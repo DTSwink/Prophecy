@@ -1,0 +1,32 @@
+# Unreal generated state
+Binaries/
+Build/
+Config/
+Content/
+DerivedDataCache/
+Intermediate/
+Saved/*
+!Saved/ProphecyCreateProductionMetaHumanReferenceLevel.py
+!Saved/ProphecyInspectKellanProductionComponents.py
+Docs/old/
+
+# IDE and local machine state
+.vs/
+.vscode/
+.vsconfig
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build and debug outputs
+*.obj
+*.pdb
+*.ilk
+*.log
+*.tmp
+
+# OS noise
+Thumbs.db
+Desktop.ini
