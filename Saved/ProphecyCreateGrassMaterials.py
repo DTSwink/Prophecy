@@ -10,6 +10,7 @@ TEXTURE_DIR = "/Game/Prophecy/Textures"
 SAVED_DIR = unreal.Paths.project_saved_dir()
 GROUND_TEXTURE_SOURCE = os.path.join(SAVED_DIR, "ProphecyGrassGroundNoise.png")
 DIRT_MASK_TEXTURE_SOURCE = os.path.join(SAVED_DIR, "ProphecyDirtPatchMask.png")
+DIRT_ALBEDO_TEXTURE_SOURCE = os.path.join(SAVED_DIR, "ProphecyDirtMossClean.png")
 GRASS_FIELD_DARK = unreal.LinearColor(0.050, 0.145, 0.032, 1.0)
 GRASS_FIELD_LIGHT = unreal.LinearColor(0.140, 0.285, 0.060, 1.0)
 GRASS_FIELD_INSTANCE_DARK = unreal.LinearColor(0.74, 0.88, 0.72, 1.0)
@@ -102,46 +103,64 @@ def ensure_dirt_mask_texture_source():
     write_rgba_png(DIRT_MASK_TEXTURE_SOURCE, 1024, 1024, pixel)
 
 
-def import_ground_texture():
+def ensure_dirt_albedo_texture_source():
+    if os.path.exists(DIRT_ALBEDO_TEXTURE_SOURCE):
+        return
+
+    def pixel(x, y):
+        n = (
+            smooth_noise(x, y, 22.0, 311) * 0.28
+            + smooth_noise(x, y, 72.0, 349) * 0.34
+            + smooth_noise(x, y, 190.0, 383) * 0.38
+        )
+        moss = max(0.0, min(1.0, (n - 0.34) / 0.46))
+        brown = (92, 66, 34)
+        olive = (85, 95, 38)
+        r = int(brown[0] + (olive[0] - brown[0]) * moss)
+        g = int(brown[1] + (olive[1] - brown[1]) * moss)
+        b = int(brown[2] + (olive[2] - brown[2]) * moss)
+        return (r, g, b, 255)
+
+    write_rgba_png(DIRT_ALBEDO_TEXTURE_SOURCE, 1024, 1024, pixel)
+
+
+def import_texture_asset(source_path, destination_name, srgb):
     ensure_dir(TEXTURE_DIR)
-    ensure_ground_texture_source()
-    asset_path = f"{TEXTURE_DIR}/T_ProphecyGrassGroundNoise"
-    if unreal.EditorAssetLibrary.does_asset_exist(asset_path):
-        return unreal.EditorAssetLibrary.load_asset(asset_path)
+    asset_path = f"{TEXTURE_DIR}/{destination_name}"
+    existing_texture = unreal.EditorAssetLibrary.load_asset(asset_path)
+    if existing_texture and os.environ.get("PROPHECY_FORCE_TEXTURE_REIMPORT", "0") != "1":
+        set_if_present(existing_texture, "srgb", srgb)
+        unreal.EditorAssetLibrary.save_loaded_asset(existing_texture)
+        return existing_texture
+
     task = unreal.AssetImportTask()
-    task.set_editor_property("filename", GROUND_TEXTURE_SOURCE)
+    task.set_editor_property("filename", source_path)
     task.set_editor_property("destination_path", TEXTURE_DIR)
-    task.set_editor_property("destination_name", "T_ProphecyGrassGroundNoise")
+    task.set_editor_property("destination_name", destination_name)
     task.set_editor_property("automated", True)
     task.set_editor_property("replace_existing", True)
     task.set_editor_property("save", True)
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
     texture = unreal.EditorAssetLibrary.load_asset(asset_path)
     if texture:
-        set_if_present(texture, "srgb", True)
+        set_if_present(texture, "srgb", srgb)
         unreal.EditorAssetLibrary.save_loaded_asset(texture)
     return texture
+
+
+def import_ground_texture():
+    ensure_ground_texture_source()
+    return import_texture_asset(GROUND_TEXTURE_SOURCE, "T_ProphecyGrassGroundNoise", True)
 
 
 def import_dirt_mask_texture():
-    ensure_dir(TEXTURE_DIR)
     ensure_dirt_mask_texture_source()
-    asset_path = f"{TEXTURE_DIR}/T_ProphecyDirtPatchMask"
-    if unreal.EditorAssetLibrary.does_asset_exist(asset_path):
-        return unreal.EditorAssetLibrary.load_asset(asset_path)
-    task = unreal.AssetImportTask()
-    task.set_editor_property("filename", DIRT_MASK_TEXTURE_SOURCE)
-    task.set_editor_property("destination_path", TEXTURE_DIR)
-    task.set_editor_property("destination_name", "T_ProphecyDirtPatchMask")
-    task.set_editor_property("automated", True)
-    task.set_editor_property("replace_existing", True)
-    task.set_editor_property("save", True)
-    unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
-    texture = unreal.EditorAssetLibrary.load_asset(asset_path)
-    if texture:
-        set_if_present(texture, "srgb", False)
-        unreal.EditorAssetLibrary.save_loaded_asset(texture)
-    return texture
+    return import_texture_asset(DIRT_MASK_TEXTURE_SOURCE, "T_ProphecyDirtPatchMask", False)
+
+
+def import_dirt_albedo_texture():
+    ensure_dirt_albedo_texture_source()
+    return import_texture_asset(DIRT_ALBEDO_TEXTURE_SOURCE, "T_ProphecyDirtMossClean", True)
 
 
 def get_or_create_material(name):
@@ -178,6 +197,67 @@ def create_scalar_parameter(material, name, default_value, x, y):
     set_if_present(node, "parameter_name", name)
     set_if_present(node, "default_value", default_value)
     return node
+
+
+def create_blood_mask_sample(material, world_xy, x, y):
+    center = create_vector_parameter(material, "BloodMaskCenter", unreal.LinearColor(0.0, 700.0, 0.0, 0.0), x, y)
+    center_xy = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionComponentMask, x + 205, y
+    )
+    set_if_present(center_xy, "r", True)
+    set_if_present(center_xy, "g", True)
+    set_if_present(center_xy, "b", False)
+    set_if_present(center_xy, "a", False)
+    relative = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionSubtract, x + 395, y - 60
+    )
+    inv_extent = create_scalar_parameter(material, "BloodMaskInvExtent", 1.0 / (12000.0 * 2.0), x + 205, y + 110)
+    scaled = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, x + 590, y - 55
+    )
+    uv_bias = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionConstant2Vector, x + 590, y + 65
+    )
+    set_if_present(uv_bias, "r", 0.5)
+    set_if_present(uv_bias, "g", 0.5)
+    uv = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionAdd, x + 780, y - 15
+    )
+    texture = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionTextureSampleParameter2D, x + 975, y - 25
+    )
+    set_if_present(texture, "parameter_name", "BloodMask")
+    default_texture = unreal.EditorAssetLibrary.load_asset("/Engine/EngineResources/Black.Black")
+    if not default_texture:
+        default_texture = unreal.EditorAssetLibrary.load_asset("/Engine/EngineResources/DefaultTexture.DefaultTexture")
+    if default_texture:
+        set_if_present(texture, "texture", default_texture)
+    mask = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionComponentMask, x + 1175, y - 25
+    )
+    set_if_present(mask, "r", True)
+    set_if_present(mask, "g", False)
+    set_if_present(mask, "b", False)
+    set_if_present(mask, "a", False)
+    core = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionComponentMask, x + 1175, y + 80
+    )
+    set_if_present(core, "r", False)
+    set_if_present(core, "g", True)
+    set_if_present(core, "b", False)
+    set_if_present(core, "a", False)
+
+    unreal.MaterialEditingLibrary.connect_material_expressions(center, "", center_xy, "None")
+    unreal.MaterialEditingLibrary.connect_material_expressions(world_xy, "", relative, "A")
+    unreal.MaterialEditingLibrary.connect_material_expressions(center_xy, "", relative, "B")
+    unreal.MaterialEditingLibrary.connect_material_expressions(relative, "", scaled, "A")
+    unreal.MaterialEditingLibrary.connect_material_expressions(inv_extent, "", scaled, "B")
+    unreal.MaterialEditingLibrary.connect_material_expressions(scaled, "", uv, "A")
+    unreal.MaterialEditingLibrary.connect_material_expressions(uv_bias, "", uv, "B")
+    unreal.MaterialEditingLibrary.connect_material_expressions(uv, "", texture, "UVs")
+    unreal.MaterialEditingLibrary.connect_material_expressions(texture, "", mask, "None")
+    unreal.MaterialEditingLibrary.connect_material_expressions(texture, "", core, "None")
+    return mask, core
 
 
 def rebuild_grass_material():
@@ -256,6 +336,7 @@ def rebuild_ground_material():
     unreal.MaterialEditingLibrary.delete_all_material_expressions(material)
     ground_texture = import_ground_texture()
     dirt_mask_texture = import_dirt_mask_texture()
+    dirt_albedo_texture = import_dirt_albedo_texture()
 
     set_if_present(material, "two_sided", False)
     set_if_present(material, "blend_mode", unreal.BlendMode.BLEND_OPAQUE)
@@ -313,8 +394,8 @@ def rebuild_ground_material():
     set_if_present(world_xy, "g", True)
     set_if_present(world_xy, "b", False)
     set_if_present(world_xy, "a", False)
-    dirt_color = create_vector_parameter(material, "DirtColor", unreal.LinearColor(0.190, 0.110, 0.045, 1.0), -920, 470)
-    dirt_patch_scale = create_scalar_parameter(material, "DirtPatchScale", 1.0 / 18000.0, -720, 460)
+    dirt_color = create_vector_parameter(material, "DirtColor", unreal.LinearColor(0.520, 0.360, 0.180, 1.0), -920, 470)
+    dirt_patch_scale = create_scalar_parameter(material, "DirtPatchScale", 1.0 / 14000.0, -720, 460)
     dirt_uv = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionMultiply, -525, 455
     )
@@ -324,6 +405,20 @@ def rebuild_ground_material():
     set_if_present(dirt_texture, "parameter_name", "DirtPatchTexture")
     if dirt_mask_texture:
         set_if_present(dirt_texture, "texture", dirt_mask_texture)
+    dirt_albedo_scale = create_scalar_parameter(material, "DirtTextureScale", 1.0 / 1600.0, -720, 645)
+    dirt_albedo_uv = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, -525, 645
+    )
+    dirt_albedo_sample = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionTextureSampleParameter2D, -335, 710
+    )
+    set_if_present(dirt_albedo_sample, "parameter_name", "DirtMossTexture")
+    if dirt_albedo_texture:
+        set_if_present(dirt_albedo_sample, "texture", dirt_albedo_texture)
+    dirt_texture_strength = create_scalar_parameter(material, "DirtTextureStrength", 1.00, 40, 355)
+    dirt_texture_color = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionLinearInterpolate, 230, 330
+    )
     dirt_mask = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionComponentMask, -145, 455
     )
@@ -331,8 +426,8 @@ def rebuild_ground_material():
     set_if_present(dirt_mask, "g", True)
     set_if_present(dirt_mask, "b", False)
     set_if_present(dirt_mask, "a", False)
-    dirt_patch_threshold = create_scalar_parameter(material, "DirtPatchThreshold", 0.08, -335, 570)
-    dirt_patch_contrast = create_scalar_parameter(material, "DirtPatchContrast", 1.80, -145, 610)
+    dirt_patch_threshold = create_scalar_parameter(material, "DirtPatchThreshold", -1.0, -335, 570)
+    dirt_patch_contrast = create_scalar_parameter(material, "DirtPatchContrast", 1.00, -145, 610)
     dirt_mask_offset = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionSubtract, 40, 475
     )
@@ -363,8 +458,8 @@ def rebuild_ground_material():
     camera_distance = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionDistance, -720, 705
     )
-    dirt_fade_start = create_scalar_parameter(material, "DirtFadeStartCm", 2500.0, -720, 840)
-    dirt_fade_inv_range = create_scalar_parameter(material, "DirtFadeInvRange", 1.0 / 9000.0, -525, 885)
+    dirt_fade_start = create_scalar_parameter(material, "DirtFadeStartCm", 900.0, -720, 840)
+    dirt_fade_inv_range = create_scalar_parameter(material, "DirtFadeInvRange", 1.0 / 6500.0, -525, 885)
     dirt_distance_offset = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionSubtract, -525, 725
     )
@@ -400,7 +495,7 @@ def rebuild_ground_material():
         material, unreal.MaterialExpressionMax, -335, 1085
     )
     dirt_view_min = create_scalar_parameter(material, "DirtViewMin", 0.00, -525, 1210)
-    dirt_view_scale = create_scalar_parameter(material, "DirtViewScale", 8.00, -335, 1250)
+    dirt_view_scale = create_scalar_parameter(material, "DirtViewScale", 10.00, -335, 1250)
     dirt_view_offset = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionSubtract, -335, 1085
     )
@@ -419,7 +514,7 @@ def rebuild_ground_material():
     dirt_patch_view_alpha = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionMultiply, 805, 760
     )
-    dirt_strength = create_scalar_parameter(material, "DirtStrength", 0.72, 805, 910)
+    dirt_strength = create_scalar_parameter(material, "DirtStrength", 1.00, 805, 910)
     dirt_alpha = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionMultiply, 1000, 790
     )
@@ -490,6 +585,23 @@ def rebuild_ground_material():
     final_color = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionLinearInterpolate, 620, 15
     )
+    blood_mask, blood_core = create_blood_mask_sample(material, world_xy, 805, -260)
+    blood_strength = create_scalar_parameter(material, "BloodStrength", 0.0, 1000, -375)
+    blood_alpha = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 1190, -335
+    )
+    blood_color = create_vector_parameter(material, "BloodColor", unreal.LinearColor(0.235, 0.016, 0.010, 1.0), 1190, -220)
+    blood_surface_color = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionLinearInterpolate, 1385, -250
+    )
+    blood_wet_strength = create_scalar_parameter(material, "BloodWetStrength", 0.0, 1000, -85)
+    blood_core_alpha = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 1190, -65
+    )
+    blood_dark_color = create_vector_parameter(material, "BloodDarkColor", unreal.LinearColor(0.070, 0.003, 0.003, 1.0), 1385, -70)
+    blood_final_color = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionLinearInterpolate, 1585, -155
+    )
 
     unreal.MaterialEditingLibrary.connect_material_expressions(
         world_position, "", world_xy, "None"
@@ -523,6 +635,24 @@ def rebuild_ground_material():
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         dirt_uv, "", dirt_texture, "UVs"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        world_xy, "", dirt_albedo_uv, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        dirt_albedo_scale, "", dirt_albedo_uv, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        dirt_albedo_uv, "", dirt_albedo_sample, "UVs"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        dirt_color, "", dirt_texture_color, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        dirt_albedo_sample, "RGB", dirt_texture_color, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        dirt_texture_strength, "", dirt_texture_color, "Alpha"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         dirt_texture, "", dirt_mask, "None"
@@ -651,7 +781,7 @@ def rebuild_ground_material():
         ground_color, "", dirt_ground_color, "A"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
-        dirt_color, "", dirt_ground_color, "B"
+        dirt_texture_color, "", dirt_ground_color, "B"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         dirt_alpha, "", dirt_ground_color, "Alpha"
@@ -701,12 +831,42 @@ def rebuild_ground_material():
     unreal.MaterialEditingLibrary.connect_material_expressions(
         shadow_alpha, "", final_color, "Alpha"
     )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_mask, "", blood_alpha, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_strength, "", blood_alpha, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        final_color, "", blood_surface_color, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_color, "", blood_surface_color, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_alpha, "", blood_surface_color, "Alpha"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_core, "", blood_core_alpha, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_wet_strength, "", blood_core_alpha, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_surface_color, "", blood_final_color, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_dark_color, "", blood_final_color, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_core_alpha, "", blood_final_color, "Alpha"
+    )
 
     unreal.MaterialEditingLibrary.connect_material_property(
-        final_color, "", unreal.MaterialProperty.MP_BASE_COLOR
+        blood_final_color, "", unreal.MaterialProperty.MP_BASE_COLOR
     )
     unreal.MaterialEditingLibrary.connect_material_property(
-        final_color, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR
+        blood_final_color, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR
     )
     unreal.MaterialEditingLibrary.connect_material_property(
         roughness, "", unreal.MaterialProperty.MP_ROUGHNESS
@@ -1571,6 +1731,34 @@ def rebuild_field_grass_material():
     wind_simple_wpo = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionAppendVector, 1755, 2355
     )
+    blood_mask, _blood_core = create_blood_mask_sample(material, world_xy, 2550, -475)
+    blood_grass_strength = create_scalar_parameter(material, "BloodGrassStrength", 0.0, 2750, -590)
+    blood_base_alpha = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 2940, -555
+    )
+    blood_tip_reduce = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionConstant, 2750, -355
+    )
+    blood_tip_reduce.set_editor_property("r", 0.55)
+    blood_tip_amount = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 2940, -385
+    )
+    blood_one = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionConstant, 2940, -270
+    )
+    blood_one.set_editor_property("r", 1.0)
+    blood_blade_factor = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionSubtract, 3130, -355
+    )
+    blood_alpha = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 3320, -475
+    )
+    blood_grass_color = create_vector_parameter(
+        material, "BloodGrassColor", unreal.LinearColor(0.155, 0.006, 0.004, 1.0), 3320, -615
+    )
+    blood_grass_final = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionLinearInterpolate, 3510, -535
+    )
 
     unreal.MaterialEditingLibrary.connect_material_expressions(
         dark_color, "", color, "A"
@@ -1736,6 +1924,39 @@ def rebuild_field_grass_material():
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         distant_flatten_negative, "", distant_flatten_wpo, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_mask, "", blood_base_alpha, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_grass_strength, "", blood_base_alpha, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blade_v, "", blood_tip_amount, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_tip_reduce, "", blood_tip_amount, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_one, "", blood_blade_factor, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_tip_amount, "", blood_blade_factor, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_base_alpha, "", blood_alpha, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_blade_factor, "", blood_alpha, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        distant_final_color, "", blood_grass_final, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_grass_color, "", blood_grass_final, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_alpha, "", blood_grass_final, "Alpha"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         distant_distance, "", distant_opacity_offset, "A"
@@ -2255,10 +2476,10 @@ def rebuild_field_grass_material():
     )
 
     unreal.MaterialEditingLibrary.connect_material_property(
-        distant_final_color, "", unreal.MaterialProperty.MP_BASE_COLOR
+        blood_grass_final, "", unreal.MaterialProperty.MP_BASE_COLOR
     )
     unreal.MaterialEditingLibrary.connect_material_property(
-        distant_final_color, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR
+        blood_grass_final, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR
     )
     unreal.MaterialEditingLibrary.connect_material_property(
         distant_combined_wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET

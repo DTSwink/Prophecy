@@ -799,6 +799,9 @@ struct AProphecyNNCrowdBenchmarkActor::FImpl
 	TArray<float> GroundShadowMaskValues;
 	TArray<float> StaticGroundShadowMaskValues;
 	TArray<FColor> GroundShadowMaskPixels;
+	TArray<float> BloodMaskValues;
+	TArray<float> BloodMaskCoreValues;
+	TArray<FColor> BloodMaskPixels;
 	TArray<FProphecyTreeShadowCaster> TreeShadowCasters;
 	bool bLoggedGrassShadowMaskStats = false;
 	bool bLoggedGroundShadowMaskStats = false;
@@ -817,6 +820,10 @@ struct AProphecyNNCrowdBenchmarkActor::FImpl
 	int32 GroundShadowMaskSize = 256;
 	FVector2D GroundShadowMaskCenter = FVector2D::ZeroVector;
 	float GroundShadowMaskHalfExtent = 6000.0f;
+	int32 BloodMaskSize = 1024;
+	FVector2D BloodMaskCenter = FVector2D::ZeroVector;
+	float BloodMaskHalfExtent = 12000.0f;
+	bool bBloodMaskDirty = false;
 	bool bSingleProxyComponent = true;
 	float MaxSpeedScaleFinal = 0.16666667f;
 	float MaxTurnRateScaleFinal = 0.41887903f;
@@ -2418,6 +2425,7 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObje
 	{
 		GrassMaterialInstance = UMaterialInstanceDynamic::Create(GrassMaterial, this);
 		ApplyGrassWindMaterialParameters();
+		ConfigureBloodMaskMaterials();
 	}
 
 	FMeshDescription MeshDescription;
@@ -3521,6 +3529,241 @@ void AProphecyNNCrowdBenchmarkActor::SpawnContactShadowComponents()
 	}
 }
 
+void AProphecyNNCrowdBenchmarkActor::ConfigureBloodMaskMaterials()
+{
+	if (!BloodMaskTexture)
+	{
+		return;
+	}
+
+	auto ConfigureMaterial = [this](UMaterialInstanceDynamic* Material, bool bGrassMaterial)
+	{
+		if (!Material)
+		{
+			return;
+		}
+
+		Material->SetTextureParameterValue(TEXT("BloodMask"), BloodMaskTexture);
+		Material->SetVectorParameterValue(TEXT("BloodMaskCenter"), FLinearColor(Impl->BloodMaskCenter.X, Impl->BloodMaskCenter.Y, 0.0f, 0.0f));
+		Material->SetScalarParameterValue(TEXT("BloodMaskInvExtent"), 1.0f / (Impl->BloodMaskHalfExtent * 2.0f));
+		Material->SetVectorParameterValue(TEXT("BloodColor"), FLinearColor(0.235f, 0.016f, 0.010f, 1.0f));
+		Material->SetVectorParameterValue(TEXT("BloodDarkColor"), FLinearColor(0.070f, 0.003f, 0.003f, 1.0f));
+		Material->SetVectorParameterValue(TEXT("BloodGrassColor"), FLinearColor(0.155f, 0.006f, 0.004f, 1.0f));
+		Material->SetScalarParameterValue(TEXT("BloodStrength"), bGrassMaterial ? 0.0f : 0.88f);
+		Material->SetScalarParameterValue(TEXT("BloodWetStrength"), bGrassMaterial ? 0.0f : 0.58f);
+		Material->SetScalarParameterValue(TEXT("BloodGrassStrength"), bGrassMaterial ? 0.78f : 0.0f);
+	};
+
+	ConfigureMaterial(FloorMaterialInstance.Get(), false);
+	ConfigureMaterial(GrassMaterialInstance.Get(), true);
+}
+
+void AProphecyNNCrowdBenchmarkActor::InitializeBloodMask(const FVector2D& FieldCenter, float FieldHalfExtent)
+{
+	Impl->BloodMaskCenter = FieldCenter;
+	Impl->BloodMaskHalfExtent = FMath::Max(FieldHalfExtent, 1.0f);
+	Impl->BloodMaskSize = 1024;
+	const int32 PixelCount = Impl->BloodMaskSize * Impl->BloodMaskSize;
+	Impl->BloodMaskValues.SetNumZeroed(PixelCount);
+	Impl->BloodMaskCoreValues.SetNumZeroed(PixelCount);
+	Impl->BloodMaskPixels.SetNumZeroed(PixelCount);
+
+	if (!BloodMaskTexture)
+	{
+		BloodMaskTexture = UTexture2D::CreateTransient(Impl->BloodMaskSize, Impl->BloodMaskSize, PF_B8G8R8A8, TEXT("ProphecyBloodMask"));
+		if (!BloodMaskTexture)
+		{
+			return;
+		}
+		BloodMaskTexture->SRGB = false;
+		BloodMaskTexture->Filter = TF_Bilinear;
+		BloodMaskTexture->AddressX = TA_Clamp;
+		BloodMaskTexture->AddressY = TA_Clamp;
+		BloodMaskTexture->UpdateResource();
+	}
+
+	ConfigureBloodMaskMaterials();
+	Impl->bBloodMaskDirty = true;
+	UploadBloodMask();
+}
+
+void AProphecyNNCrowdBenchmarkActor::ClearBloodMask()
+{
+	for (float& Value : Impl->BloodMaskValues)
+	{
+		Value = 0.0f;
+	}
+	for (float& Value : Impl->BloodMaskCoreValues)
+	{
+		Value = 0.0f;
+	}
+	Impl->bBloodMaskDirty = true;
+}
+
+void AProphecyNNCrowdBenchmarkActor::StampBloodDropMask(const FVector2D& Center, float RadiusXCm, float RadiusYCm, float RotationRadians, float Strength, float CoreStrength)
+{
+	if (Impl->BloodMaskValues.IsEmpty() || Impl->BloodMaskCoreValues.Num() != Impl->BloodMaskValues.Num())
+	{
+		return;
+	}
+
+	const int32 Size = Impl->BloodMaskSize;
+	const float RadiusX = FMath::Max(RadiusXCm, 1.0f);
+	const float RadiusY = FMath::Max(RadiusYCm, 1.0f);
+	const float MaxRadius = FMath::Max(RadiusX, RadiusY);
+	const float CmPerPixel = (Impl->BloodMaskHalfExtent * 2.0f) / float(Size);
+	auto WorldToPixel = [this, Size](const FVector2D& World)
+	{
+		const float U = (World.X - (Impl->BloodMaskCenter.X - Impl->BloodMaskHalfExtent)) / (Impl->BloodMaskHalfExtent * 2.0f);
+		const float V = (World.Y - (Impl->BloodMaskCenter.Y - Impl->BloodMaskHalfExtent)) / (Impl->BloodMaskHalfExtent * 2.0f);
+		return FIntPoint(FMath::FloorToInt(U * float(Size)), FMath::FloorToInt(V * float(Size)));
+	};
+	const FIntPoint MinPixel = WorldToPixel(Center - FVector2D(MaxRadius, MaxRadius));
+	const FIntPoint MaxPixel = WorldToPixel(Center + FVector2D(MaxRadius, MaxRadius));
+	if (MaxPixel.X < 0 || MaxPixel.Y < 0 || MinPixel.X > Size - 1 || MinPixel.Y > Size - 1)
+	{
+		return;
+	}
+
+	const int32 X0 = FMath::Clamp(MinPixel.X, 0, Size - 1);
+	const int32 Y0 = FMath::Clamp(MinPixel.Y, 0, Size - 1);
+	const int32 X1 = FMath::Clamp(MaxPixel.X, 0, Size - 1);
+	const int32 Y1 = FMath::Clamp(MaxPixel.Y, 0, Size - 1);
+	const float CosR = FMath::Cos(RotationRadians);
+	const float SinR = FMath::Sin(RotationRadians);
+	auto Smooth01 = [](float T)
+	{
+		T = FMath::Clamp(T, 0.0f, 1.0f);
+		return T * T * (3.0f - 2.0f * T);
+	};
+
+	for (int32 Y = Y0; Y <= Y1; ++Y)
+	{
+		const float WorldY = Impl->BloodMaskCenter.Y - Impl->BloodMaskHalfExtent + (float(Y) + 0.5f) * CmPerPixel;
+		for (int32 X = X0; X <= X1; ++X)
+		{
+			const float WorldX = Impl->BloodMaskCenter.X - Impl->BloodMaskHalfExtent + (float(X) + 0.5f) * CmPerPixel;
+			const FVector2D Offset(WorldX - Center.X, WorldY - Center.Y);
+			const float LocalX = Offset.X * CosR + Offset.Y * SinR;
+			const float LocalY = -Offset.X * SinR + Offset.Y * CosR;
+			const float NormalizedDistance = FMath::Sqrt(FMath::Square(LocalX / RadiusX) + FMath::Square(LocalY / RadiusY));
+			if (NormalizedDistance >= 1.0f)
+			{
+				continue;
+			}
+
+			const float EdgeSoft = 1.0f - Smooth01((NormalizedDistance - 0.52f) / 0.48f);
+			const float GrainA = 0.5f + 0.5f * FMath::Sin(WorldX * 0.021f + WorldY * 0.037f + Center.X * 0.003f);
+			const float GrainB = 0.5f + 0.5f * FMath::Sin(WorldX * 0.063f - WorldY * 0.029f + Center.Y * 0.004f);
+			const float Breakup = FMath::Clamp(0.74f + 0.20f * GrainA + 0.16f * GrainB, 0.0f, 1.0f);
+			const float MaskValue = FMath::Clamp(Strength * EdgeSoft * Breakup, 0.0f, 1.0f);
+			const float CoreValue = FMath::Clamp(CoreStrength * (1.0f - Smooth01((NormalizedDistance - 0.18f) / 0.54f)) * Breakup, 0.0f, 1.0f);
+			const int32 Index = Y * Size + X;
+			Impl->BloodMaskValues[Index] = FMath::Max(Impl->BloodMaskValues[Index], MaskValue);
+			Impl->BloodMaskCoreValues[Index] = FMath::Max(Impl->BloodMaskCoreValues[Index], CoreValue);
+		}
+	}
+
+	Impl->bBloodMaskDirty = true;
+}
+
+void AProphecyNNCrowdBenchmarkActor::GeneratePreviewBloodStains(float RadiusScale, float Strength)
+{
+	ClearBloodMask();
+
+	const float Scale = FMath::Clamp(RadiusScale, 0.35f, 3.0f);
+	const float BaseStrength = FMath::Clamp(Strength, 0.05f, 1.0f);
+	struct FPreviewBloodPool
+	{
+		FVector2D Center;
+		float RadiusX;
+		float RadiusY;
+		float Rotation;
+		float StrengthScale;
+	};
+	const FPreviewBloodPool Pools[] = {
+		{ FVector2D(-520.0f, -1150.0f), 260.0f, 210.0f, 0.28f, 0.94f },
+		{ FVector2D(260.0f, -610.0f), 360.0f, 250.0f, -0.15f, 1.00f },
+		{ FVector2D(780.0f, 120.0f), 250.0f, 190.0f, 0.64f, 0.82f },
+		{ FVector2D(-900.0f, 620.0f), 300.0f, 215.0f, -0.42f, 0.78f },
+		{ FVector2D(120.0f, 1220.0f), 430.0f, 250.0f, 0.10f, 0.64f }
+	};
+
+	FRandomStream Random(91427);
+	for (const FPreviewBloodPool& Pool : Pools)
+	{
+		StampBloodDropMask(Pool.Center, Pool.RadiusX * Scale, Pool.RadiusY * Scale, Pool.Rotation, BaseStrength * Pool.StrengthScale, BaseStrength * 0.86f * Pool.StrengthScale);
+		for (int32 Index = 0; Index < 28; ++Index)
+		{
+			const float Angle = Random.FRandRange(0.0f, UE_TWO_PI);
+			const float Distance = Random.FRandRange(90.0f, 780.0f) * Scale;
+			const FVector2D SplatterCenter = Pool.Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * Distance;
+			const float Radius = Random.FRandRange(18.0f, 72.0f) * Scale;
+			const float Stretch = Random.FRandRange(0.55f, 1.85f);
+			StampBloodDropMask(
+				SplatterCenter,
+				Radius * Stretch,
+				Radius,
+				Angle + Random.FRandRange(-0.55f, 0.55f),
+				BaseStrength * Random.FRandRange(0.34f, 0.74f),
+				BaseStrength * Random.FRandRange(0.12f, 0.42f));
+		}
+	}
+
+	for (int32 Index = 0; Index < 42; ++Index)
+	{
+		const float T = float(Index) / 41.0f;
+		const FVector2D TrailCenter(
+			FMath::Lerp(-1120.0f, 960.0f, T) + Random.FRandRange(-150.0f, 150.0f),
+			FMath::Lerp(-1450.0f, 1650.0f, T) + Random.FRandRange(-95.0f, 95.0f));
+		const float Radius = Random.FRandRange(16.0f, 54.0f) * Scale;
+		StampBloodDropMask(TrailCenter, Radius * Random.FRandRange(0.8f, 1.8f), Radius, Random.FRandRange(-UE_PI, UE_PI), BaseStrength * Random.FRandRange(0.22f, 0.58f), BaseStrength * Random.FRandRange(0.08f, 0.28f));
+	}
+
+	UploadBloodMask();
+	UE_LOG(LogProphecyNNBenchmark, Display, TEXT("Generated preview blood mask: size=%d half_extent=%.0fcm radius_scale=%.2f strength=%.2f"), Impl->BloodMaskSize, Impl->BloodMaskHalfExtent, Scale, BaseStrength);
+}
+
+void AProphecyNNCrowdBenchmarkActor::UploadBloodMask()
+{
+	if (!BloodMaskTexture || !Impl->bBloodMaskDirty)
+	{
+		return;
+	}
+
+	const int32 Size = Impl->BloodMaskSize;
+	const int32 PixelCount = Size * Size;
+	if (Impl->BloodMaskValues.Num() != PixelCount || Impl->BloodMaskCoreValues.Num() != PixelCount || Impl->BloodMaskPixels.Num() != PixelCount)
+	{
+		return;
+	}
+
+	for (int32 Index = 0; Index < PixelCount; ++Index)
+	{
+		const uint8 MaskValue = uint8(FMath::Clamp(Impl->BloodMaskValues[Index], 0.0f, 1.0f) * 255.0f);
+		const uint8 CoreValue = uint8(FMath::Clamp(Impl->BloodMaskCoreValues[Index], 0.0f, 1.0f) * 255.0f);
+		Impl->BloodMaskPixels[Index] = FColor(MaskValue, CoreValue, 0, 255);
+	}
+
+	const int32 ByteCount = PixelCount * sizeof(FColor);
+	uint8* UploadData = static_cast<uint8*>(FMemory::Malloc(ByteCount));
+	FMemory::Memcpy(UploadData, Impl->BloodMaskPixels.GetData(), ByteCount);
+	FUpdateTextureRegion2D* Region = new FUpdateTextureRegion2D(0, 0, 0, 0, Size, Size);
+	BloodMaskTexture->UpdateTextureRegions(
+		0,
+		1,
+		Region,
+		uint32(Size * sizeof(FColor)),
+		uint32(sizeof(FColor)),
+		UploadData,
+		[](uint8* SrcData, const FUpdateTextureRegion2D* Regions)
+		{
+			FMemory::Free(SrcData);
+			delete Regions;
+		});
+	Impl->bBloodMaskDirty = false;
+}
+
 void AProphecyNNCrowdBenchmarkActor::InitializeGrassShadowMask(const FVector2D& FieldCenter, float FieldHalfExtent)
 {
 	if (!GrassMaterialInstance)
@@ -3718,13 +3961,11 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 					Component->SetHiddenInGame(true);
 					Component->SetCullDistances(0, 1);
 				}
-				else
-				{
-					GrassComponents.Add(Component);
-					Impl->GrassInstanceCount += CellInstances;
-					Impl->GrassDenseInstanceCount += bUseDenseMesh ? CellInstances : 0;
-					Impl->GrassVisualBladeCount += int64(CellInstances) * int64(ComponentBladesPerTile);
-				}
+
+				GrassComponents.Add(Component);
+				Impl->GrassInstanceCount += CellInstances;
+				Impl->GrassDenseInstanceCount += bUseDenseMesh ? CellInstances : 0;
+				Impl->GrassVisualBladeCount += int64(CellInstances) * int64(ComponentBladesPerTile);
 			}
 			else
 			{
@@ -5829,6 +6070,7 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 
 	int32 DisabledExistingLightComponentCount = 0;
 	int32 DisabledExistingSkyLightComponentCount = 0;
+	int32 HiddenExistingSkyMeshComponentCount = 0;
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		AActor* ExistingActor = *It;
@@ -5878,15 +6120,54 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 		{
 			ExistingActor->SetActorHiddenInGame(true);
 		}
+
+		TArray<UStaticMeshComponent*> StaticMeshComponents;
+		ExistingActor->GetComponents(StaticMeshComponents);
+		bool bHiddenActorSkyMesh = false;
+		for (UStaticMeshComponent* ExistingMeshComponent : StaticMeshComponents)
+		{
+			if (!ExistingMeshComponent || !ExistingMeshComponent->GetStaticMesh())
+			{
+				continue;
+			}
+
+			const FString MeshPath = ExistingMeshComponent->GetStaticMesh()->GetPathName();
+			const FString ActorName = ExistingActor->GetName();
+			const FString ComponentName = ExistingMeshComponent->GetName();
+			const bool bLooksLikeMapSkyDome =
+				MeshPath.Contains(TEXT("SM_SkySphere"), ESearchCase::IgnoreCase) ||
+				MeshPath.Contains(TEXT("SkySphere"), ESearchCase::IgnoreCase) ||
+				ActorName.Contains(TEXT("SkySphere"), ESearchCase::IgnoreCase) ||
+				ActorName.Contains(TEXT("Sky_Sphere"), ESearchCase::IgnoreCase) ||
+				ComponentName.Contains(TEXT("SkySphere"), ESearchCase::IgnoreCase) ||
+				ComponentName.Contains(TEXT("Sky_Sphere"), ESearchCase::IgnoreCase);
+			if (!bLooksLikeMapSkyDome)
+			{
+				continue;
+			}
+
+			ExistingMeshComponent->SetVisibility(false, true);
+			ExistingMeshComponent->SetHiddenInGame(true);
+			ExistingMeshComponent->SetCastShadow(false);
+			ExistingMeshComponent->SetCastContactShadow(false);
+			ExistingMeshComponent->MarkRenderStateDirty();
+			++HiddenExistingSkyMeshComponentCount;
+			bHiddenActorSkyMesh = true;
+		}
+		if (bHiddenActorSkyMesh)
+		{
+			ExistingActor->SetActorHiddenInGame(true);
+		}
 	}
-	if (DisabledExistingLightComponentCount > 0 || DisabledExistingSkyLightComponentCount > 0)
+	if (DisabledExistingLightComponentCount > 0 || DisabledExistingSkyLightComponentCount > 0 || HiddenExistingSkyMeshComponentCount > 0)
 	{
 		UE_LOG(
 			LogProphecyNNBenchmark,
 			Display,
-			TEXT("Disabled %d pre-existing light component(s) and %d pre-existing sky light component(s) for benchmark scene isolation."),
+			TEXT("Disabled %d pre-existing light component(s), %d pre-existing sky light component(s), and %d pre-existing sky mesh component(s) for benchmark scene isolation."),
 			DisabledExistingLightComponentCount,
-			DisabledExistingSkyLightComponentCount);
+			DisabledExistingSkyLightComponentCount,
+			HiddenExistingSkyMeshComponentCount);
 	}
 
 	const bool bMetaHumanComparisonView =
@@ -5933,7 +6214,7 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 		FloorComponent->SetVisibleInRayTracing(false);
 		FloorComponent->SetReceivesDecals(false);
 		FloorComponent->SetRelativeLocation(FVector(0.0, bSingleAgentView ? 0.0 : ((bSpawnGrass || bSpawnTrees) ? 12000.0 : 900.0), 0.0));
-		FloorComponent->SetRelativeScale3D(FVector(bSingleAgentView ? 10.0 : ((bSpawnGrass || bSpawnTrees) ? 900.0 : 42.0), bSingleAgentView ? 10.0 : ((bSpawnGrass || bSpawnTrees) ? 900.0 : 34.0), 1.0));
+		FloorComponent->SetRelativeScale3D(FVector(bSingleAgentView ? 10.0 : ((bSpawnGrass || bSpawnTrees) ? 6000.0 : 42.0), bSingleAgentView ? 10.0 : ((bSpawnGrass || bSpawnTrees) ? 6000.0 : 34.0), 1.0));
 		if (FloorMaterial)
 		{
 			FloorMaterialInstance = UMaterialInstanceDynamic::Create(FloorMaterial, this);
@@ -5941,15 +6222,17 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 			{
 				FloorMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), (bSpawnGrass || bSpawnTrees) ? ProphecyGrassGroundBaseColor : FLinearColor(0.56f, 0.55f, 0.50f, 1.0f));
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundNoiseStrength"), (bSpawnGrass || bSpawnTrees) ? 0.55f : 0.82f);
-				FloorMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), FLinearColor(0.19f, 0.110f, 0.045f, 1.0f));
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), (bSpawnGrass || bSpawnTrees) ? 0.72f : 0.0f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchScale"), 1.0f / 18000.0f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchThreshold"), 0.08f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchContrast"), 1.8f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeStartCm"), 2500.0f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / 9000.0f);
+				FloorMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), FLinearColor(0.52f, 0.36f, 0.18f, 1.0f));
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), (bSpawnGrass || bSpawnTrees) ? 1.0f : 0.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchScale"), 1.0f / 14000.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchThreshold"), -1.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchContrast"), 1.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureScale"), 1.0f / 1600.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), 1.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeStartCm"), 900.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / 6500.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewMin"), 0.0f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewScale"), 8.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewScale"), 10.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundShadowMaskStrength"), 0.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("GrassShadowMaskStrength"), 0.0f);
 			}
@@ -5971,6 +6254,10 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 					? (bGrassDiagnosticMode ? 4200.0f : 8000.0f)
 					: FMath::Max(float(FloorScale.X), float(FloorScale.Y)) * 50.0f);
 			InitializeGroundShadowMask(ShadowMaskCenter, FloorHalfExtent);
+		}
+		if (FloorMaterialInstance && (bSpawnGrass || bSpawnTrees))
+		{
+			InitializeBloodMask(FVector2D(0.0f, 700.0f), 12000.0f);
 		}
 	}
 
@@ -6221,6 +6508,11 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 		return RootObject->TryGetNumberField(FieldName, OutValue);
 	};
 
+	auto TryBool = [&RootObject](const TCHAR* FieldName, bool& bOutValue)
+	{
+		return RootObject->TryGetBoolField(FieldName, bOutValue);
+	};
+
 	auto TryColor = [&RootObject](const TCHAR* FieldName, FLinearColor& OutColor)
 	{
 		const TArray<TSharedPtr<FJsonValue>>* Values = nullptr;
@@ -6241,18 +6533,70 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 		return true;
 	};
 
+	auto TryVector = [&RootObject](const TCHAR* FieldName, FVector& OutVector)
+	{
+		const TArray<TSharedPtr<FJsonValue>>* Values = nullptr;
+		if (!RootObject->TryGetArrayField(FieldName, Values) || !Values || Values->Num() < 3)
+		{
+			return false;
+		}
+		if (!(*Values)[0].IsValid() || !(*Values)[1].IsValid() || !(*Values)[2].IsValid())
+		{
+			return false;
+		}
+
+		OutVector = FVector((*Values)[0]->AsNumber(), (*Values)[1]->AsNumber(), (*Values)[2]->AsNumber());
+		return true;
+	};
+
+	auto ApplyScalarParameter = [&TryNumber](UMaterialInstanceDynamic* Material, const TCHAR* JsonField, const TCHAR* AlternateJsonField, const TCHAR* ParameterName)
+	{
+		if (!Material)
+		{
+			return;
+		}
+
+		double Value = 0.0;
+		if (TryNumber(JsonField, Value) || (AlternateJsonField && TryNumber(AlternateJsonField, Value)))
+		{
+			Material->SetScalarParameterValue(ParameterName, float(Value));
+		}
+	};
+
+	auto ApplyColorParameter = [&TryColor](UMaterialInstanceDynamic* Material, const TCHAR* JsonField, const TCHAR* AlternateJsonField, const TCHAR* ParameterName)
+	{
+		if (!Material)
+		{
+			return;
+		}
+
+		FLinearColor Value;
+		if (TryColor(JsonField, Value) || (AlternateJsonField && TryColor(AlternateJsonField, Value)))
+		{
+			Material->SetVectorParameterValue(ParameterName, Value);
+		}
+	};
+
 	if (GrassMaterialInstance)
 	{
-		double StartCm = 0.0;
-		if (TryNumber(TEXT("grass_distant_color_start_cm"), StartCm) || TryNumber(TEXT("GrassDistantColorStartCm"), StartCm))
-		{
-			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorStartCm"), float(StartCm));
-		}
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_wind_enabled"), TEXT("GrassWindEnabled"), TEXT("GrassWindEnabled"));
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_wind_bend_cm"), TEXT("GrassWindBendCm"), TEXT("GrassWindBendCm"));
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_wind_lift_cm"), TEXT("GrassWindLiftCm"), TEXT("GrassWindLiftCm"));
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_wind_world_freq"), TEXT("GrassWindWorldFrequency"), TEXT("GrassWindWorldFrequency"));
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_wind_patch_freq"), TEXT("GrassWindPatchFrequency"), TEXT("GrassWindPatchFrequency"));
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_wind_speed"), TEXT("GrassWindSpeed"), TEXT("GrassWindSpeed"));
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_wind_gust"), TEXT("GrassWindGustStrength"), TEXT("GrassWindGustStrength"));
 
 		double RangeCm = 0.0;
 		if ((TryNumber(TEXT("grass_distant_color_range_cm"), RangeCm) || TryNumber(TEXT("GrassDistantColorRangeCm"), RangeCm)) && RangeCm > UE_SMALL_NUMBER)
 		{
 			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorInvRange"), 1.0f / float(RangeCm));
+		}
+
+		double StartCm = 0.0;
+		if (TryNumber(TEXT("grass_distant_color_start_cm"), StartCm) || TryNumber(TEXT("GrassDistantColorStartCm"), StartCm))
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorStartCm"), float(StartCm));
 		}
 
 		double InvRange = 0.0;
@@ -6322,18 +6666,226 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 		}
 	}
 
-	if (FloorMaterialInstance)
+	auto ApplyGroundMaterialParameters = [&](UMaterialInstanceDynamic* Material)
 	{
-		double DirtStrength = 0.0;
-		if (TryNumber(TEXT("dirt_strength"), DirtStrength) || TryNumber(TEXT("DirtStrength"), DirtStrength))
+		if (!Material)
 		{
-			FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), float(DirtStrength));
+			return;
 		}
 
-		FLinearColor GroundBaseColor;
-		if (TryColor(TEXT("ground_base_color"), GroundBaseColor) || TryColor(TEXT("GroundBaseColor"), GroundBaseColor))
+		ApplyScalarParameter(Material, TEXT("ground_noise_strength"), TEXT("GroundNoiseStrength"), TEXT("GroundNoiseStrength"));
+		ApplyScalarParameter(Material, TEXT("ground_noise_scale"), TEXT("GroundNoiseScale"), TEXT("GroundNoiseScale"));
+		ApplyColorParameter(Material, TEXT("ground_base_color"), TEXT("GroundBaseColor"), TEXT("GroundBaseColor"));
+		ApplyColorParameter(Material, TEXT("dirt_color"), TEXT("DirtColor"), TEXT("DirtColor"));
+		ApplyScalarParameter(Material, TEXT("dirt_strength"), TEXT("DirtStrength"), TEXT("DirtStrength"));
+		ApplyScalarParameter(Material, TEXT("dirt_patch_scale"), TEXT("DirtPatchScale"), TEXT("DirtPatchScale"));
+		ApplyScalarParameter(Material, TEXT("dirt_patch_threshold"), TEXT("DirtPatchThreshold"), TEXT("DirtPatchThreshold"));
+		ApplyScalarParameter(Material, TEXT("dirt_patch_contrast"), TEXT("DirtPatchContrast"), TEXT("DirtPatchContrast"));
+		ApplyScalarParameter(Material, TEXT("dirt_texture_scale"), TEXT("DirtTextureScale"), TEXT("DirtTextureScale"));
+		ApplyScalarParameter(Material, TEXT("dirt_texture_strength"), TEXT("DirtTextureStrength"), TEXT("DirtTextureStrength"));
+		ApplyScalarParameter(Material, TEXT("dirt_fade_start_cm"), TEXT("DirtFadeStartCm"), TEXT("DirtFadeStartCm"));
+		ApplyScalarParameter(Material, TEXT("dirt_fade_inv_range"), TEXT("DirtFadeInvRange"), TEXT("DirtFadeInvRange"));
+		ApplyScalarParameter(Material, TEXT("dirt_view_min"), TEXT("DirtViewMin"), TEXT("DirtViewMin"));
+		ApplyScalarParameter(Material, TEXT("dirt_view_scale"), TEXT("DirtViewScale"), TEXT("DirtViewScale"));
+		ApplyScalarParameter(Material, TEXT("ground_shadow_strength"), TEXT("GroundShadowMaskStrength"), TEXT("GroundShadowMaskStrength"));
+
+		double GroundNoiseWorldCm = 0.0;
+		if ((TryNumber(TEXT("ground_noise_world_cm"), GroundNoiseWorldCm) || TryNumber(TEXT("GroundNoiseWorldCm"), GroundNoiseWorldCm)) && GroundNoiseWorldCm > UE_SMALL_NUMBER)
 		{
-			FloorMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), GroundBaseColor);
+			Material->SetScalarParameterValue(TEXT("GroundNoiseScale"), 1.0f / float(GroundNoiseWorldCm));
+		}
+
+		double DirtPatchWorldCm = 0.0;
+		if ((TryNumber(TEXT("dirt_patch_world_cm"), DirtPatchWorldCm) || TryNumber(TEXT("DirtPatchWorldCm"), DirtPatchWorldCm) ||
+			TryNumber(TEXT("dirt_patch_size_cm"), DirtPatchWorldCm) || TryNumber(TEXT("DirtPatchSizeCm"), DirtPatchWorldCm)) && DirtPatchWorldCm > UE_SMALL_NUMBER)
+		{
+			Material->SetScalarParameterValue(TEXT("DirtPatchScale"), 1.0f / float(DirtPatchWorldCm));
+		}
+
+		double DirtTextureWorldCm = 0.0;
+		if ((TryNumber(TEXT("dirt_texture_world_cm"), DirtTextureWorldCm) || TryNumber(TEXT("DirtTextureWorldCm"), DirtTextureWorldCm)) && DirtTextureWorldCm > UE_SMALL_NUMBER)
+		{
+			Material->SetScalarParameterValue(TEXT("DirtTextureScale"), 1.0f / float(DirtTextureWorldCm));
+		}
+
+		double DirtFadeRangeCm = 0.0;
+		if ((TryNumber(TEXT("dirt_fade_range_cm"), DirtFadeRangeCm) || TryNumber(TEXT("DirtFadeRangeCm"), DirtFadeRangeCm)) && DirtFadeRangeCm > UE_SMALL_NUMBER)
+		{
+			Material->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / float(DirtFadeRangeCm));
+		}
+	};
+
+	ApplyGroundMaterialParameters(FloorMaterialInstance.Get());
+	ApplyGroundMaterialParameters(DistantHillsMaterialInstance.Get());
+
+	if (!BloodMaskTexture && (FloorMaterialInstance || GrassMaterialInstance))
+	{
+		InitializeBloodMask(FVector2D(0.0f, 700.0f), 12000.0f);
+	}
+
+	auto ApplyBloodMaterialParameters = [&](UMaterialInstanceDynamic* Material)
+	{
+		if (!Material)
+		{
+			return;
+		}
+
+		ApplyColorParameter(Material, TEXT("blood_color"), TEXT("BloodColor"), TEXT("BloodColor"));
+		ApplyColorParameter(Material, TEXT("blood_dark_color"), TEXT("BloodDarkColor"), TEXT("BloodDarkColor"));
+		ApplyColorParameter(Material, TEXT("blood_grass_color"), TEXT("BloodGrassColor"), TEXT("BloodGrassColor"));
+		ApplyScalarParameter(Material, TEXT("blood_strength"), TEXT("BloodStrength"), TEXT("BloodStrength"));
+		ApplyScalarParameter(Material, TEXT("blood_wet_strength"), TEXT("BloodWetStrength"), TEXT("BloodWetStrength"));
+		ApplyScalarParameter(Material, TEXT("blood_grass_strength"), TEXT("BloodGrassStrength"), TEXT("BloodGrassStrength"));
+	};
+	ApplyBloodMaterialParameters(FloorMaterialInstance.Get());
+	ApplyBloodMaterialParameters(GrassMaterialInstance.Get());
+
+	bool bClearBlood = false;
+	if (TryBool(TEXT("blood_clear"), bClearBlood) || TryBool(TEXT("BloodClear"), bClearBlood))
+	{
+		if (bClearBlood)
+		{
+			ClearBloodMask();
+			UploadBloodMask();
+		}
+	}
+
+	bool bBloodPreview = false;
+	if (TryBool(TEXT("blood_preview"), bBloodPreview) || TryBool(TEXT("BloodPreview"), bBloodPreview))
+	{
+		if (bBloodPreview)
+		{
+			double RadiusScale = 1.0;
+			TryNumber(TEXT("blood_radius_scale"), RadiusScale) || TryNumber(TEXT("BloodRadiusScale"), RadiusScale);
+			double PreviewStrength = 0.86;
+			TryNumber(TEXT("blood_preview_strength"), PreviewStrength) || TryNumber(TEXT("BloodPreviewStrength"), PreviewStrength) || TryNumber(TEXT("blood_strength"), PreviewStrength) || TryNumber(TEXT("BloodStrength"), PreviewStrength);
+			GeneratePreviewBloodStains(float(RadiusScale), float(PreviewStrength));
+		}
+	}
+
+	bool bHideGrass = false;
+	if (TryBool(TEXT("hide_grass"), bHideGrass) || TryBool(TEXT("HideGrass"), bHideGrass))
+	{
+		const bool bVisible = !bHideGrass;
+		for (UHierarchicalInstancedStaticMeshComponent* Component : GrassComponents)
+		{
+			if (Component)
+			{
+				Component->SetVisibility(bVisible, true);
+				Component->SetHiddenInGame(!bVisible);
+				Component->SetCullDistances(bVisible ? 0 : 0, bVisible ? 0 : 1);
+			}
+		}
+		for (UNiagaraComponent* Component : NiagaraGrassComponents)
+		{
+			if (Component)
+			{
+				Component->SetVisibility(bVisible, true);
+				Component->SetHiddenInGame(!bVisible);
+				if (bVisible)
+				{
+					Component->Activate(true);
+				}
+				else
+				{
+					Component->Deactivate();
+				}
+			}
+		}
+	}
+
+	bool bGrassVisible = false;
+	if (TryBool(TEXT("grass_visible"), bGrassVisible) || TryBool(TEXT("GrassVisible"), bGrassVisible))
+	{
+		for (UHierarchicalInstancedStaticMeshComponent* Component : GrassComponents)
+		{
+			if (Component)
+			{
+				Component->SetVisibility(bGrassVisible, true);
+				Component->SetHiddenInGame(!bGrassVisible);
+				Component->SetCullDistances(bGrassVisible ? 0 : 0, bGrassVisible ? 0 : 1);
+			}
+		}
+	}
+
+	bool bHillsVisible = false;
+	if ((TryBool(TEXT("hills_visible"), bHillsVisible) || TryBool(TEXT("HillsVisible"), bHillsVisible)) && DistantHillsComponent)
+	{
+		DistantHillsComponent->SetVisibility(bHillsVisible, true);
+		DistantHillsComponent->SetHiddenInGame(!bHillsVisible);
+	}
+
+	if (BenchmarkCamera)
+	{
+		FVector CameraLocation;
+		if (TryVector(TEXT("camera_location"), CameraLocation) || TryVector(TEXT("CameraLocation"), CameraLocation))
+		{
+			BenchmarkCamera->SetActorLocation(CameraLocation);
+		}
+
+		FVector CameraLookAt;
+		if (TryVector(TEXT("camera_look_at"), CameraLookAt) || TryVector(TEXT("CameraLookAt"), CameraLookAt))
+		{
+			BenchmarkCamera->SetActorRotation((CameraLookAt - BenchmarkCamera->GetActorLocation()).Rotation());
+		}
+
+		double CameraFov = 0.0;
+		if ((TryNumber(TEXT("camera_fov"), CameraFov) || TryNumber(TEXT("CameraFov"), CameraFov)) && CameraFov > 1.0)
+		{
+			if (UCameraComponent* CameraComponent = BenchmarkCamera->GetCameraComponent())
+			{
+				CameraComponent->SetFieldOfView(float(CameraFov));
+			}
+		}
+	}
+
+	if (BenchmarkKeyLight && BenchmarkKeyLight->GetLightComponent())
+	{
+		double SunIntensity = 0.0;
+		if (TryNumber(TEXT("sun_intensity"), SunIntensity) || TryNumber(TEXT("SunIntensity"), SunIntensity))
+		{
+			BenchmarkKeyLight->GetLightComponent()->SetIntensity(float(SunIntensity));
+		}
+
+		double SunPitch = 0.0;
+		double SunYaw = 0.0;
+		double SunRoll = 0.0;
+		const bool bHasPitch = TryNumber(TEXT("sun_pitch"), SunPitch) || TryNumber(TEXT("SunPitch"), SunPitch);
+		const bool bHasYaw = TryNumber(TEXT("sun_yaw"), SunYaw) || TryNumber(TEXT("SunYaw"), SunYaw);
+		const bool bHasRoll = TryNumber(TEXT("sun_roll"), SunRoll) || TryNumber(TEXT("SunRoll"), SunRoll);
+		if (bHasPitch || bHasYaw || bHasRoll)
+		{
+			if (UDirectionalLightComponent* DirectionalLight = Cast<UDirectionalLightComponent>(BenchmarkKeyLight->GetLightComponent()))
+			{
+				FRotator Rotation = DirectionalLight->GetRelativeRotation();
+				if (bHasPitch)
+				{
+					Rotation.Pitch = SunPitch;
+				}
+				if (bHasYaw)
+				{
+					Rotation.Yaw = SunYaw;
+				}
+				if (bHasRoll)
+				{
+					Rotation.Roll = SunRoll;
+				}
+				DirectionalLight->SetRelativeRotation(Rotation);
+				DirectionalLight->UpdateComponentToWorld();
+			}
+		}
+	}
+
+	if (BenchmarkSkyLight && BenchmarkSkyLight->GetLightComponent())
+	{
+		double SkyIntensity = 0.0;
+		if (TryNumber(TEXT("sky_intensity"), SkyIntensity) || TryNumber(TEXT("SkyIntensity"), SkyIntensity))
+		{
+			BenchmarkSkyLight->GetLightComponent()->SetIntensity(float(SkyIntensity));
+			if (USkyLightComponent* SkyLightComponent = BenchmarkSkyLight->GetLightComponent())
+			{
+				SkyLightComponent->RecaptureSky();
+			}
 		}
 	}
 

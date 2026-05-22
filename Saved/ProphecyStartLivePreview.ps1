@@ -1,7 +1,9 @@
 param(
     [int]$ResX = 1280,
     [int]$ResY = 720,
-    [string]$ConfigPath = "$PSScriptRoot\ProphecyLiveVisual.json"
+    [string]$ConfigPath = "$PSScriptRoot\ProphecyLiveVisual.json",
+    [switch]$HideGrass,
+    [switch]$HideGrassBladesOnly
 )
 
 $Editor = "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe"
@@ -21,6 +23,7 @@ $argsList = @(
     "-ProphecyNNBenchmark",
     "-ProphecyNNLiveVisual=1",
     "`"-ProphecyNNLiveConfig=$ConfigPath`"",
+    "-ProphecyNNLivePoll=0.10",
     "-ProphecyNNBenchmarkSeconds=0",
     "-ProphecyNNSceneryOnly=1",
     "-ProphecyNNAgents=0",
@@ -33,6 +36,14 @@ $argsList = @(
     "-ProphecyNNShadowMode=None",
     "-ProphecyNNContactShadows=0"
 )
+
+if ($HideGrass) {
+    $argsList += "-ProphecyNNHideGrass=1"
+}
+
+if ($HideGrassBladesOnly) {
+    $argsList += "-ProphecyNNHideGrassBladesOnly=1"
+}
 
 $process = Start-Process -FilePath $Editor -ArgumentList ($argsList -join " ") -WindowStyle Hidden -PassThru
 Write-Output "Started live Prophecy preview PID=$($process.Id)"

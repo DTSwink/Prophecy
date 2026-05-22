@@ -261,6 +261,12 @@ private:
 	void InitializeDistantTerrainTexture();
 	void InitializeGrassShadowMask(const FVector2D& FieldCenter, float FieldHalfExtent);
 	void InitializeGroundShadowMask(const FVector2D& FieldCenter, float FieldHalfExtent);
+	void InitializeBloodMask(const FVector2D& FieldCenter, float FieldHalfExtent);
+	void ConfigureBloodMaskMaterials();
+	void ClearBloodMask();
+	void StampBloodDropMask(const FVector2D& Center, float RadiusXCm, float RadiusYCm, float RotationRadians, float Strength, float CoreStrength);
+	void GeneratePreviewBloodStains(float RadiusScale, float Strength);
+	void UploadBloodMask();
 	UStaticMesh* CreateGrassClusterMesh();
 	UStaticMesh* CreateDenseGrassClusterMesh();
 	UStaticMesh* CreateGrassClusterMeshVariant(TObjectPtr<UStaticMesh>& MeshSlot, FName MeshName, int32 BladesPerTile, bool bDenseCoverage);
@@ -345,6 +351,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> GroundShadowMaskTexture;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> BloodMaskTexture;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> DistantTerrainTexture;
