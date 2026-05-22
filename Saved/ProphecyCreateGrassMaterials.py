@@ -458,8 +458,8 @@ def rebuild_ground_material():
     camera_distance = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionDistance, -720, 705
     )
-    dirt_fade_start = create_scalar_parameter(material, "DirtFadeStartCm", 900.0, -720, 840)
-    dirt_fade_inv_range = create_scalar_parameter(material, "DirtFadeInvRange", 1.0 / 6500.0, -525, 885)
+    dirt_fade_start = create_scalar_parameter(material, "DirtFadeStartCm", 1500.0, -720, 840)
+    dirt_fade_inv_range = create_scalar_parameter(material, "DirtFadeInvRange", 1.0 / 900.0, -525, 885)
     dirt_distance_offset = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionSubtract, -525, 725
     )
@@ -1329,7 +1329,7 @@ def rebuild_field_grass_material():
         material, unreal.MaterialExpressionMin, 2155, -180
     )
     distant_color = create_vector_parameter(
-        material, "GrassDistantColor", unreal.LinearColor(0.105, 0.245, 0.048, 1.0), 1965, 95
+        material, "GrassDistantColor", unreal.LinearColor(0.205, 0.330, 0.095, 1.0), 1965, 95
     )
     distant_final_color = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionLinearInterpolate, 2350, 25

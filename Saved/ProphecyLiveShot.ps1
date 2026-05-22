@@ -1,6 +1,6 @@
 param(
     [string]$Name = ("live_" + (Get-Date -Format "HHmmss")),
-    [object[]]$GrassDistantColor = @(0.105, 0.245, 0.048, 1.0),
+    [object[]]$GrassDistantColor = @(),
     [double]$GrassDistantStartCm = 6000.0,
     [double]$GrassDistantRangeCm = 5200.0,
     [double]$GrassDistantFlattenStartCm = 10500.0,
@@ -107,7 +107,6 @@ New-Item -ItemType Directory -Path $ShotDir -Force | Out-Null
 
 $payload = [ordered]@{
     nonce = [DateTime]::UtcNow.Ticks
-    grass_distant_color = @($GrassDistantColorValues)
     grass_distant_color_start_cm = $GrassDistantStartCm
     grass_distant_color_range_cm = $GrassDistantRangeCm
     grass_distant_flatten_start_cm = $GrassDistantFlattenStartCm
@@ -115,6 +114,10 @@ $payload = [ordered]@{
     grass_distant_flatten_cm = $GrassDistantFlattenCm
     grass_distant_opacity_start_cm = $GrassDistantOpacityStartCm
     grass_distant_opacity_range_cm = $GrassDistantOpacityRangeCm
+}
+
+if ($GrassDistantColorValues.Count -ge 3) {
+    $payload.grass_distant_color = @($GrassDistantColorValues)
 }
 
 if ($null -ne $GrassShadowStrength) {

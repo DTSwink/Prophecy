@@ -2333,7 +2333,7 @@ void AProphecyNNCrowdBenchmarkActor::ApplyGrassWindMaterialParameters()
 	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantFadeCenter"), FLinearColor(0.0f, 700.0f, 0.0f, 0.0f));
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorStartCm"), 6000.0f);
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorInvRange"), 1.0f / 5200.0f);
-	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), FLinearColor(0.105f, 0.245f, 0.048f, 1.0f));
+	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), ProphecyGrassGroundBaseColor);
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenStartCm"), 10500.0f);
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenInvRange"), 1.0f / 9500.0f);
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenCm"), 78.0f);
@@ -6230,8 +6230,8 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchContrast"), 1.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureScale"), 1.0f / 1600.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), 1.0f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeStartCm"), 900.0f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / 6500.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeStartCm"), 1500.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / 900.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewMin"), 0.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewScale"), 10.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundShadowMaskStrength"), 0.0f);
@@ -6610,6 +6610,14 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 		if (TryColor(TEXT("grass_distant_color"), GrassDistantColor) || TryColor(TEXT("GrassDistantColor"), GrassDistantColor))
 		{
 			GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), GrassDistantColor);
+		}
+		else
+		{
+			FLinearColor GroundBaseColor;
+			if (TryColor(TEXT("ground_base_color"), GroundBaseColor) || TryColor(TEXT("GroundBaseColor"), GroundBaseColor))
+			{
+				GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), GroundBaseColor);
+			}
 		}
 
 		double FlattenStartCm = 0.0;

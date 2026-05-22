@@ -64,6 +64,7 @@ Keep this file tight. Preserve only goals, rules, keeper settings, important pat
 - `M_ProphecyGrass_UnlitField` uses blade UV height for a dark-root/bright-tip gradient, then applies light per-instance tint. It no longer relies on runtime mesh vertex color for blade color.
 - Blood staining uses one runtime `1024x1024` world-space mask shared by ground and grass. Drops max-compose into the mask so repeated drops in the same place do not add visual/perf cost. Grass blood keeps the coherent stain shape but uses a dark-root/crimson-tip gradient (`BloodGrassRootColor`, `BloodGrassColor`) so stained blades preserve the normal blade value structure.
 - Grass must be dense close to camera and fade into terrain without visible full/few/no-grass bands.
+- Distant grass color follows the ground/far-plane `GroundBaseColor`; `Saved\ProphecyLiveShot.ps1` leaves `grass_distant_color` unset unless explicitly overridden. Current dirt distance fade keeper is `DirtFadeStartCm=1500`, `DirtFadeRangeCm=900`.
 - Unified grass wind uses cheap patch-level WPO from object/world position. Current wind keeper: `bend=14cm`, `lift=0`, `speed=0.85`, `gust=0.55`, `world_freq=0.00062`.
 - `Saved\ProphecyLiveShot.ps1` now does a two-step settle before screenshots. Use it for visual captures; premature screenshots can show unsettled dark/brown artifacts.
 - Ground material generator: `Saved\ProphecyCreateGrassMaterials.py`.
