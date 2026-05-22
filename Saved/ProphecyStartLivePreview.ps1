@@ -9,6 +9,9 @@ param(
 
 $Editor = "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe"
 $Project = "C:\Users\singerie\Documents\Unreal Projects\Prophecy\GameAnimationSample3.uproject"
+$ReadyPath = [System.IO.Path]::ChangeExtension($ConfigPath, "ready.json")
+
+Remove-Item -LiteralPath $ReadyPath -Force -ErrorAction SilentlyContinue
 
 $argsList = @(
     "`"$Project`"",

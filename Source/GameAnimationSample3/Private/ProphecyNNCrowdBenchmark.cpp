@@ -858,6 +858,9 @@ struct AProphecyNNCrowdBenchmarkActor::FImpl
 	double LastLiveVisualPollSeconds = 0.0;
 	FDateTime LastLiveVisualConfigTimestamp = FDateTime::MinValue();
 	int32 LiveVisualScreenshotIndex = 0;
+	bool bLiveVisualReadyWritten = false;
+	int32 LiveVisualReadyFrameCount = 0;
+	double LiveVisualInitializedSeconds = 0.0;
 
 	void ComputeFK(FProphecyNNPoseRuntime& Pose, const FVector3f& RootPos, const FProphecyNNMat3& RootRot) const
 	{
@@ -1013,6 +1016,7 @@ void AProphecyNNCrowdBenchmarkActor::BeginPlay()
 
 	Impl->Stats = FProphecyBenchmarkStats();
 	Impl->bInitialized = true;
+	Impl->LiveVisualInitializedSeconds = FPlatformTime::Seconds();
 	UE_LOG(
 		LogProphecyNNBenchmark,
 		Display,
@@ -1071,6 +1075,7 @@ void AProphecyNNCrowdBenchmarkActor::Tick(float DeltaSeconds)
 	if (bSceneryOnly)
 	{
 		Impl->Stats.SimSeconds += FPlatformTime::Seconds() - FrameStart;
+		PublishLiveVisualReadyIfNeeded();
 		PollLiveVisualIteration();
 		LogProgressIfNeeded(DeltaSeconds);
 		return;
@@ -1096,6 +1101,7 @@ void AProphecyNNCrowdBenchmarkActor::Tick(float DeltaSeconds)
 	Impl->Stats.VisualSeconds += FPlatformTime::Seconds() - VisualStart;
 
 	Impl->Stats.SimSeconds += FPlatformTime::Seconds() - FrameStart;
+	PublishLiveVisualReadyIfNeeded();
 	PollLiveVisualIteration();
 	LogProgressIfNeeded(DeltaSeconds);
 }
@@ -6491,6 +6497,49 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 		{
 			UpdateGrassShadowMask();
 		}
+	}
+}
+
+void AProphecyNNCrowdBenchmarkActor::PublishLiveVisualReadyIfNeeded()
+{
+	if (!bLiveVisualIteration || LiveVisualConfigPath.IsEmpty() || !Impl || Impl->bLiveVisualReadyWritten)
+	{
+		return;
+	}
+
+	++Impl->LiveVisualReadyFrameCount;
+	if (Impl->LiveVisualReadyFrameCount < 12 || FPlatformTime::Seconds() - Impl->LiveVisualInitializedSeconds < 2.0)
+	{
+		return;
+	}
+
+	if (bSpawnBenchmarkFloor)
+	{
+		if (!FloorComponent || !FloorComponent->IsRegistered() || !FloorMaterialInstance)
+		{
+			return;
+		}
+	}
+
+	if (bSpawnGrass && Impl->GrassInstanceCount <= 0 && GrassComponents.Num() == 0 && NiagaraGrassComponents.Num() == 0)
+	{
+		return;
+	}
+
+	const FString ConfigPath = ResolveProjectPath(LiveVisualConfigPath);
+	const FString ReadyPath = FPaths::ChangeExtension(ConfigPath, TEXT("ready.json"));
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(ReadyPath), true);
+	const FString ReadyJson = FString::Printf(
+		TEXT("{\n  \"ready\": true,\n  \"frame_count\": %d,\n  \"grass_instances\": %d,\n  \"dense_grass_instances\": %d,\n  \"floor\": %d,\n  \"floor_registered\": %d\n}\n"),
+		Impl->LiveVisualReadyFrameCount,
+		Impl->GrassInstanceCount,
+		Impl->GrassDenseInstanceCount,
+		bSpawnBenchmarkFloor ? 1 : 0,
+		FloorComponent && FloorComponent->IsRegistered() ? 1 : 0);
+	if (FFileHelper::SaveStringToFile(ReadyJson, *ReadyPath))
+	{
+		Impl->bLiveVisualReadyWritten = true;
+		UE_LOG(LogProphecyNNBenchmark, Display, TEXT("Live visual preview ready: %s"), *ReadyPath);
 	}
 }
 

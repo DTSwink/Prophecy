@@ -288,6 +288,7 @@ private:
 	void UpdateLimbShadowVisuals();
 	void UpdateGrassShadowMask();
 	void UpdateGroundShadowMask();
+	void PublishLiveVisualReadyIfNeeded();
 	void PollLiveVisualIteration();
 	void ApplyLiveVisualIterationConfig(const TSharedPtr<FJsonObject>& RootObject);
 	void SetupBenchmarkView();

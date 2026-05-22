@@ -56,8 +56,10 @@ param(
     [object]$BloodRadiusScale = $null,
     [double]$SettleSeconds = 1.0,
     [double]$WakeSeconds = 0.50,
+    [double]$ReadyTimeoutSeconds = 45.0,
     [int]$PreviewPid = 0,
     [switch]$KeepPreviewAwake,
+    [switch]$SkipReadyWait,
     [switch]$NoScreenshot,
     [switch]$Wait
 )
@@ -114,8 +116,40 @@ $CameraLocationValues = ConvertTo-DoubleArray $CameraLocation
 $CameraLookAtValues = ConvertTo-DoubleArray $CameraLookAt
 
 $ConfigPath = "$PSScriptRoot\ProphecyLiveVisual.json"
+$ReadyPath = [System.IO.Path]::ChangeExtension($ConfigPath, "ready.json")
 $ShotDir = "$PSScriptRoot\LiveShots"
 New-Item -ItemType Directory -Path $ShotDir -Force | Out-Null
+
+function Wait-LivePreviewReady {
+    param(
+        [string]$Path,
+        [int]$ProcessId,
+        [double]$TimeoutSeconds
+    )
+
+    $processStart = $null
+    if ($ProcessId -gt 0) {
+        $process = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+        if ($null -eq $process) {
+            throw "Live preview PID $ProcessId is not running."
+        }
+        $processStart = $process.StartTime
+    }
+
+    $deadline = (Get-Date).AddSeconds([Math]::Max(1.0, $TimeoutSeconds))
+    while ((Get-Date) -lt $deadline) {
+        $ready = Get-Item -LiteralPath $Path -ErrorAction SilentlyContinue
+        if ($null -ne $ready) {
+            if ($null -eq $processStart -or $ready.LastWriteTime -ge $processStart) {
+                Write-Output "Live preview ready: $Path"
+                return
+            }
+        }
+        Start-Sleep -Milliseconds 250
+    }
+
+    throw "Live preview did not report ready within $TimeoutSeconds seconds: $Path"
+}
 
 $payload = [ordered]@{
     nonce = [DateTime]::UtcNow.Ticks
@@ -317,6 +351,10 @@ if ($null -ne $BloodRadiusScale) {
 $shotPath = $null
 if (-not $NoScreenshot) {
     $shotPath = Join-Path $ShotDir ($Name + ".png")
+}
+
+if ($shotPath -and -not $SkipReadyWait) {
+    Wait-LivePreviewReady -Path $ReadyPath -ProcessId $PreviewPid -TimeoutSeconds $ReadyTimeoutSeconds
 }
 
 if ($shotPath -and $SettleSeconds -gt 0.0) {
