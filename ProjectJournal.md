@@ -1,103 +1,96 @@
 # Prophecy Project Journal
 
-Keep this journal compact. Only record context worth preserving across a fresh conversation window: goals, rules, current architecture, keeper settings, important paths, and next actions. Full historical journal archives live in `Docs/old/`.
+Keep this file tight. Preserve only goals, rules, keeper settings, important paths, current working state, and next actions. Full historical archives live in `Docs/old/`.
 
-## Core Goal
+## Current State
 
-- Project path: `C:\Users\singerie\Documents\Unreal Projects\Prophecy`
-- Unreal project: `GameAnimationSample3.uproject`, stock Launcher UE `5.7`.
-- Absolute goal: performance. This is a full Roman-age battle sim with at least 100 active characters and room to scale.
-- Optimize across animation, AI, movement, rendering, LOD, update frequency, memory layout, and runtime data flow.
-- Use regular C++ classes as the foundation. Prefer source, config, data, scripts, and generated assets that Codex can edit directly.
-- Avoid high-overhead UE gameplay frameworks such as Behavior Trees and `AIController` for mass logic unless a UE feature proves faster than a reasonable custom system without forking the engine.
+- Project path: `C:\Users\singerie\Documents\Unreal Projects\Prophecy`.
+- Unreal project: `GameAnimationSample3.uproject`, Launcher UE `5.7`.
+- Git remote: `https://github.com/DTSwink/Prophecy.git`.
+- Latest pushed commit should be checked with `git log -1 --oneline origin/main`; avoid treating this journal as the moving hash source.
+- Git preservation rule: push everything needed to reconstruct the project if local files are lost. Include source code, journal notes, helper scripts, config, hand-authored data, and small source assets/textures through LFS when needed.
+- Do not push bulky or recoverable Unreal output by default: `Binaries/`, `Intermediate/`, `DerivedDataCache/`, screenshots, logs, autosaves, and generated `Content/` assets that can be rebuilt by opening Unreal or rerunning tracked scripts. If an added asset cannot be reconstructed from tracked source/scripts, track it.
+
+## Product Goal
+
+- Build a full Roman-age battle sim with at least 100 active characters in view and room to scale.
+- Performance is the hard constraint. Optimize animation, AI, movement, rendering, LOD, update frequency, memory layout, and runtime data flow together.
+- Use regular C++ classes as the foundation. Avoid high-overhead UE gameplay frameworks such as Behavior Trees and `AIController` for mass logic unless a UE feature proves faster than a reasonable custom system.
+
+## Core Runtime
+
+- Main benchmark actor: `Source\GameAnimationSample3\Private\ProphecyNNCrowdBenchmark.cpp`.
+- Main header: `Source\GameAnimationSample3\Public\ProphecyNNCrowdBenchmark.h`.
+- Launch with `-ProphecyNNBenchmark`.
+- Useful profiles include `CharactersFloorShadows` and `GrassField`.
+- Useful visual modes: `Skeletal`, `InstancedFull`, `Instanced`, `InstancedLite`, `MetaHuman`.
+- `InstancedLite` is a non-skeletal proxy path using one instanced static mesh component and batched transform updates.
 
 ## NN Animation
 
-- User's NN training work lives at `C:\Users\singerie\Documents\Cursor\stepper`.
+- User NN work lives at `C:\Users\singerie\Documents\Cursor\stepper`.
 - Current usable checkpoint folder: `C:\Users\singerie\Documents\Cursor\stepper\training\runs\20260518_034323_big_mixedk_doubleae_oldfootslide_continue_from_last\checkpoints`.
+- Runtime ONNX path: `Content\Prophecy\NN\stepper_checkpoint_last_b100.onnx`.
 - Training data uses a UEFN-style 30 FPS skeleton. Prefer `SKM_UEFN_Mannequin` over Manny.
-- Runtime path: exported fixed-batch ONNX at `Content\Prophecy\NN\stepper_checkpoint_last_b100.onnx`.
 - `FProphecyNNPoseStore` and `UProphecyNNPoseAnimInstance` provide the thin native pose path.
-- Production crowd NN inference should run on UE NNE ORT DirectML (`NNERuntimeORTDml`) on the GPU. CPU inference (`NNERuntimeORTCpu`) is debug/fallback only.
-- Runtime audit with floor/lights: empty scene `114.58 FPS`, 100 invisible moving agents on CPU `72.05 FPS`, 100 invisible moving agents on DirectML/GPU `98.80 FPS`. CPU inference alone can miss the 80 FPS target, while GPU inference gives enough headroom for the invisible-agent baseline.
-- Default crowd benchmark target: 100 agents, 30 Hz NN update, DirectML GPU inference, batched pose work where possible.
+- Production crowd NN inference should run on UE NNE ORT DirectML (`NNERuntimeORTDml`) on GPU. CPU inference (`NNERuntimeORTCpu`) is debug/fallback only.
+- Audit reference with floor/lights: empty scene `114.58 FPS`, 100 invisible moving agents on CPU `72.05 FPS`, 100 invisible moving agents on DirectML/GPU `98.80 FPS`.
+- Default benchmark target: 100 agents, 30 Hz NN update, DirectML GPU inference, batched pose work where possible.
 
-## Benchmark Actor
+## MetaHuman Tiers
 
-- Main implementation: `Source\GameAnimationSample3\Private\ProphecyNNCrowdBenchmark.cpp`.
-- Header: `Source\GameAnimationSample3\Public\ProphecyNNCrowdBenchmark.h`.
-- Launch with `-ProphecyNNBenchmark`; useful profiles include `CharactersFloorShadows` and `GrassField`.
-- Useful visual modes include `Skeletal`, `InstancedFull`, `Instanced`, `InstancedLite`, and `MetaHuman`.
-- `InstancedLite` is a non-skeletal proxy path using one instanced static mesh component and batched transform updates.
+- Production source character is assembled MetaHuman `/Game/MetaHumans/Kellan/BP_Kellan`.
+- The old placeholder MetaHuman is only a test harness and must not be used for production visual judgment.
+- User-facing tier names are only `Full`, `Mid`, and `Far`. Clothing/face/groom switches are diagnostics or implementation details.
+- Current `Far`: Kellan BP at MetaHuman/LODSync far LOD, body driven by `UProphecyNNPoseAnimInstance` with reference translations preserved, grooms hidden, clothing follows body pose, no real dynamic character shadows.
+- Latest 1280x720 DirectML audit for 100 moving agents, no grass/trees/shadows: invisible `205.23 FPS`; `Far` normal `112.08 FPS`; `Far` clothes hidden `143.10 FPS`; `Far` body-only diagnostic `161.77 FPS`.
+- Conclusion: `Far` clears the 80 FPS stripped benchmark target, but clothes remain a major graphics cost. Next serious optimization is a generated/baked `Far` asset with fewer components/materials.
 
-## Launch Rules
+## Rendering And Scenery
 
-- Run Unreal captures in the background by default so they do not cover the user's work.
-- Use a properly quoted `.uproject` path as the first argument and include `-RenderOffscreen`.
-- Quote decimal PowerShell arguments, e.g. `"-ProphecyNNWarmup=0.75"` and `"-ProphecyNNScreenshotSeconds=2.8"`, or PowerShell may split stray `.75` arguments into the run.
-- Always show captures in chat when visual work is being judged.
-- Single-character captures can use `-ProphecyNNClosePreview=1`; add `-ProphecyNNFrontPreview` when the MetaHuman faces the positive-Y camera side.
-- Visual debugging rule: when a visual problem is ambiguous, temporarily isolate or exaggerate the relevant variable so the failure becomes obvious. Clearly label these changes as diagnostic inspection aids, not final art direction, gameplay behavior, or performance settings.
-
-## Rendering State
-
-- Benchmark render profile disables Lumen GI/reflections, fog, AO, SSR, contact shadows, virtual shadows, auto exposure, motion blur, bloom, and DOF for stable performance-focused tests.
+- Benchmark render profile disables Lumen GI/reflections, fog, AO, SSR, contact shadows, virtual shadows, auto exposure, motion blur, bloom, and DOF for stable tests.
 - Controlled benchmark setup disables pre-existing map light and sky light components before spawning benchmark lighting.
-- Scenery sky now uses UE's physical stack: `ASkyAtmosphere`, atmosphere-enabled `ADirectionalLight`, movable real-time `ASkyLight`, and `AVolumetricCloud` with the engine's built-in simple volumetric cloud material. The old unlit sky sphere is only a fallback when benchmark lights are disabled.
-- Full dynamic character shadows are the visual truth reference. Root/Limbs fake shadows must be generated to match that light direction, not the other way around.
-- Root/Limbs fake shadows use max-composited world-space masks so overlapping shadows cap instead of stacking darker.
-- No-grass Root/Limbs use a 256x256 ground mask through `M_ProphecyGrassGround`.
-- Grass Root/Limbs use a 512x512 grass mask sampled by the grass material, plus a subtle ground underlay for sparse distance coverage.
+- Scenery sky uses UE physical stack: `ASkyAtmosphere`, atmosphere-enabled `ADirectionalLight`, movable real-time `ASkyLight`, and `AVolumetricCloud` with the engine simple volumetric cloud material.
+- Fog/aerial perspective caused blue patches on grass/hills, so the benchmark profile currently sets `r.Fog=0` and no distance-fog actor is spawned.
+- Playable middle remains flat because NN agents are trained on flat terrain.
+- Far hills are runtime low-poly grass terrain outside the playable plane, retinted/lowered to sit behind the darker grass.
+- Current scenery keeper before dirt WIP: `Saved\LiveShots\stable_live_control_after_settle.png` and older `Saved\ProphecyNN_GrassPhotoPass_v5.png`.
 
-## Grass
+## Grass And Ground
 
-- Current grass path is opaque HISM blade clusters, not Niagara. Niagara can load, but the stock tested system did not render usable grass.
-- Current keeper grass: about 58,492 HISM patch instances and about 4.173M visual blades (`44` standard, `176` dense).
+- Current grass path is opaque HISM blade clusters, not Niagara.
+- Keeper grass count: about 58,492 HISM patch instances and about 4.173M visual blades (`44` standard, `176` dense).
 - Current photo-match pass uses taller/varied blade clusters, `8` dense low filler blades per tile, and `5600cm` dense mesh radius.
-- `M_ProphecyGrass_UnlitField` no longer relies on runtime mesh vertex color for blade color; that path rendered black in the HISM field. It uses blade UV height for a dark-root/bright-tip gradient, then applies light per-instance tint.
-- Grass is dense near the formation and fades into terrain farther out; avoid visible full/few/no-grass bands.
-- Unified grass wind uses cheap patch-level WPO from object/world position, not per-blade noise and not a separate near/far wind system.
-- Current wind keeper: `bend=14cm`, `lift=0`, `speed=0.85`, `gust=0.55`, `world_freq=0.00062`.
-- Latest clean pre-tree grass+wind confirmation: `97.68 FPS` at 1280x720. Capture: `Saved\ProphecyNN_GrassWind_UnifiedFinal_v1.png`.
-- Do not repeat the extreme diagnostic grass density unless necessary; the first extreme pass used about 99k patches / 9.5M blades and took roughly 45s to load.
+- `M_ProphecyGrass_UnlitField` uses blade UV height for a dark-root/bright-tip gradient, then applies light per-instance tint. It no longer relies on runtime mesh vertex color for blade color.
+- Blood staining uses one runtime `1024x1024` world-space mask shared by ground and grass. Drops max-compose into the mask so repeated drops in the same place do not add visual/perf cost. Grass blood keeps the coherent stain shape but uses a dark-root/crimson-tip gradient (`BloodGrassRootColor`, `BloodGrassColor`) so stained blades preserve the normal blade value structure.
+- Grass must be dense close to camera and fade into terrain without visible full/few/no-grass bands.
+- Unified grass wind uses cheap patch-level WPO from object/world position. Current wind keeper: `bend=14cm`, `lift=0`, `speed=0.85`, `gust=0.55`, `world_freq=0.00062`.
+- `Saved\ProphecyLiveShot.ps1` now does a two-step settle before screenshots. Use it for visual captures; premature screenshots can show unsettled dark/brown artifacts.
+- Ground material generator: `Saved\ProphecyCreateGrassMaterials.py`.
+- Source dirt/ground PNGs tracked through LFS: `Saved\ProphecyGrassGroundNoise.png`, `Saved\ProphecyDirtPatchMask.png`.
 
-## Terrain
+## Dirt Baseline
 
-- Playable middle remains flat because the NN agents are trained on flat terrain.
-- Far hills are runtime low-poly grass terrain outside the playable plane, retinted/lowered to sit behind the darker grass instead of reading as a neon mountain wall.
-- Hill form is readable through a baked 1024x1024 world-space terrain color texture (`TerrainBakedColorTexture`), avoiding polygon-shaped vertex shading and dynamic shadow cost.
-- Fog/aerial perspective caused blue patches on grass/hills, so the benchmark render profile currently sets `r.Fog=0` and no distance-fog actor is spawned.
-- Current scenery keeper capture: `Saved\ProphecyNN_GrassPhotoPass_v5.png`.
-- Older terrain keeper capture: `Saved\ProphecyNN_TerrainHills_BakedTextureShade_v1.png`; hidden-blades benchmark reported `168.46 FPS`.
+- User asked to remove/hide grass and inspect dirt pattern. Use `-ProphecyNNGrass=1 -ProphecyNNHideGrass=1` so the grass-ground material stays active while blades are hidden.
+- The original dirt pattern is intentionally restored for now: spotty/patched, not diffuse.
+- Revert confirmation capture: `Saved\LiveShots\dirt_spotty_revert_confirm_01.png`.
+- Diffuse dirt experiment was rejected/reverted. The rejected captures were `Saved\LiveShots\dirt_hidden_grass_diffuse_01.png` and `Saved\LiveShots\dirt_hidden_grass_diffuse_strength085.png`; they were too faint and should not be treated as keeper art.
+- Next action if returning to dirt: start from the restored spotty baseline and design a better diffuse layer deliberately, while preserving the accepted close grass geometry.
 
 ## Trees
 
-- The previous distant-hill 3,000-tree wind pass is archived only; it is not the current direction.
-- Current direction: trees belong in the playable area as a tall European spooky forest around the formation.
-- Current implementation uses generated low-poly static tree meshes in HISM components, default `TreeInstanceCount=420`, with a central corridor kept open for the battle formation/camera.
-- Trees are static for performance: tree wind is off by default and dynamic tree shadow casting is off.
-- Tree shadows are simulated cheaply by baking each tree into static grass/ground receiver masks, then dynamic character masks start from that precomputed tree-shadow layer.
-- Tree material asset is still named `M_ProphecyTreeVertexWind`, but for the playable forest it is now used as a cheap static vertex-color material with no WPO connection.
-- Current visual capture: `Saved\ProphecyNN_PlayableForest_v5.png`. It shows the playable-area forest and darker mood; clean no-screenshot performance acceptance still needs to be rerun after context refresh because the pass was interrupted.
+- Tree work is on hold.
+- Previous 3,000 distant-tree pass is archived only.
+- Current direction is a tall European spooky forest around the playable area, with a central corridor kept open.
+- Current implementation uses generated low-poly static tree meshes in HISM components, default `TreeInstanceCount=420`.
+- Tree wind and dynamic tree shadow casting are off by default. Tree shadows are simulated by baking trees into static grass/ground receiver masks.
 
-## MetaHuman Character Tiers
+## Visual Workflow Rules
 
-- UE 5.7 local MetaHuman plugins are enabled through `MetaHumanCharacter` and `MetaHumanSDK`, with `RigLogic` already present.
-- Production source character is the assembled MetaHuman `/Game/MetaHumans/Kellan/BP_Kellan`, not the generated placeholder.
-- Kellan has real synthesized head/body materials, clothing materials, body textures, head LOD1/3/5 textures, and groom assets. Verified reference renders: `Saved\ProphecyMetaHumanProductionReference_Kellan_FrontCamera_2K.png` and `Saved\ProphecyMetaHumanProductionReference_Kellan_FrontCamera_CloseCrop.png`.
-- Kellan inspection script: `Saved\ProphecyInspectKellanProductionComponents.py`. Current `LODSync` reports `num_lods=4`, `forced_lod=-1`; Body and Face drive LOD, clothing/grooms are passive.
-- The old `/Game/Prophecy/MetaHumans/ProphecyPlaceholder/BP_ProphecyPlaceholder` remains a test harness only. Because the local engine lacks the optional texture synthesis payload, it produces flat placeholder skin and must not be used for production visual judgment.
-- User-facing character tier names are only `Full`, `Mid`, and `Far`. Clothing/face/groom switches are diagnostics or implementation details, not separate tier names.
-- Current `Far` implementation: Kellan BP at MetaHuman/LODSync far LOD, body driven by `UProphecyNNPoseAnimInstance` with reference translations preserved, grooms hidden, clothing follows body pose, no real dynamic character shadows.
-- Latest 1280x720 DirectML audit for 100 moving agents in view, no grass/trees/shadows: invisible agents `205.23 FPS`; `Far` normal `112.08 FPS`; `Far` with clothes hidden `143.10 FPS`; `Far` body-only diagnostic `161.77 FPS`.
-- Conclusion: `Far` is above the 80 FPS target in the stripped benchmark, but clothes remain a major graphics cost. Next serious optimization is a generated/baked `Far` asset with fewer components/materials, not more public tier names.
-
-## UE Python Material Gotchas
-
-- In UE 5.7 Python material scripts, `MaterialExpressionComponentMask` inputs often need pin name `"None"`, not `"Input"`.
-- Vertex color connections were reliable through the default output pin `""` when `"RGB"` did not update as expected.
-- Do not reimport `T_ProphecyDirtPatchMask` on every headless material rebuild. In `UnrealEditor-Cmd`, the reimport path tried to sync the Content Browser and asserted because Slate was unavailable; load the existing texture instead.
-- Main material generation script: `Saved\ProphecyCreateGrassMaterials.py`.
+- Always show captures in chat when visual work is being judged.
+- For scenery iteration, use scenery-only runs with agents disabled unless the task is explicitly about characters or performance with agents.
+- When a visual problem is ambiguous, isolate or exaggerate the variable so the failure becomes obvious. Label these as diagnostic aids, not final art direction.
+- Do not hide problems with unrelated tints or occluders; solve the underlying material/geometry/runtime cause.
 
 ## Useful Commands
 
@@ -111,4 +104,16 @@ Regenerate procedural materials:
 
 ```powershell
 & "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\Users\singerie\Documents\Unreal Projects\Prophecy\GameAnimationSample3.uproject" -run=pythonscript -script="C:\Users\singerie\Documents\Unreal Projects\Prophecy\Saved\ProphecyCreateGrassMaterials.py" -unattended -NoSplash -NoSound
+```
+
+Start fast scenery preview:
+
+```powershell
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\singerie\Documents\Unreal Projects\Prophecy\Saved\ProphecyStartLivePreview.ps1" -ResX 1280 -ResY 720
+```
+
+Request a settled live screenshot:
+
+```powershell
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\singerie\Documents\Unreal Projects\Prophecy\Saved\ProphecyLiveShot.ps1" -Name "shot_name" -SettleSeconds 1.25 -Wait
 ```

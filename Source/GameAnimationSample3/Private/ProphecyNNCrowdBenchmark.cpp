@@ -3548,10 +3548,11 @@ void AProphecyNNCrowdBenchmarkActor::ConfigureBloodMaskMaterials()
 		Material->SetScalarParameterValue(TEXT("BloodMaskInvExtent"), 1.0f / (Impl->BloodMaskHalfExtent * 2.0f));
 		Material->SetVectorParameterValue(TEXT("BloodColor"), FLinearColor(0.235f, 0.016f, 0.010f, 1.0f));
 		Material->SetVectorParameterValue(TEXT("BloodDarkColor"), FLinearColor(0.070f, 0.003f, 0.003f, 1.0f));
-		Material->SetVectorParameterValue(TEXT("BloodGrassColor"), FLinearColor(0.155f, 0.006f, 0.004f, 1.0f));
+		Material->SetVectorParameterValue(TEXT("BloodGrassRootColor"), FLinearColor(0.065f, 0.0012f, 0.0022f, 1.0f));
+		Material->SetVectorParameterValue(TEXT("BloodGrassColor"), FLinearColor(0.235f, 0.004f, 0.009f, 1.0f));
 		Material->SetScalarParameterValue(TEXT("BloodStrength"), bGrassMaterial ? 0.0f : 0.88f);
 		Material->SetScalarParameterValue(TEXT("BloodWetStrength"), bGrassMaterial ? 0.0f : 0.58f);
-		Material->SetScalarParameterValue(TEXT("BloodGrassStrength"), bGrassMaterial ? 0.78f : 0.0f);
+		Material->SetScalarParameterValue(TEXT("BloodGrassStrength"), bGrassMaterial ? 1.02f : 0.0f);
 	};
 
 	ConfigureMaterial(FloorMaterialInstance.Get(), false);
@@ -6732,6 +6733,7 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 
 		ApplyColorParameter(Material, TEXT("blood_color"), TEXT("BloodColor"), TEXT("BloodColor"));
 		ApplyColorParameter(Material, TEXT("blood_dark_color"), TEXT("BloodDarkColor"), TEXT("BloodDarkColor"));
+		ApplyColorParameter(Material, TEXT("blood_grass_root_color"), TEXT("BloodGrassRootColor"), TEXT("BloodGrassRootColor"));
 		ApplyColorParameter(Material, TEXT("blood_grass_color"), TEXT("BloodGrassColor"), TEXT("BloodGrassColor"));
 		ApplyScalarParameter(Material, TEXT("blood_strength"), TEXT("BloodStrength"), TEXT("BloodStrength"));
 		ApplyScalarParameter(Material, TEXT("blood_wet_strength"), TEXT("BloodWetStrength"), TEXT("BloodWetStrength"));

@@ -1739,25 +1739,31 @@ def rebuild_field_grass_material():
     blood_tip_reduce = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionConstant, 2750, -355
     )
-    blood_tip_reduce.set_editor_property("r", 0.55)
+    blood_tip_reduce.set_editor_property("r", 0.35)
     blood_tip_amount = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionMultiply, 2940, -385
     )
     blood_one = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionConstant, 2940, -270
     )
-    blood_one.set_editor_property("r", 1.0)
+    blood_one.set_editor_property("r", 1.12)
     blood_blade_factor = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionSubtract, 3130, -355
     )
     blood_alpha = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionMultiply, 3320, -475
     )
+    blood_grass_root_color = create_vector_parameter(
+        material, "BloodGrassRootColor", unreal.LinearColor(0.065, 0.0012, 0.0022, 1.0), 3320, -735
+    )
     blood_grass_color = create_vector_parameter(
-        material, "BloodGrassColor", unreal.LinearColor(0.155, 0.006, 0.004, 1.0), 3320, -615
+        material, "BloodGrassColor", unreal.LinearColor(0.235, 0.004, 0.009, 1.0), 3320, -635
+    )
+    blood_grass_gradient = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionLinearInterpolate, 3510, -685
     )
     blood_grass_final = unreal.MaterialEditingLibrary.create_material_expression(
-        material, unreal.MaterialExpressionLinearInterpolate, 3510, -535
+        material, unreal.MaterialExpressionLinearInterpolate, 3700, -535
     )
 
     unreal.MaterialEditingLibrary.connect_material_expressions(
@@ -1950,10 +1956,19 @@ def rebuild_field_grass_material():
         blood_blade_factor, "", blood_alpha, "B"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_grass_root_color, "", blood_grass_gradient, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_grass_color, "", blood_grass_gradient, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blade_mask, "", blood_grass_gradient, "Alpha"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
         distant_final_color, "", blood_grass_final, "A"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
-        blood_grass_color, "", blood_grass_final, "B"
+        blood_grass_gradient, "", blood_grass_final, "B"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         blood_alpha, "", blood_grass_final, "Alpha"

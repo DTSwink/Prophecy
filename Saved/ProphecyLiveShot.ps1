@@ -39,6 +39,7 @@ param(
     [switch]$BloodClear,
     [object[]]$BloodColor = @(),
     [object[]]$BloodDarkColor = @(),
+    [object[]]$BloodGrassRootColor = @(),
     [object[]]$BloodGrassColor = @(),
     [object]$BloodStrength = $null,
     [object]$BloodWetStrength = $null,
@@ -95,6 +96,7 @@ $GroundBaseColorValues = ConvertTo-DoubleArray $GroundBaseColor
 $DirtColorValues = ConvertTo-DoubleArray $DirtColor
 $BloodColorValues = ConvertTo-DoubleArray $BloodColor
 $BloodDarkColorValues = ConvertTo-DoubleArray $BloodDarkColor
+$BloodGrassRootColorValues = ConvertTo-DoubleArray $BloodGrassRootColor
 $BloodGrassColorValues = ConvertTo-DoubleArray $BloodGrassColor
 $CameraLocationValues = ConvertTo-DoubleArray $CameraLocation
 $CameraLookAtValues = ConvertTo-DoubleArray $CameraLookAt
@@ -235,6 +237,10 @@ if ($BloodColorValues.Count -ge 3) {
 
 if ($BloodDarkColorValues.Count -ge 3) {
     $payload.blood_dark_color = @($BloodDarkColorValues)
+}
+
+if ($BloodGrassRootColorValues.Count -ge 3) {
+    $payload.blood_grass_root_color = @($BloodGrassRootColorValues)
 }
 
 if ($BloodGrassColorValues.Count -ge 3) {
