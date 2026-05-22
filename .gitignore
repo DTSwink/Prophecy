@@ -3,11 +3,17 @@ Binaries/
 Build/
 Config/
 Content/
+SourceArt/
 DerivedDataCache/
 Intermediate/
 Saved/*
+!Saved/ProphecyCreateGrassMaterials.py
 !Saved/ProphecyCreateProductionMetaHumanReferenceLevel.py
+!Saved/ProphecyDirtPatchMask.png
+!Saved/ProphecyGrassGroundNoise.png
 !Saved/ProphecyInspectKellanProductionComponents.py
+!Saved/ProphecyLiveShot.ps1
+!Saved/ProphecyStartLivePreview.ps1
 Docs/old/
 
 # IDE and local machine state

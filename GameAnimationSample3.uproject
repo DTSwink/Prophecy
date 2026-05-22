@@ -98,6 +98,18 @@
 		{
 			"Name": "MetaHumanSDK",
 			"Enabled": true
+		},
+		{
+			"Name": "PCG",
+			"Enabled": true
+		},
+		{
+			"Name": "DynamicWind",
+			"Enabled": true
+		},
+		{
+			"Name": "ProceduralVegetationEditor",
+			"Enabled": true
 		}
 	],
 	"EpicSampleNameHash": "1673045636"

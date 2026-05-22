@@ -17,6 +17,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Pose")
 	bool bUseStoredPose;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Pose")
+	bool bPreserveReferenceBoneTranslations;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Pose|Debug")
 	bool bEnableDebugMotion;
 

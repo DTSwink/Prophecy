@@ -49,6 +49,7 @@ protected:
 
 		AgentId = PoseInstance->AgentId;
 		bUseStoredPose = PoseInstance->bUseStoredPose;
+		bPreserveReferenceBoneTranslations = PoseInstance->bPreserveReferenceBoneTranslations;
 		bEnableDebugMotion = PoseInstance->bEnableDebugMotion;
 		DebugBoneName = PoseInstance->DebugBoneName;
 		DebugMotionDegrees = PoseInstance->DebugMotionDegrees;
@@ -121,7 +122,14 @@ private:
 			const FCompactPoseBoneIndex CompactIndex = CachedCompactIndices[Index];
 			if (CompactIndex.IsValid() && Output.Pose.IsValidIndex(CompactIndex))
 			{
-				Output.Pose[CompactIndex] = StoredPose.LocalTransforms[Index];
+				FTransform LocalTransform = StoredPose.LocalTransforms[Index];
+				if (bPreserveReferenceBoneTranslations)
+				{
+					const FTransform& ReferenceTransform = Output.Pose[CompactIndex];
+					LocalTransform.SetLocation(ReferenceTransform.GetLocation());
+					LocalTransform.SetScale3D(ReferenceTransform.GetScale3D());
+				}
+				Output.Pose[CompactIndex] = LocalTransform;
 			}
 		}
 	}
@@ -149,6 +157,7 @@ private:
 
 	int32 AgentId = 0;
 	bool bUseStoredPose = true;
+	bool bPreserveReferenceBoneTranslations = false;
 	bool bEnableDebugMotion = true;
 	FName DebugBoneName = TEXT("spine_03");
 	float DebugMotionDegrees = 12.0f;
@@ -167,6 +176,7 @@ private:
 UProphecyNNPoseAnimInstance::UProphecyNNPoseAnimInstance()
 	: AgentId(0)
 	, bUseStoredPose(true)
+	, bPreserveReferenceBoneTranslations(false)
 	, bEnableDebugMotion(true)
 	, DebugBoneName(TEXT("spine_03"))
 	, DebugMotionDegrees(12.0f)

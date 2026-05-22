@@ -11,10 +11,13 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/LightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/LODSyncComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/VolumetricCloudComponent.h"
 #include "Dom/JsonObject.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/Engine.h"
@@ -70,9 +73,9 @@ constexpr float ProphecyGrassFarRadiusCm = 8000.0f;
 constexpr float ProphecyGrassHorizonRadiusCm = 42000.0f;
 constexpr int32 ProphecyGrassBladesPerTile = 44;
 constexpr int32 ProphecyGrassDenseBladesPerTile = 176;
-constexpr int32 ProphecyGrassDenseFillersPerTile = 0;
+constexpr int32 ProphecyGrassDenseFillersPerTile = 8;
 constexpr float ProphecyGrassTileSizeCm = 240.0f;
-constexpr float ProphecyGrassDenseMeshRadiusCm = 4200.0f;
+constexpr float ProphecyGrassDenseMeshRadiusCm = 5600.0f;
 constexpr int32 ProphecyDistantHillSegments = 192;
 constexpr int32 ProphecyDistantHillRings = 18;
 constexpr float ProphecyDistantHillInnerRadiusCm = 22000.0f;
@@ -84,8 +87,8 @@ constexpr int32 ProphecyTreeComponentCount = 12;
 constexpr float ProphecyTreePlayableInnerRadiusCm = 2600.0f;
 constexpr float ProphecyTreePlayableOuterRadiusCm = 15500.0f;
 constexpr float ProphecyTreeShadowMaskHalfExtentCm = 17000.0f;
-const FLinearColor ProphecyGrassGroundBaseColor(0.23f, 0.36f, 0.12f, 1.0f);
-const FLinearColor ProphecyGrassTerrainBaseColor(0.205f, 0.315f, 0.095f, 1.0f);
+const FLinearColor ProphecyGrassGroundBaseColor(0.205f, 0.330f, 0.095f, 1.0f);
+const FLinearColor ProphecyGrassTerrainBaseColor(0.078f, 0.170f, 0.042f, 1.0f);
 
 float ProphecySmooth01(float T)
 {
@@ -107,10 +110,10 @@ float ProphecyDistantHillHeightAtRadiusAngle(float Radius, float Angle)
 		FMath::Sin(Angle * 13.0f + Radius * 0.00017f) * 760.0f
 		+ FMath::Sin(Angle * 3.0f - Radius * 0.00008f) * 1180.0f
 		+ FMath::Sin(Angle * 23.0f + Radius * 0.00021f) * 360.0f;
-	float Height = -28.0f + FMath::Pow(RiseT, 0.62f) * (4200.0f + 8400.0f * RidgeStrength) + RollingDetail * RiseT * (1.0f - RiseT * 0.16f);
+	float Height = -4.0f + FMath::Pow(RiseT, 0.62f) * (2600.0f + 5200.0f * RidgeStrength) + RollingDetail * 0.72f * RiseT * (1.0f - RiseT * 0.16f);
 	if (Radius <= ProphecyDistantHillInnerRadiusCm + 1.0f)
 	{
-		Height = -48.0f;
+		Height = -4.0f;
 	}
 	return Height;
 }
@@ -828,6 +831,9 @@ struct AProphecyNNCrowdBenchmarkActor::FImpl
 	bool bInitialized = false;
 	bool bRanFinalSummary = false;
 	bool bScreenshotRequested = false;
+	double LastLiveVisualPollSeconds = 0.0;
+	FDateTime LastLiveVisualConfigTimestamp = FDateTime::MinValue();
+	int32 LiveVisualScreenshotIndex = 0;
 
 	void ComputeFK(FProphecyNNPoseRuntime& Pose, const FVector3f& RootPos, const FProphecyNNMat3& RootRot) const
 	{
@@ -935,6 +941,12 @@ void AProphecyNNCrowdBenchmarkActor::BeginPlay()
 		{
 			SpawnInstancedProxyComponents();
 		}
+		else if (VisualMode.Equals(TEXT("MetaHuman"), ESearchCase::IgnoreCase) ||
+			VisualMode.Equals(TEXT("MetaHumanFull"), ESearchCase::IgnoreCase) ||
+			VisualMode.Equals(TEXT("MetaHumanComparison"), ESearchCase::IgnoreCase))
+		{
+			SpawnMetaHumanActors();
+		}
 		else
 		{
 			SpawnVisualComponents();
@@ -1014,6 +1026,11 @@ void AProphecyNNCrowdBenchmarkActor::EndPlay(const EEndPlayReason::Type EndPlayR
 			FProphecyNNPoseStore::ClearAgentPose(AgentIndex);
 		}
 	}
+	MetaHumanActors.Reset();
+	MetaHumanBodyComponents.Reset();
+	MetaHumanAgentIndices.Reset();
+	MetaHumanWorldOffsets.Reset();
+	MetaHumanActorTiers.Reset();
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -1030,6 +1047,7 @@ void AProphecyNNCrowdBenchmarkActor::Tick(float DeltaSeconds)
 	if (bSceneryOnly)
 	{
 		Impl->Stats.SimSeconds += FPlatformTime::Seconds() - FrameStart;
+		PollLiveVisualIteration();
 		LogProgressIfNeeded(DeltaSeconds);
 		return;
 	}
@@ -1054,6 +1072,7 @@ void AProphecyNNCrowdBenchmarkActor::Tick(float DeltaSeconds)
 	Impl->Stats.VisualSeconds += FPlatformTime::Seconds() - VisualStart;
 
 	Impl->Stats.SimSeconds += FPlatformTime::Seconds() - FrameStart;
+	PollLiveVisualIteration();
 	LogProgressIfNeeded(DeltaSeconds);
 }
 
@@ -1076,11 +1095,16 @@ void AProphecyNNCrowdBenchmarkActor::ApplyCommandLineOverrides()
 	bContactShadowVariantSpecified = FParse::Value(Cmd, TEXT("ProphecyNNContactShadowVariant="), ContactShadowVariant) || bContactShadowVariantSpecified;
 	bContactShadowVariantSpecified = FParse::Value(Cmd, TEXT("ProphecyNNGrassShadowVariant="), ContactShadowVariant) || bContactShadowVariantSpecified;
 	FParse::Value(Cmd, TEXT("ProphecyNNForcedLOD="), ForcedMeshLOD);
+	FParse::Value(Cmd, TEXT("ProphecyNNMetaHuman="), MetaHumanBlueprintClassPath);
+	FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanLOD="), MetaHumanForcedLOD);
+	FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanForcedLOD="), MetaHumanForcedLOD);
 	FParse::Value(Cmd, TEXT("ProphecyNNSkeletalTickHz="), SkeletalTickHz);
 	FParse::Value(Cmd, TEXT("ProphecyNNOnnx="), OnnxModelPath);
 	FParse::Value(Cmd, TEXT("ProphecyNNSeed="), RuntimeSeedPath);
 	FParse::Value(Cmd, TEXT("ProphecyNNScreenshot="), ScreenshotPath);
 	FParse::Value(Cmd, TEXT("ProphecyNNScreenshotSeconds="), ScreenshotSeconds);
+	FParse::Value(Cmd, TEXT("ProphecyNNLiveConfig="), LiveVisualConfigPath);
+	FParse::Value(Cmd, TEXT("ProphecyNNLivePoll="), LiveVisualPollSeconds);
 	FParse::Value(Cmd, TEXT("ProphecyNNGrassRenderer="), GrassRenderer);
 	FParse::Value(Cmd, TEXT("ProphecyNNNiagaraSystem="), NiagaraGrassSystemPath);
 	FParse::Value(Cmd, TEXT("ProphecyNNNiagaraComponents="), NiagaraGrassComponentCount);
@@ -1090,6 +1114,34 @@ void AProphecyNNCrowdBenchmarkActor::ApplyCommandLineOverrides()
 	{
 		bSpawnVisuals = VisualsValue != 0;
 	}
+
+	int32 MetaHumanDriveBodyValue = bMetaHumanDriveBodyWithNNPose ? 1 : 0;
+	if (FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanDriveBody="), MetaHumanDriveBodyValue))
+	{
+		bMetaHumanDriveBodyWithNNPose = MetaHumanDriveBodyValue != 0;
+	}
+	int32 MetaHumanPreserveReferenceTranslationsValue = bMetaHumanPreserveReferenceBoneTranslations ? 1 : 0;
+	if (FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanPreserveRefTranslations="), MetaHumanPreserveReferenceTranslationsValue))
+	{
+		bMetaHumanPreserveReferenceBoneTranslations = MetaHumanPreserveReferenceTranslationsValue != 0;
+	}
+	FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanTier="), MetaHumanTier);
+	FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanTierComparisonList="), MetaHumanTierComparisonList);
+	FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanTierSpacingCm="), MetaHumanTierComparisonSpacingCm);
+	FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanClothingMode="), MetaHumanClothingMode);
+	FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanGroomMode="), MetaHumanGroomMode);
+	FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanFaceMode="), MetaHumanFaceMode);
+	int32 MetaHumanFreezeSkeletalTicksValue = bMetaHumanFreezeSkeletalTicks ? 1 : 0;
+	if (FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanFreezeSkeletalTicks="), MetaHumanFreezeSkeletalTicksValue))
+	{
+		bMetaHumanFreezeSkeletalTicks = MetaHumanFreezeSkeletalTicksValue != 0;
+	}
+	int32 MetaHumanTierComparisonValue = bMetaHumanTierComparison ? 1 : 0;
+	if (FParse::Value(Cmd, TEXT("ProphecyNNMetaHumanTierComparison="), MetaHumanTierComparisonValue))
+	{
+		bMetaHumanTierComparison = MetaHumanTierComparisonValue != 0;
+	}
+	bMetaHumanTierComparison = bMetaHumanTierComparison || FParse::Param(Cmd, TEXT("ProphecyNNMetaHumanTierCompare"));
 
 	int32 SceneryOnlyValue = bSceneryOnly ? 1 : 0;
 	if (FParse::Value(Cmd, TEXT("ProphecyNNSceneryOnly="), SceneryOnlyValue))
@@ -1190,6 +1242,7 @@ void AProphecyNNCrowdBenchmarkActor::ApplyCommandLineOverrides()
 	{
 		bSpawnTrees = TreesValue != 0;
 	}
+	FParse::Value(Cmd, TEXT("ProphecyNNTreeSource="), TreeSource);
 	FParse::Value(Cmd, TEXT("ProphecyNNTreeCount="), TreeInstanceCount);
 	int32 TreeWindValue = bTreeWind ? 1 : 0;
 	if (FParse::Value(Cmd, TEXT("ProphecyNNTreeWind="), TreeWindValue))
@@ -1250,6 +1303,17 @@ void AProphecyNNCrowdBenchmarkActor::ApplyCommandLineOverrides()
 	}
 
 	bExitWhenDone = bExitWhenDone || FParse::Param(Cmd, TEXT("ProphecyNNBenchmarkExit"));
+	int32 LiveVisualValue = bLiveVisualIteration ? 1 : 0;
+	if (FParse::Value(Cmd, TEXT("ProphecyNNLiveVisual="), LiveVisualValue))
+	{
+		bLiveVisualIteration = LiveVisualValue != 0;
+	}
+	bLiveVisualIteration = bLiveVisualIteration || FParse::Param(Cmd, TEXT("ProphecyNNLiveVisual"));
+	if (bLiveVisualIteration)
+	{
+		BenchmarkSeconds = 0.0f;
+		bExitWhenDone = false;
+	}
 	if (bContactShadowVariantSpecified && !IsContactShadowVariantDisabled(ContactShadowVariant))
 	{
 		bSpawnContactShadows = true;
@@ -1349,6 +1413,9 @@ void AProphecyNNCrowdBenchmarkActor::ApplyBattleSimRenderProfile()
 	SetBenchmarkCVar(TEXT("r.DefaultFeature.AutoExposure"), 0, Impl->AppliedRenderSettings);
 	SetBenchmarkCVar(TEXT("r.EyeAdaptationQuality"), 0, Impl->AppliedRenderSettings);
 	SetBenchmarkCVar(TEXT("r.Fog"), 0, Impl->AppliedRenderSettings);
+	SetBenchmarkCVar(TEXT("r.SkyAtmosphere"), 1, Impl->AppliedRenderSettings);
+	SetBenchmarkCVar(TEXT("r.VolumetricCloud"), 1, Impl->AppliedRenderSettings);
+	SetBenchmarkCVar(TEXT("r.VolumetricCloud.ViewRaySampleMaxCount"), 96, Impl->AppliedRenderSettings);
 	SetBenchmarkCVar(TEXT("r.MotionBlurQuality"), 0, Impl->AppliedRenderSettings);
 	SetBenchmarkCVar(TEXT("r.BloomQuality"), 0, Impl->AppliedRenderSettings);
 	SetBenchmarkCVar(TEXT("r.DepthOfFieldQuality"), 0, Impl->AppliedRenderSettings);
@@ -1583,6 +1650,527 @@ void AProphecyNNCrowdBenchmarkActor::SpawnVisualComponents()
 	}
 }
 
+void AProphecyNNCrowdBenchmarkActor::SpawnMetaHumanActors()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		bSpawnVisuals = false;
+		return;
+	}
+
+	UClass* MetaHumanClass = LoadClass<AActor>(nullptr, *MetaHumanBlueprintClassPath);
+	if (!MetaHumanClass && !MetaHumanBlueprintClassPath.Contains(TEXT(".")))
+	{
+		const FString ObjectName = FPackageName::GetShortName(MetaHumanBlueprintClassPath);
+		const FString GeneratedClassPath = FString::Printf(TEXT("%s.%s_C"), *MetaHumanBlueprintClassPath, *ObjectName);
+		MetaHumanClass = LoadClass<AActor>(nullptr, *GeneratedClassPath);
+	}
+	if (!MetaHumanClass)
+	{
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("Could not load MetaHuman blueprint class '%s'; continuing model-only."), *MetaHumanBlueprintClassPath);
+		bSpawnVisuals = false;
+		return;
+	}
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	auto CanonicalTierName = [](const FString& InTier)
+	{
+		const FString Tier = InTier.TrimStartAndEnd();
+		if (Tier.Equals(TEXT("Full"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Full"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Tier1"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("T1"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Near"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Production"), ESearchCase::IgnoreCase))
+		{
+			return FString(TEXT("Full"));
+		}
+		if (Tier.Equals(TEXT("Mid"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Mid"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Tier2"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("T2"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Medium"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Gameplay"), ESearchCase::IgnoreCase))
+		{
+			return FString(TEXT("Mid"));
+		}
+		if (Tier.Equals(TEXT("Far"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Far"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Tier3"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("T3"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Distant"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Distant"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Distance"), ESearchCase::IgnoreCase) ||
+			Tier.Equals(TEXT("Proxy"), ESearchCase::IgnoreCase))
+		{
+			return FString(TEXT("Far"));
+		}
+		return Tier.IsEmpty() ? FString(TEXT("Full")) : Tier;
+	};
+
+	auto IsMetaHumanGroomComponent = [](const UPrimitiveComponent* Component)
+	{
+		if (!Component)
+		{
+			return false;
+		}
+
+		const FString ComponentName = Component->GetName();
+		const FString ClassName = Component->GetClass() ? Component->GetClass()->GetName() : FString();
+		return ClassName.Contains(TEXT("Groom")) ||
+			ComponentName.Equals(TEXT("Hair"), ESearchCase::IgnoreCase) ||
+			ComponentName.Equals(TEXT("Eyebrows"), ESearchCase::IgnoreCase) ||
+			ComponentName.Equals(TEXT("Fuzz"), ESearchCase::IgnoreCase) ||
+			ComponentName.Equals(TEXT("Eyelashes"), ESearchCase::IgnoreCase) ||
+			ComponentName.Equals(TEXT("Mustache"), ESearchCase::IgnoreCase) ||
+			ComponentName.Equals(TEXT("Beard"), ESearchCase::IgnoreCase);
+	};
+
+	auto IsTinyMetaHumanGroomComponent = [](const UPrimitiveComponent* Component)
+	{
+		if (!Component)
+		{
+			return false;
+		}
+
+		const FString ComponentName = Component->GetName();
+		return ComponentName.Equals(TEXT("Fuzz"), ESearchCase::IgnoreCase) ||
+			ComponentName.Equals(TEXT("Eyelashes"), ESearchCase::IgnoreCase) ||
+			ComponentName.Equals(TEXT("Mustache"), ESearchCase::IgnoreCase) ||
+			ComponentName.Equals(TEXT("Beard"), ESearchCase::IgnoreCase);
+	};
+
+	auto IsFarTierName = [](const FString& Tier)
+	{
+		return Tier.Equals(TEXT("Far"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Far"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("Tier3"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("Distant"), ESearchCase::IgnoreCase);
+	};
+
+	auto IsMidTierName = [](const FString& Tier)
+	{
+		return Tier.Equals(TEXT("Mid"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Mid"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("Tier2"), ESearchCase::IgnoreCase);
+	};
+
+	auto ResolveTierForcedLOD = [this](const FString& Tier)
+	{
+		if (MetaHumanForcedLOD >= 0)
+		{
+			return MetaHumanForcedLOD;
+		}
+		if (Tier.Equals(TEXT("Far"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Far"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("Tier3"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("Distant"), ESearchCase::IgnoreCase))
+		{
+			return 3;
+		}
+		if (Tier.Equals(TEXT("Mid"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Mid"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("Tier2"), ESearchCase::IgnoreCase))
+		{
+			return 1;
+		}
+		return -1;
+	};
+
+	auto ResolveTierTickHz = [this](const FString& Tier)
+	{
+		if (SkeletalTickHz <= 0.0f)
+		{
+			return SkeletalTickHz;
+		}
+		if (Tier.Equals(TEXT("Far"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Far"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("Tier3"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("Distant"), ESearchCase::IgnoreCase))
+		{
+			return FMath::Min(SkeletalTickHz, 15.0f);
+		}
+		if (Tier.Equals(TEXT("Mid"), ESearchCase::IgnoreCase) ||
+			Tier.StartsWith(TEXT("Mid"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("Tier2"), ESearchCase::IgnoreCase))
+		{
+			return FMath::Min(SkeletalTickHz, 24.0f);
+		}
+		return SkeletalTickHz;
+	};
+
+	auto ResolveTierClothingMode = [this, IsFarTierName](const FString& Tier)
+	{
+		const FString RequestedMode = MetaHumanClothingMode.TrimStartAndEnd();
+		if (!RequestedMode.IsEmpty() &&
+			!RequestedMode.Equals(TEXT("TierDefault"), ESearchCase::IgnoreCase) &&
+			!RequestedMode.Equals(TEXT("Default"), ESearchCase::IgnoreCase))
+		{
+			return RequestedMode;
+		}
+		return IsFarTierName(Tier) ? FString(TEXT("Following")) : FString(TEXT("Native"));
+	};
+
+	auto ResolveTierGroomMode = [this, IsFarTierName, IsMidTierName](const FString& Tier)
+	{
+		const FString RequestedMode = MetaHumanGroomMode.TrimStartAndEnd();
+		if (!RequestedMode.IsEmpty() &&
+			!RequestedMode.Equals(TEXT("TierDefault"), ESearchCase::IgnoreCase) &&
+			!RequestedMode.Equals(TEXT("Default"), ESearchCase::IgnoreCase))
+		{
+			return RequestedMode;
+		}
+		if (Tier.Contains(TEXT("NoGroom"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("NoHair"), ESearchCase::IgnoreCase))
+		{
+			return FString(TEXT("Hidden"));
+		}
+		if (IsFarTierName(Tier))
+		{
+			return FString(TEXT("Hidden"));
+		}
+		if (IsMidTierName(Tier))
+		{
+			return FString(TEXT("TinyHidden"));
+		}
+		return FString(TEXT("Native"));
+	};
+
+	auto ResolveTierFaceMode = [this](const FString& Tier)
+	{
+		if (Tier.Contains(TEXT("FaceStatic"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("StaticFace"), ESearchCase::IgnoreCase))
+		{
+			return FString(TEXT("Static"));
+		}
+		if (Tier.Contains(TEXT("FaceLeader"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("LeaderFace"), ESearchCase::IgnoreCase))
+		{
+			return FString(TEXT("Leader"));
+		}
+		if (Tier.Contains(TEXT("FaceNative"), ESearchCase::IgnoreCase) ||
+			Tier.Contains(TEXT("NativeFace"), ESearchCase::IgnoreCase))
+		{
+			return FString(TEXT("Native"));
+		}
+
+		const FString RequestedMode = MetaHumanFaceMode.TrimStartAndEnd();
+		if (!RequestedMode.IsEmpty() &&
+			!RequestedMode.Equals(TEXT("TierDefault"), ESearchCase::IgnoreCase) &&
+			!RequestedMode.Equals(TEXT("Default"), ESearchCase::IgnoreCase))
+		{
+			return RequestedMode;
+		}
+		return FString(TEXT("Native"));
+	};
+
+	const bool bTierComparison = bMetaHumanTierComparison || VisualMode.Equals(TEXT("MetaHumanComparison"), ESearchCase::IgnoreCase);
+	TArray<FString> RequestedTiers;
+	if (bTierComparison)
+	{
+		FString TierList = MetaHumanTierComparisonList;
+		TierList.ReplaceInline(TEXT("+"), TEXT(","));
+		TierList.ReplaceInline(TEXT("|"), TEXT(","));
+		TierList.ReplaceInline(TEXT(";"), TEXT(","));
+		TierList.ParseIntoArray(RequestedTiers, TEXT(","), true);
+		if (RequestedTiers.Num() == 0)
+		{
+			RequestedTiers = { TEXT("Full"), TEXT("Mid"), TEXT("Far") };
+		}
+	}
+	else
+	{
+		RequestedTiers.SetNum(CrowdSize);
+		for (FString& Tier : RequestedTiers)
+		{
+			Tier = MetaHumanTier;
+		}
+	}
+
+	TArray<FString> SpawnTiers;
+	SpawnTiers.Reserve(RequestedTiers.Num());
+	for (const FString& Tier : RequestedTiers)
+	{
+		SpawnTiers.Add(CanonicalTierName(Tier));
+	}
+
+	const int32 VisualCount = SpawnTiers.Num();
+	FString TierSummary = FString::Join(SpawnTiers, TEXT(","));
+	int32 SpawnedCount = 0;
+	int32 BodyDrivenCount = 0;
+	int32 NativeClothingComponentCount = 0;
+	int32 LeaderPoseClothingComponentCount = 0;
+	int32 HiddenClothingComponentCount = 0;
+	int32 LeaderPoseFaceComponentCount = 0;
+	int32 StaticFaceComponentCount = 0;
+	int32 HiddenFaceComponentCount = 0;
+	int32 SkeletalComponentCount = 0;
+	int32 FrozenSkeletalComponentCount = 0;
+	int32 PrimitiveComponentCount = 0;
+	int32 HiddenPrimitiveComponentCount = 0;
+
+	MetaHumanActors.Reset(VisualCount);
+	MetaHumanBodyComponents.Reset(VisualCount);
+	MetaHumanAgentIndices.Reset(VisualCount);
+	MetaHumanWorldOffsets.Reset(VisualCount);
+	MetaHumanActorTiers.Reset(VisualCount);
+	for (int32 VisualIndex = 0; VisualIndex < VisualCount; ++VisualIndex)
+	{
+		const int32 SourceAgentIndex = bTierComparison ? 0 : VisualIndex;
+		if (!Impl->Agents.IsValidIndex(SourceAgentIndex))
+		{
+			continue;
+		}
+
+		const FString& Tier = SpawnTiers[VisualIndex];
+		const bool bMidTier = IsMidTierName(Tier);
+		const bool bFarTier = IsFarTierName(Tier);
+		const FString ClothingMode = ResolveTierClothingMode(Tier);
+		const bool bUseLeaderPoseClothing = ClothingMode.Equals(TEXT("Following"), ESearchCase::IgnoreCase) ||
+			ClothingMode.Equals(TEXT("Follow"), ESearchCase::IgnoreCase) ||
+			ClothingMode.Equals(TEXT("Leader"), ESearchCase::IgnoreCase);
+		const bool bHideTierClothing = ClothingMode.Equals(TEXT("Hidden"), ESearchCase::IgnoreCase);
+		const FString GroomMode = ResolveTierGroomMode(Tier);
+		const bool bHideAllGrooms = GroomMode.Equals(TEXT("Hidden"), ESearchCase::IgnoreCase) ||
+			GroomMode.Equals(TEXT("AllHidden"), ESearchCase::IgnoreCase) ||
+			GroomMode.Equals(TEXT("None"), ESearchCase::IgnoreCase);
+		const bool bHideTinyGrooms = bHideAllGrooms ||
+			GroomMode.Equals(TEXT("TinyHidden"), ESearchCase::IgnoreCase) ||
+			GroomMode.Equals(TEXT("SmallHidden"), ESearchCase::IgnoreCase);
+		const FString FaceMode = ResolveTierFaceMode(Tier);
+		const bool bUseLeaderPoseFace = FaceMode.Equals(TEXT("Leader"), ESearchCase::IgnoreCase);
+		const bool bUseStaticFace = FaceMode.Equals(TEXT("Static"), ESearchCase::IgnoreCase);
+		const bool bHideTierFace = FaceMode.Equals(TEXT("Hidden"), ESearchCase::IgnoreCase);
+		const int32 TierForcedLOD = ResolveTierForcedLOD(Tier);
+		const int32 SkeletalForcedLOD = TierForcedLOD >= 0 ? TierForcedLOD + 1 : 0;
+		const float TierTickHz = ResolveTierTickHz(Tier);
+		const float ComparisonCenter = 0.5f * float(FMath::Max(0, VisualCount - 1));
+		const FVector TierOffset = bTierComparison
+			? FVector((float(VisualIndex) - ComparisonCenter) * FMath::Max(120.0f, MetaHumanTierComparisonSpacingCm), 0.0f, 0.0f)
+			: FVector::ZeroVector;
+
+		const FProphecyNNAgentRuntime& Agent = Impl->Agents[SourceAgentIndex];
+		const FVector Location = TrainingWorldToUnrealVector(Agent.CurRootPos) + TierOffset;
+		const FRotator Rotation(0.0, FMath::RadiansToDegrees(double(Agent.CurRootYaw)), 0.0);
+		AActor* MetaHumanActor = World->SpawnActor<AActor>(MetaHumanClass, Location, Rotation, Params);
+		if (!MetaHumanActor)
+		{
+			MetaHumanActors.Add(nullptr);
+			MetaHumanBodyComponents.Add(nullptr);
+			MetaHumanAgentIndices.Add(SourceAgentIndex);
+			MetaHumanWorldOffsets.Add(TierOffset);
+			MetaHumanActorTiers.Add(Tier);
+			continue;
+		}
+
+		MetaHumanActor->SetActorEnableCollision(false);
+
+		TArray<UPrimitiveComponent*> PrimitiveComponents;
+		MetaHumanActor->GetComponents(PrimitiveComponents);
+		for (UPrimitiveComponent* PrimitiveComponent : PrimitiveComponents)
+		{
+			if (!PrimitiveComponent)
+			{
+				continue;
+			}
+
+			PrimitiveComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			PrimitiveComponent->SetGenerateOverlapEvents(false);
+			const bool bHidePrimitive = (bHideAllGrooms && IsMetaHumanGroomComponent(PrimitiveComponent)) ||
+				(bHideTinyGrooms && IsTinyMetaHumanGroomComponent(PrimitiveComponent));
+			if (bHidePrimitive)
+			{
+				PrimitiveComponent->SetVisibility(false, true);
+				PrimitiveComponent->SetHiddenInGame(true, true);
+				PrimitiveComponent->SetCastShadow(false);
+				PrimitiveComponent->Deactivate();
+				++HiddenPrimitiveComponentCount;
+			}
+			else
+			{
+				PrimitiveComponent->SetCastShadow(!bFarTier && bCastShadows && ShouldAgentCastRealShadow(ShadowMode, RealShadowBudget, VisualIndex));
+			}
+			PrimitiveComponent->SetCastContactShadow(false);
+			PrimitiveComponent->SetCastInsetShadow(false);
+			PrimitiveComponent->SetAffectDistanceFieldLighting(false);
+			PrimitiveComponent->SetAffectDynamicIndirectLighting(false);
+			PrimitiveComponent->SetVisibleInRayTracing(false);
+			PrimitiveComponent->SetReceivesDecals(false);
+			++PrimitiveComponentCount;
+		}
+
+		USkeletalMeshComponent* BodyComponent = nullptr;
+		USkeletalMeshComponent* FaceComponent = nullptr;
+		TArray<USkeletalMeshComponent*> ClothingComponents;
+		TArray<USkeletalMeshComponent*> SkeletalComponents;
+		MetaHumanActor->GetComponents(SkeletalComponents);
+		for (USkeletalMeshComponent* SkeletalComponent : SkeletalComponents)
+		{
+			if (!SkeletalComponent)
+			{
+				continue;
+			}
+
+			SkeletalComponent->SetForcedLOD(SkeletalForcedLOD);
+			SkeletalComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+			SkeletalComponent->bEnableUpdateRateOptimizations = true;
+			SkeletalComponent->bComponentUseFixedSkelBounds = true;
+			if (TierTickHz > 0.0f)
+			{
+				SkeletalComponent->SetComponentTickInterval(1.0f / TierTickHz);
+			}
+
+			const FName ComponentName = SkeletalComponent->GetFName();
+			if (ComponentName == FName(TEXT("Body")))
+			{
+				BodyComponent = SkeletalComponent;
+			}
+			else if (ComponentName == FName(TEXT("Face")))
+			{
+				FaceComponent = SkeletalComponent;
+			}
+			else if (ComponentName == FName(TEXT("Torso")) || ComponentName == FName(TEXT("Legs")) || ComponentName == FName(TEXT("Feet")))
+			{
+				ClothingComponents.Add(SkeletalComponent);
+				++NativeClothingComponentCount;
+			}
+			++SkeletalComponentCount;
+		}
+
+		if (BodyComponent && bMetaHumanDriveBodyWithNNPose)
+		{
+			BodyComponent->SetAnimInstanceClass(UProphecyNNPoseAnimInstance::StaticClass());
+			BodyComponent->SetDisablePostProcessBlueprint(true);
+			BodyComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+			if (UProphecyNNPoseAnimInstance* PoseInstance = Cast<UProphecyNNPoseAnimInstance>(BodyComponent->GetAnimInstance()))
+			{
+				PoseInstance->AgentId = SourceAgentIndex;
+				PoseInstance->bUseStoredPose = true;
+				PoseInstance->bPreserveReferenceBoneTranslations = bMetaHumanPreserveReferenceBoneTranslations;
+				PoseInstance->bEnableDebugMotion = false;
+				++BodyDrivenCount;
+			}
+		}
+
+		if (BodyComponent)
+		{
+			if (FaceComponent)
+			{
+				if (bHideTierFace)
+				{
+					FaceComponent->SetVisibility(false, true);
+					FaceComponent->SetHiddenInGame(true, true);
+					FaceComponent->SetCastShadow(false);
+					FaceComponent->Deactivate();
+					++HiddenFaceComponentCount;
+				}
+				else if (bUseLeaderPoseFace)
+				{
+					FaceComponent->SetLeaderPoseComponent(BodyComponent, true, false);
+					FaceComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+					FaceComponent->bEnableUpdateRateOptimizations = true;
+					++LeaderPoseFaceComponentCount;
+				}
+				else if (bUseStaticFace)
+				{
+					FaceComponent->bPauseAnims = true;
+					FaceComponent->SetComponentTickEnabled(false);
+					FaceComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+					FaceComponent->bEnableUpdateRateOptimizations = true;
+					++StaticFaceComponentCount;
+				}
+			}
+
+			for (USkeletalMeshComponent* ClothingComponent : ClothingComponents)
+			{
+				if (!ClothingComponent)
+				{
+					continue;
+				}
+				if (bHideTierClothing)
+				{
+					ClothingComponent->SetVisibility(false, true);
+					ClothingComponent->SetHiddenInGame(true, true);
+					ClothingComponent->SetCastShadow(false);
+					ClothingComponent->Deactivate();
+					++HiddenClothingComponentCount;
+				}
+				else if (bUseLeaderPoseClothing)
+				{
+					ClothingComponent->SetLeaderPoseComponent(BodyComponent, true, false);
+					ClothingComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+					ClothingComponent->bEnableUpdateRateOptimizations = true;
+					++LeaderPoseClothingComponentCount;
+				}
+			}
+		}
+
+		if (bMetaHumanFreezeSkeletalTicks)
+		{
+			for (USkeletalMeshComponent* SkeletalComponent : SkeletalComponents)
+			{
+				if (!SkeletalComponent)
+				{
+					continue;
+				}
+
+				SkeletalComponent->bPauseAnims = true;
+				SkeletalComponent->SetComponentTickEnabled(false);
+				SkeletalComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+				++FrozenSkeletalComponentCount;
+			}
+		}
+
+		TArray<ULODSyncComponent*> LODSyncComponents;
+		MetaHumanActor->GetComponents(LODSyncComponents);
+		for (ULODSyncComponent* LODSyncComponent : LODSyncComponents)
+		{
+			if (!LODSyncComponent)
+			{
+				continue;
+			}
+
+			LODSyncComponent->ForcedLOD = TierForcedLOD;
+			LODSyncComponent->RefreshSyncComponents();
+			LODSyncComponent->UpdateLOD();
+		}
+
+		MetaHumanActors.Add(MetaHumanActor);
+		MetaHumanBodyComponents.Add(BodyComponent);
+		MetaHumanAgentIndices.Add(SourceAgentIndex);
+		MetaHumanWorldOffsets.Add(TierOffset);
+		MetaHumanActorTiers.Add(Tier);
+		++SpawnedCount;
+	}
+
+	UE_LOG(
+		LogProphecyNNBenchmark,
+		Display,
+		TEXT("Spawned MetaHuman visuals: class=%s actors=%d tiers=%s comparison=%d body_nn_driven=%d preserve_ref_translations=%d native_clothing_components=%d following_clothing_components=%d hidden_clothing_components=%d leader_pose_face_components=%d static_face_components=%d hidden_face_components=%d skeletal_components=%d frozen_skeletal_components=%d primitive_components=%d hidden_primitive_components=%d global_metahuman_lod=%d skeletal_tick_hz=%.1f"),
+		*MetaHumanClass->GetPathName(),
+		SpawnedCount,
+		*TierSummary,
+		bTierComparison ? 1 : 0,
+		BodyDrivenCount,
+		bMetaHumanPreserveReferenceBoneTranslations ? 1 : 0,
+		NativeClothingComponentCount,
+		LeaderPoseClothingComponentCount,
+		HiddenClothingComponentCount,
+		LeaderPoseFaceComponentCount,
+		StaticFaceComponentCount,
+		HiddenFaceComponentCount,
+		SkeletalComponentCount,
+		FrozenSkeletalComponentCount,
+		PrimitiveComponentCount,
+		HiddenPrimitiveComponentCount,
+		MetaHumanForcedLOD,
+		SkeletalTickHz);
+}
+
 void AProphecyNNCrowdBenchmarkActor::SpawnInstancedProxyComponents()
 {
 	UStaticMesh* SegmentMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -1735,6 +2323,15 @@ void AProphecyNNCrowdBenchmarkActor::ApplyGrassWindMaterialParameters()
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassWindTextureSpeed"), EffectiveSpeed * 0.025f);
 	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassWindDirection"), FLinearColor(0.86f, 0.50f, 0.0f, 0.0f));
 	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassWindPatchDirection"), FLinearColor(-0.46f, 0.89f, 0.0f, 0.0f));
+	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantFadeCenter"), FLinearColor(0.0f, 700.0f, 0.0f, 0.0f));
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorStartCm"), 6000.0f);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorInvRange"), 1.0f / 5200.0f);
+	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), FLinearColor(0.105f, 0.245f, 0.048f, 1.0f));
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenStartCm"), 10500.0f);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenInvRange"), 1.0f / 9500.0f);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenCm"), 78.0f);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityStartCm"), 15000.0f);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityInvRange"), 1.0f / 7000.0f);
 
 	UE_LOG(
 		LogProphecyNNBenchmark,
@@ -1868,9 +2465,9 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObje
 	auto VaryColor = [](const FVector3f& Color, float CoolWarm, float ValueShift)
 	{
 		return FVector4f(
-			FMath::Clamp(Color.X + CoolWarm * 0.025f + ValueShift, 0.010f, 0.360f),
-			FMath::Clamp(Color.Y + ValueShift * 1.15f, 0.030f, 0.460f),
-			FMath::Clamp(Color.Z - CoolWarm * 0.012f + ValueShift * 0.55f, 0.006f, 0.220f),
+			FMath::Clamp(Color.X + CoolWarm * 0.020f + ValueShift, 0.008f, 0.420f),
+			FMath::Clamp(Color.Y + ValueShift * 1.20f, 0.025f, 0.560f),
+			FMath::Clamp(Color.Z - CoolWarm * 0.010f + ValueShift * 0.55f, 0.005f, 0.260f),
 			1.0f);
 	};
 
@@ -1940,16 +2537,45 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObje
 		}
 
 		const float Yaw = TileRandom.FRandRange(0.0f, 360.0f);
-		const float Height = TileRandom.FRandRange(bDenseCoverage ? 20.0f : 18.0f, bDenseCoverage ? 44.0f : 39.0f) + (TileRandom.FRand() < 0.16f ? TileRandom.FRandRange(5.0f, 14.0f) : 0.0f);
-		const float Width = TileRandom.FRandRange(bDenseCoverage ? 1.55f : 1.10f, bDenseCoverage ? 4.40f : 3.25f);
-		const float LeanForward = TileRandom.FRandRange(bDenseCoverage ? -4.0f : -3.0f, bDenseCoverage ? 20.0f : 15.0f) + Height * TileRandom.FRandRange(0.08f, bDenseCoverage ? 0.30f : 0.22f);
-		const float LeanSide = TileRandom.FRandRange(bDenseCoverage ? -8.0f : -5.5f, bDenseCoverage ? 8.0f : 5.5f);
+		float Height = TileRandom.FRandRange(bDenseCoverage ? 26.0f : 20.0f, bDenseCoverage ? 66.0f : 52.0f);
+		if (TileRandom.FRand() < (bDenseCoverage ? 0.20f : 0.14f))
+		{
+			Height += TileRandom.FRandRange(9.0f, bDenseCoverage ? 30.0f : 22.0f);
+		}
+		if (TileRandom.FRand() < 0.09f)
+		{
+			Height *= TileRandom.FRandRange(0.52f, 0.76f);
+		}
+		const float Width = TileRandom.FRandRange(bDenseCoverage ? 1.15f : 0.95f, bDenseCoverage ? 3.85f : 3.10f);
+		const float LeanForward = TileRandom.FRandRange(bDenseCoverage ? -6.0f : -4.0f, bDenseCoverage ? 28.0f : 20.0f) + Height * TileRandom.FRandRange(0.10f, bDenseCoverage ? 0.38f : 0.28f);
+		const float LeanSide = TileRandom.FRandRange(bDenseCoverage ? -11.0f : -7.0f, bDenseCoverage ? 11.0f : 7.0f);
 		const float CoolWarm = TileRandom.FRandRange(-1.0f, 1.0f);
-		const float ValueShift = TileRandom.FRandRange(-0.012f, 0.030f);
-		const bool bDryBlade = TileRandom.FRand() < (bDenseCoverage ? 0.030f : 0.050f);
-		const FVector3f BaseTint = bDryBlade ? FVector3f(0.115f, 0.105f, 0.050f) : FVector3f(0.052f, 0.135f, 0.035f);
-		const FVector3f MidTint = bDryBlade ? FVector3f(0.185f, 0.165f, 0.075f) : FVector3f(0.078f, 0.205f, 0.050f);
-		const FVector3f TipTint = bDryBlade ? FVector3f(0.255f, 0.230f, 0.105f) : FVector3f(0.118f, 0.305f, 0.070f);
+		const float ValueShift = TileRandom.FRandRange(-0.030f, 0.040f);
+		const float ToneRoll = TileRandom.FRand();
+		const float DryChance = bDenseCoverage ? 0.025f : 0.045f;
+		const float ShadeChance = bDenseCoverage ? 0.205f : 0.265f;
+		const float SunChance = bDenseCoverage ? 0.145f : 0.105f;
+		FVector3f BaseTint(0.022f, 0.080f, 0.018f);
+		FVector3f MidTint(0.060f, 0.175f, 0.036f);
+		FVector3f TipTint(0.145f, 0.340f, 0.064f);
+		if (ToneRoll < DryChance)
+		{
+			BaseTint = FVector3f(0.070f, 0.072f, 0.030f);
+			MidTint = FVector3f(0.145f, 0.155f, 0.060f);
+			TipTint = FVector3f(0.240f, 0.250f, 0.095f);
+		}
+		else if (ToneRoll < DryChance + ShadeChance)
+		{
+			BaseTint = FVector3f(0.014f, 0.055f, 0.014f);
+			MidTint = FVector3f(0.035f, 0.115f, 0.025f);
+			TipTint = FVector3f(0.075f, 0.210f, 0.043f);
+		}
+		else if (ToneRoll < DryChance + ShadeChance + SunChance)
+		{
+			BaseTint = FVector3f(0.030f, 0.100f, 0.020f);
+			MidTint = FVector3f(0.090f, 0.235f, 0.042f);
+			TipTint = FVector3f(0.195f, 0.430f, 0.075f);
+		}
 		AddBlade(
 			Yaw,
 			OffsetX,
@@ -1970,14 +2596,14 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObje
 			const float OffsetX = TileRandom.FRandRange(-HalfTile, HalfTile);
 			const float OffsetY = TileRandom.FRandRange(-HalfTile, HalfTile);
 			const float Yaw = TileRandom.FRandRange(0.0f, 360.0f);
-			const float Width = TileRandom.FRandRange(3.0f, 7.0f);
-			const float Length = TileRandom.FRandRange(18.0f, 48.0f);
-			const float Lift = TileRandom.FRandRange(2.0f, 9.0f);
-			const float Side = TileRandom.FRandRange(-8.0f, 8.0f);
+			const float Width = TileRandom.FRandRange(2.0f, 5.2f);
+			const float Length = TileRandom.FRandRange(22.0f, 64.0f);
+			const float Lift = TileRandom.FRandRange(1.0f, 6.5f);
+			const float Side = TileRandom.FRandRange(-10.0f, 10.0f);
 			const float CoolWarm = TileRandom.FRandRange(-1.0f, 1.0f);
-			const float ValueShift = TileRandom.FRandRange(-0.018f, 0.014f);
-			const FVector3f BaseTint(0.040f, 0.120f, 0.030f);
-			const FVector3f TipTint(0.090f, 0.245f, 0.055f);
+			const float ValueShift = TileRandom.FRandRange(-0.030f, 0.008f);
+			const FVector3f BaseTint(0.015f, 0.055f, 0.012f);
+			const FVector3f TipTint(0.060f, 0.165f, 0.034f);
 			AddGroundFiller(
 				Yaw,
 				OffsetX,
@@ -3052,11 +3678,13 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 
 					const float FarT = Smooth01((Distance - ProphecyGrassFarRadiusCm) / (ProphecyGrassHorizonRadiusCm - ProphecyGrassFarRadiusCm));
 					const float NearT = Smooth01((Distance - ProphecyGrassNearRadiusCm) / (ProphecyGrassFarRadiusCm - ProphecyGrassNearRadiusCm));
+					const float FarLodT = Smooth01((Distance - (ProphecyGrassFarRadiusCm - 2600.0f)) / 7200.0f);
 					const float TargetSpacing = bGrassDiagnosticMode && Distance <= DiagnosticDenseGrassRadiusCm
 						? DiagnosticGrassSpacingCm
-						: (Distance <= ProphecyGrassFarRadiusCm
-							? FMath::Lerp(105.0f, 160.0f, NearT)
-							: FMath::Lerp(170.0f, 560.0f, FarT));
+						: FMath::Lerp(
+							FMath::Lerp(105.0f, 160.0f, NearT),
+							FMath::Lerp(170.0f, 560.0f, FarT),
+							FarLodT);
 					const float FarCoverage = Distance <= ProphecyGrassFarRadiusCm ? 1.0f : FMath::Lerp(1.0f, 0.86f, FarT);
 					const float DensityKeep = FMath::Clamp(FMath::Square(CandidateSpacing / TargetSpacing) * FarCoverage, 0.0f, 1.0f);
 					if (CellRandom.FRand() > DensityKeep)
@@ -3065,13 +3693,14 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 					}
 
 					const float Yaw = CellRandom.FRandRange(0.0f, 360.0f);
-					float ScaleXY = CellRandom.FRandRange(0.88f, 1.26f);
-					float ScaleZ = CellRandom.FRandRange(0.82f, 1.18f);
-					if (Distance > ProphecyGrassFarRadiusCm)
-					{
-						ScaleXY = CellRandom.FRandRange(FMath::Lerp(1.35f, 3.20f, FarT), FMath::Lerp(2.35f, 5.20f, FarT));
-						ScaleZ = CellRandom.FRandRange(FMath::Lerp(0.72f, 0.28f, FarT), FMath::Lerp(0.96f, 0.48f, FarT));
-					}
+					const float ScaleRollXY = CellRandom.FRand();
+					const float ScaleRollZ = CellRandom.FRand();
+					const float NearScaleXY = FMath::Lerp(0.88f, 1.26f, ScaleRollXY);
+					const float NearScaleZ = FMath::Lerp(0.82f, 1.18f, ScaleRollZ);
+					const float FarScaleXY = FMath::Lerp(FMath::Lerp(1.10f, 3.20f, FarT), FMath::Lerp(1.80f, 5.20f, FarT), ScaleRollXY);
+					const float FarScaleZ = FMath::Lerp(FMath::Lerp(0.80f, 0.28f, FarT), FMath::Lerp(1.04f, 0.48f, FarT), ScaleRollZ);
+					const float ScaleXY = FMath::Lerp(NearScaleXY, FarScaleXY, FarLodT);
+					const float ScaleZ = FMath::Lerp(NearScaleZ, FarScaleZ, FarLodT);
 					const FTransform InstanceTransform(
 						FRotator(0.0, Yaw, 0.0),
 						FieldCenter + FVector(Offset.X, Offset.Y, 0.0),
@@ -3210,6 +3839,33 @@ void AProphecyNNCrowdBenchmarkActor::SpawnTreeField()
 		return;
 	}
 
+	const FString TreeSourceName = TreeSource.TrimStartAndEnd();
+	if (TreeSourceName.Equals(TEXT("PCG"), ESearchCase::IgnoreCase) ||
+		TreeSourceName.Equals(TEXT("PCGSample"), ESearchCase::IgnoreCase) ||
+		TreeSourceName.Equals(TEXT("SimpleForest"), ESearchCase::IgnoreCase) ||
+		TreeSourceName.Equals(TEXT("EngineSample"), ESearchCase::IgnoreCase))
+	{
+		if (SpawnPCGSampleTreeField())
+		{
+			return;
+		}
+
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("PCG sample tree source requested, but no PCG tree meshes loaded; trying next tree source."));
+	}
+
+	if (TreeSourceName.Equals(TEXT("PVE"), ESearchCase::IgnoreCase) ||
+		TreeSourceName.Equals(TEXT("ProceduralVegetation"), ESearchCase::IgnoreCase) ||
+		TreeSourceName.Equals(TEXT("ProceduralVegetationEditor"), ESearchCase::IgnoreCase) ||
+		TreeSourceName.Equals(TEXT("Megaplants"), ESearchCase::IgnoreCase))
+	{
+		if (SpawnPVETreeField())
+		{
+			return;
+		}
+
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("PVE tree source requested, but no PVE tree meshes loaded; falling back to generated tree mesh."));
+	}
+
 	UStaticMesh* RuntimeTreeMesh = CreateTreeMesh();
 	if (!RuntimeTreeMesh)
 	{
@@ -3217,6 +3873,7 @@ void AProphecyNNCrowdBenchmarkActor::SpawnTreeField()
 	}
 
 	TreeComponents.Reset();
+	SkeletalTreeComponents.Reset();
 	Impl->TreeShadowCasters.Reset();
 	Impl->TreeInstanceCount = 0;
 
@@ -3355,6 +4012,375 @@ void AProphecyNNCrowdBenchmarkActor::SpawnTreeField()
 		bTreeWind ? 1 : 0,
 		bTreeWindDiagnostic ? 1 : 0,
 		bCenterTreeDiagnostic ? 1 : 0);
+}
+
+bool AProphecyNNCrowdBenchmarkActor::SpawnPCGSampleTreeField()
+{
+	struct FPCGTreeSpecies
+	{
+		const TCHAR* Path = nullptr;
+		float Weight = 1.0f;
+		float BaseUniformScale = 1.0f;
+		float BaseHeightScale = 1.0f;
+		float ShadowHeightCm = 1900.0f;
+		float TrunkRadiusCm = 34.0f;
+		float CrownRadiusCm = 360.0f;
+	};
+
+	static constexpr FPCGTreeSpecies SpeciesDefs[] =
+	{
+		{ TEXT("/PCG/SampleContent/SimpleForest/Meshes/PCG_Tree_01.PCG_Tree_01"), 1.00f, 1.72f, 1.82f, 2200.0f, 38.0f, 410.0f },
+		{ TEXT("/PCG/SampleContent/SimpleForest/Meshes/PCG_Tree_02.PCG_Tree_02"), 1.20f, 1.55f, 1.70f, 2050.0f, 34.0f, 390.0f },
+		{ TEXT("/PCG/SampleContent/SimpleForest/Meshes/PCG_Tree_03.PCG_Tree_03"), 0.90f, 1.86f, 1.92f, 2350.0f, 42.0f, 435.0f }
+	};
+
+	struct FLoadedPCGTree
+	{
+		UHierarchicalInstancedStaticMeshComponent* Component = nullptr;
+		FPCGTreeSpecies Species;
+	};
+
+	TreeComponents.Reset();
+	SkeletalTreeComponents.Reset();
+	Impl->TreeShadowCasters.Reset();
+	Impl->TreeInstanceCount = 0;
+
+	TArray<FLoadedPCGTree> LoadedTrees;
+	LoadedTrees.Reserve(UE_ARRAY_COUNT(SpeciesDefs));
+	float TotalWeight = 0.0f;
+	for (const FPCGTreeSpecies& Species : SpeciesDefs)
+	{
+		UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, Species.Path);
+		if (!Mesh)
+		{
+			continue;
+		}
+
+		UHierarchicalInstancedStaticMeshComponent* Component = NewObject<UHierarchicalInstancedStaticMeshComponent>(this);
+		if (!Component)
+		{
+			continue;
+		}
+
+		Component->SetStaticMesh(Mesh);
+		Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Component->SetGenerateOverlapEvents(false);
+		Component->SetCanEverAffectNavigation(false);
+		Component->SetCastShadow(bCastShadows);
+		Component->SetCastContactShadow(false);
+		Component->SetAffectDistanceFieldLighting(false);
+		Component->SetAffectDynamicIndirectLighting(false);
+		Component->SetVisibleInRayTracing(false);
+		Component->SetReceivesDecals(false);
+		Component->SetMobility(EComponentMobility::Static);
+		Component->SetCullDistances(0, 60000);
+		Component->AttachToComponent(SceneRoot, FAttachmentTransformRules::KeepRelativeTransform);
+		AddInstanceComponent(Component);
+		Component->RegisterComponent();
+		Component->PreAllocateInstancesMemory(FMath::Max(1, TreeInstanceCount / 2));
+
+		FLoadedPCGTree& Loaded = LoadedTrees.AddDefaulted_GetRef();
+		Loaded.Component = Component;
+		Loaded.Species = Species;
+		TotalWeight += FMath::Max(0.01f, Species.Weight);
+		TreeComponents.Add(Component);
+	}
+
+	if (LoadedTrees.Num() == 0)
+	{
+		return false;
+	}
+
+	auto PickTree = [&LoadedTrees, TotalWeight](FRandomStream& Random) -> FLoadedPCGTree&
+	{
+		float Pick = Random.FRandRange(0.0f, FMath::Max(0.01f, TotalWeight));
+		for (FLoadedPCGTree& Tree : LoadedTrees)
+		{
+			Pick -= FMath::Max(0.01f, Tree.Species.Weight);
+			if (Pick <= 0.0f)
+			{
+				return Tree;
+			}
+		}
+		return LoadedTrees.Last();
+	};
+
+	auto AddTree = [this, &PickTree](FRandomStream& Random, const FVector2D& PositionXY, float YawDegrees, float UniformJitter, float HeightJitter, bool bDiagnostic)
+	{
+		FLoadedPCGTree& Tree = PickTree(Random);
+		if (!Tree.Component)
+		{
+			return;
+		}
+
+		const float UniformScale = Tree.Species.BaseUniformScale * UniformJitter;
+		const float HeightScale = Tree.Species.BaseHeightScale * HeightJitter;
+		const FTransform InstanceTransform(
+			FRotator(Random.FRandRange(-1.2f, 1.2f), YawDegrees, Random.FRandRange(-1.2f, 1.2f)),
+			FVector(PositionXY.X, PositionXY.Y, -5.0f),
+			FVector(UniformScale, UniformScale, HeightScale));
+		Tree.Component->AddInstance(InstanceTransform);
+
+		FProphecyTreeShadowCaster Caster;
+		Caster.Position = PositionXY;
+		Caster.HeightCm = Tree.Species.ShadowHeightCm * HeightScale;
+		Caster.TrunkRadiusCm = Tree.Species.TrunkRadiusCm * UniformScale;
+		Caster.CrownRadiusCm = Tree.Species.CrownRadiusCm * UniformScale;
+		Caster.Strength = bDiagnostic ? 0.95f : Random.FRandRange(0.38f, 0.58f);
+		Impl->TreeShadowCasters.Add(Caster);
+		++Impl->TreeInstanceCount;
+	};
+
+	const int32 DesiredCount = FMath::Clamp(TreeInstanceCount, 0, 1200);
+	FRandomStream Random(20260523);
+	for (int32 AttemptIndex = 0; AttemptIndex < DesiredCount * 16 && Impl->TreeInstanceCount < DesiredCount; ++AttemptIndex)
+	{
+		const float AreaT = Random.FRand();
+		float Radius = FMath::Sqrt(FMath::Lerp(FMath::Square(ProphecyTreePlayableInnerRadiusCm), FMath::Square(ProphecyTreePlayableOuterRadiusCm), AreaT));
+		const float Angle = Random.FRandRange(0.0f, UE_TWO_PI);
+		Radius += Random.FRandRange(-480.0f, 480.0f);
+		Radius = FMath::Clamp(Radius, ProphecyTreePlayableInnerRadiusCm, ProphecyTreePlayableOuterRadiusCm);
+
+		const FVector2D Direction(FMath::Cos(Angle), FMath::Sin(Angle));
+		const FVector2D FieldCenter(ProphecyTerrainCenterX, ProphecyTerrainCenterY);
+		const FVector2D PositionXY = FieldCenter + Direction * Radius + FVector2D(Random.FRandRange(-360.0f, 360.0f), Random.FRandRange(-360.0f, 360.0f));
+		if (FMath::Abs(PositionXY.X) < 2650.0f && PositionXY.Y > -2600.0f && PositionXY.Y < 12600.0f)
+		{
+			continue;
+		}
+		if (PositionXY.Y < -3600.0f && FMath::Abs(PositionXY.X) < 5100.0f)
+		{
+			continue;
+		}
+
+		AddTree(Random, PositionXY, Random.FRandRange(0.0f, 360.0f), Random.FRandRange(0.82f, 1.22f), Random.FRandRange(0.86f, 1.22f), false);
+	}
+
+	if (bCenterTreeDiagnostic)
+	{
+		const FVector2D DiagnosticPositions[] =
+		{
+			FVector2D(-1180.0f, 2450.0f),
+			FVector2D(1120.0f, 3020.0f),
+			FVector2D(-680.0f, 4200.0f),
+			FVector2D(720.0f, 5200.0f),
+			FVector2D(-160.0f, 6400.0f),
+			FVector2D(1260.0f, 6950.0f)
+		};
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(DiagnosticPositions); ++Index)
+		{
+			AddTree(Random, DiagnosticPositions[Index], 30.0f + float(Index) * 63.0f, 1.08f + 0.06f * float(Index % 3), 1.08f + 0.05f * float(Index % 2), true);
+		}
+	}
+
+	for (UHierarchicalInstancedStaticMeshComponent* Component : TreeComponents)
+	{
+		if (Component)
+		{
+			Component->BuildTreeIfOutdated(true, true);
+		}
+	}
+
+	BakeStaticTreeShadowMasks();
+	UpdateGroundShadowMask();
+
+	UE_LOG(
+		LogProphecyNNBenchmark,
+		Display,
+		TEXT("Spawned PCG sample forest trees: components=%d requested=%d spawned=%d inner_radius=%.0fcm outer_radius=%.0fcm static_shadow_casters=%d dynamic_tree_shadows=%d center_diagnostic=%d"),
+		TreeComponents.Num(),
+		TreeInstanceCount,
+		Impl->TreeInstanceCount,
+		ProphecyTreePlayableInnerRadiusCm,
+		ProphecyTreePlayableOuterRadiusCm,
+		Impl->TreeShadowCasters.Num(),
+		bCastShadows ? 1 : 0,
+		bCenterTreeDiagnostic ? 1 : 0);
+
+	return true;
+}
+
+bool AProphecyNNCrowdBenchmarkActor::SpawnPVETreeField()
+{
+	struct FPVETreeSpecies
+	{
+		const TCHAR* Path = nullptr;
+		float Weight = 1.0f;
+		float BaseUniformScale = 1.0f;
+		float BaseHeightScale = 1.0f;
+		float ShadowHeightCm = 1800.0f;
+		float TrunkRadiusCm = 34.0f;
+		float CrownRadiusCm = 320.0f;
+	};
+
+	static constexpr FPVETreeSpecies SpeciesDefs[] =
+	{
+		{ TEXT("/ProceduralVegetationEditor/SampleAssets/Tree_European_QuakingAspen_01/SK_European_QuakingAspen_01.SK_European_QuakingAspen_01"), 1.35f, 1.16f, 1.18f, 2500.0f, 38.0f, 380.0f },
+		{ TEXT("/ProceduralVegetationEditor/SampleAssets/Tree_European_QuakingAspen_01/SK_European_QuakingAspen_02.SK_European_QuakingAspen_02"), 1.20f, 1.08f, 1.12f, 2320.0f, 34.0f, 350.0f },
+		{ TEXT("/ProceduralVegetationEditor/SampleAssets/Tree_European_QuakingAspen_01/SK_European_QuakingAspen_03.SK_European_QuakingAspen_03"), 1.15f, 1.12f, 1.16f, 2380.0f, 36.0f, 360.0f },
+		{ TEXT("/ProceduralVegetationEditor/SampleAssets/Tree_European_QuakingAspen_01/SK_European_QuakingAspen_04.SK_European_QuakingAspen_04"), 1.00f, 1.04f, 1.10f, 2240.0f, 32.0f, 335.0f },
+		{ TEXT("/ProceduralVegetationEditor/SampleAssets/Tree_Common_Hazel_01/SK_CommonHazel_01.SK_CommonHazel_01"), 0.55f, 0.88f, 0.88f, 1160.0f, 18.0f, 235.0f },
+		{ TEXT("/ProceduralVegetationEditor/SampleAssets/Tree_Common_Hazel_01/SK_CommonHazel_02.SK_CommonHazel_02"), 0.48f, 0.92f, 0.90f, 1200.0f, 18.0f, 245.0f },
+		{ TEXT("/ProceduralVegetationEditor/SampleAssets/Tree_Common_Hazel_01/SK_CommonHazel_03.SK_CommonHazel_03"), 0.44f, 0.84f, 0.86f, 1080.0f, 16.0f, 225.0f },
+		{ TEXT("/ProceduralVegetationEditor/SampleAssets/Tree_Common_Hazel_01/SK_CommonHazel_04.SK_CommonHazel_04"), 0.40f, 0.90f, 0.88f, 1120.0f, 17.0f, 235.0f }
+	};
+
+	struct FLoadedPVETree
+	{
+		USkeletalMesh* Mesh = nullptr;
+		FPVETreeSpecies Species;
+	};
+
+	TArray<FLoadedPVETree> LoadedTrees;
+	LoadedTrees.Reserve(UE_ARRAY_COUNT(SpeciesDefs));
+	float TotalWeight = 0.0f;
+	for (const FPVETreeSpecies& Species : SpeciesDefs)
+	{
+		USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, Species.Path);
+		if (!Mesh)
+		{
+			continue;
+		}
+
+		FLoadedPVETree& Loaded = LoadedTrees.AddDefaulted_GetRef();
+		Loaded.Mesh = Mesh;
+		Loaded.Species = Species;
+		TotalWeight += FMath::Max(0.01f, Species.Weight);
+	}
+
+	if (LoadedTrees.Num() == 0)
+	{
+		return false;
+	}
+
+	TreeComponents.Reset();
+	SkeletalTreeComponents.Reset();
+	Impl->TreeShadowCasters.Reset();
+	Impl->TreeInstanceCount = 0;
+
+	auto PickTree = [&LoadedTrees, TotalWeight](FRandomStream& Random) -> const FLoadedPVETree&
+	{
+		float Pick = Random.FRandRange(0.0f, FMath::Max(0.01f, TotalWeight));
+		for (const FLoadedPVETree& Tree : LoadedTrees)
+		{
+			Pick -= FMath::Max(0.01f, Tree.Species.Weight);
+			if (Pick <= 0.0f)
+			{
+				return Tree;
+			}
+		}
+		return LoadedTrees.Last();
+	};
+
+	auto SpawnOneTree = [this, &PickTree](FRandomStream& Random, const FVector2D& PositionXY, float YawDegrees, float UniformJitter, float HeightJitter, bool bDiagnostic)
+	{
+		const FLoadedPVETree& Tree = PickTree(Random);
+		USkeletalMeshComponent* Component = NewObject<USkeletalMeshComponent>(this);
+		if (!Component)
+		{
+			return;
+		}
+
+		const float UniformScale = Tree.Species.BaseUniformScale * UniformJitter;
+		const float HeightScale = Tree.Species.BaseHeightScale * HeightJitter;
+		const FTransform TreeTransform(
+			FRotator(Random.FRandRange(-1.0f, 1.0f), YawDegrees, Random.FRandRange(-1.0f, 1.0f)),
+			FVector(PositionXY.X, PositionXY.Y, -4.0f),
+			FVector(UniformScale, UniformScale, HeightScale));
+
+		Component->SetSkeletalMesh(Tree.Mesh);
+		Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Component->SetGenerateOverlapEvents(false);
+		Component->SetCanEverAffectNavigation(false);
+		Component->SetCastShadow(bCastShadows);
+		Component->SetCastContactShadow(false);
+		Component->SetAffectDistanceFieldLighting(false);
+		Component->SetAffectDynamicIndirectLighting(false);
+		Component->SetVisibleInRayTracing(false);
+		Component->SetReceivesDecals(false);
+		Component->bPauseAnims = !bTreeWind;
+		Component->SetComponentTickEnabled(bTreeWind);
+		Component->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+		Component->bEnableUpdateRateOptimizations = true;
+		Component->AttachToComponent(SceneRoot, FAttachmentTransformRules::KeepRelativeTransform);
+		Component->SetRelativeTransform(TreeTransform);
+		AddInstanceComponent(Component);
+		Component->RegisterComponent();
+
+		SkeletalTreeComponents.Add(Component);
+
+		FProphecyTreeShadowCaster Caster;
+		Caster.Position = PositionXY;
+		Caster.HeightCm = Tree.Species.ShadowHeightCm * HeightScale;
+		Caster.TrunkRadiusCm = Tree.Species.TrunkRadiusCm * UniformScale;
+		Caster.CrownRadiusCm = Tree.Species.CrownRadiusCm * UniformScale;
+		Caster.Strength = bDiagnostic ? 0.94f : Random.FRandRange(0.36f, 0.56f);
+		Impl->TreeShadowCasters.Add(Caster);
+		++Impl->TreeInstanceCount;
+	};
+
+	const int32 DesiredCount = FMath::Clamp(TreeInstanceCount, 0, 240);
+	FRandomStream Random(20260522);
+	for (int32 AttemptIndex = 0; AttemptIndex < DesiredCount * 20 && Impl->TreeInstanceCount < DesiredCount; ++AttemptIndex)
+	{
+		const float AreaT = Random.FRand();
+		float Radius = FMath::Sqrt(FMath::Lerp(FMath::Square(ProphecyTreePlayableInnerRadiusCm), FMath::Square(ProphecyTreePlayableOuterRadiusCm), AreaT));
+		const float Angle = Random.FRandRange(0.0f, UE_TWO_PI);
+		Radius += Random.FRandRange(-520.0f, 520.0f);
+		Radius = FMath::Clamp(Radius, ProphecyTreePlayableInnerRadiusCm, ProphecyTreePlayableOuterRadiusCm);
+
+		const FVector2D Direction(FMath::Cos(Angle), FMath::Sin(Angle));
+		const FVector2D FieldCenter(ProphecyTerrainCenterX, ProphecyTerrainCenterY);
+		const FVector2D PositionXY = FieldCenter + Direction * Radius + FVector2D(Random.FRandRange(-420.0f, 420.0f), Random.FRandRange(-420.0f, 420.0f));
+		if (FMath::Abs(PositionXY.X) < 2550.0f && PositionXY.Y > -2500.0f && PositionXY.Y < 12600.0f)
+		{
+			continue;
+		}
+		if (PositionXY.Y < -3600.0f && FMath::Abs(PositionXY.X) < 5000.0f)
+		{
+			continue;
+		}
+
+		SpawnOneTree(Random, PositionXY, Random.FRandRange(0.0f, 360.0f), Random.FRandRange(0.78f, 1.22f), Random.FRandRange(0.86f, 1.26f), false);
+	}
+
+	if (bCenterTreeDiagnostic)
+	{
+		const FVector2D DiagnosticPositions[] =
+		{
+			FVector2D(-1150.0f, 2500.0f),
+			FVector2D(1220.0f, 3100.0f),
+			FVector2D(-700.0f, 4300.0f),
+			FVector2D(760.0f, 5200.0f),
+			FVector2D(-180.0f, 6400.0f),
+			FVector2D(1320.0f, 6900.0f)
+		};
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(DiagnosticPositions); ++Index)
+		{
+			SpawnOneTree(Random, DiagnosticPositions[Index], 22.0f + float(Index) * 71.0f, 1.08f + 0.06f * float(Index % 3), 1.12f + 0.04f * float(Index % 2), true);
+		}
+	}
+
+	BakeStaticTreeShadowMasks();
+	UpdateGroundShadowMask();
+
+	UE_LOG(
+		LogProphecyNNBenchmark,
+		Display,
+		TEXT("Spawned PVE playable forest trees: skeletal_components=%d species=%d requested=%d spawned=%d inner_radius=%.0fcm outer_radius=%.0fcm static_shadow_casters=%d dynamic_tree_shadows=%d wind=%d diagnostic=%d center_diagnostic=%d"),
+		SkeletalTreeComponents.Num(),
+		LoadedTrees.Num(),
+		TreeInstanceCount,
+		Impl->TreeInstanceCount,
+		ProphecyTreePlayableInnerRadiusCm,
+		ProphecyTreePlayableOuterRadiusCm,
+		Impl->TreeShadowCasters.Num(),
+		bCastShadows ? 1 : 0,
+		bTreeWind ? 1 : 0,
+		bTreeWindDiagnostic ? 1 : 0,
+		bCenterTreeDiagnostic ? 1 : 0);
+
+	return true;
 }
 
 void AProphecyNNCrowdBenchmarkActor::BakeStaticTreeShadowMasks()
@@ -3565,7 +4591,7 @@ void AProphecyNNCrowdBenchmarkActor::InitializeDistantTerrainTexture()
 			const FLinearColor CX0 = FMath::Lerp(C00, C10, Tx);
 			const FLinearColor CX1 = FMath::Lerp(C01, C11, Tx);
 			const FLinearColor NoiseColor = FMath::Lerp(CX0, CX1, Ty);
-			return FMath::Lerp(ProphecyGrassTerrainBaseColor, NoiseColor, 0.55f);
+			return FMath::Lerp(ProphecyGrassTerrainBaseColor, NoiseColor, 0.18f);
 		};
 
 		auto HillHeightAtRadiusAngle = [&Smooth01](float Radius, float Angle)
@@ -3582,10 +4608,10 @@ void AProphecyNNCrowdBenchmarkActor::InitializeDistantTerrainTexture()
 				FMath::Sin(Angle * 13.0f + Radius * 0.00017f) * 760.0f
 				+ FMath::Sin(Angle * 3.0f - Radius * 0.00008f) * 1180.0f
 				+ FMath::Sin(Angle * 23.0f + Radius * 0.00021f) * 360.0f;
-			float Height = -28.0f + FMath::Pow(RiseT, 0.62f) * (4200.0f + 8400.0f * RidgeStrength) + RollingDetail * RiseT * (1.0f - RiseT * 0.16f);
+			float Height = -4.0f + FMath::Pow(RiseT, 0.62f) * (2600.0f + 5200.0f * RidgeStrength) + RollingDetail * 0.72f * RiseT * (1.0f - RiseT * 0.16f);
 			if (Radius <= ProphecyDistantHillInnerRadiusCm + 1.0f)
 			{
-				Height = -48.0f;
+				Height = -4.0f;
 			}
 			return Height;
 		};
@@ -3675,8 +4701,8 @@ void AProphecyNNCrowdBenchmarkActor::InitializeDistantTerrainTexture()
 			const float LeeShadow = FMath::Pow(1.0f - AspectLight, 0.86f) * FMath::Lerp(0.38f, 0.92f, ReliefStrength);
 			const float ShadowAmount = FMath::Clamp(FMath::Max(LeeShadow, SelfShadow), 0.0f, 1.0f);
 			const float LitLift = FMath::Lerp(0.94f, 1.10f, FMath::Pow(AspectLight, 0.75f));
-			const float Shade = FMath::Lerp(LitLift, 0.30f, ShadowAmount) * (0.90f + 0.11f * HeightAlpha);
-			return FMath::Clamp(Shade, 0.24f, 1.12f);
+			const float Shade = FMath::Lerp(LitLift, 0.82f, ShadowAmount) * (0.98f + 0.02f * HeightAlpha);
+			return FMath::Clamp(Shade, 0.80f, 1.04f);
 		};
 
 		TArray<FColor> Pixels;
@@ -3698,7 +4724,7 @@ void AProphecyNNCrowdBenchmarkActor::InitializeDistantTerrainTexture()
 				float Shade = 1.0f;
 				if (TerrainHeightAtXY(WorldXY, Height))
 				{
-					const float HillShadeAlpha = Smooth01((Radius - ProphecyDistantHillInnerRadiusCm) / 9000.0f);
+					const float HillShadeAlpha = 0.35f * Smooth01((Radius - ProphecyDistantHillInnerRadiusCm) / 22000.0f);
 					Shade = FMath::Lerp(1.0f, BakedShadeAt(FVector(WorldX, WorldY, Height)), HillShadeAlpha);
 				}
 				TerrainColor.R = FMath::Clamp(TerrainColor.R * Shade, 0.0f, 1.0f);
@@ -4063,6 +5089,16 @@ void AProphecyNNCrowdBenchmarkActor::UpdateVisualRoots()
 		return;
 	}
 
+	if (MetaHumanActors.Num() > 0)
+	{
+		UpdateMetaHumanRoots();
+		UpdateContactShadowVisuals();
+		UpdateLimbShadowVisuals();
+		UpdateGrassShadowMask();
+		UpdateGroundShadowMask();
+		return;
+	}
+
 	const float StepSeconds = 1.0f / NNUpdateHz;
 	const float Alpha = FMath::Clamp(Impl->AccumulatedStepSeconds / StepSeconds, 0.0f, 1.0f);
 	for (int32 AgentIndex = 0; AgentIndex < MeshComponents.Num(); ++AgentIndex)
@@ -4081,6 +5117,31 @@ void AProphecyNNCrowdBenchmarkActor::UpdateVisualRoots()
 	UpdateLimbShadowVisuals();
 	UpdateGrassShadowMask();
 	UpdateGroundShadowMask();
+}
+
+void AProphecyNNCrowdBenchmarkActor::UpdateMetaHumanRoots()
+{
+	const float StepSeconds = 1.0f / NNUpdateHz;
+	const float Alpha = FMath::Clamp(Impl->AccumulatedStepSeconds / StepSeconds, 0.0f, 1.0f);
+	for (int32 VisualIndex = 0; VisualIndex < MetaHumanActors.Num(); ++VisualIndex)
+	{
+		AActor* MetaHumanActor = MetaHumanActors[VisualIndex];
+		const int32 SourceAgentIndex = MetaHumanAgentIndices.IsValidIndex(VisualIndex) ? MetaHumanAgentIndices[VisualIndex] : VisualIndex;
+		if (!MetaHumanActor || !Impl->Agents.IsValidIndex(SourceAgentIndex))
+		{
+			continue;
+		}
+
+		const FProphecyNNAgentRuntime& Agent = Impl->Agents[SourceAgentIndex];
+		const FVector3f VisualRoot = FMath::Lerp(Agent.PrevRootPos, Agent.CurRootPos, Alpha);
+		const FVector TierOffset = MetaHumanWorldOffsets.IsValidIndex(VisualIndex) ? MetaHumanWorldOffsets[VisualIndex] : FVector::ZeroVector;
+		MetaHumanActor->SetActorLocationAndRotation(
+			TrainingWorldToUnrealVector(VisualRoot) + TierOffset,
+			FRotator(0.0, FMath::RadiansToDegrees(double(Agent.CurRootYaw)), 0.0),
+			false,
+			nullptr,
+			ETeleportType::TeleportPhysics);
+	}
 }
 
 void AProphecyNNCrowdBenchmarkActor::UpdateContactShadowVisuals()
@@ -4828,7 +5889,10 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 			DisabledExistingSkyLightComponentCount);
 	}
 
-	const bool bSingleAgentView = (!bSceneryOnly || bClosePreviewCamera) && !bSpawnGrass && !bSpawnTrees && CrowdSize <= 4;
+	const bool bMetaHumanComparisonView =
+		(bMetaHumanTierComparison || VisualMode.Equals(TEXT("MetaHumanComparison"), ESearchCase::IgnoreCase)) &&
+		VisualMode.StartsWith(TEXT("MetaHuman"), ESearchCase::IgnoreCase);
+	const bool bSingleAgentView = (!bSceneryOnly || bClosePreviewCamera || bMetaHumanComparisonView) && !bSpawnGrass && !bSpawnTrees && (CrowdSize <= 4 || bMetaHumanComparisonView);
 	const bool bTreeOnlySceneryView = bSceneryOnly && bSpawnTrees && !bSpawnGrass;
 	FString PreviewCameraSide;
 	FParse::Value(FCommandLine::Get(), TEXT("ProphecyNNPreviewCameraSide="), PreviewCameraSide);
@@ -4838,7 +5902,7 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 			PreviewCameraSide.Equals(TEXT("Front"), ESearchCase::IgnoreCase));
 	const FVector Center = TrainingWorldToUnrealVector(FVector3f(0.0f, 0.0f, bSingleAgentView ? 0.6f : 8.0f));
 	const FVector LookAt = Center + (bSingleAgentView ? FVector(0.0, 0.0, 105.0) : (bTreeOnlySceneryView ? FVector(0.0, 4300.0, 520.0) : (bSpawnGrass ? FVector(0.0, 28500.0, 820.0) : FVector(0.0, 0.0, 120.0))));
-	const FVector CameraLocation = Center + (bSingleAgentView ? FVector(0.0, bFrontPreviewCamera ? 520.0 : -520.0, 150.0) : (bTreeOnlySceneryView ? FVector(0.0, -4200.0, 680.0) : (bSpawnGrass ? FVector(0.0, -3000.0, 310.0) : FVector(0.0, -1700.0, 650.0))));
+	const FVector CameraLocation = Center + (bSingleAgentView ? (bMetaHumanComparisonView ? FVector(0.0, bFrontPreviewCamera ? 900.0 : -900.0, 185.0) : FVector(0.0, bFrontPreviewCamera ? 520.0 : -520.0, 150.0)) : (bTreeOnlySceneryView ? FVector(0.0, -4200.0, 680.0) : (bSpawnGrass ? FVector(0.0, -3000.0, 310.0) : FVector(0.0, -1700.0, 650.0))));
 
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -4850,11 +5914,7 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 		const bool bUseGroundShadowMask = IsShadowEnabled(ShadowMode) && !IsFullDynamicShadowVariant(ContactShadowVariant) && (IsRootContactShadowVariant(ContactShadowVariant) || IsLimbContactShadowVariant(ContactShadowVariant));
 		if (bSpawnGrass || bSpawnTrees || bUseGroundShadowMask)
 		{
-			FloorMaterial = (bSpawnTrees && !bSpawnGrass && bUseGroundShadowMask)
-				? LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassGround.M_ProphecyGrassGround"))
-				: ((bSpawnGrass || bSpawnTrees)
-				? LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassTerrainShared.M_ProphecyGrassTerrainShared"))
-				: LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassGround.M_ProphecyGrassGround")));
+			FloorMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassGround.M_ProphecyGrassGround"));
 		}
 		if (!FloorMaterial)
 		{
@@ -4880,6 +5940,18 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 			if (FloorMaterialInstance)
 			{
 				FloorMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), (bSpawnGrass || bSpawnTrees) ? ProphecyGrassGroundBaseColor : FLinearColor(0.56f, 0.55f, 0.50f, 1.0f));
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundNoiseStrength"), (bSpawnGrass || bSpawnTrees) ? 0.55f : 0.82f);
+				FloorMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), FLinearColor(0.19f, 0.110f, 0.045f, 1.0f));
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), (bSpawnGrass || bSpawnTrees) ? 0.72f : 0.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchScale"), 1.0f / 18000.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchThreshold"), 0.08f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchContrast"), 1.8f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeStartCm"), 2500.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / 9000.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewMin"), 0.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewScale"), 8.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundShadowMaskStrength"), 0.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GrassShadowMaskStrength"), 0.0f);
 			}
 			FloorComponent->SetMaterial(0, FloorMaterialInstance ? FloorMaterialInstance.Get() : FloorMaterial);
 		}
@@ -4912,7 +5984,7 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 		SpawnTreeField();
 	}
 
-	if (bSpawnGrass || bSpawnTrees)
+	if ((bSpawnGrass || bSpawnTrees) && !bSpawnBenchmarkLights)
 	{
 		UStaticMesh* SkySphereMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 		UMaterialInterface* SkyMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecySky_Unlit.M_ProphecySky_Unlit"));
@@ -4940,7 +6012,7 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 	BenchmarkCamera = World->SpawnActor<ACameraActor>(CameraLocation, (LookAt - CameraLocation).Rotation(), Params);
 	if (BenchmarkCamera)
 	{
-		BenchmarkCamera->GetCameraComponent()->FieldOfView = 68.0f;
+		BenchmarkCamera->GetCameraComponent()->FieldOfView = bMetaHumanComparisonView ? 78.0f : 68.0f;
 		if (APlayerController* PlayerController = World->GetFirstPlayerController())
 		{
 			PlayerController->SetViewTarget(BenchmarkCamera);
@@ -4955,7 +6027,9 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 	if (bSpawnBenchmarkLights)
 	{
 		const bool bGrassFullDynamicShadow = (bSpawnGrass || bDebugShadowGeometry) && IsFullDynamicShadowVariant(ContactShadowVariant);
-		const FRotator BenchmarkSunRotation(bGrassFullDynamicShadow ? -34.0 : -45.0, 35.0, 0.0);
+		const FRotator BenchmarkSunRotation = (bSpawnGrass || bSpawnTrees)
+			? FRotator(-19.0f, 31.0f, 0.0f)
+			: FRotator(bGrassFullDynamicShadow ? -34.0f : -45.0f, 35.0f, 0.0f);
 		BenchmarkKeyLight = World->SpawnActor<ADirectionalLight>(FVector::ZeroVector, FRotator::ZeroRotator, Params);
 		if (BenchmarkKeyLight && BenchmarkKeyLight->GetLightComponent())
 		{
@@ -4965,13 +6039,14 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 				DirectionalLight->SetRelativeRotation(BenchmarkSunRotation);
 				DirectionalLight->UpdateComponentToWorld();
 			}
-			BenchmarkKeyLight->GetLightComponent()->SetIntensity(5.0f);
+			BenchmarkKeyLight->GetLightComponent()->SetIntensity((bSpawnGrass || bSpawnTrees) ? 8.5f : 5.0f);
 			BenchmarkKeyLight->GetLightComponent()->SetCastShadows(IsShadowEnabled(ShadowMode));
 			BenchmarkKeyLight->GetLightComponent()->ShadowResolutionScale = 0.35f;
 			if (UDirectionalLightComponent* DirectionalLight = Cast<UDirectionalLightComponent>(BenchmarkKeyLight->GetLightComponent()))
 			{
 				DirectionalLight->SetAtmosphereSunLight(true);
 				DirectionalLight->SetAtmosphereSunLightIndex(0);
+				DirectionalLight->SetAtmosphereSunDiskColorScale(FLinearColor(1.0f, 0.88f, 0.72f, 1.0f));
 				DirectionalLight->SetLightSourceAngle(bGrassFullDynamicShadow && !bDebugShadowGeometry ? 1.15f : 0.53f);
 				DirectionalLight->SetShadowSourceAngleFactor(bGrassFullDynamicShadow && !bDebugShadowGeometry ? 1.8f : 1.0f);
 				DirectionalLight->SetShadowAmount(bGrassFullDynamicShadow && !bDebugShadowGeometry ? 0.38f : 1.0f);
@@ -4983,6 +6058,16 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 				DirectionalLight->FarShadowCascadeCount = 0;
 				DirectionalLight->FarShadowDistance = 0.0f;
 				DirectionalLight->DistanceFieldShadowDistance = 0.0f;
+				DirectionalLight->bCastShadowsOnClouds = true;
+				DirectionalLight->bCastShadowsOnAtmosphere = true;
+				DirectionalLight->bCastCloudShadows = true;
+				DirectionalLight->CloudShadowStrength = 0.34f;
+				DirectionalLight->CloudShadowOnAtmosphereStrength = 0.38f;
+				DirectionalLight->CloudShadowOnSurfaceStrength = 0.08f;
+				DirectionalLight->CloudShadowExtent = 80.0f;
+				DirectionalLight->CloudShadowMapResolutionScale = 0.50f;
+				DirectionalLight->CloudShadowRaySampleCountScale = 0.50f;
+				DirectionalLight->CloudScatteredLuminanceScale = FLinearColor(1.0f, 0.90f, 0.78f, 1.0f);
 			}
 
 			const FVector ShadowDirection = GetGroundShadowDirectionForLight(BenchmarkKeyLight);
@@ -4999,11 +6084,71 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 		}
 
 		BenchmarkSkyAtmosphere = World->SpawnActor<ASkyAtmosphere>(FVector::ZeroVector, FRotator::ZeroRotator, Params);
+		if (BenchmarkSkyAtmosphere)
+		{
+			if (USkyAtmosphereComponent* AtmosphereComponent = BenchmarkSkyAtmosphere->GetComponent())
+			{
+				AtmosphereComponent->SetRayleighScatteringScale(0.0370f);
+				AtmosphereComponent->SetMieScatteringScale(0.0064f);
+				AtmosphereComponent->SetMieAbsorptionScale(0.00026f);
+				AtmosphereComponent->SetMieAnisotropy(0.82f);
+				AtmosphereComponent->SetMultiScatteringFactor(1.22f);
+				AtmosphereComponent->SetSkyLuminanceFactor(FLinearColor(1.52f, 1.60f, 1.82f, 1.0f));
+				AtmosphereComponent->SetAerialPespectiveViewDistanceScale(1.10f);
+				AtmosphereComponent->SetAerialPerspectiveStartDepth(0.03f);
+				AtmosphereComponent->SetTransmittanceMinLightElevationAngle(-3.0f);
+			}
+		}
+
+		BenchmarkVolumetricCloud = World->SpawnActor<AVolumetricCloud>(FVector::ZeroVector, FRotator::ZeroRotator, Params);
+		if (BenchmarkVolumetricCloud)
+		{
+			if (UVolumetricCloudComponent* CloudComponent = BenchmarkVolumetricCloud->FindComponentByClass<UVolumetricCloudComponent>())
+			{
+				if (UMaterialInterface* CloudMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/EngineSky/VolumetricClouds/m_SimpleVolumetricCloud_Inst.m_SimpleVolumetricCloud_Inst")))
+				{
+					BenchmarkCloudMaterialInstance = UMaterialInstanceDynamic::Create(CloudMaterial, this);
+					if (BenchmarkCloudMaterialInstance)
+					{
+						BenchmarkCloudMaterialInstance->SetScalarParameterValue(TEXT("BrightnessMult"), 1.75f);
+						BenchmarkCloudMaterialInstance->SetVectorParameterValue(TEXT("Cloud_AlbedoColor"), FLinearColor(1.0f, 0.96f, 0.90f, 1.0f));
+						CloudComponent->SetMaterial(BenchmarkCloudMaterialInstance.Get());
+					}
+					else
+					{
+						CloudComponent->SetMaterial(CloudMaterial);
+					}
+				}
+				CloudComponent->SetLayerBottomAltitude(3.6f);
+				CloudComponent->SetLayerHeight(8.0f);
+				CloudComponent->SetTracingStartMaxDistance(360.0f);
+				CloudComponent->SetTracingMaxDistance(220.0f);
+				CloudComponent->SetGroundAlbedo(FColor(78, 118, 62));
+				CloudComponent->SetbUsePerSampleAtmosphericLightTransmittance(true);
+				CloudComponent->SetSkyLightCloudBottomOcclusion(0.36f);
+				CloudComponent->SetViewSampleCountScale(0.92f);
+				CloudComponent->SetShadowViewSampleCountScale(0.55f);
+				CloudComponent->SetReflectionViewSampleCountScale(0.25f);
+				CloudComponent->SetShadowReflectionViewSampleCountScale(0.20f);
+				CloudComponent->SetShadowTracingDistance(12.0f);
+				CloudComponent->SetStopTracingTransmittanceThreshold(0.008f);
+			}
+		}
 
 		BenchmarkSkyLight = World->SpawnActor<ASkyLight>(FVector::ZeroVector, FRotator::ZeroRotator, Params);
 		if (BenchmarkSkyLight && BenchmarkSkyLight->GetLightComponent())
 		{
-			BenchmarkSkyLight->GetLightComponent()->SetIntensity(2.8f);
+			if (USkyLightComponent* SkyLightComponent = BenchmarkSkyLight->GetLightComponent())
+			{
+				SkyLightComponent->SetMobility(EComponentMobility::Movable);
+				SkyLightComponent->SetIntensity(2.6f);
+				SkyLightComponent->SetRealTimeCapture(true);
+				SkyLightComponent->SourceType = SLS_CapturedScene;
+				SkyLightComponent->CubemapResolution = 256;
+				SkyLightComponent->SkyDistanceThreshold = 150000.0f;
+				SkyLightComponent->bLowerHemisphereIsBlack = true;
+				SkyLightComponent->RecaptureSky();
+			}
 		}
 	}
 
@@ -5016,6 +6161,204 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 			UpdateGrassShadowMask();
 		}
 	}
+}
+
+void AProphecyNNCrowdBenchmarkActor::PollLiveVisualIteration()
+{
+	if (!bLiveVisualIteration || LiveVisualConfigPath.IsEmpty())
+	{
+		return;
+	}
+
+	const double NowSeconds = FPlatformTime::Seconds();
+	const double PollInterval = FMath::Max(double(LiveVisualPollSeconds), 0.05);
+	if (NowSeconds - Impl->LastLiveVisualPollSeconds < PollInterval)
+	{
+		return;
+	}
+	Impl->LastLiveVisualPollSeconds = NowSeconds;
+
+	const FString ConfigPath = ResolveProjectPath(LiveVisualConfigPath);
+	if (!FPaths::FileExists(ConfigPath))
+	{
+		return;
+	}
+
+	const FDateTime ConfigTimestamp = IFileManager::Get().GetTimeStamp(*ConfigPath);
+	if (ConfigTimestamp <= Impl->LastLiveVisualConfigTimestamp)
+	{
+		return;
+	}
+
+	FString JsonText;
+	if (!FFileHelper::LoadFileToString(JsonText, *ConfigPath))
+	{
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("Live visual config exists but could not be read: %s"), *ConfigPath);
+		return;
+	}
+
+	TSharedPtr<FJsonObject> RootObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonText);
+	if (!FJsonSerializer::Deserialize(Reader, RootObject) || !RootObject.IsValid())
+	{
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("Live visual config is not valid JSON: %s"), *ConfigPath);
+		return;
+	}
+
+	Impl->LastLiveVisualConfigTimestamp = ConfigTimestamp;
+	ApplyLiveVisualIterationConfig(RootObject);
+}
+
+void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TSharedPtr<FJsonObject>& RootObject)
+{
+	if (!RootObject.IsValid())
+	{
+		return;
+	}
+
+	auto TryNumber = [&RootObject](const TCHAR* FieldName, double& OutValue)
+	{
+		return RootObject->TryGetNumberField(FieldName, OutValue);
+	};
+
+	auto TryColor = [&RootObject](const TCHAR* FieldName, FLinearColor& OutColor)
+	{
+		const TArray<TSharedPtr<FJsonValue>>* Values = nullptr;
+		if (!RootObject->TryGetArrayField(FieldName, Values) || !Values || Values->Num() < 3)
+		{
+			return false;
+		}
+		if (!(*Values)[0].IsValid() || !(*Values)[1].IsValid() || !(*Values)[2].IsValid())
+		{
+			return false;
+		}
+
+		const double R = (*Values)[0]->AsNumber();
+		const double G = (*Values)[1]->AsNumber();
+		const double B = (*Values)[2]->AsNumber();
+		const double A = Values->Num() >= 4 && (*Values)[3].IsValid() ? (*Values)[3]->AsNumber() : 1.0;
+		OutColor = FLinearColor(float(R), float(G), float(B), float(A));
+		return true;
+	};
+
+	if (GrassMaterialInstance)
+	{
+		double StartCm = 0.0;
+		if (TryNumber(TEXT("grass_distant_color_start_cm"), StartCm) || TryNumber(TEXT("GrassDistantColorStartCm"), StartCm))
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorStartCm"), float(StartCm));
+		}
+
+		double RangeCm = 0.0;
+		if ((TryNumber(TEXT("grass_distant_color_range_cm"), RangeCm) || TryNumber(TEXT("GrassDistantColorRangeCm"), RangeCm)) && RangeCm > UE_SMALL_NUMBER)
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorInvRange"), 1.0f / float(RangeCm));
+		}
+
+		double InvRange = 0.0;
+		if (TryNumber(TEXT("grass_distant_color_inv_range"), InvRange) || TryNumber(TEXT("GrassDistantColorInvRange"), InvRange))
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorInvRange"), float(InvRange));
+		}
+
+		FLinearColor GrassDistantColor;
+		if (TryColor(TEXT("grass_distant_color"), GrassDistantColor) || TryColor(TEXT("GrassDistantColor"), GrassDistantColor))
+		{
+			GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), GrassDistantColor);
+		}
+
+		double FlattenStartCm = 0.0;
+		if (TryNumber(TEXT("grass_distant_flatten_start_cm"), FlattenStartCm) || TryNumber(TEXT("GrassDistantFlattenStartCm"), FlattenStartCm))
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenStartCm"), float(FlattenStartCm));
+		}
+
+		double FlattenRangeCm = 0.0;
+		if ((TryNumber(TEXT("grass_distant_flatten_range_cm"), FlattenRangeCm) || TryNumber(TEXT("GrassDistantFlattenRangeCm"), FlattenRangeCm)) && FlattenRangeCm > UE_SMALL_NUMBER)
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenInvRange"), 1.0f / float(FlattenRangeCm));
+		}
+
+		double FlattenInvRange = 0.0;
+		if (TryNumber(TEXT("grass_distant_flatten_inv_range"), FlattenInvRange) || TryNumber(TEXT("GrassDistantFlattenInvRange"), FlattenInvRange))
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenInvRange"), float(FlattenInvRange));
+		}
+
+		double FlattenCm = 0.0;
+		if (TryNumber(TEXT("grass_distant_flatten_cm"), FlattenCm) || TryNumber(TEXT("GrassDistantFlattenCm"), FlattenCm))
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenCm"), float(FlattenCm));
+		}
+
+		double OpacityStartCm = 0.0;
+		if (TryNumber(TEXT("grass_distant_opacity_start_cm"), OpacityStartCm) || TryNumber(TEXT("GrassDistantOpacityStartCm"), OpacityStartCm))
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityStartCm"), float(OpacityStartCm));
+		}
+
+		double OpacityRangeCm = 0.0;
+		if ((TryNumber(TEXT("grass_distant_opacity_range_cm"), OpacityRangeCm) || TryNumber(TEXT("GrassDistantOpacityRangeCm"), OpacityRangeCm)) && OpacityRangeCm > UE_SMALL_NUMBER)
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityInvRange"), 1.0f / float(OpacityRangeCm));
+		}
+
+		double OpacityInvRange = 0.0;
+		if (TryNumber(TEXT("grass_distant_opacity_inv_range"), OpacityInvRange) || TryNumber(TEXT("GrassDistantOpacityInvRange"), OpacityInvRange))
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityInvRange"), float(OpacityInvRange));
+		}
+
+		double GrassShadowStrength = 0.0;
+		if (TryNumber(TEXT("grass_shadow_strength"), GrassShadowStrength) || TryNumber(TEXT("GrassShadowMaskStrength"), GrassShadowStrength))
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassShadowMaskStrength"), float(GrassShadowStrength));
+		}
+
+		FLinearColor GrassShadowTint;
+		if (TryColor(TEXT("grass_shadow_tint"), GrassShadowTint) || TryColor(TEXT("GrassShadowMaskTint"), GrassShadowTint))
+		{
+			GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassShadowMaskTint"), GrassShadowTint);
+		}
+	}
+
+	if (FloorMaterialInstance)
+	{
+		double DirtStrength = 0.0;
+		if (TryNumber(TEXT("dirt_strength"), DirtStrength) || TryNumber(TEXT("DirtStrength"), DirtStrength))
+		{
+			FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), float(DirtStrength));
+		}
+
+		FLinearColor GroundBaseColor;
+		if (TryColor(TEXT("ground_base_color"), GroundBaseColor) || TryColor(TEXT("GroundBaseColor"), GroundBaseColor))
+		{
+			FloorMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), GroundBaseColor);
+		}
+	}
+
+	bool bRequestScreenshot = false;
+	RootObject->TryGetBoolField(TEXT("request_screenshot"), bRequestScreenshot);
+	FString RequestedScreenshotPath;
+	RootObject->TryGetStringField(TEXT("screenshot_path"), RequestedScreenshotPath);
+	if (RequestedScreenshotPath.IsEmpty())
+	{
+		RootObject->TryGetStringField(TEXT("shot"), RequestedScreenshotPath);
+	}
+
+	if (bRequestScreenshot || !RequestedScreenshotPath.IsEmpty())
+	{
+		if (RequestedScreenshotPath.IsEmpty())
+		{
+			RequestedScreenshotPath = FPaths::ProjectSavedDir() / TEXT("LiveShots") / FString::Printf(TEXT("live_%04d.png"), ++Impl->LiveVisualScreenshotIndex);
+		}
+		const FString ResolvedScreenshotPath = ResolveProjectPath(RequestedScreenshotPath);
+		IFileManager::Get().MakeDirectory(*FPaths::GetPath(ResolvedScreenshotPath), true);
+		FScreenshotRequest::RequestScreenshot(ResolvedScreenshotPath, false, false);
+		UE_LOG(LogProphecyNNBenchmark, Display, TEXT("Live visual screenshot requested: %s"), *ResolvedScreenshotPath);
+	}
+
+	UE_LOG(LogProphecyNNBenchmark, Display, TEXT("Applied live visual config."));
 }
 
 void AProphecyNNCrowdBenchmarkActor::LogProgressIfNeeded(float DeltaSeconds)

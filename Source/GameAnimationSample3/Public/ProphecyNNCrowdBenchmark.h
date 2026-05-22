@@ -23,6 +23,8 @@ class ADirectionalLight;
 class AExponentialHeightFog;
 class ASkyLight;
 class ASkyAtmosphere;
+class AVolumetricCloud;
+class FJsonObject;
 
 UCLASS()
 class GAMEANIMATIONSAMPLE3_API AProphecyNNCrowdBenchmarkActor : public AActor
@@ -110,6 +112,9 @@ public:
 	int32 TreeInstanceCount = 420;
 
 	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	FString TreeSource = TEXT("PolyHavenFir");
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
 	bool bTreeWind = false;
 
 	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
@@ -157,6 +162,42 @@ public:
 	int32 ForcedMeshLOD = 3;
 
 	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	FString MetaHumanBlueprintClassPath = TEXT("/Game/MetaHumans/Kellan/BP_Kellan.BP_Kellan_C");
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	int32 MetaHumanForcedLOD = -1;
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	bool bMetaHumanDriveBodyWithNNPose = true;
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	bool bMetaHumanPreserveReferenceBoneTranslations = true;
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	FString MetaHumanTier = TEXT("Full");
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	bool bMetaHumanTierComparison = false;
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	FString MetaHumanTierComparisonList = TEXT("Full,Mid,Far");
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	float MetaHumanTierComparisonSpacingCm = 260.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	FString MetaHumanClothingMode = TEXT("TierDefault");
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	FString MetaHumanGroomMode = TEXT("TierDefault");
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	FString MetaHumanFaceMode = TEXT("TierDefault");
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	bool bMetaHumanFreezeSkeletalTicks = false;
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
 	float SkeletalTickHz = 30.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
@@ -183,6 +224,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
 	float ScreenshotSeconds = 3.0f;
 
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	bool bLiveVisualIteration = false;
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	FString LiveVisualConfigPath = TEXT("Saved/ProphecyLiveVisual.json");
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
+	float LiveVisualPollSeconds = 0.25f;
+
 private:
 	void ApplyCommandLineOverrides();
 	void ApplyBenchmarkProfile();
@@ -194,6 +244,7 @@ private:
 	bool TryCreateCpuModel(const FString& RuntimeName);
 	void InitializeAgents();
 	void SpawnVisualComponents();
+	void SpawnMetaHumanActors();
 	void SpawnInstancedProxyComponents();
 	void InitializeShadowLimbSegments();
 	void SpawnContactShadowComponents();
@@ -202,6 +253,9 @@ private:
 	void SpawnNiagaraGrassField();
 	void ApplyGrassWindMaterialParameters();
 	void SpawnTreeField();
+	bool SpawnPolyHavenFirTreeField();
+	bool SpawnPCGSampleTreeField();
+	bool SpawnPVETreeField();
 	void ApplyTreeWindMaterialParameters();
 	void BakeStaticTreeShadowMasks();
 	void InitializeDistantTerrainTexture();
@@ -222,11 +276,14 @@ private:
 	void PublishAgentPose(int32 AgentIndex, double SourceTimeSeconds);
 	void BuildAgentVisualBoneWorldPositions(int32 AgentIndex, float Alpha, TArray<FVector>& OutPositions) const;
 	void UpdateVisualRoots();
+	void UpdateMetaHumanRoots();
 	void UpdateInstancedProxyVisuals();
 	void UpdateContactShadowVisuals();
 	void UpdateLimbShadowVisuals();
 	void UpdateGrassShadowMask();
 	void UpdateGroundShadowMask();
+	void PollLiveVisualIteration();
+	void ApplyLiveVisualIterationConfig(const TSharedPtr<FJsonObject>& RootObject);
 	void SetupBenchmarkView();
 	void LogProgressIfNeeded(float DeltaSeconds);
 	void LogFinalSummary() const;
@@ -244,6 +301,16 @@ private:
 	TArray<TObjectPtr<USkeletalMeshComponent>> MeshComponents;
 
 	UPROPERTY(Transient)
+	TArray<TObjectPtr<AActor>> MetaHumanActors;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<USkeletalMeshComponent>> MetaHumanBodyComponents;
+
+	TArray<int32> MetaHumanAgentIndices;
+	TArray<FVector> MetaHumanWorldOffsets;
+	TArray<FString> MetaHumanActorTiers;
+
+	UPROPERTY(Transient)
 	TArray<TObjectPtr<UInstancedStaticMeshComponent>> ProxySegmentComponents;
 
 	UPROPERTY(Transient)
@@ -257,6 +324,9 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> TreeComponents;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<USkeletalMeshComponent>> SkeletalTreeComponents;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> GrassMaterialInstance;
@@ -320,6 +390,12 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<ASkyAtmosphere> BenchmarkSkyAtmosphere;
+
+	UPROPERTY(Transient)
+	TObjectPtr<AVolumetricCloud> BenchmarkVolumetricCloud;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> BenchmarkCloudMaterialInstance;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AExponentialHeightFog> BenchmarkDistanceFog;
