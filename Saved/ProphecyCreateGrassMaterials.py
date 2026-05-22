@@ -15,6 +15,17 @@ GRASS_FIELD_DARK = unreal.LinearColor(0.050, 0.145, 0.032, 1.0)
 GRASS_FIELD_LIGHT = unreal.LinearColor(0.140, 0.285, 0.060, 1.0)
 GRASS_FIELD_INSTANCE_DARK = unreal.LinearColor(0.74, 0.88, 0.72, 1.0)
 GRASS_FIELD_INSTANCE_LIGHT = unreal.LinearColor(1.05, 1.07, 0.88, 1.0)
+GRASS_CONTINUATION_COLOR = unreal.LinearColor(0.105, 0.245, 0.048, 1.0)
+GRASS_DISTANT_FADE_START_CM = 52000.0
+GRASS_DISTANT_FADE_RANGE_CM = 12000.0
+GRASS_FAR_ROOT_LIFT_COLOR = unreal.LinearColor(0.130, 0.275, 0.052, 1.0)
+GRASS_FAR_ROOT_LIFT_START_CM = 5400.0
+GRASS_FAR_ROOT_LIFT_RANGE_CM = 3000.0
+GRASS_FAR_ROOT_LIFT_STRENGTH = 0.60
+GROUND_GRASS_GRAIN_DARK = unreal.LinearColor(0.070, 0.195, 0.032, 1.0)
+GROUND_GRASS_GRAIN_LIGHT = unreal.LinearColor(0.165, 0.340, 0.072, 1.0)
+GROUND_GRASS_GRAIN_STRENGTH = 0.55
+GROUND_GRASS_GRAIN_WORLD_CM = 360.0
 GRASS_FAR_HILLS_DARK = unreal.LinearColor(0.120, 0.355, 0.000, 1.0)
 GRASS_FAR_HILLS_LIGHT = unreal.LinearColor(0.160, 0.455, 0.015, 1.0)
 GRASS_TERRAIN_DARK = unreal.LinearColor(0.060, 0.155, 0.045, 1.0)
@@ -352,7 +363,7 @@ def rebuild_ground_material():
         material, unreal.MaterialExpressionVectorParameter, -920, -60
     )
     set_if_present(base, "parameter_name", "GroundBaseColor")
-    set_if_present(base, "default_value", unreal.LinearColor(0.56, 0.55, 0.50, 1.0))
+    set_if_present(base, "default_value", unreal.LinearColor(0.135, 0.285, 0.058, 1.0))
     base_output = ""
     noise_scale = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionScalarParameter, -720, -190
@@ -584,6 +595,74 @@ def rebuild_ground_material():
     )
     final_color = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionLinearInterpolate, 620, 15
+    )
+    grain_frequency = create_scalar_parameter(
+        material, "GroundGrassGrainFrequency", math.tau / GROUND_GRASS_GRAIN_WORLD_CM, -720, 1390
+    )
+    grain_strength = create_scalar_parameter(
+        material, "GroundGrassGrainStrength", GROUND_GRASS_GRAIN_STRENGTH, -525, 1475
+    )
+    grain_dark_color = create_vector_parameter(
+        material, "GroundGrassGrainDarkColor", GROUND_GRASS_GRAIN_DARK, -920, 1515
+    )
+    grain_light_color = create_vector_parameter(
+        material, "GroundGrassGrainLightColor", GROUND_GRASS_GRAIN_LIGHT, -920, 1625
+    )
+    grain_dir_a = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionConstant2Vector, -720, 1555
+    )
+    set_if_present(grain_dir_a, "r", 0.92)
+    set_if_present(grain_dir_a, "g", 0.39)
+    grain_dir_b = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionConstant2Vector, -720, 1665
+    )
+    set_if_present(grain_dir_b, "r", -0.31)
+    set_if_present(grain_dir_b, "g", 0.97)
+    grain_dot_a = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionDotProduct, -525, 1550
+    )
+    grain_dot_b = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionDotProduct, -525, 1660
+    )
+    grain_scaled_a = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, -335, 1550
+    )
+    grain_scaled_b = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, -335, 1660
+    )
+    grain_sine_a = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionSine, -145, 1550
+    )
+    grain_sine_b = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionSine, -145, 1660
+    )
+    grain_half = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionConstant, -145, 1765
+    )
+    grain_half.set_editor_property("r", 0.5)
+    grain_a_half = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 40, 1550
+    )
+    grain_b_half = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 40, 1660
+    )
+    grain_a_01 = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionAdd, 230, 1550
+    )
+    grain_b_01 = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionAdd, 230, 1660
+    )
+    grain_sum = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionAdd, 420, 1605
+    )
+    grain_mix = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 610, 1605
+    )
+    grain_color = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionLinearInterpolate, 805, 1570
+    )
+    grain_ground_color = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionLinearInterpolate, 1000, 1495
     )
     blood_mask, blood_core = create_blood_mask_sample(material, world_xy, 805, -260)
     blood_strength = create_scalar_parameter(material, "BloodStrength", 0.0, 1000, -375)
@@ -832,13 +911,97 @@ def rebuild_ground_material():
         shadow_alpha, "", final_color, "Alpha"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
+        world_xy, "", grain_dot_a, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_dir_a, "", grain_dot_a, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        world_xy, "", grain_dot_b, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_dir_b, "", grain_dot_b, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_dot_a, "", grain_scaled_a, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_frequency, "", grain_scaled_a, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_dot_b, "", grain_scaled_b, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_frequency, "", grain_scaled_b, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_scaled_a, "", grain_sine_a, ""
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_scaled_b, "", grain_sine_b, ""
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_sine_a, "", grain_a_half, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_half, "", grain_a_half, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_sine_b, "", grain_b_half, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_half, "", grain_b_half, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_a_half, "", grain_a_01, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_half, "", grain_a_01, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_b_half, "", grain_b_01, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_half, "", grain_b_01, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_a_01, "", grain_sum, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_b_01, "", grain_sum, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_sum, "", grain_mix, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_half, "", grain_mix, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_dark_color, "", grain_color, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_light_color, "", grain_color, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_mix, "", grain_color, "Alpha"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        final_color, "", grain_ground_color, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_color, "", grain_ground_color, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        grain_strength, "", grain_ground_color, "Alpha"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
         blood_mask, "", blood_alpha, "A"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         blood_strength, "", blood_alpha, "B"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
-        final_color, "", blood_surface_color, "A"
+        grain_ground_color, "", blood_surface_color, "A"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         blood_color, "", blood_surface_color, "B"
@@ -1306,8 +1469,8 @@ def rebuild_field_grass_material():
     distant_distance = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionDistance, 1390, -220
     )
-    distant_start = create_scalar_parameter(material, "GrassDistantColorStartCm", 6400.0, 1190, -80)
-    distant_inv_range = create_scalar_parameter(material, "GrassDistantColorInvRange", 1.0 / 7200.0, 1390, 25)
+    distant_start = create_scalar_parameter(material, "GrassDistantColorStartCm", GRASS_DISTANT_FADE_START_CM, 1190, -80)
+    distant_inv_range = create_scalar_parameter(material, "GrassDistantColorInvRange", 1.0 / GRASS_DISTANT_FADE_RANGE_CM, 1390, 25)
     distant_distance_offset = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionSubtract, 1585, -180
     )
@@ -1329,14 +1492,14 @@ def rebuild_field_grass_material():
         material, unreal.MaterialExpressionMin, 2155, -180
     )
     distant_color = create_vector_parameter(
-        material, "GrassDistantColor", unreal.LinearColor(0.205, 0.330, 0.095, 1.0), 1965, 95
+        material, "GrassDistantColor", GRASS_CONTINUATION_COLOR, 1965, 95
     )
     distant_final_color = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionLinearInterpolate, 2350, 25
     )
-    distant_flatten_start = create_scalar_parameter(material, "GrassDistantFlattenStartCm", 10500.0, 2350, 220)
-    distant_flatten_inv_range = create_scalar_parameter(material, "GrassDistantFlattenInvRange", 1.0 / 9500.0, 2550, 260)
-    distant_flatten_cm = create_scalar_parameter(material, "GrassDistantFlattenCm", 78.0, 2550, 370)
+    distant_flatten_start = create_scalar_parameter(material, "GrassDistantFlattenStartCm", GRASS_DISTANT_FADE_START_CM, 2350, 220)
+    distant_flatten_inv_range = create_scalar_parameter(material, "GrassDistantFlattenInvRange", 1.0 / GRASS_DISTANT_FADE_RANGE_CM, 2550, 260)
+    distant_flatten_cm = create_scalar_parameter(material, "GrassDistantFlattenCm", 0.0, 2550, 370)
     distant_flatten_offset = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionSubtract, 2750, 180
     )
@@ -1373,8 +1536,8 @@ def rebuild_field_grass_material():
     distant_combined_wpo = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionAdd, 4280, 820
     )
-    distant_opacity_start = create_scalar_parameter(material, "GrassDistantOpacityStartCm", 15000.0, 2350, 515)
-    distant_opacity_inv_range = create_scalar_parameter(material, "GrassDistantOpacityInvRange", 1.0 / 7000.0, 2550, 555)
+    distant_opacity_start = create_scalar_parameter(material, "GrassDistantOpacityStartCm", GRASS_DISTANT_FADE_START_CM, 2350, 515)
+    distant_opacity_inv_range = create_scalar_parameter(material, "GrassDistantOpacityInvRange", 1.0 / GRASS_DISTANT_FADE_RANGE_CM, 2550, 555)
     distant_opacity_offset = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionSubtract, 2750, 515
     )
@@ -1402,6 +1565,42 @@ def rebuild_field_grass_material():
     set_if_present(blade_v, "a", False)
     blade_mask = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionMultiply, -745, -315
+    )
+    far_root_lift_start = create_scalar_parameter(
+        material, "GrassFarRootLiftStartCm", GRASS_FAR_ROOT_LIFT_START_CM, 1190, 205
+    )
+    far_root_lift_inv_range = create_scalar_parameter(
+        material, "GrassFarRootLiftInvRange", 1.0 / GRASS_FAR_ROOT_LIFT_RANGE_CM, 1390, 245
+    )
+    far_root_lift_strength = create_scalar_parameter(
+        material, "GrassFarRootLiftStrength", GRASS_FAR_ROOT_LIFT_STRENGTH, 1390, 350
+    )
+    far_root_lift_color = create_vector_parameter(
+        material, "GrassFarRootLiftColor", GRASS_FAR_ROOT_LIFT_COLOR, 1965, 205
+    )
+    far_root_lift_distance_offset = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionSubtract, 1585, 205
+    )
+    far_root_lift_distance_scaled = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 1775, 205
+    )
+    far_root_lift_nonnegative = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMax, 1965, 310
+    )
+    far_root_lift_distance_alpha = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMin, 2155, 310
+    )
+    far_root_lift_root_mask = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionSubtract, 2155, 420
+    )
+    far_root_lift_spatial_alpha = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 2350, 350
+    )
+    far_root_lift_alpha = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 2550, 350
+    )
+    far_root_lifted_color = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionLinearInterpolate, 2750, 200
     )
     wind_enabled = create_scalar_parameter(material, "GrassWindEnabled", 0.0, -1140, 650)
     wind_bend = create_scalar_parameter(material, "GrassWindBendCm", 18.0, -1140, 745)
@@ -1884,6 +2083,57 @@ def rebuild_field_grass_material():
         distant_alpha, "", distant_final_color, "Alpha"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
+        distant_distance, "", far_root_lift_distance_offset, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_start, "", far_root_lift_distance_offset, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_distance_offset, "", far_root_lift_distance_scaled, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_inv_range, "", far_root_lift_distance_scaled, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_distance_scaled, "", far_root_lift_nonnegative, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        distant_zero, "", far_root_lift_nonnegative, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_nonnegative, "", far_root_lift_distance_alpha, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        distant_one, "", far_root_lift_distance_alpha, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        distant_one, "", far_root_lift_root_mask, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blade_mask, "", far_root_lift_root_mask, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_distance_alpha, "", far_root_lift_spatial_alpha, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_root_mask, "", far_root_lift_spatial_alpha, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_spatial_alpha, "", far_root_lift_alpha, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_strength, "", far_root_lift_alpha, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        distant_final_color, "", far_root_lifted_color, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_color, "", far_root_lifted_color, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        far_root_lift_alpha, "", far_root_lifted_color, "Alpha"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
         distant_distance, "", distant_flatten_offset, "A"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
@@ -1965,7 +2215,7 @@ def rebuild_field_grass_material():
         blade_mask, "", blood_grass_gradient, "Alpha"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_final_color, "", blood_grass_final, "A"
+        far_root_lifted_color, "", blood_grass_final, "A"
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         blood_grass_gradient, "", blood_grass_final, "B"

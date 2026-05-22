@@ -3,7 +3,8 @@ param(
     [int]$ResY = 720,
     [string]$ConfigPath = "$PSScriptRoot\ProphecyLiveVisual.json",
     [switch]$HideGrass,
-    [switch]$HideGrassBladesOnly
+    [switch]$HideGrassBladesOnly,
+    [string[]]$ExtraArgs = @()
 )
 
 $Editor = "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe"
@@ -43,6 +44,12 @@ if ($HideGrass) {
 
 if ($HideGrassBladesOnly) {
     $argsList += "-ProphecyNNHideGrassBladesOnly=1"
+}
+
+foreach ($arg in $ExtraArgs) {
+    if (-not [string]::IsNullOrWhiteSpace($arg)) {
+        $argsList += $arg
+    }
 }
 
 $process = Start-Process -FilePath $Editor -ArgumentList ($argsList -join " ") -WindowStyle Hidden -PassThru

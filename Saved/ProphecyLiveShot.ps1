@@ -1,16 +1,25 @@
 param(
     [string]$Name = ("live_" + (Get-Date -Format "HHmmss")),
     [object[]]$GrassDistantColor = @(),
-    [double]$GrassDistantStartCm = 6000.0,
-    [double]$GrassDistantRangeCm = 5200.0,
-    [double]$GrassDistantFlattenStartCm = 10500.0,
-    [double]$GrassDistantFlattenRangeCm = 9500.0,
-    [double]$GrassDistantFlattenCm = 78.0,
-    [double]$GrassDistantOpacityStartCm = 15000.0,
-    [double]$GrassDistantOpacityRangeCm = 7000.0,
+    [double]$GrassDistantStartCm = 52000.0,
+    [double]$GrassDistantRangeCm = 12000.0,
+    [double]$GrassDistantFlattenStartCm = 52000.0,
+    [double]$GrassDistantFlattenRangeCm = 12000.0,
+    [double]$GrassDistantFlattenCm = 0.0,
+    [double]$GrassDistantOpacityStartCm = 52000.0,
+    [double]$GrassDistantOpacityRangeCm = 12000.0,
+    [object[]]$GrassFarRootLiftColor = @(),
+    [object]$GrassFarRootLiftStartCm = $null,
+    [object]$GrassFarRootLiftRangeCm = $null,
+    [object]$GrassFarRootLiftStrength = $null,
     [object[]]$GroundBaseColor = @(),
     [object]$GroundNoiseStrength = $null,
     [object]$GroundNoiseWorldCm = $null,
+    [object[]]$GroundGrassGrainDarkColor = @(),
+    [object[]]$GroundGrassGrainLightColor = @(),
+    [object]$GroundGrassGrainStrength = $null,
+    [object]$GroundGrassGrainWorldCm = $null,
+    [object]$GroundGrassGrainFrequency = $null,
     [object[]]$DirtColor = @(),
     [object]$GrassShadowStrength = $null,
     [object]$DirtStrength = $null,
@@ -92,7 +101,10 @@ function ConvertTo-DoubleValue {
 }
 
 $GrassDistantColorValues = ConvertTo-DoubleArray $GrassDistantColor
+$GrassFarRootLiftColorValues = ConvertTo-DoubleArray $GrassFarRootLiftColor
 $GroundBaseColorValues = ConvertTo-DoubleArray $GroundBaseColor
+$GroundGrassGrainDarkColorValues = ConvertTo-DoubleArray $GroundGrassGrainDarkColor
+$GroundGrassGrainLightColorValues = ConvertTo-DoubleArray $GroundGrassGrainLightColor
 $DirtColorValues = ConvertTo-DoubleArray $DirtColor
 $BloodColorValues = ConvertTo-DoubleArray $BloodColor
 $BloodDarkColorValues = ConvertTo-DoubleArray $BloodDarkColor
@@ -120,6 +132,22 @@ if ($GrassDistantColorValues.Count -ge 3) {
     $payload.grass_distant_color = @($GrassDistantColorValues)
 }
 
+if ($GrassFarRootLiftColorValues.Count -ge 3) {
+    $payload.grass_far_root_lift_color = @($GrassFarRootLiftColorValues)
+}
+
+if ($null -ne $GrassFarRootLiftStartCm) {
+    $payload.grass_far_root_lift_start_cm = ConvertTo-DoubleValue $GrassFarRootLiftStartCm
+}
+
+if ($null -ne $GrassFarRootLiftRangeCm) {
+    $payload.grass_far_root_lift_range_cm = ConvertTo-DoubleValue $GrassFarRootLiftRangeCm
+}
+
+if ($null -ne $GrassFarRootLiftStrength) {
+    $payload.grass_far_root_lift_strength = ConvertTo-DoubleValue $GrassFarRootLiftStrength
+}
+
 if ($null -ne $GrassShadowStrength) {
     $payload.grass_shadow_strength = ConvertTo-DoubleValue $GrassShadowStrength
 }
@@ -134,6 +162,26 @@ if ($null -ne $GroundNoiseStrength) {
 
 if ($null -ne $GroundNoiseWorldCm) {
     $payload.ground_noise_world_cm = ConvertTo-DoubleValue $GroundNoiseWorldCm
+}
+
+if ($GroundGrassGrainDarkColorValues.Count -ge 3) {
+    $payload.ground_grass_grain_dark_color = @($GroundGrassGrainDarkColorValues)
+}
+
+if ($GroundGrassGrainLightColorValues.Count -ge 3) {
+    $payload.ground_grass_grain_light_color = @($GroundGrassGrainLightColorValues)
+}
+
+if ($null -ne $GroundGrassGrainStrength) {
+    $payload.ground_grass_grain_strength = ConvertTo-DoubleValue $GroundGrassGrainStrength
+}
+
+if ($null -ne $GroundGrassGrainWorldCm) {
+    $payload.ground_grass_grain_world_cm = ConvertTo-DoubleValue $GroundGrassGrainWorldCm
+}
+
+if ($null -ne $GroundGrassGrainFrequency) {
+    $payload.ground_grass_grain_frequency = ConvertTo-DoubleValue $GroundGrassGrainFrequency
 }
 
 if ($DirtColorValues.Count -ge 3) {

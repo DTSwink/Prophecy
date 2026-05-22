@@ -71,11 +71,24 @@ constexpr float ProphecyMetersToCentimeters = 100.0f;
 constexpr float ProphecyGrassNearRadiusCm = 3500.0f;
 constexpr float ProphecyGrassFarRadiusCm = 8000.0f;
 constexpr float ProphecyGrassHorizonRadiusCm = 42000.0f;
+constexpr float ProphecyGrassDistantFadeStartCm = 52000.0f;
+constexpr float ProphecyGrassDistantFadeRangeCm = 12000.0f;
+constexpr float ProphecyGrassFarRootLiftStartCm = 5400.0f;
+constexpr float ProphecyGrassFarRootLiftRangeCm = 3000.0f;
+constexpr float ProphecyGrassFarRootLiftStrength = 0.60f;
+constexpr float ProphecyGroundGrassGrainWorldCm = 360.0f;
+constexpr float ProphecyGroundGrassGrainStrength = 0.55f;
+constexpr float ProphecyGrassFarTargetSpacingCm = 420.0f;
+constexpr float ProphecyGrassFarCoverage = 0.72f;
+constexpr float ProphecyGrassFarScaleXYMin = 1.14f;
+constexpr float ProphecyGrassFarScaleXYMax = 2.05f;
+constexpr float ProphecyGrassFarScaleZMin = 0.72f;
+constexpr float ProphecyGrassFarScaleZMax = 1.08f;
 constexpr int32 ProphecyGrassBladesPerTile = 44;
 constexpr int32 ProphecyGrassDenseBladesPerTile = 176;
 constexpr int32 ProphecyGrassDenseFillersPerTile = 8;
 constexpr float ProphecyGrassTileSizeCm = 240.0f;
-constexpr float ProphecyGrassDenseMeshRadiusCm = 5600.0f;
+constexpr float ProphecyGrassDenseMeshRadiusCm = 18000.0f;
 constexpr int32 ProphecyDistantHillSegments = 192;
 constexpr int32 ProphecyDistantHillRings = 18;
 constexpr float ProphecyDistantHillInnerRadiusCm = 22000.0f;
@@ -87,8 +100,12 @@ constexpr int32 ProphecyTreeComponentCount = 12;
 constexpr float ProphecyTreePlayableInnerRadiusCm = 2600.0f;
 constexpr float ProphecyTreePlayableOuterRadiusCm = 15500.0f;
 constexpr float ProphecyTreeShadowMaskHalfExtentCm = 17000.0f;
-const FLinearColor ProphecyGrassGroundBaseColor(0.205f, 0.330f, 0.095f, 1.0f);
+const FLinearColor ProphecyGrassGroundBaseColor(0.135f, 0.285f, 0.058f, 1.0f);
 const FLinearColor ProphecyGrassTerrainBaseColor(0.078f, 0.170f, 0.042f, 1.0f);
+const FLinearColor ProphecyGrassContinuationColor(0.105f, 0.245f, 0.048f, 1.0f);
+const FLinearColor ProphecyGrassFarRootLiftColor(0.130f, 0.275f, 0.052f, 1.0f);
+const FLinearColor ProphecyGroundGrassGrainDarkColor(0.070f, 0.195f, 0.032f, 1.0f);
+const FLinearColor ProphecyGroundGrassGrainLightColor(0.165f, 0.340f, 0.072f, 1.0f);
 
 float ProphecySmooth01(float T)
 {
@@ -2331,14 +2348,18 @@ void AProphecyNNCrowdBenchmarkActor::ApplyGrassWindMaterialParameters()
 	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassWindDirection"), FLinearColor(0.86f, 0.50f, 0.0f, 0.0f));
 	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassWindPatchDirection"), FLinearColor(-0.46f, 0.89f, 0.0f, 0.0f));
 	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantFadeCenter"), FLinearColor(0.0f, 700.0f, 0.0f, 0.0f));
-	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorStartCm"), 6000.0f);
-	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorInvRange"), 1.0f / 5200.0f);
-	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), ProphecyGrassGroundBaseColor);
-	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenStartCm"), 10500.0f);
-	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenInvRange"), 1.0f / 9500.0f);
-	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenCm"), 78.0f);
-	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityStartCm"), 15000.0f);
-	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityInvRange"), 1.0f / 7000.0f);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorStartCm"), ProphecyGrassDistantFadeStartCm);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorInvRange"), 1.0f / ProphecyGrassDistantFadeRangeCm);
+	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), ProphecyGrassContinuationColor);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassFarRootLiftStartCm"), ProphecyGrassFarRootLiftStartCm);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassFarRootLiftInvRange"), 1.0f / ProphecyGrassFarRootLiftRangeCm);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassFarRootLiftStrength"), ProphecyGrassFarRootLiftStrength);
+	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassFarRootLiftColor"), ProphecyGrassFarRootLiftColor);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenStartCm"), ProphecyGrassDistantFadeStartCm);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenInvRange"), 1.0f / ProphecyGrassDistantFadeRangeCm);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenCm"), 0.0f);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityStartCm"), ProphecyGrassDistantFadeStartCm);
+	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityInvRange"), 1.0f / ProphecyGrassDistantFadeRangeCm);
 
 	UE_LOG(
 		LogProphecyNNBenchmark,
@@ -3860,6 +3881,28 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 		T = FMath::Clamp(T, 0.0f, 1.0f);
 		return T * T * (3.0f - 2.0f * T);
 	};
+	const TCHAR* Cmd = FCommandLine::Get();
+	float FarTargetSpacingCm = ProphecyGrassFarTargetSpacingCm;
+	float FarCoverage = ProphecyGrassFarCoverage;
+	float FarScaleXYMin = ProphecyGrassFarScaleXYMin;
+	float FarScaleXYMax = ProphecyGrassFarScaleXYMax;
+	float FarScaleZMin = ProphecyGrassFarScaleZMin;
+	float FarScaleZMax = ProphecyGrassFarScaleZMax;
+	float DenseMeshRadiusCm = ProphecyGrassDenseMeshRadiusCm;
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarTargetSpacing="), FarTargetSpacingCm);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarCoverage="), FarCoverage);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarScaleXYMin="), FarScaleXYMin);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarScaleXYMax="), FarScaleXYMax);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarScaleZMin="), FarScaleZMin);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarScaleZMax="), FarScaleZMax);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassDenseMeshRadius="), DenseMeshRadiusCm);
+	FarTargetSpacingCm = FMath::Clamp(FarTargetSpacingCm, 180.0f, 1200.0f);
+	FarCoverage = FMath::Clamp(FarCoverage, 0.05f, 1.0f);
+	FarScaleXYMin = FMath::Clamp(FarScaleXYMin, 0.70f, 4.00f);
+	FarScaleXYMax = FMath::Clamp(FarScaleXYMax, FarScaleXYMin, 5.50f);
+	FarScaleZMin = FMath::Clamp(FarScaleZMin, 0.20f, 1.60f);
+	FarScaleZMax = FMath::Clamp(FarScaleZMax, FarScaleZMin, 1.80f);
+	DenseMeshRadiusCm = FMath::Clamp(DenseMeshRadiusCm, 2400.0f, 18000.0f);
 
 	for (int32 CellY = 0; CellY < CellsPerAxis; ++CellY)
 	{
@@ -3876,7 +3919,7 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 				continue;
 			}
 
-			const bool bUseDenseMesh = !bGrassDiagnosticMode && CellDistance <= ProphecyGrassDenseMeshRadiusCm + CellSize * 0.5f;
+			const bool bUseDenseMesh = !bGrassDiagnosticMode && CellDistance <= DenseMeshRadiusCm + CellSize * 0.5f;
 			const int32 ComponentBladesPerTile = bUseDenseMesh ? ProphecyGrassDenseBladesPerTile : ProphecyGrassBladesPerTile;
 			const float CandidateSpacing = bGrassDiagnosticMode && CellDistance <= DiagnosticDenseGrassRadiusCm + DiagnosticGrassCellPadCm ? DiagnosticGrassSpacingCm : 105.0f;
 			UHierarchicalInstancedStaticMeshComponent* Component = NewObject<UHierarchicalInstancedStaticMeshComponent>(this);
@@ -3927,10 +3970,10 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 						? DiagnosticGrassSpacingCm
 						: FMath::Lerp(
 							FMath::Lerp(105.0f, 160.0f, NearT),
-							FMath::Lerp(170.0f, 560.0f, FarT),
+							FMath::Lerp(170.0f, FarTargetSpacingCm, FarT),
 							FarLodT);
-					const float FarCoverage = Distance <= ProphecyGrassFarRadiusCm ? 1.0f : FMath::Lerp(1.0f, 0.86f, FarT);
-					const float DensityKeep = FMath::Clamp(FMath::Square(CandidateSpacing / TargetSpacing) * FarCoverage, 0.0f, 1.0f);
+					const float DistanceCoverage = Distance <= ProphecyGrassFarRadiusCm ? 1.0f : FMath::Lerp(1.0f, FarCoverage, FarT);
+					const float DensityKeep = FMath::Clamp(FMath::Square(CandidateSpacing / TargetSpacing) * DistanceCoverage, 0.0f, 1.0f);
 					if (CellRandom.FRand() > DensityKeep)
 					{
 						continue;
@@ -3941,8 +3984,8 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 					const float ScaleRollZ = CellRandom.FRand();
 					const float NearScaleXY = FMath::Lerp(0.88f, 1.26f, ScaleRollXY);
 					const float NearScaleZ = FMath::Lerp(0.82f, 1.18f, ScaleRollZ);
-					const float FarScaleXY = FMath::Lerp(FMath::Lerp(1.10f, 3.20f, FarT), FMath::Lerp(1.80f, 5.20f, FarT), ScaleRollXY);
-					const float FarScaleZ = FMath::Lerp(FMath::Lerp(0.80f, 0.28f, FarT), FMath::Lerp(1.04f, 0.48f, FarT), ScaleRollZ);
+					const float FarScaleXY = FMath::Lerp(FMath::Lerp(1.10f, FarScaleXYMin, FarT), FMath::Lerp(1.80f, FarScaleXYMax, FarT), ScaleRollXY);
+					const float FarScaleZ = FMath::Lerp(FMath::Lerp(0.80f, FarScaleZMin, FarT), FMath::Lerp(1.04f, FarScaleZMax, FarT), ScaleRollZ);
 					const float ScaleXY = FMath::Lerp(NearScaleXY, FarScaleXY, FarLodT);
 					const float ScaleZ = FMath::Lerp(NearScaleZ, FarScaleZ, FarLodT);
 					const FTransform InstanceTransform(
@@ -3983,7 +4026,7 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 		ProphecyGrassBladesPerTile,
 		ProphecyGrassDenseBladesPerTile,
 		ProphecyGrassDenseFillersPerTile,
-		ProphecyGrassDenseMeshRadiusCm,
+		DenseMeshRadiusCm,
 		ProphecyGrassTileSizeCm,
 		ProphecyGrassNearRadiusCm,
 		ProphecyGrassFarRadiusCm,
@@ -6611,14 +6654,22 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 		{
 			GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), GrassDistantColor);
 		}
-		else
+
+		double FarRootLiftStartCm = 0.0;
+		if (TryNumber(TEXT("grass_far_root_lift_start_cm"), FarRootLiftStartCm) || TryNumber(TEXT("GrassFarRootLiftStartCm"), FarRootLiftStartCm))
 		{
-			FLinearColor GroundBaseColor;
-			if (TryColor(TEXT("ground_base_color"), GroundBaseColor) || TryColor(TEXT("GroundBaseColor"), GroundBaseColor))
-			{
-				GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), GroundBaseColor);
-			}
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassFarRootLiftStartCm"), float(FarRootLiftStartCm));
 		}
+
+		double FarRootLiftRangeCm = 0.0;
+		if ((TryNumber(TEXT("grass_far_root_lift_range_cm"), FarRootLiftRangeCm) || TryNumber(TEXT("GrassFarRootLiftRangeCm"), FarRootLiftRangeCm)) && FarRootLiftRangeCm > UE_SMALL_NUMBER)
+		{
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassFarRootLiftInvRange"), 1.0f / float(FarRootLiftRangeCm));
+		}
+
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_far_root_lift_inv_range"), TEXT("GrassFarRootLiftInvRange"), TEXT("GrassFarRootLiftInvRange"));
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_far_root_lift_strength"), TEXT("GrassFarRootLiftStrength"), TEXT("GrassFarRootLiftStrength"));
+		ApplyColorParameter(GrassMaterialInstance.Get(), TEXT("grass_far_root_lift_color"), TEXT("GrassFarRootLiftColor"), TEXT("GrassFarRootLiftColor"));
 
 		double FlattenStartCm = 0.0;
 		if (TryNumber(TEXT("grass_distant_flatten_start_cm"), FlattenStartCm) || TryNumber(TEXT("GrassDistantFlattenStartCm"), FlattenStartCm))
@@ -6682,9 +6733,17 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 			return;
 		}
 
+		Material->SetScalarParameterValue(TEXT("GroundGrassGrainFrequency"), UE_TWO_PI / ProphecyGroundGrassGrainWorldCm);
+		Material->SetScalarParameterValue(TEXT("GroundGrassGrainStrength"), ProphecyGroundGrassGrainStrength);
+		Material->SetVectorParameterValue(TEXT("GroundGrassGrainDarkColor"), ProphecyGroundGrassGrainDarkColor);
+		Material->SetVectorParameterValue(TEXT("GroundGrassGrainLightColor"), ProphecyGroundGrassGrainLightColor);
 		ApplyScalarParameter(Material, TEXT("ground_noise_strength"), TEXT("GroundNoiseStrength"), TEXT("GroundNoiseStrength"));
 		ApplyScalarParameter(Material, TEXT("ground_noise_scale"), TEXT("GroundNoiseScale"), TEXT("GroundNoiseScale"));
+		ApplyScalarParameter(Material, TEXT("ground_grass_grain_strength"), TEXT("GroundGrassGrainStrength"), TEXT("GroundGrassGrainStrength"));
+		ApplyScalarParameter(Material, TEXT("ground_grass_grain_frequency"), TEXT("GroundGrassGrainFrequency"), TEXT("GroundGrassGrainFrequency"));
 		ApplyColorParameter(Material, TEXT("ground_base_color"), TEXT("GroundBaseColor"), TEXT("GroundBaseColor"));
+		ApplyColorParameter(Material, TEXT("ground_grass_grain_dark_color"), TEXT("GroundGrassGrainDarkColor"), TEXT("GroundGrassGrainDarkColor"));
+		ApplyColorParameter(Material, TEXT("ground_grass_grain_light_color"), TEXT("GroundGrassGrainLightColor"), TEXT("GroundGrassGrainLightColor"));
 		ApplyColorParameter(Material, TEXT("dirt_color"), TEXT("DirtColor"), TEXT("DirtColor"));
 		ApplyScalarParameter(Material, TEXT("dirt_strength"), TEXT("DirtStrength"), TEXT("DirtStrength"));
 		ApplyScalarParameter(Material, TEXT("dirt_patch_scale"), TEXT("DirtPatchScale"), TEXT("DirtPatchScale"));
@@ -6702,6 +6761,12 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 		if ((TryNumber(TEXT("ground_noise_world_cm"), GroundNoiseWorldCm) || TryNumber(TEXT("GroundNoiseWorldCm"), GroundNoiseWorldCm)) && GroundNoiseWorldCm > UE_SMALL_NUMBER)
 		{
 			Material->SetScalarParameterValue(TEXT("GroundNoiseScale"), 1.0f / float(GroundNoiseWorldCm));
+		}
+
+		double GroundGrassGrainWorldCm = 0.0;
+		if ((TryNumber(TEXT("ground_grass_grain_world_cm"), GroundGrassGrainWorldCm) || TryNumber(TEXT("GroundGrassGrainWorldCm"), GroundGrassGrainWorldCm)) && GroundGrassGrainWorldCm > UE_SMALL_NUMBER)
+		{
+			Material->SetScalarParameterValue(TEXT("GroundGrassGrainFrequency"), UE_TWO_PI / float(GroundGrassGrainWorldCm));
 		}
 
 		double DirtPatchWorldCm = 0.0;
