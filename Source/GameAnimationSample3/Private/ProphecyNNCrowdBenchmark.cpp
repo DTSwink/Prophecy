@@ -70,7 +70,7 @@ constexpr int32 ProphecyNonPelvisBoneCount = 24;
 constexpr float ProphecyMetersToCentimeters = 100.0f;
 constexpr float ProphecyGrassNearRadiusCm = 3500.0f;
 constexpr float ProphecyGrassFarRadiusCm = 8000.0f;
-constexpr float ProphecyGrassHorizonRadiusCm = 42000.0f;
+constexpr float ProphecyGrassHorizonRadiusCm = 18000.0f;
 constexpr float ProphecyGrassDistantFadeStartCm = 52000.0f;
 constexpr float ProphecyGrassDistantFadeRangeCm = 12000.0f;
 constexpr float ProphecyGrassFarRootLiftStartCm = 5400.0f;
@@ -80,6 +80,9 @@ constexpr float ProphecyGroundGrassGrainWorldCm = 360.0f;
 constexpr float ProphecyGroundGrassGrainStrength = 0.55f;
 constexpr float ProphecyGrassFarTargetSpacingCm = 420.0f;
 constexpr float ProphecyGrassFarCoverage = 0.72f;
+constexpr float ProphecyGrassOuterDensityFadeStartCm = 17750.0f;
+constexpr float ProphecyGrassOuterDensityFadeRangeCm = ProphecyGrassHorizonRadiusCm - ProphecyGrassOuterDensityFadeStartCm;
+constexpr float ProphecyGrassOuterDensityEndInsetCm = 250.0f;
 constexpr float ProphecyGrassFarScaleXYMin = 1.14f;
 constexpr float ProphecyGrassFarScaleXYMax = 2.05f;
 constexpr float ProphecyGrassFarScaleZMin = 0.72f;
@@ -2353,7 +2356,8 @@ void AProphecyNNCrowdBenchmarkActor::ApplyGrassWindMaterialParameters()
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassWindTextureSpeed"), EffectiveSpeed * 0.025f);
 	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassWindDirection"), FLinearColor(0.86f, 0.50f, 0.0f, 0.0f));
 	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassWindPatchDirection"), FLinearColor(-0.46f, 0.89f, 0.0f, 0.0f));
-	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantFadeCenter"), FLinearColor(0.0f, 700.0f, 0.0f, 0.0f));
+	const FVector GrassFadeCenter = BenchmarkCamera ? BenchmarkCamera->GetActorLocation() : FVector(ProphecyTerrainCenterX, ProphecyTerrainCenterY, 0.0f);
+	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantFadeCenter"), FLinearColor(float(GrassFadeCenter.X), float(GrassFadeCenter.Y), 0.0f, 0.0f));
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorStartCm"), ProphecyGrassDistantFadeStartCm);
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantColorInvRange"), 1.0f / ProphecyGrassDistantFadeRangeCm);
 	GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantColor"), ProphecyGrassContinuationColor);
@@ -2364,8 +2368,6 @@ void AProphecyNNCrowdBenchmarkActor::ApplyGrassWindMaterialParameters()
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenStartCm"), ProphecyGrassDistantFadeStartCm);
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenInvRange"), 1.0f / ProphecyGrassDistantFadeRangeCm);
 	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenCm"), 0.0f);
-	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityStartCm"), ProphecyGrassDistantFadeStartCm);
-	GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityInvRange"), 1.0f / ProphecyGrassDistantFadeRangeCm);
 
 	UE_LOG(
 		LogProphecyNNBenchmark,
@@ -2420,22 +2422,36 @@ void AProphecyNNCrowdBenchmarkActor::ApplyTreeWindMaterialParameters()
 
 UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMesh()
 {
-	return CreateGrassClusterMeshVariant(GrassMesh, TEXT("ProphecyRuntimeGrassCluster"), ProphecyGrassBladesPerTile, false);
+	return CreateGrassClusterMeshVariant(GrassMesh, TEXT("ProphecyRuntimeGrassCluster"), ProphecyGrassBladesPerTile, false, false);
 }
 
 UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateDenseGrassClusterMesh()
 {
-	return CreateGrassClusterMeshVariant(DenseGrassMesh, TEXT("ProphecyRuntimeDenseGrassCluster"), ProphecyGrassDenseBladesPerTile, true);
+	return CreateGrassClusterMeshVariant(DenseGrassMesh, TEXT("ProphecyRuntimeDenseGrassCluster"), ProphecyGrassDenseBladesPerTile, true, false);
 }
 
-UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObjectPtr<UStaticMesh>& MeshSlot, FName MeshName, int32 BladesPerTile, bool bDenseCoverage)
+UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateOuterShellRemovedGrassClusterMesh()
+{
+	return CreateGrassClusterMeshVariant(OuterShellRemovedGrassMesh, TEXT("ProphecyRuntimeOuterShellRemovedGrassCluster"), ProphecyGrassBladesPerTile, false, true);
+}
+
+UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObjectPtr<UStaticMesh>& MeshSlot, FName MeshName, int32 BladesPerTile, bool bDenseCoverage, bool bRemoveLowerBladeBand)
 {
 	if (MeshSlot)
 	{
 		return MeshSlot;
 	}
 
-	UMaterialInterface* GrassMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrass_UnlitField.M_ProphecyGrass_UnlitField"));
+	const TCHAR* Cmd = FCommandLine::Get();
+	const bool bDebugDistanceKillMaterial = FParse::Param(Cmd, TEXT("ProphecyNNGrassDebugDistanceKillMaterial"));
+	UMaterialInterface* GrassMaterial = bDebugDistanceKillMaterial
+		? LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrass_UnlitField_DistanceKill.M_ProphecyGrass_UnlitField_DistanceKill"))
+		: LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrass_UnlitField.M_ProphecyGrass_UnlitField"));
+	if (!GrassMaterial && bDebugDistanceKillMaterial)
+	{
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("Grass distance-kill diagnostic material was requested but could not be loaded; falling back to normal grass material."));
+		GrassMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrass_UnlitField.M_ProphecyGrass_UnlitField"));
+	}
 	if (!GrassMaterial)
 	{
 		GrassMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrass_LitVertexColor.M_ProphecyGrass_LitVertexColor"));
@@ -2452,6 +2468,17 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObje
 	{
 		GrassMaterialInstance = UMaterialInstanceDynamic::Create(GrassMaterial, this);
 		ApplyGrassWindMaterialParameters();
+		if (bDebugDistanceKillMaterial)
+		{
+			float KillStartCm = 1000000.0f;
+			float KillRangeCm = 100.0f;
+			FParse::Value(Cmd, TEXT("ProphecyNNGrassDebugDistanceKillStart="), KillStartCm);
+			FParse::Value(Cmd, TEXT("ProphecyNNGrassDebugDistanceKillRange="), KillRangeCm);
+			KillRangeCm = FMath::Max(KillRangeCm, 1.0f);
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDebugDistanceKillStartCm"), KillStartCm);
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDebugDistanceKillInvRange"), 1.0f / KillRangeCm);
+			UE_LOG(LogProphecyNNBenchmark, Display, TEXT("Grass distance-kill diagnostic material enabled: start=%.1fcm range=%.1fcm."), KillStartCm, KillRangeCm);
+		}
 		ConfigureBloodMaskMaterials();
 	}
 
@@ -2506,7 +2533,7 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObje
 			1.0f);
 	};
 
-	auto AddBlade = [&AddQuad](float YawDegrees, float OffsetX, float OffsetY, float WidthCm, float HeightCm, float LeanForwardCm, float LeanSideCm, const FVector4f& BaseColor, const FVector4f& MidColor, const FVector4f& TipColor)
+	auto AddBlade = [&AddQuad, bRemoveLowerBladeBand](float YawDegrees, float OffsetX, float OffsetY, float WidthCm, float HeightCm, float LeanForwardCm, float LeanSideCm, const FVector4f& BaseColor, const FVector4f& MidColor, const FVector4f& TipColor)
 	{
 		const float YawRadians = FMath::DegreesToRadians(YawDegrees);
 		const FVector Right(FMath::Cos(YawRadians), FMath::Sin(YawRadians), 0.0);
@@ -2525,7 +2552,10 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObje
 		const FVector MidB = MidCenter + Right * (MidWidth * 0.5);
 		const FVector TipA = TipCenter - Right * (TipWidth * 0.5);
 		const FVector TipB = TipCenter + Right * (TipWidth * 0.5);
-		AddQuad(BaseA, BaseB, MidA, MidB, BaseColor, BaseColor, MidColor, MidColor, 0.0, 0.0, 0.55, 0.55);
+		if (!bRemoveLowerBladeBand)
+		{
+			AddQuad(BaseA, BaseB, MidA, MidB, BaseColor, BaseColor, MidColor, MidColor, 0.0, 0.0, 0.55, 0.55);
+		}
 		AddQuad(MidA, MidB, TipA, TipB, MidColor, MidColor, TipColor, TipColor, 0.55, 0.55, 1.0, 1.0);
 	};
 
@@ -2590,6 +2620,10 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObje
 		const float DryChance = bDenseCoverage ? 0.025f : 0.045f;
 		const float ShadeChance = bDenseCoverage ? 0.205f : 0.265f;
 		const float SunChance = bDenseCoverage ? 0.145f : 0.105f;
+		if (bRemoveLowerBladeBand && ToneRoll >= DryChance && ToneRoll < DryChance + ShadeChance)
+		{
+			continue;
+		}
 		FVector3f BaseTint(0.022f, 0.080f, 0.018f);
 		FVector3f MidTint(0.060f, 0.175f, 0.036f);
 		FVector3f TipTint(0.145f, 0.340f, 0.064f);
@@ -2624,7 +2658,7 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateGrassClusterMeshVariant(TObje
 			VaryColor(TipTint, CoolWarm, ValueShift));
 	}
 
-	if (bDenseCoverage)
+	if (bDenseCoverage && !bRemoveLowerBladeBand)
 	{
 		for (int32 FillerIndex = 0; FillerIndex < ProphecyGrassDenseFillersPerTile; ++FillerIndex)
 		{
@@ -3888,27 +3922,80 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 		return T * T * (3.0f - 2.0f * T);
 	};
 	const TCHAR* Cmd = FCommandLine::Get();
+	float GrassFarRadiusCm = ProphecyGrassFarRadiusCm;
+	float GrassHorizonRadiusCm = ProphecyGrassHorizonRadiusCm;
 	float FarTargetSpacingCm = ProphecyGrassFarTargetSpacingCm;
 	float FarCoverage = ProphecyGrassFarCoverage;
+	float OuterDensityFadeStartCm = ProphecyGrassOuterDensityFadeStartCm;
+	float OuterDensityFadeRangeCm = ProphecyGrassOuterDensityFadeRangeCm;
+	float OuterDensityEndInsetCm = ProphecyGrassOuterDensityEndInsetCm;
+	float DebugRemoveOuterShellStartCm = ProphecyGrassOuterDensityFadeStartCm;
+	float DebugRemoveViewOuterStripYStartCm = 40000.0f;
 	float FarScaleXYMin = ProphecyGrassFarScaleXYMin;
 	float FarScaleXYMax = ProphecyGrassFarScaleXYMax;
 	float FarScaleZMin = ProphecyGrassFarScaleZMin;
 	float FarScaleZMax = ProphecyGrassFarScaleZMax;
 	float DenseMeshRadiusCm = ProphecyGrassDenseMeshRadiusCm;
+	const bool bDebugRemoveOuterShell = FParse::Param(Cmd, TEXT("ProphecyNNGrassDebugRemoveOuterShell"));
+	const bool bDebugRemoveViewOuterStrip = FParse::Param(Cmd, TEXT("ProphecyNNGrassDebugRemoveViewOuterStrip"));
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarRadius="), GrassFarRadiusCm);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassHorizonRadius="), GrassHorizonRadiusCm);
 	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarTargetSpacing="), FarTargetSpacingCm);
 	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarCoverage="), FarCoverage);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassOuterDensityFadeStart="), OuterDensityFadeStartCm);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassOuterDensityFadeRange="), OuterDensityFadeRangeCm);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassOuterDensityEndInset="), OuterDensityEndInsetCm);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassDebugRemoveOuterShellStart="), DebugRemoveOuterShellStartCm);
+	FParse::Value(Cmd, TEXT("ProphecyNNGrassDebugRemoveViewOuterStripYStart="), DebugRemoveViewOuterStripYStartCm);
 	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarScaleXYMin="), FarScaleXYMin);
 	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarScaleXYMax="), FarScaleXYMax);
 	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarScaleZMin="), FarScaleZMin);
 	FParse::Value(Cmd, TEXT("ProphecyNNGrassFarScaleZMax="), FarScaleZMax);
 	FParse::Value(Cmd, TEXT("ProphecyNNGrassDenseMeshRadius="), DenseMeshRadiusCm);
+	GrassHorizonRadiusCm = FMath::Clamp(GrassHorizonRadiusCm, ProphecyGrassNearRadiusCm + 500.0f, ProphecyGrassHorizonRadiusCm);
+	GrassFarRadiusCm = FMath::Clamp(GrassFarRadiusCm, ProphecyGrassNearRadiusCm, GrassHorizonRadiusCm - 250.0f);
+	OuterDensityFadeStartCm = FMath::Clamp(OuterDensityFadeStartCm, GrassFarRadiusCm, GrassHorizonRadiusCm - 250.0f);
+	OuterDensityFadeRangeCm = FMath::Clamp(OuterDensityFadeRangeCm, 250.0f, GrassHorizonRadiusCm - OuterDensityFadeStartCm);
+	OuterDensityEndInsetCm = FMath::Clamp(OuterDensityEndInsetCm, 0.0f, GrassHorizonRadiusCm - OuterDensityFadeStartCm);
+	DebugRemoveOuterShellStartCm = FMath::Clamp(DebugRemoveOuterShellStartCm, GrassFarRadiusCm, GrassHorizonRadiusCm);
+	DebugRemoveViewOuterStripYStartCm = FMath::Clamp(DebugRemoveViewOuterStripYStartCm, 0.0f, GrassHorizonRadiusCm);
 	FarTargetSpacingCm = FMath::Clamp(FarTargetSpacingCm, 180.0f, 1200.0f);
-	FarCoverage = FMath::Clamp(FarCoverage, 0.05f, 1.0f);
+	FarCoverage = FMath::Clamp(FarCoverage, 0.0f, 1.0f);
 	FarScaleXYMin = FMath::Clamp(FarScaleXYMin, 0.70f, 4.00f);
 	FarScaleXYMax = FMath::Clamp(FarScaleXYMax, FarScaleXYMin, 5.50f);
 	FarScaleZMin = FMath::Clamp(FarScaleZMin, 0.20f, 1.60f);
 	FarScaleZMax = FMath::Clamp(FarScaleZMax, FarScaleZMin, 1.80f);
 	DenseMeshRadiusCm = FMath::Clamp(DenseMeshRadiusCm, 2400.0f, 18000.0f);
+	UStaticMesh* OuterShellRemovedMesh = bDebugRemoveOuterShell ? CreateOuterShellRemovedGrassClusterMesh() : nullptr;
+	if (bDebugRemoveOuterShell && !OuterShellRemovedMesh)
+	{
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("Outer shell removal diagnostic requested, but its grass mesh could not be built."));
+	}
+
+	auto CreateGrassHISM = [&](UStaticMesh* Mesh) -> UHierarchicalInstancedStaticMeshComponent*
+	{
+		UHierarchicalInstancedStaticMeshComponent* NewComponent = NewObject<UHierarchicalInstancedStaticMeshComponent>(this);
+		NewComponent->SetStaticMesh(Mesh);
+		if (GrassMaterialInstance)
+		{
+			NewComponent->SetMaterial(0, GrassMaterialInstance);
+		}
+		NewComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		NewComponent->SetGenerateOverlapEvents(false);
+		NewComponent->SetCastShadow(false);
+		NewComponent->SetCastContactShadow(false);
+		NewComponent->SetAffectDistanceFieldLighting(false);
+		NewComponent->SetAffectDynamicIndirectLighting(false);
+		NewComponent->SetVisibleInRayTracing(false);
+		NewComponent->SetReceivesDecals(false);
+		NewComponent->SetMobility(EComponentMobility::Static);
+		NewComponent->BoundsScale = bGrassWind ? (bGrassWindDiagnostic ? 5.0f : 1.25f) : 1.0f;
+		NewComponent->SetCullDistances(42000, 56000);
+		NewComponent->AttachToComponent(SceneRoot, FAttachmentTransformRules::KeepRelativeTransform);
+		AddInstanceComponent(NewComponent);
+		NewComponent->RegisterComponent();
+		return NewComponent;
+	};
 
 	for (int32 CellY = 0; CellY < CellsPerAxis; ++CellY)
 	{
@@ -3920,7 +4007,7 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 			const float MaxY = MinY + CellSize;
 			const FVector2D CellCenter((MinX + MaxX) * 0.5f, (MinY + MaxY) * 0.5f);
 			const float CellDistance = CellCenter.Length();
-			if (CellDistance > ProphecyGrassHorizonRadiusCm + CellSize)
+			if (CellDistance > GrassHorizonRadiusCm + CellSize)
 			{
 				continue;
 			}
@@ -3928,32 +4015,23 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 			const bool bUseDenseMesh = !bGrassDiagnosticMode && CellDistance <= DenseMeshRadiusCm + CellSize * 0.5f;
 			const int32 ComponentBladesPerTile = bUseDenseMesh ? ProphecyGrassDenseBladesPerTile : ProphecyGrassBladesPerTile;
 			const float CandidateSpacing = bGrassDiagnosticMode && CellDistance <= DiagnosticDenseGrassRadiusCm + DiagnosticGrassCellPadCm ? DiagnosticGrassSpacingCm : 105.0f;
-			UHierarchicalInstancedStaticMeshComponent* Component = NewObject<UHierarchicalInstancedStaticMeshComponent>(this);
-			Component->SetStaticMesh(bUseDenseMesh ? DenseMesh : StandardMesh);
-			if (GrassMaterialInstance)
+			UHierarchicalInstancedStaticMeshComponent* Component = CreateGrassHISM(bUseDenseMesh ? DenseMesh : StandardMesh);
+			UHierarchicalInstancedStaticMeshComponent* OuterShellComponent = nullptr;
+			if (OuterShellRemovedMesh && !bUseDenseMesh && CellDistance + CellSize >= DebugRemoveOuterShellStartCm)
 			{
-				Component->SetMaterial(0, GrassMaterialInstance);
+				OuterShellComponent = CreateGrassHISM(OuterShellRemovedMesh);
 			}
-			Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			Component->SetGenerateOverlapEvents(false);
-			Component->SetCastShadow(false);
-			Component->SetCastContactShadow(false);
-			Component->SetAffectDistanceFieldLighting(false);
-			Component->SetAffectDynamicIndirectLighting(false);
-			Component->SetVisibleInRayTracing(false);
-			Component->SetReceivesDecals(false);
-			Component->SetMobility(EComponentMobility::Static);
-			Component->BoundsScale = bGrassWind ? (bGrassWindDiagnostic ? 5.0f : 1.25f) : 1.0f;
-			Component->SetCullDistances(42000, 56000);
-			Component->AttachToComponent(SceneRoot, FAttachmentTransformRules::KeepRelativeTransform);
-			AddInstanceComponent(Component);
-			Component->RegisterComponent();
 
 			const int32 PerAxis = FMath::Max(1, FMath::CeilToInt(CellSize / CandidateSpacing));
 			Component->PreAllocateInstancesMemory(PerAxis * PerAxis);
+			if (OuterShellComponent)
+			{
+				OuterShellComponent->PreAllocateInstancesMemory(PerAxis * PerAxis);
+			}
 
 			FRandomStream CellRandom(GrassSeed + CellX * 928371 + CellY * 12377);
 			int32 CellInstances = 0;
+			int32 OuterShellCellInstances = 0;
 			for (int32 Y = 0; Y < PerAxis; ++Y)
 			{
 				for (int32 X = 0; X < PerAxis; ++X)
@@ -3964,21 +4042,31 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 					const float JitterY = CellRandom.FRandRange(-0.42f, 0.42f) * CandidateSpacing;
 					const FVector2D Offset(LocalX + JitterX, LocalY + JitterY);
 					const float Distance = Offset.Length();
-					if (Distance > ProphecyGrassHorizonRadiusCm)
+					if (bDebugRemoveViewOuterStrip && Offset.Y >= DebugRemoveViewOuterStripYStartCm)
+					{
+						continue;
+					}
+					if (Distance > GrassHorizonRadiusCm)
 					{
 						continue;
 					}
 
-					const float FarT = Smooth01((Distance - ProphecyGrassFarRadiusCm) / (ProphecyGrassHorizonRadiusCm - ProphecyGrassFarRadiusCm));
-					const float NearT = Smooth01((Distance - ProphecyGrassNearRadiusCm) / (ProphecyGrassFarRadiusCm - ProphecyGrassNearRadiusCm));
-					const float FarLodT = Smooth01((Distance - (ProphecyGrassFarRadiusCm - 2600.0f)) / 7200.0f);
+					const float FarT = Smooth01((Distance - GrassFarRadiusCm) / (GrassHorizonRadiusCm - GrassFarRadiusCm));
+					const float NearT = Smooth01((Distance - ProphecyGrassNearRadiusCm) / (GrassFarRadiusCm - ProphecyGrassNearRadiusCm));
+					const float FarLodT = Smooth01((Distance - (GrassFarRadiusCm - 2600.0f)) / 7200.0f);
 					const float TargetSpacing = bGrassDiagnosticMode && Distance <= DiagnosticDenseGrassRadiusCm
 						? DiagnosticGrassSpacingCm
 						: FMath::Lerp(
 							FMath::Lerp(105.0f, 160.0f, NearT),
 							FMath::Lerp(170.0f, FarTargetSpacingCm, FarT),
 							FarLodT);
-					const float DistanceCoverage = Distance <= ProphecyGrassFarRadiusCm ? 1.0f : FMath::Lerp(1.0f, FarCoverage, FarT);
+					const float OuterEndInsetCm = OuterDensityEndInsetCm * FMath::Lerp(0.55f, 1.45f, CellRandom.FRand());
+					const float OuterFadeEndCm = FMath::Min(GrassHorizonRadiusCm - OuterEndInsetCm, OuterDensityFadeStartCm + OuterDensityFadeRangeCm);
+					const float OuterFadeRangeCm = FMath::Max(250.0f, OuterFadeEndCm - OuterDensityFadeStartCm);
+					const float OuterFadeT = Smooth01((Distance - OuterDensityFadeStartCm) / OuterFadeRangeCm);
+					const float DistanceCoverage =
+						(Distance <= GrassFarRadiusCm ? 1.0f : FMath::Lerp(1.0f, FarCoverage, FarT))
+						* (1.0f - OuterFadeT);
 					const float DensityKeep = FMath::Clamp(FMath::Square(CandidateSpacing / TargetSpacing) * DistanceCoverage, 0.0f, 1.0f);
 					if (CellRandom.FRand() > DensityKeep)
 					{
@@ -3998,29 +4086,46 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 						FRotator(0.0, Yaw, 0.0),
 						FieldCenter + FVector(Offset.X, Offset.Y, 0.0),
 						FVector(ScaleXY, ScaleXY, ScaleZ));
-					Component->AddInstance(InstanceTransform);
-					++CellInstances;
+					const bool bUseOuterShellRemovedMesh = OuterShellComponent && Distance >= DebugRemoveOuterShellStartCm;
+					UHierarchicalInstancedStaticMeshComponent* TargetComponent = bUseOuterShellRemovedMesh ? OuterShellComponent : Component;
+					TargetComponent->AddInstance(InstanceTransform);
+					if (bUseOuterShellRemovedMesh)
+					{
+						++OuterShellCellInstances;
+					}
+					else
+					{
+						++CellInstances;
+					}
 				}
 			}
 
-			if (CellInstances > 0)
+			auto FinalizeGrassComponent = [&](UHierarchicalInstancedStaticMeshComponent* FinishedComponent, int32 InstanceCount, int32 BladesPerTile, bool bDenseComponent)
 			{
+				if (!FinishedComponent)
+				{
+					return;
+				}
+				if (InstanceCount <= 0)
+				{
+					FinishedComponent->DestroyComponent();
+					return;
+				}
 				if (bHideGrassForShadowInspection)
 				{
-					Component->SetVisibility(false, true);
-					Component->SetHiddenInGame(true);
-					Component->SetCullDistances(0, 1);
+					FinishedComponent->SetVisibility(false, true);
+					FinishedComponent->SetHiddenInGame(true);
+					FinishedComponent->SetCullDistances(0, 1);
 				}
 
-				GrassComponents.Add(Component);
-				Impl->GrassInstanceCount += CellInstances;
-				Impl->GrassDenseInstanceCount += bUseDenseMesh ? CellInstances : 0;
-				Impl->GrassVisualBladeCount += int64(CellInstances) * int64(ComponentBladesPerTile);
-			}
-			else
-			{
-				Component->DestroyComponent();
-			}
+				GrassComponents.Add(FinishedComponent);
+				Impl->GrassInstanceCount += InstanceCount;
+				Impl->GrassDenseInstanceCount += bDenseComponent ? InstanceCount : 0;
+				Impl->GrassVisualBladeCount += int64(InstanceCount) * int64(BladesPerTile);
+			};
+
+			FinalizeGrassComponent(Component, CellInstances, ComponentBladesPerTile, bUseDenseMesh);
+			FinalizeGrassComponent(OuterShellComponent, OuterShellCellInstances, ProphecyGrassBladesPerTile, false);
 		}
 	}
 
@@ -4035,8 +4140,8 @@ void AProphecyNNCrowdBenchmarkActor::SpawnGrassField()
 		DenseMeshRadiusCm,
 		ProphecyGrassTileSizeCm,
 		ProphecyGrassNearRadiusCm,
-		ProphecyGrassFarRadiusCm,
-		ProphecyGrassHorizonRadiusCm,
+		GrassFarRadiusCm,
+		GrassHorizonRadiusCm,
 		bGrassWind ? 1 : 0,
 		bGrassDiagnosticMode ? 1 : 0);
 }
@@ -6831,23 +6936,19 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantFlattenCm"), float(FlattenCm));
 		}
 
-		double OpacityStartCm = 0.0;
-		if (TryNumber(TEXT("grass_distant_opacity_start_cm"), OpacityStartCm) || TryNumber(TEXT("GrassDistantOpacityStartCm"), OpacityStartCm))
+		double DistanceKillStartCm = 0.0;
+		if (TryNumber(TEXT("grass_debug_distance_kill_start_cm"), DistanceKillStartCm) || TryNumber(TEXT("GrassDebugDistanceKillStartCm"), DistanceKillStartCm))
 		{
-			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityStartCm"), float(OpacityStartCm));
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDebugDistanceKillStartCm"), float(DistanceKillStartCm));
 		}
 
-		double OpacityRangeCm = 0.0;
-		if ((TryNumber(TEXT("grass_distant_opacity_range_cm"), OpacityRangeCm) || TryNumber(TEXT("GrassDistantOpacityRangeCm"), OpacityRangeCm)) && OpacityRangeCm > UE_SMALL_NUMBER)
+		double DistanceKillRangeCm = 0.0;
+		if ((TryNumber(TEXT("grass_debug_distance_kill_range_cm"), DistanceKillRangeCm) || TryNumber(TEXT("GrassDebugDistanceKillRangeCm"), DistanceKillRangeCm)) && DistanceKillRangeCm > UE_SMALL_NUMBER)
 		{
-			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityInvRange"), 1.0f / float(OpacityRangeCm));
+			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDebugDistanceKillInvRange"), 1.0f / float(DistanceKillRangeCm));
 		}
 
-		double OpacityInvRange = 0.0;
-		if (TryNumber(TEXT("grass_distant_opacity_inv_range"), OpacityInvRange) || TryNumber(TEXT("GrassDistantOpacityInvRange"), OpacityInvRange))
-		{
-			GrassMaterialInstance->SetScalarParameterValue(TEXT("GrassDistantOpacityInvRange"), float(OpacityInvRange));
-		}
+		ApplyScalarParameter(GrassMaterialInstance.Get(), TEXT("grass_debug_distance_kill_inv_range"), TEXT("GrassDebugDistanceKillInvRange"), TEXT("GrassDebugDistanceKillInvRange"));
 
 		double GrassShadowStrength = 0.0;
 		if (TryNumber(TEXT("grass_shadow_strength"), GrassShadowStrength) || TryNumber(TEXT("GrassShadowMaskStrength"), GrassShadowStrength))
@@ -7032,6 +7133,10 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 		if (TryVector(TEXT("camera_location"), CameraLocation) || TryVector(TEXT("CameraLocation"), CameraLocation))
 		{
 			BenchmarkCamera->SetActorLocation(CameraLocation);
+			if (GrassMaterialInstance)
+			{
+				GrassMaterialInstance->SetVectorParameterValue(TEXT("GrassDistantFadeCenter"), FLinearColor(float(CameraLocation.X), float(CameraLocation.Y), 0.0f, 0.0f));
+			}
 		}
 
 		FVector CameraLookAt;

@@ -1,13 +1,13 @@
 param(
     [string]$Name = ("live_" + (Get-Date -Format "HHmmss")),
     [object[]]$GrassDistantColor = @(),
-    [double]$GrassDistantStartCm = 52000.0,
-    [double]$GrassDistantRangeCm = 12000.0,
-    [double]$GrassDistantFlattenStartCm = 52000.0,
-    [double]$GrassDistantFlattenRangeCm = 12000.0,
-    [double]$GrassDistantFlattenCm = 0.0,
-    [double]$GrassDistantOpacityStartCm = 52000.0,
-    [double]$GrassDistantOpacityRangeCm = 12000.0,
+    [object]$GrassDistantStartCm = $null,
+    [object]$GrassDistantRangeCm = $null,
+    [object]$GrassDistantFlattenStartCm = $null,
+    [object]$GrassDistantFlattenRangeCm = $null,
+    [object]$GrassDistantFlattenCm = $null,
+    [object]$GrassDebugDistanceKillStartCm = $null,
+    [object]$GrassDebugDistanceKillRangeCm = $null,
     [object[]]$GrassFarRootLiftColor = @(),
     [object]$GrassFarRootLiftStartCm = $null,
     [object]$GrassFarRootLiftRangeCm = $null,
@@ -153,17 +153,38 @@ function Wait-LivePreviewReady {
 
 $payload = [ordered]@{
     nonce = [DateTime]::UtcNow.Ticks
-    grass_distant_color_start_cm = $GrassDistantStartCm
-    grass_distant_color_range_cm = $GrassDistantRangeCm
-    grass_distant_flatten_start_cm = $GrassDistantFlattenStartCm
-    grass_distant_flatten_range_cm = $GrassDistantFlattenRangeCm
-    grass_distant_flatten_cm = $GrassDistantFlattenCm
-    grass_distant_opacity_start_cm = $GrassDistantOpacityStartCm
-    grass_distant_opacity_range_cm = $GrassDistantOpacityRangeCm
 }
 
 if ($GrassDistantColorValues.Count -ge 3) {
     $payload.grass_distant_color = @($GrassDistantColorValues)
+}
+
+if ($null -ne $GrassDistantStartCm) {
+    $payload.grass_distant_color_start_cm = ConvertTo-DoubleValue $GrassDistantStartCm
+}
+
+if ($null -ne $GrassDistantRangeCm) {
+    $payload.grass_distant_color_range_cm = ConvertTo-DoubleValue $GrassDistantRangeCm
+}
+
+if ($null -ne $GrassDistantFlattenStartCm) {
+    $payload.grass_distant_flatten_start_cm = ConvertTo-DoubleValue $GrassDistantFlattenStartCm
+}
+
+if ($null -ne $GrassDistantFlattenRangeCm) {
+    $payload.grass_distant_flatten_range_cm = ConvertTo-DoubleValue $GrassDistantFlattenRangeCm
+}
+
+if ($null -ne $GrassDistantFlattenCm) {
+    $payload.grass_distant_flatten_cm = ConvertTo-DoubleValue $GrassDistantFlattenCm
+}
+
+if ($null -ne $GrassDebugDistanceKillStartCm) {
+    $payload.grass_debug_distance_kill_start_cm = ConvertTo-DoubleValue $GrassDebugDistanceKillStartCm
+}
+
+if ($null -ne $GrassDebugDistanceKillRangeCm) {
+    $payload.grass_debug_distance_kill_range_cm = ConvertTo-DoubleValue $GrassDebugDistanceKillRangeCm
 }
 
 if ($GrassFarRootLiftColorValues.Count -ge 3) {

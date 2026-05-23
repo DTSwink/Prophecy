@@ -269,7 +269,8 @@ private:
 	void UploadBloodMask();
 	UStaticMesh* CreateGrassClusterMesh();
 	UStaticMesh* CreateDenseGrassClusterMesh();
-	UStaticMesh* CreateGrassClusterMeshVariant(TObjectPtr<UStaticMesh>& MeshSlot, FName MeshName, int32 BladesPerTile, bool bDenseCoverage);
+	UStaticMesh* CreateOuterShellRemovedGrassClusterMesh();
+	UStaticMesh* CreateGrassClusterMeshVariant(TObjectPtr<UStaticMesh>& MeshSlot, FName MeshName, int32 BladesPerTile, bool bDenseCoverage, bool bRemoveLowerBladeBand);
 	UStaticMesh* CreateDistantGrassHillsMesh();
 	UStaticMesh* CreateTreeMesh();
 	UStaticMesh* CreateContactShadowMesh();
@@ -367,6 +368,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> DenseGrassMesh;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> OuterShellRemovedGrassMesh;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> DistantHillsMesh;

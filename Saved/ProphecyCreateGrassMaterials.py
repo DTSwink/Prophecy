@@ -1330,17 +1330,18 @@ def rebuild_field_grass_still_material():
     return material
 
 
-def rebuild_field_grass_material():
-    material = get_or_create_material("M_ProphecyGrass_UnlitField")
+def rebuild_field_grass_material(material_name="M_ProphecyGrass_UnlitField", distance_kill=False):
+    material = get_or_create_material(material_name)
     unreal.MaterialEditingLibrary.delete_all_material_expressions(material)
     wind_texture_asset = import_ground_texture()
 
     set_if_present(material, "two_sided", True)
     set_if_present(material, "used_with_instanced_static_meshes", True)
     set_if_present(material, "b_used_with_instanced_static_meshes", True)
-    set_if_present(material, "blend_mode", unreal.BlendMode.BLEND_MASKED)
-    set_if_present(material, "dither_opacity_mask", True)
-    set_if_present(material, "opacity_mask_clip_value", 0.333)
+    set_if_present(material, "blend_mode", unreal.BlendMode.BLEND_MASKED if distance_kill else unreal.BlendMode.BLEND_OPAQUE)
+    set_if_present(material, "dither_opacity_mask", False)
+    if distance_kill:
+        set_if_present(material, "opacity_mask_clip_value", 0.5)
     set_if_present(material, "material_domain", unreal.MaterialDomain.MD_SURFACE)
     set_if_present(material, "is_sky", False)
     set_if_present(material, "b_is_sky", False)
@@ -1536,23 +1537,39 @@ def rebuild_field_grass_material():
     distant_combined_wpo = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionAdd, 4280, 820
     )
-    distant_opacity_start = create_scalar_parameter(material, "GrassDistantOpacityStartCm", GRASS_DISTANT_FADE_START_CM, 2350, 515)
-    distant_opacity_inv_range = create_scalar_parameter(material, "GrassDistantOpacityInvRange", 1.0 / GRASS_DISTANT_FADE_RANGE_CM, 2550, 555)
-    distant_opacity_offset = unreal.MaterialEditingLibrary.create_material_expression(
-        material, unreal.MaterialExpressionSubtract, 2750, 515
-    )
-    distant_opacity_scaled = unreal.MaterialEditingLibrary.create_material_expression(
-        material, unreal.MaterialExpressionMultiply, 2940, 515
-    )
-    distant_opacity_nonnegative = unreal.MaterialEditingLibrary.create_material_expression(
-        material, unreal.MaterialExpressionMax, 3130, 515
-    )
-    distant_opacity_fade = unreal.MaterialEditingLibrary.create_material_expression(
-        material, unreal.MaterialExpressionMin, 3320, 515
-    )
-    distant_opacity = unreal.MaterialEditingLibrary.create_material_expression(
-        material, unreal.MaterialExpressionSubtract, 3510, 515
-    )
+    distance_kill_opacity = None
+    if distance_kill:
+        kill_camera_position = unreal.MaterialEditingLibrary.create_material_expression(
+            material, unreal.MaterialExpressionCameraPositionWS, 2350, 520
+        )
+        kill_distance = unreal.MaterialEditingLibrary.create_material_expression(
+            material, unreal.MaterialExpressionDistance, 2550, 520
+        )
+        kill_start = create_scalar_parameter(material, "GrassDebugDistanceKillStartCm", 1000000.0, 2750, 480)
+        kill_inv_range = create_scalar_parameter(material, "GrassDebugDistanceKillInvRange", 1.0 / 100.0, 2750, 585)
+        kill_offset = unreal.MaterialEditingLibrary.create_material_expression(
+            material, unreal.MaterialExpressionSubtract, 2940, 520
+        )
+        kill_scaled = unreal.MaterialEditingLibrary.create_material_expression(
+            material, unreal.MaterialExpressionMultiply, 3130, 520
+        )
+        kill_zero = unreal.MaterialEditingLibrary.create_material_expression(
+            material, unreal.MaterialExpressionConstant, 3130, 665
+        )
+        kill_zero.set_editor_property("r", 0.0)
+        kill_one = unreal.MaterialEditingLibrary.create_material_expression(
+            material, unreal.MaterialExpressionConstant, 3320, 665
+        )
+        kill_one.set_editor_property("r", 1.0)
+        kill_nonnegative = unreal.MaterialEditingLibrary.create_material_expression(
+            material, unreal.MaterialExpressionMax, 3320, 520
+        )
+        kill_fade = unreal.MaterialEditingLibrary.create_material_expression(
+            material, unreal.MaterialExpressionMin, 3510, 520
+        )
+        distance_kill_opacity = unreal.MaterialEditingLibrary.create_material_expression(
+            material, unreal.MaterialExpressionSubtract, 3700, 520
+        )
     tex_coord = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionTextureCoordinate, -1140, -315
     )
@@ -2223,36 +2240,43 @@ def rebuild_field_grass_material():
     unreal.MaterialEditingLibrary.connect_material_expressions(
         blood_alpha, "", blood_grass_final, "Alpha"
     )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_distance, "", distant_opacity_offset, "A"
-    )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_opacity_start, "", distant_opacity_offset, "B"
-    )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_opacity_offset, "", distant_opacity_scaled, "A"
-    )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_opacity_inv_range, "", distant_opacity_scaled, "B"
-    )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_opacity_scaled, "", distant_opacity_nonnegative, "A"
-    )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_zero, "", distant_opacity_nonnegative, "B"
-    )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_opacity_nonnegative, "", distant_opacity_fade, "A"
-    )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_one, "", distant_opacity_fade, "B"
-    )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_one, "", distant_opacity, "A"
-    )
-    unreal.MaterialEditingLibrary.connect_material_expressions(
-        distant_opacity_fade, "", distant_opacity, "B"
-    )
+    if distance_kill:
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            world_position, "", kill_distance, "A"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_camera_position, "", kill_distance, "B"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_distance, "", kill_offset, "A"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_start, "", kill_offset, "B"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_offset, "", kill_scaled, "A"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_inv_range, "", kill_scaled, "B"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_scaled, "", kill_nonnegative, "A"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_zero, "", kill_nonnegative, "B"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_nonnegative, "", kill_fade, "A"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_one, "", kill_fade, "B"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_one, "", distance_kill_opacity, "A"
+        )
+        unreal.MaterialEditingLibrary.connect_material_expressions(
+            kill_fade, "", distance_kill_opacity, "B"
+        )
     unreal.MaterialEditingLibrary.connect_material_expressions(
         tex_coord, "", blade_v, "None"
     )
@@ -2749,9 +2773,10 @@ def rebuild_field_grass_material():
     unreal.MaterialEditingLibrary.connect_material_property(
         distant_combined_wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET
     )
-    unreal.MaterialEditingLibrary.connect_material_property(
-        distant_opacity, "", unreal.MaterialProperty.MP_OPACITY_MASK
-    )
+    if distance_kill:
+        unreal.MaterialEditingLibrary.connect_material_property(
+            distance_kill_opacity, "", unreal.MaterialProperty.MP_OPACITY_MASK
+        )
     unreal.MaterialEditingLibrary.layout_material_expressions(material)
     unreal.MaterialEditingLibrary.recompile_material(material)
     unreal.EditorAssetLibrary.save_loaded_asset(material)
@@ -3091,6 +3116,7 @@ ground = rebuild_ground_material()
 sky = unreal.EditorAssetLibrary.load_asset(f"{ASSET_DIR}/M_ProphecySky_Unlit")
 terrain = rebuild_shared_terrain_material()
 field_grass = rebuild_field_grass_material()
+field_grass_distance_kill = rebuild_field_grass_material("M_ProphecyGrass_UnlitField_DistanceKill", True)
 tree_wind = rebuild_tree_vertex_wind_material()
 far_hills = rebuild_far_hills_material()
 contact_shadow = rebuild_grass_contact_shadow_material()
