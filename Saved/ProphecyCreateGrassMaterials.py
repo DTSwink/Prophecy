@@ -16,8 +16,8 @@ GRASS_FIELD_LIGHT = unreal.LinearColor(0.140, 0.285, 0.060, 1.0)
 GRASS_FIELD_INSTANCE_DARK = unreal.LinearColor(0.74, 0.88, 0.72, 1.0)
 GRASS_FIELD_INSTANCE_LIGHT = unreal.LinearColor(1.05, 1.07, 0.88, 1.0)
 GRASS_CONTINUATION_COLOR = unreal.LinearColor(0.105, 0.245, 0.048, 1.0)
-GRASS_DISTANT_FADE_START_CM = 52000.0
-GRASS_DISTANT_FADE_RANGE_CM = 12000.0
+GRASS_DISTANT_FADE_START_CM = 15000.0
+GRASS_DISTANT_FADE_RANGE_CM = 3000.0
 GRASS_FAR_ROOT_LIFT_COLOR = unreal.LinearColor(0.130, 0.275, 0.052, 1.0)
 GRASS_FAR_ROOT_LIFT_START_CM = 5400.0
 GRASS_FAR_ROOT_LIFT_RANGE_CM = 3000.0
@@ -681,6 +681,27 @@ def rebuild_ground_material():
     blood_final_color = unreal.MaterialEditingLibrary.create_material_expression(
         material, unreal.MaterialExpressionLinearInterpolate, 1585, -155
     )
+    vertex_color = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionVertexColor, 1585, 90
+    )
+    vertex_shade = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionComponentMask, 1785, 90
+    )
+    set_if_present(vertex_shade, "r", True)
+    set_if_present(vertex_shade, "g", False)
+    set_if_present(vertex_shade, "b", False)
+    set_if_present(vertex_shade, "a", False)
+    vertex_shade_strength = create_scalar_parameter(material, "GroundVertexShadeStrength", 0.0, 1785, 205)
+    vertex_shade_one = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionConstant, 1785, 310
+    )
+    vertex_shade_one.set_editor_property("r", 1.0)
+    vertex_shade_factor = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionLinearInterpolate, 1980, 155
+    )
+    vertex_shaded_color = unreal.MaterialEditingLibrary.create_material_expression(
+        material, unreal.MaterialExpressionMultiply, 2175, 0
+    )
 
     unreal.MaterialEditingLibrary.connect_material_expressions(
         world_position, "", world_xy, "None"
@@ -1024,12 +1045,30 @@ def rebuild_ground_material():
     unreal.MaterialEditingLibrary.connect_material_expressions(
         blood_core_alpha, "", blood_final_color, "Alpha"
     )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        vertex_color, "", vertex_shade, "None"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        vertex_shade_one, "", vertex_shade_factor, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        vertex_shade, "", vertex_shade_factor, "B"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        vertex_shade_strength, "", vertex_shade_factor, "Alpha"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        blood_final_color, "", vertex_shaded_color, "A"
+    )
+    unreal.MaterialEditingLibrary.connect_material_expressions(
+        vertex_shade_factor, "", vertex_shaded_color, "B"
+    )
 
     unreal.MaterialEditingLibrary.connect_material_property(
-        blood_final_color, "", unreal.MaterialProperty.MP_BASE_COLOR
+        vertex_shaded_color, "", unreal.MaterialProperty.MP_BASE_COLOR
     )
     unreal.MaterialEditingLibrary.connect_material_property(
-        blood_final_color, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR
+        vertex_shaded_color, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR
     )
     unreal.MaterialEditingLibrary.connect_material_property(
         roughness, "", unreal.MaterialProperty.MP_ROUGHNESS

@@ -71,8 +71,8 @@ constexpr float ProphecyMetersToCentimeters = 100.0f;
 constexpr float ProphecyGrassNearRadiusCm = 3500.0f;
 constexpr float ProphecyGrassFarRadiusCm = 8000.0f;
 constexpr float ProphecyGrassHorizonRadiusCm = 18000.0f;
-constexpr float ProphecyGrassDistantFadeStartCm = 52000.0f;
-constexpr float ProphecyGrassDistantFadeRangeCm = 12000.0f;
+constexpr float ProphecyGrassDistantFadeStartCm = 15000.0f;
+constexpr float ProphecyGrassDistantFadeRangeCm = 3000.0f;
 constexpr float ProphecyGrassFarRootLiftStartCm = 5400.0f;
 constexpr float ProphecyGrassFarRootLiftRangeCm = 3000.0f;
 constexpr float ProphecyGrassFarRootLiftStrength = 0.60f;
@@ -2728,7 +2728,7 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateDistantGrassHillsMesh()
 
 	UMaterialInterface* HillsMaterial = bHillVertexColorDiagnostic
 		? LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/EngineDebugMaterials/VertexColorMaterial.VertexColorMaterial"))
-		: LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassTerrainShared.M_ProphecyGrassTerrainShared"));
+		: LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassGround.M_ProphecyGrassGround"));
 	if (bHillVertexColorDiagnostic && !HillsMaterial)
 	{
 		HillsMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassTerrainShared.M_ProphecyGrassTerrainShared"));
@@ -2768,7 +2768,6 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateDistantGrassHillsMesh()
 	const FVector BakedToSunDirection = (-BakedSunDirection).GetSafeNormal();
 	const FVector2D BakedSunHorizontal(BakedToSunDirection.X, BakedToSunDirection.Y);
 	const FVector2D BakedSunHorizontalSafe = BakedSunHorizontal.IsNearlyZero() ? FVector2D(1.0, 0.0) : BakedSunHorizontal.GetSafeNormal();
-	const FVector2D BakedSunCross(-BakedSunHorizontalSafe.Y, BakedSunHorizontalSafe.X);
 
 	auto BakedSelfShadowAt = [BakedSunHorizontalSafe](const FVector& Position)
 	{
@@ -2822,13 +2821,8 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateDistantGrassHillsMesh()
 		return Normal;
 	};
 
-	auto BakedShadeAt = [BakedToSunDirection, BakedSunHorizontalSafe, BakedSunCross, bHillShadeDiagnostic, &BakedSelfShadowAt, &TerrainNormalAt](const FVector& Position)
+	auto BakedShadeAt = [BakedToSunDirection, BakedSunHorizontalSafe, bHillShadeDiagnostic, &BakedSelfShadowAt, &TerrainNormalAt](const FVector& Position)
 	{
-		if (!bHillShadeDiagnostic)
-		{
-			return 1.0f;
-		}
-
 		const FVector Normal = TerrainNormalAt(Position);
 		const float LitAmount = FMath::Clamp(float(FVector::DotProduct(Normal, BakedToSunDirection)), 0.0f, 1.0f);
 		const FVector2D RawSlopeAspect(Normal.X, Normal.Y);
@@ -2836,24 +2830,16 @@ UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateDistantGrassHillsMesh()
 		const float AspectLight = RawSlopeAspect.IsNearlyZero()
 			? LitAmount
 			: FMath::Clamp(0.5f + 0.5f * float(FVector2D::DotProduct(SlopeAspect, BakedSunHorizontalSafe)), 0.0f, 1.0f);
-		const float HeightAlpha = FMath::Clamp(float(Position.Z / 9000.0), 0.0f, 1.0f);
-		const float ReliefStrength = FMath::Clamp((1.0f - float(Normal.Z)) * 22.0f, 0.25f, 1.0f);
+		const float SlopeAmount = FMath::Clamp((1.0f - float(Normal.Z)) * 22.0f, 0.0f, 1.0f);
 		const float SelfShadow = BakedSelfShadowAt(Position);
-		const float LeeShadow = FMath::Pow(1.0f - AspectLight, 0.78f) * FMath::Lerp(0.45f, 1.0f, ReliefStrength);
-		const float ShadowAmount = FMath::Clamp(FMath::Max(LeeShadow, SelfShadow), 0.0f, 1.0f);
-		const float LitLift = FMath::Lerp(0.90f, 1.12f, FMath::Pow(AspectLight, 0.75f));
-		const float Shade = FMath::Lerp(LitLift, 0.14f, ShadowAmount) * (0.84f + 0.18f * HeightAlpha);
-		float ClampedShade = FMath::Clamp(Shade, 0.08f, 1.14f);
+		const float LeeShadow = FMath::Pow(1.0f - AspectLight, 0.62f) * SlopeAmount;
+		const float ShadowAmount = FMath::Clamp(FMath::Max(LeeShadow, SelfShadow * 1.15f), 0.0f, 1.0f);
+		float Shade = FMath::Lerp(1.0f, 0.42f, ShadowAmount);
 		if (bHillShadeDiagnostic)
 		{
-			const FVector2D CenterXY(Position.X, Position.Y);
-			const float AlongSun = float(FVector2D::DotProduct(CenterXY, BakedSunHorizontalSafe));
-			const float AcrossSun = float(FVector2D::DotProduct(CenterXY, BakedSunCross));
-			const int32 SunBandIndex = FMath::FloorToInt((AcrossSun + AlongSun * 0.35f) / 1800.0f);
-			const bool bDarkDiagnosticBand = (SunBandIndex & 1) == 0;
-			ClampedShade = bDarkDiagnosticBand ? 0.015f : 1.85f;
+			Shade = FMath::Clamp(1.0f - ShadowAmount * 1.25f, 0.08f, 1.15f);
 		}
-		return ClampedShade;
+		return bHillShadeDiagnostic ? FMath::Clamp(Shade, 0.08f, 1.15f) : FMath::Clamp(Shade, 0.42f, 1.0f);
 	};
 
 	auto AddTerrainTriangle = [&Builder, PolygonGroup, &TerrainNormalAt, &BakedShadeAt](const FVector& A, const FVector& B, const FVector& C)
@@ -4163,7 +4149,7 @@ void AProphecyNNCrowdBenchmarkActor::SpawnDistantGrassHills()
 	const bool bHillVertexColorDiagnostic = FParse::Param(FCommandLine::Get(), TEXT("ProphecyNNHillVertexColorDiagnostic"));
 	UMaterialInterface* HillsMaterial = bHillVertexColorDiagnostic
 		? LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/EngineDebugMaterials/VertexColorMaterial.VertexColorMaterial"))
-		: LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassTerrainShared.M_ProphecyGrassTerrainShared"));
+		: LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassGround.M_ProphecyGrassGround"));
 	if (bHillVertexColorDiagnostic && !HillsMaterial)
 	{
 		HillsMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassTerrainShared.M_ProphecyGrassTerrainShared"));
@@ -4179,8 +4165,32 @@ void AProphecyNNCrowdBenchmarkActor::SpawnDistantGrassHills()
 	if (HillsMaterial && !bHillShadeDiagnostic && !bHillVertexColorDiagnostic)
 	{
 		DistantHillsMaterialInstance = UMaterialInstanceDynamic::Create(HillsMaterial, this);
+		if (DistantHillsMaterialInstance)
+		{
+			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), ProphecyGrassGroundBaseColor);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundNoiseStrength"), 0.55f);
+			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), FLinearColor(0.52f, 0.36f, 0.18f, 1.0f));
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), 1.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchScale"), 1.0f / 14000.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchThreshold"), -1.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchContrast"), 1.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureScale"), 1.0f / 1600.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), 1.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeStartCm"), 1500.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / 900.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtViewMin"), 0.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtViewScale"), 10.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainFrequency"), UE_TWO_PI / ProphecyGroundGrassGrainWorldCm);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainStrength"), ProphecyGroundGrassGrainStrength);
+			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("GroundGrassGrainDarkColor"), ProphecyGroundGrassGrainDarkColor);
+			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("GroundGrassGrainLightColor"), ProphecyGroundGrassGrainLightColor);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundVertexShadeStrength"), 1.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundShadowMaskStrength"), 0.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GrassShadowMaskStrength"), 0.0f);
+		}
 	}
-	if (!bHillShadeDiagnostic && !bHillVertexColorDiagnostic)
+	const bool bUsesGroundMaterial = HillsMaterial && HillsMaterial->GetPathName().Contains(TEXT("M_ProphecyGrassGround"), ESearchCase::IgnoreCase);
+	if (!bHillShadeDiagnostic && !bHillVertexColorDiagnostic && !bUsesGroundMaterial)
 	{
 		InitializeDistantTerrainTexture();
 	}
