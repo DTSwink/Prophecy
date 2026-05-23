@@ -94,6 +94,7 @@ Keep this file tight. Preserve only goals, rules, keeper settings, important pat
 ## Visual Workflow Rules
 
 - Always show captures in chat when visual work is being judged.
+- User cannot rely on the assistant's visual judgment or claims alone. Always show the actual screenshot/crop/result after visual changes so the user can judge with evidence.
 - For scenery iteration, use scenery-only runs with agents disabled unless the task is explicitly about characters or performance with agents.
 - When a visual problem is ambiguous, isolate or exaggerate the variable so the failure becomes obvious. Label these as diagnostic aids, not final art direction.
 - Do not hide problems with unrelated tints or occluders; solve the underlying material/geometry/runtime cause.

@@ -12,6 +12,7 @@ $Project = "C:\Users\singerie\Documents\Unreal Projects\Prophecy\GameAnimationSa
 $ReadyPath = [System.IO.Path]::ChangeExtension($ConfigPath, "ready.json")
 
 Remove-Item -LiteralPath $ReadyPath -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $ConfigPath -Force -ErrorAction SilentlyContinue
 
 $argsList = @(
     "`"$Project`"",

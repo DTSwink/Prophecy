@@ -6120,7 +6120,11 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 
 	int32 DisabledExistingLightComponentCount = 0;
 	int32 DisabledExistingSkyLightComponentCount = 0;
+	int32 DisabledExistingSkyAtmosphereComponentCount = 0;
+	int32 DisabledExistingVolumetricCloudComponentCount = 0;
+	int32 DisabledExistingFogComponentCount = 0;
 	int32 HiddenExistingSkyMeshComponentCount = 0;
+	int32 HiddenExistingTemplateMeshComponentCount = 0;
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		AActor* ExistingActor = *It;
@@ -6171,9 +6175,69 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 			ExistingActor->SetActorHiddenInGame(true);
 		}
 
+		bool bDisabledActorEnvironment = false;
+		if (bSceneryOnly)
+		{
+			TArray<USkyAtmosphereComponent*> SkyAtmosphereComponents;
+			ExistingActor->GetComponents(SkyAtmosphereComponents);
+			for (USkyAtmosphereComponent* ExistingSkyAtmosphereComponent : SkyAtmosphereComponents)
+			{
+				if (!ExistingSkyAtmosphereComponent)
+				{
+					continue;
+				}
+
+				ExistingSkyAtmosphereComponent->SetVisibility(false, true);
+				ExistingSkyAtmosphereComponent->SetHiddenInGame(true);
+				ExistingSkyAtmosphereComponent->Deactivate();
+				ExistingSkyAtmosphereComponent->MarkRenderStateDirty();
+				++DisabledExistingSkyAtmosphereComponentCount;
+				bDisabledActorEnvironment = true;
+			}
+
+			TArray<UVolumetricCloudComponent*> VolumetricCloudComponents;
+			ExistingActor->GetComponents(VolumetricCloudComponents);
+			for (UVolumetricCloudComponent* ExistingVolumetricCloudComponent : VolumetricCloudComponents)
+			{
+				if (!ExistingVolumetricCloudComponent)
+				{
+					continue;
+				}
+
+				ExistingVolumetricCloudComponent->SetVisibility(false, true);
+				ExistingVolumetricCloudComponent->SetHiddenInGame(true);
+				ExistingVolumetricCloudComponent->Deactivate();
+				ExistingVolumetricCloudComponent->MarkRenderStateDirty();
+				++DisabledExistingVolumetricCloudComponentCount;
+				bDisabledActorEnvironment = true;
+			}
+
+			TArray<UExponentialHeightFogComponent*> FogComponents;
+			ExistingActor->GetComponents(FogComponents);
+			for (UExponentialHeightFogComponent* ExistingFogComponent : FogComponents)
+			{
+				if (!ExistingFogComponent)
+				{
+					continue;
+				}
+
+				ExistingFogComponent->SetVisibility(false, true);
+				ExistingFogComponent->SetHiddenInGame(true);
+				ExistingFogComponent->Deactivate();
+				ExistingFogComponent->MarkRenderStateDirty();
+				++DisabledExistingFogComponentCount;
+				bDisabledActorEnvironment = true;
+			}
+		}
+		if (bDisabledActorEnvironment)
+		{
+			ExistingActor->SetActorHiddenInGame(true);
+		}
+
 		TArray<UStaticMeshComponent*> StaticMeshComponents;
 		ExistingActor->GetComponents(StaticMeshComponents);
 		bool bHiddenActorSkyMesh = false;
+		bool bHiddenActorTemplateMesh = false;
 		for (UStaticMeshComponent* ExistingMeshComponent : StaticMeshComponents)
 		{
 			if (!ExistingMeshComponent || !ExistingMeshComponent->GetStaticMesh())
@@ -6191,7 +6255,11 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 				ActorName.Contains(TEXT("Sky_Sphere"), ESearchCase::IgnoreCase) ||
 				ComponentName.Contains(TEXT("SkySphere"), ESearchCase::IgnoreCase) ||
 				ComponentName.Contains(TEXT("Sky_Sphere"), ESearchCase::IgnoreCase);
-			if (!bLooksLikeMapSkyDome)
+			const bool bLooksLikeTemplateGeometry =
+				bSceneryOnly &&
+				(MeshPath.Contains(TEXT("/Engine/MapTemplates/"), ESearchCase::IgnoreCase) ||
+				 MeshPath.Contains(TEXT("SM_Template_Map_Floor"), ESearchCase::IgnoreCase));
+			if (!bLooksLikeMapSkyDome && !bLooksLikeTemplateGeometry)
 			{
 				continue;
 			}
@@ -6200,24 +6268,43 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 			ExistingMeshComponent->SetHiddenInGame(true);
 			ExistingMeshComponent->SetCastShadow(false);
 			ExistingMeshComponent->SetCastContactShadow(false);
+			ExistingMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			ExistingMeshComponent->MarkRenderStateDirty();
-			++HiddenExistingSkyMeshComponentCount;
-			bHiddenActorSkyMesh = true;
+			if (bLooksLikeMapSkyDome)
+			{
+				++HiddenExistingSkyMeshComponentCount;
+				bHiddenActorSkyMesh = true;
+			}
+			else
+			{
+				++HiddenExistingTemplateMeshComponentCount;
+				bHiddenActorTemplateMesh = true;
+			}
 		}
-		if (bHiddenActorSkyMesh)
+		if (bHiddenActorSkyMesh || bHiddenActorTemplateMesh)
 		{
 			ExistingActor->SetActorHiddenInGame(true);
 		}
 	}
-	if (DisabledExistingLightComponentCount > 0 || DisabledExistingSkyLightComponentCount > 0 || HiddenExistingSkyMeshComponentCount > 0)
+	if (DisabledExistingLightComponentCount > 0 ||
+		DisabledExistingSkyLightComponentCount > 0 ||
+		DisabledExistingSkyAtmosphereComponentCount > 0 ||
+		DisabledExistingVolumetricCloudComponentCount > 0 ||
+		DisabledExistingFogComponentCount > 0 ||
+		HiddenExistingSkyMeshComponentCount > 0 ||
+		HiddenExistingTemplateMeshComponentCount > 0)
 	{
 		UE_LOG(
 			LogProphecyNNBenchmark,
 			Display,
-			TEXT("Disabled %d pre-existing light component(s), %d pre-existing sky light component(s), and %d pre-existing sky mesh component(s) for benchmark scene isolation."),
+			TEXT("Disabled %d pre-existing light component(s), %d pre-existing sky light component(s), %d sky atmosphere component(s), %d volumetric cloud component(s), %d fog component(s), hid %d pre-existing sky mesh component(s), and hid %d pre-existing template mesh component(s) for benchmark scene isolation."),
 			DisabledExistingLightComponentCount,
 			DisabledExistingSkyLightComponentCount,
-			HiddenExistingSkyMeshComponentCount);
+			DisabledExistingSkyAtmosphereComponentCount,
+			DisabledExistingVolumetricCloudComponentCount,
+			DisabledExistingFogComponentCount,
+			HiddenExistingSkyMeshComponentCount,
+			HiddenExistingTemplateMeshComponentCount);
 	}
 
 	const bool bMetaHumanComparisonView =
@@ -6456,8 +6543,8 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 						CloudComponent->SetMaterial(CloudMaterial);
 					}
 				}
-				CloudComponent->SetLayerBottomAltitude(3.6f);
-				CloudComponent->SetLayerHeight(8.0f);
+				CloudComponent->SetLayerBottomAltitude(10.0f);
+				CloudComponent->SetLayerHeight(5.0f);
 				CloudComponent->SetTracingStartMaxDistance(360.0f);
 				CloudComponent->SetTracingMaxDistance(220.0f);
 				CloudComponent->SetGroundAlbedo(FColor(78, 118, 62));

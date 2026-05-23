@@ -270,6 +270,7 @@ if ($HideGrass) {
     $payload.hide_grass = $true
 }
 elseif ($ShowGrass) {
+    $payload.hide_grass = $false
     $payload.grass_visible = $true
 }
 
