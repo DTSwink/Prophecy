@@ -78,6 +78,16 @@ constexpr float ProphecyGrassFarRootLiftRangeCm = 3000.0f;
 constexpr float ProphecyGrassFarRootLiftStrength = 0.60f;
 constexpr float ProphecyGroundGrassGrainWorldCm = 360.0f;
 constexpr float ProphecyGroundGrassGrainStrength = 0.55f;
+constexpr float ProphecyGroundGrassGrainFadeStartCm = 12000.0f;
+constexpr float ProphecyGroundGrassGrainFadeRangeCm = 3000.0f;
+constexpr float ProphecyGroundFarGrassBlendStrength = 0.45f;
+constexpr float ProphecyGroundFarGrassBlendStartCm = ProphecyGrassDistantFadeStartCm;
+constexpr float ProphecyGroundFarGrassBlendRangeCm = ProphecyGrassDistantFadeRangeCm;
+constexpr float ProphecyGroundGrassImpostorWorldXCm = 8000.0f;
+constexpr float ProphecyGroundGrassImpostorWorldYCm = 18000.0f;
+constexpr float ProphecyGroundGrassImpostorStrength = 0.95f;
+constexpr float ProphecyGroundGrassImpostorStartCm = 8000.0f;
+constexpr float ProphecyGroundGrassImpostorRangeCm = 7000.0f;
 constexpr float ProphecyGrassFarTargetSpacingCm = 420.0f;
 constexpr float ProphecyGrassFarCoverage = 0.72f;
 constexpr float ProphecyGrassOuterDensityFadeStartCm = 17750.0f;
@@ -109,6 +119,7 @@ const FLinearColor ProphecyGrassContinuationColor(0.105f, 0.245f, 0.048f, 1.0f);
 const FLinearColor ProphecyGrassFarRootLiftColor(0.130f, 0.275f, 0.052f, 1.0f);
 const FLinearColor ProphecyGroundGrassGrainDarkColor(0.070f, 0.195f, 0.032f, 1.0f);
 const FLinearColor ProphecyGroundGrassGrainLightColor(0.165f, 0.340f, 0.072f, 1.0f);
+const FLinearColor ProphecyGroundFarGrassBlendColor(0.105f, 0.245f, 0.048f, 1.0f);
 
 float ProphecySmooth01(float T)
 {
@@ -4169,21 +4180,32 @@ void AProphecyNNCrowdBenchmarkActor::SpawnDistantGrassHills()
 		{
 			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), ProphecyGrassGroundBaseColor);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundNoiseStrength"), 0.55f);
-			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), FLinearColor(0.52f, 0.36f, 0.18f, 1.0f));
+			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), FLinearColor(0.58f, 0.40f, 0.21f, 1.0f));
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), 1.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchScale"), 1.0f / 14000.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchThreshold"), -1.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchContrast"), 1.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureScale"), 1.0f / 1600.0f);
-			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), 1.0f);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), 0.85f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeStartCm"), 1500.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / 900.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtViewMin"), 0.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("DirtViewScale"), 10.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainFrequency"), UE_TWO_PI / ProphecyGroundGrassGrainWorldCm);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainStrength"), ProphecyGroundGrassGrainStrength);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainFadeStartCm"), ProphecyGroundGrassGrainFadeStartCm);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainFadeInvRange"), 1.0f / ProphecyGroundGrassGrainFadeRangeCm);
 			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("GroundGrassGrainDarkColor"), ProphecyGroundGrassGrainDarkColor);
 			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("GroundGrassGrainLightColor"), ProphecyGroundGrassGrainLightColor);
+			DistantHillsMaterialInstance->SetVectorParameterValue(TEXT("GroundFarGrassBlendColor"), ProphecyGroundFarGrassBlendColor);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundFarGrassBlendStrength"), ProphecyGroundFarGrassBlendStrength);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundFarGrassBlendStartCm"), ProphecyGroundFarGrassBlendStartCm);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundFarGrassBlendInvRange"), 1.0f / ProphecyGroundFarGrassBlendRangeCm);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleX"), 1.0f / ProphecyGroundGrassImpostorWorldXCm);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleY"), 1.0f / ProphecyGroundGrassImpostorWorldYCm);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorStrength"), ProphecyGroundGrassImpostorStrength);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorStartCm"), ProphecyGroundGrassImpostorStartCm);
+			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorInvRange"), 1.0f / ProphecyGroundGrassImpostorRangeCm);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundVertexShadeStrength"), 1.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GroundShadowMaskStrength"), 0.0f);
 			DistantHillsMaterialInstance->SetScalarParameterValue(TEXT("GrassShadowMaskStrength"), 0.0f);
@@ -6474,17 +6496,30 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 			{
 				FloorMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), (bSpawnGrass || bSpawnTrees) ? ProphecyGrassGroundBaseColor : FLinearColor(0.56f, 0.55f, 0.50f, 1.0f));
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundNoiseStrength"), (bSpawnGrass || bSpawnTrees) ? 0.55f : 0.82f);
-				FloorMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), FLinearColor(0.52f, 0.36f, 0.18f, 1.0f));
+				FloorMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), FLinearColor(0.58f, 0.40f, 0.21f, 1.0f));
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), (bSpawnGrass || bSpawnTrees) ? 1.0f : 0.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchScale"), 1.0f / 14000.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchThreshold"), -1.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchContrast"), 1.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureScale"), 1.0f / 1600.0f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), 1.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), 0.85f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeStartCm"), 1500.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / 900.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewMin"), 0.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewScale"), 10.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainFrequency"), UE_TWO_PI / ProphecyGroundGrassGrainWorldCm);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainStrength"), (bSpawnGrass || bSpawnTrees) ? ProphecyGroundGrassGrainStrength : 0.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainFadeStartCm"), ProphecyGroundGrassGrainFadeStartCm);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainFadeInvRange"), 1.0f / ProphecyGroundGrassGrainFadeRangeCm);
+				FloorMaterialInstance->SetVectorParameterValue(TEXT("GroundFarGrassBlendColor"), ProphecyGroundFarGrassBlendColor);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundFarGrassBlendStrength"), (bSpawnGrass || bSpawnTrees) ? ProphecyGroundFarGrassBlendStrength : 0.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundFarGrassBlendStartCm"), ProphecyGroundFarGrassBlendStartCm);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundFarGrassBlendInvRange"), 1.0f / ProphecyGroundFarGrassBlendRangeCm);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleX"), 1.0f / ProphecyGroundGrassImpostorWorldXCm);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleY"), 1.0f / ProphecyGroundGrassImpostorWorldYCm);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorStrength"), (bSpawnGrass || bSpawnTrees) ? ProphecyGroundGrassImpostorStrength : 0.0f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorStartCm"), ProphecyGroundGrassImpostorStartCm);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorInvRange"), 1.0f / ProphecyGroundGrassImpostorRangeCm);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundShadowMaskStrength"), 0.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("GrassShadowMaskStrength"), 0.0f);
 			}
@@ -6982,15 +7017,37 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 
 		Material->SetScalarParameterValue(TEXT("GroundGrassGrainFrequency"), UE_TWO_PI / ProphecyGroundGrassGrainWorldCm);
 		Material->SetScalarParameterValue(TEXT("GroundGrassGrainStrength"), ProphecyGroundGrassGrainStrength);
+		Material->SetScalarParameterValue(TEXT("GroundGrassGrainFadeStartCm"), ProphecyGroundGrassGrainFadeStartCm);
+		Material->SetScalarParameterValue(TEXT("GroundGrassGrainFadeInvRange"), 1.0f / ProphecyGroundGrassGrainFadeRangeCm);
 		Material->SetVectorParameterValue(TEXT("GroundGrassGrainDarkColor"), ProphecyGroundGrassGrainDarkColor);
 		Material->SetVectorParameterValue(TEXT("GroundGrassGrainLightColor"), ProphecyGroundGrassGrainLightColor);
+		Material->SetVectorParameterValue(TEXT("GroundFarGrassBlendColor"), ProphecyGroundFarGrassBlendColor);
+		Material->SetScalarParameterValue(TEXT("GroundFarGrassBlendStrength"), ProphecyGroundFarGrassBlendStrength);
+		Material->SetScalarParameterValue(TEXT("GroundFarGrassBlendStartCm"), ProphecyGroundFarGrassBlendStartCm);
+		Material->SetScalarParameterValue(TEXT("GroundFarGrassBlendInvRange"), 1.0f / ProphecyGroundFarGrassBlendRangeCm);
+		Material->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleX"), 1.0f / ProphecyGroundGrassImpostorWorldXCm);
+		Material->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleY"), 1.0f / ProphecyGroundGrassImpostorWorldYCm);
+		Material->SetScalarParameterValue(TEXT("GroundGrassImpostorStrength"), ProphecyGroundGrassImpostorStrength);
+		Material->SetScalarParameterValue(TEXT("GroundGrassImpostorStartCm"), ProphecyGroundGrassImpostorStartCm);
+		Material->SetScalarParameterValue(TEXT("GroundGrassImpostorInvRange"), 1.0f / ProphecyGroundGrassImpostorRangeCm);
 		ApplyScalarParameter(Material, TEXT("ground_noise_strength"), TEXT("GroundNoiseStrength"), TEXT("GroundNoiseStrength"));
 		ApplyScalarParameter(Material, TEXT("ground_noise_scale"), TEXT("GroundNoiseScale"), TEXT("GroundNoiseScale"));
 		ApplyScalarParameter(Material, TEXT("ground_grass_grain_strength"), TEXT("GroundGrassGrainStrength"), TEXT("GroundGrassGrainStrength"));
 		ApplyScalarParameter(Material, TEXT("ground_grass_grain_frequency"), TEXT("GroundGrassGrainFrequency"), TEXT("GroundGrassGrainFrequency"));
+		ApplyScalarParameter(Material, TEXT("ground_grass_grain_fade_start_cm"), TEXT("GroundGrassGrainFadeStartCm"), TEXT("GroundGrassGrainFadeStartCm"));
+		ApplyScalarParameter(Material, TEXT("ground_grass_grain_fade_inv_range"), TEXT("GroundGrassGrainFadeInvRange"), TEXT("GroundGrassGrainFadeInvRange"));
+		ApplyScalarParameter(Material, TEXT("ground_far_grass_blend_strength"), TEXT("GroundFarGrassBlendStrength"), TEXT("GroundFarGrassBlendStrength"));
+		ApplyScalarParameter(Material, TEXT("ground_far_grass_blend_start_cm"), TEXT("GroundFarGrassBlendStartCm"), TEXT("GroundFarGrassBlendStartCm"));
+		ApplyScalarParameter(Material, TEXT("ground_far_grass_blend_inv_range"), TEXT("GroundFarGrassBlendInvRange"), TEXT("GroundFarGrassBlendInvRange"));
+		ApplyScalarParameter(Material, TEXT("ground_grass_impostor_strength"), TEXT("GroundGrassImpostorStrength"), TEXT("GroundGrassImpostorStrength"));
+		ApplyScalarParameter(Material, TEXT("ground_grass_impostor_scale_x"), TEXT("GroundGrassImpostorScaleX"), TEXT("GroundGrassImpostorScaleX"));
+		ApplyScalarParameter(Material, TEXT("ground_grass_impostor_scale_y"), TEXT("GroundGrassImpostorScaleY"), TEXT("GroundGrassImpostorScaleY"));
+		ApplyScalarParameter(Material, TEXT("ground_grass_impostor_start_cm"), TEXT("GroundGrassImpostorStartCm"), TEXT("GroundGrassImpostorStartCm"));
+		ApplyScalarParameter(Material, TEXT("ground_grass_impostor_inv_range"), TEXT("GroundGrassImpostorInvRange"), TEXT("GroundGrassImpostorInvRange"));
 		ApplyColorParameter(Material, TEXT("ground_base_color"), TEXT("GroundBaseColor"), TEXT("GroundBaseColor"));
 		ApplyColorParameter(Material, TEXT("ground_grass_grain_dark_color"), TEXT("GroundGrassGrainDarkColor"), TEXT("GroundGrassGrainDarkColor"));
 		ApplyColorParameter(Material, TEXT("ground_grass_grain_light_color"), TEXT("GroundGrassGrainLightColor"), TEXT("GroundGrassGrainLightColor"));
+		ApplyColorParameter(Material, TEXT("ground_far_grass_blend_color"), TEXT("GroundFarGrassBlendColor"), TEXT("GroundFarGrassBlendColor"));
 		ApplyColorParameter(Material, TEXT("dirt_color"), TEXT("DirtColor"), TEXT("DirtColor"));
 		ApplyScalarParameter(Material, TEXT("dirt_strength"), TEXT("DirtStrength"), TEXT("DirtStrength"));
 		ApplyScalarParameter(Material, TEXT("dirt_patch_scale"), TEXT("DirtPatchScale"), TEXT("DirtPatchScale"));
@@ -7014,6 +7071,51 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 		if ((TryNumber(TEXT("ground_grass_grain_world_cm"), GroundGrassGrainWorldCm) || TryNumber(TEXT("GroundGrassGrainWorldCm"), GroundGrassGrainWorldCm)) && GroundGrassGrainWorldCm > UE_SMALL_NUMBER)
 		{
 			Material->SetScalarParameterValue(TEXT("GroundGrassGrainFrequency"), UE_TWO_PI / float(GroundGrassGrainWorldCm));
+		}
+
+		double GroundGrassGrainFadeRangeCm = 0.0;
+		if ((TryNumber(TEXT("ground_grass_grain_fade_range_cm"), GroundGrassGrainFadeRangeCm) || TryNumber(TEXT("GroundGrassGrainFadeRangeCm"), GroundGrassGrainFadeRangeCm)) && GroundGrassGrainFadeRangeCm > UE_SMALL_NUMBER)
+		{
+			Material->SetScalarParameterValue(TEXT("GroundGrassGrainFadeInvRange"), 1.0f / float(GroundGrassGrainFadeRangeCm));
+		}
+
+		double GroundFarGrassBlendRangeCm = 0.0;
+		if ((TryNumber(TEXT("ground_far_grass_blend_range_cm"), GroundFarGrassBlendRangeCm) || TryNumber(TEXT("GroundFarGrassBlendRangeCm"), GroundFarGrassBlendRangeCm)) && GroundFarGrassBlendRangeCm > UE_SMALL_NUMBER)
+		{
+			Material->SetScalarParameterValue(TEXT("GroundFarGrassBlendInvRange"), 1.0f / float(GroundFarGrassBlendRangeCm));
+		}
+
+		double GroundGrassImpostorWorldCm = 0.0;
+		if ((TryNumber(TEXT("ground_grass_impostor_world_cm"), GroundGrassImpostorWorldCm) || TryNumber(TEXT("GroundGrassImpostorWorldCm"), GroundGrassImpostorWorldCm)) && GroundGrassImpostorWorldCm > UE_SMALL_NUMBER)
+		{
+			const float GroundGrassImpostorScale = 1.0f / float(GroundGrassImpostorWorldCm);
+			Material->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleX"), GroundGrassImpostorScale);
+			Material->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleY"), GroundGrassImpostorScale);
+		}
+
+		double GroundGrassImpostorUniformScale = 0.0;
+		if (TryNumber(TEXT("ground_grass_impostor_scale"), GroundGrassImpostorUniformScale) || TryNumber(TEXT("GroundGrassImpostorScale"), GroundGrassImpostorUniformScale))
+		{
+			Material->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleX"), float(GroundGrassImpostorUniformScale));
+			Material->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleY"), float(GroundGrassImpostorUniformScale));
+		}
+
+		double GroundGrassImpostorWorldXCm = 0.0;
+		if ((TryNumber(TEXT("ground_grass_impostor_world_x_cm"), GroundGrassImpostorWorldXCm) || TryNumber(TEXT("GroundGrassImpostorWorldXCm"), GroundGrassImpostorWorldXCm)) && GroundGrassImpostorWorldXCm > UE_SMALL_NUMBER)
+		{
+			Material->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleX"), 1.0f / float(GroundGrassImpostorWorldXCm));
+		}
+
+		double GroundGrassImpostorWorldYCm = 0.0;
+		if ((TryNumber(TEXT("ground_grass_impostor_world_y_cm"), GroundGrassImpostorWorldYCm) || TryNumber(TEXT("GroundGrassImpostorWorldYCm"), GroundGrassImpostorWorldYCm)) && GroundGrassImpostorWorldYCm > UE_SMALL_NUMBER)
+		{
+			Material->SetScalarParameterValue(TEXT("GroundGrassImpostorScaleY"), 1.0f / float(GroundGrassImpostorWorldYCm));
+		}
+
+		double GroundGrassImpostorRangeCm = 0.0;
+		if ((TryNumber(TEXT("ground_grass_impostor_range_cm"), GroundGrassImpostorRangeCm) || TryNumber(TEXT("GroundGrassImpostorRangeCm"), GroundGrassImpostorRangeCm)) && GroundGrassImpostorRangeCm > UE_SMALL_NUMBER)
+		{
+			Material->SetScalarParameterValue(TEXT("GroundGrassImpostorInvRange"), 1.0f / float(GroundGrassImpostorRangeCm));
 		}
 
 		double DirtPatchWorldCm = 0.0;

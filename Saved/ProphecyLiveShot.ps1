@@ -20,6 +20,24 @@ param(
     [object]$GroundGrassGrainStrength = $null,
     [object]$GroundGrassGrainWorldCm = $null,
     [object]$GroundGrassGrainFrequency = $null,
+    [object]$GroundGrassGrainFadeStartCm = $null,
+    [object]$GroundGrassGrainFadeRangeCm = $null,
+    [object]$GroundGrassGrainFadeInvRange = $null,
+    [object[]]$GroundFarGrassBlendColor = @(),
+    [object]$GroundFarGrassBlendStrength = $null,
+    [object]$GroundFarGrassBlendStartCm = $null,
+    [object]$GroundFarGrassBlendRangeCm = $null,
+    [object]$GroundFarGrassBlendInvRange = $null,
+    [object]$GroundGrassImpostorStrength = $null,
+    [object]$GroundGrassImpostorWorldCm = $null,
+    [object]$GroundGrassImpostorWorldXCm = $null,
+    [object]$GroundGrassImpostorWorldYCm = $null,
+    [object]$GroundGrassImpostorScale = $null,
+    [object]$GroundGrassImpostorScaleX = $null,
+    [object]$GroundGrassImpostorScaleY = $null,
+    [object]$GroundGrassImpostorStartCm = $null,
+    [object]$GroundGrassImpostorRangeCm = $null,
+    [object]$GroundGrassImpostorInvRange = $null,
     [object[]]$DirtColor = @(),
     [object]$GrassShadowStrength = $null,
     [object]$DirtStrength = $null,
@@ -107,6 +125,7 @@ $GrassFarRootLiftColorValues = ConvertTo-DoubleArray $GrassFarRootLiftColor
 $GroundBaseColorValues = ConvertTo-DoubleArray $GroundBaseColor
 $GroundGrassGrainDarkColorValues = ConvertTo-DoubleArray $GroundGrassGrainDarkColor
 $GroundGrassGrainLightColorValues = ConvertTo-DoubleArray $GroundGrassGrainLightColor
+$GroundFarGrassBlendColorValues = ConvertTo-DoubleArray $GroundFarGrassBlendColor
 $DirtColorValues = ConvertTo-DoubleArray $DirtColor
 $BloodColorValues = ConvertTo-DoubleArray $BloodColor
 $BloodDarkColorValues = ConvertTo-DoubleArray $BloodDarkColor
@@ -237,6 +256,78 @@ if ($null -ne $GroundGrassGrainWorldCm) {
 
 if ($null -ne $GroundGrassGrainFrequency) {
     $payload.ground_grass_grain_frequency = ConvertTo-DoubleValue $GroundGrassGrainFrequency
+}
+
+if ($null -ne $GroundGrassGrainFadeStartCm) {
+    $payload.ground_grass_grain_fade_start_cm = ConvertTo-DoubleValue $GroundGrassGrainFadeStartCm
+}
+
+if ($null -ne $GroundGrassGrainFadeRangeCm) {
+    $payload.ground_grass_grain_fade_range_cm = ConvertTo-DoubleValue $GroundGrassGrainFadeRangeCm
+}
+
+if ($null -ne $GroundGrassGrainFadeInvRange) {
+    $payload.ground_grass_grain_fade_inv_range = ConvertTo-DoubleValue $GroundGrassGrainFadeInvRange
+}
+
+if ($GroundFarGrassBlendColorValues.Count -ge 3) {
+    $payload.ground_far_grass_blend_color = @($GroundFarGrassBlendColorValues)
+}
+
+if ($null -ne $GroundFarGrassBlendStrength) {
+    $payload.ground_far_grass_blend_strength = ConvertTo-DoubleValue $GroundFarGrassBlendStrength
+}
+
+if ($null -ne $GroundFarGrassBlendStartCm) {
+    $payload.ground_far_grass_blend_start_cm = ConvertTo-DoubleValue $GroundFarGrassBlendStartCm
+}
+
+if ($null -ne $GroundFarGrassBlendRangeCm) {
+    $payload.ground_far_grass_blend_range_cm = ConvertTo-DoubleValue $GroundFarGrassBlendRangeCm
+}
+
+if ($null -ne $GroundFarGrassBlendInvRange) {
+    $payload.ground_far_grass_blend_inv_range = ConvertTo-DoubleValue $GroundFarGrassBlendInvRange
+}
+
+if ($null -ne $GroundGrassImpostorStrength) {
+    $payload.ground_grass_impostor_strength = ConvertTo-DoubleValue $GroundGrassImpostorStrength
+}
+
+if ($null -ne $GroundGrassImpostorWorldCm) {
+    $payload.ground_grass_impostor_world_cm = ConvertTo-DoubleValue $GroundGrassImpostorWorldCm
+}
+
+if ($null -ne $GroundGrassImpostorWorldXCm) {
+    $payload.ground_grass_impostor_world_x_cm = ConvertTo-DoubleValue $GroundGrassImpostorWorldXCm
+}
+
+if ($null -ne $GroundGrassImpostorWorldYCm) {
+    $payload.ground_grass_impostor_world_y_cm = ConvertTo-DoubleValue $GroundGrassImpostorWorldYCm
+}
+
+if ($null -ne $GroundGrassImpostorScale) {
+    $payload.ground_grass_impostor_scale = ConvertTo-DoubleValue $GroundGrassImpostorScale
+}
+
+if ($null -ne $GroundGrassImpostorScaleX) {
+    $payload.ground_grass_impostor_scale_x = ConvertTo-DoubleValue $GroundGrassImpostorScaleX
+}
+
+if ($null -ne $GroundGrassImpostorScaleY) {
+    $payload.ground_grass_impostor_scale_y = ConvertTo-DoubleValue $GroundGrassImpostorScaleY
+}
+
+if ($null -ne $GroundGrassImpostorStartCm) {
+    $payload.ground_grass_impostor_start_cm = ConvertTo-DoubleValue $GroundGrassImpostorStartCm
+}
+
+if ($null -ne $GroundGrassImpostorRangeCm) {
+    $payload.ground_grass_impostor_range_cm = ConvertTo-DoubleValue $GroundGrassImpostorRangeCm
+}
+
+if ($null -ne $GroundGrassImpostorInvRange) {
+    $payload.ground_grass_impostor_inv_range = ConvertTo-DoubleValue $GroundGrassImpostorInvRange
 }
 
 if ($DirtColorValues.Count -ge 3) {
