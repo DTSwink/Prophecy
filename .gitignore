@@ -32,6 +32,8 @@ Docs/old/
 *.ilk
 *.log
 *.tmp
+__pycache__/
+*.pyc
 
 # OS noise
 Thumbs.db

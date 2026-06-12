@@ -1,0 +1,263 @@
+#ifndef PROPHECY_PAINTERLY_OIL_SHADERS_USH
+#define PROPHECY_PAINTERLY_OIL_SHADERS_USH
+
+// High-quality painterly reference shaders used for texture baking.
+// The selected 2K preview settings are expensive by design; reduce RadiusScale for realtime.
+
+#define PNT_MAX_RADIUS 64
+#define PNT_MAX_BINS 96
+#define PNT_EPS 1e-5
+
+float PNT_Luma(float3 c)
+{
+    return dot(c, float3(0.2126, 0.7152, 0.0722));
+}
+
+float3 PNT_RGBToHSV(float3 c)
+{
+    float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    float4 p = (c.g < c.b) ? float4(c.bg, K.wz) : float4(c.gb, K.xy);
+    float4 q = (c.r < p.x) ? float4(p.xyw, c.r) : float4(c.r, p.yzx);
+    float d = q.x - min(q.w, q.y);
+    float e = 1e-10;
+    return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+float3 PNT_HSVToRGB(float3 c)
+{
+    float3 p = abs(frac(c.xxx + float3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
+    return c.z * lerp(float3(1.0, 1.0, 1.0), saturate(p - 1.0), c.y);
+}
+
+float3 PNT_QuantizeHSV(float3 rgb, float hBins, float sBins, float vBins, float blend)
+{
+    float3 hsv = PNT_RGBToHSV(rgb);
+    float3 q;
+    q.x = frac(floor(hsv.x * hBins + 0.5) / hBins);
+    q.y = floor(hsv.y * (sBins - 1.0) + 0.5) / max(sBins - 1.0, 1.0);
+    q.z = floor(hsv.z * (vBins - 1.0) + 0.5) / max(vBins - 1.0, 1.0);
+    return lerp(rgb, PNT_HSVToRGB(q), blend);
+}
+
+int PNT_ColorBin(float3 rgb, int hBins, int vBins, float satFloor)
+{
+    float3 hsv = PNT_RGBToHSV(saturate(rgb));
+    int vb = clamp((int)floor(hsv.z * (float)vBins), 0, vBins - 1);
+    if (hsv.y < satFloor)
+    {
+        return hBins * vBins + vb;
+    }
+    int hb = clamp((int)floor(frac(hsv.x) * (float)hBins), 0, hBins - 1);
+    return hb + hBins * vb;
+}
+
+float PNT_EdgeAmount(Texture2D Tex, SamplerState TexSampler, float2 UV, float2 TexelSize)
+{
+    float3 l = Tex.SampleLevel(TexSampler, UV - float2(TexelSize.x, 0.0), 0).rgb;
+    float3 r = Tex.SampleLevel(TexSampler, UV + float2(TexelSize.x, 0.0), 0).rgb;
+    float3 u = Tex.SampleLevel(TexSampler, UV - float2(0.0, TexelSize.y), 0).rgb;
+    float3 d = Tex.SampleLevel(TexSampler, UV + float2(0.0, TexelSize.y), 0).rgb;
+    float gx = PNT_Luma(r) - PNT_Luma(l);
+    float gy = PNT_Luma(d) - PNT_Luma(u);
+    return saturate(sqrt(gx * gx + gy * gy) * 8.0);
+}
+
+float3 PNT_PreserveExtremes(float3 center, float3 filtered)
+{
+    float mx = max(center.r, max(center.g, center.b));
+    float mn = min(center.r, min(center.g, center.b));
+    return (mx < 0.10 || mn > 0.985) ? center : filtered;
+}
+
+float3 PNT_OilModeFilter(
+    Texture2D Tex,
+    SamplerState TexSampler,
+    float2 UV,
+    float2 TexelSize,
+    float RadiusPx,
+    int HBins,
+    int VBins,
+    float SatFloor,
+    float Blend,
+    float EdgeStrength)
+{
+    int radius = clamp((int)floor(RadiusPx + 0.5), 1, PNT_MAX_RADIUS);
+    int binCount = min(HBins * VBins + VBins, PNT_MAX_BINS);
+    float3 center = Tex.SampleLevel(TexSampler, UV, 0).rgb;
+
+    float bestCount = -1.0;
+    float3 bestMean = center;
+
+    [loop]
+    for (int bin = 0; bin < PNT_MAX_BINS; ++bin)
+    {
+        if (bin >= binCount)
+        {
+            continue;
+        }
+
+        float count = 0.0;
+        float3 sum = 0.0;
+
+        [loop]
+        for (int y = -PNT_MAX_RADIUS; y <= PNT_MAX_RADIUS; ++y)
+        {
+            if (abs(y) > radius)
+            {
+                continue;
+            }
+
+            [loop]
+            for (int x = -PNT_MAX_RADIUS; x <= PNT_MAX_RADIUS; ++x)
+            {
+                if (abs(x) > radius)
+                {
+                    continue;
+                }
+
+                float2 sampleUV = UV + float2((float)x, (float)y) * TexelSize;
+                float3 c = Tex.SampleLevel(TexSampler, sampleUV, 0).rgb;
+                int b = PNT_ColorBin(c, HBins, VBins, SatFloor);
+                if (b == bin)
+                {
+                    count += 1.0;
+                    sum += c;
+                }
+            }
+        }
+
+        if (count > bestCount)
+        {
+            bestCount = count;
+            bestMean = sum / max(count, PNT_EPS);
+        }
+    }
+
+    float3 filtered = lerp(center, bestMean, Blend);
+    filtered = PNT_QuantizeHSV(filtered, max(8.0, (float)HBins), 7.0, max(4.0, (float)VBins + 3.0), 0.22);
+    filtered *= 1.0 - EdgeStrength * PNT_EdgeAmount(Tex, TexSampler, UV, TexelSize);
+    return PNT_PreserveExtremes(center, saturate(filtered));
+}
+
+float2 PNT_Tangent(Texture2D Tex, SamplerState TexSampler, float2 UV, float2 TexelSize)
+{
+    float3 cL = Tex.SampleLevel(TexSampler, UV - float2(TexelSize.x, 0.0), 0).rgb;
+    float3 cR = Tex.SampleLevel(TexSampler, UV + float2(TexelSize.x, 0.0), 0).rgb;
+    float3 cU = Tex.SampleLevel(TexSampler, UV - float2(0.0, TexelSize.y), 0).rgb;
+    float3 cD = Tex.SampleLevel(TexSampler, UV + float2(0.0, TexelSize.y), 0).rgb;
+
+    float3 dx = cR - cL;
+    float3 dy = cD - cU;
+    float jxx = dot(dx, dx);
+    float jyy = dot(dy, dy);
+    float jxy = dot(dx, dy);
+    float angle = 0.5 * atan2(2.0 * jxy, jxx - jyy + PNT_EPS) + 1.57079632679;
+    return float2(cos(angle), sin(angle));
+}
+
+float3 PNT_FlowSmoothColor(
+    Texture2D Tex,
+    SamplerState TexSampler,
+    float2 UV,
+    float2 TexelSize,
+    float LengthPx)
+{
+    float2 t = PNT_Tangent(Tex, TexSampler, UV, TexelSize);
+    float3 sum = Tex.SampleLevel(TexSampler, UV, 0).rgb * 1.2;
+    float weightSum = 1.2;
+
+    [unroll]
+    for (int i = 1; i <= 4; ++i)
+    {
+        float fi = (float)i;
+        float dist = LengthPx * fi / 4.0;
+        float w = exp(-0.5 * pow(fi / (4.0 * 0.62), 2.0));
+        sum += Tex.SampleLevel(TexSampler, UV + t * dist * TexelSize, 0).rgb * w;
+        sum += Tex.SampleLevel(TexSampler, UV - t * dist * TexelSize, 0).rgb * w;
+        weightSum += 2.0 * w;
+    }
+
+    return sum / max(weightSum, PNT_EPS);
+}
+
+float3 PNT_HybridFlowOil(
+    Texture2D Tex,
+    SamplerState TexSampler,
+    float2 UV,
+    float2 TexelSize,
+    float FlowLengthPx,
+    float OilRadiusPx,
+    int HBins,
+    float EdgeStrength)
+{
+    int radius = clamp((int)floor(OilRadiusPx + 0.5), 1, PNT_MAX_RADIUS);
+    int vBins = 4;
+    int binCount = min(HBins * vBins + vBins, PNT_MAX_BINS);
+    float3 center = Tex.SampleLevel(TexSampler, UV, 0).rgb;
+
+    float bestCount = -1.0;
+    float3 bestMean = center;
+
+    [loop]
+    for (int bin = 0; bin < PNT_MAX_BINS; ++bin)
+    {
+        if (bin >= binCount)
+        {
+            continue;
+        }
+
+        float count = 0.0;
+        float3 sum = 0.0;
+
+        [loop]
+        for (int y = -PNT_MAX_RADIUS; y <= PNT_MAX_RADIUS; ++y)
+        {
+            if (abs(y) > radius)
+            {
+                continue;
+            }
+
+            [loop]
+            for (int x = -PNT_MAX_RADIUS; x <= PNT_MAX_RADIUS; ++x)
+            {
+                if (abs(x) > radius)
+                {
+                    continue;
+                }
+
+                float2 sampleUV = UV + float2((float)x, (float)y) * TexelSize;
+                float3 c = PNT_FlowSmoothColor(Tex, TexSampler, sampleUV, TexelSize, FlowLengthPx);
+                int b = PNT_ColorBin(c, HBins, vBins, 0.10);
+                if (b == bin)
+                {
+                    count += 1.0;
+                    sum += c;
+                }
+            }
+        }
+
+        if (count > bestCount)
+        {
+            bestCount = count;
+            bestMean = sum / max(count, PNT_EPS);
+        }
+    }
+
+    float3 flowedCenter = PNT_FlowSmoothColor(Tex, TexSampler, UV, TexelSize, FlowLengthPx);
+    float3 filtered = lerp(flowedCenter, bestMean, 0.88);
+    filtered = PNT_QuantizeHSV(filtered, max(8.0, (float)HBins), 7.0, 7.0, 0.22);
+    filtered *= 1.0 - EdgeStrength * PNT_EdgeAmount(Tex, TexSampler, UV, TexelSize);
+    return PNT_PreserveExtremes(center, saturate(filtered));
+}
+
+float3 PainterlyOilReferenceMid(Texture2D Tex, SamplerState TexSampler, float2 UV, float2 TexelSize, float RadiusScale)
+{
+    return PNT_OilModeFilter(Tex, TexSampler, UV, TexelSize, 16.0 * RadiusScale, 16, 5, 0.09, 0.88, 0.07);
+}
+
+float3 PainterlyHybridFlowOilChunkyCanvas(Texture2D Tex, SamplerState TexSampler, float2 UV, float2 TexelSize, float RadiusScale)
+{
+    return PNT_HybridFlowOil(Tex, TexSampler, UV, TexelSize, 21.0 * RadiusScale, 20.0 * RadiusScale, 10, 0.14);
+}
+
+#endif
