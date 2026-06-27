@@ -8,12 +8,19 @@ DerivedDataCache/
 Intermediate/
 Saved/*
 !Saved/ProphecyCreateGrassMaterials.py
+!Saved/ProphecyCreateBloodFluidPostProcess.py
+!Saved/ProphecyCreateBloodVFXMaterials.py
+!Saved/ProphecyCreateBloodTexturePaintingAssets.py
 !Saved/ProphecyCreateProductionMetaHumanReferenceLevel.py
 !Saved/ProphecyDirtPatchMask.png
 !Saved/ProphecyGrassGroundNoise.png
 !Saved/ProphecyInspectKellanProductionComponents.py
 !Saved/ProphecyLiveShot.ps1
+!Saved/ProphecyStartBloodVFXPreview.ps1
 !Saved/ProphecyStartLivePreview.ps1
+!Saved/ProphecyValidateBloodTexturePaintingMilestones.py
+!Saved/ProphecyValidateBloodTexturePaintingRuntime.py
+!Saved/ProphecyVerifyBloodStainRenderer.py
 Docs/old/
 
 # IDE and local machine state

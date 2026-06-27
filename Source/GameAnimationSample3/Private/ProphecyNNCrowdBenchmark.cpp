@@ -802,6 +802,15 @@ float Sigmoid(float Value)
 {
 	return 1.0f / (1.0f + FMath::Exp(-Value));
 }
+
+float BloodVFXPoolBoundaryScale(float AngleRadians)
+{
+	return
+		1.0f +
+		0.105f * FMath::Sin(AngleRadians * 3.0f + 0.35f) +
+		0.070f * FMath::Sin(AngleRadians * 7.0f - 1.10f) +
+		0.045f * FMath::Sin(AngleRadians * 13.0f + 2.40f);
+}
 }
 
 struct AProphecyNNCrowdBenchmarkActor::FImpl
@@ -1017,6 +1026,11 @@ void AProphecyNNCrowdBenchmarkActor::BeginPlay()
 				SpawnGrassField();
 			}
 		}
+		if (bBloodVFXPreview)
+		{
+			SpawnBloodVFXPreview();
+			UpdateBloodVFXPreview(0.0f);
+		}
 	}
 
 	if (bRunAgents)
@@ -1088,6 +1102,7 @@ void AProphecyNNCrowdBenchmarkActor::Tick(float DeltaSeconds)
 	const double FrameStart = FPlatformTime::Seconds();
 	if (bSceneryOnly)
 	{
+		UpdateBloodVFXPreview(DeltaSeconds);
 		Impl->Stats.SimSeconds += FPlatformTime::Seconds() - FrameStart;
 		PublishLiveVisualReadyIfNeeded();
 		PollLiveVisualIteration();
@@ -1112,6 +1127,7 @@ void AProphecyNNCrowdBenchmarkActor::Tick(float DeltaSeconds)
 
 	const double VisualStart = FPlatformTime::Seconds();
 	UpdateVisualRoots();
+	UpdateBloodVFXPreview(DeltaSeconds);
 	Impl->Stats.VisualSeconds += FPlatformTime::Seconds() - VisualStart;
 
 	Impl->Stats.SimSeconds += FPlatformTime::Seconds() - FrameStart;
@@ -1152,6 +1168,8 @@ void AProphecyNNCrowdBenchmarkActor::ApplyCommandLineOverrides()
 	FParse::Value(Cmd, TEXT("ProphecyNNGrassRenderer="), GrassRenderer);
 	FParse::Value(Cmd, TEXT("ProphecyNNNiagaraSystem="), NiagaraGrassSystemPath);
 	FParse::Value(Cmd, TEXT("ProphecyNNNiagaraComponents="), NiagaraGrassComponentCount);
+	FParse::Value(Cmd, TEXT("ProphecyNNBloodVFXScale="), BloodVFXPreviewScale);
+	FParse::Value(Cmd, TEXT("ProphecyNNBloodVFXTimeScale="), BloodVFXPreviewTimeScale);
 
 	int32 VisualsValue = bSpawnVisuals ? 1 : 0;
 	if (FParse::Value(Cmd, TEXT("ProphecyNNVisuals="), VisualsValue))
@@ -1245,6 +1263,23 @@ void AProphecyNNCrowdBenchmarkActor::ApplyCommandLineOverrides()
 	if (FParse::Value(Cmd, TEXT("ProphecyNNGrass="), GrassValue))
 	{
 		bSpawnGrass = GrassValue != 0;
+	}
+
+	int32 BloodVFXValue = bBloodVFXPreview ? 1 : 0;
+	if (FParse::Value(Cmd, TEXT("ProphecyNNBloodVFX="), BloodVFXValue) ||
+		FParse::Value(Cmd, TEXT("ProphecyNNBloodVFXPreview="), BloodVFXValue))
+	{
+		bBloodVFXPreview = BloodVFXValue != 0;
+	}
+	bBloodVFXPreview = bBloodVFXPreview || FParse::Param(Cmd, TEXT("ProphecyNNBloodVFX"));
+	if (bBloodVFXPreview)
+	{
+		bSceneryOnly = true;
+		bSpawnVisuals = false;
+		bSpawnBenchmarkFloor = true;
+		bSpawnBenchmarkLights = true;
+		bSpawnGrass = false;
+		bSpawnTrees = false;
 	}
 
 	int32 ShadowDebugValue = bDebugShadowGeometry ? 1 : 0;
@@ -3604,12 +3639,12 @@ void AProphecyNNCrowdBenchmarkActor::ConfigureBloodMaskMaterials()
 		Material->SetTextureParameterValue(TEXT("BloodMask"), BloodMaskTexture);
 		Material->SetVectorParameterValue(TEXT("BloodMaskCenter"), FLinearColor(Impl->BloodMaskCenter.X, Impl->BloodMaskCenter.Y, 0.0f, 0.0f));
 		Material->SetScalarParameterValue(TEXT("BloodMaskInvExtent"), 1.0f / (Impl->BloodMaskHalfExtent * 2.0f));
-		Material->SetVectorParameterValue(TEXT("BloodColor"), FLinearColor(0.235f, 0.016f, 0.010f, 1.0f));
-		Material->SetVectorParameterValue(TEXT("BloodDarkColor"), FLinearColor(0.070f, 0.003f, 0.003f, 1.0f));
+		Material->SetVectorParameterValue(TEXT("BloodColor"), bBloodVFXPreview ? FLinearColor(0.335f, 0.0060f, 0.0035f, 1.0f) : FLinearColor(0.235f, 0.016f, 0.010f, 1.0f));
+		Material->SetVectorParameterValue(TEXT("BloodDarkColor"), bBloodVFXPreview ? FLinearColor(0.165f, 0.0022f, 0.0018f, 1.0f) : FLinearColor(0.070f, 0.003f, 0.003f, 1.0f));
 		Material->SetVectorParameterValue(TEXT("BloodGrassRootColor"), FLinearColor(0.065f, 0.0012f, 0.0022f, 1.0f));
 		Material->SetVectorParameterValue(TEXT("BloodGrassColor"), FLinearColor(0.235f, 0.004f, 0.009f, 1.0f));
-		Material->SetScalarParameterValue(TEXT("BloodStrength"), bGrassMaterial ? 0.0f : 0.88f);
-		Material->SetScalarParameterValue(TEXT("BloodWetStrength"), bGrassMaterial ? 0.0f : 0.58f);
+		Material->SetScalarParameterValue(TEXT("BloodStrength"), bGrassMaterial ? 0.0f : (bBloodVFXPreview ? 1.34f : 0.88f));
+		Material->SetScalarParameterValue(TEXT("BloodWetStrength"), bGrassMaterial ? 0.0f : (bBloodVFXPreview ? 0.12f : 0.58f));
 		Material->SetScalarParameterValue(TEXT("BloodGrassStrength"), bGrassMaterial ? 1.02f : 0.0f);
 	};
 
@@ -3621,7 +3656,7 @@ void AProphecyNNCrowdBenchmarkActor::InitializeBloodMask(const FVector2D& FieldC
 {
 	Impl->BloodMaskCenter = FieldCenter;
 	Impl->BloodMaskHalfExtent = FMath::Max(FieldHalfExtent, 1.0f);
-	Impl->BloodMaskSize = 1024;
+	Impl->BloodMaskSize = bBloodVFXPreview ? 2048 : 1024;
 	const int32 PixelCount = Impl->BloodMaskSize * Impl->BloodMaskSize;
 	Impl->BloodMaskValues.SetNumZeroed(PixelCount);
 	Impl->BloodMaskCoreValues.SetNumZeroed(PixelCount);
@@ -3635,7 +3670,7 @@ void AProphecyNNCrowdBenchmarkActor::InitializeBloodMask(const FVector2D& FieldC
 			return;
 		}
 		BloodMaskTexture->SRGB = false;
-		BloodMaskTexture->Filter = TF_Bilinear;
+		BloodMaskTexture->Filter = bBloodVFXPreview ? TF_Nearest : TF_Bilinear;
 		BloodMaskTexture->AddressX = TA_Clamp;
 		BloodMaskTexture->AddressY = TA_Clamp;
 		BloodMaskTexture->UpdateResource();
@@ -3711,12 +3746,15 @@ void AProphecyNNCrowdBenchmarkActor::StampBloodDropMask(const FVector2D& Center,
 				continue;
 			}
 
-			const float EdgeSoft = 1.0f - Smooth01((NormalizedDistance - 0.52f) / 0.48f);
+			const float EdgeSoft = 1.0f - Smooth01((NormalizedDistance - 0.78f) / 0.22f);
 			const float GrainA = 0.5f + 0.5f * FMath::Sin(WorldX * 0.021f + WorldY * 0.037f + Center.X * 0.003f);
 			const float GrainB = 0.5f + 0.5f * FMath::Sin(WorldX * 0.063f - WorldY * 0.029f + Center.Y * 0.004f);
-			const float Breakup = FMath::Clamp(0.74f + 0.20f * GrainA + 0.16f * GrainB, 0.0f, 1.0f);
+			const float Vein = FMath::Pow(0.5f + 0.5f * FMath::Sin(WorldX * 0.014f + WorldY * 0.018f + Center.X * 0.002f), 2.2f);
+			const float Breakup = bBloodVFXPreview ? FMath::Clamp(0.88f + 0.075f * GrainA + 0.055f * GrainB - 0.035f * Vein, 0.74f, 1.0f) : FMath::Clamp(0.74f + 0.20f * GrainA + 0.16f * GrainB, 0.0f, 1.0f);
+			const float CoreBreakup = bBloodVFXPreview ? FMath::Clamp(0.46f + 0.28f * Vein + 0.18f * (1.0f - GrainA), 0.34f, 1.0f) : Breakup;
 			const float MaskValue = FMath::Clamp(Strength * EdgeSoft * Breakup, 0.0f, 1.0f);
-			const float CoreValue = FMath::Clamp(CoreStrength * (1.0f - Smooth01((NormalizedDistance - 0.18f) / 0.54f)) * Breakup, 0.0f, 1.0f);
+			const float CoreScale = bBloodVFXPreview ? 0.34f : 1.0f;
+			const float CoreValue = FMath::Clamp(CoreStrength * CoreScale * (1.0f - Smooth01((NormalizedDistance - 0.18f) / 0.54f)) * CoreBreakup, 0.0f, 1.0f);
 			const int32 Index = Y * Size + X;
 			Impl->BloodMaskValues[Index] = FMath::Max(Impl->BloodMaskValues[Index], MaskValue);
 			Impl->BloodMaskCoreValues[Index] = FMath::Max(Impl->BloodMaskCoreValues[Index], CoreValue);
@@ -3781,6 +3819,1114 @@ void AProphecyNNCrowdBenchmarkActor::GeneratePreviewBloodStains(float RadiusScal
 
 	UploadBloodMask();
 	UE_LOG(LogProphecyNNBenchmark, Display, TEXT("Generated preview blood mask: size=%d half_extent=%.0fcm radius_scale=%.2f strength=%.2f"), Impl->BloodMaskSize, Impl->BloodMaskHalfExtent, Scale, BaseStrength);
+}
+
+void AProphecyNNCrowdBenchmarkActor::GenerateCoherentBloodVFXStain(float TimeSeconds, float RadiusScale, float Strength)
+{
+	if (!BloodMaskTexture)
+	{
+		return;
+	}
+
+	auto Smooth01 = [](float T)
+	{
+		T = FMath::Clamp(T, 0.0f, 1.0f);
+		return T * T * (3.0f - 2.0f * T);
+	};
+	auto Window = [&Smooth01](float T, float Start, float End, float Fade)
+	{
+		return Smooth01((T - Start) / FMath::Max(Fade, 0.001f)) * (1.0f - Smooth01((T - End) / FMath::Max(Fade, 0.001f)));
+	};
+
+	const float Scale = FMath::Clamp(RadiusScale, 0.25f, 4.0f);
+	const float BaseStrength = FMath::Clamp(Strength, 0.05f, 1.0f);
+	const float T = FMath::Fmod(FMath::Max(TimeSeconds, 0.0f), 3.2f);
+	const float Spread = Smooth01((T - 0.08f) / 1.35f);
+	ClearBloodMask();
+
+	struct FProjectedPoolLobe
+	{
+		FVector2D Offset;
+		float ScaleX;
+		float ScaleY;
+		float YawDegrees;
+		float Start;
+		float ZScale;
+	};
+
+	const FProjectedPoolLobe Lobes[] = {
+		{ FVector2D(0.0f, 0.0f), 3.25f, 2.25f, -4.0f, 0.00f, 1.00f },
+		{ FVector2D(-310.0f, -35.0f), 2.25f, 1.30f, 13.0f, 0.16f, 0.72f },
+		{ FVector2D(330.0f, 25.0f), 2.55f, 1.45f, -11.0f, 0.18f, 0.76f },
+		{ FVector2D(35.0f, 245.0f), 1.85f, 1.12f, 42.0f, 0.30f, 0.58f },
+		{ FVector2D(-120.0f, -255.0f), 2.05f, 1.20f, -50.0f, 0.38f, 0.56f },
+		{ FVector2D(320.0f, -125.0f), 1.25f, 0.62f, -23.0f, 0.70f, 0.42f },
+		{ FVector2D(-340.0f, 95.0f), 1.08f, 0.58f, 24.0f, 0.86f, 0.38f },
+	};
+
+	if (Impl->BloodMaskValues.IsEmpty() || Impl->BloodMaskCoreValues.Num() != Impl->BloodMaskValues.Num())
+	{
+		return;
+	}
+
+	const int32 Size = Impl->BloodMaskSize;
+	const float CmPerPixel = (Impl->BloodMaskHalfExtent * 2.0f) / float(Size);
+	auto WorldToPixel = [this, Size](const FVector2D& World)
+	{
+		const float U = (World.X - (Impl->BloodMaskCenter.X - Impl->BloodMaskHalfExtent)) / (Impl->BloodMaskHalfExtent * 2.0f);
+		const float V = (World.Y - (Impl->BloodMaskCenter.Y - Impl->BloodMaskHalfExtent)) / (Impl->BloodMaskHalfExtent * 2.0f);
+		return FIntPoint(FMath::FloorToInt(U * float(Size)), FMath::FloorToInt(V * float(Size)));
+	};
+
+	auto StampProjectedPool = [&](const FVector2D& Center, float ScaleX, float ScaleY, float YawRadians, float StrengthScale)
+	{
+		const float MaxWorldRadius = FMath::Max(ScaleX, ScaleY) * 126.0f;
+		const FIntPoint MinPixel = WorldToPixel(Center - FVector2D(MaxWorldRadius, MaxWorldRadius));
+		const FIntPoint MaxPixel = WorldToPixel(Center + FVector2D(MaxWorldRadius, MaxWorldRadius));
+		if (MaxPixel.X < 0 || MaxPixel.Y < 0 || MinPixel.X > Size - 1 || MinPixel.Y > Size - 1)
+		{
+			return;
+		}
+
+		const int32 X0 = FMath::Clamp(MinPixel.X, 0, Size - 1);
+		const int32 Y0 = FMath::Clamp(MinPixel.Y, 0, Size - 1);
+		const int32 X1 = FMath::Clamp(MaxPixel.X, 0, Size - 1);
+		const int32 Y1 = FMath::Clamp(MaxPixel.Y, 0, Size - 1);
+		const float CosR = FMath::Cos(YawRadians);
+		const float SinR = FMath::Sin(YawRadians);
+		const float InvScaleX = 1.0f / FMath::Max(ScaleX * 100.0f, 1.0f);
+		const float InvScaleY = 1.0f / FMath::Max(ScaleY * 100.0f, 1.0f);
+
+		for (int32 Y = Y0; Y <= Y1; ++Y)
+		{
+			const float WorldY = Impl->BloodMaskCenter.Y - Impl->BloodMaskHalfExtent + (float(Y) + 0.5f) * CmPerPixel;
+			for (int32 X = X0; X <= X1; ++X)
+			{
+				const float WorldX = Impl->BloodMaskCenter.X - Impl->BloodMaskHalfExtent + (float(X) + 0.5f) * CmPerPixel;
+				const FVector2D Offset(WorldX - Center.X, WorldY - Center.Y);
+				const float LocalX = Offset.X * CosR + Offset.Y * SinR;
+				const float LocalY = -Offset.X * SinR + Offset.Y * CosR;
+				const float NX = LocalX * InvScaleX;
+				const float NY = LocalY * InvScaleY;
+				const float Angle = FMath::Atan2(NY, NX);
+				const float Boundary = FMath::Max(BloodVFXPoolBoundaryScale(Angle), 0.45f);
+				const float Radius = FMath::Sqrt(NX * NX + NY * NY);
+				const float Normalized = Radius / Boundary;
+				if (Normalized >= 1.0f)
+				{
+					continue;
+				}
+
+				const float Edge = 1.0f - Smooth01((Normalized - 0.94f) / 0.06f);
+				const float Core = 1.0f - Smooth01((Normalized - 0.28f) / 0.54f);
+				const float GrainA = 0.5f + 0.5f * FMath::Sin(WorldX * 0.021f + WorldY * 0.037f + Center.X * 0.003f);
+				const float GrainB = 0.5f + 0.5f * FMath::Sin(WorldX * 0.067f - WorldY * 0.026f + Center.Y * 0.004f);
+				const float Vein = FMath::Pow(0.5f + 0.5f * FMath::Sin(WorldX * 0.014f + WorldY * 0.018f + Angle * 3.0f), 2.2f);
+				const float WetBreakup = FMath::Clamp(0.88f + 0.075f * GrainA + 0.055f * GrainB - 0.035f * Vein, 0.74f, 1.0f);
+				const float CoreBreakup = FMath::Clamp(0.46f + 0.28f * Vein + 0.18f * (1.0f - GrainA), 0.34f, 1.0f);
+				const int32 Index = Y * Size + X;
+				Impl->BloodMaskValues[Index] = FMath::Max(Impl->BloodMaskValues[Index], BaseStrength * StrengthScale * Edge * WetBreakup);
+				Impl->BloodMaskCoreValues[Index] = FMath::Max(Impl->BloodMaskCoreValues[Index], BaseStrength * StrengthScale * 0.42f * Core * CoreBreakup);
+			}
+		}
+	};
+
+	auto StampProjectedSheet = [&](const FVector2D& Center, float LengthCm, float WidthCm, float YawRadians, float StrengthScale, float CoreScale, float ShapeSeed)
+	{
+		const float HalfLength = FMath::Max(LengthCm * 0.5f, 2.0f);
+		const float HalfWidth = FMath::Max(WidthCm * 0.5f, 2.0f);
+		const float MaxWorldRadius = FMath::Sqrt(HalfLength * HalfLength + HalfWidth * HalfWidth) * 1.12f;
+		const FIntPoint MinPixel = WorldToPixel(Center - FVector2D(MaxWorldRadius, MaxWorldRadius));
+		const FIntPoint MaxPixel = WorldToPixel(Center + FVector2D(MaxWorldRadius, MaxWorldRadius));
+		if (MaxPixel.X < 0 || MaxPixel.Y < 0 || MinPixel.X > Size - 1 || MinPixel.Y > Size - 1)
+		{
+			return;
+		}
+
+		const int32 X0 = FMath::Clamp(MinPixel.X, 0, Size - 1);
+		const int32 Y0 = FMath::Clamp(MinPixel.Y, 0, Size - 1);
+		const int32 X1 = FMath::Clamp(MaxPixel.X, 0, Size - 1);
+		const int32 Y1 = FMath::Clamp(MaxPixel.Y, 0, Size - 1);
+		const float CosR = FMath::Cos(YawRadians);
+		const float SinR = FMath::Sin(YawRadians);
+
+		for (int32 Y = Y0; Y <= Y1; ++Y)
+		{
+			const float WorldY = Impl->BloodMaskCenter.Y - Impl->BloodMaskHalfExtent + (float(Y) + 0.5f) * CmPerPixel;
+			for (int32 X = X0; X <= X1; ++X)
+			{
+				const float WorldX = Impl->BloodMaskCenter.X - Impl->BloodMaskHalfExtent + (float(X) + 0.5f) * CmPerPixel;
+				const FVector2D Offset(WorldX - Center.X, WorldY - Center.Y);
+				const float LocalX = Offset.X * CosR + Offset.Y * SinR;
+				const float LocalY = -Offset.X * SinR + Offset.Y * CosR;
+				const float AX = FMath::Abs(LocalX) / HalfLength;
+				const float AY = FMath::Abs(LocalY) / HalfWidth;
+				const float EdgeNoise =
+					0.060f * FMath::Sin(LocalX * 0.041f + ShapeSeed * 1.7f) +
+					0.045f * FMath::Sin(LocalY * 0.088f - ShapeSeed * 2.9f) +
+					0.030f * FMath::Sin((LocalX + LocalY) * 0.026f + ShapeSeed * 4.1f);
+				const float Boundary = FMath::Clamp(1.0f + EdgeNoise, 0.82f, 1.14f);
+				const float RectDistance = FMath::Max(AX, AY) / Boundary;
+				if (RectDistance >= 1.0f)
+				{
+					continue;
+				}
+
+				const float CornerDistance = FMath::Sqrt(AX * AX + AY * AY);
+				const float CornerTrim = 1.0f - Smooth01((CornerDistance - 1.18f) / 0.22f);
+				const float Edge = (1.0f - Smooth01((RectDistance - 0.84f) / 0.16f)) * CornerTrim;
+				const float Core = 1.0f - Smooth01((FMath::Max(AX / 0.62f, AY / 0.58f) - 0.52f) / 0.48f);
+				const float GrainA = 0.5f + 0.5f * FMath::Sin(WorldX * 0.022f + WorldY * 0.039f + ShapeSeed);
+				const float GrainB = 0.5f + 0.5f * FMath::Sin(WorldX * 0.072f - WorldY * 0.027f + ShapeSeed * 3.0f);
+				const float WetBreakup = FMath::Clamp(0.86f + 0.08f * GrainA + 0.05f * GrainB, 0.74f, 1.0f);
+				const int32 Index = Y * Size + X;
+				Impl->BloodMaskValues[Index] = FMath::Max(Impl->BloodMaskValues[Index], BaseStrength * StrengthScale * Edge * WetBreakup);
+				Impl->BloodMaskCoreValues[Index] = FMath::Max(Impl->BloodMaskCoreValues[Index], BaseStrength * CoreScale * Core * FMath::Clamp(0.48f + 0.40f * GrainA, 0.32f, 1.0f));
+			}
+		}
+	};
+
+	for (int32 LobeIndex = 0; LobeIndex < UE_ARRAY_COUNT(Lobes); ++LobeIndex)
+	{
+		const FProjectedPoolLobe& Lobe = Lobes[LobeIndex];
+		const float Grow = Smooth01((T - Lobe.Start) / 0.82f);
+		if (Grow <= 0.001f)
+		{
+			continue;
+		}
+		const float Pulse = 1.0f + 0.045f * (1.0f - Smooth01((T - 1.15f) / 1.40f)) * FMath::Sin(T * 8.0f + float(LobeIndex) * 1.9f);
+		const FVector2D Center = Lobe.Offset * Spread * Scale;
+		const float ScaleX = Lobe.ScaleX * Scale * FMath::Lerp(0.16f, Pulse, Grow);
+		const float ScaleY = Lobe.ScaleY * Scale * FMath::Lerp(0.14f, Pulse, Grow);
+		const float YawRadians = FMath::DegreesToRadians(Lobe.YawDegrees + FMath::Sin(T * 2.3f + float(LobeIndex)) * 2.5f);
+		StampProjectedPool(Center, ScaleX, ScaleY, YawRadians, FMath::Clamp(1.0f - Lobe.Start * 0.45f, 0.40f, 1.0f));
+	}
+
+	struct FProjectedSheetBlob
+	{
+		float AngleDegrees;
+		float Start;
+		float Life;
+		float Distance;
+		float Height;
+		float Length;
+		float Width;
+		float RollDegrees;
+	};
+
+	const FProjectedSheetBlob SheetBlobs[] = {
+		{ -15.0f, 0.04f, 0.86f, 85.0f, 285.0f, 520.0f, 315.0f, -7.0f },
+		{ 0.0f, 0.05f, 0.92f, 120.0f, 335.0f, 650.0f, 360.0f, 3.0f },
+		{ 16.0f, 0.06f, 0.96f, 155.0f, 300.0f, 540.0f, 305.0f, 11.0f },
+		{ -38.0f, 0.08f, 1.02f, 235.0f, 215.0f, 320.0f, 145.0f, -16.0f },
+		{ 40.0f, 0.09f, 1.04f, 255.0f, 205.0f, 305.0f, 135.0f, 18.0f },
+		{ -62.0f, 0.11f, 1.08f, 310.0f, 148.0f, 175.0f, 54.0f, -20.0f },
+		{ 64.0f, 0.12f, 1.10f, 320.0f, 146.0f, 168.0f, 52.0f, 22.0f },
+		{ -82.0f, 0.16f, 1.10f, 310.0f, 118.0f, 126.0f, 34.0f, -18.0f },
+		{ 86.0f, 0.18f, 1.12f, 320.0f, 112.0f, 120.0f, 32.0f, 18.0f },
+		{ -126.0f, 0.22f, 1.16f, 360.0f, 96.0f, 100.0f, 28.0f, -16.0f },
+		{ 128.0f, 0.24f, 1.18f, 370.0f, 92.0f, 96.0f, 28.0f, 14.0f },
+		{ 172.0f, 0.28f, 1.22f, 410.0f, 84.0f, 84.0f, 24.0f, 8.0f },
+	};
+
+	for (int32 SheetIndex = 0; SheetIndex < UE_ARRAY_COUNT(SheetBlobs); ++SheetIndex)
+	{
+		const FProjectedSheetBlob& Sheet = SheetBlobs[SheetIndex];
+		const float Life = FMath::Max(Sheet.Life, 0.01f);
+		const float LocalT = (T - Sheet.Start) / Life;
+		const float Alpha = Window(T, Sheet.Start + Life * 0.28f, Sheet.Start + Life * 1.12f, 0.18f);
+		if (LocalT <= 0.0f || Alpha <= 0.003f)
+		{
+			continue;
+		}
+
+		const float Angle = FMath::DegreesToRadians(Sheet.AngleDegrees);
+		const FVector2D Direction(FMath::Cos(Angle), FMath::Sin(Angle) * 0.72f);
+		const float DirectionYaw = FMath::Atan2(Direction.Y, Direction.X);
+		const FVector2D Center = Direction * (Sheet.Distance * Scale * Smooth01(LocalT));
+		const float StretchFade = FMath::Lerp(1.18f, 0.62f, FMath::Clamp(LocalT, 0.0f, 1.0f));
+		const float SmearLength = Sheet.Length * Scale * Alpha * StretchFade;
+		const float SmearWidth = Sheet.Width * Scale * Alpha;
+		StampProjectedSheet(
+			Center,
+			SmearLength,
+			SmearWidth,
+			DirectionYaw + FMath::DegreesToRadians(2.0f * FMath::Sin(LocalT * UE_TWO_PI + SheetIndex)),
+			BaseStrength * Alpha * 0.42f,
+			BaseStrength * Alpha * 0.050f,
+			float(SheetIndex) + Sheet.AngleDegrees * 0.071f);
+	}
+
+	struct FProjectedTendril
+	{
+		float AngleDegrees;
+		float Start;
+		float End;
+		float Distance;
+		float Length;
+		float Width;
+		float CurlDegrees;
+	};
+
+	const FProjectedTendril Tendrils[] = {
+		{ -118.0f, 0.18f, 1.10f, 220.0f, 360.0f, 16.0f, -12.0f },
+		{ -92.0f, 0.14f, 0.98f, 180.0f, 280.0f, 22.0f, -20.0f },
+		{ -64.0f, 0.12f, 1.05f, 250.0f, 420.0f, 18.0f, -10.0f },
+		{ -34.0f, 0.10f, 1.02f, 300.0f, 500.0f, 20.0f, -5.0f },
+		{ -8.0f, 0.08f, 0.98f, 230.0f, 360.0f, 24.0f, 8.0f },
+		{ 24.0f, 0.10f, 1.05f, 310.0f, 440.0f, 18.0f, 10.0f },
+		{ 55.0f, 0.13f, 1.10f, 280.0f, 380.0f, 16.0f, 14.0f },
+		{ 88.0f, 0.18f, 1.16f, 230.0f, 300.0f, 14.0f, 18.0f },
+		{ 124.0f, 0.24f, 1.25f, 330.0f, 360.0f, 12.0f, 12.0f },
+		{ 160.0f, 0.28f, 1.28f, 350.0f, 340.0f, 12.0f, 5.0f },
+		{ -155.0f, 0.28f, 1.28f, 340.0f, 360.0f, 12.0f, -12.0f },
+		{ -40.0f, 0.58f, 1.70f, 430.0f, 330.0f, 11.0f, -4.0f },
+		{ 38.0f, 0.62f, 1.80f, 450.0f, 300.0f, 10.0f, 6.0f },
+		{ 8.0f, 0.74f, 2.00f, 470.0f, 320.0f, 9.0f, 3.0f },
+	};
+
+	for (int32 TendrilIndex = 0; TendrilIndex < UE_ARRAY_COUNT(Tendrils); ++TendrilIndex)
+	{
+		const FProjectedTendril& Tendril = Tendrils[TendrilIndex];
+		const float Life = FMath::Max(Tendril.End - Tendril.Start, 0.01f);
+		const float LocalT = FMath::Clamp((T - Tendril.Start) / Life, 0.0f, 1.0f);
+		const float FloorEnd = FMath::Min(Tendril.End, Tendril.Start + 0.72f);
+		const float Alpha = Window(T, Tendril.Start, FloorEnd, 0.16f);
+		if (Alpha <= 0.003f)
+		{
+			continue;
+		}
+
+		const float Angle = FMath::DegreesToRadians(Tendril.AngleDegrees + Tendril.CurlDegrees * FMath::Sin(LocalT * UE_PI));
+		const FVector2D Direction(FMath::Cos(Angle), FMath::Sin(Angle) * 0.72f);
+		const float DirectionYaw = FMath::Atan2(Direction.Y, Direction.X);
+		const float Distance = Tendril.Distance * Scale * Smooth01(LocalT);
+		const float Length = Tendril.Length * Scale * Alpha * (0.22f + 0.58f * Smooth01(LocalT));
+		const FVector2D Center = Direction * (Distance + Length * 0.42f);
+		StampBloodDropMask(
+			Center,
+			Length * 0.42f,
+			Tendril.Width * Scale * Alpha * 0.46f,
+			DirectionYaw,
+			BaseStrength * Alpha * 0.22f,
+			BaseStrength * Alpha * 0.020f);
+	}
+
+	UploadBloodMask();
+}
+
+UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateBloodVFXPoolMesh()
+{
+	if (BloodVFXPoolMesh)
+	{
+		return BloodVFXPoolMesh;
+	}
+
+	UMaterialInterface* BloodMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyBloodVFX_Surface.M_ProphecyBloodVFX_Surface"));
+	if (!BloodMaterial)
+	{
+		BloodMaterial = CreateTintedMaterial(TEXT("ProphecyBloodVFXFallbackMaterial"), FLinearColor(0.22f, 0.006f, 0.004f, 1.0f));
+	}
+	if (!BloodMaterial)
+	{
+		return nullptr;
+	}
+
+	FMeshDescription MeshDescription;
+	FStaticMeshAttributes Attributes(MeshDescription);
+	Attributes.Register();
+
+	FMeshDescriptionBuilder Builder;
+	Builder.SetMeshDescription(&MeshDescription);
+	Builder.SetNumUVLayers(1);
+	FPolygonGroupID PolygonGroup = Builder.AppendPolygonGroup(TEXT("BloodVFXPool"));
+
+	auto Smooth01Local = [](float T)
+	{
+		T = FMath::Clamp(T, 0.0f, 1.0f);
+		return T * T * (3.0f - 2.0f * T);
+	};
+
+	auto ColorAt = [&Smooth01Local](float Angle, float R, const FVector& Position)
+	{
+		const float Edge = FMath::Clamp(R, 0.0f, 1.0f);
+		const float GrainA = 0.5f + 0.5f * FMath::Sin(Position.X * 0.047f + Position.Y * 0.029f + Angle * 3.7f);
+		const float GrainB = 0.5f + 0.5f * FMath::Sin(Position.X * 0.021f - Position.Y * 0.061f + Angle * 8.3f + 0.45f);
+		const float Vein = FMath::Pow(0.5f + 0.5f * FMath::Sin(Angle * 7.0f + Edge * 13.5f + GrainA * 2.2f), 2.3f);
+		const float EdgeDarken = FMath::Lerp(1.08f, 0.68f, Smooth01Local((Edge - 0.72f) / 0.28f));
+		const float Wet = FMath::Clamp(0.70f + 0.12f * GrainA + 0.08f * GrainB - 0.08f * Vein, 0.56f, 1.0f);
+		const float Red = FMath::Clamp((0.220f + 0.150f * Wet) * EdgeDarken, 0.160f, 0.385f);
+		return FVector4f(
+			Red,
+			FMath::Clamp(0.0014f + 0.0060f * Wet * EdgeDarken, 0.0010f, 0.0085f),
+			FMath::Clamp(0.0010f + 0.0035f * Wet * EdgeDarken, 0.0007f, 0.0050f),
+			1.0f);
+	};
+
+	auto AddTriangle = [&Builder, PolygonGroup](const FVector& A, const FVector& B, const FVector& C, const FVector4f& ColorA, const FVector4f& ColorB, const FVector4f& ColorC)
+	{
+		const FVertexID VA = Builder.AppendVertex(A);
+		const FVertexID VB = Builder.AppendVertex(B);
+		const FVertexID VC = Builder.AppendVertex(C);
+		const FVertexInstanceID IA = Builder.AppendInstance(VA);
+		const FVertexInstanceID IB = Builder.AppendInstance(VB);
+		const FVertexInstanceID IC = Builder.AppendInstance(VC);
+		const FVector Normal = FVector::CrossProduct(B - A, C - A).GetSafeNormal(UE_SMALL_NUMBER, FVector::UpVector);
+		const FVector Tangent = (B - A).GetSafeNormal(UE_SMALL_NUMBER, FVector::ForwardVector);
+		Builder.SetInstanceNormal(IA, Normal);
+		Builder.SetInstanceNormal(IB, Normal);
+		Builder.SetInstanceNormal(IC, Normal);
+		Builder.SetInstanceTangentSpace(IA, Normal, Tangent, 1.0f);
+		Builder.SetInstanceTangentSpace(IB, Normal, Tangent, 1.0f);
+		Builder.SetInstanceTangentSpace(IC, Normal, Tangent, 1.0f);
+		Builder.SetInstanceUV(IA, FVector2D(0.5 + A.X / 220.0, 0.5 + A.Y / 220.0));
+		Builder.SetInstanceUV(IB, FVector2D(0.5 + B.X / 220.0, 0.5 + B.Y / 220.0));
+		Builder.SetInstanceUV(IC, FVector2D(0.5 + C.X / 220.0, 0.5 + C.Y / 220.0));
+		Builder.SetInstanceColor(IA, ColorA);
+		Builder.SetInstanceColor(IB, ColorB);
+		Builder.SetInstanceColor(IC, ColorC);
+		Builder.AppendTriangle(IA, IB, IC, PolygonGroup);
+	};
+
+	constexpr int32 Segments = 128;
+	constexpr int32 Rings = 12;
+	TArray<FVector> Positions;
+	TArray<FVector4f> Colors;
+	Positions.SetNum((Rings + 1) * Segments);
+	Colors.SetNum(Positions.Num());
+	auto MeshIndex = [](int32 Ring, int32 Segment)
+	{
+		return Ring * Segments + (Segment % Segments);
+	};
+
+	for (int32 Ring = 0; Ring <= Rings; ++Ring)
+	{
+		const float RingT = float(Ring) / float(Rings);
+		const float RadiusT = FMath::Pow(RingT, 0.76f);
+		for (int32 Segment = 0; Segment < Segments; ++Segment)
+		{
+			const float A = UE_TWO_PI * float(Segment) / float(Segments);
+			const float Boundary = BloodVFXPoolBoundaryScale(A);
+			const float Wobble = 1.0f + RingT * (0.020f * FMath::Sin(A * 17.0f + RingT * 5.1f) + 0.012f * FMath::Sin(A * 31.0f - 0.7f));
+			const float Radius = 100.0f * RadiusT * Boundary * Wobble;
+			const float CenterLift = 8.5f * (1.0f - Smooth01Local(RingT));
+			const float WetCrown = (0.08f + 0.20f * FMath::Sin(RingT * UE_PI)) * (0.5f + 0.5f * FMath::Sin(A * 9.0f + RingT * 6.0f + 0.35f));
+			const FVector Position(FMath::Cos(A) * Radius, FMath::Sin(A) * Radius, 0.65f + CenterLift + WetCrown);
+			Positions[MeshIndex(Ring, Segment)] = Position;
+			Colors[MeshIndex(Ring, Segment)] = ColorAt(A, RingT, Position);
+		}
+	}
+
+	for (int32 Segment = 0; Segment < Segments; ++Segment)
+	{
+		const int32 Next = (Segment + 1) % Segments;
+		AddTriangle(
+			Positions[MeshIndex(0, Segment)],
+			Positions[MeshIndex(1, Segment)],
+			Positions[MeshIndex(1, Next)],
+			Colors[MeshIndex(0, Segment)],
+			Colors[MeshIndex(1, Segment)],
+			Colors[MeshIndex(1, Next)]);
+	}
+	for (int32 Ring = 1; Ring < Rings; ++Ring)
+	{
+		for (int32 Segment = 0; Segment < Segments; ++Segment)
+		{
+			const int32 Next = (Segment + 1) % Segments;
+			const FVector& InnerA = Positions[MeshIndex(Ring, Segment)];
+			const FVector& InnerB = Positions[MeshIndex(Ring, Next)];
+			const FVector& OuterA = Positions[MeshIndex(Ring + 1, Segment)];
+			const FVector& OuterB = Positions[MeshIndex(Ring + 1, Next)];
+			const FVector4f& InnerColorA = Colors[MeshIndex(Ring, Segment)];
+			const FVector4f& InnerColorB = Colors[MeshIndex(Ring, Next)];
+			const FVector4f& OuterColorA = Colors[MeshIndex(Ring + 1, Segment)];
+			const FVector4f& OuterColorB = Colors[MeshIndex(Ring + 1, Next)];
+			AddTriangle(InnerA, OuterA, InnerB, InnerColorA, OuterColorA, InnerColorB);
+			AddTriangle(InnerB, OuterA, OuterB, InnerColorB, OuterColorA, OuterColorB);
+		}
+	}
+
+	BloodVFXPoolMesh = NewObject<UStaticMesh>(this, TEXT("ProphecyRuntimeBloodVFXPool"), RF_Transient);
+	if (!BloodVFXPoolMesh)
+	{
+		return nullptr;
+	}
+	BloodVFXPoolMesh->GetStaticMaterials().Add(FStaticMaterial(BloodMaterial, TEXT("BloodVFXPool")));
+
+	UStaticMesh::FBuildMeshDescriptionsParams Params;
+	Params.bBuildSimpleCollision = false;
+	Params.bCommitMeshDescription = true;
+	Params.bFastBuild = false;
+	Params.bAllowCpuAccess = false;
+	TArray<const FMeshDescription*> MeshDescriptions;
+	MeshDescriptions.Add(&MeshDescription);
+	if (!BloodVFXPoolMesh->BuildFromMeshDescriptions(MeshDescriptions, Params))
+	{
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("Failed to build runtime blood VFX pool mesh."));
+		BloodVFXPoolMesh = nullptr;
+	}
+	else
+	{
+		const FBoxSphereBounds Bounds = BloodVFXPoolMesh->GetBounds();
+		UE_LOG(
+			LogProphecyNNBenchmark,
+			Display,
+			TEXT("Built runtime blood VFX pool mesh: origin=(%.1f %.1f %.1f) extent=(%.1f %.1f %.1f) radius=%.1f"),
+			Bounds.Origin.X,
+			Bounds.Origin.Y,
+			Bounds.Origin.Z,
+			Bounds.BoxExtent.X,
+			Bounds.BoxExtent.Y,
+			Bounds.BoxExtent.Z,
+			Bounds.SphereRadius);
+	}
+	return BloodVFXPoolMesh;
+}
+
+UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateBloodVFXRibbonMesh()
+{
+	if (BloodVFXRibbonMesh)
+	{
+		return BloodVFXRibbonMesh;
+	}
+
+	UMaterialInterface* BloodMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyBloodVFX_Surface.M_ProphecyBloodVFX_Surface"));
+	if (!BloodMaterial)
+	{
+		BloodMaterial = CreateTintedMaterial(TEXT("ProphecyBloodVFXRibbonFallbackMaterial"), FLinearColor(0.20f, 0.004f, 0.004f, 1.0f));
+	}
+	if (!BloodMaterial)
+	{
+		return nullptr;
+	}
+
+	FMeshDescription MeshDescription;
+	FStaticMeshAttributes Attributes(MeshDescription);
+	Attributes.Register();
+
+	FMeshDescriptionBuilder Builder;
+	Builder.SetMeshDescription(&MeshDescription);
+	Builder.SetNumUVLayers(1);
+	FPolygonGroupID PolygonGroup = Builder.AppendPolygonGroup(TEXT("BloodVFXRibbon"));
+
+	auto AddTriangle = [&Builder, PolygonGroup](const FVector& A, const FVector& B, const FVector& C, const FVector4f& ColorA, const FVector4f& ColorB, const FVector4f& ColorC)
+	{
+		const FVertexID VA = Builder.AppendVertex(A);
+		const FVertexID VB = Builder.AppendVertex(B);
+		const FVertexID VC = Builder.AppendVertex(C);
+		const FVertexInstanceID IA = Builder.AppendInstance(VA);
+		const FVertexInstanceID IB = Builder.AppendInstance(VB);
+		const FVertexInstanceID IC = Builder.AppendInstance(VC);
+		const FVector Normal = FVector::CrossProduct(B - A, C - A).GetSafeNormal(UE_SMALL_NUMBER, FVector(0.0, -1.0, 0.0));
+		const FVector Tangent = (B - A).GetSafeNormal(UE_SMALL_NUMBER, FVector::RightVector);
+		Builder.SetInstanceNormal(IA, Normal);
+		Builder.SetInstanceNormal(IB, Normal);
+		Builder.SetInstanceNormal(IC, Normal);
+		Builder.SetInstanceTangentSpace(IA, Normal, Tangent, 1.0f);
+		Builder.SetInstanceTangentSpace(IB, Normal, Tangent, 1.0f);
+		Builder.SetInstanceTangentSpace(IC, Normal, Tangent, 1.0f);
+		Builder.SetInstanceUV(IA, FVector2D((A.X + 50.0) / 100.0, A.Y + 0.5));
+		Builder.SetInstanceUV(IB, FVector2D((B.X + 50.0) / 100.0, B.Y + 0.5));
+		Builder.SetInstanceUV(IC, FVector2D((C.X + 50.0) / 100.0, C.Y + 0.5));
+		Builder.SetInstanceColor(IA, ColorA);
+		Builder.SetInstanceColor(IB, ColorB);
+		Builder.SetInstanceColor(IC, ColorC);
+		Builder.AppendTriangle(IA, IB, IC, PolygonGroup);
+	};
+
+	constexpr int32 Sections = 12;
+	TArray<FVector> Left;
+	TArray<FVector> Right;
+	TArray<FVector4f> Colors;
+	Left.SetNum(Sections + 1);
+	Right.SetNum(Sections + 1);
+	Colors.SetNum(Sections + 1);
+	for (int32 Section = 0; Section <= Sections; ++Section)
+	{
+		const float T = float(Section) / float(Sections);
+		const float X = FMath::Lerp(-50.0f, 50.0f, T);
+		const float Width = FMath::Lerp(0.62f, 0.10f, FMath::Pow(T, 1.35f));
+		const float Curve = FMath::Sin(T * UE_PI) * 0.13f + FMath::Sin(T * UE_TWO_PI + 0.65f) * 0.035f;
+		const float Crown = 0.42f + FMath::Sin(T * UE_PI) * 0.58f;
+		Left[Section] = FVector(X, Curve - Width * 0.5f, Crown);
+		Right[Section] = FVector(X, Curve + Width * 0.5f, Crown);
+		Colors[Section] = FVector4f(
+			FMath::Lerp(0.42f, 0.18f, T),
+			FMath::Lerp(0.018f, 0.004f, T),
+			FMath::Lerp(0.010f, 0.003f, T),
+			1.0f);
+	}
+	for (int32 Section = 0; Section < Sections; ++Section)
+	{
+		AddTriangle(Left[Section], Left[Section + 1], Right[Section], Colors[Section], Colors[Section + 1], Colors[Section]);
+		AddTriangle(Right[Section], Left[Section + 1], Right[Section + 1], Colors[Section], Colors[Section + 1], Colors[Section + 1]);
+	}
+
+	BloodVFXRibbonMesh = NewObject<UStaticMesh>(this, TEXT("ProphecyRuntimeBloodVFXRibbon"), RF_Transient);
+	if (!BloodVFXRibbonMesh)
+	{
+		return nullptr;
+	}
+	BloodVFXRibbonMesh->GetStaticMaterials().Add(FStaticMaterial(BloodMaterial, TEXT("BloodVFXRibbon")));
+
+	UStaticMesh::FBuildMeshDescriptionsParams Params;
+	Params.bBuildSimpleCollision = false;
+	Params.bCommitMeshDescription = false;
+	Params.bFastBuild = true;
+	Params.bAllowCpuAccess = false;
+	TArray<const FMeshDescription*> MeshDescriptions;
+	MeshDescriptions.Add(&MeshDescription);
+	if (!BloodVFXRibbonMesh->BuildFromMeshDescriptions(MeshDescriptions, Params))
+	{
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("Failed to build runtime blood VFX ribbon mesh."));
+		BloodVFXRibbonMesh = nullptr;
+	}
+	return BloodVFXRibbonMesh;
+}
+
+UStaticMesh* AProphecyNNCrowdBenchmarkActor::CreateBloodVFXSheetMesh()
+{
+	if (BloodVFXDropMesh)
+	{
+		return BloodVFXDropMesh;
+	}
+
+	UMaterialInterface* BloodMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyBloodVFX_Surface.M_ProphecyBloodVFX_Surface"));
+	if (!BloodMaterial)
+	{
+		BloodMaterial = CreateTintedMaterial(TEXT("ProphecyBloodVFXSheetFallbackMaterial"), FLinearColor(0.30f, 0.005f, 0.003f, 1.0f));
+	}
+	if (!BloodMaterial)
+	{
+		return nullptr;
+	}
+
+	FMeshDescription MeshDescription;
+	FStaticMeshAttributes Attributes(MeshDescription);
+	Attributes.Register();
+
+	FMeshDescriptionBuilder Builder;
+	Builder.SetMeshDescription(&MeshDescription);
+	Builder.SetNumUVLayers(1);
+	FPolygonGroupID PolygonGroup = Builder.AppendPolygonGroup(TEXT("BloodVFXSheet"));
+
+	auto Smooth01Local = [](float T)
+	{
+		T = FMath::Clamp(T, 0.0f, 1.0f);
+		return T * T * (3.0f - 2.0f * T);
+	};
+
+	auto ColorAt = [&Smooth01Local](float U, float V, const FVector& Position)
+	{
+		const float Edge = FMath::Max(FMath::Abs(U * 2.0f - 1.0f), FMath::Abs(V * 2.0f - 1.0f));
+		const float GrainA = 0.5f + 0.5f * FMath::Sin(Position.X * 0.073f + Position.Y * 0.037f + U * 7.0f);
+		const float GrainB = 0.5f + 0.5f * FMath::Sin(Position.X * 0.027f - Position.Y * 0.081f + V * 11.0f);
+		const float EdgeDark = FMath::Lerp(1.08f, 0.58f, Smooth01Local((Edge - 0.68f) / 0.32f));
+		const float Wet = FMath::Clamp(0.72f + 0.16f * GrainA + 0.10f * GrainB, 0.55f, 1.0f);
+		return FVector4f(
+			FMath::Clamp((0.24f + 0.18f * Wet) * EdgeDark, 0.13f, 0.46f),
+			FMath::Clamp((0.0020f + 0.0075f * Wet) * EdgeDark, 0.0010f, 0.010f),
+			FMath::Clamp((0.0012f + 0.0040f * Wet) * EdgeDark, 0.0006f, 0.006f),
+			1.0f);
+	};
+
+	auto AddTriangle = [&Builder, PolygonGroup](const FVector& A, const FVector& B, const FVector& C, const FVector4f& ColorA, const FVector4f& ColorB, const FVector4f& ColorC)
+	{
+		const FVertexID VA = Builder.AppendVertex(A);
+		const FVertexID VB = Builder.AppendVertex(B);
+		const FVertexID VC = Builder.AppendVertex(C);
+		const FVertexInstanceID IA = Builder.AppendInstance(VA);
+		const FVertexInstanceID IB = Builder.AppendInstance(VB);
+		const FVertexInstanceID IC = Builder.AppendInstance(VC);
+		const FVector Normal = FVector::CrossProduct(B - A, C - A).GetSafeNormal(UE_SMALL_NUMBER, FVector::UpVector);
+		const FVector Tangent = (B - A).GetSafeNormal(UE_SMALL_NUMBER, FVector::ForwardVector);
+		Builder.SetInstanceNormal(IA, Normal);
+		Builder.SetInstanceNormal(IB, Normal);
+		Builder.SetInstanceNormal(IC, Normal);
+		Builder.SetInstanceTangentSpace(IA, Normal, Tangent, 1.0f);
+		Builder.SetInstanceTangentSpace(IB, Normal, Tangent, 1.0f);
+		Builder.SetInstanceTangentSpace(IC, Normal, Tangent, 1.0f);
+		Builder.SetInstanceUV(IA, FVector2D(0.5 + A.X / 120.0, 0.5 + A.Z / 120.0));
+		Builder.SetInstanceUV(IB, FVector2D(0.5 + B.X / 120.0, 0.5 + B.Z / 120.0));
+		Builder.SetInstanceUV(IC, FVector2D(0.5 + C.X / 120.0, 0.5 + C.Z / 120.0));
+		Builder.SetInstanceColor(IA, ColorA);
+		Builder.SetInstanceColor(IB, ColorB);
+		Builder.SetInstanceColor(IC, ColorC);
+		Builder.AppendTriangle(IA, IB, IC, PolygonGroup);
+	};
+
+	constexpr int32 Columns = 16;
+	constexpr int32 Rows = 6;
+	TArray<FVector> Positions;
+	TArray<FVector4f> Colors;
+	Positions.SetNum((Columns + 1) * (Rows + 1));
+	Colors.SetNum(Positions.Num());
+	auto MeshIndex = [](int32 Row, int32 Column)
+	{
+		return Row * (Columns + 1) + Column;
+	};
+
+	for (int32 Row = 0; Row <= Rows; ++Row)
+	{
+		const float V = float(Row) / float(Rows);
+		const float SignedV = V * 2.0f - 1.0f;
+		for (int32 Column = 0; Column <= Columns; ++Column)
+		{
+			const float U = float(Column) / float(Columns);
+			const float SignedU = U * 2.0f - 1.0f;
+			const float Edge = FMath::Max(FMath::Abs(SignedU), FMath::Abs(SignedV));
+			const float EdgeJitter = Smooth01Local((Edge - 0.62f) / 0.38f);
+			const float CornerTrim = FMath::Max(FMath::Abs(SignedU) + FMath::Abs(SignedV) - 1.62f, 0.0f);
+			float X = SignedU * 50.0f;
+			float Y = SignedV * 50.0f;
+			X -= FMath::Sign(SignedU) * CornerTrim * 6.5f;
+			Y -= FMath::Sign(SignedV) * CornerTrim * 5.0f;
+			X += EdgeJitter * (2.9f * FMath::Sin(V * 15.7f + U * 3.1f) + 1.7f * FMath::Sin(V * 29.0f + 0.4f));
+			Y += EdgeJitter * (3.2f * FMath::Sin(U * 18.4f - V * 5.6f) + 1.5f * FMath::Sin(U * 31.0f - 0.9f));
+			const float Crown = (1.0f - Smooth01Local((Edge - 0.18f) / 0.82f)) * 5.2f;
+			const float Ripple = 0.8f * FMath::Sin(U * UE_TWO_PI * 2.0f + V * 3.4f) + 0.45f * FMath::Sin(V * UE_TWO_PI * 3.0f - U * 2.2f);
+			const float Thickness = (0.45f + Crown * 0.18f + Ripple) * (0.35f + 0.65f * EdgeJitter);
+			const FVector Position(X, Thickness, Y);
+			Positions[MeshIndex(Row, Column)] = Position;
+			Colors[MeshIndex(Row, Column)] = ColorAt(U, V, Position);
+		}
+	}
+
+	for (int32 Row = 0; Row < Rows; ++Row)
+	{
+		for (int32 Column = 0; Column < Columns; ++Column)
+		{
+			const int32 A = MeshIndex(Row, Column);
+			const int32 B = MeshIndex(Row + 1, Column);
+			const int32 C = MeshIndex(Row, Column + 1);
+			const int32 D = MeshIndex(Row + 1, Column + 1);
+			AddTriangle(Positions[A], Positions[B], Positions[C], Colors[A], Colors[B], Colors[C]);
+			AddTriangle(Positions[C], Positions[B], Positions[D], Colors[C], Colors[B], Colors[D]);
+			AddTriangle(Positions[C], Positions[B], Positions[A], Colors[C], Colors[B], Colors[A]);
+			AddTriangle(Positions[D], Positions[B], Positions[C], Colors[D], Colors[B], Colors[C]);
+		}
+	}
+
+	BloodVFXDropMesh = NewObject<UStaticMesh>(this, TEXT("ProphecyRuntimeBloodVFXSheet"), RF_Transient);
+	if (!BloodVFXDropMesh)
+	{
+		return nullptr;
+	}
+	BloodVFXDropMesh->GetStaticMaterials().Add(FStaticMaterial(BloodMaterial, TEXT("BloodVFXSheet")));
+
+	UStaticMesh::FBuildMeshDescriptionsParams Params;
+	Params.bBuildSimpleCollision = false;
+	Params.bCommitMeshDescription = true;
+	Params.bFastBuild = false;
+	Params.bAllowCpuAccess = false;
+	TArray<const FMeshDescription*> MeshDescriptions;
+	MeshDescriptions.Add(&MeshDescription);
+	if (!BloodVFXDropMesh->BuildFromMeshDescriptions(MeshDescriptions, Params))
+	{
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("Failed to build runtime blood VFX sheet mesh."));
+		BloodVFXDropMesh = nullptr;
+	}
+	else
+	{
+		const FBoxSphereBounds Bounds = BloodVFXDropMesh->GetBounds();
+		UE_LOG(
+			LogProphecyNNBenchmark,
+			Display,
+			TEXT("Built runtime blood VFX sheet mesh: origin=(%.1f %.1f %.1f) extent=(%.1f %.1f %.1f) radius=%.1f"),
+			Bounds.Origin.X,
+			Bounds.Origin.Y,
+			Bounds.Origin.Z,
+			Bounds.BoxExtent.X,
+			Bounds.BoxExtent.Y,
+			Bounds.BoxExtent.Z,
+			Bounds.SphereRadius);
+	}
+	return BloodVFXDropMesh;
+}
+
+void AProphecyNNCrowdBenchmarkActor::SpawnBloodVFXPreview()
+{
+	if (!bBloodVFXPreview || BloodVFXPoolComponents.Num() > 0)
+	{
+		return;
+	}
+
+	UStaticMesh* PoolMesh = CreateBloodVFXPoolMesh();
+	if (!PoolMesh)
+	{
+		PoolMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	}
+	UStaticMesh* RibbonMesh = CreateBloodVFXRibbonMesh();
+	BloodVFXDropMesh = CreateBloodVFXSheetMesh();
+	if (!BloodVFXDropMesh)
+	{
+		BloodVFXDropMesh = PoolMesh;
+	}
+	if (!PoolMesh || !RibbonMesh)
+	{
+		UE_LOG(LogProphecyNNBenchmark, Warning, TEXT("Blood VFX preview requested, but runtime blood meshes could not be created."));
+		return;
+	}
+
+	UMaterialInterface* BloodMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyBloodVFX_Surface.M_ProphecyBloodVFX_Surface"));
+	if (!BloodMaterial)
+	{
+		BloodMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassGround.M_ProphecyGrassGround"));
+	}
+	if (!BloodMaterial)
+	{
+		BloodMaterial = CreateTintedMaterial(TEXT("ProphecyBloodVFXPreviewMaterial"), FLinearColor(0.38f, 0.006f, 0.003f, 1.0f));
+	}
+	if (BloodMaterial)
+	{
+		BloodVFXMaterialInstance = UMaterialInstanceDynamic::Create(BloodMaterial, this, TEXT("ProphecyBloodVFXMaterialInstance"));
+		if (BloodVFXMaterialInstance)
+		{
+			const FLinearColor ComponentBloodColor(0.36f, 0.006f, 0.0035f, 1.0f);
+			BloodVFXMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), ComponentBloodColor);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("GroundNoiseStrength"), 0.0f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), 0.0f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), 0.0f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("BloodStrength"), 0.0f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("BloodWetStrength"), 0.0f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassGrainStrength"), 0.0f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("GroundFarGrassBlendStrength"), 0.0f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("GroundGrassImpostorStrength"), 0.0f);
+			BloodVFXMaterialInstance->SetVectorParameterValue(TEXT("BloodColor"), ComponentBloodColor);
+			BloodVFXMaterialInstance->SetVectorParameterValue(TEXT("Color"), ComponentBloodColor);
+			BloodVFXMaterialInstance->SetVectorParameterValue(TEXT("BaseColor"), ComponentBloodColor);
+			BloodVFXMaterialInstance->SetVectorParameterValue(TEXT("Base Color"), ComponentBloodColor);
+			BloodVFXMaterialInstance->SetVectorParameterValue(TEXT("EmissiveColor"), ComponentBloodColor);
+			BloodVFXMaterialInstance->SetVectorParameterValue(TEXT("Emissive Color"), ComponentBloodColor);
+			BloodVFXMaterialInstance->SetVectorParameterValue(TEXT("Tint"), ComponentBloodColor);
+			BloodVFXMaterialInstance->SetVectorParameterValue(TEXT("BloodDarkColor"), FLinearColor(0.055f, 0.0012f, 0.0012f, 1.0f));
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("BloodRoughness"), 0.16f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("BloodSpecular"), 0.82f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("EmissivePower"), 1.0f);
+			BloodVFXMaterialInstance->SetScalarParameterValue(TEXT("Emissive Strength"), 1.0f);
+		}
+		UE_LOG(LogProphecyNNBenchmark, Display, TEXT("Blood VFX component material: %s"), *BloodMaterial->GetPathName());
+	}
+
+	auto CreateBloodComponent = [this](UStaticMesh* Mesh)
+	{
+		UStaticMeshComponent* Component = NewObject<UStaticMeshComponent>(this);
+		if (!Component)
+		{
+			return static_cast<UStaticMeshComponent*>(nullptr);
+		}
+		Component->SetStaticMesh(Mesh);
+		if (BloodVFXMaterialInstance)
+		{
+			Component->SetMaterial(0, BloodVFXMaterialInstance);
+		}
+		Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Component->SetGenerateOverlapEvents(false);
+		Component->SetCastShadow(false);
+		Component->SetCastContactShadow(false);
+		Component->SetAffectDistanceFieldLighting(false);
+		Component->SetAffectDynamicIndirectLighting(false);
+		Component->SetVisibleInRayTracing(false);
+		Component->SetReceivesDecals(false);
+		Component->SetMobility(EComponentMobility::Movable);
+		Component->TranslucencySortPriority = 4;
+		Component->AttachToComponent(SceneRoot, FAttachmentTransformRules::KeepRelativeTransform);
+		AddInstanceComponent(Component);
+		Component->RegisterComponent();
+		return Component;
+	};
+
+	constexpr int32 PoolCount = 7;
+	for (int32 Index = 0; Index < PoolCount; ++Index)
+	{
+		if (UStaticMeshComponent* Component = CreateBloodComponent(PoolMesh))
+		{
+			BloodVFXPoolComponents.Add(Component);
+		}
+	}
+
+	constexpr int32 RibbonCount = 14;
+	for (int32 Index = 0; Index < RibbonCount; ++Index)
+	{
+		if (UStaticMeshComponent* Component = CreateBloodComponent(RibbonMesh))
+		{
+			Component->TranslucencySortPriority = 5;
+			BloodVFXRibbonComponents.Add(Component);
+		}
+	}
+
+	constexpr int32 DropCount = 12;
+	for (int32 Index = 0; Index < DropCount; ++Index)
+	{
+		if (UStaticMeshComponent* Component = CreateBloodComponent(BloodVFXDropMesh ? BloodVFXDropMesh.Get() : PoolMesh))
+		{
+			Component->TranslucencySortPriority = 6;
+			BloodVFXDropComponents.Add(Component);
+		}
+	}
+
+	if (!BloodMaskTexture && FloorMaterialInstance)
+	{
+		InitializeBloodMask(FVector2D(0.0f, 0.0f), 4200.0f);
+	}
+	BloodVFXPreviewAgeSeconds = 0.0f;
+	UE_LOG(LogProphecyNNBenchmark, Display, TEXT("Spawned coherent blood VFX preview: stains=%d pools=%d ribbons=%d sheets=%d scale=%.2f"),
+		BloodVFXStainComponents.Num(),
+		BloodVFXPoolComponents.Num(),
+		BloodVFXRibbonComponents.Num(),
+		BloodVFXDropComponents.Num(),
+		BloodVFXPreviewScale);
+}
+
+void AProphecyNNCrowdBenchmarkActor::UpdateBloodVFXPreview(float DeltaSeconds)
+{
+	if (!bBloodVFXPreview || BloodVFXPoolComponents.Num() == 0)
+	{
+		return;
+	}
+
+	auto Smooth01 = [](float T)
+	{
+		T = FMath::Clamp(T, 0.0f, 1.0f);
+		return T * T * (3.0f - 2.0f * T);
+	};
+	auto Window = [&Smooth01](float T, float Start, float End, float Fade)
+	{
+		return Smooth01((T - Start) / FMath::Max(Fade, 0.001f)) * (1.0f - Smooth01((T - End) / FMath::Max(Fade, 0.001f)));
+	};
+
+	if (BloodVFXManualTimeSeconds < 0.0f)
+	{
+		BloodVFXPreviewAgeSeconds += FMath::Clamp(DeltaSeconds, 0.0f, 0.08f) * FMath::Max(BloodVFXPreviewTimeScale, 0.0f);
+	}
+	const float Time = BloodVFXManualTimeSeconds >= 0.0f ? BloodVFXManualTimeSeconds : BloodVFXPreviewAgeSeconds;
+	const float T = FMath::Fmod(FMath::Max(Time, 0.0f), 3.2f);
+	const float Scale = FMath::Clamp(BloodVFXPreviewScale, 0.25f, 4.0f);
+	const float Spread = Smooth01((T - 0.08f) / 1.35f);
+	const float ImpactPulse = 1.0f - Smooth01((T - 0.05f) / 0.52f);
+	const FVector Base(0.0, 0.0, 5.0);
+
+	struct FPoolLobe
+	{
+		FVector2D Offset;
+		float ScaleX;
+		float ScaleY;
+		float YawDegrees;
+		float Start;
+		float ZScale;
+	};
+
+	const FPoolLobe Lobes[] = {
+		{ FVector2D(0.0f, 0.0f), 3.25f, 2.25f, -4.0f, 0.00f, 1.00f },
+		{ FVector2D(-310.0f, -35.0f), 2.25f, 1.30f, 13.0f, 0.16f, 0.72f },
+		{ FVector2D(330.0f, 25.0f), 2.55f, 1.45f, -11.0f, 0.18f, 0.76f },
+		{ FVector2D(35.0f, 245.0f), 1.85f, 1.12f, 42.0f, 0.30f, 0.58f },
+		{ FVector2D(-120.0f, -255.0f), 2.05f, 1.20f, -50.0f, 0.38f, 0.56f },
+		{ FVector2D(320.0f, -125.0f), 1.25f, 0.62f, -23.0f, 0.70f, 0.42f },
+		{ FVector2D(-340.0f, 95.0f), 1.08f, 0.58f, 24.0f, 0.86f, 0.38f },
+	};
+
+	for (int32 Index = 0; Index < BloodVFXPoolComponents.Num(); ++Index)
+	{
+		UStaticMeshComponent* Component = BloodVFXPoolComponents[Index];
+		if (!Component || Index >= UE_ARRAY_COUNT(Lobes))
+		{
+			continue;
+		}
+
+		const FPoolLobe& Lobe = Lobes[Index];
+		const float Grow = Smooth01((T - Lobe.Start) / 0.82f);
+		const bool bVisible = Grow > 0.002f;
+		Component->SetVisibility(bVisible, true);
+		Component->SetHiddenInGame(!bVisible);
+		if (BloodVFXStainComponents.IsValidIndex(Index) && BloodVFXStainComponents[Index])
+		{
+			BloodVFXStainComponents[Index]->SetVisibility(bVisible, true);
+			BloodVFXStainComponents[Index]->SetHiddenInGame(!bVisible);
+		}
+		if (!bVisible)
+		{
+			continue;
+		}
+
+		const float Pulse = 1.0f + 0.045f * (1.0f - Smooth01((T - 1.15f) / 1.40f)) * FMath::Sin(T * 8.0f + float(Index) * 1.9f);
+		const FVector2D Center2D = Lobe.Offset * Spread * Scale;
+		const FVector Location = Base + FVector(Center2D.X, Center2D.Y, 3.5f + ImpactPulse * 18.0f * Lobe.ZScale);
+		const FRotator Rotation(0.0, Lobe.YawDegrees + FMath::Sin(T * 2.3f + float(Index)) * 2.5f, 0.0);
+		const FVector ComponentScale(
+			FMath::Max(0.01f, Lobe.ScaleX * Scale * FMath::Lerp(0.16f, Pulse, Grow)),
+			FMath::Max(0.01f, Lobe.ScaleY * Scale * FMath::Lerp(0.14f, Pulse, Grow)),
+			FMath::Max(0.04f, (0.36f + ImpactPulse * 1.25f) * Lobe.ZScale));
+		if (BloodVFXStainComponents.IsValidIndex(Index) && BloodVFXStainComponents[Index])
+		{
+			UStaticMeshComponent* StainComponent = BloodVFXStainComponents[Index];
+			StainComponent->SetVisibility(bVisible, true);
+			StainComponent->SetHiddenInGame(!bVisible);
+			StainComponent->SetRelativeLocation(FVector(Location.X, Location.Y, 0.55f));
+			StainComponent->SetRelativeRotation(Rotation);
+			StainComponent->SetRelativeScale3D(FVector(ComponentScale.X, ComponentScale.Y, 0.020f));
+		}
+		Component->SetRelativeLocation(Location);
+		Component->SetRelativeRotation(Rotation);
+		const bool bUsesRuntimePoolMesh = Component->GetStaticMesh() == BloodVFXPoolMesh.Get();
+		const float PoolXYScale = bUsesRuntimePoolMesh ? 1.0f : 2.0f;
+		const float PoolZScale = bUsesRuntimePoolMesh ? FMath::Max(0.10f, ComponentScale.Z * 0.18f) : FMath::Max(0.060f, ComponentScale.Z * 0.34f);
+		Component->SetRelativeScale3D(FVector(ComponentScale.X * PoolXYScale, ComponentScale.Y * PoolXYScale, PoolZScale));
+	}
+
+	struct FTendrilRibbon
+	{
+		float AngleDegrees;
+		float Start;
+		float End;
+		float Distance;
+		float Length;
+		float Width;
+		float CurlDegrees;
+	};
+
+	const FTendrilRibbon Tendrils[] = {
+		{ -118.0f, 0.18f, 1.10f, 220.0f, 360.0f, 16.0f, -12.0f },
+		{ -92.0f, 0.14f, 0.98f, 180.0f, 280.0f, 22.0f, -20.0f },
+		{ -64.0f, 0.12f, 1.05f, 250.0f, 420.0f, 18.0f, -10.0f },
+		{ -34.0f, 0.10f, 1.02f, 300.0f, 500.0f, 20.0f, -5.0f },
+		{ -8.0f, 0.08f, 0.98f, 230.0f, 360.0f, 24.0f, 8.0f },
+		{ 24.0f, 0.10f, 1.05f, 310.0f, 440.0f, 18.0f, 10.0f },
+		{ 55.0f, 0.13f, 1.10f, 280.0f, 380.0f, 16.0f, 14.0f },
+		{ 88.0f, 0.18f, 1.16f, 230.0f, 300.0f, 14.0f, 18.0f },
+		{ 124.0f, 0.24f, 1.25f, 330.0f, 360.0f, 12.0f, 12.0f },
+		{ 160.0f, 0.28f, 1.28f, 350.0f, 340.0f, 12.0f, 5.0f },
+		{ -155.0f, 0.28f, 1.28f, 340.0f, 360.0f, 12.0f, -12.0f },
+		{ -40.0f, 0.58f, 1.70f, 430.0f, 330.0f, 11.0f, -4.0f },
+		{ 38.0f, 0.62f, 1.80f, 450.0f, 300.0f, 10.0f, 6.0f },
+		{ 8.0f, 0.74f, 2.00f, 470.0f, 320.0f, 9.0f, 3.0f },
+	};
+
+	for (int32 Index = 0; Index < BloodVFXRibbonComponents.Num(); ++Index)
+	{
+		UStaticMeshComponent* Component = BloodVFXRibbonComponents[Index];
+		if (!Component || Index >= UE_ARRAY_COUNT(Tendrils))
+		{
+			continue;
+		}
+		const FTendrilRibbon& Tendril = Tendrils[Index];
+		const float Life = FMath::Max(Tendril.End - Tendril.Start, 0.01f);
+		const float LocalT = FMath::Clamp((T - Tendril.Start) / Life, 0.0f, 1.0f);
+		const float VisibleEnd = FMath::Min(Tendril.End, Tendril.Start + 0.62f);
+		const float Alpha = Tendril.Start > 0.55f ? 0.0f : Window(T, Tendril.Start, VisibleEnd, 0.14f);
+		const bool bVisible = Alpha > 0.012f;
+		Component->SetVisibility(bVisible, true);
+		Component->SetHiddenInGame(!bVisible);
+		if (!bVisible)
+		{
+			continue;
+		}
+		const float Angle = FMath::DegreesToRadians(Tendril.AngleDegrees + Tendril.CurlDegrees * FMath::Sin(LocalT * UE_PI));
+		const FVector2D Direction(FMath::Cos(Angle), FMath::Sin(Angle) * 0.72f);
+		const float DirectionYaw = FMath::RadiansToDegrees(FMath::Atan2(Direction.Y, Direction.X));
+		const float Distance = Tendril.Distance * Scale * Smooth01(LocalT);
+		const float Length = Tendril.Length * Scale * Alpha * (0.28f + 0.72f * Smooth01(LocalT));
+		const float Width = Tendril.Width * Scale * Alpha;
+		const FVector2D Center2D = Direction * (Distance + Length * 0.42f);
+		const float EarlyLift = (1.0f - Smooth01((T - Tendril.Start) / 0.32f)) * Alpha;
+		const FVector Location(Center2D.X, Center2D.Y, 4.2f + 4.5f * EarlyLift);
+		const FRotator Rotation(0.0f, DirectionYaw, 0.0f);
+		const FVector ComponentScale(
+			FMath::Max(0.01f, Length * 1.04f / 100.0f),
+			FMath::Max(0.01f, Width * 1.80f),
+			FMath::Max(0.35f, 1.0f + 0.35f * ImpactPulse * Alpha));
+		Component->SetRelativeLocation(Location);
+		Component->SetRelativeRotation(Rotation);
+		Component->SetRelativeScale3D(ComponentScale);
+	}
+
+	struct FSheetBlob
+	{
+		float AngleDegrees;
+		float Start;
+		float Life;
+		float Distance;
+		float Height;
+		float Length;
+		float Width;
+		float RollDegrees;
+	};
+
+	const FSheetBlob SheetBlobs[] = {
+		{ -15.0f, 0.04f, 0.86f, 85.0f, 285.0f, 520.0f, 315.0f, -7.0f },
+		{ 0.0f, 0.05f, 0.92f, 120.0f, 335.0f, 650.0f, 360.0f, 3.0f },
+		{ 16.0f, 0.06f, 0.96f, 155.0f, 300.0f, 540.0f, 305.0f, 11.0f },
+		{ -38.0f, 0.08f, 1.02f, 235.0f, 215.0f, 320.0f, 145.0f, -16.0f },
+		{ 40.0f, 0.09f, 1.04f, 255.0f, 205.0f, 305.0f, 135.0f, 18.0f },
+		{ -62.0f, 0.11f, 1.08f, 310.0f, 148.0f, 175.0f, 54.0f, -20.0f },
+		{ 64.0f, 0.12f, 1.10f, 320.0f, 146.0f, 168.0f, 52.0f, 22.0f },
+		{ -82.0f, 0.16f, 1.10f, 310.0f, 118.0f, 126.0f, 34.0f, -18.0f },
+		{ 86.0f, 0.18f, 1.12f, 320.0f, 112.0f, 120.0f, 32.0f, 18.0f },
+		{ -126.0f, 0.22f, 1.16f, 360.0f, 96.0f, 100.0f, 28.0f, -16.0f },
+		{ 128.0f, 0.24f, 1.18f, 370.0f, 92.0f, 96.0f, 28.0f, 14.0f },
+		{ 172.0f, 0.28f, 1.22f, 410.0f, 84.0f, 84.0f, 24.0f, 8.0f },
+	};
+
+	FRandomStream Random(78241);
+	for (int32 Index = 0; Index < BloodVFXDropComponents.Num(); ++Index)
+	{
+		UStaticMeshComponent* Component = BloodVFXDropComponents[Index];
+		if (!Component)
+		{
+			continue;
+		}
+		if (Index < UE_ARRAY_COUNT(SheetBlobs))
+		{
+			const FSheetBlob& Sheet = SheetBlobs[Index];
+			const float LocalT = (T - Sheet.Start) / FMath::Max(Sheet.Life, 0.01f);
+			const float Alpha = Window(T, Sheet.Start, Sheet.Start + Sheet.Life, 0.16f);
+			const bool bVisible = LocalT > 0.0f && LocalT < 1.0f && Alpha > 0.01f;
+			Component->SetVisibility(bVisible, true);
+			Component->SetHiddenInGame(!bVisible);
+			if (!bVisible)
+			{
+				continue;
+			}
+
+			const float Angle = FMath::DegreesToRadians(Sheet.AngleDegrees);
+			const FVector Direction(FMath::Cos(Angle), FMath::Sin(Angle) * 0.72f, 0.0f);
+			const float Arc = FMath::Sin(FMath::Clamp(LocalT, 0.0f, 1.0f) * UE_PI);
+			const FVector Location =
+				Base +
+				Direction * (Sheet.Distance * Scale * Smooth01(LocalT)) +
+				FVector(0.0f, 0.0f, 16.0f + Sheet.Height * Scale * Arc);
+			const float StretchFade = FMath::Lerp(1.15f, 0.58f, FMath::Clamp(LocalT, 0.0f, 1.0f));
+			const float Flatten = Smooth01((LocalT - 0.58f) / 0.42f);
+			const float FlightRoll = FMath::Lerp(Sheet.RollDegrees, -86.0f + Sheet.RollDegrees * 0.12f, Flatten);
+			Component->SetRelativeLocation(Location);
+			Component->SetRelativeRotation(FRotator(0.0f, Sheet.AngleDegrees, FlightRoll + 8.0f * FMath::Sin(LocalT * UE_TWO_PI) * (1.0f - Flatten)));
+			Component->SetRelativeScale3D(FVector(
+				FMath::Max(0.02f, Sheet.Length * Scale * Alpha * StretchFade / 100.0f),
+				FMath::Max(0.018f, Sheet.Width * Scale * Alpha * 0.060f / 100.0f),
+				FMath::Max(0.02f, Sheet.Width * Scale * Alpha / 100.0f)));
+			continue;
+		}
+
+		const float Start = Random.FRandRange(0.10f, 0.78f);
+		const float Life = Random.FRandRange(0.78f, 1.45f);
+		const float LocalT = (T - Start) / Life;
+		const bool bVisible = LocalT > 0.0f && LocalT < 1.0f;
+		Component->SetVisibility(bVisible, true);
+		Component->SetHiddenInGame(!bVisible);
+		if (!bVisible)
+		{
+			continue;
+		}
+		const float Angle = Random.FRandRange(-UE_PI, UE_PI);
+		const FVector Direction(FMath::Cos(Angle), FMath::Sin(Angle) * 0.72f, 0.0);
+		const float Distance = Random.FRandRange(280.0f, 920.0f) * Scale;
+		const float Height = Random.FRandRange(95.0f, 360.0f) * Scale;
+		const float Size = Random.FRandRange(3.8f, 13.0f) * Scale * (1.0f - LocalT * 0.35f);
+		Component->SetRelativeLocation(Base + Direction * (Distance * Smooth01(LocalT)) + FVector(0.0, 0.0, 12.0f + Height * FMath::Sin(LocalT * UE_PI)));
+		Component->SetRelativeScale3D(FVector(Size / 50.0f, Size / 50.0f, FMath::Max(0.025f, Size / 50.0f)));
+	}
+
+	GenerateCoherentBloodVFXStain(T, Scale, 0.92f);
 }
 
 void AProphecyNNCrowdBenchmarkActor::UploadBloodMask()
@@ -6467,7 +7613,11 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 	if (bSpawnBenchmarkFloor)
 	{
 		const bool bUseGroundShadowMask = IsShadowEnabled(ShadowMode) && !IsFullDynamicShadowVariant(ContactShadowVariant) && (IsRootContactShadowVariant(ContactShadowVariant) || IsLimbContactShadowVariant(ContactShadowVariant));
-		if (bSpawnGrass || bSpawnTrees || bUseGroundShadowMask)
+		if (bBloodVFXPreview)
+		{
+			FloorMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassGround.M_ProphecyGrassGround"));
+		}
+		if (!FloorMaterial && (bSpawnGrass || bSpawnTrees || bUseGroundShadowMask))
 		{
 			FloorMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prophecy/Materials/M_ProphecyGrassGround.M_ProphecyGrassGround"));
 		}
@@ -6494,15 +7644,16 @@ void AProphecyNNCrowdBenchmarkActor::SetupBenchmarkView()
 			FloorMaterialInstance = UMaterialInstanceDynamic::Create(FloorMaterial, this);
 			if (FloorMaterialInstance)
 			{
-				FloorMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), (bSpawnGrass || bSpawnTrees) ? ProphecyGrassGroundBaseColor : FLinearColor(0.56f, 0.55f, 0.50f, 1.0f));
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundNoiseStrength"), (bSpawnGrass || bSpawnTrees) ? 0.55f : 0.82f);
-				FloorMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), FLinearColor(0.58f, 0.40f, 0.21f, 1.0f));
+				const bool bBloodPreviewFloor = bBloodVFXPreview && !bSpawnGrass && !bSpawnTrees;
+				FloorMaterialInstance->SetVectorParameterValue(TEXT("GroundBaseColor"), bBloodPreviewFloor ? FLinearColor(0.46f, 0.455f, 0.43f, 1.0f) : ((bSpawnGrass || bSpawnTrees) ? ProphecyGrassGroundBaseColor : FLinearColor(0.56f, 0.55f, 0.50f, 1.0f)));
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("GroundNoiseStrength"), bBloodPreviewFloor ? 0.045f : ((bSpawnGrass || bSpawnTrees) ? 0.55f : 0.82f));
+				FloorMaterialInstance->SetVectorParameterValue(TEXT("DirtColor"), bBloodPreviewFloor ? FLinearColor(0.38f, 0.37f, 0.34f, 1.0f) : FLinearColor(0.58f, 0.40f, 0.21f, 1.0f));
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtStrength"), (bSpawnGrass || bSpawnTrees) ? 1.0f : 0.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchScale"), 1.0f / 14000.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchThreshold"), -1.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtPatchContrast"), 1.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureScale"), 1.0f / 1600.0f);
-				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), 0.85f);
+				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtTextureStrength"), bBloodPreviewFloor ? 0.0f : 0.85f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeStartCm"), 1500.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtFadeInvRange"), 1.0f / 900.0f);
 				FloorMaterialInstance->SetScalarParameterValue(TEXT("DirtViewMin"), 0.0f);
@@ -7187,6 +8338,39 @@ void AProphecyNNCrowdBenchmarkActor::ApplyLiveVisualIterationConfig(const TShare
 		}
 	}
 
+	bool bBloodVFXLivePreview = false;
+	if (TryBool(TEXT("blood_vfx_preview"), bBloodVFXLivePreview) || TryBool(TEXT("BloodVFXPreview"), bBloodVFXLivePreview))
+	{
+		bBloodVFXPreview = bBloodVFXLivePreview;
+		if (bBloodVFXPreview && BloodVFXPoolComponents.Num() == 0)
+		{
+			SpawnBloodVFXPreview();
+		}
+	}
+	double BloodVFXTime = 0.0;
+	if (TryNumber(TEXT("blood_vfx_time"), BloodVFXTime) || TryNumber(TEXT("BloodVFXTime"), BloodVFXTime))
+	{
+		BloodVFXManualTimeSeconds = float(BloodVFXTime);
+	}
+	double BloodVFXScale = 0.0;
+	if (TryNumber(TEXT("blood_vfx_scale"), BloodVFXScale) || TryNumber(TEXT("BloodVFXScale"), BloodVFXScale))
+	{
+		BloodVFXPreviewScale = float(BloodVFXScale);
+	}
+	double BloodVFXTimeScale = 0.0;
+	if (TryNumber(TEXT("blood_vfx_time_scale"), BloodVFXTimeScale) || TryNumber(TEXT("BloodVFXTimeScale"), BloodVFXTimeScale))
+	{
+		BloodVFXPreviewTimeScale = float(BloodVFXTimeScale);
+		if (BloodVFXTimeScale > 0.0 && BloodVFXManualTimeSeconds >= 0.0f)
+		{
+			BloodVFXManualTimeSeconds = -1.0f;
+		}
+	}
+	if (bBloodVFXPreview)
+	{
+		UpdateBloodVFXPreview(0.0f);
+	}
+
 	bool bHideGrass = false;
 	if (TryBool(TEXT("hide_grass"), bHideGrass) || TryBool(TEXT("HideGrass"), bHideGrass))
 	{
@@ -7454,6 +8638,12 @@ void UProphecyNNBenchmarkWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 
 	if (!InWorld.IsGameWorld() || BenchmarkActor)
 	{
+		return;
+	}
+
+	for (TActorIterator<AProphecyNNCrowdBenchmarkActor> It(&InWorld); It; ++It)
+	{
+		BenchmarkActor = *It;
 		return;
 	}
 

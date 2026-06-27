@@ -72,6 +72,10 @@ param(
     [object]$BloodWetStrength = $null,
     [object]$BloodGrassStrength = $null,
     [object]$BloodRadiusScale = $null,
+    [switch]$BloodVFXPreview,
+    [object]$BloodVFXTime = $null,
+    [object]$BloodVFXScale = $null,
+    [object]$BloodVFXTimeScale = $null,
     [double]$SettleSeconds = 1.0,
     [double]$WakeSeconds = 0.50,
     [double]$ReadyTimeoutSeconds = 45.0,
@@ -459,6 +463,22 @@ if ($null -ne $BloodGrassStrength) {
 
 if ($null -ne $BloodRadiusScale) {
     $payload.blood_radius_scale = ConvertTo-DoubleValue $BloodRadiusScale
+}
+
+if ($BloodVFXPreview) {
+    $payload.blood_vfx_preview = $true
+}
+
+if ($null -ne $BloodVFXTime) {
+    $payload.blood_vfx_time = ConvertTo-DoubleValue $BloodVFXTime
+}
+
+if ($null -ne $BloodVFXScale) {
+    $payload.blood_vfx_scale = ConvertTo-DoubleValue $BloodVFXScale
+}
+
+if ($null -ne $BloodVFXTimeScale) {
+    $payload.blood_vfx_time_scale = ConvertTo-DoubleValue $BloodVFXTimeScale
 }
 
 $shotPath = $null

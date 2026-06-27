@@ -233,6 +233,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Prophecy|NN Benchmark")
 	float LiveVisualPollSeconds = 0.25f;
 
+	UPROPERTY(EditAnywhere, Category = "Prophecy|Blood VFX")
+	bool bBloodVFXPreview = false;
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|Blood VFX")
+	float BloodVFXPreviewScale = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Prophecy|Blood VFX")
+	float BloodVFXPreviewTimeScale = 1.0f;
+
 private:
 	void ApplyCommandLineOverrides();
 	void ApplyBenchmarkProfile();
@@ -266,7 +275,13 @@ private:
 	void ClearBloodMask();
 	void StampBloodDropMask(const FVector2D& Center, float RadiusXCm, float RadiusYCm, float RotationRadians, float Strength, float CoreStrength);
 	void GeneratePreviewBloodStains(float RadiusScale, float Strength);
+	void GenerateCoherentBloodVFXStain(float TimeSeconds, float RadiusScale, float Strength);
 	void UploadBloodMask();
+	UStaticMesh* CreateBloodVFXPoolMesh();
+	UStaticMesh* CreateBloodVFXRibbonMesh();
+	UStaticMesh* CreateBloodVFXSheetMesh();
+	void SpawnBloodVFXPreview();
+	void UpdateBloodVFXPreview(float DeltaSeconds);
 	UStaticMesh* CreateGrassClusterMesh();
 	UStaticMesh* CreateDenseGrassClusterMesh();
 	UStaticMesh* CreateOuterShellRemovedGrassClusterMesh();
@@ -358,6 +373,30 @@ private:
 	TObjectPtr<UTexture2D> BloodMaskTexture;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> BloodVFXMaterialInstance;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> BloodVFXPoolComponents;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> BloodVFXStainComponents;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> BloodVFXRibbonComponents;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> BloodVFXDropComponents;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> BloodVFXPoolMesh;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> BloodVFXRibbonMesh;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> BloodVFXDropMesh;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> DistantTerrainTexture;
 
 	UPROPERTY(Transient)
@@ -416,6 +455,8 @@ private:
 
 	struct FImpl;
 	FImpl* Impl = nullptr;
+	float BloodVFXPreviewAgeSeconds = 0.0f;
+	float BloodVFXManualTimeSeconds = -1.0f;
 };
 
 UCLASS()

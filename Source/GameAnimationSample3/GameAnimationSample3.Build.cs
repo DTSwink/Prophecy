@@ -20,8 +20,19 @@ public class GameAnimationSample3 : ModuleRules
 			"MeshDescription",
 			"MeshConversion",
 			"Niagara",
+			"ProceduralMeshComponent",
 			"Projects",
 			"StaticMeshDescription"
 		});
+
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new[]
+			{
+				"AssetTools",
+				"MaterialEditor",
+				"UnrealEd"
+			});
+		}
 	}
 }
