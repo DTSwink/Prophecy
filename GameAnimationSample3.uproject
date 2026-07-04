@@ -122,6 +122,11 @@
 		{
 			"Name": "ProceduralMeshComponent",
 			"Enabled": true
+		},
+		{
+			"Name": "NoiseMapGenerator",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/Fab/product/2fd402da-2ee0-4532-b219-a0703790151d"
 		}
 	],
 	"EpicSampleNameHash": "1673045636"

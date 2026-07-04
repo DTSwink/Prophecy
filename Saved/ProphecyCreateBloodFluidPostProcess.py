@@ -7,6 +7,7 @@ import unreal
 
 ASSET_DIR = "/Game/_mygame/blood2/PP_Fluid"
 STENCIL_VALUE = 42
+BLOOD_MATERIAL_PATH = "/Game/_mygame/blood2/M_blood_final.M_blood_final"
 
 
 def log(message):
@@ -120,6 +121,8 @@ def configure_post_process_material(material, priority, user_output=None, diviso
     set_prop(material, "blendable_location", unreal.BlendableLocation.BL_SCENE_COLOR_AFTER_TONEMAPPING)
     set_prop(material, "blendable_priority", int(priority))
     set_prop(material, "blend_mode", unreal.BlendMode.BLEND_OPAQUE)
+    set_prop(material, "blendable_output_alpha", False)
+    set_prop(material, "translucency_pass", unreal.MaterialTranslucencyPass.MTP_BEFORE_DOF)
     if user_output:
         set_prop(material, "user_scene_texture", user_output)
         set_prop(material, "user_texture_divisor", unreal.IntPoint(int(divisor[0]), int(divisor[1])))
@@ -251,6 +254,8 @@ def build_composite():
 
     scene = scene_texture(material, unreal.SceneTextureId.PPI_POST_PROCESS_INPUT0, -1100, -180, False)
     stencil = scene_texture(material, unreal.SceneTextureId.PPI_CUSTOM_STENCIL, -1100, 0, False)
+    scene_depth = scene_texture(material, unreal.SceneTextureId.PPI_SCENE_DEPTH, -1100, 120, False)
+    custom_depth = scene_texture(material, unreal.SceneTextureId.PPI_CUSTOM_DEPTH, -1100, 260, False)
     radius = scalar_param(material, "BlurRadius", 4.0, -1100, 180)
     threshold = scalar_param(material, "Threshold", 0.32, -1100, 320)
     softness = scalar_param(material, "Softness", 0.08, -1100, 460)
@@ -261,14 +266,12 @@ def build_composite():
         material,
         "BloodSinglePassLayerBlur",
         f"""
-float2 uv = GetDefaultSceneTextureUV(Parameters, PPI_PostProcessInput0);
-float2 texel = GetSceneTextureViewSize(PPI_PostProcessInput0).zw;
-float3 scene = SceneTextureLookup(uv, PPI_PostProcessInput0, false).rgb;
-float sceneDepthHere = SceneTextureLookup(uv, PPI_SceneDepth, false).r;
-float stencilHere = SceneTextureLookup(uv, PPI_CustomStencil, false).r;
+float3 scene = Scene.Fetch(0.0, 0.0).rgb;
+float sceneDepthHere = SceneDepth.Fetch(0.0, 0.0).r;
+float stencilHere = Stencil.Fetch(0.0, 0.0).r;
 float rawStencilHere = (stencilHere <= 1.0) ? (stencilHere * 255.0) : stencilHere;
 float sourceMaskHere = abs(rawStencilHere - {float(STENCIL_VALUE)}) < 0.5 ? 1.0 : 0.0;
-float bloodDepthHere = SceneTextureLookup(uv, PPI_CustomDepth, false).r;
+float bloodDepthHere = BloodDepth.Fetch(0.0, 0.0).r;
 float sourceBloodSignalHere = saturate((scene.r - max(scene.g, scene.b)) * 8.0);
 
 float radius = max(BlurRadius, 0.0);
@@ -287,12 +290,12 @@ for (int y = -halfTapCount; y <= halfTapCount; ++y)
     {{
         float2 tap = float2((float)x, (float)y) / max((float)halfTapCount, 0.0001);
         float w = exp(-dot(tap, tap) * 2.75);
-        float2 sampleUv = uv + tap * texel * radius * 2.0;
-        float stencil = SceneTextureLookup(sampleUv, PPI_CustomStencil, false).r;
+        float2 pixelOffset = tap * radius * 2.0;
+        float stencil = Stencil.Fetch(pixelOffset.x, pixelOffset.y).r;
         float rawStencil = (stencil <= 1.0) ? (stencil * 255.0) : stencil;
         float sampleMask = abs(rawStencil - {float(STENCIL_VALUE)}) < 0.5 ? 1.0 : 0.0;
-        float bloodDepth = SceneTextureLookup(sampleUv, PPI_CustomDepth, false).r;
-        float3 sampleScene = SceneTextureLookup(sampleUv, PPI_PostProcessInput0, false).rgb;
+        float bloodDepth = BloodDepth.Fetch(pixelOffset.x, pixelOffset.y).r;
+        float3 sampleScene = Scene.Fetch(pixelOffset.x, pixelOffset.y).rgb;
         float sampleBloodSignal = saturate((sampleScene.r - max(sampleScene.g, sampleScene.b)) * 8.0);
         sampleMask *= sampleBloodSignal;
         layerAlpha += sampleMask * w;
@@ -317,12 +320,14 @@ float outputCoverage = max(coverage, sourceVisibleHere);
 return float4(lerp(scene, layerColor, outputCoverage), 1.0);
 """,
         unreal.CustomMaterialOutputType.CMOT_FLOAT4,
-        ["Scene", "Stencil", "BlurRadius", "Threshold", "Softness", "BlurSampleQuality", "BloodLayerColor"],
+        ["Scene", "Stencil", "SceneDepth", "BloodDepth", "BlurRadius", "Threshold", "Softness", "BlurSampleQuality", "BloodLayerColor"],
         -600,
         180,
     )
     unreal.MaterialEditingLibrary.connect_material_expressions(scene, "", node, "Scene")
     unreal.MaterialEditingLibrary.connect_material_expressions(stencil, "", node, "Stencil")
+    unreal.MaterialEditingLibrary.connect_material_expressions(scene_depth, "", node, "SceneDepth")
+    unreal.MaterialEditingLibrary.connect_material_expressions(custom_depth, "", node, "BloodDepth")
     unreal.MaterialEditingLibrary.connect_material_expressions(radius, "", node, "BlurRadius")
     unreal.MaterialEditingLibrary.connect_material_expressions(threshold, "", node, "Threshold")
     unreal.MaterialEditingLibrary.connect_material_expressions(softness, "", node, "Softness")
@@ -330,6 +335,18 @@ return float4(lerp(scene, layerColor, outputCoverage), 1.0);
     unreal.MaterialEditingLibrary.connect_material_expressions(blood_color, "", node, "BloodLayerColor")
     unreal.MaterialEditingLibrary.connect_material_property(node, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     finish_material(material)
+    return material
+
+
+def configure_blood_material():
+    material = unreal.load_asset(BLOOD_MATERIAL_PATH)
+    if not isinstance(material, unreal.Material):
+        raise RuntimeError(f"Could not load blood material: {BLOOD_MATERIAL_PATH}")
+
+    material.modify()
+    set_prop(material, "translucency_pass", unreal.MaterialTranslucencyPass.MTP_BEFORE_DOF)
+    unreal.MaterialEditingLibrary.recompile_material(material)
+    unreal.EditorAssetLibrary.save_loaded_asset(material)
     return material
 
 
@@ -348,6 +365,7 @@ def append_journal(created_paths):
 def build_all():
     ensure_dir(ASSET_DIR)
     created = [
+        configure_blood_material(),
         build_stencil_debug(),
         build_extract(),
         build_blur("M_PP_Blood_BlurH", "BloodExtract", "BloodBlurH", 20, "h"),

@@ -1,15 +1,21 @@
 #include "ProphecyBloodTexturePaintManager.h"
 
+#include "Components/MeshComponent.h"
+#include "Components/SkinnedMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Engine/SkinnedAsset.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Rendering/SkeletalMeshLODRenderData.h"
+#include "Rendering/SkeletalMeshRenderData.h"
 #include "UObject/ConstructorHelpers.h"
 
 #if WITH_EDITOR
@@ -44,6 +50,70 @@ DEFINE_LOG_CATEGORY_STATIC(LogProphecyBloodTexturePaint, Log, All);
 
 constexpr float SmallObjectExtentCm = 200.0f;
 constexpr float MediumObjectExtentCm = 800.0f;
+constexpr float MaxSkinnedMeshBrushDiameterPixels = 48.0f;
+
+bool TryGetMeshLocalBounds(const UMeshComponent* Component, FBoxSphereBounds& OutBounds)
+{
+	if (const UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Component))
+	{
+		if (const UStaticMesh* StaticMesh = StaticMeshComponent->GetStaticMesh())
+		{
+			OutBounds = StaticMesh->GetBounds();
+			return true;
+		}
+	}
+
+	if (const USkinnedMeshComponent* SkinnedMeshComponent = Cast<USkinnedMeshComponent>(Component))
+	{
+		if (const USkinnedAsset* SkinnedAsset = SkinnedMeshComponent->GetSkinnedAsset())
+		{
+			OutBounds = SkinnedAsset->GetBounds();
+			return true;
+		}
+	}
+
+	return false;
+}
+
+FVector ToVector(const FVector3f& Value)
+{
+	return FVector(Value.X, Value.Y, Value.Z);
+}
+
+float EstimateTriangleUVUnitsPerWorldUnit(const FProphecySkinnedPaintTriangle& Triangle, const FTransform& ComponentTransform)
+{
+	const FVector ABWorld = ComponentTransform.TransformVector(Triangle.B - Triangle.A);
+	const FVector ACWorld = ComponentTransform.TransformVector(Triangle.C - Triangle.A);
+	const FVector BCWorld = ComponentTransform.TransformVector(Triangle.C - Triangle.B);
+	const FVector2D ABUV = Triangle.UVB - Triangle.UVA;
+	const FVector2D ACUV = Triangle.UVC - Triangle.UVA;
+	const FVector2D BCUV = Triangle.UVC - Triangle.UVB;
+
+	const double WorldArea2 = FVector::CrossProduct(ABWorld, ACWorld).Size();
+	const double UVArea2 = FMath::Abs(static_cast<double>(ABUV.X) * static_cast<double>(ACUV.Y) - static_cast<double>(ABUV.Y) * static_cast<double>(ACUV.X));
+	if (WorldArea2 > KINDA_SMALL_NUMBER && UVArea2 > SMALL_NUMBER)
+	{
+		return static_cast<float>(FMath::Sqrt(UVArea2 / WorldArea2));
+	}
+
+	double RatioSum = 0.0;
+	int32 RatioCount = 0;
+	auto AddEdgeRatio = [&RatioSum, &RatioCount](const FVector& WorldEdge, const FVector2D& UVEdge)
+	{
+		const double WorldLength = WorldEdge.Size();
+		const double UVLength = UVEdge.Size();
+		if (WorldLength > KINDA_SMALL_NUMBER && UVLength > SMALL_NUMBER)
+		{
+			RatioSum += UVLength / WorldLength;
+			RatioCount += 1;
+		}
+	};
+
+	AddEdgeRatio(ABWorld, ABUV);
+	AddEdgeRatio(ACWorld, ACUV);
+	AddEdgeRatio(BCWorld, BCUV);
+	return RatioCount > 0 ? static_cast<float>(RatioSum / static_cast<double>(RatioCount)) : 0.0f;
+}
 
 #if WITH_EDITOR
 constexpr TCHAR BloodPaintSurfaceFunctionPath[] = TEXT("/Game/Prophecy/BloodTexturePainting/MF_BloodPaintSurface.MF_BloodPaintSurface");
@@ -175,16 +245,18 @@ void AProphecyBloodTexturePaintManager::Tick(float DeltaSeconds)
 
 bool AProphecyBloodTexturePaintManager::TryPaintFromHit(const FHitResult& Hit, float BrushRadiusWorld, float Intensity, int32 OverrideMaterialSlot)
 {
-	UStaticMeshComponent* Component = Cast<UStaticMeshComponent>(Hit.GetComponent());
+	UMeshComponent* Component = Cast<UMeshComponent>(Hit.GetComponent());
 	if (!Component)
 	{
-		LogReject(TEXT("unsupported component: hit component is not a StaticMeshComponent"));
+		LogReject(TEXT("unsupported component: hit component is not a MeshComponent"));
 		return false;
 	}
 
 	FString RejectReason;
-	const int32 MaterialSlot = ResolveMaterialSlot(Component, Hit, OverrideMaterialSlot, RejectReason);
-	if (MaterialSlot < 0)
+	FVector2D UV = FVector2D::ZeroVector;
+	int32 MaterialSlot = INDEX_NONE;
+	float BrushUVUnitsPerWorldUnit = 0.0f;
+	if (!FindPaintUV(Component, Hit, OverrideMaterialSlot, UV, MaterialSlot, BrushUVUnitsPerWorldUnit, RejectReason))
 	{
 		LogReject(RejectReason);
 		return false;
@@ -194,13 +266,6 @@ bool AProphecyBloodTexturePaintManager::TryPaintFromHit(const FHitResult& Hit, f
 	if (!IsPaintableComponent(Component, CurrentMaterial, RejectReason))
 	{
 		LogReject(RejectReason);
-		return false;
-	}
-
-	FVector2D UV = FVector2D::ZeroVector;
-	if (!UGameplayStatics::FindCollisionUV(Hit, PaintUVChannel, UV))
-	{
-		LogReject(FString::Printf(TEXT("FindCollisionUV failed on %s using UV channel %d"), *GetNameSafe(Component), PaintUVChannel));
 		return false;
 	}
 
@@ -214,9 +279,10 @@ bool AProphecyBloodTexturePaintManager::TryPaintFromHit(const FHitResult& Hit, f
 	const FString StateKey = MakeStateKey(Component, MaterialSlot);
 	FProphecyBloodPaintStamp Stamp;
 	Stamp.UV = UV;
-	Stamp.BrushSizePixels = FMath::Max(1.0f, DefaultBrushSizePixels);
+	Stamp.BrushDrawSizePixels = ComputeWorldBrushDrawSize(Component, Hit, BrushRadiusWorld, State->RTResolution, BrushUVUnitsPerWorldUnit);
+	Stamp.BrushSizePixels = FMath::Max(Stamp.BrushDrawSizePixels.X, Stamp.BrushDrawSizePixels.Y);
 	Stamp.Intensity = FMath::Clamp(Intensity, 0.0f, 1.0f);
-	Stamp.RotationDegrees = FMath::FRandRange(0.0f, 360.0f);
+	Stamp.RotationDegrees = 0.0f;
 	QueueStamp(StateKey, Stamp);
 
 	State->LastUsedTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
@@ -229,18 +295,21 @@ bool AProphecyBloodTexturePaintManager::TryPaintFromHit(const FHitResult& Hit, f
 
 	if (bDebugPrintHits)
 	{
-		DebugMessage(FString::Printf(TEXT("BloodPaint accepted: %s slot=%d UV=(%.3f, %.3f) RT=%d"),
+		DebugMessage(FString::Printf(TEXT("BloodPaint accepted: %s slot=%d UV=(%.3f, %.3f) radius=%.1f draw=(%.1f, %.1f) RT=%d"),
 			*GetNameSafe(Component),
 			MaterialSlot,
 			UV.X,
 			UV.Y,
+			BrushRadiusWorld,
+			Stamp.BrushDrawSizePixels.X,
+			Stamp.BrushDrawSizePixels.Y,
 			State->RTResolution));
 	}
 
 	return true;
 }
 
-bool AProphecyBloodTexturePaintManager::DebugPaintUV(UStaticMeshComponent* Component, FVector2D UV, float BrushSizePixels, float Intensity, int32 MaterialSlot)
+bool AProphecyBloodTexturePaintManager::DebugPaintUV(UMeshComponent* Component, FVector2D UV, float BrushSizePixels, float Intensity, int32 MaterialSlot)
 {
 	if (!Component)
 	{
@@ -266,6 +335,7 @@ bool AProphecyBloodTexturePaintManager::DebugPaintUV(UStaticMeshComponent* Compo
 	FProphecyBloodPaintStamp Stamp;
 	Stamp.UV = UV;
 	Stamp.BrushSizePixels = FMath::Max(1.0f, BrushSizePixels);
+	Stamp.BrushDrawSizePixels = FVector2D(Stamp.BrushSizePixels, Stamp.BrushSizePixels);
 	Stamp.Intensity = FMath::Clamp(Intensity, 0.0f, 1.0f);
 	Stamp.RotationDegrees = 0.0f;
 	QueueStamp(MakeStateKey(Component, MaterialSlot), Stamp);
@@ -314,10 +384,17 @@ void AProphecyBloodTexturePaintManager::FlushPendingBloodStamps()
 		for (int32 StampIndex = 0; StampIndex < LocalLimit; ++StampIndex)
 		{
 			const FProphecyBloodPaintStamp& Stamp = PendingPair.Value[StampIndex];
+			FVector2D DrawSize = Stamp.BrushDrawSizePixels;
+			if (DrawSize.X <= 0.0f || DrawSize.Y <= 0.0f)
+			{
+				DrawSize = FVector2D(Stamp.BrushSizePixels, Stamp.BrushSizePixels);
+			}
+			DrawSize.X = FMath::Max(1.0f, DrawSize.X);
+			DrawSize.Y = FMath::Max(1.0f, DrawSize.Y);
+
 			const float PixelX = Stamp.UV.X * RTSize.X;
 			const float PixelY = (bFlipV ? (1.0f - Stamp.UV.Y) : Stamp.UV.Y) * RTSize.Y;
-			const FVector2D DrawPosition(PixelX - Stamp.BrushSizePixels * 0.5f, PixelY - Stamp.BrushSizePixels * 0.5f);
-			const FVector2D DrawSize(Stamp.BrushSizePixels, Stamp.BrushSizePixels);
+			const FVector2D DrawPosition(PixelX - DrawSize.X * 0.5f, PixelY - DrawSize.Y * 0.5f);
 
 			Canvas->K2_DrawMaterial(BrushMaterial, DrawPosition, DrawSize, FVector2D::ZeroVector, FVector2D::UnitVector, Stamp.RotationDegrees, FVector2D(0.5f, 0.5f));
 			State->NumStamps += 1;
@@ -422,12 +499,12 @@ UTextureRenderTarget2D* AProphecyBloodTexturePaintManager::GetFirstPaintRenderTa
 	return nullptr;
 }
 
-FString AProphecyBloodTexturePaintManager::MakeStateKey(const UStaticMeshComponent* Component, int32 MaterialSlot) const
+FString AProphecyBloodTexturePaintManager::MakeStateKey(const UMeshComponent* Component, int32 MaterialSlot) const
 {
 	return FString::Printf(TEXT("%u_%d"), Component ? Component->GetUniqueID() : 0, MaterialSlot);
 }
 
-bool AProphecyBloodTexturePaintManager::IsPaintableComponent(const UStaticMeshComponent* Component, UMaterialInterface* CurrentMaterial, FString& OutRejectReason) const
+bool AProphecyBloodTexturePaintManager::IsPaintableComponent(const UMeshComponent* Component, UMaterialInterface* CurrentMaterial, FString& OutRejectReason) const
 {
 	if (!Component)
 	{
@@ -435,9 +512,27 @@ bool AProphecyBloodTexturePaintManager::IsPaintableComponent(const UStaticMeshCo
 		return false;
 	}
 
-	if (!Component->GetStaticMesh())
+	if (const UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Component))
 	{
-		OutRejectReason = FString::Printf(TEXT("%s has no StaticMesh"), *GetNameSafe(Component));
+		if (!StaticMeshComponent->GetStaticMesh())
+		{
+			OutRejectReason = FString::Printf(TEXT("%s has no StaticMesh"), *GetNameSafe(Component));
+			return false;
+		}
+	}
+	else if (const USkinnedMeshComponent* SkinnedMeshComponent = Cast<USkinnedMeshComponent>(Component))
+	{
+		if (!SkinnedMeshComponent->GetSkinnedAsset())
+		{
+			OutRejectReason = FString::Printf(TEXT("%s has no SkinnedAsset"), *GetNameSafe(Component));
+			return false;
+		}
+	}
+	else
+	{
+		OutRejectReason = FString::Printf(TEXT("%s is a %s; runtime blood painting currently supports static and skinned mesh components"),
+			*GetNameSafe(Component),
+			*GetNameSafe(Component->GetClass()));
 		return false;
 	}
 
@@ -466,7 +561,7 @@ bool AProphecyBloodTexturePaintManager::IsPaintableComponent(const UStaticMeshCo
 	return true;
 }
 
-int32 AProphecyBloodTexturePaintManager::ResolveMaterialSlot(UStaticMeshComponent* Component, const FHitResult& Hit, int32 OverrideMaterialSlot, FString& OutRejectReason) const
+int32 AProphecyBloodTexturePaintManager::ResolveMaterialSlot(UMeshComponent* Component, const FHitResult& Hit, int32 OverrideMaterialSlot, FString& OutRejectReason) const
 {
 	if (!Component)
 	{
@@ -512,6 +607,329 @@ int32 AProphecyBloodTexturePaintManager::ResolveMaterialSlot(UStaticMeshComponen
 
 	OutRejectReason = FString::Printf(TEXT("%s has %d material slots; pass OverrideMaterialSlot for version 1"), *GetNameSafe(Component), MaterialCount);
 	return INDEX_NONE;
+}
+
+bool AProphecyBloodTexturePaintManager::FindPaintUV(UMeshComponent* Component, const FHitResult& Hit, int32 OverrideMaterialSlot, FVector2D& OutUV, int32& OutMaterialSlot, float& OutBrushUVUnitsPerWorldUnit, FString& OutRejectReason) const
+{
+	OutBrushUVUnitsPerWorldUnit = 0.0f;
+
+	if (!Component)
+	{
+		OutRejectReason = TEXT("missing component");
+		return false;
+	}
+
+	FString MaterialRejectReason;
+	const int32 ResolvedMaterialSlot = ResolveMaterialSlot(Component, Hit, OverrideMaterialSlot, MaterialRejectReason);
+	if (ResolvedMaterialSlot >= 0)
+	{
+		FVector2D CollisionUV = FVector2D::ZeroVector;
+		if (UGameplayStatics::FindCollisionUV(Hit, PaintUVChannel, CollisionUV))
+		{
+			OutUV = CollisionUV;
+			OutMaterialSlot = ResolvedMaterialSlot;
+			return true;
+		}
+	}
+
+	if (USkinnedMeshComponent* SkinnedMeshComponent = Cast<USkinnedMeshComponent>(Component))
+	{
+		FString SkinnedRejectReason;
+		if (FindSkinnedMeshPaintUV(SkinnedMeshComponent, Hit, PaintUVChannel, OverrideMaterialSlot, OutUV, OutMaterialSlot, OutBrushUVUnitsPerWorldUnit, SkinnedRejectReason))
+		{
+			return true;
+		}
+
+		if (ResolvedMaterialSlot < 0)
+		{
+			OutRejectReason = FString::Printf(TEXT("%s; skinned UV fallback failed: %s"), *MaterialRejectReason, *SkinnedRejectReason);
+		}
+		else
+		{
+			OutRejectReason = FString::Printf(TEXT("FindCollisionUV failed on %s using UV channel %d; skinned UV fallback failed: %s"),
+				*GetNameSafe(Component),
+				PaintUVChannel,
+				*SkinnedRejectReason);
+		}
+		return false;
+	}
+
+	if (ResolvedMaterialSlot < 0)
+	{
+		OutRejectReason = MaterialRejectReason;
+		return false;
+	}
+
+	OutRejectReason = FString::Printf(TEXT("FindCollisionUV failed on %s using UV channel %d"), *GetNameSafe(Component), PaintUVChannel);
+	return false;
+}
+
+bool AProphecyBloodTexturePaintManager::FindSkinnedMeshPaintUV(USkinnedMeshComponent* Component, const FHitResult& Hit, int32 UVChannel, int32 OverrideMaterialSlot, FVector2D& OutUV, int32& OutMaterialSlot, float& OutBrushUVUnitsPerWorldUnit, FString& OutRejectReason) const
+{
+	OutBrushUVUnitsPerWorldUnit = 0.0f;
+
+	if (!Component)
+	{
+		OutRejectReason = TEXT("missing skinned component");
+		return false;
+	}
+
+	const int32 MaterialCount = Component->GetNumMaterials();
+	if (MaterialCount <= 0)
+	{
+		OutRejectReason = FString::Printf(TEXT("%s has no material slots"), *GetNameSafe(Component));
+		return false;
+	}
+
+	if (OverrideMaterialSlot >= MaterialCount)
+	{
+		OutRejectReason = FString::Printf(TEXT("override material slot %d out of range for %s"), OverrideMaterialSlot, *GetNameSafe(Component));
+		return false;
+	}
+
+	USkinnedAsset* SkinnedAsset = Component->GetSkinnedAsset();
+	if (!SkinnedAsset)
+	{
+		OutRejectReason = FString::Printf(TEXT("%s has no SkinnedAsset"), *GetNameSafe(Component));
+		return false;
+	}
+
+	const FProphecySkinnedPaintMeshCache* Cache = GetOrBuildSkinnedPaintMeshCache(Component, UVChannel, OutRejectReason);
+	if (!Cache)
+	{
+		return false;
+	}
+
+	const FVector HitWorldPosition = Hit.ImpactPoint.IsNearlyZero() ? Hit.Location : Hit.ImpactPoint;
+	FVector ReferenceLocalHitPosition = Component->GetComponentTransform().InverseTransformPosition(HitWorldPosition);
+	const int32 HitBoneIndex = Hit.BoneName != NAME_None ? Component->GetBoneIndex(Hit.BoneName) : INDEX_NONE;
+	const TArray<int32>* CandidateTriangleIndices = nullptr;
+	if (HitBoneIndex != INDEX_NONE)
+	{
+		CandidateTriangleIndices = Cache->TriangleIndicesByBone.Find(HitBoneIndex);
+
+		const FTransform CurrentBoneWorldTransform = Component->GetBoneTransform(HitBoneIndex);
+		const FTransform ReferenceBoneComponentTransform(SkinnedAsset->GetComposedRefPoseMatrix(HitBoneIndex));
+		const FVector BoneLocalHitPosition = CurrentBoneWorldTransform.InverseTransformPosition(HitWorldPosition);
+		ReferenceLocalHitPosition = ReferenceBoneComponentTransform.TransformPosition(BoneLocalHitPosition);
+	}
+
+	double BestDistanceSquared = TNumericLimits<double>::Max();
+	FVector2D BestUV = FVector2D::ZeroVector;
+	int32 BestMaterialSlot = INDEX_NONE;
+	float BestBrushUVUnitsPerWorldUnit = 0.0f;
+	const FTransform ComponentTransform = Component->GetComponentTransform();
+
+	auto ConsiderTriangle = [OverrideMaterialSlot, ReferenceLocalHitPosition, ComponentTransform, &BestDistanceSquared, &BestUV, &BestMaterialSlot, &BestBrushUVUnitsPerWorldUnit](const FProphecySkinnedPaintTriangle& Triangle)
+	{
+		if (Triangle.MaterialSlot < 0 || (OverrideMaterialSlot >= 0 && Triangle.MaterialSlot != OverrideMaterialSlot))
+		{
+			return;
+		}
+
+		const FVector ClosestPoint = FMath::ClosestPointOnTriangleToPoint(ReferenceLocalHitPosition, Triangle.A, Triangle.B, Triangle.C);
+		const double DistanceSquared = FVector::DistSquared(ReferenceLocalHitPosition, ClosestPoint);
+		if (DistanceSquared >= BestDistanceSquared)
+		{
+			return;
+		}
+
+		FVector Barycentric = FVector::ZeroVector;
+		if (!FMath::ComputeBarycentricTri(ClosestPoint, Triangle.A, Triangle.B, Triangle.C, Barycentric, KINDA_SMALL_NUMBER))
+		{
+			return;
+		}
+
+		BestUV = Triangle.UVA * Barycentric.X + Triangle.UVB * Barycentric.Y + Triangle.UVC * Barycentric.Z;
+		BestMaterialSlot = Triangle.MaterialSlot;
+		BestBrushUVUnitsPerWorldUnit = EstimateTriangleUVUnitsPerWorldUnit(Triangle, ComponentTransform);
+		BestDistanceSquared = DistanceSquared;
+	};
+
+	if (CandidateTriangleIndices && CandidateTriangleIndices->Num() > 0)
+	{
+		for (int32 TriangleIndex : *CandidateTriangleIndices)
+		{
+			if (Cache->Triangles.IsValidIndex(TriangleIndex))
+			{
+				ConsiderTriangle(Cache->Triangles[TriangleIndex]);
+			}
+		}
+	}
+
+	if (BestMaterialSlot < 0)
+	{
+		for (const FProphecySkinnedPaintTriangle& Triangle : Cache->Triangles)
+		{
+			ConsiderTriangle(Triangle);
+		}
+	}
+
+	if (BestMaterialSlot < 0)
+	{
+		OutRejectReason = OverrideMaterialSlot >= 0
+			? FString::Printf(TEXT("%s found no render triangles for material slot %d"), *GetNameSafe(Component), OverrideMaterialSlot)
+			: FString::Printf(TEXT("%s found no valid render triangles"), *GetNameSafe(Component));
+		return false;
+	}
+
+	OutUV = BestUV;
+	OutMaterialSlot = BestMaterialSlot;
+	OutBrushUVUnitsPerWorldUnit = BestBrushUVUnitsPerWorldUnit;
+	return true;
+}
+
+const FProphecySkinnedPaintMeshCache* AProphecyBloodTexturePaintManager::GetOrBuildSkinnedPaintMeshCache(USkinnedMeshComponent* Component, int32 UVChannel, FString& OutRejectReason) const
+{
+	if (!Component)
+	{
+		OutRejectReason = TEXT("missing skinned component");
+		return nullptr;
+	}
+
+	USkinnedAsset* SkinnedAsset = Component->GetSkinnedAsset();
+	if (!SkinnedAsset)
+	{
+		OutRejectReason = FString::Printf(TEXT("%s has no SkinnedAsset"), *GetNameSafe(Component));
+		return nullptr;
+	}
+
+	const FString CacheKey = MakeSkinnedPaintMeshCacheKey(SkinnedAsset, UVChannel);
+	if (FProphecySkinnedPaintMeshCache* ExistingCache = SkinnedPaintMeshCaches.Find(CacheKey))
+	{
+		return ExistingCache;
+	}
+
+	FSkeletalMeshRenderData* RenderData = SkinnedAsset->GetResourceForRendering();
+	if (!RenderData || RenderData->LODRenderData.Num() == 0)
+	{
+		OutRejectReason = FString::Printf(TEXT("%s has no skeletal render data"), *GetNameSafe(SkinnedAsset));
+		return nullptr;
+	}
+
+	const int32 LODIndex = 0;
+	const FSkeletalMeshLODRenderData& LODData = RenderData->LODRenderData[LODIndex];
+	if (UVChannel < 0 || UVChannel >= static_cast<int32>(LODData.GetNumTexCoords()))
+	{
+		OutRejectReason = FString::Printf(TEXT("%s does not have UV channel %d on LOD %d"), *GetNameSafe(SkinnedAsset), UVChannel, LODIndex);
+		return nullptr;
+	}
+
+	if (!LODData.MultiSizeIndexContainer.IsIndexBufferValid())
+	{
+		OutRejectReason = FString::Printf(TEXT("%s has no CPU-readable index buffer for LOD %d"), *GetNameSafe(SkinnedAsset), LODIndex);
+		return nullptr;
+	}
+
+	TArray<uint32> Indices;
+	LODData.MultiSizeIndexContainer.GetIndexBuffer(Indices);
+	if (Indices.Num() == 0)
+	{
+		OutRejectReason = FString::Printf(TEXT("%s returned no skeletal mesh indices"), *GetNameSafe(SkinnedAsset));
+		return nullptr;
+	}
+
+	FProphecySkinnedPaintMeshCache NewCache;
+	NewCache.AssetPath = SkinnedAsset->GetPathName();
+	NewCache.UVChannel = UVChannel;
+	NewCache.Triangles.Reserve(Indices.Num() / 3);
+
+	const uint32 MaxInfluences = LODData.SkinWeightVertexBuffer.GetMaxBoneInfluences();
+	auto AddVertexBones = [&LODData, MaxInfluences](const FSkelMeshRenderSection& Section, int32 VertexIndex, TSet<int32>& OutBoneIndices)
+	{
+		if (VertexIndex < 0 || static_cast<uint32>(VertexIndex) >= LODData.SkinWeightVertexBuffer.GetNumVertices())
+		{
+			return;
+		}
+
+		for (uint32 InfluenceIndex = 0; InfluenceIndex < MaxInfluences; ++InfluenceIndex)
+		{
+			const uint16 InfluenceWeight = LODData.SkinWeightVertexBuffer.GetBoneWeight(VertexIndex, InfluenceIndex);
+			if (InfluenceWeight == 0)
+			{
+				continue;
+			}
+
+			const int32 SectionBoneMapIndex = static_cast<int32>(LODData.SkinWeightVertexBuffer.GetBoneIndex(VertexIndex, InfluenceIndex));
+			if (Section.BoneMap.IsValidIndex(SectionBoneMapIndex))
+			{
+				OutBoneIndices.Add(static_cast<int32>(Section.BoneMap[SectionBoneMapIndex]));
+			}
+		}
+	};
+
+	for (const FSkelMeshRenderSection& Section : LODData.RenderSections)
+	{
+		const int32 SectionMaterialSlot = static_cast<int32>(Section.MaterialIndex);
+		if (!Section.IsValid() || SectionMaterialSlot < 0)
+		{
+			continue;
+		}
+
+		for (uint32 SectionTriangleIndex = 0; SectionTriangleIndex < Section.NumTriangles; ++SectionTriangleIndex)
+		{
+			const uint32 IndexOffset = Section.BaseIndex + SectionTriangleIndex * 3;
+			if (IndexOffset + 2 >= static_cast<uint32>(Indices.Num()))
+			{
+				continue;
+			}
+
+			const int32 Index0 = static_cast<int32>(Indices[IndexOffset]);
+			const int32 Index1 = static_cast<int32>(Indices[IndexOffset + 1]);
+			const int32 Index2 = static_cast<int32>(Indices[IndexOffset + 2]);
+			if (Index0 < 0 || Index1 < 0 || Index2 < 0 ||
+				static_cast<uint32>(Index0) >= LODData.StaticVertexBuffers.PositionVertexBuffer.GetNumVertices() ||
+				static_cast<uint32>(Index1) >= LODData.StaticVertexBuffers.PositionVertexBuffer.GetNumVertices() ||
+				static_cast<uint32>(Index2) >= LODData.StaticVertexBuffers.PositionVertexBuffer.GetNumVertices() ||
+				static_cast<uint32>(Index0) >= LODData.StaticVertexBuffers.StaticMeshVertexBuffer.GetNumVertices() ||
+				static_cast<uint32>(Index1) >= LODData.StaticVertexBuffers.StaticMeshVertexBuffer.GetNumVertices() ||
+				static_cast<uint32>(Index2) >= LODData.StaticVertexBuffers.StaticMeshVertexBuffer.GetNumVertices())
+			{
+				continue;
+			}
+
+			FProphecySkinnedPaintTriangle Triangle;
+			Triangle.A = ToVector(LODData.StaticVertexBuffers.PositionVertexBuffer.VertexPosition(Index0));
+			Triangle.B = ToVector(LODData.StaticVertexBuffers.PositionVertexBuffer.VertexPosition(Index1));
+			Triangle.C = ToVector(LODData.StaticVertexBuffers.PositionVertexBuffer.VertexPosition(Index2));
+			Triangle.UVA = FVector2D(LODData.StaticVertexBuffers.StaticMeshVertexBuffer.GetVertexUV(Index0, UVChannel));
+			Triangle.UVB = FVector2D(LODData.StaticVertexBuffers.StaticMeshVertexBuffer.GetVertexUV(Index1, UVChannel));
+			Triangle.UVC = FVector2D(LODData.StaticVertexBuffers.StaticMeshVertexBuffer.GetVertexUV(Index2, UVChannel));
+			Triangle.MaterialSlot = SectionMaterialSlot;
+
+			const int32 NewTriangleIndex = NewCache.Triangles.Add(Triangle);
+			TSet<int32> TriangleBoneIndices;
+			AddVertexBones(Section, Index0, TriangleBoneIndices);
+			AddVertexBones(Section, Index1, TriangleBoneIndices);
+			AddVertexBones(Section, Index2, TriangleBoneIndices);
+			for (int32 BoneIndex : TriangleBoneIndices)
+			{
+				NewCache.TriangleIndicesByBone.FindOrAdd(BoneIndex).Add(NewTriangleIndex);
+			}
+		}
+	}
+
+	if (NewCache.Triangles.Num() == 0)
+	{
+		OutRejectReason = FString::Printf(TEXT("%s produced no cached paint triangles"), *GetNameSafe(SkinnedAsset));
+		return nullptr;
+	}
+
+	FProphecySkinnedPaintMeshCache& StoredCache = SkinnedPaintMeshCaches.Add(CacheKey, MoveTemp(NewCache));
+	if (bDebugMode || bDebugPrintHits)
+	{
+		UE_LOG(LogProphecyBloodTexturePaint, Log, TEXT("Built skinned blood paint cache for %s UV%d: triangles=%d bones=%d"),
+			*GetNameSafe(SkinnedAsset),
+			UVChannel,
+			StoredCache.Triangles.Num(),
+			StoredCache.TriangleIndicesByBone.Num());
+	}
+	return &StoredCache;
+}
+
+FString AProphecyBloodTexturePaintManager::MakeSkinnedPaintMeshCacheKey(const USkinnedAsset* SkinnedAsset, int32 UVChannel) const
+{
+	return FString::Printf(TEXT("%s_UV%d_LOD0"), SkinnedAsset ? *SkinnedAsset->GetPathName() : TEXT("None"), UVChannel);
 }
 
 UMaterialInterface* AProphecyBloodTexturePaintManager::ResolveBloodMaterialTemplate(UMaterialInterface* CurrentMaterial) const
@@ -883,6 +1301,7 @@ UMaterialInterface* AProphecyBloodTexturePaintManager::EditorEnsureBloodMaterial
 
 	bool bNeedsRecompile = false;
 	UMaterialEditingLibrary::SetMaterialUsage(GeneratedMaterial, MATUSAGE_StaticMesh, bNeedsRecompile);
+	UMaterialEditingLibrary::SetMaterialUsage(GeneratedMaterial, MATUSAGE_SkeletalMesh, bNeedsRecompile);
 	UMaterialEditingLibrary::SetMaterialUsage(GeneratedMaterial, MATUSAGE_Nanite, bNeedsRecompile);
 	UMaterialEditingLibrary::LayoutMaterialExpressions(GeneratedMaterial);
 	UMaterialEditingLibrary::RecompileMaterial(GeneratedMaterial);
@@ -903,7 +1322,7 @@ UMaterialInterface* AProphecyBloodTexturePaintManager::EditorEnsureBloodMaterial
 }
 #endif
 
-FProphecyBloodPaintState* AProphecyBloodTexturePaintManager::EnsurePaintState(UStaticMeshComponent* Component, int32 MaterialSlot, FString& OutRejectReason)
+FProphecyBloodPaintState* AProphecyBloodTexturePaintManager::EnsurePaintState(UMeshComponent* Component, int32 MaterialSlot, FString& OutRejectReason)
 {
 	const FString StateKey = MakeStateKey(Component, MaterialSlot);
 	if (FProphecyBloodPaintState* ExistingState = PaintStatesByKey.Find(StateKey))
@@ -968,7 +1387,7 @@ FProphecyBloodPaintState* AProphecyBloodTexturePaintManager::EnsurePaintState(US
 	return &StoredState;
 }
 
-int32 AProphecyBloodTexturePaintManager::ChooseRTResolution(const UStaticMeshComponent* Component) const
+int32 AProphecyBloodTexturePaintManager::ChooseRTResolution(const UMeshComponent* Component) const
 {
 	if (!Component)
 	{
@@ -987,6 +1406,89 @@ int32 AProphecyBloodTexturePaintManager::ChooseRTResolution(const UStaticMeshCom
 	}
 
 	return DefaultRTResolutionLarge;
+}
+
+FVector2D AProphecyBloodTexturePaintManager::ComputeWorldBrushDrawSize(const UMeshComponent* Component, const FHitResult& Hit, float BrushRadiusWorld, int32 RTResolution, float BrushUVUnitsPerWorldUnit) const
+{
+	const float FallbackSize = FMath::Max(1.0f, DefaultBrushSizePixels);
+	const float BrushDiameterWorld = BrushRadiusWorld * 2.0f;
+	if (BrushUVUnitsPerWorldUnit > SMALL_NUMBER && BrushDiameterWorld > 0.0f && RTResolution > 0)
+	{
+		const float BrushDiameterPixels = FMath::Max(1.0f, BrushDiameterWorld * BrushUVUnitsPerWorldUnit * static_cast<float>(RTResolution));
+		return ClampBrushDrawSizeForComponent(Component, FVector2D(BrushDiameterPixels, BrushDiameterPixels));
+	}
+
+	FBoxSphereBounds LocalBounds;
+	if (!Component || !TryGetMeshLocalBounds(Component, LocalBounds) || BrushRadiusWorld <= 0.0f || RTResolution <= 0)
+	{
+		return ClampBrushDrawSizeForComponent(Component, FVector2D(FallbackSize, FallbackSize));
+	}
+
+	const FTransform ComponentTransform = Component->GetComponentTransform();
+	const FVector LocalExtent(
+		FMath::Max(LocalBounds.BoxExtent.X, 0.001f),
+		FMath::Max(LocalBounds.BoxExtent.Y, 0.001f),
+		FMath::Max(LocalBounds.BoxExtent.Z, 0.001f));
+	const FVector Scale = ComponentTransform.GetScale3D();
+	const FVector AbsScale(
+		FMath::Max(FMath::Abs(Scale.X), 0.001f),
+		FMath::Max(FMath::Abs(Scale.Y), 0.001f),
+		FMath::Max(FMath::Abs(Scale.Z), 0.001f));
+
+	FVector LocalNormal = ComponentTransform.InverseTransformVectorNoScale(Hit.ImpactNormal).GetSafeNormal();
+	if (LocalNormal.IsNearlyZero())
+	{
+		LocalNormal = FVector::UpVector;
+	}
+
+	const FVector AbsNormal(FMath::Abs(LocalNormal.X), FMath::Abs(LocalNormal.Y), FMath::Abs(LocalNormal.Z));
+	int32 UAxis = 0;
+	int32 VAxis = 1;
+	if (AbsNormal.X >= AbsNormal.Y && AbsNormal.X >= AbsNormal.Z)
+	{
+		UAxis = 1;
+		VAxis = 2;
+	}
+	else if (AbsNormal.Y >= AbsNormal.X && AbsNormal.Y >= AbsNormal.Z)
+	{
+		UAxis = 0;
+		VAxis = 2;
+	}
+
+	auto AxisWorldSpan = [&LocalExtent, &AbsScale](int32 Axis)
+	{
+		switch (Axis)
+		{
+		case 0:
+			return LocalExtent.X * 2.0f * AbsScale.X;
+		case 1:
+			return LocalExtent.Y * 2.0f * AbsScale.Y;
+		default:
+			return LocalExtent.Z * 2.0f * AbsScale.Z;
+		}
+	};
+
+	const float Resolution = static_cast<float>(RTResolution);
+	return ClampBrushDrawSizeForComponent(Component, FVector2D(
+		FMath::Max(1.0f, BrushDiameterWorld / FMath::Max(AxisWorldSpan(UAxis), 0.001f) * Resolution),
+		FMath::Max(1.0f, BrushDiameterWorld / FMath::Max(AxisWorldSpan(VAxis), 0.001f) * Resolution)));
+}
+
+FVector2D AProphecyBloodTexturePaintManager::ClampBrushDrawSizeForComponent(const UMeshComponent* Component, FVector2D DrawSize) const
+{
+	DrawSize.X = FMath::Max(1.0f, DrawSize.X);
+	DrawSize.Y = FMath::Max(1.0f, DrawSize.Y);
+
+	if (Cast<USkinnedMeshComponent>(Component) && MaxSkinnedMeshBrushDiameterPixels > 0.0f)
+	{
+		const float MaxAxis = FMath::Max(DrawSize.X, DrawSize.Y);
+		if (MaxAxis > MaxSkinnedMeshBrushDiameterPixels)
+		{
+			DrawSize *= MaxSkinnedMeshBrushDiameterPixels / MaxAxis;
+		}
+	}
+
+	return DrawSize;
 }
 
 void AProphecyBloodTexturePaintManager::QueueStamp(const FString& StateKey, const FProphecyBloodPaintStamp& Stamp)

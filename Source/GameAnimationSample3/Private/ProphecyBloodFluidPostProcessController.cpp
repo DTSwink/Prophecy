@@ -114,19 +114,6 @@ void AProphecyBloodFluidPostProcessController::TagBloodNiagaraComponentsForStenc
 		}
 
 		const int32 ClampedStencilValue = FMath::Clamp(BloodStencilValue, 0, 255);
-		if (Component->GetOwner() == World->GetWorldSettings())
-		{
-			if (Component->bRenderCustomDepth || !Component->bRenderInMainPass || !Component->bRenderInDepthPass)
-			{
-				Component->Modify();
-				Component->SetRenderCustomDepth(false);
-				Component->SetRenderInMainPass(true);
-				Component->SetRenderInDepthPass(true);
-				Component->MarkRenderStateDirty();
-			}
-			continue;
-		}
-
 		const bool bNeedsUpdate =
 			Component->bRenderCustomDepth != bUseFilter ||
 			Component->CustomDepthStencilValue != ClampedStencilValue ||
@@ -168,7 +155,7 @@ UMaterialInstanceDynamic* AProphecyBloodFluidPostProcessController::GetOrCreateM
 		return nullptr;
 	}
 
-	if (!Slot || Slot->Parent != Parent)
+	if (!Slot || Slot->Parent != Parent || Slot->GetOuter() != this)
 	{
 		Slot = UMaterialInstanceDynamic::Create(Parent, this, DebugName);
 	}
@@ -226,6 +213,8 @@ void AProphecyBloodFluidPostProcessController::PushScalarAndVectorParameters()
 		CompositeMID->SetScalarParameterValue(TEXT("Threshold"), Threshold);
 		CompositeMID->SetScalarParameterValue(TEXT("Softness"), Softness);
 		CompositeMID->SetScalarParameterValue(TEXT("BlurSampleQuality"), BlurSampleQuality);
+		CompositeMID->SetScalarParameterValue(TEXT("DebugStage"), DebugStage);
+		CompositeMID->SetScalarParameterValue(TEXT("DiagStage"), DebugStage);
 	}
 }
 

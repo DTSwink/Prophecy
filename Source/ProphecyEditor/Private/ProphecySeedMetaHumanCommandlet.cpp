@@ -1,5 +1,6 @@
 #include "ProphecySeedMetaHumanCommandlet.h"
 
+#include "Editor.h"
 #include "FileHelpers.h"
 #include "ImageCore.h"
 #include "MetaHumanCharacter.h"

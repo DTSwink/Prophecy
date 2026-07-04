@@ -72,6 +72,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Blood Fluid PP", meta = (ClampMin = "0.0", ClampMax = "4.0", UIMin = "0.0", UIMax = "4.0", DisplayName = "Blur Sample Quality"))
 	float BlurSampleQuality = 1.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Blood Fluid PP|Debug", meta = (ClampMin = "0.0", ClampMax = "7.0", UIMin = "0.0", UIMax = "7.0", DisplayName = "Debug Stage"))
+	float DebugStage = 7.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Blood Fluid PP|Materials")
 	TSoftObjectPtr<UMaterialInterface> SceneCopyMaterial;
 

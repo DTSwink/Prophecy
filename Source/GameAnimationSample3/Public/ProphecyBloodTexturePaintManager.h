@@ -6,7 +6,9 @@
 
 class UMaterialInstanceDynamic;
 class UMaterialInterface;
-class UStaticMeshComponent;
+class UMeshComponent;
+class USkinnedMeshComponent;
+class USkinnedAsset;
 class UTextureRenderTarget2D;
 
 USTRUCT(BlueprintType)
@@ -19,6 +21,9 @@ struct FProphecyBloodPaintStamp
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Blood Paint", meta = (ClampMin = "1.0"))
 	float BrushSizePixels = 32.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Blood Paint")
+	FVector2D BrushDrawSizePixels = FVector2D::ZeroVector;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Blood Paint", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float Intensity = 1.0f;
@@ -45,7 +50,7 @@ struct FProphecyBloodPaintState
 	GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prophecy|Blood Paint")
-	TObjectPtr<UStaticMeshComponent> Component = nullptr;
+	TObjectPtr<UMeshComponent> Component = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prophecy|Blood Paint")
 	int32 MaterialSlot = 0;
@@ -69,6 +74,25 @@ struct FProphecyBloodPaintState
 	bool bValid = false;
 };
 
+struct FProphecySkinnedPaintTriangle
+{
+	FVector A = FVector::ZeroVector;
+	FVector B = FVector::ZeroVector;
+	FVector C = FVector::ZeroVector;
+	FVector2D UVA = FVector2D::ZeroVector;
+	FVector2D UVB = FVector2D::ZeroVector;
+	FVector2D UVC = FVector2D::ZeroVector;
+	int32 MaterialSlot = INDEX_NONE;
+};
+
+struct FProphecySkinnedPaintMeshCache
+{
+	FString AssetPath;
+	int32 UVChannel = 0;
+	TArray<FProphecySkinnedPaintTriangle> Triangles;
+	TMap<int32, TArray<int32>> TriangleIndicesByBone;
+};
+
 UCLASS(Blueprintable)
 class GAMEANIMATIONSAMPLE3_API AProphecyBloodTexturePaintManager : public AActor
 {
@@ -83,7 +107,7 @@ public:
 	bool TryPaintFromHit(const FHitResult& Hit, float BrushRadiusWorld = 25.0f, float Intensity = 1.0f, int32 OverrideMaterialSlot = -1);
 
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Blood Paint")
-	bool DebugPaintUV(UStaticMeshComponent* Component, FVector2D UV, float BrushSizePixels = 32.0f, float Intensity = 1.0f, int32 MaterialSlot = 0);
+	bool DebugPaintUV(UMeshComponent* Component, FVector2D UV, float BrushSizePixels = 32.0f, float Intensity = 1.0f, int32 MaterialSlot = 0);
 
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Blood Paint")
 	void FlushPendingBloodStamps();
@@ -212,16 +236,22 @@ public:
 	int32 UnsupportedHitCount = 0;
 
 private:
-	FString MakeStateKey(const UStaticMeshComponent* Component, int32 MaterialSlot) const;
-	bool IsPaintableComponent(const UStaticMeshComponent* Component, UMaterialInterface* CurrentMaterial, FString& OutRejectReason) const;
-	int32 ResolveMaterialSlot(UStaticMeshComponent* Component, const FHitResult& Hit, int32 OverrideMaterialSlot, FString& OutRejectReason) const;
+	FString MakeStateKey(const UMeshComponent* Component, int32 MaterialSlot) const;
+	bool IsPaintableComponent(const UMeshComponent* Component, UMaterialInterface* CurrentMaterial, FString& OutRejectReason) const;
+	int32 ResolveMaterialSlot(UMeshComponent* Component, const FHitResult& Hit, int32 OverrideMaterialSlot, FString& OutRejectReason) const;
+	bool FindPaintUV(UMeshComponent* Component, const FHitResult& Hit, int32 OverrideMaterialSlot, FVector2D& OutUV, int32& OutMaterialSlot, float& OutBrushUVUnitsPerWorldUnit, FString& OutRejectReason) const;
+	bool FindSkinnedMeshPaintUV(USkinnedMeshComponent* Component, const FHitResult& Hit, int32 UVChannel, int32 OverrideMaterialSlot, FVector2D& OutUV, int32& OutMaterialSlot, float& OutBrushUVUnitsPerWorldUnit, FString& OutRejectReason) const;
+	const FProphecySkinnedPaintMeshCache* GetOrBuildSkinnedPaintMeshCache(USkinnedMeshComponent* Component, int32 UVChannel, FString& OutRejectReason) const;
+	FString MakeSkinnedPaintMeshCacheKey(const USkinnedAsset* SkinnedAsset, int32 UVChannel) const;
 	UMaterialInterface* ResolveBloodMaterialTemplate(UMaterialInterface* CurrentMaterial) const;
 	UMaterialInterface* ResolveOrCreateBloodMaterialTemplate(UMaterialInterface* CurrentMaterial);
 #if WITH_EDITOR
 	UMaterialInterface* EditorEnsureBloodMaterialTemplate(UMaterialInterface* CurrentMaterial);
 #endif
-	FProphecyBloodPaintState* EnsurePaintState(UStaticMeshComponent* Component, int32 MaterialSlot, FString& OutRejectReason);
-	int32 ChooseRTResolution(const UStaticMeshComponent* Component) const;
+	FProphecyBloodPaintState* EnsurePaintState(UMeshComponent* Component, int32 MaterialSlot, FString& OutRejectReason);
+	int32 ChooseRTResolution(const UMeshComponent* Component) const;
+	FVector2D ComputeWorldBrushDrawSize(const UMeshComponent* Component, const FHitResult& Hit, float BrushRadiusWorld, int32 RTResolution, float BrushUVUnitsPerWorldUnit = 0.0f) const;
+	FVector2D ClampBrushDrawSizeForComponent(const UMeshComponent* Component, FVector2D DrawSize) const;
 	void QueueStamp(const FString& StateKey, const FProphecyBloodPaintStamp& Stamp);
 	void LogReject(const FString& Reason);
 	void DebugMessage(const FString& Message, FColor Color = FColor::Cyan) const;
@@ -233,4 +263,6 @@ private:
 	TMap<FString, TObjectPtr<UMaterialInterface>> OriginalMaterialsByKey;
 
 	TMap<FString, TArray<FProphecyBloodPaintStamp>> PendingStampsByStateKey;
+
+	mutable TMap<FString, FProphecySkinnedPaintMeshCache> SkinnedPaintMeshCaches;
 };

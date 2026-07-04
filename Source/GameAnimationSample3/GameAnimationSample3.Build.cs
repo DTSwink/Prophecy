@@ -20,6 +20,7 @@ public class GameAnimationSample3 : ModuleRules
 			"MeshDescription",
 			"MeshConversion",
 			"Niagara",
+			"PhysicsCore",
 			"ProceduralMeshComponent",
 			"Projects",
 			"StaticMeshDescription"

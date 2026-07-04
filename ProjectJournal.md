@@ -11,6 +11,28 @@ Keep this file tight. Preserve only goals, rules, keeper settings, important pat
 - Git preservation rule: push everything needed to reconstruct the project if local files are lost. Include source code, journal notes, helper scripts, config, hand-authored data, and small source assets/textures through LFS when needed.
 - Do not push bulky or recoverable Unreal output by default: `Binaries/`, `Intermediate/`, `DerivedDataCache/`, screenshots, logs, autosaves, and generated `Content/` assets that can be rebuilt by opening Unreal or rerunning tracked scripts. If an added asset cannot be reconstructed from tracked source/scripts, track it.
 
+## Blood Work Ledger
+
+- Goal: keep blood visually rich without drowning the scene in thousands of expensive deferred decals. The current architecture has several purpose-built paths rather than one universal renderer.
+- Benchmarking: `AProphecyBloodRendererBenchmarkActor` compares DecalComponents, ISM, HISM, mesh-decal ISM, and the procedural renderer through `-ProphecyBloodBenchmark`; `Saved\RunBloodRendererBenchmarks.ps1` captures JSON/screenshot evidence. This drove the move away from decal spam and runtime instance churn.
+- Cheap particle/VFX stain path: `AProphecyBloodStainRenderer` receives Niagara/basic particle hit data, preallocates procedural triangle stain slots, batches vertex rewrites, and exposes `AddBloodHit`, `AddBloodParticleData`, and world helper nodes. `ProphecyWireBloodStainCommandlet` wires `/Game/_mygame/blood2/A_DecalManager` so existing `ReceiveParticleData` can also feed the native renderer.
+- Runtime texture-paint path: `AProphecyBloodTexturePaintManager::TryPaintFromHit(Hit, BrushRadiusWorld, Intensity, OverrideMaterialSlot)` is the precision path for static/Nanite mesh stains. It resolves UVs, allocates one mask RT per component/material slot, swaps that slot to a blood-enabled MID, queues brush stamps, and flushes RT writes under `MaxStampsPerFrame` and `MaxStampsPerRTPerFrame`.
+- Project requirement for texture painting: `bSupportUVFromHitResults=True` in physics settings. Static meshes use collision UV / face-material lookup where available; production assets should prefer unique non-overlapping paint UVs.
+- Paint material pipeline: `Saved\ProphecyCreateBloodTexturePaintingAssets.py` creates/rebuilds brush/test assets and `MF_BloodPaintSurface`; `Saved\ProphecyRebuildBloodPaintGeneratedMaterials.py` refreshes generated variants. Generated `_BloodPaint` materials live under `/Game/Prophecy/BloodTexturePainting/Generated` and preserve source materials by overriding only BaseColor/Roughness/Specular/Metallic through `BloodMaskRT * BloodIntensity`.
+- Material automation: the manager can auto-generate blood-enabled materials for plain materials and material instances, cache clean->blood pairs, save generated assets, avoid overwrite prompts unless explicitly allowed, and reuse generated materials by default. Complex `MP_MaterialAttributes` graphs are preserved through `SetMaterialAttributes`; normal-map layering is still a future regeneration/update task.
+- Texture-paint validation: milestone scripts in `Saved\ProphecyValidateBloodTexturePaintingMilestones.py` and `Saved\ProphecyValidateBloodTexturePaintingRuntime.py` proved brush RT output, UV variation, first-hit material swap, batched stamps, RT budget rejection, Nanite fallback UV painting on the generated Nanite cube, and editor stress with 100/1000 painted objects plus a capped 512-stamp burst.
+- Texture-paint perf rule: many stamps on one RT are cheap because they batch into one canvas pass; bursts across many components are expensive because they trigger many UV lookups, allocations/material swaps, and RT flushes. Debug hit printing/drawing must stay off for meaningful perf tests.
+- Skeletal/skinned support: `TryPaintFromHit` now accepts `UMeshComponent` hits, including skeletal meshes. The first CPU-skinned approach was removed because `GetCPUSkinnedVertices()` was too slow; the current fallback caches LOD0 reference-pose triangles/UVs by skinned asset and uses `Hit.BoneName` plus current/reference bone transforms to estimate the hit UV.
+- Skeletal caveat: large stamps can bleed across UV islands because the renderer writes a 2D circle into the material RT. Current mitigation estimates UV density and caps skinned stamp diameter to 48 RT pixels; exact island-aware painting would require heavier unwrap/capture/mask work.
+- Fake-fluid blood path: `AProphecyBloodFluidPostProcessController` drives a screen-space post-process composite over blood Niagara/stencil objects. It tags `NS_bloodsplat` components for CustomDepth stencil 42, uses `M_PP_Blood_Composite`, and can switch to `M_PP_Blood_StencilDebug42`.
+- Fake-fluid debug: `/Game/_mygame/blood2/PP_Fluid/M_PP_Blood_DebugStages` exposes stages 0-7 from raw scene through stencil mask, isolated layer, blur/gating, threshold/softness, and final depth-aware composite. This is a visual wet/blob layer, not the precise persistent mesh-stain storage.
+- Grass/ground blood: the scenery path uses one runtime `1024x1024` world-space mask shared by ground and grass. Drops max-compose into the mask so repeated drops in the same area do not add visual or CPU cost; grass uses a dark-root/crimson-tip response to preserve blade value structure.
+- Foliage/floor decal grid path: `UProphecyFoliageDecalGridComponent` is the foliage-only runtime decal-count reducer. It takes floor hits, snaps them to a 2D grid, spawns only missing square decals, then incrementally merges complete 2x2 blocks into larger decals under scan/check/merge/time budgets. Debug nodes draw active bounds; `BoundsHeightCm` only affects visualization.
+- Foliage grid current fix: tile keys are now leaf-cell origins, not fixed quadtree coordinates, so sliding 2x2 groups can merge even when they straddle the old even/odd boundary. `OccupiedLeafKeys` prevents duplicate cells after merging. Use `... Ref` Blueprint nodes when Live Coding temporarily treats the component reference as a `LIVECODING_*` class.
+- Instanced foliage/PCG direction: for large rocks/trees, promote the hit instance only when needed. Use `Hit.Item` and `GetInstanceTransform(..., WorldSpace=true)`; do not use the ISM component transform as the instance transform, and do not remove instances unless index churn is handled.
+- Active division of labor: fake-fluid PP for the big wet VFX look, texture painting for precise persistent mesh stains, procedural mesh for cheap particle-derived surface marks, foliage grid decals for foliage-only floor stains, and world-space grass mask for grass/ground coloration.
+- Remaining blood risks: real packaged/PIE profiler captures are still needed; skeletal painting is approximate; landscape and unique per-instance ISM/HISM masks are not solved; generated blood normals are not wired; Nanite proof has only been validated on the generated Nanite cube and should be retested on real hero rocks/trees.
+
 ## Blood VFX Runtime Stain Renderer
 
 - 2026-06-25 decision: stop trying to auto-author Blueprint/Niagara graph nodes from Python. UE 5.7 exposes the Niagara Data Channel runtime API to Python/C++, but the K2 `Write Data Channel` node and normal graph pin/node mutation APIs are not exposed enough for safe automatic Blueprint graph edits.
@@ -191,6 +213,19 @@ Keep this file tight. Preserve only goals, rules, keeper settings, important pat
 - 2026-06-26 follow-up: C++ build succeeded, `MF_BloodPaintSurface` was recreated, generated blood materials were rebuilt, and the latest log no longer contains the old `Missing function input`, `Failed to compile Material`, or `Default Material will be used` blood-paint failures. Existing brush/runtime helper materials are now reused by the asset script to avoid Unreal crashing while deleting rooted material expressions.
 - 2026-06-26 floor metallic debug follow-up: the runtime floor was not using the old grass-ground path; its source material was `/Engine/EditorMeshes/ColorCalibrator/M_GreyBall.M_GreyBall`. The paint manager generated `/Game/Prophecy/BloodTexturePainting/Generated/_Engine_EditorMeshes_ColorCalibrator_M_GreyBall_BloodPaint`, but it was initially only in memory and logged a missing Nanite usage warning. The generated material was force-recompiled/saved through the editor bridge and added to `Saved\ProphecyRebuildBloodPaintGeneratedMaterials.py` source materials so future rebuilds include it.
 
+## 2026-06-30 - Runtime Stain Material Pipeline Handoff
+
+- Runtime entry point is `AProphecyBloodTexturePaintManager::TryPaintFromHit(Hit, BrushRadiusWorld, Intensity, OverrideMaterialSlot)`. It accepts `UMeshComponent` hits, resolves a paint UV, computes a render-target draw size from world brush radius and UV density, and queues a `FProphecyBloodPaintStamp`.
+- Each painted component/material slot owns one `FProphecyBloodPaintState`: original material, blood material instance, `BloodRT` render target, RT resolution, and usage stats. `EnsurePaintState` creates the RT, creates a MID from the generated blood material template, sets `BloodMaskRT`, sets `BloodIntensity=1`, and applies the MID to the hit mesh slot.
+- Stamps are flushed into `BloodRT`; the material reads `BloodMaskRT` and multiplies it by `BloodIntensity` to decide where the stain affects the surface.
+- Shared blood appearance lives in `/Game/Prophecy/BloodTexturePainting/MF_BloodPaintSurface`. Current outputs are `BaseColorOut`, `RoughnessOut`, `SpecularOut`, and `MetallicOut`; it has no normal-map output yet.
+- `M_BloodPaint_RuntimeTest` is the default standalone/template material loaded by the paint manager. `M_BloodBrush_Circle` is the brush draw material used to paint the mask RT.
+- Generated variants live in `/Game/Prophecy/BloodTexturePainting/Generated` with suffix `_BloodPaint`. `EditorEnsureBloodMaterialTemplate` duplicates the source material/instance and injects the shared blood-surface function plus mask/intensity/debug parameters.
+- For normal materials, the generated graph currently captures original BaseColor/Roughness/Specular/Metallic, lerps them against the blood-surface outputs using the saturated blood mask, and reconnects those material properties.
+- For materials using `MP_MaterialAttributes`, the generated graph currently keeps the original full attributes as input 0 of `SetMaterialAttributes`, extracts the original attributes through `GetMaterialAttributes`, and overrides only BaseColor/Roughness/Specular/Metallic. This preservation rule is important for Fab/complex source materials.
+- Current generated variants do not capture or reconnect `MP_Normal`. A blood normal-map feature must add a `UseBloodNormal` static switch and `BloodNormalTexture` texture parameter, layer blood normal over the original normal only inside the blood mask, and connect the final normal both for regular property graphs and `SetMaterialAttributes` graphs.
+- Because existing `_BloodPaint` variants were generated without any normal connection, adding blood normals requires a one-time regeneration/update of generated variants. After that, appearance tweaks inside `MF_BloodPaintSurface` can propagate through material recompilation.
+
 ## Useful Commands
 
 Build:
@@ -233,50 +268,59 @@ Request a settled live screenshot:
 - Current A/B captures: raw `Saved/BloodFluidAB/A_raw_singlepass_layer_blur_1782500710.png`, fluid `Saved/BloodFluidAB/B_fluid_singlepass_layer_blur_1782500716.png`.
 - Added `Saved/ProphecyBloodFluidABTest.py` as the explicit A/B harness. `raw` removes all blood PP blendables so the original sphere/cylinder look is visible, `stencil` enables only the white stencil mask, and `fluid` restores Extract -> BlurH -> BlurV -> Composite for the fake-fluid blob look. Off mode really removes the blendables so it is useful for both visual and perf comparison.
 
-## 2026-06-26 - Blood GPU Fake-Fluid Post Process
-- Enabled persistent CustomDepth stencil in config with `r.CustomDepth=3`.
-- Baked `NS_bloodsplat` defaults to render custom depth with stencil value 42.
-- Enabled `Allow Custom Depth Writes` on translucent `M_blood_final`.
-- Generated PP materials for stencil debug plus Extract -> BlurH -> BlurV -> Composite under `/Game/_mygame/blood2/PP_Fluid`.
-- Kept the existing `_PPM_blood` as scratch/debug and avoided depending on DecalManager stencil nodes.
-- Created assets: /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_StencilDebug42, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Extract, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurH, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurV, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Composite
+## 2026-06-28 - Blood Fluid Debug State And Unreal Workflow
 
-## 2026-06-26 - Blood GPU Fake-Fluid Post Process
-- Enabled persistent CustomDepth stencil in config with `r.CustomDepth=3`.
-- Baked `NS_bloodsplat` defaults to render custom depth with stencil value 42.
-- Enabled `Allow Custom Depth Writes` on translucent `M_blood_final`.
-- Generated PP materials for stencil debug plus Extract -> BlurH -> BlurV -> layer-style Composite under `/Game/_mygame/blood2/PP_Fluid`.
-- Kept the existing `_PPM_blood` as scratch/debug and avoided depending on DecalManager stencil nodes.
-- Created assets: /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_StencilDebug42, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Extract, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurH, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurV, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Composite
+- Active fake-fluid blood post process is still a screen-space layer reconstruction over the normal scene, not a true separate blood render layer. It uses `PostProcessInput0`, `CustomStencil == 42`, `SceneDepth`, `CustomDepth`, `BlurRadius`, `Threshold`, `Softness`, and `BlurSampleQuality`.
+- Added `/Game/_mygame/blood2/PP_Fluid/M_PP_Blood_DebugStages` and the controller property `Prophecy|Blood Fluid PP|Debug > Debug Stage`. Stage `7` is the current/original PP behavior.
+- Debug stages:
+  - `0`: raw scene passthrough.
+  - `1`: custom stencil mask only.
+  - `2`: scene isolated by stencil.
+  - `3`: scene isolated by stencil and red/blood signal.
+  - `4`: blurred stencil footprint with flat blood color.
+  - `5`: blurred footprint with red/blood signal gating.
+  - `6`: threshold/softness applied to the blurred layer.
+  - `7`: stage 6 plus depth occlusion/source preservation, matching the current composite behavior.
+- Current interpretation of the editor-vs-PIE debug: the blur footprint can exist while color differs because alpha/coverage comes from stencil/redness blur and color is reconstructed from `PostProcessInput0`; stage 6 is the useful breakpoint for diagnosing that mismatch.
+- Runtime stain architecture direction: keep screen-space fake-fluid for the big wet/blood volume, but use runtime texture painting for precise mesh stains. Large PCG rocks/trees can be promoted on hit: read the hit `InstancedStaticMeshComponent` and `Hit Item` instance index, get the instance transform in world space, spawn a stainable actor at that transform, and suppress the original instance by per-instance hide if available or by updating that instance transform/scale. Do not remove instances unless index churn is explicitly handled.
+- For instanced mesh hits, never use the ISM component transform as the rock/tree transform; use `GetInstanceTransform(HitItem, WorldSpace=true)`.
 
-## 2026-06-26 - Blood GPU Fake-Fluid Post Process
-- Enabled persistent CustomDepth stencil in config with `r.CustomDepth=3`.
-- Baked `NS_bloodsplat` defaults to render custom depth with stencil value 42.
-- Enabled `Allow Custom Depth Writes` on translucent `M_blood_final`.
-- Generated PP materials for stencil debug plus Extract -> BlurH -> BlurV -> layer-style Composite under `/Game/_mygame/blood2/PP_Fluid`.
-- Kept the existing `_PPM_blood` as scratch/debug and avoided depending on DecalManager stencil nodes.
-- Created assets: /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_StencilDebug42, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Extract, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurH, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurV, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Composite
+## 2026-06-28 - Runtime Texture Paint / Skeletal Mesh State
 
-## 2026-06-26 - Blood GPU Fake-Fluid Post Process
-- Enabled persistent CustomDepth stencil in config with `r.CustomDepth=3`.
-- Baked `NS_bloodsplat` defaults to render custom depth with stencil value 42.
-- Enabled `Allow Custom Depth Writes` on translucent `M_blood_final`.
-- Generated PP materials for stencil debug plus Extract -> BlurH -> BlurV -> layer-style Composite under `/Game/_mygame/blood2/PP_Fluid`.
-- Kept the existing `_PPM_blood` as scratch/debug and avoided depending on DecalManager stencil nodes.
-- Created assets: /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_StencilDebug42, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_SceneCopy, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Extract, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurH, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurV, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Composite
+- `AProphecyBloodTexturePaintManager::TryPaintFromHit` now honors `BrushRadiusWorld`; brush draw size is converted to render-target pixels instead of always using `DefaultBrushSizePixels`.
+- Runtime texture painting now accepts `UMeshComponent` and supports both static and skeletal/skinned mesh components. Generated blood-paint materials include skeletal mesh usage.
+- The first skeletal implementation worked but was too slow because `USkinnedMeshComponent::GetCPUSkinnedVertices()` flushes/CPU-skins the mesh; we removed that hot-path call.
+- Current skeletal fallback builds a cached LOD0 reference-pose triangle/UV table per skinned asset and indexes candidate triangles by influencing bone. Runtime hits use `Hit.BoneName`, the current bone transform, and the reference pose transform to find the nearest cached triangle and UV.
+- Large brush stamps on skeletal meshes can still bleed across packed UV islands because the active renderer stamps one 2D circle into the material RT. Cheap mitigation added: estimate UV density from the matched triangle and cap skinned mesh stamp diameter to 48 RT pixels. This avoids scene captures, UV-island masks, and extra draw passes, but it is not as exact as an unwrap/capture workflow.
+- Verification: UHT processed cleanly; Live Coding produced `UnrealEditor-GameAnimationSample3.patch_10`; UBT ended with `Result: Succeeded`. UBA still logged memory-pressure retries before succeeding, so keep disk/pagefile headroom available during Unreal compiles.
 
-## 2026-06-26 - Blood GPU Fake-Fluid Post Process
-- Enabled persistent CustomDepth stencil in config with `r.CustomDepth=3`.
-- Baked `NS_bloodsplat` defaults to render custom depth with stencil value 42.
-- Enabled `Allow Custom Depth Writes` on translucent `M_blood_final`.
-- Generated PP materials for stencil debug plus Extract -> BlurH -> BlurV -> layer-style Composite under `/Game/_mygame/blood2/PP_Fluid`.
-- Kept the existing `_PPM_blood` as scratch/debug and avoided depending on DecalManager stencil nodes.
-- Created assets: /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_StencilDebug42, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Extract, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurH, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurV, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Composite
+## 2026-06-28 - Foliage Floor Decal Grid
 
-## 2026-06-26 - Blood GPU Fake-Fluid Post Process
-- Enabled persistent CustomDepth stencil in config with `r.CustomDepth=3`.
-- Baked `NS_bloodsplat` defaults to render custom depth with stencil value 42.
-- Enabled `Allow Custom Depth Writes` on translucent `M_blood_final`.
-- Generated PP materials for stencil debug plus Extract -> BlurH -> BlurV -> layer-style Composite under `/Game/_mygame/blood2/PP_Fluid`.
-- Kept the existing `_PPM_blood` as scratch/debug and avoided depending on DecalManager stencil nodes.
-- Created assets: /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_StencilDebug42, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Extract, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurH, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_BlurV, /Game/_mygame/blood2/PP_Fluid/M_PP_Blood_Composite
+- Added `UProphecyFoliageDecalGridComponent`, a Blueprint-spawnable component intended to live on `A_DecalManager`.
+- New Blueprint entry point: call `AddFloorHitToGrid(Hit, RadiusCm)` from the floor-hit branch. It validates the floor normal, snaps the stain footprint to a tight 2D XY grid, and spawns square decal components only for covered cells that are not already occupied by an active same-size tile or a merged parent tile.
+- There is no opacity/intensity argument anymore; this path assumes the decal material is already opaque/authoritative and only uses the configured material/color.
+- Optional grid bounds are exposed with `bLimitGridSize`, `GridOrigin`, `GridSizeCells`, and `CellSizeCm`. When enabled, floor hits outside the configured grid are ignored.
+- The cleanup/merge path is budgeted and incremental. The component owns a timer (`MergeProcessIntervalSeconds`) that calls `ProcessPendingMerges()`. It scans only active stained tiles, never the whole map grid, and checks at most `MaxStainedPointsScannedPerPass` active keys while sweeping back and forth through the active list.
+- Complete 2x2 blocks are queued and then replaced with one parent decal under `MaxMergeChecksPerPass`, `MaxMergesPerPass`, and `MergeBudgetMs`.
+- Runtime control nodes are exposed for the merge/remesh pass: `StartMergeProcessing`, `StopMergeProcessing`, `SetMergeProcessingEnabled`, and `IsMergeProcessingEnabled`. The `bAutoProcessMerges` checkbox is the initial BeginPlay behavior.
+- Added Blueprint Function Library wrapper nodes for easier graph discovery: `Add Floor Hit To Foliage Decal Grid`, `Set Foliage Grid Merge Processing Enabled`, and typed/ref variants for active decal access and bounds debug drawing.
+- Added debug draw nodes for the active decal bounds: `Draw Active Foliage Grid Decal Bounds`, `Draw Foliage Grid Decal Bounds`, and `Draw Foliage Grid Decal Bounds Ref`. They draw each current active decal projection box from the real decal component transform/size, optionally color-coded by merge level, so child boxes should disappear and larger parent boxes appear as remeshing progresses. `BoundsHeightCm` only changes the debug box height; it does not change the real decal projection depth. Set it to `0` to visualize the full decal depth.
+- Live PIE investigation of an apparent merge stall showed the merge timer was still active, `PendingMergeCount` was `0`, and there were no complete candidates under the old fixed quadtree phase. Some visually adjacent 2x2 blocks straddled the global even/odd parent boundary, so the old `floor(child / 2)` parent rule could never merge them.
+- Updated the remesher key model so tile `X/Y` are leaf-cell origins at every merge level. `TryEnqueueParentMerge` now checks the four possible parent positions around each child, allowing sliding 2x2 merges instead of only global even/even quadtree merges. `OccupiedLeafKeys` tracks stained leaf cells so duplicate hits stay blocked even after the visible decals merge upward.
+- After the structural Live Coding change, `A_DecalManager` briefly hit a Blueprint type mismatch between `LIVECODING Prophecy Foliage Decal Grid Component 2` and the normal component class. The actor wrapper nodes were removed. Use the `... Ref` nodes when the graph has a component reference that Live Coding temporarily treats as a different class; they accept `UObject*` and call the grid component by reflection when needed. Restarting the editor still normalizes class names.
+- Exposed tuning knobs include `CellSizeCm`, `MaxCellsPerHit`, `MaxActiveDecals`, `MaxMergeLevel`, projection depth/offset, decal material/color, fade screen size, active-scan budget, merge budget, and stats/debug counters.
+- This is a runtime decal-count merger, not a mesh bake. For foliage-only staining, the receiving materials/render setup still needs to make foliage receive the decal effect while the floor ignores it or uses a harmless response.
+- Verification: direct Live Coding UBT with `-NoUBA` succeeded after adding/refining the component and again after adding the bounds debug nodes. The open editor was memory-stressed earlier, so restart the editor if the new component or nodes do not immediately appear in Blueprint search.
+
+## Unreal Bridge / Assistant Working Rules
+
+- For nontrivial Unreal/engine technical questions, look up current external references before settling on an answer or implementation. Prefer Epic/Unreal official docs, UE 5.7 engine source, API references, and relevant Epic forum/issue threads; do not rely on memory alone for Unreal internals, performance behavior, or edge-case APIs.
+- Prefer the live-editor Python bridge for targeted Unreal operations. It uses `remote_execution.py` from `C:\Program Files\Epic Games\UE_5.7\Engine\Plugins\Experimental\PythonScriptPlugin\Content\Python` and executes Python in the open editor through `RemoteExecution.run_command(..., exec_mode=MODE_EXEC_FILE)`.
+- Use `UnrealEditor-Cmd.exe -run=pythonscript` for clean headless asset-generation scripts when live viewport state does not matter. Use the live bridge when the task depends on the currently opened level, PIE/editor world, selected actors, or current visual state.
+- Visual work rule: do not claim a visual fix without showing or inspecting an actual screenshot/crop. For editor/PIE mismatch work, capture both modes from the same camera/view before drawing conclusions.
+- `HighResShot ... filename="..."` through the correct world is the reliable Unreal-rendered capture path. Desktop/window screenshots are only a fallback and can capture the wrong foreground app.
+- Pressing Play is allowed when the user asks for PIE verification, but first confirm the current visual/camera when that is the variable under test. PIE creates a copied world, so controller/MID/material parameter state must be checked in the PIE world, not only the editor world.
+- Keep Unreal edits surgical: one hypothesis, one small change, one visual check. Do not redesign a working editor effect to fix PIE until the exact mismatch stage is isolated.
+- When adding debug tools, keep the production material intact when possible; add separate debug materials/properties and default them to the production-equivalent state.
+- Avoid pushing bulky/recoverable Unreal data unless explicitly requested. Track scripts, C++ source, and irreplaceable assets; skip `Binaries`, `Intermediate`, `DerivedDataCache`, autosaves, logs, and accidental content copies.
+- Live Coding patch link failure note: `ProphecyEditor` hit `LNK2011: precompiled object not linked in` while linking `UnrealEditor-ProphecyEditor.patch_0.exe`, specifically through `ProphecySeedMetaHumanCommandlet.cpp.obj`. `Source/ProphecyEditor/ProphecyEditor.Build.cs` now uses `PCHUsageMode.NoPCHs`, and `ProphecySeedMetaHumanCommandlet.cpp` explicitly includes `Editor.h` for `GEditor`. Verification: Live Coding UBT with `-NoUBA` succeeded after this change.
