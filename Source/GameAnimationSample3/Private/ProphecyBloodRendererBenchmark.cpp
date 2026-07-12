@@ -29,7 +29,7 @@ namespace
 {
 DEFINE_LOG_CATEGORY_STATIC(LogProphecyBloodRendererBenchmark, Log, All);
 
-FString ResolveProjectPath(const FString& Path)
+FString ResolveBloodBenchmarkProjectPath(const FString& Path)
 {
 	if (Path.IsEmpty())
 	{
@@ -561,7 +561,7 @@ void AProphecyBloodRendererBenchmarkActor::RequestBenchmarkScreenshot()
 		ScreenshotPath = FString::Printf(TEXT("Saved/BloodRendererBenchmarks/%s_%d.png"), *GetMethodName(), Samples.Num());
 	}
 
-	const FString ResolvedScreenshotPath = ResolveProjectPath(ScreenshotPath);
+	const FString ResolvedScreenshotPath = ResolveBloodBenchmarkProjectPath(ScreenshotPath);
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(ResolvedScreenshotPath), true);
 	FScreenshotRequest::RequestScreenshot(ResolvedScreenshotPath, false, false);
 	UE_LOG(LogProphecyBloodRendererBenchmark, Display, TEXT("Requested blood benchmark screenshot: %s"), *ResolvedScreenshotPath);
@@ -611,7 +611,7 @@ void AProphecyBloodRendererBenchmarkActor::FinishBenchmark()
 	UE_LOG(LogProphecyBloodRendererBenchmark, Display, TEXT("========== Prophecy Blood Renderer Benchmark Summary =========="));
 	UE_LOG(LogProphecyBloodRendererBenchmark, Display, TEXT("method=%s stains=%d updates_per_frame=%d"), *GetMethodName(), Samples.Num(), UpdatesPerFrame);
 	UE_LOG(LogProphecyBloodRendererBenchmark, Display, TEXT("populate_ms=%.3f populate_flush_ms=%.3f chunk_first_ms=%.3f chunk_last_ms=%.3f chunk_max_ms=%.3f"), PopulateTotalMs, PopulateFlushMs, FirstChunkMs, LastChunkMs, MaxChunkMs);
-	UE_LOG(LogProphecyBloodRendererBenchmark, Display, TEXT("fps=%.2f update_batch_ms=%.4f warm_frames=%lld warm_seconds=%.3f screenshot=%s json=%s"), FPS, UpdateMs, WarmFrameCount, WarmDeltaSeconds, *ResolveProjectPath(ScreenshotPath), *ResolveProjectPath(JsonPath));
+	UE_LOG(LogProphecyBloodRendererBenchmark, Display, TEXT("fps=%.2f update_batch_ms=%.4f warm_frames=%lld warm_seconds=%.3f screenshot=%s json=%s"), FPS, UpdateMs, WarmFrameCount, WarmDeltaSeconds, *ResolveBloodBenchmarkProjectPath(ScreenshotPath), *ResolveBloodBenchmarkProjectPath(JsonPath));
 
 	if (bExitWhenDone)
 	{
@@ -626,7 +626,7 @@ void AProphecyBloodRendererBenchmarkActor::SaveJsonSummary() const
 		return;
 	}
 
-	const FString ResolvedJsonPath = ResolveProjectPath(JsonPath);
+	const FString ResolvedJsonPath = ResolveBloodBenchmarkProjectPath(JsonPath);
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(ResolvedJsonPath), true);
 
 	double MaxChunkMs = 0.0;
@@ -648,7 +648,7 @@ void AProphecyBloodRendererBenchmarkActor::SaveJsonSummary() const
 	Root->SetNumberField(TEXT("warm_update_batch_ms"), WarmFrameCount > 0 ? WarmUpdateSeconds * 1000.0 / double(WarmFrameCount) : 0.0);
 	Root->SetNumberField(TEXT("warm_frames"), WarmFrameCount);
 	Root->SetNumberField(TEXT("warm_seconds"), WarmDeltaSeconds);
-	Root->SetStringField(TEXT("screenshot_path"), ResolveProjectPath(ScreenshotPath));
+	Root->SetStringField(TEXT("screenshot_path"), ResolveBloodBenchmarkProjectPath(ScreenshotPath));
 
 	TArray<TSharedPtr<FJsonValue>> Chunks;
 	for (const double ChunkMs : PopulateChunkMs)
