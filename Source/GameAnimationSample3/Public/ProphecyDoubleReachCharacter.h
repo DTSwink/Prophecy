@@ -45,6 +45,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach|Upper Body Motion Limit", meta = (ClampMin = "1.0", Units = "deg/s"))
 	float MaxSpineAngularSpeedDegreesPerSecond = 240.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach|Hand Motion Limit", meta = (ClampMin = "0.0", Units = "cm/s"))
+	float MaxHandVelocityCmPerSecond = 300.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach|Hand Motion Limit", meta = (ClampMin = "0.0", Units = "cm/s"))
+	float MaxElbowVelocityCmPerSecond = 360.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach|Debug")
 	bool bShowTargetMarkers = true;
 

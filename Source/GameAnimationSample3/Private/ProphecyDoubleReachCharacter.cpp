@@ -150,6 +150,8 @@ void AProphecyDoubleReachCharacter::SyncAnimInstance()
 	ReachAnim->UpperBodySmoothingHalfLife = UpperBodySmoothingHalfLife;
 	ReachAnim->MaxPelvisTranslationSpeedCmPerSecond = MaxPelvisTranslationSpeedCmPerSecond;
 	ReachAnim->MaxSpineAngularSpeedDegreesPerSecond = MaxSpineAngularSpeedDegreesPerSecond;
+	ReachAnim->MaxHandVelocityCmPerSecond = MaxHandVelocityCmPerSecond;
+	ReachAnim->MaxElbowVelocityCmPerSecond = MaxElbowVelocityCmPerSecond;
 	ReachAnim->ReachMode = ReachMode;
 
 	const FTransform MeshToWorld = CharacterMesh->GetComponentTransform();

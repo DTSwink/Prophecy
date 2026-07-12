@@ -477,3 +477,16 @@ Request a settled live screenshot:
   map camera, perpetual sphere motion, hidden marker cubes, forced test-only bone
   refresh, and continuous reach. Visual capture:
   `Saved/Screenshots/WindowsEditor/HighresScreenshot00008.png`.
+- Added independent `MaxHandVelocityCmPerSecond` and
+  `MaxElbowVelocityCmPerSecond` controls to the character and native animation
+  instance. Defaults are `300 cm/s` and `360 cm/s`; `0` disables either limit.
+  Active hand targets are advanced with a constant-speed component-space limit,
+  initialized from the current animated hand whenever that arm enters reach.
+- Elbows are constrained after the final mode blend. Each elbow moves toward its
+  natural IK result at the configured speed, then projects onto the exact feasible
+  two-bone elbow circle. This preserves the hand endpoint and both arm segment
+  lengths while suppressing pole/branch travel. With a deliberately low
+  `120 cm/s` elbow setting, both-arm PIE p95 speeds were `100.0` and `116.7 cm/s`;
+  upper-arm and forearm length variation remained approximately `1e-13 cm`.
+  Feasible-circle motion caused rare world-space peaks above the requested value,
+  which is unavoidable when shoulder/hand constraints themselves move faster.

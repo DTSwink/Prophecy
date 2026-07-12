@@ -390,6 +390,37 @@ FArmResult SolveArm(const FArmSpec& Spec, const FVector& Shoulder, const FVector
 	return Result;
 }
 
+FVector ProjectElbowToFeasibleCircle(
+	const FArmSpec& Spec,
+	const FVector& Shoulder,
+	const FVector& Hand,
+	const FVector& NaturalElbow,
+	const FVector& RequestedElbow)
+{
+	const FVector Raw = Hand - Shoulder;
+	const double ReachDistance = Raw.Length();
+	if (ReachDistance <= 1.0e-9)
+	{
+		return NaturalElbow;
+	}
+
+	const FVector Direction = Raw / ReachDistance;
+	const double Along =
+		(Spec.UpperLength * Spec.UpperLength
+			- Spec.LowerLength * Spec.LowerLength
+			+ ReachDistance * ReachDistance)
+		/ (2.0 * ReachDistance);
+	const double Height = FMath::Sqrt(FMath::Max(
+		0.0,
+		Spec.UpperLength * Spec.UpperLength - Along * Along));
+	const FVector Center = Shoulder + Direction * Along;
+	FVector RequestedBend = RequestedElbow - Center;
+	RequestedBend -= Direction * FVector::DotProduct(RequestedBend, Direction);
+	FVector NaturalBend = NaturalElbow - Center;
+	NaturalBend -= Direction * FVector::DotProduct(NaturalBend, Direction);
+	return Center + SafeNormal(RequestedBend, SafeNormal(NaturalBend, PreferredBend(Spec, Direction))) * Height;
+}
+
 FLegResult SolveLeg(const FSourcePose& Source, const FLegSpec& Spec, const FVector& Hip)
 {
 	FLegResult Result;
@@ -970,6 +1001,13 @@ int32 ResolveModeKeys(const EProphecyDoubleReachMode Mode, int32 Keys[2])
 	}
 }
 
+bool ModeUsesHand(const EProphecyDoubleReachMode Mode, const int32 Key)
+{
+	return Mode == EProphecyDoubleReachMode::Both
+		|| (Mode == EProphecyDoubleReachMode::Left && Key == LeftKey)
+		|| (Mode == EProphecyDoubleReachMode::Right && Key == RightKey);
+}
+
 FSolveResult SolveModeWithBodyParameters(
 	const FSourcePose& Source,
 	const FVector Targets[2],
@@ -1146,6 +1184,8 @@ protected:
 		UpperBodySmoothingHalfLife = FMath::Max(0.0f, Instance->UpperBodySmoothingHalfLife);
 		MaxPelvisTranslationSpeedCmPerSecond = FMath::Max(1.0f, Instance->MaxPelvisTranslationSpeedCmPerSecond);
 		MaxSpineAngularSpeedDegreesPerSecond = FMath::Max(1.0f, Instance->MaxSpineAngularSpeedDegreesPerSecond);
+		MaxHandVelocityCmPerSecond = FMath::Max(0.0f, Instance->MaxHandVelocityCmPerSecond);
+		MaxElbowVelocityCmPerSecond = FMath::Max(0.0f, Instance->MaxElbowVelocityCmPerSecond);
 		EvaluationDeltaSeconds = FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
 
 		const EProphecyDoubleReachMode DesiredMode = Instance->bEnableReachSolver
@@ -1207,6 +1247,14 @@ protected:
 		}
 
 		if (SourceMode == EProphecyDoubleReachMode::Off
+			&& TargetMode == EProphecyDoubleReachMode::Off)
+		{
+			bFilteredHandTargetInitialized[LeftKey] = false;
+			bFilteredHandTargetInitialized[RightKey] = false;
+			bFilteredElbowInitialized[LeftKey] = false;
+			bFilteredElbowInitialized[RightKey] = false;
+		}
+		if (SourceMode == EProphecyDoubleReachMode::Off
 			&& TargetMode == EProphecyDoubleReachMode::Off
 			&& (!bEnableUpperBodyMotionLimit
 				|| !bFilteredBodyInitialized
@@ -1251,11 +1299,41 @@ protected:
 		Source.Legs[LeftKey] = MakeLegSpec(Source, true);
 		Source.Legs[RightKey] = MakeLegSpec(Source, false);
 
-		const FVector Targets[2] =
+		FVector Targets[2] =
 		{
 			LeftTargetComponentSpace * 0.01,
 			RightTargetComponentSpace * 0.01
 		};
+		for (int32 Key = 0; Key < 2; ++Key)
+		{
+			const bool bHandActive = ModeUsesHand(SourceMode, Key) || ModeUsesHand(TargetMode, Key);
+			const FVector SourceHand = At(Source.Positions, Source.Arms[Key].Hand);
+			if (!bHandActive)
+			{
+				bFilteredHandTargetInitialized[Key] = false;
+				Targets[Key] = SourceHand;
+				continue;
+			}
+
+			if (!bFilteredHandTargetInitialized[Key])
+			{
+				FilteredHandTargets[Key] = SourceHand;
+				bFilteredHandTargetInitialized[Key] = true;
+			}
+			if (MaxHandVelocityCmPerSecond <= UE_SMALL_NUMBER)
+			{
+				FilteredHandTargets[Key] = Targets[Key];
+			}
+			else
+			{
+				FilteredHandTargets[Key] = FMath::VInterpConstantTo(
+					FilteredHandTargets[Key],
+					Targets[Key],
+					EvaluationDeltaSeconds,
+					MaxHandVelocityCmPerSecond * 0.01f);
+			}
+			Targets[Key] = FilteredHandTargets[Key];
+		}
 		FJointTransforms SourceEndpoint = Source.ComponentTransforms;
 		FJointTransforms TargetEndpoint = Source.ComponentTransforms;
 		FSolveResult SourceSolved;
@@ -1326,14 +1404,19 @@ protected:
 			}
 		}
 
+		FJointTransforms FinalEndpoint;
+		for (int32 Index = 0; Index < JointCount; ++Index)
+		{
+			FinalEndpoint[Index].Blend(SourceEndpoint[Index], TargetEndpoint[Index], BlendAlpha);
+			FinalEndpoint[Index].NormalizeRotation();
+		}
+		ApplyElbowMotionLimit(Source, FinalEndpoint);
+
 		TArray<FBoneTransform, TInlineAllocator<JointCount>> BoneTransforms;
 		BoneTransforms.Reserve(JointCount - 1);
 		for (int32 Index = 1; Index < JointCount; ++Index)
 		{
-			FTransform FinalTransform;
-			FinalTransform.Blend(SourceEndpoint[Index], TargetEndpoint[Index], BlendAlpha);
-			FinalTransform.NormalizeRotation();
-			BoneTransforms.Emplace(CompactIndices[Index], FinalTransform);
+			BoneTransforms.Emplace(CompactIndices[Index], FinalEndpoint[Index]);
 		}
 		BoneTransforms.Sort([](const FBoneTransform& A, const FBoneTransform& B)
 		{
@@ -1347,6 +1430,68 @@ protected:
 	}
 
 private:
+	void ApplyElbowMotionLimit(
+		const ProphecyDoubleReach::FSourcePose& Source,
+		ProphecyDoubleReach::FJointTransforms& FinalEndpoint)
+	{
+		using namespace ProphecyDoubleReach;
+		for (int32 Key = 0; Key < 2; ++Key)
+		{
+			const bool bHandActive = ModeUsesHand(SourceMode, Key) || ModeUsesHand(TargetMode, Key);
+			if (!bHandActive)
+			{
+				bFilteredElbowInitialized[Key] = false;
+				continue;
+			}
+
+			const FArmSpec& Arm = Source.Arms[Key];
+			const int32 ShoulderIndex = JointIndex(Arm.Shoulder);
+			const int32 ElbowIndex = JointIndex(Arm.Elbow);
+			const int32 HandIndex = JointIndex(Arm.Hand);
+			const FVector Shoulder = FinalEndpoint[ShoulderIndex].GetTranslation() * 0.01;
+			const FVector NaturalElbow = FinalEndpoint[ElbowIndex].GetTranslation() * 0.01;
+			const FVector Hand = FinalEndpoint[HandIndex].GetTranslation() * 0.01;
+			if (!bFilteredElbowInitialized[Key])
+			{
+				FilteredElbows[Key] = At(Source.Positions, Arm.Elbow);
+				bFilteredElbowInitialized[Key] = true;
+			}
+
+			if (MaxElbowVelocityCmPerSecond <= UE_SMALL_NUMBER)
+			{
+				FilteredElbows[Key] = NaturalElbow;
+				continue;
+			}
+
+			const FVector RequestedElbow = FMath::VInterpConstantTo(
+				FilteredElbows[Key],
+				NaturalElbow,
+				EvaluationDeltaSeconds,
+				MaxElbowVelocityCmPerSecond * 0.01f);
+			const FVector FeasibleElbow = ProjectElbowToFeasibleCircle(
+				Arm,
+				Shoulder,
+				Hand,
+				NaturalElbow,
+				RequestedElbow);
+			FilteredElbows[Key] = FeasibleElbow;
+			FinalEndpoint[ElbowIndex].SetTranslation(FeasibleElbow * 100.0);
+			FinalEndpoint[ShoulderIndex].SetRotation(AlignRotation(
+				Source.ComponentTransforms[ShoulderIndex].GetRotation(),
+				At(Source.Positions, Arm.Elbow) - At(Source.Positions, Arm.Shoulder),
+				FeasibleElbow - Shoulder));
+			FinalEndpoint[ElbowIndex].SetRotation(AlignRotation(
+				Source.ComponentTransforms[ElbowIndex].GetRotation(),
+				At(Source.Positions, Arm.Hand) - At(Source.Positions, Arm.Elbow),
+				Hand - FeasibleElbow));
+			const FQuat HandSwing = FQuat::FindBetweenNormals(
+				SafeNormal(At(Source.Positions, Arm.Hand) - At(Source.Positions, Arm.Elbow)),
+				SafeNormal(Hand - FeasibleElbow));
+			FinalEndpoint[HandIndex].SetRotation(
+				(HandSwing * Source.ComponentTransforms[HandIndex].GetRotation()).GetNormalized());
+		}
+	}
+
 	UAnimSequenceBase* BaseAnimation = nullptr;
 	double AnimationTimeSeconds = 0.0;
 	float AnimationPlayRate = 1.0f;
@@ -1358,6 +1503,8 @@ private:
 	float UpperBodySmoothingHalfLife = 0.075f;
 	float MaxPelvisTranslationSpeedCmPerSecond = 180.0f;
 	float MaxSpineAngularSpeedDegreesPerSecond = 240.0f;
+	float MaxHandVelocityCmPerSecond = 300.0f;
+	float MaxElbowVelocityCmPerSecond = 360.0f;
 	EProphecyDoubleReachMode SourceMode = EProphecyDoubleReachMode::Off;
 	EProphecyDoubleReachMode TargetMode = EProphecyDoubleReachMode::Off;
 	double ModeBlendLinear = 1.0;
@@ -1365,6 +1512,10 @@ private:
 	bool bEnableUpperBodyMotionLimit = true;
 	bool bFilteredBodyInitialized = false;
 	ProphecyDoubleReach::FBodyParameters FilteredBodyParameters;
+	FVector FilteredHandTargets[2] = { FVector::ZeroVector, FVector::ZeroVector };
+	bool bFilteredHandTargetInitialized[2] = { false, false };
+	FVector FilteredElbows[2] = { FVector::ZeroVector, FVector::ZeroVector };
+	bool bFilteredElbowInitialized[2] = { false, false };
 
 	bool bCompactIndexCacheValid = false;
 	uint16 CachedBoneContainerSerial = 0;
