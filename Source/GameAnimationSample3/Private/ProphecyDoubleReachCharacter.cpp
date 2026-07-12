@@ -146,6 +146,10 @@ void AProphecyDoubleReachCharacter::SyncAnimInstance()
 	ReachAnim->AnimationPlayRate = AnimationPlayRate;
 	ReachAnim->bLoopAnimation = bLoopAnimation;
 	ReachAnim->TransitionDuration = TransitionDuration;
+	ReachAnim->bEnableUpperBodyMotionLimit = bEnableUpperBodyMotionLimit;
+	ReachAnim->UpperBodySmoothingHalfLife = UpperBodySmoothingHalfLife;
+	ReachAnim->MaxPelvisTranslationSpeedCmPerSecond = MaxPelvisTranslationSpeedCmPerSecond;
+	ReachAnim->MaxSpineAngularSpeedDegreesPerSecond = MaxSpineAngularSpeedDegreesPerSecond;
 	ReachAnim->ReachMode = ReachMode;
 
 	const FTransform MeshToWorld = CharacterMesh->GetComponentTransform();

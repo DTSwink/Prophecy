@@ -155,6 +155,62 @@ FBodyParameters ClampParameters(FBodyParameters Parameters)
 	return Parameters;
 }
 
+FBodyParameters BlendBodyParameters(
+	const FBodyParameters& From,
+	const FBodyParameters& To,
+	const double Alpha)
+{
+	FBodyParameters Result;
+	for (int32 Index = 0; Index < ParameterCount; ++Index)
+	{
+		SetParameter(Result, Index, FMath::Lerp(GetParameter(From, Index), GetParameter(To, Index), Alpha));
+	}
+	return Result;
+}
+
+FBodyParameters LimitBodyParameterMotion(
+	const FBodyParameters& Current,
+	const FBodyParameters& Target,
+	const double DeltaSeconds,
+	const double HalfLifeSeconds,
+	const double TranslationSpeedMetersPerSecond,
+	const double AngularSpeedRadiansPerSecond)
+{
+	if (DeltaSeconds <= UE_DOUBLE_SMALL_NUMBER)
+	{
+		return Current;
+	}
+
+	const double ResponseAlpha = HalfLifeSeconds <= UE_DOUBLE_SMALL_NUMBER
+		? 1.0
+		: 1.0 - FMath::Exp(-0.6931471805599453 * DeltaSeconds / HalfLifeSeconds);
+	FBodyParameters Result;
+	for (int32 Index = 0; Index < ParameterCount; ++Index)
+	{
+		const double CurrentValue = GetParameter(Current, Index);
+		const double TargetValue = GetParameter(Target, Index);
+		const double SpeedLimit = Index <= 2
+			? TranslationSpeedMetersPerSecond
+			: AngularSpeedRadiansPerSecond;
+		const double RequestedStep = (TargetValue - CurrentValue) * ResponseAlpha;
+		const double MaximumStep = FMath::Max(0.0, SpeedLimit) * DeltaSeconds;
+		SetParameter(Result, Index, CurrentValue + FMath::Clamp(RequestedStep, -MaximumStep, MaximumStep));
+	}
+	return ClampParameters(Result);
+}
+
+bool AreBodyParametersNearlyZero(const FBodyParameters& Parameters)
+{
+	for (int32 Index = 0; Index < ParameterCount; ++Index)
+	{
+		if (FMath::Abs(GetParameter(Parameters, Index)) > 1.0e-5)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 struct FArmSpec
 {
 	double Sign = 1.0;
@@ -895,39 +951,42 @@ FBodyPose SolveMarkovianBodyPose(
 	return Best;
 }
 
-FSolveResult SolveMode(
-	const FSourcePose& Source,
-	const FVector Targets[2],
-	const EProphecyDoubleReachMode Mode)
+int32 ResolveModeKeys(const EProphecyDoubleReachMode Mode, int32 Keys[2])
 {
-	int32 Keys[2] = { LeftKey, RightKey };
-	int32 KeyCount = 0;
+	Keys[0] = LeftKey;
+	Keys[1] = RightKey;
 	switch (Mode)
 	{
 	case EProphecyDoubleReachMode::Left:
 		Keys[0] = LeftKey;
-		KeyCount = 1;
-		break;
+		return 1;
 	case EProphecyDoubleReachMode::Right:
 		Keys[0] = RightKey;
-		KeyCount = 1;
-		break;
+		return 1;
 	case EProphecyDoubleReachMode::Both:
-		KeyCount = 2;
-		break;
+		return 2;
 	default:
-		break;
+		return 0;
 	}
+}
 
+FSolveResult SolveModeWithBodyParameters(
+	const FSourcePose& Source,
+	const FVector Targets[2],
+	const EProphecyDoubleReachMode Mode,
+	const FBodyParameters& Parameters)
+{
+	int32 Keys[2];
+	const int32 KeyCount = ResolveModeKeys(Mode, Keys);
 	FSolveResult Result;
 	Result.Positions = Source.Positions;
-	if (KeyCount == 0)
+	Result.Parameters = ClampParameters(Parameters);
+	if (KeyCount == 0 && AreBodyParametersNearlyZero(Result.Parameters))
 	{
 		return Result;
 	}
 
-	FBodyPose Body = SolveMarkovianBodyPose(Source, Targets, Keys, KeyCount);
-	Body = EvaluateBodyPose(Source, Body.Parameters, Targets, Keys, KeyCount);
+	FBodyPose Body = EvaluateBodyPose(Source, Result.Parameters, Targets, Keys, KeyCount);
 	for (int32 Index = 0; Index < KeyCount; ++Index)
 	{
 		const int32 Key = Keys[Index];
@@ -939,6 +998,24 @@ FSolveResult SolveMode(
 	Result.Positions = Body.Positions;
 	Result.Parameters = Body.Parameters;
 	return Result;
+}
+
+FSolveResult SolveMode(
+	const FSourcePose& Source,
+	const FVector Targets[2],
+	const EProphecyDoubleReachMode Mode)
+{
+	int32 Keys[2];
+	const int32 KeyCount = ResolveModeKeys(Mode, Keys);
+	if (KeyCount == 0)
+	{
+		FSolveResult Result;
+		Result.Positions = Source.Positions;
+		return Result;
+	}
+
+	const FBodyPose Body = SolveMarkovianBodyPose(Source, Targets, Keys, KeyCount);
+	return SolveModeWithBodyParameters(Source, Targets, Mode, Body.Parameters);
 }
 
 FQuat AlignRotation(
@@ -958,7 +1035,7 @@ void BuildEndpointTransforms(
 	FJointTransforms& Output)
 {
 	Output = Source.ComponentTransforms;
-	if (Mode == EProphecyDoubleReachMode::Off)
+	if (Mode == EProphecyDoubleReachMode::Off && AreBodyParametersNearlyZero(Solved.Parameters))
 	{
 		return;
 	}
@@ -1061,6 +1138,15 @@ protected:
 		LeftTargetComponentSpace = Instance->LeftTargetComponentSpace;
 		RightTargetComponentSpace = Instance->RightTargetComponentSpace;
 		TransitionDuration = FMath::Max(0.0f, Instance->TransitionDuration);
+		bEnableUpperBodyMotionLimit = Instance->bEnableUpperBodyMotionLimit;
+		if (!bEnableUpperBodyMotionLimit)
+		{
+			bFilteredBodyInitialized = false;
+		}
+		UpperBodySmoothingHalfLife = FMath::Max(0.0f, Instance->UpperBodySmoothingHalfLife);
+		MaxPelvisTranslationSpeedCmPerSecond = FMath::Max(1.0f, Instance->MaxPelvisTranslationSpeedCmPerSecond);
+		MaxSpineAngularSpeedDegreesPerSecond = FMath::Max(1.0f, Instance->MaxSpineAngularSpeedDegreesPerSecond);
+		EvaluationDeltaSeconds = FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
 
 		const EProphecyDoubleReachMode DesiredMode = Instance->bEnableReachSolver
 			? Instance->ReachMode
@@ -1121,7 +1207,10 @@ protected:
 		}
 
 		if (SourceMode == EProphecyDoubleReachMode::Off
-			&& TargetMode == EProphecyDoubleReachMode::Off)
+			&& TargetMode == EProphecyDoubleReachMode::Off
+			&& (!bEnableUpperBodyMotionLimit
+				|| !bFilteredBodyInitialized
+				|| AreBodyParametersNearlyZero(FilteredBodyParameters)))
 		{
 			Output.Pose.NormalizeRotations();
 			return true;
@@ -1169,19 +1258,74 @@ protected:
 		};
 		FJointTransforms SourceEndpoint = Source.ComponentTransforms;
 		FJointTransforms TargetEndpoint = Source.ComponentTransforms;
-
+		FSolveResult SourceSolved;
+		SourceSolved.Positions = Source.Positions;
+		FSolveResult TargetSolved;
+		TargetSolved.Positions = Source.Positions;
 		if (ModeBlendLinear < 1.0 && SourceMode != EProphecyDoubleReachMode::Off)
 		{
-			const FSolveResult SourceSolved = SolveMode(Source, Targets, SourceMode);
-			BuildEndpointTransforms(Source, SourceSolved, SourceMode, SourceEndpoint);
+			SourceSolved = SolveMode(Source, Targets, SourceMode);
 		}
 		if (TargetMode != EProphecyDoubleReachMode::Off)
 		{
-			const FSolveResult TargetSolved = SolveMode(Source, Targets, TargetMode);
-			BuildEndpointTransforms(Source, TargetSolved, TargetMode, TargetEndpoint);
+			TargetSolved = SolveMode(Source, Targets, TargetMode);
 		}
 
 		const double BlendAlpha = ModeBlendLinear >= 1.0 ? 1.0 : SmootherStep(ModeBlendLinear);
+		if (bEnableUpperBodyMotionLimit)
+		{
+			const FBodyParameters DesiredParameters = BlendBodyParameters(
+				SourceSolved.Parameters,
+				TargetSolved.Parameters,
+				BlendAlpha);
+			if (!bFilteredBodyInitialized)
+			{
+				FilteredBodyParameters = DesiredParameters;
+				bFilteredBodyInitialized = true;
+			}
+			else
+			{
+				FilteredBodyParameters = LimitBodyParameterMotion(
+					FilteredBodyParameters,
+					DesiredParameters,
+					EvaluationDeltaSeconds,
+					UpperBodySmoothingHalfLife,
+					MaxPelvisTranslationSpeedCmPerSecond * 0.01,
+					FMath::DegreesToRadians(MaxSpineAngularSpeedDegreesPerSecond));
+			}
+
+			const FSolveResult FilteredSource = SolveModeWithBodyParameters(
+				Source,
+				Targets,
+				SourceMode,
+				FilteredBodyParameters);
+			BuildEndpointTransforms(Source, FilteredSource, SourceMode, SourceEndpoint);
+			if (SourceMode == TargetMode)
+			{
+				TargetEndpoint = SourceEndpoint;
+			}
+			else
+			{
+				const FSolveResult FilteredTarget = SolveModeWithBodyParameters(
+					Source,
+					Targets,
+					TargetMode,
+					FilteredBodyParameters);
+				BuildEndpointTransforms(Source, FilteredTarget, TargetMode, TargetEndpoint);
+			}
+		}
+		else
+		{
+			if (ModeBlendLinear < 1.0 && SourceMode != EProphecyDoubleReachMode::Off)
+			{
+				BuildEndpointTransforms(Source, SourceSolved, SourceMode, SourceEndpoint);
+			}
+			if (TargetMode != EProphecyDoubleReachMode::Off)
+			{
+				BuildEndpointTransforms(Source, TargetSolved, TargetMode, TargetEndpoint);
+			}
+		}
+
 		TArray<FBoneTransform, TInlineAllocator<JointCount>> BoneTransforms;
 		BoneTransforms.Reserve(JointCount - 1);
 		for (int32 Index = 1; Index < JointCount; ++Index)
@@ -1210,10 +1354,17 @@ private:
 	FVector LeftTargetComponentSpace = FVector::ZeroVector;
 	FVector RightTargetComponentSpace = FVector::ZeroVector;
 	float TransitionDuration = 0.35f;
+	float EvaluationDeltaSeconds = 0.0f;
+	float UpperBodySmoothingHalfLife = 0.075f;
+	float MaxPelvisTranslationSpeedCmPerSecond = 180.0f;
+	float MaxSpineAngularSpeedDegreesPerSecond = 240.0f;
 	EProphecyDoubleReachMode SourceMode = EProphecyDoubleReachMode::Off;
 	EProphecyDoubleReachMode TargetMode = EProphecyDoubleReachMode::Off;
 	double ModeBlendLinear = 1.0;
 	bool bModeInitialized = false;
+	bool bEnableUpperBodyMotionLimit = true;
+	bool bFilteredBodyInitialized = false;
+	ProphecyDoubleReach::FBodyParameters FilteredBodyParameters;
 
 	bool bCompactIndexCacheValid = false;
 	uint16 CachedBoneContainerSerial = 0;

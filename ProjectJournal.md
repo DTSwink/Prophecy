@@ -437,3 +437,43 @@ Request a settled live screenshot:
 - Forcing mesh LOD index 3 (mesh LOD2) did not help in this sample: `47.38 FPS`. Hiding all 100 skeletal components also did not remove the plateau: `51.85 FPS`, with step timings input `0.2121 ms`, inference `1.6222 ms`, native output `6.5190 ms`, store `0.2265 ms`. Therefore do not assume skeletal rendering alone explains the current ~51 FPS result.
 - Startup temporarily took 964 seconds because earlier low-disk Zen 507 failures left 11,885 shaders uncached. After disk space was restored, Zen reported healthy and the shader pass completed/stored successfully. Do not delete DDC or shader caches before the next benchmark.
 - Next session: first add and build permanent `r.DontLimitOnBattery=1`; then profile the ~51 FPS plateau with Unreal Insights/stat unit in foreground versus standalone/game launch, verify whether editor/viewport/power-state overhead dominates, and only then optimize the native 30 Hz cleanup/IK or adopt `USkeletalMeshComponentBudgeted`/Animation Budget Allocator. Re-run warmed baseline and overlay with the same camera and power state. Exact native-vs-pushed-rollout numeric parity instrumentation is also still pending.
+
+## 2026-07-12 - Perpetual Ball Reach Test And Upper-Body Motion Limit
+
+- Added `AProphecyDoubleReachBallTest` and the placeable Blueprint
+  `/Game/_mygame/locomotion/BP_ProphecyDoubleReachBallTest`. It creates six
+  invisible collision walls, two visible physics spheres, and a spawned
+  `BP_ProphecyDoubleReachCharacter` whose left/right targets continuously follow
+  the spheres.
+- The spheres use no gravity, zero linear/angular damping, CCD, zero-friction and
+  restitution-1 physical material overrides, disabled sleep stabilization, and a
+  constant-speed guard. The invisible walls block only physics bodies; the balls
+  ignore the mannequin and each other. Bounds, sphere radius, speed, initial
+  offsets/directions, transition duration, and optional debug bounds are exposed.
+- Added the dedicated map
+  `/Game/_mygame/locomotion/L_DoubleReachBallTest`. Open it and press Play: the
+  harness camera automatically becomes the view target and frames the complete
+  test. Target-marker cubes are hidden, while the test-only mannequin forces bone
+  refresh so visibility heuristics cannot silently pause the procedural pose.
+- Added an optional temporal upper-body motion-limit pass to the native animation
+  proxy. The deterministic target-only solver still selects the desired pose; the
+  presentation pass applies frame-rate-independent half-life smoothing plus hard
+  speed limits to the six shared body parameters, then analytically solves the
+  arms again from the filtered torso against the current targets. This avoids bone
+  stretching and keeps hand pursuit responsive, but intentionally introduces
+  previous-frame state in the presentation layer.
+- Exposed controls on both the character and animation instance:
+  `bEnableUpperBodyMotionLimit` (default true),
+  `UpperBodySmoothingHalfLife` (default `0.075 s`),
+  `MaxPelvisTranslationSpeedCmPerSecond` (default `180 cm/s`), and
+  `MaxSpineAngularSpeedDegreesPerSecond` (default `240 deg/s`). Set the enable
+  checkbox false to recover the exact unsmoothed Markovian output.
+- Eight-second A/B audit used the same perpetual-ball setup at `260 cm/s`. Without
+  the pass, maximum single-frame displacement was `13.00 cm` pelvis, `20.43 cm`
+  upper spine, and `27.49 cm` head. With the pass it fell to `2.65 cm`, `3.39 cm`,
+  and `5.14 cm`. Hand spikes fell from `11.22/17.00 cm` to `4.33/4.33 cm`, matching
+  the spheres' own per-frame travel rather than a solver branch acceleration.
+- Normal closed-editor UBT succeeded. Actual PIE verification confirmed the saved
+  map camera, perpetual sphere motion, hidden marker cubes, forced test-only bone
+  refresh, and continuous reach. Visual capture:
+  `Saved/Screenshots/WindowsEditor/HighresScreenshot00008.png`.

@@ -33,6 +33,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach", meta = (ClampMin = "0.0", Units = "s"))
 	float TransitionDuration = 0.35f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach|Upper Body Motion Limit")
+	bool bEnableUpperBodyMotionLimit = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach|Upper Body Motion Limit", meta = (ClampMin = "0.0", Units = "s"))
+	float UpperBodySmoothingHalfLife = 0.075f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach|Upper Body Motion Limit", meta = (ClampMin = "1.0", Units = "cm/s"))
+	float MaxPelvisTranslationSpeedCmPerSecond = 180.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach|Upper Body Motion Limit", meta = (ClampMin = "1.0", Units = "deg/s"))
+	float MaxSpineAngularSpeedDegreesPerSecond = 240.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Double Reach|Debug")
 	bool bShowTargetMarkers = true;
 
