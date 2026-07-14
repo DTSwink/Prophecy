@@ -1,0 +1,21 @@
+{
+  "name": "Prophecy Locomotion Lab",
+  "seed": 1337,
+  "simulation": {
+    "agent_count": 2,
+    "tick_rate_hz": 30.0,
+    "world_min": [-32.0, -24.0, 0.0],
+    "world_max": [32.0, 24.0, 0.0]
+  },
+  "atmosphere": {
+    "sky_color": [181, 199, 209, 255],
+    "ground_color": [78, 96, 75, 255],
+    "grid_color": [126, 141, 122, 110]
+  },
+  "camera": {
+    "focus": [0.0, 0.0, 0.0],
+    "distance": 17.5,
+    "yaw": 0.72,
+    "pitch": 0.55
+  }
+}

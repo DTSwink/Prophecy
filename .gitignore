@@ -39,6 +39,7 @@ Docs/old/
 *.ilk
 *.log
 *.tmp
+StandaloneSim/build*/
 __pycache__/
 *.pyc
 
