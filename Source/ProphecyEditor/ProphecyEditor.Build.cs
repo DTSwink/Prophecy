@@ -10,6 +10,7 @@ public class ProphecyEditor : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new[]
 		{
+			"AssetTools",
 			"Core",
 			"CoreUObject",
 			"Blutility",
@@ -24,6 +25,8 @@ public class ProphecyEditor : ModuleRules
 			"MetaHumanDefaultEditorPipeline",
 			"MetaHumanSDKRuntime",
 			"Projects",
+			"SkeletalMeshEditor",
+			"SkeletalMeshModifiers",
 			"UnrealEd"
 		});
 	}

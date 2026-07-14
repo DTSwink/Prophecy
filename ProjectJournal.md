@@ -1,6 +1,13 @@
 # Prophecy Project Journal
 
-Keep this file tight. Preserve only goals, rules, keeper settings, important paths, current working state, and next actions. Full historical archives live in `Docs/old/`.
+> **NON-NEGOTIABLE JOURNAL RULE — FINISHED STATE ONLY**
+>
+> Keep only durable, verified project state: current goals, rules, keeper settings,
+> important paths, completed implementation state, real remaining risks, and the
+> next actionable handoff. Never append investigation logs, research notes,
+> intermediate measurements, failed attempts, speculative diagnoses, or a
+> turn-by-turn account of the work. Replace obsolete state instead of accumulating
+> history. Put historical detail in `Docs/old/` only when it is genuinely useful.
 
 ## Current State
 
@@ -411,7 +418,10 @@ Request a settled live screenshot:
 - A second rooted conversion was created in `Saved/ConvertRokokoMotionLibraryForUnrealRooted.py` and imported with `Saved/ImportRokokoRootedCarrierAnimationsToUnreal.py`. It exports to `Saved/RokokoCarrierRootedFBX` and imports to `/Game/_mygame/Rokoko/FightAnimations_CarrierRooted`. It adds a ground `Root` bone, raises `Hips` to about `89 cm` in the reference pose, subtracts that same offset from Hips animation translation, imports eight `_Anim` clips, creates `IK_RokokoRooted_Xsens`, sets `Hips` as retarget root, and creates `RTG_RokokoRooted_to_UEFN`.
 - Current open issue as of the side chat: the rooted retarget preview no longer disappears, but the target pose is visibly contorted. Likely cause is still source skeleton/reference-pose or bone-axis conversion, not missing animation data. Inspect the Blender-converted rooted FBX before adding more retargeter tweaks; the first sanity check showed suspicious spine/limb reference transforms after export/import, so the next fix should preserve the original Rokoko rest pose orientation while providing a valid ground root/pelvis height for Unreal.
 
-- For nontrivial Unreal/engine technical questions, look up current external references before settling on an answer or implementation. Prefer Epic/Unreal official docs, UE 5.7 engine source, API references, and relevant Epic forum/issue threads; do not rely on memory alone for Unreal internals, performance behavior, or edge-case APIs.
+- Hard research gate for Unreal work: before answering or implementing any nontrivial engine, animation, rendering, physics, MetaHuman, asset-pipeline, or performance question, first run a focused web survey. Check current Epic documentation/API pages and UE 5.7 engine source, then search Epic forums/issues and credible examples for the same workflow or failure mode. Unreal is widely used; assume an established tool, pipeline, or known limitation may already exist.
+- Record the useful sources and the standard Unreal route considered in this journal. Do not begin a bespoke C++/Python replacement until the built-in or documented route has been identified and there is a concrete reason it cannot satisfy this project's behavior, performance, or automation constraints.
+- Research is not a one-time checkbox. If the first visual/runtime validation contradicts the implementation model, stop stacking local patches and search the exact symptom again before changing more code. A successful compile, skeleton-number audit, or plausible explanation is never a substitute for the relevant visual/runtime test.
+- For skeletal-mesh conversion and MetaHuman work specifically, investigate Epic's supported rigging, IK Retargeter, Skeleton Editing, Skin Weight Profiles/Transfer, Mesh Modeling, and MetaHuman assembly/export paths before modifying reference skeletons or skin weights manually. Never promote a converted mesh until the reference pose and representative extreme animations both pass side-by-side against the source skeleton.
 - Prefer the live-editor Python bridge for targeted Unreal operations. It uses `remote_execution.py` from `C:\Program Files\Epic Games\UE_5.7\Engine\Plugins\Experimental\PythonScriptPlugin\Content\Python` and executes Python in the open editor through `RemoteExecution.run_command(..., exec_mode=MODE_EXEC_FILE)`.
 - Use `UnrealEditor-Cmd.exe -run=pythonscript` for clean headless asset-generation scripts when live viewport state does not matter. Use the live bridge when the task depends on the currently opened level, PIE/editor world, selected actors, or current visual state.
 - Visual work rule: do not claim a visual fix without showing or inspecting an actual screenshot/crop. For editor/PIE mismatch work, capture both modes from the same camera/view before drawing conclusions.
@@ -490,3 +500,46 @@ Request a settled live screenshot:
   upper-arm and forearm length variation remained approximately `1e-13 cm`.
   Feasible-circle motion caused rare world-space peaks above the requested value,
   which is unavoidable when shoulder/hand constraints themselves move faster.
+
+## 2026-07-14 - MetaHuman UEFN-Proportion Assembly
+
+- The original MetaHuman Character `/Game/_mygame/MetaHumans/test` is preserved.
+  The editable fitted copy is `/Game/_mygame/MetaHumans/test_UEFNFit`; its final
+  fitted MetaHuman assembly is
+  `/Game/MetaHumans/test_UEFNExactFull/BP_test_UEFNExactFull` with body mesh
+  `/Game/MetaHumans/test_UEFNExactFull/Body/SKM_test_UEFNFit_BodyMesh`.
+- `/Game/_mygame/MetaHumans/SKM_test_UEFNJointCarrier` retains the full MetaHuman
+  skeleton and carries the 78 same-named reference joints from
+  `/Game/_mygame/SKM_UEFN_Mannequin`. Editor rebuild commands live in
+  `ProphecyEditorModule.cpp`: `Prophecy.MetaHuman.RemoveRigs` and
+  `Prophecy.MetaHuman.SetBodyJointsFromCarrier`.
+- Exact regeneration data is tracked in
+  `Tools/MetaHuman/skeleton_snapshots.json`; refresh it from an open editor with
+  `Tools/MetaHuman/export_skeleton_snapshots.py`. It contains the full 88-bone
+  UEFN and 342-bone fitted MetaHuman reference hierarchies, local/global
+  translations, quaternions, scales, asset paths, and fit recipe.
+- Direct-animation body:
+  `/Game/_mygame/MetaHumans/SKM_test_UEFNDirectBody`. It uses the actual
+  `/Game/_mygame/SK_UEFN_Mannequin` Skeleton asset, has the 78 shared deforming
+  bones in exact UEFN hierarchy/local reference transforms, and leaves the 10
+  UEFN attachment/weapon/IK auxiliaries skeleton-only. Building folds 18,351
+  helper influences on 6,288 vertices into surviving ancestors before pruning
+  264 MetaHuman-only bones, then regenerates all three LODs from corrected LOD0.
+- Direct full character:
+  `/Game/_mygame/MetaHumans/BP_test_UEFNDirect`. Its Body component uses the
+  direct UEFN-skeleton mesh. Its separate MetaHuman Face component retains facial
+  bones and `Face_AnimBP`; the construction script reinitializes that AnimBP after
+  components attach so it copies the UEFN-driven body pose by bone name.
+- `Tools/MetaHuman/build_uefn_direct_metahuman.py` is the authoritative build and
+  audit entry point. Run it through `UnrealEditor-Cmd.exe -run=pythonscript`; use
+  `--reuse-existing` for a non-destructive audit. Generated `Content/` assets are
+  intentionally recoverable from the tracked C++ commands, script, and snapshot.
+- Verified without any IK Retargeter: both the UEFN mannequin and the final
+  MetaHuman played
+  `/Game/Characters/UEFN_Mannequin/Animations/Sprint/M_Neutral_Sprint_Loop_F_L_20`
+  directly at automatic LOD2. The tested main-chain component pose matched within
+  `0.06445 cm` at the compressed left-foot sample, the face/body head position was
+  exact, and the clean commandlet audit passed with zero errors/warnings.
+- Visible UEFN/MetaHuman shoulder contours are not a joint-length metric. The
+  fitted head, neck, clavicle, and upper-arm pivots are concentric to within
+  `0.000045 cm`; the higher orange UEFN shoulder cap is mesh volume/skinning.
