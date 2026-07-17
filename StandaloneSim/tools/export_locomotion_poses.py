@@ -11,6 +11,33 @@ import numpy as np
 CLIPS = {
     "walk": Path("ue5/animations_omni_only_full/npz/M_Neutral_Walk_Loop_F.npz"),
     "run": Path("ue5/animation_run_omni_only/npz/M_Neutral_Run_Loop_F.npz"),
+    "idle": Path(
+        "training/slashes2/walk_run_sword_prep/authored_pruned_npz/"
+        "walk_omni/M_Neutral_Stand_Idle_Loop.npz"
+    ),
+}
+
+ACTION_CLIPS = {
+    "sword": (
+        Path("ue5/slashes/npz_fixedroot/slashL.npz"),
+        Path("ue5/slashes/npz_fixedroot/slashLD.npz"),
+        Path("ue5/slashes/npz_fixedroot/slashLU.npz"),
+        Path("ue5/slashes/npz_fixedroot/slashR.npz"),
+        Path("ue5/slashes/npz_fixedroot/slashRD.npz"),
+        Path("ue5/slashes/npz_fixedroot/slashRU.npz"),
+        Path("ue5/slashes/npz_fixedroot/pike.npz"),
+    ),
+    "melee": (
+        Path("ue5/slashes/melee_npz_fixedroot/headbutt.npz"),
+        Path("ue5/slashes/melee_npz_fixedroot/hookL.npz"),
+        Path("ue5/slashes/melee_npz_fixedroot/hookR.npz"),
+        Path("ue5/slashes/melee_npz_fixedroot/jabL.npz"),
+        Path("ue5/slashes/melee_npz_fixedroot/jabR.npz"),
+        Path("ue5/slashes/melee_npz_fixedroot/KickL.npz"),
+        Path("ue5/slashes/melee_npz_fixedroot/KickR.npz"),
+        Path("ue5/slashes/melee_npz_fixedroot/overL.npz"),
+        Path("ue5/slashes/melee_npz_fixedroot/overR.npz"),
+    ),
 }
 
 DRAW_JOINTS = (
@@ -86,7 +113,7 @@ def export_clip(mode: str, path: Path, source_path: Path) -> tuple[dict[str, obj
         "mode": mode,
         "fps": fps,
         "frame_count": int(local.shape[0]),
-        "cycle_distance_m": float(np.linalg.norm(root_xz[-1] - root_xz[0])),
+        "cycle_distance_m": 0.0 if mode == "idle" else float(np.linalg.norm(root_xz[-1] - root_xz[0])),
         "source_npz": source_path.as_posix(),
         "source_sha256": digest(path),
         "positions": np.round(local, 6).tolist(),
@@ -100,20 +127,37 @@ def export_clip(mode: str, path: Path, source_path: Path) -> tuple[dict[str, obj
     return clip, list(DRAW_JOINTS), body_parents
 
 
+def export_action_clip(category: str, path: Path, source_path: Path) -> tuple[dict[str, object], list[str], list[int]]:
+    clip, names, parents = export_clip(category, path, source_path)
+    clip.pop("mode")
+    clip.pop("cycle_distance_m")
+    clip["name"] = source_path.stem
+    clip["category"] = category
+    clip["duration_seconds"] = clip["frame_count"] / clip["fps"]
+    return clip, names, parents
+
+
 def main() -> None:
     args = parse_args()
     stepper_root = args.stepper_root.resolve()
     exported = [export_clip(mode, stepper_root / relative, relative) for mode, relative in CLIPS.items()]
+    exported_actions = [
+        export_action_clip(category, stepper_root / relative, relative)
+        for category, paths in ACTION_CLIPS.items()
+        for relative in paths
+    ]
     first_names = exported[0][1]
     first_parents = exported[0][2]
-    if any(names != first_names or parents != first_parents for _clip, names, parents in exported[1:]):
-        raise RuntimeError("Walk and run source rigs do not match.")
+    if any(names != first_names or parents != first_parents
+           for _clip, names, parents in exported[1:] + exported_actions):
+        raise RuntimeError("Exported source rigs do not match.")
     output = {
-        "schema": "prophecy.full-body-source-locomotion-poses.v1",
-        "source": "authored full-body FBX-converted source clips with draw-only skeleton pruning",
+        "schema": "prophecy.full-body-source-poses.v2",
+        "source": "authored full-body locomotion and attack clips with draw-only skeleton pruning",
         "joint_names": first_names,
         "parents": first_parents,
         "clips": [clip for clip, _names, _parents in exported],
+        "action_clips": [clip for clip, _names, _parents in exported_actions],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(output, separators=(",", ":")), encoding="utf-8")
@@ -122,6 +166,11 @@ def main() -> None:
         print(
             f"{clip['mode']}: {clip['frame_count']} full-body frames, "
             f"distance={clip['cycle_distance_m']:.5f}m, source={clip['source_sha256'][:12]}"
+        )
+    for clip in output["action_clips"]:
+        print(
+            f"{clip['category']}/{clip['name']}: {clip['frame_count']} full-body frames, "
+            f"duration={clip['duration_seconds']:.3f}s, source={clip['source_sha256'][:12]}"
         )
 
 
