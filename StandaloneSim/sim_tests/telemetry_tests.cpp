@@ -28,7 +28,7 @@ int main() {
         root["agents"][0]["equipment"]["sword_equipped"] == true &&
         root["agents"][0]["equipment"].contains("sword_state") &&
         root["agents"][0]["equipment"].contains("held_weapon") &&
-        root["agents"][0]["equipment"]["held_stick_id"] == 0U &&
+        root["agents"][0]["equipment"]["held_club_id"] == 0U &&
         root["agents"][0]["equipment"].contains("dropped_sword_position") &&
         root["agents"][0]["behavior"]["mode"] == "attack" &&
         root["agents"][0]["behavior"]["attack_target_id"] == 2U &&
@@ -60,6 +60,7 @@ int main() {
         root["agents"][0]["perception"].contains("scanning") &&
         root["agents"][0]["tactical_steering"].contains("mode") &&
         root["agents"][0]["tactical_steering"].contains("threat_count") &&
+        root["agents"][0]["tactical_steering"].contains("containment_influence") &&
         root["agents"][0]["tactical_steering"].contains("threat_arc_radians") &&
         root["agents"][0]["tactical_steering"].contains("nearest_peer_separation_radians") &&
         root["agents"][0]["tactical_steering"].contains("view_center_yaw_radians") &&
@@ -82,8 +83,9 @@ int main() {
         root["agents"][0]["wounds"]["right_leg"].contains("injured") &&
         root["agents"][0]["wounds"]["right_leg"].contains("badly_injured") &&
         root["agents"][0]["action"].contains("phase") &&
+        root["agents"][0]["action"]["kind"] == "pick_up_club" &&
         root["agents"][0]["action"].contains("weapon") &&
-        root["agents"][0]["action"]["target_stick_id"] == stick_id &&
+        root["agents"][0]["action"]["target_club_id"] == stick_id &&
         root["agents"][0]["action"].contains("target_position") &&
         root["agents"][0]["action"].contains("progress") &&
         root["agents"][0]["action"].contains("duration_seconds") &&
@@ -97,10 +99,12 @@ int main() {
         root["simulation"]["villain_agent_count"] == 1U &&
         root["simulation"]["attack_cooldown_seconds"] == 1.0f &&
         root["simulation"]["parried_attack_cooldown_seconds"] == 1.5f &&
+        root["simulation"]["attack_followup_probability"] == 0.5f &&
+        root["simulation"]["drawn_sword_attack_probability"] == 0.8f &&
         root["simulation"]["hit_probability"] == 0.2f &&
         root["simulation"]["parry_probability"] == 0.5f &&
-        root["simulation"]["stick_pickup_action_seconds"] == 1.0f &&
-        root["simulation"]["stick_drop_action_seconds"] == 0.1f &&
+        root["simulation"]["club_pickup_action_seconds"] == 1.0f &&
+        root["simulation"]["club_drop_action_seconds"] == 0.1f &&
         root["simulation"]["head_velocity_threshold_mps"] == 0.5f &&
         root["simulation"]["head_turn_speed_degrees_per_second"] == 360.0f &&
         root["simulation"]["proximity_threat_range_m"] == 3.0f &&
@@ -115,9 +119,12 @@ int main() {
         root["simulation"]["approach_sector_count"] == sim::kApproachSectorCount &&
         root["simulation"]["target_commitment_seconds"] == 1.5f &&
         root["simulation"]["sector_influence_distance_m"] == 30.0f &&
+        root["simulation"]["containment_early_influence"] == 0.1f &&
         root["simulation"]["sector_angle_variation_degrees"] == 12.0f &&
         root["simulation"]["sector_radius_variation_m"] == 0.15f &&
         root["simulation"]["ally_spacing_distance_m"] == 2.0f &&
+        root["simulation"]["crawl_speed_scale"] == 0.2f &&
+        root["simulation"]["crawl_turn_scale"] == 0.2f &&
         root["simulation"]["grunt_propagation_agent_limit"] == 5U &&
         root["simulation"].contains("head_yaw_limit_radians") &&
         root["simulation"].contains("head_pitch_limit_radians") &&
@@ -142,8 +149,8 @@ int main() {
         root["sound"]["events"].is_array() &&
         !root["sound"]["events"].empty() &&
         root["sound"]["events"][0].contains("recipient_count") &&
-        root["sticks"].size() == 1U && root["sticks"][0]["id"] == stick_id &&
-        root["sticks"][0]["holder_id"] == 0U &&
+        root["clubs"].size() == 1U && root["clubs"][0]["id"] == stick_id &&
+        root["clubs"][0]["holder_id"] == 0U &&
         root["agents"][0]["locomotion"]["future_roots"].size() == sim::kFutureRootWindow &&
         root["agents"][0]["locomotion"].contains("speed_stick_amplitude") &&
         !root.contains("battle_tuning");

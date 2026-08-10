@@ -53,9 +53,14 @@ inline constexpr std::size_t kApproachSectorCount = 8U;
 inline constexpr float kTargetAssignmentRateHz = 5.0f;
 inline constexpr float kDefaultTargetCommitmentSeconds = 1.5f;
 inline constexpr float kDefaultSectorInfluenceDistanceMeters = 30.0f;
+inline constexpr float kDefaultContainmentEarlyInfluence = 0.10f;
+inline constexpr float kDefaultAttackFollowupProbability = 0.50f;
+inline constexpr float kDefaultDrawnSwordAttackProbability = 0.80f;
 inline constexpr float kDefaultSectorAngleVariationDegrees = 12.0f;
 inline constexpr float kDefaultSectorRadiusVariationMeters = 0.15f;
 inline constexpr float kDefaultAllySpacingDistanceMeters = 2.0f;
+inline constexpr float kDefaultCrawlSpeedScale = 0.2f;
+inline constexpr float kDefaultCrawlTurnScale = 0.2f;
 inline constexpr std::uint32_t kMinTeamAgentCount = 0;
 inline constexpr std::uint32_t kMaxTeamAgentCount = 100;
 inline constexpr std::size_t kMaxSimulationAgentCount = 2U * kMaxTeamAgentCount;
@@ -206,6 +211,8 @@ struct SimulationConfig {
     float attack_range_m = 1.25f;
     float attack_cooldown_seconds = 1.0f;
     float parried_attack_cooldown_seconds = 1.5f;
+    float attack_followup_probability = kDefaultAttackFollowupProbability;
+    float drawn_sword_attack_probability = kDefaultDrawnSwordAttackProbability;
     float hit_probability = 0.2f;
     float parry_probability = 0.5f;
     float head_turn_speed_degrees_per_second = kDefaultHeadTurnSpeedDegreesPerSecond;
@@ -220,9 +227,12 @@ struct SimulationConfig {
     float follow_stop_distance_m = kDefaultFollowStopDistanceMeters;
     float target_commitment_seconds = kDefaultTargetCommitmentSeconds;
     float sector_influence_distance_m = kDefaultSectorInfluenceDistanceMeters;
+    float containment_early_influence = kDefaultContainmentEarlyInfluence;
     float sector_angle_variation_degrees = kDefaultSectorAngleVariationDegrees;
     float sector_radius_variation_m = kDefaultSectorRadiusVariationMeters;
     float ally_spacing_distance_m = kDefaultAllySpacingDistanceMeters;
+    float crawl_speed_scale = kDefaultCrawlSpeedScale;
+    float crawl_turn_scale = kDefaultCrawlTurnScale;
     std::array<float, kSwordAttackClipCount> sword_attack_stun_seconds =
         kDefaultSwordAttackStunSeconds;
     std::array<float, kMeleeAttackClipCount> melee_attack_stun_seconds =
@@ -336,6 +346,7 @@ struct AgentSnapshot {
     PerceptionSnapshot perception{};
     TacticalSteeringMode tactical_steering = TacticalSteeringMode::Direct;
     std::uint32_t tactical_threat_count = 0;
+    float tactical_containment_influence = 0.0f;
     float tactical_threat_arc_radians = 0.0f;
     float tactical_nearest_peer_separation_radians = 0.0f;
     float tactical_view_center_yaw_radians = 0.0f;
@@ -398,11 +409,18 @@ struct ReplayLog {
         std::uint64_t tick = 0;
         float attack_cooldown_seconds = 1.0f;
         float parried_attack_cooldown_seconds = 1.5f;
+        float attack_followup_probability = kDefaultAttackFollowupProbability;
+        float drawn_sword_attack_probability = kDefaultDrawnSwordAttackProbability;
         float parry_probability = 0.5f;
         std::array<float, kSwordAttackClipCount> sword_attack_stun_seconds =
             kDefaultSwordAttackStunSeconds;
         std::array<float, kMeleeAttackClipCount> melee_attack_stun_seconds =
             kDefaultMeleeAttackStunSeconds;
+    };
+    struct LocomotionOptionsEvent {
+        std::uint64_t tick = 0;
+        float crawl_speed_scale = kDefaultCrawlSpeedScale;
+        float crawl_turn_scale = kDefaultCrawlTurnScale;
     };
     struct WoundOptionsEvent {
         std::uint64_t tick = 0;
@@ -430,6 +448,7 @@ struct ReplayLog {
         std::uint64_t tick = 0;
         float target_commitment_seconds = kDefaultTargetCommitmentSeconds;
         float sector_influence_distance_m = kDefaultSectorInfluenceDistanceMeters;
+        float containment_early_influence = kDefaultContainmentEarlyInfluence;
         float sector_angle_variation_degrees = kDefaultSectorAngleVariationDegrees;
         float sector_radius_variation_m = kDefaultSectorRadiusVariationMeters;
         float ally_spacing_distance_m = kDefaultAllySpacingDistanceMeters;
@@ -451,6 +470,7 @@ struct ReplayLog {
         StickTransform transform{};
     };
     std::vector<ValidationEvent> validation_events{};
+    std::vector<LocomotionOptionsEvent> locomotion_options_events{};
     std::vector<CombatOptionsEvent> combat_options_events{};
     std::vector<WoundOptionsEvent> wound_options_events{};
     std::vector<LookOptionsEvent> look_options_events{};
@@ -501,8 +521,10 @@ public:
     bool RequestPickUpStick(EntityId agent_id, StickId stick_id) noexcept;
     bool RequestDropStick(EntityId agent_id) noexcept;
     bool HasTransientAgents() const noexcept;
+    void UpdateLocomotionOptions(float crawl_speed_scale, float crawl_turn_scale) noexcept;
     void UpdateCombatOptions(float attack_cooldown_seconds,
-        float parried_attack_cooldown_seconds, float parry_probability,
+        float parried_attack_cooldown_seconds, float attack_followup_probability,
+        float drawn_sword_attack_probability, float parry_probability,
         const std::array<float, kSwordAttackClipCount>& sword_attack_stun_seconds,
         const std::array<float, kMeleeAttackClipCount>& melee_attack_stun_seconds) noexcept;
     void UpdateWoundOptions(float melee_wound_gain, float wound_threshold,
@@ -516,8 +538,9 @@ public:
         float non_threatening_maximum_seconds,
         float follow_walk_distance_m, float follow_stop_distance_m) noexcept;
     void UpdateTacticsOptions(float target_commitment_seconds,
-        float sector_influence_distance_m, float sector_angle_variation_degrees,
-        float sector_radius_variation_m, float ally_spacing_distance_m) noexcept;
+        float sector_influence_distance_m, float containment_early_influence,
+        float sector_angle_variation_degrees, float sector_radius_variation_m,
+        float ally_spacing_distance_m) noexcept;
     bool ValidateAction(EntityId agent_id, std::uint64_t action_sequence, bool success) noexcept;
 
     void BeginReplay(const ReplayLog& replay) noexcept;

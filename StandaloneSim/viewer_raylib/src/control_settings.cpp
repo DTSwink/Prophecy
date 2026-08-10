@@ -77,6 +77,9 @@ void ClampSettings(ControlSettings& settings) {
         kMinTargetCommitmentSeconds, kMaxTargetCommitmentSeconds);
     settings.sector_influence_distance_m = std::clamp(settings.sector_influence_distance_m,
         kMinSectorInfluenceDistance, kMaxSectorInfluenceDistance);
+    settings.containment_early_influence = std::clamp(
+        settings.containment_early_influence,
+        kMinContainmentEarlyInfluence, kMaxContainmentEarlyInfluence);
     settings.sector_angle_variation_degrees = std::clamp(
         settings.sector_angle_variation_degrees,
         kMinSectorAngleVariationDegrees, kMaxSectorAngleVariationDegrees);
@@ -84,10 +87,20 @@ void ClampSettings(ControlSettings& settings) {
         kMinSectorRadiusVariation, kMaxSectorRadiusVariation);
     settings.ally_spacing_distance_m = std::clamp(settings.ally_spacing_distance_m,
         kMinAllySpacingDistance, kMaxAllySpacingDistance);
+    settings.crawl_speed_scale = std::clamp(
+        settings.crawl_speed_scale, kMinCrawlScale, kMaxCrawlScale);
+    settings.crawl_turn_scale = std::clamp(
+        settings.crawl_turn_scale, kMinCrawlScale, kMaxCrawlScale);
     settings.attack_cooldown_seconds = std::clamp(
         settings.attack_cooldown_seconds, kMinAttackCooldown, kMaxAttackCooldown);
     settings.parried_attack_cooldown_seconds = std::clamp(
         settings.parried_attack_cooldown_seconds, kMinAttackCooldown, kMaxAttackCooldown);
+    settings.attack_followup_probability = std::clamp(
+        settings.attack_followup_probability,
+        kMinAttackFollowupProbability, kMaxAttackFollowupProbability);
+    settings.drawn_sword_attack_probability = std::clamp(
+        settings.drawn_sword_attack_probability,
+        kMinDrawnSwordAttackProbability, kMaxDrawnSwordAttackProbability);
     settings.parry_probability = std::clamp(
         settings.parry_probability, kMinParryProbability, kMaxParryProbability);
     NormalizeStunDurations(settings.sword_attack_stun_seconds);
@@ -218,6 +231,15 @@ bool LoadControlSettings(const std::string& path, ControlSettings& settings, std
     if (root.contains("visualization") && root["visualization"].is_object()) {
         settings.sound_visualization = root["visualization"].value(
             "sound_events", settings.sound_visualization);
+        settings.xray_agents = root["visualization"].value(
+            "xray_agents", settings.xray_agents);
+    }
+    if (root.contains("locomotion") && root["locomotion"].is_object()) {
+        const Json& locomotion = root["locomotion"];
+        settings.crawl_speed_scale = locomotion.value(
+            "crawl_speed_scale", settings.crawl_speed_scale);
+        settings.crawl_turn_scale = locomotion.value(
+            "crawl_turn_scale", settings.crawl_turn_scale);
     }
     if (root.contains("tactics") && root["tactics"].is_object()) {
         const Json& tactics = root["tactics"];
@@ -225,6 +247,8 @@ bool LoadControlSettings(const std::string& path, ControlSettings& settings, std
             "target_commitment_seconds", settings.target_commitment_seconds);
         settings.sector_influence_distance_m = tactics.value(
             "sector_influence_distance_m", settings.sector_influence_distance_m);
+        settings.containment_early_influence = tactics.value(
+            "containment_early_influence", settings.containment_early_influence);
         settings.sector_angle_variation_degrees = tactics.value(
             "sector_angle_variation_degrees", settings.sector_angle_variation_degrees);
         settings.sector_radius_variation_m = tactics.value(
@@ -238,6 +262,10 @@ bool LoadControlSettings(const std::string& path, ControlSettings& settings, std
             "attack_cooldown_seconds", settings.attack_cooldown_seconds);
         settings.parried_attack_cooldown_seconds = combat.value(
             "parried_attack_cooldown_seconds", settings.parried_attack_cooldown_seconds);
+        settings.attack_followup_probability = combat.value(
+            "attack_followup_probability", settings.attack_followup_probability);
+        settings.drawn_sword_attack_probability = combat.value(
+            "drawn_sword_attack_probability", settings.drawn_sword_attack_probability);
         settings.parry_probability = combat.value("parry_probability", settings.parry_probability);
         if (combat.contains("sword_attack_stun_seconds")) {
             ReadFloatArray(combat["sword_attack_stun_seconds"], settings.sword_attack_stun_seconds);
@@ -295,6 +323,10 @@ bool SaveControlSettings(const std::string& path, const ControlSettings& setting
         {"transport", {
             {"arrow_repeat_ticks_per_second", clamped.arrow_repeat_ticks_per_second},
         }},
+        {"locomotion", {
+            {"crawl_speed_scale", clamped.crawl_speed_scale},
+            {"crawl_turn_scale", clamped.crawl_turn_scale},
+        }},
         {"look", {
             {"head_turn_speed_degrees_per_second",
                 clamped.head_turn_speed_degrees_per_second},
@@ -315,10 +347,12 @@ bool SaveControlSettings(const std::string& path, const ControlSettings& setting
         }},
         {"visualization", {
             {"sound_events", clamped.sound_visualization},
+            {"xray_agents", clamped.xray_agents},
         }},
         {"tactics", {
             {"target_commitment_seconds", clamped.target_commitment_seconds},
             {"sector_influence_distance_m", clamped.sector_influence_distance_m},
+            {"containment_early_influence", clamped.containment_early_influence},
             {"sector_angle_variation_degrees", clamped.sector_angle_variation_degrees},
             {"sector_radius_variation_m", clamped.sector_radius_variation_m},
             {"ally_spacing_distance_m", clamped.ally_spacing_distance_m},
@@ -326,6 +360,8 @@ bool SaveControlSettings(const std::string& path, const ControlSettings& setting
         {"combat", {
             {"attack_cooldown_seconds", clamped.attack_cooldown_seconds},
             {"parried_attack_cooldown_seconds", clamped.parried_attack_cooldown_seconds},
+            {"attack_followup_probability", clamped.attack_followup_probability},
+            {"drawn_sword_attack_probability", clamped.drawn_sword_attack_probability},
             {"parry_probability", clamped.parry_probability},
             {"sword_attack_stun_seconds", clamped.sword_attack_stun_seconds},
             {"melee_attack_stun_seconds", clamped.melee_attack_stun_seconds},

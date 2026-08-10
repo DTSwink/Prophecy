@@ -15,6 +15,7 @@ struct Vec2 {
 enum class LocomotionMode : std::uint8_t {
     Walk,
     Run,
+    Crawl,
 };
 
 enum class LocomotionResponse : std::uint8_t {
@@ -37,6 +38,8 @@ struct LocomotionIntent {
     double speed_direction_radians = 0.0;
     double speed_amplitude = 1.0;
     double orientation_yaw_radians = 0.0;
+    double speed_scale = 1.0;
+    double turn_scale = 1.0;
 };
 
 struct LocomotionState {

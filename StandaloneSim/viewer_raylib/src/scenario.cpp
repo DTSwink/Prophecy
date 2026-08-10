@@ -88,15 +88,21 @@ bool LoadScenario(const std::string& path, Scenario& scenario, std::string& erro
         loaded.simulation.unsheathe_action_seconds = simulation.value(
             "unsheathe_action_seconds", loaded.simulation.unsheathe_action_seconds);
         loaded.simulation.stick_pickup_action_seconds = simulation.value(
-            "stick_pickup_action_seconds", loaded.simulation.stick_pickup_action_seconds);
+            "club_pickup_action_seconds", simulation.value(
+                "stick_pickup_action_seconds", loaded.simulation.stick_pickup_action_seconds));
         loaded.simulation.stick_drop_action_seconds = simulation.value(
-            "stick_drop_action_seconds", loaded.simulation.stick_drop_action_seconds);
+            "club_drop_action_seconds", simulation.value(
+                "stick_drop_action_seconds", loaded.simulation.stick_drop_action_seconds));
         loaded.simulation.attack_range_m = simulation.value(
             "attack_range_m", loaded.simulation.attack_range_m);
         loaded.simulation.attack_cooldown_seconds = simulation.value(
             "attack_cooldown_seconds", loaded.simulation.attack_cooldown_seconds);
         loaded.simulation.parried_attack_cooldown_seconds = simulation.value(
             "parried_attack_cooldown_seconds", loaded.simulation.parried_attack_cooldown_seconds);
+        loaded.simulation.attack_followup_probability = simulation.value(
+            "attack_followup_probability", loaded.simulation.attack_followup_probability);
+        loaded.simulation.drawn_sword_attack_probability = simulation.value(
+            "drawn_sword_attack_probability", loaded.simulation.drawn_sword_attack_probability);
         loaded.simulation.hit_probability = simulation.value(
             "hit_probability", loaded.simulation.hit_probability);
         loaded.simulation.parry_probability = simulation.value(
@@ -129,6 +135,8 @@ bool LoadScenario(const std::string& path, Scenario& scenario, std::string& erro
             "target_commitment_seconds", loaded.simulation.target_commitment_seconds);
         loaded.simulation.sector_influence_distance_m = simulation.value(
             "sector_influence_distance_m", loaded.simulation.sector_influence_distance_m);
+        loaded.simulation.containment_early_influence = simulation.value(
+            "containment_early_influence", loaded.simulation.containment_early_influence);
         loaded.simulation.sector_angle_variation_degrees = simulation.value(
             "sector_angle_variation_degrees",
             loaded.simulation.sector_angle_variation_degrees);
@@ -136,6 +144,10 @@ bool LoadScenario(const std::string& path, Scenario& scenario, std::string& erro
             "sector_radius_variation_m", loaded.simulation.sector_radius_variation_m);
         loaded.simulation.ally_spacing_distance_m = simulation.value(
             "ally_spacing_distance_m", loaded.simulation.ally_spacing_distance_m);
+        loaded.simulation.crawl_speed_scale = simulation.value(
+            "crawl_speed_scale", loaded.simulation.crawl_speed_scale);
+        loaded.simulation.crawl_turn_scale = simulation.value(
+            "crawl_turn_scale", loaded.simulation.crawl_turn_scale);
         if (simulation.contains("sword_attack_stun_seconds")) {
             ReadFloatArray(simulation["sword_attack_stun_seconds"],
                 loaded.simulation.sword_attack_stun_seconds);
@@ -158,8 +170,14 @@ bool LoadScenario(const std::string& path, Scenario& scenario, std::string& erro
             "head_passed_out_seconds", loaded.simulation.head_passed_out_seconds);
         if (simulation.contains("world_min")) loaded.simulation.world_min = ReadVec3(simulation["world_min"], loaded.simulation.world_min);
         if (simulation.contains("world_max")) loaded.simulation.world_max = ReadVec3(simulation["world_max"], loaded.simulation.world_max);
-        if (simulation.contains("initial_sticks") && simulation["initial_sticks"].is_array()) {
-            for (const Json& entry : simulation["initial_sticks"]) {
+        const Json* initial_clubs = nullptr;
+        if (simulation.contains("initial_clubs") && simulation["initial_clubs"].is_array()) {
+            initial_clubs = &simulation["initial_clubs"];
+        } else if (simulation.contains("initial_sticks") && simulation["initial_sticks"].is_array()) {
+            initial_clubs = &simulation["initial_sticks"];
+        }
+        if (initial_clubs != nullptr) {
+            for (const Json& entry : *initial_clubs) {
                 if (!entry.is_object() ||
                     loaded.simulation.initial_sticks.size() >= sim::kMaxSimulationStickCount) continue;
                 sim::StickTransform transform{};

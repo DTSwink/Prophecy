@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <limits>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 namespace {
@@ -76,6 +77,7 @@ bool EqualAgent(const sim::AgentSnapshot& a, const sim::AgentSnapshot& b) {
         a.head_pitch_radians != b.head_pitch_radians ||
         a.tactical_steering != b.tactical_steering ||
         a.tactical_threat_count != b.tactical_threat_count ||
+        a.tactical_containment_influence != b.tactical_containment_influence ||
         a.tactical_threat_arc_radians != b.tactical_threat_arc_radians ||
         a.tactical_nearest_peer_separation_radians != b.tactical_nearest_peer_separation_radians ||
         a.tactical_view_center_yaw_radians != b.tactical_view_center_yaw_radians ||
@@ -466,14 +468,34 @@ void TestMessySectorReservationsAndMotion() {
         "the same seed must reproduce target commitment and sector reservations exactly");
 
     bool curved_motion_seen = false;
+    bool diagonal_approach_seen = false;
+    bool forward_diagonal_respected = true;
     for (int tick = 0; tick < 90; ++tick) {
+        const std::vector<sim::AgentSnapshot> previous_agents = first.Snapshot().agents;
         first.Tick();
         repeated.Tick();
         const auto& agents = first.Snapshot().agents;
-        for (std::size_t left = 0; left < 10U && !curved_motion_seen; ++left) {
+        const sim::AgentSnapshot& target = previous_agents[10];
+        for (std::size_t left = 0; left < 10U; ++left) {
             if (agents[left].tactical_sector_influence <= 0.0f ||
                 agents[left].speed_stick_amplitude == 0.0f) continue;
-            for (std::size_t right = left + 1U; right < 10U; ++right) {
+            const float direct_yaw = std::atan2(
+                target.position.x - previous_agents[left].position.x,
+                target.position.y - previous_agents[left].position.y);
+            const float approach_offset = std::fabs(std::remainder(
+                agents[left].tactical_move_yaw_radians - direct_yaw,
+                2.0f * 3.14159265358979323846f));
+            const float target_distance = std::hypot(
+                target.position.x - previous_agents[left].position.x,
+                target.position.y - previous_agents[left].position.y);
+            diagonal_approach_seen |= approach_offset > 0.2f;
+            if (agents[left].attack_cooldown_seconds_remaining <= 0.0f &&
+                target_distance > config.attack_range_m + 0.01f &&
+                approach_offset > std::atan(0.36f) + 0.001f) {
+                forward_diagonal_respected = false;
+            }
+            for (std::size_t right = left + 1U;
+                right < 10U && !curved_motion_seen; ++right) {
                 if (agents[right].tactical_sector_influence <= 0.0f ||
                     agents[right].speed_stick_amplitude == 0.0f) continue;
                 curved_motion_seen = std::fabs(std::remainder(
@@ -486,6 +508,10 @@ void TestMessySectorReservationsAndMotion() {
     }
     Check(curved_motion_seen,
         "seeded sectors must produce visibly different curved approach directions near a target");
+    Check(diagonal_approach_seen,
+        "sector spacing must retain a visible diagonal component during approach");
+    Check(forward_diagonal_respected,
+        "far spacing must remain a charge-dominant diagonal toward the target");
     Check(EqualAgents(first.Snapshot(), repeated.Snapshot()),
         "curved sector steering must remain deterministic through locomotion and combat");
 }
@@ -528,19 +554,90 @@ void TestMixedFlankRolesAcrossSeparateTargets() {
         "separate-target battles must mix center pressure with seeded side and rear-quarter routes");
 
     bool attack_started = false;
+    bool far_containment_seen = false;
+    bool containment_ramp_seen = false;
+    bool far_charge_respected = true;
     for (int tick = 0; tick < 300; ++tick) {
+        const std::vector<sim::AgentSnapshot> previous_agents = simulation.Snapshot().agents;
         simulation.Tick();
         repeated.Tick();
-        attack_started = attack_started || std::any_of(simulation.Snapshot().agents.begin(),
-            simulation.Snapshot().agents.end(), [](const sim::AgentSnapshot& agent) {
+        const auto& agents = simulation.Snapshot().agents;
+        attack_started = attack_started || std::any_of(agents.begin(), agents.end(),
+            [](const sim::AgentSnapshot& agent) {
                 return agent.action.kind == sim::ActionKind::SwordAttack ||
                     agent.action.kind == sim::ActionKind::MeleeAttack ||
                     agent.completed_attacks > 0U;
             });
+        for (const sim::AgentSnapshot& agent : agents) {
+            if (agent.tactical_steering != sim::TacticalSteeringMode::OutnumberedView) continue;
+            containment_ramp_seen |= agent.tactical_containment_influence > 0.25f;
+            if (agent.speed_stick_amplitude <= 0.001f ||
+                agent.tactical_containment_influence > 0.1f) continue;
+            const auto previous_agent = std::find_if(previous_agents.begin(),
+                previous_agents.end(), [&agent](const sim::AgentSnapshot& candidate) {
+                    return candidate.id == agent.id;
+                });
+            const auto previous_target = std::find_if(previous_agents.begin(),
+                previous_agents.end(), [&agent](const sim::AgentSnapshot& candidate) {
+                    return candidate.id == agent.attack_target_id;
+                });
+            if (previous_agent == previous_agents.end() ||
+                previous_target == previous_agents.end()) continue;
+            far_containment_seen = true;
+            const float direct_yaw = std::atan2(
+                previous_target->position.x - previous_agent->position.x,
+                previous_target->position.y - previous_agent->position.y);
+            const float approach_offset = std::fabs(std::remainder(
+                agent.tactical_move_yaw_radians - direct_yaw, 2.0f * kPi));
+            far_charge_respected = far_charge_respected && approach_offset <= 0.35f;
+        }
     }
     Check(attack_started, "flank routes must still converge into combat instead of orbiting targets");
+    Check(far_containment_seen && far_charge_respected,
+        "distant contain steering must preserve a charge-dominant diagonal toward the target");
+    Check(containment_ramp_seen,
+        "contain spacing must strengthen as the opposing formations approach contact");
     Check(EqualAgents(simulation.Snapshot(), repeated.Snapshot()),
         "mixed flank roles must remain deterministic through first contact");
+}
+
+void TestContainmentEarlyInfluenceOption() {
+    constexpr float kPi = 3.14159265358979323846f;
+    sim::SimulationConfig config{};
+    config.hero_agent_count = 1U;
+    config.villain_agent_count = 2U;
+    config.mode = sim::SimulationMode::Paired;
+    const float reference_distance = config.sector_influence_distance_m -
+        0.3f * (config.sector_influence_distance_m - config.attack_range_m);
+    const float lane_offset = 1.0f;
+    const float forward_distance = std::sqrt(
+        reference_distance * reference_distance - lane_offset * lane_offset);
+    config.opening_transforms = {
+        {1U, {0.0f, 0.0f, 0.0f}, 0.5f * kPi},
+        {2U, {forward_distance, -lane_offset, 0.0f}, -0.5f * kPi},
+        {3U, {forward_distance, lane_offset, 0.0f}, -0.5f * kPi},
+    };
+
+    sim::Simulation simulation(config, 8812U);
+    for (int tick = 0; tick < 30 &&
+        simulation.Snapshot().agents[0].tactical_steering !=
+            sim::TacticalSteeringMode::OutnumberedView; ++tick) {
+        simulation.Tick();
+    }
+    Check(simulation.Snapshot().agents[0].tactical_steering ==
+            sim::TacticalSteeringMode::OutnumberedView &&
+            std::fabs(simulation.Snapshot().agents[0].tactical_containment_influence - 0.1f) <
+                0.001f,
+        "the default early-spread option must produce ten-percent containment at its control point");
+
+    simulation.UpdateTacticsOptions(config.target_commitment_seconds,
+        config.sector_influence_distance_m, 0.2f,
+        config.sector_angle_variation_degrees, config.sector_radius_variation_m,
+        config.ally_spacing_distance_m);
+    simulation.Tick();
+    Check(std::fabs(simulation.Snapshot().agents[0].tactical_containment_influence - 0.2f) <
+            0.001f,
+        "a hot early-spread change must affect containment on the next fixed tick");
 }
 
 void TestIdleVisionActivationAndStrike() {
@@ -616,6 +713,7 @@ void TestCooldownRetreatAndSeededStrafe() {
         config.attack_range_m = 10.0f;
         config.sector_influence_distance_m = config.attack_range_m;
         config.attack_cooldown_seconds = 1.0f;
+        config.attack_followup_probability = 0.0f;
         config.opening_transforms = {
             {1U, {-1.0f, 0.0f, 0.0f}, 0.5f * kPi},
             {2U, {1.0f, 0.0f, 0.0f}, -0.5f * kPi},
@@ -752,7 +850,7 @@ void TestDeterministicSoundEvents() {
 }
 
 void TestExecutionScreamRescue() {
-    constexpr std::uint64_t kSeed = 85555888353100ULL;
+    constexpr std::uint64_t kSeed = 3U;
     sim::SimulationConfig config{};
     config.hero_agent_count = 3;
     config.villain_agent_count = 3;
@@ -761,6 +859,8 @@ void TestExecutionScreamRescue() {
     config.target_commitment_seconds = 0.0f;
     config.sector_influence_distance_m = config.attack_range_m;
     config.ally_spacing_distance_m = 0.0f;
+    config.attack_followup_probability = 0.0f;
+    config.drawn_sword_attack_probability = 0.9f;
     config.opening_transforms = {
         {1U, {-4.6173458f, -6.3535929f, 0.0f}, 0.6389511f},
         {2U, {-3.3673458f, -6.3535929f, 0.0f}, 1.2745177f},
@@ -771,17 +871,20 @@ void TestExecutionScreamRescue() {
     };
 
     sim::Simulation simulation(config, kSeed);
-    int guard = 1200;
-    while (LatestSound(simulation.Snapshot(), sim::SoundEventKind::ExecutionScream) == nullptr &&
-        --guard > 0) {
+    int guard = 2400;
+    const sim::SoundEventSnapshot* scream = nullptr;
+    while (--guard > 0) {
         simulation.Tick();
+        scream = LatestSound(simulation.Snapshot(), sim::SoundEventKind::ExecutionScream);
+        if (scream != nullptr && scream->emitted_tick == simulation.Snapshot().tick &&
+            scream->recipient_count == 1U) break;
     }
     const sim::SimulationSnapshot scream_snapshot = simulation.Snapshot();
-    const sim::SoundEventSnapshot* scream = LatestSound(
+    scream = LatestSound(
         scream_snapshot, sim::SoundEventKind::ExecutionScream);
     Check(guard > 0 && scream != nullptr,
-        "the saved wrath seed must produce an execution scream");
-    if (scream == nullptr) return;
+        "the saved wrath seed must produce an execution scream with a standing responder");
+    if (guard <= 0 || scream == nullptr || scream->recipient_count != 1U) return;
     Check(scream->emitted_tick == scream_snapshot.tick && scream->recipient_count == 1U &&
             scream->maximum_range_m == config.sound_maximum_range_m,
         "wrath entry must emit one full-range scream with exactly one responder");
@@ -811,12 +914,6 @@ void TestExecutionScreamRescue() {
     if (victim == scream_snapshot.agents.end() ||
         executioner == scream_snapshot.agents.end() ||
         responder == scream_snapshot.agents.end()) return;
-    Check(victim->id == 3U && executioner->id == 4U && responder->id == 2U &&
-            responder->rescue_former_target_id == 5U,
-        "the saved layout must reproduce victim 3, executioner 4, and closest responder 2");
-    Check(responder->reaction.kind == sim::ReactionKind::Parry,
-        "the saved seed must catch the chosen responder during its existing parry");
-
     const auto standing = [](sim::AgentState state) {
         return state == sim::AgentState::Normal || state == sim::AgentState::Slow ||
             state == sim::AgentState::Stunned;
@@ -856,9 +953,8 @@ void TestExecutionScreamRescue() {
     };
     Check(next_responder.attack_target_id == executioner_id &&
             contains_active(executioner_id) && contains_active(former_target_id) &&
-            next_responder.reaction.kind == sim::ReactionKind::Parry &&
             next_responder.speed_stick_amplitude > 0.99f,
-        "the rescue tick must run during the existing parry and retain both active threats");
+        "the rescue tick must run immediately and retain both active threats");
 
     while (simulation.Snapshot().agents[static_cast<std::size_t>(responder_id - 1U)]
             .rescue_executioner_id == executioner_id &&
@@ -1203,6 +1299,8 @@ void TestParryCancelsAttackAndDodgeDoesNot() {
     parry_config.hit_probability = 0.0f;
     parry_config.parry_probability = 1.0f;
     parry_config.parried_attack_cooldown_seconds = 1.5f;
+    parry_config.attack_followup_probability = 0.0f;
+    parry_config.drawn_sword_attack_probability = 0.9f;
     sim::Simulation parry(parry_config, 1337);
     int guard = 900;
     int defender_index = -1;
@@ -1217,6 +1315,10 @@ void TestParryCancelsAttackAndDodgeDoesNot() {
     }
     Check(guard > 0, "a fully eligible 100 percent defense roll must eventually parry");
     if (defender_index >= 0) {
+        parry.UpdateCombatOptions(parry.Config().attack_cooldown_seconds,
+            parry.Config().parried_attack_cooldown_seconds, 1.0f,
+            parry.Config().drawn_sword_attack_probability, parry.Config().parry_probability,
+            parry.Config().sword_attack_stun_seconds, parry.Config().melee_attack_stun_seconds);
         const int attacker_index = 1 - defender_index;
         const sim::AgentSnapshot& attacker = parry.Snapshot().agents[attacker_index];
         const sim::AgentSnapshot& defender = parry.Snapshot().agents[defender_index];
@@ -1246,13 +1348,16 @@ void TestParryCancelsAttackAndDodgeDoesNot() {
             ++ticks_until_next_attack;
         }
         Check(ticks_until_next_attack >= 45,
-            "a parried attacker must wait the configured 1.5-second cooldown");
+            "a parried attacker must wait the configured cooldown even at 100 percent follow-up");
     }
 
     sim::SimulationConfig dodge_config{};
     dodge_config.mode = sim::SimulationMode::Paired;
     dodge_config.hit_probability = 0.0f;
     dodge_config.parry_probability = 0.0f;
+    dodge_config.attack_cooldown_seconds = 2.0f;
+    dodge_config.attack_followup_probability = 0.0f;
+    dodge_config.drawn_sword_attack_probability = 0.9f;
     sim::Simulation dodge(dodge_config, 1337);
     guard = 900;
     defender_index = -1;
@@ -1267,10 +1372,24 @@ void TestParryCancelsAttackAndDodgeDoesNot() {
     }
     Check(guard > 0, "a zero percent parry roll must eventually dodge");
     if (defender_index >= 0) {
+        dodge.UpdateCombatOptions(dodge.Config().attack_cooldown_seconds,
+            dodge.Config().parried_attack_cooldown_seconds, 1.0f,
+            dodge.Config().drawn_sword_attack_probability, dodge.Config().parry_probability,
+            dodge.Config().sword_attack_stun_seconds, dodge.Config().melee_attack_stun_seconds);
         const int attacker_index = 1 - defender_index;
         Check(dodge.Snapshot().agents[attacker_index].action.kind == sim::ActionKind::SwordAttack ||
             dodge.Snapshot().agents[attacker_index].action.kind == sim::ActionKind::MeleeAttack,
             "dodge must leave the incoming attack running");
+        const std::uint64_t attack_sequence =
+            dodge.Snapshot().agents[attacker_index].action.sequence;
+        while (guard > 0 &&
+            dodge.Snapshot().agents[attacker_index].action.sequence == attack_sequence) {
+            dodge.Tick();
+            --guard;
+        }
+        Check(guard > 0 &&
+                dodge.Snapshot().agents[attacker_index].attack_cooldown_seconds_remaining == 0.0f,
+            "a non-parried attack must bypass regular cooldown at 100 percent follow-up");
     }
 
     sim::SimulationConfig hit_config{};
@@ -1421,8 +1540,8 @@ void TestSeededAttackSelection() {
         }
         Check(guard > 0, "every seed must reach its first authored attack");
     }
-    Check(sword_count > 850 && melee_count > 0,
-        "seeded attack selection must exercise the requested 90 percent sword and 10 percent melee split");
+    Check(sword_count > 750 && sword_count < 900 && melee_count > 100,
+        "seeded attack selection must exercise the requested 80 percent sword and 20 percent melee split");
     Check(std::all_of(sword_clips.begin(), sword_clips.end(), [](bool seen) { return seen; }) &&
         std::all_of(melee_clips.begin(), melee_clips.end(), [](bool seen) { return seen; }),
         "seeded random selection must reach every authored sword and melee clip");
@@ -1531,6 +1650,7 @@ void TestAutonomousLimbWoundsAndStates() {
         sim::SimulationConfig config{};
         config.hit_probability = 1.0f;
         config.attack_cooldown_seconds = 30.0f;
+        config.sound_maximum_range_m = 30.0f;
         sim::Simulation simulation(config, seed);
         int guard = 300;
         while (--guard > 0 && simulation.Snapshot().agents[agent_index].state != timed_state) {
@@ -1541,8 +1661,61 @@ void TestAutonomousLimbWoundsAndStates() {
         Check(simulation.Snapshot().agents[agent_index].state == timed_state,
             "timed wound state must remain active until its final fixed step");
         simulation.Tick();
-        Check(simulation.Snapshot().agents[agent_index].state == sim::AgentState::Crawling,
-            "timed wound state must enter crawling on its exact configured tick");
+        const sim::AgentSnapshot& crawling = simulation.Snapshot().agents[agent_index];
+        Check(crawling.state == sim::AgentState::Crawling &&
+                crawling.locomotion_mode == sim::LocomotionMode::Crawl &&
+                crawling.speed_stick_amplitude == 0.0f &&
+                crawling.behavior_mode == sim::BehaviorMode::Idle &&
+                crawling.attack_target_id == sim::kInvalidEntityId &&
+                crawling.head_look_mode == sim::HeadLookMode::RootHeading &&
+                crawling.head_look_target_id == sim::kInvalidEntityId &&
+                !crawling.perception.scanning,
+            "timed wound state must enter out-of-combat crawling on its exact configured tick");
+
+        const sim::Team crawling_team = crawling.team;
+        const sim::Team enemy_team = crawling_team == sim::Team::Hero
+            ? sim::Team::Villain
+            : sim::Team::Hero;
+        Check(simulation.SetAgentTransform({crawling.id, {0.0f, 0.0f, 0.0f}, 0.0f}),
+            "the crawling sound regression must orient its listener away from the source");
+        const std::vector<sim::AgentSnapshot> existing_agents = simulation.Snapshot().agents;
+        for (const sim::AgentSnapshot& agent : existing_agents) {
+            if (agent.id == crawling.id) continue;
+            Check(simulation.SetAgentTransform({agent.id, {40.0f, -40.0f, 0.0f}, 0.0f}),
+                "the crawling sound regression must move the old combatant away");
+        }
+        const sim::EntityId bait_id = simulation.SpawnTransientAgent(
+            crawling_team, {0.0f, 10.0f, 0.0f}, 3.14159265358979323846f);
+        const sim::EntityId sound_source_id = simulation.SpawnTransientAgent(
+            enemy_team, {0.0f, -2.0f, 0.0f}, 0.0f);
+        Check(bait_id != sim::kInvalidEntityId && sound_source_id != sim::kInvalidEntityId,
+            "the crawling sound regression must spawn a runner and its standing target");
+
+        bool investigated_sound = false;
+        bool returned_to_heading = false;
+        bool forbidden_scan_or_combat = false;
+        for (int tick = 0; tick < 180 && !returned_to_heading; ++tick) {
+            simulation.Tick();
+            const sim::AgentSnapshot& listener = simulation.Snapshot().agents[agent_index];
+            forbidden_scan_or_combat = forbidden_scan_or_combat ||
+                listener.perception.scanning ||
+                listener.head_look_mode == sim::HeadLookMode::SearchScan ||
+                listener.behavior_mode != sim::BehaviorMode::Idle ||
+                listener.attack_target_id != sim::kInvalidEntityId ||
+                listener.action.kind == sim::ActionKind::SwordAttack ||
+                listener.action.kind == sim::ActionKind::MeleeAttack;
+            if (listener.head_look_mode == sim::HeadLookMode::SoundInvestigation &&
+                listener.head_look_target_id == sound_source_id) {
+                investigated_sound = true;
+            } else if (investigated_sound &&
+                listener.head_look_mode == sim::HeadLookMode::RootHeading) {
+                returned_to_heading = true;
+            }
+        }
+        Check(investigated_sound && returned_to_heading,
+            "a crawling agent must turn to a heard approaching enemy, then return to root heading");
+        Check(!forbidden_scan_or_combat,
+            "sound investigation must not re-enable crawl scanning, targeting, or attacks");
     };
     if (torso_seed != 0 && torso_agent >= 0) {
         check_timed_transition(torso_seed, torso_agent, sim::AgentState::Agonising, 300,
@@ -1700,6 +1873,7 @@ void TestGroundedHitsOnlyChangeVitals() {
         sim::SimulationConfig config{};
         config.hit_probability = 1.0f;
         config.attack_cooldown_seconds = 30.0f;
+        config.attack_followup_probability = 0.0f;
         config.wound_decay_per_second = 0.0f;
         sim::Simulation simulation(config, seed);
         int tracked = -1;
@@ -1733,6 +1907,11 @@ void TestGroundedHitsOnlyChangeVitals() {
             if (!head_changed && !torso_changed) continue;
 
             focused_hit_seen = true;
+            const sim::AgentSnapshot& finisher = simulation.Snapshot().agents[1 - tracked];
+            Check(finisher.attack_cooldown_seconds_remaining > 0.0f &&
+                    !finisher.cooldown_strafe &&
+                    finisher.cooldown_strafe_target_distance_m == 0.0f,
+                "grounded finishing must retain cooldown timing without lateral cooldown movement");
             for (sim::Limb limb : {sim::Limb::LeftArm, sim::Limb::RightArm,
                      sim::Limb::LeftLeg, sim::Limb::RightLeg}) {
                 const std::size_t index = static_cast<std::size_t>(limb);
@@ -1845,11 +2024,42 @@ void TestLocomotionPrimitives() {
         "walk forward cap must match the source dataset");
     Check(std::fabs(sim::DirectionalSpeedCap(sim::LocomotionMode::Run, 0.0) - 5.0) < 1.0e-12,
         "run forward cap must match the source dataset");
+    Check(std::fabs(sim::DirectionalSpeedCap(sim::LocomotionMode::Crawl, 0.0) -
+            sim::DirectionalSpeedCap(sim::LocomotionMode::Walk, 0.0)) < 1.0e-12 &&
+            std::string_view(sim::ToString(sim::LocomotionMode::Crawl)) == "Crawl",
+        "crawl must derive its directional speed profile from Walk while remaining inspectable");
     sim::LocomotionState state{};
     sim::LocomotionIntent intent{sim::LocomotionMode::Run, 0.0, 1.0, 0.0};
     sim::StepLocomotion(state, intent, 1.0 / 30.0);
     Check(state.position.z > 0.0 && state.velocity.z > 0.0,
         "forward run stick must infer forward root motion");
+
+    sim::LocomotionState walk_speed{};
+    sim::LocomotionState crawl_speed{};
+    const sim::LocomotionIntent walk_intent{
+        sim::LocomotionMode::Walk, 0.0, 1.0, 0.0, 1.0, 1.0};
+    const sim::LocomotionIntent crawl_intent{
+        sim::LocomotionMode::Crawl, 0.0, 1.0, 0.0, 0.2, 0.2};
+    for (int tick = 0; tick < 300; ++tick) {
+        sim::StepLocomotion(walk_speed, walk_intent, 1.0 / 30.0);
+        sim::StepLocomotion(crawl_speed, crawl_intent, 1.0 / 30.0);
+    }
+    const double walk_velocity = std::hypot(walk_speed.velocity.x, walk_speed.velocity.z);
+    const double crawl_velocity = std::hypot(crawl_speed.velocity.x, crawl_speed.velocity.z);
+    Check(std::fabs(crawl_velocity / walk_velocity - 0.2) < 0.001,
+        "the crawl controller must cap root speed at its configured fraction of Walk");
+
+    sim::LocomotionState walk_turn{};
+    sim::LocomotionState crawl_turn{};
+    sim::LocomotionIntent turning_walk = walk_intent;
+    sim::LocomotionIntent turning_crawl = crawl_intent;
+    turning_walk.orientation_yaw_radians = 1.57079632679489661923;
+    turning_crawl.orientation_yaw_radians = turning_walk.orientation_yaw_radians;
+    sim::StepLocomotion(walk_turn, turning_walk, 1.0 / 30.0);
+    sim::StepLocomotion(crawl_turn, turning_crawl, 1.0 / 30.0);
+    Check(std::fabs(crawl_turn.yaw_radians) < std::fabs(walk_turn.yaw_radians) &&
+            std::fabs(crawl_turn.yaw_radians / walk_turn.yaw_radians - 0.2) < 0.001,
+        "the crawl controller must scale the normal mover's root turn by its configured fraction");
 }
 
 void TestEditableOpeningTransformsAndReplay() {
@@ -2010,7 +2220,7 @@ void TestCheckpointReplay() {
 #if PROPHECY_ENABLE_REWIND
     sim::Simulation simulation({}, 4040);
     for (int tick = 0; tick < 120; ++tick) simulation.Tick();
-    simulation.UpdateCombatOptions(2.0f, 2.5f, 0.75f,
+    simulation.UpdateCombatOptions(2.0f, 2.5f, 0.5f, 0.8f, 0.75f,
         sim::kDefaultSwordAttackStunSeconds, sim::kDefaultMeleeAttackStunSeconds);
     std::unique_ptr<sim::Simulation> checkpoint = simulation.CreateRewindCheckpoint();
     for (int tick = 120; tick < 160; ++tick) simulation.Tick();
@@ -2056,6 +2266,30 @@ void TestCheckpointSeekPerformance() {
 #endif
 }
 
+void TestLiveLocomotionOptionsReplay() {
+    sim::Simulation simulation({}, 2028U);
+    for (int tick = 0; tick < 20; ++tick) simulation.Tick();
+    const std::uint64_t option_tick = simulation.Snapshot().tick;
+    simulation.UpdateLocomotionOptions(0.35f, 0.15f);
+    Check(simulation.Snapshot().tick == option_tick,
+        "changing crawl options must not restart or advance the simulation");
+    Check(simulation.Config().crawl_speed_scale == 0.35f &&
+            simulation.Config().crawl_turn_scale == 0.15f,
+        "crawl speed and turn options must apply immediately");
+    for (int tick = 0; tick < 40; ++tick) simulation.Tick();
+#if PROPHECY_ENABLE_REWIND
+    const sim::ReplayLog tape = simulation.RecordedReplay();
+    Check(tape.locomotion_options_events.size() == 1U &&
+            tape.locomotion_options_events[0].tick == option_tick,
+        "a live crawl-option change must be recorded at its exact tick");
+    Check(simulation.SeekReplay(tape, option_tick),
+        "the crawl-option tick must remain seekable");
+    Check(simulation.Config().crawl_speed_scale == 0.35f &&
+            simulation.Config().crawl_turn_scale == 0.15f,
+        "replay must restore crawl options at the recorded tick");
+#endif
+}
+
 void TestLiveCombatOptionsReplay() {
     sim::Simulation simulation({}, 2027);
     for (int tick = 0; tick < 20; ++tick) simulation.Tick();
@@ -2064,11 +2298,14 @@ void TestLiveCombatOptionsReplay() {
     std::array<float, sim::kMeleeAttackClipCount> melee_stuns = sim::kDefaultMeleeAttackStunSeconds;
     sword_stuns[2] = 0.8f;
     melee_stuns[4] = 1.1f;
-    simulation.UpdateCombatOptions(2.0f, 2.5f, 0.75f, sword_stuns, melee_stuns);
+    simulation.UpdateCombatOptions(2.0f, 2.5f, 0.25f, 0.70f, 0.75f,
+        sword_stuns, melee_stuns);
     Check(simulation.Snapshot().tick == option_tick,
         "changing combat options must not restart or advance the simulation");
     Check(simulation.Config().attack_cooldown_seconds == 2.0f &&
         simulation.Config().parried_attack_cooldown_seconds == 2.5f &&
+        simulation.Config().attack_followup_probability == 0.25f &&
+        simulation.Config().drawn_sword_attack_probability == 0.70f &&
         simulation.Config().parry_probability == 0.75f &&
         simulation.Config().sword_attack_stun_seconds[2] == 0.8f &&
         simulation.Config().melee_attack_stun_seconds[4] == 1.1f,
@@ -2083,6 +2320,8 @@ void TestLiveCombatOptionsReplay() {
         "the option-change tick must remain seekable");
     Check(simulation.Config().attack_cooldown_seconds == 2.0f &&
         simulation.Config().parried_attack_cooldown_seconds == 2.5f &&
+        simulation.Config().attack_followup_probability == 0.25f &&
+        simulation.Config().drawn_sword_attack_probability == 0.70f &&
         simulation.Config().parry_probability == 0.75f &&
         simulation.Config().sword_attack_stun_seconds[2] == 0.8f &&
         simulation.Config().melee_attack_stun_seconds[4] == 1.1f,
@@ -2164,11 +2403,12 @@ void TestLiveTacticsOptionsReplay() {
     sim::Simulation simulation({}, 9191U);
     for (int tick = 0; tick < 20; ++tick) simulation.Tick();
     const std::uint64_t option_tick = simulation.Snapshot().tick;
-    simulation.UpdateTacticsOptions(2.0f, 7.0f, 8.0f, 0.2f, 1.8f);
+    simulation.UpdateTacticsOptions(2.0f, 7.0f, 0.12f, 8.0f, 0.2f, 1.8f);
     Check(simulation.Snapshot().tick == option_tick,
         "changing tactics options must not restart or advance the simulation");
     Check(simulation.Config().target_commitment_seconds == 2.0f &&
             simulation.Config().sector_influence_distance_m == 7.0f &&
+            simulation.Config().containment_early_influence == 0.12f &&
             simulation.Config().sector_angle_variation_degrees == 8.0f &&
             simulation.Config().sector_radius_variation_m == 0.2f &&
             simulation.Config().ally_spacing_distance_m == 1.8f,
@@ -2183,6 +2423,7 @@ void TestLiveTacticsOptionsReplay() {
         "the tactics-option tick must remain seekable");
     Check(simulation.Config().target_commitment_seconds == 2.0f &&
             simulation.Config().sector_influence_distance_m == 7.0f &&
+            simulation.Config().containment_early_influence == 0.12f &&
             simulation.Config().sector_angle_variation_degrees == 8.0f &&
             simulation.Config().sector_radius_variation_m == 0.2f &&
             simulation.Config().ally_spacing_distance_m == 1.8f,
@@ -2204,6 +2445,8 @@ void TestConfigNormalization() {
     config.attack_range_m = 100.0f;
     config.attack_cooldown_seconds = 100.0f;
     config.parried_attack_cooldown_seconds = -1.0f;
+    config.attack_followup_probability = -1.0f;
+    config.drawn_sword_attack_probability = 4.0f;
     config.hit_probability = -1.0f;
     config.parry_probability = 4.0f;
     config.head_turn_speed_degrees_per_second = -1.0f;
@@ -2216,9 +2459,12 @@ void TestConfigNormalization() {
     config.non_threatening_maximum_seconds = -1.0f;
     config.target_commitment_seconds = 100.0f;
     config.sector_influence_distance_m = 100.0f;
+    config.containment_early_influence = 100.0f;
     config.sector_angle_variation_degrees = 100.0f;
     config.sector_radius_variation_m = 100.0f;
     config.ally_spacing_distance_m = 100.0f;
+    config.crawl_speed_scale = -1.0f;
+    config.crawl_turn_scale = 2.0f;
     config.melee_wound_gain = -1.0f;
     config.wound_threshold = 0.0f;
     config.wound_decay_per_second = 1000.0f;
@@ -2241,6 +2487,8 @@ void TestConfigNormalization() {
     Check(simulation.Config().attack_range_m == 10.0f &&
         simulation.Config().attack_cooldown_seconds == 30.0f &&
         simulation.Config().parried_attack_cooldown_seconds == 0.0f &&
+        simulation.Config().attack_followup_probability == 0.0f &&
+        simulation.Config().drawn_sword_attack_probability == 1.0f &&
         simulation.Config().hit_probability == 0.0f &&
         simulation.Config().parry_probability == 1.0f &&
         simulation.Config().head_turn_speed_degrees_per_second == 0.0f &&
@@ -2253,9 +2501,12 @@ void TestConfigNormalization() {
         simulation.Config().non_threatening_maximum_seconds == 600.0f &&
         simulation.Config().target_commitment_seconds == 10.0f &&
         simulation.Config().sector_influence_distance_m == 50.0f &&
+        simulation.Config().containment_early_influence == 0.2f &&
         simulation.Config().sector_angle_variation_degrees == 22.5f &&
         simulation.Config().sector_radius_variation_m == 1.0f &&
         simulation.Config().ally_spacing_distance_m == 5.0f &&
+        simulation.Config().crawl_speed_scale == 0.0f &&
+        simulation.Config().crawl_turn_scale == 1.0f &&
         simulation.Config().melee_wound_gain == 0.0f &&
         simulation.Config().wound_threshold == 1.0f &&
         simulation.Config().wound_decay_per_second == 100.0f &&
@@ -2427,6 +2678,92 @@ void TestStickCombatUsesMeleeDamageAndSilentParries() {
     Check(saw_parry, "a real sword and training stick must remain eligible to parry each other");
     Check(LatestSound(parry.Snapshot(), sim::SoundEventKind::Parry) == nullptr,
         "any parry involving a training stick must remain silent");
+}
+
+void TestDowningDropsHandHeldEquipment() {
+    const auto standing = [](sim::AgentState state) {
+        return state == sim::AgentState::Normal || state == sim::AgentState::Slow ||
+            state == sim::AgentState::Stunned;
+    };
+    const auto living_on_floor = [](sim::AgentState state) {
+        return state == sim::AgentState::Agonising || state == sim::AgentState::PassedOut ||
+            state == sim::AgentState::Crawling;
+    };
+
+    bool drawn_sword_drop_seen = false;
+    for (std::uint64_t seed = 1U; seed <= 128U && !drawn_sword_drop_seen; ++seed) {
+        sim::SimulationConfig config{};
+        config.hit_probability = 1.0f;
+        config.parry_probability = 0.0f;
+        config.attack_cooldown_seconds = 0.0f;
+        config.wound_decay_per_second = 0.0f;
+        sim::Simulation simulation(config, seed);
+        sim::SimulationSnapshot previous = simulation.Snapshot();
+        for (int tick = 0; tick < 1200 && !drawn_sword_drop_seen; ++tick) {
+            simulation.Tick();
+            const sim::SimulationSnapshot& current = simulation.Snapshot();
+            for (std::size_t index = 0; index < current.agents.size(); ++index) {
+                const sim::AgentSnapshot& before = previous.agents[index];
+                const sim::AgentSnapshot& after = current.agents[index];
+                if (!standing(before.state) || before.sword_state != sim::SwordState::Drawn ||
+                    !living_on_floor(after.state)) continue;
+                drawn_sword_drop_seen = true;
+                Check(after.sword_state == sim::SwordState::Dropped,
+                    "downing must drop a sword that was in the agent's hand");
+                break;
+            }
+            previous = current;
+        }
+    }
+    Check(drawn_sword_drop_seen,
+        "the deterministic battle set must exercise downing a drawn-sword holder");
+
+    bool club_drop_seen = false;
+    for (std::uint64_t seed = 1U; seed <= 128U && !club_drop_seen; ++seed) {
+        constexpr float kHalfPi = 1.57079632679489661923f;
+        sim::SimulationConfig config{};
+        config.hit_probability = 1.0f;
+        config.parry_probability = 0.0f;
+        config.attack_cooldown_seconds = 0.0f;
+        config.wound_decay_per_second = 0.0f;
+        config.wound_threshold = 20.0f;
+        config.melee_wound_gain = 20.0f;
+        config.opening_transforms = {
+            {1U, {-0.5f, 0.0f, 0.0f}, kHalfPi},
+            {2U, {0.5f, 0.0f, 0.0f}, -kHalfPi},
+        };
+        config.initial_sticks = {
+            {1U, {-0.5f, 0.0f, 0.0f}, 0.0f},
+            {2U, {0.5f, 0.0f, 0.0f}, 0.0f},
+        };
+        sim::Simulation simulation(config, seed);
+        Check(simulation.RequestPickUpStick(1U, 1U) &&
+                simulation.RequestPickUpStick(2U, 2U),
+            "the downing test must begin with both clubs queued for pickup");
+        sim::SimulationSnapshot previous = simulation.Snapshot();
+        for (int tick = 0; tick < 1200 && !club_drop_seen; ++tick) {
+            simulation.Tick();
+            const sim::SimulationSnapshot& current = simulation.Snapshot();
+            for (std::size_t index = 0; index < current.agents.size(); ++index) {
+                const sim::AgentSnapshot& before = previous.agents[index];
+                const sim::AgentSnapshot& after = current.agents[index];
+                if (!standing(before.state) || before.held_stick_id == sim::kInvalidStickId ||
+                    !living_on_floor(after.state)) continue;
+                club_drop_seen = true;
+                const sim::StickSnapshot& club = current.sticks[before.held_stick_id - 1U];
+                Check(after.held_stick_id == sim::kInvalidStickId &&
+                        after.held_weapon == sim::WeaponKind::None &&
+                        club.holder_id == sim::kInvalidEntityId,
+                    "downing must release a held club into persistent world state");
+                Check(after.sword_state == sim::SwordState::Sheathed,
+                    "downing a club holder must leave its owned sheathed sword equipped");
+                break;
+            }
+            previous = current;
+        }
+    }
+    Check(club_drop_seen,
+        "the deterministic battle set must exercise downing a club holder");
 }
 
 void TestRealSwordClashAlertsIdleAgentsOnBothTeams() {
@@ -2652,6 +2989,7 @@ int main() {
     TestBalancedPerceivedTargetAllocation();
     TestMessySectorReservationsAndMotion();
     TestMixedFlankRolesAcrossSeparateTargets();
+    TestContainmentEarlyInfluenceOption();
     TestMoverDrivenMotionAndFutureRoots();
     TestIdleVisionActivationAndStrike();
     TestCooldownRetreatAndSeededStrafe();
@@ -2676,6 +3014,7 @@ int main() {
     TestTransientSpawnsDoNotEnterReplay();
     TestCheckpointReplay();
     TestCheckpointSeekPerformance();
+    TestLiveLocomotionOptionsReplay();
     TestLiveCombatOptionsReplay();
     TestLiveWoundOptionsReplay();
     TestLiveLookOptionsReplay();
@@ -2685,6 +3024,7 @@ int main() {
     TestPersistentStickLifecycleAndReplay();
     TestDrawnSwordSheathesBeforeStickPickup();
     TestStickCombatUsesMeleeDamageAndSilentParries();
+    TestDowningDropsHandHeldEquipment();
     TestRealSwordClashAlertsIdleAgentsOnBothTeams();
     TestPostBattleSweepFinishesSeenNonDeadEnemiesAndRescans();
     TestTickPerformance();

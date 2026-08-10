@@ -33,12 +33,18 @@ bool Equal(const viewer::ControlSettings& left, const viewer::ControlSettings& r
         left.follow_stop_distance_m == right.follow_stop_distance_m &&
         left.target_commitment_seconds == right.target_commitment_seconds &&
         left.sector_influence_distance_m == right.sector_influence_distance_m &&
+        left.containment_early_influence == right.containment_early_influence &&
         left.sector_angle_variation_degrees == right.sector_angle_variation_degrees &&
         left.sector_radius_variation_m == right.sector_radius_variation_m &&
         left.ally_spacing_distance_m == right.ally_spacing_distance_m &&
+        left.crawl_speed_scale == right.crawl_speed_scale &&
+        left.crawl_turn_scale == right.crawl_turn_scale &&
         left.sound_visualization == right.sound_visualization &&
+        left.xray_agents == right.xray_agents &&
         left.attack_cooldown_seconds == right.attack_cooldown_seconds &&
         left.parried_attack_cooldown_seconds == right.parried_attack_cooldown_seconds &&
+        left.attack_followup_probability == right.attack_followup_probability &&
+        left.drawn_sword_attack_probability == right.drawn_sword_attack_probability &&
         left.parry_probability == right.parry_probability &&
         left.sword_attack_stun_seconds == right.sword_attack_stun_seconds &&
         left.melee_attack_stun_seconds == right.melee_attack_stun_seconds &&
@@ -92,12 +98,18 @@ int main() {
     expected.follow_stop_distance_m = 3.0f;
     expected.target_commitment_seconds = 2.0f;
     expected.sector_influence_distance_m = 7.0f;
+    expected.containment_early_influence = 0.12f;
     expected.sector_angle_variation_degrees = 8.0f;
     expected.sector_radius_variation_m = 0.2f;
     expected.ally_spacing_distance_m = 1.8f;
+    expected.crawl_speed_scale = 0.25f;
+    expected.crawl_turn_scale = 0.15f;
     expected.sound_visualization = false;
+    expected.xray_agents = true;
     expected.attack_cooldown_seconds = 2.0f;
     expected.parried_attack_cooldown_seconds = 3.0f;
+    expected.attack_followup_probability = 0.35f;
+    expected.drawn_sword_attack_probability = 0.65f;
     expected.parry_probability = 0.65f;
     for (std::size_t index = 0; index < expected.sword_attack_stun_seconds.size(); ++index) {
         expected.sword_attack_stun_seconds[index] = 0.1f * static_cast<float>(index + 1U);
@@ -122,7 +134,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    std::ofstream(path) << R"({"simulation":{"seed":42,"hero_agent_count":0,"villain_agent_count":1000},"camera":{"look_sensitivity":100,"pan_sensitivity":-1,"flight_speed":500,"zoom_sensitivity":0},"transport":{"arrow_repeat_ticks_per_second":1000},"look":{"head_turn_speed_degrees_per_second":-1},"perception":{"proximity_threat_range_m":100,"vision_range_m":1000,"head_vision_angle_degrees":1000,"sound_maximum_range_m":100,"running_sound_toward_leeway_degrees":1000,"non_threatening_minimum_seconds":200,"non_threatening_maximum_seconds":-1,"follow_walk_distance_m":100,"follow_stop_distance_m":100},"tactics":{"target_commitment_seconds":100,"sector_influence_distance_m":100,"sector_angle_variation_degrees":100,"sector_radius_variation_m":100,"ally_spacing_distance_m":100},"visualization":{"sound_events":false},"combat":{"attack_cooldown_seconds":-1,"parried_attack_cooldown_seconds":10,"parry_probability":4,"sword_attack_stun_seconds":[-1,-1,-1,-1,-1,-1,-1],"melee_attack_stun_seconds":[-1,-1,-1,-1,-1,-1,-1,-1,-1]},"wounds":{"melee_wound_gain":-1,"wound_threshold":1000,"wound_decay_per_second":1000,"leg_agonising_seconds":-1,"torso_agonising_seconds":1000,"head_passed_out_seconds":1000}})";
+    std::ofstream(path) << R"({"simulation":{"seed":42,"hero_agent_count":0,"villain_agent_count":1000},"camera":{"look_sensitivity":100,"pan_sensitivity":-1,"flight_speed":500,"zoom_sensitivity":0},"transport":{"arrow_repeat_ticks_per_second":1000},"look":{"head_turn_speed_degrees_per_second":-1},"locomotion":{"crawl_speed_scale":-1,"crawl_turn_scale":2},"perception":{"proximity_threat_range_m":100,"vision_range_m":1000,"head_vision_angle_degrees":1000,"sound_maximum_range_m":100,"running_sound_toward_leeway_degrees":1000,"non_threatening_minimum_seconds":200,"non_threatening_maximum_seconds":-1,"follow_walk_distance_m":100,"follow_stop_distance_m":100},"tactics":{"target_commitment_seconds":100,"sector_influence_distance_m":100,"containment_early_influence":100,"sector_angle_variation_degrees":100,"sector_radius_variation_m":100,"ally_spacing_distance_m":100},"visualization":{"sound_events":false},"combat":{"attack_cooldown_seconds":-1,"parried_attack_cooldown_seconds":10,"attack_followup_probability":-1,"drawn_sword_attack_probability":4,"parry_probability":4,"sword_attack_stun_seconds":[-1,-1,-1,-1,-1,-1,-1],"melee_attack_stun_seconds":[-1,-1,-1,-1,-1,-1,-1,-1,-1]},"wounds":{"melee_wound_gain":-1,"wound_threshold":1000,"wound_decay_per_second":1000,"leg_agonising_seconds":-1,"torso_agonising_seconds":1000,"head_passed_out_seconds":1000}})";
     if (!viewer::LoadControlSettings(path.string(), loaded, error) ||
         loaded.seed != 42U ||
         loaded.hero_agent_count != viewer::kMinTeamAgentCount ||
@@ -145,13 +157,18 @@ int main() {
         loaded.follow_stop_distance_m != viewer::kMaxFollowDistance ||
         loaded.target_commitment_seconds != viewer::kMaxTargetCommitmentSeconds ||
         loaded.sector_influence_distance_m != viewer::kMaxSectorInfluenceDistance ||
+        loaded.containment_early_influence != viewer::kMaxContainmentEarlyInfluence ||
         loaded.sector_angle_variation_degrees != viewer::kMaxSectorAngleVariationDegrees ||
         loaded.sector_radius_variation_m != viewer::kMaxSectorRadiusVariation ||
         loaded.ally_spacing_distance_m != viewer::kMaxAllySpacingDistance ||
-        loaded.sound_visualization != false ||
-        loaded.attack_cooldown_seconds != viewer::kMinAttackCooldown ||
-        loaded.parried_attack_cooldown_seconds != viewer::kMaxAttackCooldown ||
-        loaded.parry_probability != viewer::kMaxParryProbability ||
+        loaded.crawl_speed_scale != viewer::kMinCrawlScale ||
+        loaded.crawl_turn_scale != viewer::kMaxCrawlScale ||
+         loaded.sound_visualization != false ||
+         loaded.attack_cooldown_seconds != viewer::kMinAttackCooldown ||
+         loaded.parried_attack_cooldown_seconds != viewer::kMaxAttackCooldown ||
+         loaded.attack_followup_probability != viewer::kMinAttackFollowupProbability ||
+         loaded.drawn_sword_attack_probability != viewer::kMaxDrawnSwordAttackProbability ||
+         loaded.parry_probability != viewer::kMaxParryProbability ||
         !std::all_of(loaded.sword_attack_stun_seconds.begin(), loaded.sword_attack_stun_seconds.end(),
             [](float seconds) { return seconds == 0.0f; }) ||
         !std::all_of(loaded.melee_attack_stun_seconds.begin(), loaded.melee_attack_stun_seconds.end(),

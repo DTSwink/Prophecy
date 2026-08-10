@@ -1,5 +1,8 @@
 #include "control_settings.h"
+#include "crowd_runtime.h"
+#include "environment_collision.h"
 #include "locomotion_poses.h"
+#include "navigation_debug.h"
 #include "rig.h"
 #include "scenario.h"
 #include "telemetry.h"
@@ -62,7 +65,7 @@ constexpr Color kSheath{48, 42, 38, 255};
 constexpr Color kLeather{103, 66, 43, 255};
 constexpr Color kSwordMetal{224, 232, 234, 255};
 constexpr Color kSwordGuard{214, 164, 54, 255};
-constexpr Color kTrainingStick{151, 101, 54, 255};
+constexpr Color kClub{151, 101, 54, 255};
 constexpr Color kSelection{244, 247, 246, 255};
 constexpr Color kSoundRing{185, 235, 202, 210};
 constexpr Color kTacticalCone{112, 224, 168, 185};
@@ -344,11 +347,10 @@ struct FlyingCamera {
         if (IsKeyDown(kAzertyLabelQKey)) movement = Vector3Subtract(movement, right);
 #endif
         const Vector2 mouse_delta = allow_mouse ? GetMouseDelta() : Vector2{};
-        const bool left_drag = allow_mouse && IsMouseButtonDown(MOUSE_BUTTON_LEFT);
         const bool right_drag = allow_mouse && IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
         const float wheel = allow_mouse ? GetMouseWheelMove() : 0.0f;
 
-        if (followed_agent_id != 0 && (Vector3LengthSqr(movement) > 0.0f || right_drag)) {
+        if (followed_agent_id != 0 && Vector3LengthSqr(movement) > 0.0f) {
             followed_agent_id = 0;
         }
 
@@ -356,7 +358,7 @@ struct FlyingCamera {
             const auto followed = std::find_if(snapshot.agents.begin(), snapshot.agents.end(),
                 [this](const sim::AgentSnapshot& agent) { return agent.id == followed_agent_id; });
             if (followed != snapshot.agents.end()) {
-                if (left_drag) {
+                if (right_drag) {
                     yaw += mouse_delta.x * settings.look_sensitivity;
                     pitch = std::clamp(pitch - mouse_delta.y * settings.look_sensitivity, -1.48f, 1.48f);
                 }
@@ -378,16 +380,9 @@ struct FlyingCamera {
             camera.position = Vector3Add(camera.position, movement);
         }
 
-        if (left_drag) {
+        if (right_drag) {
             yaw += mouse_delta.x * settings.look_sensitivity;
             pitch = std::clamp(pitch - mouse_delta.y * settings.look_sensitivity, -1.48f, 1.48f);
-        }
-        if (right_drag) {
-            const Vector3 up = Vector3Normalize(Vector3CrossProduct(right, Forward(yaw, pitch)));
-            const Vector3 pan = Vector3Add(
-                Vector3Scale(right, mouse_delta.x * settings.pan_sensitivity),
-                Vector3Scale(up, -mouse_delta.y * settings.pan_sensitivity));
-            camera.position = Vector3Add(camera.position, pan);
         }
         if (std::fabs(wheel) > 0.0f) {
             camera.position = Vector3Add(camera.position,
@@ -1283,7 +1278,7 @@ void DrawEquipment(const sim::AgentSnapshot& agent, const RenderedAgentPose& pos
     if (agent.held_weapon == sim::WeaponKind::Stick) {
         const Vector3 stick_start = Vector3Subtract(hand, Vector3Scale(sword_direction, 0.28f));
         const Vector3 stick_end = Vector3Add(hand, Vector3Scale(sword_direction, 0.78f));
-        segment(stick_start, stick_end, 0.022f, 0.018f, 7, kTrainingStick);
+        segment(stick_start, stick_end, 0.022f, 0.018f, 7, kClub);
         return;
     }
     const Vector3 grip_start = Vector3Subtract(hand, Vector3Scale(sword_direction, 0.09f));
@@ -1311,7 +1306,7 @@ void DrawGroundSticks(const sim::SimulationSnapshot& snapshot, SolidBatch& solid
             std::cos(stick.facing_radians)};
         solids.AddCylinder(Vector3Add(center, Vector3Scale(direction, -0.52f)),
             Vector3Add(center, Vector3Scale(direction, 0.52f)),
-            0.022f, 0.018f, 7, kTrainingStick);
+            0.022f, 0.018f, 7, kClub);
     }
 }
 
@@ -1401,7 +1396,11 @@ void DrawWorld(const viewer::Scenario& scenario, const sim::SimulationSnapshot& 
     const viewer::LocomotionPoses& poses, const EquipmentJoints& equipment_joints,
     sim::EntityId selected_agent_id, const AgentSelection& selected_agents,
     float prediction_seconds, bool sound_visualization, const Camera3D& camera,
-    SolidBatch& solids) {
+    const viewer::EnvironmentCollision& environment_collision,
+    const viewer::NavigationDebugSurface& navigation_debug,
+    const prophecy::navigation::CrowdRuntime& navigation_crowd,
+    bool navigation_visible, bool navigation_test, bool navigation_crowd_test,
+    bool xray_agents, SolidBatch& solids) {
     const float min_x = scenario.simulation.world_min.x;
     const float max_x = scenario.simulation.world_max.x;
     const float min_z = scenario.simulation.world_min.y;
@@ -1409,21 +1408,30 @@ void DrawWorld(const viewer::Scenario& scenario, const sim::SimulationSnapshot& 
     static LineBatch line_batch{};
     line_batch.Clear();
     solids.Clear();
-    DrawPlane({(min_x + max_x) * 0.5f, 0.0f, (min_z + max_z) * 0.5f},
-        {max_x - min_x, max_z - min_z}, scenario.ground_color);
-    for (int x = static_cast<int>(std::ceil(min_x)); x <= static_cast<int>(std::floor(max_x)); x += 4) {
-        DrawLine3D({static_cast<float>(x), 0.003f, min_z}, {static_cast<float>(x), 0.003f, max_z}, scenario.grid_color);
+    if (!environment_collision.IsLoaded()) {
+        DrawPlane({(min_x + max_x) * 0.5f, 0.0f, (min_z + max_z) * 0.5f},
+            {max_x - min_x, max_z - min_z}, scenario.ground_color);
+        for (int x = static_cast<int>(std::ceil(min_x)); x <= static_cast<int>(std::floor(max_x)); x += 4) {
+            DrawLine3D({static_cast<float>(x), 0.003f, min_z}, {static_cast<float>(x), 0.003f, max_z}, scenario.grid_color);
+        }
+        for (int z = static_cast<int>(std::ceil(min_z)); z <= static_cast<int>(std::floor(max_z)); z += 4) {
+            DrawLine3D({min_x, 0.003f, static_cast<float>(z)}, {max_x, 0.003f, static_cast<float>(z)}, scenario.grid_color);
+        }
     }
-    for (int z = static_cast<int>(std::ceil(min_z)); z <= static_cast<int>(std::floor(max_z)); z += 4) {
-        DrawLine3D({min_x, 0.003f, static_cast<float>(z)}, {max_x, 0.003f, static_cast<float>(z)}, scenario.grid_color);
+    environment_collision.Draw();
+    if (navigation_visible) navigation_debug.Draw();
+    const bool navigation_only_test = navigation_test;
+    if (!navigation_only_test) DrawGroundSticks(snapshot, solids);
+    if (xray_agents) {
+        solids.Draw();
+        solids.Clear();
     }
-    DrawGroundSticks(snapshot, solids);
-    if (sound_visualization) DrawSoundRings(
+    if (!navigation_only_test && sound_visualization) DrawSoundRings(
         scenario, snapshot, prediction_seconds, line_batch);
     const Vector3 camera_forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
     const float screen_width = static_cast<float>(GetScreenWidth());
     const float screen_height = static_cast<float>(GetScreenHeight());
-    for (const sim::AgentSnapshot& agent : snapshot.agents) {
+    if (!navigation_only_test) for (const sim::AgentSnapshot& agent : snapshot.agents) {
         const Vector3 render_root = AgentRenderRoot(agent, prediction_seconds);
         const Vector3 to_agent = Vector3Subtract(render_root, camera.position);
         if (Vector3DotProduct(to_agent, camera_forward) <= 0.0f) continue;
@@ -1448,7 +1456,86 @@ void DrawWorld(const viewer::Scenario& scenario, const sim::SimulationSnapshot& 
         DrawSkeleton(agent, poses, equipment_joints, pose, solids);
         DrawEquipment(agent, pose, equipment_joints, prediction_seconds, solids);
     }
+    if (navigation_test && navigation_debug.HasTestRoute()) {
+        Vector3 route_position{};
+        Vector3 route_velocity{};
+        const double visible_time = snapshot.time_seconds +
+            static_cast<double>(prediction_seconds);
+        if (navigation_debug.SampleTestRoute(visible_time, route_position, route_velocity)) {
+            sim::AgentSnapshot agent{};
+            agent.id = 1U;
+            agent.team = sim::Team::Hero;
+            agent.position = {route_position.x, route_position.z, route_position.y};
+            agent.root_velocity = {route_velocity.x, route_velocity.z, route_velocity.y};
+            agent.root_speed_mps = Vector3Length(route_velocity);
+            agent.locomotion_mode = sim::LocomotionMode::Walk;
+            agent.locomotion_response = sim::LocomotionResponse::Normal;
+            agent.speed_stick_amplitude = agent.root_speed_mps > 0.01f ? 1.0f : 0.0f;
+            if (agent.root_speed_mps > 0.01f) {
+                agent.facing_radians = std::atan2(route_velocity.x, route_velocity.z);
+                agent.speed_stick_direction_radians = agent.facing_radians;
+                agent.orientation_stick_yaw_radians = agent.facing_radians;
+                const float cycle_distance = poses.Clip(agent.locomotion_mode).cycle_distance_m;
+                if (cycle_distance > 0.0f) {
+                    agent.pose_phase = std::fmod(static_cast<float>(visible_time) *
+                        agent.root_speed_mps / cycle_distance, 1.0f);
+                }
+            }
+            const float render_phase = RenderPosePhase(agent, poses, visible_time, 0.0f);
+            const ProceduralReachPose reach = BuildProceduralReachPose(
+                agent, poses, equipment_joints, render_phase, 0.0f, 0.0f);
+            const RenderedAgentPose pose = BuildRenderedAgentPose(poses, agent,
+                equipment_joints, reach, render_phase, 0.0f, 0.0f, 0.0f);
+            DrawSkeleton(agent, poses, equipment_joints, pose, solids);
+        }
+    }
+    if (navigation_crowd_test) {
+        const double visible_time = snapshot.time_seconds +
+            static_cast<double>(prediction_seconds);
+        for (std::size_t index = 0U; index < navigation_crowd.AgentCount(); ++index) {
+            const prophecy::navigation::CrowdAgentSample sample = navigation_crowd.Agent(index);
+            if (!sample.active) continue;
+            sim::AgentSnapshot agent{};
+            agent.id = static_cast<sim::EntityId>(index + 1U);
+            agent.team = sim::Team::Hero;
+            agent.position = {sample.position[0], sample.position[1], sample.position[2]};
+            agent.root_velocity = {sample.velocity[0], sample.velocity[1], sample.velocity[2]};
+            agent.root_speed_mps = std::sqrt(sample.velocity[0] * sample.velocity[0] +
+                sample.velocity[1] * sample.velocity[1] +
+                sample.velocity[2] * sample.velocity[2]);
+            agent.locomotion_mode = sim::LocomotionMode::Walk;
+            agent.locomotion_response = sim::LocomotionResponse::Normal;
+            agent.speed_stick_amplitude = sample.locomotion_active ? 1.0f : 0.0f;
+            agent.facing_radians = sample.facing_radians;
+            agent.speed_stick_direction_radians = agent.facing_radians;
+            agent.orientation_stick_yaw_radians = agent.facing_radians;
+            if (agent.root_speed_mps > 0.01f) {
+                agent.facing_radians = std::atan2(sample.velocity[0], sample.velocity[1]);
+                agent.speed_stick_direction_radians = agent.facing_radians;
+                agent.orientation_stick_yaw_radians = agent.facing_radians;
+            }
+            const float cycle_distance = poses.Clip(agent.locomotion_mode).cycle_distance_m;
+            if (cycle_distance > 0.0f) {
+                agent.pose_phase = std::fmod(sample.distance_travelled_m / cycle_distance +
+                    static_cast<float>(index) * 0.173f, 1.0f);
+            }
+            const Vector3 render_root = AgentRenderRoot(agent, 0.0f);
+            const Vector3 to_agent = Vector3Subtract(render_root, camera.position);
+            if (Vector3DotProduct(to_agent, camera_forward) <= 0.0f) continue;
+            const Vector2 root_screen = GetWorldToScreen(render_root, camera);
+            if (root_screen.x < -120.0f || root_screen.x > screen_width + 120.0f ||
+                root_screen.y < -180.0f || root_screen.y > screen_height + 120.0f) continue;
+            const float render_phase = RenderPosePhase(agent, poses, visible_time, 0.0f);
+            const ProceduralReachPose reach = BuildProceduralReachPose(
+                agent, poses, equipment_joints, render_phase, 0.0f, 0.0f);
+            const RenderedAgentPose pose = BuildRenderedAgentPose(poses, agent,
+                equipment_joints, reach, render_phase, 0.0f, 0.0f, 0.0f);
+            DrawSkeleton(agent, poses, equipment_joints, pose, solids);
+        }
+    }
+    if (xray_agents) rlDisableDepthTest();
     solids.Draw();
+    if (xray_agents) rlEnableDepthTest();
     line_batch.Draw();
 }
 
@@ -1545,7 +1632,6 @@ struct UiActions {
     bool set_seed = false;
     std::uint64_t seed = 0;
     bool benchmark = false;
-    bool screenshot = false;
     bool square_formation = false;
     bool save_opening_layout = false;
     bool set_autonomous = false;
@@ -1554,6 +1640,7 @@ struct UiActions {
     bool validate_failure = false;
     bool restore_saved_settings = false;
     bool save_settings = false;
+    bool locomotion_settings_changed = false;
     bool combat_settings_changed = false;
     bool tactics_settings_changed = false;
     bool wound_settings_changed = false;
@@ -1738,6 +1825,7 @@ struct TeamCountEditorState {
 
 enum class OptionsTab : std::uint8_t {
     Camera,
+    Locomotion,
     Combat,
     Tactics,
     Wounds,
@@ -1748,7 +1836,8 @@ enum class OptionsTab : std::uint8_t {
 
 UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simulation,
     bool paused, float& time_scale, bool rewind_active, std::uint64_t rewind_head,
-    bool& options_open, OptionsTab& options_tab, viewer::ControlSettings& settings,
+    bool& options_open, bool& navigation_visible, OptionsTab& options_tab,
+    viewer::ControlSettings& settings,
     const viewer::LocomotionPoses& poses, const BenchmarkResult& benchmark,
     const std::string& settings_status, SeedInputState& seed_input,
     AttackStunEditorState& attack_stun_editor, HeadTurnEditorState& head_turn_editor,
@@ -1848,8 +1937,6 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
         "Create a new seed", tooltip); x += 39.0f;
     actions.benchmark = IconButton({x, y, button, button}, ICON_CPU,
         "Benchmark raw logic headlessly", tooltip); x += 39.0f;
-    actions.screenshot = IconButton({x, y, button, button}, ICON_CAMERA,
-        "Capture current simulation window", tooltip); x += 39.0f;
     const bool square_formation_clicked = IconButton({x, y, button, button}, ICON_BOX_GRID,
         paused ? "Arrange each team in a square around its mean" : "Pause to arrange teams",
         tooltip); x += 39.0f;
@@ -1859,6 +1946,13 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
         paused ? "Save current agent transforms as opening layout" : "Pause to save agent transforms",
         tooltip); x += 39.0f;
     actions.save_opening_layout = paused && save_opening_layout_clicked;
+    if (IconButton({x, y, button, button},
+            navigation_visible ? ICON_LAYERS_VISIBLE : ICON_LAYERS,
+            navigation_visible ? "Hide walkable surface (N)" : "Show walkable surface (N)",
+            tooltip)) {
+        navigation_visible = !navigation_visible;
+    }
+    x += 39.0f;
     if (IconButton({x, y, button, button}, ICON_GEAR, "Options", tooltip)) options_open = !options_open;
 
     DrawText("Speed", 22, 84, 14, kMuted);
@@ -1924,9 +2018,9 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
             selected->speed_stick_amplitude),
             static_cast<int>(info.x + 12.0f), agent_y + 42, 13, kText);
         if (selected->tactical_steering == sim::TacticalSteeringMode::OutnumberedView) {
-            DrawText(TextFormat("tactic contain %u  |  arc %.0f  |  move %.0f deg",
+            DrawText(TextFormat("tactic contain %u  |  near %.0f%%  |  move %.0f deg",
                 selected->tactical_threat_count,
-                selected->tactical_threat_arc_radians * 180.0f / kPi,
+                selected->tactical_containment_influence * 100.0f,
                 selected->tactical_move_yaw_radians * 180.0f / kPi),
                 static_cast<int>(info.x + 12.0f), agent_y + 62, 13, kText);
         } else if (selected->tactical_steering == sim::TacticalSteeringMode::ApproachSector) {
@@ -2017,23 +2111,29 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
     }
 
     if (options_open) {
-        const Rectangle panel{static_cast<float>(GetScreenWidth()) - 332.0f,
-            OptionsPanelTop(), 320.0f, kOptionsPanelHeight};
+        const Rectangle panel{static_cast<float>(GetScreenWidth()) - 412.0f,
+            OptionsPanelTop(), 400.0f, kOptionsPanelHeight};
         DrawRectangleRec(panel, kPanel);
         DrawRectangleLinesEx(panel, 1.0f, {73, 86, 88, 255});
-        const Rectangle camera_tab{panel.x + 12.0f, panel.y + 14.0f, 41.0f, 28.0f};
-        const Rectangle combat_tab{panel.x + 55.0f, panel.y + 14.0f, 41.0f, 28.0f};
-        const Rectangle tactics_tab{panel.x + 98.0f, panel.y + 14.0f, 41.0f, 28.0f};
-        const Rectangle wounds_tab{panel.x + 141.0f, panel.y + 14.0f, 41.0f, 28.0f};
-        const Rectangle look_tab{panel.x + 184.0f, panel.y + 14.0f, 41.0f, 28.0f};
-        const Rectangle sense_tab{panel.x + 227.0f, panel.y + 14.0f, 41.0f, 28.0f};
-        const Rectangle sound_tab{panel.x + 270.0f, panel.y + 14.0f, 38.0f, 28.0f};
-        const std::array<Rectangle, 7> option_tabs{
-            camera_tab, combat_tab, tactics_tab, wounds_tab, look_tab, sense_tab, sound_tab};
+        const auto tab = [&panel](std::size_t index) {
+            return Rectangle{panel.x + 12.0f + 46.0f * static_cast<float>(index),
+                panel.y + 14.0f, 44.0f, 28.0f};
+        };
+        const Rectangle camera_tab = tab(0);
+        const Rectangle locomotion_tab = tab(1);
+        const Rectangle combat_tab = tab(2);
+        const Rectangle tactics_tab = tab(3);
+        const Rectangle wounds_tab = tab(4);
+        const Rectangle look_tab = tab(5);
+        const Rectangle sense_tab = tab(6);
+        const Rectangle sound_tab = tab(7);
+        const std::array<Rectangle, 8> option_tabs{camera_tab, locomotion_tab, combat_tab,
+            tactics_tab, wounds_tab, look_tab, sense_tab, sound_tab};
         const Rectangle active_tab = option_tabs[static_cast<std::size_t>(options_tab)];
         DrawRectangleRec(active_tab, {36, 117, 133, 255});
         const OptionsTab previous_tab = options_tab;
         if (GuiButton(camera_tab, "Cam")) options_tab = OptionsTab::Camera;
+        if (GuiButton(locomotion_tab, "Move")) options_tab = OptionsTab::Locomotion;
         if (GuiButton(combat_tab, "Fight")) options_tab = OptionsTab::Combat;
         if (GuiButton(tactics_tab, "Tact")) options_tab = OptionsTab::Tactics;
         if (GuiButton(wounds_tab, "Wnd")) options_tab = OptionsTab::Wounds;
@@ -2066,9 +2166,9 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
         bool draw_attack_dropdown = false;
         Rectangle attack_dropdown{};
         if (options_tab == OptionsTab::Camera) {
-            std::array<SliderRow, 5> rows{{
-                {"Look", &settings.look_sensitivity, viewer::kMinLookSensitivity, viewer::kMaxLookSensitivity},
-                {"Pan", &settings.pan_sensitivity, viewer::kMinPanSensitivity, viewer::kMaxPanSensitivity},
+            std::array<SliderRow, 4> rows{{
+                {"Sensitivity", &settings.look_sensitivity,
+                    viewer::kMinLookSensitivity, viewer::kMaxLookSensitivity},
                 {"Flight", &settings.flight_speed, viewer::kMinFlightSpeed, viewer::kMaxFlightSpeed},
                 {"Dolly", &settings.zoom_sensitivity, viewer::kMinZoomSensitivity, viewer::kMaxZoomSensitivity},
                 {"Arrow rate", &settings.arrow_repeat_ticks_per_second,
@@ -2081,25 +2181,52 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
                 DrawText(index == rows.size() - 1U
                         ? TextFormat("%.0f t/s", *row.value)
                         : TextFormat(row.maximum <= 0.1f ? "%.3f" : "%.2f", *row.value),
-                    static_cast<int>(panel.x + 248.0f), static_cast<int>(row_y), 15, kMuted);
-                (void)GuiSliderBar({panel.x + 16.0f, row_y + 23.0f, 288.0f, 18.0f}, nullptr, nullptr,
+                    static_cast<int>(panel.x + 328.0f), static_cast<int>(row_y), 15, kMuted);
+                (void)GuiSliderBar({panel.x + 16.0f, row_y + 23.0f, 368.0f, 18.0f}, nullptr, nullptr,
                     row.value, row.minimum, row.maximum);
                 row_y += 51.0f;
+            }
+            GuiCheckBox({panel.x + 16.0f, row_y + 2.0f, 24.0f, 24.0f},
+                "X-ray agents", &settings.xray_agents);
+        } else if (options_tab == OptionsTab::Locomotion) {
+            std::array<SliderRow, 2> rows{{
+                {"Crawl speed", &settings.crawl_speed_scale,
+                    viewer::kMinCrawlScale, viewer::kMaxCrawlScale},
+                {"Crawl turn", &settings.crawl_turn_scale,
+                    viewer::kMinCrawlScale, viewer::kMaxCrawlScale},
+            }};
+            float row_y = panel.y + 58.0f;
+            for (const SliderRow& row : rows) {
+                DrawText(row.label, static_cast<int>(panel.x + 16.0f),
+                    static_cast<int>(row_y), 15, kText);
+                DrawText(TextFormat("%.0f%%", *row.value * 100.0f),
+                    static_cast<int>(panel.x + 328.0f), static_cast<int>(row_y), 15, kMuted);
+                if (GuiSliderBar({panel.x + 16.0f, row_y + 23.0f, 368.0f, 18.0f},
+                        nullptr, nullptr, row.value, row.minimum, row.maximum)) {
+                    actions.locomotion_settings_changed = true;
+                }
+                row_y += 58.0f;
             }
         } else if (options_tab == OptionsTab::Combat) {
             const bool controls_locked = attack_stun_editor.dropdown_open;
             if (controls_locked) GuiLock();
-            std::array<SliderRow, 3> rows{{
+            std::array<SliderRow, 5> rows{{
                 {"Cooldown", &settings.attack_cooldown_seconds,
                     viewer::kMinAttackCooldown, viewer::kMaxAttackCooldown},
                 {"Parried", &settings.parried_attack_cooldown_seconds,
                     viewer::kMinAttackCooldown, viewer::kMaxAttackCooldown},
+                {"No cooldown", &settings.attack_followup_probability,
+                    viewer::kMinAttackFollowupProbability,
+                    viewer::kMaxAttackFollowupProbability},
+                {"Sword attack", &settings.drawn_sword_attack_probability,
+                    viewer::kMinDrawnSwordAttackProbability,
+                    viewer::kMaxDrawnSwordAttackProbability},
                 {"Parry split", &settings.parry_probability,
                     viewer::kMinParryProbability, viewer::kMaxParryProbability},
             }};
             DrawText("Attack clip", static_cast<int>(panel.x + 16.0f),
                 static_cast<int>(panel.y + 58.0f), 15, kText);
-            attack_dropdown = {panel.x + 16.0f, panel.y + 80.0f, 288.0f, 20.0f};
+            attack_dropdown = {panel.x + 16.0f, panel.y + 80.0f, 368.0f, 20.0f};
             draw_attack_dropdown = true;
 
             float row_y = panel.y + 154.0f;
@@ -2107,14 +2234,14 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
                 const SliderRow& row = rows[index];
                 DrawText(row.label, static_cast<int>(panel.x + 16.0f), static_cast<int>(row_y), 15, kText);
                 DrawText(index < 2U ? TextFormat("%.2fs", *row.value) : TextFormat("%.0f%%", *row.value * 100.0f),
-                    static_cast<int>(panel.x + 248.0f), static_cast<int>(row_y), 15, kMuted);
-                if (GuiSliderBar({panel.x + 16.0f, row_y + 23.0f, 288.0f, 18.0f}, nullptr, nullptr,
+                    static_cast<int>(panel.x + 328.0f), static_cast<int>(row_y), 15, kMuted);
+                if (GuiSliderBar({panel.x + 16.0f, row_y + 21.0f, 368.0f, 16.0f}, nullptr, nullptr,
                     row.value, row.minimum, row.maximum)) actions.combat_settings_changed = true;
-                row_y += 58.0f;
+                row_y += 43.0f;
             }
             DrawText("Stun duration", static_cast<int>(panel.x + 16.0f),
                 static_cast<int>(panel.y + 118.0f), 15, kText);
-            const Rectangle stun_input{panel.x + 204.0f, panel.y + 110.0f, 80.0f, 30.0f};
+            const Rectangle stun_input{panel.x + 284.0f, panel.y + 110.0f, 80.0f, 30.0f};
             DrawRectangleRec(stun_input, kPanelRaised);
             if (GuiTextBox(stun_input, attack_stun_editor.text.data(),
                     static_cast<int>(attack_stun_editor.text.size()), attack_stun_editor.editing) != 0) {
@@ -2123,15 +2250,18 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
                 }
                 attack_stun_editor.editing = !attack_stun_editor.editing;
             }
-            DrawText("s", static_cast<int>(panel.x + 291.0f),
+            DrawText("s", static_cast<int>(panel.x + 371.0f),
                 static_cast<int>(panel.y + 118.0f), 15, kMuted);
             if (controls_locked) GuiUnlock();
         } else if (options_tab == OptionsTab::Tactics) {
-            std::array<SliderRow, 5> rows{{
+            std::array<SliderRow, 6> rows{{
                 {"Commit", &settings.target_commitment_seconds,
                     viewer::kMinTargetCommitmentSeconds, viewer::kMaxTargetCommitmentSeconds},
                 {"Flank near", &settings.sector_influence_distance_m,
                     viewer::kMinSectorInfluenceDistance, viewer::kMaxSectorInfluenceDistance},
+                {"Early spread", &settings.containment_early_influence,
+                    viewer::kMinContainmentEarlyInfluence,
+                    viewer::kMaxContainmentEarlyInfluence},
                 {"Angle jitter", &settings.sector_angle_variation_degrees,
                     viewer::kMinSectorAngleVariationDegrees,
                     viewer::kMaxSectorAngleVariationDegrees},
@@ -2147,11 +2277,12 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
                     static_cast<int>(row_y), 15, kText);
                 const char* value = index == 0U
                     ? TextFormat("%.2fs", *row.value)
-                    : (index == 2U ? TextFormat("%.0f deg", *row.value)
-                        : TextFormat("%.2fm", *row.value));
-                DrawText(value, static_cast<int>(panel.x + 248.0f),
+                    : (index == 2U ? TextFormat("%.0f%%", *row.value * 100.0f)
+                        : (index == 3U ? TextFormat("%.0f deg", *row.value)
+                            : TextFormat("%.2fm", *row.value)));
+                DrawText(value, static_cast<int>(panel.x + 328.0f),
                     static_cast<int>(row_y), 15, kMuted);
-                if (GuiSliderBar({panel.x + 16.0f, row_y + 23.0f, 288.0f, 18.0f},
+                if (GuiSliderBar({panel.x + 16.0f, row_y + 23.0f, 368.0f, 18.0f},
                         nullptr, nullptr, row.value, row.minimum, row.maximum)) {
                     actions.tactics_settings_changed = true;
                 }
@@ -2178,8 +2309,8 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
                 DrawText(row.label, static_cast<int>(panel.x + 16.0f), static_cast<int>(row_y), 15, kText);
                 const bool percentage = index < 3U;
                 DrawText(percentage ? TextFormat("%.1f%%", *row.value) : TextFormat("%.1fs", *row.value),
-                    static_cast<int>(panel.x + 248.0f), static_cast<int>(row_y), 15, kMuted);
-                if (GuiSliderBar({panel.x + 16.0f, row_y + 21.0f, 288.0f, 16.0f}, nullptr, nullptr,
+                    static_cast<int>(panel.x + 328.0f), static_cast<int>(row_y), 15, kMuted);
+                if (GuiSliderBar({panel.x + 16.0f, row_y + 21.0f, 368.0f, 16.0f}, nullptr, nullptr,
                     row.value, row.minimum, row.maximum)) actions.wound_settings_changed = true;
                 row_y += 55.0f;
             }
@@ -2226,9 +2357,9 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
                     ? TextFormat("%.1fm", *row.value)
                     : (index < 4U ? TextFormat("%.0f deg", *row.value)
                         : TextFormat("%.0fs", *row.value));
-                DrawText(value, static_cast<int>(panel.x + 248.0f),
+                DrawText(value, static_cast<int>(panel.x + 328.0f),
                     static_cast<int>(row_y), 15, kMuted);
-                if (GuiSliderBar({panel.x + 16.0f, row_y + 21.0f, 288.0f, 16.0f},
+                if (GuiSliderBar({panel.x + 16.0f, row_y + 21.0f, 368.0f, 16.0f},
                         nullptr, nullptr, row.value, row.minimum, row.maximum)) {
                     actions.perception_settings_changed = true;
                 }
@@ -2247,9 +2378,9 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
             DrawText("Max reach", static_cast<int>(panel.x + 16.0f),
                 static_cast<int>(panel.y + 112.0f), 15, kText);
             DrawText(TextFormat("%.1fm", settings.sound_maximum_range_m),
-                static_cast<int>(panel.x + 248.0f),
+                static_cast<int>(panel.x + 328.0f),
                 static_cast<int>(panel.y + 112.0f), 15, kMuted);
-            if (GuiSliderBar({panel.x + 16.0f, panel.y + 135.0f, 288.0f, 18.0f},
+            if (GuiSliderBar({panel.x + 16.0f, panel.y + 135.0f, 368.0f, 18.0f},
                     nullptr, nullptr, &settings.sound_maximum_range_m,
                     viewer::kMinSoundMaximumRange, viewer::kMaxSoundMaximumRange)) {
                 actions.perception_settings_changed = true;
@@ -2311,8 +2442,79 @@ std::string OpeningLayoutPath() {
     return (LocalDataDirectory() / "opening-layout.json").string();
 }
 
-std::string LatestScreenshotPath() {
-    return (LocalDataDirectory() / "latest-screenshot.png").string();
+std::filesystem::path ScreenshotDirectory() {
+    return LocalDataDirectory() / "screenshots";
+}
+
+std::uint64_t HighestScreenshotNumber() {
+    const std::filesystem::path directory = ScreenshotDirectory();
+    std::error_code error;
+    std::filesystem::directory_iterator iterator(directory, error);
+    const std::filesystem::directory_iterator end;
+    std::uint64_t highest = 0U;
+    constexpr char prefix[] = "screenshot-";
+    constexpr char extension[] = ".png";
+    while (!error && iterator != end) {
+        const std::string filename = iterator->path().filename().string();
+        if (filename.rfind(prefix, 0U) == 0U &&
+            filename.size() > sizeof(prefix) - 1U + sizeof(extension) - 1U &&
+            filename.compare(filename.size() - (sizeof(extension) - 1U),
+                sizeof(extension) - 1U, extension) == 0) {
+            const std::size_t digits_begin = sizeof(prefix) - 1U;
+            const std::size_t digits_end = filename.size() - (sizeof(extension) - 1U);
+            std::uint64_t number = 0U;
+            const char* begin = filename.data() + digits_begin;
+            const char* finish = filename.data() + digits_end;
+            const auto parsed = std::from_chars(begin, finish, number);
+            if (parsed.ec == std::errc{} && parsed.ptr == finish) highest = std::max(highest, number);
+        }
+        iterator.increment(error);
+    }
+    return highest;
+}
+
+std::filesystem::path ScreenshotPath(std::uint64_t number) {
+    char filename[64]{};
+    std::snprintf(filename, sizeof(filename), "screenshot-%06llu.png",
+        static_cast<unsigned long long>(number));
+    return ScreenshotDirectory() / filename;
+}
+
+std::string ScreenshotCameraTransformText(const FlyingCamera& flying_camera) {
+    char text[256]{};
+    constexpr float radians_to_degrees = 180.0f / kPi;
+    std::snprintf(text, sizeof(text),
+        "CAMERA  POS X %.3f  Y %.3f  Z %.3f m  |  ROT YAW %.3f  PITCH %.3f deg  |  FOV %.1f deg",
+        flying_camera.camera.position.x, flying_camera.camera.position.y,
+        flying_camera.camera.position.z, flying_camera.yaw * radians_to_degrees,
+        flying_camera.pitch * radians_to_degrees, flying_camera.camera.fovy);
+    return text;
+}
+
+void DrawScreenshotCounter(std::uint64_t count) {
+    const std::string text = "Screenshots: " + std::to_string(count);
+    constexpr int font_size = 16;
+    const int width = MeasureText(text.c_str(), font_size);
+    const int x = GetScreenWidth() - width - 16;
+    const int y = GetScreenHeight() - font_size - 12;
+    DrawRectangle(x - 7, y - 4, width + 14, font_size + 8, Color{24, 29, 31, 205});
+    DrawText(text.c_str(), x, y, font_size, kText);
+}
+
+void DrawScreenshotCameraStamp(const FlyingCamera& flying_camera, std::uint64_t number) {
+    char number_text[64]{};
+    std::snprintf(number_text, sizeof(number_text), "SCREENSHOT %06llu",
+        static_cast<unsigned long long>(number));
+    const std::string transform_text = ScreenshotCameraTransformText(flying_camera);
+    constexpr int heading_size = 16;
+    constexpr int transform_size = 15;
+    const int width = std::max(MeasureText(number_text, heading_size),
+        MeasureText(transform_text.c_str(), transform_size));
+    const int x = GetScreenWidth() - width - 16;
+    const int y = GetScreenHeight() - 78;
+    DrawRectangle(x - 8, y - 6, width + 16, 48, Color{24, 29, 31, 225});
+    DrawText(number_text, x, y, heading_size, kAccent);
+    DrawText(transform_text.c_str(), x, y + 22, transform_size, kText);
 }
 
 bool SaveCurrentWindowImage(const std::string& path) {
@@ -2340,21 +2542,48 @@ struct Arguments {
     std::string scenario_path{};
     std::string rig_path{};
     std::string locomotion_poses_path{};
+    std::string environment_collision_path{};
+    std::string navigation_path{};
     std::string capture_path{};
     bool capture_options = false;
+    bool capture_locomotion_options = false;
     bool capture_combat_options = false;
+    bool capture_tactics_options = false;
     bool capture_look_options = false;
     bool capture_sense_options = false;
     bool capture_sound_options = false;
     bool paired_mode = false;
     bool headless_benchmark = false;
     bool background_reload = false;
+    bool show_navigation = false;
+    bool navigation_test = false;
+    bool navigation_crowd_test = false;
     bool telemetry = true;
     std::uint16_t telemetry_port = kDefaultTelemetryPort;
     std::uint64_t capture_tick = 0;
     std::uint32_t capture_follow_agent = 0;
     std::uintptr_t restore_foreground = 0;
 };
+
+struct FileSignature {
+    std::filesystem::file_time_type write_time{};
+    std::uintmax_t size = 0U;
+    bool valid = false;
+};
+
+FileSignature ReadFileSignature(const std::string& path) {
+    std::error_code error;
+    const std::filesystem::file_time_type write_time = std::filesystem::last_write_time(path, error);
+    if (error) return {};
+    const std::uintmax_t size = std::filesystem::file_size(path, error);
+    if (error) return {};
+    return {write_time, size, true};
+}
+
+bool SameFileSignature(const FileSignature& first, const FileSignature& second) {
+    return first.valid == second.valid && (!first.valid ||
+        (first.write_time == second.write_time && first.size == second.size));
+}
 
 Arguments ParseArguments(int argc, char** argv) {
     Arguments arguments{};
@@ -2365,14 +2594,29 @@ Arguments ParseArguments(int argc, char** argv) {
     arguments.scenario_path = (data_directory / "scenario.json").string();
     arguments.rig_path = (data_directory / "rig.json").string();
     arguments.locomotion_poses_path = (data_directory / "locomotion_poses.json").string();
+    const std::filesystem::path source_environment =
+        std::filesystem::path(PROPHECY_DATA_DIR) / "unreal_collision.json";
+    arguments.environment_collision_path = (std::filesystem::exists(source_environment)
+        ? source_environment : data_directory / "unreal_collision.json").string();
+    const std::filesystem::path source_navigation =
+        std::filesystem::path(PROPHECY_DATA_DIR) / "mybasic.navbin";
+    arguments.navigation_path = (std::filesystem::exists(source_navigation)
+        ? source_navigation : data_directory / "mybasic.navbin").string();
     for (int index = 1; index < argc; ++index) {
         const std::string argument = argv[index];
         if (argument == "--scenario" && index + 1 < argc) arguments.scenario_path = argv[++index];
         else if (argument == "--rig" && index + 1 < argc) arguments.rig_path = argv[++index];
         else if (argument == "--locomotion-poses" && index + 1 < argc) arguments.locomotion_poses_path = argv[++index];
+        else if (argument == "--environment-collision" && index + 1 < argc) arguments.environment_collision_path = argv[++index];
+        else if (argument == "--navigation" && index + 1 < argc) arguments.navigation_path = argv[++index];
+        else if (argument == "--show-navigation") arguments.show_navigation = true;
+        else if (argument == "--navigation-test") arguments.navigation_test = true;
+        else if (argument == "--navigation-crowd-test") arguments.navigation_crowd_test = true;
         else if (argument == "--capture" && index + 1 < argc) arguments.capture_path = argv[++index];
         else if (argument == "--capture-options") arguments.capture_options = true;
+        else if (argument == "--capture-locomotion-options") arguments.capture_locomotion_options = true;
         else if (argument == "--capture-combat-options") arguments.capture_combat_options = true;
+        else if (argument == "--capture-tactics-options") arguments.capture_tactics_options = true;
         else if (argument == "--capture-look-options") arguments.capture_look_options = true;
         else if (argument == "--capture-sense-options") arguments.capture_sense_options = true;
         else if (argument == "--capture-sound-options") arguments.capture_sound_options = true;
@@ -2449,6 +2693,8 @@ int main(int argc, char** argv) {
     scenario.simulation.agent_count = settings.hero_agent_count + settings.villain_agent_count;
     scenario.simulation.attack_cooldown_seconds = settings.attack_cooldown_seconds;
     scenario.simulation.parried_attack_cooldown_seconds = settings.parried_attack_cooldown_seconds;
+    scenario.simulation.attack_followup_probability = settings.attack_followup_probability;
+    scenario.simulation.drawn_sword_attack_probability = settings.drawn_sword_attack_probability;
     scenario.simulation.parry_probability = settings.parry_probability;
     scenario.simulation.head_turn_speed_degrees_per_second =
         settings.head_turn_speed_degrees_per_second;
@@ -2466,10 +2712,13 @@ int main(int argc, char** argv) {
     scenario.simulation.follow_stop_distance_m = settings.follow_stop_distance_m;
     scenario.simulation.target_commitment_seconds = settings.target_commitment_seconds;
     scenario.simulation.sector_influence_distance_m = settings.sector_influence_distance_m;
+    scenario.simulation.containment_early_influence = settings.containment_early_influence;
     scenario.simulation.sector_angle_variation_degrees =
         settings.sector_angle_variation_degrees;
     scenario.simulation.sector_radius_variation_m = settings.sector_radius_variation_m;
     scenario.simulation.ally_spacing_distance_m = settings.ally_spacing_distance_m;
+    scenario.simulation.crawl_speed_scale = settings.crawl_speed_scale;
+    scenario.simulation.crawl_turn_scale = settings.crawl_turn_scale;
     scenario.simulation.sword_attack_stun_seconds = settings.sword_attack_stun_seconds;
     scenario.simulation.melee_attack_stun_seconds = settings.melee_attack_stun_seconds;
     scenario.simulation.melee_wound_gain = settings.melee_wound_gain;
@@ -2502,13 +2751,75 @@ int main(int argc, char** argv) {
     ConfigureGui();
     SolidBatch solid_batch{};
     solid_batch.Initialize();
+    viewer::EnvironmentCollision environment_collision{};
+    if (std::filesystem::exists(arguments.environment_collision_path) &&
+        !environment_collision.Load(arguments.environment_collision_path, error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+    }
+    const FileSignature initial_environment_signature =
+        ReadFileSignature(arguments.environment_collision_path);
+    FileSignature applied_environment_signature = environment_collision.IsLoaded()
+        ? initial_environment_signature : FileSignature{};
+    FileSignature observed_environment_signature = initial_environment_signature;
+    FileSignature attempted_environment_signature = initial_environment_signature;
+    double environment_signature_observed_at = GetTime();
+    double next_environment_file_check = GetTime() + 0.5;
+    viewer::NavigationDebugSurface navigation_debug{};
+    if (std::filesystem::exists(arguments.navigation_path) &&
+        !navigation_debug.Load(arguments.navigation_path, error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+    }
+    const FileSignature initial_navigation_signature =
+        ReadFileSignature(arguments.navigation_path);
+    FileSignature applied_navigation_signature = navigation_debug.IsLoaded()
+        ? initial_navigation_signature : FileSignature{};
+    FileSignature observed_navigation_signature = initial_navigation_signature;
+    FileSignature attempted_navigation_signature = initial_navigation_signature;
+    double navigation_signature_observed_at = GetTime();
+    double next_navigation_file_check = GetTime() + 0.5;
+
+    prophecy::navigation::CrowdRuntime navigation_crowd{};
+    prophecy::navigation::CrowdTickMetrics navigation_crowd_metrics{};
+    if (arguments.navigation_crowd_test &&
+        !navigation_crowd.Load(arguments.navigation_path, scenario.seed, error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        CloseWindow();
+        return 2;
+    }
+
+    if (arguments.navigation_crowd_test) {
+        scenario.simulation.hero_agent_count = 0U;
+        scenario.simulation.villain_agent_count = 0U;
+        scenario.simulation.agent_count = 0U;
+        scenario.simulation.opening_transforms.clear();
+    } else if (arguments.navigation_test) {
+        scenario.simulation.hero_agent_count = 1U;
+        scenario.simulation.villain_agent_count = 0U;
+        scenario.simulation.agent_count = 1U;
+        scenario.simulation.opening_transforms.clear();
+    }
 
     FlyingCamera flying_camera{};
     flying_camera.Initialize(CoreToWorld(scenario.camera_focus), scenario.camera_distance,
         scenario.camera_yaw, scenario.camera_pitch);
     sim::Simulation simulation(scenario.simulation, scenario.seed);
+    const auto advance_navigation_crowd = [&](const std::uint64_t count) {
+        if (!arguments.navigation_crowd_test) return;
+        for (std::uint64_t tick = 0U; tick < count; ++tick) {
+            navigation_crowd_metrics = navigation_crowd.Update(
+                static_cast<float>(simulation.TickSeconds()));
+        }
+    };
+    const auto reset_navigation_crowd = [&](const std::uint64_t seed) {
+        if (!arguments.navigation_crowd_test) return;
+        if (!navigation_crowd.Load(arguments.navigation_path, seed, error)) {
+            std::fprintf(stderr, "%s\n", error.c_str());
+        }
+        navigation_crowd_metrics = {};
+    };
     if (arguments.capture_tick > 0) {
         for (std::uint64_t tick = 0; tick < arguments.capture_tick; ++tick) simulation.Tick();
+        advance_navigation_crowd(arguments.capture_tick);
     }
     if (arguments.capture_follow_agent != 0) {
         const auto followed = std::find_if(simulation.Snapshot().agents.begin(), simulation.Snapshot().agents.end(),
@@ -2525,14 +2836,19 @@ int main(int argc, char** argv) {
     }
 
     bool paused = !arguments.capture_path.empty();
-    bool options_open = arguments.capture_options || arguments.capture_combat_options ||
+    bool navigation_visible = arguments.show_navigation || arguments.navigation_test ||
+        arguments.navigation_crowd_test;
+    bool options_open = arguments.capture_options || arguments.capture_locomotion_options ||
+        arguments.capture_combat_options || arguments.capture_tactics_options ||
         arguments.capture_look_options || arguments.capture_sense_options ||
         arguments.capture_sound_options;
-    OptionsTab options_tab = arguments.capture_combat_options
-        ? OptionsTab::Combat
-        : (arguments.capture_look_options ? OptionsTab::Look
-            : (arguments.capture_sense_options ? OptionsTab::Sense
-                : (arguments.capture_sound_options ? OptionsTab::Sound : OptionsTab::Camera)));
+    OptionsTab options_tab = arguments.capture_locomotion_options
+        ? OptionsTab::Locomotion
+        : (arguments.capture_combat_options ? OptionsTab::Combat
+            : (arguments.capture_tactics_options ? OptionsTab::Tactics
+                : (arguments.capture_look_options ? OptionsTab::Look
+                    : (arguments.capture_sense_options ? OptionsTab::Sense
+                        : (arguments.capture_sound_options ? OptionsTab::Sound : OptionsTab::Camera)))));
     SeedInputState seed_input{};
     seed_input.Set(simulation.Seed());
     AttackStunEditorState attack_stun_editor{};
@@ -2553,8 +2869,55 @@ int main(int argc, char** argv) {
     sim::EntityId selected_agent_id = arguments.capture_follow_agent;
     AgentSelection selected_agents{};
     SelectOnlyAgent(selected_agents, selected_agent_id);
+    std::uint64_t screenshot_number = HighestScreenshotNumber();
+    float screenshot_flash_seconds = 0.0f;
 
     while (!WindowShouldClose()) {
+        const double frame_time = GetTime();
+        if (frame_time >= next_environment_file_check) {
+            next_environment_file_check = frame_time + 0.5;
+            const FileSignature current_signature =
+                ReadFileSignature(arguments.environment_collision_path);
+            if (!SameFileSignature(current_signature, observed_environment_signature)) {
+                observed_environment_signature = current_signature;
+                environment_signature_observed_at = frame_time;
+            } else if (current_signature.valid &&
+                !SameFileSignature(current_signature, applied_environment_signature) &&
+                !SameFileSignature(current_signature, attempted_environment_signature) &&
+                frame_time - environment_signature_observed_at >= 0.5) {
+                attempted_environment_signature = current_signature;
+                if (environment_collision.Reload(arguments.environment_collision_path, error)) {
+                    applied_environment_signature = current_signature;
+                    std::fprintf(stderr, "Reloaded Unreal collision snapshot: %s\n",
+                        arguments.environment_collision_path.c_str());
+                } else {
+                    std::fprintf(stderr, "%s\nKeeping the previous Unreal collision snapshot.\n", error.c_str());
+                }
+            }
+        }
+        if (frame_time >= next_navigation_file_check) {
+            next_navigation_file_check = frame_time + 0.5;
+            const FileSignature current_signature =
+                ReadFileSignature(arguments.navigation_path);
+            if (!SameFileSignature(current_signature, observed_navigation_signature)) {
+                observed_navigation_signature = current_signature;
+                navigation_signature_observed_at = frame_time;
+            } else if (current_signature.valid &&
+                !SameFileSignature(current_signature, applied_navigation_signature) &&
+                !SameFileSignature(current_signature, attempted_navigation_signature) &&
+                frame_time - navigation_signature_observed_at >= 0.5) {
+                attempted_navigation_signature = current_signature;
+                if (navigation_debug.Reload(arguments.navigation_path, error)) {
+                    applied_navigation_signature = current_signature;
+                    reset_navigation_crowd(simulation.Seed());
+                    std::fprintf(stderr, "Reloaded navigation artifact: %s\n",
+                        arguments.navigation_path.c_str());
+                } else {
+                    std::fprintf(stderr, "%s\nKeeping the previous navigation surface.\n",
+                        error.c_str());
+                }
+            }
+        }
         const Rectangle transport{12.0f, 12.0f, 640.0f, 104.0f};
         const Rectangle info{static_cast<float>(GetScreenWidth()) - 342.0f, 12.0f, 330.0f, kInfoPanelHeight};
         const Rectangle options{static_cast<float>(GetScreenWidth()) - 332.0f,
@@ -2569,6 +2932,10 @@ int main(int argc, char** argv) {
             SelectAgentTeam(simulation.Snapshot(), selected_agent_id, selected_agents);
         }
         if (!text_input_active && IsKeyPressed(KEY_SPACE)) paused = !paused;
+        if (!text_input_active && IsKeyPressed(KEY_N)) {
+            navigation_visible = !navigation_visible;
+        }
+        const bool screenshot_requested = !text_input_active && IsKeyPressed(KEY_P);
         const std::int64_t keyboard_tick_delta = text_input_active ? 0 : tick_key_repeater.Consume(
 #if PROPHECY_ENABLE_REWIND
             IsKeyDown(KEY_LEFT),
@@ -2592,6 +2959,7 @@ int main(int argc, char** argv) {
                     rewind,
 #endif
                     tick_count);
+                advance_navigation_crowd(tick_count);
             }
             if (paused) tick_accumulator = 0.0;
         }
@@ -2607,6 +2975,7 @@ int main(int argc, char** argv) {
                     rewind,
 #endif
                     due_ticks);
+                advance_navigation_crowd(due_ticks);
                 tick_accumulator -= static_cast<double>(due_ticks) * tick_seconds;
             }
         }
@@ -2762,8 +3131,62 @@ int main(int argc, char** argv) {
         BeginMode3D(flying_camera.camera);
         DrawWorld(scenario, simulation.Snapshot(), locomotion_poses,
             equipment_joints, selected_agent_id, selected_agents, render_prediction_seconds,
-            settings.sound_visualization, flying_camera.camera, solid_batch);
+            settings.sound_visualization, flying_camera.camera, environment_collision,
+            navigation_debug, navigation_crowd, navigation_visible, arguments.navigation_test,
+            arguments.navigation_crowd_test,
+            settings.xray_agents, solid_batch);
         EndMode3D();
+
+        if (environment_collision.IsLoaded()) {
+            const std::string collision_status = "UE collision debug: " +
+                std::to_string(environment_collision.ObjectCount()) + " object(s), " +
+                std::to_string(environment_collision.TriangleCount()) + " triangles" +
+                (environment_collision.WarningCount() > 0U
+                    ? ", " + std::to_string(environment_collision.WarningCount()) + " warning(s)"
+                    : "");
+            DrawText(collision_status.c_str(), 16, GetScreenHeight() - 28, 16, kMuted);
+        }
+        if (navigation_visible && navigation_debug.IsLoaded()) {
+            const std::string navigation_status = "Walkable surface: " +
+                std::to_string(navigation_debug.TriangleCount()) +
+                " triangles, " + std::to_string(navigation_debug.PortalCount()) +
+                " entrance link(s), " + std::to_string(navigation_debug.ComponentCount()) +
+                " island(s)  |  N to hide";
+            DrawText(navigation_status.c_str(), 16, GetScreenHeight() - 50, 16,
+                Color{72, 238, 151, 255});
+            if (arguments.navigation_test && navigation_debug.HasTestRoute()) {
+                const std::string test_status = "ATTIC TEST: " +
+                    navigation_debug.TestStartHouse() + " -> " +
+                    navigation_debug.TestGoalHouse() + "  |  " +
+                    std::to_string(static_cast<int>(std::lround(
+                        navigation_debug.TestRouteLength()))) + " m cached route";
+                DrawText(test_status.c_str(), 16, GetScreenHeight() - 72, 18,
+                    Color{54, 219, 255, 255});
+            }
+            if (arguments.navigation_crowd_test && navigation_crowd.IsLoaded()) {
+                const std::string crowd_status = "VILLAGE CROWD: " +
+                    std::to_string(navigation_crowd_metrics.active_agents) +
+                    " agents  |  nav + avoidance " +
+                    std::string(TextFormat("%.3f",
+                        navigation_crowd_metrics.rolling_average_milliseconds)) +
+                    " ms/tick  |  " +
+                    std::to_string(navigation_crowd_metrics.completed_targets) +
+                    " trips  |  " +
+                    std::to_string(navigation_crowd_metrics.assigned_attic_targets) +
+                    " attic targets";
+                DrawText(crowd_status.c_str(), 16, GetScreenHeight() - 72, 18,
+                    Color{54, 219, 255, 255});
+                const std::string jam_status = "JAM DETECTOR: " +
+                    std::to_string(navigation_crowd_metrics.jammed_agents) +
+                    " active  |  " +
+                    std::to_string(navigation_crowd_metrics.jam_events) +
+                    " detected  |  " +
+                    std::to_string(navigation_crowd_metrics.stall_recovery_events) +
+                    " preventive clears";
+                DrawText(jam_status.c_str(), 16, GetScreenHeight() - 94, 16,
+                    Color{255, 199, 84, 255});
+            }
+        }
 
         Tooltip tooltip{};
         const UiActions actions = DrawUi(scenario, simulation, paused, time_scale,
@@ -2772,23 +3195,44 @@ int main(int argc, char** argv) {
 #else
             false, simulation.Snapshot().tick,
 #endif
-            options_open, options_tab, settings, locomotion_poses,
+            options_open, navigation_visible, options_tab, settings, locomotion_poses,
             benchmark, settings_status, seed_input, attack_stun_editor, head_turn_editor,
             team_count_editor, selected_agent_id, selected_agents, tooltip);
         DrawTooltip(tooltip);
+        const std::uint64_t displayed_screenshot_number = screenshot_number +
+            (screenshot_requested ? 1U : 0U);
+        if (screenshot_requested) {
+            DrawScreenshotCameraStamp(flying_camera, displayed_screenshot_number);
+        }
+        DrawScreenshotCounter(displayed_screenshot_number);
+        if (!screenshot_requested && screenshot_flash_seconds > 0.0f) {
+            constexpr float flash_duration_seconds = 0.14f;
+            constexpr float maximum_flash_opacity = 0.12f;
+            const float opacity = maximum_flash_opacity *
+                std::clamp(screenshot_flash_seconds / flash_duration_seconds, 0.0f, 1.0f);
+            DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(WHITE, opacity));
+        }
         EndDrawing();
 
-        if (actions.screenshot) {
-            const std::filesystem::path screenshot_path = LatestScreenshotPath();
+        if (screenshot_requested) {
+            const std::filesystem::path screenshot_path = ScreenshotPath(displayed_screenshot_number);
             std::error_code filesystem_error;
             std::filesystem::create_directories(screenshot_path.parent_path(), filesystem_error);
             if (filesystem_error) {
                 settings_status = "Screenshot failed";
             } else {
-                settings_status = SaveCurrentWindowImage(screenshot_path.string())
-                    ? "Screenshot saved"
-                    : "Screenshot failed";
+                const bool saved = SaveCurrentWindowImage(screenshot_path.string());
+                if (saved) {
+                    screenshot_number = displayed_screenshot_number;
+                    screenshot_flash_seconds = 0.14f;
+                    settings_status = "Screenshot " + std::to_string(screenshot_number) + " saved";
+                } else {
+                    settings_status = "Screenshot failed";
+                }
             }
+        } else if (screenshot_flash_seconds > 0.0f) {
+            screenshot_flash_seconds = std::max(0.0f,
+                screenshot_flash_seconds - std::min(GetFrameTime(), 0.1f));
         }
         if (actions.square_formation) {
             bool edit_ready = true;
@@ -2820,6 +3264,7 @@ int main(int argc, char** argv) {
         if (actions.stop_reset) {
             paused = true;
             simulation.Reset(simulation.Seed());
+            reset_navigation_crowd(simulation.Seed());
 #if PROPHECY_ENABLE_REWIND
             rewind.Reset(simulation);
 #endif
@@ -2830,14 +3275,20 @@ int main(int argc, char** argv) {
         if (actions.rewind_second) {
             paused = true;
             (void)rewind.SeekBackward(simulation, static_cast<std::uint64_t>(simulation.Config().tick_rate_hz));
+            reset_navigation_crowd(simulation.Seed());
+            advance_navigation_crowd(simulation.Snapshot().tick);
         }
         if (actions.previous_tick) {
             paused = true;
             (void)rewind.SeekBackward(simulation, 1U);
+            reset_navigation_crowd(simulation.Seed());
+            advance_navigation_crowd(simulation.Snapshot().tick);
         }
         if (actions.return_live) {
             paused = true;
             (void)rewind.ReturnLive(simulation);
+            reset_navigation_crowd(simulation.Seed());
+            advance_navigation_crowd(simulation.Snapshot().tick);
         }
 #endif
         if (actions.next_tick) {
@@ -2847,6 +3298,7 @@ int main(int argc, char** argv) {
                 rewind,
 #endif
                 1U);
+            advance_navigation_crowd(1U);
         }
         if (actions.next_second) {
             paused = true;
@@ -2855,9 +3307,12 @@ int main(int argc, char** argv) {
                 rewind,
 #endif
                 static_cast<std::uint64_t>(simulation.Config().tick_rate_hz));
+            advance_navigation_crowd(
+                static_cast<std::uint64_t>(simulation.Config().tick_rate_hz));
         }
         if (actions.reset) {
             simulation.Reset(simulation.Seed());
+            reset_navigation_crowd(simulation.Seed());
 #if PROPHECY_ENABLE_REWIND
             rewind.Reset(simulation);
 #endif
@@ -2894,6 +3349,7 @@ int main(int argc, char** argv) {
         if (actions.new_seed) requested_seed = NewSeed();
         if (requested_seed.has_value()) {
             simulation.Reset(*requested_seed);
+            reset_navigation_crowd(*requested_seed);
 #if PROPHECY_ENABLE_REWIND
             rewind.Reset(simulation);
 #endif
@@ -2908,9 +3364,18 @@ int main(int argc, char** argv) {
             settings_status = saved ? "Seed saved" : "Seed save failed";
         }
         if (actions.benchmark) benchmark = RunHeadlessBenchmark(simulation.Config(), simulation.Seed());
+        if (actions.locomotion_settings_changed) {
+            simulation.UpdateLocomotionOptions(
+                settings.crawl_speed_scale, settings.crawl_turn_scale);
+#if PROPHECY_ENABLE_REWIND
+            rewind.RefreshCurrent(simulation);
+#endif
+        }
         if (actions.combat_settings_changed) {
             simulation.UpdateCombatOptions(settings.attack_cooldown_seconds,
-                settings.parried_attack_cooldown_seconds, settings.parry_probability,
+                settings.parried_attack_cooldown_seconds,
+                settings.attack_followup_probability,
+                settings.drawn_sword_attack_probability, settings.parry_probability,
                 settings.sword_attack_stun_seconds, settings.melee_attack_stun_seconds);
 #if PROPHECY_ENABLE_REWIND
             rewind.RefreshCurrent(simulation);
@@ -2919,6 +3384,7 @@ int main(int argc, char** argv) {
         if (actions.tactics_settings_changed) {
             simulation.UpdateTacticsOptions(settings.target_commitment_seconds,
                 settings.sector_influence_distance_m,
+                settings.containment_early_influence,
                 settings.sector_angle_variation_degrees,
                 settings.sector_radius_variation_m,
                 settings.ally_spacing_distance_m);
@@ -3005,8 +3471,12 @@ int main(int argc, char** argv) {
                 selected_agent_id = sim::kInvalidEntityId;
                 selected_agents.reset();
             }
+            simulation.UpdateLocomotionOptions(
+                settings.crawl_speed_scale, settings.crawl_turn_scale);
             simulation.UpdateCombatOptions(settings.attack_cooldown_seconds,
-                settings.parried_attack_cooldown_seconds, settings.parry_probability,
+                settings.parried_attack_cooldown_seconds,
+                settings.attack_followup_probability,
+                settings.drawn_sword_attack_probability, settings.parry_probability,
                 settings.sword_attack_stun_seconds, settings.melee_attack_stun_seconds);
             simulation.UpdateWoundOptions(settings.melee_wound_gain, settings.wound_threshold,
                 settings.wound_decay_per_second, settings.leg_agonising_seconds,
@@ -3021,6 +3491,7 @@ int main(int argc, char** argv) {
                 settings.follow_walk_distance_m, settings.follow_stop_distance_m);
             simulation.UpdateTacticsOptions(settings.target_commitment_seconds,
                 settings.sector_influence_distance_m,
+                settings.containment_early_influence,
                 settings.sector_angle_variation_degrees,
                 settings.sector_radius_variation_m,
                 settings.ally_spacing_distance_m);
@@ -3043,6 +3514,8 @@ int main(int argc, char** argv) {
     }
 
     telemetry.Stop();
+    navigation_debug.Shutdown();
+    environment_collision.Shutdown();
     solid_batch.Shutdown();
     CloseWindow();
     return 0;

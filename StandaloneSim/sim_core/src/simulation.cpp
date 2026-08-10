@@ -13,6 +13,7 @@ namespace {
 
 constexpr double kPi = 3.1415926535897932384626433832795;
 constexpr float kAttackSourceFps = 30.0f;
+constexpr double kMaximumApproachLateralRatio = 0.36;
 
 template <std::size_t Size>
 void NormalizeStunDurations(std::array<float, Size>& values) noexcept {
@@ -57,6 +58,11 @@ constexpr std::size_t LimbIndex(Limb limb) noexcept {
 bool IsIncapacitated(AgentState state) noexcept {
     return state == AgentState::Agonising || state == AgentState::PassedOut ||
         state == AgentState::Crawling || state == AgentState::Dead;
+}
+
+bool CanInvestigateSound(AgentState state) noexcept {
+    return state != AgentState::Agonising && state != AgentState::PassedOut &&
+        state != AgentState::Dead;
 }
 
 bool IsGroundedTarget(AgentState state) noexcept {
@@ -113,6 +119,10 @@ SimulationConfig NormalizeConfig(SimulationConfig config) noexcept {
     config.attack_cooldown_seconds = std::clamp(config.attack_cooldown_seconds, 0.0f, 30.0f);
     config.parried_attack_cooldown_seconds = std::clamp(
         config.parried_attack_cooldown_seconds, 0.0f, 30.0f);
+    config.attack_followup_probability = std::clamp(
+        config.attack_followup_probability, 0.0f, 1.0f);
+    config.drawn_sword_attack_probability = std::clamp(
+        config.drawn_sword_attack_probability, 0.0f, 1.0f);
     config.hit_probability = std::clamp(config.hit_probability, 0.0f, 1.0f);
     config.parry_probability = std::clamp(config.parry_probability, 0.0f, 1.0f);
     config.head_turn_speed_degrees_per_second = NormalizeHeadTurnSpeed(
@@ -138,12 +148,16 @@ SimulationConfig NormalizeConfig(SimulationConfig config) noexcept {
         config.target_commitment_seconds, 0.0f, 10.0f);
     config.sector_influence_distance_m = std::clamp(
         config.sector_influence_distance_m, config.attack_range_m, 50.0f);
+    config.containment_early_influence = std::clamp(
+        config.containment_early_influence, 0.0f, 0.2f);
     config.sector_angle_variation_degrees = std::clamp(
         config.sector_angle_variation_degrees, 0.0f, 22.5f);
     config.sector_radius_variation_m = std::clamp(
         config.sector_radius_variation_m, 0.0f, 1.0f);
     config.ally_spacing_distance_m = std::clamp(
         config.ally_spacing_distance_m, 0.0f, 5.0f);
+    config.crawl_speed_scale = std::clamp(config.crawl_speed_scale, 0.0f, 1.0f);
+    config.crawl_turn_scale = std::clamp(config.crawl_turn_scale, 0.0f, 1.0f);
     NormalizeStunDurations(config.sword_attack_stun_seconds);
     NormalizeStunDurations(config.melee_attack_stun_seconds);
     config.melee_wound_gain = std::clamp(config.melee_wound_gain, 0.0f, 500.0f);
@@ -228,7 +242,7 @@ double HeadAnchorHeight(AgentState state) noexcept {
 
 float PosePhase(const LocomotionState& state, LocomotionMode mode) noexcept {
     // Full-body source cycles span 120 walk frames at 2 m/s and 75 run frames at 5 m/s.
-    const double cycle_distance = mode == LocomotionMode::Walk ? 8.00007152557373 : 12.5;
+    const double cycle_distance = mode == LocomotionMode::Run ? 12.5 : 8.00007152557373;
     return static_cast<float>(std::fmod(state.distance_travelled, cycle_distance) / cycle_distance);
 }
 
@@ -298,6 +312,7 @@ struct Simulation::Impl final {
         Vec2 engagement_anchor{};
         TacticalSteeringMode tactical_steering = TacticalSteeringMode::Direct;
         std::uint32_t tactical_threat_count = 0;
+        double tactical_containment_influence = 0.0;
         double tactical_threat_arc_radians = 0.0;
         double tactical_nearest_peer_separation_radians = 0.0;
         double tactical_view_center_yaw_radians = 0.0;
@@ -537,7 +552,7 @@ struct Simulation::Impl final {
                 if (source == nullptr || secondary == nullptr) continue;
                 for (AgentRuntime& listener : agents) {
                     if (listener.behavior_mode != BehaviorMode::Idle ||
-                        IsIncapacitated(listener.state) ||
+                        !CanInvestigateSound(listener.state) ||
                         listener.sound_investigation_source_id != kInvalidEntityId ||
                         IsAttacking(listener) || listener.reaction.kind != ReactionKind::None) continue;
                     AgentRuntime* enemy_source = listener.team == source->team ? secondary : source;
@@ -555,7 +570,7 @@ struct Simulation::Impl final {
             if (event.kind != SoundEventKind::Locomotion || source == nullptr ||
                 !IsStandingThreat(*source)) continue;
             for (AgentRuntime& listener : agents) {
-                if (listener.team == source->team || IsIncapacitated(listener.state) ||
+                if (listener.team == source->team || !CanInvestigateSound(listener.state) ||
                     listener.sound_investigation_source_id != kInvalidEntityId ||
                     listener.rescue_executioner_id != kInvalidEntityId) continue;
                 const double event_delta_x = static_cast<double>(event.position.x) -
@@ -689,9 +704,13 @@ struct Simulation::Impl final {
         const WeaponKind weapon = HeldWeapon(agent);
         const bool weapon_available = weapon != WeaponKind::None &&
             !LimbInjured(agent, Limb::RightArm);
+        const double attack_kind_roll = UnitRandom(DecisionWord(agent, kAttackKindSalt));
         const bool sword_attack = weapon_available &&
-            (!grounded_target || weapon == WeaponKind::Sword) &&
-            (grounded_target || DecisionWord(agent, kAttackKindSalt) % 10U != 0U);
+            (grounded_target
+                ? weapon == WeaponKind::Sword
+                : attack_kind_roll < (weapon == WeaponKind::Sword
+                    ? static_cast<double>(config.drawn_sword_attack_probability)
+                    : 0.9));
         if (sword_attack) {
             const std::uint64_t clip_decision = DecisionWord(agent, kAttackClipSalt);
             const std::uint8_t clip = grounded_target
@@ -728,7 +747,9 @@ struct Simulation::Impl final {
         constexpr std::uint64_t kCooldownDistanceSalt = 0x5354524146454449ULL;
         agent.attack_cooldown_ticks_remaining = CooldownTicks(seconds);
         agent.cooldown_strafe_last_position = agent.locomotion.position;
-        if (agent.attack_cooldown_ticks_remaining == 0U) {
+        const AgentRuntime* target = FindRuntime(agent.attack_target_id);
+        const bool grounded_finishing = target != nullptr && IsGroundedTarget(target->state);
+        if (agent.attack_cooldown_ticks_remaining == 0U || grounded_finishing) {
             agent.cooldown_strafe_enabled = false;
             agent.cooldown_strafe_direction = 1.0;
             agent.cooldown_strafe_target_distance_m = 0.0;
@@ -771,6 +792,19 @@ struct Simulation::Impl final {
         agent.held_stick_id = kInvalidStickId;
     }
 
+    void DropDrawnSwordNow(AgentRuntime& agent) noexcept {
+        if (agent.sword_state != SwordState::Drawn) return;
+        agent.sword_state = SwordState::Dropped;
+        agent.dropped_sword_position = agent.locomotion.position;
+        agent.dropped_sword_yaw_radians = agent.locomotion.yaw_radians;
+    }
+
+    void DropHandHeldEquipmentForDowning(AgentRuntime& agent) noexcept {
+        if (agent.held_stick_id != kInvalidStickId) DropHeldStickNow(agent);
+        DropDrawnSwordNow(agent);
+        agent.pending_stick_pickup_id = kInvalidStickId;
+    }
+
     void CompleteAction(AgentRuntime& agent, bool success) noexcept {
         const ActionRuntime completed_action = agent.action;
         const ActionKind completed_kind = completed_action.kind;
@@ -806,9 +840,15 @@ struct Simulation::Impl final {
             }
         }
         if (completed_attack) {
-            BeginAttackCooldown(agent, attack_was_parried
+            constexpr std::uint64_t kFollowupSalt = 0x464f4c4c4f575550ULL;
+            const bool immediate_followup = !attack_was_parried &&
+                UnitRandom(seed ^ completed_sequence ^
+                    (static_cast<std::uint64_t>(agent.id) << 32U) ^ kFollowupSalt) <
+                    config.attack_followup_probability;
+            const float cooldown_seconds = attack_was_parried
                 ? config.parried_attack_cooldown_seconds
-                : config.attack_cooldown_seconds, completed_sequence);
+                : (immediate_followup ? 0.0f : config.attack_cooldown_seconds);
+            BeginAttackCooldown(agent, cooldown_seconds, completed_sequence);
         }
     }
 
@@ -875,8 +915,16 @@ struct Simulation::Impl final {
     void EnterCrawling(AgentRuntime& agent) noexcept {
         if (agent.state == AgentState::Crawling) return;
         ClearExecutionRescue(agent);
-        if (agent.behavior_mode == BehaviorMode::Follow) agent.behavior_mode = BehaviorMode::Idle;
+        DropHandHeldEquipmentForDowning(agent);
+        agent.combat_enabled = false;
+        agent.behavior_mode = BehaviorMode::Idle;
+        agent.attack_target_id = kInvalidEntityId;
         agent.follow_target_id = kInvalidEntityId;
+        agent.draw_retreat_target_id = kInvalidEntityId;
+        agent.pending_grunt_target_id = kInvalidEntityId;
+        agent.non_dead_seen_during_scan.reset();
+        agent.finishing_targets.reset();
+        agent.head_scan_endpoint_count = 2U;
         agent.suppress_next_grunt = false;
         agent.state = AgentState::Crawling;
         agent.state_ticks_remaining = 0;
@@ -885,6 +933,7 @@ struct Simulation::Impl final {
 
     void EnterTimedState(AgentRuntime& agent, AgentState state, float seconds) noexcept {
         ClearExecutionRescue(agent);
+        DropHandHeldEquipmentForDowning(agent);
         agent.action = {};
         agent.pending_stick_pickup_id = kInvalidStickId;
         agent.attack_requested = false;
@@ -918,6 +967,7 @@ struct Simulation::Impl final {
     }
 
     void KillAgent(AgentRuntime& agent) noexcept {
+        DropHandHeldEquipmentForDowning(agent);
         StopForIncapacitation(agent);
         agent.combat_enabled = false;
         agent.behavior_mode = BehaviorMode::Idle;
@@ -944,9 +994,7 @@ struct Simulation::Impl final {
             }
         }
         if (limb == Limb::RightArm && agent.sword_state == SwordState::Drawn) {
-            agent.sword_state = SwordState::Dropped;
-            agent.dropped_sword_position = agent.locomotion.position;
-            agent.dropped_sword_yaw_radians = agent.locomotion.yaw_radians;
+            DropDrawnSwordNow(agent);
             if (agent.action.kind == ActionKind::SwordAttack) {
                 const std::uint64_t interrupted_sequence = agent.action.sequence;
                 agent.action = {};
@@ -982,6 +1030,7 @@ struct Simulation::Impl final {
 
     void ApplyBadInjuryEffects(AgentRuntime& agent, Limb limb) noexcept {
         if (agent.state == AgentState::Dead || (limb != Limb::Head && limb != Limb::Torso)) return;
+        DropHandHeldEquipmentForDowning(agent);
         StopForIncapacitation(agent);
         agent.state = limb == Limb::Head ||
                 agent.wounds[LimbIndex(Limb::Head)].condition != LimbCondition::Normal
@@ -1798,6 +1847,7 @@ struct Simulation::Impl final {
         if (agent.state == AgentState::Dead) return;
 
         const double root_yaw = agent.locomotion.yaw_radians;
+        const bool crawling = agent.state == AgentState::Crawling;
         double desired_yaw = root_yaw;
         double desired_pitch = 0.0;
         agent.head_look_mode = HeadLookMode::RootHeading;
@@ -1869,14 +1919,14 @@ struct Simulation::Impl final {
             desired_pitch = std::atan2(
                 HeadAnchorHeight(follow_target->state) - HeadAnchorHeight(agent.state),
                 std::hypot(delta_x, delta_z));
-        } else if (agent.behavior_mode == BehaviorMode::Attack) {
+        } else if (agent.behavior_mode == BehaviorMode::Attack && !crawling) {
             agent.head_look_mode = HeadLookMode::SearchScan;
             desired_yaw = WrapAngle(root_yaw + agent.head_scan_direction *
                 static_cast<double>(kHeadYawLimitRadians));
         } else {
             const double root_speed = std::hypot(
                 agent.locomotion.velocity.x, agent.locomotion.velocity.z);
-            if (root_speed >= kHeadVelocityThresholdMps) {
+            if (!crawling && root_speed >= kHeadVelocityThresholdMps) {
                 agent.head_look_mode = HeadLookMode::RootVelocity;
                 desired_yaw = std::atan2(
                     agent.locomotion.velocity.x, agent.locomotion.velocity.z);
@@ -1927,7 +1977,7 @@ struct Simulation::Impl final {
         }
         if (agent.head_look_mode == HeadLookMode::SoundInvestigation && sound_source != nullptr) {
             if (InsideHeadVisionHemisphere(agent, *sound_source)) {
-                if (RunningToward(*sound_source, agent) && agent.sword_equipped &&
+                if (!crawling && RunningToward(*sound_source, agent) && agent.sword_equipped &&
                     agent.sword_state == SwordState::Sheathed &&
                     !LimbInjured(agent, Limb::RightArm)) {
                     agent.draw_retreat_target_id = sound_source->id;
@@ -2060,15 +2110,35 @@ struct Simulation::Impl final {
         return Scale(separation, std::min(1.0, total_pressure) / length);
     }
 
+    double ContainmentInfluence(double distance) const noexcept {
+        constexpr double kEarlyReferenceProximity = 0.3;
+        const double inner = static_cast<double>(config.attack_range_m);
+        const double outer = static_cast<double>(config.sector_influence_distance_m);
+        if (outer <= inner + 1.0e-3) return distance <= inner ? 1.0 : 0.0;
+        const double proximity = std::clamp(
+            (outer - distance) / (outer - inner), 0.0, 1.0);
+        const double reference_squared =
+            kEarlyReferenceProximity * kEarlyReferenceProximity;
+        const double reference_cubed = reference_squared * kEarlyReferenceProximity;
+        const double blend = (static_cast<double>(config.containment_early_influence) -
+            reference_cubed) /
+            (reference_squared * (1.0 - kEarlyReferenceProximity));
+        const double squared = proximity * proximity;
+        const double cubed = squared * proximity;
+        return std::clamp(cubed + blend * (squared - cubed), 0.0, 1.0);
+    }
+
     Vec2 OutnumberedMovement(const AgentRuntime& agent, const AgentRuntime& target,
-        const ThreatArc& threat_arc, double distance) const noexcept {
-        Vec2 movement{};
+        const ThreatArc& threat_arc, double distance,
+        double containment_influence) const noexcept {
+        Vec2 pursuit{};
         if (distance > static_cast<double>(config.attack_range_m)) {
-            movement = UnitOrZero({target.locomotion.position.x - agent.locomotion.position.x,
+            pursuit = UnitOrZero({target.locomotion.position.x - agent.locomotion.position.x,
                 target.locomotion.position.z - agent.locomotion.position.z});
         }
         if (threat_arc.span_radians <= static_cast<double>(kOutnumberedViewConeRadians)) {
-            return UnitOrZero(Add(movement, Scale(NearbyAllySeparation(agent), 1.4)));
+            return UnitOrZero(Add(pursuit, Scale(NearbyAllySeparation(agent),
+                1.4 * containment_influence)));
         }
 
         const Vec2 escape = DirectionFromAngle(threat_arc.center_yaw_radians + kPi);
@@ -2077,13 +2147,14 @@ struct Simulation::Impl final {
         const double anchor_distance = Length(to_anchor);
         const double anchor_weight = std::clamp(anchor_distance /
             static_cast<double>(config.attack_range_m), 0.0, 2.0);
-        movement = Add(escape, Scale(UnitOrZero(to_anchor), 1.5 * anchor_weight));
+        Vec2 containment = Add(escape, Scale(UnitOrZero(to_anchor), 1.5 * anchor_weight));
         if (distance > static_cast<double>(config.attack_range_m)) {
-            const Vec2 to_target{target.locomotion.position.x - agent.locomotion.position.x,
-                target.locomotion.position.z - agent.locomotion.position.z};
-            movement = Add(movement, Scale(UnitOrZero(to_target), 0.35));
+            containment = Add(containment, Scale(pursuit, 0.35));
         }
-        return UnitOrZero(Add(movement, Scale(NearbyAllySeparation(agent), 1.4)));
+        Vec2 movement = Add(Scale(pursuit, 1.0 - containment_influence),
+            Scale(containment, containment_influence));
+        return UnitOrZero(Add(movement, Scale(NearbyAllySeparation(agent),
+            1.4 * containment_influence)));
     }
 
     void UpdateApproachSectorDiagnostics(AgentRuntime& agent,
@@ -2109,9 +2180,12 @@ struct Simulation::Impl final {
     Vec2 SectorApproachMovement(const AgentRuntime& agent, const AgentRuntime& target,
         double distance, double signed_spacing_push) const noexcept {
         Vec2 movement{};
+        Vec2 direct_to_target{};
         if (distance > static_cast<double>(config.attack_range_m)) {
-            movement = UnitOrZero({target.locomotion.position.x - agent.locomotion.position.x,
+            direct_to_target = UnitOrZero({
+                target.locomotion.position.x - agent.locomotion.position.x,
                 target.locomotion.position.z - agent.locomotion.position.z});
+            movement = direct_to_target;
         }
         const double bearing = AngleTo(target.locomotion.position, agent.locomotion.position);
         const Vec2 positive_tangent{std::cos(bearing), -std::sin(bearing)};
@@ -2128,20 +2202,38 @@ struct Simulation::Impl final {
             movement = Add(movement, Scale(positive_tangent, 1.1 * signed_spacing_push));
         }
         movement = Add(movement, Scale(NearbyAllySeparation(agent), 1.4));
+        if (distance > static_cast<double>(config.attack_range_m)) {
+            const double lateral = std::clamp(
+                movement.x * positive_tangent.x + movement.z * positive_tangent.z,
+                -kMaximumApproachLateralRatio, kMaximumApproachLateralRatio);
+            movement = Add(direct_to_target, Scale(positive_tangent, lateral));
+        }
         return UnitOrZero(movement);
     }
 
     void UpdateBehavior(AgentRuntime& agent) noexcept {
         agent.attack_requested = false;
         agent.intent.speed_direction_radians = 0.0;
+        agent.intent.speed_scale = 1.0;
+        agent.intent.turn_scale = 1.0;
         agent.tactical_steering = TacticalSteeringMode::Direct;
         agent.tactical_threat_count = 0;
+        agent.tactical_containment_influence = 0.0;
         agent.tactical_threat_arc_radians = 0.0;
         agent.tactical_nearest_peer_separation_radians = 0.0;
         agent.tactical_view_center_yaw_radians = agent.locomotion.yaw_radians;
         agent.tactical_move_yaw_radians = agent.locomotion.yaw_radians;
         agent.tactical_sector_error_radians = 0.0;
         agent.tactical_sector_influence = 0.0;
+        if (agent.state == AgentState::Crawling) {
+            agent.intent.mode = LocomotionMode::Crawl;
+            agent.intent.speed_amplitude = 0.0;
+            agent.intent.orientation_yaw_radians = agent.locomotion.yaw_radians;
+            agent.intent.speed_scale = config.crawl_speed_scale;
+            agent.intent.turn_scale = config.crawl_turn_scale;
+            agent.target_distance_m = 0.0f;
+            return;
+        }
         if (agent.behavior_mode == BehaviorMode::Idle && agent.combat_enabled) {
             agent.attack_target_id = NearestPerceivedStandingOpponent(agent);
             if (agent.attack_target_id != kInvalidEntityId) {
@@ -2254,13 +2346,15 @@ struct Simulation::Impl final {
             ? ThreatArc{}
             : MeasureThreatArc(agent, agent.locomotion.position);
         double signed_spacing_push = 0.0;
-        const double nearest_peer_separation = IsGroundedTarget(target->state)
+        const bool grounded_target = IsGroundedTarget(target->state);
+        const double nearest_peer_separation = grounded_target
             ? 0.0
             : NearestPeerSeparation(agent, *target, signed_spacing_push);
         UpdateApproachSectorDiagnostics(agent, *target, distance);
         if (threat_arc.count >= 2U) {
             agent.tactical_steering = TacticalSteeringMode::OutnumberedView;
             agent.tactical_threat_count = threat_arc.count;
+            agent.tactical_containment_influence = ContainmentInfluence(distance);
             agent.tactical_threat_arc_radians = threat_arc.span_radians;
             agent.tactical_view_center_yaw_radians = threat_arc.center_yaw_radians;
         } else if (agent.tactical_sector_influence > 0.0 &&
@@ -2285,7 +2379,7 @@ struct Simulation::Impl final {
             return;
         }
 
-        if (IsGroundedTarget(target->state) && agent.sword_equipped &&
+        if (grounded_target && agent.sword_equipped &&
             !LimbInjured(agent, Limb::RightArm) &&
             agent.held_stick_id != kInvalidStickId) {
             agent.intent.speed_amplitude = 0.0;
@@ -2325,7 +2419,8 @@ struct Simulation::Impl final {
             Vec2 movement{};
             if (agent.tactical_steering == TacticalSteeringMode::OutnumberedView) {
                 agent.intent.orientation_yaw_radians = threat_arc.center_yaw_radians;
-                movement = OutnumberedMovement(agent, *target, threat_arc, distance);
+                movement = OutnumberedMovement(agent, *target, threat_arc, distance,
+                    agent.tactical_containment_influence);
             } else {
                 movement = SectorApproachMovement(agent, *target, distance,
                     signed_spacing_push);
@@ -2363,13 +2458,18 @@ struct Simulation::Impl final {
         }
 
         Vec2 movement{};
-        if (agent.tactical_steering == TacticalSteeringMode::OutnumberedView) {
+        if (grounded_target) {
+            if (distance > static_cast<double>(config.attack_range_m)) {
+                movement = UnitOrZero({delta_x, delta_z});
+            }
+        } else if (agent.tactical_steering == TacticalSteeringMode::OutnumberedView) {
             agent.intent.orientation_yaw_radians = threat_arc.center_yaw_radians;
-            movement = OutnumberedMovement(agent, *target, threat_arc, distance);
+            movement = OutnumberedMovement(agent, *target, threat_arc, distance,
+                agent.tactical_containment_influence);
         } else {
             movement = SectorApproachMovement(agent, *target, distance, signed_spacing_push);
         }
-        if (cooling_down) {
+        if (cooling_down && !grounded_target) {
             const double spacing_distance = 0.5 * static_cast<double>(config.attack_range_m);
             if (distance < spacing_distance) {
                 movement = Add(movement, DirectionFromAngle(target_yaw + kPi));
@@ -2423,6 +2523,16 @@ struct Simulation::Impl final {
         return true;
     }
 
+    void ApplyLocomotionOptionValues(float crawl_speed_scale, float crawl_turn_scale) noexcept {
+        config.crawl_speed_scale = std::clamp(crawl_speed_scale, 0.0f, 1.0f);
+        config.crawl_turn_scale = std::clamp(crawl_turn_scale, 0.0f, 1.0f);
+        for (AgentRuntime& agent : agents) {
+            if (agent.state != AgentState::Crawling) continue;
+            agent.intent.speed_scale = config.crawl_speed_scale;
+            agent.intent.turn_scale = config.crawl_turn_scale;
+        }
+    }
+
     void ApplyWoundOptionValues(float melee_wound_gain, float wound_threshold,
         float wound_decay_per_second, float leg_agonising_seconds,
         float torso_agonising_seconds, float head_passed_out_seconds) noexcept {
@@ -2449,11 +2559,14 @@ struct Simulation::Impl final {
     }
 
     void ApplyTacticsOptionValues(float target_commitment_seconds,
-        float sector_influence_distance_m, float sector_angle_variation_degrees,
-        float sector_radius_variation_m, float ally_spacing_distance_m) noexcept {
+        float sector_influence_distance_m, float containment_early_influence,
+        float sector_angle_variation_degrees, float sector_radius_variation_m,
+        float ally_spacing_distance_m) noexcept {
         config.target_commitment_seconds = std::clamp(target_commitment_seconds, 0.0f, 10.0f);
         config.sector_influence_distance_m = std::clamp(sector_influence_distance_m,
             config.attack_range_m, 50.0f);
+        config.containment_early_influence = std::clamp(
+            containment_early_influence, 0.0f, 0.2f);
         config.sector_angle_variation_degrees = std::clamp(
             sector_angle_variation_degrees, 0.0f, 22.5f);
         config.sector_radius_variation_m = std::clamp(
@@ -2499,12 +2612,27 @@ struct Simulation::Impl final {
             config.attack_cooldown_seconds = std::clamp(event.attack_cooldown_seconds, 0.0f, 30.0f);
             config.parried_attack_cooldown_seconds = std::clamp(
                 event.parried_attack_cooldown_seconds, 0.0f, 30.0f);
+            config.attack_followup_probability = std::clamp(
+                event.attack_followup_probability, 0.0f, 1.0f);
+            config.drawn_sword_attack_probability = std::clamp(
+                event.drawn_sword_attack_probability, 0.0f, 1.0f);
             config.parry_probability = std::clamp(event.parry_probability, 0.0f, 1.0f);
             config.sword_attack_stun_seconds = event.sword_attack_stun_seconds;
             config.melee_attack_stun_seconds = event.melee_attack_stun_seconds;
             NormalizeStunDurations(config.sword_attack_stun_seconds);
             NormalizeStunDurations(config.melee_attack_stun_seconds);
             ++replay_combat_options_index;
+        }
+    }
+
+    void ApplyReplayLocomotionOptions() noexcept {
+        while (replaying &&
+            replay_locomotion_options_index < replay_source.locomotion_options_events.size()) {
+            const ReplayLog::LocomotionOptionsEvent& event =
+                replay_source.locomotion_options_events[replay_locomotion_options_index];
+            if (event.tick > tick) break;
+            ApplyLocomotionOptionValues(event.crawl_speed_scale, event.crawl_turn_scale);
+            ++replay_locomotion_options_index;
         }
     }
 
@@ -2545,8 +2673,9 @@ struct Simulation::Impl final {
                 replay_source.tactics_options_events[replay_tactics_options_index];
             if (event.tick > tick) break;
             ApplyTacticsOptionValues(event.target_commitment_seconds,
-                event.sector_influence_distance_m, event.sector_angle_variation_degrees,
-                event.sector_radius_variation_m, event.ally_spacing_distance_m);
+                event.sector_influence_distance_m, event.containment_early_influence,
+                event.sector_angle_variation_degrees, event.sector_radius_variation_m,
+                event.ally_spacing_distance_m);
             ++replay_tactics_options_index;
         }
     }
@@ -2780,6 +2909,8 @@ struct Simulation::Impl final {
             target.perception.scanning = source.head_look_mode == HeadLookMode::SearchScan;
             target.tactical_steering = source.tactical_steering;
             target.tactical_threat_count = source.tactical_threat_count;
+            target.tactical_containment_influence = static_cast<float>(
+                source.tactical_containment_influence);
             target.tactical_threat_arc_radians = static_cast<float>(source.tactical_threat_arc_radians);
             target.tactical_nearest_peer_separation_radians = static_cast<float>(
                 source.tactical_nearest_peer_separation_radians);
@@ -2872,6 +3003,7 @@ struct Simulation::Impl final {
         replay.end_tick = 0;
         replay.initial_config = config;
         replay.validation_events.clear();
+        replay.locomotion_options_events.clear();
         replay.combat_options_events.clear();
         replay.wound_options_events.clear();
         replay.look_options_events.clear();
@@ -2879,6 +3011,7 @@ struct Simulation::Impl final {
         replay.transform_events.clear();
         replay.stick_command_events.clear();
         replay_validation_index = 0;
+        replay_locomotion_options_index = 0;
         replay_combat_options_index = 0;
         replay_wound_options_index = 0;
         replay_look_options_index = 0;
@@ -2915,6 +3048,7 @@ struct Simulation::Impl final {
         RefreshTargetDistances();
         ++tick;
 #if PROPHECY_ENABLE_REWIND
+        ApplyReplayLocomotionOptions();
         ApplyReplayCombatOptions();
         ApplyReplayWoundOptions();
         ApplyReplayLookOptions();
@@ -3131,13 +3265,29 @@ struct Simulation::Impl final {
         return agents.size() > static_cast<std::size_t>(config.agent_count);
     }
 
+    void UpdateLocomotionOptions(float crawl_speed_scale, float crawl_turn_scale) noexcept {
+        ApplyLocomotionOptionValues(crawl_speed_scale, crawl_turn_scale);
+#if PROPHECY_ENABLE_REWIND
+        if (!replaying) {
+            replay.locomotion_options_events.push_back(
+                {tick, config.crawl_speed_scale, config.crawl_turn_scale});
+        }
+#endif
+        PublishSnapshot();
+    }
+
     void UpdateCombatOptions(float attack_cooldown_seconds,
-        float parried_attack_cooldown_seconds, float parry_probability,
+        float parried_attack_cooldown_seconds, float attack_followup_probability,
+        float drawn_sword_attack_probability, float parry_probability,
         const std::array<float, kSwordAttackClipCount>& sword_attack_stun_seconds,
         const std::array<float, kMeleeAttackClipCount>& melee_attack_stun_seconds) noexcept {
         config.attack_cooldown_seconds = std::clamp(attack_cooldown_seconds, 0.0f, 30.0f);
         config.parried_attack_cooldown_seconds = std::clamp(
             parried_attack_cooldown_seconds, 0.0f, 30.0f);
+        config.attack_followup_probability = std::clamp(
+            attack_followup_probability, 0.0f, 1.0f);
+        config.drawn_sword_attack_probability = std::clamp(
+            drawn_sword_attack_probability, 0.0f, 1.0f);
         config.parry_probability = std::clamp(parry_probability, 0.0f, 1.0f);
         config.sword_attack_stun_seconds = sword_attack_stun_seconds;
         config.melee_attack_stun_seconds = melee_attack_stun_seconds;
@@ -3146,7 +3296,8 @@ struct Simulation::Impl final {
 #if PROPHECY_ENABLE_REWIND
         if (!replaying) {
             replay.combat_options_events.push_back({tick, config.attack_cooldown_seconds,
-                config.parried_attack_cooldown_seconds, config.parry_probability,
+                config.parried_attack_cooldown_seconds, config.attack_followup_probability,
+                config.drawn_sword_attack_probability, config.parry_probability,
                 config.sword_attack_stun_seconds, config.melee_attack_stun_seconds});
         }
 #endif
@@ -3241,16 +3392,18 @@ struct Simulation::Impl final {
     }
 
     void UpdateTacticsOptions(float target_commitment_seconds,
-        float sector_influence_distance_m, float sector_angle_variation_degrees,
-        float sector_radius_variation_m, float ally_spacing_distance_m) noexcept {
+        float sector_influence_distance_m, float containment_early_influence,
+        float sector_angle_variation_degrees, float sector_radius_variation_m,
+        float ally_spacing_distance_m) noexcept {
         ApplyTacticsOptionValues(target_commitment_seconds, sector_influence_distance_m,
-            sector_angle_variation_degrees, sector_radius_variation_m,
-            ally_spacing_distance_m);
+            containment_early_influence, sector_angle_variation_degrees,
+            sector_radius_variation_m, ally_spacing_distance_m);
 #if PROPHECY_ENABLE_REWIND
         if (!replaying) {
             replay.tactics_options_events.push_back({tick,
                 config.target_commitment_seconds,
                 config.sector_influence_distance_m,
+                config.containment_early_influence,
                 config.sector_angle_variation_degrees,
                 config.sector_radius_variation_m,
                 config.ally_spacing_distance_m});
@@ -3308,6 +3461,7 @@ struct Simulation::Impl final {
     ReplayLog replay_source{};
     bool replaying = false;
     std::size_t replay_validation_index = 0;
+    std::size_t replay_locomotion_options_index = 0;
     std::size_t replay_combat_options_index = 0;
     std::size_t replay_wound_options_index = 0;
     std::size_t replay_look_options_index = 0;
@@ -3326,7 +3480,7 @@ const char* ToString(SwordState state) noexcept {
 }
 const char* ToString(WeaponKind kind) noexcept {
     if (kind == WeaponKind::Sword) return "sword";
-    if (kind == WeaponKind::Stick) return "stick";
+    if (kind == WeaponKind::Stick) return "club";
     return "none";
 }
 const char* ToString(SimulationMode mode) noexcept {
@@ -3359,8 +3513,8 @@ const char* ToString(ActionKind kind) noexcept {
         case ActionKind::Hold: return "hold";
         case ActionKind::SheatheSword: return "sheathe";
         case ActionKind::UnsheatheSword: return "unsheathe";
-        case ActionKind::PickUpStick: return "pick_up_stick";
-        case ActionKind::DropStick: return "drop_stick";
+        case ActionKind::PickUpStick: return "pick_up_club";
+        case ActionKind::DropStick: return "drop_club";
         case ActionKind::SwordAttack: return "sword_attack";
         case ActionKind::MeleeAttack: return "melee_attack";
         default: return "none";
@@ -3470,12 +3624,17 @@ bool Simulation::RequestDropStick(EntityId agent_id) noexcept {
 bool Simulation::HasTransientAgents() const noexcept {
     return impl_->HasTransientAgents();
 }
+void Simulation::UpdateLocomotionOptions(float crawl_speed_scale, float crawl_turn_scale) noexcept {
+    impl_->UpdateLocomotionOptions(crawl_speed_scale, crawl_turn_scale);
+}
 void Simulation::UpdateCombatOptions(float attack_cooldown_seconds,
-    float parried_attack_cooldown_seconds, float parry_probability,
+    float parried_attack_cooldown_seconds, float attack_followup_probability,
+    float drawn_sword_attack_probability, float parry_probability,
     const std::array<float, kSwordAttackClipCount>& sword_attack_stun_seconds,
     const std::array<float, kMeleeAttackClipCount>& melee_attack_stun_seconds) noexcept {
     impl_->UpdateCombatOptions(attack_cooldown_seconds,
-        parried_attack_cooldown_seconds, parry_probability,
+        parried_attack_cooldown_seconds, attack_followup_probability,
+        drawn_sword_attack_probability, parry_probability,
         sword_attack_stun_seconds, melee_attack_stun_seconds);
 }
 void Simulation::UpdateWoundOptions(float melee_wound_gain, float wound_threshold,
@@ -3500,11 +3659,12 @@ void Simulation::UpdatePerceptionOptions(float proximity_threat_range_m, float v
         follow_walk_distance_m, follow_stop_distance_m);
 }
 void Simulation::UpdateTacticsOptions(float target_commitment_seconds,
-    float sector_influence_distance_m, float sector_angle_variation_degrees,
-    float sector_radius_variation_m, float ally_spacing_distance_m) noexcept {
+    float sector_influence_distance_m, float containment_early_influence,
+    float sector_angle_variation_degrees, float sector_radius_variation_m,
+    float ally_spacing_distance_m) noexcept {
     impl_->UpdateTacticsOptions(target_commitment_seconds, sector_influence_distance_m,
-        sector_angle_variation_degrees, sector_radius_variation_m,
-        ally_spacing_distance_m);
+        containment_early_influence, sector_angle_variation_degrees,
+        sector_radius_variation_m, ally_spacing_distance_m);
 }
 bool Simulation::ValidateAction(EntityId agent_id, std::uint64_t action_sequence, bool success) noexcept {
     return impl_->ValidateAction(agent_id, action_sequence, success);
@@ -3517,6 +3677,7 @@ void Simulation::BeginReplay(const ReplayLog& replay) noexcept {
     impl_->Reset(source.seed);
     impl_->replay_source = source;
     impl_->replaying = true;
+    impl_->ApplyReplayLocomotionOptions();
     impl_->ApplyReplayCombatOptions();
     impl_->ApplyReplayWoundOptions();
     impl_->ApplyReplayLookOptions();
@@ -3550,6 +3711,7 @@ std::unique_ptr<Simulation> Simulation::CreateRewindCheckpoint() const {
     checkpoint->impl_->replay_source = {};
     checkpoint->impl_->replaying = false;
     checkpoint->impl_->replay_validation_index = 0;
+    checkpoint->impl_->replay_locomotion_options_index = 0;
     checkpoint->impl_->replay_combat_options_index = 0;
     checkpoint->impl_->replay_wound_options_index = 0;
     checkpoint->impl_->replay_look_options_index = 0;
@@ -3575,6 +3737,8 @@ bool Simulation::RestoreRewindCheckpoint(
             })));
     };
     impl_->replay_validation_index = first_event_after_tick(replay.validation_events);
+    impl_->replay_locomotion_options_index = first_event_after_tick(
+        replay.locomotion_options_events);
     impl_->replay_combat_options_index = first_event_after_tick(replay.combat_options_events);
     impl_->replay_wound_options_index = first_event_after_tick(replay.wound_options_events);
     impl_->replay_look_options_index = first_event_after_tick(replay.look_options_events);
@@ -3611,6 +3775,7 @@ bool Simulation::BranchRecordingFromReplay() noexcept {
             }), events.end());
     };
     remove_future(impl_->replay.validation_events);
+    remove_future(impl_->replay.locomotion_options_events);
     remove_future(impl_->replay.combat_options_events);
     remove_future(impl_->replay.wound_options_events);
     remove_future(impl_->replay.look_options_events);

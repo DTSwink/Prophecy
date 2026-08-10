@@ -1,7 +1,9 @@
 add_executable(prophecy_viewer
     src/control_settings.cpp
+    src/environment_collision.cpp
     src/locomotion_poses.cpp
     src/main.cpp
+    src/navigation_debug.cpp
     src/raygui_impl.cpp
     src/rig.cpp
     src/scenario.cpp
@@ -12,13 +14,16 @@ add_executable(prophecy_viewer
 target_include_directories(prophecy_viewer
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/../navigation
         ${PROPHECY_RAYGUI_INCLUDE_DIR}
 )
 
 target_link_libraries(prophecy_viewer
     PRIVATE
         prophecy_sim_core
+        prophecy_navigation_runtime
         raylib
+        Detour
         nlohmann_json::nlohmann_json
 )
 

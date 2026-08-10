@@ -411,7 +411,7 @@ Vec2 DirectionFromAngle(double angle) noexcept {
 }
 
 double DirectionalSpeedCap(LocomotionMode mode, double root_relative_direction_radians) noexcept {
-    return mode == LocomotionMode::Walk
+    return mode != LocomotionMode::Run
         ? CircularSpeed(kWalkSpeedSamples, root_relative_direction_radians)
         : CircularSpeed(kRunSpeedSamples, root_relative_direction_radians);
 }
@@ -419,13 +419,18 @@ double DirectionalSpeedCap(LocomotionMode mode, double root_relative_direction_r
 void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, double dt) noexcept {
     if (dt <= 0.0) return;
     const double amplitude = std::clamp(intent.speed_amplitude, 0.0, 1.0);
-    const double target_speed = amplitude * DirectionalSpeedCap(intent.mode, intent.speed_direction_radians);
+    const double speed_scale = std::clamp(intent.speed_scale, 0.0, 1.0);
+    const double turn_scale = std::clamp(intent.turn_scale, 0.0, 1.0);
+    const double target_speed = amplitude * speed_scale *
+        DirectionalSpeedCap(intent.mode, intent.speed_direction_radians);
     const double world_direction = state.yaw_radians + intent.speed_direction_radians;
     Vec2 target_velocity = Scale(DirectionFromAngle(world_direction), target_speed);
     const double preferred_yaw = SignedAngleDelta(state.yaw_radians, intent.orientation_yaw_radians);
     const double yaw_error = SignedAngleDelta(state.yaw_radians, intent.orientation_yaw_radians, preferred_yaw);
-    const double new_yaw = MoveYawMotor(state.previous_yaw_radians, state.yaw_radians,
+    const double full_speed_yaw = MoveYawMotor(state.previous_yaw_radians, state.yaw_radians,
         intent.orientation_yaw_radians, preferred_yaw, dt);
+    const double new_yaw = state.yaw_radians + turn_scale *
+        SignedAngleDelta(state.yaw_radians, full_speed_yaw, preferred_yaw);
 
     LocomotionResponse response = LocomotionResponse::Normal;
     if (intent.mode == LocomotionMode::Run) {
@@ -475,7 +480,9 @@ FutureRootWindow PredictFutureRoots(const LocomotionState& state,
 }
 
 const char* ToString(LocomotionMode mode) noexcept {
-    return mode == LocomotionMode::Walk ? "Walk" : "Run";
+    if (mode == LocomotionMode::Run) return "Run";
+    if (mode == LocomotionMode::Crawl) return "Crawl";
+    return "Walk";
 }
 
 const char* ToString(LocomotionResponse response) noexcept {

@@ -40,6 +40,9 @@ Docs/old/
 *.log
 *.tmp
 StandaloneSim/build*/
+StandaloneSim/data/unreal_collision.json
+StandaloneSim/data/unreal_collision.json.rendercache
+StandaloneSim/data/mybasic.previous.navbin
 __pycache__/
 *.pyc
 
