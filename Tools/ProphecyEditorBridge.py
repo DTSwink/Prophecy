@@ -33,12 +33,17 @@ def _json_default(value):
 
 def _send_json(handler, status, payload):
     body = json.dumps(payload, indent=2, sort_keys=True, default=_json_default).encode("utf-8")
-    handler.send_response(status)
-    handler.send_header("Content-Type", "application/json; charset=utf-8")
-    handler.send_header("Content-Length", str(len(body)))
-    handler.send_header("Access-Control-Allow-Origin", "http://127.0.0.1")
-    handler.end_headers()
-    handler.wfile.write(body)
+    try:
+        handler.send_response(status)
+        handler.send_header("Content-Type", "application/json; charset=utf-8")
+        handler.send_header("Content-Length", str(len(body)))
+        handler.send_header("Access-Control-Allow-Origin", "http://127.0.0.1")
+        handler.end_headers()
+        handler.wfile.write(body)
+    except (BrokenPipeError, ConnectionResetError):
+        # The caller can disappear while an editor-thread request is finishing.
+        # Do not turn a harmless disconnect into repeated Unreal Python errors.
+        pass
 
 
 def _ok(payload=None):
@@ -60,9 +65,17 @@ def _queue_editor_call(fn, timeout=30.0):
         "fn": fn,
         "event": threading.Event(),
         "result": None,
+        "cancelled": False,
+        "started": False,
+        "lock": threading.Lock(),
     }
     _REQUESTS.put(item)
     if not item["event"].wait(timeout):
+        with item["lock"]:
+            # If the editor thread has not claimed the request, make sure a
+            # timed-out HTTP call cannot mutate the editor later.
+            if not item["started"]:
+                item["cancelled"] = True
         return _error("Timed out waiting for the Unreal editor thread.")
     return item["result"]
 
@@ -384,6 +397,12 @@ def _process_editor_queue(_delta_seconds):
             item = _REQUESTS.get_nowait()
         except queue.Empty:
             break
+        with item["lock"]:
+            if item["cancelled"]:
+                item["result"] = _error("Editor call was cancelled before execution.")
+                item["event"].set()
+                continue
+            item["started"] = True
         try:
             item["result"] = item["fn"]()
         except Exception as exc:

@@ -18,6 +18,7 @@ These notes describe only the boundary for eventually validating the standalone 
 - The raylib camera, UI, telemetry server, capture controls, precomputed pose-cycle asset, and debug rewind controller do not migrate into gameplay code.
 - `data/locomotion_poses.json` contains draw-pruned authored full-body clips for the standalone viewer; it is not the shipping Unreal inference path.
 - Unreal should execute the accepted walk/run policies through its native NN runtime using the same mover-generated eight-root input contract, then apply inferred pose output without giving the policy authority over the gameplay root.
+- The current PIE bridge follows that boundary: the standalone side publishes mover stick/orientation intent and a one-time spawn, Unreal advances the shared mover and swept capsule, and Unreal returns the resolved capsule low point plus measured physical velocity for planning correction and paired debug rendering. The externally controlled player is an avoidance neighbor but never receives sim motion.
 - Keep debug replay optional in development and compile it out for the shipping configuration.
 
 ## Action Validation Contract

@@ -9,6 +9,7 @@
 namespace prophecy::navigation {
 
 constexpr std::size_t kCrowdTestAgentCount = 100U;
+constexpr std::size_t kCrowdMaximumAgentCount = 101U;
 
 struct CrowdAgentSample {
     std::array<float, 3> position{};  // Sim X/Y/Z, with Z vertical.
@@ -56,8 +57,11 @@ public:
 
     static bool RunBehaviorProbe(const std::string& navigation_path,
         CrowdBehaviorProbeResult& result, std::string& error);
-    bool Load(const std::string& navigation_path, std::uint64_t seed, std::string& error);
+    bool Load(const std::string& navigation_path, std::uint64_t seed, std::string& error,
+        std::size_t agent_count = kCrowdTestAgentCount);
     CrowdTickMetrics Update(float tick_seconds) noexcept;
+    bool SetAgentTransform(std::size_t index, const std::array<float, 3>& position,
+        float facing_radians, bool keep_navigation_target) noexcept;
     [[nodiscard]] CrowdAgentSample Agent(std::size_t index) const noexcept;
     [[nodiscard]] std::size_t AgentCount() const noexcept;
     [[nodiscard]] std::size_t VillageTargetCount() const noexcept;

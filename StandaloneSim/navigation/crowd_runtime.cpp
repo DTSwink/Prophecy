@@ -200,9 +200,9 @@ struct CrowdRuntime::Impl {
     std::vector<std::size_t> attic_target_indices{};
     std::vector<BottleneckZone> bottleneck_zones{};
     std::unordered_map<dtPolyRef, std::size_t> bottleneck_by_polygon{};
-    std::array<int, kCrowdTestAgentCount> crowd_indices{};
-    std::array<AgentTarget, kCrowdTestAgentCount> targets{};
-    std::array<AgentProgress, kCrowdTestAgentCount> progress{};
+    std::array<int, kCrowdMaximumAgentCount> crowd_indices{};
+    std::array<AgentTarget, kCrowdMaximumAgentCount> targets{};
+    std::array<AgentProgress, kCrowdMaximumAgentCount> progress{};
     std::array<double, kTimingWindow> timing_window{};
     std::uint64_t random_state = 1U;
     std::uint64_t assignment_serial = 0U;
@@ -216,6 +216,7 @@ struct CrowdRuntime::Impl {
     std::size_t timing_cursor = 0U;
     std::size_t timing_count = 0U;
     float navigation_accumulator_seconds = 0.0f;
+    std::size_t agent_count = kCrowdTestAgentCount;
 
     std::uint64_t NextRandom() noexcept {
         random_state += 0x9e3779b97f4a7c15ULL;
@@ -333,7 +334,7 @@ struct CrowdRuntime::Impl {
 
     void ApplyJamCorridorRecovery() noexcept {
         const dtQueryFilter* filter = crowd->getFilter(0);
-        for (std::size_t slot = 0U; slot < kCrowdTestAgentCount; ++slot) {
+        for (std::size_t slot = 0U; slot < agent_count; ++slot) {
             AgentProgress& state = progress[slot];
             const float blocked_seconds = state.jammed
                 ? state.jam_duration_seconds : state.stalled_seconds;
@@ -440,7 +441,7 @@ struct CrowdRuntime::Impl {
             if (village_targets[index].attic) attic_target_indices.push_back(index);
             else ground_target_indices.push_back(index);
         }
-        if (ground_target_indices.size() < kCrowdTestAgentCount || attic_target_indices.empty()) {
+        if (ground_target_indices.size() < agent_count || attic_target_indices.empty()) {
             error = "The reachable village component has insufficient crowd or attic targets.";
             return false;
         }
@@ -477,9 +478,9 @@ struct CrowdRuntime::Impl {
 
     bool InitializeCrowd(std::string& error) {
         crowd.reset(dtAllocCrowd());
-        if (!crowd || !crowd->init(static_cast<int>(kCrowdTestAgentCount),
+        if (!crowd || !crowd->init(static_cast<int>(agent_count),
                 kAgentRadiusMeters, nav_mesh.get())) {
-            error = "Could not initialize the 100-agent Detour crowd.";
+            error = "Could not initialize the requested Detour crowd.";
             return false;
         }
         crowd->getEditableFilter(0)->setIncludeFlags(1U);
@@ -487,8 +488,8 @@ struct CrowdRuntime::Impl {
         const dtCrowdAgentParams params = MakeCrowdAgentParameters();
 
         crowd_indices.fill(-1);
-        std::array<std::array<float, 3>, kCrowdTestAgentCount> starts{};
-        for (std::size_t slot = 0U; slot < kCrowdTestAgentCount; ++slot) {
+        std::array<std::array<float, 3>, kCrowdMaximumAgentCount> starts{};
+        for (std::size_t slot = 0U; slot < agent_count; ++slot) {
             Candidate candidate{};
             bool accepted = false;
             for (int attempt = 0; attempt < 128 && !accepted; ++attempt) {
@@ -507,13 +508,13 @@ struct CrowdRuntime::Impl {
             starts[slot] = candidate.position;
             const int crowd_index = crowd->addAgent(candidate.position.data(), &params);
             if (crowd_index < 0) {
-                error = "Could not place all 100 crowd agents on the village navmesh.";
+                error = "Could not place all requested crowd agents on the village navmesh.";
                 return false;
             }
             crowd_indices[slot] = crowd_index;
             progress[slot].last_position = candidate.position;
         }
-        for (std::size_t slot = 0U; slot < kCrowdTestAgentCount; ++slot) {
+        for (std::size_t slot = 0U; slot < agent_count; ++slot) {
             const dtCrowdAgent* agent = crowd->getAgent(crowd_indices[slot]);
             if (agent == nullptr || !SelectTarget(slot, agent->npos, true)) {
                 error = "Could not assign the initial crowd destinations.";
@@ -529,7 +530,7 @@ struct CrowdRuntime::Impl {
         const bool navigation_updated = navigation_accumulator_seconds + 1.0e-6f >=
             kNavigationUpdateSeconds;
         if (navigation_updated) {
-            for (std::size_t slot = 0U; slot < kCrowdTestAgentCount; ++slot) {
+            for (std::size_t slot = 0U; slot < agent_count; ++slot) {
                 const int crowd_index = crowd_indices[slot];
                 const dtCrowdAgent* agent = crowd_index >= 0 ? crowd->getAgent(crowd_index) : nullptr;
                 if (agent == nullptr || !agent->active || !targets[slot].assigned) continue;
@@ -545,8 +546,8 @@ struct CrowdRuntime::Impl {
                     (void)SelectTarget(slot, agent->npos, true);
                 }
             }
-            std::array<std::array<float, 3>, kCrowdTestAgentCount> previous_positions{};
-            for (std::size_t slot = 0U; slot < kCrowdTestAgentCount; ++slot) {
+            std::array<std::array<float, 3>, kCrowdMaximumAgentCount> previous_positions{};
+            for (std::size_t slot = 0U; slot < agent_count; ++slot) {
                 const int crowd_index = crowd_indices[slot];
                 const dtCrowdAgent* agent = crowd_index >= 0
                     ? crowd->getAgent(crowd_index) : nullptr;
@@ -557,10 +558,10 @@ struct CrowdRuntime::Impl {
             }
             crowd->update(navigation_accumulator_seconds, nullptr);
             ApplyNonBlockingIntent(*crowd, *query, crowd_indices.data(),
-                kCrowdTestAgentCount, previous_positions.data(), navigation_accumulator_seconds);
+                agent_count, previous_positions.data(), navigation_accumulator_seconds);
             ApplyJamCorridorRecovery();
             const float update_seconds = navigation_accumulator_seconds;
-            for (std::size_t slot = 0U; slot < kCrowdTestAgentCount; ++slot) {
+            for (std::size_t slot = 0U; slot < agent_count; ++slot) {
                 const int crowd_index = crowd_indices[slot];
                 const dtCrowdAgent* agent = crowd_index >= 0 ? crowd->getAgent(crowd_index) : nullptr;
                 if (agent == nullptr || !agent->active) continue;
@@ -633,7 +634,7 @@ struct CrowdRuntime::Impl {
         std::uint32_t active = 0U;
         std::uint32_t jammed = 0U;
         std::uint32_t corner_stalled = 0U;
-        for (std::size_t slot = 0U; slot < kCrowdTestAgentCount; ++slot) {
+        for (std::size_t slot = 0U; slot < agent_count; ++slot) {
             const int crowd_index = crowd_indices[slot];
             const dtCrowdAgent* agent = crowd_index >= 0 ? crowd->getAgent(crowd_index) : nullptr;
             if (agent != nullptr && agent->active) ++active;
@@ -844,9 +845,14 @@ bool CrowdRuntime::RunBehaviorProbe(const std::string& navigation_path,
 }
 
 bool CrowdRuntime::Load(const std::string& navigation_path, const std::uint64_t seed,
-    std::string& error) {
+    std::string& error, const std::size_t agent_count) {
+    if (agent_count == 0U || agent_count > kCrowdMaximumAgentCount) {
+        error = "The requested crowd size is outside the supported range.";
+        return false;
+    }
     impl_ = std::make_unique<Impl>();
     impl_->random_state = seed != 0U ? seed : 1U;
+    impl_->agent_count = agent_count;
     FileHeader header{};
     if (!impl_->LoadMesh(navigation_path, header, error) ||
         !impl_->BuildTargetPools(header, error) || !impl_->InitializeCrowd(error)) return false;
@@ -858,8 +864,53 @@ CrowdTickMetrics CrowdRuntime::Update(const float tick_seconds) noexcept {
     return IsLoaded() ? impl_->Update(tick_seconds) : CrowdTickMetrics{};
 }
 
+bool CrowdRuntime::SetAgentTransform(const std::size_t index,
+    const std::array<float, 3>& position, const float facing_radians,
+    const bool keep_navigation_target) noexcept {
+    if (!IsLoaded() || index >= impl_->agent_count) return false;
+    const int crowd_index = impl_->crowd_indices[index];
+    dtCrowdAgent* agent = crowd_index >= 0 ? impl_->crowd->getEditableAgent(crowd_index) : nullptr;
+    if (agent == nullptr || !agent->active) return false;
+
+    const float requested[3]{position[0], position[2], position[1]};
+    const dtQueryFilter* filter = impl_->crowd->getFilter(0);
+    bool moved = false;
+    if (keep_navigation_target && agent->corridor.getFirstPoly() != 0) {
+        // Constrain the physical root from the corridor's current side of the
+        // wall. A global nearest-poly query can choose the polygon across a
+        // thin wall and then steer the agent straight back through it.
+        moved = agent->corridor.movePosition(requested, impl_->query.get(), filter);
+    }
+    if (!moved) {
+        const float extents[3]{0.75f, 1.75f, 0.75f};
+        dtPolyRef nearest_polygon = 0;
+        float nearest[3]{};
+        if (dtStatusFailed(impl_->query->findNearestPoly(
+                requested, extents, filter, &nearest_polygon, nearest)) || nearest_polygon == 0) {
+            return false;
+        }
+        agent->corridor.reset(nearest_polygon, nearest);
+    }
+    const float* constrained = agent->corridor.getPos();
+    agent->npos[0] = constrained[0];
+    agent->npos[1] = constrained[1];
+    agent->npos[2] = constrained[2];
+    Impl::AgentProgress& progress = impl_->progress[index];
+    progress.last_position = {constrained[0], constrained[1], constrained[2]};
+    progress.facing_radians = facing_radians;
+
+    if (!keep_navigation_target) {
+        (void)impl_->crowd->resetMoveTarget(crowd_index);
+        agent->vel[0] = 0.0f;
+        agent->vel[1] = 0.0f;
+        agent->vel[2] = 0.0f;
+        impl_->targets[index] = {};
+    }
+    return true;
+}
+
 CrowdAgentSample CrowdRuntime::Agent(const std::size_t index) const noexcept {
-    if (!IsLoaded() || index >= kCrowdTestAgentCount) return {};
+    if (!IsLoaded() || index >= impl_->agent_count) return {};
     const int crowd_index = impl_->crowd_indices[index];
     const dtCrowdAgent* agent = crowd_index >= 0 ? impl_->crowd->getAgent(crowd_index) : nullptr;
     if (agent == nullptr || !agent->active) return {};
@@ -878,7 +929,7 @@ CrowdAgentSample CrowdRuntime::Agent(const std::size_t index) const noexcept {
 }
 
 std::size_t CrowdRuntime::AgentCount() const noexcept {
-    return IsLoaded() ? kCrowdTestAgentCount : 0U;
+    return IsLoaded() ? impl_->agent_count : 0U;
 }
 
 std::size_t CrowdRuntime::VillageTargetCount() const noexcept {

@@ -5,6 +5,8 @@ public class GameAnimationSample3 : ModuleRules
 	public GameAnimationSample3(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		PrivateIncludePaths.Add(System.IO.Path.GetFullPath(System.IO.Path.Combine(
+			ModuleDirectory, "..", "..", "StandaloneSim", "sim_core", "include")));
 
 		PublicDependencyModuleNames.AddRange(new[]
 		{

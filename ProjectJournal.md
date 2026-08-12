@@ -1,5 +1,7 @@
 # Prophecy Project Journal
 
+**NON-NEGOTIABLE: NEVER DO, IMPLEMENT, CHANGE, TEST, OPTIMIZE, VALIDATE, OR EXPAND ANYTHING THE USER DID NOT EXPLICITLY ASK FOR. NEVER INFER MISSING INTENT OR DETAILS. IF ANYTHING MATERIAL IS UNCLEAR OR UNSPECIFIED, STOP AND ASK THE USER BEFORE ACTING.**
+
 > **NON-NEGOTIABLE JOURNAL RULE — FINISHED STATE ONLY**
 >
 > Keep only durable, verified project state: current goals, rules, keeper settings,
@@ -413,6 +415,39 @@ Request a settled live screenshot:
 
 ## Unreal Bridge / Assistant Working Rules
 
+- 2026-07-16 MetaHuman bridge incident and permanent rule: never call
+  `MetaHumanCharacterEditorSubsystem.try_add_object_to_edit()` before or after
+  opening a MetaHuman Character asset interactively. The MetaHuman asset editor
+  owns that registration. A bridge probe registered
+  `/Game/_mygame/MetaHumans/test_UEFNFit` while no MetaHuman editor was open;
+  the later normal editor open attempted to register it again, and UE logged
+  `TryAddObjectToEdit ... already added` followed by the misleading
+  `failed to create editing state. The asset may be corrupted` message. The
+  asset was not corrupted; the subsystem contained an orphan editing state.
+  For interactive use, load the asset and call only
+  `AssetEditorSubsystem.open_editor_for_assets()`. For a genuinely headless
+  MetaHuman API operation, record whether the script itself successfully added
+  the character, wrap all work in `try/finally`, and call
+  `remove_object_to_edit()` in `finally` only when that script owned the
+  registration. Never remove a registration owned by an open asset editor.
+  Recovery for this exact warning is: confirm that no MetaHuman editor is open,
+  check `is_object_added_for_editing()`, remove the orphan registration, then
+  open the asset normally. Do not resave, delete, duplicate, or rebuild the
+  character merely because this warning says "may be corrupted." Recovery was
+  verified in the incident session: the orphan registration was removed and
+  `AssetEditorSubsystem.open_editor_for_assets()` then opened `test_UEFNFit`
+  successfully with the editor owning the new registration. References:
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/MetaHumanCharacterEditorSubsystem?application_version=5.7`,
+  `https://dev.epicgames.com/documentation/unreal-engine/API/Editor/UnrealEd/UAssetEditorSubsystem/OpenEditorForAssets`.
+- Bridge cancellation is not transactional. A client timeout, cancelled shell
+  command, or disconnected HTTP request does not undo Python that already began
+  on Unreal's editor thread. Stateful bridge scripts must therefore be
+  idempotent or use `try/finally` cleanup; never rely on cancelling the request
+  as rollback. `Tools/ProphecyEditorBridge.py` now marks an unstarted timed-out
+  queue item as cancelled so it cannot execute later, and quietly handles
+  disconnected response sockets. Code already claimed by the editor thread
+  still cannot be safely interrupted, so destructive or registration-changing
+  operations require explicit ownership and cleanup.
 - 2026-07-07 side-chat note: Rokoko Motion Library fight FBXs could not import directly to Unreal because the downloaded files contain `AnimStack`/`Skeleton`/`Hips` data but no `Geometry`, `Mesh`, or `Deformer` data. Rokoko Legacy copied the same files into `C:\Users\singerie\Documents\SmartsuitStudioProjects\kjb\MotionLibrary` byte-for-byte and its export path created/opened empty output folders instead of baking usable Body Mesh FBXs.
 - To get the clips into UE, Blender 5.1 was used as a converter. `Saved/ConvertRokokoMotionLibraryForUnreal.py` imports each MotionLibrary FBX, adds a tiny weighted carrier mesh, and exports converted files to `Saved/RokokoCarrierFBX`. `Saved/ImportRokokoCarrierAnimationsToUnreal.py` imports them to `/Game/_mygame/Rokoko/FightAnimations_Carrier`. This first carrier set imported eight `_Anim` clips plus a carrier skeleton, but its source `Hips` reference pose sat effectively at ground level, causing IK Retargeter warnings that the source pelvis was near the ground and launching the UEFN target far away.
 - A second rooted conversion was created in `Saved/ConvertRokokoMotionLibraryForUnrealRooted.py` and imported with `Saved/ImportRokokoRootedCarrierAnimationsToUnreal.py`. It exports to `Saved/RokokoCarrierRootedFBX` and imports to `/Game/_mygame/Rokoko/FightAnimations_CarrierRooted`. It adds a ground `Root` bone, raises `Hips` to about `89 cm` in the reference pose, subtracts that same offset from Hips animation translation, imports eight `_Anim` clips, creates `IK_RokokoRooted_Xsens`, sets `Hips` as retarget root, and creates `RTG_RokokoRooted_to_UEFN`.
@@ -435,18 +470,24 @@ Request a settled live screenshot:
 ## 2026-07-11 - NN Locomotion Runtime Checkpoint (Stopped Early)
 
 - Work paused early at the user's request so the laptop could be used. PIE was stopped. The performance investigation is not finished and the 120 FPS target has not been reached.
-- Accepted lower-body policy source is epoch 47200 from `C:\Users\singerie\Documents\Cursor\stepper\training\runs\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3\checkpoints\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3_init.pt`, SHA-256 `CCC03FEE15E825EBCBCD24F9E71934D515B5133E760114ABE664445042D379C1`. Accepted rollout is `C:\Users\singerie\Documents\Cursor\stepper\training\ik\rollout_traces\20260618_final_policy_runF`.
-- `Tools/NN/ExportProphecyLowerBodyPolicy.py` exports the 152-input/43-output raw policy to `Content/locomotion/NN/prophecy_lower_body_run_b100.onnx` plus `prophecy_lower_body_runtime.json`. ONNX SHA-256 is `75D9907B6FD62534CD4DC4FC7ED05C9E2DD32D1C173D4530044965887359C209`. Native C++ retains the deterministic recurrent cleanup, root rebase, foot-roll integration, and lower-body IK contract.
-- Added transient `AProphecyNNLocomotionManager` plus `UProphecyNNLocomotionWorldSubsystem`. Opening `/Game/locomotion` and entering PIE auto-spawns one transient manager, 100 skeletal components, and no persistent crowd actors. A single `[100,152]` NNE DirectML batch drives all agents between actors labeled `Cube` and `Cube2`; gait seeds are staggered.
+- Accepted Run policy source is epoch 47200 from `C:\Users\singerie\Documents\Cursor\stepper\training\runs\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3\checkpoints\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3_init.pt`, SHA-256 `CCC03FEE15E825EBCBCD24F9E71934D515B5133E760114ABE664445042D379C1`. Accepted rollout is `C:\Users\singerie\Documents\Cursor\stepper\training\ik\rollout_traces\20260618_final_policy_runF`. Accepted Walk source is `C:\Users\singerie\Documents\Cursor\stepper\training\runs\20260608_222748_ik_resume_inertiax10_latest\checkpoints\20260608_222748_ik_resume_inertiax10_latest_latest.pt`, SHA-256 `5FE44CA120CF79BF34CDCAA4F7227C205A35039322541AAB2E100637A9176A3`; `training/ik/official_walk_omni_baseline.json` is the Git authority selecting it.
+- `Tools/NN/ExportProphecyLowerBodyPolicy.py` exports the 152-input/43-output raw policies. Run uses `Content/locomotion/NN/prophecy_lower_body_run_b100.onnx` plus `prophecy_lower_body_runtime.json`, ONNX SHA-256 `75D9907B6FD62534CD4DC4FC7ED05C9E2DD32D1C173D4530044965887359C209`. Walk uses `prophecy_lower_body_walk_b100.onnx` plus `prophecy_lower_body_walk_runtime.json`, ONNX SHA-256 `C20D3C2BC04528409CB2D680AEE50A5FAC95C98DA3529EC25103F36D9CB868BE`. Native C++ retains each policy's exact seed geometry, deterministic recurrent cleanup, root rebase, pin semantics, foot-roll integration, and lower-body IK contract. Run uses continuous independent sigmoid pins; Walk uses its trained legacy selected-foot logit rule without the Run height gate.
+- Added transient `AProphecyNNLocomotionManager` plus `UProphecyNNLocomotionWorldSubsystem`. Opening `/Game/locomotion` and entering PIE auto-spawns one transient manager and 100 transient no-tick `AProphecyAgent` pawns; none are saved into the level and crowd pawns receive no controller. Contiguous `[100,152]` NNE batches run only the policy needed by a homogeneous crowd and both policies only for a mixed Walk/Run crowd; gait seeds are staggered. `AProphecyAgent` is intentionally an `APawn`, not `ACharacter`, so the one player agent can be possessed without giving the unpossessed crowd `CharacterMovementComponent`, `AIController`, Behavior Tree, or per-agent actor-tick overhead.
 - Added `UProphecyNNLocomotionAnimInstance`. Default upper body is reference-pose stiff while pelvis/legs use the NN pose. Optional arbitrary compatible `UAnimSequenceBase` overlay drives pelvis and upper body, reapplies NN legs, and blends in/out with `OverlayBlendSeconds`.
+- Agent identity is a stable `{index,generation}` `FProphecyAgentHandle` resolved by the manager. The manager owns intent and simulation state; an agent pawn is the occasional gameplay/debug/event shell. Its 30 cm radius, 86 cm half-height capsule exposes the authoritative low point as the root position while the mesh stays grounded with an equal negative local Z offset.
+- `AProphecyAgent` has explicit `Kinematic` and `Physical` modes. Kinematic is the default and keeps its `UPhysicalAnimationComponent` disabled. Physical mode uses one world-space pelvis target plus the Physics Asset's joint angular drives; child limbs travel under Chaos torque/impulses rather than independent world targets. Only promoted agents pay the physical-animation component tick and skeletal physics cost. Physical hit notifications default off and are independently opt-in, with a multicast event for gameplay to decide whether a hit should promote another agent; no automatic promotion policy is hard-coded.
+- Before each 30 Hz NN step, only physical agents copy the finalized component-space pelvis/leg/foot/toe transforms from the skeletal mesh. Those actual transforms are converted back into the model's 41-value recurrent state, including signed toe hinge state, so the next inference consumes physical reality rather than the prior target. The capsule low point remains the authoritative root. Leaving physical mode through the manager performs a final sample before returning to kinematic prediction.
+- NN current, previous, published, next, and physical-sample states are fixed contiguous `[100,41]` buffers. Published and sampled nine-bone transforms are fixed contiguous `[100,9]` buffers. The former per-agent state arrays and per-step transition/next-state allocations are gone. Pose-store entries retain their bone-name layout and transform capacity, and animation proxies copy a snapshot only when its revision changes instead of every render frame.
 - Runtime and visual verification succeeded: NNE selected `NNERuntimeORTDml` on the RTX 4060 Laptop GPU, 100 agents moved stably between the cubes, and both stiff-upper-body and relaxed-idle overlay poses rendered without exploded IK. Captures include `Saved/Screenshots/WindowsEditor/NNLocomotionClose.png`, `NNLocomotionAgentPaused.png`, `HighresScreenshot00002.png`, and `HighresScreenshot00003.png`.
+- The agent/physical foundation builds with UE 5.7 UHT/UBT. A 20-second, 601-frame headless `/Game/locomotion` run using NullRHI and `NNERuntimeORTCpu` started all 100 agents and one physical agent, then exited cleanly without invalid-body, Chaos, NaN, ensure, assertion, or fatal diagnostics. Its fixed-30-FPS warmed per-step timings were input plus one physical resample `0.1177 ms`, CPU inference `0.5474 ms`, output/foot-roll/IK `4.0077 ms`, and pose-store publish `0.1357 ms`; this NullRHI/CPU run is a structural benchmark, not a replacement for the rendered DirectML baseline. Physics collision state must be enabled before applying named physical-animation settings; UE 5.7 `USkeletalMeshComponent::ForEachBodyBelow` requires that ordering.
 - Normal UBT build succeeded after avoiding Live Coding. Live Coding had crashed while applying a patch, so continue using normal `Build.bat ... -NoHotReloadFromIDE` for this work.
 - Initial 60 FPS ceiling diagnosis: project fixed-rate/VSync controls were disabled correctly, but UE 5.7 editor source (`UEditorEngine::GetMaxTickRate`) also limits laptops to 60 while Windows reports battery operation. Setting `r.DontLimitOnBattery=1` changed the PIE startup line from `max tick rate 60` to `max tick rate 0`. This CVar still needs to be added permanently to the contained manager/subsystem and rebuilt; it was applied through the live bridge for the uncapped measurements.
 - Warm capped baseline was about `51.50-52.04 FPS`; overlay run was `49.16 FPS`. The observed overlay cost for 100 agents was roughly 2.3-2.9 FPS, about 0.9-1.1 ms/frame in this editor test. Overlay sample used `/Game/Characters/UEFN_Mannequin/Animations/Idle/M_Relaxed_Stand_Idle_Loop`.
 - Uncapped default-visual baseline: `51.38 FPS`; per 100-agent 30 Hz NN step: input `0.1972 ms`, DirectML inference `2.8215 ms`, native output/foot-roll/IK `5.6899 ms`, pose-store publish `0.1947 ms`.
 - Forcing mesh LOD index 3 (mesh LOD2) did not help in this sample: `47.38 FPS`. Hiding all 100 skeletal components also did not remove the plateau: `51.85 FPS`, with step timings input `0.2121 ms`, inference `1.6222 ms`, native output `6.5190 ms`, store `0.2265 ms`. Therefore do not assume skeletal rendering alone explains the current ~51 FPS result.
 - Startup temporarily took 964 seconds because earlier low-disk Zen 507 failures left 11,885 shaders uncached. After disk space was restored, Zen reported healthy and the shader pass completed/stored successfully. Do not delete DDC or shader caches before the next benchmark.
-- Next session: first add and build permanent `r.DontLimitOnBattery=1`; then profile the ~51 FPS plateau with Unreal Insights/stat unit in foreground versus standalone/game launch, verify whether editor/viewport/power-state overhead dominates, and only then optimize the native 30 Hz cleanup/IK or adopt `USkeletalMeshComponentBudgeted`/Animation Budget Allocator. Re-run warmed baseline and overlay with the same camera and power state. Exact native-vs-pushed-rollout numeric parity instrumentation is also still pending.
+- Next runtime-performance session: first add and build permanent `r.DontLimitOnBattery=1`; then remeasure the dense-buffer agent foundation and profile the ~51 FPS plateau with Unreal Insights/stat unit in foreground versus standalone/game launch. Verify whether editor/viewport/power-state overhead dominates before changing the production four-step foot-roll/IK math or adopting `USkeletalMeshComponentBudgeted`/Animation Budget Allocator. Re-run warmed baseline and overlay with the same camera and power state.
+- Physical-mode tuning and visual validation remain pending: author/verify the production Physics Asset and drive values on the final character, inspect hits/recovery in a rendered PIE session, and measure the cost for the intended player/nearby-agent promotion budget. Built-in route references: `https://dev.epicgames.com/documentation/unreal-engine/physics-components-in-unreal-engine`, `https://dev.epicgames.com/documentation/en-us/unreal-engine/physics-driven-animation-in-unreal-engine`, `https://dev.epicgames.com/documentation/unreal-engine/creating-a-physical-animation-profile-in-unreal-engine`, `https://dev.epicgames.com/documentation/en-us/unreal-engine/physics-sub-stepping-in-unreal-engine`, and UE 5.7 `PhysicalAnimationComponent.cpp` / `SkeletalMeshComponentPhysics.cpp`.
 
 ## 2026-07-12 - Perpetual Ball Reach Test And Upper-Body Motion Limit
 
@@ -522,9 +563,10 @@ Request a settled live screenshot:
   `/Game/_mygame/MetaHumans/SKM_test_UEFNDirectBody`. It uses the actual
   `/Game/_mygame/SK_UEFN_Mannequin` Skeleton asset, has the 78 shared deforming
   bones in exact UEFN hierarchy/local reference transforms, and leaves the 10
-  UEFN attachment/weapon/IK auxiliaries skeleton-only. Building folds 18,351
-  helper influences on 6,288 vertices into surviving ancestors before pruning
-  264 MetaHuman-only bones, then regenerates all three LODs from corrected LOD0.
+  UEFN attachment/weapon/IK auxiliaries skeleton-only. The current local build
+  transfers LOD0 weights from the UEFN mannequin with
+  `FSkeletalMeshOperations::CopySkinWeightAttributeFromMesh`, prunes 264
+  MetaHuman-only bones, and regenerates all three LODs.
 - Direct full character:
   `/Game/_mygame/MetaHumans/BP_test_UEFNDirect`. Its Body component uses the
   direct UEFN-skeleton mesh. Its separate MetaHuman Face component retains facial
@@ -534,12 +576,1156 @@ Request a settled live screenshot:
   audit entry point. Run it through `UnrealEditor-Cmd.exe -run=pythonscript`; use
   `--reuse-existing` for a non-destructive audit. Generated `Content/` assets are
   intentionally recoverable from the tracked C++ commands, script, and snapshot.
-- Verified without any IK Retargeter: both the UEFN mannequin and the final
-  MetaHuman played
+- Structural verification without any IK Retargeter: both the UEFN mannequin
+  and the direct MetaHuman played
   `/Game/Characters/UEFN_Mannequin/Animations/Sprint/M_Neutral_Sprint_Loop_F_L_20`
   directly at automatic LOD2. The tested main-chain component pose matched within
   `0.06445 cm` at the compressed left-foot sample, the face/body head position was
   exact, and the clean commandlet audit passed with zero errors/warnings.
+- The direct body is not production-ready. Sprint frames look clean, but the
+  demanding climb pose
+  `/Game/Characters/UEFN_Mannequin/Animations/Traversal/Climb/M_Neutral_Traversal_Climb_Start_2_5_run_F_Lfoot`
+  at `2.0 s` exposes broken wrist deformation at LOD0 and automatic LOD. The
+  runtime pose still matches all 78 shared bones (maximum sampled translation
+  delta `0.06251 cm`, rotation delta `0`, face/head delta `0`), so the remaining
+  blocker is skin weighting, not animation, LOD selection, or face attachment.
+- Weight audit of the transferred body found zero vertices jointly influenced by
+  `lowerarm_*` and `hand_*`; 226 vertices per side remain rigidly lower-arm
+  weighted. This hard seam is consistent with transferring from the segmented
+  UEFN mannequin surface. Global normal-aware inpainting changed unrelated arm
+  weights, and a narrow 57-vertex lower-arm/hand blend per wrist still failed the
+  same climb pose; neither experiment is a valid final fix.
 - Visible UEFN/MetaHuman shoulder contours are not a joint-length metric. The
   fitted head, neck, clavicle, and upper-arm pivots are concentric to within
   `0.000045 cm`; the higher orange UEFN shoulder cap is mesh volume/skinning.
+
+## 2026-07-15 - MetaHuman body on untouched UEFN skeleton: Blender plan
+
+- Scope decision: the character only needs the MetaHuman mesh skinned to the
+  untouched `/Game/_mygame/SK_UEFN_Mannequin` skeleton. No RigLogic, no DNA,
+  no facial animation, no MetaHuman runtime features. Faces are static
+  swappable meshes.
+- In-engine pose-fit weight reduction (per-vertex NNLS against 52 sampled
+  poses) was abandoned. Two findings worth keeping:
+  - Playing UEFN animations on the MetaHuman skeleton through compatible
+    skeletons diverges from the real UEFN mannequin pose (up to ~9 cm on twist
+    pivots, ~15 cm/37 deg on fingers), so it is not a valid ground truth and
+    also not a valid runtime path for extreme poses.
+  - Independent per-vertex solves have no spatial smoothness and produce fins
+    and webbing even when per-vertex error is ~0.3 cm mean. Details in
+    `Docs/ACTIVE_MetaHuman_UEFN_Hand_Fix.md`.
+- New pipeline (Blender 5.1, headless, scripts under `Tools/MetaHuman/`):
+  1. Export from the editor as FBX: fitted body
+     `SKM_test_UEFNFit_BodyMesh` (342 bones, original MetaHuman weights, its
+     78 shared bones already sit at exact UEFN reference transforms), the
+     MetaHuman face mesh, `SKM_UEFN_Mannequin`, and climb/cliff/sprint/slide
+     test animations. Then close the editor.
+  2. In Blender, keep the original continuous MetaHuman skinning and fold
+     each MetaHuman-only vertex group into its nearest surviving UEFN
+     ancestor bone (wrist_inner/outer -> hand/lowerarm, `*_half` -> parent
+     phalanx, correctives -> parent). Shared twist bones
+     (`upperarm_twist_*`, `calf_twist_*`, `thigh_twist_*`) keep their
+     original weights. Smooth only the vertices whose weights changed.
+     Delete non-UEFN bones, export FBX.
+  3. Iterate visually inside Blender: apply the exported UEFN test
+     animations to the reduced armature and render headless Workbench stills
+     of wrists/shoulders/knees before touching Unreal again.
+  4. Reimport onto the untouched UEFN Skeleton asset, rebuild the direct
+     body/BP, rerun the LOD0 + Auto screenshot audits on the demanding climb
+     and cliff-catch poses.
+- Static-face decision (no facial animation): do not carry MetaHuman DNA,
+  RigLogic, facial joints, `Face_AnimBP`, or facial/neck corrective rigs into
+  the runtime character. Keep one UEFN-rigged Body component and a separate,
+  swappable Head skeletal-mesh component on the same untouched UEFN Skeleton.
+  The Head component follows the Body with Leader Pose; no retargeter or face
+  animation evaluation is required.
+- Multiple MetaHuman faces can be made automatic after one canonical head rig:
+  1. Generate every face from a duplicate of the same unrigged MetaHuman base
+     body. Change only the face and use **Align Neck to Body** so the neck seam,
+     upper-chest/shoulder surface, and body proportions remain canonical.
+  2. Assemble/export each generated Face mesh. Require the same MetaHuman
+     topology and LOD. Verify vertex count/order; when FBX triangulation or
+     split vertices changes indices, match the standard MetaHuman UVs instead.
+  3. Rig one canonical Face mesh to the untouched UEFN skeleton. Fold every
+     facial joint influence into `head`; retain carefully authored transition
+     weights for `head`, `neck_02`, `neck_01`, upper spine, and clavicles over
+     the neck/shoulder patch. The face above the transition can be rigid to
+     `head`, but the neck/shoulder patch must not be rigid.
+  4. Stamp the canonical weights onto every same-topology face by vertex index
+     (or UV correspondence), normalize/prune, and import each Head mesh onto
+     the same UEFN Skeleton asset. This is the per-face automation step; the
+     skinning is not regenerated independently for every identity.
+  5. At runtime swap only the Head skeletal mesh/materials/grooms and reapply
+     Leader Pose to the Body. Keep the full matching UEFN reference hierarchy
+     in every Head export so follower bone indices/transforms cannot diverge.
+- Acceptance requirements for every face: neck/shoulder vertices outside the
+  editable face mask must remain identical to the canonical template; no seam
+  in reference pose; no separation, collapse, or sliding under extreme head
+  yaw/pitch/roll plus raised-shoulder/climb poses. A different topology requires
+  surface-proximity transfer and a new visual audit, so it is not automatically
+  safe.
+- MetaHuman Creator can auto-generate its own joints, RBFs, and skin weights,
+  but it cannot directly auto-rig onto the raw 88-bone UEFN skeleton: Epic's
+  joint-import workflow requires a MetaHuman hierarchy/naming convention. Use
+  Creator only to generate aligned face geometry, then apply the canonical UEFN
+  head-weight template. References:
+  `https://dev.epicgames.com/documentation/metahuman/metahuman-creator-from-template-tool-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/metahuman/body-conform-examples?lang=en-US`,
+  `https://dev.epicgames.com/documentation/metahuman/head-controls?application_version=5.7`,
+  `https://dev.epicgames.com/documentation/unreal-engine/working-with-modular-characters-in-unreal-engine?application_version=5.7`.
+- Measurement-comparison rule: read numeric body values on the unrigged
+  MetaHuman Character through **Head and Body > Body Params**; enable **Show
+  Measurement** and keep **Scale Ranges by Height** consistent. These values are
+  parametric rest-state measurements and do not require an animation pose.
+  Body Conform and Import Joints are not comparison tools because they mutate
+  the character. For a visual UEFN-pose comparison, duplicate the character,
+  create a rig on the duplicate, then use **Window > Preview Scene Details >
+  Animation Controller: AnimSequence > Body Animation Type: SpecificAnimation**
+  with a one-frame animation created from the UEFN mannequin reference pose.
+  MetaHuman Creator previews user animations through its built-in MetaHuman IK
+  retarget assets; rigging disables the Head and Body tools, so record the
+  measurements first or retain the unrigged source duplicate. References:
+  `https://dev.epicgames.com/documentation/metahuman/metahuman-creator-body-params-tool-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/metahuman/navigating-metahuman-creator-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/animation-editors-in-unreal-engine`.
+- Blender agent best practices (do not reinvent):
+  - Use **MetahumanToManny** add-on for MetaHuman weight cleanup (twist
+    rename, toe fold, finger bulges, seam weld). Script:
+    `Tools/MetaHuman/blender_metahuman_to_uefn.py`.
+  - **FBX scale**: set scene `unit_settings.scale_length = 0.01` (1 BU = 1
+    cm). Export with `apply_scale_options='FBX_SCALE_UNITS'`. Do **not**
+    `transform_apply` + `FBX_SCALE_NONE` on skeletal meshes — that was the
+    100× import bug.
+  - **Weight transfer**: only works with meshes in the **same world-space
+    position**. Cross-mesh transfer from UEFN mannequin failed because the
+    body blend is ~144 world units tall while a fresh FBX import is ~1.66 m.
+    Prefer in-place fold (MetahumanToManny / ancestor merge), not
+    mannequin→body projection.
+  - **Headless**: `blender --background --python script.py`; validate with
+    Workbench renders before reimporting to UE.
+  - Shared export helper: `Tools/MetaHuman/blender_ue_export.py`.
+
+## 2026-07-17 - Verified Sequencer pose export to Blender
+
+- The saved FK fit is `/Game/_mygame/MetaHumans/NewLevelSequence`, frame 0,
+  bound to actor `test_UEFNFit_ExportedBody5`. The actor's fitted Skeletal Mesh
+  was originally transient and disappears after an editor restart. Restore it
+  in memory from `Saved/BlenderExchange/Body_MH342.fbx`, assign it to that
+  actor, reopen/refresh the sequence, and never save the transient import or
+  level assignment.
+- Do not use `export_fbx_from_control_rig_section` as the deform-skeleton
+  export for this workflow. In UE 5.7 it produced the 342 FK controls as FBX
+  null/control objects with per-control actions, not a skinned bone animation.
+  The supported usable route is `SequencerTools.export_anim_sequence`: bake
+  the evaluated Skeletal Mesh binding to a transient `AnimSequence`, then
+  export that AnimSequence as FBX with no preview mesh. Scripts:
+  `Tools/MetaHuman/export_saved_fk_pose_from_unreal.py` and
+  `Tools/MetaHuman/blender_assemble_modified_metahuman.py`. References:
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/python-scripting-for-animating-with-control-rig-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/fk-control-rig-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/en-us/metahuman/animating-metahumans-with-control-rig-in-unreal-engine`.
+- Final Blender file:
+  `Saved/BlenderExchange/MetaHuman_BodyHead_SequencerModifiedPose.blend`.
+  It contains the fitted 342-joint Body and full Face as two separately skinned
+  meshes, both in the evaluated Sequencer pose. The pose remains a pose; it is
+  not applied as a new rest skeleton, no weights were changed, and FBX
+  automatic bone orientation stayed disabled.
+- Audit results: Body 8,568 vertices/341 Blender bones plus the FBX root object;
+  Head 4,069 vertices/874 Blender bones plus the FBX root object; zero
+  unweighted vertices; maximum weight-sum error below `4.7e-8`; 31 shared
+  Body/Head bones match in the pose within `0.0000171 cm` and `0 deg`; Blender
+  matches the Unreal component-space sample within `0.000562 cm`. Evaluated
+  world height is `1.69190 m`. Front, side, three-quarter, and head/shoulder
+  Workbench renders were inspected and show a continuous aligned head/shoulder
+  patch and symmetric fitted limbs.
+
+## 2026-07-19 - Manual-rigging Blender handoff
+
+- Final working file:
+  `Saved/BlenderExchange/ManualRig_CleanWorkingRig_with_NativeExportRig.blend`.
+  It contains the fitted UEFN reference mesh, `ally2_Body_Mesh`, and
+  `ally2_Face_Mesh` in the approved modified pose. The source handoff
+  `ManualRig_UEFN_Posed_with_ally2_Meshes.blend` remains unchanged.
+- The file deliberately contains two UEFN armatures. Use
+  `UEFN_WORKING_CLEAN_RIG` for bone selection and manual weight painting. It
+  was imported with Blender Automatic Bone Orientation, fitted to the approved
+  pose as its working rest state, and then given continuous anatomical
+  parent/child tails. Fifty primary joins across the spine/head, arms, legs,
+  and fingers validate with a zero tail-to-child-head gap. Twist, IK, weapon,
+  and attachment bones are retained but hidden by default for clarity; use
+  `Alt-H` if they are intentionally needed while weighting.
+- `UEFN_NATIVE_EXPORT_RIG` is the hidden authoritative UEFN armature. Its FBX
+  rest matrices have maximum recorded change `0.0`; it was not auto-oriented,
+  reparented, reposed as rest, or otherwise edited. Use this armature—not the
+  clean working armature—for the final skeletal-mesh export to Unreal/UEFN.
+  Never export both armatures.
+- The working and native armatures contain the same 87 Blender bone names and
+  the same parent hierarchy. Weight groups authored against the clean rig can
+  therefore be used with the native rig without renaming. The connected tails
+  and `use_connect` flags are Blender-only visual/authoring aids and are not an
+  export-skeleton modification.
+- Verified Blender 5.1.1 audit: 6,009 UEFN reference vertices; maximum clean
+  versus native fitted-mesh world delta `3.51e-7 m` (RMS `1.21e-7 m`); maximum
+  working versus native joint-head delta `5.02e-7 m`; identical bone-name sets;
+  and zero native rest-matrix delta. No native or MetaHuman geometry or weights
+  were modified. Full machine-readable results are in
+  `Saved/BlenderExchange/ManualRig_CleanWorkingRig_Audit.json`.
+- Visual checks:
+  `Saved/BlenderShots/ManualRig_CleanWorkingRig_Viewport.png`,
+  `ManualRig_CleanWorkingRig_Front.png`, and
+  `ManualRig_CleanWorkingRig_Side.png`. The viewport check confirms continuous
+  shoulder-elbow-wrist and hip-knee-ankle chains. The front and side overlays
+  confirm the fitted UEFN limb silhouettes still follow the MetaHuman closely;
+  remaining differences are expected surface volume and anatomy differences.
+- Rebuild/open scripts:
+  `Tools/MetaHuman/blender_build_clean_uefn_working_rig.py` and
+  `Tools/MetaHuman/blender_open_clean_working_rig.py`.
+- Rationale: Blender FBX bone tails are a Blender visualization convention,
+  while Unreal identifies the skeleton by joint hierarchy, names, and bind/rest
+  transforms. A single auto-oriented armature is convenient to edit but unsafe
+  as the authoritative Unreal export skeleton. Keeping a clean authoring copy
+  beside an untouched native copy provides normal Blender bones without losing
+  the exact UEFN skeleton identity.
+- References:
+  `https://dev.epicgames.com/documentation/unreal-engine/fbx-skeletal-mesh-pipeline-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/fbx-import-options-reference-in-unreal-engine`,
+  `https://docs.blender.org/manual/en/latest/addons/import_export/scene_fbx.html`.
+
+## 2026-07-20 - Four mesh-only MetaHuman Blender sources
+
+- Final files under `Saved/BlenderExchange/FourCharacters/`:
+  `BP_boss_Meshes.blend`, `BP_Enemy_Meshes.blend`,
+  `BP_girl_Meshes.blend`, and `BP_savagee_Meshes.blend`.
+  Each file contains exactly two scene objects named `<character>_Body_Mesh`
+  and `<character>_Face_Mesh`. There are no armatures, UEFN objects, Armature
+  modifiers, animations, or inherited vertex groups.
+- The placed level actors were resolved through the live editor rather than by
+  guessing from blueprint names. Source assets were:
+  - `BP_boss`: `SKM_test_UEFNFit2_BodyMesh` and
+    `SKM_test_UEFNFit2_FaceMesh` under `/Game/_mygame/MetaHumans/boss/`.
+  - `BP_Enemy`: `SKM_test_UEFNFit1_BodyMesh` and
+    `SKM_test_UEFNFit1_FaceMesh` under `/Game/MetaHumans/test_UEFNFit/`.
+  - `BP_girl`: `SKM_test_UEFNFit5_BodyMesh` and
+    `SKM_test_UEFNFit5_FaceMesh` under `/Game/_mygame/MetaHumans/girl/`.
+  - `BP_savagee`: `SKM_test_UEFNFit3_BodyMesh` and
+    `SKM_test_UEFNFit3_FaceMesh` under `/Game/_mygame/MetaHumans/savagee/`.
+- Technique: Unreal `SkeletalMeshExporterFBX` exports Body and Face assets
+  separately at LOD0 without morph targets or animation. Blender imports both
+  with the same non-auto-oriented FBX convention as the verified manual-rig
+  handoff. Their shared reference joints are checked before the rigs are
+  removed. Each mesh is detached while preserving its evaluated world matrix;
+  then the identity Armature modifier, source armature, wrapper, and vertex
+  groups are removed. The output keeps the established `0.01` world scale so
+  appending into the manual-rig scene preserves alignment and human size.
+- Verification: all four files were saved and reopened with exactly two mesh
+  objects and zero armatures/UEFN-named objects. Body meshes have 8,568
+  vertices; Face meshes have 4,065 or 4,067 vertices. Heights are
+  `1.7171-1.7444 m`. Maximum body/face shared-joint translation disagreement is
+  `2.44e-7 m`; maximum geometry change from stripping the rest-pose rigs is
+  `7.16e-7 m`. Front and side renders for every character were inspected and
+  show aligned head/neck/shoulder surfaces, intact limbs, and no malformed or
+  exploded geometry. Evidence is under
+  `Saved/BlenderShots/FourCharacters/`; full results are in
+  `Saved/BlenderExchange/FourCharacters/BlenderMeshFiles_Audit.json`.
+- Rebuild scripts:
+  `Tools/MetaHuman/probe_four_character_meshes.py`,
+  `Tools/MetaHuman/export_four_character_meshes.py`, and
+  `Tools/MetaHuman/blender_build_four_character_mesh_files.py`. The Unreal
+  export step modifies and saves no Unreal package, blueprint, actor, or level.
+- References:
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/SkeletalMeshExporterFBX?application_version=5.7`,
+  `https://dev.epicgames.com/documentation/unreal-engine/fbx-skeletal-mesh-pipeline-in-unreal-engine`,
+  `https://docs.blender.org/manual/en/latest/addons/import_export/scene_fbx.html`.
+
+## 2026-07-23 - Reusable Ally2-to-Boss skin-weight transfer
+
+- Immutable source file:
+  `C:/Users/singerie/Documents/Blender/forcodex.blend`. Verified result:
+  `C:/Users/singerie/Documents/Blender/forcodex_BossWeighted.blend`. The
+  original was not overwritten.
+- Target `boss` is now parented to `UEFN_WORKING_CLEAN_RIG.001` and has one
+  Armature modifier targeting that rig. All 11,374 target vertices are
+  weighted; there are zero unknown/non-UEFN groups, no vertex has more than
+  eight influences, and maximum normalized-weight error is `4.29e-8`.
+- Body weights come from `ally2_Body_Mesh` via world-space nearest-face
+  barycentric interpolation. This is the scripted equivalent of Blender
+  Transfer Weights with `Nearest Face Interpolated`, all source layers, name
+  matching, and Replace mode. Source vertex weights are normalized first
+  because the source object retained weights from two compatible rig layers.
+- A body-only transfer is insufficient because `boss` includes a head while
+  the rigged Ally2 Body stops at the collar. The head/neck region therefore
+  uses `ally2_Face_Mesh` as a second spatial source. MetaHuman facial groups
+  are collapsed to UEFN `head`; Neck A/Adams-apple groups to `neck_01`; Neck B
+  groups to `neck_02`; shoulder helper groups to their matching
+  spine/clavicle/upper-arm UEFN bones. Body and face transfers blend smoothly
+  across the shared collar interval (`Z 1.365845-1.445845 m`), avoiding a hard
+  neck seam.
+- The reproducible implementation is
+  `Tools/MetaHuman/blender_transfer_boss_weights.py`. It can be rerun
+  headlessly and always writes a separate result. The output also contains a
+  Blender text block named `BOSS_WEIGHT_TRANSFER_README`.
+- The imported Boss FBX carried custom split normals and stale sharp-edge
+  flags. They appeared smooth in the rest pose but exposed individual
+  triangles after armature deformation. The reusable script now removes the
+  `custom_normal` and `sharp_edge` attributes, clears per-edge sharp flags,
+  and enables smooth shading on every polygon before saving. A new frame-29
+  stress render confirms continuous shading through the deformed neck,
+  shoulders, torso, hips, and limbs; geometry and skin weights are unchanged.
+- Verification: the output was saved, closed, and reopened headlessly. It
+  retained 87 UEFN-named groups, one correct Armature modifier, the correct
+  armature parent, and the saved frame `0-29` rig action. Frame 0 was visually
+  inspected and is anatomically intact. The intentionally extreme frame-29
+  stress pose moves 11,359 vertices by more than 1 mm and visibly carries the
+  head, torso, fingers, arms, knees, ankles, and feet with the rig. Audit data
+  is in `Saved/BlenderExchange/BossWeightTransfer_Audit.json`; renders are
+  under `Saved/BlenderShots/BossWeightTransfer/`.
+- Blender UI reproduction for a body-only mesh: put both meshes in the same
+  rest pose and overlapping world transform; select the weighted source first
+  and the unweighted target last; enter Weight Paint on the target; choose
+  `Weights > Transfer Weights`; in the operation panel select all/by-name
+  source layers, destination by name, `Nearest Face Interpolated`, and
+  `Replace`; then run Normalize All, Clean near `0.0001`, and Limit Total to
+  eight before adding the target's Armature modifier. For a combined
+  body-plus-head mesh, use the script because the required second source and
+  collar blend are not a reliable one-click operation.
+- References:
+  `https://docs.blender.org/manual/en/latest/sculpt_paint/weight_paint/editing.html`,
+  `https://docs.blender.org/manual/en/latest/modeling/modifiers/modify/data_transfer.html`.
+
+## 2026-07-23 - Boss mesh imported on the native UEFN skeleton
+
+- Immutable Blender source:
+  `C:/Users/singerie/Documents/Blender/bossfinalsave.blend`. The Unreal-ready
+  clean scene is
+  `Saved/BlenderExchange/BossUEFN/Boss_UEFN_ExportClean.blend`, containing
+  exactly `SKM_Boss_UEFN` and the authoritative native FBX rig `root.001`.
+  `bossfinalsave.blend` was not overwritten.
+- The authoring mesh is fitted to the MetaHuman-shaped working rig, while
+  direct UEFN animation requires the original mannequin bind pose. Do **not**
+  inverse-skin vertices or manually reposition edit bones. Both approaches
+  previously produced visible mesh/bone offsets or damaged the neck, wrists,
+  and feet.
+- Correct conversion method (2026-07-24): duplicate the exact Boss-bound
+  `UEFN_WORKING_CLEAN_RIG.001`; clear its pose/action; disconnect every bone
+  only on that temporary copy; and point the existing Boss Armature modifier
+  to it. Import a second copy of the native UEFN FBX with Blender Automatic
+  Bone Orientation, then apply the same Blender-only primary-chain
+  connections used by the fitted working rig. Pose the temporary disconnected
+  driver to those target rest matrices. The existing Armature modifier—not a
+  vertex solver—then moves the already well-skinned Boss mesh into the native
+  UEFN reference pose.
+- Bake the modifier's evaluated result, normalize and limit the existing
+  UEFN-named weights to eight influences, clear the untouched authoritative
+  native rig to its true rest pose, and rebind the baked mesh to that rig at
+  identity. Discard both temporary rigs. No source vertex, source edit-bone,
+  or source-weight correction is used. Swapping to the temporary driver
+  changes the fitted surface by at most `3.59e-7 m`; the driver reaches the
+  target matrices within `1.64e-5` Blender matrix units; final native-rig
+  rebinding changes the baked surface by at most `2.67e-7 m` (RMS
+  `1.26e-7 m`).
+- The Automatic Bone Orientation target must receive the same connected-tail
+  convention as the fitted working rig before matrices are copied. Using the
+  raw auto-oriented target directly is the specific error that twisted and
+  displaced the feet. Trying to copy native matrices onto the still-connected
+  fitted armature is also invalid because connected children cannot accept
+  independent joint translations.
+- The conversion preserves the source topology exactly: 11,374 vertices and
+  22,068 polygons. It performs no seam snapping, welding, inverse skinning, or
+  other geometry edit. Smooth shading is restored by clearing stale custom
+  split normals/sharp-edge data, but skin/material appearance must still be
+  checked in Unreal with the original material instances.
+- The combined mesh has eight stable polygon material regions: Body, Teeth,
+  EyeL, EyeR, EyeShell, Lacrimal, Eyelashes, and FaceSkin. Unreal reuses the
+  original Boss Body and Face material instances from the assembled
+  MetaHuman rather than accepting basic FBX-generated materials. This keeps
+  the skin and underwear textures and preserves the original material-slot
+  order.
+- Blender's FBX exporter is told the scene is in centimeters, so the native
+  armature/mesh transforms are promoted by `100` in the isolated export scene.
+  This produces the correct Unreal size without relying on an Unreal import
+  scale override. Final Unreal bounds are approximately `101.06 x 34.69 x
+  167.47 cm`.
+- Final FBX:
+  `Saved/BlenderExchange/BossUEFN/SKM_Boss_UEFN.fbx`. A cold Blender reimport
+  verifies one mesh, one armature, all 87 expected Blender bone names in the
+  exact native order/hierarchy, 11,374 vertices, no unknown groups, no
+  unweighted vertices, normalized weights, and at most eight influences.
+- The latest FBX was cold-reimported into a factory-started Blender 5.1.1 and
+  visually inspected in neutral, idle, sprint, climb, and cliff-catch poses.
+  The neck/shoulders remain continuous; both wrists, hands, ankles, and feet
+  remain attached and anatomically oriented. This 2026-07-24 regeneration has
+  not yet been imported into Unreal, so the older persistent
+  `/Game/_mygame/MetaHumans/BossUEFN/SKM_Boss_UEFN` asset is not evidence for
+  the latest file and should be replaced/reimported before Unreal validation.
+- Reproducible scripts:
+  `Tools/MetaHuman/blender_prepare_boss_uefn_export.py`,
+  `Tools/MetaHuman/blender_prepare_boss_uefn_export_driver.py`,
+  `Tools/MetaHuman/blender_validate_boss_uefn_fbx.py`,
+  `Tools/MetaHuman/blender_render_boss_uefn_animation_audit.py`,
+  `Tools/MetaHuman/import_boss_uefn_to_unreal.py`,
+  `Tools/MetaHuman/run_boss_uefn_live_import.py`, and
+  `Tools/MetaHuman/audit_boss_uefn_in_unreal.py`, plus
+  `Tools/MetaHuman/audit_boss_fixed_neutral_in_unreal.py`. Machine-readable audits are
+  under `Saved/BlenderExchange/BossUEFN/`; Blender and Unreal visual evidence
+  is under `Saved/BlenderShots/BossUEFN/` and
+  `Saved/CodexLiveShots/BossUEFN/`.
+- References:
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/skeleton-assets`,
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/fbx-skeletal-mesh-pipeline-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/fbx-import-options-reference-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/fbx-material-pipeline-in-unreal-engine`.
+
+## 2026-08-06 - Physics-simulated Potence rope retraction
+
+- `/Game/_mygame/assets/hanging/A_Potence.ShrinkRope` now calls the native
+  `Update Potence Rope Physics` helper on each of its existing terminal paths.
+  No unrelated Blueprint graph or level logic was changed.
+- Retraction is normalized `0..1` and continuously bidirectional. `joint`
+  remains kinematic; `joint1` through `joint27` keep their original full-size
+  bodies and constraint frames and remain dynamic for the whole session. The
+  helper reels that stable chain above the wood by moving only the kinematic
+  root target along the reference-rope direction. This avoids the near-zero
+  constraint lever arms that caused the free tip to correct by a full segment.
+- While this helper owns the root, the runtime component uses
+  `EKinematicBonesUpdateToPhysics::SkipAllBones`; otherwise the skeletal
+  pre-physics update restores the root to its reference pose and alternates
+  against the reel target. Dynamic child bodies still feed their simulated
+  transforms back to the skeletal pose.
+- Bodies fully reeled above the anchor retain their solver/mass topology but
+  receive an empty Chaos shape filter, so they collide with nothing. Expansion
+  restores normal BodyInstance filters in place. No body or constraint is
+  destroyed, recreated, rescaled, or converted to kinematic.
+- Do not replace the in-place filter changes with
+  `FBodyInstance::SetCollisionEnabled`: that API can recreate skeletal instance
+  bodies when crossing the physics/no-physics boundary and invalidate cached
+  body/constraint pointers.
+- Runtime rendering and physics now use the same single
+  `UProphecyRetractableSkeletalMeshComponent` named `SKM_RopeHang`. It keeps the
+  original `SKM_RopeHang` asset, `MI_RopeHang`, and Physics Asset; no procedural
+  tube, poseable mesh, hidden physics duplicate, or second Blueprint component
+  is created. In `FinalizeBoneTransform`, fully consumed bones collapse to the
+  fixed reference anchor and only their local Z scale approaches zero. The
+  active boundary bone receives the fractional Z scale, while X/Y stay exactly
+  `1` and all later bones keep scale `1,1,1`. This render-pose edit occurs after
+  Chaos supplies the simulated bone transforms and does not resize the PHAT
+  bodies.
+- Live `/Game/mybasic` diagnosis sampled the Blueprint's unchanged automatic
+  Amount every frame. The old implementation produced 12 tip corrections over
+  5 cm in eight seconds, with a `10.57 cm` maximum physics step and `9.30 cm`
+  unexplained after accounting for velocity. The events occurred when the
+  active segment advanced; disabling collision retirement did not remove them,
+  while holding constraint frames fixed removed all of them.
+- Final auto-shrink validation recorded 309 post-physics samples over six
+  seconds: zero steps over 5 cm, zero velocity residuals over 3 cm, a uniform
+  `0.378 cm` maximum root step, `1.16 cm` maximum rendered-tip step, and
+  `2.99 cm` maximum physics step with only `0.58 cm` residual. A separate
+  459-sample `0 -> 0.45 -> 0` cycle had zero hard events in either direction;
+  the root returned exactly and the physics tip returned within `0.13 cm`.
+  Median frame delta was `17.69 ms`. PIE tests paused PCG transiently and did
+  not save or modify the Blueprint or level.
+- The final single-component installation was recovered after the editor OOM,
+  refreshed, and compiled with Blueprint status `3` (up to date). A PIE smoke
+  test at Amount `0.35` confirmed `joint` was kinematic, `joint1`-`joint9`
+  stayed simulated with render scale `1,1,0.001`, `joint10` stayed simulated at
+  `1,1,0.55`, and `joint11` onward stayed simulated at `1,1,1`. The component
+  retained Query and Physics collision, the original mesh/material, and was the
+  only rope-render component. Only `A_Potence` was saved; the level was not.
+- A later noose test exposed an obsolete branch still present in `ShrinkRope`:
+  it replaced the correct component asset at runtime with
+  `SKM_RopeHang_Shrink` and installed `ABP_RopeHang_Shrink`, despite the editor
+  template still showing the original mesh. This made the noose follow the real
+  `joint27` physics body while a legacy mesh rendered elsewhere, which looked
+  like a second invisible rope. `ShrinkRope` is now reduced from 15 nodes to its
+  function entry, the existing `SKM_RopeHang` reference, and one
+  `UpdatePotenceRopePhysics` call.
+- `A_Potence` now calls `Weld Noose To Rope End` once from BeginPlay, after both
+  Chaos actors exist. It disables the obsolete external `PhysicsConstraint`,
+  snaps the noose body origin to `joint27`, and performs one simulated-body
+  weld. The noose collision becomes part of the terminal rigid body; there is
+  no second rope, compliant solver joint, or per-frame attachment correction.
+  The terminal vertex ring of the existing `SKM_RopeHang` mesh is weighted
+  rigidly to `joint27`. A moving-collision and full `0 -> 0.6 -> 0` retraction
+  test both measured a `0.0 cm` attachment gap.
+- `PHAT_RopeHang` stores per-body Chaos overrides for `joint` through
+  `joint27`: 12 position, 2 velocity, and 24 projection solver iterations. The
+  cached runtime rope state applies the same values once so already-instanced
+  bodies and live upgrades are configured consistently. These settings are
+  local to the 28 controlled rope bodies and do not alter project-wide solver
+  settings, the Physics Asset's locked linear/angular limits, collision shapes,
+  masses, or constraint frames. An identical swept
+  `SandboxCharacter_CMC` contact that previously accumulated `9.48 cm` of
+  downward error at the terminal body now measured `0.000 cm`; the kinematic
+  root remained fixed within `0.000 cm`. The validation capture recorded
+  `19.24 ms` median and `22.14 ms` p95 frame deltas, and a bidirectional shrink
+  capture recorded `20.67 ms` median and `25.58 ms` p95 with no hitch-sized
+  frame. Only transient PIE actors were moved for these tests; the Blueprint
+  and level were not changed or saved.
+- Implementation:
+  `Source/GameAnimationSample3/Private/ProphecyPhysicsConstraintBlueprintLibrary.cpp`
+  and
+  `Source/GameAnimationSample3/Public/ProphecyPhysicsConstraintBlueprintLibrary.h`,
+  plus
+  `Source/GameAnimationSample3/Private/ProphecyRetractableSkeletalMeshComponent.cpp`
+  and
+  `Source/GameAnimationSample3/Public/ProphecyRetractableSkeletalMeshComponent.h`.
+- References:
+  `https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/FBodyInstance`,
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/USkeletalMeshComponent`.
+
+## 2026-08-06 - PIE startup hitch profile
+
+- A 90-second CSV capture and a focused Unreal Insights CPU/task trace show
+  that PIE world creation is not the long freeze: `StaticDuplicateObject`
+  took `0.330 s` and total PIE startup took `0.893 s`. The large hitches occur
+  in the first runtime frames.
+- The primary stall is PCG execution. One captured frame took `8.208 s`;
+  `UPCGSubsystem::Tick` spent `5.848 s` synchronously executing
+  `FPCGSplineSamplerElement::Execute`. Two other spline-sampler jobs occupied
+  worker threads for `8.893 s` and `4.663 s`, causing Game, Render, and RHI
+  thread waits. This is the source of the multi-second startup freezes.
+- The original `PCG_Dirt` and `PCG_SplineGrass` volume components are
+  deactivated and set to Generate On Demand, but their eight local components
+  in four `PCGPartitionActor`s are still activated and set to Generate On
+  Load. They therefore execute when the duplicated PIE world initializes.
+- The level also contains 25,089 ISM instances; 24,969 are PCG-owned grass
+  instances. They add first-frame scene registration and draw-command/PSO
+  work, but the trace distinguishes this from the dominant spline-sampling
+  stall.
+- Secondary findings: `A_Potence_C_1` currently emits the Blueprint message
+  `haiiii 0.5` every frame, indicating an unnecessary per-frame Print String;
+  automatic PSO precaching produced sub-100 ms spikes but not the multi-second
+  freezes. The editor used roughly 17-18 GB private memory with only about
+  2.2-2.5 GB of free physical RAM and 4.5 GB free on C:, which can amplify
+  waits. Do not delete DDC or shader caches before the next benchmark.
+- Evidence:
+  `Saved/Profiling/CSV/Profile(20260806_180739).csv` and
+  `C:/CodexProfiles/pie_startup_deep.utrace`.
+- References:
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/using-pcg-generation-modes-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/pcg-runtime-generation-debugging-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/unreal-insights-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/pso-precaching-for-unreal-engine`.
+
+## 2026-08-08 - Boat-local water cutout prototype
+
+- The user-created masked test material
+  `/Game/_mygame/assets/boat/StaticMeshes/NewMaterial` now removes water using
+  an authored footprint texture rather than `DistanceToNearestSurface`.
+  `/Game/_mygame/assets/sand/M_Water` was not modified.
+- LOD 0 of `SM_Boat_Inside` was extracted from its 999 vertices / 739
+  triangles and projected in local XY into the 512x512 mask
+  `/Game/_mygame/assets/boat/StaticMeshes/Generated/T_BoatInside_WaterMask`.
+  The texture is non-sRGB, Masks-compressed, bilinear, and clamped. It retains
+  the blockout's tapered silhouette at roughly 0.7 cm per texel along its long
+  axis; this is not a box approximation or a Global Distance Field sample.
+- `NewMaterial` contains 19 standard expressions. It transforms Absolute
+  World Position into the test blockout's local XY with parameterized origin
+  and world-to-local basis vectors, performs one mask texture sample, and
+  connects `OneMinus(mask.r)` to Opacity Mask. The graph recompiled and saved
+  without material errors. Analytical samples measured opacity `0` at the
+  footprint center/bow/stern and `1` outside both its side and bow bounds.
+- The standalone level actor `SM_Boat_Inside` was left in the level but its
+  mesh component was made invisible, non-shadow-casting, and collision-free so
+  the cutout can be inspected. The already-dirty `/Game/mybasic` level was not
+  saved. `NewMaterial` was already assigned to the `SM_SkySphere` level actor
+  as well as `ocean`; that pre-existing assignment was deliberately untouched.
+- The current parameter defaults match the standalone test actor transform.
+  For a moving boat, update `BoatMask_Origin`,
+  `BoatMask_WorldToLocalX`, and `BoatMask_WorldToLocalY` on a water MID, or
+  migrate those three values to an MPC driven by the boat. The mask texture and
+  UV bounds remain constant, so movement requires no rebake and only one
+  texture sample remains in the pixel shader.
+- A recoverable empty-material backup is at
+  `/Game/_mygame/assets/boat/StaticMeshes/_CodexBackups/NewMaterial_PreBoatMask_20260808_022307`.
+- References:
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/utility-material-expressions-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/runtime-virtual-texturing-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/virtual-texturing-settings-and-properties-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/material-inputs-in-unreal-engine`.
+
+## 2026-08-08 - Optimized gentle boat-wave physics force
+
+- Added the Blueprint-callable native node `Apply Gentle Boat Wave Forces`
+  (`UProphecyPhysicsConstraintBlueprintLibrary::ApplyBoatWaveForces`). It is
+  intended to be called once from Tick on the boat's simulated primitive.
+- The node replaces independent random impulses with a deterministic,
+  continuous three-component directional wave spectrum. Seeded phase and
+  frequency/direction spread prevent obvious repetition without generating
+  random values each frame.
+- It evaluates the spatial wave slope across four virtual hull corners and
+  analytically accumulates the result into one vertical force and one physical
+  roll/pitch torque. Smooth two-frequency horizontal drift plus linear/angular
+  damping prevents unbounded random-walk velocity; optional low-frequency yaw
+  remains acceleration-based and mass-independent.
+- Runtime work is allocation-free and stateless: three `SinCos` evaluations,
+  two slower sine evaluations, one yaw sine, and at most three Chaos calls per
+  active boat per frame. Unreal maintains per-frame forces across enabled
+  physics substeps.
+- Tunable inputs include overall strength, heave acceleration, base frequency,
+  frequency spread, wave/drift directions, direction spread, wavelength, hull
+  half-dimensions, rocking response, drift acceleration/frequency,
+  horizontal/vertical/angular damping, yaw acceleration, seed, time scale,
+  phase offset, and optional bone name.
+- Live Coding compiled and reflected `ApplyBoatWaveForces` successfully. A
+  reflection call against the live 309.8 kg `BP_Boat.SM_Boat` body returned
+  success; the validation strength was only `0.001` and produced no measurable
+  transform or velocity delta. `BP_Boat` itself was not edited or wired.
+- References:
+  `https://developer.nvidia.com/gpugems/gpugems/part-i-natural-effects/chapter-1-effective-water-simulation-physical-models`,
+  `https://repository.tudelft.nl/file/File_87c46363-97ef-4bbb-a540-3050546f907d?preview=1`,
+  `https://dev.epicgames.com/documentation/unreal-engine/physics-sub-stepping-in-unreal-engine`.
+
+## Unreal collision, navigation, and village crowd
+
+- Integration ownership is explicit: Unreal owns physical truth and the
+  standalone/core side owns intent. The current standalone slice contains the
+  persistent Unreal collision snapshot, static navigation, and the village
+  crowd runtime. PIE now exchanges the placed manager's agent roots and intent
+  with that same standalone runtime through fixed binary shared memory.
+- Added the editor console command `Prophecy.ExportSelectedSimCollision`. It
+  exports only selected actors, so the user can provide the relevant-object
+  list incrementally. Each exported object carries actor GUID plus component
+  name, actor label/class, collision source, world-space vertices, and indices.
+- `Prophecy.ExportSelectedSimComplexCollision` is the explicit override for
+  selected static and instanced mesh components. It exports their underlying
+  `UStaticMesh::GetPhysicsTriMeshData` even when component collision is disabled;
+  it does not change or save asset collision settings. The normal command keeps
+  respecting each component and `UBodySetup` collision mode.
+- Snapshot schema is `prophecy.unreal-collision.v1`; coordinates are meters in
+  the sim convention (X/Y ground plane, Z up). Static Mesh Components resolve
+  `UBodySetup::GetCollisionTraceFlag()`: sphere/box/capsule/convex simple
+  collision is exported when applicable, while `UseComplexAsSimple` uses
+  `UStaticMesh::GetPhysicsTriMeshData`. Blueprint actors work through their
+  contained Static Mesh Components. Instanced Static Mesh Components export one
+  object per instance using the exact instance world transform and underlying
+  mesh `UBodySetup`; this permits explicitly requested PCG debug geometry to use
+  its authored asset collision even when the generated component has runtime
+  collision disabled. Unsupported or absent collision is listed in warnings
+  rather than approximated silently.
+- The two `/Game/mybasic` landscapes are now a persistent manual bake, not a
+  launch-time rebuild. `StandaloneSim/tools/bake_landscape_collision.cpp`
+  finds each exact dominant flat rectangle, replaces only that rectangle with
+  one plane quad, and copies every triangle outside it unchanged. It runs only
+  when the user explicitly asks for a landscape rebuild.
+- The main plane is at `Z=0 m` and retains 102,870 exact shore/boundary
+  triangles. `Landscape2` is at `Z=0.0250104 m` and retains 14,630. The saved
+  `StandaloneSim/data/unreal_collision.json` also contains the exact transformed
+  `ocean`, `ocean2`, `waterline`, and `waterline2` quads from `/Game/mybasic`.
+  It additionally contains the ten prior actors from the Outliner folder
+  `houses` plus `tent`, with no house-export warnings. The five central
+  `SM_house_*` actors now use their explicitly exported underlying complex
+  meshes; the five cabin Blueprints retain their configured complex-as-simple
+  collision, and `tent` uses its forced complex mesh at 3,341 triangles. Folder
+  `Hay` contributes 11 forced-complex static mesh actors at
+  1,136 triangles each, for 12,496 triangles total and no warnings.
+  The six `BP_SplineFence*` actors in folder `Splines` drive `PCG_Fence`; its
+  seven generated ISM components contribute 628 exact complex instance meshes
+  and 2,224,099 triangles. The 15 actors in `mountains1` and 16 actors in
+  `mountains2`, now including `slave mountain`, contribute 31 exact complex
+  meshes and 226,218 triangles. No
+  fallback geometry, simplification, or fence/mountain warning was used. The
+  complete cache is 701 objects, 4,158,798 triangles, and 600,112,418 bytes. No
+  cutoff, smoothing, decimation, or height approximation is applied to retained
+  landscape or house geometry.
+- Landscape hole/material masks are not represented and remain two explicit
+  cache warnings; the debug surface is not a replacement for Unreal physics.
+- The raylib viewer auto-loads `StandaloneSim/data/unreal_collision.json` or an
+  explicit `--environment-collision` path. Workspace builds prefer the canonical
+  source cache and portable builds fall back to their packaged copy. The JSON is
+  authoritative; an unchanged snapshot loads prelit immutable mesh buffers from
+  the versioned 101,457,513-byte `unreal_collision.json.rendercache` sidecar after
+  validating the JSON byte size and write time. A missing or stale sidecar performs
+  the JSON parse, static lighting, and GPU preparation once, then refreshes the
+  sidecar. Measured launch through the eighth rendered frame fell from 30.128
+  seconds without the sidecar to 1.061 seconds with it. An open
+  viewer checks the chosen file signature at two hertz, waits for a changed write
+  to remain stable for half a second, builds replacement immutable 16-bit GPU
+  chunks, and swaps them atomically while retaining the previous valid scene on
+  an invalid write. No flat detection, shore extraction, environment allocation,
+  geometry rebuild, or lighting occurs during simulation ticks or normal frames.
+  Flat landscape planes render dirt brown, retained shore triangles render sand
+  yellow, water-plane quads render water blue, `Hay1` through `Hay11` use hay
+  yellow RGB `(228,190,58)`, other collision uses muted blue-grey, and complex
+  mountain meshes use warm rock grey RGB `(218,210,210)`.
+  At cache load, each static mountain triangle receives one flat color from its
+  real geometric face normal: 68% ambient, 24% two-sided directional detail,
+  and up to 8% upward sky fill. This preserves the exact complex geometry while
+  exposing its facets and keeping back-facing ranges readable. The GPU cache
+  splits only mountain render vertices per triangle; no lighting, geometry work,
+  or update occurs during normal frames. Other surfaces retain their existing
+  smooth vertex-normal ambient-plus-diffuse bake. Both use `/Game/mybasic` actor
+  `DirectionalLight`, whose snapshot forward vector is
+  `(0.4863177, -0.1161780, -0.8660241)`. Collision is drawn two-sided for debug
+  cameras inside shells. `sim_core` never touches it.
+- Verification: Unreal 5.7 and the Release viewer build successfully. The
+  initial real export verified `SM_house_7` at 684 simple-collision triangles;
+  the final canonical cache replaces all five `SM_house_*` entries with fresh
+  forced-complex exports while leaving the other 696 objects unchanged.
+  `Landscape2` at 80,850 raw triangles, and the main landscape at 290,322 raw
+  triangles. `Saved/SimCollisionTests/houses-shaded.png` confirms two-sided
+  house visibility and static directional-light shading.
+  `Saved/SimCollisionTests/complex-fences-mountains-live.png` confirms the final
+  complex fence geometry in the running viewer. The refreshed
+  `mountains2` export contains 16 objects and 158,313 triangles with zero
+  warnings; `slave mountain` contributes 98,647 of those triangles.
+  `Saved/SimCollisionTests/slave-mountain-live.png` confirms its distinctive
+  arch in the actual viewer. The later tent-plus-Hay complex export contains 12
+  objects and 15,837 triangles with zero warnings.
+  `Saved/SimCollisionTests/tent-hay-live.png` confirms the added geometry in the
+  actual viewer. The final persistent cache is 600,112,418 bytes; the viewer
+  loaded all `701 objects, 4158798 triangles, 2 warnings`; the watched refresh
+  completed in the same viewer process and returned it to a responsive state.
+  The default camera remains centered in the house area, so that capture does
+  not frame the distant mountain folders. A focused static-cache check at
+  `Saved/SimCollisionTests/mountain-detail-cached.png` confirms the lighter
+  per-triangle mountain facets. The two warnings remain the existing landscape
+  mask warnings. A watched-copy timestamp change while the viewer remained open
+  separately logged the expected successful live reload.
+- Static navigation is a separate manual bake generated by
+  `prophecy_navigation_baker`; launches never rebuild it. The baker reads the
+  same canonical complex-collision cache, corrects the sim-to-Recast winding
+  change, rasterizes at 10 cm horizontal and 5 cm vertical resolution, and
+  writes the compact `StandaloneSim/data/mybasic.navbin` Detour artifact. The
+  measured `/Game/mybasic` `my guy` profile is fixed at 0.30 m capsule radius,
+  1.72 m capsule height, 0.30 m maximum climb, and 44.765083-degree maximum
+  slope. The selected grid represents those as exactly three radius cells,
+  thirty-five height cells (1.75 m), and six climb cells. The exact horizontal
+  bench-top source triangles in the dense-village houses and tent source
+  triangles rising above that climb allowance are marked nonwalkable before
+  rasterization. The static bake preserves the real attic stairs without adding
+  a synthetic vertical link.
+- Raised/open entrance validation samples three capsule-width horizontal rays
+  0.75 m above the lower surface. Four current entrance links pass that check.
+  The viewer-only navigation layer is toggled with `N` or the layers toolbar
+  button: exterior-connected navigation is green, disconnected walkable islands
+  use distinct colors, white lines expose navigation triangles, and accepted
+  entrance links are orange. Hidden navigation performs no draw work and none of
+  this debug data enters `sim_core`. The baker disables 423 house-roof and
+  tent-exterior polygons across all five `BP_LogCabin*` houses, all five
+  `SM_house_*` houses, and `tent` while retaining covered interior floors and
+  stair surfaces. Disabled polygons are ignored by Detour, the inspector, and
+  the debug renderer. The current 3,096,236-byte bake retains four entrance
+  links. It contains a validated
+  `SM_house_5` attic to `SM_house_7` attic test: start
+  `[-24.1243, 2.12001, 3.3]`, goal `[8.24065, -3.89999, 3.55]`, 60 Detour
+  corridor polygons, and 25 straight-path corners. The path
+  descends the retained `SM_house_5` stair surfaces, crosses the exterior, and
+  ascends the retained `SM_house_7` stair surfaces; no artificial vertical link
+  is present. `--navigation-test` shows a looping walking skeleton, cyan route,
+  blue start, and pink goal. The route and endpoint proof remain x-rayed through
+  roofs so the two interior endpoints stay visible. Agent depth bypass is a
+  separate persisted Camera option named `X-ray agents`; it defaults off, so
+  structures normally occlude both test and regular agents. These are viewer-only
+  diagnostics.
+- `CrowdRuntime` loads the same `mybasic.navbin` once and owns one shared
+  Detour navmesh, query, proximity grid, asynchronous path queue, and 100-agent
+  crowd. It enumerates only the roofless connected village component: 701
+  destination polygons, including 40 elevated attic polygons. Agents retain Detour path corridors, choose deterministic random
+  destinations at least 6 m away, request an attic destination every fifth
+  assignment, and replace a destination on arrival. Crowd steering uses turn
+  anticipation and sampled obstacle-avoidance steering. The sampled sidestep is
+  kept when it still advances toward the path; otherwise the path direction
+  restores full forward intent. Avoidance never sets speed to zero, assigns
+  traffic priority, or imposes a hard capsule barrier, so agents may overlap and
+  pass through. A one-time wall-distance pass records 300 constrained polygons
+  in 166 bottleneck zones for diagnostics only. A navmesh-constrained 10 cm
+  forward corridor step clears an agent still below 0.25 m/s for one second,
+  before the 1.5-second jam threshold, without stopping another agent.
+  Navigation, stall detection, and avoidance update at a fixed
+  15 Hz inside the 30 Hz simulation; their scratch storage is persistent and
+  displayed positions extrapolate across the intervening tick.
+  Baking, artifact loading, target-pool construction, and rendering are one-time
+  or debug costs and are excluded from the runtime metric.
+- `--navigation-crowd-test` with
+  `StandaloneSim/data/village_crowd_debug.json` renders those 100 agents in the
+  real village and displays rolling navigation/avoidance time, completed trips,
+  attic assignments, active jams, and preventive clears.
+  Locomotion pose phase comes from cumulative travelled distance and facing is
+  retained through velocity dips, so turning cannot restart Walk or Run.
+  Regular agents spawned with `B` and `R` remain rendered alongside the crowd.
+  `X-ray agents` applies to this test
+  and remains off by default, so houses and other structures normally occlude
+  agents. The deterministic behavior probe confirms distant head-on agents
+  sidestep by 0.3090 m and pass, while agents initialized face-to-face keep at
+  least 1.7444 m/s forward progress and pass with a 0.1344 m minimum separation.
+  The current deterministic five-minute Release benchmark kept all 100 agents
+  active, completed 1,472 trips with 315 attic assignments, and averaged 0.2459
+  ms per 30 Hz simulation tick. Active 15 Hz solves averaged 0.4918 ms. It had
+  zero detected jams, zero corner stalls, and zero preventive corridor clears.
+  The minimum sampled near-level center separation was 0.0047 m, confirming
+  nonblocking overlap. The regression fails if either behavior case fails, any
+  jam/corner stall occurs, or average cost reaches 0.5 ms. The
+  automated 100-agent crowd regression and the existing
+  deterministic/settings/telemetry tests all pass.
+- `prophecy_collision_replacer` performs a label-scoped cache replacement after
+  an explicit partial Unreal export, preserving every object outside the selected
+  labels and recomputing summary counts. `prophecy_navigation_inspector` reads
+  the binary artifact without rebuilding it and reports connectivity, entrance
+  endpoints, and component height ranges. Both are manual development tools.
+- Free and follow camera rotation moved from left-drag to right-drag. Right-drag
+  now runs the same yaw/pitch path and persisted sensitivity as the former
+  left-drag binding; it no longer pans or exits follow. Left-drag has no camera
+  action, while ordinary left-click selection and paused agent translation/turn
+  editing remain unchanged. The Cam options tab exposes the existing persisted
+  `look_sensitivity` setting as `Sensitivity`; the obsolete Pan row is hidden.
+  `Saved/SimCollisionTests/hay-yellow-camera-options.png` confirms the yellow
+  hay rendering and the visible sensitivity control.
+- Viewer screenshots are bound only to printed `P`; there is no toolbar camera
+  button. Captures persist under
+  `%LOCALAPPDATA%\ProphecyStandaloneSim\screenshots\` as
+  `screenshot-NNNNNN.png`, continue after the highest existing number across
+  launches, and visibly stamp camera position, yaw, pitch, and FOV into each
+  image. The current screenshot number stays at the lower right, and a brief
+  light white flash confirms a successful save.
+- Focused Unreal references checked before implementation:
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/simple-versus-complex-collision-in-unreal-engine`,
+  `https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/FKAggregateGeom`,
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/UBodySetup`,
+  `https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Landscape`,
+  and UE 5.7 local source for `BodySetupCore.cpp`, `BodySetup.cpp`,
+  `StaticMesh.h`, `AggregateGeom.h`, and `LandscapeCollision.cpp`.
+
+## 2026-08-10 - Agent MACD And Foot-Roll/Physics Cost
+
+- `AProphecyAgent` exposes a runtime per-agent MACD switch, and the manager
+  exposes the same operation through stable agent handles. Agents still start
+  kinematic, but Physical promotion now applies MACD by default unless it was
+  explicitly disabled. UE 5.7's inherited `UPrimitiveComponent::SetAllUseMACD` only reaches
+  the default skeletal body, unlike the skeletal override for CCD, so the agent
+  deliberately applies `FBodyInstance::SetUseMACD` to every body in its
+  `USkeletalMeshComponent::Bodies` array. The setting survives mode changes and
+  is reapplied when the agent enters Physical mode.
+- Exact UE 5.7 Chaos behavior: `p.Chaos.Solver.UseMACD` globally permits MACD and
+  defaults on; an individual collision pair uses MACD when either particle has
+  its runtime MACD flag. MACD expands motion-aware broadphase bounds and informs
+  the narrow phase. It targets moderate-speed misses; Epic still specifies CCD
+  for reliable high-speed collision. Per-agent switching is therefore valid,
+  but agent-agent MACD is disabled only when both participants are off. Change
+  the flag at state/LOD boundaries rather than every tick because each changed
+  rigid body uses a physics-scene write operation.
+- Added benchmark-only command-line controls
+  `-ProphecyNNFootRollSteps=N`, `-ProphecyNNPhysicalAgents=N`, and
+  `-ProphecyNNPhysicalMACD=0|1`. The production and exporter default is 4 foot-roll
+  steps. Zero now means no roll integration or pin blend while retaining the
+  final cheap ground-penetration clamp. Benchmark output also records actual
+  wall milliseconds per frame after warmup.
+- The representative `/Game/_mygame/SKM_UEFN_Mannequin` uses
+  `/Game/Characters/UEFN_Mannequin/Rigs/PA_UEFN_Mannequin`: 22 bodies, 18 capsule
+  shapes, four box shapes, and 21 skeletal constraints. No convex or triangle
+  collision is present. Every body currently inherits the world-solver default
+  of eight position, two velocity, and one projection iteration. Current
+  Production Physical mode creates one world-space pelvis target and drives the
+  21 existing Physics Asset joints toward the animated local pose with angular
+  torque. `PerBodyWorld` remains available only as an explicit debug comparison.
+- Current project Chaos settings retain enhanced determinism on, asynchronous
+  physics off, and substepping off. UE 5.7 already defaults to task-graph physics,
+  task-based parallel island groups, and enabled physics/collision parallel
+  loops. No Chaos optimization setting was changed during the investigation.
+- Matched 100-agent, 30 Hz, NullRHI, CPU-NNE measurements over 450 warmed NN
+  steps gave output/foot-roll/IK costs of: 64=`3.9268 ms`, 32=`2.0806 ms`,
+  16=`1.1268 ms`, 8=`0.6923 ms`, 4=`0.4140 ms`, 2=`0.3149 ms`,
+  1=`0.2455 ms`, 0=`0.1693 ms`. Relative to 64, the measured output-stage
+  savings are respectively 0%, 47.0%, 71.3%, 82.4%, 89.5%, 92.0%, 93.7%, and
+  95.7%. This is about `0.0587 ms` per added roll step across all 100 agents per
+  NN update, plus about `0.169 ms` fixed output work.
+- Three matched wall-time samples at 64 roll steps produced medians of
+  `6.7576 ms/frame` for 100 kinematic agents, `39.7478 ms/frame` for 100 physical
+  agents with MACD, and `44.3810 ms/frame` for 100 physical agents without MACD.
+  All-physical with MACD was 5.88x the kinematic frame cost (+32.99 ms/frame);
+  keeping the crowd kinematic saved 83.0% relative to all-physical. MACD-on was
+  10.4% faster than MACD-off in this workload's medians, so this test provides
+  no evidence that disabling MACD saves time. The machine had concurrent work,
+  so retain the medians and direction, not sub-millisecond differences, until a
+  clean rendered target-hardware profile is run.
+- Normal UE 5.7 UHT/UBT succeeded after selecting the production four-step
+  foot-roll default. A no-override headless launch reported
+  `foot_roll_steps=4`. All retained benchmark runs completed without invalid
+  bodies, Chaos errors, NaNs, ensures, assertions, or fatal diagnostics. The
+  focused built-in references were Epic's `FBodyInstance::SetUseMACD`, Blueprint
+  `Set Use MACD`, `UPrimitiveComponent::SetAllUseMACD`, and local UE 5.7 source
+  in `BodyInstance.cpp`, `PrimitiveComponentPhysics.cpp`,
+  `ParticlePairMidPhase.cpp`, and `PBDRigidsEvolutionGBF.cpp`.
+
+## 2026-08-10 - Selectable Joint-Torque Drive And Chaos Settings Audit
+
+- Physical agents have a selectable drive topology. `RootAndJointTorque` is now
+  the production/default mode: Physical Animation creates only one world-space
+  target and constraint for `pelvis`, while the existing 21 Physics Asset
+  constraints explicitly use swing/twist angular position and velocity drives.
+  `bUpdateJointsFromAnimation` supplies each constraint's animated local target.
+  Nominal 1000/100 angular drive values use the same UE 5.7 Chaos 1.5 stiffness
+  and damping conversion factors as the original Physical Animation route.
+- The torque topology remains a real articulated simulation. Child limbs have no
+  independent world target and cannot teleport to the NN target: Chaos applies
+  joint drive impulses/torques through the chain, so bodies physically travel,
+  collide on the way, and propagate contact/error through their parent joints.
+  The UEFN topology falls from approximately 44 solver particles and 43
+  constraints per Physical agent to 23 particles and 22 constraints. Kinematic
+  mode disables both joint motors and joint-target updates.
+- The manager accepts the debug/benchmark selector
+  `-ProphecyNNPhysicalDrive=World|Torque`, applies it before any agent is
+  promoted, and records `drive=world|torque` in startup and benchmark logs. No
+  selector retains the production `RootAndJointTorque` default.
+- The accepted matched stress test used 100 Physical UEFN agents, MACD on, four
+  foot-roll steps, CPU NNE, NullRHI, 30 Hz simulation, a three-second warmup,
+  and 450 measured frames in interleaved world/torque order. Per-body world
+  runs were 61.1221, 65.0087, and 67.3470 ms/frame, median 65.0087. Active
+  joint-torque runs were 35.6307, 19.6709, and 51.4665 ms/frame, median 35.6307:
+  a 45.2% total wall-time reduction. A concurrent CPU workload caused large NNE
+  inference spikes. Subtracting only the manager's separately logged build,
+  inference, output, and store stages left medians of 63.0669 versus 26.2257
+  ms/frame, a 58.4% reduction in the non-manager engine/physics residual. This
+  is a CPU/headless topology result. The user subsequently approved this route
+  as the production default; `PerBodyWorld` remains selectable for debugging.
+- `Docs/ChaosPhysicsOptimizationReport_UE5_7.md` now uses the exact intended
+  capacity reference: 100 simultaneously simulated authored UEFN agents,
+  pelvis + joint-torque drive, MACD on, four foot-roll steps, CPU NNE, and 30 Hz.
+  Independent high-priority A-B-B-A Chaos captures measured a 3.4% solver-CPU
+  gain from task-based result push, 3.1% from the Partial-Jacobi collision
+  solver, and 5.0% with both. The combination remains a test candidate because
+  Partial Jacobi can alter contact behavior; neither CVar was saved.
+- Async Chaos at 30 Hz did not increase physical-agent capacity: total solver
+  CPU per captured second was 0.9% worse, although end-of-physics waiting fell
+  70.4% because work moved off the waiting thread. Fully simulated bodies using
+  `PhysicsOnly` collision were also slower than `QueryAndPhysics`, so the
+  production collision mode remains unchanged. Enhanced determinism remains on;
+  disabling it screened 2.6% slower on this reference.
+- UE 5.7 UHT/UBT passed with the active swing/twist torque route. Accepted
+  replicated runs completed without Physics/Chaos warnings, ensures, assertions,
+  or fatal errors. No project or engine Chaos setting was changed. The project
+  collision configuration now adds the dedicated `ProphecyAgentCapsule` and
+  `ProphecyAgentLimb` object channels;
+  `Config/DefaultEngine.ini` now has SHA-256
+  `D57AD4709A184A443EAA49943952CA2401034E173E94FF60D0E931C45DDD21C2`.
+
+## 2026-08-11 - Production Lightweight Agent Wiring
+
+- `AProphecyAgent` is the production lightweight shell: an unticked `APawn`
+  with one capsule, one skeletal mesh, and a Physical Animation component that
+  ticks only in Physical mode. It remains Blueprintable. The manager exposes an
+  `AgentClass` Blueprint property and spawns that class without overwriting its
+  skeletal mesh, so a Blueprint subclass can use another mesh on the same
+  skeleton while retaining the batched NN/animation path. Capsule dimensions,
+  mesh placement, drive strengths, hit events, overlays, LOD, shadows, and the
+  other existing properties remain Blueprint-configurable. Agent components do
+  not affect navigation.
+- Production defaults are four foot-roll integration steps, pelvis + joint
+  torque, and MACD for a promoted Physical agent. Mode selection remains only
+  the explicit `SetAgentSimulationMode` switch through a stable
+  `{index,generation}` handle. No player/nearby/hit promotion policy exists yet.
+- Collision uses dedicated `ProphecyAgentCapsule` and `ProphecyAgentLimb` object
+  channels. A Kinematic agent disables skeletal collision and uses its capsule,
+  which blocks Kinematic capsules and Physical limbs. A Physical agent's capsule
+  ignores every agent capsule and limb and blocks only static environment
+  collision; its simulated limbs block the world, Kinematic capsules, and other
+  Physical limbs. Therefore Kinematic-to-Physical contact resolves against the
+  limbs, never the Physical capsule.
+- `Prophecy.Agent.RuntimeContract` validates the production defaults,
+  Blueprintability, explicit Physical/Kinematic transitions, and every required
+  capsule/limb response pair in a physics-enabled preview world. The test and a
+  final normal UE 5.7 UHT/UBT build pass without errors.
+- `Docs/AgentSimulationCostAudit.md` records the current matched 0/50/100
+  Physical-agent audit with 100 total authored agents at 30 Hz. Median total
+  CPU/headless wall cost is 5.021/14.552/29.894 ms per frame; median Chaos solver
+  cost is 0.238/4.983/12.663 ms. All-Physical resampling adds only about 0.144 ms,
+  four-step output/IK remains 0.44-0.47 ms for the full batch, and pose publishing
+  remains 0.14-0.15 ms. Concurrent CPU load produced wide ranges, which the
+  report preserves. The audit did not modify `mybasic`, the bridge, or any Chaos
+  optimization CVar.
+
+## 2026-08-11 - Physics Backend Research Decision
+
+- `Config/DefaultEngine.ini` is no longer excluded by the project `.gitignore`,
+  so the production collision-channel configuration is trackable while the
+  other project config files remain ignored.
+- `Docs/PhysicsBackendResearch_2026-08-11.md` records the final Chaos/Box3D
+  decision. No Chaos or engine setting was changed. UE 5.7 has no newly verified
+  CVar gain beyond the existing 5% task-push + Partial-Jacobi candidate. The
+  remaining legitimate Chaos candidates are intra-agent collision-pair pruning
+  and a separate UE 5.8 parallel-constraint-solver evaluation.
+- Box3D's official 14-body articulated-human benchmark measured 1.948 ms for 90
+  and 2.618 ms for 120 active ragdolls with four workers on this machine, at 60
+  Hz with four substeps. This supports likely raw capacity for 100 Prophecy
+  agents but is not an exact 22-body proof.
+- Box3D core supports limited spherical joints, target-rotation springs, torque,
+  contacts, and transform resampling, so the intended physical animation is
+  technically possible. The current Box3DUnreal plugin is not a drop-in
+  replacement: it lacks SkeletalMesh/PhysicsAsset/Physical Animation support and
+  Chaos-to-Box3D interaction. Production remains on Chaos pending an explicitly
+  requested exact Box3D agent benchmark and skeletal pose-sync prototype.
+
+## 2026-08-11 - Actor/Pawn Agent Decision
+
+- The production agent remains an unticked, unpossessed `APawn`. Three
+  interleaved headless benchmarks of 100 bare instances found no measurable
+  steady-frame or spawn-time penalty versus `AActor`; the tiny timing difference
+  changed sign between runs and remained inside measurement noise. `APawn` adds
+  128 bytes per instance in this UE 5.7 build (12.5 KiB for 100 agents), which is
+  accepted in exchange for direct possession support without another class
+  architecture.
+
+## 2026-08-11 - Blueprint Agent and Manager Authoring
+
+- `/Game/_mygame/MyAgent` is a compiled Blueprint child of `AProphecyAgent` and
+  currently overrides the inherited skeletal mesh with
+  `/Game/_mygame/MetaHumans/BossUEFN/SKM_Boss_UEFN`. Both the native class and
+  `MyAgent` have Actor Tick disabled. The batch manager stores the subclass as
+  `AProphecyAgent` and executes its per-frame movement, NN, pose, and simulation
+  work in native C++; the Blueprint shell adds no scheduled Blueprint VM work
+  unless Blueprint logic is later put on Tick or called by the runtime.
+- A live 15-sample interleaved spawn check of 100 transient instances measured
+  975.9 ms for the native class and 1017.8 ms for the current Blueprint median.
+  The 41.9 ms per-100 difference is one-time editor spawning, sits inside broad
+  overlapping ranges, and also includes the different skeletal-mesh defaults;
+  it is not a measurable steady-frame Blueprint cost. All transient actors were
+  destroyed and map/content dirty-package state remained unchanged.
+- `AProphecyNNLocomotionManager` is already Blueprintable and exposes `CrowdSize`,
+  `AgentClass`, update frequency, foot-roll steps, movement settings, and initial
+  physical-mode settings. A Blueprint child can be placed in `mybasic` and set to
+  spawn `MyAgent`. Its top-level `Sim Bridge` switch controls the PIE bridge, and
+  `PlayerAgent` assigns the one externally controlled agent. `CrowdSize` counts
+  villagers only; the assigned player is additional.
+- Epic's supported hybrid route remains the chosen one: native C++ owns hot batch
+  work while Blueprint subclasses provide defaults and event-driven customization.
+  References: `https://dev.epicgames.com/documentation/en-us/unreal-engine/coding-in-unreal-engine-blueprint-vs-cplusplus`,
+  `https://dev.epicgames.com/documentation/en-us/unreal-engine/actor-ticking-in-unreal-engine`.
+
+## 2026-08-11 - PIE Sim Bridge
+
+- The saved `/Game/mybasic` manager has `Sim Bridge` enabled, `CrowdSize=20`,
+  `/Game/_mygame/MyAgent` as its agent class, and `myPlayer` assigned as the
+  additional player. Disabling `Sim Bridge` prevents the standalone process from
+  launching. Ending PIE requests shutdown and closes the process.
+- PIE creates a per-run GUID-named shared-memory block and launches the existing
+  `prophecy_viewer` in paired village-navigation mode. The bridge uses a fixed
+  versioned POD layout with sequence locks; it performs no JSON serialization.
+  Bridge-launched viewers open unfocused at the bottom of the desktop Z order;
+  ordinary standalone launches remain unchanged.
+- The sim owns random village and attic route planning for the 20 villagers and
+  publishes only locomotion mode, root-relative speed-stick direction/amplitude,
+  world-relative orientation yaw, and speed/turn scales during play. Its root is
+  used once for each villager's initial spawn. Unreal then advances the exact
+  shared native walk/run mover at 30 Hz, generates the same eight future roots for
+  the NN input, and owns the final capsule low point. Capsule sweeps provide the
+  physical correction; Unreal feeds the resolved low point, measured physical
+  displacement velocity, facing, and one-shot static-world contact back to the
+  planner. Paired debug rendering uses that Unreal physical root instead of the
+  planner's projected root. The player occupies the final active crowd slot,
+  participates in neighbor avoidance, and feeds its Unreal root to the sim, but
+  the sim never moves it.
+- Visual actor yaw applies the UEFN mesh's local `+Y` forward convention to the
+  mover's `[sin(yaw), cos(yaw)]` convention. Policy-local vectors cross the
+  training-to-UEFN boundary as `(X,-Y,Z)`, and policy-local rotations cross as
+  `S*R*S` with `S=diag(1,-1,1)`. The inverse physical-state sample uses the same
+  reflection. A clean Editor Development build and live PIE inspection of
+  controlled villagers verified that the reference-pose upper body and inferred
+  lower body share one heading, both toe offsets remain on their authored side,
+  and the prior stretched feet are gone; current foot/toe local-translation
+  differences from the skeleton reference were at most `0.419 cm` in the sampled
+  moving villagers. Bridge visualization extrapolates with measured capsule
+  velocity, not desired mover velocity, so a blocked capsule cannot create a
+  false move-and-snap debug jitter.
+- `AProphecyAgent::bIsPlayer` is native, `BlueprintReadWrite`, displayed as
+  `Is Player`, and defaults false. The saved `myPlayer` instance is true, and the
+  manager also enforces true when registering its assigned player. Its current
+  stable handle is `{index:20, generation:1}`; spawned villagers remain false.
+- Unreal Editor Development and standalone Release builds pass with the shared
+  mover compiled from the same `sim_core` implementation. A bridge launch test
+  kept the pre-existing Chrome window foreground before and after PIE while the
+  viewer opened responsive behind it. PIE launches exactly 20 villagers plus the
+  fixed externally controlled player, and shutdown remains cooperative through
+  the shared block.
+
+## 2026-08-11 - Lower-Body Runtime Parity
+
+- At the 30 Hz policy endpoints, the flat `/Game/locomotion` CPU test reproduces
+  the committed RunF reference over all 74 predictions. Maximum error was
+  `0.00000644 m` in a reconstructed lower-body position, `0.0000496` in a
+  reconstructed basis component, `0.00000596` in the published recurrent state,
+  and `0.0000147` in the raw policy output. The production four-step Run route
+  separately matches an exact four-step replay to `0.00000602 m`; compared with
+  the original 60-step archive, the intentional four-step approximation
+  accumulates at most `0.00201 m`.
+- Walk uses the accepted June checkpoint and the committed `WalkF` seed clip,
+  not a retrained or altered network. Across all 119 predictions at the
+  production four steps, maximum error was `0.00000486 m` in a rendered
+  lower-body position, `0.0000162` in a rendered basis component,
+  `0.0000111` in recurrent state, and `0.0000208` in raw output. Walk pin
+  probabilities/decisions matched within `5.96e-8`.
+- Initial visual placement now translates world-root histories without treating
+  spawn placement as a collision correction. Normal successful capsule motion
+  no longer rebases recurrent pose state every render frame; only a real sweep
+  displacement or yaw discrepancy does. Ground correction now uses the raw
+  lowest foot-contact point instead of a value already clamped to zero. These
+  changes preserve the trained inputs and outputs while removing the prior
+  recurrent jitter and ineffective below-ground lift.
+- Rendered frames now use the same pose-display contract as Stepper Model Viewer.
+  Each policy publication carries the immediately consecutive previous/current
+  component-space transforms for pelvis, both thighs, calves, feet, and toes,
+  plus both exact component-to-world transforms. At render time Unreal linearly
+  blends every joint's absolute-world position and uses the mathematical polar
+  factor of the viewer's linear rotation-matrix blend before rebuilding the
+  local hierarchy. The former local-track interpolation plus ankle-only IK is
+  removed; knees and every other lower-body joint follow the viewer trajectory.
+  This changes no trained network, recurrent state, foot-roll rule, mover, or
+  capsule motion.
+- `Tools/NN/AuditProphecyAbsoluteMotion.py` is the retained absolute-world
+  regression and now requires every visible lower-body joint, not only ankles
+  and policy endpoints, to pass. The final CPU/NullRHI RunF audit at 60 FPS had
+  `0.00371 mm` maximum capsule-root error, `2.0258 mm` maximum error across all
+  nine visible lower-body joints, `0.5011/0.7934 mm` left/right calf maxima, and
+  `2.0251 mm` maximum ankle error. At 30 FPS the audit renders the exact consecutive
+  integer policy frames and stays within `0.00388 mm` at the root and `2.0258 mm`
+  across all visible joints. At 5 FPS it renders exact policy frames
+  `7,13,19,...,73`, six policy steps apart, and stays within `0.00170 mm` at the
+  root and `2.0250 mm` across all visible joints. All pass the explicit `2.1 mm`
+  tolerance required by the production four-step foot roll.
+- The NN/mover remains a fixed 30 Hz stream independent of render frequency.
+  Above 30 FPS, rendering interpolates the previous/current exact policy poses.
+  At 30 FPS, every rendered pose is an exact policy pose. Below 30 FPS, the
+  manager advances all required 30 Hz policy steps and renders only the newest
+  completed exact pose; it does not interpolate stale poses. Therefore 60 FPS
+  shows one midpoint between policy frames, while 5 FPS shows every sixth policy
+  frame with interpolation alpha `1`.
+- Production remains at four foot-roll integration steps. The temporary parity
+  loader and collision overrides remain removed. A normal UE 5.7 Editor
+  Development build passes.
+- `/Game/locomotion` is the retained flat interactive locomotion test. It keeps
+  a selectable `LocomotionTestManager` actor in the level so `Camera
+  Sensitivity` can be edited in the normal Details panel before PIE. The world
+  subsystem reuses that placed manager instead of spawning a duplicate, and the
+  manager configures itself before locomotion initialization with exactly one
+  Kinematic agent, no sim bridge, and a `2 m/s` Walk default. A transient
+  third-person camera follows the capsule low point; raw mouse movement orbits
+  it using the manager's live-editable `Camera Sensitivity` property, and
+  holding either Shift key changes intent and policy to the `5 m/s` Run.
+  Releasing Shift returns to Walk. The one-agent lane has no crowd offset, so
+  its route is exactly `Cube -> Cube2 -> Cube`. Its capsule is teleported to the
+  intended low point before the first swept update, keeping the bottom at
+  `Z=0` instead of spawning embedded in the floor. Only the two route-marker
+  collisions are disabled for this test world. No camera/input components are
+  added to production agent pawns, and `mybasic` is unchanged.
+
+## 2026-08-12 - Walk Viewer Is the Unreal Pose Authority
+
+- The standalone viewer and trained networks remain unchanged. Walk parity uses
+  only the approved June checkpoint selected by
+  `prophecy_lower_body_walk_runtime.json` and its committed `WalkF` seed clip;
+  the later `20260811_195921` checkpoint is an upper-pose experiment and is not
+  a locomotion runtime input.
+- `/Game/locomotion` no longer enables Unreal animation update-rate skipping or
+  visibility-based pose skipping. Its single skeletal mesh always evaluates the
+  existing NN anim proxy, so Unreal cannot add a second sampling/interpolation
+  layer over the viewer-matched 30 Hz publications. Production crowd maps retain
+  their existing update-rate optimization.
+- `Tools/NN/AuditProphecyAbsoluteMotion.py --walk` now selects Walk explicitly
+  and executes the unchanged Stepper Model Viewer pipeline as the reference for
+  recurrent rollout, legacy pinning, four-step foot roll, FK, exact integer
+  frames, and between-frame position blending. The retained CPU/NullRHI tests
+  pass at 5/30/60 FPS. Maximum capsule-root error is `0.0442 mm`; maximum error
+  across pelvis, thighs, calves, feet, and toes is `0.3196 mm`. At 5 FPS Unreal
+  renders exact six-policy-step jumps; at 30 FPS it renders exact policy frames;
+  at 60 FPS it includes the viewer-equivalent midpoint.
+- A normal UE 5.7 Editor Development build passes. Normal PIE confirms one
+  `UProphecyNNLocomotionAnimInstance`, update-rate optimization disabled, and
+  `AlwaysTickPoseAndRefreshBones` in `/Game/locomotion`.

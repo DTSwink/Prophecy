@@ -1,8 +1,17 @@
 # Unreal generated state
 Binaries/
 Build/
-Config/
-Content/
+Config/*
+!Config/DefaultEngine.ini
+Content/*
+!Content/locomotion/
+Content/locomotion/*
+!Content/locomotion/NN/
+Content/locomotion/NN/*
+!Content/locomotion/NN/prophecy_lower_body_run_b100.onnx
+!Content/locomotion/NN/prophecy_lower_body_runtime.json
+!Content/locomotion/NN/prophecy_lower_body_walk_b100.onnx
+!Content/locomotion/NN/prophecy_lower_body_walk_runtime.json
 SourceArt/
 DerivedDataCache/
 Intermediate/

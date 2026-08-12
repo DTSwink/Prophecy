@@ -6,6 +6,7 @@
 #include "rig.h"
 #include "scenario.h"
 #include "telemetry.h"
+#include "unreal_bridge.h"
 #include "window_placement.h"
 
 #include "prophecy/sim/simulation.h"
@@ -1399,6 +1400,7 @@ void DrawWorld(const viewer::Scenario& scenario, const sim::SimulationSnapshot& 
     const viewer::EnvironmentCollision& environment_collision,
     const viewer::NavigationDebugSurface& navigation_debug,
     const prophecy::navigation::CrowdRuntime& navigation_crowd,
+    const viewer::UnrealBridge& unreal_bridge,
     bool navigation_visible, bool navigation_test, bool navigation_crowd_test,
     bool xray_agents, SolidBatch& solids) {
     const float min_x = scenario.simulation.world_min.x;
@@ -1493,7 +1495,8 @@ void DrawWorld(const viewer::Scenario& scenario, const sim::SimulationSnapshot& 
         const double visible_time = snapshot.time_seconds +
             static_cast<double>(prediction_seconds);
         for (std::size_t index = 0U; index < navigation_crowd.AgentCount(); ++index) {
-            const prophecy::navigation::CrowdAgentSample sample = navigation_crowd.Agent(index);
+            const prophecy::navigation::CrowdAgentSample sample = unreal_bridge.DisplayAgent(
+                index, navigation_crowd.Agent(index));
             if (!sample.active) continue;
             sim::AgentSnapshot agent{};
             agent.id = static_cast<sim::EntityId>(index + 1U);
@@ -2544,6 +2547,7 @@ struct Arguments {
     std::string locomotion_poses_path{};
     std::string environment_collision_path{};
     std::string navigation_path{};
+    std::string unreal_bridge_mapping{};
     std::string capture_path{};
     bool capture_options = false;
     bool capture_locomotion_options = false;
@@ -2612,6 +2616,12 @@ Arguments ParseArguments(int argc, char** argv) {
         else if (argument == "--show-navigation") arguments.show_navigation = true;
         else if (argument == "--navigation-test") arguments.navigation_test = true;
         else if (argument == "--navigation-crowd-test") arguments.navigation_crowd_test = true;
+        else if (argument == "--unreal-bridge" && index + 1 < argc) {
+            arguments.unreal_bridge_mapping = argv[++index];
+            arguments.navigation_crowd_test = true;
+            arguments.paired_mode = true;
+            arguments.background_reload = true;
+        }
         else if (argument == "--capture" && index + 1 < argc) arguments.capture_path = argv[++index];
         else if (argument == "--capture-options") arguments.capture_options = true;
         else if (argument == "--capture-locomotion-options") arguments.capture_locomotion_options = true;
@@ -2658,8 +2668,14 @@ void ConfigureGui() {
 
 int main(int argc, char** argv) {
     const Arguments arguments = ParseArguments(argc, argv);
-    viewer::Scenario scenario = viewer::MakeFallbackScenario();
+    viewer::UnrealBridge unreal_bridge{};
     std::string error;
+    if (!arguments.unreal_bridge_mapping.empty() &&
+        !unreal_bridge.Open(arguments.unreal_bridge_mapping, error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 2;
+    }
+    viewer::Scenario scenario = viewer::MakeFallbackScenario();
     if (!viewer::LoadScenario(arguments.scenario_path, scenario, error)) {
         std::fprintf(stderr, "%s\nUsing the neutral fallback scenario.\n", error.c_str());
     }
@@ -2780,8 +2796,18 @@ int main(int argc, char** argv) {
 
     prophecy::navigation::CrowdRuntime navigation_crowd{};
     prophecy::navigation::CrowdTickMetrics navigation_crowd_metrics{};
+    const std::size_t navigation_crowd_count = unreal_bridge.IsOpen()
+        ? unreal_bridge.TotalAgentCount()
+        : prophecy::navigation::kCrowdTestAgentCount;
     if (arguments.navigation_crowd_test &&
-        !navigation_crowd.Load(arguments.navigation_path, scenario.seed, error)) {
+        !navigation_crowd.Load(arguments.navigation_path, scenario.seed, error,
+            navigation_crowd_count)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        unreal_bridge.PublishError(error);
+        CloseWindow();
+        return 2;
+    }
+    if (unreal_bridge.IsOpen() && !unreal_bridge.InitializeCrowd(navigation_crowd, error)) {
         std::fprintf(stderr, "%s\n", error.c_str());
         CloseWindow();
         return 2;
@@ -2806,13 +2832,20 @@ int main(int argc, char** argv) {
     const auto advance_navigation_crowd = [&](const std::uint64_t count) {
         if (!arguments.navigation_crowd_test) return;
         for (std::uint64_t tick = 0U; tick < count; ++tick) {
+            unreal_bridge.ApplyUnrealTransforms(navigation_crowd);
             navigation_crowd_metrics = navigation_crowd.Update(
                 static_cast<float>(simulation.TickSeconds()));
+            unreal_bridge.Publish(navigation_crowd);
         }
     };
     const auto reset_navigation_crowd = [&](const std::uint64_t seed) {
         if (!arguments.navigation_crowd_test) return;
-        if (!navigation_crowd.Load(arguments.navigation_path, seed, error)) {
+        if (!navigation_crowd.Load(arguments.navigation_path, seed, error,
+                navigation_crowd_count)) {
+            std::fprintf(stderr, "%s\n", error.c_str());
+            unreal_bridge.PublishError(error);
+        } else if (unreal_bridge.IsOpen() &&
+            !unreal_bridge.InitializeCrowd(navigation_crowd, error)) {
             std::fprintf(stderr, "%s\n", error.c_str());
         }
         navigation_crowd_metrics = {};
@@ -2872,7 +2905,7 @@ int main(int argc, char** argv) {
     std::uint64_t screenshot_number = HighestScreenshotNumber();
     float screenshot_flash_seconds = 0.0f;
 
-    while (!WindowShouldClose()) {
+    while (!WindowShouldClose() && !unreal_bridge.ShutdownRequested()) {
         const double frame_time = GetTime();
         if (frame_time >= next_environment_file_check) {
             next_environment_file_check = frame_time + 0.5;
@@ -3132,7 +3165,7 @@ int main(int argc, char** argv) {
         DrawWorld(scenario, simulation.Snapshot(), locomotion_poses,
             equipment_joints, selected_agent_id, selected_agents, render_prediction_seconds,
             settings.sound_visualization, flying_camera.camera, environment_collision,
-            navigation_debug, navigation_crowd, navigation_visible, arguments.navigation_test,
+            navigation_debug, navigation_crowd, unreal_bridge, navigation_visible, arguments.navigation_test,
             arguments.navigation_crowd_test,
             settings.xray_agents, solid_batch);
         EndMode3D();

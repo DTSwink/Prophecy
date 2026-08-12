@@ -8,6 +8,7 @@ add_executable(prophecy_viewer
     src/rig.cpp
     src/scenario.cpp
     src/telemetry.cpp
+    src/unreal_bridge.cpp
     src/window_placement.cpp
 )
 

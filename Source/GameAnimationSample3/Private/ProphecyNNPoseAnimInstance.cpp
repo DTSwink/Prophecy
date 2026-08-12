@@ -57,7 +57,27 @@ protected:
 
 		DebugPhase = FMath::Fmod(DebugPhase + DeltaSeconds * FMath::Max(0.0f, DebugMotionHz), 1.0f);
 
-		bHasStoredPose = bUseStoredPose && FProphecyNNPoseStore::GetAgentLocalPose(AgentId, StoredPose);
+		if (AgentId != StoredAgentId)
+		{
+			StoredPose.Reset();
+			StoredAgentId = AgentId;
+			bCachedCompactIndicesValid = false;
+		}
+
+		if (bUseStoredPose)
+		{
+			FProphecyNNPoseSnapshot LatestPose;
+			if (FProphecyNNPoseStore::GetAgentLocalPoseIfNewer(AgentId, StoredPose.Revision, LatestPose))
+			{
+				StoredPose = MoveTemp(LatestPose);
+			}
+			bHasStoredPose = StoredPose.IsValid();
+		}
+		else
+		{
+			bHasStoredPose = false;
+		}
+
 		if (!bHasStoredPose)
 		{
 			StoredPose.Reset();
@@ -94,7 +114,7 @@ private:
 		}
 
 		CachedBoneContainerSerial = InRequiredBones.GetSerialNumber();
-		CachedPoseRevision = StoredPose.Revision;
+		CachedBoneLayoutHash = StoredPose.BoneLayoutHash;
 		bCachedCompactIndicesValid = true;
 	}
 
@@ -108,7 +128,7 @@ private:
 		const FBoneContainer& OutputRequiredBones = Output.Pose.GetBoneContainer();
 		const bool bCacheStale =
 			!bCachedCompactIndicesValid ||
-			CachedPoseRevision != StoredPose.Revision ||
+			CachedBoneLayoutHash != StoredPose.BoneLayoutHash ||
 			CachedBoneContainerSerial != OutputRequiredBones.GetSerialNumber() ||
 			CachedCompactIndices.Num() != StoredPose.LocalTransforms.Num();
 
@@ -156,6 +176,7 @@ private:
 	}
 
 	int32 AgentId = 0;
+	int32 StoredAgentId = INDEX_NONE;
 	bool bUseStoredPose = true;
 	bool bPreserveReferenceBoneTranslations = false;
 	bool bEnableDebugMotion = true;
@@ -169,7 +190,7 @@ private:
 
 	bool bCachedCompactIndicesValid = false;
 	uint16 CachedBoneContainerSerial = 0;
-	uint32 CachedPoseRevision = 0;
+	uint32 CachedBoneLayoutHash = 0;
 	TArray<FCompactPoseBoneIndex> CachedCompactIndices;
 };
 
