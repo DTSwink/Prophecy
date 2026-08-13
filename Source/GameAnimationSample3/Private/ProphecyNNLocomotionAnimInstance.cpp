@@ -1,5 +1,6 @@
 #include "ProphecyNNLocomotionAnimInstance.h"
 
+#include "ProphecyAgent.h"
 #include "ProphecyNNPoseTypes.h"
 
 #include "Animation/AnimInstanceProxy.h"
@@ -13,7 +14,7 @@
 
 namespace
 {
-	FCompactPoseBoneIndex ResolveCompactBoneIndex(const FBoneContainer& RequiredBones, FName BoneName)
+	FCompactPoseBoneIndex ResolveLocomotionCompactBoneIndex(const FBoneContainer& RequiredBones, FName BoneName)
 	{
 		const int32 SkeletonIndex = RequiredBones.GetReferenceSkeleton().FindBoneIndex(BoneName);
 		return SkeletonIndex == INDEX_NONE
@@ -115,11 +116,14 @@ protected:
 			EvaluationComponentWorldTransform = MeshComponent->GetComponentTransform();
 			EvaluationComponentWorldTransform.NormalizeRotation();
 			bHasEvaluationComponentWorldTransform = true;
+			const AProphecyAgent* Agent = Cast<AProphecyAgent>(MeshComponent->GetOwner());
+			bPhysicalAgent = Agent && Agent->GetSimulationMode() == EProphecyAgentSimulationMode::Physical;
 		}
 		else
 		{
 			EvaluationComponentWorldTransform = FTransform::Identity;
 			bHasEvaluationComponentWorldTransform = false;
+			bPhysicalAgent = false;
 		}
 
 		const float TargetOverlayWeight = Instance->bOverlayEnabled && OverlayAnimation ? 1.0f : 0.0f;
@@ -193,7 +197,7 @@ protected:
 		}
 
 		ApplyNNPose(Output, PoseAlpha, true, true);
-		const FCompactPoseBoneIndex PelvisIndex = ResolveCompactBoneIndex(PoseBones, TEXT("pelvis"));
+		const FCompactPoseBoneIndex PelvisIndex = ResolveLocomotionCompactBoneIndex(PoseBones, TEXT("pelvis"));
 		const FTransform NNPelvis = PelvisIndex.IsValid() && Output.Pose.IsValidIndex(PelvisIndex)
 			? Output.Pose[PelvisIndex]
 			: FTransform::Identity;
@@ -205,7 +209,7 @@ protected:
 				AnimationPoseData,
 				FAnimExtractContext(OverlayTimeSeconds, false, FDeltaTimeRecord(), bLoopOverlay));
 
-			const FCompactPoseBoneIndex RootIndex = ResolveCompactBoneIndex(PoseBones, TEXT("root"));
+			const FCompactPoseBoneIndex RootIndex = ResolveLocomotionCompactBoneIndex(PoseBones, TEXT("root"));
 			for (const FCompactPoseBoneIndex BoneIndex : Output.Pose.ForEachBoneIndex())
 			{
 				const int32 CompactIndex = BoneIndex.GetInt();
@@ -239,7 +243,7 @@ private:
 		CachedCompactIndices.AddUninitialized(CurrentPose.BoneNames.Num());
 		for (int32 Index = 0; Index < CurrentPose.BoneNames.Num(); ++Index)
 		{
-			CachedCompactIndices[Index] = ResolveCompactBoneIndex(PoseBones, CurrentPose.BoneNames[Index]);
+			CachedCompactIndices[Index] = ResolveLocomotionCompactBoneIndex(PoseBones, CurrentPose.BoneNames[Index]);
 		}
 		CachedBoneContainerSerial = PoseBones.GetSerialNumber();
 		CachedBoneLayoutHash = CurrentPose.BoneLayoutHash;
@@ -325,6 +329,51 @@ private:
 			HasDesiredTransform[Index] = true;
 		}
 
+		// The model viewer draws each lower-leg segment all the way from the calf
+		// point to the predicted foot point. Mirror that here: keep the predicted
+		// endpoint, align the calf's actual reference-bone axis to it, and extend
+		// the calf mesh to reach it. Moving only the foot bone leaves a visible gap.
+		auto ExtendCalfToFoot = [&](FName CalfName, FName FootName)
+		{
+			const int32 CalfPoseIndex = CurrentPose.BoneNames.IndexOfByKey(CalfName);
+			const int32 FootPoseIndex = CurrentPose.BoneNames.IndexOfByKey(FootName);
+			if (CalfPoseIndex == INDEX_NONE || FootPoseIndex == INDEX_NONE ||
+				!HasDesiredTransform[CalfPoseIndex] || !HasDesiredTransform[FootPoseIndex])
+			{
+				return;
+			}
+
+			const int32 FootSkeletonIndex = PoseBones.GetReferenceSkeleton().FindBoneIndex(FootName);
+			if (FootSkeletonIndex == INDEX_NONE)
+			{
+				return;
+			}
+
+			const FVector ReferenceOffset =
+				PoseBones.GetReferenceSkeleton().GetRefBonePose()[FootSkeletonIndex].GetTranslation();
+			const FVector DesiredSegment =
+				DesiredComponentTransforms[FootPoseIndex].GetLocation() -
+				DesiredComponentTransforms[CalfPoseIndex].GetLocation();
+			const double ReferenceLength = ReferenceOffset.Length();
+			const double DesiredLength = DesiredSegment.Length();
+			if (ReferenceLength <= UE_SMALL_NUMBER || DesiredLength <= UE_SMALL_NUMBER)
+			{
+				return;
+			}
+
+			FTransform& CalfTransform = DesiredComponentTransforms[CalfPoseIndex];
+			const FVector CurrentAxis = CalfTransform.GetRotation().RotateVector(ReferenceOffset).GetSafeNormal();
+			const FVector DesiredAxis = DesiredSegment / DesiredLength;
+			CalfTransform.SetRotation(
+				(FQuat::FindBetweenNormals(CurrentAxis, DesiredAxis) * CalfTransform.GetRotation()).GetNormalized());
+			CalfTransform.SetScale3D(FVector(DesiredLength / ReferenceLength));
+		};
+		if (!bPhysicalAgent)
+		{
+			ExtendCalfToFoot(TEXT("calf_l"), TEXT("foot_l"));
+			ExtendCalfToFoot(TEXT("calf_r"), TEXT("foot_r"));
+		}
+
 		for (int32 Index = 0; Index < CurrentPose.BoneNames.Num(); ++Index)
 		{
 			if (!HasDesiredTransform[Index])
@@ -361,6 +410,7 @@ private:
 	float RenderDeltaSeconds = 0.0f;
 	FTransform EvaluationComponentWorldTransform = FTransform::Identity;
 	bool bHasEvaluationComponentWorldTransform = false;
+	bool bPhysicalAgent = false;
 
 	FProphecyNNPoseSnapshot PreviousPose;
 	FProphecyNNPoseSnapshot CurrentPose;

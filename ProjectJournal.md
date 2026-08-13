@@ -2,6 +2,8 @@
 
 **NON-NEGOTIABLE: NEVER DO, IMPLEMENT, CHANGE, TEST, OPTIMIZE, VALIDATE, OR EXPAND ANYTHING THE USER DID NOT EXPLICITLY ASK FOR. NEVER INFER MISSING INTENT OR DETAILS. IF ANYTHING MATERIAL IS UNCLEAR OR UNSPECIFIED, STOP AND ASK THE USER BEFORE ACTING.**
 
+**NON-NEGOTIABLE UNREAL WORKFLOW RULE: USE LIVE CODING FOR UNREAL C++ CHANGES. NEVER CLOSE OR RESTART UNREAL UNLESS THE USER EXPLICITLY AUTHORIZES IT. IF LIVE CODING IS UNAVAILABLE, BLOCKED, OR FAILS, STOP AND ASK THE USER BEFORE CLOSING OR RESTARTING THE EDITOR.**
+
 > **NON-NEGOTIABLE JOURNAL RULE — FINISHED STATE ONLY**
 >
 > Keep only durable, verified project state: current goals, rules, keeper settings,
@@ -1729,3 +1731,192 @@ Request a settled live screenshot:
 - A normal UE 5.7 Editor Development build passes. Normal PIE confirms one
   `UProphecyNNLocomotionAnimInstance`, update-rate optimization disabled, and
   `AlwaysTickPoseAndRefreshBones` in `/Game/locomotion`.
+
+## 2026-08-12 - Fed Future-Root Floor Debug
+
+- `AProphecyNNLocomotionManager` can draw the exact current root frame and all
+  eight future-root samples encoded into one agent's NN input. The white marker
+  is the input root, the connected colored markers are samples 1-8, and the
+  white/yellow arrows show their fed yaw directions.
+- The display decodes the already normalized and clamped input values written by
+  `BuildInputBatch`; it does not run a second prediction and cannot affect the
+  mover, inference, capsule sweep, or pose. `bShowFutureRootDebug` and
+  `FutureRootDebugAgentIndex` expose the display and selected agent. It remains
+  off by default in every map, including the flat `/Game/locomotion` test. When
+  off, input construction performs no debug decoding or caching and rendering
+  makes no debug draw calls; the disabled path is only the feature-toggle branch.
+
+## 2026-08-12 - Optional Final Foot Reach Clamp
+
+- `AProphecyNNLocomotionManager` exposes `Clamp Foot`, default off, plus `Foot
+  Clamp Length Multiplier`, default `1.0`. When enabled, the final presentation
+  pose constrains each settled foot to at most `(authored upper-leg length +
+  authored lower-leg length) * multiplier` from that leg's thigh bone; for
+  example, `1.5` permits one-and-a-half times the authored total leg length.
+- The clamp runs while building the final previous/current component-space poses,
+  after NN output, pinning, foot roll, and ground correction. It updates the
+  displayed calf/foot/toe chain but does not alter recurrent NN state, mover
+  state, capsule motion, or trained-network inputs/outputs.
+
+## 2026-08-12 - Direct Run/Walk Pose Handoff
+
+- Run and Walk consume the existing previous/current recurrent poses directly;
+  gait changes do not reseed, phase-match, search, or add a transition system.
+- Each published pose retains the one-bit gait identity used to produce it.
+  Rendering reconstructs the previous pose with its previous gait geometry and
+  the current pose with its current gait geometry before the existing global
+  interpolation. This adds two booleans per agent, no allocations, no inference,
+  and no additional per-agent update pass. The optional foot clamp is unrelated
+  and remains unchanged.
+
+## 2026-08-12 - Force-Driven Physical Agent
+
+> Superseded controller snapshot retained by explicit request. The current
+> controller and solver settings are recorded in the following section.
+
+- `AProphecyAgent` Physical mode keeps the existing NN/mover pose as intent and
+  uses Chaos to produce the realized body pose. The pelvis follows its authored
+  world position and rotation through forces and torques; it is not teleported,
+  made kinematic, or attached to a world constraint. Physics Asset SLERP motors
+  drive the articulated child joints from the immutable authored pose store.
+- The retained root gains are position `40000`, velocity `400`, orientation
+  `60000`, and angular velocity `500`. Joint acceleration-drive gains are spring
+  `16000` and damping `253`. The controller includes gravity-force and
+  gravity-moment compensation so gravity does not make the pelvis roll while
+  joint reaction torque remains physical.
+- Physical activation removes presentation-only bone scale before creating the
+  Chaos bodies. The six leg constraints use the full authored articulation
+  range, and current/previous joint targets provide angular-velocity
+  feed-forward. Physical agents always evaluate their pose and do not use
+  visibility/update-rate skipping.
+- Skeletal contacts are temporarily disabled as requested: the mesh keeps its
+  22 simulated bodies and 21 constraints but ignores World Static, World
+  Dynamic, and Pawn. The managed capsule remains the root support on static
+  ground. Ground/limb contacts can be restored after the controller itself is
+  accepted visually.
+- The retained one-frame parity command copies one exact Kinematic pose into all
+  22 Chaos bodies, clears controller forces/torques and every SLERP motor, rolls
+  exactly one physics frame with gravity/contact disabled, then reports every
+  body. With the production constraint mode, maximum translation is
+  `0.000015 cm` (`0.00015 mm`) and maximum rotation is `0.02655 degrees`.
+- `/Game/locomotion` now provides the current long-horizon controller test. When
+  agent 0 is Physical, its recurrent NN state remains the uninterrupted
+  Kinematic rollout: realized Chaos limb transforms are deliberately not fed
+  back into that test agent's next inference. The Physical body still follows
+  the authored pose through the same pelvis force/torque and joint motors.
+  Production physical agents outside this simple test retain physical-state
+  feedback.
+- A collision-free Kinematic reference is rendered beside the Physical agent
+  with the engine's green debug material. It uses the exact authored pose and
+  route in a parallel world-space lane. The test accumulates original-frame
+  position and rotation errors for all nine published bones and logs running
+  mean and maximum values every two seconds, so drift is measurable across an
+  arbitrary run rather than only one frame. The current Physical controller is
+  not yet visually accepted; the comparison exposes substantial limb drift and
+  foot sliding. Foot-roll integration remains four steps. `Initial Physical
+  Agent Count` is respected and clamped to the map's one available managed
+  agent.
+
+## 2026-08-12 - Absolute-World Physical Magnetization
+
+- Before this change, each Physical agent used `16` position iterations, `4`
+  velocity iterations, and `4` projection iterations. The pelvis was driven by
+  a world-space force/torque while six lower-body joints used Chaos SLERP
+  motors. That exact pre-change configuration is retained above as the
+  superseded `Force-Driven Physical Agent` snapshot.
+- The retained 100-agent, fixed-60-Hz benchmark changed only the per-body solver
+  counts to `4/1/0`. Median Chaos solver time fell from `8.8491 ms` to
+  `6.5327 ms` (`26.2%`), measured joint-pass work fell from `2.0496 ms` to
+  `0.4826 ms` (`76.5%`), and total frame time fell from `33.6923 ms` to
+  `27.0620 ms` (`19.7%`). These are now the default Physical-agent counts.
+- The current lower-body controller no longer uses joint motors. Pelvis,
+  thighs, calves, and feet receive one acceleration-mode world force and one
+  acceleration-mode world torque toward their finalized authored world
+  transforms. Chaos constraints remain only for physical articulation and
+  impacts. The upper body remains animation-driven until its targets are
+  authored, and skeletal ground contacts remain temporarily disabled as
+  previously requested.
+- The manager is an explicit tick prerequisite of each managed agent and its
+  skeletal evaluation. It completes the 30-Hz NN step and publishes one
+  finalized pose before the Physical force pass. The controller targets that
+  exact interpolated pose; it does not extrapolate a private next pose from
+  authored linear or angular velocity.
+- The temporary Kinematic follower, comparison ghost, comparison pose store,
+  and Physical-versus-Kinematic accumulator have been removed. Every Physical
+  agent now samples its realized Chaos pelvis, thigh, foot, and toe transforms
+  before each 30-Hz inference and uses consecutive physical samples as the
+  current/previous recurrent state.
+- The temporary Ctrl Physical toggle and Kinematic comparison actor are not part
+  of the current `/Game/locomotion` test. Physical switching will be authored
+  explicitly by the user from the future-pose Blueprint surface below.
+
+## 2026-08-13 - Manual Future-Pose Blueprint Agent
+
+- `/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent` is the current single
+  test agent. In `/Game/locomotion` it retains the existing automatic test setup.
+  It can also be placed directly in any map with `Auto Possess Player` enabled:
+  on PIE it creates the one-agent locomotion runtime, registers that exact placed
+  pawn as agent `0`, preserves its placed root transform, and creates the orbit
+  camera. It does not spawn a duplicate agent. The runtime remains one Kinematic
+  agent with no comparison or Physical agent.
+- With an empty Blueprint Event Graph, the manager continues moving the capsule
+  root but automatic skeletal evaluation is disabled, so every limb remains at
+  its unchanged local pose while the complete skeleton follows root motion.
+- `Read NN Future World Pose` is Blueprint-pure and exposes the nine published
+  bone names, the exact next 30-Hz authored transforms in world space, the
+  current presentation-interpolated world transforms, and interpolation alpha.
+  It reads the existing pose publication and performs no extra inference.
+- `Apply NN Pose Kinematically(Delta Seconds)` is the explicit Blueprint-callable
+  skeletal evaluation step. Calling it from Blueprint Tick reproduces the
+  existing Kinematic presentation. The manager is its tick prerequisite, so a
+  Blueprint can read the newly published future targets first, drive custom
+  Physical bodies, and then optionally call the Kinematic application in the
+  same frame.
+- The single-agent test uses camera-relative `Z/S/Q/D` digital stick input:
+  `Z` forward, `S` backward, `Q` left, and `D` right relative to the horizontal
+  camera view. Diagonals are normalized. Translation direction and facing are
+  independent: the stick authors velocity direction while horizontal camera yaw
+  authors the orientation target every frame. This permits strafing and backward
+  locomotion, and rotating the camera with zero stick authors turn-in-place while
+  speed amplitude remains zero. Camera sensitivity defaults to `10`. Shift retains
+  the existing Walk/Run selection.
+  Automatic Cube-to-Cube intent is disabled in this interactive test but retained
+  by the absolute-motion audit.
+
+## 2026-08-13 - Manual Physical Follower Checkpoint
+
+- `/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent` contains the accepted
+  Blueprint physical-follower checkpoint. Its kinematic target is evaluated
+  before correction, and every simulated body receives additive linear and
+  angular delta velocity once per frame. Linear correction uses the rigid-body
+  velocity at the tracked bone's world point, including angular motion around
+  the center of mass; the spring helpers subtract current velocity exactly once.
+- The one-agent locomotion test enables the existing final calf-length pass at
+  multiplier `1.0`, so the published target has the same rigid lower-leg length
+  as the Physics Asset before Chaos follows it. The general manager property
+  remains Blueprint-editable and off by default outside this test.
+- `prophecy.Physical.AuditManualFollower 1` enables the retained, off-by-default
+  numeric audit. At the beginning of each PrePhysics tick it compares each
+  simulated body with the exact target saved after the preceding PrePhysics
+  tick, reporting root-world and pelvis-relative per-body position/rotation
+  mean, RMS, and maximum errors. The normal disabled path performs no sampling
+  or logging.
+
+## 2026-08-12 - Fast Unreal C++ Iteration Rule
+
+- Batch Blueprint-visible API changes into one reflected-header edit. Once the
+  nodes/properties exist, controller experiments must change implementation in
+  `.cpp` files only whenever possible. Editing a `UCLASS`, `USTRUCT`,
+  `UPROPERTY`, or `UFUNCTION` declaration invokes UHT and rebuilds dependent
+  unity files; a `.cpp`-only Live Coding change recompiles only its translation
+  unit.
+- Keep Unreal open and use Live Coding. Stop PIE for the compile but do not
+  restart the Editor unless Live Coding explicitly cannot load the change.
+- A newly added or structurally changed reflected node/property is the explicit
+  exception: save assets, close the Editor once, run one normal Editor build,
+  then reopen. After the reflected surface exists, return to `.cpp`-only Live
+  Coding iterations. Do not repeatedly restart Unreal for implementation work.
+- Do not force additional compiler parallelism or disable unity builds on this
+  16-GB workstation during an Editor session. With approximately 2 GB free,
+  UnrealBuildTool intentionally schedules one compiler process to avoid paging;
+  forcing concurrency would trade compilation for disk thrashing.

@@ -11,6 +11,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Dom/JsonObject.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/Engine.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/GameViewportClient.h"
@@ -21,6 +22,7 @@
 #include "HAL/FileManager.h"
 #include "HAL/IConsoleManager.h"
 #include "InputCoreTypes.h"
+#include "Materials/MaterialInterface.h"
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -467,6 +469,10 @@ struct AProphecyNNLocomotionManager::FImpl
 		float CurRootYaw = 0.0f;
 		float PreviousPublishedYaw = 0.0f;
 		float PublishedYaw = 0.0f;
+		FVector3f FedInputRoot = FVector3f::ZeroVector;
+		float FedInputYaw = 0.0f;
+		FVector3f FedFutureRootPositions[FutureWindow]{};
+		float FedFutureRootYaws[FutureWindow]{};
 		FVector3f RouteA = FVector3f::ZeroVector;
 		FVector3f RouteB = FVector3f::ZeroVector;
 		int32 TargetIndex = 1;
@@ -481,6 +487,9 @@ struct AProphecyNNLocomotionManager::FImpl
 		bool bHasBridgeActualRoot = false;
 		bool bPhysicalWorldBlockedPending = false;
 		bool bHasAppliedVisualRoot = false;
+		bool bHasFedFutureRoots = false;
+		bool bPreviousPublishedUseWalkPolicy = false;
+		bool bPublishedUseWalkPolicy = false;
 		bool bUseWalkPolicy = false;
 	};
 
@@ -563,6 +572,7 @@ struct AProphecyNNLocomotionManager::FImpl
 	int32 PlayerGeneration = 1;
 	bool bWalkPinLegacy = true;
 	bool bSimpleLocomotionTest = false;
+	bool bSimpleUsesPlacedAgent = false;
 	bool bAbsoluteMotionAudit = false;
 	bool bAbsoluteMotionAuditWalk = false;
 	bool bAbsoluteMotionAuditExit = false;
@@ -759,6 +769,7 @@ namespace
 AProphecyNNLocomotionManager::AProphecyNNLocomotionManager()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	CameraSensitivity = 10.0f;
 	AgentClass = AProphecyAgent::StaticClass();
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -775,9 +786,11 @@ void AProphecyNNLocomotionManager::ConfigureSimpleLocomotionTest()
 {
 	Impl->bSimpleLocomotionTest = true;
 	bSimBridge = false;
+	bClampCalf = true;
+	CalfClampLengthMultiplier = 1.0f;
 	CrowdSize = 1;
-	AgentSpeedCmPerSecond = 200.0f;
 	InitialPhysicalAgentCount = 0;
+	AgentSpeedCmPerSecond = 200.0f;
 }
 
 void AProphecyNNLocomotionManager::BeginPlay()
@@ -787,6 +800,8 @@ void AProphecyNNLocomotionManager::BeginPlay()
 	{
 		ConfigureSimpleLocomotionTest();
 	}
+	Impl->bSimpleUsesPlacedAgent =
+		Impl->bSimpleLocomotionTest && IsValid(PlayerAgent) && PlayerAgent->GetWorld() == GetWorld();
 	Impl->bAbsoluteMotionAudit = Impl->bSimpleLocomotionTest &&
 		FParse::Param(FCommandLine::Get(), TEXT("ProphecyNNAbsoluteMotionAudit"));
 	Impl->bAbsoluteMotionAuditWalk = Impl->bAbsoluteMotionAudit &&
@@ -914,7 +929,11 @@ void AProphecyNNLocomotionManager::BeginPlay()
 	InitializeAgents();
 	if (bSpawnVisuals) SpawnVisualComponents();
 	if (Impl->bSimpleLocomotionTest) InitializeSimpleTestCamera();
-	if (IsValid(PlayerAgent))
+	if (IsValid(PlayerAgent) && Impl->bSimpleUsesPlacedAgent)
+	{
+		PlayerAgent->bIsPlayer = true;
+	}
+	else if (IsValid(PlayerAgent))
 	{
 		PlayerAgent->bIsPlayer = true;
 		FProphecyAgentHandle PlayerHandle;
@@ -995,7 +1014,9 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 	}
 	for (AProphecyAgent* AgentActor : AgentActors)
 	{
-		if (IsValid(AgentActor) && !AgentActor->IsActorBeingDestroyed())
+		if (IsValid(AgentActor) &&
+			!(Impl->bSimpleUsesPlacedAgent && AgentActor == PlayerAgent) &&
+			!AgentActor->IsActorBeingDestroyed())
 		{
 			AgentActor->Destroy();
 		}
@@ -1052,6 +1073,7 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 		if (bWarmed) Impl->Stats.StoreSeconds += FPlatformTime::Seconds() - Start;
 	}
 	UpdateVisualRoots();
+	if (bShowFutureRootDebug) DrawFutureRootDebug();
 	if (Impl->bSimpleLocomotionTest) UpdateSimpleTestCamera();
 	if (IsSimBridgeActive() && Impl->bReceivedBridgeFrame)
 	{
@@ -1338,6 +1360,8 @@ void AProphecyNNLocomotionManager::InitializeAgents()
 	for (int32 AgentIndex = 0; AgentIndex < BatchSize; ++AgentIndex)
 	{
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
+		const bool bUsePlacedAgent =
+			AgentIndex == 0 && Impl->bSimpleUsesPlacedAgent && IsValid(PlayerAgent);
 		const int32 Lane = AgentIndex % LaneCount;
 		const int32 Row = AgentIndex / LaneCount;
 		const float LaneOffset = (float(Lane) - float(LaneCount - 1) * 0.5f) * 1.15f;
@@ -1345,12 +1369,19 @@ void AProphecyNNLocomotionManager::InitializeAgents()
 		Agent.RouteA = Impl->EndpointA + Offset;
 		Agent.RouteB = Impl->EndpointB + Offset;
 		const float Phase = Rows > 1 ? float(Row) / float(Rows - 1) : 0.0f;
-		Agent.CurRootPos = FMath::Lerp(Agent.RouteA, Agent.RouteB, Phase);
+		Agent.CurRootPos = bUsePlacedAgent
+			? UnrealToTraining(PlayerAgent->GetRootLowPoint())
+			: FMath::Lerp(Agent.RouteA, Agent.RouteB, Phase);
 		Agent.TargetIndex = Row % 2 == 0 ? 1 : 0;
 		const FVector3f ToTarget = (Agent.TargetIndex == 0 ? Agent.RouteA : Agent.RouteB) - Agent.CurRootPos;
-		Agent.CurRootYaw = FMath::Atan2(ToTarget.X, ToTarget.Z);
+		Agent.CurRootYaw = bUsePlacedAgent
+			? -FMath::DegreesToRadians(float(PlayerAgent->GetActorRotation().Yaw))
+			: FMath::Atan2(ToTarget.X, ToTarget.Z);
 		const FVector3f Forward(FMath::Sin(Agent.CurRootYaw), 0.0f, FMath::Cos(Agent.CurRootYaw));
-		Agent.PrevRootPos = Agent.CurRootPos - Forward * (AgentSpeedCmPerSecond / MetersToCentimeters) * StepSeconds;
+		const bool bManualSimpleInput = Impl->bSimpleLocomotionTest && !Impl->bAbsoluteMotionAudit;
+		Agent.PrevRootPos = bManualSimpleInput
+			? Agent.CurRootPos
+			: Agent.CurRootPos - Forward * (AgentSpeedCmPerSecond / MetersToCentimeters) * StepSeconds;
 		Agent.PrevRootYaw = Agent.CurRootYaw;
 		Agent.PublishedRoot = Agent.CurRootPos;
 		Agent.PreviousPublishedRoot = Agent.CurRootPos;
@@ -1358,13 +1389,29 @@ void AProphecyNNLocomotionManager::InitializeAgents()
 		Agent.PreviousPublishedYaw = Agent.CurRootYaw;
 		Agent.MoverState.position = { Agent.CurRootPos.X, Agent.CurRootPos.Z };
 		const prophecy::sim::Vec2 InitialDirection = prophecy::sim::DirectionFromAngle(Agent.CurRootYaw);
-		const double InitialSpeed = AgentSpeedCmPerSecond / MetersToCentimeters;
+		const double InitialSpeed = bManualSimpleInput
+			? 0.0
+			: AgentSpeedCmPerSecond / MetersToCentimeters;
 		Agent.MoverState.velocity = { InitialDirection.x * InitialSpeed, InitialDirection.z * InitialSpeed };
 		Agent.MoverState.previous_yaw_radians = Agent.CurRootYaw;
 		Agent.MoverState.yaw_radians = Agent.CurRootYaw;
-		UpdateRouteIntent(Agent, float(InitialSpeed), ArrivalRadiusCm / MetersToCentimeters);
+		if (bManualSimpleInput)
+		{
+			Agent.MoverIntent.mode = prophecy::sim::LocomotionMode::Walk;
+			Agent.MoverIntent.speed_direction_radians = 0.0;
+			Agent.MoverIntent.speed_amplitude = 0.0;
+			Agent.MoverIntent.orientation_yaw_radians = Agent.CurRootYaw;
+			Agent.MoverIntent.speed_scale = 1.0;
+			Agent.MoverIntent.turn_scale = 1.0;
+		}
+		else
+		{
+			UpdateRouteIntent(Agent, float(InitialSpeed), ArrivalRadiusCm / MetersToCentimeters);
+		}
 
 		Agent.bUseWalkPolicy = Agent.MoverIntent.mode != prophecy::sim::LocomotionMode::Run;
+		Agent.bPreviousPublishedUseWalkPolicy = Agent.bUseWalkPolicy;
+		Agent.bPublishedUseWalkPolicy = Agent.bUseWalkPolicy;
 		const TArray<TArray<float>>& SeedStates = Agent.bUseWalkPolicy
 			? Impl->WalkSeedPhaseStates
 			: Impl->SeedPhaseStates;
@@ -1385,24 +1432,48 @@ void AProphecyNNLocomotionManager::SpawnVisualComponents()
 	UClass* SpawnClass = AgentClass ? AgentClass.Get() : AProphecyAgent::StaticClass();
 	for (int32 AgentIndex = 0; AgentIndex < CrowdSize; ++AgentIndex)
 	{
-		FActorSpawnParameters SpawnParameters;
-		SpawnParameters.Owner = this;
-		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		SpawnParameters.ObjectFlags |= RF_Transient;
-		AProphecyAgent* AgentActor = GetWorld()->SpawnActor<AProphecyAgent>(
-			SpawnClass,
-			FTransform::Identity,
-			SpawnParameters);
+		const bool bUsePlacedAgent =
+			AgentIndex == 0 && Impl->bSimpleUsesPlacedAgent && IsValid(PlayerAgent);
+		AProphecyAgent* AgentActor = bUsePlacedAgent ? PlayerAgent.Get() : nullptr;
+		if (!AgentActor)
+		{
+			FActorSpawnParameters SpawnParameters;
+			SpawnParameters.Owner = this;
+			SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			SpawnParameters.ObjectFlags |= RF_Transient;
+			AgentActor = GetWorld()->SpawnActor<AProphecyAgent>(
+				SpawnClass,
+				FTransform::Identity,
+				SpawnParameters);
+		}
 		if (!AgentActor)
 		{
 			UE_LOG(LogProphecyNNLocomotion, Error, TEXT("Could not spawn agent shell %d."), AgentIndex);
 			break;
 		}
+		// Spawned Blueprint shells can retain the native constructor value for a
+		// native property even when their Blueprint CDO overrides it. Copy this
+		// opt-in explicitly so the class default always governs manual evaluation.
+		if (!bUsePlacedAgent)
+		{
+			if (const AProphecyAgent* SpawnDefaults = SpawnClass->GetDefaultObject<AProphecyAgent>())
+			{
+				AgentActor->bManualNNPoseApplication = SpawnDefaults->bManualNNPoseApplication;
+			}
+		}
+		// The manager publishes the complete 30 Hz authored pose first. Both the
+		// animation evaluation and the Physical controller consume that same pose;
+		// neither is allowed to predict a private frame ahead.
+		AgentActor->AddTickPrerequisiteActor(this);
 
 		FProphecyAgentHandle Handle;
 		Handle.Index = AgentIndex;
 		Handle.Generation = Impl->Agents[AgentIndex].Generation;
 		AgentActor->SetAgentHandle(Handle);
+		// Publish the current authored pose/root before this agent applies its
+		// PrePhysics forces. Without this dependency their order was scheduler-
+		// dependent and the physical drive intermittently consumed a stale frame.
+		AgentActor->AddTickPrerequisiteActor(this);
 		AgentActor->TeleportManagedRootLowPoint(
 			TrainingToUnreal(Impl->Agents[AgentIndex].CurRootPos),
 			-FMath::RadiansToDegrees(Impl->Agents[AgentIndex].CurRootYaw));
@@ -1412,7 +1483,7 @@ void AProphecyNNLocomotionManager::SpawnVisualComponents()
 		{
 			UE_LOG(LogProphecyNNLocomotion, Error,
 				TEXT("Agent class %s has no skeletal mesh (agent %d)."), *GetNameSafe(SpawnClass), AgentIndex);
-			AgentActor->Destroy();
+			if (!bUsePlacedAgent) AgentActor->Destroy();
 			break;
 		}
 		Component->SetAnimInstanceClass(UProphecyNNLocomotionAnimInstance::StaticClass());
@@ -1432,9 +1503,15 @@ void AProphecyNNLocomotionManager::SpawnVisualComponents()
 			? EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones
 			: EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 		Component->OnAnimUpdateRateParamsCreated.BindStatic(&ConfigureAgentAnimUpdateRate);
+		Component->AddTickPrerequisiteActor(this);
 		ConfigureAgentAnimUpdateRate(Component->AnimUpdateRateParams);
 		Component->bEnableUpdateRateOptimizations = !Impl->bSimpleLocomotionTest;
 		Component->bComponentUseFixedSkelBounds = true;
+		if (AgentActor->bManualNNPoseApplication)
+		{
+			Component->SetComponentTickEnabled(false);
+			AgentActor->SetActorTickEnabled(true);
+		}
 		AgentActor->SetPhysicalDriveMode(InitialPhysicalDriveMode);
 		if (UProphecyNNLocomotionAnimInstance* Anim = Cast<UProphecyNNLocomotionAnimInstance>(Component->GetAnimInstance()))
 		{
@@ -1540,7 +1617,9 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 	for (int32 AgentIndex = 0; AgentIndex < BatchSize; ++AgentIndex)
 	{
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
-		if (!bBridgeDriving || AgentIndex >= CrowdSize)
+		const bool bManualSimpleAgent = Impl->bSimpleLocomotionTest &&
+			!Impl->bAbsoluteMotionAudit && AgentIndex < CrowdSize;
+		if ((!bBridgeDriving || AgentIndex >= CrowdSize) && !bManualSimpleAgent)
 		{
 			UpdateRouteIntent(Agent, Speed, Arrival);
 		}
@@ -1571,12 +1650,35 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 			const FVector3f FutureLocal = TransformRow(FuturePosition - Agent.CurRootPos, YawMatrix(Agent.CurRootYaw));
 			const float Scale = float(FutureIndex) * Impl->MaxSpeedScaleFinal;
 			const float DeltaYaw = WrapAngle(float(FutureRoot.yaw_radians) - Agent.CurRootYaw);
-			*Write++ = FMath::Clamp(FutureLocal.X / Scale, -2.0f, 2.0f);
-			*Write++ = FMath::Clamp(FutureLocal.Z / Scale, -2.0f, 2.0f);
-			*Write++ = FMath::Cos(DeltaYaw);
-			*Write++ = FMath::Sin(DeltaYaw);
+			const float EncodedX = FMath::Clamp(FutureLocal.X / Scale, -2.0f, 2.0f);
+			const float EncodedZ = FMath::Clamp(FutureLocal.Z / Scale, -2.0f, 2.0f);
+			const float EncodedCosYaw = FMath::Cos(DeltaYaw);
+			const float EncodedSinYaw = FMath::Sin(DeltaYaw);
+			*Write++ = EncodedX;
+			*Write++ = EncodedZ;
+			*Write++ = EncodedCosYaw;
+			*Write++ = EncodedSinYaw;
 		}
 		check(int32(Write - (Impl->InputBuffer.GetData() + AgentIndex * InputDim)) == InputDim);
+	}
+
+	if (bShowFutureRootDebug && Impl->Agents.IsValidIndex(FutureRootDebugAgentIndex))
+	{
+		FImpl::FAgent& DebugAgent = Impl->Agents[FutureRootDebugAgentIndex];
+		DebugAgent.FedInputRoot = DebugAgent.CurRootPos;
+		DebugAgent.FedInputYaw = DebugAgent.CurRootYaw;
+		const float* Read = Impl->InputBuffer.GetData() + FutureRootDebugAgentIndex * InputDim + 120;
+		for (int32 FutureIndex = 1; FutureIndex <= FutureWindow; ++FutureIndex)
+		{
+			const float Scale = float(FutureIndex) * Impl->MaxSpeedScaleFinal;
+			const FVector3f FedLocal(Read[0] * Scale, 0.0f, Read[1] * Scale);
+			DebugAgent.FedFutureRootPositions[FutureIndex - 1] = DebugAgent.CurRootPos +
+				TransformRow(FedLocal, Transpose(YawMatrix(DebugAgent.CurRootYaw)));
+			DebugAgent.FedFutureRootYaws[FutureIndex - 1] = DebugAgent.CurRootYaw +
+				FMath::Atan2(Read[3], Read[2]);
+			Read += 4;
+		}
+		DebugAgent.bHasFedFutureRoots = true;
 	}
 }
 
@@ -1628,6 +1730,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 		const bool bWalkPolicy = Agent.bUseWalkPolicy;
 		const float* CurrentState = StateSlice(Impl->CurStateBuffer, AgentIndex);
 		float* Transition = StateSlice(Impl->PublishedStateBuffer, AgentIndex);
+		Agent.bPreviousPublishedUseWalkPolicy = Agent.bPublishedUseWalkPolicy;
 		FMemory::Memcpy(
 			StateSlice(Impl->PreviousPublishedStateBuffer, AgentIndex),
 			Transition,
@@ -1692,6 +1795,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 		Agent.PreviousPublishedYaw = Agent.PublishedYaw;
 		Agent.PublishedRoot = Agent.CurRootPos;
 		Agent.PublishedYaw = Agent.CurRootYaw;
+		Agent.bPublishedUseWalkPolicy = bWalkPolicy;
 
 		const float* Future = Impl->InputBuffer.GetData() + AgentIndex * InputDim + 120;
 		const FVector3f NextRootDelta(Future[0] * Impl->MaxSpeedScaleFinal, 0.0f, Future[1] * Impl->MaxSpeedScaleFinal);
@@ -1717,15 +1821,39 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	TArrayView<FTransform> LocalTransforms = TransformSlice(Impl->LocalTransformBuffer, AgentIndex);
 	TArrayView<FTransform> PreviousComponentTransforms = TransformSlice(Impl->PreviousComponentTransformBuffer, AgentIndex);
 	TArrayView<FTransform> ComponentTransforms = TransformSlice(Impl->ComponentTransformBuffer, AgentIndex);
-	const bool bWalkPolicy = Impl->Agents[AgentIndex].bUseWalkPolicy;
-	const TArray<FVector3f>& LocalOffsets = bWalkPolicy ? Impl->WalkLocalOffsets : Impl->LocalOffsets;
 	const int32 PosOffsets[2] = { 9, 25 };
 	const int32 RotOffsets[2] = { 12, 28 };
 	const int32 StartRotOffsets[2] = { 18, 34 };
 	const int32 ToeOffsets[2] = { 24, 40 };
+	FVector3f SkeletonLimbOffsets[2][3];
+	for (int32 LimbIndex = 0; LimbIndex < 2; ++LimbIndex)
+	{
+		const FImpl::FLimb& Limb = Impl->Limbs[LimbIndex];
+		const int32 BodyIndices[3] = { Limb.Start, Limb.Mid, Limb.End };
+		for (int32 SegmentIndex = 0; SegmentIndex < 3; ++SegmentIndex)
+		{
+			const int32 BodyIndex = BodyIndices[SegmentIndex];
+			SkeletonLimbOffsets[LimbIndex][SegmentIndex] = Impl->LocalOffsets[BodyIndex];
+			if (AgentActors.IsValidIndex(AgentIndex) && IsValid(AgentActors[AgentIndex]))
+			{
+				const USkeletalMeshComponent* AgentMesh = AgentActors[AgentIndex]->GetAgentMesh();
+				const USkeletalMesh* SkeletalMesh = AgentMesh ? AgentMesh->GetSkeletalMeshAsset() : nullptr;
+				if (SkeletalMesh)
+				{
+					const FReferenceSkeleton& ReferenceSkeleton = SkeletalMesh->GetRefSkeleton();
+					const int32 SkeletonIndex = ReferenceSkeleton.FindBoneIndex(Impl->BodyNames[BodyIndex]);
+					if (SkeletonIndex != INDEX_NONE)
+					{
+						SkeletonLimbOffsets[LimbIndex][SegmentIndex] = LocalUnrealToTraining(
+							ReferenceSkeleton.GetRefBonePose()[SkeletonIndex].GetTranslation());
+					}
+				}
+			}
+		}
+	}
 
-	auto BuildPoseTransforms = [&](const float* PoseState, TArrayView<FTransform> OutComponentTransforms,
-		TArrayView<FTransform>* OutLocalTransforms)
+	auto BuildPoseTransforms = [&](const float* PoseState, bool bPoseUsesWalkPolicy,
+		TArrayView<FTransform> OutComponentTransforms, TArrayView<FTransform>* OutLocalTransforms)
 	{
 		const FMat3f PelvisRot = MatrixFromRot6(PoseState + 3);
 		const FVector3f PelvisPos = ReadStateVec3(PoseState, 0);
@@ -1740,14 +1868,39 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 
 		for (int32 LimbIndex = 0; LimbIndex < 2; ++LimbIndex)
 		{
-			const FImpl::FLimb& Limb = bWalkPolicy ? Impl->WalkLimbs[LimbIndex] : Impl->Limbs[LimbIndex];
-			const FVector3f Base = PelvisPos + TransformRow(LocalOffsets[Limb.Start], PelvisRot);
+			const FImpl::FLimb& Limb = bPoseUsesWalkPolicy ? Impl->WalkLimbs[LimbIndex] : Impl->Limbs[LimbIndex];
+			const FVector3f& ThighOffset = SkeletonLimbOffsets[LimbIndex][0];
+			const FVector3f& CalfOffset = SkeletonLimbOffsets[LimbIndex][1];
+			const FVector3f& FootOffset = SkeletonLimbOffsets[LimbIndex][2];
+			const FVector3f Base = PelvisPos + TransformRow(ThighOffset, PelvisRot);
 			const FMat3f ThighGlobal = MatrixFromRot6(PoseState + StartRotOffsets[LimbIndex]);
-			const FVector3f Mid = Base + TransformRow(LocalOffsets[Limb.Mid], ThighGlobal);
-			const FVector3f End = ReadStateVec3(PoseState, PosOffsets[LimbIndex]);
+			const FVector3f Mid = Base + TransformRow(CalfOffset, ThighGlobal);
+			FVector3f End = ReadStateVec3(PoseState, PosOffsets[LimbIndex]);
+			if (bClampFoot)
+			{
+				const float MaximumLegLength =
+					(CalfOffset.Size() + FootOffset.Size()) * FMath::Max(0.0f, FootClampLengthMultiplier);
+				const FVector3f ThighToFoot = End - Base;
+				const float DistanceSquared = ThighToFoot.SizeSquared();
+				if (MaximumLegLength > 0.0f && DistanceSquared > FMath::Square(MaximumLegLength))
+				{
+					End = Base + ThighToFoot * (MaximumLegLength * FMath::InvSqrt(DistanceSquared));
+				}
+			}
+			if (bClampCalf)
+			{
+				const float PreservedCalfLength =
+					FootOffset.Size() * FMath::Max(0.0f, CalfClampLengthMultiplier);
+				const FVector3f CalfToFoot = End - Mid;
+				const float DistanceSquared = CalfToFoot.SizeSquared();
+				if (PreservedCalfLength > 0.0f && DistanceSquared > UE_SMALL_NUMBER)
+				{
+					End = Mid + CalfToFoot * (PreservedCalfLength * FMath::InvSqrt(DistanceSquared));
+				}
+			}
 			const FVector3f WorldPole = TransformRow(Limb.LocalPoleAxes[0], ThighGlobal);
 			const FMat3f CalfGlobal = RotationFromAxisAndPole(
-				LocalOffsets[Limb.End], End - Mid, Limb.LocalPoleAxes[1], WorldPole);
+				FootOffset, End - Mid, Limb.LocalPoleAxes[1], WorldPole);
 			const FMat3f FootGlobal = MatrixFromRot6(PoseState + RotOffsets[LimbIndex]);
 			const FMat3f ToeGlobal = Multiply(
 				AxisAngleMatrix(
@@ -1774,11 +1927,11 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 				const FVector3f DynamicFootLocal = TransformRow(End - Mid, Transpose(CalfGlobal));
 				(*OutLocalTransforms)[OutputBase + 0] = FTransform(
 					MatrixToQuat(MirrorYBasis(ThighLocal)),
-					LocalTrainingToUnreal(LocalOffsets[Limb.Start]),
+					LocalTrainingToUnreal(ThighOffset),
 					FVector::OneVector);
 				(*OutLocalTransforms)[OutputBase + 1] = FTransform(
 					MatrixToQuat(MirrorYBasis(CalfLocal)),
-					LocalTrainingToUnreal(LocalOffsets[Limb.Mid]),
+					LocalTrainingToUnreal(CalfOffset),
 					FVector::OneVector);
 				(*OutLocalTransforms)[OutputBase + 2] = FTransform(
 					MatrixToQuat(MirrorYBasis(FootLocal)),
@@ -1791,8 +1944,17 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 			}
 		}
 	};
-	BuildPoseTransforms(PreviousState, PreviousComponentTransforms, nullptr);
-	BuildPoseTransforms(State, ComponentTransforms, &LocalTransforms);
+	FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
+	BuildPoseTransforms(
+		PreviousState,
+		Agent.bPreviousPublishedUseWalkPolicy,
+		PreviousComponentTransforms,
+		nullptr);
+	BuildPoseTransforms(
+		State,
+		Agent.bPublishedUseWalkPolicy,
+		ComponentTransforms,
+		&LocalTransforms);
 
 	auto BuildComponentWorldTransform = [&](const FVector3f& Root, float Yaw)
 	{
@@ -1810,13 +1972,12 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 					FRotator(0.0f, -FMath::RadiansToDegrees(Yaw), 0.0f),
 					CapsuleCenter,
 					FVector::OneVector);
-				Result = Mesh->GetRelativeTransform() * CapsuleWorld;
+				Result = AgentActor->GetAuthoredMeshRelativeTransform() * CapsuleWorld;
 			}
 		}
 		Result.NormalizeRotation();
 		return Result;
 	};
-	const FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
 	const FTransform PreviousComponentWorldTransform = BuildComponentWorldTransform(
 		Agent.PreviousPublishedRoot, Agent.PreviousPublishedYaw);
 	const FTransform ComponentWorldTransform = BuildComponentWorldTransform(
@@ -1943,6 +2104,54 @@ void AProphecyNNLocomotionManager::UpdateVisualRoots()
 	}
 }
 
+void AProphecyNNLocomotionManager::DrawFutureRootDebug() const
+{
+	if (!GetWorld() || !Impl->Agents.IsValidIndex(FutureRootDebugAgentIndex))
+	{
+		return;
+	}
+
+	const FImpl::FAgent& Agent = Impl->Agents[FutureRootDebugAgentIndex];
+	if (!Agent.bHasFedFutureRoots)
+	{
+		return;
+	}
+
+	constexpr float FloorLiftCm = 2.0f;
+	constexpr float RootRadiusCm = 5.0f;
+	constexpr float FutureRadiusCm = 3.0f;
+	constexpr float FacingLengthCm = 18.0f;
+	constexpr float LineThickness = 1.5f;
+	const FVector FloorLift(0.0f, 0.0f, FloorLiftCm);
+	const FVector InputRoot = TrainingToUnreal(Agent.FedInputRoot) + FloorLift;
+	const FVector InputFacing(FMath::Sin(Agent.FedInputYaw), FMath::Cos(Agent.FedInputYaw), 0.0f);
+	DrawDebugSphere(GetWorld(), InputRoot, RootRadiusCm, 12, FColor::White,
+		false, -1.0f, 0, LineThickness);
+	DrawDebugDirectionalArrow(GetWorld(), InputRoot, InputRoot + InputFacing * FacingLengthCm,
+		5.0f, FColor::White, false, -1.0f, 0, LineThickness);
+
+	FVector Previous = InputRoot;
+	for (int32 FutureIndex = 0; FutureIndex < FutureWindow; ++FutureIndex)
+	{
+		const float Fraction = float(FutureIndex) / float(FutureWindow - 1);
+		const FColor RootColor(
+			uint8(FMath::RoundToInt(FMath::Lerp(0.0f, 255.0f, Fraction))),
+			uint8(FMath::RoundToInt(FMath::Lerp(255.0f, 80.0f, Fraction))),
+			255);
+		const FVector Root = TrainingToUnreal(Agent.FedFutureRootPositions[FutureIndex]) + FloorLift;
+		const float Yaw = Agent.FedFutureRootYaws[FutureIndex];
+		const FVector Facing(FMath::Sin(Yaw), FMath::Cos(Yaw), 0.0f);
+
+		DrawDebugLine(GetWorld(), Previous, Root, RootColor,
+			false, -1.0f, 0, LineThickness);
+		DrawDebugSphere(GetWorld(), Root, FutureRadiusCm, 10, RootColor,
+			false, -1.0f, 0, LineThickness);
+		DrawDebugDirectionalArrow(GetWorld(), Root, Root + Facing * FacingLengthCm,
+			5.0f, FColor::Yellow, false, -1.0f, 0, LineThickness);
+		Previous = Root;
+	}
+}
+
 void AProphecyNNLocomotionManager::InitializeSimpleTestCamera()
 {
 	if (!Impl->bSimpleLocomotionTest || AgentActors.IsEmpty() || !IsValid(AgentActors[0]) || !GetWorld()) return;
@@ -2015,6 +2224,50 @@ void AProphecyNNLocomotionManager::UpdateSimpleTestInput()
 		PlayerController->IsInputKeyDown(EKeys::LeftShift) ||
 		PlayerController->IsInputKeyDown(EKeys::RightShift);
 	AgentSpeedCmPerSecond = bRun ? 500.0f : 200.0f;
+
+	if (Impl->Agents.IsEmpty()) return;
+	FImpl::FAgent& Agent = Impl->Agents[0];
+	Agent.MoverIntent.mode = bRun
+		? prophecy::sim::LocomotionMode::Run
+		: prophecy::sim::LocomotionMode::Walk;
+	Agent.MoverIntent.speed_scale = 1.0;
+	Agent.MoverIntent.turn_scale = 1.0;
+
+	const float ForwardInput =
+		(PlayerController->IsInputKeyDown(EKeys::Z) ? 1.0f : 0.0f) -
+		(PlayerController->IsInputKeyDown(EKeys::S) ? 1.0f : 0.0f);
+	const float RightInput =
+		(PlayerController->IsInputKeyDown(EKeys::D) ? 1.0f : 0.0f) -
+		(PlayerController->IsInputKeyDown(EKeys::Q) ? 1.0f : 0.0f);
+	ACameraActor* Camera = Impl->SimpleTestCamera.Get();
+	if (!IsValid(Camera)) return;
+	FVector CameraForward = Camera->GetActorForwardVector();
+	FVector CameraRight = Camera->GetActorRightVector();
+	CameraForward.Z = 0.0;
+	CameraRight.Z = 0.0;
+	CameraForward.Normalize();
+	CameraRight.Normalize();
+	const double CameraFacingYaw = FMath::Atan2(CameraForward.X, CameraForward.Y);
+	Agent.MoverIntent.orientation_yaw_radians = CameraFacingYaw;
+
+	const FVector2D Stick(RightInput, ForwardInput);
+	if (Stick.IsNearlyZero())
+	{
+		Agent.MoverIntent.speed_direction_radians = 0.0;
+		Agent.MoverIntent.speed_amplitude = 0.0;
+		return;
+	}
+
+	const FVector2D UnitStick = Stick.GetSafeNormal();
+	const FVector DesiredUnrealDirection =
+		CameraForward * UnitStick.Y + CameraRight * UnitStick.X;
+	const double DesiredYaw = FMath::Atan2(
+		DesiredUnrealDirection.X,
+		DesiredUnrealDirection.Y);
+	Agent.MoverIntent.speed_direction_radians = prophecy::sim::SignedAngleDelta(
+		Agent.MoverState.yaw_radians, DesiredYaw);
+	Agent.MoverIntent.speed_amplitude = 1.0;
+
 }
 
 void AProphecyNNLocomotionManager::UpdateSimpleTestCamera()

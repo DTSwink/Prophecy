@@ -56,8 +56,8 @@ enum class EProphecyAgentPhysicalDriveMode : uint8
 	/** One PhysicalAnimation world-space target and constraint per simulated body. */
 	PerBodyWorld,
 
-	/** One pelvis world-space target; existing PhysicsAsset joints drive child-bone angles. */
-	RootAndJointTorque
+	/** Absolute world-space force and torque magnetization for every simulated lower-body rigid body. */
+	RootAndJointTorque UMETA(DisplayName = "Absolute World Magnetization")
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(
@@ -84,6 +84,7 @@ public:
 	AProphecyAgent();
 
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	/** True only for the possessed player shell; exposed for Blueprint event logic. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Agent", meta = (DisplayName = "Is Player"))
@@ -133,6 +134,34 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent")
 	USkeletalMeshComponent* GetAgentMesh() const { return Mesh; }
 
+	/**
+	 * Copies the already-published NN pose for Blueprint controllers.
+	 * FutureWorldTransforms are the exact next 30 Hz targets; InterpolatedWorldTransforms
+	 * are what the current Kinematic renderer would display on this game frame.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Manual NN Pose", meta = (DisplayName = "Read NN Future World Pose"))
+	bool ReadNNFutureWorldPose(
+		TArray<FName>& BoneNames,
+		TArray<FTransform>& FutureWorldTransforms,
+		TArray<FTransform>& InterpolatedWorldTransforms,
+		float& InterpolationAlpha) const;
+
+	/** Manually evaluates the existing viewer-matched Kinematic NN pose once. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Manual NN Pose", meta = (DisplayName = "Apply NN Pose Kinematically"))
+	bool ApplyNNPoseKinematically(float DeltaSeconds);
+
+	/** Disable automatic skeletal evaluation so Blueprint decides when the NN pose is applied. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Prophecy|Agent|Manual NN Pose")
+	bool bManualNNPoseApplication = false;
+
+	/** Stable authored mesh-to-capsule transform; Chaos overwrites the live relative transform while ragdolling. */
+	FTransform GetAuthoredMeshRelativeTransform() const
+	{
+		return SimulationMode == EProphecyAgentSimulationMode::Physical
+			? PhysicalTargetComponentRelativeTransform
+			: Mesh->GetRelativeTransform();
+	}
+
 	/** Copies the finalized component-space bone transforms without allocating. */
 	bool SampleActualComponentPose(
 		TConstArrayView<FName> BoneNames,
@@ -160,6 +189,7 @@ public:
 
 private:
 	void ApplyCollisionMode(EProphecyAgentSimulationMode Mode);
+	void ApplyAbsoluteWorldMagnetization(float DeltaSeconds);
 
 	UFUNCTION()
 	void HandleMeshHit(
@@ -187,4 +217,9 @@ private:
 
 	bool bMACDEnabled = true;
 	bool bPhysicalDriveConfigured = false;
+	bool bHasPreviousPhysicalRootTarget = false;
+	bool bSavedUpdateRateOptimizations = false;
+	EVisibilityBasedAnimTickOption SavedVisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+	FTransform PhysicalTargetComponentRelativeTransform = FTransform::Identity;
+	FTransform PreviousPhysicalRootTarget = FTransform::Identity;
 };

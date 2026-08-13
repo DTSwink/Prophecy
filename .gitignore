@@ -4,6 +4,11 @@ Build/
 Config/*
 !Config/DefaultEngine.ini
 Content/*
+!Content/_mygame/
+Content/_mygame/*
+!Content/_mygame/locomotion/
+Content/_mygame/locomotion/*
+!Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset
 !Content/locomotion/
 Content/locomotion/*
 !Content/locomotion/NN/

@@ -63,4 +63,24 @@ public:
 		FVector NormalImpulseOnSword,
 		FName BoneName = NAME_None
 	);
+
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Physics|Spring", meta = (DisplayName = "spring_cpp", WorldContext = "WorldContextObject", AdvancedDisplay = "DeltaSeconds", ReturnDisplayName = "Delta Velocity", Keywords = "spring delta velocity dvelocity target snap physics"))
+	static FVector spring_cpp(
+		const UObject* WorldContextObject,
+		FVector Position,
+		FVector Velocity,
+		FVector TargetPosition,
+		float DVelMax = 1000000.0f,
+		float Tolerance = 0.0f,
+		float DeltaSeconds = -1.0f);
+
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Physics|Spring", meta = (DisplayName = "angspring_cpp", WorldContext = "WorldContextObject", AdvancedDisplay = "DeltaSeconds", ReturnDisplayName = "Delta Angular Velocity Rad", Keywords = "spring angular delta velocity dvelocity target rotation snap physics"))
+	static FVector angspring_cpp(
+		const UObject* WorldContextObject,
+		FRotator Rotation,
+		FVector AngularVelocityRad,
+		FRotator TargetRotation,
+		float DAngVelMax = 1000000.0f,
+		float Tolerance = 0.0f,
+		float DeltaSeconds = -1.0f);
 };

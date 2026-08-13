@@ -50,12 +50,35 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (ClampMin = "0", ClampMax = "1024"))
 	int32 FootRollIntegrationSteps = 4;
 
+	/** Final presentation-only safeguard: keep each foot within its authored total leg length from the thigh bone. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Clamp Foot"))
+	bool bClampFoot = false;
+
+	/** Multiplies the authored upper-leg plus lower-leg reach used by Clamp Foot. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Foot Clamp Length Multiplier", ClampMin = "0.0", UIMin = "0.5", UIMax = "2.0"))
+	float FootClampLengthMultiplier = 1.0f;
+
+	/** Final presentation-only safeguard: pull the foot inward when it exceeds the authored calf length. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Clamp Calf"))
+	bool bClampCalf = false;
+
+	/** Multiplies the authored lower-leg length used by Clamp Calf. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Calf Clamp Length Multiplier", ClampMin = "0.0", UIMin = "0.5", UIMax = "2.0"))
+	float CalfClampLengthMultiplier = 1.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (ClampMin = "0.0"))
 	float AgentSpeedCmPerSecond = 500.0f;
 
 	/** Mouse-orbit sensitivity used by the one-agent /Game/locomotion PIE test. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion|Simple Test", meta = (ClampMin = "0.01", UIMin = "0.01", UIMax = "1.0"))
 	float CameraSensitivity = 0.15f;
+
+	/** Draw the exact current-root frame and eight future roots encoded into the selected agent's NN input. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion|Debug")
+	bool bShowFutureRootDebug = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion|Debug", meta = (ClampMin = "0", ClampMax = "99"))
+	int32 FutureRootDebugAgentIndex = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (ClampMin = "0.0"))
 	float MaxTurnRateDegreesPerSecond = 360.0f;
@@ -169,6 +192,7 @@ private:
 	void ApplyOutputBatch(float StepSeconds);
 	void PublishAgentPose(int32 AgentIndex, double SourceTimeSeconds);
 	void UpdateVisualRoots();
+	void DrawFutureRootDebug() const;
 	void InitializeSimpleTestCamera();
 	void UpdateSimpleTestInput();
 	void UpdateSimpleTestCamera();
