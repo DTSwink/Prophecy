@@ -8,6 +8,7 @@
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PoseableMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Dom/JsonObject.h"
@@ -26,6 +27,9 @@
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+#endif
 #include "Modules/ModuleManager.h"
 #include "NNE.h"
 #include "NNEModelData.h"
@@ -58,6 +62,24 @@ namespace
 	constexpr int32 MaxCatchUpStepsPerTick = 32;
 	constexpr float MetersToCentimeters = 100.0f;
 	constexpr float ToeAlphaRadians = UE_PI * 0.5f;
+
+	enum class EPhysicalFeedbackChannel : int32
+	{
+		Pelvis,
+		LeftThigh,
+		LeftFoot,
+		LeftToe,
+		RightThigh,
+		RightFoot,
+		RightToe,
+		Count
+	};
+
+	struct FPhysicalFeedbackTolerance
+	{
+		float LinearCm = 0.0f;
+		float AngularDegrees = 0.0f;
+	};
 
 	struct FMat3f
 	{
@@ -266,6 +288,154 @@ namespace
 		}
 		return Out;
 	}
+
+	FVector ApplyLinearFeedbackTolerance(
+		const FVector& Kinematic,
+		const FVector& Simulated,
+		float ToleranceCm)
+	{
+		const FVector Error = Simulated - Kinematic;
+		const float ErrorSize = Error.Size();
+		const float Tolerance = FMath::Max(0.0f, ToleranceCm);
+		if (ErrorSize <= Tolerance || ErrorSize <= UE_SMALL_NUMBER)
+		{
+			return Kinematic;
+		}
+		return Kinematic + Error * ((ErrorSize - Tolerance) / ErrorSize);
+	}
+
+	FQuat ApplyAngularFeedbackTolerance(
+		const FQuat& KinematicValue,
+		const FQuat& SimulatedValue,
+		float ToleranceDegrees)
+	{
+		FQuat Kinematic = KinematicValue.GetNormalized();
+		FQuat Simulated = SimulatedValue.GetNormalized();
+		float Dot = Kinematic | Simulated;
+		if (Dot < 0.0f)
+		{
+			Simulated = Simulated * -1.0f;
+			Dot = -Dot;
+		}
+		const float ErrorRadians = 2.0f * FMath::Acos(FMath::Clamp(Dot, 0.0f, 1.0f));
+		const float ToleranceRadians = FMath::DegreesToRadians(FMath::Max(0.0f, ToleranceDegrees));
+		if (ErrorRadians <= ToleranceRadians || ErrorRadians <= UE_SMALL_NUMBER)
+		{
+			return Kinematic;
+		}
+		return FQuat::Slerp(Kinematic, Simulated,
+			(ErrorRadians - ToleranceRadians) / ErrorRadians).GetNormalized();
+	}
+
+	void ApplyPhysicalFeedbackTolerance(
+		FTransform& Simulated,
+		const FTransform& Kinematic,
+		const FPhysicalFeedbackTolerance& Tolerance)
+	{
+		Simulated.SetTranslation(ApplyLinearFeedbackTolerance(
+			Kinematic.GetTranslation(), Simulated.GetTranslation(), Tolerance.LinearCm));
+		Simulated.SetRotation(ApplyAngularFeedbackTolerance(
+			Kinematic.GetRotation(), Simulated.GetRotation(), Tolerance.AngularDegrees));
+	}
+
+	float ReadPhysicalFeedbackSetting(const UObject* Object, const FName PropertyName)
+	{
+		if (!Object)
+		{
+			return 0.0f;
+		}
+		if (const FFloatProperty* Property = FindFProperty<FFloatProperty>(
+			Object->GetClass(), PropertyName))
+		{
+			return FMath::Max(0.0f, Property->GetPropertyValue_InContainer(Object));
+		}
+		return 0.0f;
+	}
+
+	void CachePhysicalFeedbackSettings(
+		const UObject* Object,
+		FPhysicalFeedbackTolerance* OutTolerances)
+	{
+		static const FName LinearNames[] = {
+			TEXT("FeedbackPelvisLinearCm"),
+			TEXT("FeedbackLeftThighLinearCm"),
+			TEXT("FeedbackLeftFootLinearCm"),
+			TEXT("FeedbackLeftToeLinearCm"),
+			TEXT("FeedbackRightThighLinearCm"),
+			TEXT("FeedbackRightFootLinearCm"),
+			TEXT("FeedbackRightToeLinearCm")
+		};
+		static const FName AngularNames[] = {
+			TEXT("FeedbackPelvisAngularDegrees"),
+			TEXT("FeedbackLeftThighAngularDegrees"),
+			TEXT("FeedbackLeftFootAngularDegrees"),
+			TEXT("FeedbackLeftToeAngularDegrees"),
+			TEXT("FeedbackRightThighAngularDegrees"),
+			TEXT("FeedbackRightFootAngularDegrees"),
+			TEXT("FeedbackRightToeAngularDegrees")
+		};
+		static_assert(UE_ARRAY_COUNT(LinearNames) == int32(EPhysicalFeedbackChannel::Count));
+		static_assert(UE_ARRAY_COUNT(AngularNames) == int32(EPhysicalFeedbackChannel::Count));
+		for (int32 Index = 0; Index < int32(EPhysicalFeedbackChannel::Count); ++Index)
+		{
+			OutTolerances[Index].LinearCm = ReadPhysicalFeedbackSetting(Object, LinearNames[Index]);
+			OutTolerances[Index].AngularDegrees = ReadPhysicalFeedbackSetting(Object, AngularNames[Index]);
+		}
+	}
+
+#if WITH_DEV_AUTOMATION_TESTS
+	IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+		FProphecyPhysicalFeedbackToleranceTest,
+		"Prophecy.NN.PhysicalFeedbackTolerance",
+		EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+	bool FProphecyPhysicalFeedbackToleranceTest::RunTest(const FString& Parameters)
+	{
+		const FTransform Kinematic(
+			FQuat(FVector::UpVector, FMath::DegreesToRadians(10.0f)),
+			FVector(10.0f, 20.0f, 30.0f));
+		const FTransform Simulated(
+			FQuat(FVector::UpVector, FMath::DegreesToRadians(40.0f)),
+			FVector(13.0f, 24.0f, 30.0f));
+
+		FTransform ZeroResult = Simulated;
+		ApplyPhysicalFeedbackTolerance(ZeroResult, Kinematic, FPhysicalFeedbackTolerance{});
+		TestTrue(TEXT("Zero linear tolerance returns the simulated position"),
+			ZeroResult.GetTranslation().Equals(Simulated.GetTranslation(), 1.0e-4f));
+		TestTrue(TEXT("Zero angular tolerance returns the simulated rotation"),
+			ZeroResult.GetRotation().AngularDistance(Simulated.GetRotation()) <= 1.0e-5f);
+
+		FPhysicalFeedbackTolerance LargeTolerance;
+		LargeTolerance.LinearCm = 100000.0f;
+		LargeTolerance.AngularDegrees = 360.0f;
+		FTransform LargeResult = Simulated;
+		ApplyPhysicalFeedbackTolerance(LargeResult, Kinematic, LargeTolerance);
+		TestTrue(TEXT("Oversized linear tolerance returns the kinematic position"),
+			LargeResult.GetTranslation().Equals(Kinematic.GetTranslation(), 1.0e-4f));
+		TestTrue(TEXT("Oversized angular tolerance returns the kinematic rotation"),
+			LargeResult.GetRotation().AngularDistance(Kinematic.GetRotation()) <= 1.0e-5f);
+		TestTrue(TEXT("The two extremes differ under the same start"),
+			!ZeroResult.GetTranslation().Equals(LargeResult.GetTranslation(), 1.0e-4f) &&
+			ZeroResult.GetRotation().AngularDistance(LargeResult.GetRotation()) > 1.0e-3f);
+
+		FPhysicalFeedbackTolerance PartialTolerance;
+		PartialTolerance.LinearCm = 1.0f;
+		PartialTolerance.AngularDegrees = 5.0f;
+		FTransform PartialResult = Simulated;
+		ApplyPhysicalFeedbackTolerance(PartialResult, Kinematic, PartialTolerance);
+		TestTrue(TEXT("Partial linear tolerance subtracts exactly one centimetre"),
+			FMath::IsNearlyEqual(
+				float(FVector::Distance(Kinematic.GetTranslation(), PartialResult.GetTranslation())),
+				4.0f,
+				1.0e-4f));
+		TestTrue(TEXT("Partial angular tolerance subtracts exactly five degrees"),
+			FMath::IsNearlyEqual(
+				FMath::RadiansToDegrees(PartialResult.GetRotation().AngularDistance(Kinematic.GetRotation())),
+				25.0f,
+				1.0e-3f));
+		return true;
+	}
+#endif
 
 	FVector TrainingToUnreal(const FVector3f& ValueMeters)
 	{
@@ -483,6 +653,8 @@ struct AProphecyNNLocomotionManager::FImpl
 		double LastBridgePublishSeconds = 0.0;
 		int32 Generation = 1;
 		bool bHasPhysicalSample = false;
+		FPhysicalFeedbackTolerance PhysicalFeedbackTolerances[
+			int32(EPhysicalFeedbackChannel::Count)]{};
 		bool bHasBridgeIntent = false;
 		bool bHasBridgeActualRoot = false;
 		bool bPhysicalWorldBlockedPending = false;
@@ -802,6 +974,25 @@ void AProphecyNNLocomotionManager::BeginPlay()
 	}
 	Impl->bSimpleUsesPlacedAgent =
 		Impl->bSimpleLocomotionTest && IsValid(PlayerAgent) && PlayerAgent->GetWorld() == GetWorld();
+	const AProphecyAgent* WalkPolicyAgent = IsValid(PlayerAgent) ? PlayerAgent.Get() : nullptr;
+	if (!WalkPolicyAgent && AgentClass)
+	{
+		WalkPolicyAgent = AgentClass->GetDefaultObject<AProphecyAgent>();
+	}
+	bool bUseJuly5WalkFineTune = false;
+	if (WalkPolicyAgent)
+	{
+		if (const FBoolProperty* PolicyProperty = FindFProperty<FBoolProperty>(
+			WalkPolicyAgent->GetClass(), TEXT("UseJuly5WalkFineTune")))
+		{
+			bUseJuly5WalkFineTune = PolicyProperty->GetPropertyValue_InContainer(WalkPolicyAgent);
+		}
+	}
+	if (bUseJuly5WalkFineTune)
+	{
+		WalkOnnxModelPath = TEXT("Content/locomotion/NN/prophecy_lower_body_walk_july5_b100.onnx");
+		WalkRuntimeContractPath = TEXT("Content/locomotion/NN/prophecy_lower_body_walk_july5_runtime.json");
+	}
 	Impl->bAbsoluteMotionAudit = Impl->bSimpleLocomotionTest &&
 		FParse::Param(FCommandLine::Get(), TEXT("ProphecyNNAbsoluteMotionAudit"));
 	Impl->bAbsoluteMotionAuditWalk = Impl->bAbsoluteMotionAudit &&
@@ -1073,6 +1264,72 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 		if (bWarmed) Impl->Stats.StoreSeconds += FPlatformTime::Seconds() - Start;
 	}
 	UpdateVisualRoots();
+	// Debug meshes are passive poseable renderers owned by the manager. Update
+	// them only after the authoritative pose/root publication is complete; they
+	// have no AnimInstance, component tick, collision, or dependency edge back to
+	// the agent that authors PrePhysics forces.
+	for (int32 AgentIndex = 0; AgentIndex < AgentActors.Num(); ++AgentIndex)
+	{
+		AProphecyAgent* AgentActor = AgentActors[AgentIndex];
+		if (!AgentActor || !AgentActor->bShowKinematicDebugMesh)
+		{
+			continue;
+		}
+		const FName DebugMeshName(*FString::Printf(
+			TEXT("KinematicDebugMesh_%d"), AgentIndex));
+		UPoseableMeshComponent* DebugMesh = FindObjectFast<UPoseableMeshComponent>(
+			this, DebugMeshName);
+		if (!IsValid(DebugMesh))
+		{
+			continue;
+		}
+
+		TArray<FName> BoneNames;
+		TArray<FTransform> FutureWorldTransforms;
+		TArray<FTransform> InterpolatedWorldTransforms;
+		float InterpolationAlpha = 1.0f;
+		if (!AgentActor->ReadNNFutureWorldPose(
+			BoneNames, FutureWorldTransforms, InterpolatedWorldTransforms,
+			InterpolationAlpha))
+		{
+			continue;
+		}
+		const USkinnedAsset* DebugAsset = DebugMesh->GetSkinnedAsset();
+		if (!DebugAsset)
+		{
+			continue;
+		}
+		const FReferenceSkeleton& ReferenceSkeleton = DebugAsset->GetRefSkeleton();
+		const TArray<FTransform>& ReferenceLocalPose = ReferenceSkeleton.GetRefBonePose();
+		if (DebugMesh->BoneSpaceTransforms.Num() != ReferenceSkeleton.GetNum())
+		{
+			continue;
+		}
+		TArray<FTransform, TInlineAllocator<128>> ComponentPose;
+		ComponentPose.SetNumUninitialized(ReferenceSkeleton.GetNum());
+		const FTransform DebugComponentWorld = DebugMesh->GetComponentTransform();
+		for (int32 BoneIndex = 0; BoneIndex < ReferenceSkeleton.GetNum(); ++BoneIndex)
+		{
+			const int32 ParentIndex = ReferenceSkeleton.GetParentIndex(BoneIndex);
+			const int32 TargetIndex = BoneNames.IndexOfByKey(
+				ReferenceSkeleton.GetBoneName(BoneIndex));
+			if (InterpolatedWorldTransforms.IsValidIndex(TargetIndex))
+			{
+				ComponentPose[BoneIndex] = InterpolatedWorldTransforms[TargetIndex]
+					.GetRelativeTransform(DebugComponentWorld);
+			}
+			else
+			{
+				ComponentPose[BoneIndex] = ParentIndex != INDEX_NONE
+					? ReferenceLocalPose[BoneIndex] * ComponentPose[ParentIndex]
+					: ReferenceLocalPose[BoneIndex];
+			}
+			DebugMesh->BoneSpaceTransforms[BoneIndex] = ParentIndex != INDEX_NONE
+				? ComponentPose[BoneIndex].GetRelativeTransform(ComponentPose[ParentIndex])
+				: ComponentPose[BoneIndex];
+		}
+		DebugMesh->RefreshBoneTransforms();
+	}
 	if (bShowFutureRootDebug) DrawFutureRootDebug();
 	if (Impl->bSimpleLocomotionTest) UpdateSimpleTestCamera();
 	if (IsSimBridgeActive() && Impl->bReceivedBridgeFrame)
@@ -1459,6 +1716,7 @@ void AProphecyNNLocomotionManager::SpawnVisualComponents()
 			if (const AProphecyAgent* SpawnDefaults = SpawnClass->GetDefaultObject<AProphecyAgent>())
 			{
 				AgentActor->bManualNNPoseApplication = SpawnDefaults->bManualNNPoseApplication;
+				AgentActor->bShowKinematicDebugMesh = SpawnDefaults->bShowKinematicDebugMesh;
 			}
 		}
 		// The manager publishes the complete 30 Hz authored pose first. Both the
@@ -1470,6 +1728,10 @@ void AProphecyNNLocomotionManager::SpawnVisualComponents()
 		Handle.Index = AgentIndex;
 		Handle.Generation = Impl->Agents[AgentIndex].Generation;
 		AgentActor->SetAgentHandle(Handle);
+		// Resolve Blueprint settings once. The 30 Hz loop reads only cached POD.
+		CachePhysicalFeedbackSettings(
+			AgentActor,
+			Impl->Agents[AgentIndex].PhysicalFeedbackTolerances);
 		// Publish the current authored pose/root before this agent applies its
 		// PrePhysics forces. Without this dependency their order was scheduler-
 		// dependent and the physical drive intermittently consumed a stale frame.
@@ -1479,46 +1741,86 @@ void AProphecyNNLocomotionManager::SpawnVisualComponents()
 			-FMath::RadiansToDegrees(Impl->Agents[AgentIndex].CurRootYaw));
 
 		USkeletalMeshComponent* Component = AgentActor->GetAgentMesh();
-		if (!Component->GetSkeletalMeshAsset())
+		USkeletalMeshComponent* PoseReferenceMesh = AgentActor->GetPoseReferenceMesh();
+		if (!PoseReferenceMesh || !PoseReferenceMesh->GetSkeletalMeshAsset())
 		{
 			UE_LOG(LogProphecyNNLocomotion, Error,
-				TEXT("Agent class %s has no skeletal mesh (agent %d)."), *GetNameSafe(SpawnClass), AgentIndex);
+				TEXT("Agent class %s has no pose-reference skeletal mesh (agent %d)."), *GetNameSafe(SpawnClass), AgentIndex);
 			if (!bUsePlacedAgent) AgentActor->Destroy();
 			break;
 		}
-		Component->SetAnimInstanceClass(UProphecyNNLocomotionAnimInstance::StaticClass());
-		Component->AddTickPrerequisiteActor(this);
-		Component->SetGenerateOverlapEvents(false);
-		Component->SetCastShadow(bCastShadows);
-		Component->SetReceivesDecals(false);
-		Component->SetAffectDistanceFieldLighting(false);
-		Component->SetAffectDynamicIndirectLighting(false);
-		Component->SetVisibleInRayTracing(false);
-		Component->SetForcedLOD(FMath::Max(0, ForcedMeshLOD));
-		Component->SetDisablePostProcessBlueprint(true);
-		// /Game/locomotion is the exact single-agent Stepper-viewer parity surface. Do not let
-		// visibility or URO insert a second, engine-owned sampling/interpolation
-		// layer there; the NN anim proxy already renders the 30 Hz publications.
-		Component->VisibilityBasedAnimTickOption = Impl->bSimpleLocomotionTest
-			? EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones
-			: EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
-		Component->OnAnimUpdateRateParamsCreated.BindStatic(&ConfigureAgentAnimUpdateRate);
-		Component->AddTickPrerequisiteActor(this);
-		ConfigureAgentAnimUpdateRate(Component->AnimUpdateRateParams);
-		Component->bEnableUpdateRateOptimizations = !Impl->bSimpleLocomotionTest;
-		Component->bComponentUseFixedSkelBounds = true;
+		const int32 PoseAgentId = PoseStoreAgentBase + AgentIndex;
+		const float PoseIntervalSeconds = 1.0f / FMath::Max(1.0f, NNUpdateHz);
+		const bool bInterpolatePose =
+			!FParse::Param(FCommandLine::Get(), TEXT("ProphecyNNDisableViewerGlobalInterpolation"));
+		AgentActor->ConfigureNNPoseDataSource(PoseAgentId, PoseIntervalSeconds, bInterpolatePose);
 		if (AgentActor->bManualNNPoseApplication)
 		{
+			Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Component->SetGenerateOverlapEvents(false);
+			// The inherited Mesh is an agent tick prerequisite. It must remain empty
+			// even in debug builds, otherwise merely visualizing the target changes
+			// when the PrePhysics Blueprint force pass runs.
 			Component->SetComponentTickEnabled(false);
+			Component->SetVisibility(false, true);
+			Component->SetHiddenInGame(true, true);
+			Component->SetAnimInstanceClass(nullptr);
+			Component->SetSkeletalMesh(nullptr, false);
+			if (AgentActor->bShowKinematicDebugMesh)
+			{
+				// A separate visualization-only component consumes the finalized pose
+				// store independently. Nothing in the agent or physical controller has
+				// this component as a tick prerequisite.
+				const FName DebugMeshName(*FString::Printf(
+					TEXT("KinematicDebugMesh_%d"), AgentIndex));
+				UPoseableMeshComponent* DebugMesh = NewObject<UPoseableMeshComponent>(
+					this, DebugMeshName);
+				AddInstanceComponent(DebugMesh);
+				DebugMesh->SetupAttachment(AgentActor->GetAgentCapsule());
+				DebugMesh->SetRelativeTransform(Component->GetRelativeTransform());
+				DebugMesh->SetSkinnedAssetAndUpdate(PoseReferenceMesh->GetSkeletalMeshAsset(), false);
+				DebugMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				DebugMesh->SetGenerateOverlapEvents(false);
+				DebugMesh->SetCanEverAffectNavigation(false);
+				DebugMesh->SetCastShadow(false);
+				DebugMesh->SetReceivesDecals(false);
+				DebugMesh->SetAffectDistanceFieldLighting(false);
+				DebugMesh->SetAffectDynamicIndirectLighting(false);
+				DebugMesh->SetVisibleInRayTracing(false);
+				DebugMesh->RegisterComponent();
+				DebugMesh->SetComponentTickEnabled(false);
+			}
 			AgentActor->SetActorTickEnabled(true);
+		}
+		else
+		{
+			Component->SetAnimInstanceClass(UProphecyNNLocomotionAnimInstance::StaticClass());
+			Component->AddTickPrerequisiteActor(this);
+			Component->SetGenerateOverlapEvents(false);
+			Component->SetCastShadow(bCastShadows);
+			Component->SetReceivesDecals(false);
+			Component->SetAffectDistanceFieldLighting(false);
+			Component->SetAffectDynamicIndirectLighting(false);
+			Component->SetVisibleInRayTracing(false);
+			Component->SetForcedLOD(FMath::Max(0, ForcedMeshLOD));
+			Component->SetDisablePostProcessBlueprint(true);
+			// /Game/locomotion is the exact single-agent Stepper-viewer parity surface. Do not let
+			// visibility or URO insert a second, engine-owned sampling/interpolation
+			// layer there; the NN anim proxy already renders the 30 Hz publications.
+			Component->VisibilityBasedAnimTickOption = Impl->bSimpleLocomotionTest
+				? EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones
+				: EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+			Component->OnAnimUpdateRateParamsCreated.BindStatic(&ConfigureAgentAnimUpdateRate);
+			ConfigureAgentAnimUpdateRate(Component->AnimUpdateRateParams);
+			Component->bEnableUpdateRateOptimizations = !Impl->bSimpleLocomotionTest;
+			Component->bComponentUseFixedSkelBounds = true;
 		}
 		AgentActor->SetPhysicalDriveMode(InitialPhysicalDriveMode);
 		if (UProphecyNNLocomotionAnimInstance* Anim = Cast<UProphecyNNLocomotionAnimInstance>(Component->GetAnimInstance()))
 		{
-			Anim->AgentId = PoseStoreAgentBase + AgentIndex;
-			Anim->NNPoseIntervalSeconds = 1.0f / NNUpdateHz;
-			Anim->bUseViewerGlobalPoseInterpolation =
-				!FParse::Param(FCommandLine::Get(), TEXT("ProphecyNNDisableViewerGlobalInterpolation"));
+			Anim->AgentId = PoseAgentId;
+			Anim->NNPoseIntervalSeconds = PoseIntervalSeconds;
+			Anim->bUseViewerGlobalPoseInterpolation = bInterpolatePose;
 		}
 		AgentActors.Add(AgentActor);
 		MeshComponents.Add(Component);
@@ -1549,7 +1851,15 @@ void AProphecyNNLocomotionManager::ResamplePhysicalAgents()
 	for (int32 AgentIndex = 0; AgentIndex < AgentActors.Num(); ++AgentIndex)
 	{
 		const AProphecyAgent* AgentActor = AgentActors[AgentIndex];
-		if (AgentActor && AgentActor->GetSimulationMode() == EProphecyAgentSimulationMode::Physical)
+		const USkeletalMeshComponent* PoseMesh = AgentActor
+			? AgentActor->GetPoseReferenceMesh()
+			: nullptr;
+		const bool bManualPhysicalMeshIsSimulating = AgentActor &&
+			AgentActor->bManualNNPoseApplication && PoseMesh &&
+			PoseMesh->IsAnySimulatingPhysics();
+		if (AgentActor &&
+			(AgentActor->GetSimulationMode() == EProphecyAgentSimulationMode::Physical ||
+			 bManualPhysicalMeshIsSimulating))
 		{
 			ResamplePhysicalAgentState(AgentIndex);
 		}
@@ -1568,6 +1878,24 @@ bool AProphecyNNLocomotionManager::ResamplePhysicalAgentState(int32 AgentIndex)
 	{
 		return false;
 	}
+	const TArrayView<FTransform> KinematicTransforms = TransformSlice(
+		Impl->ComponentTransformBuffer, AgentIndex);
+	const FPhysicalFeedbackTolerance* Tolerances =
+		Impl->Agents[AgentIndex].PhysicalFeedbackTolerances;
+	ApplyPhysicalFeedbackTolerance(ActualTransforms[0], KinematicTransforms[0],
+		Tolerances[int32(EPhysicalFeedbackChannel::Pelvis)]);
+	ApplyPhysicalFeedbackTolerance(ActualTransforms[1], KinematicTransforms[1],
+		Tolerances[int32(EPhysicalFeedbackChannel::LeftThigh)]);
+	ApplyPhysicalFeedbackTolerance(ActualTransforms[3], KinematicTransforms[3],
+		Tolerances[int32(EPhysicalFeedbackChannel::LeftFoot)]);
+	ApplyPhysicalFeedbackTolerance(ActualTransforms[4], KinematicTransforms[4],
+		Tolerances[int32(EPhysicalFeedbackChannel::LeftToe)]);
+	ApplyPhysicalFeedbackTolerance(ActualTransforms[5], KinematicTransforms[5],
+		Tolerances[int32(EPhysicalFeedbackChannel::RightThigh)]);
+	ApplyPhysicalFeedbackTolerance(ActualTransforms[7], KinematicTransforms[7],
+		Tolerances[int32(EPhysicalFeedbackChannel::RightFoot)]);
+	ApplyPhysicalFeedbackTolerance(ActualTransforms[8], KinematicTransforms[8],
+		Tolerances[int32(EPhysicalFeedbackChannel::RightToe)]);
 
 	float* Sample = StateSlice(Impl->PhysicalStateBuffer, AgentIndex);
 	const FTransform& Pelvis = ActualTransforms[0];
@@ -1836,7 +2164,7 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 			SkeletonLimbOffsets[LimbIndex][SegmentIndex] = Impl->LocalOffsets[BodyIndex];
 			if (AgentActors.IsValidIndex(AgentIndex) && IsValid(AgentActors[AgentIndex]))
 			{
-				const USkeletalMeshComponent* AgentMesh = AgentActors[AgentIndex]->GetAgentMesh();
+				const USkeletalMeshComponent* AgentMesh = AgentActors[AgentIndex]->GetPoseReferenceMesh();
 				const USkeletalMesh* SkeletalMesh = AgentMesh ? AgentMesh->GetSkeletalMeshAsset() : nullptr;
 				if (SkeletalMesh)
 				{
@@ -2171,6 +2499,11 @@ void AProphecyNNLocomotionManager::InitializeSimpleTestCamera()
 	if (UCameraComponent* CameraComponent = Camera->GetCameraComponent())
 	{
 		CameraComponent->SetFieldOfView(72.0f);
+		if (FObjectPropertyBase* AgentCameraProperty = FindFProperty<FObjectPropertyBase>(
+			AgentActors[0]->GetClass(), TEXT("AgentCamera")))
+		{
+			AgentCameraProperty->SetObjectPropertyValue_InContainer(AgentActors[0], CameraComponent);
+		}
 	}
 
 	Impl->SimpleTestPlayerController = GetWorld()->GetFirstPlayerController();
@@ -2297,7 +2630,7 @@ void AProphecyNNLocomotionManager::CaptureAbsoluteMotionAuditFrame()
 	}
 
 	const AProphecyAgent* AgentActor = AgentActors[0];
-	const USkeletalMeshComponent* Mesh = AgentActor->GetAgentMesh();
+	const USkeletalMeshComponent* Mesh = AgentActor->GetPoseReferenceMesh();
 	if (!Mesh || !Mesh->IsRegistered())
 	{
 		return;

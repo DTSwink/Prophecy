@@ -7,6 +7,7 @@
 #include "ProphecyAgent.generated.h"
 
 class UCapsuleComponent;
+class UCameraComponent;
 class UPrimitiveComponent;
 class USkeletalMeshComponent;
 
@@ -84,6 +85,7 @@ public:
 	AProphecyAgent();
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** True only for the possessed player shell; exposed for Blueprint event logic. */
@@ -134,6 +136,16 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent")
 	USkeletalMeshComponent* GetAgentMesh() const { return Mesh; }
 
+	/** Returns the camera component currently rendering this agent's player view. */
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Camera", meta = (DisplayName = "Get Agent Camera"))
+	UCameraComponent* GetAgentCamera() const;
+
+	/** The one rendered/simulated mesh used as this agent's skeleton reference. */
+	USkeletalMeshComponent* GetPoseReferenceMesh() const;
+
+	/** Binds this shell directly to the manager's pose-store data, without requiring an AnimInstance. */
+	void ConfigureNNPoseDataSource(int32 AgentId, float PoseIntervalSeconds, bool bInterpolatePose);
+
 	/**
 	 * Copies the already-published NN pose for Blueprint controllers.
 	 * FutureWorldTransforms are the exact next 30 Hz targets; InterpolatedWorldTransforms
@@ -153,6 +165,10 @@ public:
 	/** Disable automatic skeletal evaluation so Blueprint decides when the NN pose is applied. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Prophecy|Agent|Manual NN Pose")
 	bool bManualNNPoseApplication = false;
+
+	/** Debug only: render the data-only authored pose as a second kinematic mesh. Zero cost while disabled. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Agent|Debug", meta = (DisplayName = "Show Kinematic Debug Mesh"))
+	bool bShowKinematicDebugMesh = false;
 
 	/** Stable authored mesh-to-capsule transform; Chaos overwrites the live relative transform while ragdolling. */
 	FTransform GetAuthoredMeshRelativeTransform() const

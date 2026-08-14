@@ -12,6 +12,7 @@ public class GameAnimationSample3 : ModuleRules
 		{
 			"Core",
 			"CoreUObject",
+			"Chaos",
 			"Engine",
 			"AnimationCore",
 			"InputCore",

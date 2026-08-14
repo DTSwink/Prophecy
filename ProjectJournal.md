@@ -472,8 +472,8 @@ Request a settled live screenshot:
 ## 2026-07-11 - NN Locomotion Runtime Checkpoint (Stopped Early)
 
 - Work paused early at the user's request so the laptop could be used. PIE was stopped. The performance investigation is not finished and the 120 FPS target has not been reached.
-- Accepted Run policy source is epoch 47200 from `C:\Users\singerie\Documents\Cursor\stepper\training\runs\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3\checkpoints\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3_init.pt`, SHA-256 `CCC03FEE15E825EBCBCD24F9E71934D515B5133E760114ABE664445042D379C1`. Accepted rollout is `C:\Users\singerie\Documents\Cursor\stepper\training\ik\rollout_traces\20260618_final_policy_runF`. Accepted Walk source is `C:\Users\singerie\Documents\Cursor\stepper\training\runs\20260608_222748_ik_resume_inertiax10_latest\checkpoints\20260608_222748_ik_resume_inertiax10_latest_latest.pt`, SHA-256 `5FE44CA120CF79BF34CDCAA4F7227C205A35039322541AAB2E100637A9176A3`; `training/ik/official_walk_omni_baseline.json` is the Git authority selecting it.
-- `Tools/NN/ExportProphecyLowerBodyPolicy.py` exports the 152-input/43-output raw policies. Run uses `Content/locomotion/NN/prophecy_lower_body_run_b100.onnx` plus `prophecy_lower_body_runtime.json`, ONNX SHA-256 `75D9907B6FD62534CD4DC4FC7ED05C9E2DD32D1C173D4530044965887359C209`. Walk uses `prophecy_lower_body_walk_b100.onnx` plus `prophecy_lower_body_walk_runtime.json`, ONNX SHA-256 `C20D3C2BC04528409CB2D680AEE50A5FAC95C98DA3529EC25103F36D9CB868BE`. Native C++ retains each policy's exact seed geometry, deterministic recurrent cleanup, root rebase, pin semantics, foot-roll integration, and lower-body IK contract. Run uses continuous independent sigmoid pins; Walk uses its trained legacy selected-foot logit rule without the Run height gate.
+- Accepted Run policy source is epoch 47200 from `C:\Users\singerie\Documents\Cursor\stepper\training\runs\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3\checkpoints\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3_init.pt`, SHA-256 `CCC03FEE15E825EBCBCD24F9E71934D515B5133E760114ABE664445042D379C1`. Accepted rollout is `C:\Users\singerie\Documents\Cursor\stepper\training\ik\rollout_traces\20260618_final_policy_runF`. The accepted Walk source is the July 5 fine-tune at `C:\Users\singerie\Documents\Cursor\stepper\training\runs\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final\checkpoints\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final_latest.pt`, SHA-256 `8BAE21C5B3159D69726CD98867C85000B51D566012708EED36374B2B5A9D4C79`. It supersedes the June initializer as the final game Walk policy.
+- `Tools/NN/ExportProphecyLowerBodyPolicy.py` exports the 152-input/43-output raw policies. Run uses `Content/locomotion/NN/prophecy_lower_body_run_b100.onnx` plus `prophecy_lower_body_runtime.json`, ONNX SHA-256 `75D9907B6FD62534CD4DC4FC7ED05C9E2DD32D1C173D4530044965887359C209`. Accepted Walk uses `Content/locomotion/NN/prophecy_lower_body_walk_july5_b100.onnx` plus `prophecy_lower_body_walk_july5_runtime.json`, ONNX SHA-256 `549C1AC57971BE33AD72BB63EA5E9CA9D60E892027C3B5A8093479FB3A71949F`. Native C++ retains each policy's exact seed geometry, deterministic recurrent cleanup, root rebase, pin semantics, foot-roll integration, and lower-body IK contract. Run uses continuous independent sigmoid pins; Walk uses its trained legacy selected-foot logit rule without the Run height gate.
 - Added transient `AProphecyNNLocomotionManager` plus `UProphecyNNLocomotionWorldSubsystem`. Opening `/Game/locomotion` and entering PIE auto-spawns one transient manager and 100 transient no-tick `AProphecyAgent` pawns; none are saved into the level and crowd pawns receive no controller. Contiguous `[100,152]` NNE batches run only the policy needed by a homogeneous crowd and both policies only for a mixed Walk/Run crowd; gait seeds are staggered. `AProphecyAgent` is intentionally an `APawn`, not `ACharacter`, so the one player agent can be possessed without giving the unpossessed crowd `CharacterMovementComponent`, `AIController`, Behavior Tree, or per-agent actor-tick overhead.
 - Added `UProphecyNNLocomotionAnimInstance`. Default upper body is reference-pose stiff while pelvis/legs use the NN pose. Optional arbitrary compatible `UAnimSequenceBase` overlay drives pelvis and upper body, reapplies NN legs, and blends in/out with `OverlayBlendSeconds`.
 - Agent identity is a stable `{index,generation}` `FProphecyAgentHandle` resolved by the manager. The manager owns intent and simulation state; an agent pawn is the occasional gameplay/debug/event shell. Its 30 cm radius, 86 cm half-height capsule exposes the authoritative low point as the root position while the mesh stays grounded with an equal negative local Z offset.
@@ -1648,12 +1648,11 @@ Request a settled live screenshot:
   separately matches an exact four-step replay to `0.00000602 m`; compared with
   the original 60-step archive, the intentional four-step approximation
   accumulates at most `0.00201 m`.
-- Walk uses the accepted June checkpoint and the committed `WalkF` seed clip,
-  not a retrained or altered network. Across all 119 predictions at the
-  production four steps, maximum error was `0.00000486 m` in a rendered
-  lower-body position, `0.0000162` in a rendered basis component,
-  `0.0000111` in recurrent state, and `0.0000208` in raw output. Walk pin
-  probabilities/decisions matched within `5.96e-8`.
+- Walk now uses the accepted July 5 fine-tune and the committed `WalkF` seed
+  clip. Its checkpoint is `20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final_latest.pt`
+  with SHA-256 `8BAE21C5B3159D69726CD98867C85000B51D566012708EED36374B2B5A9D4C79`;
+  the exact Unreal export is `prophecy_lower_body_walk_july5_b100.onnx` with
+  SHA-256 `549C1AC57971BE33AD72BB63EA5E9CA9D60E892027C3B5A8093479FB3A71949F`.
 - Initial visual placement now translates world-root histories without treating
   spawn placement as a collision correction. Normal successful capsule motion
   no longer rebases recurrent pose state every render frame; only a real sweep
@@ -1711,8 +1710,8 @@ Request a settled live screenshot:
 ## 2026-08-12 - Walk Viewer Is the Unreal Pose Authority
 
 - The standalone viewer and trained networks remain unchanged. Walk parity uses
-  only the approved June checkpoint selected by
-  `prophecy_lower_body_walk_runtime.json` and its committed `WalkF` seed clip;
+  the accepted July 5 fine-tune selected by
+  `prophecy_lower_body_walk_july5_runtime.json` and its committed `WalkF` seed clip;
   the later `20260811_195921` checkpoint is an upper-pose experiment and is not
   a locomotion runtime input.
 - `/Game/locomotion` no longer enables Unreal animation update-rate skipping or
@@ -1857,15 +1856,18 @@ Request a settled live screenshot:
   It can also be placed directly in any map with `Auto Possess Player` enabled:
   on PIE it creates the one-agent locomotion runtime, registers that exact placed
   pawn as agent `0`, preserves its placed root transform, and creates the orbit
-  camera. It does not spawn a duplicate agent. The runtime remains one Kinematic
-  agent with no comparison or Physical agent.
+  camera. It does not spawn a duplicate agent or comparison ghost.
 - With an empty Blueprint Event Graph, the manager continues moving the capsule
   root but automatic skeletal evaluation is disabled, so every limb remains at
   its unchanged local pose while the complete skeleton follows root motion.
-- `Read NN Future World Pose` is Blueprint-pure and exposes the nine published
-  bone names, the exact next 30-Hz authored transforms in world space, the
-  current presentation-interpolated world transforms, and interpolation alpha.
-  It reads the existing pose publication and performs no extra inference.
+- `Read NN Future World Pose` is Blueprint-pure. For the manual physical follower
+  it exposes all `22` Physics Asset body names, the exact next 30-Hz authored
+  transforms in world space, the current presentation-interpolated world
+  transforms, and interpolation alpha. NN-authored bones override a hierarchy
+  reconstructed from the skeletal asset's static reference pose, so upper-body
+  targets require no second skeletal component, animation instance, or skeletal
+  evaluation. The function reads the existing pose publication and performs no
+  extra inference.
 - `Apply NN Pose Kinematically(Delta Seconds)` is the explicit Blueprint-callable
   skeletal evaluation step. Calling it from Blueprint Tick reproduces the
   existing Kinematic presentation. The manager is its tick prerequisite, so a
@@ -1886,11 +1888,18 @@ Request a settled live screenshot:
 ## 2026-08-13 - Manual Physical Follower Checkpoint
 
 - `/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent` contains the accepted
-  Blueprint physical-follower checkpoint. Its kinematic target is evaluated
-  before correction, and every simulated body receives additive linear and
-  angular delta velocity once per frame. Linear correction uses the rigid-body
-  velocity at the tracked bone's world point, including angular motion around
-  the center of mass; the spring helpers subtract current velocity exactly once.
+  Blueprint physical-follower checkpoint. `PhysicalMesh` is the only component
+  with a skeletal asset and is the only evaluated, rendered, and simulated
+  skeleton. The inherited native `Mesh` has no skeletal asset, animation
+  instance, tick, collision, or visibility. Every simulated body receives
+  additive linear and angular delta velocity once per frame from the data-only
+  target pose. Linear correction uses the rigid-body velocity at the tracked
+  bone's world point, including angular motion around the center of mass; the
+  spring helpers subtract current velocity exactly once.
+- `Show Kinematic Debug Mesh` is a Blueprint-editable agent debug option and
+  defaults to off. Off keeps the native `Mesh` assetless with no tick or animation
+  instance. On temporarily renders that component from the same pose store as a
+  collision-free, non-simulated target overlay; it is not a production follower.
 - The one-agent locomotion test enables the existing final calf-length pass at
   multiplier `1.0`, so the published target has the same rigid lower-leg length
   as the Physics Asset before Chaos follows it. The general manager property

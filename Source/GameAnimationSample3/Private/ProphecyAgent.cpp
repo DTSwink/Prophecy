@@ -6,6 +6,9 @@
 
 #include "Chaos/ChaosConstraintSettings.h"
 #include "Chaos/ChaosEngineInterface.h"
+#include "PBDRigidsSolver.h"
+#include "Chaos/SimCallbackObject.h"
+#include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -13,12 +16,17 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Volume.h"
+#include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
 #include "PhysicsEngine/BodyInstance.h"
 #include "PhysicsEngine/ConstraintInstance.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "PhysicsEngine/PhysicsConstraintTemplate.h"
+#include "PhysicsEngine/PhysicsSettings.h"
 #include "PhysicsEngine/SkeletalBodySetup.h"
+#include "Physics/Experimental/PhysScene_Chaos.h"
+#include "PhysicsProxy/SingleParticlePhysicsProxy.h"
+#include "Misc/ScopeLock.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -37,6 +45,90 @@ namespace
 		TEXT("prophecy.Physical.AuditManualFollower"),
 		0,
 		TEXT("At the start of each ProphecyAgent PrePhysics tick, measure the Blueprint PhysicalMesh against the exact kinematic targets saved after the preceding tick."));
+
+	struct FNNPoseDataSource
+	{
+		int32 AgentId = INDEX_NONE;
+		float PoseIntervalSeconds = 1.0f / 30.0f;
+		bool bInterpolatePose = true;
+	};
+
+	static TMap<TWeakObjectPtr<AProphecyAgent>, FNNPoseDataSource> NNPoseDataSources;
+
+	struct FManualFollowerSubstepBody
+	{
+		FPhysicsActorHandle Actor = nullptr;
+		FVector TargetPosition = FVector::ZeroVector;
+		FQuat TargetRotation = FQuat::Identity;
+	};
+
+	struct FManualFollowerSubstepTargets
+	{
+		TArray<FManualFollowerSubstepBody, TInlineAllocator<32>> Bodies;
+		float MaximumSubstepSeconds = 1.0f / 60.0f;
+	};
+
+	class FManualFollowerSubstepCallback final : public Chaos::TSimCallbackObject<
+		Chaos::FSimCallbackNoInput,
+		Chaos::FSimCallbackNoOutput,
+		Chaos::ESimCallbackOptions::PreIntegrate>
+	{
+	public:
+		void PublishTargets_External(FManualFollowerSubstepTargets&& InTargets)
+		{
+			FScopeLock ScopeLock(&TargetLock);
+			Targets = MoveTemp(InTargets);
+		}
+
+	private:
+		virtual void OnPreSimulate_Internal() override
+		{
+			// Registration always enters the frame callback path once. The follower
+			// deliberately performs all work in the per-substep hook below.
+		}
+
+		virtual void OnPreIntegrate_Internal() override
+		{
+			FScopeLock ScopeLock(&TargetLock);
+			const float StepSeconds = FMath::Max(Targets.MaximumSubstepSeconds, UE_SMALL_NUMBER);
+			for (const FManualFollowerSubstepBody& Body : Targets.Bodies)
+			{
+				Chaos::FRigidBodyHandle_Internal* Rigid = Body.Actor
+					? Body.Actor->GetPhysicsThreadAPI()
+					: nullptr;
+				if (!Rigid)
+				{
+					continue;
+				}
+
+				const FVector LinearVelocity = (Body.TargetPosition - FVector(Rigid->X())) / StepSeconds;
+				Rigid->SetV(Chaos::FVec3(LinearVelocity));
+
+				FQuat RotationDelta = Body.TargetRotation * FQuat(Rigid->R()).Inverse();
+				RotationDelta.Normalize();
+				if (RotationDelta.W < 0.0f)
+				{
+					RotationDelta = RotationDelta * -1.0f;
+				}
+				FVector Axis = FVector::ForwardVector;
+				float AngleRadians = 0.0f;
+				RotationDelta.ToAxisAndAngle(Axis, AngleRadians);
+				const FVector AngularVelocity = Axis.GetSafeNormal() * (AngleRadians / StepSeconds);
+				Rigid->SetW(Chaos::FVec3(AngularVelocity));
+			}
+		}
+
+		FCriticalSection TargetLock;
+		FManualFollowerSubstepTargets Targets;
+	};
+
+	struct FManualFollowerSubstepState
+	{
+		FManualFollowerSubstepCallback* Callback = nullptr;
+		FPhysScene* PhysicsScene = nullptr;
+	};
+
+	static TMap<TWeakObjectPtr<AProphecyAgent>, FManualFollowerSubstepState> ManualFollowerSubstepStates;
 
 	struct FManualFollowerErrorAggregate
 	{
@@ -97,6 +189,95 @@ namespace
 			}
 		}
 		return nullptr;
+	}
+
+	void ReleaseManualFollowerSubstepCallback(AProphecyAgent* Agent)
+	{
+		FManualFollowerSubstepState State;
+		if (!ManualFollowerSubstepStates.RemoveAndCopyValue(Agent, State) || !State.Callback)
+		{
+			return;
+		}
+		if (State.PhysicsScene && State.PhysicsScene->GetSolver())
+		{
+			State.PhysicsScene->GetSolver()->UnregisterAndFreeSimCallbackObject_External(State.Callback);
+		}
+	}
+
+	void PublishManualFollowerSubstepTarget(AProphecyAgent* Agent, float DeltaSeconds)
+	{
+		USkeletalMeshComponent* PhysicalMesh = FindManualPhysicalMesh(Agent);
+		UWorld* World = Agent ? Agent->GetWorld() : nullptr;
+		FPhysScene* PhysicsScene = World ? World->GetPhysicsScene() : nullptr;
+		if (!PhysicalMesh || !PhysicalMesh->IsAnySimulatingPhysics() || !PhysicsScene || !PhysicsScene->GetSolver())
+		{
+			ReleaseManualFollowerSubstepCallback(Agent);
+			return;
+		}
+
+		TArray<FName> BoneNames;
+		TArray<FTransform> FutureWorldTransforms;
+		TArray<FTransform> InterpolatedWorldTransforms;
+		float InterpolationAlpha = 1.0f;
+		if (!Agent->ReadNNFutureWorldPose(
+			BoneNames,
+			FutureWorldTransforms,
+			InterpolatedWorldTransforms,
+			InterpolationAlpha))
+		{
+			return;
+		}
+
+		FManualFollowerSubstepState* State = ManualFollowerSubstepStates.Find(Agent);
+		if (!State || State->PhysicsScene != PhysicsScene)
+		{
+			ReleaseManualFollowerSubstepCallback(Agent);
+			State = &ManualFollowerSubstepStates.FindOrAdd(Agent);
+			State->PhysicsScene = PhysicsScene;
+			State->Callback = PhysicsScene->GetSolver()->
+				CreateAndRegisterSimCallbackObject_External<FManualFollowerSubstepCallback>();
+		}
+		else if (!State->Callback)
+		{
+			State->Callback = PhysicsScene->GetSolver()->
+				CreateAndRegisterSimCallbackObject_External<FManualFollowerSubstepCallback>();
+		}
+
+		if (!State->Callback)
+		{
+			return;
+		}
+
+		FManualFollowerSubstepTargets Targets;
+		const UPhysicsSettings* Settings = UPhysicsSettings::Get();
+		Targets.MaximumSubstepSeconds = FMath::Max(
+			UE_SMALL_NUMBER,
+			Settings && Settings->bSubstepping
+				? FMath::Min(DeltaSeconds, Settings->MaxSubstepDeltaTime)
+				: DeltaSeconds);
+		Targets.Bodies.Reserve(BoneNames.Num());
+		for (int32 BoneIndex = 0; BoneIndex < BoneNames.Num(); ++BoneIndex)
+		{
+			FBodyInstance* Body = PhysicalMesh->GetBodyInstance(BoneNames[BoneIndex]);
+			if (!Body || !Body->IsInstanceSimulatingPhysics() || !Body->GetPhysicsActor() ||
+				!InterpolatedWorldTransforms.IsValidIndex(BoneIndex))
+			{
+				continue;
+			}
+			FManualFollowerSubstepBody& OutputBody = Targets.Bodies.AddDefaulted_GetRef();
+			OutputBody.Actor = Body->GetPhysicsActor();
+			// Chaos integrates the rigid body frame, not the skeletal bone frame.
+			// Preserve the PhysicsAsset-authored bone-to-body offset when converting
+			// this frame's finalized bone target to its exact rigid-body endpoint.
+			const FTransform ActualBoneWorld = PhysicalMesh->GetSocketTransform(
+				BoneNames[BoneIndex], RTS_World);
+			const FTransform BodyFromBone = Body->GetUnrealWorldTransform().GetRelativeTransform(
+				ActualBoneWorld);
+			const FTransform TargetBodyWorld = BodyFromBone * InterpolatedWorldTransforms[BoneIndex];
+			OutputBody.TargetPosition = TargetBodyWorld.GetLocation();
+			OutputBody.TargetRotation = TargetBodyWorld.GetRotation();
+		}
+		State->Callback->PublishTargets_External(MoveTemp(Targets));
 	}
 
 	void AuditManualPhysicalFollowerBeforeTick(AProphecyAgent* Agent)
@@ -219,9 +400,20 @@ namespace
 
 	void CaptureManualPhysicalFollowerEndpointAfterTick(AProphecyAgent* Agent, float DeltaSeconds)
 	{
-		USkeletalMeshComponent* TargetMesh = Agent->GetAgentMesh();
 		USkeletalMeshComponent* PhysicalMesh = FindManualPhysicalMesh(Agent);
-		if (!TargetMesh || !PhysicalMesh || !PhysicalMesh->IsAnySimulatingPhysics())
+		if (!PhysicalMesh || !PhysicalMesh->IsAnySimulatingPhysics())
+		{
+			return;
+		}
+		TArray<FName> BoneNames;
+		TArray<FTransform> FutureWorldTransforms;
+		TArray<FTransform> InterpolatedWorldTransforms;
+		float InterpolationAlpha = 1.0f;
+		if (!Agent->ReadNNFutureWorldPose(
+			BoneNames,
+			FutureWorldTransforms,
+			InterpolatedWorldTransforms,
+			InterpolationAlpha))
 		{
 			return;
 		}
@@ -231,7 +423,13 @@ namespace
 		State.PreviousEndpointTargets.Reserve(UE_ARRAY_COUNT(ManualFollowerAuditBones));
 		for (const FName BoneName : ManualFollowerAuditBones)
 		{
-			State.PreviousEndpointTargets.Add(TargetMesh->GetSocketTransform(BoneName, RTS_World));
+			const int32 PoseIndex = BoneNames.IndexOfByKey(BoneName);
+			if (!InterpolatedWorldTransforms.IsValidIndex(PoseIndex))
+			{
+				State.PreviousEndpointTargets.Reset();
+				return;
+			}
+			State.PreviousEndpointTargets.Add(InterpolatedWorldTransforms[PoseIndex]);
 		}
 		State.TargetFrame = GFrameCounter;
 		State.PreviousStepDeltaSeconds = DeltaSeconds;
@@ -581,6 +779,14 @@ namespace
 	}
 }
 
+UCameraComponent* AProphecyAgent::GetAgentCamera() const
+{
+	const UWorld* World = GetWorld();
+	const APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+	AActor* ViewTarget = PlayerController ? PlayerController->GetViewTarget() : nullptr;
+	return ViewTarget ? ViewTarget->FindComponentByClass<UCameraComponent>() : nullptr;
+}
+
 AProphecyAgent::AProphecyAgent()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -677,6 +883,42 @@ void AProphecyAgent::BeginPlay()
 	}
 }
 
+void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	ReleaseManualFollowerSubstepCallback(this);
+	NNPoseDataSources.Remove(this);
+	ManualFollowerAuditStates.Remove(this);
+	Super::EndPlay(EndPlayReason);
+}
+
+USkeletalMeshComponent* AProphecyAgent::GetPoseReferenceMesh() const
+{
+	if (bManualNNPoseApplication)
+	{
+		TArray<USkeletalMeshComponent*> SkeletalMeshes;
+		GetComponents(SkeletalMeshes);
+		for (USkeletalMeshComponent* Candidate : SkeletalMeshes)
+		{
+			if (Candidate && Candidate != Mesh && Candidate->GetFName() == TEXT("PhysicalMesh"))
+			{
+				return Candidate;
+			}
+		}
+	}
+	return Mesh;
+}
+
+void AProphecyAgent::ConfigureNNPoseDataSource(
+	int32 AgentId,
+	float PoseIntervalSeconds,
+	bool bInterpolatePose)
+{
+	FNNPoseDataSource& Source = NNPoseDataSources.FindOrAdd(this);
+	Source.AgentId = AgentId;
+	Source.PoseIntervalSeconds = FMath::Max(0.001f, PoseIntervalSeconds);
+	Source.bInterpolatePose = bInterpolatePose;
+}
+
 void AProphecyAgent::Tick(float DeltaSeconds)
 {
 	const bool bAuditManualFollower =
@@ -689,6 +931,13 @@ void AProphecyAgent::Tick(float DeltaSeconds)
 	}
 
 	Super::Tick(DeltaSeconds);
+
+	if (bManualNNPoseApplication)
+	{
+		// Blueprint has finalized this frame's data-only kinematic target. Publish it
+		// now so every Chaos substep in the same frame converges to that same instant.
+		PublishManualFollowerSubstepTarget(this, DeltaSeconds);
+	}
 
 	if (bAuditManualFollower)
 	{
@@ -720,10 +969,13 @@ bool AProphecyAgent::ReadNNFutureWorldPose(
 	InterpolatedWorldTransforms.Reset();
 	InterpolationAlpha = 1.0f;
 
-	const UProphecyNNLocomotionAnimInstance* AnimInstance =
-		Cast<UProphecyNNLocomotionAnimInstance>(Mesh->GetAnimInstance());
+	const FNNPoseDataSource* DataSource = NNPoseDataSources.Find(this);
+	const UProphecyNNLocomotionAnimInstance* AnimInstance = DataSource
+		? nullptr
+		: Cast<UProphecyNNLocomotionAnimInstance>(Mesh->GetAnimInstance());
+	const int32 PoseAgentId = DataSource ? DataSource->AgentId : (AnimInstance ? AnimInstance->AgentId : INDEX_NONE);
 	FProphecyNNPoseSnapshot Pose;
-	if (!AnimInstance || !FProphecyNNPoseStore::GetAgentLocalPose(AnimInstance->AgentId, Pose) ||
+	if (PoseAgentId == INDEX_NONE || !FProphecyNNPoseStore::GetAgentLocalPose(PoseAgentId, Pose) ||
 		!Pose.bHasComponentWorldTransform ||
 		Pose.PreviousComponentTransforms.Num() != Pose.BoneNames.Num() ||
 		Pose.ComponentTransforms.Num() != Pose.BoneNames.Num())
@@ -731,9 +983,12 @@ bool AProphecyAgent::ReadNNFutureWorldPose(
 		return false;
 	}
 
-	const float PoseInterval = FMath::Max(0.001f, AnimInstance->NNPoseIntervalSeconds);
+	const float PoseInterval = DataSource
+		? DataSource->PoseIntervalSeconds
+		: FMath::Max(0.001f, AnimInstance->NNPoseIntervalSeconds);
 	const float FrameDeltaSeconds = GetWorld() ? GetWorld()->GetDeltaSeconds() : PoseInterval;
-	if (AnimInstance->bInterpolateNNPose && FrameDeltaSeconds < PoseInterval && GetWorld())
+	const bool bInterpolatePose = DataSource ? DataSource->bInterpolatePose : AnimInstance->bInterpolateNNPose;
+	if (bInterpolatePose && FrameDeltaSeconds < PoseInterval && GetWorld())
 	{
 		InterpolationAlpha = FMath::Clamp(
 			float((double(GetWorld()->GetTimeSeconds()) - Pose.SourceTimeSeconds) / double(PoseInterval)),
@@ -741,18 +996,91 @@ bool AProphecyAgent::ReadNNFutureWorldPose(
 			1.0f);
 	}
 
-	BoneNames = Pose.BoneNames;
-	FutureWorldTransforms.SetNumUninitialized(Pose.BoneNames.Num());
-	InterpolatedWorldTransforms.SetNumUninitialized(Pose.BoneNames.Num());
+	const bool bPhysicalFollowerData = bManualNNPoseApplication && DataSource;
+	if (bPhysicalFollowerData)
+	{
+		const USkeletalMeshComponent* PoseReferenceMesh = GetPoseReferenceMesh();
+		const USkeletalMesh* SkeletalMesh = PoseReferenceMesh
+			? PoseReferenceMesh->GetSkeletalMeshAsset()
+			: nullptr;
+		const UPhysicsAsset* PhysicsAsset = PoseReferenceMesh
+			? PoseReferenceMesh->GetPhysicsAsset()
+			: nullptr;
+		if (!SkeletalMesh || !PhysicsAsset)
+		{
+			return false;
+		}
+
+		const FReferenceSkeleton& ReferenceSkeleton = SkeletalMesh->GetRefSkeleton();
+		const TArray<FTransform>& ReferenceLocalPose = ReferenceSkeleton.GetRefBonePose();
+		TArray<FTransform, TInlineAllocator<128>> PreviousWorldPose;
+		TArray<FTransform, TInlineAllocator<128>> FutureWorldPose;
+		PreviousWorldPose.SetNumUninitialized(ReferenceSkeleton.GetNum());
+		FutureWorldPose.SetNumUninitialized(ReferenceSkeleton.GetNum());
+
+		auto BuildWorldPose = [&](const TArray<FTransform>& NNComponentPose,
+			const FTransform& ComponentWorld,
+			TArray<FTransform, TInlineAllocator<128>>& OutWorldPose)
+		{
+			for (int32 BoneIndex = 0; BoneIndex < ReferenceSkeleton.GetNum(); ++BoneIndex)
+			{
+				const FName BoneName = ReferenceSkeleton.GetBoneName(BoneIndex);
+				const int32 NNPoseIndex = Pose.BoneNames.IndexOfByKey(BoneName);
+				if (NNComponentPose.IsValidIndex(NNPoseIndex))
+				{
+					// NN outputs are already component-space transforms. They override
+					// the static hierarchy exactly as the former target mesh did.
+					OutWorldPose[BoneIndex] = NNComponentPose[NNPoseIndex] * ComponentWorld;
+					continue;
+				}
+
+				const int32 ParentIndex = ReferenceSkeleton.GetParentIndex(BoneIndex);
+				OutWorldPose[BoneIndex] = ParentIndex != INDEX_NONE
+					? ReferenceLocalPose[BoneIndex] * OutWorldPose[ParentIndex]
+					: ReferenceLocalPose[BoneIndex] * ComponentWorld;
+			}
+		};
+
+		BuildWorldPose(Pose.PreviousComponentTransforms,
+			Pose.PreviousComponentWorldTransform, PreviousWorldPose);
+		BuildWorldPose(Pose.ComponentTransforms,
+			Pose.ComponentWorldTransform, FutureWorldPose);
+
+		BoneNames.Reserve(PhysicsAsset->SkeletalBodySetups.Num());
+		FutureWorldTransforms.Reserve(PhysicsAsset->SkeletalBodySetups.Num());
+		InterpolatedWorldTransforms.Reserve(PhysicsAsset->SkeletalBodySetups.Num());
+		for (const USkeletalBodySetup* BodySetup : PhysicsAsset->SkeletalBodySetups)
+		{
+			if (!BodySetup)
+			{
+				continue;
+			}
+			const int32 BoneIndex = ReferenceSkeleton.FindBoneIndex(BodySetup->BoneName);
+			if (!PreviousWorldPose.IsValidIndex(BoneIndex) || !FutureWorldPose.IsValidIndex(BoneIndex))
+			{
+				continue;
+			}
+			BoneNames.Add(BodySetup->BoneName);
+			FutureWorldTransforms.Add(FutureWorldPose[BoneIndex]);
+			InterpolatedWorldTransforms.Add(BlendAuthoredWorldTransform(
+				PreviousWorldPose[BoneIndex], FutureWorldPose[BoneIndex], InterpolationAlpha));
+		}
+		return BoneNames.Num() > 0;
+	}
+
+	BoneNames.Reserve(Pose.BoneNames.Num());
+	FutureWorldTransforms.Reserve(Pose.BoneNames.Num());
+	InterpolatedWorldTransforms.Reserve(Pose.BoneNames.Num());
 	for (int32 Index = 0; Index < Pose.BoneNames.Num(); ++Index)
 	{
 		const FTransform PreviousWorld = Pose.PreviousComponentTransforms[Index] *
 			Pose.PreviousComponentWorldTransform;
 		const FTransform FutureWorld = Pose.ComponentTransforms[Index] *
 			Pose.ComponentWorldTransform;
-		FutureWorldTransforms[Index] = FutureWorld;
-		InterpolatedWorldTransforms[Index] = BlendAuthoredWorldTransform(
-			PreviousWorld, FutureWorld, InterpolationAlpha);
+		BoneNames.Add(Pose.BoneNames[Index]);
+		FutureWorldTransforms.Add(FutureWorld);
+		InterpolatedWorldTransforms.Add(BlendAuthoredWorldTransform(
+			PreviousWorld, FutureWorld, InterpolationAlpha));
 	}
 	return true;
 }
@@ -1525,20 +1853,26 @@ bool AProphecyAgent::SampleActualComponentPose(
 	TConstArrayView<FName> BoneNames,
 	TArrayView<FTransform> OutComponentTransforms) const
 {
-	if (BoneNames.Num() != OutComponentTransforms.Num() || !Mesh->IsRegistered())
+	const USkeletalMeshComponent* PoseMesh = GetPoseReferenceMesh();
+	if (BoneNames.Num() != OutComponentTransforms.Num() || !PoseMesh || !PoseMesh->IsRegistered())
 	{
 		return false;
 	}
 
-	const TArray<FTransform>& ComponentSpaceTransforms = Mesh->GetComponentSpaceTransforms();
+	const TArray<FTransform>& ComponentSpaceTransforms = PoseMesh->GetComponentSpaceTransforms();
+	const USceneComponent* FeedbackReference = Mesh && Mesh->IsRegistered() ? Mesh : PoseMesh;
+	const bool bNeedsReferenceConversion = PoseMesh != FeedbackReference;
 	for (int32 Index = 0; Index < BoneNames.Num(); ++Index)
 	{
-		const int32 BoneIndex = Mesh->GetBoneIndex(BoneNames[Index]);
+		const int32 BoneIndex = PoseMesh->GetBoneIndex(BoneNames[Index]);
 		if (!ComponentSpaceTransforms.IsValidIndex(BoneIndex))
 		{
 			return false;
 		}
-		OutComponentTransforms[Index] = ComponentSpaceTransforms[BoneIndex];
+		OutComponentTransforms[Index] = bNeedsReferenceConversion
+			? PoseMesh->GetSocketTransform(BoneNames[Index], RTS_World)
+				.GetRelativeTransform(FeedbackReference->GetComponentTransform())
+			: ComponentSpaceTransforms[BoneIndex];
 	}
 	return true;
 }
