@@ -61,6 +61,20 @@ enum class EProphecyAgentPhysicalDriveMode : uint8
 	RootAndJointTorque UMETA(DisplayName = "Absolute World Magnetization")
 };
 
+/** Selects one recurrent physical-feedback channel. */
+UENUM(BlueprintType)
+enum class EProphecyPhysicalFeedbackLimb : uint8
+{
+	Pelvis,
+	LeftThigh UMETA(DisplayName = "Left Thigh"),
+	LeftFoot UMETA(DisplayName = "Left Foot"),
+	LeftToe UMETA(DisplayName = "Left Toe"),
+	RightThigh UMETA(DisplayName = "Right Thigh"),
+	RightFoot UMETA(DisplayName = "Right Foot"),
+	RightToe UMETA(DisplayName = "Right Toe"),
+	Count UMETA(Hidden)
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(
 	FProphecyAgentPhysicalHitSignature,
 	AProphecyAgent*, Agent,
@@ -116,6 +130,19 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Physical")
 	EProphecyAgentPhysicalDriveMode GetPhysicalDriveMode() const { return PhysicalDriveMode; }
+
+	/** Sets the same linear and angular feedback tolerance on every feedback limb. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback",
+		meta = (DisplayName = "Set All Physical Feedback Tolerances", ClampMin = "0.0"))
+	bool SetAllPhysicalFeedbackTolerances(float LinearToleranceCm, float AngularToleranceDegrees);
+
+	/** Sets the linear and angular feedback tolerance on one selected limb. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback",
+		meta = (DisplayName = "Set Physical Feedback Tolerance", ClampMin = "0.0"))
+	bool SetPhysicalFeedbackTolerance(
+		EProphecyPhysicalFeedbackLimb Limb,
+		float LinearToleranceCm,
+		float AngularToleranceDegrees);
 
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent")
 	FVector GetRootLowPoint() const;

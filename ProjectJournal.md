@@ -1900,6 +1900,17 @@ Request a settled live screenshot:
   defaults to off. Off keeps the native `Mesh` assetless with no tick or animation
   instance. On temporarily renders that component from the same pose store as a
   collision-free, non-simulated target overlay; it is not a production follower.
+- `Prophecy Agent` exposes two runtime Blueprint setters for recurrent physical
+  feedback. `Set All Physical Feedback Tolerances` applies one linear tolerance
+  in centimetres and one angular tolerance in degrees to every feedback channel.
+  `Set Physical Feedback Tolerance` changes one channel selected by
+  `EProphecyPhysicalFeedbackLimb`: pelvis, left/right thigh, foot, or toe. Both
+  clamp negative inputs to zero. Calls made from Blueprint `BeginPlay` write the
+  agent fields before the manager initializes and caches them; later calls also
+  update the manager's live cached values immediately. Tolerances are applied
+  against the exact next recurrent state, not the older displayed publication.
+  When every sampled difference is inside tolerance, the previous/current NN
+  recurrent pair is left untouched, exactly matching vanilla kinematic feedback.
 - The one-agent locomotion test enables the existing final calf-length pass at
   multiplier `1.0`, so the published target has the same rigid lower-leg length
   as the Physics Asset before Chaos follows it. The general manager property

@@ -29,10 +29,59 @@
 #include "Misc/ScopeLock.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
+#include "UObject/UnrealType.h"
 
 namespace
 {
 	DEFINE_LOG_CATEGORY_STATIC(LogProphecyAgentPhysical, Log, All);
+
+	bool WritePhysicalFeedbackToleranceProperties(
+		AProphecyAgent* Agent,
+		EProphecyPhysicalFeedbackLimb Limb,
+		float LinearToleranceCm,
+		float AngularToleranceDegrees)
+	{
+		static const FName LinearNames[] = {
+			TEXT("FeedbackPelvisLinearCm"),
+			TEXT("FeedbackLeftThighLinearCm"),
+			TEXT("FeedbackLeftFootLinearCm"),
+			TEXT("FeedbackLeftToeLinearCm"),
+			TEXT("FeedbackRightThighLinearCm"),
+			TEXT("FeedbackRightFootLinearCm"),
+			TEXT("FeedbackRightToeLinearCm")
+		};
+		static const FName AngularNames[] = {
+			TEXT("FeedbackPelvisAngularDegrees"),
+			TEXT("FeedbackLeftThighAngularDegrees"),
+			TEXT("FeedbackLeftFootAngularDegrees"),
+			TEXT("FeedbackLeftToeAngularDegrees"),
+			TEXT("FeedbackRightThighAngularDegrees"),
+			TEXT("FeedbackRightFootAngularDegrees"),
+			TEXT("FeedbackRightToeAngularDegrees")
+		};
+		static_assert(UE_ARRAY_COUNT(LinearNames) == int32(EProphecyPhysicalFeedbackLimb::Count));
+		static_assert(UE_ARRAY_COUNT(AngularNames) == int32(EProphecyPhysicalFeedbackLimb::Count));
+
+		const int32 Index = int32(Limb);
+		if (!Agent || Index < 0 || Index >= int32(EProphecyPhysicalFeedbackLimb::Count))
+		{
+			return false;
+		}
+
+		bool bWroteAnyProperty = false;
+		if (FFloatProperty* Property = FindFProperty<FFloatProperty>(Agent->GetClass(), LinearNames[Index]))
+		{
+			Property->SetPropertyValue_InContainer(Agent, FMath::Max(0.0f, LinearToleranceCm));
+			bWroteAnyProperty = true;
+		}
+		if (FFloatProperty* Property = FindFProperty<FFloatProperty>(Agent->GetClass(), AngularNames[Index]))
+		{
+			Property->SetPropertyValue_InContainer(Agent, FMath::Max(0.0f, AngularToleranceDegrees));
+			bWroteAnyProperty = true;
+		}
+		return bWroteAnyProperty;
+	}
+
 	TAutoConsoleVariable<int32> CVarProphecyPhysicalLogTrackingError(
 		TEXT("prophecy.Physical.LogTrackingError"),
 		0,
@@ -785,6 +834,52 @@ UCameraComponent* AProphecyAgent::GetAgentCamera() const
 	const APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
 	AActor* ViewTarget = PlayerController ? PlayerController->GetViewTarget() : nullptr;
 	return ViewTarget ? ViewTarget->FindComponentByClass<UCameraComponent>() : nullptr;
+}
+
+bool AProphecyAgent::SetAllPhysicalFeedbackTolerances(
+	float LinearToleranceCm,
+	float AngularToleranceDegrees)
+{
+	bool bApplied = false;
+	for (int32 Index = 0; Index < int32(EProphecyPhysicalFeedbackLimb::Count); ++Index)
+	{
+		bApplied |= WritePhysicalFeedbackToleranceProperties(
+			this,
+			EProphecyPhysicalFeedbackLimb(Index),
+			LinearToleranceCm,
+			AngularToleranceDegrees);
+	}
+	for (TActorIterator<AProphecyNNLocomotionManager> It(GetWorld()); It; ++It)
+	{
+		if (It->SetAgentAllPhysicalFeedbackTolerances(
+			AgentHandle, LinearToleranceCm, AngularToleranceDegrees))
+		{
+			bApplied = true;
+		}
+	}
+	return bApplied;
+}
+
+bool AProphecyAgent::SetPhysicalFeedbackTolerance(
+	EProphecyPhysicalFeedbackLimb Limb,
+	float LinearToleranceCm,
+	float AngularToleranceDegrees)
+{
+	if (Limb == EProphecyPhysicalFeedbackLimb::Count)
+	{
+		return false;
+	}
+	bool bApplied = WritePhysicalFeedbackToleranceProperties(
+		this, Limb, LinearToleranceCm, AngularToleranceDegrees);
+	for (TActorIterator<AProphecyNNLocomotionManager> It(GetWorld()); It; ++It)
+	{
+		if (It->SetAgentPhysicalFeedbackTolerance(
+			AgentHandle, Limb, LinearToleranceCm, AngularToleranceDegrees))
+		{
+			bApplied = true;
+		}
+	}
+	return bApplied;
 }
 
 AProphecyAgent::AProphecyAgent()

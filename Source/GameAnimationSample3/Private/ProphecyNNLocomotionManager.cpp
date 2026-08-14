@@ -63,18 +63,6 @@ namespace
 	constexpr float MetersToCentimeters = 100.0f;
 	constexpr float ToeAlphaRadians = UE_PI * 0.5f;
 
-	enum class EPhysicalFeedbackChannel : int32
-	{
-		Pelvis,
-		LeftThigh,
-		LeftFoot,
-		LeftToe,
-		RightThigh,
-		RightFoot,
-		RightToe,
-		Count
-	};
-
 	struct FPhysicalFeedbackTolerance
 	{
 		float LinearCm = 0.0f;
@@ -374,9 +362,9 @@ namespace
 			TEXT("FeedbackRightFootAngularDegrees"),
 			TEXT("FeedbackRightToeAngularDegrees")
 		};
-		static_assert(UE_ARRAY_COUNT(LinearNames) == int32(EPhysicalFeedbackChannel::Count));
-		static_assert(UE_ARRAY_COUNT(AngularNames) == int32(EPhysicalFeedbackChannel::Count));
-		for (int32 Index = 0; Index < int32(EPhysicalFeedbackChannel::Count); ++Index)
+		static_assert(UE_ARRAY_COUNT(LinearNames) == int32(EProphecyPhysicalFeedbackLimb::Count));
+		static_assert(UE_ARRAY_COUNT(AngularNames) == int32(EProphecyPhysicalFeedbackLimb::Count));
+		for (int32 Index = 0; Index < int32(EProphecyPhysicalFeedbackLimb::Count); ++Index)
 		{
 			OutTolerances[Index].LinearCm = ReadPhysicalFeedbackSetting(Object, LinearNames[Index]);
 			OutTolerances[Index].AngularDegrees = ReadPhysicalFeedbackSetting(Object, AngularNames[Index]);
@@ -654,7 +642,7 @@ struct AProphecyNNLocomotionManager::FImpl
 		int32 Generation = 1;
 		bool bHasPhysicalSample = false;
 		FPhysicalFeedbackTolerance PhysicalFeedbackTolerances[
-			int32(EPhysicalFeedbackChannel::Count)]{};
+			int32(EProphecyPhysicalFeedbackLimb::Count)]{};
 		bool bHasBridgeIntent = false;
 		bool bHasBridgeActualRoot = false;
 		bool bPhysicalWorldBlockedPending = false;
@@ -1878,24 +1866,8 @@ bool AProphecyNNLocomotionManager::ResamplePhysicalAgentState(int32 AgentIndex)
 	{
 		return false;
 	}
-	const TArrayView<FTransform> KinematicTransforms = TransformSlice(
-		Impl->ComponentTransformBuffer, AgentIndex);
 	const FPhysicalFeedbackTolerance* Tolerances =
 		Impl->Agents[AgentIndex].PhysicalFeedbackTolerances;
-	ApplyPhysicalFeedbackTolerance(ActualTransforms[0], KinematicTransforms[0],
-		Tolerances[int32(EPhysicalFeedbackChannel::Pelvis)]);
-	ApplyPhysicalFeedbackTolerance(ActualTransforms[1], KinematicTransforms[1],
-		Tolerances[int32(EPhysicalFeedbackChannel::LeftThigh)]);
-	ApplyPhysicalFeedbackTolerance(ActualTransforms[3], KinematicTransforms[3],
-		Tolerances[int32(EPhysicalFeedbackChannel::LeftFoot)]);
-	ApplyPhysicalFeedbackTolerance(ActualTransforms[4], KinematicTransforms[4],
-		Tolerances[int32(EPhysicalFeedbackChannel::LeftToe)]);
-	ApplyPhysicalFeedbackTolerance(ActualTransforms[5], KinematicTransforms[5],
-		Tolerances[int32(EPhysicalFeedbackChannel::RightThigh)]);
-	ApplyPhysicalFeedbackTolerance(ActualTransforms[7], KinematicTransforms[7],
-		Tolerances[int32(EPhysicalFeedbackChannel::RightFoot)]);
-	ApplyPhysicalFeedbackTolerance(ActualTransforms[8], KinematicTransforms[8],
-		Tolerances[int32(EPhysicalFeedbackChannel::RightToe)]);
 
 	float* Sample = StateSlice(Impl->PhysicalStateBuffer, AgentIndex);
 	const FTransform& Pelvis = ActualTransforms[0];
@@ -1930,6 +1902,110 @@ bool AProphecyNNLocomotionManager::ResamplePhysicalAgentState(int32 AgentIndex)
 	float* Previous = StateSlice(Impl->PrevStateBuffer, AgentIndex);
 	float* Current = StateSlice(Impl->CurStateBuffer, AgentIndex);
 	float* PreviousPhysical = StateSlice(Impl->PreviousPhysicalStateBuffer, AgentIndex);
+
+	auto ApplyLinearStateTolerance = [&](int32 Offset, const FPhysicalFeedbackTolerance& Tolerance)
+	{
+		const FVector3f Kinematic = ReadStateVec3(Current, Offset);
+		const FVector3f Simulated = ReadStateVec3(Sample, Offset);
+		const FVector3f Error = Simulated - Kinematic;
+		const float ErrorSize = Error.Size();
+		const float ToleranceMeters = FMath::Max(0.0f, Tolerance.LinearCm) / MetersToCentimeters;
+		if (ErrorSize <= ToleranceMeters || ErrorSize <= UE_SMALL_NUMBER)
+		{
+			FMemory::Memcpy(Sample + Offset, Current + Offset, 3 * sizeof(float));
+			return;
+		}
+		WriteStateVec3(Sample, Offset,
+			Kinematic + Error * ((ErrorSize - ToleranceMeters) / ErrorSize));
+	};
+
+	auto ApplyRotationStateTolerance = [&](int32 Offset, const FPhysicalFeedbackTolerance& Tolerance)
+	{
+		FQuat Kinematic = MatrixToQuat(MatrixFromRot6(Current + Offset)).GetNormalized();
+		FQuat Simulated = MatrixToQuat(MatrixFromRot6(Sample + Offset)).GetNormalized();
+		float Dot = Kinematic | Simulated;
+		if (Dot < 0.0f)
+		{
+			Simulated = Simulated * -1.0f;
+			Dot = -Dot;
+		}
+		const float ErrorRadians = 2.0f * FMath::Acos(FMath::Clamp(Dot, 0.0f, 1.0f));
+		const float ToleranceRadians = FMath::DegreesToRadians(
+			FMath::Max(0.0f, Tolerance.AngularDegrees));
+		if (ErrorRadians <= ToleranceRadians || ErrorRadians <= UE_SMALL_NUMBER)
+		{
+			FMemory::Memcpy(Sample + Offset, Current + Offset, 6 * sizeof(float));
+			return;
+		}
+		WriteRot6(
+			QuatToMatrix(FQuat::Slerp(
+				Kinematic,
+				Simulated,
+				(ErrorRadians - ToleranceRadians) / ErrorRadians).GetNormalized()),
+			Sample + Offset);
+	};
+
+	auto ApplyToeStateTolerance = [&](int32 Offset, const FPhysicalFeedbackTolerance& Tolerance)
+	{
+		const float Error = Sample[Offset] - Current[Offset];
+		const float ErrorDegrees = FMath::Abs(Error) * FMath::RadiansToDegrees(ToeAlphaRadians);
+		const float ToleranceDegrees = FMath::Max(0.0f, Tolerance.AngularDegrees);
+		if (ErrorDegrees <= ToleranceDegrees || ErrorDegrees <= UE_SMALL_NUMBER)
+		{
+			Sample[Offset] = Current[Offset];
+			return;
+		}
+		Sample[Offset] = Current[Offset] +
+			Error * ((ErrorDegrees - ToleranceDegrees) / ErrorDegrees);
+	};
+
+	const FPhysicalFeedbackTolerance& PelvisTolerance =
+		Tolerances[int32(EProphecyPhysicalFeedbackLimb::Pelvis)];
+	ApplyLinearStateTolerance(0, PelvisTolerance);
+	ApplyRotationStateTolerance(3, PelvisTolerance);
+
+	const FPhysicalFeedbackTolerance& LeftThighTolerance =
+		Tolerances[int32(EProphecyPhysicalFeedbackLimb::LeftThigh)];
+	const FPhysicalFeedbackTolerance& LeftFootTolerance =
+		Tolerances[int32(EProphecyPhysicalFeedbackLimb::LeftFoot)];
+	const FPhysicalFeedbackTolerance& LeftToeTolerance =
+		Tolerances[int32(EProphecyPhysicalFeedbackLimb::LeftToe)];
+	ApplyRotationStateTolerance(18, LeftThighTolerance);
+	ApplyLinearStateTolerance(9, LeftFootTolerance);
+	ApplyRotationStateTolerance(12, LeftFootTolerance);
+	ApplyToeStateTolerance(24, LeftToeTolerance);
+
+	const FPhysicalFeedbackTolerance& RightThighTolerance =
+		Tolerances[int32(EProphecyPhysicalFeedbackLimb::RightThigh)];
+	const FPhysicalFeedbackTolerance& RightFootTolerance =
+		Tolerances[int32(EProphecyPhysicalFeedbackLimb::RightFoot)];
+	const FPhysicalFeedbackTolerance& RightToeTolerance =
+		Tolerances[int32(EProphecyPhysicalFeedbackLimb::RightToe)];
+	ApplyRotationStateTolerance(34, RightThighTolerance);
+	ApplyLinearStateTolerance(25, RightFootTolerance);
+	ApplyRotationStateTolerance(28, RightFootTolerance);
+	ApplyToeStateTolerance(40, RightToeTolerance);
+
+	bool bMatchesKinematicState = true;
+	for (int32 StateIndex = 0; StateIndex < StateDim; ++StateIndex)
+	{
+		if (Sample[StateIndex] != Current[StateIndex])
+		{
+			bMatchesKinematicState = false;
+			break;
+		}
+	}
+	if (bMatchesKinematicState)
+	{
+		// An all-kinematic result must leave the exact recurrent pair untouched.
+		// Rebuilding it from the displayed publication changes root-relative
+		// velocities and produces feet moving over a stationary capsule.
+		FMemory::Memcpy(PreviousPhysical, Current, StateDim * sizeof(float));
+		Agent.bHasPhysicalSample = true;
+		return true;
+	}
+
+	CleanState(Sample, *Impl);
 	FMemory::Memcpy(Previous, Agent.bHasPhysicalSample ? PreviousPhysical : Sample, StateDim * sizeof(float));
 	FMemory::Memcpy(Current, Sample, StateDim * sizeof(float));
 	FMemory::Memcpy(PreviousPhysical, Sample, StateDim * sizeof(float));
@@ -3067,6 +3143,48 @@ bool AProphecyNNLocomotionManager::SetAgentMACDEnabled(FProphecyAgentHandle Hand
 		return false;
 	}
 	AgentActor->SetMACDEnabled(bEnabled);
+	return true;
+}
+
+bool AProphecyNNLocomotionManager::SetAgentPhysicalFeedbackTolerance(
+	FProphecyAgentHandle Handle,
+	EProphecyPhysicalFeedbackLimb Limb,
+	float LinearToleranceCm,
+	float AngularToleranceDegrees)
+{
+	if (!Impl || !ResolveAgent(Handle) || Handle.Index < 0 ||
+		!Impl->Agents.IsValidIndex(Handle.Index) ||
+		Limb == EProphecyPhysicalFeedbackLimb::Count)
+	{
+		return false;
+	}
+
+	FPhysicalFeedbackTolerance& Tolerance =
+		Impl->Agents[Handle.Index].PhysicalFeedbackTolerances[int32(Limb)];
+	Tolerance.LinearCm = FMath::Max(0.0f, LinearToleranceCm);
+	Tolerance.AngularDegrees = FMath::Max(0.0f, AngularToleranceDegrees);
+	return true;
+}
+
+bool AProphecyNNLocomotionManager::SetAgentAllPhysicalFeedbackTolerances(
+	FProphecyAgentHandle Handle,
+	float LinearToleranceCm,
+	float AngularToleranceDegrees)
+{
+	if (!Impl || !ResolveAgent(Handle) || Handle.Index < 0 ||
+		!Impl->Agents.IsValidIndex(Handle.Index))
+	{
+		return false;
+	}
+
+	const float Linear = FMath::Max(0.0f, LinearToleranceCm);
+	const float Angular = FMath::Max(0.0f, AngularToleranceDegrees);
+	for (FPhysicalFeedbackTolerance& Tolerance :
+		Impl->Agents[Handle.Index].PhysicalFeedbackTolerances)
+	{
+		Tolerance.LinearCm = Linear;
+		Tolerance.AngularDegrees = Angular;
+	}
 	return true;
 }
 

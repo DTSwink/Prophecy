@@ -173,6 +173,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|NN Locomotion|Agents")
 	bool SetAgentMACDEnabled(FProphecyAgentHandle Handle, bool bEnabled);
 
+	/** Runtime-only update used by the agent's Blueprint feedback setters. */
+	bool SetAgentPhysicalFeedbackTolerance(
+		FProphecyAgentHandle Handle,
+		EProphecyPhysicalFeedbackLimb Limb,
+		float LinearToleranceCm,
+		float AngularToleranceDegrees);
+
+	/** Runtime-only update used by the agent's Blueprint global feedback setter. */
+	bool SetAgentAllPhysicalFeedbackTolerances(
+		FProphecyAgentHandle Handle,
+		float LinearToleranceCm,
+		float AngularToleranceDegrees);
+
 	/** Configures the transient manager used only by the flat /Game/locomotion test map. */
 	void ConfigureSimpleLocomotionTest();
 
