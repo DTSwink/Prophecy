@@ -56,14 +56,22 @@ struct RootTransform {
     double yaw_radians = 0.0;
 };
 
+// Readback of the goal used by one actual mover step, before acceleration/braking.
+struct LocomotionTarget {
+    Vec2 velocity{};
+    double orientation_yaw_radians = 0.0;
+};
+
 using FutureRootWindow = std::array<RootTransform, kFutureRootWindow>;
 
 double SignedAngleDelta(double start, double end, double preferred = 0.0) noexcept;
 Vec2 DirectionFromAngle(double angle) noexcept;
 double DirectionalSpeedCap(LocomotionMode mode, double root_relative_direction_radians) noexcept;
 void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, double dt) noexcept;
+void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, double dt,
+    LocomotionTarget* out_target, bool allow_yaw_momentum = false) noexcept;
 FutureRootWindow PredictFutureRoots(const LocomotionState& state,
-    const LocomotionIntent& intent, double dt) noexcept;
+    const LocomotionIntent& intent, double dt, bool allow_yaw_momentum = false) noexcept;
 const char* ToString(LocomotionMode mode) noexcept;
 const char* ToString(LocomotionResponse response) noexcept;
 

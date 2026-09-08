@@ -1,6 +1,9 @@
 #include "ProphecyNNPoseAnimInstance.h"
 
 #include "ProphecyNNPoseTypes.h"
+#include "ProphecyAgent.h"
+#include "ProphecyAttackFists.h"
+#include "ProphecyModeTransitions.h"
 
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNodeBase.h"
@@ -48,9 +51,14 @@ protected:
 		}
 
 		AgentId = PoseInstance->AgentId;
-		bUseStoredPose = PoseInstance->bUseStoredPose;
+		const AProphecyAgent* Agent = Cast<AProphecyAgent>(PoseInstance->GetOwningActor());
+		const bool bFingersOnly = Agent && Agent->bManualNNPoseApplication &&
+			Agent->GetSimulationMode() == EProphecyAgentSimulationMode::Physical;
+		ProphecyAttackFists::PreUpdate(this, Agent);
+		ProphecyModeTransitions::PreUpdate(this, Agent);
+		bUseStoredPose = !bFingersOnly && PoseInstance->bUseStoredPose;
 		bPreserveReferenceBoneTranslations = PoseInstance->bPreserveReferenceBoneTranslations;
-		bEnableDebugMotion = PoseInstance->bEnableDebugMotion;
+		bEnableDebugMotion = !bFingersOnly && PoseInstance->bEnableDebugMotion;
 		DebugBoneName = PoseInstance->DebugBoneName;
 		DebugMotionDegrees = PoseInstance->DebugMotionDegrees;
 		DebugMotionHz = PoseInstance->DebugMotionHz;
@@ -98,6 +106,8 @@ protected:
 			ApplyDebugMotion(Output);
 		}
 
+		ProphecyAttackFists::Evaluate(this, Output);
+		ProphecyModeTransitions::Evaluate(this, Output);
 		Output.Pose.NormalizeRotations();
 		return true;
 	}
@@ -212,5 +222,7 @@ FAnimInstanceProxy* UProphecyNNPoseAnimInstance::CreateAnimInstanceProxy()
 
 void UProphecyNNPoseAnimInstance::DestroyAnimInstanceProxy(FAnimInstanceProxy* InProxy)
 {
+	ProphecyAttackFists::ReleaseProxy(InProxy);
+	ProphecyModeTransitions::ReleaseProxy(InProxy);
 	delete InProxy;
 }

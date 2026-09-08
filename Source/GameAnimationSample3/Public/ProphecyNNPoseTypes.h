@@ -87,7 +87,14 @@ public:
 		TConstArrayView<FTransform> ComponentTransforms,
 		const FTransform& PreviousComponentWorldTransform,
 		const FTransform& ComponentWorldTransform,
-		double SourceTimeSeconds);
+		double SourceTimeSeconds,
+		bool bRigidForearms = false);
+
+	/** Attack presentation: keep fixed hand-parent offsets after world interpolation. */
+	static void ApplyRigidForearms(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
+		TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms);
+	/** True for the attack publication, including its unchanged handoff frame. */
+	static bool UsesAttackPresentation(int32 AgentId);
 
 	static void SetAgentLocalPose(
 		int32 AgentId,

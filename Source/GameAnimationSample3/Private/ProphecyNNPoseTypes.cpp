@@ -6,6 +6,7 @@ namespace
 {
 	FRWLock GProphecyNNPoseLock;
 	TMap<int32, FProphecyNNPoseSnapshot> GProphecyNNPoses;
+	TSet<int32> GProphecyNNRigidForearms;
 	uint32 GProphecyNNNextRevision = 1;
 
 	uint32 AllocatePoseRevision()
@@ -127,13 +128,16 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 	TConstArrayView<FTransform> ComponentTransforms,
 	const FTransform& PreviousComponentWorldTransform,
 	const FTransform& ComponentWorldTransform,
-	double SourceTimeSeconds)
+	double SourceTimeSeconds,
+	bool bRigidForearms)
 {
 	check(BoneNames.Num() == LocalTransforms.Num());
 	check(BoneNames.Num() == PreviousComponentTransforms.Num());
 	check(BoneNames.Num() == ComponentTransforms.Num());
 
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
+	if (bRigidForearms) GProphecyNNRigidForearms.Add(AgentId);
+	else GProphecyNNRigidForearms.Remove(AgentId);
 	FProphecyNNPoseSnapshot& Snapshot = GProphecyNNPoses.FindOrAdd(AgentId);
 	const uint32 LayoutHash = HashBoneLayout(BoneNames);
 	if (!BoneLayoutMatches(Snapshot, BoneNames, LayoutHash))
@@ -235,12 +239,43 @@ void FProphecyNNPoseStore::ClearAgentPose(int32 AgentId)
 {
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
 	GProphecyNNPoses.Remove(AgentId);
+	GProphecyNNRigidForearms.Remove(AgentId);
 }
 
 void FProphecyNNPoseStore::ClearAllPoses()
 {
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
 	GProphecyNNPoses.Reset();
+	GProphecyNNRigidForearms.Reset();
+}
+
+bool FProphecyNNPoseStore::UsesAttackPresentation(int32 AgentId)
+{
+	FReadScopeLock Lock(GProphecyNNPoseLock);
+	return GProphecyNNRigidForearms.Contains(AgentId);
+}
+
+void FProphecyNNPoseStore::ApplyRigidForearms(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
+	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms)
+{
+	{
+		FReadScopeLock Lock(GProphecyNNPoseLock);
+		if (!GProphecyNNRigidForearms.Contains(AgentId)) return;
+	}
+	static const FName Hands[] = { TEXT("hand_l"), TEXT("hand_r") };
+	static const FName Forearms[] = { TEXT("lowerarm_l"), TEXT("lowerarm_r") };
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		const int32 Hand = BoneNames.IndexOfByKey(Hands[Side]);
+		const int32 Forearm = BoneNames.IndexOfByKey(Forearms[Side]);
+		const int32 SourceHand = Snapshot.BoneNames.IndexOfByKey(Hands[Side]);
+		if (Transforms.IsValidIndex(Hand) && Transforms.IsValidIndex(Forearm) &&
+			Snapshot.LocalTransforms.IsValidIndex(SourceHand))
+		{
+			Transforms[Hand].SetTranslation(Transforms[Forearm].TransformPosition(
+				Snapshot.LocalTransforms[SourceHand].GetTranslation()));
+		}
+	}
 }
 
 int32 FProphecyNNPoseStore::NumPoses()

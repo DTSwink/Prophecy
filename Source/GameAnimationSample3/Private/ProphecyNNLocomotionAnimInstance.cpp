@@ -1,6 +1,8 @@
 #include "ProphecyNNLocomotionAnimInstance.h"
 
 #include "ProphecyAgent.h"
+#include "ProphecyAttackFists.h"
+#include "ProphecyModeTransitions.h"
 #include "ProphecyNNPoseTypes.h"
 
 #include "Animation/AnimInstanceProxy.h"
@@ -94,6 +96,8 @@ protected:
 		}
 
 		AgentId = Instance->AgentId;
+		ProphecyAttackFists::PreUpdate(this, Cast<AProphecyAgent>(Instance->GetOwningActor()));
+		ProphecyModeTransitions::PreUpdate(this, Cast<AProphecyAgent>(Instance->GetOwningActor()));
 		if (AgentId != CurrentAgentId)
 		{
 			PreviousPose.Reset();
@@ -101,13 +105,22 @@ protected:
 			CurrentAgentId = AgentId;
 			bCompactIndexCacheValid = false;
 		}
-		RenderDeltaSeconds = DeltaSeconds;
+		// A zero-time carrier refresh must not turn a 5 FPS exact-frame sample
+		// into an interpolated sample, nor advance animation/overlay time again.
+		RenderDeltaSeconds = DeltaSeconds > 0.0f || !Instance->GetWorld()
+			? DeltaSeconds : Instance->GetWorld()->GetDeltaSeconds();
 		bInterpolateNNPose = Instance->bInterpolateNNPose;
 		bUseViewerGlobalPoseInterpolation = Instance->bUseViewerGlobalPoseInterpolation;
 		NNPoseIntervalSeconds = FMath::Max(0.001f, Instance->NNPoseIntervalSeconds);
 		OverlayAnimation = Instance->OverlayAnimation;
 		bLoopOverlay = Instance->bLoopOverlay;
 		OverlayPlayRate = Instance->OverlayPlayRate;
+		OverlayMode = Instance->OverlayMode;
+		if (OverlayPlaybackRevision != Instance->OverlayPlaybackRevision)
+		{
+			OverlayPlaybackRevision = Instance->OverlayPlaybackRevision;
+			OverlayTimeSeconds = 0.0;
+		}
 		EvaluationTimeSeconds = Instance->GetWorld()
 			? double(Instance->GetWorld()->GetTimeSeconds())
 			: 0.0;
@@ -117,7 +130,7 @@ protected:
 			EvaluationComponentWorldTransform.NormalizeRotation();
 			bHasEvaluationComponentWorldTransform = true;
 			const AProphecyAgent* Agent = Cast<AProphecyAgent>(MeshComponent->GetOwner());
-			bPhysicalAgent = Agent && Agent->GetSimulationMode() == EProphecyAgentSimulationMode::Physical;
+			bPhysicalAgent = Agent && Agent->GetSimulationMode() != EProphecyAgentSimulationMode::Kinematic;
 		}
 		else
 		{
@@ -174,6 +187,8 @@ protected:
 		Output.ResetToRefPose();
 		if (!CurrentPose.IsValid())
 		{
+			ProphecyAttackFists::Evaluate(this, Output);
+			ProphecyModeTransitions::Evaluate(this, Output);
 			return true;
 		}
 
@@ -196,7 +211,7 @@ protected:
 			ReferencePose[BoneIndex.GetInt()] = Output.Pose[BoneIndex];
 		}
 
-		ApplyNNPose(Output, PoseAlpha, true, true);
+		ApplyNNPose(Output, PoseAlpha, true, true, true);
 		const FCompactPoseBoneIndex PelvisIndex = ResolveLocomotionCompactBoneIndex(PoseBones, TEXT("pelvis"));
 		const FTransform NNPelvis = PelvisIndex.IsValid() && Output.Pose.IsValidIndex(PelvisIndex)
 			? Output.Pose[PelvisIndex]
@@ -204,6 +219,12 @@ protected:
 
 		if (OverlayAnimation && OverlayWeight > UE_SMALL_NUMBER && OverlayAnimation->GetSkeleton())
 		{
+			TArray<FTransform, TInlineAllocator<64>> NNPose;
+			NNPose.SetNum(Output.Pose.GetNumBones());
+			for (const FCompactPoseBoneIndex BoneIndex : Output.Pose.ForEachBoneIndex())
+			{
+				NNPose[BoneIndex.GetInt()] = Output.Pose[BoneIndex];
+			}
 			FAnimationPoseData AnimationPoseData(Output);
 			OverlayAnimation->GetAnimationPose(
 				AnimationPoseData,
@@ -219,6 +240,11 @@ protected:
 				{
 					Output.Pose[BoneIndex] = ReferencePose[CompactIndex];
 				}
+				else if (OverlayMode == EProphecyAnimationOverlayMode::FullBody)
+				{
+					Output.Pose[BoneIndex] = BlendTransform(
+						NNPose[CompactIndex], Output.Pose[BoneIndex], OverlayWeight);
+				}
 				else if (BoneIndex == PelvisIndex)
 				{
 					Output.Pose[BoneIndex] = BlendTransform(NNPelvis, Output.Pose[BoneIndex], OverlayWeight);
@@ -229,9 +255,14 @@ protected:
 				}
 			}
 
-			ApplyNNPose(Output, PoseAlpha, false, true);
+			if (OverlayMode == EProphecyAnimationOverlayMode::UpperBodyOnly)
+			{
+				ApplyNNPose(Output, PoseAlpha, false, true, false);
+			}
 		}
 
+		ProphecyAttackFists::Evaluate(this, Output);
+		ProphecyModeTransitions::Evaluate(this, Output);
 		Output.Pose.NormalizeRotations();
 		return true;
 	}
@@ -250,7 +281,12 @@ private:
 		bCompactIndexCacheValid = true;
 	}
 
-	void ApplyNNPose(FPoseContext& Output, float Alpha, bool bApplyPelvis, bool bApplyLegs) const
+	void ApplyNNPose(
+		FPoseContext& Output,
+		float Alpha,
+		bool bApplyPelvis,
+		bool bApplyLegs,
+		bool bApplyUpperBody) const
 	{
 		const bool bCanUseViewerInterpolation = bUseViewerGlobalPoseInterpolation &&
 			bHasEvaluationComponentWorldTransform && CurrentPose.bHasComponentWorldTransform &&
@@ -258,7 +294,7 @@ private:
 			CurrentPose.ComponentTransforms.Num() == CurrentPose.BoneNames.Num();
 		if (bCanUseViewerInterpolation)
 		{
-			ApplyViewerGlobalPose(Output, Alpha, bApplyPelvis, bApplyLegs);
+			ApplyViewerGlobalPose(Output, Alpha, bApplyPelvis, bApplyLegs, bApplyUpperBody);
 			return;
 		}
 
@@ -269,7 +305,9 @@ private:
 			const FName BoneName = CurrentPose.BoneNames[Index];
 			const bool bIsPelvis = BoneName == TEXT("pelvis");
 			const bool bIsLeg = IsNNLegBone(BoneName);
-			if ((bIsPelvis && !bApplyPelvis) || (bIsLeg && !bApplyLegs) || (!bIsPelvis && !bIsLeg))
+			const bool bIsUpperBody = !bIsPelvis && !bIsLeg;
+			if ((bIsPelvis && !bApplyPelvis) || (bIsLeg && !bApplyLegs) ||
+				(bIsUpperBody && !bApplyUpperBody))
 			{
 				continue;
 			}
@@ -292,7 +330,8 @@ private:
 		FPoseContext& Output,
 		float Alpha,
 		bool bApplyPelvis,
-		bool bApplyLegs) const
+		bool bApplyLegs,
+		bool bApplyUpperBody) const
 	{
 		const FBoneContainer& PoseBones = Output.Pose.GetBoneContainer();
 		FCSPose<FCompactPose> ExistingComponentPose;
@@ -307,7 +346,9 @@ private:
 			const FName BoneName = CurrentPose.BoneNames[Index];
 			const bool bIsPelvis = BoneName == TEXT("pelvis");
 			const bool bIsLeg = IsNNLegBone(BoneName);
-			if ((bIsPelvis && !bApplyPelvis) || (bIsLeg && !bApplyLegs) || (!bIsPelvis && !bIsLeg))
+			const bool bIsUpperBody = !bIsPelvis && !bIsLeg;
+			if ((bIsPelvis && !bApplyPelvis) || (bIsLeg && !bApplyLegs) ||
+				(bIsUpperBody && !bApplyUpperBody))
 			{
 				continue;
 			}
@@ -327,6 +368,12 @@ private:
 				PreviousWorld, CurrentWorld, Alpha).GetRelativeTransform(EvaluationComponentWorldTransform);
 			DesiredComponentTransforms[Index].NormalizeRotation();
 			HasDesiredTransform[Index] = true;
+		}
+
+		if (bApplyUpperBody)
+		{
+			FProphecyNNPoseStore::ApplyRigidForearms(AgentId, CurrentPose,
+				CurrentPose.BoneNames, DesiredComponentTransforms);
 		}
 
 		// The model viewer draws each lower-leg segment all the way from the calf
@@ -368,7 +415,9 @@ private:
 				(FQuat::FindBetweenNormals(CurrentAxis, DesiredAxis) * CalfTransform.GetRotation()).GetNormalized());
 			CalfTransform.SetScale3D(FVector(DesiredLength / ReferenceLength));
 		};
-		if (!bPhysicalAgent)
+		// Attack playback already supplies the authored calf transform at unit
+		// scale. The legacy locomotion extension would inflate all three axes.
+		if (!bPhysicalAgent && !FProphecyNNPoseStore::UsesAttackPresentation(AgentId))
 		{
 			ExtendCalfToFoot(TEXT("calf_l"), TEXT("foot_l"));
 			ExtendCalfToFoot(TEXT("calf_r"), TEXT("foot_r"));
@@ -402,6 +451,8 @@ private:
 	float NNPoseIntervalSeconds = 1.0f / 30.0f;
 	UAnimSequenceBase* OverlayAnimation = nullptr;
 	bool bLoopOverlay = true;
+	EProphecyAnimationOverlayMode OverlayMode = EProphecyAnimationOverlayMode::UpperBodyOnly;
+	int32 OverlayPlaybackRevision = INDEX_NONE;
 	float OverlayPlayRate = 1.0f;
 	float OverlayWeight = 0.0f;
 	double OverlayTimeSeconds = 0.0;
@@ -429,5 +480,7 @@ FAnimInstanceProxy* UProphecyNNLocomotionAnimInstance::CreateAnimInstanceProxy()
 
 void UProphecyNNLocomotionAnimInstance::DestroyAnimInstanceProxy(FAnimInstanceProxy* InProxy)
 {
+	ProphecyAttackFists::ReleaseProxy(InProxy);
+	ProphecyModeTransitions::ReleaseProxy(InProxy);
 	delete InProxy;
 }

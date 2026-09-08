@@ -79,7 +79,7 @@ This is the concise ledger of the standalone simulation as it exists now.
 ## Policy Sources
 
 - Design/source prompt: `%USERPROFILE%\Documents\Cursor\stepper\training\slashes2\WALK_RUN_SIMULATION_AGENT_PROMPT.md`.
-- Walk checkpoint: `%USERPROFILE%\Documents\Cursor\stepper\training\runs\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final\checkpoints\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final_latest.pt`, SHA-256 `8bae21c5b3159d69726cd98867c85000b51d566012708eed36374b2b5a9d4c79`.
+- Accepted final Walk checkpoint: `%USERPROFILE%\Documents\Cursor\stepper\training\runs\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final\checkpoints\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final_latest.pt`, SHA-256 `8bae21c5b3159d69726cd98867c85000b51d566012708eed36374b2b5a9d4c79`. This July 5 fine-tune supersedes its June initializer.
 - Run checkpoint: `%USERPROFILE%\Documents\Cursor\stepper\training\runs\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3\checkpoints\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3_init.pt`, SHA-256 `ccc03fee15e825ebcbcd24f9e71934d515b5133e760114abe664445042d379c1`.
 - Both policies consume the same eight future roots exposed by the native mover.
 - `tools/export_locomotion_poses.py` reads the raw FBX-converted idle/walk/run and attack NPZs and exports authored positions after root-local conversion and draw-only pruning to 25 joints. Idle comes from `M_Neutral_Stand_Idle_Loop`; no idle motion is synthesized in the standalone project.

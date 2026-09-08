@@ -220,10 +220,16 @@ Vec2 Rotate(Vec2 value, double angle) noexcept {
 }
 
 double MoveYawMotor(double previous, double current, double target,
-    double preferred_delta, double dt) noexcept {
+    double preferred_delta, double dt, bool allow_momentum) noexcept {
     const double error = SignedAngleDelta(current, target, preferred_delta);
-    if (std::abs(error) < 1.0e-10) return target;
+    if (!allow_momentum && std::abs(error) < 1.0e-10) return target;
     const double current_rate = SignedAngleDelta(previous, current) / std::max(1.0e-8, dt);
+    // Settle only when the remaining motion can be stopped within this step.
+    // Without this, a discrete acceleration-limited motor limit-cycles around
+    // zero error; unlike the legacy unconditional clamp, large impulses survive.
+    const double stop_rate = kYawMotorBrakeDegS2 * kDegreesToRadians * dt;
+    if (allow_momentum && std::abs(current_rate) <= stop_rate &&
+        std::abs(error) <= 0.5 * stop_rate * dt) return target;
     const double sign = error >= 0.0 ? 1.0 : -1.0;
     const double desired_rate_abs_deg = std::min(kYawMotorMaxRateDeg,
         std::sqrt(std::max(0.0, 2.0 * (kYawMotorBrakeDegS2 * kDegreesToRadians) * std::abs(error))) * kRadiansToDegrees);
@@ -233,7 +239,7 @@ double MoveYawMotor(double previous, double current, double target,
         ? kYawMotorBrakeDegS2 : kYawMotorAccelDegS2;
     const double new_rate = MoveToward(current_rate, desired_rate, rate_limit * kDegreesToRadians * dt);
     double step = new_rate * dt;
-    if (std::abs(step) > std::abs(error)) step = error;
+    if (!allow_momentum && std::abs(step) > std::abs(error)) step = error;
     return current + step;
 }
 
@@ -417,6 +423,11 @@ double DirectionalSpeedCap(LocomotionMode mode, double root_relative_direction_r
 }
 
 void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, double dt) noexcept {
+    StepLocomotion(state, intent, dt, nullptr);
+}
+
+void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, double dt,
+    LocomotionTarget* out_target, bool allow_yaw_momentum) noexcept {
     if (dt <= 0.0) return;
     const double amplitude = std::clamp(intent.speed_amplitude, 0.0, 1.0);
     const double speed_scale = std::clamp(intent.speed_scale, 0.0, 1.0);
@@ -428,9 +439,14 @@ void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, doub
     const double preferred_yaw = SignedAngleDelta(state.yaw_radians, intent.orientation_yaw_radians);
     const double yaw_error = SignedAngleDelta(state.yaw_radians, intent.orientation_yaw_radians, preferred_yaw);
     const double full_speed_yaw = MoveYawMotor(state.previous_yaw_radians, state.yaw_radians,
-        intent.orientation_yaw_radians, preferred_yaw, dt);
-    const double new_yaw = state.yaw_radians + turn_scale *
-        SignedAngleDelta(state.yaw_radians, full_speed_yaw, preferred_yaw);
+        intent.orientation_yaw_radians, preferred_yaw, dt, allow_yaw_momentum);
+    // External angular momentum is not a steering command. Zero turn strength
+    // removes the motor's correction, not the already imparted angular velocity.
+    const double inertial_yaw = allow_yaw_momentum
+        ? state.yaw_radians + SignedAngleDelta(state.previous_yaw_radians, state.yaw_radians)
+        : state.yaw_radians;
+    const double new_yaw = inertial_yaw + turn_scale *
+        SignedAngleDelta(inertial_yaw, full_speed_yaw, preferred_yaw);
 
     LocomotionResponse response = LocomotionResponse::Normal;
     if (intent.mode == LocomotionMode::Run) {
@@ -459,6 +475,11 @@ void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, doub
         }
     }
 
+    if (out_target) {
+        out_target->velocity = target_velocity;
+        out_target->orientation_yaw_radians = intent.orientation_yaw_radians;
+    }
+
     const Vec2 displacement = Scale(state.velocity, dt);
     state.position = Add(state.position, displacement);
     state.distance_travelled += Length(displacement);
@@ -468,11 +489,11 @@ void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, doub
 }
 
 FutureRootWindow PredictFutureRoots(const LocomotionState& state,
-    const LocomotionIntent& intent, double dt) noexcept {
+    const LocomotionIntent& intent, double dt, bool allow_yaw_momentum) noexcept {
     FutureRootWindow future{};
     LocomotionState projected = state;
     for (RootTransform& root : future) {
-        StepLocomotion(projected, intent, dt);
+        StepLocomotion(projected, intent, dt, nullptr, allow_yaw_momentum);
         root.position = projected.position;
         root.yaw_radians = projected.yaw_radians;
     }

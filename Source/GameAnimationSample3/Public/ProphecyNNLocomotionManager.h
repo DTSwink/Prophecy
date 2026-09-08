@@ -69,10 +69,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (ClampMin = "0.0"))
 	float AgentSpeedCmPerSecond = 500.0f;
 
-	/** Mouse-orbit sensitivity used by the one-agent /Game/locomotion PIE test. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion|Simple Test", meta = (ClampMin = "0.01", UIMin = "0.01", UIMax = "1.0"))
-	float CameraSensitivity = 0.15f;
-
 	/** Draw the exact current-root frame and eight future roots encoded into the selected agent's NN input. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion|Debug")
 	bool bShowFutureRootDebug = false;
@@ -109,6 +105,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion")
 	FString WalkRuntimeContractPath = TEXT("Content/locomotion/NN/prophecy_lower_body_walk_runtime.json");
+
+	/** Temporary upper-body checkpoint exported as a second batched data-only NNE model. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion|Upper Body")
+	FString UpperOnnxModelPath = TEXT("Content/locomotion/NN/prophecy_upper_body_b100.onnx");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion|Upper Body")
+	FString UpperRuntimeContractPath = TEXT("Content/locomotion/NN/prophecy_upper_body_runtime.json");
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion|Route")
 	FName EndpointAActorName = TEXT("Cube");
@@ -173,10 +176,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|NN Locomotion|Agents")
 	bool SetAgentMACDEnabled(FProphecyAgentHandle Handle, bool bEnabled);
 
+	bool GetAgentLocomotionState(FProphecyAgentHandle Handle,
+		FVector& WorldVelocityCmPerSecond, FVector& FacingWorldDirection, bool& bRun) const;
+	bool GetAgentLocomotionTarget(FProphecyAgentHandle Handle, FVector& TargetWorldVelocityCmPerSecond,
+		float& TargetSpeedCmPerSecond, FVector& TargetFacingWorldDirection, bool& bRun) const;
+	bool AddAgentRootVelocityImpulse(FProphecyAgentHandle Handle, FVector DeltaVelocityCmPerSecond,
+		double DeltaWorldYawRadiansPerSecond);
+	bool GetAgentRootVelocity(FProphecyAgentHandle Handle, FVector& LinearCmPerSecond,
+		FVector& AngularRadiansPerSecond) const;
+	static bool SetHalfAttackTargetRadius(const UWorld* World, float RadiusCm);
+	static float GetHalfAttackTargetRadius(const UWorld* World);
+	bool GetAgentNNAttackTarget(FProphecyAgentHandle Handle, FVector& RequestedWorldTarget,
+		FVector& EffectiveWorldTarget, FVector& GhostWorldTarget) const;
+
 	/** Runtime-only update used by the agent's Blueprint feedback setters. */
 	bool SetAgentPhysicalFeedbackTolerance(
 		FProphecyAgentHandle Handle,
-		EProphecyPhysicalFeedbackLimb Limb,
+		FName BoneName,
 		float LinearToleranceCm,
 		float AngularToleranceDegrees);
 
@@ -186,14 +202,43 @@ public:
 		float LinearToleranceCm,
 		float AngularToleranceDegrees);
 
+	/** Event-driven entry point used by AProphecyAgent's Blueprint animation-layer nodes. */
+	bool PlayAgentAnimationLayer(
+		FProphecyAgentHandle Handle,
+		UAnimSequenceBase* Animation,
+		FName FirstBlendedBone,
+		float BlendInSeconds,
+		float BlendOutSeconds,
+		float PlayRate,
+		bool bLoop);
+	bool StopAgentAnimationLayer(FProphecyAgentHandle Handle, float BlendOutSeconds);
+	bool TriggerAgentNNAttack(FProphecyAgentHandle Handle, FName Attack, FVector TargetWorld, bool bHalf);
+	bool SetAgentNNHalfAttack(FProphecyAgentHandle Handle, bool bHalf);
+	bool SetAgentNNAttackTarget(FProphecyAgentHandle Handle, FVector TargetWorld);
+	bool StopAgentNNAttack(FProphecyAgentHandle Handle);
+	bool GetAgentNNAttackState(FProphecyAgentHandle Handle, FName& Attack, bool& bHalf, bool& bArmed, bool& bHit, int32& Frame) const;
+	/** Development console audit; not part of the gameplay Blueprint surface. */
+	UFUNCTION(Exec)
+	bool AuditSlashReference(const FString& ReferenceDirectory);
+	/** Opt-in whole-step CPU/DirectML benchmark. Never runs during gameplay. */
+	UFUNCTION(Exec)
+	bool BenchmarkSlashRuntime(bool bGpu, int32 AgentCount);
+	bool GetAgentAnimationLayerState(
+		FProphecyAgentHandle Handle,
+		float& OutPlaybackTimeSeconds,
+		float& OutBlendWeight) const;
+
 	/** Configures the transient manager used only by the flat /Game/locomotion test map. */
 	void ConfigureSimpleLocomotionTest();
 
 private:
 	bool LoadRuntimeContract();
 	bool LoadWalkRuntimeContract();
+	bool LoadUpperRuntimeContract();
 	bool InitializeNNE();
 	bool InitializeWalkNNE();
+	bool InitializeUpperNNE();
+	bool ValidateUpperNNE();
 	void InitializeAgents();
 	void ResolveRouteEndpoints();
 	void SpawnVisualComponents();
@@ -203,12 +248,17 @@ private:
 	void BuildInputBatch(float StepSeconds);
 	bool RunModelBatch();
 	void ApplyOutputBatch(float StepSeconds);
+	void BuildUpperInputBatch();
+	bool RunUpperModelBatch();
+	void ApplyUpperOutputBatch();
+	void ApplyAnimationLayers(float StepSeconds);
+	bool InitializeSlashNNE();
+	void AdvanceSlashAttacks();
+	void ApplySlashPose(int32 AgentIndex, TArrayView<FTransform> PreviousPose, TArrayView<FTransform> Pose);
 	void PublishAgentPose(int32 AgentIndex, double SourceTimeSeconds);
 	void UpdateVisualRoots();
 	void DrawFutureRootDebug() const;
-	void InitializeSimpleTestCamera();
-	void UpdateSimpleTestInput();
-	void UpdateSimpleTestCamera();
+	void InitializeSimpleTestPlayerView();
 	void CaptureAbsoluteMotionAuditFrame();
 	void UpdateAbsoluteMotionAuditPhase();
 	void UpdateOverlaySettings();
@@ -227,6 +277,12 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNNEModelData> WalkModelData;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNNEModelData> UpperModelData;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNNEModelData> SlashModelData;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<USkeletalMeshComponent>> MeshComponents;

@@ -10,6 +10,7 @@ public class ProphecyEditor : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new[]
 		{
+			"AnimationCore",
 			"AssetTools",
 			"Core",
 			"CoreUObject",
@@ -29,6 +30,9 @@ public class ProphecyEditor : ModuleRules
 			"Projects",
 			"PhysicsCore",
 			"SkeletalMeshEditor",
+			"SkeletalMeshDescription",
+			"StaticMeshDescription",
+			"MeshDescription",
 			"SkeletalMeshModifiers",
 			"UnrealEd"
 		});

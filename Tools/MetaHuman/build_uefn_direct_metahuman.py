@@ -12,6 +12,8 @@ can be overridden with --body-output and --blueprint-output.
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import re
 import sys
 
@@ -27,6 +29,9 @@ FACE_ANIM_BLUEPRINT = "/Game/MetaHumans/Common/Face/Face_AnimBP"
 DEFAULT_BODY_OUTPUT = "/Game/_mygame/MetaHumans/SKM_test_UEFNDirectBody"
 DEFAULT_BLUEPRINT_OUTPUT = "/Game/_mygame/MetaHumans/BP_test_UEFNDirect"
 UEFN_SKELETON = "/Game/_mygame/SK_UEFN_Mannequin.SK_UEFN_Mannequin"
+REDUCED_WEIGHTS = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "reduced_skin_weights.json"
+)
 
 
 def _arguments() -> argparse.Namespace:
@@ -78,6 +83,7 @@ def _build_if_needed(args: argparse.Namespace) -> None:
             "Prophecy.MetaHuman.BuildUEFNBody "
             f"{SOURCE_BODY} {UEFN_MESH} {args.body_output}"
         )
+        _apply_reduced_weights(args.body_output)
     if not _asset_exists(args.body_output):
         raise RuntimeError("The direct UEFN body was not generated")
 
@@ -89,6 +95,44 @@ def _build_if_needed(args: argparse.Namespace) -> None:
         )
     if not _asset_exists(args.blueprint_output):
         raise RuntimeError("The direct UEFN MetaHuman Blueprint was not generated")
+
+
+def _apply_reduced_weights(body_path: str) -> None:
+    """Overwrite LOD0 skin weights with the pose-fitted shared-bone weights.
+
+    The C++ build command transfers weights from the segmented UEFN render
+    mesh, which leaves a hard wrist seam. The fitted weights approximate the
+    original 342-bone MetaHuman rig (including its post-process helper/twist
+    joints) using only the 78 shared UEFN bones, solved per vertex against 52
+    driven poses. See fit_reduced_skin_weights.py.
+    """
+    body = unreal.load_asset(body_path)
+    if not isinstance(body, unreal.SkeletalMesh):
+        raise RuntimeError("Could not load generated body for weight override")
+    with open(REDUCED_WEIGHTS, "r", encoding="utf-8") as handle:
+        reduced = json.load(handle)["weights"]
+
+    modifier = unreal.SkinWeightModifier()
+    if not modifier.set_skeletal_mesh(body):
+        raise RuntimeError("Could not open generated body for weight editing")
+    if modifier.get_num_vertices() != len(reduced):
+        raise RuntimeError(
+            "Vertex count mismatch between mesh and fitted weights: "
+            f"{modifier.get_num_vertices()} vs {len(reduced)}"
+        )
+    for vertex_id, vertex_weights in enumerate(reduced):
+        if not modifier.set_vertex_weights(vertex_id, vertex_weights, True):
+            raise RuntimeError(f"Could not set weights on vertex {vertex_id}")
+    if not modifier.commit_weights_to_skeletal_mesh():
+        raise RuntimeError("Could not commit fitted skin weights")
+
+    mesh_editor = unreal.get_editor_subsystem(unreal.SkeletalMeshEditorSubsystem)
+    if not mesh_editor.remove_lods(body, [1, 2]):
+        raise RuntimeError("Could not remove lower LODs before regeneration")
+    if not mesh_editor.regenerate_lod(body, 3, True, False):
+        raise RuntimeError("Could not regenerate LODs from fitted LOD0")
+    unreal.EditorAssetLibrary.save_loaded_asset(body, only_if_is_dirty=False)
+    unreal.log(f"Prophecy MetaHuman build: applied fitted weights to {body_path}")
 
 
 def _component_templates(blueprint: unreal.Blueprint) -> dict[str, object]:
