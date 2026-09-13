@@ -1,0 +1,687 @@
+diff --git a/Jolt/Physics/Body/Body.h b/Jolt/Physics/Body/Body.h
+index 3b17513..f8ee4fc 100644
+--- a/Jolt/Physics/Body/Body.h
++++ b/Jolt/Physics/Body/Body.h
+@@ -40,6 +40,14 @@ class
+ public:
+ 	JPH_OVERRIDE_NEW_DELETE
+ 
++	/// Prophecy: numerical correction containment contract. This does not change Body's layout.
++	static constexpr uint32 cProphecyNumericalSafetyVersion = 1;
++	inline bool				HasNumericalFailure() const { return (mFlags.load(memory_order_relaxed) & uint8(EFlags::NumericalFailure)) != 0 || (mMotionProperties != nullptr && mMotionProperties->HasNumericalFailure()); }
++	inline void				MarkNumericalFailure() { mFlags.fetch_or(uint8(EFlags::NumericalFailure), memory_order_relaxed); }
++	inline bool				CanApplyPositionStep(Vec3Arg inStep) const;
++	inline bool				CanUseTransformInternal(RVec3Arg inPosition, QuatArg inRotation) const;
++	static inline bool		sIsValidRotationStep(Vec3Arg inStep);
++
+ 	/// Get the id of this body
+ 	inline const BodyID &	GetID() const													{ return mID; }
+ 
+@@ -362,12 +370,13 @@ public:
+ 	static inline bool		sFindCollidingPairsCanCollide(const Body &inBody1, const Body &inBody2);
+ 
+ 	/// Update position using an Euler step (used during position integrate & constraint solving)
+-	inline void				AddPositionStep(Vec3Arg inLinearVelocityTimesDeltaTime)			{ JPH_ASSERT(IsRigidBody()); JPH_ASSERT(BodyAccess::sCheckRights(BodyAccess::sPositionAccess(), BodyAccess::EAccess::ReadWrite)); mPosition += mMotionProperties->LockTranslation(inLinearVelocityTimesDeltaTime); JPH_ASSERT(!mPosition.IsNaN()); }
+-	inline void				SubPositionStep(Vec3Arg inLinearVelocityTimesDeltaTime)			{ JPH_ASSERT(IsRigidBody()); JPH_ASSERT(BodyAccess::sCheckRights(BodyAccess::sPositionAccess(), BodyAccess::EAccess::ReadWrite)); mPosition -= mMotionProperties->LockTranslation(inLinearVelocityTimesDeltaTime); JPH_ASSERT(!mPosition.IsNaN()); }
++	inline void				AddPositionStep(Vec3Arg inLinearVelocityTimesDeltaTime);
++	inline void				SubPositionStep(Vec3Arg inLinearVelocityTimesDeltaTime);
+ 
+ 	/// Update rotation using an Euler step (used during position integrate & constraint solving)
+ 	inline void				AddRotationStep(Vec3Arg inAngularVelocityTimesDeltaTime);
+ 	inline void				SubRotationStep(Vec3Arg inAngularVelocityTimesDeltaTime);
++	inline void				ApplyRotationStepInternal(Vec3Arg inStep, bool inSubtract);
+ 
+ 	/// Function to update body's layer (should only be called internally since it also requires updating the broadphase)
+ 	inline void				SetObjectLayerInternal(ObjectLayer inLayer, const BroadPhaseLayerInterface &inBPLInterface) { mObjectLayer = inLayer; mBroadPhaseLayer = inBPLInterface.GetBroadPhaseLayer(inLayer); }
+@@ -440,6 +449,7 @@ private:
+ 		UseManifoldReduction			= 1 << 4,											///< Set this bit to indicate that this body can use manifold reduction (if PhysicsSettings::mUseManifoldReduction is true)
+ 		ApplyGyroscopicForce			= 1 << 5,											///< Set this bit to indicate that the gyroscopic force should be applied to this body (aka Dzhanibekov effect, see https://en.wikipedia.org/wiki/Tennis_racket_theorem)
+ 		EnhancedInternalEdgeRemoval		= 1 << 6,											///< Set this bit to indicate that enhanced internal edge removal should be used for this body (see BodyCreationSettings::mEnhancedInternalEdgeRemoval)
++		NumericalFailure				= 1 << 7,											///< Prophecy: a solver correction was rejected; the world must be shut down after Update returns.
+ 	};
+ 
+ 	// 16 byte aligned
+diff --git a/Jolt/Physics/Body/Body.inl b/Jolt/Physics/Body/Body.inl
+index dbbd64d..8eae27e 100644
+--- a/Jolt/Physics/Body/Body.inl
++++ b/Jolt/Physics/Body/Body.inl
+@@ -4,6 +4,8 @@
+ 
+ #pragma once
+ 
++#include <cmath>
++
+ JPH_NAMESPACE_BEGIN
+ 
+ RMat44 Body::GetWorldTransform() const
+@@ -78,36 +80,153 @@ inline bool Body::sFindCollidingPairsCanCollide(const Body &inBody1, const Body
+ 	return true;
+ }
+ 
+-void Body::AddRotationStep(Vec3Arg inAngularVelocityTimesDeltaTime)
++bool Body::CanApplyPositionStep(Vec3Arg inStep) const
++{
++	// Position constraints use float vectors/matrices even in a double precision world.
++	// Reject arithmetic that cannot remain representable in those operations.
++	if (HasNumericalFailure() || !std::isfinite(inStep.LengthSq()))
++		return false;
++	RVec3 candidate = mPosition + mMotionProperties->LockTranslation(inStep);
++	return CanUseTransformInternal(candidate, mRotation);
++}
++
++bool Body::CanUseTransformInternal(RVec3Arg inPosition, QuatArg inRotation) const
++{
++	// QuadTree bounds are restricted to +/-cLargeFloat, substantially below float
++	// overflow. Check this before a correction reaches CalculateWorldSpaceBounds.
++	if (!std::isfinite(inPosition.GetX()) || !std::isfinite(inPosition.GetY()) || !std::isfinite(inPosition.GetZ()))
++		return false;
++	double max_position = max(max(std::abs(double(inPosition.GetX())), std::abs(double(inPosition.GetY()))), std::abs(double(inPosition.GetZ())));
++	if (!std::isfinite(max_position) || max_position > double(cLargeFloat))
++		return false;
++
++	// Local bounds are relative to the COM and may be asymmetric. Their maximum
++	// absolute corner includes that offset. Twice its L1 norm conservatively covers
++	// every unit-quaternion rotation, including float matrix rounding. This keeps
++	// ordinary corrections off the more expensive exact world-bounds path.
++	AABox local = mShape->GetLocalBounds();
++	if (!sIsValidRotationStep(local.mMin) || !sIsValidRotationStep(local.mMax))
++		return false;
++	Vec3 corner = Vec3::sMax(local.mMin.Abs(), local.mMax.Abs());
++	double radius = 2.0 * (double(corner.GetX()) + double(corner.GetY()) + double(corner.GetZ()));
++	if (!local.IsValid() || !std::isfinite(radius))
++		return false;
++	if (max_position + radius < double(cLargeFloat))
++		return true;
++
++	// Near the numeric boundary, validate the actual transformed shape, including
++	// Jolt's outward rounding from double world positions to float broadphase bounds.
++	AABox bounds = mShape->GetWorldSpaceBounds(RMat44::sRotationTranslation(inRotation, inPosition), Vec3::sOne());
++	Vec3 limit = Vec3::sReplicate(cLargeFloat);
++	return bounds.IsValid()
++		&& Vec3::sGreaterOrEqual(bounds.mMin, -limit).TestAllXYZTrue()
++		&& Vec3::sLessOrEqual(bounds.mMax, limit).TestAllXYZTrue();
++}
++
++bool Body::sIsValidRotationStep(Vec3Arg inStep)
++{
++	return std::isfinite(inStep.GetX()) && std::isfinite(inStep.GetY()) && std::isfinite(inStep.GetZ());
++}
++
++void Body::AddPositionStep(Vec3Arg inStep)
+ {
+ 	JPH_ASSERT(IsRigidBody());
+ 	JPH_ASSERT(BodyAccess::sCheckRights(BodyAccess::sPositionAccess(), BodyAccess::EAccess::ReadWrite));
++	if (!CanApplyPositionStep(inStep))
++	{
++		MarkNumericalFailure();
++		return;
++	}
++	mPosition += mMotionProperties->LockTranslation(inStep);
++}
+ 
+-	// This used to use the equation: d/dt R(t) = 1/2 * w(t) * R(t) so that R(t + dt) = R(t) + 1/2 * w(t) * R(t) * dt
+-	// See: Appendix B of An Introduction to Physically Based Modeling: Rigid Body Simulation II-Nonpenetration Constraints
+-	// URL: https://www.cs.cmu.edu/~baraff/sigcourse/notesd2.pdf
+-	// But this is a first order approximation and does not work well for kinematic ragdolls that are driven to a new
+-	// pose if the poses differ enough. So now we split w(t) * dt into an axis and angle part and create a quaternion with it.
+-	// Note that the resulting quaternion is normalized since otherwise numerical drift will eventually make the rotation non-normalized.
+-	float len = inAngularVelocityTimesDeltaTime.Length();
+-	if (len > 1.0e-6f)
++void Body::SubPositionStep(Vec3Arg inStep)
++{
++	JPH_ASSERT(IsRigidBody());
++	JPH_ASSERT(BodyAccess::sCheckRights(BodyAccess::sPositionAccess(), BodyAccess::EAccess::ReadWrite));
++	if (!CanApplyPositionStep(-inStep))
+ 	{
+-		mRotation = (Quat::sRotation(inAngularVelocityTimesDeltaTime / len, len) * mRotation).Normalized();
+-		JPH_ASSERT(!mRotation.IsNaN());
++		MarkNumericalFailure();
++		return;
+ 	}
++	mPosition -= mMotionProperties->LockTranslation(inStep);
++}
++
++void Body::AddRotationStep(Vec3Arg inAngularVelocityTimesDeltaTime)
++{
++	ApplyRotationStepInternal(inAngularVelocityTimesDeltaTime, false);
+ }
+ 
+ void Body::SubRotationStep(Vec3Arg inAngularVelocityTimesDeltaTime)
++{
++	ApplyRotationStepInternal(inAngularVelocityTimesDeltaTime, true);
++}
++
++void Body::ApplyRotationStepInternal(Vec3Arg inAngularVelocityTimesDeltaTime, bool inSubtract)
+ {
+ 	JPH_ASSERT(IsRigidBody());
+ 	JPH_ASSERT(BodyAccess::sCheckRights(BodyAccess::sPositionAccess(), BodyAccess::EAccess::ReadWrite));
++	if (HasNumericalFailure())
++		return;
++	if (!sIsValidRotationStep(inAngularVelocityTimesDeltaTime))
++	{
++		MarkNumericalFailure();
++		return;
++	}
+ 
+-	// See comment at Body::AddRotationStep
++	// This used to use the equation: d/dt R(t) = 1/2 * w(t) * R(t) so that R(t + dt) = R(t) + 1/2 * w(t) * R(t) * dt
++	// See: Appendix B of An Introduction to Physically Based Modeling: Rigid Body Simulation II-Nonpenetration Constraints
++	// URL: https://www.cs.cmu.edu/~baraff/sigcourse/notesd2.pdf
++	// But this is a first order approximation and does not work well for kinematic ragdolls that are driven to a new
++	// pose if the poses differ enough. So now we split w(t) * dt into an axis and angle part and create a quaternion with it.
++	// Note that the resulting quaternion is normalized since otherwise numerical drift will eventually make the rotation non-normalized.
+ 	float len = inAngularVelocityTimesDeltaTime.Length();
+ 	if (len > 1.0e-6f)
+ 	{
+-		mRotation = (Quat::sRotation(inAngularVelocityTimesDeltaTime / len, -len) * mRotation).Normalized();
+-		JPH_ASSERT(!mRotation.IsNaN());
++		Quat delta;
++		if (len <= 1.0e4f)
++		{
++			// Keep ordinary corrections on the original arithmetic path.
++			Vec3 axis = inAngularVelocityTimesDeltaTime / len;
++			if (!axis.IsNormalized())
++			{
++				MarkNumericalFailure();
++				return;
++			}
++			delta = Quat::sRotation(axis, inSubtract? -len : len);
++		}
++		else
++		{
++			// The SIMD trig implementation reduces its quadrant to an integer and is
++			// unsuitable for huge finite angles. A double norm also avoids float
++			// squared-length overflow. This rare path does not clamp the correction.
++			double x = inAngularVelocityTimesDeltaTime.GetX();
++			double y = inAngularVelocityTimesDeltaTime.GetY();
++			double z = inAngularVelocityTimesDeltaTime.GetZ();
++			double length = std::sqrt(x * x + y * y + z * z);
++			double half_angle = (inSubtract? -0.5 : 0.5) * length;
++			double scale = std::sin(half_angle) / length;
++			delta = Quat(float(x * scale), float(y * scale), float(z * scale), float(std::cos(half_angle)));
++		}
++		Quat candidate = delta * mRotation;
++		float length_sq = candidate.GetXYZW().LengthSq();
++		if (!std::isfinite(length_sq) || length_sq <= 0.0f)
++		{
++			MarkNumericalFailure();
++			return;
++		}
++		candidate = candidate.Normalized();
++		if (!candidate.IsNormalized())
++		{
++			MarkNumericalFailure();
++			return;
++		}
++		if (!CanUseTransformInternal(mPosition, candidate))
++		{
++			MarkNumericalFailure();
++			return;
++		}
++		mRotation = candidate;
+ 	}
+ }
+ 
+diff --git a/Jolt/Physics/Body/MotionProperties.h b/Jolt/Physics/Body/MotionProperties.h
+index 55280a4..bbf6233 100644
+--- a/Jolt/Physics/Body/MotionProperties.h
++++ b/Jolt/Physics/Body/MotionProperties.h
+@@ -4,6 +4,8 @@
+ 
+ #pragma once
+ 
++#include <cmath>
++
+ #include <Jolt/Geometry/Sphere.h>
+ #include <Jolt/Physics/Body/AllowedDOFs.h>
+ #include <Jolt/Physics/Body/MotionQuality.h>
+@@ -30,6 +32,10 @@ class JPH_EXPORT MotionProperties
+ public:
+ 	JPH_OVERRIDE_NEW_DELETE
+ 
++	/// Prophecy: permanent numerical rejection flag; the containing world must stop.
++	inline bool				HasNumericalFailure() const { return mNumericalFailure.load(memory_order_relaxed) != 0; }
++	inline void				MarkNumericalFailure() { mNumericalFailure.store(1, memory_order_relaxed); }
++
+ 	/// Motion quality, or how well it detects collisions when it has a high velocity
+ 	EMotionQuality			GetMotionQuality() const										{ return mMotionQuality; }
+ 
+@@ -230,7 +236,13 @@ public:
+ 		JPH_DET_LOG("ApplyLinearVelocityStep: " << inLinearVelocity);
+ 		JPH_ASSERT(BodyAccess::sCheckRights(BodyAccess::sVelocityAccess(), BodyAccess::EAccess::ReadWrite));
+ 		JPH_ASSERT(mCachedMotionType == EMotionType::Dynamic);
+-		JPH_ASSERT(!inLinearVelocity.IsNaN());
++		if (HasNumericalFailure())
++			return;
++		if (!std::isfinite(inLinearVelocity.LengthSq()))
++		{
++			MarkNumericalFailure();
++			return;
++		}
+ 		mLinearVelocity = LockTranslation(inLinearVelocity);
+ 	}
+ 	inline void				AddLinearVelocityStep(Vec3Arg inLinearVelocityChange)			{ ApplyLinearVelocityStep(mLinearVelocity + inLinearVelocityChange); }
+@@ -241,7 +253,13 @@ public:
+ 		JPH_DET_LOG("ApplyAngularVelocityStep: " << inAngularVelocity);
+ 		JPH_ASSERT(BodyAccess::sCheckRights(BodyAccess::sVelocityAccess(), BodyAccess::EAccess::ReadWrite));
+ 		JPH_ASSERT(mCachedMotionType == EMotionType::Dynamic);
+-		JPH_ASSERT(!inAngularVelocity.IsNaN());
++		if (HasNumericalFailure())
++			return;
++		if (!std::isfinite(inAngularVelocity.LengthSq()))
++		{
++			MarkNumericalFailure();
++			return;
++		}
+ 		mAngularVelocity = inAngularVelocity;
+ 	}
+ 	inline void				AddAngularVelocityStep(Vec3Arg inAngularVelocityChange)			{ ApplyAngularVelocityStep(mAngularVelocity + inAngularVelocityChange); }
+@@ -312,6 +330,7 @@ private:
+ 	EAllowedDOFs			mAllowedDOFs = EAllowedDOFs::All;								///< Allowed degrees of freedom for this body
+ 	uint8					mNumVelocityStepsOverride = 0;									///< Used only when this body is dynamic and colliding. Override for the number of solver velocity iterations to run, 0 means use the default in PhysicsSettings::mNumVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
+ 	uint8					mNumPositionStepsOverride = 0;									///< Used only when this body is dynamic and colliding. Override for the number of solver position iterations to run, 0 means use the default in PhysicsSettings::mNumPositionSteps. The number of iterations to use is the max of all contacts and constraints in the island.
++	atomic<uint8>			mNumericalFailure { 0 };											///< Prophecy: uses an existing padding byte before the next aligned member.
+ 
+ 	// 3rd cache line (least frequently used)
+ 	// 4 byte aligned (or 8 byte if running in double precision)
+@@ -331,6 +350,11 @@ private:
+ #endif // JPH_TRACK_SIMULATION_STATS
+ };
+ 
++#if !defined(JPH_TRACK_SIMULATION_STATS) && defined(JPH_USE_SSE)
++// The numerical flag occupies padding; the pinned dependency's layout is unchanged.
++static_assert(sizeof(MotionProperties) == JPH_IF_SINGLE_PRECISION_ELSE(192, 208), "Prophecy numerical guard changed MotionProperties ABI");
++#endif
++
+ JPH_NAMESPACE_END
+ 
+ #include "MotionProperties.inl"
+diff --git a/Jolt/Physics/Body/MotionProperties.inl b/Jolt/Physics/Body/MotionProperties.inl
+index 5b6abc3..987ed22 100644
+--- a/Jolt/Physics/Body/MotionProperties.inl
++++ b/Jolt/Physics/Body/MotionProperties.inl
+@@ -25,7 +25,12 @@ void MotionProperties::ClampLinearVelocity()
+ 	JPH_ASSERT(BodyAccess::sCheckRights(BodyAccess::sVelocityAccess(), BodyAccess::EAccess::ReadWrite));
+ 
+ 	float len_sq = mLinearVelocity.LengthSq();
+-	JPH_ASSERT(isfinite(len_sq));
++	if (HasNumericalFailure() || !std::isfinite(len_sq))
++	{
++		MarkNumericalFailure();
++		mLinearVelocity = Vec3::sZero();
++		return;
++	}
+ 	if (len_sq > Square(mMaxLinearVelocity))
+ 		mLinearVelocity *= mMaxLinearVelocity / Sqrt(len_sq);
+ }
+@@ -35,7 +40,12 @@ void MotionProperties::ClampAngularVelocity()
+ 	JPH_ASSERT(BodyAccess::sCheckRights(BodyAccess::sVelocityAccess(), BodyAccess::EAccess::ReadWrite));
+ 
+ 	float len_sq = mAngularVelocity.LengthSq();
+-	JPH_ASSERT(isfinite(len_sq));
++	if (HasNumericalFailure() || !std::isfinite(len_sq))
++	{
++		MarkNumericalFailure();
++		mAngularVelocity = Vec3::sZero();
++		return;
++	}
+ 	if (len_sq > Square(mMaxAngularVelocity))
+ 		mAngularVelocity *= mMaxAngularVelocity / Sqrt(len_sq);
+ }
+diff --git a/Jolt/Physics/Constraints/ConstraintManager.cpp b/Jolt/Physics/Constraints/ConstraintManager.cpp
+index 509bddb..3bc0703 100644
+--- a/Jolt/Physics/Constraints/ConstraintManager.cpp
++++ b/Jolt/Physics/Constraints/ConstraintManager.cpp
+@@ -5,6 +5,7 @@
+ #include <Jolt/Jolt.h>
+ 
+ #include <Jolt/Physics/Constraints/ConstraintManager.h>
++#include <Jolt/Physics/Constraints/TwoBodyConstraint.h>
+ #include <Jolt/Physics/Constraints/CalculateSolverSteps.h>
+ #include <Jolt/Physics/IslandBuilder.h>
+ #include <Jolt/Physics/StateRecorder.h>
+@@ -60,6 +61,21 @@ void ConstraintManager::Remove(Constraint **inConstraints, int inNumber)
+ 	}
+ }
+ 
++void ConstraintManager::Replace(Constraint *inOld, Constraint *inReplacement)
++{
++	UniqueLock lock(mConstraintsMutex JPH_IF_ENABLE_ASSERTS(, mLockContext, EPhysicsLockTypes::ConstraintsList));
++	JPH_ASSERT(inOld != nullptr && inReplacement != nullptr && inOld != inReplacement);
++	const uint32 index = inOld->mConstraintIndex;
++	JPH_ASSERT(index < mConstraints.size() && mConstraints[index].GetPtr() == inOld);
++	JPH_ASSERT(inReplacement->mConstraintIndex == Constraint::cInvalidConstraintIndex);
++
++	// Take ownership before releasing the old entry: a wrapper can own its replacement.
++	Ref<Constraint> replacement = inReplacement;
++	inOld->mConstraintIndex = Constraint::cInvalidConstraintIndex;
++	inReplacement->mConstraintIndex = index;
++	mConstraints[index] = replacement;
++}
++
+ Constraints ConstraintManager::GetConstraints() const
+ {
+ 	UniqueLock lock(mConstraintsMutex JPH_IF_ENABLE_ASSERTS(, mLockContext, EPhysicsLockTypes::ConstraintsList));
+@@ -149,6 +165,12 @@ bool ConstraintManager::sSolveVelocityConstraints(Constraint **inActiveConstrain
+ 	for (const uint32 *constraint_idx = inConstraintIdxBegin; constraint_idx < inConstraintIdxEnd; ++constraint_idx)
+ 	{
+ 		Constraint *c = inActiveConstraints[*constraint_idx];
++		if (c->GetType() == EConstraintType::TwoBodyConstraint)
++		{
++			const TwoBodyConstraint *two_body = static_cast<const TwoBodyConstraint *>(c);
++			if (two_body->GetBody1()->HasNumericalFailure() || two_body->GetBody2()->HasNumericalFailure())
++				continue;
++		}
+ 		any_impulse_applied |= c->SolveVelocityConstraint(inDeltaTime);
+ 	}
+ 
+@@ -164,6 +186,12 @@ bool ConstraintManager::sSolvePositionConstraints(Constraint **inActiveConstrain
+ 	for (const uint32 *constraint_idx = inConstraintIdxBegin; constraint_idx < inConstraintIdxEnd; ++constraint_idx)
+ 	{
+ 		Constraint *c = inActiveConstraints[*constraint_idx];
++		if (c->GetType() == EConstraintType::TwoBodyConstraint)
++		{
++			const TwoBodyConstraint *two_body = static_cast<const TwoBodyConstraint *>(c);
++			if (two_body->GetBody1()->HasNumericalFailure() || two_body->GetBody2()->HasNumericalFailure())
++				continue;
++		}
+ 		any_impulse_applied |= c->SolvePositionConstraint(inDeltaTime, inBaumgarte);
+ 	}
+ 
+diff --git a/Jolt/Physics/Constraints/ConstraintManager.h b/Jolt/Physics/Constraints/ConstraintManager.h
+index 8dffcda..4caf74a 100644
+--- a/Jolt/Physics/Constraints/ConstraintManager.h
++++ b/Jolt/Physics/Constraints/ConstraintManager.h
+@@ -40,6 +40,10 @@ public:
+ 	/// Remove a constraint. This is thread safe.
+ 	void					Remove(Constraint **inConstraint, int inNumber);
+ 
++	/// Replace a registered constraint without changing its solver order. Thread safe.
++	/// The replacement must not be registered; neither constraint may be used by Update.
++	void					Replace(Constraint *inOld, Constraint *inReplacement);
++
+ 	/// Get a list of all constraints
+ 	Constraints				GetConstraints() const;
+ 
+diff --git a/Jolt/Physics/Constraints/ConstraintPart/PointConstraintPart.h b/Jolt/Physics/Constraints/ConstraintPart/PointConstraintPart.h
+index f9e86b8..191160d 100644
+--- a/Jolt/Physics/Constraints/ConstraintPart/PointConstraintPart.h
++++ b/Jolt/Physics/Constraints/ConstraintPart/PointConstraintPart.h
+@@ -167,6 +167,8 @@ public:
+ 	/// @param inBaumgarte Baumgarte constant (fraction of the error to correct)
+ 	inline bool					SolvePositionConstraint(Body &ioBody1, Body &ioBody2, float inBaumgarte) const
+ 	{
++		if (ioBody1.HasNumericalFailure() || ioBody2.HasNumericalFailure())
++			return false;
+ 		Vec3 separation = (Vec3(ioBody2.GetCenterOfMassPosition() - ioBody1.GetCenterOfMassPosition()) + mR2 - mR1);
+ 		if (separation != Vec3::sZero())
+ 		{
+@@ -176,6 +178,29 @@ public:
+ 			//
+ 			// We should divide by inDeltaTime, but we should multiply by inDeltaTime in the Euler step below so they're cancelled out
+ 			Vec3 lambda = mEffectiveMass * -inBaumgarte * separation;
++			Vec3 position_step1 = Vec3::sZero(), rotation_step1 = Vec3::sZero();
++			Vec3 position_step2 = Vec3::sZero(), rotation_step2 = Vec3::sZero();
++			bool valid = true;
++			if (ioBody1.IsDynamic())
++			{
++				position_step1 = ioBody1.GetMotionProperties()->GetInverseMass() * lambda;
++				rotation_step1 = mInvI1_R1X * lambda;
++				valid &= ioBody1.CanApplyPositionStep(-position_step1) && Body::sIsValidRotationStep(rotation_step1);
++			}
++			if (ioBody2.IsDynamic())
++			{
++				position_step2 = ioBody2.GetMotionProperties()->GetInverseMass() * lambda;
++				rotation_step2 = mInvI2_R2X * lambda;
++				valid &= ioBody2.CanApplyPositionStep(position_step2) && Body::sIsValidRotationStep(rotation_step2);
++			}
++			// Validate every increment before committing either endpoint. In particular,
++			// do not move a body before discovering its rotation increment is invalid.
++			if (!valid)
++			{
++				if (ioBody1.IsDynamic()) ioBody1.MarkNumericalFailure();
++				if (ioBody2.IsDynamic()) ioBody2.MarkNumericalFailure();
++				return false;
++			}
+ 
+ 			// Directly integrate velocity change for one time step
+ 			//
+@@ -194,13 +219,13 @@ public:
+ 			// integrate + a position integrate and then discard the velocity change.
+ 			if (ioBody1.IsDynamic())
+ 			{
+-				ioBody1.SubPositionStep(ioBody1.GetMotionProperties()->GetInverseMass() * lambda);
+-				ioBody1.SubRotationStep(mInvI1_R1X * lambda);
++				ioBody1.SubPositionStep(position_step1);
++				ioBody1.SubRotationStep(rotation_step1);
+ 			}
+ 			if (ioBody2.IsDynamic())
+ 			{
+-				ioBody2.AddPositionStep(ioBody2.GetMotionProperties()->GetInverseMass() * lambda);
+-				ioBody2.AddRotationStep(mInvI2_R2X * lambda);
++				ioBody2.AddPositionStep(position_step2);
++				ioBody2.AddRotationStep(rotation_step2);
+ 			}
+ 
+ 			return true;
+diff --git a/Jolt/Physics/Constraints/ContactConstraintManager.cpp b/Jolt/Physics/Constraints/ContactConstraintManager.cpp
+index efb7aee..6d5d9cf 100644
+--- a/Jolt/Physics/Constraints/ContactConstraintManager.cpp
++++ b/Jolt/Physics/Constraints/ContactConstraintManager.cpp
+@@ -1810,6 +1810,8 @@ bool ContactConstraintManager::SolveVelocityConstraints(const uint32 *inConstrai
+ 		// Dispatch to the correct templated form
+ 		Body &body1 = *constraint.mBody1;
+ 		Body &body2 = *constraint.mBody2;
++		if (body1.HasNumericalFailure() || body2.HasNumericalFailure())
++			continue;
+ 		any_impulse_applied |= table[(int)body1.GetMotionType()][(int)body2.GetMotionType()](constraint, body1.GetMotionPropertiesUnchecked(), body2.GetMotionPropertiesUnchecked());
+ 	}
+ 
+@@ -1893,6 +1895,8 @@ bool ContactConstraintManager::sSolvePositionConstraint(ContactConstraintBase &i
+ 
+ 	for (uint32 i = 0; i < constraint.mNumContactPoints; ++i)
+ 	{
++		if (ioBody1.HasNumericalFailure() || ioBody2.HasNumericalFailure())
++			break;
+ 		WorldContactPoint<Type1, Type2> &wcp = constraint.mContactPoints[i];
+ 		const CachedContactPoint &ccp = cached_manifold.mContactPoints[i];
+ 
+@@ -1982,6 +1986,8 @@ bool ContactConstraintManager::SolvePositionConstraints(const uint32 *inConstrai
+ 		// Fetch bodies
+ 		Body &body1 = *constraint.mBody1;
+ 		Body &body2 = *constraint.mBody2;
++		if (body1.HasNumericalFailure() || body2.HasNumericalFailure())
++			continue;
+ 
+ 		// Dispatch to the correct templated form
+ 		any_impulse_applied |= table[(int)body1.GetMotionType()][(int)body2.GetMotionType()](constraint, body1, body2, mPhysicsSettings, *mWriteCache);
+diff --git a/Jolt/Physics/Constraints/FixedConstraint.cpp b/Jolt/Physics/Constraints/FixedConstraint.cpp
+index b063985..5a8cc0f 100644
+--- a/Jolt/Physics/Constraints/FixedConstraint.cpp
++++ b/Jolt/Physics/Constraints/FixedConstraint.cpp
+@@ -156,9 +156,13 @@ bool FixedConstraint::SolveVelocityConstraint(float inDeltaTime)
+ 
+ bool FixedConstraint::SolvePositionConstraint(float inDeltaTime, float inBaumgarte)
+ {
++	if (mBody1->HasNumericalFailure() || mBody2->HasNumericalFailure())
++		return false;
+ 	// Solve rotation constraint
+ 	mRotationConstraintPart.CalculateConstraintProperties(*mBody1, Mat44::sRotation(mBody1->GetRotation()), *mBody2, Mat44::sRotation(mBody2->GetRotation()));
+ 	bool rot = mRotationConstraintPart.SolvePositionConstraint(*mBody1, *mBody2, mInvInitialOrientation, inBaumgarte);
++	if (mBody1->HasNumericalFailure() || mBody2->HasNumericalFailure())
++		return false;
+ 
+ 	// Solve position constraint
+ 	mPointConstraintPart.CalculateConstraintProperties(*mBody1, Mat44::sRotation(mBody1->GetRotation()), mLocalSpacePosition1, *mBody2, Mat44::sRotation(mBody2->GetRotation()), mLocalSpacePosition2);
+diff --git a/Jolt/Physics/Constraints/SixDOFConstraint.cpp b/Jolt/Physics/Constraints/SixDOFConstraint.cpp
+index 89b2490..1ca9e13 100644
+--- a/Jolt/Physics/Constraints/SixDOFConstraint.cpp
++++ b/Jolt/Physics/Constraints/SixDOFConstraint.cpp
+@@ -136,16 +136,21 @@ void SixDOFConstraint::UpdateFixedFreeAxis()
+ 			mFreeAxis |= 1 << a;
+ 	}
+ 
+-	// On change we deactivate all constraints to reset warm starting
+-	if (old_free_axis != mFreeAxis || old_fixed_axis != mFixedAxis)
++	// Reset only the solver block whose axis classification changed. Angular
++	// limits do not change the point attachment or its cached reaction impulse.
++	const uint8 changed_axis = (old_free_axis ^ mFreeAxis) | (old_fixed_axis ^ mFixedAxis);
++	if ((changed_axis & 0x07) != 0)
+ 	{
+ 		for (AxisConstraintPart &c : mTranslationConstraintPart)
+ 			c.Deactivate();
+ 		mPointConstraintPart.Deactivate();
+-		mSwingTwistConstraintPart.Deactivate();
+-		mRotationConstraintPart.Deactivate();
+ 		for (AxisConstraintPart &c : mMotorTranslationConstraintPart)
+ 			c.Deactivate();
++	}
++	if ((changed_axis & 0x38) != 0)
++	{
++		mSwingTwistConstraintPart.Deactivate();
++		mRotationConstraintPart.Deactivate();
+ 		for (AngleConstraintPart &c : mMotorRotationConstraintPart)
+ 			c.Deactivate();
+ 	}
+@@ -719,6 +724,8 @@ bool SixDOFConstraint::SolveVelocityConstraint(float inDeltaTime)
+ 
+ bool SixDOFConstraint::SolvePositionConstraint(float inDeltaTime, float inBaumgarte)
+ {
++	if (mBody1->HasNumericalFailure() || mBody2->HasNumericalFailure())
++		return false;
+ 	bool impulse = false;
+ 
+ 	if (IsRotationFullyConstrained())
+@@ -745,6 +752,9 @@ bool SixDOFConstraint::SolvePositionConstraint(float inDeltaTime, float inBaumga
+ 		impulse |= mSwingTwistConstraintPart.SolvePositionConstraint(*mBody1, *mBody2, q, mConstraintToBody1, mConstraintToBody2, inBaumgarte);
+ 	}
+ 
++	if (mBody1->HasNumericalFailure() || mBody2->HasNumericalFailure())
++		return false;
++
+ 	// Solve position violations
+ 	if (IsTranslationFullyConstrained())
+ 	{
+diff --git a/Jolt/Physics/EPhysicsUpdateError.h b/Jolt/Physics/EPhysicsUpdateError.h
+index c9edd6d..a4df095 100644
+--- a/Jolt/Physics/EPhysicsUpdateError.h
++++ b/Jolt/Physics/EPhysicsUpdateError.h
+@@ -13,6 +13,7 @@ enum class EPhysicsUpdateError : uint32
+ 	ManifoldCacheFull		= 1 << 0,		///< The manifold cache is full, this means that the total number of contacts between bodies is too high. Some contacts were ignored. Increase inMaxContactConstraints in PhysicsSystem::Init.
+ 	BodyPairCacheFull		= 1 << 1,		///< The body pair cache is full, this means that too many bodies contacted. Some contacts were ignored. Increase inMaxBodyPairs in PhysicsSystem::Init.
+ 	ContactConstraintsFull	= 1 << 2,		///< The contact constraints buffer is full. Some contacts were ignored. Increase inMaxContactConstraints in PhysicsSystem::Init.
++	NumericalFailure		= 1 << 3,		///< Prophecy: an unrepresentable correction was rejected. Discard this update and shut down the world before reuse.
+ };
+ 
+ /// OR operator for EPhysicsUpdateError
+diff --git a/Jolt/Physics/PhysicsSystem.cpp b/Jolt/Physics/PhysicsSystem.cpp
+index de4d0ee..ca96127 100644
+--- a/Jolt/Physics/PhysicsSystem.cpp
++++ b/Jolt/Physics/PhysicsSystem.cpp
+@@ -444,6 +444,19 @@ EPhysicsUpdateError PhysicsSystem::Update(float inDeltaTime, int inCollisionStep
+ 				PhysicsUpdateContext::Step *next_step = &context.mSteps[step_idx + 1];
+ 				step.mStartNextStep = inJobSystem->CreateJob("StartNextStep", cColorStartNextStep, [this, next_step]()
+ 					{
++						if ((next_step->mContext->mErrors.load(memory_order_relaxed) & uint32(EPhysicsUpdateError::NumericalFailure)) != 0)
++						{
++							// All jobs of the failed substep have completed. Keep the existing
++							// dependency graph draining, but give later substeps no active bodies.
++							// A copy of the last ID avoids aliasing active-list removal swaps.
++							JPH_IF_ENABLE_ASSERTS(BodyManager::GrantActiveBodiesAccess grant_active(false, true);)
++							for (EBodyType type : { EBodyType::RigidBody, EBodyType::SoftBody })
++								while (uint32 count = mBodyManager.GetNumActiveBodies(type))
++								{
++									BodyID id = mBodyManager.GetActiveBodiesUnsafe(type)[count - 1];
++									mBodyManager.DeactivateBodies(&id, 1);
++								}
++						}
+ 					#ifdef JPH_DEBUG
+ 						// Validate that the cached bounds are correct
+ 						mBodyManager.ValidateActiveBodyBounds();
+@@ -676,12 +689,18 @@ EPhysicsUpdateError PhysicsSystem::Update(float inDeltaTime, int inCollisionStep
+ 
+ 	// Return any errors
+ 	EPhysicsUpdateError errors = static_cast<EPhysicsUpdateError>(context.mErrors.load(memory_order_acquire));
+-	JPH_ASSERT(errors == EPhysicsUpdateError::None, "An error occurred during the physics update, see EPhysicsUpdateError for more information");
++	// Numerical rejection is an explicitly recoverable result for the host. Other
++	// errors retain the original assertion policy; never suppress arbitrary asserts.
++	JPH_ASSERT((uint32(errors) & ~uint32(EPhysicsUpdateError::NumericalFailure)) == 0, "An error occurred during the physics update, see EPhysicsUpdateError for more information");
+ 	return errors;
+ }
+ 
+ void PhysicsSystem::JobStepListeners(PhysicsUpdateContext::Step *ioStep)
+ {
++	// The job wrapper still releases its dependencies. Do not let a listener
++	// reactivate bodies while draining the substeps of a failed update.
++	if ((ioStep->mContext->mErrors.load(memory_order_relaxed) & uint32(EPhysicsUpdateError::NumericalFailure)) != 0)
++		return;
+ #ifdef JPH_ENABLE_ASSERTS
+ 	// Read positions (broadphase updates concurrently so we can't write), read/write velocities
+ 	BodyAccess::Grant grant(BodyAccess::EAccess::ReadWrite, BodyAccess::EAccess::Read);
+@@ -1619,6 +1638,15 @@ void PhysicsSystem::JobIntegrateVelocity(const PhysicsUpdateContext *ioContext,
+ 			MotionProperties *mp = body.GetMotionProperties();
+ 
+ 			JPH_DET_LOG("JobIntegrateVelocity: id: " << body_id << " v: " << body.GetLinearVelocity() << " w: " << body.GetAngularVelocity());
++			// Velocity constraint arithmetic can itself overflow. The stock clamp
++			// asserts that squared length is finite, so reject before entering it.
++			if (!std::isfinite(body.GetLinearVelocity().LengthSq()) || !std::isfinite(body.GetAngularVelocity().LengthSq()))
++			{
++				body.MarkNumericalFailure();
++				ioStep->mContext->mErrors.fetch_or(uint32(EPhysicsUpdateError::NumericalFailure), memory_order_relaxed);
++				mp->SetLinearVelocity(Vec3::sZero());
++				mp->SetAngularVelocity(Vec3::sZero());
++			}
+ 
+ 			// Clamp velocities (not for kinematic bodies)
+ 			if (body.IsDynamic())
+@@ -1642,6 +1670,17 @@ void PhysicsSystem::JobIntegrateVelocity(const PhysicsUpdateContext *ioContext,
+ 
+ 			// Get delta position
+ 			Vec3 delta_pos = body.GetLinearVelocity() * delta_time;
++			if (!body.CanApplyPositionStep(delta_pos))
++				body.MarkNumericalFailure();
++			if (body.HasNumericalFailure())
++			{
++				// Catch integration failures even for bodies not assigned to an island,
++				// and do not feed an invalid sweep displacement into CCD.
++				ioStep->mContext->mErrors.fetch_or(uint32(EPhysicsUpdateError::NumericalFailure), memory_order_relaxed);
++				mp->SetLinearVelocity(Vec3::sZero());
++				mp->SetAngularVelocity(Vec3::sZero());
++				delta_pos = Vec3::sZero();
++			}
+ 
+ 			// If the position should be updated (or if it is delayed because of CCD)
+ 			bool update_position = true;
+@@ -2529,6 +2568,8 @@ void PhysicsSystem::CheckSleepAndUpdateBounds(uint32 inIslandIndex, const Physic
+ 		for (const BodyID *body_id = bodies_begin; body_id < bodies_end; ++body_id)
+ 		{
+ 			Body &body = mBodyManager.GetBody(*body_id);
++			if (body.HasNumericalFailure())
++				ioStep->mContext->mErrors.fetch_or(uint32(EPhysicsUpdateError::NumericalFailure), memory_order_relaxed);
+ 
+ 			// Update bounding box
+ 			body.CalculateWorldSpaceBoundsInternal();
+@@ -2554,6 +2595,8 @@ void PhysicsSystem::CheckSleepAndUpdateBounds(uint32 inIslandIndex, const Physic
+ 		for (const BodyID *body_id = bodies_begin; body_id < bodies_end; ++body_id)
+ 		{
+ 			Body &body = mBodyManager.GetBody(*body_id);
++			if (body.HasNumericalFailure())
++				ioStep->mContext->mErrors.fetch_or(uint32(EPhysicsUpdateError::NumericalFailure), memory_order_relaxed);
+ 			body.CalculateWorldSpaceBoundsInternal();
+ 		}
+ 	}
+diff --git a/Jolt/Physics/PhysicsSystem.h b/Jolt/Physics/PhysicsSystem.h
+index b244a51..27cffee 100644
+--- a/Jolt/Physics/PhysicsSystem.h
++++ b/Jolt/Physics/PhysicsSystem.h
+@@ -130,6 +130,10 @@ public:
+ 	/// Remove constraint from the world
+ 	void						RemoveConstraint(Constraint *inConstraint)					{ mConstraintManager.Remove(&inConstraint, 1); }
+ 
++	/// Replace an existing constraint in its solver slot. The replacement must be unregistered.
++	/// Call outside Update, with the same priority to retain the exact solve order.
++	void						ReplaceConstraint(Constraint *inOld, Constraint *inReplacement) { mConstraintManager.Replace(inOld, inReplacement); }
++
+ 	/// Batch add constraints.
+ 	void						AddConstraints(Constraint **inConstraints, int inNumber)	{ mConstraintManager.Add(inConstraints, inNumber); }
+ 

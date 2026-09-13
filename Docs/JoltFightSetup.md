@@ -1,0 +1,100 @@
+# Jolt fight setup
+
+Current priority: fighter movement, physical animation, weapons and scene collision. The user deferred cutting, rope, noose and boat integration. Keep the saved sword cutting loop disconnected. Accepted performance settings and measurement limits are in `Docs/JoltAcceptedPerformance.md`.
+
+Standard force/impulse/torque and velocity setter nodes now dispatch to the active backend on the saved fighter's **PhysicalMesh** and sword's **sword** component. Existing wiring is preserved. For bone selection, radial/local calls and component requirements for new props, see [JoltForceNodes.md](JoltForceNodes.md).
+
+Jolt fighter admission also applies each body's existing **Inertia Conditioning** setting using the current engine policy. This prevents excessive wrist correction from feeding unwanted hand motion back into the NN with small feedback tolerances. See [JoltFeedbackHandDrift.md](JoltFeedbackHandDrift.md) for measurements and admission-time scope.
+
+## Press Play
+
+Extreme magnetization can still make the character physically unstable. If it exceeds Jolt's numerical range, the shared simulation now stops safely at its last published pose instead of crashing Unreal. Stop Play and start again to reset it. The protection does not reduce your requested strength. Normal/tenfold real-character tests and the full 78-test Jolt suite pass; evidence is in `Saved/JoltMigration/HighGainCrash-20260910/`.
+
+Open `/Game/testNN` and press **Play**. The saved level contains one enabled **Prophecy Jolt Fight Setup** actor. It initializes the shared world and static scene owner, then admits manual-NN fighters starting in Physical mode after BeginPlay and latent startup finish. It disables their MACD and retains Unreal QueryOnly receivers. Kinematic/HalfSim fighters are skipped, and later explicit mode/backend changes are not forced back.
+
+For another fight map, place one **Prophecy Jolt Fight Setup** actor. Set **Enable Jolt** false before Play to keep normal Chaos startup. Newly spawned fighters need their existing NN registration and published pose; this actor does not create NN lanes. It owns backend/floor startup only: use the existing **Equip Sword** node to choose when to equip.
+
+## Blood receivers
+
+`testNN` also contains **BloodPaintManager** (`BP_BloodPaintManager`) and **BloodDecalManager** (`A_DecalManager`). The decal manager references that paint manager and the existing Static Floor. Both swords reuse it at startup. The paint manager carries prepared material mappings for the sword, rock, WorldGrid and both mannequin materials; editor material generation and mask-debug display are off. The sword cutting loop is still disconnected.
+
+For another map, place those two blood actors, assign **paint manager** and **floor** on the decal manager, and add preserving material pairs for additional receiver materials. Character queries use **NiagaraWound**; the character's saved collision settings ignore Visibility. Keep Jolt's synchronized QueryOnly mesh for traces. See `Docs/JoltBloodVisualValidation.md` for the rendered checks and coverage limits.
+
+## Physics step timing
+
+The game uses a fixed **60 Hz whole-game clock**, as requested: below 60 rendered FPS, gameplay slows down rather than advancing a larger physics/animation step. Normal NN startup preserves the saved clock settings. Physics maximum substep duration is **0.016667 seconds**, with substepping enabled and a maximum of 64. The user visually accepted movement after the mode-return fix. The fresh 120-second mode-cycle capture is `Saved/Diagnostics/CameraRelativeHitch/mode-sequence-141010.json`.
+
+## Manual Blueprint startup (alternative)
+
+1. Call **Initialize Jolt World** once in the gameplay world. It uses that world's gravity; defaults are 16,384 body slots and seven workers. Scratch memory now scales with contact capacity (256 MiB at those defaults), fixing the first-step failure of the previous fixed 32 MiB allocation. Check the return value and error. **Is Jolt World Ready** checks an existing world; initialization never resets an existing simulation.
+2. Add a **Prophecy Jolt Scene Collision Component** to a persistent gameplay-manager actor and call **Enable Scene Collision**. This registers loaded static collision in the shared Jolt world. Keep the component alive until the fight ends. Check **Is Enable Pending**, **Is Scene Collision Enabled**, and **Get Last Error** if admission is deferred.
+3. After a manual-NN fighter finishes BeginPlay and any latent startup actions and has its live PhysicalMesh, call **Enable Jolt Physical Animation** to select Jolt. This preserves the current simulation mode: a Physical fighter is admitted immediately (or at the next safe admission boundary); a Kinematic/HalfSim fighter remembers the choice for its next Physical request. Character admission currently requires discrete bodies: set MACD off with **Set MACD Enabled** before enabling Jolt and leave character CCD off. Existing physical-animation targets and authored PHAT hard limits drive the character.
+
+The scene owner supports the strict static primitive/convex and cooked triangle importer, including separate ISM/HISM instances. It observes spawn, removal, streaming, physics recreation and collision changes. Blood-style instance-to-mesh promotion removes the old collider and admits the replacement before the next shared step. It preserves the original Unreal query receivers and materials. Unsupported live collision reports a source-specific error; landscape and moving-world geometry are not covered by this static importer.
+
+The sword controller selects the fighter's backend for physical equip and drop. The Training sword now has a saved 127-vertex convex that passes strict Jolt preparation after a fresh load. Its visible mesh, materials and complex query geometry are unchanged. At the user's direction, Jolt sword admission disables MACD and retains the existing CCD setting. Actual A_Sword passes the 28-check manual-step fixture for grip, attached/physical switching, both drop paths, momentum, UE queries and cleanup.
+
+## Switching a character
+
+The optional NN reference visualization can be accessed with **Get Kinematic Debug Mesh** on the agent (Prophecy > Agent > Debug). It returns a Poseable Mesh Component reference, or None while disabled/before the manager creates it. Use **Is Valid** before reading it and reacquire the reference after toggling **Show Kinematic Debug Mesh**, since disabling destroys the component. **PhysicalMesh** remains the actual character and the appropriate source for its bones/sockets during setup.
+
+**Enable Jolt Physical Animation** and **Disable Jolt Physical Animation** select the backend while preserving the simulation mode. Full Sim switches between Jolt and Chaos; Kinematic stays Kinematic; HalfSim retains its existing Chaos controller and remembers the selected backend for the next full Sim request. Initialize the shared Jolt world before admitting a Physical character. Held-sword binding refreshes on backend changes.
+
+For a toggle Branch, use **Is Jolt Physical Animation Selected**: true → Disable, false → Enable. **Is Jolt Physical Animation Enabled** still reports actual native rig activity and is appropriate for controls that require a live rig. It is false in Kinematic/HalfSim even when Jolt is selected. Explicit **Set Simulation Mode** calls remain independent of backend selection.
+
+Choose the backend before starting a fight. Whole-fight live transfer is unfinished: dropped weapons keep their existing body owner when a character switches. Jolt HalfSim and seamless transfer of all interacting objects are not established by these character controls.
+
+## Angular limits
+
+On a fighter with an initialized PhysicalMesh, call **Set Use Authored Angular Limits**:
+
+- **False** frees swing 1, swing 2 and twist on every anatomical joint.
+- **True** restores the PHAT default angular motion modes and degree values.
+
+The node returns success/failure and works before or after Jolt admission. The existing native experiment's **Set Native Use Authored Angular Limits** forwards to it and retains its own selection flag. Existing Unreal constraint setters and constraint-profile changes on the active PhysicalMesh are mirrored into Jolt at the next physics preparation; only their angular modes/angles are mirrored. Limited axes use the accepted hard limits. Linear anchors, physical-animation strengths and weapon grips are retained. No default selection or saved PHAT/Blueprint was changed. Full Jolt HalfSim remains deferred.
+
+Normal Editor build and fresh-editor limit checks pass (`Saved/JoltMigration/AngularLimits-20260910/FixtureEditorBuild.log`, `result.json`). The tests cover Free/Locked/Limited updates, PHAT restore, invalid-batch atomicity, retained body state/servo/grip and actual head-motion response to live UE setters. The real sword fixture loads its assets before constructing the control worlds. Its log retains the disconnected sword Blueprint warning and two shared-fixture teardown warnings; this is not a warning-free or visual gameplay acceptance claim. Unreal is open on testNN with the node loaded and no dirty packages; the user performs gameplay testing.
+
+## Runtime self-collision
+
+These nodes are on your **Prophecy Agent** reference, under **Prophecy > Agent > Jolt > Self Collision**. Call after **Is Jolt Physical Animation Enabled** becomes true. Every node returns success and **Out Error**; a pending admission, inactive/stopped Jolt rig or invalid bone returns false without changing collision.
+
+| Need | Blueprint call |
+| --- | --- |
+| Disable the whole character's self-collision | **Set Jolt Self Collision Enabled**, Enabled = false |
+| Disable one limb against its own character, including other bodies in that limb | **Set Jolt Self Collision Below**, Bone Name = `upperarm_l`, Enabled = false, Include Self = true |
+| Disable specific bodies against their own character | **Set Jolt Bodies Self Collision Enabled**, Body Bones = an array such as `hand_l`, `hand_r`, Enabled = false |
+| Disable only one pair | **Set Jolt Body Pair Self Collision Enabled**, Bone 1 = `hand_l`, Bone 2 = `head`, Enabled = false |
+| Undo one of those suppressions | Call the same node with the same selection and Enabled = true |
+| Restore all captured PHAT self-collision rules | **Reset Jolt Self Collision** |
+| Inspect a pair | **Get Jolt Body Pair Self Collision Enabled**; check success, then Out Enabled |
+
+The whole-character switch, individual body suppressions and pair suppressions are independent. A pair collides only when PHAT permits it and none of those runtime controls suppress it. For example, re-enabling the whole character keeps an explicitly disabled hand/head pair disabled. **True restores the normal rules; it never forces a PHAT-excluded pair to collide.** Reset clears all runtime suppressions.
+
+Body/pair nodes require exact PHAT body bone names. Below follows skeletal descendants and also accepts a helper bone whose descendants have bodies; Include Self selects the starting bone's body too. Disabling a subtree suppresses its contacts with the whole same character, not just contacts inside the selected limb. Selected-body and Below operations share the same per-body suppression state; re-enabling an overlapping selection clears those bodies' suppression.
+
+Changes apply to the next Jolt step, without rebuilding bodies, joints or the pose bridge. Changed bodies wake and refresh contact caches, including sleeping overlaps. Contact eligibility with the floor, other fighters and weapons stays unchanged; Unreal query receivers used by blood traces remain enabled. Independent weapon/grip collision exclusions still apply. Runtime selections belong to the current Jolt admission and reset when you disable/re-enable Jolt. These nodes do not edit PHAT or control Chaos/Half Sim.
+
+Verified in the normal Editor build and fresh editor: all **82 Jolt tests pass**, including live contacts, sleeping overlaps, all 231 pairs on the real character, unchanged motion/limits/held sword, invalid input, cleanup and rebind. All six nodes are available through Unreal reflection. Evidence: `Saved/JoltMigration/RuntimeSelfCollision-20260910/{result.json,EditorBuild.log,reflection.json}`. Unreal is open on testNN; gameplay feel remains for your testing.
+
+## Remaining acceptance
+
+Admission previously froze a transient difference between live Chaos body origins and rendered sockets as a permanent body-to-bone offset. The strong fighter's 88.78345 cm mismatch persisted through frames 2–120, stretching its right-hand parent link from 22.35 cm to 60.54 cm. `ProphecyJoltCharacterComponent.cpp` now uses Unreal's identity mapping for unwelded PHAT body origins and direct authored bone targets. Native body states, captured shape/COM scales, PHAT limits and drive settings are preserved.
+
+The normal Development Editor build and fresh reopen pass (`Saved/JoltMigration/PoseIntegrity-20260910/EditorBuild.log`, `EditorReopened.log`). `Prophecy.Jolt.Character.DivergentBodyAndSocketAdmission` passes with the native rig deliberately offset 40 cm and 20 degrees from sockets: native poses are retained, rendered/query poses align, and bodies recover toward unchanged targets. The final armed capture `poses-060805.json` covers every frame through frame 120 (238 Jolt character frames), with both explicit `EquipSword(true)` calls succeeding. All 22 body/display pairs align within 2.048e-12 cm and 2.415e-6 degrees. The accompanying PNG was inspected and shows the connected strong fighter holding its sword. The earlier 12-frame FightStartup ownership/count checks missed skeletal integrity and are superseded. The final capture's optional native-summary command had a path-parsing error; its full pose metrics and PNG remain valid, without claiming that optional summary passed.
+
+The frozen-offset explosion is fixed, but armed motion quality remains open: the final run still records an unresolved transient left-hand parent-link error of 8.228 cm at frame 36 (4.9 cm in another armed run). Do not hide this residual strain or retune PHAT/drives to mask it. Full motion/contact acceptance, cutting and the other deferred mechanics remain open. No new package or performance result is claimed.
+
+Earlier foundation evidence includes 67 passing tests and a one-character fixture with 60 air and 60 floor steps. See `Docs/JoltIntegrationStatus.md` for their recorded scope.
+
+Hull preparation, the actual sword functional fixture, native sword-floor contacts and held-sword contact against a distinct fighter pass. The latter compares identical initial states with only sword-to-victim collision changed from Block to Ignore; it proves contact/depenetration, not a swing or cutting sequence. Earlier combined Editor fixture report: `Saved/JoltMigration/FightValidation-20260910-015228/validation.json`, all three fixtures pass with zero new handled ensures. The older pre-repair sword commandlet recorded the NewFunctionLibrary load ensure and a transient-world teardown warning; its functional JSON pass was not a clean process exit. The duplicate reserved inputs have since been repaired and saved. Prior blood fixtures demonstrate static, character and promoted-instance staining, with the limitations recorded in `Docs/JoltIntegrationStatus.md`; complete cutting/Niagara integration remains deferred. The earlier Development and Shipping candidates passed packaged functional verification, each with exit 0 and zero new handled ensures.
+
+The actual sword now also passes a 180-step floor-contact/removal control: it settles on the imported native floor and falls through after only Jolt floor collision is removed, while original UE query receivers remain. Report: `Saved/JoltMigration/SwordContact-20260910-005817.json`. Default Blueprint world startup passes 120 active-body steps and the existing scene-lifecycle test in `Foundation-20260910-010517-582` (two passed, zero warnings/errors).
+
+The saved `/Game/testNN` Floor remains Static at its unchanged transform. `Saved/JoltMigration/FightStartup-20260910/publication.json` confirms the map already persisted through Unreal package recovery, exactly one enabled setup actor, unchanged other actor paths, PIE stopped and no dirty maps/content. No duplicate save was performed. Unreal is open on this level.
+
+The user identified the other fighter's weak upper-body magnetisation as intentional. Inspection confirms `BP_ProphecyManualPoseAgent2` has upper-body linear/angular strengths of 0.02; its bent posture is not a reason to retune the rig. The camera target uses default upper-body strengths of 1.0. Its rendered walking pose with sword was inspected in `Saved/Screenshots/WindowsEditor/HighresScreenshot00019.png`; final motion/feel acceptance remains with the user. The existing test movement continues beyond the floor if left running. No new performance result is claimed.
+
+Standalone body publication now respects Unreal's own tiny transform-update tolerances, preventing a nearly stationary sword from falsely stopping the shared step. Native query transforms still receive the exact completed body pose. The focused two-test body-component run passes, including tiny movement and rejection of callback changes by 1 cm or 1 degree (`FightValidation-20260910-015228/BodyPublicationAutomation.log`).
+
+The duplicate world-context inputs are repaired and saved in `/Game/_mygame/NewFunctionLibrary`: all 34 were wholly unlinked reserved user-defined `__WorldContext` entries with the same UObject type. The editor helper checked the exact entry identities before batch mutation, regenerated the proper hidden pins, verified unchanged remaining pin/wire fingerprints across every graph, and compiled with zero warnings/errors. Only the library was saved; no other asset changed in this repair and no dirty packages remained. Backup and evidence: [repair.json](<C:/Users/singerie/Documents/Unreal Projects/Prophecy/Saved/JoltMigration/AngSpringRepair-20260910/repair.json>) and [publication.json](<C:/Users/singerie/Documents/Unreal Projects/Prophecy/Saved/JoltMigration/AngSpringRepair-20260910/publication.json>). Fresh registry `FightCookRegistry-20260910-023258.json` confirms only the library's asset bytes changed. The earlier Development candidate passed packaged verification: saved Static floor, all 28 sword lifecycle checks, all 10 floor-contact checks, both matched 12-step fighter-contact trials and cleanup, exit 0, ensure delta 0 ([Development result](<C:/Users/singerie/Documents/Unreal Projects/Prophecy/Saved/JoltMigration/FinalFight/Packages/Development-Resume-20260910-020305-616/result.json>)). [Shipping package](<C:/Users/singerie/Documents/Unreal Projects/Prophecy/Saved/JoltMigration/FinalFight/Packages/Shipping-StageResume-20260910-021815-430/package.json>) confirms completed Shipping build/stage and required-asset checks. [Shipping result](<C:/Users/singerie/Documents/Unreal Projects/Prophecy/Saved/JoltMigration/FinalFight/Packages/Shipping-RuntimeResume-20260910-022749-979/result.json>) and its [runtime report](<C:/Users/singerie/Documents/Unreal Projects/Prophecy/Saved/JoltMigration/FinalFight/Packages/Shipping-RuntimeResume-20260910-022749-979/runtime.json>) verify all three fixtures and saved Static floor, exit 0 and ensure delta 0. The runtime-only recovery used the unchanged Shipping stage, executable and shared cook, with a fresh external `Engine.ini` selecting `/Engine/Maps/Entry` through `-EngineINI`; no further build, cook or stage ran. This override is required because Shipping ignores the positional map argument. The current Shipping stage, shared cook and both configurations' evidence are retained; the duplicate Development stage has been retired. No game source, project config or asset changed for runtime recovery. These earlier candidate packages predate the saved startup actor and initial-velocity admission fix. They remain functional fixture evidence, not package verification of current source or rendered gameplay acceptance.

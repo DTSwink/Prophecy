@@ -1,0 +1,31 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.7",
+  "Category": "PhysicsValidation",
+  "Description": "Isolated Jolt cooked-fixture and DLL-staging host; not the production game.",
+  "DisableEnginePluginsByDefault": true,
+  "AdditionalPluginDirectories": [
+    "../../../Plugins"
+  ],
+  "Modules": [
+    {
+      "Name": "ProphecyJoltSmokeHost",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "ProphecyJolt",
+      "Enabled": true,
+      "SupportedTargetPlatforms": ["Win64"]
+    },
+    {
+      "Name": "ACLPlugin",
+      "Enabled": true
+    }
+  ],
+  "TargetPlatforms": [
+    "Windows"
+  ]
+}

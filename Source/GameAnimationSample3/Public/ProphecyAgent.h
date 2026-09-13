@@ -3,9 +3,13 @@
 #include "CoreMinimal.h"
 #include "Containers/ArrayView.h"
 #include "GameFramework/Pawn.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "ProphecyHalfSimDriveComponent.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
 #include "ProphecyNNLocomotionAnimInstance.h"
 #include "ProphecyAttackFistTypes.h"
+#include "ProphecyNNPoseTypes.h"
+#include "ProphecyFootPinningTypes.h"
 #include "ProphecyAgent.generated.h"
 
 class UCapsuleComponent;
@@ -15,8 +19,12 @@ class USpringArmComponent;
 class UAnimSequenceBase;
 class UAnimSequence;
 class UPhysicsAsset;
+class UPhysicalMaterial;
 class USkeletalMeshComponent;
+class UPoseableMeshComponent;
 class UStaticMesh;
+class UProphecyJoltCharacterComponent;
+struct FProphecyNNPoseSnapshot;
 
 USTRUCT(BlueprintType)
 struct GAMEANIMATIONSAMPLE3_API FProphecyAgentHandle
@@ -57,6 +65,15 @@ enum class EProphecyAgentSimulationMode : uint8
 	Physical = 1 UMETA(DisplayName = "Sim"),
 	/** Native physical animation on the existing pose mesh, with real colliders. */
 	HalfSim = 2 UMETA(DisplayName = "Half Sim")
+};
+
+/** Uniform motion quality policy for an articulated Jolt character. */
+UENUM(BlueprintType)
+enum class EProphecyJoltCCDMode : uint8
+{
+	PhysicsAsset UMETA(DisplayName = "Physics Asset / Existing Sword Policy"),
+	Discrete,
+	Continuous UMETA(DisplayName = "Continuous (Linear Cast)")
 };
 
 /** Persistent input to the existing mover, not a velocity or a pose override. */
@@ -168,6 +185,7 @@ public:
 	AProphecyAgent();
 
 	virtual void BeginPlay() override;
+	virtual void NotifyControllerChanged() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -192,6 +210,33 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Sword", meta = (ClampMin = "0.01", Units = "kg"))
 	float SwordMassKg = 1.0f;
+
+	/** Scales held sword mass AND rotational inertia. 1 = ordinary mass, lower values reduce load on the arm.
+	 * Positive finite values only. Applies now and to future equips; dropping restores SwordMassKg captured at equip. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Sword")
+	bool SetSwordInertiaScale(float Scale = 1.0f);
+
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Sword")
+	float GetSwordInertiaScale() const { return SwordInertiaScale; }
+
+	/** Jolt attached sword only: adds sword rotational inertia to the hand without adding mass.
+	 * 0 = original hand inertia, 1 = sword's captured rotational inertia, >1 = stronger resistance to turning.
+	 * Changes immediately; retained across equips/mode changes. Nonnegative finite values only. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Sword")
+	bool SetSwordAttachedInertiaScale(float Scale = 1.0f);
+
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Sword")
+	float GetSwordAttachedInertiaScale() const { return SwordAttachedInertiaScale; }
+
+	/** Internal attack lifecycle notification; includes full and half attacks. */
+	void NotifySwordAttackState(bool bAttacking);
+	bool IsSwordAttackActive() const { return bSwordAttackActive; }
+
+private:
+	UPROPERTY(Transient) float SwordInertiaScale = 1.0f;
+	UPROPERTY(Transient) float SwordAttachedInertiaScale = 1.0f;
+	bool bSwordAttackActive = false;
+public:
 
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Sword")
 	bool EquipSword(bool bSimulated = true);
@@ -295,7 +340,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|NN")
 	bool IsNNInferenceEnabled() const { return bNNInferenceEnabled; }
 
-	/** Upper-controller mode input: false writes -1 (no sword), true writes +1. */
+	/** Upper-controller sword state: refreshed from GetHeldSword at each NN update. False writes -1, true writes +1; manual writes are replaced by actual equipment state. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Agent|NN|Upper Body")
 	bool bUpperNNHasSword = false;
 
@@ -309,6 +354,7 @@ public:
 		meta = (ClampMin = "-1.0", ClampMax = "1.0"))
 	float UpperNNGazePitchNormalized = 0.0f;
 
+	/** Legacy combined input node. Gaze remains writable; bHasSword is superseded by actual held equipment on the next NN update. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|NN|Upper Body")
 	void SetUpperNNInputs(bool bHasSword, float GazeYawNormalized, float GazePitchNormalized)
 	{
@@ -335,10 +381,76 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent")
 	EProphecyAgentSimulationMode GetSimulationMode() const;
 
-	/** Kinematic, Half Sim (native physical animation), or Sim (existing magnetization).
+	/** Select Jolt without changing simulation mode. Kinematic/Half Sim retain this choice for later Sim requests. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Jolt")
+	bool EnableJoltPhysicalAnimation();
+
+	/** Select Chaos without changing simulation mode. An active Jolt Sim returns to Chaos Sim. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Jolt")
+	void DisableJoltPhysicalAnimation();
+
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Jolt")
+	bool IsJoltPhysicalAnimationEnabled() const;
+
+	/** Backend selection for toggles, including while Kinematic/Half Sim has no active Jolt rig. */
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Jolt")
+	bool IsJoltPhysicalAnimationSelected() const { return bUseJoltForPhysicalMode; }
+
+	UProphecyJoltCharacterComponent* GetJoltCharacterComponent() const;
+
+	/** Runtime master switch for contacts within this Jolt character. True restores PHAT rules,
+	 * subject to body/pair suppressions. Requires active Jolt; external contacts are unaffected. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Jolt|Self Collision")
+	bool SetJoltSelfCollisionEnabled(bool bEnabled, FString& OutError);
+
+	/** Disable selected PHAT body bones against every body in this character. True removes this
+	 * body suppression, respecting PHAT and other runtime suppressions. All names must be valid. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Jolt|Self Collision")
+	bool SetJoltBodiesSelfCollisionEnabled(const TArray<FName>& BodyBones, bool bEnabled, FString& OutError);
+
+	/** Apply body suppression to a skeletal subtree against the rest of this character, including
+	 * other selected bodies. BoneName may be a helper bone; the subtree must contain PHAT bodies. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Jolt|Self Collision")
+	bool SetJoltSelfCollisionBelow(FName BoneName, bool bEnabled, bool bIncludeSelf, FString& OutError);
+
+	/** Suppress just this pair of PHAT body bones. True removes only the pair suppression;
+	 * it cannot override PHAT exclusions, the master switch, or body suppressions. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Jolt|Self Collision")
+	bool SetJoltBodyPairSelfCollisionEnabled(FName Bone1, FName Bone2, bool bEnabled, FString& OutError);
+
+	/** Clear every runtime self-collision suppression and restore the rules captured on Jolt admission. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Jolt|Self Collision")
+	bool ResetJoltSelfCollision(FString& OutError);
+
+	/** Runtime Jolt-only override for selected PHAT body bones. None restores each body's admission-time values.
+	 * Copies friction/restitution and effective combine modes; does not edit shared assets or UE query materials.
+	 * Requires an active Jolt rig. Overrides last until reset or rebind; changing the material later requires calling again. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Jolt|Material")
+	bool SetJoltBodiesPhysicalMaterialOverride(const TArray<FName>& BodyBones, UPhysicalMaterial* Material, FString& OutError);
+
+	/** Restore selected PHAT bodies' original friction/restitution/combine modes without rebuilding physics. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Jolt|Material")
+	bool ResetJoltBodiesPhysicalMaterialOverride(const TArray<FName>& BodyBones, FString& OutError);
+
+	/** Return success plus the effective self-collision filter for two distinct PHAT body bones.
+	 * Other collision filtering (channels or independently suppressed weapon/grip contacts) still applies. */
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Jolt|Self Collision")
+	bool GetJoltBodyPairSelfCollisionEnabled(FName Bone1, FName Bone2, bool& bOutEnabled, FString& OutError) const;
+
+	/** Kinematic, Half Sim (native Chaos physical animation), or Sim on the selected backend.
 	 * A Half Sim request during BeginPlay waits for the first NN pose automatically. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent")
 	bool SetSimulationMode(EProphecyAgentSimulationMode NewMode);
+
+	/** Select before entering Half Sim, or switch its controller live without recreating ragdoll bodies. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Half Sim")
+	bool SetHalfSimDriveMethod(EProphecyHalfSimDriveMethod NewMethod);
+
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Half Sim")
+	EProphecyHalfSimDriveMethod GetHalfSimDriveMethod() const { return HalfSimDriveMethod; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Prophecy|Agent|Half Sim")
+	EProphecyHalfSimDriveMethod HalfSimDriveMethod = EProphecyHalfSimDriveMethod::NativeWorld;
 
 	/**
 	 * Replaces the active Physics Asset without discarding the live articulated state.
@@ -347,6 +459,51 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical", meta = (DisplayName = "My Set Physics Asset"))
 	bool MySetPhysicsAsset(UPhysicsAsset* NewPhysicsAsset);
+
+	/** False frees swing/twist; true restores authored PHAT angular modes and angles.
+	 * Works on the active Chaos or Jolt rig. Linear anchors and drive strengths are retained. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical")
+	bool SetUseAuthoredAngularLimits(bool bEnabled);
+
+	/** Change one physical joint selected by its child bone (hand_r selects the wrist to lowerarm_r).
+	 * Uses the nearest connected skeletal ancestor if PHAT skips bones. Angles are 0..180 degrees,
+	 * in the authored PHAT frames. Works on Chaos and Jolt; preserves anchors and drives. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical|Joint Limits")
+	bool SetPhysicalJointAngularLimits(FName ChildBone,
+		EAngularConstraintMotion Swing1Motion, float Swing1LimitDegrees,
+		EAngularConstraintMotion Swing2Motion, float Swing2LimitDegrees,
+		EAngularConstraintMotion TwistMotion, float TwistLimitDegrees, FString& OutError);
+
+	/** Restore only this child-to-parent joint's angular modes and angles from the PHAT defaults. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical|Joint Limits")
+	bool ResetPhysicalJointAngularLimits(FName ChildBone, FString& OutError);
+
+	/** Toggle the extra predictive swing correction that reduces crossing/snap at joint limits.
+	 * False uses stock Jolt hard limits without that extra correction. Does not change PHAT limits,
+	 * targets or feedback. Applies only to player-controlled agents with Limited swing joints.
+	 * May be set before enabling Jolt; the choice persists across backend and simulation-mode changes. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical|Joint Limits")
+	void SetJoltJointLimitPredictionEnabled(bool bEnabled);
+
+	/** The requested prediction setting; actual correction also requires Jolt, player possession and Limited swing. */
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Physical|Joint Limits")
+	bool IsJoltJointLimitPredictionEnabled() const { return bJoltJointLimitPredictionEnabled; }
+
+	/** Select CCD consistently for this entire Jolt skeleton, including a welded sword carrier.
+	 * Runtime and before admission; retained across backend/mode changes. Chaos is unaffected.
+	 * Default preserves PHAT and existing sword policy. Linear Cast sweeps translation, not full rotation. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical|Jolt")
+	bool SetJoltCCDMode(EProphecyJoltCCDMode Mode, FString& OutError);
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Physical|Jolt")
+	EProphecyJoltCCDMode GetJoltCCDMode() const { return JoltCCDMode; }
+
+	/** Override native solver iteration counts. 0 restores world defaults (currently 10 velocity / 2 position).
+	 * Preserves timestep, drives and joint limits. Retained across backend/mode changes.
+	 * The highest override among touching/connected bodies and constraints applies to their whole island. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical|Jolt")
+	bool SetJoltSolverIterations(int32 VelocityIterations, int32 PositionIterations, FString& OutError);
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Physical|Jolt")
+	void GetJoltSolverIterations(int32& VelocityIterations, int32& PositionIterations) const;
 
 	/** Enable MACD on every Chaos body owned by this agent. Safe to change at runtime. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical")
@@ -444,6 +601,21 @@ public:
 		FName BoneName,
 		FProphecyPhysicalFeedbackToleranceSettings& Settings) const;
 
+	/** Smoothly blends the current feedback deadband in game seconds. Zero tolerance means full physical feedback.
+	 * Replaces this bone's previous feedback blend. Duration <= 0 applies immediately. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback")
+	bool BlendPhysicalFeedbackTolerance(FName BoneName, float LinearToleranceCm,
+		float AngularToleranceDegrees, float DurationSeconds = 1.0f);
+
+	/** Starts independent blends from each controlled descendant's current tolerances. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback")
+	int32 BlendPhysicalFeedbackToleranceBelow(FName ParentBone, bool bIncludeParent,
+		float LinearToleranceCm, float AngularToleranceDegrees, float DurationSeconds = 1.0f);
+
+	/** Stops at the current tolerance. None cancels all feedback blends on this agent. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback")
+	void CancelPhysicalFeedbackToleranceBlend(FName BoneName = NAME_None);
+
 	/** Empty entries use zero tolerance. Keys are actual skeleton bone names. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|Agent|Physical Feedback")
 	TMap<FName, FProphecyPhysicalFeedbackToleranceSettings> PhysicalFeedbackTolerances;
@@ -524,6 +696,135 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|NN Attack")
 	bool TriggerNNAttack(FName Attack, FVector TargetWorldLocation, bool bHalfAttack = false);
+
+	/** Frozen foot-pinning resolution for this agent's attacks. 4 is fast; 60 matches training.
+	 * Changes apply on the next attack policy step. The learned pin pass stays at 4. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Prophecy|Agent|NN Attack", meta=(ClampMin="1", ClampMax="60"))
+	int32 AttackFootPinningIterations = 4;
+
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack")
+	void SetAttackFootPinningIterations(int32 Iterations);
+
+	/** Opt-in capture only. Getters never run inference. Disabling discards the samples. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Debug")
+	bool SetFootPinningDebugEnabled(bool bEnabled);
+
+	/** False until a completed step has been captured. X = left, Y = right. */
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Debug")
+	bool GetLocomotionFootPinning(FProphecyFootPinningSample& Sample) const;
+
+	/** Default reads the learned attack stage. Frozen Stage reads its frozen lower-policy baseline.
+	 * Half-attack samples describe ghost feet, not the visible locomotion feet. */
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Debug")
+	bool GetAttackFootPinning(FProphecyFootPinningSample& Sample, bool bFrozenStage = false) const;
+
+	/** Upper height of locomotion's near-ground forced pin (cm). Full strength below
+	 * max(0, Threshold-FadeRange). Zero threshold disables forcing, not learned pinning.
+	 * Defaults 2 / 0.5 preserve the current run policy. Legacy walk pinning is unchanged. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
+	bool SetLocomotionFootPinningThreshold(float ThresholdCm = 2.0f, float FadeRangeCm = 0.5f);
+
+	bool bOverrideLocomotionPinThreshold = false;
+	float LocomotionPinThresholdM = .02f, LocomotionFullPinHeightM = .015f;
+
+	/** Full attacks only: maximum hip-to-foot reach = rest leg length + Leeway Cm.
+	 * Locomotion/half-attack legs keep their manager settings. Invalid leeway is rejected. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack")
+	bool SetAttackFootClamp(bool bEnabled, float LeewayCm = 0.0f);
+
+	/** Full attacks only: calf length may vary by +/- Leeway Cm from its rest length.
+	 * 0 is exact, 1 allows 1 cm either way. Disabling preserves the raw attack leg. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack")
+	bool SetAttackCalfClamp(bool bEnabled, float LeewayCm = 0.0f);
+
+	/** Full and half attacks: allowed hand distance from its normal wrist attachment.
+	 * 0 is exact; 1 permits 1 cm of positional deviation. Does not change hand rotation. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack")
+	bool SetAttackHandClamp(bool bEnabled, float LeewayCm = 0.0f);
+
+	bool bAttackHandClamp = true;
+	float AttackHandClampLeewayCm = 0;
+
+	// Per-agent runtime overrides. Until a node is called, retain manager defaults.
+	bool bOverrideAttackFootClamp = false, bOverrideAttackCalfClamp = false;
+	bool bAttackFootClamp = false, bAttackCalfClamp = false;
+	float AttackFootClampLeewayCm = 0, AttackCalfClampLeewayCm = 0;
+
+	/** Crossfade lower-body walk/run policies. Separate simulation-second durations; zero is immediate.
+	 * Both policies run only during a blend. Full attacks bypass it; half-attack legs retain it. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
+	bool SetLocomotionPolicyBlendTimes(float WalkToRunSeconds, float RunToWalkSeconds);
+
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Locomotion")
+	void GetLocomotionPolicyBlendTimes(float& WalkToRunSeconds, float& RunToWalkSeconds) const;
+
+	/** Latest published 30 Hz lower-body checkpoint mixture, 0..1 summing to 1.
+	 * Returns false before NN registration. Full attacks can hide this underlying locomotion pose. */
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Locomotion")
+	bool GetLocomotionCheckpointWeights(float& WalkWeight, float& RunWeight) const;
+
+	/** Force the walk checkpoint below this actual horizontal mover speed (cm/s), even with run intent.
+	 * Negative disables (default -1). Does not change movement mode/speed; uses policy blend times. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
+	bool SetLocomotionWalkCheckpointSpeedThreshold(float SpeedCmPerSecond = -1.f);
+
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Locomotion")
+	float GetLocomotionWalkCheckpointSpeedThreshold() const { return LocomotionWalkCheckpointSpeedThreshold; }
+
+	UPROPERTY(Transient)
+	float LocomotionWalkCheckpointSpeedThreshold = -1.f;
+
+	UPROPERTY(Transient)
+	float LocomotionWalkToRunBlendSeconds = 0.f;
+	UPROPERTY(Transient)
+	float LocomotionRunToWalkBlendSeconds = 0.f;
+
+	/** Locomotion and half-attack legs: maximum hip-to-foot reach = rest leg length + leeway (cm). */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
+	bool SetLocomotionFootClamp(bool bEnabled, float LeewayCm = 0.0f);
+
+	/** Locomotion and half-attack legs: allowed calf length is rest length +/- leeway (cm). */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
+	bool SetLocomotionCalfClamp(bool bEnabled, float LeewayCm = 0.0f);
+
+	/** Locomotion hands: maximum elbow-to-hand reach = rest forearm length + leeway (cm). */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
+	bool SetLocomotionHandClamp(bool bEnabled, float LeewayCm = 0.0f);
+
+	/** Locomotion elbow-to-hand length = rest forearm length +/- leeway (cm).
+	 * When enabled, replaces the one-sided Hand Clamp. Does not affect attack hands. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
+	bool SetLocomotionForearmClamp(bool bEnabled, float LeewayCm = 0.0f);
+
+	bool bLocomotionForearmClamp = false;
+	float LocomotionForearmClampLeewayCm = 0;
+
+	bool bOverrideLocomotionFootClamp = false, bOverrideLocomotionCalfClamp = false, bOverrideLocomotionHandClamp = false;
+	bool bLocomotionFootClamp = false, bLocomotionCalfClamp = false, bLocomotionHandClamp = false;
+	float LocomotionFootClampLeewayCm = 0, LocomotionCalfClampLeewayCm = 0, LocomotionHandClampLeewayCm = 0;
+
+	/** Last encoded locomotion root window in world space (cm): previous, current, then 8 future roots.
+	 * Time offsets are relative to the current input root. False until the first policy input is built.
+	 * During attacks this still reports the background locomotion policy, not the attack ghost. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
+	bool GetLocomotionRootWindow(TArray<FTransform>& WorldRoots, TArray<float>& TimeOffsetsSeconds) const;
+
+	/** Opt-in, unticked renderer of the previous pose encoded into the NN inputs.
+	 * PreferAttack=true displays the attack ghost while attacking; false always displays locomotion.
+	 * Returns the component immediately for Set Material. Disable destroys it and stops all debug pose work. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Debug")
+	UPoseableMeshComponent* SetShowNNPreviousPoseDebugMesh(bool bEnabled, bool bPreferAttack = true);
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category="Prophecy|Agent|Debug")
+	TObjectPtr<UPoseableMeshComponent> NNPreviousPoseDebugMesh;
+
+	/** Author Headbutt arm preparation from GT until the first learned Armed output. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Prophecy|Agent|NN Attack")
+	bool bUseGTHeadbuttPreparation = true;
+
+	/** Entry crossfade to the authored hands; sampled once when Headbutt starts. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Prophecy|Agent|NN Attack", meta=(ClampMin="0", ClampMax="1", Units="s"))
+	float HeadbuttPreparationBlendSeconds = 0.1f;
 
 	/** Both hands are sampled at time zero. Only finger/metacarpal bones are used. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Prophecy|Agent|NN Attack|Fists")
@@ -612,6 +913,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Debug")
 	void SetShowKinematicDebugMesh(bool bShow) { bShowKinematicDebugMesh = bShow; }
 
+	/** Current optional NN target visualization. None while disabled or before manager initialization.
+	 * Reacquire after toggling the debug view; this component is destroyed when the view is disabled. */
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Debug")
+	UPoseableMeshComponent* GetKinematicDebugMesh() const;
+
+	/** Per-agent mode; changes on the next NN publication, without altering NN state or cadence. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Interpolation")
+	void SetNNInterpolationMode(EProphecyNNInterpolationMode Mode);
+
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Interpolation")
+	EProphecyNNInterpolationMode GetNNInterpolationMode() const { return NNInterpolationMode; }
+
 	/** Binds this shell directly to the manager's pose-store data, without requiring an AnimInstance. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Manual NN Pose")
 	void ConfigureNNPoseDataSource(int32 AgentId, float PoseIntervalSeconds, bool bInterpolatePose);
@@ -652,6 +965,11 @@ public:
 		TArray<FTransform>& FutureWorldTransforms,
 		TArray<FTransform>& InterpolatedWorldTransforms,
 		float& InterpolationAlpha) const;
+
+	/** Native bridge: returns the same source snapshot used for the world targets, reusing caller buffers. */
+	bool ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
+		TArray<FTransform>& FutureWorldTransforms, TArray<FTransform>& InterpolatedWorldTransforms,
+		float& InterpolationAlpha, FProphecyNNPoseSnapshot& SourceSnapshot) const;
 
 	/** Manually evaluates the existing viewer-matched Kinematic NN pose once. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Manual NN Pose", meta = (DisplayName = "Apply NN Pose Kinematically"))
@@ -780,6 +1098,22 @@ public:
 		FName BoneName,
 		FProphecyBodyMagnetizationSettings& Settings) const;
 
+	/** Smoothly blends current body strengths in game seconds. Enables this body's magnetization;
+	 * a disabled body starts from zero. Global enable/scales, gravity and simulation membership are preserved.
+	 * Replaces this bone's previous blend. Duration <= 0 applies immediately. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Magnetization")
+	bool BlendBodyMagnetization(FName BoneName, float LinearStrengthScale = 1.0f,
+		float AngularStrengthScale = 1.0f, float DurationSeconds = 1.0f);
+
+	/** Starts independent blends from each Physics Asset descendant's current strengths. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Magnetization")
+	int32 BlendBodyMagnetizationBelow(FName ParentBone, bool bIncludeParent,
+		float LinearStrengthScale = 1.0f, float AngularStrengthScale = 1.0f, float DurationSeconds = 1.0f);
+
+	/** Stops at the current strength. None cancels all magnetization blends on this agent. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Magnetization")
+	void CancelBodyMagnetizationBlend(FName BoneName = NAME_None);
+
 	/** Executes the same configured all-body magnetization pass normally called by native Tick. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Magnetization")
 	void ApplyConfiguredWorldMagnetization(float DeltaSeconds);
@@ -798,6 +1132,31 @@ public:
 	FProphecyAgentPhysicalHitSignature OnPhysicalHit;
 
 private:
+	friend class UProphecyPhysicalBlendSubsystem;
+	UPROPERTY()
+	bool bJoltJointLimitPredictionEnabled = true;
+	UPROPERTY()
+	EProphecyJoltCCDMode JoltCCDMode = EProphecyJoltCCDMode::PhysicsAsset;
+	UPROPERTY()
+	int32 JoltVelocityIterations = 0;
+	UPROPERTY()
+	int32 JoltPositionIterations = 0;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UProphecyJoltCharacterComponent> JoltCharacter;
+	/** Runtime backend choice; mode changes may remove the rig while retaining this choice. */
+	UPROPERTY(Transient)
+	bool bUseJoltForPhysicalMode = false;
+	UPROPERTY(Transient)
+	bool bResumeChaosPhysicalAfterJoltRestore = false;
+	friend class UProphecyJoltCharacterComponent;
+	void FinishJoltBackendRestore();
+	bool SetSimulationModeInternal(EProphecyAgentSimulationMode NewMode);
+	void DisableJoltPhysicalAnimationForModeChange();
+
+	UPROPERTY(Transient)
+	EProphecyNNInterpolationMode NNInterpolationMode = EProphecyNNInterpolationMode::Current;
+
 	friend class AProphecyNNLocomotionManager;
 	bool EnterHalfSimulation();
 	bool LeaveHalfSimulation(EProphecyAgentSimulationMode NextMode);

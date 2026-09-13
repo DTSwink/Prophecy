@@ -16,6 +16,7 @@ public class ProphecyEditor : ModuleRules
 			"CoreUObject",
 			"Blutility",
 			"BlueprintGraph",
+			"Chaos",
 			"Engine",
 			"GameAnimationSample3",
 			"ImageCore",

@@ -1,20 +1,27 @@
 # Agent sword controls
 
-Implemented and tested on the current manual agents in `testNN`, loaded using Live Coding. A separate clean-start build has not been verified; the editor was left open and unrelated unsaved assets were preserved.
+Runtime sword controls for the current manual agents, with Chaos and Jolt ownership.
 
 All nodes take the **Prophecy Agent** as Target:
 
 - **Equip Sword** (`Simulated = true`): spawns the existing `/Game/_mygame/sword/A_Sword` Blueprint and holds it on `hand_r` of `Get Pose Reference Mesh` (the visible PhysicalMesh for manual agents).
-- **Set Sword Simulated**: true = a simulated sword held by a six-axis locked physics constraint to the hand body; false = a non-simulated child attached to the hand.
+- **Set Sword Simulated**: true = a simulated sword held by a six-axis locked physics constraint to the hand body; false = a child attached to the hand. With a simulated Jolt hand, the sword collider is welded onto that hand body, so contacts act on the hand/arm and the sword cannot stretch away from its grip. The hand's mass and center of mass stay unchanged.
 - **Drop Sword**: releases the instance with its current momentum, enables gravity/collision, and returns the dropped actor. It is no longer controlled by the agent.
 - **Hide Sword**: despawns only the currently held instance. Dropped instances are unaffected. Equip Sword creates a new held instance.
 - **Get Held Sword**, **Is Sword Simulated**: query the held instance and hold mode.
+- **Set Sword Inertia Scale (Scale)** / **Get Sword Inertia Scale**: default 1. Scales held mass and rotational inertia together; 0.5 is half the load, 0.25 is a quarter. The fixed hand grip stays rigid. Positive finite values only; the setter returns false on invalid input or an in-progress physics admission. Set once, not on Tick. The preference persists across equips, attached/physical mode changes and backend switches. Dropping restores the ordinary mass captured from Sword Mass Kg at equip, preserving release velocities.
 
-No Tick wiring is required. Agent simulation mode and sword simulation mode are independent: each agent mode can hold either an attached or a constrained sword.
+- **Set Sword Attached Inertia Scale (Scale)** / **Get Sword Attached Inertia Scale**: Jolt attached mode only, default **1**. Adds the specified fraction of the captured sword's rotational inertia, measured about the hand's center of mass. **0** leaves the hand's original inertia; **1** includes one sword's rotational inertia; **2, 5, ...** resist rotation more strongly. This does not add hand mass, move its center of mass, add damping, or change the grip. Applies immediately to an existing welded sword and persists through mode changes/equips on this agent. Dropping/removing the sword restores the original hand inertia. Negative/nonfinite values fail without changing the setting. Extremely large values that cannot be represented safely also fail. Separate from **Set Sword Inertia Scale**, which scales mass and inertia of an independently simulated sword. Attached inertia uses the sword mass/inertia captured when the weld was created.
+
+No Tick wiring is required. Agent simulation mode and sword simulation mode are independent: each agent mode can hold either an attached or a constrained sword. The attached inertia setter does work only when its value changes; it does not add per-frame work. A larger value changes contact response but is not a guarantee of jitter-free motion in every driven pose.
 
 `A_Sword` is more than a mesh: its existing cutting and Niagara logic is preserved. Its saved standalone debug defaults (`debug mode=true`, `freeze tick=0`) pause gameplay, so Equip initializes **only the spawned instance** with debug mode off, freeze tick -1, unfreeze tick 0 and gravity enabled, before Blueprint BeginPlay. If its typed decal-manager dependency is absent, Equip creates one in the game world; multiple swords reuse it. No Blueprint defaults or event graph are changed.
 
-While held, the sword ignores only its owner's physics bodies (including the capsule). This prevents its existing cutting graph from creating competing constraints against the holder's thigh/forearm. Chaos pair-specific, reference-counted collision suppression leaves world and other-agent collisions/cutting enabled; Drop removes just these owned suppression entries. It does not globally clear other cutting constraints' collision filters.
+Both sword modes collide with the owner's body during locomotion. Full and half NN attacks temporarily suppress owner contacts, including preparation, and every attack exit restores them. The gripping hand is always excluded, because its handle and hand intentionally share space. World/other-agent collision channels are unchanged. These are simulation pair exclusions, not changes to tracing or the disconnected cutting graph. The Jolt attached mode retains a QueryOnly UE receiver; the native sword shape belongs to the hand, with separate per-shape material/channel/exclusion rules. Chaos keeps its existing attached QueryAndPhysics behavior; the new attached-inertia control only applies to Jolt.
+
+Attack lifecycle events update these exclusions without per-frame polling. Jolt keeps the same native grip and warm-start state; only its reference-counted exclusions change. The inertia node uses native proportional mass scaling without recreating either body or joint and updates the UE receiver's mass override for future backend changes.
+
+Validated on the normal 13 September editor build: 35 actual-sword fixture checks passed (`Saved/Diagnostics/SwordInertiaFixture.json`), including attack collision transitions, native linear/angular impulse response at quarter mass/inertia, attached/physical roundtrip, and drop restoration without velocity changes. GenericJoint.CapacityAndAtomicPreflight also passed. No performance benchmark was run.
 
 ## Defaults and calibration
 
@@ -25,6 +32,8 @@ The grip is copied from the accepted Slash handoff (`Saved/SlashChain/sword_prev
 The original training matrix also has a small shear (the earlier preview omitted up to 0.300 mm). `PrepareExactSwordMesh.py` factors the residual out of the grip TRS. Editor command `Prophecy.Sword.BakeTrainingMesh` bakes it into a separate `Sword_GL01_Training` mesh, including transformed normals/tangents and a new convex collider. The original sword mesh, materials and Blueprint asset are unchanged. The command refuses to overwrite an existing copy. Save only that new asset after verifying its vertex transform against the source matrix.
 
 The new copy is now saved. `VerifyExactSwordMesh.py` verified all **1,744 vertices** against the original training matrix: maximum error **0.00000495 cm**. Report: `Saved/Sword/exact_mesh_audit.json`.
+
+On 10 September, at the user's request, only the Training copy's simple collision was replaced with a 127-vertex convex for Jolt. The calibrated source mesh, render buffers, materials and complex query triangles remain unchanged. The new convex preserves the source bounds and differs inward from the old source convex by at most 1.911 mm in mesh-local space (-0.922% volume). This retains the existing single convex envelope rather than adding separate blade/guard/handle shapes. Strict Jolt preparation passes after saving and reloading. Evidence and the original asset backup are in `Saved/JoltMigration/SwordHull-20260910/`. The user authorized omitting MACD for Jolt; sword admission disables it while retaining the existing CCD=true. All 28 actual A_Sword manual-step checks pass, including physical/attached equip, both drop paths, momentum, queries and cleanup. See `Docs/JoltFightSetup.md` for the remaining visible-contact and commandlet diagnostic limitations.
 
 ## Mode transition continuity
 

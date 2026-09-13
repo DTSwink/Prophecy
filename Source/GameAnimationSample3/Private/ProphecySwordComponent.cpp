@@ -1,5 +1,8 @@
 #include "ProphecySwordComponent.h"
 #include "ProphecyAgent.h"
+#include "ProphecyJoltBodyComponent.h"
+#include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyJoltWorldSubsystem.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
@@ -7,10 +10,22 @@
 #include "EngineUtils.h"
 #include "UObject/UnrealType.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
+#include "PhysicsEngine/PhysicsAsset.h"
+#include "PhysicsEngine/SkeletalBodySetup.h"
 #include "PhysicsProxy/SingleParticlePhysicsProxy.h"
 #include "PBDRigidsSolver.h"
 #include "Chaos/PBDRigidsEvolution.h"
 #include "Chaos/Collision/CollisionConstraintFlags.h"
+
+struct FProphecyJoltSwordBinding
+{
+	TWeakObjectPtr<UProphecyJoltWorldSubsystem> World;
+	TWeakObjectPtr<UProphecyJoltCharacterComponent> Character;
+	FProphecyJoltJointHandle Joint;
+	FProphecyJoltBodyHandle Hand;
+};
+
+void FProphecyJoltSwordBindingDeleter::operator()(FProphecyJoltSwordBinding* Binding) const { delete Binding; }
 
 namespace
 {
@@ -48,7 +63,8 @@ namespace
 		FOwnerCollisionPairs Pairs;
 		if (OwnerCollisionPairs().RemoveAndCopyValue(Controller, Pairs)) QueueOwnerCollisions(Pairs, false);
 	}
-	void IgnoreOwnerCollisions(const UProphecySwordComponent* Controller, UStaticMeshComponent* Blade, AProphecyAgent* Owner)
+	void IgnoreOwnerCollisions(const UProphecySwordComponent* Controller, UStaticMeshComponent* Blade, AProphecyAgent* Owner,
+		bool bAllOwner = true, bool bIncludeHand = false)
 	{
 		FOwnerCollisionPairs Pairs;
 		const auto Handle = Blade->BodyInstance.ActorHandle;
@@ -56,13 +72,17 @@ namespace
 		Pairs.Solver = Handle->GetSolver<Chaos::FPhysicsSolver>();
 		if (!Pairs.Solver) return;
 		Pairs.Blade = Handle->GetGameThreadAPI().UniqueIdx();
+		// The fixed grip owns this pair independently, including after an attack ends.
+		const auto* OwnerMesh = Owner->GetPoseReferenceMesh();
+		const FBodyInstance* GrippingHand = OwnerMesh ? OwnerMesh->GetBodyInstance(OwnerMesh->GetSocketBoneName(Owner->SwordHandSocket)) : nullptr;
 		TArray<UPrimitiveComponent*> Components;
 		Owner->GetComponents(Components);
 		for (UPrimitiveComponent* Component : Components)
 		{
-			auto Add = [&Pairs](FBodyInstance* Body)
+			auto Add = [&Pairs, GrippingHand, bAllOwner, bIncludeHand](FBodyInstance* Body)
 			{
-				if (Body && Body->ActorHandle && Body->ActorHandle->GetSolver<Chaos::FPhysicsSolver>() == Pairs.Solver)
+				if (Body && (Body == GrippingHand ? bIncludeHand : bAllOwner)
+					&& Body->ActorHandle && Body->ActorHandle->GetSolver<Chaos::FPhysicsSolver>() == Pairs.Solver)
 					Pairs.Bodies.AddUnique(Body->ActorHandle->GetGameThreadAPI().UniqueIdx());
 			};
 			if (auto* Mesh = Cast<USkeletalMeshComponent>(Component)) for (auto* Body : Mesh->Bodies) Add(Body);
@@ -78,6 +98,8 @@ UProphecySwordComponent::UProphecySwordComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.TickGroup = TG_PostPhysics;
 }
+
+UProphecySwordComponent::~UProphecySwordComponent() = default;
 
 AProphecyAgent* UProphecySwordComponent::Agent() const { return Cast<AProphecyAgent>(GetOwner()); }
 
@@ -141,13 +163,18 @@ bool UProphecySwordComponent::Equip(bool bSimulated)
 	// Make the existing Blueprint mesh the runtime root so a dropped simulated
 	// sword's actor transform follows its body, not an abandoned scene root.
 	USceneComponent* OldRoot = Sword->GetRootComponent();
+	// This controller owns the native Jolt weld or explicit Chaos grip. UE auto-welding
+	// the attached receiver into the hand adds foreign shapes to its PHAT body on a
+	// backend switch and prevents later Jolt rig capture.
+	Blade->BodyInstance.bAutoWeld = false;
 	Blade->SetSimulatePhysics(false);
 	Blade->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	Sword->SetRootComponent(Blade);
 	if (OldRoot && OldRoot != Blade) OldRoot->AttachToComponent(Blade, FAttachmentTransformRules::KeepWorldTransform);
 	Blade->SetCollisionProfileName(TEXT("PhysicsActor"));
 	Blade->SetEnableGravity(true);
-	Blade->SetMassOverrideInKg(NAME_None, A->SwordMassKg, true);
+	BaseMassKg = A->SwordMassKg;
+	if (!ApplyMass(BaseMassKg * A->GetSwordInertiaScale())) { Disappear(); return false; }
 	Blade->BodyInstance.bUseCCD = true;
 	Blade->BodyInstance.PositionSolverIterationCount = 16;
 	Blade->BodyInstance.VelocitySolverIterationCount = 8;
@@ -167,11 +194,217 @@ bool UProphecySwordComponent::Equip(bool bSimulated)
 	return true;
 }
 
+UProphecyJoltBodyComponent* UProphecySwordComponent::EnsureJoltBody()
+{
+	if (!IsValid(Sword) || !IsValid(Blade)) return nullptr;
+	if (!JoltBody)
+	{
+		JoltBody = NewObject<UProphecyJoltBodyComponent>(Sword);
+		Sword->AddInstanceComponent(JoltBody);
+		JoltBody->RegisterComponent();
+	}
+	return IsValid(JoltBody) && JoltBody->IsRegistered() && JoltBody->GetOwner() == Sword ? JoltBody.Get() : nullptr;
+}
+
+void UProphecySwordComponent::CancelJoltAdmission()
+{
+	PendingJoltBindId.Invalidate();
+	bDropPending = false;
+	if (JoltBody)
+	{
+		JoltBody->OnDeferredEnableCompleted.Remove(JoltEnableDelegate);
+		if (JoltBody->IsEnablePending()) JoltBody->DisableBody();
+	}
+	JoltEnableDelegate.Reset();
+}
+
+bool UProphecySwordComponent::ReleaseJoltGrip()
+{
+	if (JoltBinding && JoltBinding->World.IsValid() && JoltBinding->World->OwnsJoint(JoltBinding->Joint))
+	{
+		const auto Result = JoltBinding->World->DestroyJoint(JoltBinding->Joint);
+		if (!Result.IsSuccess())
+		{
+			UE_LOG(LogTemp, Error, TEXT("Jolt sword grip cleanup failed: %s"), *Result.Message);
+			return false;
+		}
+	}
+	JoltBinding.Reset();
+	return true;
+}
+
+bool UProphecySwordComponent::ReleaseJoltBody()
+{
+	CancelJoltAdmission();
+	if (!ReleaseJoltGrip()) return false;
+	if (JoltBody)
+	{
+		JoltBody->DisableBody();
+		if (JoltBody->IsJoltBody() || JoltBody->IsReceiverRestorePending()) return false;
+	}
+	return true;
+}
+
+bool UProphecySwordComponent::FinishJoltGrip(UProphecyJoltCharacterComponent& Character, USkeletalMeshComponent& Mesh)
+{
+	AProphecyAgent* A = Agent();
+	if (!A || !IsValid(Sword) || !IsValid(Blade) || !JoltBody
+		|| Character.IsSteppingStopped()
+		|| !A->IsJoltPhysicalAnimationEnabled() || A->GetJoltCharacterComponent() != &Character
+		|| A->GetPoseReferenceMesh() != &Mesh || !Mesh.GetPhysicsAsset()) return false;
+	UProphecyJoltWorldSubsystem* World = JoltBody->GetWorldOwner();
+	if (!World || World != GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>()) return false;
+	const FName Bone = Mesh.GetSocketBoneName(A->SwordHandSocket);
+	FProphecyJoltBodyHandle Hand, SwordBody;
+	FProphecyJoltBodyState HandState;
+	FTransform BodyOriginToComponent;
+	if (!Character.GetBodyHandle(Bone, Hand) || !JoltBody->GetBodyHandle(SwordBody)
+		|| Hand.WorldLifetime != SwordBody.WorldLifetime || !World->ReadBody(Hand, HandState).IsSuccess()
+		|| !JoltBody->GetBodyOriginToComponent(BodyOriginToComponent)) return false;
+	if (!bPhysicsHold)
+	{
+		if (!ReleaseJoltGrip()) return false;
+		FString Error;
+		if (!JoltBody->FollowWelded(Hand, Mesh, A->SwordHandSocket, A->SwordGripTransform, Error))
+		{ UE_LOG(LogTemp, Error, TEXT("Attached sword collider failed: %s"), *Error); return false; }
+		if (!SetAttachedInertiaScale(A->GetSwordAttachedInertiaScale())) return false;
+		JoltBinding.Reset(new FProphecyJoltSwordBinding);
+		JoltBinding->World = World;
+		JoltBinding->Character = &Character;
+		JoltBinding->Hand = Hand;
+		RefreshOwnerCollision();
+		Blade->AttachToComponent(&Mesh, FAttachmentTransformRules::KeepWorldTransform, A->SwordHandSocket);
+		Blade->SetRelativeTransform(A->SwordGripTransform);
+		Blade->UpdateComponentToWorld();
+		return true;
+	}
+	FTransform Anchor = Mesh.GetSocketTransform(A->SwordHandSocket);
+	Anchor.SetScale3D(FVector::OneVector);
+	FTransform DesiredComponent = GripWorld();
+	DesiredComponent.SetScale3D(FVector::OneVector);
+	const FTransform DesiredBodyOrigin = BodyOriginToComponent * DesiredComponent;
+	FProphecyJoltJointSettings Settings;
+	Settings.Type = EProphecyJoltJointType::Fixed;
+	Settings.BodyA = Hand;
+	Settings.BodyB = SwordBody;
+	Settings.FrameA = Anchor.GetRelativeTransform(FTransform(HandState.Rotation, HandState.PositionCm));
+	Settings.FrameB = Anchor.GetRelativeTransform(DesiredBodyOrigin);
+	Settings.FrameA.SetScale3D(FVector::OneVector);
+	Settings.FrameB.SetScale3D(FVector::OneVector);
+	Settings.FrameA.NormalizeRotation();
+	Settings.FrameB.NormalizeRotation();
+	TArray<FProphecyJoltBodyPair> Exclusions;
+	for (const USkeletalBodySetup* Setup : Mesh.GetPhysicsAsset()->SkeletalBodySetups)
+	{
+		FProphecyJoltBodyHandle OwnerBody;
+		if (!Setup || !Character.GetBodyHandle(Setup->BoneName, OwnerBody)
+			|| OwnerBody.WorldLifetime != SwordBody.WorldLifetime) return false;
+		if (A->IsSwordAttackActive() || Setup->BoneName == Bone) Exclusions.Add({ SwordBody, OwnerBody });
+	}
+	if (!ReleaseJoltGrip()) return false;
+	FProphecyJoltJointHandle Joint;
+	const auto Result = World->CreateJoint(Settings, Exclusions, Joint);
+	if (!Result.IsSuccess())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Jolt sword fixed grip failed: %s"), *Result.Message);
+		return false;
+	}
+	JoltBinding.Reset(new FProphecyJoltSwordBinding);
+	JoltBinding->World = World;
+	JoltBinding->Character = &Character;
+	JoltBinding->Joint = Joint;
+	JoltBinding->Hand = Hand;
+	return true;
+}
+
+bool UProphecySwordComponent::BindJolt(bool bSnapToGrip)
+{
+	AProphecyAgent* A = Agent();
+	USkeletalMeshComponent* Mesh = A ? A->GetPoseReferenceMesh() : nullptr;
+	UProphecyJoltCharacterComponent* Character = A ? A->GetJoltCharacterComponent() : nullptr;
+	FProphecyJoltBodyHandle ExpectedHand;
+	if (!Mesh || !Character || Character->IsSteppingStopped()
+		|| !Character->GetBodyHandle(Mesh->GetSocketBoneName(A->SwordHandSocket), ExpectedHand)) return false;
+	if (PendingJoltBindId.IsValid()) return true;
+	if (!EnsureJoltBody()) return false;
+	if (JoltBody->IsAttachedCollider() && bPhysicsHold && !ReleaseJoltBody()) return false;
+	if (JoltBody->IsJoltBody()) return FinishJoltGrip(*Character, *Mesh);
+	const TWeakObjectPtr<AActor> ExpectedSword = Sword;
+	const TWeakObjectPtr<UStaticMeshComponent> ExpectedBlade = Blade;
+	const TWeakObjectPtr<USkeletalMeshComponent> ExpectedMesh = Mesh;
+	const TWeakObjectPtr<UProphecyJoltCharacterComponent> ExpectedCharacter = Character;
+	const TWeakObjectPtr<UProphecyJoltBodyComponent> ExpectedBody = JoltBody;
+	const auto Intact = [&]()
+	{
+		return IsValid(this) && ExpectedSword.IsValid() && !ExpectedSword->IsActorBeingDestroyed()
+			&& ExpectedBlade.IsValid() && Sword == ExpectedSword.Get() && Blade == ExpectedBlade.Get()
+			&& JoltBody == ExpectedBody.Get() && Agent() == A && A->IsJoltPhysicalAnimationEnabled()
+			&& A->GetPoseReferenceMesh() == ExpectedMesh.Get() && A->GetJoltCharacterComponent() == ExpectedCharacter.Get();
+	};
+	Blade->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	if (!Intact()) return false;
+	if (bSnapToGrip) Blade->SetWorldTransform(GripWorld(), false, nullptr, ETeleportType::TeleportPhysics);
+	if (!Intact()) return false;
+	Blade->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	if (!Intact()) return false;
+	Blade->SetSimulatePhysics(true); // Required live source; coordinator admission owns the handoff.
+	if (!Intact() || !Blade->IsSimulatingPhysics()) return false;
+	// User-approved Jolt policy: omit Chaos MACD and retain the existing CCD setting.
+	Blade->BodyInstance.SetUseMACD(false);
+	if (bSnapToGrip)
+	{
+		Blade->SetPhysicsLinearVelocity(CarriedLinear);
+		Blade->SetPhysicsAngularVelocityInRadians(CarriedAngular);
+	}
+	const FGuid RequestId = FGuid::NewGuid();
+	PendingJoltBindId = RequestId;
+	JoltEnableDelegate = JoltBody->OnDeferredEnableCompleted.AddWeakLambda(this,
+		[this, RequestId, ExpectedSword, ExpectedBlade, ExpectedMesh, ExpectedCharacter, ExpectedBody,
+		 ExpectedHand](bool bSucceeded, const FString& Error)
+		{
+			if (PendingJoltBindId != RequestId || Sword != ExpectedSword.Get() || Blade != ExpectedBlade.Get()
+				|| JoltBody != ExpectedBody.Get()) return;
+			PendingJoltBindId.Invalidate();
+			JoltEnableDelegate.Reset();
+			FProphecyJoltBodyHandle CurrentHand;
+			const bool bSameHand = ExpectedMesh.IsValid() && ExpectedCharacter.IsValid() && Agent()
+				&& ExpectedCharacter->GetBodyHandle(ExpectedMesh->GetSocketBoneName(Agent()->SwordHandSocket), CurrentHand)
+				&& CurrentHand.WorldLifetime == ExpectedHand.WorldLifetime && CurrentHand.Slot == ExpectedHand.Slot
+				&& CurrentHand.Generation == ExpectedHand.Generation;
+			if (bSucceeded && bSameHand && FinishJoltGrip(*ExpectedCharacter, *ExpectedMesh)) return;
+			UE_LOG(LogTemp, Error, TEXT("Deferred Jolt sword binding failed: %s"),
+				Error.IsEmpty() ? TEXT("The captured hand binding changed or the fixed joint could not be created.") : *Error);
+			// Keep the existing receiver, materials and blood even when native activation fails.
+			if (ReleaseJoltBody())
+			{
+				bPhysicsHold = false;
+				if (Bind(false)) return;
+			}
+			bRefreshPending = true;
+		});
+	FString Error;
+	if (!JoltBody->EnableBody(*Blade, Error))
+	{
+		CancelJoltAdmission();
+		UE_LOG(LogTemp, Error, TEXT("Jolt sword body activation failed: %s"), *Error);
+		return false;
+	}
+	if (!Intact()) return false;
+	if (JoltBody->IsEnablePending()) return true;
+	CancelJoltAdmission(); // Remove only our completion listener; active ownership remains.
+	if (FinishJoltGrip(*Character, *Mesh)) return true;
+	ReleaseJoltBody();
+	return false;
+}
+
 bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 {
+	if (bBinding || bDropPending || (JoltBody && JoltBody->IsReceiverRestorePending())) return false;
+	TGuardValue<bool> BindingGuard(bBinding, true);
 	AProphecyAgent* A = Agent();
 	USkeletalMeshComponent* M = A ? A->GetPoseReferenceMesh() : nullptr;
 	if (!M || !Sword || !Blade || !Grip || !M->DoesSocketExist(A->SwordHandSocket)) return false;
+	if (A->GetJoltCharacterComponent() && A->GetJoltCharacterComponent()->IsKinematicRestorePending()) return false;
 	ClearOwnerCollisions(this);
 	Grip->BreakConstraint();
 	if (BoundMesh != M)
@@ -180,8 +413,10 @@ bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 		BoundMesh = M;
 		AddTickPrerequisiteComponent(M);
 	}
+	if (A->IsJoltPhysicalAnimationEnabled()) return BindJolt(bSnapToGrip);
 	if (bPhysicsHold)
 	{
+		if (!ReleaseJoltBody()) return false;
 		const FName Bone = M->GetSocketBoneName(A->SwordHandSocket);
 		FBodyInstance* Hand = M->GetBodyInstance(Bone);
 		if (!Hand || !Hand->IsValidBodyInstance()) return false;
@@ -190,9 +425,7 @@ bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 		Blade->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Blade->SetSimulatePhysics(true);
 		if (!Blade->IsSimulatingPhysics()) return false;
-		// The held blade must not cut its own holder. Pair-specific suppression
-		// leaves world/victim contacts and A_Sword's cutting logic intact.
-		IgnoreOwnerCollisions(this, Blade, A);
+		if (A->IsSwordAttackActive()) IgnoreOwnerCollisions(this, Blade, A);
 		FTransform Anchor = M->GetSocketTransform(A->SwordHandSocket);
 		Anchor.SetScale3D(FVector::OneVector);
 		Grip->SetWorldTransform(Anchor);
@@ -209,69 +442,257 @@ bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 	}
 	else
 	{
+		if (!ReleaseJoltBody()) return false;
 		Blade->SetSimulatePhysics(false);
-		// Attached presentation is intentionally non-physical; no kinematic sword
-		// collider can push the owning hand or pin it against the world.
-		Blade->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		// Chaos owns a moving, non-simulated collider while the socket owns presentation.
+		Blade->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Blade->AttachToComponent(M, FAttachmentTransformRules::KeepWorldTransform, A->SwordHandSocket);
 		Blade->SetRelativeTransform(A->SwordGripTransform);
 		// An unchanged relative transform can early-out after a mode switch has
 		// temporarily propagated a different socket pose to attached children.
 		Blade->UpdateComponentToWorld();
+		IgnoreOwnerCollisions(this, Blade, A, A->IsSwordAttackActive(), true);
 	}
 	bHasPrevious = false;
 	return true;
 }
 
+bool UProphecySwordComponent::ApplyMass(float MassKg)
+{
+	if (!Blade || !FMath::IsFinite(MassKg) || MassKg <= 0 || !FMath::IsFinite(1.0f / MassKg)) return false;
+	if (JoltBody && (JoltBody->IsEnablePending() || JoltBody->IsReceiverRestorePending())) return false;
+	if (JoltBody && JoltBody->IsJoltBody() && !JoltBody->IsAttachedCollider())
+	{
+		FProphecyJoltBodyHandle Handle;
+		if (!JoltBody->GetWorldOwner() || !JoltBody->GetBodyHandle(Handle)) return false;
+		const auto Result = JoltBody->GetWorldOwner()->SetBodyMassKg(Handle, MassKg);
+		if (!Result.IsSuccess()) { UE_LOG(LogTemp, Error, TEXT("Sword mass update failed: %s"), *Result.Message); return false; }
+	}
+	// Keep the existing UE receiver's mass override in sync for backend changes/re-admission.
+	// Neither operation replaces the body, changes its COM, or rewrites its velocity.
+	Blade->SetMassOverrideInKg(NAME_None, MassKg, true);
+	return true;
+}
+
+bool UProphecySwordComponent::SetInertiaScale(float Scale)
+{
+	return !Sword || (!bDropPending && ApplyMass(BaseMassKg * Scale));
+}
+
+bool UProphecySwordComponent::SetAttachedInertiaScale(float Scale)
+{
+	// Store preferences before equip, during deferred admission, and on other backends.
+	// Only an existing welded Jolt collider needs a native update here.
+	if (!JoltBody || !JoltBody->IsAttachedCollider()) return true;
+	FProphecyJoltBodyHandle Handle;
+	if (!JoltBody->GetWorldOwner() || !JoltBody->GetBodyHandle(Handle)) return false;
+	const auto Result = JoltBody->GetWorldOwner()->SetWeldedBodyInertiaScale(Handle, Scale);
+	if (!Result.IsSuccess()) UE_LOG(LogTemp, Error, TEXT("Attached sword inertia update failed: %s"), *Result.Message);
+	return Result.IsSuccess();
+}
+
+void UProphecySwordComponent::RefreshOwnerCollision()
+{
+	AProphecyAgent* A = Agent();
+	if (!A || !Sword || !Blade || bDropPending) return;
+	// Deferred admission reads the current attack state when it creates the grip.
+	if (PendingJoltBindId.IsValid()) return;
+	if (JoltBinding)
+	{
+		FProphecyJoltBodyHandle SwordBody;
+		auto* Character = JoltBinding->Character.Get();
+		auto* World = JoltBinding->World.Get();
+		if (!World || !Character || !BoundMesh || !BoundMesh->GetPhysicsAsset()
+			|| !JoltBody || !JoltBody->GetBodyHandle(SwordBody)) return;
+		TArray<FProphecyJoltBodyPair> Pairs;
+		Pairs.Add({ SwordBody, JoltBinding->Hand });
+		if (A->IsSwordAttackActive())
+		{
+			for (const USkeletalBodySetup* Setup : BoundMesh->GetPhysicsAsset()->SkeletalBodySetups)
+			{
+				FProphecyJoltBodyHandle Body;
+				if (Setup && Character->GetBodyHandle(Setup->BoneName, Body)) Pairs.Add({ SwordBody, Body });
+			}
+		}
+		const auto Result = JoltBody->IsAttachedCollider()
+			? World->UpdateBodySuppressedPairs(SwordBody, Pairs)
+			: World->UpdateJointSuppressedPairs(JoltBinding->Joint, Pairs);
+		if (!Result.IsSuccess()) UE_LOG(LogTemp, Error, TEXT("Sword owner collision update failed: %s"), *Result.Message);
+	}
+	else
+	{
+		ClearOwnerCollisions(this);
+		if (A->IsSwordAttackActive() || !bPhysicsHold)
+			IgnoreOwnerCollisions(this, Blade, A, A->IsSwordAttackActive(), !bPhysicsHold);
+	}
+}
+
 bool UProphecySwordComponent::SetSimulated(bool bSimulated)
 {
-	if (!Sword || !Blade) return false;
+	if (!Sword || !Blade || bBinding || bDropPending || PendingJoltBindId.IsValid()
+		|| (JoltBody && JoltBody->IsReceiverRestorePending())) return false;
 	if (bPhysicsHold == bSimulated) return true;
 	const bool OldMode = bPhysicsHold;
 	bPhysicsHold = bSimulated;
-	if (!Bind(bSimulated)) { bPhysicsHold = OldMode; Bind(false); return false; }
+	if (!Bind(bSimulated)) { bPhysicsHold = OldMode; if (!Bind(false)) bRefreshPending = true; return false; }
 	if (bSimulated)
 	{
-		Blade->SetPhysicsLinearVelocity(CarriedLinear);
-		Blade->SetPhysicsAngularVelocityInRadians(CarriedAngular);
+		if (JoltBody && JoltBody->IsJoltBody())
+		{
+			FString Error;
+			if (!JoltBody->SetBodyVelocity(CarriedLinear, CarriedAngular, true, Error))
+			{
+				UE_LOG(LogTemp, Error, TEXT("Jolt sword velocity handoff failed: %s"), *Error);
+				bPhysicsHold = OldMode;
+				if (!Bind(false)) bRefreshPending = true;
+				return false;
+			}
+		}
+		else if (!PendingJoltBindId.IsValid())
+		{
+			Blade->SetPhysicsLinearVelocity(CarriedLinear);
+			Blade->SetPhysicsAngularVelocityInRadians(CarriedAngular);
+		}
 	}
 	return true;
 }
 
 void UProphecySwordComponent::RefreshHandConstraint()
 {
-	if (Sword) Bind(false);
+	if (!Sword || bDropPending) return;
+	AProphecyAgent* A = Agent();
+	if (bBinding || (JoltBody && JoltBody->IsReceiverRestorePending())
+		|| (A && A->GetJoltCharacterComponent() && A->GetJoltCharacterComponent()->IsKinematicRestorePending()))
+	{ bRefreshPending = true; return; }
+	bRefreshPending = false;
+	if (!Bind(false))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Sword backend refresh failed; retaining the item in attached mode."));
+		bPhysicsHold = false;
+		if (!Bind(false)) bRefreshPending = true;
+	}
 }
 
-AActor* UProphecySwordComponent::Drop()
+AActor* UProphecySwordComponent::FinishDrop()
 {
-	if (!Sword || !Blade) return nullptr;
 	ClearOwnerCollisions(this);
-	const FVector Linear = bPhysicsHold ? Blade->GetPhysicsLinearVelocity() : CarriedLinear;
-	const FVector Angular = bPhysicsHold ? Blade->GetPhysicsAngularVelocityInRadians() : CarriedAngular;
 	if (Grip) { Grip->BreakConstraint(); Grip->DestroyComponent(); Grip = nullptr; }
-	Blade->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-	Blade->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	Blade->SetEnableGravity(true);
-	Blade->SetSimulatePhysics(true);
-	Blade->SetPhysicsLinearVelocity(Linear);
-	Blade->SetPhysicsAngularVelocityInRadians(Angular);
-	Blade->WakeAllRigidBodies();
 	AActor* Result = Sword;
 	Result->SetOwner(nullptr);
+	if (BoundMesh) RemoveTickPrerequisiteComponent(BoundMesh);
+	BoundMesh = nullptr;
+	// The component belongs to the sword actor and remains registered after these held references clear.
+	JoltBody = nullptr;
 	Sword = nullptr;
 	Blade = nullptr;
+	bPhysicsHold = false;
+	bDropPending = false;
+	bRefreshPending = false;
+	PendingJoltBindId.Invalidate();
+	JoltEnableDelegate.Reset();
 	bHasPrevious = false;
 	return Result;
 }
 
+AActor* UProphecySwordComponent::Drop()
+{
+	if (!IsValid(Sword) || !IsValid(Blade) || bBinding
+		|| (JoltBody && JoltBody->IsReceiverRestorePending())) return nullptr;
+	if (bDropPending) return Sword;
+	AProphecyAgent* A = Agent();
+	if (A && A->GetJoltCharacterComponent() && A->GetJoltCharacterComponent()->IsKinematicRestorePending()) return nullptr;
+	TGuardValue<bool> BindingGuard(bBinding, true);
+	// Restore the hand shape and re-admit the sword as an independent dynamic on drop.
+	if (JoltBody && JoltBody->IsAttachedCollider() && !ReleaseJoltBody()) return nullptr;
+	// Held assistance ends on release, without changing the carried linear/angular velocities.
+	if (!ApplyMass(BaseMassKg)) return nullptr;
+	if (JoltBody && JoltBody->IsJoltBody())
+	{
+		FProphecyJoltBodyState Current;
+		if (JoltBody->IsSteppingStopped() || !JoltBody->GetBodyState(Current) || !ReleaseJoltGrip()) return nullptr;
+		CancelJoltAdmission();
+		return FinishDrop(); // Native V/W, gravity and registration are unchanged.
+	}
+	const FVector Linear = bPhysicsHold ? Blade->GetPhysicsLinearVelocity() : CarriedLinear;
+	const FVector Angular = bPhysicsHold ? Blade->GetPhysicsAngularVelocityInRadians() : CarriedAngular;
+	CancelJoltAdmission();
+	if (!ReleaseJoltGrip()) return nullptr;
+	ClearOwnerCollisions(this);
+	if (Grip) Grip->BreakConstraint();
+	const TWeakObjectPtr<AActor> ExpectedSword = Sword;
+	const TWeakObjectPtr<UStaticMeshComponent> ExpectedBlade = Blade;
+	const auto Intact = [&]()
+	{
+		return IsValid(this) && ExpectedSword.IsValid() && !ExpectedSword->IsActorBeingDestroyed()
+			&& ExpectedBlade.IsValid() && Sword == ExpectedSword.Get() && Blade == ExpectedBlade.Get();
+	};
+	Blade->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	if (!Intact()) return nullptr;
+	Blade->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	if (!Intact()) return nullptr;
+	Blade->SetEnableGravity(true);
+	Blade->SetSimulatePhysics(true);
+	if (!Intact()) return nullptr;
+	Blade->SetPhysicsLinearVelocity(Linear);
+	Blade->SetPhysicsAngularVelocityInRadians(Angular);
+	Blade->WakeAllRigidBodies();
+	if (!Intact()) return nullptr;
+	if (!A || !A->IsJoltPhysicalAnimationEnabled()) return FinishDrop();
+	const auto RestoreAttached = [&]()
+	{
+		if (!Intact()) return;
+		CancelJoltAdmission();
+		bPhysicsHold = false;
+		TGuardValue<bool> AllowBind(bBinding, false);
+		if (!Bind(false)) bRefreshPending = true;
+	};
+	if (!EnsureJoltBody()) { RestoreAttached(); return nullptr; }
+	// An attached sword can be dropped directly without ever going through BindJolt.
+	Blade->BodyInstance.SetUseMACD(false);
+	const TWeakObjectPtr<UProphecyJoltBodyComponent> ExpectedBody = JoltBody;
+	const FGuid RequestId = FGuid::NewGuid();
+	PendingJoltBindId = RequestId;
+	bDropPending = true;
+	JoltEnableDelegate = JoltBody->OnDeferredEnableCompleted.AddWeakLambda(this,
+		[this, ExpectedSword, ExpectedBlade, ExpectedBody, RequestId](bool bSucceeded, const FString& Error)
+		{
+			if (PendingJoltBindId != RequestId || !bDropPending || Sword != ExpectedSword.Get()
+				|| Blade != ExpectedBlade.Get() || JoltBody != ExpectedBody.Get()) return;
+			PendingJoltBindId.Invalidate();
+			JoltEnableDelegate.Reset();
+			bDropPending = false;
+			if (bSucceeded && ExpectedBody.IsValid() && ExpectedBody->IsJoltBody()) { FinishDrop(); return; }
+			UE_LOG(LogTemp, Error, TEXT("Deferred Jolt sword drop failed; the existing sword stays held: %s"), *Error);
+			bPhysicsHold = false;
+			if (!Bind(false)) bRefreshPending = true;
+		});
+	FString Error;
+	if (!JoltBody->EnableBody(*Blade, Error))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Jolt sword drop failed; restored held attachment: %s"), *Error);
+		RestoreAttached();
+		return nullptr;
+	}
+	if (!Intact()) return nullptr;
+	if (JoltBody->IsEnablePending()) return Sword; // Accepted request; held references survive until success.
+	CancelJoltAdmission();
+	return FinishDrop();
+}
+
 void UProphecySwordComponent::Disappear()
 {
+	CancelJoltAdmission();
+	ReleaseJoltBody(); // Generic grip is always removed before its native body.
 	ClearOwnerCollisions(this);
 	if (Grip) { Grip->BreakConstraint(); Grip->DestroyComponent(); Grip = nullptr; }
 	if (Sword) Sword->Destroy();
 	Sword = nullptr;
 	Blade = nullptr;
+	JoltBody = nullptr;
+	if (BoundMesh) RemoveTickPrerequisiteComponent(BoundMesh);
+	BoundMesh = nullptr;
+	bPhysicsHold = false;
+	bRefreshPending = false;
 	bHasPrevious = false;
 }
 
@@ -284,8 +705,13 @@ void UProphecySwordComponent::EndPlay(const EEndPlayReason::Type Reason)
 void UProphecySwordComponent::TickComponent(float Dt, ELevelTick Type, FActorComponentTickFunction* Function)
 {
 	Super::TickComponent(Dt, Type, Function);
-	if (!IsValid(Sword) || !IsValid(Blade)) { ClearOwnerCollisions(this); Sword = nullptr; Blade = nullptr; return; }
-	if (BoundMesh != Agent()->GetPoseReferenceMesh()) Bind(false);
+	if (!IsValid(Sword) || !IsValid(Blade)) { Disappear(); return; }
+	AProphecyAgent* A = Agent();
+	if (!A) return;
+	if (!bDropPending && (bRefreshPending || BoundMesh != A->GetPoseReferenceMesh()
+		|| (!PendingJoltBindId.IsValid()
+			&& A->IsJoltPhysicalAnimationEnabled() != bool(JoltBinding)))) RefreshHandConstraint();
+	if (!IsValid(Sword) || !IsValid(Blade)) return;
 	const FTransform Current = Blade->GetComponentTransform();
 	if (bHasPrevious && Dt > SMALL_NUMBER)
 	{
@@ -316,6 +742,29 @@ namespace
 }
 
 bool AProphecyAgent::EquipSword(bool bSimulated) { return SwordController(this, true)->Equip(bSimulated); }
+bool AProphecyAgent::SetSwordAttachedInertiaScale(float Scale)
+{
+	if (!FMath::IsFinite(Scale) || Scale < 0.0f) return false;
+	if (Scale == SwordAttachedInertiaScale) return true;
+	if (auto* C = SwordController(this, false); C && !C->SetAttachedInertiaScale(Scale)) return false;
+	SwordAttachedInertiaScale = Scale;
+	return true;
+}
+
+bool AProphecyAgent::SetSwordInertiaScale(float Scale)
+{
+	if (!FMath::IsFinite(Scale) || Scale <= 0 || !FMath::IsFinite(1.0f / Scale)) return false;
+	if (Scale == SwordInertiaScale) return true;
+	if (auto* C = SwordController(this, false); C && !C->SetInertiaScale(Scale)) return false;
+	SwordInertiaScale = Scale;
+	return true;
+}
+void AProphecyAgent::NotifySwordAttackState(bool bAttacking)
+{
+	if (bSwordAttackActive == bAttacking) return;
+	bSwordAttackActive = bAttacking;
+	if (auto* C = SwordController(this, false)) C->RefreshOwnerCollision();
+}
 bool AProphecyAgent::SetSwordSimulated(bool bSimulated)
 {
 	UProphecySwordComponent* C = SwordController(this, false);

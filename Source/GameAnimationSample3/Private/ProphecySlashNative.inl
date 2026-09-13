@@ -12,6 +12,9 @@ bool FSlashNative::Initialize(const FString& Directory, const TSharedPtr<FJsonOb
 		C->GetBoolField(TEXT("frozen_height_gate")) || C->GetIntegerField(TEXT("pin_up_axis")) != 2 ||
 		C->GetIntegerField(TEXT("foot_roll_steps")) != 4 ||
 		C->GetStringField(TEXT("frozen_pin_mode")) != TEXT("legacy_logit_selected")) return false;
+	// Legacy audit fixtures predate this explicit field and used the four-step approximation.
+	FrozenPinSteps = C->HasField(TEXT("frozen_pin_steps")) ? C->GetIntegerField(TEXT("frozen_pin_steps")) : 4;
+	if (FrozenPinSteps != 4 && FrozenPinSteps != 60) return false;
 	JsonFloatArray(C->GetArrayField(TEXT("startup_expected")), StartupExpected);
 	JsonVec3(C->GetArrayField(TEXT("root_position")), RootPosition);
 	for (int32 I=0; I<3; ++I) JsonVec3(C->GetArrayField(TEXT("root_rotation"))[I]->AsArray(), RootRotation.Rows[I]);
@@ -78,6 +81,39 @@ bool FSlashNative::SetBatch(int32 Count)
 	return true;
 }
 
+bool FSlashNative::LoadHeadbuttPreparation(const FString& Directory)
+{
+	if (!HeadbuttPreparation.IsEmpty()) return true;
+	FString Text; TSharedPtr<FJsonObject> Data;
+	if (!FFileHelper::LoadFileToString(Text, *(Directory / TEXT("prophecy_headbutt_preparation.json"))) ||
+		!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text), Data) || !Data.IsValid()) return false;
+	if (Data->GetIntegerField(TEXT("schema")) != 1 || Data->GetNumberField(TEXT("fps")) != 30 ||
+		Data->GetIntegerField(TEXT("armed_frame")) != 7 ||
+		Data->GetStringField(TEXT("checkpoint_sha256")) != TEXT("6a76321d6e1525c9e6bcfcedcd0ce46676b03dd15dd277c2bd87f6c834239072")) return false;
+	const auto& Frames = Data->GetArrayField(TEXT("frames"));
+	if (Frames.Num() != 8) return false;
+	TArray<FPreparationPose> Loaded;
+	for (const auto& Frame : Frames)
+	{
+		const auto& ArmsData = Frame->AsArray();
+		if (ArmsData.Num() != 2) return false;
+		auto& Pose = Loaded.AddDefaulted_GetRef();
+		for (int32 I=0; I<2; ++I)
+		{
+			TArray<float> V; JsonFloatArray(ArmsData[I]->AsArray(), V);
+			if (V.Num() != 11) return false;
+			for (float X : V) if (!FMath::IsFinite(X)) return false;
+			auto& Arm = Pose.Arms[I];
+			Arm.Position = FVector3f(V[0], V[1], V[2]);
+			Arm.HandRotation = FQuat(V[3], V[4], V[5], V[6]);
+			Arm.UpperArmRotation = FQuat(V[7], V[8], V[9], V[10]);
+			if (!Arm.HandRotation.IsNormalized() || !Arm.UpperArmRotation.IsNormalized()) return false;
+		}
+	}
+	HeadbuttPreparation = MoveTemp(Loaded);
+	return true;
+}
+
 void FSlashNative::Rebase(const float* In, float* Out, bool bUpper, const FVector3f& FromP,
 	const FMat3f& FromR, const FVector3f& ToP, const FMat3f& ToR)
 {
@@ -119,7 +155,7 @@ float FSlashNative::Lowest(int32 Leg,const FVector3f& P,const FMat3f& R,float To
 		BoxContact(A.ToeCenter,A.ToeForward,A.ToeSide,A.ToeUp,ToeHalf,Blend).Z);
 }
 
-void FSlashNative::Pin(float* Candidate,const float* Current,const float* Pins) const
+void FSlashNative::Pin(float* Candidate,const float* Current,const float* Pins,int32 Steps) const
 {
 	Clean(Candidate,false);
 	for (int32 Leg=0; Leg<2; ++Leg)
@@ -131,9 +167,9 @@ void FSlashNative::Pin(float* Candidate,const float* Current,const float* Pins) 
 			const FMat3f CR=MatrixFromRot6(Current+O+3); const float CT=FMath::Clamp(Current[O+15],-1.f,1.f);
 			const FVector3f RV=RotationVectorBetween(CR,R); const float Angle=RV.Size(); const FVector3f Axis=SafeNormal(RV);
 			FMat3f PrevR=CR; float PrevToe=CT; FVector3f Delta=FVector3f::ZeroVector;
-			for (int32 Step=1; Step<=4; ++Step)
+			for (int32 Step=1; Step<=Steps; ++Step)
 			{
-				const float T=float(Step)*0.25f; const FMat3f SR=Multiply(AxisAngleMatrix(Axis,Angle*T),CR);
+				const float T=float(Step)/float(Steps); const FMat3f SR=Multiply(AxisAngleMatrix(Axis,Angle*T),CR);
 				const float ST=CT+(Toe-CT)*T; const auto N=Axes(Leg,FVector3f::ZeroVector,SR,ST);
 				const auto B=Axes(Leg,FVector3f::ZeroVector,PrevR,PrevToe); FVector3f FS,TS;
 				const auto FP=BoxContact(N.FootCenter,N.FootForward,N.FootSide,N.FootUp,FootHalf,FMath::DegreesToRadians(8.f),&FS);
@@ -220,7 +256,7 @@ void FSlashNative::RawUpper(const float* Lower,const float* Upper,FPose& Pose) c
 	}
 }
 
-void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,float* Out) const
+void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,float* Out,const FStepSettings* Settings) const
 {
 	for (int32 I=0; I<90; ++I) W.NextUpper[I]+=NeuralUpper[I]; Clean(W.NextUpper,true);
 	Rebase(W.NextLower,Out,false,W.Origin,W.Heading,RootPosition,RootRotation);
@@ -228,7 +264,31 @@ void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,f
 	// Only upper FK differs between the decoder baseline and candidate. Solve
 	// the legs once, not in all three full-skeleton FK passes of the oracle.
 	for (const auto& L:Legs) SolveLimb(W.FrozenPose,L,LowerOffsets,Out);
-	FPose Base,Candidate; RawUpper(Out,W.BaseUpper,Base); RawUpper(Out,Out+41,Candidate);
+	// Evaluate the original learned latch before choosing who owns the hands.
+	const bool bHitRequest=NeuralUpper[91]>=GateThreshold;
+	Out[432]=State[271]>=0.5f || (State[270]>=0.5f && bHitRequest) ? 1.f:0.f;
+	Out[431]=State[270]>=0.5f || Out[432]>=0.5f || NeuralUpper[90]>=GateThreshold || bHitRequest ? 1.f:0.f;
+	FPose Base,Candidate; RawUpper(Out,W.BaseUpper,Base);
+	if (Settings && Settings->PreparationFrame >= 0 && Settings->EntryPose && Out[431] == 0 && !HeadbuttPreparation.IsEmpty())
+	{
+		const auto& GT = HeadbuttPreparation[FMath::Min(Settings->PreparationFrame, HeadbuttPreparation.Num()-1)];
+		const float Alpha = FMath::Clamp(Settings->PreparationWeight, 0.f, 1.f);
+		const FMat3f InvRoot = Transpose(RootRotation);
+		for (int32 I=0; I<2; ++I)
+		{
+			const auto& L = Arms[I]; const auto& From = Settings->EntryPose->Arms[I]; const auto& To = GT.Arms[I];
+			const FVector3f P = W.FrozenPose.P[0] + TransformRow(FMath::Lerp(From.Position, To.Position, Alpha), W.FrozenPose.R[0]);
+			const FMat3f Hand = Multiply(QuatToMatrix(FQuat::Slerp(From.HandRotation, To.HandRotation, Alpha).GetNormalized()), W.FrozenPose.R[0]);
+			const FMat3f Upper = Multiply(QuatToMatrix(FQuat::Slerp(From.UpperArmRotation, To.UpperArmRotation, Alpha).GetNormalized()), W.FrozenPose.R[0]);
+			// Invert final = frozen + candidate - baseline (and its rotation product).
+			// These corrected channels are also the recurrent upper-state output.
+			float* Arm = Out + 41 + L.StateOffset;
+			Write(Arm, 0, TransformRow(P - W.FrozenPose.P[L.End] + Base.P[L.End] - RootPosition, InvRoot));
+			WriteRot6(Multiply(Multiply(Multiply(Hand, Transpose(W.FrozenPose.R[L.End])), Base.R[L.End]), InvRoot), Arm+3);
+			WriteRot6(Multiply(Multiply(Multiply(Upper, Transpose(W.FrozenPose.R[L.Start])), Base.R[L.Start]), InvRoot), Arm+9);
+		}
+	}
+	RawUpper(Out,Out+41,Candidate);
 	for (int32 I=0; I<25; ++I)
 	{
 		const FVector3f P=I<17 ? W.FrozenPose.P[I]+(Candidate.P[I]-Base.P[I]) : W.FrozenPose.P[I];
@@ -237,15 +297,12 @@ void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,f
 	}
 	// Match advance_phase_latches: a hit request while unarmed arms this
 	// frame. It may become a hit only on a later step whose input was armed.
-	const bool bHitRequest=NeuralUpper[91]>=GateThreshold;
-	Out[432]=State[271]>=0.5f || (State[270]>=0.5f && bHitRequest) ? 1.f:0.f;
-	Out[431]=State[270]>=0.5f || Out[432]>=0.5f || NeuralUpper[90]>=GateThreshold || bHitRequest ? 1.f:0.f;
 	Out[433]=NeuralUpper[90]; Out[434]=NeuralUpper[91]; Out[435]=W.Pins[0]; Out[436]=W.Pins[1];
 }
 
-bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output)
+bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayView<FStepSettings> Settings)
 {
-	if (Input.Num()!=InputBatchSize*272) return false;
+	if (Input.Num()!=InputBatchSize*272 || (!Settings.IsEmpty() && Settings.Num()!=InputBatchSize)) return false;
 	Output.SetNumUninitialized(InputBatchSize*437);
 	for (int32 Lane=0; Lane<InputBatchSize; ++Lane)
 	{
@@ -272,7 +329,9 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output)
 		for (int32 I=0; I<41; ++I) W.Frozen[I]=S[41+I]+R[I];
 		const bool Both=R[41]<0 && R[42]<0;
 		const float Pins[]={Both||R[41]<=R[42]?1.f:0.f,Both||R[42]<R[41]?1.f:0.f};
-		Pin(W.Frozen,S+41,Pins);
+		const int32 Iterations = !Settings.IsEmpty() && Settings[Lane].FrozenPinIterations > 0
+			? FMath::Clamp(Settings[Lane].FrozenPinIterations, 1, 60) : FrozenPinSteps;
+		Pin(W.Frozen,S+41,Pins,Iterations);
 		float* N=NetworkInputs[1].GetData()+92*Lane;
 		FMemory::Memcpy(N,W.CurLower,41*sizeof(float));
 		Rebase(W.Frozen,N+41,false,RootPosition,RootRotation,W.Origin,W.Heading);
@@ -288,7 +347,7 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output)
 		for (int32 I=0; I<41; ++I) Candidate[I]=FrozenHeld[I]+R[I];
 		Rebase(Candidate,Root,false,W.Origin,W.Heading,RootPosition,RootRotation);
 		for (int32 I=0; I<2; ++I) W.Pins[I]=FMath::Clamp(2.f/(1.f+FMath::Exp(-R[41+I]))-1.f,0.f,1.f);
-		Pin(Root,S+41,W.Pins);
+		Pin(Root,S+41,W.Pins,4); // The learned Slash pin pass is four steps in training too.
 		Rebase(Root,W.NextLower,false,RootPosition,RootRotation,W.Origin,W.Heading);
 		float CurrentBase[90],CurrentHeld[90],NextHeld[90]; FPose CurrentPose;
 		FrozenUpper(S+41,CurrentPose,CurrentBase); FrozenUpper(Root,W.FrozenPose,W.BaseUpper);
@@ -303,7 +362,8 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output)
 	}
 	if (!Models[2].Run(NetworkInputs[2],NetworkOutputs[2])) return false;
 	for (int32 Lane=0; Lane<InputBatchSize; ++Lane)
-		Finish(Work[Lane],Input.GetData()+272*Lane,NetworkOutputs[2].GetData()+92*Lane,Output.GetData()+437*Lane);
+		Finish(Work[Lane],Input.GetData()+272*Lane,NetworkOutputs[2].GetData()+92*Lane,Output.GetData()+437*Lane,
+			Settings.IsEmpty() ? nullptr : &Settings[Lane]);
 	return true;
 }
 }

@@ -1,0 +1,38 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "Prophecy Jolt",
+  "Description": "Project-owned Jolt integration. Foundation only; production physics remains unchanged.",
+  "Category": "Physics",
+  "CreatedBy": "Prophecy",
+  "CanContainContent": false,
+  "EnabledByDefault": true,
+  "SupportedTargetPlatforms": [
+    "Win64"
+  ],
+  "Plugins": [
+    {
+      "Name": "Niagara",
+      "Enabled": true
+    }
+  ],
+  "Modules": [
+    {
+      "Name": "ProphecyJolt",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "PlatformAllowList": [
+        "Win64"
+      ]
+    },
+    {
+      "Name": "ProphecyJoltEditor",
+      "Type": "Editor",
+      "LoadingPhase": "Default",
+      "PlatformAllowList": [
+        "Win64"
+      ]
+    }
+  ]
+}

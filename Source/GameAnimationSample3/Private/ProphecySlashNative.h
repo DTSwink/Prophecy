@@ -3,10 +3,25 @@
 class FSlashNative
 {
 public:
+	struct FArmPreparation
+	{
+		FVector3f Position = FVector3f::ZeroVector; // metres, native pelvis frame
+		FQuat HandRotation = FQuat::Identity;
+		FQuat UpperArmRotation = FQuat::Identity;
+	};
+	struct FPreparationPose { FArmPreparation Arms[2]; };
+	struct FStepSettings
+	{
+		int32 FrozenPinIterations = 0; // 0 uses the geometry contract (audits).
+		int32 PreparationFrame = -1;
+		float PreparationWeight = 1;
+		const FPreparationPose* EntryPose = nullptr;
+	};
 	int32 InputBatchSize = 1;
 	bool Initialize(const FString& Directory, const TSharedPtr<FJsonObject>& Contract, bool bGpu = false, const FString& AuditGeometryPath = FString());
 	bool SetBatch(int32 Count);
-	bool Run(TArray<float>& Input, TArray<float>& Output);
+	bool Run(TArray<float>& Input, TArray<float>& Output, TConstArrayView<FStepSettings> Settings = {});
+	bool LoadHeadbuttPreparation(const FString& Directory);
 	TArray<float> StartupExpected;
 	// Kept here for opt-in numerical audits; production adds no trace collection.
 	TArray<float> NetworkInputs[3], NetworkOutputs[3];
@@ -35,6 +50,8 @@ private:
 	int32 Parents[25], CoreSlots[25];
 	FLimb Legs[2], Arms[2];
 	float RootFeatures[35], DeltaScale = 1, SoleOffset = 0, Ground = 0, GateThreshold = 0.6f;
+	int32 FrozenPinSteps = 60;
+	TArray<FPreparationPose> HeadbuttPreparation;
 
 	static FVector3f Read(const float* V, int32 O = 0) { return FVector3f(V[O], V[O+1], V[O+2]); }
 	static void Write(float* V, int32 O, const FVector3f& P) { V[O]=P.X; V[O+1]=P.Y; V[O+2]=P.Z; }
@@ -55,9 +72,9 @@ private:
 		const FMat3f& FromR, const FVector3f& ToP, const FMat3f& ToR);
 	FFootAxes Axes(int32 Leg, const FVector3f& P, const FMat3f& R, float Toe) const;
 	float Lowest(int32 Leg, const FVector3f& P, const FMat3f& R, float Toe) const;
-	void Pin(float* Candidate, const float* Current, const float* Pins) const;
+	void Pin(float* Candidate, const float* Current, const float* Pins, int32 Steps) const;
 	void FrozenUpper(const float* Lower, FPose& Pose, float* Upper) const;
 	void SolveLimb(FPose& Pose, const FLimb& Limb, const FVector3f* Offsets, const float* State) const;
 	void RawUpper(const float* Lower, const float* Upper, FPose& Pose) const;
-	void Finish(FWork& W, const float* State, const float* NeuralUpper, float* Out) const;
+	void Finish(FWork& W, const float* State, const float* NeuralUpper, float* Out, const FStepSettings* Settings) const;
 };

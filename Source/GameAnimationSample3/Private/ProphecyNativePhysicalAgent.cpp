@@ -185,24 +185,7 @@ void AProphecyNativePhysicalAgent::SetNativeContactsAndGravity(bool bContacts, b
 bool AProphecyNativePhysicalAgent::SetNativeUseAuthoredAngularLimits(bool bEnabled)
 {
 	bNativeUseAuthoredAngularLimits = bEnabled;
-	USkeletalMeshComponent* NativeMesh = GetAgentMesh();
-	const UPhysicsAsset* Asset = NativeMesh ? NativeMesh->GetPhysicsAsset() : nullptr;
-	if (!Asset || NativeMesh->Constraints.Num() != Asset->ConstraintSetup.Num()) return false;
-	for (int32 Index=0; Index<NativeMesh->Constraints.Num(); ++Index)
-	{
-		FConstraintInstance* Joint = NativeMesh->Constraints[Index];
-		const UPhysicsConstraintTemplate* Template = Asset->ConstraintSetup[Index];
-		if (!Joint || !Template) continue;
-		const FConstraintProfileProperties& Profile = Template->DefaultInstance.ProfileInstance;
-		Joint->SetAngularSwing1Limit(bEnabled ? Profile.ConeLimit.Swing1Motion.GetValue() : ACM_Free,
-			Profile.ConeLimit.Swing1LimitDegrees);
-		Joint->SetAngularSwing2Limit(bEnabled ? Profile.ConeLimit.Swing2Motion.GetValue() : ACM_Free,
-			Profile.ConeLimit.Swing2LimitDegrees);
-		Joint->SetAngularTwistLimit(bEnabled ? Profile.TwistLimit.TwistMotion.GetValue() : ACM_Free,
-			Profile.TwistLimit.TwistLimitDegrees);
-	}
-	NativeMesh->WakeAllRigidBodies();
-	return true;
+	return SetUseAuthoredAngularLimits(bEnabled);
 }
 
 bool AProphecyNativePhysicalAgent::GetNativeBodySample(FName BoneName, FTransform& TargetWorld,

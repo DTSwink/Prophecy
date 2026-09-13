@@ -1,11 +1,14 @@
 #include "ProphecyNNLocomotionAnimInstance.h"
+#include "ProphecyNNInterpolation.h"
 
 #include "ProphecyAgent.h"
 #include "ProphecyAttackFists.h"
 #include "ProphecyModeTransitions.h"
 #include "ProphecyNNPoseTypes.h"
+#include "ProphecyNNPresentation.h"
 
 #include "Animation/AnimInstanceProxy.h"
+#include "Animation/AnimNodeBase.h"
 #include "Animation/AnimSequenceBase.h"
 #include "Animation/AnimationPoseData.h"
 #include "Animation/AnimTypes.h"
@@ -105,9 +108,9 @@ protected:
 			CurrentAgentId = AgentId;
 			bCompactIndexCacheValid = false;
 		}
-		// A zero-time carrier refresh must not turn a 5 FPS exact-frame sample
-		// into an interpolated sample, nor advance animation/overlay time again.
-		RenderDeltaSeconds = DeltaSeconds > 0.0f || !Instance->GetWorld()
+		// Carrier refreshes share the manager's presentation clock. Keep the world
+		// frame duration available to readers without advancing overlay time again.
+		const float FrameDeltaSeconds = DeltaSeconds > 0.0f || !Instance->GetWorld()
 			? DeltaSeconds : Instance->GetWorld()->GetDeltaSeconds();
 		bInterpolateNNPose = Instance->bInterpolateNNPose;
 		bUseViewerGlobalPoseInterpolation = Instance->bUseViewerGlobalPoseInterpolation;
@@ -180,6 +183,10 @@ protected:
 			CurrentPose = MoveTemp(LatestPose);
 			PoseBlendStartSeconds = CurrentPose.SourceTimeSeconds;
 		}
+		// Resolve on the game thread; Evaluate only reads this cached scalar. Reuse
+		// the former frame-delta slot to preserve already-allocated proxy layouts.
+		PresentationAlpha = ProphecyNNPresentation::Resolve(AgentId, CurrentPose.SourceTimeSeconds,
+			EvaluationTimeSeconds, FrameDeltaSeconds, NNPoseIntervalSeconds, bInterpolateNNPose);
 	}
 
 	virtual bool Evaluate(FPoseContext& Output) override
@@ -199,10 +206,7 @@ protected:
 			RebuildCompactIndexCache(PoseBones);
 		}
 
-		const bool bHasBetweenPoseRenderFrame = RenderDeltaSeconds < NNPoseIntervalSeconds;
-		const float PoseAlpha = bInterpolateNNPose && bHasBetweenPoseRenderFrame
-			? FMath::Clamp(float((EvaluationTimeSeconds - PoseBlendStartSeconds) / double(NNPoseIntervalSeconds)), 0.0f, 1.0f)
-			: 1.0f;
+		const float PoseAlpha = PresentationAlpha;
 
 		TArray<FTransform, TInlineAllocator<64>> ReferencePose;
 		ReferencePose.SetNum(Output.Pose.GetNumBones());
@@ -288,7 +292,7 @@ private:
 		bool bApplyLegs,
 		bool bApplyUpperBody) const
 	{
-		const bool bCanUseViewerInterpolation = bUseViewerGlobalPoseInterpolation &&
+		const bool bCanUseViewerInterpolation = (bUseViewerGlobalPoseInterpolation || CurrentPose.InterpolationMode == EProphecyNNInterpolationMode::HermiteSlerp) &&
 			bHasEvaluationComponentWorldTransform && CurrentPose.bHasComponentWorldTransform &&
 			CurrentPose.PreviousComponentTransforms.Num() == CurrentPose.ComponentTransforms.Num() &&
 			CurrentPose.ComponentTransforms.Num() == CurrentPose.BoneNames.Num();
@@ -364,8 +368,9 @@ private:
 				CurrentPose.PreviousComponentWorldTransform;
 			const FTransform CurrentWorld = CurrentPose.ComponentTransforms[Index] *
 				CurrentPose.ComponentWorldTransform;
-			DesiredComponentTransforms[Index] = BlendViewerWorldTransform(
-				PreviousWorld, CurrentWorld, Alpha).GetRelativeTransform(EvaluationComponentWorldTransform);
+			DesiredComponentTransforms[Index] = (CurrentPose.InterpolationMode == EProphecyNNInterpolationMode::HermiteSlerp
+				? ProphecyNNInterpolation::Sample(CurrentPose, Index, PreviousWorld, CurrentWorld, Alpha)
+				: BlendViewerWorldTransform(PreviousWorld, CurrentWorld, Alpha)).GetRelativeTransform(EvaluationComponentWorldTransform);
 			DesiredComponentTransforms[Index].NormalizeRotation();
 			HasDesiredTransform[Index] = true;
 		}
@@ -375,6 +380,10 @@ private:
 			FProphecyNNPoseStore::ApplyRigidForearms(AgentId, CurrentPose,
 				CurrentPose.BoneNames, DesiredComponentTransforms);
 		}
+
+		if (bApplyLegs)
+			FProphecyNNPoseStore::ApplyRigidCalves(AgentId, CurrentPose,
+				CurrentPose.BoneNames, DesiredComponentTransforms);
 
 		// The model viewer draws each lower-leg segment all the way from the calf
 		// point to the predicted foot point. Mirror that here: keep the predicted
@@ -458,7 +467,7 @@ private:
 	double OverlayTimeSeconds = 0.0;
 	double PoseBlendStartSeconds = 0.0;
 	double EvaluationTimeSeconds = 0.0;
-	float RenderDeltaSeconds = 0.0f;
+	float PresentationAlpha = 1.0f;
 	FTransform EvaluationComponentWorldTransform = FTransform::Identity;
 	bool bHasEvaluationComponentWorldTransform = false;
 	bool bPhysicalAgent = false;

@@ -1,4 +1,5 @@
 #include "ProphecyNNCrowdBenchmark.h"
+#include "Engine/StaticMesh.h"
 
 #include "ProphecyNNPoseAnimInstance.h"
 #include "ProphecyNNPoseTypes.h"

@@ -20,6 +20,30 @@ Checkpoint is accepted `good.pt`, step 265458, SHA-256
 
 ## Verified results
 
+### Source-exact native pinning (2026-09-12)
+
+The live native pipeline now uses the original **60-step frozen Walk pin pass**
+and **4-step learned Slash pin pass**. The earlier frozen4 approximation described
+below has been removed from production. Neural weights and the recorded animation
+are unchanged.
+
+- All453 self-fed transitions against the immutable original30-attack rollout:
+  maximum joint-position error **0.034761 mm**, maximum matrix-element error
+  **0.000195325**, every Armed/Hit latch identical.
+- Independently seeded transitions from that same rollout: **0.001073 mm** maximum.
+-181 captured current hook transitions, replayed independently in the original
+  Python model with identical live inputs: **0.000902 mm** maximum; pin-weight
+  error <7.2e-7 and all latches identical.
+- Geometry fixture and source replay: `Tools/NN/PrepareProphecySlashExactPins.py`,
+  `Tools/NN/ReplayProphecySlashContacts.py`; evidence under
+  `Saved/Diagnostics/SlashContacts/ExactChain/` and `LiveSourceReplay.json`.
+
+The live scene starts from its current pose and target; it is not expected to
+follow the recorded random chain unless those initial conditions and requests
+also match. Turn both **Clamp Foot** and **Clamp Calf** off for the source leg pose.
+
+### Earlier reference installation and four-step audit (historical)
+
 - Imported animation, all 455 × 25 world-space bones: maximum position error
   **0.01267 mm**, maximum angular error **0.01140°**.
 - Live rendered mesh: **1,451 samples, two loop seams**, maximum position error
@@ -34,9 +58,8 @@ Checkpoint is accepted `good.pt`, step 265458, SHA-256
   it can hit; the native latch rule now matches `advance_phase_latches` exactly.
 - The earlier single-attack audit still passes (**0.003153 mm** against four-step Python).
 
-**Not an exact live-NN match to the original 60-step rollout:** production's
-previously accepted four-step frozen-Walk foot-pinning approximation remains
-unchanged. Over this longer chain it produces a maximum **177.652 mm** world-joint
+**Historical limitation, resolved above:** the previously accepted four-step
+frozen-Walk foot-pinning approximation produced a maximum **177.652 mm** world-joint
 difference (right hand around frame 100) and one different Armed frame (98).
 Python with that same approximation independently differs by **177.559 mm**.
 Hit frames still all match. This accumulated approximation error is distinct

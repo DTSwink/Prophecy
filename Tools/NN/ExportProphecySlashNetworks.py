@@ -46,11 +46,11 @@ def main():
         hooks.append(net.register_forward_hook(hook))
 
     with rt.policy_context(), torch.inference_mode():
-        # Only the accepted four-step approximation is applied, in the isolated
-        # exporter process. Original source files and checkpoint remain untouched.
+        # Preserve source pinning: frozen Walk uses sixty steps; learned Slash uses four.
         previous_steps = slash.ik_ctl.FOOT_ROLL_INTEGRATION_STEPS
-        slash.ik_ctl.FOOT_ROLL_INTEGRATION_STEPS = 4
+        assert previous_steps == 60 and slash.LOWER_PIN_INTEGRATION_STEPS == 4
         contract.update({"frozen_original_pin_steps": previous_steps,
+            "frozen_pin_steps": previous_steps,
             "frozen_pin_mode": slash.ik_ctl.FOOT_ROLL_PIN_MODE,
             "frozen_height_gate": slash.ik_ctl.FOOT_ROLL_HEIGHT_PIN_GATE,
             "fake_gravity": slash.ik_ctl.FAKE_GRAVITY_ENABLED,

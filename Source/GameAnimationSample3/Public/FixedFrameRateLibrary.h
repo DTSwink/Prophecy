@@ -10,6 +10,8 @@ class GAMEANIMATIONSAMPLE3_API UFixedFrameRateLibrary : public UBlueprintFunctio
 	GENERATED_BODY()
 
 public:
+	// Changes the simulation clock itself. For slow-motion debugging, keep this
+	// at 60 and use t.MaxFPS (30 = half speed, 15 = quarter speed, 0 = restore).
 	UFUNCTION(BlueprintCallable, Category = "Debug|Framerate")
 	static void SetFixedFrameRateRuntime(float FPS);
 

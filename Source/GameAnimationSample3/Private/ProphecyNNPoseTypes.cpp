@@ -1,4 +1,6 @@
 #include "ProphecyNNPoseTypes.h"
+#include "ProphecyNNPresentation.h"
+#include "ProphecyNNInterpolation.h"
 
 #include "Misc/ScopeRWLock.h"
 
@@ -6,7 +8,15 @@ namespace
 {
 	FRWLock GProphecyNNPoseLock;
 	TMap<int32, FProphecyNNPoseSnapshot> GProphecyNNPoses;
+	TMap<int32, EProphecyNNInterpolationMode> GInterpolationModes;
 	TSet<int32> GProphecyNNRigidForearms;
+	TSet<int32> GProphecyNNRigidCalves;
+	struct FPresentationSample
+	{
+		double SourceTimeSeconds = 0.0;
+		float Alpha = 0.0f;
+	};
+	TMap<int32, FPresentationSample> GProphecyNNPresentation;
 	uint32 GProphecyNNNextRevision = 1;
 
 	uint32 AllocatePoseRevision()
@@ -44,6 +54,37 @@ namespace
 		}
 		return true;
 	}
+}
+
+void FProphecyNNPoseStore::SetInterpolationMode(int32 AgentId, EProphecyNNInterpolationMode Mode)
+{
+	FWriteScopeLock Lock(GProphecyNNPoseLock);
+	if (Mode == EProphecyNNInterpolationMode::HermiteSlerp) GInterpolationModes.Add(AgentId, Mode);
+	else GInterpolationModes.Remove(AgentId);
+}
+
+void ProphecyNNPresentation::Publish(int32 AgentId, double SourceTimeSeconds, float Alpha)
+{
+	FWriteScopeLock Lock(GProphecyNNPoseLock);
+	FPresentationSample& Sample = GProphecyNNPresentation.FindOrAdd(AgentId);
+	Sample.SourceTimeSeconds = SourceTimeSeconds;
+	Sample.Alpha = Alpha;
+}
+
+float ProphecyNNPresentation::Resolve(int32 AgentId, double SourceTimeSeconds, double WorldTimeSeconds,
+	float /*FrameDeltaSeconds*/, float PoseIntervalSeconds, bool bInterpolate)
+{
+	if (!bInterpolate) return 1.0f;
+	{
+		FReadScopeLock Lock(GProphecyNNPoseLock);
+		if (const FPresentationSample* Sample = GProphecyNNPresentation.Find(AgentId))
+		{
+			if (Sample->SourceTimeSeconds == SourceTimeSeconds) return Sample->Alpha;
+		}
+	}
+	// Unmanaged sources use their source clock with the same continuous timing.
+	// Explicit bInterpolate=false above remains an intentional exact-pose override.
+	return FromRemainder(float(WorldTimeSeconds - SourceTimeSeconds), PoseIntervalSeconds);
 }
 
 void FProphecyNNPoseStore::SetAgentLocalPose(
@@ -129,7 +170,8 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 	const FTransform& PreviousComponentWorldTransform,
 	const FTransform& ComponentWorldTransform,
 	double SourceTimeSeconds,
-	bool bRigidForearms)
+	bool bRigidForearms, bool bRigidCalves, float CalfClampLeewayCm, FVector2D CalfClampLengths,
+	const FProphecyNNAttackHandClamp& HandClamp, const FProphecyNNForearmClamp& ForearmClamp)
 {
 	check(BoneNames.Num() == LocalTransforms.Num());
 	check(BoneNames.Num() == PreviousComponentTransforms.Num());
@@ -138,7 +180,15 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
 	if (bRigidForearms) GProphecyNNRigidForearms.Add(AgentId);
 	else GProphecyNNRigidForearms.Remove(AgentId);
+	if (bRigidCalves) GProphecyNNRigidCalves.Add(AgentId);
+	else GProphecyNNRigidCalves.Remove(AgentId);
 	FProphecyNNPoseSnapshot& Snapshot = GProphecyNNPoses.FindOrAdd(AgentId);
+	ProphecyNNInterpolation::Prepare(Snapshot, GInterpolationModes.FindRef(AgentId), BoneNames,
+		PreviousComponentTransforms, ComponentTransforms, PreviousComponentWorldTransform, ComponentWorldTransform, SourceTimeSeconds);
+	Snapshot.CalfClampLeewayCm = CalfClampLeewayCm;
+	Snapshot.AttackHandClamp = HandClamp;
+	Snapshot.ForearmClamp = ForearmClamp;
+	Snapshot.CalfClampLengths = CalfClampLengths;
 	const uint32 LayoutHash = HashBoneLayout(BoneNames);
 	if (!BoneLayoutMatches(Snapshot, BoneNames, LayoutHash))
 	{
@@ -239,14 +289,20 @@ void FProphecyNNPoseStore::ClearAgentPose(int32 AgentId)
 {
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
 	GProphecyNNPoses.Remove(AgentId);
+	GInterpolationModes.Remove(AgentId);
 	GProphecyNNRigidForearms.Remove(AgentId);
+	GProphecyNNRigidCalves.Remove(AgentId);
+	GProphecyNNPresentation.Remove(AgentId);
 }
 
 void FProphecyNNPoseStore::ClearAllPoses()
 {
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
 	GProphecyNNPoses.Reset();
+	GInterpolationModes.Reset();
 	GProphecyNNRigidForearms.Reset();
+	GProphecyNNRigidCalves.Reset();
+	GProphecyNNPresentation.Reset();
 }
 
 bool FProphecyNNPoseStore::UsesAttackPresentation(int32 AgentId)
@@ -258,7 +314,9 @@ bool FProphecyNNPoseStore::UsesAttackPresentation(int32 AgentId)
 void FProphecyNNPoseStore::ApplyRigidForearms(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
 	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms)
 {
+	if (!Snapshot.ForearmClamp.bEnabled)
 	{
+		if (!Snapshot.AttackHandClamp.bEnabled) return;
 		FReadScopeLock Lock(GProphecyNNPoseLock);
 		if (!GProphecyNNRigidForearms.Contains(AgentId)) return;
 	}
@@ -272,9 +330,55 @@ void FProphecyNNPoseStore::ApplyRigidForearms(int32 AgentId, const FProphecyNNPo
 		if (Transforms.IsValidIndex(Hand) && Transforms.IsValidIndex(Forearm) &&
 			Snapshot.LocalTransforms.IsValidIndex(SourceHand))
 		{
-			Transforms[Hand].SetTranslation(Transforms[Forearm].TransformPosition(
-				Snapshot.LocalTransforms[SourceHand].GetTranslation()));
+			if (Snapshot.ForearmClamp.bEnabled)
+			{
+				Transforms[Hand].SetTranslation(Snapshot.ForearmClamp.ClampHand(Transforms[Hand].GetTranslation(),
+					Transforms[Forearm], Snapshot.LocalTransforms[SourceHand].GetTranslation(), Side));
+				continue;
+			}
+			const FVector Offset = Snapshot.AttackHandClamp.LeewayCm > 0
+				? Snapshot.AttackHandClamp.ReferenceOffsets[Side]
+				: Snapshot.LocalTransforms[SourceHand].GetTranslation();
+			Transforms[Hand].SetTranslation(FProphecyNNAttackHandClamp::ClampPosition(
+				Transforms[Hand].GetTranslation(), Transforms[Forearm].TransformPosition(Offset),
+				Snapshot.AttackHandClamp.LeewayCm));
 		}
+	}
+}
+
+void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
+	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms)
+{
+	{
+		FReadScopeLock Lock(GProphecyNNPoseLock);
+		if (!GProphecyNNRigidCalves.Contains(AgentId)) return;
+	}
+	static const FName Feet[] = { TEXT("foot_l"), TEXT("foot_r") };
+	static const FName Calves[] = { TEXT("calf_l"), TEXT("calf_r") };
+	static const FName Toes[] = { TEXT("ball_l"), TEXT("ball_r") };
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		const int32 Foot = BoneNames.IndexOfByKey(Feet[Side]);
+		const int32 Calf = BoneNames.IndexOfByKey(Calves[Side]);
+		const int32 SourceFoot = Snapshot.BoneNames.IndexOfByKey(Feet[Side]);
+		if (!Transforms.IsValidIndex(Foot) || !Transforms.IsValidIndex(Calf)
+			|| !Snapshot.LocalTransforms.IsValidIndex(SourceFoot)) continue;
+		FVector End;
+		if (Snapshot.CalfClampLeewayCm > 0 && Snapshot.CalfClampLengths[Side] > 0)
+		{
+			const FVector Reference = Snapshot.LocalTransforms[SourceFoot].GetTranslation().GetSafeNormal() * Snapshot.CalfClampLengths[Side];
+			const FVector Nominal = Transforms[Calf].TransformVector(Reference);
+			const FVector Delta = Transforms[Foot].GetTranslation()-Transforms[Calf].GetTranslation();
+			const double Radius = Delta.Length(), Length = Nominal.Length();
+			const double Allowed = FMath::Clamp(Radius, FMath::Max(0.,Length-Snapshot.CalfClampLeewayCm),Length+Snapshot.CalfClampLeewayCm);
+			if (Allowed == Radius) continue;
+			End = Transforms[Calf].GetTranslation() + Delta.GetSafeNormal(UE_SMALL_NUMBER,Nominal.GetSafeNormal()) * Allowed;
+		}
+		else End = Transforms[Calf].TransformPosition(Snapshot.LocalTransforms[SourceFoot].GetTranslation());
+		const FVector Shift = End - Transforms[Foot].GetTranslation();
+		Transforms[Foot].SetTranslation(End);
+		const int32 Toe = BoneNames.IndexOfByKey(Toes[Side]);
+		if (Transforms.IsValidIndex(Toe)) Transforms[Toe].AddToTranslation(Shift);
 	}
 }
 

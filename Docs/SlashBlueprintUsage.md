@@ -1,6 +1,11 @@
 # Slash attacks in Blueprint
 
 All nodes belong to **Prophecy Agent**, including `BP_ProphecyManualPoseAgent`.
+
+**2026-09-13:** per-agent **Set Attack Foot Pinning Iterations** defaults to 4;
+use 60 for original training resolution. Headbutts now use GT arm preparation
+until learned Armed by default. Controls and opt-out:
+[AttackPinningAndHeadbutt.md](AttackPinningAndHeadbutt.md).
 The agent must already be registered with its locomotion manager and NN inference enabled.
 Nothing needs to be added to Blueprint Tick for a stationary attack target.
 
@@ -20,7 +25,7 @@ Names are case-insensitive:
 `jabL`, `jabR`, `hookL`, `hookR`, `overL`, `overR`, `headbutt`, `kickL`, `kickR`.
 
 Example: event → **Trigger NN Attack** (`Self`, `slashL`, opponent's chest world position, `Half Attack = true`).
-The NN starts from the agent's previous/current pose; it does not play the saved parity rollout.
+Full attacks start from the agent's previous/current pose. Fresh half attacks use the original GT Armed/Armed-1 lower body and current upper pose; neither plays the saved parity rollout. See [HalfAttackGTInitialization.md](HalfAttackGTInitialization.md).
 
 ## During / after the attack
 
@@ -72,7 +77,7 @@ the following or a later step. This matches the source model's latch sequencing.
   `Set/Get Global Half Attack Target Radius` controls this shared world value in cm;
   `Get NN Attack Target` exposes requested/effective/ghost targets. Full attacks are unaffected.
 - A separate **data-only** lower/upper attack history performs Slash in its fixed attack-root frame. There is no additional ghost SkeletalMeshComponent.
-- The attack upper pose is transferred relative to the ghost pelvis onto the real pelvis. Real running translation does not drive the ghost's lower history.
+- Fresh half attacks seed lower history from original GT Armed/Armed-1. The upper pose uses a fixed mounting orientation and follows real pelvis translation only; real pelvis rotation, running history and root turning do not drive the attack. Targets use the inverse of that same mounting transform.
 - Switching back to full body rejoins at the current locomotion carrier instead of moving the actor back to the attack's starting location. It does not restart or phase-match the attack.
 - Full body suppresses locomotion stick amplitude through the existing mover. It does not replace the capsule mover or bypass collision.
 
@@ -95,24 +100,32 @@ These are locomotion-upper inputs, not additional gaze controls for the trained 
 
 ## Retained verification
 
-- `Tools/NN/ExportProphecySlashNetworks.py`: unchanged float32 neural-only production exports, geometry contract and four-step Python reference.
+- `Tools/NN/ExportProphecySlashNetworks.py`: unchanged float32 neural-only production exports, geometry contract and source-exact pinning configuration.
 - `Tools/NN/ExportProphecySlashPolicy.py`: retained full-transition numerical oracle, not the gameplay model.
 - `Tools/NN/AuditProphecySlashOnnx.py`: independent ONNX autoregressive comparison to the exact saved rollout.
-- `Tools/NN/AuditProphecySlashUnreal.py` through the editor bridge (outside PIE): native world-space parity against four-step Python, plus a separate comparison against the unchanged saved rollout; includes rotations, gates and input-pose codec.
+- `Tools/NN/AuditProphecySlashUnreal.py` through the editor bridge (outside PIE): legacy audit fixture support; use the source-exact chain checks in SlashFootContactsAndCamera.md for current acceptance.
 - `Tools/NN/BenchmarkProphecySlashUnreal.py cpu|gpu <count>` (outside PIE): complete attack-step timing, including native maths and GPU transfers. Tests batch counts up to 100; count 1 also tests resizing between counts.
 - `Tools/NN/TestProphecySlashBlueprint.py` (PIE): all 16 families, mid-attack switches, kick rejection and actual rendered-bone readback. It does not force an animation evaluation.
 - `Tools/NN/TestProphecySlashMoving.py` (PIE): movement, moving half attacks, gaze setters and 60/30/5 FPS readback.
 - `Tools/NN/CaptureProphecySlashLive.py`: optional live-pose images using an actor-following test camera. Never saves the map.
 
-Test outputs are under `Saved/SlashParity/`. Gameplay runs three small neural models and native geometry, not the old whole-geometry graph. Only active attackers enter the batch. Both pin passes use four integration steps. No quantization, checkpoint edits or viewer changes.
+Current source-exact verification and costs are documented in
+[SlashFootContactsAndCamera.md](SlashFootContactsAndCamera.md) and
+[SlashChainReference.md](SlashChainReference.md). Frozen Walk pinning now uses
+60 integration steps and learned Slash pinning uses 4, matching training.
+The older four-step audit fixtures under `Saved/SlashParity/` are historical
+approximations, not the production source-parity acceptance test.
 
-Measured CPU median: **0.12–0.13 ms for one attack step**, **2.91–3.40 ms total for 100 attackers**. GPU was slower for small batches and did not consistently beat CPU at 100, so CPU remains the default. These costs include attack geometry, but exclude rendering, physics and the existing locomotion update.
+The immutable 453-transition chain agrees with original Python to **0.034761 mm**
+maximum joint-position error with identical Armed/Hit latches. Measured source-exact
+CPU policy+geometry cost for 100 attackers is **5.017 ms median per 30 Hz step**;
+this excludes physics, rendering and ordinary locomotion work.
 
-Across the reference attack, native C++ differs from four-step Python by at most **0.003153 mm** in world position. The four-step approximation differs from the original saved rollout by about **0.915 mm**; event timing remains identical. These are separate checks.
+For the original unconstrained legs during attacks, set both **Clamp Foot = false**
+and **Clamp Calf = false** on the owning manager. Calf-length clamping runs after
+pinning and can move a planted foot below the floor. Existing Blueprint setters
+work during attacks as well as locomotion.
 
-For the longer 30-attack test and the permanent looping reference in `testNN`, see
-[SlashChainReference.md](SlashChainReference.md). The native port stays within
-**0.100 mm** of same-four-step Python across that chain, and all 30 Hit frames
-match the saved source. However, four-step versus original 60-step pinning can
-accumulate to **177.652 mm** and changes one Armed frame; do not generalize the
-short reference's sub-millimetre approximation error to long sequences.
+A possessed player's spring arm now follows horizontal full-attack pelvis travel.
+NPCs do not receive a follower unless possessed; half attacks retain the ordinary
+locomotion camera. Camera height/rotation/length retain their existing behavior.

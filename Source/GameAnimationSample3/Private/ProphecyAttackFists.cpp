@@ -3,6 +3,7 @@
 #include "ProphecyNNPoseAnimInstance.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimInstanceProxy.h"
+#include "Animation/AnimNodeBase.h"
 #include "Animation/Skeleton.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -139,6 +140,7 @@ void AProphecyAgent::ReleaseAttackFists()
 
 void ProphecyAttackFists::EnsureManualSimulation(AProphecyAgent* Agent)
 {
+	if (Agent && Agent->IsJoltPhysicalAnimationEnabled()) return;
 	if (!Agent || !Agent->HasActorBegunPlay() ||
 		!Agent->bManualNNPoseApplication || Agent->GetSimulationMode() != EProphecyAgentSimulationMode::Physical) return;
 	USkeletalMeshComponent* Mesh = Agent->GetPoseReferenceMesh();
@@ -241,4 +243,19 @@ void ProphecyAttackFists::ReleaseProxy(const void* Proxy)
 {
 	FScopeLock Lock(&Storage().SnapshotLock);
 	Storage().Snapshots.Remove(Proxy);
+}
+
+void ProphecyAttackFists::ApplyToLocalPose(const void* Proxy, TConstArrayView<FName> BoneNames,
+	TArrayView<FTransform> LocalPose)
+{
+	check(IsInGameThread());
+	if (BoneNames.Num() != LocalPose.Num()) return;
+	FScopeLock Lock(&Storage().SnapshotLock);
+	const TArray<FFistBone>* Bones = Storage().Snapshots.Find(Proxy);
+	if (!Bones) return;
+	for (const FFistBone& Bone : *Bones)
+	{
+		const int32 Index = BoneNames.IndexOfByKey(Bone.Name);
+		if (Index != INDEX_NONE) LocalPose[Index] = Bone.Local;
+	}
 }

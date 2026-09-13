@@ -262,7 +262,16 @@ bool AProphecyBloodTexturePaintManager::TryPaintFromHit(const FHitResult& Hit, f
 		return false;
 	}
 
+	const FString StateKey = MakeStateKey(Component, MaterialSlot);
 	UMaterialInterface* CurrentMaterial = Component->GetMaterial(MaterialSlot);
+	// The first stamp installs our MID. Validate later stamps against its original
+	// mapped material, without treating unrelated MIDs as prepared paint materials.
+	const FProphecyBloodPaintState* ExistingState = PaintStatesByKey.Find(StateKey);
+	if (ExistingState && ExistingState->bValid && ExistingState->Component == Component
+		&& ExistingState->MaterialSlot == MaterialSlot && ExistingState->BloodMID == CurrentMaterial)
+	{
+		CurrentMaterial = OriginalMaterialsByKey.FindRef(StateKey);
+	}
 	if (!IsPaintableComponent(Component, CurrentMaterial, RejectReason))
 	{
 		LogReject(RejectReason);
@@ -276,7 +285,6 @@ bool AProphecyBloodTexturePaintManager::TryPaintFromHit(const FHitResult& Hit, f
 		return false;
 	}
 
-	const FString StateKey = MakeStateKey(Component, MaterialSlot);
 	FProphecyBloodPaintStamp Stamp;
 	Stamp.UV = UV;
 	Stamp.BrushDrawSizePixels = ComputeWorldBrushDrawSize(Component, Hit, BrushRadiusWorld, State->RTResolution, BrushUVUnitsPerWorldUnit);
@@ -318,7 +326,14 @@ bool AProphecyBloodTexturePaintManager::DebugPaintUV(UMeshComponent* Component, 
 	}
 
 	FString RejectReason;
+	const FString StateKey = MakeStateKey(Component, MaterialSlot);
 	UMaterialInterface* CurrentMaterial = Component->GetMaterial(MaterialSlot);
+	const FProphecyBloodPaintState* ExistingState = PaintStatesByKey.Find(StateKey);
+	if (ExistingState && ExistingState->bValid && ExistingState->Component == Component
+		&& ExistingState->MaterialSlot == MaterialSlot && ExistingState->BloodMID == CurrentMaterial)
+	{
+		CurrentMaterial = OriginalMaterialsByKey.FindRef(StateKey);
+	}
 	if (!IsPaintableComponent(Component, CurrentMaterial, RejectReason))
 	{
 		LogReject(RejectReason);
@@ -338,7 +353,7 @@ bool AProphecyBloodTexturePaintManager::DebugPaintUV(UMeshComponent* Component, 
 	Stamp.BrushDrawSizePixels = FVector2D(Stamp.BrushSizePixels, Stamp.BrushSizePixels);
 	Stamp.Intensity = FMath::Clamp(Intensity, 0.0f, 1.0f);
 	Stamp.RotationDegrees = 0.0f;
-	QueueStamp(MakeStateKey(Component, MaterialSlot), Stamp);
+	QueueStamp(StateKey, Stamp);
 	State->LastUsedTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
 	return true;
 }
@@ -1299,12 +1314,16 @@ UMaterialInterface* AProphecyBloodTexturePaintManager::EditorEnsureBloodMaterial
 		}
 	}
 
+	// Publish the completed graph before SetMaterialUsage can compile it. That API
+	// compiles immediately without rebuilding the duplicate's referenced-texture
+	// cache; RecompileMaterial's PostEditChange refreshes it for the injected function.
+	UMaterialEditingLibrary::LayoutMaterialExpressions(GeneratedMaterial);
+	UMaterialEditingLibrary::RecompileMaterial(GeneratedMaterial);
+
 	bool bNeedsRecompile = false;
 	UMaterialEditingLibrary::SetMaterialUsage(GeneratedMaterial, MATUSAGE_StaticMesh, bNeedsRecompile);
 	UMaterialEditingLibrary::SetMaterialUsage(GeneratedMaterial, MATUSAGE_SkeletalMesh, bNeedsRecompile);
 	UMaterialEditingLibrary::SetMaterialUsage(GeneratedMaterial, MATUSAGE_Nanite, bNeedsRecompile);
-	UMaterialEditingLibrary::LayoutMaterialExpressions(GeneratedMaterial);
-	UMaterialEditingLibrary::RecompileMaterial(GeneratedMaterial);
 
 	if (bEditorSaveGeneratedBloodMaterials)
 	{

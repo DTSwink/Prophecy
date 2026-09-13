@@ -1,5 +1,8 @@
 #pragma once
 
+#include "CoreMinimal.h"
+#include "Containers/ArrayView.h"
+
 class AProphecyAgent;
 struct FPoseContext;
 
@@ -10,5 +13,6 @@ namespace ProphecyAttackFists
 	void EnsureManualSimulation(AProphecyAgent* Agent);
 	void PreUpdate(const void* Proxy, const AProphecyAgent* Agent);
 	void Evaluate(const void* Proxy, FPoseContext& Output);
+	void ApplyToLocalPose(const void* Proxy, TConstArrayView<FName> BoneNames, TArrayView<FTransform> LocalPose);
 	void ReleaseProxy(const void* Proxy);
 }

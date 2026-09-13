@@ -1,10 +1,18 @@
 #include "ProphecyAgent.h"
+#include "ProphecyPhysicalBlendSubsystem.h"
 
+#include "ProphecyManualServoCapture.h"
+#include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyJoltCharacterProfiling.h"
 #include "ProphecyNNLocomotionAnimInstance.h"
 #include "ProphecyNNLocomotionManager.h"
 #include "ProphecyNNPoseTypes.h"
+#include "ProphecyNNInterpolation.h"
+#include "ProphecyNNPresentation.h"
+#include "ProphecyNNPhysicalTargetPose.h"
 #include "ProphecyAttackFists.h"
 #include "ProphecyModeTransitions.h"
+#include "ProphecyCrowdNameLookup.h"
 
 #include "Chaos/ChaosConstraintSettings.h"
 #include "Chaos/ChaosEngineInterface.h"
@@ -12,9 +20,12 @@
 #include "Chaos/SimCallbackObject.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PoseableMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMeshActor.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -95,9 +106,112 @@ namespace
 		Chaos::ESimCallbackOptions::PreIntegrate>
 	{
 	public:
-		void PublishTargets_External(FManualFollowerSubstepTargets&& InTargets)
+		bool IsCapturing_External() const
+		{
+			check(IsInGameThread());
+			// Only the game thread attaches or detaches this pointer. The worker
+			// uses the already-existing target lock for its contents.
+			return Capture.IsValid();
+		}
+
+		bool BeginCapture_External(int32 MaxPackets, int32 MaxSteps, FString& OutError)
+		{
+			check(IsInGameThread());
+			if (Capture)
+			{
+				OutError = TEXT("This manual callback is already recording.");
+				return false;
+			}
+			TUniquePtr<ProphecyManualServoCapture::FCapture> NewCapture =
+				MakeUnique<ProphecyManualServoCapture::FCapture>();
+			NewCapture->PacketCapacity = MaxPackets;
+			NewCapture->StepCapacity = MaxSteps;
+			NewCapture->Packets.SetNum(MaxPackets);
+			NewCapture->Steps.SetNum(MaxSteps);
+			FScopeLock ScopeLock(&TargetLock);
+			Capture = MoveTemp(NewCapture);
+			CurrentPacketSequence = 0;
+			CurrentPacketAttemptSequence = 0;
+			CurrentSourceSequence = 0;
+			LastConsumedPacketSequence = 0;
+			bCurrentPacketRecorded = false;
+			return true;
+		}
+
+		bool ReadCapture_External(ProphecyManualServoCapture::FCapture& OutCapture, FString& OutError)
+		{
+			check(IsInGameThread());
+			FScopeLock ScopeLock(&TargetLock);
+			if (!Capture)
+			{
+				OutError = TEXT("This manual callback is not recording.");
+				return false;
+			}
+			OutCapture = *Capture;
+			OutCapture.Packets.SetNum(OutCapture.PacketsRecorded, EAllowShrinking::No);
+			OutCapture.Steps.SetNum(OutCapture.StepsRecorded, EAllowShrinking::No);
+			return true;
+		}
+
+		bool EndCapture_External(ProphecyManualServoCapture::FCapture& OutCapture, FString& OutError)
+		{
+			check(IsInGameThread());
+			TUniquePtr<ProphecyManualServoCapture::FCapture> FinishedCapture;
+			{
+				FScopeLock ScopeLock(&TargetLock);
+				if (!Capture)
+				{
+					OutError = TEXT("This manual callback is not recording.");
+					return false;
+				}
+				FinishedCapture = MoveTemp(Capture);
+			}
+			OutCapture = MoveTemp(*FinishedCapture);
+			OutCapture.Packets.SetNum(OutCapture.PacketsRecorded, EAllowShrinking::No);
+			OutCapture.Steps.SetNum(OutCapture.StepsRecorded, EAllowShrinking::No);
+			return true;
+		}
+
+		void RecordPublishFailure_External(ProphecyManualServoCapture::EPublishFailure Failure)
+		{
+			check(IsInGameThread());
+			if (!Capture)
+			{
+				return;
+			}
+			FScopeLock ScopeLock(&TargetLock);
+			++Capture->PublishAttempts;
+			++Capture->FailedPublications;
+			Capture->LastPublishFailure = Failure;
+		}
+
+		void PublishTargets_External(
+			FManualFollowerSubstepTargets&& InTargets,
+			const ProphecyManualServoCapture::FPacket* Packet = nullptr)
 		{
 			FScopeLock ScopeLock(&TargetLock);
+			if (Capture)
+			{
+				CurrentPacketAttemptSequence = ++Capture->PublishAttempts;
+				CurrentPacketSequence = ++Capture->PublishedPackets;
+				CurrentSourceSequence = Packet ? Packet->SourceSequence : 0;
+				bCurrentPacketRecorded = false;
+				Capture->bBodyOverflow |= InTargets.Bodies.Num() > ProphecyManualServoCapture::MaxBodies;
+				if (Packet && Capture->PacketsRecorded < Capture->PacketCapacity)
+				{
+					ProphecyManualServoCapture::FPacket& RecordedPacket =
+						Capture->Packets[Capture->PacketsRecorded++];
+					RecordedPacket = *Packet;
+					RecordedPacket.Sequence = CurrentPacketSequence;
+					RecordedPacket.AttemptSequence = CurrentPacketAttemptSequence;
+					RecordedPacket.GameFrame = GFrameCounter;
+					bCurrentPacketRecorded = true;
+				}
+				else
+				{
+					Capture->bPacketOverflow = true;
+				}
+			}
 			Targets = MoveTemp(InTargets);
 		}
 
@@ -112,14 +226,63 @@ namespace
 		{
 			FScopeLock ScopeLock(&TargetLock);
 			const float StepSeconds = FMath::Max(Targets.MaximumSubstepSeconds, UE_SMALL_NUMBER);
+			ProphecyManualServoCapture::FStep* RecordedStep = nullptr;
+			if (Capture)
+			{
+				const uint64 ConsumedSequence = ++Capture->ConsumedCallbacks;
+				const bool bRepeated = CurrentPacketSequence != 0 &&
+					CurrentPacketSequence == LastConsumedPacketSequence;
+				const bool bStale = Capture->PublishAttempts > CurrentPacketAttemptSequence;
+				const bool bUnrecorded = !bCurrentPacketRecorded;
+				Capture->RepeatedPacketConsumptions += bRepeated ? 1 : 0;
+				Capture->StalePacketConsumptions += bStale ? 1 : 0;
+				Capture->UnrecordedPacketConsumptions += bUnrecorded ? 1 : 0;
+				LastConsumedPacketSequence = CurrentPacketSequence;
+				if (Capture->StepsRecorded < Capture->StepCapacity)
+				{
+					RecordedStep = &Capture->Steps[Capture->StepsRecorded++];
+					RecordedStep->Sequence = ConsumedSequence;
+					RecordedStep->PacketSequence = CurrentPacketSequence;
+					RecordedStep->SourceSequence = CurrentSourceSequence;
+					RecordedStep->LatestAttemptSequence = Capture->PublishAttempts;
+					RecordedStep->CallbackSimTimeSeconds = static_cast<double>(GetSimTime_Internal());
+					RecordedStep->CallbackDeltaSeconds = static_cast<double>(GetDeltaTime_Internal());
+					RecordedStep->DenominatorSeconds = StepSeconds;
+					RecordedStep->BodyCount = FMath::Min(Targets.Bodies.Num(), ProphecyManualServoCapture::MaxBodies);
+					RecordedStep->bRepeatedPacket = bRepeated;
+					RecordedStep->bStaleAfterFailedPublish = bStale;
+					RecordedStep->bUnrecordedPacket = bUnrecorded;
+				}
+				else
+				{
+					Capture->bStepOverflow = true;
+				}
+			}
+			int32 BodyIndex = 0;
 			for (const FManualFollowerSubstepBody& Body : Targets.Bodies)
 			{
+				ProphecyManualServoCapture::FBodyStep* BodyStep =
+					RecordedStep && BodyIndex < ProphecyManualServoCapture::MaxBodies
+						? &RecordedStep->Bodies[BodyIndex] : nullptr;
+				++BodyIndex;
 				Chaos::FRigidBodyHandle_Internal* Rigid = Body.Actor
 					? Body.Actor->GetPhysicsThreadAPI()
 					: nullptr;
 				if (!Rigid)
 				{
+					if (Capture)
+					{
+						++Capture->MissingBodySamples;
+					}
 					continue;
+				}
+				if (BodyStep)
+				{
+					BodyStep->bValid = true;
+					BodyStep->Position = FVector(Rigid->X());
+					BodyStep->Rotation = FQuat(Rigid->R());
+					BodyStep->LinearVelocityBefore = FVector(Rigid->V());
+					BodyStep->AngularVelocityBefore = FVector(Rigid->W());
 				}
 
 				if (Body.LinearStrengthScale > 0.0f)
@@ -148,11 +311,22 @@ namespace
 					Rigid->SetW(Chaos::FVec3(CurrentAngularVelocity +
 						(AngularVelocity - CurrentAngularVelocity) * Body.AngularStrengthScale));
 				}
+				if (BodyStep)
+				{
+					BodyStep->LinearVelocityAfter = FVector(Rigid->V());
+					BodyStep->AngularVelocityAfter = FVector(Rigid->W());
+				}
 			}
 		}
 
 		FCriticalSection TargetLock;
 		FManualFollowerSubstepTargets Targets;
+		TUniquePtr<ProphecyManualServoCapture::FCapture> Capture;
+		uint64 CurrentPacketSequence = 0;
+		uint64 CurrentPacketAttemptSequence = 0;
+		uint64 CurrentSourceSequence = 0;
+		uint64 LastConsumedPacketSequence = 0;
+		bool bCurrentPacketRecorded = false;
 	};
 
 	struct FManualFollowerSubstepState
@@ -237,8 +411,35 @@ namespace
 		}
 	}
 
+	FManualFollowerSubstepCallback* GetOrCreateManualFollowerSubstepCallback(
+		AProphecyAgent* Agent, FPhysScene* PhysicsScene)
+	{
+		FManualFollowerSubstepState* State = ManualFollowerSubstepStates.Find(Agent);
+		if (!State || State->PhysicsScene != PhysicsScene)
+		{
+			ReleaseManualFollowerSubstepCallback(Agent);
+			State = &ManualFollowerSubstepStates.FindOrAdd(Agent);
+			State->PhysicsScene = PhysicsScene;
+			State->Callback = PhysicsScene->GetSolver()->
+				CreateAndRegisterSimCallbackObject_External<FManualFollowerSubstepCallback>();
+		}
+		else if (!State->Callback)
+		{
+			State->Callback = PhysicsScene->GetSolver()->
+				CreateAndRegisterSimCallbackObject_External<FManualFollowerSubstepCallback>();
+		}
+		return State->Callback;
+	}
+
 	void PublishManualFollowerSubstepTarget(AProphecyAgent* Agent, float DeltaSeconds)
 	{
+		if (Agent && Agent->IsJoltPhysicalAnimationEnabled())
+		{
+			FString Error;
+			if (!Agent->GetJoltCharacterComponent()->PublishAuthoredTargets(DeltaSeconds, Error))
+				UE_LOG(LogProphecyAgentPhysical, Error, TEXT("Jolt target publication failed: %s"), *Error);
+			return;
+		}
 		if (Agent->GetSimulationMode() == EProphecyAgentSimulationMode::HalfSim)
 		{
 			ReleaseManualFollowerSubstepCallback(Agent);
@@ -263,29 +464,27 @@ namespace
 			InterpolatedWorldTransforms,
 			InterpolationAlpha))
 		{
+			const FManualFollowerSubstepState* State = ManualFollowerSubstepStates.Find(Agent);
+			if (State && State->Callback)
+			{
+				State->Callback->RecordPublishFailure_External(
+					ProphecyManualServoCapture::EPublishFailure::PoseUnavailable);
+			}
 			return;
 		}
 
-		FManualFollowerSubstepState* State = ManualFollowerSubstepStates.Find(Agent);
-		if (!State || State->PhysicsScene != PhysicsScene)
-		{
-			ReleaseManualFollowerSubstepCallback(Agent);
-			State = &ManualFollowerSubstepStates.FindOrAdd(Agent);
-			State->PhysicsScene = PhysicsScene;
-			State->Callback = PhysicsScene->GetSolver()->
-				CreateAndRegisterSimCallbackObject_External<FManualFollowerSubstepCallback>();
-		}
-		else if (!State->Callback)
-		{
-			State->Callback = PhysicsScene->GetSolver()->
-				CreateAndRegisterSimCallbackObject_External<FManualFollowerSubstepCallback>();
-		}
-
-		if (!State->Callback)
+		FManualFollowerSubstepCallback* Callback = GetOrCreateManualFollowerSubstepCallback(Agent, PhysicsScene);
+		if (!Callback)
 		{
 			return;
 		}
 
+		TUniquePtr<ProphecyManualServoCapture::FPacket> CapturePacket;
+		if (Callback->IsCapturing_External())
+		{
+			CapturePacket = MakeUnique<ProphecyManualServoCapture::FPacket>();
+			CapturePacket->FrameDeltaSeconds = DeltaSeconds;
+		}
 		FManualFollowerSubstepTargets Targets;
 		const UPhysicsSettings* Settings = UPhysicsSettings::Get();
 		Targets.MaximumSubstepSeconds = FMath::Max(
@@ -327,8 +526,24 @@ namespace
 			const FTransform TargetBodyWorld = BodyFromBone * InterpolatedWorldTransforms[BoneIndex];
 			OutputBody.TargetPosition = TargetBodyWorld.GetLocation();
 			OutputBody.TargetRotation = TargetBodyWorld.GetRotation();
+			if (CapturePacket && CapturePacket->BodyCount < ProphecyManualServoCapture::MaxBodies)
+			{
+				ProphecyManualServoCapture::FBoneTarget& RecordedBody =
+					CapturePacket->Bodies[CapturePacket->BodyCount++];
+				RecordedBody.BoneName = BoneNames[BoneIndex];
+				RecordedBody.ActualBoneWorld = ActualBoneWorld;
+				RecordedBody.BodyFromBone = BodyFromBone;
+				RecordedBody.TargetPosition = OutputBody.TargetPosition;
+				RecordedBody.TargetRotation = OutputBody.TargetRotation;
+				RecordedBody.LinearStrength = OutputBody.LinearStrengthScale;
+				RecordedBody.AngularStrength = OutputBody.AngularStrengthScale;
+			}
 		}
-		State->Callback->PublishTargets_External(MoveTemp(Targets));
+		if (CapturePacket)
+		{
+			CapturePacket->MaximumSubstepSeconds = Targets.MaximumSubstepSeconds;
+		}
+		Callback->PublishTargets_External(MoveTemp(Targets), CapturePacket.Get());
 	}
 
 	void AuditManualPhysicalFollowerBeforeTick(AProphecyAgent* Agent)
@@ -794,6 +1009,14 @@ namespace
 			FVector::OneVector);
 	}
 
+	FTransform BlendAuthoredWorldTransform(const FProphecyNNPoseSnapshot& Pose, int32 Index,
+		const FTransform& A, const FTransform& B, float Alpha)
+	{
+		return Pose.InterpolationMode == EProphecyNNInterpolationMode::HermiteSlerp
+			? ProphecyNNInterpolation::Sample(Pose, Index, A, B, Alpha)
+			: BlendAuthoredWorldTransform(A, B, Alpha);
+	}
+
 	bool IsIgnoredNavigationBlocker(const AActor* Actor)
 	{
 		if (!Actor)
@@ -955,19 +1178,33 @@ bool AProphecyAgent::GetMassWeightedPoseError(FVector& LinearErrorKgCm, FVector&
 	TotalMassKg = 0.0f;
 	BodyCount = 0;
 	const USkeletalMeshComponent* PhysicalMesh = GetPoseReferenceMesh();
-	if (!PhysicalMesh || !PhysicalMesh->IsAnySimulatingPhysics()) return false;
+	const bool bJolt = IsJoltPhysicalAnimationEnabled();
+	if (!PhysicalMesh || (!bJolt && !PhysicalMesh->IsAnySimulatingPhysics())) return false;
 	TArray<FName> Names;
 	TArray<FTransform> Future, Presented;
 	float Alpha;
 	if (!ReadNNFutureWorldPose(Names, Future, Presented, Alpha)) return false;
 	TSet<const FBodyInstance*> Seen;
+	TSet<int32> SeenJoltBodies;
 	for (int32 Index = 0; Index < Names.Num(); ++Index)
 	{
-		FBodyInstance* Body = PhysicalMesh->GetBodyInstance(Names[Index]);
-		if (!Body || !Body->IsValidBodyInstance() || !Body->IsInstanceSimulatingPhysics() || Seen.Contains(Body)) continue;
-		Seen.Add(Body);
-		const double Mass = Body->GetBodyMass();
-		const FTransform Actual = Body->GetUnrealWorldTransform();
+		double Mass = 0.0;
+		FTransform Actual;
+		if (bJolt)
+		{
+			int32 BodyIndex = INDEX_NONE;
+			if (!JoltCharacter->ReadPoseErrorBody(Names[Index], BodyIndex, Mass, Actual)
+				|| SeenJoltBodies.Contains(BodyIndex)) continue;
+			SeenJoltBodies.Add(BodyIndex);
+		}
+		else
+		{
+			FBodyInstance* Body = PhysicalMesh->GetBodyInstance(Names[Index]);
+			if (!Body || !Body->IsValidBodyInstance() || !Body->IsInstanceSimulatingPhysics() || Seen.Contains(Body)) continue;
+			Seen.Add(Body);
+			Mass = Body->GetBodyMass();
+			Actual = Body->GetUnrealWorldTransform();
+		}
 		if (!FMath::IsFinite(Mass) || Mass <= 0.0 || Actual.ContainsNaN()) continue;
 		const FTransform& Target = Presented[Index];
 		LinearErrorKgCm += Mass * (Actual.GetLocation() - Target.GetLocation());
@@ -988,6 +1225,7 @@ bool AProphecyAgent::SetAllPhysicalFeedbackTolerances(
 	float LinearToleranceCm,
 	float AngularToleranceDegrees)
 {
+	CancelPhysicalFeedbackToleranceBlend();
 	const float Linear = FMath::Max(0.0f, LinearToleranceCm);
 	const float Angular = FMath::Max(0.0f, AngularToleranceDegrees);
 	for (const FName BoneName : PhysicalFeedbackBoneNames())
@@ -997,16 +1235,9 @@ bool AProphecyAgent::SetAllPhysicalFeedbackTolerances(
 		Settings.LinearToleranceCm = Linear;
 		Settings.AngularToleranceDegrees = Angular;
 	}
-	bool bApplied = true;
-	for (TActorIterator<AProphecyNNLocomotionManager> It(GetWorld()); It; ++It)
-	{
-		if (It->SetAgentAllPhysicalFeedbackTolerances(
-			AgentHandle, Linear, Angular))
-		{
-			bApplied = true;
-		}
-	}
-	return bApplied;
+	if (auto* Manager = FindOwningNNManager(this))
+		Manager->SetAgentAllPhysicalFeedbackTolerances(AgentHandle, Linear, Angular);
+	return true;
 }
 
 bool AProphecyAgent::SetPhysicalFeedbackTolerance(
@@ -1018,20 +1249,15 @@ bool AProphecyAgent::SetPhysicalFeedbackTolerance(
 	{
 		return false;
 	}
+	CancelPhysicalFeedbackToleranceBlend(BoneName);
 	FProphecyPhysicalFeedbackToleranceSettings& Settings =
 		PhysicalFeedbackTolerances.FindOrAdd(BoneName);
 	Settings.LinearToleranceCm = FMath::Max(0.0f, LinearToleranceCm);
 	Settings.AngularToleranceDegrees = FMath::Max(0.0f, AngularToleranceDegrees);
-	bool bApplied = true;
-	for (TActorIterator<AProphecyNNLocomotionManager> It(GetWorld()); It; ++It)
-	{
-		if (It->SetAgentPhysicalFeedbackTolerance(
-			AgentHandle, BoneName, Settings.LinearToleranceCm, Settings.AngularToleranceDegrees))
-		{
-			bApplied = true;
-		}
-	}
-	return bApplied;
+	if (auto* Manager = FindOwningNNManager(this))
+		Manager->SetAgentPhysicalFeedbackTolerance(AgentHandle, BoneName,
+			Settings.LinearToleranceCm, Settings.AngularToleranceDegrees);
+	return true;
 }
 
 int32 AProphecyAgent::SetPhysicalFeedbackToleranceBelow(
@@ -1230,6 +1456,10 @@ bool AProphecyAgent::EnsureStandaloneNNManager()
 
 void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (auto* Blends = GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>()) Blends->RemoveAgent(*this);
+	bResumeChaosPhysicalAfterJoltRestore = false;
+	bUseJoltForPhysicalMode = false;
+	DisableJoltPhysicalAnimationForModeChange();
 	ProphecyModeTransitions::ReleaseAgent(this);
 	ReleaseAttackFists();
 	ReleaseHalfSimulationState();
@@ -1239,11 +1469,27 @@ void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+UPoseableMeshComponent* AProphecyAgent::GetKinematicDebugMesh() const
+{
+	if (!bShowKinematicDebugMesh || !IsValid(Capsule) || !AgentHandle.IsValid()) return nullptr;
+	const FName ExpectedName = ProphecyCrowd::KinematicDebugMeshName(AgentHandle.Index);
+	for (USceneComponent* Child : Capsule->GetAttachChildren())
+	{
+		auto* DebugMesh = Cast<UPoseableMeshComponent>(Child);
+		if (IsValid(DebugMesh) && DebugMesh->IsRegistered() && DebugMesh->GetFName() == ExpectedName
+			&& IsValid(Cast<AProphecyNNLocomotionManager>(DebugMesh->GetOwner())))
+		{
+			return DebugMesh;
+		}
+	}
+	return nullptr;
+}
+
 USkeletalMeshComponent* AProphecyAgent::GetPoseReferenceMesh() const
 {
 	if (bManualNNPoseApplication)
 	{
-		TArray<USkeletalMeshComponent*> SkeletalMeshes;
+		TInlineComponentArray<USkeletalMeshComponent*, 4> SkeletalMeshes;
 		GetComponents(SkeletalMeshes);
 		for (USkeletalMeshComponent* Candidate : SkeletalMeshes)
 		{
@@ -1389,6 +1635,16 @@ bool AProphecyAgent::GetNNAnimationLayerState(
 		BlendWeight);
 }
 
+void AProphecyAgent::SetNNInterpolationMode(EProphecyNNInterpolationMode Mode)
+{
+	if (Mode != EProphecyNNInterpolationMode::Current && Mode != EProphecyNNInterpolationMode::HermiteSlerp) return;
+	NNInterpolationMode = Mode;
+	if (const FNNPoseDataSource* Source = NNPoseDataSources.Find(this))
+		FProphecyNNPoseStore::SetInterpolationMode(Source->AgentId, Mode);
+	else if (const auto* Anim = GetProphecyAnimInstance())
+		FProphecyNNPoseStore::SetInterpolationMode(Anim->AgentId, Mode);
+}
+
 void AProphecyAgent::ConfigureNNPoseDataSource(
 	int32 AgentId,
 	float PoseIntervalSeconds,
@@ -1398,6 +1654,7 @@ void AProphecyAgent::ConfigureNNPoseDataSource(
 	Source.AgentId = AgentId;
 	Source.PoseIntervalSeconds = FMath::Max(0.001f, PoseIntervalSeconds);
 	Source.bInterpolatePose = bInterpolatePose;
+	FProphecyNNPoseStore::SetInterpolationMode(AgentId, NNInterpolationMode);
 }
 
 void AProphecyAgent::ClearNNPoseDataSource()
@@ -1464,20 +1721,15 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 		? DataSource->bInterpolatePose
 		: AnimInstance->bInterpolateNNPose;
 	const float FrameDeltaSeconds = GetWorld() ? GetWorld()->GetDeltaSeconds() : PoseInterval;
-	if (bInterpolate && FrameDeltaSeconds < PoseInterval && GetWorld())
-	{
-		InterpolationAlpha = FMath::Clamp(
-			float((double(GetWorld()->GetTimeSeconds()) - Pose.SourceTimeSeconds) /
-				double(PoseInterval)),
-			0.0f,
-			1.0f);
-	}
+	InterpolationAlpha = ProphecyNNPresentation::Resolve(PoseAgentId, Pose.SourceTimeSeconds,
+		GetWorld() ? double(GetWorld()->GetTimeSeconds()) : Pose.SourceTimeSeconds,
+		FrameDeltaSeconds, PoseInterval, bInterpolate);
 
 	PreviousWorldTransform = Pose.PreviousComponentTransforms[PoseIndex] *
 		Pose.PreviousComponentWorldTransform;
 	CurrentWorldTransform = Pose.ComponentTransforms[PoseIndex] *
 		Pose.ComponentWorldTransform;
-	InterpolatedWorldTransform = BlendAuthoredWorldTransform(
+	InterpolatedWorldTransform = BlendAuthoredWorldTransform(Pose, PoseIndex,
 		PreviousWorldTransform, CurrentWorldTransform, InterpolationAlpha);
 	if (BoneName == TEXT("hand_l") || BoneName == TEXT("hand_r"))
 	{
@@ -1486,7 +1738,7 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 		if (Pose.ComponentTransforms.IsValidIndex(Parent) && Pose.PreviousComponentTransforms.IsValidIndex(Parent))
 		{
 			const FName Names[] = { ParentName, BoneName };
-			FTransform Transforms[] = { BlendAuthoredWorldTransform(
+			FTransform Transforms[] = { BlendAuthoredWorldTransform(Pose, Parent,
 				Pose.PreviousComponentTransforms[Parent] * Pose.PreviousComponentWorldTransform,
 				Pose.ComponentTransforms[Parent] * Pose.ComponentWorldTransform, InterpolationAlpha),
 				InterpolatedWorldTransform };
@@ -1494,7 +1746,167 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 			InterpolatedWorldTransform = Transforms[1];
 		}
 	}
+	if (BoneName == TEXT("foot_l") || BoneName == TEXT("foot_r") ||
+		BoneName == TEXT("ball_l") || BoneName == TEXT("ball_r"))
+	{
+		const bool bLeft = BoneName == TEXT("foot_l") || BoneName == TEXT("ball_l");
+		const FName Names[] = { bLeft ? TEXT("calf_l") : TEXT("calf_r"),
+			bLeft ? TEXT("foot_l") : TEXT("foot_r"), bLeft ? TEXT("ball_l") : TEXT("ball_r") };
+		FTransform Transforms[3];
+		bool bComplete = true;
+		for (int32 Part = 0; Part < 3; ++Part)
+		{
+			const int32 Index = Pose.BoneNames.IndexOfByKey(Names[Part]);
+			if (!Pose.ComponentTransforms.IsValidIndex(Index) || !Pose.PreviousComponentTransforms.IsValidIndex(Index))
+			{ bComplete = false; break; }
+			Transforms[Part] = BlendAuthoredWorldTransform(Pose, Index,
+				Pose.PreviousComponentTransforms[Index] * Pose.PreviousComponentWorldTransform,
+				Pose.ComponentTransforms[Index] * Pose.ComponentWorldTransform, InterpolationAlpha);
+		}
+		if (bComplete)
+		{
+			FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, Names, Transforms);
+			InterpolatedWorldTransform = Transforms[BoneName == Names[1] ? 1 : 2];
+		}
+	}
 	return true;
+}
+
+void AProphecyAgent::SetAttackFootPinningIterations(int32 Iterations)
+{
+	AttackFootPinningIterations = FMath::Clamp(Iterations, 1, 60);
+}
+
+bool AProphecyAgent::SetFootPinningDebugEnabled(bool bEnabled)
+{
+	auto* Manager = FindOwningNNManager(this);
+	return Manager && Manager->SetAgentFootPinningDebug(AgentHandle, bEnabled);
+}
+
+bool AProphecyAgent::GetLocomotionFootPinning(FProphecyFootPinningSample& Sample) const
+{
+	Sample = FProphecyFootPinningSample();
+	const auto* Manager = FindOwningNNManager(this);
+	return Manager && Manager->GetAgentFootPinning(AgentHandle, false, false, Sample);
+}
+
+bool AProphecyAgent::GetAttackFootPinning(FProphecyFootPinningSample& Sample, bool bFrozenStage) const
+{
+	Sample = FProphecyFootPinningSample();
+	const auto* Manager = FindOwningNNManager(this);
+	return Manager && Manager->GetAgentFootPinning(AgentHandle, true, bFrozenStage, Sample);
+}
+
+bool AProphecyAgent::SetLocomotionFootPinningThreshold(float ThresholdCm, float FadeRangeCm)
+{
+	if (!FMath::IsFinite(ThresholdCm) || !FMath::IsFinite(FadeRangeCm) || ThresholdCm < 0 || FadeRangeCm < 0) return false;
+	bOverrideLocomotionPinThreshold = true;
+	LocomotionPinThresholdM = ThresholdCm * .01f;
+	LocomotionFullPinHeightM = FMath::Max(0.f, ThresholdCm-FadeRangeCm) * .01f;
+	return true;
+}
+
+bool AProphecyAgent::SetAttackHandClamp(bool bEnabled, float LeewayCm)
+{
+	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	bAttackHandClamp = bEnabled;
+	AttackHandClampLeewayCm = LeewayCm;
+	return true;
+}
+
+bool AProphecyAgent::SetAttackFootClamp(bool bEnabled, float LeewayCm)
+{
+	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	bOverrideAttackFootClamp = true;
+	bAttackFootClamp = bEnabled;
+	AttackFootClampLeewayCm = LeewayCm;
+	return true;
+}
+
+bool AProphecyAgent::SetAttackCalfClamp(bool bEnabled, float LeewayCm)
+{
+	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	bOverrideAttackCalfClamp = true;
+	bAttackCalfClamp = bEnabled;
+	AttackCalfClampLeewayCm = LeewayCm;
+	return true;
+}
+
+bool AProphecyAgent::SetLocomotionPolicyBlendTimes(float WalkToRunSeconds, float RunToWalkSeconds)
+{
+	if (!FMath::IsFinite(WalkToRunSeconds) || !FMath::IsFinite(RunToWalkSeconds) ||
+		WalkToRunSeconds < 0.f || RunToWalkSeconds < 0.f) return false;
+	LocomotionWalkToRunBlendSeconds = WalkToRunSeconds;
+	LocomotionRunToWalkBlendSeconds = RunToWalkSeconds;
+	return true;
+}
+
+bool AProphecyAgent::SetLocomotionWalkCheckpointSpeedThreshold(float SpeedCmPerSecond)
+{
+	if (!FMath::IsFinite(SpeedCmPerSecond)) return false;
+	LocomotionWalkCheckpointSpeedThreshold = SpeedCmPerSecond < 0.f ? -1.f : SpeedCmPerSecond;
+	return true;
+}
+
+bool AProphecyAgent::GetLocomotionCheckpointWeights(float& WalkWeight, float& RunWeight) const
+{
+	WalkWeight = RunWeight = 0.f;
+	const AProphecyNNLocomotionManager* Manager = FindOwningNNManager(this);
+	return Manager && Manager->GetAgentLocomotionCheckpointWeights(AgentHandle, WalkWeight, RunWeight);
+}
+
+void AProphecyAgent::GetLocomotionPolicyBlendTimes(float& WalkToRunSeconds, float& RunToWalkSeconds) const
+{
+	WalkToRunSeconds = LocomotionWalkToRunBlendSeconds;
+	RunToWalkSeconds = LocomotionRunToWalkBlendSeconds;
+}
+
+bool AProphecyAgent::SetLocomotionFootClamp(bool bEnabled, float LeewayCm)
+{
+	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	bOverrideLocomotionFootClamp = true;
+	bLocomotionFootClamp = bEnabled;
+	LocomotionFootClampLeewayCm = LeewayCm;
+	return true;
+}
+
+bool AProphecyAgent::SetLocomotionCalfClamp(bool bEnabled, float LeewayCm)
+{
+	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	bOverrideLocomotionCalfClamp = true;
+	bLocomotionCalfClamp = bEnabled;
+	LocomotionCalfClampLeewayCm = LeewayCm;
+	return true;
+}
+
+bool AProphecyAgent::SetLocomotionForearmClamp(bool bEnabled, float LeewayCm)
+{
+	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	bLocomotionForearmClamp = bEnabled;
+	LocomotionForearmClampLeewayCm = LeewayCm;
+	return true;
+}
+
+bool AProphecyAgent::SetLocomotionHandClamp(bool bEnabled, float LeewayCm)
+{
+	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	bOverrideLocomotionHandClamp = true;
+	bLocomotionHandClamp = bEnabled;
+	LocomotionHandClampLeewayCm = LeewayCm;
+	return true;
+}
+
+bool AProphecyAgent::GetLocomotionRootWindow(TArray<FTransform>& WorldRoots, TArray<float>& TimeOffsetsSeconds) const
+{
+	WorldRoots.Reset(); TimeOffsetsSeconds.Reset();
+	const AProphecyNNLocomotionManager* Manager = FindOwningNNManager(this);
+	return Manager && Manager->GetAgentLocomotionRootWindow(AgentHandle, WorldRoots, TimeOffsetsSeconds);
+}
+
+UPoseableMeshComponent* AProphecyAgent::SetShowNNPreviousPoseDebugMesh(bool bEnabled, bool bPreferAttack)
+{
+	AProphecyNNLocomotionManager* Manager = FindOwningNNManager(this);
+	return Manager ? Manager->SetAgentPreviousPoseDebug(AgentHandle, bEnabled, bPreferAttack) : nullptr;
 }
 
 void AProphecyAgent::PublishManualFollowerSubstepTargets(float DeltaSeconds)
@@ -1509,6 +1921,7 @@ void AProphecyAgent::ReleaseManualFollowerSubstepTargets()
 
 void AProphecyAgent::Tick(float DeltaSeconds)
 {
+	ProphecyJolt::CharacterProfiling::FScope JoltAgentTiming(ProphecyJolt::CharacterProfiling::EPhase::AgentTick);
 	const bool bAuditManualFollower =
 		CVarProphecyAuditManualPhysicalFollower.GetValueOnGameThread() != 0;
 	if (bAuditManualFollower)
@@ -1519,7 +1932,10 @@ void AProphecyAgent::Tick(float DeltaSeconds)
 	}
 
 	Super::Tick(DeltaSeconds);
-	ProphecyAttackFists::EnsureManualSimulation(this);
+	{
+		ProphecyJolt::CharacterProfiling::FScope JoltFistTiming(ProphecyJolt::CharacterProfiling::EPhase::EnsureFists);
+		ProphecyAttackFists::EnsureManualSimulation(this);
+	}
 	if (bPendingHalfSimulation) EnterHalfSimulation();
 
 	if (bManualNNPoseApplication && bAutoPublishManualFollowerSubstepTargets &&
@@ -1538,7 +1954,7 @@ void AProphecyAgent::Tick(float DeltaSeconds)
 	}
 	if (SimulationMode == EProphecyAgentSimulationMode::Physical &&
 		PhysicalDriveMode == EProphecyAgentPhysicalDriveMode::RootAndJointTorque &&
-		bAutoApplyWorldMagnetization)
+		bAutoApplyWorldMagnetization && !IsJoltPhysicalAnimationEnabled())
 	{
 		static bool bLoggedPhysicalDriveTick = false;
 		if (!bLoggedPhysicalDriveTick && CVarProphecyPhysicalLogPelvisError.GetValueOnGameThread() != 0)
@@ -1556,6 +1972,15 @@ bool AProphecyAgent::ReadNNFutureWorldPose(
 	TArray<FTransform>& InterpolatedWorldTransforms,
 	float& InterpolationAlpha) const
 {
+	FProphecyNNPoseSnapshot SourceSnapshot;
+	return ReadNNFutureWorldPoseWithSnapshot(BoneNames, FutureWorldTransforms,
+		InterpolatedWorldTransforms, InterpolationAlpha, SourceSnapshot);
+}
+
+bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
+	TArray<FTransform>& FutureWorldTransforms, TArray<FTransform>& InterpolatedWorldTransforms,
+	float& InterpolationAlpha, FProphecyNNPoseSnapshot& Pose) const
+{
 	BoneNames.Reset();
 	FutureWorldTransforms.Reset();
 	InterpolatedWorldTransforms.Reset();
@@ -1566,7 +1991,6 @@ bool AProphecyAgent::ReadNNFutureWorldPose(
 		? nullptr
 		: Cast<UProphecyNNLocomotionAnimInstance>(Mesh->GetAnimInstance());
 	const int32 PoseAgentId = DataSource ? DataSource->AgentId : (AnimInstance ? AnimInstance->AgentId : INDEX_NONE);
-	FProphecyNNPoseSnapshot Pose;
 	if (PoseAgentId == INDEX_NONE || !FProphecyNNPoseStore::GetAgentLocalPose(PoseAgentId, Pose) ||
 		!Pose.bHasComponentWorldTransform ||
 		Pose.PreviousComponentTransforms.Num() != Pose.BoneNames.Num() ||
@@ -1580,13 +2004,9 @@ bool AProphecyAgent::ReadNNFutureWorldPose(
 		: FMath::Max(0.001f, AnimInstance->NNPoseIntervalSeconds);
 	const float FrameDeltaSeconds = GetWorld() ? GetWorld()->GetDeltaSeconds() : PoseInterval;
 	const bool bInterpolatePose = DataSource ? DataSource->bInterpolatePose : AnimInstance->bInterpolateNNPose;
-	if (bInterpolatePose && FrameDeltaSeconds < PoseInterval && GetWorld())
-	{
-		InterpolationAlpha = FMath::Clamp(
-			float((double(GetWorld()->GetTimeSeconds()) - Pose.SourceTimeSeconds) / double(PoseInterval)),
-			0.0f,
-			1.0f);
-	}
+	InterpolationAlpha = ProphecyNNPresentation::Resolve(PoseAgentId, Pose.SourceTimeSeconds,
+		GetWorld() ? double(GetWorld()->GetTimeSeconds()) : Pose.SourceTimeSeconds,
+		FrameDeltaSeconds, PoseInterval, bInterpolatePose);
 
 	const bool bPhysicalFollowerData = bManualNNPoseApplication && DataSource;
 	if (bPhysicalFollowerData)
@@ -1603,61 +2023,19 @@ bool AProphecyAgent::ReadNNFutureWorldPose(
 			return false;
 		}
 
-		const FReferenceSkeleton& ReferenceSkeleton = SkeletalMesh->GetRefSkeleton();
-		const TArray<FTransform>& ReferenceLocalPose = ReferenceSkeleton.GetRefBonePose();
-		TArray<FTransform, TInlineAllocator<128>> PreviousWorldPose;
-		TArray<FTransform, TInlineAllocator<128>> FutureWorldPose;
-		PreviousWorldPose.SetNumUninitialized(ReferenceSkeleton.GetNum());
-		FutureWorldPose.SetNumUninitialized(ReferenceSkeleton.GetNum());
-
-		auto BuildWorldPose = [&](const TArray<FTransform>& NNComponentPose,
-			const FTransform& ComponentWorld,
-			TArray<FTransform, TInlineAllocator<128>>& OutWorldPose)
+		if (!ProphecyNNPhysicalTargets::BuildWorldPoses(*SkeletalMesh, *PhysicsAsset, Pose,
+			BoneNames, FutureWorldTransforms, InterpolatedWorldTransforms))
 		{
-			for (int32 BoneIndex = 0; BoneIndex < ReferenceSkeleton.GetNum(); ++BoneIndex)
-			{
-				const FName BoneName = ReferenceSkeleton.GetBoneName(BoneIndex);
-				const int32 NNPoseIndex = Pose.BoneNames.IndexOfByKey(BoneName);
-				if (NNComponentPose.IsValidIndex(NNPoseIndex))
-				{
-					// NN outputs are already component-space transforms. They override
-					// the static hierarchy exactly as the former target mesh did.
-					OutWorldPose[BoneIndex] = NNComponentPose[NNPoseIndex] * ComponentWorld;
-					continue;
-				}
-
-				const int32 ParentIndex = ReferenceSkeleton.GetParentIndex(BoneIndex);
-				OutWorldPose[BoneIndex] = ParentIndex != INDEX_NONE
-					? ReferenceLocalPose[BoneIndex] * OutWorldPose[ParentIndex]
-					: ReferenceLocalPose[BoneIndex] * ComponentWorld;
-			}
-		};
-
-		BuildWorldPose(Pose.PreviousComponentTransforms,
-			Pose.PreviousComponentWorldTransform, PreviousWorldPose);
-		BuildWorldPose(Pose.ComponentTransforms,
-			Pose.ComponentWorldTransform, FutureWorldPose);
-
-		BoneNames.Reserve(PhysicsAsset->SkeletalBodySetups.Num());
-		FutureWorldTransforms.Reserve(PhysicsAsset->SkeletalBodySetups.Num());
-		InterpolatedWorldTransforms.Reserve(PhysicsAsset->SkeletalBodySetups.Num());
-		for (const USkeletalBodySetup* BodySetup : PhysicsAsset->SkeletalBodySetups)
+			return false;
+		}
+		for (int32 Index = 0; Index < BoneNames.Num(); ++Index)
 		{
-			if (!BodySetup)
-			{
-				continue;
-			}
-			const int32 BoneIndex = ReferenceSkeleton.FindBoneIndex(BodySetup->BoneName);
-			if (!PreviousWorldPose.IsValidIndex(BoneIndex) || !FutureWorldPose.IsValidIndex(BoneIndex))
-			{
-				continue;
-			}
-			BoneNames.Add(BodySetup->BoneName);
-			FutureWorldTransforms.Add(FutureWorldPose[BoneIndex]);
-			InterpolatedWorldTransforms.Add(BlendAuthoredWorldTransform(
-				PreviousWorldPose[BoneIndex], FutureWorldPose[BoneIndex], InterpolationAlpha));
+			InterpolatedWorldTransforms[Index] = BlendAuthoredWorldTransform(Pose,
+				Pose.InterpolationMode == EProphecyNNInterpolationMode::HermiteSlerp ? Pose.BoneNames.IndexOfByKey(BoneNames[Index]) : INDEX_NONE,
+				InterpolatedWorldTransforms[Index], FutureWorldTransforms[Index], InterpolationAlpha);
 		}
 		FProphecyNNPoseStore::ApplyRigidForearms(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
+		FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
 		return BoneNames.Num() > 0;
 	}
 
@@ -1672,15 +2050,17 @@ bool AProphecyAgent::ReadNNFutureWorldPose(
 			Pose.ComponentWorldTransform;
 		BoneNames.Add(Pose.BoneNames[Index]);
 		FutureWorldTransforms.Add(FutureWorld);
-		InterpolatedWorldTransforms.Add(BlendAuthoredWorldTransform(
+		InterpolatedWorldTransforms.Add(BlendAuthoredWorldTransform(Pose, Index,
 			PreviousWorld, FutureWorld, InterpolationAlpha));
 	}
 	FProphecyNNPoseStore::ApplyRigidForearms(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
+	FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
 	return true;
 }
 
 bool AProphecyAgent::ApplyNNPoseKinematically(float DeltaSeconds)
 {
+	if (IsJoltPhysicalAnimationEnabled()) return true;
 	// Half Sim evaluates once on the mesh's PrePhysics tick, before native drives.
 	if (SimulationMode == EProphecyAgentSimulationMode::HalfSim) return true;
 	USkeletalMeshComponent* PoseReferenceMesh = GetPoseReferenceMesh();
@@ -1697,6 +2077,7 @@ bool AProphecyAgent::ApplyNNPoseKinematically(float DeltaSeconds)
 
 EProphecyAgentSimulationMode AProphecyAgent::GetSimulationMode() const
 {
+	if (IsJoltPhysicalAnimationEnabled()) return EProphecyAgentSimulationMode::Physical;
 	if (SimulationMode == EProphecyAgentSimulationMode::HalfSim) return SimulationMode;
 	const USkeletalMeshComponent* PoseReferenceMesh = GetPoseReferenceMesh();
 	if (bManualNNPoseApplication && PoseReferenceMesh && PoseReferenceMesh != Mesh &&
@@ -1770,6 +2151,48 @@ void AProphecyAgent::ConfigureRootAndJointTorquePhysics(
 
 bool AProphecyAgent::SetSimulationMode(EProphecyAgentSimulationMode NewMode)
 {
+    if (!IsInGameThread() || IsActorBeingDestroyed()) return false;
+    // An explicit later mode request wins over an in-flight backend restoration.
+    bResumeChaosPhysicalAfterJoltRestore = false;
+    // Finish ordinary body/pose restoration before Jolt captures a HalfSim-to-Sim handoff.
+    // Read the choice afterwards so an explicit Disable from a transition callback still wins.
+    if (!SetSimulationModeInternal(NewMode)) return false;
+    if (NewMode == EProphecyAgentSimulationMode::Physical && bUseJoltForPhysicalMode
+        && !IsJoltPhysicalAnimationEnabled())
+    {
+        if (GetSimulationMode() != EProphecyAgentSimulationMode::Physical) return false;
+        return EnableJoltPhysicalAnimation();
+    }
+    return true;
+}
+
+bool AProphecyAgent::SetSimulationModeInternal(EProphecyAgentSimulationMode NewMode)
+{
+    if (JoltCharacter && JoltCharacter->IsKinematicRestorePending())
+    {
+        // A finalization callback can request another mode before the detached Jolt mesh is restored.
+        // Preserve the accepted kinematic transition until that same call boundary has unwound.
+        if (NewMode != EProphecyAgentSimulationMode::Kinematic) return false;
+        SimulationMode = EProphecyAgentSimulationMode::Kinematic;
+        return true;
+    }
+    if (JoltCharacter && JoltCharacter->IsEnablePending()
+        && (NewMode == EProphecyAgentSimulationMode::Kinematic || NewMode == EProphecyAgentSimulationMode::HalfSim))
+    {
+        // A queued handoff must not reactivate Jolt after a later explicit mode request.
+        JoltCharacter->DisablePhysicalAnimation();
+    }
+	if (IsJoltPhysicalAnimationEnabled())
+	{
+		if (NewMode == EProphecyAgentSimulationMode::Physical) return true;
+		if (NewMode == EProphecyAgentSimulationMode::Kinematic)
+		{
+			DisableJoltPhysicalAnimationForModeChange();
+			return true;
+		}
+		UE_LOG(LogProphecyAgentPhysical, Warning, TEXT("Half Sim is not yet connected to the opt-in Jolt character binding."));
+		return false;
+	}
 	ProphecyModeTransitions::FScope Transition(this);
 	if (NewMode != EProphecyAgentSimulationMode::Kinematic &&
 		NewMode != EProphecyAgentSimulationMode::Physical &&
@@ -1954,6 +2377,11 @@ bool AProphecyAgent::SetSimulationMode(EProphecyAgentSimulationMode NewMode)
 
 bool AProphecyAgent::MySetPhysicsAsset(UPhysicsAsset* NewPhysicsAsset)
 {
+	if (IsJoltPhysicalAnimationEnabled())
+	{
+		UE_LOG(LogProphecyAgentPhysical, Warning, TEXT("Disable the opt-in Jolt binding before replacing its Physics Asset."));
+		return false;
+	}
 	USkeletalMeshComponent* PhysicalMesh = GetPoseReferenceMesh();
 	if (!PhysicalMesh || !PhysicalMesh->GetSkeletalMeshAsset() || !NewPhysicsAsset ||
 		NewPhysicsAsset->FindBodyIndex(PhysicalRootBodyName) == INDEX_NONE)
@@ -2126,10 +2554,9 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 	const FTransform CurrentTarget = AuthoredPose.ComponentTransforms[PelvisPoseIndex] *
 		AuthoredPose.ComponentWorldTransform;
 	const float PoseInterval = FMath::Max(0.001f, AnimInstance->NNPoseIntervalSeconds);
-	const float PoseAlpha = AnimInstance->bInterpolateNNPose && DeltaSeconds < PoseInterval && GetWorld()
-		? FMath::Clamp(float((double(GetWorld()->GetTimeSeconds()) - AuthoredPose.SourceTimeSeconds) /
-			double(PoseInterval)), 0.0f, 1.0f)
-		: 1.0f;
+	const float PoseAlpha = ProphecyNNPresentation::Resolve(AnimInstance->AgentId, AuthoredPose.SourceTimeSeconds,
+		GetWorld() ? double(GetWorld()->GetTimeSeconds()) : AuthoredPose.SourceTimeSeconds,
+		GetWorld() ? DeltaSeconds : PoseInterval, PoseInterval, AnimInstance->bInterpolateNNPose);
 
 	float MaximumPositionErrorCm = 0.0f;
 	float MaximumRotationErrorDegrees = 0.0f;
@@ -2161,8 +2588,21 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 			AuthoredPose.PreviousComponentWorldTransform;
 		const FTransform CurrentBodyTarget = AuthoredPose.ComponentTransforms[PoseIndex] *
 			AuthoredPose.ComponentWorldTransform;
-		const FTransform BodyTarget = BlendAuthoredWorldTransform(
+		FTransform BodyTarget = BlendAuthoredWorldTransform(AuthoredPose, PoseIndex,
 			PreviousBodyTarget, CurrentBodyTarget, PoseAlpha);
+		if (AuthoredPose.ForearmClamp.bEnabled && (BodySetup->BoneName == TEXT("hand_l") || BodySetup->BoneName == TEXT("hand_r")))
+		{
+			const bool bLeft = BodySetup->BoneName == TEXT("hand_l");
+			const int32 Parent = AuthoredPose.BoneNames.IndexOfByKey(bLeft ? FName(TEXT("lowerarm_l")) : FName(TEXT("lowerarm_r")));
+			if (AuthoredPose.ComponentTransforms.IsValidIndex(Parent) && AuthoredPose.PreviousComponentTransforms.IsValidIndex(Parent))
+			{
+				const FTransform Forearm = BlendAuthoredWorldTransform(AuthoredPose, Parent,
+					AuthoredPose.PreviousComponentTransforms[Parent] * AuthoredPose.PreviousComponentWorldTransform,
+					AuthoredPose.ComponentTransforms[Parent] * AuthoredPose.ComponentWorldTransform, PoseAlpha);
+				BodyTarget.SetTranslation(AuthoredPose.ForearmClamp.ClampHand(BodyTarget.GetTranslation(), Forearm,
+					AuthoredPose.LocalTransforms[PoseIndex].GetTranslation(), bLeft ? 0 : 1));
+			}
+		}
 		const FTransform ActualBody = Body->GetUnrealWorldTransform();
 
 		ApplyBodyWorldMagnetization(
@@ -2211,7 +2651,7 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 		}
 	}
 
-	PreviousPhysicalRootTarget = BlendAuthoredWorldTransform(
+	PreviousPhysicalRootTarget = BlendAuthoredWorldTransform(AuthoredPose, PelvisPoseIndex,
 		PreviousTarget, CurrentTarget, PoseAlpha);
 	bHasPreviousPhysicalRootTarget = true;
 	return;
@@ -2597,6 +3037,8 @@ bool AProphecyAgent::ApplyPhysicalDriveSettingsNow()
 void AProphecyAgent::SetPhysicalDriveStrengthMultiplier(float NewMultiplier)
 {
 	PhysicalDriveStrengthMultiplier = FMath::Max(0.0f, NewMultiplier);
+	if (SimulationMode == EProphecyAgentSimulationMode::HalfSim)
+		if (auto* Driver = FindComponentByClass<UProphecyHalfSimDriveComponent>()) Driver->SetStrength(PhysicalDriveStrengthMultiplier);
 	if (PhysicalAnimation && (PhysicalDriveMode == EProphecyAgentPhysicalDriveMode::PerBodyWorld ||
 		SimulationMode == EProphecyAgentSimulationMode::HalfSim))
 	{
@@ -2641,11 +3083,17 @@ void AProphecyAgent::ApplyPhysicalSolverSettings()
 
 void AProphecyAgent::ApplyAgentCollisionMode(EProphecyAgentSimulationMode Mode)
 {
+	if (IsJoltPhysicalAnimationEnabled()) return; // The live binding owns QueryOnly presentation.
 	ApplyCollisionMode(Mode);
 }
 
 bool AProphecyAgent::SetPhysicalBodySimulating(FName BoneName, bool bSimulate, bool bWake)
 {
+	if (IsJoltPhysicalAnimationEnabled())
+	{
+		UE_LOG(LogProphecyAgentPhysical, Warning, TEXT("Per-body simulation changes are not yet connected to the Jolt binding; disable the binding before changing solver ownership."));
+		return false;
+	}
 	USkeletalMeshComponent* PhysicalMesh = GetPoseReferenceMesh();
 	FBodyInstance* Body = PhysicalMesh ? PhysicalMesh->GetBodyInstance(BoneName) : nullptr;
 	if (!Body)
@@ -2716,6 +3164,8 @@ bool AProphecyAgent::GetPhysicalBodyState(
 	FVector& AngularVelocityRadiansPerSecond,
 	bool& bIsSimulating) const
 {
+	if (IsJoltPhysicalAnimationEnabled())
+		return JoltCharacter->GetBodyState(BoneName, WorldTransform, LinearVelocityCmPerSecond, AngularVelocityRadiansPerSecond, bIsSimulating);
 	WorldTransform = FTransform::Identity;
 	LinearVelocityCmPerSecond = FVector::ZeroVector;
 	AngularVelocityRadiansPerSecond = FVector::ZeroVector;
@@ -2744,6 +3194,7 @@ void AProphecyAgent::SetAllBodyMagnetization(
 	float LinearStrengthScale,
 	float AngularStrengthScale)
 {
+	CancelBodyMagnetizationBlend();
 	const USkeletalMeshComponent* PhysicalMesh = GetPoseReferenceMesh();
 	const UPhysicsAsset* PhysicsAsset = PhysicalMesh ? PhysicalMesh->GetPhysicsAsset() : nullptr;
 	if (PhysicsAsset)
@@ -2771,6 +3222,7 @@ void AProphecyAgent::SetBodyMagnetization(
 	float LinearStrengthScale,
 	float AngularStrengthScale)
 {
+	CancelBodyMagnetizationBlend(BoneName);
 	FProphecyBodyMagnetizationSettings& Settings = BodyMagnetizationSettings.FindOrAdd(BoneName);
 	Settings.bMagnetizationEnabled = bEnabled;
 	Settings.LinearStrengthScale = FMath::Max(0.0f, LinearStrengthScale);
@@ -2833,6 +3285,11 @@ int32 AProphecyAgent::SetBodyMagnetizationBelow(
 
 bool AProphecyAgent::SetBodyIncludedInPhysicalSimulation(FName BoneName, bool bSimulateBody)
 {
+	if (IsJoltPhysicalAnimationEnabled())
+	{
+		UE_LOG(LogProphecyAgentPhysical, Warning, TEXT("Changing rig membership is not yet connected to the opt-in Jolt binding; use drive strength to release a limb."));
+		return false;
+	}
 	FProphecyBodyMagnetizationSettings& Settings = BodyMagnetizationSettings.FindOrAdd(BoneName);
 	Settings.bSimulateBody = bSimulateBody;
 	const USkeletalMeshComponent* PhysicalMesh = GetPoseReferenceMesh();
@@ -2874,40 +3331,11 @@ bool AProphecyAgent::ApplyBodyWorldMagnetization(
 		return false;
 	}
 
-	const FTransform ActualBody = Body->GetUnrealWorldTransform();
-	const float LinearScale = FMath::Max(0.0f, LinearStrengthScale);
-	if (LinearScale > 0.0f)
-	{
-		FVector LinearAcceleration =
-			(TargetWorldTransform.GetLocation() - ActualBody.GetLocation() -
-				Body->GetUnrealWorldVelocity() * DeltaSeconds) /
-			FMath::Square(DeltaSeconds);
-		if (bCancelGravity && GetWorld())
-		{
-			LinearAcceleration.Z -= GetWorld()->GetGravityZ();
-		}
-		Body->AddForce(LinearAcceleration * LinearScale, true, true);
-	}
-
-	const float AngularScale = FMath::Max(0.0f, AngularStrengthScale);
-	if (AngularScale > 0.0f)
-	{
-		FQuat RotationError = TargetWorldTransform.GetRotation() * ActualBody.GetRotation().Inverse();
-		RotationError.Normalize();
-		if (RotationError.W < 0.0f)
-		{
-			RotationError = RotationError * -1.0f;
-		}
-		FVector ErrorAxis = FVector::ForwardVector;
-		float ErrorAngle = 0.0f;
-		RotationError.ToAxisAndAngle(ErrorAxis, ErrorAngle);
-		const FVector DesiredAngularVelocity = ErrorAxis * (ErrorAngle / DeltaSeconds);
-		const FVector AngularAcceleration =
-			(DesiredAngularVelocity - Body->GetUnrealWorldAngularVelocityInRadians()) /
-			DeltaSeconds;
-		Body->AddTorqueInRadians(AngularAcceleration * AngularScale, true, true);
-	}
-	return true;
+	// Shared exact native Sim rule: the headless comparison uses this same math,
+	// without the production Blueprint or NN target-generation path.
+	return UProphecyHalfSimDriveComponent::ApplyOneStepBody(Body, TargetWorldTransform,
+		DeltaSeconds, LinearStrengthScale, AngularStrengthScale, bCancelGravity,
+		GetWorld() ? GetWorld()->GetGravityZ() : 0.f);
 }
 
 void AProphecyAgent::SetMACDEnabled(bool bEnabled)
@@ -2999,6 +3427,8 @@ bool AProphecyAgent::SampleActualComponentPose(
 	TConstArrayView<FName> BoneNames,
 	TArrayView<FTransform> OutComponentTransforms) const
 {
+	if (IsJoltPhysicalAnimationEnabled())
+		return JoltCharacter->SampleCompletedComponentPose(BoneNames, OutComponentTransforms);
 	const USkeletalMeshComponent* PoseMesh = GetPoseReferenceMesh();
 	if (BoneNames.Num() != OutComponentTransforms.Num() || !PoseMesh || !PoseMesh->IsRegistered())
 	{
@@ -3034,4 +3464,187 @@ void AProphecyAgent::HandleMeshHit(
 	{
 		OnPhysicalHit.Broadcast(this, OtherActor, OtherComponent, NormalImpulse, Hit);
 	}
+}
+
+namespace ProphecyManualServoCapture
+{
+namespace
+{
+	FManualFollowerSubstepCallback* FindCaptureCallback(AProphecyAgent* Agent, FString& OutError)
+	{
+		OutError.Reset();
+		if (!IsInGameThread())
+		{
+			OutError = TEXT("Manual servo capture APIs require the game thread.");
+			return nullptr;
+		}
+		if (!IsValid(Agent))
+		{
+			OutError = TEXT("Manual servo capture requires a valid agent.");
+			return nullptr;
+		}
+		const FManualFollowerSubstepState* State = ManualFollowerSubstepStates.Find(Agent);
+		if (!State || !State->Callback)
+		{
+			OutError = TEXT("The manual callback is unavailable or was released. End capture before changing mode or destroying its actor/world.");
+			return nullptr;
+		}
+		return State->Callback;
+	}
+
+	bool ResolveManualCaptureScene(
+		AProphecyAgent* Agent, USkeletalMeshComponent*& OutMesh, FPhysScene*& OutScene, FString& OutError)
+	{
+		OutError.Reset();
+		if (!IsInGameThread())
+		{
+			OutError = TEXT("Manual servo capture APIs require the game thread.");
+			return false;
+		}
+		if (!IsValid(Agent) || !Agent->bManualNNPoseApplication ||
+			Agent->GetSimulationMode() == EProphecyAgentSimulationMode::HalfSim)
+		{
+			OutError = TEXT("Capture/replay requires a valid manual agent outside HalfSim.");
+			return false;
+		}
+		OutMesh = FindManualPhysicalMesh(Agent);
+		UWorld* World = Agent->GetWorld();
+		OutScene = World ? World->GetPhysicsScene() : nullptr;
+		if (!OutMesh || !OutMesh->IsAnySimulatingPhysics() || !OutScene || !OutScene->GetSolver())
+		{
+			OutError = TEXT("Capture/replay requires a live simulating PhysicalMesh and Chaos solver.");
+			return false;
+		}
+		return true;
+	}
+}
+
+bool BeginCapture(AProphecyAgent* Agent, int32 MaxPackets, int32 MaxSteps, FString& OutError)
+{
+	USkeletalMeshComponent* PhysicalMesh = nullptr;
+	FPhysScene* PhysicsScene = nullptr;
+	if (!ResolveManualCaptureScene(Agent, PhysicalMesh, PhysicsScene, OutError))
+	{
+		return false;
+	}
+	constexpr uint64 MaximumCaptureBytes = 256ull * 1024ull * 1024ull;
+	if (MaxPackets <= 0 || MaxSteps <= 0 ||
+		static_cast<uint64>(MaxPackets) * sizeof(FPacket) +
+		static_cast<uint64>(MaxSteps) * sizeof(FStep) > MaximumCaptureBytes)
+	{
+		OutError = TEXT("Capture capacities must be positive and their combined packet/step storage must not exceed 256 MiB.");
+		return false;
+	}
+	const FManualFollowerSubstepState* ExistingState = ManualFollowerSubstepStates.Find(Agent);
+	if (ExistingState && ExistingState->Callback && ExistingState->Callback->IsCapturing_External())
+	{
+		OutError = TEXT("This agent is already recording; end its capture before starting another.");
+		return false;
+	}
+	FManualFollowerSubstepCallback* Callback = GetOrCreateManualFollowerSubstepCallback(Agent, PhysicsScene);
+	if (!Callback)
+	{
+		OutError = TEXT("Could not create the existing manual follower callback.");
+		return false;
+	}
+	return Callback->BeginCapture_External(MaxPackets, MaxSteps, OutError);
+}
+
+bool ReadCapture(AProphecyAgent* Agent, FCapture& OutCapture, FString& OutError)
+{
+	FManualFollowerSubstepCallback* Callback = FindCaptureCallback(Agent, OutError);
+	return Callback && Callback->ReadCapture_External(OutCapture, OutError);
+}
+
+bool EndCapture(AProphecyAgent* Agent, FCapture& OutCapture, FString& OutError)
+{
+	FManualFollowerSubstepCallback* Callback = FindCaptureCallback(Agent, OutError);
+	return Callback && Callback->EndCapture_External(OutCapture, OutError);
+}
+
+bool PublishReplayPacket(AProphecyAgent* Agent, const FPacket& Packet, FString& OutError)
+{
+	USkeletalMeshComponent* PhysicalMesh = nullptr;
+	FPhysScene* PhysicsScene = nullptr;
+	if (!ResolveManualCaptureScene(Agent, PhysicalMesh, PhysicsScene, OutError))
+	{
+		if (IsInGameThread() && IsValid(Agent))
+		{
+			const FManualFollowerSubstepState* State = ManualFollowerSubstepStates.Find(Agent);
+			if (State && State->Callback)
+			{
+				State->Callback->RecordPublishFailure_External(EPublishFailure::CallbackUnavailable);
+			}
+		}
+		return false;
+	}
+	auto FailPublication = [Agent, &OutError](EPublishFailure Failure, const TCHAR* Message)
+	{
+		const FManualFollowerSubstepState* State = ManualFollowerSubstepStates.Find(Agent);
+		if (State && State->Callback)
+		{
+			State->Callback->RecordPublishFailure_External(Failure);
+		}
+		OutError = Message;
+		return false;
+	};
+	if (Agent->bAutoPublishManualFollowerSubstepTargets)
+	{
+		return FailPublication(EPublishFailure::InvalidReplayPacket,
+			TEXT("Disable automatic manual target publication explicitly before replay, so Tick cannot overwrite sealed packets."));
+	}
+	if (Packet.Sequence == 0 || Packet.BodyCount < 0 || Packet.BodyCount > MaxBodies ||
+		!FMath::IsFinite(Packet.MaximumSubstepSeconds) || Packet.MaximumSubstepSeconds <= 0.0f ||
+		!FMath::IsFinite(Packet.FrameDeltaSeconds) || Packet.FrameDeltaSeconds < 0.0f)
+	{
+		return FailPublication(EPublishFailure::InvalidReplayPacket,
+			TEXT("Replay requires a sealed nonzero-sequence packet, a bounded body count, and finite valid timing values."));
+	}
+	FManualFollowerSubstepTargets Targets;
+	Targets.MaximumSubstepSeconds = Packet.MaximumSubstepSeconds;
+	Targets.Bodies.Reserve(Packet.BodyCount);
+	for (int32 BodyIndex = 0; BodyIndex < Packet.BodyCount; ++BodyIndex)
+	{
+		const FBoneTarget& RecordedBody = Packet.Bodies[BodyIndex];
+		if (RecordedBody.BoneName.IsNone() || RecordedBody.ActualBoneWorld.ContainsNaN() ||
+			RecordedBody.BodyFromBone.ContainsNaN() || RecordedBody.TargetPosition.ContainsNaN() ||
+			RecordedBody.TargetRotation.ContainsNaN() || !RecordedBody.TargetRotation.IsNormalized() ||
+			!FMath::IsFinite(RecordedBody.LinearStrength) || RecordedBody.LinearStrength < 0.0f ||
+			!FMath::IsFinite(RecordedBody.AngularStrength) || RecordedBody.AngularStrength < 0.0f)
+		{
+			return FailPublication(EPublishFailure::InvalidReplayPacket,
+				TEXT("Replay packet has an invalid bone name, transform, endpoint, or strength."));
+		}
+		for (int32 PreviousIndex = 0; PreviousIndex < BodyIndex; ++PreviousIndex)
+		{
+			if (Packet.Bodies[PreviousIndex].BoneName == RecordedBody.BoneName)
+			{
+				return FailPublication(EPublishFailure::InvalidReplayPacket,
+					TEXT("Replay packet contains a duplicate body bone name."));
+			}
+		}
+		FBodyInstance* Body = PhysicalMesh->GetBodyInstance(RecordedBody.BoneName);
+		if (!Body || !Body->IsInstanceSimulatingPhysics() || !Body->GetPhysicsActor())
+		{
+			return FailPublication(EPublishFailure::ReplayBodyUnavailable,
+				TEXT("A recorded replay bone does not resolve to a live simulating body on PhysicalMesh."));
+		}
+		FManualFollowerSubstepBody& OutputBody = Targets.Bodies.AddDefaulted_GetRef();
+		OutputBody.Actor = Body->GetPhysicsActor();
+		OutputBody.TargetPosition = RecordedBody.TargetPosition;
+		OutputBody.TargetRotation = RecordedBody.TargetRotation;
+		OutputBody.LinearStrengthScale = RecordedBody.LinearStrength;
+		OutputBody.AngularStrengthScale = RecordedBody.AngularStrength;
+	}
+	FManualFollowerSubstepCallback* Callback = GetOrCreateManualFollowerSubstepCallback(Agent, PhysicsScene);
+	if (!Callback)
+	{
+		return FailPublication(EPublishFailure::CallbackUnavailable,
+			TEXT("Could not create the existing manual callback for replay."));
+	}
+	FPacket ReplayMetadata = Packet;
+	ReplayMetadata.SourceSequence = Packet.SourceSequence != 0 ? Packet.SourceSequence : Packet.Sequence;
+	Callback->PublishTargets_External(MoveTemp(Targets), &ReplayMetadata);
+	return true;
+}
 }

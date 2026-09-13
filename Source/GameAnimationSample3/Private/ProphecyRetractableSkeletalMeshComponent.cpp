@@ -5,11 +5,11 @@
 
 namespace
 {
-constexpr int32 PotenceRopeSegmentCount = 27;
+constexpr int32 RetractableRopeSegmentCount = 27;
 constexpr float PotenceRopeMinimumLongitudinalScale = 0.001f;
-const FName PotenceRopeRootBone(TEXT("joint"));
+const FName RetractableRopeRootBone(TEXT("joint"));
 
-FName MakePotenceRopeBoneName(const int32 SegmentIndex)
+FName MakeRetractableRopeBoneName(const int32 SegmentIndex)
 {
 	return FName(*FString::Printf(TEXT("joint%d"), SegmentIndex + 1));
 }
@@ -65,7 +65,7 @@ void UProphecyRetractableSkeletalMeshComponent::ApplyRetractionVisualPose()
 
 	const FReferenceSkeleton& ReferenceSkeleton = RopeSkeletalMesh->GetRefSkeleton();
 	TArray<FTransform>& ComponentPose = GetEditableComponentSpaceTransforms();
-	const int32 RootBoneIndex = ReferenceSkeleton.FindBoneIndex(PotenceRopeRootBone);
+	const int32 RootBoneIndex = ReferenceSkeleton.FindBoneIndex(RetractableRopeRootBone);
 	FTransform RootReferenceTransform;
 	if (!ComponentPose.IsValidIndex(RootBoneIndex)
 		|| !GetReferenceBoneComponentTransform(ReferenceSkeleton, RootBoneIndex, RootReferenceTransform))
@@ -75,7 +75,7 @@ void UProphecyRetractableSkeletalMeshComponent::ApplyRetractionVisualPose()
 
 	const FVector Anchor = RootReferenceTransform.GetLocation();
 	FVector RetractionDirection = FVector::UpVector;
-	const int32 FirstSegmentBoneIndex = ReferenceSkeleton.FindBoneIndex(MakePotenceRopeBoneName(0));
+	const int32 FirstSegmentBoneIndex = ReferenceSkeleton.FindBoneIndex(MakeRetractableRopeBoneName(0));
 	FTransform FirstSegmentReferenceTransform;
 	if (GetReferenceBoneComponentTransform(
 		ReferenceSkeleton, FirstSegmentBoneIndex, FirstSegmentReferenceTransform))
@@ -88,10 +88,10 @@ void UProphecyRetractableSkeletalMeshComponent::ApplyRetractionVisualPose()
 	RootVisualTransform.SetLocation(Anchor);
 	RootVisualTransform.SetScale3D(RootReferenceTransform.GetScale3D());
 
-	const float SegmentProgress = RetractionVisualAmount * static_cast<float>(PotenceRopeSegmentCount);
-	for (int32 SegmentIndex = 0; SegmentIndex < PotenceRopeSegmentCount; ++SegmentIndex)
+	const float SegmentProgress = RetractionVisualAmount * static_cast<float>(RetractableRopeSegmentCount);
+	for (int32 SegmentIndex = 0; SegmentIndex < RetractableRopeSegmentCount; ++SegmentIndex)
 	{
-		const int32 BoneIndex = ReferenceSkeleton.FindBoneIndex(MakePotenceRopeBoneName(SegmentIndex));
+		const int32 BoneIndex = ReferenceSkeleton.FindBoneIndex(MakeRetractableRopeBoneName(SegmentIndex));
 		if (!ComponentPose.IsValidIndex(BoneIndex))
 		{
 			continue;

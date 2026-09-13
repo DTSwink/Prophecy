@@ -152,9 +152,11 @@ void AProphecyAgent::ApplyHalfSimulationBodyStrength(FName BoneName)
 {
 	if (SimulationMode != EProphecyAgentSimulationMode::HalfSim || !PhysicalAnimation) return;
 	FPhysicalAnimationData Data = PhysicalDriveSettings;
+	bool bCancelGravity = true;
 	Data.bIsLocalSimulation = false;
 	if (const FProphecyBodyMagnetizationSettings* Settings = BodyMagnetizationSettings.Find(BoneName))
 	{
+		bCancelGravity = Settings->bCancelGravity;
 		const float Linear = Settings->bMagnetizationEnabled ? Settings->LinearStrengthScale : 0.0f;
 		const float Angular = Settings->bMagnetizationEnabled ? Settings->AngularStrengthScale : 0.0f;
 		Data.PositionStrength *= Linear;
@@ -164,14 +166,30 @@ void AProphecyAgent::ApplyHalfSimulationBodyStrength(FName BoneName)
 		Data.AngularVelocityStrength *= Angular;
 		Data.MaxAngularForce *= Angular;
 	}
-	PhysicalAnimation->ApplyPhysicalAnimationSettings(BoneName, Data);
+	if (auto* Driver = FindComponentByClass<UProphecyHalfSimDriveComponent>())
+		Driver->SetBodySettings(BoneName, Data, bCancelGravity);
+}
+
+bool AProphecyAgent::SetHalfSimDriveMethod(EProphecyHalfSimDriveMethod NewMethod)
+{
+	if (uint8(NewMethod) > uint8(EProphecyHalfSimDriveMethod::WorldOneStep)) return false;
+	HalfSimDriveMethod = NewMethod;
+	return GetSimulationMode() != EProphecyAgentSimulationMode::HalfSim || RefreshHalfSimulationDrives();
 }
 
 bool AProphecyAgent::RefreshHalfSimulationDrives()
 {
 	USkeletalMeshComponent* PoseMesh = GetPoseReferenceMesh();
 	if (!PoseMesh || !PoseMesh->GetPhysicsAsset() || !PhysicalAnimation) return false;
-	PhysicalAnimation->SetSkeletalMeshComponent(PoseMesh);
+	auto* Driver = FindComponentByClass<UProphecyHalfSimDriveComponent>();
+	if (!Driver)
+	{
+		Driver = NewObject<UProphecyHalfSimDriveComponent>(this, TEXT("HalfSimController"));
+		AddInstanceComponent(Driver);
+		Driver->RegisterComponent();
+	}
+	if (!Driver->Configure(PoseMesh, PhysicalAnimation, HalfSimDriveMethod, PhysicalRootBodyName,
+		PhysicalDriveSettings, PhysicalDriveStrengthMultiplier)) return false;
 	const FReferenceSkeleton& Skeleton = PoseMesh->GetSkeletalMeshAsset()->GetRefSkeleton();
 	const int32 Root = Skeleton.FindBoneIndex(PhysicalRootBodyName);
 	for (const USkeletalBodySetup* Body : PoseMesh->GetPhysicsAsset()->SkeletalBodySetups)
@@ -183,18 +201,6 @@ bool AProphecyAgent::RefreshHalfSimulationDrives()
 			ApplyHalfSimulationBodyStrength(Body->BoneName);
 		}
 	}
-	// Same calibration as the accepted native test: free angular axes, rigid anchors.
-	for (FConstraintInstance* Joint : PoseMesh->Constraints)
-	{
-		if (!Joint) continue;
-		Joint->SetAngularSwing1Limit(ACM_Free, 0.0f);
-		Joint->SetAngularSwing2Limit(ACM_Free, 0.0f);
-		Joint->SetAngularTwistLimit(ACM_Free, 0.0f);
-		Joint->SetOrientationDriveSLERP(false);
-		Joint->SetAngularVelocityDriveSLERP(false);
-	}
-	PhysicalAnimation->SetStrengthMultiplyer(PhysicalDriveStrengthMultiplier);
-	PhysicalAnimation->SetComponentTickEnabled(true);
 	return true;
 }
 
@@ -205,6 +211,7 @@ bool AProphecyAgent::LeaveHalfSimulation(EProphecyAgentSimulationMode NextMode)
 	USkeletalMeshComponent* PoseMesh = Saved.Mesh.Get();
 	if (!PoseMesh) return false;
 	const FHalfTransitionBodies Bodies = CaptureHalfTransitionBodies(PoseMesh);
+	if (auto* Driver = FindComponentByClass<UProphecyHalfSimDriveComponent>()) Driver->Stop();
 	PhysicalAnimation->SetStrengthMultiplyer(0.0f);
 	PhysicalAnimation->SetComponentTickEnabled(false);
 	PhysicalAnimation->RemoveTickPrerequisiteComponent(PoseMesh);
@@ -279,6 +286,7 @@ bool AProphecyAgent::LeaveHalfSimulation(EProphecyAgentSimulationMode NextMode)
 
 void AProphecyAgent::ReleaseHalfSimulationState()
 {
+	if (auto* Driver = FindComponentByClass<UProphecyHalfSimDriveComponent>()) Driver->Stop();
 	HalfSimulationStates.Remove(this);
 	bPendingHalfSimulation = false;
 }

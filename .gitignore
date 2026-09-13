@@ -17,6 +17,14 @@ Content/locomotion/NN/*
 !Content/locomotion/NN/prophecy_lower_body_runtime.json
 !Content/locomotion/NN/prophecy_lower_body_walk_b100.onnx
 !Content/locomotion/NN/prophecy_lower_body_walk_runtime.json
+!Content/locomotion/NN/prophecy_lower_body_walk_july5_b100.onnx
+!Content/locomotion/NN/prophecy_lower_body_walk_july5_runtime.json
+!Content/locomotion/NN/prophecy_lower_body_walk_july5_best_b100.onnx
+!Content/locomotion/NN/prophecy_lower_body_walk_july5_best_runtime.json
+!Content/locomotion/NN/prophecy_upper_body_b100.onnx
+!Content/locomotion/NN/prophecy_upper_body_runtime.json
+!Content/locomotion/NN/prophecy_slash_step_b1.onnx
+!Content/locomotion/NN/prophecy_slash_runtime.json
 SourceArt/
 DerivedDataCache/
 Intermediate/
@@ -61,5 +69,11 @@ __pycache__/
 *.pyc
 
 # OS noise
+!Content/locomotion/NN/prophecy_slash_frozen.onnx
+!Content/locomotion/NN/prophecy_slash_lower.onnx
+!Content/locomotion/NN/prophecy_slash_upper.onnx
+!Content/locomotion/NN/prophecy_slash_native.json
+!Content/locomotion/NN/prophecy_slash_half_gt.json
+!Content/locomotion/NN/prophecy_headbutt_preparation.json
 Thumbs.db
 Desktop.ini

@@ -8,8 +8,8 @@
 
 namespace
 {
-constexpr int32 PotenceRopeSegmentCount = 27;
-const FName PotenceRopeRootBone(TEXT("joint"));
+constexpr int32 PotenceVisualRopeSegmentCount = 27;
+const FName PotenceVisualRopeRootBone(TEXT("joint"));
 
 // Keep the reflected component layout unchanged while Live Coding is active. The
 // procedural component is now only a post-physics updater; this transient poseable
@@ -173,8 +173,8 @@ void UProphecyPotenceRopeVisualComponent::UpdateRopeMesh()
 
 	FTransform RootReferenceTransform;
 	const bool bHasReferenceAnchor = GetReferenceBoneComponentTransform(
-		TargetComponent->GetSkeletalMeshAsset(), PotenceRopeRootBone, RootReferenceTransform);
-	const FTransform SimulatedRootTransform = TargetComponent->GetBoneTransform(PotenceRopeRootBone, RTS_Component);
+		TargetComponent->GetSkeletalMeshAsset(), PotenceVisualRopeRootBone, RootReferenceTransform);
+	const FTransform SimulatedRootTransform = TargetComponent->GetBoneTransform(PotenceVisualRopeRootBone, RTS_Component);
 	const FVector Anchor = bHasReferenceAnchor ? RootReferenceTransform.GetLocation() : SimulatedRootTransform.GetLocation();
 	FVector RetractionDirection = FVector::UpVector;
 	FTransform FirstSegmentReferenceTransform;
@@ -188,10 +188,10 @@ void UProphecyPotenceRopeVisualComponent::UpdateRopeMesh()
 	FTransform VisualRootTransform = SimulatedRootTransform;
 	VisualRootTransform.SetLocation(Anchor);
 	VisualRootTransform.SetScale3D(FVector::OneVector);
-	SkinnedVisual->SetBoneTransformByName(PotenceRopeRootBone, VisualRootTransform, EBoneSpaces::ComponentSpace);
+	SkinnedVisual->SetBoneTransformByName(PotenceVisualRopeRootBone, VisualRootTransform, EBoneSpaces::ComponentSpace);
 
-	const float SegmentProgress = RetractionAmount * static_cast<float>(PotenceRopeSegmentCount);
-	for (int32 SegmentIndex = 0; SegmentIndex < PotenceRopeSegmentCount; ++SegmentIndex)
+	const float SegmentProgress = RetractionAmount * static_cast<float>(PotenceVisualRopeSegmentCount);
+	for (int32 SegmentIndex = 0; SegmentIndex < PotenceVisualRopeSegmentCount; ++SegmentIndex)
 	{
 		const FName BoneName = MakePotenceRopeVisualBoneName(SegmentIndex);
 		FTransform VisualBoneTransform = TargetComponent->GetBoneTransform(BoneName, RTS_Component);

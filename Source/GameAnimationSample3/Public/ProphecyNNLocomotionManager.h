@@ -12,6 +12,22 @@ class USceneComponent;
 class USkeletalMesh;
 class USkeletalMeshComponent;
 
+/** Read-only completed manager diagnostics; does not sample bodies or run inference. */
+struct FProphecyNNRuntimeBenchmarkStats
+{
+	bool bInitialized = false;
+	bool bUsingGPU = false;
+	bool bSimBridgeActive = false;
+	int32 RegisteredAgents = 0;
+	int32 RunBatchSize = 0, WalkBatchSize = 0, UpperBatchSize = 0;
+	int32 FootRollSteps = 0;
+	int32 PhysicalFeedbackExecutionMode = 0;
+	uint64 PreparedPhysicalSamples = 0, PreparedPhysicalBatches = 0;
+	uint64 CompletedNNSteps = 0, CompletedPhysicalSamples = 0, FailedPhysicalSamples = 0;
+	double BuildSeconds = 0.0, InferenceSeconds = 0.0, OutputSeconds = 0.0, StoreSeconds = 0.0;
+	FString RunRuntime, WalkRuntime, UpperRuntime;
+};
+
 UCLASS(BlueprintType, Blueprintable)
 class GAMEANIMATIONSAMPLE3_API AProphecyNNLocomotionManager : public AActor
 {
@@ -22,6 +38,9 @@ public:
 
 	AProphecyNNLocomotionManager();
 	virtual ~AProphecyNNLocomotionManager() override;
+
+	/** Native opt-in before BeginPlay: 0 original, 1 prepared serial, 2 prepared parallel. */
+	bool SetPhysicalFeedbackExecutionMode(int32 Mode);
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -65,6 +84,14 @@ public:
 	/** Multiplies the authored lower-leg length used by Clamp Calf. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Calf Clamp Length Multiplier", ClampMin = "0.0", UIMin = "0.5", UIMax = "2.0"))
 	float CalfClampLengthMultiplier = 1.0f;
+
+	/** Limit each locomotion hand's distance from its elbow when building the pose. Applies to all managed agents; does not change recurrent NN state or Slash attack forearm correction. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Clamp Hand"))
+	bool bClampHand = true;
+
+	/** Maximum elbow-to-hand distance as a multiple of authored forearm length. Read on each pose publication; 1 preserves the original limit. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Hand Clamp Length Multiplier", ClampMin = "0.0", UIMin = "0.5", UIMax = "2.0"))
+	float HandClampLengthMultiplier = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (ClampMin = "0.0"))
 	float AgentSpeedCmPerSecond = 500.0f;
@@ -164,6 +191,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Prophecy|NN Locomotion")
 	FString GetActiveRuntimeName() const;
 
+	/** Game-thread fixture observer of existing work. No callbacks, simulation or model work is triggered. */
+	bool ReadRuntimeBenchmarkStats(FProphecyNNRuntimeBenchmarkStats& OutStats) const;
+
 	UFUNCTION(BlueprintPure, Category = "Prophecy|NN Locomotion|Agents")
 	FProphecyAgentHandle GetAgentHandle(int32 AgentIndex) const;
 
@@ -178,6 +208,7 @@ public:
 
 	bool GetAgentLocomotionState(FProphecyAgentHandle Handle,
 		FVector& WorldVelocityCmPerSecond, FVector& FacingWorldDirection, bool& bRun) const;
+	bool GetAgentLocomotionCheckpointWeights(FProphecyAgentHandle Handle, float& WalkWeight, float& RunWeight) const;
 	bool GetAgentLocomotionTarget(FProphecyAgentHandle Handle, FVector& TargetWorldVelocityCmPerSecond,
 		float& TargetSpeedCmPerSecond, FVector& TargetFacingWorldDirection, bool& bRun) const;
 	bool AddAgentRootVelocityImpulse(FProphecyAgentHandle Handle, FVector DeltaVelocityCmPerSecond,
@@ -215,6 +246,12 @@ public:
 	bool TriggerAgentNNAttack(FProphecyAgentHandle Handle, FName Attack, FVector TargetWorld, bool bHalf);
 	bool SetAgentNNHalfAttack(FProphecyAgentHandle Handle, bool bHalf);
 	bool SetAgentNNAttackTarget(FProphecyAgentHandle Handle, FVector TargetWorld);
+	bool GetAgentLocomotionRootWindow(FProphecyAgentHandle Handle, TArray<FTransform>& WorldRoots, TArray<float>& Times) const;
+	UPoseableMeshComponent* SetAgentPreviousPoseDebug(FProphecyAgentHandle Handle, bool bEnabled, bool bPreferAttack);
+	void UpdatePreviousPoseDebug(bool bAttack);
+	void TraceNNHandoff();
+	bool SetAgentFootPinningDebug(FProphecyAgentHandle Handle, bool bEnabled);
+	bool GetAgentFootPinning(FProphecyAgentHandle Handle, bool bAttack, bool bFrozenStage, FProphecyFootPinningSample& Sample) const;
 	bool StopAgentNNAttack(FProphecyAgentHandle Handle);
 	bool GetAgentNNAttackState(FProphecyAgentHandle Handle, FName& Attack, bool& bHalf, bool& bArmed, bool& bHit, int32& Frame) const;
 	/** Development console audit; not part of the gameplay Blueprint surface. */
@@ -245,6 +282,7 @@ private:
 	void StepSimulation(float StepSeconds);
 	void ResamplePhysicalAgents();
 	bool ResamplePhysicalAgentState(int32 AgentIndex);
+	int32 PhysicalFeedbackExecutionMode = 0;
 	void BuildInputBatch(float StepSeconds);
 	bool RunModelBatch();
 	void ApplyOutputBatch(float StepSeconds);

@@ -1,6 +1,7 @@
 #include "ProphecyDoubleReachAnimInstance.h"
 
 #include "Animation/AnimInstanceProxy.h"
+#include "Animation/AnimNodeBase.h"
 #include "Animation/AnimSequenceBase.h"
 #include "Animation/AnimationPoseData.h"
 #include "Animation/AnimTypes.h"
