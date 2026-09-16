@@ -8,6 +8,7 @@
 struct FProphecyJoltRigSnapshot;
 struct FProphecyJoltRigJoint;
 class FProphecyJoltPreparedRig;
+class UPrimitiveComponent;
 struct FProphecyJoltBodySnapshot;
 class FProphecyJoltPreparedBody;
 struct FProphecyJoltStaticBodySnapshot;
@@ -91,11 +92,19 @@ struct FProphecyJoltAxisLimit
     double Maximum = 0.0;
 };
 
+struct FProphecyJoltJointDrive
+{
+    bool bPosition = false, bVelocity = false, bAcceleration = true;
+    float Stiffness = 0, Damping = 0, MaximumForce = 0; // UE cm/kg units; 0 maximum means unlimited.
+};
+
 /** Literal A/B order, unlike the separate UE PHAT child/parent importer. Frames are rigid body-origin
  * local transforms in cm. Hard limits use independent translation XYZ (cm), twist X and swing Y/Z
  * (radians). Cone swing is symmetric; pyramid swing permits asymmetry. Neither is an Euler-angle box.
  * Limited angular ranges entering stock Jolt's internal 0.5/179.5 degree lock/free thresholds are
- * rejected. No motors, soft limits, breaking, implicit snapping, or velocity changes are supplied.
+ * rejected. Optional SixDOF drives and soft translation springs are explicit settings.
+ * Breaking is handled by the gameplay constraint bridge using native reaction readback.
+ * Creation does not implicitly snap bodies or change their velocities.
  */
 struct FProphecyJoltJointSettings
 {
@@ -107,6 +116,16 @@ struct FProphecyJoltJointSettings
     EProphecyJoltSwingGeometry SwingGeometry = EProphecyJoltSwingGeometry::Cone;
     FProphecyJoltAxisLimit Translation[3];
     FProphecyJoltAxisLimit Rotation[3];
+    FProphecyJoltJointDrive Drives[6]; // translation XYZ, then twist X / swing YZ.
+    FVector PositionTargetCm = FVector::ZeroVector;
+    FVector VelocityTargetCmPerSecond = FVector::ZeroVector;
+    FQuat OrientationTarget = FQuat::Identity;
+    FVector AngularVelocityTargetRadians = FVector::ZeroVector;
+    bool bSoftTranslation = false;
+    float TranslationStiffness = 0, TranslationDamping = 0;
+    // UE standard components use one circular/spherical radius for 2+ Limited axes.
+    // False preserves the generic API's independent per-axis intervals.
+    bool bRadialTranslation = false;
 };
 
 /** Explicit temporary simulation exclusion. Queries and existing PHAT/channel policy are unchanged. */
@@ -329,6 +348,10 @@ public:
     FProphecyJoltWorldStatus ReadBodyCollision(const FProphecyJoltBodyHandle& Handle, FProphecyJoltCollisionUpdate& Out) const;
     // Ownership remains inspectable when the world is faulted/ending, outside Update and on the game thread.
     bool OwnsRig(const FProphecyJoltRigHandle& Rig) const;
+    // Reflected event-driven bridge; INDEX_NONE selects every anatomical joint.
+    UFUNCTION()
+    bool SetRigJointDamping(FGuid WorldLifetime, int32 BodySlot, int64 BodyGeneration, int32 SourceConstraintIndex,
+        float Damping, FString& OutError);
     // Atomic idle-GT update of only swing/twist motion modes and angle fields. Pass every joint in
     // captured order with unchanged identity/endpoints/frames; other profile fields are not applied.
     // Native constraints and bodies are retained. Effective no-ops do not wake bodies/reset warm starts.
@@ -381,6 +404,10 @@ public:
         const FVector& ImpulseKgCmPerSecond, const FVector& WorldPointCm);
     // Writes dynamic-body COM velocity and world angular velocity; captured Jolt speed caps apply.
     // bWake=false preserves activation state, including a sleeping body with a stored velocity.
+    // Per-world-axis servo correction weights (0..1); all-one removes the override.
+    // External forces, gravity, damping and constraint impulses remain native.
+    FProphecyJoltWorldStatus SetBodyServoFollow(const FProphecyJoltBodyHandle& Handle,
+        const FVector& Linear, const FVector& Angular);
     FProphecyJoltWorldStatus SetBodyVelocity(const FProphecyJoltBodyHandle& Handle,
         const FVector& CenterOfMassVelocityCmPerSecond, const FVector& AngularVelocityRadiansPerSecond, bool bWake);
     // Identity-only inspection remains available while faulted/ending, on GT and outside Update.
@@ -400,6 +427,10 @@ public:
     /** Absolute dynamic mass; scales rotational inertia proportionally, without changing pose or velocity. */
     FProphecyJoltWorldStatus SetBodyMassKg(const FProphecyJoltBodyHandle& Body, float MassKg);
     FProphecyJoltWorldStatus SetBodyKinematic(const FProphecyJoltBodyHandle& Body);
+    FProphecyJoltWorldStatus SetBodyDynamic(const FProphecyJoltBodyHandle& Body);
+    FProphecyJoltWorldStatus SetBodyPose(const FProphecyJoltBodyHandle& Body, const FTransform& BodyOrigin);
+    FProphecyJoltWorldStatus SetBodyRuntimeSettings(const FProphecyJoltBodyHandle& Body,
+        bool bGravity, float LinearDamping, float AngularDamping, bool bCCD);
     /** Adds Source's collider to Parent without changing Parent mass, COM, inertia or constraints.
      * Source retains its identity/material/filter metadata but leaves the broadphase until detached. */
     FProphecyJoltWorldStatus WeldBodyShape(const FProphecyJoltBodyHandle& Parent,
@@ -413,12 +444,20 @@ public:
     FProphecyJoltWorldStatus UpdateBodySuppressedPairs(const FProphecyJoltBodyHandle& Body,
         TConstArrayView<FProphecyJoltBodyPair> Pairs);
     FProphecyJoltWorldStatus ReadJoint(const FProphecyJoltJointHandle& Joint, FProphecyJoltJointSettings& OutSettings) const;
+    FProphecyJoltWorldStatus ReadJointReaction(const FProphecyJoltJointHandle& Joint,
+        FVector& Force, FVector& Torque) const;
     // Cleanup/ownership inspection remain available while faulted or ending, on GT and outside Update.
     FProphecyJoltWorldStatus DestroyJoint(const FProphecyJoltJointHandle& Joint);
     bool OwnsJoint(const FProphecyJoltJointHandle& Joint) const;
     // Absent/expired optional association returns AssociationUnavailable and a null output.
     FProphecyJoltWorldStatus ResolveAssociatedObject(const FProphecyJoltBodyHandle& Handle, UObject*& OutObject) const;
     FProphecyJoltWorldStatus GetDiagnostics(FProphecyJoltWorldDiagnostics& OutDiagnostics) const;
+
+    // Optional solved-contact notifications. Delivery is GT-only after completed poses are published.
+    FProphecyJoltWorldStatus SetRigHitEvents(const FProphecyJoltRigHandle& Rig, UPrimitiveComponent* Receiver, bool bEnabled);
+    FProphecyJoltWorldStatus SetBodyHitEvents(const FProphecyJoltBodyHandle& Body, bool bEnabled);
+    void DispatchPendingHitEvents();
+    uint64 GetDeliveredHitEventCount() const;
 
     // Module ShutdownModule should verify zero before unregistering global Jolt types.
     static int32 GetLiveSimulationCount();

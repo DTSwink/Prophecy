@@ -21,7 +21,7 @@ struct FProphecyJoltBodyComponentStateDeleter
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FProphecyJoltBodyEnableCompleted, bool, const FString&);
 
-/** Owns one existing, independent primitive root through the shared per-world Jolt coordinator.
+/** Owns one existing, independent primitive component through the shared per-world Jolt coordinator.
  * The original component remains the rendering, material and UE query receiver. No world is created.
  */
 UCLASS(ClassGroup = Physics, meta = (BlueprintSpawnableComponent))
@@ -33,9 +33,11 @@ public:
     UProphecyJoltBodyComponent();
     virtual ~UProphecyJoltBodyComponent() override;
 
-    // Requires this actor's detached, live dynamic primitive root and an initialized native world.
+    // Requires this actor's detached, live dynamic primitive component and an initialized native world.
     // True means enabled or safely queued; a queued request retains the original Chaos ownership.
     bool EnableBody(UPrimitiveComponent& Source, FString& OutError);
+    // Optional for freshly launched projectiles: hold their exact launch state until queued admission.
+    bool FreezePendingLaunch(UPrimitiveComponent& Source, FString& OutError);
     bool IsEnablePending() const { return PendingAdmissionId.IsValid(); }
     bool IsReceiverRestorePending() const { return DeferredRestore || bDisableInProgress; }
     FProphecyJoltBodyEnableCompleted OnDeferredEnableCompleted;
@@ -49,6 +51,9 @@ public:
     bool IsSteppingStopped() const;
     bool GetBodyHandle(FProphecyJoltBodyHandle& OutHandle) const;
     bool GetBodyState(FProphecyJoltBodyState& OutState) const;
+    bool SetSimulationEnabled(bool bEnabled, FString& OutError);
+    bool SetMassKg(float MassKg, FString& OutError);
+    void SynchronizeSourceTransform();
     bool GetBodyOriginToComponent(FTransform& OutTransform) const;
     UProphecyJoltWorldSubsystem* GetWorldOwner() const;
     bool GetPointVelocity(const FVector& WorldPointCm, FVector& OutVelocityCmPerSecond) const;

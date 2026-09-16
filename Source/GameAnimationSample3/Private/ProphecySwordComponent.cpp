@@ -179,6 +179,7 @@ bool UProphecySwordComponent::Equip(bool bSimulated)
 	Blade->BodyInstance.PositionSolverIterationCount = 16;
 	Blade->BodyInstance.VelocitySolverIterationCount = 8;
 	Grip = NewObject<UPhysicsConstraintComponent>(A);
+	Grip->ComponentTags.Add(TEXT("Prophecy.ManagedConstraint")); // Its controller owns the Jolt grip separately.
 	A->AddInstanceComponent(Grip);
 	Grip->RegisterComponent();
 	Grip->SetDisableCollision(true);
@@ -353,8 +354,10 @@ bool UProphecySwordComponent::BindJolt(bool bSnapToGrip)
 	Blade->BodyInstance.SetUseMACD(false);
 	if (bSnapToGrip)
 	{
-		Blade->SetPhysicsLinearVelocity(CarriedLinear);
-		Blade->SetPhysicsAngularVelocityInRadians(CarriedAngular);
+		// Internal capture setup belongs to this controller. Do not dispatch through
+		// the generic receiver, which would auto-admit a second owner before ours.
+		Blade->UPrimitiveComponent::SetPhysicsLinearVelocity(CarriedLinear);
+		Blade->UPrimitiveComponent::SetPhysicsAngularVelocityInRadians(CarriedAngular);
 	}
 	const FGuid RequestId = FGuid::NewGuid();
 	PendingJoltBindId = RequestId;
@@ -550,8 +553,8 @@ bool UProphecySwordComponent::SetSimulated(bool bSimulated)
 		}
 		else if (!PendingJoltBindId.IsValid())
 		{
-			Blade->SetPhysicsLinearVelocity(CarriedLinear);
-			Blade->SetPhysicsAngularVelocityInRadians(CarriedAngular);
+			Blade->UPrimitiveComponent::SetPhysicsLinearVelocity(CarriedLinear);
+			Blade->UPrimitiveComponent::SetPhysicsAngularVelocityInRadians(CarriedAngular);
 		}
 	}
 	return true;
@@ -633,8 +636,10 @@ AActor* UProphecySwordComponent::Drop()
 	Blade->SetEnableGravity(true);
 	Blade->SetSimulatePhysics(true);
 	if (!Intact()) return nullptr;
-	Blade->SetPhysicsLinearVelocity(Linear);
-	Blade->SetPhysicsAngularVelocityInRadians(Angular);
+	// Stage the live source for the managed handoff below. Calling the derived
+	// Blueprint receiver here auto-admits/freezes it before EnsureJoltBody runs.
+	Blade->UPrimitiveComponent::SetPhysicsLinearVelocity(Linear);
+	Blade->UPrimitiveComponent::SetPhysicsAngularVelocityInRadians(Angular);
 	Blade->WakeAllRigidBodies();
 	if (!Intact()) return nullptr;
 	if (!A || !A->IsJoltPhysicalAnimationEnabled()) return FinishDrop();
@@ -759,10 +764,12 @@ bool AProphecyAgent::SetSwordInertiaScale(float Scale)
 	SwordInertiaScale = Scale;
 	return true;
 }
+#include "ProphecyPhysicalContext.h"
 void AProphecyAgent::NotifySwordAttackState(bool bAttacking)
 {
 	if (bSwordAttackActive == bAttacking) return;
 	bSwordAttackActive = bAttacking;
+	ProphecyPhysicalContext::AttackChanged(this);
 	if (auto* C = SwordController(this, false)) C->RefreshOwnerCollision();
 }
 bool AProphecyAgent::SetSwordSimulated(bool bSimulated)

@@ -37,12 +37,14 @@ public:
     UFUNCTION(BlueprintPure, Category = "Prophecy|Jolt")
     bool IsEnablePending() const { return PendingAdmissionId.IsValid(); }
     int32 GetImportedBodyCount() const;
+    bool bAutomaticScenePhysics = false;
+    static UProphecyJoltSceneCollisionComponent* FindForWorld(UWorld* World);
     bool GetBodyHandle(const UPrimitiveComponent& Source, int32 InstanceIndex, FProphecyJoltBodyHandle& OutHandle) const;
     UFUNCTION(BlueprintPure, Category = "Prophecy|Jolt")
     const FString& GetLastError() const { return LastError; }
 
     virtual bool IsJoltStepClientActive() const override { return IsSceneCollisionEnabled(); }
-    virtual bool WantsAutomaticJoltStep() const override { return false; }
+    virtual bool WantsAutomaticJoltStep() const override { return bAutomaticScenePhysics; }
     virtual bool PrepareJoltWorldStep(float DeltaSeconds, bool bPublishMissingTargets, FString& OutError) override;
     virtual bool ConsumeCompletedJoltWorldStep(FString& OutError) override;
     virtual void LatchJoltStepError(const FString& Error) override;

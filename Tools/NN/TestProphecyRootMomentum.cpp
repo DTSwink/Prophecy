@@ -6,8 +6,46 @@
 int main() {
     using namespace prophecy::sim;
     constexpr double dt = 1.0 / 30.0;
+    for (double impulse : {-1.e9, -12.0, -4.0, 4.0, 12.0, 1.e9}) {
+        LocomotionState s{};
+        LocomotionIntent goal{};
+        goal.speed_amplitude = 0;
+        assert(AddRootYawImpulse(s, goal, impulse, dt));
+        const double stop = goal.orientation_yaw_radians;
+        assert(stop * impulse > 0 && s.yaw_radians == 0);
+        assert(std::abs(s.yaw_radians-s.previous_yaw_radians) < 3.141592653589793);
+        const auto window=PredictFutureRoots(s,goal,dt,true);
+        for(int i=0;i<8;++i) {
+            StepLocomotion(s,goal,dt,nullptr,true);
+            assert(std::abs(s.yaw_radians-window[i].yaw_radians)<1e-12);
+        }
+        double reverse=0;
+        for(int i=0;i<20000;++i) {
+            const double before=s.yaw_radians;
+            StepLocomotion(s,goal,dt,nullptr,true);
+            reverse += std::max(0., (before-s.yaw_radians)*std::copysign(1.,impulse));
+        }
+        std::cout << "impulse=" << impulse << " target=" << stop << " final=" << s.yaw_radians << " reverse=" << reverse << std::endl;
+        assert(std::abs(s.yaw_radians-stop)<1e-8);
+        assert(reverse<0.02);
+    }
     LocomotionIntent intent{};
     intent.speed_amplitude = 0;
+    for (double strength : {0.25, 0.5, 1.0}) {
+        LocomotionState s{};
+        LocomotionIntent goal{};
+        goal.speed_amplitude=0;goal.turn_scale=strength;
+        assert(AddRootYawImpulse(s,goal,4,dt));
+        for(int i=0;i<8;++i) StepLocomotion(s,goal,dt,nullptr,true);
+        assert(AddRootYawImpulse(s,goal,2,dt));
+        const double target=goal.orientation_yaw_radians;
+        for(int i=0;i<2000;++i) {
+            const double before=s.yaw_radians;
+            StepLocomotion(s,goal,dt,nullptr,true);
+            assert(s.yaw_radians>=before-1e-9);
+        }
+        assert(std::abs(s.yaw_radians-target)<1e-8);
+    }
     for (double impulse : {-4.0, 4.0}) {
         LocomotionState state{};
         state.velocity = {3, -2};

@@ -8,6 +8,9 @@ public class GameAnimationSample3EditorTarget : TargetRules
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.Latest;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
+		// Normal and Live Coding actions share SARIF output paths in UE5.7,
+		// invalidating their command history even when source is unchanged.
+		WindowsPlatform.bWriteSarif = false;
 		ExtraModuleNames.Add("GameAnimationSample3");
 		ExtraModuleNames.Add("ProphecyEditor");
 	}

@@ -52,6 +52,9 @@ public:
     bool PrepareActivation(JPH::PhysicsSystem& Physics, FString& OutError, bool bUseNoLockIdleReads = false,
         float FirstStepSeconds = 0.0f);
     void Clear();
+    // Sparse opt-in world-axis tracking weights; retained when packets are rebuilt.
+    void SetBodyFollow(JPH::BodyID Body, const FVector& Linear, const FVector& Angular);
+    void RemoveBodyFollow(JPH::BodyID Body);
     virtual void OnStep(const JPH::PhysicsStepListenerContext& Context) override;
     const TArray<FSample>& GetLastSamples() const { return Samples; }
     uint64 GetInvocationCount() const { return Invocations; }

@@ -10,6 +10,7 @@
 #include "ProphecyAttackFistTypes.h"
 #include "ProphecyNNPoseTypes.h"
 #include "ProphecyFootPinningTypes.h"
+#include "ProphecyPhysicalContextTypes.h"
 #include "ProphecyAgent.generated.h"
 
 class UCapsuleComponent;
@@ -585,7 +586,9 @@ public:
 	bool SetPhysicalFeedbackTolerance(
 		FName BoneName,
 		float LinearToleranceCm,
-		float AngularToleranceDegrees);
+		float AngularToleranceDegrees,
+		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
 
 	/** Sets feedback tolerances on every recurrently controlled bone at or below ParentBone. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback",
@@ -594,7 +597,9 @@ public:
 		FName ParentBone,
 		bool bIncludeParent,
 		float LinearToleranceCm,
-		float AngularToleranceDegrees);
+		float AngularToleranceDegrees,
+		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
 
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Physical Feedback")
 	bool GetPhysicalFeedbackTolerance(
@@ -605,12 +610,16 @@ public:
 	 * Replaces this bone's previous feedback blend. Duration <= 0 applies immediately. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback")
 	bool BlendPhysicalFeedbackTolerance(FName BoneName, float LinearToleranceCm,
-		float AngularToleranceDegrees, float DurationSeconds = 1.0f);
+		float AngularToleranceDegrees, float DurationSeconds = 1.0f,
+		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
 
 	/** Starts independent blends from each controlled descendant's current tolerances. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback")
 	int32 BlendPhysicalFeedbackToleranceBelow(FName ParentBone, bool bIncludeParent,
-		float LinearToleranceCm, float AngularToleranceDegrees, float DurationSeconds = 1.0f);
+		float LinearToleranceCm, float AngularToleranceDegrees, float DurationSeconds = 1.0f,
+		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
 
 	/** Stops at the current tolerance. None cancels all feedback blends on this agent. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback")
@@ -1079,7 +1088,9 @@ public:
 		FName BoneName,
 		bool bEnabled,
 		float LinearStrengthScale = 1.0f,
-		float AngularStrengthScale = 1.0f);
+		float AngularStrengthScale = 1.0f,
+		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
 
 	/** Applies settings to every Physics Asset body at or below ParentBone. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Magnetization")
@@ -1088,7 +1099,9 @@ public:
 		bool bIncludeParent,
 		bool bEnabled,
 		float LinearStrengthScale = 1.0f,
-		float AngularStrengthScale = 1.0f);
+		float AngularStrengthScale = 1.0f,
+		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
 
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Magnetization")
 	bool SetBodyIncludedInPhysicalSimulation(FName BoneName, bool bSimulateBody);
@@ -1103,12 +1116,16 @@ public:
 	 * Replaces this bone's previous blend. Duration <= 0 applies immediately. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Magnetization")
 	bool BlendBodyMagnetization(FName BoneName, float LinearStrengthScale = 1.0f,
-		float AngularStrengthScale = 1.0f, float DurationSeconds = 1.0f);
+		float AngularStrengthScale = 1.0f, float DurationSeconds = 1.0f,
+		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
 
 	/** Starts independent blends from each Physics Asset descendant's current strengths. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Magnetization")
 	int32 BlendBodyMagnetizationBelow(FName ParentBone, bool bIncludeParent,
-		float LinearStrengthScale = 1.0f, float AngularStrengthScale = 1.0f, float DurationSeconds = 1.0f);
+		float LinearStrengthScale = 1.0f, float AngularStrengthScale = 1.0f, float DurationSeconds = 1.0f,
+		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
 
 	/** Stops at the current strength. None cancels all magnetization blends on this agent. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Magnetization")

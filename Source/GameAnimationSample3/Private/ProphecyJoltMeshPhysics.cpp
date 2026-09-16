@@ -3,6 +3,9 @@
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyJoltWorldSubsystem.h"
+#include "ProphecyJoltStaticMeshLibrary.h"
+#include "ProphecyJoltSceneCollisionComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
@@ -11,6 +14,33 @@
 
 namespace ProphecyJolt::MeshPhysics
 {
+namespace
+{
+struct FDeferredCommand { FProphecyJoltPhysicsCommand Command; FSelection Selection; };
+TMap<TWeakObjectPtr<UPrimitiveComponent>, TArray<FDeferredCommand>> DeferredCommands;
+FDelegateHandle Cleanup;
+void Queue(UPrimitiveComponent& Component, UProphecyJoltBodyComponent& Adapter,
+    const FProphecyJoltPhysicsCommand& Command, const FSelection& Selection)
+{
+    if (!Cleanup.IsValid()) Cleanup = FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World, bool, bool)
+    {
+        for (auto It = DeferredCommands.CreateIterator(); It; ++It)
+            if (!It.Key().IsValid() || It.Key()->GetWorld() == World) It.RemoveCurrent();
+    });
+    if (!DeferredCommands.Contains(&Component))
+    {
+        TWeakObjectPtr<UPrimitiveComponent> Weak(&Component);
+        Adapter.OnDeferredEnableCompleted.AddWeakLambda(&Adapter, [Weak](bool bSuccess, const FString&)
+        {
+            TArray<FDeferredCommand> Commands;
+            DeferredCommands.RemoveAndCopyValue(Weak, Commands);
+            if (bSuccess && Weak.IsValid())
+                for (const auto& Pending : Commands) Execute(*Weak.Get(), Pending.Command, Pending.Selection);
+        });
+    }
+    DeferredCommands.FindOrAdd(&Component).Add({Command, Selection});
+}
+}
 bool Execute(UPrimitiveComponent& Component, const FProphecyJoltPhysicsCommand& Command, const FSelection& Selection)
 {
     if (!IsInGameThread())
@@ -27,8 +57,22 @@ bool Execute(UPrimitiveComponent& Component, const FProphecyJoltPhysicsCommand& 
     UProphecyJoltBodyComponent* Standalone = nullptr;
     if (!Character)
     {
-        Standalone = Owner->FindComponentByClass<UProphecyJoltBodyComponent>();
-        if (!Standalone || !Standalone->IsJoltBody() || Standalone->GetSourceComponent() != &Component) return false;
+        TInlineComponentArray<UProphecyJoltBodyComponent*> Adapters(Owner);
+        for (auto* Candidate : Adapters)
+            if ((Candidate->IsJoltBody() || Candidate->IsEnablePending()) && Candidate->GetSourceComponent() == &Component)
+            { Standalone = Candidate; break; }
+        if (!Standalone && UProphecyJoltSceneCollisionComponent::FindForWorld(Component.GetWorld()))
+            if (auto* Mesh = Cast<UStaticMeshComponent>(&Component); Mesh && Mesh->IsSimulatingPhysics())
+            {
+                FString Error;
+                if (!UProphecyJoltStaticMeshLibrary::EnableJoltStaticMeshPhysics(Mesh, Error))
+                { UE_LOG(LogTemp, Error, TEXT("Automatic Jolt body admission: %s"), *Error); return true; }
+                TInlineComponentArray<UProphecyJoltBodyComponent*> Added(Owner);
+                for (auto* Candidate : Added)
+                    if (Candidate->GetSourceComponent() == &Component) { Standalone = Candidate; break; }
+            }
+        if (!Standalone) return false;
+        if (Standalone->IsEnablePending()) { Queue(Component, *Standalone, Command, Selection); return true; }
     }
     // Never send a failed Jolt request to Chaos's retained query bodies.
     UProphecyJoltWorldSubsystem* World = Component.GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>();

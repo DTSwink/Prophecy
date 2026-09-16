@@ -1,4 +1,5 @@
 #include "BoneWeights.h"
+#include "ProphecyStandardPhysicsCompiler.h"
 #include "Animation/Skeleton.h"
 #include "AssetToolsModule.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -1484,6 +1485,8 @@ FAutoConsoleCommand GAuthorPotenceRopeSolverIterationsCommand(
 
 class FProphecyEditorModule final : public IModuleInterface
 {
+    virtual void StartupModule() override { RegisterProphecyStandardPhysicsCompiler(); }
+    virtual void ShutdownModule() override { UnregisterProphecyStandardPhysicsCompiler(); }
 };
 
 IMPLEMENT_MODULE(FProphecyEditorModule, ProphecyEditor)

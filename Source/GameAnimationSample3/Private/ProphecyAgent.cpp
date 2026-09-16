@@ -1,4 +1,8 @@
 #include "ProphecyAgent.h"
+#include "ProphecyRootFacing.h"
+#include "ProphecyPelvisInertia.h"
+#include "ProphecyHandInertia.h"
+#include "ProphecyPhysicalContext.h"
 #include "ProphecyPhysicalBlendSubsystem.h"
 
 #include "ProphecyManualServoCapture.h"
@@ -98,6 +102,8 @@ namespace
 	{
 		TArray<FManualFollowerSubstepBody, TInlineAllocator<32>> Bodies;
 		float MaximumSubstepSeconds = 1.0f / 60.0f;
+		int32 InertiaBodyIndex = INDEX_NONE;
+		FVector InertiaLinear = FVector::OneVector, InertiaAngular = FVector::OneVector;
 	};
 
 	class FManualFollowerSubstepCallback final : public Chaos::TSimCallbackObject<
@@ -264,7 +270,7 @@ namespace
 				ProphecyManualServoCapture::FBodyStep* BodyStep =
 					RecordedStep && BodyIndex < ProphecyManualServoCapture::MaxBodies
 						? &RecordedStep->Bodies[BodyIndex] : nullptr;
-				++BodyIndex;
+				const bool bPelvisInertia = BodyIndex++ == Targets.InertiaBodyIndex;
 				Chaos::FRigidBodyHandle_Internal* Rigid = Body.Actor
 					? Body.Actor->GetPhysicsThreadAPI()
 					: nullptr;
@@ -290,8 +296,9 @@ namespace
 					const FVector LinearVelocity =
 						(Body.TargetPosition - FVector(Rigid->X())) / StepSeconds;
 					const FVector CurrentVelocity(Rigid->V());
-					Rigid->SetV(Chaos::FVec3(CurrentVelocity +
-						(LinearVelocity - CurrentVelocity) * Body.LinearStrengthScale));
+					FVector Correction=(LinearVelocity - CurrentVelocity) * Body.LinearStrengthScale;
+					if (bPelvisInertia) Correction *= Targets.InertiaLinear;
+					Rigid->SetV(Chaos::FVec3(CurrentVelocity + Correction));
 				}
 
 				if (Body.AngularStrengthScale > 0.0f)
@@ -308,8 +315,9 @@ namespace
 					const FVector AngularVelocity =
 						Axis.GetSafeNormal() * (AngleRadians / StepSeconds);
 					const FVector CurrentAngularVelocity(Rigid->W());
-					Rigid->SetW(Chaos::FVec3(CurrentAngularVelocity +
-						(AngularVelocity - CurrentAngularVelocity) * Body.AngularStrengthScale));
+					FVector Correction=(AngularVelocity - CurrentAngularVelocity) * Body.AngularStrengthScale;
+					if (bPelvisInertia) Correction *= Targets.InertiaAngular;
+					Rigid->SetW(Chaos::FVec3(CurrentAngularVelocity + Correction));
 				}
 				if (BodyStep)
 				{
@@ -486,6 +494,7 @@ namespace
 			CapturePacket->FrameDeltaSeconds = DeltaSeconds;
 		}
 		FManualFollowerSubstepTargets Targets;
+		const bool bPelvisInertia=ProphecyPelvisInertia::GetBodyFollow(Agent,Targets.InertiaLinear,Targets.InertiaAngular);
 		const UPhysicsSettings* Settings = UPhysicsSettings::Get();
 		Targets.MaximumSubstepSeconds = FMath::Max(
 			UE_SMALL_NUMBER,
@@ -509,6 +518,8 @@ namespace
 				continue;
 			}
 			FManualFollowerSubstepBody& OutputBody = Targets.Bodies.AddDefaulted_GetRef();
+			if (bPelvisInertia && BoneNames[BoneIndex] == TEXT("pelvis"))
+				Targets.InertiaBodyIndex=Targets.Bodies.Num()-1;
 			OutputBody.Actor = Body->GetPhysicsActor();
 			OutputBody.LinearStrengthScale = FMath::Max(
 				0.0f,
@@ -1080,6 +1091,9 @@ void AProphecyAgent::SetLocomotionInput(
 	LocomotionInput.bRun = bRun;
 	LocomotionInput.FacingWorldDirection = FacingWorldDirection.ContainsNaN()
 		? FVector::ZeroVector : FacingWorldDirection.GetSafeNormal();
+	// A repeated fixed vector is still an explicit steering command. Do not
+	// confuse it with the facing vector written back by an angular impulse.
+	if (!LocomotionInput.FacingWorldDirection.IsNearlyZero()) ProphecyRootFacing::Explicit(this);
 	LocomotionInput.SpeedScale = FMath::IsFinite(SpeedScale) ? FMath::Clamp(SpeedScale, 0.0f, 1.0f) : 0.0f;
 	LocomotionInput.TurnScale = FMath::IsFinite(TurnScale) ? FMath::Clamp(TurnScale, 0.0f, 1.0f) : 0.0f;
 	bUseBlueprintLocomotionInput = true;
@@ -1230,12 +1244,17 @@ bool AProphecyAgent::SetAllPhysicalFeedbackTolerances(
 	const float Angular = FMath::Max(0.0f, AngularToleranceDegrees);
 	for (const FName BoneName : PhysicalFeedbackBoneNames())
 	{
+		if (ProphecyPhysicalContext::IsManaged(this,BoneName,ProphecyPhysicalContext::EKind::Feedback))
+		{
+			ProphecyPhysicalContext::Set(*this,BoneName,ProphecyPhysicalContext::EKind::Feedback,true,{Linear,Angular},0);
+			continue;
+		}
 		FProphecyPhysicalFeedbackToleranceSettings& Settings =
 			PhysicalFeedbackTolerances.FindOrAdd(BoneName);
 		Settings.LinearToleranceCm = Linear;
 		Settings.AngularToleranceDegrees = Angular;
 	}
-	if (auto* Manager = FindOwningNNManager(this))
+	if (auto* Manager = FindOwningNNManager(this); Manager && !IsSwordAttackActive())
 		Manager->SetAgentAllPhysicalFeedbackTolerances(AgentHandle, Linear, Angular);
 	return true;
 }
@@ -1243,8 +1262,12 @@ bool AProphecyAgent::SetAllPhysicalFeedbackTolerances(
 bool AProphecyAgent::SetPhysicalFeedbackTolerance(
 	FName BoneName,
 	float LinearToleranceCm,
-	float AngularToleranceDegrees)
+	float AngularToleranceDegrees,EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
 {
+	if (Locomotion!=EProphecyLocomotionSelection::Both || Equipment!=EProphecyEquipmentSelection::Both
+		|| ProphecyPhysicalContext::IsManaged(this,BoneName,ProphecyPhysicalContext::EKind::Feedback))
+		return ProphecyPhysicalContext::Set(*this,BoneName,ProphecyPhysicalContext::EKind::Feedback,true,
+			{LinearToleranceCm,AngularToleranceDegrees},0,Locomotion,Equipment);
 	if (BoneName.IsNone() || !PhysicalFeedbackBoneNames().Contains(BoneName))
 	{
 		return false;
@@ -1264,8 +1287,9 @@ int32 AProphecyAgent::SetPhysicalFeedbackToleranceBelow(
 	FName ParentBone,
 	bool bIncludeParent,
 	float LinearToleranceCm,
-	float AngularToleranceDegrees)
+	float AngularToleranceDegrees,EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
 {
+	if (!ProphecyPhysicalContext::Valid(Locomotion,Equipment)) return 0;
 	const USkeletalMeshComponent* PoseMesh = GetPoseReferenceMesh();
 	const USkeletalMesh* SkeletalMesh = PoseMesh ? PoseMesh->GetSkeletalMeshAsset() : nullptr;
 	if (!SkeletalMesh || ParentBone.IsNone())
@@ -1292,8 +1316,8 @@ int32 AProphecyAgent::SetPhysicalFeedbackToleranceBelow(
 				break;
 			}
 		}
-		if (bDescendant && SetPhysicalFeedbackTolerance(
-			BoneName, LinearToleranceCm, AngularToleranceDegrees))
+		if (bDescendant && ProphecyPhysicalContext::Set(*this,BoneName,ProphecyPhysicalContext::EKind::Feedback,true,
+			{LinearToleranceCm,AngularToleranceDegrees},0,Locomotion,Equipment))
 		{
 			++ChangedBones;
 		}
@@ -1341,7 +1365,6 @@ AProphecyAgent::AProphecyAgent()
 	Mesh->SetGenerateOverlapEvents(false);
 	Mesh->SetCanEverAffectNavigation(false);
 	Mesh->SetNotifyRigidBodyCollision(false);
-	Mesh->OnComponentHit.AddDynamic(this, &AProphecyAgent::HandleMeshHit);
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> DefaultMesh(
 		TEXT("/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin"));
 	if (DefaultMesh.Succeeded())
@@ -1419,6 +1442,7 @@ void AProphecyAgent::InitializeAgentRuntime()
 	PhysicalAnimation->SetComponentTickEnabled(false);
 	AddTickPrerequisiteComponent(Mesh);
 	ApplyCollisionMode(SimulationMode);
+	SetGeneratePhysicalHitEvents(bGeneratePhysicalHitEvents);
 }
 
 bool AProphecyAgent::EnsureStandaloneNNManager()
@@ -1456,6 +1480,10 @@ bool AProphecyAgent::EnsureStandaloneNNManager()
 
 void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ProphecyPhysicalContext::Remove(this);
+    ProphecyRootFacing::Explicit(this);
+    ProphecyPelvisInertia::Remove(this);
+    ProphecyHandInertia::Remove(this);
 	if (auto* Blends = GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>()) Blends->RemoveAgent(*this);
 	bResumeChaosPhysicalAfterJoltRestore = false;
 	bUseJoltForPhysicalMode = false;
@@ -1932,6 +1960,7 @@ void AProphecyAgent::Tick(float DeltaSeconds)
 	}
 
 	Super::Tick(DeltaSeconds);
+	ProphecyPhysicalContext::Update(this);
 	{
 		ProphecyJolt::CharacterProfiling::FScope JoltFistTiming(ProphecyJolt::CharacterProfiling::EPhase::EnsureFists);
 		ProphecyAttackFists::EnsureManualSimulation(this);
@@ -3049,8 +3078,11 @@ void AProphecyAgent::SetPhysicalDriveStrengthMultiplier(float NewMultiplier)
 void AProphecyAgent::SetGeneratePhysicalHitEvents(bool bEnabled)
 {
 	bGeneratePhysicalHitEvents = bEnabled;
+	if (JoltCharacter) JoltCharacter->SetHitEventsEnabled(bEnabled);
 	if (USkeletalMeshComponent* PhysicalMesh = GetPoseReferenceMesh())
 	{
+		if (Mesh && Mesh != PhysicalMesh) Mesh->OnComponentHit.RemoveDynamic(this, &AProphecyAgent::HandleMeshHit);
+		PhysicalMesh->OnComponentHit.AddUniqueDynamic(this, &AProphecyAgent::HandleMeshHit);
 		PhysicalMesh->SetNotifyRigidBodyCollision(
 			bEnabled && GetSimulationMode() != EProphecyAgentSimulationMode::Kinematic);
 	}
@@ -3209,6 +3241,12 @@ void AProphecyAgent::SetAllBodyMagnetization(
 	}
 	for (TPair<FName, FProphecyBodyMagnetizationSettings>& Pair : BodyMagnetizationSettings)
 	{
+		if (ProphecyPhysicalContext::IsManaged(this,Pair.Key,ProphecyPhysicalContext::EKind::Magnetization))
+		{
+			ProphecyPhysicalContext::Set(*this,Pair.Key,ProphecyPhysicalContext::EKind::Magnetization,bEnabled,
+				{LinearStrengthScale,AngularStrengthScale},0);
+			continue;
+		}
 		Pair.Value.bMagnetizationEnabled = bEnabled;
 		Pair.Value.LinearStrengthScale = FMath::Max(0.0f, LinearStrengthScale);
 		Pair.Value.AngularStrengthScale = FMath::Max(0.0f, AngularStrengthScale);
@@ -3220,8 +3258,15 @@ void AProphecyAgent::SetBodyMagnetization(
 	FName BoneName,
 	bool bEnabled,
 	float LinearStrengthScale,
-	float AngularStrengthScale)
+	float AngularStrengthScale,EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
 {
+	if (Locomotion!=EProphecyLocomotionSelection::Both || Equipment!=EProphecyEquipmentSelection::Both
+		|| ProphecyPhysicalContext::IsManaged(this,BoneName,ProphecyPhysicalContext::EKind::Magnetization))
+	{
+		ProphecyPhysicalContext::Set(*this,BoneName,ProphecyPhysicalContext::EKind::Magnetization,bEnabled,
+			{LinearStrengthScale,AngularStrengthScale},0,Locomotion,Equipment);
+		return;
+	}
 	CancelBodyMagnetizationBlend(BoneName);
 	FProphecyBodyMagnetizationSettings& Settings = BodyMagnetizationSettings.FindOrAdd(BoneName);
 	Settings.bMagnetizationEnabled = bEnabled;
@@ -3235,8 +3280,9 @@ int32 AProphecyAgent::SetBodyMagnetizationBelow(
 	bool bIncludeParent,
 	bool bEnabled,
 	float LinearStrengthScale,
-	float AngularStrengthScale)
+	float AngularStrengthScale,EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
 {
+	if (!ProphecyPhysicalContext::Valid(Locomotion,Equipment)) return 0;
 	const USkeletalMeshComponent* PhysicalMesh = GetPoseReferenceMesh();
 	const USkeletalMesh* SkeletalMesh = PhysicalMesh ? PhysicalMesh->GetSkeletalMeshAsset() : nullptr;
 	const UPhysicsAsset* PhysicsAsset = PhysicalMesh ? PhysicalMesh->GetPhysicsAsset() : nullptr;
@@ -3272,12 +3318,9 @@ int32 AProphecyAgent::SetBodyMagnetizationBelow(
 		}
 		if ((bIncludeParent && bIsParent) || bIsBelow)
 		{
-			SetBodyMagnetization(
-				BodySetup->BoneName,
-				bEnabled,
-				LinearStrengthScale,
-				AngularStrengthScale);
-			++ChangedBodies;
+			ChangedBodies+=ProphecyPhysicalContext::Set(*this,BodySetup->BoneName,
+				ProphecyPhysicalContext::EKind::Magnetization,bEnabled,{LinearStrengthScale,AngularStrengthScale},
+				0,Locomotion,Equipment) ? 1 : 0;
 		}
 	}
 	return ChangedBodies;
@@ -3333,6 +3376,9 @@ bool AProphecyAgent::ApplyBodyWorldMagnetization(
 
 	// Shared exact native Sim rule: the headless comparison uses this same math,
 	// without the production Blueprint or NN target-generation path.
+	if (ProphecyPelvisInertia::ApplyChaosDrive(this, BoneName, Body, TargetWorldTransform,
+		DeltaSeconds, LinearStrengthScale, AngularStrengthScale, bCancelGravity,
+		GetWorld() ? GetWorld()->GetGravityZ() : 0.f)) return true;
 	return UProphecyHalfSimDriveComponent::ApplyOneStepBody(Body, TargetWorldTransform,
 		DeltaSeconds, LinearStrengthScale, AngularStrengthScale, bCancelGravity,
 		GetWorld() ? GetWorld()->GetGravityZ() : 0.f);
@@ -3460,7 +3506,8 @@ void AProphecyAgent::HandleMeshHit(
 	FVector NormalImpulse,
 	const FHitResult& Hit)
 {
-	if (SimulationMode != EProphecyAgentSimulationMode::Kinematic && bGeneratePhysicalHitEvents)
+	if (SimulationMode != EProphecyAgentSimulationMode::Kinematic && bGeneratePhysicalHitEvents
+		&& HitComponent == GetPoseReferenceMesh())
 	{
 		OnPhysicalHit.Broadcast(this, OtherActor, OtherComponent, NormalImpulse, Hit);
 	}

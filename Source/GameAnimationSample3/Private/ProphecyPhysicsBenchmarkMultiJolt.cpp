@@ -248,7 +248,17 @@ bool UProphecyPhysicsBenchmarkSubsystem::InitializeMultiJoltCase(FString& Error)
         if (!Material) { Error = TEXT("JoltCrowd source floor has no simple physical material."); return false; }
         FProphecyJoltFixtureBodySettings Floor;
         Floor.bDynamic = false;
+        // Keep the existing floor component as contact identity as well as geometry provenance.
+        Floor.AssociatedObject = SourceFloor;
         Floor.PositionCm = FloorWorld.GetLocation();
+        // Optional contact workload for hit-event benchmarking. The retained NN crowd
+        // keeps its physical feet above the floor; raise only the native contact plane
+        // relative to unchanged mover/NN inputs, identically in the on and off trials.
+        float ContactFloorLiftCm = 0.0f;
+        FParse::Value(FCommandLine::Get(), TEXT("PhysicsBenchContactFloorLiftCm="), ContactFloorLiftCm);
+        if (!FMath::IsFinite(ContactFloorLiftCm) || ContactFloorLiftCm < 0.0f || ContactFloorLiftCm > 100.0f)
+        { Error = TEXT("Contact benchmark floor lift must be finite and within 0..100 cm."); return false; }
+        Floor.PositionCm.Z += ContactFloorLiftCm;
         Floor.Rotation = FloorWorld.GetRotation();
         Floor.Friction = Material->Friction;
         Floor.Restitution = Material->Restitution;
@@ -261,6 +271,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::InitializeMultiJoltCase(FString& Error)
         FloorJson->SetObjectField(TEXT("source_world_transform"), Json::Transform(FloorWorld));
         FloorJson->SetArrayField(TEXT("baked_half_extent_cm"), Json::Vector(HalfExtent));
         FloorJson->SetNumberField(TEXT("convex_radius_cm"), 0.0);
+        FloorJson->SetNumberField(TEXT("contact_benchmark_floor_lift_cm"), ContactFloorLiftCm);
         FloorJson->SetStringField(TEXT("physical_material"), Material->GetPathName());
         FloorJson->SetNumberField(TEXT("friction"), Floor.Friction);
         FloorJson->SetNumberField(TEXT("restitution"), Floor.Restitution);
@@ -872,7 +883,10 @@ bool UProphecyPhysicsBenchmarkSubsystem::SaveMultiJoltCase(TSharedPtr<FJsonObjec
         }
         return true;
     };
-    if (!Agents[RemovedIndex]->EnableJoltPhysicalAnimation()
+    // Backend selection now preserves simulation mode. Explicitly request Physical
+    // for this legacy deferred-admission probe; measured crowd work is unchanged.
+    if (!Agents[RemovedIndex]->SetSimulationMode(EProphecyAgentSimulationMode::Physical)
+        || !Agents[RemovedIndex]->EnableJoltPhysicalAnimation()
         || Agents[RemovedIndex]->GetJoltCharacterComponent() != Characters[RemovedIndex]
         || !Characters[RemovedIndex]->IsEnablePending() || Characters[RemovedIndex]->IsJoltPhysical()
         || Characters[RemovedIndex]->IsSteppingStopped() || Characters[RemovedIndex]->GetRevision() != 0

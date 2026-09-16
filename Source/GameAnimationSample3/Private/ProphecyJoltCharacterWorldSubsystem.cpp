@@ -1,4 +1,5 @@
 #include "ProphecyJoltCharacterWorldSubsystem.h"
+#include "ProphecyJoltConstraintRuntime.h"
 
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyJoltSceneCollisionComponent.h"
@@ -380,6 +381,7 @@ bool UProphecyJoltCharacterWorldSubsystem::StepRegisteredClients(float DeltaSeco
         || Diagnostics.CompletedSteps != ExpectedWorldSteps)
         return StopWithError(OutError, TEXT("A client changed or stepped the native owner during shared-step preparation."));
     const UPhysicsSettings* PhysicsSettings = UPhysicsSettings::Get();
+    ProphecyJolt::Constraints::Prepare(GetWorld());
     const int32 CollisionSteps = ProphecyJolt::StepTiming::Count(DeltaSeconds, PhysicsSettings);
     {
         Profile::FScope StepTiming(Profile::EPhase::NativeStep);
@@ -395,7 +397,7 @@ bool UProphecyJoltCharacterWorldSubsystem::StepRegisteredClients(float DeltaSeco
         if (Character && Character->GetClass() == UProphecyJoltCharacterComponent::StaticClass()
             && IsStepClientRegistered(*Character, Registration.RegistrationId)) PoseCharacters.Add(Character);
     }
-    UProphecyJoltCharacterComponent::PrepareCompletedPoseBatch(PoseCharacters);
+    UProphecyJoltCharacterComponent::PrepareCompletedPoseBatch(PoseCharacters, DeltaSeconds);
     for (const auto& Registration : Clients)
     {
         IProphecyJoltStepClient* Client = ResolveClient(Registration);
@@ -405,6 +407,8 @@ bool UProphecyJoltCharacterWorldSubsystem::StepRegisteredClients(float DeltaSeco
             return StopWithError(OutError, FString::Printf(TEXT("Shared-step completed presentation failed: %s"), *Error));
     }
     LastError.Reset();
+    ProphecyJolt::Constraints::Finish(GetWorld());
+    if (IsValid(PhysicsOwner) && !bEnding) PhysicsOwner->DispatchPendingHitEvents();
     return true;
 }
 

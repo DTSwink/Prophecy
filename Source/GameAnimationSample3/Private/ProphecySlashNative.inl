@@ -202,7 +202,7 @@ void FSlashNative::FrozenUpper(const float* Lower,FPose& Pose,float* Upper) cons
 	Clean(Upper,true);
 }
 
-void FSlashNative::SolveLimb(FPose& Pose,const FLimb& L,const FVector3f* Offsets,const float* State) const
+void FSlashNative::SolveLimb(FPose& Pose,const FLimb& L,const FVector3f* Offsets,const float* State,bool bSignedHinge) const
 {
 	const int32 O=L.StateOffset;
 	const FMat3f SR=Multiply(MatrixFromRot6(State+O+9),RootRotation);
@@ -212,6 +212,13 @@ void FSlashNative::SolveLimb(FPose& Pose,const FLimb& L,const FVector3f* Offsets
 	Pose.P[L.End]=TransformRow(EndRoot,RootRotation)+RootPosition;
 	FVector3f Axis=Pose.P[L.End]-Pose.P[L.Mid];
 	if (Axis.SizeSquared()<=1.e-16f) Axis=TransformRow(Offsets[L.End],SR);
+	if (bSignedHinge && L.Toe!=INDEX_NONE)
+	{
+		// v4 uses the signed hinge normal through folded legs, including the decoder.
+		Pose.R[L.Mid]=CalfRotationFromHinge(Offsets[L.Mid],Offsets[L.End],L.Pole[0],L.Pole[1],SR,Axis);
+	}
+	else
+	{
 	// ik_core's modified Gram-Schmidt basis (do not change the unrelated
 	// locomotion decoder while porting the accepted Slash decoder).
 	auto Normalize=[](const FVector3f& V) { return V/FMath::Max(V.Size(),1.e-8f); };
@@ -230,6 +237,7 @@ void FSlashNative::SolveLimb(FPose& Pose,const FLimb& L,const FVector3f* Offsets
 		const FVector3f Unit=Normalize(Axis), Calf=Plane(Pose.R[L.Mid].Rows[2],Unit), Thigh=Plane(SR.Rows[2],Unit);
 		const float Twist=FMath::Atan2(FVector3f::DotProduct(FVector3f::CrossProduct(Calf,Thigh),Unit),FVector3f::DotProduct(Calf,Thigh));
 		for (auto& Row:Pose.R[L.Mid].Rows) Row=RotateAroundAxis(Row,Unit,Twist);
+	}
 	}
 	Pose.R[L.End]=Multiply(ER,RootRotation);
 	if (L.Toe!=INDEX_NONE)
@@ -263,7 +271,7 @@ void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,f
 	Rebase(W.NextUpper,Out+41,true,W.Origin,W.Heading,RootPosition,RootRotation);
 	// Only upper FK differs between the decoder baseline and candidate. Solve
 	// the legs once, not in all three full-skeleton FK passes of the oracle.
-	for (const auto& L:Legs) SolveLimb(W.FrozenPose,L,LowerOffsets,Out);
+	for (const auto& L:Legs) SolveLimb(W.FrozenPose,L,LowerOffsets,Out,Settings && Settings->PelvisInertia);
 	// Evaluate the original learned latch before choosing who owns the hands.
 	const bool bHitRequest=NeuralUpper[91]>=GateThreshold;
 	Out[432]=State[271]>=0.5f || (State[270]>=0.5f && bHitRequest) ? 1.f:0.f;
@@ -348,6 +356,20 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 		Rebase(Candidate,Root,false,W.Origin,W.Heading,RootPosition,RootRotation);
 		for (int32 I=0; I<2; ++I) W.Pins[I]=FMath::Clamp(2.f/(1.f+FMath::Exp(-R[41+I]))-1.f,0.f,1.f);
 		Pin(Root,S+41,W.Pins,4); // The learned Slash pin pass is four steps in training too.
+		if (!Settings.IsEmpty() && Settings[Lane].PelvisInertia)
+		{
+			const auto& Option=*Settings[Lane].PelvisInertia;
+			FPelvisLegGeometry Geometry[2];
+			for (int32 I=0; I<2; ++I)
+			{
+				const auto& L=Legs[I]; const int32 O=9+16*I;
+				const FVector3f Ankle=Read(Root,O);
+				Geometry[I]={LowerOffsets[L.Start],LowerOffsets[L.Mid],L.Pole[0],LowerOffsets[L.End].Size(),
+					Ankle.Z+Ground-ExactFootMinimum(Axes(I,Ankle,MatrixFromRot6(Root+O+3),Root[O+15]),FootHalf,ToeHalf)+1.e-5f};
+			}
+			CorrectLowerPelvis(Option.Actor,Option.Time,Option.Step,
+				Option.Carrier,Option.Carrier,S+41,Root,Geometry);
+		}
 		Rebase(Root,W.NextLower,false,RootPosition,RootRotation,W.Origin,W.Heading);
 		float CurrentBase[90],CurrentHeld[90],NextHeld[90]; FPose CurrentPose;
 		FrozenUpper(S+41,CurrentPose,CurrentBase); FrozenUpper(Root,W.FrozenPose,W.BaseUpper);

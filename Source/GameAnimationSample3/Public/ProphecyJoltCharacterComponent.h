@@ -48,9 +48,15 @@ public:
     // Caller publishes targets explicitly. Every registered client consumes the same completed world step.
     bool StepAndPublish(float DeltaSeconds, FString& OutError);
     bool SampleCompletedComponentPose(TConstArrayView<FName> BoneNames, TArrayView<FTransform> OutTransforms) const;
+    // Paired with the authored target of that completed step, not today's published pose.
+    // First request arms the small capture cache; false until a matching step completes.
+    bool SampleCompletedLowerFeedbackPose(TConstArrayView<FName> BoneNames, const FTransform& Reference,
+        TArrayView<FTransform> OutActual, TArrayView<FTransform> OutAuthored) const;
     bool GetBodyState(FName BoneName, FTransform& OutBodyWorld, FVector& OutLinearVelocity,
         FVector& OutAngularVelocity, bool& bOutSimulating) const;
     bool GetBodyHandle(FName BoneName, FProphecyJoltBodyHandle& OutHandle) const;
+    bool GetRigIdentityBody(FProphecyJoltBodyHandle& OutHandle) const;
+    void SetHitEventsEnabled(bool bEnabled);
     double GetCapturedBodyMassKg(FName BoneName) const;
     // Preserve the original skeletal receiver identity. Native subshape IDs are never UE triangle FaceIndex values.
     bool MakeHitResult(const FProphecyJoltRayHit& Hit, FHitResult& OutHit) const;
@@ -88,7 +94,7 @@ private:
     void RefreshPlayerSwingLimits();
     bool ReadPoseErrorBody(FName BoneName, int32& OutBodyIndex, double& OutMassKg, FTransform& OutBodyWorld) const;
     friend class UProphecyJoltCharacterWorldSubsystem;
-    static void PrepareCompletedPoseBatch(TConstArrayView<UProphecyJoltCharacterComponent*> Characters);
+    static void PrepareCompletedPoseBatch(TConstArrayView<UProphecyJoltCharacterComponent*> Characters, float DeltaSeconds);
     bool EnablePhysicalAnimationNow(FString& OutError);
     void CompleteDeferredEnable(const FGuid& AdmissionId);
     void CancelDeferredEnable(const FGuid& AdmissionId);

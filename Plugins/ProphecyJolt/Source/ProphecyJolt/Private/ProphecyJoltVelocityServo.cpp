@@ -10,6 +10,12 @@ namespace ProphecyJolt
 {
 namespace
 {
+struct FFollow { FVector Linear, Angular; };
+using FBodyFollows = TMap<uint32, FFollow>;
+// No modification of live servo/rig layouts. Writes only outside synchronous Update;
+// the physics worker reads an immutable map, never game objects.
+TMap<const FVelocityServo*, FBodyFollows> Follows;
+
 struct FVelocityRewrite
 {
     JPH::Vec3 NativeLinear = JPH::Vec3::sZero();
@@ -18,7 +24,7 @@ struct FVelocityRewrite
 
 bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Body, float DenominatorSeconds,
     double TrajectoryElapsedSeconds, float IntegrationSeconds,
-    FVelocityServo::FSample& Sample, FVelocityRewrite& Rewrite)
+    FVelocityServo::FSample& Sample, FVelocityRewrite& Rewrite, const FFollow* Follow)
 {
     using namespace Conversions;
     Sample.PositionCm = FromJoltPosition(Body.GetPosition());
@@ -56,6 +62,8 @@ bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Bo
         const FVector Desired = Axis.GetSafeNormal() * (Angle / DenominatorSeconds);
         Angular += (Desired - Angular) * Target.AngularStrength;
     }
+    if (Follow) Angular = Sample.AngularBeforeRadiansPerSecond
+        + (Angular-Sample.AngularBeforeRadiansPerSecond)*Follow->Angular;
     if (Target.LinearStrength > 0.0f)
     {
         // Vcom = Vorigin + W x (COM - origin). Omitting this term makes the
@@ -65,6 +73,14 @@ bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Bo
         const FVector WorldCOMOffset = Sample.Rotation.RotateVector(
             FromJoltPosition(JPH::RVec3(Body.GetShape()->GetCenterOfMass())));
         Linear += Angular.Cross(WorldCOMOffset) * Target.LinearStrength;
+    }
+    if (Follow)
+    {
+        Linear = Sample.LinearBeforeCmPerSecond + (Linear-Sample.LinearBeforeCmPerSecond)*Follow->Linear;
+        // Keep the separately configured gravity compensation, even when tracking is zero.
+        if (Target.LinearStrength > 0.0f)
+            Linear.Z += (1.-Follow->Linear.Z)*Target.GravityCompensationCmPerSecondSquared
+                * IntegrationSeconds*Target.LinearStrength;
     }
     Rewrite.NativeLinear = ToJoltLinearVelocity(Linear);
     Rewrite.NativeAngular = ToJoltAngularVelocity(Angular);
@@ -147,6 +163,7 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
     if (!IsInGameThread())
     { OutError = TEXT("Fixture servo activation preparation requires the game thread outside Update."); return false; }
     TArray<JPH::BodyID, TInlineAllocator<32>> BodiesToWake;
+    const auto* BodyFollows = Follows.IsEmpty() ? nullptr : Follows.Find(this);
     const JPH::BodyLockInterface& ReadLocks = bUseNoLockIdleReads
         ? static_cast<const JPH::BodyLockInterface&>(Physics.GetBodyLockInterfaceNoLock())
         : static_cast<const JPH::BodyLockInterface&>(Physics.GetBodyLockInterface());
@@ -163,7 +180,8 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
         const float H = Target.TrajectoryDurationSeconds > 0.0f && FirstStepSeconds > 0.0f
             ? FirstStepSeconds : Target.DenominatorSeconds;
         if (!CalculateRewrite(Target, Body, H, Target.TrajectoryElapsedSeconds + H,
-            FirstStepSeconds > 0.0f ? FirstStepSeconds : H, Sample, Rewrite))
+            FirstStepSeconds > 0.0f ? FirstStepSeconds : H, Sample, Rewrite,
+            BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr))
         { ++InvalidBodies; OutError = TEXT("Fixture servo sleeping-body candidate overflows native velocity precision."); return false; }
         if (RequiresNativeWake(Target, Rewrite) || HasPendingTrajectoryMotion(Target)) BodiesToWake.Add(Target.Body);
     }
@@ -174,6 +192,21 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
     return true;
 }
 
+void FVelocityServo::SetBodyFollow(JPH::BodyID Body, const FVector& Linear, const FVector& Angular)
+{
+    check(IsInGameThread());
+    if (Linear == FVector::OneVector && Angular == FVector::OneVector) { RemoveBodyFollow(Body); return; }
+    Follows.FindOrAdd(this).Add(Body.GetIndexAndSequenceNumber(), {Linear,Angular});
+}
+void FVelocityServo::RemoveBodyFollow(JPH::BodyID Body)
+{
+    check(IsInGameThread());
+    if (auto* Map=Follows.Find(this))
+    {
+        Map->Remove(Body.GetIndexAndSequenceNumber());
+        if (Map->IsEmpty()) Follows.Remove(this);
+    }
+}
 void FVelocityServo::Clear()
 {
     check(IsInGameThread());
@@ -190,6 +223,7 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
     if (Targets.IsEmpty()) return;
     ++Invocations;
     LastIntegrationSeconds = Context.mDeltaTime;
+    const auto* BodyFollows = Follows.IsEmpty() ? nullptr : Follows.Find(this);
     for (int32 Index = 0; Index < Targets.Num(); ++Index)
     {
         FTarget& Target = Targets[Index];
@@ -206,7 +240,8 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
         JPH::Body& Body = Lock.GetBody();
         FVelocityRewrite Rewrite;
         const float H = Target.TrajectoryDurationSeconds > 0.0f ? Context.mDeltaTime : Target.DenominatorSeconds;
-        if (!CalculateRewrite(Target, Body, H, Target.TrajectoryElapsedSeconds, Context.mDeltaTime, Sample, Rewrite)
+        if (!CalculateRewrite(Target, Body, H, Target.TrajectoryElapsedSeconds, Context.mDeltaTime, Sample, Rewrite,
+            BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr)
             || (!Body.IsActive() && RequiresNativeWake(Target, Rewrite)))
         { ++InvalidBodies; continue; }
         // Stock clamped setters enforce the body's captured caps without changing those limits.

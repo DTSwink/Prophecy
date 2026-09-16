@@ -14,6 +14,7 @@ AProphecyJoltFightSetup::AProphecyJoltFightSetup()
     PrimaryActorTick.bCanEverTick = false;
     SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
     SceneCollision = CreateDefaultSubobject<UProphecyJoltSceneCollisionComponent>(TEXT("SceneCollision"));
+    SceneCollision->bAutomaticScenePhysics = true;
 }
 
 void AProphecyJoltFightSetup::ReportError(const FString& Error)

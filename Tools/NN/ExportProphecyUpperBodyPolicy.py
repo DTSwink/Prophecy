@@ -13,10 +13,10 @@ import torch
 DEFAULT_STEPPER_ROOT = Path(r"C:\Users\singerie\Documents\Cursor\stepper")
 DEFAULT_CHECKPOINT = Path(
     "training/runs/"
-    "20260816_051748_ik_upper_cached_ae1ae4_bs64_allk32_ble_hbb0ff7d69b/"
+    "20260915_102838_ik_upper_cached_ae1ae4_bs64_allk32_ble_h66961999d3/"
     "checkpoints/"
-    "20260816_051748_ik_upper_cached_ae1ae4_bs64_allk32_blend_noise50_"
-    "initgaze50each_latest.pt"
+    "20260915_102838_ik_upper_cached_ae1ae4_bs64_allk32_blend_noise50_"
+    "initgaze50each_latest_download2.pt"
 )
 DEFAULT_REFERENCE_CLIP = Path(
     "training/slashes2/walk_run_sword_prep/authored_pruned_npz/"

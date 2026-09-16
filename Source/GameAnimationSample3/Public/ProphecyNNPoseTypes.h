@@ -122,6 +122,8 @@ class GAMEANIMATIONSAMPLE3_API FProphecyNNPoseStore
 public:
 	/** Requested mode is applied atomically with the next pose publication. */
 	static void SetInterpolationMode(int32 AgentId, EProphecyNNInterpolationMode Mode);
+	/** Translate both world carriers without rebuilding local poses or changing interpolation tangents. */
+	static void TranslateAgentWorldPose(int32 AgentId, const FVector& WorldDelta);
 	static void SetAgentLocalPose(
 		int32 AgentId,
 		TConstArrayView<FName> BoneNames,

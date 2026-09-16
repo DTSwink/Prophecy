@@ -1,7 +1,32 @@
 # Root hit response and half-attack targets
 
-All nodes are on **Prophecy Agent** (`Self` in the agent Blueprint).
-They do not require adding anything to Blueprint Tick. No hit event is automatically wired.
+The existing readback/impulse nodes are on **Prophecy Agent** (`Self` in the agent Blueprint).
+The force/torque node is a function-library node with an explicit **Agent** input.
+No hit event or automatic feedback controller is wired by these nodes.
+
+## Add Root Force and Torque
+
+Applies force and torque for the supplied **Delta Seconds**, through **Add Root Impulse**:
+`linear impulse = World Force × Delta Seconds`,
+`angular impulse = World Torque Radians × Delta Seconds`.
+
+- **Agent**: the agent to move (`Self` inside its Blueprint).
+- **World Force**: kg·cm/s²; only world X/Y affect the ground mover.
+- **World Torque Radians**: kg·cm²/s²; only world Z affects yaw.
+- **Delta Seconds**: duration represented by this call. For sustained force, call once per frame with that frame's Delta Seconds. For a one-shot impact, prefer Add Root Impulse.
+- **Acceleration Change**: false by default, scales by capsule mass/yaw inertia. When true, inputs instead mean cm/s² and rad/s², independent of mass/inertia.
+- **Return Value**: success; invalid agent/duration/vector or a rejected root impulse returns false without partially applying it. Zero duration adds no momentum.
+
+The call adds velocity without teleporting, in Kinematic, Half Sim, and Sim with either backend.
+It creates no ticking component, timer, or persistent force; unused nodes cost nothing.
+The existing steering, braking, collision and root-window smoothing govern subsequent movement.
+In particular, deliberately holding a collapsed root window with all smoothing factors at zero
+still holds the root; the force node does not override your smoothing controls.
+It does not apply force directly to the pelvis or enable vertical movement/pitch/roll.
+
+For example, Acceleration Change true, World Force `(200, 0, 0)`,
+World Torque Radians `(0, 0, 2)`, Delta Seconds `0.1` adds
+`20 cm/s` world X and `0.2 rad/s` yaw. Existing velocity is retained.
 
 ## Add Root Impulse
 

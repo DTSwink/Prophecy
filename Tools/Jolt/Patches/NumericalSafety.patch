@@ -328,6 +328,30 @@ index 5b6abc3..987ed22 100644
  	if (len_sq > Square(mMaxAngularVelocity))
  		mAngularVelocity *= mMaxAngularVelocity / Sqrt(len_sq);
  }
+diff --git a/Jolt/Physics/Collision/ContactListener.h b/Jolt/Physics/Collision/ContactListener.h
+index 07dacf3..fc08ecd 100644
+--- a/Jolt/Physics/Collision/ContactListener.h
++++ b/Jolt/Physics/Collision/ContactListener.h
+@@ -75,6 +75,19 @@ enum class ValidateResult
+ /// For EMotionQuality::Discrete bodies, during every 'collision step' in a PhysicsSystem::Update, you will receive at most one OnContactAdded/Persisted/Removed call per body/sub shape pair.
+ /// For EMotionQuality::LinearCast bodies, you may get an OnContactAdded followed by an OnContactPersisted for the same body/sub shape pair.
+ /// This happens when a body collides both in the discrete and the continuous collision detection stage.
++/// Prophecy opt-in observer of actual rigid contact solver impulses. Worker-thread,
++/// read-only callback; no body locking, UObject access or physics mutations allowed.
++/// Normal points from body 1 to body 2; positive impulse acts on body 2.
++class ContactImpulseListener
++{
++public:
++    virtual ~ContactImpulseListener() = default;
++    virtual bool WantsContactImpulse(const Body &inBody1, const Body &inBody2) const = 0;
++    virtual void OnContactImpulse(const Body &inBody1, const Body &inBody2,
++        const SubShapeID &inShape1, const SubShapeID &inShape2,
++        RVec3Arg inPoint1, RVec3Arg inPoint2, Vec3Arg inNormal, float inImpulse) = 0;
++};
++
+ class ContactListener
+ {
+ public:
 diff --git a/Jolt/Physics/Constraints/ConstraintManager.cpp b/Jolt/Physics/Constraints/ConstraintManager.cpp
 index 509bddb..3bc0703 100644
 --- a/Jolt/Physics/Constraints/ConstraintManager.cpp
@@ -464,8 +488,29 @@ index f9e86b8..191160d 100644
  			}
  
  			return true;
+diff --git a/Jolt/Physics/Constraints/ConstraintPart/SwingTwistConstraintPart.h b/Jolt/Physics/Constraints/ConstraintPart/SwingTwistConstraintPart.h
+index 1418435..e69da9f 100644
+--- a/Jolt/Physics/Constraints/ConstraintPart/SwingTwistConstraintPart.h
++++ b/Jolt/Physics/Constraints/ConstraintPart/SwingTwistConstraintPart.h
+@@ -527,6 +527,16 @@ public:
+ 		return mTwistLimitConstraintPart.GetTotalLambda();
+ 	}
+ 
++	/// Total angular impulse in the solver's world-space axes, including signed limit normals.
++	inline Vec3 GetTotalWorldSpaceImpulse() const
++	{
++		Vec3 result = Vec3::sZero();
++		if (float impulse = GetTotalTwistLambda(); impulse != 0.0f) result += impulse * mWorldSpaceTwistLimitRotationAxis;
++		if (float impulse = GetTotalSwingYLambda(); impulse != 0.0f) result += impulse * mWorldSpaceSwingLimitYRotationAxis;
++		if (float impulse = GetTotalSwingZLambda(); impulse != 0.0f) result += impulse * mWorldSpaceSwingLimitZRotationAxis;
++		return result;
++	}
++
+ 	/// Save state of this constraint part
+ 	void						SaveState(StateRecorder &inStream) const
+ 	{
 diff --git a/Jolt/Physics/Constraints/ContactConstraintManager.cpp b/Jolt/Physics/Constraints/ContactConstraintManager.cpp
-index efb7aee..6d5d9cf 100644
+index efb7aee..ab0c5df 100644
 --- a/Jolt/Physics/Constraints/ContactConstraintManager.cpp
 +++ b/Jolt/Physics/Constraints/ContactConstraintManager.cpp
 @@ -1810,6 +1810,8 @@ bool ContactConstraintManager::SolveVelocityConstraints(const uint32 *inConstrai
@@ -477,7 +522,38 @@ index efb7aee..6d5d9cf 100644
  		any_impulse_applied |= table[(int)body1.GetMotionType()][(int)body2.GetMotionType()](constraint, body1.GetMotionPropertiesUnchecked(), body2.GetMotionPropertiesUnchecked());
  	}
  
-@@ -1893,6 +1895,8 @@ bool ContactConstraintManager::sSolvePositionConstraint(ContactConstraintBase &i
+@@ -1874,6 +1876,30 @@ void ContactConstraintManager::StoreAppliedImpulses(const uint32 *inConstraintOf
+ 
+ 		// Dispatch to the correct templated form
+ 		table[(int)constraint.mBody1->GetMotionType()][(int)constraint.mBody2->GetMotionType()](constraint, *mWriteCache);
++        if (mContactImpulseListener != nullptr && mContactImpulseListener->WantsContactImpulse(*constraint.mBody1, *constraint.mBody2))
++        {
++            const auto *entry = mWriteCache->FromHandle(constraint.mCachedManifoldHandle);
++            const auto &cached = entry->GetValue();
++            float impulse = 0.0f;
++            Vec3 point1 = Vec3::sZero(), point2 = Vec3::sZero();
++            for (uint32 i = 0; i < constraint.mNumContactPoints; ++i)
++            {
++                const auto &point = cached.mContactPoints[i];
++                const float weight = max(0.0f, point.mNonPenetrationLambda);
++                impulse += weight;
++                point1 += weight * Vec3::sLoadFloat3Unsafe(point.mPosition1);
++                point2 += weight * Vec3::sLoadFloat3Unsafe(point.mPosition2);
++            }
++            if (impulse > 0.0f)
++            {
++                const auto &key = entry->GetKey();
++                mContactImpulseListener->OnContactImpulse(*constraint.mBody1, *constraint.mBody2,
++                    key.GetSubShapeID1(), key.GetSubShapeID2(),
++                    constraint.mBody1->GetCenterOfMassTransform() * (point1 / impulse),
++                    constraint.mBody2->GetCenterOfMassTransform() * (point2 / impulse),
++                    constraint.GetWorldSpaceNormal(), impulse);
++            }
++        }
+ 	}
+ }
+ 
+@@ -1893,6 +1919,8 @@ bool ContactConstraintManager::sSolvePositionConstraint(ContactConstraintBase &i
  
  	for (uint32 i = 0; i < constraint.mNumContactPoints; ++i)
  	{
@@ -486,7 +562,7 @@ index efb7aee..6d5d9cf 100644
  		WorldContactPoint<Type1, Type2> &wcp = constraint.mContactPoints[i];
  		const CachedContactPoint &ccp = cached_manifold.mContactPoints[i];
  
-@@ -1982,6 +1986,8 @@ bool ContactConstraintManager::SolvePositionConstraints(const uint32 *inConstrai
+@@ -1982,6 +2010,8 @@ bool ContactConstraintManager::SolvePositionConstraints(const uint32 *inConstrai
  		// Fetch bodies
  		Body &body1 = *constraint.mBody1;
  		Body &body2 = *constraint.mBody2;
@@ -495,6 +571,36 @@ index efb7aee..6d5d9cf 100644
  
  		// Dispatch to the correct templated form
  		any_impulse_applied |= table[(int)body1.GetMotionType()][(int)body2.GetMotionType()](constraint, body1, body2, mPhysicsSettings, *mWriteCache);
+diff --git a/Jolt/Physics/Constraints/ContactConstraintManager.h b/Jolt/Physics/Constraints/ContactConstraintManager.h
+index d76f3fc..33c0d4e 100644
+--- a/Jolt/Physics/Constraints/ContactConstraintManager.h
++++ b/Jolt/Physics/Constraints/ContactConstraintManager.h
+@@ -24,6 +24,7 @@ JPH_SUPPRESS_WARNINGS_STD_END
+ JPH_NAMESPACE_BEGIN
+ 
+ struct PhysicsSettings;
++class ContactImpulseListener;
+ class PhysicsUpdateContext;
+ 
+ /// A contact constraint manager manages all contacts between two bodies
+@@ -47,6 +48,9 @@ public:
+ 	void						SetContactListener(ContactListener *inListener)						{ mContactListener = inListener; }
+ 	ContactListener *			GetContactListener() const											{ return mContactListener; }
+ 
++    void SetContactImpulseListener(ContactImpulseListener *inListener) { mContactImpulseListener = inListener; }
++    ContactImpulseListener *GetContactImpulseListener() const { return mContactImpulseListener; }
++
+ 	/// Callback function to combine the restitution or friction of two bodies
+ 	/// Note that when merging manifolds (when PhysicsSettings::mUseManifoldReduction is true) you will only get a callback for the merged manifold.
+ 	/// It is not possible in that case to get all sub shape ID pairs that were colliding, you'll get the first encountered pair.
+@@ -549,6 +553,7 @@ private:
+ 
+ 	/// Listener that is notified whenever a contact point between two bodies is added/updated/removed
+ 	ContactListener *			mContactListener = nullptr;
++    ContactImpulseListener *mContactImpulseListener = nullptr;
+ 
+ 	/// Functions that are used to combine friction and restitution of 2 bodies
+ 	CombineFunction				mCombineFriction = [](const Body &inBody1, const SubShapeID &, const Body &inBody2, const SubShapeID &) { return Sqrt(inBody1.GetFriction() * inBody2.GetFriction()); };
 diff --git a/Jolt/Physics/Constraints/FixedConstraint.cpp b/Jolt/Physics/Constraints/FixedConstraint.cpp
 index b063985..5a8cc0f 100644
 --- a/Jolt/Physics/Constraints/FixedConstraint.cpp
@@ -562,6 +668,36 @@ index 89b2490..1ca9e13 100644
  	// Solve position violations
  	if (IsTranslationFullyConstrained())
  	{
+diff --git a/Jolt/Physics/Constraints/SixDOFConstraint.h b/Jolt/Physics/Constraints/SixDOFConstraint.h
+index 2ebb985..cc08e1a 100644
+--- a/Jolt/Physics/Constraints/SixDOFConstraint.h
++++ b/Jolt/Physics/Constraints/SixDOFConstraint.h
+@@ -198,6 +198,25 @@ public:
+ 	inline Vec3					GetTotalLambdaMotorTranslation() const						{ return Vec3(mMotorTranslationConstraintPart[0].GetTotalLambda(), mMotorTranslationConstraintPart[1].GetTotalLambda(), mMotorTranslationConstraintPart[2].GetTotalLambda()); }
+ 	inline Vec3					GetTotalLambdaMotorRotation() const							{ return Vec3(mMotorRotationConstraintPart[0].GetTotalLambda(), mMotorRotationConstraintPart[1].GetTotalLambda(), mMotorRotationConstraintPart[2].GetTotalLambda()); }
+ 
++	/// Actual world-space solver impulses, including motors. No work unless queried.
++	inline Vec3 GetTotalWorldSpaceLinearImpulse() const
++	{
++		const bool fixed = IsTranslationFullyConstrained();
++		Vec3 result = fixed ? mPointConstraintPart.GetTotalLambda() : Vec3::sZero();
++		for (int i = 0; i < 3; ++i)
++		{
++			float impulse = (fixed ? 0.0f : mTranslationConstraintPart[i].GetTotalLambda()) + mMotorTranslationConstraintPart[i].GetTotalLambda();
++			if (impulse != 0.0f) result += impulse * mTranslationAxis[i];
++		}
++		return result;
++	}
++	inline Vec3 GetTotalWorldSpaceAngularImpulse() const
++	{
++		Vec3 result = IsRotationFullyConstrained() ? mRotationConstraintPart.GetTotalLambda() : mSwingTwistConstraintPart.GetTotalWorldSpaceImpulse();
++		for (int i = 0; i < 3; ++i)
++			if (float impulse = mMotorRotationConstraintPart[i].GetTotalLambda(); impulse != 0.0f) result += impulse * mRotationAxis[i];
++		return result;
++	}
+ private:
+ 	// Calculate properties needed for the position constraint
+ 	inline void					GetPositionConstraintProperties(Vec3 &outR1PlusU, Vec3 &outR2, Vec3 &outU) const;
 diff --git a/Jolt/Physics/EPhysicsUpdateError.h b/Jolt/Physics/EPhysicsUpdateError.h
 index c9edd6d..a4df095 100644
 --- a/Jolt/Physics/EPhysicsUpdateError.h
@@ -575,7 +711,7 @@ index c9edd6d..a4df095 100644
  
  /// OR operator for EPhysicsUpdateError
 diff --git a/Jolt/Physics/PhysicsSystem.cpp b/Jolt/Physics/PhysicsSystem.cpp
-index de4d0ee..ca96127 100644
+index de4d0ee..1c7f20b 100644
 --- a/Jolt/Physics/PhysicsSystem.cpp
 +++ b/Jolt/Physics/PhysicsSystem.cpp
 @@ -444,6 +444,19 @@ EPhysicsUpdateError PhysicsSystem::Update(float inDeltaTime, int inCollisionStep
@@ -652,7 +788,52 @@ index de4d0ee..ca96127 100644
  
  			// If the position should be updated (or if it is delayed because of CCD)
  			bool update_position = true;
-@@ -2529,6 +2568,8 @@ void PhysicsSystem::CheckSleepAndUpdateBounds(uint32 inIslandIndex, const Physic
+@@ -2069,6 +2108,7 @@ void PhysicsSystem::JobFindCCDContacts(const PhysicsUpdateContext *ioContext, Ph
+ 			ContactManifold manifold;
+ 			manifold.mBaseOffset = shape_cast.mCenterOfMassStart.GetTranslation();
+ 			ManifoldBetweenTwoFaces(cast_shape_result.mContactPointOn1, cast_shape_result.mContactPointOn2, cast_shape_result.mPenetrationAxis, mPhysicsSettings.mManifoldTolerance, cast_shape_result.mShape1Face, cast_shape_result.mShape2Face, manifold.mRelativeContactPointsOn1, manifold.mRelativeContactPointsOn2 JPH_IF_DEBUG_RENDERER(, manifold.mBaseOffset));
++			ccd_body.mSubShapeID1 = cast_shape_result.mSubShapeID1;
+ 			manifold.mSubShapeID1 = cast_shape_result.mSubShapeID1;
+ 			manifold.mSubShapeID2 = cast_shape_result.mSubShapeID2;
+ 			manifold.mPenetrationDepth = cast_shape_result.mPenetrationDepth;
+@@ -2113,7 +2153,7 @@ void PhysicsSystem::JobFindCCDContacts(const PhysicsUpdateContext *ioContext, Ph
+ }
+ 
+ template <EMotionType Type2>
+-void PhysicsSystem::sSolveCCDContact(Body &ioBody1, float inInvM1, Mat44Arg inInvI1, Vec3Arg inR1PlusU, Body &ioBody2, Vec3Arg inR2, Vec3Arg inContactNormal, float inNormalVelocityBias, Vec3Arg inFrictionDirection, const ContactSettings &inContactSettings)
++float PhysicsSystem::sSolveCCDContact(Body &ioBody1, float inInvM1, Mat44Arg inInvI1, Vec3Arg inR1PlusU, Body &ioBody2, Vec3Arg inR2, Vec3Arg inContactNormal, float inNormalVelocityBias, Vec3Arg inFrictionDirection, const ContactSettings &inContactSettings)
+ {
+ 	MotionProperties *body_mp = ioBody1.GetMotionProperties();
+ 
+@@ -2182,6 +2222,7 @@ void PhysicsSystem::sSolveCCDContact(Body &ioBody1, float inInvM1, Mat44Arg inIn
+ 		body2_mp->SetLinearVelocityClamped(linear_velocity2);
+ 		body2_mp->SetAngularVelocityClamped(angular_velocity2);
+ 	}
++    return contact_constraint.GetTotalLambda();
+ }
+ 
+ void PhysicsSystem::JobResolveCCDContacts(PhysicsUpdateContext *ioContext, PhysicsUpdateContext::Step *ioStep)
+@@ -2300,13 +2341,17 @@ void PhysicsSystem::JobResolveCCDContacts(PhysicsUpdateContext *ioContext, Physi
+ 						Vec3 friction_direction = relative_velocity - normal_velocity * ccd_body->mContactNormal;
+ 
+ 						// Dispatch to the correct form
+-						using DispatchFunc = void (*)(Body &, float, Mat44Arg, Vec3Arg, Body &, Vec3Arg, Vec3Arg, float, Vec3Arg, const ContactSettings &);
++						using DispatchFunc = float (*)(Body &, float, Mat44Arg, Vec3Arg, Body &, Vec3Arg, Vec3Arg, float, Vec3Arg, const ContactSettings &);
+ 						static const DispatchFunc table[3] = {
+ 							sSolveCCDContact<EMotionType::Static>,
+ 							sSolveCCDContact<EMotionType::Kinematic>,
+ 							sSolveCCDContact<EMotionType::Dynamic>
+ 						};
+-						table[(int)body2.GetMotionType()](body1, inv_m1, inv_i1, r1_plus_u, body2, r2, ccd_body->mContactNormal, normal_velocity_bias, friction_direction, contact_settings);
++						const float impulse = table[(int)body2.GetMotionType()](body1, inv_m1, inv_i1, r1_plus_u, body2, r2, ccd_body->mContactNormal, normal_velocity_bias, friction_direction, contact_settings);
++                        auto *listener = mContactManager.GetContactImpulseListener();
++                        if (listener != nullptr && impulse > 0.0f && listener->WantsContactImpulse(body1, body2))
++                            listener->OnContactImpulse(body1, body2, ccd_body->mSubShapeID1, ccd_body->mSubShapeID2,
++                                ccd_body->mContactPointOn2, ccd_body->mContactPointOn2, ccd_body->mContactNormal, impulse);
+ 					}
+ 					else
+ 					{
+@@ -2529,6 +2574,8 @@ void PhysicsSystem::CheckSleepAndUpdateBounds(uint32 inIslandIndex, const Physic
  		for (const BodyID *body_id = bodies_begin; body_id < bodies_end; ++body_id)
  		{
  			Body &body = mBodyManager.GetBody(*body_id);
@@ -661,7 +842,7 @@ index de4d0ee..ca96127 100644
  
  			// Update bounding box
  			body.CalculateWorldSpaceBoundsInternal();
-@@ -2554,6 +2595,8 @@ void PhysicsSystem::CheckSleepAndUpdateBounds(uint32 inIslandIndex, const Physic
+@@ -2554,6 +2601,8 @@ void PhysicsSystem::CheckSleepAndUpdateBounds(uint32 inIslandIndex, const Physic
  		for (const BodyID *body_id = bodies_begin; body_id < bodies_end; ++body_id)
  		{
  			Body &body = mBodyManager.GetBody(*body_id);
@@ -671,10 +852,18 @@ index de4d0ee..ca96127 100644
  		}
  	}
 diff --git a/Jolt/Physics/PhysicsSystem.h b/Jolt/Physics/PhysicsSystem.h
-index b244a51..27cffee 100644
+index b244a51..d3dea5b 100644
 --- a/Jolt/Physics/PhysicsSystem.h
 +++ b/Jolt/Physics/PhysicsSystem.h
-@@ -130,6 +130,10 @@ public:
+@@ -66,6 +66,7 @@ public:
+ 	/// You can't change contact listener during PhysicsSystem::Update but it can be changed at any other time.
+ 	void						SetContactListener(ContactListener *inListener)				{ mContactManager.SetContactListener(inListener); }
+ 	ContactListener *			GetContactListener() const									{ return mContactManager.GetContactListener(); }
++    void SetContactImpulseListener(ContactImpulseListener *inListener) { mContactManager.SetContactImpulseListener(inListener); }
+ 
+ 	/// Listener that is notified whenever a contact point between a soft body and another body
+ 	void						SetSoftBodyContactListener(SoftBodyContactListener *inListener) { mSoftBodyContactListener = inListener; }
+@@ -130,6 +131,10 @@ public:
  	/// Remove constraint from the world
  	void						RemoveConstraint(Constraint *inConstraint)					{ mConstraintManager.Remove(&inConstraint, 1); }
  
@@ -685,3 +874,24 @@ index b244a51..27cffee 100644
  	/// Batch add constraints.
  	void						AddConstraints(Constraint **inConstraints, int inNumber)	{ mConstraintManager.Add(inConstraints, inNumber); }
  
+@@ -310,7 +315,7 @@ private:
+ 
+ 	/// Helper function that solves the velocity of a CCD contact
+ 	template <EMotionType Type2>
+-	static void					sSolveCCDContact(Body &ioBody1, float inInvM1, Mat44Arg inInvI1, Vec3Arg inR1PlusU, Body &ioBody2, Vec3Arg inR2, Vec3Arg inContactNormal, float inNormalVelocityBias, Vec3Arg inFrictionDirection, const ContactSettings &inContactSettings);
++	static float					sSolveCCDContact(Body &ioBody1, float inInvM1, Mat44Arg inInvI1, Vec3Arg inR1PlusU, Body &ioBody2, Vec3Arg inR2, Vec3Arg inContactNormal, float inNormalVelocityBias, Vec3Arg inFrictionDirection, const ContactSettings &inContactSettings);
+ 
+ 	/// Number of constraints to process at once in JobDetermineActiveConstraints
+ 	static constexpr int		cDetermineActiveConstraintsBatchSize = 64;
+diff --git a/Jolt/Physics/PhysicsUpdateContext.h b/Jolt/Physics/PhysicsUpdateContext.h
+index c25f6ad..6e253aa 100644
+--- a/Jolt/Physics/PhysicsUpdateContext.h
++++ b/Jolt/Physics/PhysicsUpdateContext.h
+@@ -106,6 +106,7 @@ public:
+ 			RVec3			mContactPointOn2;										///< World space contact point on body 2 of closest hit (only valid if mFractionPlusSlop < 1)
+ 			BodyID			mBodyID1;												///< Body 1 (the body that is performing collision detection)
+ 			BodyID			mBodyID2;												///< Body 2 (the body of the closest hit, only valid if mFractionPlusSlop < 1)
++            SubShapeID mSubShapeID1;
+ 			SubShapeID		mSubShapeID2;											///< Sub shape of body 2 that was hit (only valid if mFractionPlusSlop < 1)
+ 			float			mFraction = 1.0f;										///< Fraction at which the hit occurred
+ 			float			mFractionPlusSlop = 1.0f;								///< Fraction at which the hit occurred + extra delta to allow body to penetrate by mMaxPenetration

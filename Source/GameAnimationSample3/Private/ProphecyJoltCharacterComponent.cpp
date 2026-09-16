@@ -1,4 +1,7 @@
 #include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyPelvisInertia.h"
+#include "ProphecyJointDampingPolicy.h"
+#include "ProphecyLimbCollision.h"
 #include "ProphecyJoltCharacterProfiling.h"
 #include "ProphecyJoltCharacterWorldSubsystem.h"
 #include "ProphecyJoltStepTiming.h"
@@ -116,6 +119,61 @@ struct FProphecyJoltCharacterState
 void FProphecyJoltCharacterStateDeleter::operator()(FProphecyJoltCharacterState* InState) const
 {
     delete InState;
+}
+
+namespace
+{
+// Separate storage: never grow the native character allocation under Live Coding.
+struct FLowerFeedbackCapture
+{
+    const FProphecyJoltCharacterState* Binding = nullptr;
+    TArray<FName> Names;
+    TArray<int32> Bones;
+    TArray<int32> Bodies;
+    TArray<TArray<int32, TInlineAllocator<4>>> LocalChains;
+    TArray<FTransform> AuthoredWorld;
+    uint64 Revision = MAX_uint64;
+    uint64 AuthoredSerial = MAX_uint64;
+    double ElapsedSeconds = 0.0;
+};
+TMap<TWeakObjectPtr<const UProphecyJoltCharacterComponent>, FLowerFeedbackCapture> LowerFeedbackCaptures;
+
+void CaptureLowerFeedbackTargets(const UProphecyJoltCharacterComponent* Character,
+    const FProphecyJoltCharacterState& State, float DeltaSeconds)
+{
+    auto* Capture = LowerFeedbackCaptures.Find(Character);
+    if (!Capture || Capture->Binding != &State) return;
+    Capture->Revision = MAX_uint64;
+    if (Capture->AuthoredSerial != State.AuthoredPublicationSerial)
+    {
+        Capture->AuthoredSerial = State.AuthoredPublicationSerial;
+        Capture->ElapsedSeconds = 0.0;
+    }
+    Capture->ElapsedSeconds += DeltaSeconds;
+    for (int32 I = 0; I < Capture->Bones.Num(); ++I)
+    {
+        if (!State.AuthoredBodyScratch.IsValidIndex(Capture->Bodies[I])) return;
+        FTransform Target = State.AuthoredBodyScratch[Capture->Bodies[I]];
+        // Explicit callers may step less than the authored trajectory duration.
+        // Match the servo's endpoint at this completed time, including substeps.
+        const int32 Slot = State.Handles[Capture->Bodies[I]].Slot;
+        for (const auto& Trajectory : State.TargetScratch)
+            if (Trajectory.Handle.Slot == Slot && Trajectory.TrajectoryDurationSeconds > 0.f)
+            {
+                const double Alpha = FMath::Clamp(Capture->ElapsedSeconds / Trajectory.TrajectoryDurationSeconds, 0.0, 1.0);
+                Target.SetLocation(FMath::Lerp(Trajectory.StartPositionCm, Trajectory.TargetPositionCm, Alpha));
+                Target.SetRotation(FQuat::Slerp(Trajectory.StartRotation, Trajectory.TargetRotation, Alpha).GetNormalized());
+                break;
+            }
+        const auto& Chain = Capture->LocalChains[I];
+        // Helpers without a PHAT body (notably toes) inherit precisely the local
+        // pose used to compose the completed physical skeleton for this step.
+        for (int32 J = Chain.Num() - 1; J >= 0; --J)
+            Target = State.BaseLocalPose[Chain[J]] * Target;
+        Capture->AuthoredWorld[I] = Target;
+    }
+    Capture->Revision = State.Revision + 1;
+}
 }
 
 namespace
@@ -368,7 +426,12 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
         Agent->IsJoltJointLimitPredictionEnabled() && Agent->GetController() && Agent->GetController()->IsPlayerController());
     if (!Created.IsSuccess()) return Fail(OutError, Created.Message);
     Pending->bOwnsRig = true;
-    auto SolverPolicy = Owner->SetRigCCDMode(Pending->RigHandle, uint8(Agent->GetJoltCCDMode()));
+    if (Agent->Mesh && Agent->Mesh != Mesh)
+        Agent->Mesh->OnComponentHit.RemoveDynamic(Agent, &AProphecyAgent::HandleMeshHit);
+    Mesh->OnComponentHit.AddUniqueDynamic(Agent, &AProphecyAgent::HandleMeshHit);
+    auto SolverPolicy = Owner->SetRigHitEvents(Pending->RigHandle, Mesh, Agent->bGeneratePhysicalHitEvents);
+    if (SolverPolicy.IsSuccess())
+        SolverPolicy = Owner->SetRigCCDMode(Pending->RigHandle, uint8(Agent->GetJoltCCDMode()));
     if (SolverPolicy.IsSuccess())
         SolverPolicy = Owner->SetRigSolverIterations(Pending->RigHandle, Agent->JoltVelocityIterations, Agent->JoltPositionIterations);
     if (!SolverPolicy.IsSuccess())
@@ -510,6 +573,7 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
             || Names.Num() != Interpolated.Num())
             return Fail(OutError, TEXT("The manual authored pose is unavailable; the last valid Jolt packet remains published."));
     }
+    ProphecyPelvisInertia::SynchronizeJolt(Agent);
     TArray<FTransform>& NewBaseLocal = State->AuthoredLocalScratch;
     FString Error;
     {
@@ -581,9 +645,14 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     return true;
 }
 
-void UProphecyJoltCharacterComponent::PrepareCompletedPoseBatch(TConstArrayView<UProphecyJoltCharacterComponent*> Characters)
+void UProphecyJoltCharacterComponent::PrepareCompletedPoseBatch(TConstArrayView<UProphecyJoltCharacterComponent*> Characters, float DeltaSeconds)
 {
     check(IsInGameThread());
+    // Capture before any completed-pose callback can publish the NEXT target.
+    // Runs for the serial/single-character path as well; only requested lower bones.
+    for (const auto* Character : Characters)
+        if (IsValid(Character) && Character->IsJoltPhysical() && !Character->IsSteppingStopped())
+            CaptureLowerFeedbackTargets(Character, *Character->State, DeltaSeconds);
     // The coordinator supplies unique exact native characters. Small/admission paths remain serial.
     static const bool bSerialCompose = FParse::Param(FCommandLine::Get(), TEXT("ProphecyJoltSerialCompose"));
     if (Characters.Num() < 2 || bSerialCompose) return;
@@ -890,6 +959,7 @@ bool UProphecyJoltCharacterComponent::PrepareForCoordinatedWorldStep(float Delta
         && State->LastPublicationFrame != GFrameCounter && !PublishAuthoredTargets(DeltaSeconds, OutError)) return false;
     // Publication can invoke callbacks. Revalidate the live binding before reading UE constraint state.
     if (!SynchronizeAngularLimits(OutError)) return false;
+    if (!ProphecyJointDamping::Update(Agent,State->Handles[0],OutError)) return false;
     Mesh = State->Mesh.Get();
     const auto Channel = Mesh->GetCollisionObjectType();
     const auto Responses = Mesh->GetCollisionResponseToChannels();
@@ -912,8 +982,9 @@ bool UProphecyJoltCharacterComponent::PrepareForCoordinatedWorldStep(float Delta
         if (!Result.IsSuccess()) return Fail(OutError, Result.Message);
         State->LastObjectChannel = Channel;
         State->LastCollisionResponses = Responses;
+        ProphecyLimbCollision::Invalidate(Agent);
     }
-    return true;
+    return ProphecyLimbCollision::Update(Agent,State->Handles[0],OutError);
 }
 
 bool UProphecyJoltCharacterComponent::ValidateAngularLimitSource(FString& OutError) const
@@ -1192,6 +1263,7 @@ void UProphecyJoltCharacterComponent::DisablePhysicalAnimation()
 void UProphecyJoltCharacterComponent::DisablePhysicalAnimationInternal(bool bCancelEnable)
 {
     if (!IsInGameThread()) return;
+    LowerFeedbackCaptures.Remove(this);
     if (bCancelEnable)
     {
         bEnableCancelled |= bEnableInProgress || IsEnablePending();
@@ -1330,6 +1402,62 @@ bool UProphecyJoltCharacterComponent::SampleCompletedComponentPose(TConstArrayVi
     return true;
 }
 
+bool UProphecyJoltCharacterComponent::SampleCompletedLowerFeedbackPose(TConstArrayView<FName> BoneNames,
+    const FTransform& Reference, TArrayView<FTransform> OutActual, TArrayView<FTransform> OutAuthored) const
+{
+    if (!IsInGameThread() || !IsJoltPhysical() || IsSteppingStopped()
+        || BoneNames.Num() != OutActual.Num() || BoneNames.Num() != OutAuthored.Num()) return false;
+    auto& Capture = LowerFeedbackCaptures.FindOrAdd(this);
+    bool bSame = Capture.Binding == State.Get() && Capture.Names.Num() == BoneNames.Num();
+    for (int32 I = 0; bSame && I < BoneNames.Num(); ++I) bSame = Capture.Names[I] == BoneNames[I];
+    if (!bSame)
+    {
+        Capture = {};
+        Capture.Binding = State.Get();
+        Capture.Names.Append(BoneNames.GetData(), BoneNames.Num());
+        for (const FName Name : BoneNames)
+        {
+            const int32 Bone = State->SkeletonNames.IndexOfByKey(Name);
+            if (Bone == INDEX_NONE) { Capture = {}; return false; }
+            Capture.Bones.Add(Bone);
+            auto& Chain = Capture.LocalChains.AddDefaulted_GetRef();
+            int32 Ancestor = Bone;
+            int32 Body = State->BodyNames.IndexOfByKey(Name);
+            while (Body == INDEX_NONE && Ancestor != INDEX_NONE)
+            {
+                Chain.Add(Ancestor);
+                Ancestor = State->Parents[Ancestor];
+                if (Ancestor != INDEX_NONE) Body = State->BodyNames.IndexOfByKey(State->SkeletonNames[Ancestor]);
+            }
+            if (Body == INDEX_NONE) { Capture = {}; return false; }
+            Capture.Bodies.Add(Body);
+        }
+        Capture.AuthoredWorld.SetNum(BoneNames.Num());
+        return false;
+    }
+    if (Capture.Revision != State->Revision || State->Revision == 0) return false;
+    for (int32 I = 0; I < BoneNames.Num(); ++I)
+    {
+        if (!State->Completed.WorldTransforms.IsValidIndex(Capture.Bones[I])) return false;
+        OutActual[I] = State->Completed.WorldTransforms[Capture.Bones[I]].GetRelativeTransform(Reference);
+        OutAuthored[I] = Capture.AuthoredWorld[I].GetRelativeTransform(Reference);
+    }
+    return true;
+}
+
+void UProphecyJoltCharacterComponent::SetHitEventsEnabled(bool bEnabled)
+{
+    if (State && State->WorldOwner.IsValid() && State->Mesh.IsValid())
+        State->WorldOwner->SetRigHitEvents(State->RigHandle, State->Mesh.Get(), bEnabled);
+}
+
+bool UProphecyJoltCharacterComponent::GetRigIdentityBody(FProphecyJoltBodyHandle& OutHandle) const
+{
+    OutHandle={};
+    if (!IsInGameThread() || !IsJoltPhysical() || !StillOwnsRig(*State) || State->Handles.IsEmpty()) return false;
+    OutHandle=State->Handles[0];return true;
+}
+
 bool UProphecyJoltCharacterComponent::GetBodyHandle(FName BoneName, FProphecyJoltBodyHandle& OutHandle) const
 {
     OutHandle = {};
@@ -1415,6 +1543,8 @@ bool UProphecyJoltCharacterComponent::MakeHitResult(const FProphecyJoltRayHit& H
 
 void UProphecyJoltCharacterComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ProphecyLimbCollision::Remove(Cast<AProphecyAgent>(GetOwner()));
+    ProphecyJointDamping::Remove(Cast<AProphecyAgent>(GetOwner()));
     DisablePhysicalAnimation();
     Super::EndPlay(EndPlayReason);
 }

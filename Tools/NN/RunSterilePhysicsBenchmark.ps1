@@ -10,6 +10,8 @@ param(
     [switch]$ManualChaosOnly,
     [switch]$BloodValidation,
     [switch]$MovementOnly,
+    [switch]$HitEvents,
+    [double]$ContactFloorLiftCm=0.0,
     [switch]$DuringPhysics,
     [switch]$SerialCompose,
     [switch]$PClassGameThread,
@@ -75,6 +77,11 @@ if ($RigAudit) { $benchArgs+=' -PhysicsBenchRigAudit' }
 if ($ManualChaosOnly) { $benchArgs+=' -PhysicsBenchManualChaosOnly' }
 if ($BloodValidation) { $benchArgs+=' -PhysicsBenchBloodValidation' }
 if ($MovementOnly) { $benchArgs+=' -PhysicsBenchMovementOnly' }
+if ($HitEvents) { $benchArgs+=' -PhysicsBenchHitEvents' }
+if ($ContactFloorLiftCm -ne 0.0) {
+    if ($Methods -ne 'NNJoltCrowd' -or !$FloorOnly -or [double]::IsNaN($ContactFloorLiftCm) -or [double]::IsInfinity($ContactFloorLiftCm) -or $ContactFloorLiftCm -lt 0.0 -or $ContactFloorLiftCm -gt 100.0) { throw 'ContactFloorLiftCm requires NNJoltCrowd FloorOnly and finite 0..100 cm.' }
+    $benchArgs+=' -PhysicsBenchContactFloorLiftCm=' + $ContactFloorLiftCm.ToString([Globalization.CultureInfo]::InvariantCulture)
+}
 if ($DuringPhysics) { $benchArgs+=' -ProphecyJoltDuringPhysics' }
 if ($SerialCompose) { $benchArgs+=' -ProphecyJoltSerialCompose' }
 if ($PClassGameThread) { $benchArgs+=' -PhysicsBenchPClassGameThread' }

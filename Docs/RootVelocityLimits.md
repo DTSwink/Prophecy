@@ -1,0 +1,11 @@
+# Root velocity limits
+
+**Set Root Velocity Limits** configures one agent: Max Linear Speed Cm Per Second, Max Angular Speed Degrees Per Second, Enabled. Both defaults are **1,000,000**. Zero stops the corresponding motion, negative/nonfinite values reject the call without changing configuration, and Enabled=false removes it. **Get Root Velocity Limits** reads the settings. Agents without configuration bypass limiting.
+
+The linear cap applies to combined XYZ speed, and angular to absolute yaw speed, after locomotion, impulses, root-window smoothing, self-balancing and both magic sets are combined. The upright root has no pitch/roll motion. Full attacks, NN defense and the external bridge retain their existing root ownership; half attacks share locomotion limits. Explicit root placement and pelvis-bounds corrections are teleports and are not speed limited.
+
+Every adjacent future-window interval is checked before the lower and upper NNs consume it. If necessary, one linear scale and one angular scale reduce the complete window around root0. This preserves its spatial shape and constant vertical-velocity convention, while bounding every segment; a faster later segment can therefore also slow the first segment. The actual mover and recurrent-state rebase then use exactly the resulting root1. Configured agents also respect the existing NN input displacement range rather than advancing the actual root beyond its encoded prediction.
+
+Applied magic contributions use the same scales, without modifying either configured magic set or their getters. World momentum stays world-aligned. Unwrapped angular accounting prevents opposing mover/magic terms from introducing full turns when recombined. The root-velocity getter reports applied magic contributions and respects the limits. Disabling returns to the existing path; configured magic values resume normally.
+
+Implementation lives in a separate translation unit and a new weak map; existing native/UObject instance layouts are unchanged. No per-agent component, world scan or tick is added. Unconfigured agents skip through empty-map checks. Manager EndPlay removes entries. Configuration survives motion reset; the next policy step rebuilds transient applied contributions. Native check: Prophecy.Root.VelocityLimits.CombinedWindow (XYZ and angular cap, zero, preserved magic source, high defaults).

@@ -119,7 +119,8 @@ bool CaptureMesh(const FPhysicsShapeHandle& Handle, FProphecyJoltStaticMeshShape
 bool CaptureLocked(const FBodyInstance& Instance, const UBodySetup& Setup, FProphecyJoltStaticBodySnapshot& Out, FString& Error)
 {
     const FPhysicsActorHandle Actor = Instance.GetPhysicsActor();
-    if (!Actor || Instance.WeldParent || !FPhysicsInterface::IsStatic(Actor) || Instance.IsInstanceSimulatingPhysics())
+    if (!Actor || Instance.WeldParent || (!FPhysicsInterface::IsStatic(Actor)
+        && !(Out.bKinematic && FPhysicsInterface::IsKinematic(Actor))) || Instance.IsInstanceSimulatingPhysics())
         return Fail(Error, TEXT("Static capture requires one independent native static body; moving/kinematic/dynamic and welded bodies are unsupported."));
     Out.BodyOriginToWorld = Instance.GetUnrealWorldTransform_AssumesLocked(false, true);
     Out.SourceBodyScale3D = Instance.Scale3D;
@@ -254,13 +255,13 @@ bool ValidateSnapshot(const FProphecyJoltStaticBodySnapshot& Snapshot, FString& 
     return true;
 }
 
-bool CaptureStaticBody(UPrimitiveComponent& Component, int32 InstanceIndex, FProphecyJoltStaticBodySnapshot& OutSnapshot, FString& Error)
+bool CaptureStaticBody(UPrimitiveComponent& Component, int32 InstanceIndex, FProphecyJoltStaticBodySnapshot& OutSnapshot, FString& Error, bool bAllowKinematic)
 {
     OutSnapshot = {}; Error.Reset();
     if (!IsInGameThread()) return Fail(Error, TEXT("Static capture requires the game thread at a completed synchronous Chaos step."));
     UWorld* World = Component.GetWorld();
     if (!World || !World->IsGameWorld() || !Component.IsRegistered() || !Component.IsPhysicsStateCreated()
-        || Component.GetMobility() != EComponentMobility::Static || Cast<USkeletalMeshComponent>(&Component))
+        || (!bAllowKinematic && Component.GetMobility() != EComponentMobility::Static) || Cast<USkeletalMeshComponent>(&Component))
         return Fail(Error, TEXT("Capture requires a registered static-mobility Game/PIE primitive with native physics; moving/skeletal components are unsupported."));
     if (UPhysicsSettings::Get()->bTickPhysicsAsync) return Fail(Error, TEXT("Async Chaos static capture is unsupported."));
     auto* ISM = Cast<UInstancedStaticMeshComponent>(&Component);
@@ -275,6 +276,7 @@ bool CaptureStaticBody(UPrimitiveComponent& Component, int32 InstanceIndex, FPro
     if (!Instance || !Instance->IsValidBodyInstance() || Instance->WeldParent || !Setup)
         return Fail(Error, TEXT("Static component/instance has no valid independent native body/setup."));
     FProphecyJoltStaticBodySnapshot Captured;
+    Captured.bKinematic = Component.GetMobility() != EComponentMobility::Static;
     Captured.CaptureId = FGuid::NewGuid(); Captured.SourceComponent = &Component; Captured.SourceWorld = World;
     Captured.InstanceIndex = InstanceIndex; Captured.ComponentPath = Component.GetPathName();
     Captured.BodySetupPath = Setup->GetPathName(); Captured.EngineFrame = GFrameCounter;

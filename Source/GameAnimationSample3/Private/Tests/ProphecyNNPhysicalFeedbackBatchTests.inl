@@ -210,3 +210,60 @@ bool FProphecyNNPhysicalFeedbackBatchOracleTest::RunTest(const FString& Paramete
     ExecutePhysicalFeedbackBatch(*Parallel, Parallel->PhysicalFeedbackWorkItems, Empty, false);
     return Same(*this, *Legacy, *Parallel, TEXT("empty batch preserves every lane"), 4);
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyNNLowerFeedbackAlignmentTest,
+    "Prophecy.NN.PhysicalFeedback.LowerTargetAlignment",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FProphecyNNLowerFeedbackAlignmentTest::RunTest(const FString& Parameters)
+{
+    using namespace PhysicalFeedbackBatchTests;
+    auto Serial = MakeUnique<FImpl>();
+    auto Prepared = MakeUnique<FImpl>();
+    if (!Initialize(*this, *Serial, 1) || !Initialize(*this, *Prepared, 1)) return false;
+    float Authored[StateDim], Actual[StateDim], Aligned[StateDim], Original[StateDim];
+    float* Current = StateSlice(Serial->CurStateBuffer, 0);
+    FMemory::Memcpy(Original, Current, sizeof(Original));
+    FMemory::Memcpy(Authored, Current, sizeof(Authored));
+    // A completely different presentation frame/time must not count as contact.
+    for (const int32 O : { 0, 9, 25 }) WriteStateVec3(Authored, O, FVector3f(7.1f, -3.2f, .9f));
+    for (const int32 O : { 3, 12, 18, 28, 34 })
+        WriteRot6(QuatToMatrix(FQuat(FVector(1,2,3).GetSafeNormal(), 1.7)), Authored + O);
+    Authored[24] = .3f; Authored[40] = -.6f;
+    ApplyLowerPhysicalDeviation(Authored, Authored, Current, Aligned);
+    TestTrue(TEXT("Perfect follower preserves every recurrent float despite presentation movement"),
+        FMemory::Memcmp(Aligned, Original, sizeof(Original)) == 0);
+
+    FMemory::Memcpy(Actual, Authored, sizeof(Actual));
+    WriteStateVec3(Actual, 9, ReadStateVec3(Authored, 9) + FVector3f(.05f, 0, 0));
+    const FMat3f ContactRotation = QuatToMatrix(FQuat(FVector::UpVector, FMath::DegreesToRadians(20.0)));
+    WriteRot6(Multiply(MatrixFromRot6(Authored + 18), ContactRotation), Actual + 18);
+    Actual[24] += .1f;
+    ApplyLowerPhysicalDeviation(Actual, Authored, Current, Aligned);
+    TestTrue(TEXT("5 cm contact is retained independent of authored root"),
+        ReadStateVec3(Aligned, 9).Equals(ReadStateVec3(Current, 9) + FVector3f(.05f, 0, 0), 1.e-6f));
+    TestTrue(TEXT("World/component angular deviation transported onto current pose"),
+        MatrixToQuat(MatrixFromRot6(Aligned + 18)).Equals(MatrixToQuat(ContactRotation), 1.e-6));
+    TestTrue(TEXT("Toe feedback is an authored-relative deviation"), FMath::IsNearlyEqual(Aligned[24], .1f, 1.e-6f));
+    for (FImpl* Data : { Serial.Get(), Prepared.Get() })
+    {
+        for (const FName Name : { FName("pelvis"), FName("thigh_l"), FName("foot_l"), FName("ball_l"),
+            FName("thigh_r"), FName("foot_r"), FName("ball_r") })
+        {
+            auto& Tolerance = Data->Agents[0].PhysicalFeedbackTolerances.FindOrAdd(Name);
+            Tolerance.LinearCm = 2.f; Tolerance.AngularDegrees = 5.f;
+        }
+    }
+    PreparePhysicalFeedbackWork(*Prepared, 0);
+    TestTrue(TEXT("Serial aligned commit succeeds"), CommitPhysicalSampleSerial(*Serial, 0,
+        TransformSlice(Serial->PhysicalTransformBuffer, 0), Aligned));
+    TestTrue(TEXT("Prepared aligned commit succeeds"), CommitPreparedPhysicalSample(*Prepared,
+        Prepared->PhysicalFeedbackWorkItems[0], Aligned));
+    Prepared->Agents[0].bHasPhysicalSample = Prepared->PhysicalFeedbackWorkItems[0].bHasPhysicalSample;
+    TestTrue(TEXT("2 cm tolerance leaves 3 cm of a real 5 cm contact"),
+        FMath::IsNearlyEqual(ReadStateVec3(StateSlice(Serial->CurStateBuffer, 0), 9).X, .03f, 1.e-6f));
+    const FQuat Limited = MatrixToQuat(MatrixFromRot6(StateSlice(Serial->CurStateBuffer, 0) + 18));
+    TestTrue(TEXT("5 degree tolerance leaves 15 degrees of real angular contact"),
+        Limited.Equals(FQuat(FVector::UpVector, FMath::DegreesToRadians(15.0)), 1.e-5));
+    return Same(*this, *Serial, *Prepared, TEXT("aligned serial/prepared"), 0);
+}

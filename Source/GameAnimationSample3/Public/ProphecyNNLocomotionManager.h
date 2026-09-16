@@ -11,6 +11,8 @@ class UNNEModelData;
 class USceneComponent;
 class USkeletalMesh;
 class USkeletalMeshComponent;
+enum class EProphecyParryBlocker : uint8;
+struct FProphecyNNDefenseStatus;
 
 /** Read-only completed manager diagnostics; does not sample bodies or run inference. */
 struct FProphecyNNRuntimeBenchmarkStats
@@ -35,6 +37,12 @@ class GAMEANIMATIONSAMPLE3_API AProphecyNNLocomotionManager : public AActor
 
 public:
 	struct FImpl;
+	// Event-only update of a registered lane; non-reflected and not a per-frame settings lookup.
+	void CacheUpperRootRotationHorizon(const AProphecyAgent* Agent, float Horizon);
+	// Event-only debug checkpoints; native storage is separate from retained manager layouts.
+	int32 CaptureInitialAgentResetState(FString& OutError);
+	int32 RestoreInitialAgentResetState(FString& OutError);
+	void ClearInitialAgentResetState();
 
 	AProphecyNNLocomotionManager();
 	virtual ~AProphecyNNLocomotionManager() override;
@@ -247,12 +255,18 @@ public:
 	bool SetAgentNNHalfAttack(FProphecyAgentHandle Handle, bool bHalf);
 	bool SetAgentNNAttackTarget(FProphecyAgentHandle Handle, FVector TargetWorld);
 	bool GetAgentLocomotionRootWindow(FProphecyAgentHandle Handle, TArray<FTransform>& WorldRoots, TArray<float>& Times) const;
+	bool GetAgentContinuousLocomotionRootWindow(FProphecyAgentHandle Handle, TArray<FTransform>& WorldRoots, TArray<float>& Times) const;
+	bool SetAgentLocomotionRootWindowLocation(FProphecyAgentHandle Handle, FVector WorldLocation, bool bPreserveWorldPose = false);
 	UPoseableMeshComponent* SetAgentPreviousPoseDebug(FProphecyAgentHandle Handle, bool bEnabled, bool bPreferAttack);
 	void UpdatePreviousPoseDebug(bool bAttack);
 	void TraceNNHandoff();
 	bool SetAgentFootPinningDebug(FProphecyAgentHandle Handle, bool bEnabled);
 	bool GetAgentFootPinning(FProphecyAgentHandle Handle, bool bAttack, bool bFrozenStage, FProphecyFootPinningSample& Sample) const;
 	bool StopAgentNNAttack(FProphecyAgentHandle Handle);
+	bool StartAgentNNParry(FProphecyAgentHandle Handle,AProphecyAgent* Attacker,EProphecyParryBlocker Blocker,float MaximumSeconds,FString& Error);
+	bool StartAgentNNDodge(FProphecyAgentHandle Handle,AProphecyAgent* Attacker,float MaximumSeconds,FString& Error);
+	bool StopAgentNNDefense(FProphecyAgentHandle Handle);
+	bool GetAgentNNDefenseStatus(FProphecyAgentHandle Handle,FProphecyNNDefenseStatus& Status) const;
 	bool GetAgentNNAttackState(FProphecyAgentHandle Handle, FName& Attack, bool& bHalf, bool& bArmed, bool& bHit, int32& Frame) const;
 	/** Development console audit; not part of the gameplay Blueprint surface. */
 	UFUNCTION(Exec)
@@ -292,6 +306,8 @@ private:
 	void ApplyAnimationLayers(float StepSeconds);
 	bool InitializeSlashNNE();
 	void AdvanceSlashAttacks();
+	void AdvanceNNDefenses();
+	void AdvanceNNDodges();
 	void ApplySlashPose(int32 AgentIndex, TArrayView<FTransform> PreviousPose, TArrayView<FTransform> Pose);
 	void PublishAgentPose(int32 AgentIndex, double SourceTimeSeconds);
 	void UpdateVisualRoots();

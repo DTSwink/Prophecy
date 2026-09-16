@@ -428,6 +428,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	// Validate the replacement first; an invalid request must not end the old attack.
 	const bool bContinueFullHistory = Agent.Slash.bActive && Agent.Slash.bHasPose &&
 		!Agent.Slash.bHalf && !bHalf;
+	if (Agent.DefensePose) StopAgentNNDefense(Handle);
 	if (Agent.Slash.bActive) StopAgentNNAttack(Handle);
 	const FTransform StartCarrier = SlashComponentWorld(Actor, Agent.PublishedRoot, Agent.PublishedYaw);
 	auto& Slash = Agent.Slash;
@@ -618,6 +619,9 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 	{
 		const int32 Count = FMath::Min(Width, Active.Num() - Start);
 		TArray<FSlashNative::FStepSettings, TInlineAllocator<BatchSize>> Settings;
+		// Construct contexts only for active inertia; inline capacity keeps pointers
+		// stable through this call and avoids per-step heap allocation.
+		TArray<FPelvisInertiaStepContext, TInlineAllocator<BatchSize>> InertiaContexts;
 		Settings.SetNum(Width);
 		for (int32 Lane = 0; Lane < Width; ++Lane)
 		{
@@ -631,6 +635,15 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				const auto& Slash = Impl->Agents[Index].Slash;
 				auto& Option = Settings[Lane];
 				Option.FrozenPinIterations = Actor->AttackFootPinningIterations;
+				if (!Slash.bHalf && ProphecyPelvisInertia::HasTarget(Actor))
+				{
+					auto& Context=InertiaContexts.AddDefaulted_GetRef();
+					Context.Actor=Actor;
+					Context.Carrier=Slash.AnchorWorld;
+					Context.Step=1./NNUpdateHz;
+					Context.Time=double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds+Context.Step;
+					Option.PelvisInertia=&Context;
+				}
 				if (Slash.bHeadbuttPreparation && Actor->bUseGTHeadbuttPreparation && Source[270] < 0.5f)
 				{
 					Option.PreparationFrame = Slash.Frame;
@@ -783,6 +796,28 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 					if (Slash.HandClamp.bEnabled)
 						Pose[Arm.End].SetTranslation(FProphecyNNAttackHandClamp::ClampPosition(
 							Pose[Arm.End].GetTranslation(), Pose[Arm.Mid].TransformPosition(Offset), Slash.HandClamp.LeewayCm));
+				}
+			}
+		}
+		if (ProphecyHandInertia::IsActive(AgentActors[AgentIndex],Agent.PublishedWalkWeight,true))
+		{
+			const FTransform Root=HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw);
+			const FTransform PrevRoot=HandInertiaRoot(Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
+			const double Dt=1./NNUpdateHz;
+			const double Time=double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds+Dt;
+			for (int32 I=0; I<2; ++I)
+			{
+				const auto& Arm=Impl->UpperArms[I];
+				if (CorrectInertiaArm(*Impl,AgentActors[AgentIndex],I,Agent.PublishedWalkWeight,true,Time,Dt,
+					PrevRoot,Root,Slash.PreviousVisibleWorldPose[Arm.End],Carrier,Pose))
+				{
+					for (int32 Bone:{Arm.Start,Arm.Mid,Arm.End})
+					{
+						const FTransform World=Pose[Bone]*Carrier;
+						Slash.GhostPose[Bone]=Slash.bHalf ? World.GetRelativeTransform(HalfMount*Carrier)*Slash.GhostPose[0]
+							: World.GetRelativeTransform(Slash.AnchorWorld);
+					}
+					StoreInertiaArm(*Impl,I,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
 				}
 			}
 		}

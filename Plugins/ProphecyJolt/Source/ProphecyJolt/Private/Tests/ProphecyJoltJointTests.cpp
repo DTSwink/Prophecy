@@ -548,4 +548,36 @@ bool FProphecyJoltJointTransitionTest::RunTest(const FString& Parameters)
     return !HasAnyErrors();
 }
 
+#include "ProphecyJoltJointDamping.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltJointDampingTest,"Prophecy.Jolt.Joints.AngularDamping",ProphecyJolt::JointTests::Flags)
+bool FProphecyJoltJointDampingTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt;
+    using namespace ProphecyJolt::JointTests;
+    if (!RuntimeReady(*this)) return false;
+    auto Joint=MakeJoint();
+    Joint.CurrentProfile.ConeLimit.Swing1Motion=ACM_Free;
+    Joint.CurrentProfile.ConeLimit.Swing2Motion=ACM_Free;
+    Joint.CurrentProfile.TwistLimit.TwistMotion=ACM_Free;
+    FJointFixture Fixture;
+    if (!Fixture.Init(*this,Joint,FQuat(FVector::XAxisVector,.4))) return false;
+    auto& Native=const_cast<JPH::SixDOFConstraint&>(Fixture.JointConstraint());
+    TestFalse(TEXT("Default zero is a no-op"),SetJointDamping(Native,0));
+    TestTrue(TEXT("Enable native damping"),SetJointDamping(Native,6));
+    const FQuat Start=Fixture.RelativeRotation();
+    if (!Fixture.Step(*this,2)) return false;
+    TestTrue(TEXT("Damping has no angular spring attraction"),Fixture.RelativeRotation().Equals(Start,1.e-5));
+    Fixture.SetChildAngularVelocity(JPH::Vec3(4,0,0));
+    if (!Fixture.Step(*this,10)) return false;
+    const float Speed=Fixture.ChildAngularVelocity().Length();
+    TestNearlyEqual(TEXT("Native implicit relative damping rate"),Speed,4.f/FMath::Pow(1.1f,10.f),.002f);
+    TestFalse(TEXT("Same value leaves motor warm start intact"),SetJointDamping(Native,6));
+    TestTrue(TEXT("Zero disables damping"),SetJointDamping(Native,0));
+    if (!Fixture.Step(*this,5)) return false;
+    TestNearlyEqual(TEXT("No residual damping after disabling"),Fixture.ChildAngularVelocity().Length(),Speed,.002f);
+    for (int32 I=0;I<3;++I)
+        TestTrue(TEXT("Zero removes native angular motor rows"),Native.GetMotorState(JPH::SixDOFConstraintSettings::EAxis(JPH::SixDOFConstraintSettings::RotationX+I))==JPH::EMotorState::Off);
+    return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

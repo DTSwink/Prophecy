@@ -74,6 +74,7 @@ public:
         Physics.RemoveStepListener(&Servo);
         for (const JPH::BodyID ID : IDs)
         {
+            Servo.RemoveBodyFollow(ID);
             Bodies().RemoveBody(ID);
             Bodies().DestroyBody(ID);
         }
@@ -774,4 +775,59 @@ bool FProphecyJoltServoAuthoredTrajectoryTest::RunTest(const FString&)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltServoInertiaTest,
+    "Prophecy.Jolt.Servo.PelvisInertia", ProphecyJolt::VelocityServoTests::Flags)
+bool FProphecyJoltServoInertiaTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt;
+    using namespace ProphecyJolt::Conversions;
+    using namespace ProphecyJolt::VelocityServoTests;
+    if (!RuntimeReady(*this)) return false;
+    FServoFixture Fixture;
+    const JPH::RefConst<JPH::Shape> Shape=new JPH::SphereShape(.1f);
+    const FVector Velocity(20,-40,10), Spin(.1,-.2,.4);
+    TArray<FVelocityServo::FTarget> Targets;
+    for (int32 I=0; I<3; ++I)
+    {
+        const FVector Start(I*100.,0,100);
+        auto& T=Targets.AddDefaulted_GetRef();
+        T.Body=Fixture.Add(Shape.GetPtr(),FTransform(FQuat::Identity,Start));
+        T.TargetPositionCm=Start+FVector(30,0,0);
+        T.TargetRotation=FQuat(FVector::UpVector,.2);
+        Fixture.Bodies().SetLinearVelocity(T.Body,ToJoltLinearVelocity(Velocity));
+        Fixture.Bodies().SetAngularVelocity(T.Body,ToJoltAngularVelocity(Spin));
+    }
+    Fixture.Listener().SetBodyFollow(Targets[0].Body,FVector::ZeroVector,FVector::ZeroVector);
+    Fixture.Listener().SetBodyFollow(Targets[1].Body,FVector(0,0,1),FVector(1,1,0));
+    if (!Fixture.Publish(*this,Targets,.1f) || !Fixture.Step(*this,1.f/60)
+        || !Fixture.CheckSamples(*this,3)) return false;
+    const auto& Samples=Fixture.Listener().GetLastSamples();
+    TestTrue(TEXT("Zero retains COM linear velocity"),Samples[0].LinearAfterCmPerSecond.Equals(Velocity,.002));
+    TestTrue(TEXT("Zero retains world angular velocity"),Samples[0].AngularAfterRadiansPerSecond.Equals(Spin,.00002));
+    TestTrue(TEXT("Independent horizontal coast and vertical follow"),
+        Samples[1].LinearAfterCmPerSecond.Equals(FVector(20,-40,0),.002));
+    TestTrue(TEXT("Independent world yaw coast and XY follow"),
+        Samples[1].AngularAfterRadiansPerSecond.Equals(FVector(0,0,.4),.00002));
+    TestTrue(TEXT("Unconfigured body original servo"),Samples[2].LinearAfterCmPerSecond.Equals(FVector(300,0,0),.002)
+        && Samples[2].AngularAfterRadiansPerSecond.Equals(FVector(0,0,2),.00002));
+    // A flat-packet rebuild must not erase another still-live body's settings.
+    Fixture.Listener().Clear();
+    for (auto& T:Targets)
+    {
+        T.TargetPositionCm=FromJoltPosition(Fixture.Bodies().GetPosition(T.Body))+FVector(30,0,0);
+        Fixture.Bodies().SetLinearVelocity(T.Body,ToJoltLinearVelocity(Velocity));
+    }
+    Fixture.Listener().SetBodyFollow(Targets[1].Body,FVector::OneVector,FVector::OneVector);
+    if (!Fixture.Publish(*this,Targets,.1f) || !Fixture.Step(*this,1.f/60)) return false;
+    TestTrue(TEXT("Packet rebuild preserves zero follow"),
+        Fixture.Listener().GetLastSamples()[0].LinearAfterCmPerSecond.Equals(Velocity,.002));
+    TestTrue(TEXT("All one restores original servo"),
+        Fixture.Listener().GetLastSamples()[1].LinearAfterCmPerSecond.Equals(FVector(300,0,0),.002));
+    Targets[0].GravityCompensationCmPerSecondSquared=981.f;
+    Fixture.Bodies().SetLinearVelocity(Targets[0].Body,ToJoltLinearVelocity(Velocity));
+    if (!Fixture.Publish(*this,Targets,.1f) || !Fixture.Step(*this,1.f/60)) return false;
+    TestTrue(TEXT("Zero tracking retains the separate gravity compensation"),
+        Fixture.Listener().GetLastSamples()[0].LinearAfterCmPerSecond.Equals(Velocity+FVector(0,0,981./60.),.002));
+    return true;
+}
 #endif // WITH_DEV_AUTOMATION_TESTS

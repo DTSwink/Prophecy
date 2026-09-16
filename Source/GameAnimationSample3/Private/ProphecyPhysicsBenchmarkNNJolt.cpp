@@ -1,6 +1,9 @@
 #include "ProphecyPhysicsBenchmark.h"
 #include "ProphecyJoltBenchmarkChaosPause.h"
 #include "ProphecyAgent.h"
+#include "ProphecyHitEventTestSink.h"
+#include "UObject/StrongObjectPtr.h"
+#include "ProphecyJoltWorldSubsystem.h"
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyNNLocomotionManager.h"
 #include "ProphecyNNPoseTypes.h"
@@ -43,6 +46,9 @@ struct FProphecyNNJoltBenchmarkState
     TArray<FVector> InitialRoots;
     FProphecyNNRuntimeBenchmarkStats InitialStats, LastStats;
     int32 ValidatedFrames = 0, FramesWithoutNNStep = 0;
+    TStrongObjectPtr<UProphecyHitEventTestSink> HitSink;
+    int64 InitialHits = 0;
+    bool bHitEvents = false;
     int32 PhysicalFeedbackMode = 0;
     TSharedPtr<FJsonObject> OrtThreadingBeforeModels, OrtThreadingAfterModels;
 };
@@ -209,6 +215,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::PrepareNNJoltCase(FString& Error)
         Expected.Add(Agent);
         // All shells have finished BeginPlay with automatic manager startup disabled. Turning
         // collection eligibility on here does not call EnsureStandaloneNNManager or start a process.
+        Agent->SetGeneratePhysicalHitEvents(FParse::Param(FCommandLine::Get(), TEXT("PhysicsBenchHitEvents")));
         Agent->bAutoEnsureStandaloneNNManager = true;
         Agent->SetLocomotionInput(FVector(0, 1, 0), false, FVector(0, 1, 0));
         // The old isolated fixture disabled this component. Restore the current native Physical
@@ -257,6 +264,11 @@ bool UProphecyPhysicsBenchmarkSubsystem::PrepareNNJoltCase(FString& Error)
     if (!OrtBeforeModels.HasSameTypedSettings(OrtAfterModels))
     { Error = TEXT("ORT threading settings changed while creating the actual NN models."); return false; }
     auto Pending = MakeShared<FProphecyNNJoltBenchmarkState>();
+    Pending->bHitEvents = FParse::Param(FCommandLine::Get(), TEXT("PhysicsBenchHitEvents"));
+    Pending->HitSink.Reset(NewObject<UProphecyHitEventTestSink>());
+    for (USkeletalMeshComponent* Mesh : Meshes)
+        CastChecked<AProphecyAgent>(Mesh->GetOwner())->OnPhysicalHit.AddDynamic(
+            Pending->HitSink.Get(), &UProphecyHitEventTestSink::PhysicalHit);
     Pending->OrtThreadingBeforeModels = MoveTemp(OrtBeforeModels.Json);
     Pending->OrtThreadingAfterModels = MoveTemp(OrtAfterModels.Json);
     Pending->Manager = Manager;
@@ -311,12 +323,16 @@ bool UProphecyPhysicsBenchmarkSubsystem::InitializeNNJoltCase(FString& Error)
     if (!NNJoltState->InitialStats.CompletedNNSteps || NNJoltState->InitialStats.FailedPhysicalSamples)
     { Error = TEXT("Actual NN warmup did not complete real inference and successful physical feedback."); return false; }
     NNJoltState->LastStats = NNJoltState->InitialStats;
+    NNJoltState->InitialHits = NNJoltState->HitSink->PhysicalHits;
     for (int32 Lane = 0; Lane < Count; ++Lane)
     {
         if (!NN::ValidateLane(*NNJoltState, Lane, false, Error)) return false;
         NNJoltState->InitialRoots[Lane] = NNJoltState->Agents[Lane]->GetRootLowPoint();
     }
     if (!InitializeMultiJoltCase(Error)) return false;
+    for (const auto& Agent : NNJoltState->Agents)
+        if (Agent->bGeneratePhysicalHitEvents != NNJoltState->bHitEvents)
+        { Error = TEXT("Benchmark Agent hit opt-in was changed during setup."); return false; }
     if (!ProphecyJolt::BenchmarkChaosPause::Begin(*this, *GetWorld(), Actors, Error)) return false;
     Before->SetObjectField(TEXT("paused_chaos_diagnostic"), ProphecyJolt::BenchmarkChaosPause::ToJson());
     Before->SetObjectField(TEXT("actual_nn_initial"), NN::StatsJson(NNJoltState->InitialStats));
@@ -418,6 +434,17 @@ bool UProphecyPhysicsBenchmarkSubsystem::SaveNNJoltCase(TSharedPtr<FJsonObject> 
     { Error = TEXT("Actual NN case has incomplete 30 Hz model work."); return false; }
     auto Summary = MakeShared<FJsonObject>();
     Summary->SetBoolField(TEXT("success"), false);
+    const int64 DeliveredHits = NNJoltState->HitSink->PhysicalHits - NNJoltState->InitialHits;
+    Summary->SetBoolField(TEXT("hit_events_enabled"), NNJoltState->bHitEvents);
+    Summary->SetNumberField(TEXT("physical_hit_delegates_delivered"), double(DeliveredHits));
+    Summary->SetNumberField(TEXT("physical_hits_per_frame"), double(DeliveredHits) / Samples);
+    if ((NNJoltState->bHitEvents ? DeliveredHits <= 0 : DeliveredHits != 0) || !NNJoltState->HitSink->bOnlyGameThread)
+    {
+        Error = FString::Printf(TEXT("Hit-event benchmark delivery mismatch: enabled=%d, measured Agent hits=%lld, total Agent hits=%lld, native dispatched=%llu, GT=%d."),
+            NNJoltState->bHitEvents, DeliveredHits, NNJoltState->HitSink->PhysicalHits,
+            GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>()->GetDeliveredHitEventCount(), NNJoltState->HitSink->bOnlyGameThread);
+        return false;
+    }
     Summary->SetNumberField(TEXT("completed_nn_steps"), double(NNSteps));
     Summary->SetNumberField(TEXT("physical_feedback_mode"), End.PhysicalFeedbackExecutionMode);
     Summary->SetNumberField(TEXT("prepared_physical_samples"), double(End.PreparedPhysicalSamples - Start.PreparedPhysicalSamples));

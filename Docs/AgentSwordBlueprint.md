@@ -2,6 +2,14 @@
 
 Runtime sword controls for the current manual agents, with Chaos and Jolt ownership.
 
+## Right Shift drop freeze correction (2026-09-15)
+
+The automatic mesh receiver introduced a deterministic conflict during native sword handoff. `Drop()` staged release velocity on `UProphecyPhysicsStaticMeshComponent` before reserving its managed Jolt adapter. The virtual velocity setter entered the generic automatic importer, which claimed/froze that same source. The sword controller's subsequent admission then conflicted; restoring the held source invalidated the other adapter and stopped shared physics. Key input runs in the world-tick admission path, unlike the earlier isolated direct-drop check.
+
+Native sword capture/handoff velocity writes now explicitly call `UPrimitiveComponent`, leaving admission to the sword controller. Blueprint velocity nodes retain their normal Jolt dispatch. Generic library/scene admission also respects pending managed ownership; direct duplicate adapters reject a claimed source before mutation. The shared-world binding validation remains enabled.
+
+Verification: Live Coding compile/patch succeeded. `Prophecy.Jolt.SceneCollision.PendingManagedMesh` passed the queued-owner regression, but that test alone missed the virtual-setter problem. The final `Saved/Diagnostics/TestSwordDropKey.py` test starts the unchanged current scene and injects Right Shift through `PlayerController::InputKey`, invoking the existing Blueprint key binding. The sword was released with exactly one active dynamic Jolt adapter and zero pending adapters; the shared world advanced from step 37 to 82 without errors/stopping. Report: `Saved/Diagnostics/SwordDropKey/PIE.json`. The development-only `Prophecy.Sword.DebugDropKey press|release` command supports this input-path test with no tick work. No Blueprint/map edits or saves and no editor restart were required.
+
 All nodes take the **Prophecy Agent** as Target:
 
 - **Equip Sword** (`Simulated = true`): spawns the existing `/Game/_mygame/sword/A_Sword` Blueprint and holds it on `hand_r` of `Get Pose Reference Mesh` (the visible PhysicalMesh for manual agents).

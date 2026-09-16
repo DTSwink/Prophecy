@@ -39,6 +39,7 @@ public:
 		FVector2f Target, float Duration);
 	void Cancel(AProphecyAgent& Agent, FName Bone, EProphecyPhysicalBlend Kind);
 	void RemoveAgent(AProphecyAgent& Agent);
+	void MoveBlendsToContext(AProphecyAgent& Agent);
 
 private:
 	friend class FProphecyPhysicalBlendsTest;

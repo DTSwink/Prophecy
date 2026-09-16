@@ -1,5 +1,7 @@
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyPhysicsStaticMeshComponent.h"
+#include "ProphecyJoltStaticMeshLibrary.h"
+#include "ProphecyJoltPhysicsCommand.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "ProphecyJoltCharacterWorldSubsystem.h"
@@ -565,6 +567,90 @@ bool FProphecyJoltCharacterChannelsTest::RunTest(const FString&)
     TestFalse(TEXT("Explicit Kinematic does not restore Chaos Sim"), Mesh->IsAnySimulatingPhysics());
     TestTrue(TEXT("Mode changes retain backend selection"), Agent->IsJoltPhysicalAnimationSelected());
     Agent->DisableJoltPhysicalAnimation();
+    return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltAddedStaticMeshTest,
+    "Prophecy.Jolt.BodyComponent.AddedStaticMeshLaunch",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyJoltAddedStaticMeshTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::BodyComponentTests;
+    FWorldFixture Fixture;
+    Fixture.World->InitializeActorsForPlay(FURL());
+    auto* World = Fixture.World->GetSubsystem<UProphecyJoltWorldSubsystem>();
+    FProphecyJoltWorldSettings Settings;
+    Settings.GravityCmPerSecondSquared = FVector::ZeroVector;
+    if (!TestTrue(TEXT("Initialize shared world"), World->InitializeSimulation(Settings).IsSuccess())) return false;
+    auto* Actor = Fixture.World->SpawnActor<AActor>();
+    auto* Root = NewObject<USceneComponent>(Actor);
+    Actor->AddInstanceComponent(Root); Actor->SetRootComponent(Root); Root->RegisterComponent();
+    Actor->DispatchBeginPlay();
+    const FTransform OriginalRoot = Root->GetComponentTransform();
+    auto* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+    UStaticMeshComponent* Meshes[2];
+    UProphecyJoltBodyComponent* Adapters[2];
+    FProphecyJoltBodyHandle Handles[2];
+    FString Error;
+    for (int32 I=0; I<2; ++I)
+    {
+        auto* Mesh = Meshes[I] = I == 0 ? NewObject<UStaticMeshComponent>(Actor)
+            : NewObject<UProphecyPhysicsStaticMeshComponent>(Actor);
+        Actor->AddInstanceComponent(Mesh); Mesh->SetupAttachment(Root);
+        Mesh->SetStaticMesh(Cube); Mesh->SetMobility(EComponentMobility::Movable);
+        Mesh->SetRelativeScale3D(FVector(.1)); Mesh->SetCollisionProfileName(TEXT("PhysicsActor"));
+        Mesh->SetEnableGravity(false); Mesh->SetLinearDamping(0); Mesh->SetAngularDamping(0);
+        Mesh->RegisterComponent(); Mesh->SetSimulatePhysics(true);
+        Mesh->SetMassOverrideInKg(NAME_None, 2, true);
+        Mesh->SetWorldLocation(FVector(-100,I*150,0));
+        Mesh->SetPhysicsLinearVelocity(FVector(10000,0,0)); Mesh->SetUseCCD(true);
+        TestNull(TEXT("UE simulation detaches the added component"), Mesh->GetAttachParent());
+        // Force the second launch through the same closed-admission branch used during actor Tick.
+        Fixture.World->bInTick = I == 1;
+        const bool bEnabled = UProphecyJoltStaticMeshLibrary::EnableJoltStaticMeshPhysics(Mesh,Error);
+        Fixture.World->bInTick = false;
+        if (!TestTrue(TEXT("Transfer configured launch mesh"), bEnabled))
+        { AddError(Error); return false; }
+        if (I == 1)
+        {
+            TestFalse(TEXT("Queued projectile cannot advance in Chaos"), Mesh->IsSimulatingPhysics());
+            TestFalse(TEXT("Queued projectile has no premature Jolt body"), UProphecyJoltStaticMeshLibrary::IsJoltStaticMeshPhysicsEnabled(Mesh));
+            FWorldDelegates::OnWorldTickStart.Broadcast(Fixture.World,LEVELTICK_All,1.f/60);
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(Fixture.World,LEVELTICK_All,1.f/60);
+            FWorldDelegates::OnWorldTickEnd.Broadcast(Fixture.World,LEVELTICK_All,1.f/60);
+        }
+        TInlineComponentArray<UProphecyJoltBodyComponent*> Found(Actor);
+        Adapters[I]=nullptr;
+        for (auto* Candidate : Found) if (Candidate->GetSourceComponent()==Mesh) Adapters[I]=Candidate;
+        if (!TestNotNull(TEXT("One adapter for this exact component"),Adapters[I])) return false;
+        Adapters[I]->bAutomaticStep=false; Adapters[I]->GetBodyHandle(Handles[I]);
+        FProphecyJoltBodyState State; Adapters[I]->GetBodyState(State);
+        TestNearlyEqual(TEXT("Launch velocity preserved"),State.CenterOfMassVelocityCmPerSecond,FVector(10000,0,0),1.e-3f);
+        TestFalse(TEXT("Chaos no longer simulates the cube"),Mesh->IsSimulatingPhysics());
+        TestTrue(TEXT("Original scale preserved"),Mesh->GetComponentScale().Equals(FVector(.1)));
+        TestTrue(TEXT("Repeated enable is idempotent"),UProphecyJoltStaticMeshLibrary::EnableJoltStaticMeshPhysics(Mesh,Error));
+    }
+    // The second adapter on one actor must receive standard commands, not the first one.
+    Meshes[1]->AddImpulse(FVector(0,4,0),NAME_None,false);
+    FProphecyJoltBodyState First, Second;
+    Adapters[0]->GetBodyState(First); Adapters[1]->GetBodyState(Second);
+    TestNearlyEqual(TEXT("Configured 2kg mass gives 2cm/s for impulse4"),Second.CenterOfMassVelocityCmPerSecond.Y,2.0,1.e-4);
+    TestNearlyEqual(TEXT("Other component velocity unchanged"),First.CenterOfMassVelocityCmPerSecond.Y,0.0,1.e-4);
+    FProphecyJoltFixtureBodySettings Target;
+    Target.PositionCm=FVector(0,75,0); Target.MassKg=10000; Target.bAllowSleeping=false;
+    FProphecyJoltBodyHandle TargetHandle;
+    if (!TestTrue(TEXT("Create thin dynamic Jolt target"),World->CreateBox(FVector(1,200,100),0,Target,TargetHandle).IsSuccess())) return false;
+    if (!TestTrue(TEXT("Advance launch through shared coordinator"),Adapters[0]->StepAndPublish(1.f/60,Error)))
+    { AddError(Error); return false; }
+    FProphecyJoltBodyState TargetState; World->ReadBody(TargetHandle,TargetState);
+    TestTrue(TEXT("CCD prevents 10000cm/s launch crossing thin target"),Meshes[0]->GetComponentLocation().X<0 && Meshes[1]->GetComponentLocation().X<0);
+    TestTrue(TEXT("Projectile contact transfers momentum to Jolt target"),TargetState.CenterOfMassVelocityCmPerSecond.X>0);
+    TestTrue(TEXT("Pawn root stays unchanged"),Actor->GetRootComponent()==Root && Root->GetComponentTransform().Equals(OriginalRoot));
+    Meshes[0]->DestroyComponent();
+    TestFalse(TEXT("Destroy Component retires only its native body"),World->OwnsBody(Handles[0]));
+    TestTrue(TEXT("Second cube survives first cube destruction"),World->OwnsBody(Handles[1]));
+    UProphecyJoltStaticMeshLibrary::DisableJoltStaticMeshPhysics(Meshes[1]);
+    TestFalse(TEXT("Explicit disable retires remaining native body"),World->OwnsBody(Handles[1]));
+    TestFalse(TEXT("Disable does not restart Chaos"),Meshes[1]->IsSimulatingPhysics());
     return !HasAnyErrors();
 }
 #endif

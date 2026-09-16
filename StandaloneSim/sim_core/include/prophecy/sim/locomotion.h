@@ -64,14 +64,33 @@ struct LocomotionTarget {
 
 using FutureRootWindow = std::array<RootTransform, kFutureRootWindow>;
 
+// Optional ground-plane balance controller. Targets use the mover's world/metre frame.
+struct RootBalanceSpring {
+    Vec2 target{};
+    double speed_threshold = 0.6;
+    double input_threshold = 0.05;
+    double frequency_hz = 2.0;
+    double damping_ratio = 1.0;
+    double maximum_speed = 0.3;
+    double tolerance = 0.0;
+};
+bool IsRootBalanceActive(const LocomotionState& state, const LocomotionIntent& intent,
+    const RootBalanceSpring& spring) noexcept;
+
 double SignedAngleDelta(double start, double end, double preferred = 0.0) noexcept;
+// Changes yaw momentum and its stopping target together. Caps per-step rotation
+// below pi so the NN's orientation-pair window cannot reverse the impulse.
+bool AddRootYawImpulse(LocomotionState& state, LocomotionIntent& intent,
+    double delta_yaw_rate, double dt) noexcept;
 Vec2 DirectionFromAngle(double angle) noexcept;
 double DirectionalSpeedCap(LocomotionMode mode, double root_relative_direction_radians) noexcept;
 void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, double dt) noexcept;
 void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, double dt,
-    LocomotionTarget* out_target, bool allow_yaw_momentum = false) noexcept;
+    LocomotionTarget* out_target, bool allow_yaw_momentum = false,
+    const RootBalanceSpring* balance = nullptr) noexcept;
 FutureRootWindow PredictFutureRoots(const LocomotionState& state,
-    const LocomotionIntent& intent, double dt, bool allow_yaw_momentum = false) noexcept;
+    const LocomotionIntent& intent, double dt, bool allow_yaw_momentum = false,
+    const RootBalanceSpring* balance = nullptr) noexcept;
 const char* ToString(LocomotionMode mode) noexcept;
 const char* ToString(LocomotionResponse response) noexcept;
 

@@ -16,6 +16,8 @@ public:
 		int32 PreparationFrame = -1;
 		float PreparationWeight = 1;
 		const FPreparationPose* EntryPose = nullptr;
+		// Transient per-call context; no persistent native model layout change.
+		const FPelvisInertiaStepContext* PelvisInertia = nullptr;
 	};
 	int32 InputBatchSize = 1;
 	bool Initialize(const FString& Directory, const TSharedPtr<FJsonObject>& Contract, bool bGpu = false, const FString& AuditGeometryPath = FString());
@@ -74,7 +76,7 @@ private:
 	float Lowest(int32 Leg, const FVector3f& P, const FMat3f& R, float Toe) const;
 	void Pin(float* Candidate, const float* Current, const float* Pins, int32 Steps) const;
 	void FrozenUpper(const float* Lower, FPose& Pose, float* Upper) const;
-	void SolveLimb(FPose& Pose, const FLimb& Limb, const FVector3f* Offsets, const float* State) const;
+	void SolveLimb(FPose& Pose, const FLimb& Limb, const FVector3f* Offsets, const float* State, bool bSignedHinge = false) const;
 	void RawUpper(const float* Lower, const float* Upper, FPose& Pose) const;
 	void Finish(FWork& W, const float* State, const float* NeuralUpper, float* Out, const FStepSettings* Settings) const;
 };

@@ -219,15 +219,29 @@ Vec2 Rotate(Vec2 value, double angle) noexcept {
     return {cosine * value.x + sine * value.z, -sine * value.x + cosine * value.z};
 }
 
+double YawStoppingTravel(double rate, double brake_step, double dt) noexcept {
+    if (brake_step <= 0.0) return 0.0;
+    const double steps = std::max(0.0, std::ceil(std::abs(rate) / brake_step) - 1.0);
+    return std::copysign(dt * steps * (std::abs(rate) - 0.5 * brake_step * (steps + 1.0)), rate);
+}
+
 double MoveYawMotor(double previous, double current, double target,
-    double preferred_delta, double dt, bool allow_momentum) noexcept {
-    const double error = SignedAngleDelta(current, target, preferred_delta);
+    double preferred_delta, double dt, bool allow_momentum, double turn_scale) noexcept {
+    const double error = allow_momentum ? target - current : SignedAngleDelta(current, target, preferred_delta);
     if (!allow_momentum && std::abs(error) < 1.0e-10) return target;
-    const double current_rate = SignedAngleDelta(previous, current) / std::max(1.0e-8, dt);
+    const double current_rate = (allow_momentum ? current - previous : SignedAngleDelta(previous, current)) / std::max(1.0e-8, dt);
     // Settle only when the remaining motion can be stopped within this step.
     // Without this, a discrete acceleration-limited motor limit-cycles around
     // zero error; unlike the legacy unconditional clamp, large impulses survive.
     const double stop_rate = kYawMotorBrakeDegS2 * kDegreesToRadians * dt;
+    if (allow_momentum && turn_scale > 0.0 &&
+        std::abs(error - YawStoppingTravel(current_rate, stop_rate * turn_scale, dt)) < 1.e-7) {
+        // An impulse selected this exact discrete stopping heading. Brake toward
+        // it directly; the ordinary pursuit motor would overshoot and spring back.
+        const double next_rate = MoveToward(current_rate, 0.0, stop_rate * turn_scale);
+        // Caller blends the motor correction by turn_scale.
+        return current + (current_rate + (next_rate - current_rate) / turn_scale) * dt;
+    }
     if (allow_momentum && std::abs(current_rate) <= stop_rate &&
         std::abs(error) <= 0.5 * stop_rate * dt) return target;
     const double sign = error >= 0.0 ? 1.0 : -1.0;
@@ -426,8 +440,32 @@ void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, doub
     StepLocomotion(state, intent, dt, nullptr);
 }
 
+bool IsRootBalanceActive(const LocomotionState& state, const LocomotionIntent& intent,
+    const RootBalanceSpring& spring) noexcept {
+    // Intent rejects first; neither gate requires square roots or foot sampling.
+    return std::clamp(intent.speed_amplitude, 0.0, 1.0) <= spring.input_threshold &&
+        state.velocity.x * state.velocity.x + state.velocity.z * state.velocity.z <=
+            spring.speed_threshold * spring.speed_threshold;
+}
+
+bool AddRootYawImpulse(LocomotionState& state, LocomotionIntent& intent,
+    double delta_yaw_rate, double dt) noexcept {
+    if (!std::isfinite(delta_yaw_rate) || !std::isfinite(dt) || dt <= 0.0) return false;
+    if (delta_yaw_rate == 0.0) return true;
+    const double limit = (kPi - 1.0e-3) / dt;
+    const double old_rate = (state.yaw_radians - state.previous_yaw_radians) / dt;
+    const double rate = std::clamp(old_rate + delta_yaw_rate, -limit, limit);
+    const double brake_step = kYawMotorBrakeDegS2 * kDegreesToRadians *
+        std::clamp(intent.turn_scale, 0.0, 1.0) * dt;
+    // Same semi-implicit braking as the mover, summed without a second timeline.
+    const double travel = YawStoppingTravel(rate, brake_step, dt);
+    state.previous_yaw_radians = state.yaw_radians - rate * dt;
+    intent.orientation_yaw_radians = state.yaw_radians + travel;
+    return true;
+}
+
 void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, double dt,
-    LocomotionTarget* out_target, bool allow_yaw_momentum) noexcept {
+    LocomotionTarget* out_target, bool allow_yaw_momentum, const RootBalanceSpring* balance) noexcept {
     if (dt <= 0.0) return;
     const double amplitude = std::clamp(intent.speed_amplitude, 0.0, 1.0);
     const double speed_scale = std::clamp(intent.speed_scale, 0.0, 1.0);
@@ -439,17 +477,39 @@ void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, doub
     const double preferred_yaw = SignedAngleDelta(state.yaw_radians, intent.orientation_yaw_radians);
     const double yaw_error = SignedAngleDelta(state.yaw_radians, intent.orientation_yaw_radians, preferred_yaw);
     const double full_speed_yaw = MoveYawMotor(state.previous_yaw_radians, state.yaw_radians,
-        intent.orientation_yaw_radians, preferred_yaw, dt, allow_yaw_momentum);
+        intent.orientation_yaw_radians, preferred_yaw, dt, allow_yaw_momentum, turn_scale);
     // External angular momentum is not a steering command. Zero turn strength
     // removes the motor's correction, not the already imparted angular velocity.
     const double inertial_yaw = allow_yaw_momentum
-        ? state.yaw_radians + SignedAngleDelta(state.previous_yaw_radians, state.yaw_radians)
+        ? state.yaw_radians + (state.yaw_radians - state.previous_yaw_radians)
         : state.yaw_radians;
-    const double new_yaw = inertial_yaw + turn_scale *
-        SignedAngleDelta(inertial_yaw, full_speed_yaw, preferred_yaw);
+    const double new_yaw = inertial_yaw + turn_scale * (allow_yaw_momentum
+        ? full_speed_yaw - inertial_yaw : SignedAngleDelta(inertial_yaw, full_speed_yaw, preferred_yaw));
 
     LocomotionResponse response = LocomotionResponse::Normal;
-    if (intent.mode == LocomotionMode::Run) {
+    if (balance && IsRootBalanceActive(state, intent, *balance)) {
+        Vec2 error = Subtract(balance->target, state.position);
+        const double distance = Length(error);
+        // Zero preserves the original point spring, including damping at its centre.
+        // Positive tolerance exerts no spring, damping or speed-cap correction inside.
+        if (balance->tolerance == 0.0 || distance > balance->tolerance) {
+            if (balance->tolerance > 0.0) error = Scale(error, (distance - balance->tolerance) / distance);
+            // Implicit Euler solves x'=v, v'=omega^2(target-x)-2*zeta*omega*v.
+            // Stable for stiff settings without substeps. Replace only the planar motor;
+            // ordinary yaw steering/momentum and downstream collision remain unchanged.
+            const double omega = kTau * balance->frequency_hz;
+            const double stiffness_dt = omega * omega * dt;
+            const double denominator = 1.0 + 2.0 * balance->damping_ratio * omega * dt + stiffness_dt * dt;
+            state.velocity = Scale(Add(state.velocity, Scale(error, stiffness_dt)), 1.0 / denominator);
+            // Keep the spring's own correction within its speed gate so it cannot toggle
+            // itself off repeatedly. External impulses above the gate still disengage it.
+            // Leave numerical headroom at the boundary after vector normalization.
+            const double cap = std::min(balance->maximum_speed, balance->speed_threshold * (1.0 - 1e-9));
+            const double speed = Length(state.velocity);
+            if (speed > cap && speed > 0.0) state.velocity = Scale(state.velocity, cap / speed);
+        }
+        target_velocity = state.velocity;
+    } else if (intent.mode == LocomotionMode::Run) {
         response = ClassifyRunResponse(state, target_velocity, intent.orientation_yaw_radians, yaw_error, dt);
         if (response == LocomotionResponse::Turn45 || response == LocomotionResponse::Turn90 ||
             response == LocomotionResponse::Turn135 || response == LocomotionResponse::Turn180) {
@@ -489,11 +549,11 @@ void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, doub
 }
 
 FutureRootWindow PredictFutureRoots(const LocomotionState& state,
-    const LocomotionIntent& intent, double dt, bool allow_yaw_momentum) noexcept {
+    const LocomotionIntent& intent, double dt, bool allow_yaw_momentum, const RootBalanceSpring* balance) noexcept {
     FutureRootWindow future{};
     LocomotionState projected = state;
     for (RootTransform& root : future) {
-        StepLocomotion(projected, intent, dt, nullptr, allow_yaw_momentum);
+        StepLocomotion(projected, intent, dt, nullptr, allow_yaw_momentum, balance);
         root.position = projected.position;
         root.yaw_radians = projected.yaw_radians;
     }

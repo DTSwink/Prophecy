@@ -40,6 +40,10 @@ struct FProphecyJoltBodyComponentState
     bool bReceiverChanged = false;
     bool bRestoreOriginalSimulation = false;
     bool bAttachedCollider = false;
+    bool bWasActorRoot = true;
+    bool bSimpleKinematic = false;
+    bool bHitEvents = false;
+    FDelegateHandle TransformChanged;
     TWeakObjectPtr<USceneComponent> FollowParent;
     FName FollowSocket;
     FTransform FollowRelative;
@@ -49,6 +53,32 @@ void FProphecyJoltBodyComponentStateDeleter::operator()(FProphecyJoltBodyCompone
 
 namespace
 {
+struct FPendingJoltLaunch
+{
+    FProphecyJoltBodySnapshot Snapshot;
+    FProphecyJoltPreparedBody Prepared;
+    ECollisionEnabled::Type Collision;
+    FVector ComponentVelocity;
+};
+// Only queued launches have entries; no lookup in the shared simulation loop.
+TMap<TWeakObjectPtr<UProphecyJoltBodyComponent>, TSharedPtr<FPendingJoltLaunch>> PendingJoltLaunches;
+void RestorePendingLaunch(const FPendingJoltLaunch& Launch, bool bSimulate)
+{
+    auto* Source = Launch.Snapshot.SourceComponent.Get();
+    if (!IsValid(Source) || Source->IsBeingDestroyed() || !Source->IsRegistered()
+        || !IsValid(Source->GetOwner()) || Source->GetOwner()->IsActorBeingDestroyed()) return;
+    Source->SetCollisionEnabled(Launch.Collision);
+    if (!bSimulate || !IsValid(Source) || Source->IsBeingDestroyed()) return;
+    Source->SetWorldTransform(Launch.Snapshot.ComponentToWorld, false, nullptr, ETeleportType::TeleportPhysics);
+    Source->SetSimulatePhysics(true);
+    if (auto* Body = Source->GetBodyInstance(NAME_None, false); Body && Body->IsValidBodyInstance())
+    {
+        Body->SetLinearVelocity(Launch.Snapshot.Body.CenterOfMassVelocityCmPerSecond, false, false);
+        Body->SetAngularVelocityInRadians(Launch.Snapshot.Body.AngularVelocityRadiansPerSecond, false, false);
+    }
+    Source->ComponentVelocity = Launch.ComponentVelocity;
+}
+
 bool SameBody(const FProphecyJoltBodyHandle& A, const FProphecyJoltBodyHandle& B)
 {
     return A.WorldLifetime == B.WorldLifetime && A.Slot == B.Slot && A.Generation == B.Generation;
@@ -58,9 +88,10 @@ bool SourceIsIntact(const FProphecyJoltBodyComponentState& Binding)
 {
     UPrimitiveComponent* Source = Binding.Snapshot.SourceComponent.Get();
     AActor* Actor = Binding.Actor.Get();
-    if (!Source || !Actor || Actor->IsActorBeingDestroyed() || !Source->IsRegistered()
-        || Source->GetOwner() != Actor || Actor->GetRootComponent() != Source
-        || (Source->GetAttachParent() && (!Binding.bAttachedCollider || Source->GetAttachParent() != Binding.FollowParent.Get()))
+    if (!Source || Source->IsBeingDestroyed() || !Actor || Actor->IsActorBeingDestroyed() || !Source->IsRegistered()
+        || Source->GetOwner() != Actor || (Actor->GetRootComponent() == Source) != Binding.bWasActorRoot
+        || (Source->GetAttachParent() && !Binding.bSimpleKinematic
+            && (!Binding.bAttachedCollider || Source->GetAttachParent() != Binding.FollowParent.Get()))
         || Source->GetWorld() != Binding.Snapshot.SourceWorld.Get() || !Source->IsPhysicsStateCreated()) return false;
     FBodyInstance* Instance = Source->GetBodyInstance(NAME_None, false);
     if (!Instance || Instance->WeldParent || !Instance->IsValidBodyInstance()
@@ -75,10 +106,9 @@ bool CanEnableSource(const UProphecyJoltBodyComponent& Component, UPrimitiveComp
     if (!IsValid(&Component) || !Component.IsRegistered() || !IsValid(Component.GetOwner())
         || Component.GetOwner()->IsActorBeingDestroyed() || !IsValid(&Source) || !Source.IsRegistered()
         || Source.GetOwner() != Component.GetOwner() || Source.GetWorld() != Component.GetWorld()
-        || Component.GetOwner()->GetRootComponent() != &Source || Source.GetAttachParent()
         || Source.Mobility != EComponentMobility::Movable)
     {
-        Error = TEXT("A standalone Jolt body requires this actor's registered, detached, movable primitive root.");
+        Error = TEXT("A standalone Jolt body requires this actor's registered, movable primitive component.");
         return false;
     }
     return true;
@@ -111,6 +141,10 @@ bool UProphecyJoltBodyComponent::EnableBody(UPrimitiveComponent& Source, FString
         ? true : Fail(OutError, TEXT("Disable the existing standalone binding before selecting another component."));
     if (IsEnablePending()) return PendingSource.Get() == &Source
         ? true : Fail(OutError, TEXT("A different standalone source already awaits admission."));
+    TInlineComponentArray<UProphecyJoltBodyComponent*> Siblings(GetOwner());
+    for (const auto* Other : Siblings)
+        if (Other != this && Other->GetSourceComponent() == &Source && (Other->IsJoltBody() || Other->IsEnablePending()))
+            return Fail(OutError, TEXT("This source already has an active or queued Jolt body owner."));
     if (!CanEnableSource(*this, Source, OutError)) return Fail(OutError, OutError);
     UProphecyJoltCharacterWorldSubsystem* Coordinator = GetWorld()
         ? GetWorld()->GetSubsystem<UProphecyJoltCharacterWorldSubsystem>() : nullptr;
@@ -133,6 +167,29 @@ bool UProphecyJoltBodyComponent::EnableBody(UPrimitiveComponent& Source, FString
     return EnableBodyNow(Source, OutError);
 }
 
+bool UProphecyJoltBodyComponent::FreezePendingLaunch(UPrimitiveComponent& Source, FString& OutError)
+{
+    if (!IsInGameThread() || !IsEnablePending() || PendingSource.Get() != &Source || bEnableInProgress)
+        return Fail(OutError, TEXT("Launch preservation requires this component's queued admission."));
+    if (PendingJoltLaunches.Contains(this)) return true;
+    auto Launch = MakeShared<FPendingJoltLaunch>();
+    if (!ProphecyJolt::Body::CaptureLiveBody(Source, Launch->Snapshot, OutError)
+        || !Launch->Prepared.Build(Launch->Snapshot, OutError)) return Fail(OutError, OutError);
+    Launch->Collision = Source.GetCollisionEnabled();
+    Launch->ComponentVelocity = Source.ComponentVelocity;
+    PendingJoltLaunches.Add(this, Launch);
+    TGuardValue<bool> Guard(bEnableInProgress, true);
+    // Authored simulated components can retain their SCS parent at startup. Match
+    // SetSimulatePhysics(true): independent dynamics leave the attachment hierarchy.
+    // Capture/shape validation has already rejected genuinely welded bodies.
+    Source.DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+    if (!IsEnablePending() || bEnableCancelled || !IsValid(&Source) || Source.IsBeingDestroyed()) return false;
+    Source.SetSimulatePhysics(false);
+    if (!IsEnablePending() || bEnableCancelled || !IsValid(&Source) || Source.IsBeingDestroyed()) return false;
+    Source.SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    return IsEnablePending() && !bEnableCancelled && IsValid(&Source) && !Source.IsBeingDestroyed();
+}
+
 void UProphecyJoltBodyComponent::CompleteDeferredEnable(const FGuid& AdmissionId)
 {
     if (PendingAdmissionId != AdmissionId || !AdmissionId.IsValid()) return;
@@ -143,6 +200,7 @@ void UProphecyJoltBodyComponent::CompleteDeferredEnable(const FGuid& AdmissionId
     FString Error;
     const bool bSucceeded = Source.IsValid() ? EnableBodyNow(*Source, Error)
         : Fail(Error, TEXT("The queued standalone source was destroyed before admission."));
+    PendingJoltLaunches.Remove(this);
     if (bEnableCancelled || !IsValid(this) || !IsRegistered() || !IsValid(GetOwner()) || GetOwner()->IsActorBeingDestroyed())
     { OnDeferredEnableCompleted.Clear(); return; }
     FProphecyJoltBodyEnableCompleted Completion = MoveTemp(OnDeferredEnableCompleted);
@@ -164,6 +222,10 @@ bool UProphecyJoltBodyComponent::EnableBodyNow(UPrimitiveComponent& Source, FStr
     TGuardValue<bool> EnableGuard(bEnableInProgress, true);
     ON_SCOPE_EXIT { if (DeferredRestore) RestoreReceiver(MoveTemp(DeferredRestore)); };
     bEnableCancelled = false;
+    TSharedPtr<FPendingJoltLaunch> Launch;
+    PendingJoltLaunches.RemoveAndCopyValue(this, Launch);
+    bool bLaunchTransferred = false;
+    ON_SCOPE_EXIT { if (Launch && !bLaunchTransferred && !bEnableCancelled) RestorePendingLaunch(*Launch, true); };
     if (!CanEnableSource(*this, Source, OutError)) return Fail(OutError, OutError);
     UProphecyJoltWorldSubsystem* Owner = GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>();
     UProphecyJoltCharacterWorldSubsystem* Coordinator = GetWorld()->GetSubsystem<UProphecyJoltCharacterWorldSubsystem>();
@@ -174,25 +236,46 @@ bool UProphecyJoltBodyComponent::EnableBodyNow(UPrimitiveComponent& Source, FStr
 
     FProphecyJoltBodySnapshot Snapshot;
     FProphecyJoltPreparedBody Prepared;
-    if (!ProphecyJolt::Body::CaptureLiveBody(Source, Snapshot, OutError) || !Prepared.Build(Snapshot, OutError))
+    if (Launch)
+    {
+        if (const auto* Current = Source.GetBodyInstance(NAME_None, false))
+        {
+            Launch->Snapshot.Body.bCCD = Current->bUseCCD;
+            Launch->Snapshot.Body.bGravityEnabled = Current->bEnableGravity;
+            Launch->Snapshot.Body.LinearDamping = Current->LinearDamping;
+            Launch->Snapshot.Body.AngularDamping = Current->AngularDamping;
+        }
+        const auto* LiveBody = Source.GetBodyInstance(NAME_None,false);
+        const auto* StaticMesh = Cast<UStaticMeshComponent>(&Source);
+        if (!LiveBody || !LiveBody->IsValidBodyInstance() || LiveBody->WeldParent || Source.IsSimulatingPhysics()
+            || !Source.GetComponentTransform().Equals(Launch->Snapshot.ComponentToWorld)
+            || GetPathNameSafe(LiveBody->GetBodySetup()) != Launch->Snapshot.BodySetupPath
+            || (StaticMesh && GetPathNameSafe(StaticMesh->GetStaticMesh()) != Launch->Snapshot.StaticMeshPath))
+            return Fail(OutError, TEXT("The queued launch mesh changed before admission."));
+        Snapshot = Launch->Snapshot;
+        Prepared = MoveTemp(Launch->Prepared);
+    }
+    else if (!ProphecyJolt::Body::CaptureLiveBody(Source, Snapshot, OutError) || !Prepared.Build(Snapshot, OutError))
         return Fail(OutError, OutError);
     auto Pending = MakeUnique<FProphecyJoltBodyComponentState>();
     Pending->Snapshot = MoveTemp(Snapshot);
     Pending->Actor = GetOwner();
+    Pending->bWasActorRoot = GetOwner()->GetRootComponent() == &Source;
     Pending->BodySetup = Source.GetBodyInstance(NAME_None, false)->GetBodySetup();
     if (const auto* Static = Cast<UStaticMeshComponent>(&Source)) Pending->StaticMesh = Static->GetStaticMesh();
     Pending->WorldOwner = Owner;
     Pending->Coordinator = Coordinator;
     Pending->ExpectedWorldSteps = Diagnostics.CompletedSteps;
-    Pending->OriginalCollisionEnabled = Source.GetCollisionEnabled();
+    Pending->OriginalCollisionEnabled = Launch ? Launch->Collision : Source.GetCollisionEnabled();
     Pending->OriginalObjectType = Source.GetCollisionObjectType();
     Pending->OriginalResponses = Source.GetCollisionResponseToChannels();
-    Pending->OriginalComponentVelocity = Source.ComponentVelocity;
+    Pending->OriginalComponentVelocity = Launch ? Launch->ComponentVelocity : Source.ComponentVelocity;
     TArray<FString> Coverage;
     const FProphecyJoltWorldStatus Created = Owner->CreateBody(Pending->Snapshot, Prepared, Pending->Handle, Coverage);
     if (!Created.IsSuccess()) return Fail(OutError, Created.Message);
     Pending->bActive = true;
     State.Reset(Pending.Release());
+    bLaunchTransferred = true;
     FProphecyJoltBodyComponentState* const Committing = State.Get();
     const FProphecyJoltBodyHandle Handle = State->Handle;
     const auto CommitIsValid = [&]()
@@ -209,6 +292,8 @@ bool UProphecyJoltBodyComponent::EnableBodyNow(UPrimitiveComponent& Source, FStr
     // No solver can advance during this synchronous commit. The complete Jolt body exists before
     // changing the original receiver, and rollback always destroys it before restoring Chaos.
     State->bReceiverChanged = true;
+    Source.DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+    if (!CommitIsValid()) return Abort();
     Source.SetSimulatePhysics(false);
     if (!CommitIsValid()) return Abort();
     Source.SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -217,6 +302,8 @@ bool UProphecyJoltBodyComponent::EnableBodyNow(UPrimitiveComponent& Source, FStr
     State->QueryActor = State->QueryInstance ? State->QueryInstance->GetPhysicsActor() : nullptr;
     if (!PublishCompletedBody(OutError) || !CommitIsValid()
         || !Coordinator->RegisterStepClient(*this, nullptr, StepRegistrationId, OutError)) return Abort();
+    State->TransformChanged = Source.TransformUpdated.AddWeakLambda(this,
+        [this](USceneComponent*, EUpdateTransformFlags, ETeleportType) { SynchronizeSourceTransform(); });
     LastError.Reset();
     return true;
 }
@@ -226,7 +313,8 @@ bool UProphecyJoltBodyComponent::ValidateBinding(FString& OutError) const
     OutError.Reset();
     if (!IsInGameThread() || !IsValid(this) || !IsRegistered() || !State || !State->bActive || State->bStopped
         || !SourceIsIntact(*State) || !State->WorldOwner.IsValid() || !State->WorldOwner->OwnsBody(State->Handle))
-    { OutError = TEXT("The standalone Jolt body no longer has its live, unchanged source binding."); return false; }
+    { OutError = FString::Printf(TEXT("The standalone Jolt body %s (source %s) no longer has its live, unchanged source binding."),
+        *GetPathName(), *GetPathNameSafe(GetSourceComponent())); return false; }
     UPrimitiveComponent* Source = State->Snapshot.SourceComponent.Get();
     FBodyInstance* Instance = Source->GetBodyInstance(NAME_None, false);
     FPhysScene* Scene = GetWorld() ? GetWorld()->GetPhysicsScene() : nullptr;
@@ -332,6 +420,25 @@ bool UProphecyJoltBodyComponent::SynchronizeCollision(FString& OutError)
     }
     if (!ValidateBinding(OutError)) return false;
     const auto Channel = Source->GetCollisionObjectType();
+    const auto* BI = Source->GetBodyInstance(NAME_None, false);
+    if (BI)
+    {
+        auto& Captured = State->Snapshot.Body;
+        if (Captured.bGravityEnabled != bool(BI->bEnableGravity) || Captured.bCCD != bool(BI->bUseCCD)
+            || Captured.LinearDamping != BI->LinearDamping || Captured.AngularDamping != BI->AngularDamping)
+        {
+            const auto Changed = State->WorldOwner->SetBodyRuntimeSettings(State->Handle, BI->bEnableGravity,
+                BI->LinearDamping, BI->AngularDamping, BI->bUseCCD);
+            if (!Changed.IsSuccess()) return Fail(OutError, Changed.Message);
+            Captured.bGravityEnabled = BI->bEnableGravity; Captured.bCCD = BI->bUseCCD;
+            Captured.LinearDamping = BI->LinearDamping; Captured.AngularDamping = BI->AngularDamping;
+        }
+        if (State->bHitEvents != bool(BI->bNotifyRigidBodyCollision))
+        {
+            State->WorldOwner->SetBodyHitEvents(State->Handle, BI->bNotifyRigidBodyCollision);
+            State->bHitEvents = BI->bNotifyRigidBodyCollision;
+        }
+    }
     const auto Responses = Source->GetCollisionResponseToChannels();
     if (Channel == State->OriginalObjectType && Responses == State->OriginalResponses) return true;
     FProphecyJoltCollisionUpdate Update;
@@ -350,6 +457,12 @@ bool UProphecyJoltBodyComponent::PrepareJoltWorldStep(float DeltaSeconds, bool b
     if (!FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0.0f)
         return Fail(OutError, TEXT("Standalone Jolt step duration must be finite and positive."));
     if (!SynchronizeCollision(OutError)) return false;
+    if (State->bSimpleKinematic)
+    {
+        FTransform Target = State->Snapshot.SourceComponent->GetComponentTransform(); Target.RemoveScaling();
+        const auto Moved = State->WorldOwner->MoveKinematicBody(State->Handle, State->Snapshot.BodyOriginToComponent * Target, DeltaSeconds);
+        if (!Moved.IsSuccess()) return Fail(OutError, Moved.Message);
+    }
     if (State->bAttachedCollider)
     {
         auto* Parent = State->FollowParent.Get();
@@ -391,6 +504,8 @@ void UProphecyJoltBodyComponent::DisableBodyInternal(bool bRestoreOriginalSimula
     if (!IsInGameThread()) return;
     if (bCancelEnable)
     {
+        TSharedPtr<FPendingJoltLaunch> Launch;
+        PendingJoltLaunches.RemoveAndCopyValue(this, Launch);
         bEnableCancelled |= bEnableInProgress || IsEnablePending();
         const FGuid Admission = PendingAdmissionId;
         PendingAdmissionId.Invalidate();
@@ -399,6 +514,7 @@ void UProphecyJoltBodyComponent::DisableBodyInternal(bool bRestoreOriginalSimula
         AdmissionCoordinator.Reset();
         OnDeferredEnableCompleted.Clear();
         LastError.Reset();
+        if (Launch) RestorePendingLaunch(*Launch, false);
     }
     if (bDisableInProgress) return;
     TGuardValue<bool> DisableGuard(bDisableInProgress, true);
@@ -435,6 +551,7 @@ void UProphecyJoltBodyComponent::RestoreReceiver(
     TUniquePtr<FProphecyJoltBodyComponentState, FProphecyJoltBodyComponentStateDeleter> Removed)
 {
     TGuardValue<bool> DisableGuard(bDisableInProgress, true);
+    if (auto* Source = Removed->Snapshot.SourceComponent.Get()) Source->TransformUpdated.Remove(Removed->TransformChanged);
     if (!Removed->bReceiverChanged || !SourceIsIntact(*Removed)) return;
     const auto CanRestore = [&]() { return SourceIsIntact(*Removed) && !State; };
     UPrimitiveComponent* Source = Removed->Snapshot.SourceComponent.Get();
@@ -464,6 +581,48 @@ void UProphecyJoltBodyComponent::RestoreReceiver(
 }
 
 bool UProphecyJoltBodyComponent::IsJoltBody() const { return IsInGameThread() && State && State->bActive; }
+bool UProphecyJoltBodyComponent::SetSimulationEnabled(bool bEnabled, FString& OutError)
+{
+    if (!ValidateBinding(OutError)) return false;
+    const auto Result = bEnabled ? State->WorldOwner->SetBodyDynamic(State->Handle) : State->WorldOwner->SetBodyKinematic(State->Handle);
+    if (!Result.IsSuccess()) return Fail(OutError, Result.Message);
+    State->bSimpleKinematic = !bEnabled;
+    if (bEnabled) State->Snapshot.SourceComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+    return true;
+}
+bool UProphecyJoltBodyComponent::SetMassKg(float MassKg, FString& OutError)
+{
+    if (!FMath::IsFinite(MassKg) || MassKg <= 0) return Fail(OutError, TEXT("Mass must be finite and positive."));
+    if (auto* Launch = PendingJoltLaunches.Find(this))
+    {
+        auto& Body = (*Launch)->Snapshot.Body;
+        Body.PrincipalInertiaKgCmSquared *= MassKg / Body.MassKg;
+        Body.MassKg = MassKg;
+        return (*Launch)->Prepared.Build((*Launch)->Snapshot, OutError);
+    }
+    if (!ValidateBinding(OutError)) return false;
+    const auto Result = State->WorldOwner->SetBodyMassKg(State->Handle, MassKg);
+    if (!Result.IsSuccess()) return Fail(OutError, Result.Message);
+    return true;
+}
+void UProphecyJoltBodyComponent::SynchronizeSourceTransform()
+{
+    if (bPublishing || bEnableInProgress || bDisableInProgress) return;
+    auto* Source = GetSourceComponent();
+    if (!IsValid(Source)) return;
+    if (auto* Launch = PendingJoltLaunches.Find(this))
+    {
+        auto& Snapshot = (*Launch)->Snapshot;
+        Snapshot.ComponentToWorld = Source->GetComponentTransform();
+        FTransform RigidComponent = Snapshot.ComponentToWorld; RigidComponent.RemoveScaling();
+        Snapshot.Body.BodyOriginToWorld = Snapshot.BodyOriginToComponent * RigidComponent;
+        return;
+    }
+    if (!State || State->bAttachedCollider || State->bSimpleKinematic) return;
+    FTransform RigidComponent = Source->GetComponentTransform(); RigidComponent.RemoveScaling();
+    const auto Result = State->WorldOwner->SetBodyPose(State->Handle, State->Snapshot.BodyOriginToComponent * RigidComponent);
+    if (!Result.IsSuccess()) LastError = Result.Message;
+}
 bool UProphecyJoltBodyComponent::IsAttachedCollider() const { return IsJoltBody() && State->bAttachedCollider; }
 bool UProphecyJoltBodyComponent::FollowWelded(const FProphecyJoltBodyHandle& Hand, USceneComponent& Parent, FName Socket,
     const FTransform& Relative, FString& OutError)
@@ -491,7 +650,7 @@ bool UProphecyJoltBodyComponent::FollowWelded(const FProphecyJoltBodyHandle& Han
 bool UProphecyJoltBodyComponent::IsSteppingStopped() const { return IsInGameThread() && State && State->bStopped; }
 uint64 UProphecyJoltBodyComponent::GetRevision() const { return IsInGameThread() && State ? State->Revision : 0; }
 UPrimitiveComponent* UProphecyJoltBodyComponent::GetSourceComponent() const
-{ return IsInGameThread() && State ? State->Snapshot.SourceComponent.Get() : nullptr; }
+{ return IsInGameThread() ? (State ? State->Snapshot.SourceComponent.Get() : PendingSource.Get()) : nullptr; }
 
 bool UProphecyJoltBodyComponent::GetBodyHandle(FProphecyJoltBodyHandle& OutHandle) const
 {

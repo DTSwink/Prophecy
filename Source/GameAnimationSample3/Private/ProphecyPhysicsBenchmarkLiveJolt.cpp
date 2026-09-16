@@ -66,17 +66,17 @@ bool ValidateMassWeightedPoseError(AProphecyAgent& Agent, UProphecyJoltCharacter
     UProphecyJoltWorldSubsystem& Owner, const FProphecyJoltRigSnapshot& Capture, FJsonObject& Report, FString& Error)
 {
     namespace Json = ProphecySterileBench::RigAudit;
-    TArray<FName> Names;
+    TArray<FName> PoseBoneNames;
     TArray<FTransform> Future, Presented;
     float Alpha = 0.0f;
-    if (!Agent.ReadNNFutureWorldPose(Names, Future, Presented, Alpha) || Names.Num() != Presented.Num())
+    if (!Agent.ReadNNFutureWorldPose(PoseBoneNames, Future, Presented, Alpha) || PoseBoneNames.Num() != Presented.Num())
     { Error = TEXT("Pose-error control could not read the existing presented target pose."); return false; }
     FVector ExpectedLinear = FVector::ZeroVector, ExpectedAngular = FVector::ZeroVector;
     float ExpectedMass = 0.0f;
     TSet<int32> SeenSlots;
     for (const FProphecyJoltRigBody& Source : Capture.Bodies)
     {
-        const int32 TargetIndex = Names.IndexOfByKey(Source.BodyName);
+        const int32 TargetIndex = PoseBoneNames.IndexOfByKey(Source.BodyName);
         FProphecyJoltBodyHandle Handle;
         FProphecyJoltBodyState Native;
         if (!Presented.IsValidIndex(TargetIndex) || !Character.GetBodyHandle(Source.BodyName, Handle)

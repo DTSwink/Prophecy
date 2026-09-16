@@ -63,6 +63,17 @@ void FProphecyNNPoseStore::SetInterpolationMode(int32 AgentId, EProphecyNNInterp
 	else GInterpolationModes.Remove(AgentId);
 }
 
+void FProphecyNNPoseStore::TranslateAgentWorldPose(int32 AgentId, const FVector& WorldDelta)
+{
+	FWriteScopeLock Lock(GProphecyNNPoseLock);
+	if (auto* Snapshot = GProphecyNNPoses.Find(AgentId))
+	{
+		Snapshot->PreviousComponentWorldTransform.AddToTranslation(WorldDelta);
+		Snapshot->ComponentWorldTransform.AddToTranslation(WorldDelta);
+		Snapshot->Revision = AllocatePoseRevision();
+	}
+}
+
 void ProphecyNNPresentation::Publish(int32 AgentId, double SourceTimeSeconds, float Alpha)
 {
 	FWriteScopeLock Lock(GProphecyNNPoseLock);

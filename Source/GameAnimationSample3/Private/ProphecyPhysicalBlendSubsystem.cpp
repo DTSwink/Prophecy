@@ -1,4 +1,5 @@
 #include "ProphecyPhysicalBlendSubsystem.h"
+#include "ProphecyPhysicalContext.h"
 
 #include "ProphecyNNLocomotionManager.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -149,6 +150,22 @@ void UProphecyPhysicalBlendSubsystem::RemoveAgent(AProphecyAgent& Agent)
 	RefreshCallback();
 }
 
+void UProphecyPhysicalBlendSubsystem::MoveBlendsToContext(AProphecyAgent& Agent)
+{
+	for (int32 Index=0;Index<ActiveAgents.Num();++Index)
+	{
+		if (ActiveAgents[Index].Agent!=&Agent) continue;
+		auto Blends=MoveTemp(ActiveAgents[Index].Blends);
+		ActiveAgents.RemoveAtSwap(Index,1,EAllowShrinking::No);
+		RefreshCallback();
+		for (const auto& Blend:Blends)
+			ProphecyPhysicalContext::AdoptBlend(Agent,Blend.Bone,
+				Blend.Kind==EProphecyPhysicalBlend::Feedback ? ProphecyPhysicalContext::EKind::Feedback : ProphecyPhysicalContext::EKind::Magnetization,
+				Blend.Start,Blend.Target,Blend.Elapsed,Blend.Duration);
+		break;
+	}
+}
+
 void UProphecyPhysicalBlendSubsystem::Advance(UWorld* World, ELevelTick TickType, float DeltaSeconds)
 {
 	if (World != GetWorld() || World->IsPaused() || TickType == LEVELTICK_ViewportsOnly
@@ -214,44 +231,58 @@ void UProphecyPhysicalBlendSubsystem::Advance(UWorld* World, ELevelTick TickType
 	RefreshCallback();
 }
 
-bool AProphecyAgent::BlendBodyMagnetization(FName BoneName, float Linear, float Angular, float Duration)
+bool AProphecyAgent::BlendBodyMagnetization(FName BoneName, float Linear, float Angular, float Duration,
+	EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
 {
+	if (Locomotion!=EProphecyLocomotionSelection::Both || Equipment!=EProphecyEquipmentSelection::Both
+		|| ProphecyPhysicalContext::IsManaged(this,BoneName,ProphecyPhysicalContext::EKind::Magnetization))
+		return ProphecyPhysicalContext::Set(*this,BoneName,ProphecyPhysicalContext::EKind::Magnetization,true,{Linear,Angular},Duration,Locomotion,Equipment);
 	auto* Blends = GetWorld() ? GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>() : nullptr;
 	return Blends && Blends->Start(*this, BoneName, EProphecyPhysicalBlend::Magnetization, FVector2f(Linear, Angular), Duration);
 }
 
-bool AProphecyAgent::BlendPhysicalFeedbackTolerance(FName BoneName, float Linear, float Angular, float Duration)
+bool AProphecyAgent::BlendPhysicalFeedbackTolerance(FName BoneName, float Linear, float Angular, float Duration,
+	EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
 {
+	if (Locomotion!=EProphecyLocomotionSelection::Both || Equipment!=EProphecyEquipmentSelection::Both
+		|| ProphecyPhysicalContext::IsManaged(this,BoneName,ProphecyPhysicalContext::EKind::Feedback))
+		return ProphecyPhysicalContext::Set(*this,BoneName,ProphecyPhysicalContext::EKind::Feedback,true,{Linear,Angular},Duration,Locomotion,Equipment);
 	auto* Blends = GetWorld() ? GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>() : nullptr;
 	return Blends && Blends->Start(*this, BoneName, EProphecyPhysicalBlend::Feedback, FVector2f(Linear, Angular), Duration);
 }
 
-int32 AProphecyAgent::BlendBodyMagnetizationBelow(FName Parent, bool bIncludeParent, float Linear, float Angular, float Duration)
+int32 AProphecyAgent::BlendBodyMagnetizationBelow(FName Parent, bool bIncludeParent, float Linear, float Angular, float Duration,
+	EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
 {
-	if (!ValidRequest(FVector2f(Linear, Angular), Duration)) return 0;
+	if (!ValidRequest(FVector2f(Linear, Angular), Duration) || !ProphecyPhysicalContext::Valid(Locomotion,Equipment)) return 0;
 	int32 Count = 0;
 	for (FName Bone : Descendants(*this, Parent, bIncludeParent, false))
-		Count += BlendBodyMagnetization(Bone, Linear, Angular, Duration) ? 1 : 0;
+		Count += ProphecyPhysicalContext::Set(*this,Bone,ProphecyPhysicalContext::EKind::Magnetization,true,
+			{Linear,Angular},Duration,Locomotion,Equipment) ? 1 : 0;
 	return Count;
 }
 
-int32 AProphecyAgent::BlendPhysicalFeedbackToleranceBelow(FName Parent, bool bIncludeParent, float Linear, float Angular, float Duration)
+int32 AProphecyAgent::BlendPhysicalFeedbackToleranceBelow(FName Parent, bool bIncludeParent, float Linear, float Angular, float Duration,
+	EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
 {
-	if (!ValidRequest(FVector2f(Linear, Angular), Duration)) return 0;
+	if (!ValidRequest(FVector2f(Linear, Angular), Duration) || !ProphecyPhysicalContext::Valid(Locomotion,Equipment)) return 0;
 	int32 Count = 0;
 	for (FName Bone : Descendants(*this, Parent, bIncludeParent, true))
-		Count += BlendPhysicalFeedbackTolerance(Bone, Linear, Angular, Duration) ? 1 : 0;
+		Count += ProphecyPhysicalContext::Set(*this,Bone,ProphecyPhysicalContext::EKind::Feedback,true,
+			{Linear,Angular},Duration,Locomotion,Equipment) ? 1 : 0;
 	return Count;
 }
 
 void AProphecyAgent::CancelBodyMagnetizationBlend(FName Bone)
 {
+	ProphecyPhysicalContext::Cancel(this,Bone,ProphecyPhysicalContext::EKind::Magnetization);
 	if (auto* Blends = GetWorld() ? GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>() : nullptr)
 		Blends->Cancel(*this, Bone, EProphecyPhysicalBlend::Magnetization);
 }
 
 void AProphecyAgent::CancelPhysicalFeedbackToleranceBlend(FName Bone)
 {
+	ProphecyPhysicalContext::Cancel(this,Bone,ProphecyPhysicalContext::EKind::Feedback);
 	if (auto* Blends = GetWorld() ? GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>() : nullptr)
 		Blends->Cancel(*this, Bone, EProphecyPhysicalBlend::Feedback);
 }

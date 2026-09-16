@@ -1,8 +1,12 @@
 #include "ProphecyJoltSceneCollisionComponent.h"
+#include "ProphecyJoltConstraintRuntime.h"
 
 #include "ProphecyJoltCharacterWorldSubsystem.h"
 #include "ProphecyJoltStaticBody.h"
 #include "ProphecyJoltWorldSubsystem.h"
+#include "ProphecyJoltBodyComponent.h"
+#include "ProphecyJoltStaticMeshLibrary.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/ModelComponent.h"
@@ -18,6 +22,13 @@ DEFINE_LOG_CATEGORY_STATIC(LogProphecyJoltSceneCollision, Log, All);
 
 struct FProphecyJoltSceneCollisionSource
 {
+    FTransform BodyToComponent = FTransform::Identity;
+    FTransform LastComponentTransform = FTransform::Identity;
+    bool bKinematic = false;
+    bool bWasMoving = false;
+    bool bAutoDynamic = false;
+    bool bDynamicAdmissionFailed = false;
+    bool bHitEvents = false;
     ECollisionChannel LastObjectChannel = ECC_MAX;
     FString Path;
     TWeakObjectPtr<ULevel> Level;
@@ -51,6 +62,15 @@ void FProphecyJoltSceneCollisionStateDeleter::operator()(FProphecyJoltSceneColli
 
 namespace
 {
+TMap<TWeakObjectPtr<UWorld>, TWeakObjectPtr<UProphecyJoltSceneCollisionComponent>> SceneOwners;
+bool HasSourceBinding(UStaticMeshComponent* Mesh)
+{
+    if (!Mesh || !Mesh->GetOwner()) return false;
+    TInlineComponentArray<UProphecyJoltBodyComponent*> Adapters(Mesh->GetOwner());
+    for (auto* Adapter : Adapters)
+        if (Adapter->GetSourceComponent() == Mesh && (Adapter->IsJoltBody() || Adapter->IsEnablePending())) return true;
+    return false;
+}
 FString SourceError(const FProphecyJoltSceneCollisionSource& Source, int32 InstanceIndex, const FString& Error)
 {
     return InstanceIndex == INDEX_NONE ? FString::Printf(TEXT("%s: %s"), *Source.Path, *Error)
@@ -89,6 +109,11 @@ bool UProphecyJoltSceneCollisionComponent::Fail(FString& OutError, const FString
 }
 bool UProphecyJoltSceneCollisionComponent::IsSceneCollisionEnabled() const { return State != nullptr; }
 int32 UProphecyJoltSceneCollisionComponent::GetImportedBodyCount() const { return State ? State->BodyCount : 0; }
+UProphecyJoltSceneCollisionComponent* UProphecyJoltSceneCollisionComponent::FindForWorld(UWorld* World)
+{
+    const auto* Found = SceneOwners.Find(World);
+    return Found ? Found->Get() : nullptr;
+}
 
 bool UProphecyJoltSceneCollisionComponent::EnableSceneCollision(FString& OutError)
 {
@@ -157,19 +182,31 @@ bool UProphecyJoltSceneCollisionComponent::EnableNow(FString& OutError)
         const FString Failure = OutError;
         DisableSceneCollision(); return Fail(OutError, Failure);
     }
+    SceneOwners.Add(GetWorld(), this);
+    ProphecyJolt::Constraints::Enable(GetWorld());
     LastError.Reset(); return true;
 }
 
 void UProphecyJoltSceneCollisionComponent::ObserveSource(UPrimitiveComponent& Source)
 {
-    if (!State || Source.GetWorld() != GetWorld() || Source.GetMobility() != EComponentMobility::Static) return;
+    if (!State || Source.GetWorld() != GetWorld()
+        || (Source.GetMobility() != EComponentMobility::Static && !Source.IsA<UStaticMeshComponent>())) return;
     const TWeakObjectPtr<UPrimitiveComponent> Key(&Source);
     if (State->Sources.Contains(Key)) return;
     auto& Entry = State->Sources.Add(Key);
     Entry.LastObjectChannel = Source.GetCollisionObjectType();
     Entry.Path = Source.GetPathName(); Entry.Level = Source.GetTypedOuter<ULevel>();
     Entry.TransformChanged = Source.TransformUpdated.AddWeakLambda(this,
-        [this](USceneComponent* Changed, EUpdateTransformFlags, ETeleportType) { QueueSource(Cast<UPrimitiveComponent>(Changed)); });
+        [this](USceneComponent* Changed, EUpdateTransformFlags, ETeleportType)
+        {
+            auto* Primitive = Cast<UPrimitiveComponent>(Changed);
+            auto* Tracked = State ? State->Sources.Find(Primitive) : nullptr;
+            // A rigid movable transform updates the existing kinematic body. Recook only scale
+            // changes or physics recreation; never rebuild geometry every animation frame.
+            if (Tracked && (Tracked->bAutoDynamic || (Tracked->bKinematic
+                && Primitive->GetComponentScale().Equals(Tracked->LastComponentTransform.GetScale3D())))) return;
+            QueueSource(Primitive);
+        });
     Source.OnComponentCollisionSettingsChangedEvent.AddUniqueDynamic(this, &ThisClass::OnSourceCollisionSettings);
     if (Cast<UInstancedStaticMeshComponent>(&Source)) State->InstancedSources.Add(Key);
 }
@@ -190,21 +227,30 @@ void UProphecyJoltSceneCollisionComponent::OnPhysicsCreated(UActorComponent* Com
 {
     auto* Source = Cast<UPrimitiveComponent>(Component);
     QueueSource(Source);
-    if (State && Source) if (auto* Entry = State->Sources.Find(Source)) Entry->bPhysicsDestroyed = false;
+    if (State && Source) if (auto* Entry = State->Sources.Find(Source))
+    { Entry->bPhysicsDestroyed = false; Entry->bDynamicAdmissionFailed = false; }
 }
-void UProphecyJoltSceneCollisionComponent::OnPhysicsDestroyed(UActorComponent* Component) { QueueSource(Cast<UPrimitiveComponent>(Component), true); }
+void UProphecyJoltSceneCollisionComponent::OnPhysicsDestroyed(UActorComponent* Component)
+{
+    auto* Source = Cast<UPrimitiveComponent>(Component);
+    QueueSource(Source, true);
+}
 void UProphecyJoltSceneCollisionComponent::OnSourceCollisionSettings(UPrimitiveComponent* Source)
 {
     if (!State || !Source) return;
     if (auto* Entry = State->Sources.Find(Source))
     {
         Entry->bCollisionDirty = true;
+        Entry->bDynamicAdmissionFailed = false;
         State->PendingSources.Add(Source);
     }
 }
 void UProphecyJoltSceneCollisionComponent::QueueActor(AActor* Actor)
 {
-    if (State && Actor && Actor->GetWorld() == GetWorld()) State->PendingActors.Add(Actor);
+    if (State && Actor && Actor->GetWorld() == GetWorld())
+    {
+        State->PendingActors.Add(Actor);
+    }
 }
 void UProphecyJoltSceneCollisionComponent::QueueLevel(ULevel* Level)
 {
@@ -236,6 +282,8 @@ bool UProphecyJoltSceneCollisionComponent::ReconcileSources(FString& OutError)
     {
         if (auto* Source = Pair.Key.Get())
         {
+            if (Source->GetMobility() != EComponentMobility::Static && Source->IsSimulatingPhysics()
+                && !Pair.Value.bAutoDynamic && !Pair.Value.bDynamicAdmissionFailed) State->PendingSources.Add(Pair.Key);
             const auto Channel = Source->GetCollisionObjectType();
             if (Pair.Value.LastObjectChannel != Channel)
             {
@@ -284,8 +332,38 @@ bool UProphecyJoltSceneCollisionComponent::ReconcileSources(FString& OutError)
                     && Entry->Level->GetWorld() == GetWorld();
             const bool bGone = !Source || !Source->IsRegistered() || Source->GetWorld() != GetWorld()
                 || !bLiveOwner
-                || State->bAllLevelsRemoved || State->RemovedLevels.Contains(Entry->Level)
-                || Source->GetMobility() != EComponentMobility::Static;
+                || State->bAllLevelsRemoved || State->RemovedLevels.Contains(Entry->Level);
+            if (!bGone && Source->GetMobility() != EComponentMobility::Static)
+            {
+                auto* Mesh = Cast<UStaticMeshComponent>(Source);
+                // A queued sword/managed-body handoff already owns this source.
+                // Importing it here would freeze its Chaos body under the original
+                // request, then give two adapters the same query receiver.
+                if (Entry->bAutoDynamic || HasSourceBinding(Mesh))
+                {
+                    if (!RetireAll(*State, *Entry, OutError)) return false;
+                    Entry->bFullRefresh = false;
+                    continue;
+                }
+                if (Mesh && Mesh->IsSimulatingPhysics())
+                {
+                    if (Entry->bDynamicAdmissionFailed) continue;
+                    if (!RetireAll(*State, *Entry, OutError)) return false;
+                    if (!UProphecyJoltStaticMeshLibrary::EnableJoltStaticMeshPhysics(Mesh, OutError))
+                    {
+                        // A rejected source retains its Chaos body. Do not tear down the
+                        // world's valid colliders or prevent fighter admission because of it.
+                        // Retry only after its physics/collision settings change.
+                        Entry->bDynamicAdmissionFailed = true;
+                        UE_LOG(LogProphecyJoltSceneCollision, Warning, TEXT("Jolt mesh admission skipped: %s"),
+                            *SourceError(*Entry, INDEX_NONE, OutError));
+                        OutError.Reset();
+                        continue;
+                    }
+                    Entry->bAutoDynamic = true;
+                    continue;
+                }
+            }
             const bool bNoSimulation = !bGone && (Source->GetCollisionEnabled() == ECollisionEnabled::NoCollision
                 || Source->GetCollisionEnabled() == ECollisionEnabled::QueryOnly || Entry->bPhysicsDestroyed);
             if (bGone || bNoSimulation)
@@ -324,7 +402,7 @@ bool UProphecyJoltSceneCollisionComponent::ReconcileSources(FString& OutError)
                 {
                     FProphecyJoltStaticBodySnapshot Snapshot;
                     FString Error;
-                    if (!ProphecyJolt::StaticBody::CaptureStaticBody(*Source, Pair.Key, Snapshot, Error))
+                    if (!ProphecyJolt::StaticBody::CaptureStaticBody(*Source, Pair.Key, Snapshot, Error, true))
                         return Fail(OutError, SourceError(*Entry, Pair.Key, Error));
                     auto& Update = Updates.AddDefaulted_GetRef();
                     Update.Handle = Pair.Value;
@@ -376,12 +454,18 @@ bool UProphecyJoltSceneCollisionComponent::ReconcileSources(FString& OutError)
                 FProphecyJoltStaticBodySnapshot Snapshot;
                 FProphecyJoltPreparedStaticBody Prepared;
                 FString Error;
-                if (!ProphecyJolt::StaticBody::CaptureStaticBody(*Source, Index, Snapshot, Error) || !Prepared.Build(Snapshot, Error))
+                if (!ProphecyJolt::StaticBody::CaptureStaticBody(*Source, Index, Snapshot, Error, true) || !Prepared.Build(Snapshot, Error))
                     return Fail(OutError, SourceError(*Entry, Index, Error));
                 FProphecyJoltBodyHandle Handle; TArray<FString> Notes;
                 const auto Created = State->Owner->CreateStaticBody(Snapshot, Prepared, Handle, Notes);
                 if (!Created.IsSuccess()) return Fail(OutError, SourceError(*Entry, Index, Created.Message));
                 Entry->Bodies.Add(Index, Handle); ++State->BodyCount;
+                Entry->bKinematic = Snapshot.bKinematic;
+                Entry->LastComponentTransform = Source->GetComponentTransform();
+                Entry->BodyToComponent = Snapshot.BodyOriginToWorld.GetRelativeTransform(Snapshot.ComponentToWorld);
+                Entry->BodyToComponent.SetScale3D(FVector::OneVector);
+                if (const auto* BI = Source->GetBodyInstance(NAME_None, false)) Entry->bHitEvents = BI->bNotifyRigidBodyCollision;
+                State->Owner->SetBodyHitEvents(Handle, Entry->bHitEvents);
             }
             Entry->bFullRefresh = false; Entry->DirtyInstances.Reset();
         }
@@ -402,9 +486,28 @@ bool UProphecyJoltSceneCollisionComponent::ValidateBinding(FString& OutError) co
     { OutError = TEXT("Scene collision native world, step sequence or registration changed externally."); return false; }
     return true;
 }
-bool UProphecyJoltSceneCollisionComponent::PrepareJoltWorldStep(float, bool, FString& OutError)
+bool UProphecyJoltSceneCollisionComponent::PrepareJoltWorldStep(float DeltaSeconds, bool, FString& OutError)
 {
-    return ValidateBinding(OutError) && ReconcileSources(OutError);
+    if (!ValidateBinding(OutError) || !ReconcileSources(OutError)) return false;
+    for (auto& Pair : State->Sources)
+    {
+        auto* Source = Pair.Key.Get();
+        auto& Entry = Pair.Value;
+        if (!Source || !Entry.bKinematic || Entry.bAutoDynamic || Entry.Bodies.IsEmpty()
+            || Source->IsA<UInstancedStaticMeshComponent>()) continue;
+        const FTransform Current = Source->GetComponentTransform();
+        const bool bMoved = !Current.Equals(Entry.LastComponentTransform, 1.e-6);
+        if (bMoved || Entry.bWasMoving)
+        {
+            FTransform Target = Entry.BodyToComponent * Current;
+            Target.SetScale3D(FVector::OneVector);
+            const auto Moved = State->Owner->MoveKinematicBody(Entry.Bodies.FindChecked(INDEX_NONE), Target, DeltaSeconds);
+            if (!Moved.IsSuccess()) return Fail(OutError, Moved.Message);
+        }
+        Entry.bWasMoving = bMoved;
+        Entry.LastComponentTransform = Current;
+    }
+    return true;
 }
 bool UProphecyJoltSceneCollisionComponent::ConsumeCompletedJoltWorldStep(FString& OutError)
 {
@@ -423,6 +526,12 @@ bool UProphecyJoltSceneCollisionComponent::GetBodyHandle(const UPrimitiveCompone
 {
     OutHandle = {};
     if (!IsInGameThread() || !State || !State->Owner.IsValid()) return false;
+    if (InstanceIndex == INDEX_NONE)
+    {
+        TInlineComponentArray<UProphecyJoltBodyComponent*> Adapters(Source.GetOwner());
+        for (auto* Adapter : Adapters)
+            if (Adapter->GetSourceComponent() == &Source && Adapter->GetBodyHandle(OutHandle)) return true;
+    }
     const auto* Entry = State->Sources.Find(const_cast<UPrimitiveComponent*>(&Source));
     const auto* Handle = Entry ? Entry->Bodies.Find(InstanceIndex) : nullptr;
     if (!Handle || !State->Owner->OwnsBody(*Handle)) return false;
@@ -436,6 +545,8 @@ void UProphecyJoltSceneCollisionComponent::DisableSceneCollision()
     PendingAdmissionId.Invalidate(); AdmissionCoordinator.Reset();
     auto Removed = MoveTemp(State);
     if (!Removed) return;
+    ProphecyJolt::Constraints::Disable(GetWorld());
+    SceneOwners.Remove(GetWorld());
     if (Removed->Coordinator.IsValid() && StepRegistrationId.IsValid()) Removed->Coordinator->UnregisterStepClient(*this, StepRegistrationId);
     StepRegistrationId.Invalidate();
     UActorComponent::GlobalCreatePhysicsDelegate.Remove(Removed->PhysicsCreated);
@@ -449,6 +560,8 @@ void UProphecyJoltSceneCollisionComponent::DisableSceneCollision()
     {
         if (auto* Source = Pair.Key.Get())
         {
+            if (Pair.Value.bAutoDynamic)
+                UProphecyJoltStaticMeshLibrary::DisableJoltStaticMeshPhysics(Cast<UStaticMeshComponent>(Source));
             Source->TransformUpdated.Remove(Pair.Value.TransformChanged);
             Source->OnComponentCollisionSettingsChangedEvent.RemoveDynamic(this, &ThisClass::OnSourceCollisionSettings);
         }

@@ -1,4 +1,93 @@
 // Optional renderer of encoded input history. Included after the pose decoder and Slash runtime.
+#include "ProphecyContinuousRootWindow.h"
+
+bool AProphecyNNLocomotionManager::SetAgentLocomotionRootWindowLocation(
+	FProphecyAgentHandle Handle, FVector WorldLocation, bool bPreserveWorldPose)
+{
+	if (!IsInGameThread() || !Impl || !Impl->bInitialized || IsSimBridgeActive()
+		|| WorldLocation.ContainsNaN()) return false;
+	AProphecyAgent* Actor = ResolveAgent(Handle);
+	if (!Actor || !Actor->bNNInferenceEnabled) return false;
+	auto& Agent = Impl->Agents[Handle.Index];
+	if (Agent.WindowStepSeconds <= 0 || Agent.DefensePose
+		|| (Agent.Slash.bActive && !Agent.Slash.bHalf)) return false;
+	const FVector WorldDelta = WorldLocation - Actor->GetRootLowPoint();
+	const FVector3f Delta = UnrealToTraining(WorldDelta);
+	if (Delta.ContainsNaN() || (Agent.CurRootPos + Delta).ContainsNaN()) return false;
+	if (WorldDelta.IsZero()) return true;
+	// Deliberately unswept: a requested window translation must not collapse into
+	// the normal collision-rebase path. Leave physical Jolt bodies to their solver.
+	if (!Actor->SetActorLocation(Actor->GetActorLocation() + WorldDelta, false, nullptr, ETeleportType::None)) return false;
+	if (bPreserveWorldPose)
+	{
+		// Bounds recenter the carrier under the existing skeleton. Preserve BOTH
+		// recurrence frames and publication endpoints, otherwise the next NN step
+		// reintroduces a shifted pelvis target and the bounds chase it indefinitely.
+		auto RebasePair = [&](TArray<float>& Lower, TArray<float>& Upper, float Yaw)
+		{
+			const FVector3f HeadingDelta = TransformRow(Delta, YawMatrix(Yaw));
+			const FVector3f LowerDelta = TransformRow(HeadingDelta, Transpose(Impl->SeedRootRot));
+			float* LowerState = StateSlice(Lower, Handle.Index);
+			float* UpperState = UpperStateSlice(Upper, Handle.Index);
+			// Translation only: don't normalize rotations or modify toe/clamp state.
+			for (int32 Offset : {0, 9, 25})
+				WriteStateVec3(LowerState, Offset, ReadStateVec3(LowerState, Offset) - LowerDelta);
+			for (int32 Offset : {60, 75})
+				WriteStateVec3(UpperState, Offset, ReadStateVec3(UpperState, Offset) - HeadingDelta);
+		};
+		RebasePair(Impl->PrevStateBuffer, Impl->UpperPreviousStateBuffer, Agent.PrevRootYaw);
+		RebasePair(Impl->CurStateBuffer, Impl->UpperCurrentStateBuffer, Agent.CurRootYaw);
+		RebasePair(Impl->PreviousPublishedStateBuffer, Impl->UpperPreviousPublishedStateBuffer, Agent.PreviousPublishedYaw);
+		RebasePair(Impl->PublishedStateBuffer, Impl->UpperPublishedStateBuffer, Agent.PublishedYaw);
+		if (Agent.bHasPhysicalSample)
+			RebasePair(Impl->PreviousPhysicalStateBuffer, Impl->UpperPreviousPhysicalStateBuffer, Agent.CurRootYaw);
+		BuildUpperBaseFromLower(StateSlice(Impl->CurStateBuffer, Handle.Index), *Impl,
+			UpperStateSlice(Impl->UpperCurrentBaseBuffer, Handle.Index));
+		LowerTransformToHeading(StateSlice(Impl->PrevStateBuffer, Handle.Index), 0, 3, *Impl,
+			TransformStateSlice(Impl->PreviousPelvisHeadingBuffer, Handle.Index));
+		LowerTransformToHeading(StateSlice(Impl->CurStateBuffer, Handle.Index), 0, 3, *Impl,
+			TransformStateSlice(Impl->CurrentPelvisHeadingBuffer, Handle.Index));
+	}
+	Agent.PrevRootPos += Delta;
+	Agent.CurRootPos += Delta;
+	Agent.PreviousPublishedRoot += Delta;
+	Agent.PublishedRoot += Delta;
+	Agent.FedInputRoot += Delta;
+	Agent.WindowPreviousRoot += Delta;
+	for (auto& Root : Agent.FedFutureRootPositions) Root += Delta;
+	Agent.MoverState.position.x += Delta.X;
+	Agent.MoverState.position.z += Delta.Z;
+	if (Agent.bHasBridgeActualRoot) Agent.LastBridgeActualRoot += Delta;
+	// Encoded windows, recurrent poses and smoothing history are root-relative:
+	// translating those again would change the trajectory/pose instead of its origin.
+	// Half-attack presentation retains cached world poses between policy updates.
+	if (!bPreserveWorldPose && Agent.Slash.bActive && Agent.Slash.bHalf)
+	{
+		for (auto& Bone : Agent.Slash.PreviousVisibleWorldPose) Bone.AddToTranslation(WorldDelta);
+		for (auto& Bone : Agent.Slash.VisibleWorldPose) Bone.AddToTranslation(WorldDelta);
+	}
+	// The cached target is already in world coordinates. Bounds must leave it
+	// (and Jolt's target history) untouched; ordinary explicit placement translates it.
+	if (!bPreserveWorldPose)
+		FProphecyNNPoseStore::TranslateAgentWorldPose(PoseStoreAgentBase + Handle.Index, WorldDelta);
+	return true;
+}
+
+bool AProphecyNNLocomotionManager::GetAgentContinuousLocomotionRootWindow(
+	FProphecyAgentHandle Handle, TArray<FTransform>& Roots, TArray<float>& Times) const
+{
+	Roots.Reset(); Times.Reset();
+	const AProphecyAgent* Actor = ResolveAgent(Handle);
+	if (!Actor || !Actor->bNNInferenceEnabled) return false;
+	const auto& Agent = Impl->Agents[Handle.Index];
+	if (Agent.DefensePose && Agent.DefensePose->bDodge) return false;
+	if (Agent.Slash.bActive && !Agent.Slash.bHalf) return false;
+	if (!GetAgentLocomotionRootWindow(Handle, Roots, Times)) return false;
+	const FTransform AppliedRoot(FRotator(0, Actor->GetActorRotation().Yaw, 0), Actor->GetRootLowPoint());
+	ProphecyContinuousRootWindow::Resample(Roots, Times, Impl->VisualPoseAlpha, Agent.WindowStepSeconds, AppliedRoot);
+	return true;
+}
+
 bool AProphecyNNLocomotionManager::SetAgentFootPinningDebug(FProphecyAgentHandle Handle, bool bEnabled)
 {
 	auto* Actor = ResolveAgent(Handle);
@@ -45,7 +134,7 @@ bool AProphecyNNLocomotionManager::GetAgentLocomotionRootWindow(
 	for (int32 I = 1; I <= FutureWindow; ++I, Input += 4)
 	{
 		const float Scale = I * Impl->MaxSpeedScaleFinal;
-		const FVector3f Local(Input[0] * Scale, 0, Input[1] * Scale);
+		const FVector3f Local(Input[0] * Scale, Agent.WindowVerticalVelocity * I * Agent.WindowStepSeconds, Input[1] * Scale);
 		Add(Agent.FedInputRoot + TransformRow(Local, Transpose(YawMatrix(Agent.FedInputYaw))),
 			Agent.FedInputYaw + FMath::Atan2(Input[3], Input[2]), I * Agent.WindowStepSeconds);
 	}

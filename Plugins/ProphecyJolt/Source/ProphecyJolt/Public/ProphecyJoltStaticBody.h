@@ -27,6 +27,7 @@ struct FProphecyJoltStaticMeshShape
  */
 struct FProphecyJoltStaticBodySnapshot
 {
+    bool bKinematic = false;
     FGuid CaptureId;
     TWeakObjectPtr<UPrimitiveComponent> SourceComponent;
     TWeakObjectPtr<UWorld> SourceWorld;
@@ -60,7 +61,7 @@ namespace ProphecyJolt::StaticBody
 {
     // Read-only GT capture at a completed synchronous Chaos step. Pass INDEX_NONE for a non-ISM.
     PROPHECYJOLT_API bool CaptureStaticBody(UPrimitiveComponent& Component, int32 InstanceIndex,
-        FProphecyJoltStaticBodySnapshot& OutSnapshot, FString& OutError);
+        FProphecyJoltStaticBodySnapshot& OutSnapshot, FString& OutError, bool bAllowKinematic = false);
     PROPHECYJOLT_API bool ValidateSnapshot(const FProphecyJoltStaticBodySnapshot& Snapshot, FString& OutError);
 }
 

@@ -22,6 +22,7 @@ public class ProphecyEditor : ModuleRules
 			"ImageCore",
 			"Json",
 			"KismetCompiler",
+			"Kismet",
 			"Landscape",
 			"MetaHumanCharacter",
 			"MetaHumanCharacterEditor",

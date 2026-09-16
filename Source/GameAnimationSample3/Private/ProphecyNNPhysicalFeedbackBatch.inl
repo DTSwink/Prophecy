@@ -1,7 +1,7 @@
 // Included in the manager's anonymous namespace after the native math helpers.
 // The serial reference preserves the previous operation order and GT profiling.
 bool CommitPhysicalSampleSerial(AProphecyNNLocomotionManager::FImpl& Impl, int32 AgentIndex,
-    TConstArrayView<FTransform> ActualTransforms)
+    TConstArrayView<FTransform> ActualTransforms, const float* AlignedLower = nullptr)
 {
     using FImpl = AProphecyNNLocomotionManager::FImpl;
 	float* Sample = StateSlice(Impl.PhysicalStateBuffer, AgentIndex);
@@ -9,7 +9,8 @@ bool CommitPhysicalSampleSerial(AProphecyNNLocomotionManager::FImpl& Impl, int32
 	const double RawEncodeStart = ProphecyJolt::CharacterProfiling::Timestamp();
 	// Cache only this successful sample; no pose, tolerance, or recurrent state survives here.
 	FSampledTrainingRotations TrainingRotations(ActualTransforms);
-	EncodePhysicalLowerSample(Impl, Agent, ActualTransforms, TrainingRotations, Sample);
+	if (AlignedLower) FMemory::Memcpy(Sample, AlignedLower, StateDim * sizeof(float));
+	else EncodePhysicalLowerSample(Impl, Agent, ActualTransforms, TrainingRotations, Sample);
 	ProphecyJolt::CharacterProfiling::RecordElapsed(ProphecyJolt::CharacterProfiling::EPhase::PhysicalRawEncode, RawEncodeStart);
 
 	float* Previous = StateSlice(Impl.PrevStateBuffer, AgentIndex);
@@ -230,14 +231,15 @@ bool CommitPhysicalSampleSerial(AProphecyNNLocomotionManager::FImpl& Impl, int32
 }
 
 bool CommitPreparedPhysicalSample(const AProphecyNNLocomotionManager::FImpl& Impl,
-    AProphecyNNLocomotionManager::FImpl::FPhysicalFeedbackWorkItem& Work)
+    AProphecyNNLocomotionManager::FImpl::FPhysicalFeedbackWorkItem& Work, const float* AlignedLower = nullptr)
 {
     using FImpl = AProphecyNNLocomotionManager::FImpl;
     const TConstArrayView<FTransform> ActualTransforms = Work.ActualTransforms;
 	float* Sample = Work.Sample;
 	// Cache only this successful sample; no pose, tolerance, or recurrent state survives here.
 	FSampledTrainingRotations TrainingRotations(ActualTransforms);
-	EncodePhysicalLowerSample(Impl, Work.bUseWalkPolicy, ActualTransforms, TrainingRotations, Sample);
+	if (AlignedLower) FMemory::Memcpy(Sample, AlignedLower, StateDim * sizeof(float));
+	else EncodePhysicalLowerSample(Impl, Work.bUseWalkPolicy, ActualTransforms, TrainingRotations, Sample);
 
 	float* Previous = Work.Previous;
 	float* Current = Work.Current;
@@ -489,13 +491,15 @@ bool PreparePhysicalFeedbackWork(AProphecyNNLocomotionManager::FImpl& Impl, int3
 
 void ExecutePhysicalFeedbackBatch(const AProphecyNNLocomotionManager::FImpl& ReadOnlyLayout,
     TArrayView<AProphecyNNLocomotionManager::FImpl::FPhysicalFeedbackWorkItem> WorkItems,
-    TConstArrayView<int32> Indices, bool bForceSerial)
+    TConstArrayView<int32> Indices, bool bForceSerial, TConstArrayView<FAlignedLowerFeedback> Alignment = {})
 {
     check(IsInGameThread());
     ParallelFor(TEXT("ProphecyNN.PhysicalFeedback"), Indices.Num(), 4,
-        [&ReadOnlyLayout, WorkItems, Indices](int32 ItemIndex)
+        [&ReadOnlyLayout, WorkItems, Indices, Alignment](int32 ItemIndex)
         {
             auto& Work = WorkItems[Indices[ItemIndex]];
-            Work.bSucceeded = CommitPreparedPhysicalSample(ReadOnlyLayout, Work);
+            const auto* Aligned = Alignment.IsValidIndex(Indices[ItemIndex]) ? &Alignment[Indices[ItemIndex]] : nullptr;
+            Work.bSucceeded = CommitPreparedPhysicalSample(ReadOnlyLayout, Work,
+                Aligned && Aligned->bAligned ? Aligned->State : nullptr);
         }, bForceSerial ? EParallelForFlags::ForceSingleThread : EParallelForFlags::None);
 }

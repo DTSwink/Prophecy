@@ -225,6 +225,61 @@ bool FProphecyJoltHardSixDOFTest::RunTest(const FString& Parameters)
     return Counts(*this, World, 1, 0);
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltRadialLimitTest,
+    "Prophecy.Jolt.GenericJoint.RadialTranslation", ProphecyJolt::GenericJointTests::Flags)
+
+bool FProphecyJoltRadialLimitTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::GenericJointTests;
+    for (int32 Axes : {2, 3}) for (bool Soft : {false, true})
+    {
+        FScopedWorld Scope;
+        if (!Start(*this, Scope)) return false;
+        auto& World = *Scope.Get();
+        FProphecyJoltFixtureBodySettings Anchor;
+        Anchor.bDynamic = false; Anchor.CollisionResponses.SetAllChannels(ECR_Ignore);
+        FProphecyJoltBodyHandle A, B;
+        if (!Okay(*this,TEXT("Radial anchor"),World.CreateSphere(1,Anchor,A))
+            || !Okay(*this,TEXT("Radial body"),World.CreateSphere(2,{},B))) return false;
+        auto Joint = FreeJoint(A,B);
+        const FQuat Frame(FVector(1,2,3).GetSafeNormal(), .7);
+        Joint.FrameA = Joint.FrameB = FTransform(Frame);
+        Joint.bRadialTranslation = true;
+        Joint.bSoftTranslation = Soft; Joint.TranslationStiffness = 25; Joint.TranslationDamping = 4;
+        for (int32 I=0; I<Axes; ++I) Joint.Translation[I] = { EProphecyJoltAxisMotion::Limited,-20,20 };
+        FProphecyJoltJointHandle Handle;
+        if (!Okay(*this,TEXT("Create circular/spherical limit"),World.CreateJoint(Joint,{},Handle))
+            || !Okay(*this,TEXT("Diagonal outward speed"),World.SetBodyVelocity(B,Frame.RotateVector(FVector(100,100,80)),FVector::ZeroVector,true))
+            || !Steps(*this,World,30)) return false;
+        FProphecyJoltBodyState State;
+        if (!Okay(*this,TEXT("Read radial motion"),World.ReadBody(B,State))) return false;
+        const auto Local = Frame.UnrotateVector(State.PositionCm);
+        const double Radius = Axes==3 ? Local.Size() : FVector2D(Local.X,Local.Y).Size();
+        if (Soft) TestTrue(TEXT("Soft radius allows compliant overshoot"),Radius>21.0);
+        else TestTrue(TEXT("Diagonal travel stops at shared radius, not box corner"),Radius>19.5 && Radius<20.2);
+        if (Axes==2) TestTrue(TEXT("Cylinder's free local axis remains unconstrained"),FMath::Abs(Local.Z-20)<.05);
+        // A settings-only motor update retains the wrapper and must not cast it as stock SixDOF.
+        Joint.Drives[0].bVelocity=true; Joint.Drives[0].Damping=2;
+        if (!Okay(*this,TEXT("Retarget radial joint motor"),World.UpdateJoint(Handle,Joint)) || !Steps(*this,World,1)) return false;
+        auto Invalid = Joint; Invalid.Translation[1].Maximum=30;
+        TestEqual(TEXT("Unequal radii rejected atomically"),World.UpdateJoint(Handle,Invalid).Code,EProphecyJoltWorldResult::InvalidArgument);
+        FProphecyJoltJointSettings Readback;
+        if (!Okay(*this,TEXT("Read retained radial settings"),World.ReadJoint(Handle,Readback))) return false;
+        TestTrue(TEXT("Invalid update preserves radial joint"),Readback.bRadialTranslation && Readback.Translation[1].Maximum==20);
+        // Changing back to a generic box should actually release the diagonal corner.
+        Joint.bRadialTranslation=false; Joint.bSoftTranslation=false; Joint.Drives[0]={};
+        if (!Okay(*this,TEXT("Restore generic box limits"),World.UpdateJoint(Handle,Joint))
+            || !Okay(*this,TEXT("Reset center"),World.SetBodyPose(B,FTransform::Identity))
+            || !Okay(*this,TEXT("Push toward corner"),World.SetBodyVelocity(B,Frame.RotateVector(FVector(100,100,80)),FVector::ZeroVector,true))
+            || !Steps(*this,World,60)
+            || !Okay(*this,TEXT("Read generic corner"),World.ReadBody(B,State))) return false;
+        const auto Corner=Frame.UnrotateVector(State.PositionCm);
+        TestTrue(TEXT("Unchanged generic API retains independent intervals"),FVector2D(Corner.X,Corner.Y).Size()>27.5);
+        if (!Counts(*this,World,1,0)) return false;
+    }
+    return !HasAnyErrors();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltSuppressionCacheTest,
     "Prophecy.Jolt.GenericJoint.CachedSuppressionReferenceCounts", ProphecyJolt::GenericJointTests::Flags)
 
