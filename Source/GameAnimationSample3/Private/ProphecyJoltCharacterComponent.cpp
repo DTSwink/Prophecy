@@ -433,7 +433,10 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     if (SolverPolicy.IsSuccess())
         SolverPolicy = Owner->SetRigCCDMode(Pending->RigHandle, uint8(Agent->GetJoltCCDMode()));
     if (SolverPolicy.IsSuccess())
-        SolverPolicy = Owner->SetRigSolverIterations(Pending->RigHandle, Agent->JoltVelocityIterations, Agent->JoltPositionIterations);
+    {
+        int32 Velocity,Position; Agent->GetJoltSolverIterations(Velocity,Position);
+        SolverPolicy = Owner->SetRigSolverIterations(Pending->RigHandle, Velocity, Position);
+    }
     if (!SolverPolicy.IsSuccess())
     {
         Owner->DestroyRig(Pending->RigHandle);
@@ -629,7 +632,7 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     }
     }
     const UPhysicsSettings* Physics = UPhysicsSettings::Get();
-    const float H = ProphecyJolt::StepTiming::Duration(DeltaSeconds, Physics);
+    const float H = ProphecyJolt::StepTiming::Duration(DeltaSeconds, Physics, GetWorld());
     if (State->AuthoredPublicationSerial == MAX_uint64)
         return Fail(OutError, TEXT("Authored pose publication serial exhausted; disable and rebind the character."));
     {

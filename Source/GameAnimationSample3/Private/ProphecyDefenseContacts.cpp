@@ -74,15 +74,16 @@ struct FSweep
 };
 }
 
-bool FContactGeometry::Load(const FString& Filename,FString& Error)
+bool FContactGeometry::Load(const FString& Filename,FString& Error,bool bAttacker)
 {
     Count=BaseCount=0;FString Text;TSharedPtr<FJsonObject> Doc;
     if (!FFileHelper::LoadFileToString(Text,*Filename) || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Doc) || !Doc)
     { Error=TEXT("Cannot read defense collider geometry: ")+Filename;return false; }
     const TArray<TSharedPtr<FJsonValue>>* Records=nullptr;double Version,Base;
     if (!Doc->TryGetNumberField(TEXT("version"),Version) || Version!=1 || !Doc->TryGetNumberField(TEXT("base_count"),Base)
-        || (Base!=13 && Base!=14) || !Doc->TryGetArrayField(TEXT("colliders"),Records)
-        || (Records->Num()!=int32(Base)+6 && !(Base==13 && Records->Num()==13)) || Records->Num()>MaxBoxes)
+        || !Doc->TryGetArrayField(TEXT("colliders"),Records) || Records->Num()>MaxBoxes
+        || (bAttacker ? (Base!=6 || Records->Num()!=6)
+            : ((Base!=13 && Base!=14) || (Records->Num()!=int32(Base)+6 && !(Base==13 && Records->Num()==13)))))
     { Error=TEXT("Unsupported defense collider layout.");return false; }
     for (int32 I=0;I<Records->Num();++I)
     {
@@ -97,7 +98,21 @@ bool FContactGeometry::Load(const FString& Filename,FString& Error)
     }
     static const FName Extras[]={TEXT("hand_l"),TEXT("hand_r"),TEXT("foot_l"),TEXT("ball_l"),TEXT("foot_r"),TEXT("ball_r")};
     for (int32 I=int32(Base);I<Records->Num();++I) if (Boxes[I].Name!=Extras[I-int32(Base)]) { Error=TEXT("Unexpected end-effector collider order.");return false; }
+    if (bAttacker)
+    {
+        static const FName Names[]={TEXT("head"),TEXT("lowerarm_l"),TEXT("lowerarm_r"),TEXT("calf_l"),TEXT("calf_r"),TEXT("blade")};
+        for (int32 I=0;I<6;++I) if (Boxes[I].Name!=Names[I]) { Error=TEXT("Unexpected attacker collider order.");return false; }
+    }
     Count=Records->Num();BaseCount=int32(Base);Error.Reset();return true;
+}
+
+FDefenseBox FContactGeometry::BuildAttachedBox(const FVector3f& Position,const FRows& Rotation,int32 Index) const
+{
+    check(Index>=0 && Index<BaseCount);
+    const auto& B=Boxes[Index];FDefenseBox Out;
+    Out.Center=Position+Transform(B.BoneOffset,Rotation);
+    for (int32 J=0;J<3;++J) Out.Axes.V[J]=Unit(Transform(B.LocalAxes.V[J],Rotation));
+    return Out;
 }
 
 FDefenseBox FContactGeometry::BuildBox(const FPose& P,int32 I) const
@@ -145,18 +160,6 @@ uint32 FContactGeometry::PresentMask(bool bDrawn) const
 {
     uint32 Mask=0;for (int32 I=0;I<Count;++I) if (bDrawn || Boxes[I].Name!=TEXT("blade")) Mask|=1u<<I;return Mask;
 }
-uint32 FContactGeometry::BlockingMask(int32 Label,bool bDrawn) const
-{
-    uint32 Mask=0;
-    for (int32 I=0;I<Count;++I)
-    {
-        const auto N=Boxes[I].Name;
-        if (((Label==16 || Label==17) && bDrawn && N==TEXT("blade"))
-            || ((Label==18 || Label==20 || Label==22) && (N==TEXT("upperarm_l") || N==TEXT("lowerarm_l") || N==TEXT("hand_l")))
-            || ((Label==19 || Label==21 || Label==23) && (N==TEXT("upperarm_r") || N==TEXT("lowerarm_r") || N==TEXT("hand_r")))) Mask|=1u<<I;
-    }
-    return Mask;
-}
 float BoxGap(const FDefenseBox& A,const FVector3f& HA,const FDefenseBox& B,const FVector3f& HB)
 {
     const auto Delta=B.Center-A.Center;float Gap=-std::numeric_limits<float>::infinity();
@@ -199,13 +202,10 @@ FContactPair SweepBoxes(const FDefenseBox& A0,const FDefenseBox& A1,const FVecto
     }
     Result.bPossible=true;Result.bConfirmed=false;Result.bResolved=false;return Result;
 }
-void FContactOrder::Include(const FContactPair& Pair,int32 Collider,bool bBlocking,double Start,double End)
+void FFirstContact::Include(const FContactPair& Pair,int32 Body,double Start,double End)
 {
     if (!Pair.bResolved) ++Unresolved;
-    const double Time=Start+Pair.Fraction*(End-Start);
-    if (bBlocking && Pair.bConfirmed && Time<BlockTime) { BlockTime=Time;BlockCollider=Collider;BlockFraction=Pair.Fraction; }
-    if (!bBlocking && Pair.bPossible && Time<HarmTime) { HarmTime=Time;HarmCollider=Collider;HarmFraction=Pair.Fraction; }
-    bProtected=FMath::IsFinite(BlockTime)&&BlockTime+2./8192.<HarmTime;
-    bHarmful=FMath::IsFinite(HarmTime)&&!bProtected;
+    const double Candidate=Start+Pair.Fraction*(End-Start);
+    if (Pair.bConfirmed && Candidate<Time) { Time=Candidate;Collider=Body; }
 }
 }

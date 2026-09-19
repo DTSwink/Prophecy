@@ -1,5 +1,15 @@
 #pragma once
 #include "CoreMinimal.h"
+class AProphecyAgent;
+namespace ProphecyAutoRun
+{
+float Threshold(const AProphecyAgent* Agent);
+void Remove(const AProphecyAgent* Agent);
+inline bool Above(double RootSpeedSquaredM, float ThresholdCm)
+{
+    return RootSpeedSquaredM > FMath::Square(double(ThresholdCm) * .01);
+}
+}
 
 inline bool ProphecySelectWalkCheckpoint(bool bRun, double VelocityX, double VelocityZ, float ThresholdCmPerSecond)
 {
@@ -9,7 +19,8 @@ inline bool ProphecySelectWalkCheckpoint(bool bRun, double VelocityX, double Vel
     return VelocityX * VelocityX + VelocityZ * VelocityZ < ThresholdM * ThresholdM;
 }
 
-// NN-step clock. Reversals start at the current mixture instead of jumping endpoints.
+// Dt is supplied by the active 60-tick blend clock (not NN or world delta time).
+// Reversals start at the current mixture instead of jumping endpoints.
 struct FProphecyNNPolicyBlend
 {
     float WalkWeight = 1.f;
@@ -38,7 +49,7 @@ struct FProphecyNNPolicyBlend
         }
         if (!IsActive()) return;
         Elapsed += Dt;
-        if (Elapsed + UE_SMALL_NUMBER >= Duration) { Reset(bWalk); return; }
+        if (Elapsed + 1.e-6f >= Duration) { Reset(bWalk); return; }
         const float T = FMath::Clamp(Elapsed / Duration, 0.f, 1.f);
         WalkWeight = FMath::Lerp(StartWeight, bWalk ? 1.f : 0.f, T * T * (3.f - 2.f * T));
     }

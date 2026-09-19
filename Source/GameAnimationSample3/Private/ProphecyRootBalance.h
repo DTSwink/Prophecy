@@ -4,6 +4,8 @@
 class AProphecyAgent;
 namespace ProphecyRootBalance
 {
+// Same physical/visible-foot selection as balancing, independent of its enable/speed gates.
+bool GetFlatFeetTarget(const AProphecyAgent* Agent,FVector& Target);
 // Sample once per real policy step. The same snapshot drives prediction and movement.
 const prophecy::sim::RootBalanceSpring* Prepare(const AProphecyAgent* Agent, const prophecy::sim::LocomotionState& Mover,
     const prophecy::sim::LocomotionIntent& Intent, bool bAllowed);

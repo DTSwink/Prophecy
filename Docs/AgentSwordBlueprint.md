@@ -2,6 +2,10 @@
 
 Runtime sword controls for the current manual agents, with Chaos and Jolt ownership.
 
+Held simulated Jolt swords now inherit the hand's magnetisation and authored target,
+independently of their fixed grip. `Break Sword Grip Constraint` removes only that
+joint for testing; see [independent sword magnetisation](SwordMagnetization.md).
+
 ## Right Shift drop freeze correction (2026-09-15)
 
 The automatic mesh receiver introduced a deterministic conflict during native sword handoff. `Drop()` staged release velocity on `UProphecyPhysicsStaticMeshComponent` before reserving its managed Jolt adapter. The virtual velocity setter entered the generic automatic importer, which claimed/froze that same source. The sword controller's subsequent admission then conflicted; restoring the held source invalidated the other adapter and stopped shared physics. Key input runs in the world-tick admission path, unlike the earlier isolated direct-drop check.

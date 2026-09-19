@@ -1,5 +1,6 @@
 #include "ProphecyJoltVelocityServo.h"
 #include "ProphecyJoltConversions.h"
+#include "ProphecyJoltPHATSweeps.h"
 
 THIRD_PARTY_INCLUDES_START
 #include <Jolt/Physics/Body/BodyLock.h>
@@ -15,6 +16,7 @@ using FBodyFollows = TMap<uint32, FFollow>;
 // No modification of live servo/rig layouts. Writes only outside synchronous Update;
 // the physics worker reads an immutable map, never game objects.
 TMap<const FVelocityServo*, FBodyFollows> Follows;
+TMap<const FVelocityServo*, TMap<uint32, FTransform>> TargetOffsets;
 
 struct FVelocityRewrite
 {
@@ -24,7 +26,8 @@ struct FVelocityRewrite
 
 bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Body, float DenominatorSeconds,
     double TrajectoryElapsedSeconds, float IntegrationSeconds,
-    FVelocityServo::FSample& Sample, FVelocityRewrite& Rewrite, const FFollow* Follow)
+    FVelocityServo::FSample& Sample, FVelocityRewrite& Rewrite, const FFollow* Follow,
+    const FTransform* TargetOffset)
 {
     using namespace Conversions;
     Sample.PositionCm = FromJoltPosition(Body.GetPosition());
@@ -40,6 +43,11 @@ bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Bo
         const double Alpha = FMath::Clamp(TrajectoryElapsedSeconds / Target.TrajectoryDurationSeconds, 0.0, 1.0);
         TargetPositionCm = FMath::Lerp(Target.StartPositionCm, Target.TargetPositionCm, Alpha);
         TargetRotation = FQuat::Slerp(Target.StartRotation, Target.TargetRotation, Alpha).GetNormalized();
+    }
+    if (TargetOffset)
+    {
+        const FTransform Shifted = *TargetOffset * FTransform(TargetRotation, TargetPositionCm);
+        TargetPositionCm = Shifted.GetLocation(); TargetRotation = Shifted.GetRotation();
     }
     // The authored target is the body origin; Jolt stores linear velocity at the COM.
     // Convert the requested origin velocity to COM velocity after calculating W below.
@@ -164,6 +172,7 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
     { OutError = TEXT("Fixture servo activation preparation requires the game thread outside Update."); return false; }
     TArray<JPH::BodyID, TInlineAllocator<32>> BodiesToWake;
     const auto* BodyFollows = Follows.IsEmpty() ? nullptr : Follows.Find(this);
+    const auto* Offsets = TargetOffsets.IsEmpty() ? nullptr : TargetOffsets.Find(this);
     const JPH::BodyLockInterface& ReadLocks = bUseNoLockIdleReads
         ? static_cast<const JPH::BodyLockInterface&>(Physics.GetBodyLockInterfaceNoLock())
         : static_cast<const JPH::BodyLockInterface&>(Physics.GetBodyLockInterface());
@@ -181,7 +190,8 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
             ? FirstStepSeconds : Target.DenominatorSeconds;
         if (!CalculateRewrite(Target, Body, H, Target.TrajectoryElapsedSeconds + H,
             FirstStepSeconds > 0.0f ? FirstStepSeconds : H, Sample, Rewrite,
-            BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr))
+            BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr,
+            Offsets ? Offsets->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr))
         { ++InvalidBodies; OutError = TEXT("Fixture servo sleeping-body candidate overflows native velocity precision."); return false; }
         if (RequiresNativeWake(Target, Rewrite) || HasPendingTrajectoryMotion(Target)) BodiesToWake.Add(Target.Body);
     }
@@ -217,13 +227,29 @@ void FVelocityServo::Clear()
     LastIntegrationSeconds = 0.0f;
 }
 
+void FVelocityServo::SetBodyTargetOffset(JPH::BodyID Body, const FTransform& Offset)
+{
+    check(IsInGameThread());
+    TargetOffsets.FindOrAdd(this).Add(Body.GetIndexAndSequenceNumber(), Offset);
+}
+void FVelocityServo::RemoveBodyTargetOffset(JPH::BodyID Body)
+{
+    check(IsInGameThread());
+    if (auto* Map = TargetOffsets.Find(this))
+    {
+        Map->Remove(Body.GetIndexAndSequenceNumber());
+        if (Map->IsEmpty()) TargetOffsets.Remove(this);
+    }
+}
+
 void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
 {
     using namespace Conversions;
-    if (Targets.IsEmpty()) return;
+    if (Targets.IsEmpty()) { PHATSweeps::AfterServo(Context.mPhysicsSystem, Context.mDeltaTime); return; }
     ++Invocations;
     LastIntegrationSeconds = Context.mDeltaTime;
     const auto* BodyFollows = Follows.IsEmpty() ? nullptr : Follows.Find(this);
+    const auto* Offsets = TargetOffsets.IsEmpty() ? nullptr : TargetOffsets.Find(this);
     for (int32 Index = 0; Index < Targets.Num(); ++Index)
     {
         FTarget& Target = Targets[Index];
@@ -241,7 +267,8 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
         FVelocityRewrite Rewrite;
         const float H = Target.TrajectoryDurationSeconds > 0.0f ? Context.mDeltaTime : Target.DenominatorSeconds;
         if (!CalculateRewrite(Target, Body, H, Target.TrajectoryElapsedSeconds, Context.mDeltaTime, Sample, Rewrite,
-            BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr)
+            BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr,
+            Offsets ? Offsets->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr)
             || (!Body.IsActive() && RequiresNativeWake(Target, Rewrite)))
         { ++InvalidBodies; continue; }
         // Stock clamped setters enforce the body's captured caps without changing those limits.
@@ -251,5 +278,7 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
         Sample.AngularAfterRadiansPerSecond = FromJoltAngularVelocity(Body.GetAngularVelocity());
         Sample.bValid = true;
     }
+    // Ordered after ALL target velocities; a separate Jolt listener could race this servo.
+    PHATSweeps::AfterServo(Context.mPhysicsSystem, Context.mDeltaTime);
 }
 }

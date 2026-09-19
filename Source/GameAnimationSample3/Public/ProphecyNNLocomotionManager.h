@@ -11,7 +11,7 @@ class UNNEModelData;
 class USceneComponent;
 class USkeletalMesh;
 class USkeletalMeshComponent;
-enum class EProphecyParryBlocker : uint8;
+enum class EProphecyAgentState : uint8;
 struct FProphecyNNDefenseStatus;
 
 /** Read-only completed manager diagnostics; does not sample bodies or run inference. */
@@ -252,6 +252,7 @@ public:
 		bool bLoop);
 	bool StopAgentAnimationLayer(FProphecyAgentHandle Handle, float BlendOutSeconds);
 	bool TriggerAgentNNAttack(FProphecyAgentHandle Handle, FName Attack, FVector TargetWorld, bool bHalf);
+	void GetAgentAttackDefenseState(FProphecyAgentHandle Handle,bool& bParry,bool& bDodge) const;
 	bool SetAgentNNHalfAttack(FProphecyAgentHandle Handle, bool bHalf);
 	bool SetAgentNNAttackTarget(FProphecyAgentHandle Handle, FVector TargetWorld);
 	bool GetAgentLocomotionRootWindow(FProphecyAgentHandle Handle, TArray<FTransform>& WorldRoots, TArray<float>& Times) const;
@@ -262,10 +263,11 @@ public:
 	void TraceNNHandoff();
 	bool SetAgentFootPinningDebug(FProphecyAgentHandle Handle, bool bEnabled);
 	bool GetAgentFootPinning(FProphecyAgentHandle Handle, bool bAttack, bool bFrozenStage, FProphecyFootPinningSample& Sample) const;
-	bool StopAgentNNAttack(FProphecyAgentHandle Handle);
-	bool StartAgentNNParry(FProphecyAgentHandle Handle,AProphecyAgent* Attacker,EProphecyParryBlocker Blocker,float MaximumSeconds,FString& Error);
+	bool StopAgentNNAttack(FProphecyAgentHandle Handle, bool bReturnToLocomotion = true);
+	bool StartAgentNNParry(FProphecyAgentHandle Handle,AProphecyAgent* Attacker,float MaximumSeconds,FString& Error);
 	bool StartAgentNNDodge(FProphecyAgentHandle Handle,AProphecyAgent* Attacker,float MaximumSeconds,FString& Error);
-	bool StopAgentNNDefense(FProphecyAgentHandle Handle);
+	bool StopAgentNNDefense(FProphecyAgentHandle Handle, bool bReturnToLocomotion = true);
+	EProphecyAgentState GetAgentActivityState(FProphecyAgentHandle Handle) const;
 	bool GetAgentNNDefenseStatus(FProphecyAgentHandle Handle,FProphecyNNDefenseStatus& Status) const;
 	bool GetAgentNNAttackState(FProphecyAgentHandle Handle, FName& Attack, bool& bHalf, bool& bArmed, bool& bHit, int32& Frame) const;
 	/** Development console audit; not part of the gameplay Blueprint surface. */
@@ -298,6 +300,8 @@ private:
 	bool ResamplePhysicalAgentState(int32 AgentIndex);
 	int32 PhysicalFeedbackExecutionMode = 0;
 	void BuildInputBatch(float StepSeconds);
+	void AdvanceAgentMover(int32 AgentIndex, float StepSeconds);
+	void RebaseDefenseAfterRootCollision(int32 AgentIndex,const FVector3f& PreviousRoot,float PreviousYaw,const FVector3f& Root,float Yaw);
 	bool RunModelBatch();
 	void ApplyOutputBatch(float StepSeconds);
 	void BuildUpperInputBatch();

@@ -5,6 +5,9 @@
 #include "Misc/AutomationTest.h"
 #include "ProphecyJoltConversions.h"
 #include "ProphecyJoltVelocityServo.h"
+#include "ProphecyJoltPHATSweeps.h"
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Body/BodyLock.h>
 #include <limits>
 
 THIRD_PARTY_INCLUDES_START
@@ -68,6 +71,7 @@ public:
 
     ~FServoFixture()
     {
+        PHATSweeps::Forget(&Physics);
         // Update is synchronous; join worker wrappers before destroying anything
         // that the real registered listener can access.
         Jobs.Reset();
@@ -127,6 +131,7 @@ public:
     }
 
     JPH::BodyInterface& Bodies() { return Physics.GetBodyInterface(); }
+    JPH::PhysicsSystem& System() { return Physics; }
     FVelocityServo& Listener() { return Servo; }
 
 private:
@@ -828,6 +833,55 @@ bool FProphecyJoltServoInertiaTest::RunTest(const FString&)
     if (!Fixture.Publish(*this,Targets,.1f) || !Fixture.Step(*this,1.f/60)) return false;
     TestTrue(TEXT("Zero tracking retains the separate gravity compensation"),
         Fixture.Listener().GetLastSamples()[0].LinearAfterCmPerSecond.Equals(Velocity+FVector(0,0,981./60.),.002));
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyPHATSweepTest, "Prophecy.Jolt.ContactShapes.SelectiveSweeps",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyPHATSweepTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt;
+    using namespace ProphecyJolt::VelocityServoTests;
+    class FAllowPairs final : public JPH::ObjectLayerPairFilter
+    { public: bool ShouldCollide(JPH::ObjectLayer, JPH::ObjectLayer) const override { return true; } } Allow;
+    FNoObjectPairs Reject;
+    const JPH::RefConst<JPH::Shape> Sphere = new JPH::SphereShape(.05f);
+    for (int32 Mode = 0; Mode < 4; ++Mode)
+    {
+        FServoFixture F;
+        const auto A = F.Add(Sphere, FTransform::Identity);
+        const auto B = F.Add(Sphere, FTransform(FVector(30,0,0)));
+        FVelocityServo::FTarget Target;
+        Target.Body = A; Target.TargetPositionCm = FVector(40,0,0); Target.AngularStrength = 0;
+        if (!F.Publish(*this, MakeArrayView(&Target, 1), 1.f/60)) return false;
+        if (Mode != 0)
+        {
+            TArray<PHATSweeps::FBody> Selected{{A.GetIndexAndSequenceNumber(), {Mode == 2 ? 0.f : 1.f, 64}}};
+            TArray<uint32> Candidates{A.GetIndexAndSequenceNumber(), B.GetIndexAndSequenceNumber()};
+            PHATSweeps::Publish(&F.System(), Mode == 3 ? static_cast<const JPH::ObjectLayerPairFilter*>(&Reject) : &Allow,
+                MoveTemp(Selected), MoveTemp(Candidates), nullptr);
+        }
+        if (!F.Step(*this, 1.f/60)) return false;
+        const float AX = float(F.Bodies().GetPosition(A).GetX()), BX = float(F.Bodies().GetPosition(B).GetX());
+        if (Mode == 1)
+        {
+            TestTrue(TEXT("Sweep after servo prevents sphere crossing"), AX <= BX - .0999f);
+            TestTrue(TEXT("Dynamic target receives momentum"), F.Bodies().GetLinearVelocity(B).GetX() > 0.f);
+            TestNearlyEqual(TEXT("Equal/opposite response conserves linear momentum"),
+                F.Bodies().GetLinearVelocity(A).GetX() + F.Bodies().GetLinearVelocity(B).GetX(), 24.f, .001f);
+        }
+        else TestNearlyEqual(TEXT("Off, zero strength, or excluded pair preserves original travel"), AX, .4f, .0001f);
+    }
+    {
+        FServoFixture F;
+        const JPH::RefConst<JPH::Shape> Bar = new JPH::BoxShape(JPH::Vec3(.25f,.02f,.02f), 0.f);
+        const auto A = F.Add(Bar, FTransform::Identity);
+        const auto B = F.Add(Sphere, FTransform(FVector(10,17.32,0)));
+        F.Bodies().SetAngularVelocity(A, JPH::Vec3(0,0,40.f));
+        JPH::BodyLockWrite LA(F.System().GetBodyLockInterfaceNoLock(), A);
+        JPH::BodyLockWrite LB(F.System().GetBodyLockInterfaceNoLock(), B);
+        TestTrue(TEXT("Pure angular sweep finds an intermediate contact"), PHATSweeps::Respond(F.System(), LA.GetBody(), LB.GetBody(), 1.f/30, {}));
+        TestTrue(TEXT("Angular response changes angular velocity"), LA.GetBody().GetAngularVelocity().GetZ() < 40.f);
+    }
     return true;
 }
 #endif // WITH_DEV_AUTOMATION_TESTS

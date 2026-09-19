@@ -704,7 +704,15 @@ public:
 	 * Target is an absolute Unreal world position in centimetres. Kicks reject half mode.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|NN Attack")
-	bool TriggerNNAttack(FName Attack, FVector TargetWorldLocation, bool bHalfAttack = false);
+	bool TriggerNNAttack(FName Attack, FVector TargetWorldLocation, bool bHalfAttack = false, AProphecyAgent* Victim = nullptr);
+
+	/** Optional gameplay victim of the active attack. Null means an untargeted air attack. */
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Attack")
+	AProphecyAgent* GetNNAttackVictim() const;
+
+	/** Includes waiting pre-Armed responses; reads state only, without inference. */
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Attack")
+	void GetNNAttackDefenseState(bool& bBeingParried, bool& bBeingDodged) const;
 
 	/** Frozen foot-pinning resolution for this agent's attacks. 4 is fast; 60 matches training.
 	 * Changes apply on the next attack policy step. The learned pin pass stays at 4. */

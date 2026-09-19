@@ -55,6 +55,9 @@ public:
     // Sparse opt-in world-axis tracking weights; retained when packets are rebuilt.
     void SetBodyFollow(JPH::BodyID Body, const FVector& Linear, const FVector& Angular);
     void RemoveBodyFollow(JPH::BodyID Body);
+    // Optional rigid offset applied AFTER interpolating the inherited parent target.
+    void SetBodyTargetOffset(JPH::BodyID Body, const FTransform& Offset);
+    void RemoveBodyTargetOffset(JPH::BodyID Body);
     virtual void OnStep(const JPH::PhysicsStepListenerContext& Context) override;
     const TArray<FSample>& GetLastSamples() const { return Samples; }
     uint64 GetInvocationCount() const { return Invocations; }

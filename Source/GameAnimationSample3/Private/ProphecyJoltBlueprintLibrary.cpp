@@ -4,6 +4,36 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "PhysicsEngine/PhysicsSettings.h"
+#include "ProphecyJoltStepTiming.h"
+
+namespace ProphecyJolt::StepTiming
+{
+static TMap<TWeakObjectPtr<const UWorld>, int32> Overrides;
+int32 MinimumSubsteps(const UWorld* World)
+{
+    const auto* Value = Overrides.IsEmpty() ? nullptr : Overrides.Find(World);
+    return Value ? *Value : 1;
+}
+void RemoveOverride(const UWorld* World) { Overrides.Remove(World); }
+}
+
+bool UProphecyJoltBlueprintLibrary::SetJoltCollisionSubsteps(const UObject* Context, bool bEnabled, int32 Substeps)
+{
+    if (!IsInGameThread()) return false;
+    auto* World = GEngine ? GEngine->GetWorldFromContextObject(Context, EGetWorldErrorMode::ReturnNull) : nullptr;
+    if (!World || !World->IsGameWorld()) return false;
+    if (!bEnabled) { ProphecyJolt::StepTiming::RemoveOverride(World); return true; }
+    if (Substeps < 1 || Substeps > 16) return false;
+    if (Substeps == 1) ProphecyJolt::StepTiming::RemoveOverride(World);
+    else ProphecyJolt::StepTiming::Overrides.Add(World, Substeps);
+    return true;
+}
+void UProphecyJoltBlueprintLibrary::GetJoltCollisionSubsteps(const UObject* Context, bool& bEnabled, int32& Substeps)
+{
+    auto* World = IsInGameThread() && GEngine ? GEngine->GetWorldFromContextObject(Context, EGetWorldErrorMode::ReturnNull) : nullptr;
+    Substeps = World ? ProphecyJolt::StepTiming::MinimumSubsteps(World) : 1;
+    bEnabled = Substeps > 1;
+}
 
 bool UProphecyJoltBlueprintLibrary::InitializeJoltWorld(const UObject* WorldContextObject,
     FString& OutError, int32 BodyCapacity, int32 WorkerThreads)

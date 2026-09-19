@@ -121,6 +121,7 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
         { Error += FString::Printf(TEXT("%s could not leave physics; "), *Actor->GetName()); continue; }
         StopAgentNNDefense(S.Handle);
         StopAgentNNAttack(S.Handle);
+        ProphecyAttackRecovery::Cancel(Actor);
         if (!IsValid(Actor) || Actor->IsActorBeingDestroyed() || ResolveAgent(S.Handle) != Actor) continue;
         Actor->StopLocomotionInput();
         Actor->ConsumeMovementInputVector();

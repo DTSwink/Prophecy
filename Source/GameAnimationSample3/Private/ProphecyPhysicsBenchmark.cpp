@@ -130,7 +130,7 @@ namespace ProphecySterileBench
             Bone.SetRotation((Bone.GetRotation() * FQuat(FVector::UpVector,.12*FMath::Sin(Time*2))).GetNormalized());
         if (Name == TEXT("pelvis")) Bone.AddToTranslation(FVector(0,0,1.5*FMath::Sin(Time*2)));
     }
-    const TCHAR* Names[] = {TEXT("Empty"), TEXT("Kinematic"), TEXT("NativeWorld"), TEXT("NativeLocal"),
+    const TCHAR* BenchmarkModeNames[] = {TEXT("Empty"), TEXT("Kinematic"), TEXT("NativeWorld"), TEXT("NativeLocal"),
         TEXT("NativeLocalPelvis"), TEXT("JointMotors"), TEXT("JointMotorsPelvis"), TEXT("WorldForcePD"), TEXT("Passive"), TEXT("WorldOneStep"), TEXT("FullSim"), TEXT("AgentHalfSim"), TEXT("ManualCapture"), TEXT("ManualReplay"), TEXT("JoltLive"), TEXT("JoltCrowd"), TEXT("ManualCrowd"), TEXT("NNJoltCrowd")};
     constexpr int32 ManualMode = 12;
     constexpr int32 ManualReplayMode = 13;
@@ -250,7 +250,7 @@ void UProphecyPhysicsBenchmarkSubsystem::OnWorldBeginPlay(UWorld& World)
         || !FParse::Param(FCommandLine::Get(), TEXT("PhysicsBenchFloorOnly"))
         || !FParse::Param(FCommandLine::Get(), TEXT("PhysicsBenchMovementOnly"))))
     { Finish(TEXT("NNJoltCrowd requires Count=2..100, Repeats=1, Warmup>=30, Samples=60..3600, synchronous physics, FloorOnly and MovementOnly as the sole method")); return; }
-    for (int32 R = 0; R < Repeats; ++R) for (int32 F = 0; F < 2; ++F) for (int32 M = 0; M < UE_ARRAY_COUNT(ProphecySterileBench::Names); ++M)
+    for (int32 R = 0; R < Repeats; ++R) for (int32 F = 0; F < 2; ++F) for (int32 M = 0; M < UE_ARRAY_COUNT(ProphecySterileBench::BenchmarkModeNames); ++M)
         if (!FParse::Param(FCommandLine::Get(),TEXT("PhysicsBenchFloorOnly")) || F==1)
         if (M != ProphecySterileBench::ManualMode || Included.Contains(TEXT("ManualCapture")))
         if (M != ProphecySterileBench::ManualReplayMode)
@@ -258,7 +258,7 @@ void UProphecyPhysicsBenchmarkSubsystem::OnWorldBeginPlay(UWorld& World)
         if (M != ProphecySterileBench::MultiJoltMode || Included.Contains(TEXT("JoltCrowd")))
         if (M != ProphecySterileBench::ManualCrowdMode || Included.Contains(TEXT("ManualCrowd")))
         if (M != ProphecySterileBench::NNJoltMode || Included.Contains(TEXT("NNJoltCrowd")))
-        if(Included.IsEmpty() || Included.Contains(ProphecySterileBench::Names[M])) Cases.Add({M,bool(F),R});
+        if(Included.IsEmpty() || Included.Contains(ProphecySterileBench::BenchmarkModeNames[M])) Cases.Add({M,bool(F),R});
     if(Cases.IsEmpty()) { Finish(TEXT("No matching benchmark methods")); return; }
     if (ProphecyJolt::BenchmarkChaosPause::IsRequested()
         && (Included.Num() != 1 || !Included.Contains(TEXT("NNJoltCrowd")) || Cases.Num() != 1
@@ -461,7 +461,7 @@ void UProphecyPhysicsBenchmarkSubsystem::PrepareCase()
         if (!PrepareNNJoltCase(Error)) { Finish(Error); return; }
     }
     Frame=0; WorldMs.Reset(); FrameMs.Reset(); Before.Reset(); PreviousStart=0;
-    UE_LOG(LogTemp,Display,TEXT("STERILE_PHYSICS case=%d/%d mode=%s fixture=%s repeat=%d"),CaseIndex+1,Cases.Num(),ProphecySterileBench::Names[C.Mode],C.Floor?TEXT("floor_gravity"):TEXT("air_no_gravity"),C.Repeat);
+    UE_LOG(LogTemp,Display,TEXT("STERILE_PHYSICS case=%d/%d mode=%s fixture=%s repeat=%d"),CaseIndex+1,Cases.Num(),ProphecySterileBench::BenchmarkModeNames[C.Mode],C.Floor?TEXT("floor_gravity"):TEXT("air_no_gravity"),C.Repeat);
 }
 
 void UProphecyPhysicsBenchmarkSubsystem::StartTick(UWorld* W,ELevelTick,float)
@@ -664,7 +664,7 @@ void UProphecyPhysicsBenchmarkSubsystem::SaveCase()
     FString QueryPaddingError;
     if (!ProphecySterileBench::ValidateRequestedQueryPadding(QueryPaddingError)) { Finish(QueryPaddingError); return; }
     const FCase C=Cases[CaseIndex]; auto O=MakeShared<FJsonObject>();
-    O->SetStringField(TEXT("mode"),ProphecySterileBench::Names[C.Mode]);
+    O->SetStringField(TEXT("mode"),ProphecySterileBench::BenchmarkModeNames[C.Mode]);
     O->SetStringField(TEXT("fixture"),C.Floor?TEXT("floor_gravity"):TEXT("air_no_gravity"));
     O->SetNumberField(TEXT("repeat"),C.Repeat); O->SetNumberField(TEXT("samples"),WorldMs.Num());
     O->SetObjectField(TEXT("world_tick"),ProphecySterileBench::Stats(WorldMs));
@@ -737,7 +737,7 @@ void UProphecyPhysicsBenchmarkSubsystem::SaveCase()
         if (C.Mode == ProphecySterileBench::ManualMode) Cases.Insert({ ProphecySterileBench::ManualReplayMode, C.Floor, C.Repeat }, CaseIndex + 1);
     }
     Results.Add(MakeShared<FJsonValueObject>(O));
-    UE_LOG(LogTemp,Display,TEXT("STERILE_PHYSICS result mode=%s mean=%.3fms"),ProphecySterileBench::Names[C.Mode],O->GetObjectField(TEXT("world_tick"))->GetNumberField(TEXT("mean_ms")));
+    UE_LOG(LogTemp,Display,TEXT("STERILE_PHYSICS result mode=%s mean=%.3fms"),ProphecySterileBench::BenchmarkModeNames[C.Mode],O->GetObjectField(TEXT("world_tick"))->GetNumberField(TEXT("mean_ms")));
 }
 
 void UProphecyPhysicsBenchmarkSubsystem::Finish(const FString& Error)
@@ -763,7 +763,7 @@ void UProphecyPhysicsBenchmarkSubsystem::Finish(const FString& Error)
         auto Partial = MakeShared<FJsonObject>();
         Partial->SetBoolField(TEXT("success"), false);
         Partial->SetStringField(TEXT("scope"), TEXT("Incomplete failed-case diagnostics only, not performance acceptance. World samples may include the failed frame; character means use only previously completed character-validation rows. Actual NN validation is a separate counter below."));
-        if (Cases.IsValidIndex(CaseIndex)) Partial->SetStringField(TEXT("mode"), ProphecySterileBench::Names[Cases[CaseIndex].Mode]);
+        if (Cases.IsValidIndex(CaseIndex)) Partial->SetStringField(TEXT("mode"), ProphecySterileBench::BenchmarkModeNames[Cases[CaseIndex].Mode]);
         Partial->SetNumberField(TEXT("timed_world_samples"), WorldMs.Num());
         Partial->SetObjectField(TEXT("world_tick"), ProphecySterileBench::Stats(WorldMs));
         Partial->SetArrayField(TEXT("world_ms"), ProphecySterileBench::Values(WorldMs));

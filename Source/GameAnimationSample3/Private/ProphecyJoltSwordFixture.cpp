@@ -1,5 +1,7 @@
 #include "CoreMinimal.h"
 #include "ProphecyAgent.h"
+#include "ProphecySwordAttackCollision.h"
+#include "ProphecySwordPhysicsLibrary.h"
 #include "ProphecyAngularLimits.h"
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltCharacterComponent.h"
@@ -819,7 +821,174 @@ FAutoConsoleCommand FighterContactConsoleCommand(TEXT("Prophecy.Jolt.SwordFighte
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySwordMagnetizationTest,
+    "Prophecy.Jolt.Sword.IndependentHandMagnetization",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecySwordMagnetizationTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::SwordFixture;
+    FWorldFixture Fixture;
+    const auto Values=UWorld::InitializationValues().AllowAudioPlayback(false).RequiresHitProxies(false)
+        .CreatePhysicsScene(true).CreateNavigation(false).CreateAISystem(false).ShouldSimulatePhysics(true)
+        .EnableTraceCollision(true).CreateFXSystem(false).SetTransactional(false);
+    Fixture.World=UWorld::CreateWorld(EWorldType::Game,false,NAME_None,nullptr,true,ERHIFeatureLevel::Num,&Values);
+    if (!Fixture.World || !GEngine) return false;
+    GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(Fixture.World);
+    Fixture.World->GetWorldSettings()->bGlobalGravitySet=true;
+    Fixture.World->GetWorldSettings()->GlobalGravityZ=0.f;
+    Fixture.World->InitializeActorsForPlay(FURL());Fixture.World->GetWorldSettings()->NotifyBeginPlay();
+    auto* World=Fixture.World->GetSubsystem<UProphecyJoltWorldSubsystem>();
+    FProphecyJoltWorldSettings Settings;Settings.GravityCmPerSecondSquared=FVector::ZeroVector;Settings.WorkerThreads=0;
+    if (!World || !World->InitializeSimulation(Settings).IsSuccess()) return false;
+    AProphecyAgent* Agent=nullptr;FString Error;
+    if (!PrepareAgent(Fixture,Agent,Error) || !Agent->EquipSword(true)) { AddError(Error);return false; }
+    auto* Character=Agent->GetJoltCharacterComponent();
+    auto* Sword=Agent->GetHeldSword();
+    auto* Blade=Cast<UStaticMeshComponent>(Sword->GetRootComponent());
+    auto* Body=Sword->FindComponentByClass<UProphecyJoltBodyComponent>();
+    FProphecyJoltBodyHandle Handle;FTransform Origin;
+    if (!Body || !Body->GetBodyHandle(Handle) || !Body->GetBodyOriginToComponent(Origin)) return false;
+    Body->bAutomaticStep=false;
+    FTransform ComponentTarget=Agent->SwordGripTransform*Agent->GetPoseReferenceMesh()->GetSocketTransform(Agent->SwordHandSocket);
+    ComponentTarget.RemoveScaling();
+    const FTransform Expected=Origin*ComponentTarget;
+    FProphecyJoltWorldDiagnostics Before,After;World->GetDiagnostics(Before);
+    if (!TestTrue(TEXT("Break the grip without dropping the sword"),UProphecySwordPhysicsLibrary::BreakSwordGripConstraint(Agent))) return false;
+    World->GetDiagnostics(After);
+    TestTrue(TEXT("Only one joint removed; held item and body survive"),After.GenericJointCount+1==Before.GenericJointCount
+        && After.BodyCount==Before.BodyCount && Agent->GetHeldSword()==Sword && World->OwnsBody(Handle));
+    TestTrue(TEXT("Repeated break is safe"),UProphecySwordPhysicsLibrary::BreakSwordGripConstraint(Agent));
+    // Isolate drive response; do not change the user's scene, collider geometry or CCD setting.
+    Blade->SetCollisionResponseToAllChannels(ECR_Ignore);
+    FProphecyJoltCollisionUpdate Collision;Collision.Handle=Handle;Collision.Responses=FCollisionResponseContainer(ECR_Ignore);
+    if (!World->UpdateBodyCollision(MakeArrayView(&Collision,1)).IsSuccess()
+        || !World->SetBodyRuntimeSettings(Handle,false,0,0,false).IsSuccess()) return false;
+    Agent->bWorldMagnetizationEnabled=true;
+    Agent->WorldMagnetizationLinearStrengthScale=1;
+    Agent->WorldMagnetizationAngularStrengthScale=1;
+    Agent->SetAllBodyMagnetization(false,0,0);
+    auto ResetBlade=[&](float Angle=0.f)
+    {
+        const auto Result=World->SetBodyPose(Handle,FTransform(FQuat(FVector::UpVector,Angle)*Expected.GetRotation(),Expected.GetLocation()+FVector(16,0,0)));
+        if (!Result.IsSuccess()) { AddError(Result.Message);return false; }
+        if (!Body->SetBodyVelocity(FVector::ZeroVector,FVector::ZeroVector,true,Error)) { AddError(Error);return false; }
+        return true;
+    };
+    auto Step=[&]()
+    {
+        if (!Character->PublishAuthoredTargets(StepSeconds,Error)) { AddError(Error);return false; }
+        if (!Character->StepAndPublish(StepSeconds,Error)) { AddError(Error);return false; }
+        return true;
+    };
+    FProphecyJoltBodyState State;
+    Agent->SetBodyMagnetization(TEXT("hand_r"),true,1,1);
+    if (!ResetBlade() || !Step() || !Body->GetBodyState(State)) return false;
+    TestTrue(TEXT("Constraint-free sword reaches authored hand-offset target, not actual hand"),State.PositionCm.Equals(Expected.GetLocation(),.002));
+    Agent->WorldMagnetizationLinearStrengthScale=.5f;
+    Agent->WorldMagnetizationAngularStrengthScale=.5f;
+    Agent->SetBodyMagnetization(TEXT("hand_r"),true,.5f,.5f);
+    if (!ResetBlade() || !Step() || !Body->GetBodyState(State)) return false;
+    TestTrue(TEXT("Sword inherits global times hand linear strength"),State.PositionCm.Equals(Expected.GetLocation()+FVector(12,0,0),.002));
+    Agent->SetBodyMagnetization(TEXT("hand_r"),true,0,.5f);
+    if (!ResetBlade(.1f) || !Step() || !Body->GetBodyState(State)) return false;
+    TestTrue(TEXT("Sword inherits independent angular strength"),FMath::IsNearlyEqual(State.AngularVelocityRadiansPerSecond.Z,-.1*.25/StepSeconds,.001));
+    Agent->SetBodyMagnetization(TEXT("hand_r"),false,1,1);
+    if (!ResetBlade() || !Step() || !Body->GetBodyState(State)) return false;
+    TestTrue(TEXT("Hand disable clears sword drive immediately"),State.PositionCm.Equals(Expected.GetLocation()+FVector(16,0,0),.002));
+    Agent->SetBodyMagnetization(TEXT("hand_r"),true,1,1);
+    Agent->bWorldMagnetizationEnabled=false;
+    if (!ResetBlade() || !Step() || !Body->GetBodyState(State)) return false;
+    TestTrue(TEXT("Global disable clears sword drive"),State.PositionCm.Equals(Expected.GetLocation()+FVector(16,0,0),.002));
+    Agent->bWorldMagnetizationEnabled=true;
+    if (!TestTrue(TEXT("Drop keeps physical item"),Agent->DropSword()==Sword)) return false;
+    if (!ResetBlade() || !Step() || !Body->GetBodyState(State)) return false;
+    TestTrue(TEXT("Dropped sword no longer magnetised"),State.PositionCm.Equals(Expected.GetLocation()+FVector(16,0,0),.002));
+    return !HasAnyErrors();
+}
 #include "PhysicsEngine/PhysicsSettings.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySwordAttackCollisionTest,
+    "Prophecy.Jolt.Sword.AttackCollisionPhases",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::SwordFixture;
+    FWorldFixture Fixture;
+    const auto Values=UWorld::InitializationValues().AllowAudioPlayback(false).RequiresHitProxies(false)
+        .CreatePhysicsScene(true).CreateNavigation(false).CreateAISystem(false).ShouldSimulatePhysics(true)
+        .EnableTraceCollision(true).CreateFXSystem(false).SetTransactional(false);
+    Fixture.World=UWorld::CreateWorld(EWorldType::Game,false,NAME_None,nullptr,true,ERHIFeatureLevel::Num,&Values);
+    if (!Fixture.World || !GEngine) return false;
+    GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(Fixture.World);
+    Fixture.World->InitializeActorsForPlay(FURL());Fixture.World->GetWorldSettings()->NotifyBeginPlay();
+    auto* World=Fixture.World->GetSubsystem<UProphecyJoltWorldSubsystem>();
+    FProphecyJoltWorldSettings Settings;Settings.GravityCmPerSecondSquared=FVector::ZeroVector;Settings.WorkerThreads=0;
+    if (!World || !World->InitializeSimulation(Settings).IsSuccess()) return false;
+    AProphecyAgent* Agent=nullptr;FString Error;
+    if (!PrepareAgent(Fixture,Agent,Error)) { AddError(Error);return false; }
+    for (bool bSimulated:{true,false})
+    {
+        if (!TestTrue(TEXT("Equip mode"),Agent->EquipSword(bSimulated))) return false;
+        auto* Sword=Agent->GetHeldSword();auto* Blade=Cast<UStaticMeshComponent>(Sword->GetRootComponent());
+        auto* Body=Sword->FindComponentByClass<UProphecyJoltBodyComponent>();
+        FProphecyJoltBodyHandle Handle;if (!Body || !Body->GetBodyHandle(Handle)) return false;
+        // Preserve an asymmetric authored response, not just a hard-coded BlockAll reset.
+        Blade->SetCollisionResponseToChannel(ECC_Visibility,ECR_Ignore);
+        const auto Original=Blade->GetCollisionResponseToChannels();
+        FProphecyJoltWorldDiagnostics Before;World->GetDiagnostics(Before);
+        auto Check=[&](bool bAllowed)
+        {
+            const auto Expected=bAllowed?Original:FCollisionResponseContainer(ECR_Ignore);
+            FProphecyJoltCollisionUpdate Native;FProphecyJoltWorldDiagnostics Now;World->GetDiagnostics(Now);
+            TestTrue(TEXT("UE receiver collision follows phase"),Blade->GetCollisionResponseToChannels()==Expected);
+            TestTrue(TEXT("Native Jolt collision follows phase"),World->ReadBodyCollision(Handle,Native).IsSuccess() && Native.Responses==Expected);
+            TestEqual(TEXT("Kinematic contact gate follows phase"),ProphecySwordAttackCollision::IsAllowed(Agent),bAllowed);
+            TestTrue(TEXT("No body or joint recreation"),Now.BodyCount==Before.BodyCount && Now.ConstraintCount==Before.ConstraintCount
+                && Now.GenericJointCount==Before.GenericJointCount && World->OwnsBody(Handle));
+        };
+        for (FName Family:{FName(TEXT("slashl")),FName(TEXT("slashrd")),FName(TEXT("pike")),FName(TEXT("hookl")),FName(TEXT("headbutt"))})
+        {
+            ProphecySwordAttackCollision::Begin(Agent,Family);Check(false);
+            ProphecySwordAttackCollision::Armed(Agent);
+            Check(Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash")));
+            ProphecySwordAttackCollision::Hit(Agent);Check(true);
+            ProphecySwordAttackCollision::Refresh(Agent);Check(true); // latched through recovery/rebind
+            ProphecySwordAttackCollision::Hit(Agent);Check(true); // repeated Hit is harmless
+            ProphecySwordAttackCollision::End(Agent);Check(true);
+        }
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));Check(false);
+        ProphecySwordAttackCollision::Hit(Agent);Check(false); // weapon still requires Armed
+        Agent->NotifySwordAttackState(false);Check(true); // shared cancel/failure path
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));ProphecySwordAttackCollision::Armed(Agent);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("hookr"));Check(false);
+        ProphecySwordAttackCollision::Armed(Agent);Check(false);
+        ProphecySwordAttackCollision::Hit(Agent);Check(true);
+        ProphecySwordAttackCollision::End(Agent);Check(true);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("hookl"));
+        auto* Dropped=Agent->DropSword();
+        TestTrue(TEXT("Drop restores collision before releasing ownership"),Dropped==Sword && Blade->GetCollisionResponseToChannels()==Original);
+        ProphecySwordAttackCollision::End(Agent);
+        if (Dropped) Dropped->Destroy();else return false;
+    }
+    // Ordinary kinematic presentation uses the same UE filter without a Jolt body.
+    Agent->SetSimulationMode(EProphecyAgentSimulationMode::Kinematic);
+    if (!Agent->EquipSword(false)) return false;
+    auto* Blade=Cast<UStaticMeshComponent>(Agent->GetHeldSword()->GetRootComponent());
+    const auto Original=Blade->GetCollisionResponseToChannels();
+    ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));
+    TestTrue(TEXT("Kinematic sword ignores all channels before Armed"),Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
+    ProphecySwordAttackCollision::Armed(Agent);
+    TestTrue(TEXT("Kinematic sword restores original channels on Armed"),Blade->GetCollisionResponseToChannels()==Original);
+    ProphecySwordAttackCollision::End(Agent);
+    ProphecySwordAttackCollision::Begin(Agent,TEXT("kickl"));
+    ProphecySwordAttackCollision::Armed(Agent);
+    TestTrue(TEXT("Kinematic melee stays suppressed on Armed"),Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
+    ProphecySwordAttackCollision::Hit(Agent);
+    TestTrue(TEXT("Kinematic melee restores on Hit"),Blade->GetCollisionResponseToChannels()==Original);
+    ProphecySwordAttackCollision::End(Agent);
+    return !HasAnyErrors();
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltDivergentAdmissionTest,
     "Prophecy.Jolt.Character.DivergentBodyAndSocketAdmission",

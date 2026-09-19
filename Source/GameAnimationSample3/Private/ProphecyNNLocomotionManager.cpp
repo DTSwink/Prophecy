@@ -1,14 +1,21 @@
 #include "ProphecyNNLocomotionManager.h"
 #include "ProphecyRootFacing.h"
+#include "ProphecySwordAttackCollision.h"
 #include "ProphecyLimbCollision.h"
 #include "ProphecyNNDefenseRuntime.h"
+#include "ProphecyDefenseArmedGate.h"
+#include "ProphecyDefenseControls.h"
 #include "ProphecyNNLegClamps.h"
 #include "ProphecyNNPolicyBlend.h"
+#include "ProphecyAttackRecovery.h"
+#include "ProphecyBlendClock.h"
+#include "ProphecyLowerTempering.h"
 #include "ProphecyNNRootWindowSmoothing.h"
 #include "ProphecyRootBalance.h"
 #include "ProphecyRootPelvisBounds.h"
 #include "ProphecyRootMagic.h"
 #include "ProphecyRootSpeedLimits.h"
+#include "ProphecyUpperIdleSeed.h"
 #include "ProphecyPelvisInertia.h"
 #include "ProphecyHandInertia.h"
 #include "ProphecyPhysicalContext.h"
@@ -19,6 +26,7 @@
 
 #include "ProphecyAgent.h"
 #include "ProphecyAttackCamera.h"
+#include "ProphecyAttackControls.h"
 #include "ProphecyNNLocomotionAnimInstance.h"
 #include "ProphecyNNPoseTypes.h"
 #include "ProphecyNNPresentation.h"
@@ -1038,6 +1046,11 @@ struct AProphecyNNLocomotionManager::FImpl
 	FFootAxes BuildFootAxes(int32 LimbIndex, const FVector3f& FootPos, const FMat3f& FootRot, float ToeFloat, bool bWalkPolicy = false) const
 	{
 		const FLimb& Limb = bWalkPolicy ? WalkLimbs[LimbIndex] : Limbs[LimbIndex];
+		return BuildFootAxes(Limb, FootPos, FootRot, ToeFloat);
+	}
+
+	FFootAxes BuildFootAxes(const FLimb& Limb, const FVector3f& FootPos, const FMat3f& FootRot, float ToeFloat) const
+	{
 		const FVector3f ToePos = FootPos + TransformRow(Limb.ToeOffset, FootRot);
 		FVector3f FootUp = FootRot.Rows[0];
 		FVector3f FootForward = FootRot.Rows[1];
@@ -1257,6 +1270,24 @@ namespace
 			WriteStateVec3(OutUpper, Offset, TransformRow(HandPositionRoot, Impl.SeedRootRot));
 			WriteRot6(PelvisHeadingRotation, OutUpper + Offset + 3);
 			WriteRot6(PelvisHeadingRotation, OutUpper + Offset + 9);
+		}
+		CleanUpperState(OutUpper);
+	}
+
+	// Startup only. Keep the network's neutral FK base unchanged: this authored
+	// idle is the initial recurrent pose, not a change to the checkpoint's features.
+	void SeedUpperIdleFromLower(const float* LowerState,
+		const AProphecyNNLocomotionManager::FImpl& Impl, float* OutUpper)
+	{
+		const float* Idle = ProphecyUpperIdleSeed::PelvisLocal;
+		FMemory::Memcpy(OutUpper, Idle, 60 * sizeof(float));
+		const FVector3f PelvisPosition = TransformRow(ReadStateVec3(LowerState, 0), Impl.SeedRootRot);
+		const FMat3f PelvisRotation = Multiply(MatrixFromRot6(LowerState + 3), Impl.SeedRootRot);
+		for (int32 Offset : {60, 75})
+		{
+			WriteStateVec3(OutUpper, Offset, PelvisPosition + TransformRow(ReadStateVec3(Idle, Offset), PelvisRotation));
+			WriteRot6(Multiply(MatrixFromRot6(Idle + Offset + 3), PelvisRotation), OutUpper + Offset + 3);
+			WriteRot6(Multiply(MatrixFromRot6(Idle + Offset + 9), PelvisRotation), OutUpper + Offset + 9);
 		}
 		CleanUpperState(OutUpper);
 	}
@@ -1591,6 +1622,8 @@ namespace
 	{
 		return FMath::SmoothStep(0.0f, 1.0f, FMath::Clamp(Alpha, 0.0f, 1.0f));
 	}
+
+#include "ProphecyLowerTempering.inl"
 
 	void UpdateRouteIntent(
 		AProphecyNNLocomotionManager::FImpl::FAgent& Agent,
@@ -1935,6 +1968,7 @@ void AProphecyNNLocomotionManager::BeginPlay()
 
 void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ProphecyDefenseArmedGate::RemoveManager(this);
     AlignedLowerFeedbackBatches.Remove(this);
 	ProphecyAttackCamera::End(this);
 	ResolvedMoverTargets.Remove(this);
@@ -1947,12 +1981,17 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 	}
 	for (AProphecyAgent* AgentActor : AgentActors)
 	{
+		ProphecySwordAttackCollision::End(AgentActor);
+		ProphecyDefenseControls::Remove(AgentActor);
 		SlashRootMinusStartPelvis.Remove(AgentActor);
 		ProphecyNNRootWindow::Remove(AgentActor);
 		ProphecyUpperRootHorizon::Remove(AgentActor);
 		ProphecyRootBalance::Remove(AgentActor);
 		ProphecyRootPelvisBounds::Remove(AgentActor);
 		ProphecyRootMagic::Remove(AgentActor);
+		ProphecyAutoRun::Remove(AgentActor);
+		ProphecyAttackRecovery::Remove(AgentActor);
+		ProphecyLowerTempering::Remove(AgentActor);
 		ProphecyRootSpeedLimits::Remove(AgentActor);
 		RootYawImpulseAgents.Remove(AgentActor);
 		ProphecyRootFacing::Explicit(AgentActor);
@@ -2702,12 +2741,12 @@ void AProphecyNNLocomotionManager::InitializeAgents()
 		float* PreviousUpper = UpperStateSlice(Impl->UpperPreviousStateBuffer, AgentIndex);
 		float* CurrentUpper = UpperStateSlice(Impl->UpperCurrentStateBuffer, AgentIndex);
 		float* CurrentBase = UpperStateSlice(Impl->UpperCurrentBaseBuffer, AgentIndex);
-		BuildUpperBaseFromLower(StateSlice(Impl->PrevStateBuffer, AgentIndex), *Impl, PreviousUpper);
-		BuildUpperBaseFromLower(StateSlice(Impl->CurStateBuffer, AgentIndex), *Impl, CurrentUpper);
-		FMemory::Memcpy(CurrentBase, CurrentUpper, UpperStateDim * sizeof(float));
+		BuildUpperBaseFromLower(StateSlice(Impl->CurStateBuffer, AgentIndex), *Impl, CurrentBase);
+		SeedUpperIdleFromLower(StateSlice(Impl->PrevStateBuffer, AgentIndex), *Impl, PreviousUpper);
+		SeedUpperIdleFromLower(StateSlice(Impl->CurStateBuffer, AgentIndex), *Impl, CurrentUpper);
 		FMemory::Memcpy(
 			UpperStateSlice(Impl->UpperPreviousPublishedStateBuffer, AgentIndex),
-			PreviousUpper,
+			CurrentUpper, // Both initial published lower frames are the current seed.
 			UpperStateDim * sizeof(float));
 		FMemory::Memcpy(
 			UpperStateSlice(Impl->UpperPublishedStateBuffer, AgentIndex),
@@ -2893,6 +2932,20 @@ void AProphecyNNLocomotionManager::StepSimulation(float StepSeconds)
 	}
 	const bool bWarmed = Impl->Stats.bCollecting;
 	double Start = FPlatformTime::Seconds();
+	ProphecyDefenseArmedGate::Capture(this,[&](AProphecyAgent* Defender,ProphecyDefenseArmedGate::FHistory& H)
+	{
+		if (ResolveAgent(Defender->GetAgentHandle())!=Defender) return;
+		const int32 Index=Defender->GetAgentHandle().Index;auto& Agent=Impl->Agents[Index];
+		PublishAgentPose(Index,Agent.PublishedPoseTimeSeconds);
+		H.Root[0]=Agent.PreviousPublishedRoot;H.Root[1]=Agent.PublishedRoot;
+		H.Yaw[0]=Agent.PreviousPublishedYaw;H.Yaw[1]=Agent.PublishedYaw;
+		for (int32 I=0;I<2;++I)
+		{
+			const auto Pose=TransformSlice(I?Impl->ComponentTransformBuffer:Impl->PreviousComponentTransformBuffer,Index);
+			for (int32 Bone=0;Bone<25;++Bone) H.Pose[I][Bone]=Pose[Bone];
+		}
+		H.bValid=true;
+	});
 	ResamplePhysicalAgents();
 	BuildInputBatch(StepSeconds);
 	if (bWarmed) Impl->Stats.BuildSeconds += FPlatformTime::Seconds() - Start;
@@ -2914,6 +2967,8 @@ void AProphecyNNLocomotionManager::StepSimulation(float StepSeconds)
 	TraceNNHandoff();
 	ApplyAnimationLayers(StepSeconds);
 	AdvanceSlashAttacks();
+	// Predict on Armed itself using the history from before this completed step.
+	ProphecyDefenseArmedGate::Advance(this);
 	if (Impl->Defense && Impl->Defense->ActiveCount) { AdvanceNNDefenses();AdvanceNNDodges(); }
 	if (bWarmed) Impl->Stats.OutputSeconds += FPlatformTime::Seconds() - Start;
 	if (Impl->bAbsoluteMotionAudit)
@@ -3033,7 +3088,6 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 	for (int32 AgentIndex = 0; AgentIndex < BatchSize; ++AgentIndex)
 	{
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
-		if (Agent.DefensePose && Agent.DefensePose->bDodge) continue;
 		if (AgentActors.IsValidIndex(AgentIndex) && AgentActors[AgentIndex] &&
 			!AgentActors[AgentIndex]->bNNInferenceEnabled)
 		{
@@ -3094,25 +3148,15 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 			Agent.MoverIntent.speed_amplitude = 0.0;
 			Agent.MoverIntent.orientation_yaw_radians = Agent.CurRootYaw;
 		}
-		Agent.bUseWalkPolicy = ProphecySelectWalkCheckpoint(
-			Agent.MoverIntent.mode == prophecy::sim::LocomotionMode::Run,
-			Agent.MoverState.velocity.x, Agent.MoverState.velocity.z,
-			InputActor ? InputActor->LocomotionWalkCheckpointSpeedThreshold : -1.f);
-		if (Agent.Slash.bActive && !Agent.Slash.bHalf)
-			Agent.PolicyBlend.Reset(Agent.bUseWalkPolicy);
-		else if (Agent.PolicyBlend.IsActive() || Agent.PolicyBlend.bTargetWalk != Agent.bUseWalkPolicy)
-			Agent.PolicyBlend.Step(Agent.bUseWalkPolicy,
-				InputActor ? InputActor->LocomotionWalkToRunBlendSeconds : 0.f,
-				InputActor ? InputActor->LocomotionRunToWalkBlendSeconds : 0.f, StepSeconds);
 		Agent.FedInputRoot = Agent.CurRootPos;
 		Agent.FedInputYaw = Agent.CurRootYaw;
 		Agent.WindowPreviousRoot = Agent.PrevRootPos;
 		Agent.WindowPreviousYaw = Agent.PrevRootYaw;
 		Agent.WindowStepSeconds = StepSeconds;
-		const auto* Magic = !bBridgeDriving && !Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf)
+		const auto* Magic = !bBridgeDriving && (!Agent.Slash.bActive || Agent.Slash.bHalf)
 			? ProphecyRootMagic::Find(InputActor) : nullptr;
 		Agent.WindowVerticalVelocity = Magic ? Magic->Linear.Y : 0.f;
-		auto* SpeedLimits = !bBridgeDriving && !Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf)
+		auto* SpeedLimits = !bBridgeDriving && (!Agent.Slash.bActive || Agent.Slash.bHalf)
 			? ProphecyRootSpeedLimits::Find(InputActor) : nullptr;
 		double LimitedWindowYaw[FutureWindow];
 		const float* CurrentState = StateSlice(Impl->CurStateBuffer, AgentIndex);
@@ -3202,6 +3246,40 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 			ProphecyRootSpeedLimits::LimitWindow(*SpeedLimits,
 				Impl->InputBuffer.GetData() + AgentIndex * InputDim + 120, LimitedWindowYaw,
 				FutureWindow, Impl->MaxSpeedScaleFinal, StepSeconds, Magic, Agent.WindowVerticalVelocity);
+		// Select from the trajectory actually fed to the NN, not the mover's
+		// pre-magic/pre-limit velocity. Root teleports cannot create false speed.
+		const float* NextRoot = Impl->InputBuffer.GetData() + AgentIndex * InputDim + 120;
+		const double SpeedScale = double(Impl->MaxSpeedScaleFinal) / StepSeconds;
+		const double RootSpeedSquared = (double(NextRoot[0]) * NextRoot[0] + double(NextRoot[1]) * NextRoot[1]) * SpeedScale * SpeedScale;
+		Agent.bUseWalkPolicy = ProphecySelectWalkCheckpoint(
+			Agent.MoverIntent.mode == prophecy::sim::LocomotionMode::Run,
+			Agent.MoverState.velocity.x, Agent.MoverState.velocity.z,
+			InputActor ? InputActor->LocomotionWalkCheckpointSpeedThreshold : -1.f);
+		if (ProphecyAutoRun::Above(RootSpeedSquared, ProphecyAutoRun::Threshold(InputActor)))
+			Agent.bUseWalkPolicy = false;
+		const bool bAttackRecovery = ProphecyAttackRecovery::Step(
+			InputActor, Agent.PolicyBlend, Agent.bUseWalkPolicy, StepSeconds);
+		if (!bAttackRecovery && Agent.Slash.bActive && !Agent.Slash.bHalf)
+		{
+			Agent.PolicyBlend.Reset(Agent.bUseWalkPolicy);
+			ProphecyBlendClock::Stop(InputActor,ProphecyBlendClock::EKind::Policy);
+		}
+		else if (!bAttackRecovery && (Agent.PolicyBlend.IsActive() || Agent.PolicyBlend.bTargetWalk != Agent.bUseWalkPolicy))
+		{
+			const float Duration=InputActor ? (Agent.bUseWalkPolicy ? InputActor->LocomotionRunToWalkBlendSeconds
+				: InputActor->LocomotionWalkToRunBlendSeconds) : 0.f;
+			// Start/reverse at the current mix; consume elapsed engine ticks once,
+			// even if multiple policy evaluations occur in this engine frame.
+			if (Duration>0 && Agent.PolicyBlend.bTargetWalk!=Agent.bUseWalkPolicy)
+				ProphecyBlendClock::Start(InputActor,ProphecyBlendClock::EKind::Policy,Duration);
+			else if (Duration>0) ProphecyBlendClock::Ensure(InputActor,ProphecyBlendClock::EKind::Policy);
+			const float BlendDt=Duration>0 ? float(ProphecyBlendClock::Consume(InputActor,ProphecyBlendClock::EKind::Policy)) : 0.f;
+			Agent.PolicyBlend.Step(Agent.bUseWalkPolicy,
+				InputActor ? InputActor->LocomotionWalkToRunBlendSeconds : 0.f,
+				InputActor ? InputActor->LocomotionRunToWalkBlendSeconds : 0.f, BlendDt);
+			if (!Agent.PolicyBlend.IsActive()) ProphecyBlendClock::Stop(InputActor,ProphecyBlendClock::EKind::Policy);
+		}
+
 	}
 
 	if (bShowFutureRootDebug && Impl->Agents.IsValidIndex(FutureRootDebugAgentIndex))
@@ -3268,9 +3346,93 @@ bool AProphecyNNLocomotionManager::RunModelBatch()
 	return true;
 }
 
+void AProphecyNNLocomotionManager::AdvanceAgentMover(int32 AgentIndex, float StepSeconds)
+{
+    auto& Agent=Impl->Agents[AgentIndex];
+    auto& MoverTargets=ResolvedMoverTargets.FindChecked(this);
+    float* NextState=Agent.DefensePose && Agent.DefensePose->bDodge ? nullptr : StateSlice(Impl->NextStateBuffer,AgentIndex);
+		const float* Future = Impl->InputBuffer.GetData() + AgentIndex * InputDim + 120;
+		AProphecyAgent* Actor = AgentActors.IsValidIndex(AgentIndex) ? AgentActors[AgentIndex] : nullptr;
+		const auto* Magic = !IsSimBridgeActive() && (!Agent.Slash.bActive || Agent.Slash.bHalf)
+			? ProphecyRootMagic::Find(Actor) : nullptr;
+		const auto* SpeedLimits = !IsSimBridgeActive() && (!Agent.Slash.bActive || Agent.Slash.bHalf)
+			? ProphecyRootSpeedLimits::Find(Actor) : nullptr;
+		const bool bSpeedClamped = SpeedLimits && SpeedLimits->bClamped;
+		if (Magic && bSpeedClamped) Magic = &SpeedLimits->AppliedMagic;
+		auto* WindowSmoothing = ProphecyNNRootWindow::Find(AgentActors[AgentIndex]);
+		const FVector3f MagicDelta = Magic ? Magic->Linear * StepSeconds : FVector3f::ZeroVector;
+		const float MagicYaw = Magic ? float(Magic->Yaw * StepSeconds) : 0.f;
+		// NN recurrence follows the combined motion. The mover below keeps only
+		// its own velocity and yaw momentum; add the independent term exactly once.
+		const FVector3f NextRootDelta(Future[0] * Impl->MaxSpeedScaleFinal,
+			MagicDelta.Y, Future[1] * Impl->MaxSpeedScaleFinal);
+		const float NextYawDelta = FMath::Atan2(Future[3], Future[2]);
+		if (NextState) RebaseStateRoot(NextState, *Impl, NextRootDelta, NextYawDelta);
+		Agent.PrevRootPos = Agent.CurRootPos;
+		Agent.PrevRootYaw = Agent.CurRootYaw;
+		FResolvedMoverTarget& MoverTarget = MoverTargets[AgentIndex];
+		const bool bYawImpulse = RootYawImpulseAgents.Contains(Actor);
+		const auto* BalanceSpring = ProphecyRootBalance::GetPrepared(Actor);
+		if (WindowSmoothing || BalanceSpring || SpeedLimits)
+		{
+			// root0 is the anchor for this update. Advance the actual mover to the same
+			// encoded root1 that the NN and recurrence use, including smoothing or input-range
+			// clipping at unusually high balance speeds, never to a second unfiltered prediction.
+			auto Predicted = Agent.MoverState;
+			prophecy::sim::StepLocomotion(Predicted, Agent.MoverIntent, StepSeconds, &MoverTarget.Target, bYawImpulse, BalanceSpring);
+			const FVector3f Delta = TransformRow(NextRootDelta, Transpose(YawMatrix(Agent.CurRootYaw))) - MagicDelta;
+			Agent.MoverState.position.x += Delta.X;
+			Agent.MoverState.position.z += Delta.Z;
+			Agent.MoverState.velocity = { Delta.X / double(StepSeconds), Delta.Z / double(StepSeconds) };
+			Agent.MoverState.previous_yaw_radians = Agent.MoverState.yaw_radians;
+			// Subtract the applied magic without wrapping: opposing large terms must
+			// cancel exactly, rather than reintroducing a complete turn after limiting.
+			Agent.MoverState.yaw_radians += SpeedLimits ? SpeedLimits->NextYawDelta - MagicYaw
+				: WindowSmoothing ? WindowSmoothing->ActualNextYaw : WrapAngle(NextYawDelta - MagicYaw);
+			Agent.MoverState.distance_travelled += FVector2D(Delta.X, Delta.Z).Size();
+			Agent.MoverState.response = Predicted.response;
+		}
+		else prophecy::sim::StepLocomotion(Agent.MoverState, Agent.MoverIntent, StepSeconds, &MoverTarget.Target, bYawImpulse, BalanceSpring);
+		if (Magic)
+		{
+			Agent.MoverState.position.x += MagicDelta.X;
+			Agent.MoverState.position.z += MagicDelta.Z;
+			Agent.CurRootPos.Y += MagicDelta.Y;
+			// Carry both endpoints and the target: external yaw creates no phantom
+			// mover angular velocity or spring back toward an unchanged facing target.
+			Agent.MoverState.yaw_radians += MagicYaw;
+			Agent.MoverState.previous_yaw_radians += MagicYaw;
+			Agent.MoverIntent.orientation_yaw_radians += MagicYaw;
+			MoverTarget.Target.orientation_yaw_radians += MagicYaw;
+			if (MagicYaw != 0 && WindowSmoothing)
+			{
+				// Transport cached travel directions into the rotated root frame,
+				// preserving the mover's world momentum instead of producing a helix.
+				for (auto& Sample : WindowSmoothing->Samples) Sample.Direction += MagicYaw;
+				if (float* HistoryYaw = RootImpulseSmoothingYaw.Find(Actor)) *HistoryYaw += MagicYaw;
+			}
+			if (MagicYaw != 0 && Actor && Actor->bUseBlueprintLocomotionInput
+				&& !Actor->LocomotionInput.FacingWorldDirection.IsNearlyZero())
+				Actor->LocomotionInput.FacingWorldDirection = FQuat(FVector::UpVector, -double(MagicYaw))
+					.RotateVector(Actor->LocomotionInput.FacingWorldDirection);
+		}
+		if (bYawImpulse && FMath::Abs(prophecy::sim::SignedAngleDelta(
+			Agent.MoverState.previous_yaw_radians, Agent.MoverState.yaw_radians)) < 1.0e-8 &&
+			FMath::Abs(prophecy::sim::SignedAngleDelta(Agent.MoverState.yaw_radians,
+				Agent.MoverIntent.orientation_yaw_radians)) < 1.0e-8)
+		{
+			RootYawImpulseAgents.Remove(Actor);
+			ProphecyRootFacing::Explicit(Actor);
+		}
+		MoverTarget.bRun = Agent.MoverIntent.mode == prophecy::sim::LocomotionMode::Run;
+		MoverTarget.bValid = true;
+		Agent.CurRootPos.X = float(Agent.MoverState.position.x);
+		Agent.CurRootPos.Z = float(Agent.MoverState.position.z);
+		Agent.CurRootYaw = float(Agent.MoverState.yaw_radians);
+}
+
 void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 {
-	TArray<FResolvedMoverTarget>& MoverTargets = ResolvedMoverTargets.FindChecked(this);
 	for (int32 AgentIndex = 0; AgentIndex < CrowdSize; ++AgentIndex)
 	{
 		if (AgentActors.IsValidIndex(AgentIndex) && AgentActors[AgentIndex] &&
@@ -3284,6 +3446,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			// The buffers swap for every lane below. Hold this lane until its own
 			// lower/upper defense batch commits after the attacker has completed.
 			FMemory::Memcpy(StateSlice(Impl->NextStateBuffer,AgentIndex),StateSlice(Impl->CurStateBuffer,AgentIndex),StateDim*sizeof(float));
+			AdvanceAgentMover(AgentIndex,StepSeconds);
 			continue;
 		}
 		const bool bWalkPolicy = Agent.bUseWalkPolicy;
@@ -3297,13 +3460,24 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			StateDim * sizeof(float));
 		float* NextState = StateSlice(Impl->NextStateBuffer, AgentIndex);
 		const float* Raw = Impl->OutputBuffer.GetData() + AgentIndex * PolicyOutputDim;
+		// Tempering is locomotion-only. Half attacks also need their lower-body
+		// movement unmodified, even though they use the locomotion lower policy.
+		const auto* Tempering = !Agent.DefensePose && !Agent.Slash.bActive
+			? ProphecyLowerTempering::Find(AgentActors[AgentIndex]) : nullptr;
+		// These stack buffers are copied/used only when tempering is active.
+		float TemperedReference[StateDim], WalkTemperedReference[StateDim];
 		// Correct each policy with its own pinning semantics before mixing the poses.
 		// The ordinary single-policy path performs exactly one correction.
 		auto CorrectPolicy = [&](const float* Raw, bool bWalkPolicy, float* Transition,
-			FVector2f& RawPin, FVector2f& EffectivePin)
+			FVector2f& RawPin, FVector2f& EffectivePin, float* PrePinReference)
 		{
 			for (int32 Index = 0; Index < StateDim; ++Index) Transition[Index] = CurrentState[Index] + Raw[Index];
 			CleanState(Transition, *Impl);
+			if (Tempering)
+			{
+				TemperLowerPose(*Tempering, StateSlice(Impl->PreviousPublishedStateBuffer, AgentIndex), Transition);
+				FMemory::Memcpy(PrePinReference, Transition, StateDim * sizeof(float));
+			}
 	
 			float Heights[2] = { 0.0f, 0.0f };
 			float Pin[2];
@@ -3371,17 +3545,49 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			float WalkState[StateDim];
 			FVector2f WalkRawPin, WalkEffectivePin;
 			const float* WalkRaw = Impl->WalkOutputBuffer.GetData() + AgentIndex * PolicyOutputDim;
-			CorrectPolicy(Raw, false, Transition, RawPin, EffectivePin);
-			CorrectPolicy(WalkRaw, true, WalkState, WalkRawPin, WalkEffectivePin);
+			CorrectPolicy(Raw, false, Transition, RawPin, EffectivePin, TemperedReference);
+			CorrectPolicy(WalkRaw, true, WalkState, WalkRawPin, WalkEffectivePin, WalkTemperedReference);
 			const float W = Agent.PolicyBlend.WalkWeight;
 			for (const int32 Offset : { 0, 9, 25 }) BlendStateVector(Transition, WalkState, Offset, W);
 			for (const int32 Offset : { 3, 12, 18, 28, 34 }) BlendStateRotation(Transition, WalkState, Offset, W);
 			for (const int32 Offset : { 24, 40 }) Transition[Offset] = FMath::Lerp(Transition[Offset], WalkState[Offset], W);
+			if (Tempering)
+			{
+				for (const int32 Offset : { 0, 9, 25 }) BlendStateVector(TemperedReference, WalkTemperedReference, Offset, W);
+				for (const int32 Offset : { 3, 12, 18, 28, 34 }) BlendStateRotation(TemperedReference, WalkTemperedReference, Offset, W);
+			}
 			RawPin = FMath::Lerp(RawPin, WalkRawPin, W);
 			EffectivePin = FMath::Lerp(EffectivePin, WalkEffectivePin, W);
 			RawDebug = FMath::Lerp(RawDebug, FVector2D(WalkRaw[41], WalkRaw[42]), double(W));
 		}
-		else CorrectPolicy(Raw, bWalkPolicy, Transition, RawPin, EffectivePin);
+		else CorrectPolicy(Raw, bWalkPolicy, Transition, RawPin, EffectivePin, TemperedReference);
+		if (Tempering)
+		{
+			// Restore fixed-length chains AFTER both pinning and checkpoint blending,
+			// before recurrence/upper inference. Pole comes from the tempered pre-pin pose.
+			const FVector3f Pelvis = ReadStateVec3(Transition, 0);
+			const FMat3f PelvisRotation = MatrixFromRot6(Transition + 3);
+			const FVector3f ReferencePelvis = ReadStateVec3(TemperedReference, 0);
+			const FMat3f ReferenceRotation = MatrixFromRot6(TemperedReference + 3);
+			const float W = Agent.PolicyBlend.WalkWeight;
+			for (int32 I = 0; I < 2; ++I)
+			{
+				auto Limb = W >= 1.f ? Impl->WalkLimbs[I] : Impl->Limbs[I];
+				if (W > 0.f && W < 1.f)
+				{
+					Limb.LocalPoleAxes[0] = SafeNormal(FMath::Lerp(Limb.LocalPoleAxes[0], Impl->WalkLimbs[I].LocalPoleAxes[0], W));
+					Limb.ToeOffset = FMath::Lerp(Limb.ToeOffset, Impl->WalkLimbs[I].ToeOffset, W);
+					Limb.ToeAxis = SafeNormal(FMath::Lerp(Limb.ToeAxis, Impl->WalkLimbs[I].ToeAxis, W));
+				}
+				const int32 O = 9 + 16 * I;
+				const FVector3f Ankle = ReadStateVec3(Transition, O);
+				const auto Axes = Impl->BuildFootAxes(Limb, Ankle, MatrixFromRot6(Transition + O + 3), Transition[O + 15]);
+				const FPelvisLegGeometry G{Impl->LocalOffsets[Limb.Start], Impl->LocalOffsets[Limb.Mid], Limb.LocalPoleAxes[0],
+					Impl->LocalOffsets[Limb.End].Size(), Ankle.Z + Impl->GroundHeight
+					- ExactFootMinimum(Axes, Impl->FootHalfDims, Impl->ToeHalfDims) + 1.e-5f};
+				ResolvePelvisLeg(ReferencePelvis, ReferenceRotation, Pelvis, PelvisRotation, G, Transition, O, TemperedReference);
+			}
+		}
 		Agent.PinProbability = EffectivePin;
 		auto* Debug = Impl->PinningDebug.IsEmpty() ? nullptr : Impl->PinningDebug.Find(AgentIndex);
 		if (Debug && Debug->Owner.Get() == AgentActors[AgentIndex])
@@ -3428,85 +3634,8 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 				StateSlice(Impl->PreviousPublishedStateBuffer,AgentIndex),Transition,Legs);
 		}
 
-		const float* Future = Impl->InputBuffer.GetData() + AgentIndex * InputDim + 120;
-		AProphecyAgent* Actor = AgentActors.IsValidIndex(AgentIndex) ? AgentActors[AgentIndex] : nullptr;
-		const auto* Magic = !IsSimBridgeActive() && !Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf)
-			? ProphecyRootMagic::Find(Actor) : nullptr;
-		const auto* SpeedLimits = !IsSimBridgeActive() && !Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf)
-			? ProphecyRootSpeedLimits::Find(Actor) : nullptr;
-		const bool bSpeedClamped = SpeedLimits && SpeedLimits->bClamped;
-		if (Magic && bSpeedClamped) Magic = &SpeedLimits->AppliedMagic;
-		auto* WindowSmoothing = ProphecyNNRootWindow::Find(AgentActors[AgentIndex]);
-		const FVector3f MagicDelta = Magic ? Magic->Linear * StepSeconds : FVector3f::ZeroVector;
-		const float MagicYaw = Magic ? float(Magic->Yaw * StepSeconds) : 0.f;
-		// NN recurrence follows the combined motion. The mover below keeps only
-		// its own velocity and yaw momentum; add the independent term exactly once.
-		const FVector3f NextRootDelta(Future[0] * Impl->MaxSpeedScaleFinal,
-			MagicDelta.Y, Future[1] * Impl->MaxSpeedScaleFinal);
-		const float NextYawDelta = FMath::Atan2(Future[3], Future[2]);
 		FMemory::Memcpy(NextState, Transition, StateDim * sizeof(float));
-		RebaseStateRoot(NextState, *Impl, NextRootDelta, NextYawDelta);
-		Agent.PrevRootPos = Agent.CurRootPos;
-		Agent.PrevRootYaw = Agent.CurRootYaw;
-		FResolvedMoverTarget& MoverTarget = MoverTargets[AgentIndex];
-		const bool bYawImpulse = RootYawImpulseAgents.Contains(Actor);
-		const auto* BalanceSpring = ProphecyRootBalance::GetPrepared(Actor);
-		if (WindowSmoothing || BalanceSpring || SpeedLimits)
-		{
-			// root0 is the anchor for this update. Advance the actual mover to the same
-			// encoded root1 that the NN and recurrence use, including smoothing or input-range
-			// clipping at unusually high balance speeds, never to a second unfiltered prediction.
-			auto Predicted = Agent.MoverState;
-			prophecy::sim::StepLocomotion(Predicted, Agent.MoverIntent, StepSeconds, &MoverTarget.Target, bYawImpulse, BalanceSpring);
-			const FVector3f Delta = TransformRow(NextRootDelta, Transpose(YawMatrix(Agent.CurRootYaw))) - MagicDelta;
-			Agent.MoverState.position.x += Delta.X;
-			Agent.MoverState.position.z += Delta.Z;
-			Agent.MoverState.velocity = { Delta.X / double(StepSeconds), Delta.Z / double(StepSeconds) };
-			Agent.MoverState.previous_yaw_radians = Agent.MoverState.yaw_radians;
-			// Subtract the applied magic without wrapping: opposing large terms must
-			// cancel exactly, rather than reintroducing a complete turn after limiting.
-			Agent.MoverState.yaw_radians += SpeedLimits ? SpeedLimits->NextYawDelta - MagicYaw
-				: WindowSmoothing ? WindowSmoothing->ActualNextYaw : WrapAngle(NextYawDelta - MagicYaw);
-			Agent.MoverState.distance_travelled += FVector2D(Delta.X, Delta.Z).Size();
-			Agent.MoverState.response = Predicted.response;
-		}
-		else prophecy::sim::StepLocomotion(Agent.MoverState, Agent.MoverIntent, StepSeconds, &MoverTarget.Target, bYawImpulse, BalanceSpring);
-		if (Magic)
-		{
-			Agent.MoverState.position.x += MagicDelta.X;
-			Agent.MoverState.position.z += MagicDelta.Z;
-			Agent.CurRootPos.Y += MagicDelta.Y;
-			// Carry both endpoints and the target: external yaw creates no phantom
-			// mover angular velocity or spring back toward an unchanged facing target.
-			Agent.MoverState.yaw_radians += MagicYaw;
-			Agent.MoverState.previous_yaw_radians += MagicYaw;
-			Agent.MoverIntent.orientation_yaw_radians += MagicYaw;
-			MoverTarget.Target.orientation_yaw_radians += MagicYaw;
-			if (MagicYaw != 0 && WindowSmoothing)
-			{
-				// Transport cached travel directions into the rotated root frame,
-				// preserving the mover's world momentum instead of producing a helix.
-				for (auto& Sample : WindowSmoothing->Samples) Sample.Direction += MagicYaw;
-				if (float* HistoryYaw = RootImpulseSmoothingYaw.Find(Actor)) *HistoryYaw += MagicYaw;
-			}
-			if (MagicYaw != 0 && Actor && Actor->bUseBlueprintLocomotionInput
-				&& !Actor->LocomotionInput.FacingWorldDirection.IsNearlyZero())
-				Actor->LocomotionInput.FacingWorldDirection = FQuat(FVector::UpVector, -double(MagicYaw))
-					.RotateVector(Actor->LocomotionInput.FacingWorldDirection);
-		}
-		if (bYawImpulse && FMath::Abs(prophecy::sim::SignedAngleDelta(
-			Agent.MoverState.previous_yaw_radians, Agent.MoverState.yaw_radians)) < 1.0e-8 &&
-			FMath::Abs(prophecy::sim::SignedAngleDelta(Agent.MoverState.yaw_radians,
-				Agent.MoverIntent.orientation_yaw_radians)) < 1.0e-8)
-		{
-			RootYawImpulseAgents.Remove(Actor);
-			ProphecyRootFacing::Explicit(Actor);
-		}
-		MoverTarget.bRun = Agent.MoverIntent.mode == prophecy::sim::LocomotionMode::Run;
-		MoverTarget.bValid = true;
-		Agent.CurRootPos.X = float(Agent.MoverState.position.x);
-		Agent.CurRootPos.Z = float(Agent.MoverState.position.z);
-		Agent.CurRootYaw = float(Agent.MoverState.yaw_radians);
+		AdvanceAgentMover(AgentIndex,StepSeconds);
 	}
 	Swap(Impl->PrevStateBuffer, Impl->CurStateBuffer);
 	Swap(Impl->CurStateBuffer, Impl->NextStateBuffer);
@@ -4158,12 +4287,56 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	};
 	FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
 	const bool bDefensePose=Agent.DefensePose && Agent.DefensePose->bHasPose;
+	const auto* DefenseClamps=bDefensePose?ProphecyDefenseControls::Find(Controls,Agent.DefensePose->bDodge):nullptr;
+	FProphecyNNAttackHandClamp PresentationHandClamp=bDefensePose?FProphecyNNAttackHandClamp():Agent.Slash.HandClamp;
+	if (DefenseClamps && DefenseClamps->Hand.bOverride)
+	{
+		PresentationHandClamp.bEnabled=DefenseClamps->Hand.bEnabled;
+		PresentationHandClamp.LeewayCm=DefenseClamps->Hand.LeewayCm;
+	}
 	if (bDefensePose)
 	{
 		for (int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
 		{
 			PreviousComponentTransforms[Bone]=Agent.DefensePose->PreviousComponent[Bone];
 			ComponentTransforms[Bone]=Agent.DefensePose->CurrentComponent[Bone];
+		}
+		if (DefenseClamps)
+		{
+			const auto& D=*DefenseClamps;
+			const auto* Mesh=Controls->GetPoseReferenceMesh();
+			const auto* Asset=Mesh?Mesh->GetSkeletalMeshAsset():nullptr;
+			const bool Foot=D.Foot.bOverride && D.Foot.bEnabled, Calf=D.Calf.bOverride && D.Calf.bEnabled;
+			const bool Hand=D.Hand.bOverride && D.Hand.bEnabled, Forearm=D.Forearm.bOverride && D.Forearm.bEnabled;
+			if (Asset && (Foot || Calf || Hand || Forearm))
+			{
+				const auto& Skeleton=Asset->GetRefSkeleton();
+				for (auto Pose:{PreviousComponentTransforms,ComponentTransforms})
+				{
+					if (Foot || Calf) for (const auto& Leg:Impl->Limbs)
+					{
+						const int32 F=Skeleton.FindBoneIndex(Impl->BodyNames[Leg.End]), K=Skeleton.FindBoneIndex(Impl->BodyNames[Leg.Mid]);
+						if (F!=INDEX_NONE && K!=INDEX_NONE)
+							ProphecyNNLegClamps::Apply(Pose[Leg.Start].GetTranslation(),Pose[Leg.Mid],Pose[Leg.End],Pose[Leg.Toe],
+								Skeleton.GetRefBonePose()[F].GetTranslation(),Skeleton.GetRefBonePose()[K].GetTranslation().Length(),
+								Foot,1.f,Calf,1.f,D.Foot.LeewayCm,D.Calf.LeewayCm);
+					}
+					if (Hand || Forearm) for (const auto& Arm:Impl->UpperArms)
+					{
+						const int32 H=Skeleton.FindBoneIndex(Impl->BodyNames[Arm.End]);if (H==INDEX_NONE) continue;
+						const FVector Offset=Skeleton.GetRefBonePose()[H].GetTranslation();
+						PresentationHandClamp.ReferenceOffsets[Impl->BodyNames[Arm.End]==TEXT("hand_l")?0:1]=Offset;
+						if (Forearm)
+						{
+							const auto Delta=Pose[Arm.End].GetTranslation()-Pose[Arm.Mid].GetTranslation();
+							const double Length=Pose[Arm.Mid].TransformVector(Offset).Length();
+							const double Allowed=FProphecyNNForearmClamp::ClampLength(Delta.Length(),Length,D.Forearm.LeewayCm);
+							Pose[Arm.End].SetTranslation(Pose[Arm.Mid].GetTranslation()+Delta.GetSafeNormal(UE_SMALL_NUMBER,Pose[Arm.Mid].TransformVector(Offset).GetSafeNormal())*Allowed);
+						}
+						else Pose[Arm.End].SetTranslation(FProphecyNNAttackHandClamp::ClampPosition(Pose[Arm.End].GetTranslation(),Pose[Arm.Mid].TransformPosition(Offset),D.Hand.LeewayCm));
+					}
+				}
+			}
 		}
 	}
 	else
@@ -4231,6 +4404,11 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	ForearmClamp.bEnabled = !bDefensePose && C.bClampForearm && !(Agent.Slash.bActive && Agent.Slash.bHasPose);
 	ForearmClamp.LeewayCm = Controls->LocomotionForearmClampLeewayCm;
 	ForearmClamp.LengthsCm = FVector2D(Impl->UpperArms[0].Lengths.Y * 100.f, Impl->UpperArms[1].Lengths.Y * 100.f);
+	if (DefenseClamps && DefenseClamps->Forearm.bOverride)
+	{
+		ForearmClamp.bEnabled=DefenseClamps->Forearm.bEnabled;
+		ForearmClamp.LeewayCm=DefenseClamps->Forearm.LeewayCm;
+	}
 	FProphecyNNPoseStore::SetAgentLocalPose(
 		PoseStoreAgentBase + AgentIndex,
 		Impl->PublishedBoneNames,
@@ -4241,12 +4419,12 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		ComponentWorldTransform,
 		SourceTimeSeconds,
 		bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose),
-		!bDefensePose && (bCalfOverride ? ClampActor->bAttackCalfClamp : (bFullAttack ? bClampCalf && CalfClampLengthMultiplier > 0.f : C.bClampCalf && C.CalfClampLengthMultiplier > 0.f)),
-		bCalfOverride ? ClampActor->AttackCalfClampLeewayCm : (bFullAttack ? 0.f : C.CalfLeeway * 100.f),
+		bDefensePose ? (DefenseClamps && DefenseClamps->Calf.bOverride && DefenseClamps->Calf.bEnabled) : (bCalfOverride ? ClampActor->bAttackCalfClamp : (bFullAttack ? bClampCalf && CalfClampLengthMultiplier > 0.f : C.bClampCalf && C.CalfClampLengthMultiplier > 0.f)),
+		bDefensePose ? (DefenseClamps?DefenseClamps->Calf.LeewayCm:0.f) : bCalfOverride ? ClampActor->AttackCalfClampLeewayCm : (bFullAttack ? 0.f : C.CalfLeeway * 100.f),
 		bFullAttack ? Agent.Slash.CalfClampLengths : FVector2D(
-			Impl->LocalOffsets[Impl->Limbs[0].End].Size() * 100.f * C.CalfClampLengthMultiplier,
-			Impl->LocalOffsets[Impl->Limbs[1].End].Size() * 100.f * C.CalfClampLengthMultiplier),
-		Agent.Slash.HandClamp, ForearmClamp);
+			Impl->LocalOffsets[Impl->Limbs[0].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier),
+			Impl->LocalOffsets[Impl->Limbs[1].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier)),
+		PresentationHandClamp, ForearmClamp);
 }
 
 void AProphecyNNLocomotionManager::UpdateVisualRoots()
@@ -4303,9 +4481,9 @@ void AProphecyNNLocomotionManager::UpdateVisualRoots()
 			// the same world-space pose when the capsule resolves somewhere other
 			// than the unobstructed mover prediction; changing root numbers alone
 			// makes a blocked agent's feet treadmill through the recurrent state.
-			// A world collision invalidates Dodge's fixed extrapolated command.
-			// Resume from its committed state before normal collision rebasing.
-			if (Agent.DefensePose && Agent.DefensePose->bDodge) StopAgentNNDefense(GetAgentHandle(AgentIndex));
+			// Defense now shares the live mover. Preserve its private recurrence
+			// through collision rebasing rather than cancelling the response.
+			if (Agent.DefensePose) RebaseDefenseAfterRootCollision(AgentIndex,PreviousAppliedRoot,PreviousAppliedYaw,AppliedRoot,Yaw);
 			const FVector3f PreviousStateRootDelta = TransformRow(
 				PreviousAppliedRoot - Agent.PrevRootPos,
 				YawMatrix(Agent.PrevRootYaw));
@@ -4986,7 +5164,7 @@ bool AProphecyNNLocomotionManager::GetAgentRootVelocity(FProphecyAgentHandle Han
 	Angular.Z = -prophecy::sim::SignedAngleDelta(Mover.previous_yaw_radians, Mover.yaw_radians) *
 		FMath::Max(1.0f, NNUpdateHz);
 	const auto& Agent = Impl->Agents[Handle.Index];
-	if (ResolveAgent(Handle)->bNNInferenceEnabled && !IsSimBridgeActive() && !Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf))
+	if (ResolveAgent(Handle)->bNNInferenceEnabled && !IsSimBridgeActive() && (!Agent.Slash.bActive || Agent.Slash.bHalf))
 	{
 		const auto* SpeedLimits = ProphecyRootSpeedLimits::Find(ResolveAgent(Handle));
 		if (SpeedLimits) Angular.Z = -(Mover.yaw_radians - Mover.previous_yaw_radians) * FMath::Max(1.0f, NNUpdateHz);

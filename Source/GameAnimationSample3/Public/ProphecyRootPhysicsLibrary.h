@@ -9,6 +9,16 @@ class GAMEANIMATIONSAMPLE3_API UProphecyRootPhysicsLibrary : public UBlueprintFu
 {
     GENERATED_BODY()
 public:
+    /** Select the run checkpoint above this planar root speed, even with walk input.
+     * Uses the next root-window step AFTER smoothing, magic and speed limits.
+     * Changes checkpoint selection only, not movement input/speed. Existing blend times apply.
+     * Below/equal to threshold, ordinary walk/run selection applies. Default 100000 cm/s. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion", meta=(DefaultToSelf="Agent"))
+    static bool SetLocomotionAutoRunSpeedThreshold(AProphecyAgent* Agent, float SpeedCmPerSecond = 100000.f);
+
+    UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Locomotion", meta=(DefaultToSelf="Agent"))
+    static float GetLocomotionAutoRunSpeedThreshold(AProphecyAgent* Agent);
+
     /** Constant world-space velocity added to locomotion and its future window, in cm/s.
      * Separate from mover velocity: no mover acceleration, braking or damping is applied to it.
      * Add to Current accumulates this term only; otherwise replaces it. Zero clears linear magic.

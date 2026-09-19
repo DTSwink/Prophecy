@@ -382,7 +382,7 @@ bool UProphecyJoltCharacterWorldSubsystem::StepRegisteredClients(float DeltaSeco
         return StopWithError(OutError, TEXT("A client changed or stepped the native owner during shared-step preparation."));
     const UPhysicsSettings* PhysicsSettings = UPhysicsSettings::Get();
     ProphecyJolt::Constraints::Prepare(GetWorld());
-    const int32 CollisionSteps = ProphecyJolt::StepTiming::Count(DeltaSeconds, PhysicsSettings);
+    const int32 CollisionSteps = ProphecyJolt::StepTiming::Count(DeltaSeconds, PhysicsSettings, GetWorld());
     {
         Profile::FScope StepTiming(Profile::EPhase::NativeStep);
         const FProphecyJoltWorldStatus Stepped = PhysicsOwner->Step(DeltaSeconds, CollisionSteps);
@@ -517,6 +517,7 @@ bool UProphecyJoltCharacterWorldSubsystem::StepExplicit(UProphecyJoltCharacterCo
 
 void UProphecyJoltCharacterWorldSubsystem::StopForWorldTeardown()
 {
+    ProphecyJolt::StepTiming::RemoveOverride(GetWorld());
     bEnding = true;
     bAdmissionWindowOpen = false;
     bWorldTickInProgress = false;

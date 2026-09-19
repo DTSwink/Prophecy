@@ -4,6 +4,36 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Serialization/JsonSerializer.h"
+#include "ProphecyJoltContactShape.h"
+#include "PhysicsEngine/BodySetup.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyPhysicalContactShapeTest,"Prophecy.NN.Defense.PhysicalContactShapes",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyPhysicalContactShapeTest::RunTest(const FString&)
+{
+    auto* Capsule=NewObject<UBodySetup>();FKSphylElem C;C.Radius=10;C.Length=20;Capsule->AggGeom.SphylElems.Add(C);
+    auto* Sphere=NewObject<UBodySetup>();FKSphereElem S;S.Radius=1;Sphere->AggGeom.SphereElems.Add(S);
+    FProphecyJoltContactShape A,B;FString Error;float Time=0;
+    if (!A.Build(*Capsule,FVector::OneVector,Error) || !B.Build(*Sphere,FVector::OneVector,Error)) { AddError(Error);return false; }
+    auto At=[](double X,double Y,double Z) { return FTransform(FVector(X,Y,Z)); };
+    TestFalse(TEXT("Capsule corner is empty (would intersect its bounding box)"),A.Sweep(At(0,0,0),At(0,0,0),B,At(9,9,18),At(9,9,18),Time));
+    TestTrue(TEXT("Actual capsule surface contact"),A.Sweep(At(0,0,0),At(0,0,0),B,At(10.5,0,0),At(10.5,0,0),Time));
+    TestTrue(TEXT("Fast crossing detected despite clear endpoints"),A.Sweep(At(0,0,0),At(0,0,0),B,At(-100,0,0),At(100,0,0),Time));
+    TestTrue(TEXT("Crossing time matches authored radii"),FMath::Abs(Time-.445f)<.0001f);
+    TestFalse(TEXT("Parallel near miss is not enlarged"),A.Sweep(At(0,0,0),At(0,0,0),B,At(-100,11.1,0),At(100,11.1,0),Time));
+    TestFalse(TEXT("Equal fast translations preserve separation"),A.Sweep(At(0,0,0),At(1000,0,0),B,At(20,0,0),At(1020,0,0),Time));
+    auto* Sword=NewObject<UBodySetup>();FKBoxElem Box;Box.Center=FVector(50,0,0);Box.X=100;Box.Y=2;Box.Z=2;Sword->AggGeom.BoxElems.Add(Box);
+    FProphecyJoltContactShape Blade;if (!Blade.Build(*Sword,FVector::OneVector,Error)) { AddError(Error);return false; }
+    // Less than 180 degrees: the shortest-arc direction must be unambiguous.
+    const FTransform R0(FQuat(FVector::UpVector,-FMath::DegreesToRadians(80.)),FVector::ZeroVector),R1(FQuat(FVector::UpVector,FMath::DegreesToRadians(80.)),FVector::ZeroVector);
+    TestTrue(TEXT("Sword occupies its authored location"),Blade.Sweep(FTransform::Identity,FTransform::Identity,B,At(80,0,0),At(80,0,0),Time));
+    TestTrue(TEXT("Rotating sword catches contact between endpoints"),Blade.Sweep(R0,R1,B,At(80,0,0),At(80,0,0),Time));
+    TestTrue(TEXT("Angular contact occurs around the middle"),Time>.45f && Time<.55f);
+    if (!B.Build(*Sphere,FVector(2),Error)) { AddError(Error);return false; }
+    TestTrue(TEXT("Authored scale applied once"),A.Sweep(At(0,0,0),At(0,0,0),B,At(11.5,0,0),At(11.5,0,0),Time));
+    TestFalse(TEXT("No extra scale/enlargement"),A.Sweep(At(0,0,0),At(0,0,0),B,At(12.1,0,0),At(12.1,0,0),Time));
+    return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyDefenseContactTest,"Prophecy.NN.Defense.ParryContacts",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -31,9 +61,9 @@ bool FProphecyDefenseContactTest::RunTest(const FString&)
         }
         return true;
     };
-    FDefenseBox Previous[20],Current[20],PreviousAttack;FContactOrder Order;float Half[3];double PreviousTime=0;
+    FDefenseBox Previous[20],Current[20],PreviousAttack;FFirstContact Order;float Half[3];double PreviousTime=0;
     if (!Tensor(Doc,TEXT("attacker_half"),Half,3)) return false;
-    const uint32 Blocking=G.BlockingMask(16,true),Present=G.PresentMask(true);
+    const uint32 Present=G.PresentMask(true);
     int32 Frame=0,Pairs=0;TArray<TSharedPtr<FJsonValue>> Events;
     for (const auto& V:Doc->GetArrayField(TEXT("frames")))
     {
@@ -55,7 +85,7 @@ bool FProphecyDefenseContactTest::RunTest(const FString&)
             {
                 const auto Contact=SweepBoxes(Previous[I],Current[I],G.Boxes[I].Half,G.Boxes[I].CenterOffset,
                     PreviousAttack,Attack,Read(Half),FVector3f::ZeroVector);
-                Order.Include(Contact,I,(Blocking&(1u<<I))!=0,PreviousTime,Time);++Pairs;
+                Order.Include(Contact,I,PreviousTime,Time);++Pairs;
                 if (Contact.bPossible)
                 {
                     auto Event=MakeShared<FJsonObject>();Event->SetNumberField(TEXT("frame"),Frame);Event->SetStringField(TEXT("collider"),G.Boxes[I].Name.ToString());
@@ -66,11 +96,11 @@ bool FProphecyDefenseContactTest::RunTest(const FString&)
         }
         FMemory::Memcpy(Previous,Current,sizeof(Current));PreviousAttack=Attack;PreviousTime=Time;++Frame;
     }
-    TestEqual(TEXT("Saved successful block"),Order.bProtected,Doc->GetNumberField(TEXT("expected_protected"))!=0);
+    TestTrue(TEXT("Saved trajectory has a confirmed contact"),Order.Collider!=INDEX_NONE);
     const double ExpectedTime=Doc->GetNumberField(TEXT("expected_time"));
-    TestTrue(TEXT("Saved fractional contact time"),FMath::IsFinite(Order.BlockTime) && FMath::Abs(Order.BlockTime-ExpectedTime)<=1.e-5+1.e-5*FMath::Abs(ExpectedTime));
-    auto Report=MakeShared<FJsonObject>();Report->SetNumberField(TEXT("geometry_max_abs"),Maximum);Report->SetBoolField(TEXT("protected"),Order.bProtected);
-    Report->SetNumberField(TEXT("block_time"),FMath::IsFinite(Order.BlockTime)?Order.BlockTime:-1);Report->SetNumberField(TEXT("expected_block_time"),ExpectedTime);
+    TestTrue(TEXT("Saved fractional contact time"),FMath::IsFinite(Order.Time) && FMath::Abs(Order.Time-ExpectedTime)<=1.e-5+1.e-5*FMath::Abs(ExpectedTime));
+    auto Report=MakeShared<FJsonObject>();Report->SetNumberField(TEXT("geometry_max_abs"),Maximum);
+    Report->SetNumberField(TEXT("contact_time"),FMath::IsFinite(Order.Time)?Order.Time:-1);Report->SetNumberField(TEXT("expected_contact_time"),ExpectedTime);
     Report->SetNumberField(TEXT("unresolved_pairs"),Order.Unresolved);Report->SetArrayField(TEXT("events"),Events);
     FJsonSerializer::Serialize(Report,TJsonWriterFactory<>::Create(&Text));FFileHelper::SaveStringToFile(Text,*(Dir/TEXT("unreal_parry_contact.json")));
     // Cover safety semantics independently of the one supplied sword witness.
@@ -79,12 +109,13 @@ bool FProphecyDefenseContactTest::RunTest(const FString&)
     const auto Fast=SweepBoxes(Static,Static,{.5f,.5f,.5f},{0,0,0},FastStart,FastEnd,{.5f,.5f,.5f},{0,0,0});
     TestTrue(TEXT("Sweep catches contact absent at either endpoint"),Fast.bConfirmed && FMath::IsNearlyEqual(Fast.Fraction,1.f/3.f,1.e-6f));
     const auto Exhausted=SweepBoxes(Static,Static,{.5f,.5f,.5f},{0,0,0},FastStart,FastEnd,{.5f,.5f,.5f},{0,0,0},1);
-    TestTrue(TEXT("Exhaustion cannot grant a block"),Exhausted.bPossible && !Exhausted.bConfirmed && !Exhausted.bResolved);
-    FContactOrder Tie;Tie.Include(Fast,0,true,0,1);Tie.Include(Fast,1,false,0,1);
-    TestTrue(TEXT("Harmful tie is not a win"),!Tie.bProtected && Tie.bHarmful);
-    TestTrue(TEXT("Undrawn blade absent"),(G.PresentMask(false)&Blocking)==0 && G.BlockingMask(16,false)==0);
-    TestEqual(TEXT("Legacy leg labels remapped to arms"),G.BlockingMask(22,false),G.BlockingMask(18,false));
-    AddInfo(FString::Printf(TEXT("%d frames / %d swept pairs, collider error %.9g; block %.9f expected %.9f; unresolved %d."),Frame,Pairs,Maximum,Order.BlockTime,ExpectedTime,Order.Unresolved));
+    TestTrue(TEXT("Exhaustion cannot confirm a contact"),Exhausted.bPossible && !Exhausted.bConfirmed && !Exhausted.bResolved);
+    FFirstContact First;First.Include(Exhausted,2,0,1);
+    TestEqual(TEXT("Unconfirmed contact is ignored"),First.Collider,INDEX_NONE);
+    First.Include(Fast,0,1,2);First.Include(Fast,1,0,1);
+    TestEqual(TEXT("Earliest contact wins regardless of body"),First.Collider,1);
+    TestTrue(TEXT("Earliest fractional time"),FMath::IsNearlyEqual(First.Time,double(Fast.Fraction)));
+    AddInfo(FString::Printf(TEXT("%d frames / %d swept pairs, collider error %.9g; block %.9f expected %.9f; unresolved %d."),Frame,Pairs,Maximum,Order.Time,ExpectedTime,Order.Unresolved));
     return !HasAnyErrors();
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyDodgeContactGeometryTest,"Prophecy.NN.Defense.DodgeContactGeometry",
@@ -123,5 +154,43 @@ bool FProphecyDodgeContactGeometryTest::RunTest(const FString&)
     }
     AddInfo(FString::Printf(TEXT("Eight saved Dodge poses, 13 colliders each; max element error %.9g."),Maximum));
     return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyDefenseAttackerTest,"Prophecy.NN.Defense.AttackerAttachments",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyDefenseAttackerTest::RunTest(const FString&)
+{
+    using namespace ProphecyDefense;
+    FString Error,Text;FContactGeometry G;TSharedPtr<FJsonObject> Doc;
+    if (!G.Load(FPaths::ProjectContentDir()/TEXT("locomotion/NN/defense/attacker_colliders.json"),Error,true))
+    { AddError(Error);return false; }
+    if (!FFileHelper::LoadFileToString(Text,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/DodgeMismatch/attacker_attachment_reference.json")))
+        || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Doc) || !Doc)
+    { AddError(TEXT("Missing independent viewer attachment reference."));return false; }
+    float MaxError=0;int32 Count=0;
+    for (const auto& V:Doc->GetArrayField(TEXT("cases")))
+    {
+        const auto C=V->AsObject();float P[3],R[9],Expected[15],Actual[15];
+        auto ReadArray=[&](const TCHAR* Key,float* Out,int32 N)
+        {
+            const auto& A=C->GetArrayField(Key);if (A.Num()!=N) return false;
+            for (int32 I=0;I<N;++I) Out[I]=float(A[I]->AsNumber());return true;
+        };
+        if (!ReadArray(TEXT("position"),P,3) || !ReadArray(TEXT("rotation"),R,9)
+            || !ReadArray(TEXT("center"),Expected,3) || !ReadArray(TEXT("axes"),Expected+3,9)
+            || !ReadArray(TEXT("half"),Expected+12,3)) { AddError(TEXT("Malformed fixture."));return false; }
+        const int32 I=int32(C->GetNumberField(TEXT("index")));
+        const auto Box=G.BuildAttachedBox(Read(P),Rows(R),I);
+        Write(Actual,Box.Center);for (int32 J=0;J<3;++J) Write(Actual+3+J*3,Box.Axes.V[J]);
+        Write(Actual+12,G.Boxes[I].Half);
+        for (int32 K=0;K<15;++K)
+        {
+            MaxError=FMath::Max(MaxError,FMath::Abs(Actual[K]-Expected[K]));
+            if (!FMath::IsFinite(Actual[K]) || FMath::Abs(Actual[K]-Expected[K])>1.e-5f)
+            { AddError(FString::Printf(TEXT("Attachment %d sample %d channel %d mismatch."),I,Count,K));return false; }
+        }
+        ++Count;
+    }
+    AddInfo(FString::Printf(TEXT("Compared %d training attacker attachment samples, max error %.9g."),Count,MaxError));
+    return Count>0;
 }
 #endif

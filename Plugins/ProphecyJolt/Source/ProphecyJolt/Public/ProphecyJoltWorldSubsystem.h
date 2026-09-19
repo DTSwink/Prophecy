@@ -294,6 +294,15 @@ public:
     UProphecyJoltWorldSubsystem();
     virtual ~UProphecyJoltWorldSubsystem() override;
 
+    /** Allowed contact penetration in cm for the entire shared Jolt world. Default 2.
+     * Try 0.1 for less visible sinking. Zero is accepted; this is not a hard overlap cap.
+     * Call once or when changing it; no Tick needed. May be set before Jolt initializes.
+     * Does not enable CCD or change collision substeps. Negative/nonfinite values fail. */
+    static bool SetJoltPenetrationSlop(const UObject* WorldContextObject, float SlopCm = 2.0f);
+
+    /** Current world penetration allowance in cm; default 2 before customization. */
+    static float GetJoltPenetrationSlop(const UObject* WorldContextObject);
+
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void OnWorldEndPlay(UWorld& InWorld) override;
     virtual void PreDeinitialize() override;
@@ -466,6 +475,7 @@ protected:
     virtual bool DoesSupportWorldType(EWorldType::Type WorldType) const override;
 
 private:
+    friend class UProphecyJoltBodyDriveLibrary;
     FProphecyJoltWorldStatus ValidateReady() const;
     FProphecyJoltWorldStatus ValidateBodySettings(const FProphecyJoltFixtureBodySettings& Settings) const;
     void RefreshDiagnostics();

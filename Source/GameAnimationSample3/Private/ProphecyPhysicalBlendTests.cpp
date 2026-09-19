@@ -44,7 +44,14 @@ bool FProphecyPhysicalBlendsTest::RunTest(const FString& Parameters)
 	auto* Agent = Spawn();
 	auto ReadStrength = [&]() { FProphecyBodyMagnetizationSettings S; Agent->GetBodyMagnetizationSettings(TEXT("head"), S); return S; };
 	auto ReadFeedback = [&]() { FProphecyPhysicalFeedbackToleranceSettings S; Agent->GetPhysicalFeedbackTolerance(TEXT("head"), S); return S; };
-	auto Step = [&](float Delta) { Blends->Advance(World, LEVELTICK_All, Delta); };
+	// Test convenience: authored seconds expand to 60 explicit engine ticks.
+	float FrameDelta=1.f/60.f;
+	auto Step = [&](float NominalSeconds)
+	{
+		if (NominalSeconds<=0) { Blends->Advance(World,LEVELTICK_All,NominalSeconds);return; }
+		for (int32 I=0;I<FMath::RoundToInt(NominalSeconds*60.f);++I)
+			Blends->Advance(World,LEVELTICK_All,FrameDelta);
+	};
 	TestFalse(TEXT("Idle has no delegate"), Blends->TickHandle.IsValid());
 	Agent->SetBodyMagnetization(TEXT("head"), true, 0, 0);
 	Agent->BodyMagnetizationSettings[TEXT("head")].bCancelGravity = false;
@@ -53,7 +60,7 @@ bool FProphecyPhysicalBlendsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Start simultaneous feedback transition"), Agent->BlendPhysicalFeedbackTolerance(TEXT("head"), 4, 20, 1));
 	TestEqual(TEXT("One registration for both channels"), Blends->ActiveAgents.Num(), 1);
 	TestEqual(TEXT("Two active bone channels"), Blends->ActiveAgents[0].Blends.Num(), 2);
-	FWorldDelegates::OnWorldPreActorTick.Broadcast(World, LEVELTICK_All, 0.25f);
+	for (int32 I=0;I<15;++I) FWorldDelegates::OnWorldPreActorTick.Broadcast(World, LEVELTICK_All, 1.f/30.f);
 	TestEqual(TEXT("Smooth strength quarter point"), ReadStrength().LinearStrengthScale, 0.15625f);
 	TestEqual(TEXT("Angular strength independently interpolated"), ReadStrength().AngularStrengthScale, 0.3125f);
 	TestEqual(TEXT("Feedback reaches smooth quarter point"), ReadFeedback().AngularToleranceDegrees, 3.125f);
@@ -67,8 +74,9 @@ bool FProphecyPhysicalBlendsTest::RunTest(const FString& Parameters)
 	Step(-1);
 	TestEqual(TEXT("Nonpositive deltas do not advance"), ReadStrength().LinearStrengthScale, 0.15625f);
 	Agent->CustomTimeDilation = 0.5f;
-	Step(0.5f);
-	TestEqual(TEXT("Custom dilation uses simulation time"), ReadStrength().LinearStrengthScale, 0.5f);
+	FrameDelta=1.f/120.f;
+	Step(0.25f);
+	TestEqual(TEXT("30 ticks give midpoint regardless of FPS or dilation"), ReadStrength().LinearStrengthScale, 0.5f);
 	Agent->CustomTimeDilation = 1;
 	TestTrue(TEXT("Retrigger from current state"), Agent->BlendBodyMagnetization(TEXT("head"), 0, 0, 1));
 	TestEqual(TEXT("Retrigger has no immediate jump"), ReadStrength().LinearStrengthScale, 0.5f);
@@ -87,7 +95,7 @@ bool FProphecyPhysicalBlendsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Disabled starts from effective zero"), ReadStrength().LinearStrengthScale, 0.0f);
 	TestTrue(TEXT("Blend explicitly enables per-body drive"), ReadStrength().bMagnetizationEnabled);
 	Step(2);
-	TestEqual(TEXT("Oversized step reaches exact endpoint"), ReadStrength().LinearStrengthScale, 1.0f);
+	TestEqual(TEXT("Sufficient ticks reach exact endpoint"), ReadStrength().LinearStrengthScale, 1.0f);
 	TestFalse(TEXT("Invalid body rejected"), Agent->BlendBodyMagnetization(TEXT("missing"), 1, 1, 1));
 	TestFalse(TEXT("Lowerarm not a feedback channel"), Agent->BlendPhysicalFeedbackTolerance(TEXT("lowerarm_r"), 1, 1, 1));
 	TestFalse(TEXT("NaN rejected"), Agent->BlendBodyMagnetization(TEXT("head"), std::numeric_limits<float>::quiet_NaN(), 1, 1));

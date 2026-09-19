@@ -23,12 +23,13 @@ float ExactFootMinimum(const FFootAxes& A, const FVector3f& FootHalf, const FVec
 
 void ResolvePelvisLeg(const FVector3f& OldPelvis, const FMat3f& OldPelvisRotation,
     const FVector3f& NewPelvis, const FMat3f& NewPelvisRotation,
-    const FPelvisLegGeometry& G, float* State, int32 Offset)
+    const FPelvisLegGeometry& G, float* State, int32 Offset, const float* ReferenceState = nullptr)
 {
-    const FMat3f OldThigh = MatrixFromRot6(State+Offset+9);
+    const float* Reference = ReferenceState ? ReferenceState : State;
+    const FMat3f OldThigh = MatrixFromRot6(Reference+Offset+9);
     const FVector3f OldHip = OldPelvis+TransformRow(G.HipOffset,OldPelvisRotation);
     const FVector3f OldUpper = TransformRow(G.KneeOffset,OldThigh);
-    const FVector3f OldAnkle = ReadStateVec3(State,Offset);
+    const FVector3f OldAnkle = ReadStateVec3(Reference,Offset);
     const FVector3f OldAxis = SafeNormal(OldAnkle-OldHip,SafeNormal(OldUpper));
     const FVector3f RawBend = OldUpper-OldAxis*FVector3f::DotProduct(OldUpper,OldAxis);
     const FVector3f OldPole = RawBend.SizeSquared()>1.e-10f ? SafeNormal(RawBend)
@@ -36,7 +37,7 @@ void ResolvePelvisLeg(const FVector3f& OldPelvis, const FMat3f& OldPelvisRotatio
     const FVector3f Hip = NewPelvis+TransformRow(G.HipOffset,NewPelvisRotation);
     const float L1=G.KneeOffset.Size(), L2=G.CalfLength;
     const float Min=FMath::Abs(L1-L2)+2.e-5f, Max=L1+L2-2.e-5f;
-    const FVector3f Delta=OldAnkle-Hip;
+    const FVector3f Delta=ReadStateVec3(State,Offset)-Hip;
     FVector3f Ankle=Hip+SafeNormal(Delta,OldAxis)*FMath::Clamp(Delta.Size(),Min,Max);
     // Floor-plane reach projection, never lift then radially pull underground.
     // Unbounded world coasting can put the entire reach sphere below the floor;

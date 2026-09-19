@@ -1,7 +1,9 @@
 #include "ProphecyJoltWorldSubsystem.h"
+#include "ProphecyJoltBodyDriveLibrary.h"
 #include "ProphecyJoltPhysicsCommand.h"
 
 #include "Components/PrimitiveComponent.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "HAL/PlatformTime.h"
 #include "Misc/ScopeLock.h"
@@ -18,6 +20,7 @@
 #include "ProphecyJoltRig.h"
 #include "ProphecyJoltMaterial.h"
 #include "ProphecyJoltVelocityServo.h"
+#include "ProphecyJoltPHATSweeps.h"
 #include "Templates/UnrealTemplate.h"
 #include "UObject/WeakObjectPtr.h"
 
@@ -464,6 +467,17 @@ struct FProphecyJoltPendingHit
     FVector Point1, Point2, Normal, Impulse;
 };
 
+namespace ProphecyJolt::DriveFollowers
+{
+struct FBinding
+{
+    JPH::BodyID Body, Parent;
+    FProphecyJoltRigHandle ParentRig;
+};
+// Sparse, event-owned bindings; no change to retained world/rig/servo layouts.
+static TMap<const FProphecyJoltWorldState*, TMap<uint32, FBinding>> Bindings;
+}
+
 class FProphecyJoltWorldState final : public JPH::ContactImpulseListener
 {
 public:
@@ -489,6 +503,7 @@ public:
 
     ~FProphecyJoltWorldState()
     {
+        ProphecyJolt::PHATSweeps::Forget(&Physics);
         // Update is synchronous, and public methods are game-thread-only. No work can race teardown.
         Physics.SetContactListener(nullptr);
         Physics.SetContactImpulseListener(nullptr);
@@ -1074,6 +1089,16 @@ public:
     {
         auto& Slot = Slots[Index];
         if (Slot.Body.IsInvalid()) return;
+        if (auto* Followers = ProphecyJolt::DriveFollowers::Bindings.Find(this))
+        {
+            for (auto It = Followers->CreateIterator(); It; ++It)
+                if (It.Value().Body == Slot.Body || It.Value().Parent == Slot.Body)
+                {
+                    Servo.RemoveBodyTargetOffset(It.Value().Body);
+                    It.RemoveCurrent();
+                }
+            if (Followers->IsEmpty()) ProphecyJolt::DriveFollowers::Bindings.Remove(this);
+        }
         if (Slot.Weld) UnweldSource(Slot.Weld->SourceHandle.Slot,true);
         while (!Slot.IncidentJoints.IsEmpty()) DestroyJointSlot(Slot.IncidentJoints.Last());
         ReleaseSuppression(Slot.OwnedSuppression);
@@ -1134,6 +1159,22 @@ public:
 
         }
         // PublishRigVelocityTargets already validated these owned values transactionally.
+        if (const auto* Followers = ProphecyJolt::DriveFollowers::Bindings.IsEmpty() ? nullptr
+            : ProphecyJolt::DriveFollowers::Bindings.Find(this))
+        {
+            for (const auto& Pair : *Followers)
+            {
+                const auto& F = Pair.Value;
+                const auto* ParentRig = FindRig(F.ParentRig);
+                if (!ParentRig || Physics.GetBodyInterface().GetMotionType(F.Body) != JPH::EMotionType::Dynamic) continue;
+                const auto* ParentTarget = ParentRig->Targets.FindByPredicate([&](const auto& T) { return T.Body == F.Parent; });
+                // Absence means hand magnetisation is disabled. Never retain a stale sword drive.
+                if (!ParentTarget || (ParentTarget->LinearStrength == 0.f && ParentTarget->AngularStrength == 0.f)) continue;
+                auto Target = *ParentTarget;
+                Target.Body = F.Body;
+                FlatTargets.Add(Target);
+            }
+        }
         // Rig body sets are disjoint, and whole-rig removal clears this packet before deleting IDs.
         Error.Reset();
         Servo.CommitValidatedTargets(FlatTargets);
@@ -1204,8 +1245,83 @@ public:
 
 void FProphecyJoltWorldStateDeleter::operator()(FProphecyJoltWorldState* State) const { delete State; }
 
+bool UProphecyJoltBodyDriveLibrary::SetDriveFollower(UObject* WorldContext, FGuid Lifetime,
+    int32 BodySlot, int64 BodyGeneration, int32 ParentSlot, int64 ParentGeneration,
+    FTransform BodyToParent, bool Enabled)
+{
+    if (!IsInGameThread() || !IsValid(WorldContext)) return false;
+    UWorld* World = WorldContext->GetWorld();
+    auto* Owner = World ? World->GetSubsystem<UProphecyJoltWorldSubsystem>() : nullptr;
+    if (!Owner || Owner->bStepInProgress || !Owner->Native) return false;
+    auto* Native = Owner->Native.Get();
+    const FProphecyJoltBodyHandle BodyHandle{Lifetime, BodySlot, uint64(BodyGeneration)};
+    const auto* Body = Native->Find(BodyHandle);
+    if (!Body) return !Enabled;
+    using namespace ProphecyJolt::DriveFollowers;
+    if (!Enabled)
+    {
+        Native->Servo.RemoveBodyTargetOffset(Body->Body);
+        if (auto* Entries = Bindings.Find(Native))
+        {
+            Entries->Remove(Body->Body.GetIndexAndSequenceNumber());
+            if (Entries->IsEmpty()) Bindings.Remove(Native);
+        }
+        // Removing a drive must also retire the already-flattened packet before body cleanup.
+        Native->Servo.Clear(); Native->FlatTargets.Reset(); Native->ServoRanges.Reset();
+        return true;
+    }
+    if (!Owner->ValidateReady().IsSuccess() || BodyToParent.ContainsNaN()
+        || !BodyToParent.GetRotation().IsNormalized() || !BodyToParent.GetScale3D().Equals(FVector::OneVector)
+        || Body->OwnerRig.IsSet()) return false;
+    const auto* Parent = Native->Find(FProphecyJoltBodyHandle{Lifetime, ParentSlot, uint64(ParentGeneration)});
+    if (!Parent || !Parent->OwnerRig.IsSet() || Parent->Body == Body->Body
+        || Native->Physics.GetBodyInterface().GetMotionType(Body->Body) != JPH::EMotionType::Dynamic) return false;
+    Bindings.FindOrAdd(Native).Add(Body->Body.GetIndexAndSequenceNumber(), {Body->Body, Parent->Body, Parent->OwnerRig});
+    Native->Servo.SetBodyTargetOffset(Body->Body, BodyToParent);
+    return true;
+}
+
 UProphecyJoltWorldSubsystem::UProphecyJoltWorldSubsystem() = default;
 UProphecyJoltWorldSubsystem::~UProphecyJoltWorldSubsystem() = default;
+
+namespace ProphecyJolt::ContactSettings
+{
+// Only configured worlds allocate an entry. Read on initialization/set/get, never during Step.
+static TMap<TWeakObjectPtr<const UProphecyJoltWorldSubsystem>, float> SlopOverridesCm;
+static float SlopCm(const UProphecyJoltWorldSubsystem* Owner)
+{
+    const float* Value = SlopOverridesCm.Find(Owner);
+    return Value ? *Value : 2.0f;
+}
+}
+
+bool UProphecyJoltWorldSubsystem::SetJoltPenetrationSlop(const UObject* Context, float SlopCm)
+{
+    if (!IsInGameThread() || !FMath::IsFinite(SlopCm) || SlopCm < 0.0f) return false;
+    auto* World = GEngine ? GEngine->GetWorldFromContextObject(Context, EGetWorldErrorMode::ReturnNull) : nullptr;
+    auto* Owner = World && World->IsGameWorld() ? World->GetSubsystem<UProphecyJoltWorldSubsystem>() : nullptr;
+    if (!Owner || !Owner->bSubsystemInitialized || Owner->bWorldEnding || World->bIsTearingDown
+        || Owner->bStepInProgress || Owner->Diagnostics.bFaulted) return false;
+    if (SlopCm == 2.0f) ProphecyJolt::ContactSettings::SlopOverridesCm.Remove(Owner);
+    else ProphecyJolt::ContactSettings::SlopOverridesCm.Add(Owner, SlopCm);
+    if (Owner->Native)
+    {
+        auto Settings = Owner->Native->Physics.GetPhysicsSettings();
+        Settings.mPenetrationSlop = SlopCm * 0.01f;
+        Owner->Native->Physics.SetPhysicsSettings(Settings);
+    }
+    return true;
+}
+
+float UProphecyJoltWorldSubsystem::GetJoltPenetrationSlop(const UObject* Context)
+{
+    if (!IsInGameThread()) return 2.0f;
+    auto* World = GEngine ? GEngine->GetWorldFromContextObject(Context, EGetWorldErrorMode::ReturnNull) : nullptr;
+    auto* Owner = World && World->IsGameWorld() ? World->GetSubsystem<UProphecyJoltWorldSubsystem>() : nullptr;
+    if (!Owner || Owner->bStepInProgress || Owner->bWorldEnding) return 2.0f;
+    return Owner->Native ? Owner->Native->Physics.GetPhysicsSettings().mPenetrationSlop * 100.0f
+        : ProphecyJolt::ContactSettings::SlopCm(Owner);
+}
 
 #if !UE_BUILD_SHIPPING
 void UProphecyJoltWorldSubsystem::RunContactExperiment(const TArray<FString>& Input)
@@ -1261,7 +1377,8 @@ void UProphecyJoltWorldSubsystem::RunContactExperiment(const TArray<FString>& In
             {
                 auto* C = R.Constraints[I].GetPtr();
                 const auto& Name = R.JointDescriptions[I].Bone1;
-                if (Name != TEXT("hand_r") && Name != TEXT("lowerarm_r") && Name != TEXT("upperarm_r")) continue;
+                if (Name != TEXT("hand_r") && Name != TEXT("lowerarm_r") && Name != TEXT("upperarm_r")
+                    && Name != TEXT("hand_l") && Name != TEXT("lowerarm_l") && Name != TEXT("upperarm_l")) continue;
                 const auto A = C->GetBody1()->GetCenterOfMassTransform() * C->GetConstraintToBody1Matrix().GetTranslation();
                 const auto B = C->GetBody2()->GetCenterOfMassTransform() * C->GetConstraintToBody2Matrix().GetTranslation();
                 const auto* Six = ProphecyJolt::GetSixDOF(C);
@@ -1319,6 +1436,8 @@ void UProphecyJoltWorldSubsystem::StopForWorldTeardown()
 {
     check(IsInGameThread());
     bWorldEnding = true;
+    ProphecyJolt::PHATSweeps::ForgetWorld(GetWorld());
+    ProphecyJolt::ContactSettings::SlopOverridesCm.Remove(this);
     const FProphecyJoltWorldStatus Status = ShutdownSimulation();
     checkf(Status.IsSuccess(), TEXT("Jolt world teardown failed: %s"), *Status.Message);
 }
@@ -1373,6 +1492,12 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::InitializeSimulation(const
         return Fail(EProphecyJoltWorldResult::RuntimeUnavailable, TEXT("Compatible process-wide Jolt registration is unavailable."));
     // Allocation/thread creation failure is not converted into a success or fallback configuration.
     Native.Reset(new FProphecyJoltWorldState(Settings));
+    if (const float* Slop = ProphecyJolt::ContactSettings::SlopOverridesCm.Find(this))
+    {
+        auto PhysicsSettings = Native->Physics.GetPhysicsSettings();
+        PhysicsSettings.mPenetrationSlop = *Slop * 0.01f;
+        Native->Physics.SetPhysicsSettings(PhysicsSettings);
+    }
     Diagnostics = {};
     Diagnostics.Settings = Settings;
     Diagnostics.WorldLifetime = Native->Lifetime;
@@ -3223,6 +3348,23 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::Step(float DeltaSeconds, i
         return { EProphecyJoltWorldResult::PhysicsFailure, Diagnostics.Failure };
     }
     // No accumulator, tick subscription, fixed-step substitution, delta clamp or automatic catch-up policy.
+    if (ProphecyJolt::PHATSweeps::HasRequests(GetWorld()))
+    {
+        TArray<ProphecyJolt::PHATSweeps::FBody> Selected;
+        TArray<uint32> Candidates;
+        for (const auto& Slot : Native->Slots)
+        {
+            if (Slot.Body.IsInvalid() || Slot.WeldParent.IsSet()) continue;
+            Candidates.Add(Slot.Body.GetIndexAndSequenceNumber());
+            const auto* Component = Cast<UPrimitiveComponent>(Slot.AssociatedObject.Get());
+            if (!Slot.OwnerRig.IsSet() || !Component || Component->GetFName() != TEXT("PhysicalMesh")) continue;
+            if (const auto* Settings = ProphecyJolt::PHATSweeps::Find(Component->GetOwner()))
+                Selected.Add({Slot.Body.GetIndexAndSequenceNumber(), *Settings});
+        }
+        ProphecyJolt::PHATSweeps::Publish(&Native->Physics, &Native->ObjectPairs, MoveTemp(Selected), MoveTemp(Candidates),
+            Native->HitEnabledBodies ? Native.Get() : nullptr);
+    }
+    else ProphecyJolt::PHATSweeps::Forget(&Native->Physics);
     const uint64 PreviousServoInvocations = Native->Servo.GetInvocationCount();
     const JPH::EPhysicsUpdateError Result = Native->Physics.Update(DeltaSeconds, CollisionSteps, &Native->Temp, Native->Jobs.Get());
     const double UpdatedAt = FPlatformTime::Seconds();

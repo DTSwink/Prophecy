@@ -20,4 +20,6 @@ inline bool ClampLocation(const FVector& Root, const FVector& Pelvis, double Rad
 }
 void Apply(AProphecyNNLocomotionManager& Manager);
 void Remove(const AProphecyAgent* Agent);
+// Combat handoff: eliminate planar feedback error, retaining the cube's authored height.
+void ResetMagicCubeToRoot(AProphecyAgent* Agent);
 }

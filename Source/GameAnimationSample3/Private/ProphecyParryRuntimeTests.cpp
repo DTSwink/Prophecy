@@ -56,7 +56,7 @@ bool FProphecyParryRecurrenceTest::RunTest(const FString&)
         for (int32 I=0;I<Count;++I) Values.Add(MakeShared<FJsonValueNumber>(P[I]));
         return MakeShared<FJsonValueArray>(MoveTemp(Values));
     };
-    FDefenseBox PreviousBoxes[20],PreviousAttack;FContactOrder ContactOrder;double PreviousTime=0;
+    FDefenseBox PreviousBoxes[20],PreviousAttack;FFirstContact ContactOrder;double PreviousTime=0;
     float AttackerHalf[3];if (!ReadArray(ContactFixture->TryGetField(TEXT("attacker_half")),AttackerHalf,3)) return false;
     auto StorePose=[&](const FPose& Pose,const float* R12)
     {
@@ -81,7 +81,7 @@ bool FProphecyParryRecurrenceTest::RunTest(const FString&)
         {
             const auto& Box=ContactGeometry.Boxes[I];const auto Pair=SweepBoxes(PreviousBoxes[I],Boxes[I],Box.Half,Box.CenterOffset,
                 PreviousAttack,Attack,Read(AttackerHalf),FVector3f::ZeroVector);
-            ContactOrder.Include(Pair,I,(ContactGeometry.BlockingMask(16,true)&(1u<<I))!=0,PreviousTime,Time);
+            ContactOrder.Include(Pair,I,PreviousTime,Time);
         }
         FMemory::Memcpy(PreviousBoxes,Boxes,sizeof(Boxes));PreviousAttack=Attack;PreviousTime=Time;
         Positions.Add(MakeShared<FJsonValueArray>(MoveTemp(P)));Rotations.Add(MakeShared<FJsonValueArray>(MoveTemp(R)));
@@ -138,14 +138,13 @@ bool FProphecyParryRecurrenceTest::RunTest(const FString&)
     auto Candidate=MakeShared<FJsonObject>();Candidate->SetArrayField(TEXT("network/inputs"),Inputs);Candidate->SetArrayField(TEXT("network/outputs"),Outputs);
     Candidate->SetArrayField(TEXT("trajectory/positions"),Positions);Candidate->SetArrayField(TEXT("trajectory/basis"),Rotations);Candidate->SetArrayField(TEXT("trajectory/roots"),Roots);
     Candidate->SetArrayField(TEXT("colliders/centers"),Centers);Candidate->SetArrayField(TEXT("colliders/axes"),Axes);
-    Candidate->SetNumberField(TEXT("contact/protected"),ContactOrder.bProtected?1:0);
-    Candidate->SetNumberField(TEXT("contact/first_block_time"),FMath::IsFinite(ContactOrder.BlockTime)?ContactOrder.BlockTime:-1);
+    Candidate->SetNumberField(TEXT("contact/first_contact_time"),FMath::IsFinite(ContactOrder.Time)?ContactOrder.Time:-1);
     FString CandidateText;FJsonSerializer::Serialize(Candidate,TJsonWriterFactory<>::Create(&CandidateText));
     FFileHelper::SaveStringToFile(CandidateText,*(Directory/TEXT("ue_parry_candidate.json")));
-    TestTrue(TEXT("Native inferred pose blocks the attack"),ContactOrder.bProtected);
+    TestTrue(TEXT("Native inferred pose contacts the attack"),ContactOrder.Collider!=INDEX_NONE);
     const double ExpectedContact=ContactFixture->GetNumberField(TEXT("expected_time"));
-    TestTrue(TEXT("Native inferred contact matches saved time"),FMath::Abs(ContactOrder.BlockTime-ExpectedContact)<=1.e-5+1.e-5*ExpectedContact);
-    AddInfo(FString::Printf(TEXT("%llu consecutive native parry steps, max element error %.9g; lower joints unchanged bit-for-bit; native block %.9f."),State.CompletedSteps,Maximum,ContactOrder.BlockTime));
+    TestTrue(TEXT("Native inferred contact matches saved time"),FMath::Abs(ContactOrder.Time-ExpectedContact)<=1.e-5+1.e-5*ExpectedContact);
+    AddInfo(FString::Printf(TEXT("%llu consecutive native parry steps, max element error %.9g; lower joints unchanged bit-for-bit; native contact %.9f."),State.CompletedSteps,Maximum,ContactOrder.Time));
     return State.CompletedSteps>0 && !HasAnyErrors();
 }
 #endif

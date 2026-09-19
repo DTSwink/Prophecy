@@ -1,4 +1,6 @@
 #include "ProphecyAgent.h"
+#include "ProphecyDefenseArmedGate.h"
+#include "ProphecyDefenseControls.h"
 #include "ProphecyRootFacing.h"
 #include "ProphecyPelvisInertia.h"
 #include "ProphecyHandInertia.h"
@@ -1480,6 +1482,8 @@ bool AProphecyAgent::EnsureStandaloneNNManager()
 
 void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ProphecyDefenseArmedGate::RemoveAgent(this);
+    ProphecyDefenseControls::Remove(this);
     ProphecyPhysicalContext::Remove(this);
     ProphecyRootFacing::Explicit(this);
     ProphecyPelvisInertia::Remove(this);
@@ -1619,10 +1623,19 @@ bool AProphecyAgent::IsNNAnimationLayerActive() const
 	return GetNNAnimationLayerState(PlaybackTimeSeconds, BlendWeight);
 }
 
-bool AProphecyAgent::TriggerNNAttack(FName Attack, FVector TargetWorldLocation, bool bHalfAttack)
+bool AProphecyAgent::TriggerNNAttack(FName Attack, FVector TargetWorldLocation, bool bHalfAttack, AProphecyAgent* Victim)
 {
+	if (Victim && (!IsValid(Victim) || Victim==this || Victim->GetWorld()!=GetWorld())) return false;
 	AProphecyNNLocomotionManager* Manager = FindOwningNNManager(this);
-	return Manager && Manager->TriggerAgentNNAttack(AgentHandle, Attack, TargetWorldLocation, bHalfAttack);
+	if (!Manager || !Manager->TriggerAgentNNAttack(AgentHandle, Attack, TargetWorldLocation, bHalfAttack)) return false;
+	ProphecyDefenseArmedGate::SetVictim(this,Victim);return true;
+}
+
+AProphecyAgent* AProphecyAgent::GetNNAttackVictim() const { return ProphecyDefenseArmedGate::GetVictim(this); }
+void AProphecyAgent::GetNNAttackDefenseState(bool& bBeingParried,bool& bBeingDodged) const
+{
+	bBeingParried=bBeingDodged=false;
+	if (const auto* Manager=FindOwningNNManager(this)) Manager->GetAgentAttackDefenseState(AgentHandle,bBeingParried,bBeingDodged);
 }
 
 bool AProphecyAgent::SetNNHalfAttackEnabled(bool bEnabled)

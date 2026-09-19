@@ -10,6 +10,7 @@ public class GameAnimationSample3 : ModuleRules
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/prophecy_parry_upper.onnx", StagedFileType.UFS);
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/parry_skeleton.json", StagedFileType.UFS);
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/parry_colliders.json", StagedFileType.UFS);
+		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/attacker_colliders.json", StagedFileType.UFS);
 		foreach (string Asset in new[] { "prophecy_dodge_walk.onnx", "prophecy_dodge_run.onnx", "prophecy_dodge_upper.onnx", "dodge_skeleton.json", "dodge_colliders.json", "dodge_lower_settings.json", "dodge_banks.json" })
 			RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/" + Asset, StagedFileType.UFS);
 		// Local, opt-in game-module ISA experiment; never change the native Jolt

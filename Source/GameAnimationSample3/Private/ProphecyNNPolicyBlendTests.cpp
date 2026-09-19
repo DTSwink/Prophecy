@@ -6,6 +6,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyNNPolicyBlendTiming,
     "Prophecy.NN.PolicyBlend.DirectionalTiming", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FProphecyNNPolicyBlendTiming::RunTest(const FString&)
 {
+    TestFalse(TEXT("Auto run default leaves ordinary running speeds alone"), ProphecyAutoRun::Above(100., 100000.f));
+    TestFalse(TEXT("Auto run equality retains ordinary selection"), ProphecyAutoRun::Above(25., 500.f));
+    TestTrue(TEXT("Auto run above threshold overrides walk"), ProphecyAutoRun::Above(25.01, 500.f));
+    TestFalse(TEXT("Zero speed never triggers zero threshold"), ProphecyAutoRun::Above(0., 0.f));
     TestFalse(TEXT("Disabled override retains running checkpoint at rest"), ProphecySelectWalkCheckpoint(true, 0, 0, -1));
     TestTrue(TEXT("Walk intent always keeps walk"), ProphecySelectWalkCheckpoint(false, 8, 0, -1));
     TestTrue(TEXT("100 cm/s below 150 threshold selects walk while running"), ProphecySelectWalkCheckpoint(true, 1, 0, 150));

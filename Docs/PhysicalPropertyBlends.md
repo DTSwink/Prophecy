@@ -25,7 +25,7 @@ These are deadband tolerances, **not a normalized feedback weight**. Zero tolera
 - Existing immediate Set nodes cancel the affected blends. Single-bone, Below and All variants follow their existing selection rules. Do not call a setter every Tick while expecting a blend to continue.
 - Magnetisation and feedback transitions are independent and may run simultaneously, with different durations.
 - Duration <= 0 applies the destination immediately. Finite negative destinations clamp to zero; invalid bone or nonfinite input returns failure without scheduling work.
-- Time follows the world simulation clock, including the project's fixed-clock slow motion and world/agent time dilation. Pause freezes progression. Disabling the agent's actor Tick does not stop its transition.
+- One authored second means60 unpaused engine ticks, regardless of actual FPS or world/agent time dilation. Pause freezes progression. Disabling the agent's actor Tick does not stop its transition. Only active transitions run an updater; the last completion/cancellation unregisters it.
 - Ending play/destruction removes the agent's transitions. Runtime blends are not saved into assets or resumed across Play sessions.
 - Use these APIs and the existing Set nodes to override transitions; direct edits to the exposed settings maps do not notify the scheduler.
 

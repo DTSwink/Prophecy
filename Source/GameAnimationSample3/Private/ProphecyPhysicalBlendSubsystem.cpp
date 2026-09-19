@@ -1,5 +1,6 @@
 #include "ProphecyPhysicalBlendSubsystem.h"
 #include "ProphecyPhysicalContext.h"
+#include "ProphecyBlendClock.h"
 
 #include "ProphecyNNLocomotionManager.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -180,7 +181,7 @@ void UProphecyPhysicalBlendSubsystem::Advance(UWorld* World, ELevelTick TickType
 			ActiveAgents.RemoveAtSwap(Index, 1, EAllowShrinking::No);
 			continue;
 		}
-		const double Delta = double(DeltaSeconds) * Agent->CustomTimeDilation;
+		const double Delta = ProphecyBlendClock::TickSeconds;
 		if (!FMath::IsFinite(Delta) || Delta <= 0.0) continue;
 		AProphecyNNLocomotionManager* Manager = nullptr;
 		if (Entry.Blends.ContainsByPredicate([](const auto& B) { return B.Kind == EProphecyPhysicalBlend::Feedback; }))
@@ -203,6 +204,7 @@ void UProphecyPhysicalBlendSubsystem::Advance(UWorld* World, ELevelTick TickType
 		{
 			auto& Blend = Entry.Blends[BlendIndex];
 			Blend.Elapsed = FMath::Min(Blend.Duration, Blend.Elapsed + Delta);
+			if (Blend.Elapsed + 1.e-9 >= Blend.Duration) Blend.Elapsed = Blend.Duration;
 			const double T = Blend.Elapsed / Blend.Duration;
 			const float Alpha = float(T * T * (3.0 - 2.0 * T));
 			const FVector2f Value = Blend.Elapsed >= Blend.Duration ? Blend.Target : FMath::Lerp(Blend.Start, Blend.Target, Alpha);

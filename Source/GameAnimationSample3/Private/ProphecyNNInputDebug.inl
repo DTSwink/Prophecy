@@ -9,7 +9,7 @@ bool AProphecyNNLocomotionManager::SetAgentLocomotionRootWindowLocation(
 	AProphecyAgent* Actor = ResolveAgent(Handle);
 	if (!Actor || !Actor->bNNInferenceEnabled) return false;
 	auto& Agent = Impl->Agents[Handle.Index];
-	if (Agent.WindowStepSeconds <= 0 || Agent.DefensePose
+	if (Agent.WindowStepSeconds <= 0
 		|| (Agent.Slash.bActive && !Agent.Slash.bHalf)) return false;
 	const FVector WorldDelta = WorldLocation - Actor->GetRootLowPoint();
 	const FVector3f Delta = UnrealToTraining(WorldDelta);
@@ -18,6 +18,52 @@ bool AProphecyNNLocomotionManager::SetAgentLocomotionRootWindowLocation(
 	// Deliberately unswept: a requested window translation must not collapse into
 	// the normal collision-rebase path. Leave physical Jolt bodies to their solver.
 	if (!Actor->SetActorLocation(Actor->GetActorLocation() + WorldDelta, false, nullptr, ETeleportType::None)) return false;
+	if (Agent.DefensePose)
+	{
+		using namespace ProphecyDefense;
+		auto& P=*Agent.DefensePose;
+		if (bPreserveWorldPose)
+		{
+			auto Rebase=[&](float* Lower,float* Upper,FRootFrame& Root)
+			{
+				const FVector3f Old=Root.P;Root.P+=Delta;
+				RebaseLower(Lower,Lower,Old,Root.R,Root.P,Root.R);
+				RebaseUpper(Upper,Upper,Old,Root.R,Root.P,Root.R);
+			};
+			if (P.bDodge)
+			{
+				auto& S=static_cast<FProphecyLiveDodge&>(P).State;
+				Rebase(S.PreviousLower,S.PreviousUpper,S.PreviousRoot);Rebase(S.CurrentLower,S.CurrentUpper,S.CurrentRoot);
+			}
+			else
+			{
+				auto& S=static_cast<FProphecyLiveParry&>(P).State;
+				RebaseUpper(S.CurrentBaseline,S.CurrentBaseline,S.CurrentRoot.P,S.CurrentRoot.R,S.CurrentRoot.P+Delta,S.CurrentRoot.R);
+				Rebase(S.PreviousLower,S.PreviousUpper,S.PreviousRoot);Rebase(S.CurrentLower,S.CurrentUpper,S.CurrentRoot);
+			}
+			const auto PrevCarrier=SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
+			const auto Carrier=SlashComponentWorld(Actor,Agent.PublishedRoot,Agent.PublishedYaw);
+			for (int32 I=0;I<25;++I)
+			{
+				P.PreviousComponent[I].AddToTranslation(-PrevCarrier.InverseTransformVector(WorldDelta));
+				P.CurrentComponent[I].AddToTranslation(-Carrier.InverseTransformVector(WorldDelta));
+			}
+		}
+		else if (P.bDodge)
+		{
+			// Move the episode origin with the defender. The external attacker does
+			// not teleport, so its retained sweep endpoint needs the inverse shift.
+			static_cast<FProphecyLiveDodge&>(P).WorldOrigin+=Delta;
+			P.PreviousAttack.Center-=Delta;P.NextAttack.Center-=Delta;P.Context.TargetWorld-=Delta;
+		}
+		else
+		{
+			auto& Parry=static_cast<FProphecyLiveParry&>(P);
+			Parry.State.PreviousRoot.P+=Delta;Parry.State.CurrentRoot.P+=Delta;
+			for (int32 I=0;I<25;++I) { P.CurrentPose.P[I]+=Delta;Parry.Frozen.P[I]+=Delta; }
+			for (int32 I=0;I<Impl->Defense->Contacts.Count;++I) P.PreviousBoxes[I].Center+=Delta;
+		}
+	}
 	if (bPreserveWorldPose)
 	{
 		// Bounds recenter the carrier under the existing skeleton. Preserve BOTH
@@ -70,6 +116,8 @@ bool AProphecyNNLocomotionManager::SetAgentLocomotionRootWindowLocation(
 	// (and Jolt's target history) untouched; ordinary explicit placement translates it.
 	if (!bPreserveWorldPose)
 		FProphecyNNPoseStore::TranslateAgentWorldPose(PoseStoreAgentBase + Handle.Index, WorldDelta);
+	else if (Actor->GetSimulationMode() == EProphecyAgentSimulationMode::Kinematic)
+		Actor->ApplyNNPoseKinematically(0.0f);
 	return true;
 }
 
@@ -80,7 +128,6 @@ bool AProphecyNNLocomotionManager::GetAgentContinuousLocomotionRootWindow(
 	const AProphecyAgent* Actor = ResolveAgent(Handle);
 	if (!Actor || !Actor->bNNInferenceEnabled) return false;
 	const auto& Agent = Impl->Agents[Handle.Index];
-	if (Agent.DefensePose && Agent.DefensePose->bDodge) return false;
 	if (Agent.Slash.bActive && !Agent.Slash.bHalf) return false;
 	if (!GetAgentLocomotionRootWindow(Handle, Roots, Times)) return false;
 	const FTransform AppliedRoot(FRotator(0, Actor->GetActorRotation().Yaw, 0), Actor->GetRootLowPoint());

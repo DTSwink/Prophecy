@@ -2,6 +2,7 @@
 #include "ProphecyParryRuntime.h"
 #include "ProphecyDodgeLower.h"
 #include "ProphecyDefenseContacts.h"
+#include "ProphecyDefensePhysicalContacts.h"
 #include "ProphecyDefenseNetwork.h"
 #include "ProphecyNNDefenseLibrary.h"
 class AProphecyAgent;
@@ -11,13 +12,15 @@ struct FProphecyLiveDefensePose
     ProphecyDefense::FContext Context;
     ProphecyDefense::FPose CurrentPose;
     ProphecyDefense::FDefenseBox PreviousBoxes[20],PreviousAttack,NextAttack;
-    ProphecyDefense::FContactOrder Order;
+    ProphecyDefense::FFirstContact Order;
+    TSharedPtr<FProphecyDefensePhysicalContacts> PhysicalContacts;
+    bool bPhysicalContactsFailed=false;
     FTransform PreviousComponent[25],CurrentComponent[25];
     FProphecyNNDefenseStatus Status;
     FVector3f AttackerHalf;
     FName Family;
     int32 AttackerIndex=INDEX_NONE,AttackerCollider=INDEX_NONE,MaxSteps=90;
-    uint32 PresentMask=0,BlockingMask=0;
+    uint32 PresentMask=0;
     bool bHasPose=false,bDodge=false;
 };
 struct FProphecyLiveParry : FProphecyLiveDefensePose
@@ -41,6 +44,7 @@ struct FProphecyLiveDefenseRuntime
 {
     ProphecyDefense::FGeometry Geometry;
     ProphecyDefense::FContactGeometry Contacts;
+    ProphecyDefense::FContactGeometry AttackContacts;
     FProphecyDefenseNetwork ParryNetwork;
     ProphecyDefense::FGeometry DodgeGeometry;
     ProphecyDefense::FContactGeometry DodgeContacts;

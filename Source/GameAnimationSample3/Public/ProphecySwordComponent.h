@@ -29,6 +29,7 @@ public:
 	AActor* Drop();
 	void Disappear();
 	void RefreshHandConstraint();
+	bool BreakGripConstraint();
 	bool SetInertiaScale(float Scale);
 	bool SetAttachedInertiaScale(float Scale);
 	void RefreshOwnerCollision();

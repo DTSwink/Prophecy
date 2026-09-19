@@ -5,6 +5,33 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "ProphecyAngularLimits.h"
+#include "ProphecySpecialSolver.h"
+
+namespace ProphecySpecialSolver
+{
+struct FState { bool Attack=false, Defense=false; };
+// Event-owned state preserves existing live UObject/native layouts. Locomotion has no entry.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FState> States;
+bool IsActive(const AProphecyAgent* Agent) { return !States.IsEmpty() && States.Contains(Agent); }
+void Remove(const AProphecyAgent* Agent) { States.Remove(Agent); }
+static void Change(AProphecyAgent* Agent,bool Defense,bool Active)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()) return;
+    const bool WasActive=IsActive(Agent);
+    if (!WasActive && !Active) return;
+    auto& State=States.FindOrAdd(Agent);
+    (Defense ? State.Defense : State.Attack)=Active;
+    const bool NowActive=State.Attack || State.Defense;
+    if (!NowActive) States.Remove(Agent);
+    if (WasActive==NowActive || !Agent->IsJoltPhysicalAnimationEnabled()) return;
+    int32 Velocity,Position; Agent->GetJoltSolverIterations(Velocity,Position);
+    FString Error;
+    if (!Agent->GetJoltCharacterComponent()->SetSolverIterations(Velocity,Position,Error))
+        UE_LOG(LogTemp,Error,TEXT("Special solver transition failed on %s: %s"),*Agent->GetName(),*Error);
+}
+void AttackChanged(AProphecyAgent* Agent,bool Active) { Change(Agent,false,Active); }
+void DefenseChanged(AProphecyAgent* Agent,bool Active) { Change(Agent,true,Active); }
+}
 
 namespace
 {
@@ -63,7 +90,9 @@ bool AProphecyAgent::SetJoltSolverIterations(int32 VelocityIterations, int32 Pos
     if (!IsInGameThread() || IsActorBeingDestroyed() || VelocityIterations < 0 || VelocityIterations > 128
         || PositionIterations < 0 || PositionIterations > 128)
     { OutError = TEXT("Solver iterations require a live agent and counts in 0..128; zero restores world defaults."); return false; }
-    if (IsJoltPhysicalAnimationEnabled() && !JoltCharacter->SetSolverIterations(VelocityIterations, PositionIterations, OutError)) return false;
+    // During a special, edits configure the locomotion settings restored on exit.
+    if (!ProphecySpecialSolver::IsActive(this) && IsJoltPhysicalAnimationEnabled()
+        && !JoltCharacter->SetSolverIterations(VelocityIterations, PositionIterations, OutError)) return false;
     JoltVelocityIterations = VelocityIterations;
     JoltPositionIterations = PositionIterations;
     return true;
@@ -71,8 +100,9 @@ bool AProphecyAgent::SetJoltSolverIterations(int32 VelocityIterations, int32 Pos
 
 void AProphecyAgent::GetJoltSolverIterations(int32& VelocityIterations, int32& PositionIterations) const
 {
-    VelocityIterations = JoltVelocityIterations;
-    PositionIterations = JoltPositionIterations;
+    const bool Special=ProphecySpecialSolver::IsActive(this);
+    VelocityIterations = Special ? 10 : JoltVelocityIterations;
+    PositionIterations = Special ? 32 : JoltPositionIterations;
 }
 
 bool AProphecyAgent::SetPhysicalJointAngularLimits(FName ChildBone,

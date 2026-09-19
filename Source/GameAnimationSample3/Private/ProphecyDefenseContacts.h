@@ -18,11 +18,12 @@ struct FContactGeometry
     };
     FAttachment Boxes[MaxBoxes];
     int32 Count=0,BaseCount=0;
-    bool Load(const FString& Filename,FString& Error);
+    bool Load(const FString& Filename,FString& Error,bool bAttacker=false);
+    // Training attacker boxes attach directly to the authored bone basis.
+    // Defender forearm/end-effector reconstruction must not affect this input.
+    FDefenseBox BuildAttachedBox(const FVector3f& Position,const FRows& Rotation,int32 Index) const;
     void Build(const FPose& Pose,FDefenseBox* Out) const;
     FDefenseBox BuildBox(const FPose& Pose,int32 Index) const;
-    // Eligibility is supplied by gameplay, never appended to the NN input.
-    uint32 BlockingMask(int32 TrainingLabel,bool bDrawn) const;
     uint32 PresentMask(bool bDrawn) const;
 };
 
@@ -33,19 +34,16 @@ struct FContactPair
     bool bPossible=false,bConfirmed=false,bResolved=true;
 };
 float BoxGap(const FDefenseBox& A,const FVector3f& HalfA,const FDefenseBox& B,const FVector3f& HalfB);
-// Strict conservative advancement: exhausted searches may be harmful, but
-// never certify a block. Time is a fraction of this completed policy interval.
+// Conservative advancement: exhausted searches do not confirm a contact.
+// Time is a fraction of this completed policy interval.
 FContactPair SweepBoxes(const FDefenseBox& A0,const FDefenseBox& A1,const FVector3f& HalfA,const FVector3f& OffsetA,
     const FDefenseBox& B0,const FDefenseBox& B1,const FVector3f& HalfB,const FVector3f& OffsetB,int32 MaxIterations=96);
 
-struct FContactOrder
+// Earliest confirmed contact, without gameplay success/damage classification.
+struct FFirstContact
 {
-    double BlockTime=std::numeric_limits<double>::infinity(),HarmTime=std::numeric_limits<double>::infinity();
-    int32 BlockCollider=INDEX_NONE,HarmCollider=INDEX_NONE,Unresolved=0;
-    float BlockFraction=0,HarmFraction=0;
-    bool bProtected=false,bHarmful=false;
-    // Source-frame times, matching training's 2/8192 tie margin. Calling code
-    // accumulates only real intervals, and stops the episode at the first hit.
-    void Include(const FContactPair& Pair,int32 Collider,bool bBlocking,double Start,double End);
+    double Time=std::numeric_limits<double>::infinity();
+    int32 Collider=INDEX_NONE,Unresolved=0;
+    void Include(const FContactPair& Pair,int32 Body,double Start,double End);
 };
 }

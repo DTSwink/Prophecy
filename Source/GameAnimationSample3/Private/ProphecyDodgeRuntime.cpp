@@ -12,11 +12,18 @@ void FDodgeState::Initialize(const float* Lower0,const float* Upper0,const float
     InitialRootCommand(Root0,Root1,InitialWorldDelta,InitialYawDelta);
     RootShift=FVector3f::ZeroVector;YawOffset=0;CompletedSteps=0;bInitialized=true;
 }
-bool PrepareDodge(const FDodgeState& S,const float* Frozen,FContext Context,FDodgeWork& W,float* Input)
+bool PrepareDodge(const FDodgeState& S,const float* Frozen,FContext Context,FDodgeWork& W,float* Input,const FRootFrame* PlannedRoot)
 {
     W.StateStep=MAX_uint64;if (!S.bInitialized) return false;
     Context.RootPosition=S.CurrentRoot.P;Context.RootAxes=S.CurrentRoot.R;
     Context.InitialWorldDelta=DodgeCommand(S.InitialWorldDelta,S.YawOffset);Context.InitialYawDelta=S.InitialYawDelta;
+    if (PlannedRoot)
+    {
+        Context.InitialWorldDelta=PlannedRoot->P-S.CurrentRoot.P;
+        const float A=FMath::Atan2(-S.CurrentRoot.R.V[1].X,-S.CurrentRoot.R.V[1].Z);
+        const float B=FMath::Atan2(-PlannedRoot->R.V[1].X,-PlannedRoot->R.V[1].Z);
+        Context.InitialYawDelta=FMath::Atan2(FMath::Sin(B-A),FMath::Cos(B-A));
+    }
     float Features[50];if (!Conditioning(Context,Features)) return false;
     float PreviousLower[41],PreviousUpper[90];
     RebaseLower(S.PreviousLower,PreviousLower,S.PreviousRoot.P,S.PreviousRoot.R,S.CurrentRoot.P,S.CurrentRoot.R);
@@ -28,7 +35,7 @@ bool PrepareDodge(const FDodgeState& S,const float* Frozen,FContext Context,FDod
     Write(Input+359,InTransposedBasis(S.RootShift,S.CurrentRoot.R));W.StateStep=S.CompletedSteps;return true;
 }
 bool CompleteDodge(FDodgeState& S,const FDodgeWork& W,const float* Frozen,const float* Output,
-    const FGeometry& Geometry,FPose& Pose,float* ModifiedLower,float* UnrebasedUpper)
+    const FGeometry& Geometry,FPose& Pose,float* ModifiedLower,float* UnrebasedUpper,const FRootFrame* PlannedRoot)
 {
     if (!S.bInitialized || W.StateStep!=S.CompletedSteps) return false;
     const float PelvisHeight=(Transform(Read(Frozen),S.CurrentRoot.R)+S.CurrentRoot.P).Y;
@@ -52,7 +59,16 @@ bool CompleteDodge(FDodgeState& S,const FDodgeWork& W,const float* Frozen,const 
     // retaining float32 root-basis effects from the reference.
     float WorldBase[90];Geometry.EncodeUpper(NextBasePose,S.CurrentRoot.P,S.CurrentRoot.R,WorldBase);
     Geometry.Finish(Modified,Upper,S.CurrentRoot.P,S.CurrentRoot.R,NextBasePose,WorldBase,Pose);
-    const auto NextRoot=DodgeNextRoot(S.CurrentRoot,S.InitialWorldDelta,S.InitialYawDelta,C.RootHorizontal,C.RootYaw,S.YawOffset);
+    auto NextRoot=DodgeNextRoot(S.CurrentRoot,S.InitialWorldDelta,S.InitialYawDelta,C.RootHorizontal,C.RootYaw,S.YawOffset);
+    if (PlannedRoot)
+    {
+        // Player/mover/magic motion is already resolved in world space. Add the
+        // learned correction once; never rotate that world momentum by dodge yaw.
+        NextRoot=*PlannedRoot;
+        NextRoot.P+=DodgeHorizontal(C.RootHorizontal,S.CurrentRoot.R);
+        const auto Yaw=DodgeYaw(C.RootYaw);
+        for (auto& Row:NextRoot.R.V) Row=Transform(Row,Yaw);
+    }
     FMemory::Memcpy(S.PreviousLower,S.CurrentLower,sizeof(S.PreviousLower));FMemory::Memcpy(S.PreviousUpper,S.CurrentUpper,sizeof(S.PreviousUpper));
     RebaseLower(Modified,S.CurrentLower,S.CurrentRoot.P,S.CurrentRoot.R,NextRoot.P,NextRoot.R);
     RebaseUpper(Upper,S.CurrentUpper,S.CurrentRoot.P,S.CurrentRoot.R,NextRoot.P,NextRoot.R);

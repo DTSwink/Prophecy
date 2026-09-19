@@ -5,6 +5,30 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "ProphecyNNLocomotionManager.h"
 #include "EngineUtils.h"
+#include "ProphecyNNPolicyBlend.h"
+
+namespace ProphecyAutoRun
+{
+static TMap<TWeakObjectPtr<const AProphecyAgent>, float> Thresholds;
+float Threshold(const AProphecyAgent* Agent)
+{
+    const float* Value = Thresholds.IsEmpty() ? nullptr : Thresholds.Find(Agent);
+    return Value ? *Value : 100000.f;
+}
+void Remove(const AProphecyAgent* Agent) { Thresholds.Remove(Agent); }
+}
+bool UProphecyRootPhysicsLibrary::SetLocomotionAutoRunSpeedThreshold(AProphecyAgent* Agent, float SpeedCmPerSecond)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
+        || !FMath::IsFinite(SpeedCmPerSecond) || SpeedCmPerSecond < 0.f) return false;
+    if (SpeedCmPerSecond == 100000.f) ProphecyAutoRun::Remove(Agent);
+    else ProphecyAutoRun::Thresholds.Add(Agent, SpeedCmPerSecond);
+    return true;
+}
+float UProphecyRootPhysicsLibrary::GetLocomotionAutoRunSpeedThreshold(AProphecyAgent* Agent)
+{
+    return IsInGameThread() && IsValid(Agent) ? ProphecyAutoRun::Threshold(Agent) : 100000.f;
+}
 
 namespace ProphecyRootMagic
 {
@@ -152,8 +176,16 @@ const prophecy::sim::RootBalanceSpring* Prepare(const AProphecyAgent* Agent, con
     if (const auto* Magic = ProphecyRootMagic::Find(Agent))
         if (Magic->Linear.SizeSquared() > State->MagicLinearSpeedSquared
             || FMath::Abs(Magic->Yaw) > State->MagicAngularSpeed) return nullptr;
+    if (!GetFlatFeetTarget(Agent,State->FlatMidpoint)) return nullptr;
+    State->Spring.target = { State->FlatMidpoint.X * .01, State->FlatMidpoint.Y * .01 };
+    State->bActive = true;
+    return &State->Spring;
+}
+bool GetFlatFeetTarget(const AProphecyAgent* Agent,FVector& Target)
+{
+    if (!IsValid(Agent)) return false;
     const auto* Mesh = Agent->GetPoseReferenceMesh();
-    if (!Mesh || !Mesh->GetSkeletalMeshAsset()) return nullptr;
+    if (!Mesh || !Mesh->GetSkeletalMeshAsset()) return false;
     const FName Feet[] = { TEXT("foot_l"), TEXT("foot_r") };
     FVector Positions[2];
     for (int32 Index = 0; Index < 2; ++Index)
@@ -165,16 +197,14 @@ const prophecy::sim::RootBalanceSpring* Prepare(const AProphecyAgent* Agent, con
             Positions[Index] = Body.GetLocation();
         else
         {
-            if (Mesh->GetBoneIndex(Feet[Index]) == INDEX_NONE) return nullptr;
+            if (Mesh->GetBoneIndex(Feet[Index]) == INDEX_NONE) return false;
             Positions[Index] = Mesh->GetSocketLocation(Feet[Index]);
         }
-        if (Positions[Index].ContainsNaN()) return nullptr;
+        if (Positions[Index].ContainsNaN()) return false;
     }
-    State->FlatMidpoint = (Positions[0] + Positions[1]) * 0.5;
-    State->FlatMidpoint.Z = Agent->GetRootLowPoint().Z;
-    State->Spring.target = { State->FlatMidpoint.X * .01, State->FlatMidpoint.Y * .01 };
-    State->bActive = true;
-    return &State->Spring;
+    Target = (Positions[0] + Positions[1]) * 0.5;
+    Target.Z = Agent->GetRootLowPoint().Z;
+    return true;
 }
 }
 

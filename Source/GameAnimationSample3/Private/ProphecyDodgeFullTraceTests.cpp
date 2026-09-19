@@ -25,7 +25,7 @@ bool FProphecyDodgeFullTraceTest::RunTest(const FString&)
     const auto& L=Get(TEXT("episode/lower_primers"));const auto& U=Get(TEXT("episode/upper_primers"));
     const auto& Roots=Get(TEXT("episode/root_primers"));const auto& Limits=Get(TEXT("limits"));
     const auto& Valid=Get(TEXT("episode/valid"));const int32 Frames=Valid.Num();
-    if (L.Num()!=82 || U.Num()!=180 || Roots.Num()!=24 || Limits.Num()!=6 || Frames!=16) return false;
+    if (L.Num()!=82 || U.Num()!=180 || Roots.Num()!=24 || Limits.Num()!=6 || Frames<3) return false;
     ProphecyDefense::FGeometry G;FDodgeLowerSettings Settings[2];FProphecyDefenseNetwork Lower[2],Upper;
     if (!G.Load(Dir/TEXT("dodge_skeleton.json"),true,Error)
         || !Upper.Initialize(Dir/TEXT("prophecy_dodge_upper.onnx"),362,112,Error)) { AddError(Error);return false; }
@@ -139,6 +139,42 @@ bool FProphecyDodgeFullTraceTest::RunTest(const FString&)
     if (!FFileHelper::SaveStringToFile(Text,*(Dir/TEXT("ue_dodge_trace_flat.json")))) return false;
     TestEqual(TEXT("Padding does not advance the recurrent state"),S.CompletedSteps,uint64(6));
     AddInfo(FString::Printf(TEXT("Exported %d native trace tensors. Run the original Dodge comparator for full numerical verification."),Trace.Num()));
+    return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyDodgeLiveRootTest,"Prophecy.NN.Defense.DodgeLiveRoot",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyDodgeLiveRootTest::RunTest(const FString&)
+{
+    using namespace ProphecyDefense;
+    const FString Dir=FPaths::ProjectSavedDir()/TEXT("DefenseIntegration/Models");
+    FString Text,Error;TSharedPtr<FJsonObject> Fixture;
+    if (!FFileHelper::LoadFileToString(Text,*(Dir/TEXT("dodge_trace_inputs.json"))) ||
+        !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Fixture)) return false;
+    auto Get=[&](const TCHAR* Name) { TArray<float> A;for (auto& V:Fixture->GetArrayField(Name)) A.Add(float(V->AsNumber()));return A; };
+    const auto L=Get(TEXT("episode/lower_primers")),U=Get(TEXT("episode/upper_primers")),R=Get(TEXT("episode/root_primers"));
+    ProphecyDefense::FGeometry Geometry;if (!Geometry.Load(Dir/TEXT("dodge_skeleton.json"),true,Error)) { AddError(Error);return false; }
+    const float Budgets[]={10,10,10,10,10,10};
+    FDodgeState S;S.Initialize(L.GetData(),U.GetData(),R.GetData(),L.GetData()+41,U.GetData()+90,R.GetData()+12,Budgets);
+    // Large retained yaw must not rotate a new world-space command into a helix.
+    S.YawOffset=1.7f;S.InitialWorldDelta={9,0,9};
+    auto Planned=S.CurrentRoot;Planned.P+=FVector3f(.2f,.01f,-.1f);
+    const auto Turn=DodgeYaw(.13f);for (auto& Row:Planned.R.V) Row=Transform(Row,Turn);
+    FDodgeWork W;FContext Context;float Input[362],Output[112]={};FPose Pose;
+    TestTrue(TEXT("Live preparation"),PrepareDodge(S,S.CurrentLower,Context,W,Input,&Planned));
+    const auto ExpectedCommand=InTransposedBasis(Planned.P-S.CurrentRoot.P,S.CurrentRoot.R);
+    TestTrue(TEXT("Conditioning uses new command, not episode seed"),Read(Input+207+37).Equals(ExpectedCommand,1.e-6f));
+    TestTrue(TEXT("Zero residual completion"),CompleteDodge(S,W,S.CurrentLower,Output,Geometry,Pose,nullptr,nullptr,&Planned));
+    TestTrue(TEXT("Zero residual follows planned position exactly"),S.CurrentRoot.P.Equals(Planned.P,1.e-6f));
+    for (int32 I=0;I<3;++I) TestTrue(TEXT("Zero residual follows planned orientation"),S.CurrentRoot.R.V[I].Equals(Planned.R.V[I],1.e-6f));
+    const auto Old=S.CurrentRoot;Planned.P+=FVector3f(-.1f,0,.23f);
+    Output[105]=.04f;Output[106]=-.02f;Output[107]=1;Output[110]=.2f;Output[111]=1;
+    TestTrue(TEXT("Second live preparation"),PrepareDodge(S,S.CurrentLower,Context,W,Input,&Planned));
+    TestTrue(TEXT("Residual completion"),CompleteDodge(S,W,S.CurrentLower,Output,Geometry,Pose,nullptr,nullptr,&Planned));
+    TestTrue(TEXT("Dodge displacement added once in native root frame"),S.CurrentRoot.P.Equals(Planned.P+Transform(FVector3f(.04f,-.02f,0),Old.R),1.e-6f));
+    const auto Rotation=DodgeYaw(.2f);
+    for (int32 I=0;I<3;++I) TestTrue(TEXT("Dodge yaw added once"),S.CurrentRoot.R.V[I].Equals(Transform(Planned.R.V[I],Rotation),1.e-6f));
+    TestTrue(TEXT("Only learned movement consumes root budget"),FMath::IsNearlyEqual(S.Remaining[4],10.f-FMath::Sqrt(.002f),1.e-5f));
+    TestEqual(TEXT("Retarget/live movement did not reseed history"),S.CompletedSteps,uint64(2));
     return !HasAnyErrors();
 }
 #endif

@@ -2,7 +2,7 @@
 
 On **Prophecy Agent**, call **Set Locomotion Policy Blend Times** once with independent **Walk To Run Seconds** and **Run To Walk Seconds**. For example, 0.2 and 0.35. **Get Locomotion Policy Blend Times** reads them back.
 
-Defaults are 0/0, preserving immediate policy switching. Durations use simulation time, so game slow motion slows the transition too. Negative/nonfinite inputs fail without changing either setting. Nonzero duration changes configure the next transition; setting the active direction to zero ends it on the next NN step.
+Defaults are 0/0, preserving immediate policy switching. One authored second means60 unpaused engine ticks regardless of FPS or time dilation. Only active transitions run a clock; NN evaluations consume accumulated ticks once. Negative/nonfinite inputs fail without changing either setting. Nonzero duration changes configure the next transition; setting the active direction to zero ends it on the next NN step.
 
 **Get Locomotion Checkpoint Weights** returns **Walk Weight** and **Run Weight** in the latest published 30 Hz lower-body prediction. Each is 0..1 and together they equal 1. It reads existing state only; it does not evaluate an NN or copy the pose. Before registration it returns false and zero outputs. These are policy weights, not percentages of a physical pose; full attacks may hide the underlying locomotion pose.
 

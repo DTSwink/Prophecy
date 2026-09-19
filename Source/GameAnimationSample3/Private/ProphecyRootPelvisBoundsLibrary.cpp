@@ -2,6 +2,8 @@
 #include "ProphecyRootPelvisBounds.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNLocomotionManager.h"
+#include "ProphecyRootPhysicsLibrary.h"
+#include "ProphecyJoltBodyComponent.h"
 #include "Components/PrimitiveComponent.h"
 
 // Kept in its own translation unit so bounds implementation edits do not rebuild the NN implementation.
@@ -11,6 +13,32 @@ namespace ProphecyRootPelvisBounds
 static TMap<TWeakObjectPtr<const AProphecyAgent>, float> Radii;
 static TMap<TWeakObjectPtr<const AProphecyAgent>, TWeakObjectPtr<UPrimitiveComponent>> MagicCubes;
 void Remove(const AProphecyAgent* Agent) { Radii.Remove(Agent); MagicCubes.Remove(Agent); }
+
+void ResetMagicCubeToRoot(AProphecyAgent* Agent)
+{
+    const auto* Registered = MagicCubes.IsEmpty() ? nullptr : MagicCubes.Find(Agent);
+    auto* Cube = Registered ? Registered->Get() : nullptr;
+    if (!IsValid(Agent) || !IsValid(Cube) || Cube->IsBeingDestroyed()) return;
+    FVector Destination = Cube->GetComponentLocation();
+    const FVector Root = Agent->GetRootLowPoint();
+    Destination.X = Root.X; Destination.Y = Root.Y;
+    Cube->SetWorldLocation(Destination, false, nullptr, ETeleportType::TeleportPhysics);
+    // Clear both the pending UE command and the native velocity: otherwise one
+    // pre-handoff command can move the cube before Blueprint computes its next delta.
+    Cube->SetPhysicsLinearVelocity(FVector::ZeroVector);
+    Cube->SetPhysicsAngularVelocityInRadians(FVector::ZeroVector);
+    TInlineComponentArray<UProphecyJoltBodyComponent*> Bodies(Cube->GetOwner());
+    for (auto* Body : Bodies) if (Body->GetSourceComponent() == Cube && Body->IsJoltBody())
+    {
+        FString Error;
+        if (!Body->SetBodyVelocity(FVector::ZeroVector, FVector::ZeroVector, true, Error))
+            UE_LOG(LogTemp, Warning, TEXT("Magic cube return reset: %s"), *Error);
+        break;
+    }
+    // The registered cube feeds set 1's linear term. Preserve angular magic and
+    // independent set 2 (external impulses), rather than clearing user momentum.
+    UProphecyRootPhysicsLibrary::SetRootMagicVelocity(Agent, FVector::ZeroVector, false);
+}
 
 void Apply(AProphecyNNLocomotionManager& Manager)
 {
@@ -76,6 +104,40 @@ void UProphecyRootPelvisBoundsLibrary::GetRootPelvisBounds(AProphecyAgent* Agent
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+#include "Engine/World.h"
+#include "Components/StaticMeshComponent.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyMagicReturnTest, "Prophecy.Root.PelvisBounds.CombatReturn",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyMagicReturnTest::RunTest(const FString& Parameters)
+{
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    if (!TestNotNull(TEXT("Transient world"), World)) return false;
+    auto* Agent = World->SpawnActor<AProphecyAgent>();
+    auto* Cube = NewObject<UStaticMeshComponent>(Agent);
+    Agent->AddInstanceComponent(Cube); Cube->RegisterComponent();
+    Agent->SetActorLocation(FVector(300,400,100));
+    Cube->SetWorldLocation(FVector(-200,-100,150));
+    UProphecyRootPelvisBoundsLibrary::SetRootPelvisBounds(Agent,true,20,Cube);
+    UProphecyRootPhysicsLibrary::SetRootMagicVelocity(Agent,FVector(800,-200,0));
+    UProphecyRootPhysicsLibrary::SetRootMagicVelocity2(Agent,FVector(12,34,0));
+    UProphecyRootPhysicsLibrary::SetRootMagicAngVelocity(Agent,FVector(0,0,90));
+    ProphecyRootPelvisBounds::ResetMagicCubeToRoot(Agent);
+    const FVector Root=Agent->GetRootLowPoint(), P=Cube->GetComponentLocation();
+    TestTrue(TEXT("Zero planar feedback error at relocated root"), FVector(P.X-Root.X,P.Y-Root.Y,0).IsNearlyZero());
+    TestEqual(TEXT("Cube height retained"), P.Z,150.);
+    TestTrue(TEXT("Stale feedback velocity cleared"), UProphecyRootPhysicsLibrary::GetRootMagicVelocity(Agent).IsZero());
+    TestTrue(TEXT("Second magic channel retained"), UProphecyRootPhysicsLibrary::GetRootMagicVelocity2(Agent).Equals(FVector(12,34,0),1.e-4));
+    TestTrue(TEXT("Angular magic retained"), UProphecyRootPhysicsLibrary::GetRootMagicAngVelocity(Agent).Equals(FVector(0,0,90),1.e-4));
+    ProphecyRootPelvisBounds::Remove(Agent);
+    UProphecyRootPhysicsLibrary::SetRootMagicVelocity(Agent,FVector(50,0,0));
+    ProphecyRootPelvisBounds::ResetMagicCubeToRoot(Agent);
+    TestTrue(TEXT("No cube registration leaves ordinary magic untouched"), UProphecyRootPhysicsLibrary::GetRootMagicVelocity(Agent).Equals(FVector(50,0,0)));
+    UProphecyRootPhysicsLibrary::SetRootMagicVelocity(Agent,FVector::ZeroVector);
+    UProphecyRootPhysicsLibrary::SetRootMagicVelocity2(Agent,FVector::ZeroVector);
+    UProphecyRootPhysicsLibrary::SetRootMagicAngVelocity(Agent,FVector::ZeroVector);
+    World->DestroyWorld(false);
+    return true;
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyRootPelvisBoundsTest, "Prophecy.Root.PelvisBounds.PlanarCircle",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FProphecyRootPelvisBoundsTest::RunTest(const FString& Parameters)

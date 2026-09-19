@@ -1,5 +1,6 @@
 #include "ProphecyLimbCollisionLibrary.h"
 #include "ProphecyLimbCollision.h"
+#include "ProphecySpecialSolver.h"
 #include "ProphecyAgent.h"
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyJoltWorldSubsystem.h"
@@ -25,11 +26,24 @@ struct FAgentOverrides
 };
 // Separate optional native storage: no extension of existing live character/map layouts.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FAgentOverrides> Overrides;
-void Remove(const AProphecyAgent* Agent) { Overrides.Remove(Agent); }
+void Remove(const AProphecyAgent* Agent) { Overrides.Remove(Agent); ProphecySpecialSolver::Remove(Agent); }
 void Invalidate(AProphecyAgent* Agent)
 { if (auto* S=Overrides.IsEmpty() ? nullptr : Overrides.Find(Agent)) S->bDirty=true; }
 void DefenseChanged(AProphecyAgent* Agent,bool Active)
-{ if (auto* S=Overrides.IsEmpty() ? nullptr : Overrides.Find(Agent)) S->bDefense=Active; }
+{
+    ProphecySpecialSolver::DefenseChanged(Agent,Active);
+    // Shared committed defense lifecycle: both parry/dodge call this after activation,
+    // and StopAgentNNDefense calls it on exit. Queued pre-Armed requests never call true.
+    // Independent of optional limb overrides. Reflection avoids new live plugin imports.
+    if (IsValid(Agent))
+    {
+        struct FSweepDefenseState { AActor* Agent; bool Defending; } State{Agent,Active};
+        auto* Library=FindObjectChecked<UClass>(nullptr,
+            TEXT("/Script/ProphecyJolt.ProphecyJoltPHATSweepLibrary"))->GetDefaultObject();
+        Library->ProcessEvent(Library->FindFunctionChecked(TEXT("NotifyDefenseState")),&State);
+    }
+    if (auto* S=Overrides.IsEmpty() ? nullptr : Overrides.Find(Agent)) S->bDefense=Active;
+}
 static bool SameRig(const FProphecyJoltBodyHandle& A,const FProphecyJoltBodyHandle& B)
 { return A.WorldLifetime==B.WorldLifetime && A.Slot==B.Slot && A.Generation==B.Generation; }
 static bool Read(AProphecyAgent* Agent,FName Bone,FProphecyJoltCollisionUpdate& Out,FString& Error)

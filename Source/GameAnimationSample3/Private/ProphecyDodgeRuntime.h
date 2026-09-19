@@ -17,7 +17,9 @@ struct FDodgeState
 struct FDodgeWork { uint64 StateStep=MAX_uint64; };
 // FrozenLower must be the just-completed accepted lower network step under
 // this state's causal root command, including its checkpoint's pin projection.
-bool PrepareDodge(const FDodgeState& State,const float* FrozenLower,FContext Context,FDodgeWork& Work,float* Input362);
+bool PrepareDodge(const FDodgeState& State,const float* FrozenLower,FContext Context,FDodgeWork& Work,float* Input362,
+    const FRootFrame* PlannedRoot=nullptr);
 bool CompleteDodge(FDodgeState& State,const FDodgeWork& Work,const float* FrozenLower,const float* Output112,
-    const FGeometry& Geometry,FPose& Pose,float* ModifiedLower=nullptr,float* UnrebasedUpper=nullptr);
+    const FGeometry& Geometry,FPose& Pose,float* ModifiedLower=nullptr,float* UnrebasedUpper=nullptr,
+    const FRootFrame* PlannedRoot=nullptr);
 }
