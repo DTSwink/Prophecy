@@ -1,6 +1,16 @@
 #pragma once
 #include "CoreMinimal.h"
 class AProphecyAgent;
+// Physical-profile selection follows the checkpoint driving that physical limb.
+inline float ProphecyBodyPolicyWalkWeight(FName Bone,float Pelvis,const FVector2f& Legs)
+{
+    if (Legs.X==Pelvis && Legs.Y==Pelvis) return Pelvis;
+    static const FName Left[]={TEXT("thigh_l"),TEXT("calf_l"),TEXT("foot_l"),TEXT("ball_l")};
+    static const FName Right[]={TEXT("thigh_r"),TEXT("calf_r"),TEXT("foot_r"),TEXT("ball_r")};
+    for (const auto Name:Left) if (Bone==Name) return Legs.X;
+    for (const auto Name:Right) if (Bone==Name) return Legs.Y;
+    return Pelvis;
+}
 namespace ProphecyAutoRun
 {
 float Threshold(const AProphecyAgent* Agent);

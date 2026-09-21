@@ -184,6 +184,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     if (Agent.DefensePose) StopAgentNNDefense(Handle, false);
     D.Dodges.Remove(Handle.Index);
     ProphecyAttackRecovery::Cancel(Actor);
+    ProphecyRootBalance::CancelKickException(Actor);
     Agent.DefensePose=New.Get();D.Parries.Add(Handle.Index,MoveTemp(New));++D.ActiveCount;
     ProphecyLimbCollision::DefenseChanged(Actor,true);Error.Reset();return true;
 }
@@ -321,8 +322,11 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
             if (Clamps->Foot.bOverride) { C.bClampFoot=Clamps->Foot.bEnabled;C.FootLeeway=Clamps->Foot.LeewayCm/100.f;C.FootClampLengthMultiplier=1; }
             if (Clamps->Calf.bOverride) { C.bClampCalf=Clamps->Calf.bEnabled;C.CalfLeeway=Clamps->Calf.LeewayCm/100.f;C.CalfClampLengthMultiplier=1; }
         }
+        const bool KickExtension=ProphecyKickFootLeeway::Current(Actor)>0;
+        if (KickExtension) C.bClampFoot=C.bClampCalf=false;
         float BaseHeading[90];BuildUpperBaseFromLower(P.NextLower,*Impl,BaseHeading);FTransform FrozenComponent[25];
-        DecodeLocomotionPose(Impl,P.NextLower,BaseHeading,Agent.PublishedWalkWeight,MakeArrayView(FrozenComponent),nullptr,C);
+        DecodeLocomotionPose(Impl,P.NextLower,BaseHeading,Agent.PublishedWalkWeight,MakeArrayView(FrozenComponent),nullptr,C,&Agent.PublishedLegWalkWeights);
+        if (KickExtension) ProphecyNNPresentation::ApplyKickFootExtension(PoseStoreAgentBase+Index,Impl->PublishedBoneNames,MakeArrayView(FrozenComponent));
         const auto Carrier=SlashComponentWorld(Actor,Agent.PublishedRoot,Agent.PublishedYaw);
         for (int32 Bone:{0,17,18,19,20,21,22,23,24})
         {

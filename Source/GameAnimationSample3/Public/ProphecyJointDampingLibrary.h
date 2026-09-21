@@ -1,6 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "ProphecyPhysicalContextTypes.h"
 #include "ProphecyJointDampingLibrary.generated.h"
 class AProphecyAgent;
 
@@ -28,4 +29,32 @@ public:
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Jolt|Joints", meta=(AdvancedDisplay="OutError"))
     static bool SetJoltJointLocomotionDamping(AProphecyAgent* Agent,FName ChildBone,
         float WalkSheathed,float RunSheathed,float WalkDrawn,float RunDrawn,FString& OutError);
+
+    /** Set the four locomotion damping values on inbound PHAT joints below Parent Bone.
+     * Include Parent also selects that bone's inbound joint. Non-physical bones are skipped.
+     * Uses the same checkpoint blend, equipment selection, attack suppression and snapshots
+     * as the single-joint node. Returns the number of joints changed. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Jolt|Joints", meta=(AdvancedDisplay="OutError"))
+    static int32 SetJoltJointLocomotionDampingBelow(AProphecyAgent* Agent,FName ParentBone,bool IncludeParent,
+        float WalkSheathed,float RunSheathed,float WalkDrawn,float RunDrawn,FString& OutError);
+
+    /** Smoothstep blend of inbound-joint damping. Duration1 =60 game ticks.
+     * Both/Both edits every locomotion profile; attacks use zero. Requires Jolt. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Jolt|Joints")
+    static bool BlendJoltJointAngularDamping(AProphecyAgent* Agent,FName ChildBone,float Damping,
+        float DurationSeconds=1.f,EProphecyLocomotionSelection Locomotion=EProphecyLocomotionSelection::Both,
+        EProphecyEquipmentSelection Equipment=EProphecyEquipmentSelection::Both);
+
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Jolt|Joints")
+    static int32 BlendJoltJointAngularDampingBelow(AProphecyAgent* Agent,FName ParentBone,bool IncludeParent,
+        float Damping,float DurationSeconds=1.f,EProphecyLocomotionSelection Locomotion=EProphecyLocomotionSelection::Both,
+        EProphecyEquipmentSelection Equipment=EProphecyEquipmentSelection::Both);
+
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Jolt|Joints")
+    static int32 BlendJoltAllJointsAngularDamping(AProphecyAgent* Agent,float Damping,float DurationSeconds=1.f,
+        EProphecyLocomotionSelection Locomotion=EProphecyLocomotionSelection::Both,
+        EProphecyEquipmentSelection Equipment=EProphecyEquipmentSelection::Both);
+
+    UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Jolt|Joints")
+    static bool GetJoltJointAngularDamping(AProphecyAgent* Agent,FName ChildBone,float& Damping);
 };

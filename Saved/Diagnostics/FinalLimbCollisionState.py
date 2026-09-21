@@ -1,0 +1,1 @@
+import unreal; ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem); print("PIE",bool(ed.get_game_world())); print("WORLD",ed.get_editor_world().get_name()); print("DIRTY",[p.get_path_name() for p in unreal.EditorLoadingAndSavingUtils.get_dirty_content_packages()]); print("LIBRARY",unreal.load_class(None,"/Script/GameAnimationSample3.ProphecyLimbCollisionLibrary"))

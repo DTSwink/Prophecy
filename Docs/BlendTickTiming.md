@@ -4,11 +4,19 @@ User-approved convention, 2026-09-19: one duration unit labelled "second" means
 60 unpaused game-world ticks, independently of FPS and time dilation. This is
 deliberately a tick-count contract, not a promise of identical physics at different
 FPS. At30FPS, a60-tick blend takes2 real seconds; at120FPS it takes0.5 real seconds.
+Apply this convention to newly added authored blend/fade durations too, including
+camera fades. Do not use DeltaSeconds or elapsed wall time for those durations.
 
 Covered features:
 - Locomotion Walk-to-Run and Run-to-Walk checkpoint transitions.
 - Post-attack pure-Run hold and return to Walk.
 - Lower-body tempering hold and return of all four controls to1.
+- Possessed player's full-attack camera offset fade: default1 means60 completed
+  unpaused PostPhysics game ticks, zero snaps immediately; the component stops
+  ticking when the fade finishes. No NPC camera fade and no permanent fade clock.
+- Kick self-balancing pelvis-target hold and fade to the normal feet midpoint.
+  Starts on kick return to locomotion; uses the shared bounded clock and cancels
+  on a new attack, active defense or reset. Both0 disables with no active timer.
 - Magnetization and feedback-tolerance blends, including conditional profiles,
   single/Below/All variants, and returns to saved snapshots.
 

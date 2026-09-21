@@ -1,5 +1,6 @@
 #include "ProphecyDefenseControls.h"
 #include "ProphecyAgent.h"
+#include "ProphecyClampProfiles.h"
 namespace ProphecyDefenseControls
 {
 namespace { struct FPair { FSettings Modes[2]; }; TMap<TWeakObjectPtr<const AProphecyAgent>,FPair> Settings; }
@@ -9,9 +10,14 @@ const FSettings* Find(const AProphecyAgent* Agent,bool bDodge)
 bool Set(AProphecyAgent* Agent,bool bDodge,ELimb Limb,bool bEnabled,float LeewayCm)
 {
     if (!IsInGameThread() || !IsValid(Agent) || !FMath::IsFinite(LeewayCm) || LeewayCm<0) return false;
+    ProphecyClampProfiles::Cancel(Agent,bDodge?ProphecyClampProfiles::EMode::Dodge:ProphecyClampProfiles::EMode::Parry,int32(Limb));
+    RestoreClamp(Agent,bDodge,Limb,{true,bEnabled,LeewayCm});return true;
+}
+void RestoreClamp(AProphecyAgent* Agent,bool bDodge,ELimb Limb,FClamp Value)
+{
     auto& Mode=Settings.FindOrAdd(Agent).Modes[bDodge?1:0];
     auto& Clamp=Limb==ELimb::Foot?Mode.Foot:Limb==ELimb::Calf?Mode.Calf:Limb==ELimb::Hand?Mode.Hand:Mode.Forearm;
-    Clamp={true,bEnabled,LeewayCm};return true;
+    Clamp=Value;
 }
 bool SetDodgeFramesAfterHit(AProphecyAgent* Agent,int32 Frames)
 {

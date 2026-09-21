@@ -6,6 +6,8 @@
 #include "InputKeyEventArgs.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
+#include "Engine/Engine.h"
+#include "Engine/LocalPlayer.h"
 #include "HAL/IConsoleManager.h"
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
@@ -71,7 +73,10 @@ FAutoConsoleCommandWithWorldAndArgs DropKeyCommand(TEXT("Prophecy.Sword.DebugDro
     FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
     {
         if (!World || !World->IsGameWorld() || Args.Num()!=1) return;
-        auto* Controller=World->GetFirstPlayerController();
+        // Debug camera temporarily owns the local player; the first world
+        // controller is still the original pawn controller and has no input.
+        auto* LocalPlayer=GEngine ? GEngine->GetFirstGamePlayer(World) : nullptr;
+        auto* Controller=LocalPlayer ? LocalPlayer->PlayerController.Get() : nullptr;
         if (!Controller || (Args[0]!=TEXT("press") && Args[0]!=TEXT("release"))) return;
         const bool Pressed=Args[0]==TEXT("press");
         Controller->InputKey(FInputKeyEventArgs(nullptr, INPUTDEVICEID_NONE, EKeys::RightShift,

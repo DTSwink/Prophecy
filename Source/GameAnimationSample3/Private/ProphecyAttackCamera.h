@@ -17,6 +17,7 @@ class UProphecyAttackCameraComponent final : public UActorComponent
 public:
 	UProphecyAttackCameraComponent();
 	void Follow(AActor* InManager, AProphecyAgent* InAgent);
+	void CompensateRootSnap(const FVector& PreviousSpringOrigin);
 	void Stop();
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -40,4 +41,5 @@ namespace ProphecyAttackCamera
 	void Stop(const AActor* Manager);
 	void End(const AActor* Manager);
 	void Update(AActor* Manager, AProphecyAgent* Player, bool bFullAttack);
+	void CompensateRootSnap(AProphecyAgent* Player, const FVector& PreviousSpringOrigin);
 }

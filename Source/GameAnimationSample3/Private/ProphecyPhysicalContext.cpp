@@ -3,9 +3,12 @@
 #include "ProphecyPhysicalBlendSubsystem.h"
 #include "ProphecyPhysicalProfileLibrary.h"
 #include "ProphecyBlendClock.h"
+#include "ProphecyNNPolicyBlend.h"
+#include "ProphecyJointDampingPolicy.h"
 #include "Engine/World.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "PhysicsEngine/SkeletalBodySetup.h"
+#include "ProphecyClampProfiles.inl"
 
 namespace ProphecyPhysicalContext
 {
@@ -46,7 +49,8 @@ struct FEntry
     bool AppliedValid=false;
     FValue Resolve(float Walk,bool Drawn,bool Attack) const
     {
-        if (Attack) return {Kind==EKind::Feedback ? FVector2f(1000,1000) : FVector2f(1,1),true};
+        if (Attack) return {Kind==EKind::Feedback ? FVector2f(1000,1000)
+            : Kind==EKind::Damping ? FVector2f::ZeroVector : FVector2f(1,1),true};
         const int32 Offset=Drawn ? 2 : 0;
         const auto& A=Cells[Offset].Value;
         const auto& B=Cells[Offset+1].Value;
@@ -63,6 +67,7 @@ struct FAgentState
     TArray<FEntry> Entries;
     double Clock=0,WorldTime=0;
     float Walk=0;
+    FVector2f Legs=FVector2f::ZeroVector;
     bool Drawn=false,Attack=false,ValidContext=false;
     bool Running=false;
 };
@@ -74,7 +79,7 @@ bool IsApplying() { return Applying; }
 bool Valid(EProphecyLocomotionSelection L,EProphecyEquipmentSelection E)
 { return uint8(L)<=uint8(EProphecyLocomotionSelection::Run) && uint8(E)<=uint8(EProphecyEquipmentSelection::Sheathed); }
 void Remove(const AProphecyAgent* Agent)
-{ States.Remove(Agent); Snapshots.Remove(Agent);ProphecyBlendClock::Remove(Agent); }
+{ States.Remove(Agent); Snapshots.Remove(Agent);ProphecyBlendClock::Remove(Agent);ProphecyClampProfiles::Remove(Agent); }
 bool IsManaged(const AProphecyAgent* Agent,FName Bone,EKind Kind)
 {
     if (Applying || States.IsEmpty()) return false;
@@ -92,24 +97,29 @@ static void Publish(AProphecyAgent& Agent,FEntry& Entry,FValue Value)
     TGuardValue<bool> Guard(Applying,true);
     if (Entry.Kind==EKind::Feedback)
         Agent.SetPhysicalFeedbackTolerance(Entry.Bone,Value.Scales.X,Value.Scales.Y);
+    else if (Entry.Kind==EKind::Damping)
+    {
+        if (!ProphecyJointDamping::ApplyValue(&Agent,Entry.Bone,Value.Scales.X)) return;
+    }
     else
         Agent.SetBodyMagnetization(Entry.Bone,Value.Enabled,Value.Scales.X,Value.Scales.Y);
     Entry.Applied=Value; Entry.AppliedValid=true;
 }
-static bool UpdateState(AProphecyAgent& Agent,FAgentState& State,float Walk,bool Drawn,bool Attack)
+static bool UpdateState(AProphecyAgent& Agent,FAgentState& State,float Walk,bool Drawn,bool Attack,const FVector2f* LegWeights=nullptr)
 {
     AdvanceClock(Agent,State);
-    const bool Changed=!State.ValidContext || State.Walk!=Walk || State.Drawn!=Drawn || State.Attack!=Attack;
+    const FVector2f Legs=LegWeights ? *LegWeights : FVector2f(Walk,Walk);
+    const bool Changed=!State.ValidContext || State.Walk!=Walk || State.Legs!=Legs || State.Drawn!=Drawn || State.Attack!=Attack;
     if (!Changed && !State.Running) return false;
     State.Running=false;
     for (auto& Entry:State.Entries)
     {
         if (!Changed && !Entry.Running()) continue;
         for (auto& Cell:Entry.Cells) Cell.Sample(State.Clock);
-        Publish(Agent,Entry,Entry.Resolve(Walk,Drawn,Attack));
+        Publish(Agent,Entry,Entry.Resolve(ProphecyBodyPolicyWalkWeight(Entry.Bone,Walk,Legs),Drawn,Attack));
         State.Running|=Entry.Running();
     }
-    State.Walk=Walk; State.Drawn=Drawn; State.Attack=Attack; State.ValidContext=true;
+    State.Walk=Walk; State.Legs=Legs; State.Drawn=Drawn; State.Attack=Attack; State.ValidContext=true;
     if (State.Running) ProphecyBlendClock::Ensure(&Agent,ProphecyBlendClock::EKind::Profiles);
     else ProphecyBlendClock::Stop(&Agent,ProphecyBlendClock::EKind::Profiles);
     return true;
@@ -119,13 +129,13 @@ void Update(AProphecyAgent* Agent)
     auto* State=States.IsEmpty() ? nullptr : States.Find(Agent);
     if (!State || !Agent || !Agent->GetWorld()) return;
     const bool Attack=Agent->IsSwordAttackActive();
-    bool Drawn=false; float Walk=1,Run=0;
+    bool Drawn=false; float Walk=1;FVector2f Legs(1,1);
     if (!Attack)
     {
         Drawn=IsValid(Agent->GetHeldSword());
-        if (!Agent->GetLocomotionCheckpointWeights(Walk,Run)) Walk=1;
+        if (!Agent->GetLocomotionRegionalWeights(Walk,Legs)) { Walk=1;Legs=FVector2f(1,1); }
     }
-    const bool Updated=UpdateState(*Agent,*State,FMath::Clamp(Walk,0.f,1.f),Drawn,Attack);
+    const bool Updated=UpdateState(*Agent,*State,FMath::Clamp(Walk,0.f,1.f),Drawn,Attack,&Legs);
     if (Updated && !Attack)
     {
         // A completed universal restore needs no ongoing context processing.
@@ -152,7 +162,7 @@ bool Set(AProphecyAgent& Agent,FName Bone,EKind Kind,bool Enabled,FVector2f Valu
     Value.X=FMath::Max(0.f,Value.X); Value.Y=FMath::Max(0.f,Value.Y);
     const bool Universal=L==EProphecyLocomotionSelection::Both && E==EProphecyEquipmentSelection::Both;
     // Ordinary pre-existing calls stay on their original path, allocating no profile.
-    if (Universal && !IsManaged(&Agent,Bone,Kind))
+    if (Universal && Kind!=EKind::Damping && !IsManaged(&Agent,Bone,Kind))
     {
         if (Duration>0)
             return Kind==EKind::Feedback ? Agent.BlendPhysicalFeedbackTolerance(Bone,Value.X,Value.Y,Duration)
@@ -166,6 +176,12 @@ bool Set(AProphecyAgent& Agent,FName Bone,EKind Kind,bool Enabled,FVector2f Valu
         FProphecyPhysicalFeedbackToleranceSettings S;
         if (!Agent.GetPhysicalFeedbackTolerance(Bone,S)) return false;
         Initial.Scales={S.LinearToleranceCm,S.AngularToleranceDegrees};
+    }
+    else if (Kind==EKind::Damping)
+    {
+        float Damping;
+        if (!ProphecyJointDamping::Validate(&Agent,Bone) || !ProphecyJointDamping::Get(&Agent,Bone,Damping)) return false;
+        Initial.Scales={Damping,Damping};
     }
     else
     {
@@ -185,11 +201,18 @@ bool Set(AProphecyAgent& Agent,FName Bone,EKind Kind,bool Enabled,FVector2f Valu
     {
         Entry=&State->Entries.AddDefaulted_GetRef(); Entry->Bone=Bone; Entry->Kind=Kind;
         for (auto& Cell:Entry->Cells) Cell.Value=Initial;
+        if (Kind==EKind::Damping)
+        {
+            float Values[4];
+            if (ProphecyJointDamping::GetProfile(&Agent,Bone,Values))
+                for (int32 I=0;I<4;++I) Entry->Cells[I].Value={{Values[I],Values[I]},true};
+        }
     }
     // Cancel legacy timeline ownership, without cancelling our other context cells.
     {
         TGuardValue<bool> Guard(Applying,true);
         if (Kind==EKind::Feedback) Agent.CancelPhysicalFeedbackToleranceBlend(Bone);
+        else if (Kind==EKind::Damping) ProphecyJointDamping::ReleasePolicy(&Agent,Bone);
         else Agent.CancelBodyMagnetizationBlend(Bone);
     }
     for (int32 I=0;I<4;++I) if (Matches(I,L,E)) Entry->Cells[I].Write({Value,Enabled},Duration,State->Clock);
@@ -233,6 +256,15 @@ void AttackChanged(AProphecyAgent* Agent)
             FProphecyPhysicalFeedbackToleranceSettings S;
             if (Agent->GetPhysicalFeedbackTolerance(Bone,S))
                 Capture(Bone,EKind::Feedback,{FVector2f(S.LinearToleranceCm,S.AngularToleranceDegrees),true});
+            float Damping;
+            if (ProphecyJointDamping::Get(Agent,Bone,Damping) && Damping!=0
+                && !State.Entries.ContainsByPredicate([&](const FEntry& X) { return X.Bone==Bone && X.Kind==EKind::Damping; }))
+            {
+                float Values[4];ProphecyJointDamping::GetProfile(Agent,Bone,Values);
+                auto& Entry=State.Entries.AddDefaulted_GetRef();Entry.Bone=Bone;Entry.Kind=EKind::Damping;
+                for (int32 I=0;I<4;++I) Entry.Cells[I].Value={{Values[I],Values[I]},true};
+                ProphecyJointDamping::ReleasePolicy(Agent,Bone);
+            }
         }
         if (auto* Blends=Agent->GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>())
             Blends->MoveBlendsToContext(*Agent);
@@ -278,6 +310,18 @@ void Cancel(AProphecyAgent* Agent,FName Bone,EKind Kind)
     State->ValidContext=false;
     Update(Agent);
 }
+// A whole-body immediate setter replaces the selected kind, including its
+// attack override. Do not publish the discarded profile during cancellation.
+void Discard(AProphecyAgent* Agent,EKind Kind)
+{
+    if (Applying || States.IsEmpty()) return;
+    auto* State=States.Find(Agent);
+    if (!State) return;
+    State->Entries.RemoveAllSwap([&](const FEntry& Entry) { return Entry.Kind==Kind; });
+    State->Running=State->Entries.ContainsByPredicate([](const FEntry& Entry) { return Entry.Running(); });
+    if (!State->Running) ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::Profiles);
+    if (State->Entries.IsEmpty()) States.Remove(Agent);
+}
 
 static FEntry Capture(AProphecyAgent& Agent,FName Bone,EKind Kind)
 {
@@ -295,6 +339,12 @@ static FEntry Capture(AProphecyAgent& Agent,FName Bone,EKind Kind)
     {
         FProphecyBodyMagnetizationSettings S; Agent.GetBodyMagnetizationSettings(Bone,S);
         Value={FVector2f(S.LinearStrengthScale,S.AngularStrengthScale),S.bMagnetizationEnabled};
+    }
+    else if (Kind==EKind::Damping)
+    {
+        float Values[4]={};ProphecyJointDamping::GetProfile(&Agent,Bone,Values);
+        for (int32 I=0;I<4;++I) Entry.Cells[I].Value={{Values[I],Values[I]},true};
+        return Entry;
     }
     else
     {
@@ -321,14 +371,17 @@ static bool SaveSnapshot(AProphecyAgent* Agent,FName Name)
     {
         FProphecyPhysicalFeedbackToleranceSettings S;
         if (Agent->GetPhysicalFeedbackTolerance(Bone,S)) Saved.Add(Capture(*Agent,Bone,EKind::Feedback));
+        float Damping;
+        if (ProphecyJointDamping::Get(Agent,Bone,Damping)) Saved.Add(Capture(*Agent,Bone,EKind::Damping));
     }
     if (Saved.IsEmpty()) return false;
     for (auto It=Snapshots.CreateIterator();It;++It) if (!It.Key().IsValid()) It.RemoveCurrent();
     Snapshots.FindOrAdd(Agent).Add(Name,MoveTemp(Saved));
+    ProphecyClampProfiles::Save(Agent,Name);
     return true;
 }
 // Selection: 0 = one bone, 1 = subtree, 2 = every saved bone of the requested kind.
-static int32 RestoreSnapshot(AProphecyAgent* Agent,FName Name,EKind Kind,FName Bone,int32 Selection,bool IncludeParent,float Duration)
+static int32 RestoreSnapshot(AProphecyAgent* Agent,FName Name,EKind Kind,FName Bone,int32 Selection,bool IncludeParent,float Duration,bool AllowOfflineDamping=false)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld()
         || !FMath::IsFinite(Duration) || (Selection!=2 && Bone.IsNone())) return 0;
@@ -341,6 +394,8 @@ static int32 RestoreSnapshot(AProphecyAgent* Agent,FName Name,EKind Kind,FName B
         if (Entry.Kind==Kind && (Selection==2 || (Entry.Bone==Bone && (Selection==0 || IncludeParent))
             || (Selection==1 && Entry.Bone!=Bone && Mesh->BoneIsChildOf(Entry.Bone,Bone)))) Selected.Add(&Entry);
     if (Selected.IsEmpty()) return 0;
+    if (Kind==EKind::Damping && !AllowOfflineDamping)
+        for (const FEntry* Target:Selected) if (!ProphecyJointDamping::Validate(Agent,Target->Bone)) return 0;
     Update(Agent);
     auto& State=States.FindOrAdd(Agent);
     if (State.Entries.IsEmpty()) State.WorldTime=Agent->GetWorld()->GetTimeSeconds();
@@ -352,6 +407,7 @@ static int32 RestoreSnapshot(AProphecyAgent* Agent,FName Name,EKind Kind,FName B
         {
             TGuardValue<bool> Guard(Applying,true);
             if (Kind==EKind::Magnetization) Agent->CancelBodyMagnetizationBlend(Target->Bone);
+            else if (Kind==EKind::Damping) ProphecyJointDamping::ReleasePolicy(Agent,Target->Bone);
             else Agent->CancelPhysicalFeedbackToleranceBlend(Target->Bone);
         }
         auto* Entry=State.Entries.FindByPredicate([&](const FEntry& X) { return X.Bone==Target->Bone && X.Kind==Kind; });
@@ -362,6 +418,22 @@ static int32 RestoreSnapshot(AProphecyAgent* Agent,FName Name,EKind Kind,FName B
     State.ValidContext=false;
     Update(Agent);
     return Selected.Num();
+}
+bool RestoreResetSnapshot(AProphecyAgent* Agent,FName Name)
+{
+    const auto* Saved=Snapshots.Find(Agent);
+    if (!Saved || !Saved->Contains(Name)) return false;
+    for (EKind Kind:{EKind::Magnetization,EKind::Feedback,EKind::Damping})
+        RestoreSnapshot(Agent,Name,Kind,NAME_None,2,true,0,true);
+    ProphecyClampProfiles::Cancel(Agent);
+    ProphecyClampProfiles::Restore(Agent,Name,ProphecyClampProfiles::EMode::All,-1,0);
+    return true;
+}
+void DeleteSnapshot(const AProphecyAgent* Agent,FName Name)
+{
+    ProphecyClampProfiles::Delete(Agent,Name);
+    if (auto* Saved=Snapshots.Find(Agent))
+    { Saved->Remove(Name);if (Saved->IsEmpty()) Snapshots.Remove(Agent); }
 }
 }
 
@@ -379,9 +451,38 @@ int32 UProphecyPhysicalProfileLibrary::BlendPhysicalFeedbackToleranceBelowToSnap
 { return ProphecyPhysicalContext::RestoreSnapshot(Agent,Name,ProphecyPhysicalContext::EKind::Feedback,Bone,1,Include,Duration); }
 int32 UProphecyPhysicalProfileLibrary::BlendAllPhysicalFeedbackTolerancesToSnapshot(AProphecyAgent* Agent,float Duration,FName Name)
 { return ProphecyPhysicalContext::RestoreSnapshot(Agent,Name,ProphecyPhysicalContext::EKind::Feedback,NAME_None,2,true,Duration); }
+bool UProphecyPhysicalProfileLibrary::BlendJointAngularDampingToSnapshot(AProphecyAgent* Agent,FName Bone,float Duration,FName Name)
+{ return ProphecyPhysicalContext::RestoreSnapshot(Agent,Name,ProphecyPhysicalContext::EKind::Damping,Bone,0,true,Duration)>0; }
+int32 UProphecyPhysicalProfileLibrary::BlendJointAngularDampingBelowToSnapshot(AProphecyAgent* Agent,FName Bone,bool Include,float Duration,FName Name)
+{ return ProphecyPhysicalContext::RestoreSnapshot(Agent,Name,ProphecyPhysicalContext::EKind::Damping,Bone,1,Include,Duration); }
+int32 UProphecyPhysicalProfileLibrary::BlendAllJointAngularDampingToSnapshot(AProphecyAgent* Agent,float Duration,FName Name)
+{ return ProphecyPhysicalContext::RestoreSnapshot(Agent,Name,ProphecyPhysicalContext::EKind::Damping,NAME_None,2,true,Duration); }
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyDampingProfileMathTest,"Prophecy.Joints.DampingProfileBlend",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyDampingProfileMathTest::RunTest(const FString&)
+{
+    using namespace ProphecyPhysicalContext;
+    FEntry Entry;Entry.Kind=EKind::Damping;
+    const float Values[]={10,30,100,300};
+    for (int32 I=0;I<4;++I) Entry.Cells[I].Value={{Values[I],Values[I]},true};
+    TestEqual(TEXT("Checkpoint blending"),Entry.Resolve(.25f,true,false).Scales.X,250.f);
+    TestEqual(TEXT("Attack override"),Entry.Resolve(.25f,true,true).Scales.X,0.f);
+    const FEntry Saved=Entry;
+    for (auto& Cell:Entry.Cells) Cell.Write({{0,0},true},1,0);
+    for (auto& Cell:Entry.Cells) Cell.Sample(.5);
+    TestEqual(TEXT("Timed damping halfway"),Entry.Resolve(1,false,false).Scales.X,5.f);
+    for (int32 I=0;I<4;++I) Entry.Cells[I].Write(Saved.Cells[I].Value,1,.5);
+    for (auto& Cell:Entry.Cells) Cell.Sample(1);
+    TestEqual(TEXT("Retarget starts at current blend"),Entry.Resolve(1,false,false).Scales.X,7.5f);
+    TestEqual(TEXT("Snapshot remains immutable"),Saved.Cells[0].Value.Scales.X,10.f);
+    for (auto& Cell:Entry.Cells) Cell.Sample(1.5);
+    TestFalse(TEXT("Completed timeline retired"),Entry.Running());
+    TestEqual(TEXT("All saved profiles restored"),Entry.Resolve(0,true,false).Scales.X,300.f);
+    return true;
+}
 #include "Misc/ScopeExit.h"
 #include "Engine/Engine.h"
 #include "Engine/SkeletalMesh.h"
@@ -485,6 +586,8 @@ bool FProphecyPhysicalContextTest::RunTest(const FString&)
     Agent->SetBodyMagnetization(TEXT("head"),true,.8f,1.6f,L::Run,E::Drawn);
     Agent->SetPhysicalFeedbackTolerance(TEXT("head"),30,50,L::Run,E::Drawn);
     TestTrue(TEXT("Save full named per-agent snapshot"),Profiles::SavePhysicalProfileSnapshot(Agent,TEXT("Baseline")));
+    TestTrue(TEXT("Snapshot includes inbound joint damping"),Snapshots.FindChecked(Agent).FindChecked(TEXT("Baseline"))
+        .ContainsByPredicate([](const FEntry& X){return X.Bone==TEXT("head") && X.Kind==EKind::Damping;}));
     Agent->SetBodyMagnetization(TEXT("head"),true,0,0);
     Agent->SetPhysicalFeedbackTolerance(TEXT("head"),0,0);
     TestFalse(TEXT("Unknown snapshot fails without mutation"),Profiles::BlendBodyMagnetizationToSnapshot(Agent,TEXT("head"),1,TEXT("Missing")));
@@ -528,6 +631,38 @@ bool FProphecyPhysicalContextTest::RunTest(const FString&)
     TestTrue(TEXT("Restore full tolerance snapshot"),Profiles::BlendAllPhysicalFeedbackTolerancesToSnapshot(Agent,0)>0);
     TestTrue(TEXT("Restore full magnetization snapshot"),Profiles::BlendAllBodyMagnetizationToSnapshot(Agent,0)>0);
     TestFalse(TEXT("Immediate full restore leaves no context tick state"),States.Contains(Agent));
+    // Death-style all-body disable must supersede both kinds of active restore,
+    // including the attack override, without cancelling unrelated tolerance work.
+    for (bool Attack:{false,true})
+    {
+        Agent->SetAllBodyMagnetization(true,1,1);
+        Profiles::SavePhysicalProfileSnapshot(Agent,TEXT("DeathBaseline"));
+        Agent->SetBodyMagnetization(TEXT("head"),true,0,0);
+        Agent->SetPhysicalFeedbackTolerance(TEXT("head"),0,0);
+        Agent->BlendBodyMagnetization(TEXT("hand_l"),1,1,1);
+        Profiles::BlendBodyMagnetizationToSnapshot(Agent,TEXT("head"),1,TEXT("DeathBaseline"));
+        Profiles::BlendPhysicalFeedbackToleranceToSnapshot(Agent,TEXT("head"),1,TEXT("DeathBaseline"));
+        Agent->NotifySwordAttackState(Attack);
+        Agent->SetAllBodyMagnetization(false,1,1);
+        TestFalse(TEXT("All-body disable wins immediately during snapshot/attack"),Read().bMagnetizationEnabled);
+        const auto* Remaining=States.Find(Agent);
+        TestTrue(TEXT("No magnetization profile survives all-body setter"),!Remaining || !Remaining->Entries.ContainsByPredicate(
+            [](const FEntry& Entry) { return Entry.Kind==EKind::Magnetization; }));
+        TestTrue(TEXT("Tolerance restore remains active"),Remaining && Remaining->Entries.ContainsByPredicate(
+            [](const FEntry& Entry) { return Entry.Kind==EKind::Feedback && Entry.Running(); }));
+        for (int32 Tick=0;Tick<70;++Tick)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/60.f);
+            Update(Agent);
+        }
+        Agent->NotifySwordAttackState(false);
+        TestFalse(TEXT("Snapshot completion and attack exit cannot revive magnetization"),Read().bMagnetizationEnabled);
+        FProphecyBodyMagnetizationSettings Hand;Agent->GetBodyMagnetizationSettings(TEXT("hand_l"),Hand);
+        TestFalse(TEXT("Ordinary blend cannot revive magnetization either"),Hand.bMagnetizationEnabled);
+        TestEqual(TEXT("Unrelated tolerance finishes normally"),Feedback().LinearToleranceCm,8.f);
+        Agent->SetAllBodyMagnetization(true,1,1);
+        TestTrue(TEXT("Explicit all-body enable still works"),Read().bMagnetizationEnabled);
+    }
     auto* OtherAgent=World->SpawnActor<AProphecyAgent>();
     if (OtherAgent)
     {

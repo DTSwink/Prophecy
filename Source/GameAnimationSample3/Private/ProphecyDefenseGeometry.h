@@ -27,6 +27,6 @@ struct FGeometry
     void Finish(const float* Lower,const float* Upper,const FVector3f& RootP,const FRows& RootR,
         const FPose& Frozen,const float* BaselineUpper,FPose& Out) const;
     bool SolveDodgeLower(const float* Baseline,const FDodgeControls& Controls,const FVector3f& RootP,
-        const FRows& RootR,float* Out,bool bFootFloor=true) const;
+        const FRows& RootR,float* Out,bool bFootFloor=true,bool bReconstructLegs=true) const;
 };
 }

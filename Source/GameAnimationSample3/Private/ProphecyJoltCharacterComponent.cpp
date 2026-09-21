@@ -6,6 +6,8 @@
 #include "ProphecyJoltCharacterWorldSubsystem.h"
 #include "ProphecyJoltStepTiming.h"
 #include "ProphecyJoltAuthoredTargetHistory.h"
+#include "ProphecyPhysicalFootTarget.h"
+#include "ProphecyKickFootLeeway.h"
 
 #include "ProphecyAgent.h"
 #include "ProphecyAngularLimits.h"
@@ -539,7 +541,8 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     State->bActive = true;
     AddTickPrerequisiteActor(Agent);
     if (!PublishAuthoredTargets(GetWorld()->GetDeltaSeconds(), Error) || !PublishCompletedPose(Error)
-        || !CommitIsValid() || !SynchronizeAngularLimits(Error) || !Coordinator->RegisterCharacter(*this, Error))
+        || !CommitIsValid() || !SynchronizeAngularLimits(Error) || !ProphecyKickFootLeeway::Reapply(Agent,Error)
+        || !Coordinator->RegisterCharacter(*this, Error))
     {
         if (State.Get() == CommittingState && SameRig(State->RigHandle, CommittingRig))
             DisablePhysicalAnimationInternal(false);
@@ -603,16 +606,43 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     {
     Profile::FScope PhaseTiming(Profile::EPhase::TargetPacket);
     State->TargetNameLookup.Update(Names, State->BodyNames);
+    const float FootTargetLeeway=ProphecyPhysicalFootTarget::Leeway(Agent);
+    const float KickFootLeeway=ProphecyKickFootLeeway::Current(Agent);
     for (int32 Index = 0; Index < State->Handles.Num(); ++Index)
     {
         const int32 TargetIndex = State->TargetNameLookup.GetIndices()[Index];
         if (!Interpolated.IsValidIndex(TargetIndex))
             return Fail(OutError, FString::Printf(TEXT("Published authored pose is missing rig bone %s."), *State->BodyNames[Index].ToString()));
-        const FTransform& BodyWorld = Interpolated[TargetIndex];
+        FTransform BodyWorld = Interpolated[TargetIndex];
         State->AuthoredBodyScratch[Index] = BodyWorld;
         FProphecyBodyMagnetizationSettings Settings;
         Agent->GetBodyMagnetizationSettings(State->BodyNames[Index], Settings); // Missing entries intentionally use native defaults.
         if (!Agent->bWorldMagnetizationEnabled || !Settings.bSimulateBody || !Settings.bMagnetizationEnabled) continue;
+        // Foot translation follows the end of the authored calf, even when NN
+        // presentation clamps are off. Leave NN data and every rotation untouched.
+        // Use the reference offset, not the stretched foot local from the NN pose.
+        static const FName Feet[] = {TEXT("foot_l"),TEXT("foot_r")};
+        static const FName Calves[] = {TEXT("calf_l"),TEXT("calf_r")};
+        const int32 Side = State->BodyNames[Index]==Feet[0] ? 0 : State->BodyNames[Index]==Feet[1] ? 1 : INDEX_NONE;
+        if (Side!=INDEX_NONE)
+        {
+            const auto& Skeleton=Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
+            const int32 FootBone=State->Mappings[Index].BoneIndex;
+            const int32 Parent=Skeleton.GetParentIndex(FootBone);
+            const int32 CalfTarget=Names.IndexOfByKey(Calves[Side]);
+            if (Parent!=INDEX_NONE && Skeleton.GetBoneName(Parent)==Calves[Side] && Interpolated.IsValidIndex(CalfTarget))
+            {
+                const FVector Offset=Skeleton.GetRefBonePose()[FootBone].GetTranslation();
+                const FTransform& Calf=Interpolated[CalfTarget];
+                const FVector End=Calf.TransformPosition(Offset),Original=BodyWorld.GetLocation();
+                FVector Target=ProphecyPhysicalFootTarget::Clamp(Original,End,FootTargetLeeway);
+                if (KickFootLeeway>0) Target=ProphecyKickFootLeeway::Target(Original,Target,End,
+                    Calf.TransformVector(Offset).GetSafeNormal(),KickFootLeeway);
+                BodyWorld.SetLocation(Target);
+            }
+            // Start/end trajectories and lower feedback must agree with the drive.
+            State->AuthoredBodyScratch[Index]=BodyWorld;
+        }
         FProphecyJoltRigVelocityTarget& Target = Targets.AddDefaulted_GetRef();
         Target.Handle = State->Handles[Index];
         Target.TargetPositionCm = BodyWorld.GetLocation();
@@ -1546,6 +1576,7 @@ bool UProphecyJoltCharacterComponent::MakeHitResult(const FProphecyJoltRayHit& H
 
 void UProphecyJoltCharacterComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ProphecyKickFootLeeway::Remove(Cast<AProphecyAgent>(GetOwner()));
     ProphecyLimbCollision::Remove(Cast<AProphecyAgent>(GetOwner()));
     ProphecyJointDamping::Remove(Cast<AProphecyAgent>(GetOwner()));
     DisablePhysicalAnimation();

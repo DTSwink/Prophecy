@@ -181,7 +181,7 @@ void FGeometry::Finish(const float* Lower,const float* Upper,const FVector3f& Ro
 }
 
 bool FGeometry::SolveDodgeLower(const float* Baseline,const FDodgeControls& C,const FVector3f& RootP,
-    const FRows& RootR,float* Out,bool bFootFloor) const
+    const FRows& RootR,float* Out,bool bFootFloor,bool bReconstructLegs) const
 {
     check(bSignedLegHinge);
     if (!C.bEnabled && !bFootFloor) { FMemory::Memcpy(Out,Baseline,41*sizeof(float));return false; }
@@ -199,6 +199,15 @@ bool FGeometry::SolveDodgeLower(const float* Baseline,const FDodgeControls& C,co
     const FRows PelvisR=Multiply(Multiply(Rot6(Baseline+3),Rotation),RootR),Inverse=Transpose(RootR);
     float Result[41];FMemory::Memcpy(Result,Baseline,sizeof(Result));
     Write(Result,Transform(Pelvis-RootP,Inverse));Write6(Result+3,Multiply(PelvisR,Inverse));
+    if (!bReconstructLegs)
+    {
+        // Diagnostic: retain learned endpoint/pelvis changes, but keep baseline
+        // thigh frames and skip all corrective reach/floor/hinge reconstruction.
+        for (int32 Leg=0;Leg<2;++Leg)
+            Write(Result+9+16*Leg,Read(Baseline+9+16*Leg)+C.Foot[Leg]);
+        FMemory::Memcpy(Out,C.bEnabled?Result:Baseline,41*sizeof(float));
+        return C.bEnabled;
+    }
     bool FloorApplied=false;
     for (int32 Leg=0;Leg<2;++Leg)
     {

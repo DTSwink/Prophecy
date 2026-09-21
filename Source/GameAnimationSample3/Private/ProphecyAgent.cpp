@@ -1,4 +1,7 @@
 #include "ProphecyAgent.h"
+#include "ProphecyClampProfiles.h"
+#include "ProphecyAngularLimitBlend.h"
+#include "ProphecyAgentResetPhysics.h"
 #include "ProphecyDefenseArmedGate.h"
 #include "ProphecyDefenseControls.h"
 #include "ProphecyRootFacing.h"
@@ -1482,6 +1485,8 @@ bool AProphecyAgent::EnsureStandaloneNNManager()
 
 void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	ProphecyAngularLimitBlend::Cancel(this);
+	ProphecyAgentResetPhysics::Remove(this);
     ProphecyDefenseArmedGate::RemoveAgent(this);
     ProphecyDefenseControls::Remove(this);
     ProphecyPhysicalContext::Remove(this);
@@ -1850,6 +1855,7 @@ bool AProphecyAgent::SetLocomotionFootPinningThreshold(float ThresholdCm, float 
 bool AProphecyAgent::SetAttackHandClamp(bool bEnabled, float LeewayCm)
 {
 	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Attack,int32(ProphecyClampProfiles::ELimb::Hand));
 	bAttackHandClamp = bEnabled;
 	AttackHandClampLeewayCm = LeewayCm;
 	return true;
@@ -1858,6 +1864,7 @@ bool AProphecyAgent::SetAttackHandClamp(bool bEnabled, float LeewayCm)
 bool AProphecyAgent::SetAttackFootClamp(bool bEnabled, float LeewayCm)
 {
 	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Attack,int32(ProphecyClampProfiles::ELimb::Foot));
 	bOverrideAttackFootClamp = true;
 	bAttackFootClamp = bEnabled;
 	AttackFootClampLeewayCm = LeewayCm;
@@ -1867,6 +1874,7 @@ bool AProphecyAgent::SetAttackFootClamp(bool bEnabled, float LeewayCm)
 bool AProphecyAgent::SetAttackCalfClamp(bool bEnabled, float LeewayCm)
 {
 	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Attack,int32(ProphecyClampProfiles::ELimb::Calf));
 	bOverrideAttackCalfClamp = true;
 	bAttackCalfClamp = bEnabled;
 	AttackCalfClampLeewayCm = LeewayCm;
@@ -1896,6 +1904,13 @@ bool AProphecyAgent::GetLocomotionCheckpointWeights(float& WalkWeight, float& Ru
 	return Manager && Manager->GetAgentLocomotionCheckpointWeights(AgentHandle, WalkWeight, RunWeight);
 }
 
+bool AProphecyAgent::GetLocomotionRegionalWeights(float& PelvisWalkWeight,FVector2f& LegWalkWeights) const
+{
+	PelvisWalkWeight=1;LegWalkWeights=FVector2f(1,1);float Run=0;
+	const auto* Manager=FindOwningNNManager(this);
+	return Manager && Manager->GetAgentLocomotionCheckpointWeights(AgentHandle,PelvisWalkWeight,Run,&LegWalkWeights);
+}
+
 void AProphecyAgent::GetLocomotionPolicyBlendTimes(float& WalkToRunSeconds, float& RunToWalkSeconds) const
 {
 	WalkToRunSeconds = LocomotionWalkToRunBlendSeconds;
@@ -1905,6 +1920,7 @@ void AProphecyAgent::GetLocomotionPolicyBlendTimes(float& WalkToRunSeconds, floa
 bool AProphecyAgent::SetLocomotionFootClamp(bool bEnabled, float LeewayCm)
 {
 	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Locomotion,int32(ProphecyClampProfiles::ELimb::Foot));
 	bOverrideLocomotionFootClamp = true;
 	bLocomotionFootClamp = bEnabled;
 	LocomotionFootClampLeewayCm = LeewayCm;
@@ -1914,6 +1930,7 @@ bool AProphecyAgent::SetLocomotionFootClamp(bool bEnabled, float LeewayCm)
 bool AProphecyAgent::SetLocomotionCalfClamp(bool bEnabled, float LeewayCm)
 {
 	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Locomotion,int32(ProphecyClampProfiles::ELimb::Calf));
 	bOverrideLocomotionCalfClamp = true;
 	bLocomotionCalfClamp = bEnabled;
 	LocomotionCalfClampLeewayCm = LeewayCm;
@@ -1923,6 +1940,7 @@ bool AProphecyAgent::SetLocomotionCalfClamp(bool bEnabled, float LeewayCm)
 bool AProphecyAgent::SetLocomotionForearmClamp(bool bEnabled, float LeewayCm)
 {
 	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Locomotion,int32(ProphecyClampProfiles::ELimb::Forearm));
 	bLocomotionForearmClamp = bEnabled;
 	LocomotionForearmClampLeewayCm = LeewayCm;
 	return true;
@@ -1931,6 +1949,7 @@ bool AProphecyAgent::SetLocomotionForearmClamp(bool bEnabled, float LeewayCm)
 bool AProphecyAgent::SetLocomotionHandClamp(bool bEnabled, float LeewayCm)
 {
 	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
+	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Locomotion,int32(ProphecyClampProfiles::ELimb::Hand));
 	bOverrideLocomotionHandClamp = true;
 	bLocomotionHandClamp = bEnabled;
 	LocomotionHandClampLeewayCm = LeewayCm;
@@ -3239,6 +3258,7 @@ void AProphecyAgent::SetAllBodyMagnetization(
 	float LinearStrengthScale,
 	float AngularStrengthScale)
 {
+	ProphecyPhysicalContext::Discard(this,ProphecyPhysicalContext::EKind::Magnetization);
 	CancelBodyMagnetizationBlend();
 	const USkeletalMeshComponent* PhysicalMesh = GetPoseReferenceMesh();
 	const UPhysicsAsset* PhysicsAsset = PhysicalMesh ? PhysicalMesh->GetPhysicsAsset() : nullptr;

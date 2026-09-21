@@ -9,6 +9,7 @@
 #include "HAL/IConsoleManager.h"
 #include "ProphecyJoltRig.h"
 #include "ProphecyJoltWorldSubsystem.h"
+#include "ProphecyJoltFootJointLibrary.h"
 #include "ProphecyJoltPhysicsCommand.h"
 #include <limits>
 
@@ -1620,6 +1621,47 @@ bool FProphecyJoltImportedInertiaTest::RunTest(const FString& Parameters)
     FString Error;
     TestFalse(TEXT("Invalid policy rejects before replacing prepared rig"), Existing.Build(Rig, Error));
     TestEqual(TEXT("Rejected policy preserves prepared body count"), Existing.GetBodyCount(), 2);
+    return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyFootExtensionLifecycleTest,"Prophecy.Jolt.RigWorld.FootExtension",
+    ProphecyJolt::RigWorldTests::Flags)
+bool FProphecyFootExtensionLifecycleTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::RigWorldTests;
+    auto Snapshot=MakeRig();
+    Snapshot.Bodies[0].BodyName=TEXT("calf_l"); Snapshot.Bodies[1].BodyName=TEXT("foot_l");
+    Snapshot.Joints[0].Bone1=TEXT("foot_l"); Snapshot.Joints[0].Bone2=TEXT("calf_l");
+    for (int I=0;I<2;++I)
+    {
+        auto Body=Snapshot.Bodies[I]; Body.SourceBodyIndex=Body.BoneIndex=I+2;
+        Body.BodyName=I==0 ? TEXT("calf_r") : TEXT("foot_r");
+        Body.BodyOriginToWorld.AddToTranslation(FVector(100,0,0)); Snapshot.Bodies.Add(Body);
+    }
+    auto Joint=Snapshot.Joints[0]; Joint.SourceConstraintIndex=1; Joint.JointName=TEXT("right_ankle");
+    Joint.Body1Index=3; Joint.Body2Index=2; Joint.Bone1=TEXT("foot_r"); Joint.Bone2=TEXT("calf_r");
+    Snapshot.Joints.Add(Joint);
+    FProphecyJoltPreparedRig Prepared;
+    if (!Prepare(*this,Snapshot,Prepared)) return false;
+    FScopedWorld Scope; auto* Owner=Scope.Get();
+    if (!TestNotNull(TEXT("Owner"),Owner) || !Okay(*this,TEXT("Initialize"),Owner->InitializeSimulation(SmallWorld()))) return false;
+    FProphecyJoltRigHandle Rig; TArray<FProphecyJoltBodyHandle> Bodies; TArray<FString> Notes;
+    if (!Okay(*this,TEXT("Create ankles"),Owner->CreateRig(Snapshot,Prepared,Rig,Bodies,Notes))) return false;
+    const auto Set=[&](float Value)
+    {
+        FString Error; const auto& H=Bodies[0];
+        const bool Result=UProphecyJoltFootJointLibrary::SetFootExtension(Scope.World,H.WorldLifetime,H.Slot,
+            int64(H.Generation),Value,FVector(0,0,1),FVector(0,0,1),Error);
+        return TestTrue(FString(TEXT("Set foot extension: "))+Error,Result);
+    };
+    if (!Set(10) || !Counts(*this,*Owner,4,4)) return false;
+    if (!Set(5) || !Counts(*this,*Owner,4,4)) return false;
+    if (!Okay(*this,TEXT("Keep angular update compatible"),Owner->UpdateRigAngularLimits(Rig,Snapshot.Joints))) return false;
+    if (!Set(0) || !Counts(*this,*Owner,4,2)) return false;
+    if (!Set(10) || !Okay(*this,TEXT("Destroy extended rig"),Owner->DestroyRig(Rig)) || !Counts(*this,*Owner,0,0)) return false;
+    if (!Okay(*this,TEXT("Recreate rig"),Owner->CreateRig(Snapshot,Prepared,Rig,Bodies,Notes))) return false;
+    if (!Counts(*this,*Owner,4,2) || !Set(6)) return false;
+    Scope.Destroy(); // Teardown with an active extension must remove constraints before bodies.
     return !HasAnyErrors();
 }
 

@@ -3,6 +3,13 @@
 class AProphecyAgent;
 namespace ProphecyWalkPinning
 {
+inline void LimitRawValues(float Limit,float Left,float Right,float& LeftPin,float& RightPin)
+{
+    // Veto the existing decision independently; never rerun the hard winner gate.
+    if (Left>Limit) LeftPin=0.f;
+    if (Right>Limit) RightPin=0.f;
+}
+void ApplyLimit(const AProphecyAgent* Agent,float Left,float Right,float& LeftPin,float& RightPin);
 struct FSettings
 {
     float Tolerance=0,Fallback=0;

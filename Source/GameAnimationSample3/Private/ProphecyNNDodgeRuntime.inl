@@ -134,6 +134,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNDodge(FProphecyAgentHandle Handle
     if (Agent.DefensePose) StopAgentNNDefense(Handle, false);
     Agent.PolicyBlend.Reset(P.Category==0);
     ProphecyAttackRecovery::Cancel(Actor);
+    ProphecyRootBalance::CancelKickException(Actor);
     D.Parries.Remove(Handle.Index);Agent.DefensePose=New.Get();D.Dodges.Add(Handle.Index,MoveTemp(New));
     ProphecyLimbCollision::DefenseChanged(Actor,true);
     ++D.ActiveCount;++D.ActiveDodgeCount;Error.Reset();return true;
@@ -255,7 +256,8 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
             Root(Audit,TEXT("planned_root"),PlannedRoot);
         }
 #endif
-        if (!Finite || !CompleteDodge(P.State,P.Work,P.NextLower,Output,D.DodgeGeometry,Pose,Modified,Upper,&PlannedRoot)) { P.Status.Active=false;continue; }
+        if (!Finite || !CompleteDodge(P.State,P.Work,P.NextLower,Output,D.DodgeGeometry,Pose,Modified,Upper,&PlannedRoot,
+            ProphecyLegChainDebug::IsEnabled(AgentActors[Index]))) { P.Status.Active=false;continue; }
 #if !UE_BUILD_SHIPPING
         if (Audit)
         {
@@ -301,8 +303,8 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
             Future[2]=FMath::Cos(Yaw);Future[3]=FMath::Sin(Yaw);
         }
         Agent.PinProbability={P.Pins[0],P.Pins[1]};Agent.bHasFedFutureRoots=false;
-        Agent.bPreviousPublishedUseWalkPolicy=Agent.bPublishedUseWalkPolicy;Agent.PreviousPublishedWalkWeight=Agent.PublishedWalkWeight;
-        Agent.bPublishedUseWalkPolicy=P.Category==0;Agent.PublishedWalkWeight=P.Category==0?1.f:0.f;
+        Agent.bPreviousPublishedUseWalkPolicy=Agent.bPublishedUseWalkPolicy;Agent.PreviousPublishedWalkWeight=Agent.PublishedWalkWeight;Agent.PreviousPublishedLegWalkWeights=Agent.PublishedLegWalkWeights;
+        Agent.bPublishedUseWalkPolicy=P.Category==0;Agent.PublishedWalkWeight=P.Category==0?1.f:0.f;Agent.PublishedLegWalkWeights=FVector2f(Agent.PublishedWalkWeight,Agent.PublishedWalkWeight);
         FMemory::Memcpy(StateSlice(Impl->PreviousPublishedStateBuffer,Index),StateSlice(Impl->PublishedStateBuffer,Index),sizeof(Modified));
         FMemory::Memcpy(StateSlice(Impl->PublishedStateBuffer,Index),Modified,sizeof(Modified));
         FMemory::Memcpy(StateSlice(Impl->PrevStateBuffer,Index),P.State.PreviousLower,sizeof(Modified));

@@ -261,8 +261,8 @@ void AProphecyNNLocomotionManager::UpdatePreviousPoseDebug(bool bAttack)
 		{
 			// Read the tensors before the upper inference mutates its history.
 			DecodeLocomotionPose(Impl, Impl->InputBuffer.GetData() + Index * InputDim + StateDim,
-				Impl->UpperInputBuffer.GetData() + Index * UpperInputDim, Agent.bUseWalkPolicy,
-				MakeArrayView(Pose), nullptr, {});
+				Impl->UpperInputBuffer.GetData() + Index * UpperInputDim, Agent.PublishedWalkWeight,
+				MakeArrayView(Pose), nullptr, {},&Agent.PublishedLegWalkWeights);
 			Carrier = SlashComponentWorld(Actor, Agent.WindowPreviousRoot, Agent.WindowPreviousYaw);
 		}
 		auto* Mesh = Actor->NNPreviousPoseDebugMesh.Get();
@@ -314,6 +314,19 @@ void AProphecyNNLocomotionManager::TraceNNHandoff()
 		Add(TEXT("upper_input"), Impl->UpperInputBuffer.GetData() + I * UpperInputDim, UpperInputDim);
 		Add(TEXT("upper_delta"), Impl->UpperOutputBuffer.GetData() + I * UpperStateDim, UpperStateDim);
 		Add(TEXT("published_lower"), StateSlice(Impl->PublishedStateBuffer, I), StateDim);
+		Add(TEXT("previous_lower"), StateSlice(Impl->PreviousPublishedStateBuffer, I), StateDim);
+		Add(TEXT("lower_delta"), Impl->OutputBuffer.GetData() + I * PolicyOutputDim, PolicyOutputDim);
+		if (A.RecoveryWeights.NeedsBoth())
+			Add(TEXT("walk_delta"), Impl->WalkOutputBuffer.GetData() + I * PolicyOutputDim, PolicyOutputDim);
+		Row->SetNumberField(TEXT("walk_weight"), A.RecoveryWeights.Pelvis);
+        Row->SetNumberField(TEXT("left_walk_weight"),A.RecoveryWeights.Left);
+        Row->SetNumberField(TEXT("right_walk_weight"),A.RecoveryWeights.Right);
+		Row->SetBoolField(TEXT("walk_policy"), A.bUseWalkPolicy);
+		if (const auto* S=ProphecyLowerTempering::Find(AgentActors[I]))
+		{
+			const float Values[]={S->FeetTranslation,S->FeetRotation,S->PelvisTranslation,S->PelvisRotation,S->FeetTranslationZ,S->PelvisTranslationZ};
+			Add(TEXT("tempering"),Values,UE_ARRAY_COUNT(Values));
+		}
 		Add(TEXT("previous_upper"), UpperStateSlice(Impl->UpperPreviousPublishedStateBuffer, I), UpperStateDim);
 		const float Root[] = {A.PrevRootPos.X,A.PrevRootPos.Y,A.PrevRootPos.Z,A.PrevRootYaw,
 			A.CurRootPos.X,A.CurRootPos.Y,A.CurRootPos.Z,A.CurRootYaw,A.PublishedRoot.X,A.PublishedRoot.Y,A.PublishedRoot.Z,A.PublishedYaw};

@@ -435,6 +435,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		!Agent.Slash.bHalf && !bHalf;
 	if (Agent.DefensePose) StopAgentNNDefense(Handle, false);
 	if (Agent.Slash.bActive) StopAgentNNAttack(Handle, false);
+	ProphecyRootBalance::CancelKickException(Actor);
 	const FTransform StartCarrier = SlashComponentWorld(Actor, Agent.PublishedRoot, Agent.PublishedYaw);
 	auto& Slash = Agent.Slash;
 	if (bContinueFullHistory)
@@ -456,6 +457,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		Actor->BeginAttackFists(Attack);
 		ProphecyAttackRecovery::Cancel(Actor);
 		Actor->NotifySwordAttackState(true);
+		ProphecyKickFootLeeway::Begin(Actor,Attack);
 		SlashRootMinusStartPelvis.Add(Actor,
 			Actor->GetRootLowPoint() - Slash.VisibleWorldPose[0].GetTranslation());
 		ProphecyAttackCamera::Update(this, Actor, true);
@@ -504,6 +506,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	Actor->BeginAttackFists(Attack);
 	ProphecyAttackRecovery::Cancel(Actor);
 	Actor->NotifySwordAttackState(true);
+	ProphecyKickFootLeeway::Begin(Actor,Attack);
 	ProphecyAttackCamera::Update(this, Actor, !bHalf);
 	return true;
 }
@@ -553,13 +556,16 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	auto& Slash = Impl->Agents[Handle.Index].Slash;
 	if (!Slash.bActive) return false;
 	ProphecyDefenseArmedGate::AttackEnded(Actor);
+	const FName EndedAttack = Slash.Family;
+	const bool bEndedHalfAttack = Slash.bHalf;
+	ProphecyRootBalance::BeginKickException(Actor,EndedAttack,bReturnToLocomotion);
 	// Sample the selected target before moving the carrier. Default to the same
 	// flat foot midpoint as root balancing; the optional pelvis mode keeps the
 	// previous attack handoff. This selection is event-only.
 	FVector ReturnTarget = FVector::ZeroVector;
 	bool bHasReturnTarget = false;
 	if (bReturnToLocomotion && ProphecyAttackControls::UsesRootBalancingTarget(Actor))
-		bHasReturnTarget=ProphecyRootBalance::GetFlatFeetTarget(Actor,ReturnTarget);
+		bHasReturnTarget=ProphecyRootBalance::GetTarget(Actor,ReturnTarget);
 	else if (bReturnToLocomotion)
 	{
 		static const FName PelvisBone(TEXT("pelvis"));
@@ -578,13 +584,18 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 		}
 		if (bHasReturnTarget) ReturnTarget.Z = Actor->GetRootLowPoint().Z;
 	}
+	const USpringArmComponent* PlayerSpring=Actor->IsPlayerControlled() ? Actor->GetAgentSpringArm() : nullptr;
+	const FVector PreviousCameraOrigin=PlayerSpring ? PlayerSpring->GetComponentLocation() : FVector::ZeroVector;
 	CatchUpFullAttackRoot(this, *Impl, Actor, Handle.Index);
 	Slash.bActive = false;
+	ProphecyKickFootLeeway::End(Actor);
 	if (bHasReturnTarget) SetAgentLocomotionRootWindowLocation(Handle, ReturnTarget, true);
+	if (PlayerSpring) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
 	if (bReturnToLocomotion) ProphecyRootPelvisBounds::ResetMagicCubeToRoot(Actor);
 	Actor->EndAttackFists();
 	Actor->NotifySwordAttackState(false);
 	if (bReturnToLocomotion) ProphecyAttackRecovery::Begin(Actor);
+	ProphecyAttackRecovery::NotifyEnded(Actor,EndedAttack,bEndedHalfAttack,bReturnToLocomotion);
 	return true;
 }
 
@@ -799,8 +810,9 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		{
 			const FReferenceSkeleton& Skeleton = SkeletonMesh->GetRefSkeleton();
 			const AProphecyAgent* ClampActor = AgentActors[AgentIndex];
-			const bool bFootClamp = ClampActor->bOverrideAttackFootClamp ? ClampActor->bAttackFootClamp : bClampFoot;
-			const bool bCalfClamp = ClampActor->bOverrideAttackCalfClamp ? ClampActor->bAttackCalfClamp : bClampCalf;
+			const bool bKickExtension=ProphecyKickFootLeeway::Current(ClampActor)>0;
+			const bool bFootClamp = !bKickExtension && (ClampActor->bOverrideAttackFootClamp ? ClampActor->bAttackFootClamp : bClampFoot);
+			const bool bCalfClamp = !bKickExtension && (ClampActor->bOverrideAttackCalfClamp ? ClampActor->bAttackCalfClamp : bClampCalf);
 			const float FootMultiplier = ClampActor->bOverrideAttackFootClamp ? 1.f : FootClampLengthMultiplier;
 			const float CalfMultiplier = ClampActor->bOverrideAttackCalfClamp ? 1.f : CalfClampLengthMultiplier;
 			const float FootLeeway = ClampActor->bOverrideAttackFootClamp ? ClampActor->AttackFootClampLeewayCm : 0.f;

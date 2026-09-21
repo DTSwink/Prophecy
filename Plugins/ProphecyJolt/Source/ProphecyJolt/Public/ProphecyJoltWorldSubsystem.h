@@ -476,6 +476,7 @@ protected:
 
 private:
     friend class UProphecyJoltBodyDriveLibrary;
+    friend class UProphecyJoltFootJointLibrary;
     FProphecyJoltWorldStatus ValidateReady() const;
     FProphecyJoltWorldStatus ValidateBodySettings(const FProphecyJoltFixtureBodySettings& Settings) const;
     void RefreshDiagnostics();

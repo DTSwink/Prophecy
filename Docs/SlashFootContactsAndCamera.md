@@ -65,10 +65,57 @@ camera height, rotation, arm length, collision test and capsule/NN state retain
 their existing behavior. Half attacks use the locomotion camera.
 
 The component remains allocated while owned by that player, ticks only while
-following, and restores its added offset after attacks or loss of possession.
+following or fading its offset after an attack, and restores its added offset
+immediately on loss of possession or teardown.
 Unreal owns its lifetime so a pending tick remains valid during a stop/destruction.
 The initial manually allocated tick experiment crashed on retirement and was
 replaced before final verification.
+
+### Attack-end offset fade (2026-09-21)
+
+**Set Attack Camera Offset Fade Duration** takes Agent and Duration Seconds,
+default1. One authored second means60 unpaused game ticks, ignoring frame delta
+and time dilation;0 restores immediately. Nonfinite/negative durations are rejected.
+The setting may be configured before possession, but only the player-possessed
+full-attack follower uses it. NPCs receive no camera follower or fade work.
+
+At attack exit, the handoff samples the possessed player's spring origin before
+the attack carrier catch-up and balancing/pelvis root placement, then subtracts
+their combined **actual** origin displacement from the existing camera offset.
+Thus `new spring origin + new offset = old spring origin + old offset` at the
+snap. This compensates actual applied movement rather than the requested target
+and avoids counting the intermediate catch-up twice. The combined offset then
+eases to zero with smoothstep over the requested tick count. Duration0 retains
+the immediate handoff without compensation. Camera baseline settings and any
+independent Blueprint TargetOffset are preserved by applying only the change in
+this component's offset. A new attack cancels the return and resumes pelvis
+tracking from the remaining offset. Updating the duration during a fade retimes
+it from its current value;0 stops immediately. Loss of possession and teardown
+restore immediately. The finished fade removes its state and disables the
+component tick; default duration needs no per-agent settings entry.
+
+This fades the added offset plus inverse handoff displacement; it does not change actor/root movement,
+camera rotation, arm collision or full-attack pelvis tracking. Uses the existing
+PostPhysics component tick, without another timer or inference. Live component
+layout is unchanged; transient return/settings data lives in weak-object maps.
+
+Validation2026-09-21: Live Coding loaded12:45:59UTC; reflected node/default1 checked.
+`Prophecy.Camera.AttackOffsetFade` passed12:46:47UTC, including60-tick completion,
+paused/duplicate suppression, retiming/zero, possessed-only activation and real
+component retirement on unpossession while retaining another camera offset.
+Existing pose-agent Blueprint compiled status3 with no stale types or wiring
+changes. Reload emitted handled RigVM delegate-access ensures; reload completed
+and subsequent checks passed. No gameplay rollout or asset save/restart.
+
+The follow-up root-snap regression test translates the actor twice and changes its
+yaw with an off-center spring attachment. It checks continuity of the world-space
+camera pivot, exactly-once inverse displacement, the combined fade's initial value,
+and a new attack retaining that corrected offset. This is translation/pivot
+compensation; camera rotation, arm collision and unrelated Blueprint teleports are
+not interpolated by this feature.
+The correction loaded through Live Coding12:55:49UTC on2026-09-21; the expanded
+`Prophecy.Camera.AttackOffsetFade` test passed12:56:13UTC. Existing Blueprint
+duration/node unchanged. No gameplay rollout, explicit asset save or restart.
 
 Validation:40s in the current scene; within-attack horizontal pelvis-to-camera
 offset change below3e-14cm. A further20s test switched possession to the other

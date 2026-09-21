@@ -5,6 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "ProphecyAngularLimits.h"
+#include "ProphecyAngularLimitBlend.h"
 #include "ProphecySpecialSolver.h"
 
 namespace ProphecySpecialSolver
@@ -50,12 +51,16 @@ bool ApplyParentJointLimits(AProphecyAgent& Agent, FName ChildBone,
         : Mesh->GetPhysicsAsset()->ConstraintSetup[Index]->DefaultInstance.ProfileInstance;
     ProphecyAngularLimits::Copy(Profiles[Index], Limits);
     if (Agent.IsJoltPhysicalAnimationEnabled())
-        return Agent.GetJoltCharacterComponent()->ApplyAngularLimitProfiles(Profiles, Error);
+    {
+        if (!Agent.GetJoltCharacterComponent()->ApplyAngularLimitProfiles(Profiles, Error)) return false;
+        ProphecyAngularLimitBlend::Cancel(&Agent);return true;
+    }
     if (!ProphecyAngularLimits::Equal(Mesh->Constraints[Index]->ProfileInstance, Profiles[Index]))
     {
         ProphecyAngularLimits::Apply(*Mesh->Constraints[Index], Profiles[Index]);
         Mesh->WakeAllRigidBodies();
     }
+    ProphecyAngularLimitBlend::Cancel(&Agent);
     return true;
 }
 }
@@ -150,11 +155,13 @@ bool AProphecyAgent::SetUseAuthoredAngularLimits(bool bEnabled)
             UE_LOG(LogTemp, Error, TEXT("Jolt angular-limit change failed for %s: %s"), *GetName(), *Error);
             return false;
         }
+        ProphecyAngularLimitBlend::Cancel(this);
         return true;
     }
     for (int32 Index = 0; Index < Profiles.Num(); ++Index)
         ProphecyAngularLimits::Apply(*PhysicalMesh->Constraints[Index], Profiles[Index]);
     PhysicalMesh->WakeAllRigidBodies();
+    ProphecyAngularLimitBlend::Cancel(this);
     return true;
 }
 

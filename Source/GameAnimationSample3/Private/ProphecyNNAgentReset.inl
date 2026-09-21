@@ -2,6 +2,7 @@
 // Kept outside FImpl/FAgent so Live Coding does not resize existing native allocations.
 #include "ProphecyJoltStandardPhysicsLibrary.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "ProphecyAgentResetPhysics.h"
 
 namespace ProphecyNNAgentReset
 {
@@ -48,6 +49,8 @@ static void ClearMotion(AProphecyNNLocomotionManager::FImpl::FAgent& A, const FC
     A.bUseWalkPolicy = A.bPublishedUseWalkPolicy = A.bPreviousPublishedUseWalkPolicy = S.bWalk;
     A.PolicyBlend.Reset(S.bWalk);
     A.PublishedWalkWeight = A.PreviousPublishedWalkWeight = A.PolicyBlend.WalkWeight;
+    A.RecoveryWeights=ProphecyAttackRecovery::FWeights(A.PolicyBlend.WalkWeight);
+    A.PublishedLegWalkWeights=A.PreviousPublishedLegWalkWeights=A.RecoveryWeights.Legs();
     A.AnimationLayer.Reset();
     A.Slash = {};
 }
@@ -84,12 +87,20 @@ int32 AProphecyNNLocomotionManager::CaptureInitialAgentResetState(FString& Error
         }
     }
     const int32 Count = Captured.Num();
+    for (const auto& S:Captured)
+        if (!ProphecyAgentResetPhysics::Capture(S.Actor.Get(),Error))
+        {
+            for (const auto& Undo:Captured) ProphecyAgentResetPhysics::Remove(Undo.Actor.Get());
+            return 0;
+        }
     if (Count) Checkpoints.Add(this, MoveTemp(Captured));
     return Count;
 }
 
 void AProphecyNNLocomotionManager::ClearInitialAgentResetState()
 {
+    if (const auto* Saved=ProphecyNNAgentReset::Checkpoints.Find(this))
+        for (const auto& S:*Saved) ProphecyAgentResetPhysics::Remove(S.Actor.Get());
     ProphecyNNAgentReset::Checkpoints.Remove(this);
 }
 
@@ -109,6 +120,9 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
         if (!IsValid(Actor) || Actor->IsActorBeingDestroyed() || ResolveAgent(S.Handle) != Actor) continue;
         const int32 I = S.Handle.Index;
         if (!Impl->Agents.IsValidIndex(I)) continue;
+        if (!ProphecyAgentResetPhysics::Has(Actor))
+        { Error+=TEXT("Physics baseline missing: begin a new Play session and initialize reset after setup; ");continue; }
+        ProphecyAgentResetPhysics::CancelBlends(Actor);
         const auto Mode = Actor->GetSimulationMode();
         if (auto* Mesh = Actor->GetPoseReferenceMesh())
         {
@@ -163,6 +177,9 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
         if (auto* Targets = ResolvedMoverTargets.Find(this); Targets && Targets->IsValidIndex(I))
         { (*Targets)[I] = {}; (*Targets)[I].Target.orientation_yaw_radians = S.Yaw; }
         if (auto* Debug = Impl->PinningDebug.Find(I)) { Debug->Locomotion = {}; Debug->Attack = {}; Debug->Frozen = {}; }
+        FString PhysicsError;
+        if (!ProphecyAgentResetPhysics::Restore(Actor,PhysicsError))
+            Error+=FString::Printf(TEXT("%s physics reset: %s; "),*Actor->GetName(),*PhysicsError);
         Actor->TeleportManagedRootLowPoint(TrainingToUnreal(S.Root), -FMath::RadiansToDegrees(S.Yaw));
         const int32 PoseId = PoseStoreAgentBase + I;
         FProphecyNNPoseStore::ClearAgentPose(PoseId); // Remove old Hermite tangents/presentation history.
@@ -190,6 +207,11 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
             }
         }
         if (!Actor->SetSimulationMode(Mode)) Error += FString::Printf(TEXT("%s reset but could not restore simulation mode; "), *Actor->GetName());
+        else if (!ProphecyAgentResetPhysics::RestoreLimits(Actor,PhysicsError))
+            Error+=FString::Printf(TEXT("%s reset limits: %s; "),*Actor->GetName(),*PhysicsError);
+        // Equipment must bind to the restored hand/rig, after root and pose publication.
+        if (!ProphecyAgentResetPhysics::RestoreEquipment(Actor,PhysicsError))
+            Error+=FString::Printf(TEXT("%s reset equipment: %s; "),*Actor->GetName(),*PhysicsError);
         ++Restored;
     }
     if (!Impl->PreviousPoseDebugAgents.IsEmpty()) UpdatePreviousPoseDebug(false);

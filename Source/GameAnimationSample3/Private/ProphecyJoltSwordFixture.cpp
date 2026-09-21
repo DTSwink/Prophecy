@@ -6,6 +6,7 @@
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyPhysicsSkeletalMeshComponent.h"
+#include "ProphecyJointDampingLibrary.h"
 #include "PhysicsEngine/SkeletalBodySetup.h"
 #include "PhysicsProxy/SingleParticlePhysicsProxy.h"
 #include "ProphecyJoltCharacterWorldSubsystem.h"
@@ -2286,6 +2287,77 @@ bool FProphecyJoltRuntimeBoneMaterialsTest::RunTest(const FString& Parameters)
     for (int32 I=0; I<Captured.Bodies.Num(); ++I)
         if (!Character->GetBodyHandle(Captured.Bodies[I].BodyName,Handles[I])) return false;
     TestTrue(TEXT("Rebind drops temporary overrides"),Check(false,false));
+    // Standard component node must dispatch to the live Jolt rig as well as UE.
+    auto* Mesh=Agent->GetPoseReferenceMesh();
+    auto CheckAll=[&](float Friction,float Restitution,uint8 FrictionMode,uint8 RestitutionMode)
+    {
+        for (const auto& Handle:Handles)
+        {
+            FProphecyJoltBodyMaterial M;
+            if (!World->ReadBodyMaterial(Handle,M).IsSuccess() || M.Friction!=Friction || M.Restitution!=Restitution
+                || M.FrictionCombineMode!=FrictionMode || M.RestitutionCombineMode!=RestitutionMode) return false;
+        }
+        return true;
+    };
+    PM->Friction=.25f;PM->Restitution=.75f;
+    struct FMaterialParams { UPhysicalMaterial* Material; } Params{PM};
+    Mesh->ProcessEvent(Mesh->FindFunctionChecked(TEXT("SetPhysMaterialOverride")),&Params);
+    TestTrue(TEXT("Standard Blueprint material node updates all live Jolt bodies"),CheckAll(.25f,.75f,1,1));
+    TestTrue(TEXT("Standard node retains the UE query material"),Mesh->GetBodyInstance(Feet[0])->GetSimplePhysicalMaterial()==PM);
+    PM->Friction=.5f;
+    Mesh->SetPhysMaterialOverride(PM);
+    TestTrue(TEXT("Calling setter again refreshes the same asset's changed coefficients"),CheckAll(.5f,.75f,1,1));
+    Agent->DisableJoltPhysicalAnimation();
+    TestTrue(TEXT("Rebind with authored component override succeeds"),Agent->EnableJoltPhysicalAnimation());
+    for (int32 I=0; I<Captured.Bodies.Num(); ++I)
+        if (!Character->GetBodyHandle(Captured.Bodies[I].BodyName,Handles[I])) return false;
+    TestTrue(TEXT("Component override survives rig recreation"),CheckAll(.5f,.75f,1,1));
+    Params.Material=nullptr;
+    Mesh->ProcessEvent(Mesh->FindFunctionChecked(TEXT("SetPhysMaterialOverride")),&Params);
+    TestTrue(TEXT("Clearing component override restores per-body fallback, not admission override"),Check(false,false));
+    Agent->SetSimulationMode(EProphecyAgentSimulationMode::Kinematic);
+    return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltLocomotionDampingBelowTest,
+    "Prophecy.Jolt.Character.LocomotionDampingBelow",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyJoltLocomotionDampingBelowTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::SwordFixture;
+    FWorldFixture Fixture;FString Error;
+    const auto Values=UWorld::InitializationValues().AllowAudioPlayback(false).RequiresHitProxies(false)
+        .CreatePhysicsScene(true).CreateNavigation(false).CreateAISystem(false).ShouldSimulatePhysics(true)
+        .EnableTraceCollision(true).CreateFXSystem(false).SetTransactional(false);
+    Fixture.World=UWorld::CreateWorld(EWorldType::Game,false,NAME_None,nullptr,true,ERHIFeatureLevel::Num,&Values);
+    if (!Fixture.World || !GEngine) return false;
+    GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(Fixture.World);
+    Fixture.World->InitializeActorsForPlay(FURL());Fixture.World->GetWorldSettings()->NotifyBeginPlay();
+    auto* World=Fixture.World->GetSubsystem<UProphecyJoltWorldSubsystem>();
+    FProphecyJoltWorldSettings Settings;Settings.GravityCmPerSecondSquared=FVector::ZeroVector;
+    if (!World || !World->InitializeSimulation(Settings).IsSuccess()) return false;
+    AProphecyAgent* Agent=nullptr;
+    if (!PrepareAgent(Fixture,Agent,Error)) { AddError(Error);return false; }
+    using D=UProphecyJointDampingLibrary;
+    auto Read=[&](FName Bone) { float Value=-1;D::GetJoltJointAngularDamping(Agent,Bone,Value);return Value; };
+    TestEqual(TEXT("Exclude parent selects only wrist PHAT joint"),
+        D::SetJoltJointLocomotionDampingBelow(Agent,TEXT("lowerarm_l"),false,10,20,30,40,Error),1);
+    TestEqual(TEXT("Excluded elbow unchanged"),Read(TEXT("lowerarm_l")),0.f);
+    TestEqual(TEXT("Wrist uses walk sheathed profile"),Read(TEXT("hand_l")),10.f);
+    TestEqual(TEXT("Opposite wrist unchanged"),Read(TEXT("hand_r")),0.f);
+    TestEqual(TEXT("Include parent selects elbow and wrist"),
+        D::SetJoltJointLocomotionDampingBelow(Agent,TEXT("lowerarm_l"),true,10,20,30,40,Error),2);
+    TestEqual(TEXT("Included elbow updated"),Read(TEXT("lowerarm_l")),10.f);
+    TestEqual(TEXT("Invalid rates change no joints"),
+        D::SetJoltJointLocomotionDampingBelow(Agent,TEXT("lowerarm_l"),true,99,-1,99,99,Error),0);
+    TestEqual(TEXT("Invalid call preserves previous value"),Read(TEXT("hand_l")),10.f);
+    Agent->NotifySwordAttackState(true);
+    TestEqual(TEXT("Attack suppresses descendant damping"),Read(TEXT("hand_l")),0.f);
+    Agent->NotifySwordAttackState(false);
+    TestEqual(TEXT("Attack exit restores descendant profile"),Read(TEXT("hand_l")),10.f);
+    TestEqual(TEXT("All zero clears both joint profiles"),
+        D::SetJoltJointLocomotionDampingBelow(Agent,TEXT("lowerarm_l"),true,0,0,0,0,Error),2);
+    TestEqual(TEXT("Wrist returns to zero"),Read(TEXT("hand_l")),0.f);
     Agent->SetSimulationMode(EProphecyAgentSimulationMode::Kinematic);
     return !HasAnyErrors();
 }

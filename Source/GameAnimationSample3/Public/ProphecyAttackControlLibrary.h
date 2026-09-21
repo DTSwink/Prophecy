@@ -18,6 +18,13 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackControlLibrary : public UBlueprint
 {
     GENERATED_BODY()
 public:
+    /** Fade the full-attack camera's added horizontal pelvis offset back to zero after the attack.
+     * Only affects this agent while player-possessed. Default 1 means 60 unpaused game ticks,
+     * independent of FPS/time dilation; 0 removes the offset immediately. Changes also retime
+     * an active fade from its current value. No camera tick is retained after completion. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Camera", meta=(DefaultToSelf="Agent"))
+    static bool SetAttackCameraOffsetFadeDuration(AProphecyAgent* Agent,float DurationSeconds=1.f);
+
     /** Read-only metadata for an ongoing NN attack, including before Armed.
      * BoneNames contains the attacking PHAT bodies, not every body that can collide.
      * Slash/pike returns only SwordCollider, with an empty BoneNames array.

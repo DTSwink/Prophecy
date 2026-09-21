@@ -23,7 +23,9 @@ float ExactFootMinimum(const FFootAxes& A, const FVector3f& FootHalf, const FVec
 
 void ResolvePelvisLeg(const FVector3f& OldPelvis, const FMat3f& OldPelvisRotation,
     const FVector3f& NewPelvis, const FMat3f& NewPelvisRotation,
-    const FPelvisLegGeometry& G, float* State, int32 Offset, const float* ReferenceState = nullptr)
+    const FPelvisLegGeometry& G, float* State, int32 Offset, const float* ReferenceState = nullptr,
+    bool bCarryFootRotation = false, FVector3f* OutPole = nullptr,
+    float MinimumReach = 0.f, bool bClampOuterReach = true)
 {
     const float* Reference = ReferenceState ? ReferenceState : State;
     const FMat3f OldThigh = MatrixFromRot6(Reference+Offset+9);
@@ -36,16 +38,19 @@ void ResolvePelvisLeg(const FVector3f& OldPelvis, const FMat3f& OldPelvisRotatio
         : ProjectToPlane(TransformRow(G.Pole,OldThigh),OldAxis);
     const FVector3f Hip = NewPelvis+TransformRow(G.HipOffset,NewPelvisRotation);
     const float L1=G.KneeOffset.Size(), L2=G.CalfLength;
-    const float Min=FMath::Abs(L1-L2)+2.e-5f, Max=L1+L2-2.e-5f;
+    const float Max=L1+L2-2.e-5f;
+    const float Min=FMath::Clamp(MinimumReach,FMath::Abs(L1-L2)+2.e-5f,Max);
     const FVector3f Delta=ReadStateVec3(State,Offset)-Hip;
-    FVector3f Ankle=Hip+SafeNormal(Delta,OldAxis)*FMath::Clamp(Delta.Size(),Min,Max);
+    const float RequestedDistance=Delta.Size();
+    FVector3f Ankle=Hip+SafeNormal(Delta,OldAxis)*(bClampOuterReach
+        ? FMath::Clamp(RequestedDistance,Min,Max) : FMath::Max(RequestedDistance,Min));
     // Floor-plane reach projection, never lift then radially pull underground.
     // Unbounded world coasting can put the entire reach sphere below the floor;
     // in that infeasible case keep the leg connected at its highest reachable point.
     if (Ankle.Z<G.MinimumAnkleZ)
     {
         const float Dz=G.MinimumAnkleZ-Hip.Z;
-        if (Dz>Max) Ankle=Hip+FVector3f(0,0,Max);
+        if (bClampOuterReach && Dz>Max) Ankle=Hip+FVector3f(0,0,Max);
         else
         {
             FVector3f Flat(Ankle.X-Hip.X,Ankle.Y-Hip.Y,0);
@@ -53,17 +58,29 @@ void ResolvePelvisLeg(const FVector3f& OldPelvis, const FMat3f& OldPelvisRotatio
             const FVector3f Axis=SafeNormal(Flat,SafeNormal(FVector3f(OldAxis.X,OldAxis.Y,0)));
             const float Low=FMath::Sqrt(FMath::Max(0.f,Min*Min-Dz*Dz));
             const float High=FMath::Sqrt(FMath::Max(0.f,Max*Max-Dz*Dz));
-            Ankle=Hip+Axis*FMath::Clamp(Radius,Low,High); Ankle.Z=G.MinimumAnkleZ;
+            Ankle=Hip+Axis*(bClampOuterReach ? FMath::Clamp(Radius,Low,High) : FMath::Max(Radius,Low));
+            Ankle.Z=G.MinimumAnkleZ;
         }
     }
     const FVector3f Axis=SafeNormal(Ankle-Hip,OldAxis);
-    const float Cos=FMath::Clamp(FVector3f::DotProduct(OldAxis,Axis),-1.f,1.f);
-    // Foot rotation is unchanged, so the foot-local carry is identity. Minimal
-    // swing still transports the pole onto the modified hip-to-ankle direction.
-    const FVector3f Transport=Cos < -1.f+1.e-6f ? -OldPole
-        : OldPole-(OldAxis+Axis)*(FVector3f::DotProduct(OldPole,Axis)/FMath::Max(1.e-6f,1.f+Cos));
+    // dodge_leg_feedback.foot_local_hinge_pole: carry the SOURCE frame through
+    // the foot rotation before minimal swing. Pelvis-only inertia retains its
+    // original identity-carry path; tempering supplies an untouched source pose.
+    FVector3f CarriedAxis=OldAxis,CarriedPole=OldPole;
+    if (bCarryFootRotation)
+    {
+        const FMat3f Change=Multiply(Transpose(MatrixFromRot6(Reference+Offset+3)),MatrixFromRot6(State+Offset+3));
+        CarriedAxis=SafeNormal(TransformRow(OldAxis,Change));
+        CarriedPole=ProjectToPlane(TransformRow(OldPole,Change),CarriedAxis);
+    }
+    const float Cos=FMath::Clamp(FVector3f::DotProduct(CarriedAxis,Axis),-1.f,1.f);
+    const FVector3f Transport=Cos < -1.f+1.e-6f ? -CarriedPole
+        : CarriedPole-(CarriedAxis+Axis)*(FVector3f::DotProduct(CarriedPole,Axis)/FMath::Max(1.e-6f,1.f+Cos));
     const FVector3f Pole=ProjectToPlane(Transport,Axis);
-    const float Distance=(Ankle-Hip).Size();
+    if (OutPole) *OutPole=Pole;
+    // An unclamped endpoint can exceed a fixed-length chain. Aim a straight leg
+    // at it while preserving the endpoint for the existing unclamped decoder.
+    const float Distance=FMath::Min((Ankle-Hip).Size(),Max);
     const float Along=(L1*L1-L2*L2+Distance*Distance)/(2.f*Distance);
     const FVector3f NewUpper=Axis*Along+Pole*FMath::Sqrt(FMath::Max(0.f,L1*L1-Along*Along));
     const FVector3f OldNormal=SafeNormal(FVector3f::CrossProduct(OldAxis,OldPole));
@@ -90,8 +107,9 @@ bool CorrectLowerPelvis(const AProphecyAgent* Actor, double Time, double Dt,
     if (!ProphecyPelvisInertia::ApplyTarget(Actor,Time,Dt,PreviousCarrier,Carrier,Prev,Next)) return false;
     const FVector3f NewPosition=LocalUnrealToTraining(Next.GetTranslation());
     const FMat3f NewRotation=MirrorYBasis(QuatToMatrix(Next.GetRotation()));
-    for (int32 I=0; I<2; ++I)
-        ResolvePelvisLeg(OldPosition,OldRotation,NewPosition,NewRotation,Legs[I],Lower,9+16*I);
+    if (ProphecyLegChainDebug::IsEnabled(Actor))
+        for (int32 I=0; I<2; ++I)
+            ResolvePelvisLeg(OldPosition,OldRotation,NewPosition,NewRotation,Legs[I],Lower,9+16*I);
     WriteStateVec3(Lower,0,NewPosition);
     WriteRot6(NewRotation,Lower+3);
     return true;

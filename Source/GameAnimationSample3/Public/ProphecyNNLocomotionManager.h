@@ -216,7 +216,8 @@ public:
 
 	bool GetAgentLocomotionState(FProphecyAgentHandle Handle,
 		FVector& WorldVelocityCmPerSecond, FVector& FacingWorldDirection, bool& bRun) const;
-	bool GetAgentLocomotionCheckpointWeights(FProphecyAgentHandle Handle, float& WalkWeight, float& RunWeight) const;
+	bool GetAgentLocomotionCheckpointWeights(FProphecyAgentHandle Handle, float& WalkWeight, float& RunWeight,
+		FVector2f* LegWalkWeights = nullptr) const;
 	bool GetAgentLocomotionTarget(FProphecyAgentHandle Handle, FVector& TargetWorldVelocityCmPerSecond,
 		float& TargetSpeedCmPerSecond, FVector& TargetFacingWorldDirection, bool& bRun) const;
 	bool AddAgentRootVelocityImpulse(FProphecyAgentHandle Handle, FVector DeltaVelocityCmPerSecond,

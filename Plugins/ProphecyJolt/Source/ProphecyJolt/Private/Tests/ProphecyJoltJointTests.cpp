@@ -21,6 +21,8 @@ THIRD_PARTY_INCLUDES_START
 #include <Jolt/RegisterTypes.h>
 THIRD_PARTY_INCLUDES_END
 #include "ProphecyJoltSpeculativeJoint.h"
+#include "ProphecyJoltFootExtension.h"
+#include "Misc/ScopeExit.h"
 
 namespace ProphecyJolt::JointTests
 {
@@ -577,6 +579,58 @@ bool FProphecyJoltJointDampingTest::RunTest(const FString&)
     TestNearlyEqual(TEXT("No residual damping after disabling"),Fixture.ChildAngularVelocity().Length(),Speed,.002f);
     for (int32 I=0;I<3;++I)
         TestTrue(TEXT("Zero removes native angular motor rows"),Native.GetMotorState(JPH::SixDOFConstraintSettings::EAxis(JPH::SixDOFConstraintSettings::RotationX+I))==JPH::EMotorState::Off);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyFootExtensionTest,"Prophecy.Jolt.Joints.FootExtension",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyFootExtensionTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt;
+    using namespace ProphecyJolt::JointTests;
+    if (!RuntimeReady(*this)) return false;
+    FJointFixture Fixture;
+    if (!Fixture.Init(*this,MakeJoint(),FQuat::Identity)) return false;
+    auto& Original=Fixture.MutableJointConstraint();
+    const auto Min=Original.GetRotationLimitsMin(),Max=Original.GetRotationLimitsMax();
+    // Deliberately not an authored joint-frame axis; the parent itself is rotated in world space.
+    const auto LocalAxis=JPH::Vec3(.3f,.8f,-.4f).Normalized();
+    const auto S=FootExtension::Settings(Original,LocalAxis,.10f);
+    JPH::Ref<JPH::TwoBodyConstraint> Extra=Fixture.Bodies().CreateConstraint(&S,
+        Original.GetBody1()->GetID(),Original.GetBody2()->GetID());
+    if (!TestNotNull(TEXT("Axial translation joint created"),Extra.GetPtr())) return false;
+    auto* Translation=static_cast<JPH::SixDOFConstraint*>(Extra.GetPtr());
+    Original.SetTranslationLimits(JPH::Vec3::sReplicate(-FLT_MAX),JPH::Vec3::sReplicate(FLT_MAX));
+    Fixture.World().AddConstraint(Extra.GetPtr());
+    ON_SCOPE_EXIT { if (Extra) Fixture.World().RemoveConstraint(Extra.GetPtr()); };
+    const auto Axis=Original.GetBody1()->GetRotation()*LocalAxis;
+    const auto Side=Axis.GetNormalizedPerpendicular();
+    const auto Offset=[&]()
+    {
+        const auto P=Fixture.Bodies().GetCenterOfMassTransform(Original.GetBody1()->GetID())*Original.GetConstraintToBody1Matrix().GetTranslation();
+        const auto C=Fixture.Bodies().GetCenterOfMassTransform(Original.GetBody2()->GetID())*Original.GetConstraintToBody2Matrix().GetTranslation();
+        return JPH::Vec3(C-P);
+    };
+    for (int I=0;I<40;++I)
+    {
+        Fixture.Bodies().SetLinearVelocity(Fixture.ChildID(),Axis+Side);
+        if (!Fixture.Step(*this,1)) return false;
+    }
+    TestNearlyEqual(TEXT("Stops at 10 cm extension along rotated calf"),Offset().Dot(Axis),.10f,.003f);
+    TestTrue(TEXT("Sideways translation stays locked"),(Offset()-Axis*Offset().Dot(Axis)).Length()<.001f);
+    TestTrue(TEXT("Original angular bounds retained"),Original.GetRotationLimitsMin()==Min && Original.GetRotationLimitsMax()==Max);
+    for (int I=1;I<=60;++I)
+    {
+        const float A=float(I)/60.f,Limit=.1f*(1-A*A*(3-2*A));
+        Translation->SetTranslationLimits(JPH::Vec3::sZero(),JPH::Vec3(Limit,0,0));
+        if (!Fixture.Step(*this,1)) return false;
+    }
+    Fixture.World().RemoveConstraint(Extra.GetPtr()); Extra=nullptr;
+    Original.SetTranslationLimits(JPH::Vec3::sZero(),JPH::Vec3::sZero());
+    if (!Fixture.Step(*this,30)) return false;
+    TestTrue(TEXT("Return restores the original attachment"),Fixture.AnchorErrorCm()<.02);
+    TestTrue(TEXT("Original locked translation restored"),Original.IsFixedAxis(EJointAxis::TranslationX)
+        && Original.IsFixedAxis(EJointAxis::TranslationY) && Original.IsFixedAxis(EJointAxis::TranslationZ));
     return true;
 }
 

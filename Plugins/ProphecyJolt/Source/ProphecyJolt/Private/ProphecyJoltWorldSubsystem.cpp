@@ -1,5 +1,6 @@
 #include "ProphecyJoltWorldSubsystem.h"
 #include "ProphecyJoltBodyDriveLibrary.h"
+#include "ProphecyJoltFootJointLibrary.h"
 #include "ProphecyJoltPhysicsCommand.h"
 
 #include "Components/PrimitiveComponent.h"
@@ -54,6 +55,7 @@ THIRD_PARTY_INCLUDES_END
 #include "ProphecyJoltSpeculativeJoint.h"
 #include "ProphecyJoltRadialJoint.h"
 #include "ProphecyJoltJointDamping.h"
+#include "ProphecyJoltFootExtension.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogProphecyJoltWorld, Log, All);
 
@@ -422,6 +424,21 @@ struct FRigRecord
     TArray<FProphecyJoltBodyHandle> PublishedHandles;
     FProphecyJoltRigServoState ServoState;
 };
+
+// Sparse sidecar rather than changing the layout of retained live rig records.
+static TMap<const FRigRecord*,TArray<ProphecyJolt::FootExtension::FJoint>> FootExtensions;
+static void RemoveFootExtensions(JPH::PhysicsSystem& Physics,const FRigRecord* Rig)
+{
+    if (auto* Entries=FootExtensions.Find(Rig))
+    {
+        for (auto& Entry:*Entries)
+        {
+            Physics.RemoveConstraint(Entry.Translation.GetPtr());
+            Entry.Original->SetTranslationLimits(Entry.Minimum,Entry.Maximum);
+        }
+        FootExtensions.Remove(Rig);
+    }
+}
 
 // Called only at possession/range transitions, outside Update. Keep the same
 // native SixDOF (and its warm start/body state) when changing its registered wrapper.
@@ -1132,6 +1149,7 @@ public:
         FlatTargets.Reset();
         ServoRanges.Reset();
         auto& Rig = *Rigs[Index].Record;
+        RemoveFootExtensions(Physics,&Rig);
         Rig.Targets.Reset();
         Rig.PublishedHandles.Reset();
         for (const auto& Constraint : Rig.Constraints) Physics.RemoveConstraint(Constraint.GetPtr());
@@ -1244,6 +1262,70 @@ public:
 };
 
 void FProphecyJoltWorldStateDeleter::operator()(FProphecyJoltWorldState* State) const { delete State; }
+
+bool UProphecyJoltFootJointLibrary::SetFootExtension(UObject* WorldContext,FGuid Lifetime,
+    int32 BodySlot,int64 BodyGeneration,float LeewayCm,FVector LeftCalfAxis,FVector RightCalfAxis,FString& OutError)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    using Axis=JPH::SixDOFConstraintSettings::EAxis;
+    OutError.Reset();
+    UWorld* World=IsValid(WorldContext) ? WorldContext->GetWorld() : nullptr;
+    auto* Owner=World ? World->GetSubsystem<UProphecyJoltWorldSubsystem>() : nullptr;
+    if (!Owner || !Owner->ValidateReady().IsSuccess() || !FMath::IsFinite(LeewayCm) || LeewayCm<0)
+    { OutError=TEXT("A ready Jolt world and finite nonnegative foot leeway are required."); return false; }
+    auto* Native=Owner->Native.Get();
+    const auto* Body=Native->Find(FProphecyJoltBodyHandle{Lifetime,BodySlot,uint64(BodyGeneration)});
+    auto* Rig=Body ? Native->FindRig(Body->OwnerRig) : nullptr;
+    if (!Rig) { OutError=TEXT("Foot leeway requires a live skeletal rig."); return false; }
+    const auto Wake=[&]()
+    {
+        for (const auto& Handle:Rig->Handles) Native->Wake(Handle);
+    };
+    if (LeewayCm==0)
+    {
+        const bool Changed=FootExtensions.Contains(Rig);
+        RemoveFootExtensions(Native->Physics,Rig);
+        if (Changed) { Wake(); Owner->RefreshDiagnostics(); }
+        return true;
+    }
+    if (auto* Entries=FootExtensions.Find(Rig))
+    {
+        for (auto& Entry:*Entries)
+            Entry.Translation->SetTranslationLimits(JPH::Vec3::sZero(),JPH::Vec3(LeewayCm*.01f,0,0));
+        Wake(); return true;
+    }
+    TArray<ProphecyJolt::FootExtension::FJoint> Pending;
+    const FName Feet[]={TEXT("foot_l"),TEXT("foot_r")},Calves[]={TEXT("calf_l"),TEXT("calf_r")};
+    const FVector Directions[]={LeftCalfAxis,RightCalfAxis};
+    for (int32 Side=0;Side<2;++Side)
+    {
+        const int32 Index=Rig->JointDescriptions.IndexOfByPredicate([&](const FProphecyJoltRigJoint& J)
+            { return J.Bone1==Feet[Side] && J.Bone2==Calves[Side]; });
+        if (Index==INDEX_NONE || Directions[Side].ContainsNaN() || Directions[Side].IsNearlyZero())
+        { OutError=TEXT("Expected a foot-to-calf joint and a valid parent-local calf length axis on each side."); return false; }
+        auto* Original=ProphecyJolt::GetSixDOF(Rig->Constraints[Index].GetPtr());
+        if (!Original || !Original->IsFixedAxis(Axis::TranslationX) || !Original->IsFixedAxis(Axis::TranslationY)
+            || !Original->IsFixedAxis(Axis::TranslationZ))
+        { OutError=TEXT("Foot extension expects authored locked ankle translations."); return false; }
+        const auto Settings=ProphecyJolt::FootExtension::Settings(*Original,
+            ProphecyJolt::Conversions::ToJoltDirection(Directions[Side].GetSafeNormal()),LeewayCm*.01f);
+        JPH::Ref<JPH::TwoBodyConstraint> Extra=Native->Physics.GetBodyInterface().CreateConstraint(&Settings,
+            Original->GetBody1()->GetID(),Original->GetBody2()->GetID());
+        if (!Extra) { OutError=TEXT("Could not create the calf-axis translation constraint."); return false; }
+        ProphecyJolt::FootExtension::FJoint Entry;
+        Entry.Original=Original;
+        Entry.Translation=static_cast<JPH::SixDOFConstraint*>(Extra.GetPtr());
+        Entry.Minimum=Original->GetTranslationLimitsMin(); Entry.Maximum=Original->GetTranslationLimitsMax();
+        Pending.Add(MoveTemp(Entry));
+    }
+    // Both ankles validated/allocated before changing any live constraint.
+    for (auto& Entry:Pending)
+    {
+        Entry.Original->SetTranslationLimits(JPH::Vec3::sReplicate(-FLT_MAX),JPH::Vec3::sReplicate(FLT_MAX));
+        Native->Physics.AddConstraint(Entry.Translation.GetPtr());
+    }
+    FootExtensions.Add(Rig,MoveTemp(Pending)); Wake(); Owner->RefreshDiagnostics(); return true;
+}
 
 bool UProphecyJoltBodyDriveLibrary::SetDriveFollower(UObject* WorldContext, FGuid Lifetime,
     int32 BodySlot, int64 BodyGeneration, int32 ParentSlot, int64 ParentGeneration,
@@ -2794,6 +2876,11 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetRigSolverIterations(con
         C->SetNumVelocityStepsOverride(Velocity); C->SetNumPositionStepsOverride(Position);
         auto* Six = ProphecyJolt::GetSixDOF(C.GetPtr());
         Six->SetNumVelocityStepsOverride(Velocity); Six->SetNumPositionStepsOverride(Position);
+    }
+    if (auto* Entries=FootExtensions.Find(Rig)) for (auto& Entry:*Entries)
+    {
+        Entry.Translation->SetNumVelocityStepsOverride(Velocity);
+        Entry.Translation->SetNumPositionStepsOverride(Position);
     }
     return {};
 }

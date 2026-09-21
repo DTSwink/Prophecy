@@ -10,6 +10,7 @@ class GAMEANIMATIONSAMPLE3_API UProphecyPhysicsSkeletalMeshComponent : public US
 {
     GENERATED_BODY()
 public:
+    virtual void SetPhysMaterialOverride(UPhysicalMaterial* NewPhysMaterial) override;
     virtual void AddForce(FVector Force, FName BoneName, bool bAccelChange) override;
     virtual void AddImpulse(FVector Impulse, FName BoneName, bool bVelChange) override;
     virtual void AddTorqueInRadians(FVector Torque, FName BoneName, bool bAccelChange) override;

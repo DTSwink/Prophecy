@@ -1,7 +1,55 @@
 #include "ProphecyPhysicsSkeletalMeshComponent.h"
 #include "ProphecyJoltMeshPhysics.h"
+#include "ProphecyAgent.h"
+#include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyJoltWorldSubsystem.h"
+#include "Engine/World.h"
+#include "PhysicsEngine/PhysicsAsset.h"
+#include "PhysicsEngine/SkeletalBodySetup.h"
+#include "PhysicsEngine/BodyInstance.h"
+#include "PhysicsEngine/PhysicsSettings.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 
 using namespace ProphecyJolt::MeshPhysics;
+
+void UProphecyPhysicsSkeletalMeshComponent::SetPhysMaterialOverride(UPhysicalMaterial* NewPhysMaterial)
+{
+    // Retain UE's receiver/query material and its normal editor/Chaos behavior.
+    Super::SetPhysMaterialOverride(NewPhysMaterial);
+    auto* Agent=Cast<AProphecyAgent>(GetOwner());
+    if (!Agent || Agent->GetPoseReferenceMesh()!=this || !Agent->IsJoltPhysicalAnimationEnabled()) return;
+    auto* Character=Agent->GetJoltCharacterComponent();
+    auto* PhysicsAsset=GetPhysicsAsset();
+    auto* Jolt=GetWorld() ? GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>() : nullptr;
+    if (!Character || !PhysicsAsset || !Jolt) return;
+    TArray<FProphecyJoltMaterialUpdate,TInlineAllocator<32>> Updates;
+    for (const USkeletalBodySetup* Setup:PhysicsAsset->SkeletalBodySetups)
+    {
+        FProphecyJoltBodyHandle Handle;
+        if (!Setup || !Character->GetBodyHandle(Setup->BoneName,Handle)) continue;
+        const auto* Body=GetBodyInstance(Setup->BoneName);
+        const auto* Material=Body ? Body->GetSimplePhysicalMaterial() : nullptr;
+        if (!Material)
+        {
+            UE_LOG(LogTemp,Warning,TEXT("Physical material override: missing receiver material on %s.%s; no Jolt bodies updated."),
+                *GetName(),*Setup->BoneName.ToString());
+            return;
+        }
+        // Re-resolve after the UE setter: None must remove an editor-time override
+        // too, rather than restoring the material captured when the rig was bound.
+        FProphecyJoltBodyMaterial Value;
+        Value.Friction=Material->Friction;Value.Restitution=Material->Restitution;
+        Value.FrictionCombineMode=uint8(Material->bOverrideFrictionCombineMode
+            ? Material->FrictionCombineMode.GetValue() : UPhysicsSettings::Get()->FrictionCombineMode.GetValue());
+        Value.RestitutionCombineMode=uint8(Material->bOverrideRestitutionCombineMode
+            ? Material->RestitutionCombineMode.GetValue() : UPhysicsSettings::Get()->RestitutionCombineMode.GetValue());
+        Updates.Add({Handle,Value});
+    }
+    if (Updates.IsEmpty()) return;
+    const auto Result=Jolt->UpdateBodyMaterials(Updates);
+    if (!Result.IsSuccess()) UE_LOG(LogTemp,Warning,TEXT("Physical material override could not update Jolt on %s: %s"),
+        *GetName(),*Result.Message);
+}
 
 void UProphecyPhysicsSkeletalMeshComponent::AddForce(FVector Force, FName BoneName, bool bAccelChange)
 {

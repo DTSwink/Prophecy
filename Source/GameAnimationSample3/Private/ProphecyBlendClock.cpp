@@ -110,6 +110,10 @@ bool FProphecyBlendTickClockTest::RunTest(const FString&)
     for (float FPS : {30.f,60.f,120.f})
     {
         Agent->CustomTimeDilation=.25f;
+        Start(Agent,EKind::KickBalance,1);
+        for (int32 Tick=0;Tick<60;++Tick) Advance(World,LEVELTICK_All,1.f/FPS);
+        TestEqual(TEXT("Kick balance clock uses 60 ticks regardless of FPS/dilation"),Consume(Agent,EKind::KickBalance),1.);
+        Stop(Agent,EKind::KickBalance);
         Start(Agent,EKind::Tempering);
         double Total=0;
         for (int32 Tick=1;Tick<=60;++Tick)
@@ -129,30 +133,30 @@ bool FProphecyBlendTickClockTest::RunTest(const FString&)
         if (Before==0) TestFalse(TEXT("Elapsed timer stops even before consumer reads again"),TickHandle.IsValid());
         TestEqual(TEXT("Deferred final read keeps all 60 ticks"),Consume(Agent,EKind::Tempering),1.);
 
-        UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(Agent,true,0,0,0,0);
+        UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(Agent,true,0,1.f,0,0,1.f,0);
         UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(Agent,1,.5f,1,.5f);
-        UProphecyAttackRecoveryLibrary::SetAttackToLocomotionBlend(Agent,1,.5f);
+        UProphecyAttackRecoveryLibrary::SetAttackToLocomotionBlend(Agent,EProphecyRecoverySource::Run,.5f,1);
         ProphecyAttackRecovery::Begin(Agent);
-        FProphecyNNPolicyBlend Blend;bool Walk=true;
-        ProphecyAttackRecovery::Step(Agent,Blend,Walk,1.f/30.f);
+        ProphecyAttackRecovery::FWeights Weights;
+        ProphecyAttackRecovery::Step(Agent,1.f,Weights);
         for (int32 Tick=1;Tick<=90;++Tick)
         {
             Advance(World,LEVELTICK_All,1.f/FPS);
-            ProphecyAttackRecovery::Step(Agent,Blend,Walk,1.f/30.f);
+            ProphecyAttackRecovery::Step(Agent,1.f,Weights);
             const auto* Tempering=ProphecyLowerTempering::Find(Agent);
             if (Tick==30)
             {
                 TestTrue(TEXT("30-tick tempering hold"),Tempering && Tempering->FeetTranslation==0);
-                TestEqual(TEXT("30-tick recovery hold"),Blend.WalkWeight,0.f);
+                TestEqual(TEXT("30-tick recovery hold"),Weights.Pelvis,0.f);
             }
             if (Tick==60)
             {
                 TestTrue(TEXT("Tempering halfway after 30 hold + 30 blend ticks"),Tempering && FMath::IsNearlyEqual(Tempering->FeetTranslation,.5f,1.e-5f));
-                TestTrue(TEXT("Recovery halfway after 30 hold + 30 blend ticks"),FMath::IsNearlyEqual(Blend.WalkWeight,.5f,1.e-5f));
+                TestTrue(TEXT("Recovery halfway after 30 hold + 30 blend ticks"),FMath::IsNearlyEqual(Weights.Pelvis,.5f,1.e-5f));
             }
         }
         TestNull(TEXT("Tempering normal after 90 ticks"),ProphecyLowerTempering::Find(Agent));
-        TestTrue(TEXT("Recovery normal after 90 ticks"),!Blend.IsActive() && Blend.WalkWeight==1);
+        TestTrue(TEXT("Recovery normal after 90 ticks"),Weights.Pelvis==1 && Weights.Left==1 && Weights.Right==1);
         TestEqual(TEXT("Completed features retire their clocks"),Active.Num(),Before);
         ProphecyAttackRecovery::Remove(Agent);
     }

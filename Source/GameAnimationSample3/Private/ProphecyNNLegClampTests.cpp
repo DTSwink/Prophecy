@@ -1,5 +1,6 @@
 #include "ProphecyNNLegClamps.h"
 #include "ProphecyNNPoseTypes.h"
+#include "ProphecyNNPresentation.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
@@ -83,5 +84,67 @@ bool FProphecyNNLegClampsTest::RunTest(const FString&)
 	}
 	FProphecyNNPoseStore::ClearAgentPose(Id);
 	return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyKickNNLeewayTest,"Prophecy.NN.PhysicalTargets.KickLeewayInheritance",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyKickNNLeewayTest::RunTest(const FString&)
+{
+    constexpr int32 Id=1900000043;
+    const TArray<FName> Names={TEXT("calf_r"),TEXT("foot_r"),TEXT("ball_r")};
+    const FVector Reference(40,0,0);
+    const FTransform Calf(FRotator(23,47,-16),FVector(17,-35,62));
+    const FVector Axis=Calf.GetRotation().GetAxisX(),End=Calf.TransformPosition(Reference),ToeOffset(6,9,3);
+    const TArray<FTransform> Local={Calf,FTransform(FVector(50,0,0)),FTransform(ToeOffset)};
+    const TArray<FTransform> Raw={Calf,FTransform(FRotator(14,-17,9),End+Axis*18),FTransform(End+Axis*18+ToeOffset)};
+    FProphecyNNPoseSnapshot Snapshot;
+    // Unclamped attack and hard-clamped locomotion both inherit the same active allowance.
+    for (bool Rigid:{false,true})
+    {
+        FProphecyNNPoseStore::SetAgentLocalPose(Id,Names,Local,Raw,Raw,FTransform::Identity,FTransform::Identity,0,false,Rigid);
+        FProphecyNNPoseStore::GetAgentLocalPose(Id,Snapshot);
+        ProphecyNNPresentation::SetKickFootExtension(Id,10,Reference,Reference);
+        auto Pose=Raw;
+        FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+        TestTrue(TEXT("Mode switch retains 10 cm allowance"),Pose[1].GetTranslation().Equals(End+Axis*10,1e-8));
+        TestTrue(TEXT("Calf and foot rotations unchanged"),Pose[0].Equals(Raw[0],0) && Pose[1].GetRotation().Equals(Raw[1].GetRotation(),0));
+        TestTrue(TEXT("Toe follows foot"),(Pose[2].GetTranslation()-Pose[1].GetTranslation()).Equals(ToeOffset,1e-8));
+        // No new 30 Hz pose: reducing the 60 Hz allowance must take effect immediately.
+        ProphecyNNPresentation::SetKickFootExtension(Id,5,Reference,Reference);
+        Pose=Raw; FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+        TestTrue(TEXT("In-between tick uses live physical limit"),Pose[1].GetTranslation().Equals(End+Axis*5,1e-8));
+        Pose=Raw; Pose[1].SetTranslation(End-Axis*5+Calf.GetRotation().GetAxisY()*7);
+        FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+        TestTrue(TEXT("No compression or lateral freedom added"),Pose[1].GetTranslation().Equals(End,1e-8));
+        // Regression: reconstruction may already have shortened the input. The
+        // return preserves actual outgoing stretch rather than only capping it.
+        ProphecyNNPresentation::SetKickFootReturn(Id,true,FVector2D(1,4));
+        Pose=Raw; Pose[1].SetTranslation(End); Pose[2].SetTranslation(End+ToeOffset);
+        FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+        TestTrue(TEXT("Return restores captured right extension"),Pose[1].GetTranslation().Equals(End+Axis*4,1e-8));
+        TestTrue(TEXT("Return keeps toe offset and foot rotation"),
+            (Pose[2].GetTranslation()-Pose[1].GetTranslation()).Equals(ToeOffset,1e-8)
+            && Pose[1].GetRotation().Equals(Raw[1].GetRotation(),0));
+        ProphecyNNPresentation::SetKickFootReturn(Id,true,FVector2D(.5,2));
+        Pose=Raw; ProphecyNNPresentation::ApplyKickFootExtension(Id,Names,Pose);
+        TestTrue(TEXT("Publication shares return length"),Pose[1].GetTranslation().Equals(End+Axis*2,1e-8));
+        ProphecyNNPresentation::SetKickFootReturn(Id,false,FVector2D::ZeroVector);
+        Pose=Raw; FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+        TestTrue(TEXT("New attack can choose extension again"),Pose[1].GetTranslation().Equals(End+Axis*5,1e-8));
+        ProphecyNNPresentation::SetKickFootExtension(Id,0,Reference,Reference);
+        FProphecyNNPoseStore::GetAgentLocalPose(Id,Snapshot);
+        Pose=Raw; FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+        TestTrue(TEXT("Zero restores exact authored attachment or disabled baseline"),Pose[1].GetTranslation().Equals(Rigid?End:Raw[1].GetTranslation(),1e-8));
+        TestFalse(TEXT("Completed return removes NN override"),ProphecyNNPresentation::ApplyKickFootExtension(Id,Names,Pose));
+    }
+    FProphecyNNPoseStore::SetAgentLocalPose(Id,Names,Local,Raw,Raw,FTransform::Identity,FTransform::Identity,1,false,true,0,FVector2D(30,30));
+    ProphecyNNPresentation::SetKickFootExtension(Id,10,Reference,Reference);
+    ProphecyNNPresentation::SetKickFootExtension(Id,0,Reference,Reference);
+    FProphecyNNPoseStore::GetAgentLocalPose(Id,Snapshot);
+    TestTrue(TEXT("Retirement preserves a custom baseline length"),Snapshot.LocalTransforms[1].GetTranslation().Equals(FVector(30,0,0),1e-8));
+    ProphecyNNPresentation::SetKickFootExtension(Id,10,Reference,Reference);
+    FProphecyNNPoseStore::ClearAgentPose(Id);
+    auto Pose=Raw;
+    TestFalse(TEXT("Pose teardown removes override"),ProphecyNNPresentation::ApplyKickFootExtension(Id,Names,Pose));
+    return true;
 }
 #endif

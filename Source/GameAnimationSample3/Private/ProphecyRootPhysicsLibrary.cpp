@@ -6,6 +6,8 @@
 #include "ProphecyNNLocomotionManager.h"
 #include "EngineUtils.h"
 #include "ProphecyNNPolicyBlend.h"
+#include "ProphecyBlendClock.h"
+#include "Engine/World.h"
 
 namespace ProphecyAutoRun
 {
@@ -142,6 +144,87 @@ bool UProphecyRootPhysicsLibrary::GetContinuousLocomotionRootWindow(AProphecyAge
 
 namespace ProphecyRootBalance
 {
+struct FKickDurations
+{
+    double Hold=0.,Fade=1.;
+    double End() const { return Hold+Fade; }
+    double Weight(double Elapsed) const
+    {
+        if (Elapsed+1.e-8>=End()) return 0.;
+        if (Elapsed<=Hold) return 1.;
+        const double Alpha=FMath::Clamp((Elapsed-Hold)/Fade,0.,1.);
+        return 1.-Alpha*Alpha*(3.-2.*Alpha);
+    }
+};
+struct FKickReturn { FKickDurations Duration;double Elapsed=0.; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FKickDurations> KickSettings;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FKickReturn> KickReturns;
+static FDelegateHandle KickCleanup;
+static void RefreshKickCleanup()
+{
+    if (KickSettings.IsEmpty() && KickReturns.IsEmpty())
+    { FWorldDelegates::OnWorldCleanup.Remove(KickCleanup);KickCleanup.Reset(); }
+    else if (!KickCleanup.IsValid()) KickCleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
+    {
+        for (auto It=KickSettings.CreateIterator();It;++It)
+            if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+        for (auto It=KickReturns.CreateIterator();It;++It)
+            if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+        RefreshKickCleanup();
+    });
+}
+void CancelKickException(const AProphecyAgent* Agent)
+{
+    if (!KickReturns.IsEmpty()) KickReturns.Remove(Agent);
+    ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::KickBalance);
+    RefreshKickCleanup();
+}
+void BeginKickException(const AProphecyAgent* Agent,FName Attack,bool ReturningToLocomotion)
+{
+    CancelKickException(Agent);
+    if (!ReturningToLocomotion || (Attack!=TEXT("kickl") && Attack!=TEXT("kickr"))) return;
+    const FKickDurations* Config=KickSettings.IsEmpty() ? nullptr : KickSettings.Find(Agent);
+    if (!Config || Config->End()<=0.) return;
+    KickReturns.Add(Agent,FKickReturn{*Config});
+    ProphecyBlendClock::Start(Agent,ProphecyBlendClock::EKind::KickBalance,Config->End());
+    RefreshKickCleanup();
+}
+static double KickWeight(const AProphecyAgent* Agent)
+{
+    auto* State=KickReturns.IsEmpty() ? nullptr : KickReturns.Find(Agent);
+    if (!State) return 0.;
+    State->Elapsed+=ProphecyBlendClock::Consume(Agent,ProphecyBlendClock::EKind::KickBalance);
+    const double Weight=State->Duration.Weight(State->Elapsed);
+    if (Weight<=0.) CancelKickException(Agent);
+    return Weight;
+}
+static bool GetFlatPelvisTarget(const AProphecyAgent* Agent,FVector& Target)
+{
+    static const FName PelvisBone(TEXT("pelvis"));
+    FTransform Body;FVector Linear,Angular;bool Simulating=false;
+    if (Agent->GetPhysicalBodyState(PelvisBone,Body,Linear,Angular,Simulating) && Simulating)
+        Target=Body.GetLocation();
+    else
+    {
+        const auto* Mesh=Agent->GetPoseReferenceMesh();
+        if (!Mesh || Mesh->GetBoneIndex(PelvisBone)==INDEX_NONE) return false;
+        Target=Mesh->GetSocketLocation(PelvisBone);
+    }
+    if (Target.ContainsNaN()) return false;
+    Target.Z=Agent->GetRootLowPoint().Z;return true;
+}
+bool GetTarget(const AProphecyAgent* Agent,FVector& Target)
+{
+    if (!IsValid(Agent)) return false;
+    const double Weight=KickWeight(Agent);
+    if (Weight<=0.) return GetFlatFeetTarget(Agent,Target);
+    FVector Pelvis;
+    if (!GetFlatPelvisTarget(Agent,Pelvis)) return GetFlatFeetTarget(Agent,Target);
+    if (Weight>=1.) { Target=Pelvis;return true; }
+    FVector Feet;
+    if (!GetFlatFeetTarget(Agent,Feet)) { Target=Pelvis;return true; }
+    Target=FMath::Lerp(Feet,Pelvis,Weight);return true;
+}
 // New native storage identity: Live Coding cannot resize retained TMap elements.
 // If this layout changes again, migrate/version its storage or load a normal build.
 struct FStateWithMagicLimits
@@ -153,9 +236,13 @@ struct FStateWithMagicLimits
     bool bActive = false;
 };
 static TMap<TWeakObjectPtr<const AProphecyAgent>, FStateWithMagicLimits> StatesWithMagicLimits;
-void Remove(const AProphecyAgent* Agent) { StatesWithMagicLimits.Remove(Agent); }
+void Remove(const AProphecyAgent* Agent)
+{
+    StatesWithMagicLimits.Remove(Agent);KickSettings.Remove(Agent);CancelKickException(Agent);
+}
 void ResetMotion(const AProphecyAgent* Agent)
 {
+    CancelKickException(Agent);
     if (auto* S = StatesWithMagicLimits.Find(Agent))
     { S->bActive = false; S->FlatMidpoint = FVector::ZeroVector; S->Spring.target = {}; }
 }
@@ -176,7 +263,7 @@ const prophecy::sim::RootBalanceSpring* Prepare(const AProphecyAgent* Agent, con
     if (const auto* Magic = ProphecyRootMagic::Find(Agent))
         if (Magic->Linear.SizeSquared() > State->MagicLinearSpeedSquared
             || FMath::Abs(Magic->Yaw) > State->MagicAngularSpeed) return nullptr;
-    if (!GetFlatFeetTarget(Agent,State->FlatMidpoint)) return nullptr;
+    if (!GetTarget(Agent,State->FlatMidpoint)) return nullptr;
     State->Spring.target = { State->FlatMidpoint.X * .01, State->FlatMidpoint.Y * .01 };
     State->bActive = true;
     return &State->Spring;
@@ -208,6 +295,19 @@ bool GetFlatFeetTarget(const AProphecyAgent* Agent,FVector& Target)
 }
 }
 
+bool UProphecyRootPhysicsLibrary::SetKickSelfBalancingExceptionDurations(AProphecyAgent* Agent,
+    float HoldDurationSeconds,float FadeDurationSeconds)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
+        || !FMath::IsFinite(HoldDurationSeconds) || HoldDurationSeconds<0.f
+        || !FMath::IsFinite(FadeDurationSeconds) || FadeDurationSeconds<0.f) return false;
+    using namespace ProphecyRootBalance;
+    const FKickDurations Config{HoldDurationSeconds,FadeDurationSeconds};
+    if (Config.End()<=0.) { KickSettings.Remove(Agent);CancelKickException(Agent); }
+    else { KickSettings.Add(Agent,Config);RefreshKickCleanup(); }
+    return true;
+}
+
 bool UProphecyRootPhysicsLibrary::AddRootAngularImpulse(AProphecyAgent* Agent,
     FVector WorldAngularImpulseRadians, bool bVelocityChange)
 {
@@ -232,7 +332,7 @@ bool UProphecyRootPhysicsLibrary::SetRootSelfBalancing(AProphecyAgent* Agent, bo
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()) return false;
     using namespace ProphecyRootBalance;
-    if (!bEnabled) { Remove(Agent); return true; }
+    if (!bEnabled) { StatesWithMagicLimits.Remove(Agent); return true; }
     for (float Value : {SpeedThresholdCmPerSecond, MoveInputThreshold, SpringFrequencyHz,
         DampingRatio, MaxBalanceSpeedCmPerSecond, ToleranceCm,
         MagicVelocityThresholdCmPerSecond, MagicAngVelocityThresholdDegreesPerSecond})
@@ -262,6 +362,55 @@ void UProphecyRootPhysicsLibrary::GetRootSelfBalancingState(AProphecyAgent* Agen
 }
 
 #if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyKickBalanceTest,"Prophecy.Root.KickSelfBalancingException",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyKickBalanceTest::RunTest(const FString&)
+{
+    using namespace ProphecyRootBalance;
+    const FKickDurations Schedule{.5,1.};
+    TestEqual(TEXT("Starts below pelvis"),Schedule.Weight(0),1.);
+    TestEqual(TEXT("Holds below pelvis through 30 ticks"),Schedule.Weight(.5),1.);
+    TestNearlyEqual(TEXT("Halfway back after 30 hold plus 30 fade ticks"),Schedule.Weight(1.),.5,1.e-8);
+    TestEqual(TEXT("Normal feet target after 90 ticks"),Schedule.Weight(1.5),0.);
+    TestEqual(TEXT("Zero fade holds then restores immediately"),FKickDurations{1.,0.}.Weight(1.),0.);
+    TestEqual(TEXT("Zero hold starts at pelvis"),FKickDurations{0.,1.}.Weight(0),1.);
+    TestEqual(TEXT("Zero durations bypass entirely"),FKickDurations{0.,0.}.Weight(0),0.);
+    UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
+    AProphecyAgent* Agent=World ? World->SpawnActor<AProphecyAgent>() : nullptr;
+    if (!Agent) { if (World) World->DestroyWorld(false);return false; }
+    BeginKickException(Agent,TEXT("kickl"),true);
+    TestFalse(TEXT("Unconfigured agent stays on normal rule"),KickReturns.Contains(Agent));
+    TestTrue(TEXT("Configure durations"),UProphecyRootPhysicsLibrary::SetKickSelfBalancingExceptionDurations(Agent,.5f,1.f));
+    for (FName Attack:{FName(TEXT("kickl")),FName(TEXT("kickr"))})
+    {
+        BeginKickException(Agent,Attack,true);
+        TestEqual(TEXT("Either kick starts at pelvis weight 1"),KickWeight(Agent),1.);
+        TestEqual(TEXT("Repeated target read does not advance"),KickWeight(Agent),1.);
+        KickReturns.FindChecked(Agent).Elapsed=1.;
+        TestNearlyEqual(TEXT("Active fade blends toward normal"),KickWeight(Agent),.5,1.e-8);
+        KickReturns.FindChecked(Agent).Elapsed=1.5;
+        TestEqual(TEXT("Expired return uses normal target"),KickWeight(Agent),0.);
+        TestFalse(TEXT("Completed return retires state"),KickReturns.Contains(Agent));
+    }
+    BeginKickException(Agent,TEXT("hookl"),true);
+    TestFalse(TEXT("Other attacks do not activate exception"),KickReturns.Contains(Agent));
+    BeginKickException(Agent,TEXT("kickl"),false);
+    TestFalse(TEXT("Replacement without locomotion does not activate"),KickReturns.Contains(Agent));
+    UProphecyRootPhysicsLibrary::SetRootSelfBalancing(Agent,false);
+    TestTrue(TEXT("Disabling spring preserves separate return configuration"),KickSettings.Contains(Agent));
+    BeginKickException(Agent,TEXT("kickr"),true);ResetMotion(Agent);
+    TestFalse(TEXT("Reset cancels active kick return"),KickReturns.Contains(Agent));
+    TestTrue(TEXT("Reset preserves configured durations"),KickSettings.Contains(Agent));
+    BeginKickException(Agent,TEXT("kickr"),true);
+    UProphecyRootPhysicsLibrary::SetKickSelfBalancingExceptionDurations(Agent,0,0);
+    TestFalse(TEXT("Zero durations remove settings"),KickSettings.Contains(Agent));
+    TestFalse(TEXT("Zero durations cancel current return"),KickReturns.Contains(Agent));
+    TestFalse(TEXT("Reject negative duration"),UProphecyRootPhysicsLibrary::SetKickSelfBalancingExceptionDurations(Agent,-1,1));
+    Remove(Agent);World->DestroyWorld(false);
+    return !HasAnyErrors();
+}
+
 #include "Misc/AutomationTest.h"
 #include "ProphecyContinuousRootWindow.h"
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyContinuousRootWindowTest,

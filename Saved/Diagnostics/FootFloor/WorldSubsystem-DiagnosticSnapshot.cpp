@@ -1,0 +1,2161 @@
+#include "ProphecyJoltWorldSubsystem.h"
+
+#include "Components/PrimitiveComponent.h"
+#include "Engine/World.h"
+#include "HAL/PlatformTime.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "ProphecyJoltConversions.h"
+#include "ProphecyJoltBody.h"
+#include "ProphecyJoltStaticBody.h"
+#include "ProphecyJoltJointConversion.h"
+#include "ProphecyJoltRig.h"
+#include "ProphecyJoltVelocityServo.h"
+#include "Templates/UnrealTemplate.h"
+#include "UObject/WeakObjectPtr.h"
+
+#include <atomic>
+
+THIRD_PARTY_INCLUDES_START
+#include <Jolt/Jolt.h>
+#include <Jolt/Core/Factory.h>
+#include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Core/TempAllocator.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/BodyLock.h>
+#include <Jolt/Physics/Body/BodyLockMulti.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/GroupFilterTable.h>
+#include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/SimShapeFilter.h>
+#include <Jolt/Physics/Constraints/FixedConstraint.h>
+#include <Jolt/Physics/Constraints/SixDOFConstraint.h>
+#include <Jolt/Physics/PhysicsSettings.h>
+#include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/RegisterTypes.h>
+THIRD_PARTY_INCLUDES_END
+
+DEFINE_LOG_CATEGORY_STATIC(LogProphecyJoltWorld, Log, All);
+
+namespace ProphecyJolt::WorldPrivate
+{
+std::atomic<int32> LiveSimulations{0};
+// Opt-in investigation controls, sampled only when creating a new world. Negative retains Jolt's defaults.
+static TAutoConsoleVariable<float> DiagnosticBounceThresholdCm(TEXT("Prophecy.Jolt.Diagnostic.BounceThresholdCm"), -1.0f,
+    TEXT("New-world diagnostic restitution velocity threshold in cm/s; -1 retains the native default."), ECVF_Cheat);
+static TAutoConsoleVariable<float> DiagnosticSpeculativeDistanceCm(TEXT("Prophecy.Jolt.Diagnostic.SpeculativeDistanceCm"), -1.0f,
+    TEXT("New-world diagnostic speculative contact distance in cm; -1 retains the native default."), ECVF_Cheat);
+static TAutoConsoleVariable<float> DiagnosticPenetrationSlopCm(TEXT("Prophecy.Jolt.Diagnostic.PenetrationSlopCm"), -1.0f,
+    TEXT("New-world diagnostic penetration slop in cm; -1 retains the native default."), ECVF_Cheat);
+static_assert(sizeof(JPH::ObjectLayer) == sizeof(uint16), "Review the collision profile capacity for a changed Jolt ABI.");
+static_assert(JPH::Body::cProphecyNumericalSafetyVersion == 1, "Rebuild the reviewed numerical-safety Jolt dependency.");
+
+FProphecyJoltWorldStatus Fail(EProphecyJoltWorldResult Code, const TCHAR* Message)
+{
+    return { Code, Message };
+}
+
+bool Finite(const FVector& Value)
+{
+    return FMath::IsFinite(Value.X) && FMath::IsFinite(Value.Y) && FMath::IsFinite(Value.Z);
+}
+
+bool FitsFloat(double Value)
+{
+    return FMath::IsFinite(Value) && FMath::IsFinite(static_cast<float>(Value));
+}
+
+bool FitsFloatVector(const FVector& Value, double Scale)
+{
+    return FitsFloat(Value.X * Scale) && FitsFloat(Value.Y * Scale) && FitsFloat(Value.Z * Scale);
+}
+
+struct FCollisionProfile
+{
+    bool bStatic = false;
+    uint8 ObjectChannel = 0;
+    uint32 BlockMask = 0;
+    uint32 ChannelBit() const { return uint32(1) << ObjectChannel; }
+    uint64 Key() const { return (uint64(BlockMask) << 6) | (uint64(ObjectChannel) << 1) | uint64(bStatic); }
+};
+
+bool MakeCollisionProfile(bool bStatic, ECollisionChannel ObjectChannel,
+    const FCollisionResponseContainer& Responses, FCollisionProfile& Out)
+{
+    if (static_cast<uint32>(ObjectChannel) >= 32) return false;
+    Out = { bStatic, static_cast<uint8>(ObjectChannel), 0 };
+    for (uint32 Channel = 0; Channel < 32; ++Channel)
+    {
+        const ECollisionResponse Response = Responses.GetResponse(static_cast<ECollisionChannel>(Channel));
+        if (Response == ECR_Block) Out.BlockMask |= uint32(1) << Channel;
+        else if (Response != ECR_Ignore && Response != ECR_Overlap) return false;
+    }
+    return true;
+}
+
+// Mutated only by game-thread creation outside Update. Worker callbacks read immutable indexed rows,
+// never the GT-only hash map, adapter handles, source components, or other UObject state.
+class FCollisionProfiles final
+{
+public:
+    explicit FCollisionProfiles(uint32 InCapacity) : Capacity(InCapacity) {}
+
+    FProphecyJoltWorldStatus Intern(TConstArrayView<FCollisionProfile> Requested, TArray<JPH::ObjectLayer>& OutLayers)
+    {
+        OutLayers.Reset();
+        TSet<uint64> NewKeys;
+        for (const FCollisionProfile& Profile : Requested)
+            if (!LayersByKey.Contains(Profile.Key())) NewKeys.Add(Profile.Key());
+        if (uint64(Profiles.Num()) + uint64(NewKeys.Num()) > Capacity)
+            return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Complete request exceeds the interned collision-profile capacity; no body was created."));
+        OutLayers.Reserve(Requested.Num());
+        for (const FCollisionProfile& Profile : Requested)
+        {
+            JPH::ObjectLayer Layer;
+            if (const JPH::ObjectLayer* Existing = LayersByKey.Find(Profile.Key())) Layer = *Existing;
+            else
+            {
+                Layer = static_cast<JPH::ObjectLayer>(Profiles.Num());
+                check(Layer != JPH::cObjectLayerInvalid);
+                Profiles.Add(Profile);
+                LayersByKey.Add(Profile.Key(), Layer);
+                // A conservative union can retain channels from removed bodies or failed creation.
+                // It may allow extra traversal, but can never hide a subsequently added channel.
+                UsedChannels[Profile.bStatic ? 0 : 1] |= Profile.ChannelBit();
+            }
+            OutLayers.Add(Layer);
+        }
+        return {};
+    }
+
+    const FCollisionProfile& Get(JPH::ObjectLayer Layer) const { check(Profiles.IsValidIndex(Layer)); return Profiles[Layer]; }
+    uint32 GetUsedChannels(uint8 BroadPhase) const { check(BroadPhase < 2); return UsedChannels[BroadPhase]; }
+    uint32 Num() const { return static_cast<uint32>(Profiles.Num()); }
+private:
+    uint32 Capacity;
+    TArray<FCollisionProfile> Profiles;
+    TMap<uint64, JPH::ObjectLayer> LayersByKey;
+    uint32 UsedChannels[2] = {};
+};
+
+class FBroadPhaseLayers final : public JPH::BroadPhaseLayerInterface
+{
+public:
+    explicit FBroadPhaseLayers(const FCollisionProfiles& InProfiles) : Profiles(InProfiles) {}
+    virtual JPH::uint GetNumBroadPhaseLayers() const override { return 2; }
+    virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer Layer) const override
+    {
+        return JPH::BroadPhaseLayer(Profiles.Get(Layer).bStatic ? 0 : 1);
+    }
+#if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
+    virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer Layer) const override
+    {
+        return Layer == JPH::BroadPhaseLayer(0) ? "FixtureStatic" : "FixtureMoving";
+    }
+#endif
+private:
+    const FCollisionProfiles& Profiles;
+};
+
+class FObjectPairs final : public JPH::ObjectLayerPairFilter
+{
+public:
+    explicit FObjectPairs(const FCollisionProfiles& InProfiles) : Profiles(InProfiles) {}
+    virtual bool ShouldCollide(JPH::ObjectLayer A, JPH::ObjectLayer B) const override
+    {
+        const FCollisionProfile& First = Profiles.Get(A);
+        const FCollisionProfile& Second = Profiles.Get(B);
+        return !(First.bStatic && Second.bStatic)
+            && (First.BlockMask & Second.ChannelBit()) != 0
+            && (Second.BlockMask & First.ChannelBit()) != 0;
+    }
+private:
+    const FCollisionProfiles& Profiles;
+};
+
+class FObjectVsBroadPhase final : public JPH::ObjectVsBroadPhaseLayerFilter
+{
+public:
+    explicit FObjectVsBroadPhase(const FCollisionProfiles& InProfiles) : Profiles(InProfiles) {}
+    virtual bool ShouldCollide(JPH::ObjectLayer Object, JPH::BroadPhaseLayer BroadPhase) const override
+    {
+        const FCollisionProfile& Profile = Profiles.Get(Object);
+        const uint8 Tree = static_cast<JPH::BroadPhaseLayer::Type>(BroadPhase);
+        return !(Profile.bStatic && Tree == 0) && (Profile.BlockMask & Profiles.GetUsedChannels(Tree)) != 0;
+    }
+private:
+    const FCollisionProfiles& Profiles;
+};
+
+// Jolt guarantees ordered stack allocations/frees through job dependencies, even across worker threads.
+// No fallback hides insufficient capacity. Jolt's allocator aborts on exhaustion; the outer runner must
+// treat process failure as failure, and these counters cannot make that path recoverable.
+class FMeasuredTempAllocator final : public JPH::TempAllocator
+{
+public:
+    explicit FMeasuredTempAllocator(uint32 Bytes) : Storage(Bytes) {}
+    virtual void* Allocate(JPH::uint Bytes) override
+    {
+        if (!Storage.CanAllocate(Bytes))
+        {
+            UE_LOG(LogProphecyJoltWorld, Error, TEXT("Jolt fixed temp capacity exhausted: requested %u, used %llu, capacity %llu bytes. Jolt will abort."),
+                Bytes, static_cast<uint64>(Storage.GetUsage()), static_cast<uint64>(Storage.GetSize()));
+        }
+        void* Result = Storage.Allocate(Bytes);
+        Peak = FMath::Max(Peak, static_cast<uint64>(Storage.GetUsage()));
+        ++AllocationCount;
+        return Result;
+    }
+    virtual void Free(void* Address, JPH::uint Bytes) override { Storage.Free(Address, Bytes); }
+    uint64 GetUsage() const { return static_cast<uint64>(Storage.GetUsage()); }
+    uint64 Peak = 0;
+    uint64 AllocationCount = 0;
+private:
+    JPH::TempAllocatorImpl Storage;
+};
+
+struct FBodyIdentity
+{
+    int32 Slot = INDEX_NONE;
+    uint64 Generation = 0;
+    bool operator==(const FBodyIdentity& Other) const { return Slot == Other.Slot && Generation == Other.Generation; }
+    friend uint32 GetTypeHash(const FBodyIdentity& Key) { return HashCombine(::GetTypeHash(Key.Slot), ::GetTypeHash(Key.Generation)); }
+};
+
+struct FSuppressionKey
+{
+    FBodyIdentity A, B;
+    bool operator==(const FSuppressionKey& Other) const { return A == Other.A && B == Other.B; }
+    friend uint32 GetTypeHash(const FSuppressionKey& Key) { return HashCombine(GetTypeHash(Key.A), GetTypeHash(Key.B)); }
+};
+
+bool SameBody(const FProphecyJoltBodyHandle& A, const FProphecyJoltBodyHandle& B)
+{
+    return A.WorldLifetime == B.WorldLifetime && A.Slot == B.Slot && A.Generation == B.Generation;
+}
+
+uint64 NativePairKey(const JPH::BodyID& A, const JPH::BodyID& B)
+{
+    const uint32 First = A.GetIndexAndSequenceNumber(), Second = B.GetIndexAndSequenceNumber();
+    return (uint64(FMath::Min(First, Second)) << 32) | uint64(FMath::Max(First, Second));
+}
+
+// Immutable throughout synchronous Update. Only this compact numeric array is visible to workers.
+// The separate GT ownership keys include full adapter generations; reused native IDs inherit no veto.
+class FScopedPairFilter final : public JPH::SimShapeFilter
+{
+public:
+    TArray<uint64> SortedPairs;
+    virtual bool ShouldCollide(const JPH::Body& A, const JPH::Shape*, const JPH::SubShapeID&,
+        const JPH::Body& B, const JPH::Shape*, const JPH::SubShapeID&) const override
+    {
+        const uint64 Key = NativePairKey(A.GetID(), B.GetID());
+        int32 First = 0, End = SortedPairs.Num();
+        while (First < End)
+        {
+            const int32 Middle = First + (End - First) / 2;
+            if (SortedPairs[Middle] < Key) First = Middle + 1;
+            else End = Middle;
+        }
+        return First == SortedPairs.Num() || SortedPairs[First] != Key;
+    }
+};
+
+struct FSuppressionRecord
+{
+    uint64 NativeKey = 0;
+    uint32 References = 0;
+};
+
+struct FJointRecord
+{
+    FProphecyJoltJointSettings Settings;
+    JPH::Ref<JPH::TwoBodyConstraint> Constraint;
+    TArray<FSuppressionKey> Suppression;
+};
+
+struct FJointSlot
+{
+    uint64 Generation = 1;
+    TUniquePtr<FJointRecord> Record;
+};
+
+bool RigidJointFrame(const FTransform& Frame)
+{
+    return Frame.IsValid() && Frame.GetScale3D().Equals(FVector::OneVector, 1.0e-6)
+        && FitsFloatVector(Frame.GetTranslation(), 0.01);
+}
+
+FProphecyJoltWorldStatus FillHardLimits(const FProphecyJoltJointSettings& In, JPH::SixDOFConstraintSettings& Out)
+{
+    if (In.SwingGeometry != EProphecyJoltSwingGeometry::Cone && In.SwingGeometry != EProphecyJoltSwingGeometry::Pyramid)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Unknown stock swing geometry."));
+    Out.mSwingType = In.SwingGeometry == EProphecyJoltSwingGeometry::Cone ? JPH::ESwingType::Cone : JPH::ESwingType::Pyramid;
+    for (int32 Index = 0; Index < 6; ++Index)
+    {
+        const bool bAngular = Index >= 3;
+        const auto& Limit = bAngular ? In.Rotation[Index - 3] : In.Translation[Index];
+        const auto Axis = static_cast<JPH::SixDOFConstraintSettings::EAxis>(Index);
+        // Even unused fields must be finite; Locked/Free never interpret a nonzero stored interval.
+        if (!FMath::IsFinite(Limit.Minimum) || !FMath::IsFinite(Limit.Maximum))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Joint limits must be finite."));
+        if (Limit.Motion == EProphecyJoltAxisMotion::Locked) { Out.MakeFixedAxis(Axis); continue; }
+        if (Limit.Motion == EProphecyJoltAxisMotion::Free) { Out.MakeFreeAxis(Axis); continue; }
+        const double Scale = bAngular ? 1.0 : 0.01;
+        const float Minimum = static_cast<float>(Limit.Minimum * Scale), Maximum = static_cast<float>(Limit.Maximum * Scale);
+        if (Limit.Motion != EProphecyJoltAxisMotion::Limited || !FMath::IsFinite(Minimum) || !FMath::IsFinite(Maximum)
+            || Minimum >= Maximum || Minimum == -FLT_MAX || Maximum == FLT_MAX)
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Limited axis requires an ordered, representable interval, excluding native free-axis sentinels."));
+        if (bAngular)
+        {
+            if (Limit.Minimum < -UE_DOUBLE_PI || Limit.Maximum > UE_DOUBLE_PI)
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Angular limits must be within [-pi, pi] radians."));
+            if (Index >= 4 && In.SwingGeometry == EProphecyJoltSwingGeometry::Cone
+                && (Limit.Minimum != -Limit.Maximum || Maximum <= 0.0f))
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Cone swing requires exactly symmetric positive half ranges; use Pyramid for asymmetric swing."));
+            const float Locked = JPH::DegreesToRadians(0.5f), Free = JPH::DegreesToRadians(179.5f);
+            if ((Minimum > -Locked && Maximum < Locked) || (Minimum < -Free && Maximum > Free))
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Limited angular range enters a stock internal Locked/Free threshold; specify that mode explicitly."));
+        }
+        Out.SetLimitedAxis(Axis, Minimum, Maximum);
+    }
+    return {};
+}
+
+struct FBodySlot
+{
+    JPH::BodyID Body;
+    uint64 Generation = 1;
+    TWeakObjectPtr<UObject> AssociatedObject;
+    FProphecyJoltRigHandle OwnerRig;
+    TArray<int32> IncidentJoints;
+    TSet<FSuppressionKey> SuppressionPairs;
+};
+
+bool SameRig(const FProphecyJoltRigHandle& A, const FProphecyJoltRigHandle& B)
+{
+    return A.WorldLifetime == B.WorldLifetime && A.Slot == B.Slot && A.Generation == B.Generation;
+}
+
+uint64 RigPairKey(int32 A, int32 B)
+{
+    return (uint64(FMath::Min(A, B)) << 32) | uint32(FMath::Max(A, B));
+}
+
+struct FRigRecord
+{
+    FRigRecord() { ServoState.DenominatorSeconds = 1.0f / 60.0f; }
+    FGuid CaptureId;
+    bool bCommitted = false;
+    TArray<FProphecyJoltBodyHandle> Handles;
+    TArray<JPH::Ref<JPH::TwoBodyConstraint>> Constraints;
+    TArray<FProphecyJoltRigJoint> JointDescriptions;
+    TArray<FProphecyJoltRigDisabledPair> DisabledPairs;
+    TSet<uint64> AuthoredDisabledPairKeys;
+    bool bSelfCollisionEnabled = true;
+    TSet<int32> SelfCollisionDisabledBodies;
+    TSet<uint64> SelfCollisionDisabledPairs;
+    JPH::Ref<JPH::GroupFilterTable> CollisionFilter;
+    JPH::CollisionGroup::GroupID CollisionGroupId = JPH::CollisionGroup::cInvalidGroup;
+    TArray<FString> CoverageNotes;
+    TArray<ProphecyJolt::FVelocityServo::FTarget> Targets;
+    TArray<FProphecyJoltBodyHandle> PublishedHandles;
+    FProphecyJoltRigServoState ServoState;
+};
+
+struct FRigSlot
+{
+    uint64 Generation = 1;
+    TUniquePtr<FRigRecord> Record;
+};
+
+struct FServoRange
+{
+    FProphecyJoltRigHandle Rig;
+    int32 Begin = 0;
+    int32 Count = 0;
+};
+}
+
+class FProphecyJoltWorldState final
+{
+public:
+    explicit FProphecyJoltWorldState(const FProphecyJoltWorldSettings& InSettings)
+        : Settings(InSettings), Lifetime(FGuid::NewGuid()), CollisionProfiles(InSettings.MaxCollisionProfiles),
+          BroadPhaseLayers(CollisionProfiles), ObjectPairs(CollisionProfiles), ObjectVsBroadPhase(CollisionProfiles),
+          Temp(InSettings.TempAllocatorBytes)
+    {
+        Physics.Init(Settings.MaxBodies, 0, Settings.MaxBodyPairs, Settings.MaxContactConstraints,
+            BroadPhaseLayers, ObjectVsBroadPhase, ObjectPairs);
+        JPH::PhysicsSettings ContactSettings = Physics.GetPhysicsSettings();
+        const float Bounce = ProphecyJolt::WorldPrivate::DiagnosticBounceThresholdCm.GetValueOnGameThread();
+        const float Speculative = ProphecyJolt::WorldPrivate::DiagnosticSpeculativeDistanceCm.GetValueOnGameThread();
+        const float Slop = ProphecyJolt::WorldPrivate::DiagnosticPenetrationSlopCm.GetValueOnGameThread();
+        if (FMath::IsFinite(Bounce) && Bounce >= 0) ContactSettings.mMinVelocityForRestitution = Bounce * 0.01f;
+        if (FMath::IsFinite(Speculative) && Speculative >= 0) ContactSettings.mSpeculativeContactDistance = Speculative * 0.01f;
+        if (FMath::IsFinite(Slop) && Slop >= 0) ContactSettings.mPenetrationSlop = Slop * 0.01f;
+        Physics.SetPhysicsSettings(ContactSettings);
+        if (Bounce >= 0 || Speculative >= 0 || Slop >= 0)
+            UE_LOG(LogProphecyJoltWorld, Display, TEXT("Contact diagnostic: bounce=%.3f cm/s speculative=%.3f cm slop=%.3f cm"),
+                ContactSettings.mMinVelocityForRestitution * 100, ContactSettings.mSpeculativeContactDistance * 100,
+                ContactSettings.mPenetrationSlop * 100);
+        // Explicit same-binary diagnostic, resolved once for this world's lifetime.
+        bNoLockIdleBodyReads = FParse::Param(FCommandLine::Get(), TEXT("ProphecyJoltNoLockIdleReads"));
+        // The optional sparse filter is installed only while exclusions exist.
+        Physics.SetGravity(ProphecyJolt::Conversions::ToJoltDirection(
+            Settings.GravityCmPerSecondSquared * ProphecyJolt::Conversions::CentimetersToMeters));
+        Jobs = MakeUnique<JPH::JobSystemThreadPool>(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, Settings.WorkerThreads);
+        Physics.AddStepListener(&Servo);
+        ProphecyJolt::WorldPrivate::LiveSimulations.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    ~FProphecyJoltWorldState()
+    {
+        // Update is synchronous, and public methods are game-thread-only. No work can race teardown.
+        Physics.SetContactListener(nullptr);
+        Physics.SetBodyActivationListener(nullptr);
+        Physics.SetSimShapeFilter(nullptr);
+        Physics.RemoveStepListener(&Servo);
+        Servo.Clear();
+        for (int32 Index = 0; Index < Joints.Num(); ++Index) DestroyJointSlot(Index);
+        for (int32 Index = 0; Index < Rigs.Num(); ++Index) DestroyRigSlot(Index);
+        Jobs.Reset();
+        check(Physics.GetConstraints().empty());
+        for (int32 Index = 0; Index < Slots.Num(); ++Index) DestroySlot(Index);
+        check(Temp.GetUsage() == 0);
+        ProphecyJolt::WorldPrivate::LiveSimulations.fetch_sub(1, std::memory_order_relaxed);
+    }
+
+    // Only the GT owner uses this before synchronous Update or after all its jobs joined.
+    // Keep BodyLockRead's full-ID and broadphase checks; select only its mutex policy.
+    const JPH::BodyLockInterface& IdleBodyReadLocks() const
+    {
+        if (bNoLockIdleBodyReads) return Physics.GetBodyLockInterfaceNoLock();
+        return Physics.GetBodyLockInterface();
+    }
+
+    const ProphecyJolt::WorldPrivate::FBodySlot* Find(const FProphecyJoltBodyHandle& Handle) const
+    {
+        if (Handle.WorldLifetime != Lifetime || !Slots.IsValidIndex(Handle.Slot)) return nullptr;
+        const auto& Slot = Slots[Handle.Slot];
+        return !Slot.Body.IsInvalid() && Slot.Generation == Handle.Generation && Handle.Generation != 0 ? &Slot : nullptr;
+    }
+
+    const ProphecyJolt::WorldPrivate::FRigRecord* FindRig(const FProphecyJoltRigHandle& Handle) const
+    {
+        if (Handle.WorldLifetime != Lifetime || !Rigs.IsValidIndex(Handle.Slot) || Handle.Generation == 0) return nullptr;
+        const auto& Slot = Rigs[Handle.Slot];
+        return Slot.Generation == Handle.Generation && Slot.Record && Slot.Record->bCommitted ? Slot.Record.Get() : nullptr;
+    }
+
+    ProphecyJolt::WorldPrivate::FRigRecord* FindRig(const FProphecyJoltRigHandle& Handle)
+    {
+        return const_cast<ProphecyJolt::WorldPrivate::FRigRecord*>(
+            static_cast<const FProphecyJoltWorldState*>(this)->FindRig(Handle));
+    }
+
+    bool HasRigs() const
+    {
+        for (const auto& Slot : Rigs) if (Slot.Record) return true;
+        return false;
+    }
+
+    int32 AllocateRigSlot()
+    {
+        for (int32 Index = 0; Index < Rigs.Num(); ++Index)
+            if (!Rigs[Index].Record && Rigs[Index].Generation < MAX_uint64) return Index;
+        return Rigs.Num() < MAX_int32 ? Rigs.AddDefaulted() : INDEX_NONE;
+    }
+
+    const ProphecyJolt::WorldPrivate::FJointRecord* FindJoint(const FProphecyJoltJointHandle& Handle) const
+    {
+        if (Handle.WorldLifetime != Lifetime || !Joints.IsValidIndex(Handle.Slot) || Handle.Generation == 0) return nullptr;
+        const auto& Slot = Joints[Handle.Slot];
+        return Slot.Generation == Handle.Generation ? Slot.Record.Get() : nullptr;
+    }
+
+    const ProphecyJolt::WorldPrivate::FBodySlot* FindIdentity(const ProphecyJolt::WorldPrivate::FBodyIdentity& Id) const
+    {
+        return Find({ Lifetime, Id.Slot, Id.Generation });
+    }
+
+    FProphecyJoltWorldStatus BuildJoint(const FProphecyJoltJointSettings& In, JPH::Ref<JPH::TwoBodyConstraint>& Out)
+    {
+        using namespace ProphecyJolt::WorldPrivate;
+        using namespace ProphecyJolt::Conversions;
+        Out = nullptr;
+        const FBodySlot* A = Find(In.BodyA), *B = Find(In.BodyB);
+        if (!A || !B) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Both joint endpoints must be live bodies in this world; missing endpoints never mean fixed-to-world."));
+        if (SameBody(In.BodyA, In.BodyB))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Joint endpoints must be distinct."));
+        if (!RigidJointFrame(In.FrameA) || !RigidJointFrame(In.FrameB))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Joint frames must be finite, normalized, unit-scale body-origin-local transforms."));
+        const JPH::BodyID IDs[] = { A->Body, B->Body };
+        JPH::RVec3 PositionA, PositionB;
+        {
+            JPH::BodyLockMultiRead Lock(Physics.GetBodyLockInterface(), IDs, 2);
+            const JPH::Body* First = Lock.GetBody(0), *Second = Lock.GetBody(1);
+            if (!First || !Second) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Native joint endpoint no longer exists."));
+            if (!First->IsDynamic() && !Second->IsDynamic())
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("A stock two-body joint requires at least one dynamic endpoint."));
+            // Jolt's COM frame has the body's orientation. Only the local shape COM translation
+            // is removed; principal inertia orientation must not be applied to a connector frame.
+            PositionA = ToJoltPosition(In.FrameA.GetTranslation()) - JPH::RVec3(First->GetShape()->GetCenterOfMass());
+            PositionB = ToJoltPosition(In.FrameB.GetTranslation()) - JPH::RVec3(Second->GetShape()->GetCenterOfMass());
+        } // Do not nest CreateConstraint's write locks under the read lock.
+        if (!FitsFloatVector(FromJoltPosition(PositionA), 0.01) || !FitsFloatVector(FromJoltPosition(PositionB), 0.01))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("COM-local connector position exceeds finite native local precision."));
+        const JPH::Vec3 XA = ToJoltDirection(In.FrameA.GetRotation().GetAxisX());
+        const JPH::Vec3 YA = ToJoltDirection(In.FrameA.GetRotation().GetAxisY());
+        const JPH::Vec3 XB = ToJoltDirection(In.FrameB.GetRotation().GetAxisX());
+        const JPH::Vec3 YB = ToJoltDirection(In.FrameB.GetRotation().GetAxisY());
+        if (In.Type == EProphecyJoltJointType::Fixed)
+        {
+            for (int32 Index = 0; Index < 3; ++Index)
+                if (In.Translation[Index].Motion != EProphecyJoltAxisMotion::Locked || In.Rotation[Index].Motion != EProphecyJoltAxisMotion::Locked
+                    || In.Translation[Index].Minimum != 0.0 || In.Translation[Index].Maximum != 0.0
+                    || In.Rotation[Index].Minimum != 0.0 || In.Rotation[Index].Maximum != 0.0)
+                    return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Fixed joints require default locked limit fields; select HardSixDOF for axis settings."));
+            JPH::FixedConstraintSettings Fixed;
+            Fixed.mSpace = JPH::EConstraintSpace::LocalToBodyCOM;
+            Fixed.mPoint1 = PositionA; Fixed.mPoint2 = PositionB;
+            Fixed.mAxisX1 = XA; Fixed.mAxisY1 = YA; Fixed.mAxisX2 = XB; Fixed.mAxisY2 = YB;
+            Out = Physics.GetBodyInterface().CreateConstraint(&Fixed, IDs[0], IDs[1]);
+        }
+        else if (In.Type == EProphecyJoltJointType::HardSixDOF)
+        {
+            JPH::SixDOFConstraintSettings Six;
+            const FProphecyJoltWorldStatus Limits = FillHardLimits(In, Six);
+            if (!Limits.IsSuccess()) return Limits;
+            Six.mSpace = JPH::EConstraintSpace::LocalToBodyCOM;
+            Six.mPosition1 = PositionA; Six.mPosition2 = PositionB;
+            Six.mAxisX1 = XA; Six.mAxisY1 = YA; Six.mAxisX2 = XB; Six.mAxisY2 = YB;
+            Out = Physics.GetBodyInterface().CreateConstraint(&Six, IDs[0], IDs[1]);
+        }
+        else return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Unknown generic joint type."));
+        return Out != nullptr ? FProphecyJoltWorldStatus{} : Fail(EProphecyJoltWorldResult::PhysicsFailure, TEXT("Native constraint creation returned null."));
+    }
+
+    FProphecyJoltWorldStatus PrepareSuppression(TConstArrayView<FProphecyJoltBodyPair> Pairs,
+        TArray<ProphecyJolt::WorldPrivate::FSuppressionKey>& Out) const
+    {
+        using namespace ProphecyJolt::WorldPrivate;
+        Out.Reset();
+        TSet<FSuppressionKey> Unique;
+        uint32 NewCount = 0;
+        for (const FProphecyJoltBodyPair& Pair : Pairs)
+        {
+            if (!Find(Pair.A) || !Find(Pair.B))
+                return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Suppression endpoints must be live bodies in this world."));
+            if (SameBody(Pair.A, Pair.B))
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Cannot suppress a body against itself."));
+            FSuppressionKey Key{ { Pair.A.Slot, Pair.A.Generation }, { Pair.B.Slot, Pair.B.Generation } };
+            if (Key.A.Slot > Key.B.Slot) Swap(Key.A, Key.B);
+            if (Unique.Contains(Key)) continue;
+            Unique.Add(Key);
+            if (const FSuppressionRecord* Existing = Suppression.Find(Key))
+            {
+                if (Existing->References == MAX_uint32)
+                    return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Suppression reference count is exhausted."));
+            }
+            else ++NewCount;
+            Out.Add(Key);
+        }
+        if (uint64(Suppression.Num()) + NewCount > Settings.MaxSuppressedBodyPairs)
+            return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Complete suppression request exceeds pair capacity; no joint or filter was changed."));
+        return {};
+    }
+
+    void Wake(const FProphecyJoltBodyHandle& Handle)
+    {
+        if (const auto* Body = Find(Handle))
+        {
+            JPH::BodyInterface& Bodies = Physics.GetBodyInterface();
+            if (Bodies.GetMotionType(Body->Body) == JPH::EMotionType::Dynamic) Bodies.ActivateBody(Body->Body);
+        }
+    }
+
+    FProphecyJoltWorldStatus ApplyRigSelfCollision(ProphecyJolt::WorldPrivate::FRigRecord& Rig,
+        bool bEnabled, TSet<int32> DisabledBodies, TSet<uint64> DisabledPairs)
+    {
+        using namespace ProphecyJolt::WorldPrivate;
+        TArray<JPH::BodyID, TInlineAllocator<64>> BodyIds;
+        BodyIds.Reserve(Rig.Handles.Num());
+        for (const auto& Handle : Rig.Handles)
+        {
+            const auto* Body = Find(Handle);
+            if (!Body) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("A self-collision rig body is no longer owned."));
+            BodyIds.Add(Body->Body);
+        }
+        struct FChange { int32 A; int32 B; bool bEnabled; };
+        TArray<FChange, TInlineAllocator<64>> Changes;
+        TArray<JPH::BodyID, TInlineAllocator<64>> ChangedBodies;
+        for (int32 A = 0; A < Rig.Handles.Num(); ++A)
+            for (int32 B = A + 1; B < Rig.Handles.Num(); ++B)
+            {
+                const uint64 Key = RigPairKey(A, B);
+                const bool bPairEnabled = bEnabled && !DisabledBodies.Contains(A) && !DisabledBodies.Contains(B)
+                    && !DisabledPairs.Contains(Key) && !Rig.AuthoredDisabledPairKeys.Contains(Key);
+                if (Rig.CollisionFilter->IsCollisionEnabled(A, B) != bPairEnabled)
+                {
+                    Changes.Add({ A, B, bPairEnabled });
+                    ChangedBodies.AddUnique(BodyIds[A]);
+                    ChangedBodies.AddUnique(BodyIds[B]);
+                }
+            }
+        // All validation/allocation is complete. This runs only outside Update, so worker reads
+        // cannot race the existing shared filter. Keep all native identities and other filters.
+        Rig.bSelfCollisionEnabled = bEnabled;
+        Rig.SelfCollisionDisabledBodies = MoveTemp(DisabledBodies);
+        Rig.SelfCollisionDisabledPairs = MoveTemp(DisabledPairs);
+        for (const FChange& Change : Changes)
+        {
+            if (Change.bEnabled) Rig.CollisionFilter->EnableCollision(Change.A, Change.B);
+            else Rig.CollisionFilter->DisableCollision(Change.A, Change.B);
+        }
+        auto& Bodies = Physics.GetBodyInterface();
+        // Invalidate both contact and cached-no-contact pairs for either transition; wake to
+        // rediscover sleeping overlaps when re-enabling. An effective no-op does neither.
+        for (const auto& BodyId : ChangedBodies) Bodies.InvalidateContactCache(BodyId);
+        if (!ChangedBodies.IsEmpty()) Bodies.ActivateBodies(ChangedBodies.GetData(), ChangedBodies.Num());
+        return {};
+    }
+
+    void PublishSuppression(const TSet<ProphecyJolt::WorldPrivate::FBodyIdentity>& Changed)
+    {
+        if (Changed.IsEmpty()) return;
+        ScopedPairFilter.SortedPairs.Reset(Suppression.Num());
+        for (const auto& Pair : Suppression) ScopedPairFilter.SortedPairs.Add(Pair.Value.NativeKey);
+        ScopedPairFilter.SortedPairs.Sort();
+        Physics.SetSimShapeFilter(Suppression.IsEmpty() ? nullptr : &ScopedPairFilter);
+        for (const auto& Identity : Changed)
+        {
+            if (const auto* Body = FindIdentity(Identity))
+            {
+                // Both 0->1 and 1->0 transitions must discard existing caches, including cached
+                // pairs with no contacts. Activation ensures a sleeping pair is rediscovered.
+                Physics.GetBodyInterface().InvalidateContactCache(Body->Body);
+                Wake({ Lifetime, Identity.Slot, Identity.Generation });
+            }
+        }
+    }
+
+    void AddSuppression(const TArray<ProphecyJolt::WorldPrivate::FSuppressionKey>& Keys)
+    {
+        using namespace ProphecyJolt::WorldPrivate;
+        TSet<FBodyIdentity> Changed;
+        for (const auto& Key : Keys)
+        {
+            FSuppressionRecord& Pair = Suppression.FindOrAdd(Key);
+            check(Pair.References < MAX_uint32);
+            if (Pair.References++ == 0)
+            {
+                Pair.NativeKey = NativePairKey(FindIdentity(Key.A)->Body, FindIdentity(Key.B)->Body);
+                Slots[Key.A.Slot].SuppressionPairs.Add(Key);
+                Slots[Key.B.Slot].SuppressionPairs.Add(Key);
+                Changed.Add(Key.A); Changed.Add(Key.B);
+            }
+        }
+        PublishSuppression(Changed);
+    }
+
+    void RetireSuppression(const ProphecyJolt::WorldPrivate::FSuppressionKey& Key,
+        TSet<ProphecyJolt::WorldPrivate::FBodyIdentity>& Changed)
+    {
+        if (FindIdentity(Key.A)) Slots[Key.A.Slot].SuppressionPairs.Remove(Key);
+        if (FindIdentity(Key.B)) Slots[Key.B.Slot].SuppressionPairs.Remove(Key);
+        Suppression.Remove(Key);
+        Changed.Add(Key.A); Changed.Add(Key.B);
+    }
+
+    void ReleaseSuppression(const TArray<ProphecyJolt::WorldPrivate::FSuppressionKey>& Keys)
+    {
+        using namespace ProphecyJolt::WorldPrivate;
+        TSet<FBodyIdentity> Changed;
+        for (const auto& Key : Keys)
+        {
+            // A third-party body may already have retired this exact generation's pair.
+            if (FSuppressionRecord* Pair = Suppression.Find(Key))
+            {
+                check(Pair->References > 0);
+                if (--Pair->References == 0) RetireSuppression(Key, Changed);
+            }
+        }
+        PublishSuppression(Changed);
+    }
+
+    void DestroyJointSlot(int32 Index)
+    {
+        if (!Joints.IsValidIndex(Index) || !Joints[Index].Record) return;
+        auto& Record = *Joints[Index].Record;
+        Physics.RemoveConstraint(Record.Constraint.GetPtr());
+        for (const auto& Endpoint : { Record.Settings.BodyA, Record.Settings.BodyB })
+        {
+            if (Find(Endpoint)) Slots[Endpoint.Slot].IncidentJoints.RemoveSingleSwap(Index);
+            Wake(Endpoint);
+        }
+        ReleaseSuppression(Record.Suppression);
+        Joints[Index].Record.Reset();
+        if (Joints[Index].Generation < MAX_uint64) ++Joints[Index].Generation;
+        check(JointCount > 0);
+        --JointCount;
+    }
+
+    FProphecyJoltWorldStatus Add(const JPH::Shape* Shape, const FProphecyJoltFixtureBodySettings& InSettings,
+        FProphecyJoltBodyHandle& OutHandle)
+    {
+        using namespace ProphecyJolt::WorldPrivate;
+        using namespace ProphecyJolt::Conversions;
+        JPH::BodyCreationSettings BodySettings(Shape, ToJoltPosition(InSettings.PositionCm), ToJoltRotation(InSettings.Rotation),
+            InSettings.bDynamic ? JPH::EMotionType::Dynamic : JPH::EMotionType::Static,
+            JPH::cObjectLayerInvalid); // Assigned only after the complete profile preflight below.
+        BodySettings.mFriction = InSettings.Friction;
+        BodySettings.mRestitution = InSettings.Restitution;
+        BodySettings.mLinearDamping = InSettings.LinearDamping;
+        BodySettings.mAngularDamping = InSettings.AngularDamping;
+        BodySettings.mAllowSleeping = InSettings.bAllowSleeping;
+        if (InSettings.bDynamic)
+        {
+            // Validate the actual mass-scaled inertia before entering Jolt's body constructor.
+            JPH::MassProperties Mass = Shape->GetMassProperties();
+            if (!FMath::IsFinite(Mass.mMass) || Mass.mMass <= 0.0f)
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Shape mass overflow/underflow; dimensions are outside this fixture's numeric range."));
+            Mass.ScaleToMass(static_cast<float>(InSettings.MassKg));
+            for (JPH::uint Axis = 0; Axis < 3; ++Axis)
+                if (!FMath::IsFinite(Mass.mInertia(Axis, Axis)) || Mass.mInertia(Axis, Axis) <= 0.0f
+                    || !FMath::IsFinite(1.0f / Mass.mInertia(Axis, Axis)))
+                    return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Scaled shape inertia is not positive and finite."));
+            BodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+            BodySettings.mMassPropertiesOverride = Mass;
+        }
+        FCollisionProfile Profile;
+        if (!MakeCollisionProfile(!InSettings.bDynamic,
+            InSettings.ObjectChannel.Get(InSettings.bDynamic ? ECC_PhysicsBody : ECC_WorldStatic), InSettings.CollisionResponses, Profile))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Invalid fixture object channel or collision response."));
+        TArray<JPH::ObjectLayer> Layers;
+        const FProphecyJoltWorldStatus Interned = CollisionProfiles.Intern(TConstArrayView<FCollisionProfile>(&Profile, 1), Layers);
+        if (!Interned.IsSuccess()) return Interned;
+        BodySettings.mObjectLayer = Layers[0];
+        return AddNative(BodySettings, InSettings.bDynamic ? JPH::EActivation::Activate : JPH::EActivation::DontActivate,
+            InSettings.AssociatedObject, {}, OutHandle);
+    }
+
+    FProphecyJoltWorldStatus AddNative(const JPH::BodyCreationSettings& BodySettings, JPH::EActivation Activation,
+        UObject* Association, const FProphecyJoltRigHandle& OwnerRig, FProphecyJoltBodyHandle& OutHandle)
+    {
+        using namespace ProphecyJolt::WorldPrivate;
+        if (!FMath::IsFinite(BodySettings.mLinearVelocity.LengthSq())
+            || !FMath::IsFinite(BodySettings.mAngularVelocity.LengthSq()))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Initial velocity magnitude exceeds finite native clamping arithmetic."));
+        if (Physics.GetNumBodies() >= Settings.MaxBodies)
+        {
+            ++CreationFailures;
+            return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Configured body capacity reached; no body was created."));
+        }
+        int32 SlotIndex = INDEX_NONE;
+        for (int32 Index = 0; Index < Slots.Num(); ++Index)
+        {
+            // A generation that could wrap is permanently retired, even in a long-lived session.
+            if (Slots[Index].Body.IsInvalid() && Slots[Index].Generation < MAX_uint64) { SlotIndex = Index; break; }
+        }
+        if (SlotIndex == INDEX_NONE)
+        {
+            if (Slots.Num() == MAX_int32)
+                return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Adapter handle slots exhausted."));
+            SlotIndex = Slots.AddDefaulted();
+        }
+        // Chaos can hand over a current speed above its configured cap. Jolt's creation
+        // setters assert in that case; use its normal clamped setters before broadphase
+        // insertion, retaining the captured limits and requested awake/asleep state.
+        JPH::BodyCreationSettings InitialSettings = BodySettings;
+        InitialSettings.mLinearVelocity = JPH::Vec3::sZero();
+        InitialSettings.mAngularVelocity = JPH::Vec3::sZero();
+        JPH::Body* CreatedBody = Physics.GetBodyInterface().CreateBody(InitialSettings);
+        if (!CreatedBody)
+        {
+            ++CreationFailures;
+            return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Jolt returned an invalid body ID; body creation failed."));
+        }
+        if (!CreatedBody->IsStatic())
+        {
+            CreatedBody->SetLinearVelocityClamped(BodySettings.mLinearVelocity);
+            CreatedBody->SetAngularVelocityClamped(BodySettings.mAngularVelocity);
+        }
+        const JPH::BodyID Body = CreatedBody->GetID();
+        Physics.GetBodyInterface().AddBody(Body, Activation);
+        auto& Slot = Slots[SlotIndex];
+        Slot.Body = Body;
+        Slot.AssociatedObject = Association;
+        Slot.OwnerRig = OwnerRig;
+        OutHandle.WorldLifetime = Lifetime;
+        OutHandle.Slot = SlotIndex;
+        OutHandle.Generation = Slot.Generation;
+        return {};
+    }
+
+    void DestroySlot(int32 Index)
+    {
+        auto& Slot = Slots[Index];
+        if (Slot.Body.IsInvalid()) return;
+        while (!Slot.IncidentJoints.IsEmpty()) DestroyJointSlot(Slot.IncidentJoints.Last());
+        TSet<ProphecyJolt::WorldPrivate::FBodyIdentity> Changed;
+        const auto RetiredPairs = Slot.SuppressionPairs.Array();
+        for (const auto& Key : RetiredPairs) RetireSuppression(Key, Changed);
+        PublishSuppression(Changed);
+        JPH::BodyInterface& Bodies = Physics.GetBodyInterface();
+        if (Bodies.IsAdded(Slot.Body)) Bodies.RemoveBody(Slot.Body);
+        Bodies.DestroyBody(Slot.Body);
+        Slot.Body = JPH::BodyID();
+        Slot.AssociatedObject.Reset();
+        Slot.OwnerRig = {};
+        if (Slot.Generation < MAX_uint64) ++Slot.Generation;
+    }
+
+    void DestroyRigSlot(int32 Index)
+    {
+        if (!Rigs.IsValidIndex(Index) || !Rigs[Index].Record) return;
+        // Drop every flattened native ID before deletion; surviving per-rig packets/history remain intact.
+        // The next Step rebuilds the flat listener packet from those surviving records.
+        Servo.Clear();
+        FlatTargets.Reset();
+        ServoRanges.Reset();
+        auto& Rig = *Rigs[Index].Record;
+        Rig.Targets.Reset();
+        Rig.PublishedHandles.Reset();
+        for (const auto& Constraint : Rig.Constraints) Physics.RemoveConstraint(Constraint.GetPtr());
+        Rig.Constraints.Reset();
+        for (const auto& Handle : Rig.Handles)
+            if (Find(Handle)) DestroySlot(Handle.Slot);
+        Rigs[Index].Record.Reset();
+        if (Rigs[Index].Generation < MAX_uint64) ++Rigs[Index].Generation;
+        if (LegacyRig.Slot == Index) LegacyRig = {};
+    }
+
+    bool PrepareServoPacket(FString& Error)
+    {
+        FlatTargets.Reset();
+        ServoRanges.Reset();
+        for (int32 Index = 0; Index < Rigs.Num(); ++Index)
+        {
+            const auto& Slot = Rigs[Index];
+            if (!Slot.Record || !Slot.Record->bCommitted || Slot.Record->Targets.IsEmpty()) continue;
+            auto& Range = ServoRanges.AddDefaulted_GetRef();
+            Range.Rig = { Lifetime, Index, Slot.Generation };
+            Range.Begin = FlatTargets.Num();
+            Range.Count = Slot.Record->Targets.Num();
+            FlatTargets.Append(Slot.Record->Targets);
+        }
+        // PublishRigVelocityTargets already validated these owned values transactionally.
+        // Rig body sets are disjoint, and whole-rig removal clears this packet before deleting IDs.
+        Error.Reset();
+        Servo.CommitValidatedTargets(FlatTargets);
+        return true;
+    }
+
+    void CaptureServoSamples(uint64 PreviousInvocations)
+    {
+        const auto& Samples = Servo.GetLastSamples();
+        check(Samples.Num() == FlatTargets.Num());
+        const uint64 InvocationDelta = Servo.GetInvocationCount() - PreviousInvocations;
+        for (const auto& Range : ServoRanges)
+        {
+            auto* Rig = FindRig(Range.Rig);
+            check(Rig && Rig->PublishedHandles.Num() == Range.Count);
+            auto& State = Rig->ServoState;
+            State.InvocationCount += InvocationDelta;
+            State.LastIntegrationSeconds = Servo.GetLastIntegrationSeconds();
+            State.Samples.SetNum(Range.Count);
+            for (int32 Index = 0; Index < Range.Count; ++Index)
+            {
+                // Rebuilding the flat packet next Update must continue this rig's
+                // accepted trajectory, not replay its first substep.
+                Rig->Targets[Index].TrajectoryElapsedSeconds = Servo.Targets[Range.Begin + Index].TrajectoryElapsedSeconds;
+                const auto& Source = Samples[Range.Begin + Index];
+                auto& Destination = State.Samples[Index];
+                Destination.Handle = Rig->PublishedHandles[Index];
+                Destination.bValid = Source.bValid;
+                Destination.PositionCm = Source.PositionCm;
+                Destination.Rotation = Source.Rotation;
+                Destination.LinearBeforeCmPerSecond = Source.LinearBeforeCmPerSecond;
+                Destination.AngularBeforeRadiansPerSecond = Source.AngularBeforeRadiansPerSecond;
+                Destination.LinearAfterCmPerSecond = Source.LinearAfterCmPerSecond;
+                Destination.AngularAfterRadiansPerSecond = Source.AngularAfterRadiansPerSecond;
+                if (!Source.bValid) ++State.InvalidBodyCount;
+            }
+        }
+    }
+
+    FProphecyJoltWorldSettings Settings;
+    FGuid Lifetime;
+    // Declaration order makes filters and temporary memory outlive PhysicsSystem.
+    ProphecyJolt::WorldPrivate::FCollisionProfiles CollisionProfiles;
+    ProphecyJolt::WorldPrivate::FBroadPhaseLayers BroadPhaseLayers;
+    ProphecyJolt::WorldPrivate::FObjectPairs ObjectPairs;
+    ProphecyJolt::WorldPrivate::FObjectVsBroadPhase ObjectVsBroadPhase;
+    ProphecyJolt::WorldPrivate::FScopedPairFilter ScopedPairFilter;
+    ProphecyJolt::WorldPrivate::FMeasuredTempAllocator Temp;
+    // Registered listener must outlive PhysicsSystem, and is removed explicitly before teardown.
+    ProphecyJolt::FVelocityServo Servo;
+    JPH::PhysicsSystem Physics;
+    bool bNoLockIdleBodyReads = false;
+    TUniquePtr<JPH::JobSystemThreadPool> Jobs;
+    TArray<ProphecyJolt::WorldPrivate::FBodySlot> Slots;
+    TArray<ProphecyJolt::WorldPrivate::FRigSlot> Rigs;
+    TArray<ProphecyJolt::WorldPrivate::FJointSlot> Joints;
+    TMap<ProphecyJolt::WorldPrivate::FSuppressionKey, ProphecyJolt::WorldPrivate::FSuppressionRecord> Suppression;
+    uint32 JointCount = 0;
+    FProphecyJoltRigHandle LegacyRig;
+    float LegacyDenominatorSeconds = 1.0f / 60.0f;
+    TArray<ProphecyJolt::FVelocityServo::FTarget> FlatTargets;
+    TArray<ProphecyJolt::WorldPrivate::FServoRange> ServoRanges;
+    uint64 CreationFailures = 0;
+    // Distinct from capture IDs and recyclable adapter slots. Invalid sentinel is never allocated.
+    uint64 NextRigCollisionGroup = 0;
+};
+
+void FProphecyJoltWorldStateDeleter::operator()(FProphecyJoltWorldState* State) const { delete State; }
+
+UProphecyJoltWorldSubsystem::UProphecyJoltWorldSubsystem() = default;
+UProphecyJoltWorldSubsystem::~UProphecyJoltWorldSubsystem() = default;
+
+bool UProphecyJoltWorldSubsystem::DoesSupportWorldType(EWorldType::Type WorldType) const
+{
+    return WorldType == EWorldType::Game || WorldType == EWorldType::PIE;
+}
+
+void UProphecyJoltWorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+    bSubsystemInitialized = true;
+    bWorldEnding = false;
+    Super::Initialize(Collection);
+}
+
+void UProphecyJoltWorldSubsystem::StopForWorldTeardown()
+{
+    check(IsInGameThread());
+    bWorldEnding = true;
+    const FProphecyJoltWorldStatus Status = ShutdownSimulation();
+    checkf(Status.IsSuccess(), TEXT("Jolt world teardown failed: %s"), *Status.Message);
+}
+
+void UProphecyJoltWorldSubsystem::OnWorldEndPlay(UWorld& InWorld)
+{
+    StopForWorldTeardown();
+    Super::OnWorldEndPlay(InWorld);
+}
+
+void UProphecyJoltWorldSubsystem::PreDeinitialize()
+{
+    StopForWorldTeardown();
+    Super::PreDeinitialize();
+}
+
+void UProphecyJoltWorldSubsystem::Deinitialize()
+{
+    StopForWorldTeardown();
+    bSubsystemInitialized = false;
+    Super::Deinitialize();
+}
+
+void UProphecyJoltWorldSubsystem::BeginDestroy()
+{
+    // Covers abnormal disposal too; normal world cleanup already deinitialized and released Native.
+    StopForWorldTeardown();
+    bSubsystemInitialized = false;
+    Super::BeginDestroy();
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::InitializeSimulation(const FProphecyJoltWorldSettings& Settings)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    if (!IsInGameThread()) return Fail(EProphecyJoltWorldResult::WrongThread, TEXT("World initialization requires the game thread."));
+    UWorld* World = GetWorld();
+    if (!World || !DoesSupportWorldType(World->WorldType))
+        return Fail(EProphecyJoltWorldResult::UnsupportedWorld, TEXT("Only Game and PIE worlds are eligible."));
+    if (!bSubsystemInitialized || bWorldEnding || World->bIsTearingDown)
+        return Fail(EProphecyJoltWorldResult::WorldEnding, TEXT("Subsystem is not initialized or world teardown has begun."));
+    if (Native) return Fail(EProphecyJoltWorldResult::AlreadyInitialized, TEXT("Shut down explicitly before changing simulation settings."));
+    if (!Finite(Settings.GravityCmPerSecondSquared) || !FitsFloatVector(Settings.GravityCmPerSecondSquared, 0.01)
+        || Settings.MaxBodies == 0 || Settings.MaxBodies > JPH::PhysicsSystem::cMaxBodiesLimit
+        || Settings.MaxBodyPairs == 0 || Settings.MaxBodyPairs > JPH::PhysicsSystem::cMaxBodyPairsLimit
+        || Settings.MaxContactConstraints == 0 || Settings.MaxContactConstraints > JPH::PhysicsSystem::cMaxContactConstraintsLimit
+        || Settings.MaxCollisionProfiles == 0 || Settings.MaxCollisionProfiles > static_cast<uint32>(JPH::cObjectLayerInvalid)
+        || Settings.MaxGenericJoints == 0 || Settings.MaxGenericJoints > MAX_int32
+        || Settings.MaxSuppressedBodyPairs == 0 || Settings.MaxSuppressedBodyPairs > MAX_int32
+        || Settings.TempAllocatorBytes == 0 || Settings.WorkerThreads < 0 || Settings.WorkerThreads > 32)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Invalid gravity/capacity settings; worker count must be 0..32 and collision-profile capacity 1..65535."));
+    if (!JPH::VerifyJoltVersionID() || !JPH::Factory::sInstance || !JPH::Factory::sInstance->Find("SphereShapeSettings"))
+        return Fail(EProphecyJoltWorldResult::RuntimeUnavailable, TEXT("Compatible process-wide Jolt registration is unavailable."));
+    // Allocation/thread creation failure is not converted into a success or fallback configuration.
+    Native.Reset(new FProphecyJoltWorldState(Settings));
+    Diagnostics = {};
+    Diagnostics.Settings = Settings;
+    Diagnostics.WorldLifetime = Native->Lifetime;
+    RefreshDiagnostics();
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ShutdownSimulation()
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    if (!IsInGameThread()) return Fail(EProphecyJoltWorldResult::WrongThread, TEXT("Shutdown requires the game thread."));
+    if (bStepInProgress) return Fail(EProphecyJoltWorldResult::Busy, TEXT("Cannot shut down from within a step."));
+    if (Native)
+    {
+        RefreshDiagnostics();
+        Native.Reset();
+    }
+    Diagnostics.bInitialized = false;
+    Diagnostics.BodyCount = 0;
+    Diagnostics.ActiveRigidBodyCount = 0;
+    Diagnostics.ConstraintCount = 0;
+    Diagnostics.CollisionProfileCount = 0;
+    Diagnostics.GenericJointCount = 0;
+    Diagnostics.SuppressedBodyPairCount = 0;
+    Diagnostics.TempCurrentBytes = 0;
+    Diagnostics.JobConcurrency = 0;
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ValidateReady() const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    if (!IsInGameThread()) return Fail(EProphecyJoltWorldResult::WrongThread, TEXT("This interface is game-thread-only."));
+    if (!bSubsystemInitialized || bWorldEnding || !GetWorld() || GetWorld()->bIsTearingDown)
+        return Fail(EProphecyJoltWorldResult::WorldEnding, TEXT("World/subsystem lifetime is ending."));
+    if (!Native) return Fail(EProphecyJoltWorldResult::NotInitialized, TEXT("InitializeSimulation must be called explicitly."));
+    if (bStepInProgress) return Fail(EProphecyJoltWorldResult::Busy, TEXT("Reentrant access during Update is unsupported."));
+    if (Diagnostics.bFaulted) return Fail(EProphecyJoltWorldResult::PhysicsFailure, TEXT("A failed simulation must be shut down before reuse."));
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ValidateBodySettings(const FProphecyJoltFixtureBodySettings& Settings) const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    if (!Finite(Settings.PositionCm) || Settings.Rotation.ContainsNaN() || !Settings.Rotation.IsNormalized()
+        || !FitsFloat(Settings.MassKg) || static_cast<float>(Settings.MassKg) <= 0.0f
+        || !FMath::IsFinite(1.0f / static_cast<float>(Settings.MassKg))
+        || !FMath::IsFinite(Settings.Friction) || Settings.Friction < 0.0f
+        || !FMath::IsFinite(Settings.Restitution) || Settings.Restitution < 0.0f || Settings.Restitution > 1.0f
+        || !FMath::IsFinite(Settings.LinearDamping) || Settings.LinearDamping < 0.0f
+        || !FMath::IsFinite(Settings.AngularDamping) || Settings.AngularDamping < 0.0f)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Body settings contain invalid pose, mass, friction, restitution or damping."));
+    if (Settings.AssociatedObject && (!IsValid(Settings.AssociatedObject)
+        || (Settings.AssociatedObject->GetWorld() && Settings.AssociatedObject->GetWorld() != GetWorld())))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Association is invalid or belongs to another world."));
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateSphere(double RadiusCm,
+    const FProphecyJoltFixtureBodySettings& Settings, FProphecyJoltBodyHandle& OutHandle)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    OutHandle = {};
+    const FProphecyJoltWorldStatus Ready = ValidateBodySettings(Settings);
+    if (!Ready.IsSuccess()) return Ready;
+    const float RadiusMeters = static_cast<float>(RadiusCm * 0.01);
+    if (!FitsFloat(RadiusCm * 0.01) || RadiusMeters <= 0.0f)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Sphere radius must remain positive and finite after conversion."));
+    JPH::SphereShapeSettings ShapeSettings(RadiusMeters);
+    const JPH::Shape::ShapeResult Shape = ShapeSettings.Create();
+    if (Shape.HasError()) return { EProphecyJoltWorldResult::ShapeCreationFailed, UTF8_TO_TCHAR(Shape.GetError().c_str()) };
+    const FProphecyJoltWorldStatus Result = Native->Add(Shape.Get().GetPtr(), Settings, OutHandle);
+    RefreshDiagnostics();
+    return Result;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateBox(const FVector& HalfExtentCm, double ConvexRadiusCm,
+    const FProphecyJoltFixtureBodySettings& Settings, FProphecyJoltBodyHandle& OutHandle)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    OutHandle = {};
+    const FProphecyJoltWorldStatus Ready = ValidateBodySettings(Settings);
+    if (!Ready.IsSuccess()) return Ready;
+    if (!Finite(HalfExtentCm) || !FitsFloatVector(HalfExtentCm, 0.01) || HalfExtentCm.GetMin() <= 0.0
+        || !FitsFloat(ConvexRadiusCm * 0.01) || ConvexRadiusCm < 0.0 || ConvexRadiusCm > HalfExtentCm.GetMin())
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Box half extents must be positive/finite, and convex radius must fit inside every half extent."));
+    const JPH::Vec3 HalfExtent = static_cast<JPH::Vec3>(ProphecyJolt::Conversions::ToJoltPosition(HalfExtentCm));
+    if (HalfExtent.ReduceMin() <= 0.0f)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Box dimensions underflow float shape precision."));
+    JPH::BoxShapeSettings ShapeSettings(HalfExtent, static_cast<float>(ConvexRadiusCm * 0.01));
+    const JPH::Shape::ShapeResult Shape = ShapeSettings.Create();
+    if (Shape.HasError()) return { EProphecyJoltWorldResult::ShapeCreationFailed, UTF8_TO_TCHAR(Shape.GetError().c_str()) };
+    const FProphecyJoltWorldStatus Result = Native->Add(Shape.Get().GetPtr(), Settings, OutHandle);
+    RefreshDiagnostics();
+    return Result;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateBody(const FProphecyJoltBodySnapshot& Snapshot,
+    const FProphecyJoltPreparedBody& Prepared, FProphecyJoltBodyHandle& OutHandle, TArray<FString>& OutCoverageNotes)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    using namespace ProphecyJolt::Conversions;
+    OutHandle = {};
+    OutCoverageNotes.Reset();
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    FString Error;
+    if (!ProphecyJolt::Body::ValidateSnapshot(Snapshot, Error)) return { EProphecyJoltWorldResult::InvalidArgument, Error };
+    if (!Prepared.IsValid() || Prepared.GetCaptureId() != Snapshot.CaptureId)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Prepared standalone shape/mass data does not belong to this sealed capture."));
+    if ((!Snapshot.SourceWorld.IsExplicitlyNull() && Snapshot.SourceWorld.Get() != GetWorld())
+        || (!Snapshot.SourceComponent.IsExplicitlyNull() && (!Snapshot.SourceComponent.IsValid()
+            || Snapshot.SourceComponent->GetWorld() != GetWorld())))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Standalone source identity is expired or belongs to another world."));
+    const FProphecyJoltBodyData& Body = Snapshot.Body;
+    if (Body.CollisionEnabled != ECollisionEnabled::QueryAndPhysics && Body.CollisionEnabled != ECollisionEnabled::PhysicsOnly)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Standalone creation requires a captured simulation-enabled body."));
+    FCollisionProfile Profile;
+    if (!MakeCollisionProfile(false, Body.ObjectType, Body.CollisionResponses, Profile))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Standalone body has an invalid effective collision channel or response."));
+    if (!FitsFloatVector(Body.CenterOfMassVelocityCmPerSecond, CentimetersToMeters)
+        || !FitsFloatVector(Body.AngularVelocityRadiansPerSecond, 1.0))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Standalone velocity does not fit native precision."));
+    const JPH::Vec3 Linear = ToJoltLinearVelocity(Body.CenterOfMassVelocityCmPerSecond);
+    const JPH::Vec3 Angular = ToJoltAngularVelocity(Body.AngularVelocityRadiansPerSecond);
+    if (!FMath::IsFinite(Linear.LengthSq()) || !FMath::IsFinite(Angular.LengthSq()))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Standalone velocity magnitude exceeds finite native clamping arithmetic."));
+    const JPH::Shape* Shape = Prepared.GetNativeShape();
+    JPH::MassProperties Mass;
+    if (!Shape || !Prepared.GetNativeMassProperties(Mass))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Prepared standalone body is missing its native shape or captured mass tensor."));
+    if (Native->Physics.GetNumBodies() >= Native->Settings.MaxBodies)
+    {
+        ++Native->CreationFailures;
+        RefreshDiagnostics();
+        return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Standalone body exceeds configured body capacity; no body was created."));
+    }
+    JPH::BodyCreationSettings Settings(Shape, ToJoltPosition(Body.BodyOriginToWorld.GetTranslation()),
+        ToJoltRotation(Body.BodyOriginToWorld.GetRotation()), JPH::EMotionType::Dynamic, JPH::cObjectLayerInvalid);
+    Settings.mLinearVelocity = Linear;
+    Settings.mAngularVelocity = Angular;
+    Settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+    Settings.mMassPropertiesOverride = Mass;
+    Settings.mFriction = static_cast<float>(Body.Friction);
+    Settings.mRestitution = static_cast<float>(Body.Restitution);
+    Settings.mLinearDamping = static_cast<float>(Body.LinearDamping);
+    Settings.mAngularDamping = static_cast<float>(Body.AngularDamping);
+    Settings.mMaxLinearVelocity = static_cast<float>(Body.MaxLinearVelocityCmPerSecond * CentimetersToMeters);
+    Settings.mMaxAngularVelocity = static_cast<float>(Body.MaxAngularVelocityRadiansPerSecond);
+    Settings.mGravityFactor = Body.bGravityEnabled ? 1.0f : 0.0f;
+    Settings.mAllowSleeping = true;
+    Settings.mMotionQuality = Body.bCCD ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
+    TArray<JPH::ObjectLayer> Layers;
+    const FProphecyJoltWorldStatus Interned = Native->CollisionProfiles.Intern(TConstArrayView<FCollisionProfile>(&Profile, 1), Layers);
+    if (!Interned.IsSuccess()) return Interned;
+    Settings.mObjectLayer = Layers[0];
+    const FProphecyJoltWorldStatus Created = Native->AddNative(Settings,
+        Body.bAwake ? JPH::EActivation::Activate : JPH::EActivation::DontActivate,
+        Snapshot.SourceComponent.Get(), {}, OutHandle);
+    RefreshDiagnostics();
+    if (!Created.IsSuccess()) return Created;
+    OutCoverageNotes = Snapshot.CoverageNotes;
+    OutCoverageNotes.AddUnique(TEXT("Standalone creation applies the prepared native geometry and full captured mass tensor, body-origin pose, COM V/W, gravity, damping, speed caps, awake state, friction/restitution and effective bilateral Block filters. Original component identity is retained as a weak association only."));
+    OutCoverageNotes.AddUnique(Body.bCCD
+        ? TEXT("Captured CCD selects stock Jolt LinearCast. Rotation-only swept coverage and Chaos CCD trajectory equivalence are not implied.")
+        : TEXT("Captured discrete motion selects stock Jolt Discrete motion quality."));
+    OutCoverageNotes.AddUnique(TEXT("Stock Jolt sleep/contact/solver behavior applies. Captured static friction, material combine modes, inertia conditioning, iteration/projection counts and initial-overlap depenetration overrides remain provenance. UE queries, paint metadata and overlap events require the retained component adapter."));
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateStaticBody(const FProphecyJoltStaticBodySnapshot& Snapshot,
+    const FProphecyJoltPreparedStaticBody& Prepared, FProphecyJoltBodyHandle& OutHandle, TArray<FString>& OutCoverageNotes)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    using namespace ProphecyJolt::Conversions;
+    OutHandle = {}; OutCoverageNotes.Reset();
+    const auto Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    FString Error;
+    if (!ProphecyJolt::StaticBody::ValidateSnapshot(Snapshot, Error)) return { EProphecyJoltWorldResult::InvalidArgument, Error };
+    if (!Prepared.IsValid() || Prepared.GetCaptureId() != Snapshot.CaptureId)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Prepared static geometry does not belong to this capture."));
+    if ((!Snapshot.SourceWorld.IsExplicitlyNull() && Snapshot.SourceWorld.Get() != GetWorld())
+        || (!Snapshot.SourceComponent.IsExplicitlyNull() && (!Snapshot.SourceComponent.IsValid()
+            || Snapshot.SourceComponent->GetWorld() != GetWorld() || !Snapshot.SourceComponent->IsRegistered()
+            || Snapshot.SourceComponent->GetMobility() != EComponentMobility::Static)))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Static source is expired, unregistered, moving or belongs to another world."));
+    FCollisionProfile Profile;
+    if (!MakeCollisionProfile(true, Snapshot.ObjectType, Snapshot.CollisionResponses, Profile))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Static body has an invalid effective collision policy."));
+    if (Native->Physics.GetNumBodies() >= Native->Settings.MaxBodies)
+    {
+        ++Native->CreationFailures;
+        RefreshDiagnostics();
+        return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Static body exceeds configured capacity; no body was created."));
+    }
+    JPH::BodyCreationSettings Settings(Prepared.GetNativeShape(), ToJoltPosition(Snapshot.BodyOriginToWorld.GetTranslation()),
+        ToJoltRotation(Snapshot.BodyOriginToWorld.GetRotation()), JPH::EMotionType::Static, JPH::cObjectLayerInvalid);
+    Settings.mFriction = static_cast<float>(Snapshot.Friction);
+    Settings.mRestitution = static_cast<float>(Snapshot.Restitution);
+    TArray<JPH::ObjectLayer> Layers;
+    const auto Interned = Native->CollisionProfiles.Intern(TConstArrayView<FCollisionProfile>(&Profile, 1), Layers);
+    if (!Interned.IsSuccess()) return Interned;
+    Settings.mObjectLayer = Layers[0];
+    const auto Created = Native->AddNative(Settings, JPH::EActivation::DontActivate, Snapshot.SourceComponent.Get(), {}, OutHandle);
+    RefreshDiagnostics();
+    if (!Created.IsSuccess()) return Created;
+    OutCoverageNotes = Snapshot.CoverageNotes;
+    OutCoverageNotes.AddUnique(TEXT("Static creation applies exact prepared geometry, captured body-origin pose, body-level friction/restitution and bilateral Block filters in the existing world. No mass/velocity override or extra simulation is created. Source component association is weak; instance index and later source lifecycle remain the caller's responsibility."));
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateRig(const FProphecyJoltRigSnapshot& Snapshot,
+    const FProphecyJoltPreparedRig& Prepared, FProphecyJoltRigHandle& OutRig,
+    TArray<FProphecyJoltBodyHandle>& OutBodyHandles, TArray<FString>& OutCoverageNotes)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    using namespace ProphecyJolt::Conversions;
+    OutRig = {};
+    OutBodyHandles.Reset();
+    OutCoverageNotes.Reset();
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    FString Error;
+    if (!ProphecyJolt::Rig::ValidateSnapshot(Snapshot, Error)) return { EProphecyJoltWorldResult::InvalidArgument, Error };
+    if (Prepared.GetCaptureId() != Snapshot.CaptureId || Prepared.GetBodyCount() != Snapshot.Bodies.Num())
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Prepared shape/mass data does not belong to this sealed rig capture."));
+    if (static_cast<uint64>(Native->Physics.GetNumBodies()) + static_cast<uint64>(Snapshot.Bodies.Num()) > Native->Settings.MaxBodies)
+    {
+        ++Native->CreationFailures;
+        RefreshDiagnostics();
+        return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("The complete rig does not fit the remaining configured body capacity; no body was created."));
+    }
+
+    // Complete preflight before mutating this world. The snapshot may be replayed in a different world;
+    // its weak source pointers are provenance and are never dereferenced or attached to native bodies.
+    TArray<TUniquePtr<JPH::BodyCreationSettings>> BodySettings;
+    BodySettings.Reserve(Snapshot.Bodies.Num());
+    TArray<FCollisionProfile> BodyProfiles;
+    BodyProfiles.Reserve(Snapshot.Bodies.Num());
+    TArray<FString> Notes = Snapshot.CoverageNotes;
+    Notes.AddUnique(TEXT("Simulation applies captured bilateral Block channel masks and exactly the captured PHAT/current-joint disabled pairs within each independently identified rig. Other rigs and ordinary props still require bilateral Block responses."));
+    Notes.AddUnique(TEXT("Overlap responses are nonblocking; overlap events, UE query-channel filtering and arbitrary scene ignore-pair mutations are not implemented. Native simulation Word2 is a component ID; overlap provenance remains in the captured query data."));
+    Notes.AddUnique(TEXT("Captured COM, principal inertia, mass, body pose/velocities, gravity flag, damping and speed caps are applied. Chaos body iteration/projection counts, inertia conditioning, sleep thresholds and initial-overlap depenetration overrides are not mapped to equivalent Jolt solver behavior."));
+    Notes.AddUnique(TEXT("Body friction and restitution coefficients are applied. Static friction, physical surface identity and UE per-material combine modes are retained only in the capture; this fixture uses Jolt's default contact combination policy."));
+    Notes.AddUnique(TEXT("Initial awake state is captured. Stock Jolt sleep thresholds and velocity caps apply. Pending nonzero control wakes bodies before Update so they receive first-step gravity/damping; publication alone and zero control do not force wake."));
+    for (int32 Index = 0; Index < Snapshot.Bodies.Num(); ++Index)
+    {
+        const FProphecyJoltRigBody& Body = Snapshot.Bodies[Index];
+        if (!Body.bSimulating || Body.bCCD || Body.bMACD
+            || (Body.CollisionEnabled != ECollisionEnabled::QueryAndPhysics && Body.CollisionEnabled != ECollisionEnabled::PhysicsOnly))
+            return { EProphecyJoltWorldResult::InvalidArgument, FString::Printf(TEXT("Body %s is outside the dynamic/discrete simulated rig contract."), *Body.BodyName.ToString()) };
+        FCollisionProfile Profile;
+        if (!MakeCollisionProfile(false, Body.ObjectType, Body.CollisionResponses, Profile))
+            return { EProphecyJoltWorldResult::InvalidArgument, FString::Printf(TEXT("Body %s has an invalid object channel or collision response."), *Body.BodyName.ToString()) };
+        BodyProfiles.Add(Profile);
+        if (!FitsFloatVector(Body.CenterOfMassVelocityCmPerSecond, CentimetersToMeters)
+            || !FitsFloatVector(Body.AngularVelocityRadiansPerSecond, 1.0))
+            return { EProphecyJoltWorldResult::InvalidArgument, FString::Printf(TEXT("Body %s velocity does not fit native precision."), *Body.BodyName.ToString()) };
+        const JPH::Shape* Shape = Prepared.GetNativeBodyShape(Index);
+        JPH::MassProperties Mass;
+        if (!Shape || !Prepared.GetNativeBodyMassProperties(Index, Mass))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Prepared rig is missing a required native shape or mass tensor."));
+        auto Settings = MakeUnique<JPH::BodyCreationSettings>(Shape,
+            ToJoltPosition(Body.BodyOriginToWorld.GetTranslation()), ToJoltRotation(Body.BodyOriginToWorld.GetRotation()),
+            JPH::EMotionType::Dynamic, JPH::cObjectLayerInvalid);
+        Settings->mLinearVelocity = ToJoltLinearVelocity(Body.CenterOfMassVelocityCmPerSecond);
+        Settings->mAngularVelocity = ToJoltAngularVelocity(Body.AngularVelocityRadiansPerSecond);
+        Settings->mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+        Settings->mMassPropertiesOverride = Mass;
+        Settings->mFriction = static_cast<float>(Body.Friction);
+        Settings->mRestitution = static_cast<float>(Body.Restitution);
+        Settings->mLinearDamping = static_cast<float>(Body.LinearDamping);
+        Settings->mAngularDamping = static_cast<float>(Body.AngularDamping);
+        Settings->mMaxLinearVelocity = static_cast<float>(Body.MaxLinearVelocityCmPerSecond * CentimetersToMeters);
+        Settings->mMaxAngularVelocity = static_cast<float>(Body.MaxAngularVelocityRadiansPerSecond);
+        Settings->mGravityFactor = Body.bGravityEnabled ? 1.0f : 0.0f;
+        Settings->mAllowSleeping = true;
+        BodySettings.Add(MoveTemp(Settings));
+    }
+
+    TArray<TUniquePtr<JPH::SixDOFConstraintSettings>> JointSettings;
+    TArray<ProphecyJolt::FHardJointConversionReport> JointReports;
+    JointSettings.Reserve(Snapshot.Joints.Num());
+    JointReports.Reserve(Snapshot.Joints.Num());
+    for (const FProphecyJoltRigJoint& Joint : Snapshot.Joints)
+    {
+        auto Settings = MakeUnique<JPH::SixDOFConstraintSettings>();
+        ProphecyJolt::FHardJointConversionReport Report;
+        if (!ProphecyJolt::BuildHardJointSettings(Joint,
+            Snapshot.Bodies[Joint.Body1Index].GetCenterOfMassToBodyOrigin(),
+            Snapshot.Bodies[Joint.Body2Index].GetCenterOfMassToBodyOrigin(), *Settings, Report, Error))
+            return { EProphecyJoltWorldResult::InvalidArgument, Error };
+        if (Report.bAuthoredSoftSwing || Report.bAuthoredSoftTwist)
+            Notes.AddUnique(TEXT("Authorized angular-limit change: authored soft flags and coefficients remain in capture provenance; this fixture uses hard Jolt cone/twist limits at the exact captured angles, without coefficient or angle retuning. Combined swing response is not claimed identical to Chaos."));
+        for (const FString& Feature : Report.DeferredProfileFeatures)
+            Notes.AddUnique(FString::Printf(TEXT("Joint %s: %s"), *Joint.JointName.ToString(), *Feature));
+        JointSettings.Add(MoveTemp(Settings));
+        JointReports.Add(MoveTemp(Report));
+    }
+
+    if (Native->NextRigCollisionGroup >= JPH::CollisionGroup::cInvalidGroup)
+        return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("World-lifetime rig collision group IDs exhausted; no body was created."));
+    const uint64 BodyCount = static_cast<uint64>(Snapshot.Bodies.Num());
+    // GroupFilterTable's pinned constructor computes N*(N-1) in uint32 before dividing.
+    if (BodyCount * (BodyCount - 1) > MAX_uint32)
+        return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Rig is too large for the pinned collision exclusion table; no body was created."));
+    TArray<JPH::ObjectLayer> BodyLayers;
+    const FProphecyJoltWorldStatus Interned = Native->CollisionProfiles.Intern(BodyProfiles, BodyLayers);
+    if (!Interned.IsSuccess()) return Interned;
+    JPH::Ref<JPH::GroupFilterTable> CollisionFilter = new JPH::GroupFilterTable(static_cast<JPH::uint>(BodyCount));
+    for (const FProphecyJoltRigDisabledPair& Pair : Snapshot.DisabledPairs)
+        CollisionFilter->DisableCollision(static_cast<JPH::uint32>(Pair.Body1Index), static_cast<JPH::uint32>(Pair.Body2Index));
+
+    const int32 RigIndex = Native->AllocateRigSlot();
+    if (RigIndex == INDEX_NONE)
+        return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Adapter rig slots exhausted; no body was created."));
+    auto& RigSlot = Native->Rigs[RigIndex];
+    RigSlot.Record = MakeUnique<FRigRecord>();
+    FRigRecord& Rig = *RigSlot.Record;
+    const FProphecyJoltRigHandle PendingHandle{ Native->Lifetime, RigIndex, RigSlot.Generation };
+    Rig.CaptureId = Snapshot.CaptureId;
+    Rig.Handles.Reserve(Snapshot.Bodies.Num());
+    Rig.Constraints.Reserve(Snapshot.Joints.Num());
+    Rig.JointDescriptions = Snapshot.Joints;
+    Rig.DisabledPairs = Snapshot.DisabledPairs;
+    for (const auto& Pair : Snapshot.DisabledPairs)
+        Rig.AuthoredDisabledPairKeys.Add(RigPairKey(Pair.Body1Index, Pair.Body2Index));
+    Rig.CollisionFilter = CollisionFilter;
+    Rig.CollisionGroupId = static_cast<JPH::CollisionGroup::GroupID>(Native->NextRigCollisionGroup++);
+    Rig.CoverageNotes = MoveTemp(Notes);
+    for (int32 Index = 0; Index < BodySettings.Num(); ++Index)
+    {
+        BodySettings[Index]->mObjectLayer = BodyLayers[Index];
+        BodySettings[Index]->mCollisionGroup = JPH::CollisionGroup(Rig.CollisionFilter.GetPtr(), Rig.CollisionGroupId, static_cast<JPH::uint32>(Index));
+        FProphecyJoltBodyHandle Handle;
+        const FProphecyJoltWorldStatus Created = Native->AddNative(*BodySettings[Index],
+            Snapshot.Bodies[Index].bAwake ? JPH::EActivation::Activate : JPH::EActivation::DontActivate, nullptr, PendingHandle, Handle);
+        if (!Created.IsSuccess())
+        {
+            Native->DestroyRigSlot(RigIndex);
+            RefreshDiagnostics();
+            return Created;
+        }
+        Rig.Handles.Add(Handle);
+    }
+    for (int32 Index = 0; Index < JointSettings.Num(); ++Index)
+    {
+        const ProphecyJolt::FHardJointConversionReport& Report = JointReports[Index];
+        const auto* Body1 = Native->Find(Rig.Handles[Report.JoltBody1Index]);
+        const auto* Body2 = Native->Find(Rig.Handles[Report.JoltBody2Index]);
+        check(Body1 && Body2);
+        // Chaos solver order is parent first: the mapper returns UE Body2 then UE Body1 explicitly.
+        JPH::Ref<JPH::TwoBodyConstraint> Constraint = Native->Physics.GetBodyInterface().CreateConstraint(
+            JointSettings[Index].Get(), Body1->Body, Body2->Body);
+        if (!Constraint)
+        {
+            Native->DestroyRigSlot(RigIndex);
+            RefreshDiagnostics();
+            return Fail(EProphecyJoltWorldResult::PhysicsFailure, TEXT("Jolt constraint creation failed; only the new pending rig was removed."));
+        }
+        Native->Physics.AddConstraint(Constraint.GetPtr());
+        Rig.Constraints.Add(MoveTemp(Constraint));
+    }
+    Rig.bCommitted = true;
+    OutRig = PendingHandle;
+    OutBodyHandles = Rig.Handles;
+    OutCoverageNotes = Rig.CoverageNotes;
+    RefreshDiagnostics();
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::DestroyRig(const FProphecyJoltRigHandle& Handle)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    if (!IsInGameThread()) return Fail(EProphecyJoltWorldResult::WrongThread, TEXT("Rig destruction requires the game thread."));
+    if (bStepInProgress) return Fail(EProphecyJoltWorldResult::Busy, TEXT("Cannot destroy a rig during a physics step."));
+    // Identity cleanup is intentionally available while faulted or ending.
+    if (!Native || !Native->FindRig(Handle))
+        return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    Native->DestroyRigSlot(Handle.Slot);
+    RefreshDiagnostics();
+    return {};
+}
+
+bool UProphecyJoltWorldSubsystem::OwnsRig(const FProphecyJoltRigHandle& Handle) const
+{
+    return IsInGameThread() && !bStepInProgress && Native && Native->FindRig(Handle);
+}
+
+namespace ProphecyJolt::WorldPrivate
+{
+void CopyAngularLimits(const FConstraintProfileProperties& Source, FConstraintProfileProperties& Destination)
+{
+    Destination.ConeLimit.Swing1Motion = Source.ConeLimit.Swing1Motion;
+    Destination.ConeLimit.Swing2Motion = Source.ConeLimit.Swing2Motion;
+    Destination.ConeLimit.Swing1LimitDegrees = Source.ConeLimit.Swing1LimitDegrees;
+    Destination.ConeLimit.Swing2LimitDegrees = Source.ConeLimit.Swing2LimitDegrees;
+    Destination.TwistLimit.TwistMotion = Source.TwistLimit.TwistMotion;
+    Destination.TwistLimit.TwistLimitDegrees = Source.TwistLimit.TwistLimitDegrees;
+}
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::UpdateRigAngularLimits(const FProphecyJoltRigHandle& Handle,
+    TConstArrayView<FProphecyJoltRigJoint> Joints)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    FRigRecord* Rig = Native->FindRig(Handle);
+    if (!Rig) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    if (Joints.Num() != Rig->JointDescriptions.Num() || Joints.Num() != Rig->Constraints.Num())
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Angular updates require the complete captured joint order."));
+    struct FChange { JPH::SixDOFConstraint* Constraint; JPH::Vec3 Minimum; JPH::Vec3 Maximum; };
+    TArray<FChange, TInlineAllocator<32>> Changes;
+    TArray<JPH::BodyID, TInlineAllocator<64>> WakeBodies;
+    for (int32 Index = 0; Index < Joints.Num(); ++Index)
+    {
+        const auto& Input = Joints[Index];
+        const auto& Captured = Rig->JointDescriptions[Index];
+        if (Input.SourceConstraintIndex != Captured.SourceConstraintIndex || Input.JointName != Captured.JointName
+            || Input.Bone1 != Captured.Bone1 || Input.Bone2 != Captured.Bone2
+            || Input.Body1Index != Captured.Body1Index || Input.Body2Index != Captured.Body2Index
+            || !Input.Frame1.Equals(Captured.Frame1, 0.0) || !Input.Frame2.Equals(Captured.Frame2, 0.0)
+            || !Input.AngularRotationOffsetDegrees.Equals(Captured.AngularRotationOffsetDegrees, 0.0))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Angular updates cannot change captured joint identity, endpoints or frames."));
+        const auto& Profile = Input.CurrentProfile;
+        for (float Angle : { Profile.ConeLimit.Swing1LimitDegrees, Profile.ConeLimit.Swing2LimitDegrees, Profile.TwistLimit.TwistLimitDegrees })
+            if (!FMath::IsFinite(Angle) || Angle < 0.0f || Angle > 180.0f)
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Every angular limit angle must be finite and within [0,180] degrees, including inactive fields."));
+        FProphecyJoltRigJoint Candidate = Captured;
+        CopyAngularLimits(Profile, Candidate.CurrentProfile);
+        JPH::SixDOFConstraintSettings Settings;
+        ProphecyJolt::FHardJointConversionReport Report;
+        FString Error;
+        // Only angular ranges are consumed. COM translations affect the discarded anchor positions.
+        if (!ProphecyJolt::BuildHardJointSettings(Candidate, FTransform::Identity, FTransform::Identity, Settings, Report, Error))
+            return { EProphecyJoltWorldResult::InvalidArgument, Error };
+        JPH::TwoBodyConstraint* Base = Rig->Constraints[Index].GetPtr();
+        const auto* Body1 = Native->Find(Rig->Handles[Report.JoltBody1Index]);
+        const auto* Body2 = Native->Find(Rig->Handles[Report.JoltBody2Index]);
+        if (!Base || Base->GetSubType() != JPH::EConstraintSubType::SixDOF || !Body1 || !Body2
+            || !SameRig(Body1->OwnerRig, Handle) || !SameRig(Body2->OwnerRig, Handle)
+            || Base->GetBody1()->GetID() != Body1->Body || Base->GetBody2()->GetID() != Body2->Body)
+            return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("The captured anatomical joint endpoints are no longer owned by this rig."));
+        float Min[3], Max[3];
+        for (int32 Axis = 0; Axis < 3; ++Axis)
+        {
+            // SixDOF canonicalizes free sentinels to +/-pi and locked sentinels to zero.
+            Min[Axis] = FMath::Clamp(Settings.mLimitMin[JPH::SixDOFConstraintSettings::RotationX + Axis], -JPH::JPH_PI, JPH::JPH_PI);
+            Max[Axis] = FMath::Clamp(Settings.mLimitMax[JPH::SixDOFConstraintSettings::RotationX + Axis], -JPH::JPH_PI, JPH::JPH_PI);
+            if (Min[Axis] > Max[Axis]) Min[Axis] = Max[Axis] = 0.0f;
+        }
+        auto* Constraint = static_cast<JPH::SixDOFConstraint*>(Base);
+        const JPH::Vec3 Minimum(Min[0], Min[1], Min[2]), Maximum(Max[0], Max[1], Max[2]);
+        if (Constraint->GetRotationLimitsMin() != Minimum || Constraint->GetRotationLimitsMax() != Maximum)
+        {
+            Changes.Add({ Constraint, Minimum, Maximum });
+            WakeBodies.AddUnique(Body1->Body);
+            WakeBodies.AddUnique(Body2->Body);
+        }
+    }
+    // All validation/allocation precedes mutation. SetRotationLimits cannot fail and retains
+    // translation limits and local frames; native warm starts reset when an axis changes mode.
+    for (const auto& Change : Changes) Change.Constraint->SetRotationLimits(Change.Minimum, Change.Maximum);
+    for (int32 Index = 0; Index < Joints.Num(); ++Index)
+        CopyAngularLimits(Joints[Index].CurrentProfile, Rig->JointDescriptions[Index].CurrentProfile);
+    if (!WakeBodies.IsEmpty()) Native->Physics.GetBodyInterface().ActivateBodies(WakeBodies.GetData(), WakeBodies.Num());
+    RefreshDiagnostics();
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadRigAngularLimits(const FProphecyJoltRigHandle& Handle,
+    TArray<FProphecyJoltRigJoint>& OutJoints) const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    OutJoints.Reset();
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const FRigRecord* Rig = Native->FindRig(Handle);
+    if (!Rig) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    TArray<FProphecyJoltRigJoint> Result = Rig->JointDescriptions;
+    for (int32 Index = 0; Index < Result.Num(); ++Index)
+    {
+        const auto* Constraint = static_cast<const JPH::SixDOFConstraint*>(Rig->Constraints[Index].GetPtr());
+        auto& Profile = Result[Index].CurrentProfile;
+        const auto ReadAxis = [&](JPH::SixDOFConstraintSettings::EAxis Axis, TEnumAsByte<EAngularConstraintMotion>& Motion, float& Angle)
+        {
+            Motion = Constraint->IsFixedAxis(Axis) ? ACM_Locked : Constraint->IsFreeAxis(Axis) ? ACM_Free : ACM_Limited;
+            if (Motion == ACM_Limited) Angle = JPH::RadiansToDegrees(Constraint->GetLimitsMax(Axis));
+        };
+        ReadAxis(JPH::SixDOFConstraintSettings::RotationX, Profile.TwistLimit.TwistMotion, Profile.TwistLimit.TwistLimitDegrees);
+        ReadAxis(JPH::SixDOFConstraintSettings::RotationY, Profile.ConeLimit.Swing2Motion, Profile.ConeLimit.Swing2LimitDegrees);
+        ReadAxis(JPH::SixDOFConstraintSettings::RotationZ, Profile.ConeLimit.Swing1Motion, Profile.ConeLimit.Swing1LimitDegrees);
+    }
+    OutJoints = MoveTemp(Result);
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadBodyCollision(const FProphecyJoltBodyHandle& Handle, FProphecyJoltCollisionUpdate& Out) const
+{
+    Out = {};
+    const auto Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const auto* Slot = Native->Find(Handle);
+    if (!Slot) return ProphecyJolt::WorldPrivate::Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Collision inspection requires a live body."));
+    const auto& Profile = Native->CollisionProfiles.Get(Native->Physics.GetBodyInterface().GetObjectLayer(Slot->Body));
+    Out.Handle = Handle;
+    Out.ObjectChannel = static_cast<ECollisionChannel>(Profile.ObjectChannel);
+    Out.Responses.SetAllChannels(ECR_Ignore);
+    for (uint32 Channel = 0; Channel < 32; ++Channel)
+        if ((Profile.BlockMask & (uint32(1) << Channel)) != 0) Out.Responses.SetResponse(static_cast<ECollisionChannel>(Channel), ECR_Block);
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::UpdateBodyCollision(TConstArrayView<FProphecyJoltCollisionUpdate> Updates)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    TSet<int32> Seen;
+    TArray<FCollisionProfile> Profiles;
+    TArray<JPH::BodyID> IDs;
+    for (const auto& Update : Updates)
+    {
+        const FBodySlot* Slot = Native->Find(Update.Handle);
+        if (!Slot || Seen.Contains(Update.Handle.Slot))
+            return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Collision updates require unique live body handles."));
+        Seen.Add(Update.Handle.Slot);
+        const auto OldLayer = Native->Physics.GetBodyInterface().GetObjectLayer(Slot->Body);
+        FCollisionProfile Profile;
+        if (!MakeCollisionProfile(Native->CollisionProfiles.Get(OldLayer).bStatic, Update.ObjectChannel, Update.Responses, Profile))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Invalid collision channel or response."));
+        Profiles.Add(Profile);
+        IDs.Add(Slot->Body);
+    }
+    TArray<JPH::ObjectLayer> Layers;
+    const auto Interned = Native->CollisionProfiles.Intern(Profiles, Layers);
+    if (!Interned.IsSuccess()) return Interned;
+    auto& Bodies = Native->Physics.GetBodyInterface();
+    for (int32 Index = 0; Index < IDs.Num(); ++Index)
+    {
+        if (Bodies.GetObjectLayer(IDs[Index]) == Layers[Index]) continue;
+        JPH::AABox Bounds;
+        {
+            JPH::BodyLockRead Lock(Native->Physics.GetBodyLockInterface(), IDs[Index]);
+            check(Lock.Succeeded());
+            Bounds = Lock.GetBody().GetWorldSpaceBounds();
+        }
+        Bodies.SetObjectLayer(IDs[Index], Layers[Index]);
+        Bodies.InvalidateContactCache(IDs[Index]);
+        // Also wake sleeping counterparts when a supporting static body stops blocking.
+        Bounds.ExpandBy(JPH::Vec3::sReplicate(0.02f));
+        Bodies.ActivateBodiesInAABox(Bounds, JPH::BroadPhaseLayerFilter(), JPH::ObjectLayerFilter());
+    }
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetRigSelfCollisionEnabled(const FProphecyJoltRigHandle& Handle, bool bEnabled)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    FRigRecord* Rig = Native->FindRig(Handle);
+    if (!Rig) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    if (Rig->bSelfCollisionEnabled == bEnabled) return {};
+    const auto Result = Native->ApplyRigSelfCollision(*Rig, bEnabled, Rig->SelfCollisionDisabledBodies, Rig->SelfCollisionDisabledPairs);
+    if (Result.IsSuccess()) RefreshDiagnostics();
+    return Result;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetRigBodiesSelfCollisionEnabled(const FProphecyJoltRigHandle& Handle,
+    TConstArrayView<int32> BodyIndices, bool bEnabled)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    FRigRecord* Rig = Native->FindRig(Handle);
+    if (!Rig) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    for (const int32 Index : BodyIndices)
+        if (!Rig->Handles.IsValidIndex(Index))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Every selected self-collision body index must belong to this rig."));
+    bool bChanged = false;
+    for (const int32 Index : BodyIndices) bChanged |= Rig->SelfCollisionDisabledBodies.Contains(Index) == bEnabled;
+    if (!bChanged) return {};
+    TSet<int32> DisabledBodies = Rig->SelfCollisionDisabledBodies;
+    for (const int32 Index : BodyIndices)
+    {
+        if (bEnabled) DisabledBodies.Remove(Index);
+        else DisabledBodies.Add(Index);
+    }
+    const auto Result = Native->ApplyRigSelfCollision(*Rig, Rig->bSelfCollisionEnabled, MoveTemp(DisabledBodies), Rig->SelfCollisionDisabledPairs);
+    if (Result.IsSuccess()) RefreshDiagnostics();
+    return Result;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetRigBodyPairSelfCollisionEnabled(const FProphecyJoltRigHandle& Handle,
+    int32 Body1Index, int32 Body2Index, bool bEnabled)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    FRigRecord* Rig = Native->FindRig(Handle);
+    if (!Rig) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    if (!Rig->Handles.IsValidIndex(Body1Index) || !Rig->Handles.IsValidIndex(Body2Index) || Body1Index == Body2Index)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Self-collision pairs require two distinct body indices belonging to this rig."));
+    const uint64 Key = RigPairKey(Body1Index, Body2Index);
+    if (Rig->SelfCollisionDisabledPairs.Contains(Key) != bEnabled) return {};
+    TSet<uint64> DisabledPairs = Rig->SelfCollisionDisabledPairs;
+    if (bEnabled) DisabledPairs.Remove(Key);
+    else DisabledPairs.Add(Key);
+    const auto Result = Native->ApplyRigSelfCollision(*Rig, Rig->bSelfCollisionEnabled, Rig->SelfCollisionDisabledBodies, MoveTemp(DisabledPairs));
+    if (Result.IsSuccess()) RefreshDiagnostics();
+    return Result;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ResetRigSelfCollision(const FProphecyJoltRigHandle& Handle)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    FRigRecord* Rig = Native->FindRig(Handle);
+    if (!Rig) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    if (Rig->bSelfCollisionEnabled && Rig->SelfCollisionDisabledBodies.IsEmpty() && Rig->SelfCollisionDisabledPairs.IsEmpty()) return {};
+    const auto Result = Native->ApplyRigSelfCollision(*Rig, true, {}, {});
+    if (Result.IsSuccess()) RefreshDiagnostics();
+    return Result;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadRigBodyPairSelfCollisionEnabled(const FProphecyJoltRigHandle& Handle,
+    int32 Body1Index, int32 Body2Index, bool& bOutEnabled) const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    bOutEnabled = false;
+    const auto Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const FRigRecord* Rig = Native->FindRig(Handle);
+    if (!Rig) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    if (!Rig->Handles.IsValidIndex(Body1Index) || !Rig->Handles.IsValidIndex(Body2Index) || Body1Index == Body2Index)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Self-collision pairs require two distinct body indices belonging to this rig."));
+    bOutEnabled = Rig->CollisionFilter->IsCollisionEnabled(Body1Index, Body2Index);
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::PublishRigVelocityTargets(const FProphecyJoltRigHandle& Handle,
+    TConstArrayView<FProphecyJoltRigVelocityTarget> Targets, float MaximumSubstepSeconds)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    FRigRecord* Rig = Native->FindRig(Handle);
+    if (!Rig) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    if (!FMath::IsFinite(MaximumSubstepSeconds) || MaximumSubstepSeconds <= 0.0f)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Rig target denominator must be positive and finite."));
+    const float Denominator = FMath::Max(MaximumSubstepSeconds, UE_SMALL_NUMBER);
+    TArray<ProphecyJolt::FVelocityServo::FTarget, TInlineAllocator<32>> NativeTargets;
+    TArray<FProphecyJoltBodyHandle, TInlineAllocator<32>> Handles;
+    TSet<int32, DefaultKeyFuncs<int32>, TInlineSetAllocator<32>> UniqueSlots;
+    NativeTargets.Reserve(Targets.Num());
+    Handles.Reserve(Targets.Num());
+    for (const auto& Target : Targets)
+    {
+        const FBodySlot* Slot = Native->Find(Target.Handle);
+        if (!Slot || !SameRig(Slot->OwnerRig, Handle))
+            return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Every target must name a current body owned by the specified rig."));
+        if (UniqueSlots.Contains(Target.Handle.Slot) || Target.TargetPositionCm.ContainsNaN()
+            || Target.TargetRotation.ContainsNaN() || !Target.TargetRotation.IsNormalized()
+            || !FMath::IsFinite(Target.LinearStrength) || Target.LinearStrength < 0.0f
+            || !FMath::IsFinite(Target.AngularStrength) || Target.AngularStrength < 0.0f
+            || !FMath::IsFinite(Target.GravityCompensationCmPerSecondSquared)
+            || !FMath::IsFinite(Target.TrajectoryDurationSeconds) || Target.TrajectoryDurationSeconds < 0.0f
+            || (Target.TrajectoryDurationSeconds > 0.0f && (Target.StartPositionCm.ContainsNaN()
+                || Target.StartRotation.ContainsNaN() || !Target.StartRotation.IsNormalized())))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Rig targets require unique bodies, finite endpoints, nonnegative finite strengths and valid optional trajectories."));
+        UniqueSlots.Add(Target.Handle.Slot);
+        ProphecyJolt::FVelocityServo::FTarget NativeTarget;
+        NativeTarget.Body = Slot->Body;
+        NativeTarget.TargetPositionCm = Target.TargetPositionCm;
+        NativeTarget.TargetRotation = Target.TargetRotation;
+        NativeTarget.LinearStrength = Target.LinearStrength;
+        NativeTarget.AngularStrength = Target.AngularStrength;
+        NativeTarget.GravityCompensationCmPerSecondSquared = Target.GravityCompensationCmPerSecondSquared;
+        NativeTarget.DenominatorSeconds = Denominator;
+        NativeTarget.StartPositionCm = Target.StartPositionCm;
+        NativeTarget.StartRotation = Target.StartRotation;
+        NativeTarget.TrajectoryDurationSeconds = Target.TrajectoryDurationSeconds;
+        NativeTargets.Add(NativeTarget);
+        Handles.Add(Target.Handle);
+    }
+    // Transactional per-rig publication. Complete the stack-staged preflight before touching
+    // either accepted array, then reuse its capacity instead of replacing two allocations per tick.
+    Rig->Targets.Reset(NativeTargets.Num());
+    Rig->Targets.Append(NativeTargets.GetData(), NativeTargets.Num());
+    Rig->PublishedHandles.Reset(Handles.Num());
+    Rig->PublishedHandles.Append(Handles.GetData(), Handles.Num());
+    Rig->ServoState.DenominatorSeconds = Denominator;
+    Rig->ServoState.Samples.SetNum(Rig->PublishedHandles.Num());
+    for (int32 Index = 0; Index < Rig->PublishedHandles.Num(); ++Index)
+    {
+        Rig->ServoState.Samples[Index] = {};
+        Rig->ServoState.Samples[Index].Handle = Rig->PublishedHandles[Index];
+    }
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadRigServoSamples(const FProphecyJoltRigHandle& Handle,
+    FProphecyJoltRigServoState& OutState) const
+{
+    OutState = {};
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const auto* Rig = Native->FindRig(Handle);
+    if (!Rig) return ProphecyJolt::WorldPrivate::Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world rig handle."));
+    OutState = Rig->ServoState;
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateRigFixture(const FProphecyJoltRigSnapshot& Snapshot,
+    const FProphecyJoltPreparedRig& Prepared, TArray<FProphecyJoltBodyHandle>& OutBodyHandles, TArray<FString>& OutCoverageNotes)
+{
+    OutBodyHandles.Reset();
+    OutCoverageNotes.Reset();
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    if (Native->HasRigs())
+        return ProphecyJolt::WorldPrivate::Fail(EProphecyJoltWorldResult::AlreadyInitialized,
+            TEXT("Legacy fixture creation requires an empty rig registry; use CreateRig for multiple independent rigs."));
+    FProphecyJoltRigHandle Rig;
+    const FProphecyJoltWorldStatus Created = CreateRig(Snapshot, Prepared, Rig, OutBodyHandles, OutCoverageNotes);
+    if (Created.IsSuccess()) Native->LegacyRig = Rig;
+    return Created;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::DestroyRigFixture()
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    if (!IsInGameThread()) return Fail(EProphecyJoltWorldResult::WrongThread, TEXT("Rig destruction requires the game thread."));
+    if (bStepInProgress) return Fail(EProphecyJoltWorldResult::Busy, TEXT("Cannot destroy a rig during a physics step."));
+    // Preserve legacy idempotence without treating an unrelated explicit rig as legacy ownership.
+    if (!Native || !Native->FindRig(Native->LegacyRig)) return {};
+    return DestroyRig(Native->LegacyRig);
+}
+
+bool UProphecyJoltWorldSubsystem::OwnsRigFixture(TConstArrayView<FProphecyJoltBodyHandle> Handles) const
+{
+    if (!IsInGameThread() || bStepInProgress || !Native || Handles.IsEmpty()) return false;
+    const auto* Rig = Native->FindRig(Native->LegacyRig);
+    if (!Rig || Handles.Num() != Rig->Handles.Num()) return false;
+    for (int32 Index = 0; Index < Handles.Num(); ++Index)
+    {
+        const auto& Handle = Handles[Index];
+        const auto& Current = Rig->Handles[Index];
+        if (Handle.WorldLifetime != Current.WorldLifetime || Handle.Slot != Current.Slot || Handle.Generation != Current.Generation) return false;
+        const auto* Slot = Native->Find(Handle);
+        if (!Slot || !ProphecyJolt::WorldPrivate::SameRig(Slot->OwnerRig, Native->LegacyRig)) return false;
+    }
+    return true;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::PublishRigFixtureVelocityTargets(
+    TConstArrayView<FProphecyJoltRigVelocityTarget> Targets, float MaximumSubstepSeconds)
+{
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    if (!Native->FindRig(Native->LegacyRig))
+        return ProphecyJolt::WorldPrivate::Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Create a legacy rig fixture before publishing its targets."));
+    const FProphecyJoltWorldStatus Published = PublishRigVelocityTargets(Native->LegacyRig, Targets, MaximumSubstepSeconds);
+    if (Published.IsSuccess()) Native->LegacyDenominatorSeconds = FMath::Max(MaximumSubstepSeconds, UE_SMALL_NUMBER);
+    return Published;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadRigFixtureServoSamples(FProphecyJoltRigServoState& OutState) const
+{
+    OutState = {};
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    if (Native->FindRig(Native->LegacyRig)) return ReadRigServoSamples(Native->LegacyRig, OutState);
+    OutState.DenominatorSeconds = Native->LegacyDenominatorSeconds;
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadBody(const FProphecyJoltBodyHandle& Handle, FProphecyJoltBodyState& OutState) const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    using namespace ProphecyJolt::Conversions;
+    OutState = {};
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const FBodySlot* Slot = Native->Find(Handle);
+    if (!Slot) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world body handle."));
+    const JPH::BodyLockRead Lock(Native->IdleBodyReadLocks(), Slot->Body);
+    if (!Lock.SucceededAndIsInBroadPhase()) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Body registry disagrees with Jolt; body is absent."));
+    const JPH::Body& Body = Lock.GetBody();
+    OutState.PositionCm = FromJoltPosition(Body.GetPosition());
+    OutState.CenterOfMassPositionCm = FromJoltPosition(Body.GetCenterOfMassPosition());
+    OutState.Rotation = FromJoltRotation(Body.GetRotation());
+    OutState.CenterOfMassVelocityCmPerSecond = FromJoltLinearVelocity(Body.GetLinearVelocity());
+    OutState.AngularVelocityRadiansPerSecond = FromJoltAngularVelocity(Body.GetAngularVelocity());
+    OutState.bDynamic = Body.IsDynamic();
+    OutState.bActive = Body.IsActive();
+    if (!Finite(OutState.PositionCm) || !Finite(OutState.CenterOfMassPositionCm) || OutState.Rotation.ContainsNaN()
+        || !Finite(OutState.CenterOfMassVelocityCmPerSecond) || !Finite(OutState.AngularVelocityRadiansPerSecond))
+        return Fail(EProphecyJoltWorldResult::PhysicsFailure, TEXT("Body state contains a non-finite value."));
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::RayCast(const FVector& StartCm, const FVector& EndCm,
+    FProphecyJoltRayHit& OutHit, bool& bOutHit) const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    using namespace ProphecyJolt::Conversions;
+    OutHit = {};
+    bOutHit = false;
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const FVector DeltaCm = EndCm - StartCm;
+    if (!Finite(StartCm) || !Finite(EndCm) || !Finite(DeltaCm) || !FitsFloatVector(DeltaCm, CentimetersToMeters))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Ray endpoints and segment must be finite and fit native query precision."));
+    const JPH::Vec3 Direction = ToJoltDirection(DeltaCm * CentimetersToMeters);
+    const float LengthSquared = Direction.LengthSq();
+    if (!FMath::IsFinite(LengthSquared) || LengthSquared <= 0.0f)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Ray segment must have a positive finite length in native query precision."));
+
+    const JPH::RRayCast Ray(ToJoltPosition(StartCm), Direction);
+    JPH::RayCastResult Hit;
+    // Default query filters admit every fixture layer; simulation pair policy does not filter this query.
+    if (!Native->Physics.GetNarrowPhaseQuery().CastRay(Ray, Hit)) return {};
+    int32 SlotIndex = INDEX_NONE;
+    for (int32 Index = 0; Index < Native->Slots.Num(); ++Index)
+    {
+        if (Native->Slots[Index].Body == Hit.mBodyID) { SlotIndex = Index; break; }
+    }
+    if (SlotIndex == INDEX_NONE || Hit.mBodyID.IsInvalid())
+        return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Ray hit body is absent from the adapter registry."));
+    const JPH::BodyLockRead Lock(Native->Physics.GetBodyLockInterface(), Hit.mBodyID);
+    if (!Lock.SucceededAndIsInBroadPhase())
+        return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Ray hit body is absent from Jolt."));
+    const JPH::RVec3 NativePoint = Ray.GetPointOnRay(Hit.mFraction);
+    const FVector PointCm = FromJoltPosition(NativePoint);
+    const FVector Normal = FromJoltDirection(Lock.GetBody().GetWorldSpaceSurfaceNormal(Hit.mSubShapeID2, NativePoint));
+    if (!FMath::IsFinite(Hit.mFraction) || Hit.mFraction < 0.0f || Hit.mFraction > 1.0f || !Finite(PointCm) || !Finite(Normal))
+        return Fail(EProphecyJoltWorldResult::PhysicsFailure, TEXT("Ray hit contains an invalid fraction, point or normal."));
+    OutHit.Handle.WorldLifetime = Native->Lifetime;
+    OutHit.Handle.Slot = SlotIndex;
+    OutHit.Handle.Generation = Native->Slots[SlotIndex].Generation;
+    OutHit.PositionCm = PointCm;
+    OutHit.Normal = Normal;
+    OutHit.Fraction = Hit.mFraction;
+    OutHit.NativeSubShapeId = Hit.mSubShapeID2.GetValue();
+    bOutHit = true;
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::AddPointImpulse(const FProphecyJoltBodyHandle& Handle,
+    const FVector& ImpulseKgCmPerSecond, const FVector& WorldPointCm)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const FBodySlot* Slot = Native->Find(Handle);
+    if (!Slot) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world body handle."));
+    if (!Finite(WorldPointCm) || !Finite(ImpulseKgCmPerSecond) || !FitsFloatVector(ImpulseKgCmPerSecond, 0.01))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Point/impulse values must be finite and fit their target precision."));
+    {
+        const JPH::BodyLockRead Lock(Native->Physics.GetBodyLockInterface(), Slot->Body);
+        if (!Lock.SucceededAndIsInBroadPhase()) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Body is absent from Jolt."));
+        if (!Lock.GetBody().IsDynamic()) return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Point impulses require a dynamic body."));
+        const FVector OffsetCm = WorldPointCm - ProphecyJolt::Conversions::FromJoltPosition(Lock.GetBody().GetCenterOfMassPosition());
+        if (!FitsFloatVector(OffsetCm, 0.01)) return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Impulse lever arm exceeds float precision range."));
+        const JPH::Body& Body = Lock.GetBody();
+        const JPH::MotionProperties& Motion = *Body.GetMotionProperties();
+        const JPH::Vec3 Impulse = ProphecyJolt::Conversions::ToJoltLinearImpulse(ImpulseKgCmPerSecond);
+        const JPH::Vec3 Lever = static_cast<JPH::Vec3>(ProphecyJolt::Conversions::ToJoltPosition(WorldPointCm) - Body.GetCenterOfMassPosition());
+        const JPH::Vec3 NewLinear = Body.GetLinearVelocity() + Impulse * Motion.GetInverseMass();
+        const JPH::Vec3 NewAngular = Body.GetAngularVelocity()
+            + Motion.MultiplyWorldSpaceInverseInertiaByVector(Body.GetRotation(), Lever.Cross(Impulse));
+        if (!Finite(ProphecyJolt::Conversions::FromJoltDirection(NewLinear))
+            || !Finite(ProphecyJolt::Conversions::FromJoltDirection(NewAngular)))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Impulse would overflow body velocity before Jolt's documented velocity clamp."));
+    }
+    Native->Physics.GetBodyInterface().AddImpulse(Slot->Body,
+        ProphecyJolt::Conversions::ToJoltLinearImpulse(ImpulseKgCmPerSecond), ProphecyJolt::Conversions::ToJoltPosition(WorldPointCm));
+    RefreshDiagnostics();
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateJoint(const FProphecyJoltJointSettings& Settings,
+    TConstArrayView<FProphecyJoltBodyPair> SuppressedPairs, FProphecyJoltJointHandle& OutJoint)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    OutJoint = {};
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    if (Native->JointCount >= Native->Settings.MaxGenericJoints)
+        return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Generic joint capacity reached."));
+    int32 Index = INDEX_NONE;
+    for (int32 Candidate = 0; Candidate < Native->Joints.Num(); ++Candidate)
+        if (!Native->Joints[Candidate].Record && Native->Joints[Candidate].Generation < MAX_uint64) { Index = Candidate; break; }
+    if (Index == INDEX_NONE && Native->Joints.Num() == MAX_int32)
+        return Fail(EProphecyJoltWorldResult::CapacityExceeded, TEXT("Joint identity slots exhausted."));
+    TUniquePtr<FJointRecord> Record = MakeUnique<FJointRecord>();
+    const FProphecyJoltWorldStatus Pairs = Native->PrepareSuppression(SuppressedPairs, Record->Suppression);
+    if (!Pairs.IsSuccess()) return Pairs;
+    const FProphecyJoltWorldStatus Built = Native->BuildJoint(Settings, Record->Constraint);
+    if (!Built.IsSuccess()) return Built;
+    Record->Settings = Settings;
+    // All recoverable validation/capacity failures occur before registration or filter mutation.
+    // Like existing body/rig creation, allocator failure is not claimed to be recoverable.
+    if (Index == INDEX_NONE) Index = Native->Joints.AddDefaulted();
+    Native->Physics.AddConstraint(Record->Constraint.GetPtr());
+    Native->AddSuppression(Record->Suppression);
+    Native->Slots[Settings.BodyA.Slot].IncidentJoints.Add(Index);
+    Native->Slots[Settings.BodyB.Slot].IncidentJoints.Add(Index);
+    Native->Joints[Index].Record = MoveTemp(Record);
+    ++Native->JointCount;
+    Native->Wake(Settings.BodyA);
+    Native->Wake(Settings.BodyB);
+    OutJoint = { Native->Lifetime, Index, Native->Joints[Index].Generation };
+    RefreshDiagnostics();
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::UpdateJoint(const FProphecyJoltJointHandle& Handle,
+    const FProphecyJoltJointSettings& Settings)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const FJointRecord* Old = Native->FindJoint(Handle);
+    if (!Old) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world joint handle."));
+    if (!SameBody(Old->Settings.BodyA, Settings.BodyA) || !SameBody(Old->Settings.BodyB, Settings.BodyB) || Old->Settings.Type != Settings.Type)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Joint updates cannot change endpoints, endpoint order or type; create a new joint explicitly."));
+    JPH::Ref<JPH::TwoBodyConstraint> Replacement;
+    const FProphecyJoltWorldStatus Built = Native->BuildJoint(Settings, Replacement);
+    if (!Built.IsSuccess()) return Built;
+    FJointRecord& Record = *Native->Joints[Handle.Slot].Record;
+    Native->Physics.RemoveConstraint(Record.Constraint.GetPtr());
+    Native->Physics.AddConstraint(Replacement.GetPtr());
+    Record.Constraint = MoveTemp(Replacement); // New constraint intentionally has no warm-start history.
+    Record.Settings = Settings;
+    Native->Wake(Settings.BodyA);
+    Native->Wake(Settings.BodyB);
+    RefreshDiagnostics();
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadJoint(const FProphecyJoltJointHandle& Handle,
+    FProphecyJoltJointSettings& OutSettings) const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    OutSettings = {};
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const FJointRecord* Record = Native->FindJoint(Handle);
+    if (!Record) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world joint handle."));
+    OutSettings = Record->Settings;
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::DestroyJoint(const FProphecyJoltJointHandle& Handle)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    if (!IsInGameThread()) return Fail(EProphecyJoltWorldResult::WrongThread, TEXT("Joint destruction requires the game thread."));
+    if (bStepInProgress) return Fail(EProphecyJoltWorldResult::Busy, TEXT("Cannot destroy a joint during a physics step."));
+    if (!Native || !Native->FindJoint(Handle))
+        return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world joint handle."));
+    Native->DestroyJointSlot(Handle.Slot);
+    RefreshDiagnostics();
+    return {};
+}
+
+bool UProphecyJoltWorldSubsystem::OwnsJoint(const FProphecyJoltJointHandle& Handle) const
+{
+    return IsInGameThread() && !bStepInProgress && Native && Native->FindJoint(Handle);
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetBodyVelocity(const FProphecyJoltBodyHandle& Handle,
+    const FVector& CenterOfMassVelocityCmPerSecond, const FVector& AngularVelocityRadiansPerSecond, bool bWake)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    using namespace ProphecyJolt::Conversions;
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const FBodySlot* Slot = Native->Find(Handle);
+    if (!Slot) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world body handle."));
+    if (!FitsFloatVector(CenterOfMassVelocityCmPerSecond, CentimetersToMeters)
+        || !FitsFloatVector(AngularVelocityRadiansPerSecond, 1.0))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("COM and angular velocity must fit finite native precision."));
+    const JPH::Vec3 Linear = ToJoltLinearVelocity(CenterOfMassVelocityCmPerSecond);
+    const JPH::Vec3 Angular = ToJoltAngularVelocity(AngularVelocityRadiansPerSecond);
+    if (!FMath::IsFinite(Linear.LengthSq()) || !FMath::IsFinite(Angular.LengthSq()))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Velocity magnitude exceeds finite native clamping arithmetic."));
+    {
+        JPH::BodyLockWrite Lock(Native->Physics.GetBodyLockInterface(), Slot->Body);
+        if (!Lock.SucceededAndIsInBroadPhase()) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Body is absent from Jolt."));
+        JPH::Body& Body = Lock.GetBody();
+        if (!Body.IsDynamic()) return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Velocity writes require a dynamic body."));
+        // BodyInterface setters implicitly activate; use the locked body so the explicit wake
+        // policy survives carried/drop transitions and a rejected request never partially writes.
+        Body.SetLinearVelocityClamped(Linear);
+        Body.SetAngularVelocityClamped(Angular);
+    }
+    if (bWake) Native->Physics.GetBodyInterface().ActivateBody(Slot->Body);
+    RefreshDiagnostics();
+    return {};
+}
+
+bool UProphecyJoltWorldSubsystem::OwnsBody(const FProphecyJoltBodyHandle& Handle) const
+{
+    return IsInGameThread() && !bStepInProgress && Native && Native->Find(Handle);
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::DestroyBody(const FProphecyJoltBodyHandle& Handle)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    if (!IsInGameThread()) return Fail(EProphecyJoltWorldResult::WrongThread, TEXT("Body destruction requires the game thread."));
+    if (bStepInProgress) return Fail(EProphecyJoltWorldResult::Busy, TEXT("Cannot destroy a body during a physics step."));
+    if (!Native || !Native->Find(Handle)) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world body handle."));
+    if (Native->Slots[Handle.Slot].OwnerRig.IsSet())
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("A rig body cannot be removed independently; destroy its owning rig to remove constraints and invalidate the complete rig safely."));
+    Native->DestroySlot(Handle.Slot);
+    RefreshDiagnostics();
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ResolveAssociatedObject(const FProphecyJoltBodyHandle& Handle, UObject*& OutObject) const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    OutObject = nullptr;
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const FBodySlot* Slot = Native->Find(Handle);
+    if (!Slot) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Stale, unset or cross-world body handle."));
+    OutObject = Slot->AssociatedObject.Get();
+    return OutObject ? FProphecyJoltWorldStatus{} : Fail(EProphecyJoltWorldResult::AssociationUnavailable, TEXT("Optional object association is absent or expired."));
+}
+
+void UProphecyJoltWorldSubsystem::RefreshDiagnostics()
+{
+    check(IsInGameThread());
+    if (!Native) return;
+    Diagnostics.bInitialized = true;
+    Diagnostics.bNoLockIdleBodyReads = Native->bNoLockIdleBodyReads;
+    Diagnostics.BodyCount = Native->Physics.GetNumBodies();
+    Diagnostics.ActiveRigidBodyCount = Native->Physics.GetNumActiveBodies(JPH::EBodyType::RigidBody);
+    Diagnostics.ConstraintCount = static_cast<uint32>(Native->Physics.GetConstraints().size());
+    Diagnostics.CollisionProfileCount = Native->CollisionProfiles.Num();
+    Diagnostics.GenericJointCount = Native->JointCount;
+    Diagnostics.SuppressedBodyPairCount = static_cast<uint32>(Native->Suppression.Num());
+    Diagnostics.JobConcurrency = Native->Jobs->GetMaxConcurrency();
+    Diagnostics.BodyCreationFailures = Native->CreationFailures;
+    Diagnostics.TempPeakBytes = Native->Temp.Peak;
+    Diagnostics.TempCurrentBytes = Native->Temp.GetUsage();
+    Diagnostics.TempAllocationCount = Native->Temp.AllocationCount;
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::Step(float DeltaSeconds, int32 CollisionSteps)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const FProphecyJoltWorldStatus Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    if (!FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0.0f || CollisionSteps <= 0
+        || DeltaSeconds / static_cast<float>(CollisionSteps) <= 0.0f)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Step requires a positive finite interval and positive collision-step count."));
+    TGuardValue<bool> Guard(bStepInProgress, true);
+    Diagnostics.LastRequestedDeltaSeconds = DeltaSeconds;
+    Diagnostics.LastCollisionSteps = CollisionSteps;
+    const double Started = FPlatformTime::Seconds();
+    Diagnostics.LastServoPrepareWallSeconds = Diagnostics.LastActivationWallSeconds = 0.0;
+    Diagnostics.LastPhysicsUpdateWallSeconds = Diagnostics.LastServoCaptureWallSeconds = 0.0;
+    Diagnostics.LastValidationWallSeconds = 0.0;
+    // Prepare target-driven activation before Jolt snapshots its active list,
+    // so controlled bodies receive gravity/force/damping on the first awake step.
+    FString ActivationError;
+    const bool bPrepared = Native->PrepareServoPacket(ActivationError);
+    const double PreparedAt = FPlatformTime::Seconds();
+    Diagnostics.LastServoPrepareWallSeconds = PreparedAt - Started;
+    const bool bActivated = bPrepared && Native->Servo.PrepareActivation(Native->Physics, ActivationError,
+        Native->bNoLockIdleBodyReads, DeltaSeconds / float(CollisionSteps));
+    const double ActivatedAt = FPlatformTime::Seconds();
+    Diagnostics.LastActivationWallSeconds = ActivatedAt - PreparedAt;
+    if (!bActivated)
+    {
+        Diagnostics.LastStepWallSeconds = FPlatformTime::Seconds() - Started;
+        Diagnostics.bFaulted = true;
+        Diagnostics.Failure = ActivationError;
+        RefreshDiagnostics();
+        return { EProphecyJoltWorldResult::PhysicsFailure, Diagnostics.Failure };
+    }
+    // No accumulator, tick subscription, fixed-step substitution, delta clamp or automatic catch-up policy.
+    const uint64 PreviousServoInvocations = Native->Servo.GetInvocationCount();
+    const JPH::EPhysicsUpdateError Result = Native->Physics.Update(DeltaSeconds, CollisionSteps, &Native->Temp, Native->Jobs.Get());
+    const double UpdatedAt = FPlatformTime::Seconds();
+    Diagnostics.LastPhysicsUpdateWallSeconds = UpdatedAt - ActivatedAt;
+    // A numerical fault is contained inside Jolt before invalid transforms are
+    // committed. Do not capture servo samples or publish any part of this step.
+    if ((Result & JPH::EPhysicsUpdateError::NumericalFailure) != JPH::EPhysicsUpdateError::None)
+    {
+        Diagnostics.LastUpdateErrorBits = static_cast<uint32>(Result);
+        Diagnostics.LastStepWallSeconds = UpdatedAt - Started;
+        Diagnostics.bFaulted = true;
+        Diagnostics.Failure = TEXT("Jolt stopped safely after a numerical solver failure; the last published pose is retained. Stop Play and restart the simulation to reset it.");
+        RefreshDiagnostics();
+        UE_LOG(LogProphecyJoltWorld, Warning, TEXT("%s"), *Diagnostics.Failure);
+        return { EProphecyJoltWorldResult::PhysicsFailure, Diagnostics.Failure };
+    }
+    Native->CaptureServoSamples(PreviousServoInvocations);
+    const double CapturedAt = FPlatformTime::Seconds();
+    Diagnostics.LastServoCaptureWallSeconds = CapturedAt - UpdatedAt;
+    Diagnostics.LastStepWallSeconds = CapturedAt - Started;
+    Diagnostics.LastUpdateErrorBits = static_cast<uint32>(Result);
+    RefreshDiagnostics();
+    if (Native->Servo.GetInvalidBodyCount() != 0)
+    {
+        Diagnostics.bFaulted = true;
+        Diagnostics.Failure = TEXT("Jolt fixture servo encountered invalid body state or a velocity overflow; explicit shutdown is required.");
+        return { EProphecyJoltWorldResult::PhysicsFailure, Diagnostics.Failure };
+    }
+    if (Result != JPH::EPhysicsUpdateError::None || Diagnostics.TempCurrentBytes != 0)
+    {
+        Diagnostics.bFaulted = true;
+        Diagnostics.Failure = FString::Printf(TEXT("Jolt Update failed: error bits 0x%x, remaining temporary bytes %llu."),
+            Diagnostics.LastUpdateErrorBits, Diagnostics.TempCurrentBytes);
+        return { EProphecyJoltWorldResult::PhysicsFailure, Diagnostics.Failure };
+    }
+    const double ValidationStarted = FPlatformTime::Seconds();
+    for (const auto& Slot : Native->Slots)
+    {
+        if (Slot.Body.IsInvalid()) continue;
+        const JPH::BodyLockRead Lock(Native->IdleBodyReadLocks(), Slot.Body);
+        bool bValid = Lock.SucceededAndIsInBroadPhase();
+        if (bValid)
+        {
+            const JPH::Body& Body = Lock.GetBody();
+            bValid = Finite(ProphecyJolt::Conversions::FromJoltPosition(Body.GetPosition()))
+                && Finite(ProphecyJolt::Conversions::FromJoltPosition(Body.GetCenterOfMassPosition()))
+                && !ProphecyJolt::Conversions::FromJoltRotation(Body.GetRotation()).ContainsNaN()
+                && Finite(ProphecyJolt::Conversions::FromJoltLinearVelocity(Body.GetLinearVelocity()))
+                && Finite(ProphecyJolt::Conversions::FromJoltAngularVelocity(Body.GetAngularVelocity()));
+        }
+        if (!bValid)
+        {
+            Diagnostics.bFaulted = true;
+            Diagnostics.Failure = TEXT("Jolt body registry/state is invalid after Update; explicit shutdown is required.");
+            Diagnostics.LastValidationWallSeconds = FPlatformTime::Seconds() - ValidationStarted;
+            return { EProphecyJoltWorldResult::PhysicsFailure, Diagnostics.Failure };
+        }
+    }
+    Diagnostics.LastValidationWallSeconds = FPlatformTime::Seconds() - ValidationStarted;
+    ++Diagnostics.CompletedSteps;
+    Diagnostics.SimulatedSeconds += static_cast<double>(DeltaSeconds);
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::GetDiagnostics(FProphecyJoltWorldDiagnostics& OutDiagnostics) const
+{
+    if (!IsInGameThread()) return ProphecyJolt::WorldPrivate::Fail(EProphecyJoltWorldResult::WrongThread, TEXT("Diagnostics require the game thread."));
+    OutDiagnostics = Diagnostics;
+    return {};
+}
+
+int32 UProphecyJoltWorldSubsystem::GetLiveSimulationCount()
+{
+    return ProphecyJolt::WorldPrivate::LiveSimulations.load(std::memory_order_relaxed);
+}

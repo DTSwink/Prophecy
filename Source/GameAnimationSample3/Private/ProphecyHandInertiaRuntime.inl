@@ -43,10 +43,10 @@ void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyA
     FTransform Pose[FullBodyBoneCount],Previous[FullBodyBoneCount];
     const FLocomotionClamps Unclamped;
     DecodeLocomotionPose(Impl,StateSlice(Impl->PublishedStateBuffer,Index),Upper,
-        Agent.PublishedWalkWeight,MakeArrayView(Pose),nullptr,Unclamped);
+        Agent.PublishedWalkWeight,MakeArrayView(Pose),nullptr,Unclamped,&Agent.PublishedLegWalkWeights);
     DecodeLocomotionPose(Impl,StateSlice(Impl->PreviousPublishedStateBuffer,Index),
         UpperStateSlice(Impl->UpperPreviousPublishedStateBuffer,Index),Agent.PreviousPublishedWalkWeight,
-        MakeArrayView(Previous),nullptr,Unclamped);
+        MakeArrayView(Previous),nullptr,Unclamped,&Agent.PreviousPublishedLegWalkWeights);
     const FTransform Root=HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw);
     const FTransform PrevRoot=HandInertiaRoot(Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
     const FTransform Carrier=HandInertiaCarrier(Actor,Root),PrevCarrier=HandInertiaCarrier(Actor,PrevRoot);

@@ -19,7 +19,13 @@ restart or Blueprint/scene changes. Validation is limited to compilation, reflec
 node availability and inspection of the shared handoff wiring; scene testing remains
 with the user.
 
-`Set Attack To Locomotion Blend` takes Agent, Duration Seconds (default **1**) and
+The recovery interface was expanded on2026-09-20: **Set Attack To Locomotion Blend**
+now has separate Pelvis, Left Leg and Right Leg source/hold/duration controls and
+returns each to **normal selection**, not a forced walk endpoint. See
+[Regional attack recovery](AttackRecoveryBlend.md) for current behavior. The notes
+below describe the earlier implementation and its validation.
+
+Previously, `Set Attack To Locomotion Blend` took Agent, Duration Seconds (default **1**) and
 Hold Duration Seconds (default **0**, preserving existing calls).
 After a full or half attack returns to locomotion, the first lower prediction uses
 100% Run. It holds that pure Run checkpoint for the hold duration, then its weight

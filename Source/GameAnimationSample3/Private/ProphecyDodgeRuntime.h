@@ -21,5 +21,5 @@ bool PrepareDodge(const FDodgeState& State,const float* FrozenLower,FContext Con
     const FRootFrame* PlannedRoot=nullptr);
 bool CompleteDodge(FDodgeState& State,const FDodgeWork& Work,const float* FrozenLower,const float* Output112,
     const FGeometry& Geometry,FPose& Pose,float* ModifiedLower=nullptr,float* UnrebasedUpper=nullptr,
-    const FRootFrame* PlannedRoot=nullptr);
+    const FRootFrame* PlannedRoot=nullptr,bool bReconstructLegs=true);
 }

@@ -39,6 +39,7 @@
 #include "SkeletalMeshOperations.h"
 #include "SkeletalMeshTypes.h"
 #include "SkeletonModifier.h"
+#include "ProphecyLiveAgentTypeRepair.inl"
 
 namespace
 {

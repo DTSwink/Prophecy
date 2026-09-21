@@ -779,6 +779,8 @@ public:
 	 * Returns false before NN registration. Full attacks can hide this underlying locomotion pose. */
 	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Locomotion")
 	bool GetLocomotionCheckpointWeights(float& WalkWeight, float& RunWeight) const;
+	// Native physical-context readback; legacy Blueprint getter describes the pelvis.
+	bool GetLocomotionRegionalWeights(float& PelvisWalkWeight, FVector2f& LegWalkWeights) const;
 
 	/** Force the walk checkpoint below this actual horizontal mover speed (cm/s), even with run intent.
 	 * Negative disables (default -1). Does not change movement mode/speed; uses policy blend times. */
@@ -903,6 +905,13 @@ public:
 	/** Return control to locomotion using the last published attack pose as recurrent history. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|NN Attack")
 	bool StopNNAttack();
+
+	/** Fires once after an active attack ends, including natural completion, stop,
+	 * cancellation or replacement. Native attack cleanup is complete before this
+	 * event, so Blueprint can start profile/tempering return blends here.
+	 * Attack and Half Attack describe the attack that ended, not a newly requested attack. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Prophecy|Agent|NN Attack", meta=(DisplayName="On Attack Ended"))
+	void OnNNAttackEnded(FName Attack, bool bHalfAttack);
 
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|NN Attack")
 	bool GetNNAttackState(FName& Attack, bool& bHalfAttack, bool& bArmed, bool& bHit, int32& PolicyFrame) const;

@@ -9,6 +9,15 @@ class GAMEANIMATIONSAMPLE3_API UProphecyRootPhysicsLibrary : public UBlueprintFu
 {
     GENERATED_BODY()
 public:
+    /** Configure the NEXT kick recovery: hold the balancing target below the live pelvis,
+     * then blend toward the live feet midpoint. Applies to kickL/kickR return placement too.
+     * 1 second means 60 unpaused game ticks, not wall time. 0/0 disables and cancels.
+     * Unconfigured agents retain normal balancing. New attacks/defenses and reset cancel
+     * the active exception; normal balancing enable/input/speed gates still apply. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Root", meta=(DefaultToSelf="Agent"))
+    static bool SetKickSelfBalancingExceptionDurations(AProphecyAgent* Agent,
+        float HoldDurationSeconds=0.f,float FadeDurationSeconds=1.f);
+
     /** Select the run checkpoint above this planar root speed, even with walk input.
      * Uses the next root-window step AFTER smoothing, magic and speed limits.
      * Changes checkpoint selection only, not movement input/speed. Existing blend times apply.

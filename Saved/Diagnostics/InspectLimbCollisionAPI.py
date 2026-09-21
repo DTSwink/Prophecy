@@ -1,0 +1,13 @@
+import unreal
+ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
+assert not ed.get_game_world()
+unreal.SystemLibrary.execute_console_command(ed.get_editor_world(),'Prophecy.Collision.ReloadChannels')
+cls=unreal.load_class(None,'/Script/GameAnimationSample3.ProphecyLimbCollisionLibrary')
+print('CLASS',cls)
+cdo=unreal.get_default_object(cls)
+print('METHOD',cdo.call_method.__doc__)
+print('EMPTY',cdo.call_method('GetModifiedLimbCollisionBones',(None,)))
+print('CHANNELS',[x for x in dir(unreal.CollisionChannel) if '11' in x or 'LEG' in x])
+print('VALUES',unreal.CollisionChannel.__dict__)
+print('CALL',cdo.call_method('SetJoltLimbCollisionChannel',(None,'thigh_r',24,True)))
+print('DIRTY',[p.get_path_name() for p in unreal.EditorLoadingAndSavingUtils.get_dirty_content_packages()])

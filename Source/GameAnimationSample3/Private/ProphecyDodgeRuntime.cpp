@@ -35,12 +35,12 @@ bool PrepareDodge(const FDodgeState& S,const float* Frozen,FContext Context,FDod
     Write(Input+359,InTransposedBasis(S.RootShift,S.CurrentRoot.R));W.StateStep=S.CompletedSteps;return true;
 }
 bool CompleteDodge(FDodgeState& S,const FDodgeWork& W,const float* Frozen,const float* Output,
-    const FGeometry& Geometry,FPose& Pose,float* ModifiedLower,float* UnrebasedUpper,const FRootFrame* PlannedRoot)
+    const FGeometry& Geometry,FPose& Pose,float* ModifiedLower,float* UnrebasedUpper,const FRootFrame* PlannedRoot,bool bReconstructLegs)
 {
     if (!S.bInitialized || W.StateStep!=S.CompletedSteps) return false;
     const float PelvisHeight=(Transform(Read(Frozen),S.CurrentRoot.R)+S.CurrentRoot.P).Y;
     const auto C=DodgeControls(Output+90,S.Remaining,PelvisHeight);
-    float Modified[41];Geometry.SolveDodgeLower(Frozen,C,S.CurrentRoot.P,S.CurrentRoot.R,Modified);
+    float Modified[41];Geometry.SolveDodgeLower(Frozen,C,S.CurrentRoot.P,S.CurrentRoot.R,Modified,true,bReconstructLegs);
     if (ModifiedLower) FMemory::Memcpy(ModifiedLower,Modified,sizeof(Modified));
     const FRows Identity={{{1,0,0},{0,1,0},{0,0,1}}};
     FPose CurrentBasePose,NextBasePose;float CurrentBase[90],NextBase[90],Upper[90];

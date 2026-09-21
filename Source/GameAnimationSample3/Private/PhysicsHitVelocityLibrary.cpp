@@ -3,6 +3,20 @@
 #include "Components/PrimitiveComponent.h"
 #include "Engine/World.h"
 #include "PhysicsEngine/BodyInstance.h"
+#include "ProphecyHitTrajectory.inl"
+
+FVector UPhysicsHitVelocityLibrary::GetHitTrajectory(
+    const UObject* WorldContextObject,FVector StartLocation,FVector CurrentTargetLocation,
+    FVector CurrentTargetSpeed,float Angle,bool& ExactHit,float& FlightTime,float& MissDistance,
+    float MaxLaunchSpeed,float MaxFlightTime,float GravityScale)
+{
+    const UWorld* World=WorldContextObject ? WorldContextObject->GetWorld() : nullptr;
+    const double GravityZ=World ? World->GetGravityZ() : -980.;
+    const auto Result=ProphecyHitTrajectory::Solve(CurrentTargetLocation-StartLocation,
+        CurrentTargetSpeed,Angle,GravityZ*GravityScale,MaxLaunchSpeed,MaxFlightTime);
+    ExactHit=Result.Exact;FlightTime=static_cast<float>(Result.Time);MissDistance=static_cast<float>(Result.Miss);
+    return Result.Velocity;
+}
 
 namespace
 {
@@ -167,3 +181,5 @@ FVector UPhysicsHitVelocityLibrary::angspring_cpp(
 	const FVector DeltaAngularVelocityRad = DesiredAngularVelocityRad - AngularVelocityRad;
 	return ApplyDeltaVelocityLimits(DeltaAngularVelocityRad, DAngVelMax, Tolerance);
 }
+
+#include "ProphecyHitTrajectoryTests.inl"

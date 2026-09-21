@@ -47,6 +47,27 @@ class GAMEANIMATIONSAMPLE3_API UPhysicsHitVelocityLibrary : public UBlueprintFun
 	GENERATED_BODY()
 
 public:
+	/** Launch a ballistic projectile toward a target moving at constant world velocity (cm/s).
+	 * Angle is elevation in degrees: 0 horizontal, 90 up, -90 down. Values are clamped to this range.
+	 * Keeps the angle even when no hit is possible: minimizes point-to-point miss within the advanced
+	 * speed/time limits. World gravity * GravityScale; assumes no drag, collision or target acceleration.
+	 * Exact Hit means miss <= 0.01 cm; Flight Time is time of hit/closest pass, Miss Distance is in cm.
+	 * Invalid inputs return zero velocity, Exact Hit=false and Miss Distance=-1. Computed only when called.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Physics|Trajectory", meta=(WorldContext="WorldContextObject", DisplayName="Get Launch Trajectory", ReturnDisplayName="Velocity", AdvancedDisplay="MaxLaunchSpeed,MaxFlightTime,GravityScale"))
+	static FVector GetHitTrajectory(
+		const UObject* WorldContextObject,
+		FVector StartLocation,
+		FVector CurrentTargetLocation,
+		FVector CurrentTargetSpeed,
+		float Angle,
+		bool& ExactHit,
+		float& FlightTime,
+		float& MissDistance,
+		float MaxLaunchSpeed=10000.f,
+		float MaxFlightTime=10.f,
+		float GravityScale=1.f);
+
 	/**
 	 * Reconstructs pre-hit linear/angular velocity from post-hit velocity + collision impulse.
 	 *

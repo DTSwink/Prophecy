@@ -1,5 +1,7 @@
 #include "ProphecyPhysicalProfileLibrary.h"
 #include "ProphecyAgent.h"
+#include "ProphecyJointDampingPolicy.h"
+#include "ProphecyClampProfiles.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -51,10 +53,14 @@ FString UProphecyPhysicalProfileLibrary::PrintPhysicalBoneProfiles(
         const float Angular = Enabled ? FMath::Max(0.f, Agent->WorldMagnetizationAngularStrengthScale * Magnet.AngularStrengthScale) : 0.f;
         FProphecyPhysicalFeedbackToleranceSettings Tolerance;
         const FString ToleranceText = Agent->GetPhysicalFeedbackTolerance(Row.Bone, Tolerance)
-            ? FString::Printf(TEXT("L=%.2fcm A=%.2fdeg"), Tolerance.LinearToleranceCm, Tolerance.AngularToleranceDegrees)
+            ? FString::Printf(TEXT("L=%.2f A=%.2f"), Tolerance.LinearToleranceCm, Tolerance.AngularToleranceDegrees)
             : TEXT("n/a");
         if (!Text.IsEmpty()) Text += TEXT("\n");
-        Text += FString::Printf(TEXT("%s : L=%.2f A=%.2f / %s"), *Row.Bone.ToString(), Linear, Angular, *ToleranceText);
+        float Damping;
+        const FString DampingText=ProphecyJointDamping::Get(Agent,Row.Bone,Damping)
+            ? FString::Printf(TEXT("%.2f"),Damping) : TEXT("n/a");
+        Text += FString::Printf(TEXT("%s : L=%.2f A=%.2f / %s / D=%s"), *Row.Bone.ToString(), Linear, Angular, *ToleranceText,*DampingText);
+        Text += ProphecyClampProfiles::Debug(Agent,Row.Bone);
     }
     if (!Text.IsEmpty())
     {
