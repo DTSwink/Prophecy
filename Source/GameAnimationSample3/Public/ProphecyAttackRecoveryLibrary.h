@@ -13,6 +13,13 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackRecoveryLibrary : public UBlueprin
 {
     GENERATED_BODY()
 public:
+    /** Opt-in foot rotation from Walk after full/half attacks, including kicks.
+     * Uses each leg's existing recovery hold/blend back to normal. Translation,
+     * pelvis, thighs, toes and pin source retain their configured blend. Rotation
+     * tempering and contact correction still apply. Off until enabled here. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack", meta=(DisplayName="Set Attack Recovery Foot Rotation From Walk"))
+    static bool SetAttackRecoveryFootRotationFromWalk(AProphecyAgent* Agent,bool Enabled=true);
+
     /** Independent pelvis/left-leg/right-leg recovery after attack/parry/dodge. Each part
      * holds its selected checkpoint, then blends to NORMAL locomotion selection
      * (including ordinary walk/run blends). Does not change root motion.

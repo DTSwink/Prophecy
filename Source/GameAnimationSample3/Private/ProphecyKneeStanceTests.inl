@@ -105,13 +105,15 @@ bool FProphecyStancePlaneConnectedRegressionTest::RunTest(const FString&)
     Expand(F.Previous,F.Offset,Previous);Expand(F.Source,F.Offset,Source);Expand(F.Target,F.Offset,Initial);
     FMemory::Memcpy(Target,Initial,sizeof(Target));
     ResolveTemperedLeg(F.Settings,Previous,F.Geometry,Target,F.Offset,F.Forward,F.Up,.15f,false,Source);
-    // Independent double-precision fixture evaluation, not the C++ solver's output.
-    const float Expected[6]={-.194084247f,-.592315395f,-.781980676f,.0226195174f,-.799628539f,.600068794f};
+    // Independent double-precision fixture evaluation. Hinge/twist admission
+    // follows FeetRotation once, just like the stance offset. The final plane
+    // correction follows that authored amount too instead of overriding it.
+    const float Expected[6]={-.176451077f,-.590883095f,-.787224355f,-.073765539f,-.789586165f,.609189899f};
     TestTrue(TEXT("Wide stance matches independent geometry"),MatrixToQuat(MatrixFromRot6(Target+F.Offset+9)).AngularDistance(
         MatrixToQuat(MatrixFromRot6(Expected)))<3.e-5);
     const float Step=FMath::RadiansToDegrees(MatrixToQuat(MatrixFromRot6(Target+F.Offset+9)).AngularDistance(
         MatrixToQuat(MatrixFromRot6(Previous+F.Offset+9))));
-    TestTrue(TEXT("Recorded large snap becomes the independently predicted 6.50 degree step"),FMath::Abs(Step-6.503658f)<.03f);
+    TestTrue(TEXT("Recorded large snap becomes the independently predicted 3.29 degree step"),FMath::Abs(Step-3.287029f)<.03f);
     const FVector3f Hip=ReadStateVec3(Target,0)+TransformRow(F.Geometry.HipOffset,MatrixFromRot6(Target+3));
     const FVector3f Knee=Hip+TransformRow(F.Geometry.KneeOffset,MatrixFromRot6(Target+F.Offset+9));
     const FVector3f Foot=ReadStateVec3(Target,F.Offset);
@@ -123,14 +125,16 @@ bool FProphecyStancePlaneConnectedRegressionTest::RunTest(const FString&)
     TestEqual(TEXT("Other leg untouched"),FMemory::Memcmp(Target+9,Initial+9,16*sizeof(float)),0);
     TestEqual(TEXT("Toe untouched"),Target[F.Offset+15],Initial[F.Offset+15]);
     FQuat Last=FQuat::Identity;
+    // Double-precision reference values after partial plane guidance, not a
+    // demand to reach the plane instantly while following only one quarter.
+    const float ExpectedOffsets[]={-.122153614f,-.121991295f,-.121822075f,-.121645956f,-.121462939f};
     for (int32 I=0;I<=4;++I)
     {
         const float Follow=.23f+.01f*I;
         auto S=F.Settings;S.FeetRotation=Follow;
         FMemory::Memcpy(Target,Initial,sizeof(Target));
         ResolveTemperedLeg(S,Previous,F.Geometry,Target,F.Offset,F.Forward,F.Up,.15f,false,Source);
-        const float ExpectedOffset=FMath::Lerp(-.1348527317f,-.08945818317f,Follow);
-        TestTrue(TEXT("Quarter following approaches measured source stance offset"),FMath::Abs(SideOffset(F,Target)-ExpectedOffset)<5.e-6f);
+        TestTrue(TEXT("Quarter following matches gradual stance guidance"),FMath::Abs(SideOffset(F,Target)-ExpectedOffsets[I])<5.e-6f);
         const FQuat Current=MatrixToQuat(MatrixFromRot6(Target+F.Offset+9));
         if (I) TestTrue(TEXT("Small quarter-follow changes are continuous"),Current.AngularDistance(Last)<.02);
         Last=Current;
@@ -140,6 +144,13 @@ bool FProphecyStancePlaneConnectedRegressionTest::RunTest(const FString&)
     ResolveTemperedLeg(Frozen,Previous,F.Geometry,Target,F.Offset,F.Forward,F.Up,.15f,false,Source);
     ResolveTemperedLeg(Frozen,Previous,F.Geometry,NullSource,F.Offset,F.Forward,F.Up,.15f,false,nullptr);
     TestEqual(TEXT("Zero following ignores NN source bit for bit"),FMemory::Memcmp(Target,NullSource,sizeof(Target)),0);
+    // Previously any positive value applied the full final plane correction,
+    // so arbitrarily small following jumped away from the exact frozen solve.
+    auto NearlyFrozen=Frozen;NearlyFrozen.FeetRotation=1.e-6f;
+    FMemory::Memcpy(NullSource,Initial,sizeof(NullSource));
+    ResolveTemperedLeg(NearlyFrozen,Previous,F.Geometry,NullSource,F.Offset,F.Forward,F.Up,.15f,false,Source);
+    TestTrue(TEXT("Final plane guidance is continuous at zero following"),MatrixToQuat(MatrixFromRot6(Target+F.Offset+9)).AngularDistance(
+        MatrixToQuat(MatrixFromRot6(NullSource+F.Offset+9)))<1.e-4);
     return !HasAnyErrors();
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyStancePlaneRaisedSourceTest,

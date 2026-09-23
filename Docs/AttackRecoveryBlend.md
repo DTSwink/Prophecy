@@ -1,5 +1,42 @@
 # Regional attack recovery
 
+## Optional Walk foot-rotation source
+
+**Set Attack Recovery Foot Rotation From Walk** (Agent, Enabled=true) opts an
+agent into Walk foot orientation during attack recovery. It is off until called.
+Call it in delayed BeginPlay or Special/Attack Ended; toggling it during a return
+does not restart the translation blend. Disabled immediately restores the usual
+rotation selection.
+
+Both feet use their own existing leg hold/blend duration, including the mapped
+kicking/non-kicking durations after kickL/kickR. Normal/zero-duration leg regions
+remain bypassed. While translation follows its configured source→normal blend,
+rotation follows Walk→normal on that same timeline. Thus for the user's current
+Run→Walk recovery, foot rotation comes entirely from Walk throughout. If normal
+locomotion is Run, rotation fades back to Run rather than snapping at retirement.
+
+Only the two foot rotation fields change source. Pelvis, ankle prediction,
+thigh rotation, toe articulation and pin selection retain their existing source
+weights. Selection happens before rotation tempering, foot rolling, floor checks
+and leg reconstruction, so these existing systems see the actual chosen foot
+orientation. Their resulting contact corrections can naturally change ankle
+positions; this does not freeze the final world-space position numerically.
+The accepted result feeds both recurrence and upper-body conditioning.
+
+The override applies after full/half attacks, including kicks, and is absent
+during specials or after defense-only exits. New specials/reset cancel the
+current return; the configured checkbox remains available for future attacks.
+The ordinary recovery clock retires each foot independently. No additional
+timer, inference or rotation processing remains after completion. While active,
+a Run-only translation may require the existing batched Walk evaluation too.
+It shares that evaluation with all existing Walk consumers.
+
+Validation2026-09-23: Live Coding build succeeded (375.34s), reflected node enable/
+disable calls succeeded, pose Blueprint compiled with status3 and zero stale agent
+types. Four focused native tests passed: recovery rotation timing/role mapping,
+rotation-only fields, existing regional recovery, and the60-tick clock. No scene
+test or Blueprint wiring/save was performed; the node is ready for user testing.
+
 `Set Attack To Locomotion Blend` configures the next attack exit. Pelvis, Left Leg
 and Right Leg each have **Source** (Normal, Walk, Run), **Hold Duration Seconds**,
 then **Blend Duration Seconds**, in that order. Defaults are Run, 0 and 1 for each

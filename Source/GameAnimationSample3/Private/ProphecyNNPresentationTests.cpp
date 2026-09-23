@@ -4,6 +4,47 @@
 #include "ProphecyNNPresentation.h"
 #include "ProphecyNNPoseTypes.h"
 #include "Misc/AutomationTest.h"
+#include "ProphecyRecoveryLegLength.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRecoveryCalfLengthTest,"Prophecy.NN.PhysicalTargets.RecoveryCalfLength",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FRecoveryCalfLengthTest::RunTest(const FString&)
+{
+    using namespace ProphecyRecoveryLegLength;
+    for (double Length:{37.5,42.5,47.5})
+    {
+        FTransform Thigh(FQuat::Identity,FVector(0,0,75));
+        FTransform Calf(FQuat::Identity,FVector(20,0,40));
+        const FTransform Foot(FRotator(12,32,-8),FVector(0,0,5));
+        const FTransform Saved=Foot;
+        TestTrue(TEXT("Reachable compression/extension resolves"),Resolve(Thigh,Calf,Foot,42.5,Length));
+        TestTrue(TEXT("Upper length preserved"),FMath::IsNearlyEqual((Calf.GetLocation()-Thigh.GetLocation()).Size(),42.5,1.e-6));
+        TestTrue(TEXT("Calf length preserved including compression"),FMath::IsNearlyEqual((Foot.GetLocation()-Calf.GetLocation()).Size(),Length,1.e-6));
+        TestTrue(TEXT("Foot position and rotation unchanged"),Foot.Equals(Saved,0));
+        TestTrue(TEXT("Existing knee bend side preserved"),Calf.GetLocation().X>0);
+        const FTransform Previous=Calf;
+        Resolve(Thigh,Calf,Foot,42.5,Length);
+        TestTrue(TEXT("Repeated presentation is idempotent"),Calf.Equals(Previous,1.e-6));
+    }
+    const int32 Id=-918;
+    const TArray<FName> Names={TEXT("thigh_l"),TEXT("calf_l"),TEXT("foot_l"),TEXT("thigh_r"),TEXT("calf_r"),TEXT("foot_r")};
+    TArray<FTransform> Pose;
+    for (int Side=0;Side<2;++Side)
+    {
+        Pose.Add(FTransform(FVector(0,Side*20,75)));Pose.Add(FTransform(FVector(20,Side*20,40)));Pose.Add(FTransform(FVector(0,Side*20,5)));
+    }
+    FProphecyNNPoseSnapshot Snapshot;Snapshot.BoneNames=Names;Snapshot.LocalTransforms=Pose;
+    ProphecyNNPresentation::SetRecoveryCalfLengths(Id,FVector2D(42.5,42.5),FVector2D(47.5,37.5));
+    FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+    TestTrue(TEXT("Both sides use independently published lengths"),
+        FMath::IsNearlyEqual((Pose[2].GetLocation()-Pose[1].GetLocation()).Size(),47.5,1.e-6)
+        && FMath::IsNearlyEqual((Pose[5].GetLocation()-Pose[4].GetLocation()).Size(),37.5,1.e-6));
+    FProphecyNNPoseStore::ClearAgentPose(Id);
+    Pose[1].AddToTranslation(FVector(1,2,3));const auto Uncorrected=Pose;
+    FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+    TestTrue(TEXT("Cleared/inactive return does no pose work"),Pose[1].Equals(Uncorrected[1],0));
+    return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyNNPresentationCadence,
     "Prophecy.NN.Presentation.FrameCadence", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)

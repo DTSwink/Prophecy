@@ -2,9 +2,17 @@
 
 ## Current behavior, September23
 
-The extension-only **NN pose override is removed**. The checkpoint owns its foot-distance/floor correction; the Blueprint node no longer projects the foot onto the calf axis, captures outgoing NN extension, or modifies locomotion reconstruction lengths. While physical allowance is active, foot magnetisation uses the published foot target directly. Mode-specific foot/calf clamps remain bypassed during that allowance, as before.
+The extension-only **attack-time NN pose override is removed**. The checkpoint owns its foot-distance/floor correction. While physical allowance is active, foot magnetisation uses the published foot target directly. Mode-specific foot/calf clamps remain bypassed during that allowance, as before.
 
-The node still controls Jolt ankle-joint allowance and its return duration. It does not change the checkpoint's±5cm range. Existing physical constraints are a separate setting: this change does not grant additional physical compression or transverse joint freedom. Defaults and60-tick duration convention are unchanged; no NN override map or interpolation pass remains. See [new checkpoint contract](AttackCheckpoint123793.md).
+**Recovery length continuity:** after a full kick returns to locomotion, capture each calf's actual outgoing target length independently. Its signed difference from the reference length fades to zero using the existing `Set Kick Foot Joint Leeway` return duration (60 ticks per authored second, no hold). This supports both extension and compression from the new checkpoint. Reconstruction and pelvis inertia use that current effective length. After pose interpolation, knee/segment-aim correction preserves the ankle position and rotation; it does not push the foot down onto the old calf axis. Unreachable endpoints keep their existing positions and use the nearest feasible knee triangle. No attack pose or new inference is involved.
+
+The correction is active only during that finite configured return. Zero leeway/duration bypasses; new specials, reset, completion and world teardown remove the correction. The leg-chain diagnostic toggle also bypasses it. Existing physical constraints remain extension-only; signed NN length recovery does not add physical joint compression freedom.
+
+Kinematic rendering also retains the attack's authored calf scale during recovery. Applying locomotion's ordinary mesh stretch immediately at exit would snap the visible calf tip to the ankle despite smooth joint-centre distances. The gap now closes with the length return; ordinary locomotion stretching resumes at rest length. Existing authored transverse scale is preserved.
+
+Validation: six focused checks passed;15-exit kinematic replay reduced the5cm two-tick collapse to below0.017cm. Final getter replay verifies that the displayed physical mesh and Blueprint target reads agree within0.00065cm. Both signs of length recovery follow the60-tick curve. [Detailed evidence and scope](KickExitCalfLengthRegression.md).
+
+The node still controls Jolt ankle-joint allowance and its return duration. It does not change the checkpoint's±5cm range. Existing physical constraints are a separate setting: this change does not grant additional physical compression or transverse joint freedom. Defaults and60-tick duration convention are unchanged; no pose-recovery state or correction remains after completion. See [new checkpoint contract](AttackCheckpoint123793.md).
 
 ## Historical implementation through September21 — superseded pose inheritance
 
@@ -44,4 +52,6 @@ Implemented the per-foot captured return and consistent effective reconstruction
 Evidence: `Saved/Diagnostics/KickFootSnap.json` (24 seconds, 15 exits), `KickFootSnap-no_reconstruction.json` (7 seconds, four exits), captured by `KickFootSnapCapture.py`, summarized by `AnalyzeKickFootSnap.py`.
 Corrected evidence: `KickFootSnap-fixed.json`, `KickFootSnap-comparison.json`, and `CompareKickFootSnap.py`, including independent left/right lengths and return-curve assertions.
 
-Final patch loaded14:40:20UTC; all three focused tests passed14:40:53UTC: `KickFootLeeway`, `AttackLegClamps`, `KickLeewayInheritance`. Regressions cover a shortened reconstruction input, shared publication/interpolation return length, independent captured extensions, the tick clock, new-kick cancellation and retirement. The final recompilation changed only a float-comparison tolerance in the clock assertion (1e-5); gameplay behavior matches the captured patch. Changes remain Live Coding patches until the next authorized normal editor build.
+Final patch loaded14:40:20UTC; all three focused tests passed14:40:53UTC: `KickFootLeeway`, `AttackLegClamps`, `KickLeewayInheritance`. Regressions cover a shortened reconstruction input, shared publication/interpolation return length, independent captured extensions, the tick clock, new-kick cancellation and retirement. The final recompilation changed only a float-comparison tolerance in the clock assertion (1e-5); gameplay behavior matches the captured patch.
+
+The2026-09-23 normal Editor build incorporated the later signed-length and render-scale fixes. Direct evaluated-mesh verification across five complete recovery windows now checks calf-tip/ankle continuity as well as joint-centre distance: calf scale remains unchanged, the largest first-tick left gap change is0.004045cm instead of4.907983cm, and each gap converges below0.02cm. See [current evidence](KickExitCalfLengthRegression.md). The authorized pose Blueprint save/restart is complete; diagnostic Play ended.

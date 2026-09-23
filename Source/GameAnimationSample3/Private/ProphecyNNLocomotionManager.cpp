@@ -1679,6 +1679,23 @@ namespace
 		}
 	}
 
+    void OverrideRecoveryFootRotations(const float* Current,const float* RunRaw,const float* WalkRaw,
+        const FVector2f& Weights,float* State)
+    {
+        for (int32 I=0;I<2;++I)
+        {
+            const float W=Weights[I];if (W<0) continue;
+            const int32 O=12+16*I;
+            float Walk[6],Run[6];
+            for (int32 J=0;J<6;++J) Walk[J]=Current[O+J]+WalkRaw[O+J];
+            if (W>=1.f) { FMemory::Memcpy(State+O,Walk,sizeof(Walk));continue; }
+            for (int32 J=0;J<6;++J) Run[J]=Current[O+J]+RunRaw[O+J];
+            const FQuat R=MatrixToQuat(MatrixFromRot6(Run)),Q=MatrixToQuat(MatrixFromRot6(Walk));
+            WriteRot6(QuatToMatrix(FQuat::Slerp(R,Q,W).GetNormalized()),State+O);
+        }
+    }
+
+#include "Tests/ProphecyNNRecoveryFootRotationTests.inl"
 	float SmoothUnitAlpha(float Alpha)
 	{
 		return FMath::SmoothStep(0.0f, 1.0f, FMath::Clamp(Alpha, 0.0f, 1.0f));
@@ -1686,6 +1703,7 @@ namespace
 
 #include "ProphecyLowerTempering.inl"
 #include "ProphecyKneeStanceTests.inl"
+#include "Tests/ProphecyKneeSourceHeadingTests.inl"
 
 	void UpdateRouteIntent(
 		AProphecyNNLocomotionManager::FImpl::FAgent& Agent,
@@ -3418,6 +3436,8 @@ bool AProphecyNNLocomotionManager::RunModelBatch()
 		}
 		bNeedWalk |= Impl->Agents[AgentIndex].RecoveryWeights.NeedsWalk();
 		bNeedRun |= Impl->Agents[AgentIndex].RecoveryWeights.NeedsRun();
+        const auto Rotations=ProphecyAttackRecovery::FootRotationWeights(AgentActors[AgentIndex],Impl->Agents[AgentIndex].PolicyBlend.WalkWeight);
+        bNeedWalk |= Rotations.X>=0 || Rotations.Y>=0;
 		if (const auto* H=ProphecyHandRecovery::Frame(AgentActors[AgentIndex]))
 		{ bNeedRun|=H->Need[0];bNeedWalk|=H->Need[1]; }
 	}
@@ -3579,6 +3599,9 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			StateDim * sizeof(float));
 		float* NextState = StateSlice(Impl->NextStateBuffer, AgentIndex);
 		const float* Raw = Impl->OutputBuffer.GetData() + AgentIndex * PolicyOutputDim;
+        const FVector2f FootRotationWeights=!Agent.DefensePose && !Agent.Slash.bActive
+            ? ProphecyAttackRecovery::FootRotationWeights(AgentActors[AgentIndex],Agent.PolicyBlend.WalkWeight) : FVector2f(-1,-1);
+        const bool bOverrideFootRotation=FootRotationWeights.X>=0 || FootRotationWeights.Y>=0;
 		// Tempering is locomotion-only. Half attacks also need their lower-body
 		// movement unmodified, even though they use the locomotion lower policy.
 		const auto* Tempering = !Agent.DefensePose && !Agent.Slash.bActive
@@ -3598,6 +3621,9 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			FVector2f& RawPin, FVector2f& EffectivePin)
 		{
 			for (int32 Index = 0; Index < StateDim; ++Index) Transition[Index] = CurrentState[Index] + Raw[Index];
+            if (bOverrideFootRotation) OverrideRecoveryFootRotations(CurrentState,
+                Impl->OutputBuffer.GetData()+AgentIndex*PolicyOutputDim,
+                Impl->WalkOutputBuffer.GetData()+AgentIndex*PolicyOutputDim,FootRotationWeights,Transition);
 			CleanState(Transition, *Impl);
 			if (bSupportSource) FMemory::Memcpy(bWalkPolicy ? WalkTemperingSource : RunTemperingSource,Transition,StateDim*sizeof(float));
 			if (Tempering)
@@ -3702,7 +3728,10 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			BlendLowerPolicyRegion(Transition,WalkState,0,Agent.RecoveryWeights.Pelvis);
 		}
 		else CorrectPolicy(Raw, bWalkPolicy, Transition, RawPin, EffectivePin);
-		if (bReconstructTemperedLegs || (bRegional && !Tempering && ProphecyLegChainDebug::IsEnabled(AgentActors[AgentIndex])))
+		const FVector2f ReturningCalfDelta(ProphecyKickFootLeeway::ReturningLengthDeltaCm(AgentActors[AgentIndex],0)/100.f,
+			ProphecyKickFootLeeway::ReturningLengthDeltaCm(AgentActors[AgentIndex],1)/100.f);
+		const bool bReturnLengths=ReturningCalfDelta.X!=0 || ReturningCalfDelta.Y!=0;
+		if (bReconstructTemperedLegs || ((bReturnLengths || (bRegional && !Tempering)) && ProphecyLegChainDebug::IsEnabled(AgentActors[AgentIndex])))
 		{
 			const AProphecyAgent* Controls=AgentActors[AgentIndex];
 			const float MinimumReachMultiplier=ProphecyLowerTempering::MinimumLegReachMultiplier(Controls);
@@ -3715,7 +3744,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			{
 				const float W=I==0 ? Agent.RecoveryWeights.Left : Agent.RecoveryWeights.Right;
 				const bool bTemperThisLeg=I==0 ? bTemperLeft : bTemperRight;
-				if (!bTemperThisLeg && W==Agent.RecoveryWeights.Pelvis) continue;
+				if (!bTemperThisLeg && W==Agent.RecoveryWeights.Pelvis && !bReturnLengths) continue;
 				auto Limb = W >= 1.f ? Impl->WalkLimbs[I] : Impl->Limbs[I];
 				if (W > 0.f && W < 1.f)
 				{
@@ -3744,7 +3773,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 				const FVector3f Ankle = ReadStateVec3(Transition, O);
 				const auto Axes = Impl->BuildFootAxes(Limb, Ankle, MatrixFromRot6(Transition + O + 3), Transition[O + 15]);
 				const FPelvisLegGeometry G{Impl->LocalOffsets[Limb.Start], Impl->LocalOffsets[Limb.Mid], Limb.LocalPoleAxes[0],
-					Impl->LocalOffsets[Limb.End].Size(), Ankle.Z + Impl->GroundHeight
+					Impl->LocalOffsets[Limb.End].Size()+ReturningCalfDelta[I], Ankle.Z + Impl->GroundHeight
 					- ExactFootMinimum(Axes, Impl->FootHalfDims, Impl->ToeHalfDims) + 1.e-5f};
 				if (bTemperThisLeg) ResolveTemperedLeg(I==0 ? *Tempering : *RightTempering, StateSlice(Impl->PreviousPublishedStateBuffer, AgentIndex),
 					G, Transition, O,Limb.ToeOffset,
@@ -3753,6 +3782,9 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 					NNSource);
 				else if (W!=Agent.RecoveryWeights.Pelvis)
 					ResolvePelvisLeg(LegSourcePelvis[I],LegSourcePelvisRotation[I],ReadStateVec3(Transition,0),
+						MatrixFromRot6(Transition+3),G,Transition,O,nullptr,false,nullptr,0.f,bOuterReach);
+				else if (bReturnLengths)
+					ResolvePelvisLeg(ReadStateVec3(Transition,0),MatrixFromRot6(Transition+3),ReadStateVec3(Transition,0),
 						MatrixFromRot6(Transition+3),G,Transition,O,nullptr,false,nullptr,0.f,bOuterReach);
 			}
 		}
@@ -3795,7 +3827,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 				const FVector3f Ankle=ReadStateVec3(Transition,O);
 				const auto Axes=Impl->BuildFootAxes(L,Ankle,MatrixFromRot6(Transition+O+3),Transition[O+15]);
 				Legs[I]={Impl->LocalOffsets[L.Start],Impl->LocalOffsets[L.Mid],L.LocalPoleAxes[0],
-					Impl->LocalOffsets[L.End].Size(), Ankle.Z+Impl->GroundHeight
+					Impl->LocalOffsets[L.End].Size()+ProphecyKickFootLeeway::ReturningLengthDeltaCm(InertiaActor,I)/100.f, Ankle.Z+Impl->GroundHeight
 					-ExactFootMinimum(Axes,Impl->FootHalfDims,Impl->ToeHalfDims)+1.e-5f};
 			}
 			CorrectLowerPelvis(InertiaActor,Clock?Clock->Step->SourceTimeSeconds:double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds+StepSeconds,

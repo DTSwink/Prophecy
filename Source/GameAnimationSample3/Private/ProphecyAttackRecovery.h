@@ -24,4 +24,6 @@ bool IsEndEvent(const AProphecyAgent* Agent);
 FName EndEventAttack(const AProphecyAgent* Agent);
 // Overlay the normal selection without changing its ordinary blend state.
 void Step(const AProphecyAgent* Agent, float NormalWalkWeight, FWeights& Out);
+// -1 means unchanged. Active feet use Walk -> normal on their existing clocks.
+FVector2f FootRotationWeights(const AProphecyAgent* Agent,float NormalWalkWeight);
 }

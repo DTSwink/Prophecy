@@ -1,6 +1,7 @@
 #include "ProphecyNNPoseTypes.h"
 #include "ProphecyNNPresentation.h"
 #include "ProphecyNNInterpolation.h"
+#include "ProphecyRecoveryLegLength.h"
 
 #include "Misc/ScopeRWLock.h"
 
@@ -11,6 +12,8 @@ namespace
 	TMap<int32, EProphecyNNInterpolationMode> GInterpolationModes;
 	TSet<int32> GProphecyNNRigidForearms;
 	TSet<int32> GProphecyNNRigidCalves;
+	struct FRecoveryLegLengths { FVector2D Upper,Lower; };
+	TMap<int32,FRecoveryLegLengths> GRecoveryLegLengths;
 	struct FPresentationSample
 	{
 		double SourceTimeSeconds = 0.0;
@@ -80,6 +83,18 @@ void ProphecyNNPresentation::Publish(int32 AgentId, double SourceTimeSeconds, fl
 	FPresentationSample& Sample = GProphecyNNPresentation.FindOrAdd(AgentId);
 	Sample.SourceTimeSeconds = SourceTimeSeconds;
 	Sample.Alpha = Alpha;
+}
+
+void ProphecyNNPresentation::SetRecoveryCalfLengths(int32 AgentId,const FVector2D& UpperCm,const FVector2D& LowerCm)
+{
+	FWriteScopeLock Lock(GProphecyNNPoseLock);
+	if (LowerCm.X>0 && LowerCm.Y>0) GRecoveryLegLengths.Add(AgentId,{UpperCm,LowerCm});
+	else GRecoveryLegLengths.Remove(AgentId);
+}
+bool ProphecyNNPresentation::HasRecoveryCalfLengths(int32 AgentId)
+{
+	FReadScopeLock Lock(GProphecyNNPoseLock);
+	return !GRecoveryLegLengths.IsEmpty() && GRecoveryLegLengths.Contains(AgentId);
 }
 
 float ProphecyNNPresentation::Resolve(int32 AgentId, double SourceTimeSeconds, double WorldTimeSeconds,
@@ -304,6 +319,7 @@ void FProphecyNNPoseStore::ClearAgentPose(int32 AgentId)
 	GProphecyNNRigidForearms.Remove(AgentId);
 	GProphecyNNRigidCalves.Remove(AgentId);
 	GProphecyNNPresentation.Remove(AgentId);
+	GRecoveryLegLengths.Remove(AgentId);
 }
 
 void FProphecyNNPoseStore::ClearAllPoses()
@@ -314,6 +330,7 @@ void FProphecyNNPoseStore::ClearAllPoses()
 	GProphecyNNRigidForearms.Reset();
 	GProphecyNNRigidCalves.Reset();
 	GProphecyNNPresentation.Reset();
+	GRecoveryLegLengths.Reset();
 }
 
 bool FProphecyNNPoseStore::UsesAttackPresentation(int32 AgentId)
@@ -360,9 +377,13 @@ void FProphecyNNPoseStore::ApplyRigidForearms(int32 AgentId, const FProphecyNNPo
 void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
 	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms)
 {
+	FRecoveryLegLengths Recovery;
+	bool bRecovery=false;
 	{
 		FReadScopeLock Lock(GProphecyNNPoseLock);
-		if (!GProphecyNNRigidCalves.Contains(AgentId)) return;
+		if (!GRecoveryLegLengths.IsEmpty()) if (const auto* Value=GRecoveryLegLengths.Find(AgentId))
+		{ Recovery=*Value;bRecovery=true; }
+		if (!bRecovery && !GProphecyNNRigidCalves.Contains(AgentId)) return;
 	}
 
 	static const FName Feet[] = { TEXT("foot_l"), TEXT("foot_r") };
@@ -375,6 +396,13 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 		const int32 SourceFoot = Snapshot.BoneNames.IndexOfByKey(Feet[Side]);
 		if (!Transforms.IsValidIndex(Foot) || !Transforms.IsValidIndex(Calf)
 			|| !Snapshot.LocalTransforms.IsValidIndex(SourceFoot)) continue;
+		if (bRecovery)
+		{
+			const int32 Thigh=BoneNames.IndexOfByKey(Side==0 ? FName(TEXT("thigh_l")) : FName(TEXT("thigh_r")));
+			if (Transforms.IsValidIndex(Thigh)) ProphecyRecoveryLegLength::Resolve(
+				Transforms[Thigh],Transforms[Calf],Transforms[Foot],Recovery.Upper[Side],Recovery.Lower[Side]);
+			continue;
+		}
 		FVector End;
 		if (Snapshot.CalfClampLeewayCm > 0 && Snapshot.CalfClampLengths[Side] > 0)
 		{

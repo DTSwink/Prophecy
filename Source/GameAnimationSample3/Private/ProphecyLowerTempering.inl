@@ -93,10 +93,11 @@ void ResolveTemperedLeg(const ProphecyLowerTempering::FSettings& S,const float* 
         ResolvePelvisLeg(ReadStateVec3(Source,0),MatrixFromRot6(Source+3),Pelvis,PelvisRotation,
             G,Output,Offset,Source,false,Pole,MinimumReach,bClampOuterReach);
     };
+    float AlignedSource[41];
     // Preserve the accepted previous-pose hinge for raised/frozen feet. Near
     // the floor, retaining that frame indefinitely fights the walking policy:
     // the knee may stay forward while the thigh twists/stalls and disturbs the
-    // next pelvis prediction. Admit the untouched NN source gradually, then
+    // next pelvis prediction. Admit the NN source in the presented foot frame, then
     // resolve the SAME final endpoints and forward-knee constraint below.
     float SourceFollow=0.f;
     if (NNSource && S.FeetRotation>0.f)
@@ -105,20 +106,57 @@ void ResolveTemperedLeg(const ProphecyLowerTempering::FSettings& S,const float* 
         const float Support=1.f-T*T*(3.f-2.f*T);
         if (Support>0.f)
         {
+            // Compare stance hinges in the same foot-heading frame. The untempered
+            // policy foot may already be turning while the presented foot is held.
+            const FMat3f R=MatrixFromRot6(NNSource+Offset+3);
+            const FVector3f SourceToe=TransformRow(SafeNormal(FootForwardLocal),R);
+            const FVector3f SourceFlat(SourceToe.X,SourceToe.Y,0);
+            auto Confidence=[](float V){V=FMath::Clamp(V,0.f,1.f);return V*V*(3.f-2.f*V);};
+            // Fade the source weight, not its yaw: a partial +/-180 degree
+            // turn would otherwise jump at the heading wrap.
+            const float HeadingTrust=Confidence(SourceFlat.SizeSquared()*4.f)*Confidence(FlatToe.SizeSquared()*4.f);
+            const FVector3f SourceForward=SafeNormal(SourceFlat,Forward);
+            const float Angle=FMath::Atan2(FVector3f::CrossProduct(SourceForward,Forward).Z,FVector3f::DotProduct(SourceForward,Forward));
+            const FMat3f Turn=AxisAngleMatrix(FVector3f(0,0,1),Angle);
+            FMemory::Memcpy(AlignedSource,NNSource,sizeof(AlignedSource));
+            const FVector3f SourceHip=ReadStateVec3(NNSource,0)+TransformRow(G.HipOffset,MatrixFromRot6(NNSource+3));
+            WriteStateVec3(AlignedSource,Offset,SourceHip+TransformRow(ReadStateVec3(NNSource,Offset)-SourceHip,Turn));
+            for(int32 O:{Offset+3,Offset+9})WriteRot6(Multiply(MatrixFromRot6(NNSource+O),Turn),AlignedSource+O);
+            NNSource=AlignedSource;
             const float Difference=MatrixToQuat(MatrixFromRot6(Previous+Offset+9)).AngularDistance(
                 MatrixToQuat(MatrixFromRot6(NNSource+Offset+9)));
             // A source-frame handover bound per fixed 30Hz policy step, not a
             // clamp on the solved joint or a new wall-time blend clock.
-            SourceFollow=Support*FMath::Min(1.f,FMath::DegreesToRadians(20.f)/FMath::Max(Difference,1.e-6f));
+            // The foot and its incoming hinge must follow the same authored
+            // amount. Near-floor support is confidence, not permission to
+            // bypass tempering: doing so feeds a fast-turning thigh beside a
+            // held foot back into the next policy step and perturbs its height.
+            SourceFollow=S.FeetRotation*HeadingTrust*Support
+                *FMath::Min(1.f,FMath::DegreesToRadians(20.f)/FMath::Max(Difference,1.e-6f));
         }
     }
     if (SourceFollow>0.f)
     {
-        float Source[41]; FMemory::Memcpy(Source,Previous,sizeof(Source));
-        for (int32 O : {0,Offset})
-            WriteStateVec3(Source,O,FMath::Lerp(ReadStateVec3(Previous,O),ReadStateVec3(NNSource,O),SourceFollow));
-        for (int32 O : {3,Offset+9}) BlendStateRotation(Source,NNSource,O,SourceFollow);
-        Solve(Source,Target);
+        // Interpolating hip/ankle positions and thigh rotation independently
+        // can collapse/reverse the source hinge before solving. Transport
+        // each intact source to the SAME final ankle, then mix on its circle.
+        float Other[41];FMemory::Memcpy(Other,Target,sizeof(Other));
+        FVector3f PriorPole,NextPole;
+        Solve(Previous,Target,&PriorPole);Solve(NNSource,Other,&NextPole);
+        const FVector3f Axis=SafeNormal(ReadStateVec3(Target,Offset)-Hip);
+        const float Cos=FMath::Clamp(FVector3f::DotProduct(PriorPole,NextPole),-1.f,1.f);
+        const FVector3f SourceHip=ReadStateVec3(NNSource,0)+TransformRow(G.HipOffset,MatrixFromRot6(NNSource+3));
+        const FVector3f SourceAxis=SafeNormal(ReadStateVec3(NNSource,Offset)-SourceHip);
+        const FVector3f SourceUpper=TransformRow(G.KneeOffset,MatrixFromRot6(NNSource+Offset+9));
+        const float Radius=(SourceUpper-SourceAxis*FVector3f::DotProduct(SourceUpper,SourceAxis)).Size();
+        auto Trust=[](float V){V=FMath::Clamp(V,0.f,1.f);return V*V*(3.f-2.f*V);};
+        SourceFollow*=Trust(Radius/(G.KneeOffset.Size()*.02f))*Trust((1.f+Cos)/.02f)
+            *Trust((1.f+FVector3f::DotProduct(SourceAxis,Axis))/.05f);
+        const float Angle=FMath::Atan2(FVector3f::DotProduct(Axis,FVector3f::CrossProduct(PriorPole,NextPole)),Cos);
+        const FMat3f Prior=MatrixFromRot6(Target+Offset+9),Next=MatrixFromRot6(Other+Offset+9);
+        const FMat3f A=Multiply(Prior,AxisAngleMatrix(Axis,Angle*SourceFollow));
+        const FMat3f B=Multiply(Next,AxisAngleMatrix(Axis,-Angle*(1.f-SourceFollow)));
+        WriteRot6(QuatToMatrix(FQuat::Slerp(MatrixToQuat(A),MatrixToQuat(B),SourceFollow).GetNormalized()),Target+Offset+9);
     }
     else
         Solve(Previous,Target);
@@ -160,7 +198,9 @@ void ResolveTemperedLeg(const ProphecyLowerTempering::FSettings& S,const float* 
     };
     float StanceOffset=SourceSideOffset(Previous);
     if (SourceFollow>0.f)
-        StanceOffset=FMath::Lerp(StanceOffset,SourceSideOffset(NNSource),SourceFollow*S.FeetRotation);
+        // SourceFollow already includes FeetRotation; applying it twice would
+        // over-hold the stance and restore the old planted-thigh hitch.
+        StanceOffset=FMath::Lerp(StanceOffset,SourceSideOffset(NNSource),SourceFollow);
     bool bSourcePlane=true;
 #if WITH_EDITOR
     bSourcePlane=CVarTemperingKneePlane.GetValueOnGameThread()!=0;
@@ -172,7 +212,10 @@ void ResolveTemperedLeg(const ProphecyLowerTempering::FSettings& S,const float* 
     // Fade at an ambiguous branch so changing its sign cannot create a jump.
     const float BranchDot=FVector3f::DotProduct(Pole,HingePole);
     const float Branch=bSourcePlane && BranchDot<0.f ? -1.f : 1.f;
-    float Strength=Smooth(FlatToe.SizeSquared()*4.f)*Smooth(NLength*NLength*4.f)
+    // The stance plane is guidance, not an instantaneous second pose override.
+    // Follow it at the same authored rotation amount as the connected hinge;
+    // otherwise a nearly held foot can still receive a full knee-plane turn.
+    float Strength=S.FeetRotation*Smooth(FlatToe.SizeSquared()*4.f)*Smooth(NLength*NLength*4.f)
         *Smooth((1.f-FMath::Abs(Q))*4.f);
     if (bSourcePlane) Strength*=Smooth(FMath::Abs(BranchDot)*4.f);
     if (Strength<1.e-8f) return;

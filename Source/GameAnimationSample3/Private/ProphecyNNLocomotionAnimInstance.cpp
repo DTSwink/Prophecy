@@ -385,6 +385,7 @@ private:
 			FProphecyNNPoseStore::ApplyRigidCalves(AgentId, CurrentPose,
 				CurrentPose.BoneNames, DesiredComponentTransforms);
 
+		const bool bRecoveringCalfLength=!bPhysicalAgent && ProphecyNNPresentation::HasRecoveryCalfLengths(AgentId);
 		// The model viewer draws each lower-leg segment all the way from the calf
 		// point to the predicted foot point. Mirror that here: keep the predicted
 		// endpoint, align the calf's actual reference-bone axis to it, and extend
@@ -422,7 +423,12 @@ private:
 			const FVector DesiredAxis = DesiredSegment / DesiredLength;
 			CalfTransform.SetRotation(
 				(FQuat::FindBetweenNormals(CurrentAxis, DesiredAxis) * CalfTransform.GetRotation()).GetNormalized());
-			CalfTransform.SetScale3D(FVector(DesiredLength / ReferenceLength));
+			// Attacks retain the authored unit scale even when the ankle is farther
+			// away. Growing the mesh to that distance on the first recovery frame
+			// closes the gap instantly despite a smooth knee/ankle length return.
+			// Keep that scale until recovery converges to rest; the existing signed
+			// length curve closes the visible gap without another timer or blend.
+			if (!bRecoveringCalfLength) CalfTransform.SetScale3D(FVector(DesiredLength / ReferenceLength));
 		};
 		// Attack playback already supplies the authored calf transform at unit
 		// scale. The legacy locomotion extension would inflate all three axes.

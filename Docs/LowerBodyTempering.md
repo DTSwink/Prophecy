@@ -17,6 +17,13 @@ also drives that foot's toe, reconstruction source and calf twist continuity.
 Normal feet with a normal pelvis bypass tempering reconstruction unless regional
 Run/Walk mixing still requires chain repair. Reset preserves both feet's values.
 
+Final knee stance-plane guidance also follows the foot's Rotation tempering:
+it approaches the frozen hinge at zero and full plane guidance at one. This
+prevents a full-strength final knee correction from overriding a slowly following
+foot. It adds no timer or work outside active reconstruction. Current Walk
+recovery substantially reduces supporting-knee popping, with partial pelvis
+improvement; see [measured results and limits](WalkRecoveryPelvisKneeDiagnosis.md).
+
 Until a kick profile is configured, the old immediate-set behavior is unchanged.
 Once configured, a non-kick attack exit selects the last regular profile. Disabled
 or all-one kick settings explicitly disable kick recovery tempering; they do not

@@ -416,7 +416,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 			ProphecyAttackFists::RetargetFamily(Actor,Attack);
 			ProphecySwordAttackCollision::RetargetFamily(Actor,Attack,Slash.State[270]>.5f,
 				Slash.HitFrame!=INDEX_NONE || Slash.State[271]>.5f);
-			if (bWasKick && !bIsKick) ProphecyKickFootLeeway::End(Actor);
+			if (bWasKick && !bIsKick) ProphecyKickFootLeeway::End(Actor,false);
 			else if (!bWasKick && bIsKick) ProphecyKickFootLeeway::Begin(Actor,Attack);
 		}
 		Slash.TargetWorld = TargetWorld;
@@ -606,7 +606,7 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	const FVector PreviousCameraOrigin=PlayerSpring ? PlayerSpring->GetComponentLocation() : FVector::ZeroVector;
 	CatchUpFullAttackRoot(this, *Impl, Actor, Handle.Index);
 	Slash.bActive = false;
-	ProphecyKickFootLeeway::End(Actor);
+	ProphecyKickFootLeeway::End(Actor,bReturnToLocomotion && !bEndedHalfAttack);
 	if (bHasReturnTarget) SetAgentLocomotionRootWindowLocation(Handle, ReturnTarget, true);
 	if (PlayerSpring) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
 	if (bReturnToLocomotion) ProphecyRootPelvisBounds::ResetMagicCubeToRoot(Actor);

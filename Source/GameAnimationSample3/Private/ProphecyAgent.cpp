@@ -1783,6 +1783,35 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 		Pose.ComponentWorldTransform;
 	InterpolatedWorldTransform = BlendAuthoredWorldTransform(Pose, PoseIndex,
 		PreviousWorldTransform, CurrentWorldTransform, InterpolationAlpha);
+	// A recovery corrects the connected knee after interpolation while preserving
+	// the ankle. Single-bone reads must expose the same target as full-pose users.
+	if ((BoneName==TEXT("thigh_l") || BoneName==TEXT("thigh_r") ||
+		BoneName==TEXT("calf_l") || BoneName==TEXT("calf_r") ||
+		BoneName==TEXT("foot_l") || BoneName==TEXT("foot_r") ||
+		BoneName==TEXT("ball_l") || BoneName==TEXT("ball_r"))
+		&& ProphecyNNPresentation::HasRecoveryCalfLengths(PoseAgentId))
+	{
+		const bool Left=BoneName==TEXT("thigh_l") || BoneName==TEXT("calf_l") || BoneName==TEXT("foot_l") || BoneName==TEXT("ball_l");
+		const FName Names[]={Left?TEXT("thigh_l"):TEXT("thigh_r"),Left?TEXT("calf_l"):TEXT("calf_r"),
+			Left?TEXT("foot_l"):TEXT("foot_r"),Left?TEXT("ball_l"):TEXT("ball_r")};
+		FTransform Transforms[4];int32 Selected=INDEX_NONE;bool Complete=true;
+		for (int32 Part=0;Part<4;++Part)
+		{
+			const int32 Index=Pose.BoneNames.IndexOfByKey(Names[Part]);
+			if (!Pose.ComponentTransforms.IsValidIndex(Index) || !Pose.PreviousComponentTransforms.IsValidIndex(Index))
+			{ Complete=false;break; }
+			Transforms[Part]=BlendAuthoredWorldTransform(Pose,Index,
+				Pose.PreviousComponentTransforms[Index]*Pose.PreviousComponentWorldTransform,
+				Pose.ComponentTransforms[Index]*Pose.ComponentWorldTransform,InterpolationAlpha);
+			if (Names[Part]==BoneName) Selected=Part;
+		}
+		if (Complete && Selected!=INDEX_NONE)
+		{
+			FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId,Pose,Names,Transforms);
+			InterpolatedWorldTransform=Transforms[Selected];
+			return true;
+		}
+	}
 	if (BoneName == TEXT("hand_l") || BoneName == TEXT("hand_r"))
 	{
 		const FName ParentName = BoneName == TEXT("hand_l") ? TEXT("lowerarm_l") : TEXT("lowerarm_r");

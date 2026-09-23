@@ -9,6 +9,7 @@
 #include "ProphecySlashReturn.h"
 #include "ProphecyUpperBodyInertia.h"
 #include "ProphecySpecialRecoveryEvents.h"
+#include "ProphecyKickFootLeeway.h"
 
 namespace ProphecyAttackRecovery
 {
@@ -41,6 +42,8 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FRecovery> Active;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FSettings> KickSettings;
 static TSet<TWeakObjectPtr<const AProphecyAgent>> KickActive;
 static TSet<TWeakObjectPtr<const AProphecyAgent>> RightKickActive;
+// Separate storage preserves retained Live Coding layouts.
+static TSet<TWeakObjectPtr<const AProphecyAgent>> WalkFootRotations,AttackActive;
 static bool EndEventKick=false,EndEventRightKick=false;
 static FSettings ResolveKickRoles(FSettings Value,bool RightKick)
 {
@@ -59,7 +62,7 @@ static void EnsureCleanup()
     {
         for (auto* Map:{&Settings,&KickSettings}) for (auto It=Map->CreateIterator();It;++It)
             if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
-        for (auto* Set:{&KickActive,&RightKickActive}) for (auto It=Set->CreateIterator();It;++It)
+        for (auto* Set:{&KickActive,&RightKickActive,&WalkFootRotations,&AttackActive}) for (auto It=Set->CreateIterator();It;++It)
             if (!It->IsValid() || It->Get()->GetWorld()==World) It.RemoveCurrent();
         for (auto It=Active.CreateIterator();It;++It)
             if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
@@ -70,6 +73,7 @@ void Cancel(const AProphecyAgent* Agent)
     if (EndEventAgent==Agent) EndEventAgent=nullptr; // New attack/reset inside the event wins.
     if (!Active.IsEmpty()) Active.Remove(Agent);
     KickActive.Remove(Agent);RightKickActive.Remove(Agent);
+    AttackActive.Remove(Agent);
     ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::Recovery);
 }
 void Begin(const AProphecyAgent* Agent,FName Attack)
@@ -82,12 +86,14 @@ void Begin(const AProphecyAgent* Agent,FName Attack)
     const FSettings Value=ResolveKickRoles(Config ? *Config : FSettings{},HasKickProfile && Attack==TEXT("kickr"));
     if (Value.End()<=0) return;
     EnsureCleanup();Active.Add(Agent,FRecovery{Value});
+    if (!Attack.IsNone()) AttackActive.Add(Agent);
     if (IsKick(Attack)) KickActive.Add(Agent);
     if (Attack==TEXT("kickr")) RightKickActive.Add(Agent);
 }
-void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Settings.Remove(Agent);KickSettings.Remove(Agent); }
+void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Settings.Remove(Agent);KickSettings.Remove(Agent);WalkFootRotations.Remove(Agent); }
 void EnterSpecial(const AProphecyAgent* Agent)
 {
+    ProphecyKickFootLeeway::CancelPoseRecovery(Agent);
     Cancel(Agent);ProphecyLowerTempering::Remove(Agent);
     ProphecyHandRecovery::CancelMotion(Agent);ProphecyCoreTempering::CancelMotion(Agent);
     ProphecySlashReturn::Cancel(Agent);ProphecyUpperBodyInertia::Cancel(Agent);
@@ -111,6 +117,18 @@ void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLo
 }
 bool IsEndEvent(const AProphecyAgent* Agent) { return EndEventAgent==Agent; }
 FName EndEventAttack(const AProphecyAgent* Agent) { return IsEndEvent(Agent)?EndAttack:NAME_None; }
+FVector2f FootRotationWeights(const AProphecyAgent* Agent,float Normal)
+{
+    FVector2f Result(-1,-1);
+    if (WalkFootRotations.IsEmpty() || Active.IsEmpty() || !WalkFootRotations.Contains(Agent) || !AttackActive.Contains(Agent)) return Result;
+    const auto* R=Active.Find(Agent);if (!R) return Result;
+    auto Sample=[&](FPart Part)
+    {
+        if (!Part.Enabled() || R->Elapsed+1.e-6>=Part.End()) return -1.f;
+        Part.Source=EProphecyRecoverySource::Walk;return Part.Sample(R->Elapsed,Normal);
+    };
+    Result.X=Sample(R->Settings.Left);Result.Y=Sample(R->Settings.Right);return Result;
+}
 void Step(const AProphecyAgent* Agent,float Normal,FWeights& Out)
 {
     Out=FWeights(Normal);
@@ -153,6 +171,7 @@ static bool SetRecoveryProfile(bool Kick,AProphecyAgent* Agent,
     if (EndEventAgent==Agent && !Active.Contains(Agent) && Value.End()>0)
     {
         Active.Add(Agent,FRecovery{Value});
+        if (!EndAttack.IsNone()) AttackActive.Add(Agent);
         if (KickHandoff) KickActive.Add(Agent);
         if (RightKick) RightKickActive.Add(Agent);
     }
@@ -178,6 +197,16 @@ bool UProphecyAttackRecoveryLibrary::SetAttackToLocomotionBlend(AProphecyAgent* 
     return SetRecoveryProfile(false,Agent,PelvisSource,HoldDurationSeconds,DurationSeconds,
         LeftLegSource,LeftLegHoldDurationSeconds,LeftLegDurationSeconds,
         RightLegSource,RightLegHoldDurationSeconds,RightLegDurationSeconds);
+}
+
+bool UProphecyAttackRecoveryLibrary::SetAttackRecoveryFootRotationFromWalk(AProphecyAgent* Agent,bool Enabled)
+{
+    using namespace ProphecyAttackRecovery;
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
+        || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown) return false;
+    if (Enabled) { EnsureCleanup();WalkFootRotations.Add(Agent); }
+    else WalkFootRotations.Remove(Agent);
+    return true;
 }
 
 bool UProphecyAttackRecoveryLibrary::SetKickToLocomotionBlend(AProphecyAgent* Agent,
@@ -291,5 +320,45 @@ bool FProphecyAttackRecoveryTest::RunTest(const FString&)
       L::SetKickToLocomotionBlend(Agent);
       TestTrue(TEXT("Kick event setter can enable current zero handoff"),Active.Contains(Agent)); }
     Remove(Agent);World->DestroyWorld(false);return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyRecoveryFootRotationTest,"Prophecy.NN.PolicyBlend.RecoveryFootRotation",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyRecoveryFootRotationTest::RunTest(const FString&)
+{
+    using namespace ProphecyAttackRecovery;using L=UProphecyAttackRecoveryLibrary;using E=EProphecyRecoverySource;
+    auto* World=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=World?World->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    const FVector2f None(-1,-1);FWeights Out;
+    TestFalse(TEXT("Invalid agent rejected"),L::SetAttackRecoveryFootRotationFromWalk(nullptr,true));
+    L::SetAttackToLocomotionBlend(A,E::Run,0,0,E::Run,.1,.2,E::Run,0,.4);
+    Begin(A,TEXT("slashR"));Step(A,1,Out);
+    TestTrue(TEXT("Default leaves rotations alone"),FootRotationWeights(A,1)==None);
+    L::SetAttackRecoveryFootRotationFromWalk(A,true);
+    TestTrue(TEXT("Walk rotations with Run translation at start"),FootRotationWeights(A,1)==FVector2f(1,1) && Out.Left==0 && Out.Right==0);
+    for(int32 Tick=1;Tick<=24;++Tick)
+    {
+        FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/120);Step(A,1,Out);
+        if(Tick==12) TestTrue(TEXT("Translations retain their individual smoothstep blend"),FMath::IsNearlyEqual(Out.Left,.5f,1.e-5f) && FMath::IsNearlyEqual(Out.Right,.5f,1.e-5f));
+        if(Tick==18) TestTrue(TEXT("Each foot retires at its own existing duration"),FootRotationWeights(A,1)==FVector2f(-1,1));
+    }
+    TestTrue(TEXT("Finished retains no override or recovery"),FootRotationWeights(A,1)==None && !Active.Contains(A));
+    Begin(A,TEXT("slashL"));Step(A,0,Out);
+    for(int32 Tick=0;Tick<12;++Tick) {FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/30);Step(A,0,Out);}
+    const FVector2f Rot=FootRotationWeights(A,0);
+    TestTrue(TEXT("Normal Run receives a smooth Walk-to-Run rotation return on the same tick clock"),Rot.Equals(FVector2f(.5,.5),1.e-5f) && Out.Left==0 && Out.Right==0);
+    const double Elapsed=Active.FindChecked(A).Elapsed;
+    L::SetAttackRecoveryFootRotationFromWalk(A,false);
+    TestTrue(TEXT("Disabling is immediate without resetting translation blend"),FootRotationWeights(A,0)==None && Active.FindChecked(A).Elapsed==Elapsed);
+    L::SetAttackRecoveryFootRotationFromWalk(A,true);
+    L::SetKickToLocomotionBlend(A,E::Run,0,0,E::Run,0,.4,E::Run,0,.2);
+    Begin(A,TEXT("kickR"));Step(A,1,Out);
+    for(int32 Tick=0;Tick<12;++Tick) {FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/60);Step(A,1,Out);}
+    TestTrue(TEXT("Kick roles use mapped left/right clocks"),FootRotationWeights(A,1)==FVector2f(-1,1));
+    Begin(A);Step(A,1,Out);TestTrue(TEXT("Defense exit is unaffected"),FootRotationWeights(A,1)==None);
+    Begin(A,TEXT("hookL"));Step(A,1,Out);EnterSpecial(A);
+    TestTrue(TEXT("New special/reset cancellation immediately removes override"),FootRotationWeights(A,1)==None);
+    L::SetAttackToLocomotionBlend(A,E::Normal,0,0,E::Normal,0,0,E::Run,0,0);
+    Begin(A,TEXT("overL"));Step(A,1,Out);TestTrue(TEXT("Zero/Normal regions add no recovery work"),FootRotationWeights(A,1)==None && !Active.Contains(A));
+    Remove(A);TestFalse(TEXT("Removal forgets configuration"),WalkFootRotations.Contains(A));
+    World->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif
