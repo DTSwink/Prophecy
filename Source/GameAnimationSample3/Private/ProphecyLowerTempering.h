@@ -20,11 +20,18 @@ struct FSettings
     FSettings(float FeetXY,float FeetR,float PelvisXY,float PelvisR,float FeetZ,float PelvisZ)
         : FeetTranslation(FeetXY),FeetRotation(FeetR),PelvisTranslation(PelvisXY),PelvisRotation(PelvisR),
           FeetTranslationZ(FeetZ),PelvisTranslationZ(PelvisZ) {}
+    bool FeetAreIdentity() const { return FeetTranslation==1.f && FeetTranslationZ==1.f && FeetRotation==1.f; }
     bool IsIdentity() const { return FeetTranslation == 1.f && FeetRotation == 1.f
         && PelvisTranslation == 1.f && PelvisRotation == 1.f
         && FeetTranslationZ == 1.f && PelvisTranslationZ == 1.f; }
 };
+void SelectAttackProfile(const AProphecyAgent* Agent,FName Attack);
+void ClearAttackSelection(const AProphecyAgent* Agent);
+void ForgetProfiles(const AProphecyAgent* Agent);
 const FSettings* Find(const AProphecyAgent* Agent);
+// Find samples the existing clocks first; this accessor reads the already sampled right foot.
+const FSettings& RightFootSettings(const AProphecyAgent* Agent,const FSettings& Left);
+void RestoreRightFootSettings(const AProphecyAgent* Agent,const FSettings& Right);
 float MinimumLegReachMultiplier(const AProphecyAgent* Agent);
 void Remove(const AProphecyAgent* Agent);
 }

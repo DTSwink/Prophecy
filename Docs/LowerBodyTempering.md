@@ -1,5 +1,32 @@
 # Root-local locomotion tempering
 
+## Separate kick recovery profile
+
+`Set Kick Locomotion Lower Body Tempering` stores Enabled and independent XY/Z/rotation
+controls for **Kicking Foot**, **Non Kicking Foot** and **Pelvis**. Foot roles automatically
+swap between left and right for kickL/kickR. It is selected automatically when
+kickL/kickR returns to locomotion, before On Attack Ended runs. The regular setter
+configures the normal profile; during a kick handoff it cannot overwrite the kick
+profile. A kick setter called during that handoff applies immediately. Configure
+both profiles in BeginPlay, then use the existing **Blend Locomotion Lower Body
+Tempering To Normal** in On Attack Ended to blend from whichever profile was selected.
+Feet/pelvis holds and durations remain independent and use 60 unpaused game ticks
+per authored second. Both feet use the existing feet timing, each starting from its
+own values. The kick setter does not create its own return schedule. Foot rotation
+also drives that foot's toe, reconstruction source and calf twist continuity.
+Normal feet with a normal pelvis bypass tempering reconstruction unless regional
+Run/Walk mixing still requires chain repair. Reset preserves both feet's values.
+
+Until a kick profile is configured, the old immediate-set behavior is unchanged.
+Once configured, a non-kick attack exit selects the last regular profile. Disabled
+or all-one kick settings explicitly disable kick recovery tempering; they do not
+fall back to the regular values. Completed return blends remove active values and
+timelines, while keeping the configured profiles for the next attack. Active
+specials still bypass tempering, and knee reconstruction/pinning math is unchanged.
+Reset cancels active blends and clears the selected kick context before restoring
+its captured tempering values. Profile storage adds no ticking or inference.
+
+
 `Set Locomotion Lower Body Tempering` takes **Agent**, **Enabled**, and six values:
 
 | Pin | Controls |
@@ -286,3 +313,15 @@ on2026-09-19, without restarting or editing user assets. `ReturnTimeline` and
 `PolicyBlend.AttackRecovery` passed: hold boundaries, separate four-value return,
 normal endpoint/removal, setter cancellation, zero-duration snap/bypass, pure Run
 hold without dual inference, and residual time across the hold/blend boundary.
+
+September22 kick-profile/Hit validation: normal editor build succeeded (108.36s),
+testNN reopened, both new nodes reflected, and all three existing recovery nodes
+refreshed with other values/connections preserved. Pose Blueprint compiled and saved.
+Six focused tests passed at19:14:49UTC: KickProfiles, AttackRecovery, ReturnTimeline,
+SeparateReturns, SixtyTickClock, and Jolt Sword AttackCollisionPhases. The latter
+checks native owner-pair restoration at Hit for simulated and attached swords,
+retained attack context, repeated refresh, and stable body/joint counts. No scene
+rollout. Evidence: `Saved/Diagnostics/KickProfilesValidation.txt`.
+
+
+September22 kicking/non-kicking refinement: Normal editor build passed115.26s; final test-only rebuild passed60.75s. Unreal reopened on testNN, both role nodes refreshed with existing values/links preserved, new non-kicking inputs copied from shared feet, and pose Blueprint compiled status3 and saved. All11 focused tests passed20:21:05UTC (role mirroring, per-axis pose/toes, return/hold retirement, reset, regional policy, calf continuity and60-tick clock). Initial role-test rotation assertion differed by one float ULP; corrected its tolerance to1e-6, with no gameplay change. No gameplay rollout. Evidence `Saved/Diagnostics/KickRolesValidation.txt` and `KickRolePinValidation.json`; asset backup `KickRoles-BeforeRefresh.uasset`.

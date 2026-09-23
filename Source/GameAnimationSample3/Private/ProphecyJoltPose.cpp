@@ -97,8 +97,8 @@ bool FPreparedLayout::Compose(TConstArrayView<FTransform> BaseLocalPose,
     if (!bPrepared) return Fail(OutError, TEXT("A validated completed-pose layout must be prepared before composition."));
     if (Parents.Num() != BaseLocalPose.Num() || BodyFrames.Num() != CompletedBodyWorldTransforms.Num())
         return Fail(OutError, TEXT("Pose/parent counts and body mapping/state counts must match."));
-    if (!RigidTransform(ComponentWorldTransform))
-        return Fail(OutError, TEXT("Component-to-world must be finite, normalized and unscaled for this adapter."));
+    if (!ValidTransform(ComponentWorldTransform))
+        return Fail(OutError, TEXT("Component-to-world must be finite, normalized and have positive scale."));
     for (int32 Index = 0; Index < CompletedBodyWorldTransforms.Num(); ++Index)
         if (!RigidTransform(CompletedBodyWorldTransforms[Index]))
             return Fail(OutError, FString::Printf(TEXT("Body mapping %d requires rigid finite body/offset frames and positive visual scale."), Index));
@@ -152,8 +152,8 @@ bool ComposeCompletedPose(TConstArrayView<FTransform> BaseLocalPose, TConstArray
     if (!ValidateLocalPose(BaseLocalPose, OutError)) return false;
     if (ParentIndices.Num() != BaseLocalPose.Num() || BodyMappings.Num() != CompletedBodyWorldTransforms.Num())
         return Fail(OutError, TEXT("Pose/parent counts and body mapping/state counts must match."));
-    if (!RigidTransform(ComponentWorldTransform))
-        return Fail(OutError, TEXT("Component-to-world must be finite, normalized and unscaled for this adapter."));
+    if (!ValidTransform(ComponentWorldTransform))
+        return Fail(OutError, TEXT("Component-to-world must be finite, normalized and have positive scale."));
     for (int32 Index = 0; Index < ParentIndices.Num(); ++Index)
         if ((Index == 0 && ParentIndices[Index] != INDEX_NONE)
             || (Index > 0 && (ParentIndices[Index] < 0 || ParentIndices[Index] >= Index)))

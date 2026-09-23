@@ -6,6 +6,7 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "ScopedTransaction.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 
 namespace ProphecyLiveAgentTypeRepair
 {
@@ -92,4 +93,34 @@ void Run(const TArray<FString>& Args)
     UE_LOG(LogTemp,Display,TEXT("LiveAgentTypes: %s"),*Report.RightChop(Report.Find(TEXT("native_properties="))));
 }
 FAutoConsoleCommand Command(TEXT("Prophecy.Editor.LiveAgentTypes"),TEXT("Inspect|Repair obsolete Live Coding agent signatures and pose-agent pins; preserves wiring and leaves assets unsaved."),FConsoleCommandWithArgsDelegate::CreateStatic(&Run));
+
+void RepairLibraryDefaults()
+{
+    if (!GEditor || GEditor->PlayWorld) return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if (!BP) return;
+    auto Expected=Wiring(BP);
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","RepairLibraryDefaults","Repair Live Coding library defaults"));
+    BP->Modify();int32 Count=0;
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    for (auto* G:Graphs) for (UEdGraphNode* N:G->Nodes) if (N) for (auto* P:N->Pins)
+    {
+        if (!P || P->PinName!=TEXT("self") || !P->LinkedTo.IsEmpty() || !P->DefaultObject
+            || !P->DefaultObject->GetName().StartsWith(TEXT("BPGC_ARCH_FOR_CDO_"))) continue;
+        auto* Class=Cast<UClass>(P->PinType.PinSubCategoryObject.Get());
+        if (!Class || !Class->IsChildOf(UBlueprintFunctionLibrary::StaticClass())
+            || Class->GetOutermost()->GetName()!=TEXT("/Script/GameAnimationSample3")) continue;
+        const FString OldPath=P->DefaultObject->GetPathName();
+        N->Modify();P->DefaultObject=Class->GetDefaultObject();++Count;
+        for (auto& Row:Expected) Row.ReplaceInline(*OldPath,*P->DefaultObject->GetPathName());
+    }
+    Expected.Sort();
+    const bool Preserved=Expected==Wiring(BP);
+    FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    const FString Report=FString::Printf(TEXT("repaired_defaults=%d status=%d other_values_and_wiring_preserved=%d asset_saved=0\n"),Count,int32(BP->Status),int32(Preserved));
+    FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/LiveLibraryDefaults.txt")));
+    UE_LOG(LogTemp,Display,TEXT("LiveLibraryDefaults: %s"),*Report);
+}
+FAutoConsoleCommand LibraryDefaultsCommand(TEXT("Prophecy.Editor.RepairLibraryDefaults"),TEXT("Repair archived Live Coding library CDOs on unlinked self pins; preserve values/connections and leave asset unsaved."),FConsoleCommandDelegate::CreateStatic(&RepairLibraryDefaults));
 }

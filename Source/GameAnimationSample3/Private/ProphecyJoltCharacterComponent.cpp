@@ -624,7 +624,7 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
         static const FName Feet[] = {TEXT("foot_l"),TEXT("foot_r")};
         static const FName Calves[] = {TEXT("calf_l"),TEXT("calf_r")};
         const int32 Side = State->BodyNames[Index]==Feet[0] ? 0 : State->BodyNames[Index]==Feet[1] ? 1 : INDEX_NONE;
-        if (Side!=INDEX_NONE)
+        if (Side!=INDEX_NONE && KickFootLeeway<=0)
         {
             const auto& Skeleton=Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
             const int32 FootBone=State->Mappings[Index].BoneIndex;
@@ -636,8 +636,6 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
                 const FTransform& Calf=Interpolated[CalfTarget];
                 const FVector End=Calf.TransformPosition(Offset),Original=BodyWorld.GetLocation();
                 FVector Target=ProphecyPhysicalFootTarget::Clamp(Original,End,FootTargetLeeway);
-                if (KickFootLeeway>0) Target=ProphecyKickFootLeeway::Target(Original,Target,End,
-                    Calf.TransformVector(Offset).GetSafeNormal(),KickFootLeeway);
                 BodyWorld.SetLocation(Target);
             }
             // Start/end trajectories and lower feedback must agree with the drive.

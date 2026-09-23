@@ -46,3 +46,27 @@ bool FProphecyForearmTargetTest::RunTest(const FString& Parameters)
     }
     return !HasAnyErrors();
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySpecialForearmBoundaryTest,
+    "Prophecy.NN.PhysicalTargets.SpecialForearmBoundary",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecySpecialForearmBoundaryTest::RunTest(const FString&)
+{
+    for(float Side:{-1.f,1.f}) for(int32 Degrees=-180;Degrees<=180;Degrees+=15)
+    {
+        const FVector3f Axis(Side,0,0),Pole(0,Side,0);
+        FTransform Forearm(FRotator(45,80,-120),FVector(15,30,90),FVector(1.1,1.1,1.1));
+        const FTransform Before=Forearm;
+        const FTransform Hand(FRotator(25,-30,Degrees),FVector(36,41,102),FVector(1.2,1.2,1.2));
+        SetForearmRollFromHand(Axis,Pole,Forearm,Hand);
+        const FVector Aim=(Hand.GetLocation()-Forearm.GetLocation()).GetSafeNormal();
+        TestTrue(TEXT("Special forearm aims at wrist without changing position or scale"),
+            Forearm.GetLocation()==Before.GetLocation() && Forearm.GetScale3D()==Before.GetScale3D() &&
+            Forearm.GetRotation().RotateVector(FVector(Axis)).Equals(Aim,1.e-5));
+        const FQuat Relative=Forearm.GetRotation().Inverse()*Hand.GetRotation();
+        TestTrue(TEXT("Special wrist has swing but no independent roll"),FMath::Abs(Relative.X)<1.e-5);
+        const FTransform Accepted=Forearm;
+        SetForearmRollFromHand(Axis,Pole,Forearm,Hand);
+        TestTrue(TEXT("Repeated publication does not accumulate rotation"),Forearm.Equals(Accepted,1.e-6));
+    }
+    return !HasAnyErrors();
+}

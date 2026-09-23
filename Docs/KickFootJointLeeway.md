@@ -1,5 +1,13 @@
 # Kick foot joint leeway
 
+## Current behavior, September23
+
+The extension-only **NN pose override is removed**. The checkpoint owns its foot-distance/floor correction; the Blueprint node no longer projects the foot onto the calf axis, captures outgoing NN extension, or modifies locomotion reconstruction lengths. While physical allowance is active, foot magnetisation uses the published foot target directly. Mode-specific foot/calf clamps remain bypassed during that allowance, as before.
+
+The node still controls Jolt ankle-joint allowance and its return duration. It does not change the checkpoint's±5cm range. Existing physical constraints are a separate setting: this change does not grant additional physical compression or transverse joint freedom. Defaults and60-tick duration convention are unchanged; no NN override map or interpolation pass remains. See [new checkpoint contract](AttackCheckpoint123793.md).
+
+## Historical implementation through September21 — superseded pose inheritance
+
 **Set Kick Foot Joint Leeway** configures an agent's Jolt ankle joints:
 
 - **Leeway Cm = 0** by default: disabled, existing behavior.

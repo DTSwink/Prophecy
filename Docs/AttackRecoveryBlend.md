@@ -6,7 +6,19 @@ then **Blend Duration Seconds**, in that order. Defaults are Run, 0 and 1 for ea
 region. The old internal pin names are retained so reordering preserves connections
 and values.
 
-For kickR, choose Right Leg Source=Walk and Pelvis/Left Leg Source=Run. This selects
+`Set Kick To Locomotion Blend` has Source/Hold/Blend controls for **Pelvis**, **Kicking Leg**
+and **Non Kicking Leg**. Roles automatically map to left/right for kickL/kickR.
+After kickL/kickR, the agent automatically selects that profile. Other attacks use
+`Set Attack To Locomotion Blend`. Until the kick setter is called, kicks retain the
+regular profile. A regular setter in On Attack Ended cannot overwrite an explicitly
+configured kick handoff; the matching setter can still configure that handoff before
+its first prediction. No new per-frame selection or additional clock is introduced.
+
+The redundant **Force Run** pin has been removed. Each region's **Source** is now
+the sole choice; set that region to Run when needed. Existing Source connections,
+holds and blend durations are retained when nodes are refreshed.
+
+For either kick, choose Kicking Leg Source=Walk and Pelvis/Non Kicking Leg Source=Run. This selects
 complete policy regions: pelvis position/rotation; each leg's ankle, foot rotation,
 thigh rotation, toe articulation and corresponding pin outputs. The two checkpoints
 receive the same existing recurrent/root input. This does not select a separate
@@ -58,3 +70,15 @@ upgrade changed five nodes, adding25 pins and16 inherited values/connections;
 all pre-existing graph links remained, apart from native CDO/output-default
 normalization after restart. The verified pose-agent was saved. User scene testing
 remains separate; no combat rollout or visual-quality claim.
+
+September22 kick-profile/Hit validation: normal editor build succeeded (108.36s),
+testNN reopened, both new nodes reflected, and all three existing recovery nodes
+refreshed with other values/connections preserved. Pose Blueprint compiled and saved.
+Six focused tests passed at19:14:49UTC: KickProfiles, AttackRecovery, ReturnTimeline,
+SeparateReturns, SixtyTickClock, and Jolt Sword AttackCollisionPhases. The latter
+checks native owner-pair restoration at Hit for simulated and attached swords,
+retained attack context, repeated refresh, and stable body/joint counts. No scene
+rollout. Evidence: `Saved/Diagnostics/KickProfilesValidation.txt`.
+
+
+September22 kicking/non-kicking refinement: Normal editor build passed115.26s; final test-only rebuild passed60.75s. Unreal reopened on testNN, both role nodes refreshed with existing values/links preserved, new non-kicking inputs copied from shared feet, and pose Blueprint compiled status3 and saved. All11 focused tests passed20:21:05UTC (role mirroring, per-axis pose/toes, return/hold retirement, reset, regional policy, calf continuity and60-tick clock). Initial role-test rotation assertion differed by one float ULP; corrected its tolerance to1e-6, with no gameplay change. No gameplay rollout. Evidence `Saved/Diagnostics/KickRolesValidation.txt` and `KickRolePinValidation.json`; asset backup `KickRoles-BeforeRefresh.uasset`.

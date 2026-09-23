@@ -6,6 +6,9 @@ bool FSlashNative::Initialize(const FString& Directory, const TSharedPtr<FJsonOb
 	TSharedPtr<FJsonObject> C;
 	if (!FFileHelper::LoadFileToString(Text, *(AuditGeometryPath.IsEmpty() ? Directory / TEXT("prophecy_slash_native.json") : AuditGeometryPath)) ||
 		!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text), C) || !C.IsValid()) return false;
+	const bool Current = C->HasField(TEXT("transition_schema"));
+	if (Current && (C->GetStringField(TEXT("transition_schema")) != TEXT("slash2_no_frozen_clamped_v1") ||
+		C->GetNumberField(TEXT("calf_foot_margin_m")) != .05)) return false;
 	// Fail closed if a future export changes a currently-pruned semantic branch.
 	if (C->GetStringField(TEXT("checkpoint_sha256")) != Contract->GetStringField(TEXT("checkpoint_sha256")) ||
 		C->GetBoolField(TEXT("clamp_reach")) || C->GetNumberField(TEXT("fake_gravity")) != 0 ||
@@ -52,10 +55,13 @@ bool FSlashNative::Initialize(const FString& Directory, const TSharedPtr<FJsonOb
 		LoadLimb(Arms[I], C->GetArrayField(TEXT("full_limbs"))[I]->AsObject(), Full, I); Arms[I].StateOffset=60+15*I;
 	}
 	FModuleManager::Get().LoadModule(TEXT("NNERuntimeORT"));
-	const TCHAR* Keys[]={TEXT("frozen"),TEXT("lower"),TEXT("upper")};
+	const TCHAR* Keys[]={Current ? TEXT("cone") : TEXT("frozen"),TEXT("lower"),TEXT("upper")};
+	const int32 Widths[]={Current ? 82 : 152,Current ? 51 : 92,217};
+	const int32 Outputs[]={Current ? 41 : 43,43,92};
 	for (int32 I=0; I<3; ++I)
 	{
 		const auto& N=C->GetObjectField(TEXT("networks"))->GetObjectField(Keys[I]);
+		if (N->GetIntegerField(TEXT("input_dim")) != Widths[I] || N->GetIntegerField(TEXT("output_dim")) != Outputs[I]) return false;
 		TArray64<uint8> Bytes;
 		if (!FFileHelper::LoadFileToArray(Bytes, *(Directory / N->GetStringField(TEXT("file"))))) return false;
 		ModelData[I].Reset(NewObject<UNNEModelData>());
@@ -70,7 +76,8 @@ bool FSlashNative::Initialize(const FString& Directory, const TSharedPtr<FJsonOb
 bool FSlashNative::SetBatch(int32 Count)
 {
 	if (Count<1 || Count>100) return false;
-	const int32 InWidths[]={152,92,217}, OutWidths[]={43,43,92};
+	const bool Current=Models[1].InputWidth==51;
+	const int32 InWidths[]={Current ? 82 : 152,Current ? 51 : 92,217}, OutWidths[]={Current ? 41 : 43,43,92};
 	for (int32 I=0; I<3; ++I)
 	{
 		if (!Models[I].ResizeBatch(Count)) return false;
@@ -275,7 +282,8 @@ void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,f
 	// Evaluate the original learned latch before choosing who owns the hands.
 	const bool bHitRequest=NeuralUpper[91]>=GateThreshold;
 	Out[432]=State[271]>=0.5f || (State[270]>=0.5f && bHitRequest) ? 1.f:0.f;
-	Out[431]=State[270]>=0.5f || Out[432]>=0.5f || NeuralUpper[90]>=GateThreshold || bHitRequest ? 1.f:0.f;
+	Out[431]=State[270]>=0.5f || NeuralUpper[90]>=GateThreshold ||
+		(Models[1].InputWidth!=51 && (Out[432]>=0.5f || bHitRequest)) ? 1.f:0.f;
 	FPose Base,Candidate; RawUpper(Out,W.BaseUpper,Base);
 	if (Settings && Settings->PreparationFrame >= 0 && Settings->EntryPose && Out[431] == 0 && !HeadbuttPreparation.IsEmpty())
 	{
@@ -303,8 +311,8 @@ void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,f
 		const FMat3f R=I<17 ? Multiply(Multiply(Candidate.R[I],Transpose(Base.R[I])),W.FrozenPose.R[I]) : W.FrozenPose.R[I];
 		Write(Out,131+I*3,P); for (int32 Row=0; Row<3; ++Row) Write(Out,206+I*9+Row*3,R.Rows[Row]);
 	}
-	// Match advance_phase_latches: a hit request while unarmed arms this
-	// frame. It may become a hit only on a later step whose input was armed.
+	// Current checkpoints require actual Armed on a preceding step. Legacy
+	// checkpoints retain their original Hit-request-to-Armed compatibility.
 	Out[433]=NeuralUpper[90]; Out[434]=NeuralUpper[91]; Out[435]=W.Pins[0]; Out[436]=W.Pins[1];
 }
 
@@ -312,6 +320,7 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 {
 	if (Input.Num()!=InputBatchSize*272 || (!Settings.IsEmpty() && Settings.Num()!=InputBatchSize)) return false;
 	Output.SetNumUninitialized(InputBatchSize*437);
+	const bool Current=Models[1].InputWidth==51;
 	for (int32 Lane=0; Lane<InputBatchSize; ++Lane)
 	{
 		const float* S=Input.GetData()+272*Lane; auto& W=Work[Lane];
@@ -323,14 +332,22 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 		Rebase(S+41,W.CurLower,false,RootPosition,RootRotation,W.Origin,W.Heading);
 		Rebase(S+82,W.PrevUpper,true,RootPosition,RootRotation,W.Origin,W.Heading);
 		Rebase(S+172,W.CurUpper,true,RootPosition,RootRotation,W.Origin,W.Heading);
+		if (Current)
+		{
+			float* N=NetworkInputs[1].GetData()+51*Lane;
+			FMemory::Memcpy(N,W.CurLower,41*sizeof(float));
+			FMemory::Memcpy(N+41,S+265,5*sizeof(float));
+			N[46]=N[47]=N[49]=N[50]=0; N[48]=S[263];
+			continue;
+		}
 		float* N=NetworkInputs[0].GetData()+152*Lane;
 		FMemory::Memcpy(N,S+41,41*sizeof(float)); FMemory::Memcpy(N+41,S,41*sizeof(float));
 		for (int32 I=0; I<3; ++I) N[82+I]=(S[41+I]-S[I])/DeltaScale;
 		for (int32 I=9; I<41; ++I) N[85+I-9]=(S[41+I]-S[I])/DeltaScale;
 		FMemory::Memcpy(N+117,RootFeatures,35*sizeof(float));
 	}
-	if (!Models[0].Run(NetworkInputs[0],NetworkOutputs[0])) return false;
-	for (int32 Lane=0; Lane<InputBatchSize; ++Lane)
+	if (!Current && !Models[0].Run(NetworkInputs[0],NetworkOutputs[0])) return false;
+	for (int32 Lane=0; !Current && Lane<InputBatchSize; ++Lane)
 	{
 		const float* S=Input.GetData()+272*Lane; auto& W=Work[Lane];
 		const float* R=NetworkOutputs[0].GetData()+43*Lane;
@@ -350,12 +367,55 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 	{
 		const float* S=Input.GetData()+272*Lane; auto& W=Work[Lane];
 		const float* R=NetworkOutputs[1].GetData()+43*Lane;
-		const float* FrozenHeld=NetworkInputs[1].GetData()+92*Lane+41;
+		const float* FrozenHeld=Current ? W.CurLower : NetworkInputs[1].GetData()+92*Lane+41;
 		float Candidate[41],Root[41];
 		for (int32 I=0; I<41; ++I) Candidate[I]=FrozenHeld[I]+R[I];
 		Rebase(Candidate,Root,false,W.Origin,W.Heading,RootPosition,RootRotation);
 		for (int32 I=0; I<2; ++I) W.Pins[I]=FMath::Clamp(2.f/(1.f+FMath::Exp(-R[41+I]))-1.f,0.f,1.f);
 		Pin(Root,S+41,W.Pins,4); // The learned Slash pin pass is four steps in training too.
+		FMemory::Memcpy(W.Frozen,Root,41*sizeof(float));
+		if (Current)
+		{
+			float* N=NetworkInputs[0].GetData()+82*Lane;
+			FMemory::Memcpy(N,W.CurLower,41*sizeof(float));
+			Rebase(Root,N+41,false,RootPosition,RootRotation,W.Origin,W.Heading);
+		}
+	}
+	if (Current && !Models[0].Run(NetworkInputs[0],NetworkOutputs[0])) return false;
+	for (int32 Lane=0; Lane<InputBatchSize; ++Lane)
+	{
+		const float* S=Input.GetData()+272*Lane; auto& W=Work[Lane];
+		float Root[41]; FMemory::Memcpy(Root,W.Frozen,41*sizeof(float));
+		if (Current)
+		{
+			Rebase(NetworkOutputs[0].GetData()+41*Lane,Root,false,W.Origin,W.Heading,RootPosition,RootRotation);
+			// Exact training distance band, intersected with the unchanged sole/toe
+			// floor plane. This is not an axial extension-only presentation clamp.
+			for (int32 I=0;I<2;++I)
+			{
+				const auto& L=Legs[I]; const int32 O=9+16*I;
+				const FMat3f Thigh=MatrixFromRot6(Root+O+9);
+				const FVector3f Knee=Read(Root)+TransformRow(LowerOffsets[L.Start],MatrixFromRot6(Root+3))
+					+TransformRow(LowerOffsets[L.Mid],Thigh);
+				const FVector3f Foot=Read(Root,O),D=Foot-Knee;
+				const float Distance=D.Size(),Length=LowerOffsets[L.End].Size();
+				const float Lo=FMath::Max(0.f,Length-.05f),Hi=Length+.05f;
+				const float Floor=Foot.Z+Ground-Lowest(I,Foot,MatrixFromRot6(Root+O+3),Root[O+15]);
+				if (Distance>=Lo && Distance<=Hi && Foot.Z>=Floor) continue;
+				const float Gap=Floor-Knee.Z;
+				if (Gap>Hi+1.e-6f) return false;
+				const FVector3f Direction=Distance>1.e-8f ? D/Distance : SafeNormal(TransformRow(LowerOffsets[L.End],Thigh));
+				FVector3f Fixed=Knee+Direction*FMath::Clamp(Distance,Lo,Hi);
+				if (Fixed.Z<Floor)
+				{
+					const float XY=FMath::Sqrt(D.X*D.X+D.Y*D.Y);
+					const FVector3f Axis=XY>1.e-8f ? FVector3f(D.X/XY,D.Y/XY,0) : FVector3f(1,0,0);
+					Fixed=Knee+Axis*FMath::Clamp(XY,FMath::Sqrt(FMath::Max(1.e-12f,Lo*Lo-Gap*Gap)),
+						FMath::Sqrt(FMath::Max(1.e-12f,Hi*Hi-Gap*Gap))); Fixed.Z=Floor;
+				}
+				Write(Root,O,Fixed);
+			}
+		}
 		if (!Settings.IsEmpty() && Settings[Lane].PelvisInertia)
 		{
 			const auto& Option=*Settings[Lane].PelvisInertia;

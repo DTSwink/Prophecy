@@ -2,9 +2,12 @@
 
 All nodes belong to **Prophecy Agent**, including `BP_ProphecyManualPoseAgent`.
 
-**2026-09-13:** per-agent **Set Attack Foot Pinning Iterations** defaults to 4;
-use 60 for original training resolution. Headbutts now use GT arm preparation
-until learned Armed by default. Controls and opt-out:
+**September23 checkpoint update:** step123793 omits the frozen Walk attack stage;
+its learned pin pass uses training's four iterations. **Set Attack Foot Pinning
+Iterations** controls the legacy frozen stage and has no effect on this new
+checkpoint. Its phase rule requires actual Armed before a later Hit. See
+[checkpoint contract and validation](AttackCheckpoint123793.md).
+Headbutts retain optional GT arm preparation until learned Armed. Controls and opt-out:
 [AttackPinningAndHeadbutt.md](AttackPinningAndHeadbutt.md).
 The agent must already be registered with its locomotion manager and NN inference enabled.
 Nothing needs to be added to Blueprint Tick for a stationary attack target.
@@ -17,7 +20,7 @@ Wire an input/event into **Trigger NN Attack**:
 - **Attack:** a bone-name-style `Name`, for example `slashL`.
 - **Target World Location:** the point to strike, in Unreal world centimetres. Use the opponent's bone/socket position if appropriate, not necessarily its capsule centre.
 - **Half Attack:** off for full body; on to retain ordinary leg locomotion.
-- **Return Value:** true means it started. False means invalid agent/model/name/target, NN disabled, or a kick requested in half mode.
+- **Return Value:** true means it started or updated the active attack. False means invalid agent/model/name/target, NN disabled, or a kick requested in half mode.
 
 Names are case-insensitive:
 
@@ -36,14 +39,53 @@ Full attacks start from the agent's previous/current pose. Fresh half attacks us
 | **Stop NN Attack** | Interrupt and return to locomotion. The last published pose feeds the locomotion continuation; there is no reset to an idle seed. |
 | **Get NN Attack State** | Returns whether an attack is active, its family, half/full setting, Armed, Hit and 30 Hz policy-frame index. |
 
-Natural completion uses the learned Hit latch plus the original family-specific tail.
+Natural completion uses the learned Hit latch plus the family-specific tail, shortened
+by **Set Trim Attack** when configured.
 Hit here is a **model timing signal**, not confirmation of a physics collision or damage.
 An unreachable target may never produce Hit; gameplay can interrupt with **Stop NN Attack**.
-Starting another accepted attack replaces the current one.
+Calling **Trigger NN Attack** while already attacking updates the target, attack family,
+victim and half/full selection in place. It preserves Armed, Hit, policy frame,
+first-Hit frame, recurrent history and ongoing progress. No Attack Ended event,
+root handoff, reseeding, static-initialization repeat or end/start physics cycle occurs.
+Use **Stop NN Attack → Trigger NN Attack** for a fresh attack with cleared latches.
+Changing type updates its labels, tail length, fist settings and weapon/kick rules;
+the first-Hit frame stays unchanged, so this does not restart the recovery countdown.
+
+### Trim the ending
+
+**Set Trim Attack** has one integer input for each of the 16 attack names above.
+All default to **0**. One unit removes one **60 Hz frame (1/60 second)** from
+that family's post-Hit tail, for both full and half attacks. The trim saturates at
+the learned Hit: it cannot end before that unpredictable model signal. Negative
+inputs reject the entire call. It does not change Armed/Hit timing or play speed.
+
+Settings belong to the agent and persist across its attack/reset cycles. Call once
+when configuring it; all zeros clear its trim configuration. A call during an
+attack updates its cached tail without resetting the attack; if its shortened
+ending has already passed, the existing completion check ends it next time it runs.
+Family changes use the new family's trim. Normal Attack Ended and recovery run.
+
+The NN remains at30Hz. Even values shorten its cached tail by whole NN frames;
+odd values finish on the intervening unpaused game tick instead of rounding.
+The existing completion check admits the final policy interval and schedules a
+one-shot handoff only for an odd trim. Its callback removes itself immediately;
+stop, retarget, setting changes and world teardown cancel stale handoffs. There
+is no persistent timer/tick, additional NN inference or locomotion polling.
+The last half-frame means one unpaused game tick (assuming60FPS), following the
+project's tick convention, not a separate wall-clock timer.
+
+Validated2026-09-22 in owned PIE: target updates each tick did not prevent natural
+completion; slashRU→hookL retained Armed/frame10, slashRU→pike retained Armed+Hit/frame13.
+Immediate root and published pose were unchanged, rejected requests preserved state,
+and Stop/fresh start plus half/full changes passed. See
+`Saved/Diagnostics/AttackRetargetPIE.json`. Sword weapon/melee retarget gating passed
+`Prophecy.Jolt.Sword.AttackCollisionPhases`, including unchanged native body/joint counts.
+Normal editor build passed285.45s after recovering a Live Coding reinstancing crash;
+testNN reopened and pose Blueprint compiled successfully. No scene/Blueprint rewiring.
 
 Full-body root handoff: the capsule remains fixed during the attack, then catches
 up with the pelvis's accumulated **horizontal displacement** on natural completion,
-`Stop NN Attack`, or a replacement attack. The move uses the existing capsule sweep;
+or `Stop NN Attack`. The move uses the existing capsule sweep;
 height stays unchanged. Root facing and its locomotion orientation target become the
 horizontal direction from the final published pelvis to the ending attack's latest
 world target (coincident XY keeps the old heading). Both pose-history frames are
@@ -53,10 +95,10 @@ can author the next locomotion target normally; zero facing input retains this h
 The production kinematic mesh and optional debug mesh are refreshed in the handoff
 itself, including when Blueprint calls it after their normal update.
 
-Direct full-body-to-full-body replacements retain the two raw lower/upper NN states
-and fixed world anchor, resetting only the family/target, latches and attack counter.
-This is the continuous-rollout path; presentation corrections do not enter that raw
-attack history. Attacks started after locomotion has resumed start from its current pose.
+Active full-body updates retain the two raw lower/upper NN states and fixed world
+anchor without resetting latches or the attack counter. Presentation corrections do
+not enter that raw attack history. Attacks started after locomotion has resumed
+start from its current pose.
 
 Live attacks use the same final forearm correction as the saved preview: `hand_l`
 and `hand_r` keep their skeleton-rest translations relative to the corresponding

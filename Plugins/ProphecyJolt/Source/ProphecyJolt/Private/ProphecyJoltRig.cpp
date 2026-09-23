@@ -397,7 +397,11 @@ bool CaptureLiveRig(USkeletalMeshComponent& Component, FProphecyJoltRigSnapshot&
         return Fail(OutError, TEXT("Capture requires a registered Game/PIE skeletal component with a live physics state, mesh and physics asset."));
     if (UPhysicsSettings::Get()->bTickPhysicsAsync)
         return Fail(OutError, TEXT("Async Chaos capture is not supported; this reader requires the current synchronous fixture cadence."));
-    if (!ValidFrame(Component.GetComponentTransform())) return Fail(OutError, TEXT("Component transform must be finite, normalized and unscaled."));
+    const FTransform Carrier=Component.GetComponentTransform();
+    if (Carrier.ContainsNaN() || !Carrier.GetRotation().IsNormalized() || Carrier.GetScale3D().GetMin()<=0)
+        return Fail(OutError, TEXT("Component transform must be finite, normalized and have positive scale."));
+    // Body geometry/mass and joint connectors are read from live Chaos actors below;
+    // component scale is already baked there. Do not apply it a second time.
     if (Asset->SkeletalBodySetups.IsEmpty() || Component.Bodies.Num() != Asset->SkeletalBodySetups.Num()
         || Component.Constraints.Num() != Asset->ConstraintSetup.Num())
         return Fail(OutError, TEXT("Live body/constraint arrays do not completely match the physics asset."));

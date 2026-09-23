@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "ProphecyAgent.h"
 #include "ProphecySwordAttackCollision.h"
+#include "ProphecySwordComponent.h"
 #include "ProphecySwordPhysicsLibrary.h"
 #include "ProphecyAngularLimits.h"
 #include "ProphecyJoltBodyComponent.h"
@@ -950,13 +951,25 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         };
         for (FName Family:{FName(TEXT("slashl")),FName(TEXT("slashrd")),FName(TEXT("pike")),FName(TEXT("hookl")),FName(TEXT("headbutt"))})
         {
+            Agent->NotifySwordAttackState(true);
             ProphecySwordAttackCollision::Begin(Agent,Family);Check(false);
+            auto* Controller=Agent->FindComponentByClass<UProphecySwordComponent>();
+            if (!Controller) return false;
+            Controller->RefreshOwnerCollision();
+            FProphecyJoltWorldDiagnostics Suppressed;World->GetDiagnostics(Suppressed);
+            TestTrue(TEXT("Before Hit sword suppresses owner body pairs"),Suppressed.SuppressedBodyPairCount>Before.SuppressedBodyPairCount);
             ProphecySwordAttackCollision::Armed(Agent);
             Check(Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash")));
             ProphecySwordAttackCollision::Hit(Agent);Check(true);
+            FProphecyJoltWorldDiagnostics Restored;World->GetDiagnostics(Restored);
+            TestEqual(TEXT("Hit restores native owner pairs to normal grip-only exclusions"),Restored.SuppressedBodyPairCount,Before.SuppressedBodyPairCount);
+            TestTrue(TEXT("Hit does not end attack context"),Agent->IsSwordAttackActive());
+            TestFalse(TEXT("Hit is latched for deferred grip/rebind"),ProphecySwordAttackCollision::SuppressesOwner(Agent));
+            Controller->RefreshOwnerCollision();World->GetDiagnostics(Restored);
+            TestEqual(TEXT("Refresh after Hit keeps owner collisions restored"),Restored.SuppressedBodyPairCount,Before.SuppressedBodyPairCount);
             ProphecySwordAttackCollision::Refresh(Agent);Check(true); // latched through recovery/rebind
             ProphecySwordAttackCollision::Hit(Agent);Check(true); // repeated Hit is harmless
-            ProphecySwordAttackCollision::End(Agent);Check(true);
+            Agent->NotifySwordAttackState(false);Check(true);
         }
         ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));Check(false);
         ProphecySwordAttackCollision::Hit(Agent);Check(false); // weapon still requires Armed
@@ -965,6 +978,15 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         ProphecySwordAttackCollision::Begin(Agent,TEXT("hookr"));Check(false);
         ProphecySwordAttackCollision::Armed(Agent);Check(false);
         ProphecySwordAttackCollision::Hit(Agent);Check(true);
+        ProphecySwordAttackCollision::End(Agent);Check(true);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));
+        ProphecySwordAttackCollision::Armed(Agent);Check(true);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("pike"),false,false);Check(true);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("hookl"),true,false);Check(false);
+        ProphecySwordAttackCollision::Hit(Agent);Check(true);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("kickr"),false,false);Check(true);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("slashr"),true,true);Check(true);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("jabl"),true,true);Check(true);
         ProphecySwordAttackCollision::End(Agent);Check(true);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("hookl"));
         auto* Dropped=Agent->DropSword();

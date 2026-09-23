@@ -702,6 +702,9 @@ public:
 	/** Start the accepted Slash2 policy from this agent's current pose, not a recorded clip.
 	 * Attack: slashL/R/LD/RD/LU/RU, pike, jabL/R, hookL/R, overL/R, headbutt, kickL/R.
 	 * Target is an absolute Unreal world position in centimetres. Kicks reject half mode.
+	 * While already attacking, updates target/family/victim and half/full ownership in place.
+	 * Preserves Armed, Hit, policy progress and recurrent pose history; no end/start event.
+	 * Use Stop NN Attack first when a fresh attack/reset is wanted.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|NN Attack")
 	bool TriggerNNAttack(FName Attack, FVector TargetWorldLocation, bool bHalfAttack = false, AProphecyAgent* Victim = nullptr);
@@ -907,7 +910,8 @@ public:
 	bool StopNNAttack();
 
 	/** Fires once after an active attack ends, including natural completion, stop,
-	 * cancellation or replacement. Native attack cleanup is complete before this
+	 * cancellation or interruption. Retriggering an active attack does not fire this.
+	 * Native attack cleanup is complete before this
 	 * event, so Blueprint can start profile/tempering return blends here.
 	 * Attack and Half Attack describe the attack that ended, not a newly requested attack. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Prophecy|Agent|NN Attack", meta=(DisplayName="On Attack Ended"))

@@ -222,6 +222,9 @@ public:
 		float& TargetSpeedCmPerSecond, FVector& TargetFacingWorldDirection, bool& bRun) const;
 	bool AddAgentRootVelocityImpulse(FProphecyAgentHandle Handle, FVector DeltaVelocityCmPerSecond,
 		double DeltaWorldYawRadiansPerSecond);
+	bool SetAgentRootVelocity(FProphecyAgentHandle Handle, FVector Value, bool bAngular, bool bAddToCurrent);
+	bool SetAgentTimeDilation(FProphecyAgentHandle Handle, float Multiplier);
+	float GetAgentTimeDilation(FProphecyAgentHandle Handle) const;
 	bool GetAgentRootVelocity(FProphecyAgentHandle Handle, FVector& LinearCmPerSecond,
 		FVector& AngularRadiansPerSecond) const;
 	static bool SetHalfAttackTargetRadius(const UWorld* World, float RadiusCm);
@@ -253,12 +256,14 @@ public:
 		bool bLoop);
 	bool StopAgentAnimationLayer(FProphecyAgentHandle Handle, float BlendOutSeconds);
 	bool TriggerAgentNNAttack(FProphecyAgentHandle Handle, FName Attack, FVector TargetWorld, bool bHalf);
+	void RefreshAgentAttackTrim(FProphecyAgentHandle Handle);
 	void GetAgentAttackDefenseState(FProphecyAgentHandle Handle,bool& bParry,bool& bDodge) const;
 	bool SetAgentNNHalfAttack(FProphecyAgentHandle Handle, bool bHalf);
 	bool SetAgentNNAttackTarget(FProphecyAgentHandle Handle, FVector TargetWorld);
 	bool GetAgentLocomotionRootWindow(FProphecyAgentHandle Handle, TArray<FTransform>& WorldRoots, TArray<float>& Times) const;
 	bool GetAgentContinuousLocomotionRootWindow(FProphecyAgentHandle Handle, TArray<FTransform>& WorldRoots, TArray<float>& Times) const;
 	bool SetAgentLocomotionRootWindowLocation(FProphecyAgentHandle Handle, FVector WorldLocation, bool bPreserveWorldPose = false);
+	bool AddAgentRootAngleOffset(FProphecyAgentHandle Handle, float YawDegrees);
 	UPoseableMeshComponent* SetAgentPreviousPoseDebug(FProphecyAgentHandle Handle, bool bEnabled, bool bPreferAttack);
 	void UpdatePreviousPoseDebug(bool bAttack);
 	void TraceNNHandoff();

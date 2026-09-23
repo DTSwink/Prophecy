@@ -1,4 +1,5 @@
 #include "ProphecyAgent.h"
+#include "ProphecyAgentTime.h"
 #include "ProphecyClampProfiles.h"
 #include "ProphecyAngularLimitBlend.h"
 #include "ProphecyAgentResetPhysics.h"
@@ -7,6 +8,7 @@
 #include "ProphecyRootFacing.h"
 #include "ProphecyPelvisInertia.h"
 #include "ProphecyHandInertia.h"
+#include "ProphecyHandRecovery.h"
 #include "ProphecyPhysicalContext.h"
 #include "ProphecyPhysicalBlendSubsystem.h"
 
@@ -1114,6 +1116,7 @@ void AProphecyAgent::StopLocomotionInput()
 {
 	LocomotionInput.WorldMoveInput = FVector::ZeroVector;
 	LocomotionInput.FacingWorldDirection = FVector::ZeroVector;
+	LocomotionInput.bRun = false; // Request Walk through the normal policy blend, not a hard reset.
 	bUseBlueprintLocomotionInput = true;
 }
 
@@ -1485,6 +1488,8 @@ bool AProphecyAgent::EnsureStandaloneNNManager()
 
 void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (const auto* Manager=FindOwningNNManager(this))
+		ProphecyAgentTime::RemoveLane(Manager,AgentHandle.Index);
 	ProphecyAngularLimitBlend::Cancel(this);
 	ProphecyAgentResetPhysics::Remove(this);
     ProphecyDefenseArmedGate::RemoveAgent(this);
@@ -1493,6 +1498,7 @@ void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
     ProphecyRootFacing::Explicit(this);
     ProphecyPelvisInertia::Remove(this);
     ProphecyHandInertia::Remove(this);
+    ProphecyHandRecovery::Remove(this);
 	if (auto* Blends = GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>()) Blends->RemoveAgent(*this);
 	bResumeChaosPhysicalAfterJoltRestore = false;
 	bUseJoltForPhysicalMode = false;

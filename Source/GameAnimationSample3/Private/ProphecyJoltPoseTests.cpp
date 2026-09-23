@@ -164,8 +164,8 @@ bool FProphecyJoltPoseValidationTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Two bodies cannot independently own the same bone"), Compose(FTransform::Identity));
     Mappings.Pop();
     BodyWorld.Pop();
-    TestFalse(TEXT("Component scaling is not silently approximated"),
-        Compose(FTransform(FQuat::Identity, FVector::ZeroVector, FVector(2.0, 1.0, 1.0))));
+    TestFalse(TEXT("Zero component scale is rejected"),
+        Compose(FTransform(FQuat::Identity, FVector::ZeroVector, FVector(0.0, 1.0, 1.0))));
     Mappings[0].VisualScale.X = -1.0;
     TestFalse(TEXT("Negative visual scale is rejected"), Compose(FTransform::Identity));
     Mappings[0].VisualScale = FVector::OneVector;
@@ -174,4 +174,36 @@ bool FProphecyJoltPoseValidationTest::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltScaledCarrierPoseTest,
+    "Prophecy.Jolt.Pose.ScaledSkeletalCarrier", ProphecyJolt::PoseTests::Flags)
+bool FProphecyJoltScaledCarrierPoseTest::RunTest(const FString&)
+{
+    const TArray<FTransform> Base={FTransform::Identity,FTransform(FVector(0,0,-20)),FTransform(FVector(0,0,-20))};
+    const TArray<int32> Parents={INDEX_NONE,0,1};
+    for (const FVector Scale:{FVector(.492965,.492965,1),FVector(.79),FVector(2,1,.7)})
+    {
+        const FTransform Carrier(FRotator(20,30,10),FVector(5,-40,600),Scale);
+        TArray<FProphecyJoltPoseBodyMapping> Maps;
+        TArray<FTransform> Bodies;
+        for (int32 I=0;I<3;++I)
+        {
+            FProphecyJoltPoseBodyMapping Map; Map.BoneIndex=I; Map.VisualScale=Scale; Maps.Add(Map);
+            Bodies.Emplace(FRotator(10+I*15,30-I*10,5+I*20),FVector(5+I*12,-40+I*7,600-I*20));
+        }
+        ProphecyJolt::Pose::FPreparedLayout Layout; FString Error;
+        FProphecyJoltComposedPose Pose;
+        if (!Layout.Build(3,Parents,Maps,Error) || !Layout.Compose(Base,Bodies,Carrier,Pose,Error))
+        { AddError(Error); return false; }
+        TArray<FTransform> CS;
+        for (int32 I=0;I<3;++I)
+        {
+            CS.Add(I==0?Pose.LocalTransforms[I]:Pose.LocalTransforms[I]*CS[I-1]);
+            const FTransform World=CS[I]*Carrier;
+            TestTrue(TEXT("Scaled skeletal evaluation preserves native bone position"),World.GetLocation().Equals(Bodies[I].GetLocation(),1.e-5));
+            TestTrue(TEXT("Scaled skeletal evaluation preserves native bone rotation"),World.GetRotation().Equals(Bodies[I].GetRotation(),1.e-5));
+            TestTrue(TEXT("Carrier scale applied once"),World.GetScale3D().Equals(Scale,1.e-6));
+        }
+    }
+    return !HasAnyErrors();
+}
 #endif

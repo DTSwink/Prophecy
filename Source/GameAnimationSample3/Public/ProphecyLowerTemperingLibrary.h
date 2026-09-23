@@ -48,6 +48,22 @@ public:
         UPARAM(DisplayName="Pelvis Translation XY") float PelvisTranslation = 1.f,
         float PelvisTranslationZ = 1.f, float PelvisRotation = 1.f);
 
+    /** Configure separate tempering automatically selected on return from kickL/kickR.
+     * Independent root-local XY/Z/rotation for kicking foot, non-kicking foot and pelvis.
+     * Foot roles automatically swap for kickR. Applied only in locomotion.
+     * Regular attacks select the regular Set profile. Until this node is called,
+     * existing behavior is unchanged. Blend To Normal uses the selected values.
+     * Disabled/all-one means no tempering after kicks, without disabling the regular profile. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion", meta=(DisplayName="Set Kick Locomotion Lower Body Tempering"))
+    static bool SetKickLocomotionLowerBodyTempering(AProphecyAgent* Agent, bool Enabled = true,
+        UPARAM(DisplayName="Kicking Foot Translation XY") float FeetTranslation = 1.f,
+        UPARAM(DisplayName="Kicking Foot Translation Z") float FeetTranslationZ = 1.f,
+        UPARAM(DisplayName="Kicking Foot Rotation") float FeetRotation = 1.f,
+        float NonKickingFootTranslationXY = 1.f, float NonKickingFootTranslationZ = 1.f,
+        float NonKickingFootRotation = 1.f,
+        UPARAM(DisplayName="Pelvis Translation XY") float PelvisTranslation = 1.f,
+        float PelvisTranslationZ = 1.f, float PelvisRotation = 1.f);
+
     /** Hold and restore feet and pelvis to 1 with separate timing for each group.
      * Each group's XY translation, Z translation and rotation return together.
      * Completion removes tempering and its timeline entirely. A new Set cancels

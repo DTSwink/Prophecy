@@ -1,0 +1,456 @@
+{
+  "schema": 1,
+  "reference": "Frame 0 flat foot_l/foot_r midpoint to saved GT hit target; ignore training Y (height).",
+  "source_units": "global_joint_pos: cm; attack_target_world_m: metres",
+  "families": [
+    {
+      "attack": "jabL",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\jabL.npz",
+      "sha256": "9338c2406b163772556504a6982e6c0d31af384ede3106f06ca43a3ebcd22996",
+      "first_frame_feet_cm": [
+        [
+          25.53328514099121,
+          9.37521743774414,
+          55.271202087402344
+        ],
+        [
+          -8.945942878723145,
+          9.372954368591309,
+          22.303695678710938
+        ]
+      ],
+      "balance_center_xz_cm": [
+        8.293671131134033,
+        38.78744888305664
+      ],
+      "gt_target_cm": [
+        9.547898918390274,
+        129.67954874038696,
+        128.17996740341187
+      ],
+      "hit_frame": 9.0,
+      "radius_cm": 89.40131685134385
+    },
+    {
+      "attack": "jabR",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\jabR.npz",
+      "sha256": "abaa1b2a8f3f71a261c4afe8251ef8a1b9445d12e619c666aab78b06f0ed94c0",
+      "first_frame_feet_cm": [
+        [
+          26.943706512451172,
+          9.373945236206055,
+          54.46297073364258
+        ],
+        [
+          -7.621026992797852,
+          9.152410507202148,
+          22.067541122436523
+        ]
+      ],
+      "balance_center_xz_cm": [
+        9.66133975982666,
+        38.26525592803955
+      ],
+      "gt_target_cm": [
+        1.5785815194249153,
+        127.42341756820679,
+        126.27768516540527
+      ],
+      "hit_frame": 9.0,
+      "radius_cm": 88.38279629563148
+    },
+    {
+      "attack": "hookL",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\hookL.npz",
+      "sha256": "2f77a4c5cb502c95ad968c951a0652691530cdf1f9e80d30203b23c2425dcbaf",
+      "first_frame_feet_cm": [
+        [
+          20.012575149536133,
+          9.375226974487305,
+          13.247631072998047
+        ],
+        [
+          -14.46665096282959,
+          9.372955322265625,
+          -19.719871520996094
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.7729620933532715,
+        -3.2361202239990234
+      ],
+      "gt_target_cm": [
+        -0.04478255577851087,
+        143.8136100769043,
+        73.70805144309998
+      ],
+      "hit_frame": 8.347000122070312,
+      "radius_cm": 76.99574818419333
+    },
+    {
+      "attack": "hookR",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\hookR.npz",
+      "sha256": "a410f17d814632de58263ca159868cf35740ce53e4d5b2f0f32190fe9934447c",
+      "first_frame_feet_cm": [
+        [
+          20.012575149536133,
+          9.375221252441406,
+          13.247636795043945
+        ],
+        [
+          -14.46665096282959,
+          9.37295150756836,
+          -19.71986961364746
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.7729620933532715,
+        -3.236116409301758
+      ],
+      "gt_target_cm": [
+        0.8568019606173038,
+        131.7708134651184,
+        58.73543620109558
+      ],
+      "hit_frame": 8.053999900817871,
+      "radius_cm": 62.001169364759015
+    },
+    {
+      "attack": "overL",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\overL.npz",
+      "sha256": "e3968f6df801dc8d228d5f8fd353425963d5f556cd586dbe8464310e79a1e280",
+      "first_frame_feet_cm": [
+        [
+          20.012575149536133,
+          9.375223159790039,
+          13.247638702392578
+        ],
+        [
+          -14.46664810180664,
+          9.372957229614258,
+          -19.71986198425293
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.772963523864746,
+        -3.236111640930176
+      ],
+      "gt_target_cm": [
+        -12.581004202365875,
+        133.05641412734985,
+        68.04823875427246
+      ],
+      "hit_frame": 11.416000366210938,
+      "radius_cm": 72.91915342490036
+    },
+    {
+      "attack": "overR",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\overR.npz",
+      "sha256": "58ccf6b475ff8f820252402038678bc98d2de34efd4cbf68b0566ddda2ce0049",
+      "first_frame_feet_cm": [
+        [
+          26.28005599975586,
+          9.375224113464355,
+          49.490577697753906
+        ],
+        [
+          -8.199172019958496,
+          9.372954368591309,
+          16.52307891845703
+        ]
+      ],
+      "balance_center_xz_cm": [
+        9.040441989898682,
+        33.00682830810547
+      ],
+      "gt_target_cm": [
+        19.828929007053375,
+        127.75529623031616,
+        119.17842626571655
+      ],
+      "hit_frame": 9.255999565124512,
+      "radius_cm": 86.84431902368443
+    },
+    {
+      "attack": "headbutt",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\headbutt.npz",
+      "sha256": "d60ec15294291a2ba53880deb841485f716f31f7188b79e7b77c00b4ec95a1c1",
+      "first_frame_feet_cm": [
+        [
+          20.01258087158203,
+          9.375227928161621,
+          13.24763298034668
+        ],
+        [
+          -14.466647148132324,
+          9.372960090637207,
+          -19.719867706298828
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.7729668617248535,
+        -3.236117362976074
+      ],
+      "gt_target_cm": [
+        0.4976238589733839,
+        125.74485540390015,
+        59.892112016677856
+      ],
+      "hit_frame": 10.0,
+      "radius_cm": 63.169221385025565
+    },
+    {
+      "attack": "kickL",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\KickL.npz",
+      "sha256": "3319fbf3b45fac960f6549c77d864165b3b70ec39eaf76654ddd30fb934ba855",
+      "first_frame_feet_cm": [
+        [
+          21.46634864807129,
+          9.375224113464355,
+          41.400794982910156
+        ],
+        [
+          -13.012869834899902,
+          9.606175422668457,
+          8.433289527893066
+        ]
+      ],
+      "balance_center_xz_cm": [
+        4.226739406585693,
+        24.91704225540161
+      ],
+      "gt_target_cm": [
+        -10.02996638417244,
+        116.76064729690552,
+        141.91640615463257
+      ],
+      "hit_frame": 13.0,
+      "radius_cm": 117.86477341779818
+    },
+    {
+      "attack": "kickR",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\KickR.npz",
+      "sha256": "0793a6de5429a4330dd3c799bfa6a5ddd07c338c2d28a8c3432af4809e5bbd06",
+      "first_frame_feet_cm": [
+        [
+          21.891721725463867,
+          10.83498477935791,
+          47.259647369384766
+        ],
+        [
+          -12.587499618530273,
+          9.372958183288574,
+          14.29213809967041
+        ]
+      ],
+      "balance_center_xz_cm": [
+        4.652111053466797,
+        30.775892734527588
+      ],
+      "gt_target_cm": [
+        5.661577731370926,
+        105.72935342788696,
+        150.77581405639648
+      ],
+      "hit_frame": 12.0,
+      "radius_cm": 120.00416717859645
+    },
+    {
+      "attack": "slashL",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\slashL.npz",
+      "sha256": "858e34f30ce3b61cc13348e1634b2b739d53f0c7d835bae3fbffdb589987f671",
+      "first_frame_feet_cm": [
+        [
+          20.012577056884766,
+          9.375219345092773,
+          13.247637748718262
+        ],
+        [
+          -14.46664810180664,
+          9.372967720031738,
+          -19.71986961364746
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.7729644775390625,
+        -3.2361159324645996
+      ],
+      "gt_target_cm": [
+        -4.9946121871471405,
+        115.49514532089233,
+        125.91478824615479
+      ],
+      "hit_frame": 17.757999420166016,
+      "radius_cm": 129.38427762829883
+    },
+    {
+      "attack": "slashR",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\slashR.npz",
+      "sha256": "7473a93bd00567f89b87ad5f8e93823c08bae7421f81dabc385889d8f6cefac7",
+      "first_frame_feet_cm": [
+        [
+          20.01261329650879,
+          9.375218391418457,
+          13.247600555419922
+        ],
+        [
+          -14.466609954833984,
+          9.372967720031738,
+          -19.719905853271484
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.7730016708374023,
+        -3.2361526489257812
+      ],
+      "gt_target_cm": [
+        30.557525157928467,
+        125.30509233474731,
+        89.30575847625732
+      ],
+      "hit_frame": 20.679000854492188,
+      "radius_cm": 96.6229013231646
+    },
+    {
+      "attack": "slashLD",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\slashLD.npz",
+      "sha256": "0c991de9efb7d4e338bc3efd501be4f1b382f580071d7120aca239da08d22e18",
+      "first_frame_feet_cm": [
+        [
+          19.9111385345459,
+          9.375218391418457,
+          13.148297309875488
+        ],
+        [
+          -14.568086624145508,
+          9.372967720031738,
+          -19.81920623779297
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.6715259552001953,
+        -3.3354544639587402
+      ],
+      "gt_target_cm": [
+        -14.214371144771576,
+        121.72822952270508,
+        117.84019470214844
+      ],
+      "hit_frame": 20.440000534057617,
+      "radius_cm": 122.34652210708046
+    },
+    {
+      "attack": "slashRD",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\slashRD.npz",
+      "sha256": "affeabd29b3498d52c54c25bc6813937e50841ed696409f8f7b191e9b48f1378",
+      "first_frame_feet_cm": [
+        [
+          20.014955520629883,
+          9.375214576721191,
+          13.24626636505127
+        ],
+        [
+          -14.464271545410156,
+          9.372967720031738,
+          -19.72123908996582
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.7753419876098633,
+        -3.2374863624572754
+      ],
+      "gt_target_cm": [
+        16.616138815879822,
+        127.49197483062744,
+        84.78530049324036
+      ],
+      "hit_frame": 18.84600067138672,
+      "radius_cm": 89.10431337867445
+    },
+    {
+      "attack": "slashLU",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\slashLU.npz",
+      "sha256": "393a7a4e56649ce026ba9acdfab43ff323a492350b428e398c711064e5d6d1bb",
+      "first_frame_feet_cm": [
+        [
+          20.01230239868164,
+          9.375218391418457,
+          13.247931480407715
+        ],
+        [
+          -14.46692180633545,
+          9.372967720031738,
+          -19.719573974609375
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.7726902961730957,
+        -3.23582124710083
+      ],
+      "gt_target_cm": [
+        -22.632130980491638,
+        103.38890552520752,
+        117.9236888885498
+      ],
+      "hit_frame": 18.179000854492188,
+      "radius_cm": 123.79431263353784
+    },
+    {
+      "attack": "slashRU",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\slashRU.npz",
+      "sha256": "72771fc5ef0a5422f32b6f454c883fd95816c6bea3aa5b3d3abaf5cbe6a6d7d8",
+      "first_frame_feet_cm": [
+        [
+          19.928722381591797,
+          9.375215530395508,
+          13.165364265441895
+        ],
+        [
+          -14.550503730773926,
+          9.372968673706055,
+          -19.802143096923828
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.6891093254089355,
+        -3.318389415740967
+      ],
+      "gt_target_cm": [
+        20.597904920578003,
+        88.75600099563599,
+        84.06039476394653
+      ],
+      "hit_frame": 17.64900016784668,
+      "radius_cm": 89.19516177680241
+    },
+    {
+      "attack": "pike",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_gt_attack_dataset_npz\\pike.npz",
+      "sha256": "ae274aa52264d8cc09ca8870eac9cd4b2ee9d27e02083f13c10fbfef2f925ab3",
+      "first_frame_feet_cm": [
+        [
+          20.0125789642334,
+          9.375214576721191,
+          13.247635841369629
+        ],
+        [
+          -14.466647148132324,
+          9.372967720031738,
+          -19.71986961364746
+        ]
+      ],
+      "balance_center_xz_cm": [
+        2.772965908050537,
+        -3.236116886138916
+      ],
+      "gt_target_cm": [
+        -10.30610129237175,
+        93.7729001045227,
+        136.56100034713745
+      ],
+      "hit_frame": 16.0,
+      "radius_cm": 140.40760658015498
+    }
+  ],
+  "excluded": "*_M mirror augmentation clips are not additional runtime attack families."
+}

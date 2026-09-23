@@ -86,9 +86,52 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
     {
         auto* N=Cast<UK2Node_CallFunction>(Base);
         if (!N || N->FunctionReference.GetMemberName()!=FunctionName) continue;
-        const auto Before=PinValues(N);
+        N->Modify();
+        if (FunctionName==TEXT("SetAttackToLocomotionBlend")) if (auto* Force=N->FindPin(TEXT("bForceRun")))
+        {
+            Force->BreakAllPinLinks();N->RemovePin(Force);
+        }
+        const bool HadDistanceToLimit=N->FindPin(TEXT("DistanceToLimit"))!=nullptr;
+        const bool HadNonKicking=N->FindPin(TEXT("NonKickingFootTranslationXY"))!=nullptr;
+        FString OldKickGraph;
+        const FString Diagnostics=FPaths::ProjectSavedDir()/TEXT("Diagnostics");
+        FFileHelper::LoadFileToString(OldKickGraph,*(Diagnostics/TEXT("KickRolePinsBefore.txt")));
+        const FString NodeKey=TEXT(" | ")+Graph->GetName()+TEXT(" | ")+N->GetName()+TEXT(" | ");
+        const bool MigrateFeet=FunctionName==TEXT("SetKickLocomotionLowerBodyTempering")
+            && (!HadNonKicking || (!IFileManager::Get().FileExists(*(Diagnostics/TEXT("KickTemperingRoles.txt")))
+                && OldKickGraph.Contains(NodeKey)));
+        auto Before=PinValues(N);
         N->Modify();N->ReconstructNode();++Count;
-        Preserved&=Before==PinValues(N);
+        if (MigrateFeet)
+        {
+            const TCHAR* Sources[]={TEXT("FeetTranslation"),TEXT("FeetTranslationZ"),TEXT("FeetRotation")};
+            const TCHAR* Targets[]={TEXT("NonKickingFootTranslationXY"),TEXT("NonKickingFootTranslationZ"),TEXT("NonKickingFootRotation")};
+            for (int32 I=0;I<3;++I)
+            {
+                auto* Src=N->FindPin(Sources[I]);auto* Dst=N->FindPin(Targets[I]);
+                if (!Src || !Dst) { Preserved=false;continue; }
+                // New pins inherit the old shared feet values/connections. Preserve
+                // any explicit new-pin edit made after a Live Coding reconstruction.
+                if (Dst->LinkedTo.IsEmpty() && FCString::Atof(*Dst->DefaultValue)==1.f)
+                {
+                    Dst->DefaultValue=Src->DefaultValue;Dst->DefaultObject=Src->DefaultObject;Dst->DefaultTextValue=Src->DefaultTextValue;
+                    for (auto* Link:Src->LinkedTo) if (!Graph->GetSchema()->TryCreateConnection(Link,Dst)) Preserved=false;
+                }
+            }
+        }
+        auto After=PinValues(N);
+        if (MigrateFeet)
+        {
+            Before.RemoveAll([](const FString& Row) { return Row.StartsWith(TEXT("NonKickingFoot")); });
+            After.RemoveAll([](const FString& Row) { return Row.StartsWith(TEXT("NonKickingFoot")); });
+        }
+        if (!HadDistanceToLimit && FunctionName==TEXT("GetValidAttackTarget"))
+        {
+            const auto* Margin=N->FindPin(TEXT("DistanceToLimit"));
+            Preserved&=Margin && Margin->Direction==EGPD_Output && Margin->LinkedTo.IsEmpty();
+            After.RemoveAll([](const FString& Row) { return Row.StartsWith(TEXT("DistanceToLimit=")); });
+        }
+        Preserved&=Before==After;
     }
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
     FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
@@ -98,6 +141,14 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
 }
 static void RefreshOrder() { RefreshOrderFor(TEXT("SetAttackToLocomotionBlend"),TEXT("RecoveryPinOrder.txt")); }
 static void RefreshTemperingOrder() { RefreshOrderFor(TEXT("SetLocomotionLowerBodyTempering"),TEXT("TemperingPinOrder.txt")); }
+static void RefreshAttackTargetMargin() { RefreshOrderFor(TEXT("GetValidAttackTarget"),TEXT("AttackTargetMarginPins.txt")); }
+static void RefreshKickRoles()
+{
+    RefreshOrderFor(TEXT("SetKickToLocomotionBlend"),TEXT("KickRecoveryRoles.txt"));
+    RefreshOrderFor(TEXT("SetKickLocomotionLowerBodyTempering"),TEXT("KickTemperingRoles.txt"));
+}
+static FAutoConsoleCommand KickRolesCommand(TEXT("Prophecy.Editor.RefreshKickRoles"),TEXT("Refresh kicking/non-kicking roles and copy old shared foot values to both roles; leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshKickRoles));
+static FAutoConsoleCommand AttackTargetMarginCommand(TEXT("Prophecy.Editor.RefreshAttackTargetMargin"),TEXT("Add the distance-to-limit output on existing target queries; preserve values and links, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshAttackTargetMargin));
 static FAutoConsoleCommand OrderCommand(TEXT("Prophecy.Editor.RefreshRecoveryPinOrder"),TEXT("Refresh recovery pin order while retaining named pins and their connections; leaves Blueprint unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshOrder));
 static FAutoConsoleCommand TemperingOrderCommand(TEXT("Prophecy.Editor.RefreshTemperingPinOrder"),TEXT("Group tempering pins by feet/pelvis and XY/Z/rotation; retains values and connections, leaves Blueprint unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshTemperingOrder));
 }

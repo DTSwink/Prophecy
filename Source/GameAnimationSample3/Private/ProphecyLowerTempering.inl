@@ -11,7 +11,12 @@ static TAutoConsoleVariable<int32> CVarTemperingCalfContinuity(
     TEXT("Prophecy.Tempering.CalfContinuity"),1,
     TEXT("Editor comparison: 1 carries published calf twist during feet tempering; 0 re-decodes it immediately."));
 #endif
-void TemperLowerPose(const ProphecyLowerTempering::FSettings& S, const float* Previous, float* Predicted)
+static bool NeedsTemperedLegReconstruction(const ProphecyLowerTempering::FSettings& Pelvis,const ProphecyLowerTempering::FSettings& Foot)
+{
+    return !Foot.FeetAreIdentity() || Pelvis.PelvisTranslation!=1.f || Pelvis.PelvisTranslationZ!=1.f || Pelvis.PelvisRotation!=1.f;
+}
+void TemperLowerPose(const ProphecyLowerTempering::FSettings& S, const float* Previous, float* Predicted,
+    const ProphecyLowerTempering::FSettings* Right=nullptr)
 {
     auto Position = [&](int32 Offset, float XY, float Z)
     {
@@ -33,13 +38,14 @@ void TemperLowerPose(const ProphecyLowerTempering::FSettings& S, const float* Pr
     Position(0, S.PelvisTranslation, S.PelvisTranslationZ); Rotation(3, S.PelvisRotation);
     for (int32 Offset : {9,25})
     {
-        Position(Offset, S.FeetTranslation, S.FeetTranslationZ);
-        Rotation(Offset+3, S.FeetRotation);
+        const auto& Foot=Offset==25 && Right ? *Right : S;
+        Position(Offset, Foot.FeetTranslation, Foot.FeetTranslationZ);
+        Rotation(Offset+3, Foot.FeetRotation);
         // Thigh orientation is solved from untouched source hinge frames below.
         // Independently blending it here corrupts the source bend direction.
-        if (S.FeetRotation != 1.f)
-            Predicted[Offset+15] = S.FeetRotation == 0.f ? Previous[Offset+15]
-                : FMath::Lerp(Previous[Offset+15], Predicted[Offset+15], S.FeetRotation);
+        if (Foot.FeetRotation != 1.f)
+            Predicted[Offset+15] = Foot.FeetRotation == 0.f ? Previous[Offset+15]
+                : FMath::Lerp(Previous[Offset+15], Predicted[Offset+15], Foot.FeetRotation);
     }
 }
 
@@ -255,6 +261,18 @@ bool FProphecyTemperingAxesTest::RunTest(const FString&)
     TemperLowerPose(ProphecyLowerTempering::FSettings{0,1,1,1,.5f,0},Previous,Target);
     TestTrue(TEXT("Pelvis XY and Z independent"),ReadStateVec3(Target,0).Equals(FVector3f(5,6,3)));
     for (int32 O : {9,25}) TestTrue(TEXT("Feet XY and Z independent"),ReadStateVec3(Target,O).Equals(FVector3f(1,2,5)));
+    for (int32 O:{0,9,25}) WriteStateVec3(Target,O,FVector3f(5,6,7));
+    Previous[24]=.1f;Target[24]=.9f;Previous[40]=.2f;Target[40]=.8f;
+    const ProphecyLowerTempering::FSettings Left{0,0,1,1,.5f,1},Right{1,1,1,1,0,1};
+    TemperLowerPose(Left,Previous,Target,&Right);
+    TestTrue(TEXT("Left uses its own XY/Z values"),ReadStateVec3(Target,9).Equals(FVector3f(1,2,5)));
+    TestTrue(TEXT("Right uses its own XY/Z values"),ReadStateVec3(Target,25).Equals(FVector3f(5,6,3)));
+    TestEqual(TEXT("Left toe follows left rotation tempering"),Target[24],.1f);
+    TestEqual(TEXT("Right toe follows right rotation tempering"),Target[40],.8f);
+    const ProphecyLowerTempering::FSettings Normal;
+    TestTrue(TEXT("Modified foot requires chain reconstruction"),NeedsTemperedLegReconstruction(Normal,Left));
+    TestFalse(TEXT("Other normal foot and normal pelvis bypass reconstruction"),NeedsTemperedLegReconstruction(Normal,Normal));
+    TestTrue(TEXT("Modified pelvis still requires both chains"),NeedsTemperedLegReconstruction({1,1,0,1},Normal));
     return !HasAnyErrors();
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyLowerTemperingTest,

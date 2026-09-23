@@ -18,6 +18,26 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackControlLibrary : public UBlueprint
 {
     GENERATED_BODY()
 public:
+    /** Clamp a wanted world target to this attack's horizontal GT reach + extra reach.
+     * GT reach is measured from the first-frame flat feet midpoint to its saved hit target.
+     * The live cylinder is centered on the agent's current flat feet midpoint (the normal
+     * self-balancing target, even when balancing is disabled). Height is unchanged.
+     * Attack is an explicit family name, so this can run before starting an attack.
+     * Difference = Effective Target - Wanted Target. No attack/NN state is changed.
+     * Distance To Limit is the remaining horizontal reach in cm for the wanted target:
+     * radius minus planar distance, clamped to zero on/outside the boundary.
+     * Unknown attack names have zero horizontal reach. Missing feet use the live root;
+     * invalid agents/targets pass through unchanged with zero Difference/Distance To Limit. No tick work. */
+    UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Attack", meta=(DefaultToSelf="Agent"))
+    static void GetValidAttackTarget(AProphecyAgent* Agent, FName Attack, FVector Target,
+        FVector& EffectiveTarget, FVector& Difference, FVector& WantedTarget, double& DistanceToLimit);
+
+    /** Set this agent's extra horizontal attack reach X in cm, shared by all attack
+     * families. Default 50; zero uses the measured GT reach. Finite nonnegative values
+     * only. Setting 50 removes the override. Does not alter a running attack's target. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack", meta=(DefaultToSelf="Agent", ClampMin="0"))
+    static bool SetAttackTargetExtraReach(AProphecyAgent* Agent, float ExtraReachCm = 50.f);
+
     /** Fade the full-attack camera's added horizontal pelvis offset back to zero after the attack.
      * Only affects this agent while player-possessed. Default 1 means 60 unpaused game ticks,
      * independent of FPS/time dilation; 0 removes the offset immediately. Changes also retime

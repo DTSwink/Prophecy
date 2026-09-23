@@ -5,6 +5,58 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 #include "PhysicsEngine/PhysicsAsset.h"
+#include "ProphecyRootBalance.h"
+#include "ProphecyAttackTargetReach.inl"
+#include <cmath>
+
+namespace ProphecyAttackTargetReach
+{
+static TMap<TWeakObjectPtr<const AProphecyAgent>,float> ExtraReach;
+static FDelegateHandle Cleanup;
+static double Radius(FName Attack,double Extra)
+{
+    for (const auto& Entry:Entries) if (Entry.Attack==Attack) return Entry.RadiusCm+Extra;
+    return 0.; // No fabricated reach for unknown attack families.
+}
+static FVector Clamp(const FVector& Center,const FVector& Wanted,double RadiusCm,double* DistanceToLimit=nullptr)
+{
+    const FVector Delta=Wanted-Center;
+    const double Distance=std::hypot(Delta.X,Delta.Y);
+    if (DistanceToLimit) *DistanceToLimit=FMath::Max(0.,RadiusCm-Distance);
+    if (Distance<=RadiusCm) return Wanted;
+    const double Scale=RadiusCm/Distance;
+    return FVector(Center.X+Delta.X*Scale,Center.Y+Delta.Y*Scale,Wanted.Z);
+}
+}
+
+void UProphecyAttackControlLibrary::GetValidAttackTarget(AProphecyAgent* Agent,FName Attack,FVector Target,
+    FVector& EffectiveTarget,FVector& Difference,FVector& WantedTarget,double& DistanceToLimit)
+{
+    WantedTarget=EffectiveTarget=Target;Difference=FVector::ZeroVector;DistanceToLimit=0.;
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || Target.ContainsNaN()) return;
+    FVector Center;
+    if (!ProphecyRootBalance::GetFlatFeetTarget(Agent,Center)) Center=Agent->GetRootLowPoint();
+    if (Center.ContainsNaN()) return;
+    using namespace ProphecyAttackTargetReach;
+    const float* Extra=ExtraReach.IsEmpty()?nullptr:ExtraReach.Find(Agent);
+    EffectiveTarget=Clamp(Center,Target,Radius(Attack,Extra?*Extra:50.f),&DistanceToLimit);
+    Difference=EffectiveTarget-WantedTarget;
+}
+
+bool UProphecyAttackControlLibrary::SetAttackTargetExtraReach(AProphecyAgent* Agent,float ExtraReachCm)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() ||
+        !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown || !FMath::IsFinite(ExtraReachCm) || ExtraReachCm<0.f) return false;
+    using namespace ProphecyAttackTargetReach;
+    if (ExtraReachCm==50.f) { ExtraReach.Remove(Agent);return true; }
+    if (!Cleanup.IsValid()) Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
+    {
+        for (auto It=ExtraReach.CreateIterator();It;++It)
+            if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+    });
+    for (auto It=ExtraReach.CreateIterator();It;++It) if (!It.Key().IsValid()) It.RemoveCurrent();
+    ExtraReach.Add(Agent,ExtraReachCm);return true;
+}
 
 namespace ProphecyAttackControls
 {
@@ -96,6 +148,50 @@ EProphecyAttackInitializationMode UProphecyAttackControlLibrary::GetAttackInitia
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackTargetReachTest,"Prophecy.Attack.TargetReach",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyAttackTargetReachTest::RunTest(const FString&)
+{
+    using namespace ProphecyAttackTargetReach;
+    TestEqual(TEXT("All 16 runtime attacks have GT reach"),int32(UE_ARRAY_COUNT(Entries)),16);
+    const FVector Center(123.,-456.,987.);
+    for (const auto& Entry:Entries)
+    {
+        const double R=Radius(Entry.Attack,50.);
+        TestTrue(TEXT("Positive GT distance with default margin"),R>50.);
+        const FVector Wanted=Center+FVector(3.*R,4.*R,10000.);
+        const FVector Effective=Clamp(Center,Wanted,R);
+        TestTrue(TEXT("Horizontal projection lands on cylinder, independent of height"),FMath::IsNearlyEqual(FVector::Dist2D(Effective,Center),R,1.e-8));
+        TestEqual(TEXT("Height remains exact"),Effective.Z,Wanted.Z);
+        TestTrue(TEXT("Nearest radial point, not axiswise square clamp"),Effective.Equals(Center+FVector(.6*R,.8*R,10000.),1.e-8));
+        const FVector Difference=Effective-Wanted;
+        TestTrue(TEXT("Signed difference reconstructs effective target"),(Wanted+Difference).Equals(Effective,1.e-8));
+        const FVector Inside=Center+FVector(.3*R,.4*R,-10000.);
+        TestEqual(TEXT("Interior passes through unchanged"),Clamp(Center,Inside,R),Inside);
+        double Margin=-1.;
+        Clamp(Center,Inside,R,&Margin);
+        TestTrue(TEXT("Interior margin is radial distance to boundary, ignoring height"),FMath::IsNearlyEqual(Margin,.5*R,1.e-8));
+        Clamp(Center,Wanted,R,&Margin);
+        TestEqual(TEXT("Outside margin is zero"),Margin,0.);
+        Clamp(Center,Center+FVector(R,0,500),R,&Margin);
+        TestTrue(TEXT("Boundary margin is zero"),FMath::IsNearlyZero(Margin,1.e-8));
+        Clamp(Center,Center+FVector(0,0,500),R,&Margin);
+        TestEqual(TEXT("Cylinder axis has full radius remaining"),Margin,R);
+        TestEqual(TEXT("Zero planar distance preserves arbitrary height"),Clamp(Center,Center+FVector(0,0,20.),R),Center+FVector(0,0,20.));
+        TestTrue(TEXT("Removing extra reach changes radius by 50cm"),FMath::IsNearlyEqual(R-Radius(Entry.Attack,0.),50.,1.e-8));
+    }
+    TestEqual(TEXT("Family names are case insensitive"),Radius(TEXT("KICKL"),0.),Radius(TEXT("kickL"),0.));
+    TestEqual(TEXT("Unknown family cannot invent reach"),Radius(TEXT("bad_attack"),50.),0.);
+    TestEqual(TEXT("Zero radius safely projects onto axis"),Clamp(Center,Center+FVector(10,20,30),0.),Center+FVector(0,0,30));
+    FVector Effective,Difference,Wanted;
+    double Margin=123.;
+    UProphecyAttackControlLibrary::GetValidAttackTarget(nullptr,TEXT("jabL"),Center,Effective,Difference,Wanted,Margin);
+    TestEqual(TEXT("Invalid agent clears distance to limit"),Margin,0.);
+    TestEqual(TEXT("Invalid agent returns original target"),Effective,Center);
+    TestEqual(TEXT("Wanted output always echoes input"),Wanted,Center);
+    TestTrue(TEXT("Invalid agent difference is zero"),Difference.IsZero());
+    return true;
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackControlsTest, "Prophecy.Attack.Controls.HistoryAndColliders",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FProphecyAttackControlsTest::RunTest(const FString&)

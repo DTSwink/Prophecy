@@ -1842,9 +1842,9 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateRig(const FProphecyJ
     for (int32 Index = 0; Index < Snapshot.Bodies.Num(); ++Index)
     {
         const FProphecyJoltRigBody& Body = Snapshot.Bodies[Index];
-        if (!Body.bSimulating || Body.bCCD || Body.bMACD
+        if (Body.bCCD || Body.bMACD
             || (Body.CollisionEnabled != ECollisionEnabled::QueryAndPhysics && Body.CollisionEnabled != ECollisionEnabled::PhysicsOnly))
-            return { EProphecyJoltWorldResult::InvalidArgument, FString::Printf(TEXT("Body %s is outside the dynamic/discrete simulated rig contract."), *Body.BodyName.ToString()) };
+            return { EProphecyJoltWorldResult::InvalidArgument, FString::Printf(TEXT("Body %s is outside the discrete physical rig contract."), *Body.BodyName.ToString()) };
         FCollisionProfile Profile;
         if (!MakeCollisionProfile(false, Body.ObjectType, Body.CollisionResponses, Profile))
             return { EProphecyJoltWorldResult::InvalidArgument, FString::Printf(TEXT("Body %s has an invalid object channel or collision response."), *Body.BodyName.ToString()) };
@@ -1858,7 +1858,7 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateRig(const FProphecyJ
             return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Prepared rig is missing a required native shape or mass tensor."));
         auto Settings = MakeUnique<JPH::BodyCreationSettings>(Shape,
             ToJoltPosition(Body.BodyOriginToWorld.GetTranslation()), ToJoltRotation(Body.BodyOriginToWorld.GetRotation()),
-            JPH::EMotionType::Dynamic, JPH::cObjectLayerInvalid);
+            Body.bSimulating ? JPH::EMotionType::Dynamic : JPH::EMotionType::Kinematic, JPH::cObjectLayerInvalid);
         Settings->mLinearVelocity = ToJoltLinearVelocity(Body.CenterOfMassVelocityCmPerSecond);
         Settings->mAngularVelocity = ToJoltAngularVelocity(Body.AngularVelocityRadiansPerSecond);
         Settings->mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;

@@ -149,7 +149,7 @@ bool FProphecyJoltPreparedPoseValidation::RunTest(const FString&)
     Bodies[3].SetRotation(FQuat(0, 0, 0, 2));
     if (!RejectSame()) return false;
     Bodies[3] = FTransform::Identity;
-    World.SetScale3D(FVector(2, 1, 1));
+    World.SetScale3D(FVector(0, 1, 1)); // Positive carrier scale is supported; singular scale remains invalid.
     if (!RejectSame()) return false;
     World = FTransform::Identity;
     Bodies.Pop();

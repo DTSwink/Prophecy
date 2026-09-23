@@ -33,6 +33,12 @@ struct FGate
 	FCollisionResponseContainer Original;
 };
 TMap<TWeakObjectPtr<const AProphecyAgent>,FGate> Gates;
+TSet<TWeakObjectPtr<const AProphecyAgent>> HitOwners;
+void RefreshOwner(AProphecyAgent* Agent)
+{
+    if (Agent) if (auto* Controller=Agent->FindComponentByClass<UProphecySwordComponent>())
+        Controller->RefreshOwnerCollision();
+}
 void Responses(UStaticMeshComponent& Blade,const FCollisionResponseContainer& Value)
 {
 	Blade.SetCollisionResponseToChannels(Value);
@@ -55,6 +61,10 @@ void Restore(FGate& Gate)
 	if (Gate.bSuppressed) if (auto* Blade=Gate.Blade.Get()) Responses(*Blade,Gate.Original);
 	Gate.bSuppressed=false;Gate.Blade.Reset();
 }
+}
+bool SuppressesOwner(const AProphecyAgent* Agent)
+{
+    return Agent && Agent->IsSwordAttackActive() && !HitOwners.Contains(Agent);
 }
 bool IsAllowed(const AProphecyAgent* Agent)
 {
@@ -88,8 +98,23 @@ void Armed(AProphecyAgent* Agent)
 	if (!Gate || !Gate->bWeapon || Gate->bAllowed) return;
 	Gate->bAllowed=true;Restore(*Gate);
 }
+void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit)
+{
+	auto* Gate=Gates.Find(Agent);
+	if (!Gate) return;
+	const bool bWeapon=Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash"),ESearchCase::IgnoreCase);
+	if (Gate->bWeapon==bWeapon) return; // Preserve the already-latched collision phase.
+	Gate->bWeapon=bWeapon;
+	Gate->bAllowed=bWeapon ? bArmed : bHit;
+	Refresh(Agent); // Retain original responses, body and grip; no End/Begin cycle.
+}
 void Hit(AProphecyAgent* Agent)
 {
+    if (!Agent || !Gates.Contains(Agent)) return;
+    const bool First=!HitOwners.Contains(Agent);
+    HitOwners.Add(Agent);
+    // Restore owner pairs for every attack family without ending any attack systems.
+    if (First) RefreshOwner(Agent);
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate || Gate->bWeapon || Gate->bAllowed) return;
 	Gate->bAllowed=true;Restore(*Gate);
@@ -97,6 +122,7 @@ void Hit(AProphecyAgent* Agent)
 void End(AProphecyAgent* Agent)
 {
 	FGate Gate;if (Gates.RemoveAndCopyValue(Agent,Gate)) Restore(Gate);
+    HitOwners.Remove(Agent);
 }
 void ReleaseSword(AProphecyAgent* Agent)
 {
@@ -426,7 +452,7 @@ bool UProphecySwordComponent::FinishJoltGrip(UProphecyJoltCharacterComponent& Ch
 		FProphecyJoltBodyHandle OwnerBody;
 		if (!Setup || !Character.GetBodyHandle(Setup->BoneName, OwnerBody)
 			|| OwnerBody.WorldLifetime != SwordBody.WorldLifetime) return false;
-		if (A->IsSwordAttackActive() || Setup->BoneName == Bone) Exclusions.Add({ SwordBody, OwnerBody });
+		if (ProphecySwordAttackCollision::SuppressesOwner(A) || Setup->BoneName == Bone) Exclusions.Add({ SwordBody, OwnerBody });
 	}
 	if (!ReleaseJoltGrip()) return false;
 	FProphecyJoltJointHandle Joint;
@@ -566,7 +592,7 @@ bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 		Blade->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Blade->SetSimulatePhysics(true);
 		if (!Blade->IsSimulatingPhysics()) return false;
-		if (A->IsSwordAttackActive()) IgnoreOwnerCollisions(this, Blade, A);
+		if (ProphecySwordAttackCollision::SuppressesOwner(A)) IgnoreOwnerCollisions(this, Blade, A);
 		FTransform Anchor = M->GetSocketTransform(A->SwordHandSocket);
 		Anchor.SetScale3D(FVector::OneVector);
 		Grip->SetWorldTransform(Anchor);
@@ -592,7 +618,7 @@ bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 		// An unchanged relative transform can early-out after a mode switch has
 		// temporarily propagated a different socket pose to attached children.
 		Blade->UpdateComponentToWorld();
-		IgnoreOwnerCollisions(this, Blade, A, A->IsSwordAttackActive(), true);
+		IgnoreOwnerCollisions(this, Blade, A, ProphecySwordAttackCollision::SuppressesOwner(A), true);
 	}
 	bHasPrevious = false;
 	ProphecySwordAttackCollision::Refresh(A);
@@ -649,7 +675,7 @@ void UProphecySwordComponent::RefreshOwnerCollision()
 			|| !JoltBody || !JoltBody->GetBodyHandle(SwordBody)) return;
 		TArray<FProphecyJoltBodyPair> Pairs;
 		Pairs.Add({ SwordBody, JoltBinding->Hand });
-		if (A->IsSwordAttackActive())
+		if (ProphecySwordAttackCollision::SuppressesOwner(A))
 		{
 			for (const USkeletalBodySetup* Setup : BoundMesh->GetPhysicsAsset()->SkeletalBodySetups)
 			{
@@ -665,8 +691,8 @@ void UProphecySwordComponent::RefreshOwnerCollision()
 	else
 	{
 		ClearOwnerCollisions(this);
-		if (A->IsSwordAttackActive() || !bPhysicsHold)
-			IgnoreOwnerCollisions(this, Blade, A, A->IsSwordAttackActive(), !bPhysicsHold);
+		if (ProphecySwordAttackCollision::SuppressesOwner(A) || !bPhysicsHold)
+			IgnoreOwnerCollisions(this, Blade, A, ProphecySwordAttackCollision::SuppressesOwner(A), !bPhysicsHold);
 	}
 }
 

@@ -11,26 +11,6 @@ namespace
 	TMap<int32, EProphecyNNInterpolationMode> GInterpolationModes;
 	TSet<int32> GProphecyNNRigidForearms;
 	TSet<int32> GProphecyNNRigidCalves;
-	struct FKickFootExtension { float Leeway=0; FVector Reference[2]; };
-	TMap<int32,FKickFootExtension> GKickFootExtensions;
-	TMap<int32,FVector2D> GKickFootReturns;
-	void ApplyKickExtension(const FKickFootExtension& Kick,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,
-		const FVector2D* Returning=nullptr)
-	{
-		const FName Feet[]={TEXT("foot_l"),TEXT("foot_r")},Calves[]={TEXT("calf_l"),TEXT("calf_r")},Toes[]={TEXT("ball_l"),TEXT("ball_r")};
-		for (int Side=0;Side<2;++Side)
-		{
-			const int32 F=Names.IndexOfByKey(Feet[Side]),C=Names.IndexOfByKey(Calves[Side]),T=Names.IndexOfByKey(Toes[Side]);
-			if (!Pose.IsValidIndex(F) || !Pose.IsValidIndex(C)) continue;
-			const FVector Nominal=Pose[C].TransformVector(Kick.Reference[Side]),Axis=Nominal.GetSafeNormal();
-			const FVector Origin=Pose[C].GetTranslation()+Nominal;
-			const double Extension=FMath::Clamp(Returning ? (*Returning)[Side]
-				: FVector::DotProduct(Pose[F].GetTranslation()-Origin,Axis),0.,double(Kick.Leeway));
-			const FVector End=Origin+Axis*Extension,Shift=End-Pose[F].GetTranslation();
-			Pose[F].SetTranslation(End);
-			if (Pose.IsValidIndex(T)) Pose[T].AddToTranslation(Shift);
-		}
-	}
 	struct FPresentationSample
 	{
 		double SourceTimeSeconds = 0.0;
@@ -100,56 +80,6 @@ void ProphecyNNPresentation::Publish(int32 AgentId, double SourceTimeSeconds, fl
 	FPresentationSample& Sample = GProphecyNNPresentation.FindOrAdd(AgentId);
 	Sample.SourceTimeSeconds = SourceTimeSeconds;
 	Sample.Alpha = Alpha;
-}
-
-void ProphecyNNPresentation::SetKickFootExtension(int32 AgentId,float LeewayCm,
-	const FVector& LeftReference,const FVector& RightReference)
-{
-	FWriteScopeLock Lock(GProphecyNNPoseLock);
-	if (LeewayCm>0)
-	{
-		GKickFootExtensions.Add(AgentId,FKickFootExtension{LeewayCm,{LeftReference,RightReference}});
-		return;
-	}
-	GKickFootReturns.Remove(AgentId);
-	const auto* Previous=GKickFootExtensions.Find(AgentId);
-	if (!Previous) return;
-	// The 60 Hz return can finish between two 30 Hz publications. A hard clamp
-	// must not use the last slightly stretched local offset as its new rest length.
-	if (auto* Pose=GProphecyNNPoses.Find(AgentId); Pose && GProphecyNNRigidCalves.Contains(AgentId)
-		&& Pose->CalfClampLeewayCm==0)
-	{
-		const FName Feet[]={TEXT("foot_l"),TEXT("foot_r")};
-		for (int Side=0;Side<2;++Side)
-		{
-			const int32 Index=Pose->BoneNames.IndexOfByKey(Feet[Side]);
-			if (Pose->LocalTransforms.IsValidIndex(Index)) Pose->LocalTransforms[Index].SetTranslation(
-				Pose->CalfClampLengths[Side]>0 ? Previous->Reference[Side].GetSafeNormal()*Pose->CalfClampLengths[Side] : Previous->Reference[Side]);
-		}
-		Pose->Revision=AllocatePoseRevision();
-	}
-	GKickFootExtensions.Remove(AgentId);
-}
-
-bool ProphecyNNPresentation::ApplyKickFootExtension(int32 AgentId,TConstArrayView<FName> Names,TArrayView<FTransform> Pose)
-{
-	FKickFootExtension Kick;
-	FVector2D Returning; bool HasReturn=false;
-	{
-		FReadScopeLock Lock(GProphecyNNPoseLock);
-		const auto* Value=GKickFootExtensions.Find(AgentId);
-		if (!Value) return false;
-		Kick=*Value;
-		if (const auto* R=GKickFootReturns.Find(AgentId)) { Returning=*R; HasReturn=true; }
-	}
-	ApplyKickExtension(Kick,Names,Pose,HasReturn ? &Returning : nullptr); return true;
-}
-
-void ProphecyNNPresentation::SetKickFootReturn(int32 AgentId,bool Returning,const FVector2D& ExtensionCm)
-{
-	FWriteScopeLock Lock(GProphecyNNPoseLock);
-	if (Returning && GKickFootExtensions.Contains(AgentId)) GKickFootReturns.Add(AgentId,ExtensionCm);
-	else GKickFootReturns.Remove(AgentId);
 }
 
 float ProphecyNNPresentation::Resolve(int32 AgentId, double SourceTimeSeconds, double WorldTimeSeconds,
@@ -373,8 +303,6 @@ void FProphecyNNPoseStore::ClearAgentPose(int32 AgentId)
 	GInterpolationModes.Remove(AgentId);
 	GProphecyNNRigidForearms.Remove(AgentId);
 	GProphecyNNRigidCalves.Remove(AgentId);
-	GKickFootExtensions.Remove(AgentId);
-	GKickFootReturns.Remove(AgentId);
 	GProphecyNNPresentation.Remove(AgentId);
 }
 
@@ -385,8 +313,6 @@ void FProphecyNNPoseStore::ClearAllPoses()
 	GInterpolationModes.Reset();
 	GProphecyNNRigidForearms.Reset();
 	GProphecyNNRigidCalves.Reset();
-	GKickFootExtensions.Reset();
-	GKickFootReturns.Reset();
 	GProphecyNNPresentation.Reset();
 }
 
@@ -434,15 +360,11 @@ void FProphecyNNPoseStore::ApplyRigidForearms(int32 AgentId, const FProphecyNNPo
 void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
 	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms)
 {
-	FKickFootExtension Kick;
-	FVector2D Returning; bool HasReturn=false;
 	{
 		FReadScopeLock Lock(GProphecyNNPoseLock);
-		if (const auto* Value=GKickFootExtensions.Find(AgentId)) Kick=*Value;
-		if (const auto* R=GKickFootReturns.Find(AgentId)) { Returning=*R; HasReturn=true; }
-		if (Kick.Leeway<=0 && !GProphecyNNRigidCalves.Contains(AgentId)) return;
+		if (!GProphecyNNRigidCalves.Contains(AgentId)) return;
 	}
-	if (Kick.Leeway>0) { ApplyKickExtension(Kick,BoneNames,Transforms,HasReturn ? &Returning : nullptr); return; }
+
 	static const FName Feet[] = { TEXT("foot_l"), TEXT("foot_r") };
 	static const FName Calves[] = { TEXT("calf_l"), TEXT("calf_r") };
 	static const FName Toes[] = { TEXT("ball_l"), TEXT("ball_r") };

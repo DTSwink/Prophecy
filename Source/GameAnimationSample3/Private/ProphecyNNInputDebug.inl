@@ -1,6 +1,131 @@
 // Optional renderer of encoded input history. Included after the pose decoder and Slash runtime.
 #include "ProphecyContinuousRootWindow.h"
 
+bool AProphecyNNLocomotionManager::AddAgentRootAngleOffset(FProphecyAgentHandle Handle, float YawDegrees)
+{
+	if (!IsInGameThread() || !Impl || !Impl->bInitialized || IsSimBridgeActive()
+		|| !FMath::IsFinite(YawDegrees)) return false;
+	AProphecyAgent* Actor=ResolveAgent(Handle);
+	if (!Actor || !Actor->bNNInferenceEnabled) return false;
+	auto& Agent=Impl->Agents[Handle.Index];
+	if (Agent.WindowStepSeconds<=0 || (Agent.Slash.bActive && !Agent.Slash.bHalf)) return false;
+	const float Delta=-FMath::DegreesToRadians(FMath::UnwindDegrees(YawDegrees));
+	if (Delta==0) return true;
+	const int32 Index=Handle.Index;
+	const auto OldPreviousCarrier=SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
+	const auto OldCarrier=SlashComponentWorld(Actor,Agent.PublishedRoot,Agent.PublishedYaw);
+	const auto PreviousCarrier=SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw+Delta);
+	const auto Carrier=SlashComponentWorld(Actor,Agent.PublishedRoot,Agent.PublishedYaw+Delta);
+	USkeletalMeshComponent* KinematicMesh=Actor->GetSimulationMode()==EProphecyAgentSimulationMode::Kinematic
+		? Actor->GetPoseReferenceMesh() : nullptr;
+	if (KinematicMesh) KinematicMesh->HandleExistingParallelEvaluationTask(true,true);
+	const FName DebugName(*FString::Printf(TEXT("KinematicDebugMesh_%d"),Index));
+	auto* DebugMesh=FindObjectFast<UPoseableMeshComponent>(this,DebugName);
+	const FTransform OldDebugWorld=IsValid(DebugMesh) ? DebugMesh->GetComponentTransform() : FTransform::Identity;
+	if (!Actor->SetActorRotation(FRotator(0,Actor->GetActorRotation().Yaw-FMath::RadiansToDegrees(Delta),0),ETeleportType::None)) return false;
+
+	// Change coordinates, never rotate the skeleton or its recurrent history.
+	auto RebasePair=[&](TArray<float>& Lower,TArray<float>& Upper)
+	{
+		RebaseStateRoot(StateSlice(Lower,Index),*Impl,FVector3f::ZeroVector,Delta);
+		RebaseUpperHeadingState(UpperStateSlice(Upper,Index),FVector3f::ZeroVector,Delta);
+	};
+	RebasePair(Impl->PrevStateBuffer,Impl->UpperPreviousStateBuffer);
+	RebasePair(Impl->CurStateBuffer,Impl->UpperCurrentStateBuffer);
+	RebasePair(Impl->PreviousPublishedStateBuffer,Impl->UpperPreviousPublishedStateBuffer);
+	RebasePair(Impl->PublishedStateBuffer,Impl->UpperPublishedStateBuffer);
+	if (Agent.bHasPhysicalSample) RebasePair(Impl->PreviousPhysicalStateBuffer,Impl->UpperPreviousPhysicalStateBuffer);
+	if (Agent.AnimationLayer.Animation.IsValid()) RebasePair(Impl->AnimationFrozenBaseLowerStateBuffer,Impl->AnimationFrozenBaseUpperStateBuffer);
+	BuildUpperBaseFromLower(StateSlice(Impl->CurStateBuffer,Index),*Impl,UpperStateSlice(Impl->UpperCurrentBaseBuffer,Index));
+	LowerTransformToHeading(StateSlice(Impl->PrevStateBuffer,Index),0,3,*Impl,TransformStateSlice(Impl->PreviousPelvisHeadingBuffer,Index));
+	LowerTransformToHeading(StateSlice(Impl->CurStateBuffer,Index),0,3,*Impl,TransformStateSlice(Impl->CurrentPelvisHeadingBuffer,Index));
+
+	if (Agent.DefensePose)
+	{
+		using namespace ProphecyDefense;
+		auto& P=*Agent.DefensePose;
+		auto Before=DefenseRoot(PreviousCarrier),Current=DefenseRoot(Carrier);
+		if (P.bDodge)
+		{
+			auto& Dodge=static_cast<FProphecyLiveDodge&>(P);
+			Before.P-=Dodge.WorldOrigin;Current.P-=Dodge.WorldOrigin;
+		}
+		auto Rebase=[&](float* Lower,float* Upper,FRootFrame& Old,const FRootFrame& New)
+		{
+			RebaseLower(Lower,Lower,Old.P,Old.R,New.P,New.R);
+			RebaseUpper(Upper,Upper,Old.P,Old.R,New.P,New.R);Old=New;
+		};
+		if (P.bDodge)
+		{
+			auto& S=static_cast<FProphecyLiveDodge&>(P).State;
+			Rebase(S.PreviousLower,S.PreviousUpper,S.PreviousRoot,Before);
+			Rebase(S.CurrentLower,S.CurrentUpper,S.CurrentRoot,Current);
+		}
+		else
+		{
+			auto& S=static_cast<FProphecyLiveParry&>(P).State;
+			RebaseUpper(S.CurrentBaseline,S.CurrentBaseline,S.CurrentRoot.P,S.CurrentRoot.R,Current.P,Current.R);
+			Rebase(S.PreviousLower,S.PreviousUpper,S.PreviousRoot,Before);
+			Rebase(S.CurrentLower,S.CurrentUpper,S.CurrentRoot,Current);
+		}
+		for (int32 Bone=0;Bone<25;++Bone)
+		{
+			P.PreviousComponent[Bone]=(P.PreviousComponent[Bone]*OldPreviousCarrier).GetRelativeTransform(PreviousCarrier);
+			P.CurrentComponent[Bone]=(P.CurrentComponent[Bone]*OldCarrier).GetRelativeTransform(Carrier);
+		}
+	}
+	// Retain the exact published bones (including calf twist not stored in the NN
+	// state). The world-pose store deliberately stays untouched until next publish.
+	auto Pose=TransformSlice(Impl->ComponentTransformBuffer,Index);
+	auto PreviousPose=TransformSlice(Impl->PreviousComponentTransformBuffer,Index);
+	auto LocalPose=TransformSlice(Impl->LocalTransformBuffer,Index);
+	for (int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
+	{
+		Pose[Bone]=(Pose[Bone]*OldCarrier).GetRelativeTransform(Carrier);
+		PreviousPose[Bone]=(PreviousPose[Bone]*OldPreviousCarrier).GetRelativeTransform(PreviousCarrier);
+		if (Impl->Parents[Bone]==INDEX_NONE) LocalPose[Bone]=Pose[Bone];
+	}
+	Agent.PrevRootYaw+=Delta;Agent.CurRootYaw+=Delta;
+	Agent.PreviousPublishedYaw+=Delta;Agent.PublishedYaw+=Delta;
+	Agent.FedInputYaw+=Delta;Agent.WindowPreviousYaw+=Delta;
+	for (auto& Yaw:Agent.FedFutureRootYaws) Yaw+=Delta;
+	Agent.MoverState.previous_yaw_radians+=Delta;Agent.MoverState.yaw_radians+=Delta;
+	Agent.MoverIntent.orientation_yaw_radians+=Delta;
+	if (auto* Targets=ResolvedMoverTargets.Find(this);Targets && Targets->IsValidIndex(Index))
+		(*Targets)[Index].Target.orientation_yaw_radians+=Delta;
+	if (Actor->bUseBlueprintLocomotionInput && !Actor->LocomotionInput.FacingWorldDirection.IsNearlyZero())
+		Actor->LocomotionInput.FacingWorldDirection=FQuat(FVector::UpVector,-double(Delta)).RotateVector(Actor->LocomotionInput.FacingWorldDirection);
+	// Rotate encoded local travel by the inverse carrier change: future WORLD
+	// positions and momentum remain fixed. Relative orientation predictions stay fixed.
+	float* Input=Impl->InputBuffer.GetData()+Index*InputDim;
+	auto RebaseTravel=[&](float* XY)
+	{
+		const auto Local=TransformRow(FVector3f(XY[0],0,XY[1]),YawMatrix(Delta));
+		XY[0]=Local.X;XY[1]=Local.Z;
+	};
+	RebaseTravel(Input+117);
+	for (int32 I=0;I<FutureWindow;++I) RebaseTravel(Input+120+I*4);
+	if (auto* Smoothing=ProphecyNNRootWindow::Find(Actor))
+	{
+		for (auto& Sample:Smoothing->Samples) Sample.Direction+=Delta;
+		Smoothing->ActualNextRootLocal=TransformRow(Smoothing->ActualNextRootLocal,YawMatrix(Delta));
+	}
+	if (float* HistoryYaw=RootImpulseSmoothingYaw.Find(Actor)) *HistoryYaw+=Delta;
+	if (IsValid(DebugMesh) && !DebugMesh->BoneSpaceTransforms.IsEmpty())
+	{
+		DebugMesh->BoneSpaceTransforms[0]=(DebugMesh->BoneSpaceTransforms[0]*OldDebugWorld).GetRelativeTransform(DebugMesh->GetComponentTransform());
+		DebugMesh->RefreshBoneTransforms();
+	}
+	if (KinematicMesh)
+	{
+		const bool SavedURO=KinematicMesh->bEnableUpdateRateOptimizations;
+		KinematicMesh->bEnableUpdateRateOptimizations=false;
+		Actor->ApplyNNPoseKinematically(0);
+		KinematicMesh->bEnableUpdateRateOptimizations=SavedURO;
+	}
+	return true;
+}
+
 bool AProphecyNNLocomotionManager::SetAgentLocomotionRootWindowLocation(
 	FProphecyAgentHandle Handle, FVector WorldLocation, bool bPreserveWorldPose)
 {
@@ -131,7 +256,9 @@ bool AProphecyNNLocomotionManager::GetAgentContinuousLocomotionRootWindow(
 	if (Agent.Slash.bActive && !Agent.Slash.bHalf) return false;
 	if (!GetAgentLocomotionRootWindow(Handle, Roots, Times)) return false;
 	const FTransform AppliedRoot(FRotator(0, Actor->GetActorRotation().Yaw, 0), Actor->GetRootLowPoint());
-	ProphecyContinuousRootWindow::Resample(Roots, Times, Impl->VisualPoseAlpha, Agent.WindowStepSeconds, AppliedRoot);
+	ProphecyContinuousRootWindow::Resample(Roots, Times,
+		ProphecyAgentTime::Alpha(this,Handle.Index,Impl->VisualPoseAlpha),
+		Agent.WindowStepSeconds/GetAgentTimeDilation(Handle), AppliedRoot);
 	return true;
 }
 
@@ -169,13 +296,14 @@ bool AProphecyNNLocomotionManager::GetAgentLocomotionRootWindow(
 	if (!ResolveAgent(Handle)) return false;
 	const auto& Agent = Impl->Agents[Handle.Index];
 	if (Agent.WindowStepSeconds <= 0) return false;
+	const float WorldStep=Agent.WindowStepSeconds/GetAgentTimeDilation(Handle);
 	auto Add = [&](const FVector3f& Position, float Yaw, float Time)
 	{
 		Roots.Emplace(FRotator(0, -FMath::RadiansToDegrees(Yaw), 0), TrainingToUnreal(Position));
 		Times.Add(Time);
 	};
 	Roots.Reserve(FutureWindow + 2); Times.Reserve(FutureWindow + 2);
-	Add(Agent.WindowPreviousRoot, Agent.WindowPreviousYaw, -Agent.WindowStepSeconds);
+	Add(Agent.WindowPreviousRoot, Agent.WindowPreviousYaw, -WorldStep);
 	Add(Agent.FedInputRoot, Agent.FedInputYaw, 0);
 	const float* Input = Impl->InputBuffer.GetData() + Handle.Index * InputDim + 120;
 	for (int32 I = 1; I <= FutureWindow; ++I, Input += 4)
@@ -183,7 +311,7 @@ bool AProphecyNNLocomotionManager::GetAgentLocomotionRootWindow(
 		const float Scale = I * Impl->MaxSpeedScaleFinal;
 		const FVector3f Local(Input[0] * Scale, Agent.WindowVerticalVelocity * I * Agent.WindowStepSeconds, Input[1] * Scale);
 		Add(Agent.FedInputRoot + TransformRow(Local, Transpose(YawMatrix(Agent.FedInputYaw))),
-			Agent.FedInputYaw + FMath::Atan2(Input[3], Input[2]), I * Agent.WindowStepSeconds);
+			Agent.FedInputYaw + FMath::Atan2(Input[3], Input[2]), I * WorldStep);
 	}
 	return true;
 }
@@ -326,6 +454,9 @@ void AProphecyNNLocomotionManager::TraceNNHandoff()
 		{
 			const float Values[]={S->FeetTranslation,S->FeetRotation,S->PelvisTranslation,S->PelvisRotation,S->FeetTranslationZ,S->PelvisTranslationZ};
 			Add(TEXT("tempering"),Values,UE_ARRAY_COUNT(Values));
+            const auto& R=ProphecyLowerTempering::RightFootSettings(AgentActors[I],*S);
+            const float Right[]={R.FeetTranslation,R.FeetTranslationZ,R.FeetRotation};
+            Add(TEXT("right_foot_tempering"),Right,UE_ARRAY_COUNT(Right));
 		}
 		Add(TEXT("previous_upper"), UpperStateSlice(Impl->UpperPreviousPublishedStateBuffer, I), UpperStateDim);
 		const float Root[] = {A.PrevRootPos.X,A.PrevRootPos.Y,A.PrevRootPos.Z,A.PrevRootYaw,

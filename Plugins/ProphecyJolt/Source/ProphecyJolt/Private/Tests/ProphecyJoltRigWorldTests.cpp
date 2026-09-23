@@ -1665,4 +1665,44 @@ bool FProphecyFootExtensionLifecycleTest::RunTest(const FString&)
     return !HasAnyErrors();
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltAnchoredRigTest,
+    "Prophecy.Jolt.RigWorld.KinematicAnchor", ProphecyJolt::RigWorldTests::Flags)
+bool FProphecyJoltAnchoredRigTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::RigWorldTests;
+    FScopedWorld Scope;
+    auto* Owner=Scope.Get();
+    if (!Owner || !Okay(*this,TEXT("Initialize"),Owner->InitializeSimulation(SmallWorld()))) return false;
+    auto Snapshot=MakeRig();
+    Snapshot.Bodies[0].bSimulating=false;
+    Snapshot.Bodies[1].bGravityEnabled=true;
+    auto& P=Snapshot.Joints[0].CurrentProfile;
+    P.ConeLimit.Swing1Motion=P.ConeLimit.Swing2Motion=P.TwistLimit.TwistMotion=ACM_Locked;
+    FProphecyJoltPreparedRig Prepared; FString Error;
+    if (!TestTrue(TEXT("Prepare mixed rig"),Prepared.Build(Snapshot,Error))) { AddError(Error); return false; }
+    FProphecyJoltRigHandle Rig; TArray<FProphecyJoltBodyHandle> Bodies; TArray<FString> Notes;
+    if (!Okay(*this,TEXT("Create mixed kinematic/dynamic rig"),Owner->CreateRig(Snapshot,Prepared,Rig,Bodies,Notes))) return false;
+    FProphecyJoltBodyState A,B;
+    Owner->ReadBody(Bodies[0],A); Owner->ReadBody(Bodies[1],B);
+    TestFalse(TEXT("Fixed top is not dynamic"),A.bDynamic);
+    TestTrue(TEXT("Hanging body remains dynamic"),B.bDynamic);
+    const FVector InitialA=A.PositionCm,InitialB=B.PositionCm;
+    const FVector Shift(30,10,20);
+    for (int32 I=0;I<60;++I)
+    {
+        const float Alpha=float(I+1)/60.f;
+        if (!Okay(*this,TEXT("Move fixed top"),Owner->MoveKinematicBody(Bodies[0],
+            FTransform(FQuat::Identity,InitialA+Shift*Alpha),1.f/60))) return false;
+        if (!Okay(*this,TEXT("Step"),Owner->Step(1.f/60,1))) return false;
+    }
+    Owner->ReadBody(Bodies[0],A); Owner->ReadBody(Bodies[1],B);
+    TestTrue(TEXT("Top follows its target exactly"),A.PositionCm.Equals(InitialA+Shift,.01));
+    TestTrue(TEXT("Joint transports hanging body"),B.PositionCm.Equals(InitialB+Shift,.5));
+    if (!Okay(*this,TEXT("Remove mixed rig"),Owner->DestroyRig(Rig))) return false;
+    TestFalse(TEXT("Old top handle retired"),Owner->OwnsBody(Bodies[0]));
+    TestFalse(TEXT("Old hanging handle retired"),Owner->OwnsBody(Bodies[1]));
+    if (!Okay(*this,TEXT("Recreate mixed rig"),Owner->CreateRig(Snapshot,Prepared,Rig,Bodies,Notes))) return false;
+    return Okay(*this,TEXT("Final cleanup"),Owner->DestroyRig(Rig)) && !HasAnyErrors();
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -57,6 +57,30 @@ bool UProphecyLegChainDebugLibrary::SetLegChainReconstruction(AProphecyAgent* Ag
 namespace ProphecyLowerTempering
 {
 static TMap<TWeakObjectPtr<const AProphecyAgent>, FSettings> Settings;
+// Configuration is independent of the active values consumed by Blend To Normal.
+static TMap<TWeakObjectPtr<const AProphecyAgent>, FSettings> RegularProfiles,KickProfiles;
+static TSet<TWeakObjectPtr<const AProphecyAgent>> KickSelected,RightKickSelected;
+// Sidecars preserve live settings, return timelines and reset snapshot layouts.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FSettings> NonKickingProfiles,RightValues;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FSettings> ReturnRightInitial,FeetReturnRightInitial;
+const FSettings& RightFootSettings(const AProphecyAgent* Agent,const FSettings& Left)
+{
+    const auto* Right=RightValues.IsEmpty() ? nullptr : RightValues.Find(Agent);
+    return Right ? *Right : Left;
+}
+static bool AllNormal(const AProphecyAgent* Agent,const FSettings& Left)
+{ return Left.IsIdentity() && RightFootSettings(Agent,Left).FeetAreIdentity(); }
+static bool SameFeet(const FSettings& A,const FSettings& B)
+{ return A.FeetTranslation==B.FeetTranslation && A.FeetTranslationZ==B.FeetTranslationZ && A.FeetRotation==B.FeetRotation; }
+static void CopyFeet(FSettings& A,const FSettings& B)
+{ A.FeetTranslation=B.FeetTranslation;A.FeetTranslationZ=B.FeetTranslationZ;A.FeetRotation=B.FeetRotation; }
+void RestoreRightFootSettings(const AProphecyAgent* Agent,const FSettings& Right)
+{
+    const auto* Left=Settings.Find(Agent);
+    if ((!Left && Right.FeetAreIdentity()) || (Left && SameFeet(*Left,Right))) { RightValues.Remove(Agent);return; }
+    if (!Left) Settings.Add(Agent,FSettings{});
+    RightValues.Add(Agent,Right);
+}
 struct FReturnTimeline
 {
     FSettings Initial;
@@ -79,6 +103,7 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FReturnTimeline> FeetReturns,Pe
 static FDelegateHandle Cleanup;
 static void CancelReturns(const AProphecyAgent* Agent)
 {
+    ReturnRightInitial.Remove(Agent);FeetReturnRightInitial.Remove(Agent);
     if (!Returns.IsEmpty()) Returns.Remove(Agent);
     if (!FeetReturns.IsEmpty()) FeetReturns.Remove(Agent);
     if (!PelvisReturns.IsEmpty()) PelvisReturns.Remove(Agent);
@@ -93,8 +118,10 @@ const FSettings* Find(const AProphecyAgent* Agent)
     {
         Return->Elapsed+=ProphecyBlendClock::Consume(Agent,ProphecyBlendClock::EKind::Tempering);
         *Value=Return->Sample();
-        if (Value->IsIdentity())
-        { Returns.Remove(Agent);ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::Tempering); }
+        if (const auto* Initial=ReturnRightInitial.Find(Agent))
+        { auto Right=*Return;Right.Initial=*Initial;CopyFeet(RightValues.FindOrAdd(Agent),Right.Sample()); }
+        if (AllNormal(Agent,*Value))
+        { Returns.Remove(Agent);ReturnRightInitial.Remove(Agent);ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::Tempering); }
     }
     auto SamplePart=[&](auto& Timelines,bool Feet,ProphecyBlendClock::EKind Kind)
     {
@@ -102,19 +129,25 @@ const FSettings* Find(const AProphecyAgent* Agent)
         if (!Return) return;
         Return->Elapsed+=ProphecyBlendClock::Consume(Agent,Kind);
         const auto Sample=Return->Sample();
-        if (Feet) { Value->FeetTranslation=Sample.FeetTranslation;Value->FeetTranslationZ=Sample.FeetTranslationZ;Value->FeetRotation=Sample.FeetRotation; }
+        if (Feet)
+        {
+            CopyFeet(*Value,Sample);
+            if (const auto* Initial=FeetReturnRightInitial.Find(Agent))
+            { auto Right=*Return;Right.Initial=*Initial;CopyFeet(RightValues.FindOrAdd(Agent),Right.Sample()); }
+        }
         else { Value->PelvisTranslation=Sample.PelvisTranslation;Value->PelvisTranslationZ=Sample.PelvisTranslationZ;Value->PelvisRotation=Sample.PelvisRotation; }
-        const bool Done=Feet ? Value->FeetTranslation==1 && Value->FeetTranslationZ==1 && Value->FeetRotation==1
+        const bool Done=Feet ? Value->FeetAreIdentity() && RightFootSettings(Agent,*Value).FeetAreIdentity()
             : Value->PelvisTranslation==1 && Value->PelvisTranslationZ==1 && Value->PelvisRotation==1;
-        if (Done) { Timelines.Remove(Agent);ProphecyBlendClock::Stop(Agent,Kind); }
+        if (Done) { Timelines.Remove(Agent);if (Feet) FeetReturnRightInitial.Remove(Agent);ProphecyBlendClock::Stop(Agent,Kind); }
     };
     SamplePart(FeetReturns,true,ProphecyBlendClock::EKind::FeetTempering);
     SamplePart(PelvisReturns,false,ProphecyBlendClock::EKind::PelvisTempering);
-    if (Value->IsIdentity()) { Remove(Agent);return nullptr; }
+    if (AllNormal(Agent,*Value)) { Remove(Agent);return nullptr; }
     return Value;
 }
 void Remove(const AProphecyAgent* Agent)
 {
+    RightValues.Remove(Agent);
     if (!Settings.IsEmpty()) Settings.Remove(Agent);
     CancelReturns(Agent);
 }
@@ -127,58 +160,116 @@ static bool BlendPart(AProphecyAgent* Agent,bool Feet,float Duration,float Hold)
     const auto* Current=Find(Agent);
     if (!Current) return true;
     const FSettings Initial=*Current;
+    const FSettings InitialRight=RightFootSettings(Agent,Initial);
     // Detach only this part from a pre-existing combined return. The other part
     // keeps exactly its old elapsed time, hold, duration and initial values.
     if (auto* Shared=Returns.Find(Agent))
     {
         if (Feet) Shared->Initial.FeetTranslation=Shared->Initial.FeetTranslationZ=Shared->Initial.FeetRotation=1;
         else Shared->Initial.PelvisTranslation=Shared->Initial.PelvisTranslationZ=Shared->Initial.PelvisRotation=1;
-        if (Shared->Initial.IsIdentity())
-        { Returns.Remove(Agent);ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::Tempering); }
+        auto* SharedRight=ReturnRightInitial.Find(Agent);
+        if (Feet && SharedRight) CopyFeet(*SharedRight,FSettings{});
+        if (Shared->Initial.IsIdentity() && (!SharedRight || SharedRight->FeetAreIdentity()))
+        { Returns.Remove(Agent);ReturnRightInitial.Remove(Agent);ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::Tempering); }
     }
     auto& Timelines=Feet ? FeetReturns : PelvisReturns;
     const auto Kind=Feet ? ProphecyBlendClock::EKind::FeetTempering : ProphecyBlendClock::EKind::PelvisTempering;
-    const bool AlreadyNormal=Feet ? Initial.FeetTranslation==1 && Initial.FeetTranslationZ==1 && Initial.FeetRotation==1
+    const bool AlreadyNormal=Feet ? Initial.FeetAreIdentity() && InitialRight.FeetAreIdentity()
         : Initial.PelvisTranslation==1 && Initial.PelvisTranslationZ==1 && Initial.PelvisRotation==1;
     if (AlreadyNormal || (Duration==0 && Hold==0))
     {
         Timelines.Remove(Agent);ProphecyBlendClock::Stop(Agent,Kind);
         auto& Value=Settings.FindChecked(Agent);
-        if (Feet) Value.FeetTranslation=Value.FeetTranslationZ=Value.FeetRotation=1;
+        if (Feet)
+        { CopyFeet(Value,FSettings{});RightValues.Remove(Agent);FeetReturnRightInitial.Remove(Agent); }
         else Value.PelvisTranslation=Value.PelvisTranslationZ=Value.PelvisRotation=1;
-        if (Value.IsIdentity()) Remove(Agent);
+        if (AllNormal(Agent,Value)) Remove(Agent);
         return true;
     }
     Timelines.Add(Agent,FReturnTimeline{Initial,Duration,Hold});
+    if (Feet && RightValues.Contains(Agent)) FeetReturnRightInitial.Add(Agent,InitialRight);
     ProphecyBlendClock::Start(Agent,Kind,double(Duration)+Hold);
     return true;
 }
 }
 
-bool UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(AProphecyAgent* Agent, bool Enabled,
-    float FeetTranslation, float FeetTranslationZ, float FeetRotation,
-    float PelvisTranslation, float PelvisTranslationZ, float PelvisRotation)
+namespace ProphecyLowerTempering
+{
+static void EnsureCleanup()
+{
+    if (Cleanup.IsValid()) return;
+    Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
+    {
+        for (auto* Map:{&Settings,&RegularProfiles,&KickProfiles,&NonKickingProfiles,&RightValues,&ReturnRightInitial,&FeetReturnRightInitial}) for (auto It=Map->CreateIterator();It;++It)
+            if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+        for (auto* Map:{&Returns,&FeetReturns,&PelvisReturns}) for (auto It=Map->CreateIterator();It;++It)
+            if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+        for (auto* Set:{&KickSelected,&RightKickSelected}) for (auto It=Set->CreateIterator();It;++It)
+            if (!It->IsValid() || It->Get()->GetWorld()==World) It.RemoveCurrent();
+    });
+}
+static void Apply(const AProphecyAgent* Agent,const FSettings& Value)
+{
+    Remove(Agent);
+    if (!Value.IsIdentity()) { EnsureCleanup();Settings.Add(Agent,Value); }
+}
+void ClearAttackSelection(const AProphecyAgent* Agent) { KickSelected.Remove(Agent);RightKickSelected.Remove(Agent); }
+void ForgetProfiles(const AProphecyAgent* Agent)
+{ Remove(Agent);ClearAttackSelection(Agent);RegularProfiles.Remove(Agent);KickProfiles.Remove(Agent);NonKickingProfiles.Remove(Agent); }
+void SelectAttackProfile(const AProphecyAgent* Agent,FName Attack)
+{
+    const bool Kick=Attack==TEXT("kickl") || Attack==TEXT("kickr");
+    if (Kick) { EnsureCleanup();KickSelected.Add(Agent); } else KickSelected.Remove(Agent);
+    if (Attack==TEXT("kickr")) RightKickSelected.Add(Agent);else RightKickSelected.Remove(Agent);
+    const auto* Special=KickProfiles.Find(Agent);
+    if (!Special) return; // Unconfigured agents keep the previous immediate-set behavior.
+    const auto* Regular=RegularProfiles.Find(Agent);
+    if (!Kick) { Apply(Agent,Regular ? *Regular : FSettings{});return; }
+    const auto* NonKicking=NonKickingProfiles.Find(Agent);
+    FSettings Left=*Special,Right=NonKicking ? *NonKicking : *Special;
+    if (Attack==TEXT("kickr")) Swap(Left,Right);
+    // Pelvis is independent of which leg kicked.
+    Left.PelvisTranslation=Special->PelvisTranslation;Left.PelvisTranslationZ=Special->PelvisTranslationZ;Left.PelvisRotation=Special->PelvisRotation;
+    Apply(Agent,Left);RestoreRightFootSettings(Agent,Right);
+}
+static bool SetProfile(bool Kick,AProphecyAgent* Agent,bool Enabled,
+    float FeetXY,float FeetZ,float FeetR,float PelvisXY,float PelvisZ,float PelvisR)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
         || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown) return false;
+    if (Enabled) for (float V:{FeetXY,FeetZ,FeetR,PelvisXY,PelvisZ,PelvisR})
+        if (!FMath::IsFinite(V) || V<0 || V>1) return false;
+    const FSettings Value=Enabled ? FSettings{FeetXY,FeetR,PelvisXY,PelvisR,FeetZ,PelvisZ} : FSettings{};
+    EnsureCleanup();(Kick ? KickProfiles : RegularProfiles).Add(Agent,Value);
+    const bool UsesKick=KickSelected.Contains(Agent) && KickProfiles.Contains(Agent);
+    if (Kick==UsesKick) Apply(Agent,Value);
+    return true;
+}
+}
+
+bool UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(AProphecyAgent* Agent,bool Enabled,
+    float FeetTranslation,float FeetTranslationZ,float FeetRotation,
+    float PelvisTranslation,float PelvisTranslationZ,float PelvisRotation)
+{
+    return ProphecyLowerTempering::SetProfile(false,Agent,Enabled,FeetTranslation,FeetTranslationZ,FeetRotation,
+        PelvisTranslation,PelvisTranslationZ,PelvisRotation);
+}
+
+bool UProphecyLowerTemperingLibrary::SetKickLocomotionLowerBodyTempering(AProphecyAgent* Agent,bool Enabled,
+    float FeetTranslation,float FeetTranslationZ,float FeetRotation,
+    float NonKickingFootTranslationXY,float NonKickingFootTranslationZ,float NonKickingFootRotation,
+    float PelvisTranslation,float PelvisTranslationZ,float PelvisRotation)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
+        || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown) return false;
+    if (Enabled) for (float V:{FeetTranslation,FeetTranslationZ,FeetRotation,NonKickingFootTranslationXY,
+        NonKickingFootTranslationZ,NonKickingFootRotation,PelvisTranslation,PelvisTranslationZ,PelvisRotation})
+        if (!FMath::IsFinite(V) || V<0 || V>1) return false;
     using namespace ProphecyLowerTempering;
-    if (!Enabled) { Remove(Agent); return true; }
-    for (float V : {FeetTranslation, FeetRotation, PelvisTranslation, PelvisRotation, FeetTranslationZ, PelvisTranslationZ})
-        if (!FMath::IsFinite(V) || V < 0.f || V > 1.f) return false;
-    const FSettings Value{FeetTranslation, FeetRotation, PelvisTranslation, PelvisRotation, FeetTranslationZ, PelvisTranslationZ};
-    if (Value.IsIdentity()) { Remove(Agent); return true; }
-    if (!Cleanup.IsValid()) Cleanup = FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World, bool, bool)
-    {
-        for (auto It = Settings.CreateIterator(); It; ++It)
-            if (!It.Key().IsValid() || It.Key()->GetWorld() == World) It.RemoveCurrent();
-        for (auto It = Returns.CreateIterator(); It; ++It)
-            if (!It.Key().IsValid() || It.Key()->GetWorld() == World) It.RemoveCurrent();
-        for (auto* Map : {&FeetReturns,&PelvisReturns})
-            for (auto It=Map->CreateIterator();It;++It)
-                if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
-    });
-    CancelReturns(Agent);
-    Settings.Add(Agent, Value);
+    EnsureCleanup();
+    KickProfiles.Add(Agent,Enabled ? FSettings{FeetTranslation,FeetRotation,PelvisTranslation,PelvisRotation,FeetTranslationZ,PelvisTranslationZ} : FSettings{});
+    NonKickingProfiles.Add(Agent,Enabled ? FSettings{NonKickingFootTranslationXY,NonKickingFootRotation,1,1,NonKickingFootTranslationZ,1} : FSettings{});
+    if (KickSelected.Contains(Agent)) SelectAttackProfile(Agent,RightKickSelected.Contains(Agent) ? TEXT("kickr") : TEXT("kickl"));
     return true;
 }
 
@@ -203,7 +294,9 @@ bool UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(
     const auto* Current=Find(Agent);
     if (!Current) return true;
     const FSettings Initial=*Current;
+    const FSettings InitialRight=RightFootSettings(Agent,Initial);
     CancelReturns(Agent);
+    if (RightValues.Contains(Agent)) ReturnRightInitial.Add(Agent,InitialRight);
     Returns.Add(Agent,FReturnTimeline{Initial,DurationSeconds,HoldDurationSeconds});
     ProphecyBlendClock::Start(Agent,ProphecyBlendClock::EKind::Tempering,double(DurationSeconds)+HoldDurationSeconds);
     return true;
@@ -265,7 +358,7 @@ bool FProphecyTemperingSeparateReturnsTest::RunTest(const FString&)
     int32 VisibleNodes=0;
     for (TFieldIterator<UFunction> It(L::StaticClass(),EFieldIteratorFlags::ExcludeSuper);It;++It)
         if (It->HasAnyFunctionFlags(FUNC_BlueprintCallable) && !It->GetBoolMetaData(TEXT("BlueprintInternalUseOnly"))) ++VisibleNodes;
-    TestEqual(TEXT("Exactly Set and Blend exposed in the Blueprint menu"),VisibleNodes,2);
+    TestEqual(TEXT("Regular Set, Kick Set and shared Blend exposed"),VisibleNodes,3);
 #endif
     UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
     auto* Agent=World ? World->SpawnActor<AProphecyAgent>() : nullptr;
@@ -334,5 +427,104 @@ bool FProphecyTemperingSeparateReturnsTest::RunTest(const FString&)
     TestNull(TEXT("Combined replacement completes"),Find(Agent));
     Remove(Agent);World->DestroyWorld(false);
     return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyKickTemperingTest,"Prophecy.NN.LowerTempering.KickProfiles",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyKickTemperingTest::RunTest(const FString&)
+{
+    using namespace ProphecyLowerTempering;
+    using L=UProphecyLowerTemperingLibrary;
+    UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* Agent=World ? World->SpawnActor<AProphecyAgent>() : nullptr;
+    if (!Agent) { if (World) World->DestroyWorld(false);return false; }
+    auto Value=[&]() { const auto* V=Find(Agent);return V ? *V : FSettings{}; };
+    L::SetLocomotionLowerBodyTempering(Agent,true,.2f,.3f,.4f,.5f,.6f,.7f);
+    L::SetKickLocomotionLowerBodyTempering(Agent,true,.8f,.7f,.6f,.8f,.7f,.6f,.4f,.3f,.2f);
+    TestEqual(TEXT("Configuring kick does not change ordinary locomotion"),Value().FeetTranslation,.2f);
+    for (FName Family:{FName(TEXT("kickL")),FName(TEXT("kickR"))})
+    {
+        SelectAttackProfile(Agent,Family);
+        L::SetLocomotionLowerBodyTempering(Agent,true,.2f,.3f,.4f,.5f,.6f,.7f);
+        TestEqual(TEXT("Regular end-event setter cannot overwrite kick feet XY"),Value().FeetTranslation,.8f);
+        TestEqual(TEXT("Kick pelvis Z selected independently"),Value().PelvisTranslationZ,.3f);
+        L::BlendLocomotionLowerBodyTemperingToNormal(Agent,1,0,.5f,0);
+        for (int I=0;I<30;++I) { FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/120);Find(Agent); }
+        TestTrue(TEXT("Kick feet blend from selected profile at 30 ticks"),FMath::IsNearlyEqual(Value().FeetTranslation,.9f));
+        TestEqual(TEXT("Kick pelvis finishes independently"),Value().PelvisTranslationZ,1.f);
+        for (int I=0;I<30;++I) { FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/30);Find(Agent); }
+        TestNull(TEXT("Kick completion removes active pose work"),Find(Agent));
+        TestFalse(TEXT("Kick completion removes timeline"),FeetReturns.Contains(Agent));
+    }
+    SelectAttackProfile(Agent,TEXT("overL"));
+    TestEqual(TEXT("Next ordinary attack restores regular profile"),Value().FeetTranslation,.2f);
+    L::SetKickLocomotionLowerBodyTempering(Agent,false);
+    SelectAttackProfile(Agent,TEXT("kickL"));
+    TestNull(TEXT("Disabled kick overrides nonidentity regular profile"),Find(Agent));
+    SelectAttackProfile(Agent,TEXT("hookL"));
+    TestEqual(TEXT("Disabled kick did not erase regular profile"),Value().FeetTranslation,.2f);
+    ClearAttackSelection(Agent);Remove(Agent);
+    L::SetLocomotionLowerBodyTempering(Agent);
+    TestNull(TEXT("Reset/normal cancels active tempering"),Find(Agent));
+    ForgetProfiles(Agent);World->DestroyWorld(false);return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyTemperingFootRolesTest,"Prophecy.NN.LowerTempering.FootRoles",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyTemperingFootRolesTest::RunTest(const FString&)
+{
+    using namespace ProphecyLowerTempering;
+    using L=UProphecyLowerTemperingLibrary;
+    UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* Agent=World ? World->SpawnActor<AProphecyAgent>() : nullptr;
+    if (!Agent) { if (World) World->DestroyWorld(false);return false; }
+    auto Left=[&]() { const auto* S=Find(Agent);return S ? *S : FSettings{}; };
+    auto Right=[&]() { const auto S=Left();return FSettings(RightFootSettings(Agent,S)); };
+    auto Tick=[&](int Count) { for (int I=0;I<Count;++I) { FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/120);Find(Agent); } };
+    L::SetLocomotionLowerBodyTempering(Agent,true,.25f,.5f,.75f,.2f,.4f,.6f);
+    // Frozen kicking foot, untouched non-kicking foot; independent pelvis channels.
+    L::SetKickLocomotionLowerBodyTempering(Agent,true,0,.2f,.4f,1,1,1,.3f,.5f,.7f);
+    for (FName Family:{FName(TEXT("kickL")),FName(TEXT("kickR")),FName(TEXT("kickL"))})
+    {
+        SelectAttackProfile(Agent,Family);
+        const bool R=Family==TEXT("kickR");
+        auto Kick=[&]() { return R ? Right() : Left(); };
+        auto Other=[&]() { return R ? Left() : Right(); };
+        TestEqual(TEXT("Kicking XY maps to selected leg"),Kick().FeetTranslation,0.f);
+        TestEqual(TEXT("Kicking Z maps to selected leg"),Kick().FeetTranslationZ,.2f);
+        TestEqual(TEXT("Kicking rotation maps to selected leg"),Kick().FeetRotation,.4f);
+        TestTrue(TEXT("Non-kicking foot remains untempered"),Other().FeetAreIdentity());
+        TestEqual(TEXT("Pelvis remains independent of kick side"),Left().PelvisTranslation,.3f);
+        L::BlendLocomotionLowerBodyTemperingToNormal(Agent,1,.5f,.5f,0);
+        Tick(30);
+        TestEqual(TEXT("Each kicking foot honors existing feet hold"),Kick().FeetTranslation,0.f);
+        TestEqual(TEXT("Pelvis completes while kicking foot held"),Left().PelvisTranslation,1.f);
+        Tick(30);
+        TestTrue(TEXT("Kicking XY blends independently"),FMath::IsNearlyEqual(Kick().FeetTranslation,.5f));
+        TestTrue(TEXT("Kicking Z blends independently"),FMath::IsNearlyEqual(Kick().FeetTranslationZ,.6f));
+        // Lerp(.4f,1,.5f) differs from the .7f literal by one float ULP.
+        TestEqual(TEXT("Kicking rotation blends independently"),Kick().FeetRotation,.7f,1.e-6f);
+        TestTrue(TEXT("Non-kicking foot was not frozen by other's blend"),Other().FeetAreIdentity());
+        Tick(30);
+        TestNull(TEXT("All normal removes primary entry"),Find(Agent));
+        TestFalse(TEXT("All normal removes right sidecar"),RightValues.Contains(Agent));
+        TestFalse(TEXT("All normal removes right timeline initial"),FeetReturnRightInitial.Contains(Agent));
+    }
+    // Right-only tempering must survive an identity left/pelvis through a shared timeline.
+    L::SetKickLocomotionLowerBodyTempering(Agent,true,0,0,0,1,1,1,1,1,1);
+    SelectAttackProfile(Agent,TEXT("kickR"));
+    TestNotNull(TEXT("Identity left cannot retire active right"),Find(Agent));
+    L::BlendLocomotionLowerBodyTemperingToNormal(Agent,1,0,1,0);
+    L::BlendLocomotionPelvisTemperingToNormal(Agent,0,0);
+    Tick(30);
+    TestTrue(TEXT("Pelvis-only change preserves right shared schedule"),FMath::IsNearlyEqual(Right().FeetTranslation,.5f));
+    L::BlendLocomotionFeetTemperingToNormal(Agent,.5f,0);
+    Tick(15);
+    TestTrue(TEXT("Retarget right feet return starts from current value"),FMath::IsNearlyEqual(Right().FeetTranslation,.75f));
+    Tick(15);TestNull(TEXT("Retargeted right-only return retires"),Find(Agent));
+    SelectAttackProfile(Agent,TEXT("kickL"));
+    L::BlendLocomotionLowerBodyTemperingToNormal(Agent,0,0,0,0);
+    TestNull(TEXT("Zero return bypasses both feet"),Find(Agent));
+    SelectAttackProfile(Agent,TEXT("hookL"));
+    TestTrue(TEXT("Non-kick selects regular symmetric settings"),Left().FeetTranslation==.25f && Right().FeetTranslation==.25f);
+    ForgetProfiles(Agent);World->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif

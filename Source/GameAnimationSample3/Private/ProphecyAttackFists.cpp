@@ -92,6 +92,15 @@ void AProphecyAgent::BeginAttackFists(FName Attack)
 	S.bAttacking = true;
 }
 
+void ProphecyAttackFists::RetargetFamily(AProphecyAgent* Agent,FName Attack)
+{
+	FFistState* S = Storage().States.Find(Agent);
+	if (!S || !S->bAttacking) return;
+	const FProphecyAttackFistSettings Settings = Agent->GetAttackFistSettings(Attack);
+	S->Target = FVector2D(Settings.LeftClosedLevel,Settings.RightClosedLevel);
+	S->EndSeconds = Settings.OpeningEndSeconds;
+}
+
 bool AProphecyAgent::SetFistClosedLevels(float Left, float Right, float BlendSeconds)
 {
 	check(IsInGameThread());

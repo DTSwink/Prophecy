@@ -13,10 +13,11 @@ struct FWeights
     bool NeedsBoth() const { return NeedsWalk() && NeedsRun(); }
     FVector2f Legs() const { return FVector2f(Left,Right); }
 };
-void Begin(const AProphecyAgent* Agent);
+void Begin(const AProphecyAgent* Agent,FName Attack=NAME_None);
 void Cancel(const AProphecyAgent* Agent);
 void Remove(const AProphecyAgent* Agent);
 void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLocomotion);
+bool IsEndEvent(const AProphecyAgent* Agent);
 // Overlay the normal selection without changing its ordinary blend state.
 void Step(const AProphecyAgent* Agent, float NormalWalkWeight, FWeights& Out);
 }

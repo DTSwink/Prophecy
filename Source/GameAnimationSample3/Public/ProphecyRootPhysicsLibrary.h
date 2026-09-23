@@ -9,6 +9,20 @@ class GAMEANIMATIONSAMPLE3_API UProphecyRootPhysicsLibrary : public UBlueprintFu
 {
     GENERATED_BODY()
 public:
+    /** Add a world-space offset (cm) to the root and its entire window, preserving
+     * the current skeleton's world pose and world momentum. Immediate/unswept;
+     * ordinary steering and balancing resume afterward. False during full attacks,
+     * external bridge, disabled inference or before initialization. No tick work. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Root", meta=(DefaultToSelf="Agent"))
+    static bool AddRootOffset(AProphecyAgent* Agent, FVector WorldOffset);
+
+    /** Add yaw in Unreal degrees to the root/window orientations and facing target.
+     * Preserves the current skeleton's world pose, window world positions and world
+     * linear/angular momentum. Root stays upright. Same availability as Add Root Offset.
+     * A subsequent explicit facing command can override the new target. No tick work. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Root", meta=(DefaultToSelf="Agent"))
+    static bool AddRootAngleOffset(AProphecyAgent* Agent, float YawDegrees);
+
     /** Configure the NEXT kick recovery: hold the balancing target below the live pelvis,
      * then blend toward the live feet midpoint. Applies to kickL/kickR return placement too.
      * 1 second means 60 unpaused game ticks, not wall time. 0/0 disables and cancels.

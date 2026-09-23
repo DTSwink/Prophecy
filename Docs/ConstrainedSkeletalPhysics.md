@@ -1,0 +1,22 @@
+# Skeletal endpoints of ordinary constraints
+
+The standard Jolt constraint bridge now admits passive, ordinary skeletal meshes used as constraint endpoints. This covers the placed `A_Pot`: `Cube` connects to `rope`, bone `joint27`. Agent physical meshes retain their existing character adapter. No Blueprint wiring or saved mesh/PHAT settings were changed.
+
+Admission captures the live bodies, their baked collision geometry, mass/inertia, damping, materials, velocities, collision masks, disabled pairs and PHAT connector frames. The rig is created in the existing shared Jolt world before Chaos simulation is disabled. Nonsimulating bodies become Jolt kinematic anchors; the rope's `Root` remains fixed relative to its component. Dynamic bones are published through the existing native pose instance and retained Unreal query bodies. There is one physics owner, not a second independently simulated rope.
+
+The implementation lives in `ProphecyJoltConstrainedSkeleton.inl`, included by the existing constraint runtime. It adds no actor tick, NN work or character-state layout changes. Existing shared preparation/publication boundaries drive admitted rigs; ordinary constraint-free skeletal meshes are untouched. Breaking the pot joint leaves the rope rig simulated. Removing the skeletal component retires its rig; removing a named endpoint no longer silently substitutes a fixed world anchor. World/scene teardown releases the bindings.
+
+Positive component scale is supported, including the user's rope scale `(0.492965, 0.492965, 1)` and pot scale `0.790151`. The earlier capture/presentation guard rejected non-unit carriers; that was why changing the rope scale stopped admission. Native collision geometry and joint frames already include scale, so it must not be baked again. Pose publication converts native world bone transforms through the actual scaled component carrier. Negative/zero/nonfinite scale remains invalid. Changing geometry/scale after admission is not a supported live recook operation; configure it before Play/admission.
+
+This is passive rig support, not an animation/motor controller for arbitrary skeletal props. Existing rig-converter limitations still apply: the PHAT angles and connectors are retained, but authored soft angular limits use the current hard Jolt angular-limit mapping. Chaos projection, solver-iteration numbers and other deferred profile features are not equivalence claims. This does not implement rope cutting/noose gameplay or route every stock skeletal physics setter into Jolt.
+
+## Evidence and remaining solver behavior
+
+- Normal editor build passed September22; scaled-carrier follow-up build took54.24s and is in the normal DLL, not dependent on a Live Coding patch.
+- Actual scaled `A_Pot` test:29 native bodies,28 PHAT joints, the external pot joint active in Jolt and inactive in Chaos. The fixed Root stayed at its captured location. All reported bone origins matched the visible sockets to numerical precision. Original PHAT anchor error at admission was below0.000001cm.
+- The12-second diagnostic run completed four temporary solver settings. It confirms admission/publication, not zero joint stretch: default settings measured roughly5.65–9.19cm at the external attachment and up to4.76cm at internal rope anchors. Raising only rope PHAT iterations reduced internal error but did not eliminate external attachment error. Defaults were not retuned. A subsequent temporary collision-disable experiment was interrupted before completion and is not a complete validation run.
+- `Saved/Diagnostics/PotRopeConvergence-Iterations.json` contains the completed scaled run; `PotRopeConvergence.json` contains the interrupted collision experiment. `PotConstraintPIE-Before.json` records the original mixed Chaos/Jolt failure.
+- `Prophecy.Jolt.SkeletonAudit` writes on-demand body identity, motion type, mass, pose error and joint-gap measurements to `Saved/Diagnostics/ConstrainedSkeleton.json`. Optional velocity/position arguments change only admitted skeletal rig iterations in the current Play session. This diagnostic command is excluded from Shipping.
+- Native fixed-anchor and ordinary-constraint regression tests passed. New `Prophecy.Jolt.Pose.ScaledSkeletalCarrier` tests recomposed bone positions/rotations and single application of uniform/nonuniform carrier scale. Existing unit-only rejection fixtures were updated to reject singular scale instead; final rerun is recorded in the journal.
+
+The editor is left open. No Blueprint, map, mesh or PHAT asset was saved by this change.

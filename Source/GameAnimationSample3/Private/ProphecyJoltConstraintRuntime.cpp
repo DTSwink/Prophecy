@@ -9,6 +9,15 @@
 #include "UObject/UObjectArray.h"
 #include "UObject/UObjectIterator.h"
 #include "Containers/Queue.h"
+#include "Engine/SkeletalMesh.h"
+#include "ProphecyJoltRig.h"
+#include "ProphecyJoltPose.h"
+#include "ProphecyJoltPoseAnimInstance.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "Serialization/JsonSerializer.h"
+#include "ProphecyJoltConstrainedSkeleton.inl"
 
 namespace ProphecyJolt::Constraints
 {
@@ -57,12 +66,17 @@ void Retire(UProphecyJoltWorldSubsystem& Native, FBinding& Binding)
     Binding.Error.Reset();
 }
 
-bool BodyFor(UPrimitiveComponent* Mesh, FName Bone, UWorld& World, FProphecyJoltBodyHandle& Body)
+bool BodyFor(UPrimitiveComponent* Mesh, FName Bone, UWorld& World, FProphecyJoltBodyHandle& Body, FString& Error)
 {
     if (!IsValid(Mesh) || !Mesh->IsRegistered() || Mesh->GetWorld() != &World) return false;
     if (auto* Agent = Cast<AProphecyAgent>(Mesh->GetOwner()); Agent && Agent->GetPoseReferenceMesh() == Mesh)
         if (auto* Character = Agent->GetJoltCharacterComponent(); Character && Character->IsJoltPhysical())
             return Character->GetBodyHandle(Bone, Body);
+    if (auto* Skeleton=Cast<USkeletalMeshComponent>(Mesh))
+    {
+        if (Cast<AProphecyAgent>(Mesh->GetOwner())) return false;
+        return ConstrainedSkeleton::BodyFor(*Skeleton,Bone,Body,Error);
+    }
     auto* Scene = UProphecyJoltSceneCollisionComponent::FindForWorld(&World);
     return Scene && Scene->GetBodyHandle(*Mesh, INDEX_NONE, Body);
 }
@@ -88,10 +102,20 @@ void Reconcile(UPhysicsConstraintComponent& Component, FBinding& Binding,
     if (Component.IsBroken()) { Retire(Native, Binding); return; }
     UPrimitiveComponent* A = nullptr; UPrimitiveComponent* B = nullptr; FName BoneA, BoneB;
     Component.GetConstrainedComponents(A, BoneA, B, BoneB);
+    // A named endpoint that disappeared is not an intentional world anchor.
+    if ((!A && (!Component.ComponentName1.ComponentName.IsNone() || Component.OverrideComponent1.IsStale()))
+        || (!B && (!Component.ComponentName2.ComponentName.IsNone() || Component.OverrideComponent2.IsStale())))
+    { Retire(Native,Binding); return; }
     if (!A && !B) { Retire(Native, Binding); return; }
     FProphecyJoltBodyHandle Bodies[2];
-    if ((A && !BodyFor(A, BoneA, World, Bodies[0])) || (B && !BodyFor(B, BoneB, World, Bodies[1])))
-    { Retire(Native, Binding); return; } // Admission may be queued. Never bind to the retained Chaos query actor.
+    FString EndpointError;
+    if ((A && !BodyFor(A, BoneA, World, Bodies[0],EndpointError)) || (B && !BodyFor(B, BoneB, World, Bodies[1],EndpointError)))
+    {
+        const FString Previous=Binding.Error; Retire(Native, Binding); Binding.Error=EndpointError;
+        if (!EndpointError.IsEmpty() && EndpointError!=Previous)
+            UE_LOG(LogTemp,Warning,TEXT("Jolt constraint %s: %s"),*Component.GetPathName(),*EndpointError);
+        return;
+    } // Admission may be queued. Never bind to the retained Chaos query actor.
     if (!A || !B)
     {
         if (!Native.OwnsBody(Registry.WorldAnchor))
@@ -209,6 +233,7 @@ void Disable(UWorld* World)
         if (Native->OwnsBody(Registry->WorldAnchor)) Native->DestroyBody(Registry->WorldAnchor);
     }
     Worlds.Remove(World);
+    ConstrainedSkeleton::Disable(World);
     if (Worlds.IsEmpty())
     {
         GUObjectArray.RemoveUObjectCreateListener(&Listener);
@@ -222,6 +247,7 @@ void Prepare(UWorld* World)
     if (!Registry) return;
     auto* Native = World->GetSubsystem<UProphecyJoltWorldSubsystem>();
     if (!Native) return;
+    ConstrainedSkeleton::Prepare(World);
     FWeakObjectPtr Item;
     while (Listener.Created.Dequeue(Item)) if (auto* Object = Cast<UPhysicsConstraintComponent>(Item.Get())) Pending.Add(Object);
     for (auto It = Pending.CreateIterator(); It; ++It)
@@ -256,6 +282,7 @@ bool GetJoint(UPhysicsConstraintComponent* Component, FProphecyJoltJointHandle& 
 
 void Finish(UWorld* World)
 {
+    ConstrainedSkeleton::Finish(World);
     auto* Registry = Worlds.Find(World);
     if (!Registry) return;
     auto* Native = World->GetSubsystem<UProphecyJoltWorldSubsystem>();

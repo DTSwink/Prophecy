@@ -95,6 +95,10 @@ static void Solve(FTransform& Shoulder,FTransform& Elbow,FTransform& Wrist,
     Wrist=Target; Wrist.SetLocation(End);
 }
 
+void ResolveTarget(FTransform& Shoulder,FTransform& Elbow,FTransform& Wrist,
+    const FTransform& Target,const FVector& Pole,double LowerLength)
+{ Solve(Shoulder,Elbow,Wrist,Target,Pole,LowerLength); }
+
 bool Apply(const AProphecyAgent* Agent,int32 Hand,float W,bool Attack,double Time,double Dt,
     const FTransform& PreviousRoot,const FTransform& Root,const FTransform& PreviousHand,
     FTransform& Shoulder,FTransform& Elbow,FTransform& Wrist,const FVector& Pole,double L2)

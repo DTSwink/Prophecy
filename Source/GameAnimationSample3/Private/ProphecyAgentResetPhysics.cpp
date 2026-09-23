@@ -7,6 +7,8 @@
 #include "ProphecyAngularLimits.h"
 #include "ProphecyLowerTempering.h"
 #include "ProphecyLowerTemperingLibrary.h"
+#include "ProphecyHandRecovery.h"
+#include "ProphecyCoreTempering.h"
 #include "ProphecyAttackRecovery.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyRootBalance.h"
@@ -32,6 +34,7 @@ struct FState
 };
 // Separate storage avoids resizing already-live manager/checkpoint allocations.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FState> States;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,ProphecyLowerTempering::FSettings> RightTemperingStates;
 // Keep equipment separate: do not resize physics snapshots retained by Live Coding.
 struct FEquipmentState
 {
@@ -45,8 +48,10 @@ bool Has(const AProphecyAgent* Agent) { return States.Contains(Agent); }
 void Remove(const AProphecyAgent* Agent)
 {
     if (auto* S=States.Find(Agent)) ProphecyPhysicalContext::DeleteSnapshot(Agent,S->Profile);
-    States.Remove(Agent);
+    States.Remove(Agent);RightTemperingStates.Remove(Agent);
     EquipmentStates.Remove(Agent);
+    ProphecyHandRecovery::ForgetReset(Agent);
+    ProphecyCoreTempering::ForgetReset(Agent);
 }
 bool Capture(AProphecyAgent* Agent,FString& Error)
 {
@@ -60,7 +65,8 @@ bool Capture(AProphecyAgent* Agent,FString& Error)
     S.Bodies=Agent->BodyMagnetizationSettings;
     S.Enabled=Agent->bWorldMagnetizationEnabled;
     S.Linear=Agent->WorldMagnetizationLinearStrengthScale;S.Angular=Agent->WorldMagnetizationAngularStrengthScale;
-    if (const auto* T=ProphecyLowerTempering::Find(Agent)) S.Tempering=*T;
+    if (const auto* T=ProphecyLowerTempering::Find(Agent))
+    { S.Tempering=*T;RightTemperingStates.Add(Agent,ProphecyLowerTempering::RightFootSettings(Agent,*T)); }
     if (auto* Mesh=Agent->GetPoseReferenceMesh())
     {
         S.Material=Mesh->BodyInstance.GetPhysMaterialOverride();S.HadMaterial=S.Material.IsValid();
@@ -77,6 +83,8 @@ bool Capture(AProphecyAgent* Agent,FString& Error)
     Equipment.Simulated=Agent->IsSwordSimulated();
     if (Equipment.HadSword) Equipment.SwordClass=Equipment.Sword->GetClass();
     EquipmentStates.Add(Agent,MoveTemp(Equipment));
+    ProphecyHandRecovery::CaptureReset(Agent);
+    ProphecyCoreTempering::CaptureReset(Agent);
     States.Add(Agent,MoveTemp(S));return true;
 }
 bool RestoreEquipment(AProphecyAgent* Agent,FString& Error)
@@ -108,7 +116,10 @@ void CancelBlends(AProphecyAgent* Agent)
     Agent->CancelBodyMagnetizationBlend();Agent->CancelPhysicalFeedbackToleranceBlend();
     ProphecyAngularLimitBlend::Cancel(Agent);
     ProphecyAttackRecovery::Cancel(Agent);
+    ProphecyHandRecovery::CancelMotion(Agent);
+    ProphecyCoreTempering::CancelMotion(Agent);
     ProphecyRootBalance::CancelKickException(Agent);
+    ProphecyLowerTempering::ClearAttackSelection(Agent);
     ProphecyLowerTempering::Remove(Agent);
     ProphecyBlendClock::Remove(Agent);
 }
@@ -132,6 +143,9 @@ bool Restore(AProphecyAgent* Agent,FString& Error)
         if (!S.Bodies.Contains(It.Key())) It.RemoveCurrent();
     const auto& T=S.Tempering;
     UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(Agent,true,T.FeetTranslation,T.FeetTranslationZ,T.FeetRotation,T.PelvisTranslation,T.PelvisTranslationZ,T.PelvisRotation);
+    if (const auto* Right=RightTemperingStates.Find(Agent)) ProphecyLowerTempering::RestoreRightFootSettings(Agent,*Right);
+    ProphecyHandRecovery::RestoreReset(Agent);
+    ProphecyCoreTempering::RestoreReset(Agent);
     if (S.HadMaterial && !S.Material.IsValid()) { Error=TEXT("Initial physical material no longer exists.");return false; }
     if (auto* Mesh=Agent->GetPoseReferenceMesh()) Mesh->SetPhysMaterialOverride(S.Material.Get());
     return RestoreLimits(Agent,Error);
@@ -194,6 +208,7 @@ bool FProphecyResetPhysicsTest::RunTest(const FString&)
     Agent->SetPhysicalFeedbackTolerance(TEXT("head"),12,24);
     TestTrue(TEXT("Stage baseline damping"),ProphecyJointDamping::ApplyValue(Agent,TEXT("head"),37));
     UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(Agent,true,.3f,.7f,.4f,.5f,.8f,.6f);
+    ProphecyLowerTempering::RestoreRightFootSettings(Agent,{.9f,.8f,1,1,.2f,1});
     FString Error;
     if (!TestTrue(TEXT("Capture baseline"),Capture(Agent,Error))) { AddError(Error);return false; }
     for (int32 Repeat=0;Repeat<2;++Repeat)
@@ -227,6 +242,11 @@ bool FProphecyResetPhysicsTest::RunTest(const FString&)
         const auto* T=ProphecyLowerTempering::Find(Agent);
         TestTrue(TEXT("Tempering return cancelled, XY/Z restored"),T && T->FeetTranslation==.3f && T->PelvisRotation==.6f
             && T->FeetTranslationZ==.7f && T->PelvisTranslationZ==.8f);
+        if (T)
+        {
+            const auto& R=ProphecyLowerTempering::RightFootSettings(Agent,*T);
+            TestTrue(TEXT("Reset restores asymmetric right foot and cancels its blend"),R.FeetTranslation==.9f && R.FeetTranslationZ==.2f && R.FeetRotation==.8f);
+        }
         TestFalse(TEXT("Missing baseline entry remains absent"),Agent->GetBodyMagnetizationSettings(TEXT("foot_l"),M));
         TestTrue(TEXT("Missing entry retains native Jolt drive defaults"),M.bSimulateBody && M.bMagnetizationEnabled);
         TestFalse(TEXT("Upper arm absent at capture remains absent"),Agent->GetBodyMagnetizationSettings(TEXT("upperarm_l"),M));

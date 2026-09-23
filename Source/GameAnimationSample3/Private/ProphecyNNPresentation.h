@@ -16,11 +16,6 @@ inline float FromRemainder(float AccumulatedSeconds, float PoseIntervalSeconds)
 // Manager publication, consumed on the game thread before animation evaluation.
 // Stored separately so Live Coding never changes existing snapshot/proxy layouts.
 void Publish(int32 AgentId, double SourceTimeSeconds, float Alpha);
-// Game-thread publication; animation workers consume a locked, value-only copy.
-// Reference offsets are the actual unstretched foot offsets in calf space (cm).
-void SetKickFootExtension(int32 AgentId,float LeewayCm,const FVector& LeftReference,const FVector& RightReference);
-void SetKickFootReturn(int32 AgentId,bool Returning,const FVector2D& ExtensionCm);
-bool ApplyKickFootExtension(int32 AgentId,TConstArrayView<FName> BoneNames,TArrayView<FTransform> Transforms);
 float Resolve(int32 AgentId, double SourceTimeSeconds, double WorldTimeSeconds,
     float FrameDeltaSeconds, float PoseIntervalSeconds, bool bInterpolate);
 }

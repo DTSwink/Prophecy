@@ -107,6 +107,26 @@ bool UProphecyRootPhysicsLibrary::SetLocomotionRootWindowLocation(AProphecyAgent
     return false;
 }
 
+bool UProphecyRootPhysicsLibrary::AddRootOffset(AProphecyAgent* Agent, FVector WorldOffset)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
+        || WorldOffset.ContainsNaN() || !Agent->GetWorld() || !Agent->HasValidAgentHandle()) return false;
+    for (TActorIterator<AProphecyNNLocomotionManager> It(Agent->GetWorld()); It; ++It)
+        if (It->ResolveAgent(Agent->GetAgentHandle()) == Agent)
+            return It->SetAgentLocomotionRootWindowLocation(Agent->GetAgentHandle(), Agent->GetRootLowPoint()+WorldOffset, true);
+    return false;
+}
+
+bool UProphecyRootPhysicsLibrary::AddRootAngleOffset(AProphecyAgent* Agent, float YawDegrees)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
+        || !FMath::IsFinite(YawDegrees) || !Agent->GetWorld() || !Agent->HasValidAgentHandle()) return false;
+    for (TActorIterator<AProphecyNNLocomotionManager> It(Agent->GetWorld()); It; ++It)
+        if (It->ResolveAgent(Agent->GetAgentHandle()) == Agent)
+            return It->AddAgentRootAngleOffset(Agent->GetAgentHandle(), YawDegrees);
+    return false;
+}
+
 FVector UProphecyRootPhysicsLibrary::GetRootMagicVelocity(AProphecyAgent* Agent)
 {
     const auto* Value = IsInGameThread() && IsValid(Agent) ? ProphecyRootMagic::FindChannel(Agent, false) : nullptr;

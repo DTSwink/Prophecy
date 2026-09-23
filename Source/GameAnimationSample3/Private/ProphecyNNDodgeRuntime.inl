@@ -136,6 +136,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNDodge(FProphecyAgentHandle Handle
     ProphecyAttackRecovery::Cancel(Actor);
     ProphecyRootBalance::CancelKickException(Actor);
     D.Parries.Remove(Handle.Index);Agent.DefensePose=New.Get();D.Dodges.Add(Handle.Index,MoveTemp(New));
+    SetAgentTimeDilation(Handle,1.f);
     ProphecyLimbCollision::DefenseChanged(Actor,true);
     ++D.ActiveCount;++D.ActiveDodgeCount;Error.Reset();return true;
 }
@@ -268,6 +269,7 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
         }
 #endif
         FMemory::Memcpy(P.PreviousComponent,P.CurrentComponent,sizeof(P.CurrentComponent));
+        DefenseForearmRoll(*Impl,D.Bones,Pose);
         const bool bContactStop=DefensePhysicalStop(*Impl,P,P.CurrentPose,Pose,P.WorldOrigin);
         DefenseComponentPose(Pose,PoseRoot,D.Bones,P.CurrentComponent);P.CurrentPose=Pose;
         Agent.PreviousPublishedRoot=Agent.PublishedRoot;Agent.PreviousPublishedYaw=Agent.PublishedYaw;

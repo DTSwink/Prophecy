@@ -65,8 +65,9 @@ orientation. Switching half to full retains the existing rejoin behavior using
 the current ground-aligned locomotion carrier; the full ghost takes ownership of
 the pelvis/legs again. This is not a new pose-matched transition feature.
 
-Rejected families/half kicks leave the current attack intact. Stop and replacement
-use the existing attack lifecycle. Invalid/missing GT data refuses a fresh half
+Rejected families/half kicks leave the current attack intact. Active Trigger calls
+update target/family/mode without restarting history/latches/frame; fresh GT seeding
+requires an inactive attack (use Stop first to restart). Invalid/missing GT data refuses a fresh half
 attack instead of silently falling back to a moving lower-body seed.
 
 ## Numerical verification
