@@ -2,6 +2,7 @@
 #include "ProphecyAttackControlLibrary.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNLocomotionManager.h"
+#include "ProphecyNNDefenseLibrary.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
@@ -167,7 +168,8 @@ void UProphecyAttackCameraComponent::TickComponent(float DeltaTime, ELevelTick T
 		Stop();
 		return;
 	}
-	if (!bFullAttack)
+	const auto Activity=Pawn && OwnerManager ? OwnerManager->GetAgentActivityState(Pawn->GetAgentHandle()) : EProphecyAgentState::Locomotion;
+	if (!bFullAttack && Activity!=EProphecyAgentState::Parrying && Activity!=EProphecyAgentState::Dodging)
 	{
 		using namespace ProphecyAttackCameraFade;
 		FReturn* Fade=Returns.Find(this);

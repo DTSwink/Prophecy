@@ -1,5 +1,6 @@
 #pragma once
 #include "ProphecyNNPolicyBlend.h"
+#include "ProphecyNNDefenseLibrary.h"
 
 namespace ProphecyAttackRecovery
 {
@@ -15,9 +16,12 @@ struct FWeights
 };
 void Begin(const AProphecyAgent* Agent,FName Attack=NAME_None);
 void Cancel(const AProphecyAgent* Agent);
+void EnterSpecial(const AProphecyAgent* Agent);
 void Remove(const AProphecyAgent* Agent);
-void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLocomotion);
+void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLocomotion,
+    EProphecyAgentState Special=EProphecyAgentState::Attacking);
 bool IsEndEvent(const AProphecyAgent* Agent);
+FName EndEventAttack(const AProphecyAgent* Agent);
 // Overlay the normal selection without changing its ordinary blend state.
 void Step(const AProphecyAgent* Agent, float NormalWalkWeight, FWeights& Out);
 }

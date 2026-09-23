@@ -294,6 +294,52 @@ bool FProphecyHandChainContinuityTest::RunTest(const FString&)
     TestTrue(TEXT("Root-local chain solve is equivariant"),RA.Equals(A*Root,1.e-6) && RB.Equals(B*Root,1.e-6) && RC.Equals(C*Root,1.e-6));
     return !HasAnyErrors();
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyHandBendBlendTest,"Prophecy.NN.HandRecovery.BendBlend",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyHandBendBlendTest::RunTest(const FString&)
+{
+    using namespace ProphecyHandChain;
+    // Captured slashR exit: mixing the raw shoulder/endpoints gave a strongly
+    // nonlinear swivel and kept the elbow on the opposite side of idle.
+    const FVector Offset(-26.651449,0,0),LocalPole(0,99.67503,-8.055328);
+    const FTransform PS(FQuat(.889630664,-.347223185,.295306014,-.028065994).GetNormalized(),FVector(0,13.375396,2.054786));
+    const FTransform PE(PS.TransformPosition(Offset));
+    const FTransform PW(FVector(-31.041967,43.987524,-18.115667));
+    const FTransform NS(FQuat(.853407639,-.312747866,.273992396,.314344304).GetNormalized(),FVector(0,13.288782,1.952071));
+    const FTransform NE(NS.TransformPosition(Offset));
+    const FTransform NW(FVector(-21.813846,36.301616,-33.290068));
+    const FTransform Target(FVector(-30.746899,43.775991,-18.572348));
+    const FVector Axis=(Target.GetLocation()-NS.GetLocation()).GetSafeNormal();
+    auto Bend=[&](const FTransform& S,const FTransform& E,const FTransform& W)
+    { const FVector A=(W.GetLocation()-S.GetLocation()).GetSafeNormal();
+      return TransportPole(A,Axis,Plane(E.GetLocation()-S.GetLocation(),A,S.TransformVectorNoScale(LocalPole))); };
+    const FVector P=Bend(PS,PE,PW),N=Bend(NS,NE,NW);
+    const double Total=FMath::Acos(FMath::Clamp(FVector::DotProduct(P,N),-1.,1.));
+    double OldAngle=-1;
+    for(int32 I=0;I<=40;++I)
+    {
+        const double T=I/40.;FTransform S=NS,E=NE,W=NW;
+        Resolve(PS,PE,PW,S,E,W,Target,Offset,LocalPole,T);
+        const FVector Actual=Bend(S,E,W);
+        const double Angle=FMath::Acos(FMath::Clamp(FVector::DotProduct(P,Actual),-1.,1.));
+        TestTrue(TEXT("Bend progresses without reversal or an intermediate singularity"),Angle+1.e-6>=OldAngle && FMath::Abs(Angle-Total*T)<1.e-5);
+        TestTrue(TEXT("Reconstruction preserves wrist and both link lengths"),W.GetLocation().Equals(Target.GetLocation(),1.e-6) &&
+            E.GetLocation().Equals(S.TransformPosition(Offset),1.e-6) && FMath::IsNearlyEqual((W.GetLocation()-E.GetLocation()).Length(),
+                FMath::Lerp((PW.GetLocation()-PE.GetLocation()).Length(),(NW.GetLocation()-NE.GetLocation()).Length(),T),1.e-6));
+        OldAngle=Angle;
+    }
+    FTransform Results[2];int32 Index=0;
+    for(double Sign:{-1.,1.})
+    {
+        FTransform S=NS,E=NE,W=NW;
+        W.SetLocation(NS.TransformPosition(Offset*1.8)+NS.TransformVectorNoScale(FVector(0,Sign*1.e-8,0)));
+        Resolve(PS,PE,PW,S,E,W,Target,Offset,LocalPole,.5);
+        Results[Index++]=E;
+        TestFalse(TEXT("Straight source remains finite"),S.ContainsNaN() || E.ContainsNaN() || W.ContainsNaN());
+    }
+    TestTrue(TEXT("Sub-nanometre straight-arm noise cannot flip the elbow"),Results[0].GetLocation().Equals(Results[1].GetLocation(),1.e-5));
+    return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyHandSpineReferenceTest,"Prophecy.NN.HandRecovery.SpineReference",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyHandSpineReferenceTest::RunTest(const FString&)

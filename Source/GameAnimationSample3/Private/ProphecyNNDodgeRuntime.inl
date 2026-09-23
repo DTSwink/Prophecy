@@ -133,7 +133,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNDodge(FProphecyAgentHandle Handle
     P.Status.Active=true;P.Status.AttackerFrame=Attack.Frame-(History?1:0);P.bHasPose=true;
     if (Agent.DefensePose) StopAgentNNDefense(Handle, false);
     Agent.PolicyBlend.Reset(P.Category==0);
-    ProphecyAttackRecovery::Cancel(Actor);
+    ProphecyAttackRecovery::EnterSpecial(Actor);
     ProphecyRootBalance::CancelKickException(Actor);
     D.Parries.Remove(Handle.Index);Agent.DefensePose=New.Get();D.Dodges.Add(Handle.Index,MoveTemp(New));
     SetAgentTimeDilation(Handle,1.f);
@@ -146,23 +146,39 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
     using namespace ProphecyDefense;
     auto& D=*Impl->Defense;if (!D.ActiveDodgeCount) return;
     D.DodgePrepared.Reset();for (auto& Group:D.DodgeLowerPrepared) Group.Reset();
-    for (auto& Pair:D.Dodges)
+    TArray<int32,TInlineAllocator<16>> DodgeIndices;
+    for(const auto& Pair:D.Dodges) DodgeIndices.Add(Pair.Key);
+    // Dispatch exit callbacks before preparing any inference lanes: Blueprint
+    // can start/stop another special and mutate either defense map.
+    for(int32 Index:DodgeIndices)
     {
-        auto& P=*Pair.Value;if (!P.Status.Active) continue;
+        auto* Entry=D.Dodges.Find(Index);if(!Entry || !(*Entry)->Status.Active)continue;
+        auto& P=**Entry;auto* Actor=P.Owner.Get();auto* Attacker=P.Attacker.Get();
+        if(!IsValid(Actor) || !IsValid(Attacker) || !Actor->bNNInferenceEnabled || !Attacker->bNNInferenceEnabled || !Impl->Agents.IsValidIndex(P.AttackerIndex))continue;
+        const auto& Attack=Impl->Agents[P.AttackerIndex].Slash;
+        if(Attack.bActive && Attack.Family==P.Family && Attack.HitFrame!=INDEX_NONE && Attack.Frame-Attack.HitFrame>=ProphecyDefenseControls::GetDodgeFramesAfterHit(Actor))
+        {
+            P.Status.AttackerFrame=Attack.Frame;StopAgentNNDefense(Actor->GetAgentHandle());
+            if(IsValid(Actor) && ResolveAgent(Actor->GetAgentHandle())==Actor) PublishAgentPose(Index,Impl->Agents[Index].PublishedPoseTimeSeconds);
+        }
+    }
+    for (int32 Index:DodgeIndices)
+    {
+        const auto* Entry=D.Dodges.Find(Index);if(!Entry)continue;
+        auto& P=**Entry;if (!P.Status.Active) continue;
         AProphecyAgent* Actor=P.Owner.Get();AProphecyAgent* Attacker=P.Attacker.Get();
         if (!IsValid(Actor) || !IsValid(Attacker) || !Impl->Agents.IsValidIndex(P.AttackerIndex)
             || ResolveAgent(Actor->GetAgentHandle())!=Actor || ResolveAgent(Attacker->GetAgentHandle())!=Attacker)
         { P.Status.Active=false;continue; }
         const auto& Attack=Impl->Agents[P.AttackerIndex].Slash;
-        auto& Agent=Impl->Agents[Pair.Key];
+        auto& Agent=Impl->Agents[Index];
         if (!Actor->bNNInferenceEnabled || !Attacker->bNNInferenceEnabled) continue;
         if (!Attack.bActive || Attack.Family!=P.Family || Attack.Frame<P.Status.AttackerFrame || P.Status.CompletedSteps>=P.MaxSteps)
         { P.Status.Active=false;continue; }
         if (Attack.HitFrame!=INDEX_NONE && Attack.Frame-Attack.HitFrame>=ProphecyDefenseControls::GetDodgeFramesAfterHit(Actor))
         {
             P.Status.AttackerFrame=Attack.Frame;
-            StopAgentNNDefense(Actor->GetAgentHandle());
-            PublishAgentPose(Pair.Key,Agent.PublishedPoseTimeSeconds);
+            P.Status.Active=false;
             continue;
         }
         if (Attack.Frame==P.Status.AttackerFrame) continue;
@@ -177,7 +193,7 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
         P.Context.TargetWorld=UnrealToTraining(Attack.TargetWorld)-P.WorldOrigin;
         P.Category=Agent.bUseWalkPolicy?0:1;
         P.PresentMask=D.DodgeContacts.PresentMask(IsValid(Actor->GetHeldSword()));
-        D.DodgeLowerPrepared[P.Category].Add(Pair.Key);
+        D.DodgeLowerPrepared[P.Category].Add(Index);
     }
     D.DodgeInputs.SetNumUninitialized(D.ActiveDodgeCount*362,EAllowShrinking::No);
     D.DodgeOutputs.SetNumUninitialized(D.ActiveDodgeCount*112,EAllowShrinking::No);

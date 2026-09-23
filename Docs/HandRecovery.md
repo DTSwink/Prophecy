@@ -1,5 +1,10 @@
 # Hand recovery and tempering
 
+The shared arm solver's September23 elbow-bend correction is described in
+[ElbowRecoveryBend](ElbowRecoveryBend.md). Both source hinges are now resolved
+against the final wrist before their bend directions are blended; raw shoulder
+rotation/endpoint mixing no longer creates an inconsistent intermediate arm.
+
 Three nodes, independent left/right hands, one profile shared by all attacks (including kicks):
 
 - **Set Locomotion Hand Tempering**: Enabled plus Left Hand XY/Z/Rotation, then Right Hand XY/Z/Rotation. Defaults1. Zero carries the preceding accepted hand pose with `spine_05`; intermediate values follow the next prediction per NN step. XY, Z and rotation use that bone's local axes. Reach correction repairs shoulder/elbow/hand attachment while preserving the requested wrist rotation. Impossible endpoints are projected into reachable arm space.

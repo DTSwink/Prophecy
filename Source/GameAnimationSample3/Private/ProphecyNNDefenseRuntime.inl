@@ -237,8 +237,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     P.Status.Active=true;P.Status.AttackerFrame=Attack.Frame-(History?1:0);P.bHasPose=true;
     if (Agent.DefensePose) StopAgentNNDefense(Handle, false);
     D.Dodges.Remove(Handle.Index);
-    ProphecyAttackRecovery::Cancel(Actor);
-    ProphecyHandRecovery::CancelRecovery(Actor);
+    ProphecyAttackRecovery::EnterSpecial(Actor);
     ProphecyRootBalance::CancelKickException(Actor);
     Agent.DefensePose=New.Get();D.Parries.Add(Handle.Index,MoveTemp(New));++D.ActiveCount;
     SetAgentTimeDilation(Handle,1.f);
@@ -295,6 +294,19 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
     const bool bCancelled=ProphecyDefenseArmedGate::Cancel(Actor);
     if (!Impl->Agents[Handle.Index].DefensePose) return bCancelled;
     auto& Agent=Impl->Agents[Handle.Index];
+    const bool WasDodge=Agent.DefensePose->bDodge;
+    // Capture before root recentering or Blueprint callbacks can replace the
+    // defense object. These are the actual two accepted defense endpoints.
+    FTransform PreviousWorld[25],World[25];
+    if (bReturnToLocomotion)
+    {
+        const auto PreviousCarrier=SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
+        const auto Carrier=SlashComponentWorld(Actor,Agent.PublishedRoot,Agent.PublishedYaw);
+        for(int32 B=0;B<25;++B)
+        { PreviousWorld[B]=Agent.DefensePose->PreviousComponent[B]*PreviousCarrier;World[B]=Agent.DefensePose->CurrentComponent[B]*Carrier; }
+    }
+    const USpringArmComponent* PlayerSpring=Actor->IsPlayerControlled()?Actor->GetAgentSpringArm():nullptr;
+    const FVector PreviousCameraOrigin=PlayerSpring?PlayerSpring->GetComponentLocation():FVector::ZeroVector;
     FVector ReturnTarget;
     if (bReturnToLocomotion && ProphecyRootBalance::GetFlatFeetTarget(Actor,ReturnTarget))
         SetAgentLocomotionRootWindowLocation(Handle,ReturnTarget,true);
@@ -307,7 +319,15 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
     Agent.DefensePose->Status.Active=false;Agent.DefensePose=nullptr;
     if (bReturnToLocomotion) ProphecyRootPelvisBounds::ResetMagicCubeToRoot(Actor);
     ProphecyLimbCollision::DefenseChanged(ResolveAgent(Handle),false);
-    --Impl->Defense->ActiveCount;return true;
+    --Impl->Defense->ActiveCount;
+    if (PlayerSpring && bReturnToLocomotion) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
+    if (bReturnToLocomotion) ProphecyAttackRecovery::Begin(Actor);
+    ProphecyAttackRecovery::NotifyEnded(Actor,NAME_None,false,bReturnToLocomotion,
+        WasDodge?EProphecyAgentState::Dodging:EProphecyAgentState::Parrying);
+    if (bReturnToLocomotion && ResolveAgent(Handle)==Actor && !Agent.Slash.bActive && !Agent.DefensePose)
+        ProphecyUpperBodyInertia::Begin(Actor,MakeArrayView(PreviousWorld),MakeArrayView(World),
+            Impl->BodyNames,Impl->UpperCoreBoneNames,1./NNUpdateHz);
+    return true;
 }
 bool AProphecyNNLocomotionManager::GetAgentNNDefenseStatus(FProphecyAgentHandle Handle,FProphecyNNDefenseStatus& Status) const
 {
@@ -339,11 +359,26 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
 {
     using namespace ProphecyDefense;
     auto& D=*Impl->Defense;if (D.ActiveCount==D.ActiveDodgeCount) return;D.Prepared.Reset();
+    TArray<int32,TInlineAllocator<16>> ParryIndices;
+    for(const auto& Pair:D.Parries) ParryIndices.Add(Pair.Key);
+    for(int32 Index:ParryIndices)
+    {
+        auto* Entry=D.Parries.Find(Index);if(!Entry || !(*Entry)->Status.Active)continue;
+        auto& P=**Entry;auto* Actor=P.Owner.Get();auto* Attacker=P.Attacker.Get();
+        if(!IsValid(Actor) || !IsValid(Attacker) || !Actor->bNNInferenceEnabled || !Attacker->bNNInferenceEnabled || !Impl->Agents.IsValidIndex(P.AttackerIndex))continue;
+        const auto& Attack=Impl->Agents[P.AttackerIndex].Slash;
+        if(Attack.bActive && Attack.Family==P.Family && Attack.HitFrame!=INDEX_NONE)
+        {
+            P.Status.AttackerFrame=Attack.Frame;StopAgentNNDefense(Actor->GetAgentHandle());
+            if(IsValid(Actor) && ResolveAgent(Actor->GetAgentHandle())==Actor) PublishAgentPose(Index,Impl->Agents[Index].PublishedPoseTimeSeconds);
+        }
+    }
     const int32 ParryCount=D.ActiveCount-D.ActiveDodgeCount;
     D.Inputs.SetNumUninitialized(ParryCount*258,EAllowShrinking::No);D.Outputs.SetNumUninitialized(ParryCount*90,EAllowShrinking::No);
-    for (auto& Pair:D.Parries)
+    for (int32 Index:ParryIndices)
     {
-        auto& P=*Pair.Value;const int32 Index=Pair.Key;if (!P.Status.Active) continue;
+        const auto* Entry=D.Parries.Find(Index);if(!Entry)continue;
+        auto& P=**Entry;if (!P.Status.Active) continue;
         AProphecyAgent* Actor=P.Owner.Get();AProphecyAgent* Attacker=P.Attacker.Get();
         if (!IsValid(Actor) || !IsValid(Attacker) || !Impl->Agents.IsValidIndex(P.AttackerIndex)
             || ResolveAgent(Actor->GetAgentHandle())!=Actor || ResolveAgent(Attacker->GetAgentHandle())!=Attacker)
@@ -357,8 +392,7 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
             // Hit is a learned attack output, independent of physical contact.
             // Release ownership on this very policy step, not after the attack tail.
             P.Status.AttackerFrame=Attack.Frame;
-            StopAgentNNDefense(Actor->GetAgentHandle());
-            PublishAgentPose(Index,Agent.PublishedPoseTimeSeconds);
+            P.Status.Active=false;
             continue;
         }
         if (Attack.Frame==P.Status.AttackerFrame) continue;

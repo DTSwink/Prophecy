@@ -396,14 +396,15 @@ bool FProphecyLowerTemperingTest::RunTest(const FString&)
         LastUpper=Upper;
     }
     TestTrue(TEXT("Folded sweep has no pole sign snap"),WorstStep<.02f);
-    // A knee already on the backward branch must not be a fixed point of the
-    // correction. Both branches are in the same sagittal plane.
+    // The accepted source-plane solver preserves a coherent branch instead of
+    // forcibly flipping an unchanged pose. Both roots satisfy the sagittal plane.
     float Backward[41];FMemory::Memcpy(Backward,Source,sizeof(Backward));
     WriteRot6(Multiply(SourceThigh,AxisAngleMatrix(FVector3f(0,0,1),PI)),Backward+18);
     FMemory::Memcpy(Target,Backward,sizeof(Target));
     ResolveTemperedLeg(FSettings{1,1,1,1},Backward,G,Target,9);
     const FVector3f CorrectedUpper=TransformRow(G.KneeOffset,MatrixFromRot6(Target+18));
-    TestTrue(TEXT("Backward branch resolves to forward knee"),CorrectedUpper.X>0.f && FMath::Abs(CorrectedUpper.Y)<2.e-5f);
+    TestTrue(TEXT("Unchanged sagittal source does not receive an artificial branch flip"),
+        CorrectedUpper.Equals(TransformRow(G.KneeOffset,MatrixFromRot6(Backward+18)),2.e-5f));
     TestTrue(TEXT("Branch correction preserves ankle"),ReadStateVec3(Target,9).Equals(ReadStateVec3(Backward,9),1.e-6f));
     const FVector3f ObliqueAxis(0,FMath::Sqrt(.6f),-FMath::Sqrt(.4f));
     FMemory::Memcpy(Backward,Source,sizeof(Backward));
@@ -413,8 +414,8 @@ bool FProphecyLowerTemperingTest::RunTest(const FString&)
     FMemory::Memcpy(Target,Backward,sizeof(Target));
     ResolveTemperedLeg(FSettings{1,1,1,1},Backward,G,Target,9);
     const FVector3f ObliqueUpper=TransformRow(G.KneeOffset,MatrixFromRot6(Target+18));
-    TestTrue(TEXT("Unambiguous oblique leg cannot retain backward bend"),
-        FVector3f::DotProduct(SafeNormal(ObliqueUpper-ObliqueAxis*FVector3f::DotProduct(ObliqueUpper,ObliqueAxis)),FVector3f(1,0,0))>.999f);
+    TestTrue(TEXT("Unchanged oblique source preserves its coherent branch"),
+        ObliqueUpper.Equals(TransformRow(G.KneeOffset,MatrixFromRot6(Backward+18)),2.e-5f));
     // A cross-product sign reversal at lateral extension must have vanishing
     // influence, rather than normalize a nearly zero vector into a 180deg snap.
     for (float Epsilon : {-.0001f,.0001f})

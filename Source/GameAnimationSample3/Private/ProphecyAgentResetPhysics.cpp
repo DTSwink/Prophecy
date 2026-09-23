@@ -9,6 +9,8 @@
 #include "ProphecyLowerTemperingLibrary.h"
 #include "ProphecyHandRecovery.h"
 #include "ProphecyCoreTempering.h"
+#include "ProphecyUpperBodyInertia.h"
+#include "ProphecySlashReturn.h"
 #include "ProphecyAttackRecovery.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyRootBalance.h"
@@ -52,6 +54,8 @@ void Remove(const AProphecyAgent* Agent)
     EquipmentStates.Remove(Agent);
     ProphecyHandRecovery::ForgetReset(Agent);
     ProphecyCoreTempering::ForgetReset(Agent);
+    ProphecyUpperBodyInertia::ForgetReset(Agent);
+    ProphecySlashReturn::ForgetReset(Agent);
 }
 bool Capture(AProphecyAgent* Agent,FString& Error)
 {
@@ -85,6 +89,8 @@ bool Capture(AProphecyAgent* Agent,FString& Error)
     EquipmentStates.Add(Agent,MoveTemp(Equipment));
     ProphecyHandRecovery::CaptureReset(Agent);
     ProphecyCoreTempering::CaptureReset(Agent);
+    ProphecyUpperBodyInertia::CaptureReset(Agent);
+    ProphecySlashReturn::CaptureReset(Agent);
     States.Add(Agent,MoveTemp(S));return true;
 }
 bool RestoreEquipment(AProphecyAgent* Agent,FString& Error)
@@ -118,6 +124,8 @@ void CancelBlends(AProphecyAgent* Agent)
     ProphecyAttackRecovery::Cancel(Agent);
     ProphecyHandRecovery::CancelMotion(Agent);
     ProphecyCoreTempering::CancelMotion(Agent);
+    ProphecyUpperBodyInertia::Cancel(Agent);
+    ProphecySlashReturn::Cancel(Agent);
     ProphecyRootBalance::CancelKickException(Agent);
     ProphecyLowerTempering::ClearAttackSelection(Agent);
     ProphecyLowerTempering::Remove(Agent);
@@ -146,6 +154,8 @@ bool Restore(AProphecyAgent* Agent,FString& Error)
     if (const auto* Right=RightTemperingStates.Find(Agent)) ProphecyLowerTempering::RestoreRightFootSettings(Agent,*Right);
     ProphecyHandRecovery::RestoreReset(Agent);
     ProphecyCoreTempering::RestoreReset(Agent);
+    ProphecyUpperBodyInertia::RestoreReset(Agent);
+    ProphecySlashReturn::RestoreReset(Agent);
     if (S.HadMaterial && !S.Material.IsValid()) { Error=TEXT("Initial physical material no longer exists.");return false; }
     if (auto* Mesh=Agent->GetPoseReferenceMesh()) Mesh->SetPhysMaterialOverride(S.Material.Get());
     return RestoreLimits(Agent,Error);

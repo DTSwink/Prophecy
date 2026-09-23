@@ -222,9 +222,8 @@ void SelectAttackProfile(const AProphecyAgent* Agent,FName Attack)
     if (Kick) { EnsureCleanup();KickSelected.Add(Agent); } else KickSelected.Remove(Agent);
     if (Attack==TEXT("kickr")) RightKickSelected.Add(Agent);else RightKickSelected.Remove(Agent);
     const auto* Special=KickProfiles.Find(Agent);
-    if (!Special) return; // Unconfigured agents keep the previous immediate-set behavior.
     const auto* Regular=RegularProfiles.Find(Agent);
-    if (!Kick) { Apply(Agent,Regular ? *Regular : FSettings{});return; }
+    if (!Kick || !Special) { if (Regular || Special) Apply(Agent,Regular ? *Regular : FSettings{});return; }
     const auto* NonKicking=NonKickingProfiles.Find(Agent);
     FSettings Left=*Special,Right=NonKicking ? *NonKicking : *Special;
     if (Attack==TEXT("kickr")) Swap(Left,Right);

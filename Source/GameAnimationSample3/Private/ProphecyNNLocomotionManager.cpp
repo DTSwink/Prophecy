@@ -22,6 +22,8 @@
 #include "ProphecyHandInertia.h"
 #include "ProphecyHandRecovery.h"
 #include "ProphecyCoreTempering.h"
+#include "ProphecyUpperBodyInertia.h"
+#include "ProphecySlashReturn.h"
 #include "ProphecyHandChainMath.h"
 #include "ProphecyPhysicalContext.h"
 #include "ProphecyWalkPinning.h"
@@ -419,6 +421,19 @@ namespace
         const auto Rotation=ForearmRotationFromHand(LocalAxis,FVector3f(Delta.X,-Delta.Y,Delta.Z),
             LocalPole,MirrorYBasis(QuatToMatrix(Hand.GetRotation())));
         Forearm.SetRotation(MatrixToQuat(MirrorYBasis(Rotation)));
+    }
+
+    // As with forearms, calf twist is reconstructed rather than a reduced NN
+    // state output. Carry the signed knee hinge used by locomotion instead of
+    // the attack decoder's discontinuous projected-pole/hemisphere rule.
+    void SetCalfRollFromThigh(const FVector3f& ThighAxis,const FVector3f& CalfAxis,
+        const FVector3f& ThighPole,const FVector3f& CalfPole,
+        const FTransform& Thigh,FTransform& Calf,const FTransform& Foot)
+    {
+        const FVector Delta=Foot.GetLocation()-Calf.GetLocation();
+        const auto Rotation=CalfRotationFromHinge(ThighAxis,CalfAxis,ThighPole,CalfPole,
+            MirrorYBasis(QuatToMatrix(Thigh.GetRotation())),FVector3f(Delta.X,-Delta.Y,Delta.Z));
+        Calf.SetRotation(MatrixToQuat(MirrorYBasis(Rotation)));
     }
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -2041,6 +2056,8 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 		ProphecyAttackRecovery::Remove(AgentActor);
 		ProphecyHandRecovery::Remove(AgentActor);
 		ProphecyCoreTempering::Remove(AgentActor);
+		ProphecySlashReturn::Remove(AgentActor);
+		ProphecyUpperBodyInertia::Remove(AgentActor);
 		ProphecyLowerTempering::ForgetProfiles(AgentActor);
 		ProphecyLegChainDebug::Remove(AgentActor);
 		ProphecyRootSpeedLimits::Remove(AgentActor);
@@ -2134,8 +2151,8 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 	AProphecyAgent* CameraPawn = CameraController ? Cast<AProphecyAgent>(CameraController->GetPawn()) : nullptr;
 	const FProphecyAgentHandle CameraHandle = CameraPawn ? CameraPawn->GetAgentHandle() : FProphecyAgentHandle{};
 	const bool bOwnsCameraPawn = CameraPawn && ResolveAgent(CameraHandle) == CameraPawn;
-	const bool bFollowAttack = bOwnsCameraPawn && Impl->Agents[CameraHandle.Index].Slash.bActive &&
-		!Impl->Agents[CameraHandle.Index].Slash.bHalf;
+	const bool bFollowAttack = bOwnsCameraPawn && ((Impl->Agents[CameraHandle.Index].Slash.bActive &&
+		!Impl->Agents[CameraHandle.Index].Slash.bHalf) || Impl->Agents[CameraHandle.Index].DefensePose);
 	ProphecyAttackCamera::Update(this, CameraPawn, bFollowAttack);
 	// Debug meshes are passive poseable renderers owned by the manager. Update
 	// them only after the authoritative pose/root publication is complete; they
@@ -3950,7 +3967,7 @@ void AProphecyNNLocomotionManager::ApplyUpperOutputBatch()
 		CleanUpperState(CurrentUpper);
 		const float CoreFollow=Impl->Agents[AgentIndex].Slash.bActive ? 1.f : ProphecyCoreTempering::Rotation(AgentActors[AgentIndex]);
 		if (!Impl->Agents[AgentIndex].Slash.bActive &&
-			(CoreFollow<1 || ProphecyHandRecovery::Frame(AgentActors[AgentIndex]) || ProphecyHandRecovery::Tempering(AgentActors[AgentIndex]) ||
+			(CoreFollow<1 || ProphecyUpperBodyInertia::Active(AgentActors[AgentIndex]) || ProphecySlashReturn::Active(AgentActors[AgentIndex]) || ProphecyHandRecovery::Frame(AgentActors[AgentIndex]) || ProphecyHandRecovery::Tempering(AgentActors[AgentIndex]) ||
 			ProphecyHandInertia::IsActive(AgentActors[AgentIndex],Impl->Agents[AgentIndex].PublishedWalkWeight,false)))
 			CorrectLocomotionHands(Impl,AgentActors[AgentIndex],AgentIndex,
 				Clock?Clock->Step->SourceTimeSeconds:double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds+1./NNUpdateHz,
@@ -4630,6 +4647,9 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		Agent.PreviousPublishedRoot, Agent.PreviousPublishedYaw);
 	const FTransform ComponentWorldTransform = BuildComponentWorldTransform(
 		Agent.PublishedRoot, Agent.PublishedYaw);
+	if (!Agent.Slash.bActive && !bDefensePose && ProphecyUpperBodyInertia::Active(Controls))
+		ProphecyUpperBodyInertia::PreserveHandoff(Controls,Impl->Parents,Impl->BodyNames,Impl->UpperCoreBoneNames,
+			PreviousComponentWorldTransform,PreviousComponentTransforms);
 	const AProphecyAgent* ClampActor = AgentActors[AgentIndex];
 	const bool bFullAttack = Agent.Slash.bActive && Agent.Slash.bHasPose && !Agent.Slash.bHalf;
 	const bool bCalfOverride = bFullAttack && ClampActor->bOverrideAttackCalfClamp;

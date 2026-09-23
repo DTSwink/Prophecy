@@ -6,7 +6,7 @@ class AProphecyAgent;
 // or time dilation. Only explicitly active blends subscribe to this clock.
 namespace ProphecyBlendClock
 {
-enum class EKind : uint8 { Tempering, Profiles, Policy, Recovery, FeetTempering, PelvisTempering, KickBalance, LeftHandTempering, RightHandTempering, HandRecovery, CoreTempering };
+enum class EKind : uint8 { Tempering, Profiles, Policy, Recovery, FeetTempering, PelvisTempering, KickBalance, LeftHandTempering, RightHandTempering, HandRecovery, CoreTempering, SlashReturn, UpperBodyInertia };
 constexpr double TickSeconds = 1.0 / 60.0;
 void Start(const AProphecyAgent* Agent, EKind Kind, double DurationSeconds=0);
 void Ensure(const AProphecyAgent* Agent, EKind Kind);

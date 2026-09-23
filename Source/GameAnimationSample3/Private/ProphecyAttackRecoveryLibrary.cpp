@@ -6,6 +6,9 @@
 #include "ProphecyLowerTempering.h"
 #include "ProphecyHandRecovery.h"
 #include "ProphecyCoreTempering.h"
+#include "ProphecySlashReturn.h"
+#include "ProphecyUpperBodyInertia.h"
+#include "ProphecySpecialRecoveryEvents.h"
 
 namespace ProphecyAttackRecovery
 {
@@ -48,6 +51,7 @@ static bool IsKick(FName Attack) { return Attack==TEXT("kickl") || Attack==TEXT(
 static FDelegateHandle Cleanup;
 // Stack-scoped only while invoking the Blueprint event; no idle entry/tick.
 static const AProphecyAgent* EndEventAgent=nullptr;
+static FName EndAttack;
 static void EnsureCleanup()
 {
     if (Cleanup.IsValid()) return;
@@ -82,17 +86,31 @@ void Begin(const AProphecyAgent* Agent,FName Attack)
     if (Attack==TEXT("kickr")) RightKickActive.Add(Agent);
 }
 void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Settings.Remove(Agent);KickSettings.Remove(Agent); }
-void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLocomotion)
+void EnterSpecial(const AProphecyAgent* Agent)
+{
+    Cancel(Agent);ProphecyLowerTempering::Remove(Agent);
+    ProphecyHandRecovery::CancelMotion(Agent);ProphecyCoreTempering::CancelMotion(Agent);
+    ProphecySlashReturn::Cancel(Agent);ProphecyUpperBodyInertia::Cancel(Agent);
+}
+void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLocomotion,EProphecyAgentState Special)
 {
     TGuardValue<const AProphecyAgent*> Scope(EndEventAgent,ReturningToLocomotion ? Agent : nullptr);
     TGuardValue<bool> KickScope(EndEventKick,IsKick(Attack));
     TGuardValue<bool> SideScope(EndEventRightKick,Attack==TEXT("kickr"));
+    TGuardValue<FName> AttackScope(EndAttack,Attack);
     if (ReturningToLocomotion) ProphecyLowerTempering::SelectAttackProfile(Agent,Attack);
     if (ReturningToLocomotion) ProphecyHandRecovery::Begin(Agent);
     if (ReturningToLocomotion) ProphecyCoreTempering::Begin(Agent);
-    Agent->OnNNAttackEnded(Attack,Half);
+    if (ReturningToLocomotion) ProphecySlashReturn::Begin(Agent,Attack);
+    if (Special==EProphecyAgentState::Attacking) Agent->OnNNAttackEnded(Attack,Half);
+    // A handler may replace this return with another special/reset. Do not
+    // dispatch a second recovery chain over the newly selected action.
+    if (IsValid(Agent) && !Agent->IsActorBeingDestroyed() && (!ReturningToLocomotion || EndEventAgent==Agent)
+        && Agent->GetClass()->ImplementsInterface(UProphecySpecialRecoveryEvents::StaticClass()))
+        IProphecySpecialRecoveryEvents::Execute_OnNNSpecialEnded(Agent,Special,Attack,Half,ReturningToLocomotion);
 }
 bool IsEndEvent(const AProphecyAgent* Agent) { return EndEventAgent==Agent; }
+FName EndEventAttack(const AProphecyAgent* Agent) { return IsEndEvent(Agent)?EndAttack:NAME_None; }
 void Step(const AProphecyAgent* Agent,float Normal,FWeights& Out)
 {
     Out=FWeights(Normal);
@@ -174,6 +192,47 @@ bool UProphecyAttackRecoveryLibrary::SetKickToLocomotionBlend(AProphecyAgent* Ag
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+#include "ProphecyLowerTemperingLibrary.h"
+#include "ProphecyHandRecoveryLibrary.h"
+#include "ProphecyCoreTemperingLibrary.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySpecialRecoveryTest,"Prophecy.NN.SpecialRecovery.AllExitsAndRetirement",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecySpecialRecoveryTest::RunTest(const FString&)
+{
+    using namespace ProphecyAttackRecovery;
+    auto* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(A,true,.2,.3,.4,.5,.6,.7);
+    UProphecyHandRecoveryLibrary::SetLocomotionHandTempering(A,true,.2,.3,.4,.5,.6,.7);
+    UProphecyCoreTemperingLibrary::SetLocomotionFKCoreTempering(A,true,.3);
+    UProphecyHandRecoveryLibrary::SetAttackToLocomotionHandBlend(A,EProphecyRecoverySource::Walk,0,.5,EProphecyRecoverySource::Run,0,.5);
+    UProphecyAttackRecoveryLibrary::SetAttackToLocomotionBlend(A,EProphecyRecoverySource::Walk,0,.5,EProphecyRecoverySource::Run,0,.5,EProphecyRecoverySource::Walk,0,.5);
+    for(auto Kind:{EProphecyAgentState::Attacking,EProphecyAgentState::Parrying,EProphecyAgentState::Dodging})
+    {
+        EnterSpecial(A);
+        TestTrue(TEXT("Every special clears prior locomotion control motion"),!ProphecyLowerTempering::Find(A)
+            && !ProphecyHandRecovery::Tempering(A) && !ProphecyHandRecovery::Frame(A) && ProphecyCoreTempering::Rotation(A)==1);
+        Begin(A);NotifyEnded(A,NAME_None,false,true,Kind);
+        const auto* L=ProphecyLowerTempering::Find(A);
+        TestTrue(TEXT("All exits restore the regular lower profile without a kick override"),L && L->FeetTranslation==.2f && L->PelvisTranslation==.5f);
+        TestTrue(TEXT("All exits restore hands and core"),ProphecyHandRecovery::Tempering(A) && ProphecyCoreTempering::Rotation(A)==.3f);
+        UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(A,.5,0,.5,0);
+        UProphecyHandRecoveryLibrary::BlendLocomotionHandTemperingToNormal(A,0,.5,0,.5);
+        UProphecyCoreTemperingLibrary::BlendLocomotionFKCoreTemperingToNormal(A,0,.5);
+        FWeights Weights;Step(A,1,Weights);ProphecyHandRecovery::Step(A);
+        for(int32 I=0;I<30;++I)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/120);
+            Step(A,1,Weights);ProphecyHandRecovery::Step(A);ProphecyLowerTempering::Find(A);
+            ProphecyHandRecovery::Tempering(A);ProphecyCoreTempering::Rotation(A);
+        }
+        TestTrue(TEXT("All exits retire all recovery motion after 30 ticks"),!Active.Contains(A) && !ProphecyLowerTempering::Find(A)
+            && !ProphecyHandRecovery::Tempering(A) && !ProphecyHandRecovery::Frame(A) && ProphecyCoreTempering::Rotation(A)==1);
+        EnterSpecial(A);NotifyEnded(A,NAME_None,false,false,Kind);
+        TestTrue(TEXT("Special-to-special interruption does not reactivate locomotion recovery"),!ProphecyLowerTempering::Find(A) && !ProphecyHandRecovery::Frame(A));
+    }
+    Remove(A);ProphecyLowerTempering::ForgetProfiles(A);ProphecyHandRecovery::Remove(A);ProphecyCoreTempering::Remove(A);
+    W->DestroyWorld(false);return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackRecoveryTest,"Prophecy.NN.PolicyBlend.AttackRecovery",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyAttackRecoveryTest::RunTest(const FString&)

@@ -13,13 +13,13 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackRecoveryLibrary : public UBlueprin
 {
     GENERATED_BODY()
 public:
-    /** Independent pelvis/left-leg/right-leg recovery after an attack. Each part
+    /** Independent pelvis/left-leg/right-leg recovery after attack/parry/dodge. Each part
      * holds its selected checkpoint, then blends to NORMAL locomotion selection
      * (including ordinary walk/run blends). Does not change root motion.
      * Duration zero or Source Normal disables that part. All disabled means no
      * recovery clock, correction or extra inference. 1 second = 60 unpaused ticks.
-     * Positive settings apply at the next attack end, or the current handoff when
-     * called from On Attack Ended before its first locomotion prediction.
+     * Positive settings apply at the next special end, or the current handoff when
+     * called from Special Ended before its first locomotion prediction.
      * KickL/KickR use the separate kick profile once it has been configured. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack", meta=(DisplayName="Set Attack To Locomotion Blend", ClampMin="0.0", Units="s"))
     static bool SetAttackToLocomotionBlend(AProphecyAgent* Agent,

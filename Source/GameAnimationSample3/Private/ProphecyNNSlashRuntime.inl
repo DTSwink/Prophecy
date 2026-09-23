@@ -507,8 +507,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	SetAgentTimeDilation(Handle,1.f);
 	BeginHeadbuttPreparation(*Impl, Agent, Actor, bPreparation);
 	Actor->BeginAttackFists(Attack);
-	ProphecyAttackRecovery::Cancel(Actor);
-	ProphecyHandRecovery::CancelRecovery(Actor);
+	ProphecyAttackRecovery::EnterSpecial(Actor);
 	Actor->NotifySwordAttackState(true);
 	ProphecyKickFootLeeway::Begin(Actor,Attack);
 	ProphecyAttackCamera::Update(this, Actor, !bHalf);
@@ -615,6 +614,9 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	Actor->NotifySwordAttackState(false);
 	if (bReturnToLocomotion) ProphecyAttackRecovery::Begin(Actor,EndedAttack);
 	ProphecyAttackRecovery::NotifyEnded(Actor,EndedAttack,bEndedHalfAttack,bReturnToLocomotion);
+	if (bReturnToLocomotion && !Slash.bActive && !Impl->Agents[Handle.Index].DefensePose)
+		ProphecyUpperBodyInertia::Begin(Actor,Slash.PreviousVisibleWorldPose,Slash.VisibleWorldPose,
+			Impl->BodyNames,Impl->UpperCoreBoneNames,1./NNUpdateHz);
 	return true;
 }
 
@@ -875,6 +877,13 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		// Cache the corrected pose so rendering, Jolt and defender colliders agree.
 		for (const auto& Arm:Impl->UpperArms)
 			SetForearmRollFromHand(Impl->UpperLocalOffsets[Arm.End],Arm.LocalPoleAxes[1],Pose[Arm.Mid],Pose[Arm.End]);
+		// Only full attacks replace the lower body. Half attacks already retain
+		// the locomotion calf, including its existing recovery continuity.
+		// Correct the accepted visible cache once, after endpoint clamps, so
+		// presentation, physics and defender collider samples use the same frame.
+		if (!Slash.bHalf) for (const auto& Leg:Impl->Limbs)
+			SetCalfRollFromThigh(Impl->LocalOffsets[Leg.Mid],Impl->LocalOffsets[Leg.End],
+				Leg.LocalPoleAxes[0],Leg.LocalPoleAxes[1],Pose[Leg.Start],Pose[Leg.Mid],Pose[Leg.End]);
 		if (ProphecyHandInertia::IsActive(AgentActors[AgentIndex],Agent.PublishedWalkWeight,true))
 		{
 			const FTransform Root=HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw);

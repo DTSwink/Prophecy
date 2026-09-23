@@ -1,4 +1,34 @@
 // Included beside the production reconstruction helper in its anonymous namespace.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySpecialCalfBoundaryTest,
+    "Prophecy.NN.PhysicalTargets.SpecialCalfHinge",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecySpecialCalfBoundaryTest::RunTest(const FString&)
+{
+    for(float Side:{-1.f,1.f})
+    {
+        const FVector3f Axis(Side,0,0),Pole(0,Side,0);
+        const FVector UEAxis(Side,0,0),UEPole(0,-Side,0);
+        const FTransform Thigh(FRotator(31,-47,19),FVector(15,30,90));
+        const FVector Hinge=Thigh.GetRotation().RotateVector(FVector::CrossProduct(UEAxis,UEPole));
+        FQuat Previous=FQuat::Identity;bool HasPrevious=false;
+        for(int32 Degrees=-180;Degrees<=180;Degrees+=5)
+        {
+            FTransform Calf(FRotator(45,80,-120),FVector(20,35,70),FVector(1.1));
+            const FTransform Before=Calf;
+            const FVector Aim=FQuat(Hinge,FMath::DegreesToRadians(double(Degrees))).RotateVector(Thigh.GetRotation().RotateVector(UEAxis));
+            const FTransform Foot(FRotator(25,-30,Degrees),Calf.GetLocation()+Aim*42,FVector(1.2));
+            SetCalfRollFromThigh(Axis,Axis,Pole,Pole,Thigh,Calf,Foot);
+            TestTrue(TEXT("Calf keeps endpoint geometry and scale"),Calf.GetLocation()==Before.GetLocation() && Calf.GetScale3D()==Before.GetScale3D());
+            TestTrue(TEXT("Calf aims knee to foot"),Calf.GetRotation().RotateVector(UEAxis).Equals(Aim,1.e-5));
+            TestTrue(TEXT("Signed hinge does not flip through a folded knee"),Calf.GetRotation().RotateVector(FVector::CrossProduct(UEAxis,UEPole)).Equals(Hinge,1.e-5));
+            if(HasPrevious) TestTrue(TEXT("Five degree bend never produces a roll jump"),Previous.AngularDistance(Calf.GetRotation())<FMath::DegreesToRadians(5.001));
+            Previous=Calf.GetRotation();HasPrevious=true;
+            SetCalfRollFromThigh(Axis,Axis,Pole,Pole,Thigh,Calf,Foot);
+            TestTrue(TEXT("Repeated publication is idempotent"),Previous.AngularDistance(Calf.GetRotation())<1.e-5);
+        }
+    }
+    return !HasAnyErrors();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyForearmTargetTest,
     "Prophecy.NN.PhysicalTargets.ForearmRollFromHand",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
