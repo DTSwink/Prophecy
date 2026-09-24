@@ -52,6 +52,13 @@ public:
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Foot Pinning", meta=(ClampMin="0"))
     static bool SetWalkPinningSmoothing(AProphecyAgent* Agent,bool Enabled=true,int32 PinInFrames=3,int32 PinOutFrames=3);
 
+    /** Temporary A/B switch. Uses the latest NN pin request and existing Pin In/Out
+     * frames to update Walk foot targets every unpaused game tick. NN inference stays
+     * at its configured rate. Off by default; disable restores the ordinary path.
+     * Requires Set Walk Pinning Smoothing; no state/tick work when disabled. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Foot Pinning",meta=(DefaultToSelf="Agent",DisplayName="Set Walk Pinning Every Tick"))
+    static bool SetWalkPinningEveryTick(AProphecyAgent* Agent,bool Enabled=true);
+
     /** Walk only (including its recovery blend): veto a pin that would fully extend
      * the leg, then suppress that foot for Frames unpaused game ticks (60 = 1 authored second).
      * Frames includes the rejecting tick; zero vetoes only the current prediction.

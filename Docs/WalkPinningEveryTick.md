@@ -1,0 +1,21 @@
+# Temporary every-tick Walk pinning comparison
+
+`Set Walk Pinning Every Tick` takes Agent and Enabled. Off by default. Use together with the existing `Set Walk Pinning Smoothing` node: it retains the existing independent Pin In/Pin Out counts. One frame means the next unpaused game tick; 60 ticks means one authored second regardless of wall framerate. Repeated calls do not restart smoothing.
+
+The ordinary path samples the smooth state only at NN evaluations. The experimental path also resamples the cached Walk foot-roll displacement on intermediate game ticks, using the latest available decision and the current smoothing value. No extra NN inference, policy step, root advance or blend-clock advance occurs. Each render interval applies only its proportional displacement difference; the accumulated correction is carried into the next normal recurrent input before physical feedback. Reweighting the whole cached endpoint was experimentally rejected because it amplified steps.
+
+Per-foot caches retain previous/current policy displacement, sampled weight, mixed Walk contribution, and the latest spatial caps/transfer minimum. Bounds and full-extension rejection keep priority. Only the eight leg component/local transforms are republished; upper body, pose source time, root carriers and foot rotations are preserved except existing connected-leg/clamp requirements. Existing calf/foot clamps and connected recovery solve are reused; their algorithms are not edited. Hermite endpoint corrections transport tangents linearly and are reversible.
+
+Debug effective pin comes from the same resampling; raw NN decision remains the latest policy sample. Disabling restores cached original legs immediately and removes experiment state. Turning smoothing off, specials, pure Run and reset clear cached poses; the toggle configuration can remain enabled for later Walk. Disabled has no cached pose, timer, correction/decoding work or extra inference, only the empty-map guard.
+
+Original current-scene capture: at527 raw left0 requests unpinning but applied1,528 debug retains1 despite smoothing reaching0,529 raw left1 but applied0. Blueprint smoothing is In3/Out1, backward bound40–55cm/root7/LerpTarget.75; reach guard is disconnected. Baseline evidence: Saved/Diagnostics/Pin529Baseline.json and Pin529BP.copy.
+
+Final interval-integration build succeeded167.01s and loaded20:58:55UTC. All nine WalkPinning/Presentation tests passed20:59:11UTC, including the temporary toggle lifecycle and independent-frame ramp case. Canonical node invocation succeeds; pose BP library-default repair retained graph values/wiring, status3. No Blueprint wiring or asset save; include live changes in next authorized normal build.
+
+Current-scene replay enabled the option at526: all captured foot endpoints through527 match baseline exactly. At528 effective left becomes0 and right1/3 (old path still1/0); at529 it uses0/2/3, at530 left1/3 and right0. Actual targets respond on528 too. Left foot movement527→528 is4.13257cm and528→5294.71081cm; the rejected whole-endpoint prototype had8.10460 then0.93908cm. At532 the rejected13.58090cm jump becomes5.73387cm. Later predictions change because the accepted per-tick corrections feed recurrence; do not claim an identical rollout or global visual improvement. User will compare modes. The node is left disabled in the authored graph. Evidence: Saved/Diagnostics/Pin529Integrated.json and matching NN trace, plus baseline and rejected prototype captures. Own diagnostic sessions ended; trace off and callbacks removed.
+
+Disable tested with a nonzero intermediate correction at528: the same-pose target immediately matches the original baseline (error <1e-6cm), then the owned test ends normally. Evidence: Pin529ToggleOff.json.
+
+## Knee-reference repair
+
+The per-tick endpoint solve now uses the untouched source hinge and, when knee-pop smoothing is enabled, its existing stable thigh-local reference. Recurrence commits the solved thigh together with the ankle before physical feedback. This fixes the1088–1090 knee swivel without changing foot pin displacement, rotations, root, clamps, smoothing clocks or the general leg solver. Disabled retains the empty-map bypass. [Causal replay and regression evidence](KneeSnap1089.md).

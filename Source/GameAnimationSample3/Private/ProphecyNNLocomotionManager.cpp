@@ -28,6 +28,7 @@
 #include "ProphecyHandChainMath.h"
 #include "ProphecyPhysicalContext.h"
 #include "ProphecyWalkPinning.h"
+#include "ProphecyWalkTickPinning.h"
 #include "ProphecyUpperRootHorizon.h"
 #include "Async/ParallelFor.h"
 #include "ProphecyCrowdNameLookup.h"
@@ -2192,6 +2193,7 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 	}
 	}
 	UpdateVisualRoots();
+    if(ProphecyWalkPinning::AnyTickPinning()) UpdateWalkTickPinning(DeltaSeconds);
 	ProphecyRootPelvisBounds::Apply(*this);
 	const APlayerController* CameraController = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
 	AProphecyAgent* CameraPawn = CameraController ? Cast<AProphecyAgent>(CameraController->GetPawn()) : nullptr;
@@ -3083,6 +3085,7 @@ void AProphecyNNLocomotionManager::StepSimulation(float StepSeconds)
 		}
 		H.bValid=true;
 	});
+    if(ProphecyWalkPinning::AnyTickPinning()) CommitWalkTickPinning();
 	ResamplePhysicalAgents();
 	BuildInputBatch(StepSeconds);
 	if (bWarmed) Impl->Stats.BuildSeconds += FPlatformTime::Seconds() - Start;
@@ -3618,6 +3621,9 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			AdvanceAgentMover(AgentIndex,StepSeconds);
 			continue;
 		}
+        auto* TickPins=PinSmoothing && !Agent.DefensePose && !Agent.Slash.bActive && Agent.RecoveryWeights.NeedsWalk()
+            ? ProphecyWalkPinning::FindTickPinning(AgentActors[AgentIndex]) : nullptr;
+        if(TickPins) {TickPins->Previous=TickPins->Current;TickPins->Current={};TickPins->Current.Valid=true;}
 		const bool bWalkPolicy = !Agent.RecoveryWeights.NeedsRun();
 		const float* CurrentState = StateSlice(Impl->CurStateBuffer, AgentIndex);
 		float* Transition = StateSlice(Impl->PublishedStateBuffer, AgentIndex);
@@ -3748,6 +3754,17 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 				}
 				ProphecyWalkPinning::TransferBackwardPins(PinTransferMultiplier,BackwardCaps,OwnCaps,Pin[0],Pin[1]);
 			}
+            if(TickPins && bWalkPolicy && bVisiblePolicy)
+            {
+                auto& T=TickPins->Current;FVector2f BackCaps(1,1);
+                for(int32 I=0;I<2;++I)
+                {
+                    const FVector Foot=LowerPointToWorld(ReadStateVec3(CurrentState,PosOffsets[I]),Impl->SeedRootRot,Agent.FedInputRoot,Agent.FedInputYaw);
+                    if(PinBackwardBound) BackCaps[I]=ProphecyWalkPinning::BoundPin(1.f,*PinBackwardBound,Foot,BoundRoot,BoundForward);
+                    T.Cap[I]=PinCircleBound?ProphecyWalkPinning::CircleBoundPin(BackCaps[I],*PinCircleBound,Foot,CircleRoot):BackCaps[I];
+                }
+                if(bTransfer) T.Minimum=FVector2f(FMath::Clamp((1.f-BackCaps.Y)*PinTransferMultiplier,0.f,1.f),FMath::Clamp((1.f-BackCaps.X)*PinTransferMultiplier,0.f,1.f));
+            }
 			for (int32 LimbIndex = 0; LimbIndex < 2; ++LimbIndex)
 			{
 				const FVector3f PredPos = ReadStateVec3(Transition, PosOffsets[LimbIndex]);
@@ -3776,6 +3793,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 					const float CurToe = CurrentState[ToeOffsets[LimbIndex]];
 					const FVector3f RollDelta = Impl->IntegratedFootRollDelta(LimbIndex, CurRot, CurToe, PredRot, PredToe, bWalkPolicy);
 					const FVector3f PinnedPos(CurPos.X + RollDelta.X, CurPos.Y + RollDelta.Y, PredPos.Z);
+                    if(TickPins && bWalkPolicy && bVisiblePolicy) TickPins->Current.Delta[LimbIndex]=PinnedPos-PredPos;
 					OutPos = FMath::Lerp(PredPos, PinnedPos, Pin[LimbIndex]);
 				}
 				const float Lowest = Impl->LowestFootPointZ(LimbIndex, OutPos, PredRot, PredToe, bWalkPolicy);
@@ -3784,6 +3802,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			}
 			CleanState(Transition, *Impl);
 			EffectivePin = FVector2f(Pin[0], Pin[1]);
+            if(TickPins && bWalkPolicy && bVisiblePolicy) TickPins->Current.Applied=EffectivePin;
 		};
 		FVector2f RawPin, EffectivePin;
 		if (auto* H=ProphecyHandRecovery::Frame(AgentActors[AgentIndex]))
@@ -3848,6 +3867,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 				WriteStateVec3(Transition,O,FreePos);
 				EffectivePin[I]=0.f;
 				if (PinSmoothing) ProphecyWalkPinning::ClearSmoothedFoot(*PinSmoothing,I);
+                if(TickPins) {TickPins->Current.Cap[I]=0;TickPins->Current.Applied[I]=0;TickPins->Current.Delta[I]=FVector3f::ZeroVector;}
 			}
 		}
 		if (bReconstructTemperedLegs || ((bReturnLengths || (bRegional && !Tempering)) && ProphecyLegChainDebug::IsEnabled(AgentActors[AgentIndex])))
@@ -3907,6 +3927,11 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 						MatrixFromRot6(Transition+3),G,Transition,O,nullptr,false,nullptr,0.f,bOuterReach);
 			}
 		}
+        if(TickPins)
+        {
+            TickPins->Current.WalkWeight=Agent.RecoveryWeights.Legs();
+            for(int32 I=0;I<2;++I) TickPins->Current.OtherPin[I]=EffectivePin[I]-TickPins->Current.Applied[I]*TickPins->Current.WalkWeight[I];
+        }
 		Agent.PinProbability = EffectivePin;
 		auto* Debug = Impl->PinningDebug.IsEmpty() ? nullptr : Impl->PinningDebug.Find(AgentIndex);
 		if (Debug && Debug->Owner.Get() == AgentActors[AgentIndex])
@@ -4829,7 +4854,20 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 			Impl->LocalOffsets[Impl->Limbs[0].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier),
 			Impl->LocalOffsets[Impl->Limbs[1].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier)),
 		PresentationHandClamp, ForearmClamp);
+    if(auto* T=ProphecyWalkPinning::FindTickPinning(Controls))
+    {
+        if(!Agent.Slash.bActive && !Agent.DefensePose && T->Current.Valid && ProphecyWalkPinning::FindSmoothing(Controls))
+        {
+            T->PoseId=PoseStoreAgentBase+AgentIndex;T->HasBase=true;T->Dirty=true;
+            for(int32 I=0;I<2;++I)
+            {
+                const auto& L=Impl->Limbs[I];const int32 B[]={L.Start,L.Mid,L.End,L.Toe};
+                for(int32 J=0;J<4;++J){const int32 K=I*4+J;T->Bones[K]=B[J];T->BasePrevious[K]=PreviousComponentTransforms[B[J]];T->BaseCurrent[K]=ComponentTransforms[B[J]];}
+            }
+        }
+    }
 }
+#include "ProphecyWalkTickPinningRuntime.inl"
 
 void AProphecyNNLocomotionManager::UpdateVisualRoots()
 {
@@ -5991,6 +6029,7 @@ void UProphecyNNLocomotionWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 bool RunCapturedKneeBendReturnChecks(FAutomationTestBase& Test)
 {
     CheckCapturedKneePlaneReturn(Test);
+    CheckTickPinningHingeReference(Test);
     return !Test.HasAnyErrors();
 }
 #endif

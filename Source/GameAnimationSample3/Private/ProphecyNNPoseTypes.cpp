@@ -141,6 +141,15 @@ bool ProphecyNNPresentation::HasKneePopSmoothing(int32 AgentId)
 	return !GKneePopSmoothing.IsEmpty() && GKneePopSmoothing.Contains(AgentId);
 }
 
+bool ProphecyNNPresentation::ReadKneePopReference(int32 Id,int32 Side,float& Zone,FVector& LocalPole)
+{
+    FReadScopeLock Lock(GProphecyNNPoseLock);
+    if(Side<0 || Side>1 || GKneePopSmoothing.IsEmpty())return false;
+    const auto* Z=GKneePopSmoothing.Find(Id);const auto* F=GKneeBendFrames.Find(Id);
+    if(!Z || !F || F->LocalPole[Side].IsNearlyZero())return false;
+    Zone=*Z;LocalPole=F->LocalPole[Side];return true;
+}
+
 float ProphecyNNPresentation::Resolve(int32 AgentId, double SourceTimeSeconds, double WorldTimeSeconds,
 	float /*FrameDeltaSeconds*/, float PoseIntervalSeconds, bool bInterpolate)
 {
@@ -517,4 +526,36 @@ bool ProphecyNNPresentation::ReadPelvisWorld(int32 Id,FTransform& Out)
         Out=FTransform(Q,FMath::Lerp(A.GetLocation(),B.GetLocation(),Alpha));
     }
     return true;
+}
+
+void FProphecyNNPoseStore::UpdateTickPinningLegs(int32 Id,TConstArrayView<int32> Indices,
+    TConstArrayView<FTransform> Previous,TConstArrayView<FTransform> Current)
+{
+    FWriteScopeLock Lock(GProphecyNNPoseLock);
+    auto* P=GProphecyNNPoses.Find(Id);
+    if(!P || Indices.Num()!=8 || Previous.Num()!=8 || Current.Num()!=8)return;
+    for(int32 J=0;J<8;++J)
+    {
+        const int32 I=Indices[J];
+        if(!P->ComponentTransforms.IsValidIndex(I) || !P->PreviousComponentTransforms.IsValidIndex(I))return;
+    }
+    for(int32 J=0;J<8;++J)
+    {
+        const int32 I=Indices[J];
+        // Adding a linear endpoint correction to Hermite adds its world delta to
+        // both tangents. Preserve the existing curve and make restoration reversible.
+        if(P->InterpolationStartTangents.IsValidIndex(I) && P->InterpolationEndTangents.IsValidIndex(I))
+        {
+            const FVector Old=(P->ComponentTransforms[I]*P->ComponentWorldTransform).GetLocation()
+                -(P->PreviousComponentTransforms[I]*P->PreviousComponentWorldTransform).GetLocation();
+            const FVector New=(Current[J]*P->ComponentWorldTransform).GetLocation()
+                -(Previous[J]*P->PreviousComponentWorldTransform).GetLocation();
+            P->InterpolationStartTangents[I]+=New-Old;P->InterpolationEndTangents[I]+=New-Old;
+        }
+        P->PreviousComponentTransforms[I]=Previous[J];P->ComponentTransforms[I]=Current[J];
+        const int32 Parent=J%4 ? Indices[J-1] : P->BoneNames.IndexOfByKey(FName(TEXT("pelvis")));
+        if(P->LocalTransforms.IsValidIndex(I) && P->ComponentTransforms.IsValidIndex(Parent))
+            P->LocalTransforms[I]=Current[J].GetRelativeTransform(P->ComponentTransforms[Parent]);
+    }
+    P->Revision=AllocatePoseRevision();
 }

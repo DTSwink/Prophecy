@@ -120,6 +120,10 @@ struct GAMEANIMATIONSAMPLE3_API FProphecyNNPoseSnapshot
 class GAMEANIMATIONSAMPLE3_API FProphecyNNPoseStore
 {
 public:
+    // Replace only the eight cached leg transforms; preserve source time and upper pose.
+    static void UpdateTickPinningLegs(int32 AgentId,TConstArrayView<int32> Indices,
+        TConstArrayView<FTransform> Previous,TConstArrayView<FTransform> Current);
+
 	/** Requested mode is applied atomically with the next pose publication. */
 	static void SetInterpolationMode(int32 AgentId, EProphecyNNInterpolationMode Mode);
 	/** Translate both world carriers without rebuilding local poses or changing interpolation tangents. */

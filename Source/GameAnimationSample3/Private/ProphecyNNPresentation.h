@@ -23,6 +23,8 @@ void SetRecoveryCalfLengths(int32 AgentId,const FVector2D& UpperCm,const FVector
 bool HasRecoveryCalfLengths(int32 AgentId);
 void SetKneePopSmoothing(int32 AgentId,float SoftZoneCm);
 bool HasKneePopSmoothing(int32 AgentId);
+// Optional per-tick pin correction uses the same stable bend reference as presentation.
+bool ReadKneePopReference(int32 AgentId,int32 Side,float& OutZone,FVector& OutLocalPole);
 float Resolve(int32 AgentId, double SourceTimeSeconds, double WorldTimeSeconds,
     float FrameDeltaSeconds, float PoseIntervalSeconds, bool bInterpolate);
 }

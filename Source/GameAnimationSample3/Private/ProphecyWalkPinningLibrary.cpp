@@ -1,5 +1,7 @@
 #include "ProphecyWalkPinningLibrary.h"
 #include "ProphecyWalkPinning.h"
+#include "ProphecyWalkTickPinning.h"
+#include "ProphecyNNPoseTypes.h"
 #include "ProphecyAgent.h"
 #include "Engine/World.h"
 #include "ProphecyRootPhysicsLibrary.h"
@@ -7,6 +9,20 @@
 
 namespace ProphecyWalkPinning
 {
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FTickPinning> TickPins;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FTickPinOffsets> TickPinOffsets;
+FTickPinOffsets& TickOffsets(const AProphecyAgent* A) {return TickPinOffsets.FindOrAdd(A);}
+FTickPinning* FindTickPinning(const AProphecyAgent* A) {return TickPins.IsEmpty()?nullptr:TickPins.Find(A);}
+bool AnyTickPinning() {return !TickPins.IsEmpty();}
+void ResetTickPinning(const AProphecyAgent* A)
+{
+    TickPinOffsets.Remove(A);
+    if(auto* T=FindTickPinning(A))
+    {
+        if(T->HasBase) FProphecyNNPoseStore::UpdateTickPinningLegs(T->PoseId,MakeArrayView(T->Bones),MakeArrayView(T->BasePrevious),MakeArrayView(T->BaseCurrent));
+        *T=FTickPinning{};
+    }
+}
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FSettings> Settings;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FReachGuard> ReachGuards;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FSmoothing> Smoothing;
@@ -75,6 +91,7 @@ void ClearSmoothedFoot(FSmoothing& State,int32 Side)
 }
 void ResetSmoothing(const AProphecyAgent* Agent)
 {
+    ResetTickPinning(Agent);
     if (auto* S=FindSmoothing(Agent))
     { for (int32 I=0;I<2;++I) { S->Current[I]=S->Target[I]=S->Start[I]=0;S->Elapsed[I]=0; } RefreshSmoothTick(); }
 }
@@ -131,7 +148,7 @@ void ClearReachCooldown(const AProphecyAgent* Agent)
 }
 static void RefreshCleanup()
 {
-    if (Settings.IsEmpty() && ReachGuards.IsEmpty() && Smoothing.IsEmpty() && BackwardBounds.IsEmpty() && CircleBounds.IsEmpty() && BackwardTransfers.IsEmpty())
+    if (TickPins.IsEmpty() && Settings.IsEmpty() && ReachGuards.IsEmpty() && Smoothing.IsEmpty() && BackwardBounds.IsEmpty() && CircleBounds.IsEmpty() && BackwardTransfers.IsEmpty())
     {
         FWorldDelegates::OnWorldCleanup.Remove(CleanupHandle);
         CleanupHandle.Reset();
@@ -142,6 +159,10 @@ static void RefreshCleanup()
             for (auto It=Settings.CreateIterator();It;++It)
                 if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
             for (auto It=ReachGuards.CreateIterator();It;++It)
+                if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+            for (auto It=TickPinOffsets.CreateIterator();It;++It)
+                if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+            for (auto It=TickPins.CreateIterator();It;++It)
                 if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
             for (auto It=Smoothing.CreateIterator();It;++It)
                 if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
@@ -164,6 +185,14 @@ bool Apply(const AProphecyAgent* Agent,float Left,float Right,float PinScale,flo
     return Config && Config->Apply(Left,Right,PinScale,LeftPin,RightPin);
 }
 
+}
+bool UProphecyWalkPinningLibrary::SetWalkPinningEveryTick(AProphecyAgent* Agent,bool Enabled)
+{
+    using namespace ProphecyWalkPinning;
+    if(!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed())return false;
+    if(Enabled) TickPins.FindOrAdd(Agent);
+    else {ResetTickPinning(Agent);TickPins.Remove(Agent);}
+    RefreshCleanup();return true;
 }
 bool UProphecyWalkPinningLibrary::SetWalkPinningBackwardTransfer(AProphecyAgent* Agent,bool Enabled,float Multiplier)
 {
@@ -282,7 +311,7 @@ bool UProphecyWalkPinningLibrary::SetWalkPinningSmoothing(AProphecyAgent* Agent,
         }
         S.InFrames=PinInFrames;S.OutFrames=PinOutFrames;
     }
-    else Smoothing.Remove(Agent);
+    else {ResetTickPinning(Agent);Smoothing.Remove(Agent);}
     RefreshSmoothTick();RefreshCleanup();return true;
 }
 bool UProphecyWalkPinningLibrary::SetWalkPinningReachGuard(AProphecyAgent* Agent,bool Enabled,int32 Frames)
@@ -468,6 +497,39 @@ bool FProphecyWalkPinningBackwardBoundTest::RunTest(const FString&)
     TestFalse(TEXT("Disabled retires target interpolation too"),BackwardTargetLerps.Contains(Agent));
     TestFalse(TEXT("Disabled debug node is a no-op"),UProphecyWalkPinningLibrary::DrawWalkPinningBackwardBound(Agent));
     World->DestroyWorld(false);
+    return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyWalkPinningTickTest,"Prophecy.NN.WalkPinning.EveryTick",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyWalkPinningTickTest::RunTest(const FString&)
+{
+    using namespace ProphecyWalkPinning;
+    FTickPinFrame F;F.Valid=true;F.Delta[0]=FVector3f(-.06f,.02f,0);F.Applied=FVector2f(1,0);F.WalkWeight=FVector2f(1,.5f);
+    TestTrue(TEXT("Policy-time sample preserves existing endpoint"),F.Shift(0,1).IsZero());
+    TestTrue(TEXT("Next tick can remove cached pin without another NN prediction"),F.Shift(0,0).Equals(FVector3f(.06f,-.02f,0),1.e-7f));
+    TestEqual(TEXT("Pinning never changes vertical target"),F.Shift(0,.5f).Z,0.f);
+    F.Cap.X=.4f;F.Minimum.X=.6f;
+    TestEqual(TEXT("Receiving own bound still wins"),F.Effective(0,.1f),.4f);
+    F.Cap.X=1;TestEqual(TEXT("Opposite transfer remains a lower bound"),F.Effective(0,.8f),.8f);
+    F.Cap.X=0;TestEqual(TEXT("Reach rejection remains immediate"),F.Effective(0,1),0.f);
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);AProphecyAgent* A=World?World->SpawnActor<AProphecyAgent>():nullptr;
+    if(!A)return false;
+    TestNull(TEXT("Experimental path defaults off"),FindTickPinning(A));
+    UProphecyWalkPinningLibrary::SetWalkPinningEveryTick(A,true);
+    UProphecyWalkPinningLibrary::SetWalkPinningSmoothing(A,true,3,1);
+    auto* S=FindSmoothing(A);S->Current[0]=S->Target[0]=1;
+    float L=0,R=1;SmoothPins(*S,L,R);
+    TestEqual(TEXT("527 retains last value at new decision"),L,1.f);
+    TickSmoothing(World,LEVELTICK_All,1.f/60);
+    TestEqual(TEXT("528 unpins with cached decision, no NN call"),S->Current[0],0.f);
+    TestEqual(TEXT("Other foot progresses independently between NN calls"),S->Current[1],1.f/3);
+    L=1;R=0;SmoothPins(*S,L,R);TestEqual(TEXT("Reversal begins from actual current value"),L,0.f);
+    TickSmoothing(World,LEVELTICK_All,1.f/120);TestEqual(TEXT("Authored game tick, not wall seconds"),S->Current[0],1.f/3);
+    ResetSmoothing(A);TestNotNull(TEXT("Special/reset preserves toggle"),FindTickPinning(A));
+    TestFalse(TEXT("Special/reset clears pose cache"),FindTickPinning(A)->HasBase);
+    UProphecyWalkPinningLibrary::SetWalkPinningEveryTick(A,false);
+    TestNull(TEXT("Disabled retires cache"),FindTickPinning(A));
+    UProphecyWalkPinningLibrary::SetWalkPinningSmoothing(A,false,3,1);World->DestroyWorld(false);
     return !HasAnyErrors();
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyWalkPinningSmoothingTest,"Prophecy.NN.WalkPinning.Smoothing",

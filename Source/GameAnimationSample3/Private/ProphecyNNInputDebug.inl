@@ -286,6 +286,9 @@ bool AProphecyNNLocomotionManager::GetAgentFootPinning(FProphecyAgentHandle Hand
 	const auto& Cached = bAttack ? (bFrozenStage ? Debug->Frozen : Debug->Attack) : Debug->Locomotion;
 	if (Cached.SampleTimeSeconds < 0) return false;
 	Sample = Cached;
+    if(!bAttack) if(const auto* T=ProphecyWalkPinning::FindTickPinning(Actor))
+        if(T->HasBase && T->SampleTime>=0 && !T->Dirty)
+        {Sample.EffectivePinning=FVector2D(T->Effective);Sample.SampleTimeSeconds=T->SampleTime;}
 	return true;
 }
 

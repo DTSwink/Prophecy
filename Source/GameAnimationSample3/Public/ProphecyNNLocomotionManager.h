@@ -322,6 +322,8 @@ private:
 	void AdvanceNNDodges();
 	void ApplySlashPose(int32 AgentIndex, TArrayView<FTransform> PreviousPose, TArrayView<FTransform> Pose);
 	void PublishAgentPose(int32 AgentIndex, double SourceTimeSeconds);
+    void UpdateWalkTickPinning(float DeltaSeconds);
+    void CommitWalkTickPinning();
 	void UpdateVisualRoots();
 	void DrawFutureRootDebug() const;
 	void InitializeSimpleTestPlayerView();
