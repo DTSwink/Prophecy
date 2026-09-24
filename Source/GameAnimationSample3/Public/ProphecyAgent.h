@@ -840,12 +840,12 @@ public:
 	UPROPERTY(Transient, BlueprintReadOnly, Category="Prophecy|Agent|Debug")
 	TObjectPtr<UPoseableMeshComponent> NNPreviousPoseDebugMesh;
 
-	/** Author Headbutt arm preparation from GT until the first learned Armed output. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Prophecy|Agent|NN Attack")
-	bool bUseGTHeadbuttPreparation = true;
+	/** Inert compatibility property. Headbutt GT arm preparation was removed. */
+	UPROPERTY(BlueprintReadWrite, Category="Prophecy|Deprecated", meta=(DeprecatedProperty, DeprecationMessage="Headbutt arm preparation was removed; arms always use the checkpoint."))
+	bool bUseGTHeadbuttPreparation = false;
 
-	/** Entry crossfade to the authored hands; sampled once when Headbutt starts. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Prophecy|Agent|NN Attack", meta=(ClampMin="0", ClampMax="1", Units="s"))
+	/** Inert compatibility property retained for saved Blueprint references. */
+	UPROPERTY(BlueprintReadWrite, Category="Prophecy|Deprecated", meta=(DeprecatedProperty, DeprecationMessage="Headbutt arm preparation was removed; this duration has no effect."))
 	float HeadbuttPreparationBlendSeconds = 0.1f;
 
 	/** Both hands are sampled at time zero. Only finger/metacarpal bones are used. */

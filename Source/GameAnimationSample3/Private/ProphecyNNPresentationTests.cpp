@@ -6,10 +6,21 @@
 #include "Misc/AutomationTest.h"
 #include "ProphecyRecoveryLegLength.h"
 
+bool RunAttackStartInertiaChecks(FAutomationTestBase& Test);
+bool RunKneePopSmoothingChecks(FAutomationTestBase& Test);
+#if WITH_EDITOR
+bool RunCapturedKneeBendReturnChecks(FAutomationTestBase& Test);
+#endif
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRecoveryCalfLengthTest,"Prophecy.NN.PhysicalTargets.RecoveryCalfLength",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FRecoveryCalfLengthTest::RunTest(const FString&)
 {
+    TestTrue(TEXT("Attack start pelvis inertia regression"),RunAttackStartInertiaChecks(*this));
+    TestTrue(TEXT("Optional knee smoothing regression"),RunKneePopSmoothingChecks(*this));
+#if WITH_EDITOR
+    TestTrue(TEXT("Captured knee bend return regression"),RunCapturedKneeBendReturnChecks(*this));
+#endif
     using namespace ProphecyRecoveryLegLength;
     for (double Length:{37.5,42.5,47.5})
     {

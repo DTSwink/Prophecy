@@ -12,6 +12,10 @@
 namespace ProphecyAttackTargetReach
 {
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> ExtraReach;
+// Preserve the existing scalar storage's live layout; nonuniform profiles use
+// separate storage. Entry order follows the baked GT table, not the node layout.
+struct FFamilyExtraReach { float Values[UE_ARRAY_COUNT(Entries)]; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FFamilyExtraReach> FamilyExtraReach;
 static FDelegateHandle Cleanup;
 static double Radius(FName Attack,double Extra)
 {
@@ -39,23 +43,39 @@ void UProphecyAttackControlLibrary::GetValidAttackTarget(AProphecyAgent* Agent,F
     if (Center.ContainsNaN()) return;
     using namespace ProphecyAttackTargetReach;
     const float* Extra=ExtraReach.IsEmpty()?nullptr:ExtraReach.Find(Agent);
-    EffectiveTarget=Clamp(Center,Target,Radius(Attack,Extra?*Extra:50.f),&DistanceToLimit);
+    const auto* Family=FamilyExtraReach.IsEmpty()?nullptr:FamilyExtraReach.Find(Agent);
+    double Reach=0.;
+    for (int32 I=0;I<UE_ARRAY_COUNT(Entries);++I) if (Entries[I].Attack==Attack)
+    { Reach=Entries[I].RadiusCm+(Family?Family->Values[I]:(Extra?*Extra:50.f));break; }
+    EffectiveTarget=Clamp(Center,Target,Reach,&DistanceToLimit);
     Difference=EffectiveTarget-WantedTarget;
 }
 
-bool UProphecyAttackControlLibrary::SetAttackTargetExtraReach(AProphecyAgent* Agent,float ExtraReachCm)
+bool UProphecyAttackControlLibrary::SetAttackTargetExtraReach(AProphecyAgent* Agent,float ExtraReachCm,
+    float SlashR,float SlashLD,float SlashRD,float SlashLU,float SlashRU,float Pike,
+    float JabL,float JabR,float HookL,float HookR,float OverL,float OverR,float Headbutt,float KickL,float KickR)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() ||
-        !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown || !FMath::IsFinite(ExtraReachCm) || ExtraReachCm<0.f) return false;
+        !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown) return false;
     using namespace ProphecyAttackTargetReach;
-    if (ExtraReachCm==50.f) { ExtraReach.Remove(Agent);return true; }
+    const FFamilyExtraReach Profile{{JabL,JabR,HookL,HookR,OverL,OverR,Headbutt,KickL,KickR,
+        ExtraReachCm,SlashR,SlashLD,SlashRD,SlashLU,SlashRU,Pike}};
+    bool Uniform=true;
+    for (float Value:Profile.Values)
+    { if (!FMath::IsFinite(Value) || Value<0.f) return false;Uniform&=Value==ExtraReachCm; }
+    if (Uniform && ExtraReachCm==50.f) { ExtraReach.Remove(Agent);FamilyExtraReach.Remove(Agent);return true; }
     if (!Cleanup.IsValid()) Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
     {
         for (auto It=ExtraReach.CreateIterator();It;++It)
             if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+        for (auto It=FamilyExtraReach.CreateIterator();It;++It)
+            if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
     });
     for (auto It=ExtraReach.CreateIterator();It;++It) if (!It.Key().IsValid()) It.RemoveCurrent();
-    ExtraReach.Add(Agent,ExtraReachCm);return true;
+    for (auto It=FamilyExtraReach.CreateIterator();It;++It) if (!It.Key().IsValid()) It.RemoveCurrent();
+    if (Uniform) { ExtraReach.Add(Agent,ExtraReachCm);FamilyExtraReach.Remove(Agent); }
+    else { ExtraReach.Remove(Agent);FamilyExtraReach.Add(Agent,Profile); }
+    return true;
 }
 
 namespace ProphecyAttackControls

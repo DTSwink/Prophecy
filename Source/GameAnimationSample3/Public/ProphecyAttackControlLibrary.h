@@ -32,11 +32,21 @@ public:
     static void GetValidAttackTarget(AProphecyAgent* Agent, FName Attack, FVector Target,
         FVector& EffectiveTarget, FVector& Difference, FVector& WantedTarget, double& DistanceToLimit);
 
-    /** Set this agent's extra horizontal attack reach X in cm, shared by all attack
-     * families. Default 50; zero uses the measured GT reach. Finite nonnegative values
-     * only. Setting 50 removes the override. Does not alter a running attack's target. */
+    /** Set this agent's extra horizontal reach in cm independently for each attack.
+     * Each defaults to 50; zero uses that attack's measured GT reach. All values must
+     * be finite and nonnegative; invalid input leaves every setting unchanged.
+     * All 50 removes overrides. Does not alter a running attack's target. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack", meta=(DefaultToSelf="Agent", ClampMin="0"))
-    static bool SetAttackTargetExtraReach(AProphecyAgent* Agent, float ExtraReachCm = 50.f);
+    static bool SetAttackTargetExtraReach(AProphecyAgent* Agent,
+        UPARAM(DisplayName="slashL") float ExtraReachCm=50.f, UPARAM(DisplayName="slashR") float SlashR=50.f,
+        UPARAM(DisplayName="slashLD") float SlashLD=50.f, UPARAM(DisplayName="slashRD") float SlashRD=50.f,
+        UPARAM(DisplayName="slashLU") float SlashLU=50.f, UPARAM(DisplayName="slashRU") float SlashRU=50.f,
+        UPARAM(DisplayName="pike") float Pike=50.f,
+        UPARAM(DisplayName="jabL") float JabL=50.f, UPARAM(DisplayName="jabR") float JabR=50.f,
+        UPARAM(DisplayName="hookL") float HookL=50.f, UPARAM(DisplayName="hookR") float HookR=50.f,
+        UPARAM(DisplayName="overL") float OverL=50.f, UPARAM(DisplayName="overR") float OverR=50.f,
+        UPARAM(DisplayName="headbutt") float Headbutt=50.f,
+        UPARAM(DisplayName="kickL") float KickL=50.f, UPARAM(DisplayName="kickR") float KickR=50.f);
 
     /** Fade the full-attack camera's added horizontal pelvis offset back to zero after the attack.
      * Only affects this agent while player-possessed. Default 1 means 60 unpaused game ticks,

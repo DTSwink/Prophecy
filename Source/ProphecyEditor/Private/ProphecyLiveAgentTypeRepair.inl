@@ -123,4 +123,43 @@ void RepairLibraryDefaults()
     UE_LOG(LogTemp,Display,TEXT("LiveLibraryDefaults: %s"),*Report);
 }
 FAutoConsoleCommand LibraryDefaultsCommand(TEXT("Prophecy.Editor.RepairLibraryDefaults"),TEXT("Repair archived Live Coding library CDOs on unlinked self pins; preserve values/connections and leave asset unsaved."),FConsoleCommandDelegate::CreateStatic(&RepairLibraryDefaults));
+
+void RepairAttackCheckpointEnum()
+{
+    if (!GEditor || GEditor->PlayWorld) return;
+    auto* Enum=FindObject<UEnum>(nullptr,TEXT("/Script/GameAnimationSample3.EProphecyAttackCheckpoint"));
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if (!Enum || !BP) return;
+    const auto Before=Wiring(BP);
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","RepairAttackCheckpointEnum","Refresh attack checkpoint enum pins"));
+    BP->Modify();int32 Count=0;
+    auto Fix=[&](FEdGraphPinType& Type)
+    {
+        auto* Old=Type.PinSubCategoryObject.Get();
+        if (Old && Old!=Enum && Old->GetName().Contains(TEXT("EProphecyAttackCheckpoint")))
+        { Type.PinSubCategoryObject=Enum;++Count; }
+    };
+    for (auto& Variable:BP->NewVariables) Fix(Variable.VarType);
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    for (auto* G:Graphs) for (UEdGraphNode* N:G->Nodes) if(N)
+    {
+        N->Modify();
+        const auto* Call=Cast<UK2Node_CallFunction>(N);
+        const bool CheckpointCall=Call && (Call->FunctionReference.GetMemberName()==TEXT("SetAttackCheckpoint")
+            || Call->FunctionReference.GetMemberName()==TEXT("GetAttackCheckpoint"));
+        for (auto* P:N->Pins) if(P)
+        {
+            Fix(P->PinType);
+            // A saved transient enum may resolve to null after a clean restart.
+            if (CheckpointCall && (P->PinName==TEXT("Checkpoint") || P->PinName==TEXT("Selected") || P->PinName==TEXT("Effective"))
+                && P->PinType.PinSubCategoryObject.Get()!=Enum)
+            { P->PinType.PinSubCategoryObject=Enum;++Count; }
+        }
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    UE_LOG(LogTemp,Display,TEXT("AttackCheckpointEnum: repaired=%d choices=%d status=%d wiring_preserved=%d asset_saved=0"),
+        Count,Enum->NumEnums()-1,int32(BP->Status),int32(Wiring(BP)==Before));
+}
+FAutoConsoleCommand AttackCheckpointEnumCommand(TEXT("Prophecy.Editor.RepairAttackCheckpointEnum"),TEXT("Repair obsolete attack checkpoint enum pins without changing selections, wiring or saving."),FConsoleCommandDelegate::CreateStatic(&RepairAttackCheckpointEnum));
 }

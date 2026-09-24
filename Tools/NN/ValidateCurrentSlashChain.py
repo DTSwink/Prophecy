@@ -1,5 +1,6 @@
 """Replay the viewer's 30-request seed with the staged checkpoint; emit native audit inputs."""
 import json
+import argparse
 from pathlib import Path
 from dataclasses import replace
 import ExportProphecySlashPolicy as old
@@ -9,7 +10,9 @@ import generate_latest_chain_variants as g
 
 def main():
     torch.set_num_threads(1)
-    dest=old.PROJECT/'Saved/Slash123793'
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--staging',type=Path,default=old.PROJECT/'Saved/Slash123793')
+    dest=parser.parse_args().staging.resolve()
     meta=json.loads((dest/'prophecy_slash_runtime.json').read_text())
     saved,recipe,lower,upper=slash.load_slash2_rollout_session(Path(meta['checkpoint_path']),torch.device('cpu'))
     recipe=replace(recipe,predictive_pin_checkpoint=None)

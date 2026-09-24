@@ -2,13 +2,12 @@
 
 All nodes belong to **Prophecy Agent**, including `BP_ProphecyManualPoseAgent`.
 
-**September23 checkpoint update:** step123793 omits the frozen Walk attack stage;
+**September24 checkpoint update:** step174664 omits the frozen Walk attack stage;
 its learned pin pass uses training's four iterations. **Set Attack Foot Pinning
 Iterations** controls the legacy frozen stage and has no effect on this new
 checkpoint. Its phase rule requires actual Armed before a later Hit. See
-[checkpoint contract and validation](AttackCheckpoint123793.md).
-Headbutts retain optional GT arm preparation until learned Armed. Controls and opt-out:
-[AttackPinningAndHeadbutt.md](AttackPinningAndHeadbutt.md).
+[checkpoint contract and validation](AttackCheckpoint174664.md). Its learned pin strength saturates at0.99 as serialized by training.
+Headbutts use checkpoint-authored arms throughout. The former GT preparation override was removed2026-09-24; old serialized preparation settings have no effect. See [AttackPinningAndHeadbutt.md](AttackPinningAndHeadbutt.md).
 The agent must already be registered with its locomotion manager and NN inference enabled.
 Nothing needs to be added to Blueprint Tick for a stationary attack target.
 

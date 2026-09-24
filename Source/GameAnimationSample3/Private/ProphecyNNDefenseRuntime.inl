@@ -238,6 +238,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     if (Agent.DefensePose) StopAgentNNDefense(Handle, false);
     D.Dodges.Remove(Handle.Index);
     ProphecyAttackRecovery::EnterSpecial(Actor);
+    ProphecyWalkPinning::ResetSmoothing(Actor);
     ProphecyRootBalance::CancelKickException(Actor);
     Agent.DefensePose=New.Get();D.Parries.Add(Handle.Index,MoveTemp(New));++D.ActiveCount;
     SetAgentTimeDilation(Handle,1.f);
@@ -307,6 +308,8 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
     }
     const USpringArmComponent* PlayerSpring=Actor->IsPlayerControlled()?Actor->GetAgentSpringArm():nullptr;
     const FVector PreviousCameraOrigin=PlayerSpring?PlayerSpring->GetComponentLocation():FVector::ZeroVector;
+    // Capture the outgoing defense before its pose/carrier is replaced.
+    if (bReturnToLocomotion) ProphecyKickFootLeeway::End(Actor,true);
     FVector ReturnTarget;
     if (bReturnToLocomotion && ProphecyRootBalance::GetFlatFeetTarget(Actor,ReturnTarget))
         SetAgentLocomotionRootWindowLocation(Handle,ReturnTarget,true);

@@ -15,13 +15,15 @@
 namespace ProphecySlashReturn
 {
 #if WITH_EDITOR
-static TAutoConsoleVariable<int32> AuditReturn(TEXT("Prophecy.SlashReturn.Audit"),0,TEXT("Log active right-arm return stages for diagnosis."),ECVF_Default);
+static TAutoConsoleVariable<int32> AuditReturn(TEXT("Prophecy.SlashReturn.Audit"),0,TEXT("Log active attack-arm return stages for diagnosis."),ECVF_Default);
 #endif
 using K=ProphecyBlendClock::EKind;
 struct FConfig { float Hold=.3f,Blend=.5f,Speed=100; };
 struct FReturn { FConfig Config; double Elapsed=0;bool Initialized=false; FTransform Wrist; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FReturn> Returns;
+// Event-only selection; retain the old FReturn layout across Live Coding.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,int32> ReturnArms;
 // Separate versioned sidecar: do not resize the retained FReturn allocation
 // while Live Coding. Basis is calibrated to the actual held blade's long axis.
 struct FWeaponRoute
@@ -37,7 +39,9 @@ static FWeaponRoute MakeWeaponRoute(const AProphecyAgent* A,const FTransform& Ha
 {
     FWeaponRoute V;FVector Axis=Neutral.GetRotation().UnrotateVector(FVector::ForwardVector);
     FVector Up=Neutral.GetRotation().UnrotateVector(FVector::UpVector);
-    if(const auto* Sword=A->GetHeldSword())
+    // A held sword belongs to the right hand. Its grip/bounds must never be
+    // interpreted as left-hand geometry when returning a left hook/overhead.
+    if(const auto* Sword=ActiveArm(A)==1 ? A->GetHeldSword() : nullptr)
     {
         TArray<UStaticMeshComponent*> Meshes;Sword->GetComponents(Meshes);
         for(auto* Mesh:Meshes) if(Mesh && Mesh->GetStaticMesh() && (Mesh->GetFName()==TEXT("sword") || Meshes.Num()==1))
@@ -90,19 +94,31 @@ static void EnsureCleanup()
     {
         auto Clean=[W](auto& Map) { for(auto It=Map.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W) It.RemoveCurrent(); };
-        Clean(Configs);Clean(Baselines);Clean(Returns);Clean(WeaponRoutes);Clean(Blades);
+        Clean(Configs);Clean(Baselines);Clean(Returns);Clean(ReturnArms);Clean(WeaponRoutes);Clean(Blades);
     });
 }
 bool IsSlash(FName N)
 { return N==TEXT("slashL") || N==TEXT("slashR") || N==TEXT("slashLD") || N==TEXT("slashRD") || N==TEXT("slashLU") || N==TEXT("slashRU"); }
+int32 ArmForAttack(FName N)
+{
+    if(IsSlash(N) || N==TEXT("hookR") || N==TEXT("overR")) return 1;
+    if(N==TEXT("hookL") || N==TEXT("overL")) return 0;
+    return INDEX_NONE;
+}
 bool Active(const AProphecyAgent* A) { return !Returns.IsEmpty() && Returns.Contains(A); }
+int32 ActiveArm(const AProphecyAgent* A)
+{
+    if(!Active(A)) return INDEX_NONE;
+    const int32* Arm=ReturnArms.Find(A);
+    return Arm ? *Arm : 1; // A slash already returning when this patch loads.
+}
 void Cancel(const AProphecyAgent* A)
-{ Blades.Remove(A);WeaponRoutes.Remove(A);if(Returns.Remove(A)) ProphecyBlendClock::Stop(A,K::SlashReturn); }
+{ ReturnArms.Remove(A);Blades.Remove(A);WeaponRoutes.Remove(A);if(Returns.Remove(A)) ProphecyBlendClock::Stop(A,K::SlashReturn); }
 void Begin(const AProphecyAgent* A,FName Attack)
 {
-    Cancel(A);if(!IsSlash(Attack)) return;
+    Cancel(A);const int32 Arm=ArmForAttack(Attack);if(Arm==INDEX_NONE) return;
     if(const auto* C=Configs.Find(A))
-    { Returns.Add(A,FReturn{*C});ProphecyBlendClock::Start(A,K::SlashReturn,double(C->Hold)+C->Blend); }
+    { Returns.Add(A,FReturn{*C});ReturnArms.Add(A,Arm);ProphecyBlendClock::Start(A,K::SlashReturn,double(C->Hold)+C->Blend); }
 }
 void Remove(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);Baselines.Remove(A); }
 void CaptureReset(const AProphecyAgent* A)
@@ -218,14 +234,25 @@ bool FProphecySlashReturnTest::RunTest(const FString&)
 {
     using namespace ProphecySlashReturn;using L=UProphecySlashReturnLibrary;
     for(const TCHAR* Name:{TEXT("slashL"),TEXT("slashR"),TEXT("slashLD"),TEXT("slashRD"),TEXT("slashLU"),TEXT("slashRU")})
+    {
         TestTrue(TEXT("All six slash names"),IsSlash(FName(Name)));
+        TestEqual(TEXT("All slash directions return the sword arm"),ArmForAttack(FName(Name)),1);
+    }
     for(const TCHAR* Name:{TEXT("pike"),TEXT("kickL"),TEXT("hookR"),TEXT("jabL"),TEXT("overR")})
-        TestFalse(TEXT("Pike and melee excluded"),IsSlash(FName(Name)));
+        TestFalse(TEXT("Non-slash classification stays strict"),IsSlash(FName(Name)));
+    for(const TCHAR* Name:{TEXT("hookL"),TEXT("overL")})
+        TestEqual(TEXT("Left hook/over selects left arm"),ArmForAttack(FName(Name)),0);
+    for(const TCHAR* Name:{TEXT("hookR"),TEXT("overR")})
+        TestEqual(TEXT("Right hook/over selects right arm"),ArmForAttack(FName(Name)),1);
+    for(const TCHAR* Name:{TEXT("pike"),TEXT("kickL"),TEXT("kickR"),TEXT("jabL"),TEXT("jabR"),TEXT("headbutt"),TEXT("dodge"),TEXT("parry"),TEXT("")})
+        TestEqual(TEXT("Other attacks and defense have no return arm"),ArmForAttack(FName(Name)),INDEX_NONE);
     const FVector From(-3,-25,0),To(-3,25,-30);
     for(int32 I=0;I<=100;++I)
     {
         const FVector V=FrontPath(From,To,17,I/100.);
         if(FMath::Abs(V.Y)<17) TestTrue(TEXT("Cross-body route is in front, not through torso or behind it"),V.X>=15.3);
+        const FVector Mirrored=FrontPath(From*FVector(1,-1,1),To*FVector(1,-1,1),17,I/100.);
+        TestTrue(TEXT("Left-hand route mirrors around the front of the same torso"),Mirrored.Equals(V*FVector(1,-1,1),1.e-9));
     }
     FVector P=From;
     for(int32 I=0;I<600;++I)
@@ -304,6 +331,28 @@ bool FProphecySlashReturnTest::RunTest(const FString&)
         Begin(A,TEXT("slashRU"));ApplyAt(0);ApplyAt(80);
         TestEqual(TEXT("Initially idle retains zero positional speed even if goal later moves"),Returns.FindChecked(A).Config.Speed,0.f);
     }
+    for(float FPS:{30.f,60.f,120.f}) for(const TCHAR* Name:{TEXT("hookL"),TEXT("hookR"),TEXT("overL"),TEXT("overR")})
+    {
+        const int32 Arm=ArmForAttack(FName(Name));const double Side=Arm==0?-1.:1.;
+        L::SetSlashRightArmReturnToNeutral(A,true,.1f,.1f,100);
+        Begin(A,FName(Name));TestEqual(TEXT("Melee return latches the proper hand"),ActiveArm(A),Arm);
+        const FTransform PS(FVector(0,Side*17,0)),PE(FVector(15,Side*25,-15)),PH(FVector(10,Side*22,-35));
+        FTransform Idle=PH;Idle.AddToTranslation(FVector(20,0,0));
+        for(int32 Tick=1;Tick<=12;++Tick)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/FPS);
+            FTransform S=PS,E=PE,H=PH;
+            ApplyPose(A,FTransform::Identity,FTransform::Identity,17,PS,PE,PH,PS,PE,Idle,Idle,S,E,H,FVector::UpVector);
+            TestFalse(TEXT("Both-handed returns have finite connected targets"),S.ContainsNaN()||E.ContainsNaN()||H.ContainsNaN());
+            if(Tick<12)TestEqual(TEXT("Arm selection survives the hold and blend"),ActiveArm(A),Arm);
+        }
+        TestFalse(TEXT("Melee return retires after 12 ticks at every FPS"),Active(A));
+        TestFalse(TEXT("No arm-selection sidecar remains after retirement"),ReturnArms.Contains(A));
+        Begin(A,FName(Name));Cancel(A);TestEqual(TEXT("New special cancels either arm"),ActiveArm(A),INDEX_NONE);
+        L::SetSlashRightArmReturnToNeutral(A,false,.1f,.1f,100);Begin(A,FName(Name));
+        TestFalse(TEXT("Disabled melee return performs no work"),Active(A));
+    }
+    AddInfo(TEXT("AttackArmReturn: six sword-arm slashes, four sided hook/over returns, front-route mirror and 12-tick retirement at 30/60/120 FPS verified."));
     Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif

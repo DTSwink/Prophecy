@@ -28,10 +28,29 @@ Set Attack Upper Body Inertia and the camera fade duration. Their regular profil
 now cover all specials. The possessed-player camera follow and fade compensate
 defense root recentering as they do attack recentering.
 
-Intentional restrictions remain: kick leeway/self-balancing/kick recovery profiles
-remain kick-only; right-arm sword wraparound remains slash-only, excluding pike.
+Intentional restrictions remain: physical kick leeway, kick self-balancing and
+kick recovery profiles remain kick-only. Calf pose-length/render recovery is now
+shared by full attacks and active defenses; see [the calf handoff](CalfSnap1495.md).
+Arm return to neutral now covers six right-arm slashes and the matching arm for
+hooks/overs, excluding pike, jabs, headbutt, kicks and defenses, as requested.
 Physical profile, clamp, damping, magnetisation and tolerance snapshot blends are
 already mode-independent and can be called from the shared event.
+
+September24 source audit: lower-body/hand/FK tempering, regional Walk/Run recovery,
+hand checkpoint recovery, outgoing upper-body inertia and the calf-length handoff
+have no accidental kick-only gate. The leg solver itself is shared; kick profiles
+choose different parameters and kicking/non-kicking roles. Existing physical
+kick allowance also bypasses calf/foot clamps while it remains active, deliberately
+preserving the allowance during its finite return.
+
+One related coverage exception remains: `Set Attack Recovery Foot Rotation From
+Walk` explicitly requires `AttackActive` in `FootRotationWeights`. Defenses call
+`Begin` with no attack name, so this optional rotation override skips their return
+even though regional translation recovery runs. This matches that node's existing
+attack-only documentation but is an exception to a blanket all-specials rule.
+Attack-start pelvis inertia also remains full-attack entry only, as originally
+requested; it is separate from shared outgoing upper-body inertia. Audit only:
+these restrictions were reported, not changed or scene-tested in this pass.
 
 Hold/blend times remain 60 unpaused game ticks per authored second. Normal/finished
 returns retain no timer, extra inference or reconstruction. The interface is

@@ -8,6 +8,9 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
+#if WITH_EDITOR
+#include "HAL/IConsoleManager.h"
+#endif
 
 namespace ProphecyKickFootLeeway
 {
@@ -26,6 +29,12 @@ struct FActive
 };
 static TMap<TWeakObjectPtr<AProphecyAgent>,FSettings> Settings;
 static TMap<TWeakObjectPtr<AProphecyAgent>,FActive> Active;
+// Pose-only return: never changes the physical joint allowance or retained layouts.
+static TMap<TWeakObjectPtr<AProphecyAgent>,FActive> PoseReturns;
+#if WITH_EDITOR
+static TAutoConsoleVariable<int32> SharedCalfRecovery(TEXT("Prophecy.Debug.SharedCalfRecovery"),1,
+    TEXT("Diagnostic: enable non-kick calf-length handoff; read only on special exit."));
+#endif
 // Keep retained Live Coding structures unchanged. Centimetres, signed shortening
 // or lengthening captured once at the actual visible kick exit.
 struct FLengthReturn { FVector2D Upper,Rest,Delta; int32 PoseId=INDEX_NONE; };
@@ -41,16 +50,17 @@ float Current(const AProphecyAgent* Agent)
 float ReturningLengthDeltaCm(const AProphecyAgent* Agent,int32 Side)
 {
     const auto* Length=LengthReturns.IsEmpty() ? nullptr : LengthReturns.Find(Agent);
-    const auto* State=Length ? Active.Find(const_cast<AProphecyAgent*>(Agent)) : nullptr;
+    const auto* State=Length ? PoseReturns.Find(const_cast<AProphecyAgent*>(Agent)) : nullptr;
+    if (Length && !State) State=Active.Find(const_cast<AProphecyAgent*>(Agent));
     return State && State->Returning && State->From>0 && (Side==0 || Side==1)
         ? float(Length->Delta[Side])*State->Value/State->From : 0.f;
 }
 void CancelPoseRecovery(const AProphecyAgent* Agent)
 {
-    if (LengthReturns.IsEmpty()) return;
     if (const auto* Length=LengthReturns.Find(Agent))
         ProphecyNNPresentation::SetRecoveryCalfLengths(Length->PoseId,FVector2D::ZeroVector,FVector2D::ZeroVector);
     LengthReturns.Remove(Agent);
+    if (PoseReturns.Remove(const_cast<AProphecyAgent*>(Agent))) Refresh();
 }
 static void PublishLengths(const AProphecyAgent* Agent)
 {
@@ -120,15 +130,11 @@ void Begin(AProphecyAgent* Agent,FName Attack)
     FActive State; State.Value=Config->Leeway;
     Active.Add(Agent,State); Refresh();
 }
-void End(AProphecyAgent* Agent,bool RecoverPose)
+static bool CaptureLengths(AProphecyAgent* Agent)
 {
-    auto* State=Active.Find(Agent);
-    if (!State || State->Returning) return;
-    const auto* Config=Settings.Find(Agent);
-    if (!Config || Config->Duration==0) { Cancel(Agent); return; }
     // Capture distance, not axial extension: the current checkpoint also permits
     // compression. Never change its attack output or project an attack foot.
-    const auto* Mesh=RecoverPose ? Agent->GetPoseReferenceMesh() : nullptr;
+    const auto* Mesh=Agent->GetPoseReferenceMesh();
     if (Mesh && Mesh->GetSkeletalMeshAsset())
     {
         const auto& Ref=Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
@@ -148,8 +154,39 @@ void End(AProphecyAgent* Agent,bool RecoverPose)
             Length.Rest[Side]=Ref.GetRefBonePose()[FootIndex].GetTranslation().Size();
             Length.Delta[Side]=(Foot.GetLocation()-Calf.GetLocation()).Size()-Length.Rest[Side];
         }
-        if (Valid && !Length.Delta.IsNearlyZero(.0001)) LengthReturns.Add(Agent,Length);
+        if (Valid && !Length.Delta.IsNearlyZero(.0001))
+        { LengthReturns.Add(Agent,Length); return true; }
     }
+    return false;
+}
+static void StartPoseReturn(AProphecyAgent* Agent,float Duration)
+{
+    if (Duration<=0) return;
+    FActive Pose; Pose.Returning=true; Pose.From=Pose.Value=1;
+    Pose.Total=uint64(FMath::Max(1.,FMath::CeilToDouble(FMath::Min(double(Duration)*60.,9.e15)-1.e-5)));
+    PoseReturns.Add(Agent,Pose);
+    PublishLengths(Agent);Refresh();
+}
+void End(AProphecyAgent* Agent,bool RecoverPose)
+{
+    auto* State=Active.Find(Agent);
+    const auto* Config=Settings.Find(Agent);
+    if (!State || State->Returning)
+    {
+        // Other full specials use the same configured return duration (default
+        // 60 ticks), independently of whether a kick joint allowance is active.
+#if WITH_EDITOR
+        if (SharedCalfRecovery.GetValueOnGameThread()==0) return;
+#endif
+        if (!RecoverPose) return;
+        CancelPoseRecovery(Agent);
+        const float Duration=Config ? Config->Duration : FSettings{}.Duration;
+        if (Duration>0 && CaptureLengths(Agent)) StartPoseReturn(Agent,Duration);
+        return;
+    }
+    // Preserve the existing kick episode and its physical/pose shared clock.
+    if (!Config || Config->Duration==0) { Cancel(Agent); return; }
+    if (RecoverPose) CaptureLengths(Agent);
     State->Returning=true; State->From=State->Value; State->Ticks=0;
     State->Total=uint64(FMath::Max(1.,FMath::CeilToDouble(FMath::Min(double(Config->Duration)*60.,9.e15)-1.e-5)));
     PublishLengths(Agent);
@@ -176,17 +213,34 @@ static void Tick(UWorld* World,ELevelTick Type,float Dt)
             Apply(Agent,0,Error);CancelPoseRecovery(Agent);It.RemoveCurrent(); continue;
         }
         PublishLengths(Agent);
-        if (State.Ticks>=State.Total) { CancelPoseRecovery(Agent);It.RemoveCurrent(); }
+        if (State.Ticks>=State.Total)
+        {
+            if (!PoseReturns.Contains(Agent)) CancelPoseRecovery(Agent);
+            It.RemoveCurrent();
+        }
+    }
+    for (auto It=PoseReturns.CreateIterator();It;++It)
+    {
+        auto* Agent=It.Key().Get();auto& State=It.Value();
+        const bool Valid=Agent && !Agent->IsActorBeingDestroyed();
+        if (Valid && Agent->GetWorld()!=World) continue;
+        if (Valid) { ++State.Ticks;State.Value=State.Sample();PublishLengths(Agent); }
+        if (!Valid || State.Ticks>=State.Total)
+        {
+            if (const auto* Length=LengthReturns.Find(It.Key()))
+                ProphecyNNPresentation::SetRecoveryCalfLengths(Length->PoseId,FVector2D::ZeroVector,FVector2D::ZeroVector);
+            LengthReturns.Remove(It.Key());It.RemoveCurrent();
+        }
     }
     Refresh();
 }
 static void Refresh()
 {
-    bool NeedsTick=false;
+    bool NeedsTick=!PoseReturns.IsEmpty();
     for (const auto& Pair:Active) NeedsTick|=Pair.Value.Returning;
     if (NeedsTick && !TickHandle.IsValid()) TickHandle=FWorldDelegates::OnWorldPreActorTick.AddStatic(&Tick);
     else if (!NeedsTick && TickHandle.IsValid()) { FWorldDelegates::OnWorldPreActorTick.Remove(TickHandle); TickHandle.Reset(); }
-    if ((!Settings.IsEmpty() || !Active.IsEmpty()) && !CleanupHandle.IsValid())
+    if ((!Settings.IsEmpty() || !Active.IsEmpty() || !PoseReturns.IsEmpty()) && !CleanupHandle.IsValid())
         CleanupHandle=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
         {
             for (auto It=Active.CreateIterator();It;++It) if (!It.Key().IsValid() || It.Key()->GetWorld()==World)
@@ -196,9 +250,15 @@ static void Refresh()
                 LengthReturns.Remove(It.Key());It.RemoveCurrent();
             }
             for (auto It=Settings.CreateIterator();It;++It) if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+            for (auto It=PoseReturns.CreateIterator();It;++It) if (!It.Key().IsValid() || It.Key()->GetWorld()==World)
+            {
+                if (const auto* Length=LengthReturns.Find(It.Key()))
+                    ProphecyNNPresentation::SetRecoveryCalfLengths(Length->PoseId,FVector2D::ZeroVector,FVector2D::ZeroVector);
+                LengthReturns.Remove(It.Key());It.RemoveCurrent();
+            }
             Refresh(); // Native rig teardown owns the temporary constraints.
         });
-    else if (Settings.IsEmpty() && Active.IsEmpty() && CleanupHandle.IsValid())
+    else if (Settings.IsEmpty() && Active.IsEmpty() && PoseReturns.IsEmpty() && CleanupHandle.IsValid())
     { FWorldDelegates::OnWorldCleanup.Remove(CleanupHandle); CleanupHandle.Reset(); }
 }
 }
@@ -265,6 +325,30 @@ bool FKickFootLeewayTest::RunTest(const FString&)
     Cancel(Agent); TestEqual(TEXT("Reset closes joints"),Current(Agent),0.f);
     TestTrue(TEXT("Reset retains configured future kicks"),Settings.Contains(Agent));
     Remove(Agent); TestFalse(TEXT("Cleanup leaves no timer"),TickHandle.IsValid());
+    for (float Dt:{1.f/30,1.f/60,1.f/120})
+    {
+        // Signed lengths measured at the reported non-kick exit. Pose recovery
+        // must neither open physical joints nor retain work after completion.
+        LengthReturns.Add(Agent,{FVector2D(40,40),FVector2D(42.5633,42.5633),FVector2D(2.6754,-2.1974),-917});
+        StartPoseReturn(Agent,1.f);
+        TestEqual(TEXT("Non-kick leaves physical leeway at zero"),Current(Agent),0.f);
+        TestTrue(TEXT("Non-kick entry retains outgoing extension"),FMath::IsNearlyEqual(ReturningLengthDeltaCm(Agent,0),2.6754f));
+        Tick(World,LEVELTICK_All,Dt);
+        TestTrue(TEXT("1495 does not instantly close 2.675cm gap"),ReturningLengthDeltaCm(Agent,0)>2.67f);
+        for (int I=1;I<30;++I) Tick(World,LEVELTICK_All,Dt);
+        TestTrue(TEXT("Signed pose return halfway at thirty ticks"),
+            FMath::IsNearlyEqual(ReturningLengthDeltaCm(Agent,0),1.3377f)
+            && FMath::IsNearlyEqual(ReturningLengthDeltaCm(Agent,1),-1.0987f));
+        for (int I=30;I<60;++I) Tick(World,LEVELTICK_All,Dt);
+        TestTrue(TEXT("Non-kick completion removes length and clock"),LengthReturns.IsEmpty() && PoseReturns.IsEmpty() && !TickHandle.IsValid());
+        TestFalse(TEXT("Completion removes presentation override"),ProphecyNNPresentation::HasRecoveryCalfLengths(-917));
+    }
+    LengthReturns.Add(Agent,{FVector2D(40,40),FVector2D(42,42),FVector2D(3,-2),-917});
+    StartPoseReturn(Agent,1.f);Begin(Agent,TEXT("jabR"));
+    TestTrue(TEXT("New non-kick retires pose-only return"),LengthReturns.IsEmpty() && PoseReturns.IsEmpty() && !TickHandle.IsValid());
+    LengthReturns.Add(Agent,{FVector2D(40,40),FVector2D(42,42),FVector2D(3,-2),-917});
+    StartPoseReturn(Agent,1.f);Cancel(Agent);
+    TestTrue(TEXT("Reset retires pose-only return"),LengthReturns.IsEmpty() && PoseReturns.IsEmpty() && !TickHandle.IsValid());
     World->DestroyWorld(false); return true;
 }
 #endif

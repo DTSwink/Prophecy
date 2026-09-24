@@ -1,4 +1,5 @@
 #include "ProphecyAgent.h"
+#include "ProphecyAttackStartInertia.h"
 #include "ProphecyAgentTime.h"
 #include "ProphecyClampProfiles.h"
 #include "ProphecyAngularLimitBlend.h"
@@ -1497,6 +1498,7 @@ void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
     ProphecyPhysicalContext::Remove(this);
     ProphecyRootFacing::Explicit(this);
     ProphecyPelvisInertia::Remove(this);
+    ProphecyAttackStartInertia::Remove(this);
     ProphecyHandInertia::Remove(this);
     ProphecyHandRecovery::Remove(this);
 	if (auto* Blends = GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>()) Blends->RemoveAgent(*this);
@@ -1759,6 +1761,22 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 		return false;
 	}
 
+	if (ProphecyAttackStartInertia::Active(PoseAgentId))
+    {
+        TArray<FName> Names;TArray<FTransform> Future,Visible;
+        if (ReadNNFutureWorldPose(Names,Future,Visible,InterpolationAlpha))
+        {
+            const int32 I=Names.IndexOfByKey(BoneName);
+            if(Visible.IsValidIndex(I))
+            {
+                InterpolatedWorldTransform=Visible[I];CurrentWorldTransform=Future[I];
+                const int32 Source=Pose.BoneNames.IndexOfByKey(BoneName);
+                PreviousWorldTransform=Pose.PreviousComponentTransforms.IsValidIndex(Source)
+                    ? Pose.PreviousComponentTransforms[Source]*Pose.PreviousComponentWorldTransform:Visible[I];
+                return true;
+            }
+        }
+    }
 	const int32 PoseIndex = Pose.BoneNames.IndexOfByKey(BoneName);
 	if (!Pose.PreviousComponentTransforms.IsValidIndex(PoseIndex) ||
 		!Pose.ComponentTransforms.IsValidIndex(PoseIndex))
@@ -1789,7 +1807,7 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 		BoneName==TEXT("calf_l") || BoneName==TEXT("calf_r") ||
 		BoneName==TEXT("foot_l") || BoneName==TEXT("foot_r") ||
 		BoneName==TEXT("ball_l") || BoneName==TEXT("ball_r"))
-		&& ProphecyNNPresentation::HasRecoveryCalfLengths(PoseAgentId))
+		&& (ProphecyNNPresentation::HasRecoveryCalfLengths(PoseAgentId) || ProphecyNNPresentation::HasKneePopSmoothing(PoseAgentId)))
 	{
 		const bool Left=BoneName==TEXT("thigh_l") || BoneName==TEXT("calf_l") || BoneName==TEXT("foot_l") || BoneName==TEXT("ball_l");
 		const FName Names[]={Left?TEXT("thigh_l"):TEXT("thigh_r"),Left?TEXT("calf_l"):TEXT("calf_r"),
@@ -2132,6 +2150,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 		}
 		FProphecyNNPoseStore::ApplyRigidForearms(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
 		FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
+		ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 		return BoneNames.Num() > 0;
 	}
 
@@ -2151,6 +2170,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 	}
 	FProphecyNNPoseStore::ApplyRigidForearms(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
 	FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
+	ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	return true;
 }
 
@@ -2654,6 +2674,12 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 		GetWorld() ? double(GetWorld()->GetTimeSeconds()) : AuthoredPose.SourceTimeSeconds,
 		GetWorld() ? DeltaSeconds : PoseInterval, PoseInterval, AnimInstance->bInterpolateNNPose);
 
+    TArray<FName> InertiaNames;TArray<FTransform> InertiaFuture,InertiaTargets;
+    if(ProphecyAttackStartInertia::Active(AnimInstance->AgentId))
+    {
+        float InertiaAlpha;
+        ReadNNFutureWorldPose(InertiaNames,InertiaFuture,InertiaTargets,InertiaAlpha);
+    }
 	float MaximumPositionErrorCm = 0.0f;
 	float MaximumRotationErrorDegrees = 0.0f;
 	FName MaximumPositionErrorBone = NAME_None;
@@ -2699,6 +2725,11 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 					AuthoredPose.LocalTransforms[PoseIndex].GetTranslation(), bLeft ? 0 : 1));
 			}
 		}
+        if(!InertiaNames.IsEmpty())
+        {
+            const int32 CorrectedIndex=InertiaNames.IndexOfByKey(BodySetup->BoneName);
+            if(InertiaTargets.IsValidIndex(CorrectedIndex))BodyTarget=InertiaTargets[CorrectedIndex];
+        }
 		const FTransform ActualBody = Body->GetUnrealWorldTransform();
 
 		ApplyBodyWorldMagnetization(

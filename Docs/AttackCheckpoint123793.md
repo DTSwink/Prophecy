@@ -1,5 +1,7 @@
 # Intermediate attack checkpoint — step 123793
 
+Historical integration: replaced September24 by [step174664](AttackCheckpoint174664.md).
+
 Source: `C:/Users/singerie/Documents/Cursor/stepper/training/runs/20260923_pin_x12_latest_fetch_005607/checkpoint_step123793_d467d60bd11e.pt`.
 SHA256: `d467d60bd11e4c07408297047249161309b2bee3e7b0f086fae22c929821e7ad`.
 

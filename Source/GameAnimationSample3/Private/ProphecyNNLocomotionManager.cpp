@@ -1,4 +1,5 @@
 #include "ProphecyNNLocomotionManager.h"
+#include "ProphecyAttackStartInertia.h"
 #include "ProphecyRootFacing.h"
 #include "ProphecyAgentTime.h"
 #include "ProphecySwordAttackCollision.h"
@@ -77,6 +78,10 @@
 #include "Misc/AutomationTest.h"
 #endif
 #include "Modules/ModuleManager.h"
+#if WITH_EDITOR
+#include "Misc/SecureHash.h"
+#include "Misc/CoreDelegates.h"
+#endif
 #include "NNE.h"
 #include "NNEModelData.h"
 #include "NNERuntimeCPU.h"
@@ -1170,6 +1175,9 @@ struct AProphecyNNLocomotionManager::FImpl
 	}
 };
 
+#include "ProphecyEditorAttackCache.inl"
+#include "ProphecyAttackCheckpointState.inl"
+
 namespace
 {
 	FVector3f ReadStateVec3(const float* State, int32 Offset)
@@ -1182,6 +1190,14 @@ namespace
 		State[Offset] = Value.X;
 		State[Offset + 1] = Value.Y;
 		State[Offset + 2] = Value.Z;
+	}
+
+	FVector LowerPointToWorld(const FVector3f& Point, const FMat3f& SeedRootRotation,
+		const FVector3f& Root, float Yaw)
+	{
+		// Lower pose coordinates are Z-up; root trajectories are training Y-up.
+		// Match LowerTransformToHeading before applying the root's world yaw.
+		return TrainingToUnreal(Root + TransformRow(TransformRow(Point, SeedRootRotation), Transpose(YawMatrix(Yaw))));
 	}
 
 	void CleanState(float* State, const AProphecyNNLocomotionManager::FImpl& Impl)
@@ -1639,6 +1655,7 @@ namespace
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Tests/ProphecyNNPhysicalRotationCacheTests.inl"
+#include "Tests/ProphecyWalkPinningSpaceTests.inl"
 #endif
 
 #include "ProphecyNNLowerFeedbackAlignment.inl"
@@ -1972,6 +1989,11 @@ void AProphecyNNLocomotionManager::BeginPlay()
 		return;
 	}
 
+#if WITH_EDITOR
+	// Debug Play pays cold model creation before gameplay, never on the first hit.
+	if (ProphecyEditorAttackCache::Uses(this) && !InitializeSlashNNE())
+		UE_LOG(LogProphecyNNLocomotion, Warning, TEXT("Editor attack warmup failed; attacks retain their normal validation path."));
+#endif
 	InitializeAgents();
 	if (bSpawnVisuals) SpawnVisualComponents();
 	if (Impl->bSimpleLocomotionTest) InitializeSimpleTestPlayerView();
@@ -2076,6 +2098,7 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 		ProphecyCoreTempering::Remove(AgentActor);
 		ProphecySlashReturn::Remove(AgentActor);
 		ProphecyUpperBodyInertia::Remove(AgentActor);
+		ProphecyAttackStartInertia::Remove(AgentActor);
 		ProphecyLowerTempering::ForgetProfiles(AgentActor);
 		ProphecyLegChainDebug::Remove(AgentActor);
 		ProphecyRootSpeedLimits::Remove(AgentActor);
@@ -2091,6 +2114,11 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 	}
 	AgentActors.Reset();
 	MeshComponents.Reset();
+	ProphecyAttackCheckpoint::Clear(this);
+#if WITH_EDITOR
+	ProphecyEditorAttackCache::Release(this,Impl->SlashModel,Impl->bSlashInitialized);
+	Impl->bSlashInitialized=false;
+#endif
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -3579,6 +3607,9 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			continue;
 		}
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
+		auto* PinSmoothing=ProphecyWalkPinning::FindSmoothing(AgentActors[AgentIndex]);
+		if (PinSmoothing && (Agent.DefensePose || Agent.Slash.bActive || !Agent.RecoveryWeights.NeedsWalk()))
+		{ ProphecyWalkPinning::ResetSmoothing(AgentActors[AgentIndex]);PinSmoothing=nullptr; }
 		if (Agent.DefensePose && Agent.DefensePose->bDodge)
 		{
 			// The buffers swap for every lane below. Hold this lane until its own
@@ -3615,10 +3646,44 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 		if (bSupportSource) bSupportSource=CVarTemperingSupportSource.GetValueOnGameThread()!=0;
 #endif
 		float RunTemperingSource[StateDim],WalkTemperingSource[StateDim];
+		auto* PinReachGuard=ProphecyWalkPinning::FindReachGuard(AgentActors[AgentIndex]);
+		FVector3f UnpinnedFeet[2][2]; // [Run/Walk][left/right], populated only when enabled.
+		const auto* PinBackwardBound=(!Agent.DefensePose && !Agent.Slash.bActive && Agent.RecoveryWeights.NeedsWalk())
+			? ProphecyWalkPinning::FindBackwardBound(AgentActors[AgentIndex]) : nullptr;
+		const auto* PinCircleBound=(!Agent.DefensePose && !Agent.Slash.bActive && Agent.RecoveryWeights.NeedsWalk())
+			? ProphecyWalkPinning::FindCircleBound(AgentActors[AgentIndex]) : nullptr;
+		FVector BoundRoot,BoundForward,CircleRoot;
+		if (PinBackwardBound || PinCircleBound)
+		{
+			// Use the same zero-based continuous window exposed to Blueprint. Its
+			// root0 is the applied current root, not the discrete previous sample.
+			TArray<FTransform> Roots;TArray<float> Times;
+			if (GetAgentContinuousLocomotionRootWindow(AgentActors[AgentIndex]->GetAgentHandle(),Roots,Times))
+			{
+				if (PinBackwardBound)
+				{
+					if (Roots.IsValidIndex(PinBackwardBound->RootIndex))
+					{
+						ProphecyWalkPinning::BackwardReference(Roots[0],Roots[PinBackwardBound->RootIndex],BoundRoot,BoundForward);
+						ProphecyWalkPinning::ApplyBackwardTargetHeading(AgentActors[AgentIndex],BoundForward);
+						if (BoundForward.IsNearlyZero()) PinBackwardBound=nullptr;
+					}
+					else PinBackwardBound=nullptr;
+				}
+				if (PinCircleBound)
+				{
+					if (Roots.IsValidIndex(PinCircleBound->RootIndex)) CircleRoot=Roots[PinCircleBound->RootIndex].GetLocation();
+					else PinCircleBound=nullptr;
+				}
+			}
+			else { PinBackwardBound=nullptr;PinCircleBound=nullptr; }
+		}
 		// Correct each policy with its own pinning semantics before mixing the poses.
+		const float PinTransferMultiplier=PinBackwardBound
+			? ProphecyWalkPinning::BackwardTransferMultiplier(AgentActors[AgentIndex]) : 0.f;
 		// The ordinary single-policy path performs exactly one correction.
 		auto CorrectPolicy = [&](const float* Raw, bool bWalkPolicy, float* Transition,
-			FVector2f& RawPin, FVector2f& EffectivePin)
+			FVector2f& RawPin, FVector2f& EffectivePin,bool bVisiblePolicy=true)
 		{
 			for (int32 Index = 0; Index < StateDim; ++Index) Transition[Index] = CurrentState[Index] + Raw[Index];
             if (bOverrideFootRotation) OverrideRecoveryFootRotations(CurrentState,
@@ -3653,10 +3718,9 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			{
 				Heights[LimbIndex] = Impl->LowestFootHeight(LimbIndex, ReadStateVec3(Transition, PosOffsets[LimbIndex]), MatrixFromRot6(Transition + RotOffsets[LimbIndex]), Transition[ToeOffsets[LimbIndex]], bWalkPolicy);
 			}
-			// Apply after winner/tolerance selection. An ineligible winner leaves
-			// both feet unpinned; the losing foot must not inherit its pin.
-			if (bWalkPolicy) ProphecyWalkPinning::ApplyLimit(AgentActors[AgentIndex],Raw[41],Raw[42],Pin[0],Pin[1]);
 			RawPin = FVector2f(Pin[0], Pin[1]);
+			if (PinSmoothing && bWalkPolicy && bVisiblePolicy)
+				ProphecyWalkPinning::SmoothPins(*PinSmoothing,Pin[0],Pin[1]);
 			const AProphecyAgent* PinActor = AgentActors.IsValidIndex(AgentIndex) ? AgentActors[AgentIndex] : nullptr;
 			const bool bOverridePin = PinActor && PinActor->bOverrideLocomotionPinThreshold;
 			const float FadeHeight = bOverridePin ? PinActor->LocomotionPinThresholdM : Impl->NearFloorFadeHeight;
@@ -3671,11 +3735,39 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 				Pin[Selected] = FMath::Max(Pin[Selected], Force);
 			}
 	
+			const bool bTransfer=PinTransferMultiplier>0 && bWalkPolicy && bVisiblePolicy;
+			if (bTransfer)
+			{
+				FVector2f BackwardCaps,OwnCaps;
+				for (int32 I=0;I<2;++I)
+				{
+					const FVector FootWorld=LowerPointToWorld(ReadStateVec3(CurrentState,PosOffsets[I]),
+						Impl->SeedRootRot,Agent.FedInputRoot,Agent.FedInputYaw);
+					BackwardCaps[I]=ProphecyWalkPinning::BoundPin(1.f,*PinBackwardBound,FootWorld,BoundRoot,BoundForward);
+					OwnCaps[I]=PinCircleBound ? ProphecyWalkPinning::CircleBoundPin(BackwardCaps[I],*PinCircleBound,FootWorld,CircleRoot) : BackwardCaps[I];
+				}
+				ProphecyWalkPinning::TransferBackwardPins(PinTransferMultiplier,BackwardCaps,OwnCaps,Pin[0],Pin[1]);
+			}
 			for (int32 LimbIndex = 0; LimbIndex < 2; ++LimbIndex)
 			{
 				const FVector3f PredPos = ReadStateVec3(Transition, PosOffsets[LimbIndex]);
 				const FMat3f PredRot = MatrixFromRot6(Transition + RotOffsets[LimbIndex]);
 				const float PredToe = Transition[ToeOffsets[LimbIndex]];
+				if (!bTransfer && (PinBackwardBound || PinCircleBound) && bWalkPolicy && bVisiblePolicy)
+				{
+					// Measure the foot that is currently being held. Measuring only the
+					// free prediction could hide a planted foot left behind by the root.
+					const FVector FootWorld=LowerPointToWorld(ReadStateVec3(CurrentState,PosOffsets[LimbIndex]),
+						Impl->SeedRootRot,Agent.FedInputRoot,Agent.FedInputYaw);
+					if (PinBackwardBound) Pin[LimbIndex]=ProphecyWalkPinning::BoundPin(Pin[LimbIndex],*PinBackwardBound,FootWorld,BoundRoot,BoundForward);
+					if (PinCircleBound) Pin[LimbIndex]=ProphecyWalkPinning::CircleBoundPin(Pin[LimbIndex],*PinCircleBound,FootWorld,CircleRoot);
+				}
+				if (PinReachGuard && bVisiblePolicy)
+				{
+					FVector3f FreePos=PredPos;
+					FreePos.Z+=FMath::Max(0.f,Impl->GroundHeight-Impl->LowestFootPointZ(LimbIndex,FreePos,PredRot,PredToe,bWalkPolicy));
+					UnpinnedFeet[bWalkPolicy ? 1 : 0][LimbIndex]=FreePos;
+				}
 				FVector3f OutPos = PredPos;
 				if (Impl->FootRollSteps > 0)
 				{
@@ -3697,7 +3789,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 		if (auto* H=ProphecyHandRecovery::Frame(AgentActors[AgentIndex]))
 		{
 			FVector2f UnusedRaw,UnusedPin;
-			for(int32 P=0;P<2;++P) if(H->Need[P]) CorrectPolicy(H->Raw[P],P==1,H->Lower[P],UnusedRaw,UnusedPin);
+			for(int32 P=0;P<2;++P) if(H->Need[P]) CorrectPolicy(H->Raw[P],P==1,H->Lower[P],UnusedRaw,UnusedPin,false);
 		}
 		FVector2D RawDebug(Raw[41], Raw[42]);
 		FVector3f LegSourcePelvis[2];
@@ -3731,6 +3823,33 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 		const FVector2f ReturningCalfDelta(ProphecyKickFootLeeway::ReturningLengthDeltaCm(AgentActors[AgentIndex],0)/100.f,
 			ProphecyKickFootLeeway::ReturningLengthDeltaCm(AgentActors[AgentIndex],1)/100.f);
 		const bool bReturnLengths=ReturningCalfDelta.X!=0 || ReturningCalfDelta.Y!=0;
+		if (PinReachGuard && (!Agent.Slash.bActive || Agent.Slash.bHalf) && Impl->FootRollSteps>0)
+		{
+			// Judge the actual mixed pelvis/foot, not an unused source policy. A veto
+			// restores the same policy mixture without its horizontal pin constraint;
+			// it never elects the opposite foot or changes the knee's bend guidance.
+			const FVector3f Pelvis=ReadStateVec3(Transition,0);
+			const FMat3f PelvisRotation=MatrixFromRot6(Transition+3);
+			for (int32 I=0;I<2;++I)
+			{
+				const float W=I==0 ? Agent.RecoveryWeights.Left : Agent.RecoveryWeights.Right;
+				if (W<=0.f || EffectivePin[I]<=0.f) continue;
+				const auto Limb=Impl->BlendLimb(I,W);
+				const int32 O=9+16*I;
+				const FVector3f Hip=Pelvis+TransformRow(Impl->LocalOffsets[Limb.Start],PelvisRotation);
+				// Match the connected solver's full-extension boundary (metres),
+				// including the currently returning signed calf length after kicks.
+				const float Reach=Impl->LocalOffsets[Limb.Mid].Size()+Impl->LocalOffsets[Limb.End].Size()+ReturningCalfDelta[I]-2.e-5f;
+				if (!ProphecyWalkPinning::RejectPin(*PinReachGuard,I,Hip,ReadStateVec3(Transition,O),Reach)) continue;
+				FVector3f FreePos=Agent.RecoveryWeights.NeedsBoth()
+					? FMath::Lerp(UnpinnedFeet[0][I],UnpinnedFeet[1][I],W) : UnpinnedFeet[bWalkPolicy ? 1 : 0][I];
+				const auto Axes=Impl->BuildFootAxes(Limb,FreePos,MatrixFromRot6(Transition+O+3),Transition[O+15]);
+				FreePos.Z+=FMath::Max(0.f,Impl->GroundHeight-ExactFootMinimum(Axes,Impl->FootHalfDims,Impl->ToeHalfDims));
+				WriteStateVec3(Transition,O,FreePos);
+				EffectivePin[I]=0.f;
+				if (PinSmoothing) ProphecyWalkPinning::ClearSmoothedFoot(*PinSmoothing,I);
+			}
+		}
 		if (bReconstructTemperedLegs || ((bReturnLengths || (bRegional && !Tempering)) && ProphecyLegChainDebug::IsEnabled(AgentActors[AgentIndex])))
 		{
 			const AProphecyAgent* Controls=AgentActors[AgentIndex];
@@ -4849,6 +4968,7 @@ void AProphecyNNLocomotionManager::UpdateVisualRoots()
 			// Collision rebasing changes coordinates, not the published NN interval.
 			PublishAgentPose(AgentIndex, Agent.PublishedPoseTimeSeconds);
 		}
+		ProphecyAttackStartInertia::Update(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex);
 	}
 }
 
@@ -5865,3 +5985,12 @@ void UProphecyNNLocomotionWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 
 #include "ProphecyNNInputDebug.inl"
 #include "ProphecyNNAgentReset.inl"
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+// External test entry keeps Live Coding validation out of anonymous test vtables.
+bool RunCapturedKneeBendReturnChecks(FAutomationTestBase& Test)
+{
+    CheckCapturedKneePlaneReturn(Test);
+    return !Test.HasAnyErrors();
+}
+#endif

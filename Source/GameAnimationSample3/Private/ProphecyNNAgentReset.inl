@@ -138,6 +138,8 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
         SetAgentTimeDilation(S.Handle,1.f);
         ProphecyAgentTime::RemoveLane(this,I); // Reset replaces both pose endpoints; no phase handoff needed.
         ProphecyAttackRecovery::Cancel(Actor);
+        ProphecyWalkPinning::ClearReachCooldown(Actor);
+        ProphecyWalkPinning::ResetSmoothing(Actor);
         if (!IsValid(Actor) || Actor->IsActorBeingDestroyed() || ResolveAgent(S.Handle) != Actor) continue;
         Actor->StopLocomotionInput();
         Actor->ConsumeMovementInputVector();

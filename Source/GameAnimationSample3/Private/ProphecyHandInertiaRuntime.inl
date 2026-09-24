@@ -150,13 +150,14 @@ void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyA
         if (Changed)
             StoreInertiaArm(*Impl,I,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
     }
-    if(ProphecySlashReturn::Active(Actor))
+    if(const int32 ArmIndex=ProphecySlashReturn::ActiveArm(Actor);ArmIndex!=INDEX_NONE)
     {
         float IdleUpper[UpperStateDim];FTransform Idle[FullBodyBoneCount];
         SeedUpperIdleFromLower(StateSlice(Impl->PublishedStateBuffer,Index),*Impl,IdleUpper);
         DecodeLocomotionPose(Impl,StateSlice(Impl->PublishedStateBuffer,Index),IdleUpper,
             Agent.PublishedWalkWeight,MakeArrayView(Idle),nullptr,Unclamped,&Agent.PublishedLegWalkWeights);
-        const auto& A=Impl->UpperArms[1];const auto& Left=Impl->UpperArms[0];
+        const auto& A=Impl->UpperArms[ArmIndex];
+        const auto& RightArm=Impl->UpperArms[1];const auto& Left=Impl->UpperArms[0];
         const int32 Parent=Impl->Parents[A.Start];
         // Capture the neutral endpoint on the outgoing clavicle, before the
         // first recovery prediction turns it. ApplyPose uses this only once.
@@ -166,16 +167,18 @@ void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyA
         auto TorsoFrame=[&](const FTransform* P)
         {
             const FVector Up=(P[Neck].GetLocation()-P[0].GetLocation()).GetSafeNormal();
-            const FVector Across=P[A.Start].GetLocation()-P[Left.Start].GetLocation();
+            // The anatomical frame is always right-minus-left. Selecting the
+            // left arm must not reverse forward or collapse the torso width.
+            const FVector Across=P[RightArm.Start].GetLocation()-P[Left.Start].GetLocation();
             const FVector Right=(Across-Up*FVector::DotProduct(Across,Up)).GetSafeNormal();
             return FTransform(FRotationMatrix::MakeFromYZ(Right,Up).ToQuat(),
-                (P[A.Start].GetLocation()+P[Left.Start].GetLocation())*.5);
+                (P[RightArm.Start].GetLocation()+P[Left.Start].GetLocation())*.5);
         };
         ProphecySlashReturn::ApplyPose(Actor,TorsoFrame(Pose),TorsoFrame(Previous),
-            (Pose[A.Start].GetLocation()-Pose[Left.Start].GetLocation()).Length()*.5,
+            (Pose[RightArm.Start].GetLocation()-Pose[Left.Start].GetLocation()).Length()*.5,
             Previous[A.Start],Previous[A.Mid],Previous[A.End],Idle[A.Start],Idle[A.Mid],Idle[A.End],InitialNeutralWrist,
             Pose[A.Start],Pose[A.Mid],Pose[A.End],LocalTrainingToUnreal(A.LocalPoleAxes[0]));
-        StoreInertiaArm(*Impl,1,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
+        StoreInertiaArm(*Impl,ArmIndex,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
     }
 }
 

@@ -1,0 +1,23 @@
+# Attack-start pelvis inertia
+
+`Set Attack Start Pelvis Inertia`: Enabled; Translation Window Frames5 / Translation Inertia1; Rotation Window Frames5 / Rotation Inertia1. Off until configured. The foot-inertia experiment was removed completely at the user's request on2026-09-24, restoring the original pelvis-only implementation and Blueprint signature.
+
+The previous displayed WORLD pelvis translation/angular deltas are latched once on a new full attack. Strength1 preserves each delta on the first frame, then linearly fades to the authored attack target by the corresponding final frame. Windows count unpaused game ticks (60 per authored second), not wall time or30Hz policy steps. Windows<=1 or strength0 bypass that channel. Retriggering an ongoing attack does not restart inertia. Half attacks retain locomotion pelvis ownership. End/cancel/reset clears motion; initial-agent reset restores captured pelvis settings.
+
+The original MoveHip solve moves each hip with the corrected pelvis while preserving reachable authored ankles, their rotations and both segment lengths. Only unreachable ankles are projected to the original reach shell. The added independent ankle target, foot/toe rotation override, multi-body correction/history and generic post-clamp foot sampler are removed. Existing locomotion leg reconstruction, knee smoothing, calf recovery and clamps from before the experiment remain unchanged.
+
+Disabled/all-zero configuration removes pelvis history and active correction, with no sampling, extra inference or timer. Enabled configuration retains only two pelvis presentation samples; readers share one correction per game tick. Physical and rendered targets use the original common pelvis correction. Raw checkpoint recurrence and root window remain unchanged.
+
+## Rollback validation
+
+Original source/leg solve/sampling restored. Normal closed-editor build succeeded54.79s (11 actions), testNN reopened. RecoveryCalfLength (including original pelvis entry and accepted knee checks), FrameCadence and SharedReadersAndLifecycle all passed19:39:20UTC. Existing Blueprint node refreshed with pelvis values/wiring preserved, status3/zero stale types; exported pins verify no Feet/LeftFoot/RightFoot inputs. Migrated pose Blueprint is currently unsaved: user Play began before final save, so the save guard preserved that session. Pre-restart Blueprint was saved. No diagnostic gameplay rollout or retuning. Walk raw-limit removal is retained separately. This normal build also incorporates preceding backward-bound Lerp Target changes. Backup: Saved/Diagnostics/BP-BeforePelvisOnlyRollback.uasset.
+
+## Original pelvis-only validation
+
+Normal editor build succeeded 2026-09-24 in 193.84 seconds. User authorized saving the pose Blueprint and restarting; save succeeded, clean Slate shutdown completed (the process lingered briefly, then exited on its own), and testNN reopened. Canonical reflected node invocation succeeds; pose Blueprint compiles with status 3, zero stale agent types and no default/wiring repairs needed. No new node was wired into the user's graph.
+
+All six focused tests passed at 15:27:48 UTC: pelvis inertia geometry/motion, RecoveryCalfLength (including this feature's new checks and the existing knee regression), and presentation cadence/lifecycle. New checks cover exact previous world linear/angular increments, independent five/seven-tick retirement, repeated-read immunity, zero/disabled bypass, reset configuration/motion, root-carrier sampling, physical-world/component-space parity, preserved reachable feet and 1001 hip displacements. Maximum segment-length error was 2.14e-14 cm. Helper invocation through the existing external RecoveryCalfLength test emitted its unique receipt.
+
+A short owned kinematic overL probe recorded 89 samples. First-frame linear delta error was exactly 0 cm, angular delta error 1.12e-16 radians; translation offset retired on tick 5 and rotation on tick 7 (independent double-precision reconstruction differs from the engine float-angle interpolation by about 1.3e-5 degrees). Physical mesh versus corrected target maximum position/rotation errors were 1.43e-14 cm / 2.48e-16 radians. This confirms target/presentation integration, not a general collision-response claim for simulated bodies. The temporary configuration and actor-tick override existed only in that diagnostic PIE, which ended without saving gameplay changes.
+
+Evidence: `Saved/Diagnostics/AttackStartInertia-runtime.json`, `AttackStartInertia-verification.json`, native automation receipts in `Saved/Logs/GameAnimationSample3.log`. The normal build also incorporates preceding Live Coding source changes, including the still-pending knee recovery trial (mode 3).

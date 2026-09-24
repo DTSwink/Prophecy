@@ -22,7 +22,7 @@ for net in contract['networks'].values():
     assert path.parent==staging and hashlib.sha256(path.read_bytes()).hexdigest()==net['sha256']
     files.append(path.name)
 dest=root/'Content/locomotion/NN'
-backup=root/'Saved/CheckpointBackups'/datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-before-123793')
+backup=root/'Saved/CheckpointBackups'/datetime.now(timezone.utc).strftime(f'%Y%m%d-%H%M%S-before-{runtime["checkpoint_step"]}')
 backup.mkdir(parents=True,exist_ok=False)
 for path in dest.glob('prophecy_slash_*'):
     if path.is_file():shutil.copy2(path,backup/path.name)

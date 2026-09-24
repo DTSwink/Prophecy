@@ -1,12 +1,19 @@
 # Kick foot joint leeway
 
-## Current behavior, September23
+## Current behavior, September24
+
+**Shared special return:** full non-kick attacks, parry and dodge now use the same
+outgoing signed calf-length/render continuity without loosening physical ankle
+joints. It reuses the configured kick return duration when present, otherwise60
+ticks; explicit configured zero duration stays immediate. Half attacks retain
+locomotion legs. Active-kick joint/pose recovery is unchanged. See
+[the paired jabR regression](CalfSnap1495.md) for evidence and scope.
 
 The extension-only **attack-time NN pose override is removed**. The checkpoint owns its foot-distance/floor correction. While physical allowance is active, foot magnetisation uses the published foot target directly. Mode-specific foot/calf clamps remain bypassed during that allowance, as before.
 
 **Recovery length continuity:** after a full kick returns to locomotion, capture each calf's actual outgoing target length independently. Its signed difference from the reference length fades to zero using the existing `Set Kick Foot Joint Leeway` return duration (60 ticks per authored second, no hold). This supports both extension and compression from the new checkpoint. Reconstruction and pelvis inertia use that current effective length. After pose interpolation, knee/segment-aim correction preserves the ankle position and rotation; it does not push the foot down onto the old calf axis. Unreachable endpoints keep their existing positions and use the nearest feasible knee triangle. No attack pose or new inference is involved.
 
-The correction is active only during that finite configured return. Zero leeway/duration bypasses; new specials, reset, completion and world teardown remove the correction. The leg-chain diagnostic toggle also bypasses it. Existing physical constraints remain extension-only; signed NN length recovery does not add physical joint compression freedom.
+The correction is active only during that finite configured return. Zero leeway disables the kick joint allowance; pose-only special recovery can still run. Zero configured duration bypasses; new specials, reset, completion and world teardown remove the correction. The leg-chain diagnostic toggle also bypasses it. Existing physical constraints remain extension-only; signed NN length recovery does not add physical joint compression freedom.
 
 Kinematic rendering also retains the attack's authored calf scale during recovery. Applying locomotion's ordinary mesh stretch immediately at exit would snap the visible calf tip to the ankle despite smooth joint-centre distances. The gap now closes with the length return; ordinary locomotion stretching resumes at rest length. Existing authored transverse scale is preserved.
 

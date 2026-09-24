@@ -16,9 +16,13 @@ inline float FromRemainder(float AccumulatedSeconds, float PoseIntervalSeconds)
 // Manager publication, consumed on the game thread before animation evaluation.
 // Stored separately so Live Coding never changes existing snapshot/proxy layouts.
 void Publish(int32 AgentId, double SourceTimeSeconds, float Alpha);
+// Optional inertia reads just the published pelvis under the store lock, without copying a pose.
+bool ReadPelvisWorld(int32 AgentId,FTransform& OutWorld);
 // Recovery only. Nonpositive lengths remove the entry; no attack-time projection.
 void SetRecoveryCalfLengths(int32 AgentId,const FVector2D& UpperCm,const FVector2D& LowerCm);
 bool HasRecoveryCalfLengths(int32 AgentId);
+void SetKneePopSmoothing(int32 AgentId,float SoftZoneCm);
+bool HasKneePopSmoothing(int32 AgentId);
 float Resolve(int32 AgentId, double SourceTimeSeconds, double WorldTimeSeconds,
     float FrameDeltaSeconds, float PoseIntervalSeconds, bool bInterpolate);
 }

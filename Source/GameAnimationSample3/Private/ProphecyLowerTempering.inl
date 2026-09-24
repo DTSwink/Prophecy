@@ -5,8 +5,8 @@ static TAutoConsoleVariable<int32> CVarTemperingSupportSource(
     TEXT("Prophecy.Tempering.SupportSource"),1,
     TEXT("Editor recovery comparison: 1 follows NN hinge near the floor; 0 uses the previous-pose hinge throughout."));
 static TAutoConsoleVariable<int32> CVarTemperingKneePlane(
-    TEXT("Prophecy.Tempering.KneePlane"),1,
-    TEXT("Editor geometry comparison: 0 forces a zero-offset knee plane; 1 preserves the source stance plane."));
+    TEXT("Prophecy.Tempering.KneePlane"),3,
+    TEXT("Editor recovery comparison: 3 transports normalized source bend direction (trial); 1 restores the original lateral stance plane; 0 forces zero lateral offset."));
 static TAutoConsoleVariable<int32> CVarTemperingCalfContinuity(
     TEXT("Prophecy.Tempering.CalfContinuity"),1,
     TEXT("Editor comparison: 1 carries published calf twist during feet tempering; 0 re-decodes it immediately."));
@@ -176,47 +176,79 @@ void ResolveTemperedLeg(const ProphecyLowerTempering::FSettings& S,const float* 
     const FVector3f N=N0/NLength;
     const FVector3f HingePole=SafeNormal(FVector3f::CrossProduct(Axis,N));
     auto Smooth=[](float X) { X=FMath::Clamp(X,0.f,1.f);return X*X*(3.f-2.f*X); };
-    const float TransportedOffset=FVector3f::DotProduct(Upper,Side);
-    // Preserve the coherent source stance in its own foot-forward frame. A
-    // connected wide stance need not put the knee in the plane through the hip.
-    // Raised feet keep the previous source; grounded feet admit the same NN
-    // source already used above, at the authored feet-rotation following rate.
-    auto SourceSideOffset=[&](const float* Source)
+    bool bBendCoordinate=true;
+#if WITH_EDITOR
+    bBendCoordinate=CVarTemperingKneePlane.GetValueOnGameThread()==3;
+#endif
+    float StanceOffset=0.f;
+    if (!bBendCoordinate)
     {
-        const FMat3f R=MatrixFromRot6(Source+Offset+3);
-        const FVector3f SourceToe=TransformRow(SafeNormal(FootForwardLocal),R);
-        const FVector3f SourceSide=TransformRow(SafeNormal(FVector3f::CrossProduct(FootUpLocal,FootForwardLocal)),R);
-        const FVector3f SourceForward=SafeNormal(FVector3f(SourceToe.X,SourceToe.Y,0),
-            SafeNormal(FVector3f(SourceSide.Y,-SourceSide.X,0),FVector3f(1,0,0)));
-        const float OffsetValue=FVector3f::DotProduct(TransformRow(G.KneeOffset,MatrixFromRot6(Source+Offset+9)),
-            FVector3f(-SourceForward.Y,SourceForward.X,0));
-        // Horizontal heading is unobservable when the source toe is vertical.
-        // Fall back to the already connected hinge continuously, before mixing
-        // sources; target-heading confidence alone cannot protect this case.
-        const float Confidence=Smooth((SourceToe.X*SourceToe.X+SourceToe.Y*SourceToe.Y)*4.f);
-        return FMath::Lerp(TransportedOffset,OffsetValue,Confidence);
-    };
-    float StanceOffset=SourceSideOffset(Previous);
-    if (SourceFollow>0.f)
-        // SourceFollow already includes FeetRotation; applying it twice would
-        // over-hold the stance and restore the old planted-thigh hitch.
-        StanceOffset=FMath::Lerp(StanceOffset,SourceSideOffset(NNSource),SourceFollow);
+        const float TransportedOffset=FVector3f::DotProduct(Upper,Side);
+        // Preserve the coherent source stance in its own foot-forward frame. A
+        // connected wide stance need not put the knee in the plane through the hip.
+        // Raised feet keep the previous source; grounded feet admit the same NN
+        // source already used above, at the authored feet-rotation following rate.
+        auto SourceSideOffset=[&](const float* Source)
+        {
+            const FMat3f R=MatrixFromRot6(Source+Offset+3);
+            const FVector3f SourceToe=TransformRow(SafeNormal(FootForwardLocal),R);
+            const FVector3f SourceSide=TransformRow(SafeNormal(FVector3f::CrossProduct(FootUpLocal,FootForwardLocal)),R);
+            const FVector3f SourceForward=SafeNormal(FVector3f(SourceToe.X,SourceToe.Y,0),
+                SafeNormal(FVector3f(SourceSide.Y,-SourceSide.X,0),FVector3f(1,0,0)));
+            const float OffsetValue=FVector3f::DotProduct(TransformRow(G.KneeOffset,MatrixFromRot6(Source+Offset+9)),
+                FVector3f(-SourceForward.Y,SourceForward.X,0));
+            // Horizontal heading is unobservable when the source toe is vertical.
+            // Fall back to the already connected hinge continuously, before mixing
+            // sources; target-heading confidence alone cannot protect this case.
+            const float Confidence=Smooth((SourceToe.X*SourceToe.X+SourceToe.Y*SourceToe.Y)*4.f);
+            return FMath::Lerp(TransportedOffset,OffsetValue,Confidence);
+        };
+        StanceOffset=SourceSideOffset(Previous);
+        if (SourceFollow>0.f)
+            // SourceFollow already includes FeetRotation; applying it twice would
+            // over-hold the stance and restore the old planted-thigh hitch.
+            StanceOffset=FMath::Lerp(StanceOffset,SourceSideOffset(NNSource),SourceFollow);
+    }
     bool bSourcePlane=true;
 #if WITH_EDITOR
     bSourcePlane=CVarTemperingKneePlane.GetValueOnGameThread()!=0;
 #endif
     if (!bSourcePlane) StanceOffset=0.f;
-    const float Q=(StanceOffset-Along*SideAlong)/(Radius*NLength);
-    // Both circle roots satisfy the lateral plane. Follow the transported
-    // coherent branch; forcing the positive root can rotate an unchanged pose.
-    // Fade at an ambiguous branch so changing its sign cannot create a jump.
+    float Q=0.f;
+    if (!bBendCoordinate) Q=(StanceOffset-Along*SideAlong)/(Radius*NLength);
+    if (bBendCoordinate)
+    {
+        // Carry dimensionless bend direction in each source's foot-heading
+        // frame, not a lateral knee position that may be outside the new circle.
+        const float CarriedCoordinate=FVector3f::DotProduct(Pole,N);
+        auto SourceCoordinate=[&](const float* Source)
+        {
+            const FVector3f SourceToe=TransformRow(SafeNormal(FootForwardLocal),MatrixFromRot6(Source+Offset+3));
+            const FVector3f SourceForward=SafeNormal(FVector3f(SourceToe.X,SourceToe.Y,0),Forward);
+            const FVector3f SourceSide(-SourceForward.Y,SourceForward.X,0);
+            const FVector3f SourceHip=ReadStateVec3(Source,0)+TransformRow(G.HipOffset,MatrixFromRot6(Source+3));
+            const FVector3f SourceAxis=SafeNormal(ReadStateVec3(Source,Offset)-SourceHip,Axis);
+            const FVector3f SourceUpper=TransformRow(G.KneeOffset,MatrixFromRot6(Source+Offset+9));
+            const FVector3f SourceRadial=SourceUpper-SourceAxis*FVector3f::DotProduct(SourceUpper,SourceAxis);
+            const FVector3f SourceN=SourceSide-SourceAxis*FVector3f::DotProduct(SourceSide,SourceAxis);
+            const float Confidence=Smooth((SourceToe.X*SourceToe.X+SourceToe.Y*SourceToe.Y)*4.f)
+                *Smooth(SourceN.SizeSquared()*4.f)*Smooth(SourceRadial.Size()/(G.KneeOffset.Size()*.02f));
+            const float Coordinate=FVector3f::DotProduct(SafeNormal(SourceRadial),SafeNormal(SourceN));
+            return FMath::Lerp(CarriedCoordinate,Coordinate,Confidence);
+        };
+        Q=SourceCoordinate(Previous);
+        if(SourceFollow>0.f) Q=FMath::Lerp(Q,SourceCoordinate(NNSource),SourceFollow);
+    }
+    // The bend coordinate always describes a point on the connected knee circle.
+    // Preserve the transported branch, fading at ambiguity. There is no lateral
+    // plane feasibility gate to switch the correction off and back on.
     const float BranchDot=FVector3f::DotProduct(Pole,HingePole);
     const float Branch=bSourcePlane && BranchDot<0.f ? -1.f : 1.f;
     // The stance plane is guidance, not an instantaneous second pose override.
     // Follow it at the same authored rotation amount as the connected hinge;
     // otherwise a nearly held foot can still receive a full knee-plane turn.
     float Strength=S.FeetRotation*Smooth(FlatToe.SizeSquared()*4.f)*Smooth(NLength*NLength*4.f)
-        *Smooth((1.f-FMath::Abs(Q))*4.f);
+        *(bBendCoordinate ? 1.f : Smooth((1.f-FMath::Abs(Q))*4.f));
     if (bSourcePlane) Strength*=Smooth(FMath::Abs(BranchDot)*4.f);
     if (Strength<1.e-8f) return;
     const float ClampedQ=FMath::Clamp(Q,-1.f,1.f);
@@ -227,6 +259,55 @@ void ResolveTemperedLeg(const ProphecyLowerTempering::FSettings& S,const float* 
 }
 
 #if WITH_DEV_AUTOMATION_TESTS
+
+#if WITH_EDITOR
+static void CheckCapturedKneePlaneReturn(FAutomationTestBase& Test)
+{
+    // Recorded131->161 recovery: changing the plane becomes feasible at157.
+    // These are frozen inputs; this check cannot pass merely by changing rollout.
+    const float Previous[41]={-0.0139852036f,-0.0183354877f,0.899950325f,0.0323824659f,0.0786658525f,0.996374965f,0.206406504f,0.974881887f,-0.0836772025f,-0.280153304f,0.0356324837f,0.130454123f,0.119750373f,-0.190972894f,0.97426343f,0.0430869944f,0.981400192f,0.187075838f,0.414380491f,-0.0808831155f,0.906502485f,0.0178953838f,0.996574581f,0.0807395056f,-0.947685719f,0.0194326192f,0.3100003f,0.175645411f,0.196144298f,0.444234312f,-0.874175787f,-0.526791334f,-0.704180777f,-0.476046592f,0.00918883178f,0.0100692902f,-0.999907076f,-0.272030801f,-0.962211251f,-0.0121894972f,-0.935755968f};
+    const float NN[41]={-0.0220915144f,-0.0264487825f,0.911052396f,0.0404931365f,0.0534222382f,0.997750655f,0.123610567f,0.990630977f,-0.0580576953f,-0.135414764f,0.0741419327f,0.104437325f,0.123978138f,-0.242851869f,0.962108305f,0.0657512112f,0.96946836f,0.236236907f,0.273927742f,-0.0428891702f,0.96079348f,0.0189047619f,0.999052255f,0.0392071597f,-0.931232305f,-0.060180936f,0.169378325f,0.167875064f,0.162172781f,0.33575902f,-0.927882465f,-0.462054395f,-0.805031685f,-0.372061451f,-0.0821176504f,-0.194671304f,-0.977425074f,-0.248620739f,-0.945729217f,0.209246209f,-0.97195895f};
+    const float Recorded[41]={-0.0217763893f,-0.0261333864f,0.910620809f,0.0400942601f,0.0545123033f,0.997707903f,0.127249524f,0.990101874f,-0.0592104234f,-0.229537964f,0.0894430131f,0.135315448f,0.123925224f,-0.242099568f,0.962304711f,0.0654194877f,0.96966368f,0.235526264f,0.285925239f,-0.00139057636f,0.95825094f,-0.689636886f,0.694004238f,0.206782579f,-0.931472182f,-0.0563509911f,0.176143169f,0.168014765f,0.163591236f,0.341203153f,-0.925644815f,-0.465362221f,-0.800643146f,-0.377370626f,-0.0988058001f,-0.222776696f,-0.969849408f,-0.262603313f,-0.934232473f,0.241348833f,-0.970217347f};
+    const float ExpectedRot[6]={0.411954197f,0.00319733329f,0.911198944f,-0.00720673489f,0.999974f,-0.000250664763f};
+    const ProphecyLowerTempering::FSettings S{0.985422254f,0.985422254f,0.96112597f,0.956266701f,0.985422254f,0.96112597f};
+    const FPelvisLegGeometry G{FVector3f(-0.0256932992f,0.000108699314f,-0.0775007159f),FVector3f(-0.390062451f,-5.7220459e-05f,-9.39704478e-06f),FVector3f(1.07968381e-05f,-0.930421889f,-0.366490304f),0.430068872f,0.135315446f};
+    const int32 SavedMode=CVarTemperingKneePlane.GetValueOnGameThread();
+    float Legacy[41],Candidate[41];FMemory::Memcpy(Legacy,Recorded,sizeof(Legacy));FMemory::Memcpy(Candidate,Recorded,sizeof(Candidate));
+    auto Solve=[&](float* Out){ResolveTemperedLeg(S,Previous,G,Out,9,FVector3f(-0.0615985096f,-0.13826412f,0.00680604391f),FVector3f(1,0,0),.15f,true,NN);};
+    CVarTemperingKneePlane->Set(1,ECVF_SetByConsole);Solve(Legacy);
+    CVarTemperingKneePlane->Set(3,ECVF_SetByConsole);Solve(Candidate);
+    const FQuat Prior=MatrixToQuat(MatrixFromRot6(Previous+18));
+    const FQuat Old=MatrixToQuat(MatrixFromRot6(Legacy+18));
+    const FQuat New=MatrixToQuat(MatrixFromRot6(Candidate+18));
+    Test.TestTrue(TEXT("Recorded original reproduces the greater-than40-degree thigh step"),FMath::RadiansToDegrees(Prior.AngularDistance(Old))>40.);
+    Test.TestTrue(TEXT("Same frozen inputs produce a thigh step below6 degrees"),FMath::RadiansToDegrees(Prior.AngularDistance(New))<6.);
+    Test.TestTrue(TEXT("Independent double-precision bend-coordinate oracle"),FMath::RadiansToDegrees(New.AngularDistance(MatrixToQuat(MatrixFromRot6(ExpectedRot))))<.01);
+    Test.TestEqual(TEXT("Recorded solve leaves pelvis unchanged"),FMemory::Memcmp(Recorded,Candidate,9*sizeof(float)),0);
+    Test.TestTrue(TEXT("Recorded solve keeps the exact ankle endpoint"),ReadStateVec3(Recorded,9).Equals(ReadStateVec3(Candidate,9),2.e-6f));
+    Test.TestEqual(TEXT("Recorded solve preserves foot rotation and toe"),FMemory::Memcmp(Recorded+12,Candidate+12,6*sizeof(float)),0);
+    Test.TestEqual(TEXT("Recorded toe unchanged"),Recorded[24],Candidate[24]);
+    const FVector3f Hip=ReadStateVec3(Candidate,0)+TransformRow(G.HipOffset,MatrixFromRot6(Candidate+3));
+    const FVector3f Knee=Hip+TransformRow(G.KneeOffset,MatrixFromRot6(Candidate+18));
+    Test.TestTrue(TEXT("Recorded calf remains connected"),FMath::Abs((ReadStateVec3(Candidate,9)-Knee).Size()-G.CalfLength)<2.e-6f);
+    // Sweep the endpoint through the previous feasibility boundary using fixed
+    // reference poses. This also covers an almost straight connected leg.
+    FQuat Last;double MaxStep=0;
+    for(int32 I=0;I<=1000;++I)
+    {
+        float P[41];FMemory::Memcpy(P,Recorded,sizeof(P));
+        WriteStateVec3(P,9,ReadStateVec3(Recorded,9)+FVector3f((float(I)/1000.f-.5f)*.16f,0,0));
+        Solve(P);
+        const FQuat Q=MatrixToQuat(MatrixFromRot6(P+18));
+        if(I) MaxStep=FMath::Max(MaxStep,double(FMath::RadiansToDegrees(Last.AngularDistance(Q))));
+        Last=Q;
+        Test.TestTrue(TEXT("Endpoint sweep remains finite"),!Q.ContainsNaN());
+    }
+    Test.TestTrue(TEXT("No discrete knee turn across endpoint feasibility sweep"),MaxStep<1.);
+    Test.AddInfo(FString::Printf(TEXT("Frozen recorded157: old %.6f, new %.6f degrees; sweep max %.6f degrees"),FMath::RadiansToDegrees(Prior.AngularDistance(Old)),FMath::RadiansToDegrees(Prior.AngularDistance(New)),MaxStep));
+    CVarTemperingKneePlane->Set(SavedMode,ECVF_SetByConsole);
+}
+#endif
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyTemperingSupportSourceTest,
     "Prophecy.NN.LowerTempering.SupportSourceContracts", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FProphecyTemperingSupportSourceTest::RunTest(const FString&)

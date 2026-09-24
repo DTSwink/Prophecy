@@ -111,7 +111,8 @@ def main():
                     ('upper', Upper(rt, legacy.upper, saved), 217, 92)]
         contract = json.loads((old.PROJECT/'Content/locomotion/NN/prophecy_slash_native.json').read_text())
         contract.update(checkpoint_sha256=old.CHECKPOINT_SHA, transition_schema='slash2_no_frozen_clamped_v1',
-            calf_foot_margin_m=.05, networks={}, startup_expected=frames[0]['output'])
+            calf_foot_margin_m=.05, pin_full_strength_at=rt.recipe.pin_full_strength_at,
+            networks={}, startup_expected=frames[0]['output'])
         # Geometry is exported from the same runtime that produced the oracle.
         contract.update(root_features=oracle.root_features[0].tolist(), root_position=oracle.root_pos[0].tolist(),
             root_rotation=oracle.root_rot[0].tolist(), lower_geometry={k:v[0].tolist() for k,v in rt.lower_fk_geometry.items()},

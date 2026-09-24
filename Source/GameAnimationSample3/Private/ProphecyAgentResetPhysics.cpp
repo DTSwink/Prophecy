@@ -1,4 +1,5 @@
 #include "ProphecyAgentResetPhysics.h"
+#include "ProphecyAttackStartInertia.h"
 #include "ProphecyAgent.h"
 #include "ProphecyPhysicalProfileLibrary.h"
 #include "ProphecyPhysicalContext.h"
@@ -55,6 +56,7 @@ void Remove(const AProphecyAgent* Agent)
     ProphecyHandRecovery::ForgetReset(Agent);
     ProphecyCoreTempering::ForgetReset(Agent);
     ProphecyUpperBodyInertia::ForgetReset(Agent);
+    ProphecyAttackStartInertia::ForgetReset(Agent);
     ProphecySlashReturn::ForgetReset(Agent);
 }
 bool Capture(AProphecyAgent* Agent,FString& Error)
@@ -90,6 +92,7 @@ bool Capture(AProphecyAgent* Agent,FString& Error)
     ProphecyHandRecovery::CaptureReset(Agent);
     ProphecyCoreTempering::CaptureReset(Agent);
     ProphecyUpperBodyInertia::CaptureReset(Agent);
+    ProphecyAttackStartInertia::CaptureReset(Agent);
     ProphecySlashReturn::CaptureReset(Agent);
     States.Add(Agent,MoveTemp(S));return true;
 }
@@ -125,6 +128,7 @@ void CancelBlends(AProphecyAgent* Agent)
     ProphecyHandRecovery::CancelMotion(Agent);
     ProphecyCoreTempering::CancelMotion(Agent);
     ProphecyUpperBodyInertia::Cancel(Agent);
+    ProphecyAttackStartInertia::Cancel(Agent);
     ProphecySlashReturn::Cancel(Agent);
     ProphecyRootBalance::CancelKickException(Agent);
     ProphecyLowerTempering::ClearAttackSelection(Agent);
@@ -155,6 +159,7 @@ bool Restore(AProphecyAgent* Agent,FString& Error)
     ProphecyHandRecovery::RestoreReset(Agent);
     ProphecyCoreTempering::RestoreReset(Agent);
     ProphecyUpperBodyInertia::RestoreReset(Agent);
+    ProphecyAttackStartInertia::RestoreReset(Agent);
     ProphecySlashReturn::RestoreReset(Agent);
     if (S.HadMaterial && !S.Material.IsValid()) { Error=TEXT("Initial physical material no longer exists.");return false; }
     if (auto* Mesh=Agent->GetPoseReferenceMesh()) Mesh->SetPhysMaterialOverride(S.Material.Get());

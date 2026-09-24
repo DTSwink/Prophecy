@@ -48,39 +48,26 @@ Call **Set Attack Foot Pinning Iterations** with the agent as Target.
 
 The exported geometry and standalone source audits retain their original 60-step
 configuration. Actual gameplay supplies the per-agent setting explicitly. For
-training/reference comparisons, set the tested agent to 60, disable Headbutt GT
-preparation, and disable both Foot and Calf presentation clamps.
+training/reference comparisons, set the tested agent to 60 and disable both Foot
+and Calf presentation clamps. Headbutt GT preparation has been removed.
 
-## Headbutt preparation
+## Headbutt preparation removed2026-09-24
 
-**Use GT Headbutt Preparation** defaults to **true**. Set it before triggering a
-Headbutt; false gives the previous fully neural behavior. It applies to full and
-half attacks and to Headbutts started after another attack.
+The former modifier replaced both hands and upper-arm orientation with an authored
+GT track before learned Armed, writing the result back into recurrent history.
+It has been removed at the user's request. Full/half headbutts and live family
+updates now use the checkpoint's arms throughout, with ordinary shared arm/roll,
+clamp and presentation controls unchanged.
 
-The original animation supplies both hand positions/rotations and upper-arm
-orientations until the first learned Armed output. The track uses frames 0–7
-at 30 Hz. If Armed is late, it holds the final preparation pose; it does not
-force Armed or Hit. The first Armed output returns arm control to the NN.
+Removed entry capture, track loading, per-step settings, native pose override,
+warmup fingerprint input and dedicated staging dependency. The two old properties
+remain deprecated and inert solely for saved Blueprint compatibility, hidden from
+editable agent defaults. Retained private storage is unused so this Live Coding
+change does not resize already allocated actors, managers or native models.
+The old JSON and exporter remain historical artifacts and are not loaded.
 
-**Headbutt Preparation Blend Seconds** defaults to **0.1 seconds** (range 0–1).
-It is sampled when Headbutt starts and crossfades the current arm pose into GT
-with smoothstep. Set it to 0 for direct authored targets. Entry-blend frames are
-intentionally a mixture of the starting pose and GT.
-
-The shared file `Content/locomotion/NN/prophecy_headbutt_preparation.json` is about
-4 KB with metadata. The native decoder applies the track before its existing
-candidate arm calculation, compensating for its baseline/residual representation.
-Corrected arm channels also become the next recurrent history. Half mode uses
-the ghost pelvis so real pelvis rotation cannot steer this preparation.
-
-There are no extra neural calls, per-agent Timelines, component ticks or second
-whole-skeleton evaluations. Normal physical animation and hand attachment still
-act on the resulting targets. This is an authored modifier to the learned model,
-so Armed timing may differ from fully neural playback.
-
-Source export: `Tools/NN/ExportProphecyHeadbuttPreparation.py`. It verifies source
-Armed/fps metadata and quaternion coordinate reconstruction without modifying
-training files or weights. Both JSON assets are declared as UFS runtime dependencies.
-
-The user requested to perform gameplay testing themselves. Visual entry/release
-quality and incremental runtime cost have not been validated in this pass.
+Installed in the normal editor build2026-09-24 during the authorized checkpoint
+selector restart. Fresh pose Blueprint compiles status3. Short owned PIE test
+successfully advances full and half headbutts with checkpoint184064 and shares
+the three-agent batch. No runtime references to preparation settings/track remain;
+this was a lifecycle check, not a visual headbutt evaluation.

@@ -1,6 +1,6 @@
-# Slash right-arm return to neutral
+# Attack arm return to neutral
 
-`Set Slash Right Arm Return To Neutral` configures an automatic, temporary right-arm controller after **slashL, slashR, slashLD, slashRD, slashLU, slashRU**. Full and half versions share the setting. **Pike, kicks and other melee are excluded.** Nothing is enabled until the node is called.
+`Set Attack Arm Return To Neutral` configures an automatic, temporary attacking-arm controller after **slashL, slashR, slashLD, slashRD, slashLU, slashRU, hookL, hookR, overL, overR**. Slashes always return the right sword arm; hookL/overL return the left arm and hookR/overR return the right arm. Full and half versions share the setting. **Pike, jabs, kicks, headbutts and defense are excluded.** Nothing is enabled until the node is called. The former `Set Slash Right Arm Return To Neutral` node retains its native function and pins, preserving existing Blueprint connections/settings.
 
 Inputs, in order:
 
@@ -11,11 +11,11 @@ Inputs, in order:
 
 One authored second means **60 unpaused game ticks**, independent of actual FPS and agent time dilatation. Both durations zero disables the feature. Hold is not a delay before moving: it is the period during which the return controller fully authors the arm. A short hold/low speed need not reach idle before the blend begins.
 
-Configure in delayed BeginPlay or in Attack Ended. The setter can recognize the ending attack inside that event, including the slash-only restriction. A new committed attack/parry/dodge cancels the active return immediately. Reset cancels motion and restores captured configuration. Queued defense before Armed remains ordinary locomotion.
+Configure in delayed BeginPlay or in Attack Ended. The setter recognizes the ending attack inside that event and selects its eligible arm automatically. A new committed attack/parry/dodge cancels the active return immediately. Reset cancels motion and restores captured configuration. Queued defense before Armed remains ordinary locomotion.
 
 ## Pose contract
 
-The destination is the authored neutral idle seed already used at initialization. Its right arm is carried onto the current clavicle. The route is measured in an anatomical frame derived from the current pelvis, neck and shoulders, so it follows the torso instead of a world-space waypoint.
+The destination is the authored neutral idle seed already used at initialization. Its selected arm is carried onto the corresponding current clavicle. The route is measured in an anatomical frame derived from the current pelvis, neck and shoulders, so it follows the torso instead of a world-space waypoint. Selecting the left arm preserves the same right-minus-left torso frame and uses the left arm's hinge axes, lengths and neutral wrist. Held-sword geometry is used only for the right arm; left-hand routing cannot accidentally inherit the right-hand grip.
 
 The initial distance is the full3D straight distance between the outgoing wrist
 and the neutral wrist mounted on the **outgoing clavicle**, before the first
@@ -31,7 +31,7 @@ Hand rotation is calibrated from the held sword's mesh bounds and actual grip tr
 
 A connected two-bone solve transports both source hinges to the same final wrist before blending their bend directions. It gradually restores coherent idle/NN guidance; wrist roll does not independently orbit the elbow. Nearly straight or ambiguous guidance retains the previous bend rather than amplifying numerical noise. A torso-envelope guard checks both shoulder–elbow and elbow–wrist segments and rotates the elbow on its exact IK solution circle toward the nearest clear solution. It preserves both lengths and the wrist target. Boundary refinement avoids discrete pole snapping; its turn rate is bounded, permitting gradual escape from an already-penetrating attack pose. Wrist-derived forearm roll retains the shared locomotion/specials convention. See [the elbow correction and validation](ElbowRecoveryBend.md).
 
-The result is stored in the accepted upper-body state, feeding subsequent NN inputs and publication/physical targets. It runs after existing hand recovery, tempering and inertia: the slash controller owns the right arm during its hold, then yields to those ordinary controls. The left arm, FK core, legs, root and special poses are untouched. Existing physical constraints and authored clamp settings remain in force.
+The result is stored in the accepted upper-body state, feeding subsequent NN inputs and publication/physical targets. It runs after existing hand recovery, tempering and inertia: the return controller owns the selected arm during its hold, then yields to those ordinary controls. The other arm, FK core, legs, root and special poses are untouched. Existing physical constraints and authored clamp settings remain in force.
 
 This uses an anatomical torso envelope and the held blade geometry, not an environment collision planner or a guarantee against every physical self-contact. It cannot repair arbitrary pre-existing body penetration or make an unreachable wrist target reachable. Existing target clamps may further constrain the decoded wrist. At the end, ordinary NN/tempering controls resume exactly.
 
@@ -40,6 +40,10 @@ This uses an anatomical torso envelope and the held blade geometry, not an envir
 Separate weak sidecars preserve retained actor/manager layouts for Live Coding. Only active returns consume the finite 60-tick clock, decode the compiled idle seed, route or solve the arm. No extra model inference. The clock retires at its configured end, and the active pose record is removed on the next eligible policy sample. Inactive/finished settings introduce no recurring timer or pose work.
 
 ## Validation and limitations — 2026-09-23 correction
+
+Current extension validated2026-09-24: Live Coding build213.42s loaded15:44:25UTC. Eight focused SlashReturn, HandRecovery and CoreTempering tests passed15:44:39UTC, including six-slash/four-melee arm selection, exclusions, left/right front-route mirror parity, finite arm targets, exact12-tick retirement at30/60/120FPS, disable and cancellation cleanup. Existing blade winding, proportional speed and lifecycle regressions remain passing. Pose Blueprint compiles status3 with zero stale native types;45 archived library defaults repaired with values/wiring preserved. No scene rollout was performed for the new melee extension, so these checks do not establish visual quality for every hook/over recovery pose. No graph wiring edits, asset save or restart. Fold this live patch into the next authorized normal build.
+
+The following is historical validation of the original slash controller:
 
 Earlier patch9 evidence checked wrists and arm segments, **not the blade sweep**, and did not establish the safety the user requested. Fresh audit also found no call to this opt-in node in the current pose Blueprint. Ordinary-recovery baseline `Saved/Diagnostics/SlashSword-20260923-140318.json` has blade/torso overlap (squared normalized clearance about0.004; outside is≥1).
 

@@ -91,17 +91,48 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
         {
             Force->BreakAllPinLinks();N->RemovePin(Force);
         }
+        if(FunctionName==TEXT("SetAttackStartPelvisInertia"))
+            for(const TCHAR* Name:{TEXT("LeftFootTranslationWindowFrames"),TEXT("LeftFootTranslationInertia"),
+                TEXT("LeftFootRotationWindowFrames"),TEXT("LeftFootRotationInertia"),
+                TEXT("RightFootTranslationWindowFrames"),TEXT("RightFootTranslationInertia"),
+                TEXT("RightFootRotationWindowFrames"),TEXT("RightFootRotationInertia")})
+                if(auto* P=N->FindPin(Name)) {P->BreakAllPinLinks();N->RemovePin(P);}
         const bool HadDistanceToLimit=N->FindPin(TEXT("DistanceToLimit"))!=nullptr;
+        const bool HadLerpTarget=N->FindPin(TEXT("LerpTarget"))!=nullptr;
         const bool HadNonKicking=N->FindPin(TEXT("NonKickingFootTranslationXY"))!=nullptr;
+        const bool HadAttackReachFamilies=N->FindPin(TEXT("SlashR"))!=nullptr;
         FString OldKickGraph;
         const FString Diagnostics=FPaths::ProjectSavedDir()/TEXT("Diagnostics");
         FFileHelper::LoadFileToString(OldKickGraph,*(Diagnostics/TEXT("KickRolePinsBefore.txt")));
         const FString NodeKey=TEXT(" | ")+Graph->GetName()+TEXT(" | ")+N->GetName()+TEXT(" | ");
+        FString OldReachGraph;
+        if (FunctionName==TEXT("SetAttackTargetExtraReach"))
+            FFileHelper::LoadFileToString(OldReachGraph,*(Diagnostics/TEXT("AttackTargetExtraReachBefore.txt")));
+        const bool MigrateReach=FunctionName==TEXT("SetAttackTargetExtraReach")
+            && (!HadAttackReachFamilies || (!IFileManager::Get().FileExists(*(Diagnostics/ReportName)) && OldReachGraph.Contains(NodeKey)));
         const bool MigrateFeet=FunctionName==TEXT("SetKickLocomotionLowerBodyTempering")
             && (!HadNonKicking || (!IFileManager::Get().FileExists(*(Diagnostics/TEXT("KickTemperingRoles.txt")))
                 && OldKickGraph.Contains(NodeKey)));
         auto Before=PinValues(N);
         N->Modify();N->ReconstructNode();++Count;
+        const TCHAR* ReachPins[]={TEXT("SlashR"),TEXT("SlashLD"),TEXT("SlashRD"),TEXT("SlashLU"),TEXT("SlashRU"),TEXT("Pike"),
+            TEXT("JabL"),TEXT("JabR"),TEXT("HookL"),TEXT("HookR"),TEXT("OverL"),TEXT("OverR"),TEXT("Headbutt"),TEXT("KickL"),TEXT("KickR")};
+        if (MigrateReach)
+        {
+            // ExtraReachCm retains its old pin identity and now displays slashL.
+            // Copy the old common setting to every added family; keep explicit
+            // edits made to new pins after Live Coding reconstructed the node.
+            auto* Src=N->FindPin(TEXT("ExtraReachCm"));
+            if (!Src) Preserved=false;
+            else for (const TCHAR* Name:ReachPins)
+            {
+                auto* Dst=N->FindPin(Name);
+                if (!Dst) { Preserved=false;continue; }
+                if (!Dst->LinkedTo.IsEmpty() || FCString::Atof(*Dst->DefaultValue)!=50.f) continue;
+                Dst->DefaultValue=Src->DefaultValue;Dst->DefaultObject=Src->DefaultObject;Dst->DefaultTextValue=Src->DefaultTextValue;
+                for (auto* Link:Src->LinkedTo) if (!Graph->GetSchema()->TryCreateConnection(Link,Dst)) Preserved=false;
+            }
+        }
         if (MigrateFeet)
         {
             const TCHAR* Sources[]={TEXT("FeetTranslation"),TEXT("FeetTranslationZ"),TEXT("FeetRotation")};
@@ -120,6 +151,21 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
             }
         }
         auto After=PinValues(N);
+        if (!HadLerpTarget && FunctionName==TEXT("SetWalkPinningBackwardBound"))
+        {
+            const auto* Lerp=N->FindPin(TEXT("LerpTarget"));
+            Preserved&=Lerp && Lerp->LinkedTo.IsEmpty() && FCString::Atof(*Lerp->DefaultValue)==0.f;
+            After.RemoveAll([](const FString& Row) { return Row.StartsWith(TEXT("LerpTarget=")) || Row.StartsWith(TEXT("LerpTarget->")); });
+        }
+        if (MigrateReach)
+        {
+            auto IsAddedReachPin=[&](const FString& Row)
+            {
+                for (const TCHAR* Name:ReachPins) if (Row.StartsWith(FString(Name)+TEXT("=")) || Row.StartsWith(FString(Name)+TEXT("->"))) return true;
+                return false;
+            };
+            Before.RemoveAll(IsAddedReachPin);After.RemoveAll(IsAddedReachPin);
+        }
         if (MigrateFeet)
         {
             Before.RemoveAll([](const FString& Row) { return Row.StartsWith(TEXT("NonKickingFoot")); });
@@ -142,6 +188,47 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
 static void RefreshOrder() { RefreshOrderFor(TEXT("SetAttackToLocomotionBlend"),TEXT("RecoveryPinOrder.txt")); }
 static void RefreshTemperingOrder() { RefreshOrderFor(TEXT("SetLocomotionLowerBodyTempering"),TEXT("TemperingPinOrder.txt")); }
 static void RefreshAttackTargetMargin() { RefreshOrderFor(TEXT("GetValidAttackTarget"),TEXT("AttackTargetMarginPins.txt")); }
+static void RefreshAttackTargetExtraReach() { RefreshOrderFor(TEXT("SetAttackTargetExtraReach"),TEXT("AttackTargetExtraReachPins.txt")); }
+static void RefreshWalkBoundTarget() { RefreshOrderFor(TEXT("SetWalkPinningBackwardBound"),TEXT("WalkBoundTargetPins.txt")); }
+static void RestorePelvisOnlyInertia() { RefreshOrderFor(TEXT("SetAttackStartPelvisInertia"),TEXT("RestorePelvisOnlyPins.txt")); }
+static FAutoConsoleCommand RestorePelvisOnlyCommand(TEXT("Prophecy.Editor.RestorePelvisOnlyInertia"),TEXT("Remove discarded foot-entry controls; retain pelvis values and wiring."),FConsoleCommandDelegate::CreateStatic(&RestorePelvisOnlyInertia));
+static void RemoveWalkLimitNodes()
+{
+    if(!GEditor || GEditor->PlayWorld)return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if(!BP)return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","RemoveWalkLimit","Remove obsolete raw Walk pinning limit"));
+    BP->Modify();TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);int32 Removed=0;bool OK=true;
+    for(auto* Graph:Graphs)
+    {
+        const auto Nodes=Graph->Nodes;
+        for(UEdGraphNode* Base:Nodes)
+        {
+            auto* N=Cast<UK2Node_CallFunction>(Base);if(!N)continue;
+            const auto Name=N->FunctionReference.GetMemberName();
+            const bool Setter=Name==TEXT("SetWalkPinningLimit");
+            if(!Setter && Name!=TEXT("GetWalkPinningLimit"))continue;
+            Graph->Modify();N->Modify();
+            TArray<UEdGraphPin*> Incoming,Outgoing,Results;
+            if(auto* P=N->FindPin(TEXT("execute")))Incoming=P->LinkedTo;
+            if(auto* P=N->FindPin(TEXT("then")))Outgoing=P->LinkedTo;
+            if(auto* P=N->FindPin(TEXT("ReturnValue")))Results=P->LinkedTo;
+            N->BreakAllNodeLinks();
+            for(auto* From:Incoming)for(auto* To:Outgoing)OK&=Graph->GetSchema()->TryCreateConnection(From,To);
+            // Remove obsolete readbacks without leaving dangling data pins.
+            for(auto* Result:Results)Graph->GetSchema()->TrySetDefaultValue(*Result,Setter?TEXT("true"):TEXT("2.0"));
+            FBlueprintEditorUtils::RemoveNode(BP,N,true);++Removed;
+        }
+    }
+    const FString Report=FString::Printf(TEXT("removed=%d execution_reconnected=%d asset_saved=0\n"),Removed,int32(OK));
+    FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/RemoveWalkPinLimit.txt")));
+    UE_LOG(LogTemp,Display,TEXT("Walk pin limit removal: %s"),*Report);
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+}
+static FAutoConsoleCommand RemoveWalkLimitCommand(TEXT("Prophecy.Editor.RemoveWalkPinningLimit"),TEXT("Remove obsolete Walk raw-limit calls and reconnect execution; leaves Blueprint unsaved."),FConsoleCommandDelegate::CreateStatic(&RemoveWalkLimitNodes));
+static FAutoConsoleCommand WalkBoundTargetCommand(TEXT("Prophecy.Editor.RefreshWalkBoundTarget"),TEXT("Add the default-zero Lerp Target pin to backward pin bound nodes; preserve existing values/wiring, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshWalkBoundTarget));
+static FAutoConsoleCommand AttackTargetExtraReachCommand(TEXT("Prophecy.Editor.RefreshAttackTargetExtraReach"),TEXT("Expand existing extra reach nodes to all attack families, preserving prior common values/connections; leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshAttackTargetExtraReach));
 static void RefreshKickRoles()
 {
     RefreshOrderFor(TEXT("SetKickToLocomotionBlend"),TEXT("KickRecoveryRoles.txt"));

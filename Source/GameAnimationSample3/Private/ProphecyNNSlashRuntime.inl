@@ -144,27 +144,6 @@ namespace
 		GhostPose.Reset(); GhostPose.Append(SeedPose);
 	}
 
-	void BeginHeadbuttPreparation(const AProphecyNNLocomotionManager::FImpl& Impl,
-		AProphecyNNLocomotionManager::FImpl::FAgent& Agent, const AProphecyAgent* Actor, bool bEnabled)
-	{
-		auto& Slash = Agent.Slash;
-		Slash.bHeadbuttPreparation = bEnabled;
-		if (!bEnabled) return;
-		Slash.PreparationBlendSeconds = FMath::IsFinite(Actor->HeadbuttPreparationBlendSeconds)
-			? FMath::Clamp(Actor->HeadbuttPreparationBlendSeconds, 0.f, 1.f) : 0.1f;
-		for (int32 I=0; I<2; ++I)
-		{
-			const int32 Hand = Impl.BodyNames.IndexOfByKey(FName(I ? TEXT("hand_r") : TEXT("hand_l")));
-			const int32 Upper = Impl.BodyNames.IndexOfByKey(FName(I ? TEXT("upperarm_r") : TEXT("upperarm_l")));
-			const FTransform HandLocal = Slash.GhostPose[Hand].GetRelativeTransform(Slash.GhostPose[0]);
-			const FTransform UpperLocal = Slash.GhostPose[Upper].GetRelativeTransform(Slash.GhostPose[0]);
-			auto& Entry = Slash.PreparationEntry.Arms[I];
-			Entry.Position = LocalUnrealToTraining(HandLocal.GetTranslation());
-			Entry.HandRotation = MatrixToQuat(MirrorYBasis(QuatToMatrix(HandLocal.GetRotation())));
-			Entry.UpperArmRotation = MatrixToQuat(MirrorYBasis(QuatToMatrix(UpperLocal.GetRotation())));
-		}
-	}
-
 	void ResolveSlashTarget(const AProphecyNNLocomotionManager::FImpl& Impl,
 		const AProphecyAgent* Actor, int32 Index, FVector& EffectiveWorld, FVector& GhostWorld)
 	{
@@ -309,16 +288,91 @@ namespace
 	}
 }
 
+bool AProphecyNNLocomotionManager::SetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle,int32 Checkpoint,FString& OutError)
+{
+	OutError.Reset();
+	AProphecyAgent* Actor=ResolveAgent(Handle);
+	if (!Actor) { OutError=TEXT("Agent is not initialized.");return false; }
+	if (Checkpoint<0 || Checkpoint>2) { OutError=TEXT("Unknown attack checkpoint.");return false; }
+	auto* Existing=ProphecyAttackCheckpoint::Find(this,Checkpoint);
+	if (Checkpoint==0)
+	{
+		ProphecyAttackCheckpoint::Select(this,Actor,0,false);
+		return true;
+	}
+	if (!Existing)
+	{
+		if (!InitializeSlashNNE()) { OutError=TEXT("Current attack model failed initialization.");return false; }
+		const FString CurrentDirectory=FPaths::ProjectContentDir()/TEXT("locomotion/NN");
+		const FString Directory=CurrentDirectory/(Checkpoint==2?TEXT("Attack184064"):TEXT("Attack160664"));
+		TSharedPtr<FJsonObject> Current,Contract;
+		auto Read=[](const FString& Path,TSharedPtr<FJsonObject>& Object)
+		{ FString Text;return FFileHelper::LoadFileToString(Text,*Path) && FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Object) && Object.IsValid(); };
+		if (!Read(CurrentDirectory/TEXT("prophecy_slash_runtime.json"),Current) || !Read(Directory/TEXT("prophecy_slash_runtime.json"),Contract))
+		{ OutError=TEXT("Attack checkpoint comparison files are missing or invalid.");return false; }
+		FString SHA;
+		if (!Contract->TryGetStringField(TEXT("checkpoint_sha256"),SHA) || SHA!=(Checkpoint==2?ProphecyAttackCheckpoint::Refresh2SHA:ProphecyAttackCheckpoint::AlternativeSHA))
+		{ OutError=TEXT("Unexpected comparison checkpoint hash.");return false; }
+		// Both checkpoints share the agent's recurrent encoding, attack labels and
+		// finishing rules. Refuse a future incompatible export instead of silently
+		// decoding it through the current model's geometry/metadata.
+		for (const TCHAR* Key:{TEXT("input_dim"),TEXT("output_dim"),TEXT("transition_schema"),TEXT("root_position_m"),
+			TEXT("root_rotation"),TEXT("bone_names"),TEXT("attack_labels"),TEXT("post_hit_tail_steps")})
+		{
+			const auto A=Current->TryGetField(Key),B=Contract->TryGetField(Key);
+			if (!A.IsValid() || !B.IsValid() || !FJsonValue::CompareEqual(*A,*B))
+			{ OutError=FString::Printf(TEXT("Incompatible attack checkpoint field: %s"),Key);return false; }
+		}
+		auto Candidate=MakeUnique<ProphecyAttackCheckpoint::FComparison>();
+		Candidate->Model=MakeUnique<FSlashNative>();
+		if (!Candidate->Model->Initialize(Directory,Contract))
+		{ OutError=TEXT("Comparison attack model failed initialization.");return false; }
+		TArray<float> Input,Output;
+		if (!JsonFloatArray(Contract->GetArrayField(TEXT("seed_input")),Input) || Input.Num()!=SlashInputDim)
+		{ OutError=TEXT("Invalid comparison seed.");return false; }
+		Output.SetNumZeroed(SlashOutputDim);
+		if (!Candidate->Model->Run(Input,Output) || Candidate->Model->StartupExpected.Num()!=SlashOutputDim)
+		{ OutError=TEXT("Comparison startup inference failed.");return false; }
+		float MaxError=0;
+		for(int32 I=0;I<SlashOutputDim;++I)
+		{
+			if (!FMath::IsFinite(Output[I])) { OutError=TEXT("Comparison model produced nonfinite values.");return false; }
+			MaxError=FMath::Max(MaxError,FMath::Abs(Output[I]-Candidate->Model->StartupExpected[I]));
+		}
+		if (MaxError>.001f) { OutError=TEXT("Comparison model failed startup parity.");return false; }
+		UE_LOG(LogProphecyNNLocomotion,Display,TEXT("Attack checkpoint%d ready, startup max_abs=%.9g"),Checkpoint==2?184064:160664,MaxError);
+		Existing=Candidate.Get();
+		ProphecyAttackCheckpoint::Storage(Checkpoint).Add(this,MoveTemp(Candidate));
+	}
+	ProphecyAttackCheckpoint::Select(this,Actor,Checkpoint,false);
+	return true;
+}
+
+bool AProphecyNNLocomotionManager::GetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle,int32& Selected,int32& Effective,bool& Attacking) const
+{
+	Selected=Effective=0;Attacking=false;
+	const AProphecyAgent* Actor=ResolveAgent(Handle);if (!Actor) return false;
+	Attacking=Impl->Agents[Handle.Index].Slash.bActive;
+	Selected=ProphecyAttackCheckpoint::Choice(this,Actor,false);
+	Effective=Attacking?ProphecyAttackCheckpoint::Choice(this,Actor,true):Selected;
+	return true;
+}
+
 bool AProphecyNNLocomotionManager::InitializeSlashNNE()
 {
 	if (Impl->bSlashInitialized) return true;
+#if WITH_EDITOR
+	const double EditorLoadStart=FPlatformTime::Seconds();
+	bool bEditorCacheHit=false;
+#endif
 	const FString Directory = FPaths::ProjectContentDir() / TEXT("locomotion/NN");
 	FString Text;
 	TSharedPtr<FJsonObject> Contract;
 	if (!FFileHelper::LoadFileToString(Text, *(Directory / TEXT("prophecy_slash_runtime.json"))) ||
 		!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text), Contract) || !Contract.IsValid()) return false;
 	const FString Checkpoint=Contract->GetStringField(TEXT("checkpoint_sha256"));
-	const bool CurrentCheckpoint=Checkpoint==TEXT("d467d60bd11e4c07408297047249161309b2bee3e7b0f086fae22c929821e7ad");
+	const bool CurrentCheckpoint=Checkpoint==TEXT("d467d60bd11e4c07408297047249161309b2bee3e7b0f086fae22c929821e7ad") ||
+		Checkpoint==TEXT("3c68cbeec601b814d569c53c577812402b17cb4f94a931d657bcf3f8f9b5a61f");
 	if ((Checkpoint != TEXT("6a76321d6e1525c9e6bcfcedcd0ce46676b03dd15dd277c2bd87f6c834239072") && !CurrentCheckpoint) ||
 		Contract->GetIntegerField(TEXT("input_dim")) != SlashInputDim ||
 		Contract->GetIntegerField(TEXT("output_dim")) != SlashOutputDim) return false;
@@ -350,8 +404,22 @@ bool AProphecyNNLocomotionManager::InitializeSlashNNE()
 		Impl->SlashLabels.Add(FName(Pair.Key), MoveTemp(Label));
 		Impl->SlashTailSteps.Add(FName(Pair.Key), Contract->GetObjectField(TEXT("post_hit_tail_steps"))->GetIntegerField(Pair.Key));
 	}
-	Impl->SlashModel = MakeUnique<FSlashNative>();
-	if (!Impl->SlashModel->Initialize(Directory, Contract)) return false;
+#if WITH_EDITOR
+	if (ProphecyEditorAttackCache::Uses(this))
+	{
+		Impl->SlashModel=ProphecyEditorAttackCache::Acquire(this,ProphecyEditorAttackCache::Fingerprint(Directory));
+		bEditorCacheHit=Impl->SlashModel.IsValid();
+	}
+	if (bEditorCacheHit)
+	{
+		if (!Impl->SlashModel->SetBatch(ModelBatch)) return false;
+	}
+	else
+#endif
+	{
+		Impl->SlashModel = MakeUnique<FSlashNative>();
+		if (!Impl->SlashModel->Initialize(Directory, Contract)) return false;
+	}
 	Impl->SlashInputBuffer.SetNumUninitialized(ModelBatch * SlashInputDim);
 	Impl->SlashOutputBuffer.SetNumZeroed(ModelBatch * SlashOutputDim);
 	for (int32 Lane = 0; Lane < ModelBatch; ++Lane)
@@ -383,6 +451,10 @@ bool AProphecyNNLocomotionManager::InitializeSlashNNE()
 		return false;
 	}
 	Impl->bSlashInitialized = true;
+#if WITH_EDITOR
+	UE_LOG(LogProphecyNNLocomotion, Display, TEXT("Editor attack initialization: cache=%s total_ms=%.3f world_time=%.3f"),
+		bEditorCacheHit ? TEXT("hit") : TEXT("miss"),(FPlatformTime::Seconds()-EditorLoadStart)*1000.,GetWorld()->GetTimeSeconds());
+#endif
 	return true;
 }
 
@@ -402,9 +474,6 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		// Do not reseed history, reset latches/clocks, emit Ended or cycle physics.
 		auto& Slash = Agent.Slash;
 		const bool bFamilyChanged = Slash.Family != Attack;
-		const bool bPreparation = Attack == TEXT("headbutt") && Actor->bUseGTHeadbuttPreparation;
-		if (bFamilyChanged && bPreparation &&
-			!Impl->SlashModel->LoadHeadbuttPreparation(FPaths::ProjectContentDir()/TEXT("locomotion/NN"))) return false;
 		if (bFamilyChanged)
 		{
 			const bool bWasKick = Slash.Family == TEXT("kickl") || Slash.Family == TEXT("kickr");
@@ -412,7 +481,6 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 			Slash.Family = Attack;
 			RefreshAgentAttackTrim(Handle);
 			FMemory::Memcpy(Slash.State.GetData()+265, Labels->GetData(), 5*sizeof(float));
-			BeginHeadbuttPreparation(*Impl, Agent, Actor, bPreparation);
 			ProphecyAttackFists::RetargetFamily(Actor,Attack);
 			ProphecySwordAttackCollision::RetargetFamily(Actor,Attack,Slash.State[270]>.5f,
 				Slash.HitFrame!=INDEX_NONE || Slash.State[271]>.5f);
@@ -422,12 +490,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		Slash.TargetWorld = TargetWorld;
 		return Slash.bHalf == bHalf || SetAgentNNHalfAttack(Handle,bHalf);
 	}
-	const bool bPreparation = Attack == TEXT("headbutt") && Actor->bUseGTHeadbuttPreparation;
-	if (bPreparation && !Impl->SlashModel->LoadHeadbuttPreparation(FPaths::ProjectContentDir()/TEXT("locomotion/NN")))
-	{
-		UE_LOG(LogProphecyNNLocomotion, Error, TEXT("Headbutt refused: missing/invalid GT preparation track."));
-		return false;
-	}
+	const int32 Checkpoint=ProphecyAttackCheckpoint::Choice(this,Actor,false);
 	const FHalfAttackGT* HalfGT = bHalf ? FindHalfAttackGT(*Impl, Attack) : nullptr;
 	if (bHalf && !HalfGT)
 	{
@@ -503,9 +566,13 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	Slash.PreviousVisibleWorldPose = Slash.VisibleWorldPose;
 	if (!bHalf) SlashRootMinusStartPelvis.Add(Actor,
 		Actor->GetRootLowPoint() - Slash.VisibleWorldPose[0].GetTranslation());
+	if (!bHalf) ProphecyAttackStartInertia::Begin(Actor,PoseStoreAgentBase+Handle.Index,
+        TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index)[0]
+            *SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),Current[0]*StartCarrier);
 	Slash.bActive = true;
+	ProphecyAttackCheckpoint::Select(this,Actor,Checkpoint,true);
+	ProphecyWalkPinning::ResetSmoothing(Actor);
 	SetAgentTimeDilation(Handle,1.f);
-	BeginHeadbuttPreparation(*Impl, Agent, Actor, bPreparation);
 	Actor->BeginAttackFists(Attack);
 	ProphecyAttackRecovery::EnterSpecial(Actor);
 	Actor->NotifySwordAttackState(true);
@@ -533,6 +600,7 @@ bool AProphecyNNLocomotionManager::SetAgentNNHalfAttack(FProphecyAgentHandle Han
 	}
 	if (bHalf)
 	{
+		ProphecyAttackStartInertia::Cancel(Actor);
 		// A running full attack keeps its pose/history. Freeze its current upper
 		// mounting orientation rather than reseeding an already-running attack.
 		Slash.HalfMountWorldRotation = (Slash.GhostPose[0] * Slash.AnchorWorld).GetRotation();
@@ -572,6 +640,7 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	if (!Actor) return false;
 	auto& Slash = Impl->Agents[Handle.Index].Slash;
 	if (!Slash.bActive) return false;
+	ProphecyAttackStartInertia::Cancel(Actor);
 	ProphecyAttackTrim::CancelHalfFrame(Actor);
 	ProphecyDefenseArmedGate::AttackEnded(Actor);
 	const FName EndedAttack = Slash.Family;
@@ -606,6 +675,7 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	const FVector PreviousCameraOrigin=PlayerSpring ? PlayerSpring->GetComponentLocation() : FVector::ZeroVector;
 	CatchUpFullAttackRoot(this, *Impl, Actor, Handle.Index);
 	Slash.bActive = false;
+	ProphecyAttackCheckpoint::Select(this,Actor,0,true);
 	ProphecyKickFootLeeway::End(Actor,bReturnToLocomotion && !bEndedHalfAttack);
 	if (bHasReturnTarget) SetAgentLocomotionRootWindowLocation(Handle, ReturnTarget, true);
 	if (PlayerSpring) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
@@ -644,7 +714,9 @@ bool AProphecyNNLocomotionManager::GetAgentNNAttackTarget(FProphecyAgentHandle H
 void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 {
 	if (!Impl->bSlashInitialized) return;
-	TArray<int32, TInlineAllocator<BatchSize>> Active;
+	TArray<int32, TInlineAllocator<BatchSize>> Active,AlternativeActive,Refresh2Active;
+	auto* Comparison=ProphecyAttackCheckpoint::Find(this);
+	auto* Refresh2Comparison=ProphecyAttackCheckpoint::Find(this,2);
 	for (int32 Index = 0; Index < CrowdSize; ++Index)
 	{
 		auto& Agent = Impl->Agents[Index];
@@ -664,16 +736,21 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			continue;
 		}
 		WriteStateVec3(Slash.State.GetData(), 262, Target);
-		Active.Add(Index);
+		if (Refresh2Comparison && Refresh2Comparison->Active.Contains(AgentActors[Index])) Refresh2Active.Add(Index);
+		else if (Comparison && Comparison->Active.Contains(AgentActors[Index])) AlternativeActive.Add(Index);
+		else Active.Add(Index);
 	}
-	if (Active.IsEmpty()) return;
+	if (Active.IsEmpty() && AlternativeActive.IsEmpty() && Refresh2Active.IsEmpty()) return;
 	if (!Impl->PreviousPoseDebugAgents.IsEmpty()) UpdatePreviousPoseDebug(true);
-	// A single call per neural stage, packed with active attackers only. Dynamic
-	// CPU batch shapes change only when the active count changes (not per frame).
-	const int32 Width = FMath::Min(BatchSize,Active.Num());
-	if (Impl->SlashModel->InputBatchSize!=Width)
+	// Keep recurrent histories and phase latches on agents; only inference batches
+	// split by the checkpoint latched at attack entry. Empty groups do no work.
+	auto RunGroup=[&](const TArray<int32,TInlineAllocator<BatchSize>>& Active,FSlashNative& Model)
 	{
-		if (!Impl->SlashModel->SetBatch(Width))
+	if (Active.IsEmpty()) return;
+	const int32 Width = FMath::Min(BatchSize,Active.Num());
+	if (Model.InputBatchSize!=Width)
+	{
+		if (!Model.SetBatch(Width))
 		{
 			for (int32 Index:Active)
 			{
@@ -681,9 +758,11 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			}
 			return;
 		}
-		Impl->SlashInputBuffer.SetNumUninitialized(Width*SlashInputDim);
-		Impl->SlashOutputBuffer.SetNumUninitialized(Width*SlashOutputDim);
 	}
+	// The models share scratch; sizes must match even when no model
+	// changed its own batch shape this frame.
+	if (Impl->SlashInputBuffer.Num()!=Width*SlashInputDim) Impl->SlashInputBuffer.SetNumUninitialized(Width*SlashInputDim);
+	if (Impl->SlashOutputBuffer.Num()!=Width*SlashOutputDim) Impl->SlashOutputBuffer.SetNumUninitialized(Width*SlashOutputDim);
 	for (int32 Start = 0; Start < Active.Num(); Start += Width)
 	{
 		const int32 Count = FMath::Min(Width, Active.Num() - Start);
@@ -713,17 +792,9 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 					Context.Time=double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds+Context.Step;
 					Option.PelvisInertia=&Context;
 				}
-				if (Slash.bHeadbuttPreparation && Actor->bUseGTHeadbuttPreparation && Source[270] < 0.5f)
-				{
-					Option.PreparationFrame = Slash.Frame;
-					Option.EntryPose = &Slash.PreparationEntry;
-					const float T = Slash.PreparationBlendSeconds > 0
-						? FMath::Clamp(Slash.Frame / (30.f * Slash.PreparationBlendSeconds), 0.f, 1.f) : 1.f;
-					Option.PreparationWeight = T*T*(3-2*T);
-				}
 			}
 		}
-		if (!Impl->SlashModel->Run(Impl->SlashInputBuffer, Impl->SlashOutputBuffer, MakeArrayView(Settings)))
+		if (!Model.Run(Impl->SlashInputBuffer, Impl->SlashOutputBuffer, MakeArrayView(Settings)))
 		{
 			UE_LOG(LogProphecyNNLocomotion, Error, TEXT("Slash2 NNE inference failed."));
 			for (int32 Lane = 0; Lane < Count; ++Lane)
@@ -750,9 +821,9 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			{
 				if (auto* Debug = Impl->PinningDebug.Find(Index); Debug && Debug->Owner.Get() == AgentActors[Index])
 				{
-					const bool HasFrozen=Impl->SlashModel->NetworkInputs[1].Num()!=51*Impl->SlashModel->InputBatchSize;
-					const float* Frozen = HasFrozen ? Impl->SlashModel->NetworkOutputs[0].GetData() + Lane*43 : nullptr;
-					const float* Learned = Impl->SlashModel->NetworkOutputs[1].GetData() + Lane*43;
+					const bool HasFrozen=Model.NetworkInputs[1].Num()!=51*Model.InputBatchSize;
+					const float* Frozen = HasFrozen ? Model.NetworkOutputs[0].GetData() + Lane*43 : nullptr;
+					const float* Learned = Model.NetworkOutputs[1].GetData() + Lane*43;
 					const bool Both = Frozen && Frozen[41]<0 && Frozen[42]<0;
 					Debug->Frozen.RawNetworkOutput = Frozen ? FVector2D(Frozen[41],Frozen[42]) : FVector2D::ZeroVector;
 					Debug->Frozen.RawPinning = Frozen ? FVector2D(Both || Frozen[41]<=Frozen[42] ? 1 : 0, Both || Frozen[42]<Frozen[41] ? 1 : 0) : FVector2D::ZeroVector;
@@ -798,6 +869,10 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			PublishAgentPose(Index, Impl->Agents[Index].PublishedPoseTimeSeconds);
 		}
 	}
+	};
+	RunGroup(Active,*Impl->SlashModel);
+	if (!AlternativeActive.IsEmpty()) RunGroup(AlternativeActive,*Comparison->Model);
+	if (!Refresh2Active.IsEmpty()) RunGroup(Refresh2Active,*Refresh2Comparison->Model);
 }
 
 void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<FTransform> PreviousPose, TArrayView<FTransform> Pose)

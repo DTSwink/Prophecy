@@ -256,6 +256,8 @@ public:
 		bool bLoop);
 	bool StopAgentAnimationLayer(FProphecyAgentHandle Handle, float BlendOutSeconds);
 	bool TriggerAgentNNAttack(FProphecyAgentHandle Handle, FName Attack, FVector TargetWorld, bool bHalf);
+	bool SetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle, int32 Checkpoint, FString& OutError);
+	bool GetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle, int32& Selected, int32& Effective, bool& bAttacking) const;
 	void RefreshAgentAttackTrim(FProphecyAgentHandle Handle);
 	void GetAgentAttackDefenseState(FProphecyAgentHandle Handle,bool& bParry,bool& bDodge) const;
 	bool SetAgentNNHalfAttack(FProphecyAgentHandle Handle, bool bHalf);

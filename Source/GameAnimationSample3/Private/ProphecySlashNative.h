@@ -3,6 +3,8 @@
 class FSlashNative
 {
 public:
+	// Reserved legacy storage only: preserve retained Live Coding layouts.
+	// Headbutt preparation has no loader, per-step branch or pose override.
 	struct FArmPreparation
 	{
 		FVector3f Position = FVector3f::ZeroVector; // metres, native pelvis frame
@@ -23,7 +25,6 @@ public:
 	bool Initialize(const FString& Directory, const TSharedPtr<FJsonObject>& Contract, bool bGpu = false, const FString& AuditGeometryPath = FString());
 	bool SetBatch(int32 Count);
 	bool Run(TArray<float>& Input, TArray<float>& Output, TConstArrayView<FStepSettings> Settings = {});
-	bool LoadHeadbuttPreparation(const FString& Directory);
 	TArray<float> StartupExpected;
 	// Kept here for opt-in numerical audits; production adds no trace collection.
 	TArray<float> NetworkInputs[3], NetworkOutputs[3];
@@ -53,6 +54,7 @@ private:
 	FLimb Legs[2], Arms[2];
 	float RootFeatures[35], DeltaScale = 1, SoleOffset = 0, Ground = 0, GateThreshold = 0.6f;
 	int32 FrozenPinSteps = 60;
+	float PinFullStrengthAt = 1.f;
 	TArray<FPreparationPose> HeadbuttPreparation;
 
 	static FVector3f Read(const float* V, int32 O = 0) { return FVector3f(V[O], V[O+1], V[O+2]); }

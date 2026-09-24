@@ -4,6 +4,9 @@ class AProphecyAgent;
 namespace ProphecySlashReturn
 {
 bool IsSlash(FName Attack);
+// 0 left / 1 right / INDEX_NONE excluded. Slashes always use the sword arm.
+int32 ArmForAttack(FName Attack);
+int32 ActiveArm(const AProphecyAgent* A);
 bool Active(const AProphecyAgent* A);
 void Begin(const AProphecyAgent* A,FName Attack);
 void Cancel(const AProphecyAgent* A);
