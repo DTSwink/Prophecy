@@ -939,6 +939,15 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         Blade->SetCollisionResponseToChannel(ECC_Visibility,ECR_Ignore);
         const auto Original=Blade->GetCollisionResponseToChannels();
         FProphecyJoltWorldDiagnostics Before;World->GetDiagnostics(Before);
+        bool bBodyDefault = false;
+        if (!Agent->GetJoltBodyPairSelfCollisionEnabled(TEXT("hand_r"), TEXT("head"), bBodyDefault, Error)
+            || !TestTrue(TEXT("Body test pair initially collides"), bBodyDefault)) return false;
+        auto CheckBody = [&](bool Expected)
+        {
+            bool Actual = !Expected;
+            TestTrue(TEXT("Attack body pair follows phase"),
+                Agent->GetJoltBodyPairSelfCollisionEnabled(TEXT("hand_r"), TEXT("head"), Actual, Error) && Actual == Expected);
+        };
         auto Check=[&](bool bAllowed)
         {
             const auto Expected=bAllowed?Original:FCollisionResponseContainer(ECR_Ignore);
@@ -952,15 +961,16 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         for (FName Family:{FName(TEXT("slashl")),FName(TEXT("slashrd")),FName(TEXT("pike")),FName(TEXT("hookl")),FName(TEXT("headbutt"))})
         {
             Agent->NotifySwordAttackState(true);
-            ProphecySwordAttackCollision::Begin(Agent,Family);Check(false);
+            ProphecySwordAttackCollision::Begin(Agent,Family);Check(false);CheckBody(false);
             auto* Controller=Agent->FindComponentByClass<UProphecySwordComponent>();
             if (!Controller) return false;
             Controller->RefreshOwnerCollision();
             FProphecyJoltWorldDiagnostics Suppressed;World->GetDiagnostics(Suppressed);
             TestTrue(TEXT("Before Hit sword suppresses owner body pairs"),Suppressed.SuppressedBodyPairCount>Before.SuppressedBodyPairCount);
             ProphecySwordAttackCollision::Armed(Agent);
+            CheckBody(false); // Armed only changes the weapon's external collision gate.
             Check(Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash")));
-            ProphecySwordAttackCollision::Hit(Agent);Check(true);
+            ProphecySwordAttackCollision::Hit(Agent);Check(true);CheckBody(true);
             FProphecyJoltWorldDiagnostics Restored;World->GetDiagnostics(Restored);
             TestEqual(TEXT("Hit restores native owner pairs to normal grip-only exclusions"),Restored.SuppressedBodyPairCount,Before.SuppressedBodyPairCount);
             TestTrue(TEXT("Hit does not end attack context"),Agent->IsSwordAttackActive());
@@ -973,7 +983,7 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         }
         ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));Check(false);
         ProphecySwordAttackCollision::Hit(Agent);Check(false); // weapon still requires Armed
-        Agent->NotifySwordAttackState(false);Check(true); // shared cancel/failure path
+        Agent->NotifySwordAttackState(false);Check(true);CheckBody(true); // shared cancel/failure path
         ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));ProphecySwordAttackCollision::Armed(Agent);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("hookr"));Check(false);
         ProphecySwordAttackCollision::Armed(Agent);Check(false);
@@ -990,8 +1000,9 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         ProphecySwordAttackCollision::End(Agent);Check(true);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("hookl"));
         auto* Dropped=Agent->DropSword();
+        CheckBody(false); // Dropping the weapon does not end body suppression.
         TestTrue(TEXT("Drop restores collision before releasing ownership"),Dropped==Sword && Blade->GetCollisionResponseToChannels()==Original);
-        ProphecySwordAttackCollision::End(Agent);
+        ProphecySwordAttackCollision::End(Agent);CheckBody(true);
         if (Dropped) Dropped->Destroy();else return false;
     }
     // Ordinary kinematic presentation uses the same UE filter without a Jolt body.

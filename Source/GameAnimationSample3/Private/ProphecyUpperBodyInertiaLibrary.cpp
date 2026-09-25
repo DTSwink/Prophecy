@@ -138,6 +138,14 @@ bool FProphecyCoreInertiaTest::RunTest(const FString&)
         RestoreReset(A);Begin(A,Previous,Next,Names,Core,1./30);Cancel(A);TestFalse(TEXT("Special/reset cancels motion"),Active(A));
         UProphecyUpperBodyInertiaLibrary::SetAttackUpperBodyInertia(A,true,.25,0,0,1);Begin(A,Previous,Next,Names,Core,1./30);
         TestFalse(TEXT("Zero durations retain no active work"),Active(A));
+        UProphecyUpperBodyInertiaLibrary::SetAttackUpperBodyInertia(A,true,.25,.25,0,1);
+        Begin(A,Previous,Next,Names,Core,1./30);
+        for(int32 Tick=1;Tick<=15;++Tick)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1/FPS);
+            TArray<FTransform> HeldPose=Next;Apply(A,Parents,Names,Core,FTransform::Identity,HeldPose);
+            TestTrue(TEXT("Hold-only inertia retains ownership until tick15 then retires"),Active(A)==(Tick<15));
+        }
     }
     UProphecyUpperBodyInertiaLibrary::SetAttackUpperBodyInertia(A,true,.25,0,.5,1);
     Begin(A,Previous,Next,Names,Core,1./30);

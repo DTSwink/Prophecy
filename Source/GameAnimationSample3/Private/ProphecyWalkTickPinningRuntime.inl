@@ -152,9 +152,13 @@ void AProphecyNNLocomotionManager::CommitWalkTickPinning()
             if(Offsets.WorldOffset[I].IsNearlyZero(1.e-9))continue;
             const FVector3f World=UnrealToTraining(Offsets.WorldOffset[I]);
             const int32 O=9+16*I;
-            auto Shift=[&](float* State,float Yaw)
+            auto Shift=[&](float* State,float Yaw,bool Recurrent)
             {
                 const FVector3f D=TransformRow(TransformRow(World,YawMatrix(Yaw)),Transpose(Impl->SeedRootRot));
+                // Feed the new pin displacement into the policy. The connected
+                // knee remains a presentation solve, just as at policy cadence.
+                if(Recurrent && UsePresentationRecovery())
+                { WriteStateVec3(State,O,ReadStateVec3(State,O)+D);return; }
                 if(PreserveTickPinningHinge())
                 {
                     // Current and published states use different root frames. Solve
@@ -167,8 +171,8 @@ void AProphecyNNLocomotionManager::CommitWalkTickPinning()
                 }
                 else WriteStateVec3(State,O,ReadStateVec3(State,O)+D);
             };
-            Shift(StateSlice(Impl->CurStateBuffer,Index),Agent.CurRootYaw);
-            Shift(StateSlice(Impl->PublishedStateBuffer,Index),Agent.PublishedYaw);
+            Shift(StateSlice(Impl->CurStateBuffer,Index),Agent.CurRootYaw,true);
+            Shift(StateSlice(Impl->PublishedStateBuffer,Index),Agent.PublishedYaw,false);
             Offsets.WorldOffset[I]=FVector::ZeroVector;
         }
     }

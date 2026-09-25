@@ -9,7 +9,7 @@ does not restart the translation blend. Disabled immediately restores the usual
 rotation selection.
 
 Both feet use their own existing leg hold/blend duration, including the mapped
-kicking/non-kicking durations after kickL/kickR. Normal/zero-duration leg regions
+kicking/non-kicking durations after kickL/kickR. Normal/zero-hold-and-blend leg regions
 remain bypassed. While translation follows its configured source→normal blend,
 rotation follows Walk→normal on that same timeline. Thus for the user's current
 Run→Walk recovery, foot rotation comes entirely from Walk throughout. If normal
@@ -67,12 +67,26 @@ finishes on walk. Movement intent, automatic run threshold and normal directiona
 blend settings remain authoritative. Root trajectory is unchanged.
 
 Each authored second is 60 unpaused world ticks, independent of FPS/time dilation.
-Different holds and durations retire independently. Duration=0 or Source=Normal
-bypasses a region entirely (including hold). If all regions bypass, no recovery
+Different holds and durations retire independently. Blend Duration=0 with a positive
+hold keeps the selected source for the hold, then switches directly to normal.
+For example Run, Hold=0.25, Blend=0 holds Run for15 game ticks. Hold=0 AND Blend=0,
+or Source=Normal, bypasses a region entirely. If all regions bypass, no recovery
 clock, extra policy inference or recovery pose correction is scheduled. Disabling
 a region applies immediately; positive edits apply at the next handoff. Calls in
 On Attack Ended can configure the current handoff before its first prediction. Starting
 a new attack or resetting cancels the previous recovery.
+
+Hold-only correction2026-09-25: the current Blueprint selects Run, Hold0.25,
+Blend0 for all regular regions. Previously zero blend disabled the hold too;
+disconnecting the setter restored the default1-second Run recovery. Positive
+hold now works without a fade, with no division by zero. Six focused native
+tests pass16:14:35UTC: existing recovery, hold-only, both foot-rotation tests,
+all-special retirement and60-tick clock. Hold-only tests cover30/60/120FPS,
+15-tick expiry, per-region kick roles, cancellation and zero inactive work.
+The unchanged210-tick Blueprint replay ends overR at137, publishes Run weight1
+through152 and normal Walk1 at153. The15-game-tick hold is consumed at the next
+30Hz policy publication, as with existing recovery timing. Live build100.64s;
+no saved graph/settings changes. Capture: `Saved/Diagnostics/RecoveryHoldOnly-capture.json`.
 
 Checkpoint inference is selected from all three weights: an exact run-only or
 walk-only pose uses one policy, mixed regions require both existing batched policy

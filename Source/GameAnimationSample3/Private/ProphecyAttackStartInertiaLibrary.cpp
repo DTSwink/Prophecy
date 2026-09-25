@@ -5,6 +5,7 @@
 #include "ProphecyNNPoseTypes.h"
 #include "ProphecyNNPresentation.h"
 #include "ProphecyNNInterpolation.h"
+#include "ProphecyKneePopSmoothing.h"
 #include "Engine/World.h"
 #include "Misc/ScopeRWLock.h"
 
@@ -115,7 +116,12 @@ void Apply(int32 Id,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,con
     FCorrection C;
     {FReadScopeLock Lock(CorrectionLock);const auto* Found=Corrections.Find(Id);if(!Found)return;C=*Found;}
     const FTransform Before=C.Authored.GetRelativeTransform(Space),After=C.Corrected.GetRelativeTransform(Space);
-    if(Before.Equals(After,1.e-10))return;
+    if(Before.Equals(After,1.e-10))
+    {
+        if(ProphecyNNPresentation::UseSpecialKneeSmoothingOrder())
+            ProphecyNNPresentation::ApplyKneePopSmoothing(Id,Names,Pose);
+        return;
+    }
     const FQuat Rotation=(After.GetRotation()*Before.GetRotation().Inverse()).GetNormalized();
     auto Move=[&](const FVector& P){return After.GetLocation()+Rotation.RotateVector(P-Before.GetLocation());};
     int32 LegIndices[2][4];
@@ -135,6 +141,10 @@ void Apply(int32 Id,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,con
         Pose[B].SetLocation(Move(Pose[B].GetLocation()));
         Pose[B].SetRotation((Rotation*Pose[B].GetRotation()).GetNormalized());
     }
+    // Entry inertia can exhaust leg reach after the ordinary presentation pass.
+    // Smooth once here, only while this correction exists, using the user's zone.
+    if(ProphecyNNPresentation::UseSpecialKneeSmoothingOrder())
+        ProphecyNNPresentation::ApplyKneePopSmoothing(Id,Names,Pose);
 }
 }
 bool UProphecyAttackStartInertiaLibrary::SetAttackStartPelvisInertia(AProphecyAgent* A,bool Enabled,
@@ -236,6 +246,36 @@ bool RunAttackStartInertiaChecks(FAutomationTestBase& Test)
     for(int32 I=0;I<Pose.Num();++I)Test.TestTrue(TEXT("Readers share one correction without advancing it"),Repeated[I].Equals(Pose[I],0));
     EraseCorrection(Id);Repeated=Source;Apply(Id,Names,Repeated);
     for(int32 I=0;I<Pose.Num();++I)Test.TestTrue(TEXT("Disabled pose path exactly unchanged"),Repeated[I].Equals(Source[I],0));
+    // Inertia moves the hip beyond reach, reproducing the tick-920 failure.
+    // Smoothing must run exactly once AFTER MoveHip, not before and not when retired.
+    FProphecyNNPoseStore::SetAgentLocalPose(Id,Names,Source,Source,Source,
+        FTransform::Identity,FTransform::Identity,3.,true,false);
+    ProphecyNNPresentation::SetKneePopSmoothing(Id,4);
+    const FTransform FarPelvis(Source[0].GetRotation(),Source[0].GetLocation()+FVector(0,0,15));
+    {FWriteScopeLock Lock(CorrectionLock);Corrections.Add(Id,{Source[0],FarPelvis});HasCorrections.Store(true);}
+    FProphecyNNPoseSnapshot Snapshot;Snapshot.BoneNames=Names;
+    auto Smoothed=Source;
+    FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Smoothed);
+    for(int32 I=0;I<Source.Num();++I)Test.TestTrue(TEXT("Pre-entry pass skips special smoothing"),Smoothed[I].Equals(Source[I],0));
+    Apply(Id,Names,Smoothed);
+    auto Expected=Source;
+    MoveHip(Expected[2],Expected[3],Expected[4],&Expected[5],Source[2].GetLocation()+FVector(0,0,15));
+    float Zone;FVector Pole;
+    Test.TestTrue(TEXT("Stable configured reference available"),ProphecyNNPresentation::ReadKneePopReference(Id,0,Zone,Pole));
+    ProphecyKneePopSmoothing::Apply(Expected[2],Expected[3],Expected[4],&Expected[5],Zone,Expected[2].TransformVectorNoScale(Pole));
+    for(int32 I=2;I<6;++I)Test.TestTrue(TEXT("One post-inertia smoothing pass matches expected result"),Smoothed[I].Equals(Expected[I],1.e-7));
+    Test.TestTrue(TEXT("Entry smoothing keeps exact pelvis"),Smoothed[0].Equals(FarPelvis,1.e-9));
+    Test.TestTrue(TEXT("Entry smoothing preserves foot rotation"),Smoothed[4].GetRotation().Equals(Source[4].GetRotation(),0));
+    const double KneeBend=FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(FVector::DotProduct(
+        (Smoothed[3].GetLocation()-Smoothed[2].GetLocation()).GetSafeNormal(),
+        (Smoothed[4].GetLocation()-Smoothed[3].GetLocation()).GetSafeNormal()),-1.,1.)));
+    Test.TestTrue(TEXT("Entry no longer leaves fully extended leg"),KneeBend>15);
+    Local=Source;for(auto& B:Local)B=B.GetRelativeTransform(Space);Apply(Id,Names,Local,Space);
+    for(int32 I=0;I<Source.Num();++I)Test.TestTrue(TEXT("Post-entry smoothing agrees in world and component spaces"),(Local[I]*Space).Equals(Smoothed[I],1.e-7));
+    EraseCorrection(Id);Repeated=Source;
+    FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Repeated);Apply(Id,Names,Repeated);
+    for(int32 I=0;I<Source.Num();++I)Test.TestTrue(TEXT("Retired entry leaves special unmodified"),Repeated[I].Equals(Source[I],0));
+    FProphecyNNPoseStore::ClearAgentPose(Id);
     double WorstLength=0;
     for(int32 I=0;I<=1000;++I)
     {

@@ -1,6 +1,15 @@
 #pragma once
 #include "CoreMinimal.h"
 class AProphecyAgent;
+namespace ProphecyLegRecovery
+{
+struct FStep { float MaxTurnRadians=0; bool Expired=false; };
+void Begin(const AProphecyAgent* Agent);
+void Cancel(const AProphecyAgent* Agent);
+void Remove(const AProphecyAgent* Agent);
+bool Step(const AProphecyAgent* Agent,FStep& Out);
+void FinishStep(const AProphecyAgent* Agent,bool Limited);
+}
 namespace ProphecyLegChainDebug
 {
 bool IsEnabled(const AProphecyAgent* Agent);

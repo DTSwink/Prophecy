@@ -16,7 +16,7 @@ AProphecyNNLocomotionManager* Manager(AProphecyAgent* Agent)
 bool UProphecyAttackCheckpointLibrary::SetAttackCheckpoint(AProphecyAgent* Agent,EProphecyAttackCheckpoint Checkpoint,FString& OutError)
 {
     OutError.Reset();
-    if (Checkpoint!=EProphecyAttackCheckpoint::Current174664 && Checkpoint!=EProphecyAttackCheckpoint::PredictivePin160664 && Checkpoint!=EProphecyAttackCheckpoint::PredictivePin184064)
+    if (Checkpoint!=EProphecyAttackCheckpoint::Current174664 && Checkpoint!=EProphecyAttackCheckpoint::PredictivePin160664 && Checkpoint!=EProphecyAttackCheckpoint::PredictivePin184064 && Checkpoint!=EProphecyAttackCheckpoint::September20Good265458)
     { OutError=TEXT("Unknown attack checkpoint.");return false; }
     auto* M=Manager(Agent);
     if (!M) { OutError=TEXT("Agent is not initialized.");return false; }

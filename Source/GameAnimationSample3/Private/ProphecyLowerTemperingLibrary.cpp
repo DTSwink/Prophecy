@@ -4,6 +4,71 @@
 #include "Engine/World.h"
 #include "ProphecyBlendClock.h"
 
+namespace ProphecyLegRecovery
+{
+struct FConfig { float Duration=1.f,Speed=180.f; };
+struct FActive { FConfig Config; double Elapsed=0; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FActive> Active;
+static FDelegateHandle Cleanup;
+static void EnsureCleanup()
+{
+    if(Cleanup.IsValid()) return;
+    Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
+    {
+        for(auto It=Configs.CreateIterator();It;++It)
+            if(!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+        for(auto It=Active.CreateIterator();It;++It)
+            if(!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+    });
+}
+void Cancel(const AProphecyAgent* Agent)
+{
+    if(!Active.IsEmpty() && Active.Remove(Agent))
+        ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::LegReconstruction);
+}
+void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Configs.Remove(Agent); }
+void Begin(const AProphecyAgent* Agent)
+{
+    Cancel(Agent);
+    const auto* Config=Configs.IsEmpty()?nullptr:Configs.Find(Agent);
+    const FConfig Value=Config?*Config:FConfig{};
+    if(Value.Duration<=0 || !IsValid(Agent) || !ProphecyLegChainDebug::IsEnabled(Agent)) return;
+    EnsureCleanup();Active.Add(Agent,FActive{Value});
+    ProphecyBlendClock::Start(Agent,ProphecyBlendClock::EKind::LegReconstruction);
+}
+bool Step(const AProphecyAgent* Agent,FStep& Out)
+{
+    auto* State=Active.IsEmpty()?nullptr:Active.Find(Agent);
+    if(!State) return false;
+    const double Dt=ProphecyBlendClock::Consume(Agent,ProphecyBlendClock::EKind::LegReconstruction);
+    State->Elapsed+=Dt;
+    Out.MaxTurnRadians=FMath::DegreesToRadians(State->Config.Speed*float(Dt));
+    Out.Expired=State->Elapsed+1.e-6>=State->Config.Duration;
+    return true;
+}
+void FinishStep(const AProphecyAgent* Agent,bool Limited)
+{
+    const auto* State=Active.Find(Agent);
+    if(State && !Limited && State->Elapsed+1.e-6>=State->Config.Duration) Cancel(Agent);
+}
+}
+
+bool UProphecyLegChainDebugLibrary::SetLegReconstructionRecovery(AProphecyAgent* Agent,float DurationSeconds,float PoleTurnSpeedDegreesPerSecond)
+{
+    if(!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
+        || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown
+        || !FMath::IsFinite(DurationSeconds) || DurationSeconds<0
+        || !FMath::IsFinite(PoleTurnSpeedDegreesPerSecond) || PoleTurnSpeedDegreesPerSecond<=0) return false;
+    using namespace ProphecyLegRecovery;
+    EnsureCleanup();const FConfig Config{DurationSeconds,PoleTurnSpeedDegreesPerSecond};
+    if(DurationSeconds==1.f && PoleTurnSpeedDegreesPerSecond==180.f) Configs.Remove(Agent);
+    else Configs.Add(Agent,Config);
+    if(DurationSeconds==0) Cancel(Agent);
+    else if(auto* State=Active.Find(Agent)) State->Config=Config; // Retuning never restarts the clock.
+    return true;
+}
+
 namespace ProphecyLowerTempering
 {
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> MinimumReachOverrides;
@@ -45,6 +110,7 @@ bool UProphecyLegChainDebugLibrary::SetLegChainReconstruction(AProphecyAgent* Ag
         || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown) return false;
     using namespace ProphecyLegChainDebug;
     if (Enabled) { Remove(Agent);return true; }
+    ProphecyLegRecovery::Cancel(Agent);
     if (!Cleanup.IsValid()) Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
     {
         for (auto It=Disabled.CreateIterator();It;++It)
@@ -60,6 +126,9 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>, FSettings> Settings;
 // Configuration is independent of the active values consumed by Blend To Normal.
 static TMap<TWeakObjectPtr<const AProphecyAgent>, FSettings> RegularProfiles,KickProfiles;
 static TSet<TWeakObjectPtr<const AProphecyAgent>> KickSelected,RightKickSelected;
+// Opt-in separation keeps existing shared-return graphs working until the kick
+// node is used. Configuration only; no tick work or additional return clock.
+static TSet<TWeakObjectPtr<const AProphecyAgent>> SeparateKickReturns;
 // Sidecars preserve live settings, return timelines and reset snapshot layouts.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FSettings> NonKickingProfiles,RightValues;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FSettings> ReturnRightInitial,FeetReturnRightInitial;
@@ -204,7 +273,7 @@ static void EnsureCleanup()
             if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
         for (auto* Map:{&Returns,&FeetReturns,&PelvisReturns}) for (auto It=Map->CreateIterator();It;++It)
             if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
-        for (auto* Set:{&KickSelected,&RightKickSelected}) for (auto It=Set->CreateIterator();It;++It)
+        for (auto* Set:{&KickSelected,&RightKickSelected,&SeparateKickReturns}) for (auto It=Set->CreateIterator();It;++It)
             if (!It->IsValid() || It->Get()->GetWorld()==World) It.RemoveCurrent();
     });
 }
@@ -215,7 +284,7 @@ static void Apply(const AProphecyAgent* Agent,const FSettings& Value)
 }
 void ClearAttackSelection(const AProphecyAgent* Agent) { KickSelected.Remove(Agent);RightKickSelected.Remove(Agent); }
 void ForgetProfiles(const AProphecyAgent* Agent)
-{ Remove(Agent);ClearAttackSelection(Agent);RegularProfiles.Remove(Agent);KickProfiles.Remove(Agent);NonKickingProfiles.Remove(Agent); }
+{ Remove(Agent);ClearAttackSelection(Agent);SeparateKickReturns.Remove(Agent);RegularProfiles.Remove(Agent);KickProfiles.Remove(Agent);NonKickingProfiles.Remove(Agent); }
 void SelectAttackProfile(const AProphecyAgent* Agent,FName Attack)
 {
     const bool Kick=Attack==TEXT("kickl") || Attack==TEXT("kickr");
@@ -272,8 +341,8 @@ bool UProphecyLowerTemperingLibrary::SetKickLocomotionLowerBodyTempering(AProphe
     return true;
 }
 
-bool UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(
-    AProphecyAgent* Agent,float DurationSeconds,float HoldDurationSeconds,float PelvisDurationSeconds,float PelvisHoldDurationSeconds)
+static bool BlendSelectedLowerBodyTemperingToNormal(bool Kick,AProphecyAgent* Agent,
+    float DurationSeconds,float HoldDurationSeconds,float PelvisDurationSeconds,float PelvisHoldDurationSeconds)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
         || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown
@@ -282,6 +351,9 @@ bool UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(
         || !FMath::IsFinite(PelvisDurationSeconds) || PelvisDurationSeconds<0
         || !FMath::IsFinite(PelvisHoldDurationSeconds) || PelvisHoldDurationSeconds<0) return false;
     using namespace ProphecyLowerTempering;
+    if (Kick) { EnsureCleanup();SeparateKickReturns.Add(Agent); }
+    if ((Kick && !KickSelected.Contains(Agent))
+        || (!Kick && SeparateKickReturns.Contains(Agent) && KickSelected.Contains(Agent))) return true;
     if (DurationSeconds!=PelvisDurationSeconds || HoldDurationSeconds!=PelvisHoldDurationSeconds)
     {
         if (!Find(Agent)) return true;
@@ -301,6 +373,14 @@ bool UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(
     return true;
 }
 
+bool UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(
+    AProphecyAgent* Agent,float DurationSeconds,float HoldDurationSeconds,float PelvisDurationSeconds,float PelvisHoldDurationSeconds)
+{ return BlendSelectedLowerBodyTemperingToNormal(false,Agent,DurationSeconds,HoldDurationSeconds,PelvisDurationSeconds,PelvisHoldDurationSeconds); }
+
+bool UProphecyLowerTemperingLibrary::BlendKickLocomotionLowerBodyTemperingToNormal(
+    AProphecyAgent* Agent,float DurationSeconds,float HoldDurationSeconds,float PelvisDurationSeconds,float PelvisHoldDurationSeconds)
+{ return BlendSelectedLowerBodyTemperingToNormal(true,Agent,DurationSeconds,HoldDurationSeconds,PelvisDurationSeconds,PelvisHoldDurationSeconds); }
+
 bool UProphecyLowerTemperingLibrary::BlendLocomotionFeetTemperingToNormal(
     AProphecyAgent* Agent,float DurationSeconds,float HoldDurationSeconds)
 { return ProphecyLowerTempering::BlendPart(Agent,true,DurationSeconds,HoldDurationSeconds); }
@@ -311,6 +391,48 @@ bool UProphecyLowerTemperingLibrary::BlendLocomotionPelvisTemperingToNormal(
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyLegRecoveryClockTest,"Prophecy.NN.LowerTempering.IndependentRecoveryClock",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyLegRecoveryClockTest::RunTest(const FString&)
+{
+    using namespace ProphecyLegRecovery;
+    UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* Agent=World?World->SpawnActor<AProphecyAgent>():nullptr;
+    if(!Agent) return false;
+    for(float FPS:{30.f,60.f,120.f})
+    {
+        TestTrue(TEXT("Configure independent duration and speed"),UProphecyLegChainDebugLibrary::SetLegReconstructionRecovery(Agent,1.f,180.f));
+        Begin(Agent);FStep S;float Budget=0;
+        for(int32 I=1;I<=60;++I)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/FPS);
+            if(I==15) ProphecyLowerTempering::Remove(Agent);
+            if(I%2==0)
+            {
+                TestTrue(TEXT("Recovery survives its independent window"),Step(Agent,S));Budget+=S.MaxTurnRadians;
+                if(I<60) TestFalse(TEXT("Timer cannot expire early"),S.Expired);
+                FStep Duplicate;Step(Agent,Duplicate);TestEqual(TEXT("Duplicate sample adds no turn budget"),Duplicate.MaxTurnRadians,0.f);
+            }
+        }
+        TestTrue(TEXT("Sixty ticks allows exactly 180 degrees at every FPS"),FMath::IsNearlyEqual(Budget,PI,2.e-6f));
+        TestTrue(TEXT("Duration expires at sixty ticks"),S.Expired);
+        FinishStep(Agent,true);TestTrue(TEXT("Remaining correction is not dropped at expiry"),Step(Agent,S));
+        FinishStep(Agent,false);TestFalse(TEXT("Convergence removes all active pose work"),Step(Agent,S));
+        TestFalse(TEXT("Convergence retires active entry"),Active.Contains(Agent));
+    }
+    UProphecyLegChainDebugLibrary::SetLegReconstructionRecovery(Agent,0,180);Begin(Agent);FStep S;
+    TestFalse(TEXT("Zero extra duration creates no state or clock"),Step(Agent,S));
+    TestFalse(TEXT("Zero speed rejected"),UProphecyLegChainDebugLibrary::SetLegReconstructionRecovery(Agent,1,0));
+    UProphecyLegChainDebugLibrary::SetLegReconstructionRecovery(Agent,1,90);Begin(Agent);Cancel(Agent);
+    TestFalse(TEXT("New special/reset cancellation removes active work"),Step(Agent,S));
+    TestTrue(TEXT("Cancellation preserves tuning for future exits"),Configs.Contains(Agent));
+    Begin(Agent);UProphecyLegChainDebugLibrary::SetLegChainReconstruction(Agent,false);
+    TestFalse(TEXT("Disabling leg reconstruction cancels timer"),Step(Agent,S));
+    UProphecyLegChainDebugLibrary::SetLegChainReconstruction(Agent,true);
+    Remove(Agent);TestFalse(TEXT("Lifetime cleanup removes settings"),Configs.Contains(Agent));
+    World->DestroyWorld(false);return !HasAnyErrors();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyTemperingReturnTest,"Prophecy.NN.LowerTempering.ReturnTimeline",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyTemperingReturnTest::RunTest(const FString&)
@@ -357,7 +479,7 @@ bool FProphecyTemperingSeparateReturnsTest::RunTest(const FString&)
     int32 VisibleNodes=0;
     for (TFieldIterator<UFunction> It(L::StaticClass(),EFieldIteratorFlags::ExcludeSuper);It;++It)
         if (It->HasAnyFunctionFlags(FUNC_BlueprintCallable) && !It->GetBoolMetaData(TEXT("BlueprintInternalUseOnly"))) ++VisibleNodes;
-    TestEqual(TEXT("Regular Set, Kick Set and shared Blend exposed"),VisibleNodes,3);
+    TestEqual(TEXT("Regular and kick Set/Blend exposed"),VisibleNodes,4);
 #endif
     UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
     auto* Agent=World ? World->SpawnActor<AProphecyAgent>() : nullptr;
@@ -525,5 +647,50 @@ bool FProphecyTemperingFootRolesTest::RunTest(const FString&)
     SelectAttackProfile(Agent,TEXT("hookL"));
     TestTrue(TEXT("Non-kick selects regular symmetric settings"),Left().FeetTranslation==.25f && Right().FeetTranslation==.25f);
     ForgetProfiles(Agent);World->DestroyWorld(false);return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySeparatedKickReturnsTest,"Prophecy.NN.LowerTempering.SeparatedKickReturns",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecySeparatedKickReturnsTest::RunTest(const FString&)
+{
+    using namespace ProphecyLowerTempering;
+    using L=UProphecyLowerTemperingLibrary;
+    UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* Agent=World ? World->SpawnActor<AProphecyAgent>() : nullptr;
+    if (!Agent) { if(World) World->DestroyWorld(false);return false; }
+    auto Left=[&]() { const auto* V=Find(Agent);return V ? *V : FSettings{}; };
+    auto Right=[&]() { const auto V=Left();return FSettings(RightFootSettings(Agent,V)); };
+    for (float FPS:{30.f,60.f,120.f}) for (FName Family:{FName(TEXT("kickL")),FName(TEXT("kickR"))})
+    {
+        ForgetProfiles(Agent);
+        auto Tick=[&](int Count) { for(int I=0;I<Count;++I)
+            { FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/FPS);Find(Agent); } };
+        L::SetLocomotionLowerBodyTempering(Agent,true,.2f,.3f,.4f,.5f,.6f,.7f);
+        L::SetKickLocomotionLowerBodyTempering(Agent,true,0,.2f,.4f,.6f,.7f,.8f,.3f,.4f,.5f);
+        SelectAttackProfile(Agent,Family);
+        // Both call orders: legacy regular call may precede initial opt-in, but
+        // only the explicit kick schedule wins; later regular calls do nothing.
+        L::BlendLocomotionLowerBodyTemperingToNormal(Agent,2,0,2,0);
+        L::BlendKickLocomotionLowerBodyTemperingToNormal(Agent,.5f,.25f,.25f,0);
+        L::BlendLocomotionLowerBodyTemperingToNormal(Agent,0,0,0,0);
+        Tick(15);
+        auto Kick=[&]() { return Family==TEXT("kickR") ? Right() : Left(); };
+        TestEqual(TEXT("Kick retains its own hold despite regular zero return"),Kick().FeetTranslation,0.f);
+        TestEqual(TEXT("Kick pelvis has independent duration"),Left().PelvisTranslation,1.f);
+        Tick(15);TestEqual(TEXT("Kick blend uses its own duration at every FPS"),Kick().FeetTranslation,.5f,1.e-6f);
+        Tick(15);TestNull(TEXT("Kick finishes at45 ticks and removes pose work"),Find(Agent));
+        TestFalse(TEXT("Kick completion removes feet timeline"),FeetReturns.Contains(Agent));
+        TestFalse(TEXT("Kick completion removes pelvis timeline"),PelvisReturns.Contains(Agent));
+        SelectAttackProfile(Agent,TEXT("hookL"));
+        L::BlendLocomotionLowerBodyTemperingToNormal(Agent,1,.25f,1,.25f);
+        L::BlendKickLocomotionLowerBodyTemperingToNormal(Agent,0,0,0,0);
+        Tick(15);TestEqual(TEXT("Kick node cannot erase regular hold"),Left().FeetTranslation,.2f);
+        Tick(60);TestNull(TEXT("Regular schedule still completes"),Find(Agent));
+        SelectAttackProfile(Agent,Family);
+        L::BlendKickLocomotionLowerBodyTemperingToNormal(Agent,0,0,0,0);
+        TestNull(TEXT("Zero kick duration restores both feet immediately"),Find(Agent));
+        TestFalse(TEXT("Zero kick duration retains no timeline"),Returns.Contains(Agent)||FeetReturns.Contains(Agent)||PelvisReturns.Contains(Agent));
+    }
+    ForgetProfiles(Agent);TestFalse(TEXT("Cleanup removes opt-in configuration"),SeparateKickReturns.Contains(Agent));
+    World->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif

@@ -101,8 +101,8 @@ bool IsSlash(FName N)
 { return N==TEXT("slashL") || N==TEXT("slashR") || N==TEXT("slashLD") || N==TEXT("slashRD") || N==TEXT("slashLU") || N==TEXT("slashRU"); }
 int32 ArmForAttack(FName N)
 {
-    if(IsSlash(N) || N==TEXT("hookR") || N==TEXT("overR")) return 1;
-    if(N==TEXT("hookL") || N==TEXT("overL")) return 0;
+    if(IsSlash(N) || N==TEXT("pike") || N==TEXT("jabR") || N==TEXT("hookR") || N==TEXT("overR")) return 1;
+    if(N==TEXT("jabL") || N==TEXT("hookL") || N==TEXT("overL")) return 0;
     return INDEX_NONE;
 }
 bool Active(const AProphecyAgent* A) { return !Returns.IsEmpty() && Returns.Contains(A); }
@@ -240,11 +240,11 @@ bool FProphecySlashReturnTest::RunTest(const FString&)
     }
     for(const TCHAR* Name:{TEXT("pike"),TEXT("kickL"),TEXT("hookR"),TEXT("jabL"),TEXT("overR")})
         TestFalse(TEXT("Non-slash classification stays strict"),IsSlash(FName(Name)));
-    for(const TCHAR* Name:{TEXT("hookL"),TEXT("overL")})
-        TestEqual(TEXT("Left hook/over selects left arm"),ArmForAttack(FName(Name)),0);
-    for(const TCHAR* Name:{TEXT("hookR"),TEXT("overR")})
-        TestEqual(TEXT("Right hook/over selects right arm"),ArmForAttack(FName(Name)),1);
-    for(const TCHAR* Name:{TEXT("pike"),TEXT("kickL"),TEXT("kickR"),TEXT("jabL"),TEXT("jabR"),TEXT("headbutt"),TEXT("dodge"),TEXT("parry"),TEXT("")})
+    for(const TCHAR* Name:{TEXT("jabL"),TEXT("hookL"),TEXT("overL")})
+        TestEqual(TEXT("Left jab/hook/over selects left arm"),ArmForAttack(FName(Name)),0);
+    for(const TCHAR* Name:{TEXT("jabR"),TEXT("hookR"),TEXT("overR"),TEXT("pike")})
+        TestEqual(TEXT("Right jab/hook/over and pike select right arm"),ArmForAttack(FName(Name)),1);
+    for(const TCHAR* Name:{TEXT("kickL"),TEXT("kickR"),TEXT("headbutt"),TEXT("dodge"),TEXT("parry"),TEXT("")})
         TestEqual(TEXT("Other attacks and defense have no return arm"),ArmForAttack(FName(Name)),INDEX_NONE);
     const FVector From(-3,-25,0),To(-3,25,-30);
     for(int32 I=0;I<=100;++I)
@@ -293,7 +293,7 @@ bool FProphecySlashReturnTest::RunTest(const FString&)
     for(float FPS:{30.f,60.f,120.f})
     {
         TestTrue(TEXT("Configure"),L::SetSlashRightArmReturnToNeutral(A,true,.5,1,100));CaptureReset(A);
-        Begin(A,TEXT("pike"));TestFalse(TEXT("Pike never starts"),Active(A));
+        Begin(A,TEXT("kickL"));TestFalse(TEXT("Kick never starts"),Active(A));
         Begin(A,TEXT("slashL"));TestTrue(TEXT("Slash starts"),Active(A));
         FTransform S(FVector(0,17,0)),E(FVector(15,25,-15)),H(FVector(10,22,-35));
         const FTransform PS=S,PE=E,PH=H;
@@ -311,6 +311,13 @@ bool FProphecySlashReturnTest::RunTest(const FString&)
         RestoreReset(A);TestFalse(TEXT("Reset cancels active return"),Active(A));
         L::SetSlashRightArmReturnToNeutral(A,true,0,0,100);Begin(A,TEXT("slashR"));
         TestFalse(TEXT("Zero times retain no active work"),Active(A));
+        L::SetSlashRightArmReturnToNeutral(A,true,.25f,0,100);Begin(A,TEXT("slashR"));
+        for(int32 Tick=1;Tick<=15;++Tick)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/FPS);
+            ApplyPose(A,FTransform::Identity,FTransform::Identity,17,PS,PE,PH,PS,PE,PH,PH,S,E,H,FVector::UpVector);
+            TestTrue(TEXT("Hold-only arm return retains ownership until tick15 then retires"),Active(A)==(Tick<15));
+        }
     }
     {
         const FTransform PS(FVector(0,17,0)),PE(FVector(15,25,-15)),PH(FVector(10,22,-35));
@@ -331,11 +338,11 @@ bool FProphecySlashReturnTest::RunTest(const FString&)
         Begin(A,TEXT("slashRU"));ApplyAt(0);ApplyAt(80);
         TestEqual(TEXT("Initially idle retains zero positional speed even if goal later moves"),Returns.FindChecked(A).Config.Speed,0.f);
     }
-    for(float FPS:{30.f,60.f,120.f}) for(const TCHAR* Name:{TEXT("hookL"),TEXT("hookR"),TEXT("overL"),TEXT("overR")})
+    for(float FPS:{30.f,60.f,120.f}) for(const TCHAR* Name:{TEXT("jabL"),TEXT("jabR"),TEXT("hookL"),TEXT("hookR"),TEXT("overL"),TEXT("overR"),TEXT("pike")})
     {
         const int32 Arm=ArmForAttack(FName(Name));const double Side=Arm==0?-1.:1.;
         L::SetSlashRightArmReturnToNeutral(A,true,.1f,.1f,100);
-        Begin(A,FName(Name));TestEqual(TEXT("Melee return latches the proper hand"),ActiveArm(A),Arm);
+        Begin(A,FName(Name));TestEqual(TEXT("Eligible return latches the proper hand"),ActiveArm(A),Arm);
         const FTransform PS(FVector(0,Side*17,0)),PE(FVector(15,Side*25,-15)),PH(FVector(10,Side*22,-35));
         FTransform Idle=PH;Idle.AddToTranslation(FVector(20,0,0));
         for(int32 Tick=1;Tick<=12;++Tick)
@@ -346,13 +353,13 @@ bool FProphecySlashReturnTest::RunTest(const FString&)
             TestFalse(TEXT("Both-handed returns have finite connected targets"),S.ContainsNaN()||E.ContainsNaN()||H.ContainsNaN());
             if(Tick<12)TestEqual(TEXT("Arm selection survives the hold and blend"),ActiveArm(A),Arm);
         }
-        TestFalse(TEXT("Melee return retires after 12 ticks at every FPS"),Active(A));
+        TestFalse(TEXT("Eligible return retires after 12 ticks at every FPS"),Active(A));
         TestFalse(TEXT("No arm-selection sidecar remains after retirement"),ReturnArms.Contains(A));
         Begin(A,FName(Name));Cancel(A);TestEqual(TEXT("New special cancels either arm"),ActiveArm(A),INDEX_NONE);
         L::SetSlashRightArmReturnToNeutral(A,false,.1f,.1f,100);Begin(A,FName(Name));
-        TestFalse(TEXT("Disabled melee return performs no work"),Active(A));
+        TestFalse(TEXT("Disabled eligible return performs no work"),Active(A));
     }
-    AddInfo(TEXT("AttackArmReturn: six sword-arm slashes, four sided hook/over returns, front-route mirror and 12-tick retirement at 30/60/120 FPS verified."));
+    AddInfo(TEXT("AttackArmReturn: six sword-arm slashes, pike, six sided jab/hook/over returns, front-route mirror and 12-tick retirement at 30/60/120 FPS verified."));
     Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif

@@ -1202,6 +1202,8 @@ bool FProphecyJoltLiveSelfCollisionTest::RunTest(const FString& Parameters)
     return !HasAnyErrors();
 }
 
+#include "ProphecyJoltAttackCollisionLibrary.h"
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltSelfCollisionLayersTest,
     "Prophecy.Jolt.Collision.SelfCollisionLayersAtomic", ProphecyJolt::RigWorldTests::Flags)
 
@@ -1282,6 +1284,24 @@ bool FProphecyJoltSelfCollisionLayersTest::RunTest(const FString& Parameters)
         || !Okay(*this, TEXT("Add reset pair layer"), Owner->SetRigBodyPairSelfCollisionEnabled(Rig, 1, 2, false))
         || !Okay(*this, TEXT("Reset all runtime layers"), Owner->ResetRigSelfCollision(Rig))
         || !Pair(0, 1, false) || !Pair(0, 2, true) || !Pair(1, 2, true)) return false;
+    FString AttackError;
+    const auto Attack = [&](bool Suppressed)
+    {
+        return TestTrue(TEXT("Set independent attack suppression"), UProphecyJoltAttackCollisionLibrary::SetSuppressed(
+            Owner, Rig.WorldLifetime, Rig.Slot, int64(Rig.Generation), Suppressed, AttackError));
+    };
+    if (!Attack(true) || !Pair(0, 2, false) || !Pair(1, 2, false)
+        || !Okay(*this, TEXT("BP enable during attack remains suppressed"), Owner->SetRigSelfCollisionEnabled(Rig, true))
+        || !Pair(0, 2, false)
+        || !Okay(*this, TEXT("Edit pair during attack"), Owner->SetRigBodyPairSelfCollisionEnabled(Rig, 1, 2, false))
+        || !Attack(false) || !Pair(0, 1, false) || !Pair(0, 2, true) || !Pair(1, 2, false)
+        || !Attack(true)
+        || !Okay(*this, TEXT("Reset configured exclusions cannot defeat attack suppression"), Owner->ResetRigSelfCollision(Rig))
+        || !Pair(0, 2, false) || !Pair(1, 2, false)
+        || !Okay(*this, TEXT("Global disable during attack persists after Hit"), Owner->SetRigSelfCollisionEnabled(Rig, false))
+        || !Attack(false) || !Pair(0, 2, false) || !Pair(1, 2, false)
+        || !Okay(*this, TEXT("Restore configured default"), Owner->ResetRigSelfCollision(Rig))
+        || !Pair(0, 1, false) || !Pair(0, 2, true) || !Pair(1, 2, true)) return false;
     for (int32 Index = 0; Index < Handles.Num(); ++Index)
     {
         FProphecyJoltBodyState After;
@@ -1305,7 +1325,8 @@ bool FProphecyJoltSelfCollisionLayersTest::RunTest(const FString& Parameters)
     FProphecyJoltRigServoState Servo;
     if (!Okay(*this, TEXT("Read retained servo"), Owner->ReadRigServoSamples(Rig, Servo))) return false;
     TestTrue(TEXT("All servo targets survive controls"), Servo.Samples.Num() == 3 && Servo.InvocationCount == 1 && Servo.InvalidBodyCount == 0);
-    if (!Okay(*this, TEXT("Disable before destruction"), Owner->SetRigSelfCollisionEnabled(Rig, false))
+    if (!Attack(true)
+        || !Okay(*this, TEXT("Disable before destruction"), Owner->SetRigSelfCollisionEnabled(Rig, false))
         || !Okay(*this, TEXT("Destroy rig and its incident grip"), Owner->DestroyRig(Rig))) return false;
     FProphecyJoltRigHandle Replacement;
     TArray<FProphecyJoltBodyHandle> ReplacementBodies;
@@ -1656,6 +1677,19 @@ bool FProphecyFootExtensionLifecycleTest::RunTest(const FString&)
     };
     if (!Set(10) || !Counts(*this,*Owner,4,4)) return false;
     if (!Set(5) || !Counts(*this,*Owner,4,4)) return false;
+    const auto Range=[&](float Compression,float Extension)
+    {
+        FString Error;const auto& H=Bodies[0];
+        return UProphecyJoltFootJointLibrary::SetFootRange(Scope.World,H.WorldLifetime,H.Slot,
+            int64(H.Generation),Compression,Extension,FVector(0,0,1),FVector(0,0,1),Error);
+    };
+    TestTrue(TEXT("Locomotion supports symmetric calf leeway"),Range(2,2));
+    TestTrue(TEXT("Unchanged range is repeatable"),Range(2,2));
+    if (!Counts(*this,*Owner,4,4)) return false;
+    TestTrue(TEXT("Kick return composes with locomotion floor"),Range(2,5));
+    TestTrue(TEXT("Compression-only range is supported"),Range(2,0));
+    TestFalse(TEXT("Negative compression rejected"),Range(-1,2));
+    if (!Set(5)) return false; // Existing kick API restores extension-only semantics.
     if (!Okay(*this,TEXT("Keep angular update compatible"),Owner->UpdateRigAngularLimits(Rig,Snapshot.Joints))) return false;
     if (!Set(0) || !Counts(*this,*Owner,4,2)) return false;
     if (!Set(10) || !Okay(*this,TEXT("Destroy extended rig"),Owner->DestroyRig(Rig)) || !Counts(*this,*Owner,0,0)) return false;

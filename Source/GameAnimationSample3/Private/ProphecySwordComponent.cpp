@@ -34,6 +34,16 @@ struct FGate
 };
 TMap<TWeakObjectPtr<const AProphecyAgent>,FGate> Gates;
 TSet<TWeakObjectPtr<const AProphecyAgent>> HitOwners;
+void SetBodySuppressed(AProphecyAgent* Agent, bool bSuppressed)
+{
+    if (!Agent) return;
+    if (auto* Character = Agent->GetJoltCharacterComponent(); Character && Character->IsJoltPhysical())
+    {
+        FString Error;
+        if (!Character->SetAttackSelfCollisionSuppressed(bSuppressed, Error))
+            UE_LOG(LogTemp, Warning, TEXT("Attack body self-collision: %s"), *Error);
+    }
+}
 void RefreshOwner(AProphecyAgent* Agent)
 {
     if (Agent) if (auto* Controller=Agent->FindComponentByClass<UProphecySwordComponent>())
@@ -90,6 +100,7 @@ void Begin(AProphecyAgent* Agent,FName Family)
 	End(Agent);
 	auto& Gate=Gates.Add(Agent);
 	Gate.bWeapon=Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash"),ESearchCase::IgnoreCase);
+	SetBodySuppressed(Agent, true);
 	Refresh(Agent);
 }
 void Armed(AProphecyAgent* Agent)
@@ -114,13 +125,14 @@ void Hit(AProphecyAgent* Agent)
     const bool First=!HitOwners.Contains(Agent);
     HitOwners.Add(Agent);
     // Restore owner pairs for every attack family without ending any attack systems.
-    if (First) RefreshOwner(Agent);
+    if (First) { SetBodySuppressed(Agent, false); RefreshOwner(Agent); }
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate || Gate->bWeapon || Gate->bAllowed) return;
 	Gate->bAllowed=true;Restore(*Gate);
 }
 void End(AProphecyAgent* Agent)
 {
+	SetBodySuppressed(Agent, false);
 	FGate Gate;if (Gates.RemoveAndCopyValue(Agent,Gate)) Restore(Gate);
     HitOwners.Remove(Agent);
 }

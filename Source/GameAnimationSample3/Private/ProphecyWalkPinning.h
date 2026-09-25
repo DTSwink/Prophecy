@@ -3,6 +3,8 @@
 class AProphecyAgent;
 namespace ProphecyWalkPinning
 {
+// Config lookup is skipped when no agent opted in. Run branch only.
+void BoostRunPin(const AProphecyAgent* Agent,float& Left,float& Right);
 struct FBackwardBound
 {
     float MinCm=20,MaxCm=60;

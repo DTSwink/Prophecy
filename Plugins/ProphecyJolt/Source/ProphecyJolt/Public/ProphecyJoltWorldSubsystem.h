@@ -475,6 +475,7 @@ protected:
     virtual bool DoesSupportWorldType(EWorldType::Type WorldType) const override;
 
 private:
+    friend class UProphecyJoltAttackCollisionLibrary;
     friend class UProphecyJoltBodyDriveLibrary;
     friend class UProphecyJoltFootJointLibrary;
     FProphecyJoltWorldStatus ValidateReady() const;

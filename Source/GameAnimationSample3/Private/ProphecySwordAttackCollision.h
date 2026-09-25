@@ -2,7 +2,8 @@
 #include "CoreMinimal.h"
 class AProphecyAgent;
 
-// Event-driven held-sword collision gate. Does not alter NN conditioning geometry.
+// Event-driven attack collision phase: held sword channels/owner pairs and Jolt
+// body self-collision until first Hit. Does not alter NN conditioning geometry.
 namespace ProphecySwordAttackCollision
 {
 void Begin(AProphecyAgent* Agent,FName Family);

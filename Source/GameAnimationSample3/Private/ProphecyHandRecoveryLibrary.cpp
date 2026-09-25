@@ -22,7 +22,7 @@ struct FValues { FTempering Value;FReturn Return[2]; };
 struct FPart
 {
     E Source=E::Normal;float Hold=0,Duration=0;
-    bool Enabled() const { return Source!=E::Normal && Duration>0; }
+    bool Enabled() const { return Source!=E::Normal && (Hold>0 || Duration>0); }
     double End() const { return Enabled()?double(Hold)+Duration:0.; }
 };
 struct FConfig { FTempering Tempering;FPart Recovery[2]; };
@@ -212,8 +212,28 @@ bool FProphecyHandRecoveryTest::RunTest(const FString&)
         Begin(A);Step(A);ProphecyAttackRecovery::Cancel(A);
         TestNotNull(TEXT("Leg completion or disabling cannot cancel a longer hand recovery"),Frame(A));
         CancelRecovery(A);TestNull(TEXT("New special cancels recovery"),Frame(A));
-        L::SetAttackToLocomotionHandBlend(A,E::Walk,3,0,E::Run,3,0);Begin(A);Step(A);
-        TestNull(TEXT("Zero blend duration creates no recovery despite hold"),Frame(A));
+        L::SetAttackToLocomotionHandBlend(A,E::Walk,.25f,0,E::Run,.5f,0);Begin(A);Step(A);
+        TestTrue(TEXT("Hold-only requests both configured sources"),Frame(A) && Frame(A)->Need[0] && Frame(A)->Need[1]);
+        for(int32 T=1;T<=30;++T)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/FPS);Step(A);
+            const auto* F=Frame(A);
+            if(T==14) TestTrue(TEXT("Both hands retain their source before the first hold ends"),F && F->Alpha[0]==0 && F->Alpha[1]==0);
+            if(T==15) TestTrue(TEXT("Left retires after 15 ticks; right still holds Run"),F && F->Alpha[0]==1 && F->Alpha[1]==0 && F->Need[0] && !F->Need[1]);
+        }
+        TestNull(TEXT("Hold-only removes all source work at final boundary"),Frame(A));
+        L::SetAttackToLocomotionHandBlend(A,E::Walk,0,0,E::Normal,3,0);Begin(A);Step(A);
+        TestNull(TEXT("Both-zero and Normal sources create no recovery"),Frame(A));
+        L::SetLocomotionHandTempering(A,true,0,0,0,0,0,0);
+        L::BlendLocomotionHandTemperingToNormal(A,.25f,0,.5f,0);
+        for(int32 T=1;T<=30;++T)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/FPS);
+            const auto* V=Tempering(A);
+            if(T==14) TestTrue(TEXT("Hand tempering keeps both held values without a blend"),V && V->Hand[0].XY==0 && V->Hand[1].XY==0);
+            if(T==15) TestTrue(TEXT("Only left tempering returns at its hold boundary"),V && V->Hand[0].Normal() && V->Hand[1].XY==0);
+        }
+        TestNull(TEXT("Hold-only hand tempering retires"),Tempering(A));
     }
     const FTransform PrevRoot(FRotator(0,20,0),FVector(10,20,0)),Root(FRotator(0,110,0),FVector(100,200,0));
     const FTransform Local(FRotator(20,30,40),FVector(25,-15,50));

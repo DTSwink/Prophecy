@@ -155,6 +155,21 @@ void RepairAttackCheckpointEnum()
                 && P->PinType.PinSubCategoryObject.Get()!=Enum)
             { P->PinType.PinSubCategoryObject=Enum;++Count; }
         }
+        // Live enum reinstancing can retain an unconnected obsolete duplicate
+        // beside the valid checkpoint pin. Keep the valid pin's selection and
+        // all wiring; never discard a linked orphan or the only copy of a pin.
+        if (CheckpointCall)
+        {
+            const auto Pins=N->Pins;
+            for (auto* P:Pins) if (P && P->bOrphanedPin && P->LinkedTo.IsEmpty()
+                && P->PinName==TEXT("Checkpoint"))
+            {
+                const bool HasReplacement=N->Pins.ContainsByPredicate([&](const UEdGraphPin* Other)
+                { return Other && Other!=P && !Other->bOrphanedPin && Other->PinName==P->PinName
+                    && Other->PinType.PinSubCategoryObject.Get()==Enum; });
+                if (HasReplacement) { N->RemovePin(P);++Count; }
+            }
+        }
     }
     FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
     FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);

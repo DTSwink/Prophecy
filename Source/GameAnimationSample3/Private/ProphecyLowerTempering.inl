@@ -1,6 +1,15 @@
 // Included after policy blend math. Previous is the previous PUBLISHED state in
 // its own root frame, not CurStateBuffer rebased to keep positions world-stationary.
 #if WITH_EDITOR
+static TAutoConsoleVariable<int32> CVarRecoveryCleanSource(
+    TEXT("Prophecy.Recovery.CleanSource"),1,
+    TEXT("Editor comparison: preserve the policy hinge before pinning during calf/regional recovery."));
+static TAutoConsoleVariable<int32> CVarRecoveryPolePresentation(
+    TEXT("Prophecy.Recovery.PolePresentation"),1,
+    TEXT("Editor comparison: 1 keeps procedural recovery legs in presentation; 0 feeds reconstruction back into the policy (legacy)."));
+static TAutoConsoleVariable<int32> CVarRecoveryPoleWindow(
+    TEXT("Prophecy.Recovery.PoleWindow"),1,
+    TEXT("Editor comparison: independent tick-based recovery pole window; 0 retains tempering-only smoothing."));
 static TAutoConsoleVariable<int32> CVarTemperingSupportSource(
     TEXT("Prophecy.Tempering.SupportSource"),1,
     TEXT("Editor recovery comparison: 1 follows NN hinge near the floor; 0 uses the previous-pose hinge throughout."));
@@ -10,7 +19,49 @@ static TAutoConsoleVariable<int32> CVarTemperingKneePlane(
 static TAutoConsoleVariable<int32> CVarTemperingCalfContinuity(
     TEXT("Prophecy.Tempering.CalfContinuity"),1,
     TEXT("Editor comparison: 1 carries published calf twist during feet tempering; 0 re-decodes it immediately."));
+static TAutoConsoleVariable<int32> CVarTemperingPoleSmoothing(
+    TEXT("Prophecy.Tempering.PoleSmoothing"),1,
+    TEXT("Editor comparison: 1 limits recovery knee steering in the foot frame; 0 preserves the unsmoothed target."));
+static TAutoConsoleVariable<int32> CVarTemperingPoleTrace(
+    TEXT("Prophecy.Tempering.PoleTrace"),0,
+    TEXT("Capture this many possessed-agent recovery legs, including the exact unsmoothed and smoothed targets."));
 #endif
+static bool UsePresentationRecovery()
+{
+#if WITH_EDITOR
+    return CVarRecoveryPolePresentation.GetValueOnGameThread()!=0;
+#else
+    return true;
+#endif
+}
+
+// A procedural recovery is a target-pose constraint, not a new NN action.
+// Keep the coherent pre-solve ankle/thigh in recurrence. Preserve any later
+// pelvis-inertia adjustment instead of overwriting it with an older pose.
+// Plain, uninitialized storage: no construction/copy/math outside recovery.
+struct FRecoveryPolicyLegs
+{
+    float Source[2][9],Solved[2][9];
+    static void Capture(const float* Pose,float (&Out)[2][9])
+    {
+        for(int32 I=0;I<2;++I)
+        {
+            FMemory::Memcpy(Out[I],Pose+9+16*I,3*sizeof(float));
+            FMemory::Memcpy(Out[I]+3,Pose+18+16*I,6*sizeof(float));
+        }
+    }
+    void Restore(float* Policy) const
+    {
+        for(int32 I=0;I<2;++I)
+        {
+            float* P=Policy+9+16*I;float* R=Policy+18+16*I;
+            if(!FMemory::Memcmp(P,Solved[I],3*sizeof(float))) FMemory::Memcpy(P,Source[I],3*sizeof(float));
+            else WriteStateVec3(Policy,9+16*I,ReadStateVec3(Policy,9+16*I)+ReadStateVec3(Source[I],0)-ReadStateVec3(Solved[I],0));
+            if(!FMemory::Memcmp(R,Solved[I]+3,6*sizeof(float))) FMemory::Memcpy(R,Source[I]+3,6*sizeof(float));
+            else WriteRot6(Multiply(Multiply(MatrixFromRot6(Source[I]+3),Transpose(MatrixFromRot6(Solved[I]+3))),MatrixFromRot6(R)),R);
+        }
+    }
+};
 static bool NeedsTemperedLegReconstruction(const ProphecyLowerTempering::FSettings& Pelvis,const ProphecyLowerTempering::FSettings& Foot)
 {
     return !Foot.FeetAreIdentity() || Pelvis.PelvisTranslation!=1.f || Pelvis.PelvisTranslationZ!=1.f || Pelvis.PelvisRotation!=1.f;
@@ -64,8 +115,9 @@ void ResolveTemperedLeg(const ProphecyLowerTempering::FSettings& S,const float* 
     const FPelvisLegGeometry& G,float* Target,int32 Offset,
     FVector3f FootForwardLocal=FVector3f(1,0,0),FVector3f FootUpLocal=FVector3f(0,0,1),
     float MinimumReach=0.f,bool bClampOuterReach=true,
-    const float* NNSource=nullptr)
+    const float* ExperimentNNSource=nullptr)
 {
+    constexpr int32 ExperimentMode=7; // Exact first September20 comparison, selected by user.
     const FVector3f Pelvis=ReadStateVec3(Target,0);
     const FMat3f PelvisRotation=MatrixFromRot6(Target+3);
     const FVector3f Hip=Pelvis+TransformRow(G.HipOffset,PelvisRotation);
@@ -93,70 +145,30 @@ void ResolveTemperedLeg(const ProphecyLowerTempering::FSettings& S,const float* 
         ResolvePelvisLeg(ReadStateVec3(Source,0),MatrixFromRot6(Source+3),Pelvis,PelvisRotation,
             G,Output,Offset,Source,false,Pole,MinimumReach,bClampOuterReach);
     };
-    float AlignedSource[41];
-    // Preserve the accepted previous-pose hinge for raised/frozen feet. Near
-    // the floor, retaining that frame indefinitely fights the walking policy:
-    // the knee may stay forward while the thigh twists/stalls and disturbs the
-    // next pelvis prediction. Admit the NN source in the presented foot frame, then
-    // resolve the SAME final endpoints and forward-knee constraint below.
-    float SourceFollow=0.f;
-    if (NNSource && S.FeetRotation>0.f)
+    // The previous published leg is coherent; raw NN endpoint/thigh pairs
+    // can be wildly inconsistent on recovery. Transport this hinge through
+    // accepted endpoint changes, without coupling foot pitch to knee orbit.
+    float Support=0.f;
+    if (ExperimentMode)
     {
-        const float T=FMath::Clamp((ReadStateVec3(Target,Offset).Z-G.MinimumAnkleZ-.02f)/.10f,0.f,1.f);
-        const float Support=1.f-T*T*(3.f-2.f*T);
-        if (Support>0.f)
-        {
-            // Compare stance hinges in the same foot-heading frame. The untempered
-            // policy foot may already be turning while the presented foot is held.
-            const FMat3f R=MatrixFromRot6(NNSource+Offset+3);
-            const FVector3f SourceToe=TransformRow(SafeNormal(FootForwardLocal),R);
-            const FVector3f SourceFlat(SourceToe.X,SourceToe.Y,0);
-            auto Confidence=[](float V){V=FMath::Clamp(V,0.f,1.f);return V*V*(3.f-2.f*V);};
-            // Fade the source weight, not its yaw: a partial +/-180 degree
-            // turn would otherwise jump at the heading wrap.
-            const float HeadingTrust=Confidence(SourceFlat.SizeSquared()*4.f)*Confidence(FlatToe.SizeSquared()*4.f);
-            const FVector3f SourceForward=SafeNormal(SourceFlat,Forward);
-            const float Angle=FMath::Atan2(FVector3f::CrossProduct(SourceForward,Forward).Z,FVector3f::DotProduct(SourceForward,Forward));
-            const FMat3f Turn=AxisAngleMatrix(FVector3f(0,0,1),Angle);
-            FMemory::Memcpy(AlignedSource,NNSource,sizeof(AlignedSource));
-            const FVector3f SourceHip=ReadStateVec3(NNSource,0)+TransformRow(G.HipOffset,MatrixFromRot6(NNSource+3));
-            WriteStateVec3(AlignedSource,Offset,SourceHip+TransformRow(ReadStateVec3(NNSource,Offset)-SourceHip,Turn));
-            for(int32 O:{Offset+3,Offset+9})WriteRot6(Multiply(MatrixFromRot6(NNSource+O),Turn),AlignedSource+O);
-            NNSource=AlignedSource;
-            const float Difference=MatrixToQuat(MatrixFromRot6(Previous+Offset+9)).AngularDistance(
-                MatrixToQuat(MatrixFromRot6(NNSource+Offset+9)));
-            // A source-frame handover bound per fixed 30Hz policy step, not a
-            // clamp on the solved joint or a new wall-time blend clock.
-            // The foot and its incoming hinge must follow the same authored
-            // amount. Near-floor support is confidence, not permission to
-            // bypass tempering: doing so feeds a fast-turning thigh beside a
-            // held foot back into the next policy step and perturbs its height.
-            SourceFollow=S.FeetRotation*HeadingTrust*Support
-                *FMath::Min(1.f,FMath::DegreesToRadians(20.f)/FMath::Max(Difference,1.e-6f));
-        }
+        float T=FMath::Clamp((ReadStateVec3(Target,Offset).Z-G.MinimumAnkleZ-.02f)/.10f,0.f,1.f);
+        Support=1.f-T*T*(3.f-2.f*T);
     }
-    if (SourceFollow>0.f)
+    if (ExperimentMode>=2 && Support>0.f && ExperimentNNSource && S.FeetRotation>0.f)
     {
-        // Interpolating hip/ankle positions and thigh rotation independently
-        // can collapse/reverse the source hinge before solving. Transport
-        // each intact source to the SAME final ankle, then mix on its circle.
-        float Other[41];FMemory::Memcpy(Other,Target,sizeof(Other));
-        FVector3f PriorPole,NextPole;
-        Solve(Previous,Target,&PriorPole);Solve(NNSource,Other,&NextPole);
-        const FVector3f Axis=SafeNormal(ReadStateVec3(Target,Offset)-Hip);
-        const float Cos=FMath::Clamp(FVector3f::DotProduct(PriorPole,NextPole),-1.f,1.f);
-        const FVector3f SourceHip=ReadStateVec3(NNSource,0)+TransformRow(G.HipOffset,MatrixFromRot6(NNSource+3));
-        const FVector3f SourceAxis=SafeNormal(ReadStateVec3(NNSource,Offset)-SourceHip);
-        const FVector3f SourceUpper=TransformRow(G.KneeOffset,MatrixFromRot6(NNSource+Offset+9));
-        const float Radius=(SourceUpper-SourceAxis*FVector3f::DotProduct(SourceUpper,SourceAxis)).Size();
-        auto Trust=[](float V){V=FMath::Clamp(V,0.f,1.f);return V*V*(3.f-2.f*V);};
-        SourceFollow*=Trust(Radius/(G.KneeOffset.Size()*.02f))*Trust((1.f+Cos)/.02f)
-            *Trust((1.f+FVector3f::DotProduct(SourceAxis,Axis))/.05f);
-        const float Angle=FMath::Atan2(FVector3f::DotProduct(Axis,FVector3f::CrossProduct(PriorPole,NextPole)),Cos);
-        const FMat3f Prior=MatrixFromRot6(Target+Offset+9),Next=MatrixFromRot6(Other+Offset+9);
-        const FMat3f A=Multiply(Prior,AxisAngleMatrix(Axis,Angle*SourceFollow));
-        const FMat3f B=Multiply(Next,AxisAngleMatrix(Axis,-Angle*(1.f-SourceFollow)));
-        WriteRot6(QuatToMatrix(FQuat::Slerp(MatrixToQuat(A),MatrixToQuat(B),SourceFollow).GetNormalized()),Target+Offset+9);
+        float SourceFollow=Support*(ExperimentMode==4 ? S.FeetRotation
+            : ExperimentMode==5 ? S.FeetRotation*S.FeetRotation : 1.f);
+        if (ExperimentMode>=6)
+        {
+            const float Difference=MatrixToQuat(MatrixFromRot6(Previous+Offset+9)).AngularDistance(
+                MatrixToQuat(MatrixFromRot6(ExperimentNNSource+Offset+9)));
+            SourceFollow*=S.FeetRotation==0.f ? 0.f : FMath::Min(1.f,FMath::DegreesToRadians(10.f*(ExperimentMode-5))/FMath::Max(Difference,1.e-6f));
+        }
+        float Source[41]; FMemory::Memcpy(Source,Previous,sizeof(Source));
+        for (int32 O : {0,Offset})
+            WriteStateVec3(Source,O,FMath::Lerp(ReadStateVec3(Previous,O),ReadStateVec3(ExperimentNNSource,O),SourceFollow));
+        for (int32 O : {3,Offset+9}) BlendStateRotation(Source,ExperimentNNSource,O,SourceFollow);
+        Solve(Source,Target);
     }
     else
         Solve(Previous,Target);
@@ -175,90 +187,231 @@ void ResolveTemperedLeg(const ProphecyLowerTempering::FSettings& S,const float* 
     if (NLength<1.e-6f) return;
     const FVector3f N=N0/NLength;
     const FVector3f HingePole=SafeNormal(FVector3f::CrossProduct(Axis,N));
+    const float HipFrontQ=-Along*SideAlong/(Radius*NLength);
+    // Use one oriented hinge throughout the motion. Crossing hip height must
+    // never choose the opposite branch. Undefined/infeasible planes retain the
+    // transported frame rather than normalizing a singular direction.
     auto Smooth=[](float X) { X=FMath::Clamp(X,0.f,1.f);return X*X*(3.f-2.f*X); };
-    bool bBendCoordinate=true;
-#if WITH_EDITOR
-    bBendCoordinate=CVarTemperingKneePlane.GetValueOnGameThread()==3;
-#endif
-    float StanceOffset=0.f;
-    if (!bBendCoordinate)
-    {
-        const float TransportedOffset=FVector3f::DotProduct(Upper,Side);
-        // Preserve the coherent source stance in its own foot-forward frame. A
-        // connected wide stance need not put the knee in the plane through the hip.
-        // Raised feet keep the previous source; grounded feet admit the same NN
-        // source already used above, at the authored feet-rotation following rate.
-        auto SourceSideOffset=[&](const float* Source)
-        {
-            const FMat3f R=MatrixFromRot6(Source+Offset+3);
-            const FVector3f SourceToe=TransformRow(SafeNormal(FootForwardLocal),R);
-            const FVector3f SourceSide=TransformRow(SafeNormal(FVector3f::CrossProduct(FootUpLocal,FootForwardLocal)),R);
-            const FVector3f SourceForward=SafeNormal(FVector3f(SourceToe.X,SourceToe.Y,0),
-                SafeNormal(FVector3f(SourceSide.Y,-SourceSide.X,0),FVector3f(1,0,0)));
-            const float OffsetValue=FVector3f::DotProduct(TransformRow(G.KneeOffset,MatrixFromRot6(Source+Offset+9)),
-                FVector3f(-SourceForward.Y,SourceForward.X,0));
-            // Horizontal heading is unobservable when the source toe is vertical.
-            // Fall back to the already connected hinge continuously, before mixing
-            // sources; target-heading confidence alone cannot protect this case.
-            const float Confidence=Smooth((SourceToe.X*SourceToe.X+SourceToe.Y*SourceToe.Y)*4.f);
-            return FMath::Lerp(TransportedOffset,OffsetValue,Confidence);
-        };
-        StanceOffset=SourceSideOffset(Previous);
-        if (SourceFollow>0.f)
-            // SourceFollow already includes FeetRotation; applying it twice would
-            // over-hold the stance and restore the old planted-thigh hitch.
-            StanceOffset=FMath::Lerp(StanceOffset,SourceSideOffset(NNSource),SourceFollow);
-    }
-    bool bSourcePlane=true;
-#if WITH_EDITOR
-    bSourcePlane=CVarTemperingKneePlane.GetValueOnGameThread()!=0;
-#endif
-    if (!bSourcePlane) StanceOffset=0.f;
-    float Q=0.f;
-    if (!bBendCoordinate) Q=(StanceOffset-Along*SideAlong)/(Radius*NLength);
-    if (bBendCoordinate)
-    {
-        // Carry dimensionless bend direction in each source's foot-heading
-        // frame, not a lateral knee position that may be outside the new circle.
-        const float CarriedCoordinate=FVector3f::DotProduct(Pole,N);
-        auto SourceCoordinate=[&](const float* Source)
-        {
-            const FVector3f SourceToe=TransformRow(SafeNormal(FootForwardLocal),MatrixFromRot6(Source+Offset+3));
-            const FVector3f SourceForward=SafeNormal(FVector3f(SourceToe.X,SourceToe.Y,0),Forward);
-            const FVector3f SourceSide(-SourceForward.Y,SourceForward.X,0);
-            const FVector3f SourceHip=ReadStateVec3(Source,0)+TransformRow(G.HipOffset,MatrixFromRot6(Source+3));
-            const FVector3f SourceAxis=SafeNormal(ReadStateVec3(Source,Offset)-SourceHip,Axis);
-            const FVector3f SourceUpper=TransformRow(G.KneeOffset,MatrixFromRot6(Source+Offset+9));
-            const FVector3f SourceRadial=SourceUpper-SourceAxis*FVector3f::DotProduct(SourceUpper,SourceAxis);
-            const FVector3f SourceN=SourceSide-SourceAxis*FVector3f::DotProduct(SourceSide,SourceAxis);
-            const float Confidence=Smooth((SourceToe.X*SourceToe.X+SourceToe.Y*SourceToe.Y)*4.f)
-                *Smooth(SourceN.SizeSquared()*4.f)*Smooth(SourceRadial.Size()/(G.KneeOffset.Size()*.02f));
-            const float Coordinate=FVector3f::DotProduct(SafeNormal(SourceRadial),SafeNormal(SourceN));
-            return FMath::Lerp(CarriedCoordinate,Coordinate,Confidence);
-        };
-        Q=SourceCoordinate(Previous);
-        if(SourceFollow>0.f) Q=FMath::Lerp(Q,SourceCoordinate(NNSource),SourceFollow);
-    }
-    // The bend coordinate always describes a point on the connected knee circle.
-    // Preserve the transported branch, fading at ambiguity. There is no lateral
-    // plane feasibility gate to switch the correction off and back on.
-    const float BranchDot=FVector3f::DotProduct(Pole,HingePole);
-    const float Branch=bSourcePlane && BranchDot<0.f ? -1.f : 1.f;
-    // The stance plane is guidance, not an instantaneous second pose override.
-    // Follow it at the same authored rotation amount as the connected hinge;
-    // otherwise a nearly held foot can still receive a full knee-plane turn.
-    float Strength=S.FeetRotation*Smooth(FlatToe.SizeSquared()*4.f)*Smooth(NLength*NLength*4.f)
-        *(bBendCoordinate ? 1.f : Smooth((1.f-FMath::Abs(Q))*4.f));
-    if (bSourcePlane) Strength*=Smooth(FMath::Abs(BranchDot)*4.f);
+    // Raised feet retain the accepted hip-front knee placement. Near the floor,
+    // instead align the bend direction with the foot: forcing the knee itself
+    // into the hip-front plane makes its pole over-turn as the ankle moves sideways.
+    // Interpolate directions on the connected knee circle, not knee positions.
+    // Support already eases from 0 at 12cm clearance to 1 at 2cm clearance.
+    const float HipFrontAngle=FMath::Asin(FMath::Clamp(HipFrontQ,-1.f,1.f));
+    const float Q=Support<=0.f ? HipFrontQ : FMath::Sin(HipFrontAngle*(1.f-Support));
+    const float PlaneConfidence=FMath::Lerp(Smooth((1.f-FMath::Abs(HipFrontQ))*4.f),1.f,Support);
+    const float Strength=Smooth(FlatToe.SizeSquared()*4.f)*Smooth(NLength*NLength*4.f)
+        *PlaneConfidence
+        * ((ExperimentMode==1 || ExperimentMode==2) ? 1.f-Support : 1.f);
     if (Strength<1.e-8f) return;
     const float ClampedQ=FMath::Clamp(Q,-1.f,1.f);
-    const FVector3f DesiredPole=N*ClampedQ+HingePole*(Branch*FMath::Sqrt(FMath::Max(0.f,1.f-ClampedQ*ClampedQ)));
+    const FVector3f DesiredPole=N*ClampedQ+HingePole*FMath::Sqrt(FMath::Max(0.f,1.f-ClampedQ*ClampedQ));
     const float Angle=FMath::Atan2(FVector3f::DotProduct(Axis,FVector3f::CrossProduct(Pole,DesiredPole)),
         FMath::Clamp(FVector3f::DotProduct(Pole,DesiredPole),-1.f,1.f));
     WriteRot6(Multiply(Thigh,AxisAngleMatrix(Axis,Angle*Strength)),Target+Offset+9);
 }
 
+
+// Post-process the existing geometric solution, not its target construction.
+// Carry the previous complete hinge with the foot, then minimally transport it
+// to the accepted hip/ankle axis. Only the remaining turn ABOUT that axis is
+// limited. This preserves both endpoints, segment lengths and foot rotation.
+// The previous published pose is the history: no new timer or persistent state.
+static bool SmoothTemperedKneePole(const float* Previous,const FPelvisLegGeometry& G,
+    float* Target,int32 Offset,float MaxTurnRadians=FMath::DegreesToRadians(12.f))
+{
+    const FVector3f Hip=ReadStateVec3(Target,0)+TransformRow(G.HipOffset,MatrixFromRot6(Target+3));
+    const FVector3f Axis=SafeNormal(ReadStateVec3(Target,Offset)-Hip);
+    const FMat3f Thigh=MatrixFromRot6(Target+Offset+9);
+    const FVector3f Upper=TransformRow(G.KneeOffset,Thigh);
+    const FVector3f Radial=Upper-Axis*FVector3f::DotProduct(Upper,Axis);
+    if (Radial.SizeSquared()<1.e-10f) return false;
+    const FVector3f DesiredPole=SafeNormal(Radial);
+    const FVector3f OldHip=ReadStateVec3(Previous,0)+TransformRow(G.HipOffset,MatrixFromRot6(Previous+3));
+    const FMat3f OldThigh=MatrixFromRot6(Previous+Offset+9);
+    const FVector3f OldUpper=TransformRow(G.KneeOffset,OldThigh);
+    const FVector3f OldAxis=SafeNormal(ReadStateVec3(Previous,Offset)-OldHip,SafeNormal(OldUpper));
+    const FVector3f OldRadial=OldUpper-OldAxis*FVector3f::DotProduct(OldUpper,OldAxis);
+    const FVector3f OldPole=OldRadial.SizeSquared()>1.e-10f ? SafeNormal(OldRadial)
+        : ProjectToPlane(TransformRow(G.Pole,OldThigh),OldAxis);
+    const FMat3f FootChange=Multiply(Transpose(MatrixFromRot6(Previous+Offset+3)),MatrixFromRot6(Target+Offset+3));
+    const FVector3f CarriedAxis=SafeNormal(TransformRow(OldAxis,FootChange));
+    const FVector3f CarriedPole=SafeNormal(TransformRow(OldPole,FootChange));
+    const float Cos=FMath::Clamp(FVector3f::DotProduct(CarriedAxis,Axis),-1.f,1.f);
+    const FVector3f Transport=Cos<-1.f+1.e-6f ? -CarriedPole
+        : CarriedPole-(CarriedAxis+Axis)*(FVector3f::DotProduct(CarriedPole,Axis)/FMath::Max(1.e-6f,1.f+Cos));
+    const FVector3f From=ProjectToPlane(Transport,Axis);
+    const float Angle=FMath::Atan2(FVector3f::DotProduct(Axis,FVector3f::CrossProduct(From,DesiredPole)),
+        FMath::Clamp(FVector3f::DotProduct(From,DesiredPole),-1.f,1.f));
+    if (FMath::Abs(Angle)<=MaxTurnRadians+1.e-7f) return false; // Exact old result for already smooth guidance.
+    const float Accepted=FMath::Clamp(Angle,-MaxTurnRadians,MaxTurnRadians);
+    WriteRot6(Multiply(Thigh,AxisAngleMatrix(Axis,Accepted-Angle)),Target+Offset+9);
+    return true;
+}
+
+static bool ApplyTemperedKneePoleRecovery(const AProphecyAgent* Actor,const float* Previous,
+    const FPelvisLegGeometry& G,float* Target,int32 Offset,float MaxTurnRadians=FMath::DegreesToRadians(12.f))
+{
+    bool Limited=false;
+#if WITH_EDITOR
+    const bool Trace=CVarTemperingPoleTrace.GetValueOnGameThread()>0 && Actor && Actor->IsPlayerControlled();
+    float Before[41];if(Trace) FMemory::Memcpy(Before,Target,sizeof(Before));
+    if(CVarTemperingPoleSmoothing.GetValueOnGameThread()!=0)
+#endif
+        Limited=SmoothTemperedKneePole(Previous,G,Target,Offset,MaxTurnRadians);
+#if WITH_EDITOR
+    if(Trace)
+    {
+        CVarTemperingPoleTrace->Set(CVarTemperingPoleTrace.GetValueOnGameThread()-1,ECVF_SetByConsole);
+        float Candidate[41];FMemory::Memcpy(Candidate,Before,sizeof(Candidate));
+        SmoothTemperedKneePole(Previous,G,Candidate,Offset,MaxTurnRadians);
+        auto Row=MakeShared<FJsonObject>();
+        auto Add=[&](const TCHAR* Key,const float* V,int32 Count){TArray<TSharedPtr<FJsonValue>> A;for(int32 I=0;I<Count;++I) A.Add(MakeShared<FJsonValueNumber>(V[I]));Row->SetArrayField(Key,A);};
+        auto Vec=[&](const TCHAR* Key,const FVector3f& V){const float A[]={V.X,V.Y,V.Z};Add(Key,A,3);};
+        Add(TEXT("previous"),Previous,41);Add(TEXT("before"),Before,41);Add(TEXT("after"),Candidate,41);
+        Vec(TEXT("hip"),G.HipOffset);Vec(TEXT("knee"),G.KneeOffset);Vec(TEXT("pole"),G.Pole);
+        Row->SetNumberField(TEXT("offset"),Offset);Row->SetNumberField(TEXT("calf"),G.CalfLength);
+        Row->SetNumberField(TEXT("time"),Actor->GetWorld()->GetTimeSeconds());
+        Row->SetNumberField(TEXT("max_turn"),MaxTurnRadians);
+        FString Line;FJsonSerializer::Serialize(Row,TJsonWriterFactory<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>::Create(&Line));
+        FFileHelper::SaveStringToFile(Line+TEXT("\n"),*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/RecoveryPoleSmoothing.jsonl")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM,&IFileManager::Get(),FILEWRITE_Append);
+    }
+#endif
+    return Limited;
+}
+
 #if WITH_DEV_AUTOMATION_TESTS
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyRecoveryPolicyIsolationTest,
+    "Prophecy.NN.LowerTempering.PolicyIsolation",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyRecoveryPolicyIsolationTest::RunTest(const FString&)
+{
+    float Source[41]{},Published[41],Policy[41];
+    for(int32 I=0;I<41;++I) Source[I]=float(I)*.01f;
+    for(int32 O:{3,12,18,28,34}) WriteRot6(AxisAngleMatrix(FVector3f(0,0,1),.17f),Source+O);
+    FMemory::Memcpy(Published,Source,sizeof(Source));
+    FRecoveryPolicyLegs Saved;FRecoveryPolicyLegs::Capture(Source,Saved.Source);
+    for(int32 I=0;I<2;++I)
+    {
+        WriteStateVec3(Published,9+16*I,ReadStateVec3(Source,9+16*I)+FVector3f(.02f,-.03f,.01f));
+        WriteRot6(Multiply(MatrixFromRot6(Source+18+16*I),AxisAngleMatrix(FVector3f(1,0,0),I?.6f:-.7f)),Published+18+16*I);
+    }
+    FRecoveryPolicyLegs::Capture(Published,Saved.Solved);
+    FMemory::Memcpy(Policy,Published,sizeof(Policy));Saved.Restore(Policy);
+    TestEqual(TEXT("Pure recovery leaves the coherent policy input bitwise unchanged"),FMemory::Memcmp(Policy,Source,sizeof(Source)),0);
+    const FMat3f LaterTurn=AxisAngleMatrix(FVector3f(0,1,0),.23f);
+    const FVector3f LaterShift(.04f,.05f,-.02f);
+    FMemory::Memcpy(Policy,Published,sizeof(Policy));
+    for(int32 I=0;I<2;++I)
+    {
+        WriteStateVec3(Policy,9+16*I,ReadStateVec3(Policy,9+16*I)+LaterShift);
+        WriteRot6(Multiply(MatrixFromRot6(Policy+18+16*I),LaterTurn),Policy+18+16*I);
+    }
+    Saved.Restore(Policy);
+    for(int32 I=0;I<2;++I)
+    {
+        TestTrue(TEXT("Later pelvis-inertia ankle correction survives"),ReadStateVec3(Policy,9+16*I).Equals(ReadStateVec3(Source,9+16*I)+LaterShift,1.e-6f));
+        TestTrue(TEXT("Later noncommuting thigh adjustment survives"),MatrixToQuat(MatrixFromRot6(Policy+18+16*I)).Equals(MatrixToQuat(Multiply(MatrixFromRot6(Source+18+16*I),LaterTurn)),1.e-6));
+        TestEqual(TEXT("Foot rotation and toe remain untouched"),FMemory::Memcmp(Policy+12+16*I,Source+12+16*I,6*sizeof(float)),0);
+        TestEqual(TEXT("Published reconstruction remains intact"),FMemory::Memcmp(Published+18+16*I,Saved.Solved[I]+3,6*sizeof(float)),0);
+    }
+    TestEqual(TEXT("Pelvis is never filtered by policy isolation"),FMemory::Memcmp(Policy,Source,9*sizeof(float)),0);
+    return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyTemperingFootFramePoleTest,
+    "Prophecy.NN.LowerTempering.FootFramePoleSmoothing", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyTemperingFootFramePoleTest::RunTest(const FString&)
+{
+    const FPelvisLegGeometry G{FVector3f(0,.1f,0),FVector3f(0,0,-.45f),FVector3f(1,0,0),.43f,.05f};
+    float Previous[41]{};
+    WriteStateVec3(Previous,0,FVector3f(0,0,.8f));
+    WriteStateVec3(Previous,9,FVector3f(.1f,.1f,.08f));
+    for(int32 O:{3,12,18,28,34}) WriteRot6(FMat3f(),Previous+O);
+    ResolvePelvisLeg(ReadStateVec3(Previous,0),FMat3f(),ReadStateVec3(Previous,0),FMat3f(),G,Previous,9);
+    const FVector3f Hip=ReadStateVec3(Previous,0)+G.HipOffset;
+    const FVector3f Axis=SafeNormal(ReadStateVec3(Previous,9)-Hip);
+    const FMat3f InitialThigh=MatrixFromRot6(Previous+18);
+    for(float Angle:{-179.f,-80.f,-12.f,-5.f,0.f,5.f,12.f,80.f,179.f})
+    {
+        float Target[41],Before[41];FMemory::Memcpy(Target,Previous,sizeof(Target));
+        WriteRot6(Multiply(InitialThigh,AxisAngleMatrix(Axis,FMath::DegreesToRadians(Angle))),Target+18);
+        FMemory::Memcpy(Before,Target,sizeof(Before));
+        SmoothTemperedKneePole(Previous,G,Target,9);
+        const FQuat Expected=MatrixToQuat(Multiply(InitialThigh,AxisAngleMatrix(Axis,FMath::DegreesToRadians(FMath::Clamp(Angle,-12.f,12.f)))));
+        TestTrue(TEXT("Only excess foot-relative steering is limited"),Expected.Equals(MatrixToQuat(MatrixFromRot6(Target+18)),2.e-5));
+        TestEqual(TEXT("Pelvis and foot position/rotation preserved bitwise"),FMemory::Memcmp(Before,Target,18*sizeof(float)),0);
+        TestEqual(TEXT("Toe and other leg preserved bitwise"),FMemory::Memcmp(Before+24,Target+24,17*sizeof(float)),0);
+        const FVector3f K=Hip+TransformRow(G.KneeOffset,MatrixFromRot6(Target+18));
+        TestTrue(TEXT("Connected calf unchanged"),FMath::Abs((K-ReadStateVec3(Target,9)).Size()-G.CalfLength)<2.e-6f);
+        if(FMath::Abs(Angle)<12.f) TestEqual(TEXT("Smooth guidance is exactly unchanged"),FMemory::Memcmp(Before,Target,sizeof(Target)),0);
+    }
+    // Large common foot/hinge rotations must carry immediately, not acquire a
+    // world-space lag. Sweep yaw, pitch and roll, including nearly reversed axes.
+    for(int32 I=0;I<=360;++I)
+    {
+        const FMat3f Change=AxisAngleMatrix(SafeNormal(FVector3f(1,2,3)),FMath::DegreesToRadians(float(I)));
+        float Target[41],Before[41];FMemory::Memcpy(Target,Previous,sizeof(Target));
+        WriteStateVec3(Target,9,Hip+TransformRow(ReadStateVec3(Previous,9)-Hip,Change));
+        WriteRot6(Change,Target+12);WriteRot6(Multiply(InitialThigh,Change),Target+18);
+        FMemory::Memcpy(Before,Target,sizeof(Before));
+        SmoothTemperedKneePole(Previous,G,Target,9);
+        TestEqual(TEXT("Rigid foot-frame motion is unchanged, including full turns"),FMemory::Memcmp(Before,Target,sizeof(Target)),0);
+    }
+    // Repeated corrections reach the exact original target, so no residual is
+    // discarded when the existing recovery window retires.
+    float Target[41];FMemory::Memcpy(Target,Previous,sizeof(Target));
+    const FMat3f Goal=Multiply(InitialThigh,AxisAngleMatrix(Axis,FMath::DegreesToRadians(73.f)));
+    for(int32 I=0;I<7;++I)
+    {
+        float Prior[41];FMemory::Memcpy(Prior,Target,sizeof(Prior));WriteRot6(Goal,Target+18);
+        SmoothTemperedKneePole(Prior,G,Target,9);
+    }
+    TestTrue(TEXT("Stationary target is reached in finite steps"),MatrixToQuat(Goal).Equals(MatrixToQuat(MatrixFromRot6(Target+18)),2.e-6));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyTemperingHeightDirectionTest,
+    "Prophecy.NN.LowerTempering.HeightDirection", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyTemperingHeightDirectionTest::RunTest(const FString&)
+{
+    const FMat3f Identity;
+    FPelvisLegGeometry G{FVector3f(0,.1f,0),FVector3f(0,0,-.45f),FVector3f(1,0,0),.43f,.05f};
+    float Previous[41]{};
+    WriteStateVec3(Previous,0,FVector3f(0,0,.8f));
+    for(int32 O:{3,12,18,28,34}) WriteRot6(Identity,Previous+O);
+    const FVector3f Endpoint(.15f,.3f,.15f);
+    WriteStateVec3(Previous,9,Endpoint);
+    WriteRot6(AxisAngleMatrix(FVector3f(0,1,0),-.4f),Previous+18);
+    ResolvePelvisLeg(ReadStateVec3(Previous,0),Identity,ReadStateVec3(Previous,0),Identity,G,Previous,9);
+    const FVector3f Hip=ReadStateVec3(Previous,0)+G.HipOffset;
+    const FVector3f Axis=SafeNormal(Endpoint-Hip);
+    FVector3f LastKnee;float WorstStep=0;
+    // Fixed hip/ankle/foot and source: vary only clearance to exercise the entire
+    // direction transition without an NN rollout or an endpoint change hiding it.
+    for(int32 I=0;I<=140;++I)
+    {
+        const float Clearance=float(I)*.001f;
+        G.MinimumAnkleZ=Endpoint.Z-Clearance;
+        float Target[41];FMemory::Memcpy(Target,Previous,sizeof(Target));
+        ResolveTemperedLeg({1,1,1,1},Previous,G,Target,9);
+        const FVector3f Upper=TransformRow(G.KneeOffset,MatrixFromRot6(Target+18));
+        const FVector3f Knee=Hip+Upper;
+        const FVector3f Pole=SafeNormal(Upper-Axis*FVector3f::DotProduct(Upper,Axis));
+        if(I<=20) TestTrue(TEXT("Near floor bend follows foot heading"),FMath::Abs(Pole.Y)<2.e-5f && Pole.X>0.f);
+        if(I>=120) TestTrue(TEXT("Raised foot retains hip-front knee plane"),FMath::Abs(Upper.Y)<2.e-5f && Upper.X>0.f);
+        TestTrue(TEXT("Calf stays connected"),FMath::Abs((Endpoint-Knee).Size()-G.CalfLength)<2.e-6f);
+        TestEqual(TEXT("Pelvis unchanged"),FMemory::Memcmp(Target,Previous,9*sizeof(float)),0);
+        TestTrue(TEXT("Ankle unchanged"),ReadStateVec3(Target,9).Equals(Endpoint,2.e-6f));
+        TestEqual(TEXT("Foot rotation unchanged"),FMemory::Memcmp(Target+12,Previous+12,6*sizeof(float)),0);
+        TestEqual(TEXT("Other leg unchanged"),FMemory::Memcmp(Target+25,Previous+25,16*sizeof(float)),0);
+        if(I) WorstStep=FMath::Max(WorstStep,(Knee-LastKnee).Size());
+        LastKnee=Knee;
+    }
+    TestTrue(TEXT("Height transition has no knee discontinuity"),WorstStep<.004f);
+    AddInfo(FString::Printf(TEXT("Fixed-endpoint height sweep: maximum knee step %.6fcm per 1mm clearance"),WorstStep*100.f));
+    return true;
+}
 
 #if WITH_EDITOR
 static void CheckCapturedKneePlaneReturn(FAutomationTestBase& Test)
@@ -268,20 +421,13 @@ static void CheckCapturedKneePlaneReturn(FAutomationTestBase& Test)
     const float Previous[41]={-0.0139852036f,-0.0183354877f,0.899950325f,0.0323824659f,0.0786658525f,0.996374965f,0.206406504f,0.974881887f,-0.0836772025f,-0.280153304f,0.0356324837f,0.130454123f,0.119750373f,-0.190972894f,0.97426343f,0.0430869944f,0.981400192f,0.187075838f,0.414380491f,-0.0808831155f,0.906502485f,0.0178953838f,0.996574581f,0.0807395056f,-0.947685719f,0.0194326192f,0.3100003f,0.175645411f,0.196144298f,0.444234312f,-0.874175787f,-0.526791334f,-0.704180777f,-0.476046592f,0.00918883178f,0.0100692902f,-0.999907076f,-0.272030801f,-0.962211251f,-0.0121894972f,-0.935755968f};
     const float NN[41]={-0.0220915144f,-0.0264487825f,0.911052396f,0.0404931365f,0.0534222382f,0.997750655f,0.123610567f,0.990630977f,-0.0580576953f,-0.135414764f,0.0741419327f,0.104437325f,0.123978138f,-0.242851869f,0.962108305f,0.0657512112f,0.96946836f,0.236236907f,0.273927742f,-0.0428891702f,0.96079348f,0.0189047619f,0.999052255f,0.0392071597f,-0.931232305f,-0.060180936f,0.169378325f,0.167875064f,0.162172781f,0.33575902f,-0.927882465f,-0.462054395f,-0.805031685f,-0.372061451f,-0.0821176504f,-0.194671304f,-0.977425074f,-0.248620739f,-0.945729217f,0.209246209f,-0.97195895f};
     const float Recorded[41]={-0.0217763893f,-0.0261333864f,0.910620809f,0.0400942601f,0.0545123033f,0.997707903f,0.127249524f,0.990101874f,-0.0592104234f,-0.229537964f,0.0894430131f,0.135315448f,0.123925224f,-0.242099568f,0.962304711f,0.0654194877f,0.96966368f,0.235526264f,0.285925239f,-0.00139057636f,0.95825094f,-0.689636886f,0.694004238f,0.206782579f,-0.931472182f,-0.0563509911f,0.176143169f,0.168014765f,0.163591236f,0.341203153f,-0.925644815f,-0.465362221f,-0.800643146f,-0.377370626f,-0.0988058001f,-0.222776696f,-0.969849408f,-0.262603313f,-0.934232473f,0.241348833f,-0.970217347f};
-    const float ExpectedRot[6]={0.411954197f,0.00319733329f,0.911198944f,-0.00720673489f,0.999974f,-0.000250664763f};
     const ProphecyLowerTempering::FSettings S{0.985422254f,0.985422254f,0.96112597f,0.956266701f,0.985422254f,0.96112597f};
     const FPelvisLegGeometry G{FVector3f(-0.0256932992f,0.000108699314f,-0.0775007159f),FVector3f(-0.390062451f,-5.7220459e-05f,-9.39704478e-06f),FVector3f(1.07968381e-05f,-0.930421889f,-0.366490304f),0.430068872f,0.135315446f};
-    const int32 SavedMode=CVarTemperingKneePlane.GetValueOnGameThread();
-    float Legacy[41],Candidate[41];FMemory::Memcpy(Legacy,Recorded,sizeof(Legacy));FMemory::Memcpy(Candidate,Recorded,sizeof(Candidate));
+    float Candidate[41];FMemory::Memcpy(Candidate,Recorded,sizeof(Candidate));
     auto Solve=[&](float* Out){ResolveTemperedLeg(S,Previous,G,Out,9,FVector3f(-0.0615985096f,-0.13826412f,0.00680604391f),FVector3f(1,0,0),.15f,true,NN);};
-    CVarTemperingKneePlane->Set(1,ECVF_SetByConsole);Solve(Legacy);
-    CVarTemperingKneePlane->Set(3,ECVF_SetByConsole);Solve(Candidate);
+    Solve(Candidate);
     const FQuat Prior=MatrixToQuat(MatrixFromRot6(Previous+18));
-    const FQuat Old=MatrixToQuat(MatrixFromRot6(Legacy+18));
     const FQuat New=MatrixToQuat(MatrixFromRot6(Candidate+18));
-    Test.TestTrue(TEXT("Recorded original reproduces the greater-than40-degree thigh step"),FMath::RadiansToDegrees(Prior.AngularDistance(Old))>40.);
-    Test.TestTrue(TEXT("Same frozen inputs produce a thigh step below6 degrees"),FMath::RadiansToDegrees(Prior.AngularDistance(New))<6.);
-    Test.TestTrue(TEXT("Independent double-precision bend-coordinate oracle"),FMath::RadiansToDegrees(New.AngularDistance(MatrixToQuat(MatrixFromRot6(ExpectedRot))))<.01);
     Test.TestEqual(TEXT("Recorded solve leaves pelvis unchanged"),FMemory::Memcmp(Recorded,Candidate,9*sizeof(float)),0);
     Test.TestTrue(TEXT("Recorded solve keeps the exact ankle endpoint"),ReadStateVec3(Recorded,9).Equals(ReadStateVec3(Candidate,9),2.e-6f));
     Test.TestEqual(TEXT("Recorded solve preserves foot rotation and toe"),FMemory::Memcmp(Recorded+12,Candidate+12,6*sizeof(float)),0);
@@ -289,6 +435,17 @@ static void CheckCapturedKneePlaneReturn(FAutomationTestBase& Test)
     const FVector3f Hip=ReadStateVec3(Candidate,0)+TransformRow(G.HipOffset,MatrixFromRot6(Candidate+3));
     const FVector3f Knee=Hip+TransformRow(G.KneeOffset,MatrixFromRot6(Candidate+18));
     Test.TestTrue(TEXT("Recorded calf remains connected"),FMath::Abs((ReadStateVec3(Candidate,9)-Knee).Size()-G.CalfLength)<2.e-6f);
+    // The rejected normalized-coordinate trial's golden rotation is obsolete.
+    // This frozen endpoint is at floor level: the accepted rule requires a pole
+    // in the foot-forward vertical plane, with the forward-facing branch.
+    const FVector Axis=FVector(ReadStateVec3(Candidate,9)-Hip).GetSafeNormal();
+    const FVector Upper=FVector(Knee-Hip);
+    const FVector Bend=(Upper-Axis*FVector::DotProduct(Upper,Axis)).GetSafeNormal();
+    FVector Forward=FVector(TransformRow(FVector3f(-.0615985096f,-.13826412f,.00680604391f),MatrixFromRot6(Candidate+12)));
+    Forward.Z=0;Forward.Normalize();
+    const FVector Side(-Forward.Y,Forward.X,0);
+    Test.TestTrue(TEXT("Frozen floor-level bend follows the foot-forward plane"),FMath::Abs(FVector::DotProduct(Bend,Side))<2.e-5);
+    Test.TestTrue(TEXT("Frozen floor-level bend retains the forward branch"),FVector::DotProduct(Bend,Forward)>0);
     // Sweep the endpoint through the previous feasibility boundary using fixed
     // reference poses. This also covers an almost straight connected leg.
     FQuat Last;double MaxStep=0;
@@ -303,8 +460,7 @@ static void CheckCapturedKneePlaneReturn(FAutomationTestBase& Test)
         Test.TestTrue(TEXT("Endpoint sweep remains finite"),!Q.ContainsNaN());
     }
     Test.TestTrue(TEXT("No discrete knee turn across endpoint feasibility sweep"),MaxStep<1.);
-    Test.AddInfo(FString::Printf(TEXT("Frozen recorded157: old %.6f, new %.6f degrees; sweep max %.6f degrees"),FMath::RadiansToDegrees(Prior.AngularDistance(Old)),FMath::RadiansToDegrees(Prior.AngularDistance(New)),MaxStep));
-    CVarTemperingKneePlane->Set(SavedMode,ECVF_SetByConsole);
+    Test.AddInfo(FString::Printf(TEXT("Frozen recorded157 height-guided thigh step %.6f degrees; sweep max %.6f degrees"),FMath::RadiansToDegrees(Prior.AngularDistance(New)),MaxStep));
 }
 #endif
 

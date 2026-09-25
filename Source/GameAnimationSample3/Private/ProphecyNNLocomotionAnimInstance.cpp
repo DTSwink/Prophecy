@@ -384,7 +384,7 @@ private:
 
 		if (bApplyLegs)
 			FProphecyNNPoseStore::ApplyRigidCalves(AgentId, CurrentPose,
-				CurrentPose.BoneNames, DesiredComponentTransforms);
+				CurrentPose.BoneNames, DesiredComponentTransforms,Alpha);
 
 		if (bApplyPelvis && bApplyLegs && bApplyUpperBody)
             ProphecyAttackStartInertia::Apply(AgentId,CurrentPose.BoneNames,DesiredComponentTransforms,EvaluationComponentWorldTransform);

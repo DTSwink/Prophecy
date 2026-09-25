@@ -1825,7 +1825,7 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 		}
 		if (Complete && Selected!=INDEX_NONE)
 		{
-			FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId,Pose,Names,Transforms);
+			FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId,Pose,Names,Transforms,InterpolationAlpha);
 			InterpolatedWorldTransform=Transforms[Selected];
 			return true;
 		}
@@ -1864,7 +1864,7 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 		}
 		if (bComplete)
 		{
-			FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, Names, Transforms);
+			FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, Names, Transforms,InterpolationAlpha);
 			InterpolatedWorldTransform = Transforms[BoneName == Names[1] ? 1 : 2];
 		}
 	}
@@ -2149,7 +2149,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 				InterpolatedWorldTransforms[Index], FutureWorldTransforms[Index], InterpolationAlpha);
 		}
 		FProphecyNNPoseStore::ApplyRigidForearms(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
-		FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
+		FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms,InterpolationAlpha);
 		ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 		return BoneNames.Num() > 0;
 	}
@@ -2169,7 +2169,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 			PreviousWorld, FutureWorld, InterpolationAlpha));
 	}
 	FProphecyNNPoseStore::ApplyRigidForearms(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
-	FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
+	FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms,InterpolationAlpha);
 	ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	return true;
 }

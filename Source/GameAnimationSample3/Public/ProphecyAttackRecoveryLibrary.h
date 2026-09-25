@@ -23,7 +23,8 @@ public:
     /** Independent pelvis/left-leg/right-leg recovery after attack/parry/dodge. Each part
      * holds its selected checkpoint, then blends to NORMAL locomotion selection
      * (including ordinary walk/run blends). Does not change root motion.
-     * Duration zero or Source Normal disables that part. All disabled means no
+     * Zero blend with a positive hold keeps the source, then switches to normal.
+     * Both durations zero or Source Normal disables that part. All disabled means no
      * recovery clock, correction or extra inference. 1 second = 60 unpaused ticks.
      * Positive settings apply at the next special end, or the current handoff when
      * called from Special Ended before its first locomotion prediction.

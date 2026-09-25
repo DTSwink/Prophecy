@@ -68,6 +68,7 @@ public:
     // Complete angular-only update; preserves native articulation and synchronizes the UE receiver.
     bool ApplyAngularLimitProfiles(TConstArrayView<FConstraintProfileProperties> Profiles, FString& OutError);
     bool SetSelfCollisionEnabled(bool bEnabled, FString& OutError);
+    bool SetAttackSelfCollisionSuppressed(bool bSuppressed, FString& OutError);
     bool SetBodiesPhysicalMaterialOverride(TConstArrayView<FName> BodyBones, UPhysicalMaterial* Material, FString& OutError);
     bool SetBodiesSelfCollisionEnabled(TConstArrayView<FName> BodyBones, bool bEnabled, FString& OutError);
     bool SetSelfCollisionBelow(FName BoneName, bool bEnabled, bool bIncludeSelf, FString& OutError);

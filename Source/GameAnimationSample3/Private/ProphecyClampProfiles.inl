@@ -1,5 +1,6 @@
 // Included by PhysicalContext: separate maps preserve retained Live Coding layouts.
 #include "ProphecyClampProfiles.h"
+#include "ProphecyPhysicalFootTarget.h"
 #include "ProphecyNNLocomotionManager.h"
 #include "EngineUtils.h"
 namespace ProphecyClampProfiles
@@ -217,6 +218,7 @@ bool FProphecyClampSnapshotTest::RunTest(const FString&)
     for (int32 I=0;I<30;++I) Advance(W,LEVELTICK_All,I%2?1.f/120.f:1.f/30.f);
     TestEqual(TEXT("Off-to-on half blend uses large allowance"),A->LocomotionFootClampLeewayCm,501.5f);
     TestEqual(TEXT("Calf half blend"),A->LocomotionCalfClampLeewayCm,12.f);
+    TestEqual(TEXT("Physical calf range follows the snapshot blend"),ProphecyPhysicalFootTarget::LocomotionCalfLeeway(A),12.f);
     TestEqual(TEXT("Foot restore does not affect hands"),A->LocomotionHandClampLeewayCm,55.f);
     Advance(W,LEVELTICK_ViewportsOnly,1.f/60.f);
     TestEqual(TEXT("Non-game tick does not advance"),A->LocomotionCalfClampLeewayCm,12.f);
@@ -224,6 +226,7 @@ bool FProphecyClampSnapshotTest::RunTest(const FString&)
     for (int32 I=0;I<30;++I) Advance(W,LEVELTICK_All,1.f/240.f);
     TestEqual(TEXT("Exactly 60 ticks reaches foot baseline"),A->LocomotionFootClampLeewayCm,3.f);
     TestEqual(TEXT("Calf endpoint"),A->LocomotionCalfClampLeewayCm,4.f);
+    TestEqual(TEXT("Physical calf range follows the saved endpoint"),ProphecyPhysicalFootTarget::LocomotionCalfLeeway(A),4.f);
     TestTrue(TEXT("Finished callback removed"),Active.IsEmpty() && !TickHandle.IsValid());
     Lib::BlendClampToSnapshot(A,EProphecyClampType::Foot,0,TEXT("Mid"),EMode::Locomotion);
     TestEqual(TEXT("Snapshot stores current blend value"),A->LocomotionFootClampLeewayCm,501.5f);

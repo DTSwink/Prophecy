@@ -31,8 +31,9 @@ public:
     /** Hand-only recovery after any special. Walk/Run conditions the SAME upper checkpoint
      * on that lower checkpoint's prediction, blending only the arm outputs back to normal.
      * Does not switch the actual legs, torso or root. Independent holds and blend durations.
-     * Extra source inference only during active recovery. Normal/zero duration disables
-     * that hand. No kick variant. Configure before a special or in Special Ended.
+     * Extra source inference only during active recovery. Zero blend honors the hold,
+     * then returns immediately. Normal or both durations zero disables that hand.
+     * No kick variant. Configure before a special or in Special Ended.
      * 1 second means60 unpaused game ticks. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|NN Attack",meta=(DefaultToSelf="Agent"))
     static bool SetAttackToLocomotionHandBlend(AProphecyAgent* Agent,

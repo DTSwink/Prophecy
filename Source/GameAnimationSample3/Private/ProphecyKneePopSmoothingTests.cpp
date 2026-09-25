@@ -59,6 +59,19 @@ bool RunKneePopSmoothingChecks(FAutomationTestBase& Test)
     ProphecyNNPresentation::SetKneePopSmoothing(Id,4);
     FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
     Test.TestTrue(TEXT("Shared presentation applies correction without legacy calf clamp"),!Pose[2].Equals(Original[2],1.e-6));
+    // All special publications share this existing classification, independent of clamps.
+    for(const TCHAR* Mode:{TEXT("attack"),TEXT("parry"),TEXT("dodge")})
+    {
+        FProphecyNNPoseStore::SetAgentLocalPose(Id,Names,Original,Original,Original,
+            FTransform::Identity,FTransform::Identity,1.,true,false);
+        Pose=Original;FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+        Test.TestTrue(FString::Printf(TEXT("%s without entry inertia bypasses smoothing"),Mode),
+            Pose[1].Equals(Original[1],0)&&Pose[2].Equals(Original[2],0));
+    }
+    FProphecyNNPoseStore::SetAgentLocalPose(Id,Names,Original,Original,Original,
+        FTransform::Identity,FTransform::Identity,2.,false,false);
+    Pose=Original;FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+    Test.TestTrue(TEXT("Locomotion resumes configured smoothing"),!Pose[2].Equals(Original[2],1.e-6));
     ProphecyNNPresentation::SetKneePopSmoothing(Id,0);Pose=Original;
     FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
     Test.TestTrue(TEXT("Disable removes settings and pose work"),!ProphecyNNPresentation::HasKneePopSmoothing(Id)&&Pose[1].Equals(Original[1],0)&&Pose[2].Equals(Original[2],0));

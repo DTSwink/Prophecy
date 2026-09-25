@@ -6,8 +6,10 @@ Disable it or set the zone to zero to remove its setting. There is no callback,
 timer, retained pose history or additional inference; disabled calls skip the
 extra bone traversal and math after a guard in the existing presentation path.
 
-This is soft IK near maximum leg extension, for both legs in every animation
-mode. Given current thigh/calf lengths `a,b`, reach `r=a+b`, soft zone `s`, and
+This is soft IK near maximum leg extension, for both legs during locomotion.
+Normal attack, parry and dodge presentation bypass it. The exception is an
+active attack-start pelvis inertia correction: smoothing runs once AFTER that
+correction, with the same configured zone, and stops when inertia retires. Given current thigh/calf lengths `a,b`, reach `r=a+b`, soft zone `s`, and
 hip-to-ankle distance `d`, there is no change below `r-s`. Above that boundary,
 the desired distance is `r-s*exp(-(d-(r-s))/s)`. Value and first derivative match
 at the boundary. The zone is capped at one quarter of the current reach.
@@ -20,8 +22,9 @@ shift the toe with the foot. The pelvis is unchanged. As requested, **the foot
 may lift from the floor, including a pinned foot**. No floor-height constraint
 is imposed. This prevents extension collapse; it is not a general time filter.
 
-The correction runs after existing calf recovery/clamps on interpolated
-presentation, shared by rendered pose and physical targets. It does not edit
+The locomotion correction runs after existing calf recovery/clamps on interpolated
+presentation. The attack-entry exception runs after pelvis inertia instead.
+Both paths are shared by rendered pose and physical targets. It does not edit
 raw checkpoint outputs or recurrent state. While enabled, remember each leg's
 reliable bend direction in thigh space at pose publication, refreshing it outside
 the soft region. Carry it with the thigh and smoothly guide the extra knee bend
@@ -73,3 +76,7 @@ ended, tracing is off and Python capture memory was released.
 
 The feature is left unwired/off in user assets. Include this Live Coding change
 in the next authorized normal editor build before relying on a fresh process.
+
+## Current Walk check, 2026-09-25
+
+Read-only Blueprint dump shows tick debugging / K2Node_CallFunction_209: Enabled=true but SoftZoneCm=0.000000. Zero removes the smoothing setting, so this walk does not run the correction. Owned capture20–360 contains pure Walk/no attacks. Identical-prefix same-frame disable at320 changes both feet0cm and both knee bends0degrees (right5.51710685degrees before/after), confirming bypass. No gameplay changes or saves; diagnostic PIE ended. Evidence: Saved/Diagnostics/WalkKneeNow-verification.json and SwordThigh/BlueprintGraph.txt (fresh read-only dump).

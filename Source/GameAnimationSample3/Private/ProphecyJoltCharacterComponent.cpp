@@ -1,4 +1,5 @@
 #include "ProphecyJoltCharacterComponent.h"
+#include "ProphecySwordAttackCollision.h"
 #include "ProphecyPelvisInertia.h"
 #include "ProphecyJointDampingPolicy.h"
 #include "ProphecyLimbCollision.h"
@@ -8,6 +9,14 @@
 #include "ProphecyJoltAuthoredTargetHistory.h"
 #include "ProphecyPhysicalFootTarget.h"
 #include "ProphecyKickFootLeeway.h"
+#include "ProphecyLowerTempering.h"
+#if WITH_EDITOR
+#include "HAL/IConsoleManager.h"
+static TAutoConsoleVariable<int32> CVarPhysicalFootRecovery(TEXT("Prophecy.PhysicalFoot.RecoveryLength"),1,
+    TEXT("Editor A/B only: physical foot target follows shared returning calf length (1) or legacy immediate rest endpoint (0)."));
+static TAutoConsoleVariable<int32> CVarPhysicalFootRecoveryTrace(TEXT("Prophecy.PhysicalFoot.TraceFrames"),0,
+    TEXT("Opt-in possessed-agent physical foot target publication trace; frame budget."));
+#endif
 
 #include "ProphecyAgent.h"
 #include "ProphecyAngularLimits.h"
@@ -542,6 +551,7 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     AddTickPrerequisiteActor(Agent);
     if (!PublishAuthoredTargets(GetWorld()->GetDeltaSeconds(), Error) || !PublishCompletedPose(Error)
         || !CommitIsValid() || !SynchronizeAngularLimits(Error) || !ProphecyKickFootLeeway::Reapply(Agent,Error)
+        || !SetAttackSelfCollisionSuppressed(ProphecySwordAttackCollision::SuppressesOwner(Agent), Error)
         || !Coordinator->RegisterCharacter(*this, Error))
     {
         if (State.Get() == CommittingState && SameRig(State->RigHandle, CommittingRig))
@@ -606,8 +616,14 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     {
     Profile::FScope PhaseTiming(Profile::EPhase::TargetPacket);
     State->TargetNameLookup.Update(Names, State->BodyNames);
-    const float FootTargetLeeway=ProphecyPhysicalFootTarget::Leeway(Agent);
+    const float LocomotionFootLeeway=ProphecyPhysicalFootTarget::LocomotionCalfLeeway(Agent);
+    const float FootTargetLeeway=FMath::Max(ProphecyPhysicalFootTarget::Leeway(Agent),LocomotionFootLeeway);
     const float KickFootLeeway=ProphecyKickFootLeeway::Current(Agent);
+    if (!ProphecyKickFootLeeway::Synchronize(Agent,LocomotionFootLeeway,Error)) return Fail(OutError,Error);
+#if WITH_EDITOR
+    const bool TraceFeet=CVarPhysicalFootRecoveryTrace.GetValueOnGameThread()>0 && Agent->IsPlayerControlled();
+    if(TraceFeet)CVarPhysicalFootRecoveryTrace->Set(CVarPhysicalFootRecoveryTrace.GetValueOnGameThread()-1,ECVF_SetByConsole);
+#endif
     for (int32 Index = 0; Index < State->Handles.Num(); ++Index)
     {
         const int32 TargetIndex = State->TargetNameLookup.GetIndices()[Index];
@@ -634,13 +650,27 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
             {
                 const FVector Offset=Skeleton.GetRefBonePose()[FootBone].GetTranslation();
                 const FTransform& Calf=Interpolated[CalfTarget];
-                const FVector End=Calf.TransformPosition(Offset),Original=BodyWorld.GetLocation();
+                bool Recovering=ProphecyKickFootLeeway::HasLengthReturn(Agent) && ProphecyLegChainDebug::IsEnabled(Agent);
+#if WITH_EDITOR
+                if(CVarPhysicalFootRecovery.GetValueOnGameThread()==0)Recovering=false;
+#endif
+                const FVector Original=BodyWorld.GetLocation();
+                const FVector End=Recovering ? ProphecyPhysicalFootTarget::PresentedCalfEnd(Calf,Offset,Original)
+                    : Calf.TransformPosition(Offset);
                 FVector Target=ProphecyPhysicalFootTarget::Clamp(Original,End,FootTargetLeeway);
                 BodyWorld.SetLocation(Target);
             }
             // Start/end trajectories and lower feedback must agree with the drive.
             State->AuthoredBodyScratch[Index]=BodyWorld;
         }
+#if WITH_EDITOR
+        if(TraceFeet && Side!=INDEX_NONE)
+            UE_LOG(LogTemp,Display,TEXT("FootRecoveryTarget actor=%s time=%.9f side=%d allowance=%.6f recovery=%.6f target=(%.9f,%.9f,%.9f) authored=(%.9f,%.9f,%.9f)"),
+                *Agent->GetName(),GetWorld()->GetTimeSeconds(),Side,FootTargetLeeway,
+                ProphecyKickFootLeeway::ReturningLengthDeltaCm(Agent,Side),
+                BodyWorld.GetLocation().X,BodyWorld.GetLocation().Y,BodyWorld.GetLocation().Z,
+                Interpolated[TargetIndex].GetLocation().X,Interpolated[TargetIndex].GetLocation().Y,Interpolated[TargetIndex].GetLocation().Z);
+#endif
         FProphecyJoltRigVelocityTarget& Target = Targets.AddDefaulted_GetRef();
         Target.Handle = State->Handles[Index];
         Target.TargetPositionCm = BodyWorld.GetLocation();
@@ -1179,6 +1209,23 @@ bool UProphecyJoltCharacterComponent::SetSelfCollisionEnabled(bool bEnabled, FSt
     const FProphecyJoltWorldStatus Result = State->WorldOwner->SetRigSelfCollisionEnabled(State->RigHandle, bEnabled);
     OutError = Result.Message;
     return Result.IsSuccess();
+}
+
+bool UProphecyJoltCharacterComponent::SetAttackSelfCollisionSuppressed(bool bSuppressed, FString& OutError)
+{
+    if (!ValidateSelfCollisionSource(OutError)) return false;
+    // Event-only reflected bridge also works against the existing editor import library.
+    struct FArgs
+    {
+        UObject* WorldContext; FGuid Lifetime; int32 RigSlot; int64 RigGeneration;
+        bool bSuppressed; FString OutError; bool ReturnValue;
+    } Args{this, State->RigHandle.WorldLifetime, State->RigHandle.Slot,
+        int64(State->RigHandle.Generation), bSuppressed, {}, false};
+    auto* Library = FindObjectChecked<UClass>(nullptr,
+        TEXT("/Script/ProphecyJolt.ProphecyJoltAttackCollisionLibrary"))->GetDefaultObject();
+    Library->ProcessEvent(Library->FindFunctionChecked(TEXT("SetSuppressed")), &Args);
+    OutError = Args.OutError;
+    return Args.ReturnValue;
 }
 
 bool UProphecyJoltCharacterComponent::SetBodiesSelfCollisionEnabled(

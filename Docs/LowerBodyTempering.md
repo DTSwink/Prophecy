@@ -17,6 +17,40 @@ also drives that foot's toe, reconstruction source and calf twist continuity.
 Normal feet with a normal pelvis bypass tempering reconstruction unless regional
 Run/Walk mixing still requires chain repair. Reset preserves both feet's values.
 
+For separate timing, call **Blend Kick Locomotion Lower Body Tempering To Normal**
+after the kick setter in Special Ended. It has Feet Duration/Hold and Pelvis
+Duration/Hold (defaults1/0 and1/0); both feet retain their own role-specific values
+while sharing the feet timing. It runs only for the selected kick return. Using
+it opts that agent into separated return routing: subsequent regular return calls
+leave kicks untouched, and the kick return leaves ordinary attacks/parry/dodge
+returns untouched. Existing graphs which never use the kick node keep the shared
+return behavior. This routing is checked only when a node is called, reuses the
+existing clocks, and retains zero-duration and completed-return bypasses.
+
+The pose-agent's two kick return calls now use the kick variant. Their duration
+inputs are independent0.25 literals (15 ticks), with holds0; they no longer share
+the regular branch's duration literal. Gameplay Live build213.86s loaded17:33:36UTC;
+all five focused tests passed17:34:15UTC, including SeparatedKickReturns across
+30/60/120FPS, kick sides, hold/blend separation, zero duration and retirement.
+Editor conversion compiled BP status3 at17:36:24UTC; node265/266 now call the kick
+variant with canonical library/Agent references and unchanged execution links.
+Blueprint subsequently compiled and saved for the user-authorized scripts/BP backup. No scene rollout or Play interruption/restart.
+Include the new reflected function in the next authorized normal build.
+
+September25 Special Ended graph repair: both live kick branches applied the kick
+tempering setter and the Walk/Run recovery setter but never reached a tempering
+return. The existing regular tempering return was in a disconnected chain. Initially added
+`Blend Locomotion Lower Body Tempering To Normal` immediately after each kick
+tempering setter, before its existing checkpoint-blend setter. Both new nodes use
+the existing tempering literal0.25 for feet/pelvis duration (15 game ticks), holds0,
+and the same Agent links as their setters. Those two calls now use the separate
+kick variant described above. Kick coefficients and Walk/Run timings
+are unchanged. This is an undoable Blueprint wiring repair, not a change to native
+tempering/reconstruction. Live editor repair helper built14.06s; BP compiled status3
+at17:22:28UTC and remains unsaved. KickProfiles, FootRoles and SeparateReturns all
+passed17:22:39UTC. No scene rollout, Play interruption or restart. Before/after
+graphs: `Saved/Diagnostics/KickTemperingReturn-{before,after}.txt`.
+
 Final knee stance-plane guidance also follows the foot's Rotation tempering:
 it approaches the frozen hinge at zero and full plane guidance at one. This
 prevents a full-strength final knee correction from overriding a slowly following

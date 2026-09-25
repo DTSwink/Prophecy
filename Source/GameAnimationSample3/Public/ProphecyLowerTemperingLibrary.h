@@ -25,6 +25,16 @@ public:
      * tempering/reconstruction is inactive. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion", meta=(DisplayName="Set Locomotion Minimum Leg Reach"))
     static bool SetLocomotionMinimumLegReach(AProphecyAgent* Agent, float Multiplier = 1.2f);
+
+    /** Keep foot-relative knee steering smooth after any special, independently
+     * of pelvis/feet tempering. One duration second = 60 game ticks; turn speed
+     * is degrees per 60 ticks. Zero duration keeps the previous tempering-only
+     * behavior. At expiry, a remaining correction finishes at the chosen speed
+     * rather than snapping. A new special/reset cancels it. No normal-pose work
+     * remains after convergence. Speed must be positive and finite. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion", meta=(DisplayName="Set Leg Reconstruction Recovery"))
+    static bool SetLegReconstructionRecovery(AProphecyAgent* Agent, float DurationSeconds = 1.f,
+        float PoleTurnSpeedDegreesPerSecond = 180.f);
 };
 
 UCLASS()
@@ -68,9 +78,23 @@ public:
      * Each group's XY translation, Z translation and rotation return together.
      * Completion removes tempering and its timeline entirely. A new Set cancels
      * this return; another Blend starts from the current values. Each authored second
-     * means 60 unpaused game ticks, independent of FPS/time dilation. Zero duration snaps after the optional hold. */
+     * means 60 unpaused game ticks, independent of FPS/time dilation. Zero duration snaps after the optional hold.
+     * Once the kick return node is used on this agent, this node leaves kick returns untouched.
+     * Existing graphs without the kick return node retain their shared return behavior. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion")
     static bool BlendLocomotionLowerBodyTemperingToNormal(AProphecyAgent* Agent,
+        UPARAM(DisplayName="Feet Duration Seconds") float DurationSeconds = 1.f,
+        UPARAM(DisplayName="Feet Hold Duration Seconds") float HoldDurationSeconds = 0.f,
+        float PelvisDurationSeconds = 1.f, float PelvisHoldDurationSeconds = 0.f);
+
+    /** Separate kick-only return timing. Call after Set Kick Locomotion Lower Body Tempering
+     * in Special Ended. Applies only to the selected kick recovery; non-kick calls do
+     * not change active values or timelines. Using this node separates kick returns from
+     * the regular return node, so both may be wired without overwriting each other.
+     * Both feet retain their kicking/non-kicking values and share the feet schedule.
+     * One second = 60 game ticks. Zero/zero restores immediately; normal has no active work. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion")
+    static bool BlendKickLocomotionLowerBodyTemperingToNormal(AProphecyAgent* Agent,
         UPARAM(DisplayName="Feet Duration Seconds") float DurationSeconds = 1.f,
         UPARAM(DisplayName="Feet Hold Duration Seconds") float HoldDurationSeconds = 0.f,
         float PelvisDurationSeconds = 1.f, float PelvisHoldDurationSeconds = 0.f);

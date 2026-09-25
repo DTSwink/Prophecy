@@ -159,7 +159,7 @@ public:
 
 	/** Preserve exact calf attachment, or the published attack length band; toes follow any correction. */
 	static void ApplyRigidCalves(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
-		TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms);
+		TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms, float InterpolationAlpha = 1.f);
 
 	/** Attack presentation: keep fixed hand-parent offsets after world interpolation. */
 	static void ApplyRigidForearms(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,

@@ -29,6 +29,14 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FSmoothing> Smoothing;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FBackwardBound> BackwardBounds;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FBackwardBound> CircleBounds;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> BackwardTransfers;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,float> RunBoosts;
+void BoostRunPin(const AProphecyAgent* Agent,float& Left,float& Right)
+{
+    const float* Alpha=RunBoosts.IsEmpty()?nullptr:RunBoosts.Find(Agent);
+    if(!Alpha)return;
+    float& Highest=Left>=Right?Left:Right;
+    Highest=FMath::Lerp(Highest,1.f,*Alpha);
+}
 // Separate storage keeps existing retained bound structs and circle settings intact.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> BackwardTargetLerps;
 void ApplyBackwardTargetHeading(const AProphecyAgent* Agent,FVector& Heading)
@@ -148,7 +156,7 @@ void ClearReachCooldown(const AProphecyAgent* Agent)
 }
 static void RefreshCleanup()
 {
-    if (TickPins.IsEmpty() && Settings.IsEmpty() && ReachGuards.IsEmpty() && Smoothing.IsEmpty() && BackwardBounds.IsEmpty() && CircleBounds.IsEmpty() && BackwardTransfers.IsEmpty())
+    if (TickPins.IsEmpty() && Settings.IsEmpty() && ReachGuards.IsEmpty() && Smoothing.IsEmpty() && BackwardBounds.IsEmpty() && CircleBounds.IsEmpty() && BackwardTransfers.IsEmpty() && RunBoosts.IsEmpty())
     {
         FWorldDelegates::OnWorldCleanup.Remove(CleanupHandle);
         CleanupHandle.Reset();
@@ -174,6 +182,8 @@ static void RefreshCleanup()
                 if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
             for (auto It=BackwardTargetLerps.CreateIterator();It;++It)
                 if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+            for (auto It=RunBoosts.CreateIterator();It;++It)
+                if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
             RefreshReachTick();
             RefreshSmoothTick();
             RefreshCleanup();
@@ -185,6 +195,14 @@ bool Apply(const AProphecyAgent* Agent,float Left,float Right,float PinScale,flo
     return Config && Config->Apply(Left,Right,PinScale,LeftPin,RightPin);
 }
 
+}
+bool UProphecyWalkPinningLibrary::SetRunPinningBoost(AProphecyAgent* Agent,float Alpha)
+{
+    using namespace ProphecyWalkPinning;
+    if(!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() ||
+        !FMath::IsFinite(Alpha) || Alpha<0 || Alpha>1)return false;
+    if(Alpha>0)RunBoosts.Add(Agent,Alpha);else RunBoosts.Remove(Agent);
+    RefreshCleanup();return true;
 }
 bool UProphecyWalkPinningLibrary::SetWalkPinningEveryTick(AProphecyAgent* Agent,bool Enabled)
 {
@@ -344,6 +362,31 @@ bool UProphecyWalkPinningLibrary::GetWalkPinningTolerance(AProphecyAgent* Agent,
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyRunPinningBoostTest,"Prophecy.NN.RunPinning.HighestBoost",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyRunPinningBoostTest::RunTest(const FString&)
+{
+    using namespace ProphecyWalkPinning;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Game,false);
+    AProphecyAgent* A=W->SpawnActor<AProphecyAgent>();AProphecyAgent* B=W->SpawnActor<AProphecyAgent>();
+    float L=.2f,R=.6f;BoostRunPin(A,L,R);
+    TestEqual(TEXT("Default inactive"),R,.6f);
+    TestTrue(TEXT("Configure half boost"),UProphecyWalkPinningLibrary::SetRunPinningBoost(A,.5f));
+    BoostRunPin(A,L,R);TestNearlyEqual(TEXT("Higher right interpolated"),R,.8f,1.e-6f);TestEqual(TEXT("Lower left untouched"),L,.2f);
+    L=.6f;R=.2f;BoostRunPin(A,L,R);TestNearlyEqual(TEXT("Higher left interpolated"),L,.8f,1.e-6f);TestEqual(TEXT("Lower right untouched"),R,.2f);
+    L=.2f;R=.6f;BoostRunPin(B,L,R);TestEqual(TEXT("Other agent unaffected"),R,.6f);
+    UProphecyWalkPinningLibrary::SetRunPinningBoost(A,1);L=.2f;R=.6f;BoostRunPin(A,L,R);
+    TestEqual(TEXT("Alpha one reaches exactly one"),R,1.f);TestEqual(TEXT("Other pin retained"),L,.2f);
+    L=R=.4f;BoostRunPin(A,L,R);TestEqual(TEXT("Tie deterministically selects left"),L,1.f);TestEqual(TEXT("Tie does not pin both"),R,.4f);
+    TestFalse(TEXT("Reject invalid alpha"),UProphecyWalkPinningLibrary::SetRunPinningBoost(A,-1));
+    UProphecyWalkPinningLibrary::SetRunPinningBoost(A,0);L=.2f;R=.6f;BoostRunPin(A,L,R);
+    TestFalse(TEXT("Alpha zero removes storage"),RunBoosts.Contains(A));TestEqual(TEXT("Zero exact bypass"),R,.6f);
+    TestFalse(TEXT("No smoothing timer"),SmoothTickHandle.IsValid());TestFalse(TEXT("No reach timer"),ReachTickHandle.IsValid());
+    UProphecyWalkPinningLibrary::SetRunPinningBoost(A,.5f);W->DestroyWorld(false);
+    TestFalse(TEXT("World cleanup removes setting"),RunBoosts.Contains(A));
+    return !HasAnyErrors();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyWalkPinningCircleBoundTest,"Prophecy.NN.WalkPinning.CircleBound",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FProphecyWalkPinningCircleBoundTest::RunTest(const FString&)

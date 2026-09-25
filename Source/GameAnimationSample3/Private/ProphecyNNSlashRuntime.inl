@@ -288,30 +288,23 @@ namespace
 	}
 }
 
-bool AProphecyNNLocomotionManager::SetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle,int32 Checkpoint,FString& OutError)
+static bool EnsureAttackCheckpointModel(const AProphecyNNLocomotionManager* Owner,int32 Checkpoint,FString& OutError)
 {
 	OutError.Reset();
-	AProphecyAgent* Actor=ResolveAgent(Handle);
-	if (!Actor) { OutError=TEXT("Agent is not initialized.");return false; }
-	if (Checkpoint<0 || Checkpoint>2) { OutError=TEXT("Unknown attack checkpoint.");return false; }
-	auto* Existing=ProphecyAttackCheckpoint::Find(this,Checkpoint);
-	if (Checkpoint==0)
-	{
-		ProphecyAttackCheckpoint::Select(this,Actor,0,false);
-		return true;
-	}
+	if (Checkpoint<0 || Checkpoint>3) { OutError=TEXT("Unknown attack checkpoint.");return false; }
+	auto* Existing=ProphecyAttackCheckpoint::Find(Owner,Checkpoint);
+	if (Checkpoint==0) return true;
 	if (!Existing)
 	{
-		if (!InitializeSlashNNE()) { OutError=TEXT("Current attack model failed initialization.");return false; }
 		const FString CurrentDirectory=FPaths::ProjectContentDir()/TEXT("locomotion/NN");
-		const FString Directory=CurrentDirectory/(Checkpoint==2?TEXT("Attack184064"):TEXT("Attack160664"));
+		const FString Directory=CurrentDirectory/(Checkpoint==3?TEXT("AttackSeptember20"):Checkpoint==2?TEXT("Attack184064"):TEXT("Attack160664"));
 		TSharedPtr<FJsonObject> Current,Contract;
 		auto Read=[](const FString& Path,TSharedPtr<FJsonObject>& Object)
 		{ FString Text;return FFileHelper::LoadFileToString(Text,*Path) && FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Object) && Object.IsValid(); };
 		if (!Read(CurrentDirectory/TEXT("prophecy_slash_runtime.json"),Current) || !Read(Directory/TEXT("prophecy_slash_runtime.json"),Contract))
 		{ OutError=TEXT("Attack checkpoint comparison files are missing or invalid.");return false; }
 		FString SHA;
-		if (!Contract->TryGetStringField(TEXT("checkpoint_sha256"),SHA) || SHA!=(Checkpoint==2?ProphecyAttackCheckpoint::Refresh2SHA:ProphecyAttackCheckpoint::AlternativeSHA))
+		if (!Contract->TryGetStringField(TEXT("checkpoint_sha256"),SHA) || SHA!=(Checkpoint==3?ProphecyAttackCheckpoint::September20SHA:Checkpoint==2?ProphecyAttackCheckpoint::Refresh2SHA:ProphecyAttackCheckpoint::AlternativeSHA))
 		{ OutError=TEXT("Unexpected comparison checkpoint hash.");return false; }
 		// Both checkpoints share the agent's recurrent encoding, attack labels and
 		// finishing rules. Refuse a future incompatible export instead of silently
@@ -319,6 +312,13 @@ bool AProphecyNNLocomotionManager::SetAgentAttackCheckpointIndex(FProphecyAgentH
 		for (const TCHAR* Key:{TEXT("input_dim"),TEXT("output_dim"),TEXT("transition_schema"),TEXT("root_position_m"),
 			TEXT("root_rotation"),TEXT("bone_names"),TEXT("attack_labels"),TEXT("post_hit_tail_steps")})
 		{
+			// Historical model owns its frozen-walk transition internally. Only its
+			// external pose/phase contract must match; do not reinterpret its weights.
+			if (Checkpoint==3 && FCString::Strcmp(Key,TEXT("transition_schema"))==0)
+			{
+				if (Contract->HasField(Key)) { OutError=TEXT("Unexpected historical attack schema.");return false; }
+				continue;
+			}
 			const auto A=Current->TryGetField(Key),B=Contract->TryGetField(Key);
 			if (!A.IsValid() || !B.IsValid() || !FJsonValue::CompareEqual(*A,*B))
 			{ OutError=FString::Printf(TEXT("Incompatible attack checkpoint field: %s"),Key);return false; }
@@ -340,10 +340,21 @@ bool AProphecyNNLocomotionManager::SetAgentAttackCheckpointIndex(FProphecyAgentH
 			MaxError=FMath::Max(MaxError,FMath::Abs(Output[I]-Candidate->Model->StartupExpected[I]));
 		}
 		if (MaxError>.001f) { OutError=TEXT("Comparison model failed startup parity.");return false; }
-		UE_LOG(LogProphecyNNLocomotion,Display,TEXT("Attack checkpoint%d ready, startup max_abs=%.9g"),Checkpoint==2?184064:160664,MaxError);
+		UE_LOG(LogProphecyNNLocomotion,Display,TEXT("Attack checkpoint%d ready, startup max_abs=%.9g"),Checkpoint==3?265458:Checkpoint==2?184064:160664,MaxError);
 		Existing=Candidate.Get();
-		ProphecyAttackCheckpoint::Storage(Checkpoint).Add(this,MoveTemp(Candidate));
+		ProphecyAttackCheckpoint::Storage(Checkpoint).Add(Owner,MoveTemp(Candidate));
 	}
+	return true;
+}
+
+bool AProphecyNNLocomotionManager::SetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle,int32 Checkpoint,FString& OutError)
+{
+	OutError.Reset();
+	AProphecyAgent* Actor=ResolveAgent(Handle);
+	if (!Actor) { OutError=TEXT("Agent is not initialized.");return false; }
+	if (Checkpoint<0 || Checkpoint>3) { OutError=TEXT("Unknown attack checkpoint.");return false; }
+	if (Checkpoint!=0 && !InitializeSlashNNE()) { OutError=TEXT("Current attack model failed initialization.");return false; }
+	if (!EnsureAttackCheckpointModel(this,Checkpoint,OutError)) return false;
 	ProphecyAttackCheckpoint::Select(this,Actor,Checkpoint,false);
 	return true;
 }
@@ -478,6 +489,15 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		{
 			const bool bWasKick = Slash.Family == TEXT("kickl") || Slash.Family == TEXT("kickr");
 			const bool bIsKick = Attack == TEXT("kickl") || Attack == TEXT("kickr");
+			if (bWasKick!=bIsKick)
+			{
+				const int32 FamilyCheckpoint=bIsKick ? 3 : ProphecyAttackCheckpoint::Choice(this,Actor,false);
+				FString Error;
+				if (!EnsureAttackCheckpointModel(this,FamilyCheckpoint,Error))
+				{ UE_LOG(LogProphecyNNLocomotion,Error,TEXT("Attack checkpoint: %s"),*Error);return false; }
+				// Same recurrent state, Armed/Hit latches and clocks; only the model changes.
+				ProphecyAttackCheckpoint::Select(this,Actor,FamilyCheckpoint,true);
+			}
 			Slash.Family = Attack;
 			RefreshAgentAttackTrim(Handle);
 			FMemory::Memcpy(Slash.State.GetData()+265, Labels->GetData(), 5*sizeof(float));
@@ -490,7 +510,10 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		Slash.TargetWorld = TargetWorld;
 		return Slash.bHalf == bHalf || SetAgentNNHalfAttack(Handle,bHalf);
 	}
-	const int32 Checkpoint=ProphecyAttackCheckpoint::Choice(this,Actor,false);
+	const int32 Checkpoint=(Attack==TEXT("kickl") || Attack==TEXT("kickr")) ? 3 : ProphecyAttackCheckpoint::Choice(this,Actor,false);
+	FString CheckpointError;
+	if (!EnsureAttackCheckpointModel(this,Checkpoint,CheckpointError))
+	{ UE_LOG(LogProphecyNNLocomotion,Error,TEXT("Attack checkpoint: %s"),*CheckpointError);return false; }
 	const FHalfAttackGT* HalfGT = bHalf ? FindHalfAttackGT(*Impl, Attack) : nullptr;
 	if (bHalf && !HalfGT)
 	{
@@ -714,9 +737,10 @@ bool AProphecyNNLocomotionManager::GetAgentNNAttackTarget(FProphecyAgentHandle H
 void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 {
 	if (!Impl->bSlashInitialized) return;
-	TArray<int32, TInlineAllocator<BatchSize>> Active,AlternativeActive,Refresh2Active;
+	TArray<int32, TInlineAllocator<BatchSize>> Active,AlternativeActive,Refresh2Active,September20Active;
 	auto* Comparison=ProphecyAttackCheckpoint::Find(this);
 	auto* Refresh2Comparison=ProphecyAttackCheckpoint::Find(this,2);
+	auto* September20Comparison=ProphecyAttackCheckpoint::Find(this,3);
 	for (int32 Index = 0; Index < CrowdSize; ++Index)
 	{
 		auto& Agent = Impl->Agents[Index];
@@ -736,11 +760,12 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			continue;
 		}
 		WriteStateVec3(Slash.State.GetData(), 262, Target);
-		if (Refresh2Comparison && Refresh2Comparison->Active.Contains(AgentActors[Index])) Refresh2Active.Add(Index);
+		if (September20Comparison && September20Comparison->Active.Contains(AgentActors[Index])) September20Active.Add(Index);
+		else if (Refresh2Comparison && Refresh2Comparison->Active.Contains(AgentActors[Index])) Refresh2Active.Add(Index);
 		else if (Comparison && Comparison->Active.Contains(AgentActors[Index])) AlternativeActive.Add(Index);
 		else Active.Add(Index);
 	}
-	if (Active.IsEmpty() && AlternativeActive.IsEmpty() && Refresh2Active.IsEmpty()) return;
+	if (Active.IsEmpty() && AlternativeActive.IsEmpty() && Refresh2Active.IsEmpty() && September20Active.IsEmpty()) return;
 	if (!Impl->PreviousPoseDebugAgents.IsEmpty()) UpdatePreviousPoseDebug(true);
 	// Keep recurrent histories and phase latches on agents; only inference batches
 	// split by the checkpoint latched at attack entry. Empty groups do no work.
@@ -873,6 +898,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 	RunGroup(Active,*Impl->SlashModel);
 	if (!AlternativeActive.IsEmpty()) RunGroup(AlternativeActive,*Comparison->Model);
 	if (!Refresh2Active.IsEmpty()) RunGroup(Refresh2Active,*Refresh2Comparison->Model);
+	if (!September20Active.IsEmpty()) RunGroup(September20Active,*September20Comparison->Model);
 }
 
 void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<FTransform> PreviousPose, TArrayView<FTransform> Pose)

@@ -17,11 +17,12 @@ struct FPart
 {
     EProphecyRecoverySource Source=EProphecyRecoverySource::Run;
     float Duration=1.f,Hold=0.f;
-    bool Enabled() const { return Source!=EProphecyRecoverySource::Normal && Duration>0; }
+    bool Enabled() const { return Source!=EProphecyRecoverySource::Normal && (Duration>0 || Hold>0); }
     double End() const { return Enabled() ? double(Duration)+Hold : 0.; }
     float Sample(double Elapsed,float Normal) const
     {
         if (!Enabled() || Elapsed+1.e-6>=End()) return Normal;
+        if (Duration<=0) return Source==EProphecyRecoverySource::Walk ? 1.f : 0.f;
         const float T=FMath::Clamp(float((Elapsed-Hold)/Duration),0.f,1.f);
         return FMath::Lerp(Source==EProphecyRecoverySource::Walk ? 1.f : 0.f,Normal,T*T*(3-2*T));
     }
@@ -90,9 +91,10 @@ void Begin(const AProphecyAgent* Agent,FName Attack)
     if (IsKick(Attack)) KickActive.Add(Agent);
     if (Attack==TEXT("kickr")) RightKickActive.Add(Agent);
 }
-void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Settings.Remove(Agent);KickSettings.Remove(Agent);WalkFootRotations.Remove(Agent); }
+void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Settings.Remove(Agent);KickSettings.Remove(Agent);WalkFootRotations.Remove(Agent);ProphecyLegRecovery::Remove(Agent); }
 void EnterSpecial(const AProphecyAgent* Agent)
 {
+    ProphecyLegRecovery::Cancel(Agent);
     ProphecyKickFootLeeway::CancelPoseRecovery(Agent);
     Cancel(Agent);ProphecyLowerTempering::Remove(Agent);
     ProphecyHandRecovery::CancelMotion(Agent);ProphecyCoreTempering::CancelMotion(Agent);
@@ -105,6 +107,7 @@ void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLo
     TGuardValue<bool> SideScope(EndEventRightKick,Attack==TEXT("kickr"));
     TGuardValue<FName> AttackScope(EndAttack,Attack);
     if (ReturningToLocomotion) ProphecyLowerTempering::SelectAttackProfile(Agent,Attack);
+    if (ReturningToLocomotion) ProphecyLegRecovery::Begin(Agent);
     if (ReturningToLocomotion) ProphecyHandRecovery::Begin(Agent);
     if (ReturningToLocomotion) ProphecyCoreTempering::Begin(Agent);
     if (ReturningToLocomotion) ProphecySlashReturn::Begin(Agent,Attack);
@@ -273,12 +276,12 @@ bool FProphecyAttackRecoveryTest::RunTest(const FString&)
     TestTrue(TEXT("Kicking role maps source, hold and duration together to right"),Mirrored.Right.Source==E::Walk && Mirrored.Right.Duration==2 && Mirrored.Right.Hold==.25f);
     TestTrue(TEXT("Non-kicking role maps source, hold and duration together to left"),Mirrored.Left.Source==E::Run && Mirrored.Left.Duration==1 && Mirrored.Left.Hold==.5f);
     TestTrue(TEXT("Mapping never swaps pelvis settings"),Mirrored.Pelvis.Source==Roles.Pelvis.Source && Mirrored.Pelvis.Duration==Roles.Pelvis.Duration && Mirrored.Pelvis.Hold==Roles.Pelvis.Hold);
-    const FPart Run{E::Run,1,.5f},Walk{E::Walk,2,0},Off{E::Run,0,10};
+    const FPart Run{E::Run,1,.5f},Walk{E::Walk,2,0},Off{E::Run,0,0};
     TestEqual(TEXT("Run source held"),Run.Sample(.5,1),0.f);
     TestEqual(TEXT("Run halfway toward normal walk"),Run.Sample(1,1),.5f);
     TestEqual(TEXT("Run normal remains run at endpoint"),Run.Sample(1.5,0),0.f);
     TestEqual(TEXT("Walk halfway toward normal run"),Walk.Sample(1,0),.5f);
-    TestEqual(TEXT("Disabled ignores hold and uses normal blend"),Off.Sample(0,.3f),.3f);
+    TestEqual(TEXT("Both durations zero uses normal blend"),Off.Sample(0,.3f),.3f);
     TestEqual(TEXT("Right foot physical profile uses right policy"),ProphecyBodyPolicyWalkWeight(TEXT("foot_r"),0,FVector2f(0,1)),1.f);
     TestEqual(TEXT("Left calf physical profile uses left policy"),ProphecyBodyPolicyWalkWeight(TEXT("calf_l"),1,FVector2f(0,1)),0.f);
     TestEqual(TEXT("Upper profile follows pelvis"),ProphecyBodyPolicyWalkWeight(TEXT("hand_r"),.25f,FVector2f(0,1)),.25f);
@@ -320,6 +323,46 @@ bool FProphecyAttackRecoveryTest::RunTest(const FString&)
       L::SetKickToLocomotionBlend(Agent);
       TestTrue(TEXT("Kick event setter can enable current zero handoff"),Active.Contains(Agent)); }
     Remove(Agent);World->DestroyWorld(false);return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyRecoveryHoldOnlyTest,"Prophecy.NN.PolicyBlend.RecoveryHoldOnly",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyRecoveryHoldOnlyTest::RunTest(const FString&)
+{
+    using namespace ProphecyAttackRecovery;using L=UProphecyAttackRecoveryLibrary;using E=EProphecyRecoverySource;
+    auto* World=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=World?World->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    FWeights W;
+    for(float Dt:{1.f/30,1.f/60,1.f/120})
+    {
+        // Reproduce the current BP: set the three Run sources in the end event,
+        // hold 0.25, blend 0. The displayed source must last 15 game ticks.
+        L::SetAttackToLocomotionBlend(A,E::Normal,0,0,E::Normal,0,0,E::Normal,0,0);
+        Begin(A,TEXT("overL"));
+        { TGuardValue<const AProphecyAgent*> Event(EndEventAgent,A);TGuardValue<bool> Kick(EndEventKick,false);
+          TGuardValue<FName> Attack(EndAttack,FName(TEXT("overL")));
+          L::SetAttackToLocomotionBlend(A,E::Run,.25f,0,E::Run,.25f,0,E::Run,.25f,0); }
+        Step(A,1,W);
+        TestTrue(TEXT("Hold-only setter activates before first prediction"),Active.Contains(A) && !W.NeedsWalk());
+        for(int32 Tick=1;Tick<=15;++Tick)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,Dt);Step(A,1,W);
+            if(Tick<15) TestTrue(TEXT("Hold stays entirely Run, independently of wall delta"),!W.NeedsWalk());
+        }
+        TestTrue(TEXT("At 15 ticks switches to normal and retires"),!Active.Contains(A) && !W.NeedsRun());
+    }
+    L::SetKickToLocomotionBlend(A,E::Run,.25f,0,E::Walk,.5f,0,E::Run,.1f,0);
+    L::SetAttackRecoveryFootRotationFromWalk(A,true);
+    for(FName Attack:{FName(TEXT("kickL")),FName(TEXT("kickR"))})
+    {
+        Begin(A,Attack);Step(A,1,W);const bool Right=Attack==TEXT("kickR");
+        TestTrue(TEXT("Hold-only kick roles map correctly"),W.Pelvis==0 && W.Left==(Right?0:1) && W.Right==(Right?1:0));
+        TestTrue(TEXT("Optional Walk foot rotation also covers hold-only"),FootRotationWeights(A,0)==FVector2f(1,1));
+        for(int32 Tick=0;Tick<6;++Tick) { FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,1.f/60);Step(A,1,W); }
+        TestTrue(TEXT("Non-kicking region retires at its own hold boundary"),FootRotationWeights(A,0)==(Right?FVector2f(-1,1):FVector2f(1,-1)));
+        Cancel(A);TestFalse(TEXT("Cancellation removes hold-only recovery"),Active.Contains(A));
+    }
+    L::SetAttackToLocomotionBlend(A,E::Run,0,0,E::Walk,0,0,E::Normal,2,0);
+    Begin(A);TestFalse(TEXT("Both-zero and Normal create no active work"),Active.Contains(A));
+    Remove(A);World->DestroyWorld(false);return !HasAnyErrors();
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyRecoveryFootRotationTest,"Prophecy.NN.PolicyBlend.RecoveryFootRotation",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)

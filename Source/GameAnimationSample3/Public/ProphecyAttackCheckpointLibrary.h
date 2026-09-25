@@ -7,9 +7,12 @@ class AProphecyAgent;
 UENUM(BlueprintType)
 enum class EProphecyAttackCheckpoint : uint8
 {
-    Current174664 UMETA(DisplayName="Current (174664)"),
-    PredictivePin160664 UMETA(DisplayName="Predictive Pin x5 (160664)"),
-    PredictivePin184064 UMETA(DisplayName="Predictive Pin x5 Refresh 2 (184064)")
+    // Display order is chronological; explicit values preserve saved selections.
+    September20Good265458 = 3 UMETA(DisplayName="September 20 - good.pt (265458)"),
+    PredictivePin160664 = 1 UMETA(DisplayName="Predictive Pin x5 (160664)"),
+    Current174664 = 0 UMETA(DisplayName="Current (174664)"),
+    PredictivePin184064 = 2 UMETA(DisplayName="Predictive Pin x5 Refresh 2 (184064)"),
+    MAX = 4 UMETA(Hidden)
 };
 
 UCLASS()
@@ -21,7 +24,7 @@ public:
      * attack; an ongoing attack keeps its checkpoint and history until it ends.
      * The first alternate selection loads/validates its model once per manager.
      * Call after agent initialization, preferably in delayed BeginPlay. */
-    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Attack",meta=(DefaultToSelf="Agent"))
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Attack",meta=(DefaultToSelf="Agent",CPP_Default_Checkpoint="Current174664"))
     static bool SetAttackCheckpoint(AProphecyAgent* Agent,EProphecyAttackCheckpoint Checkpoint,FString& OutError);
 
     /** Selected is for the next new attack. Effective identifies the ongoing attack,

@@ -9,6 +9,13 @@ class GAMEANIMATIONSAMPLE3_API UProphecyWalkPinningLibrary : public UBlueprintFu
 {
     GENERATED_BODY()
 public:
+    /** Run only: raise the higher effective pin toward 1 using Alpha, after the
+     * existing near-floor rule. Lower pin unchanged; exact ties select left.
+     * Per agent. Alpha0 removes the setting; Alpha1 fully pins the winner.
+     * Applies to the Run contribution in Walk/Run blends. No timer or extra inference. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Foot Pinning",meta=(DefaultToSelf="Agent",ClampMin="0",ClampMax="1"))
+    static bool SetRunPinningBoost(AProphecyAgent* Agent,float Alpha=0.f);
+
     /** Raise the opposite foot's Walk pin to (1 - this foot's backward bound cap) * Multiplier,
      * clamped to 0..1. Uses geometric release, even if the source foot was not selected.
      * Preserves stronger existing pins; receiving foot's own bounds, raw limit and reach guard win.

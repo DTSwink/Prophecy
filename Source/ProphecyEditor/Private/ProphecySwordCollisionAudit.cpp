@@ -14,6 +14,7 @@
 #include "K2Node_GetArrayItem.h"
 #include "ScopedTransaction.h"
 #include "Editor.h"
+#include "ProphecyLowerTemperingLibrary.h"
 
 namespace ProphecySwordCollisionAudit
 {
@@ -43,6 +44,128 @@ void Dump()
     FFileHelper::SaveStringToFile(Text,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/SwordThigh/BlueprintGraph.txt")));
 }
 FAutoConsoleCommand Cmd(TEXT("Prophecy.Sword.AuditCollisionGraph"),TEXT("Read-only current sword/agent graph audit."),FConsoleCommandDelegate::CreateStatic(&Dump));
+
+// Explicit, undoable repair of the two audited Special Ended branches. No startup
+// hook or gameplay change: Set tempering needs its own Blend To Normal call.
+void RepairKickTemperingReturns()
+{
+    if (!GEditor || GEditor->PlayWorld) return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if (!BP) return;
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    UEdGraph* Graph=nullptr;
+    for (auto* G:Graphs) if (G->GetFName()==TEXT("EventGraph")) Graph=G;
+    if (!Graph) return;
+    auto Node=[&](FName Name)->UK2Node_CallFunction*
+    { for (UEdGraphNode* N:Graph->Nodes) if (N && N->GetFName()==Name) return Cast<UK2Node_CallFunction>(N);return nullptr; };
+    auto* Template=Node(TEXT("K2Node_CallFunction_208"));
+    if (!Template || Template->FunctionReference.GetMemberName()!=TEXT("BlendLocomotionLowerBodyTemperingToNormal")) return;
+    UFunction* Function=Template->GetTargetFunction();if (!Function) return;
+    TArray<UK2Node_CallFunction*> Setters;
+    for (FName Name:{FName(TEXT("K2Node_CallFunction_235")),FName(TEXT("K2Node_CallFunction_170"))})
+    {
+        auto* Set=Node(Name);if (!Set || Set->FunctionReference.GetMemberName()!=TEXT("SetKickLocomotionLowerBodyTempering")) return;
+        auto* Then=Set->FindPin(UEdGraphSchema_K2::PN_Then);
+        if (!Then || Then->LinkedTo.Num()!=1 || !Set->FindPin(TEXT("Agent"))) return;
+        auto* Next=Cast<UK2Node_CallFunction>(Then->LinkedTo[0]->GetOwningNode());
+        if (Next && Next->FunctionReference.GetMemberName()==Function->GetFName()) continue;
+        if (!Next || Next->FunctionReference.GetMemberName()!=TEXT("SetKickToLocomotionBlend")) return;
+        Setters.Add(Set);
+    }
+    if (Setters.IsEmpty()) return;
+    const FScopedTransaction Transaction(NSLOCTEXT("Prophecy", "KickTemperingReturnRepair", "Wire kick tempering return to normal"));
+    BP->Modify();Graph->Modify();
+    for (auto* Set:Setters)
+    {
+        Set->Modify();
+        auto* Then=Set->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+        auto* Next=Then->LinkedTo[0];Next->GetOwningNode()->Modify();
+        FGraphNodeCreator<UK2Node_CallFunction> Creator(*Graph);
+        auto* Blend=Creator.CreateNode();Blend->SetFromFunction(Function);
+        Blend->NodePosX=Set->NodePosX+380;Blend->NodePosY=Set->NodePosY+360;
+        Blend->NodeComment=TEXT("Restore kick tempering to normal; separate from Walk/Run checkpoint blending.");
+        Creator.Finalize();
+        for (auto* Pin:Blend->Pins)
+        {
+            if (Pin->Direction!=EGPD_Input || Pin->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec) continue;
+            auto* Source=Pin->PinName==TEXT("Agent") ? Set->FindPin(Pin->PinName) : Template->FindPin(Pin->PinName);
+            if (!Source) continue;
+            Pin->DefaultValue=Source->DefaultValue;Pin->DefaultObject=Source->DefaultObject;Pin->DefaultTextValue=Source->DefaultTextValue;
+            for (auto* Link:Source->LinkedTo) { Link->GetOwningNode()->Modify();Link->MakeLinkTo(Pin); }
+        }
+        Then->BreakLinkTo(Next);
+        Then->MakeLinkTo(Blend->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+        Blend->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Next);
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    UE_LOG(LogTemp,Display,TEXT("Kick tempering return repair: added %d return nodes; BP status=%d; not saved."),Setters.Num(),int32(BP->Status));
+    Dump();
+}
+FAutoConsoleCommand KickTemperingReturnsCmd(TEXT("Prophecy.RepairKickTemperingReturns"),
+    TEXT("Wire missing Blend To Normal after the two audited kick tempering setters; undoable, no save."),
+    FConsoleCommandDelegate::CreateStatic(&RepairKickTemperingReturns));
+
+void SeparateKickTemperingReturns()
+{
+    if (!GEditor || GEditor->PlayWorld) return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    auto* Library=UProphecyLowerTemperingLibrary::StaticClass();
+    auto* Function=Library ? Library->FindFunctionByName(TEXT("BlendKickLocomotionLowerBodyTemperingToNormal")) : nullptr;
+    if (!BP || !Function) { UE_LOG(LogTemp,Warning,TEXT("Separate kick return: missing blueprint/function (%s)."),*GetPathNameSafe(Library));return; }
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    TArray<UK2Node_CallFunction*> Calls;
+    for (auto* Graph:Graphs) if (Graph->GetFName()==TEXT("EventGraph")) for (UEdGraphNode* N:Graph->Nodes)
+    {
+        auto* Call=Cast<UK2Node_CallFunction>(N);
+        if (!Call || Call->FunctionReference.GetMemberName()!=TEXT("BlendLocomotionLowerBodyTemperingToNormal")) continue;
+        auto* Exec=Call->FindPin(UEdGraphSchema_K2::PN_Execute);
+        if (!Exec || Exec->LinkedTo.Num()!=1) continue;
+        auto* Set=Cast<UK2Node_CallFunction>(Exec->LinkedTo[0]->GetOwningNode());
+        if (!Set || Set->FunctionReference.GetMemberName()!=TEXT("SetKickLocomotionLowerBodyTempering")) continue;
+        // Only detach timing inputs whose current values are plain literals.
+        // Refuse unknown formulas rather than discard the user's logic.
+        for (FName Name:{FName(TEXT("DurationSeconds")),FName(TEXT("HoldDurationSeconds")),
+            FName(TEXT("PelvisDurationSeconds")),FName(TEXT("PelvisHoldDurationSeconds"))})
+        {
+            auto* Pin=Call->FindPin(Name);if(!Pin || Pin->LinkedTo.Num()>1) return;
+            if(Pin->LinkedTo.Num()==1)
+            {
+                auto* Literal=Cast<UK2Node_CallFunction>(Pin->LinkedTo[0]->GetOwningNode());
+                if(!Literal || (Literal->FunctionReference.GetMemberName()!=TEXT("MakeLiteralFloat")
+                    && Literal->FunctionReference.GetMemberName()!=TEXT("MakeLiteralDouble")) || !Literal->FindPin(TEXT("Value")))
+                { UE_LOG(LogTemp,Warning,TEXT("Separate kick return: unrecognized timing input %s."),Literal?*Literal->FunctionReference.GetMemberName().ToString():TEXT("non-call"));return; }
+            }
+        }
+        Calls.Add(Call);
+    }
+    if(Calls.IsEmpty()) { UE_LOG(LogTemp,Display,TEXT("Separate kick return: no matching shared calls remain."));return; }
+    const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","SeparateKickReturns","Separate kick tempering return timing"));
+    BP->Modify();
+    for(auto* Call:Calls)
+    {
+        Call->Modify();Call->GetGraph()->Modify();
+        for(FName Name:{FName(TEXT("DurationSeconds")),FName(TEXT("HoldDurationSeconds")),
+            FName(TEXT("PelvisDurationSeconds")),FName(TEXT("PelvisHoldDurationSeconds"))})
+        {
+            auto* Pin=Call->FindPinChecked(Name);
+            if(Pin->LinkedTo.Num()==1)
+            {
+                auto* Literal=Pin->LinkedTo[0]->GetOwningNode();Literal->Modify();
+                const FString Value=Literal->FindPinChecked(TEXT("Value"))->DefaultValue;
+                Pin->BreakAllPinLinks();Pin->DefaultValue=Value;
+            }
+        }
+        Call->SetFromFunction(Function);Call->ReconstructNode();
+        Call->NodeComment=TEXT("Kick-only tempering return; independent timing from regular specials.");
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);FKismetEditorUtilities::CompileBlueprint(BP);
+    UE_LOG(LogTemp,Display,TEXT("Separated %d kick tempering return nodes; BP status=%d; not saved."),Calls.Num(),int32(BP->Status));
+    Dump();
+}
+FAutoConsoleCommand SeparateKickTemperingReturnsCmd(TEXT("Prophecy.SeparateKickTemperingReturns"),
+    TEXT("Convert kick return calls and detach shared timing literals; undoable, no save."),
+    FConsoleCommandDelegate::CreateStatic(&SeparateKickTemperingReturns));
 // One-shot migration of the user's audited cube follower. Ordinary BP arithmetic
 // remains visible/editable; no native runtime component, polling or graph hook.
 void FixMagicCubeTime()

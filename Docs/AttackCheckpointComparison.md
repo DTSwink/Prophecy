@@ -2,13 +2,30 @@
 
 `Set Attack Checkpoint` takes Agent and Checkpoint, and returns success plus Out Error.
 
-- **Current (174664)** is the unchanged default.
-- **Predictive Pin x5 (160664)** is the requested viewer's checkpoint.
-- **Predictive Pin x5 Refresh 2 (184064)** is the later refresh2 viewer checkpoint, added without changing either existing enum value or the default.
+Dropdown order is oldest first. Stored enum values are explicit, so reordering the menu does not change saved selections:
 
-Call after agent initialization, preferably delayed BeginPlay. Selection belongs to that agent, including full and half attacks. A running attack keeps the checkpoint selected when it started: changing this node, updating its target or retriggering it does not reset history, Armed, Hit or frame count. The next new attack uses the new selection. Stop + Trigger still explicitly starts a new attack. Reset stops the active attack and keeps the selected comparison setting. EndPlay removes comparison state.
+1. **September 20 - good.pt (265458)** — historical frozen-walk checkpoint (value3).
+2. **Predictive Pin x5 (160664)** — first predictive viewer checkpoint (value1).
+3. **Current (174664)** — unchanged default (value0).
+4. **Predictive Pin x5 Refresh 2 (184064)** — later refresh2 checkpoint (value2).
 
-`Get Attack Checkpoint` returns Selected (next attack), Effective (ongoing attack, otherwise Selected), and Attacking. First selection of each alternative loads and startup-validates that model for the owning manager; later selections reuse it. Current-only sessions never load the extra models. Simultaneous attackers are batched separately per checkpoint, with independent per-agent recurrent states and phase latches. All batches use the existing locomotion/defense/physics/recovery workflows. Loaded alternatives are retained until that manager ends; this is a temporary comparison feature, not an additional permanent policy stage.
+Call after agent initialization, preferably delayed BeginPlay. Selection belongs to that agent for full and half **non-kick** attacks. **kickL and kickR always use September20 good.pt265458**, regardless of this selection. Changing the selection alone leaves an ongoing attack's checkpoint/history/Armed/Hit/frame count unchanged. Updating a target or retargeting between non-kick families retains that active model. Retargeting from a non-kick to a kick switches to good.pt; retargeting back switches to the agent's currently selected non-kick model, preserving recurrent state and phase/frame latches. Half kicks remain unsupported. Stop + Trigger explicitly starts a new attack. Reset stops the active attack and keeps the selected setting. EndPlay removes comparison state.
+
+`Get Attack Checkpoint` returns Selected (non-kick choice), Effective (ongoing model, always good.pt for kicks; otherwise Selected when idle), and Attacking. First selection/use of each alternative loads and startup-validates it for the owning manager; later selections reuse it. A session using kicks necessarily loads the historical model even when its selected non-kick model is Current. Simultaneous attackers remain batched separately per effective checkpoint, with independent recurrent states and phase latches. No additional inference stage or per-tick selection lookup was introduced. Loaded alternatives remain until manager shutdown.
+
+Forced-kick routing compiled and loaded via Live Coding2026-09-25 13:21:08UTC (23.82s incremental build). The model loader was separated from selection so forcing a kick never overwrites the user's saved choice. Failure to load/validate historical files refuses the kick rather than silently using the selected model. The new isolated switch/retarget test is `Saved/Diagnostics/TestForcedGoodKicks.py`; it was not run because the user asked to leave their active Play running and test themselves. Earlier selector checks below predate this routing exception. No asset edits/save/restart.
+
+## September20 historical checkpoint265458
+
+The September19 `f314e8d` and September21 `8919c05` exporter revisions both identify `training/runs/done slash 2 2/checkpoints/good.pt`, step265458, SHA256 `6a76321d6e1525c9e6bcfcedcd0ce46676b03dd15dd277c2bd87f6c834239072`. The pre-replacement export in `Saved/CheckpointBackups/20260922-234039-before-123793` agrees; source checkpoint and all three exported network hashes were verified.
+
+The five original files are installed separately under `Content/locomotion/NN/AttackSeptember20` (about4.56MB). The existing native legacy branch preserves this checkpoint's frozen-walk model,92-wide lower input and original pin mapping. It is not decoded through the new no-frozen/cone contract. Its external dimensions, root geometry, labels, gate threshold and post-hit tails match the current agent interface. Current recovery, physical and Blueprint controls still apply; this is checkpoint selection, not a rollback of the whole September20 game code.
+
+Loaded on explicit selection or first kick, retained by that manager, separate inference batch, cleared on manager shutdown. Current files are unchanged. Provenance/install receipt: `Saved/Diagnostics/AttackSeptember20-installation.json`. `MAX` is hidden; newly placed Set nodes retain Current174664 as their explicit non-kick default despite the historical choice appearing first.
+
+Normal21-action editor build passed91.78s after authorized save/restart (pose Blueprint and dirty testNN backed up and saved). Live Coding's enum replacement had left the old menu and an unused duplicate Checkpoint pin; clean loading restores the canonical four-choice enum, and explicit editor repair removes only an unlinked orphan when its valid replacement exists, preserving the live selection and all links.
+
+Owned short PIE passed2026-09-25: historical/current/predictive concurrent models, pending selection vs latched active model, target/type retrigger preserving phase/frame, full and half attacks, historical batch1→3, and return to current. Native historical startup max error0.000003919. All sampled poses finite. The first harness incorrectly required every short attack still to be active at a later sample; it now allows natural completion after separately asserting successful entry. Final result: `Saved/Diagnostics/AttackSeptember20Selection.json`. This is switching/inference validation, not a recreation of the entire September20 gameplay rollout. Test settings exist only in the owned PIE, which was ended.
 
 ## Refresh2 checkpoint184064
 

@@ -3,11 +3,25 @@
 #include "ProphecyNNInterpolation.h"
 #include "ProphecyRecoveryLegLength.h"
 #include "ProphecyKneePopSmoothing.h"
+#include "ProphecyAttackStartInertia.h"
+#include "HAL/IConsoleManager.h"
 
 #include "Misc/ScopeRWLock.h"
 
 namespace
 {
+#if WITH_EDITOR
+    TAutoConsoleVariable<int32> CVarRecoveryLengthInterpolation(TEXT("Prophecy.Recovery.LengthInterpolation"),1,
+        TEXT("Editor comparison: sample returning calf length with the pose interpolation instead of the latest live value."));
+#endif
+    bool UseRecoveryLengthInterpolation()
+    {
+#if WITH_EDITOR
+        return CVarRecoveryLengthInterpolation.GetValueOnAnyThread()!=0;
+#else
+        return true;
+#endif
+    }
 	FRWLock GProphecyNNPoseLock;
 	TMap<int32, FProphecyNNPoseSnapshot> GProphecyNNPoses;
 	TMap<int32, EProphecyNNInterpolationMode> GInterpolationModes;
@@ -123,6 +137,20 @@ bool ProphecyNNPresentation::HasRecoveryCalfLengths(int32 AgentId)
 {
 	FReadScopeLock Lock(GProphecyNNPoseLock);
 	return !GRecoveryLegLengths.IsEmpty() && GRecoveryLegLengths.Contains(AgentId);
+}
+
+#if WITH_EDITOR
+static TAutoConsoleVariable<int32> CVarSpecialKneeSmoothingOrder(
+    TEXT("Prophecy.KneeSmoothing.SpecialOrder"),1,
+    TEXT("Editor A/B only: 0=legacy all-mode pre-inertia smoothing; 1=locomotion plus post-entry-inertia exception."));
+#endif
+bool ProphecyNNPresentation::UseSpecialKneeSmoothingOrder()
+{
+#if WITH_EDITOR
+    return CVarSpecialKneeSmoothingOrder.GetValueOnAnyThread()!=0;
+#else
+    return true;
+#endif
 }
 
 void ProphecyNNPresentation::SetKneePopSmoothing(int32 AgentId,float SoftZoneCm)
@@ -434,11 +462,12 @@ void FProphecyNNPoseStore::ApplyRigidForearms(int32 AgentId, const FProphecyNNPo
 }
 
 void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
-	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms)
+	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms, float InterpolationAlpha)
 {
 	FRecoveryLegLengths Recovery;
 	bool bRecovery=false,bRigid=false;
 	float SoftZone=0;
+	bool Special=false;
 	FKneeBendFrames BendFrames;
 	{
 		FReadScopeLock Lock(GProphecyNNPoseLock);
@@ -446,7 +475,11 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 		{ Recovery=*Value;bRecovery=true; }
 		bRigid=GProphecyNNRigidCalves.Contains(AgentId);
 		if (!GKneePopSmoothing.IsEmpty()) if (const float* Value=GKneePopSmoothing.Find(AgentId)) SoftZone=*Value;
-		if (SoftZone>0) if (const auto* Value=GKneeBendFrames.Find(AgentId)) BendFrames=*Value;
+		if (SoftZone>0)
+        {
+            Special=GProphecyNNRigidForearms.Contains(AgentId);
+            if (const auto* Value=GKneeBendFrames.Find(AgentId)) BendFrames=*Value;
+        }
 		if (!bRecovery && !bRigid && SoftZone<=0) return;
 	}
 
@@ -463,8 +496,22 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 		if (bRecovery)
 		{
 			const int32 Thigh=BoneNames.IndexOfByKey(Side==0 ? FName(TEXT("thigh_l")) : FName(TEXT("thigh_r")));
+			double Lower=Recovery.Lower[Side];
+			// The return curve authors each policy endpoint. Sample those lengths
+			// with the pose, rather than applying the newest live curve value to
+			// a knee/ankle still interpolating from the previous policy frame.
+			const int32 SourceCalf=Snapshot.BoneNames.IndexOfByKey(Calves[Side]);
+			if (UseRecoveryLengthInterpolation() && Snapshot.PreviousComponentTransforms.IsValidIndex(SourceCalf)
+				&& Snapshot.PreviousComponentTransforms.IsValidIndex(SourceFoot)
+				&& Snapshot.ComponentTransforms.IsValidIndex(SourceCalf)
+				&& Snapshot.ComponentTransforms.IsValidIndex(SourceFoot))
+			{
+				const double A=(Snapshot.PreviousComponentTransforms[SourceFoot].GetLocation()-Snapshot.PreviousComponentTransforms[SourceCalf].GetLocation()).Size();
+				const double B=(Snapshot.ComponentTransforms[SourceFoot].GetLocation()-Snapshot.ComponentTransforms[SourceCalf].GetLocation()).Size();
+				Lower=FMath::Lerp(A,B,double(FMath::Clamp(InterpolationAlpha,0.f,1.f)));
+			}
 			if (Transforms.IsValidIndex(Thigh)) ProphecyRecoveryLegLength::Resolve(
-				Transforms[Thigh],Transforms[Calf],Transforms[Foot],Recovery.Upper[Side],Recovery.Lower[Side]);
+				Transforms[Thigh],Transforms[Calf],Transforms[Foot],Recovery.Upper[Side],Lower);
 			continue;
 		}
 		FVector End;
@@ -485,6 +532,8 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 		if (Transforms.IsValidIndex(Toe)) Transforms[Toe].AddToTranslation(Shift);
 	}
 	if (SoftZone<=0) return;
+    if (ProphecyNNPresentation::UseSpecialKneeSmoothingOrder() &&
+        (Special || ProphecyAttackStartInertia::Active(AgentId))) return;
 	for (int32 Side=0;Side<2;++Side)
 	{
 		const FName ThighName=Side==0 ? FName(TEXT("thigh_l")) : FName(TEXT("thigh_r"));
@@ -495,6 +544,27 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 		ProphecyKneePopSmoothing::Apply(Transforms[Thigh],Transforms[Calf],Transforms[Foot],
 			Transforms.IsValidIndex(Toe)?&Transforms[Toe]:nullptr,SoftZone,Fallback);
 	}
+}
+
+void ProphecyNNPresentation::ApplyKneePopSmoothing(int32 AgentId,TConstArrayView<FName> Names,TArrayView<FTransform> Pose)
+{
+    float Zone;FKneeBendFrames Frames;
+    {
+        FReadScopeLock Lock(GProphecyNNPoseLock);
+        const auto* Value=GKneePopSmoothing.Find(AgentId);if(!Value)return;
+        Zone=*Value;
+        if(const auto* F=GKneeBendFrames.Find(AgentId))Frames=*F;
+    }
+    for(int32 Side=0;Side<2;++Side)
+    {
+        const int32 H=Names.IndexOfByKey(Side?FName(TEXT("thigh_r")):FName(TEXT("thigh_l")));
+        const int32 K=Names.IndexOfByKey(Side?FName(TEXT("calf_r")):FName(TEXT("calf_l")));
+        const int32 F=Names.IndexOfByKey(Side?FName(TEXT("foot_r")):FName(TEXT("foot_l")));
+        const int32 T=Names.IndexOfByKey(Side?FName(TEXT("ball_r")):FName(TEXT("ball_l")));
+        if(!Pose.IsValidIndex(H)||!Pose.IsValidIndex(K)||!Pose.IsValidIndex(F))continue;
+        ProphecyKneePopSmoothing::Apply(Pose[H],Pose[K],Pose[F],Pose.IsValidIndex(T)?&Pose[T]:nullptr,
+            Zone,Pose[H].TransformVectorNoScale(Frames.LocalPole[Side]));
+    }
 }
 
 int32 FProphecyNNPoseStore::NumPoses()

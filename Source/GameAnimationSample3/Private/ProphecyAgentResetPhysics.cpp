@@ -118,6 +118,7 @@ bool RestoreEquipment(AProphecyAgent* Agent,FString& Error)
 }
 void CancelBlends(AProphecyAgent* Agent)
 {
+    ProphecyLegRecovery::Cancel(Agent);
     ProphecyKickFootLeeway::Cancel(Agent);
     ProphecyClampProfiles::Cancel(Agent);
     using namespace ProphecyPhysicalContext;

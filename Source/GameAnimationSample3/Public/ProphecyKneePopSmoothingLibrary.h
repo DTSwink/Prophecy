@@ -10,7 +10,9 @@ class GAMEANIMATIONSAMPLE3_API UProphecyKneePopSmoothingLibrary : public UBluepr
     GENERATED_BODY()
 public:
     /** Optional soft approach to full knee extension, shared by rendered and physical
-     * targets in all animation modes. Soft Zone is how far before maximum reach the
+     * locomotion targets. During attacks it applies only while attack-start pelvis
+     * inertia is active, AFTER that correction. Ordinary attacks/parry/dodge bypass it.
+     * Soft Zone is how far before maximum reach the
      * correction begins. Moves the ankle directly toward the hip by the shortest
      * correction, preserving foot rotation, pelvis and both segment lengths.
      * This can lift/move a pinned foot. No time delay or change to raw NN recurrence.

@@ -12,4 +12,8 @@ public:
     UFUNCTION()
     static bool SetFootExtension(UObject* WorldContext, FGuid Lifetime, int32 BodySlot, int64 BodyGeneration,
         float LeewayCm, FVector LeftCalfAxis, FVector RightCalfAxis, FString& OutError);
+
+    UFUNCTION()
+    static bool SetFootRange(UObject* WorldContext, FGuid Lifetime, int32 BodySlot, int64 BodyGeneration,
+        float CompressionCm, float ExtensionCm, FVector LeftCalfAxis, FVector RightCalfAxis, FString& OutError);
 };

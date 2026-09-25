@@ -50,6 +50,27 @@ bool FRecoveryCalfLengthTest::RunTest(const FString&)
     TestTrue(TEXT("Both sides use independently published lengths"),
         FMath::IsNearlyEqual((Pose[2].GetLocation()-Pose[1].GetLocation()).Size(),47.5,1.e-6)
         && FMath::IsNearlyEqual((Pose[5].GetLocation()-Pose[4].GetLocation()).Size(),37.5,1.e-6));
+    Snapshot.PreviousComponentTransforms=Pose;
+    Snapshot.ComponentTransforms=Pose;
+    Resolve(Snapshot.ComponentTransforms[0],Snapshot.ComponentTransforms[1],Snapshot.ComponentTransforms[2],42.5,43.5);
+    Resolve(Snapshot.ComponentTransforms[3],Snapshot.ComponentTransforms[4],Snapshot.ComponentTransforms[5],42.5,41.5);
+    for (float Alpha:{0.f,.25f,.5f,.75f,1.f})
+    {
+        for(int32 I=0;I<Pose.Num();++I) Pose[I].Blend(Snapshot.PreviousComponentTransforms[I],Snapshot.ComponentTransforms[I],Alpha);
+        const auto Before=Pose;
+        FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose,Alpha);
+        for(int32 Side=0;Side<2;++Side)
+        {
+            const int32 I=Side*3;
+            const double Expected=Side==0?FMath::Lerp(47.5,43.5,double(Alpha)):FMath::Lerp(37.5,41.5,double(Alpha));
+            TestTrue(TEXT("Recovery length follows pose progress on both legs"),FMath::IsNearlyEqual((Pose[I+2].GetLocation()-Pose[I+1].GetLocation()).Size(),Expected,1.e-6));
+            TestTrue(TEXT("Interpolated recovery preserves ankle and hip"),Pose[I+2].Equals(Before[I+2],0) && Pose[I].GetLocation().Equals(Before[I].GetLocation(),0));
+        }
+        const auto Once=Pose;
+        ProphecyNNPresentation::SetRecoveryCalfLengths(Id,FVector2D(42.5,42.5),FVector2D(39,49));
+        FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose,Alpha);
+        TestTrue(TEXT("A newer live return tick cannot change the same presented sample"),Pose[1].Equals(Once[1],1.e-6) && Pose[4].Equals(Once[4],1.e-6));
+    }
     FProphecyNNPoseStore::ClearAgentPose(Id);
     Pose[1].AddToTranslation(FVector(1,2,3));const auto Uncorrected=Pose;
     FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);

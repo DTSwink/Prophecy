@@ -6,6 +6,8 @@ The previous displayed WORLD pelvis translation/angular deltas are latched once 
 
 The original MoveHip solve moves each hip with the corrected pelvis while preserving reachable authored ankles, their rotations and both segment lengths. Only unreachable ankles are projected to the original reach shell. The added independent ankle target, foot/toe rotation override, multi-body correction/history and generic post-clamp foot sampler are removed. Existing locomotion leg reconstruction, knee smoothing, calf recovery and clamps from before the experiment remain unchanged.
 
+When `Set Knee Pop Smoothing` is enabled, the active entry correction now applies that existing soft reach/bend correction after `MoveHip`. It runs once, keeps pelvis/foot rotation/segment lengths unchanged, and may bring an ankle inward or upward. The ordinary pre-inertia pass is skipped. When entry inertia retires, attack smoothing stops; normal specials do not receive locomotion knee smoothing.
+
 Disabled/all-zero configuration removes pelvis history and active correction, with no sampling, extra inference or timer. Enabled configuration retains only two pelvis presentation samples; readers share one correction per game tick. Physical and rendered targets use the original common pelvis correction. Raw checkpoint recurrence and root window remain unchanged.
 
 ## Rollback validation

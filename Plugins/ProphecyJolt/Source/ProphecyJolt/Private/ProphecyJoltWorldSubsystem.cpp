@@ -1,4 +1,5 @@
 #include "ProphecyJoltWorldSubsystem.h"
+#include "ProphecyJoltAttackCollisionLibrary.h"
 #include "ProphecyJoltBodyDriveLibrary.h"
 #include "ProphecyJoltFootJointLibrary.h"
 #include "ProphecyJoltPhysicsCommand.h"
@@ -427,6 +428,8 @@ struct FRigRecord
 
 // Sparse sidecar rather than changing the layout of retained live rig records.
 static TMap<const FRigRecord*,TArray<ProphecyJolt::FootExtension::FJoint>> FootExtensions;
+// Sparse event state: no rig layout change, per-tick poll, or contact-time lookup.
+static TSet<const FRigRecord*> AttackSelfCollisionSuppressed;
 static void RemoveFootExtensions(JPH::PhysicsSystem& Physics,const FRigRecord* Rig)
 {
     if (auto* Entries=FootExtensions.Find(Rig))
@@ -847,7 +850,8 @@ public:
             for (int32 B = A + 1; B < Rig.Handles.Num(); ++B)
             {
                 const uint64 Key = RigPairKey(A, B);
-                const bool bPairEnabled = bEnabled && !DisabledBodies.Contains(A) && !DisabledBodies.Contains(B)
+                const bool bPairEnabled = bEnabled && !AttackSelfCollisionSuppressed.Contains(&Rig)
+                    && !DisabledBodies.Contains(A) && !DisabledBodies.Contains(B)
                     && !DisabledPairs.Contains(Key) && !Rig.AuthoredDisabledPairKeys.Contains(Key);
                 if (Rig.CollisionFilter->IsCollisionEnabled(A, B) != bPairEnabled)
                 {
@@ -1149,6 +1153,7 @@ public:
         FlatTargets.Reset();
         ServoRanges.Reset();
         auto& Rig = *Rigs[Index].Record;
+        ProphecyJolt::WorldPrivate::AttackSelfCollisionSuppressed.Remove(&Rig);
         RemoveFootExtensions(Physics,&Rig);
         Rig.Targets.Reset();
         Rig.PublishedHandles.Reset();
@@ -1263,15 +1268,49 @@ public:
 
 void FProphecyJoltWorldStateDeleter::operator()(FProphecyJoltWorldState* State) const { delete State; }
 
+bool UProphecyJoltAttackCollisionLibrary::SetSuppressed(UObject* WorldContext, FGuid Lifetime,
+    int32 RigSlot, int64 RigGeneration, bool bSuppressed, FString& OutError)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    OutError.Reset();
+    UWorld* World = IsValid(WorldContext) ? WorldContext->GetWorld() : nullptr;
+    auto* Owner = World ? World->GetSubsystem<UProphecyJoltWorldSubsystem>() : nullptr;
+    if (!Owner) { OutError = TEXT("Attack collision requires a Jolt world."); return false; }
+    const auto Ready = Owner->ValidateReady();
+    if (!Ready.IsSuccess()) { OutError = Ready.Message; return false; }
+    auto* Native = Owner->Native.Get();
+    auto* Rig = Native->FindRig(FProphecyJoltRigHandle{Lifetime, RigSlot, uint64(RigGeneration)});
+    if (!Rig) { OutError = TEXT("Attack collision requires a live skeletal rig."); return false; }
+    if (AttackSelfCollisionSuppressed.Contains(Rig) == bSuppressed) return true;
+    if (bSuppressed) AttackSelfCollisionSuppressed.Add(Rig);
+    else AttackSelfCollisionSuppressed.Remove(Rig);
+    const auto Result = Native->ApplyRigSelfCollision(*Rig, Rig->bSelfCollisionEnabled,
+        Rig->SelfCollisionDisabledBodies, Rig->SelfCollisionDisabledPairs);
+    if (!Result.IsSuccess())
+    {
+        if (bSuppressed) AttackSelfCollisionSuppressed.Remove(Rig);
+        else AttackSelfCollisionSuppressed.Add(Rig);
+    }
+    OutError = Result.Message;
+    return Result.IsSuccess();
+}
+
 bool UProphecyJoltFootJointLibrary::SetFootExtension(UObject* WorldContext,FGuid Lifetime,
     int32 BodySlot,int64 BodyGeneration,float LeewayCm,FVector LeftCalfAxis,FVector RightCalfAxis,FString& OutError)
+{
+    return SetFootRange(WorldContext,Lifetime,BodySlot,BodyGeneration,0,LeewayCm,LeftCalfAxis,RightCalfAxis,OutError);
+}
+
+bool UProphecyJoltFootJointLibrary::SetFootRange(UObject* WorldContext,FGuid Lifetime,
+    int32 BodySlot,int64 BodyGeneration,float CompressionCm,float ExtensionCm,FVector LeftCalfAxis,FVector RightCalfAxis,FString& OutError)
 {
     using namespace ProphecyJolt::WorldPrivate;
     using Axis=JPH::SixDOFConstraintSettings::EAxis;
     OutError.Reset();
     UWorld* World=IsValid(WorldContext) ? WorldContext->GetWorld() : nullptr;
     auto* Owner=World ? World->GetSubsystem<UProphecyJoltWorldSubsystem>() : nullptr;
-    if (!Owner || !Owner->ValidateReady().IsSuccess() || !FMath::IsFinite(LeewayCm) || LeewayCm<0)
+    if (!Owner || !Owner->ValidateReady().IsSuccess() || !FMath::IsFinite(ExtensionCm) || ExtensionCm<0
+        || !FMath::IsFinite(CompressionCm) || CompressionCm<0)
     { OutError=TEXT("A ready Jolt world and finite nonnegative foot leeway are required."); return false; }
     auto* Native=Owner->Native.Get();
     const auto* Body=Native->Find(FProphecyJoltBodyHandle{Lifetime,BodySlot,uint64(BodyGeneration)});
@@ -1281,7 +1320,8 @@ bool UProphecyJoltFootJointLibrary::SetFootExtension(UObject* WorldContext,FGuid
     {
         for (const auto& Handle:Rig->Handles) Native->Wake(Handle);
     };
-    if (LeewayCm==0)
+    const JPH::Vec3 Minimum(-CompressionCm*.01f,0,0),Maximum(ExtensionCm*.01f,0,0);
+    if (ExtensionCm==0 && CompressionCm==0)
     {
         const bool Changed=FootExtensions.Contains(Rig);
         RemoveFootExtensions(Native->Physics,Rig);
@@ -1290,9 +1330,11 @@ bool UProphecyJoltFootJointLibrary::SetFootExtension(UObject* WorldContext,FGuid
     }
     if (auto* Entries=FootExtensions.Find(Rig))
     {
+        bool Changed=false;
         for (auto& Entry:*Entries)
-            Entry.Translation->SetTranslationLimits(JPH::Vec3::sZero(),JPH::Vec3(LeewayCm*.01f,0,0));
-        Wake(); return true;
+            if (Entry.Translation->GetTranslationLimitsMin()!=Minimum || Entry.Translation->GetTranslationLimitsMax()!=Maximum)
+            { Entry.Translation->SetTranslationLimits(Minimum,Maximum);Changed=true; }
+        if (Changed) Wake(); return true;
     }
     TArray<ProphecyJolt::FootExtension::FJoint> Pending;
     const FName Feet[]={TEXT("foot_l"),TEXT("foot_r")},Calves[]={TEXT("calf_l"),TEXT("calf_r")};
@@ -1307,8 +1349,9 @@ bool UProphecyJoltFootJointLibrary::SetFootExtension(UObject* WorldContext,FGuid
         if (!Original || !Original->IsFixedAxis(Axis::TranslationX) || !Original->IsFixedAxis(Axis::TranslationY)
             || !Original->IsFixedAxis(Axis::TranslationZ))
         { OutError=TEXT("Foot extension expects authored locked ankle translations."); return false; }
-        const auto Settings=ProphecyJolt::FootExtension::Settings(*Original,
-            ProphecyJolt::Conversions::ToJoltDirection(Directions[Side].GetSafeNormal()),LeewayCm*.01f);
+        auto Settings=ProphecyJolt::FootExtension::Settings(*Original,
+            ProphecyJolt::Conversions::ToJoltDirection(Directions[Side].GetSafeNormal()),ExtensionCm*.01f);
+        Settings.SetLimitedAxis(Axis::TranslationX,-CompressionCm*.01f,ExtensionCm*.01f);
         JPH::Ref<JPH::TwoBodyConstraint> Extra=Native->Physics.GetBodyInterface().CreateConstraint(&Settings,
             Original->GetBody1()->GetID(),Original->GetBody2()->GetID());
         if (!Extra) { OutError=TEXT("Could not create the calf-axis translation constraint."); return false; }
