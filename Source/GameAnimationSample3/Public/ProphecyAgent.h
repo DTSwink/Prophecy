@@ -948,7 +948,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Debug")
 	UPoseableMeshComponent* GetKinematicDebugMesh() const;
 
-	/** Per-agent mode; changes on the next NN publication, without altering NN state or cadence. */
+	/** Per-agent mode; changes on the next NN publication, without altering NN state or cadence.
+	 * Attack Viewer uses linear world positions and plain shortest-path SLERP rotations,
+	 * in locomotion and every special. No Hermite tangent history is allocated. */
 	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Interpolation")
 	void SetNNInterpolationMode(EProphecyNNInterpolationMode Mode);
 

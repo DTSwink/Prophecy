@@ -26,7 +26,8 @@ void Prepare(FProphecyNNPoseSnapshot& Previous, EProphecyNNInterpolationMode Mod
 {
     if (Mode != EProphecyNNInterpolationMode::HermiteSlerp)
     {
-        Previous.InterpolationMode = EProphecyNNInterpolationMode::Current;
+        Previous.InterpolationMode = Mode == EProphecyNNInterpolationMode::AttackViewer
+            ? Mode : EProphecyNNInterpolationMode::Current;
         Previous.InterpolationStartTangents.Empty();
         Previous.InterpolationEndTangents.Empty();
         Previous.InterpolationIntervalSeconds = 0;
@@ -82,7 +83,8 @@ FTransform Sample(const FProphecyNNPoseSnapshot& Pose, int32 BoneIndex,
     if (Alpha <= 0) return A;
     if (Alpha >= 1) return B;
     FVector Position = FMath::Lerp(A.GetLocation(), B.GetLocation(), Alpha);
-    if (Pose.InterpolationStartTangents.IsValidIndex(BoneIndex) && Pose.InterpolationEndTangents.IsValidIndex(BoneIndex))
+    if (Pose.InterpolationMode == EProphecyNNInterpolationMode::HermiteSlerp
+        && Pose.InterpolationStartTangents.IsValidIndex(BoneIndex) && Pose.InterpolationEndTangents.IsValidIndex(BoneIndex))
         Position = FMath::CubicInterp(A.GetLocation(), Pose.InterpolationStartTangents[BoneIndex],
             B.GetLocation(), Pose.InterpolationEndTangents[BoneIndex], double(Alpha));
     return FTransform(FQuat::Slerp(A.GetRotation(), B.GetRotation(), Alpha).GetNormalized(),

@@ -285,7 +285,7 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
         }
 #endif
         FMemory::Memcpy(P.PreviousComponent,P.CurrentComponent,sizeof(P.CurrentComponent));
-        DefenseForearmRoll(*Impl,D.Bones,Pose);
+        if (ProphecySpecialRoll::Forearms(P.Owner.Get())) DefenseForearmRoll(*Impl,D.Bones,Pose);
         const bool bContactStop=DefensePhysicalStop(*Impl,P,P.CurrentPose,Pose,P.WorldOrigin);
         DefenseComponentPose(Pose,PoseRoot,D.Bones,P.CurrentComponent);P.CurrentPose=Pose;
         Agent.PreviousPublishedRoot=Agent.PublishedRoot;Agent.PreviousPublishedYaw=Agent.PublishedYaw;

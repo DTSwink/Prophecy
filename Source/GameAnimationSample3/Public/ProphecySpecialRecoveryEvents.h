@@ -9,11 +9,16 @@ class GAMEANIMATIONSAMPLE3_API UProphecySpecialRecoveryEvents : public UInterfac
 {
     GENERATED_BODY()
 };
-/** Optional shared recovery event. No component, polling or per-frame binding. */
+/** Regional recovery events. No component, polling or per-frame binding. */
 class GAMEANIMATIONSAMPLE3_API IProphecySpecialRecoveryEvents
 {
     GENERATED_BODY()
 public:
+    UFUNCTION(BlueprintImplementableEvent,Category="Prophecy|Agent|Recovery",meta=(DisplayName="Upper Special Ended"))
+    void OnNNUpperSpecialEnded(EProphecyAgentState Special,FName Attack,bool HalfAttack,bool ReturningToLocomotion);
+    UFUNCTION(BlueprintImplementableEvent,Category="Prophecy|Agent|Recovery",meta=(DisplayName="Lower Special Ended"))
+    void OnNNLowerSpecialEnded(EProphecyAgentState Special,FName Attack,bool HalfAttack,bool ReturningToLocomotion);
+    // Retained for existing Blueprint node loading only; runtime dispatch uses the two regional events.
     UFUNCTION(BlueprintImplementableEvent,Category="Prophecy|Agent|Recovery",meta=(DisplayName="Special Ended"))
     void OnNNSpecialEnded(EProphecyAgentState Special,FName Attack,bool HalfAttack,bool ReturningToLocomotion);
 };

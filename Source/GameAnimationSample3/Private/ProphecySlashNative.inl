@@ -256,6 +256,16 @@ void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,f
 		(Models[1].InputWidth!=51 && (Out[432]>=0.5f || bHitRequest)) ? 1.f:0.f;
 	FPose Base,Candidate; RawUpper(Out,W.BaseUpper,Base);
 	RawUpper(Out,Out+41,Candidate);
+	if (Settings && Settings->bLeftHandConstraint)
+	{
+		const auto& Left=Arms[0];
+		if (ProphecyAttackWrist::Constrain(Candidate.R[Left.End].Rows,Candidate.P[Left.Mid],Candidate.P[Left.End]))
+		{
+			// The corrected hand rotation is also the next recurrent state, just as
+			// in the training hand clamp. No second FK: hand has no encoded children.
+			WriteRot6(Multiply(Candidate.R[Left.End],Transpose(RootRotation)),Out+41+Left.StateOffset+3);
+		}
+	}
 	for (int32 I=0; I<25; ++I)
 	{
 		const FVector3f P=I<17 ? W.FrozenPose.P[I]+(Candidate.P[I]-Base.P[I]) : W.FrozenPose.P[I];
@@ -404,3 +414,57 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 	return true;
 }
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackWristModels,"Prophecy.NN.AttackWrist.AllCheckpoints",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyAttackWristModels::RunTest(const FString&)
+{
+    int32 Corrections=0;
+    for (const TCHAR* Suffix:{TEXT(""),TEXT("AttackSeptember20"),TEXT("Attack160664"),TEXT("Attack184064")})
+    {
+        const FString Dir=FPaths::ProjectContentDir()/TEXT("locomotion/NN")/Suffix;
+        FString Text;TSharedPtr<FJsonObject> Contract;
+        if (!FFileHelper::LoadFileToString(Text,*(Dir/TEXT("prophecy_slash_runtime.json"))) ||
+            !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Contract))
+        { AddError(TEXT("Missing checkpoint fixture: ")+Dir);return false; }
+        FSlashNative Model;
+        if (!TestTrue(TEXT("Model loads"),Model.Initialize(Dir,Contract))) return false;
+        TArray<float> State,Off,On,ExplicitOff;
+        JsonFloatArray(Contract->GetArrayField(TEXT("seed_input")),State);
+        // Deliberate bad wrist history ensures the old checkpoints exercise
+        // the active correction rather than only their already-valid seed.
+        for (int32 Base:{82,172})
+        {
+            State[Base+63]=-State[Base+63];State[Base+64]=-State[Base+64];State[Base+65]=-State[Base+65];
+        }
+        FSlashNative::FStepSettings Options[1];Options[0].bLeftHandConstraint=true;
+        for (int32 Step=0;Step<20;++Step)
+        {
+            if (!Model.Run(State,Off) || !Model.Run(State,On,MakeArrayView(Options)))
+            { AddError(TEXT("Inference failed"));return false; }
+            Options[0].bLeftHandConstraint=false;
+            TestTrue(TEXT("Explicit disabled runs"),Model.Run(State,ExplicitOff,MakeArrayView(Options)));
+            TestTrue(TEXT("Disabled output bit-identical"),FMemory::Memcmp(Off.GetData(),ExplicitOff.GetData(),Off.Num()*sizeof(float))==0);
+            Options[0].bLeftHandConstraint=true;
+            for (int32 I=0;I<Off.Num();++I)
+            {
+                if ((I>=104 && I<110) || (I>=287 && I<296)) continue;
+                if (Off[I]!=On[I]) { AddError(FString::Printf(TEXT("Unexpected changed output %d"),I));return false; }
+            }
+            const FVector3f Elbow(On[155],On[156],On[157]),Hand(On[158],On[159],On[160]);
+            const FVector3f Palm(On[287],On[288],On[289]);
+            TestTrue(TEXT("Emitted wrist cone"),FVector3f::DotProduct(Palm,(Hand-Elbow).GetSafeNormal())>=FMath::Cos(FMath::DegreesToRadians(55.f))-3.e-5f);
+            if (FMemory::Memcmp(Off.GetData()+104,On.GetData()+104,6*sizeof(float))) ++Corrections;
+            // Recurrent state uses the same corrected rotation as the output pose.
+            FMemory::Memcpy(State.GetData(),State.GetData()+41,41*sizeof(float));
+            FMemory::Memcpy(State.GetData()+82,State.GetData()+172,90*sizeof(float));
+            FMemory::Memcpy(State.GetData()+41,On.GetData(),41*sizeof(float));
+            FMemory::Memcpy(State.GetData()+172,On.GetData()+41,90*sizeof(float));
+            State[270]=On[431];State[271]=On[432];
+        }
+    }
+    TestTrue(TEXT("Fixture exercises an actual excess-bend correction"),Corrections>0);
+    return !HasAnyErrors();
+}
+#endif

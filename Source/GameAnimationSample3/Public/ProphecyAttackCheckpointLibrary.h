@@ -20,6 +20,12 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackCheckpointLibrary : public UBluepr
 {
     GENERATED_BODY()
 public:
+    /** Per agent, off by default. Enabled forces kickL/kickR to September20 good.pt;
+     * disabled lets kicks use Set Attack Checkpoint like other attacks. Applies on
+     * new attacks/family changes; does not restart or change an ongoing same-family attack. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Attack",meta=(DefaultToSelf="Agent"))
+    static bool SetKickCheckpointOverride(AProphecyAgent* Agent,bool bEnabled=false);
+
     /** Per-agent comparison. Current is the default. Applies to the next new full/half
      * attack; an ongoing attack keeps its checkpoint and history until it ends.
      * The first alternate selection loads/validates its model once per manager.

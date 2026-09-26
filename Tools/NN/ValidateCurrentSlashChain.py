@@ -12,12 +12,14 @@ def main():
     torch.set_num_threads(1)
     parser=argparse.ArgumentParser()
     parser.add_argument('--staging',type=Path,default=old.PROJECT/'Saved/Slash123793')
-    dest=parser.parse_args().staging.resolve()
+    parser.add_argument('--seed',type=int,default=2026092211)
+    args=parser.parse_args()
+    dest=args.staging.resolve()
     meta=json.loads((dest/'prophecy_slash_runtime.json').read_text())
     saved,recipe,lower,upper=slash.load_slash2_rollout_session(Path(meta['checkpoint_path']),torch.device('cpu'))
     recipe=replace(recipe,predictive_pin_checkpoint=None)
     manifest=json.loads((g.chain.SOURCE_DATASET/'dataset_manifest.json').read_text())
-    g.SEED=2026092211;g.OUT=dest/'chain';g.OUT.mkdir(exist_ok=True)
+    g.SEED=args.seed;g.OUT=dest/'chain';g.OUT.mkdir(exist_ok=True)
     _,slots=g.chain.pick_candidates(manifest,g.SEED,30,4)
     rows=[r for slot in slots for r in slot]
     paths=[Path(r['runtimeSourcePath']) for r in rows]

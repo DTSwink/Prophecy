@@ -8,7 +8,8 @@ UENUM(BlueprintType)
 enum class EProphecyNNInterpolationMode : uint8
 {
     Current = 0 UMETA(DisplayName="Current (Linear / Viewer Rotation)"),
-    HermiteSlerp = 1 UMETA(DisplayName="Hermite Positions / SLERP Rotations")
+    HermiteSlerp = 1 UMETA(DisplayName="Hermite Positions / SLERP Rotations"),
+    AttackViewer = 2 UMETA(DisplayName="Attack Viewer")
 };
 
 USTRUCT(BlueprintType)
@@ -155,7 +156,7 @@ public:
 		bool bRigidForearms = false, bool bRigidCalves = false,
 		float CalfClampLeewayCm = 0, FVector2D CalfClampLengths = FVector2D::ZeroVector,
 		const FProphecyNNAttackHandClamp& HandClamp = FProphecyNNAttackHandClamp(),
-		const FProphecyNNForearmClamp& ForearmClamp = FProphecyNNForearmClamp());
+		const FProphecyNNForearmClamp& ForearmClamp = FProphecyNNForearmClamp(),bool bHalfAttack = false);
 
 	/** Preserve exact calf attachment, or the published attack length band; toes follow any correction. */
 	static void ApplyRigidCalves(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
@@ -166,6 +167,7 @@ public:
 		TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms);
 	/** True for the attack publication, including its unchanged handoff frame. */
 	static bool UsesAttackPresentation(int32 AgentId);
+	static bool UsesLowerSpecialPresentation(int32 AgentId);
 
 	static void SetAgentLocalPose(
 		int32 AgentId,

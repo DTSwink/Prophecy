@@ -32,4 +32,10 @@ private:
 bool BuildWorldPoses(const USkeletalMesh& Mesh, const UPhysicsAsset& PhysicsAsset,
     const FProphecyNNPoseSnapshot& Pose, TArray<FName>& OutNames,
     TArray<FTransform>& OutFuture, TArray<FTransform>& OutPrevious);
+
+// Helpers without rigid bodies inherit the displayed parent, with a local pose
+// derived from the same interpolated world endpoints as the body's drive.
+bool BuildHelperLocals(const FReferenceSkeleton& Reference, TConstArrayView<int32> SourceIndices,
+    TConstArrayView<FTransform> WorldTargets, const FTransform& ComponentWorld,
+    TArray<FTransform>& OutLocal);
 }

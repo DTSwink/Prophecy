@@ -150,19 +150,16 @@ void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyA
         if (Changed)
             StoreInertiaArm(*Impl,I,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
     }
-    if(const int32 ArmIndex=ProphecySlashReturn::ActiveArm(Actor);ArmIndex!=INDEX_NONE)
+    if(ProphecySlashReturn::Active(Actor))
     {
+        const double ReturnDt=ProphecySlashReturn::AdvanceFrame(Actor);
+        const uint8 ArmMask=ProphecySlashReturn::ActiveArmMask(Actor);
+        if(!ArmMask) return;
         float IdleUpper[UpperStateDim];FTransform Idle[FullBodyBoneCount];
         SeedUpperIdleFromLower(StateSlice(Impl->PublishedStateBuffer,Index),*Impl,IdleUpper);
         DecodeLocomotionPose(Impl,StateSlice(Impl->PublishedStateBuffer,Index),IdleUpper,
             Agent.PublishedWalkWeight,MakeArrayView(Idle),nullptr,Unclamped,&Agent.PublishedLegWalkWeights);
-        const auto& A=Impl->UpperArms[ArmIndex];
         const auto& RightArm=Impl->UpperArms[1];const auto& Left=Impl->UpperArms[0];
-        const int32 Parent=Impl->Parents[A.Start];
-        // Capture the neutral endpoint on the outgoing clavicle, before the
-        // first recovery prediction turns it. ApplyPose uses this only once.
-        const FTransform InitialNeutralWrist=Idle[A.End].GetRelativeTransform(Idle[Parent])*Previous[Parent];
-        for(int32 B:{A.Start,A.Mid,A.End}) Idle[B]=Idle[B].GetRelativeTransform(Idle[Parent])*Pose[Parent];
         const int32 Neck=Impl->BodyNames.IndexOfByKey(FName(TEXT("neck_01")));
         auto TorsoFrame=[&](const FTransform* P)
         {
@@ -174,11 +171,39 @@ void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyA
             return FTransform(FRotationMatrix::MakeFromYZ(Right,Up).ToQuat(),
                 (P[RightArm.Start].GetLocation()+P[Left.Start].GetLocation())*.5);
         };
-        ProphecySlashReturn::ApplyPose(Actor,TorsoFrame(Pose),TorsoFrame(Previous),
-            (Pose[RightArm.Start].GetLocation()-Pose[Left.Start].GetLocation()).Length()*.5,
+        // Both sides use the same unmodified anatomical frame and one clock
+        // sample. Their own neutral chain/hinge axes handle mirrored bone bases.
+        const FTransform Torso=TorsoFrame(Pose),PreviousTorso=TorsoFrame(Previous);
+        const bool PelvisLocal=ProphecySlashReturn::UsesPelvisReference(Actor);
+        const bool ControlledReference=ProphecySlashReturn::UsesControlledReference(Actor);
+        FTransform ReturnReference,PreviousReturnReference;
+        const FTransform IdleTorso=TorsoFrame(Idle);
+        if(ControlledReference) ProphecySlashReturn::PelvisReferenceFrames(Actor,IdleTorso,Idle[0],
+            Pose[0],Previous[0],Root.GetRelativeTransform(Carrier).GetRotation(),
+            PrevRoot.GetRelativeTransform(PrevCarrier).GetRotation(),ReturnReference,PreviousReturnReference,
+            PelvisLocal ? nullptr : &Torso,PelvisLocal ? nullptr : &PreviousTorso);
+        const double HalfWidth=(Pose[RightArm.Start].GetLocation()-Pose[Left.Start].GetLocation()).Length()*.5;
+        for(int32 ArmIndex=0;ArmIndex<2;++ArmIndex) if(ArmMask & (1<<ArmIndex))
+        {
+        const auto& A=Impl->UpperArms[ArmIndex];const int32 Parent=PelvisLocal ? 0 : Impl->Parents[A.Start];
+        // The destination must use the same heading as the route. Reattaching
+        // it through the pelvis bone would reintroduce pelvis rotation here.
+        const FTransform& IdleMount=ControlledReference ? IdleTorso : Idle[Parent];
+        const FTransform& PreviousMount=ControlledReference ? PreviousReturnReference : Previous[Parent];
+        const FTransform& CurrentMount=ControlledReference ? ReturnReference : Pose[Parent];
+        FTransform InitialNeutralShoulder=Idle[A.Start].GetRelativeTransform(IdleMount)*PreviousMount;
+        FTransform InitialNeutralElbow=Idle[A.Mid].GetRelativeTransform(IdleMount)*PreviousMount;
+        FTransform InitialNeutralWrist=Idle[A.End].GetRelativeTransform(IdleMount)*PreviousMount;
+        ProphecySlashReturn::FitNeutralArm(Previous[A.Start],
+            InitialNeutralShoulder,InitialNeutralElbow,InitialNeutralWrist);
+        for(int32 B:{A.Start,A.Mid,A.End}) Idle[B]=Idle[B].GetRelativeTransform(IdleMount)*CurrentMount;
+        ProphecySlashReturn::FitNeutralArm(Pose[A.Start],Idle[A.Start],Idle[A.Mid],Idle[A.End]);
+        ProphecySlashReturn::ApplyPose(Actor,ArmIndex,ReturnDt,Torso,PreviousTorso,HalfWidth,
             Previous[A.Start],Previous[A.Mid],Previous[A.End],Idle[A.Start],Idle[A.Mid],Idle[A.End],InitialNeutralWrist,
-            Pose[A.Start],Pose[A.Mid],Pose[A.End],LocalTrainingToUnreal(A.LocalPoleAxes[0]));
+            Pose[A.Start],Pose[A.Mid],Pose[A.End],LocalTrainingToUnreal(A.LocalPoleAxes[0]),
+            ControlledReference ? &ReturnReference : nullptr,ControlledReference ? &PreviousReturnReference : nullptr);
         StoreInertiaArm(*Impl,ArmIndex,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
+        }
     }
 }
 

@@ -1,5 +1,8 @@
 #include "ProphecyNNLocomotionManager.h"
 #include "ProphecyAttackStartInertia.h"
+#include "ProphecySpecialRoll.h"
+#include "ProphecyAttackWrist.h"
+#include "ProphecyClampProfileLibrary.h"
 #include "ProphecyRootFacing.h"
 #include "ProphecyAgentTime.h"
 #include "ProphecySwordAttackCollision.h"
@@ -825,7 +828,7 @@ struct AProphecyNNLocomotionManager::FImpl
 			FName Family;
 			FVector TargetWorld = FVector::ZeroVector;
 			FTransform AnchorWorld;
-			// Half attacks follow pelvis translation, never locomotion pelvis/root rotation.
+			// Reserved legacy storage for Live Coding layout compatibility; no longer used.
 			FQuat HalfMountWorldRotation = FQuat::Identity;
 			FVector2D CalfClampLengths = FVector2D::ZeroVector;
 			FProphecyNNAttackHandClamp HandClamp;
@@ -2278,6 +2281,12 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 		}
 		TArray<FTransform, TInlineAllocator<128>> ComponentPose;
 		ComponentPose.SetNumUninitialized(ReferenceSkeleton.GetNum());
+		// The world pose below already includes the capsule carrier. A later
+		// full->half/root handoff must not move these debug bones a second time.
+		// Follow the capsule only here, atomically with this pose publication.
+		if (!DebugMesh->IsUsingAbsoluteLocation() || !DebugMesh->IsUsingAbsoluteRotation()
+			|| !DebugMesh->IsUsingAbsoluteScale()) DebugMesh->SetAbsolute(true,true,true);
+		DebugMesh->SetWorldTransform(AgentActor->GetAgentCapsule()->GetComponentTransform());
 		const FTransform DebugComponentWorld = DebugMesh->GetComponentTransform();
 		for (int32 BoneIndex = 0; BoneIndex < ReferenceSkeleton.GetNum(); ++BoneIndex)
 		{
@@ -3612,7 +3621,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 		}
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
 		auto* PinSmoothing=ProphecyWalkPinning::FindSmoothing(AgentActors[AgentIndex]);
-		if (PinSmoothing && (Agent.DefensePose || Agent.Slash.bActive || !Agent.RecoveryWeights.NeedsWalk()))
+		if (PinSmoothing && (Agent.DefensePose || (Agent.Slash.bActive && !Agent.Slash.bHalf) || !Agent.RecoveryWeights.NeedsWalk()))
 		{ ProphecyWalkPinning::ResetSmoothing(AgentActors[AgentIndex]);PinSmoothing=nullptr; }
 		if (Agent.DefensePose && Agent.DefensePose->bDodge)
 		{
@@ -3622,7 +3631,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			AdvanceAgentMover(AgentIndex,StepSeconds);
 			continue;
 		}
-        auto* TickPins=PinSmoothing && !Agent.DefensePose && !Agent.Slash.bActive && Agent.RecoveryWeights.NeedsWalk()
+        auto* TickPins=PinSmoothing && !Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf) && Agent.RecoveryWeights.NeedsWalk()
             ? ProphecyWalkPinning::FindTickPinning(AgentActors[AgentIndex]) : nullptr;
         if(TickPins) {TickPins->Previous=TickPins->Current;TickPins->Current={};TickPins->Current.Valid=true;}
 		const bool bWalkPolicy = !Agent.RecoveryWeights.NeedsRun();
@@ -3637,17 +3646,16 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			StateDim * sizeof(float));
 		float* NextState = StateSlice(Impl->NextStateBuffer, AgentIndex);
 		const float* Raw = Impl->OutputBuffer.GetData() + AgentIndex * PolicyOutputDim;
-        const FVector2f FootRotationWeights=!Agent.DefensePose && !Agent.Slash.bActive
+        const FVector2f FootRotationWeights=!Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf)
             ? ProphecyAttackRecovery::FootRotationWeights(AgentActors[AgentIndex],Agent.PolicyBlend.WalkWeight) : FVector2f(-1,-1);
         const bool bOverrideFootRotation=FootRotationWeights.X>=0 || FootRotationWeights.Y>=0;
-		// Tempering is locomotion-only. Half attacks also need their lower-body
-		// movement unmodified, even though they use the locomotion lower policy.
-		const auto* Tempering = !Agent.DefensePose && !Agent.Slash.bActive
+		// The lower body remains locomotion-owned during half attacks.
+		const auto* Tempering = !Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf)
 			? ProphecyLowerTempering::Find(AgentActors[AgentIndex]) : nullptr;
 		const bool bReconstructTemperedLegs = Tempering && ProphecyLegChainDebug::IsEnabled(AgentActors[AgentIndex]);
 		const auto* RightTempering=Tempering ? &ProphecyLowerTempering::RightFootSettings(AgentActors[AgentIndex],*Tempering) : nullptr;
         ProphecyLegRecovery::FStep PoleStep;
-        bool bTimedPoleRecovery=!Agent.DefensePose && !Agent.Slash.bActive
+        bool bTimedPoleRecovery=!Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf)
             && ProphecyLegChainDebug::IsEnabled(AgentActors[AgentIndex]) && ProphecyLegRecovery::Step(AgentActors[AgentIndex],PoleStep);
 #if WITH_EDITOR
         if(bTimedPoleRecovery && CVarRecoveryPoleWindow.GetValueOnGameThread()==0)
@@ -3674,9 +3682,9 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 		float RunTemperingSource[StateDim],WalkTemperingSource[StateDim];
 		auto* PinReachGuard=ProphecyWalkPinning::FindReachGuard(AgentActors[AgentIndex]);
 		FVector3f UnpinnedFeet[2][2]; // [Run/Walk][left/right], populated only when enabled.
-		const auto* PinBackwardBound=(!Agent.DefensePose && !Agent.Slash.bActive && Agent.RecoveryWeights.NeedsWalk())
+		const auto* PinBackwardBound=(!Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf) && Agent.RecoveryWeights.NeedsWalk())
 			? ProphecyWalkPinning::FindBackwardBound(AgentActors[AgentIndex]) : nullptr;
-		const auto* PinCircleBound=(!Agent.DefensePose && !Agent.Slash.bActive && Agent.RecoveryWeights.NeedsWalk())
+		const auto* PinCircleBound=(!Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf) && Agent.RecoveryWeights.NeedsWalk())
 			? ProphecyWalkPinning::FindCircleBound(AgentActors[AgentIndex]) : nullptr;
 		FVector BoundRoot,BoundForward,CircleRoot;
 		if (PinBackwardBound || PinCircleBound)
@@ -4734,7 +4742,7 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	};
 	FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
 	const bool bDefensePose=Agent.DefensePose && Agent.DefensePose->bHasPose;
-	const auto* CalfTempering=!Agent.DefensePose && !Agent.Slash.bActive
+	const auto* CalfTempering=!Agent.DefensePose && (!Agent.Slash.bActive || Agent.Slash.bHalf)
 		? ProphecyLowerTempering::Find(Controls) : nullptr;
 	const auto* RightCalfTempering=CalfTempering ? &ProphecyLowerTempering::RightFootSettings(Controls,*CalfTempering) : nullptr;
     bool bTemperCalves=bHasPreviousPose && CalfTempering && (CalfTempering->FeetRotation<1.f || RightCalfTempering->FeetRotation<1.f) && ProphecyLegChainDebug::IsEnabled(Controls);
@@ -4847,7 +4855,19 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		ComponentTransforms[Arm.Mid].SetRotation(ProphecyHandChain::FollowTwist(Carried,
 			ComponentTransforms[Arm.Mid].GetRotation(),LocalTrainingToUnreal(Impl->UpperLocalOffsets[Arm.End]),Follow));
 	}
-	if (bTemperCalves || bTemperArms || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose))
+	// Attacks constrain their native output and recurrent rotation together.
+	// Other modes apply their independently configured limit to publication only.
+	const float WristDegrees=Agent.Slash.bActive ? -1.f : ProphecyAttackWrist::Degrees(Controls,
+		bDefensePose ? (Agent.DefensePose->bDodge ? EProphecyClampProfileMode::Dodge : EProphecyClampProfileMode::Parry)
+		: EProphecyClampProfileMode::Locomotion);
+	bool bWristChanged=false;
+	if (WristDegrees>=0)
+	{
+		const auto& Arm=Impl->UpperArms[0];
+		ProphecyAttackWrist::ConstrainPose(PreviousComponentTransforms[Arm.End],PreviousComponentTransforms[Arm.Mid].GetTranslation(),WristDegrees);
+		bWristChanged=ProphecyAttackWrist::ConstrainPose(ComponentTransforms[Arm.End],ComponentTransforms[Arm.Mid].GetTranslation(),WristDegrees);
+	}
+	if (bWristChanged || bTemperCalves || bTemperArms || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose))
 	{
 		for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
 		{
@@ -4919,10 +4939,10 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		bFullAttack ? Agent.Slash.CalfClampLengths : FVector2D(
 			Impl->LocalOffsets[Impl->Limbs[0].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier),
 			Impl->LocalOffsets[Impl->Limbs[1].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier)),
-		PresentationHandClamp, ForearmClamp);
+		PresentationHandClamp, ForearmClamp,Agent.Slash.bActive && Agent.Slash.bHalf);
     if(auto* T=ProphecyWalkPinning::FindTickPinning(Controls))
     {
-        if(!Agent.Slash.bActive && !Agent.DefensePose && T->Current.Valid && ProphecyWalkPinning::FindSmoothing(Controls))
+        if((!Agent.Slash.bActive || Agent.Slash.bHalf) && !Agent.DefensePose && T->Current.Valid && ProphecyWalkPinning::FindSmoothing(Controls))
         {
             T->PoseId=PoseStoreAgentBase+AgentIndex;T->HasBase=true;T->Dirty=true;
             for(int32 I=0;I<2;++I)
@@ -6089,6 +6109,7 @@ void UProphecyNNLocomotionWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 
 #include "ProphecyNNInputDebug.inl"
 #include "ProphecyNNAgentReset.inl"
+#include "ProphecySlashTrainDebug.inl"
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 // External test entry keeps Live Coding validation out of anonymous test vtables.

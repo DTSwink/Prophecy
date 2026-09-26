@@ -231,6 +231,9 @@ public:
 	static float GetHalfAttackTargetRadius(const UWorld* World);
 	bool GetAgentNNAttackTarget(FProphecyAgentHandle Handle, FVector& RequestedWorldTarget,
 		FVector& EffectiveWorldTarget, FVector& GhostWorldTarget) const;
+	// On-demand raw attack-policy pose, before half graft/clamps/roll corrections.
+	bool ReadAgentAttackGhost(FProphecyAgentHandle Handle,TArray<FName>& Names,
+		TArray<FTransform>& WorldPose,FVector& GhostTarget) const;
 
 	/** Runtime-only update used by the agent's Blueprint feedback setters. */
 	bool SetAgentPhysicalFeedbackTolerance(
@@ -257,10 +260,13 @@ public:
 	bool StopAgentAnimationLayer(FProphecyAgentHandle Handle, float BlendOutSeconds);
 	bool TriggerAgentNNAttack(FProphecyAgentHandle Handle, FName Attack, FVector TargetWorld, bool bHalf);
 	bool SetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle, int32 Checkpoint, FString& OutError);
+	bool SetAgentKickCheckpointOverride(FProphecyAgentHandle Handle, bool bEnabled);
+	bool SetSlashTrainStartingPose(FProphecyAgentHandle Handle, FString& OutError);
 	bool GetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle, int32& Selected, int32& Effective, bool& bAttacking) const;
 	void RefreshAgentAttackTrim(FProphecyAgentHandle Handle);
 	void GetAgentAttackDefenseState(FProphecyAgentHandle Handle,bool& bParry,bool& bDodge) const;
 	bool SetAgentNNHalfAttack(FProphecyAgentHandle Handle, bool bHalf);
+	void ReturnAttackLowerToLocomotion(FProphecyAgentHandle Handle,bool bReturnToLocomotion);
 	bool SetAgentNNAttackTarget(FProphecyAgentHandle Handle, FVector TargetWorld);
 	bool GetAgentLocomotionRootWindow(FProphecyAgentHandle Handle, TArray<FTransform>& WorldRoots, TArray<float>& Times) const;
 	bool GetAgentContinuousLocomotionRootWindow(FProphecyAgentHandle Handle, TArray<FTransform>& WorldRoots, TArray<float>& Times) const;

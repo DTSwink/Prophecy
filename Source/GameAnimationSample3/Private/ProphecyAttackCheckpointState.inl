@@ -13,6 +13,8 @@ static TMap<TWeakObjectPtr<const AProphecyNNLocomotionManager>,TUniquePtr<FCompa
 // Separate storage preserves the loaded first-comparison allocation during Live Coding.
 static TMap<TWeakObjectPtr<const AProphecyNNLocomotionManager>,TUniquePtr<FComparison>> Refresh2Comparisons;
 static TMap<TWeakObjectPtr<const AProphecyNNLocomotionManager>,TUniquePtr<FComparison>> September20Comparisons;
+// Opt-in routing only; inspected at attack entry/family changes, never per frame.
+static TMap<TWeakObjectPtr<const AProphecyNNLocomotionManager>,TSet<TWeakObjectPtr<const AProphecyAgent>>> KickOverrides;
 static auto& Storage(int32 Checkpoint) { return Checkpoint==3?September20Comparisons:Checkpoint==2?Refresh2Comparisons:Comparisons; }
 static FComparison* Find(const AProphecyNNLocomotionManager* Owner,int32 Checkpoint=1)
 {
@@ -31,5 +33,11 @@ static void Select(const AProphecyNNLocomotionManager* Owner,const AProphecyAgen
     for(int32 I=1;I<=3;++I) if(auto* C=Find(Owner,I))
     { auto& Set=Active?C->Active:C->Selected;if(I==Choice)Set.Add(Actor);else Set.Remove(Actor); }
 }
-static void Clear(const AProphecyNNLocomotionManager* Owner) { Comparisons.Remove(Owner);Refresh2Comparisons.Remove(Owner);September20Comparisons.Remove(Owner); }
+static int32 ForFamily(const AProphecyNNLocomotionManager* Owner,const AProphecyAgent* Actor,FName Family)
+{
+    if (Family==TEXT("kickl") || Family==TEXT("kickr"))
+        if (const auto* Overrides=KickOverrides.Find(Owner);Overrides && Overrides->Contains(Actor)) return 3;
+    return Choice(Owner,Actor,false);
+}
+static void Clear(const AProphecyNNLocomotionManager* Owner) { Comparisons.Remove(Owner);Refresh2Comparisons.Remove(Owner);September20Comparisons.Remove(Owner);KickOverrides.Remove(Owner); }
 }

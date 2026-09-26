@@ -18,6 +18,6 @@ void Cancel(AProphecyAgent* Agent);
 void Remove(AProphecyAgent* Agent);
 bool Reapply(AProphecyAgent* Agent,FString& Error);
 // Reuses the existing publication; unchanged joint ranges do not rebuild or wake.
-bool Synchronize(AProphecyAgent* Agent,float LocomotionLeeway,FString& Error);
+bool Synchronize(AProphecyAgent* Agent,float CalfLeeway,FString& Error);
 float Current(const AProphecyAgent* Agent);
 }

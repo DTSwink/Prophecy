@@ -13,6 +13,8 @@ namespace
 #if WITH_EDITOR
     TAutoConsoleVariable<int32> CVarRecoveryLengthInterpolation(TEXT("Prophecy.Recovery.LengthInterpolation"),1,
         TEXT("Editor comparison: sample returning calf length with the pose interpolation instead of the latest live value."));
+    TAutoConsoleVariable<int32> CVarRecoveryUpperLengthBlend(TEXT("Prophecy.Recovery.UpperLengthBlend"),1,
+        TEXT("Editor comparison: converge recovery thigh length to publication on the existing recovery clock."));
 #endif
     bool UseRecoveryLengthInterpolation()
     {
@@ -26,9 +28,12 @@ namespace
 	TMap<int32, FProphecyNNPoseSnapshot> GProphecyNNPoses;
 	TMap<int32, EProphecyNNInterpolationMode> GInterpolationModes;
 	TSet<int32> GProphecyNNRigidForearms;
+	TSet<int32> GProphecyNNLowerSpecial;
 	TSet<int32> GProphecyNNRigidCalves;
 	struct FRecoveryLegLengths { FVector2D Upper,Lower; };
 	TMap<int32,FRecoveryLegLengths> GRecoveryLegLengths;
+	// Separate sidecar keeps retained Live Coding map values/layout unchanged.
+	TMap<int32,float> GRecoveryUpperLengthWeights;
 	TMap<int32,float> GKneePopSmoothing;
 	struct FKneeBendFrames { FVector LocalPole[2]={FVector::ZeroVector,FVector::ZeroVector}; };
 	TMap<int32,FKneeBendFrames> GKneeBendFrames;
@@ -104,7 +109,7 @@ namespace
 void FProphecyNNPoseStore::SetInterpolationMode(int32 AgentId, EProphecyNNInterpolationMode Mode)
 {
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
-	if (Mode == EProphecyNNInterpolationMode::HermiteSlerp) GInterpolationModes.Add(AgentId, Mode);
+	if (Mode == EProphecyNNInterpolationMode::HermiteSlerp || Mode == EProphecyNNInterpolationMode::AttackViewer) GInterpolationModes.Add(AgentId, Mode);
 	else GInterpolationModes.Remove(AgentId);
 }
 
@@ -129,9 +134,18 @@ void ProphecyNNPresentation::Publish(int32 AgentId, double SourceTimeSeconds, fl
 
 void ProphecyNNPresentation::SetRecoveryCalfLengths(int32 AgentId,const FVector2D& UpperCm,const FVector2D& LowerCm)
 {
+	SetRecoveryCalfLengthsWithUpperBlend(AgentId,UpperCm,LowerCm,1.f);
+}
+void ProphecyNNPresentation::SetRecoveryCalfLengthsWithUpperBlend(int32 AgentId,const FVector2D& UpperCm,const FVector2D& LowerCm,float RemainingWeight)
+{
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
-	if (LowerCm.X>0 && LowerCm.Y>0) GRecoveryLegLengths.Add(AgentId,{UpperCm,LowerCm});
-	else GRecoveryLegLengths.Remove(AgentId);
+	if (LowerCm.X>0 && LowerCm.Y>0)
+	{
+		GRecoveryLegLengths.Add(AgentId,{UpperCm,LowerCm});
+		if(RemainingWeight<1.f) GRecoveryUpperLengthWeights.Add(AgentId,FMath::Clamp(RemainingWeight,0.f,1.f));
+		else GRecoveryUpperLengthWeights.Remove(AgentId);
+	}
+	else { GRecoveryLegLengths.Remove(AgentId);GRecoveryUpperLengthWeights.Remove(AgentId); }
 }
 bool ProphecyNNPresentation::HasRecoveryCalfLengths(int32 AgentId)
 {
@@ -278,7 +292,7 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 	const FTransform& ComponentWorldTransform,
 	double SourceTimeSeconds,
 	bool bRigidForearms, bool bRigidCalves, float CalfClampLeewayCm, FVector2D CalfClampLengths,
-	const FProphecyNNAttackHandClamp& HandClamp, const FProphecyNNForearmClamp& ForearmClamp)
+	const FProphecyNNAttackHandClamp& HandClamp, const FProphecyNNForearmClamp& ForearmClamp,bool bHalfAttack)
 {
 	check(BoneNames.Num() == LocalTransforms.Num());
 	check(BoneNames.Num() == PreviousComponentTransforms.Num());
@@ -287,6 +301,8 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
 	if (bRigidForearms) GProphecyNNRigidForearms.Add(AgentId);
 	else GProphecyNNRigidForearms.Remove(AgentId);
+	if (bRigidForearms && !bHalfAttack) GProphecyNNLowerSpecial.Add(AgentId);
+	else if (!GProphecyNNLowerSpecial.IsEmpty()) GProphecyNNLowerSpecial.Remove(AgentId);
 	if (bRigidCalves) GProphecyNNRigidCalves.Add(AgentId);
 	else GProphecyNNRigidCalves.Remove(AgentId);
 	FProphecyNNPoseSnapshot& Snapshot = GProphecyNNPoses.FindOrAdd(AgentId);
@@ -400,9 +416,11 @@ void FProphecyNNPoseStore::ClearAgentPose(int32 AgentId)
 	GProphecyNNPoses.Remove(AgentId);
 	GInterpolationModes.Remove(AgentId);
 	GProphecyNNRigidForearms.Remove(AgentId);
+	GProphecyNNLowerSpecial.Remove(AgentId);
 	GProphecyNNRigidCalves.Remove(AgentId);
 	GProphecyNNPresentation.Remove(AgentId);
 	GRecoveryLegLengths.Remove(AgentId);
+	GRecoveryUpperLengthWeights.Remove(AgentId);
 	GKneePopSmoothing.Remove(AgentId);
 	GKneeBendFrames.Remove(AgentId);
 }
@@ -413,11 +431,19 @@ void FProphecyNNPoseStore::ClearAllPoses()
 	GProphecyNNPoses.Reset();
 	GInterpolationModes.Reset();
 	GProphecyNNRigidForearms.Reset();
+	GProphecyNNLowerSpecial.Reset();
 	GProphecyNNRigidCalves.Reset();
 	GProphecyNNPresentation.Reset();
 	GRecoveryLegLengths.Reset();
+	GRecoveryUpperLengthWeights.Reset();
 	GKneePopSmoothing.Reset();
 	GKneeBendFrames.Reset();
+}
+
+bool FProphecyNNPoseStore::UsesLowerSpecialPresentation(int32 AgentId)
+{
+	FReadScopeLock Lock(GProphecyNNPoseLock);
+	return GProphecyNNLowerSpecial.Contains(AgentId);
 }
 
 bool FProphecyNNPoseStore::UsesAttackPresentation(int32 AgentId)
@@ -465,6 +491,7 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms, float InterpolationAlpha)
 {
 	FRecoveryLegLengths Recovery;
+	float UpperRemaining=1.f;
 	bool bRecovery=false,bRigid=false;
 	float SoftZone=0;
 	bool Special=false;
@@ -472,16 +499,22 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 	{
 		FReadScopeLock Lock(GProphecyNNPoseLock);
 		if (!GRecoveryLegLengths.IsEmpty()) if (const auto* Value=GRecoveryLegLengths.Find(AgentId))
-		{ Recovery=*Value;bRecovery=true; }
+		{
+			Recovery=*Value;bRecovery=true;
+			if(const float* Weight=GRecoveryUpperLengthWeights.Find(AgentId)) UpperRemaining=*Weight;
+		}
 		bRigid=GProphecyNNRigidCalves.Contains(AgentId);
 		if (!GKneePopSmoothing.IsEmpty()) if (const float* Value=GKneePopSmoothing.Find(AgentId)) SoftZone=*Value;
 		if (SoftZone>0)
         {
-            Special=GProphecyNNRigidForearms.Contains(AgentId);
+            Special=GProphecyNNLowerSpecial.Contains(AgentId);
             if (const auto* Value=GKneeBendFrames.Find(AgentId)) BendFrames=*Value;
         }
 		if (!bRecovery && !bRigid && SoftZone<=0) return;
 	}
+#if WITH_EDITOR
+	if(bRecovery && CVarRecoveryUpperLengthBlend.GetValueOnAnyThread()==0) UpperRemaining=1.f;
+#endif
 
 	static const FName Feet[] = { TEXT("foot_l"), TEXT("foot_r") };
 	static const FName Calves[] = { TEXT("calf_l"), TEXT("calf_r") };
@@ -497,6 +530,7 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 		{
 			const int32 Thigh=BoneNames.IndexOfByKey(Side==0 ? FName(TEXT("thigh_l")) : FName(TEXT("thigh_r")));
 			double Lower=Recovery.Lower[Side];
+			double Upper=Recovery.Upper[Side];
 			// The return curve authors each policy endpoint. Sample those lengths
 			// with the pose, rather than applying the newest live curve value to
 			// a knee/ankle still interpolating from the previous policy frame.
@@ -510,8 +544,23 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 				const double B=(Snapshot.ComponentTransforms[SourceFoot].GetLocation()-Snapshot.ComponentTransforms[SourceCalf].GetLocation()).Size();
 				Lower=FMath::Lerp(A,B,double(FMath::Clamp(InterpolationAlpha,0.f,1.f)));
 			}
+			// Match the destination pose's thigh length, not the reference
+			// skeleton's slightly different length. Keep the accepted starting
+			// value and consume the already-running recovery weight. No work
+			// survives removal of the recovery entry.
+			if(UpperRemaining<1.f)
+			{
+				const int32 SourceThigh=Snapshot.BoneNames.IndexOfByKey(Side==0 ? FName(TEXT("thigh_l")) : FName(TEXT("thigh_r")));
+				if(Snapshot.PreviousComponentTransforms.IsValidIndex(SourceThigh) && Snapshot.ComponentTransforms.IsValidIndex(SourceThigh)
+					&& Snapshot.PreviousComponentTransforms.IsValidIndex(SourceCalf) && Snapshot.ComponentTransforms.IsValidIndex(SourceCalf))
+				{
+					const double A=(Snapshot.PreviousComponentTransforms[SourceCalf].GetLocation()-Snapshot.PreviousComponentTransforms[SourceThigh].GetLocation()).Size();
+					const double B=(Snapshot.ComponentTransforms[SourceCalf].GetLocation()-Snapshot.ComponentTransforms[SourceThigh].GetLocation()).Size();
+					Upper=FMath::Lerp(FMath::Lerp(A,B,double(FMath::Clamp(InterpolationAlpha,0.f,1.f))),Upper,double(UpperRemaining));
+				}
+			}
 			if (Transforms.IsValidIndex(Thigh)) ProphecyRecoveryLegLength::Resolve(
-				Transforms[Thigh],Transforms[Calf],Transforms[Foot],Recovery.Upper[Side],Lower);
+				Transforms[Thigh],Transforms[Calf],Transforms[Foot],Upper,Lower);
 			continue;
 		}
 		FVector End;
@@ -584,7 +633,7 @@ bool ProphecyNNPresentation::ReadPelvisWorld(int32 Id,FTransform& Out)
     const float Alpha=Presentation && Presentation->SourceTimeSeconds==P.SourceTimeSeconds?Presentation->Alpha:1.f;
     const FTransform A=P.PreviousComponentTransforms[I]*P.PreviousComponentWorldTransform;
     const FTransform B=P.ComponentTransforms[I]*P.ComponentWorldTransform;
-    if(P.InterpolationMode==EProphecyNNInterpolationMode::HermiteSlerp) Out=ProphecyNNInterpolation::Sample(P,I,A,B,Alpha);
+    if(P.InterpolationMode!=EProphecyNNInterpolationMode::Current) Out=ProphecyNNInterpolation::Sample(P,I,A,B,Alpha);
     else
     {
         // Same matrix-lerp polar rotation as the physical and animation readers.

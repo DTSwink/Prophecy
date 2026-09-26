@@ -1,5 +1,7 @@
 # Kick foot joint leeway
 
+**September26 update:** an explicitly enabled attack calf clamp now supplies symmetric physical ankle allowance during full attacks, just as the locomotion calf clamp does during locomotion and half attacks. Kick leeway adds extension on top: extension=max(calf allowance, kick allowance), compression=calf allowance. Existing kick return timing is unchanged. [Current contract](HalfAttackPhysicalFootSink.md).
+
 **Locomotion calf-clamp inheritance, September25:** physical feet now use an explicitly enabled locomotion calf clamp's current±leeway for joint travel and drive-target allowance. Snapshot blends/restores are read directly. Specials retain their own rules; kick allowance remains configured by `Set Kick Foot Joint Leeway` (default0), extension-only while attacking. On locomotion return, the physical range is−locomotion leeway through max(locomotion leeway, current kick return). This does not increase the user's attack5cm setting. [Implementation and validation](PhysicalFootHover20260925.md).
 
 **Physical target continuity, September25:** after a full special, the physical foot clamp endpoint now follows the same signed calf-length return as presentation. It no longer jumps to rest length while the kinematic calf is still returning. Configured physical target leeway is applied around this endpoint; physical joint limits and active kick allowance remain unchanged. [Measured simulation evidence](SimFootExitRecovery.md).

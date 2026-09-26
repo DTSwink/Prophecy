@@ -56,6 +56,14 @@ static FDelegateHandle Cleanup;
 // Stack-scoped only while invoking the Blueprint event; no idle entry/tick.
 static const AProphecyAgent* EndEventAgent=nullptr;
 static FName EndAttack;
+static bool EndEventUpper=false;
+#if WITH_EDITOR
+static TAutoConsoleVariable<int32> RegionAudit(TEXT("Prophecy.Recovery.RegionAudit"),0,
+    TEXT("Opt-in regional special-end dispatch log; event-only."));
+#endif
+#if WITH_DEV_AUTOMATION_TESTS
+static TFunction<void(bool)> RegionObserver;
+#endif
 static void EnsureCleanup()
 {
     if (Cleanup.IsValid()) return;
@@ -92,33 +100,77 @@ void Begin(const AProphecyAgent* Agent,FName Attack)
     if (Attack==TEXT("kickr")) RightKickActive.Add(Agent);
 }
 void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Settings.Remove(Agent);KickSettings.Remove(Agent);WalkFootRotations.Remove(Agent);ProphecyLegRecovery::Remove(Agent); }
-void EnterSpecial(const AProphecyAgent* Agent)
+void EnterLowerSpecial(const AProphecyAgent* Agent)
 {
     ProphecyLegRecovery::Cancel(Agent);
     ProphecyKickFootLeeway::CancelPoseRecovery(Agent);
     Cancel(Agent);ProphecyLowerTempering::Remove(Agent);
+}
+void EnterSpecial(const AProphecyAgent* Agent,bool Half)
+{
+    if (EndEventAgent==Agent) EndEventAgent=nullptr;
+    if (!Half) EnterLowerSpecial(Agent);
     ProphecyHandRecovery::CancelMotion(Agent);ProphecyCoreTempering::CancelMotion(Agent);
     ProphecySlashReturn::Cancel(Agent);ProphecyUpperBodyInertia::Cancel(Agent);
 }
-void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLocomotion,EProphecyAgentState Special)
+static void DispatchRegion(AProphecyAgent* Agent,FName Attack,bool Half,bool Returning,
+    EProphecyAgentState Special,bool Upper)
 {
-    TGuardValue<const AProphecyAgent*> Scope(EndEventAgent,ReturningToLocomotion ? Agent : nullptr);
+    TGuardValue<bool> Region(EndEventUpper,Upper);
+    if (Returning)
+    {
+        if (Upper)
+        {
+            ProphecyHandRecovery::Begin(Agent);ProphecyCoreTempering::Begin(Agent);
+            ProphecySlashReturn::Begin(Agent,Attack);
+        }
+        else
+        {
+            ProphecyLowerTempering::SelectAttackProfile(Agent,Attack);
+            ProphecyLegRecovery::Begin(Agent);
+        }
+    }
+#if WITH_EDITOR
+    if (RegionAudit.GetValueOnGameThread()!=0)
+        UE_LOG(LogTemp,Display,TEXT("SpecialRegion actor=%s region=%s special=%d attack=%s half=%d returning=%d"),
+            *Agent->GetName(),Upper?TEXT("upper"):TEXT("lower"),int32(Special),*Attack.ToString(),Half,Returning);
+#endif
+#if WITH_DEV_AUTOMATION_TESTS
+    if (RegionObserver) RegionObserver(Upper);
+#endif
+    if (Agent->GetClass()->ImplementsInterface(UProphecySpecialRecoveryEvents::StaticClass()))
+    {
+        if (Upper) IProphecySpecialRecoveryEvents::Execute_OnNNUpperSpecialEnded(Agent,Special,Attack,Half,Returning);
+        else IProphecySpecialRecoveryEvents::Execute_OnNNLowerSpecialEnded(Agent,Special,Attack,Half,Returning);
+    }
+}
+void NotifyLowerEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool Returning,EProphecyAgentState Special)
+{
+    if (Returning) Begin(Agent,Attack);
+    TGuardValue<const AProphecyAgent*> Scope(EndEventAgent,Returning ? Agent : nullptr);
     TGuardValue<bool> KickScope(EndEventKick,IsKick(Attack));
     TGuardValue<bool> SideScope(EndEventRightKick,Attack==TEXT("kickr"));
     TGuardValue<FName> AttackScope(EndAttack,Attack);
-    if (ReturningToLocomotion) ProphecyLowerTempering::SelectAttackProfile(Agent,Attack);
-    if (ReturningToLocomotion) ProphecyLegRecovery::Begin(Agent);
-    if (ReturningToLocomotion) ProphecyHandRecovery::Begin(Agent);
-    if (ReturningToLocomotion) ProphecyCoreTempering::Begin(Agent);
-    if (ReturningToLocomotion) ProphecySlashReturn::Begin(Agent,Attack);
-    if (Special==EProphecyAgentState::Attacking) Agent->OnNNAttackEnded(Attack,Half);
-    // A handler may replace this return with another special/reset. Do not
-    // dispatch a second recovery chain over the newly selected action.
-    if (IsValid(Agent) && !Agent->IsActorBeingDestroyed() && (!ReturningToLocomotion || EndEventAgent==Agent)
-        && Agent->GetClass()->ImplementsInterface(UProphecySpecialRecoveryEvents::StaticClass()))
-        IProphecySpecialRecoveryEvents::Execute_OnNNSpecialEnded(Agent,Special,Attack,Half,ReturningToLocomotion);
+    DispatchRegion(Agent,Attack,Half,Returning,Special,false);
 }
-bool IsEndEvent(const AProphecyAgent* Agent) { return EndEventAgent==Agent; }
+void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool Returning,EProphecyAgentState Special)
+{
+    const bool Lower=Special!=EProphecyAgentState::Attacking || !Half;
+    if (Returning && Lower) Begin(Agent,Attack);
+    TGuardValue<const AProphecyAgent*> Scope(EndEventAgent,Returning ? Agent : nullptr);
+    TGuardValue<bool> KickScope(EndEventKick,IsKick(Attack));
+    TGuardValue<bool> SideScope(EndEventRightKick,Attack==TEXT("kickr"));
+    TGuardValue<FName> AttackScope(EndAttack,Attack);
+    if (Lower) DispatchRegion(Agent,Attack,Half,Returning,Special,false);
+    // A lower handler may reset the agent or start a replacement special.
+    if (IsValid(Agent) && !Agent->IsActorBeingDestroyed() && (!Returning || EndEventAgent==Agent))
+        DispatchRegion(Agent,Attack,Half,Returning,Special,true);
+    // The attack-only gameplay event still fires once, never on a mode switch.
+    // Run it after regional recovery so event-driven chaining starts cleanly.
+    if (IsValid(Agent) && !Agent->IsActorBeingDestroyed() && Special==EProphecyAgentState::Attacking)
+        Agent->OnNNAttackEnded(Attack,Half);
+}
+bool IsEndEvent(const AProphecyAgent* Agent) { return EndEventAgent==Agent && EndEventUpper; }
 FName EndEventAttack(const AProphecyAgent* Agent) { return IsEndEvent(Agent)?EndAttack:NAME_None; }
 FVector2f FootRotationWeights(const AProphecyAgent* Agent,float Normal)
 {
@@ -166,12 +218,12 @@ static bool SetRecoveryProfile(bool Kick,AProphecyAgent* Agent,
         {LeftLegSource,LeftLegDurationSeconds,LeftLegHoldDurationSeconds},
         {RightLegSource,RightLegDurationSeconds,RightLegHoldDurationSeconds}};
     EnsureCleanup();(Kick ? KickSettings : Settings).Add(Agent,Value);
-    const bool KickHandoff=KickActive.Contains(Agent) || (EndEventAgent==Agent && EndEventKick);
+    const bool KickHandoff=KickActive.Contains(Agent) || (EndEventAgent==Agent && !EndEventUpper && EndEventKick);
     const bool UsesKick=KickHandoff && KickSettings.Contains(Agent);
     if (Kick!=UsesKick) return true; // Configuring the other profile cannot overwrite this handoff.
-    const bool RightKick=RightKickActive.Contains(Agent) || (EndEventAgent==Agent && EndEventRightKick);
+    const bool RightKick=RightKickActive.Contains(Agent) || (EndEventAgent==Agent && !EndEventUpper && EndEventRightKick);
     if (Kick) Value=ResolveKickRoles(Value,RightKick);
-    if (EndEventAgent==Agent && !Active.Contains(Agent) && Value.End()>0)
+    if (EndEventAgent==Agent && !EndEventUpper && !Active.Contains(Agent) && Value.End()>0)
     {
         Active.Add(Agent,FRecovery{Value});
         if (!EndAttack.IsNone()) AttackActive.Add(Agent);
@@ -187,7 +239,7 @@ static bool SetRecoveryProfile(bool Kick,AProphecyAgent* Agent,
         if (!Value.Pelvis.Enabled()) R->Settings.Pelvis=Value.Pelvis;
         if (!Value.Left.Enabled()) R->Settings.Left=Value.Left;
         if (!Value.Right.Enabled()) R->Settings.Right=Value.Right;
-        if (R->Settings.End()<=0) Cancel(Agent);
+        if (R->Settings.End()<=0) { const auto* Event=EndEventAgent;Cancel(Agent);EndEventAgent=Event; }
     }
     return true;
 }
@@ -227,6 +279,60 @@ bool UProphecyAttackRecoveryLibrary::SetKickToLocomotionBlend(AProphecyAgent* Ag
 #include "ProphecyLowerTemperingLibrary.h"
 #include "ProphecyHandRecoveryLibrary.h"
 #include "ProphecyCoreTemperingLibrary.h"
+#include "ProphecySlashReturnLibrary.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyRegionalRecoveryTest,"Prophecy.NN.SpecialRecovery.RegionalOwnership",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyRegionalRecoveryTest::RunTest(const FString&)
+{
+    using namespace ProphecyAttackRecovery;
+    auto* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(A,true,.2,.3,.4,.5,.6,.7);
+    UProphecyHandRecoveryLibrary::SetLocomotionHandTempering(A,true,.2,.3,.4,.5,.6,.7);
+    UProphecyCoreTemperingLibrary::SetLocomotionFKCoreTempering(A,true,.3);
+    UProphecySlashReturnLibrary::SetSlashRightArmReturnToNeutral(A,true,.1,.3,100);
+    TArray<bool> Events;
+    RegionObserver=[&](bool Upper) { Events.Add(Upper); };
+    // Pure half: neither entry nor exit disturbs a previous lower return.
+    Begin(A);FWeights Weights;Step(A,1,Weights);
+    FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/60);Step(A,1,Weights);
+    const double Before=Active.FindChecked(A).Elapsed;
+    EnterSpecial(A,true);
+    TestEqual(TEXT("Half entry preserves lower clock"),Active.FindChecked(A).Elapsed,Before);
+    TestTrue(TEXT("Half entry preserves lower tempering"),ProphecyLowerTempering::Find(A)!=nullptr);
+    NotifyEnded(A,TEXT("slashR"),true,true);
+    TestTrue(TEXT("Pure half emits upper only"),Events.Num()==1 && Events[0]);
+    TestEqual(TEXT("Half exit does not restart lower recovery"),Active.FindChecked(A).Elapsed,Before);
+    ProphecyLegRecovery::FStep Pole;
+    TestFalse(TEXT("Pure half does not start knee reconstruction"),ProphecyLegRecovery::Step(A,Pole));
+    TestTrue(TEXT("Upper exit starts arm return"),ProphecySlashReturn::Active(A));
+    // Full -> half releases legs while arms keep attacking; half -> full cancels only legs.
+    Events.Reset();EnterSpecial(A);
+    NotifyLowerEnded(A,TEXT("slashR"),true,true);
+    TestTrue(TEXT("Full to half emits lower only"),Events.Num()==1 && !Events[0]);
+    TestTrue(TEXT("Lower release starts knee reconstruction"),ProphecyLegRecovery::Step(A,Pole));
+    TestFalse(TEXT("Lower release does not start arm return"),ProphecySlashReturn::Active(A));
+    Step(A,1,Weights);FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/60);Step(A,1,Weights);
+    const double LowerElapsed=Active.FindChecked(A).Elapsed;
+    NotifyEnded(A,TEXT("slashR"),true,true);
+    TestTrue(TEXT("Half end adds upper only"),Events.Num()==2 && Events[1]);
+    TestEqual(TEXT("Upper end preserves running lower return"),Active.FindChecked(A).Elapsed,LowerElapsed);
+    Events.Reset();EnterSpecial(A,true);EnterLowerSpecial(A);
+    TestFalse(TEXT("Full reacquisition cancels knee recovery"),ProphecyLegRecovery::Step(A,Pole));
+    NotifyEnded(A,TEXT("slashR"),false,true);
+    TestTrue(TEXT("Half to full ends both regions"),Events.Num()==2 && !Events[0] && Events[1]);
+    for(auto Kind:{EProphecyAgentState::Parrying,EProphecyAgentState::Dodging})
+    {
+        Events.Reset();EnterSpecial(A);NotifyEnded(A,NAME_None,false,true,Kind);
+        TestTrue(TEXT("Defense emits both regions"),Events.Num()==2 && !Events[0] && Events[1]);
+    }
+    Events.Reset();EnterSpecial(A);NotifyEnded(A,TEXT("slashR"),false,false);
+    TestTrue(TEXT("Interrupted full emits both notifications"),Events.Num()==2);
+    TestFalse(TEXT("Interrupted full starts no knee recovery"),ProphecyLegRecovery::Step(A,Pole));
+    TestFalse(TEXT("Interrupted full starts no arm return"),ProphecySlashReturn::Active(A));
+    RegionObserver=nullptr;Remove(A);ProphecyLowerTempering::ForgetProfiles(A);
+    ProphecyHandRecovery::Remove(A);ProphecyCoreTempering::Remove(A);ProphecySlashReturn::Remove(A);
+    W->DestroyWorld(false);return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySpecialRecoveryTest,"Prophecy.NN.SpecialRecovery.AllExitsAndRetirement",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecySpecialRecoveryTest::RunTest(const FString&)

@@ -13,6 +13,11 @@ AProphecyNNLocomotionManager* Manager(AProphecyAgent* Agent)
     return nullptr;
 }
 }
+bool UProphecyAttackCheckpointLibrary::SetKickCheckpointOverride(AProphecyAgent* Agent,bool bEnabled)
+{
+    auto* M=Manager(Agent);
+    return M && M->SetAgentKickCheckpointOverride(Agent->GetAgentHandle(),bEnabled);
+}
 bool UProphecyAttackCheckpointLibrary::SetAttackCheckpoint(AProphecyAgent* Agent,EProphecyAttackCheckpoint Checkpoint,FString& OutError)
 {
     OutError.Reset();

@@ -345,6 +345,9 @@ public:
     FProphecyJoltWorldStatus SetRigCCDMode(const FProphecyJoltRigHandle& Rig, uint8 Mode);
     // Zero restores world defaults. The highest override in a connected island determines its work.
     FProphecyJoltWorldStatus SetRigSolverIterations(const FProphecyJoltRigHandle& Rig, int32 Velocity, int32 Position);
+    // Absolute toe-end box trim. Atomic across both feet, preserving captured COM/mass and joints.
+    FProphecyJoltWorldStatus SetRigFootColliderFrontTrim(const FProphecyJoltRigHandle& Rig,
+        double TrimCm, const FVector& LeftToeDirection, const FVector& RightToeDirection);
     // Removes only this rig, constraints before bodies. Stale/cross-world identity is rejected.
     FProphecyJoltWorldStatus DestroyRig(const FProphecyJoltRigHandle& Rig);
     // Atomic idle-GT channel update. Retains native bodies/joints/velocities and wakes

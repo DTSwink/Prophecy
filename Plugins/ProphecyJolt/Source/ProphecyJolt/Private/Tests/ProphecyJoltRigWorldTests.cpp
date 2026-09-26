@@ -4,6 +4,7 @@
 
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "Components/LineBatchComponent.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "HAL/IConsoleManager.h"
@@ -11,6 +12,7 @@
 #include "ProphecyJoltWorldSubsystem.h"
 #include "ProphecyJoltFootJointLibrary.h"
 #include "ProphecyJoltPhysicsCommand.h"
+#include "ProphecyJoltFootColliderTrim.h"
 #include <limits>
 
 namespace ProphecyJolt::RigWorldTests
@@ -1737,6 +1739,89 @@ bool FProphecyJoltAnchoredRigTest::RunTest(const FString&)
     TestFalse(TEXT("Old hanging handle retired"),Owner->OwnsBody(Bodies[1]));
     if (!Okay(*this,TEXT("Recreate mixed rig"),Owner->CreateRig(Snapshot,Prepared,Rig,Bodies,Notes))) return false;
     return Okay(*this,TEXT("Final cleanup"),Owner->DestroyRig(Rig)) && !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyFootColliderTrimTest,
+    "Prophecy.Jolt.RigWorld.FootColliderFrontTrim", ProphecyJolt::RigWorldTests::Flags)
+bool FProphecyFootColliderTrimTest::RunTest(const FString& Parameters)
+{
+    using namespace ProphecyJolt::RigWorldTests;
+    // Rotated and mirrored boxes: the heel plane stays fixed; width/height do not change.
+    for (double Sign : {-1.0,1.0})
+    {
+        FProphecyJoltRigShape Box; Box.Kind=EProphecyJoltRigShape::Box;
+        Box.BoxHalfExtentCm=FVector(12,4,3);
+        Box.LocalToBodyOrigin=FTransform(FRotator(17,38,-23),FVector(4,-2,7));
+        const FVector Forward=Box.LocalToBodyOrigin.TransformVectorNoScale(FVector(Sign,0,0));
+        TArray<FProphecyJoltRigShape> Input{Box}, Output; FString Error;
+        if (!TestTrue(TEXT("Trim rotated box"),ProphecyJolt::FootColliderTrim::Build(Input,Forward,6,Output,Error))) return false;
+        for (double Y : {-4.0,4.0}) for (double Z : {-3.0,3.0})
+            TestTrue(TEXT("Every heel corner unchanged"),Box.LocalToBodyOrigin.TransformPosition(FVector(-Sign*12,Y,Z))
+                .Equals(Output[0].LocalToBodyOrigin.TransformPosition(FVector(-Sign*9,Y,Z)),1.e-8));
+        TestTrue(TEXT("Toe moved exactly six cm"),(Box.LocalToBodyOrigin.TransformPosition(FVector(Sign*12,0,0))-Forward*6)
+            .Equals(Output[0].LocalToBodyOrigin.TransformPosition(FVector(Sign*9,0,0)),1.e-8));
+        TestFalse(TEXT("Reject complete removal"),ProphecyJolt::FootColliderTrim::Build(Input,Forward,24,Output,Error));
+        TestFalse(TEXT("Reject NaN"),ProphecyJolt::FootColliderTrim::Build(Input,Forward,std::numeric_limits<double>::quiet_NaN(),Output,Error));
+    }
+    auto Snapshot=MakeRig();
+    Snapshot.Bodies[0].BodyName=TEXT("foot_l"); Snapshot.Bodies[1].BodyName=TEXT("foot_r");
+    Snapshot.Joints[0].Bone1=TEXT("foot_r"); Snapshot.Joints[0].Bone2=TEXT("foot_l");
+    for (auto& Body:Snapshot.Bodies)
+    {
+        auto& Shape=Body.Shapes[0]; Shape.Kind=EProphecyJoltRigShape::Box;
+        Shape.BoxHalfExtentCm=FVector(12,4,3);
+        Shape.LocalToBodyOrigin.SetTranslation(FVector(3,0,0));
+        Body.MassFrameToBodyOrigin.SetTranslation(FVector(1,0,0));
+    }
+    FProphecyJoltPreparedRig Prepared;
+    if (!Prepare(*this,Snapshot,Prepared)) return false;
+    FScopedWorld Scope; auto* Owner=Scope.Get();
+    if (!Owner || !Okay(*this,TEXT("Initialize"),Owner->InitializeSimulation(SmallWorld(4)))) return false;
+    FProphecyJoltRigHandle Rig,OtherRig; TArray<FProphecyJoltBodyHandle> Handles,OtherHandles; TArray<FString> Notes;
+    if (!Okay(*this,TEXT("Create feet"),Owner->CreateRig(Snapshot,Prepared,Rig,Handles,Notes))) return false;
+    auto CheckFace=[&](int32 I,double Start,double End,double Expected)
+    {
+        const FVector Origin=Snapshot.Bodies[I].BodyOriginToWorld.GetTranslation();
+        FProphecyJoltRayHit Hit; bool Found=false;
+        if (!Okay(*this,TEXT("Raycast"),Owner->RayCast(Origin+FVector(Start,0,0),Origin+FVector(End,0,0),Hit,Found))) return false;
+        return TestTrue(TEXT("Ray hits foot"),Found) && TestTrue(TEXT("Expected collision face"),FMath::Abs(Hit.PositionCm.X-Expected)<1.e-3);
+    };
+    FProphecyJoltBodyState Before,After;
+    Owner->SetBodyVelocity(Handles[0],FVector(5,7,9),FVector(0.1,0.2,0.3),true);
+    Owner->ReadBody(Handles[0],Before);
+    if (!Okay(*this,TEXT("Trim native feet"),Owner->SetRigFootColliderFrontTrim(Rig,6,FVector::ForwardVector,FVector::ForwardVector))) return false;
+    Owner->GetWorld()->UpdateWorldComponents(false,false);
+    auto CheckDrawing=[&](double Toe)
+    {
+        auto* Lines=Owner->GetWorld()->GetLineBatcher(UWorld::ELineBatcherType::World);
+        if (!TestNotNull(TEXT("Native debug line batch"),Lines)) return;
+        Lines->Flush();Owner->RunContactExperiment({TEXT("drawcollision"),TEXT("all")});
+        FBox Bounds(ForceInit);
+        for (const auto& Line:Lines->BatchedLines) { Bounds+=Line.Start;Bounds+=Line.End; }
+        TestTrue(TEXT("Native boxes produce wire triangles"),Lines->BatchedLines.Num()>=72);
+        TestTrue(TEXT("Live debug geometry retains heel and uses current trimmed toe"),
+            FMath::Abs(Bounds.Min.X+9)<1.e-3 && FMath::Abs(Bounds.Max.X-Toe)<1.e-3);
+    };
+    CheckDrawing(9);
+    for (int32 I=0;I<2;++I) { CheckFace(I,-30,30,-9); CheckFace(I,30,-30,9); }
+    Owner->ReadBody(Handles[0],After);
+    TestTrue(TEXT("Body and COM remain fixed"),Before.PositionCm.Equals(After.PositionCm,1.e-5) && Before.CenterOfMassPositionCm.Equals(After.CenterOfMassPositionCm,1.e-5));
+    TestTrue(TEXT("Velocities retained"),Before.CenterOfMassVelocityCmPerSecond.Equals(After.CenterOfMassVelocityCmPerSecond) && Before.AngularVelocityRadiansPerSecond.Equals(After.AngularVelocityRadiansPerSecond));
+    // A bad second foot must not partially change the first one.
+    TestFalse(TEXT("Atomic rejection"),Owner->SetRigFootColliderFrontTrim(Rig,3,FVector::ForwardVector,FVector::ZeroVector).IsSuccess());
+    CheckFace(0,30,-30,9);
+    Owner->SetRigFootColliderFrontTrim(Rig,3,FVector::ForwardVector,FVector::ForwardVector);
+    CheckFace(0,30,-30,12); // Absolute from the original, not another three cm.
+    Owner->SetRigFootColliderFrontTrim(Rig,0,FVector::ForwardVector,FVector::ForwardVector);
+    CheckDrawing(15);
+    for (int32 I=0;I<2;++I) { CheckFace(I,-30,30,-9); CheckFace(I,30,-30,15); }
+    Counts(*this,*Owner,2,1);
+    Owner->DestroyRig(Rig);
+    if (!Okay(*this,TEXT("Recreate"),Owner->CreateRig(Snapshot,Prepared,OtherRig,OtherHandles,Notes))) return false;
+    TestFalse(TEXT("Stale rig rejected"),Owner->SetRigFootColliderFrontTrim(Rig,6,FVector::ForwardVector,FVector::ForwardVector).IsSuccess());
+    CheckFace(0,30,-30,15);
+    Owner->DestroyRig(OtherRig);
+    return !HasAnyErrors();
 }
 
 #endif // WITH_DEV_AUTOMATION_TESTS

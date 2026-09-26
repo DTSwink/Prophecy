@@ -238,4 +238,38 @@ static FAutoConsoleCommand KickRolesCommand(TEXT("Prophecy.Editor.RefreshKickRol
 static FAutoConsoleCommand AttackTargetMarginCommand(TEXT("Prophecy.Editor.RefreshAttackTargetMargin"),TEXT("Add the distance-to-limit output on existing target queries; preserve values and links, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshAttackTargetMargin));
 static FAutoConsoleCommand OrderCommand(TEXT("Prophecy.Editor.RefreshRecoveryPinOrder"),TEXT("Refresh recovery pin order while retaining named pins and their connections; leaves Blueprint unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshOrder));
 static FAutoConsoleCommand TemperingOrderCommand(TEXT("Prophecy.Editor.RefreshTemperingPinOrder"),TEXT("Group tempering pins by feet/pelvis and XY/Z/rotation; retains values and connections, leaves Blueprint unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshTemperingOrder));
+static void RefreshBothArmReturn()
+{
+    if(!GEditor || GEditor->PlayWorld) return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    auto* Class=LoadObject<UClass>(nullptr,TEXT("/Script/GameAnimationSample3.ProphecySlashReturnLibrary"));
+    auto* Function=Class?Class->FindFunctionByName(TEXT("SetAttackBothArmsReturnToNeutral")):nullptr;
+    if(!BP || !Function) return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","BothArmReturnCheckboxes","Replace attack selector with return checkboxes"));
+    BP->Modify();int32 Count=0;bool Preserved=true,DefaultsOff=true;FString Prior;
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    for(auto* Graph:Graphs) for(UEdGraphNode* Base:Graph->Nodes)
+    {
+        auto* N=Cast<UK2Node_CallFunction>(Base);
+        if(!N || N->FunctionReference.GetMemberName()!=TEXT("SetAttackBothArmsReturnToNeutral")) continue;
+        if(!N->FindPin(TEXT("Attack")) && !N->FindPin(TEXT("Enabled"))) continue;
+        Graph->Modify();N->Modify();
+        for(auto* P:N->Pins) if(P) Prior+=Graph->GetName()+TEXT("/")+N->GetName()+TEXT("/")+P->PinName.ToString()+TEXT("=")+P->DefaultValue+TEXT("\n");
+        for(const TCHAR* Name:{TEXT("Attack"),TEXT("Enabled")}) if(auto* P=N->FindPin(Name))
+        { P->BreakAllPinLinks();N->RemovePin(P); }
+        const auto Before=PinValues(N);
+        N->SetFromFunction(Function);N->ReconstructNode();++Count;
+        const auto After=PinValues(N);for(const auto& Row:Before) if(!After.Contains(Row)) Preserved=false;
+        int32 Bools=0;
+        for(auto* P:N->Pins) if(P && P->Direction==EGPD_Input && P->PinType.PinCategory==UEdGraphSchema_K2::PC_Boolean)
+        { ++Bools;DefaultsOff&=P->DefaultValue==TEXT("false") && P->LinkedTo.IsEmpty(); }
+        DefaultsOff&=Bools==16;
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    const FString Report=FString::Printf(TEXT("nodes=%d existing_connections_and_values_preserved=%d all16_defaults_off=%d status=%d asset_saved=0\n"),Count,int32(Preserved),int32(DefaultsOff),int32(BP->Status))+Prior;
+    FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/BothArmReturnCheckboxes.txt")));
+    UE_LOG(LogTemp,Display,TEXT("Both-arm return checkbox upgrade: %s"),*Report);
+}
+static FAutoConsoleCommand BothArmReturnCommand(TEXT("Prophecy.Editor.RefreshBothArmReturn"),TEXT("Replace the old attack-name/enable selector pins with16 unchecked attack inputs. Preserve execution/Agent/output wiring; leave Blueprint unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshBothArmReturn));
 }

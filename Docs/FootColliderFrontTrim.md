@@ -1,0 +1,19 @@
+# Foot collider front trim
+
+`Set Foot Collider Front Trim(Agent, Trim Cm = 0)` is an explicit, per-agent Jolt collision adjustment. Call it while that agent is simulated. It shortens both `foot_l` and `foot_r` box colliders by the requested centimetres at the toe end; zero restores the exact captured native shapes. Values are absolute, never cumulative. The current PHAT has one box on each foot.
+
+The reference skeleton's foot-to-ball direction selects the signed longitudinal axis in each box's own local frame. For a trim of D, that half-extent decreases by D/2 and the centre moves toward the heel by D/2. Every heel-face corner stays fixed. Collider rotation, width and height are unchanged. Too-large, nonfinite, negative or unsupported-geometry requests fail before either foot changes; at least 0.1 cm of length must remain.
+
+The native replacement retains the original centre of mass, inertia, mass, body origin, velocities, body identity and joint anchors. It refreshes collision via Jolt's shape replacement API; PHAT sweeps read the live shape. Unreal's PHAT/Chaos collision visualization may still show the authored asset, which is not edited. This does not alter neural poses, foot targets, pinning, or joint leeway. Chaos/kinematic collision geometry remains the authored asset.
+
+For the actual trimmed Jolt wire shapes, use `showflag.collision 0` then `Prophecy.Jolt.ShowCollision 1` during Play. `Prophecy.Jolt.ShowCollision 0` disables it;2 also includes static Jolt geometry. See [live collision overlay](JoltCollisionView.md).
+
+The setting applies through locomotion, attacks, dodge and parry, and is reapplied on Jolt rig recreation. It is not a physical-profile snapshot property. There is no tick callback or added per-step feature work: preparation happens only on an explicit call or rig creation. Original foot geometry is retained for exact restoration and freed with the rig; agent preferences are weakly owned and cleared with the world.
+
+September 26 mode-switch check: Sim → Kinematic → Sim retains the saved trim and reapplies it before the new rig is registered. No trim code change was needed. The collision preference persistence fix uses the same admission phase without resetting trim. The real-agent test carried 4 cm trim through four recreations; native `FootColliderFrontTrim` geometry/restoration/recreation tests passed again at 19:55:54 UTC. The live test verifies healthy re-admission, not measured shape dimensions; see [collision persistence validation](JoltFightSetup.md#mode-switch-persistence--september-26).
+
+For a rig already running before this code was loaded, re-enter simulation before using the node: it has no captured original-foot record. Subsequent sessions/admissions capture it normally. No user Blueprint defaults, node wiring, or scene collision settings are changed automatically.
+
+Validation: normal editor build succeeded September 26 (26 actions, 97.52 seconds). `Prophecy.Jolt.RigWorld.FootColliderFrontTrim` passed at09:50:02UTC: rotated/mirrored heel preservation, native ray-hit positions, absolute updates, zero restoration, invalid-request atomicity, unchanged COM/velocities, and rig recreation. Blueprint reflection confirms `Trim Cm=0`.
+
+The actual pose-agent test passed at09:53:05UTC with successive0/5/3/0/5cm calls, negative/oversized rejection, unchanged rendered foot/calf transforms during the calls, and a healthy kinematic-to-physical recreation followed by restoration. Evidence: `Saved/Diagnostics/FootColliderTrim-live.json`; script `Saved/Diagnostics/TestFootColliderTrim.py`. An initial diagnostic attempt stopped its own agent tick, triggering the existing target-publication guard; that test setup was corrected without changing gameplay code. Both owned Play sessions ended; no user Play interruption, Blueprint edits, asset saves or persistent scene retuning. No claim of improved foot-floor motion until the user selects a trim and judges the scene.

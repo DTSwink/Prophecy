@@ -137,6 +137,11 @@ bool BuildWorldPoses(const USkeletalMesh& Mesh, const UPhysicsAsset& PhysicsAsse
     BodyNames.Reserve(PhysicsAsset.SkeletalBodySetups.Num());
     for (const USkeletalBodySetup* Body : PhysicsAsset.SkeletalBodySetups)
         if (Body) BodyNames.Add(Body->BoneName);
+    // The shared presented pose must retain NN-authored helpers too. Otherwise
+    // toes/neck_02 silently become reference-pose bones in the debug renderer.
+    for (const FName Name : Pose.BoneNames)
+        if (!BodyNames.Contains(Name) && Mesh.GetRefSkeleton().FindBoneIndex(Name) != INDEX_NONE)
+            BodyNames.Add(Name);
 
     FCacheEntry* Entry = GLayouts.FindByPredicate([&](const FCacheEntry& Candidate)
     {
@@ -162,5 +167,36 @@ bool BuildWorldPoses(const USkeletalMesh& Mesh, const UPhysicsAsset& PhysicsAsse
     Entry->LastUse = ++GLayoutUse;
     Entry->Layout.Update(Mesh.GetRefSkeleton(), BodyNames, Pose.BoneNames);
     return Entry->Layout.Evaluate(Mesh.GetRefSkeleton(), Pose, OutNames, OutFuture, OutPrevious);
+}
+
+bool BuildHelperLocals(const FReferenceSkeleton& Reference, TConstArrayView<int32> SourceIndices,
+    TConstArrayView<FTransform> WorldTargets, const FTransform& ComponentWorld,
+    TArray<FTransform>& OutLocal)
+{
+    if (SourceIndices.Num() != Reference.GetNum()) return false;
+    OutLocal = Reference.GetRefBonePose();
+    for (int32 Bone = 0; Bone < SourceIndices.Num(); ++Bone)
+    {
+        const int32 Source = SourceIndices[Bone];
+        if (!WorldTargets.IsValidIndex(Source)) continue;
+        const int32 Parent = Reference.GetParentIndex(Bone);
+        FTransform ParentWorld = ComponentWorld;
+        if (Parent != INDEX_NONE)
+        {
+            int32 Ancestor = Parent;
+            TArray<int32, TInlineAllocator<8>> Chain;
+            while (Ancestor != INDEX_NONE && !WorldTargets.IsValidIndex(SourceIndices[Ancestor]))
+            {
+                Chain.Add(Ancestor);
+                Ancestor = Reference.GetParentIndex(Ancestor);
+            }
+            if (Ancestor != INDEX_NONE) ParentWorld = WorldTargets[SourceIndices[Ancestor]];
+            for (int32 I = Chain.Num() - 1; I >= 0; --I)
+                ParentWorld = Reference.GetRefBonePose()[Chain[I]] * ParentWorld;
+        }
+        OutLocal[Bone] = WorldTargets[Source].GetRelativeTransform(ParentWorld);
+        OutLocal[Bone].NormalizeRotation();
+    }
+    return true;
 }
 }

@@ -20,6 +20,9 @@ void Publish(int32 AgentId, double SourceTimeSeconds, float Alpha);
 bool ReadPelvisWorld(int32 AgentId,FTransform& OutWorld);
 // Recovery only. Nonpositive lengths remove the entry; no attack-time projection.
 void SetRecoveryCalfLengths(int32 AgentId,const FVector2D& UpperCm,const FVector2D& LowerCm);
+// Existing recovery clock: 1 retains the starting reference thigh length,
+// 0 reaches the published pose length before the entry is retired.
+void SetRecoveryCalfLengthsWithUpperBlend(int32 AgentId,const FVector2D& UpperCm,const FVector2D& LowerCm,float RemainingWeight);
 bool HasRecoveryCalfLengths(int32 AgentId);
 void SetKneePopSmoothing(int32 AgentId,float SoftZoneCm);
 bool HasKneePopSmoothing(int32 AgentId);

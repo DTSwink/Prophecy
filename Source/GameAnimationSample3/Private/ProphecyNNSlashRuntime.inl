@@ -1,7 +1,9 @@
 // Included by the manager translation unit: one optional shared model, data-only per-agent history.
 #include "ProphecyAttackFists.h"
+#include "ProphecyHalfAttackMount.h"
 namespace
 {
+#include "ProphecySlashTrainFrame.inl"
 #if !UE_BUILD_SHIPPING
 	TAutoConsoleVariable<int32> CVarSlashTraceAgent(TEXT("Prophecy.SlashTraceAgent"), -1,
 		TEXT("Opt-in live Slash audit: owning manager agent index."));
@@ -12,7 +14,8 @@ namespace
 	TAutoConsoleVariable<int32> CVarHalfTestRelativeTarget(TEXT("Prophecy.SlashTestHalfRelativeTarget"), 0,
 		TEXT("Opt-in paired test world target producer: identical fixed-world (-30,50,35) cm pelvis offsets before normal half mapping."));
 	void TraceSlashStep(AProphecyAgent* Actor, int32 Index, FName Family, int32 Frame,
-		const FTransform& Anchor, const float* Input, const float* Output, bool bFoot, bool bCalf)
+		const FTransform& Anchor, const float* Input, const float* Output, bool bFoot, bool bCalf,
+		const FVector3f& NativePosition,const FMat3f& NativeRotation)
 	{
 		const int32 Remaining = CVarSlashTraceFrames.GetValueOnGameThread();
 		const int32 Selected = CVarSlashTraceAgent.GetValueOnGameThread();
@@ -34,6 +37,9 @@ namespace
 		const FVector P=Anchor.GetTranslation(); const FQuat Q=Anchor.GetRotation();
 		const float Transform[]={float(P.X),float(P.Y),float(P.Z),float(Q.X),float(Q.Y),float(Q.Z),float(Q.W)};
 		Values(TEXT("anchor"),Transform,7);
+		Values(TEXT("native_position"),&NativePosition.X,3);
+		float NativeRows[9];for (int32 R=0;R<3;++R) for (int32 C=0;C<3;++C) NativeRows[3*R+C]=NativeRotation.Rows[R][C];
+		Values(TEXT("native_rotation"),NativeRows,9);
 		FString Text;
 		FJsonSerializer::Serialize(Row,TJsonWriterFactory<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>::Create(&Text));
 		FFileHelper::SaveStringToFile(Text+TEXT("\n"),*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/SlashContacts/live_steps.jsonl")),
@@ -65,110 +71,12 @@ namespace
 		}
 	}
 
-	struct FHalfAttackGT
-	{
-		TArray<float> Lower[2];
-		TArray<FTransform> Pose[2]; // Native contract bone order; centimetres, UE root axes.
-	};
-	// Shared immutable seed data, loaded only when a half attack is first requested.
-	TMap<FName, FHalfAttackGT> HalfAttackGT;
-
-	const FHalfAttackGT* FindHalfAttackGT(const AProphecyNNLocomotionManager::FImpl& Impl, FName Family)
-	{
-		if (HalfAttackGT.IsEmpty())
-		{
-			FString Text; TSharedPtr<FJsonObject> Json;
-			if (!FFileHelper::LoadFileToString(Text, *(FPaths::ProjectContentDir()/TEXT("locomotion/NN/prophecy_slash_half_gt.json"))) ||
-				!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text), Json) ||
-				Json->GetIntegerField(TEXT("schema")) != 1 ||
-				Json->GetStringField(TEXT("checkpoint_sha256")) != TEXT("6a76321d6e1525c9e6bcfcedcd0ce46676b03dd15dd277c2bd87f6c834239072")) return nullptr;
-			const auto& Names = Json->GetArrayField(TEXT("bone_names"));
-			if (Names.Num() != FullBodyBoneCount) return nullptr;
-			for (int32 I=0; I<Names.Num(); ++I)
-				if (FName(Names[I]->AsString()) != Impl.BodyNames[Impl.SlashBodyIndices[I]]) return nullptr;
-			TMap<FName, FHalfAttackGT> Loaded;
-			for (const auto& Pair : Json->GetObjectField(TEXT("families"))->Values)
-			{
-				const auto& Entry = Pair.Value->AsObject();
-				if (Entry->GetIntegerField(TEXT("previous_frame")) + 1 != Entry->GetIntegerField(TEXT("armed_frame")) ||
-					Entry->GetNumberField(TEXT("fps")) != 30) return nullptr;
-				FHalfAttackGT Seed;
-				for (int32 Frame=0; Frame<2; ++Frame)
-				{
-					JsonFloatArray(Entry->GetArrayField(Frame ? TEXT("lower_current") : TEXT("lower_previous")), Seed.Lower[Frame]);
-					if (Seed.Lower[Frame].Num() != StateDim) return nullptr;
-					for (float V : Seed.Lower[Frame]) if (!FMath::IsFinite(V)) return nullptr;
-					const auto& Bones = Entry->GetArrayField(Frame ? TEXT("pose_current") : TEXT("pose_previous"));
-					if (Bones.Num() != FullBodyBoneCount) return nullptr;
-					for (const auto& Bone : Bones)
-					{
-						TArray<float> V; JsonFloatArray(Bone->AsArray(), V);
-						if (V.Num()!=7) return nullptr;
-						for (float X : V) if (!FMath::IsFinite(X)) return nullptr;
-						FQuat Q(V[3],V[4],V[5],V[6]); if (Q.SizeSquared()<0.5) return nullptr;
-						Seed.Pose[Frame].Emplace(Q.GetNormalized(),FVector(V[0],V[1],V[2]));
-					}
-				}
-				Loaded.Add(FName(Pair.Key),MoveTemp(Seed));
-			}
-			for (const auto& Label : Impl.SlashLabels) if (!Loaded.Contains(Label.Key)) return nullptr;
-			HalfAttackGT = MoveTemp(Loaded);
-		}
-		return HalfAttackGT.Find(Family);
-	}
-
-	void SeedHalfAttackGhost(const AProphecyNNLocomotionManager::FImpl& Impl,
-		const AProphecyNNLocomotionManager::FImpl::FAgent& Agent, const FHalfAttackGT& GT,
-		TArrayView<const FTransform> RealPose, TArray<float>& State, TArray<FTransform>& GhostPose)
-	{
-		TArray<FTransform, TInlineAllocator<FullBodyBoneCount>> SeedPose;
-		SeedPose.SetNum(FullBodyBoneCount);
-		const FTransform RealMount(GT.Pose[1][Impl.SlashBodyIndices.IndexOfByKey(0)].GetRotation(),
-			RealPose[0].GetTranslation());
-		float UnusedLower[StateDim];
-		for (int32 Frame=0; Frame<2; ++Frame)
-		{
-			for (int32 I=0; I<FullBodyBoneCount; ++I) SeedPose[Impl.SlashBodyIndices[I]]=GT.Pose[Frame][I];
-			for (int32 I=1; I<FullBodyBoneCount; ++I)
-			{
-				const FString Name=Impl.BodyNames[I].ToString();
-				const bool bLower=Name.StartsWith(TEXT("thigh_")) || Name.StartsWith(TEXT("calf_")) ||
-					Name.StartsWith(TEXT("foot_")) || Name.StartsWith(TEXT("ball_"));
-				if (!bLower) SeedPose[I]=RealPose[I].GetRelativeTransform(RealMount)*SeedPose[0];
-			}
-			// The current upper pose supplies both frames: no running/physical lower
-			// velocity leaks into hand history. GT pelvis transport is retained.
-			EncodeSlashPose(Impl,Agent,MakeArrayView(SeedPose),UnusedLower,State.GetData()+82+90*Frame);
-			FMemory::Memcpy(State.GetData()+41*Frame,GT.Lower[Frame].GetData(),StateDim*sizeof(float));
-		}
-		GhostPose.Reset(); GhostPose.Append(SeedPose);
-	}
-
 	void ResolveSlashTarget(const AProphecyNNLocomotionManager::FImpl& Impl,
 		const AProphecyAgent* Actor, int32 Index, FVector& EffectiveWorld, FVector& GhostWorld)
 	{
-		const auto& Agent = Impl.Agents[Index];
-		const auto& Slash = Agent.Slash;
-		EffectiveWorld = GhostWorld = Slash.TargetWorld;
-		if (!Slash.bHalf || Slash.GhostPose.IsEmpty()) return;
-		// Read the current lower publication directly; the optional debug mesh and
-		// previous rendered frame must not become an authority for policy inputs.
-		const float* Lower = StateSlice(Impl.PublishedStateBuffer, Index);
-		const FTransform RealMount(Slash.HalfMountWorldRotation,
-			SlashComponentWorld(Actor, Agent.PublishedRoot, Agent.PublishedYaw).TransformPosition(
-				LocalTrainingToUnreal(ReadStateVec3(Lower, 0))));
-		FVector RequestedWorld = Slash.TargetWorld;
-#if !UE_BUILD_SHIPPING
-		if (CVarHalfTestRelativeTarget.GetValueOnGameThread() != 0)
-			RequestedWorld = RealMount.GetLocation() + FVector(-30,50,35);
-#endif
-		const FVector Offset = RequestedWorld - RealMount.GetLocation();
-		const float Radius = AProphecyNNLocomotionManager::GetHalfAttackTargetRadius(Actor->GetWorld());
-		EffectiveWorld = RealMount.GetLocation() + Offset.GetClampedToMaxSize(Radius);
-		const FTransform GhostPelvis = Slash.GhostPose[0] * Slash.AnchorWorld;
-		// Inverse of presentation. The mount orientation is fixed at attack start:
-		// real pelvis sway/turning cannot rotate the target seen by the ghost NN.
-		GhostWorld = GhostPelvis.TransformPosition(RealMount.InverseTransformPosition(EffectiveWorld));
+		// The independent ghost aims at the requested world point. Recomputing it
+		// through either pelvis makes a stationary target rotate with the attacker.
+		EffectiveWorld = GhostWorld = Impl.Agents[Index].Slash.TargetWorld;
 	}
 
 	void CatchUpFullAttackRoot(AProphecyNNLocomotionManager* Manager, AProphecyNNLocomotionManager::FImpl& Impl,
@@ -347,6 +255,18 @@ static bool EnsureAttackCheckpointModel(const AProphecyNNLocomotionManager* Owne
 	return true;
 }
 
+bool AProphecyNNLocomotionManager::SetAgentKickCheckpointOverride(FProphecyAgentHandle Handle,bool bEnabled)
+{
+	const AProphecyAgent* Actor=ResolveAgent(Handle);if (!Actor) return false;
+	if (bEnabled) ProphecyAttackCheckpoint::KickOverrides.FindOrAdd(this).Add(Actor);
+	else if (auto* Overrides=ProphecyAttackCheckpoint::KickOverrides.Find(this))
+	{
+		Overrides->Remove(Actor);
+		if (Overrides->IsEmpty()) ProphecyAttackCheckpoint::KickOverrides.Remove(this);
+	}
+	return true;
+}
+
 bool AProphecyNNLocomotionManager::SetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle,int32 Checkpoint,FString& OutError)
 {
 	OutError.Reset();
@@ -491,7 +411,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 			const bool bIsKick = Attack == TEXT("kickl") || Attack == TEXT("kickr");
 			if (bWasKick!=bIsKick)
 			{
-				const int32 FamilyCheckpoint=bIsKick ? 3 : ProphecyAttackCheckpoint::Choice(this,Actor,false);
+				const int32 FamilyCheckpoint=ProphecyAttackCheckpoint::ForFamily(this,Actor,Attack);
 				FString Error;
 				if (!EnsureAttackCheckpointModel(this,FamilyCheckpoint,Error))
 				{ UE_LOG(LogProphecyNNLocomotion,Error,TEXT("Attack checkpoint: %s"),*Error);return false; }
@@ -510,16 +430,10 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		Slash.TargetWorld = TargetWorld;
 		return Slash.bHalf == bHalf || SetAgentNNHalfAttack(Handle,bHalf);
 	}
-	const int32 Checkpoint=(Attack==TEXT("kickl") || Attack==TEXT("kickr")) ? 3 : ProphecyAttackCheckpoint::Choice(this,Actor,false);
+	const int32 Checkpoint=ProphecyAttackCheckpoint::ForFamily(this,Actor,Attack);
 	FString CheckpointError;
 	if (!EnsureAttackCheckpointModel(this,Checkpoint,CheckpointError))
 	{ UE_LOG(LogProphecyNNLocomotion,Error,TEXT("Attack checkpoint: %s"),*CheckpointError);return false; }
-	const FHalfAttackGT* HalfGT = bHalf ? FindHalfAttackGT(*Impl, Attack) : nullptr;
-	if (bHalf && !HalfGT)
-	{
-		UE_LOG(LogProphecyNNLocomotion, Error, TEXT("Half attack %s refused: missing/invalid GT Armed seed."), *Attack.ToString());
-		return false;
-	}
 	const FTransform Carrier = SlashComponentWorld(Actor, Agent.PublishedRoot, Agent.PublishedYaw);
 	const auto Current = TransformSlice(Impl->ComponentTransformBuffer, Handle.Index);
 #if !UE_BUILD_SHIPPING
@@ -548,43 +462,46 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	const FVector Pelvis = Carrier.TransformPosition(Current[0].GetTranslation());
 	if (FVector::DistSquared2D(Pelvis, TargetWorld) < 0.0001) return false;
 	if (Agent.DefensePose) StopAgentNNDefense(Handle, false);
-	ProphecyRootBalance::CancelKickException(Actor);
+	if (!bHalf) ProphecyRootBalance::CancelKickException(Actor);
 	const FTransform StartCarrier = SlashComponentWorld(Actor, Agent.PublishedRoot, Agent.PublishedYaw);
 	auto& Slash = Agent.Slash;
 	Slash = FImpl::FAgent::FSlashAttack{};
 	Slash.Family = Attack; Slash.TargetWorld = TargetWorld; Slash.bHalf = bHalf;
 	Slash.AnchorWorld = StartCarrier; Slash.TailSteps = ProphecyAttackTrim::TailSteps(Actor,Attack,Impl->SlashTailSteps[Attack]);
+#if !UE_BUILD_SHIPPING
+	if (!bHalf) if (const auto* Frame=SlashTrainFrame::Find(Actor)) Slash.AnchorWorld=Frame->Anchor;
+#endif
 	Slash.State = Impl->SlashSeedInput;
 	FMemory::Memcpy(Slash.State.GetData() + 265, Labels->GetData(), 5 * sizeof(float));
 	Slash.State[270] = Slash.State[271] = 0;
-	if (HalfGT)
-	{
-		// A target-facing ghost frame also removes the real root's INITIAL heading
-		// from conditioning. Equal upper world poses and pelvis-relative world
-		// targets must seed identically even when one lower body faces elsewhere.
-		const FVector Direction = (TargetWorld - Pelvis).GetSafeNormal2D();
-		const FQuat Heading(FRotator(0, FMath::RadiansToDegrees(FMath::Atan2(-Direction.X, Direction.Y)), 0));
-		const FTransform& GTPelvis = HalfGT->Pose[1][Impl->SlashBodyIndices.IndexOfByKey(0)];
-		Slash.AnchorWorld = FTransform(Heading, Pelvis - Heading.RotateVector(GTPelvis.GetTranslation()));
-		TArray<FTransform, TInlineAllocator<FullBodyBoneCount>> InGhostFrame;
-		for (const FTransform& Bone : Current)
-			InGhostFrame.Add((Bone * StartCarrier).GetRelativeTransform(Slash.AnchorWorld));
-		SeedHalfAttackGhost(*Impl, Agent, *HalfGT, MakeArrayView(InGhostFrame), Slash.State, Slash.GhostPose);
-		Slash.HalfMountWorldRotation = (Slash.GhostPose[0] * Slash.AnchorWorld).GetRotation();
-		Slash.bHasPose = Slash.bNeedsFeedback = true;
-	}
-	else
+	// Both modes start from the current agent, including its previous world pose.
+	// Keep this carrier fixed for the lifetime of the independent attack history.
 	{
 		TArray<FTransform, TInlineAllocator<FullBodyBoneCount>> Previous;
 		Previous.Append(TransformSlice(Impl->PreviousComponentTransformBuffer, Handle.Index));
 		const FTransform PreviousWorld = SlashComponentWorld(Actor, Agent.PreviousPublishedRoot, Agent.PreviousPublishedYaw);
-		for (FTransform& Bone : Previous) Bone = (Bone * PreviousWorld).GetRelativeTransform(StartCarrier);
+		for (FTransform& Bone : Previous) Bone = (Bone * PreviousWorld).GetRelativeTransform(Slash.AnchorWorld);
 		EncodeSlashPose(*Impl, Agent, MakeArrayView(Previous), Slash.State.GetData(), Slash.State.GetData() + 82);
+		// The viewer retains one carrier throughout its chain. Keep this explicitly
+		// seeded diagnostic in that same frame, without changing ordinary attacks.
+#if !UE_BUILD_SHIPPING
+		if (SlashTrainFrame::Find(Actor))
+		{
+			TArray<FTransform,TInlineAllocator<FullBodyBoneCount>> InFrame;
+			for (const auto& Bone:Current) InFrame.Add((Bone*StartCarrier).GetRelativeTransform(Slash.AnchorWorld));
+			EncodeSlashPose(*Impl,Agent,MakeArrayView(InFrame),Slash.State.GetData()+41,Slash.State.GetData()+172);
+			Slash.GhostPose.Append(InFrame);
+		}
+		else
+#endif
+		{
 		EncodeSlashPose(*Impl, Agent, Current, Slash.State.GetData() + 41, Slash.State.GetData() + 172);
 		Slash.GhostPose.Append(Current);
+		}
 	}
-	// Apply once after either full-body encoding or half-attack GT ghost seeding.
+	// Static initialization remains the explicit opt-in to discard entry velocity.
 	if (ProphecyAttackControls::IsStatic(Actor)) ProphecyAttackControls::MakeHistoryStatic(Slash.State);
+	if (bHalf) Slash.bHasPose = Slash.bNeedsFeedback = true;
 	for (const auto& Bone : Current) Slash.VisibleWorldPose.Add(Bone * StartCarrier);
 	Slash.PreviousVisibleWorldPose = Slash.VisibleWorldPose;
 	if (!bHalf) SlashRootMinusStartPelvis.Add(Actor,
@@ -593,15 +510,64 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
         TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index)[0]
             *SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),Current[0]*StartCarrier);
 	Slash.bActive = true;
+#if !UE_BUILD_SHIPPING
+	if (!bHalf) SlashTrainFrame::Started(Actor);
+#endif
 	ProphecyAttackCheckpoint::Select(this,Actor,Checkpoint,true);
-	ProphecyWalkPinning::ResetSmoothing(Actor);
+	if (!bHalf) ProphecyWalkPinning::ResetSmoothing(Actor);
 	SetAgentTimeDilation(Handle,1.f);
 	Actor->BeginAttackFists(Attack);
-	ProphecyAttackRecovery::EnterSpecial(Actor);
+	ProphecyAttackRecovery::EnterSpecial(Actor,bHalf);
 	Actor->NotifySwordAttackState(true);
-	ProphecyKickFootLeeway::Begin(Actor,Attack);
+	if (!bHalf) ProphecyKickFootLeeway::Begin(Actor,Attack);
 	ProphecyAttackCamera::Update(this, Actor, !bHalf);
 	return true;
+}
+
+void AProphecyNNLocomotionManager::ReturnAttackLowerToLocomotion(FProphecyAgentHandle Handle,bool bReturnToLocomotion)
+{
+	AProphecyAgent* Actor=ResolveAgent(Handle);
+	if (!Actor) return;
+	auto& Slash=Impl->Agents[Handle.Index].Slash;
+	ProphecyRootBalance::BeginKickException(Actor,Slash.Family,bReturnToLocomotion);
+	// Sample the selected target before moving the carrier. Default to the same
+	// flat foot midpoint as root balancing; the optional pelvis mode keeps the
+	// previous attack handoff. This selection is event-only.
+	FVector ReturnTarget = FVector::ZeroVector;
+	bool bHasReturnTarget = false;
+	if (bReturnToLocomotion && ProphecyAttackControls::UsesRootBalancingTarget(Actor))
+		bHasReturnTarget=ProphecyRootBalance::GetTarget(Actor,ReturnTarget);
+	else if (bReturnToLocomotion)
+	{
+		static const FName PelvisBone(TEXT("pelvis"));
+		FTransform Pelvis;
+		FVector Linear, Angular;
+		bool bSimulating = false;
+		if (Actor->GetPhysicalBodyState(PelvisBone, Pelvis, Linear, Angular, bSimulating) && bSimulating)
+		{
+			ReturnTarget = Pelvis.GetLocation();
+			bHasReturnTarget = !ReturnTarget.ContainsNaN();
+		}
+		else if (const auto* Mesh = Actor->GetPoseReferenceMesh(); Mesh && Mesh->GetBoneIndex(PelvisBone) != INDEX_NONE)
+		{
+			ReturnTarget = Mesh->GetSocketLocation(PelvisBone);
+			bHasReturnTarget = !ReturnTarget.ContainsNaN();
+		}
+		if (bHasReturnTarget) ReturnTarget.Z = Actor->GetRootLowPoint().Z;
+	}
+	const USpringArmComponent* PlayerSpring=Actor->IsPlayerControlled() ? Actor->GetAgentSpringArm() : nullptr;
+	const FVector PreviousCameraOrigin=PlayerSpring ? PlayerSpring->GetComponentLocation() : FVector::ZeroVector;
+	CatchUpFullAttackRoot(this, *Impl, Actor, Handle.Index);
+	ProphecyKickFootLeeway::End(Actor,bReturnToLocomotion);
+	if (bHasReturnTarget)
+	{
+		// The root-window API rejects full-attack ownership. Release it only for
+		// this synchronous rebase; public ownership is committed before events.
+		TGuardValue<bool> Release(Slash.bActive,false);
+		SetAgentLocomotionRootWindowLocation(Handle, ReturnTarget, true);
+	}
+	if (PlayerSpring && bReturnToLocomotion) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
+	if (bReturnToLocomotion) ProphecyRootPelvisBounds::ResetMagicCubeToRoot(Actor);
 }
 
 bool AProphecyNNLocomotionManager::SetAgentNNHalfAttack(FProphecyAgentHandle Handle, bool bHalf)
@@ -614,6 +580,8 @@ bool AProphecyNNLocomotionManager::SetAgentNNHalfAttack(FProphecyAgentHandle Han
 	if (Slash.bHalf == bHalf) return true;
 	if (Slash.bHalf && !bHalf)
 	{
+		ProphecyAttackRecovery::EnterLowerSpecial(Actor);
+		ProphecyWalkPinning::ResetSmoothing(Actor);
 		// Retain the existing full-mode rejoin contract: use the current ground-
 		// aligned locomotion carrier, keeping native history/latches. Matching a
 		// tilted ghost pelvis here would tilt the full attack's floor frame too.
@@ -623,14 +591,15 @@ bool AProphecyNNLocomotionManager::SetAgentNNHalfAttack(FProphecyAgentHandle Han
 	}
 	if (bHalf)
 	{
+		ReturnAttackLowerToLocomotion(Handle,true);
 		ProphecyAttackStartInertia::Cancel(Actor);
-		// A running full attack keeps its pose/history. Freeze its current upper
-		// mounting orientation rather than reseeding an already-running attack.
-		Slash.HalfMountWorldRotation = (Slash.GhostPose[0] * Slash.AnchorWorld).GetRotation();
+		// Keep the running ghost history; the upper subtree follows the real pelvis.
 		SlashRootMinusStartPelvis.Remove(Actor);
 	}
 	Slash.bHalf = bHalf;
 	Slash.bNeedsFeedback = true;
+	// Commit ownership before dispatch: a callback can stop/reset/retrigger.
+	if (bHalf) ProphecyAttackRecovery::NotifyLowerEnded(Actor,Slash.Family,true,true);
 	return true;
 }
 
@@ -668,44 +637,14 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	ProphecyDefenseArmedGate::AttackEnded(Actor);
 	const FName EndedAttack = Slash.Family;
 	const bool bEndedHalfAttack = Slash.bHalf;
-	ProphecyRootBalance::BeginKickException(Actor,EndedAttack,bReturnToLocomotion);
-	// Sample the selected target before moving the carrier. Default to the same
-	// flat foot midpoint as root balancing; the optional pelvis mode keeps the
-	// previous attack handoff. This selection is event-only.
-	FVector ReturnTarget = FVector::ZeroVector;
-	bool bHasReturnTarget = false;
-	if (bReturnToLocomotion && ProphecyAttackControls::UsesRootBalancingTarget(Actor))
-		bHasReturnTarget=ProphecyRootBalance::GetTarget(Actor,ReturnTarget);
-	else if (bReturnToLocomotion)
-	{
-		static const FName PelvisBone(TEXT("pelvis"));
-		FTransform Pelvis;
-		FVector Linear, Angular;
-		bool bSimulating = false;
-		if (Actor->GetPhysicalBodyState(PelvisBone, Pelvis, Linear, Angular, bSimulating) && bSimulating)
-		{
-			ReturnTarget = Pelvis.GetLocation();
-			bHasReturnTarget = !ReturnTarget.ContainsNaN();
-		}
-		else if (const auto* Mesh = Actor->GetPoseReferenceMesh(); Mesh && Mesh->GetBoneIndex(PelvisBone) != INDEX_NONE)
-		{
-			ReturnTarget = Mesh->GetSocketLocation(PelvisBone);
-			bHasReturnTarget = !ReturnTarget.ContainsNaN();
-		}
-		if (bHasReturnTarget) ReturnTarget.Z = Actor->GetRootLowPoint().Z;
-	}
-	const USpringArmComponent* PlayerSpring=Actor->IsPlayerControlled() ? Actor->GetAgentSpringArm() : nullptr;
-	const FVector PreviousCameraOrigin=PlayerSpring ? PlayerSpring->GetComponentLocation() : FVector::ZeroVector;
-	CatchUpFullAttackRoot(this, *Impl, Actor, Handle.Index);
+	if (!bEndedHalfAttack) ReturnAttackLowerToLocomotion(Handle,bReturnToLocomotion);
 	Slash.bActive = false;
+#if !UE_BUILD_SHIPPING
+	SlashTrainFrame::Ended(Actor);
+#endif
 	ProphecyAttackCheckpoint::Select(this,Actor,0,true);
-	ProphecyKickFootLeeway::End(Actor,bReturnToLocomotion && !bEndedHalfAttack);
-	if (bHasReturnTarget) SetAgentLocomotionRootWindowLocation(Handle, ReturnTarget, true);
-	if (PlayerSpring) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
-	if (bReturnToLocomotion) ProphecyRootPelvisBounds::ResetMagicCubeToRoot(Actor);
 	Actor->EndAttackFists();
 	Actor->NotifySwordAttackState(false);
-	if (bReturnToLocomotion) ProphecyAttackRecovery::Begin(Actor,EndedAttack);
 	ProphecyAttackRecovery::NotifyEnded(Actor,EndedAttack,bEndedHalfAttack,bReturnToLocomotion);
 	if (bReturnToLocomotion && !Slash.bActive && !Impl->Agents[Handle.Index].DefensePose)
 		ProphecyUpperBodyInertia::Begin(Actor,Slash.PreviousVisibleWorldPose,Slash.VisibleWorldPose,
@@ -738,6 +677,9 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 {
 	if (!Impl->bSlashInitialized) return;
 	TArray<int32, TInlineAllocator<BatchSize>> Active,AlternativeActive,Refresh2Active,September20Active;
+#if !UE_BUILD_SHIPPING
+	TArray<int32,TInlineAllocator<BatchSize>> AuditActive;
+#endif
 	auto* Comparison=ProphecyAttackCheckpoint::Find(this);
 	auto* Refresh2Comparison=ProphecyAttackCheckpoint::Find(this,2);
 	auto* September20Comparison=ProphecyAttackCheckpoint::Find(this,3);
@@ -751,8 +693,13 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 		FVector EffectiveTarget, GhostTarget;
 		ResolveSlashTarget(*Impl, AgentActors[Index], Index, EffectiveTarget, GhostTarget);
 		FVector3f TargetLocal = LocalUnrealToTraining(Slash.AnchorWorld.InverseTransformPosition(GhostTarget));
-		const FVector3f Target = TransformRow(TargetLocal, Impl->SlashRootRotation) + Impl->SlashRootPosition;
-		const FVector3f Pelvis = TransformRow(ReadStateVec3(Slash.State.GetData() + 41, 0), Impl->SlashRootRotation) + Impl->SlashRootPosition;
+		const FVector3f* NativePosition=&Impl->SlashRootPosition;const FMat3f* NativeRotation=&Impl->SlashRootRotation;
+#if !UE_BUILD_SHIPPING
+		const auto* AuditFrame=Slash.bHalf?nullptr:SlashTrainFrame::Find(AgentActors[Index]);
+		if (AuditFrame) { NativePosition=&AuditFrame->Position;NativeRotation=&AuditFrame->Rotation; }
+#endif
+		const FVector3f Target = TransformRow(TargetLocal, *NativeRotation) + *NativePosition;
+		const FVector3f Pelvis = TransformRow(ReadStateVec3(Slash.State.GetData() + 41, 0), *NativeRotation) + *NativePosition;
 		if (FMath::Square(Target.X - Pelvis.X) + FMath::Square(Target.Z - Pelvis.Z) < 1.0e-10f)
 		{
 			UE_LOG(LogProphecyNNLocomotion, Warning, TEXT("Slash2 stopped: pelvis and target have coincident horizontal positions."));
@@ -760,16 +707,24 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			continue;
 		}
 		WriteStateVec3(Slash.State.GetData(), 262, Target);
+#if !UE_BUILD_SHIPPING
+		if (AuditFrame) { AuditActive.Add(Index);continue; }
+#endif
 		if (September20Comparison && September20Comparison->Active.Contains(AgentActors[Index])) September20Active.Add(Index);
 		else if (Refresh2Comparison && Refresh2Comparison->Active.Contains(AgentActors[Index])) Refresh2Active.Add(Index);
 		else if (Comparison && Comparison->Active.Contains(AgentActors[Index])) AlternativeActive.Add(Index);
 		else Active.Add(Index);
 	}
-	if (Active.IsEmpty() && AlternativeActive.IsEmpty() && Refresh2Active.IsEmpty() && September20Active.IsEmpty()) return;
+	if (Active.IsEmpty() && AlternativeActive.IsEmpty() && Refresh2Active.IsEmpty() && September20Active.IsEmpty()
+#if !UE_BUILD_SHIPPING
+		&& AuditActive.IsEmpty()
+#endif
+	) return;
 	if (!Impl->PreviousPoseDebugAgents.IsEmpty()) UpdatePreviousPoseDebug(true);
 	// Keep recurrent histories and phase latches on agents; only inference batches
 	// split by the checkpoint latched at attack entry. Empty groups do no work.
-	auto RunGroup=[&](const TArray<int32,TInlineAllocator<BatchSize>>& Active,FSlashNative& Model)
+	auto RunGroup=[&](const TArray<int32,TInlineAllocator<BatchSize>>& Active,FSlashNative& Model,
+		const FVector3f& NativePosition,const FMat3f& NativeRotation,bool bAudit=false)
 	{
 	if (Active.IsEmpty()) return;
 	const int32 Width = FMath::Min(BatchSize,Active.Num());
@@ -808,6 +763,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				const auto& Slash = Impl->Agents[Index].Slash;
 				auto& Option = Settings[Lane];
 				Option.FrozenPinIterations = Actor->AttackFootPinningIterations;
+				Option.bLeftHandConstraint = ProphecyAttackWrist::Enabled(Actor);
 				if (!Slash.bHalf && ProphecyPelvisInertia::HasTarget(Actor))
 				{
 					auto& Context=InertiaContexts.AddDefaulted_GetRef();
@@ -819,7 +775,15 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				}
 			}
 		}
-		if (!Model.Run(Impl->SlashInputBuffer, Impl->SlashOutputBuffer, MakeArrayView(Settings)))
+#if !UE_BUILD_SHIPPING
+		FVector3f SavedPosition=NativePosition;FMat3f SavedRotation=NativeRotation;
+		if (bAudit) Model.SwapAuditFrame(SavedPosition,SavedRotation);
+#endif
+		const bool bRan=Model.Run(Impl->SlashInputBuffer, Impl->SlashOutputBuffer, MakeArrayView(Settings));
+#if !UE_BUILD_SHIPPING
+		if (bAudit) Model.SwapAuditFrame(SavedPosition,SavedRotation);
+#endif
+		if (!bRan)
 		{
 			UE_LOG(LogProphecyNNLocomotion, Error, TEXT("Slash2 NNE inference failed."));
 			for (int32 Lane = 0; Lane < Count; ++Lane)
@@ -865,14 +829,14 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			}
 #if !UE_BUILD_SHIPPING
 			TraceSlashStep(AgentActors[Index], Index, Slash.Family, Slash.Frame + 1, Slash.AnchorWorld,
-				Impl->SlashInputBuffer.GetData() + Lane * SlashInputDim, Output, bClampFoot, bClampCalf);
+				Impl->SlashInputBuffer.GetData() + Lane * SlashInputDim, Output, bClampFoot, bClampCalf,NativePosition,NativeRotation);
 #endif
 			for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
 			{
-				const FVector3f Position = TransformRow(ReadStateVec3(Output, 131 + Bone * 3) - Impl->SlashRootPosition, Transpose(Impl->SlashRootRotation));
+				const FVector3f Position = TransformRow(ReadStateVec3(Output, 131 + Bone * 3) - NativePosition, Transpose(NativeRotation));
 				FMat3f Rotation;
 				for (int32 Row = 0; Row < 3; ++Row) Rotation.Rows[Row] = ReadStateVec3(Output, 206 + Bone * 9 + Row * 3);
-				Rotation = Multiply(Rotation, Transpose(Impl->SlashRootRotation));
+				Rotation = Multiply(Rotation, Transpose(NativeRotation));
 				Slash.GhostPose[Impl->SlashBodyIndices[Bone]] = FTransform(MatrixToQuat(MirrorYBasis(Rotation)), LocalTrainingToUnreal(Position));
 			}
 			FMemory::Memmove(Slash.State.GetData(), Slash.State.GetData() + 41, 41 * sizeof(float));
@@ -895,10 +859,40 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 		}
 	}
 	};
-	RunGroup(Active,*Impl->SlashModel);
-	if (!AlternativeActive.IsEmpty()) RunGroup(AlternativeActive,*Comparison->Model);
-	if (!Refresh2Active.IsEmpty()) RunGroup(Refresh2Active,*Refresh2Comparison->Model);
-	if (!September20Active.IsEmpty()) RunGroup(September20Active,*September20Comparison->Model);
+	RunGroup(Active,*Impl->SlashModel,Impl->SlashRootPosition,Impl->SlashRootRotation);
+	if (!AlternativeActive.IsEmpty()) RunGroup(AlternativeActive,*Comparison->Model,Impl->SlashRootPosition,Impl->SlashRootRotation);
+	if (!Refresh2Active.IsEmpty()) RunGroup(Refresh2Active,*Refresh2Comparison->Model,Impl->SlashRootPosition,Impl->SlashRootRotation);
+	if (!September20Active.IsEmpty()) RunGroup(September20Active,*September20Comparison->Model,Impl->SlashRootPosition,Impl->SlashRootRotation);
+#if !UE_BUILD_SHIPPING
+	for (int32 Index:AuditActive)
+	{
+		const auto* Frame=SlashTrainFrame::Find(AgentActors[Index]);
+		FSlashNative* Model=Impl->SlashModel.Get();
+		if (September20Comparison && September20Comparison->Active.Contains(AgentActors[Index])) Model=September20Comparison->Model.Get();
+		else if (Refresh2Comparison && Refresh2Comparison->Active.Contains(AgentActors[Index])) Model=Refresh2Comparison->Model.Get();
+		else if (Comparison && Comparison->Active.Contains(AgentActors[Index])) Model=Comparison->Model.Get();
+		TArray<int32,TInlineAllocator<BatchSize>> Single;Single.Add(Index);
+		RunGroup(Single,*Model,Frame->Position,Frame->Rotation,true);
+	}
+#endif
+}
+
+bool AProphecyNNLocomotionManager::ReadAgentAttackGhost(FProphecyAgentHandle Handle,
+    TArray<FName>& Names,TArray<FTransform>& WorldPose,FVector& GhostTarget) const
+{
+    Names.Reset(); WorldPose.Reset(); GhostTarget=FVector::ZeroVector;
+#if !UE_BUILD_SHIPPING
+    const auto* Actor=ResolveAgent(Handle);
+    if (!Actor) return false;
+    const auto& Slash=Impl->Agents[Handle.Index].Slash;
+    if (!Slash.bActive || Slash.GhostPose.Num()!=Impl->BodyNames.Num()) return false;
+    Names=Impl->BodyNames;
+    for (const auto& Pose:Slash.GhostPose) WorldPose.Add(Pose*Slash.AnchorWorld);
+    FVector Effective; ResolveSlashTarget(*Impl,Actor,Handle.Index,Effective,GhostTarget);
+    return true;
+#else
+    return false;
+#endif
 }
 
 void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<FTransform> PreviousPose, TArrayView<FTransform> Pose)
@@ -912,16 +906,13 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 	{
 		Slash.PreviousVisibleWorldPose = Slash.VisibleWorldPose;
 		FTransform HalfMount;
-		if (Slash.bHalf) HalfMount = FTransform(Slash.HalfMountWorldRotation,
-			Carrier.TransformPosition(Pose[0].GetTranslation())).GetRelativeTransform(Carrier);
+		if (Slash.bHalf) HalfMount = Pose[0];
+		const int32 Spine01=Slash.bHalf ? Impl->BodyNames.IndexOfByKey(FName(TEXT("spine_01"))) : INDEX_NONE;
 		for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
 		{
-			// Bone selection uses the shared named skeleton, not assumptions about ordering.
-			const FName Name = Impl->BodyNames[Bone];
-			const bool bLower = Bone == 0 || Name.ToString().StartsWith(TEXT("thigh_")) ||
-				Name.ToString().StartsWith(TEXT("calf_")) || Name.ToString().StartsWith(TEXT("foot_")) || Name.ToString().StartsWith(TEXT("ball_"));
 			if (!Slash.bHalf) Pose[Bone] = (Slash.GhostPose[Bone] * Slash.AnchorWorld).GetRelativeTransform(Carrier);
-			else if (!bLower) Pose[Bone] = Slash.GhostPose[Bone].GetRelativeTransform(Slash.GhostPose[0]) * HalfMount;
+			else if (ProphecyHalfAttackMount::IsUpper(Bone,Spine01,Impl->Parents))
+				Pose[Bone] = ProphecyHalfAttackMount::Mount(Slash.GhostPose[Bone],Slash.GhostPose[0],HalfMount);
 		}
 		// Default matches the reference animation's exact wrist attachment. Optional
 		// per-agent leeway or disabling only changes presentation, not raw Slash history.
@@ -976,13 +967,13 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		// Full and half attacks share the locomotion roll convention. Apply at
 		// the UE boundary; the trained decoder/ghost and NN history stay intact.
 		// Cache the corrected pose so rendering, Jolt and defender colliders agree.
-		for (const auto& Arm:Impl->UpperArms)
+		if (ProphecySpecialRoll::Forearms(AgentActors[AgentIndex])) for (const auto& Arm:Impl->UpperArms)
 			SetForearmRollFromHand(Impl->UpperLocalOffsets[Arm.End],Arm.LocalPoleAxes[1],Pose[Arm.Mid],Pose[Arm.End]);
 		// Only full attacks replace the lower body. Half attacks already retain
 		// the locomotion calf, including its existing recovery continuity.
 		// Correct the accepted visible cache once, after endpoint clamps, so
 		// presentation, physics and defender collider samples use the same frame.
-		if (!Slash.bHalf) for (const auto& Leg:Impl->Limbs)
+		if (!Slash.bHalf && ProphecySpecialRoll::Calves(AgentActors[AgentIndex])) for (const auto& Leg:Impl->Limbs)
 			SetCalfRollFromThigh(Impl->LocalOffsets[Leg.Mid],Impl->LocalOffsets[Leg.End],
 				Leg.LocalPoleAxes[0],Leg.LocalPoleAxes[1],Pose[Leg.Start],Pose[Leg.Mid],Pose[Leg.End]);
 		if (ProphecyHandInertia::IsActive(AgentActors[AgentIndex],Agent.PublishedWalkWeight,true))
@@ -997,13 +988,17 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 				if (CorrectInertiaArm(*Impl,AgentActors[AgentIndex],I,Agent.PublishedWalkWeight,true,Time,Dt,
 					PrevRoot,Root,Slash.PreviousVisibleWorldPose[Arm.End],Carrier,Pose))
 				{
-					for (int32 Bone:{Arm.Start,Arm.Mid,Arm.End})
+					// Half-attack presentation must not feed the moving real carrier back
+					// into the independent ghost. Full attacks retain their inertia feedback.
+					if (!Slash.bHalf)
 					{
-						const FTransform World=Pose[Bone]*Carrier;
-						Slash.GhostPose[Bone]=Slash.bHalf ? World.GetRelativeTransform(HalfMount*Carrier)*Slash.GhostPose[0]
-							: World.GetRelativeTransform(Slash.AnchorWorld);
+						for (int32 Bone:{Arm.Start,Arm.Mid,Arm.End})
+						{
+							const FTransform World=Pose[Bone]*Carrier;
+							Slash.GhostPose[Bone]=World.GetRelativeTransform(Slash.AnchorWorld);
+						}
+						StoreInertiaArm(*Impl,I,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
 					}
-					StoreInertiaArm(*Impl,I,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
 				}
 			}
 		}

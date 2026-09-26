@@ -72,7 +72,7 @@ void AProphecyNNLocomotionManager::UpdateWalkTickPinning(float DeltaSeconds)
         if(!T || !T->HasBase)continue;
         const auto* S=ProphecyWalkPinning::FindSmoothing(A);
         auto& Agent=Impl->Agents[Index];
-        if(!S || Agent.Slash.bActive || Agent.DefensePose || !A->bNNInferenceEnabled)
+        if(!S || (Agent.Slash.bActive && !Agent.Slash.bHalf) || Agent.DefensePose || !A->bNNInferenceEnabled)
         {ProphecyWalkPinning::ResetTickPinning(A);continue;}
         auto& Offsets=ProphecyWalkPinning::TickOffsets(A);
         const FVector2f Value(S->Current[0],S->Current[1]);
@@ -145,7 +145,7 @@ void AProphecyNNLocomotionManager::CommitWalkTickPinning()
         const AProphecyAgent* A=AgentActors[Index];auto* T=ProphecyWalkPinning::FindTickPinning(A);
         if(!T || !T->HasBase)continue;
         const auto& Agent=Impl->Agents[Index];
-        if(!A->bNNInferenceEnabled || Agent.Slash.bActive || Agent.DefensePose)continue;
+        if(!A->bNNInferenceEnabled || (Agent.Slash.bActive && !Agent.Slash.bHalf) || Agent.DefensePose)continue;
         auto& Offsets=ProphecyWalkPinning::TickOffsets(A);
         for(int32 I=0;I<2;++I)
         {

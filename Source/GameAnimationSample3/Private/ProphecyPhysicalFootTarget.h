@@ -4,8 +4,10 @@ class AProphecyAgent;
 namespace ProphecyPhysicalFootTarget
 {
 float Leeway(const AProphecyAgent* Agent);
-// Explicit enabled locomotion calf clamp, including its current snapshot blend.
+// Explicit enabled locomotion calf clamp, also during half attacks and snapshot blends.
 float LocomotionCalfLeeway(const AProphecyAgent* Agent);
+// Physical ankle/drive allowance: locomotion for half attacks, attack for full attacks.
+float CalfLeeway(const AProphecyAgent* Agent);
 // Same finite signed calf-length return as presentation. Zero is the exact old endpoint.
 inline FVector CalfEnd(const FTransform& Calf,const FVector& ReferenceOffset,float RecoveryDeltaCm)
 {

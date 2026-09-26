@@ -1,6 +1,12 @@
 // Optional renderer of encoded input history. Included after the pose decoder and Slash runtime.
 #include "ProphecyContinuousRootWindow.h"
 
+#if !UE_BUILD_SHIPPING
+static TAutoConsoleVariable<int32> CVarRootTranslationCachedPoseRebase(
+    TEXT("Prophecy.RootTranslation.CachedPoseRebase"),1,
+    TEXT("Diagnostic legacy comparison only: preserve cached component poses when moving the root with world-pose preservation."));
+#endif
+
 bool AProphecyNNLocomotionManager::AddAgentRootAngleOffset(FProphecyAgentHandle Handle, float YawDegrees)
 {
 	if (!IsInGameThread() || !Impl || !Impl->bInitialized || IsSimBridgeActive()
@@ -218,6 +224,28 @@ bool AProphecyNNLocomotionManager::SetAgentLocomotionRootWindowLocation(
 			TransformStateSlice(Impl->PreviousPelvisHeadingBuffer, Handle.Index));
 		LowerTransformToHeading(StateSlice(Impl->CurStateBuffer, Handle.Index), 0, 3, *Impl,
 			TransformStateSlice(Impl->CurrentPelvisHeadingBuffer, Handle.Index));
+		// The encoded history above and the published world store stay fixed, but
+		// a same-frame new special seeds from these component-space caches. Rebase
+		// BOTH endpoints too, or the new carrier adds WorldDelta to the whole pose.
+		// Match the angle-offset path: do not republish, reclamp or rotate bones.
+#if !UE_BUILD_SHIPPING
+		if (CVarRootTranslationCachedPoseRebase.GetValueOnGameThread()!=0)
+#endif
+		{
+			const FTransform Carrier=SlashComponentWorld(Actor,Agent.PublishedRoot,Agent.PublishedYaw);
+			const FTransform PreviousCarrier=SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
+			const FVector LocalDelta=Carrier.InverseTransformVector(WorldDelta);
+			const FVector PreviousLocalDelta=PreviousCarrier.InverseTransformVector(WorldDelta);
+			auto Pose=TransformSlice(Impl->ComponentTransformBuffer,Handle.Index);
+			auto PreviousPose=TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index);
+			auto LocalPose=TransformSlice(Impl->LocalTransformBuffer,Handle.Index);
+			for (int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
+			{
+				Pose[Bone].AddToTranslation(-LocalDelta);
+				PreviousPose[Bone].AddToTranslation(-PreviousLocalDelta);
+				if (Impl->Parents[Bone]==INDEX_NONE) LocalPose[Bone]=Pose[Bone];
+			}
+		}
 	}
 	Agent.PrevRootPos += Delta;
 	Agent.CurRootPos += Delta;

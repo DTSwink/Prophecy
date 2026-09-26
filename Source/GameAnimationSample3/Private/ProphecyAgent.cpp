@@ -1031,7 +1031,7 @@ namespace
 	FTransform BlendAuthoredWorldTransform(const FProphecyNNPoseSnapshot& Pose, int32 Index,
 		const FTransform& A, const FTransform& B, float Alpha)
 	{
-		return Pose.InterpolationMode == EProphecyNNInterpolationMode::HermiteSlerp
+		return Pose.InterpolationMode != EProphecyNNInterpolationMode::Current
 			? ProphecyNNInterpolation::Sample(Pose, Index, A, B, Alpha)
 			: BlendAuthoredWorldTransform(A, B, Alpha);
 	}
@@ -1691,7 +1691,8 @@ bool AProphecyAgent::GetNNAnimationLayerState(
 
 void AProphecyAgent::SetNNInterpolationMode(EProphecyNNInterpolationMode Mode)
 {
-	if (Mode != EProphecyNNInterpolationMode::Current && Mode != EProphecyNNInterpolationMode::HermiteSlerp) return;
+	if (Mode != EProphecyNNInterpolationMode::Current && Mode != EProphecyNNInterpolationMode::HermiteSlerp
+		&& Mode != EProphecyNNInterpolationMode::AttackViewer) return;
 	NNInterpolationMode = Mode;
 	if (const FNNPoseDataSource* Source = NNPoseDataSources.Find(this))
 		FProphecyNNPoseStore::SetInterpolationMode(Source->AgentId, Mode);
@@ -2939,7 +2940,7 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 	}
 
 	FTransform Target;
-	Target = BlendAuthoredWorldTransform(PreviousTarget, CurrentTarget, PoseAlpha);
+	Target = BlendAuthoredWorldTransform(AuthoredPose, PelvisPoseIndex, PreviousTarget, CurrentTarget, PoseAlpha);
 
 	const FTransform Current = PelvisBody->GetUnrealWorldTransform();
 	const FVector TargetLinearVelocity =
@@ -3059,7 +3060,7 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 				const FTransform CurrentBodyTarget = AuthoredPose.ComponentTransforms[PoseIndex] *
 					AuthoredPose.ComponentWorldTransform;
 				const FTransform BodyTarget = BlendAuthoredWorldTransform(
-					PreviousBodyTarget, CurrentBodyTarget, PoseAlpha);
+					AuthoredPose, PoseIndex, PreviousBodyTarget, CurrentBodyTarget, PoseAlpha);
 				const FTransform ActualBody = Body->GetUnrealWorldTransform();
 				const float RotationErrorDegrees = FMath::RadiansToDegrees(
 					BodyTarget.GetRotation().AngularDistance(ActualBody.GetRotation()));

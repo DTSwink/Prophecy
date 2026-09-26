@@ -26,9 +26,11 @@ static TAutoConsoleVariable<int32> CVarPhysicalFootRecoveryTrace(TEXT("Prophecy.
 #include "ProphecyJoltQueryPose.h"
 #include "ProphecyJoltPoseAnimInstance.h"
 #include "ProphecyJoltRig.h"
+#include "ProphecyFootColliderTrim.h"
 #include "ProphecyJoltWorldSubsystem.h"
 #include "ProphecyNNLocomotionAnimInstance.h"
 #include "ProphecyNNPoseTypes.h"
+#include "ProphecyNNPhysicalTargetPose.h"
 #include "ProphecyCrowdNameLookup.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -45,6 +47,50 @@ static TAutoConsoleVariable<int32> CVarPhysicalFootRecoveryTrace(TEXT("Prophecy.
 #include "Misc/ScopeExit.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogProphecyJoltCharacter, Log, All);
+
+namespace ProphecyCharacterCollisionPreferences
+{
+// Agent component lifetime, not native rig lifetime. Names survive PHAT body-index
+// changes. Keep attack suppression separate: it is re-evaluated at admission.
+struct FSettings
+{
+    bool Enabled=true;
+    TSet<FName> Bodies;
+    TArray<TPair<FName,FName>> Pairs;
+};
+static TMap<TWeakObjectPtr<const UProphecyJoltCharacterComponent>,FSettings> Settings;
+static void Prune(const UProphecyJoltCharacterComponent* Component)
+{
+    const auto* S=Settings.Find(Component);
+    if(S && S->Enabled && S->Bodies.IsEmpty() && S->Pairs.IsEmpty()) Settings.Remove(Component);
+}
+static void RememberBodies(const UProphecyJoltCharacterComponent* Component,
+    TConstArrayView<FName> Names,TConstArrayView<int32> Indices,bool Enabled)
+{
+    if(Enabled && !Settings.Contains(Component)) return;
+    auto& S=Settings.FindOrAdd(Component);
+    for(int32 I:Indices) { if(Enabled) S.Bodies.Remove(Names[I]); else S.Bodies.Add(Names[I]); }
+    Prune(Component);
+}
+static FProphecyJoltWorldStatus Reapply(const UProphecyJoltCharacterComponent* Component,
+    UProphecyJoltWorldSubsystem& Owner,const FProphecyJoltRigHandle& Rig,TConstArrayView<FName> Names)
+{
+    const auto* S=Settings.Find(Component);
+    if(!S) return {};
+    auto Result=Owner.SetRigSelfCollisionEnabled(Rig,S->Enabled);
+    if(!Result.IsSuccess()) return Result;
+    TArray<int32> Indices;
+    for(FName Bone:S->Bodies) Indices.Add(Names.IndexOfByKey(Bone));
+    if(!Indices.IsEmpty()) Result=Owner.SetRigBodiesSelfCollisionEnabled(Rig,Indices,false);
+    if(!Result.IsSuccess()) return Result;
+    for(const auto& Pair:S->Pairs)
+    {
+        Result=Owner.SetRigBodyPairSelfCollisionEnabled(Rig,Names.IndexOfByKey(Pair.Key),Names.IndexOfByKey(Pair.Value),false);
+        if(!Result.IsSuccess()) return Result;
+    }
+    return Result;
+}
+}
 
 struct FProphecyJoltCompletedPosePacket
 {
@@ -192,24 +238,20 @@ namespace
 bool BuildAuthoredHelperPose(const AProphecyAgent& Agent, USkeletalMeshComponent& Mesh,
     TConstArrayView<FName> SkeletonNames, TArray<FTransform>& OutLocal, FString& OutError)
 {
-    OutLocal = Mesh.GetSkeletalMeshAsset()->GetRefSkeleton().GetRefBonePose();
-    int32 PoseId = INDEX_NONE;
-    float Interval = 0.0f;
-    bool bInterpolate = false;
-    FProphecyNNPoseSnapshot Pose;
-    if (!Agent.GetNNPoseDataSource(PoseId, Interval, bInterpolate)
-        || !FProphecyNNPoseStore::GetAgentLocalPose(PoseId, Pose) || !Pose.IsValid())
+    TArray<FName> Names;
+    TArray<FTransform> Future, Presented;
+    float Alpha = 1.f;
+    if (!Agent.ReadNNFutureWorldPose(Names, Future, Presented, Alpha))
     {
         OutError = TEXT("The manual Jolt binding requires the agent's published native NN pose source.");
         return false;
     }
-    // Simulated bones are replaced by completed rigid states. Unmapped authored bones keep their local
-    // pose, and missing helpers retain their reference offsets instead of disappearing from the skeleton.
+    TArray<int32> Indices;
+    Indices.SetNumUninitialized(SkeletonNames.Num());
     for (int32 BoneIndex = 0; BoneIndex < SkeletonNames.Num(); ++BoneIndex)
-    {
-        const int32 PoseIndex = Pose.BoneNames.IndexOfByKey(SkeletonNames[BoneIndex]);
-        if (Pose.LocalTransforms.IsValidIndex(PoseIndex)) OutLocal[BoneIndex] = Pose.LocalTransforms[PoseIndex];
-    }
+        Indices[BoneIndex] = Names.IndexOfByKey(SkeletonNames[BoneIndex]);
+    if (!ProphecyNNPhysicalTargets::BuildHelperLocals(Mesh.GetSkeletalMeshAsset()->GetRefSkeleton(),
+        Indices, Presented, Mesh.GetComponentTransform(), OutLocal)) return false;
     return ProphecyJolt::Pose::ValidateLocalPose(OutLocal, OutError);
 }
 
@@ -218,22 +260,19 @@ bool BuildAuthoredHelperPoseFromSnapshot(USkeletalMeshComponent& Mesh,
 {
     const auto& Pose = State.AuthoredSnapshot;
     if (!Pose.IsValid()) { OutError = TEXT("The target source snapshot is invalid."); return false; }
-    State.AuthoredLocalScratch = Mesh.GetSkeletalMeshAsset()->GetRefSkeleton().GetRefBonePose();
-    if (State.AuthoredLocalScratch.Num() != State.SkeletonNames.Num())
+    if (Mesh.GetSkeletalMeshAsset()->GetRefSkeleton().GetNum() != State.SkeletonNames.Num())
     { OutError = TEXT("The bound reference skeleton changed; disable and rebind it."); return false; }
     // Check the full layout, not just a hash. Missing helpers still retain their reference pose.
-    if (State.HelperSourceNames != Pose.BoneNames || State.HelperSourceIndices.Num() != State.SkeletonNames.Num())
+    if (State.HelperSourceNames != State.TargetNames || State.HelperSourceIndices.Num() != State.SkeletonNames.Num())
     {
-        State.HelperSourceNames = Pose.BoneNames;
+        State.HelperSourceNames = State.TargetNames;
         State.HelperSourceIndices.SetNumUninitialized(State.SkeletonNames.Num());
         for (int32 BoneIndex = 0; BoneIndex < State.SkeletonNames.Num(); ++BoneIndex)
-            State.HelperSourceIndices[BoneIndex] = Pose.BoneNames.IndexOfByKey(State.SkeletonNames[BoneIndex]);
+            State.HelperSourceIndices[BoneIndex] = State.TargetNames.IndexOfByKey(State.SkeletonNames[BoneIndex]);
     }
-    for (int32 BoneIndex = 0; BoneIndex < State.SkeletonNames.Num(); ++BoneIndex)
-    {
-        const int32 PoseIndex = State.HelperSourceIndices[BoneIndex];
-        if (Pose.LocalTransforms.IsValidIndex(PoseIndex)) State.AuthoredLocalScratch[BoneIndex] = Pose.LocalTransforms[PoseIndex];
-    }
+    if (!ProphecyNNPhysicalTargets::BuildHelperLocals(Mesh.GetSkeletalMeshAsset()->GetRefSkeleton(),
+        State.HelperSourceIndices, State.InterpolatedTargets, Mesh.GetComponentTransform(), State.AuthoredLocalScratch))
+    { OutError = TEXT("The authored helper layout is invalid."); return false; }
     return ProphecyJolt::Pose::ValidateLocalPose(State.AuthoredLocalScratch, OutError);
 }
 
@@ -448,6 +487,22 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
         int32 Velocity,Position; Agent->GetJoltSolverIterations(Velocity,Position);
         SolverPolicy = Owner->SetRigSolverIterations(Pending->RigHandle, Velocity, Position);
     }
+    if (SolverPolicy.IsSuccess())
+        SolverPolicy=ProphecyCharacterCollisionPreferences::Reapply(this, *Owner, Pending->RigHandle, Pending->BodyNames);
+    if (SolverPolicy.IsSuccess() && ProphecyFootColliderTrim::Get(Agent)>0.0f)
+    {
+        // Reference-pose foot -> ball identifies the toe end independently of animation.
+        const auto Direction=[&](FName Foot,FName Toe)
+        {
+            const int32 F=Skeleton.FindBoneIndex(Foot), T=Skeleton.FindBoneIndex(Toe);
+            FTransform Relative=FTransform::Identity;
+            int32 I=T;
+            for (;I!=INDEX_NONE && I!=F;I=Skeleton.GetParentIndex(I)) Relative=Relative*Skeleton.GetRefBonePose()[I];
+            return I==F ? Relative.GetTranslation().GetSafeNormal() : FVector::ZeroVector;
+        };
+        SolverPolicy=Owner->SetRigFootColliderFrontTrim(Pending->RigHandle,ProphecyFootColliderTrim::Get(Agent),
+            Direction(TEXT("foot_l"),TEXT("ball_l")),Direction(TEXT("foot_r"),TEXT("ball_r")));
+    }
     if (!SolverPolicy.IsSuccess())
     {
         Owner->DestroyRig(Pending->RigHandle);
@@ -616,10 +671,10 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     {
     Profile::FScope PhaseTiming(Profile::EPhase::TargetPacket);
     State->TargetNameLookup.Update(Names, State->BodyNames);
-    const float LocomotionFootLeeway=ProphecyPhysicalFootTarget::LocomotionCalfLeeway(Agent);
-    const float FootTargetLeeway=FMath::Max(ProphecyPhysicalFootTarget::Leeway(Agent),LocomotionFootLeeway);
+    const float CalfFootLeeway=ProphecyPhysicalFootTarget::CalfLeeway(Agent);
+    const float FootTargetLeeway=FMath::Max(ProphecyPhysicalFootTarget::Leeway(Agent),CalfFootLeeway);
     const float KickFootLeeway=ProphecyKickFootLeeway::Current(Agent);
-    if (!ProphecyKickFootLeeway::Synchronize(Agent,LocomotionFootLeeway,Error)) return Fail(OutError,Error);
+    if (!ProphecyKickFootLeeway::Synchronize(Agent,CalfFootLeeway,Error)) return Fail(OutError,Error);
 #if WITH_EDITOR
     const bool TraceFeet=CVarPhysicalFootRecoveryTrace.GetValueOnGameThread()>0 && Agent->IsPlayerControlled();
     if(TraceFeet)CVarPhysicalFootRecoveryTrace->Set(CVarPhysicalFootRecoveryTrace.GetValueOnGameThread()-1,ECVF_SetByConsole);
@@ -665,11 +720,12 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
         }
 #if WITH_EDITOR
         if(TraceFeet && Side!=INDEX_NONE)
-            UE_LOG(LogTemp,Display,TEXT("FootRecoveryTarget actor=%s time=%.9f side=%d allowance=%.6f recovery=%.6f target=(%.9f,%.9f,%.9f) authored=(%.9f,%.9f,%.9f)"),
+            UE_LOG(LogTemp,Display,TEXT("FootRecoveryTarget actor=%s time=%.9f side=%d allowance=%.6f recovery=%.6f target=(%.9f,%.9f,%.9f) authored=(%.9f,%.9f,%.9f) calf=%.6f kick=%.6f"),
                 *Agent->GetName(),GetWorld()->GetTimeSeconds(),Side,FootTargetLeeway,
                 ProphecyKickFootLeeway::ReturningLengthDeltaCm(Agent,Side),
                 BodyWorld.GetLocation().X,BodyWorld.GetLocation().Y,BodyWorld.GetLocation().Z,
-                Interpolated[TargetIndex].GetLocation().X,Interpolated[TargetIndex].GetLocation().Y,Interpolated[TargetIndex].GetLocation().Z);
+                Interpolated[TargetIndex].GetLocation().X,Interpolated[TargetIndex].GetLocation().Y,Interpolated[TargetIndex].GetLocation().Z,
+                CalfFootLeeway,KickFootLeeway);
 #endif
         FProphecyJoltRigVelocityTarget& Target = Targets.AddDefaulted_GetRef();
         Target.Handle = State->Handles[Index];
@@ -1082,6 +1138,25 @@ void UProphecyJoltCharacterComponent::RefreshPlayerSwingLimits()
     if (!Result.IsSuccess()) LatchJoltStepError(Result.Message);
 }
 
+bool UProphecyJoltCharacterComponent::SetFootColliderFrontTrim(float TrimCm,FString& OutError)
+{
+    OutError.Reset();
+    if (!IsInGameThread() || !State || !StillOwnsRig(*State) || IsSteppingStopped() || !State->MeshAsset.IsValid())
+    { OutError=TEXT("Enable Jolt simulation before setting the foot collider trim."); return false; }
+    const auto& Skeleton=State->MeshAsset->GetRefSkeleton();
+    const auto Direction=[&](FName Foot,FName Toe)
+    {
+        const int32 F=Skeleton.FindBoneIndex(Foot),T=Skeleton.FindBoneIndex(Toe);
+        FTransform Relative=FTransform::Identity;
+        int32 I=T;
+        for (;I!=INDEX_NONE && I!=F;I=Skeleton.GetParentIndex(I)) Relative=Relative*Skeleton.GetRefBonePose()[I];
+        return I==F ? Relative.GetTranslation().GetSafeNormal() : FVector::ZeroVector;
+    };
+    const auto Result=State->WorldOwner->SetRigFootColliderFrontTrim(State->RigHandle,TrimCm,
+        Direction(TEXT("foot_l"),TEXT("ball_l")),Direction(TEXT("foot_r"),TEXT("ball_r")));
+    OutError=Result.Message; return Result.IsSuccess();
+}
+
 bool UProphecyJoltCharacterComponent::SetCCDMode(uint8 Mode, FString& OutError)
 {
     OutError.Reset();
@@ -1208,6 +1283,12 @@ bool UProphecyJoltCharacterComponent::SetSelfCollisionEnabled(bool bEnabled, FSt
     if (!ValidateSelfCollisionSource(OutError)) return false;
     const FProphecyJoltWorldStatus Result = State->WorldOwner->SetRigSelfCollisionEnabled(State->RigHandle, bEnabled);
     OutError = Result.Message;
+    if(Result.IsSuccess())
+    {
+        using namespace ProphecyCharacterCollisionPreferences;
+        if(!bEnabled || Settings.Contains(this)) Settings.FindOrAdd(this).Enabled=bEnabled;
+        Prune(this);
+    }
     return Result.IsSuccess();
 }
 
@@ -1245,6 +1326,7 @@ bool UProphecyJoltCharacterComponent::SetBodiesSelfCollisionEnabled(
     }
     const FProphecyJoltWorldStatus Result = State->WorldOwner->SetRigBodiesSelfCollisionEnabled(State->RigHandle, Indices, bEnabled);
     OutError = Result.Message;
+    if(Result.IsSuccess()) ProphecyCharacterCollisionPreferences::RememberBodies(this,State->BodyNames,Indices,bEnabled);
     return Result.IsSuccess();
 }
 
@@ -1267,6 +1349,7 @@ bool UProphecyJoltCharacterComponent::SetSelfCollisionBelow(
     { OutError = TEXT("The selected skeletal subtree contains no PHAT bodies with this Include Self setting."); return false; }
     const FProphecyJoltWorldStatus Result = State->WorldOwner->SetRigBodiesSelfCollisionEnabled(State->RigHandle, Indices, bEnabled);
     OutError = Result.Message;
+    if(Result.IsSuccess()) ProphecyCharacterCollisionPreferences::RememberBodies(this,State->BodyNames,Indices,bEnabled);
     return Result.IsSuccess();
 }
 
@@ -1281,6 +1364,18 @@ bool UProphecyJoltCharacterComponent::SetBodyPairSelfCollisionEnabled(
     const FProphecyJoltWorldStatus Result = State->WorldOwner->SetRigBodyPairSelfCollisionEnabled(
         State->RigHandle, Index1, Index2, bEnabled);
     OutError = Result.Message;
+    if(Result.IsSuccess())
+    {
+        using namespace ProphecyCharacterCollisionPreferences;
+        if(!bEnabled || Settings.Contains(this))
+        {
+            if(Bone2.LexicalLess(Bone1)) Swap(Bone1,Bone2);
+            const TPair<FName,FName> Pair(Bone1,Bone2);
+            auto& S=Settings.FindOrAdd(this);
+            if(bEnabled) S.Pairs.Remove(Pair); else S.Pairs.AddUnique(Pair);
+            Prune(this);
+        }
+    }
     return Result.IsSuccess();
 }
 
@@ -1289,6 +1384,7 @@ bool UProphecyJoltCharacterComponent::ResetSelfCollision(FString& OutError)
     if (!ValidateSelfCollisionSource(OutError)) return false;
     const FProphecyJoltWorldStatus Result = State->WorldOwner->ResetRigSelfCollision(State->RigHandle);
     OutError = Result.Message;
+    if(Result.IsSuccess()) ProphecyCharacterCollisionPreferences::Settings.Remove(this);
     return Result.IsSuccess();
 }
 
@@ -1621,6 +1717,7 @@ bool UProphecyJoltCharacterComponent::MakeHitResult(const FProphecyJoltRayHit& H
 
 void UProphecyJoltCharacterComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ProphecyCharacterCollisionPreferences::Settings.Remove(this);
     ProphecyKickFootLeeway::Remove(Cast<AProphecyAgent>(GetOwner()));
     ProphecyLimbCollision::Remove(Cast<AProphecyAgent>(GetOwner()));
     ProphecyJointDamping::Remove(Cast<AProphecyAgent>(GetOwner()));

@@ -73,10 +73,15 @@ void CancelPoseRecovery(const AProphecyAgent* Agent)
 static void PublishLengths(const AProphecyAgent* Agent)
 {
     if (const auto* Length=LengthReturns.Find(Agent))
-        ProphecyNNPresentation::SetRecoveryCalfLengths(Length->PoseId,Length->Upper,
+    {
+        const auto* State=PoseReturns.Find(const_cast<AProphecyAgent*>(Agent));
+        if(!State) State=Active.Find(const_cast<AProphecyAgent*>(Agent));
+        const float Weight=State && State->Returning && State->From>0 ? State->Value/State->From : 1.f;
+        ProphecyNNPresentation::SetRecoveryCalfLengthsWithUpperBlend(Length->PoseId,Length->Upper,
             ProphecyLegChainDebug::IsEnabled(Agent)
                 ? Length->Rest+FVector2D(ReturningLengthDeltaCm(Agent,0),ReturningLengthDeltaCm(Agent,1))
-                : FVector2D::ZeroVector);
+                : FVector2D::ZeroVector,Weight);
+    }
 }
 void SetLocomotionLengthTarget(const AProphecyAgent* Agent,FVector2D RequestedDeltaCm)
 {
@@ -91,9 +96,9 @@ void SetLocomotionLengthTarget(const AProphecyAgent* Agent,FVector2D RequestedDe
         FMath::Clamp(RequestedDeltaCm.Y,-double(Leeway),double(Leeway))));
     PublishLengths(Agent);
 }
-static bool ApplyRange(AProphecyAgent* Agent,float Value,float LocomotionLeeway,FString& Error)
+static bool ApplyRange(AProphecyAgent* Agent,float Value,float CalfLeeway,FString& Error)
 {
-    const float Compression=LocomotionLeeway,Extension=FMath::Max(Value,LocomotionLeeway);
+    const float Compression=CalfLeeway,Extension=FMath::Max(Value,CalfLeeway);
     const auto* Applied=AppliedRanges.IsEmpty() ? nullptr : AppliedRanges.Find(Agent);
     if (Compression==0 && Extension==0 && !Applied) return true;
     auto* Character=Agent ? Agent->GetJoltCharacterComponent() : nullptr;
@@ -135,9 +140,9 @@ static bool ApplyRange(AProphecyAgent* Agent,float Value,float LocomotionLeeway,
     return P.Result;
 }
 static bool Apply(AProphecyAgent* Agent,float Value,FString& Error)
-{ return ApplyRange(Agent,Value,ProphecyPhysicalFootTarget::LocomotionCalfLeeway(Agent),Error); }
-bool Synchronize(AProphecyAgent* Agent,float LocomotionLeeway,FString& Error)
-{ return ApplyRange(Agent,Current(Agent),LocomotionLeeway,Error); }
+{ return ApplyRange(Agent,Value,ProphecyPhysicalFootTarget::CalfLeeway(Agent),Error); }
+bool Synchronize(AProphecyAgent* Agent,float CalfLeeway,FString& Error)
+{ return ApplyRange(Agent,Current(Agent),CalfLeeway,Error); }
 bool Reapply(AProphecyAgent* Agent,FString& Error)
 {
     const float Value=Current(Agent);

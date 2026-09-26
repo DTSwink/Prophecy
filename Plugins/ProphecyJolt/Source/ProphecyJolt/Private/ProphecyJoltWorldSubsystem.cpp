@@ -42,6 +42,7 @@ THIRD_PARTY_INCLUDES_START
 #include <Jolt/Physics/Collision/GroupFilterTable.h>
 #include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
 #include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/TransformedShape.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/SimShapeFilter.h>
@@ -57,6 +58,11 @@ THIRD_PARTY_INCLUDES_END
 #include "ProphecyJoltRadialJoint.h"
 #include "ProphecyJoltJointDamping.h"
 #include "ProphecyJoltFootExtension.h"
+#include "ProphecyJoltBodyConversion.h"
+#include "ProphecyJoltFootColliderTrim.h"
+#if !UE_BUILD_SHIPPING
+#include "DrawDebugHelpers.h"
+#endif
 
 DEFINE_LOG_CATEGORY_STATIC(LogProphecyJoltWorld, Log, All);
 
@@ -430,6 +436,14 @@ struct FRigRecord
 static TMap<const FRigRecord*,TArray<ProphecyJolt::FootExtension::FJoint>> FootExtensions;
 // Sparse event state: no rig layout change, per-tick poll, or contact-time lookup.
 static TSet<const FRigRecord*> AttackSelfCollisionSuppressed;
+struct FFootColliderOriginal
+{
+    int32 BodyIndex=INDEX_NONE;
+    FName Bone;
+    TArray<FProphecyJoltRigShape> Shapes;
+    JPH::RefConst<JPH::Shape> NativeShape;
+};
+static TMap<const FRigRecord*,TArray<FFootColliderOriginal>> FootColliderOriginals;
 static void RemoveFootExtensions(JPH::PhysicsSystem& Physics,const FRigRecord* Rig)
 {
     if (auto* Entries=FootExtensions.Find(Rig))
@@ -1154,6 +1168,7 @@ public:
         ServoRanges.Reset();
         auto& Rig = *Rigs[Index].Record;
         ProphecyJolt::WorldPrivate::AttackSelfCollisionSuppressed.Remove(&Rig);
+        ProphecyJolt::WorldPrivate::FootColliderOriginals.Remove(&Rig);
         RemoveFootExtensions(Physics,&Rig);
         Rig.Targets.Reset();
         Rig.PublishedHandles.Reset();
@@ -1452,6 +1467,56 @@ float UProphecyJoltWorldSubsystem::GetJoltPenetrationSlop(const UObject* Context
 void UProphecyJoltWorldSubsystem::RunContactExperiment(const TArray<FString>& Input)
 {
     using namespace ProphecyJolt::WorldPrivate;
+    if (Input.Num()>0 && (Input[0]==TEXT("drawcollision") || Input[0]==TEXT("collisionstats")))
+    {
+        if (!ValidateReady().IsSuccess()) return;
+        const bool IncludeStatic=Input.Num()>1 && Input[1]==TEXT("all");
+        const bool Stats=Input[0]==TEXT("collisionstats");
+        auto& Bodies=Native->Physics.GetBodyInterface();
+        for (const auto& Slot:Native->Slots)
+        {
+            if (Slot.Body.IsInvalid() || !Bodies.IsAdded(Slot.Body)) continue;
+            JPH::BodyLockRead Lock(Native->Physics.GetBodyLockInterface(),Slot.Body);
+            if (!Lock.Succeeded()) continue;
+            const auto& Body=Lock.GetBody();
+            if (!IncludeStatic && Body.IsStatic()) continue;
+            const FColor Color=Body.IsStatic()?FColor(140,140,140):Body.IsKinematic()?FColor::Yellow:FColor::Cyan;
+            const auto* Shape=Body.GetShape();
+            // Bound large mesh drawing per body. A shared triangle budget let
+            // earlier rope rigs hide every character admitted after them.
+            int32 Remaining=2048;
+            const int32 Before=Remaining;
+            // GetTriangles is leaf-only in Jolt. Expand compounds and decorators
+            // first, including the retained-COM wrapper used by foot trimming.
+            JPH::AllHitCollisionCollector<JPH::TransformedShapeCollector> Leaves;
+            Shape->CollectTransformedShapes(JPH::AABox::sBiggest(),JPH::Vec3::sZero(),Body.GetRotation(),
+                JPH::Vec3::sReplicate(1),JPH::SubShapeIDCreator(),Leaves,{});
+            const FVector Origin=ProphecyJolt::Conversions::FromJoltPosition(Body.GetCenterOfMassPosition());
+            JPH::Float3 Vertices[32*3];
+            for (const auto& Leaf:Leaves.mHits)
+            {
+            JPH::Shape::GetTrianglesContext Context;
+            Leaf.GetTrianglesStart(Context,JPH::AABox::sBiggest(),JPH::RVec3::sZero());
+            while (Remaining>0)
+            {
+                const int32 Count=Leaf.GetTrianglesNext(Context,32,Vertices);
+                if (Count==0) break;
+                const int32 DrawCount=FMath::Min(Count,Remaining);Remaining-=DrawCount;
+                for (int32 T=0;T<DrawCount;++T)
+                {
+                    FVector Points[3];
+                    for (int32 I=0;I<3;++I)
+                    { const auto& V=Vertices[T*3+I];Points[I]=Origin+FVector(V.x,V.y,V.z)*100.; }
+                    for (int32 I=0;I<3;++I) DrawDebugLine(GetWorld(),Points[I],Points[(I+1)%3],Color,false,0,0,.65f);
+                }
+            }
+            if (Remaining<=0) break;
+            }
+            if (Stats) UE_LOG(LogProphecyJoltWorld,Display,TEXT("CollisionShape %s bone=%s rig=%d motion=%d triangles=%d remaining=%d"),
+                *GetNameSafe(Slot.AssociatedObject.Get()),*Slot.HitBone.ToString(),Slot.OwnerRig.IsSet(),int32(Body.GetMotionType()),Before-Remaining,Remaining);
+        }
+        return;
+    }
     if (Input.Num() < 5 || !ValidateReady().IsSuccess()) return;
     const int32 N = Input.Num();
     if (Input[N-4] != TEXT("at")) return;
@@ -1543,6 +1608,44 @@ static FAutoConsoleCommandWithWorldAndArgs ContactExperimentCommand(TEXT("Prophe
     TEXT("Explicit transient rig diagnostics. capture <tag>, iterations <v> <p>, ccd <bone|all> <0|1>, slop <cm>. Suffix: at <hand X Y Z cm>."),
     FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
     { if (World) if (auto* S = World->GetSubsystem<UProphecyJoltWorldSubsystem>()) S->RunContactExperiment(Args); }));
+
+namespace ProphecyJoltCollisionView
+{
+static TMap<TWeakObjectPtr<UWorld>,bool> Worlds;
+static FDelegateHandle Tick,Cleanup;
+static void RetireIfEmpty()
+{
+    if (!Worlds.IsEmpty()) return;
+    FWorldDelegates::OnWorldPostActorTick.Remove(Tick);Tick.Reset();
+    FWorldDelegates::OnWorldCleanup.Remove(Cleanup);Cleanup.Reset();
+}
+static FAutoConsoleCommandWithWorldAndArgs Command(TEXT("Prophecy.Jolt.ShowCollision"),
+    TEXT("0 off; 1 live Jolt dynamic/kinematic wire shapes; 2 also static geometry. Cyan dynamic, yellow kinematic, gray static. Use showflag.collision 0 to hide the separate Chaos overlay."),
+    FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args,UWorld* World)
+    {
+        if (!IsInGameThread()) return;
+        if ((!World || !World->IsGameWorld()) && GEngine)
+            for (const auto& Context:GEngine->GetWorldContexts()) if (Context.WorldType==EWorldType::PIE)
+            { World=Context.World();break; }
+        if (!World || !World->IsGameWorld() || World->bIsTearingDown) return;
+        const int32 Mode=Args.IsEmpty()?1:FCString::Atoi(*Args[0]);
+        if (Mode<0 || Mode>2) return;
+        if (Mode==0) Worlds.Remove(World);else Worlds.Add(World,Mode==2);
+        if (!Worlds.IsEmpty() && !Tick.IsValid())
+        {
+            Tick=FWorldDelegates::OnWorldPostActorTick.AddLambda([](UWorld* W,ELevelTick,float)
+            {
+                if (const bool* All=Worlds.Find(W);All && W && !W->bIsTearingDown)
+                    if (auto* S=W->GetSubsystem<UProphecyJoltWorldSubsystem>())
+                        S->RunContactExperiment({TEXT("drawcollision"),*All?TEXT("all"):TEXT("moving")});
+            });
+            Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* W,bool,bool)
+            { Worlds.Remove(W);RetireIfEmpty(); });
+        }
+        RetireIfEmpty();
+        UE_LOG(LogProphecyJoltWorld,Display,TEXT("Jolt collision view: %d (native shapes; Chaos overlay is separate)."),Mode);
+    }));
+}
 #endif
 
 bool UProphecyJoltWorldSubsystem::DoesSupportWorldType(EWorldType::Type WorldType) const
@@ -2009,10 +2112,58 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateRig(const FProphecyJ
         Rig.Constraints.Add(MoveTemp(Constraint));
     }
     Rig.bCommitted = true;
+    for (int32 Index=0;Index<Snapshot.Bodies.Num();++Index)
+    {
+        const auto& Body=Snapshot.Bodies[Index];
+        if (Body.BodyName!=TEXT("foot_l") && Body.BodyName!=TEXT("foot_r")) continue;
+        auto& Original=FootColliderOriginals.FindOrAdd(&Rig).AddDefaulted_GetRef();
+        Original.BodyIndex=Index; Original.Bone=Body.BodyName; Original.Shapes=Body.Shapes;
+        Original.NativeShape=Prepared.GetNativeBodyShape(Index);
+    }
     OutRig = PendingHandle;
     OutBodyHandles = Rig.Handles;
     OutCoverageNotes = Rig.CoverageNotes;
     RefreshDiagnostics();
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetRigFootColliderFrontTrim(
+    const FProphecyJoltRigHandle& Handle,double TrimCm,const FVector& LeftToeDirection,const FVector& RightToeDirection)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready=ValidateReady(); if (!Ready.IsSuccess()) return Ready;
+    auto* Rig=Native->FindRig(Handle);
+    if (!Rig) return Fail(EProphecyJoltWorldResult::InvalidHandle,TEXT("Foot trim requires a live rig."));
+    const auto* Originals=FootColliderOriginals.Find(Rig);
+    if (!Originals || Originals->Num()!=2)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Both captured foot colliders are required. A rig created before this update must re-enter simulation."));
+    TArray<JPH::RefConst<JPH::Shape>,TInlineAllocator<2>> Shapes;
+    TArray<JPH::BodyID,TInlineAllocator<2>> IDs;
+    for (const auto& Original:*Originals)
+    {
+        const auto* Slot=Native->Find(Rig->Handles[Original.BodyIndex]);
+        if (!Slot || Slot->Weld || Slot->WeldParent.IsSet())
+            return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Cannot trim a missing or welded foot."));
+        TArray<FProphecyJoltRigShape> Trimmed; FString Error;
+        if (!ProphecyJolt::FootColliderTrim::Build(Original.Shapes,
+            Original.Bone==TEXT("foot_l") ? LeftToeDirection : RightToeDirection,TrimCm,Trimmed,Error))
+            return {EProphecyJoltWorldResult::InvalidArgument,Error};
+        JPH::RefConst<JPH::Shape> Shape=Original.NativeShape;
+        if (TrimCm>0.0)
+        {
+            if (!ProphecyJolt::BodyConversion::PrepareShapes(Trimmed,Shape,Error))
+                return {EProphecyJoltWorldResult::InvalidArgument,Error};
+            Shape=new JPH::OffsetCenterOfMassShape(Shape.GetPtr(),
+                Original.NativeShape->GetCenterOfMass()-Shape->GetCenterOfMass());
+        }
+        IDs.Add(Slot->Body); Shapes.Add(Shape);
+    }
+    // All validation/preparation completed before either foot changes. Keeping COM
+    // and updateMassProperties=false retains velocities, inertia and joint frames.
+    auto& Bodies=Native->Physics.GetBodyInterface();
+    for (int32 I=0;I<IDs.Num();++I)
+        if (Bodies.GetShape(IDs[I]).GetPtr()!=Shapes[I].GetPtr())
+            Bodies.SetShape(IDs[I],Shapes[I].GetPtr(),false,JPH::EActivation::Activate);
     return {};
 }
 

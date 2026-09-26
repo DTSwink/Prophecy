@@ -12,7 +12,7 @@ public:
     /** After slashL/R/LD/RD/LU/RU or pike, guide the right arm toward authored idle around
      * the front of the torso. Also guides the attacking arm after jabL/R, hookL/R and overL/R:
      * left for jabL/hookL/overL, right for jabR/hookR/overR, including half attacks.
-     * Kicks, headbutts and defense are excluded.
+     * Kicks/headbutts are excluded unless explicitly selected by the both-arm node; defense is excluded.
      * Hold keeps full procedural ownership; Blend transfers it back to the NN.
      * Return Speed is cm per authored second at an initial hand-to-idle distance
      * of100cm. Each return captures Speed * InitialDistanceCm /100 once from the
@@ -23,4 +23,55 @@ public:
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Attack Arm Return To Neutral",Keywords="Slash Pike Jab Hook Over Idle"))
     static bool SetSlashRightArmReturnToNeutral(AProphecyAgent* Agent,bool Enabled=true,
         float HoldDurationSeconds=.3f,float BlendToNNDurationSeconds=.5f,float ReturnSpeed=100.f);
+
+    /** Replace the per-attack selection for returning both arms to their own neutral poses.
+     * Requires Set Both Arms Return To Neutral Enabled and the existing arm-return settings.
+     * All checkboxes default off. Configure before the attack or in Special Ended.
+     * Unselected attacks keep their usual behavior. Selected kicks/headbutt can return both arms too.
+     * Unchecking the active attack cancels its additional-arm return immediately. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Attack Both Arms Return To Neutral"))
+    static bool SetAttackBothArmsReturnToNeutral(AProphecyAgent* Agent,
+        UPARAM(DisplayName="slashL") bool SlashL=false, UPARAM(DisplayName="slashR") bool SlashR=false,
+        UPARAM(DisplayName="slashLD") bool SlashLD=false, UPARAM(DisplayName="slashRD") bool SlashRD=false,
+        UPARAM(DisplayName="slashLU") bool SlashLU=false, UPARAM(DisplayName="slashRU") bool SlashRU=false,
+        UPARAM(DisplayName="pike") bool Pike=false,
+        UPARAM(DisplayName="jabL") bool JabL=false, UPARAM(DisplayName="jabR") bool JabR=false,
+        UPARAM(DisplayName="hookL") bool HookL=false, UPARAM(DisplayName="hookR") bool HookR=false,
+        UPARAM(DisplayName="overL") bool OverL=false, UPARAM(DisplayName="overR") bool OverR=false,
+        UPARAM(DisplayName="headbutt") bool Headbutt=false,
+        UPARAM(DisplayName="kickL") bool KickL=false, UPARAM(DisplayName="kickR") bool KickR=false);
+
+    /** Master switch for the additional-arm extension; initially OFF per agent.
+     * Preserves per-attack choices and the original arm's return. Both arms share the existing
+     * hold/blend durations; each uses its own idle rotation and initial-distance speed.
+     * Enable before the attack or in Special Ended. Disable cancels the extra arm immediately. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Both Arms Return To Neutral Enabled"))
+    static bool SetBothArmsReturnToNeutralEnabled(AProphecyAgent* Agent,bool Enabled=true);
+
+    /** Rotation only: 0 follows anatomical pelvis rotation, 1 follows current root rotation.
+     * Intermediate values use quaternion interpolation. Separate values for attacks using
+     * the spine-local or pelvis-local position mode. Applies to both returning arms and idle.
+     * Configure before return or in Special Ended; changes during motion apply next return.
+     * Until this node is called, spine mode retains its original torso rotation.
+     * Does not enable return itself. Reset snapshots include these settings. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Attack Arm Return Rotation Blend",Keywords="Pelvis Root Spine Reference",ClampMin="0",ClampMax="1"))
+    static bool SetAttackArmReturnRotationBlend(AProphecyAgent* Agent,
+        float SpineLocalRotationBlend=0.f,float PelvisLocalRotationBlend=1.f);
+
+    /** Select the return reference per attack: checked = pelvis position with current root rotation, unchecked = original upper-torso local.
+     * Applies to both returning arms, including the optional additional arm. All default false.
+     * Replaces all choices. Configure before the return or in Special Ended; an already moving
+     * return keeps its reference to avoid a discontinuity. Idle destination follows the same reference.
+     * Does not enable arm return itself. Body/sword clearance still uses the actual torso. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Attack Arm Return Pelvis Local",Keywords="Spine Reference Space Idle"))
+    static bool SetAttackArmReturnPelvisLocal(AProphecyAgent* Agent,
+        UPARAM(DisplayName="slashL") bool SlashL=false, UPARAM(DisplayName="slashR") bool SlashR=false,
+        UPARAM(DisplayName="slashLD") bool SlashLD=false, UPARAM(DisplayName="slashRD") bool SlashRD=false,
+        UPARAM(DisplayName="slashLU") bool SlashLU=false, UPARAM(DisplayName="slashRU") bool SlashRU=false,
+        UPARAM(DisplayName="pike") bool Pike=false,
+        UPARAM(DisplayName="jabL") bool JabL=false, UPARAM(DisplayName="jabR") bool JabR=false,
+        UPARAM(DisplayName="hookL") bool HookL=false, UPARAM(DisplayName="hookR") bool HookR=false,
+        UPARAM(DisplayName="overL") bool OverL=false, UPARAM(DisplayName="overR") bool OverR=false,
+        UPARAM(DisplayName="headbutt") bool Headbutt=false,
+        UPARAM(DisplayName="kickL") bool KickL=false, UPARAM(DisplayName="kickR") bool KickR=false);
 };

@@ -69,6 +69,55 @@ inline FVector FrontPath(const FVector& From,const FVector& To,double HalfWidth,
     const double R=FMath::Lerp(R0,FMath::Max(1.08,R1),T),Angle=FMath::Lerp(A,B,T);
     return FVector(X*R*FMath::Cos(Angle),Y*R*FMath::Sin(Angle),FMath::Lerp(From.Z,To.Z,T));
 }
+inline double ReturnSegmentClearance(const FVector& A,const FVector& B,double Width)
+{
+    // Continuous rounded end caps: clipping the segment to a flat torso slab
+    // makes the route switch abruptly when a hand crosses its top/bottom.
+    const FVector D=B-A;const double Bottom=-3.*Width,Top=.3*Width,Cap=.12*Width;
+    double Cuts[4]={0.,1.,1.,1.};int32 Count=2;
+    if(FMath::Abs(D.Z)>1.e-12) for(double Z:{Bottom,Top})
+    { const double T=(Z-A.Z)/D.Z;if(T>0 && T<1) Cuts[Count++]=T; }
+    for(int32 I=1;I<Count;++I) for(int32 J=I;J>0 && Cuts[J]<Cuts[J-1];--J) Swap(Cuts[J],Cuts[J-1]);
+    double Best=1.e30;
+    for(int32 I=1;I<Count;++I)
+    {
+        const double Z=A.Z+D.Z*(Cuts[I-1]+Cuts[I])*.5;
+        FVector P(A.X/(.9*Width),A.Y/(.8*Width),0),V(D.X/(.9*Width),D.Y/(.8*Width),0);
+        if(Z<Bottom || Z>Top) { P.Z=(A.Z-(Z<Bottom?Bottom:Top))/Cap;V.Z=D.Z/Cap; }
+        const double T=FMath::Clamp(-FVector::DotProduct(P,V)/FMath::Max(1.e-12,V.SizeSquared()),Cuts[I-1],Cuts[I]);
+        Best=FMath::Min(Best,(P+V*T).SizeSquared());
+    }
+    return Best;
+}
+inline FVector ClearFrontPath(const FVector& From,const FVector& To,double HalfWidth,double T,
+    const FTransform* ReferenceToTorso=nullptr)
+{
+    if(T<=0) return From;
+    // The exclusion ellipse and its front/back seam belong to the BODY.
+    // Using a root/pelvis carrier's azimuth can send a clear front-side hand
+    // around the opposite flank as its local Y crosses zero behind that carrier.
+    if(ReferenceToTorso)
+        return ReferenceToTorso->InverseTransformPosition(ClearFrontPath(
+            ReferenceToTorso->TransformPosition(From),ReferenceToTorso->TransformPosition(To),HalfWidth,T));
+    const double Width=FMath::Max(1.,HalfWidth);
+    const FVector A=ReferenceToTorso ? ReferenceToTorso->TransformPosition(From) : From;
+    const FVector B=ReferenceToTorso ? ReferenceToTorso->TransformPosition(To) : To;
+    const double Angle=FMath::Abs(FMath::Atan2(From.Y,From.X)-FMath::Atan2(To.Y,To.X));
+    // Keep front winding for opposite rear flanks. A clear segment gets no
+    // lateral detour. Quintic clearance transition has zero slope/curvature at
+    // either boundary; no attack-name or distance threshold changes the path.
+    auto Smooth=[](double X) {X=FMath::Clamp(X,0.,1.);return X*X*X*(10.+X*(-15.+6.*X));};
+    const double Weight=Smooth((FMath::Sqrt(ReturnSegmentClearance(A,B,Width))-1.02)/.12)*Smooth((PI-Angle)/.2);
+    if(Weight>=1) return FMath::Lerp(From,To,T);
+    return FMath::Lerp(FrontPath(From,To,Width+5.,T),FMath::Lerp(From,To,T),Weight);
+}
+inline double SoftReturnReach(double Distance,double Reach,double Softness)
+{
+    if(Softness<=1.e-8 || Distance<=Reach-Softness) return Distance;
+    const double X=(Distance-(Reach-Softness))/Softness;
+    // C2 at the onset, asymptotic to full reach. Never snap onto a straight arm.
+    return Reach-Softness+Softness*X/FMath::Sqrt(1.+X*X);
+}
 inline double DirectedHeading(double Start,double Goal,double Side)
 {
     double Delta=FMath::UnwindDegrees(Goal-Start);
@@ -81,6 +130,11 @@ inline FRotator BlendWeaponRotation(const FRotator& From,const FRotator& To,doub
     // it: that silently reverses a requested 225-degree outward turn.
     return FRotator(From.Pitch+FMath::UnwindDegrees(To.Pitch-From.Pitch)*Alpha,
         FMath::Lerp(From.Yaw,To.Yaw,Alpha),From.Roll+FMath::UnwindDegrees(To.Roll-From.Roll)*Alpha);
+}
+inline FQuat AdvanceUnarmedRotation(FTransform& Returning,const FQuat& Neutral,const FQuat& NN,double Step,double Blend)
+{
+    Returning.SetRotation(FQuat::Slerp(Returning.GetRotation(),Neutral,Step).GetNormalized());
+    return FQuat::Slerp(Returning.GetRotation(),NN,Blend).GetNormalized();
 }
 // Exact minimum of the blade segment against a padded elliptical torso. The
 // padding includes the blade width; using only the wrist misses the hilt/blade.
@@ -124,7 +178,7 @@ inline double Advance(const FVector& From,const FVector& To,double Width,double 
     const double R0=FMath::Sqrt(FMath::Square(From.X/X)+FMath::Square(From.Y/Y));
     const double R1=FMath::Max(1.08,FMath::Sqrt(FMath::Square(To.X/X)+FMath::Square(To.Y/Y)));
     const double Angle=FMath::Abs(FMath::Atan2(To.Y/Y,To.X/X)-FMath::Atan2(From.Y/Y,From.X/X));
-    const double Bound=Y*(FMath::Abs(R1-R0)+FMath::Max(R0,R1)*Angle)+FMath::Abs(To.Z-From.Z);
+    const double Bound=FMath::Max(Y*(FMath::Abs(R1-R0)+FMath::Max(R0,R1)*Angle)+FMath::Abs(To.Z-From.Z),FVector::Distance(From,To));
     return FMath::Min3(1.,Distance/FMath::Max(1.e-6,Bound),4.5*TickTime/FMath::Max(1.e-6,Angle));
 }
 }

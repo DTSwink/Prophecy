@@ -65,6 +65,7 @@ public:
     int32 GetSpeculativeSwingJointCount() const;
     bool SetCCDMode(uint8 Mode, FString& OutError);
     bool SetSolverIterations(int32 Velocity, int32 Position, FString& OutError);
+    bool SetFootColliderFrontTrim(float TrimCm, FString& OutError);
     // Complete angular-only update; preserves native articulation and synchronizes the UE receiver.
     bool ApplyAngularLimitProfiles(TConstArrayView<FConstraintProfileProperties> Profiles, FString& OutError);
     bool SetSelfCollisionEnabled(bool bEnabled, FString& OutError);

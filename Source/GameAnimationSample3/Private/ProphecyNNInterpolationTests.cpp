@@ -1,4 +1,5 @@
 #include "ProphecyNNInterpolation.h"
+#include "ProphecyNNPresentation.h"
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
 
@@ -81,6 +82,49 @@ bool FNNInterpolationHistoryTest::RunTest(const FString& Parameters)
     FProphecyNNPoseStore::ClearAgentPose(TestAgent);
     Pose=Publish(7./30,Point(0),Point(1));
     TestTrue(TEXT("Clearing an agent clears its override"), Pose.InterpolationMode==EProphecyNNInterpolationMode::Current);
+    FProphecyNNPoseStore::ClearAgentPose(TestAgent);
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAttackViewerInterpolationTest,"Prophecy.NN.Interpolation.AttackViewer",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAttackViewerInterpolationTest::RunTest(const FString& Parameters)
+{
+    FProphecyNNPoseStore::ClearAgentPose(TestAgent);
+    FProphecyNNPoseStore::SetInterpolationMode(TestAgent,EProphecyNNInterpolationMode::HermiteSlerp);
+    Publish(0,Point(0),Point(10));Publish(1./30,Point(10),Point(20));
+    auto Pose=Publish(2./30,Point(20),Point(40));
+    TestTrue(TEXT("Hermite history exists before switching"),!Pose.InterpolationStartTangents.IsEmpty());
+    FProphecyNNPoseStore::SetInterpolationMode(TestAgent,EProphecyNNInterpolationMode::AttackViewer);
+    const FTransform A=Point(40,0),B=Point(80,120);
+    Pose=Publish(3./30,A,B);
+    TestTrue(TEXT("New enum retained through publication"),Pose.InterpolationMode==EProphecyNNInterpolationMode::AttackViewer);
+    TestTrue(TEXT("No tangent storage or curve clock"),Pose.InterpolationStartTangents.Max()==0
+        && Pose.InterpolationEndTangents.Max()==0 && Pose.InterpolationIntervalSeconds==0);
+    TestTrue(TEXT("Stored source endpoints unchanged"),Pose.PreviousComponentTransforms[0].Equals(A)
+        && Pose.ComponentTransforms[0].Equals(B));
+    for(int32 I=0;I<=20;++I)
+    {
+        const float Alpha=I/20.f;
+        const auto Expected=Point(40+40*Alpha,120*Alpha);
+        TestTrue(TEXT("Linear travel and uniform angular speed"),
+            ProphecyNNInterpolation::Sample(Pose,0,A,B,Alpha).Equals(Expected,1.e-5));
+        TestTrue(TEXT("Extra physical bones require no source index"),
+            ProphecyNNInterpolation::Sample(Pose,INDEX_NONE,A,B,Alpha).Equals(Expected,1.e-5));
+    }
+    ProphecyNNPresentation::Publish(TestAgent,Pose.SourceTimeSeconds,.25f);
+    FTransform Pelvis;
+    TestTrue(TEXT("Inertia pelvis reader uses same mode"),ProphecyNNPresentation::ReadPelvisWorld(TestAgent,Pelvis)
+        && Pelvis.Equals(Point(50,30),1.e-5));
+    TestTrue(TEXT("Shortest path crosses 180 without going around"),
+        ProphecyNNInterpolation::Sample(Pose,0,Point(0,179),Point(0,-179),.5f).GetRotation().Equals(Point(0,180).GetRotation(),1.e-6));
+    FTransform Negative=A;Negative.SetRotation(A.GetRotation()*-1.);
+    TestTrue(TEXT("Quaternion sign cannot cause a spin"),ProphecyNNInterpolation::Sample(Pose,0,A,Negative,.4f).Equals(A,1.e-8));
+    // A stale tangent must never turn this mode into Hermite.
+    Pose.InterpolationStartTangents.Add(FVector(999,999,999));Pose.InterpolationEndTangents.Add(FVector(-999,-999,-999));
+    TestTrue(TEXT("Attack Viewer ignores any stale curve data"),ProphecyNNInterpolation::Sample(Pose,0,A,B,.25f).Equals(Point(50,30),1.e-5));
+    FProphecyNNPoseStore::SetInterpolationMode(TestAgent,EProphecyNNInterpolationMode::Current);
+    Pose=Publish(4./30,A,B);
+    TestTrue(TEXT("Existing mode can be restored"),Pose.InterpolationMode==EProphecyNNInterpolationMode::Current);
     FProphecyNNPoseStore::ClearAgentPose(TestAgent);
     return true;
 }

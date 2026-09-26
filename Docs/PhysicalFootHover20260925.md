@@ -1,5 +1,7 @@
 # Physical foot above kinematic target — September25
 
+**September26 update:** physical ankle and drive allowances now follow the owner of the legs: locomotion calf-clamp settings during locomotion/half attacks, attack calf-clamp settings during full attacks. The older statement below that all specials drop the locomotion allowance is superseded. [Current contract and half-attack dip evidence](HalfAttackPhysicalFootSink.md).
+
 Initial investigation used the height-guided knee implementation, historical September20 checkpoint, repeated kickL, Physical/Jolt. The user subsequently requested locomotion physical feet inherit their calf-clamp leeway; implementation is described below. The diagnostic8cm kick override was not retained.
 
 ## Shared locomotion allowance — implementation

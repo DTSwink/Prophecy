@@ -22,12 +22,40 @@ struct FLeeways
 };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FLeeways> Overrides;
 static FDelegateHandle Cleanup;
+static EProphecyAgentState LowerState(EProphecyAgentState State,bool Half)
+{
+    return State==EProphecyAgentState::Attacking && Half ? EProphecyAgentState::Locomotion : State;
+}
+static EProphecyAgentState LowerState(const AProphecyAgent* Agent)
+{
+    const auto State=UProphecyNNDefenseLibrary::GetAgentState(const_cast<AProphecyAgent*>(Agent));
+    if (Agent && State==EProphecyAgentState::Attacking)
+    {
+        FName Attack;bool Half=false,Armed=false,Hit=false;int32 Frame=0;
+        if (Agent->GetNNAttackState(Attack,Half,Armed,Hit,Frame)) return LowerState(State,Half);
+    }
+    return State;
+}
+static float CalfLeewayFor(const AProphecyAgent* Agent,EProphecyAgentState State)
+{
+    if (!Agent) return 0.f;
+    if (State==EProphecyAgentState::Locomotion)
+        return Agent->bOverrideLocomotionCalfClamp && Agent->bLocomotionCalfClamp
+            ? FMath::Max(0.f,Agent->LocomotionCalfClampLeewayCm) : 0.f;
+    if (State==EProphecyAgentState::Attacking)
+        return Agent->bOverrideAttackCalfClamp && Agent->bAttackCalfClamp
+            ? FMath::Max(0.f,Agent->AttackCalfClampLeewayCm) : 0.f;
+    // Defense retains its existing physical range policy.
+    return 0.f;
+}
 float LocomotionCalfLeeway(const AProphecyAgent* Agent)
 {
-    if (!Agent || !Agent->bOverrideLocomotionCalfClamp || !Agent->bLocomotionCalfClamp
-        || Agent->LocomotionCalfClampLeewayCm<=0.f) return 0.f;
-    return UProphecyNNDefenseLibrary::GetAgentState(const_cast<AProphecyAgent*>(Agent))==EProphecyAgentState::Locomotion
-        ? Agent->LocomotionCalfClampLeewayCm : 0.f;
+    return LowerState(Agent)==EProphecyAgentState::Locomotion
+        ? CalfLeewayFor(Agent,EProphecyAgentState::Locomotion) : 0.f;
+}
+float CalfLeeway(const AProphecyAgent* Agent)
+{
+    return CalfLeewayFor(Agent,LowerState(Agent));
 }
 float Leeway(const AProphecyAgent* Agent)
 {
@@ -36,7 +64,7 @@ float Leeway(const AProphecyAgent* Agent)
     // All-mode settings avoid even the activity-state lookup.
     const auto& V=Settings->Values;
     if (V[0]==V[1] && V[0]==V[2] && V[0]==V[3]) return V[0];
-    return Settings->For(UProphecyNNDefenseLibrary::GetAgentState(const_cast<AProphecyAgent*>(Agent)));
+    return Settings->For(LowerState(Agent));
 }
 }
 
@@ -79,6 +107,23 @@ bool FProphecyPhysicalFootLeewayTest::RunTest(const FString&)
     TestEqual(TEXT("Disabled clamp does not invent unlimited joint freedom"),LocomotionCalfLeeway(Agent),0.f);
     Agent->SetLocomotionCalfClamp(true,0);
     TestEqual(TEXT("Zero clamp restores locked ankle"),LocomotionCalfLeeway(Agent),0.f);
+    Agent->SetLocomotionCalfClamp(true,2);
+    Agent->SetAttackCalfClamp(true,5);
+    for (const bool Half:{false,true})
+    {
+        const auto State=LowerState(EProphecyAgentState::Attacking,Half);
+        TestEqual(TEXT("Physical ankle follows the owner of the legs"),CalfLeewayFor(Agent,State),Half?2.f:5.f);
+        FLeeways Profiles;Profiles.Values[0]=3;Profiles.Values[1]=1000;
+        TestEqual(TEXT("Foot drive profile follows the same lower owner"),Profiles.For(State),Half?3.f:1000.f);
+    }
+    Agent->SetAttackCalfClamp(true,0);
+    TestEqual(TEXT("Explicit zero attack allowance locks the ankle"),CalfLeewayFor(Agent,EProphecyAgentState::Attacking),0.f);
+    Agent->SetAttackCalfClamp(false,5);
+    TestEqual(TEXT("Disabled attack clamp does not invent unlimited joint freedom"),CalfLeewayFor(Agent,EProphecyAgentState::Attacking),0.f);
+    TestEqual(TEXT("Attack settings do not overwrite half/locomotion allowance"),CalfLeeway(Agent),2.f);
+    Agent->SetAttackCalfClamp(true,7);
+    TestEqual(TEXT("Full attack reads current values without latching"),CalfLeewayFor(Agent,EProphecyAgentState::Attacking),7.f);
+    TestEqual(TEXT("Defense keeps its previous joint policy"),CalfLeewayFor(Agent,EProphecyAgentState::Parrying),0.f);
     const FVector End(12,-8,40), Target=End+FVector(3,4,0);
     TestTrue(TEXT("Default exactly retains calf endpoint"),Clamp(Target,End,0)==End);
     TestTrue(TEXT("Inside allowance keeps original target"),Clamp(Target,End,6)==Target);

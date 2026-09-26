@@ -324,7 +324,6 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
     ProphecyLimbCollision::DefenseChanged(ResolveAgent(Handle),false);
     --Impl->Defense->ActiveCount;
     if (PlayerSpring && bReturnToLocomotion) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
-    if (bReturnToLocomotion) ProphecyAttackRecovery::Begin(Actor);
     ProphecyAttackRecovery::NotifyEnded(Actor,NAME_None,false,bReturnToLocomotion,
         WasDodge?EProphecyAgentState::Dodging:EProphecyAgentState::Parrying);
     if (bReturnToLocomotion && ResolveAgent(Handle)==Actor && !Agent.Slash.bActive && !Agent.DefensePose)
@@ -456,7 +455,7 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
         const float* Delta=D.Outputs.GetData()+Lane*90;bool Finite=true;for (int32 I=0;I<90;++I) Finite&=FMath::IsFinite(Delta[I]);
         FPose Pose;if (!Finite || !CompleteParry(P.State,P.Work,Delta,P.NextLower,P.NextBaseline,P.NextRoot,P.Frozen,D.Geometry,Pose))
         { P.Status.Active=false;continue; }
-        DefenseForearmRoll(*Impl,D.Bones,Pose);
+        if (ProphecySpecialRoll::Forearms(P.Owner.Get())) DefenseForearmRoll(*Impl,D.Bones,Pose);
         const bool bContactStop=DefensePhysicalStop(*Impl,P,P.CurrentPose,Pose,FVector3f::ZeroVector);
         FMemory::Memcpy(P.PreviousComponent,P.CurrentComponent,sizeof(P.CurrentComponent));
         DefenseComponentPose(Pose,P.NextRoot,D.Bones,P.CurrentComponent);P.CurrentPose=Pose;P.bHasPose=true;

@@ -16,9 +16,12 @@ struct FWeights
 };
 void Begin(const AProphecyAgent* Agent,FName Attack=NAME_None);
 void Cancel(const AProphecyAgent* Agent);
-void EnterSpecial(const AProphecyAgent* Agent);
+void EnterSpecial(const AProphecyAgent* Agent,bool Half=false);
+void EnterLowerSpecial(const AProphecyAgent* Agent);
 void Remove(const AProphecyAgent* Agent);
 void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLocomotion,
+    EProphecyAgentState Special=EProphecyAgentState::Attacking);
+void NotifyLowerEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLocomotion,
     EProphecyAgentState Special=EProphecyAgentState::Attacking);
 bool IsEndEvent(const AProphecyAgent* Agent);
 FName EndEventAttack(const AProphecyAgent* Agent);

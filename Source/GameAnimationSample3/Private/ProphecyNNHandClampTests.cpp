@@ -43,7 +43,15 @@ bool FProphecyNNHandClampTest::RunTest(const FString&)
 				TestTrue(TEXT("Inside band and disabled poses untouched"), Pose[Side*2+1].Equals(Original[Side*2+1],0));
 		}
 	}
+	for (bool Half : {true,false})
+	{
+		FProphecyNNPoseStore::SetAgentLocalPose(Id,Names,Local,Local,Local,FTransform::Identity,FTransform::Identity,
+			0,true,false,0,FVector2D::ZeroVector,Settings,FProphecyNNForearmClamp(),Half);
+		TestTrue(TEXT("Both attack modes retain upper presentation"),FProphecyNNPoseStore::UsesAttackPresentation(Id));
+		TestEqual(TEXT("Half legs retain locomotion presentation"),FProphecyNNPoseStore::UsesLowerSpecialPresentation(Id),!Half);
+	}
 	FProphecyNNPoseStore::ClearAgentPose(Id);
+	TestFalse(TEXT("Lower ownership flag is retired with the pose"),FProphecyNNPoseStore::UsesLowerSpecialPresentation(Id));
 	return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyNNForearmClampTest,

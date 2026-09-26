@@ -1,5 +1,22 @@
 # Shared special recovery
 
+## Current regional dispatch
+
+The combined Special Ended event is replaced by **Upper Special Ended** and
+**Lower Special Ended**. See [regional ownership and transition rules](RegionalSpecialRecovery.md).
+Pure half attacks release only the upper body. Full-to-half switches release the
+lower body immediately; half-to-full switches reacquire it, so both regions end
+when that full attack ends. Parry and dodge emit both events consecutively.
+Leg reconstruction and lower recovery belong to lower end; arm return, hands and
+FK-core recovery belong to upper end. Lower recovery can run while the upper half
+of an attack continues. Upper-only entry/exit preserves ongoing lower motion.
+
+## Historical combined-event implementation
+
+The following describes the earlier shared-event setup and its original test
+results. Its blanket cancellation/recovery rules for half attacks are superseded
+by the regional contract above.
+
 Specials are attack (full/half), active parry and active dodge. A queued defense
 waiting for Armed is not yet a special and leaves locomotion controls available.
 

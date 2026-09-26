@@ -20,11 +20,17 @@ public:
 		const FPreparationPose* EntryPose = nullptr;
 		// Transient per-call context; no persistent native model layout change.
 		const FPelvisInertiaStepContext* PelvisInertia = nullptr;
+		bool bLeftHandConstraint = false;
 	};
 	int32 InputBatchSize = 1;
 	bool Initialize(const FString& Directory, const TSharedPtr<FJsonObject>& Contract, bool bGpu = false, const FString& AuditGeometryPath = FString());
 	bool SetBatch(int32 Count);
 	bool Run(TArray<float>& Input, TArray<float>& Output, TConstArrayView<FStepSettings> Settings = {});
+#if !UE_BUILD_SHIPPING
+	// Scoped by the diagnostic caller; never changes weights or retained history.
+	void SwapAuditFrame(FVector3f& Position,FMat3f& Rotation)
+	{ Swap(RootPosition,Position);Swap(RootRotation,Rotation); }
+#endif
 	TArray<float> StartupExpected;
 	// Kept here for opt-in numerical audits; production adds no trace collection.
 	TArray<float> NetworkInputs[3], NetworkOutputs[3];

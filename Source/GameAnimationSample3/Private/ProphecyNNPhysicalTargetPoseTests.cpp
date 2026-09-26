@@ -4,6 +4,7 @@
 
 #include "ProphecyNNPhysicalTargetPose.h"
 #include "ProphecyNNPoseTypes.h"
+#include "ProphecyNNInterpolation.h"
 #include "Engine/SkeletalMesh.h"
 #include "Misc/AutomationTest.h"
 #include "PhysicsEngine/PhysicsAsset.h"
@@ -277,4 +278,68 @@ bool FProphecySparseTargetsForearms::RunTest(const FString&)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAuthoredHelperTargets,
+    "Prophecy.NN.PhysicalTargets.AuthoredHelpers", ProphecyNNPhysicalTargets::Tests::Flags)
+bool FProphecyAuthoredHelperTargets::RunTest(const FString&)
+{
+    using namespace ProphecyNNPhysicalTargets;
+    FReferenceSkeleton Ref;
+    const FName Skeleton[]={TEXT("root"),TEXT("calf_l"),TEXT("foot_l"),TEXT("ball_l"),
+        TEXT("neck_01"),TEXT("neck_helper"),TEXT("neck_02"),TEXT("unanimated_helper")};
+    const int32 Parents[]={INDEX_NONE,0,1,2,0,4,5,3};
+    {
+        FReferenceSkeletonModifier Edit(Ref,nullptr);
+        for(int32 I=0;I<UE_ARRAY_COUNT(Skeleton);++I)
+            Edit.Add(FMeshBoneInfo(Skeleton[I],Skeleton[I].ToString(),Parents[I]),
+                FTransform(FRotator(0,I*3.,0),FVector(I+1.,0,5)));
+    }
+    TStrongObjectPtr<USkeletalMesh> Mesh(NewObject<USkeletalMesh>(GetTransientPackage()));
+    Mesh->SetRefSkeleton(Ref);
+    TStrongObjectPtr<UPhysicsAsset> Asset(NewObject<UPhysicsAsset>(GetTransientPackage()));
+    TArray<FName> Bodies={TEXT("calf_l"),TEXT("foot_l"),TEXT("neck_01")};
+    for(FName Name:Bodies)
+    { auto* Body=NewObject<USkeletalBodySetup>(Asset.Get());Body->BoneName=Name;Asset->SkeletalBodySetups.Add(Body); }
+    FProphecyNNPoseSnapshot Pose;
+    Pose.BoneNames={TEXT("calf_l"),TEXT("foot_l"),TEXT("ball_l"),TEXT("neck_01"),TEXT("neck_02")};
+    for(int32 I=0;I<Pose.BoneNames.Num();++I)
+    {
+        Pose.PreviousComponentTransforms.Add(FTransform(FRotator(I*10.,I*17.,0),FVector(I*9.,0,50)));
+        Pose.ComponentTransforms.Add(FTransform(FRotator(I*15.,I*31.+90.,20),FVector(I*10.,15,65)));
+        Pose.LocalTransforms.Add(FTransform::Identity); // Must not leak future local data into presentation.
+    }
+    Pose.bHasComponentWorldTransform=true;
+    TArray<FName> Names;
+    TArray<FTransform> Future,Previous;
+    TestTrue(TEXT("World pose includes authored helpers"),BuildWorldPoses(*Mesh,*Asset,Pose,Names,Future,Previous));
+    TestEqual(TEXT("Adds only the two missing authored helpers"),Names.Num(),5);
+    TestTrue(TEXT("Body order unchanged"),Names[0]==Bodies[0] && Names[1]==Bodies[1] && Names[2]==Bodies[2]);
+    TArray<int32> Indices;
+    for(FName Name:Skeleton)Indices.Add(Names.IndexOfByKey(Name));
+    for(auto Mode:{EProphecyNNInterpolationMode::Current,EProphecyNNInterpolationMode::AttackViewer,
+        EProphecyNNInterpolationMode::HermiteSlerp})
+    for(float Alpha:{0.f,.25f,.5f,.75f,1.f})
+    {
+        Pose.InterpolationMode=Mode;
+        TArray<FTransform> World,Local,Composed;
+        for(int32 I=0;I<Names.Num();++I)
+            World.Add(Mode==EProphecyNNInterpolationMode::Current
+                ? ProphecyNNPhysicalTargets::Tests::Blend(Previous[I],Future[I],Alpha)
+                : ProphecyNNInterpolation::Sample(Pose,INDEX_NONE,Previous[I],Future[I],Alpha));
+        TestTrue(TEXT("Derives local helpers from this presented pose"),BuildHelperLocals(Ref,Indices,World,FTransform::Identity,Local));
+        for(int32 I=0;I<Ref.GetNum();++I)
+        {
+            Composed.Add(Parents[I]==INDEX_NONE?Local[I]:Local[I]*Composed[Parents[I]]);
+            if(World.IsValidIndex(Indices[I]))
+                TestTrue(TEXT("Toe/neck and body world targets reconstruct coherently"),Composed[I].Equals(World[Indices[I]],1.e-5));
+        }
+        TestTrue(TEXT("Unauthored helper retains reference local"),Local[7].Equals(Ref.GetRefBonePose()[7]));
+        const FQuat Offset(FVector::UpVector,.4);
+        const int32 Foot=Names.IndexOfByKey(TEXT("foot_l"));
+        FTransform PhysicalFoot=World[Foot];PhysicalFoot.SetRotation(Offset*PhysicalFoot.GetRotation());
+        const FTransform PhysicalToe=Local[3]*PhysicalFoot;
+        TestTrue(TEXT("Simulated toe inherits actual foot while preserving authored local"),
+            PhysicalToe.GetRelativeTransform(PhysicalFoot).Equals(Local[3],1.e-5));
+    }
+    return true;
+}
 #endif

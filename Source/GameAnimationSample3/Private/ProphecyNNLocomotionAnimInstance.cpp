@@ -293,7 +293,7 @@ private:
 		bool bApplyLegs,
 		bool bApplyUpperBody) const
 	{
-		const bool bCanUseViewerInterpolation = (bUseViewerGlobalPoseInterpolation || CurrentPose.InterpolationMode == EProphecyNNInterpolationMode::HermiteSlerp) &&
+		const bool bCanUseViewerInterpolation = (bUseViewerGlobalPoseInterpolation || CurrentPose.InterpolationMode != EProphecyNNInterpolationMode::Current) &&
 			bHasEvaluationComponentWorldTransform && CurrentPose.bHasComponentWorldTransform &&
 			CurrentPose.PreviousComponentTransforms.Num() == CurrentPose.ComponentTransforms.Num() &&
 			CurrentPose.ComponentTransforms.Num() == CurrentPose.BoneNames.Num();
@@ -369,7 +369,7 @@ private:
 				CurrentPose.PreviousComponentWorldTransform;
 			const FTransform CurrentWorld = CurrentPose.ComponentTransforms[Index] *
 				CurrentPose.ComponentWorldTransform;
-			DesiredComponentTransforms[Index] = (CurrentPose.InterpolationMode == EProphecyNNInterpolationMode::HermiteSlerp
+			DesiredComponentTransforms[Index] = (CurrentPose.InterpolationMode != EProphecyNNInterpolationMode::Current
 				? ProphecyNNInterpolation::Sample(CurrentPose, Index, PreviousWorld, CurrentWorld, Alpha)
 				: BlendViewerWorldTransform(PreviousWorld, CurrentWorld, Alpha)).GetRelativeTransform(EvaluationComponentWorldTransform);
 			DesiredComponentTransforms[Index].NormalizeRotation();
@@ -435,7 +435,7 @@ private:
 		};
 		// Attack playback already supplies the authored calf transform at unit
 		// scale. The legacy locomotion extension would inflate all three axes.
-		if (!bPhysicalAgent && !FProphecyNNPoseStore::UsesAttackPresentation(AgentId))
+		if (!bPhysicalAgent && !FProphecyNNPoseStore::UsesLowerSpecialPresentation(AgentId))
 		{
 			ExtendCalfToFoot(TEXT("calf_l"), TEXT("foot_l"));
 			ExtendCalfToFoot(TEXT("calf_r"), TEXT("foot_r"));

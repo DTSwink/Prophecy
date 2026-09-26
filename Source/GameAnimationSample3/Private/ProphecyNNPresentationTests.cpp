@@ -78,6 +78,51 @@ bool FRecoveryCalfLengthTest::RunTest(const FString&)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRecoveryUpperHandoffTest,"Prophecy.NN.PhysicalTargets.RecoveryUpperHandoff",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FRecoveryUpperHandoffTest::RunTest(const FString&)
+{
+    constexpr int32 Id=-919;
+    const TArray<FName> Names={TEXT("thigh_l"),TEXT("calf_l"),TEXT("foot_l"),TEXT("thigh_r"),TEXT("calf_r"),TEXT("foot_r")};
+    TArray<FTransform> Source;
+    for(int Side=0;Side<2;++Side)
+    {
+        Source.Add(FTransform(FVector(0,Side*20,80)));
+        Source.Add(FTransform(FVector(6,Side*20,41)));
+        Source.Add(FTransform(FRotator(5,12,-8),FVector(0,Side*20,0)));
+        ProphecyRecoveryLegLength::Resolve(Source[Side*3],Source[Side*3+1],Source[Side*3+2],38.865064,42.3232);
+    }
+    FProphecyNNPoseSnapshot Snapshot;Snapshot.BoneNames=Names;Snapshot.LocalTransforms=Source;
+    Snapshot.PreviousComponentTransforms=Source;Snapshot.ComponentTransforms=Source;
+    TArray<FTransform> Previous;
+    for(int Tick=0;Tick<=60;++Tick)
+    {
+        const double T=double(Tick)/60.,Weight=1.-T*T*(3.-2.*T);
+        if(Tick<60) ProphecyNNPresentation::SetRecoveryCalfLengthsWithUpperBlend(Id,FVector2D(39.048656,39.048656),FVector2D(42.3232,42.3232),float(Weight));
+        else ProphecyNNPresentation::SetRecoveryCalfLengths(Id,FVector2D::ZeroVector,FVector2D::ZeroVector);
+        auto Pose=Source;FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose,1);
+        for(int Side=0;Side<2;++Side)
+        {
+            const int I=Side*3;
+            TestTrue(TEXT("Thigh converges on existing smooth recovery clock"),FMath::IsNearlyEqual(
+                (Pose[I+1].GetLocation()-Pose[I].GetLocation()).Size(),FMath::Lerp(38.865064,39.048656,Weight),1.e-6));
+            TestTrue(TEXT("Hip and ankle remain fixed"),Pose[I].GetLocation().Equals(Source[I].GetLocation(),0) && Pose[I+2].Equals(Source[I+2],0));
+            if(Tick) TestTrue(TEXT("Small continuous knee steps including removal"),(Pose[I+1].GetLocation()-Previous[I+1].GetLocation()).Size()<.025);
+            if(Tick==60) TestTrue(TEXT("Completion returns exact unmodified pose"),Pose[I+1].Equals(Source[I+1],0));
+        }
+        Previous=Pose;
+    }
+    TestFalse(TEXT("Completion leaves no recovery work"),ProphecyNNPresentation::HasRecoveryCalfLengths(Id));
+    // A stale weight must not leak into the next return through the old setter.
+    ProphecyNNPresentation::SetRecoveryCalfLengthsWithUpperBlend(Id,FVector2D(39.048656,39.048656),FVector2D(42.3232,42.3232),0);
+    FProphecyNNPoseStore::ClearAgentPose(Id);
+    ProphecyNNPresentation::SetRecoveryCalfLengths(Id,FVector2D(39.048656,39.048656),FVector2D(42.3232,42.3232));
+    auto Pose=Source;FProphecyNNPoseStore::ApplyRigidCalves(Id,Snapshot,Names,Pose);
+    TestTrue(TEXT("Reset/new return restores its initial length"),FMath::IsNearlyEqual((Pose[1].GetLocation()-Pose[0].GetLocation()).Size(),39.048656,1.e-6));
+    FProphecyNNPoseStore::ClearAgentPose(Id);
+    return !HasAnyErrors();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyNNPresentationCadence,
     "Prophecy.NN.Presentation.FrameCadence", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
