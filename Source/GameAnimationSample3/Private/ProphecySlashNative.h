@@ -21,6 +21,7 @@ public:
 		// Transient per-call context; no persistent native model layout change.
 		const FPelvisInertiaStepContext* PelvisInertia = nullptr;
 		bool bLeftHandConstraint = false;
+		bool bBlockArmed = false;
 	};
 	int32 InputBatchSize = 1;
 	bool Initialize(const FString& Directory, const TSharedPtr<FJsonObject>& Contract, bool bGpu = false, const FString& AuditGeometryPath = FString());

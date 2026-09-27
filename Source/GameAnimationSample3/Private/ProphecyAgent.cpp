@@ -1,4 +1,6 @@
 #include "ProphecyAgent.h"
+#include "ProphecyHalfAttackCompensation.h"
+#include "ProphecyAttackControls.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyAgentTime.h"
 #include "ProphecyClampProfiles.h"
@@ -1423,6 +1425,7 @@ AProphecyAgent::AProphecyAgent()
 
 void AProphecyAgent::BeginPlay()
 {
+	ProphecyAttackControls::StartAttackTickCounter(this);
 	Super::BeginPlay();
 	if (bAutoInitializeAgentRuntime)
 	{
@@ -1489,6 +1492,8 @@ bool AProphecyAgent::EnsureStandaloneNNManager()
 
 void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	ProphecyHalfAttackCompensation::Remove(this);
+	ProphecyAttackControls::Remove(this);
 	if (const auto* Manager=FindOwningNNManager(this))
 		ProphecyAgentTime::RemoveLane(Manager,AgentHandle.Index);
 	ProphecyAngularLimitBlend::Cancel(this);

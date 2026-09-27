@@ -1,4 +1,6 @@
 #include "ProphecyAgentResetPhysics.h"
+#include "ProphecyHalfAttackCompensation.h"
+#include "ProphecyAttackControls.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyAgent.h"
 #include "ProphecyPhysicalProfileLibrary.h"
@@ -55,6 +57,8 @@ void Remove(const AProphecyAgent* Agent)
     EquipmentStates.Remove(Agent);
     ProphecyHandRecovery::ForgetReset(Agent);
     ProphecyCoreTempering::ForgetReset(Agent);
+    ProphecyHalfAttackCompensation::ForgetReset(Agent);
+    ProphecyAttackControls::ForgetReset(Agent);
     ProphecyUpperBodyInertia::ForgetReset(Agent);
     ProphecyAttackStartInertia::ForgetReset(Agent);
     ProphecySlashReturn::ForgetReset(Agent);
@@ -91,6 +95,8 @@ bool Capture(AProphecyAgent* Agent,FString& Error)
     EquipmentStates.Add(Agent,MoveTemp(Equipment));
     ProphecyHandRecovery::CaptureReset(Agent);
     ProphecyCoreTempering::CaptureReset(Agent);
+    ProphecyHalfAttackCompensation::CaptureReset(Agent);
+    ProphecyAttackControls::CaptureReset(Agent);
     ProphecyUpperBodyInertia::CaptureReset(Agent);
     ProphecyAttackStartInertia::CaptureReset(Agent);
     ProphecySlashReturn::CaptureReset(Agent);
@@ -159,6 +165,8 @@ bool Restore(AProphecyAgent* Agent,FString& Error)
     if (const auto* Right=RightTemperingStates.Find(Agent)) ProphecyLowerTempering::RestoreRightFootSettings(Agent,*Right);
     ProphecyHandRecovery::RestoreReset(Agent);
     ProphecyCoreTempering::RestoreReset(Agent);
+    ProphecyHalfAttackCompensation::RestoreReset(Agent);
+    ProphecyAttackControls::RestoreReset(Agent);
     ProphecyUpperBodyInertia::RestoreReset(Agent);
     ProphecyAttackStartInertia::RestoreReset(Agent);
     ProphecySlashReturn::RestoreReset(Agent);

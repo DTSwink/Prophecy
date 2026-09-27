@@ -250,10 +250,8 @@ void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,f
 	// the legs once, not in all three full-skeleton FK passes of the oracle.
 	for (const auto& L:Legs) SolveLimb(W.FrozenPose,L,LowerOffsets,Out,Settings && Settings->PelvisInertia);
 	// Learned phase latches; headbutt arms remain entirely checkpoint-authored.
-	const bool bHitRequest=NeuralUpper[91]>=GateThreshold;
-	Out[432]=State[271]>=0.5f || (State[270]>=0.5f && bHitRequest) ? 1.f:0.f;
-	Out[431]=State[270]>=0.5f || NeuralUpper[90]>=GateThreshold ||
-		(Models[1].InputWidth!=51 && (Out[432]>=0.5f || bHitRequest)) ? 1.f:0.f;
+	ProphecyAttackControls::PhaseLatches(Settings && Settings->bBlockArmed,Models[1].InputWidth!=51,
+		State[270],State[271],NeuralUpper[90],NeuralUpper[91],GateThreshold,Out[431],Out[432]);
 	FPose Base,Candidate; RawUpper(Out,W.BaseUpper,Base);
 	RawUpper(Out,Out+41,Candidate);
 	if (Settings && Settings->bLeftHandConstraint)

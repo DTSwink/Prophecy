@@ -1,5 +1,6 @@
 #include "ProphecyAttackRecoveryLibrary.h"
 #include "ProphecyAttackRecovery.h"
+#include "ProphecyAttackControls.h"
 #include "ProphecyAgent.h"
 #include "Engine/World.h"
 #include "ProphecyBlendClock.h"
@@ -57,6 +58,7 @@ static FDelegateHandle Cleanup;
 static const AProphecyAgent* EndEventAgent=nullptr;
 static FName EndAttack;
 static bool EndEventUpper=false;
+static EProphecyAgentState EndEventSpecial=EProphecyAgentState::Locomotion;
 #if WITH_EDITOR
 static TAutoConsoleVariable<int32> RegionAudit(TEXT("Prophecy.Recovery.RegionAudit"),0,
     TEXT("Opt-in regional special-end dispatch log; event-only."));
@@ -102,6 +104,7 @@ void Begin(const AProphecyAgent* Agent,FName Attack)
 void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Settings.Remove(Agent);KickSettings.Remove(Agent);WalkFootRotations.Remove(Agent);ProphecyLegRecovery::Remove(Agent); }
 void EnterLowerSpecial(const AProphecyAgent* Agent)
 {
+    ProphecyAttackControls::CancelLowerReturn(Agent);
     ProphecyLegRecovery::Cancel(Agent);
     ProphecyKickFootLeeway::CancelPoseRecovery(Agent);
     Cancel(Agent);ProphecyLowerTempering::Remove(Agent);
@@ -117,6 +120,7 @@ static void DispatchRegion(AProphecyAgent* Agent,FName Attack,bool Half,bool Ret
     EProphecyAgentState Special,bool Upper)
 {
     TGuardValue<bool> Region(EndEventUpper,Upper);
+    TGuardValue<EProphecyAgentState> SpecialScope(EndEventSpecial,Special);
     if (Returning)
     {
         if (Upper)
@@ -126,6 +130,7 @@ static void DispatchRegion(AProphecyAgent* Agent,FName Attack,bool Half,bool Ret
         }
         else
         {
+            if(Special==EProphecyAgentState::Attacking)ProphecyAttackControls::BeginLowerReturn(Agent);
             ProphecyLowerTempering::SelectAttackProfile(Agent,Attack);
             ProphecyLegRecovery::Begin(Agent);
         }
@@ -171,6 +176,8 @@ void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool Returning,EPr
         Agent->OnNNAttackEnded(Attack,Half);
 }
 bool IsEndEvent(const AProphecyAgent* Agent) { return EndEventAgent==Agent && EndEventUpper; }
+bool IsLowerAttackEndEvent(const AProphecyAgent* Agent)
+{ return Agent && EndEventAgent==Agent && !EndEventUpper && EndEventSpecial==EProphecyAgentState::Attacking; }
 FName EndEventAttack(const AProphecyAgent* Agent) { return IsEndEvent(Agent)?EndAttack:NAME_None; }
 FVector2f FootRotationWeights(const AProphecyAgent* Agent,float Normal)
 {

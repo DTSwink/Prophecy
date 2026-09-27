@@ -428,6 +428,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 			else if (!bWasKick && bIsKick) ProphecyKickFootLeeway::Begin(Actor,Attack);
 		}
 		Slash.TargetWorld = TargetWorld;
+		if (!bHalf && !Slash.bHalf) ProphecyAttackControls::FullAttackStarted(Actor);
 		return Slash.bHalf == bHalf || SetAgentNNHalfAttack(Handle,bHalf);
 	}
 	const int32 Checkpoint=ProphecyAttackCheckpoint::ForFamily(this,Actor,Attack);
@@ -510,6 +511,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
         TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index)[0]
             *SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),Current[0]*StartCarrier);
 	Slash.bActive = true;
+	if (!bHalf) ProphecyAttackControls::FullAttackStarted(Actor);
 #if !UE_BUILD_SHIPPING
 	if (!bHalf) SlashTrainFrame::Started(Actor);
 #endif
@@ -568,6 +570,7 @@ void AProphecyNNLocomotionManager::ReturnAttackLowerToLocomotion(FProphecyAgentH
 	}
 	if (PlayerSpring && bReturnToLocomotion) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
 	if (bReturnToLocomotion) ProphecyRootPelvisBounds::ResetMagicCubeToRoot(Actor);
+	ProphecyAttackControls::LowerAttackFinished(Actor);
 }
 
 bool AProphecyNNLocomotionManager::SetAgentNNHalfAttack(FProphecyAgentHandle Handle, bool bHalf)
@@ -580,6 +583,7 @@ bool AProphecyNNLocomotionManager::SetAgentNNHalfAttack(FProphecyAgentHandle Han
 	if (Slash.bHalf == bHalf) return true;
 	if (Slash.bHalf && !bHalf)
 	{
+		ProphecyAttackControls::FullAttackStarted(Actor);
 		ProphecyAttackRecovery::EnterLowerSpecial(Actor);
 		ProphecyWalkPinning::ResetSmoothing(Actor);
 		// Retain the existing full-mode rejoin contract: use the current ground-
@@ -675,6 +679,7 @@ bool AProphecyNNLocomotionManager::GetAgentNNAttackTarget(FProphecyAgentHandle H
 
 void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 {
+	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::Attack);
 	if (!Impl->bSlashInitialized) return;
 	TArray<int32, TInlineAllocator<BatchSize>> Active,AlternativeActive,Refresh2Active,September20Active;
 #if !UE_BUILD_SHIPPING
@@ -764,6 +769,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				auto& Option = Settings[Lane];
 				Option.FrozenPinIterations = Actor->AttackFootPinningIterations;
 				Option.bLeftHandConstraint = ProphecyAttackWrist::Enabled(Actor);
+				Option.bBlockArmed = ProphecyAttackControls::ArmedBlocked(Actor);
 				if (!Slash.bHalf && ProphecyPelvisInertia::HasTarget(Actor))
 				{
 					auto& Context=InertiaContexts.AddDefaulted_GetRef();
@@ -908,7 +914,30 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		FTransform HalfMount;
 		if (Slash.bHalf) HalfMount = Pose[0];
 		const int32 Spine01=Slash.bHalf ? Impl->BodyNames.IndexOfByKey(FName(TEXT("spine_01"))) : INDEX_NONE;
-		for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
+		if (Slash.bHalf && Spine01!=INDEX_NONE && ProphecyHalfAttackCompensation::Enabled(AgentActors[AgentIndex]))
+		{
+			const FVector* PositionTarget=ProphecyHalfAttackCompensation::Position(AgentActors[AgentIndex]) ? &Slash.TargetWorld : nullptr;
+			bool bDistributed=false;
+			if (ProphecyHalfAttackCompensation::Distributed(AgentActors[AgentIndex]))
+			{
+				const int32 Spines[]={Spine01,Impl->BodyNames.IndexOfByKey(FName(TEXT("spine_02"))),
+					Impl->BodyNames.IndexOfByKey(FName(TEXT("spine_03"))),Impl->BodyNames.IndexOfByKey(FName(TEXT("spine_04"))),
+					Impl->BodyNames.IndexOfByKey(FName(TEXT("spine_05")))};
+				bDistributed=ProphecyHalfAttackMount::MountDistributed(Slash.GhostPose,Pose,Impl->Parents,MakeArrayView(Spines),HalfMount,Slash.AnchorWorld,Carrier,PositionTarget);
+			}
+			if (!bDistributed)
+			{
+				FTransform CompensatedSpine=ProphecyHalfAttackMount::CompensatedSpine(
+					Slash.GhostPose[Spine01],Slash.GhostPose[0],HalfMount,Slash.AnchorWorld,Carrier);
+				if(PositionTarget) ProphecyHalfAttackMount::CompensateSpinePosition(CompensatedSpine,Slash.GhostPose[Spine01],
+					Slash.AnchorWorld.InverseTransformPosition(*PositionTarget),Carrier.InverseTransformPosition(*PositionTarget));
+				for (int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
+					if (ProphecyHalfAttackMount::IsUpper(Bone,Spine01,Impl->Parents))
+						Pose[Bone]=Bone==Spine01 ? CompensatedSpine
+							: Slash.GhostPose[Bone].GetRelativeTransform(Slash.GhostPose[Spine01])*CompensatedSpine;
+			}
+		}
+		else for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
 		{
 			if (!Slash.bHalf) Pose[Bone] = (Slash.GhostPose[Bone] * Slash.AnchorWorld).GetRelativeTransform(Carrier);
 			else if (ProphecyHalfAttackMount::IsUpper(Bone,Spine01,Impl->Parents))

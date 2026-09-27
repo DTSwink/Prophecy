@@ -99,6 +99,7 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
                 if(auto* P=N->FindPin(Name)) {P->BreakAllPinLinks();N->RemovePin(P);}
         const bool HadDistanceToLimit=N->FindPin(TEXT("DistanceToLimit"))!=nullptr;
         const bool HadLerpTarget=N->FindPin(TEXT("LerpTarget"))!=nullptr;
+        const bool HadPositionCompensation=N->FindPin(TEXT("CompensatePosition"))!=nullptr;
         const bool HadNonKicking=N->FindPin(TEXT("NonKickingFootTranslationXY"))!=nullptr;
         const bool HadAttackReachFamilies=N->FindPin(TEXT("SlashR"))!=nullptr;
         FString OldKickGraph;
@@ -151,6 +152,12 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
             }
         }
         auto After=PinValues(N);
+        if (!HadPositionCompensation && FunctionName==TEXT("EnableSpine01CompensationHalfAttack"))
+        {
+            const auto* Position=N->FindPin(TEXT("CompensatePosition"));
+            Preserved&=Position && Position->LinkedTo.IsEmpty() && Position->DefaultValue==TEXT("false");
+            After.RemoveAll([](const FString& Row) { return Row.StartsWith(TEXT("CompensatePosition=")); });
+        }
         if (!HadLerpTarget && FunctionName==TEXT("SetWalkPinningBackwardBound"))
         {
             const auto* Lerp=N->FindPin(TEXT("LerpTarget"));
@@ -186,6 +193,8 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
     UE_LOG(LogTemp,Display,TEXT("Recovery pin order: %s"),*Report);
 }
 static void RefreshOrder() { RefreshOrderFor(TEXT("SetAttackToLocomotionBlend"),TEXT("RecoveryPinOrder.txt")); }
+static void RefreshSpinePosition() { RefreshOrderFor(TEXT("EnableSpine01CompensationHalfAttack"),TEXT("SpinePositionPins.txt")); }
+static FAutoConsoleCommand SpinePositionCommand(TEXT("Prophecy.Editor.RefreshSpinePosition"),TEXT("Add position compensation checkbox; preserve existing values and links, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshSpinePosition));
 static void RefreshTemperingOrder() { RefreshOrderFor(TEXT("SetLocomotionLowerBodyTempering"),TEXT("TemperingPinOrder.txt")); }
 static void RefreshAttackTargetMargin() { RefreshOrderFor(TEXT("GetValidAttackTarget"),TEXT("AttackTargetMarginPins.txt")); }
 static void RefreshAttackTargetExtraReach() { RefreshOrderFor(TEXT("SetAttackTargetExtraReach"),TEXT("AttackTargetExtraReachPins.txt")); }

@@ -16,6 +16,22 @@ public:
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Foot Pinning",meta=(DefaultToSelf="Agent",ClampMin="0",ClampMax="1"))
     static bool SetRunPinningBoost(AProphecyAgent* Agent,float Alpha=0.f);
 
+    /** Current effective Run pin boost (0..1), including any attack-recovery hold/blend.
+     * Otherwise returns the ordinary Set Run Pinning Boost value (default0).
+     * This is the boost amount, not a foot's final pin or the Run checkpoint weight.
+     * Read-only: no ticking, state allocation, or extra inference. */
+    UFUNCTION(BlueprintPure,Category="Prophecy|Agent|Foot Pinning",meta=(DefaultToSelf="Agent"))
+    static float GetRunPinningBoost(AProphecyAgent* Agent);
+
+    /** Configure a temporary Run pin boost when an attack releases the lower body,
+     * including full-to-half switches. Hold Boost, then blend to the current regular
+     * Set Run Pinning Boost value. Pure half completion does not restart it.
+     * Durations use 60 unpaused game ticks per second. Both zero/disabled bypass.
+     * Does not force Run; only affects its contribution. New lower specials cancel it. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Foot Pinning",meta=(DefaultToSelf="Agent"))
+    static bool SetAttackRecoveryRunPinningBoost(AProphecyAgent* Agent,bool Enabled=true,
+        float HoldDurationSeconds=0.f,float BlendDurationSeconds=1.f,UPARAM(meta=(ClampMin="0",ClampMax="1")) float Boost=1.f);
+
     /** Raise the opposite foot's Walk pin to (1 - this foot's backward bound cap) * Multiplier,
      * clamped to 0..1. Uses geometric release, even if the source foot was not selected.
      * Preserves stronger existing pins; receiving foot's own bounds, raw limit and reach guard win.

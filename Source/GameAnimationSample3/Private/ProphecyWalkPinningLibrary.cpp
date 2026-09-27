@@ -1,4 +1,5 @@
 #include "ProphecyWalkPinningLibrary.h"
+#include "ProphecyAttackControls.h"
 #include "ProphecyWalkPinning.h"
 #include "ProphecyWalkTickPinning.h"
 #include "ProphecyNNPoseTypes.h"
@@ -30,12 +31,17 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FBackwardBound> BackwardBounds;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FBackwardBound> CircleBounds;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> BackwardTransfers;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> RunBoosts;
-void BoostRunPin(const AProphecyAgent* Agent,float& Left,float& Right)
+static float EffectiveRunBoost(const AProphecyAgent* Agent)
 {
     const float* Alpha=RunBoosts.IsEmpty()?nullptr:RunBoosts.Find(Agent);
-    if(!Alpha)return;
+    return ProphecyAttackControls::RunBoost(Agent,Alpha?*Alpha:0.f);
+}
+void BoostRunPin(const AProphecyAgent* Agent,float& Left,float& Right)
+{
+    const float Effective=EffectiveRunBoost(Agent);
+    if(Effective<=0)return;
     float& Highest=Left>=Right?Left:Right;
-    Highest=FMath::Lerp(Highest,1.f,*Alpha);
+    Highest=FMath::Lerp(Highest,1.f,Effective);
 }
 // Separate storage keeps existing retained bound structs and circle settings intact.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> BackwardTargetLerps;
@@ -203,6 +209,11 @@ bool UProphecyWalkPinningLibrary::SetRunPinningBoost(AProphecyAgent* Agent,float
         !FMath::IsFinite(Alpha) || Alpha<0 || Alpha>1)return false;
     if(Alpha>0)RunBoosts.Add(Agent,Alpha);else RunBoosts.Remove(Agent);
     RefreshCleanup();return true;
+}
+float UProphecyWalkPinningLibrary::GetRunPinningBoost(AProphecyAgent* Agent)
+{
+    return IsInGameThread() && IsValid(Agent) && !Agent->IsActorBeingDestroyed()
+        ? ProphecyWalkPinning::EffectiveRunBoost(Agent) : 0.f;
 }
 bool UProphecyWalkPinningLibrary::SetWalkPinningEveryTick(AProphecyAgent* Agent,bool Enabled)
 {

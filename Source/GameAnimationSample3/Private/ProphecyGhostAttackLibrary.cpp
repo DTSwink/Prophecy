@@ -1,4 +1,9 @@
 #include "ProphecyGhostAttackLibrary.h"
+#include "ProphecyHalfAttackCompensation.h"
+#include "ProphecyAttackControls.h"
+#include "ProphecyAttackRecovery.h"
+#include "ProphecyWalkPinningLibrary.h"
+#include "ProphecyRootPhysicsLibrary.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNLocomotionManager.h"
 #include "EngineUtils.h"
@@ -13,6 +18,45 @@
 #include "Engine/World.h"
 #include "Components/LineBatchComponent.h"
 #include "Misc/AutomationTest.h"
+#include "ProphecyAttackControls.inl"
+
+namespace ProphecyHalfAttackCompensation
+{
+// No ticking state, world delegates or retained object-layout changes. EndPlay
+// removes the weak-key entries; disabling erases the agent's active entry.
+static TSet<TWeakObjectPtr<const AProphecyAgent>> Active,ResetEnabled;
+static TSet<TWeakObjectPtr<const AProphecyAgent>> DistributedAgents,ResetDistributed;
+static TSet<TWeakObjectPtr<const AProphecyAgent>> PositionAgents,ResetPosition;
+bool Enabled(const AProphecyAgent* A) { return !Active.IsEmpty() && Active.Contains(A); }
+bool Distributed(const AProphecyAgent* A) { return !DistributedAgents.IsEmpty() && DistributedAgents.Contains(A); }
+bool Position(const AProphecyAgent* A) { return !PositionAgents.IsEmpty() && PositionAgents.Contains(A); }
+void Remove(const AProphecyAgent* A) { Active.Remove(A);ResetEnabled.Remove(A);DistributedAgents.Remove(A);ResetDistributed.Remove(A);PositionAgents.Remove(A);ResetPosition.Remove(A); }
+void CaptureReset(const AProphecyAgent* A)
+{
+    if(Enabled(A)) ResetEnabled.Add(A);else ResetEnabled.Remove(A);
+    if(Distributed(A)) ResetDistributed.Add(A);else ResetDistributed.Remove(A);
+    if(Position(A)) ResetPosition.Add(A);else ResetPosition.Remove(A);
+}
+void RestoreReset(const AProphecyAgent* A)
+{
+    if(ResetEnabled.Contains(A)) Active.Add(A);else Active.Remove(A);
+    if(ResetDistributed.Contains(A)) DistributedAgents.Add(A);else DistributedAgents.Remove(A);
+    if(ResetPosition.Contains(A)) PositionAgents.Add(A);else PositionAgents.Remove(A);
+}
+void ForgetReset(const AProphecyAgent* A) { ResetEnabled.Remove(A);ResetDistributed.Remove(A);ResetPosition.Remove(A); }
+}
+bool UProphecyGhostAttackLibrary::EnableSpine01CompensationHalfAttack(AProphecyAgent* Agent,bool Enabled,bool DistributeAlongSpine01ToSpine05,bool CompensatePosition)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
+        || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown) return false;
+    if(Enabled) ProphecyHalfAttackCompensation::Active.Add(Agent);
+    else ProphecyHalfAttackCompensation::Active.Remove(Agent);
+    if(Enabled && DistributeAlongSpine01ToSpine05) ProphecyHalfAttackCompensation::DistributedAgents.Add(Agent);
+    else ProphecyHalfAttackCompensation::DistributedAgents.Remove(Agent);
+    if(Enabled && CompensatePosition) ProphecyHalfAttackCompensation::PositionAgents.Add(Agent);
+    else ProphecyHalfAttackCompensation::PositionAgents.Remove(Agent);
+    return true;
+}
 
 #if !UE_BUILD_SHIPPING
 namespace
