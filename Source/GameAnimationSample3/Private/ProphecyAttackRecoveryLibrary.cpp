@@ -1,5 +1,6 @@
 #include "ProphecyAttackRecoveryLibrary.h"
 #include "ProphecyAttackRecovery.h"
+#include "ProphecyArmedPose.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAgent.h"
 #include "Engine/World.h"
@@ -101,7 +102,7 @@ void Begin(const AProphecyAgent* Agent,FName Attack)
     if (IsKick(Attack)) KickActive.Add(Agent);
     if (Attack==TEXT("kickr")) RightKickActive.Add(Agent);
 }
-void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Settings.Remove(Agent);KickSettings.Remove(Agent);WalkFootRotations.Remove(Agent);ProphecyLegRecovery::Remove(Agent); }
+void Remove(const AProphecyAgent* Agent) { Cancel(Agent);Settings.Remove(Agent);KickSettings.Remove(Agent);WalkFootRotations.Remove(Agent);ProphecyLegRecovery::Remove(Agent);ProphecyArmedPose::Cancel(Agent); }
 void EnterLowerSpecial(const AProphecyAgent* Agent)
 {
     ProphecyAttackControls::CancelLowerReturn(Agent);
@@ -111,6 +112,7 @@ void EnterLowerSpecial(const AProphecyAgent* Agent)
 }
 void EnterSpecial(const AProphecyAgent* Agent,bool Half)
 {
+    ProphecyArmedPose::Cancel(Agent);
     if (EndEventAgent==Agent) EndEventAgent=nullptr;
     if (!Half) EnterLowerSpecial(Agent);
     ProphecyHandRecovery::CancelMotion(Agent);ProphecyCoreTempering::CancelMotion(Agent);

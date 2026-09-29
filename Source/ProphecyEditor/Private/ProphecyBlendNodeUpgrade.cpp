@@ -281,4 +281,73 @@ static void RefreshBothArmReturn()
     UE_LOG(LogTemp,Display,TEXT("Both-arm return checkbox upgrade: %s"),*Report);
 }
 static FAutoConsoleCommand BothArmReturnCommand(TEXT("Prophecy.Editor.RefreshBothArmReturn"),TEXT("Replace the old attack-name/enable selector pins with16 unchecked attack inputs. Preserve execution/Agent/output wiring; leave Blueprint unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshBothArmReturn));
+static void RefreshFootLocomotionHandoff()
+{
+    if(!GEditor || GEditor->PlayWorld)return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if(!BP)return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","FootLocomotionHandoff","Add foot rotation and independent handoff durations"));
+    BP->Modify();int32 Count=0;bool Preserved=true,Defaults=true;
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    const FName Pins[]={TEXT("AlphaRotation"),TEXT("LeftBlendDurationSeconds"),TEXT("RightBlendDurationSeconds"),TEXT("KneePoleBlendDurationSeconds")};
+    for(auto* G:Graphs)for(UEdGraphNode* Base:G->Nodes)
+    {
+        auto* N=Cast<UK2Node_CallFunction>(Base);if(!N || N->FunctionReference.GetMemberName()!=TEXT("SetAttackFootLocomotion"))continue;
+        bool Had[UE_ARRAY_COUNT(Pins)];for(int32 I=0;I<UE_ARRAY_COUNT(Pins);++I)Had[I]=N->FindPin(Pins[I])!=nullptr;
+        const auto Before=PinValues(N);G->Modify();N->Modify();N->ReconstructNode();++Count;
+        const auto After=PinValues(N);for(const auto& Row:Before)Preserved&=After.Contains(Row);
+        for(int32 I=0;I<UE_ARRAY_COUNT(Pins);++I)if(!Had[I])
+        {const auto* P=N->FindPin(Pins[I]);Defaults&=P && P->LinkedTo.IsEmpty() && FCString::Atof(*P->DefaultValue)==(I==0?1.f:0.f);}
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    const FString Report=FString::Printf(TEXT("nodes=%d values_and_links_preserved=%d new_defaults_correct=%d status=%d asset_saved=0\n"),Count,int32(Preserved),int32(Defaults),int32(BP->Status));
+    FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/FootLocomotionHandoffPins.txt")));
+    UE_LOG(LogTemp,Display,TEXT("Foot locomotion handoff pins: %s"),*Report);
+}
+static FAutoConsoleCommand FootLocomotionHandoffCommand(TEXT("Prophecy.Editor.RefreshFootLocomotionHandoff"),TEXT("Add foot rotation/handoff pins on existing loco-drag nodes, preserve values/wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshFootLocomotionHandoff));
+static void DisableOverriddenUpperReturn()
+{
+    if(!GEditor || GEditor->PlayWorld)return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if(!BP)return;
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    TArray<UK2Node_CallFunction*> Nodes;
+    for(auto* G:Graphs)if(G->GetFName()==TEXT("EventGraph"))for(UEdGraphNode* N:G->Nodes)
+    {
+        auto* C=Cast<UK2Node_CallFunction>(N);if(!C)continue;
+        if((C->GetFName()==TEXT("K2Node_CallFunction_203") && C->FunctionReference.GetMemberName()==TEXT("SetLocomotionHandTempering")) ||
+            (C->GetFName()==TEXT("K2Node_CallFunction_157") && C->FunctionReference.GetMemberName()==TEXT("SetSlashRightArmReturnToNeutral")))Nodes.Add(C);
+    }
+    if(Nodes.Num()!=2)return;
+    for(auto* N:Nodes)if(!N->FindPin(TEXT("Enabled")) || !N->FindPin(TEXT("Enabled"))->LinkedTo.IsEmpty())return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","UpperInertiaControls","Keep upper exit tempering and neutral return disabled"));
+    BP->Modify();
+    for(auto* N:Nodes){N->Modify();N->GetGraph()->Modify();N->FindPin(TEXT("Enabled"))->DefaultValue=TEXT("false");}
+    FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    UE_LOG(LogTemp,Display,TEXT("Upper exit overrides: two Enabled pins set false, links unchanged, BP status=%d, asset_saved=0"),int32(BP->Status));
+}
+static FAutoConsoleCommand UpperReturnOverrideCommand(TEXT("Prophecy.Editor.DisableOverriddenUpperReturn"),TEXT("Explicitly disable the two stale upper-exit control setters; preserve wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&DisableOverriddenUpperReturn));
+static void RefreshUpperInertiaSpace()
+{
+    if(!GEditor || GEditor->PlayWorld)return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if(!BP)return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","UpperInertiaSpace","Add hand inertia reference space"));
+    BP->Modify();int32 Count=0;bool Preserved=true,Defaults=true;
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    for(auto* G:Graphs)for(UEdGraphNode* Base:G->Nodes)
+    {
+        auto* N=Cast<UK2Node_CallFunction>(Base);if(!N || N->FunctionReference.GetMemberName()!=TEXT("SetAttackUpperBodyInertia"))continue;
+        const bool Had=N->FindPin(TEXT("HandInertiaSpace"))!=nullptr;
+        const auto Before=PinValues(N);G->Modify();N->Modify();N->ReconstructNode();++Count;
+        const auto After=PinValues(N);for(const auto& Row:Before)Preserved&=After.Contains(Row);
+        if(!Had){const auto* P=N->FindPin(TEXT("HandInertiaSpace"));Defaults&=P && P->LinkedTo.IsEmpty() && P->DefaultValue==TEXT("RootLocal");}
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    UE_LOG(LogTemp,Display,TEXT("Upper inertia space pins: nodes=%d preserved=%d defaults=%d status=%d asset_saved=0"),Count,int32(Preserved),int32(Defaults),int32(BP->Status));
+}
+static FAutoConsoleCommand UpperInertiaSpaceCommand(TEXT("Prophecy.Editor.RefreshUpperInertiaSpace"),TEXT("Add Root Local/Spine Local selector to existing upper inertia nodes; preserve wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshUpperInertiaSpace));
 }

@@ -77,7 +77,7 @@ void CarryCoreArm(const AProphecyNNLocomotionManager::FImpl& Impl,int32 I,
         After[Bone]=Before[Bone].GetRelativeTransform(Before[Parent])*After[Parent];
     StoreInertiaArm(Impl,I,After,Impl.SeedRootRot,Upper);
 }
-void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyAgent* Actor,int32 Index,double Time,double Dt,float CoreFollow)
+void CorrectLocomotionHands(const AProphecyNNLocomotionManager* Manager,AProphecyNNLocomotionManager::FImpl* Impl,AProphecyAgent* Actor,int32 Index,double Time,double Dt,float CoreFollow)
 {
     auto& Agent=Impl->Agents[Index];
     float* Upper=UpperStateSlice(Impl->UpperCurrentStateBuffer,Index);
@@ -89,6 +89,19 @@ void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyA
     DecodeLocomotionPose(Impl,StateSlice(Impl->PublishedStateBuffer,Index),Upper,
         Agent.PublishedWalkWeight,MakeArrayView(Pose),nullptr,Unclamped,&Agent.PublishedLegWalkWeights);
     const bool CoreInertia=ProphecyUpperBodyInertia::Active(Actor);
+    auto FinishInertia=[&]()
+    {
+        if(!CoreInertia || !ProphecyUpperBodyInertia::ArmsActive(Actor))return;
+        const FTransform Root=HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw);
+        const FTransform Carrier=HandInertiaCarrier(Actor,Root);
+        ProphecyUpperBodyInertia::ApplyArms(Actor,Carrier,MakeArrayView(Pose),Dt,
+            FVector2D(Impl->UpperArms[0].Lengths.Y*100.,Impl->UpperArms[1].Lengths.Y*100.),
+            Actor->bLocomotionForearmClamp,Actor->LocomotionForearmClampLeewayCm,
+            Actor->bOverrideLocomotionHandClamp?Actor->bLocomotionHandClamp:Manager->bClampHand,
+            Actor->bOverrideLocomotionHandClamp?1.:Manager->HandClampLengthMultiplier,
+            Actor->bOverrideLocomotionHandClamp?Actor->LocomotionHandClampLeewayCm:0.,Root);
+        for(int32 I=0;I<2;++I)StoreInertiaArm(*Impl,I,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
+    };
     if(CoreFollow<1 || CoreInertia)
     {
         FTransform Candidate[FullBodyBoneCount];
@@ -109,7 +122,7 @@ void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyA
         }
         for(int32 I=0;I<2;++I) CarryCoreArm(*Impl,I,MakeArrayView(Candidate),MakeArrayView(Pose),Upper);
         // Do not run a hand solve when only core tempering was requested.
-        if(!Recovery && !Temper && !ProphecySlashReturn::Active(Actor) && !ProphecyHandInertia::IsActive(Actor,Agent.PublishedWalkWeight,false)) return;
+        if(!Recovery && !Temper && !ProphecySlashReturn::Active(Actor) && !ProphecyHandInertia::IsActive(Actor,Agent.PublishedWalkWeight,false)) {FinishInertia();return;}
     }
     DecodeLocomotionPose(Impl,StateSlice(Impl->PreviousPublishedStateBuffer,Index),
         UpperStateSlice(Impl->UpperPreviousPublishedStateBuffer,Index),Agent.PreviousPublishedWalkWeight,
@@ -154,7 +167,7 @@ void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyA
     {
         const double ReturnDt=ProphecySlashReturn::AdvanceFrame(Actor);
         const uint8 ArmMask=ProphecySlashReturn::ActiveArmMask(Actor);
-        if(!ArmMask) return;
+        if(!ArmMask) {FinishInertia();return;}
         float IdleUpper[UpperStateDim];FTransform Idle[FullBodyBoneCount];
         SeedUpperIdleFromLower(StateSlice(Impl->PublishedStateBuffer,Index),*Impl,IdleUpper);
         DecodeLocomotionPose(Impl,StateSlice(Impl->PublishedStateBuffer,Index),IdleUpper,
@@ -205,6 +218,7 @@ void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyA
         StoreInertiaArm(*Impl,ArmIndex,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
         }
     }
+    FinishInertia();
 }
 
 void BuildHandRecoveryUpperInput(const AProphecyNNLocomotionManager::FImpl& Impl,const float* Lower,

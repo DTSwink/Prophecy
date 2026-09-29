@@ -3,6 +3,8 @@
 #include "ProphecyPelvisInertiaMath.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyAgent.h"
+#include "ProphecyHandChainMath.h"
+#include "ProphecyNNPoseTypes.h"
 #include "Engine/World.h"
 namespace ProphecyUpperBodyInertia
 {
@@ -15,6 +17,20 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FReturn> Returns;
 // Separate sidecar: don't resize allocations retained by Live Coding.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,TArray<FTransform>> Handoffs;
 static TSet<TWeakObjectPtr<const AProphecyAgent>> HandoffReady;
+struct FArmMotion
+{
+    int32 Bones[3];
+    FMotion Upper,Forearm,Hand;
+    FVector Position,Velocity,LocalUpper,LocalLower,LocalPole;
+    FTransform Previous[3],Current[3];
+    double InitialLength=0;
+};
+struct FArms { FArmMotion Side[2];bool Ready=false; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FArms> Arms;
+using ESpace=EProphecyUpperHandInertiaSpace;
+struct FArmReference { ESpace Space=ESpace::RootLocal;int32 Spine=INDEX_NONE; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,ESpace> Spaces,SpaceBaselines;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FArmReference> ArmReferences;
 static FDelegateHandle Cleanup;
 static void EnsureCleanup()
 {
@@ -23,7 +39,8 @@ static void EnsureCleanup()
     {
         auto Clean=[W](auto& M) { for(auto It=M.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W) It.RemoveCurrent(); };
-        Clean(Configs);Clean(Baselines);Clean(Returns);Clean(Handoffs);
+        Clean(Configs);Clean(Baselines);Clean(Returns);Clean(Handoffs);Clean(Arms);
+        Clean(Spaces);Clean(SpaceBaselines);Clean(ArmReferences);
         for(auto It=HandoffReady.CreateIterator();It;++It) if(!It->IsValid() || It->Get()->GetWorld()==W) It.RemoveCurrent();
     });
 }
@@ -37,13 +54,15 @@ static void Spring(FMotion& M,const FQuat& Target,double Response,double Dt)
     M.Velocity=(M.Velocity-W*C*Dt)*E;
 }
 bool Active(const AProphecyAgent* A) { return !Returns.IsEmpty() && Returns.Contains(A); }
-void Cancel(const AProphecyAgent* A) { Handoffs.Remove(A);HandoffReady.Remove(A);if(Returns.Remove(A)) ProphecyBlendClock::Stop(A,K::UpperBodyInertia); }
-void Remove(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);Baselines.Remove(A); }
-void CaptureReset(const AProphecyAgent* A) { EnsureCleanup();if(const auto* C=Configs.Find(A)) Baselines.Add(A,*C);else Baselines.Remove(A); }
-void RestoreReset(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A)) Configs.Add(A,*C); }
-void ForgetReset(const AProphecyAgent* A) { Baselines.Remove(A); }
+bool Configured(const AProphecyAgent* A) { return !Configs.IsEmpty() && Configs.Contains(A); }
+bool ArmsActive(const AProphecyAgent* A) { return !Arms.IsEmpty() && Arms.Contains(A); }
+void Cancel(const AProphecyAgent* A) { ArmReferences.Remove(A);Arms.Remove(A);Handoffs.Remove(A);HandoffReady.Remove(A);if(Returns.Remove(A)) ProphecyBlendClock::Stop(A,K::UpperBodyInertia); }
+void Remove(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);Baselines.Remove(A);Spaces.Remove(A);SpaceBaselines.Remove(A); }
+void CaptureReset(const AProphecyAgent* A) { EnsureCleanup();if(const auto* C=Configs.Find(A)) Baselines.Add(A,*C);else Baselines.Remove(A);SpaceBaselines.Add(A,Spaces.FindRef(A)); }
+void RestoreReset(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A)) Configs.Add(A,*C);Spaces.Add(A,SpaceBaselines.FindRef(A)); }
+void ForgetReset(const AProphecyAgent* A) { Baselines.Remove(A);SpaceBaselines.Remove(A); }
 void Begin(const AProphecyAgent* A,TConstArrayView<FTransform> Previous,TConstArrayView<FTransform> World,
-    TConstArrayView<FName> Names,TConstArrayView<FName> Core,double Dt)
+    TConstArrayView<FName> Names,TConstArrayView<FName> Core,double Dt,const FTransform& PreviousRoot,const FTransform& Root)
 {
     Cancel(A);const auto* C=Configs.IsEmpty()?nullptr:Configs.Find(A);if(!C || Dt<=0 || World.Num()!=Names.Num() || Previous.Num()!=World.Num()) return;
     FReturn R;R.Config=*C;
@@ -54,7 +73,112 @@ void Begin(const AProphecyAgent* A,TConstArrayView<FTransform> Previous,TConstAr
         R.Joints.Add({Q,ProphecyPelvisInertia::RotationVector(Q*Previous[I].GetRotation().Inverse())*(C->Momentum/Dt)});
     }
     Returns.Add(A,MoveTemp(R));Handoffs.Add(A).Append(World.GetData(),World.Num());
+    FArms NewArms;bool ValidArms=true;
+    const FArmReference Ref{Spaces.FindRef(A),Names.IndexOfByKey(TEXT("spine_05"))};
+    if(Ref.Space==ESpace::SpineLocal && Ref.Spine==INDEX_NONE){Cancel(A);return;}
+    const FTransform& Frame=Ref.Space==ESpace::SpineLocal?World[Ref.Spine]:Root;
+    const FTransform& PreviousFrame=Ref.Space==ESpace::SpineLocal?Previous[Ref.Spine]:PreviousRoot;
+    const FName ArmNames[2][3]={{TEXT("upperarm_l"),TEXT("lowerarm_l"),TEXT("hand_l")},
+        {TEXT("upperarm_r"),TEXT("lowerarm_r"),TEXT("hand_r")}};
+    for(int32 S=0;S<2;++S)
+    {
+        auto& M=NewArms.Side[S];
+        for(int32 B=0;B<3;++B)
+        {
+            const int32 I=Names.IndexOfByKey(ArmNames[S][B]);M.Bones[B]=I;
+            if(I==INDEX_NONE){ValidArms=false;break;}
+            M.Previous[B]=M.Current[B]=World[I];
+            FMotion& Q=B==0?M.Upper:B==1?M.Forearm:M.Hand;
+            const FQuat CurrentLocal=(Frame.GetRotation().Inverse()*World[I].GetRotation()).GetNormalized();
+            const FQuat PreviousLocal=(PreviousFrame.GetRotation().Inverse()*Previous[I].GetRotation()).GetNormalized();
+            Q={CurrentLocal,ProphecyPelvisInertia::RotationVector(CurrentLocal*PreviousLocal.Inverse())*(C->Momentum/Dt)};
+        }
+        if(!ValidArms)break;
+        M.Position=M.Current[2].GetLocation();
+        M.Velocity=(M.Position-Previous[M.Bones[2]].GetLocation())*(C->Momentum/Dt);
+        M.LocalUpper=M.Current[0].GetRotation().UnrotateVector(M.Current[1].GetLocation()-M.Current[0].GetLocation());
+        M.LocalLower=M.Current[1].GetRotation().UnrotateVector(M.Position-M.Current[1].GetLocation());
+        M.InitialLength=M.LocalLower.Length();
+        const FVector Axis=(M.Position-M.Current[0].GetLocation()).GetSafeNormal();
+        M.LocalPole=M.Current[0].GetRotation().UnrotateVector(ProphecyHandChain::Plane(
+            M.Current[1].GetLocation()-M.Current[0].GetLocation(),Axis,M.Current[0].GetRotation().GetAxisZ()));
+        M.Position=Frame.InverseTransformPosition(M.Position);
+        M.Velocity=(M.Position-PreviousFrame.InverseTransformPosition(Previous[M.Bones[2]].GetLocation()))*(C->Momentum/Dt);
+    }
+    if(ValidArms){Arms.Add(A,MoveTemp(NewArms));ArmReferences.Add(A,Ref);}
     ProphecyBlendClock::Start(A,K::UpperBodyInertia,double(C->Hold)+C->Blend);
+}
+static double BlendAlpha(const FReturn& R)
+{
+    const double T=R.Elapsed<R.Config.Hold?0.:R.Config.Blend>0?
+        FMath::Clamp((R.Elapsed-R.Config.Hold)/R.Config.Blend,0.,1.):1.;
+    return T*T*(3.-2.*T);
+}
+static void SpringPosition(FVector& Position,FVector& Velocity,const FVector& Goal,double Response,double Dt)
+{
+    if(Dt<=0)return;
+    const double W=2./Response,E=FMath::Exp(-W*Dt);
+    const FVector X=Position-Goal,C=Velocity+W*X;
+    Position=Goal+(X+C*Dt)*E;Velocity=(Velocity-W*C*Dt)*E;
+}
+void ApplyArms(const AProphecyAgent* A,const FTransform& Carrier,TArrayView<FTransform> Pose,
+    double Dt,const FVector2D& RestLengths,bool ClampForearm,double ForearmLeeway,
+    bool ClampHand,double HandMultiplier,double HandLeeway,const FTransform& Root)
+{
+    auto* State=Arms.IsEmpty()?nullptr:Arms.Find(A);const auto* R=State?Returns.Find(A):nullptr;
+    if(!R)return;
+    const double Alpha=BlendAlpha(*R);
+    const auto* Ref=ArmReferences.Find(A);if(!Ref)return;
+    const FTransform Frame=Ref->Space==ESpace::SpineLocal?Pose[Ref->Spine]*Carrier:Root;
+    for(int32 S=0;S<2;++S)
+    {
+        auto& M=State->Side[S];
+        FTransform Goal[3];for(int32 B=0;B<3;++B){Goal[B]=Pose[M.Bones[B]]*Carrier;M.Previous[B]=M.Current[B];}
+        FTransform LocalGoal[3];for(int32 B=0;B<3;++B)LocalGoal[B]=Goal[B].GetRelativeTransform(Frame);
+        SpringPosition(M.Position,M.Velocity,LocalGoal[2].GetLocation(),R->Config.Response,Dt);
+        Spring(M.Upper,LocalGoal[0].GetRotation(),R->Config.Response,Dt);
+        Spring(M.Forearm,LocalGoal[1].GetRotation(),R->Config.Response,Dt);
+        Spring(M.Hand,LocalGoal[2].GetRotation(),R->Config.Response,Dt);
+        const double RawLength=(Goal[2].GetLocation()-Goal[1].GetLocation()).Length();
+        const double Rest=S==0?RestLengths.X:RestLengths.Y;
+        const double GoalLength=ClampForearm ? FProphecyNNForearmClamp::ClampLength(RawLength,Rest,ForearmLeeway)
+            : ClampHand ? FMath::Min(RawLength,Rest*HandMultiplier+HandLeeway) : RawLength;
+        const double Length=FMath::Lerp(M.InitialLength,GoalLength,Alpha);
+        FTransform Shoulder=Goal[0],Elbow=Goal[1],Wrist=Goal[2];
+        Shoulder.SetRotation((Frame.GetRotation()*FQuat::Slerp(M.Upper.Rotation,LocalGoal[0].GetRotation(),Alpha)).GetNormalized());
+        Elbow.SetRotation((Frame.GetRotation()*FQuat::Slerp(M.Forearm.Rotation,LocalGoal[1].GetRotation(),Alpha)).GetNormalized());
+        Elbow.SetLocation(Shoulder.GetLocation()+Shoulder.GetRotation().RotateVector(M.LocalUpper));
+        Wrist.SetLocation(Elbow.GetLocation()+Elbow.GetRotation().RotateVector(M.LocalLower.GetSafeNormal()*Length));
+        const FTransform Target=FTransform(FQuat::Slerp(M.Hand.Rotation,LocalGoal[2].GetRotation(),Alpha).GetNormalized(),
+            FMath::Lerp(M.Position,LocalGoal[2].GetLocation(),Alpha))*Frame;
+        // The predicted angular chain supplies a continuous elbow pole. The
+        // reference-local wrist spring owns translation; IK projects only unreachable goals.
+        const FTransform GuideShoulder=Shoulder,GuideElbow=Elbow,GuideWrist=Wrist;
+        ProphecyHandChain::Resolve(GuideShoulder,GuideElbow,GuideWrist,Shoulder,Elbow,Wrist,
+            Target,M.LocalUpper,M.LocalPole,1.);
+        M.Current[0]=Shoulder;M.Current[1]=Elbow;M.Current[2]=Wrist;
+        // No hidden ballistic target can accumulate outside the reachable arm.
+        if(!Wrist.GetLocation().Equals(Target.GetLocation(),1.e-5))
+        {
+            const FVector Normal=Frame.InverseTransformVectorNoScale(Target.GetLocation()-Wrist.GetLocation()).GetSafeNormal();
+            M.Position+=Frame.InverseTransformVector(Wrist.GetLocation()-Target.GetLocation());
+            const double Outward=FVector::DotProduct(M.Velocity,Normal);
+            if(Outward>0)M.Velocity-=Normal*Outward;
+        }
+        for(int32 B=0;B<3;++B)Pose[M.Bones[B]]=M.Current[B].GetRelativeTransform(Carrier);
+    }
+    State->Ready=true;
+}
+bool PublishArms(const AProphecyAgent* A,const FTransform& PreviousCarrier,const FTransform& Carrier,
+    TArrayView<FTransform> PreviousPose,TArrayView<FTransform> Pose)
+{
+    const auto* S=Arms.IsEmpty()?nullptr:Arms.Find(A);if(!S || !S->Ready)return false;
+    for(const auto& M:S->Side)for(int32 B=0;B<3;++B)
+    {
+        PreviousPose[M.Bones[B]]=M.Previous[B].GetRelativeTransform(PreviousCarrier);
+        Pose[M.Bones[B]]=M.Current[B].GetRelativeTransform(Carrier);
+    }
+    return true;
 }
 void PreserveHandoff(const AProphecyAgent* A,TConstArrayView<int32> Parents,TConstArrayView<FName> Names,
     TConstArrayView<FName> Core,const FTransform& Carrier,TArrayView<FTransform> PreviousPose)
@@ -96,21 +220,117 @@ void Apply(const AProphecyAgent* A,TConstArrayView<int32> Parents,TConstArrayVie
     }
 }
 }
-bool UProphecyUpperBodyInertiaLibrary::SetAttackUpperBodyInertia(AProphecyAgent* A,bool Enabled,float Response,float Hold,float Blend,float Momentum)
+bool UProphecyUpperBodyInertiaLibrary::SetAttackUpperBodyInertia(AProphecyAgent* A,bool Enabled,float Response,float Hold,float Blend,float Momentum,EProphecyUpperHandInertiaSpace Space)
 {
     using namespace ProphecyUpperBodyInertia;
     if(!IsInGameThread() || !IsValid(A) || A->IsActorBeingDestroyed() || !A->GetWorld() || A->GetWorld()->bIsTearingDown) return false;
     for(float V:{Response,Hold,Blend,Momentum}) if(!FMath::IsFinite(V) || V<0) return false;
+    if(Space!=ESpace::RootLocal && Space!=ESpace::SpineLocal)return false;
     if(Enabled && Response>0 && Hold+Blend>0)
     {
-        if(const auto* C=Configs.Find(A)) if(C->Response==Response && C->Hold==Hold && C->Blend==Blend && C->Momentum==Momentum) return true;
-        EnsureCleanup();Cancel(A);Configs.Add(A,FConfig{Response,Hold,Blend,Momentum});
+        if(const auto* C=Configs.Find(A)) if(C->Response==Response && C->Hold==Hold && C->Blend==Blend && C->Momentum==Momentum && Spaces.FindRef(A)==Space) return true;
+        EnsureCleanup();Cancel(A);Spaces.Add(A,Space);Configs.Add(A,FConfig{Response,Hold,Blend,Momentum});
     }
-    else {Cancel(A);Configs.Remove(A);}
+    else {Cancel(A);Configs.Remove(A);Spaces.Remove(A);}
     return true;
 }
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmInertiaSpaceTest,"Prophecy.NN.UpperBodyInertia.ReferenceFrames",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyArmInertiaSpaceTest::RunTest(const FString&)
+{
+    using namespace ProphecyUpperBodyInertia;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    const TArray<FName> Names={TEXT("spine_05"),TEXT("clavicle_l"),TEXT("upperarm_l"),TEXT("lowerarm_l"),TEXT("hand_l"),
+        TEXT("clavicle_r"),TEXT("upperarm_r"),TEXT("lowerarm_r"),TEXT("hand_r")};
+    const TArray<FName> Core={TEXT("clavicle_l"),TEXT("clavicle_r")};
+    TArray<FTransform> Local;Local.Init(FTransform::Identity,9);
+    for(int32 S=0;S<2;++S)
+    {
+        const int32 B=1+S*4;const double Y=S?20.:-20.;
+        Local[B]=Local[B+1]=FTransform(FVector(0,Y,0));
+        Local[B+2]=FTransform(FVector(30,Y,0));Local[B+3]=FTransform(FVector(30,Y,-30));
+    }
+    const FTransform PrevFrame(FRotator(-10,-30,5),FVector(-100,40,80));
+    const FTransform Frame(FRotator(15,20,-5),FVector(200,60,120));
+    const FTransform NextFrame(FRotator(25,75,10),FVector(450,-80,140));
+    for(ESpace Space:{ESpace::RootLocal,ESpace::SpineLocal})
+    {
+        UProphecyUpperBodyInertiaLibrary::SetAttackUpperBodyInertia(A,true,80000,1,.5,1,Space);CaptureReset(A);
+        UProphecyUpperBodyInertiaLibrary::SetAttackUpperBodyInertia(A,true,80000,1,.5,1,
+            Space==ESpace::RootLocal?ESpace::SpineLocal:ESpace::RootLocal);
+        RestoreReset(A);TestTrue(TEXT("Reset restores selected reference space"),Spaces.FindRef(A)==Space);
+        TArray<FTransform> Previous=Local,World=Local,Pose=Local;
+        for(int32 I=0;I<9;++I)
+        {
+            if(I==4 || I==8)Previous[I].AddToTranslation(FVector(-2,0,-3));
+            Previous[I]=Previous[I]*PrevFrame;World[I]=World[I]*Frame;Pose[I]=Pose[I]*NextFrame;
+        }
+        Begin(A,Previous,World,Names,Core,1./30,
+            Space==ESpace::RootLocal?PrevFrame:FTransform::Identity,
+            Space==ESpace::RootLocal?Frame:FTransform::Identity);
+        TestTrue(TEXT("Reference motion is removed from captured hand velocity"),Arms.FindChecked(A).Side[1].Velocity.Equals(FVector(60,0,90),1.e-5));
+        TestTrue(TEXT("Reference turning is removed from captured arm angular velocity"),Arms.FindChecked(A).Side[1].Upper.Velocity.IsNearlyZero(1.e-5));
+        ApplyArms(A,FTransform::Identity,Pose,1./30,FVector2D(30,30),false,0,false,1,0,
+            Space==ESpace::RootLocal?NextFrame:FTransform::Identity);
+        for(int32 I:{4,8})TestTrue(TEXT("Hand momentum follows moving/turning selected reference"),
+            NextFrame.InverseTransformPosition(Pose[I].GetLocation()).Equals(Local[I].GetLocation()+FVector(2,0,3),1.e-4));
+        Cancel(A);TestFalse(TEXT("Reference state retires with arm state"),ArmReferences.Contains(A));
+    }
+    Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmInertiaTest,"Prophecy.NN.UpperBodyInertia.HandVelocityAndReach",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyArmInertiaTest::RunTest(const FString&)
+{
+    using namespace ProphecyUpperBodyInertia;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    const TArray<FName> Names={TEXT("pelvis"),TEXT("clavicle_l"),TEXT("upperarm_l"),TEXT("lowerarm_l"),TEXT("hand_l"),
+        TEXT("clavicle_r"),TEXT("upperarm_r"),TEXT("lowerarm_r"),TEXT("hand_r")};
+    const TArray<FName> Core={TEXT("clavicle_l"),TEXT("clavicle_r")};
+    const TArray<int32> Parents={INDEX_NONE,0,1,2,3,0,5,6,7};
+    TArray<FTransform> Last;Last.Init(FTransform::Identity,9);
+    for(int32 S=0;S<2;++S)
+    {
+        const int32 B=1+S*4;const double Y=S?20.:-20.;
+        Last[B]=Last[B+1]=FTransform(FVector(0,Y,100));
+        Last[B+2]=FTransform(FVector(30,Y,100));Last[B+3]=FTransform(FVector(30,Y,70));
+    }
+    TArray<FTransform> Prior=Last;
+    for(int32 I:{4,8})Prior[I].AddToTranslation(FVector(-2,0,-3));
+    UProphecyUpperBodyInertiaLibrary::SetAttackUpperBodyInertia(A,true,80000,1,.5,1);
+    Begin(A,Prior,Last,Names,Core,1./30);
+    TestTrue(TEXT("Real arms captured"),ArmsActive(A));
+    FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/60);
+    TArray<FTransform> Pose=Last;
+    for(int32 I:{4,8})Pose[I].SetLocation(FVector(15,Pose[I].GetLocation().Y,85));
+    Apply(A,Parents,Names,Core,FTransform::Identity,Pose,1./30);
+    ApplyArms(A,FTransform::Identity,Pose,1./30,FVector2D(25,25),true,2,false,1,0);
+    for(int32 I:{4,8})
+    {
+        TestTrue(TEXT("Outgoing world hand velocity survives changed NN goal"),
+            Pose[I].GetLocation().Equals(Last[I].GetLocation()+FVector(2,0,3),1.e-4));
+        TestTrue(TEXT("Outgoing forearm length is not snapped to locomotion clamp at entry"),
+            FMath::IsNearlyEqual((Pose[I].GetLocation()-Pose[I-1].GetLocation()).Length(),30.,1.e-5));
+        TestTrue(TEXT("Upper arm stays attached with original length"),
+            FMath::IsNearlyEqual((Pose[I-1].GetLocation()-Pose[I-2].GetLocation()).Length(),30.,1.e-5));
+    }
+    const FTransform Carrier(FRotator(0,80,0),FVector(500,-200,0));
+    TArray<FTransform> P=Last,C=Last;
+    TestTrue(TEXT("Publication has cached authored endpoints"),PublishArms(A,Carrier,Carrier,P,C));
+    for(int32 I:{4,8})
+    {
+        TestTrue(TEXT("Previous world endpoint survives carrier changes"),(P[I]*Carrier).Equals(Last[I],1.e-5));
+        TestTrue(TEXT("Current world endpoint survives carrier changes"),(C[I]*Carrier).Equals(Pose[I],1.e-5));
+    }
+    // Force unreachable ballistic demand; solve must stay finite and attached.
+    Arms.FindChecked(A).Side[1].Velocity=FVector(1.e5,0,0);
+    ApplyArms(A,FTransform::Identity,Pose,1./30,FVector2D(25,25),true,2,false,1,0);
+    TestTrue(TEXT("Reach constraint prevents arm stretching"),(Pose[8].GetLocation()-Pose[6].GetLocation()).Length()<=60.00001);
+    TestFalse(TEXT("Reach solve remains finite"),Pose[8].ContainsNaN());
+    Cancel(A);TestFalse(TEXT("Cancel removes arm sidecar"),ArmsActive(A));
+    TestFalse(TEXT("Disabled publication performs no pose work"),PublishArms(A,Carrier,Carrier,P,C));
+    Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyCoreInertiaTest,"Prophecy.NN.UpperBodyInertia.SpringAndRetirement",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyCoreInertiaTest::RunTest(const FString&)
 {

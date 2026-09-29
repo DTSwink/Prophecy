@@ -281,12 +281,28 @@ bool AProphecyNNLocomotionManager::GetAgentContinuousLocomotionRootWindow(
 	const AProphecyAgent* Actor = ResolveAgent(Handle);
 	if (!Actor || !Actor->bNNInferenceEnabled) return false;
 	const auto& Agent = Impl->Agents[Handle.Index];
-	if (Agent.Slash.bActive && !Agent.Slash.bHalf) return false;
+	if (Agent.Slash.bActive && !Agent.Slash.bHalf && !ProphecyAttackFootLocomotion::Mask(Actor)) return false;
 	if (!GetAgentLocomotionRootWindow(Handle, Roots, Times)) return false;
+	// Reconstruct the unblended prediction before presentation resampling. The
+	// raw getter remains the exact input fed to the NN, already freeze-blended.
+	if(const auto* Window=ProphecyAttackFootLocomotion::FindFreezeWindow(Actor))
+		for(int32 I=1;I<=FutureWindow;++I)
+		{
+			const float Scale=I*Impl->MaxSpeedScaleFinal;
+			const FVector3f Local(Window->XY[2*(I-1)]*Scale,Agent.WindowVerticalVelocity*I*Agent.WindowStepSeconds,Window->XY[2*(I-1)+1]*Scale);
+			Roots[I+1].SetLocation(TrainingToUnreal(Agent.FedInputRoot+TransformRow(Local,Transpose(YawMatrix(Agent.FedInputYaw)))));
+		}
 	const FTransform AppliedRoot(FRotator(0, Actor->GetActorRotation().Yaw, 0), Actor->GetRootLowPoint());
 	ProphecyContinuousRootWindow::Resample(Roots, Times,
 		ProphecyAgentTime::Alpha(this,Handle.Index,Impl->VisualPoseAlpha),
 		Agent.WindowStepSeconds/GetAgentTimeDilation(Handle), AppliedRoot);
+	const float Freeze=ProphecyAttackFootLocomotion::FreezeBlend(Actor);
+	FTransform Pelvis;
+	if(Freeze>0 && ProphecyNNPresentation::ReadPelvisWorld(PoseStoreAgentBase+Handle.Index,Pelvis))
+	{
+		const FVector UnderPelvis(Pelvis.GetLocation().X,Pelvis.GetLocation().Y,AppliedRoot.GetLocation().Z);
+		for(auto& Root:Roots)Root.SetLocation(FMath::Lerp(Root.GetLocation(),UnderPelvis,double(Freeze)));
+	}
 	return true;
 }
 
@@ -470,6 +486,11 @@ void AProphecyNNLocomotionManager::TraceNNHandoff()
 			Row->SetArrayField(Name, Items);
 		};
 		Add(TEXT("lower_input"), Impl->InputBuffer.GetData() + I * InputDim, InputDim);
+		if(A.Slash.bActive)
+		{
+			Add(TEXT("attack_previous_lower"),A.Slash.State.GetData(),StateDim);
+			Add(TEXT("attack_lower"),A.Slash.State.GetData()+StateDim,StateDim);
+		}
 		Add(TEXT("upper_input"), Impl->UpperInputBuffer.GetData() + I * UpperInputDim, UpperInputDim);
 		Add(TEXT("upper_delta"), Impl->UpperOutputBuffer.GetData() + I * UpperStateDim, UpperStateDim);
 		Add(TEXT("published_lower"), StateSlice(Impl->PublishedStateBuffer, I), StateDim);

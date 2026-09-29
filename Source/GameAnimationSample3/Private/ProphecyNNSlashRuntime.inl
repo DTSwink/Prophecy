@@ -419,6 +419,17 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 				ProphecyAttackCheckpoint::Select(this,Actor,FamilyCheckpoint,true);
 			}
 			Slash.Family = Attack;
+			if (bIsKick)
+			{
+				// Kicks never use loco drag, including an in-place family switch.
+				// Preserve configuration for later attacks and completed ownership.
+				ProphecyAttackFootLocomotion::Suspend(Actor,false);
+				if (auto* Drag=ProphecyAttackFootLocomotion::FindActive(Actor))
+				{
+					const uint8 Released=ProphecyAttackFootLocomotion::ReleaseAll(Actor);
+					if (!Slash.bHalf) ProphecyAttackStartInertia::BeginFeet(Actor,PoseStoreAgentBase+Handle.Index,Released);
+				}
+			}
 			RefreshAgentAttackTrim(Handle);
 			FMemory::Memcpy(Slash.State.GetData()+265, Labels->GetData(), 5*sizeof(float));
 			ProphecyAttackFists::RetargetFamily(Actor,Attack);
@@ -507,9 +518,13 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	Slash.PreviousVisibleWorldPose = Slash.VisibleWorldPose;
 	if (!bHalf) SlashRootMinusStartPelvis.Add(Actor,
 		Actor->GetRootLowPoint() - Slash.VisibleWorldPose[0].GetTranslation());
+	if (!bHalf && Attack!=TEXT("kickl") && Attack!=TEXT("kickr"))
+		ProphecyAttackFootLocomotion::Begin(Actor,PoseStoreAgentBase+Handle.Index,
+		Impl->BodyNames,Current,StartCarrier,TargetWorld);
 	if (!bHalf) ProphecyAttackStartInertia::Begin(Actor,PoseStoreAgentBase+Handle.Index,
         TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index)[0]
-            *SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),Current[0]*StartCarrier);
+            *SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),Current[0]*StartCarrier,
+		uint8(3&~ProphecyAttackFootLocomotion::Mask(Actor)));
 	Slash.bActive = true;
 	if (!bHalf) ProphecyAttackControls::FullAttackStarted(Actor);
 #if !UE_BUILD_SHIPPING
@@ -592,15 +607,22 @@ bool AProphecyNNLocomotionManager::SetAgentNNHalfAttack(FProphecyAgentHandle Han
 		Slash.AnchorWorld = SlashComponentWorld(Actor, Agent.PublishedRoot, Agent.PublishedYaw);
 		SlashRootMinusStartPelvis.Add(Actor, Actor->GetRootLowPoint() -
 			(Slash.GhostPose[0] * Slash.AnchorWorld).GetTranslation());
+		if (Slash.Family!=TEXT("kickl") && Slash.Family!=TEXT("kickr"))
+			ProphecyAttackFootLocomotion::Begin(Actor,PoseStoreAgentBase+Handle.Index,Impl->BodyNames,
+			TransformSlice(Impl->ComponentTransformBuffer,Handle.Index),Slash.AnchorWorld,Slash.TargetWorld);
+		ProphecyAttackFootLocomotion::Suspend(Actor,false);
+		ProphecyAttackStartInertia::BeginFeet(Actor,PoseStoreAgentBase+Handle.Index,uint8(3&~ProphecyAttackFootLocomotion::Mask(Actor)));
 	}
 	if (bHalf)
 	{
 		ReturnAttackLowerToLocomotion(Handle,true);
-		ProphecyAttackStartInertia::Cancel(Actor);
+		// Keep an existing entry-inertia fade across lower ownership changes.
+		// Removing its world-space correction here snaps back to the raw pelvis.
 		// Keep the running ghost history; the upper subtree follows the real pelvis.
 		SlashRootMinusStartPelvis.Remove(Actor);
 	}
 	Slash.bHalf = bHalf;
+	ProphecyAttackFootLocomotion::Suspend(Actor,bHalf);
 	Slash.bNeedsFeedback = true;
 	// Commit ownership before dispatch: a callback can stop/reset/retrigger.
 	if (bHalf) ProphecyAttackRecovery::NotifyLowerEnded(Actor,Slash.Family,true,true);
@@ -636,13 +658,19 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	if (!Actor) return false;
 	auto& Slash = Impl->Agents[Handle.Index].Slash;
 	if (!Slash.bActive) return false;
-	ProphecyAttackStartInertia::Cancel(Actor);
+	// A normal exit can precede the authored inertia window. Let that window
+	// finish against locomotion rather than dropping its remaining offset.
+	if (!bReturnToLocomotion) ProphecyAttackStartInertia::Cancel(Actor);
 	ProphecyAttackTrim::CancelHalfFrame(Actor);
 	ProphecyDefenseArmedGate::AttackEnded(Actor);
 	const FName EndedAttack = Slash.Family;
 	const bool bEndedHalfAttack = Slash.bHalf;
+	const auto& InertiaAgent=Impl->Agents[Handle.Index];
+	const FVector3f InertiaPreviousRoot=InertiaAgent.PreviousPublishedRoot,InertiaRoot=InertiaAgent.PublishedRoot;
+	const float InertiaPreviousYaw=InertiaAgent.PreviousPublishedYaw,InertiaYaw=InertiaAgent.PublishedYaw;
 	if (!bEndedHalfAttack) ReturnAttackLowerToLocomotion(Handle,bReturnToLocomotion);
 	Slash.bActive = false;
+	ProphecyAttackFootLocomotion::End(Actor);
 #if !UE_BUILD_SHIPPING
 	SlashTrainFrame::Ended(Actor);
 #endif
@@ -650,20 +678,24 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	Actor->EndAttackFists();
 	Actor->NotifySwordAttackState(false);
 	ProphecyAttackRecovery::NotifyEnded(Actor,EndedAttack,bEndedHalfAttack,bReturnToLocomotion);
-	if (bReturnToLocomotion && !Slash.bActive && !Impl->Agents[Handle.Index].DefensePose)
+	if (bReturnToLocomotion && !Slash.bActive && !Impl->Agents[Handle.Index].DefensePose && ProphecyUpperBodyInertia::Configured(Actor))
 		ProphecyUpperBodyInertia::Begin(Actor,Slash.PreviousVisibleWorldPose,Slash.VisibleWorldPose,
-			Impl->BodyNames,Impl->UpperCoreBoneNames,1./NNUpdateHz);
+			Impl->BodyNames,Impl->UpperCoreBoneNames,1./NNUpdateHz,
+			HandInertiaRoot(InertiaPreviousRoot,InertiaPreviousYaw),HandInertiaRoot(InertiaRoot,InertiaYaw));
 	return true;
 }
 
 bool AProphecyNNLocomotionManager::GetAgentNNAttackState(FProphecyAgentHandle Handle, FName& Attack, bool& bHalf, bool& bArmed, bool& bHit, int32& Frame) const
 {
+	Attack = NAME_None; bHalf = bArmed = bHit = false; Frame = 0;
 	if (!ResolveAgent(Handle)) return false;
 	const auto& Slash = Impl->Agents[Handle.Index].Slash;
+	// Retained history belongs to the finished attack, not the current state pins.
+	if (!Slash.bActive) return false;
 	Attack = Slash.Family; bHalf = Slash.bHalf; Frame = Slash.Frame;
 	bArmed = Slash.State.Num() == SlashInputDim && Slash.State[270] > 0.5f;
 	bHit = Slash.State.Num() == SlashInputDim && Slash.State[271] > 0.5f;
-	return Slash.bActive;
+	return true;
 }
 
 bool AProphecyNNLocomotionManager::GetAgentNNAttackTarget(FProphecyAgentHandle Handle,
@@ -911,6 +943,22 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 	if (Slash.bNeedsFeedback)
 	{
 		Slash.PreviousVisibleWorldPose = Slash.VisibleWorldPose;
+		auto* FootAuthor=!Slash.bHalf ? ProphecyAttackFootLocomotion::FindActive(AgentActors[AgentIndex]) : nullptr;
+		// Keep the release sample locomotion-authored too. The next attack step
+		// must predict from this final real foot sample, not reveal its old ghost.
+		const uint8 LocoThisStep=FootAuthor ? FootAuthor->Loco : 0;
+		float LocoPosition[2]={1,1},LocoRotation=1,PoleAttackAlpha[2]={-1,-1};
+		// Inline storage is uninitialized unless this opt-in has a pending foot.
+		TArray<FTransform,TInlineAllocator<8>> LocoLegs;
+		if(FootAuthor)
+		{
+			for(int32 S=0;S<2;++S)for(int32 B=0;B<4;++B)LocoLegs.Add(Pose[FootAuthor->Legs[S][B]]);
+			const uint8 Released=ProphecyAttackFootLocomotion::Advance(AgentActors[AgentIndex],*FootAuthor,
+				(Slash.GhostPose[0]*Slash.AnchorWorld).GetLocation(),Slash.TargetWorld,AgentActors[AgentIndex]->GetRootLowPoint().Z,
+				(LocoLegs[2]*Carrier).GetLocation(),(LocoLegs[6]*Carrier).GetLocation(),LocoPosition,LocoRotation);
+			ProphecyAttackFootLocomotion::AdvancePoles(AgentActors[AgentIndex],FootAuthor->Loco,PoleAttackAlpha);
+			if(Released)ProphecyAttackStartInertia::BeginFeet(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex,Released);
+		}
 		FTransform HalfMount;
 		if (Slash.bHalf) HalfMount = Pose[0];
 		const int32 Spine01=Slash.bHalf ? Impl->BodyNames.IndexOfByKey(FName(TEXT("spine_01"))) : INDEX_NONE;
@@ -993,6 +1041,24 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 				}
 			}
 		}
+		if(FootAuthor)for(int32 S=0;S<2;++S)if(LocoThisStep&(1<<S))
+		{
+			if(LocoPosition[S]<=0)continue;
+			const auto* I=FootAuthor->Legs[S];
+			if(LocoPosition[S]>=1 && LocoRotation>=1 && PoleAttackAlpha[S]<0)
+			{
+				// Retain the original fast path when neither extension is in use.
+				const FVector Hip=Pose[I[0]].GetLocation();
+				for(int32 B=0;B<4;++B)Pose[I[B]]=LocoLegs[S*4+B];
+				ProphecyAttackStartInertia::MoveHip(Pose[I[0]],Pose[I[1]],Pose[I[2]],&Pose[I[3]],Hip);
+			}
+			else
+			{
+				FTransform Leg[4];for(int32 B=0;B<4;++B)Leg[B]=Pose[I[B]];
+				ProphecyAttackFootLocomotion::AuthorLeg(Leg,LocoLegs.GetData()+S*4,LocoPosition[S],LocoRotation,PoleAttackAlpha[S]);
+				for(int32 B=0;B<4;++B)Pose[I[B]]=Leg[B];
+			}
+		}
 		// Full and half attacks share the locomotion roll convention. Apply at
 		// the UE boundary; the trained decoder/ghost and NN history stay intact.
 		// Cache the corrected pose so rendering, Jolt and defender colliders agree.
@@ -1033,6 +1099,26 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		}
 		for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
 			Slash.VisibleWorldPose[Bone] = Pose[Bone] * Carrier;
+		// Feed only locomotion-owned legs into the attack recurrence, in its
+		// fixed carrier. The normal state shift preserves the preceding sample.
+		// Include blending feet and their final release once. Both models receive
+		// the accepted mixed foot rather than an independently advancing ghost foot.
+		if(FootAuthor)for(int32 S=0;S<2;++S)if(LocoThisStep&(1<<S))
+		{
+			const auto* I=FootAuthor->Legs[S];
+			for(int32 B=0;B<4;++B)
+				Slash.GhostPose[I[B]]=Slash.VisibleWorldPose[I[B]].GetRelativeTransform(Slash.AnchorWorld);
+			const auto& Foot=Slash.GhostPose[I[2]];
+			const FMat3f FootRot=MirrorYBasis(QuatToMatrix(Foot.GetRotation()));
+			const FMat3f ToeRot=MirrorYBasis(QuatToMatrix(Slash.GhostPose[I[3]].GetRotation()));
+			float* Leg=Slash.State.GetData()+41+9+16*S;
+			WriteStateVec3(Leg,0,LocalUnrealToTraining(Foot.GetLocation()));
+			WriteRot6(FootRot,Leg+3);
+			WriteRot6(MirrorYBasis(QuatToMatrix(Slash.GhostPose[I[0]].GetRotation())),Leg+9);
+			Leg[15]=FMath::Clamp(FVector3f::DotProduct(
+				RotationVectorBetween(FMat3f(),Multiply(ToeRot,Transpose(FootRot))),
+				SafeNormal(Impl->Limbs[S].ToeAxis))/ToeAlphaRadians,-1.f,1.f);
+		}
 		// Half mode does not re-encode or feed presentation clamps back into the
 		// real lower policy. Its exact vanilla locomotion recurrence stays intact.
 		float UnusedLower[StateDim];

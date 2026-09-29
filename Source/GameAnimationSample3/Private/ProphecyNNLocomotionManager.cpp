@@ -1,5 +1,8 @@
 #include "ProphecyNNLocomotionManager.h"
 #include "ProphecyAttackStartInertia.h"
+#include "ProphecyAttackFootLocomotion.h"
+#include "ProphecyAttackFootLocomotionMath.h"
+#include "ProphecyAttackStartInertiaMath.h"
 #include "ProphecyHalfAttackCompensation.h"
 #include "ProphecySpecialRoll.h"
 #include "ProphecyAttackWrist.h"
@@ -14,6 +17,7 @@
 #include "ProphecyNNLegClamps.h"
 #include "ProphecyNNPolicyBlend.h"
 #include "ProphecyAttackRecovery.h"
+#include "ProphecyArmedPose.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyLowerTempering.h"
 #include "ProphecyNNRootWindowSmoothing.h"
@@ -1510,6 +1514,8 @@ namespace
 		float* OutLowerState,
 		float* OutUpperState)
 	{
+		if(OutLowerState)
+		{
 		const FTransform& Pelvis = ComponentTransforms[0];
 		WriteStateVec3(OutLowerState, 0, LocalUnrealToTraining(Pelvis.GetTranslation()));
 		WriteRot6(MirrorYBasis(QuatToMatrix(Pelvis.GetRotation())), OutLowerState + 3);
@@ -1544,6 +1550,7 @@ namespace
 				1.0f);
 		}
 		CleanState(OutLowerState, Impl);
+		}
 
 		FMemory::Memzero(OutUpperState, UpperStateDim * sizeof(float));
 		for (int32 CoreIndex = 0; CoreIndex < Impl.UpperCoreBoneNames.Num(); ++CoreIndex)
@@ -3407,6 +3414,23 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 			ProphecyRootSpeedLimits::LimitWindow(*SpeedLimits,
 				Impl->InputBuffer.GetData() + AgentIndex * InputDim + 120, LimitedWindowYaw,
 				FutureWindow, Impl->MaxSpeedScaleFinal, StepSeconds, Magic, Agent.WindowVerticalVelocity);
+		// Loco drag can collapse its actual NN trajectory under the current pelvis.
+		// Preserve the original offsets so the continuous getter blends only once.
+		const float DragFreeze=ProphecyAttackFootLocomotion::FreezeBlend(InputActor);
+		FTransform FreezePelvis;
+		if(DragFreeze>0 && ProphecyNNPresentation::ReadPelvisWorld(PoseStoreAgentBase+AgentIndex,FreezePelvis))
+		{
+			float* Window=Impl->InputBuffer.GetData()+AgentIndex*InputDim+120;
+			ProphecyAttackFootLocomotion::CaptureFreezeWindow(InputActor,Window);
+			const FVector3f UnderPelvis=TransformRow(UnrealToTraining(FreezePelvis.GetLocation())-Agent.CurRootPos,YawMatrix(Agent.CurRootYaw));
+			for(int32 I=0;I<FutureWindow;++I)
+			{
+				const float Scale=(I+1)*Impl->MaxSpeedScaleFinal;
+				Window[4*I]=FMath::Lerp(Window[4*I],UnderPelvis.X/Scale,DragFreeze);
+				Window[4*I+1]=FMath::Lerp(Window[4*I+1],UnderPelvis.Z/Scale,DragFreeze);
+			}
+		}
+		else ProphecyAttackFootLocomotion::ClearFreezeWindow(InputActor);
 		// Select from the trajectory actually fed to the NN, not the mover's
 		// pre-magic/pre-limit velocity. Root teleports cannot create false speed.
 		const float* NextRoot = Impl->InputBuffer.GetData() + AgentIndex * InputDim + 120;
@@ -3420,7 +3444,7 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 			InputActor ? InputActor->LocomotionWalkCheckpointSpeedThreshold : -1.f);
 		if (ProphecyAutoRun::Above(RootSpeedSquared, ProphecyAutoRun::Threshold(InputActor)))
 			Agent.bUseWalkPolicy = false;
-		if (Agent.Slash.bActive && !Agent.Slash.bHalf)
+		if (Agent.Slash.bActive && !Agent.Slash.bHalf && !ProphecyAttackFootLocomotion::Mask(InputActor))
 		{
 			Agent.PolicyBlend.Reset(Agent.bUseWalkPolicy);
 			ProphecyBlendClock::Stop(InputActor,ProphecyBlendClock::EKind::Policy);
@@ -3441,6 +3465,8 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 			if (!Agent.PolicyBlend.IsActive()) ProphecyBlendClock::Stop(InputActor,ProphecyBlendClock::EKind::Policy);
 		}
 		ProphecyAttackRecovery::Step(InputActor,Agent.PolicyBlend.WalkWeight,Agent.RecoveryWeights);
+		if (const auto* Feet=ProphecyAttackFootLocomotion::FindActive(InputActor))
+			Agent.RecoveryWeights=ProphecyAttackRecovery::FWeights(ProphecyAttackFootLocomotion::WalkWeight(*Feet,Agent.PolicyBlend.WalkWeight));
 		if (!Agent.Slash.bActive && !Agent.DefensePose) ProphecyHandRecovery::Step(InputActor);
 
 	}
@@ -3473,7 +3499,7 @@ TAutoConsoleVariable<int32> CVarAttackSkipOverwrittenLocomotion(
 	TEXT("Prophecy.Attack.SkipOverwrittenLocomotion"),1,
 	TEXT("Skip locomotion work replaced by an established attack pose. 0 retains the reference path for paired captures."));
 #endif
-bool AttackOwnsLocomotionOutput(const AProphecyNNLocomotionManager::FImpl::FAgent& Agent,bool bLower)
+bool AttackOwnsLocomotionOutput(const AProphecyNNLocomotionManager::FImpl::FAgent& Agent,bool bLower,const AProphecyAgent* Actor=nullptr)
 {
 #if WITH_EDITOR
 	if (!CVarAttackSkipOverwrittenLocomotion.GetValueOnGameThread()) return false;
@@ -3481,7 +3507,8 @@ bool AttackOwnsLocomotionOutput(const AProphecyNNLocomotionManager::FImpl::FAgen
 	// Preserve first-frame seeding and authored layer evaluation. The ghost commits
 	// its pose and recurrence at the end of this same policy step.
 	return Agent.Slash.bActive && Agent.Slash.bHasPose && (!bLower || !Agent.Slash.bHalf)
-		&& !Agent.DefensePose && !Agent.AnimationLayer.Animation.IsValid();
+		&& !Agent.DefensePose && !Agent.AnimationLayer.Animation.IsValid()
+		&& (!bLower || !ProphecyAttackFootLocomotion::Mask(Actor));
 }
 }
 
@@ -3495,7 +3522,7 @@ bool AProphecyNNLocomotionManager::RunModelBatch()
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		if (Impl->Agents[AgentIndex].DefensePose && Impl->Agents[AgentIndex].DefensePose->bDodge) continue;
-		if (AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],true)) continue;
+		if (AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],true,AgentActors[AgentIndex])) continue;
 		if (AgentActors.IsValidIndex(AgentIndex) && AgentActors[AgentIndex] &&
 			!AgentActors[AgentIndex]->bNNInferenceEnabled)
 		{
@@ -3576,7 +3603,7 @@ void AProphecyNNLocomotionManager::AdvanceAgentMover(int32 AgentIndex, float Ste
 		FResolvedMoverTarget& MoverTarget = MoverTargets[AgentIndex];
 		const bool bYawImpulse = RootYawImpulseAgents.Contains(Actor);
 		const auto* BalanceSpring = ProphecyRootBalance::GetPrepared(Actor);
-		if (WindowSmoothing || BalanceSpring || SpeedLimits)
+		if (WindowSmoothing || BalanceSpring || SpeedLimits || ProphecyAttackFootLocomotion::FindFreezeWindow(Actor))
 		{
 			// root0 is the anchor for this update. Advance the actual mover to the same
 			// encoded root1 that the NN and recurrence use, including smoothing or input-range
@@ -3672,7 +3699,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			Transition,
 			StateDim * sizeof(float));
 		float* NextState = StateSlice(Impl->NextStateBuffer, AgentIndex);
-		if (AttackOwnsLocomotionOutput(Agent,true))
+		if (AttackOwnsLocomotionOutput(Agent,true,AgentActors[AgentIndex]))
 		{
 			if (auto* Debug=Impl->PinningDebug.Find(AgentIndex); Debug && Debug->Owner.Get()==AgentActors[AgentIndex])
 				Debug->Locomotion.bAppliesToVisibleFeet=false;
@@ -4139,7 +4166,8 @@ void AProphecyNNLocomotionManager::BuildUpperInputBatch()
 		{
 			continue;
 		}
-		if (AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false))
+		if (ProphecyArmedPose::Active(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
+			|| AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false))
 		{
 			if (AProphecyAgent* Actor=AgentActors.IsValidIndex(AgentIndex) ? AgentActors[AgentIndex].Get() : nullptr)
 				Actor->bUpperNNHasSword=IsValid(Actor->GetHeldSword());
@@ -4221,7 +4249,8 @@ bool AProphecyNNLocomotionManager::RunUpperModelBatch()
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		if (Impl->Agents[AgentIndex].DefensePose) continue;
-		if (AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false)) continue;
+		if (ProphecyArmedPose::Active(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
+			|| AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false)) continue;
 		bNeedUpper |= !AgentActors.IsValidIndex(AgentIndex) || !AgentActors[AgentIndex] ||
 			AgentActors[AgentIndex]->bNNInferenceEnabled;
 	}
@@ -4238,7 +4267,7 @@ bool AProphecyNNLocomotionManager::RunUpperModelBatch()
 	return RunHandRecoverySources(this,Impl,MakeArrayView(AgentActors));
 }
 
-namespace { void CorrectLocomotionHands(AProphecyNNLocomotionManager::FImpl* Impl,AProphecyAgent* Actor,int32 Index,double Time,double Dt,float CoreFollow); }
+namespace { void CorrectLocomotionHands(const AProphecyNNLocomotionManager* Manager,AProphecyNNLocomotionManager::FImpl* Impl,AProphecyAgent* Actor,int32 Index,double Time,double Dt,float CoreFollow); }
 void AProphecyNNLocomotionManager::ApplyUpperOutputBatch()
 {
 	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::UpperOutput);
@@ -4261,7 +4290,8 @@ void AProphecyNNLocomotionManager::ApplyUpperOutputBatch()
 		float* Published = UpperStateSlice(Impl->UpperPublishedStateBuffer, AgentIndex);
 		FMemory::Memcpy(PreviousPublished, Published, UpperStateDim * sizeof(float));
 		FMemory::Memcpy(PreviousUpper, CurrentUpper, UpperStateDim * sizeof(float));
-		if (AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false))
+		if (ProphecyArmedPose::Active(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
+			|| AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false))
 		{
 			// Attack feedback fills CurrentUpper, Published, CurrentBase and the
 			// current pelvis heading. Retain their real preceding samples for exit.
@@ -4280,7 +4310,7 @@ void AProphecyNNLocomotionManager::ApplyUpperOutputBatch()
 		if (!Impl->Agents[AgentIndex].Slash.bActive &&
 			(CoreFollow<1 || ProphecyUpperBodyInertia::Active(AgentActors[AgentIndex]) || ProphecySlashReturn::Active(AgentActors[AgentIndex]) || ProphecyHandRecovery::Frame(AgentActors[AgentIndex]) || ProphecyHandRecovery::Tempering(AgentActors[AgentIndex]) ||
 			ProphecyHandInertia::IsActive(AgentActors[AgentIndex],Impl->Agents[AgentIndex].PublishedWalkWeight,false)))
-			CorrectLocomotionHands(Impl,AgentActors[AgentIndex],AgentIndex,
+			CorrectLocomotionHands(this,Impl,AgentActors[AgentIndex],AgentIndex,
 				Clock?Clock->Step->SourceTimeSeconds:double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds+1./NNUpdateHz,
 				Clock?Clock->Step->WorldIntervals[AgentIndex]:1./NNUpdateHz,CoreFollow);
 		FMemory::Memcpy(Published, CurrentUpper, UpperStateDim * sizeof(float));
@@ -4880,7 +4910,7 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 			}
 		}
 	}
-	else if (!AttackOwnsLocomotionOutput(Agent,true))
+	else if (!AttackOwnsLocomotionOutput(Agent,true,AgentActors[AgentIndex]))
 	{
 	BuildFullPoseTransforms(
 		PreviousState,
@@ -4929,7 +4959,25 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		ProphecyAttackWrist::ConstrainPose(PreviousComponentTransforms[Arm.End],PreviousComponentTransforms[Arm.Mid].GetTranslation(),WristDegrees);
 		bWristChanged=ProphecyAttackWrist::ConstrainPose(ComponentTransforms[Arm.End],ComponentTransforms[Arm.Mid].GetTranslation(),WristDegrees);
 	}
-	if (bWristChanged || bTemperCalves || bTemperArms || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose))
+	const bool bManualArmed=ProphecyArmedPose::Apply(Controls,PreviousComponentTransforms,ComponentTransforms,bNewPoseTime);
+	if(bManualArmed)
+	{
+		// Commit exactly the authored upper pose; lower recurrence remains untouched.
+		// Upper hands use the published heading frame, then rebase to the next mover
+		// frame just as attack feedback does. This also seeds a subsequent real attack.
+		float* Published=UpperStateSlice(Impl->UpperPublishedStateBuffer,AgentIndex);
+		EncodeComponentPoseToNNStates(*Impl,Agent,ComponentTransforms,nullptr,Published);
+		EncodeComponentPoseToNNStates(*Impl,Agent,PreviousComponentTransforms,nullptr,
+			UpperStateSlice(Impl->UpperPreviousPublishedStateBuffer,AgentIndex));
+		float* Current=UpperStateSlice(Impl->UpperCurrentStateBuffer,AgentIndex);
+		FMemory::Memcpy(Current,Published,UpperStateDim*sizeof(float));
+		const FVector3f Delta=TransformRow(Agent.CurRootPos-Agent.PublishedRoot,YawMatrix(Agent.PublishedYaw));
+		RebaseUpperHeadingState(Current,Delta,WrapAngle(Agent.CurRootYaw-Agent.PublishedYaw));
+		const float* Lower=StateSlice(Impl->CurStateBuffer,AgentIndex);
+		BuildUpperBaseFromLower(Lower,*Impl,UpperStateSlice(Impl->UpperCurrentBaseBuffer,AgentIndex));
+		LowerTransformToHeading(Lower,0,3,*Impl,TransformStateSlice(Impl->CurrentPelvisHeadingBuffer,AgentIndex));
+	}
+	if (bManualArmed || bWristChanged || bTemperCalves || bTemperArms || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose))
 	{
 		for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
 		{
@@ -4971,14 +5019,25 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		Agent.PreviousPublishedRoot, Agent.PreviousPublishedYaw);
 	const FTransform ComponentWorldTransform = BuildComponentWorldTransform(
 		Agent.PublishedRoot, Agent.PublishedYaw);
-	if (!Agent.Slash.bActive && !bDefensePose && ProphecyUpperBodyInertia::Active(Controls))
+	if (!bManualArmed && !Agent.Slash.bActive && !bDefensePose && ProphecyUpperBodyInertia::Active(Controls))
 		ProphecyUpperBodyInertia::PreserveHandoff(Controls,Impl->Parents,Impl->BodyNames,Impl->UpperCoreBoneNames,
 			PreviousComponentWorldTransform,PreviousComponentTransforms);
+	const bool bInertiaArms=!bManualArmed && !Agent.Slash.bActive && !bDefensePose &&
+		ProphecyUpperBodyInertia::PublishArms(Controls,PreviousComponentWorldTransform,ComponentWorldTransform,
+			PreviousComponentTransforms,ComponentTransforms);
+	if(bInertiaArms)
+	{
+		// Arm inertia already solved reach and transitions outgoing lengths into
+		// the configured clamp range. Re-clamping publication would undo continuity.
+		PresentationHandClamp.bEnabled=false;
+		for(const auto& Arm:Impl->UpperArms)for(int32 B:{Arm.Start,Arm.Mid,Arm.End})
+			LocalTransforms[B]=ComponentTransforms[B].GetRelativeTransform(ComponentTransforms[Impl->Parents[B]]);
+	}
 	const AProphecyAgent* ClampActor = AgentActors[AgentIndex];
 	const bool bFullAttack = Agent.Slash.bActive && Agent.Slash.bHasPose && !Agent.Slash.bHalf;
 	const bool bCalfOverride = bFullAttack && ClampActor->bOverrideAttackCalfClamp;
 	FProphecyNNForearmClamp ForearmClamp;
-	ForearmClamp.bEnabled = !bDefensePose && C.bClampForearm && !(Agent.Slash.bActive && Agent.Slash.bHasPose);
+	ForearmClamp.bEnabled = !bInertiaArms && !bDefensePose && C.bClampForearm && !(Agent.Slash.bActive && Agent.Slash.bHasPose);
 	ForearmClamp.LeewayCm = Controls->LocomotionForearmClampLeewayCm;
 	ForearmClamp.LengthsCm = FVector2D(Impl->UpperArms[0].Lengths.Y * 100.f, Impl->UpperArms[1].Lengths.Y * 100.f);
 	if (DefenseClamps && DefenseClamps->Forearm.bOverride)
@@ -6022,6 +6081,7 @@ bool AProphecyNNLocomotionManager::PlayAgentAnimationLayer(
 	{
 		return false;
 	}
+	ProphecyArmedPose::Cancel(AgentActor);
 
 	FImpl::FAgent& Agent = Impl->Agents[Handle.Index];
 	FImpl::FAgent::FAnimationLayer& Layer = Agent.AnimationLayer;

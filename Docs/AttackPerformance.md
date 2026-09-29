@@ -4,6 +4,8 @@ Full attacks were still requesting lower and upper locomotion inference, correct
 
 ## Ownership and preserved behavior
 
+Optional [attack foot locomotion authoring](AttackFootLocomotion.md) is an explicit exception: full attacks retain lower locomotion while at least one foot needs it. The final foot release restores the lower skip from the next inference step. Upper locomotion remains skipped. Disabled/completed authoring introduces no extra inference.
+
 - Full attack: skip its requests for lower/upper locomotion networks, lower correction, upper feature construction/output correction, and the two discarded locomotion pose decodes.
 - Half attack: retain lower locomotion inference/correction and pelvis mounting; skip the discarded upper locomotion work. The independent ghost still needs its own lower, cone and upper networks.
 - Keep mover/root-window advancement and previous pose/recurrent samples. Attack feedback writes the current recurrent state before the next inference step, including catch-up steps. Recovery therefore starts from the same attack pose.

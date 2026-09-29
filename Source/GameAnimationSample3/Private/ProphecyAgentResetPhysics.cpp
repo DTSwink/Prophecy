@@ -1,7 +1,9 @@
 #include "ProphecyAgentResetPhysics.h"
+#include "ProphecyArmedPose.h"
 #include "ProphecyHalfAttackCompensation.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAttackStartInertia.h"
+#include "ProphecyAttackFootLocomotion.h"
 #include "ProphecyAgent.h"
 #include "ProphecyPhysicalProfileLibrary.h"
 #include "ProphecyPhysicalContext.h"
@@ -52,6 +54,7 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FEquipmentState> EquipmentState
 bool Has(const AProphecyAgent* Agent) { return States.Contains(Agent); }
 void Remove(const AProphecyAgent* Agent)
 {
+    ProphecyArmedPose::Cancel(Agent);
     if (auto* S=States.Find(Agent)) ProphecyPhysicalContext::DeleteSnapshot(Agent,S->Profile);
     States.Remove(Agent);RightTemperingStates.Remove(Agent);
     EquipmentStates.Remove(Agent);
@@ -61,6 +64,7 @@ void Remove(const AProphecyAgent* Agent)
     ProphecyAttackControls::ForgetReset(Agent);
     ProphecyUpperBodyInertia::ForgetReset(Agent);
     ProphecyAttackStartInertia::ForgetReset(Agent);
+    ProphecyAttackFootLocomotion::ForgetReset(Agent);
     ProphecySlashReturn::ForgetReset(Agent);
 }
 bool Capture(AProphecyAgent* Agent,FString& Error)
@@ -99,6 +103,7 @@ bool Capture(AProphecyAgent* Agent,FString& Error)
     ProphecyAttackControls::CaptureReset(Agent);
     ProphecyUpperBodyInertia::CaptureReset(Agent);
     ProphecyAttackStartInertia::CaptureReset(Agent);
+    ProphecyAttackFootLocomotion::CaptureReset(Agent);
     ProphecySlashReturn::CaptureReset(Agent);
     States.Add(Agent,MoveTemp(S));return true;
 }
@@ -124,6 +129,7 @@ bool RestoreEquipment(AProphecyAgent* Agent,FString& Error)
 }
 void CancelBlends(AProphecyAgent* Agent)
 {
+    ProphecyArmedPose::Cancel(Agent);
     ProphecyLegRecovery::Cancel(Agent);
     ProphecyKickFootLeeway::Cancel(Agent);
     ProphecyClampProfiles::Cancel(Agent);
@@ -169,6 +175,7 @@ bool Restore(AProphecyAgent* Agent,FString& Error)
     ProphecyAttackControls::RestoreReset(Agent);
     ProphecyUpperBodyInertia::RestoreReset(Agent);
     ProphecyAttackStartInertia::RestoreReset(Agent);
+    ProphecyAttackFootLocomotion::RestoreReset(Agent);
     ProphecySlashReturn::RestoreReset(Agent);
     if (S.HadMaterial && !S.Material.IsValid()) { Error=TEXT("Initial physical material no longer exists.");return false; }
     if (auto* Mesh=Agent->GetPoseReferenceMesh()) Mesh->SetPhysMaterialOverride(S.Material.Get());

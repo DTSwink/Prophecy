@@ -31,11 +31,13 @@ static void EraseCorrection(int32 Id)
 {
     FWriteScopeLock Lock(CorrectionLock);Corrections.Remove(Id);HasCorrections.Store(!Corrections.IsEmpty());
 }
+#include "ProphecyAttackStartFootInertia.inl"
 static void EnsureCleanup()
 {
     if (Cleanup.IsValid()) return;
     Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* W,bool,bool)
     {
+        Feet::CleanupWorld(W);
         for (auto It=Entries.CreateIterator();It;++It)
             if (!It.Key().IsValid() || It.Key()->GetWorld()==W) {EraseCorrection(It.Value().PoseId);It.RemoveCurrent();}
         auto Clean=[W](auto& Map) {for(auto It=Map.CreateIterator();It;++It)
@@ -45,26 +47,33 @@ static void EnsureCleanup()
 }
 void Cancel(const AProphecyAgent* A)
 {
+    Feet::Cancel(A);
     if (const auto* E=Entries.Find(A)) EraseCorrection(E->PoseId);
     Entries.Remove(A);
 }
-void Remove(const AProphecyAgent* A) {Cancel(A);History.Remove(A);Configs.Remove(A);Baselines.Remove(A);}
+void Remove(const AProphecyAgent* A) {Cancel(A);History.Remove(A);Configs.Remove(A);Baselines.Remove(A);Feet::Configs.Remove(A);Feet::Baselines.Remove(A);}
 void CaptureReset(const AProphecyAgent* A)
-{EnsureCleanup();if(const auto* C=Configs.Find(A)) Baselines.Add(A,*C);else Baselines.Remove(A);}
+{EnsureCleanup();if(const auto* C=Configs.Find(A)) Baselines.Add(A,*C);else Baselines.Remove(A);
+if(const auto* C=Feet::Configs.Find(A))Feet::Baselines.Add(A,*C);else Feet::Baselines.Remove(A);}
 void RestoreReset(const AProphecyAgent* A)
-{Cancel(A);History.Remove(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A)) Configs.Add(A,*C);}
-void ForgetReset(const AProphecyAgent* A) {Baselines.Remove(A);}
+{Cancel(A);History.Remove(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A)) Configs.Add(A,*C);
+Feet::Configs.Remove(A);if(const auto* C=Feet::Baselines.Find(A))Feet::Configs.Add(A,*C);}
+void ForgetReset(const AProphecyAgent* A) {Baselines.Remove(A);Feet::Baselines.Remove(A);}
 bool Active(int32 Id)
 {
+    if(Feet::Active(Id))return true;
     if (!HasCorrections.Load()) return false;
     FReadScopeLock Lock(CorrectionLock);return Corrections.Contains(Id);
 }
-void Begin(const AProphecyAgent* A,int32 Id,const FTransform& Previous,const FTransform& Current)
+void BeginFeet(const AProphecyAgent* A,int32 Id,uint8 Mask){Feet::Begin(A,Id,Mask);}
+void Begin(const AProphecyAgent* A,int32 Id,const FTransform& Previous,const FTransform& Current,uint8 FootMask)
 {
+    Feet::CancelMask(A,uint8(3&~FootMask));
+    Feet::Begin(A,Id,FootMask);
     const auto* C=Configs.IsEmpty()?nullptr:Configs.Find(A);if(!C)return;
     FEntry E;E.Config=*C;E.PoseId=Id;E.Tick=GFrameCounter;
     const auto* H=History.Find(A);
-    if (H && H->Samples>=2)
+    if (H && H->Samples>=2 && H->Tick+1>=GFrameCounter)
     {
         E.Output=H->Current;E.Delta=H->Current.GetLocation()-H->Previous.GetLocation();
         E.AngularDelta=ProphecyPelvisInertia::RotationVector(H->Current.GetRotation()*H->Previous.GetRotation().Inverse());
@@ -73,7 +82,9 @@ void Begin(const AProphecyAgent* A,int32 Id,const FTransform& Previous,const FTr
     {
         // A setter immediately followed by Trigger has no displayed history yet.
         // Seed from the existing two 30 Hz policy poses; no permanent extra history.
-        E.Output=Current;E.Delta=(Current.GetLocation()-Previous.GetLocation())*.5;
+        E.Output=Current;
+        ProphecyNNPresentation::ReadPelvisWorld(Id,E.Output);
+        E.Delta=(Current.GetLocation()-Previous.GetLocation())*.5;
         E.AngularDelta=ProphecyPelvisInertia::RotationVector(Current.GetRotation()*Previous.GetRotation().Inverse())*.5;
     }
     Entries.Add(A,E);
@@ -106,11 +117,12 @@ static void Advance(const AProphecyAgent* A,int32 Id,const FTransform& Authored,
 }
 void Update(const AProphecyAgent* A,int32 Id)
 {
-    if(Configs.IsEmpty() || !Configs.Contains(A) || !A->GetWorld() || A->GetWorld()->IsPaused())return;
+    Feet::Update(A,Id);
+    if(Entries.IsEmpty() || !Entries.Contains(A) || !A->GetWorld() || A->GetWorld()->IsPaused())return;
     if(const auto* H=History.Find(A))if(H->Tick==GFrameCounter)return;
     FTransform Authored;if(ProphecyNNPresentation::ReadPelvisWorld(Id,Authored))Advance(A,Id,Authored,GFrameCounter);
 }
-void Apply(int32 Id,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,const FTransform& Space)
+static void ApplyPelvis(int32 Id,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,const FTransform& Space)
 {
     if(!HasCorrections.Load())return;
     FCorrection C;
@@ -118,7 +130,7 @@ void Apply(int32 Id,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,con
     const FTransform Before=C.Authored.GetRelativeTransform(Space),After=C.Corrected.GetRelativeTransform(Space);
     if(Before.Equals(After,1.e-10))
     {
-        if(ProphecyNNPresentation::UseSpecialKneeSmoothingOrder())
+        if(!Feet::Active(Id) && ProphecyNNPresentation::UseSpecialKneeSmoothingOrder())
             ProphecyNNPresentation::ApplyKneePopSmoothing(Id,Names,Pose);
         return;
     }
@@ -143,7 +155,13 @@ void Apply(int32 Id,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,con
     }
     // Entry inertia can exhaust leg reach after the ordinary presentation pass.
     // Smooth once here, only while this correction exists, using the user's zone.
-    if(ProphecyNNPresentation::UseSpecialKneeSmoothingOrder())
+    if(!Feet::Active(Id) && ProphecyNNPresentation::UseSpecialKneeSmoothingOrder())
+        ProphecyNNPresentation::ApplyKneePopSmoothing(Id,Names,Pose);
+}
+void Apply(int32 Id,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,const FTransform& Space)
+{
+    ApplyPelvis(Id,Names,Pose,Space);
+    if(Feet::Apply(Id,Names,Pose,Space) && ProphecyNNPresentation::UseSpecialKneeSmoothingOrder())
         ProphecyNNPresentation::ApplyKneePopSmoothing(Id,Names,Pose);
 }
 }
@@ -155,9 +173,22 @@ bool UProphecyAttackStartInertiaLibrary::SetAttackStartPelvisInertia(AProphecyAg
     if(TranslationWindowFrames<0 || RotationWindowFrames<0 || !FMath::IsFinite(TranslationInertia)
         || !FMath::IsFinite(RotationInertia) || TranslationInertia<0 || RotationInertia<0)return false;
     if(!Enabled || ((TranslationWindowFrames<=1 || TranslationInertia==0) && (RotationWindowFrames<=1 || RotationInertia==0)))
-    {Cancel(A);History.Remove(A);Configs.Remove(A);return true;}
+    {if(const auto* E=Entries.Find(A))EraseCorrection(E->PoseId);Entries.Remove(A);History.Remove(A);Configs.Remove(A);return true;}
     EnsureCleanup();Configs.Add(A,{TranslationWindowFrames,RotationWindowFrames,TranslationInertia,RotationInertia});
     // Active entry latches its settings. Repeated setter calls do not restart it.
+    return true;
+}
+
+bool UProphecyAttackStartInertiaLibrary::SetAttackStartFootInertia(AProphecyAgent* A,bool Enabled,
+    int32 TranslationWindowFrames,float TranslationInertia,int32 RotationWindowFrames,float RotationInertia)
+{
+    using namespace ProphecyAttackStartInertia;
+    if(!IsInGameThread() || !IsValid(A) || A->IsActorBeingDestroyed())return false;
+    if(TranslationWindowFrames<0 || RotationWindowFrames<0 || !FMath::IsFinite(TranslationInertia)
+        || !FMath::IsFinite(RotationInertia) || TranslationInertia<0 || RotationInertia<0)return false;
+    if(!Enabled || ((TranslationWindowFrames<=1 || TranslationInertia==0) && (RotationWindowFrames<=1 || RotationInertia==0)))
+    {Feet::Cancel(A);Feet::Configs.Remove(A);return true;}
+    EnsureCleanup();Feet::Configs.Add(A,{TranslationWindowFrames,RotationWindowFrames,TranslationInertia,RotationInertia});
     return true;
 }
 
@@ -200,7 +231,7 @@ bool RunAttackStartInertiaChecks(FAutomationTestBase& Test)
         FHistory H;H.Current=Start;H.Previous=Start;
         H.Previous.AddToTranslation(-Delta);
         H.Previous.SetRotation((ProphecyPelvisInertia::RotationIncrement(-Angular)*Start.GetRotation()).GetNormalized());
-        H.Samples=2;H.Tick=100;History.Add(A,H);
+        H.Samples=2;H.Tick=GFrameCounter;History.Add(A,H);
         Begin(A,Id,Start,Goal);Entries.FindChecked(A).Tick=100;
         for(int32 Frame=1;Frame<=7;++Frame)
         {
@@ -290,4 +321,84 @@ bool RunAttackStartInertiaChecks(FAutomationTestBase& Test)
     Test.AddInfo(FString::Printf(TEXT("AttackStartPelvisInertia: world deltas, independent 5/7 ticks, reset/disable, dual-space parity and 1001 connected hips passed; max length error %.12g"),WorstLength));
     return !Test.HasAnyErrors();
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyEntryFeetTest,"Prophecy.NN.AttackEntry.FootInertia",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyEntryFeetTest::RunTest(const FString&)
+{
+    using namespace ProphecyAttackStartInertia;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);
+    AProphecyAgent* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    constexpr int32 Id=-1937;
+    using L=UProphecyAttackStartInertiaLibrary;
+    TestTrue(TEXT("Configure feet independently"),L::SetAttackStartFootInertia(A,true,5,1,7,1));
+    Update(A,Id);
+    TestFalse(TEXT("Configured idle agent has no foot entry or pelvis history"),Feet::Entries.Contains(A)||History.Contains(A));
+    L::SetAttackStartPelvisInertia(A,true,5,1,7,1);Update(A,Id);
+    TestFalse(TEXT("Configured idle pelvis also samples nothing"),History.Contains(A));
+    const FTransform Start(FRotator(0,30,0),FVector(0,0,5));
+    const FVector Delta(2,-1,.2),Angular(.01,.02,.03);
+    Feet::FPair Pair;
+    for(auto& E:Pair.Leg){E.Config={5,7,1,1};E.Output=Start;E.Delta=Delta;E.AngularDelta=Angular;E.PoseId=Id;E.Tick=100;}
+    Feet::Entries.Add(A,Pair);
+    FTransform Authored[2]={FTransform(FVector(5,0,5)),FTransform(FVector(-5,0,5))};
+    Feet::Advance(A,Id,Authored,101);
+    TestTrue(TEXT("Both feet preserve entry world displacement"),
+        Feet::Entries.FindChecked(A).Leg[0].Output.GetLocation().Equals(Start.GetLocation()+Delta,1.e-9)
+        && Feet::Entries.FindChecked(A).Leg[1].Output.GetLocation().Equals(Start.GetLocation()+Delta,1.e-9));
+    const auto First=Feet::Entries.FindChecked(A).Leg[0].Output;
+    Feet::Advance(A,Id,Authored,101);
+    TestTrue(TEXT("Repeated reads cannot advance a game tick"),Feet::Entries.FindChecked(A).Leg[0].Output.Equals(First,0));
+    L::SetAttackStartPelvisInertia(A,false,5,1,5,1);
+    TestTrue(TEXT("Disabling pelvis preserves foot correction"),Active(Id));
+    for(int32 Tick=102;Tick<=107;++Tick)Feet::Advance(A,Id,Authored,Tick);
+    TestFalse(TEXT("Foot deadline removes entry and all pose work"),Feet::Entries.Contains(A)||Active(Id));
+    Update(A,Id);TestFalse(TEXT("Completed feet remain dormant"),Feet::Entries.Contains(A));
+
+    // Left enters attack first; right remains locomotion-owned until tick102.
+    Pair.Active=1;
+    for(auto& E:Pair.Leg){E.Config={5,5,1,1};E.Frame=0;E.Tick=100;E.PoseId=Id;}
+    Feet::Entries.Add(A,Pair);Feet::Advance(A,Id,Authored,101);Feet::Advance(A,Id,Authored,102);
+    auto& Delayed=Feet::Entries.FindChecked(A);Delayed.Active|=2;Delayed.Leg[1].Tick=102;
+    Feet::Advance(A,Id,Authored,103);
+    TestEqual(TEXT("Delayed right inertia starts its own frame one"),Feet::Entries.FindChecked(A).Leg[1].Frame,1);
+    TestEqual(TEXT("Starting right does not restart left"),Feet::Entries.FindChecked(A).Leg[0].Frame,3);
+    Feet::Advance(A,Id,Authored,104);Feet::Advance(A,Id,Authored,105);
+    TestEqual(TEXT("Left deadline retires independently"),Feet::Entries.FindChecked(A).Active,uint8(2));
+    Feet::Advance(A,Id,Authored,106);Feet::Advance(A,Id,Authored,107);
+    TestFalse(TEXT("Both deadlines retire pose work"),Feet::Entries.Contains(A)||Active(Id));
+
+    const TArray<FName> Names={TEXT("pelvis"),TEXT("thigh_l"),TEXT("calf_l"),TEXT("foot_l"),TEXT("ball_l")};
+    const TArray<FTransform> Source={FTransform(FVector(0,0,90)),FTransform(FVector(0,0,85)),
+        FTransform(FVector(20,0,45)),FTransform(FVector(0,0,5)),FTransform(FVector(15,0,5))};
+    const double Upper=(Source[2].GetLocation()-Source[1].GetLocation()).Length();
+    const double Lower=(Source[3].GetLocation()-Source[2].GetLocation()).Length();
+    Feet::FTargets Target;Target.World[0]=FTransform(FRotator(5,25,10),FVector(8,4,7));Target.World[1]=Start;
+    {FWriteScopeLock Guard(Feet::Lock);Feet::Targets.Add(Id,Target);Feet::HasTargets.Store(true);}
+    auto Pose=Source;Apply(Id,Names,Pose);
+    TestTrue(TEXT("Foot-only inertia leaves pelvis unchanged"),Pose[0].Equals(Source[0],0));
+    TestTrue(TEXT("Reachable ankle reaches its world target"),Pose[3].Equals(Target.World[0],1.e-8));
+    TestTrue(TEXT("Knee remains connected with original lengths"),
+        FMath::IsNearlyEqual((Pose[2].GetLocation()-Pose[1].GetLocation()).Length(),Upper,1.e-8)
+        && FMath::IsNearlyEqual((Pose[3].GetLocation()-Pose[2].GetLocation()).Length(),Lower,1.e-8));
+    TestTrue(TEXT("Toe follows corrected ankle rigidly"),Pose[4].GetRelativeTransform(Pose[3]).Equals(Source[4].GetRelativeTransform(Source[3]),1.e-8));
+    Target.Linear=false;
+    {FWriteScopeLock Guard(Feet::Lock);Feet::Targets.Add(Id,Target);}
+    auto RotationOnly=Source;Apply(Id,Names,RotationOnly);
+    for(int32 I=0;I<=3;++I)TestTrue(TEXT("Zero/retired translation cannot move hip, knee or ankle"),RotationOnly[I].GetLocation().Equals(Source[I].GetLocation(),0));
+    Target.Linear=true;
+    {FWriteScopeLock Guard(Feet::Lock);Feet::Targets.Add(Id,Target);}
+    const FTransform Space(FRotator(4,80,12),FVector(200,50,30));auto Local=Source;
+    for(auto& B:Local)B=B.GetRelativeTransform(Space);Apply(Id,Names,Local,Space);
+    for(int32 I=0;I<Pose.Num();++I)TestTrue(TEXT("Physical/world and render/component feet agree"),(Local[I]*Space).Equals(Pose[I],1.e-7));
+    Feet::Erase(Id);auto Off=Source;Apply(Id,Names,Off);
+    for(int32 I=0;I<Off.Num();++I)TestTrue(TEXT("Inactive leaves pose untouched"),Off[I].Equals(Source[I],0));
+    CaptureReset(A);L::SetAttackStartFootInertia(A,false,5,1,5,1);RestoreReset(A);
+    TestTrue(TEXT("Reset restores foot configuration only"),Feet::Configs.Contains(A)&&!Feet::Entries.Contains(A));
+    Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyEntryPelvisTest,"Prophecy.NN.AttackEntry.PelvisRegression",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyEntryPelvisTest::RunTest(const FString&){return RunAttackStartInertiaChecks(*this);}
 #endif

@@ -296,6 +296,8 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
     if (!Impl->Agents[Handle.Index].DefensePose) return bCancelled;
     auto& Agent=Impl->Agents[Handle.Index];
     const bool WasDodge=Agent.DefensePose->bDodge;
+    const FVector3f InertiaPreviousRoot=Agent.PreviousPublishedRoot,InertiaRoot=Agent.PublishedRoot;
+    const float InertiaPreviousYaw=Agent.PreviousPublishedYaw,InertiaYaw=Agent.PublishedYaw;
     // Capture before root recentering or Blueprint callbacks can replace the
     // defense object. These are the actual two accepted defense endpoints.
     FTransform PreviousWorld[25],World[25];
@@ -326,9 +328,10 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
     if (PlayerSpring && bReturnToLocomotion) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
     ProphecyAttackRecovery::NotifyEnded(Actor,NAME_None,false,bReturnToLocomotion,
         WasDodge?EProphecyAgentState::Dodging:EProphecyAgentState::Parrying);
-    if (bReturnToLocomotion && ResolveAgent(Handle)==Actor && !Agent.Slash.bActive && !Agent.DefensePose)
+    if (bReturnToLocomotion && ResolveAgent(Handle)==Actor && !Agent.Slash.bActive && !Agent.DefensePose && ProphecyUpperBodyInertia::Configured(Actor))
         ProphecyUpperBodyInertia::Begin(Actor,MakeArrayView(PreviousWorld),MakeArrayView(World),
-            Impl->BodyNames,Impl->UpperCoreBoneNames,1./NNUpdateHz);
+            Impl->BodyNames,Impl->UpperCoreBoneNames,1./NNUpdateHz,
+            HandInertiaRoot(InertiaPreviousRoot,InertiaPreviousYaw),HandInertiaRoot(InertiaRoot,InertiaYaw));
     return true;
 }
 bool AProphecyNNLocomotionManager::GetAgentNNDefenseStatus(FProphecyAgentHandle Handle,FProphecyNNDefenseStatus& Status) const

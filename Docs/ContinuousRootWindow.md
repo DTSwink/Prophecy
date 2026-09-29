@@ -2,9 +2,13 @@
 
 `Get Continuous Locomotion Root Window` (Agent, default Self) returns world-space transforms and time offsets evaluated when the node executes:
 
-- Index **0**: the currently applied/displayed root low point and yaw; time **0**.
+- Index **0**: the currently applied/displayed root low point and yaw; time **0**. During loco drag with positive Freeze Blend, its position is blended beneath the NN pelvis as described below.
 - Indices **1–8**: predicted future roots, spaced by the policy interval (1/30 second at 30 Hz).
-- Return Value is false before an input window exists, when inference is disabled, or during a full attack or full-body NN Dodge. Half attacks and upper-only Parry retain the locomotion window.
+- Return Value is false before an input window exists, when inference is disabled, or during a full attack without any locomotion-owned feet. Half attacks and full attacks with active **loco drag** retain the locomotion window. Once both drag feet become attack-owned, full attacks return false again.
+
+Loco drag exposes the lower locomotion prediction. Full-attack movement intent still brakes normally. **Freeze Blend** on **Set Attack Foot Locomotion** additionally blends the NN trajectory and mover toward the NN pelvis ground projection. The continuous getter blends all nine positional samples once toward the currently presented pelvis XY at applied-root Z: 0 preserves the ordinary prediction, 1 collapses the whole window, and intermediate values interpolate. Yaw and sample times remain unchanged. Positive freeze deliberately changes index 0 from the actual capsule root. Reading this getter adds no inference or background work.
+
+September27 correction loaded via Live Coding17:19:17 UTC: removed the blanket full-attack rejection only while a drag foot remains. Read-only attachment to the user's existing Play verified371 samples, including23 full-attack loco-drag samples with all9 roots/times valid and zero root0 position error, plus2 completed full-attack samples correctly unavailable. User Play was preserved. Evidence: `Saved/Diagnostics/TestLocoDragRootWindow.py`, `LocoDragRootWindow.json`. No Blueprint edit or full suite.
 
 This is a separate getter. `Get Locomotion Root Window` still returns the exact last encoded NN input with **10** entries: previous at index 0, current at index 1, eight future roots. Neither getter modifies NN inputs, the mover, smoothing, physics, or animation.
 

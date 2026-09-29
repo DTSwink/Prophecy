@@ -18,6 +18,9 @@ inline float FromRemainder(float AccumulatedSeconds, float PoseIntervalSeconds)
 void Publish(int32 AgentId, double SourceTimeSeconds, float Alpha);
 // Optional inertia reads just the published pelvis under the store lock, without copying a pose.
 bool ReadPelvisWorld(int32 AgentId,FTransform& OutWorld);
+// Active/event-only inertia sampling; reads one bone without copying a pose.
+bool ReadBoneWorld(int32 AgentId,FName Bone,FTransform& OutWorld,
+    FTransform* PreviousWorld=nullptr,FTransform* CurrentWorld=nullptr);
 // Recovery only. Nonpositive lengths remove the entry; no attack-time projection.
 void SetRecoveryCalfLengths(int32 AgentId,const FVector2D& UpperCm,const FVector2D& LowerCm);
 // Existing recovery clock: 1 retains the starting reference thigh length,

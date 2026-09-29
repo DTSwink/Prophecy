@@ -2,6 +2,7 @@
 #include "ProphecyHalfAttackCompensation.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAttackStartInertia.h"
+#include "ProphecyAttackFootLocomotion.h"
 #include "ProphecyAgentTime.h"
 #include "ProphecyClampProfiles.h"
 #include "ProphecyAngularLimitBlend.h"
@@ -1504,6 +1505,7 @@ void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
     ProphecyRootFacing::Explicit(this);
     ProphecyPelvisInertia::Remove(this);
     ProphecyAttackStartInertia::Remove(this);
+    ProphecyAttackFootLocomotion::Remove(this);
     ProphecyHandInertia::Remove(this);
     ProphecyHandRecovery::Remove(this);
 	if (auto* Blends = GetWorld()->GetSubsystem<UProphecyPhysicalBlendSubsystem>()) Blends->RemoveAgent(*this);

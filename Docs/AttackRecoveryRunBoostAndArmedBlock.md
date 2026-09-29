@@ -42,6 +42,8 @@ September27 entry validation: patch38 loaded **11:13:47 UTC**; **2/2 focused tes
 
 ## Recovery and Armed verification
 
+September27 inactive-state getter correction: `GetAgentNNAttackState` now initializes Attack=None, Half/Armed/Hit=false and Frame=0, and returns false before reading retained Slash history when inactive. Previously it returned false but still populated those outputs from the finished attack. Blueprint consumers using an output pin without the bool gate could therefore read a stale half attack (and stale Armed/Hit). Current-scene capture `Saved/Diagnostics/AttackState400.json`: hookL starts162, switches half169, ends187; activity is Locomotion throughout399–520, with no active attack. Retained history and special-end event payloads are preserved; this changes getter readback only, with no new ticking/allocation/inference.
+
 `Tools/NN/AttackControls/TestAttackControls.py` runs the new recovery/latch test, existing regional ownership test, and existing Run boost test. Coverage includes full-to-half, pure half end, full reacquisition, defense exclusion, 30/60/120 FPS timing, hold-only/zero durations, current normal destination, actual effective Run pin, reset/removal, completed callback retirement, legacy/current phase gates and release.
 
 `Tools/NN/AttackControls/CaptureArmedBlock.py` uses an owned PIE session with the authored scene: blocks at tick95, releases at170, records phase progression through230, and ends its own session. It makes no Blueprint changes.

@@ -623,16 +623,21 @@ int32 FProphecyNNPoseStore::NumPoses()
 }
 
 bool ProphecyNNPresentation::ReadPelvisWorld(int32 Id,FTransform& Out)
+{ return ReadBoneWorld(Id,TEXT("pelvis"),Out); }
+
+bool ProphecyNNPresentation::ReadBoneWorld(int32 Id,FName Bone,FTransform& Out,FTransform* Previous,FTransform* Current)
 {
     FReadScopeLock Lock(GProphecyNNPoseLock);
     const auto* Found=GProphecyNNPoses.Find(Id);if(!Found)return false;
     const auto& P=*Found;
-    const int32 I=P.BoneNames.IndexOfByKey(FName(TEXT("pelvis")));
+    const int32 I=P.BoneNames.IndexOfByKey(Bone);
     if(!P.ComponentTransforms.IsValidIndex(I)||!P.PreviousComponentTransforms.IsValidIndex(I))return false;
     const auto* Presentation=GProphecyNNPresentation.Find(Id);
     const float Alpha=Presentation && Presentation->SourceTimeSeconds==P.SourceTimeSeconds?Presentation->Alpha:1.f;
     const FTransform A=P.PreviousComponentTransforms[I]*P.PreviousComponentWorldTransform;
     const FTransform B=P.ComponentTransforms[I]*P.ComponentWorldTransform;
+    if(Previous)*Previous=A;
+    if(Current)*Current=B;
     if(P.InterpolationMode!=EProphecyNNInterpolationMode::Current) Out=ProphecyNNInterpolation::Sample(P,I,A,B,Alpha);
     else
     {

@@ -42,7 +42,8 @@ FString UProphecyPhysicalProfileLibrary::PrintPhysicalBoneProfiles(
         return A.Height == B.Height ? A.Bone.LexicalLess(B.Bone) : A.Height > B.Height;
     });
 
-    FString Text;
+    FString Text = Rows.IsEmpty() ? FString() : FString(TEXT(
+        "Bone : Magnetization (L=Linear A=Angular) / Feedback Tolerance (L=cm A=deg) / Joint Damping / Locomotion Clamp Leeway (cm)"));
     for (const FRow& Row : Rows)
     {
         FProphecyBodyMagnetizationSettings Magnet;

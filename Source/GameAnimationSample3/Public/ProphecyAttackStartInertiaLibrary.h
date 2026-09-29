@@ -20,4 +20,12 @@ public:
     static bool SetAttackStartPelvisInertia(AProphecyAgent* Agent, bool Enabled,
         int32 TranslationWindowFrames=5, float TranslationInertia=1.f,
         int32 RotationWindowFrames=5, float RotationInertia=1.f);
+
+    /** Both feet retain their world motion at full-attack entry, fading to authored
+     * motion over the selected game-tick windows. Continues across lower release.
+     * Pure half entry does not start it. Disabled/finished: no sampling or pose work. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Feet", meta=(DefaultToSelf="Agent"))
+    static bool SetAttackStartFootInertia(AProphecyAgent* Agent, bool Enabled,
+        int32 TranslationWindowFrames=5, float TranslationInertia=1.f,
+        int32 RotationWindowFrames=5, float RotationInertia=1.f);
 };
