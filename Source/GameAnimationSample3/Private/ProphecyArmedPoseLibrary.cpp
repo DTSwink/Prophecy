@@ -7,6 +7,7 @@
 #include "ProphecyCoreTempering.h"
 #include "ProphecySlashReturn.h"
 #include "ProphecyUpperBodyInertia.h"
+#include "ProphecyAttackControls.h"
 #include "ProphecyNNPoseTypes.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -31,10 +32,47 @@ struct FState
     double MaxAngle=0,Alpha=0,Speed=180;bool Holding=false;
 };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FState> States;
+// Keep the original state layout intact for Live Coding. Only non-default
+// blend/alpha settings allocate this sidecar; disabled retains no pose work.
+struct FBlendState
+{
+    int32 Slots[Count];float Weights[Count];
+    FTransform Previous[Count],Current[Count];
+    double Elapsed=0,Duration=0;
+    bool NeedsLocomotion=true,HasSample=false;
+};
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FBlendState> Blends;
 static FDelegateHandle Cleanup;
 static constexpr auto Clock=ProphecyBlendClock::EKind::ArmedUpperPose;
 static double Degrees(const FQuat& A,const FQuat& B)
 {return FMath::RadiansToDegrees(2.*FMath::Acos(FMath::Clamp(FMath::Abs(A|B),0.,1.)));}
+static uint8 HittingHands(FName Attack)
+{
+    TArray<FName> Bones;bool Sword=false;
+    ProphecyAttackControls::ColliderRoles(Attack,Bones,Sword);
+    if(Sword || Bones.Contains(TEXT("hand_r")))return 2;
+    if(Bones.Contains(TEXT("hand_l")))return 1;
+    return 3; // No striking arm: headbutt and kicks use hitting settings for both.
+}
+static int32 ProfileSlot(FName Bone,uint8 Hitting)
+{
+    static const FName Core[]={TEXT("spine_01"),TEXT("spine_02"),TEXT("spine_03"),TEXT("spine_04"),TEXT("spine_05"),TEXT("neck_01"),TEXT("neck_02"),TEXT("head")};
+    static const FName Arms[2][4]={{TEXT("clavicle_l"),TEXT("upperarm_l"),TEXT("lowerarm_l"),TEXT("hand_l")},
+        {TEXT("clavicle_r"),TEXT("upperarm_r"),TEXT("lowerarm_r"),TEXT("hand_r")}};
+    for(int32 I=0;I<8;++I)if(Bone==Core[I])return I;
+    for(int32 Side=0;Side<2;++Side)for(int32 I=0;I<4;++I)if(Bone==Arms[Side][I])return ((Hitting&(1<<Side))?8:12)+I;
+    return INDEX_NONE;
+}
+static double BlendWeight(const FBlendState& B)
+{
+    const double T=B.Duration<=0?1.:FMath::Clamp(B.Elapsed/B.Duration,0.,1.);
+    return T*T*(3-2*T);
+}
+static void RefreshOwnership(FBlendState& B)
+{
+    B.NeedsLocomotion=B.Elapsed<B.Duration;
+    for(float Weight:B.Weights)B.NeedsLocomotion|=Weight<1.f;
+}
 static bool LoadTargets()
 {
     if(!Targets.IsEmpty())return true;
@@ -64,7 +102,7 @@ static bool LoadTargets()
 }
 // Explicit calls only: sample the shared presented target once; never initialize
 // an attack model, read simulated bodies or scan a scene on the hot path.
-static bool Read(AProphecyAgent* A,FName Attack,FBinding (&Bones)[Count],FTransform (&Local)[Count])
+static bool Read(AProphecyAgent* A,FName Attack,FBinding (&Bones)[Count],FTransform (&Local)[Count],int32* Slots=nullptr)
 {
     if(!IsValid(A)||!LoadTargets())return false;
     const FTarget* GT=Targets.Find(Attack);if(!GT)return false;
@@ -73,7 +111,7 @@ static bool Read(AProphecyAgent* A,FName Attack,FBinding (&Bones)[Count],FTransf
     const auto& Ref=Asset->GetRefSkeleton();const int32 Spine=Ref.FindBoneIndex(TEXT("spine_01"));if(Spine==INDEX_NONE)return false;
     TArray<FName> Names;TArray<FTransform> Future,Pose;float Alpha;FProphecyNNPoseSnapshot Snapshot;
     if(!A->ReadNNFutureWorldPoseWithSnapshot(Names,Future,Pose,Alpha,Snapshot)||Names.Num()!=Pose.Num())return false;
-    int32 N=0;
+    int32 N=0;const uint8 Hitting=Slots?HittingHands(Attack):0;
     // Physical target order can differ and include extra bodies. Bind only the
     // authored NN bones, in the same parent-first order used by publication.
     for(int32 I=0;I<Snapshot.BoneNames.Num();++I)
@@ -89,13 +127,21 @@ static bool Read(AProphecyAgent* A,FName Attack,FBinding (&Bones)[Count],FTransf
         const int32 Presented=Names.IndexOfByKey(Name),PresentedParent=Names.IndexOfByKey(ParentName);
         if(Parent<0 || Parent>=I || Source<0 || SourceParent<0 || Presented<0 || PresentedParent<0)return false;
         Bones[N]={I,Parent,(GT->Rotation[SourceParent].Inverse()*GT->Rotation[Source]).GetNormalized()};
+        if(Slots){Slots[N]=ProfileSlot(Name,Hitting);if(Slots[N]==INDEX_NONE)return false;}
         Local[N]=Pose[Presented].GetRelativeTransform(Pose[PresentedParent]);Local[N].NormalizeRotation();++N;
     }
     return N==Count;
 }
 bool Active(const AProphecyAgent* A){return !States.IsEmpty() && States.Contains(A);}
+bool OwnsUpperOutput(const AProphecyAgent* A)
+{
+    if(!Active(A))return false;
+    const auto* B=Blends.IsEmpty()?nullptr:Blends.Find(A);
+    return !B || !B->NeedsLocomotion;
+}
 void Cancel(const AProphecyAgent* A)
 {
+    if(!Blends.IsEmpty())Blends.Remove(A);
     if(States.IsEmpty() || !States.Remove(A))return;
     ProphecyBlendClock::Stop(A,Clock);
     if(States.IsEmpty()){FWorldDelegates::OnWorldCleanup.Remove(Cleanup);Cleanup.Reset();}
@@ -114,6 +160,44 @@ static void AdvanceState(FState& S,double Dt)
 bool Apply(const AProphecyAgent* A,TArrayView<FTransform> Previous,TArrayView<FTransform> Current,bool Advance)
 {
     auto* S=States.IsEmpty()?nullptr:States.Find(A);if(!S)return false;
+    auto* Blend=Blends.IsEmpty()?nullptr:Blends.Find(A);
+    if(Blend)
+    {
+        for(const auto& B:S->Bones)
+            if(!Current.IsValidIndex(B.Bone)||!Previous.IsValidIndex(B.Bone)||
+                !Current.IsValidIndex(B.Parent)||!Previous.IsValidIndex(B.Parent)){Cancel(A);return false;}
+        if(Advance || !Blend->HasSample)
+        {
+            if(Advance)
+            {
+                const double Dt=ProphecyBlendClock::Consume(A,Clock);
+                AdvanceState(*S,Dt);Blend->Elapsed+=Dt;
+                RefreshOwnership(*Blend);
+                if(S->Holding && Blend->Elapsed>=Blend->Duration)ProphecyBlendClock::Stop(A,Clock);
+            }
+            const double Ramp=BlendWeight(*Blend);
+            // Read all locomotion locals before modifying any parent. Cache the
+            // composed endpoints so render-only publication never blends twice.
+            for(int32 I=0;I<Count;++I)
+            {
+                const auto& B=S->Bones[I];
+                const FTransform Loco=Current[B.Bone].GetRelativeTransform(Current[B.Parent]);
+                Blend->Previous[I]=Blend->Current[I];
+                Blend->Current[I]=Loco;
+                const double Weight=Ramp*Blend->Weights[I];
+                if(Weight>0)Blend->Current[I].SetRotation(Weight>=1?S->Current[I].GetRotation():
+                    FQuat::Slerp(Loco.GetRotation(),S->Current[I].GetRotation(),Weight).GetNormalized());
+            }
+            Blend->HasSample=true;
+        }
+        for(int32 I=0;I<Count;++I)
+        {
+            const auto& B=S->Bones[I];
+            Previous[B.Bone]=Blend->Previous[I]*Previous[B.Parent];
+            Current[B.Bone]=Blend->Current[I]*Current[B.Parent];
+        }
+        return true;
+    }
     if(Advance)
     {
         if(!S->Holding)
@@ -134,32 +218,75 @@ bool Apply(const AProphecyAgent* A,TArrayView<FTransform> Previous,TArrayView<FT
 }
 }
 
-bool UProphecyArmedPoseLibrary::SetUpperBodyArmedPose(AProphecyAgent* A,bool Enabled,FName Attack,FString& Error,float Speed)
+bool UProphecyArmedPoseLibrary::SetUpperBodyArmedPose(AProphecyAgent* A,bool Enabled,FName Attack,FString& Error,float Speed,float BlendInTime,
+    float Spine01,float Spine02,float Spine03,float Spine04,float Spine05,float Neck01,float Neck02,float Head,
+    float HittingClavicle,float HittingUpperarm,float HittingLowerarm,float HittingHand,
+    float NonHittingClavicle,float NonHittingUpperarm,float NonHittingLowerarm,float NonHittingHand)
 {
     using namespace ProphecyArmedPose;Error.Reset();
     if(!IsInGameThread()||!IsValid(A)||A->IsActorBeingDestroyed()||!A->GetWorld()||A->GetWorld()->bIsTearingDown)
     {Error=TEXT("Agent is unavailable.");return false;}
     if(!Enabled){Cancel(A);return true;}
     if(!FMath::IsFinite(Speed)||Speed<=0){Error=TEXT("Max joint speed must be positive and finite.");return false;}
+    if(!FMath::IsFinite(BlendInTime)||BlendInTime<0){Error=TEXT("Blend In Time must be nonnegative and finite.");return false;}
+    const float Profile[]={Spine01,Spine02,Spine03,Spine04,Spine05,Neck01,Neck02,Head,
+        HittingClavicle,HittingUpperarm,HittingLowerarm,HittingHand,NonHittingClavicle,NonHittingUpperarm,NonHittingLowerarm,NonHittingHand};
+    bool Custom=BlendInTime>0,Any=false;
+    for(float Alpha:Profile)
+    {
+        if(!FMath::IsFinite(Alpha)||Alpha<0||Alpha>1){Error=TEXT("Joint alphas must be finite and between zero and one.");return false;}
+        Custom|=Alpha<1;Any|=Alpha>0;
+    }
+    if(!Any){Cancel(A);return true;}
     if(UProphecyNNDefenseLibrary::GetAgentState(A)!=EProphecyAgentState::Locomotion)
     {Error=TEXT("Start the Armed pose during locomotion, before triggering the real attack/defense.");return false;}
     if(auto* Existing=States.Find(A);Existing && Existing->Attack==Attack)
-    {Existing->Speed=Speed;return true;}
+    {
+        auto* B=Blends.Find(A);
+        if(Custom && !B)
+        {
+            FBinding Bones[Count];FTransform Local[Count];FBlendState New;
+            if(!Read(A,Attack,Bones,Local,New.Slots)){Error=TEXT("Upper-body pose is not initialized.");return false;}
+            for(int32 I=0;I<Count;++I)New.Previous[I]=New.Current[I]=Local[I];
+            // Retuning a running pose must not restart its entry ramp.
+            New.Elapsed=BlendInTime;B=&Blends.Add(A,MoveTemp(New));
+        }
+        Existing->Speed=Speed;
+        if(B)
+        {
+            Any=false;B->Duration=BlendInTime;
+            for(int32 I=0;I<Count;++I){B->Weights[I]=Profile[B->Slots[I]];Any|=B->Weights[I]>0;}
+            if(!Any){Cancel(A);return true;}
+            RefreshOwnership(*B);
+            if(!Existing->Holding || B->Elapsed<B->Duration)ProphecyBlendClock::Ensure(A,Clock);
+            else ProphecyBlendClock::Stop(A,Clock);
+        }
+        return true;
+    }
     FState S;S.Attack=Attack;S.Speed=Speed;
-    if(!Read(A,Attack,S.Bones,S.Start)){Error=TEXT("Unknown GT attack or upper-body pose is not initialized.");return false;}
+    FBlendState Blend;Blend.Duration=BlendInTime;
+    if(!Read(A,Attack,S.Bones,S.Start,Custom?Blend.Slots:nullptr)){Error=TEXT("Unknown GT attack or upper-body pose is not initialized.");return false;}
+    Any=!Custom;
     for(int32 I=0;I<Count;++I)
     {
         S.Previous[I]=S.Current[I]=S.Start[I];S.MaxAngle=FMath::Max(S.MaxAngle,Degrees(S.Start[I].GetRotation(),S.Bones[I].Goal));
+        if(Custom)
+        {
+            Blend.Previous[I]=Blend.Current[I]=S.Start[I];Blend.Weights[I]=Profile[Blend.Slots[I]];Any|=Blend.Weights[I]>0;
+        }
     }
+    if(!Any){Cancel(A);return true;}
     S.Holding=S.MaxAngle<1.e-6;if(S.Holding)S.Alpha=1;
     Cancel(A);A->StopNNAnimationLayer(0);
     ProphecyHandRecovery::CancelMotion(A);ProphecyCoreTempering::CancelMotion(A);
     ProphecySlashReturn::Cancel(A);ProphecyUpperBodyInertia::Cancel(A);
     States.Add(A,MoveTemp(S));
-    if(!States.FindChecked(A).Holding)ProphecyBlendClock::Start(A,Clock);
+    if(Custom){RefreshOwnership(Blend);Blends.Add(A,MoveTemp(Blend));}
+    if(!States.FindChecked(A).Holding || BlendInTime>0)ProphecyBlendClock::Start(A,Clock);
     if(!Cleanup.IsValid())Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* W,bool,bool)
     {
         for(auto It=States.CreateIterator();It;++It)if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
+        for(auto It=Blends.CreateIterator();It;++It)if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
         if(States.IsEmpty()){FWorldDelegates::OnWorldCleanup.Remove(Cleanup);Cleanup.Reset();}
     });
     return true;
@@ -228,6 +355,76 @@ bool FProphecyArmedPoseTest::RunTest(const FString&)
         TestFalse(TEXT("Stop removes state"),Active(A));
         TestFalse(TEXT("Inactive apply bypasses pose work"),Apply(A,MakeArrayView(Previous),MakeArrayView(Current),true));
     }
+    W->DestroyWorld(false);return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmedPoseRolesTest,"Prophecy.NN.ArmedPose.AttackRoles",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyArmedPoseRolesTest::RunTest(const FString&)
+{
+    using namespace ProphecyArmedPose;
+    for(FName Name:{FName(TEXT("jabL")),FName(TEXT("hookL")),FName(TEXT("overL"))})
+        TestEqual(TEXT("Left punches use left hitting profile"),HittingHands(Name),uint8(1));
+    for(FName Name:{FName(TEXT("jabR")),FName(TEXT("hookR")),FName(TEXT("overR")),FName(TEXT("pike")),
+        FName(TEXT("slashL")),FName(TEXT("slashR")),FName(TEXT("slashLD")),FName(TEXT("slashRD")),FName(TEXT("slashLU")),FName(TEXT("slashRU"))})
+        TestEqual(TEXT("Right punches and every sword direction use right hitting profile"),HittingHands(Name),uint8(2));
+    for(FName Name:{FName(TEXT("headbutt")),FName(TEXT("kickL")),FName(TEXT("kickR"))})
+        TestEqual(TEXT("Attacks without a striking arm use both hitting profiles"),HittingHands(Name),uint8(3));
+    TestEqual(TEXT("Left jab hand uses hitting hand alpha"),ProfileSlot(TEXT("hand_l"),HittingHands(TEXT("jabL"))),11);
+    TestEqual(TEXT("Right jab left hand uses non-hitting hand alpha"),ProfileSlot(TEXT("hand_l"),HittingHands(TEXT("jabR"))),15);
+    TestEqual(TEXT("Headbutt right clavicle uses hitting clavicle alpha"),ProfileSlot(TEXT("clavicle_r"),HittingHands(TEXT("headbutt"))),8);
+    TestEqual(TEXT("Spine has its own joint alpha"),ProfileSlot(TEXT("spine_05"),3),4);
+    return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmedPoseBlendTest,"Prophecy.NN.ArmedPose.LocomotionBlendAndJointAlphas",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyArmedPoseBlendTest::RunTest(const FString&)
+{
+    using namespace ProphecyArmedPose;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;
+    if(!A)return false;
+    FState S;S.Holding=true;S.Alpha=1;
+    FBlendState B;B.Duration=1;
+    const FVector Offset(0,0,5);const FQuat Goal(FVector::UpVector,PI/2);
+    for(int32 I=0;I<Count;++I)
+    {
+        S.Bones[I]={I+1,I,Goal};S.Start[I]=S.Current[I]=S.Previous[I]=FTransform(Goal,Offset);
+        B.Slots[I]=I;B.Weights[I]=1;B.Previous[I]=B.Current[I]=FTransform(Offset);
+    }
+    B.Weights[0]=.5f;B.Weights[1]=0;
+    States.Add(A,S);Blends.Add(A,B);ProphecyBlendClock::Start(A,Clock);
+    TestFalse(TEXT("Entry blend requires live upper locomotion"),OwnsUpperOutput(A));
+    FTransform Previous[25],Current[25],Last[Count];
+    for(int32 I=0;I<Count;++I)Last[I]=B.Current[I];
+    for(int32 Tick=1;Tick<=60;++Tick)
+    {
+        FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/60);
+        const FQuat Loco(FVector::UpVector,FMath::DegreesToRadians(10.+Tick*.1));
+        Previous[0]=FTransform(FRotator(0,Tick-1,0),FVector(Tick-1,0,90));
+        Current[0]=FTransform(FRotator(0,Tick,0),FVector(Tick,0,90));
+        for(int32 I=0;I<Count;++I)Current[I+1]=FTransform(Loco,Offset)*Current[I];
+        for(int32 I=17;I<25;++I)Previous[I]=Current[I]=FTransform(FVector(I,2*I,3*I));
+        Apply(A,Previous,Current,true);
+        const double T=Tick/60.,Ramp=T*T*(3-2*T);
+        for(int32 I=0;I<Count;++I)
+        {
+            const FTransform Local=Current[I+1].GetRelativeTransform(Current[I]);
+            const FQuat Expected=FQuat::Slerp(Loco,Goal,Ramp*B.Weights[I]).GetNormalized();
+            TestTrue(TEXT("Each local alpha blends the live, moving locomotion pose"),Degrees(Local.GetRotation(),Expected)<1.e-4);
+            TestTrue(TEXT("Offsets remain attached"),Local.GetLocation().Equals(Offset,1.e-6));
+            TestTrue(TEXT("Previous endpoint is the last accepted composite"),Previous[I+1].GetRelativeTransform(Previous[I]).Equals(Last[I],1.e-6));
+            Last[I]=Local;
+        }
+        const FTransform Once=Current[Count];Apply(A,Previous,Current,false);
+        TestTrue(TEXT("Duplicate publication does not re-blend"),Current[Count].Equals(Once,1.e-6));
+        for(int32 I=17;I<25;++I)TestTrue(TEXT("Legs remain untouched"),Current[I].GetLocation().Equals(FVector(I,2*I,3*I)));
+    }
+    TestFalse(TEXT("Partial joints keep normal upper inference alive after entry"),OwnsUpperOutput(A));
+    TestEqual(TEXT("Finished entry and manual track retire timer even with partial joints"),ProphecyBlendClock::Consume(A,Clock),0.);
+    auto& Full=Blends.FindChecked(A);for(float& Weight:Full.Weights)Weight=1;RefreshOwnership(Full);
+    TestTrue(TEXT("Full influence bypasses upper inference"),OwnsUpperOutput(A));
+    Cancel(A);TestFalse(TEXT("Stop clears advanced state"),Blends.Contains(A));
+    TestFalse(TEXT("Disabled never owns upper inference"),OwnsUpperOutput(A));
+    TestFalse(TEXT("Disabled bypasses pose work"),Apply(A,Previous,Current,true));
     W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif

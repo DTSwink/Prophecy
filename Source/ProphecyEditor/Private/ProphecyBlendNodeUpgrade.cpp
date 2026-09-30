@@ -187,9 +187,16 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
         if(FunctionName==TEXT("SetArmRepellantCone"))
         {
             auto NewPin=[](const FString& Row)
-            { return Row.StartsWith(TEXT("EnableWristTwistRecoil=")) || Row.StartsWith(TEXT("TwistLimitDegrees=")) || Row.StartsWith(TEXT("TwistRecoilStrength=")) || Row.StartsWith(TEXT("TwistDamping=")); };
+            { return Row.StartsWith(TEXT("RollRecoilStrength=")); };
             // Compare all original pins; the new pins are intentionally added with defaults.
             Before.RemoveAll(NewPin);After.RemoveAll(NewPin);
+        }
+        if(FunctionName==TEXT("SetUpperBodyArmedPose"))
+        {
+            // New influence pins have defaults; compare the pre-existing call contract.
+            auto Added=[](const FString& Row){return Row.StartsWith(TEXT("BlendInTime=")) ||
+                Row.StartsWith(TEXT("BlendInTime->")) || Row.Contains(TEXT("Alpha=")) || Row.Contains(TEXT("Alpha->"));};
+            Before.RemoveAll(Added);After.RemoveAll(Added);
         }
         Preserved&=Before==After;
     }
@@ -364,10 +371,75 @@ static FAutoConsoleCommand UpperInertiaSpaceCommand(TEXT("Prophecy.Editor.Refres
 namespace ProphecyBlendNodeUpgrade
 {
 static void RefreshArmConeTwist(){RefreshOrderFor(TEXT("SetArmRepellantCone"),TEXT("ArmConeTwistPins.txt"));}
+static void RefreshArmedPoseBlend(){RefreshOrderFor(TEXT("SetUpperBodyArmedPose"),TEXT("ArmedPoseBlendPins.txt"));}
+static FAutoConsoleCommand ArmedPoseBlendCommand(TEXT("Prophecy.Editor.RefreshArmedPoseBlend"),TEXT("Add locomotion blend and joint alpha pins; preserve existing values and wiring, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshArmedPoseBlend));
 static FAutoConsoleCommand ArmConeTwistCommand(TEXT("Prophecy.Editor.RefreshArmConeTwist"),TEXT("Add optional wrist recoil pins; preserve existing values and wiring, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshArmConeTwist));
 }
 namespace ProphecyBlendNodeUpgrade
 {
+static void RemoveTemporaryDragNode()
+{
+    if(!GEditor || GEditor->PlayWorld)return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if(!BP)return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","RemoveTemporaryDrag","Remove temporary pre-drag comparison node"));
+    BP->Modify();TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);int32 Removed=0;bool OK=true;
+    for(auto* Graph:Graphs)
+    {
+        const auto Nodes=Graph->Nodes;
+        for(UEdGraphNode* Base:Nodes)
+        {
+            auto* N=Cast<UK2Node_CallFunction>(Base);
+            if(!N || N->FunctionReference.GetMemberName()!=TEXT("SetTemporaryPreDragFixVersion"))continue;
+            Graph->Modify();N->Modify();TArray<UEdGraphPin*> Incoming,Outgoing,Results;
+            if(auto* P=N->FindPin(TEXT("execute")))Incoming=P->LinkedTo;
+            if(auto* P=N->FindPin(TEXT("then")))Outgoing=P->LinkedTo;
+            if(auto* P=N->FindPin(TEXT("ReturnValue")))Results=P->LinkedTo;
+            N->BreakAllNodeLinks();
+            for(auto* From:Incoming)for(auto* To:Outgoing)OK&=Graph->GetSchema()->TryCreateConnection(From,To);
+            for(auto* Result:Results)Graph->GetSchema()->TrySetDefaultValue(*Result,TEXT("true"));
+            FBlueprintEditorUtils::RemoveNode(BP,N,true);++Removed;
+        }
+    }
+    if(Removed){FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);}
+    UE_LOG(LogTemp,Display,TEXT("Temporary drag node removal: removed=%d execution_reconnected=%d status=%d asset_saved=0"),Removed,int32(OK),int32(BP->Status));
+}
+static FAutoConsoleCommand RemoveTemporaryDragCommand(TEXT("Prophecy.Editor.RemoveTemporaryDragNode"),TEXT("Remove temporary comparison calls, reconnect execution, leave Blueprint unsaved."),FConsoleCommandDelegate::CreateStatic(&RemoveTemporaryDragNode));
+
+// Explicit editor tuning of one existing node; undoable, never saves unrelated edits.
+static void SetWristRecoilTuning(const TArray<FString>& Args)
+{
+    if(!GEditor || GEditor->PlayWorld || (Args.Num()!=4 && Args.Num()!=5))return;
+    const int32 Count=Args.Num()-1;double Values[4];
+    for(int32 I=0;I<Count;++I)if(!LexTryParseString(Values[I],*Args[I+1]) || !FMath::IsFinite(Values[I]) || (Values[I]<0 && !(I==3 && Values[I]==-1)))return;
+    if(Values[0]>=180)return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if(!BP)return;
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    UK2Node_CallFunction* Node=nullptr;
+    for(auto* G:Graphs)for(UEdGraphNode* Base:G->Nodes)
+        if(auto* N=Cast<UK2Node_CallFunction>(Base);N && N->GetName()==Args[0] && N->FunctionReference.GetMemberName()==TEXT("SetArmRepellantCone"))
+        {if(Node)return;Node=N;}
+    if(!Node)return;
+    const TCHAR* Pins[]={TEXT("TwistLimitDegrees"),TEXT("TwistRecoilStrength"),TEXT("TwistDamping"),TEXT("RollRecoilStrength")};
+    FString Before;
+    for(int32 I=0;I<Count;++I)
+    {
+        const TCHAR* Name=Pins[I];
+        const auto* P=Node->FindPin(Name);if(!P || !P->LinkedTo.IsEmpty())return;
+        Before+=FString::Printf(TEXT("%s=%s\n"),Name,*P->DefaultValue);
+    }
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","TuneWristRecoil","Tune wrist recoil"));
+    BP->Modify();Node->GetGraph()->Modify();Node->Modify();
+    for(int32 I=0;I<Count;++I)Node->GetGraph()->GetSchema()->TrySetDefaultValue(*Node->FindPin(Pins[I]),Args[I+1]);
+    FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    UE_LOG(LogTemp,Display,TEXT("Wrist tuning %s before:\n%safter: limit=%s strength=%s damping=%s status=%d saved=0"),
+        *Args[0],*Before,*Args[1],*Args[2],*Args[3],int32(BP->Status));
+    if(Count==4)UE_LOG(LogTemp,Display,TEXT("Wrist roll recoil strength=%s"),*Args[4]);
+}
+static FAutoConsoleCommand WristTuningCommand(TEXT("Prophecy.Editor.SetWristRecoilTuning"),TEXT("Set one wrist node: node-name limit strength damping [roll-strength]. Undoable; no save."),FConsoleCommandWithArgsDelegate::CreateStatic(&SetWristRecoilTuning));
+
 // Explicit diagnostic preview; never saves. Restore exact prior pin literals afterwards.
 static TMap<FGuid,TArray<FString>> WristPreviewPins;
 static void PreviewArmConeTwist(const TArray<FString>& Args)

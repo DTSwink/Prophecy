@@ -3,8 +3,11 @@
 #include "ProphecyAgent.h"
 #include "ProphecyAttackRecovery.h"
 #include "ProphecyBlendClock.h"
+#include "ProphecyNNPoseTypes.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 
 namespace ProphecyArmCone
 {
@@ -14,6 +17,7 @@ struct FRecovery { FConfig Config; FName Attack; double Elapsed=0; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,TSet<FName>> Choices,ChoiceBaselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FRecovery> Recoveries;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,bool> AttackHolds;
 // Keep new state separate from allocations retained across Live Coding.
 struct FTargetCorrection
 {
@@ -27,6 +31,9 @@ struct FTargetCorrection
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FTargetCorrection> TargetCorrections;
 struct FPublishedArms { FTransform Previous[6],Current[6]; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FPublishedArms> PublishedArms;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,uint8> PublishedCorrections;
+// Separate live layout; cached rotations use world space to survive carrier rebases.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FPublicationFeedback> PublishedFeedback;
 #include "ProphecyArmConeTwist.inl"
 static FDelegateHandle Cleanup;
 #if WITH_EDITOR
@@ -43,17 +50,21 @@ static void EnsureCleanup()
     {
         auto Clean=[W](auto& Map) { for(auto It=Map.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W) It.RemoveCurrent(); };
-        Clean(Configs);Clean(Baselines);Clean(Choices);Clean(ChoiceBaselines);Clean(Recoveries);Clean(TargetCorrections);Clean(PublishedArms);Clean(TwistConfigs);Clean(TwistBaselines);Clean(TwistStates);
+        Clean(Configs);Clean(Baselines);Clean(Choices);Clean(ChoiceBaselines);Clean(Recoveries);Clean(AttackHolds);Clean(TargetCorrections);Clean(PublishedArms);Clean(PublishedCorrections);Clean(PublishedFeedback);Clean(TwistConfigs);Clean(TwistBaselines);Clean(TwistStates);Clean(WristIdleReferences);Clean(WristRecoilMotions);Clean(WristRollStrengths);Clean(WristRollBaselines);
     });
 }
 void Cancel(const AProphecyAgent* A)
 {
+    if(!AttackHolds.IsEmpty()) AttackHolds.Remove(A);
     if(!TwistStates.IsEmpty()) TwistStates.Remove(A);
+    if(!WristRecoilMotions.IsEmpty()) WristRecoilMotions.Remove(A);
     if(!TargetCorrections.IsEmpty()) TargetCorrections.Remove(A);
     if(!PublishedArms.IsEmpty()) PublishedArms.Remove(A);
+    if(!PublishedCorrections.IsEmpty()) PublishedCorrections.Remove(A);
+    if(!PublishedFeedback.IsEmpty()) PublishedFeedback.Remove(A);
     if(!Recoveries.IsEmpty() && Recoveries.Remove(A)) ProphecyBlendClock::Stop(A,K::ArmRepellantCone);
 }
-void Begin(const AProphecyAgent* A,FName Attack)
+void BeginAttack(const AProphecyAgent* A,FName Attack)
 {
     Cancel(A);
 #if WITH_EDITOR
@@ -63,24 +74,41 @@ void Begin(const AProphecyAgent* A,FName Attack)
     const auto* C=Configs.Find(A);const auto* Selected=Choices.Find(A);
     if(!C || !Selected || !Selected->Contains(Attack) || !Valid(A)) return;
     EnsureCleanup();Recoveries.Add(A,FRecovery{*C,Attack});
-    ProphecyBlendClock::Start(A,K::ArmRepellantCone,double(C->Hold)+C->Blend);
+    AttackHolds.Add(A,true);
+}
+void Begin(const AProphecyAgent* A,FName Attack)
+{
+    const auto* Existing=Recoveries.Find(A);
+    if(!Existing || Existing->Attack!=Attack || !AttackHolds.Contains(A)) BeginAttack(A,Attack);
+    if(auto* R=Recoveries.Find(A))
+    {
+        AttackHolds.Remove(A);R->Elapsed=0;
+        // Wrist recoil starts at upper release, independently of the cone's attack hold.
+        if(!TwistStates.IsEmpty()) TwistStates.Remove(A);
+    if(!WristRecoilMotions.IsEmpty()) WristRecoilMotions.Remove(A);
+        const double Duration=double(R->Config.Hold)+R->Config.Blend;
+        if(Duration<=0) Cancel(A);
+        else ProphecyBlendClock::Start(A,K::ArmRepellantCone,Duration);
+    }
 }
 void Remove(const AProphecyAgent* A)
-{ Cancel(A);Configs.Remove(A);Choices.Remove(A);TwistConfigs.Remove(A);ForgetReset(A); }
+{ Cancel(A);Configs.Remove(A);Choices.Remove(A);TwistConfigs.Remove(A);WristRollStrengths.Remove(A);WristIdleReferences.Remove(A);ForgetReset(A); }
 void CaptureReset(const AProphecyAgent* A)
 {
     if(const auto* C=TwistConfigs.Find(A)) TwistBaselines.Add(A,*C);else TwistBaselines.Remove(A);
+    if(const auto* C=WristRollStrengths.Find(A)) WristRollBaselines.Add(A,*C);else WristRollBaselines.Remove(A);
     EnsureCleanup();if(const auto* C=Configs.Find(A)) Baselines.Add(A,*C);else Baselines.Remove(A);
     if(const auto* C=Choices.Find(A)) ChoiceBaselines.Add(A,*C);else ChoiceBaselines.Remove(A);
 }
 void RestoreReset(const AProphecyAgent* A)
 {
-    Cancel(A);Configs.Remove(A);Choices.Remove(A);TwistConfigs.Remove(A);
+    Cancel(A);Configs.Remove(A);Choices.Remove(A);TwistConfigs.Remove(A);WristRollStrengths.Remove(A);
     if(const auto* C=TwistBaselines.Find(A)) TwistConfigs.Add(A,*C);
+    if(const auto* C=WristRollBaselines.Find(A)) WristRollStrengths.Add(A,*C);
     if(const auto* C=Baselines.Find(A)) Configs.Add(A,*C);
     if(const auto* C=ChoiceBaselines.Find(A)) Choices.Add(A,*C);
 }
-void ForgetReset(const AProphecyAgent* A) { Baselines.Remove(A);ChoiceBaselines.Remove(A);TwistBaselines.Remove(A); }
+void ForgetReset(const AProphecyAgent* A) { Baselines.Remove(A);ChoiceBaselines.Remove(A);TwistBaselines.Remove(A);WristRollBaselines.Remove(A); }
 static double Weight(const FConfig& C,double Time)
 {
     if(Time+1.e-6>=double(C.Hold)+C.Blend) return 0;
@@ -125,15 +153,21 @@ static FQuat AdvanceTarget(const FVector& Goal,const FConfig& C,double W,double 
     const double Angle=Offset.Size();
     return Angle>SMALL_NUMBER?FQuat(Offset/Angle,Angle*W):FQuat::Identity;
 }
-bool Active(const AProphecyAgent* A) { return !Recoveries.IsEmpty() && Recoveries.Contains(A); }
+bool Active(const AProphecyAgent* A)
+{
+    const auto* R=Recoveries.IsEmpty()?nullptr:Recoveries.Find(A);
+    // A wrist-only configuration has no pose/publication work during attacks.
+    return R && (!AttackHolds.Contains(A) || (R->Config.Radius>0 && R->Config.Strength>0));
+}
 bool ApplyNNPose(AProphecyAgent* A,TConstArrayView<FName> Names,TConstArrayView<int32> Parents,
     TArrayView<FTransform> Pose,const FTransform& Carrier,float DeltaSeconds)
 {
     if(Recoveries.IsEmpty()) return false;
     auto* R=Recoveries.Find(A);
     if(!R || DeltaSeconds<=0 || !Valid(A) || A->GetWorld()->IsPaused() || Names.Num()!=Pose.Num() || Parents.Num()!=Pose.Num()) return false;
-    R->Elapsed+=ProphecyBlendClock::Consume(A,K::ArmRepellantCone);
-    const double W=Weight(R->Config,R->Elapsed);
+    const bool Held=AttackHolds.Contains(A);
+    if(!Held) R->Elapsed+=ProphecyBlendClock::Consume(A,K::ArmRepellantCone);
+    const double W=Held?1.:Weight(R->Config,R->Elapsed);
     if(W<=0) { Cancel(A);return false; }
     if(R->Config.Radius<=0 || R->Config.Strength<=0) return false;
     FArmConeGeometry G;if(!Geometry(Names,Pose,Carrier,G)) return false;
@@ -173,11 +207,21 @@ bool ApplyNNPose(AProphecyAgent* A,TConstArrayView<FName> Names,TConstArrayView<
     }
     return Changed;
 }
-bool ApplyNNPublication(AProphecyAgent* A,TConstArrayView<FName> Names,TConstArrayView<int32> Parents,
+uint8 ApplyNNPublication(AProphecyAgent* A,TConstArrayView<FName> Names,TConstArrayView<int32> Parents,
     TArrayView<FTransform> Previous,TArrayView<FTransform> Current,const FTransform& PreviousCarrier,
-    const FTransform& Carrier,float DeltaSeconds,bool NewSample)
+    const FTransform& Carrier,float DeltaSeconds,bool NewSample,FPublicationFeedback* Feedback)
 {
+    if(Feedback) Feedback->Arms=0;
     if(!Active(A)) return false;
+    auto ReadFeedback=[&]()
+    {
+        if(Feedback && AttackHolds.Contains(A)) if(const auto* Saved=PublishedFeedback.Find(A))
+        {
+            Feedback->Arms=Saved->Arms;
+            for(int32 Side=0;Side<2;++Side) if(Saved->Arms & (1<<Side))
+                Feedback->WristRotation[Side]=(Carrier.GetRotation().Inverse()*Saved->WristRotation[Side]).GetNormalized();
+        }
+    };
     static const FName Bones[]={TEXT("upperarm_l"),TEXT("lowerarm_l"),TEXT("hand_l"),TEXT("upperarm_r"),TEXT("lowerarm_r"),TEXT("hand_r")};
     int32 Indices[6];
     for(int32 I=0;I<6;++I)
@@ -192,48 +236,86 @@ bool ApplyNNPublication(AProphecyAgent* A,TConstArrayView<FName> Names,TConstArr
             Previous[Indices[I]]=(NewSample?Last->Current[I]:Last->Previous[I]).GetRelativeTransform(PreviousCarrier);
             if(!NewSample) Current[Indices[I]]=Last->Current[I].GetRelativeTransform(Carrier);
         }
-        if(!NewSample) return true;
+        if(!NewSample) { ReadFeedback();return PublishedCorrections.FindRef(A); }
     }
     else if(!NewSample) return false;
+    FTransform Before[6];
+    for(int32 I=0;I<6;++I) Before[I]=Current[Indices[I]];
     ApplyNNPose(A,Names,Parents,Current,Carrier,DeltaSeconds);
     if(!Active(A)) return false;
-    if(!TwistConfigs.IsEmpty())
+    FPublicationFeedback Cone;
+    for(int32 I=0;I<6;++I)
+        if(!Current[Indices[I]].Equals(Before[I],1.e-8)) Cone.Arms|=uint8(1<<(I/3));
+    // Recovery is a temporary publication correction. Feeding it into the
+    // locomotion checkpoint compounds the displacement and prevents a clean fade.
+    if(Cone.Arms && AttackHolds.Contains(A))
+    {
+        for(int32 Side=0;Side<2;++Side) if(Cone.Arms & (1<<Side))
+            Cone.WristRotation[Side]=(Carrier.GetRotation()*Current[Indices[Side*3+2]].GetRotation()).GetNormalized();
+        PublishedFeedback.Add(A,Cone);
+        ReadFeedback();
+    }
+    else PublishedFeedback.Remove(A);
+    if(!TwistConfigs.IsEmpty() && !AttackHolds.Contains(A))
     {
         const auto* R=Recoveries.Find(A);
-        ApplyTwist(A,Previous,Current,Indices,Names.IndexOfByKey(FName(TEXT("spine_05"))),Names.IndexOfByKey(FName(TEXT("neck_01"))),Weight(R->Config,R->Elapsed),DeltaSeconds);
+        ApplyTwist(A,Previous,Current,Indices,Weight(R->Config,R->Elapsed),DeltaSeconds);
     }
     auto& Saved=PublishedArms.FindOrAdd(A);
+    uint8 ChangedArms=0;
     for(int32 I=0;I<6;++I)
     {
+        if(!Current[Indices[I]].Equals(Before[I],1.e-8)) ChangedArms|=uint8(1<<(I/3));
         Saved.Previous[I]=Previous[Indices[I]]*PreviousCarrier;
         Saved.Current[I]=Current[Indices[I]]*Carrier;
     }
-    return true;
+    PublishedCorrections.Add(A,ChangedArms);
+    return ChangedArms;
 }
 static void BeginInsideEndEvent(AProphecyAgent* A)
-{ if(ProphecyAttackRecovery::IsEndEvent(A) && !Recoveries.Contains(A)) Begin(A,ProphecyAttackRecovery::EndEventAttack(A)); }
+{
+    if(Recoveries.Contains(A)) return;
+    if(ProphecyAttackRecovery::IsEndEvent(A)) Begin(A,ProphecyAttackRecovery::EndEventAttack(A));
+    else if(Configs.Contains(A) && Choices.Contains(A))
+    {
+        FName Attack;bool Half,Armed,Hit;int32 Frame;
+        if(A->GetNNAttackState(Attack,Half,Armed,Hit,Frame)) BeginAttack(A,Attack);
+    }
+}
 }
 
 bool UProphecyArmConeLibrary::SetArmRepellantCone(AProphecyAgent* A,bool Enabled,float Radius,float Strength,float Damping,float Hold,float Blend,
-    bool EnableTwist,float TwistLimit,float TwistStrength,float TwistDamping)
+    bool EnableTwist,float TwistLimit,float TwistStrength,float TwistDamping,float RollStrength)
 {
     using namespace ProphecyArmCone;
     if(!Valid(A) || !FMath::IsFinite(Radius) || !FMath::IsFinite(Strength) || !FMath::IsFinite(Damping) ||
         !FMath::IsFinite(Hold) || !FMath::IsFinite(Blend) || Radius<0 || Radius>=90 || Strength<0 || Damping<0 || Hold<0 || Blend<0) return false;
     if(!FMath::IsFinite(TwistLimit) || !FMath::IsFinite(TwistStrength) || !FMath::IsFinite(TwistDamping) ||
+        !FMath::IsFinite(RollStrength) || (RollStrength<0 && RollStrength!=-1) ||
         TwistLimit<0 || TwistLimit>=180 || TwistStrength<0 || TwistDamping<0) return false;
-    const bool Twist=EnableTwist && (TwistStrength>0 || TwistDamping>0);
-    if(!Enabled || ((!Twist) && (Radius==0 || Strength==0)) || (Hold==0 && Blend==0))
-    { Cancel(A);Configs.Remove(A);TwistConfigs.Remove(A);return true; }
+    const bool Twist=EnableTwist && (TwistStrength>0 || TwistDamping>0 || RollStrength>0);
+    if(!Enabled || ((!Twist) && (Radius==0 || Strength==0)))
+    { Cancel(A);Configs.Remove(A);TwistConfigs.Remove(A);WristRollStrengths.Remove(A);return true; }
     if(Twist) TwistConfigs.Add(A,FTwistConfig{TwistLimit,TwistStrength,TwistDamping});
-    else { TwistConfigs.Remove(A);TwistStates.Remove(A); }
+    else { TwistConfigs.Remove(A);TwistStates.Remove(A);WristRecoilMotions.Remove(A); }
+    if(Twist && RollStrength>=0)WristRollStrengths.Add(A,RollStrength);else WristRollStrengths.Remove(A);
     EnsureCleanup();const FConfig C{Radius,Strength,Damping,Hold,Blend};Configs.Add(A,C);
     if(auto* R=Recoveries.Find(A))
     {
-        R->Elapsed+=ProphecyBlendClock::Consume(A,K::ArmRepellantCone);R->Config=C;
-        const double Remaining=double(C.Hold)+C.Blend-R->Elapsed;
-        if(Remaining<=0) Cancel(A);
-        else ProphecyBlendClock::Start(A,K::ArmRepellantCone,Remaining);
+        R->Config=C;
+        if(AttackHolds.Contains(A) && (C.Radius<=0 || C.Strength<=0))
+        {
+            // If the cone is switched off mid-attack, do not later seed wrist
+            // recovery from a stale cone publication instead of the outgoing arm.
+            PublishedArms.Remove(A);PublishedCorrections.Remove(A);PublishedFeedback.Remove(A);TargetCorrections.Remove(A);
+        }
+        if(!AttackHolds.Contains(A))
+        {
+            R->Elapsed+=ProphecyBlendClock::Consume(A,K::ArmRepellantCone);
+            const double Remaining=double(C.Hold)+C.Blend-R->Elapsed;
+            if(Remaining<=0) Cancel(A);
+            else ProphecyBlendClock::Start(A,K::ArmRepellantCone,Remaining);
+        }
     }
     BeginInsideEndEvent(A);return true;
 }
@@ -257,9 +339,11 @@ bool UProphecyArmConeLibrary::VisualizeArmRepellantCone(AProphecyAgent* A,float 
     const auto* R=Recoveries.Find(A);const auto* C=R?&R->Config:Configs.Find(A);const FConfig Default;
     if(!C) C=&Default;
     TArray<FName> Names;TArray<FTransform> Future,Presented;float Alpha=0;
-    if(!A->ReadNNFutureWorldPose(Names,Future,Presented,Alpha)) return false;
+    FProphecyNNPoseSnapshot Snapshot;
+    if(!A->ReadNNFutureWorldPoseWithSnapshot(Names,Future,Presented,Alpha,Snapshot)) return false;
     FArmConeGeometry G;if(!Geometry(Names,Presented,FTransform::Identity,G)) return false;
-    DrawTwist(A,Names,Presented,Length,Duration,R!=nullptr);
+    const FQuat Root=FQuat::Slerp(Snapshot.PreviousComponentWorldTransform.GetRotation(),Snapshot.ComponentWorldTransform.GetRotation(),Alpha).GetNormalized();
+    DrawTwist(A,Names,Presented,Root,Length,Duration,R && !AttackHolds.Contains(A));
     const float Radius=FMath::DegreesToRadians(C->Radius);
     for(int32 I=0;I<2;++I)
     {
@@ -274,104 +358,89 @@ bool UProphecyArmConeLibrary::VisualizeArmRepellantCone(AProphecyAgent* A,float 
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyWristHorizontalAxisTest,"Prophecy.Physics.ArmCone.WristHorizontalAxis",
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyWristSplitTest,"Prophecy.Physics.ArmCone.WristSplit",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
-bool FProphecyWristHorizontalAxisTest::RunTest(const FString&)
+bool FProphecyWristSplitTest::RunTest(const FString&)
 {
     using namespace ProphecyArmCone;
-    const FVector Up=FVector(1,.014,0).GetSafeNormal();
-    const FTransform Spine(FRotator(25,70,-15),FVector(100,20,80));
-    const FTransform Lower(FQuat::Identity,FVector(15,20,90));
-    const FTransform Hand(FRotator(10,15,45),Lower.GetLocation()+FVector(-15,25,-20));
-    FTwistArm S;TestTrue(TEXT("Tilted forearm reference seeds"),SeedTwist(S,Spine,Lower,Hand,Up));
-    TestTrue(TEXT("Axis is spine-to-neck up, independent of arm aim"),S.LocalAxis.Equals(Up,1.e-8));
-    const FVector Pitch=FVector::CrossProduct(Up,FVector::RightVector).GetSafeNormal();
-    TestTrue(TEXT("Pure pitch is not horizontal twist"),FMath::Abs(WristAngle(S,FQuat(Pitch,1.)*S.Reference,0))<1.e-7);
-    for(double Sign:{-1.,1.})
+    FTwistArm S;S.Reference=FQuat::Identity;S.LocalAxis=FVector::UpVector;S.LocalRadial=FVector::ForwardVector;
+    FTwistConfig C;C.Strength=60;C.Damping=10;C.Limit=5;
+    const FQuat Backward(FVector::UpVector,FMath::DegreesToRadians(-135.));
+    TestTrue(TEXT("Backward right wrist selects the outside winding"),SeedWristMotion(S,Backward).Yaw>UE_PI);
+    TestTrue(TEXT("Damping-only keeps its original angle branch"),SeedWristMotion(S,Backward,false).Yaw<0);
+    for(double Yaw:{-135.,135.})for(double Elevation:{-60.,60.})for(double Hz:{30.,60.})
     {
-        const FQuat Proposed=FQuat(Up,FMath::DegreesToRadians(Sign*110))*S.Reference;
-        const double Angle=WristAngle(S,Proposed,0);S.AcceptedAngle=Angle;S.Velocity=0;
-        const FTwistConfig C{60,1000000,0};AdvanceTwist(S,Angle,C,1,1./30);
-        const FQuat Accepted=AcceptWristStep(S,Proposed,Proposed,Angle,Angle,S.AcceptedAngle,C,1,1./30);
-        TestTrue(TEXT("Recoil approaches horizontal limit"),FMath::Abs(FMath::RadiansToDegrees(WristAngle(S,Accepted,S.AcceptedAngle)))<60.1);
-        for(const FVector Blade:{FVector::ForwardVector,FVector::RightVector,FVector::UpVector})
+        const FQuat Start=FQuat::FindBetweenNormals(S.LocalRadial,WristDirection(S,FMath::DegreesToRadians(Yaw),FMath::DegreesToRadians(Elevation)));
+        auto M=SeedWristMotion(S,Start);double PreviousYaw=M.Yaw,PreviousElevation=M.Elevation;
+        const double ReturnSign=M.Yaw>0?-1.:1.;
+        for(int32 I=0;I<2*Hz;++I)
         {
-            const double Before=FVector::DotProduct(Proposed.RotateVector(Blade),Up);
-            const double After=FVector::DotProduct(Accepted.RotateVector(Blade),Up);
-            TestTrue(TEXT("Horizontal recoil preserves blade elevation in spine space"),FMath::IsNearlyEqual(Before,After,1.e-7));
+            const FQuat Raw=Start;
+            const FQuat Q=AdvanceRootWrist(M,S,Raw,C,1,1/Hz);const FVector2D Angles=WristAngles(S,Q,M.Yaw);
+            TestTrue(TEXT("Yaw preserves the selected outward return direction"),(Angles.X-PreviousYaw)*ReturnSign>=-1.e-6);
+            TestTrue(TEXT("Elevation takes the short arc toward idle, from above or below"),FMath::Abs(Angles.Y)<=FMath::Abs(PreviousElevation)+1.e-6);
+            TestTrue(TEXT("A low blade never gets driven farther down"),Elevation>0 || Angles.Y>=PreviousElevation-1.e-6);
+            PreviousYaw=Angles.X;PreviousElevation=Angles.Y;
         }
-        const FQuat Previous=FQuat(Up,FMath::DegreesToRadians(Sign*20))*FQuat(Pitch,.5)*S.Reference;
-        const double PreviousAngle=WristAngle(S,Previous,0);S.AcceptedAngle=PreviousAngle;S.Velocity=0;
-        AdvanceTwist(S,Angle,C,1,1./30);
-        const FQuat Moving=AcceptWristStep(S,Previous,Proposed,PreviousAngle,Angle,S.AcceptedAngle,C,1,1./30);
-        TestTrue(TEXT("Recoil never borrows an older pitch from the preceding pose"),FMath::IsNearlyEqual(
-            FVector::DotProduct(Proposed.RotateVector(FVector::RightVector),Up),
-            FVector::DotProduct(Moving.RotateVector(FVector::RightVector),Up),1.e-7));
+        TestTrue(TEXT("Real pointing direction reaches idle allowance at recoil 60"),FMath::Acos(FMath::Clamp(WristDirection(S,M.Yaw,M.Elevation).X,-1.,1.))<=FMath::DegreesToRadians(5.01));
+        const FQuat Inside=FQuat(FVector::UpVector,FMath::DegreesToRadians(2.))*FQuat(FVector::ForwardVector,1.);
+        FQuat Result;
+        for(int32 I=0;I<2*Hz;++I)Result=AdvanceRootWrist(M,S,Inside,C,1,1/Hz);
+        TestTrue(TEXT("Inside-cone NN direction and axial roll keep moving during hold"),Result.AngularDistance(Inside)<.001);
+        TestTrue(TEXT("Zero weight restores exact NN rotation"),AdvanceRootWrist(M,S,Start,C,0,1/Hz).Equals(Start,1.e-10));
     }
-    return !HasAnyErrors();
-}
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyWristSpineStopTest,"Prophecy.Physics.ArmCone.WristSpineStop",
-    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
-bool FProphecyWristSpineStopTest::RunTest(const FString&)
-{
-    using namespace ProphecyArmCone;
-    const FTwistConfig C{60,0,10000};FTwistArm S;
-    const FTransform Spine=FTransform::Identity,Lower(FVector::ZeroVector),Hand(FVector(25,0,0));
-    SeedTwist(S,Spine,Lower,Hand);
-    const FQuat Before(FVector::ForwardVector,FMath::DegreesToRadians(60.));
-    const FQuat Proposed=FQuat(FVector::ForwardVector,FMath::DegreesToRadians(90.))*FQuat(FVector::RightVector,FMath::DegreesToRadians(40.));
-    const double PreviousAngle=WristAngle(S,Before,0),Angle=WristAngle(S,Proposed,PreviousAngle);
-    S.AcceptedAngle=PreviousAngle;AdvanceTwist(S,Angle,C,1,1./30);
-    const FQuat Accepted=AcceptWristStep(S,Before,Proposed,PreviousAngle,Angle,S.AcceptedAngle,C,1,1./30);
-    TestTrue(TEXT("At limit the full bent-wrist step stops, without an upward counter-swing"),FMath::RadiansToDegrees(Accepted.AngularDistance(Before))<.3);
-    TestTrue(TEXT("Analytical quaternion boundary matches accepted twist"),FMath::Abs(WristAngle(S,Accepted,S.AcceptedAngle)-S.AcceptedAngle)<1.e-6);
-    const FQuat SpineTurn(FVector::UpVector,.6);
-    const FQuat WorldStill=SpineTurn.Inverse()*Before;
-    const double StillAngle=WristAngle(S,WorldStill,PreviousAngle);
-    const FQuat Follow=AcceptWristStep(S,Before,WorldStill,PreviousAngle,StillAngle,StillAngle,C,1,1./30);
-    TestTrue(TEXT("At boundary stationary world wrist follows spine, including swing"),FMath::RadiansToDegrees(Follow.AngularDistance(Before))<.2);
-    FTransform ChangedForearm(FQuat(FVector::UpVector,1.),FVector(0,20,0));
-    FTransform UnchangedWrist(Before,FVector(25,0,0));FVector Axis,Ref,Actual;double Measured=0;
-    MeasureTwist(S,Spine,ChangedForearm,UnchangedWrist,Axis,Ref,Actual,Measured);
-    TestTrue(TEXT("Moving elbow cannot change stationary spine-local wrist angle"),FMath::Abs(Measured-PreviousAngle)<1.e-6);
-    const FQuat Returning(FVector::ForwardVector,FMath::DegreesToRadians(20.));
-    S.AcceptedAngle=PreviousAngle;const double ReturnAngle=WristAngle(S,Returning,PreviousAngle);
-    AdvanceTwist(S,ReturnAngle,C,1,1./30);
-    TestTrue(TEXT("Inward wrist step remains untouched"),AcceptWristStep(S,Before,Returning,PreviousAngle,ReturnAngle,S.AcceptedAngle,C,1,1./30).Equals(Returning,1.e-8));
-    return !HasAnyErrors();
-}
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmConeDampingTest,"Prophecy.Physics.ArmCone.SpineLocalDamping",
-    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
-bool FProphecyArmConeDampingTest::RunTest(const FString&)
-{
-    using namespace ProphecyArmCone;
-    const FTwistConfig C{30,0,10000};
-    for(double Sign:{-1.,1.})
+    const FQuat Before(FVector::UpVector,FMath::DegreesToRadians(179.));auto M=SeedWristMotion(S,Before);
+    M.ReleaseYaw=FMath::DegreesToRadians(179.);M.Releasing=true;
+    const FQuat After(FVector::UpVector,FMath::DegreesToRadians(-179.));
+    AdvanceRootWrist(M,S,After,C,.5,1./60);
+    TestTrue(TEXT("Fade raw yaw unwraps without a 360-degree jump"),FMath::IsNearlyEqual(FMath::RadiansToDegrees(M.ReleaseYaw),181.,1.e-4));
+    C.Strength=75;C.Damping=20;C.Limit=15;
+    const FQuat Rolled=FQuat(FVector::UpVector,2.)*FQuat(FVector::ForwardVector,2.);
+    auto Slow=SeedWristMotion(S,Rolled),Fast=Slow,Legacy=Slow,Free=Slow;
+    FQuat SlowQ,FastQ,LegacyQ;
+    for(int32 I=0;I<30;++I)
     {
-        FTwistArm S;
-        TestEqual(TEXT("Inside limit damping is idle"),AdvanceTwist(S,FMath::DegreesToRadians(Sign*20),C,1,1./30),0.);
-        AdvanceTwist(S,FMath::DegreesToRadians(Sign*90),C,1,1./30);
-        TestTrue(TEXT("Damping only blocks outward spin at both limits"),FMath::Abs(FMath::RadiansToDegrees(S.AcceptedAngle))<30.2);
-        TestEqual(TEXT("Inward recovery is undamped"),AdvanceTwist(S,FMath::DegreesToRadians(Sign*15),C,1,1./30),0.);
-        S.AcceptedAngle=FMath::DegreesToRadians(Sign*90);
-        TestEqual(TEXT("Zero recoil does not pull stationary excess back"),AdvanceTwist(S,S.AcceptedAngle,C,1,1./30),0.);
-        const double NoWeight=AdvanceTwist(S,FMath::DegreesToRadians(Sign*120),C,0,1./30);
-        TestEqual(TEXT("Faded-out damping leaves NN alone"),NoWeight,0.);
+        SlowQ=AdvanceRootWrist(Slow,S,FQuat::Identity,C,1,1./60,75);
+        FastQ=AdvanceRootWrist(Fast,S,FQuat::Identity,C,1,1./60,300);
+        LegacyQ=AdvanceRootWrist(Legacy,S,FQuat::Identity,C,1,1./60);
+        TestTrue(TEXT("Independent roll strength preserves blade direction"),SlowQ.RotateVector(S.LocalRadial).Equals(FastQ.RotateVector(S.LocalRadial),1.e-8));
+        TestTrue(TEXT("Default roll strength retains shared response"),SlowQ.Equals(LegacyQ,1.e-8));
     }
-    FTwistArm S;
-    const FTransform Spine=FTransform::Identity,Lower(FVector(0,0,0)),Hand(FVector(25,0,0));
-    TestTrue(TEXT("Reference seeds from spine"),SeedTwist(S,Spine,Lower,Hand));
-    const FTransform RotatedSpine(FQuat(FVector::ForwardVector,FMath::DegreesToRadians(90.)));
-    FVector Axis,Ref,Actual;double Angle=0;
-    MeasureTwist(S,RotatedSpine,Lower,Hand,Axis,Ref,Actual,Angle);
-    TestTrue(TEXT("Spine turning under world-still wrist registers relative twist"),FMath::IsNearlyEqual(FMath::RadiansToDegrees(Angle),-90.,1.e-4));
-    const double Correction=AdvanceTwist(S,Angle,C,1,1./30);
-    TestTrue(TEXT("Damping turns wrist with spine after reaching limit"),FMath::RadiansToDegrees(Correction)>59.8);
-    FTransform CorrectedLower=Lower,CorrectedHand=Hand;
-    CorrectedLower.SetRotation(FQuat(Axis,Correction));CorrectedHand.SetRotation(FQuat(Axis,Correction));
-    MeasureTwist(S,RotatedSpine,CorrectedLower,CorrectedHand,Axis,Ref,Actual,Angle);
-    TestTrue(TEXT("Accepted wrist remains near spine-local boundary"),FMath::Abs(FMath::RadiansToDegrees(Angle))<30.2);
+    auto RollError=[&](FQuat Q)
+    {
+        Q=(FQuat::FindBetweenNormals(Q.RotateVector(S.LocalRadial),S.LocalRadial)*Q).GetNormalized();
+        return Q.AngularDistance(FQuat::Identity);
+    };
+    TestTrue(TEXT("Higher roll stiffness closes the axial gap faster"),RollError(FastQ)<RollError(SlowQ)*.5);
+    TestTrue(TEXT("Zero roll stiffness follows raw roll directly"),RollError(AdvanceRootWrist(Free,S,FQuat::Identity,C,1,1./60,0))<1.e-7);
+    TestTrue(TEXT("Independent roll releases to exact raw orientation"),AdvanceRootWrist(Fast,S,Rolled,C,0,1./60,300).Equals(Rolled,1.e-10));
     return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyWristIdleReferenceTest,"Prophecy.Physics.ArmCone.WristIdleReference",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyWristIdleReferenceTest::RunTest(const FString&)
+{
+    using namespace ProphecyArmCone;using L=UProphecyArmConeLibrary;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;
+    if(!A)return false;
+    const FName Names[]={TEXT("lowerarm_r"),TEXT("hand_r"),TEXT("spine_05"),TEXT("neck_01")};
+    const FQuat Spine=FRotator(20,55,-10).Quaternion(),IdleWrist=FRotator(-30,15,65).Quaternion();
+    FTransform Idle[]={FTransform(FVector(0,0,20)),FTransform(Spine*IdleWrist,FVector(10,0,20)),
+        FTransform(Spine,FVector::ZeroVector),FTransform(Spine.RotateVector(FVector(10,0,0)))};
+    TestFalse(TEXT("Disabled needs no idle decoding"),NeedsWristIdleReference(A));
+    L::SetArmRepellantCone(A,true,0,0,20,2.5,.5,true,5,60000,10);
+    L::SetAttackArmRepellantConeEnabled(A,false,true);BeginAttack(A,TEXT("slashR"));
+    TestFalse(TEXT("Attack performs no wrist idle decoding"),NeedsWristIdleReference(A));
+    Begin(A,TEXT("slashR"));TestTrue(TEXT("First recovery requests authored idle"),NeedsWristIdleReference(A));
+    SetWristIdleReference(A,Names,Idle);
+    TestFalse(TEXT("Idle reference decoded only once"),NeedsWristIdleReference(A));
+    FTwistArm S=WristIdleReferences.FindChecked(A);
+    TestTrue(TEXT("Idle hand is cached in root space"),S.Reference.Equals(Spine*IdleWrist,1.e-8));
+    TestTrue(TEXT("Axis uses root up"),S.LocalAxis.Equals(FVector::UpVector,1.e-8));
+    Cancel(A);BeginAttack(A,TEXT("slashR"));Begin(A,TEXT("slashR"));
+    TestFalse(TEXT("Next attack reuses canonical idle without decoding"),NeedsWristIdleReference(A));
+    Remove(A);TestFalse(TEXT("Agent removal releases cached idle"),WristIdleReferences.Contains(A));
+    W->DestroyWorld(false);return !HasAnyErrors();
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmConeTwistTest,"Prophecy.Physics.ArmCone.WristTwistRecoil",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -393,37 +462,91 @@ bool FProphecyArmConeTwistTest::RunTest(const FString&)
         for(int32 B=1;B<3;++B)Current[I+B].SetRotation(Twist*Current[I+B].GetRotation());
     }
     const FTransform Carrier(FRotator(10,80,20),FVector(100,40,20));
-    TestFalse(TEXT("Disabled publication bypass"),ApplyNNPublication(A,Names,Parents,Previous,Current,Carrier,Carrier,1.f/30,true));
+    TestFalse(TEXT("Disabled publication bypass"),ApplyNNPublication(A,Names,Parents,Previous,Current,Carrier,Carrier,1.f/30,true)!=0);
     TestTrue(TEXT("Twist only with zero cone radius"),L::SetArmRepellantCone(A,true,0,0,20,1,.5,true,30,1000000,20));
-    L::SetAttackArmRepellantConeEnabled(A,false,true);CaptureReset(A);Begin(A,TEXT("slashR"));
-    const FQuat WristSwing=(Current[1].GetRotation().Inverse()*Current[2].GetRotation()).GetNormalized();
-    TestTrue(TEXT("Twist corrects NN without physics"),ApplyNNPublication(A,Names,Parents,Previous,Current,Carrier,Carrier,1.f/30,true));
-    for(int32 Side=0;Side<2;++Side)
+    L::SetAttackArmRepellantConeEnabled(A,false,true);CaptureReset(A);BeginAttack(A,TEXT("slashR"));
+    TestFalse(TEXT("Wrist-only configuration has no active attack pose work"),Active(A));
+    TestFalse(TEXT("Wrist-only attack publication bypass"),ApplyNNPublication(A,Names,Parents,Previous,Current,Carrier,Carrier,1.f/30,true)!=0);
+    TestFalse(TEXT("Attack allocates no twist state or publication cache"),TwistStates.Contains(A)||PublishedArms.Contains(A));
+    Begin(A,TEXT("slashR"));
+    SetWristIdleReference(A,Names,Previous);
+    // Spine lean must not rotate the idle target or seed the accepted wrist.
+    Previous[6].SetRotation(FRotator(-20,-10,7).Quaternion());
+    Current[6].SetRotation(FRotator(40,15,-25).Quaternion());
+    const FQuat ForearmBefore[2]={Current[1].GetRotation(),Current[4].GetRotation()};
+    const FTransform LeftBefore[3]={Current[0],Current[1],Current[2]};
+    FPublicationFeedback Feedback;Feedback.Arms=3;
+    TestTrue(TEXT("Twist corrects NN without physics"),ApplyNNPublication(A,Names,Parents,Previous,Current,Carrier,Carrier,1.f/30,true,&Feedback)!=0);
+    TestEqual(TEXT("Twist-only correction never feeds locomotion recurrence"),Feedback.Arms,uint8(0));
+    TestFalse(TEXT("Left wrist never initializes recoil"),TwistStates.FindChecked(A).Arm[0].Ready);
+    for(int32 I=0;I<3;++I)TestTrue(TEXT("Left arm and its constrained wrist stay untouched"),Current[I].Equals(LeftBefore[I],1.e-8));
+    for(int32 Side=1;Side<2;++Side)
     {
-        const int32 I=Side*3;FVector Axis,Ref,Actual;double Angle=0;
-        MeasureTwist(TwistStates.FindChecked(A).Arm[Side],Current[6],Current[I+1],Current[I+2],Axis,Ref,Actual,Angle);
-        TestTrue(TEXT("Mirrored twist approaches 30 degree limit"),FMath::Abs(FMath::RadiansToDegrees(Angle))<30.3);
-        for(int32 B=0;B<3;++B)TestTrue(TEXT("Twist leaves every joint position unchanged"),Current[I+B].GetLocation().Equals(Previous[I+B].GetLocation(),1.e-8));
-        TestTrue(TEXT("Wrist swing preserved"),(Current[I+1].GetRotation().Inverse()*Current[I+2].GetRotation()).Equals(WristSwing,1.e-7));
-        const FQuat Rigid(FVector::UpVector,1.1);FTransform Moved[3];
-        for(int32 B=0;B<3;++B)Moved[B]=Current[I+B]*FTransform(Rigid,FVector(12,40,0));
-        double MovedAngle=0;MeasureTwist(TwistStates.FindChecked(A).Arm[Side],Current[6]*FTransform(Rigid,FVector(12,40,0)),Moved[1],Moved[2],Axis,Ref,Actual,MovedAngle);
-        TestTrue(TEXT("Spine-local reference ignores rigid body movement"),FMath::IsNearlyEqual(Angle,MovedAngle,1.e-7));
+        const int32 I=Side*3;
+        const FQuat Local=Current[I+2].GetRotation();
+        TestTrue(TEXT("Accepted direction stays within the configured cone"),FMath::Acos(FMath::Clamp(FVector::DotProduct(Local.RotateVector(WristIdleReferences.FindChecked(A).LocalRadial),WristIdleReferences.FindChecked(A).Reference.RotateVector(WristIdleReferences.FindChecked(A).LocalRadial)),-1.,1.))<=FMath::DegreesToRadians(30.01));
+        for(int32 B=0;B<3;++B)TestTrue(TEXT("Wrist leaves every joint position unchanged"),Current[I+B].GetLocation().Equals(Previous[I+B].GetLocation(),1.e-8));
+        TestTrue(TEXT("Wrist leaves forearm rotation untouched"),Current[I+1].GetRotation().Equals(ForearmBefore[Side],1.e-7));
+        const FTransform Rigid(FQuat(FVector::UpVector,1.1),FVector(12,40,0));
+        TestTrue(TEXT("Root-local reference follows rigid movement"),
+            (Rigid.GetRotation().Inverse()*(Current[I+2]*Rigid).GetRotation()).Equals(Local,1.e-7));
     }
     const FQuat Once=Current[1].GetRotation();
-    TestTrue(TEXT("Repeated publication reuses accepted endpoint"),ApplyNNPublication(A,Names,Parents,Previous,Current,Carrier,Carrier,0,false));
+    Feedback.Arms=3;
+    TestTrue(TEXT("Repeated publication reuses accepted endpoint"),ApplyNNPublication(A,Names,Parents,Previous,Current,Carrier,Carrier,0,false,&Feedback)!=0);
+    TestEqual(TEXT("Repeated wrist correction also leaves recurrence untouched"),Feedback.Arms,uint8(0));
     TestTrue(TEXT("Repeated publication does not integrate twice"),Current[1].GetRotation().Equals(Once,1.e-7));
-    TestTrue(TEXT("Unwrap does not jump at 180"),FMath::IsNearlyEqual(FMath::RadiansToDegrees(UnwrapTwist(FMath::DegreesToRadians(-179.),FMath::DegreesToRadians(175.))),181.,1.e-4));
-    FTwistArm S;S.AcceptedAngle=FMath::DegreesToRadians(175.);
-    AdvanceTwist(S,FMath::DegreesToRadians(-179.),FTwistConfig{30,1000000,20},1,1./30);
-    TestTrue(TEXT("Crossing 180 recoils to same side of limit"),S.AcceptedAngle>0 && FMath::RadiansToDegrees(S.AcceptedAngle)<30.3);
-    L::SetArmRepellantCone(A,false);TestFalse(TEXT("Disable clears twist state"),TwistStates.Contains(A));
+    L::SetArmRepellantCone(A,false);TestFalse(TEXT("Disable clears twist state and selected winding"),TwistStates.Contains(A)||WristRecoilMotions.Contains(A));
     RestoreReset(A);TestTrue(TEXT("Reset restores twist settings"),TwistConfigs.Contains(A));
     L::SetArmRepellantCone(A,true,0,0,20,1,.5,true,30,0,10000);
-    TestTrue(TEXT("Zero recoil retains damping-only configuration"),TwistConfigs.Contains(A));
+    TestTrue(TEXT("Damping-only configuration remains available"),TwistConfigs.Contains(A));
     L::SetArmRepellantCone(A,true,0,0,20,1,.5,true,30,0,0);
-    TestFalse(TEXT("Zero recoil and damping bypass"),TwistConfigs.Contains(A));
+    TestFalse(TEXT("Zero strength and damping bypass wrist work"),TwistConfigs.Contains(A));
+    L::SetArmRepellantCone(A,true,0,0,20,1,.5,true,30,0,0,300);
+    TestTrue(TEXT("Independent roll can run without pointing recoil"),TwistConfigs.Contains(A));
+    CaptureReset(A);L::SetArmRepellantCone(A,false);
+    TestFalse(TEXT("Disabled removes independent roll configuration"),WristRollStrengths.Contains(A));
+    RestoreReset(A);TestEqual(TEXT("Reset preserves independent roll strength"),WristRollStrengths.FindRef(A),300.);
+    TestFalse(TEXT("Invalid independent roll strength rejected"),L::SetArmRepellantCone(A,true,0,0,20,1,.5,true,30,75,20,-2));
     L::SetArmRepellantCone(A,true);TestFalse(TEXT("Default cone has no twist config"),TwistConfigs.Contains(A));
+    TestFalse(TEXT("Wrist disable removes independent roll configuration"),WristRollStrengths.Contains(A));
+    Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmConeFeedbackTest,"Prophecy.Physics.ArmCone.FeedbackOnlyCorrectedArms",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyArmConeFeedbackTest::RunTest(const FString&)
+{
+    using namespace ProphecyArmCone;using L=UProphecyArmConeLibrary;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;
+    if(!A)return false;
+    const FName Names[]={TEXT("upperarm_l"),TEXT("lowerarm_l"),TEXT("hand_l"),TEXT("upperarm_r"),TEXT("lowerarm_r"),TEXT("hand_r")};
+    const int32 Parents[]={-1,0,1,-1,3,4};FTransform Previous[6],Current[6];
+    for(int32 Side=0;Side<2;++Side)
+    {
+        const int32 I=3*Side;const FVector Shoulder(0,Side?15:-15,100);
+        Current[I]=FTransform(Shoulder);
+        Current[I+1]=FTransform(Shoulder+FVector(0,Side?25:-25,0));
+        Current[I+2]=FTransform(Current[I+1].GetLocation()+FVector(15,0,-20));
+        for(int32 B=0;B<3;++B)Previous[I+B]=Current[I+B];
+    }
+    L::SetArmRepellantCone(A,true,60,1000000,20,1,.5);
+    L::SetAttackArmRepellantConeEnabled(A,false,true);Begin(A,TEXT("slashR"));
+    FPublicationFeedback Feedback;
+    auto Publish=[&](bool New){return ApplyNNPublication(A,Names,Parents,Previous,Current,
+        FTransform::Identity,FTransform::Identity,New?1.f/30:0.f,New,&Feedback);};
+    TestEqual(TEXT("Active cone outside both limits requests no recurrent rewrite"),Publish(true),uint8(0));
+    TestEqual(TEXT("Repeated uncorrected publication also bypasses feedback"),Publish(false),uint8(0));
+    Current[1].SetLocation(Current[0].GetLocation()+FVector(1,25,0));
+    Current[2].SetLocation(Current[1].GetLocation()+FVector(15,0,-20));
+    const FTransform Right[3]={Current[3],Current[4],Current[5]};
+    TestEqual(TEXT("Only inward left arm requests feedback"),Publish(true),uint8(1));
+    TestEqual(TEXT("Recovery correction does not rewrite the checkpoint"),Feedback.Arms,uint8(0));
+    for(int32 I=0;I<3;++I)TestTrue(TEXT("Uncorrected right arm untouched"),Current[I+3].Equals(Right[I],1.e-8));
+    TestEqual(TEXT("Repeated corrected publication preserves its arm mask"),Publish(false),uint8(1));
+    TestEqual(TEXT("Repeated recovery also leaves checkpoint motion untouched"),Feedback.Arms,uint8(0));
+    L::SetArmRepellantCone(A,false);
+    TestFalse(TEXT("Cancel clears feedback sidecar"),PublishedCorrections.Contains(A));
+    TestFalse(TEXT("Cancel clears cone-only feedback pose"),PublishedFeedback.Contains(A));
     Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmConeNNPoseTest,"Prophecy.Physics.ArmCone.NNPoseWithoutPhysics",
@@ -533,8 +656,68 @@ bool FProphecyArmConeLifecycleTest::RunTest(const FString&)
     Begin(A,TEXT("slashL"));TestFalse(TEXT("Unselected attack bypass"),Recoveries.Contains(A));
     L::SetArmRepellantCone(A,true,45,0);Begin(A,TEXT("slashR"));
     TestFalse(TEXT("Zero strength erases settings and recovery"),Configs.Contains(A)||Recoveries.Contains(A));
-    L::SetArmRepellantCone(A,true,45,100,20,0,0);TestFalse(TEXT("Zero duration erases settings"),Configs.Contains(A));
+    L::SetArmRepellantCone(A,true,45,100,20,0,0);BeginAttack(A,TEXT("slashR"));
+    TestTrue(TEXT("Zero post duration permits attack-only recoil"),Active(A));
+    Begin(A,TEXT("slashR"));TestFalse(TEXT("Attack-only retires at upper release"),Active(A));
     TestFalse(TEXT("Invalid radius rejected"),L::SetArmRepellantCone(A,true,100));
+    Remove(A);ProphecyAttackRecovery::Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmConeAttackHoldTest,"Prophecy.Physics.ArmCone.AttackHoldAndRelease",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyArmConeAttackHoldTest::RunTest(const FString&)
+{
+    using namespace ProphecyArmCone;using L=UProphecyArmConeLibrary;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;
+    if(!A)return false;
+    const FName Names[]={TEXT("upperarm_l"),TEXT("lowerarm_l"),TEXT("hand_l"),TEXT("upperarm_r"),TEXT("lowerarm_r"),TEXT("hand_r")};
+    TArray<FName> PoseNames;PoseNames.Append(Names,UE_ARRAY_COUNT(Names));PoseNames.Add(TEXT("spine_05"));
+    const int32 Parents[]={6,0,1,6,3,4,-1};FTransform Raw[7],Previous[7],Current[7];
+    Raw[6]=Previous[6]=Current[6]=FTransform::Identity;
+    for(int32 Side=0;Side<2;++Side)
+    {
+        const int32 I=3*Side;const FVector Shoulder(0,Side?15:-15,100);
+        const FVector Dir=FVector(1,Side?-4:4,0).GetSafeNormal();
+        Raw[I]=FTransform(Shoulder);Raw[I+1]=FTransform(Shoulder+30*Dir);Raw[I+2]=FTransform(Shoulder+55*Dir);
+        for(int32 B=0;B<3;++B)Previous[I+B]=Raw[I+B];
+    }
+    L::SetArmRepellantCone(A,true,60,1000000,20,.5f,1.f,true,30,1000000,20);
+    L::SetAttackArmRepellantConeEnabled(A,false,true);BeginAttack(A,TEXT("slashR"));
+    auto Step=[&]()
+    {
+        FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/60);
+        for(int32 I=0;I<7;++I)Current[I]=Raw[I];
+        return ApplyNNPublication(A,PoseNames,Parents,Previous,Current,FTransform::Identity,FTransform::Identity,1.f/60,true);
+    };
+    for(int32 Tick=0;Tick<240;++Tick)
+    {
+        L::SetArmRepellantCone(A,true,60,1000000,20,.5f,1.f,true,30,1000000,20);
+        Step();
+    }
+    TestTrue(TEXT("Long attack stays active beyond post-release duration"),Active(A));
+    TestFalse(TEXT("Cone attack does not initialize wrist recoil"),TwistStates.Contains(A));
+    TestEqual(TEXT("Attack does not consume hold or blend"),Recoveries.FindChecked(A).Elapsed,0.);
+    TestEqual(TEXT("No cone clock during attack"),ProphecyBlendClock::Consume(A,K::ArmRepellantCone),0.);
+    FArmConeGeometry G;Geometry(PoseNames,Current,FTransform::Identity,G);
+    TestTrue(TEXT("Attack correction retains full cone weight"),FVector::DotProduct(G.Direction[0],G.Right)<.501);
+    ProphecyAttackRecovery::NotifyLowerEnded(A,TEXT("slashR"),true,true);
+    TestTrue(TEXT("Full-to-half does not release attack hold"),AttackHolds.Contains(A));
+    TestFalse(TEXT("Lower release does not initialize wrist recoil"),TwistStates.Contains(A));
+    const FVector Offset=TargetCorrections.FindChecked(A).Offset[0];
+    ProphecyAttackRecovery::NotifyEnded(A,TEXT("slashR"),true,true);
+    TestFalse(TEXT("Upper end releases hold"),AttackHolds.Contains(A));
+    TestTrue(TEXT("Upper end preserves recoil spring"),TargetCorrections.FindChecked(A).Offset[0].Equals(Offset));
+    SetWristIdleReference(A,PoseNames,Raw);
+    for(int32 Tick=0;Tick<30;++Tick)Step();
+    TestTrue(TEXT("Wrist reference uses supplied idle, not outgoing attack pose"),TwistStates.FindChecked(A).Arm[1].Reference.Equals(Raw[5].GetRotation(),1.e-7));
+    TestTrue(TEXT("Post-release hold is full weight"),FMath::IsNearlyEqual(Weight(Recoveries.FindChecked(A).Config,Recoveries.FindChecked(A).Elapsed),1.,1.e-6));
+    for(int32 Tick=0;Tick<30;++Tick)Step();
+    TestTrue(TEXT("Then blend reaches half weight"),FMath::IsNearlyEqual(Weight(Recoveries.FindChecked(A).Config,Recoveries.FindChecked(A).Elapsed),.5,1.e-6));
+    for(int32 Tick=0;Tick<30;++Tick)Step();
+    TestFalse(TEXT("Completed blend retires"),Active(A));
+    BeginAttack(A,TEXT("slashR"));ProphecyAttackRecovery::NotifyEnded(A,TEXT("slashR"),false,false);
+    TestFalse(TEXT("Interrupted attack cancels held recoil"),Active(A));
+    L::SetArmRepellantCone(A,false);BeginAttack(A,TEXT("slashR"));
+    TestFalse(TEXT("Disabled attack has no pose work"),Step()!=0);
     Remove(A);ProphecyAttackRecovery::Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif

@@ -421,6 +421,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 				ProphecyAttackCheckpoint::Select(this,Actor,FamilyCheckpoint,true);
 			}
 			Slash.Family = Attack;
+			ProphecyArmCone::BeginAttack(Actor,Attack);
 			if (bIsKick)
 			{
 				// Kicks never use loco drag, including an in-place family switch.
@@ -549,6 +550,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	SetAgentTimeDilation(Handle,1.f);
 	Actor->BeginAttackFists(Attack);
 	ProphecyAttackRecovery::EnterSpecial(Actor,bHalf);
+	ProphecyArmCone::BeginAttack(Actor,Attack);
 	ProphecyAttackStartHands::Begin(Actor);
 	Actor->NotifySwordAttackState(true);
 	if (!bHalf) ProphecyKickFootLeeway::Begin(Actor,Attack);
@@ -1118,6 +1120,26 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 				const auto& Arm=Impl->UpperArms[I];
 				for(int Bone:{Arm.Start,Arm.Mid,Arm.End})Slash.GhostPose[Bone]=(Pose[Bone]*Carrier).GetRelativeTransform(Slash.AnchorWorld);
 				StoreInertiaArm(*Impl,I,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
+			}
+		}
+		if(ProphecyArmCone::Active(AgentActors[AgentIndex]))
+		{
+			// Correct each accepted attack prediction once and retain the corrected
+			// endpoints for presentation and outgoing inertia at upper release.
+			for(int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
+				PreviousPose[Bone]=Slash.PreviousVisibleWorldPose[Bone].GetRelativeTransform(PreviousCarrier);
+			if(ProphecyArmCone::ApplyNNPublication(AgentActors[AgentIndex],Impl->BodyNames,Impl->Parents,
+				PreviousPose,Pose,PreviousCarrier,Carrier,1.f/NNUpdateHz,true))
+			{
+				if(!Slash.bHalf) for(int32 I=0;I<2;++I)
+				{
+					const auto& Arm=Impl->UpperArms[I];
+					for(int32 Bone:{Arm.Start,Arm.Mid,Arm.End})
+						Slash.GhostPose[Bone]=(Pose[Bone]*Carrier).GetRelativeTransform(Slash.AnchorWorld);
+					StoreInertiaArm(*Impl,I,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
+				}
+				for(int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
+					Slash.PreviousVisibleWorldPose[Bone]=PreviousPose[Bone]*PreviousCarrier;
 			}
 		}
 		for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)

@@ -128,6 +128,7 @@ static void DispatchRegion(AProphecyAgent* Agent,FName Attack,bool Half,bool Ret
     TGuardValue<bool> Region(EndEventUpper,Upper);
     TGuardValue<EProphecyAgentState> SpecialScope(EndEventSpecial,Special);
     if(Upper) ProphecyAttackStartHands::Cancel(Agent);
+    if(Upper && !Returning) ProphecyArmCone::Cancel(Agent);
     if (Returning)
     {
         if (Upper)

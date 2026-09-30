@@ -21,4 +21,6 @@ inline constexpr float PelvisLocal[90] = {
     0.976192474f, 0.140513256f, -0.165239945f, 0.208256349f, -0.394181848f, 0.895125628f,
     0.908817947f, -0.299286544f, -0.29065001f, -0.308849961f, -0.95101428f, 0.013546735f,
 };
+// Canonical idle pelvis in root space; do not inherit the current attack/run lean.
+inline constexpr float PelvisRootRot6[6] = { 0.00224559102f, 0.00808036514f, 0.999964833f, 0.2677432f, 0.963453829f, -0.00838659517f };
 }

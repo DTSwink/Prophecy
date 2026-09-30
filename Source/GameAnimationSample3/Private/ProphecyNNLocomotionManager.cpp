@@ -4171,7 +4171,7 @@ void AProphecyNNLocomotionManager::BuildUpperInputBatch()
 		{
 			continue;
 		}
-		if (ProphecyArmedPose::Active(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
+		if (ProphecyArmedPose::OwnsUpperOutput(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
 			|| AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false))
 		{
 			if (AProphecyAgent* Actor=AgentActors.IsValidIndex(AgentIndex) ? AgentActors[AgentIndex].Get() : nullptr)
@@ -4254,7 +4254,7 @@ bool AProphecyNNLocomotionManager::RunUpperModelBatch()
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		if (Impl->Agents[AgentIndex].DefensePose) continue;
-		if (ProphecyArmedPose::Active(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
+		if (ProphecyArmedPose::OwnsUpperOutput(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
 			|| AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false)) continue;
 		bNeedUpper |= !AgentActors.IsValidIndex(AgentIndex) || !AgentActors[AgentIndex] ||
 			AgentActors[AgentIndex]->bNNInferenceEnabled;
@@ -4295,7 +4295,7 @@ void AProphecyNNLocomotionManager::ApplyUpperOutputBatch()
 		float* Published = UpperStateSlice(Impl->UpperPublishedStateBuffer, AgentIndex);
 		FMemory::Memcpy(PreviousPublished, Published, UpperStateDim * sizeof(float));
 		FMemory::Memcpy(PreviousUpper, CurrentUpper, UpperStateDim * sizeof(float));
-		if (ProphecyArmedPose::Active(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
+		if (ProphecyArmedPose::OwnsUpperOutput(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
 			|| AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false))
 		{
 			// Attack feedback fills CurrentUpper, Published, CurrentBase and the
@@ -5050,15 +5050,38 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	bool bConeChanged=false;
 	if(!Agent.Slash.bActive && !bDefensePose && ProphecyArmCone::Active(Controls))
 	{
-		bConeChanged=ProphecyArmCone::ApplyNNPublication(AgentActors[AgentIndex],Impl->BodyNames,Impl->Parents,
-			PreviousComponentTransforms,ComponentTransforms,PreviousComponentWorldTransform,ComponentWorldTransform,
-			float(SourceTimeSeconds-PreviousPoseTime),bNewPoseTime);
-		if(bConeChanged)
+		if(bNewPoseTime && ProphecyArmCone::NeedsWristIdleReference(Controls))
 		{
-			// Correct the final decoded NN pose, then retain exactly that pose in
-			// publication and recurrent history. A later decode must not undo it.
+			float IdleUpper[UpperStateDim];FTransform Idle[FullBodyBoneCount];
+			float Lower[StateDim];
+			FMemory::Memcpy(Lower,StateSlice(Impl->PublishedStateBuffer,AgentIndex),sizeof(Lower));
+			// Cache the authored idle in root space, independent of outgoing pelvis/spine lean.
+			FMemory::Memcpy(Lower+3,ProphecyUpperIdleSeed::PelvisRootRot6,6*sizeof(float));
+			SeedUpperIdleFromLower(Lower,*Impl,IdleUpper);
+			DecodeLocomotionPose(Impl,Lower,IdleUpper,Agent.PublishedWalkWeight,MakeArrayView(Idle),nullptr,
+				FLocomotionClamps{},&Agent.PublishedLegWalkWeights);
+			ProphecyArmCone::SetWristIdleReference(Controls,Impl->BodyNames,MakeArrayView(Idle));
+		}
+		ProphecyArmCone::FPublicationFeedback Feedback;
+		const uint8 ConeArms=ProphecyArmCone::ApplyNNPublication(AgentActors[AgentIndex],Impl->BodyNames,Impl->Parents,
+			PreviousComponentTransforms,ComponentTransforms,PreviousComponentWorldTransform,ComponentWorldTransform,
+			float(SourceTimeSeconds-PreviousPoseTime),bNewPoseTime,&Feedback);
+		bConeChanged=ConeArms!=0;
+		if(Feedback.Arms)
+		{
+			// Feed back only corrected arms. Decoding applies presentation clamps;
+			// re-encoding untouched arms/core during the hold changes normal NN recovery.
+			float Corrected[UpperStateDim];
+			EncodeComponentPoseToNNStates(*Impl,Agent,ComponentTransforms,nullptr,Corrected);
 			float* Published=UpperStateSlice(Impl->UpperPublishedStateBuffer,AgentIndex);
-			EncodeComponentPoseToNNStates(*Impl,Agent,ComponentTransforms,nullptr,Published);
+			for(int32 Side=0;Side<2;++Side) if(Feedback.Arms & (1<<Side))
+			{
+				// Wrist recoil is a final orientation filter, including when the cone
+				// also moves this arm. Its rotation must not drive later NN positions.
+				WriteRot6(Multiply(MirrorYBasis(QuatToMatrix(Feedback.WristRotation[Side])),Impl->SeedRootRot),
+					Corrected+63+Side*15);
+				FMemory::Memcpy(Published+60+Side*15,Corrected+60+Side*15,15*sizeof(float));
+			}
 			float* Current=UpperStateSlice(Impl->UpperCurrentStateBuffer,AgentIndex);
 			FMemory::Memcpy(Current,Published,UpperStateDim*sizeof(float));
 			const FVector3f Delta=TransformRow(Agent.CurRootPos-Agent.PublishedRoot,YawMatrix(Agent.PublishedYaw));
