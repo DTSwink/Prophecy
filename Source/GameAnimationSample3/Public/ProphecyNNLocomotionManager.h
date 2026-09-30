@@ -93,13 +93,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Calf Clamp Length Multiplier", ClampMin = "0.0", UIMin = "0.5", UIMax = "2.0"))
 	float CalfClampLengthMultiplier = 1.0f;
 
-	/** Limit each locomotion hand's distance from its elbow when building the pose. Applies to all managed agents; does not change recurrent NN state or Slash attack forearm correction. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Clamp Hand"))
-	bool bClampHand = true;
-
-	/** Maximum elbow-to-hand distance as a multiple of authored forearm length. Read on each pose publication; 1 preserves the original limit. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (DisplayName = "Hand Clamp Length Multiplier", ClampMin = "0.0", UIMin = "0.5", UIMax = "2.0"))
-	float HandClampLengthMultiplier = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prophecy|NN Locomotion", meta = (ClampMin = "0.0"))
 	float AgentSpeedCmPerSecond = 500.0f;
@@ -261,7 +254,8 @@ public:
 	bool TriggerAgentNNAttack(FProphecyAgentHandle Handle, FName Attack, FVector TargetWorld, bool bHalf);
 	bool SetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle, int32 Checkpoint, FString& OutError);
 	bool SetAgentKickCheckpointOverride(FProphecyAgentHandle Handle, bool bEnabled);
-	bool SetSlashTrainStartingPose(FProphecyAgentHandle Handle, FString& OutError);
+	bool SetSlashTrainStartingPose(FProphecyAgentHandle Handle, FString& OutError,
+		FName OriginalGTAttack = NAME_None, FVector* OutGTTarget = nullptr);
 	bool GetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle, int32& Selected, int32& Effective, bool& bAttacking) const;
 	void RefreshAgentAttackTrim(FProphecyAgentHandle Handle);
 	void GetAgentAttackDefenseState(FProphecyAgentHandle Handle,bool& bParry,bool& bDodge) const;

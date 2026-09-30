@@ -46,7 +46,7 @@ def tick(_):
                 actor.set_actor_tick_enabled(False)
                 actor.stop_nn_attack()
                 actor.set_locomotion_input(unreal.Vector(0, float(index == 1), 0), False, unreal.Vector(0, 1, 0), 1, 1)
-                for part in ('foot', 'calf', 'hand'):
+                for part in ('foot', 'calf'):
                     setter = getattr(actor, 'set_locomotion_' + part + '_clamp')
                     assert setter(True, 1)
                     assert not setter(True, -1)
@@ -58,7 +58,7 @@ def tick(_):
                 assert not mesh.is_component_tick_enabled()
                 mesh.set_material(0, actor.get_pose_reference_mesh().get_material(0))
             for manager in unreal.GameplayStatics.get_all_actors_of_class(world, unreal.ProphecyNNLocomotionManager):
-                for prop in ('clamp_foot', 'clamp_calf', 'clamp_hand'):
+                for prop in ('clamp_foot', 'clamp_calf'):
                     manager.set_editor_property(prop, False)
             unreal.SystemLibrary.execute_console_command(world, 'Prophecy.NNInputTraceFrames 300')
             state['phase'] = 0

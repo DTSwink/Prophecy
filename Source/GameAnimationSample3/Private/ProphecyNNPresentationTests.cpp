@@ -12,6 +12,40 @@ bool RunKneePopSmoothingChecks(FAutomationTestBase& Test);
 bool RunCapturedKneeBendReturnChecks(FAutomationTestBase& Test);
 #endif
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRecoveryCalfAimTest,"Prophecy.NN.PhysicalTargets.RecoveryCalfAim",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FRecoveryCalfAimTest::RunTest(const FString&)
+{
+    // Deliberately inconsistent midpoint: independent world interpolation leaves
+    // the calf rotation pointing beside an otherwise valid knee/ankle pair.
+    const FVector LocalAim=FVector(1.,-.0025,-.0101).GetSafeNormal();
+    for (double Roll:{-2.,0.,1.5})
+    {
+        FTransform Thigh(FQuat::Identity,FVector(0,0,75));
+        const FQuat Initial=FQuat(FVector::UpVector,.2)*FQuat(LocalAim,Roll);
+        FTransform Calf(Initial,FVector(20,0,40));
+        const FTransform Foot(FRotator(12,32,-8),FVector(0,0,5));
+        const FTransform SavedFoot=Foot;
+        const FVector BeforeAim=Initial.RotateVector(LocalAim);
+        TestTrue(TEXT("Misaligned recovery resolves"),ProphecyRecoveryLegLength::Resolve(Thigh,Calf,Foot,42.5,38.,LocalAim));
+        const FVector Direction=(Foot.GetLocation()-Calf.GetLocation()).GetSafeNormal();
+        TestTrue(TEXT("Calf anatomical axis hits accepted ankle"),Calf.TransformVectorNoScale(LocalAim).Equals(Direction,1.e-7));
+        const FQuat Expected=(FQuat::FindBetweenNormals(BeforeAim,Direction)*Initial).GetNormalized();
+        TestTrue(TEXT("Only shortest swing, no additional axial twist"),Calf.GetRotation().Equals(Expected,1.e-7));
+        TestTrue(TEXT("Accepted foot pose unchanged"),Foot.Equals(SavedFoot,0));
+        TestTrue(TEXT("Requested calf length preserved"),FMath::IsNearlyEqual((Foot.GetLocation()-Calf.GetLocation()).Size(),38.,1.e-6));
+        const FTransform Once=Calf;
+        ProphecyRecoveryLegLength::Resolve(Thigh,Calf,Foot,42.5,38.,LocalAim);
+        TestTrue(TEXT("Repeated aim correction is idempotent"),Calf.Equals(Once,1.e-6));
+    }
+    FTransform Thigh(FVector(0,0,80)),Calf(FQuat::Identity,FVector(0,0,40));
+    const FTransform Foot(FVector::ZeroVector);
+    TestFalse(TEXT("Straight leg does not invent a knee pole"),ProphecyRecoveryLegLength::Resolve(Thigh,Calf,Foot,40.,40.,LocalAim));
+    TestTrue(TEXT("Straight leg still aligns calf"),Calf.TransformVectorNoScale(LocalAim).Equals(FVector(0,0,-1),1.e-7));
+    TestTrue(TEXT("Straight knee position unchanged"),Calf.GetLocation().Equals(FVector(0,0,40),0));
+    return !HasAnyErrors();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRecoveryCalfLengthTest,"Prophecy.NN.PhysicalTargets.RecoveryCalfLength",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FRecoveryCalfLengthTest::RunTest(const FString&)

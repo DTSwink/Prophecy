@@ -16,7 +16,7 @@ bool Set(AProphecyAgent* Agent,bool bDodge,ELimb Limb,bool bEnabled,float Leeway
 void RestoreClamp(AProphecyAgent* Agent,bool bDodge,ELimb Limb,FClamp Value)
 {
     auto& Mode=Settings.FindOrAdd(Agent).Modes[bDodge?1:0];
-    auto& Clamp=Limb==ELimb::Foot?Mode.Foot:Limb==ELimb::Calf?Mode.Calf:Limb==ELimb::Hand?Mode.Hand:Mode.Forearm;
+    auto& Clamp=Limb==ELimb::Foot?Mode.Foot:Mode.Calf;
     Clamp=Value;
 }
 bool SetDodgeFramesAfterHit(AProphecyAgent* Agent,int32 Frames)

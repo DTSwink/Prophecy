@@ -14,7 +14,7 @@ public:
     /** Print one line per PHAT bone, head at the top and feet at the bottom.
      * Each pair is linear/angular: magnetization scales (including global scales,
      * zero when disabled) / feedback tolerances / inbound angular damping.
-     * Hand/foot rows also show locomotion Hand/Forearm or Foot/Calf clamp leeway (off when disabled).
+     * Hands show fixed attachment; feet show locomotion Foot/Calf clamp leeway (off when disabled).
      * Unsupported tolerance/joint entries show n/a. Printed values have no units.
      * Reads the current applied profile/blend values. One screen block per agent
      * is replaced on repeated calls. No automatic tick or work when not called.

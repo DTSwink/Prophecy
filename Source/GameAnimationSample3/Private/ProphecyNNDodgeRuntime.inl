@@ -100,6 +100,10 @@ bool AProphecyNNLocomotionManager::StartAgentNNDodge(FProphecyAgentHandle Handle
     if (Agent.Slash.bActive) StopAgentNNAttack(Handle, false);
     PublishAgentPose(Handle.Index,Agent.PublishedPoseTimeSeconds);
     const auto* History=ProphecyDefenseArmedGate::ActivationHistory(Actor);
+    ProphecySpecialStart::FSeed PhysicalSeed;
+    const bool bPhysicalSeed=ProphecySpecialStart::Enabled(Actor) && ProphecySpecialStart::Sample(Actor,Impl->PublishedBoneNames,
+        SlashComponentWorld(Actor,History?History->Root[0]:Agent.PreviousPublishedRoot,History?History->Yaw[0]:Agent.PreviousPublishedYaw),
+        SlashComponentWorld(Actor,History?History->Root[1]:Agent.PublishedRoot,History?History->Yaw[1]:Agent.PublishedYaw),1.f/NNUpdateHz,PhysicalSeed);
     auto New=MakeUnique<FProphecyLiveDodge>();auto& P=*New;
     P.bDodge=true;P.Owner=Actor;P.Attacker=Attacker;P.AttackerIndex=AttackerIndex;P.AttackerCollider=AttackCollider;P.Family=Attack.Family;
     P.Category=Agent.bUseWalkPolicy?0:1;P.AttackerHalf=D.AttackContacts.Boxes[AttackCollider].Half;
@@ -111,7 +115,8 @@ bool AProphecyNNLocomotionManager::StartAgentNNDodge(FProphecyAgentHandle Handle
     float L[2][41],U[2][90],Roots[2][12];
     for (int32 I=0;I<2;++I)
     {
-        const TArrayView<const FTransform> Pose=History?MakeArrayView(History->Pose[I]):TArrayView<const FTransform>(TransformSlice(I?Impl->ComponentTransformBuffer:Impl->PreviousComponentTransformBuffer,Handle.Index));
+        const TArrayView<const FTransform> Pose=bPhysicalSeed?TArrayView<const FTransform>(I?MakeArrayView(PhysicalSeed.Current):MakeArrayView(PhysicalSeed.Previous)):
+            History?MakeArrayView(History->Pose[I]):TArrayView<const FTransform>(TransformSlice(I?Impl->ComponentTransformBuffer:Impl->PreviousComponentTransformBuffer,Handle.Index));
         EncodeSlashPose(*Impl,Agent,Pose,L[I],U[I]);
         auto Root=DefenseRoot(SlashComponentWorld(Actor,History?History->Root[I]:(I?Agent.PublishedRoot:Agent.PreviousPublishedRoot),History?History->Yaw[I]:(I?Agent.PublishedYaw:Agent.PreviousPublishedYaw)));
         Root.P-=P.WorldOrigin;DefenseRoot12(Root,Roots[I]);
@@ -285,7 +290,7 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
         }
 #endif
         FMemory::Memcpy(P.PreviousComponent,P.CurrentComponent,sizeof(P.CurrentComponent));
-        if (ProphecySpecialRoll::Forearms(P.Owner.Get())) DefenseForearmRoll(*Impl,D.Bones,Pose);
+        if (ProphecySpecialRoll::Forearms(P.Owner.Get())) DefenseForearmRoll(*Impl,D.Bones,Pose,!ProphecyAttackWrist::FreePosition(P.Owner.Get()));
         const bool bContactStop=DefensePhysicalStop(*Impl,P,P.CurrentPose,Pose,P.WorldOrigin);
         DefenseComponentPose(Pose,PoseRoot,D.Bones,P.CurrentComponent);P.CurrentPose=Pose;
         Agent.PreviousPublishedRoot=Agent.PublishedRoot;Agent.PreviousPublishedYaw=Agent.PublishedYaw;

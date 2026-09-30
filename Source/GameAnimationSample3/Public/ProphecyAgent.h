@@ -757,13 +757,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack")
 	bool SetAttackCalfClamp(bool bEnabled, float LeewayCm = 0.0f);
 
-	/** Full and half attacks: allowed hand distance from its normal wrist attachment.
-	 * 0 is exact; 1 permits 1 cm of positional deviation. Does not change hand rotation. */
-	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack")
-	bool SetAttackHandClamp(bool bEnabled, float LeewayCm = 0.0f);
-
-	bool bAttackHandClamp = true;
-	float AttackHandClampLeewayCm = 0;
 
 	// Per-agent runtime overrides. Until a node is called, retain manager defaults.
 	bool bOverrideAttackFootClamp = false, bOverrideAttackCalfClamp = false;
@@ -809,21 +802,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
 	bool SetLocomotionCalfClamp(bool bEnabled, float LeewayCm = 0.0f);
 
-	/** Locomotion hands: maximum elbow-to-hand reach = rest forearm length + leeway (cm). */
-	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
-	bool SetLocomotionHandClamp(bool bEnabled, float LeewayCm = 0.0f);
 
-	/** Locomotion elbow-to-hand length = rest forearm length +/- leeway (cm).
-	 * When enabled, replaces the one-sided Hand Clamp. Does not affect attack hands. */
-	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
-	bool SetLocomotionForearmClamp(bool bEnabled, float LeewayCm = 0.0f);
-
-	bool bLocomotionForearmClamp = false;
-	float LocomotionForearmClampLeewayCm = 0;
-
-	bool bOverrideLocomotionFootClamp = false, bOverrideLocomotionCalfClamp = false, bOverrideLocomotionHandClamp = false;
-	bool bLocomotionFootClamp = false, bLocomotionCalfClamp = false, bLocomotionHandClamp = false;
-	float LocomotionFootClampLeewayCm = 0, LocomotionCalfClampLeewayCm = 0, LocomotionHandClampLeewayCm = 0;
+	bool bOverrideLocomotionFootClamp = false, bOverrideLocomotionCalfClamp = false;
+	bool bLocomotionFootClamp = false, bLocomotionCalfClamp = false;
+	float LocomotionFootClampLeewayCm = 0, LocomotionCalfClampLeewayCm = 0;
 
 	/** Last encoded locomotion root window in world space (cm): previous, current, then 8 future roots.
 	 * Time offsets are relative to the current input root. False until the first policy input is built.

@@ -3,6 +3,9 @@
 #include "ProphecyAgent.h"
 #include "ProphecyNNDefenseLibrary.h"
 #include "Engine/World.h"
+#include "ProphecyClampEase.inl"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 
 namespace ProphecyPhysicalFootTarget
 {
@@ -55,16 +58,41 @@ float LocomotionCalfLeeway(const AProphecyAgent* Agent)
 }
 float CalfLeeway(const AProphecyAgent* Agent)
 {
-    return CalfLeewayFor(Agent,LowerState(Agent));
+    // This effective value is shared by the ankle joint and physical foot drive.
+    return ProphecyClampEase::Resolve(Agent,ProphecyClampEase::EChannel::PhysicalCalf,
+        CalfLeewayFor(Agent,LowerState(Agent)));
+}
+static float ObservedFootOffset(const AProphecyAgent* Agent)
+{
+    const auto* Mesh=Agent?Agent->GetPoseReferenceMesh():nullptr;
+    const auto* Asset=Mesh?Mesh->GetSkeletalMeshAsset():nullptr;
+    if(!Asset)return -1;
+    float Result=0;
+    for(int32 Side=0;Side<2;++Side)
+    {
+        const FName Foot=Side==0?TEXT("foot_l"):TEXT("foot_r"),Calf=Side==0?TEXT("calf_l"):TEXT("calf_r");
+        const int32 Index=Asset->GetRefSkeleton().FindBoneIndex(Foot);if(Index==INDEX_NONE)continue;
+        FTransform F,C;FVector Linear,Angular;bool Sim=false;
+        if(!Agent->GetPhysicalBodyState(Foot,F,Linear,Angular,Sim) || !Agent->GetPhysicalBodyState(Calf,C,Linear,Angular,Sim))continue;
+        Result=FMath::Max(Result,float(FVector::Distance(F.GetLocation(),C.TransformPosition(Asset->GetRefSkeleton().GetRefBonePose()[Index].GetLocation()))));
+    }
+    return Result;
 }
 float Leeway(const AProphecyAgent* Agent)
 {
     const auto* Settings=Overrides.IsEmpty() ? nullptr : Overrides.Find(Agent);
-    if (!Settings) return 0.f;
+    if (!Settings)
+    {
+        if(ProphecyClampEase::Current(Agent,ProphecyClampEase::EChannel::PhysicalFoot,0)<=0)return 0;
+        const float Observed=ProphecyClampEase::NeedsObservation(Agent,ProphecyClampEase::EChannel::PhysicalFoot,0)?ObservedFootOffset(Agent):-1;
+        return ProphecyClampEase::Resolve(Agent,ProphecyClampEase::EChannel::PhysicalFoot,0,Observed);
+    }
     // All-mode settings avoid even the activity-state lookup.
     const auto& V=Settings->Values;
-    if (V[0]==V[1] && V[0]==V[2] && V[0]==V[3]) return V[0];
-    return Settings->For(LowerState(Agent));
+    const float Target=V[0]==V[1] && V[0]==V[2] && V[0]==V[3]?V[0]:Settings->For(LowerState(Agent));
+    const float Observed=ProphecyClampEase::NeedsObservation(Agent,ProphecyClampEase::EChannel::PhysicalFoot,Target)
+        ? ObservedFootOffset(Agent):-1;
+    return ProphecyClampEase::Resolve(Agent,ProphecyClampEase::EChannel::PhysicalFoot,Target,Observed);
 }
 }
 
@@ -92,6 +120,35 @@ bool UProphecyPhysicalFootTargetLibrary::SetPhysicalFootTargetClampLeeway(
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyClampEaseTest,"Prophecy.NN.ClampEase.Transitions",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyClampEaseTest::RunTest(const FString&)
+{
+    using namespace ProphecyClampEase;
+    FReduction R;R.Request(2);R.Request(10);
+    TestEqual(TEXT("Opening is immediate"),R.Value,10.f);
+    R.Request(0);float Previous=R.Value;
+    for(int32 I=0;I<15;++I)
+    {
+        R.Request(0);R.Advance(1./60.);
+        TestTrue(TEXT("Repeated requests cannot restart tightening"),R.Value<Previous);
+        if(I<14)TestTrue(TEXT("Does not close before the blend ends"),R.Value>0);
+        Previous=R.Value;
+    }
+    TestTrue(TEXT("Exact target and no active work at completion"),R.Value==0 && !R.Active);
+    R.Request(-1);R.Request(2,7);
+    TestEqual(TEXT("Re-enabling preserves actual outgoing slack"),R.Value,7.f);
+    R.Advance(.1);const float Mid=R.Value;R.Request(1);
+    TestEqual(TEXT("Interrupted reduction starts continuously"),R.Value,Mid);
+    TestEqual(TEXT("Continuous target updates retain the closing deadline"),R.Elapsed,.1);
+    R.Request(20);TestEqual(TEXT("Opening interrupts a closing blend immediately"),R.Value,20.f);
+    R.Request(0,3);TestEqual(TEXT("Large allowance closes from used slack"),R.Value,3.f);
+    R.Request(-1);TestTrue(TEXT("Disable cancels and leaves no active blend"),R.Value<0 && !R.Active);
+    R.Request(20);R.Request(19);
+    for(int32 I=0;I<15;++I){R.Request(19.f-I);R.Advance(1./60.);}
+    TestTrue(TEXT("Per-tick Blueprint reductions cannot stall closing"),R.Value==5 && !R.Active);
+    return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyPhysicalFootLeewayTest,"Prophecy.Physics.FootTargetLeeway",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FProphecyPhysicalFootLeewayTest::RunTest(const FString&)

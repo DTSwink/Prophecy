@@ -54,17 +54,58 @@ bool FProphecyAttackWristModes::RunTest(const FString&)
     TestEqual(TEXT("Default disabled"),Degrees(A,Mode::Locomotion),-1.f);
     TestFalse(TEXT("Default attack disabled"),Enabled(A));
     TestTrue(TEXT("Set all"),Set(true,Mode::All,30));
-    TestEqual(TEXT("Attack retains training 55 with All"),Degrees(A,Mode::Attack),55.f);
+    TestEqual(TEXT("Attack shares the configured angle with All"),Degrees(A,Mode::Attack),30.f);
     TestEqual(TEXT("Other agent unaffected"),Degrees(B,Mode::Locomotion),-1.f);
     TestTrue(TEXT("Independent parry setting"),Set(true,Mode::Parry,70));
     TestEqual(TEXT("Parry 70"),Degrees(A,Mode::Parry),70.f);
     TestEqual(TEXT("Locomotion still 30"),Degrees(A,Mode::Locomotion),30.f);
     TestEqual(TEXT("Dodge still 30"),Degrees(A,Mode::Dodge),30.f);
-    TestTrue(TEXT("Attack ignores angle override"),Set(true,Mode::Attack,12));
-    TestEqual(TEXT("Attack stays 55"),Degrees(A,Mode::Attack),55.f);
-    TestFalse(TEXT("Reject invalid angle"),Set(true,Mode::Locomotion,180));
+    TestTrue(TEXT("Attack accepts angle override"),Set(true,Mode::Attack,12));
+    TestEqual(TEXT("Attack uses 12"),Degrees(A,Mode::Attack),12.f);
+    TestFalse(TEXT("Reject invalid angle"),Set(true,Mode::Locomotion,181));
+    TestFalse(TEXT("Attack rejects invalid angle too"),Set(true,Mode::Attack,-1));
     TestEqual(TEXT("Rejected update preserves settings"),Degrees(A,Mode::Locomotion),30.f);
-    for (float Limit:{0.f,30.f,55.f,70.f,150.f})
+    TestTrue(TEXT("NN freedom enables both independent overrides"),UProphecyAttackWristLibrary::SetNNWristFreedom(A,true,true));
+    TestTrue(TEXT("Both NN freedom pins are enabled"),FreePosition(A) && FreeRotation(A));
+    for(auto M:{Mode::Locomotion,Mode::Attack,Mode::Parry,Mode::Dodge})TestEqual(TEXT("Free rotation bypasses every left-wrist limit"),Degrees(A,M),-1.f);
+    TestFalse(TEXT("Free rotation bypasses native attack clamp"),Enabled(A));
+    TestFalse(TEXT("Other agent has no freedom override"),FreePosition(B) || FreeRotation(B));
+    TestTrue(TEXT("Rotation-only freedom"),UProphecyAttackWristLibrary::SetNNWristFreedom(A,false,true));
+    TestTrue(TEXT("Position remains attached independently"),!FreePosition(A) && FreeRotation(A));
+    TestTrue(TEXT("Position-only freedom"),UProphecyAttackWristLibrary::SetNNWristFreedom(A,true,false));
+    TestEqual(TEXT("Restores original locomotion angle"),Degrees(A,Mode::Locomotion),30.f);
+    TestEqual(TEXT("Restores original parry angle"),Degrees(A,Mode::Parry),70.f);
+    TestEqual(TEXT("Restores original attack constraint"),Degrees(A,Mode::Attack),12.f);
+    TestTrue(TEXT("Disable freedom"),UProphecyAttackWristLibrary::SetNNWristFreedom(A,false,false));
+    TestFalse(TEXT("Default fixed positioning restored"),FreePosition(A));
+    const FName Attacks[]={TEXT("slashL"),TEXT("slashR"),TEXT("slashLD"),TEXT("slashRD"),TEXT("slashLU"),TEXT("slashRU"),TEXT("pike"),
+        TEXT("jabL"),TEXT("jabR"),TEXT("hookL"),TEXT("hookR"),TEXT("overL"),TEXT("overR"),TEXT("headbutt"),TEXT("kickL"),TEXT("kickR")};
+    for(int32 Selected=0;Selected<16;++Selected)
+    {
+        bool V[16]{};V[Selected]=true;
+        TestTrue(TEXT("Set attack checkbox selection"),UProphecyAttackWristLibrary::SetLeftHandConstraintAttacks(A,
+            V[0],V[1],V[2],V[3],V[4],V[5],V[6],V[7],V[8],V[9],V[10],V[11],V[12],V[13],V[14],V[15]));
+        for(int32 I=0;I<16;++I)TestEqual(TEXT("Only the checked family uses the angle"),Degrees(A,Mode::Attack,Attacks[I]),I==Selected?12.f:-1.f);
+        TestEqual(TEXT("Attack selection leaves parry enabled"),Degrees(A,Mode::Parry),70.f);
+        TestEqual(TEXT("Attack selection leaves dodge enabled"),Degrees(A,Mode::Dodge),30.f);
+    }
+    TestTrue(TEXT("Global disable"),UProphecyAttackWristLibrary::SetLeftHandConstraintGlobalEnabled(A,false));
+    TestTrue(TEXT("Updating settings cannot undo global disable"),Set(true,Mode::All,25));
+    TestTrue(TEXT("Freedom off cannot undo global disable"),UProphecyAttackWristLibrary::SetNNWristFreedom(A,false,false));
+    for(auto M:{Mode::Locomotion,Mode::Attack,Mode::Parry,Mode::Dodge})TestEqual(TEXT("Global off bypasses all modes"),Degrees(A,M,TEXT("kickR")),-1.f);
+    TestTrue(TEXT("Global re-enable"),UProphecyAttackWristLibrary::SetLeftHandConstraintGlobalEnabled(A,true));
+    TestEqual(TEXT("Global restores latest angle"),Degrees(A,Mode::Parry),25.f);
+    TestEqual(TEXT("Global preserves attack selection"),Degrees(A,Mode::Attack,TEXT("slashR")),-1.f);
+    TestEqual(TEXT("Global restores selected attack"),Degrees(A,Mode::Attack,TEXT("kickR")),25.f);
+    UProphecyAttackWristLibrary::SetNNWristFreedom(A,true,true);
+    UProphecyAttackWristLibrary::SetLeftHandConstraintGlobalEnabled(A,true);
+    TestEqual(TEXT("Global on cannot undo Free Rotation"),Degrees(A,Mode::Parry),-1.f);
+    UProphecyAttackWristLibrary::SetNNWristFreedom(A,false,false);
+    UProphecyAttackWristLibrary::SetLeftHandConstraintAttacks(A);
+    for(auto Attack:Attacks)TestEqual(TEXT("Default checkboxes restore all families"),Degrees(A,Mode::Attack,Attack),25.f);
+    TestTrue(TEXT("180 is legal"),Set(true,Mode::Attack,180));
+    TestFalse(TEXT("180 skips native correction"),Enabled(A,TEXT("slashR")));
+    for (float Limit:{0.f,30.f,55.f,70.f,150.f,180.f})
     {
         FTransform Hand(FRotator(0,0,0),FVector(0,20,0));
         const auto Position=Hand.GetLocation();
@@ -72,6 +113,10 @@ bool FProphecyAttackWristModes::RunTest(const FString&)
         TestTrue(TEXT("UE pose honors variable angle"),FVector::DotProduct(Hand.GetRotation().GetAxisX(),Position.GetSafeNormal())>=FMath::Cos(FMath::DegreesToRadians(Limit))-1.e-6);
         TestTrue(TEXT("UE hand position unchanged"),Hand.GetLocation()==Position);
     }
+    FTransform Inside(FQuat(FVector::ForwardVector,.7)*FQuat(FVector::UpVector,FMath::DegreesToRadians(15.)),FVector(20,0,0));
+    const FTransform Original=Inside;
+    TestFalse(TEXT("Inside leeway no correction, including axial twist"),ConstrainPose(Inside,FVector::ZeroVector,30));
+    TestTrue(TEXT("Inside leeway rotation and position untouched"),Inside.Equals(Original,0));
     TestTrue(TEXT("Disable all"),Set(false,Mode::All,55));
     for (auto M:{Mode::Locomotion,Mode::Attack,Mode::Parry,Mode::Dodge}) TestEqual(TEXT("No retained enabled setting"),Degrees(A,M),-1.f);
     World->DestroyWorld(false);World->MarkAsGarbage();

@@ -1,4 +1,5 @@
 #include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyFixedArmPhysics.h"
 #include "ProphecySwordAttackCollision.h"
 #include "ProphecyPelvisInertia.h"
 #include "ProphecyJointDampingPolicy.h"
@@ -423,6 +424,7 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     if (!Coordinator->CanRegisterCharacter(*this, Error) || !Owner->GetDiagnostics(Diagnostics).IsSuccess()
         || !Diagnostics.bInitialized || Diagnostics.bFaulted)
         return Fail(OutError, TEXT("The coordinator/native owner changed while finishing source animation."));
+    ProphecyFixedArmPhysics::AttachWrists(Mesh);
     FProphecyJoltRigSnapshot Snapshot;
     FProphecyJoltPreparedRig Prepared;
     if (!ProphecyJolt::Rig::CaptureLiveRig(*Mesh, Snapshot, Error) || !Prepared.Build(Snapshot, Error))

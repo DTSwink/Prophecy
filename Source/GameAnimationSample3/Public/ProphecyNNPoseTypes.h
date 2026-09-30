@@ -36,39 +36,10 @@ struct GAMEANIMATIONSAMPLE3_API FProphecyNNBonePose
 	}
 };
 
-struct FProphecyNNAttackHandClamp
+// Anatomical wrist offsets, shared by every policy and interpolated presentation.
+struct FProphecyNNFixedArms
 {
-	bool bEnabled = true;
-	float LeewayCm = 0;
-	FVector ReferenceOffsets[2] = {FVector::ZeroVector, FVector::ZeroVector};
-
-	static FVector ClampPosition(const FVector& Position, const FVector& Attachment, float Leeway)
-	{
-		if (Leeway <= 0) return Attachment;
-		const FVector Delta = Position - Attachment;
-		return Delta.SizeSquared() <= FMath::Square(double(Leeway))
-			? Position : Attachment + Delta.GetSafeNormal() * Leeway;
-	}
-};
-
-struct FProphecyNNForearmClamp
-{
-	bool bEnabled = false;
-	float LeewayCm = 0;
-	FVector2D LengthsCm = FVector2D::ZeroVector;
-	static double ClampLength(double Distance, double Length, double Leeway)
-	{
-		return FMath::Clamp(Distance, FMath::Max(0., Length-Leeway), Length+Leeway);
-	}
-	FVector ClampHand(const FVector& Hand, const FTransform& Forearm, const FVector& LocalDirection, int32 Side) const
-	{
-		const FVector Nominal = Forearm.TransformVector(LocalDirection.GetSafeNormal(UE_SMALL_NUMBER, FVector::ForwardVector) * LengthsCm[Side]);
-		const FVector Delta = Hand - Forearm.GetTranslation();
-		const double Distance = Delta.Length();
-		const double Allowed = ClampLength(Distance, Nominal.Length(), LeewayCm);
-		if (Distance == Allowed) return Hand;
-		return Forearm.GetTranslation() + Delta.GetSafeNormal(UE_SMALL_NUMBER, Nominal.GetSafeNormal()) * Allowed;
-	}
+	FVector ForearmOffsets[2] = {FVector::ZeroVector, FVector::ZeroVector};
 };
 
 struct GAMEANIMATIONSAMPLE3_API FProphecyNNPoseSnapshot
@@ -87,8 +58,7 @@ struct GAMEANIMATIONSAMPLE3_API FProphecyNNPoseSnapshot
 	double SourceTimeSeconds = 0.0;
 	bool bHasComponentWorldTransform = false;
 	float CalfClampLeewayCm = 0;
-	FProphecyNNAttackHandClamp AttackHandClamp;
-	FProphecyNNForearmClamp ForearmClamp;
+	FProphecyNNFixedArms FixedArms;
 	FVector2D CalfClampLengths = FVector2D::ZeroVector;
 
 	bool IsValid() const
@@ -112,8 +82,7 @@ struct GAMEANIMATIONSAMPLE3_API FProphecyNNPoseSnapshot
 		SourceTimeSeconds = 0.0;
 		bHasComponentWorldTransform = false;
 		CalfClampLeewayCm = 0;
-		AttackHandClamp = FProphecyNNAttackHandClamp();
-		ForearmClamp = FProphecyNNForearmClamp();
+		FixedArms = FProphecyNNFixedArms();
 		CalfClampLengths = FVector2D::ZeroVector;
 	}
 };
@@ -153,16 +122,15 @@ public:
 		const FTransform& PreviousComponentWorldTransform,
 		const FTransform& ComponentWorldTransform,
 		double SourceTimeSeconds,
-		bool bRigidForearms = false, bool bRigidCalves = false,
+		bool bSpecialPresentation = false, bool bRigidCalves = false,
 		float CalfClampLeewayCm = 0, FVector2D CalfClampLengths = FVector2D::ZeroVector,
-		const FProphecyNNAttackHandClamp& HandClamp = FProphecyNNAttackHandClamp(),
-		const FProphecyNNForearmClamp& ForearmClamp = FProphecyNNForearmClamp(),bool bHalfAttack = false);
+		const FProphecyNNFixedArms& FixedArms = FProphecyNNFixedArms(),bool bHalfAttack = false,bool bFixedArms = true);
 
 	/** Preserve exact calf attachment, or the published attack length band; toes follow any correction. */
 	static void ApplyRigidCalves(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
 		TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms, float InterpolationAlpha = 1.f);
 
-	/** Attack presentation: keep fixed hand-parent offsets after world interpolation. */
+	/** Every mode: keep anatomical hand-parent offsets after world interpolation. */
 	static void ApplyRigidForearms(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
 		TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms);
 	/** True for the attack publication, including its unchanged handoff frame. */

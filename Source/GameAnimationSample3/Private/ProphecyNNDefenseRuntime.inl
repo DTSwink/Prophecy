@@ -35,7 +35,7 @@ namespace
             Out[Bones[I]]=FTransform(MatrixToQuat(MirrorYBasis(R)),LocalTrainingToUnreal(InTransposedBasis(World.P[I]-Root.P,Root.R)));
         }
     }
-    void DefenseForearmRoll(const AProphecyNNLocomotionManager::FImpl& Impl,const int32* Bones,ProphecyDefense::FPose& Pose)
+    void DefenseForearmRoll(const AProphecyNNLocomotionManager::FImpl& Impl,const int32* Bones,ProphecyDefense::FPose& Pose,bool bFixedArms=true)
     {
         // Convert only the two forearms/wrists at the UE boundary. Native policy
         // state remains unchanged; PHAT contact tests and published targets use
@@ -54,6 +54,7 @@ namespace
             FTransform Forearm=Transform(Mid);
             SetForearmRollFromHand(Impl.UpperLocalOffsets[Arm.End],Arm.LocalPoleAxes[1],Forearm,Transform(End));
             Pose.R[Mid]=DefenseAxes(Forearm.GetRotation());
+            if(bFixedArms)Pose.P[End]=UnrealToTraining(Forearm.TransformPosition(LocalTrainingToUnreal(Impl.UpperLocalOffsets[Arm.End])));
         }
     }
     void DefenseUpperToLocomotion(const float* Input,const FMat3f& Seed,float* Out)
@@ -139,7 +140,7 @@ bool FProphecyDefenseForearmBoundaryTest::RunTest(const FString&)
         Impl.UpperLocalOffsets[A.End]=FVector3f(I?-.25f:.25f,0,0);A.LocalPoleAxes[1]=FVector3f(0,1,0);
     }
     ProphecyDefense::FPose Native;DefenseWorldPose(World,Bones,Native);const auto Original=Native;
-    DefenseForearmRoll(Impl,Bones,Native);
+    DefenseForearmRoll(Impl,Bones,Native,false);
     for(int32 I=0;I<25;++I)
     {
         TestEqual(TEXT("Defense correction preserves every position"),Native.P[I],Original.P[I]);
@@ -214,6 +215,10 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     if (Agent.Slash.bActive) StopAgentNNAttack(Handle, false);
     PublishAgentPose(Handle.Index,Agent.PublishedPoseTimeSeconds);
     const auto* History=ProphecyDefenseArmedGate::ActivationHistory(Actor);
+    ProphecySpecialStart::FSeed PhysicalSeed;
+    const bool bPhysicalSeed=ProphecySpecialStart::Enabled(Actor) && ProphecySpecialStart::Sample(Actor,Impl->PublishedBoneNames,
+        SlashComponentWorld(Actor,History?History->Root[0]:Agent.PreviousPublishedRoot,History?History->Yaw[0]:Agent.PreviousPublishedYaw),
+        SlashComponentWorld(Actor,History?History->Root[1]:Agent.PublishedRoot,History?History->Yaw[1]:Agent.PublishedYaw),1.f/NNUpdateHz,PhysicalSeed);
     auto New=MakeUnique<FProphecyLiveParry>();auto& P=*New;
     P.Owner=Actor;P.Attacker=Attacker;P.AttackerIndex=AttackerIndex;P.AttackerCollider=AttackCollider;P.Family=Attack.Family;
     P.AttackerHalf=D.AttackContacts.Boxes[AttackCollider].Half;P.MaxSteps=FMath::Clamp(FMath::CeilToInt(MaximumSeconds*30),1,18000);
@@ -222,7 +227,8 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     float L[2][41],U[2][90],Roots[2][12],Base[90];ProphecyDefense::FPose BasePose;
     for (int32 I=0;I<2;++I)
     {
-        const TArrayView<const FTransform> Pose=History?MakeArrayView(History->Pose[I]):TArrayView<const FTransform>(TransformSlice(I?Impl->ComponentTransformBuffer:Impl->PreviousComponentTransformBuffer,Handle.Index));
+        const TArrayView<const FTransform> Pose=bPhysicalSeed?TArrayView<const FTransform>(I?MakeArrayView(PhysicalSeed.Current):MakeArrayView(PhysicalSeed.Previous)):
+            History?MakeArrayView(History->Pose[I]):TArrayView<const FTransform>(TransformSlice(I?Impl->ComponentTransformBuffer:Impl->PreviousComponentTransformBuffer,Handle.Index));
         EncodeSlashPose(*Impl,Agent,Pose,L[I],U[I]);
         const auto Root=DefenseRoot(SlashComponentWorld(Actor,History?History->Root[I]:(I?Agent.PublishedRoot:Agent.PreviousPublishedRoot),History?History->Yaw[I]:(I?Agent.PublishedYaw:Agent.PreviousPublishedYaw)));
         DefenseRoot12(Root,Roots[I]);
@@ -406,7 +412,7 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
         D.Geometry.LowerPose(P.NextLower,Root.P,Root.R,P.Frozen);
         // Preserve the actual accepted locomotion leg decoder and its per-agent
         // presentation clamps; only the upper candidate belongs to parry.
-        FLocomotionClamps C;C.bClampFoot=Actor->bOverrideLocomotionFootClamp?Actor->bLocomotionFootClamp:bClampFoot;
+        FLocomotionClamps C;C.bFixedArms=!ProphecyAttackWrist::FreePosition(Actor);C.bClampFoot=Actor->bOverrideLocomotionFootClamp?Actor->bLocomotionFootClamp:bClampFoot;
         C.FootClampLengthMultiplier=Actor->bOverrideLocomotionFootClamp?1.f:FootClampLengthMultiplier;
         C.FootLeeway=Actor->bOverrideLocomotionFootClamp?Actor->LocomotionFootClampLeewayCm/100.f:0;
         C.bClampCalf=Actor->bOverrideLocomotionCalfClamp?Actor->bLocomotionCalfClamp:bClampCalf;
@@ -458,7 +464,7 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
         const float* Delta=D.Outputs.GetData()+Lane*90;bool Finite=true;for (int32 I=0;I<90;++I) Finite&=FMath::IsFinite(Delta[I]);
         FPose Pose;if (!Finite || !CompleteParry(P.State,P.Work,Delta,P.NextLower,P.NextBaseline,P.NextRoot,P.Frozen,D.Geometry,Pose))
         { P.Status.Active=false;continue; }
-        if (ProphecySpecialRoll::Forearms(P.Owner.Get())) DefenseForearmRoll(*Impl,D.Bones,Pose);
+        if (ProphecySpecialRoll::Forearms(P.Owner.Get())) DefenseForearmRoll(*Impl,D.Bones,Pose,!ProphecyAttackWrist::FreePosition(P.Owner.Get()));
         const bool bContactStop=DefensePhysicalStop(*Impl,P,P.CurrentPose,Pose,FVector3f::ZeroVector);
         FMemory::Memcpy(P.PreviousComponent,P.CurrentComponent,sizeof(P.CurrentComponent));
         DefenseComponentPose(Pose,P.NextRoot,D.Bones,P.CurrentComponent);P.CurrentPose=Pose;P.bHasPose=true;

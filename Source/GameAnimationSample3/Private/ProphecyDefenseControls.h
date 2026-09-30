@@ -3,9 +3,9 @@
 class AProphecyAgent;
 namespace ProphecyDefenseControls
 {
-enum class ELimb : uint8 { Foot, Calf, Hand, Forearm };
+enum class ELimb : uint8 { Foot, Calf };
 struct FClamp { bool bOverride=false,bEnabled=false; float LeewayCm=0; };
-struct FSettings { FClamp Foot,Calf,Hand,Forearm; };
+struct FSettings { FClamp Foot,Calf; };
 const FSettings* Find(const AProphecyAgent* Agent,bool bDodge);
 bool Set(AProphecyAgent* Agent,bool bDodge,ELimb Limb,bool bEnabled,float LeewayCm);
 void RestoreClamp(AProphecyAgent* Agent,bool bDodge,ELimb Limb,FClamp Value);

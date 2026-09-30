@@ -21,6 +21,7 @@ public:
 		// Transient per-call context; no persistent native model layout change.
 		const FPelvisInertiaStepContext* PelvisInertia = nullptr;
 		bool bLeftHandConstraint = false;
+		float LeftHandMaxBendDegrees = 55.f;
 		bool bBlockArmed = false;
 	};
 	int32 InputBatchSize = 1;

@@ -257,7 +257,7 @@ void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,f
 	if (Settings && Settings->bLeftHandConstraint)
 	{
 		const auto& Left=Arms[0];
-		if (ProphecyAttackWrist::Constrain(Candidate.R[Left.End].Rows,Candidate.P[Left.Mid],Candidate.P[Left.End]))
+		if (ProphecyAttackWrist::Constrain(Candidate.R[Left.End].Rows,Candidate.P[Left.Mid],Candidate.P[Left.End],Settings->LeftHandMaxBendDegrees))
 		{
 			// The corrected hand rotation is also the next recurrent state, just as
 			// in the training hand clamp. No second FK: hand has no encoded children.
@@ -439,6 +439,8 @@ bool FProphecyAttackWristModels::RunTest(const FString&)
         FSlashNative::FStepSettings Options[1];Options[0].bLeftHandConstraint=true;
         for (int32 Step=0;Step<20;++Step)
         {
+            const float Limits[]={0.f,20.f,55.f,110.f,180.f};
+            Options[0].LeftHandMaxBendDegrees=Limits[Step%UE_ARRAY_COUNT(Limits)];
             if (!Model.Run(State,Off) || !Model.Run(State,On,MakeArrayView(Options)))
             { AddError(TEXT("Inference failed"));return false; }
             Options[0].bLeftHandConstraint=false;
@@ -452,7 +454,9 @@ bool FProphecyAttackWristModels::RunTest(const FString&)
             }
             const FVector3f Elbow(On[155],On[156],On[157]),Hand(On[158],On[159],On[160]);
             const FVector3f Palm(On[287],On[288],On[289]);
-            TestTrue(TEXT("Emitted wrist cone"),FVector3f::DotProduct(Palm,(Hand-Elbow).GetSafeNormal())>=FMath::Cos(FMath::DegreesToRadians(55.f))-3.e-5f);
+            TestTrue(TEXT("Emitted wrist respects requested angle"),FVector3f::DotProduct(Palm,(Hand-Elbow).GetSafeNormal())>=FMath::Cos(FMath::DegreesToRadians(Options[0].LeftHandMaxBendDegrees))-3.e-5f);
+            if(Options[0].LeftHandMaxBendDegrees==180)
+                TestTrue(TEXT("Full angular leeway leaves native output bit-identical"),FMemory::Memcmp(Off.GetData(),On.GetData(),Off.Num()*sizeof(float))==0);
             if (FMemory::Memcmp(Off.GetData()+104,On.GetData()+104,6*sizeof(float))) ++Corrections;
             // Recurrent state uses the same corrected rotation as the output pose.
             FMemory::Memcpy(State.GetData(),State.GetData()+41,41*sizeof(float));

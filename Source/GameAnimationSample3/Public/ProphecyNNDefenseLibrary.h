@@ -54,16 +54,8 @@ public:
     static bool SetParryFootClamp(AProphecyAgent* Agent,bool bEnabled,float LeewayCm=0.f);
     UFUNCTION(BlueprintCallable,Category="Prophecy|NN Defense|Parry|Clamps",meta=(DefaultToSelf="Agent"))
     static bool SetParryCalfClamp(AProphecyAgent* Agent,bool bEnabled,float LeewayCm=0.f);
-    UFUNCTION(BlueprintCallable,Category="Prophecy|NN Defense|Parry|Clamps",meta=(DefaultToSelf="Agent"))
-    static bool SetParryHandClamp(AProphecyAgent* Agent,bool bEnabled,float LeewayCm=0.f);
-    UFUNCTION(BlueprintCallable,Category="Prophecy|NN Defense|Parry|Clamps",meta=(DefaultToSelf="Agent"))
-    static bool SetParryForearmClamp(AProphecyAgent* Agent,bool bEnabled,float LeewayCm=0.f);
     UFUNCTION(BlueprintCallable,Category="Prophecy|NN Defense|Dodge|Clamps",meta=(DefaultToSelf="Agent"))
     static bool SetDodgeFootClamp(AProphecyAgent* Agent,bool bEnabled,float LeewayCm=0.f);
     UFUNCTION(BlueprintCallable,Category="Prophecy|NN Defense|Dodge|Clamps",meta=(DefaultToSelf="Agent"))
     static bool SetDodgeCalfClamp(AProphecyAgent* Agent,bool bEnabled,float LeewayCm=0.f);
-    UFUNCTION(BlueprintCallable,Category="Prophecy|NN Defense|Dodge|Clamps",meta=(DefaultToSelf="Agent"))
-    static bool SetDodgeHandClamp(AProphecyAgent* Agent,bool bEnabled,float LeewayCm=0.f);
-    UFUNCTION(BlueprintCallable,Category="Prophecy|NN Defense|Dodge|Clamps",meta=(DefaultToSelf="Agent"))
-    static bool SetDodgeForearmClamp(AProphecyAgent* Agent,bool bEnabled,float LeewayCm=0.f);
 };

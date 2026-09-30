@@ -6,8 +6,7 @@ namespace ProphecyUpperBodyInertia
 bool Active(const AProphecyAgent* Agent);
 bool ArmsActive(const AProphecyAgent* Agent);
 void ApplyArms(const AProphecyAgent* Agent,const FTransform& Carrier,TArrayView<FTransform> Pose,
-    double StepSeconds,const FVector2D& RestForearmLengthsCm,bool ClampForearm,double ForearmLeewayCm,
-    bool ClampHand,double HandLengthMultiplier,double HandLeewayCm,const FTransform& Root=FTransform::Identity);
+    double StepSeconds,const FVector2D& RestForearmLengthsCm,const FTransform& Root=FTransform::Identity);
 bool PublishArms(const AProphecyAgent* Agent,const FTransform& PreviousCarrier,const FTransform& Carrier,
     TArrayView<FTransform> PreviousPose,TArrayView<FTransform> Pose);
 void Begin(const AProphecyAgent* Agent,TConstArrayView<FTransform> PreviousWorld,TConstArrayView<FTransform> World,

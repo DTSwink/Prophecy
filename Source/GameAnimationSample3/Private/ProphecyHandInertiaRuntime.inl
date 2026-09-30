@@ -85,7 +85,7 @@ void CorrectLocomotionHands(const AProphecyNNLocomotionManager* Manager,AProphec
     const auto* Temper=ProphecyHandRecovery::Tempering(Actor);
     if (Recovery) MixHandRecoveryUpper(*Recovery,Upper);
     FTransform Pose[FullBodyBoneCount],Previous[FullBodyBoneCount];
-    const FLocomotionClamps Unclamped;
+    FLocomotionClamps Unclamped;Unclamped.bFixedArms=!ProphecyAttackWrist::FreePosition(Actor);
     DecodeLocomotionPose(Impl,StateSlice(Impl->PublishedStateBuffer,Index),Upper,
         Agent.PublishedWalkWeight,MakeArrayView(Pose),nullptr,Unclamped,&Agent.PublishedLegWalkWeights);
     const bool CoreInertia=ProphecyUpperBodyInertia::Active(Actor);
@@ -95,11 +95,7 @@ void CorrectLocomotionHands(const AProphecyNNLocomotionManager* Manager,AProphec
         const FTransform Root=HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw);
         const FTransform Carrier=HandInertiaCarrier(Actor,Root);
         ProphecyUpperBodyInertia::ApplyArms(Actor,Carrier,MakeArrayView(Pose),Dt,
-            FVector2D(Impl->UpperArms[0].Lengths.Y*100.,Impl->UpperArms[1].Lengths.Y*100.),
-            Actor->bLocomotionForearmClamp,Actor->LocomotionForearmClampLeewayCm,
-            Actor->bOverrideLocomotionHandClamp?Actor->bLocomotionHandClamp:Manager->bClampHand,
-            Actor->bOverrideLocomotionHandClamp?1.:Manager->HandClampLengthMultiplier,
-            Actor->bOverrideLocomotionHandClamp?Actor->LocomotionHandClampLeewayCm:0.,Root);
+            FVector2D(Impl->UpperArms[0].Lengths.Y*100.,Impl->UpperArms[1].Lengths.Y*100.),Root);
         for(int32 I=0;I<2;++I)StoreInertiaArm(*Impl,I,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
     };
     if(CoreFollow<1 || CoreInertia)
@@ -154,7 +150,7 @@ void CorrectLocomotionHands(const AProphecyNNLocomotionManager* Manager,AProphec
             auto Carry=[&](int32 Bone) { return (Previous[Bone]*PrevCarrier).GetRelativeTransform(From)*To; };
             ProphecyHandChain::Resolve(Carry(A.Start),Carry(A.Mid),Carry(A.End),Shoulder,Elbow,Wrist,Target,
                 Shoulder.GetRotation().UnrotateVector(Elbow.GetLocation()-Shoulder.GetLocation()),
-                LocalTrainingToUnreal(A.LocalPoleAxes[0]),HandChainFollow(Temper,Recovery,I));
+                LocalTrainingToUnreal(A.LocalPoleAxes[0]),HandChainFollow(Temper,Recovery,I),A.Lengths.Y*100.);
             Pose[A.Start]=Shoulder.GetRelativeTransform(Carrier);Pose[A.Mid]=Elbow.GetRelativeTransform(Carrier);Pose[A.End]=Wrist.GetRelativeTransform(Carrier);
             Changed=true;
         }

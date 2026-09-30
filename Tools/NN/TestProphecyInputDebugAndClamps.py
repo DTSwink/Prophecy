@@ -39,7 +39,7 @@ def tick(_):
         actor.stop_nn_attack()
         phase=0 if now<1 else 1
         if phase!=state['phase']:
-            for part in ['foot','calf','hand']:assert getattr(actor,'set_locomotion_'+part+'_clamp')(True,float(phase))
+            for part in ['foot','calf']:assert getattr(actor,'set_locomotion_'+part+'_clamp')(True,float(phase))
             state['phase']=phase
         pose=actor.read_nn_future_world_pose()
         roots=actor.get_locomotion_root_window()
@@ -52,7 +52,7 @@ def tick(_):
         if now>0.2 and abs(now-1)>0.1:
             for side_index,side in enumerate(['l','r']):
                 def distance(a,b):return math.dist(values(future[index[a]].translation),values(future[index[b]].translation))
-                assert distance('lowerarm_'+side,'hand_'+side)<=upper['arm_limb_lengths_m'][side_index][1]*100+phase+0.001
+                assert abs(distance('lowerarm_'+side,'hand_'+side)-upper['arm_limb_lengths_m'][side_index][1]*100)<0.001
                 assert abs(distance('calf_'+side,'foot_'+side)-lengths['foot_'+side])<=phase+0.001
                 assert distance('thigh_'+side,'foot_'+side)<=lengths['calf_'+side]+lengths['foot_'+side]+phase+0.001
         state['rows'].append(dict(t=now,actor=actor.get_name(),phase=phase,debug=debug,

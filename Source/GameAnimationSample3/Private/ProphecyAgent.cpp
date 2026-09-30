@@ -1,4 +1,5 @@
 #include "ProphecyAgent.h"
+#include "ProphecyFixedArmPhysics.h"
 #include "ProphecyHalfAttackCompensation.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAttackStartInertia.h"
@@ -1913,14 +1914,6 @@ bool AProphecyAgent::SetLocomotionFootPinningThreshold(float ThresholdCm, float 
 	return true;
 }
 
-bool AProphecyAgent::SetAttackHandClamp(bool bEnabled, float LeewayCm)
-{
-	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
-	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Attack,int32(ProphecyClampProfiles::ELimb::Hand));
-	bAttackHandClamp = bEnabled;
-	AttackHandClampLeewayCm = LeewayCm;
-	return true;
-}
 
 bool AProphecyAgent::SetAttackFootClamp(bool bEnabled, float LeewayCm)
 {
@@ -1998,24 +1991,7 @@ bool AProphecyAgent::SetLocomotionCalfClamp(bool bEnabled, float LeewayCm)
 	return true;
 }
 
-bool AProphecyAgent::SetLocomotionForearmClamp(bool bEnabled, float LeewayCm)
-{
-	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
-	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Locomotion,int32(ProphecyClampProfiles::ELimb::Forearm));
-	bLocomotionForearmClamp = bEnabled;
-	LocomotionForearmClampLeewayCm = LeewayCm;
-	return true;
-}
 
-bool AProphecyAgent::SetLocomotionHandClamp(bool bEnabled, float LeewayCm)
-{
-	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;
-	ProphecyClampProfiles::Cancel(this,ProphecyClampProfiles::EMode::Locomotion,int32(ProphecyClampProfiles::ELimb::Hand));
-	bOverrideLocomotionHandClamp = true;
-	bLocomotionHandClamp = bEnabled;
-	LocomotionHandClampLeewayCm = LeewayCm;
-	return true;
-}
 
 bool AProphecyAgent::GetLocomotionRootWindow(TArray<FTransform>& WorldRoots, TArray<float>& TimeOffsetsSeconds) const
 {
@@ -2317,7 +2293,6 @@ bool AProphecyAgent::SetSimulationModeInternal(EProphecyAgentSimulationMode NewM
 		UE_LOG(LogProphecyAgentPhysical, Warning, TEXT("Half Sim is not yet connected to the opt-in Jolt character binding."));
 		return false;
 	}
-	ProphecyModeTransitions::FScope Transition(this);
 	if (NewMode != EProphecyAgentSimulationMode::Kinematic &&
 		NewMode != EProphecyAgentSimulationMode::Physical &&
 		NewMode != EProphecyAgentSimulationMode::HalfSim) return false;
@@ -2328,6 +2303,9 @@ bool AProphecyAgent::SetSimulationModeInternal(EProphecyAgentSimulationMode NewM
 		SimulationMode = CurrentMode;
 		return true;
 	}
+	// Same-mode requests must not finish parallel animation or capture the pose/bodies.
+	// Keep pending backend cancellation above, but open a transition only for a mode change.
+	ProphecyModeTransitions::FScope Transition(this);
 	if (NewMode == EProphecyAgentSimulationMode::HalfSim)
 	{
 		USkeletalMeshComponent* TargetMesh = GetPoseReferenceMesh();
@@ -2352,7 +2330,8 @@ bool AProphecyAgent::SetSimulationModeInternal(EProphecyAgentSimulationMode NewM
 			PoseReferenceMesh->TickAnimation(0.0f, false);
 			PoseReferenceMesh->RefreshBoneTransforms();
 			PhysicalTargetComponentRelativeTransform = PoseReferenceMesh->GetRelativeTransform();
-			PoseReferenceMesh->SetAllBodiesBelowSimulatePhysics(PhysicalRootBodyName, true, true);
+			ProphecyFixedArmPhysics::AttachWrists(PoseReferenceMesh);
+		PoseReferenceMesh->SetAllBodiesBelowSimulatePhysics(PhysicalRootBodyName, true, true);
 			PoseReferenceMesh->SetAllBodiesBelowPhysicsBlendWeight(
 				PhysicalRootBodyName, 1.0f, false, true);
 			PoseReferenceMesh->SetAnimInstanceClass(nullptr);
@@ -2437,6 +2416,7 @@ bool AProphecyAgent::SetSimulationModeInternal(EProphecyAgentSimulationMode NewM
 			bPhysicalDriveConfigured = true;
 		}
 
+		ProphecyFixedArmPhysics::AttachWrists(Mesh);
 		Mesh->SetAllBodiesBelowSimulatePhysics(PhysicalRootBodyName, true, true);
 		Mesh->SetAllBodiesBelowPhysicsBlendWeight(PhysicalRootBodyName, 1.0f, false, true);
 		if (PhysicalDriveMode == EProphecyAgentPhysicalDriveMode::RootAndJointTorque)
@@ -2572,6 +2552,7 @@ bool AProphecyAgent::MySetPhysicsAsset(UPhysicsAsset* NewPhysicsAsset)
 		{
 			PhysicalAnimation->SetSkeletalMeshComponent(PhysicalMesh);
 		}
+		ProphecyFixedArmPhysics::AttachWrists(PhysicalMesh);
 		PhysicalMesh->SetAllBodiesBelowSimulatePhysics(PhysicalRootBodyName, true, true);
 		PhysicalMesh->SetAllBodiesBelowPhysicsBlendWeight(
 			PhysicalRootBodyName, 1.0f, false, true);
@@ -2720,7 +2701,7 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 			AuthoredPose.ComponentWorldTransform;
 		FTransform BodyTarget = BlendAuthoredWorldTransform(AuthoredPose, PoseIndex,
 			PreviousBodyTarget, CurrentBodyTarget, PoseAlpha);
-		if (AuthoredPose.ForearmClamp.bEnabled && (BodySetup->BoneName == TEXT("hand_l") || BodySetup->BoneName == TEXT("hand_r")))
+		if (BodySetup->BoneName == TEXT("hand_l") || BodySetup->BoneName == TEXT("hand_r"))
 		{
 			const bool bLeft = BodySetup->BoneName == TEXT("hand_l");
 			const int32 Parent = AuthoredPose.BoneNames.IndexOfByKey(bLeft ? FName(TEXT("lowerarm_l")) : FName(TEXT("lowerarm_r")));
@@ -2729,8 +2710,8 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 				const FTransform Forearm = BlendAuthoredWorldTransform(AuthoredPose, Parent,
 					AuthoredPose.PreviousComponentTransforms[Parent] * AuthoredPose.PreviousComponentWorldTransform,
 					AuthoredPose.ComponentTransforms[Parent] * AuthoredPose.ComponentWorldTransform, PoseAlpha);
-				BodyTarget.SetTranslation(AuthoredPose.ForearmClamp.ClampHand(BodyTarget.GetTranslation(), Forearm,
-					AuthoredPose.LocalTransforms[PoseIndex].GetTranslation(), bLeft ? 0 : 1));
+				const FVector& Offset=AuthoredPose.FixedArms.ForearmOffsets[bLeft?0:1];
+				if(!Offset.IsNearlyZero())BodyTarget.SetTranslation(Forearm.TransformPosition(Offset));
 			}
 		}
         if(!InertiaNames.IsEmpty())

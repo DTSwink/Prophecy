@@ -184,6 +184,13 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
             Preserved&=Margin && Margin->Direction==EGPD_Output && Margin->LinkedTo.IsEmpty();
             After.RemoveAll([](const FString& Row) { return Row.StartsWith(TEXT("DistanceToLimit=")); });
         }
+        if(FunctionName==TEXT("SetArmRepellantCone"))
+        {
+            auto NewPin=[](const FString& Row)
+            { return Row.StartsWith(TEXT("EnableWristTwistRecoil=")) || Row.StartsWith(TEXT("TwistLimitDegrees=")) || Row.StartsWith(TEXT("TwistRecoilStrength=")) || Row.StartsWith(TEXT("TwistDamping=")); };
+            // Compare all original pins; the new pins are intentionally added with defaults.
+            Before.RemoveAll(NewPin);After.RemoveAll(NewPin);
+        }
         Preserved&=Before==After;
     }
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
@@ -341,13 +348,56 @@ static void RefreshUpperInertiaSpace()
     {
         auto* N=Cast<UK2Node_CallFunction>(Base);if(!N || N->FunctionReference.GetMemberName()!=TEXT("SetAttackUpperBodyInertia"))continue;
         const bool Had=N->FindPin(TEXT("HandInertiaSpace"))!=nullptr;
+        const bool HadAlpha=N->FindPin(TEXT("Alpha"))!=nullptr;
         const auto Before=PinValues(N);G->Modify();N->Modify();N->ReconstructNode();++Count;
         const auto After=PinValues(N);for(const auto& Row:Before)Preserved&=After.Contains(Row);
         if(!Had){const auto* P=N->FindPin(TEXT("HandInertiaSpace"));Defaults&=P && P->LinkedTo.IsEmpty() && P->DefaultValue==TEXT("RootLocal");}
+        if(!HadAlpha){const auto* P=N->FindPin(TEXT("Alpha"));Defaults&=P && P->LinkedTo.IsEmpty() && FCString::Atof(*P->DefaultValue)==1.f;}
     }
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
     FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
     UE_LOG(LogTemp,Display,TEXT("Upper inertia space pins: nodes=%d preserved=%d defaults=%d status=%d asset_saved=0"),Count,int32(Preserved),int32(Defaults),int32(BP->Status));
 }
 static FAutoConsoleCommand UpperInertiaSpaceCommand(TEXT("Prophecy.Editor.RefreshUpperInertiaSpace"),TEXT("Add Root Local/Spine Local selector to existing upper inertia nodes; preserve wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshUpperInertiaSpace));
+}
+
+namespace ProphecyBlendNodeUpgrade
+{
+static void RefreshArmConeTwist(){RefreshOrderFor(TEXT("SetArmRepellantCone"),TEXT("ArmConeTwistPins.txt"));}
+static FAutoConsoleCommand ArmConeTwistCommand(TEXT("Prophecy.Editor.RefreshArmConeTwist"),TEXT("Add optional wrist recoil pins; preserve existing values and wiring, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshArmConeTwist));
+}
+namespace ProphecyBlendNodeUpgrade
+{
+// Explicit diagnostic preview; never saves. Restore exact prior pin literals afterwards.
+static TMap<FGuid,TArray<FString>> WristPreviewPins;
+static void PreviewArmConeTwist(const TArray<FString>& Args)
+{
+    if(!GEditor || GEditor->PlayWorld || Args.Num()!=1)return;
+    const bool On=Args[0]==TEXT("on"),Off=Args[0]==TEXT("restore");
+    if((!On&&!Off) || (On&&!WristPreviewPins.IsEmpty()))return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if(!BP)return;
+    const TCHAR* Pins[]={TEXT("EnableWristTwistRecoil"),TEXT("TwistLimitDegrees"),TEXT("TwistRecoilStrength"),TEXT("TwistDamping")};
+    const TCHAR* Values[]={TEXT("true"),TEXT("60"),TEXT("1000000"),TEXT("20")};
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);int32 Count=0;
+    for(auto* G:Graphs)for(UEdGraphNode* Base:G->Nodes)
+    {
+        auto* N=Cast<UK2Node_CallFunction>(Base);
+        if(!N || N->FunctionReference.GetMemberName()!=TEXT("SetArmRepellantCone"))continue;
+        bool OK=true;for(const TCHAR* P:Pins)if(!N->FindPin(P)||!N->FindPin(P)->LinkedTo.IsEmpty())OK=false;
+        if(!OK)continue;
+        if(On)
+        {
+            TArray<FString> Old;for(const TCHAR* P:Pins)Old.Add(N->FindPin(P)->DefaultValue);
+            WristPreviewPins.Add(N->NodeGuid,MoveTemp(Old));
+            for(int32 I=0;I<4;++I)N->FindPin(Pins[I])->DefaultValue=Values[I];++Count;
+        }
+        else if(const auto* Old=WristPreviewPins.Find(N->NodeGuid))
+        {for(int32 I=0;I<4;++I)N->FindPin(Pins[I])->DefaultValue=(*Old)[I];++Count;}
+    }
+    if(Off)WristPreviewPins.Reset();
+    if(Count){FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);}
+    UE_LOG(LogTemp,Display,TEXT("ArmCone twist preview %s nodes=%d status=%d saved=0"),*Args[0],Count,int32(BP->Status));
+}
+static FAutoConsoleCommand WristPreviewCommand(TEXT("Prophecy.Editor.PreviewArmConeTwist"),TEXT("Diagnostic on/restore of wrist recoil pins; preserves prior literals; never saves."),FConsoleCommandWithArgsDelegate::CreateStatic(&PreviewArmConeTwist));
 }

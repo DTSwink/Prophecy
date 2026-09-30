@@ -10,12 +10,43 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackWristLibrary : public UBlueprintFu
 {
     GENERATED_BODY()
 public:
-    /** Per-mode left wrist bend constraint; disabled by default in every mode.
-     * Attacks always use the training limit of 55 degrees, for all checkpoints
-     * including half attacks. Max Bend Degrees only affects Locomotion, Parry
-     * and Dodge (or those modes when All is selected). Positions/right hand
-     * unchanged. Disable removes our override, not a model's baked constraint. */
+    /** NN only. Free Position bypasses fixed wrist attachment for both hands.
+     * Free Rotation bypasses Set Left Hand Constraint in every mode, including attacks.
+     * False restores the existing settings. Does not modify physical joints,
+     * inertia/posing controls, or constraints baked into a checkpoint. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Animation",meta=(DefaultToSelf="Agent",DisplayName="Set NN Wrist Freedom"))
+    static bool SetNNWristFreedom(AProphecyAgent* Agent,bool FreePosition=true,bool FreeRotation=false);
+
+    /** Left wrist angular leeway around the forearm direction: 0 locks bend,
+     * 55 allows a 55-degree cone, 180 allows every orientation. Inside the cone
+     * the NN rotation is unchanged; axial twist is not locked. Applies to the
+     * selected mode, including full/half attacks. All includes locomotion,
+     * attacks, parry and dodge. Disabled by default until configured.
+     * Positions/right hand unchanged; model-baked behavior is separate. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Animation",meta=(DefaultToSelf="Agent"))
     static bool SetLeftHandConstraint(AProphecyAgent* Agent,bool Enabled=false,
-        EProphecyClampProfileMode Mode=EProphecyClampProfileMode::All,float MaxBendDegrees=55.f);
+        EProphecyClampProfileMode Mode=EProphecyClampProfileMode::All,
+        UPARAM(DisplayName="Angle Leeway Degrees",meta=(ClampMin="0",ClampMax="180")) float MaxBendDegrees=55.f);
+
+    /** Checked attacks use the configured Attack angle; unchecked attacks are free.
+     * Applies to full/half attacks and in-place family changes. All checked by default.
+     * Does not change locomotion, parry/dodge, the configured angle or global switches. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Animation",meta=(DefaultToSelf="Agent",DisplayName="Set Left Hand Constraint Attacks"))
+    static bool SetLeftHandConstraintAttacks(AProphecyAgent* Agent,
+        UPARAM(DisplayName="slashL") bool SlashL=true, UPARAM(DisplayName="slashR") bool SlashR=true,
+        UPARAM(DisplayName="slashLD") bool SlashLD=true, UPARAM(DisplayName="slashRD") bool SlashRD=true,
+        UPARAM(DisplayName="slashLU") bool SlashLU=true, UPARAM(DisplayName="slashRU") bool SlashRU=true,
+        UPARAM(DisplayName="pike") bool Pike=true,
+        UPARAM(DisplayName="jabL") bool JabL=true, UPARAM(DisplayName="jabR") bool JabR=true,
+        UPARAM(DisplayName="hookL") bool HookL=true, UPARAM(DisplayName="hookR") bool HookR=true,
+        UPARAM(DisplayName="overL") bool OverL=true, UPARAM(DisplayName="overR") bool OverR=true,
+        UPARAM(DisplayName="headbutt") bool Headbutt=true,
+        UPARAM(DisplayName="kickL") bool KickL=true, UPARAM(DisplayName="kickR") bool KickR=true);
+
+    /** False bypasses this left-hand angular constraint in ALL modes immediately.
+     * True restores configured angles and attack choices. Settings may be updated
+     * while disabled without re-enabling it. Independent of Free Rotation in
+     * Set NN Wrist Freedom (either bypass wins). No physical joint changes. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Animation",meta=(DefaultToSelf="Agent",DisplayName="Set Left Hand Constraint Global Enabled"))
+    static bool SetLeftHandConstraintGlobalEnabled(AProphecyAgent* Agent,bool Enabled=true);
 };

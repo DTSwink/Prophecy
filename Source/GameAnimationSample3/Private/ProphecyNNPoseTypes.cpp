@@ -27,7 +27,7 @@ namespace
 	FRWLock GProphecyNNPoseLock;
 	TMap<int32, FProphecyNNPoseSnapshot> GProphecyNNPoses;
 	TMap<int32, EProphecyNNInterpolationMode> GInterpolationModes;
-	TSet<int32> GProphecyNNRigidForearms;
+	TSet<int32> GProphecyNNSpecialPresentation;
 	TSet<int32> GProphecyNNLowerSpecial;
 	TSet<int32> GProphecyNNRigidCalves;
 	struct FRecoveryLegLengths { FVector2D Upper,Lower; };
@@ -208,6 +208,26 @@ float ProphecyNNPresentation::Resolve(int32 AgentId, double SourceTimeSeconds, d
 	return FromRemainder(float(WorldTimeSeconds - SourceTimeSeconds), PoseIntervalSeconds);
 }
 
+namespace
+{
+void FixPublishedArms(FProphecyNNPoseSnapshot& Snapshot)
+{
+    static const FName Hands[]={TEXT("hand_l"),TEXT("hand_r")},Elbows[]={TEXT("lowerarm_l"),TEXT("lowerarm_r")};
+    for(int32 Side=0;Side<2;++Side)
+    {
+        const int32 H=Snapshot.BoneNames.IndexOfByKey(Hands[Side]),E=Snapshot.BoneNames.IndexOfByKey(Elbows[Side]);
+        if(!Snapshot.LocalTransforms.IsValidIndex(H) || E==INDEX_NONE)continue;
+        auto& Offset=Snapshot.FixedArms.ForearmOffsets[Side];
+        // Generic animation/fixture producers establish their geometry once;
+        // production NN publishers supply the anatomical contract explicitly.
+        if(Offset.IsNearlyZero())Offset=Snapshot.LocalTransforms[H].GetLocation();
+        Snapshot.LocalTransforms[H].SetLocation(Offset);
+        for(auto* Pose:{&Snapshot.PreviousComponentTransforms,&Snapshot.ComponentTransforms})
+            if(Pose->IsValidIndex(H) && Pose->IsValidIndex(E))(*Pose)[H].SetLocation((*Pose)[E].TransformPosition(Offset));
+    }
+}
+}
+
 void FProphecyNNPoseStore::SetAgentLocalPose(
 	int32 AgentId,
 	TConstArrayView<FName> BoneNames,
@@ -225,6 +245,7 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 		Snapshot.BoneNames.Reset(BoneNames.Num());
 		Snapshot.BoneNames.Append(BoneNames.GetData(), BoneNames.Num());
 		Snapshot.BoneLayoutHash = LayoutHash;
+		Snapshot.FixedArms = FProphecyNNFixedArms();
 	}
 
 	Snapshot.LocalTransforms.SetNumUninitialized(LocalTransforms.Num());
@@ -235,6 +256,7 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 		LocalTransform.NormalizeRotation();
 	}
 
+	FixPublishedArms(Snapshot);
 	Snapshot.Revision = AllocatePoseRevision();
 	Snapshot.SourceTimeSeconds = SourceTimeSeconds;
 	Snapshot.PreviousComponentTransforms.Reset();
@@ -262,6 +284,7 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 		Snapshot.BoneNames.Reset(BoneNames.Num());
 		Snapshot.BoneNames.Append(BoneNames.GetData(), BoneNames.Num());
 		Snapshot.BoneLayoutHash = LayoutHash;
+		Snapshot.FixedArms = FProphecyNNFixedArms();
 	}
 
 	Snapshot.LocalTransforms.SetNumUninitialized(LocalTransforms.Num());
@@ -278,6 +301,7 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 	Snapshot.ComponentTransforms.Reset();
 	Snapshot.PreviousComponentWorldTransform = FTransform::Identity;
 	Snapshot.bHasComponentWorldTransform = true;
+	FixPublishedArms(Snapshot);
 	Snapshot.Revision = AllocatePoseRevision();
 	Snapshot.SourceTimeSeconds = SourceTimeSeconds;
 }
@@ -291,17 +315,17 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 	const FTransform& PreviousComponentWorldTransform,
 	const FTransform& ComponentWorldTransform,
 	double SourceTimeSeconds,
-	bool bRigidForearms, bool bRigidCalves, float CalfClampLeewayCm, FVector2D CalfClampLengths,
-	const FProphecyNNAttackHandClamp& HandClamp, const FProphecyNNForearmClamp& ForearmClamp,bool bHalfAttack)
+	bool bSpecialPresentation, bool bRigidCalves, float CalfClampLeewayCm, FVector2D CalfClampLengths,
+	const FProphecyNNFixedArms& FixedArms,bool bHalfAttack,bool bFixedArms)
 {
 	check(BoneNames.Num() == LocalTransforms.Num());
 	check(BoneNames.Num() == PreviousComponentTransforms.Num());
 	check(BoneNames.Num() == ComponentTransforms.Num());
 
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
-	if (bRigidForearms) GProphecyNNRigidForearms.Add(AgentId);
-	else GProphecyNNRigidForearms.Remove(AgentId);
-	if (bRigidForearms && !bHalfAttack) GProphecyNNLowerSpecial.Add(AgentId);
+	if (bSpecialPresentation) GProphecyNNSpecialPresentation.Add(AgentId);
+	else GProphecyNNSpecialPresentation.Remove(AgentId);
+	if (bSpecialPresentation && !bHalfAttack) GProphecyNNLowerSpecial.Add(AgentId);
 	else if (!GProphecyNNLowerSpecial.IsEmpty()) GProphecyNNLowerSpecial.Remove(AgentId);
 	if (bRigidCalves) GProphecyNNRigidCalves.Add(AgentId);
 	else GProphecyNNRigidCalves.Remove(AgentId);
@@ -309,8 +333,6 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 	ProphecyNNInterpolation::Prepare(Snapshot, GInterpolationModes.FindRef(AgentId), BoneNames,
 		PreviousComponentTransforms, ComponentTransforms, PreviousComponentWorldTransform, ComponentWorldTransform, SourceTimeSeconds);
 	Snapshot.CalfClampLeewayCm = CalfClampLeewayCm;
-	Snapshot.AttackHandClamp = HandClamp;
-	Snapshot.ForearmClamp = ForearmClamp;
 	Snapshot.CalfClampLengths = CalfClampLengths;
 	const uint32 LayoutHash = HashBoneLayout(BoneNames);
 	if (!BoneLayoutMatches(Snapshot, BoneNames, LayoutHash))
@@ -318,7 +340,10 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 		Snapshot.BoneNames.Reset(BoneNames.Num());
 		Snapshot.BoneNames.Append(BoneNames.GetData(), BoneNames.Num());
 		Snapshot.BoneLayoutHash = LayoutHash;
+		Snapshot.FixedArms = FProphecyNNFixedArms();
 	}
+	for(int32 Side=0;Side<2;++Side)if(!FixedArms.ForearmOffsets[Side].IsNearlyZero())
+        Snapshot.FixedArms.ForearmOffsets[Side]=FixedArms.ForearmOffsets[Side];
 
 	auto CopyNormalized = [](TArray<FTransform>& Destination, TConstArrayView<FTransform> Source)
 	{
@@ -339,6 +364,7 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 	Snapshot.ComponentWorldTransform = ComponentWorldTransform;
 	Snapshot.ComponentWorldTransform.NormalizeRotation();
 	Snapshot.bHasComponentWorldTransform = true;
+	if(bFixedArms)FixPublishedArms(Snapshot);else Snapshot.FixedArms=FProphecyNNFixedArms();
 	Snapshot.Revision = AllocatePoseRevision();
 	Snapshot.SourceTimeSeconds = SourceTimeSeconds;
 }
@@ -363,6 +389,7 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 		Snapshot.BoneNames.Reset(IncomingBoneNames.Num());
 		Snapshot.BoneNames.Append(IncomingBoneNames.GetData(), IncomingBoneNames.Num());
 		Snapshot.BoneLayoutHash = LayoutHash;
+		Snapshot.FixedArms = FProphecyNNFixedArms();
 	}
 	Snapshot.LocalTransforms.SetNumUninitialized(BonePoses.Num());
 
@@ -373,6 +400,7 @@ void FProphecyNNPoseStore::SetAgentLocalPose(
 		LocalTransform.NormalizeRotation();
 	}
 
+	FixPublishedArms(Snapshot);
 	Snapshot.Revision = AllocatePoseRevision();
 	Snapshot.SourceTimeSeconds = SourceTimeSeconds;
 	Snapshot.PreviousComponentTransforms.Reset();
@@ -415,7 +443,7 @@ void FProphecyNNPoseStore::ClearAgentPose(int32 AgentId)
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
 	GProphecyNNPoses.Remove(AgentId);
 	GInterpolationModes.Remove(AgentId);
-	GProphecyNNRigidForearms.Remove(AgentId);
+	GProphecyNNSpecialPresentation.Remove(AgentId);
 	GProphecyNNLowerSpecial.Remove(AgentId);
 	GProphecyNNRigidCalves.Remove(AgentId);
 	GProphecyNNPresentation.Remove(AgentId);
@@ -430,7 +458,7 @@ void FProphecyNNPoseStore::ClearAllPoses()
 	FWriteScopeLock Lock(GProphecyNNPoseLock);
 	GProphecyNNPoses.Reset();
 	GInterpolationModes.Reset();
-	GProphecyNNRigidForearms.Reset();
+	GProphecyNNSpecialPresentation.Reset();
 	GProphecyNNLowerSpecial.Reset();
 	GProphecyNNRigidCalves.Reset();
 	GProphecyNNPresentation.Reset();
@@ -449,41 +477,20 @@ bool FProphecyNNPoseStore::UsesLowerSpecialPresentation(int32 AgentId)
 bool FProphecyNNPoseStore::UsesAttackPresentation(int32 AgentId)
 {
 	FReadScopeLock Lock(GProphecyNNPoseLock);
-	return GProphecyNNRigidForearms.Contains(AgentId);
+	return GProphecyNNSpecialPresentation.Contains(AgentId);
 }
 
 void FProphecyNNPoseStore::ApplyRigidForearms(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
 	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms)
 {
-	if (!Snapshot.ForearmClamp.bEnabled)
-	{
-		if (!Snapshot.AttackHandClamp.bEnabled) return;
-		FReadScopeLock Lock(GProphecyNNPoseLock);
-		if (!GProphecyNNRigidForearms.Contains(AgentId)) return;
-	}
 	static const FName Hands[] = { TEXT("hand_l"), TEXT("hand_r") };
 	static const FName Forearms[] = { TEXT("lowerarm_l"), TEXT("lowerarm_r") };
-	for (int32 Side = 0; Side < 2; ++Side)
+	for (int32 Side=0;Side<2;++Side)
 	{
-		const int32 Hand = BoneNames.IndexOfByKey(Hands[Side]);
-		const int32 Forearm = BoneNames.IndexOfByKey(Forearms[Side]);
-		const int32 SourceHand = Snapshot.BoneNames.IndexOfByKey(Hands[Side]);
-		if (Transforms.IsValidIndex(Hand) && Transforms.IsValidIndex(Forearm) &&
-			Snapshot.LocalTransforms.IsValidIndex(SourceHand))
-		{
-			if (Snapshot.ForearmClamp.bEnabled)
-			{
-				Transforms[Hand].SetTranslation(Snapshot.ForearmClamp.ClampHand(Transforms[Hand].GetTranslation(),
-					Transforms[Forearm], Snapshot.LocalTransforms[SourceHand].GetTranslation(), Side));
-				continue;
-			}
-			const FVector Offset = Snapshot.AttackHandClamp.LeewayCm > 0
-				? Snapshot.AttackHandClamp.ReferenceOffsets[Side]
-				: Snapshot.LocalTransforms[SourceHand].GetTranslation();
-			Transforms[Hand].SetTranslation(FProphecyNNAttackHandClamp::ClampPosition(
-				Transforms[Hand].GetTranslation(), Transforms[Forearm].TransformPosition(Offset),
-				Snapshot.AttackHandClamp.LeewayCm));
-		}
+		const int32 H=BoneNames.IndexOfByKey(Hands[Side]),E=BoneNames.IndexOfByKey(Forearms[Side]);
+		const FVector& Offset=Snapshot.FixedArms.ForearmOffsets[Side];
+		if(Transforms.IsValidIndex(H) && Transforms.IsValidIndex(E) && !Offset.IsNearlyZero())
+			Transforms[H].SetTranslation(Transforms[E].TransformPosition(Offset));
 	}
 }
 
@@ -559,8 +566,9 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 					Upper=FMath::Lerp(FMath::Lerp(A,B,double(FMath::Clamp(InterpolationAlpha,0.f,1.f))),Upper,double(UpperRemaining));
 				}
 			}
-			if (Transforms.IsValidIndex(Thigh)) ProphecyRecoveryLegLength::Resolve(
-				Transforms[Thigh],Transforms[Calf],Transforms[Foot],Upper,Lower);
+            if (Transforms.IsValidIndex(Thigh)) ProphecyRecoveryLegLength::Resolve(
+                Transforms[Thigh],Transforms[Calf],Transforms[Foot],Upper,Lower,
+                Snapshot.LocalTransforms[SourceFoot].GetTranslation());
 			continue;
 		}
 		FVector End;

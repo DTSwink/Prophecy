@@ -429,15 +429,17 @@ void AProphecyNNLocomotionManager::UpdatePreviousPoseDebug(bool bAttack)
 				WriteRot6(Multiply(MatrixFromRot6(Upper + Offset + 3), Impl->SeedRootRot), Upper + Offset + 3);
 				WriteRot6(Multiply(MatrixFromRot6(Upper + Offset + 9), Impl->SeedRootRot), Upper + Offset + 9);
 			}
-			DecodeLocomotionPose(Impl, Slash.State.GetData(), Upper, false, MakeArrayView(Pose), nullptr, {});
+			FLocomotionClamps C;C.bFixedArms=!ProphecyAttackWrist::FreePosition(Actor);
+			DecodeLocomotionPose(Impl, Slash.State.GetData(), Upper, false, MakeArrayView(Pose), nullptr, C);
 			Carrier = Slash.AnchorWorld;
 		}
 		else
 		{
 			// Read the tensors before the upper inference mutates its history.
+			FLocomotionClamps C;C.bFixedArms=!ProphecyAttackWrist::FreePosition(Actor);
 			DecodeLocomotionPose(Impl, Impl->InputBuffer.GetData() + Index * InputDim + StateDim,
 				Impl->UpperInputBuffer.GetData() + Index * UpperInputDim, Agent.PublishedWalkWeight,
-				MakeArrayView(Pose), nullptr, {},&Agent.PublishedLegWalkWeights);
+				MakeArrayView(Pose), nullptr, C,&Agent.PublishedLegWalkWeights);
 			Carrier = SlashComponentWorld(Actor, Agent.WindowPreviousRoot, Agent.WindowPreviousYaw);
 		}
 		auto* Mesh = Actor->NNPreviousPoseDebugMesh.Get();

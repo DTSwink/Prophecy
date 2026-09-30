@@ -64,6 +64,12 @@ bool Execute(UPrimitiveComponent& Component, const FProphecyJoltPhysicsCommand& 
         if (!Standalone && UProphecyJoltSceneCollisionComponent::FindForWorld(Component.GetWorld()))
             if (auto* Mesh = Cast<UStaticMeshComponent>(&Component); Mesh && Mesh->IsSimulatingPhysics())
             {
+                // Held equipment has a controller that owns its backend handoff. While
+                // that controller uses Chaos (including a kinematic holder), ordinary
+                // Blueprint forces must not auto-admit a second Jolt body for its blade.
+                // Dropped swords clear their owner and still use normal prop admission.
+                if (const auto* Holder = Cast<AProphecyAgent>(Owner->GetOwner());
+                    Holder && Holder->GetHeldSword() == Owner) return false;
                 FString Error;
                 if (!UProphecyJoltStaticMeshLibrary::EnableJoltStaticMeshPhysics(Mesh, Error))
                 { UE_LOG(LogTemp, Error, TEXT("Automatic Jolt body admission: %s"), *Error); return true; }

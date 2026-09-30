@@ -12,16 +12,14 @@ The original fixed-command reference path remains the default of the standalone 
 
 ## Independent clamps
 
-`ProphecyNNDefenseLibrary` now exposes eight nodes, each with Agent, Enabled and Leeway Cm:
+`ProphecyNNDefenseLibrary` exposes four leg nodes, each with Agent, Enabled and Leeway Cm:
 
 - Set Parry Foot Clamp / Set Dodge Foot Clamp
 - Set Parry Calf Clamp / Set Dodge Calf Clamp
-- Set Parry Hand Clamp / Set Dodge Hand Clamp
-- Set Parry Forearm Clamp / Set Dodge Forearm Clamp
 
-Values are independent per agent and response. Zero leeway means an exact clamp; 1 means one centimetre. Negative/nonfinite values are rejected. Foot limits total leg reach; calf/forearm constrain segment length in both directions; hand constrains wrist attachment displacement. Forearm takes precedence over hand if both are enabled, matching the locomotion arm controls. Clamps affect presentation, not the retained raw defense recurrence. They do not disable Dodge's trained leg IK/bone-length reconstruction or final foot-floor correction.
+Values are independent per agent and response. Zero leeway means an exact clamp; 1 means one centimetre. Negative/nonfinite values are rejected. Foot limits total leg reach; calf constrains segment length in both directions. Before an override, Parry uses locomotion leg settings and Dodge has no optional leg clamps. These controls do not disable Dodge's trained leg IK or foot-floor correction.
 
-Before an override, Parry keeps its existing locomotion foot/calf settings, Dodge has no optional foot/calf clamps, forearm is off, and the existing hand interpolation attachment correction remains on at zero leeway. Defense hand settings now have their own defaults rather than inheriting stale settings from the agent's last attack.
+Both hands now remain attached at fixed anatomical forearm length in every mode. The former parry/dodge hand and forearm leeway nodes were removed September30, including their easing and profile entries. [Fixed arm attachment](FixedArmAttachments.md).
 
 ## Attack target and response readback
 

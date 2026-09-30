@@ -17,7 +17,7 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,TMap<FName,TArray<FEntry>>> Sna
 static TMap<TWeakObjectPtr<AProphecyAgent>,TArray<FBlend>> Active;
 static FDelegateHandle TickHandle,CleanupHandle;
 static const FValue& Select(const ProphecyDefenseControls::FSettings& S,ELimb L)
-{ return L==ELimb::Foot?S.Foot:L==ELimb::Calf?S.Calf:L==ELimb::Hand?S.Hand:S.Forearm; }
+{ return L==ELimb::Foot?S.Foot:S.Calf; }
 static FValue Read(const AProphecyAgent& A,EMode M,ELimb L)
 {
     if (M==EMode::Parry || M==EMode::Dodge)
@@ -26,12 +26,11 @@ static FValue Read(const AProphecyAgent& A,EMode M,ELimb L)
     {
         if (L==ELimb::Foot) return {A.bOverrideAttackFootClamp,A.bAttackFootClamp,A.AttackFootClampLeewayCm};
         if (L==ELimb::Calf) return {A.bOverrideAttackCalfClamp,A.bAttackCalfClamp,A.AttackCalfClampLeewayCm};
-        return {true,A.bAttackHandClamp,A.AttackHandClampLeewayCm};
+        return {};
     }
     if (L==ELimb::Foot) return {A.bOverrideLocomotionFootClamp,A.bLocomotionFootClamp,A.LocomotionFootClampLeewayCm};
     if (L==ELimb::Calf) return {A.bOverrideLocomotionCalfClamp,A.bLocomotionCalfClamp,A.LocomotionCalfClampLeewayCm};
-    if (L==ELimb::Hand) return {A.bOverrideLocomotionHandClamp,A.bLocomotionHandClamp,A.LocomotionHandClampLeewayCm};
-    return {true,A.bLocomotionForearmClamp,A.LocomotionForearmClampLeewayCm};
+    return {};
 }
 static FValue Effective(const AProphecyAgent& A,EMode M,ELimb L,FValue V)
 {
@@ -40,12 +39,12 @@ static FValue Effective(const AProphecyAgent& A,EMode M,ELimb L,FValue V)
     {
         if (M==EMode::Parry && (L==ELimb::Foot || L==ELimb::Calf))
             return Effective(A,EMode::Locomotion,L,Read(A,EMode::Locomotion,L));
-        return {true,L==ELimb::Hand,0};
+        return {true,false,0};
     }
     if (A.GetWorld()) for (TActorIterator<AProphecyNNLocomotionManager> It(A.GetWorld());It;++It)
         if (It->ResolveAgent(A.GetAgentHandle())==&A)
-            return {true,L==ELimb::Foot?It->bClampFoot:L==ELimb::Calf?It->bClampCalf:It->bClampHand,0};
-    return {true,L==ELimb::Hand,0};
+            return {true,L==ELimb::Foot?It->bClampFoot:It->bClampCalf,0};
+    return {true,false,0};
 }
 static void Write(AProphecyAgent& A,const FEntry& E)
 {
@@ -56,13 +55,10 @@ static void Write(AProphecyAgent& A,const FEntry& E)
     {
         if (L==ELimb::Foot) { A.bOverrideAttackFootClamp=V.bOverride;A.bAttackFootClamp=V.bEnabled;A.AttackFootClampLeewayCm=V.LeewayCm; }
         else if (L==ELimb::Calf) { A.bOverrideAttackCalfClamp=V.bOverride;A.bAttackCalfClamp=V.bEnabled;A.AttackCalfClampLeewayCm=V.LeewayCm; }
-        else { A.bAttackHandClamp=V.bEnabled;A.AttackHandClampLeewayCm=V.LeewayCm; }
         return;
     }
     if (L==ELimb::Foot) { A.bOverrideLocomotionFootClamp=V.bOverride;A.bLocomotionFootClamp=V.bEnabled;A.LocomotionFootClampLeewayCm=V.LeewayCm; }
     else if (L==ELimb::Calf) { A.bOverrideLocomotionCalfClamp=V.bOverride;A.bLocomotionCalfClamp=V.bEnabled;A.LocomotionCalfClampLeewayCm=V.LeewayCm; }
-    else if (L==ELimb::Hand) { A.bOverrideLocomotionHandClamp=V.bOverride;A.bLocomotionHandClamp=V.bEnabled;A.LocomotionHandClampLeewayCm=V.LeewayCm; }
-    else { A.bLocomotionForearmClamp=V.bEnabled;A.LocomotionForearmClampLeewayCm=V.LeewayCm; }
 }
 static void Refresh();
 static void Advance(UWorld* World,ELevelTick TickType,float Dt)
@@ -117,8 +113,8 @@ void Save(AProphecyAgent* A,FName Name)
 {
     TArray<FEntry> Saved;
     for (auto M:{EMode::Locomotion,EMode::Attack,EMode::Parry,EMode::Dodge})
-        for (auto L:{ELimb::Foot,ELimb::Calf,ELimb::Hand,ELimb::Forearm})
-            if (!(M==EMode::Attack && L==ELimb::Forearm)) Saved.Add({M,L,Read(*A,M,L)});
+        for (auto L:{ELimb::Foot,ELimb::Calf})
+            Saved.Add({M,L,Read(*A,M,L)});
     Snapshots.FindOrAdd(A).Add(Name,MoveTemp(Saved));Refresh();
 }
 int32 Restore(AProphecyAgent* A,FName Name,EMode Mode,int32 Limb,float Duration)
@@ -149,14 +145,14 @@ FString Debug(const AProphecyAgent* A,FName Bone)
 {
     if (!A) return {};
     const bool Hand=Bone==TEXT("hand_l") || Bone==TEXT("hand_r"),Foot=Bone==TEXT("foot_l") || Bone==TEXT("foot_r");
-    if (!Hand && !Foot) return {};
+    if (Hand) return TEXT(" / Arm=FixedLength");
+    if (!Foot) return {};
     auto Text=[&](ELimb L)
     {
         const auto V=Effective(*A,EMode::Locomotion,L,Read(*A,EMode::Locomotion,L));
         return V.bEnabled?FString::Printf(TEXT("%.2f"),V.LeewayCm):FString(TEXT("off"));
     };
-    return FString::Printf(TEXT(" / Clamp=%s:%s %s:%s"),Hand?TEXT("Hand"):TEXT("Foot"),*Text(Hand?ELimb::Hand:ELimb::Foot),
-        Hand?TEXT("Forearm"):TEXT("Calf"),*Text(Hand?ELimb::Forearm:ELimb::Calf));
+    return FString::Printf(TEXT(" / Clamp=Foot:%s Calf:%s"),*Text(ELimb::Foot),*Text(ELimb::Calf));
 }
 }
 bool UProphecyClampProfileLibrary::BlendClampToSnapshot(AProphecyAgent* A,EProphecyClampType Clamp,float Duration,FName Name,EProphecyClampProfileMode Mode)
@@ -166,8 +162,6 @@ bool UProphecyClampProfileLibrary::BlendClampToSnapshot(AProphecyAgent* A,EProph
     switch (Clamp)
     {
     case EProphecyClampType::Calf: Limb=ELimb::Calf;break;
-    case EProphecyClampType::Forearm: Limb=ELimb::Forearm;break;
-    case EProphecyClampType::Hand: Limb=ELimb::Hand;break;
     case EProphecyClampType::Foot: Limb=ELimb::Foot;break;
     default:return false;
     }
@@ -205,12 +199,10 @@ bool FProphecyClampSnapshotTest::RunTest(const FString&)
     if (!TestNotNull(TEXT("Skeleton"),Asset)) return false;
     A->GetAgentMesh()->SetSkeletalMeshAsset(Asset);
     A->SetLocomotionFootClamp(true,3);A->SetLocomotionCalfClamp(true,4);
-    A->SetLocomotionHandClamp(true,5);A->SetLocomotionForearmClamp(false,7);
-    A->SetAttackHandClamp(false,11);
     ProphecyDefenseControls::Set(A,false,ELimb::Foot,true,12);
-    ProphecyDefenseControls::Set(A,true,ELimb::Hand,true,13);
+    ProphecyDefenseControls::Set(A,true,ELimb::Calf,true,13);
     TestTrue(TEXT("Existing save captures clamps"),UProphecyPhysicalProfileLibrary::SavePhysicalProfileSnapshot(A,TEXT("ClampBase")));
-    A->SetLocomotionFootClamp(false,0);A->SetLocomotionCalfClamp(true,20);A->SetLocomotionHandClamp(true,55);
+    A->SetLocomotionFootClamp(false,0);A->SetLocomotionCalfClamp(true,20);
     TestFalse(TEXT("Missing snapshot is nonmutating"),Lib::BlendClampToSnapshot(A,EProphecyClampType::Foot,1,TEXT("Missing")));
     TestTrue(TEXT("Foot selects only the shared foot setting"),Lib::BlendClampToSnapshot(A,EProphecyClampType::Foot,1,TEXT("ClampBase"),EMode::Locomotion));
     TestEqual(TEXT("Foot does not change calf"),A->LocomotionCalfClampLeewayCm,20.f);
@@ -219,7 +211,6 @@ bool FProphecyClampSnapshotTest::RunTest(const FString&)
     TestEqual(TEXT("Off-to-on half blend uses large allowance"),A->LocomotionFootClampLeewayCm,501.5f);
     TestEqual(TEXT("Calf half blend"),A->LocomotionCalfClampLeewayCm,12.f);
     TestEqual(TEXT("Physical calf range follows the snapshot blend"),ProphecyPhysicalFootTarget::LocomotionCalfLeeway(A),12.f);
-    TestEqual(TEXT("Foot restore does not affect hands"),A->LocomotionHandClampLeewayCm,55.f);
     Advance(W,LEVELTICK_ViewportsOnly,1.f/60.f);
     TestEqual(TEXT("Non-game tick does not advance"),A->LocomotionCalfClampLeewayCm,12.f);
     TestTrue(TEXT("Save mid-blend"),UProphecyPhysicalProfileLibrary::SavePhysicalProfileSnapshot(A,TEXT("Mid")));
@@ -237,16 +228,12 @@ bool FProphecyClampSnapshotTest::RunTest(const FString&)
     for (int32 I=0;I<60;++I) Advance(W,LEVELTICK_All,1.f/60.f);
     TestEqual(TEXT("Direct setter cancels only foot return"),A->LocomotionFootClampLeewayCm,23.f);
     TestEqual(TEXT("Uncancelled calf return finishes"),A->LocomotionCalfClampLeewayCm,4.f);
-    TestTrue(TEXT("Forearm restores independently"),Lib::BlendClampToSnapshot(A,EProphecyClampType::Forearm,0,TEXT("ClampBase"),EMode::Locomotion));
-    TestEqual(TEXT("Forearm does not restore hand"),A->LocomotionHandClampLeewayCm,55.f);
-    TestFalse(TEXT("Absent attack forearm is not invented"),Lib::BlendClampToSnapshot(A,EProphecyClampType::Forearm,0,TEXT("ClampBase"),EMode::Attack));
-    A->SetAttackHandClamp(true,0);ProphecyDefenseControls::Set(A,true,ELimb::Hand,false,0);
-    TestEqual(TEXT("All restores 15 distinct settings, not double-counted sides"),Lib::BlendAllClampsToSnapshot(A,0,TEXT("ClampBase")),15);
-    TestTrue(TEXT("Attack disabled flag and remembered allowance restored"),!A->bAttackHandClamp && A->AttackHandClampLeewayCm==11);
-    TestTrue(TEXT("Dodge restored independently"),ProphecyDefenseControls::Find(A,true)->Hand.bEnabled && ProphecyDefenseControls::Find(A,true)->Hand.LeewayCm==13);
+    ProphecyDefenseControls::Set(A,true,ELimb::Calf,false,0);
+    TestEqual(TEXT("All restores eight leg settings"),Lib::BlendAllClampsToSnapshot(A,0,TEXT("ClampBase")),8);
+    TestTrue(TEXT("Dodge restored independently"),ProphecyDefenseControls::Find(A,true)->Calf.bEnabled && ProphecyDefenseControls::Find(A,true)->Calf.LeewayCm==13);
     TestTrue(TEXT("Parry inherited override state preserved"),!ProphecyDefenseControls::Find(A,false)->Calf.bOverride);
     TestTrue(TEXT("Only endpoints get clamp print"),Debug(A,TEXT("head")).IsEmpty() && Debug(A,TEXT("calf_l")).IsEmpty());
-    TestEqual(TEXT("Hands print locomotion only"),Debug(A,TEXT("hand_l")),FString(TEXT(" / Clamp=Hand:5.00 Forearm:off")));
+    TestEqual(TEXT("Hands report their invariant"),Debug(A,TEXT("hand_l")),FString(TEXT(" / Arm=FixedLength")));
     TestEqual(TEXT("Feet print both settings without units"),Debug(A,TEXT("foot_r")),FString(TEXT(" / Clamp=Foot:3.00 Calf:4.00")));
     TestTrue(TEXT("No ticking work remains"),Active.IsEmpty() && !TickHandle.IsValid());
     return true;

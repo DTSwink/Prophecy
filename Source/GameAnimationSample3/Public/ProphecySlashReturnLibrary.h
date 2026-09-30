@@ -9,6 +9,23 @@ class GAMEANIMATIONSAMPLE3_API UProphecySlashReturnLibrary : public UBlueprintFu
 {
     GENERATED_BODY()
 public:
+    /** Per-attack gate for the entire neutral return, including the additional arm.
+     * Checked permits the existing configured return; unchecked blocks both hands.
+     * Defaults preserve all existing behavior. Does not enable the master return
+     * or change speed/hold/blend/both-arm choices. Configure before an attack or
+     * inside Upper Special Ended. Unchecking an active return cancels it immediately. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Attack Arm Return Enabled"))
+    static bool SetAttackArmReturnEnabled(AProphecyAgent* Agent,
+        UPARAM(DisplayName="slashL") bool SlashL=true, UPARAM(DisplayName="slashR") bool SlashR=true,
+        UPARAM(DisplayName="slashLD") bool SlashLD=true, UPARAM(DisplayName="slashRD") bool SlashRD=true,
+        UPARAM(DisplayName="slashLU") bool SlashLU=true, UPARAM(DisplayName="slashRU") bool SlashRU=true,
+        UPARAM(DisplayName="pike") bool Pike=true,
+        UPARAM(DisplayName="jabL") bool JabL=true, UPARAM(DisplayName="jabR") bool JabR=true,
+        UPARAM(DisplayName="hookL") bool HookL=true, UPARAM(DisplayName="hookR") bool HookR=true,
+        UPARAM(DisplayName="overL") bool OverL=true, UPARAM(DisplayName="overR") bool OverR=true,
+        UPARAM(DisplayName="headbutt") bool Headbutt=true,
+        UPARAM(DisplayName="kickL") bool KickL=true, UPARAM(DisplayName="kickR") bool KickR=true);
+
     /** After slashL/R/LD/RD/LU/RU or pike, guide the right arm toward authored idle around
      * the front of the torso. Also guides the attacking arm after jabL/R, hookL/R and overL/R:
      * left for jabL/hookL/overL, right for jabR/hookR/overR, including half attacks.

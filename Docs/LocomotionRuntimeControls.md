@@ -8,26 +8,14 @@ All nodes target a **Prophecy Agent**, so settings can differ between agents and
 
 - `Set Locomotion Foot Clamp(Enabled, Leeway Cm)`: caps thigh-to-foot distance at the total rest leg length plus leeway. It does not force the leg straight.
 - `Set Locomotion Calf Clamp(Enabled, Leeway Cm)`: keeps knee-to-foot distance within rest calf length ± leeway. Zero is exact; one permits one centimetre in either direction.
-- `Set Locomotion Hand Clamp(Enabled, Leeway Cm)`: caps elbow-to-hand distance at rest forearm length plus leeway.
-- `Set Locomotion Forearm Clamp(Enabled, Leeway Cm)`: keeps elbow-to-hand distance within rest forearm length **± leeway**. Zero is exact; one permits 1 cm of shortening or stretching. It acts on both arms and supersedes the one-sided Hand Clamp while enabled. Disabling restores the existing Hand Clamp setting. This new option defaults off.
 
 Disabled preserves the decoded positions. Negative or nonfinite leeway returns false without changing the setting. Until a node is called, the agent inherits the manager's existing controls. These overrides use rest length directly; the manager's old length multipliers apply only when no override has been set.
 
-Foot/calf controls also apply to the locomotion legs during half attacks. Full attacks retain their separate `Set Attack Foot Clamp` and `Set Attack Calf Clamp` controls. Locomotion hand controls are separate from `Set Attack Hand Clamp`. Calf and attack-hand leeway also carry through render interpolation, so interpolation does not silently restore an exact clamp.
+Foot/calf controls also apply to locomotion legs during half attacks. Full attacks retain their separate `Set Attack Foot Clamp` and `Set Attack Calf Clamp` controls. Calf leeway also carries through render interpolation. These are geometric reach controls, not floor collision or foot pinning.
 
-## Attack hand clamp
+## Fixed hand attachment
 
-`Set Attack Hand Clamp(Enabled, Leeway Cm)` controls both hands in full and half attacks, independently per agent. Default is enabled with zero leeway, preserving the existing reference-animation wrist attachment.
-
-- Enabled, 0: exact skeleton rest offset from the forearm.
-- Enabled, 1: allows up to 1 cm of positional deviation from that attachment, leaving positions inside the band untouched.
-- Disabled: preserves raw attack hand positions and disables the corresponding interpolation correction.
-
-Hand rotations, forearms, raw attack NN recurrence and locomotion clamp settings are unchanged. Changes apply on the next attack pose update. Negative/nonfinite leeway returns false without modifying the setting. The same rule is used for the published pose and both interpolation modes.
-
-These are geometric reach controls, not floor collision or foot pinning. They do not alter the locomotion model's recurrent state.
-
-Forearm Clamp applies to locomotion arms, with the same band enforced after both interpolation modes and on physical-animation targets. Full and half attack arms retain their separate Attack Hand Clamp. Forearm Clamp moves the hand endpoint to bound segment length; it does not change the elbow's location or physical joint limits. Outside the band it retains the elbow-to-hand direction. Inside the band it leaves the prediction untouched. The existing hand-based forearm rotation reconstruction remains in use.
+As of September30, hand and forearm clamp/leeway nodes have been removed. Both wrists stay at their anatomical forearm offsets in locomotion, attacks, defense, recovery and interpolation. There is no hand-length allowance or blend to configure. Physical wrist joints lock translation; hand rotation retains its existing controls. [Implementation and verification](FixedArmAttachments.md).
 
 ## Root window
 

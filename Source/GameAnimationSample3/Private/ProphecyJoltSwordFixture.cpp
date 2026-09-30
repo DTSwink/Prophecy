@@ -3,6 +3,8 @@
 #include "ProphecySwordAttackCollision.h"
 #include "ProphecySwordComponent.h"
 #include "ProphecySwordPhysicsLibrary.h"
+#include "ProphecySpecialStartLibrary.h"
+#include "ProphecySpecialStart.h"
 #include "ProphecyAngularLimits.h"
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltCharacterComponent.h"
@@ -935,6 +937,9 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         auto* Sword=Agent->GetHeldSword();auto* Blade=Cast<UStaticMeshComponent>(Sword->GetRootComponent());
         auto* Body=Sword->FindComponentByClass<UProphecyJoltBodyComponent>();
         FProphecyJoltBodyHandle Handle;if (!Body || !Body->GetBodyHandle(Handle)) return false;
+        if (!bSimulated) TestTrue(TEXT("Manual disable survives next equip"),
+            Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);
         // Preserve an asymmetric authored response, not just a hard-coded BlockAll reset.
         Blade->SetCollisionResponseToChannel(ECC_Visibility,ECR_Ignore);
         const auto Original=Blade->GetCollisionResponseToChannels();
@@ -998,6 +1003,17 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("slashr"),true,true);Check(true);
         ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("jabl"),true,true);Check(true);
         ProphecySwordAttackCollision::End(Agent);Check(true);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
+        Agent->NotifySwordAttackState(true);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));Check(false);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);Check(false); // Still before Armed.
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);
+        ProphecySwordAttackCollision::Armed(Agent);Check(false);
+        ProphecySwordAttackCollision::Hit(Agent);Check(false);
+        Agent->NotifySwordAttackState(false);Check(false); // Manual disable survives the attack.
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);Check(true);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("hookl"));
         auto* Dropped=Agent->DropSword();
         CheckBody(false); // Dropping the weapon does not end body suppression.
@@ -1006,6 +1022,7 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         if (Dropped) Dropped->Destroy();else return false;
     }
     // Ordinary kinematic presentation uses the same UE filter without a Jolt body.
+    UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);
     Agent->SetSimulationMode(EProphecyAgentSimulationMode::Kinematic);
     if (!Agent->EquipSword(false)) return false;
     auto* Blade=Cast<UStaticMeshComponent>(Agent->GetHeldSword()->GetRootComponent());
@@ -1021,6 +1038,66 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
     ProphecySwordAttackCollision::Hit(Agent);
     TestTrue(TEXT("Kinematic melee restores on Hit"),Blade->GetCollisionResponseToChannels()==Original);
     ProphecySwordAttackCollision::End(Agent);
+    UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);
+    TestTrue(TEXT("Kinematic manual disable"),Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
+    UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);
+    TestTrue(TEXT("Kinematic manual restore"),Blade->GetCollisionResponseToChannels()==Original);
+    return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySpecialPhysicalStartTest,
+    "Prophecy.Jolt.Special.PhysicalStart",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecySpecialPhysicalStartTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::SwordFixture;
+    FWorldFixture Fixture;
+    const auto Values=UWorld::InitializationValues().AllowAudioPlayback(false).RequiresHitProxies(false)
+        .CreatePhysicsScene(true).CreateNavigation(false).CreateAISystem(false).ShouldSimulatePhysics(true)
+        .EnableTraceCollision(true).CreateFXSystem(false).SetTransactional(false);
+    Fixture.World=UWorld::CreateWorld(EWorldType::Game,false,NAME_None,nullptr,true,ERHIFeatureLevel::Num,&Values);
+    if (!Fixture.World || !GEngine) return false;
+    GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(Fixture.World);
+    Fixture.World->InitializeActorsForPlay(FURL());Fixture.World->GetWorldSettings()->NotifyBeginPlay();
+    auto* World=Fixture.World->GetSubsystem<UProphecyJoltWorldSubsystem>();
+    FProphecyJoltWorldSettings Settings;Settings.GravityCmPerSecondSquared=FVector::ZeroVector;Settings.WorkerThreads=0;
+    if (!World || !World->InitializeSimulation(Settings).IsSuccess()) return false;
+    AProphecyAgent* Agent=nullptr;FString Error;
+    if (!PrepareAgent(Fixture,Agent,Error)) { AddError(Error);return false; }
+    const FName Names[]={TEXT("hand_r"),TEXT("pelvis"),TEXT("spine_01")};
+    const FTransform Before(FRotator(0,31,0),FVector(42,-53,12)),Now(FRotator(0,48,0),FVector(56,-40,15));
+    ProphecySpecialStart::FSeed Seed;
+    TestFalse(TEXT("Default bypass"),ProphecySpecialStart::Sample(Agent,MakeArrayView(Names),Before,Now,1.f/30,Seed));
+    TestTrue(TEXT("Default allocates no pose"),Seed.Current.IsEmpty() && Seed.Previous.IsEmpty());
+    FProphecyJoltBodyHandle Hand;
+    if (!Agent->GetJoltCharacterComponent()->GetBodyHandle(Names[0],Hand)) return false;
+    FProphecyJoltPhysicsCommand Command;Command.Operation=EProphecyJoltPhysicsCommand::LinearVelocity;Command.Value=FVector(30,-60,90);
+    if (!World->ExecutePhysicsCommand(Hand,Command).IsSuccess()) return false;
+    Command.Operation=EProphecyJoltPhysicsCommand::AngularVelocity;Command.Value=FVector(0,0,1.5);
+    if (!World->ExecutePhysicsCommand(Hand,Command).IsSuccess()) return false;
+    FProphecyJoltBodyState State;World->ReadBody(Hand,State);
+    UProphecySpecialStartLibrary::SetSpecialStartFromPhysical(Agent,true);
+    if (!TestTrue(TEXT("Physical sample available"),ProphecySpecialStart::Sample(Agent,MakeArrayView(Names),Before,Now,1.f/30,Seed))) return false;
+    FTransform Actual[3];
+    if (!Agent->SampleActualComponentPose(MakeArrayView(Names),MakeArrayView(Actual))) return false;
+    const auto Reference=Agent->GetAgentMesh()->GetComponentTransform();
+    for(int32 I=0;I<3;++I) TestTrue(TEXT("Current physical pose survives carrier conversion"),(Seed.Current[I]*Now).Equals(Actual[I]*Reference,1.e-5));
+    const FTransform Current=Seed.Current[0]*Now,Previous=Seed.Previous[0]*Before;
+    const FQuat Forward(FVector::UpVector,1.5/30.);
+    const FVector PreviousCenter=State.CenterOfMassPositionCm-State.CenterOfMassVelocityCmPerSecond/30.;
+    TestTrue(TEXT("History preserves physical COM velocity and angular motion"),
+        (State.CenterOfMassPositionCm+Forward.RotateVector(Previous.GetLocation()-PreviousCenter)).Equals(Current.GetLocation(),1.e-5)
+        && (Forward*Previous.GetRotation()).Equals(Current.GetRotation(),1.e-5));
+    FProphecyJoltBodyState After;World->ReadBody(Hand,After);
+    TestTrue(TEXT("Sampling never moves the body or changes velocity"),After.PositionCm.Equals(State.PositionCm)
+        && After.CenterOfMassVelocityCmPerSecond.Equals(State.CenterOfMassVelocityCmPerSecond)
+        && After.AngularVelocityRadiansPerSecond.Equals(State.AngularVelocityRadiansPerSecond));
+    UProphecySpecialStartLibrary::SetSpecialStartFromPhysical(Agent,false);
+    TestFalse(TEXT("Explicit disable"),ProphecySpecialStart::Sample(Agent,MakeArrayView(Names),Before,Now,1.f/30,Seed));
+    UProphecySpecialStartLibrary::SetSpecialStartFromPhysical(Agent,true);
+    Agent->SetSimulationMode(EProphecyAgentSimulationMode::Kinematic);
+    TestFalse(TEXT("Kinematic retains NN entry"),ProphecySpecialStart::Sample(Agent,MakeArrayView(Names),Before,Now,1.f/30,Seed));
+    UProphecySpecialStartLibrary::SetSpecialStartFromPhysical(Agent,false);
     return !HasAnyErrors();
 }
 

@@ -1,3 +1,4 @@
+#include "ProphecyFixedArmPhysics.h"
 #include "ProphecyAgent.h"
 #include "ProphecyModeTransitions.h"
 #include "ProphecyAttackFists.h"
@@ -136,6 +137,7 @@ bool AProphecyAgent::EnterHalfSimulation()
 	PoseMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	PoseMesh->SetEnableGravity(true);
 	PoseMesh->SetNotifyRigidBodyCollision(bGeneratePhysicalHitEvents);
+	ProphecyFixedArmPhysics::AttachWrists(PoseMesh);
 	if (!bAlreadySimulating) PoseMesh->SetAllBodiesBelowSimulatePhysics(PhysicalRootBodyName, true, true);
 	PoseMesh->SetAllBodiesBelowPhysicsBlendWeight(PhysicalRootBodyName, 1.0f, false, true);
 	SetMACDEnabled(bMACDEnabled);

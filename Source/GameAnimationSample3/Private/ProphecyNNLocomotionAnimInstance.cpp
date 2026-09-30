@@ -268,6 +268,17 @@ protected:
 
 		ProphecyAttackFists::Evaluate(this, Output);
 		ProphecyModeTransitions::Evaluate(this, Output);
+		// Overlay and simulation-mode blends run after NN presentation. Their
+		// component-space interpolation must not shorten an attached forearm.
+		// Enforce the anatomical local translations at the final animation output;
+		// wrist rotations and finger-local poses retain their authored values.
+		for(int32 Side=0;Side<2;++Side)
+		{
+			if(CurrentPose.FixedArms.ForearmOffsets[Side].IsNearlyZero())continue;
+			const FCompactPoseBoneIndex Index=ResolveLocomotionCompactBoneIndex(PoseBones,Side==0?FName(TEXT("hand_l")):FName(TEXT("hand_r")));
+			if(Index.IsValid() && Output.Pose.IsValidIndex(Index))
+				Output.Pose[Index].SetTranslation(PoseBones.GetReferenceSkeleton().GetRefBonePose()[PoseBones.GetSkeletonIndex(Index)].GetTranslation());
+		}
 		Output.Pose.NormalizeRotations();
 		return true;
 	}

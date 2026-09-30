@@ -4,8 +4,10 @@ class AProphecyAgent;
 enum class EProphecyClampProfileMode : uint8;
 namespace ProphecyAttackWrist
 {
-bool Enabled(const AProphecyAgent* Agent);
-float Degrees(const AProphecyAgent* Agent,EProphecyClampProfileMode Mode);
+bool FreePosition(const AProphecyAgent* Agent);
+bool FreeRotation(const AProphecyAgent* Agent);
+bool Enabled(const AProphecyAgent* Agent,FName Attack=NAME_None);
+float Degrees(const AProphecyAgent* Agent,EProphecyClampProfileMode Mode,FName Attack=NAME_None);
 bool ConstrainPose(FTransform& Hand,const FVector& Elbow,float MaxBendDegrees);
 
 // Training slash2_wrist_neutral.WristNeutral(55), in native row-basis space.

@@ -26,14 +26,11 @@ inline double Confidence(double V)
 // deliberately absent from the hinge calculation.
 inline void Resolve(const FTransform& PreviousShoulder,const FTransform& PreviousElbow,
     const FTransform& PreviousWrist,FTransform& Shoulder,FTransform& Elbow,FTransform& Wrist,
-    const FTransform& Target,const FVector& LocalUpper,const FVector& LocalPole,double Follow)
+    const FTransform& Target,const FVector& LocalUpper,const FVector& LocalPole,double Follow,double ForearmLength)
 {
     const FVector Hip=Shoulder.GetLocation();
     const double L1=LocalUpper.Length();
-    // Honor the source's allowed forearm length; forcing rest length here made
-    // unclamped NN arms change length abruptly when reconstruction switched off.
-    const double L2=FMath::Lerp((PreviousWrist.GetLocation()-PreviousElbow.GetLocation()).Length(),
-        (Wrist.GetLocation()-Elbow.GetLocation()).Length(),Follow);
+    const double L2=ForearmLength; // Geometry never blends with pose ownership.
     if (L1<1.e-6 || L2<1.e-6) { Wrist=Target;return; }
     const FVector Delta=Target.GetLocation()-Hip;
     const FVector Axis=Delta.GetSafeNormal(1.e-12,(PreviousWrist.GetLocation()-PreviousShoulder.GetLocation()).GetSafeNormal());

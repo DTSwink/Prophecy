@@ -60,6 +60,8 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FReturn> Returns;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,int32> ReturnArms;
 struct FBothArmsConfig { bool Enabled=false;TSet<FName> Attacks; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FBothArmsConfig> BothArmsConfigs,BothArmsBaselines;
+// Event-only gate; keep retained Live Coding config layouts unchanged.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,TSet<FName>> BlockedAttacks,BlockedAttackBaselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FReturn> ExtraReturns;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FName> ReturnAttacks;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,TSet<FName>> PelvisChoices,PelvisBaselines;
@@ -199,6 +201,7 @@ static void EnsureCleanup()
         auto Clean=[W](auto& Map) { for(auto It=Map.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W) It.RemoveCurrent(); };
         Clean(Configs);Clean(Baselines);Clean(Returns);Clean(ReturnArms);Clean(WeaponRoutes);Clean(Blades);
+        Clean(BlockedAttacks);Clean(BlockedAttackBaselines);
         Clean(BothArmsConfigs);Clean(BothArmsBaselines);Clean(ExtraReturns);Clean(ReturnAttacks);Clean(ExtraWeaponRoutes);Clean(ExtraBlades);
         Clean(PelvisChoices);Clean(PelvisBaselines);Clean(PelvisOffsets);
         Clean(RotationConfigs);Clean(RotationBaselines);Clean(RotationReturns);Clean(PelvisAxes);
@@ -246,6 +249,7 @@ static void SyncExtra(const AProphecyAgent* A)
 void Begin(const AProphecyAgent* A,FName Attack)
 {
     Cancel(A);int32 Arm=ArmForAttack(Attack);
+    if(!BlockedAttacks.IsEmpty())if(const auto* Blocked=BlockedAttacks.Find(A);Blocked && Blocked->Contains(Attack))return;
     if(Arm==INDEX_NONE)
     {
         const auto* Choice=BothArmsConfigs.Find(A);
@@ -255,18 +259,20 @@ void Begin(const AProphecyAgent* A,FName Attack)
     if(const auto* C=Configs.Find(A))
     { Returns.Add(A,FReturn{*C});ReturnArms.Add(A,Arm);ReturnAttacks.Add(A,Attack);LatchReference(A,Attack);SyncExtra(A);ProphecyBlendClock::Start(A,K::SlashReturn,double(C->Hold)+C->Blend); }
 }
-void Remove(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);Baselines.Remove(A);BothArmsConfigs.Remove(A);BothArmsBaselines.Remove(A);PelvisChoices.Remove(A);PelvisBaselines.Remove(A);RotationConfigs.Remove(A);RotationBaselines.Remove(A); }
+void Remove(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);Baselines.Remove(A);BothArmsConfigs.Remove(A);BothArmsBaselines.Remove(A);PelvisChoices.Remove(A);PelvisBaselines.Remove(A);RotationConfigs.Remove(A);RotationBaselines.Remove(A);BlockedAttacks.Remove(A);BlockedAttackBaselines.Remove(A); }
 void CaptureReset(const AProphecyAgent* A)
 { EnsureCleanup();if(const auto* C=Configs.Find(A)) Baselines.Add(A,*C);else Baselines.Remove(A);
+  if(const auto* C=BlockedAttacks.Find(A)) BlockedAttackBaselines.Add(A,*C);else BlockedAttackBaselines.Remove(A);
   if(const auto* C=BothArmsConfigs.Find(A)) BothArmsBaselines.Add(A,*C);else BothArmsBaselines.Remove(A);
   if(const auto* C=PelvisChoices.Find(A)) PelvisBaselines.Add(A,*C);else PelvisBaselines.Remove(A);
   if(const auto* C=RotationConfigs.Find(A)) RotationBaselines.Add(A,*C);else RotationBaselines.Remove(A); }
 void RestoreReset(const AProphecyAgent* A)
 { Cancel(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A)) Configs.Add(A,*C);
+  BlockedAttacks.Remove(A);if(const auto* C=BlockedAttackBaselines.Find(A)) BlockedAttacks.Add(A,*C);
   BothArmsConfigs.Remove(A);if(const auto* C=BothArmsBaselines.Find(A)) BothArmsConfigs.Add(A,*C);
   PelvisChoices.Remove(A);if(const auto* C=PelvisBaselines.Find(A)) PelvisChoices.Add(A,*C);
   RotationConfigs.Remove(A);if(const auto* C=RotationBaselines.Find(A)) RotationConfigs.Add(A,*C); }
-void ForgetReset(const AProphecyAgent* A) { Baselines.Remove(A);BothArmsBaselines.Remove(A);PelvisBaselines.Remove(A);RotationBaselines.Remove(A); }
+void ForgetReset(const AProphecyAgent* A) { Baselines.Remove(A);BothArmsBaselines.Remove(A);PelvisBaselines.Remove(A);RotationBaselines.Remove(A);BlockedAttackBaselines.Remove(A); }
 double AdvanceFrame(const AProphecyAgent* A)
 {
     auto* R=Returns.Find(A);if(!R) return 0;
@@ -362,10 +368,7 @@ void ApplyPose(const AProphecyAgent* A,int32 ArmIndex,double Dt,const FTransform
     // singularity. Derive the zone from the neutral bend and the SAME forearm
     // length the two solves below will use; fade with procedural ownership.
     const double UpperLength=LocalUpper.Length();
-    const double NeutralLower=FVector::Distance(NeutralElbow.GetLocation(),NeutralWrist.GetLocation());
-    const double CurrentLower=FVector::Distance(Elbow.GetLocation(),Wrist.GetLocation());
-    const double PreviousLower=FVector::Distance(PreviousElbow.GetLocation(),PreviousWrist.GetLocation());
-    const double LowerLength=FMath::Lerp(PreviousLower,FMath::Lerp(NeutralLower,CurrentLower,Alpha),FMath::Lerp(RotationStep,1.,Alpha));
+    const double LowerLength=FVector::Distance(Elbow.GetLocation(),Wrist.GetLocation());
     const double CosBend=FMath::Clamp(FVector::DotProduct(
         (NeutralElbow.GetLocation()-NeutralShoulder.GetLocation()).GetSafeNormal(),
         (NeutralWrist.GetLocation()-NeutralElbow.GetLocation()).GetSafeNormal()),-1.,1.);
@@ -384,10 +387,10 @@ void ApplyPose(const AProphecyAgent* A,int32 ArmIndex,double Dt,const FTransform
     // Fade the hinge guidance to NN together with ownership. Prior hinge comes
     // from accepted/rebased state, so torso motion and root snaps cannot orbit it.
     ProphecyHandChain::Resolve(NeutralShoulder,NeutralElbow,NeutralWrist,
-        GuideShoulder,GuideElbow,GuideWrist,Target,LocalUpper,LocalPole,Alpha);
+        GuideShoulder,GuideElbow,GuideWrist,Target,LocalUpper,LocalPole,Alpha,LowerLength);
     ProphecyHandChain::Resolve(Carry(PreviousShoulder),Carry(PreviousElbow),Carry(PreviousWrist),
         GuideShoulder,GuideElbow,GuideWrist,Target,LocalUpper,LocalPole,
-        FMath::Lerp(RotationStep,1.,Alpha));
+        FMath::Lerp(RotationStep,1.,Alpha),LowerLength);
     const FVector S=Torso.InverseTransformPosition(GuideShoulder.GetLocation());
     const FVector E=Torso.InverseTransformPosition(GuideElbow.GetLocation());
     const FVector H=Torso.InverseTransformPosition(GuideWrist.GetLocation());
@@ -418,6 +421,22 @@ void ApplyPose(const AProphecyAgent* A,int32 ArmIndex,double Dt,const FTransform
     }
 #endif
 }
+}
+bool UProphecySlashReturnLibrary::SetAttackArmReturnEnabled(AProphecyAgent* A,
+    bool SlashL,bool SlashR,bool SlashLD,bool SlashRD,bool SlashLU,bool SlashRU,bool Pike,
+    bool JabL,bool JabR,bool HookL,bool HookR,bool OverL,bool OverR,bool Headbutt,bool KickL,bool KickR)
+{
+    using namespace ProphecySlashReturn;
+    if(!IsInGameThread() || !IsValid(A) || A->IsActorBeingDestroyed() || !A->GetWorld() || A->GetWorld()->bIsTearingDown)return false;
+    EnsureCleanup();TSet<FName> Blocked;
+    const TCHAR* Names[]={TEXT("slashL"),TEXT("slashR"),TEXT("slashLD"),TEXT("slashRD"),TEXT("slashLU"),TEXT("slashRU"),TEXT("pike"),
+        TEXT("jabL"),TEXT("jabR"),TEXT("hookL"),TEXT("hookR"),TEXT("overL"),TEXT("overR"),TEXT("headbutt"),TEXT("kickL"),TEXT("kickR")};
+    const bool Choices[]={SlashL,SlashR,SlashLD,SlashRD,SlashLU,SlashRU,Pike,JabL,JabR,HookL,HookR,OverL,OverR,Headbutt,KickL,KickR};
+    for(int32 I=0;I<UE_ARRAY_COUNT(Names);++I)if(!Choices[I])Blocked.Add(Names[I]);
+    if(const auto* Current=ReturnAttacks.Find(A);Current && Blocked.Contains(*Current))Cancel(A);
+    if(Blocked.IsEmpty())BlockedAttacks.Remove(A);else BlockedAttacks.Add(A,MoveTemp(Blocked));
+    if(ProphecyAttackRecovery::IsEndEvent(A) && !Active(A))Begin(A,ProphecyAttackRecovery::EndEventAttack(A));
+    return true;
 }
 bool UProphecySlashReturnLibrary::SetSlashRightArmReturnToNeutral(AProphecyAgent* A,bool Enabled,float Hold,float Blend,float Speed)
 {
@@ -496,6 +515,36 @@ bool UProphecySlashReturnLibrary::SetBothArmsReturnToNeutralEnabled(AProphecyAge
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyReturnAttackGateTest,"Prophecy.NN.SlashReturn.PerAttackGate",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyReturnAttackGateTest::RunTest(const FString&)
+{
+    using namespace ProphecySlashReturn;using L=UProphecySlashReturnLibrary;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;
+    auto* B=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A || !B)return false;
+    L::SetSlashRightArmReturnToNeutral(A,true,.3,.5,100);
+    L::SetSlashRightArmReturnToNeutral(B,true,.3,.5,100);
+    L::SetBothArmsReturnToNeutralEnabled(A,true);
+    L::SetAttackBothArmsReturnToNeutral(A,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true);
+    const TCHAR* Names[]={TEXT("slashL"),TEXT("slashR"),TEXT("slashLD"),TEXT("slashRD"),TEXT("slashLU"),TEXT("slashRU"),TEXT("pike"),
+        TEXT("jabL"),TEXT("jabR"),TEXT("hookL"),TEXT("hookR"),TEXT("overL"),TEXT("overR"),TEXT("headbutt"),TEXT("kickL"),TEXT("kickR")};
+    for(int32 I=0;I<UE_ARRAY_COUNT(Names);++I)
+    {
+        L::SetAttackArmReturnEnabled(A);Begin(A,Names[I]);
+        TestEqual(TEXT("Checked permits configured both-arm return"),int32(ActiveArmMask(A)),3);
+        L::SetAttackArmReturnEnabled(A,I!=0,I!=1,I!=2,I!=3,I!=4,I!=5,I!=6,I!=7,I!=8,I!=9,I!=10,I!=11,I!=12,I!=13,I!=14,I!=15);
+        TestFalse(TEXT("Unchecking cancels both active arms"),Active(A) || ExtraReturns.Contains(A));
+        Begin(A,Names[I]);TestFalse(TEXT("Unchecked attack cannot start return"),Active(A));
+        Begin(A,Names[(I+1)%UE_ARRAY_COUNT(Names)]);TestTrue(TEXT("Other checked attacks remain enabled"),Active(A));
+    }
+    L::SetAttackArmReturnEnabled(A,false);CaptureReset(A);L::SetAttackArmReturnEnabled(A);RestoreReset(A);
+    Begin(A,TEXT("slashL"));TestFalse(TEXT("Reset restores blocked attack"),Active(A));
+    Begin(B,TEXT("slashL"));TestTrue(TEXT("Other agent unaffected"),Active(B));
+    L::SetAttackArmReturnEnabled(A);TestFalse(TEXT("All checked removes gate storage"),BlockedAttacks.Contains(A));
+    L::SetSlashRightArmReturnToNeutral(A,false);Begin(A,TEXT("slashL"));
+    TestFalse(TEXT("Gate does not enable master return"),Active(A));
+    Remove(A);Remove(B);W->DestroyWorld(false);return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyReturnReachAndPathTest,"Prophecy.NN.SlashReturn.ReachableIdleAndPath",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyReturnReachAndPathTest::RunTest(const FString&)

@@ -1,10 +1,12 @@
 #include "ProphecyNNLocomotionManager.h"
 #include "ProphecyAttackStartInertia.h"
+#include "ProphecyAttackStartHandInertia.h"
 #include "ProphecyAttackFootLocomotion.h"
 #include "ProphecyAttackFootLocomotionMath.h"
 #include "ProphecyAttackStartInertiaMath.h"
 #include "ProphecyHalfAttackCompensation.h"
 #include "ProphecySpecialRoll.h"
+#include "ProphecySpecialStart.h"
 #include "ProphecyAttackWrist.h"
 #include "ProphecyClampProfileLibrary.h"
 #include "ProphecyRootFacing.h"
@@ -25,6 +27,7 @@
 #include "ProphecyKickFootLeeway.h"
 #include "ProphecyRootPelvisBounds.h"
 #include "ProphecyRootMagic.h"
+#include "ProphecyClampEase.h"
 #include "ProphecyRootSpeedLimits.h"
 #include "ProphecyUpperIdleSeed.h"
 #include "ProphecyPelvisInertia.h"
@@ -33,6 +36,7 @@
 #include "ProphecyCoreTempering.h"
 #include "ProphecyUpperBodyInertia.h"
 #include "ProphecySlashReturn.h"
+#include "ProphecyArmCone.h"
 #include "ProphecyHandChainMath.h"
 #include "ProphecyPhysicalContext.h"
 #include "ProphecyWalkPinning.h"
@@ -838,7 +842,6 @@ struct AProphecyNNLocomotionManager::FImpl
 			// Reserved legacy storage for Live Coding layout compatibility; no longer used.
 			FQuat HalfMountWorldRotation = FQuat::Identity;
 			FVector2D CalfClampLengths = FVector2D::ZeroVector;
-			FProphecyNNAttackHandClamp HandClamp;
 			FSlashNative::FPreparationPose PreparationEntry;
 			float PreparationBlendSeconds = 0.1f;
 			bool bHeadbuttPreparation = false;
@@ -2107,6 +2110,7 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 		ProphecyRootBalance::Remove(AgentActor);
 		ProphecyRootPelvisBounds::Remove(AgentActor);
 		ProphecyRootMagic::Remove(AgentActor);
+		ProphecyClampEase::Remove(AgentActor);
 		ProphecyAutoRun::Remove(AgentActor);
 		ProphecyAttackRecovery::Remove(AgentActor);
 		ProphecyHandRecovery::Remove(AgentActor);
@@ -2114,6 +2118,7 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 		ProphecySlashReturn::Remove(AgentActor);
 		ProphecyUpperBodyInertia::Remove(AgentActor);
 		ProphecyAttackStartInertia::Remove(AgentActor);
+		ProphecyAttackStartHands::Remove(AgentActor);
 		ProphecyLowerTempering::ForgetProfiles(AgentActor);
 		ProphecyLegChainDebug::Remove(AgentActor);
 		ProphecyRootSpeedLimits::Remove(AgentActor);
@@ -4614,11 +4619,9 @@ namespace
 {
 	struct FLocomotionClamps
 	{
-		bool bClampFoot = false, bClampCalf = false, bClampHand = false;
-		bool bClampForearm = false;
-		float ForearmLeeway = 0;
-		float FootClampLengthMultiplier = 1, CalfClampLengthMultiplier = 1, HandClampLengthMultiplier = 1;
-		float FootLeeway = 0, CalfLeeway = 0, HandLeeway = 0; // native metres
+		bool bClampFoot = false, bClampCalf = false, bFixedArms = true;
+		float FootClampLengthMultiplier = 1, CalfClampLengthMultiplier = 1;
+		float FootLeeway = 0, CalfLeeway = 0; // native metres
 	};
 	void DecodeLocomotionPose(const AProphecyNNLocomotionManager::FImpl* Impl,
 		const float* PoseState, const float* UpperState, float WalkWeightForFallback,
@@ -4673,29 +4676,9 @@ namespace
 				FVector3f End = TransformRow(
 					ReadStateVec3(UpperState, UpperOffset), HeadingToRoot);
 				FVector3f LowerAxis = End - Positions[Arm.Mid];
-				const float Distance = LowerAxis.Size();
-				const float HandLengthMultiplier = FMath::IsFinite(C.HandClampLengthMultiplier)
-					? FMath::Max(0.0f, C.HandClampLengthMultiplier) : 1.0f;
-				const float Maximum = FMath::Max(1.0e-5f, Arm.Lengths.Y * HandLengthMultiplier + C.HandLeeway);
-				if (C.bClampForearm && Distance > 1.e-8f)
-				{
-					const float Allowed = float(FProphecyNNForearmClamp::ClampLength(Distance, Arm.Lengths.Y, C.ForearmLeeway));
-					if (Allowed != Distance)
-					{
-						End = Positions[Arm.Mid] + LowerAxis * (Allowed / Distance);
-						LowerAxis = End - Positions[Arm.Mid];
-					}
-				}
-				else if (!C.bClampForearm && C.bClampHand && Distance > Maximum)
-				{
-					End = Positions[Arm.Mid] + LowerAxis * (Maximum / Distance);
-					LowerAxis = End - Positions[Arm.Mid];
-				}
-				if (LowerAxis.SizeSquared() <= 1.0e-16f)
-				{
-					LowerAxis = TransformRow(Impl->UpperLocalOffsets[Arm.End], Rotations[Arm.Start]);
-					End = Positions[Arm.Mid] + LowerAxis;
-				}
+				// Forearms have one anatomical length in every locomotion mode.
+				if(C.bFixedArms)LowerAxis = SafeNormal(LowerAxis, SafeNormal(TransformRow(Impl->UpperLocalOffsets[Arm.End], Rotations[Arm.Start]))) * Arm.Lengths.Y;
+				End = Positions[Arm.Mid] + LowerAxis;
 				Positions[Arm.End] = End;
 				Rotations[Arm.End] = Multiply(
 					MatrixFromRot6(UpperState + UpperOffset + 3), HeadingToRoot);
@@ -4803,6 +4786,7 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	ProphecyJolt::CharacterProfiling::FScope Timing(ProphecyJolt::CharacterProfiling::EPhase::ManagerPosePublish);
 	const bool bHasPreviousPose=Impl->Agents[AgentIndex].PublishedPoseTimeSeconds>0.;
 	const bool bNewPoseTime=SourceTimeSeconds>Impl->Agents[AgentIndex].PublishedPoseTimeSeconds;
+	const double PreviousPoseTime=Impl->Agents[AgentIndex].PublishedPoseTimeSeconds;
 	Impl->Agents[AgentIndex].PublishedPoseTimeSeconds = SourceTimeSeconds;
 	const float* State = StateSlice(Impl->PublishedStateBuffer, AgentIndex);
 	const float* PreviousState = StateSlice(Impl->PreviousPublishedStateBuffer, AgentIndex);
@@ -4812,17 +4796,60 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	const AProphecyAgent* Controls = AgentActors[AgentIndex];
 	const bool bKickFootExtension=ProphecyKickFootLeeway::Current(Controls)>0;
 	FLocomotionClamps C;
+	C.bFixedArms=!ProphecyAttackWrist::FreePosition(Controls);
 	C.bClampFoot = Controls->bOverrideLocomotionFootClamp ? Controls->bLocomotionFootClamp : bClampFoot;
 	C.FootClampLengthMultiplier = Controls->bOverrideLocomotionFootClamp ? 1.f : FootClampLengthMultiplier;
 	C.FootLeeway = Controls->bOverrideLocomotionFootClamp ? Controls->LocomotionFootClampLeewayCm / 100.f : 0.f;
 	C.bClampCalf = Controls->bOverrideLocomotionCalfClamp ? Controls->bLocomotionCalfClamp : bClampCalf;
 	C.CalfClampLengthMultiplier = Controls->bOverrideLocomotionCalfClamp ? 1.f : CalfClampLengthMultiplier;
 	C.CalfLeeway = Controls->bOverrideLocomotionCalfClamp ? Controls->LocomotionCalfClampLeewayCm / 100.f : 0.f;
-	C.bClampHand = Controls->bOverrideLocomotionHandClamp ? Controls->bLocomotionHandClamp : bClampHand;
-	C.HandClampLengthMultiplier = Controls->bOverrideLocomotionHandClamp ? 1.f : HandClampLengthMultiplier;
-	C.HandLeeway = Controls->bOverrideLocomotionHandClamp ? Controls->LocomotionHandClampLeewayCm / 100.f : 0.f;
-	C.bClampForearm = Controls->bLocomotionForearmClamp;
-	C.ForearmLeeway = Controls->LocomotionForearmClampLeewayCm / 100.f;
+	// Track the clamp of the current owner. A disabled clamp contributes no work
+	// until it is re-enabled, when the actual preceding pose seeds the tightening.
+	const auto& ClampAgent=Impl->Agents[AgentIndex];
+	const bool ClampAttack=ClampAgent.Slash.bActive && ClampAgent.Slash.bHasPose;
+	const bool ClampFull=ClampAttack && !ClampAgent.Slash.bHalf;
+	const bool ClampDefense=ClampAgent.DefensePose && ClampAgent.DefensePose->bHasPose;
+	FLocomotionClamps Effective=C;
+	if(ClampFull)
+	{
+		Effective.bClampFoot=Controls->bOverrideAttackFootClamp?Controls->bAttackFootClamp:bClampFoot;
+		Effective.bClampCalf=Controls->bOverrideAttackCalfClamp?Controls->bAttackCalfClamp:bClampCalf;
+		Effective.FootLeeway=Controls->bOverrideAttackFootClamp?Controls->AttackFootClampLeewayCm*.01f:0;
+		Effective.CalfLeeway=Controls->bOverrideAttackCalfClamp?Controls->AttackCalfClampLeewayCm*.01f:0;
+	}
+	if(ClampDefense)
+	{
+		const auto* D=ProphecyDefenseControls::Find(Controls,ClampAgent.DefensePose->bDodge);
+		Effective.bClampFoot=D && D->Foot.bOverride && D->Foot.bEnabled;
+		Effective.bClampCalf=D && D->Calf.bOverride && D->Calf.bEnabled;
+		if(D){Effective.FootLeeway=D->Foot.LeewayCm*.01f;Effective.CalfLeeway=D->Calf.LeewayCm*.01f;}
+	}
+	if(bKickFootExtension)Effective.bClampFoot=Effective.bClampCalf=false;
+	using EaseChannel=ProphecyClampEase::EChannel;
+	auto Ease=[&](EaseChannel Channel,bool Enabled,float Metres)
+	{
+		const float Target=Enabled?Metres*100.f:-1.f;float Observed=-1;
+		if(bHasPreviousPose && ProphecyClampEase::NeedsObservation(Controls,Channel,Target))
+		{
+			Observed=0;
+			for(int32 S=0;S<2;++S)
+			{
+				if(Channel==EaseChannel::Foot || Channel==EaseChannel::Calf)
+				{
+					const auto& L=Impl->Limbs[S];const auto& P=ComponentTransforms;
+					const double Rest=Impl->LocalOffsets[L.End].Size()*100.;
+					const double Error=Channel==EaseChannel::Calf?FMath::Abs(FVector::Distance(P[L.End].GetLocation(),P[L.Mid].GetLocation())-Rest)
+						:FVector::Distance(P[L.End].GetLocation(),P[L.Start].GetLocation())-Rest-Impl->LocalOffsets[L.Mid].Size()*100.;
+					Observed=FMath::Max(Observed,float(Error));
+				}
+
+			}
+		}
+		return ProphecyClampEase::Resolve(Controls,Channel,Target,Observed)*.01f;
+	};
+	Effective.FootLeeway=Ease(EaseChannel::Foot,Effective.bClampFoot,Effective.FootLeeway);
+	Effective.CalfLeeway=Ease(EaseChannel::Calf,Effective.bClampCalf,Effective.CalfLeeway);
+	if(!ClampDefense && !ClampFull){C.FootLeeway=FMath::Max(0.f,Effective.FootLeeway);C.CalfLeeway=FMath::Max(0.f,Effective.CalfLeeway);}
 	auto BuildFullPoseTransforms = [&](const float* Lower, const float* Upper, float WalkWeight,const FVector2f& LegWeights,
 		TArrayView<FTransform> Out, TArrayView<FTransform>* Local)
 	{
@@ -4859,12 +4886,6 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		? (bNewPoseTime?ComponentTransforms:PreviousComponentTransforms)[HandSpine].GetRotation() : FQuat::Identity;
 	if (bTemperArms) for(int32 I=0;I<2;++I)
 		PreviousForearmRotations[I]=(bNewPoseTime?ComponentTransforms:PreviousComponentTransforms)[Impl->UpperArms[I].Mid].GetRotation();
-	FProphecyNNAttackHandClamp PresentationHandClamp=bDefensePose?FProphecyNNAttackHandClamp():Agent.Slash.HandClamp;
-	if (DefenseClamps && DefenseClamps->Hand.bOverride)
-	{
-		PresentationHandClamp.bEnabled=DefenseClamps->Hand.bEnabled;
-		PresentationHandClamp.LeewayCm=DefenseClamps->Hand.LeewayCm;
-	}
 	if (bDefensePose)
 	{
 		for (int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
@@ -4874,12 +4895,12 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		}
 		if (DefenseClamps)
 		{
-			const auto& D=*DefenseClamps;
+			auto D=*DefenseClamps;
+			D.Foot.LeewayCm=FMath::Max(0.f,Effective.FootLeeway*100.f);D.Calf.LeewayCm=FMath::Max(0.f,Effective.CalfLeeway*100.f);
 			const auto* Mesh=Controls->GetPoseReferenceMesh();
 			const auto* Asset=Mesh?Mesh->GetSkeletalMeshAsset():nullptr;
 			const bool Foot=!bKickFootExtension && D.Foot.bOverride && D.Foot.bEnabled, Calf=!bKickFootExtension && D.Calf.bOverride && D.Calf.bEnabled;
-			const bool Hand=D.Hand.bOverride && D.Hand.bEnabled, Forearm=D.Forearm.bOverride && D.Forearm.bEnabled;
-			if (Asset && (Foot || Calf || Hand || Forearm))
+			if (Asset && (Foot || Calf))
 			{
 				const auto& Skeleton=Asset->GetRefSkeleton();
 				for (auto Pose:{PreviousComponentTransforms,ComponentTransforms})
@@ -4891,20 +4912,6 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 							ProphecyNNLegClamps::Apply(Pose[Leg.Start].GetTranslation(),Pose[Leg.Mid],Pose[Leg.End],Pose[Leg.Toe],
 								Skeleton.GetRefBonePose()[F].GetTranslation(),Skeleton.GetRefBonePose()[K].GetTranslation().Length(),
 								Foot,1.f,Calf,1.f,D.Foot.LeewayCm,D.Calf.LeewayCm);
-					}
-					if (Hand || Forearm) for (const auto& Arm:Impl->UpperArms)
-					{
-						const int32 H=Skeleton.FindBoneIndex(Impl->BodyNames[Arm.End]);if (H==INDEX_NONE) continue;
-						const FVector Offset=Skeleton.GetRefBonePose()[H].GetTranslation();
-						PresentationHandClamp.ReferenceOffsets[Impl->BodyNames[Arm.End]==TEXT("hand_l")?0:1]=Offset;
-						if (Forearm)
-						{
-							const auto Delta=Pose[Arm.End].GetTranslation()-Pose[Arm.Mid].GetTranslation();
-							const double Length=Pose[Arm.Mid].TransformVector(Offset).Length();
-							const double Allowed=FProphecyNNForearmClamp::ClampLength(Delta.Length(),Length,D.Forearm.LeewayCm);
-							Pose[Arm.End].SetTranslation(Pose[Arm.Mid].GetTranslation()+Delta.GetSafeNormal(UE_SMALL_NUMBER,Pose[Arm.Mid].TransformVector(Offset).GetSafeNormal())*Allowed);
-						}
-						else Pose[Arm.End].SetTranslation(FProphecyNNAttackHandClamp::ClampPosition(Pose[Arm.End].GetTranslation(),Pose[Arm.Mid].TransformPosition(Offset),D.Hand.LeewayCm));
 					}
 				}
 			}
@@ -4949,11 +4956,20 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	}
 	// Attacks constrain their native output and recurrent rotation together.
 	// Other modes apply their independently configured limit to publication only.
-	const float WristDegrees=Agent.Slash.bActive ? -1.f : ProphecyAttackWrist::Degrees(Controls,
+	const float RequestedWrist=ProphecyAttackWrist::Degrees(Controls,Agent.Slash.bActive?EProphecyClampProfileMode::Attack:
 		bDefensePose ? (Agent.DefensePose->bDodge ? EProphecyClampProfileMode::Dodge : EProphecyClampProfileMode::Parry)
-		: EProphecyClampProfileMode::Locomotion);
+		: EProphecyClampProfileMode::Locomotion,Agent.Slash.bActive?Agent.Slash.Family:NAME_None);
+	float ObservedWrist=-1;
+	if(bHasPreviousPose && ProphecyClampEase::NeedsObservation(Controls,EaseChannel::Wrist,RequestedWrist))
+	{
+		const auto& Arm=Impl->UpperArms[0];const auto& Hand=PreviousComponentTransforms[Arm.End];
+		const FVector Axis=(Hand.GetLocation()-PreviousComponentTransforms[Arm.Mid].GetLocation()).GetSafeNormal();
+		ObservedWrist=float(FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(FVector::DotProduct(Hand.GetRotation().GetAxisX(),Axis),-1.,1.))));
+	}
+	const float EffectiveWrist=ProphecyClampEase::Resolve(Controls,EaseChannel::Wrist,RequestedWrist,ObservedWrist);
+	const float WristDegrees=Agent.Slash.bActive?-1.f:EffectiveWrist;
 	bool bWristChanged=false;
-	if (WristDegrees>=0)
+	if (WristDegrees>=0 && WristDegrees<180)
 	{
 		const auto& Arm=Impl->UpperArms[0];
 		ProphecyAttackWrist::ConstrainPose(PreviousComponentTransforms[Arm.End],PreviousComponentTransforms[Arm.Mid].GetTranslation(),WristDegrees);
@@ -5027,23 +5043,47 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 			PreviousComponentTransforms,ComponentTransforms);
 	if(bInertiaArms)
 	{
-		// Arm inertia already solved reach and transitions outgoing lengths into
-		// the configured clamp range. Re-clamping publication would undo continuity.
-		PresentationHandClamp.bEnabled=false;
+		// Arm inertia publishes the same fixed geometry as the normal decoder.
 		for(const auto& Arm:Impl->UpperArms)for(int32 B:{Arm.Start,Arm.Mid,Arm.End})
 			LocalTransforms[B]=ComponentTransforms[B].GetRelativeTransform(ComponentTransforms[Impl->Parents[B]]);
+	}
+	bool bConeChanged=false;
+	if(!Agent.Slash.bActive && !bDefensePose && ProphecyArmCone::Active(Controls))
+	{
+		bConeChanged=ProphecyArmCone::ApplyNNPublication(AgentActors[AgentIndex],Impl->BodyNames,Impl->Parents,
+			PreviousComponentTransforms,ComponentTransforms,PreviousComponentWorldTransform,ComponentWorldTransform,
+			float(SourceTimeSeconds-PreviousPoseTime),bNewPoseTime);
+		if(bConeChanged)
+		{
+			// Correct the final decoded NN pose, then retain exactly that pose in
+			// publication and recurrent history. A later decode must not undo it.
+			float* Published=UpperStateSlice(Impl->UpperPublishedStateBuffer,AgentIndex);
+			EncodeComponentPoseToNNStates(*Impl,Agent,ComponentTransforms,nullptr,Published);
+			float* Current=UpperStateSlice(Impl->UpperCurrentStateBuffer,AgentIndex);
+			FMemory::Memcpy(Current,Published,UpperStateDim*sizeof(float));
+			const FVector3f Delta=TransformRow(Agent.CurRootPos-Agent.PublishedRoot,YawMatrix(Agent.PublishedYaw));
+			RebaseUpperHeadingState(Current,Delta,WrapAngle(Agent.CurRootYaw-Agent.PublishedYaw));
+			const float* Lower=StateSlice(Impl->CurStateBuffer,AgentIndex);
+			BuildUpperBaseFromLower(Lower,*Impl,UpperStateSlice(Impl->UpperCurrentBaseBuffer,AgentIndex));
+			LowerTransformToHeading(Lower,0,3,*Impl,TransformStateSlice(Impl->CurrentPelvisHeadingBuffer,AgentIndex));
+		}
+	}
+	if(bConeChanged) for(int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
+	{
+		const int32 Parent=Impl->Parents[Bone];
+		LocalTransforms[Bone]=Parent==INDEX_NONE?ComponentTransforms[Bone]:ComponentTransforms[Bone].GetRelativeTransform(ComponentTransforms[Parent]);
 	}
 	const AProphecyAgent* ClampActor = AgentActors[AgentIndex];
 	const bool bFullAttack = Agent.Slash.bActive && Agent.Slash.bHasPose && !Agent.Slash.bHalf;
 	const bool bCalfOverride = bFullAttack && ClampActor->bOverrideAttackCalfClamp;
-	FProphecyNNForearmClamp ForearmClamp;
-	ForearmClamp.bEnabled = !bInertiaArms && !bDefensePose && C.bClampForearm && !(Agent.Slash.bActive && Agent.Slash.bHasPose);
-	ForearmClamp.LeewayCm = Controls->LocomotionForearmClampLeewayCm;
-	ForearmClamp.LengthsCm = FVector2D(Impl->UpperArms[0].Lengths.Y * 100.f, Impl->UpperArms[1].Lengths.Y * 100.f);
-	if (DefenseClamps && DefenseClamps->Forearm.bOverride)
+	FProphecyNNFixedArms FixedArms;
+	for(int32 Side=0;Side<2;++Side)
 	{
-		ForearmClamp.bEnabled=DefenseClamps->Forearm.bEnabled;
-		ForearmClamp.LeewayCm=DefenseClamps->Forearm.LeewayCm;
+		const auto& Arm=Impl->UpperArms[Side];
+		FixedArms.ForearmOffsets[Side]=LocalTrainingToUnreal(Impl->UpperLocalOffsets[Arm.End]);
+		if(C.bFixedArms)for(auto Pose:{PreviousComponentTransforms,ComponentTransforms})
+			Pose[Arm.End].SetLocation(Pose[Arm.Mid].TransformPosition(FixedArms.ForearmOffsets[Side]));
+		LocalTransforms[Arm.End]=ComponentTransforms[Arm.End].GetRelativeTransform(ComponentTransforms[Arm.Mid]);
 	}
 	FProphecyNNPoseStore::SetAgentLocalPose(
 		PoseStoreAgentBase + AgentIndex,
@@ -5056,11 +5096,11 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		SourceTimeSeconds,
 		bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose),
 		bDefensePose ? (DefenseClamps && DefenseClamps->Calf.bOverride && DefenseClamps->Calf.bEnabled) : (bCalfOverride ? ClampActor->bAttackCalfClamp : (bFullAttack ? bClampCalf && CalfClampLengthMultiplier > 0.f : C.bClampCalf && C.CalfClampLengthMultiplier > 0.f)),
-		bDefensePose ? (DefenseClamps?DefenseClamps->Calf.LeewayCm:0.f) : bCalfOverride ? ClampActor->AttackCalfClampLeewayCm : (bFullAttack ? 0.f : C.CalfLeeway * 100.f),
+		FMath::Max(0.f,Effective.CalfLeeway*100.f),
 		bFullAttack ? Agent.Slash.CalfClampLengths : FVector2D(
 			Impl->LocalOffsets[Impl->Limbs[0].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier),
 			Impl->LocalOffsets[Impl->Limbs[1].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier)),
-		PresentationHandClamp, ForearmClamp,Agent.Slash.bActive && Agent.Slash.bHalf);
+		FixedArms,Agent.Slash.bActive && Agent.Slash.bHalf,C.bFixedArms);
     if(auto* T=ProphecyWalkPinning::FindTickPinning(Controls))
     {
         if((!Agent.Slash.bActive || Agent.Slash.bHalf) && !Agent.DefensePose && T->Current.Valid && ProphecyWalkPinning::FindSmoothing(Controls))

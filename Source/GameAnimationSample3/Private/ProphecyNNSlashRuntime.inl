@@ -180,9 +180,11 @@ namespace
 			PreviousPose[Bone] = (PreviousPose[Bone] * OldPreviousCarrier).GetRelativeTransform(PreviousCarrier);
 			if (Impl.Parents[Bone] == INDEX_NONE) LocalPose[Bone] = Pose[Bone];
 		}
+		FProphecyNNFixedArms FixedArms;
+		for(int32 Side=0;Side<2;++Side)FixedArms.ForearmOffsets[Side]=LocalTrainingToUnreal(Impl.UpperLocalOffsets[Impl.UpperArms[Side].End]);
 		FProphecyNNPoseStore::SetAgentLocalPose(PoseStoreAgentBase + Index, Impl.PublishedBoneNames,
 			LocalPose, PreviousPose, Pose, PreviousCarrier, Carrier, Agent.PublishedPoseTimeSeconds,
-			true, false, 0, FVector2D::ZeroVector, Agent.Slash.HandClamp);
+			true, false, 0, FVector2D::ZeroVector, FixedArms,Slash.bHalf,!ProphecyAttackWrist::FreePosition(Actor));
 		if (KinematicMesh)
 		{
 			// Moving the capsule also moves the already-evaluated component-space
@@ -447,7 +449,12 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	if (!EnsureAttackCheckpointModel(this,Checkpoint,CheckpointError))
 	{ UE_LOG(LogProphecyNNLocomotion,Error,TEXT("Attack checkpoint: %s"),*CheckpointError);return false; }
 	const FTransform Carrier = SlashComponentWorld(Actor, Agent.PublishedRoot, Agent.PublishedYaw);
-	const auto Current = TransformSlice(Impl->ComponentTransformBuffer, Handle.Index);
+	auto Current = TransformSlice(Impl->ComponentTransformBuffer, Handle.Index);
+	const FTransform EntryPreviousCarrier=SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
+	ProphecySpecialStart::FSeed PhysicalSeed;
+	const bool bPhysicalSeed=ProphecySpecialStart::Sample(Actor,Impl->PublishedBoneNames,
+		EntryPreviousCarrier,Carrier,1.f/NNUpdateHz,PhysicalSeed);
+	if (bPhysicalSeed) Current=MakeArrayView(PhysicalSeed.Current);
 #if !UE_BUILD_SHIPPING
 	const int32 UpperSource = CVarHalfTestUpperSource.GetValueOnGameThread();
 	if (bHalf && UpperSource >= 0 && UpperSource != Handle.Index && Impl->Agents.IsValidIndex(UpperSource))
@@ -476,6 +483,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	if (Agent.DefensePose) StopAgentNNDefense(Handle, false);
 	if (!bHalf) ProphecyRootBalance::CancelKickException(Actor);
 	const FTransform StartCarrier = SlashComponentWorld(Actor, Agent.PublishedRoot, Agent.PublishedYaw);
+	if (bPhysicalSeed) for (auto& Bone:PhysicalSeed.Current) Bone=(Bone*Carrier).GetRelativeTransform(StartCarrier);
 	auto& Slash = Agent.Slash;
 	Slash = FImpl::FAgent::FSlashAttack{};
 	Slash.Family = Attack; Slash.TargetWorld = TargetWorld; Slash.bHalf = bHalf;
@@ -490,8 +498,9 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	// Keep this carrier fixed for the lifetime of the independent attack history.
 	{
 		TArray<FTransform, TInlineAllocator<FullBodyBoneCount>> Previous;
-		Previous.Append(TransformSlice(Impl->PreviousComponentTransformBuffer, Handle.Index));
-		const FTransform PreviousWorld = SlashComponentWorld(Actor, Agent.PreviousPublishedRoot, Agent.PreviousPublishedYaw);
+		if (bPhysicalSeed) Previous.Append(PhysicalSeed.Previous);
+		else Previous.Append(TransformSlice(Impl->PreviousComponentTransformBuffer, Handle.Index));
+		const FTransform PreviousWorld = EntryPreviousCarrier;
 		for (FTransform& Bone : Previous) Bone = (Bone * PreviousWorld).GetRelativeTransform(Slash.AnchorWorld);
 		EncodeSlashPose(*Impl, Agent, MakeArrayView(Previous), Slash.State.GetData(), Slash.State.GetData() + 82);
 		// The viewer retains one carrier throughout its chain. Keep this explicitly
@@ -514,7 +523,12 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	// Static initialization remains the explicit opt-in to discard entry velocity.
 	if (ProphecyAttackControls::IsStatic(Actor)) ProphecyAttackControls::MakeHistoryStatic(Slash.State);
 	if (bHalf) Slash.bHasPose = Slash.bNeedsFeedback = true;
-	for (const auto& Bone : Current) Slash.VisibleWorldPose.Add(Bone * StartCarrier);
+	// Physical seeding owns checkpoint history, not the preceding render endpoint.
+	// Locomotion can finish its already-published interval before the first attack
+	// prediction. Using the physical sample taken mid-interval here rewinds that
+	// first interpolation (especially a loco-drag foot released on prediction one).
+	const auto VisibleEntry=TransformSlice(Impl->ComponentTransformBuffer,Handle.Index);
+	for (const auto& Bone : VisibleEntry) Slash.VisibleWorldPose.Add(Bone * StartCarrier);
 	Slash.PreviousVisibleWorldPose = Slash.VisibleWorldPose;
 	if (!bHalf) SlashRootMinusStartPelvis.Add(Actor,
 		Actor->GetRootLowPoint() - Slash.VisibleWorldPose[0].GetTranslation());
@@ -522,8 +536,8 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		ProphecyAttackFootLocomotion::Begin(Actor,PoseStoreAgentBase+Handle.Index,
 		Impl->BodyNames,Current,StartCarrier,TargetWorld);
 	if (!bHalf) ProphecyAttackStartInertia::Begin(Actor,PoseStoreAgentBase+Handle.Index,
-        TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index)[0]
-            *SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),Current[0]*StartCarrier,
+        (bPhysicalSeed?PhysicalSeed.Previous[0]:TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index)[0])
+            *EntryPreviousCarrier,Current[0]*StartCarrier,
 		uint8(3&~ProphecyAttackFootLocomotion::Mask(Actor)));
 	Slash.bActive = true;
 	if (!bHalf) ProphecyAttackControls::FullAttackStarted(Actor);
@@ -535,6 +549,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	SetAgentTimeDilation(Handle,1.f);
 	Actor->BeginAttackFists(Attack);
 	ProphecyAttackRecovery::EnterSpecial(Actor,bHalf);
+	ProphecyAttackStartHands::Begin(Actor);
 	Actor->NotifySwordAttackState(true);
 	if (!bHalf) ProphecyKickFootLeeway::Begin(Actor,Attack);
 	ProphecyAttackCamera::Update(this, Actor, !bHalf);
@@ -800,7 +815,8 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				const auto& Slash = Impl->Agents[Index].Slash;
 				auto& Option = Settings[Lane];
 				Option.FrozenPinIterations = Actor->AttackFootPinningIterations;
-				Option.bLeftHandConstraint = ProphecyAttackWrist::Enabled(Actor);
+				Option.LeftHandMaxBendDegrees = ProphecyAttackWrist::Degrees(Actor,EProphecyClampProfileMode::Attack,Slash.Family);
+				Option.bLeftHandConstraint = Option.LeftHandMaxBendDegrees>=0 && Option.LeftHandMaxBendDegrees<180;
 				Option.bBlockArmed = ProphecyAttackControls::ArmedBlocked(Actor);
 				if (!Slash.bHalf && ProphecyPelvisInertia::HasTarget(Actor))
 				{
@@ -877,6 +893,8 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				Rotation = Multiply(Rotation, Transpose(NativeRotation));
 				Slash.GhostPose[Impl->SlashBodyIndices[Bone]] = FTransform(MatrixToQuat(MirrorYBasis(Rotation)), LocalTrainingToUnreal(Position));
 			}
+			if(!ProphecyAttackWrist::FreePosition(AgentActors[Index]))for(const auto& Arm:Impl->UpperArms)
+				Slash.GhostPose[Arm.End].SetLocation(Slash.GhostPose[Arm.Mid].TransformPosition(LocalTrainingToUnreal(Impl->UpperLocalOffsets[Arm.End])));
 			FMemory::Memmove(Slash.State.GetData(), Slash.State.GetData() + 41, 41 * sizeof(float));
 			FMemory::Memcpy(Slash.State.GetData() + 41, Output, 41 * sizeof(float));
 			FMemory::Memmove(Slash.State.GetData() + 82, Slash.State.GetData() + 172, 90 * sizeof(float));
@@ -991,10 +1009,7 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 			else if (ProphecyHalfAttackMount::IsUpper(Bone,Spine01,Impl->Parents))
 				Pose[Bone] = ProphecyHalfAttackMount::Mount(Slash.GhostPose[Bone],Slash.GhostPose[0],HalfMount);
 		}
-		// Default matches the reference animation's exact wrist attachment. Optional
-		// per-agent leeway or disabling only changes presentation, not raw Slash history.
-		Slash.HandClamp.bEnabled = AgentActors[AgentIndex]->bAttackHandClamp;
-		Slash.HandClamp.LeewayCm = AgentActors[AgentIndex]->AttackHandClampLeewayCm;
+		// Hands remain at their anatomical forearm attachment in every attack.
 		const USkeletalMeshComponent* Mesh = AgentActors[AgentIndex]->GetPoseReferenceMesh();
 		const USkeletalMesh* SkeletonMesh = Mesh ? Mesh->GetSkeletalMeshAsset() : nullptr;
 		if (SkeletonMesh)
@@ -1006,8 +1021,8 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 			const bool bCalfClamp = !bKickExtension && (ClampActor->bOverrideAttackCalfClamp ? ClampActor->bAttackCalfClamp : bClampCalf);
 			const float FootMultiplier = ClampActor->bOverrideAttackFootClamp ? 1.f : FootClampLengthMultiplier;
 			const float CalfMultiplier = ClampActor->bOverrideAttackCalfClamp ? 1.f : CalfClampLengthMultiplier;
-			const float FootLeeway = ClampActor->bOverrideAttackFootClamp ? ClampActor->AttackFootClampLeewayCm : 0.f;
-			const float CalfLeeway = ClampActor->bOverrideAttackCalfClamp ? ClampActor->AttackCalfClampLeewayCm : 0.f;
+			const float FootLeeway = ProphecyClampEase::Current(ClampActor,ProphecyClampEase::EChannel::Foot,ClampActor->bOverrideAttackFootClamp ? ClampActor->AttackFootClampLeewayCm : 0.f);
+			const float CalfLeeway = ProphecyClampEase::Current(ClampActor,ProphecyClampEase::EChannel::Calf,ClampActor->bOverrideAttackCalfClamp ? ClampActor->AttackCalfClampLeewayCm : 0.f);
 			Slash.CalfClampLengths = FVector2D::ZeroVector;
 			// Full attacks replace the already-clamped locomotion legs. Apply the controls
 			// to that replacement before publishing/encoding the visible pose, just as for hands.
@@ -1028,16 +1043,13 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 					}
 				}
 			}
-			for (const FImpl::FUpperArm& Arm : Impl->UpperArms)
+			if(!ProphecyAttackWrist::FreePosition(ClampActor))for (const FImpl::FUpperArm& Arm : Impl->UpperArms)
 			{
 				const int32 HandIndex = Skeleton.FindBoneIndex(Impl->BodyNames[Arm.End]);
 				if (HandIndex != INDEX_NONE)
 				{
 					const FVector Offset = Skeleton.GetRefBonePose()[HandIndex].GetTranslation();
-					Slash.HandClamp.ReferenceOffsets[Impl->BodyNames[Arm.End] == TEXT("hand_l") ? 0 : 1] = Offset;
-					if (Slash.HandClamp.bEnabled)
-						Pose[Arm.End].SetTranslation(FProphecyNNAttackHandClamp::ClampPosition(
-							Pose[Arm.End].GetTranslation(), Pose[Arm.Mid].TransformPosition(Offset), Slash.HandClamp.LeewayCm));
+					Pose[Arm.End].SetTranslation(Pose[Arm.Mid].TransformPosition(Offset));
 				}
 			}
 		}
@@ -1095,6 +1107,17 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 						StoreInertiaArm(*Impl,I,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
 					}
 				}
+			}
+		}
+		if(const uint8 Hands=ProphecyAttackStartHands::Apply(AgentActors[AgentIndex],Impl->BodyNames,Pose,Carrier,1./NNUpdateHz))
+		{
+			// Match the existing hand-inertia ownership rule: full attacks feed
+			// accepted arms into their checkpoint; half ghosts remain independent.
+			if(!Slash.bHalf) for(int I=0;I<2;++I)if(Hands&(1<<I))
+			{
+				const auto& Arm=Impl->UpperArms[I];
+				for(int Bone:{Arm.Start,Arm.Mid,Arm.End})Slash.GhostPose[Bone]=(Pose[Bone]*Carrier).GetRelativeTransform(Slash.AnchorWorld);
+				StoreInertiaArm(*Impl,I,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
 			}
 		}
 		for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)

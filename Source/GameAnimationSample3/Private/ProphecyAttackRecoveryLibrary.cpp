@@ -1,4 +1,5 @@
 #include "ProphecyAttackRecoveryLibrary.h"
+#include "ProphecyAttackStartHandInertia.h"
 #include "ProphecyAttackRecovery.h"
 #include "ProphecyArmedPose.h"
 #include "ProphecyAttackControls.h"
@@ -9,6 +10,7 @@
 #include "ProphecyHandRecovery.h"
 #include "ProphecyCoreTempering.h"
 #include "ProphecySlashReturn.h"
+#include "ProphecyArmCone.h"
 #include "ProphecyUpperBodyInertia.h"
 #include "ProphecySpecialRecoveryEvents.h"
 #include "ProphecyKickFootLeeway.h"
@@ -112,6 +114,8 @@ void EnterLowerSpecial(const AProphecyAgent* Agent)
 }
 void EnterSpecial(const AProphecyAgent* Agent,bool Half)
 {
+    ProphecyAttackStartHands::Cancel(Agent);
+    ProphecyArmCone::Cancel(Agent);
     ProphecyArmedPose::Cancel(Agent);
     if (EndEventAgent==Agent) EndEventAgent=nullptr;
     if (!Half) EnterLowerSpecial(Agent);
@@ -123,12 +127,14 @@ static void DispatchRegion(AProphecyAgent* Agent,FName Attack,bool Half,bool Ret
 {
     TGuardValue<bool> Region(EndEventUpper,Upper);
     TGuardValue<EProphecyAgentState> SpecialScope(EndEventSpecial,Special);
+    if(Upper) ProphecyAttackStartHands::Cancel(Agent);
     if (Returning)
     {
         if (Upper)
         {
             ProphecyHandRecovery::Begin(Agent);ProphecyCoreTempering::Begin(Agent);
             ProphecySlashReturn::Begin(Agent,Attack);
+            if(Special==EProphecyAgentState::Attacking) ProphecyArmCone::Begin(Agent,Attack);
         }
         else
         {

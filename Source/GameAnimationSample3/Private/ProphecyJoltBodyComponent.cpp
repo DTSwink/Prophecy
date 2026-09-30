@@ -414,7 +414,11 @@ bool UProphecyJoltBodyComponent::SynchronizeCollision(FString& OutError)
     {
         const auto* Binding = State.Get();
         Source->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-        if (State.Get() != Binding || !State || !SourceIsIntact(*State)) return false;
+        if (State.Get() != Binding || !State) return false;
+        if (!SourceIsIntact(*State))
+            return Fail(OutError, FString::Printf(TEXT("Collision refresh changed source binding: %s; parent=%s, follow=%s, attached=%d, kinematic=%d, physics=%d"),
+                *Source->GetPathName(), *GetPathNameSafe(Source->GetAttachParent()), *GetPathNameSafe(State->FollowParent.Get()),
+                State->bAttachedCollider, State->bSimpleKinematic, Source->IsPhysicsStateCreated()));
         State->QueryInstance = Source->GetBodyInstance(NAME_None, false);
         State->QueryActor = State->QueryInstance->GetPhysicsActor();
     }

@@ -37,12 +37,8 @@ bool UProphecyNNDefenseLibrary::Set##Mode##Limb##Clamp(AProphecyAgent* Agent,boo
 { return ProphecyDefenseControls::Set(Agent,Dodge,ProphecyDefenseControls::ELimb::Limb,bEnabled,LeewayCm); }
 DEFENSE_CLAMP(Parry,false,Foot)
 DEFENSE_CLAMP(Parry,false,Calf)
-DEFENSE_CLAMP(Parry,false,Hand)
-DEFENSE_CLAMP(Parry,false,Forearm)
 DEFENSE_CLAMP(Dodge,true,Foot)
 DEFENSE_CLAMP(Dodge,true,Calf)
-DEFENSE_CLAMP(Dodge,true,Hand)
-DEFENSE_CLAMP(Dodge,true,Forearm)
 #undef DEFENSE_CLAMP
 
 bool UProphecyNNDefenseLibrary::SetDodgeFramesAfterHit(AProphecyAgent* Agent,int32 Frames)

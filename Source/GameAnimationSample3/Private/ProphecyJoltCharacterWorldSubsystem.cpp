@@ -368,7 +368,8 @@ bool UProphecyJoltCharacterWorldSubsystem::StepRegisteredClients(float DeltaSeco
             if (!Client || (Cast<UProphecyJoltSceneCollisionComponent>(Registration.Client.Get()) != nullptr) != (PreparePass == 1)) continue;
             Profile::FScope ClientTiming(Profile::EPhase::ClientPrepare);
             if (!Client->PrepareJoltWorldStep(DeltaSeconds, bPublishMissingTargets, Error) && ResolveClient(Registration))
-                return StopWithError(OutError, FString::Printf(TEXT("Shared-step client preparation failed: %s"), *Error));
+                return StopWithError(OutError, FString::Printf(TEXT("Shared-step client preparation failed for %s: %s"),
+                    *GetPathNameSafe(Registration.Client.Get()), *Error));
         }
     }
     PruneRegistrations();

@@ -261,10 +261,11 @@ bool FProphecyHandChainContinuityTest::RunTest(const FString&)
     const FTransform S(FRotator(15,20,10),FVector(10,20,40));
     const FTransform E(FRotator(10,-20,35),S.TransformPosition(Offset));
     const FTransform W(FRotator(20,50,-30),E.GetLocation()+S.TransformVector(FVector(10,25,5)));
+    const double LowerLength=FVector::Distance(W.GetLocation(),E.GetLocation());
     for(double Follow:{0.,.1,.5,.9,1.})
     {
         FTransform Shoulder=S,Elbow=E,Wrist=W;
-        Resolve(S,E,W,Shoulder,Elbow,Wrist,W,Offset,Pole,Follow);
+        Resolve(S,E,W,Shoulder,Elbow,Wrist,W,Offset,Pole,Follow,LowerLength);
         TestTrue(TEXT("An unchanged coherent arm stays unchanged, including shoulder twist"),Shoulder.Equals(S,1.e-6) &&
             Elbow.GetLocation().Equals(E.GetLocation(),1.e-6) && Wrist.Equals(W,1.e-6));
     }
@@ -274,18 +275,17 @@ bool FProphecyHandChainContinuityTest::RunTest(const FString&)
     {
         FTransform Shoulder=S,Elbow=E,Wrist=W;
         Target.SetRotation((FQuat(FVector::ForwardVector,I*.4)*W.GetRotation()).GetNormalized());
-        Resolve(S,E,W,Shoulder,Elbow,Wrist,Target,Offset,Pole,0.);
+        Resolve(S,E,W,Shoulder,Elbow,Wrist,Target,Offset,Pole,0.,LowerLength);
         if(I==0) {FirstElbow=Elbow;FirstShoulder=Shoulder;}
         TestTrue(TEXT("Wrist roll cannot orbit the elbow or twist the upper arm"),Elbow.GetLocation().Equals(FirstElbow.GetLocation(),1.e-6) && Shoulder.Equals(FirstShoulder,1.e-6));
         TestTrue(TEXT("Connected chain and requested wrist orientation"),Elbow.GetLocation().Equals(Shoulder.TransformPosition(Offset),1.e-6) &&
             FMath::IsNearlyEqual((Wrist.GetLocation()-Elbow.GetLocation()).Length(),(W.GetLocation()-E.GetLocation()).Length(),1.e-6) &&
             Wrist.GetRotation().Equals(Target.GetRotation(),1.e-6));
     }
-    // Stretched but deliberately unclamped source converges to EXACT normal,
-    // instead of forcing rest length until the last active sample.
+    // A new connected source converges to normal without changing either bone length.
     const FTransform NS(FRotator(35,-15,20),FVector(12,19,41));
     const FTransform NE(FQuat::Identity,NS.TransformPosition(Offset));
-    const FTransform NW(FRotator(5,10,15),NE.GetLocation()+NS.TransformVector(FVector(15,28,6)));
+    const FTransform NW(FRotator(5,10,15),NE.GetLocation()+NS.TransformVector(FVector(15,28,6).GetSafeNormal()*LowerLength));
     FTransform PrevS=S,PrevE=E,PrevW=W;
     double MaxStep=0;
     for(int32 I=0;I<=60;++I)
@@ -293,7 +293,7 @@ bool FProphecyHandChainContinuityTest::RunTest(const FString&)
         const double T=I/60.,Follow=T*T*(3-2*T);
         FTransform Shoulder=NS,Elbow=NE,Wrist=NW;
         FTransform Goal=NW;Goal.SetLocation(FMath::Lerp(PrevW.GetLocation(),NW.GetLocation(),Follow));
-        Resolve(PrevS,PrevE,PrevW,Shoulder,Elbow,Wrist,Goal,Offset,Pole,Follow);
+        Resolve(PrevS,PrevE,PrevW,Shoulder,Elbow,Wrist,Goal,Offset,Pole,Follow,LowerLength);
         MaxStep=FMath::Max(MaxStep,Shoulder.GetRotation().AngularDistance(PrevS.GetRotation()));
         TestFalse(TEXT("Fade produces finite connected transforms"),Shoulder.ContainsNaN() || Elbow.ContainsNaN() || Wrist.ContainsNaN());
         TestTrue(TEXT("Elbow remains on the upper arm throughout fade"),Elbow.GetLocation().Equals(Shoulder.TransformPosition(Offset),1.e-6));
@@ -309,8 +309,8 @@ bool FProphecyHandChainContinuityTest::RunTest(const FString&)
     // The same calculation in another root/world frame must commute.
     const FTransform Root(FRotator(30,110,5),FVector(500,-700,80));
     FTransform A=NS,B=NE,C=NW,RA=NS*Root,RB=NE*Root,RC=NW*Root;
-    Resolve(S,E,W,A,B,C,NW,Offset,Pole,.3);
-    Resolve(S*Root,E*Root,W*Root,RA,RB,RC,NW*Root,Offset,Pole,.3);
+    Resolve(S,E,W,A,B,C,NW,Offset,Pole,.3,LowerLength);
+    Resolve(S*Root,E*Root,W*Root,RA,RB,RC,NW*Root,Offset,Pole,.3,LowerLength);
     TestTrue(TEXT("Root-local chain solve is equivariant"),RA.Equals(A*Root,1.e-6) && RB.Equals(B*Root,1.e-6) && RC.Equals(C*Root,1.e-6));
     return !HasAnyErrors();
 }
@@ -328,6 +328,7 @@ bool FProphecyHandBendBlendTest::RunTest(const FString&)
     const FTransform NS(FQuat(.853407639,-.312747866,.273992396,.314344304).GetNormalized(),FVector(0,13.288782,1.952071));
     const FTransform NE(NS.TransformPosition(Offset));
     const FTransform NW(FVector(-21.813846,36.301616,-33.290068));
+    const double LowerLength=22.349;
     const FTransform Target(FVector(-30.746899,43.775991,-18.572348));
     const FVector Axis=(Target.GetLocation()-NS.GetLocation()).GetSafeNormal();
     auto Bend=[&](const FTransform& S,const FTransform& E,const FTransform& W)
@@ -339,13 +340,13 @@ bool FProphecyHandBendBlendTest::RunTest(const FString&)
     for(int32 I=0;I<=40;++I)
     {
         const double T=I/40.;FTransform S=NS,E=NE,W=NW;
-        Resolve(PS,PE,PW,S,E,W,Target,Offset,LocalPole,T);
+        Resolve(PS,PE,PW,S,E,W,Target,Offset,LocalPole,T,LowerLength);
         const FVector Actual=Bend(S,E,W);
         const double Angle=FMath::Acos(FMath::Clamp(FVector::DotProduct(P,Actual),-1.,1.));
         TestTrue(TEXT("Bend progresses without reversal or an intermediate singularity"),Angle+1.e-6>=OldAngle && FMath::Abs(Angle-Total*T)<1.e-5);
         TestTrue(TEXT("Reconstruction preserves wrist and both link lengths"),W.GetLocation().Equals(Target.GetLocation(),1.e-6) &&
             E.GetLocation().Equals(S.TransformPosition(Offset),1.e-6) && FMath::IsNearlyEqual((W.GetLocation()-E.GetLocation()).Length(),
-                FMath::Lerp((PW.GetLocation()-PE.GetLocation()).Length(),(NW.GetLocation()-NE.GetLocation()).Length(),T),1.e-6));
+                LowerLength,1.e-6));
         OldAngle=Angle;
     }
     FTransform Results[2];int32 Index=0;
@@ -353,7 +354,7 @@ bool FProphecyHandBendBlendTest::RunTest(const FString&)
     {
         FTransform S=NS,E=NE,W=NW;
         W.SetLocation(NS.TransformPosition(Offset*1.8)+NS.TransformVectorNoScale(FVector(0,Sign*1.e-8,0)));
-        Resolve(PS,PE,PW,S,E,W,Target,Offset,LocalPole,.5);
+        Resolve(PS,PE,PW,S,E,W,Target,Offset,LocalPole,.5,LowerLength);
         Results[Index++]=E;
         TestFalse(TEXT("Straight source remains finite"),S.ContainsNaN() || E.ContainsNaN() || W.ContainsNaN());
     }

@@ -9,6 +9,21 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackStartInertiaLibrary : public UBlue
 {
     GENERATED_BODY()
 public:
+    /** NN hand position/rotation inertia on a new full or half attack. Configure
+     * before triggering; repeated attack requests and half/full switches do not
+     * restart it. ReferenceAlpha: 0 pelvis, 1 spine_05 (position and rotation).
+     * Hold keeps full influence, then BlendTime fades to the attack checkpoint.
+     * ResponseTime controls softness; MomentumScale scales entry velocity only.
+     * Times use 60 unpaused ticks/second. Disabled/Alpha 0: no sampling or clock.
+     * Settings latch at entry; disabling cancels immediately. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Hands", meta=(DefaultToSelf="Agent",DisplayName="Set Attack Start Hand Inertia"))
+    static bool SetAttackStartHandInertia(AProphecyAgent* Agent, bool Enabled,
+        float HoldOutTime=.1f, float BlendTime=.3f,
+        UPARAM(meta=(ClampMin="0",ClampMax="1")) float ReferenceAlpha=1.f,
+        float ResponseTime=.25f, float MomentumScale=1.f,
+        UPARAM(meta=(ClampMin="0",ClampMax="1")) float Alpha=1.f,
+        bool LeftHand=true, bool RightHand=true);
+
     /** Full attack entry only; retriggering an ongoing attack does not restart it.
      * Windows count unpaused game ticks (60 Hz convention), independently of FPS.
      * Strength 1 keeps the previous WORLD pelvis delta on the first frame, then

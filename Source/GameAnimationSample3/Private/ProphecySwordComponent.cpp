@@ -34,6 +34,8 @@ struct FGate
 };
 TMap<TWeakObjectPtr<const AProphecyAgent>,FGate> Gates;
 TSet<TWeakObjectPtr<const AProphecyAgent>> HitOwners;
+// Event-only preference; no component layout changes or per-tick collision polling.
+TSet<TWeakObjectPtr<const AProphecyAgent>> CollisionDisabled;
 void SetBodySuppressed(AProphecyAgent* Agent, bool bSuppressed)
 {
     if (!Agent) return;
@@ -78,12 +80,17 @@ bool SuppressesOwner(const AProphecyAgent* Agent)
 }
 bool IsAllowed(const AProphecyAgent* Agent)
 {
-	const auto* Gate=Gates.Find(Agent);return !Gate || Gate->bAllowed;
+	const auto* Gate=Gates.Find(Agent);return !CollisionDisabled.Contains(Agent) && (!Gate || Gate->bAllowed);
 }
 void Refresh(AProphecyAgent* Agent)
 {
-	auto* Gate=Gates.Find(Agent);if (!Gate) return;
-	if (Gate->bAllowed) { Restore(*Gate);return; }
+	auto* Gate=Gates.Find(Agent);
+	if (!Gate && CollisionDisabled.Contains(Agent))
+	{
+		Gate=&Gates.Add(Agent);Gate->bAllowed=true;
+	}
+	if (!Gate) return;
+	if (IsAllowed(Agent)) { Restore(*Gate);return; }
 	auto* Sword=Agent->GetHeldSword();
 	auto* Blade=Sword?Cast<UStaticMeshComponent>(Sword->GetRootComponent()):nullptr;
 	if (!Blade) return;
@@ -98,7 +105,8 @@ void Begin(AProphecyAgent* Agent,FName Family)
 {
 	if (!Agent) return;
 	End(Agent);
-	auto& Gate=Gates.Add(Agent);
+	auto& Gate=Gates.FindOrAdd(Agent);
+	Gate.bAllowed=false;
 	Gate.bWeapon=Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash"),ESearchCase::IgnoreCase);
 	SetBodySuppressed(Agent, true);
 	Refresh(Agent);
@@ -107,7 +115,7 @@ void Armed(AProphecyAgent* Agent)
 {
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate || !Gate->bWeapon || Gate->bAllowed) return;
-	Gate->bAllowed=true;Restore(*Gate);
+	Gate->bAllowed=true;Refresh(Agent);
 }
 void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit)
 {
@@ -128,13 +136,14 @@ void Hit(AProphecyAgent* Agent)
     if (First) { SetBodySuppressed(Agent, false); RefreshOwner(Agent); }
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate || Gate->bWeapon || Gate->bAllowed) return;
-	Gate->bAllowed=true;Restore(*Gate);
+	Gate->bAllowed=true;Refresh(Agent);
 }
 void End(AProphecyAgent* Agent)
 {
 	SetBodySuppressed(Agent, false);
 	FGate Gate;if (Gates.RemoveAndCopyValue(Agent,Gate)) Restore(Gate);
     HitOwners.Remove(Agent);
+	Refresh(Agent); // A manual disable survives attack end.
 }
 void ReleaseSword(AProphecyAgent* Agent)
 {
@@ -883,6 +892,7 @@ void UProphecySwordComponent::Disappear()
 
 void UProphecySwordComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
+	ProphecySwordAttackCollision::CollisionDisabled.Remove(Agent());
 	ProphecySwordAttackCollision::End(Agent());
 	Disappear();
 	Super::EndPlay(Reason);
@@ -928,6 +938,21 @@ namespace
 }
 
 bool AProphecyAgent::EquipSword(bool bSimulated) { return SwordController(this, true)->Equip(bSimulated); }
+void UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(AProphecyAgent* Agent, bool Enabled)
+{
+	if (!IsValid(Agent)) return;
+	using namespace ProphecySwordAttackCollision;
+	if (Enabled == !CollisionDisabled.Contains(Agent)) return;
+	if (Enabled) CollisionDisabled.Remove(Agent);
+	else
+	{
+		// Ensure cleanup even if configured before the first equip.
+		SwordController(Agent, true);
+		CollisionDisabled.Add(Agent);
+	}
+	Refresh(Agent);
+	if (Enabled && !Agent->IsSwordAttackActive()) Gates.Remove(Agent);
+}
 bool AProphecyAgent::SetSwordAttachedInertiaScale(float Scale)
 {
 	if (!FMath::IsFinite(Scale) || Scale < 0.0f) return false;
