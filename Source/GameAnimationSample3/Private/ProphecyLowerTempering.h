@@ -3,7 +3,7 @@
 class AProphecyAgent;
 namespace ProphecyLegRecovery
 {
-struct FStep { float MaxTurnRadians=0; bool Expired=false; };
+struct FStep { float MaxTurnRadians=0,Weight=0; bool Expired=false; };
 void Begin(const AProphecyAgent* Agent);
 void Cancel(const AProphecyAgent* Agent);
 void Remove(const AProphecyAgent* Agent);
@@ -40,6 +40,8 @@ void ForgetProfiles(const AProphecyAgent* Agent);
 const FSettings* Find(const AProphecyAgent* Agent);
 // Find samples the existing clocks first; this accessor reads the already sampled right foot.
 const FSettings& RightFootSettings(const AProphecyAgent* Agent,const FSettings& Left);
+// Remaining influence of the existing feet/pelvis blend-out clocks; no new timeline.
+FVector2f ReconstructionWeights(const AProphecyAgent* Agent,const FSettings& Left);
 void RestoreRightFootSettings(const AProphecyAgent* Agent,const FSettings& Right);
 float MinimumLegReachMultiplier(const AProphecyAgent* Agent);
 void Remove(const AProphecyAgent* Agent);

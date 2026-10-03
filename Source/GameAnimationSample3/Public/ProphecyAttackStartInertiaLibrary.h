@@ -9,9 +9,21 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackStartInertiaLibrary : public UBlue
 {
     GENERATED_BODY()
 public:
+    /** Parent-local angular inertia for spine, neck, head and clavicles on new full/half attacks.
+     * Arms follow their parents without any local arm/hand inertia. Configure before triggering.
+     * HoldOutTime retains full influence; BlendTime fades it to the attack. ResponseTime controls
+     * spring softness; MomentumScale scales outgoing angular velocity; Alpha controls influence.
+     * Times mean 60 unpaused game ticks per second. Disabled by default; disabled/Alpha 0/Response 0
+     * does no sampling or spring work. Settings latch at entry; disabling cancels immediately. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Upper Body", meta=(DefaultToSelf="Agent",DisplayName="Set Attack Start FK Core Inertia"))
+    static bool SetAttackStartFKCoreInertia(AProphecyAgent* Agent, bool Enabled=false,
+        float HoldOutTime=.1f, float BlendTime=.3f, float ResponseTime=.25f, float MomentumScale=1.f,
+        UPARAM(meta=(ClampMin="0",ClampMax="1")) float Alpha=1.f);
+
     /** NN hand position/rotation inertia on a new full or half attack. Configure
      * before triggering; repeated attack requests and half/full switches do not
-     * restart it. ReferenceAlpha: 0 pelvis, 1 spine_05 (position and rotation).
+     * restart it. ReferenceAlpha: 0 locomotion root local, 1 spine_05 local;
+     * intermediate values blend root position/heading toward spine position/rotation.
      * Hold keeps full influence, then BlendTime fades to the attack checkpoint.
      * ResponseTime controls softness; MomentumScale scales entry velocity only.
      * Times use 60 unpaused ticks/second. Disabled/Alpha 0: no sampling or clock.

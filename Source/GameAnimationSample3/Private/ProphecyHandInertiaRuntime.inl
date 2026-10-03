@@ -29,11 +29,7 @@ bool CorrectInertiaArm(const AProphecyNNLocomotionManager::FImpl& Impl,AProphecy
     Pose[A.Start]=Shoulder.GetRelativeTransform(Carrier);
     Pose[A.Mid]=Elbow.GetRelativeTransform(Carrier);
     Pose[A.End]=Wrist.GetRelativeTransform(Carrier);
-    // Use the same hand-derived forearm twist as the ordinary decoder.
-    const FMat3f Forearm=ForearmRotationFromHand(Impl.UpperLocalOffsets[A.End],
-        LocalUnrealToTraining(Pose[A.End].GetLocation()-Pose[A.Mid].GetLocation()),A.LocalPoleAxes[1],
-        MirrorYBasis(QuatToMatrix(Pose[A.End].GetRotation())));
-    Pose[A.Mid].SetRotation(MatrixToQuat(MirrorYBasis(Forearm)));
+    SetForearmRollFromUpperArm(Impl.UpperLocalOffsets[A.End],I,Pose[A.Start],Pose[A.Mid],Pose[A.End]);
     return true;
 }
 void MixHandRecoveryUpper(const ProphecyHandRecovery::FFrame& Recovery,float* Upper)
@@ -47,18 +43,6 @@ void MixHandRecoveryUpper(const ProphecyHandRecovery::FFrame& Recovery,float* Up
         for(int32 R:{O+3,O+9}) WriteRot6(QuatToMatrix(FQuat::Slerp(MatrixToQuat(MatrixFromRot6(Source+R)),
             MatrixToQuat(MatrixFromRot6(Upper+R)),W).GetNormalized()),Upper+R);
     }
-}
-float HandChainFollow(const ProphecyHandRecovery::FTempering* Temper,
-    const ProphecyHandRecovery::FFrame* Recovery,int32 Hand,bool TwistOnly=false)
-{
-    float Follow=1.f;
-    if (Temper)
-    {
-        const auto& T=Temper->Hand[Hand];
-        Follow=TwistOnly?T.Rotation:FMath::Min3(T.XY,T.Z,T.Rotation);
-    }
-    if (Recovery && Recovery->Ready[Recovery->Source[Hand]]) Follow=FMath::Min(Follow,Recovery->Alpha[Hand]);
-    return Follow;
 }
 // Core channels are already parent-local rotations, so FK preserves every
 // attachment offset. Arm endpoints are heading-space values; carry them with
@@ -77,146 +61,6 @@ void CarryCoreArm(const AProphecyNNLocomotionManager::FImpl& Impl,int32 I,
         After[Bone]=Before[Bone].GetRelativeTransform(Before[Parent])*After[Parent];
     StoreInertiaArm(Impl,I,After,Impl.SeedRootRot,Upper);
 }
-void CorrectLocomotionHands(const AProphecyNNLocomotionManager* Manager,AProphecyNNLocomotionManager::FImpl* Impl,AProphecyAgent* Actor,int32 Index,double Time,double Dt,float CoreFollow)
-{
-    auto& Agent=Impl->Agents[Index];
-    float* Upper=UpperStateSlice(Impl->UpperCurrentStateBuffer,Index);
-    const auto* Recovery=ProphecyHandRecovery::Frame(Actor);
-    const auto* Temper=ProphecyHandRecovery::Tempering(Actor);
-    if (Recovery) MixHandRecoveryUpper(*Recovery,Upper);
-    FTransform Pose[FullBodyBoneCount],Previous[FullBodyBoneCount];
-    FLocomotionClamps Unclamped;Unclamped.bFixedArms=!ProphecyAttackWrist::FreePosition(Actor);
-    DecodeLocomotionPose(Impl,StateSlice(Impl->PublishedStateBuffer,Index),Upper,
-        Agent.PublishedWalkWeight,MakeArrayView(Pose),nullptr,Unclamped,&Agent.PublishedLegWalkWeights);
-    const bool CoreInertia=ProphecyUpperBodyInertia::Active(Actor);
-    auto FinishInertia=[&]()
-    {
-        if(!CoreInertia || !ProphecyUpperBodyInertia::ArmsActive(Actor))return;
-        const FTransform Root=HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw);
-        const FTransform Carrier=HandInertiaCarrier(Actor,Root);
-        ProphecyUpperBodyInertia::ApplyArms(Actor,Carrier,MakeArrayView(Pose),Dt,
-            FVector2D(Impl->UpperArms[0].Lengths.Y*100.,Impl->UpperArms[1].Lengths.Y*100.),Root);
-        for(int32 I=0;I<2;++I)StoreInertiaArm(*Impl,I,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
-    };
-    if(CoreFollow<1 || CoreInertia)
-    {
-        FTransform Candidate[FullBodyBoneCount];
-        for(int32 B=0;B<FullBodyBoneCount;++B) Candidate[B]=Pose[B];
-        TemperCoreLocalState(UpperStateSlice(Impl->UpperPreviousPublishedStateBuffer,Index),Upper,
-            Impl->UpperCoreBoneNames.Num(),CoreFollow);
-        DecodeLocomotionPose(Impl,StateSlice(Impl->PublishedStateBuffer,Index),Upper,
-            Agent.PublishedWalkWeight,MakeArrayView(Pose),nullptr,Unclamped,&Agent.PublishedLegWalkWeights);
-        if(CoreInertia)
-        {
-            const FTransform CoreCarrier=HandInertiaCarrier(Actor,HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw));
-            ProphecyUpperBodyInertia::Apply(Actor,Impl->Parents,Impl->BodyNames,Impl->UpperCoreBoneNames,CoreCarrier,MakeArrayView(Pose),Dt);
-            for(int32 I=0;I<Impl->UpperCoreBoneNames.Num();++I)
-            {
-                const int32 B=Impl->BodyNames.IndexOfByKey(Impl->UpperCoreBoneNames[I]),P=Impl->Parents[B];
-                WriteRot6(MirrorYBasis(QuatToMatrix(Pose[B].GetRelativeTransform(Pose[P]).GetRotation())),Upper+I*6);
-            }
-        }
-        for(int32 I=0;I<2;++I) CarryCoreArm(*Impl,I,MakeArrayView(Candidate),MakeArrayView(Pose),Upper);
-        // Do not run a hand solve when only core tempering was requested.
-        if(!Recovery && !Temper && !ProphecySlashReturn::Active(Actor) && !ProphecyHandInertia::IsActive(Actor,Agent.PublishedWalkWeight,false)) {FinishInertia();return;}
-    }
-    DecodeLocomotionPose(Impl,StateSlice(Impl->PreviousPublishedStateBuffer,Index),
-        UpperStateSlice(Impl->UpperPreviousPublishedStateBuffer,Index),Agent.PreviousPublishedWalkWeight,
-        MakeArrayView(Previous),nullptr,Unclamped,&Agent.PreviousPublishedLegWalkWeights);
-    const FTransform Root=HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw);
-    const FTransform PrevRoot=HandInertiaRoot(Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
-    const FTransform Carrier=HandInertiaCarrier(Actor,Root),PrevCarrier=HandInertiaCarrier(Actor,PrevRoot);
-    // Sample the same decoded torso as the hand targets (not the rendered mesh,
-    // which is one interpolation interval behind the policy publication).
-    static const FName SpineName(TEXT("spine_05"));
-    const int32 Spine=Temper ? Impl->BodyNames.IndexOfByKey(SpineName) : INDEX_NONE;
-    const FTransform Reference=Spine!=INDEX_NONE ? Pose[Spine]*Carrier : Root;
-    const FTransform PrevReference=Spine!=INDEX_NONE ? Previous[Spine]*PrevCarrier : PrevRoot;
-    for (int32 I=0; I<2; ++I)
-    {
-        const auto& A=Impl->UpperArms[I];
-        const bool TemperHand=Temper && !Temper->Hand[I].Normal();
-        bool Changed=false;
-        if (TemperHand || (Recovery && Recovery->Alpha[I]<1 && Recovery->Ready[Recovery->Source[I]]))
-        {
-            // Use rebased accepted NN endpoints/shoulder here: the component
-            // cache can still belong to the old carrier after a root-only snap.
-            // Only the missing forearm twist needs the real publication below.
-            FTransform Shoulder=Pose[A.Start]*Carrier,Elbow=Pose[A.Mid]*Carrier,Wrist=Pose[A.End]*Carrier;
-            const FTransform& From=TemperHand?PrevReference:PrevRoot;
-            const FTransform& To=TemperHand?Reference:Root;
-            const FTransform Target=TemperHand?ProphecyHandRecovery::TemperTarget(Temper->Hand[I],From,To,
-                Previous[A.End]*PrevCarrier,Wrist):Wrist;
-            auto Carry=[&](int32 Bone) { return (Previous[Bone]*PrevCarrier).GetRelativeTransform(From)*To; };
-            ProphecyHandChain::Resolve(Carry(A.Start),Carry(A.Mid),Carry(A.End),Shoulder,Elbow,Wrist,Target,
-                Shoulder.GetRotation().UnrotateVector(Elbow.GetLocation()-Shoulder.GetLocation()),
-                LocalTrainingToUnreal(A.LocalPoleAxes[0]),HandChainFollow(Temper,Recovery,I),A.Lengths.Y*100.);
-            Pose[A.Start]=Shoulder.GetRelativeTransform(Carrier);Pose[A.Mid]=Elbow.GetRelativeTransform(Carrier);Pose[A.End]=Wrist.GetRelativeTransform(Carrier);
-            Changed=true;
-        }
-        Changed|=CorrectInertiaArm(*Impl,Actor,I,Agent.PublishedWalkWeight,false,Time,Dt,PrevRoot,Root,
-            Previous[A.End]*PrevCarrier,Carrier,MakeArrayView(Pose));
-        if (Changed)
-            StoreInertiaArm(*Impl,I,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
-    }
-    if(ProphecySlashReturn::Active(Actor))
-    {
-        const double ReturnDt=ProphecySlashReturn::AdvanceFrame(Actor);
-        const uint8 ArmMask=ProphecySlashReturn::ActiveArmMask(Actor);
-        if(!ArmMask) {FinishInertia();return;}
-        float IdleUpper[UpperStateDim];FTransform Idle[FullBodyBoneCount];
-        SeedUpperIdleFromLower(StateSlice(Impl->PublishedStateBuffer,Index),*Impl,IdleUpper);
-        DecodeLocomotionPose(Impl,StateSlice(Impl->PublishedStateBuffer,Index),IdleUpper,
-            Agent.PublishedWalkWeight,MakeArrayView(Idle),nullptr,Unclamped,&Agent.PublishedLegWalkWeights);
-        const auto& RightArm=Impl->UpperArms[1];const auto& Left=Impl->UpperArms[0];
-        const int32 Neck=Impl->BodyNames.IndexOfByKey(FName(TEXT("neck_01")));
-        auto TorsoFrame=[&](const FTransform* P)
-        {
-            const FVector Up=(P[Neck].GetLocation()-P[0].GetLocation()).GetSafeNormal();
-            // The anatomical frame is always right-minus-left. Selecting the
-            // left arm must not reverse forward or collapse the torso width.
-            const FVector Across=P[RightArm.Start].GetLocation()-P[Left.Start].GetLocation();
-            const FVector Right=(Across-Up*FVector::DotProduct(Across,Up)).GetSafeNormal();
-            return FTransform(FRotationMatrix::MakeFromYZ(Right,Up).ToQuat(),
-                (P[RightArm.Start].GetLocation()+P[Left.Start].GetLocation())*.5);
-        };
-        // Both sides use the same unmodified anatomical frame and one clock
-        // sample. Their own neutral chain/hinge axes handle mirrored bone bases.
-        const FTransform Torso=TorsoFrame(Pose),PreviousTorso=TorsoFrame(Previous);
-        const bool PelvisLocal=ProphecySlashReturn::UsesPelvisReference(Actor);
-        const bool ControlledReference=ProphecySlashReturn::UsesControlledReference(Actor);
-        FTransform ReturnReference,PreviousReturnReference;
-        const FTransform IdleTorso=TorsoFrame(Idle);
-        if(ControlledReference) ProphecySlashReturn::PelvisReferenceFrames(Actor,IdleTorso,Idle[0],
-            Pose[0],Previous[0],Root.GetRelativeTransform(Carrier).GetRotation(),
-            PrevRoot.GetRelativeTransform(PrevCarrier).GetRotation(),ReturnReference,PreviousReturnReference,
-            PelvisLocal ? nullptr : &Torso,PelvisLocal ? nullptr : &PreviousTorso);
-        const double HalfWidth=(Pose[RightArm.Start].GetLocation()-Pose[Left.Start].GetLocation()).Length()*.5;
-        for(int32 ArmIndex=0;ArmIndex<2;++ArmIndex) if(ArmMask & (1<<ArmIndex))
-        {
-        const auto& A=Impl->UpperArms[ArmIndex];const int32 Parent=PelvisLocal ? 0 : Impl->Parents[A.Start];
-        // The destination must use the same heading as the route. Reattaching
-        // it through the pelvis bone would reintroduce pelvis rotation here.
-        const FTransform& IdleMount=ControlledReference ? IdleTorso : Idle[Parent];
-        const FTransform& PreviousMount=ControlledReference ? PreviousReturnReference : Previous[Parent];
-        const FTransform& CurrentMount=ControlledReference ? ReturnReference : Pose[Parent];
-        FTransform InitialNeutralShoulder=Idle[A.Start].GetRelativeTransform(IdleMount)*PreviousMount;
-        FTransform InitialNeutralElbow=Idle[A.Mid].GetRelativeTransform(IdleMount)*PreviousMount;
-        FTransform InitialNeutralWrist=Idle[A.End].GetRelativeTransform(IdleMount)*PreviousMount;
-        ProphecySlashReturn::FitNeutralArm(Previous[A.Start],
-            InitialNeutralShoulder,InitialNeutralElbow,InitialNeutralWrist);
-        for(int32 B:{A.Start,A.Mid,A.End}) Idle[B]=Idle[B].GetRelativeTransform(IdleMount)*CurrentMount;
-        ProphecySlashReturn::FitNeutralArm(Pose[A.Start],Idle[A.Start],Idle[A.Mid],Idle[A.End]);
-        ProphecySlashReturn::ApplyPose(Actor,ArmIndex,ReturnDt,Torso,PreviousTorso,HalfWidth,
-            Previous[A.Start],Previous[A.Mid],Previous[A.End],Idle[A.Start],Idle[A.Mid],Idle[A.End],InitialNeutralWrist,
-            Pose[A.Start],Pose[A.Mid],Pose[A.End],LocalTrainingToUnreal(A.LocalPoleAxes[0]),
-            ControlledReference ? &ReturnReference : nullptr,ControlledReference ? &PreviousReturnReference : nullptr);
-        StoreInertiaArm(*Impl,ArmIndex,MakeArrayView(Pose),Impl->SeedRootRot,Upper);
-        }
-    }
-    FinishInertia();
-}
-
 void BuildHandRecoveryUpperInput(const AProphecyNNLocomotionManager::FImpl& Impl,const float* Lower,
     const float* Current,const float* Base,float* In)
 {
@@ -227,42 +71,7 @@ void BuildHandRecoveryUpperInput(const AProphecyNNLocomotionManager::FImpl& Impl
     LowerTransformToHeading(Lower,9,12,Impl,In+261);
     LowerTransformToHeading(Lower,25,28,Impl,In+270);
 }
-bool RunHandRecoverySources(AProphecyNNLocomotionManager* Manager,AProphecyNNLocomotionManager::FImpl* Impl,
-    TArrayView<TObjectPtr<AProphecyAgent>> Actors)
-{
-    if (!ProphecyHandRecovery::HasRecovery()) return true;
-    const auto* Clock=ProphecyAgentTime::Context(Manager);
-    auto Eligible=[&](int32 I)
-    { return (!Clock || Clock->Step->Due[I]) && Actors[I] && Actors[I]->bNNInferenceEnabled &&
-        !Impl->Agents[I].Slash.bActive && !Impl->Agents[I].DefensePose; };
-    for(int32 P=0;P<2;++P)
-    {
-        bool Needed=false;
-        for(int32 I=0;I<Actors.Num();++I) if(Eligible(I))
-            if(const auto* H=ProphecyHandRecovery::Frame(Actors[I])) Needed|=H->Need[P];
-        if(!Needed) continue;
-        TArray<float> Input=Impl->UpperInputBuffer,Output;
-        Output.SetNumUninitialized(Impl->UpperOutputBuffer.Num());
-        for(int32 I=0;I<Actors.Num();++I) if(Eligible(I))
-        {
-            auto* H=ProphecyHandRecovery::Frame(Actors[I]);if(!H || !H->Need[P]) continue;
-            float* In=Input.GetData()+I*UpperInputDim;
-            const float* Current=UpperStateSlice(Impl->UpperCurrentStateBuffer,I);
-            const float* Base=UpperStateSlice(Impl->UpperCurrentBaseBuffer,I);
-            BuildHandRecoveryUpperInput(*Impl,H->Lower[P],Current,Base,In);
-            // Previous history, equipment, gaze and root window remain identical.
-        }
-        if(!Impl->UpperModel.Run(Input,Output))
-        { UE_LOG(LogProphecyNNLocomotion,Error,TEXT("Hand recovery source inference failed"));Manager->SetActorTickEnabled(false);return false; }
-        for(int32 I=0;I<Actors.Num();++I) if(Eligible(I))
-        {
-            auto* H=ProphecyHandRecovery::Frame(Actors[I]);if(!H || !H->Need[P]) continue;
-            for(int32 J=0;J<UpperStateDim;++J) H->Upper[P][J]=Input[I*UpperInputDim+90+J]+Output[I*UpperStateDim+J];
-            CleanUpperState(H->Upper[P]);H->Ready[P]=true;
-        }
-    }
-    return true;
-}
+
 }
 
 #if WITH_DEV_AUTOMATION_TESTS

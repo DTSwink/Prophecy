@@ -1,6 +1,9 @@
+#include "ProphecyForearmConvention.h"
 #include "ProphecyNNLocomotionManager.h"
+#include "UObject/StrongObjectPtr.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyAttackStartHandInertia.h"
+#include "ProphecyAttackStartFKCore.h"
 #include "ProphecyAttackFootLocomotion.h"
 #include "ProphecyAttackFootLocomotionMath.h"
 #include "ProphecyAttackStartInertiaMath.h"
@@ -19,6 +22,9 @@
 #include "ProphecyNNLegClamps.h"
 #include "ProphecyNNPolicyBlend.h"
 #include "ProphecyAttackRecovery.h"
+#include "ProphecyFKReturn.h"
+#include "ProphecyFKReturnData.h"
+#include "Containers/StaticArray.h"
 #include "ProphecyArmedPose.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyLowerTempering.h"
@@ -49,6 +55,8 @@
 #include "ProphecyAttackCamera.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAttackTrim.h"
+#include "ProphecyAttackEndExtension.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "ProphecyNNLocomotionAnimInstance.h"
 #include "ProphecyNNPoseTypes.h"
 #include "ProphecyNNPresentation.h"
@@ -87,6 +95,7 @@
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/ScopeExit.h"
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
 #endif
@@ -131,6 +140,13 @@ namespace
 	TMap<const AProphecyNNLocomotionManager*, TArray<FResolvedMoverTarget>> ResolvedMoverTargets;
 	// Event-only full-attack handoff state; no change to live FImpl allocation layout.
 	TMap<const AProphecyAgent*, FVector> SlashRootMinusStartPelvis;
+	struct FAttackEndPrediction
+	{
+		TArray<float> Input,Output;
+		FVector2D FrozenRaw=FVector2D::ZeroVector,FrozenPin=FVector2D::ZeroVector,AttackRaw=FVector2D::ZeroVector;
+	};
+	// Exists only after an accepted one-frame extension; no live FImpl layout change.
+	TMap<TWeakObjectPtr<const AProphecyAgent>,FAttackEndPrediction> AttackEndPredictions;
 	TSet<TWeakObjectPtr<const AProphecyAgent>> RootYawImpulseAgents;
 	// Only external linear impulses need world-space transport of the otherwise
 	// root-relative direction-smoothing history. Value is its last training yaw.
@@ -402,43 +418,41 @@ namespace
 		return Out;
 	}
 
-	FMat3f ForearmRotationFromHand(const FVector3f& LocalAxisValue,
-		const FVector3f& ElbowToHand, const FVector3f& LocalPole, const FMat3f& HandRotation)
+	const FQuat& ForearmIdleLocal(int32 Side)
 	{
-		// The upper-body contract uses a shared neutral hand/forearm basis (as in
-		// SeedUpperState). Carry the hand's roll, removing only wrist swing needed
-		// to point the forearm from elbow to hand. Never use simulated forearm roll
-		// or the upper-arm pole to choose this target's axial rotation.
-		const FQuat Hand = MatrixToQuat(HandRotation);
-		const FVector LocalAxis(SafeNormal(LocalAxisValue));
-		const FVector From = Hand.RotateVector(LocalAxis);
-		const FVector To = FVector(ElbowToHand).GetSafeNormal(1.0e-16, From);
-		const double Dot = FMath::Clamp(FVector::DotProduct(From, To), -1.0, 1.0);
-		FQuat Swing;
-		if (1.0 + Dot > 1.0e-12)
+		// Same canonical animation frame as the FK return, converted to native basis once.
+		static const TStaticArray<FQuat,2> Reference=[]
 		{
-			const FVector Cross = FVector::CrossProduct(From, To);
-			Swing = FQuat(Cross.X, Cross.Y, Cross.Z, 1.0 + Dot).GetNormalized();
-		}
-		else
-		{
-			// At exactly opposite directions a shortest swing has no unique axis.
-			// Resolve that degenerate pose in the hand frame, not against world axes.
-			const FVector Axis = Hand.RotateVector(FVector(ProjectToPlane(LocalPole, FVector3f(LocalAxis))));
-			Swing = FQuat(Axis, UE_DOUBLE_PI);
-		}
-		return QuatToMatrix(Swing * Hand);
+			TStaticArray<FQuat,2> Result;
+            for(int32 I=0;I<2;++I)
+            {
+                const FQuat& Q=ProphecyForearmConvention::IdleLocalUE(I);
+                Result[I]=FQuat(-Q.X,Q.Y,-Q.Z,Q.W);
+            }
+			return Result;
+		}();
+		return Reference[Side];
 	}
 
-    // UE boundary for every special: same wrist-derived roll as locomotion.
+	FMat3f ForearmRotationFromUpperArm(const FVector3f& LocalAxisValue,
+		const FVector3f& ElbowToHand, const FMat3f& UpperArmRotation,int32 Side)
+	{
+		// Carry neutral forearm roll with its parent, then swing only to reach the wrist.
+		// Hand orientation is an independent wrist DOF and must never choose forearm roll.
+		const FQuat Reference = MatrixToQuat(UpperArmRotation)*ForearmIdleLocal(Side);
+        return QuatToMatrix(ProphecyForearmConvention::FromReference(
+            FVector(SafeNormal(LocalAxisValue)),FVector(ElbowToHand),Reference));
+	}
+
+    // UE boundary for every special: same upper-arm-derived roll as locomotion.
     // Twist is reconstructed, not an independent NN output. Keep every position
     // and the hand's complete transform untouched.
-    void SetForearmRollFromHand(const FVector3f& LocalAxis,const FVector3f& LocalPole,
-        FTransform& Forearm,const FTransform& Hand)
+    void SetForearmRollFromUpperArm(const FVector3f& LocalAxis,int32 Side,
+        const FTransform& UpperArm,FTransform& Forearm,const FTransform& Hand)
     {
         const FVector Delta=Hand.GetLocation()-Forearm.GetLocation();
-        const auto Rotation=ForearmRotationFromHand(LocalAxis,FVector3f(Delta.X,-Delta.Y,Delta.Z),
-            LocalPole,MirrorYBasis(QuatToMatrix(Hand.GetRotation())));
+        const auto Rotation=ForearmRotationFromUpperArm(LocalAxis,FVector3f(Delta.X,-Delta.Y,Delta.Z),
+            MirrorYBasis(QuatToMatrix(UpperArm.GetRotation())),Side);
         Forearm.SetRotation(MatrixToQuat(MirrorYBasis(Rotation)));
     }
 
@@ -1017,6 +1031,9 @@ struct AProphecyNNLocomotionManager::FImpl
 	TArray<float> WalkOutputBuffer;
 	TArray<float> UpperInputBuffer;
 	TArray<float> UpperOutputBuffer;
+	TArray<int32> UpperInferenceAgents;
+	TArray<uint8> UpperInferenceRequested;
+	TArray<float> UpperPackedInput,UpperPackedOutput;
 	FPolicyModel Model;
 	FPolicyModel WalkModel;
 	FPolicyModel UpperModel;
@@ -1592,6 +1609,29 @@ namespace
 		CleanUpperState(OutUpperState);
 	}
 
+	// Accepted FK output is the next NN prior, in the same predicted mover frame
+	// as the lower-derived base. History shifts once in ApplyUpperOutputBatch.
+	void CommitFKReturnUpperPose(AProphecyNNLocomotionManager::FImpl& Impl,int32 Index,
+		TConstArrayView<FTransform> Pose)
+	{
+		const auto& Agent=Impl.Agents[Index];
+		float* Published=UpperStateSlice(Impl.UpperPublishedStateBuffer,Index);
+		EncodeComponentPoseToNNStates(Impl,Agent,Pose,nullptr,Published);
+		float* Current=UpperStateSlice(Impl.UpperCurrentStateBuffer,Index);
+		FMemory::Memcpy(Current,Published,UpperStateDim*sizeof(float));
+		RebaseUpperHeadingState(Current,
+			TransformRow(Agent.CurRootPos-Agent.PublishedRoot,YawMatrix(Agent.PublishedYaw)),
+			WrapAngle(Agent.CurRootYaw-Agent.PublishedYaw));
+	}
+	void WriteUpperPoseHistory(const float* Previous,const float* Current,const float* CurrentBase,
+		const float* NextBase,float* Write)
+	{
+		FMemory::Memcpy(Write,Previous,UpperStateDim*sizeof(float));
+		Write+=UpperStateDim;
+		for(int32 Index=0;Index<UpperStateDim;++Index)Write[Index]=NextBase[Index]+Current[Index]-CurrentBase[Index];
+		CleanUpperState(Write);
+	}
+
 	// These raw encoders stay at their original positions around the unchanged tolerance stages.
 	void EncodePhysicalLowerSample(const AProphecyNNLocomotionManager::FImpl& Impl,
 		bool bUseWalkPolicy,
@@ -1679,6 +1719,7 @@ namespace
 #include "ProphecyNNPhysicalFeedbackBatch.inl"
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Tests/ProphecyNNPhysicalFeedbackBatchTests.inl"
+#include "Tests/ProphecyFKReturnFeedbackTests.inl"
 #endif
 
 	void BlendStateVector(float* State, const float* Target, int32 Offset, float Weight)
@@ -2105,6 +2146,7 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 		ProphecySwordAttackCollision::End(AgentActor);
 		ProphecyDefenseControls::Remove(AgentActor);
 		SlashRootMinusStartPelvis.Remove(AgentActor);
+		AttackEndPredictions.Remove(AgentActor);
 		ProphecyNNRootWindow::Remove(AgentActor);
 		ProphecyUpperRootHorizon::Remove(AgentActor);
 		ProphecyRootBalance::Remove(AgentActor);
@@ -2117,8 +2159,10 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 		ProphecyCoreTempering::Remove(AgentActor);
 		ProphecySlashReturn::Remove(AgentActor);
 		ProphecyUpperBodyInertia::Remove(AgentActor);
+		ProphecyFKReturn::Remove(AgentActor);
 		ProphecyAttackStartInertia::Remove(AgentActor);
 		ProphecyAttackStartHands::Remove(AgentActor);
+		ProphecyAttackStartFKCore::Remove(AgentActor);
 		ProphecyLowerTempering::ForgetProfiles(AgentActor);
 		ProphecyLegChainDebug::Remove(AgentActor);
 		ProphecyRootSpeedLimits::Remove(AgentActor);
@@ -2170,9 +2214,11 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 	}
 
 	const float StepSeconds = 1.0f / NNUpdateHz;
+	// One authored tick per unpaused game tick, independent of FPS/dilation.
+	const float TickBudget = ProphecyBlendClock::TickBudget(!GetWorld() || GetWorld()->IsPaused(), DeltaSeconds);
 	if (ProphecyAgentTime::HasClocks(this) && !IsSimBridgeActive())
 	{
-		ProphecyAgentTime::Advance(this,DeltaSeconds,StepSeconds,BatchSize,MaxCatchUpStepsPerTick,
+		ProphecyAgentTime::Advance(this,TickBudget,StepSeconds,BatchSize,MaxCatchUpStepsPerTick,
 			Impl->AccumulatedStepSeconds,GetWorld()?double(GetWorld()->GetTimeSeconds()):0.,
 			[&](ProphecyAgentTime::FStep& Event)
 		{
@@ -2184,12 +2230,20 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 	}
 	else
 	{
-	Impl->AccumulatedStepSeconds += DeltaSeconds;
+	Impl->AccumulatedStepSeconds += TickBudget;
 	int32 Steps = 0;
 	while (Impl->AccumulatedStepSeconds >= StepSeconds && Steps < MaxCatchUpStepsPerTick)
 	{
 		StepSimulation(StepSeconds);
 		Impl->AccumulatedStepSeconds -= StepSeconds;
+		// Policy steps must also see the last accepted return pose. Ordinary
+		// agents retain their existing publication cadence; the FK clock still
+		// spends at most one tick regardless of how many NN steps are due.
+		for(int32 I=0;I<CrowdSize;++I)if(ProphecyFKReturn::IsActive(AgentActors[I]))
+		{
+			const double Time=GetWorld()?double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds:0.;
+			PublishAgentPose(I,FMath::Max(Time,Impl->Agents[I].PublishedPoseTimeSeconds+1.e-6));
+		}
 		++Steps;
 	}
 	if (Steps == MaxCatchUpStepsPerTick && Impl->AccumulatedStepSeconds >= StepSeconds)
@@ -2212,7 +2266,7 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 	}
 	}
 	UpdateVisualRoots();
-    if(ProphecyWalkPinning::AnyTickPinning()) UpdateWalkTickPinning(DeltaSeconds);
+    if(ProphecyWalkPinning::AnyTickPinning()) UpdateWalkTickPinning(TickBudget);
 	ProphecyRootPelvisBounds::Apply(*this);
 	const APlayerController* CameraController = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
 	AProphecyAgent* CameraPawn = CameraController ? Cast<AProphecyAgent>(CameraController->GetPawn()) : nullptr;
@@ -2647,11 +2701,86 @@ bool AProphecyNNLocomotionManager::InitializeWalkNNE()
 	return Impl->WalkModel.CreateCpu(WalkModelData, TEXT("NNERuntimeORTCpu"));
 }
 
+namespace
+{
+FString UpperCheckpointDirectory(int32 Checkpoint)
+{
+	return Checkpoint==1 ? TEXT("Content/locomotion/NN/Upper82500/") :
+		Checkpoint==2 ? TEXT("Content/locomotion/NN/Upper85750/") :
+		Checkpoint==3 ? TEXT("Content/locomotion/NN/Upper86750/") :
+		Checkpoint==4 ? TEXT("Content/locomotion/NN/Upper83750/") : TEXT("Content/locomotion/NN/");
+}
+}
+
+int32 AProphecyNNLocomotionManager::GetUpperCheckpointIndex() const
+{
+	if (!Impl || !Impl->bInitialized) return -1;
+	for (int32 Index=0;Index<5;++Index)
+	{
+		const FString Directory=UpperCheckpointDirectory(Index);
+		if (FPaths::IsSamePath(ResolveProjectPath(UpperOnnxModelPath),ResolveProjectPath(Directory+TEXT("prophecy_upper_body_b100.onnx"))) &&
+			FPaths::IsSamePath(ResolveProjectPath(UpperRuntimeContractPath),ResolveProjectPath(Directory+TEXT("prophecy_upper_body_runtime.json")))) return Index;
+	}
+	return -1;
+}
+
+bool AProphecyNNLocomotionManager::SetUpperCheckpointIndex(int32 Checkpoint,FString& OutError)
+{
+	OutError.Reset();
+	if (!IsInGameThread() || !Impl || !Impl->bInitialized)
+	{ OutError=TEXT("Upper manager is not initialized.");return false; }
+	if (Checkpoint<0 || Checkpoint>4)
+	{ OutError=TEXT("Unknown upper checkpoint.");return false; }
+	if (GetUpperCheckpointIndex()==Checkpoint) return true;
+	const FString Directory=UpperCheckpointDirectory(Checkpoint);
+	const FString NewContract=Directory+TEXT("prophecy_upper_body_runtime.json");
+	TSharedPtr<FJsonObject> ExistingContract, CandidateContract;
+	auto ReadContract=[](const FString& Path,TSharedPtr<FJsonObject>& Result)
+	{
+		FString Text;
+		return FFileHelper::LoadFileToString(Text,*ResolveProjectPath(Path)) &&
+			FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Result) && Result.IsValid();
+	};
+	if (!ReadContract(UpperRuntimeContractPath,ExistingContract) || !ReadContract(NewContract,CandidateContract))
+	{ OutError=TEXT("Cannot read upper checkpoint contracts.");return false; }
+	// Only weights/provenance/audit may differ: preserve all current pose and recurrent state.
+	for (const TCHAR* Field : {TEXT("checkpoint_path"),TEXT("checkpoint_sha256"),TEXT("checkpoint_step"),
+		TEXT("checkpoint_kind"),TEXT("onnx_path"),TEXT("onnx_sha256"),TEXT("startup_audit")})
+	{
+		ExistingContract->RemoveField(Field);
+		CandidateContract->RemoveField(Field);
+	}
+	if (!FJsonValue::CompareEqual(FJsonValueObject(ExistingContract),FJsonValueObject(CandidateContract)))
+	{ OutError=TEXT("Upper checkpoint runtime contract differs; keeping current model.");return false; }
+
+	// Synchronous game-thread transaction. No tick can observe the candidate before validation.
+	FPolicyModel PreviousModel=MoveTemp(Impl->UpperModel);
+	TStrongObjectPtr<UNNEModelData> PreviousData(UpperModelData.Get());
+	const FString PreviousOnnx=UpperOnnxModelPath, PreviousContract=UpperRuntimeContractPath;
+	Impl->UpperModel=FPolicyModel();
+	UpperOnnxModelPath=Directory+TEXT("prophecy_upper_body_b100.onnx");
+	UpperRuntimeContractPath=NewContract;
+	if (!InitializeUpperNNE() || !ValidateUpperNNE())
+	{
+		Impl->UpperModel=MoveTemp(PreviousModel);
+		UpperModelData=PreviousData.Get();
+		UpperOnnxModelPath=PreviousOnnx;
+		UpperRuntimeContractPath=PreviousContract;
+		OutError=TEXT("Upper checkpoint failed model creation/startup validation; keeping current model.");
+		return false;
+	}
+	UE_LOG(LogProphecyNNLocomotion,Display,TEXT("Shared upper checkpoint switched to %s."),*UpperOnnxModelPath);
+	return true;
+}
+
 bool AProphecyNNLocomotionManager::InitializeUpperNNE()
 {
 	FModuleManager::Get().LoadModule(TEXT("NNERuntimeORT"));
 	TArray64<uint8> Bytes;
-	if (!FFileHelper::LoadFileToArray(Bytes, *ResolveProjectPath(UpperOnnxModelPath)))
+	// Same frozen weights/operations, with only the ONNX batch dimension made
+	// symbolic so held/authored agents can be omitted from the inference batch.
+	const FString DynamicPath=UpperOnnxModelPath.Replace(TEXT("_b100.onnx"),TEXT("_dynamic.onnx"));
+	if (!FFileHelper::LoadFileToArray(Bytes, *ResolveProjectPath(DynamicPath)))
 	{
 		return false;
 	}
@@ -2817,6 +2946,10 @@ void AProphecyNNLocomotionManager::InitializeAgents()
 	Impl->WalkOutputBuffer.SetNumZeroed(BatchSize * PolicyOutputDim);
 	Impl->UpperInputBuffer.SetNumZeroed(BatchSize * UpperInputDim);
 	Impl->UpperOutputBuffer.SetNumZeroed(BatchSize * UpperStateDim);
+	Impl->UpperInferenceAgents.Reserve(BatchSize);
+	Impl->UpperInferenceRequested.Reserve(BatchSize);
+	Impl->UpperPackedInput.Reserve(BatchSize*UpperInputDim);
+	Impl->UpperPackedOutput.Reserve(BatchSize*UpperStateDim);
 	const float StepSeconds = 1.0f / NNUpdateHz;
 	const int32 LaneCount = Impl->bSimpleLocomotionTest ? 1 : 10;
 	const int32 Rows = FMath::DivideAndRoundUp(BatchSize, LaneCount);
@@ -3090,7 +3223,9 @@ void AProphecyNNLocomotionManager::StepSimulation(float StepSeconds)
 			Slash.HitFrame != INDEX_NONE && Slash.Frame + 1 >= Slash.HitFrame + Slash.TailSteps)
 		{
 			if (Slash.Frame >= Slash.HitFrame + Slash.TailSteps)
-				StopAgentNNAttack(GetAgentHandle(Index));
+			{
+				if (!TryExtendAgentAttackEnd(GetAgentHandle(Index))) StopAgentNNAttack(GetAgentHandle(Index));
+			}
 			else
 				ProphecyAttackTrim::QueueHalfFrame(this,AgentActors[Index],Slash.Family,Slash.Frame+1);
 		}
@@ -3354,6 +3489,7 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 			Agent.MoverState, Agent.MoverIntent, StepSeconds, RootYawImpulseAgents.Contains(InputActor),
 			PreparedBalance);
 		auto* WindowSmoothing = ProphecyNNRootWindow::Find(InputActor);
+		const float WindowDeceleration = WindowSmoothing ? ProphecyNNRootWindow::GetDistanceDeceleration(InputActor) : -1.f;
 		if (float* HistoryYaw = RootImpulseSmoothingYaw.Find(InputActor))
 		{
 			if (WindowSmoothing)
@@ -3383,7 +3519,7 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 			{
 				double LocalYaw = -double(DeltaYaw);
 				const FVector FilteredOffset = WindowSmoothing->Samples[FutureIndex - 1].Filter(
-					TrainingToUnreal(FutureLocal), LocalYaw, WindowSmoothing->Factors);
+					TrainingToUnreal(FutureLocal), LocalYaw, WindowSmoothing->Factors, WindowDeceleration);
 				FutureLocal = UnrealToTraining(FilteredOffset);
 				DeltaYaw = WrapAngle(float(-LocalYaw));
 			}
@@ -3472,7 +3608,7 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 		ProphecyAttackRecovery::Step(InputActor,Agent.PolicyBlend.WalkWeight,Agent.RecoveryWeights);
 		if (const auto* Feet=ProphecyAttackFootLocomotion::FindActive(InputActor))
 			Agent.RecoveryWeights=ProphecyAttackRecovery::FWeights(ProphecyAttackFootLocomotion::WalkWeight(*Feet,Agent.PolicyBlend.WalkWeight));
-		if (!Agent.Slash.bActive && !Agent.DefensePose) ProphecyHandRecovery::Step(InputActor);
+		// Upper return is publication-only FK; lower recovery remains independent.
 
 	}
 
@@ -3537,8 +3673,7 @@ bool AProphecyNNLocomotionManager::RunModelBatch()
 		bNeedRun |= Impl->Agents[AgentIndex].RecoveryWeights.NeedsRun();
         const auto Rotations=ProphecyAttackRecovery::FootRotationWeights(AgentActors[AgentIndex],Impl->Agents[AgentIndex].PolicyBlend.WalkWeight);
         bNeedWalk |= Rotations.X>=0 || Rotations.Y>=0;
-		if (const auto* H=ProphecyHandRecovery::Frame(AgentActors[AgentIndex]))
-		{ bNeedRun|=H->Need[0];bNeedWalk|=H->Need[1]; }
+
 	}
 	if (bNeedRun && !Impl->Model.Run(Impl->InputBuffer, Impl->OutputBuffer))
 	{
@@ -3551,16 +3686,6 @@ bool AProphecyNNLocomotionManager::RunModelBatch()
 		UE_LOG(LogProphecyNNLocomotion, Error, TEXT("Walk NNE policy RunSync failed."));
 		SetActorTickEnabled(false);
 		return false;
-	}
-	// Preserve source outputs before the ordinary walk-only lane overwrites Run.
-	if (ProphecyHandRecovery::HasRecovery()) for (int32 I=0;I<CrowdSize;++I)
-	{
-		if (Clock && !Clock->Step->Due[I]) continue;
-		if (auto* H=ProphecyHandRecovery::Frame(AgentActors[I]))
-		{
-			if(H->Need[0]) FMemory::Memcpy(H->Raw[0],Impl->OutputBuffer.GetData()+I*PolicyOutputDim,sizeof(H->Raw[0]));
-			if(H->Need[1]) FMemory::Memcpy(H->Raw[1],Impl->WalkOutputBuffer.GetData()+I*PolicyOutputDim,sizeof(H->Raw[1]));
-		}
 	}
 	if (bNeedWalk)
 	{
@@ -3601,8 +3726,7 @@ void AProphecyNNLocomotionManager::AdvanceAgentMover(int32 AgentIndex, float Ste
 			MagicDelta.Y, Future[1] * Impl->MaxSpeedScaleFinal);
 		const float NextYawDelta = FMath::Atan2(Future[3], Future[2]);
 		if (NextState) RebaseStateRoot(NextState, *Impl, NextRootDelta, NextYawDelta);
-		if (auto* H=ProphecyHandRecovery::Frame(Actor))
-			for(int32 P=0;P<2;++P) if(H->Need[P]) RebaseStateRoot(H->Lower[P],*Impl,NextRootDelta,NextYawDelta);
+
 		Agent.PrevRootPos = Agent.CurRootPos;
 		Agent.PrevRootYaw = Agent.CurRootYaw;
 		FResolvedMoverTarget& MoverTarget = MoverTargets[AgentIndex];
@@ -3741,6 +3865,8 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
         FVector2f ReturningCalfDelta(ProphecyKickFootLeeway::ReturningLengthDeltaCm(AgentActors[AgentIndex],0)/100.f,
             ProphecyKickFootLeeway::ReturningLengthDeltaCm(AgentActors[AgentIndex],1)/100.f);
         const bool bReturnLengths=ProphecyKickFootLeeway::HasLengthReturn(AgentActors[AgentIndex]);
+        const float LengthReturnWeight=bReturnLengths?ProphecyKickFootLeeway::LengthReturnWeight(AgentActors[AgentIndex]):0.f;
+        const FVector2f TemperingWeights=Tempering?ProphecyLowerTempering::ReconstructionWeights(AgentActors[AgentIndex],*Tempering):FVector2f::ZeroVector;
         const bool bRegional=Agent.RecoveryWeights.Left!=Agent.RecoveryWeights.Pelvis || Agent.RecoveryWeights.Right!=Agent.RecoveryWeights.Pelvis;
         const bool bReconstructRecovery=bReconstructTemperedLegs || ((bReturnLengths || (bRegional && !Tempering))
             && ProphecyLegChainDebug::IsEnabled(AgentActors[AgentIndex]));
@@ -3912,11 +4038,6 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
             if(TickPins && bWalkPolicy && bVisiblePolicy) TickPins->Current.Applied=EffectivePin;
 		};
 		FVector2f RawPin, EffectivePin;
-		if (auto* H=ProphecyHandRecovery::Frame(AgentActors[AgentIndex]))
-		{
-			FVector2f UnusedRaw,UnusedPin;
-			for(int32 P=0;P<2;++P) if(H->Need[P]) CorrectPolicy(H->Raw[P],P==1,H->Lower[P],UnusedRaw,UnusedPin,false);
-		}
 		FVector2D RawDebug(Raw[41], Raw[42]);
 		FVector3f LegSourcePelvis[2];
 		FMat3f LegSourcePelvisRotation[2];
@@ -4037,8 +4158,25 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 				const FPelvisLegGeometry G{Impl->LocalOffsets[Limb.Start], Impl->LocalOffsets[Limb.Mid], Limb.LocalPoleAxes[0],
 					Impl->LocalOffsets[Limb.End].Size()+ReturningCalfDelta[I], Ankle.Z + Impl->GroundHeight
 					- ExactFootMinimum(Axes, Impl->FootHalfDims, Impl->ToeHalfDims) + 1.e-5f};
+				// Each correction fades against its incoming NN pose on its own existing clock.
+				// Keep length/regional repair underneath tempering, so ending tempering does
+				// not abruptly replace one full-strength solver with another.
+				if (bReturnLengths || W!=Agent.RecoveryWeights.Pelvis)
+				{
+					const FRecoveryLegSource Source(Transition,O);
+					if (bCleanRecoverySource && NNSource)
+						ResolvePelvisLeg(ReadStateVec3(NNSource,0),MatrixFromRot6(NNSource+3),ReadStateVec3(Transition,0),
+							MatrixFromRot6(Transition+3),G,Transition,O,NNSource,false,nullptr,0.f,bOuterReach);
+					else if(W!=Agent.RecoveryWeights.Pelvis)
+						ResolvePelvisLeg(LegSourcePelvis[I],LegSourcePelvisRotation[I],ReadStateVec3(Transition,0),
+							MatrixFromRot6(Transition+3),G,Transition,O,nullptr,false,nullptr,0.f,bOuterReach);
+					else ResolvePelvisLeg(ReadStateVec3(Transition,0),MatrixFromRot6(Transition+3),ReadStateVec3(Transition,0),
+						MatrixFromRot6(Transition+3),G,Transition,O,nullptr,false,nullptr,0.f,bOuterReach);
+					Source.BlendCorrection(Transition,O,FMath::Max(LengthReturnWeight,FMath::Abs(W-Agent.RecoveryWeights.Pelvis)));
+				}
 				if (bTemperThisLeg)
 				{
+					const FRecoveryLegSource Source(Transition,O);
 					ResolveTemperedLeg(I==0 ? *Tempering : *RightTempering, StateSlice(Impl->PreviousPublishedStateBuffer, AgentIndex),
 					G, Transition, O,Limb.ToeOffset,
 					FVector3f(Impl->LocalOffsets[Limb.End].X<0.f ? 1.f : -1.f,0,0),
@@ -4046,18 +4184,8 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 					bSupportSource ? NNSource : nullptr);
 					if (!bTimedPoleRecovery && (I==0 ? Tempering : RightTempering)->FeetRotation>0.f)
 						ApplyTemperedKneePoleRecovery(Controls,StateSlice(Impl->PreviousPublishedStateBuffer,AgentIndex),G,Transition,O);
+					Source.BlendCorrection(Transition,O,I==0?TemperingWeights.X:TemperingWeights.Y);
 				}
-				else if (bCleanRecoverySource && NNSource)
-                {
-                    ResolvePelvisLeg(ReadStateVec3(NNSource,0),MatrixFromRot6(NNSource+3),ReadStateVec3(Transition,0),
-                        MatrixFromRot6(Transition+3),G,Transition,O,NNSource,false,nullptr,0.f,bOuterReach);
-                }
-				else if (W!=Agent.RecoveryWeights.Pelvis)
-					ResolvePelvisLeg(LegSourcePelvis[I],LegSourcePelvisRotation[I],ReadStateVec3(Transition,0),
-						MatrixFromRot6(Transition+3),G,Transition,O,nullptr,false,nullptr,0.f,bOuterReach);
-				else if (bReturnLengths)
-					ResolvePelvisLeg(ReadStateVec3(Transition,0),MatrixFromRot6(Transition+3),ReadStateVec3(Transition,0),
-						MatrixFromRot6(Transition+3),G,Transition,O,nullptr,false,nullptr,0.f,bOuterReach);
 			}
 		}
         if(bPresentationGeometry) FRecoveryPolicyLegs::Capture(Transition,PolicyLegs.Solved);
@@ -4070,7 +4198,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
                 if(Frozen) continue;
                 const auto Limb=Impl->BlendLimb(I,I==0?Agent.RecoveryWeights.Left:Agent.RecoveryWeights.Right);
                 const FPelvisLegGeometry G{Impl->LocalOffsets[Limb.Start],Impl->LocalOffsets[Limb.Mid],Limb.LocalPoleAxes[0]};
-                Limited|=ApplyTemperedKneePoleRecovery(AgentActors[AgentIndex],StateSlice(Impl->PreviousPublishedStateBuffer,AgentIndex),G,Transition,9+16*I,PoleStep.MaxTurnRadians);
+                Limited|=ApplyTemperedKneePoleRecovery(AgentActors[AgentIndex],StateSlice(Impl->PreviousPublishedStateBuffer,AgentIndex),G,Transition,9+16*I,PoleStep.MaxTurnRadians,PoleStep.Weight);
             }
             ProphecyLegRecovery::FinishStep(AgentActors[AgentIndex],Limited);
         };
@@ -4162,7 +4290,9 @@ void AProphecyNNLocomotionManager::BuildUpperInputBatch()
 {
 	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::UpperInput);
 	const auto* Clock=ProphecyAgentTime::Context(this);
-	for (int32 AgentIndex = 0; AgentIndex < BatchSize; ++AgentIndex)
+	Impl->UpperInferenceAgents.Reset();
+	Impl->UpperInferenceRequested.Init(0,BatchSize);
+	for (int32 AgentIndex = 0; AgentIndex < CrowdSize; ++AgentIndex)
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		if (Impl->Agents[AgentIndex].DefensePose) continue;
@@ -4183,16 +4313,13 @@ void AProphecyNNLocomotionManager::BuildUpperInputBatch()
 		const float* CurrentBase = UpperStateSlice(Impl->UpperCurrentBaseBuffer, AgentIndex);
 		float* NextBase = UpperStateSlice(Impl->UpperNextBaseBuffer, AgentIndex);
 		BuildUpperBaseFromLower(StateSlice(Impl->CurStateBuffer, AgentIndex), *Impl, NextBase);
+		if(!ProphecyFKReturn::NeedsInference(AgentActors[AgentIndex]))continue;
+		Impl->UpperInferenceRequested[AgentIndex]=1;
+		Impl->UpperInferenceAgents.Add(AgentIndex);
 
 		float* Write = Impl->UpperInputBuffer.GetData() + AgentIndex * UpperInputDim;
-		FMemory::Memcpy(Write, PreviousUpper, UpperStateDim * sizeof(float));
-		Write += UpperStateDim;
-		for (int32 Index = 0; Index < UpperStateDim; ++Index)
-		{
-			Write[Index] = NextBase[Index] + CurrentUpper[Index] - CurrentBase[Index];
-		}
-		CleanUpperState(Write);
-		Write += UpperStateDim;
+		WriteUpperPoseHistory(PreviousUpper,CurrentUpper,CurrentBase,NextBase,Write);
+		Write += 2*UpperStateDim;
 		FMemory::Memcpy(
 			Write,
 			TransformStateSlice(Impl->PreviousPelvisHeadingBuffer, AgentIndex),
@@ -4244,35 +4371,34 @@ void AProphecyNNLocomotionManager::BuildUpperInputBatch()
 	}
 }
 
-namespace { bool RunHandRecoverySources(AProphecyNNLocomotionManager* Manager,AProphecyNNLocomotionManager::FImpl* Impl,TArrayView<TObjectPtr<AProphecyAgent>> Actors); }
 bool AProphecyNNLocomotionManager::RunUpperModelBatch()
 {
 	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::UpperRun);
-	const auto* Clock=ProphecyAgentTime::Context(this);
-	bool bNeedUpper = false;
-	for (int32 AgentIndex = 0; AgentIndex < CrowdSize; ++AgentIndex)
+	const int32 Count=Impl->UpperInferenceAgents.Num();
+	if(Count==0)return true;
+	// Only eligible agents enter the single normal NN batch. Held returns, active
+	// authors and unused capacity cost no inference; buffers retain their storage.
+	const bool Dense=Count==BatchSize;
+	if(!Dense)
 	{
-		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
-		if (Impl->Agents[AgentIndex].DefensePose) continue;
-		if (ProphecyArmedPose::OwnsUpperOutput(AgentActors.IsValidIndex(AgentIndex)?AgentActors[AgentIndex].Get():nullptr)
-			|| AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],false)) continue;
-		bNeedUpper |= !AgentActors.IsValidIndex(AgentIndex) || !AgentActors[AgentIndex] ||
-			AgentActors[AgentIndex]->bNNInferenceEnabled;
+		Impl->UpperPackedInput.SetNumUninitialized(Count*UpperInputDim,EAllowShrinking::No);
+		Impl->UpperPackedOutput.SetNumUninitialized(Count*UpperStateDim,EAllowShrinking::No);
+		for(int32 Row=0;Row<Count;++Row)FMemory::Memcpy(Impl->UpperPackedInput.GetData()+Row*UpperInputDim,
+			Impl->UpperInputBuffer.GetData()+Impl->UpperInferenceAgents[Row]*UpperInputDim,UpperInputDim*sizeof(float));
 	}
-	if (!bNeedUpper)
-	{
-		return true;
-	}
-	if (!Impl->UpperModel.Run(Impl->UpperInputBuffer, Impl->UpperOutputBuffer))
+	if (!Impl->UpperModel.ResizeBatch(Count) || !Impl->UpperModel.Run(
+		Dense?Impl->UpperInputBuffer:Impl->UpperPackedInput,Dense?Impl->UpperOutputBuffer:Impl->UpperPackedOutput))
 	{
 		UE_LOG(LogProphecyNNLocomotion, Error, TEXT("Upper NNE policy RunSync failed."));
 		SetActorTickEnabled(false);
 		return false;
 	}
-	return RunHandRecoverySources(this,Impl,MakeArrayView(AgentActors));
+	if(!Dense)for(int32 Row=0;Row<Count;++Row)FMemory::Memcpy(
+		Impl->UpperOutputBuffer.GetData()+Impl->UpperInferenceAgents[Row]*UpperStateDim,
+		Impl->UpperPackedOutput.GetData()+Row*UpperStateDim,UpperStateDim*sizeof(float));
+	return true; // One vanilla upper inference. No auxiliary walk/run hand policies.
 }
 
-namespace { void CorrectLocomotionHands(const AProphecyNNLocomotionManager* Manager,AProphecyNNLocomotionManager::FImpl* Impl,AProphecyAgent* Actor,int32 Index,double Time,double Dt,float CoreFollow); }
 void AProphecyNNLocomotionManager::ApplyUpperOutputBatch()
 {
 	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::UpperOutput);
@@ -4304,6 +4430,8 @@ void AProphecyNNLocomotionManager::ApplyUpperOutputBatch()
 				TransformStateSlice(Impl->CurrentPelvisHeadingBuffer,AgentIndex),9*sizeof(float));
 			continue;
 		}
+		if(Impl->UpperInferenceRequested[AgentIndex])
+		{
 		const float* Prior = Impl->UpperInputBuffer.GetData() + AgentIndex * UpperInputDim + 90;
 		const float* Delta = Impl->UpperOutputBuffer.GetData() + AgentIndex * UpperStateDim;
 		for (int32 Index = 0; Index < UpperStateDim; ++Index)
@@ -4311,14 +4439,12 @@ void AProphecyNNLocomotionManager::ApplyUpperOutputBatch()
 			CurrentUpper[Index] = Prior[Index] + Delta[Index];
 		}
 		CleanUpperState(CurrentUpper);
-		const float CoreFollow=Impl->Agents[AgentIndex].Slash.bActive ? 1.f : ProphecyCoreTempering::Rotation(AgentActors[AgentIndex]);
-		if (!Impl->Agents[AgentIndex].Slash.bActive &&
-			(CoreFollow<1 || ProphecyUpperBodyInertia::Active(AgentActors[AgentIndex]) || ProphecySlashReturn::Active(AgentActors[AgentIndex]) || ProphecyHandRecovery::Frame(AgentActors[AgentIndex]) || ProphecyHandRecovery::Tempering(AgentActors[AgentIndex]) ||
-			ProphecyHandInertia::IsActive(AgentActors[AgentIndex],Impl->Agents[AgentIndex].PublishedWalkWeight,false)))
-			CorrectLocomotionHands(this,Impl,AgentActors[AgentIndex],AgentIndex,
-				Clock?Clock->Step->SourceTimeSeconds:double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds+1./NNUpdateHz,
-				Clock?Clock->Step->WorldIntervals[AgentIndex]:1./NNUpdateHz,CoreFollow);
+		const auto& Agent=Impl->Agents[AgentIndex];
 		FMemory::Memcpy(Published, CurrentUpper, UpperStateDim * sizeof(float));
+		RebaseUpperHeadingState(Published,
+			TransformRow(Agent.PublishedRoot-Agent.CurRootPos,YawMatrix(Agent.CurRootYaw)),
+			WrapAngle(Agent.PublishedYaw-Agent.CurRootYaw));
+		}
 		FMemory::Memcpy(CurrentBase, NextBase, UpperStateDim * sizeof(float));
 		FMemory::Memcpy(
 			TransformStateSlice(Impl->PreviousPelvisHeadingBuffer, AgentIndex),
@@ -4388,8 +4514,9 @@ void AProphecyNNLocomotionManager::ApplyAnimationLayers(float StepSeconds)
 		}
 
 		const float PlayLength = FMath::Max(0.0f, Animation->GetPlayLength());
-		Layer.ElapsedSeconds += StepSeconds;
-		Layer.PlaybackTimeSeconds += StepSeconds * Layer.PlayRate;
+		const float LayerSeconds = float(ProphecyBlendClock::Consume(AgentActor, ProphecyBlendClock::EKind::AnimationLayer));
+		Layer.ElapsedSeconds += LayerSeconds;
+		Layer.PlaybackTimeSeconds += LayerSeconds * Layer.PlayRate;
 		if (Layer.bLoop && PlayLength > UE_SMALL_NUMBER)
 		{
 			Layer.PlaybackTimeSeconds = FMath::Fmod(Layer.PlaybackTimeSeconds, PlayLength);
@@ -4406,7 +4533,7 @@ void AProphecyNNLocomotionManager::ApplyAnimationLayers(float StepSeconds)
 		bool bCompletesThisStep = false;
 		if (Layer.bStopping)
 		{
-			Layer.StopElapsedSeconds += StepSeconds;
+			Layer.StopElapsedSeconds += LayerSeconds;
 			const float StopAlpha = Layer.StopDurationSeconds <= UE_SMALL_NUMBER
 				? 1.0f
 				: SmoothUnitAlpha(Layer.StopElapsedSeconds / Layer.StopDurationSeconds);
@@ -4457,7 +4584,8 @@ void AProphecyNNLocomotionManager::ApplyAnimationLayers(float StepSeconds)
 					*GetNameSafe(Animation),
 					AgentIndex);
 				AgentActor->ActiveNNAnimationLayerAsset = nullptr;
-				Layer.Reset();
+				ProphecyBlendClock::Stop(AgentActor, ProphecyBlendClock::EKind::AnimationLayer);
+	Layer.Reset();
 				AgentActor->OnNNAnimationLayerInterrupted.Broadcast(Animation);
 				continue;
 			}
@@ -4586,6 +4714,10 @@ void AProphecyNNLocomotionManager::ApplyAnimationLayers(float StepSeconds)
 			UpperStateSlice(Impl->UpperCurrentStateBuffer, AgentIndex),
 			UpperStateSlice(Impl->UpperPublishedStateBuffer, AgentIndex),
 			UpperStateDim * sizeof(float));
+		if (!bNNFrozen)
+			RebaseUpperHeadingState(UpperStateSlice(Impl->UpperCurrentStateBuffer, AgentIndex),
+				NextRootDelta,
+				WindowSmoothing ? WindowSmoothing->ActualNextYaw : FMath::Atan2(Future[3], Future[2]));
 		BuildUpperBaseFromLower(
 			CurrentLower,
 			*Impl,
@@ -4602,7 +4734,8 @@ void AProphecyNNLocomotionManager::ApplyAnimationLayers(float StepSeconds)
 			const bool bNaturalCompletion = Layer.bNaturalCompletion || !Layer.bStopping;
 			Layer.BlendWeight = 0.0f;
 			AgentActor->ActiveNNAnimationLayerAsset = nullptr;
-			Layer.Reset();
+			ProphecyBlendClock::Stop(AgentActor, ProphecyBlendClock::EKind::AnimationLayer);
+	Layer.Reset();
 			if (bNaturalCompletion)
 			{
 				AgentActor->OnNNAnimationLayerFinished.Broadcast(Animation);
@@ -4682,9 +4815,9 @@ namespace
 				Positions[Arm.End] = End;
 				Rotations[Arm.End] = Multiply(
 					MatrixFromRot6(UpperState + UpperOffset + 3), HeadingToRoot);
-				Rotations[Arm.Mid] = ForearmRotationFromHand(
+				Rotations[Arm.Mid] = ForearmRotationFromUpperArm(
 					Impl->UpperLocalOffsets[Arm.End], LowerAxis,
-					Arm.LocalPoleAxes[1], Rotations[Arm.End]);
+					Rotations[Arm.Start],ArmIndex);
 				bFilled[Arm.Start] = bFilled[Arm.Mid] = bFilled[Arm.End] = true;
 				continue;
 			}
@@ -4877,15 +5010,6 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		PreviousCalfRotations[I]=(bNewPoseTime ? ComponentTransforms : PreviousComponentTransforms)[Impl->Limbs[I].Mid].GetRotation();
 	}
 	const auto* DefenseClamps=bDefensePose?ProphecyDefenseControls::Find(Controls,Agent.DefensePose->bDodge):nullptr;
-	const auto* HandTempering=!Agent.DefensePose && !Agent.Slash.bActive ? ProphecyHandRecovery::Tempering(Controls) : nullptr;
-	const auto* HandRecovery=!Agent.DefensePose && !Agent.Slash.bActive ? ProphecyHandRecovery::Frame(Controls) : nullptr;
-	const bool bTemperArms=bHasPreviousPose && (HandTempering || HandRecovery);
-	FQuat PreviousForearmRotations[2];
-	const int32 HandSpine=bTemperArms && HandTempering ? Impl->BodyNames.IndexOfByKey(FName(TEXT("spine_05"))) : INDEX_NONE;
-	const FQuat PreviousHandSpine=HandSpine!=INDEX_NONE
-		? (bNewPoseTime?ComponentTransforms:PreviousComponentTransforms)[HandSpine].GetRotation() : FQuat::Identity;
-	if (bTemperArms) for(int32 I=0;I<2;++I)
-		PreviousForearmRotations[I]=(bNewPoseTime?ComponentTransforms:PreviousComponentTransforms)[Impl->UpperArms[I].Mid].GetRotation();
 	if (bDefensePose)
 	{
 		for (int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
@@ -4942,23 +5066,13 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		ComponentTransforms[Leg.Mid].SetRotation(TemperCalfRotation(PreviousCalfRotations[I],
 			ComponentTransforms[Leg.Mid].GetRotation(),LocalTrainingToUnreal(Impl->LocalOffsets[Leg.End]),Follow));
 	}
-	if (bTemperArms) for(int32 I=0;I<2;++I)
+	// Attack constraints are applied with attack recurrence. Only defense needs
+	// a publication wrist limit; locomotion remains the clean NN target.
+	bool bWristChanged=false;
+	if (bDefensePose)
 	{
-		const float Follow=HandChainFollow(HandTempering,HandRecovery,I,true);
-		if (Follow>=1.f) continue;
-		const auto& Arm=Impl->UpperArms[I];
-		PreviousComponentTransforms[Arm.Mid].SetRotation(PreviousForearmRotations[I]);
-		const FQuat Carried=HandSpine!=INDEX_NONE && !HandTempering->Hand[I].Normal()
-			? (ComponentTransforms[HandSpine].GetRotation()*PreviousHandSpine.Inverse()*PreviousForearmRotations[I]).GetNormalized()
-			: PreviousForearmRotations[I];
-		ComponentTransforms[Arm.Mid].SetRotation(ProphecyHandChain::FollowTwist(Carried,
-			ComponentTransforms[Arm.Mid].GetRotation(),LocalTrainingToUnreal(Impl->UpperLocalOffsets[Arm.End]),Follow));
-	}
-	// Attacks constrain their native output and recurrent rotation together.
-	// Other modes apply their independently configured limit to publication only.
-	const float RequestedWrist=ProphecyAttackWrist::Degrees(Controls,Agent.Slash.bActive?EProphecyClampProfileMode::Attack:
-		bDefensePose ? (Agent.DefensePose->bDodge ? EProphecyClampProfileMode::Dodge : EProphecyClampProfileMode::Parry)
-		: EProphecyClampProfileMode::Locomotion,Agent.Slash.bActive?Agent.Slash.Family:NAME_None);
+	const float RequestedWrist=ProphecyAttackWrist::Degrees(Controls,
+		Agent.DefensePose->bDodge ? EProphecyClampProfileMode::Dodge : EProphecyClampProfileMode::Parry,NAME_None);
 	float ObservedWrist=-1;
 	if(bHasPreviousPose && ProphecyClampEase::NeedsObservation(Controls,EaseChannel::Wrist,RequestedWrist))
 	{
@@ -4966,14 +5080,13 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		const FVector Axis=(Hand.GetLocation()-PreviousComponentTransforms[Arm.Mid].GetLocation()).GetSafeNormal();
 		ObservedWrist=float(FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(FVector::DotProduct(Hand.GetRotation().GetAxisX(),Axis),-1.,1.))));
 	}
-	const float EffectiveWrist=ProphecyClampEase::Resolve(Controls,EaseChannel::Wrist,RequestedWrist,ObservedWrist);
-	const float WristDegrees=Agent.Slash.bActive?-1.f:EffectiveWrist;
-	bool bWristChanged=false;
+	const float WristDegrees=ProphecyClampEase::Resolve(Controls,EaseChannel::Wrist,RequestedWrist,ObservedWrist);
 	if (WristDegrees>=0 && WristDegrees<180)
 	{
 		const auto& Arm=Impl->UpperArms[0];
 		ProphecyAttackWrist::ConstrainPose(PreviousComponentTransforms[Arm.End],PreviousComponentTransforms[Arm.Mid].GetTranslation(),WristDegrees);
 		bWristChanged=ProphecyAttackWrist::ConstrainPose(ComponentTransforms[Arm.End],ComponentTransforms[Arm.Mid].GetTranslation(),WristDegrees);
+	}
 	}
 	const bool bManualArmed=ProphecyArmedPose::Apply(Controls,PreviousComponentTransforms,ComponentTransforms,bNewPoseTime);
 	if(bManualArmed)
@@ -4993,7 +5106,7 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		BuildUpperBaseFromLower(Lower,*Impl,UpperStateSlice(Impl->UpperCurrentBaseBuffer,AgentIndex));
 		LowerTransformToHeading(Lower,0,3,*Impl,TransformStateSlice(Impl->CurrentPelvisHeadingBuffer,AgentIndex));
 	}
-	if (bManualArmed || bWristChanged || bTemperCalves || bTemperArms || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose))
+	if (bManualArmed || bWristChanged || bTemperCalves || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose))
 	{
 		for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
 		{
@@ -5035,67 +5148,6 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		Agent.PreviousPublishedRoot, Agent.PreviousPublishedYaw);
 	const FTransform ComponentWorldTransform = BuildComponentWorldTransform(
 		Agent.PublishedRoot, Agent.PublishedYaw);
-	if (!bManualArmed && !Agent.Slash.bActive && !bDefensePose && ProphecyUpperBodyInertia::Active(Controls))
-		ProphecyUpperBodyInertia::PreserveHandoff(Controls,Impl->Parents,Impl->BodyNames,Impl->UpperCoreBoneNames,
-			PreviousComponentWorldTransform,PreviousComponentTransforms);
-	const bool bInertiaArms=!bManualArmed && !Agent.Slash.bActive && !bDefensePose &&
-		ProphecyUpperBodyInertia::PublishArms(Controls,PreviousComponentWorldTransform,ComponentWorldTransform,
-			PreviousComponentTransforms,ComponentTransforms);
-	if(bInertiaArms)
-	{
-		// Arm inertia publishes the same fixed geometry as the normal decoder.
-		for(const auto& Arm:Impl->UpperArms)for(int32 B:{Arm.Start,Arm.Mid,Arm.End})
-			LocalTransforms[B]=ComponentTransforms[B].GetRelativeTransform(ComponentTransforms[Impl->Parents[B]]);
-	}
-	bool bConeChanged=false;
-	if(!Agent.Slash.bActive && !bDefensePose && ProphecyArmCone::Active(Controls))
-	{
-		if(bNewPoseTime && ProphecyArmCone::NeedsWristIdleReference(Controls))
-		{
-			float IdleUpper[UpperStateDim];FTransform Idle[FullBodyBoneCount];
-			float Lower[StateDim];
-			FMemory::Memcpy(Lower,StateSlice(Impl->PublishedStateBuffer,AgentIndex),sizeof(Lower));
-			// Cache the authored idle in root space, independent of outgoing pelvis/spine lean.
-			FMemory::Memcpy(Lower+3,ProphecyUpperIdleSeed::PelvisRootRot6,6*sizeof(float));
-			SeedUpperIdleFromLower(Lower,*Impl,IdleUpper);
-			DecodeLocomotionPose(Impl,Lower,IdleUpper,Agent.PublishedWalkWeight,MakeArrayView(Idle),nullptr,
-				FLocomotionClamps{},&Agent.PublishedLegWalkWeights);
-			ProphecyArmCone::SetWristIdleReference(Controls,Impl->BodyNames,MakeArrayView(Idle));
-		}
-		ProphecyArmCone::FPublicationFeedback Feedback;
-		const uint8 ConeArms=ProphecyArmCone::ApplyNNPublication(AgentActors[AgentIndex],Impl->BodyNames,Impl->Parents,
-			PreviousComponentTransforms,ComponentTransforms,PreviousComponentWorldTransform,ComponentWorldTransform,
-			float(SourceTimeSeconds-PreviousPoseTime),bNewPoseTime,&Feedback);
-		bConeChanged=ConeArms!=0;
-		if(Feedback.Arms)
-		{
-			// Feed back only corrected arms. Decoding applies presentation clamps;
-			// re-encoding untouched arms/core during the hold changes normal NN recovery.
-			float Corrected[UpperStateDim];
-			EncodeComponentPoseToNNStates(*Impl,Agent,ComponentTransforms,nullptr,Corrected);
-			float* Published=UpperStateSlice(Impl->UpperPublishedStateBuffer,AgentIndex);
-			for(int32 Side=0;Side<2;++Side) if(Feedback.Arms & (1<<Side))
-			{
-				// Wrist recoil is a final orientation filter, including when the cone
-				// also moves this arm. Its rotation must not drive later NN positions.
-				WriteRot6(Multiply(MirrorYBasis(QuatToMatrix(Feedback.WristRotation[Side])),Impl->SeedRootRot),
-					Corrected+63+Side*15);
-				FMemory::Memcpy(Published+60+Side*15,Corrected+60+Side*15,15*sizeof(float));
-			}
-			float* Current=UpperStateSlice(Impl->UpperCurrentStateBuffer,AgentIndex);
-			FMemory::Memcpy(Current,Published,UpperStateDim*sizeof(float));
-			const FVector3f Delta=TransformRow(Agent.CurRootPos-Agent.PublishedRoot,YawMatrix(Agent.PublishedYaw));
-			RebaseUpperHeadingState(Current,Delta,WrapAngle(Agent.CurRootYaw-Agent.PublishedYaw));
-			const float* Lower=StateSlice(Impl->CurStateBuffer,AgentIndex);
-			BuildUpperBaseFromLower(Lower,*Impl,UpperStateSlice(Impl->UpperCurrentBaseBuffer,AgentIndex));
-			LowerTransformToHeading(Lower,0,3,*Impl,TransformStateSlice(Impl->CurrentPelvisHeadingBuffer,AgentIndex));
-		}
-	}
-	if(bConeChanged) for(int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
-	{
-		const int32 Parent=Impl->Parents[Bone];
-		LocalTransforms[Bone]=Parent==INDEX_NONE?ComponentTransforms[Bone]:ComponentTransforms[Bone].GetRelativeTransform(ComponentTransforms[Parent]);
-	}
 	const AProphecyAgent* ClampActor = AgentActors[AgentIndex];
 	const bool bFullAttack = Agent.Slash.bActive && Agent.Slash.bHasPose && !Agent.Slash.bHalf;
 	const bool bCalfOverride = bFullAttack && ClampActor->bOverrideAttackCalfClamp;
@@ -5108,6 +5160,13 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 			Pose[Arm.End].SetLocation(Pose[Arm.Mid].TransformPosition(FixedArms.ForearmOffsets[Side]));
 		LocalTransforms[Arm.End]=ComponentTransforms[Arm.End].GetRelativeTransform(ComponentTransforms[Arm.Mid]);
 	}
+	// Sample once, then feed the accepted mixed upper pose into the next inference.
+	// Repeated publication restores cached FK locals instead of blending twice.
+	bool bNewFKSample=false;
+	const bool bFKReturn=!bManualArmed && !Agent.Slash.bActive && !bDefensePose &&
+		ProphecyFKReturn::Apply(Controls,SourceTimeSeconds,
+			PreviousComponentTransforms,ComponentTransforms,LocalTransforms,&bNewFKSample);
+	if(bNewFKSample)CommitFKReturnUpperPose(*Impl,AgentIndex,ComponentTransforms);
 	FProphecyNNPoseStore::SetAgentLocalPose(
 		PoseStoreAgentBase + AgentIndex,
 		Impl->PublishedBoneNames,
@@ -5123,7 +5182,7 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		bFullAttack ? Agent.Slash.CalfClampLengths : FVector2D(
 			Impl->LocalOffsets[Impl->Limbs[0].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier),
 			Impl->LocalOffsets[Impl->Limbs[1].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier)),
-		FixedArms,Agent.Slash.bActive && Agent.Slash.bHalf,C.bFixedArms);
+		FixedArms,Agent.Slash.bActive && Agent.Slash.bHalf,C.bFixedArms && !bFKReturn);
     if(auto* T=ProphecyWalkPinning::FindTickPinning(Controls))
     {
         if((!Agent.Slash.bActive || Agent.Slash.bHalf) && !Agent.DefensePose && T->Current.Valid && ProphecyWalkPinning::FindSmoothing(Controls))
@@ -6153,8 +6212,10 @@ bool AProphecyNNLocomotionManager::PlayAgentAnimationLayer(
 	{
 		AgentActor->OnNNAnimationLayerInterrupted.Broadcast(InterruptedAnimation);
 	}
+	ProphecyBlendClock::Stop(AgentActor, ProphecyBlendClock::EKind::AnimationLayer);
 	Layer.Reset();
 	Layer.Animation = Animation;
+	ProphecyBlendClock::Start(AgentActor, ProphecyBlendClock::EKind::AnimationLayer);
 	Layer.BoneMask = BoneMask;
 	Layer.BlendInSeconds = FMath::Max(0.0f, BlendInSeconds);
 	Layer.BlendOutSeconds = FMath::Max(0.0f, BlendOutSeconds);
@@ -6189,6 +6250,10 @@ bool AProphecyNNLocomotionManager::StopAgentAnimationLayer(
 	{
 		return false;
 	}
+	// Spend pre-command ticks on playback, not on the new stop fade.
+	const float Pending = float(ProphecyBlendClock::Consume(AgentActor, ProphecyBlendClock::EKind::AnimationLayer));
+	Layer.ElapsedSeconds += Pending;
+	Layer.PlaybackTimeSeconds += Pending * Layer.PlayRate;
 	Layer.bStopping = true;
 	Layer.bNaturalCompletion = false;
 	Layer.StopElapsedSeconds = 0.0f;
@@ -6288,6 +6353,7 @@ void UProphecyNNLocomotionWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 }
 
 #include "ProphecySlashNative.inl"
+#include "Tests/ProphecySlashFastGeometryTests.inl"
 #include "ProphecyNNSlashRuntime.inl"
 #include "ProphecyNNDefenseRuntime.inl"
 #include "ProphecyNNDodgeRuntime.inl"

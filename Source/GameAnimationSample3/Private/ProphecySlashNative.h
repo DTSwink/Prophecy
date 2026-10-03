@@ -89,4 +89,5 @@ private:
 	void SolveLimb(FPose& Pose, const FLimb& Limb, const FVector3f* Offsets, const float* State, bool bSignedHinge = false) const;
 	void RawUpper(const float* Lower, const float* Upper, FPose& Pose) const;
 	void Finish(FWork& W, const float* State, const float* NeuralUpper, float* Out, const FStepSettings* Settings) const;
+	void ClampNeuralUpper(const float* Input,float* Output) const;
 };

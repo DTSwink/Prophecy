@@ -18,12 +18,22 @@ source_mod=unreal.SkeletonModifier(); source_mod.set_skeletal_mesh(preview.get_s
 names=[str(n) for n in source_mod.get_all_bone_names() if str(n).startswith(('index_','middle_','ring_','pinky_','thumb_'))]
 source_ref={n:source_mod.get_bone_transform(n,True) for n in names+['hand_l','hand_r']}
 source_pose={n:preview.get_socket_transform(n,unreal.RelativeTransformSpace.RTS_COMPONENT) for n in names+['hand_l','hand_r']}
+# Never attach this mutating test to the user's Play session.
+editor_guard = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
+assert editor_guard.get_game_world() is None, 'Stop your Play session before running this test'
+import time
+owned_world = None
+watchdog_start = time.monotonic()
+finished = False
+diagnostic_ticks = 0
+last_world_time = None
+
 state={'handle':None,'phase':-1,'mode':0,'start':0.,'checks':[]}
 modes=['Physical','Kinematic','HalfSim']
 output=Path(unreal.Paths.project_saved_dir()).resolve()/'AttackFists/deformation_audit.json'
 unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_request_begin_play()
 
-def now(): return unreal.GameplayStatics.get_time_seconds(world)
+def now(): return diagnostic_ticks / 60.0
 def xyz(p): return [p.x,p.y,p.z]
 
 def check(closed):
@@ -47,16 +57,33 @@ def check(closed):
     assert maximum<.005,row
 
 def finish(error=None):
+    global finished
+    if finished: return
+    finished = True
     if state['handle'] is not None:
         unreal.unregister_slate_post_tick_callback(state['handle']); state['handle']=None
     output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps({'passed':error is None,'error':error,'checks':state['checks']},indent=2))
     unreal.log('Fist deformation audit '+str(output)+' error='+str(error))
-    unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_request_end_play()
+    if owned_world is not None and editor_guard.get_game_world() == owned_world:
+        unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_request_end_play()
 
 def tick(dt):
     global world,agent,mesh,target_ref
+    global owned_world, diagnostic_ticks, last_world_time
     try:
+        if time.monotonic() - watchdog_start > 60:
+            raise RuntimeError('Diagnostic timed out (Play failed, stopped, or paused)')
+        current_world = editor_guard.get_game_world()
+        if owned_world is not None and current_world != owned_world:
+            raise RuntimeError('Owned Play session ended or was replaced')
+        if current_world is not None and owned_world is None:
+            owned_world = current_world
+        if current_world is not None:
+            stamp = unreal.GameplayStatics.get_time_seconds(current_world)
+            if stamp != last_world_time:
+                last_world_time = stamp
+                if not unreal.GameplayStatics.is_game_paused(current_world): diagnostic_ticks += 1
         if state['phase']==-1:
             world=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world()
             if not world: return

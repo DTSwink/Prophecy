@@ -9,7 +9,7 @@ struct FSample
 {
     double Distance = 0, Direction = 0, Orientation = 0;
     bool bInitialized = false;
-    FVector Filter(FVector Offset, double& Yaw, const FVector& Factors)
+    FVector Filter(FVector Offset, double& Yaw, const FVector& Factors, float Deceleration = -1.f)
     {
         const double Length = Offset.Size2D();
         const double Heading = Length > UE_SMALL_NUMBER ? FMath::Atan2(Offset.Y, Offset.X) : (bInitialized ? Direction : Yaw);
@@ -18,13 +18,14 @@ struct FSample
             Distance = Length; Direction = Heading; Orientation = Yaw; bInitialized = true;
             return Offset;
         }
-        Distance = FMath::Lerp(Distance, Length, Factors.X);
+        const double DistanceFactor = Deceleration >= 0.f && Length < Distance ? double(Deceleration) : Factors.X;
+        Distance = FMath::Lerp(Distance, Length, DistanceFactor);
         Direction += FMath::FindDeltaAngleRadians(Direction, Heading) * Factors.Y;
         Orientation += FMath::FindDeltaAngleRadians(Orientation, Yaw) * Factors.Z;
         // Preserve the incoming value exactly for unrestricted channels.
         if (Factors.Z < 1.) Yaw = Orientation;
         else Orientation = Yaw;
-        if (Factors.X == 1. && Factors.Y == 1.) return Offset;
+        if (DistanceFactor == 1. && Factors.Y == 1.) return Offset;
         return FVector(Distance * FMath::Cos(Direction), Distance * FMath::Sin(Direction), Offset.Z);
     }
 };
@@ -37,5 +38,6 @@ struct FState
     float ActualNextYaw = 0;
 };
 FState* Find(const AProphecyAgent* Agent);
+float GetDistanceDeceleration(const AProphecyAgent* Agent);
 void Remove(const AProphecyAgent* Agent);
 }

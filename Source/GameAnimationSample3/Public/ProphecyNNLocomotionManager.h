@@ -253,6 +253,8 @@ public:
 	bool StopAgentAnimationLayer(FProphecyAgentHandle Handle, float BlendOutSeconds);
 	bool TriggerAgentNNAttack(FProphecyAgentHandle Handle, FName Attack, FVector TargetWorld, bool bHalf);
 	bool SetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle, int32 Checkpoint, FString& OutError);
+	bool SetUpperCheckpointIndex(int32 Checkpoint, FString& OutError);
+	int32 GetUpperCheckpointIndex() const;
 	bool SetAgentKickCheckpointOverride(FProphecyAgentHandle Handle, bool bEnabled);
 	bool SetSlashTrainStartingPose(FProphecyAgentHandle Handle, FString& OutError,
 		FName OriginalGTAttack = NAME_None, FVector* OutGTTarget = nullptr);
@@ -272,6 +274,8 @@ public:
 	bool SetAgentFootPinningDebug(FProphecyAgentHandle Handle, bool bEnabled);
 	bool GetAgentFootPinning(FProphecyAgentHandle Handle, bool bAttack, bool bFrozenStage, FProphecyFootPinningSample& Sample) const;
 	bool StopAgentNNAttack(FProphecyAgentHandle Handle, bool bReturnToLocomotion = true);
+	// Natural completion only; explicit Stop always stops immediately.
+	bool TryExtendAgentAttackEnd(FProphecyAgentHandle Handle);
 	bool StartAgentNNParry(FProphecyAgentHandle Handle,AProphecyAgent* Attacker,float MaximumSeconds,FString& Error);
 	bool StartAgentNNDodge(FProphecyAgentHandle Handle,AProphecyAgent* Attacker,float MaximumSeconds,FString& Error);
 	bool StopAgentNNDefense(FProphecyAgentHandle Handle, bool bReturnToLocomotion = true);

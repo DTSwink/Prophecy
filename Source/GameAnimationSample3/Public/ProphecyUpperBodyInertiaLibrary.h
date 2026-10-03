@@ -19,14 +19,21 @@ public:
      * forearms retain their fixed anatomical length. Response
      * controls spring softness; larger is more inertial.
      * Hold/blend use 60 unpaused game ticks per authored second. Configure before
-     * a special ends or inside Special Ended. Alpha scales the whole effect from
-     * zero (disabled) to one (full). Alpha-only changes preserve active spring
-     * motion and timing; zero cancels it. Momentum scales outgoing velocity only.
-     * Zero response or both times zero also bypass. */
+     * a special ends or inside Special Ended. Core Alpha and Arms Alpha scale
+     * their own regions from zero (disabled) to one (full). Arms Alpha -1 inherits
+     * Core Alpha. Alpha-only changes preserve ongoing spring motion and timing;
+     * zero retires only that region, which can restart at the next special end.
+     * Momentum scales outgoing velocity only.
+     * ArmsResponseTimeSeconds and ArmsBlendToNormalDurationSeconds apply equally
+     * to both arms; -1 inherits the corresponding core value. Hold is shared.
+     * Zero response or hold plus blend zero bypasses that region only. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Attack Upper Body Inertia"))
     static bool SetAttackUpperBodyInertia(AProphecyAgent* Agent,bool Enabled=true,
-        float ResponseTimeSeconds=.25f,float HoldDurationSeconds=0.f,
-        float BlendToNormalDurationSeconds=.5f,float MomentumScale=1.f,
+        UPARAM(DisplayName="Core Response Time Seconds") float ResponseTimeSeconds=.25f,float HoldDurationSeconds=0.f,
+        UPARAM(DisplayName="Core Blend To Normal Duration Seconds") float BlendToNormalDurationSeconds=.5f,float MomentumScale=1.f,
         EProphecyUpperHandInertiaSpace HandInertiaSpace=EProphecyUpperHandInertiaSpace::RootLocal,
-        UPARAM(meta=(ClampMin="0",ClampMax="1",UIMin="0",UIMax="1")) float Alpha=1.f);
+        UPARAM(DisplayName="Core Alpha",meta=(ClampMin="0",ClampMax="1",UIMin="0",UIMax="1")) float Alpha=1.f,
+        UPARAM(meta=(ClampMin="-1")) float ArmsResponseTimeSeconds=-1.f,
+        UPARAM(meta=(ClampMin="-1")) float ArmsBlendToNormalDurationSeconds=-1.f,
+        UPARAM(meta=(ClampMin="-1",ClampMax="1",UIMin="-1",UIMax="1")) float ArmsAlpha=-1.f);
 };

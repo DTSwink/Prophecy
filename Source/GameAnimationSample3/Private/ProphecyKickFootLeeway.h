@@ -11,6 +11,7 @@ void CancelPoseRecovery(const AProphecyAgent* Agent);
 // Signed, independently captured length differences; zero outside the finite return.
 float ReturningLengthDeltaCm(const AProphecyAgent* Agent,int32 Side);
 bool HasLengthReturn(const AProphecyAgent* Agent);
+float LengthReturnWeight(const AProphecyAgent* Agent);
 // Destination follows the current locomotion calf-clamp allowance, without
 // changing the captured outgoing length or its existing finite return clock.
 void SetLocomotionLengthTarget(const AProphecyAgent* Agent,FVector2D RequestedDeltaCm);

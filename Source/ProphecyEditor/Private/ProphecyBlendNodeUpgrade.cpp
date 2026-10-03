@@ -98,6 +98,8 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
                 TEXT("RightFootRotationWindowFrames"),TEXT("RightFootRotationInertia")})
                 if(auto* P=N->FindPin(Name)) {P->BreakAllPinLinks();N->RemovePin(P);}
         const bool HadDistanceToLimit=N->FindPin(TEXT("DistanceToLimit"))!=nullptr;
+        const bool HadDistanceDeceleration=N->FindPin(TEXT("DistanceDeceleration"))!=nullptr;
+        const bool HadAlphaHold=N->FindPin(TEXT("AlphaHold"))!=nullptr;
         const bool HadLerpTarget=N->FindPin(TEXT("LerpTarget"))!=nullptr;
         const bool HadPositionCompensation=N->FindPin(TEXT("CompensatePosition"))!=nullptr;
         const bool HadNonKicking=N->FindPin(TEXT("NonKickingFootTranslationXY"))!=nullptr;
@@ -152,6 +154,19 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
             }
         }
         auto After=PinValues(N);
+        if(!HadDistanceDeceleration && (FunctionName==TEXT("SetLocomotionRootWindowSmoothing") || FunctionName==TEXT("GetLocomotionRootWindowSmoothing")))
+        {
+            const auto* Pin=N->FindPin(TEXT("DistanceDeceleration"));
+            Preserved&=Pin && Pin->LinkedTo.IsEmpty() &&
+                (FunctionName==TEXT("GetLocomotionRootWindowSmoothing") || FCString::Atof(*Pin->DefaultValue)==-1.f);
+            After.RemoveAll([](const FString& Row){return Row.StartsWith(TEXT("DistanceDeceleration="));});
+        }
+        if(!HadAlphaHold && FunctionName==TEXT("SetAttackFKReturn"))
+        {
+            const auto* Hold=N->FindPin(TEXT("AlphaHold"));
+            Preserved&=Hold && Hold->LinkedTo.IsEmpty() && FCString::Atof(*Hold->DefaultValue)==0.f;
+            After.RemoveAll([](const FString& Row){return Row.StartsWith(TEXT("AlphaHold="));});
+        }
         if (!HadPositionCompensation && FunctionName==TEXT("EnableSpine01CompensationHalfAttack"))
         {
             const auto* Position=N->FindPin(TEXT("CompensatePosition"));
@@ -207,6 +222,14 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
     UE_LOG(LogTemp,Display,TEXT("Recovery pin order: %s"),*Report);
 }
 static void RefreshOrder() { RefreshOrderFor(TEXT("SetAttackToLocomotionBlend"),TEXT("RecoveryPinOrder.txt")); }
+static void RefreshRootWindowDistance()
+{
+    RefreshOrderFor(TEXT("SetLocomotionRootWindowSmoothing"),TEXT("RootWindowDistanceSetterPins.txt"));
+    RefreshOrderFor(TEXT("GetLocomotionRootWindowSmoothing"),TEXT("RootWindowDistanceGetterPins.txt"));
+}
+static FAutoConsoleCommand RootWindowDistanceCommand(TEXT("Prophecy.Editor.RefreshRootWindowDistance"),TEXT("Add inherited distance deceleration smoothing; preserve existing root-window values/wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshRootWindowDistance));
+static void RefreshFKReturn(){RefreshOrderFor(TEXT("SetAttackFKReturn"),TEXT("FKReturnAlphaHoldPins.txt"));}
+static FAutoConsoleCommand FKReturnCommand(TEXT("Prophecy.Editor.RefreshFKReturn"),TEXT("Add Alpha Hold to existing FK return nodes; preserve values/wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshFKReturn));
 static void RefreshSpinePosition() { RefreshOrderFor(TEXT("EnableSpine01CompensationHalfAttack"),TEXT("SpinePositionPins.txt")); }
 static FAutoConsoleCommand SpinePositionCommand(TEXT("Prophecy.Editor.RefreshSpinePosition"),TEXT("Add position compensation checkbox; preserve existing values and links, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshSpinePosition));
 static void RefreshTemperingOrder() { RefreshOrderFor(TEXT("SetLocomotionLowerBodyTempering"),TEXT("TemperingPinOrder.txt")); }
@@ -356,24 +379,30 @@ static void RefreshUpperInertiaSpace()
         auto* N=Cast<UK2Node_CallFunction>(Base);if(!N || N->FunctionReference.GetMemberName()!=TEXT("SetAttackUpperBodyInertia"))continue;
         const bool Had=N->FindPin(TEXT("HandInertiaSpace"))!=nullptr;
         const bool HadAlpha=N->FindPin(TEXT("Alpha"))!=nullptr;
+        const TCHAR* ArmPins[]={TEXT("ArmsResponseTimeSeconds"),TEXT("ArmsBlendToNormalDurationSeconds"),TEXT("ArmsAlpha")};
+        const bool HadArms[]={N->FindPin(ArmPins[0])!=nullptr,N->FindPin(ArmPins[1])!=nullptr,N->FindPin(ArmPins[2])!=nullptr};
         const auto Before=PinValues(N);G->Modify();N->Modify();N->ReconstructNode();++Count;
         const auto After=PinValues(N);for(const auto& Row:Before)Preserved&=After.Contains(Row);
         if(!Had){const auto* P=N->FindPin(TEXT("HandInertiaSpace"));Defaults&=P && P->LinkedTo.IsEmpty() && P->DefaultValue==TEXT("RootLocal");}
         if(!HadAlpha){const auto* P=N->FindPin(TEXT("Alpha"));Defaults&=P && P->LinkedTo.IsEmpty() && FCString::Atof(*P->DefaultValue)==1.f;}
+        for(int32 I=0;I<3;++I)if(!HadArms[I])
+        {const auto* P=N->FindPin(ArmPins[I]);Defaults&=P && P->LinkedTo.IsEmpty() && !P->DefaultValue.IsEmpty() && FCString::Atof(*P->DefaultValue)==-1.f;}
     }
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
     FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
-    UE_LOG(LogTemp,Display,TEXT("Upper inertia space pins: nodes=%d preserved=%d defaults=%d status=%d asset_saved=0"),Count,int32(Preserved),int32(Defaults),int32(BP->Status));
+    const FString Report=FString::Printf(TEXT("nodes=%d preserved=%d defaults=%d status=%d asset_saved=0\n"),Count,int32(Preserved),int32(Defaults),int32(BP->Status));
+    FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/UpperInertiaControlsPins.txt")));
+    UE_LOG(LogTemp,Display,TEXT("Upper inertia controls: %s"),*Report);
 }
 static FAutoConsoleCommand UpperInertiaSpaceCommand(TEXT("Prophecy.Editor.RefreshUpperInertiaSpace"),TEXT("Add Root Local/Spine Local selector to existing upper inertia nodes; preserve wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshUpperInertiaSpace));
 }
 
 namespace ProphecyBlendNodeUpgrade
 {
-static void RefreshArmConeTwist(){RefreshOrderFor(TEXT("SetArmRepellantCone"),TEXT("ArmConeTwistPins.txt"));}
+static void RefreshArmReturnSettings(){RefreshOrderFor(TEXT("SetSlashRightArmReturnToNeutral"),TEXT("ArmReturnSettingsPins.txt"));}
+static FAutoConsoleCommand ArmReturnSettingsCommand(TEXT("Prophecy.Editor.RefreshArmReturnSettings"),TEXT("Add left-arm return durations and arm alpha pins; preserve values and wiring, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshArmReturnSettings));
 static void RefreshArmedPoseBlend(){RefreshOrderFor(TEXT("SetUpperBodyArmedPose"),TEXT("ArmedPoseBlendPins.txt"));}
 static FAutoConsoleCommand ArmedPoseBlendCommand(TEXT("Prophecy.Editor.RefreshArmedPoseBlend"),TEXT("Add locomotion blend and joint alpha pins; preserve existing values and wiring, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshArmedPoseBlend));
-static FAutoConsoleCommand ArmConeTwistCommand(TEXT("Prophecy.Editor.RefreshArmConeTwist"),TEXT("Add optional wrist recoil pins; preserve existing values and wiring, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshArmConeTwist));
 }
 namespace ProphecyBlendNodeUpgrade
 {
@@ -406,70 +435,156 @@ static void RemoveTemporaryDragNode()
 }
 static FAutoConsoleCommand RemoveTemporaryDragCommand(TEXT("Prophecy.Editor.RemoveTemporaryDragNode"),TEXT("Remove temporary comparison calls, reconnect execution, leave Blueprint unsaved."),FConsoleCommandDelegate::CreateStatic(&RemoveTemporaryDragNode));
 
-// Explicit editor tuning of one existing node; undoable, never saves unrelated edits.
-static void SetWristRecoilTuning(const TArray<FString>& Args)
-{
-    if(!GEditor || GEditor->PlayWorld || (Args.Num()!=4 && Args.Num()!=5))return;
-    const int32 Count=Args.Num()-1;double Values[4];
-    for(int32 I=0;I<Count;++I)if(!LexTryParseString(Values[I],*Args[I+1]) || !FMath::IsFinite(Values[I]) || (Values[I]<0 && !(I==3 && Values[I]==-1)))return;
-    if(Values[0]>=180)return;
-    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
-    if(!BP)return;
-    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
-    UK2Node_CallFunction* Node=nullptr;
-    for(auto* G:Graphs)for(UEdGraphNode* Base:G->Nodes)
-        if(auto* N=Cast<UK2Node_CallFunction>(Base);N && N->GetName()==Args[0] && N->FunctionReference.GetMemberName()==TEXT("SetArmRepellantCone"))
-        {if(Node)return;Node=N;}
-    if(!Node)return;
-    const TCHAR* Pins[]={TEXT("TwistLimitDegrees"),TEXT("TwistRecoilStrength"),TEXT("TwistDamping"),TEXT("RollRecoilStrength")};
-    FString Before;
-    for(int32 I=0;I<Count;++I)
-    {
-        const TCHAR* Name=Pins[I];
-        const auto* P=Node->FindPin(Name);if(!P || !P->LinkedTo.IsEmpty())return;
-        Before+=FString::Printf(TEXT("%s=%s\n"),Name,*P->DefaultValue);
-    }
-    FScopedTransaction Tx(NSLOCTEXT("Prophecy","TuneWristRecoil","Tune wrist recoil"));
-    BP->Modify();Node->GetGraph()->Modify();Node->Modify();
-    for(int32 I=0;I<Count;++I)Node->GetGraph()->GetSchema()->TrySetDefaultValue(*Node->FindPin(Pins[I]),Args[I+1]);
-    FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
-    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
-    UE_LOG(LogTemp,Display,TEXT("Wrist tuning %s before:\n%safter: limit=%s strength=%s damping=%s status=%d saved=0"),
-        *Args[0],*Before,*Args[1],*Args[2],*Args[3],int32(BP->Status));
-    if(Count==4)UE_LOG(LogTemp,Display,TEXT("Wrist roll recoil strength=%s"),*Args[4]);
-}
-static FAutoConsoleCommand WristTuningCommand(TEXT("Prophecy.Editor.SetWristRecoilTuning"),TEXT("Set one wrist node: node-name limit strength damping [roll-strength]. Undoable; no save."),FConsoleCommandWithArgsDelegate::CreateStatic(&SetWristRecoilTuning));
 
-// Explicit diagnostic preview; never saves. Restore exact prior pin literals afterwards.
-static TMap<FGuid,TArray<FString>> WristPreviewPins;
-static void PreviewArmConeTwist(const TArray<FString>& Args)
+}
+
+namespace ProphecyUpperRecoveryCleanup
 {
-    if(!GEditor || GEditor->PlayWorld || Args.Num()!=1)return;
-    const bool On=Args[0]==TEXT("on"),Off=Args[0]==TEXT("restore");
-    if((!On&&!Off) || (On&&!WristPreviewPins.IsEmpty()))return;
+// Explicit one-shot removal of the retired upper recovery stack. No runtime or
+// reflection change; live user edits are backed up before the undoable mutation.
+static void Run()
+{
+    if(!GEditor || GEditor->PlayWorld)return;
     auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
     if(!BP)return;
-    const TCHAR* Pins[]={TEXT("EnableWristTwistRecoil"),TEXT("TwistLimitDegrees"),TEXT("TwistRecoilStrength"),TEXT("TwistDamping")};
-    const TCHAR* Values[]={TEXT("true"),TEXT("60"),TEXT("1000000"),TEXT("20")};
-    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);int32 Count=0;
-    for(auto* G:Graphs)for(UEdGraphNode* Base:G->Nodes)
+    const TSet<FName> Retired={
+        TEXT("SetLocomotionHandTempering"),TEXT("BlendLocomotionHandTemperingToNormal"),
+        TEXT("SetAttackToLocomotionHandBlend"),TEXT("SetLocomotionFKCoreTempering"),
+        TEXT("BlendLocomotionFKCoreTemperingToNormal"),TEXT("SetAttackUpperBodyInertia"),
+        TEXT("SetAttackArmReturnEnabled"),TEXT("SetSlashRightArmReturnToNeutral"),
+        TEXT("SetAttackBothArmsReturnToNeutral"),TEXT("SetBothArmsReturnToNeutralEnabled"),
+        TEXT("SetAttackArmReturnRotationBlend"),TEXT("SetAttackArmReturnPelvisLocal"),
+        TEXT("SetAttackWristRecoilStrengths")};
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    TArray<UK2Node_CallFunction*> Targets;
+    TSet<UEdGraphNode*> Dependencies;
+    TFunction<void(UEdGraphNode*)> GatherInputs=[&](UEdGraphNode* Node)
     {
-        auto* N=Cast<UK2Node_CallFunction>(Base);
-        if(!N || N->FunctionReference.GetMemberName()!=TEXT("SetArmRepellantCone"))continue;
-        bool OK=true;for(const TCHAR* P:Pins)if(!N->FindPin(P)||!N->FindPin(P)->LinkedTo.IsEmpty())OK=false;
-        if(!OK)continue;
-        if(On)
+        for(auto* Pin:Node->Pins)if(Pin && Pin->Direction==EGPD_Input && Pin->PinType.PinCategory!=UEdGraphSchema_K2::PC_Exec)
+            for(auto* Link:Pin->LinkedTo)
+            {
+                auto* Input=Cast<UK2Node>(Link->GetOwningNode());
+                if(Input && Input->IsNodePure() && !Dependencies.Contains(Input))
+                {Dependencies.Add(Input);GatherInputs(Input);}
+            }
+    };
+    // Refuse before any edits if a removed result drives other logic. Do not
+    // invent replacement return values or discard nonstandard execution paths.
+    for(auto* Graph:Graphs)for(UEdGraphNode* Base:Graph->Nodes)
+    {
+        auto* Node=Cast<UK2Node_CallFunction>(Base);
+        if(!Node || !Retired.Contains(Node->FunctionReference.GetMemberName()))continue;
+        for(auto* Pin:Node->Pins)if(Pin && !Pin->LinkedTo.IsEmpty())
         {
-            TArray<FString> Old;for(const TCHAR* P:Pins)Old.Add(N->FindPin(P)->DefaultValue);
-            WristPreviewPins.Add(N->NodeGuid,MoveTemp(Old));
-            for(int32 I=0;I<4;++I)N->FindPin(Pins[I])->DefaultValue=Values[I];++Count;
+            const bool Exec=Pin->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec;
+            if((Pin->Direction==EGPD_Output && !Exec) ||
+                (Exec && Pin->PinName!=TEXT("execute") && Pin->PinName!=TEXT("then")) ||
+                (Exec && Pin->Direction==EGPD_Output && Pin->LinkedTo.Num()>1))
+            {UE_LOG(LogTemp,Error,TEXT("Upper recovery cleanup refused: connected result/nonstandard flow at %s.%s"),*Node->GetName(),*Pin->PinName.ToString());return;}
         }
-        else if(const auto* Old=WristPreviewPins.Find(N->NodeGuid))
-        {for(int32 I=0;I<4;++I)N->FindPin(Pins[I])->DefaultValue=(*Old)[I];++Count;}
+        Targets.Add(Node);GatherInputs(Node);
     }
-    if(Off)WristPreviewPins.Reset();
-    if(Count){FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);}
-    UE_LOG(LogTemp,Display,TEXT("ArmCone twist preview %s nodes=%d status=%d saved=0"),*Args[0],Count,int32(BP->Status));
+    if(Targets.IsEmpty()){UE_LOG(LogTemp,Display,TEXT("Upper recovery cleanup: no retired nodes remain"));return;}
+    const FString Dir=FPaths::ProjectSavedDir()/TEXT("FKReturn/upper-cleanup");
+    IFileManager::Get().MakeDirectory(*Dir,true);
+    const FString Backup=Dir/(TEXT("BP-live-before-")+FDateTime::Now().ToString(TEXT("%Y%m%d-%H%M%S"))+TEXT(".uasset"));
+    FSavePackageArgs Save;Save.TopLevelFlags=RF_Public|RF_Standalone;Save.SaveFlags=SAVE_KeepDirty;
+    if(!UPackage::SavePackage(BP->GetOutermost(),BP,*Backup,Save))return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","RemoveRetiredUpperRecovery","Remove retired upper-body recovery nodes"));
+    BP->Modify();int32 Removed=0,Pruned=0;bool OK=true;FString Report;
+    for(auto* Node:Targets)
+    {
+        auto* Graph=Node->GetGraph();Graph->Modify();Node->Modify();
+        TArray<UEdGraphPin*> In,Out;
+        if(auto* Pin=Node->FindPin(TEXT("execute")))In=Pin->LinkedTo;
+        if(auto* Pin=Node->FindPin(TEXT("then")))Out=Pin->LinkedTo;
+        for(auto* Pin:Node->Pins)if(Pin)for(auto* Link:Pin->LinkedTo)Link->GetOwningNode()->Modify();
+        Report+=TEXT("removed | ")+Graph->GetName()+TEXT(" | ")+Node->GetName()+TEXT(" | ")+Node->FunctionReference.GetMemberName().ToString()+TEXT("\n");
+        Node->BreakAllNodeLinks();
+        for(auto* From:In)for(auto* To:Out)OK&=Graph->GetSchema()->TryCreateConnection(From,To);
+        FBlueprintEditorUtils::RemoveNode(BP,Node,true);++Removed;
+    }
+    // Remove only pure inputs belonging exclusively to those removed calls.
+    // Shared values, unrelated disconnected work and execution nodes survive.
+    bool Progress=true;
+    while(Progress)
+    {
+        Progress=false;const auto Candidates=Dependencies.Array();
+        for(auto* Node:Candidates)
+        {
+            bool Used=false;
+            for(auto* Pin:Node->Pins)if(Pin && Pin->Direction==EGPD_Output && !Pin->LinkedTo.IsEmpty()){Used=true;break;}
+            if(Used)continue;
+            Node->GetGraph()->Modify();Node->Modify();
+            for(auto* Pin:Node->Pins)if(Pin)for(auto* Link:Pin->LinkedTo)Link->GetOwningNode()->Modify();
+            Report+=TEXT("pruned | ")+Node->GetGraph()->GetName()+TEXT(" | ")+Node->GetName()+TEXT(" | ")+Node->GetNodeTitle(ENodeTitleType::ListView).ToString().Replace(TEXT("\n"),TEXT(" "))+TEXT("\n");
+            FBlueprintEditorUtils::RemoveNode(BP,Node,true);Dependencies.Remove(Node);++Pruned;Progress=true;
+        }
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    Report+=FString::Printf(TEXT("removed=%d pruned=%d connections_ok=%d status=%d asset_saved=0\nbackup=%s\n"),Removed,Pruned,int32(OK),int32(BP->Status),*Backup);
+    FFileHelper::SaveStringToFile(Report,*(Dir/TEXT("cleanup-result.txt")));
+    UE_LOG(LogTemp,Display,TEXT("Upper recovery cleanup: %s"),*Report);
 }
-static FAutoConsoleCommand WristPreviewCommand(TEXT("Prophecy.Editor.PreviewArmConeTwist"),TEXT("Diagnostic on/restore of wrist recoil pins; preserves prior literals; never saves."),FConsoleCommandWithArgsDelegate::CreateStatic(&PreviewArmConeTwist));
+static FAutoConsoleCommand Command(TEXT("Prophecy.Editor.RemoveRetiredUpperRecovery"),TEXT("Remove retired upper recovery nodes and their exclusive pure inputs; back up live BP, preserve execution flow, compile and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&Run));
+}
+
+namespace ProphecyRetireWristRecoil
+{
+static void Run()
+{
+    if(!GEditor || GEditor->PlayWorld)return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if(!BP)return;
+    const FString Dir=FPaths::ProjectSavedDir()/TEXT("FKReturn/wrist-removal");
+    IFileManager::Get().MakeDirectory(*Dir,true);
+    const FString Backup=Dir/(TEXT("BP-live-before-")+FDateTime::Now().ToString(TEXT("%Y%m%d-%H%M%S"))+TEXT(".uasset"));
+    FSavePackageArgs Save;Save.TopLevelFlags=RF_Public|RF_Standalone;Save.SaveFlags=SAVE_KeepDirty;
+    if(!UPackage::SavePackage(BP->GetOutermost(),BP,*Backup,Save))return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","RetireWristRecoil","Remove wrist recoil and disable optional arm cone"));
+    BP->Modify();TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    int32 Removed=0,Disabled=0,Pins=0,Bypassed=0;bool OK=true;
+    for(auto* G:Graphs)
+    {
+        const auto Nodes=G->Nodes;
+        for(UEdGraphNode* Base:Nodes)
+        {
+            auto* N=Cast<UK2Node_CallFunction>(Base);if(!N)continue;
+            const FName Name=N->FunctionReference.GetMemberName();
+            if(Name!=TEXT("SetAttackWristRecoilStrengths") && Name!=TEXT("SetArmRepellantCone") &&
+                Name!=TEXT("SetAttackArmRepellantConeEnabled") && Name!=TEXT("VisualizeArmRepellantCone"))continue;
+            G->Modify();N->Modify();
+            if(Name==TEXT("SetAttackWristRecoilStrengths"))
+            {
+                TArray<UEdGraphPin*> In,Out;
+                if(auto* P=N->FindPin(TEXT("execute")))In=P->LinkedTo;
+                if(auto* P=N->FindPin(TEXT("then")))Out=P->LinkedTo;
+                // Existing cleanup has already removed these; refuse to discard a newly wired result.
+                if(auto* P=N->FindPin(TEXT("ReturnValue"));P && !P->LinkedTo.IsEmpty()){OK=false;continue;}
+                N->BreakAllNodeLinks();for(auto* A:In)for(auto* B:Out)OK&=G->GetSchema()->TryCreateConnection(A,B);
+                FBlueprintEditorUtils::RemoveNode(BP,N,true);++Removed;continue;
+            }
+            // Keep optional cone nodes and tuning for later, but remove their Tick execution cost.
+            if(auto* P=N->FindPin(TEXT("ReturnValue"));P && !P->LinkedTo.IsEmpty()){OK=false;continue;}
+            TArray<UEdGraphPin*> In,Out;
+            if(auto* P=N->FindPin(TEXT("execute"))){In=P->LinkedTo;P->BreakAllPinLinks();}
+            if(auto* P=N->FindPin(TEXT("then"))){Out=P->LinkedTo;P->BreakAllPinLinks();}
+            for(auto* A:In)for(auto* B:Out)OK&=G->GetSchema()->TryCreateConnection(A,B);
+            ++Bypassed;
+            if(Name!=TEXT("SetArmRepellantCone"))continue;
+            for(const TCHAR* NameToRemove:{TEXT("EnableWristTwistRecoil"),TEXT("TwistLimitDegrees"),TEXT("TwistRecoilStrength"),TEXT("TwistDamping"),TEXT("RollRecoilStrength")})
+                if(auto* P=N->FindPin(NameToRemove)){P->BreakAllPinLinks();N->RemovePin(P);++Pins;}
+            if(auto* P=N->FindPin(TEXT("Enabled")))
+            {P->BreakAllPinLinks();G->GetSchema()->TrySetDefaultValue(*P,TEXT("false"));++Disabled;}
+            N->ReconstructNode();
+        }
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    const FString Report=FString::Printf(TEXT("wrist_nodes_removed=%d cone_nodes_disabled=%d wrist_pins_removed=%d cone_calls_bypassed=%d wiring_ok=%d status=%d asset_saved=0\nbackup=%s\n"),Removed,Disabled,Pins,Bypassed,int32(OK),int32(BP->Status),*Backup);
+    FFileHelper::SaveStringToFile(Report,*(Dir/TEXT("migration.txt")));
+    UE_LOG(LogTemp,Display,TEXT("Wrist recoil removal: %s"),*Report);
+}
+static FAutoConsoleCommand Command(TEXT("Prophecy.Editor.RetireWristRecoil"),TEXT("Remove wrist pins, disable cone, preserve execution flow and leave BP unsaved."),FConsoleCommandDelegate::CreateStatic(&Run));
 }

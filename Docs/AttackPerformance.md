@@ -1,4 +1,34 @@
-# Attack performance investigation — September 27, 2026
+# Attack performance
+
+## October 2: native checkpoint geometry
+
+The measured attack overhead came mainly from geometry exported as thousands of small ONNX operators, not the learned layers. The graph labelled `cone` is the checkpoint's **pelvis versus leveled-foot yaw constraint**, including its 257-sample continuous sweep and previous-lower-pose fallback. It is unrelated to the optional arm repellent. The latter remains disabled by default, its current Blueprint setup/selection/drawing calls disconnected, and attack pose work gated off.
+
+Three installed current checkpoints (174664, 160664, 184064) now run their unchanged lower and upper learned layers through ONNX, with the existing pelvis/foot and hand constraints evaluated directly in C++. The upper network is extracted from 2,721 operators to 24; the separate geometry-only cone session is not created or run. No sample reduction, new convergence, damping, inference skipping, or temporal approximation is used. The hand clamp includes the checkpoint's existing left wrist bend limit; this is not the removed wrist recoil feature.
+
+`Tools/NN/ExtractAttackNeuralLayers.py` creates `prophecy_slash_upper_neural.onnx` and `prophecy_slash_fast.json` beside each original model. Original exports and trained weights are untouched. It checks the checkpoint constraint-program hashes and original upper hash, then validates unchanged neural outputs at batches 1/3/100 (all errors zero). Runtime requires the matching checkpoint, original upper hash and supported executable-program identities; unsupported/missing derivatives retain the original path. September 20 legacy models are unchanged. Cache fingerprints include both derivative files.
+
+The native implementation is `ProphecySlashFastGeometry.inl` plus `FSlashNative::ClampNeuralUpper`. Gameplay remains tick-based; wall-time clocks below only measure execution cost. `Prophecy.Attack.NativeGeometry` is an editor comparison switch, default **1**, latched when a model loads. Clear the idle model with `Prophecy.Editor.ClearAttackCache` between reference captures. Do not change an active user session.
+
+### Measurements and parity
+
+Paired same-process full-step comparisons in Unreal, median over 110 recorded inputs after warmup:
+
+| Checkpoint | Original | Native | Speedup |
+| --- | ---: | ---: | ---: |
+| 174664 | 2.849 ms | 0.156 ms | 18.26× |
+| 160664 | 2.956 ms | 0.170 ms | 17.43× |
+| 184064 | 2.691 ms | 0.147 ms | 18.30× |
+
+`Prophecy.NN.Attack.NativeGeometryParityAndCost` passed on October 2 at 19:29 UTC. It compares all 437 outputs on the same recorded inputs at batches 1/4/100 for all three checkpoints, including identical phase latches. Maximum position difference: **0.000000477 m** (0.000477 mm); rotation-matrix difference: **0.000003681**; recurrent-state difference: **0.000000477**. These are direct-step numerical comparisons, not a claim of indefinitely bit-identical recurrent trajectories.
+
+The unchanged natural TestNN scene has three inference-enabled agents. Two original 800-tick captures measured the attack stage at **1.913 / 2.043 ms per game tick**, averaging inference and intervening ticks. The native capture measures **0.190 ms**, a **10.1–10.7×** reduction of that stage in the live scene. Actual CPU network runs fall from three per attack inference step to two. Mean whole-world actor-tick time during attacks falls from **13.27 / 13.90 ms to 11.66 ms**; idle is **10.65 / 11.22 / 10.94 ms**, respectively. This is not a 10× speedup of the whole game, nor a complete GPU frame-time measurement. Shared fixed-100 lower locomotion and compact upper DirectML calls, physics and presentation remain.
+
+Paired gameplay replays also cover **all 16 attack families**, alternating full/half attacks where supported, both full-body kicks, and their recovery intervals: **1,280 recorded ticks**, with identical attack/Armed/Hit/frame states. Maximum future/presented position difference is **0.003431 mm**, rotation difference **0.000586 degrees**. Receipt: `motion-comparison.json`; captures `motion_original.json` and `motion_native.json`. The earlier files ending `_invalid_halfkick` are incomplete script attempts: both versions correctly rejected an unsupported half-body kick; the corrected final replays completed.
+
+Live Coding compiled successfully and loaded **19:28:24 UTC**, with no object-layout or reflected API changes. Rebuild the normal DLL before any future cold launch. Evidence: `Saved/Diagnostics/AttackPerformance20261002/` (`neural-extraction.json`, `native-parity.json`, `analysis.json`, owned-capture receipts), and `Saved/Diagnostics/AttackPerformance/oct02_current_a.json`, `oct02_current_b.json`, `oct02_native_a.json`. All profiling is opt-in; gameplay adds no measurement overhead when capture is off. All owned Play sessions ended, native geometry restored to 1. No Blueprint/map edits, explicit asset save, editor restart, commit or push.
+
+## September 27 investigation (historical)
 
 Full attacks were still requesting lower and upper locomotion inference, correcting the locomotion legs, and decoding two complete locomotion poses before the attack replaced those results. Half attacks also calculated upper locomotion output that the ghost replaced. This redundant work is now skipped once the attack has its initialized pose.
 

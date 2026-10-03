@@ -62,6 +62,22 @@ struct FRecoveryPolicyLegs
         }
     }
 };
+// Only channels changed by recovery. Stack storage, and exact source at zero influence.
+struct FRecoveryLegSource
+{
+    float V[9];
+    FRecoveryLegSource(const float* Pose,int32 Offset)
+    { FMemory::Memcpy(V,Pose+Offset,3*sizeof(float));FMemory::Memcpy(V+3,Pose+Offset+9,6*sizeof(float)); }
+    void BlendCorrection(float* Pose,int32 Offset,float Weight) const
+    {
+        if(Weight>=1.f)return;
+        if(Weight<=0.f)
+        {FMemory::Memcpy(Pose+Offset,V,3*sizeof(float));FMemory::Memcpy(Pose+Offset+9,V+3,6*sizeof(float));return;}
+        WriteStateVec3(Pose,Offset,FMath::Lerp(ReadStateVec3(V,0),ReadStateVec3(Pose,Offset),Weight));
+        WriteRot6(QuatToMatrix(FQuat::Slerp(MatrixToQuat(MatrixFromRot6(V+3)),
+            MatrixToQuat(MatrixFromRot6(Pose+Offset+9)),Weight).GetNormalized()),Pose+Offset+9);
+    }
+};
 static bool NeedsTemperedLegReconstruction(const ProphecyLowerTempering::FSettings& Pelvis,const ProphecyLowerTempering::FSettings& Foot)
 {
     return !Foot.FeetAreIdentity() || Pelvis.PelvisTranslation!=1.f || Pelvis.PelvisTranslationZ!=1.f || Pelvis.PelvisRotation!=1.f;
@@ -250,8 +266,10 @@ static bool SmoothTemperedKneePole(const float* Previous,const FPelvisLegGeometr
 }
 
 static bool ApplyTemperedKneePoleRecovery(const AProphecyAgent* Actor,const float* Previous,
-    const FPelvisLegGeometry& G,float* Target,int32 Offset,float MaxTurnRadians=FMath::DegreesToRadians(12.f))
+    const FPelvisLegGeometry& G,float* Target,int32 Offset,float MaxTurnRadians=FMath::DegreesToRadians(12.f),float Weight=1.f)
 {
+    if(Weight<=0.f)return false;
+    const FRecoveryLegSource Source(Target,Offset);
     bool Limited=false;
 #if WITH_EDITOR
     const bool Trace=CVarTemperingPoleTrace.GetValueOnGameThread()>0 && Actor && Actor->IsPlayerControlled();
@@ -259,12 +277,14 @@ static bool ApplyTemperedKneePoleRecovery(const AProphecyAgent* Actor,const floa
     if(CVarTemperingPoleSmoothing.GetValueOnGameThread()!=0)
 #endif
         Limited=SmoothTemperedKneePole(Previous,G,Target,Offset,MaxTurnRadians);
+    if(Limited)Source.BlendCorrection(Target,Offset,Weight);
 #if WITH_EDITOR
     if(Trace)
     {
         CVarTemperingPoleTrace->Set(CVarTemperingPoleTrace.GetValueOnGameThread()-1,ECVF_SetByConsole);
         float Candidate[41];FMemory::Memcpy(Candidate,Before,sizeof(Candidate));
         SmoothTemperedKneePole(Previous,G,Candidate,Offset,MaxTurnRadians);
+        Source.BlendCorrection(Candidate,Offset,Weight);
         auto Row=MakeShared<FJsonObject>();
         auto Add=[&](const TCHAR* Key,const float* V,int32 Count){TArray<TSharedPtr<FJsonValue>> A;for(int32 I=0;I<Count;++I) A.Add(MakeShared<FJsonValueNumber>(V[I]));Row->SetArrayField(Key,A);};
         auto Vec=[&](const TCHAR* Key,const FVector3f& V){const float A[]={V.X,V.Y,V.Z};Add(Key,A,3);};
@@ -273,6 +293,7 @@ static bool ApplyTemperedKneePoleRecovery(const AProphecyAgent* Actor,const floa
         Row->SetNumberField(TEXT("offset"),Offset);Row->SetNumberField(TEXT("calf"),G.CalfLength);
         Row->SetNumberField(TEXT("time"),Actor->GetWorld()->GetTimeSeconds());
         Row->SetNumberField(TEXT("max_turn"),MaxTurnRadians);
+        Row->SetNumberField(TEXT("weight"),Weight);
         FString Line;FJsonSerializer::Serialize(Row,TJsonWriterFactory<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>::Create(&Line));
         FFileHelper::SaveStringToFile(Line+TEXT("\n"),*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/RecoveryPoleSmoothing.jsonl")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM,&IFileManager::Get(),FILEWRITE_Append);
     }
@@ -743,5 +764,25 @@ bool FProphecyLowerTemperingTest::RunTest(const FString&)
             TestTrue(TEXT("Inner bound resolves connected calf when within outer reach"),FMath::IsNearlyEqual((Accepted-K).Size(),G.CalfLength,2.e-6f));
     }
     return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyLegCorrectionBlendTest,"Prophecy.NN.LowerTempering.LegCorrectionBlend",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyLegCorrectionBlendTest::RunTest(const FString&)
+{
+    float NN[41]{},Solved[41]{},Pose[41];
+    WriteStateVec3(NN,9,FVector3f(1,2,3));WriteRot6(FMat3f(),NN+18);
+    FMemory::Memcpy(Solved,NN,sizeof(NN));WriteStateVec3(Solved,9,FVector3f(3,4,5));
+    WriteRot6(QuatToMatrix(FQuat(FVector::UpVector,PI*.5)),Solved+18);
+    const FRecoveryLegSource Source(NN,9);
+    for(float W:{0.f,.001f,.5f,1.f})
+    {
+        FMemory::Memcpy(Pose,Solved,sizeof(Pose));Source.BlendCorrection(Pose,9,W);
+        TestTrue(TEXT("Recovery position influence scales down to NN"),ReadStateVec3(Pose,9).Equals(FVector3f(1,2,3)+FVector3f(2,2,2)*W,1.e-6));
+        TestTrue(TEXT("Rotation takes the weighted short arc"),FMath::IsNearlyEqual(MatrixToQuat(MatrixFromRot6(Pose+18)).AngularDistance(FQuat::Identity),PI*.5*W,1.e-5));
+        if(W==0)TestTrue(TEXT("Zero returns exact NN channels"),FMemory::Memcmp(Pose,NN,sizeof(NN))==0);
+        if(W==1)TestTrue(TEXT("One preserves exact feature channels"),FMemory::Memcmp(Pose,Solved,sizeof(Solved))==0);
+    }
+    return !HasAnyErrors();
 }
 #endif

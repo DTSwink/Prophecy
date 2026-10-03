@@ -9,7 +9,7 @@ class GAMEANIMATIONSAMPLE3_API UProphecySpecialRollLibrary : public UBlueprintFu
 {
     GENERATED_BODY()
 public:
-    /** Enabled by default. Both forearms use our hand-guided roll in attacks,
+    /** Enabled by default. Both forearms use idle-referenced upper-arm roll in attacks,
      * parry and dodge. Disable to inspect the decoded checkpoint rotations.
      * Applies at the next policy pose; positions, hand rotations and NN state are unchanged. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Specials",meta=(DefaultToSelf="Agent"))

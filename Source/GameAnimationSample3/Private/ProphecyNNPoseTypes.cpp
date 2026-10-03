@@ -566,9 +566,9 @@ void FProphecyNNPoseStore::ApplyRigidCalves(int32 AgentId, const FProphecyNNPose
 					Upper=FMath::Lerp(FMath::Lerp(A,B,double(FMath::Clamp(InterpolationAlpha,0.f,1.f))),Upper,double(UpperRemaining));
 				}
 			}
-            if (Transforms.IsValidIndex(Thigh)) ProphecyRecoveryLegLength::Resolve(
+            if (Transforms.IsValidIndex(Thigh)) ProphecyRecoveryLegLength::ResolveBlended(
                 Transforms[Thigh],Transforms[Calf],Transforms[Foot],Upper,Lower,
-                Snapshot.LocalTransforms[SourceFoot].GetTranslation());
+                Snapshot.LocalTransforms[SourceFoot].GetTranslation(),UpperRemaining);
 			continue;
 		}
 		FVector End;

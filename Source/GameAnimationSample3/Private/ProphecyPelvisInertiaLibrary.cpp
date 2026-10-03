@@ -21,6 +21,15 @@ struct FState
 };
 // Separate state keeps existing live actor/manager layouts unchanged. No components or timers.
 static TMap<TWeakObjectPtr<const AProphecyAgent>, FState> States;
+bool Preview(const AProphecyAgent* Agent,TFunctionRef<bool()> Prediction)
+{
+    auto* State=States.Find(Agent);
+    if (!State) return Prediction();
+    const FState Saved=*State;
+    const bool Result=Prediction();
+    *State=Saved;
+    return Result;
+}
 static bool BodyMode(const AProphecyAgent* Agent, const FState& S)
 {
     return S.bSimulatedBody && Agent->GetSimulationMode() == EProphecyAgentSimulationMode::Physical;
@@ -90,7 +99,7 @@ bool ApplyTarget(const AProphecyAgent* Agent, double Time, double StepSeconds,
     else if (Time > S->Time + 1.e-8)
     {
         S->IntervalStart=S->Motion;
-        S->IntervalSeconds=Time-S->Time;
+        S->IntervalSeconds=StepSeconds;
         S->Time=Time;
     }
     // Re-evaluate from the same start if collision rebases this interval. One-follow

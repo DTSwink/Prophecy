@@ -52,6 +52,11 @@ void AProphecyBloodFluidPostProcessController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	if (!bBloodFluidPostEnabled && !bShowStencilDebug)
+	{
+		ApplyBloodFluidPostProcessSettings(); // Retire after a direct property edit, too.
+		return;
+	}
 	if (bUpdateParametersEveryTick)
 	{
 		ApplyBloodFluidPostProcessSettings();
@@ -139,8 +144,11 @@ void AProphecyBloodFluidPostProcessController::ApplyBloodFluidPostProcessSetting
 		return;
 	}
 
+	const bool Active = bBloodFluidPostEnabled || bShowStencilDebug;
+	SetActorTickEnabled(Active && (bUpdateParametersEveryTick || bAutoTagBloodNiagaraInEditor));
 	RebuildBlendables();
-	PushScalarAndVectorParameters();
+	if (Active) PushScalarAndVectorParameters();
+	else if (bAutoTagBloodNiagaraInEditor) TagBloodNiagaraComponentsForStencil();
 }
 
 UMaterialInstanceDynamic* AProphecyBloodFluidPostProcessController::GetOrCreateMID(
@@ -220,7 +228,7 @@ void AProphecyBloodFluidPostProcessController::PushScalarAndVectorParameters()
 
 void AProphecyBloodFluidPostProcessController::AutoTagBloodNiagaraComponentsForEditor()
 {
-	if (GetWorld() == nullptr || !bAutoTagBloodNiagaraInEditor)
+	if (GetWorld() == nullptr || !bAutoTagBloodNiagaraInEditor || (!bBloodFluidPostEnabled && !bShowStencilDebug))
 	{
 		return;
 	}

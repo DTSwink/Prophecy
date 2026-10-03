@@ -46,13 +46,14 @@ namespace
             return FTransform(FRotationMatrix::MakeFromXY(FVector(R.V[0].X,R.V[0].Z,R.V[0].Y),
                 FVector(-R.V[1].X,-R.V[1].Z,-R.V[1].Y)).ToQuat(),FVector(P.X,P.Z,P.Y)*100.);
         };
-        for (const auto& Arm:Impl.UpperArms)
+        for (int32 Side=0;Side<2;++Side)
         {
-            int32 Mid=INDEX_NONE,End=INDEX_NONE;
-            for(int32 I=0;I<25;++I) { if(Bones[I]==Arm.Mid) Mid=I;if(Bones[I]==Arm.End) End=I; }
-            if(Mid==INDEX_NONE || End==INDEX_NONE) continue;
+            const auto& Arm=Impl.UpperArms[Side];
+            int32 Start=INDEX_NONE,Mid=INDEX_NONE,End=INDEX_NONE;
+            for(int32 I=0;I<25;++I) { if(Bones[I]==Arm.Start) Start=I;if(Bones[I]==Arm.Mid) Mid=I;if(Bones[I]==Arm.End) End=I; }
+            if(Start==INDEX_NONE || Mid==INDEX_NONE || End==INDEX_NONE) continue;
             FTransform Forearm=Transform(Mid);
-            SetForearmRollFromHand(Impl.UpperLocalOffsets[Arm.End],Arm.LocalPoleAxes[1],Forearm,Transform(End));
+            SetForearmRollFromUpperArm(Impl.UpperLocalOffsets[Arm.End],Side,Transform(Start),Forearm,Transform(End));
             Pose.R[Mid]=DefenseAxes(Forearm.GetRotation());
             if(bFixedArms)Pose.P[End]=UnrealToTraining(Forearm.TransformPosition(LocalTrainingToUnreal(Impl.UpperLocalOffsets[Arm.End])));
         }
@@ -136,7 +137,7 @@ bool FProphecyDefenseForearmBoundaryTest::RunTest(const FString&)
     Impl.UpperLocalOffsets.SetNumZeroed(25);
     for(int32 I=0;I<2;++I)
     {
-        auto& A=Impl.UpperArms[I];A.Mid=2+I*4;A.End=A.Mid+1;
+        auto& A=Impl.UpperArms[I];A.Mid=2+I*4;A.Start=A.Mid-1;A.End=A.Mid+1;
         Impl.UpperLocalOffsets[A.End]=FVector3f(I?-.25f:.25f,0,0);A.LocalPoleAxes[1]=FVector3f(0,1,0);
     }
     ProphecyDefense::FPose Native;DefenseWorldPose(World,Bones,Native);const auto Original=Native;
@@ -149,9 +150,9 @@ bool FProphecyDefenseForearmBoundaryTest::RunTest(const FString&)
         else
         {
             auto Expected=World[Arm->Mid];
-            SetForearmRollFromHand(Impl.UpperLocalOffsets[Arm->End],Arm->LocalPoleAxes[1],Expected,World[Arm->End]);
+            SetForearmRollFromUpperArm(Impl.UpperLocalOffsets[Arm->End],Arm==&Impl.UpperArms[0]?0:1,World[Arm->Start],Expected,World[Arm->End]);
             const auto R=DefenseAxes(Expected.GetRotation());
-            for(int32 J=0;J<3;++J) TestTrue(TEXT("Parry/dodge native boundary matches attack/locomotion wrist roll"),Native.R[I].V[J].Equals(R.V[J],2.e-6));
+            for(int32 J=0;J<3;++J) TestTrue(TEXT("Parry/dodge native boundary matches attack/locomotion parent roll"),Native.R[I].V[J].Equals(R.V[J],2.e-6));
         }
     }
     return !HasAnyErrors();
@@ -302,18 +303,6 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
     if (!Impl->Agents[Handle.Index].DefensePose) return bCancelled;
     auto& Agent=Impl->Agents[Handle.Index];
     const bool WasDodge=Agent.DefensePose->bDodge;
-    const FVector3f InertiaPreviousRoot=Agent.PreviousPublishedRoot,InertiaRoot=Agent.PublishedRoot;
-    const float InertiaPreviousYaw=Agent.PreviousPublishedYaw,InertiaYaw=Agent.PublishedYaw;
-    // Capture before root recentering or Blueprint callbacks can replace the
-    // defense object. These are the actual two accepted defense endpoints.
-    FTransform PreviousWorld[25],World[25];
-    if (bReturnToLocomotion)
-    {
-        const auto PreviousCarrier=SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
-        const auto Carrier=SlashComponentWorld(Actor,Agent.PublishedRoot,Agent.PublishedYaw);
-        for(int32 B=0;B<25;++B)
-        { PreviousWorld[B]=Agent.DefensePose->PreviousComponent[B]*PreviousCarrier;World[B]=Agent.DefensePose->CurrentComponent[B]*Carrier; }
-    }
     const USpringArmComponent* PlayerSpring=Actor->IsPlayerControlled()?Actor->GetAgentSpringArm():nullptr;
     const FVector PreviousCameraOrigin=PlayerSpring?PlayerSpring->GetComponentLocation():FVector::ZeroVector;
     // Capture the outgoing defense before its pose/carrier is replaced.
@@ -334,10 +323,6 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
     if (PlayerSpring && bReturnToLocomotion) ProphecyAttackCamera::CompensateRootSnap(Actor,PreviousCameraOrigin);
     ProphecyAttackRecovery::NotifyEnded(Actor,NAME_None,false,bReturnToLocomotion,
         WasDodge?EProphecyAgentState::Dodging:EProphecyAgentState::Parrying);
-    if (bReturnToLocomotion && ResolveAgent(Handle)==Actor && !Agent.Slash.bActive && !Agent.DefensePose && ProphecyUpperBodyInertia::Configured(Actor))
-        ProphecyUpperBodyInertia::Begin(Actor,MakeArrayView(PreviousWorld),MakeArrayView(World),
-            Impl->BodyNames,Impl->UpperCoreBoneNames,1./NNUpdateHz,
-            HandInertiaRoot(InertiaPreviousRoot,InertiaPreviousYaw),HandInertiaRoot(InertiaRoot,InertiaYaw));
     return true;
 }
 bool AProphecyNNLocomotionManager::GetAgentNNDefenseStatus(FProphecyAgentHandle Handle,FProphecyNNDefenseStatus& Status) const

@@ -38,4 +38,17 @@ inline bool Resolve(FTransform& Thigh,FTransform& Calf,const FTransform& Foot,do
     Calf.SetLocation(NewKnee);
     return true;
 }
+inline bool ResolveBlended(FTransform& Thigh,FTransform& Calf,const FTransform& Foot,double Upper,double Lower,
+    const FVector& CalfLocalAim,double Weight)
+{
+    if(Weight<=0)return false;
+    if(Weight>=1)return Resolve(Thigh,Calf,Foot,Upper,Lower,CalfLocalAim);
+    const FQuat OldThigh=Thigh.GetRotation(),OldCalf=Calf.GetRotation();
+    const FVector OldKnee=Calf.GetLocation();
+    const bool Changed=Resolve(Thigh,Calf,Foot,Upper,Lower,CalfLocalAim);
+    Thigh.SetRotation(FQuat::Slerp(OldThigh,Thigh.GetRotation(),Weight).GetNormalized());
+    Calf.SetRotation(FQuat::Slerp(OldCalf,Calf.GetRotation(),Weight).GetNormalized());
+    Calf.SetLocation(FMath::Lerp(OldKnee,Calf.GetLocation(),Weight));
+    return Changed;
+}
 }

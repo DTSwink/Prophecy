@@ -1,7 +1,38 @@
 #include "ProphecyAgentTime.h"
+#include "ProphecyBlendClock.h"
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
 #include "ProphecyContinuousRootWindow.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyGameTickSchedulerTest,"Prophecy.Agent.TimeDilation.GameTickBudget",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyGameTickSchedulerTest::RunTest(const FString&)
+{
+    for (float FrameDelta : {1.f/120.f,1.f/60.f,1.f/30.f,.2f,20.f})
+    {
+        ProphecyAgentTime::FClocks Clocks;
+        Clocks.Set(0,2.); Clocks.Set(1,.5);
+        int32 Counts[3]={}, Shared=0;
+        for (int32 Tick=0;Tick<60;++Tick)
+        {
+            int32 TickShared=0;
+            Clocks.Advance(ProphecyBlendClock::TickBudget(false,FrameDelta),1.f/30.f,3,32,
+                [&](ProphecyAgentTime::FStep& S)
+                {
+                    if(S.SharedBoundary) { ++Shared; ++TickShared; }
+                    for(int32 I=0;I<3;++I) if(S.Due[I]) ++Counts[I];
+                });
+            TestTrue(TEXT("A hitch never advances more than one shared policy step"),TickShared<=1);
+        }
+        TestEqual(TEXT("60 game ticks produce 30 shared attack/policy steps at every FPS"),Shared,30);
+        TestEqual(TEXT("Explicit double-rate locomotion preserved"),Counts[0],60);
+        TestEqual(TEXT("Explicit half-rate locomotion preserved"),Counts[1],15);
+        TestEqual(TEXT("Normal lane shares fixed tick cadence"),Counts[2],30);
+        TestEqual(TEXT("Pause spends no budget"),ProphecyBlendClock::TickBudget(true,FrameDelta),0.f);
+        TestEqual(TEXT("Zero-delta editor refresh spends no budget"),ProphecyBlendClock::TickBudget(false,0),0.f);
+    }
+    return !HasAnyErrors();
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAgentTimeClockTest,"Prophecy.Agent.TimeDilation.Clocks",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)

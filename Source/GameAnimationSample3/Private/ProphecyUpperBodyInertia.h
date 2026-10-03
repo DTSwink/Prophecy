@@ -4,6 +4,8 @@ class AProphecyAgent;
 namespace ProphecyUpperBodyInertia
 {
 bool Active(const AProphecyAgent* Agent);
+bool CoreActive(const AProphecyAgent* Agent);
+void Advance(const AProphecyAgent* Agent);
 bool ArmsActive(const AProphecyAgent* Agent);
 void ApplyArms(const AProphecyAgent* Agent,const FTransform& Carrier,TArrayView<FTransform> Pose,
     double StepSeconds,const FVector2D& RestForearmLengthsCm,const FTransform& Root=FTransform::Identity);

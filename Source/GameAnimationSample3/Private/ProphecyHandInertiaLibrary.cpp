@@ -110,7 +110,7 @@ bool Apply(const AProphecyAgent* Agent,int32 Hand,float W,bool Attack,double Tim
     const FTransform Target=Wrist;
     if (!H.Seeded || Time<H.Time)
     { H.Motion.Seed(PreviousHand,Target,Dt); H.Start=H.Motion; H.Dt=Dt; H.Time=Time; H.Seeded=true; }
-    else if (Time>H.Time+1.e-8) { H.Start=H.Motion; H.Dt=Time-H.Time; H.Time=Time; }
+    else if (Time>H.Time+1.e-8) { H.Start=H.Motion; H.Dt=Dt; H.Time=Time; }
     H.Motion=H.Start;
     const FTransform Filtered=StepRootAxes(H.Motion,Target,Root.GetRotation(),F,H.Dt);
     Solve(Shoulder,Elbow,Wrist,Filtered,Pole,L2);

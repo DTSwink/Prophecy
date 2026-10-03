@@ -9,6 +9,8 @@ int32 ArmForAttack(FName Attack);
 int32 ActiveArm(const AProphecyAgent* A);
 // Bit0 left, bit1 right. Consume the shared clock once before applying any arm.
 uint8 ActiveArmMask(const AProphecyAgent* A);
+// Cached sword-route winding, selected once by the neutral return's clearance check.
+bool RightWristReturnDirection(const AProphecyAgent* A,double& Direction);
 double AdvanceFrame(const AProphecyAgent* A);
 bool Active(const AProphecyAgent* A);
 bool UsesPelvisReference(const AProphecyAgent* A);

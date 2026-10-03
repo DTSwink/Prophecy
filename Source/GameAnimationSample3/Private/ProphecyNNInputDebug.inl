@@ -481,6 +481,8 @@ void AProphecyNNLocomotionManager::TraceNNHandoff()
 		Row->SetNumberField(TEXT("time"), GetWorld()->GetTimeSeconds());
 		Row->SetBoolField(TEXT("attack"), A.Slash.bActive);
 		Row->SetBoolField(TEXT("half"), A.Slash.bHalf);
+		Row->SetBoolField(TEXT("upper_inference"),Impl->UpperInferenceRequested.IsValidIndex(I) && Impl->UpperInferenceRequested[I]!=0);
+		Row->SetNumberField(TEXT("upper_batch_rows"),Impl->UpperInferenceAgents.Num());
 		auto Add = [&](const TCHAR* Name, const float* Data, int32 Count)
 		{
 			TArray<TSharedPtr<FJsonValue>> Items;

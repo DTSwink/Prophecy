@@ -14,4 +14,5 @@ namespace ProphecyModeTransitions
 	void Evaluate(const void* Proxy, FPoseContext& Output);
 	void ReleaseProxy(const void* Proxy);
 	void ReleaseAgent(const AProphecyAgent* Agent);
+	void FinishBlend(const AProphecyAgent* Agent);
 }

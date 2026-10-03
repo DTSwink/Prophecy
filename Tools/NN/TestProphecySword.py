@@ -1,7 +1,15 @@
 """Exercise the actual A_Sword Blueprint, fixed grip, physics toggle, drop and despawn."""
 import unreal, json, traceback, math, time
 from pathlib import Path
-state={'phase':-1,'handle':None,'rows':[],'index':0,'wall_start':time.monotonic()}
+# Never attach this mutating test to the user's Play session.
+editor_guard = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
+assert editor_guard.get_game_world() is None, 'Stop your Play session before running this test'
+import time
+owned_world = None
+watchdog_start = time.monotonic()
+finished = False
+
+state={'phase':-1,'handle':None,'rows':[],'index':0}
 no_contacts=globals().get('NO_CONTACTS',False)
 keep_tick=globals().get('KEEP_AGENT_TICK',False)
 isolate_others=globals().get('ISOLATE_OTHER_AGENTS',False)
@@ -46,17 +54,27 @@ def report(label):
     state['rows'].append(row)
     return row
 def finish(error=None):
+    global finished
+    if finished: return
+    finished = True
     if state['handle'] is not None: unreal.unregister_slate_post_tick_callback(state['handle']);state['handle']=None
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps({'passed':error is None,'error':error,'no_contacts_diagnostic':no_contacts,
                               'original_agent_bp_tick_enabled':keep_tick,'other_agents_collision_disabled':isolate_others,
                               'drop_from_attached':drop_attached,'rows':state['rows']},indent=2))
-    unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_request_end_play()
+    if owned_world is not None and editor_guard.get_game_world() == owned_world:
+        unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_request_end_play()
 def tick(dt):
     global world,agent,mesh,dropped
+    global owned_world
     try:
-        # Wall-clock watchdog also catches a Blueprint pausing game time.
-        if time.monotonic()-state['wall_start']>45:raise RuntimeError('Sword test timed out (check existing Blueprint pause logic)')
+        if time.monotonic() - watchdog_start > 45:
+            raise RuntimeError('Diagnostic timed out (Play failed, stopped, or paused)')
+        current_world = editor_guard.get_game_world()
+        if owned_world is not None and current_world != owned_world:
+            raise RuntimeError('Owned Play session ended or was replaced')
+        if current_world is not None and owned_world is None:
+            owned_world = current_world
         if state['phase']==-1:
             world=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world()
             if not world:return

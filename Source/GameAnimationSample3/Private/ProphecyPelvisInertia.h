@@ -11,6 +11,8 @@ void SynchronizeJolt(const AProphecyAgent* Agent);
 bool GetBodyFollow(const AProphecyAgent* Agent, FVector& Linear, FVector& Angular);
 // Cheap gate before constructing geometry/carriers or doing any leg work.
 bool HasTarget(const AProphecyAgent* Agent);
+// Speculative attack end prediction must not advance the live inertia state.
+bool Preview(const AProphecyAgent* Agent,TFunctionRef<bool()> Prediction);
 // Caller writes the result into lower policy state and resolves legs before upper inference.
 bool ApplyTarget(const AProphecyAgent* Agent, double Time, double StepSeconds,
     const FTransform& PreviousCarrier, const FTransform& Carrier,

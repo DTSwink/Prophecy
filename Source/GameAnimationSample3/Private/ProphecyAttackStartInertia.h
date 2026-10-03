@@ -4,7 +4,9 @@ class AProphecyAgent;
 namespace ProphecyAttackStartInertia
 {
 void Update(const AProphecyAgent* Agent,int32 PoseId);
-void Begin(const AProphecyAgent* Agent,int32 PoseId,const FTransform& PreviousWorld,const FTransform& World,uint8 FootMask=3);
+bool Configured(const AProphecyAgent* Agent);
+void Begin(const AProphecyAgent* Agent,int32 PoseId,const FTransform& PreviousWorld,const FTransform& World,
+    uint8 FootMask=3,double SourceInterval=1./30.);
 void BeginFeet(const AProphecyAgent* Agent,int32 PoseId,uint8 FootMask);
 void Cancel(const AProphecyAgent* Agent);
 void Remove(const AProphecyAgent* Agent);

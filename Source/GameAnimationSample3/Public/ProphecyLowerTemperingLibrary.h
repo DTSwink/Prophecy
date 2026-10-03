@@ -29,8 +29,8 @@ public:
     /** Keep foot-relative knee steering smooth after any special, independently
      * of pelvis/feet tempering. One duration second = 60 game ticks; turn speed
      * is degrees per 60 ticks. Zero duration keeps the previous tempering-only
-     * behavior. At expiry, a remaining correction finishes at the chosen speed
-     * rather than snapping. A new special/reset cancels it. No normal-pose work
+     * behavior. Correction influence fades to zero over this duration, then stops
+     * exactly at its deadline. A new special/reset cancels it. No normal-pose work
      * remains after convergence. Speed must be positive and finite. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion", meta=(DisplayName="Set Leg Reconstruction Recovery"))
     static bool SetLegReconstructionRecovery(AProphecyAgent* Agent, float DurationSeconds = 1.f,

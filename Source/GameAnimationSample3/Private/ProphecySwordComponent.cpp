@@ -36,6 +36,19 @@ TMap<TWeakObjectPtr<const AProphecyAgent>,FGate> Gates;
 TSet<TWeakObjectPtr<const AProphecyAgent>> HitOwners;
 // Event-only preference; no component layout changes or per-tick collision polling.
 TSet<TWeakObjectPtr<const AProphecyAgent>> CollisionDisabled;
+TSet<TWeakObjectPtr<const AProphecyAgent>> OwnCollisionDisabled;
+FDelegateHandle OwnCollisionCleanup;
+void EnsureOwnCollisionCleanup()
+{
+    if (OwnCollisionCleanup.IsValid()) return;
+    OwnCollisionCleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
+    {
+        for (auto It=OwnCollisionDisabled.CreateIterator();It;++It)
+            if (!It->IsValid() || It->Get()->GetWorld()==World) It.RemoveCurrent();
+        if (OwnCollisionDisabled.IsEmpty())
+        { FWorldDelegates::OnWorldCleanup.Remove(OwnCollisionCleanup);OwnCollisionCleanup.Reset(); }
+    });
+}
 void SetBodySuppressed(AProphecyAgent* Agent, bool bSuppressed)
 {
     if (!Agent) return;
@@ -77,6 +90,11 @@ void Restore(FGate& Gate)
 bool SuppressesOwner(const AProphecyAgent* Agent)
 {
     return Agent && Agent->IsSwordAttackActive() && !HitOwners.Contains(Agent);
+}
+// Keep the automatic body-body attack mask separate from this sword-only preference.
+bool SuppressesSwordOwner(const AProphecyAgent* Agent)
+{
+    return OwnCollisionDisabled.Contains(Agent) || SuppressesOwner(Agent);
 }
 bool IsAllowed(const AProphecyAgent* Agent)
 {
@@ -226,13 +244,15 @@ namespace
 		// The fixed grip owns this pair independently, including after an attack ends.
 		const auto* OwnerMesh = Owner->GetPoseReferenceMesh();
 		const FBodyInstance* GrippingHand = OwnerMesh ? OwnerMesh->GetBodyInstance(OwnerMesh->GetSocketBoneName(Owner->SwordHandSocket)) : nullptr;
+		const FBodyInstance* GrippingForearm = OwnerMesh
+			? OwnerMesh->GetBodyInstance(OwnerMesh->GetParentBone(OwnerMesh->GetSocketBoneName(Owner->SwordHandSocket))) : nullptr;
 		TArray<UPrimitiveComponent*> Components;
 		Owner->GetComponents(Components);
 		for (UPrimitiveComponent* Component : Components)
 		{
-			auto Add = [&Pairs, GrippingHand, bAllOwner, bIncludeHand](FBodyInstance* Body)
+			auto Add = [&Pairs, GrippingHand, GrippingForearm, bAllOwner, bIncludeHand](FBodyInstance* Body)
 			{
-				if (Body && (Body == GrippingHand ? bIncludeHand : bAllOwner)
+				if (Body && (Body == GrippingHand ? bIncludeHand : (Body == GrippingForearm || bAllOwner))
 					&& Body->ActorHandle && Body->ActorHandle->GetSolver<Chaos::FPhysicsSolver>() == Pairs.Solver)
 					Pairs.Bodies.AddUnique(Body->ActorHandle->GetGameThreadAPI().UniqueIdx());
 			};
@@ -468,12 +488,14 @@ bool UProphecySwordComponent::FinishJoltGrip(UProphecyJoltCharacterComponent& Ch
 	Settings.FrameA.NormalizeRotation();
 	Settings.FrameB.NormalizeRotation();
 	TArray<FProphecyJoltBodyPair> Exclusions;
+	const FName Forearm = Mesh.GetParentBone(Bone);
 	for (const USkeletalBodySetup* Setup : Mesh.GetPhysicsAsset()->SkeletalBodySetups)
 	{
 		FProphecyJoltBodyHandle OwnerBody;
 		if (!Setup || !Character.GetBodyHandle(Setup->BoneName, OwnerBody)
 			|| OwnerBody.WorldLifetime != SwordBody.WorldLifetime) return false;
-		if (ProphecySwordAttackCollision::SuppressesOwner(A) || Setup->BoneName == Bone) Exclusions.Add({ SwordBody, OwnerBody });
+		if (ProphecySwordAttackCollision::SuppressesSwordOwner(A) || Setup->BoneName == Bone || Setup->BoneName == Forearm)
+			Exclusions.Add({ SwordBody, OwnerBody });
 	}
 	if (!ReleaseJoltGrip()) return false;
 	FProphecyJoltJointHandle Joint;
@@ -613,7 +635,7 @@ bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 		Blade->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Blade->SetSimulatePhysics(true);
 		if (!Blade->IsSimulatingPhysics()) return false;
-		if (ProphecySwordAttackCollision::SuppressesOwner(A)) IgnoreOwnerCollisions(this, Blade, A);
+		IgnoreOwnerCollisions(this, Blade, A, ProphecySwordAttackCollision::SuppressesSwordOwner(A));
 		FTransform Anchor = M->GetSocketTransform(A->SwordHandSocket);
 		Anchor.SetScale3D(FVector::OneVector);
 		Grip->SetWorldTransform(Anchor);
@@ -639,7 +661,7 @@ bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 		// An unchanged relative transform can early-out after a mode switch has
 		// temporarily propagated a different socket pose to attached children.
 		Blade->UpdateComponentToWorld();
-		IgnoreOwnerCollisions(this, Blade, A, ProphecySwordAttackCollision::SuppressesOwner(A), true);
+		IgnoreOwnerCollisions(this, Blade, A, ProphecySwordAttackCollision::SuppressesSwordOwner(A), true);
 	}
 	bHasPrevious = false;
 	ProphecySwordAttackCollision::Refresh(A);
@@ -696,7 +718,12 @@ void UProphecySwordComponent::RefreshOwnerCollision()
 			|| !JoltBody || !JoltBody->GetBodyHandle(SwordBody)) return;
 		TArray<FProphecyJoltBodyPair> Pairs;
 		Pairs.Add({ SwordBody, JoltBinding->Hand });
-		if (ProphecySwordAttackCollision::SuppressesOwner(A))
+		// The gripping forearm stays excluded for the entire held lifetime, including
+		// Hit/end and a broken diagnostic grip. Drop releases these owned pairs.
+		FProphecyJoltBodyHandle Forearm;
+		if (Character->GetBodyHandle(BoundMesh->GetParentBone(BoundMesh->GetSocketBoneName(A->SwordHandSocket)), Forearm))
+			Pairs.Add({ SwordBody, Forearm });
+		if (ProphecySwordAttackCollision::SuppressesSwordOwner(A))
 		{
 			for (const USkeletalBodySetup* Setup : BoundMesh->GetPhysicsAsset()->SkeletalBodySetups)
 			{
@@ -712,8 +739,7 @@ void UProphecySwordComponent::RefreshOwnerCollision()
 	else
 	{
 		ClearOwnerCollisions(this);
-		if (ProphecySwordAttackCollision::SuppressesOwner(A) || !bPhysicsHold)
-			IgnoreOwnerCollisions(this, Blade, A, ProphecySwordAttackCollision::SuppressesOwner(A), !bPhysicsHold);
+		IgnoreOwnerCollisions(this, Blade, A, ProphecySwordAttackCollision::SuppressesSwordOwner(A), !bPhysicsHold);
 	}
 }
 
@@ -893,6 +919,7 @@ void UProphecySwordComponent::Disappear()
 void UProphecySwordComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
 	ProphecySwordAttackCollision::CollisionDisabled.Remove(Agent());
+	ProphecySwordAttackCollision::OwnCollisionDisabled.Remove(Agent());
 	ProphecySwordAttackCollision::End(Agent());
 	Disappear();
 	Super::EndPlay(Reason);
@@ -938,6 +965,16 @@ namespace
 }
 
 bool AProphecyAgent::EquipSword(bool bSimulated) { return SwordController(this, true)->Equip(bSimulated); }
+void UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(AProphecyAgent* Agent, bool Enabled)
+{
+	if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown) return;
+	using namespace ProphecySwordAttackCollision;
+	if (Enabled == !OwnCollisionDisabled.Contains(Agent)) return;
+	if (Enabled) OwnCollisionDisabled.Remove(Agent);
+	else { OwnCollisionDisabled.Add(Agent);EnsureOwnCollisionCleanup(); }
+	// Do not create/tick a sword component just to retain a preference before equip.
+	RefreshOwner(Agent);
+}
 void UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(AProphecyAgent* Agent, bool Enabled)
 {
 	if (!IsValid(Agent)) return;

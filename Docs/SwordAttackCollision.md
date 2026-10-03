@@ -1,5 +1,19 @@
 # Body and held sword collision during NN attacks
 
+**Set Own Sword Collision Enabled** (category `Prophecy | Agent | Sword`) is the
+manual owner-only control. Pass the agent and **Enabled = false** to suppress
+contact between their held sword and their own physical bodies. Other agents,
+world contact, sword channel responses, body-body self-collision, grip and
+velocities retain their existing rules. True restores the normal attack-phase
+owner behavior below; it does not force owner collisions on before Hit, and the
+gripping-hand and gripping-forearm exclusions remain. It is enabled by default and can be configured
+before equip. The preference survives attack Hit/end, rebind and future equips;
+drop removes the released sword's exclusions. Agent/controller EndPlay and world
+cleanup clear preference state. The control uses existing Jolt and Chaos pair
+exclusion paths, with no added ticking, body recreation or inference. It does not
+change independent Blueprint damage/cutting trace logic. The existing **Set Sword
+Collision Enabled** is the separate global held-sword collision toggle.
+
 The attack phase automatically controls the held sword's collision:
 
 | Phase | Slash / pike | Punch / kick / headbutt |
@@ -13,7 +27,11 @@ For slash/pike, Armed is latched for collision for the rest of the attack. For m
 
 Owner-body exclusions are separate: the sword ignores its wielder until the first
 NN **Hit** output, then restores normal sword-owner contact during the remaining
-attack animation. The gripping-hand exclusion remains. This is latched for every
+attack animation. The gripping hand and its parent forearm stay excluded for the
+entire held lifetime, including after Hit/end, owner-collision re-enabling, and
+grip/backend refresh. Dropping removes these held exclusions and restores normal
+collision eligibility. This applies to simulated and attached swords on Jolt and
+Chaos, using the configured hand socket to choose the arm. This is latched for every
 attack family, including equipment/rebinding after Hit; it does not switch off
 attack sweeps, special solver iterations or attack physical profiles. Stops,
 interruptions and completion still restore normally if Hit never occurs. Re-enabled collision retains the original channel responses rather than forcing BlockAll. Equipping or rebinding a held sword during an attack reapplies the current phase.
@@ -41,6 +59,18 @@ Implementation: `ProphecySwordAttackCollision` in `ProphecySwordComponent.cpp`, 
 No added Tick callback, timer, actor scan or locomotion polling. Changes run on attack/equip/drop/backend events and the existing Armed/first-Hit transitions.
 
 Focused engine test: `Prophecy.Jolt.Sword.AttackCollisionPhases`.
+
+October 2 held-forearm change: Jolt simulated/attached fixtures now assert two
+held exclusions (hand and forearm), retention across Hit/re-enable/refresh, and
+complete removal on drop. These assertions passed in the 21:03:44 UTC run, but
+the test as a whole failed two pre-attack channel checks: its asymmetric UE-only
+response setup had not initialized the native Jolt response. The fixture now
+initializes both copies explicitly; that correction compiled and loaded at
+21:05:39 UTC. A complete rerun was deferred because user Play was active and was
+preserved. Do not report the whole test passed yet. The gameplay fix loaded at
+21:03:11 UTC and a separate owned TestNN replay reduced tick-200 hand error from
+25.845 to 0.288 degrees. No asset/settings edits; include source in the next normal
+editor build before cold launch. [Diagnosis and replay](HandPhysical200Diagnosis.md).
 
 September25 body-mask change: expanded phase tests cover body-pair suppression
 through Armed, restoration at Hit/end and sword drop retaining body suppression.

@@ -8,22 +8,50 @@ import unreal
 
 editor = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 assert not editor.get_game_world()
+# Never attach this mutating test to the user's Play session.
+editor_guard = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
+assert editor_guard.get_game_world() is None, 'Stop your Play session before running this test'
+import time
+owned_world = None
+watchdog_start = time.monotonic()
+finished = False
+diagnostic_ticks = 0
+last_world_time = None
+
 state = dict(actors=[], phase=0, samples=0, events=[])
 builtins._nn_interpolation_check = state
 
 def finish(reason):
+    global finished
+    if finished: return
+    finished = True
     unreal.unregister_slate_post_tick_callback(state['callback'])
     path = pathlib.Path(unreal.Paths.project_saved_dir()) / 'Diagnostics/SlashContacts/InterpolationSmoke.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(dict(reason=reason, samples=state['samples'], events=state['events'])), encoding='utf-8')
-    unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_request_end_play()
+    if owned_world is not None and editor_guard.get_game_world() == owned_world:
+        unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_request_end_play()
     print('NN_INTERPOLATION_CHECK', reason)
 
 def tick(_):
+    global owned_world, diagnostic_ticks, last_world_time
     try:
+        if time.monotonic() - watchdog_start > 60:
+            raise RuntimeError('Diagnostic timed out (Play failed, stopped, or paused)')
+        current_world = editor_guard.get_game_world()
+        if owned_world is not None and current_world != owned_world:
+            raise RuntimeError('Owned Play session ended or was replaced')
+        if current_world is not None and owned_world is None:
+            owned_world = current_world
+        if current_world is not None:
+            stamp = unreal.GameplayStatics.get_time_seconds(current_world)
+            if stamp != last_world_time:
+                last_world_time = stamp
+                if not unreal.GameplayStatics.is_game_paused(current_world): diagnostic_ticks += 1
         world = editor.get_game_world()
         if not world:
             return
-        now = unreal.GameplayStatics.get_time_seconds(world)
+        now = diagnostic_ticks / 60.0
         current = unreal.ProphecyNNInterpolationMode.CURRENT
         cubic = unreal.ProphecyNNInterpolationMode.HERMITE_SLERP
         if not state['actors']:

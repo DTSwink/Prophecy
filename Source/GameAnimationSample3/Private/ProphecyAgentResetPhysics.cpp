@@ -1,9 +1,12 @@
 #include "ProphecyAgentResetPhysics.h"
+#include "ProphecyAttackFists.h"
+#include "ProphecyModeTransitions.h"
 #include "ProphecyArmedPose.h"
 #include "ProphecyHalfAttackCompensation.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyAttackStartHandInertia.h"
+#include "ProphecyAttackStartFKCore.h"
 #include "ProphecyAttackFootLocomotion.h"
 #include "ProphecyAgent.h"
 #include "ProphecyPhysicalProfileLibrary.h"
@@ -16,6 +19,7 @@
 #include "ProphecyHandRecovery.h"
 #include "ProphecyCoreTempering.h"
 #include "ProphecyUpperBodyInertia.h"
+#include "ProphecyFKReturn.h"
 #include "ProphecySlashReturn.h"
 #include "ProphecyArmCone.h"
 #include "ProphecyAttackRecovery.h"
@@ -66,8 +70,10 @@ void Remove(const AProphecyAgent* Agent)
     ProphecyHalfAttackCompensation::ForgetReset(Agent);
     ProphecyAttackControls::ForgetReset(Agent);
     ProphecyUpperBodyInertia::ForgetReset(Agent);
+    ProphecyFKReturn::ForgetReset(Agent);
     ProphecyAttackStartInertia::ForgetReset(Agent);
     ProphecyAttackStartHands::ForgetReset(Agent);
+    ProphecyAttackStartFKCore::ForgetReset(Agent);
     ProphecyAttackFootLocomotion::ForgetReset(Agent);
     ProphecySlashReturn::ForgetReset(Agent);
     ProphecyArmCone::Remove(Agent);
@@ -107,8 +113,10 @@ bool Capture(AProphecyAgent* Agent,FString& Error)
     ProphecyHalfAttackCompensation::CaptureReset(Agent);
     ProphecyAttackControls::CaptureReset(Agent);
     ProphecyUpperBodyInertia::CaptureReset(Agent);
+    ProphecyFKReturn::CaptureReset(Agent);
     ProphecyAttackStartInertia::CaptureReset(Agent);
     ProphecyAttackStartHands::CaptureReset(Agent);
+    ProphecyAttackStartFKCore::CaptureReset(Agent);
     ProphecyAttackFootLocomotion::CaptureReset(Agent);
     ProphecySlashReturn::CaptureReset(Agent);
     ProphecyArmCone::CaptureReset(Agent);
@@ -136,6 +144,10 @@ bool RestoreEquipment(AProphecyAgent* Agent,FString& Error)
 }
 void CancelBlends(AProphecyAgent* Agent)
 {
+	// Complete pose-only fades before removing their clocks; never freeze a
+	// partially closed fist or partially switched mesh when resetting an agent.
+	ProphecyAttackFists::FinishBlend(Agent);
+	ProphecyModeTransitions::FinishBlend(Agent);
     ProphecyClampEase::Remove(Agent);
     ProphecyArmedPose::Cancel(Agent);
     ProphecyLegRecovery::Cancel(Agent);
@@ -149,7 +161,9 @@ void CancelBlends(AProphecyAgent* Agent)
     ProphecyHandRecovery::CancelMotion(Agent);
     ProphecyCoreTempering::CancelMotion(Agent);
     ProphecyUpperBodyInertia::Cancel(Agent);
+    ProphecyFKReturn::Cancel(Agent);
     ProphecyAttackStartHands::Cancel(Agent);
+    ProphecyAttackStartFKCore::Cancel(Agent);
     ProphecyAttackStartInertia::Cancel(Agent);
     ProphecySlashReturn::Cancel(Agent);
     ProphecyArmCone::Cancel(Agent);
@@ -184,8 +198,10 @@ bool Restore(AProphecyAgent* Agent,FString& Error)
     ProphecyHalfAttackCompensation::RestoreReset(Agent);
     ProphecyAttackControls::RestoreReset(Agent);
     ProphecyUpperBodyInertia::RestoreReset(Agent);
+    ProphecyFKReturn::RestoreReset(Agent);
     ProphecyAttackStartInertia::RestoreReset(Agent);
     ProphecyAttackStartHands::RestoreReset(Agent);
+    ProphecyAttackStartFKCore::RestoreReset(Agent);
     ProphecyAttackFootLocomotion::RestoreReset(Agent);
     ProphecySlashReturn::RestoreReset(Agent);
     ProphecyArmCone::RestoreReset(Agent);

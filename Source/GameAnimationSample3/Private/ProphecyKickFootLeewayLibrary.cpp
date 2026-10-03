@@ -63,6 +63,13 @@ float ReturningLengthDeltaCm(const AProphecyAgent* Agent,int32 Side)
     return FMath::Lerp(Target?float((*Target)[Side]):0.f,float(Length->Delta[Side]),State->Value/State->From);
 }
 bool HasLengthReturn(const AProphecyAgent* Agent) { return !LengthReturns.IsEmpty() && LengthReturns.Contains(Agent); }
+float LengthReturnWeight(const AProphecyAgent* Agent)
+{
+    if(!HasLengthReturn(Agent))return 0.f;
+    const auto* State=PoseReturns.Find(const_cast<AProphecyAgent*>(Agent));
+    if(!State)State=Active.Find(const_cast<AProphecyAgent*>(Agent));
+    return State && State->Returning && State->From>0 ? FMath::Clamp(State->Value/State->From,0.f,1.f) : 0.f;
+}
 void CancelPoseRecovery(const AProphecyAgent* Agent)
 {
     if (const auto* Length=LengthReturns.Find(Agent))

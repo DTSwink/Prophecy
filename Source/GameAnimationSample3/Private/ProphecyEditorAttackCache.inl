@@ -34,7 +34,7 @@ static FString Fingerprint(const FString& Directory)
         Files.AddUnique(File);
     }
     // Optional auxiliary data can be loaded into a model after acquisition.
-    for (const TCHAR* File:{TEXT("prophecy_slash_half_gt.json")})
+    for (const TCHAR* File:{TEXT("prophecy_slash_half_gt.json"),TEXT("prophecy_slash_fast.json"),TEXT("prophecy_slash_upper_neural.onnx")})
         if (FPaths::FileExists(Directory/File)) Files.Add(File);
     Files.Sort();
     FString Key=FPaths::ConvertRelativePathToFull(Directory);

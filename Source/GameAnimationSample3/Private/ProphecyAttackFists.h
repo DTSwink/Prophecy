@@ -13,6 +13,7 @@ namespace ProphecyAttackFists
 	// Change attack-specific levels without restarting the closing timeline.
 	void RetargetFamily(AProphecyAgent* Agent,FName Attack);
 	void EnsureManualSimulation(AProphecyAgent* Agent);
+	void FinishBlend(const AProphecyAgent* Agent);
 	void PreUpdate(const void* Proxy, const AProphecyAgent* Agent);
 	void Evaluate(const void* Proxy, FPoseContext& Output);
 	void ApplyToLocalPose(const void* Proxy, TConstArrayView<FName> BoneNames, TArrayView<FTransform> LocalPose);

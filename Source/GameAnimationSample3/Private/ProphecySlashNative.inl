@@ -1,5 +1,6 @@
 namespace
 {
+#include "ProphecySlashFastGeometry.inl"
 bool FSlashNative::Initialize(const FString& Directory, const TSharedPtr<FJsonObject>& Contract, bool bGpu, const FString& AuditGeometryPath)
 {
 	FString Text;
@@ -58,15 +59,19 @@ bool FSlashNative::Initialize(const FString& Directory, const TSharedPtr<FJsonOb
 		LoadLimb(Arms[I], C->GetArrayField(TEXT("full_limbs"))[I]->AsObject(), Full, I); Arms[I].StateOffset=60+15*I;
 	}
 	FModuleManager::Get().LoadModule(TEXT("NNERuntimeORT"));
+	FString NeuralUpperFile;
+	const bool Fast=Current && AuditGeometryPath.IsEmpty() && SlashFastGeometry::Use(Directory,C,NeuralUpperFile);
 	const TCHAR* Keys[]={Current ? TEXT("cone") : TEXT("frozen"),TEXT("lower"),TEXT("upper")};
 	const int32 Widths[]={Current ? 82 : 152,Current ? 51 : 92,217};
 	const int32 Outputs[]={Current ? 41 : 43,43,92};
 	for (int32 I=0; I<3; ++I)
 	{
+		// Width zero marks native geometry without changing the retained model layout.
+		if(Fast && I==0){Models[I].InputWidth=0;continue;}
 		const auto& N=C->GetObjectField(TEXT("networks"))->GetObjectField(Keys[I]);
 		if (N->GetIntegerField(TEXT("input_dim")) != Widths[I] || N->GetIntegerField(TEXT("output_dim")) != Outputs[I]) return false;
 		TArray64<uint8> Bytes;
-		if (!FFileHelper::LoadFileToArray(Bytes, *(Directory / N->GetStringField(TEXT("file"))))) return false;
+		if (!FFileHelper::LoadFileToArray(Bytes, *(Directory / (Fast && I==2?NeuralUpperFile:N->GetStringField(TEXT("file")))))) return false;
 		ModelData[I].Reset(NewObject<UNNEModelData>());
 		ModelData[I]->Init(TEXT("onnx"), TConstArrayView64<uint8>(Bytes.GetData(), Bytes.Num()));
 		Models[I].InputWidth=N->GetIntegerField(TEXT("input_dim")); Models[I].InputBatchSize=InputBatchSize;
@@ -83,6 +88,8 @@ bool FSlashNative::SetBatch(int32 Count)
 	const int32 InWidths[]={Current ? 82 : 152,Current ? 51 : 92,217}, OutWidths[]={Current ? 41 : 43,43,92};
 	for (int32 I=0; I<3; ++I)
 	{
+		if(I==0 && Models[0].InputWidth==0)
+		{NetworkInputs[0].SetNumUninitialized(Count*82);NetworkOutputs[0].SetNumUninitialized(Count*41);continue;}
 		if (!Models[I].ResizeBatch(Count)) return false;
 		NetworkInputs[I].SetNumUninitialized(Count*InWidths[I]);
 		NetworkOutputs[I].SetNumUninitialized(Count*OutWidths[I]);
@@ -241,6 +248,43 @@ void FSlashNative::RawUpper(const float* Lower,const float* Upper,FPose& Pose) c
 	}
 }
 
+void FSlashNative::ClampNeuralUpper(const float* Input,float* Output) const
+{
+    float Upper[90];for(int32 I=0;I<90;++I)Upper[I]=Input[90+I]+Output[I];Clean(Upper,true);
+    // Held-target coordinates, as in the exported HandClamp; arm rotations are absolute.
+    FPose Pose;Pose.P[0]=Read(Input,204);Pose.R[0]=MatrixFromRot6(Input+207);
+    for(int32 Bone=1;Bone<17;++Bone)if(CoreSlots[Bone]!=INDEX_NONE)
+    {
+        const int32 Parent=Parents[Bone];
+        Pose.P[Bone]=Pose.P[Parent]+TransformRow(FullOffsets[Bone],Pose.R[Parent]);
+        Pose.R[Bone]=Multiply(MatrixFromRot6(Upper+6*CoreSlots[Bone]),Pose.R[Parent]);
+    }
+    for(int32 Side=0;Side<2;++Side)
+    {
+        const auto& A=Arms[Side];const int32 O=A.StateOffset,Parent=Parents[A.Start];
+        const auto Rotation=MatrixFromRot6(Upper+O+9);
+        const auto Shoulder=Pose.P[Parent]+TransformRow(FullOffsets[A.Start],Pose.R[Parent]);
+        const auto Elbow=Shoulder+TransformRow(FullOffsets[A.Mid],Rotation);
+        auto Hand=Read(Upper,O);const auto Delta=Hand-Elbow;
+        const float Distance=Delta.Size(),Length=FullOffsets[A.End].Size();
+        const float Low=FMath::Max(0.f,Length-.05f),High=Length+.05f;
+        if(Distance<Low || Distance>High)
+        {
+            const auto Fallback=TransformRow(FullOffsets[A.End],Rotation);
+            const auto Direction=Distance>1.e-8f?Delta/Distance:SafeNormal(Fallback);
+            Hand=Elbow+Direction*FMath::Clamp(Distance,Low,High);Write(Upper,O,Hand);
+        }
+        if(Side==0)
+        {
+            const auto Before=MatrixFromRot6(Upper+O+3);auto After=Before;
+            if(ProphecyAttackWrist::Constrain(After.Rows,Elbow,Hand,55.f))
+                for(int32 I=0;I<6;++I)Upper[O+3+I]+=After.Rows[I/3][I%3]-Before.Rows[I/3][I%3];
+        }
+    }
+    // Keep the export's subtract-prior/add-prior round trip and gate values.
+    for(int32 I=0;I<90;++I)Output[I]=Upper[I]-Input[90+I];
+}
+
 void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,float* Out,const FStepSettings* Settings) const
 {
 	for (int32 I=0; I<90; ++I) W.NextUpper[I]+=NeuralUpper[I]; Clean(W.NextUpper,true);
@@ -344,7 +388,17 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 			Rebase(Root,N+41,false,RootPosition,RootRotation,W.Origin,W.Heading);
 		}
 	}
-	if (Current && !Models[0].Run(NetworkInputs[0],NetworkOutputs[0])) return false;
+	if (Current)
+	{
+		if(Models[0].InputWidth==0)
+		{
+			const FVector3f Offsets[]={Legs[0].ToeOffset,Legs[1].ToeOffset};
+			for(int32 Lane=0;Lane<InputBatchSize;++Lane)
+				if(!SlashFastGeometry::Cone(NetworkInputs[0].GetData()+82*Lane,NetworkInputs[0].GetData()+82*Lane+41,
+					Offsets,NetworkOutputs[0].GetData()+41*Lane))return false;
+		}
+		else if(!Models[0].Run(NetworkInputs[0],NetworkOutputs[0]))return false;
+	}
 	for (int32 Lane=0; Lane<InputBatchSize; ++Lane)
 	{
 		const float* S=Input.GetData()+272*Lane; auto& W=Work[Lane];
@@ -406,6 +460,8 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 		FMemory::Memcpy(N+204,W.NextLower,9*sizeof(float)); N[213]=S[270]; N[214]=S[271]; N[215]=N[216]=0;
 	}
 	if (!Models[2].Run(NetworkInputs[2],NetworkOutputs[2])) return false;
+	if(Models[0].InputWidth==0)for(int32 Lane=0;Lane<InputBatchSize;++Lane)
+		ClampNeuralUpper(NetworkInputs[2].GetData()+217*Lane,NetworkOutputs[2].GetData()+92*Lane);
 	for (int32 Lane=0; Lane<InputBatchSize; ++Lane)
 		Finish(Work[Lane],Input.GetData()+272*Lane,NetworkOutputs[2].GetData()+92*Lane,Output.GetData()+437*Lane,
 			Settings.IsEmpty() ? nullptr : &Settings[Lane]);

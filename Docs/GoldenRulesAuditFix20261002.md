@@ -1,0 +1,15 @@
+# October 2 golden-rule audit corrections
+
+Requested from the pasted audit while correcting kick recovery.
+
+- Native NN scheduling: one fixed 1/60 budget per unpaused game tick, independent of frame delta and engine dilation. Default 30 Hz policy/attack cadence is every two game ticks. Custom locomotion rates remain explicit settings; no hitch backlog.
+- Fists: manual and attack closing/opening use the shared bounded tick clock. Repeated pose reads spend no additional time; completed clocks retire.
+- Simulation-mode changes: 15 game ticks for the existing .25 fade. Full captured pose/blend snapshots retire at the endpoint. Manual physical mode retains only its necessary nonphysical helper-bone locals, and the independent Chaos scale correction stays active.
+- Animation layers: playback, blend-in and explicit blend-out use ticks since the last sample, rather than the number of policy evaluations. Replacing/stopping a layer retires its clock.
+- Procedural motion: optional arm cone inherits fixed accepted-policy intervals. Legacy hand and target-pelvis inertia use supplied policy intervals instead of timestamp differences. DoubleReach playback, transition and motion-limit integration use one authored interval per game frame. No active DoubleReach instance existed in the editor when its proxy was changed.
+- Disabled blood post effect: settings application disables its actor tick; inactive updates neither rebuild materials nor repeatedly scan Niagara. Existing enable/debug setters and property-edit hooks restart it. Direct C++ writes must call ApplyBloodFluidPostProcessSettings, as with other settings changes.
+- Diagnostic scripts: sword, fist-deformation and interpolation tests require no existing Play session, track their owned world, stop only that world and have elapsed-time watchdogs. Fist/interpolation checkpoints now count observed game ticks so their assertions follow the new gameplay convention.
+
+No Blueprint rewiring, asset saving, editor relaunch or physics solver scheduling changes. Profiling and diagnostic timeout clocks remain real-time measurements. External Sim Bridge delivery is not rewritten. This does not claim whole-physics determinism across FPS.
+
+Validation: Live Coding build succeeded and loaded 18:02:16 UTC. All 10 focused tick/fade/retirement checks passed at 17:57:16 UTC; the two strengthened fist/mode reset checks passed again at 18:02:40 UTC. Reset completes these fades before removing their clocks, avoiding a stuck partial pose. All three Python scripts parse, reject replacement worlds and trigger their watchdogs in isolated guard checks. No gameplay replay: visual acceptance remains the user's test. Normal DLL rebuild remains required before cold launch. Receipts: Saved/Diagnostics/GoldenRulesFix/receipt.json, tests-initial.log, tests-final-reset.log, script-guards.json and build-final.log. Source snapshots of the new audit changes are under Saved/Diagnostics/GoldenRulesFix/before; kick-fade snapshots are under Saved/Diagnostics/KickRecoveryFade/before.

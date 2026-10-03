@@ -1,5 +1,7 @@
 # Attack-start pelvis inertia
 
+October3 current source contract: entry pose and velocity always come from published NN history, including Sim/Half Sim. Automatic physical sampling was removed. When FK core inertia is active, pelvis correction becomes visible with the first core attack pose while retaining its fixed game-tick progression. [Head/hand continuity checks](NNEntry20261003.md).
+
 `Set Attack Start Pelvis Inertia`: Enabled; Translation Window Frames5 / Translation Inertia1; Rotation Window Frames5 / Rotation Inertia1. Off until configured. The foot-inertia experiment was removed completely at the user's request on2026-09-24, restoring the original pelvis-only implementation and Blueprint signature.
 
 The previous displayed WORLD pelvis translation/angular deltas are latched once on a new full attack. Strength1 preserves each delta on the first frame, then linearly fades to the authored target by the corresponding final frame. Windows count unpaused game ticks (60 per authored second), not wall time or30Hz policy steps. Windows<=1 or strength0 bypass that channel. Retriggering an ongoing attack does not restart inertia. Pure half attacks start no inertia; a full-to-half handoff or normal attack end retains an already-running entry fade until its original deadline, now following the locomotion-owned pelvis. Interruption without return to locomotion, disable and reset clear motion; initial-agent reset restores captured pelvis settings.

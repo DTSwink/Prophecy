@@ -36,3 +36,30 @@ A155-tick owned Kinematic preview on testNN passed partial posing, retuning to f
 Validation (September 29 local): Live Coding loaded the three nodes; final mapping fix loaded at September 28 22:14:28 UTC. The focused native `Prophecy.NN.ArmedPose.SynchronizedJoints` test passed: common arrival, maximum angular speed, quaternion sign equivalence, moving pelvis, preserved offsets/legs, duplicate publication, clock retirement and repeated Stop across simulated 30/60/120 FPS. A bounded 276-tick owned PIE check passed on `testNN`, including turning while posing, Stop from hold, Stop during a blend, restarting and triggering a real half attack. Initial mean error was 45.9021 degrees; held maximum was 0.000000107 degrees. Profiling showed 40 lower and zero upper network calls during the 81-frame manual window, then 10 lower and 10 upper calls during the 21-frame window after Stop. The second manual window again had zero upper calls. Physical tracking was not tested; this check used Kinematic mode. Owned PIE ended and the profiler stopped; no Blueprint save, editor restart or full suite.
 
 Evidence: `Saved/Diagnostics/ArmedPose/live.json`, `analysis.json`, `Saved/Diagnostics/AttackPerformance/manual_armed_pose.json`. Scripts: `TestArmedPoseNative.py`, `TestArmedPose.py`, `AnalyzeArmedPose.py` under `Saved/Diagnostics`. The live check caught and fixed a physical-target versus NN bone-order mismatch; binding now uses snapshot NN indices and samples presented transforms by name.
+
+
+October 2 entry-history correction (loaded and verified): a current TestNN capture
+shows the first Armed-pose application at tick 140 replacing the previous
+interpolation endpoint with the sampled displayed local pose. At zero entry weight
+this changed spine_05 by 7.026882 degrees and head by 4.702679 degrees / 2.576814 cm;
+pelvis history was unchanged. The entry now seeds its cached previous locals from
+the incoming previous policy endpoint; the sampled visible pose still starts the
+manual rotation track. Subsequent updates continue using the last accepted composite.
+Existing .1 blend, 350-degree speed, .1 core influence and Blueprint wiring are preserved.
+No added smoothing, duration or inference. Evidence: Saved/Diagnostics/ArmedSpineHitch
+and Saved/Diagnostics/Knee202/armed_spine_before.json. Live Coding loaded 18:13:53 UTC; all four ArmedPose checks passed 18:14:14 UTC. The owned 230-tick replay reduced the tick-140 spine/head history jump to numerical zero (head displacement below 1e-12 cm). Owned Play ended; Blueprint tuning and assets were unchanged.
+
+
+October 2 forearm convention follow-up (loaded and checked): Armed targets were
+still loading source-controller forearm rotations directly, unlike locomotion,
+full/half attacks and defense. jabR's right forearm differed from the canonical
+upper-arm/idle convention by 169.546 degrees. This also changed the corresponding
+hand's parent-local rotation, allowing the two local interpolation paths to twist
+unnecessarily. Both target forearms now use the common reconstruction before
+parent-local goals are derived. The original authored hand/sword component rotation
+is preserved. The conversion runs once per cached target bank, for all 16 families;
+the distance getter uses the same corrected bank. Raw GT data stays unchanged.
+
+The user confirmed the full turn is gone in the Play session started after the 18:23:39 UTC Live Coding load. That session was left running.
+
+All eight Armed/forearm checks passed at 18:25:49 UTC. Both arms across all 16 source families match the common convention; original hand rotations and corrected wrist composition are covered. The existing entry-history fix also passed again. Normal editor DLL rebuild is required before cold launch.

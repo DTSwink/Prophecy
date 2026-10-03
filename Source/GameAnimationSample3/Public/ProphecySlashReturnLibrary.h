@@ -30,16 +30,24 @@ public:
      * the front of the torso. Also guides the attacking arm after jabL/R, hookL/R and overL/R:
      * left for jabL/hookL/overL, right for jabR/hookR/overR, including half attacks.
      * Kicks/headbutts are excluded unless explicitly selected by the both-arm node; defense is excluded.
-     * Hold keeps full procedural ownership; Blend transfers it back to the NN.
+     * Right Hold/Blend set the right arm's times. Left times of -1 inherit the
+     * corresponding right time; zero is an explicit zero duration.
+     * Each arm retires independently. Left/Right Alpha: 0 = incoming NN pose,
+     * 1 = full neutral return, intermediate values blend local joint rotations
+     * while preserving arm lengths. Alpha multiplies that arm's timed influence.
      * Return Speed is cm per authored second at an initial hand-to-idle distance
      * of100cm. Each return captures Speed * InitialDistanceCm /100 once from the
      * outgoing pose; approaching or moving the target does not rescale it.
      * One authored second is60 unpaused game ticks, independent of FPS.
-     * Configure before attacking or inside Special Ended. Disabled/both times zero
+     * Configure before attacking or inside Special Ended. Repeating settings or
+     * changing only alphas preserves elapsed time. Disabled/no effective arms
      * removes the feature; a new special cancels the active return. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Attack Arm Return To Neutral",Keywords="Slash Pike Jab Hook Over Idle"))
     static bool SetSlashRightArmReturnToNeutral(AProphecyAgent* Agent,bool Enabled=true,
-        float HoldDurationSeconds=.3f,float BlendToNNDurationSeconds=.5f,float ReturnSpeed=100.f);
+        UPARAM(DisplayName="Right Hold Duration Seconds") float HoldDurationSeconds=.3f,
+        UPARAM(DisplayName="Right Blend To NN Duration Seconds") float BlendToNNDurationSeconds=.5f,float ReturnSpeed=100.f,
+        float LeftHoldDurationSeconds=-1.f,float LeftBlendToNNDurationSeconds=-1.f,
+        float LeftAlpha=1.f,float RightAlpha=1.f);
 
     /** Replace the per-attack selection for returning both arms to their own neutral poses.
      * Requires Set Both Arms Return To Neutral Enabled and the existing arm-return settings.
@@ -59,8 +67,8 @@ public:
         UPARAM(DisplayName="kickL") bool KickL=false, UPARAM(DisplayName="kickR") bool KickR=false);
 
     /** Master switch for the additional-arm extension; initially OFF per agent.
-     * Preserves per-attack choices and the original arm's return. Both arms share the existing
-     * hold/blend durations; each uses its own idle rotation and initial-distance speed.
+     * Preserves per-attack choices and the original arm's return. Each arm uses its own
+     * hold/blend/alpha settings, idle rotation and initial-distance speed.
      * Enable before the attack or in Special Ended. Disable cancels the extra arm immediately. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Both Arms Return To Neutral Enabled"))
     static bool SetBothArmsReturnToNeutralEnabled(AProphecyAgent* Agent,bool Enabled=true);

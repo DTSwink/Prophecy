@@ -1,3 +1,4 @@
+#include "ProphecyForearmConvention.h"
 #include "ProphecyArmedPoseLibrary.h"
 #include "ProphecyArmedPose.h"
 #include "ProphecyAgent.h"
@@ -25,6 +26,7 @@ constexpr int32 Count=16;
 struct FTarget { TArray<FQuat> Rotation; };
 static TArray<FName> GTNames;
 static TMap<FName,FTarget> Targets;
+static bool CanonicalTargetForearms=false; // Reload a bank cached before this Live Coding correction.
 struct FBinding { int32 Bone=INDEX_NONE,Parent=INDEX_NONE;FQuat Goal=FQuat::Identity; };
 struct FState
 {
@@ -75,7 +77,7 @@ static void RefreshOwnership(FBlendState& B)
 }
 static bool LoadTargets()
 {
-    if(!Targets.IsEmpty())return true;
+    if(CanonicalTargetForearms && !Targets.IsEmpty())return true;
     FString Text;TSharedPtr<FJsonObject> Root;
     if(!FFileHelper::LoadFileToString(Text,*(FPaths::ProjectContentDir()/TEXT("locomotion/NN/prophecy_slash_half_gt.json")))
         || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Root) || !Root)return false;
@@ -87,18 +89,30 @@ static bool LoadTargets()
     {
         const auto Row=Pair.Value->AsObject();const TArray<TSharedPtr<FJsonValue>>* Pose=nullptr;
         if(!Row || !Row->TryGetArrayField(TEXT("pose_current"),Pose) || Pose->Num()!=NewNames.Num())return false;
-        FTarget Target;
+        FTarget Target;TArray<FVector> Positions;
         for(const auto& V:*Pose)
         {
             const auto& Values=V->AsArray();if(Values.Num()!=7)return false;
             FQuat Q(Values[3]->AsNumber(),Values[4]->AsNumber(),Values[5]->AsNumber(),Values[6]->AsNumber());
             if(Q.ContainsNaN() || Q.SizeSquared()<.5)return false;
             Target.Rotation.Add(Q.GetNormalized());
+            Positions.Emplace(Values[0]->AsNumber(),Values[1]->AsNumber(),Values[2]->AsNumber());
+        }
+        // GT controller frames still carry their source forearm roll. Convert
+        // both parents before deriving locals, preserving the authored hand Q.
+        for(int32 Side=0;Side<2;++Side)
+        {
+            const int32 Upper=NewNames.IndexOfByKey(FName(Side==0?TEXT("upperarm_l"):TEXT("upperarm_r")));
+            const int32 Lower=NewNames.IndexOfByKey(FName(Side==0?TEXT("lowerarm_l"):TEXT("lowerarm_r")));
+            const int32 Hand=NewNames.IndexOfByKey(FName(Side==0?TEXT("hand_l"):TEXT("hand_r")));
+            if(Upper==INDEX_NONE || Lower==INDEX_NONE || Hand==INDEX_NONE)return false;
+            Target.Rotation[Lower]=ProphecyForearmConvention::FromReference(FVector(Side==0?1.:-1.,0,0),
+                Positions[Hand]-Positions[Lower],Target.Rotation[Upper]*ProphecyForearmConvention::IdleLocalUE(Side)).GetNormalized();
         }
         NewTargets.Add(FName(Pair.Key),MoveTemp(Target));
     }
     if(NewTargets.IsEmpty())return false;
-    GTNames=MoveTemp(NewNames);Targets=MoveTemp(NewTargets);return true;
+    GTNames=MoveTemp(NewNames);Targets=MoveTemp(NewTargets);CanonicalTargetForearms=true;return true;
 }
 // Explicit calls only: sample the shared presented target once; never initialize
 // an attack model, read simulated bodies or scan a scene on the hot path.
@@ -182,7 +196,11 @@ bool Apply(const AProphecyAgent* A,TArrayView<FTransform> Previous,TArrayView<FT
             {
                 const auto& B=S->Bones[I];
                 const FTransform Loco=Current[B.Bone].GetRelativeTransform(Current[B.Parent]);
-                Blend->Previous[I]=Blend->Current[I];
+                // Entry must retain the incoming interpolation interval. Start was
+                // sampled from the displayed pose, which can be between endpoints;
+                // using it as previous rewinds/advances the visible spine at weight 0.
+                Blend->Previous[I]=Blend->HasSample?Blend->Current[I]:
+                    Previous[B.Bone].GetRelativeTransform(Previous[B.Parent]);
                 Blend->Current[I]=Loco;
                 const double Weight=Ramp*Blend->Weights[I];
                 if(Weight>0)Blend->Current[I].SetRotation(Weight>=1?S->Current[I].GetRotation():
@@ -307,6 +325,45 @@ bool UProphecyArmedPoseLibrary::GetUpperBodyArmedPoseDistance(AProphecyAgent* A,
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmedForearmConventionTest,"Prophecy.NN.ArmedPose.AllFamilyForearmConvention",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyArmedForearmConventionTest::RunTest(const FString&)
+{
+    using namespace ProphecyArmedPose;
+    if(!TestTrue(TEXT("Canonical Armed targets load"),LoadTargets()))return false;
+    FString Text;TSharedPtr<FJsonObject> Root;
+    if(!FFileHelper::LoadFileToString(Text,*(FPaths::ProjectContentDir()/TEXT("locomotion/NN/prophecy_slash_half_gt.json")))
+        || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Root))return false;
+    const auto Families=Root->GetObjectField(TEXT("families"));
+    for(const auto& Family:Families->Values)
+    {
+        const auto& Rows=Family.Value->AsObject()->GetArrayField(TEXT("pose_current"));
+        const auto& Target=Targets.FindChecked(FName(Family.Key));
+        auto Position=[&](int32 I){const auto& V=Rows[I]->AsArray();return FVector(V[0]->AsNumber(),V[1]->AsNumber(),V[2]->AsNumber());};
+        auto Rotation=[&](int32 I){const auto& V=Rows[I]->AsArray();return FQuat(V[3]->AsNumber(),V[4]->AsNumber(),V[5]->AsNumber(),V[6]->AsNumber()).GetNormalized();};
+        for(int32 I=0;I<GTNames.Num();++I)
+            if(GTNames[I]!=TEXT("lowerarm_l") && GTNames[I]!=TEXT("lowerarm_r"))
+                TestTrue(TEXT("Authored hand/sword and all other rotations are preserved"),Target.Rotation[I].AngularDistance(Rotation(I))<1.e-6);
+        for(int32 Side=0;Side<2;++Side)
+        {
+            const int32 U=GTNames.IndexOfByKey(FName(Side==0?TEXT("upperarm_l"):TEXT("upperarm_r")));
+            const int32 E=GTNames.IndexOfByKey(FName(Side==0?TEXT("lowerarm_l"):TEXT("lowerarm_r")));
+            const int32 H=GTNames.IndexOfByKey(FName(Side==0?TEXT("hand_l"):TEXT("hand_r")));
+            const FVector Axis(Side==0?1.:-1.,0,0),Aim=(Position(H)-Position(E)).GetSafeNormal();
+            const FQuat Reference=Target.Rotation[U]*ProphecyForearmConvention::IdleLocalUE(Side);
+            const FQuat Swing=(Target.Rotation[E]*Reference.Inverse()).GetNormalized();
+            TestTrue(TEXT("Every family's forearm aims at its authored wrist"),Target.Rotation[E].RotateVector(Axis).Equals(Aim,1.e-6));
+            TestTrue(TEXT("No added axial twist relative to upper-arm-carried idle"),FMath::Abs(FVector::DotProduct(FVector(Swing.X,Swing.Y,Swing.Z),Reference.RotateVector(Axis)))<1.e-6);
+            const FQuat WristLocal=(Target.Rotation[E].Inverse()*Target.Rotation[H]).GetNormalized();
+            TestTrue(TEXT("Rebased wrist local reconstructs the original sword orientation"),
+                (Target.Rotation[E]*WristLocal).AngularDistance(Rotation(H))<1.e-6);
+            auto Mirror=[](const FQuat& Q){return FQuat(-Q.X,Q.Y,-Q.Z,Q.W);};
+            const FQuat Native=ProphecyForearmConvention::FromReference(Axis,FVector(Aim.X,-Aim.Y,Aim.Z),Mirror(Reference));
+            TestTrue(TEXT("Armed and native locomotion/special coordinate boundaries agree"),Mirror(Native).AngularDistance(Target.Rotation[E])<1.e-6);
+        }
+    }
+    return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmedPoseTest,"Prophecy.NN.ArmedPose.SynchronizedJoints",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyArmedPoseTest::RunTest(const FString&)
@@ -401,7 +458,11 @@ bool FProphecyArmedPoseBlendTest::RunTest(const FString&)
         const FQuat Loco(FVector::UpVector,FMath::DegreesToRadians(10.+Tick*.1));
         Previous[0]=FTransform(FRotator(0,Tick-1,0),FVector(Tick-1,0,90));
         Current[0]=FTransform(FRotator(0,Tick,0),FVector(Tick,0,90));
-        for(int32 I=0;I<Count;++I)Current[I+1]=FTransform(Loco,Offset)*Current[I];
+        for(int32 I=0;I<Count;++I)
+        {
+            Previous[I+1]=Last[I]*Previous[I];
+            Current[I+1]=FTransform(Loco,Offset)*Current[I];
+        }
         for(int32 I=17;I<25;++I)Previous[I]=Current[I]=FTransform(FVector(I,2*I,3*I));
         Apply(A,Previous,Current,true);
         const double T=Tick/60.,Ramp=T*T*(3-2*T);
@@ -426,5 +487,41 @@ bool FProphecyArmedPoseBlendTest::RunTest(const FString&)
     TestFalse(TEXT("Disabled never owns upper inference"),OwnsUpperOutput(A));
     TestFalse(TEXT("Disabled bypasses pose work"),Apply(A,Previous,Current,true));
     W->DestroyWorld(false);return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyArmedPoseEntryHistoryTest,"Prophecy.NN.ArmedPose.EntryPreservesHistory",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyArmedPoseEntryHistoryTest::RunTest(const FString&)
+{
+    using namespace ProphecyArmedPose;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;
+    if(!A)return false;
+    FState S;S.Holding=true;S.Alpha=1;
+    FBlendState B;B.Duration=.1;
+    FTransform Previous[17],Current[17],OriginalPrevious[17],OriginalCurrent[17];
+    Previous[0]=FTransform(FRotator(5,15,0),FVector(10,20,90));
+    Current[0]=FTransform(FRotator(6,18,0),FVector(20,22,91));
+    for(int32 I=0;I<Count;++I)
+    {
+        const FTransform Old(FRotator(I*.3,2,0),FVector(0,0,5));
+        const FTransform New(FRotator(I*.3+1,3,0),FVector(0,0,5));
+        FTransform Shown;Shown.Blend(Old,New,.5f);
+        S.Bones[I]={I+1,I,FQuat::Identity};S.Start[I]=S.Previous[I]=S.Current[I]=Shown;
+        B.Weights[I]=.1f;B.Slots[I]=I;B.Previous[I]=B.Current[I]=Shown;
+        Previous[I+1]=Old*Previous[I];Current[I+1]=New*Current[I];
+    }
+    for(int32 I=0;I<17;++I){OriginalPrevious[I]=Previous[I];OriginalCurrent[I]=Current[I];}
+    States.Add(A,S);Blends.Add(A,B);
+    Apply(A,Previous,Current,false);
+    for(int32 I=0;I<17;++I)
+    {
+        TestTrue(TEXT("Zero-weight entry preserves the previous policy endpoint"),Previous[I].Equals(OriginalPrevious[I],1.e-6));
+        TestTrue(TEXT("Zero-weight entry preserves the current policy endpoint"),Current[I].Equals(OriginalCurrent[I],1.e-6));
+        for(float Alpha:{0.f,.5f,1.f})
+        {
+            FTransform Before,After;Before.Blend(OriginalPrevious[I],OriginalCurrent[I],Alpha);After.Blend(Previous[I],Current[I],Alpha);
+            TestTrue(TEXT("Spine/head presentation cannot jump on activation at any phase"),Before.Equals(After,1.e-6));
+        }
+    }
+    Cancel(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif

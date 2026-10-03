@@ -1,6 +1,8 @@
 #include "ProphecyAttackRecoveryLibrary.h"
 #include "ProphecyAttackStartHandInertia.h"
+#include "ProphecyAttackStartFKCore.h"
 #include "ProphecyAttackRecovery.h"
+#include "ProphecyFKReturn.h"
 #include "ProphecyArmedPose.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAgent.h"
@@ -114,7 +116,9 @@ void EnterLowerSpecial(const AProphecyAgent* Agent)
 }
 void EnterSpecial(const AProphecyAgent* Agent,bool Half)
 {
+    ProphecyFKReturn::Cancel(Agent);
     ProphecyAttackStartHands::Cancel(Agent);
+    ProphecyAttackStartFKCore::Cancel(Agent);
     ProphecyArmCone::Cancel(Agent);
     ProphecyArmedPose::Cancel(Agent);
     if (EndEventAgent==Agent) EndEventAgent=nullptr;
@@ -128,14 +132,17 @@ static void DispatchRegion(AProphecyAgent* Agent,FName Attack,bool Half,bool Ret
     TGuardValue<bool> Region(EndEventUpper,Upper);
     TGuardValue<EProphecyAgentState> SpecialScope(EndEventSpecial,Special);
     if(Upper) ProphecyAttackStartHands::Cancel(Agent);
+    if(Upper) ProphecyAttackStartFKCore::Cancel(Agent);
     if(Upper && !Returning) ProphecyArmCone::Cancel(Agent);
     if (Returning)
     {
         if (Upper)
         {
-            ProphecyHandRecovery::Begin(Agent);ProphecyCoreTempering::Begin(Agent);
-            ProphecySlashReturn::Begin(Agent,Attack);
-            if(Special==EProphecyAgentState::Attacking) ProphecyArmCone::Begin(Agent,Attack);
+            // Legacy nodes can still exist in assets, but no upper modifiers enter
+            // locomotion. The attack handoff has already captured its FK return.
+            ProphecyHandRecovery::CancelMotion(Agent);ProphecyCoreTempering::CancelMotion(Agent);
+            ProphecySlashReturn::Cancel(Agent);ProphecyUpperBodyInertia::Cancel(Agent);
+            ProphecyArmCone::Cancel(Agent);
         }
         else
         {
@@ -320,7 +327,7 @@ bool FProphecyRegionalRecoveryTest::RunTest(const FString&)
     TestEqual(TEXT("Half exit does not restart lower recovery"),Active.FindChecked(A).Elapsed,Before);
     ProphecyLegRecovery::FStep Pole;
     TestFalse(TEXT("Pure half does not start knee reconstruction"),ProphecyLegRecovery::Step(A,Pole));
-    TestTrue(TEXT("Upper exit starts arm return"),ProphecySlashReturn::Active(A));
+    TestFalse(TEXT("Upper exit cannot restart legacy arm return"),ProphecySlashReturn::Active(A));
     // Full -> half releases legs while arms keep attacking; half -> full cancels only legs.
     Events.Reset();EnterSpecial(A);
     NotifyLowerEnded(A,TEXT("slashR"),true,true);
@@ -368,7 +375,8 @@ bool FProphecySpecialRecoveryTest::RunTest(const FString&)
         Begin(A);NotifyEnded(A,NAME_None,false,true,Kind);
         const auto* L=ProphecyLowerTempering::Find(A);
         TestTrue(TEXT("All exits restore the regular lower profile without a kick override"),L && L->FeetTranslation==.2f && L->PelvisTranslation==.5f);
-        TestTrue(TEXT("All exits restore hands and core"),ProphecyHandRecovery::Tempering(A) && ProphecyCoreTempering::Rotation(A)==.3f);
+        TestTrue(TEXT("Upper exits leave unfiltered NN controls"),!ProphecyHandRecovery::Tempering(A)
+            && !ProphecyHandRecovery::Frame(A) && ProphecyCoreTempering::Rotation(A)==1.f);
         UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(A,.5,0,.5,0);
         UProphecyHandRecoveryLibrary::BlendLocomotionHandTemperingToNormal(A,0,.5,0,.5);
         UProphecyCoreTemperingLibrary::BlendLocomotionFKCoreTemperingToNormal(A,0,.5);

@@ -20,7 +20,7 @@ struct FHand
     FVector Position,Velocity,AngularVelocity,LocalUpper,LocalPole;
     double ForearmLength=0;
     FQuat Rotation;
-    FTransform Accepted[3]; // In the blended anatomical reference, not world space.
+    FTransform Accepted[3]; // In the blended locomotion-root/spine reference.
 };
 struct FState
 {
@@ -35,10 +35,10 @@ static const FName Bones[]={TEXT("pelvis"),TEXT("spine_05"),TEXT("upperarm_l"),T
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FState> States;
 static FDelegateHandle Cleanup;
-static FTransform Reference(const FTransform& Pelvis,const FTransform& Spine,float Alpha)
+static FTransform Reference(const FTransform& Root,const FTransform& Spine,float Alpha)
 {
-    return FTransform(FQuat::Slerp(Pelvis.GetRotation(),Spine.GetRotation(),Alpha).GetNormalized(),
-        FMath::Lerp(Pelvis.GetLocation(),Spine.GetLocation(),Alpha));
+    return FTransform(FQuat::Slerp(Root.GetRotation(),Spine.GetRotation(),Alpha).GetNormalized(),
+        FMath::Lerp(Root.GetLocation(),Spine.GetLocation(),Alpha));
 }
 static void EnsureCleanup()
 {
@@ -56,12 +56,13 @@ void Remove(const AProphecyAgent* A){Cancel(A);Configs.Remove(A);Baselines.Remov
 void CaptureReset(const AProphecyAgent* A){if(const auto* C=Configs.Find(A))Baselines.Add(A,*C);else Baselines.Remove(A);}
 void RestoreReset(const AProphecyAgent* A){Cancel(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A))Configs.Add(A,*C);}
 void ForgetReset(const AProphecyAgent* A){Baselines.Remove(A);}
-static void Seed(FState& State,const FTransform* Previous,const FTransform* Current,const FTransform* Future,double Dt)
+static void Seed(FState& State,const FTransform* Previous,const FTransform* Current,const FTransform* Future,double Dt,
+    const FTransform& PreviousRoot,const FTransform& Root)
 {
     const auto& C=State.Config;
-    const FTransform P=Reference(Previous[0],Previous[1],C.Reference);
-    const FTransform R=Reference(Current[0],Current[1],C.Reference);
-    const FTransform F=Reference(Future[0],Future[1],C.Reference);
+    const FTransform P=Reference(PreviousRoot,Previous[1],C.Reference);
+    const FTransform R=Reference(Root,Current[1],C.Reference);
+    const FTransform F=Reference(Root,Future[1],C.Reference);
     for(int S=0;S<2;++S)if(C.Hand[S])
     {
         auto& M=State.Hand[S];const int B=2+S*3;
@@ -77,7 +78,7 @@ static void Seed(FState& State,const FTransform* Previous,const FTransform* Curr
             M.Accepted[1].GetLocation()-M.Accepted[0].GetLocation(),Axis,M.Accepted[0].GetRotation().GetAxisZ()));
     }
 }
-void Begin(const AProphecyAgent* A)
+void Begin(const AProphecyAgent* A,const FTransform& PreviousRoot,const FTransform& Root)
 {
     Cancel(A);
     const auto* C=Configs.IsEmpty()?nullptr:Configs.Find(A);if(!C)return;
@@ -97,7 +98,7 @@ void Begin(const AProphecyAgent* A)
     // The next attack interval begins at the preceding published endpoint.
     // Seeding from the halfway displayed pose would rewind a half-entry's
     // immediate publication and lag one half interval at full entry.
-    FState State;State.Config=*C;Seed(State,P,F,F,Interval);
+    FState State;State.Config=*C;Seed(State,P,F,F,Interval,PreviousRoot,Root);
     States.Add(A,MoveTemp(State));ProphecyBlendClock::Start(A,K::AttackStartHands,double(C->Hold)+C->Blend);
 }
 static double Weight(const FConfig& C,double Elapsed)
@@ -115,10 +116,10 @@ static void Spring(FHand& M,const FTransform& Goal,double Response,double Dt)
     M.Rotation=(ProphecyPelvisInertia::RotationIncrement((R+V*Dt)*E)*Goal.GetRotation()).GetNormalized();
     M.AngularVelocity=(M.AngularVelocity-W*V*Dt)*E;
 }
-static void Solve(FState& State,TArrayView<FTransform> Pose,const FTransform& Carrier,double Dt)
+static void Solve(FState& State,TArrayView<FTransform> Pose,const FTransform& Carrier,double Dt,const FTransform& Root)
 {
     const auto& C=State.Config;const double W=Weight(C,State.Elapsed),Follow=1.-W;
-    const FTransform Frame=Reference(Pose[State.Indices[0]]*Carrier,Pose[State.Indices[1]]*Carrier,C.Reference);
+    const FTransform Frame=Reference(Root,Pose[State.Indices[1]]*Carrier,C.Reference);
     for(int S=0;S<2;++S)if(C.Hand[S])
     {
         auto& M=State.Hand[S];FTransform Goal[3];const int B=2+S*3;
@@ -140,7 +141,7 @@ static void Solve(FState& State,TArrayView<FTransform> Pose,const FTransform& Ca
     }
 }
 uint8 Apply(const AProphecyAgent* A,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,
-    const FTransform& Carrier,double PoseStepSeconds)
+    const FTransform& Carrier,double PoseStepSeconds,const FTransform& Root)
 {
     auto* State=States.IsEmpty()?nullptr:States.Find(A);if(!State)return false;
     const double Dt=ProphecyBlendClock::Consume(A,K::AttackStartHands);State->Elapsed+=Dt;
@@ -155,11 +156,11 @@ uint8 Apply(const AProphecyAgent* A,TConstArrayView<FName> Names,TArrayView<FTra
     // Half/full switches may republish the same sample: never solve/integrate twice.
     if(State->Applied && Dt<=0)
     {
-        const FTransform Frame=Reference(Pose[State->Indices[0]]*Carrier,Pose[State->Indices[1]]*Carrier,State->Config.Reference);
+        const FTransform Frame=Reference(Root,Pose[State->Indices[1]]*Carrier,State->Config.Reference);
         for(int S=0;S<2;++S)if(State->Config.Hand[S])for(int J=0;J<3;++J)
             Pose[State->Indices[2+S*3+J]]=(State->Hand[S].Accepted[J]*Frame).GetRelativeTransform(Carrier);
     }
-    else Solve(*State,Pose,Carrier,Dt>0?PoseStepSeconds:0.);
+    else Solve(*State,Pose,Carrier,Dt>0?PoseStepSeconds:0.,Root);
     State->Applied=true;return uint8((State->Config.Hand[0]?1:0)|(State->Config.Hand[1]?2:0));
 }
 }
@@ -191,29 +192,55 @@ bool FEntryHandsReferenceTest::RunTest(const FString&)
         const int B=2+S*3;const double Y=S?20:-20;
         Base[B]=FTransform(FVector(0,Y,110));Base[B+1]=FTransform(FVector(25,Y,100));Base[B+2]=FTransform(FVector(35,Y,80));
     }
-    const FTransform Shift(FRotator(15,80,-12),FVector(200,80,-20));
+    const FTransform Root(FRotator(0,25,0),FVector(10,-20,3));
+    const FTransform Shift(FRotator(0,80,0),FVector(200,80,-20));
     for(float A:{0.f,.5f,1.f})
     {
         FState S;S.Config.Reference=A;FTransform P[8],F[8];
         for(int I=0;I<8;++I){P[I]=Base[I];F[I]=Base[I]*Shift;}
-        Seed(S,P,F,F,1./30);
-        for(const auto& H:S.Hand)
+        Seed(S,P,F,F,1./30,Root,Root*Shift);
+        for(int Side=0;Side<2;++Side)
         {
-            TestTrue(TEXT("Reference removes rigid body linear velocity"),H.Velocity.IsNearlyZero(1.e-7));
-            TestTrue(TEXT("Reference removes rigid body angular velocity"),H.AngularVelocity.IsNearlyZero(1.e-7));
+            const auto& H=S.Hand[Side];
+            TestTrue(TEXT("Root/spine reference removes common body linear velocity"),H.Velocity.IsNearlyZero(1.e-7));
+            TestTrue(TEXT("Root/spine reference removes common body angular velocity"),H.AngularVelocity.IsNearlyZero(1.e-7));
         }
-        const FTransform Frame=Reference(Base[0],Base[1],A);
-        TestTrue(TEXT("Reference origin blends pelvis/spine"),Frame.GetLocation().Equals(FMath::Lerp(Base[0].GetLocation(),Base[1].GetLocation(),A),1.e-8));
-        if(A==0)TestTrue(TEXT("Zero is pelvis"),Frame.Equals(Base[0],1.e-8));
+        const FTransform Frame=Reference(Root,Base[1],A);
+        TestTrue(TEXT("Reference origin blends root and spine"),Frame.GetLocation().Equals(FMath::Lerp(Root.GetLocation(),Base[1].GetLocation(),A),1.e-8));
+        if(A==0)TestTrue(TEXT("Zero is the locomotion root, independent of pelvis"),Frame.Equals(Root,1.e-8));
         if(A==1)TestTrue(TEXT("One is spine"),Frame.Equals(Base[1],1.e-8));
+        if(A==.5f)TestTrue(TEXT("Midpoint rotates halfway from root heading to spine"),
+            FMath::IsNearlyEqual(Root.GetRotation().AngularDistance(Frame.GetRotation()),
+                Root.GetRotation().AngularDistance(Base[1].GetRotation())*.5,1.e-8));
         P[7].AddToTranslation(Frame.TransformVectorNoScale(FVector(-1,0,0)));
-        Seed(S,P,Base,Base,1./30);
+        Seed(S,P,Base,Base,1./30,Root,Root);
         TestTrue(TEXT("Hand velocity measured in blended frame"),S.Hand[1].Velocity.Equals(FVector(30,0,0),1.e-6));
-        S.Config.Momentum=0;Seed(S,P,Base,Base,1./30);
+        S.Config.Momentum=0;Seed(S,P,Base,Base,1./30,Root,Root);
         TestTrue(TEXT("Zero momentum kills entry velocity only"),S.Hand[1].Velocity.IsZero());
         const FVector Before=S.Hand[1].Position;FTransform Goal=S.Hand[1].Accepted[2];Goal.AddToTranslation(FVector(10,0,0));
         Spring(S.Hand[1],Goal,.25,1./30);
         TestTrue(TEXT("Zero momentum still produces positional lag"),S.Hand[1].Position.X>Before.X && S.Hand[1].Position.X<Goal.GetLocation().X);
+    }
+    // Root motion carries both endpoints; spine-only motion carries only alpha one.
+    // Exercise the actual arm solver with a separate nonidentity component carrier.
+    const FTransform BodyMotion(FRotator(0,2,0),FVector(2,-1,1));
+    const FTransform Carrier(FRotator(15,70,-10),FVector(400,-200,30));
+    for(bool MoveRoot:{false,true})for(float A:{0.f,1.f})
+    {
+        FState S;S.Config.Reference=A;Seed(S,Base,Base,Base,1./30,Root,Root);
+        FTransform Pose[8];
+        for(int I=0;I<8;++I){S.Indices[I]=I;Pose[I]=(Base[I]*BodyMotion).GetRelativeTransform(Carrier);}
+        Solve(S,MakeArrayView(Pose),Carrier,0.,MoveRoot?Root*BodyMotion:Root);
+        for(int Side=0;Side<2;++Side)
+        {
+            const int Hand=4+3*Side;
+            const FTransform Expected=(MoveRoot || A==1)?Base[Hand]*BodyMotion:Base[Hand];
+            TestTrue(TEXT("Root carries hand while independent spine motion only carries spine-local hand"),
+                (Pose[Hand]*Carrier).Equals(Expected,1.e-6));
+            TestTrue(TEXT("Root/spine solve retains connected forearm length"),
+                FMath::IsNearlyEqual(FVector::Distance(Pose[Hand].GetLocation(),Pose[Hand-1].GetLocation()),
+                    S.Hand[Side].ForearmLength,1.e-6));
+        }
     }
     return !HasAnyErrors();
 }
@@ -225,26 +252,28 @@ bool FEntryHandsLifecycleTest::RunTest(const FString&)
     UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
     FTransform P[8];P[0]=FTransform(FVector(0,0,70));P[1]=FTransform(FVector(0,0,110));
     for(int S=0;S<2;++S){const int B=2+3*S;P[B]=FTransform(FVector(0,S?20:-20,100));P[B+1]=FTransform(P[B].GetLocation()+FVector(25,0,0));P[B+2]=FTransform(P[B+1].GetLocation()+FVector(0,0,-25));}
-    TestFalse(TEXT("Disabled apply has no state"),Apply(A,Bones,P,FTransform::Identity,1./30)!=0);Begin(A);TestFalse(TEXT("Disabled entry samples nothing"),Active(A));
+    TestFalse(TEXT("Disabled apply has no state"),Apply(A,Bones,P,FTransform::Identity,1./30,FTransform::Identity)!=0);Begin(A,FTransform::Identity,FTransform::Identity);TestFalse(TEXT("Disabled entry samples nothing"),Active(A));
     TestTrue(TEXT("Configure node"),L::SetAttackStartHandInertia(A,true,.1,.2,.5,.25,1,1,false,true));
-    CaptureReset(A);FState State;State.Config=Configs.FindChecked(A);Seed(State,P,P,P,1./30);States.Add(A,State);
-    auto Left=P[4];P[7].AddToTranslation(FVector(5,0,5));
-    TestEqual(TEXT("NN-only apply reports exactly the selected hand"),Apply(A,Bones,P,FTransform::Identity,1./30),uint8(2));
+    CaptureReset(A);FState State;State.Config=Configs.FindChecked(A);Seed(State,P,P,P,1./30,FTransform::Identity,FTransform::Identity);States.Add(A,State);
+    const FTransform EntryWrist=P[7];auto Left=P[4];P[7].AddToTranslation(FVector(5,0,5));
+    TestEqual(TEXT("NN-only apply reports exactly the selected hand"),Apply(A,Bones,P,FTransform::Identity,1./30,FTransform::Identity),uint8(2));
     TestTrue(TEXT("Unselected hand unchanged"),P[4].Equals(Left,0));
-    TestTrue(TEXT("Held position restored on entry"),P[7].GetLocation().Equals(State.Hand[1].Accepted[2].GetLocation()+FVector(0,0,90),1.e-6));
+    TestTrue(TEXT("Held position restored on entry"),P[7].GetLocation().Equals(EntryWrist.GetLocation(),1.e-6));
     TestTrue(TEXT("Elbow remains connected"),FMath::IsNearlyEqual((P[6].GetLocation()-P[5].GetLocation()).Length(),25.,1.e-6));
     TestTrue(TEXT("Forearm remains connected"),FMath::IsNearlyEqual((P[7].GetLocation()-P[6].GetLocation()).Length(),25.,1.e-6));
-    const FTransform Once=P[7];Apply(A,Bones,P,FTransform::Identity,1./30);
+    const FTransform Once=P[7];Apply(A,Bones,P,FTransform::Identity,1./30,FTransform::Identity);
     TestTrue(TEXT("Same-clock publication idempotent"),P[7].Equals(Once,1.e-6));
     L::SetAttackStartHandInertia(A,true,.1,.2,.5,.25,1,1,false,true);
     TestTrue(TEXT("Repeated setter preserves active state"),States.FindChecked(A).Applied);
     TestEqual(TEXT("Full hold weight"),Weight(State.Config,.05),1.);
     TestTrue(TEXT("Smooth blend midpoint"),FMath::IsNearlyEqual(Weight(State.Config,.2),.5,1.e-6));
-    States.FindChecked(A).Elapsed=.3;TestFalse(TEXT("Completion retires before further pose work"),Apply(A,Bones,P,FTransform::Identity,1./30)!=0);TestFalse(TEXT("Completed state gone"),Active(A));
+    States.FindChecked(A).Elapsed=.3;TestFalse(TEXT("Completion retires before further pose work"),Apply(A,Bones,P,FTransform::Identity,1./30,FTransform::Identity)!=0);TestFalse(TEXT("Completed state gone"),Active(A));
     State.Config.Hold=.1f;State.Config.Blend=.3f;State.Elapsed=24./60.;States.Add(A,State);
-    TestFalse(TEXT("Default float durations retire exactly on tick 24"),Apply(A,Bones,P,FTransform::Identity,1./30)!=0);
+    TestFalse(TEXT("Default float durations retire exactly on tick 24"),Apply(A,Bones,P,FTransform::Identity,1./30,FTransform::Identity)!=0);
     L::SetAttackStartHandInertia(A,true,.1,.2,.5,.25,1,0);TestFalse(TEXT("Zero alpha removes configuration"),Configs.Contains(A));
     RestoreReset(A);TestTrue(TEXT("Reset restores configuration only"),Configs.Contains(A)&&!Active(A));
     Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif
+
+#include "ProphecyAttackStartFKCore.inl"

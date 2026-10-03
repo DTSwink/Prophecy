@@ -1,3 +1,5 @@
+#include "Engine/World.h"
+#include "ProphecyBlendClock.h"
 #include "ProphecyDoubleReachAnimInstance.h"
 
 #include "Animation/AnimInstanceProxy.h"
@@ -1187,7 +1189,10 @@ protected:
 		MaxSpineAngularSpeedDegreesPerSecond = FMath::Max(1.0f, Instance->MaxSpineAngularSpeedDegreesPerSecond);
 		MaxHandVelocityCmPerSecond = FMath::Max(0.0f, Instance->MaxHandVelocityCmPerSecond);
 		MaxElbowVelocityCmPerSecond = FMath::Max(0.0f, Instance->MaxElbowVelocityCmPerSecond);
-		EvaluationDeltaSeconds = FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
+		const UWorld* World = Instance->GetWorld();
+		const bool Advance = World && !World->IsPaused() && DeltaSeconds > 0 && LastGameFrame != GFrameCounter;
+		EvaluationDeltaSeconds = Advance ? float(ProphecyBlendClock::TickSeconds) : 0.f;
+		if (Advance) LastGameFrame = GFrameCounter;
 
 		const EProphecyDoubleReachMode DesiredMode = Instance->bEnableReachSolver
 			? Instance->ReachMode
@@ -1215,7 +1220,7 @@ protected:
 		}
 		else
 		{
-			ModeBlendLinear = FMath::Min(1.0, ModeBlendLinear + DeltaSeconds / TransitionDuration);
+			ModeBlendLinear = FMath::Min(1.0, ModeBlendLinear + EvaluationDeltaSeconds / TransitionDuration);
 			if (ModeBlendLinear >= 1.0)
 			{
 				SourceMode = TargetMode;
@@ -1225,7 +1230,7 @@ protected:
 		if (BaseAnimation)
 		{
 			const double PlayLength = FMath::Max(0.0, BaseAnimation->GetPlayLength());
-			AnimationTimeSeconds += DeltaSeconds * AnimationPlayRate;
+			AnimationTimeSeconds += EvaluationDeltaSeconds * AnimationPlayRate;
 			if (PlayLength > UE_DOUBLE_SMALL_NUMBER)
 			{
 				AnimationTimeSeconds = bLoopAnimation
@@ -1501,6 +1506,7 @@ private:
 	FVector RightTargetComponentSpace = FVector::ZeroVector;
 	float TransitionDuration = 0.35f;
 	float EvaluationDeltaSeconds = 0.0f;
+	uint64 LastGameFrame = MAX_uint64;
 	float UpperBodySmoothingHalfLife = 0.075f;
 	float MaxPelvisTranslationSpeedCmPerSecond = 180.0f;
 	float MaxSpineAngularSpeedDegreesPerSecond = 240.0f;

@@ -66,7 +66,7 @@ static void FinishHalfFrame(UWorld* World,ELevelTick TickType,float DeltaSeconds
         if (Manager->ResolveAgent(Handle)==Agent &&
             Manager->GetAgentNNAttackState(Handle,Attack,Half,Armed,Hit,Frame) &&
             Attack==P.Attack && Hit && Frame==P.ExpectedFrame)
-            Manager->StopAgentNNAttack(Handle);
+            if (!Manager->TryExtendAgentAttackEnd(Handle)) Manager->StopAgentNNAttack(Handle);
     }
 }
 void QueueHalfFrame(AProphecyNNLocomotionManager* Manager,AProphecyAgent* Agent,FName Attack,int32 ExpectedFrame)

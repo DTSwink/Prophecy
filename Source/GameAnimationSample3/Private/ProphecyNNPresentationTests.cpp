@@ -138,8 +138,10 @@ bool FRecoveryUpperHandoffTest::RunTest(const FString&)
         for(int Side=0;Side<2;++Side)
         {
             const int I=Side*3;
-            TestTrue(TEXT("Thigh converges on existing smooth recovery clock"),FMath::IsNearlyEqual(
-                (Pose[I+1].GetLocation()-Pose[I].GetLocation()).Size(),FMath::Lerp(38.865064,39.048656,Weight),1.e-6));
+            const double Length=(Pose[I+1].GetLocation()-Pose[I].GetLocation()).Size();
+            TestTrue(TEXT("Fading correction stays between normal and captured thigh length"),Length>=38.865064-1.e-6 && Length<=39.048656+1.e-6);
+            if(Tick)TestTrue(TEXT("Knee correction monotonically fades to NN"),
+                (Pose[I+1].GetLocation()-Source[I+1].GetLocation()).Size()<=(Previous[I+1].GetLocation()-Source[I+1].GetLocation()).Size()+1.e-6);
             TestTrue(TEXT("Hip and ankle remain fixed"),Pose[I].GetLocation().Equals(Source[I].GetLocation(),0) && Pose[I+2].Equals(Source[I+2],0));
             if(Tick) TestTrue(TEXT("Small continuous knee steps including removal"),(Pose[I+1].GetLocation()-Previous[I+1].GetLocation()).Size()<.025);
             if(Tick==60) TestTrue(TEXT("Completion returns exact unmodified pose"),Pose[I+1].Equals(Source[I+1],0));

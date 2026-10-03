@@ -1,4 +1,5 @@
 #include "ProphecyAttackFists.h"
+#include "ProphecyBlendClock.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNPoseAnimInstance.h"
 #include "Animation/AnimSequence.h"
@@ -36,15 +37,20 @@ namespace
 		return *Instance;
 	}
 
-	double Now(const AProphecyAgent* Agent)
+	FVector2D Sample(FFistState& S, const AProphecyAgent* Agent)
 	{
-		return Agent->GetWorld() ? double(Agent->GetWorld()->GetTimeSeconds()) : 0.0;
-	}
-	FVector2D Sample(const FFistState& S, double Time)
-	{
+		S.StartTime += ProphecyBlendClock::Consume(Agent, ProphecyBlendClock::EKind::Fists);
 		const float Alpha = S.Duration <= UE_SMALL_NUMBER ? 1.0f :
-			FMath::Clamp(float((Time-S.StartTime)/S.Duration), 0.0f, 1.0f);
+			FMath::Clamp(float((S.StartTime+1.e-7)/S.Duration), 0.0f, 1.0f);
+		if (Alpha >= 1) ProphecyBlendClock::Stop(Agent, ProphecyBlendClock::EKind::Fists);
 		return FMath::Lerp(S.Start, S.Target, Alpha);
+	}
+	void StartBlend(FFistState& S, const AProphecyAgent* Agent)
+	{
+		S.StartTime = 0; // Elapsed authored time, never a world timestamp.
+		if (S.Duration > UE_SMALL_NUMBER)
+			ProphecyBlendClock::Start(Agent, ProphecyBlendClock::EKind::Fists, S.Duration);
+		else ProphecyBlendClock::Stop(Agent, ProphecyBlendClock::EKind::Fists);
 	}
 	FProphecyAttackFistSettings Sanitize(FProphecyAttackFistSettings S)
 	{
@@ -82,12 +88,11 @@ void AProphecyAgent::BeginAttackFists(FName Attack)
 	check(IsInGameThread());
 	ProphecyAttackFists::EnsureManualSimulation(this);
 	FFistState& S = Storage().States.FindOrAdd(this);
-	const double Time = Now(this);
 	const FProphecyAttackFistSettings Settings = GetAttackFistSettings(Attack);
-	S.Start = Sample(S, Time);
+	S.Start = Sample(S, this);
 	S.Target = FVector2D(Settings.LeftClosedLevel, Settings.RightClosedLevel);
-	S.StartTime = Time;
 	S.Duration = Settings.ClosingStartSeconds;
+	StartBlend(S, this);
 	S.EndSeconds = Settings.OpeningEndSeconds;
 	S.bAttacking = true;
 }
@@ -112,10 +117,10 @@ bool AProphecyAgent::SetFistClosedLevels(float Left, float Right, float BlendSec
 	const float Duration = FMath::Max(0.f,BlendSeconds);
 	// Repeating the same command must not keep restarting an in-progress blend.
 	if (!S.bAttacking && S.Target.Equals(Target) && S.Duration == Duration) return true;
-	S.Start = Sample(S,Now(this));
+	S.Start = Sample(S,this);
 	S.Target = Target;
-	S.StartTime = Now(this);
 	S.Duration = Duration;
+	StartBlend(S, this);
 	S.bAttacking = false;
 	return true;
 }
@@ -125,26 +130,33 @@ void AProphecyAgent::EndAttackFists()
 	check(IsInGameThread());
 	FFistState* S = Storage().States.Find(this);
 	if (!S || !S->bAttacking) return;
-	S->Start = Sample(*S, Now(this));
+	S->Start = Sample(*S, this);
 	const FVector2D* Manual = Storage().ManualLevels.Find(this);
 	S->Target = Manual ? *Manual : FVector2D::ZeroVector;
-	S->StartTime = Now(this);
 	S->Duration = S->EndSeconds;
+	StartBlend(*S, this);
 	S->bAttacking = false;
 }
 
 void AProphecyAgent::GetFistClosedLevels(float& Left, float& Right) const
 {
 	check(IsInGameThread());
-	const FFistState* S = Storage().States.Find(this);
-	const FVector2D Value = bEnableAttackFists && S ? Sample(*S,Now(this)) : FVector2D::ZeroVector;
+	FFistState* S = Storage().States.Find(this);
+	const FVector2D Value = bEnableAttackFists && S ? Sample(*S,this) : FVector2D::ZeroVector;
 	Left = float(Value.X); Right = float(Value.Y);
 }
 
 void AProphecyAgent::ReleaseAttackFists()
 {
+	ProphecyBlendClock::Stop(this, ProphecyBlendClock::EKind::Fists);
 	Storage().States.Remove(this);
 	Storage().ManualLevels.Remove(this);
+}
+
+void ProphecyAttackFists::FinishBlend(const AProphecyAgent* Agent)
+{
+	if (auto* S = Storage().States.Find(Agent)) S->Duration = 0;
+	ProphecyBlendClock::Stop(Agent, ProphecyBlendClock::EKind::Fists);
 }
 
 void ProphecyAttackFists::EnsureManualSimulation(AProphecyAgent* Agent)
@@ -268,3 +280,51 @@ void ProphecyAttackFists::ApplyToLocalPose(const void* Proxy, TConstArrayView<FN
 		if (Index != INDEX_NONE) LocalPose[Index] = Bone.Local;
 	}
 }
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyFistTickTest,"Prophecy.Agent.Fists.TickTiming",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyFistTickTest::RunTest(const FString&)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* Agent=World ? World->SpawnActor<AProphecyAgent>() : nullptr;
+    if(!Agent) return false;
+    Agent->bEnableAttackFists=true;
+    for(float Dt:{1.f/120.f,1.f/60.f,.2f,20.f})
+    {
+        Agent->SetFistClosedLevels(0,0,0);
+        Agent->SetFistClosedLevels(1,.5f,1);
+        for(int32 Tick=1;Tick<=60;++Tick)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,Dt);
+            float L,R,AgainL,AgainR;
+            Agent->GetFistClosedLevels(L,R);
+            Agent->GetFistClosedLevels(AgainL,AgainR);
+            TestTrue(TEXT("Manual fist blend uses game ticks"),FMath::IsNearlyEqual(L,float(Tick)/60,1.e-6f));
+            TestEqual(TEXT("Repeated read cannot advance blend"),L,AgainL);
+            TestTrue(TEXT("Both hands share the same tick clock"),FMath::IsNearlyEqual(R,L*.5f,1.e-6f));
+        }
+        FProphecyAttackFistSettings Config;
+        Config.LeftClosedLevel=0;Config.RightClosedLevel=1;
+        Config.ClosingStartSeconds=.5f;Config.OpeningEndSeconds=.5f;
+        Agent->SetAttackFistSettings(TEXT("kickL"),Config);
+        Agent->BeginAttackFists(TEXT("kickL"));
+        for(int32 Tick=0;Tick<30;++Tick) FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,Dt);
+        float L,R;Agent->GetFistClosedLevels(L,R);
+        TestEqual(TEXT("Attack closes at its tick deadline"),L,0.f);
+        Agent->EndAttackFists();
+        for(int32 Tick=0;Tick<30;++Tick) FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,Dt);
+        Agent->GetFistClosedLevels(L,R);
+        TestEqual(TEXT("Attack restores manual fist target"),L,1.f);
+        TestEqual(TEXT("Attack restores manual right target"),R,.5f);
+    }
+    Agent->SetFistClosedLevels(.25f,.75f,1);
+    ProphecyAttackFists::FinishBlend(Agent);
+    ProphecyBlendClock::Remove(Agent);
+    float L,R;Agent->GetFistClosedLevels(L,R);
+    TestEqual(TEXT("Reset cannot strand a fist mid-blend after clock removal"),L,.25f);
+    TestEqual(TEXT("Reset preserves the requested right-hand target"),R,.75f);
+    Agent->ReleaseAttackFists();World->DestroyWorld(false);
+    return !HasAnyErrors();
+}
+#endif

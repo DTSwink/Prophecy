@@ -1,6 +1,6 @@
 # Locomotion-authored feet during full attacks
 
-**Set Attack Foot Locomotion** configures Enabled, Mode (Walk / Run / Current Blend), Distance Limit Cm (default 40), Height Limit Cm (default 15), and **Freeze Blend** (default 0). Disabled by default; configure before triggering the attack. Current Blend continues the ordinary gait blend instead of resetting it at full attack entry. Walk and Run select their respective lower checkpoint.
+**Set Attack Loco Drag** (formerly Set Attack Foot Locomotion) configures Enabled, Mode (Walk / Run / Current Blend), Distance Limit Cm (default 40), Height Limit Cm (default 15), and **Freeze Blend** (default 0). Disabled by default; configure before triggering the attack. Current Blend continues the ordinary gait blend instead of resetting it at full attack entry. Walk and Run select their respective lower checkpoint. The October 2 rename changes only the displayed setter title; the native function name, pins and behavior remain compatible. The user confirmed Freeze works; no smoothing/freeze algorithm change was made.
 
 Additional pins: **Alpha Rotation** (default1, clamped0–1), **Left Blend Duration Seconds** and **Right Blend Duration Seconds** (both default0). Alpha Rotation1 uses locomotion foot orientation;0 uses attack orientation while the foot position remains locomotion-authored. Toe articulation follows the same rotational source, attached to the chosen ankle. These settings latch at attack entry, alongside mode/limits; Freeze Blend remains live adjustable.
 
@@ -35,6 +35,14 @@ Locomotion-owned/blending legs feed their accepted foot position/rotation, thigh
 Only pending feet keep the lower locomotion policy request alive. The last release removes that request for subsequent inference steps; upper locomotion remains skipped during full attacks. Other agents may still require the shared fixed-size batch. Disabled/completed authoring does no extra inference, threshold math, pose capture, or leg solve beyond cheap guards. Configuration/reset/EndPlay/world cleanup follow the existing agent lifecycle.
 
 ## September 28 rotation and handoff validation
+
+October 2 display-name update: Live Coding build succeeded (204.96 seconds),
+loaded 21:24:07 UTC. Read-only graph audit confirms the existing node displays
+**Set Attack Loco Drag**. User Play was active and preserved; no reconstruction,
+pin edit, asset save, gameplay capture or test run was needed for the rename.
+Runtime smoothing/freeze code was not changed. Evidence:
+`Saved/Diagnostics/LocoDragFreeze20261002/rename.json` and `rename-before.txt`.
+Normal editor DLL rebuild remains required before a cold launch.
 
 Runtime Live Coding loaded20:18:17 UTC; the editor node-refresh helper loaded20:20:29 UTC. Existing FootLocomotion and new FootLocomotionHandoff tests both passed20:19:00 UTC. New coverage includes direct-attack bypass, staggered independent durations at30/60/120FPS, continuous one-way handoff despite retargeting, duplicate-read timing, half-mode pause/resume, pause ticks, clock/state retirement, reset/default/explicit-release paths, rotation endpoints/intermediate weights and connected leg lengths.
 

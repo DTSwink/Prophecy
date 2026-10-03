@@ -45,12 +45,14 @@ bool Step(const AProphecyAgent* Agent,FStep& Out)
     State->Elapsed+=Dt;
     Out.MaxTurnRadians=FMath::DegreesToRadians(State->Config.Speed*float(Dt));
     Out.Expired=State->Elapsed+1.e-6>=State->Config.Duration;
+    const float X=FMath::Clamp(float(State->Elapsed/State->Config.Duration),0.f,1.f);
+    Out.Weight=Out.Expired?0.f:1.f-X*X*(3.f-2.f*X);
     return true;
 }
 void FinishStep(const AProphecyAgent* Agent,bool Limited)
 {
     const auto* State=Active.Find(Agent);
-    if(State && !Limited && State->Elapsed+1.e-6>=State->Config.Duration) Cancel(Agent);
+    if(State && State->Elapsed+1.e-6>=State->Config.Duration) Cancel(Agent);
 }
 }
 
@@ -213,6 +215,22 @@ const FSettings* Find(const AProphecyAgent* Agent)
     SamplePart(PelvisReturns,false,ProphecyBlendClock::EKind::PelvisTempering);
     if (AllNormal(Agent,*Value)) { Remove(Agent);return nullptr; }
     return Value;
+}
+FVector2f ReconstructionWeights(const AProphecyAgent* Agent,const FSettings& Left)
+{
+    auto Remaining=[](const FReturnTimeline* T)
+    {
+        if(!T)return 1.f;
+        const float X=T->Duration>0?FMath::Clamp(float((T->Elapsed-T->Hold)/T->Duration),0.f,1.f)
+            :(T->Elapsed<T->Hold?0.f:1.f);
+        return 1.f-X*X*(3.f-2.f*X);
+    };
+    const auto* Shared=Returns.IsEmpty()?nullptr:Returns.Find(Agent);
+    const float Feet=Remaining(Shared?Shared:FeetReturns.Find(Agent));
+    const float Pelvis=Left.PelvisTranslation!=1.f || Left.PelvisTranslationZ!=1.f || Left.PelvisRotation!=1.f
+        ? Remaining(Shared?Shared:PelvisReturns.Find(Agent)):0.f;
+    return FVector2f(FMath::Max(Pelvis,Left.FeetAreIdentity()?0.f:Feet),
+        FMath::Max(Pelvis,RightFootSettings(Agent,Left).FeetAreIdentity()?0.f:Feet));
 }
 void Remove(const AProphecyAgent* Agent)
 {
@@ -416,9 +434,9 @@ bool FProphecyLegRecoveryClockTest::RunTest(const FString&)
         }
         TestTrue(TEXT("Sixty ticks allows exactly 180 degrees at every FPS"),FMath::IsNearlyEqual(Budget,PI,2.e-6f));
         TestTrue(TEXT("Duration expires at sixty ticks"),S.Expired);
-        FinishStep(Agent,true);TestTrue(TEXT("Remaining correction is not dropped at expiry"),Step(Agent,S));
-        FinishStep(Agent,false);TestFalse(TEXT("Convergence removes all active pose work"),Step(Agent,S));
-        TestFalse(TEXT("Convergence retires active entry"),Active.Contains(Agent));
+        TestEqual(TEXT("Correction reaches exactly zero at deadline"),S.Weight,0.f);
+        FinishStep(Agent,true);TestFalse(TEXT("Blend deadline removes all active work even if previously limited"),Step(Agent,S));
+        TestFalse(TEXT("Deadline retires active entry"),Active.Contains(Agent));
     }
     UProphecyLegChainDebugLibrary::SetLegReconstructionRecovery(Agent,0,180);Begin(Agent);FStep S;
     TestFalse(TEXT("Zero extra duration creates no state or clock"),Step(Agent,S));
@@ -692,5 +710,25 @@ bool FProphecySeparatedKickReturnsTest::RunTest(const FString&)
     }
     ForgetProfiles(Agent);TestFalse(TEXT("Cleanup removes opt-in configuration"),SeparateKickReturns.Contains(Agent));
     World->DestroyWorld(false);return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyReconstructionFadeTest,"Prophecy.NN.LowerTempering.ReconstructionFade",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyReconstructionFadeTest::RunTest(const FString&)
+{
+    using namespace ProphecyLowerTempering;using L=UProphecyLowerTemperingLibrary;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;
+    if(!A)return false;
+    L::SetKickLocomotionLowerBodyTempering(A,true,1,1,1,.2f,.2f,.2f,.5f,.5f,.5f);
+    SelectAttackProfile(A,TEXT("kickL"));L::BlendKickLocomotionLowerBodyTemperingToNormal(A,1,.5f,.5f,0);
+    auto Advance=[&](int32 T){for(int32 I=0;I<T;++I){FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,.2f);Find(A);}};
+    Advance(15);auto V=ReconstructionWeights(A,*Find(A));
+    TestTrue(TEXT("Pelvis fade affects untempered left leg; right foot keeps its hold"),V.Equals(FVector2f(.5f,1.f),1.e-5));
+    Advance(15);V=ReconstructionWeights(A,*Find(A));
+    TestTrue(TEXT("Ended pelvis correction is zero independently of right foot hold"),V.Equals(FVector2f(0,1),1.e-5));
+    Advance(30);V=ReconstructionWeights(A,*Find(A));
+    TestTrue(TEXT("Right reconstruction follows its existing half-finished blend"),V.Equals(FVector2f(0,.5f),1.e-5));
+    Advance(30);TestNull(TEXT("Both blend deadlines retire all tempering work"),Find(A));
+    ForgetProfiles(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif

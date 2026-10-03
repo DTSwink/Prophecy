@@ -55,6 +55,23 @@ using K=ProphecyBlendClock::EKind;
 struct FConfig { float Hold=.3f,Blend=.5f,Speed=100; };
 struct FReturn { FConfig Config; double Elapsed=0;bool Initialized=false; FTransform Wrist; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
+// Separate from retained FConfig/FReturn allocations for Live Coding.
+struct FArmOptions { float LeftHold=-1,LeftBlend=-1,LeftAlpha=1,RightAlpha=1; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FArmOptions> ArmOptions,ArmOptionBaselines;
+static FArmOptions Options(const AProphecyAgent* A)
+{ const auto* C=ArmOptions.IsEmpty()?nullptr:ArmOptions.Find(A);return C?*C:FArmOptions{}; }
+static double Influence(const AProphecyAgent* A,int32 Arm)
+{ const auto C=Options(A);return Arm==0?C.LeftAlpha:C.RightAlpha; }
+static FConfig ConfigForArm(const AProphecyAgent* A,FConfig C,int32 Arm)
+{
+    if(Arm==0) { const auto O=Options(A);if(O.LeftHold>=0)C.Hold=O.LeftHold;if(O.LeftBlend>=0)C.Blend=O.LeftBlend; }
+    return C;
+}
+static bool Alive(const AProphecyAgent* A,const FReturn& R,int32 Arm)
+{
+    // Match the blend clock's tick rounding, including float-authored durations.
+    return Influence(A,Arm)>0 && R.Elapsed*60.+1.e-5<(double(R.Config.Hold)+R.Config.Blend)*60.;
+}
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FReturn> Returns;
 // Event-only selection; retain the old FReturn layout across Live Coding.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,int32> ReturnArms;
@@ -140,6 +157,9 @@ struct FBladeGeometry { FVector Base=FVector::ZeroVector,Tip=FVector::ZeroVector
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FBladeGeometry> Blades;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FWeaponRoute> ExtraWeaponRoutes;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FBladeGeometry> ExtraBlades;
+// Separate storage keeps retained return/route layouts valid during Live Coding.
+// Offsets live in anatomical torso space, independently of the return carrier.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FVector> BladeOffsets,ExtraBladeOffsets;
 static FWeaponRoute MakeWeaponRoute(const AProphecyAgent* A,int32 ArmIndex,const FTransform& Hand,const FTransform& Neutral,double Width,
     TMap<TWeakObjectPtr<const AProphecyAgent>,FBladeGeometry>& ArmBlades,const FTransform* ReferenceToTorso=nullptr)
 {
@@ -170,27 +190,46 @@ static FWeaponRoute MakeWeaponRoute(const AProphecyAgent* A,int32 ArmIndex,const
     V.Goal=FRotator(0,DirectedHeading(V.Rotation.Yaw,0,V.Side),Idle.Roll);
     if(const auto* Blade=ArmBlades.Find(A))
     {
-        // Decide from the swept blade, not side alone: a blade already pointing
-        // forward must not make a needless full revolution on the right flank.
+        // A clear short rotation at the outgoing wrist must not become a full
+        // revolution to avoid a later positional overlap. Translation has its
+        // own clearance solve. Otherwise retain the existing moving-hand route.
         const double Short=V.Rotation.Yaw+FMath::UnwindDegrees(-V.Rotation.Yaw);
         double BestCost=1.e30,BestYaw=V.Goal.Yaw;
         for(double Goal:{Short,Short+360.,Short-360.})
         {
             if(FMath::Abs(Goal-V.Rotation.Yaw)>360.+1.e-6) continue;
-            double Cost=0;
+            double Cost=0;bool ClearShort=Goal==Short;
             for(int32 I=1;I<=48;++I)
             {
                 const double T=I/48.;FRotator End=V.Goal;End.Yaw=Goal;
-                const FTransform P((BlendWeaponRotation(V.Rotation,End,T).Quaternion()*V.Basis.Inverse()).GetNormalized(),
-                    RoutePath(Hand.GetLocation(),Neutral.GetLocation(),Width,T,ReferenceToTorso));
+                FTransform P((BlendWeaponRotation(V.Rotation,End,T).Quaternion()*V.Basis.Inverse()).GetNormalized(),
+                    Hand.GetLocation());
+                if(ClearShort && BladeClearance(ReferenceToTorso ? P*(*ReferenceToTorso) : P,
+                    Blade->Base,Blade->Tip,Width,Blade->Padding)<1.04) ClearShort=false;
+                P.SetLocation(RoutePath(Hand.GetLocation(),Neutral.GetLocation(),Width,T,ReferenceToTorso));
                 Cost+=FMath::Max(0.,1.04-BladeClearance(ReferenceToTorso ? P*(*ReferenceToTorso) : P,Blade->Base,Blade->Tip,Width,Blade->Padding));
             }
+            if(ClearShort) { BestYaw=Short;break; }
             Cost+=FMath::Abs(Goal-V.Rotation.Yaw)*1.e-5;
             if(Cost<BestCost) {BestCost=Cost;BestYaw=Goal;}
         }
         V.Goal.Yaw=BestYaw;
     }
+    // Retain the selected direction after Rotation advances toward Goal.
+    V.Side=FMath::Sign(V.Goal.Yaw-V.Rotation.Yaw);
+#if WITH_EDITOR
+    if(AuditReturn.GetValueOnGameThread() && A->IsPlayerControlled())
+        UE_LOG(LogTemp,Display,TEXT("ReturnSwordRoute time=%.9f arm=%d start=%.6f goal=%.6f idle=%.6f side=%.0f"),
+            A->GetWorld()->GetTimeSeconds(),ArmIndex,V.Rotation.Yaw,V.Goal.Yaw,Idle.Yaw,V.Side);
+#endif
     return V;
+}
+bool RightWristReturnDirection(const AProphecyAgent* A,double& Direction)
+{
+    if(!(ActiveArmMask(A)&2))return false;
+    const auto* Route=ActiveArm(A)==1?WeaponRoutes.Find(A):ExtraWeaponRoutes.Find(A);
+    if(!Route)return false;
+    Direction=Route->Side;return true;
 }
 static FDelegateHandle Cleanup;
 static void EnsureCleanup()
@@ -201,6 +240,8 @@ static void EnsureCleanup()
         auto Clean=[W](auto& Map) { for(auto It=Map.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W) It.RemoveCurrent(); };
         Clean(Configs);Clean(Baselines);Clean(Returns);Clean(ReturnArms);Clean(WeaponRoutes);Clean(Blades);
+        Clean(BladeOffsets);Clean(ExtraBladeOffsets);
+        Clean(ArmOptions);Clean(ArmOptionBaselines);
         Clean(BlockedAttacks);Clean(BlockedAttackBaselines);
         Clean(BothArmsConfigs);Clean(BothArmsBaselines);Clean(ExtraReturns);Clean(ReturnAttacks);Clean(ExtraWeaponRoutes);Clean(ExtraBlades);
         Clean(PelvisChoices);Clean(PelvisBaselines);Clean(PelvisOffsets);
@@ -227,16 +268,33 @@ int32 ActiveArm(const AProphecyAgent* A)
 uint8 ActiveArmMask(const AProphecyAgent* A)
 {
     const int32 Arm=ActiveArm(A);if(Arm==INDEX_NONE) return 0;
-    return ExtraReturns.Contains(A) ? 3 : uint8(1<<Arm);
+    uint8 Mask=Alive(A,Returns.FindChecked(A),Arm)?uint8(1<<Arm):0;
+    if(const auto* Extra=ExtraReturns.Find(A);Extra && Alive(A,*Extra,1-Arm))Mask|=uint8(1<<(1-Arm));
+    return Mask;
+}
+static void StartRemainingClock(const AProphecyAgent* A)
+{
+    auto* R=Returns.Find(A);if(!R)return;
+    // Preserve any unread ticks when adding a longer-lived extra arm mid-return.
+    R->Elapsed+=ProphecyBlendClock::Consume(A,K::SlashReturn);
+    const int32 Arm=ActiveArm(A);
+    double End=Alive(A,*R,Arm)?double(R->Config.Hold)+R->Config.Blend:0;
+    if(auto* Extra=ExtraReturns.Find(A))
+    {
+        Extra->Elapsed=R->Elapsed;
+        if(Alive(A,*Extra,1-Arm))End=FMath::Max(End,double(Extra->Config.Hold)+Extra->Config.Blend);
+    }
+    if(End<=R->Elapsed)Cancel(A);else ProphecyBlendClock::Start(A,K::SlashReturn,End-R->Elapsed);
 }
 static void CancelExtra(const AProphecyAgent* A)
-{ ExtraReturns.Remove(A);ExtraWeaponRoutes.Remove(A);ExtraBlades.Remove(A); }
+{ ExtraReturns.Remove(A);ExtraWeaponRoutes.Remove(A);ExtraBlades.Remove(A);ExtraBladeOffsets.Remove(A); }
 void Cancel(const AProphecyAgent* A)
-{ CancelExtra(A);PelvisReturns.Remove(A);PelvisOffsets.Remove(A);RotationReturns.Remove(A);PelvisAxes.Remove(A);ReturnAttacks.Remove(A);ReturnArms.Remove(A);Blades.Remove(A);WeaponRoutes.Remove(A);if(Returns.Remove(A)) ProphecyBlendClock::Stop(A,K::SlashReturn); }
+{ CancelExtra(A);BladeOffsets.Remove(A);PelvisReturns.Remove(A);PelvisOffsets.Remove(A);RotationReturns.Remove(A);PelvisAxes.Remove(A);ReturnAttacks.Remove(A);ReturnArms.Remove(A);Blades.Remove(A);WeaponRoutes.Remove(A);if(Returns.Remove(A)) ProphecyBlendClock::Stop(A,K::SlashReturn); }
 static void CancelExtension(const AProphecyAgent* A)
 {
     const auto* Attack=ReturnAttacks.Find(A);
-    if(Attack && ArmForAttack(*Attack)==INDEX_NONE) Cancel(A);else CancelExtra(A);
+    if(Attack && ArmForAttack(*Attack)==INDEX_NONE) Cancel(A);
+    else { CancelExtra(A);if(!ActiveArmMask(A))Cancel(A); }
 }
 static void SyncExtra(const AProphecyAgent* A)
 {
@@ -244,7 +302,10 @@ static void SyncExtra(const AProphecyAgent* A)
     if(!Choice || !Choice->Enabled || !Attack || !Choice->Attacks.Contains(*Attack)) { CancelExtension(A);return; }
     // Called at entry / in Special Ended. Never reset a return already in progress.
     if(!ExtraReturns.Contains(A)) if(const auto* C=Configs.Find(A)) if(const auto* R=Returns.Find(A))
-    { FReturn Extra{*C};Extra.Elapsed=R->Elapsed;ExtraReturns.Add(A,Extra); }
+    {
+        FReturn Extra{ConfigForArm(A,*C,1-ActiveArm(A))};Extra.Elapsed=R->Elapsed;
+        if(Alive(A,Extra,1-ActiveArm(A))) { ExtraReturns.Add(A,Extra);StartRemainingClock(A); }
+    }
 }
 void Begin(const AProphecyAgent* A,FName Attack)
 {
@@ -257,29 +318,48 @@ void Begin(const AProphecyAgent* A,FName Attack)
         Arm=1; // Explicitly selected kick/headbutt: both arms, no default return.
     }
     if(const auto* C=Configs.Find(A))
-    { Returns.Add(A,FReturn{*C});ReturnArms.Add(A,Arm);ReturnAttacks.Add(A,Attack);LatchReference(A,Attack);SyncExtra(A);ProphecyBlendClock::Start(A,K::SlashReturn,double(C->Hold)+C->Blend); }
+    { Returns.Add(A,FReturn{ConfigForArm(A,*C,Arm)});ReturnArms.Add(A,Arm);ReturnAttacks.Add(A,Attack);LatchReference(A,Attack);SyncExtra(A);StartRemainingClock(A); }
 }
-void Remove(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);Baselines.Remove(A);BothArmsConfigs.Remove(A);BothArmsBaselines.Remove(A);PelvisChoices.Remove(A);PelvisBaselines.Remove(A);RotationConfigs.Remove(A);RotationBaselines.Remove(A);BlockedAttacks.Remove(A);BlockedAttackBaselines.Remove(A); }
+void Remove(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);Baselines.Remove(A);ArmOptions.Remove(A);ArmOptionBaselines.Remove(A);BothArmsConfigs.Remove(A);BothArmsBaselines.Remove(A);PelvisChoices.Remove(A);PelvisBaselines.Remove(A);RotationConfigs.Remove(A);RotationBaselines.Remove(A);BlockedAttacks.Remove(A);BlockedAttackBaselines.Remove(A); }
 void CaptureReset(const AProphecyAgent* A)
 { EnsureCleanup();if(const auto* C=Configs.Find(A)) Baselines.Add(A,*C);else Baselines.Remove(A);
+  if(const auto* C=ArmOptions.Find(A))ArmOptionBaselines.Add(A,*C);else ArmOptionBaselines.Remove(A);
   if(const auto* C=BlockedAttacks.Find(A)) BlockedAttackBaselines.Add(A,*C);else BlockedAttackBaselines.Remove(A);
   if(const auto* C=BothArmsConfigs.Find(A)) BothArmsBaselines.Add(A,*C);else BothArmsBaselines.Remove(A);
   if(const auto* C=PelvisChoices.Find(A)) PelvisBaselines.Add(A,*C);else PelvisBaselines.Remove(A);
   if(const auto* C=RotationConfigs.Find(A)) RotationBaselines.Add(A,*C);else RotationBaselines.Remove(A); }
 void RestoreReset(const AProphecyAgent* A)
 { Cancel(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A)) Configs.Add(A,*C);
+  ArmOptions.Remove(A);if(const auto* C=ArmOptionBaselines.Find(A))ArmOptions.Add(A,*C);
   BlockedAttacks.Remove(A);if(const auto* C=BlockedAttackBaselines.Find(A)) BlockedAttacks.Add(A,*C);
   BothArmsConfigs.Remove(A);if(const auto* C=BothArmsBaselines.Find(A)) BothArmsConfigs.Add(A,*C);
   PelvisChoices.Remove(A);if(const auto* C=PelvisBaselines.Find(A)) PelvisChoices.Add(A,*C);
   RotationConfigs.Remove(A);if(const auto* C=RotationBaselines.Find(A)) RotationConfigs.Add(A,*C); }
-void ForgetReset(const AProphecyAgent* A) { Baselines.Remove(A);BothArmsBaselines.Remove(A);PelvisBaselines.Remove(A);RotationBaselines.Remove(A);BlockedAttackBaselines.Remove(A); }
+void ForgetReset(const AProphecyAgent* A) { Baselines.Remove(A);ArmOptionBaselines.Remove(A);BothArmsBaselines.Remove(A);PelvisBaselines.Remove(A);RotationBaselines.Remove(A);BlockedAttackBaselines.Remove(A); }
 double AdvanceFrame(const AProphecyAgent* A)
 {
     auto* R=Returns.Find(A);if(!R) return 0;
     const double Dt=ProphecyBlendClock::Consume(A,K::SlashReturn);R->Elapsed+=Dt;
-    if(R->Elapsed+1.e-8>=double(R->Config.Hold)+R->Config.Blend) { Cancel(A);return 0; }
-    if(auto* Extra=ExtraReturns.Find(A)) Extra->Elapsed=R->Elapsed;
+    if(auto* Extra=ExtraReturns.Find(A))
+    {
+        Extra->Elapsed=R->Elapsed;
+        if(!Alive(A,*Extra,1-ActiveArm(A)))CancelExtra(A);
+    }
+    if(!ActiveArmMask(A)) { Cancel(A);return 0; }
     return Dt;
+}
+static void BlendArmInfluence(const FTransform* NN,double Weight,FTransform& Shoulder,FTransform& Elbow,FTransform& Wrist)
+{
+    if(Weight>=1)return;
+    if(Weight<=0) { Shoulder=NN[0];Elbow=NN[1];Wrist=NN[2];return; }
+    // Blend in the joint hierarchy, then reconstruct FK attachments. Blending
+    // three independent world positions would shorten the forearm mid-blend.
+    const FTransform NNElbow=NN[1].GetRelativeTransform(NN[0]),NNWrist=NN[2].GetRelativeTransform(NN[1]);
+    const FQuat ElbowLocal=Shoulder.GetRotation().Inverse()*Elbow.GetRotation();
+    const FQuat WristLocal=Elbow.GetRotation().Inverse()*Wrist.GetRotation();
+    Shoulder=FTransform(FQuat::Slerp(NN[0].GetRotation(),Shoulder.GetRotation(),Weight).GetNormalized(),NN[0].GetLocation(),NN[0].GetScale3D());
+    Elbow=FTransform(FQuat::Slerp(NNElbow.GetRotation(),ElbowLocal,Weight).GetNormalized(),NNElbow.GetLocation(),NNElbow.GetScale3D())*Shoulder;
+    Wrist=FTransform(FQuat::Slerp(NNWrist.GetRotation(),WristLocal,Weight).GetNormalized(),NNWrist.GetLocation(),NNWrist.GetScale3D())*Elbow;
 }
 void ApplyPose(const AProphecyAgent* A,int32 ArmIndex,double Dt,const FTransform& Torso,const FTransform& PreviousTorso,
     double HalfWidth,const FTransform& PreviousShoulder,const FTransform& PreviousElbow,
@@ -290,7 +370,9 @@ void ApplyPose(const AProphecyAgent* A,int32 ArmIndex,double Dt,const FTransform
 {
     const int32 Primary=ActiveArm(A);if(Primary==INDEX_NONE || (ArmIndex!=0 && ArmIndex!=1)) return;
     const bool Extra=ArmIndex!=Primary;
-    auto* R=Extra ? ExtraReturns.Find(A) : Returns.Find(A);if(!R) return;
+    auto* R=Extra ? ExtraReturns.Find(A) : Returns.Find(A);if(!R || !Alive(A,*R,ArmIndex)) return;
+    const double ArmAlpha=Influence(A,ArmIndex);
+    const FTransform Natural[3]={Shoulder,Elbow,Wrist};
     auto& ArmRoutes=Extra ? ExtraWeaponRoutes : WeaponRoutes;
     auto& ArmBlades=Extra ? ExtraBlades : Blades;
     const FTransform& Frame=Reference ? *Reference : Torso;
@@ -347,18 +429,28 @@ void ApplyPose(const AProphecyAgent* A,int32 ArmIndex,double Dt,const FTransform
     const FVector BeforeClear=LocalTarget.GetLocation();
 #endif
     // Reference is a motion carrier only. Clearance must follow the actual body.
+    auto ClearSmoothly=[&](FTransform& TorsoTarget)
+    {
+        const auto* Blade=ArmBlades.Find(A);if(!Blade)return;
+        const FVector Desired=ClearBladePosition(TorsoTarget,Blade->Base,Blade->Tip,HalfWidth,Blade->Padding)-TorsoTarget.GetLocation();
+        auto& Offsets=Extra ? ExtraBladeOffsets : BladeOffsets;
+        FVector& Offset=Offsets.FindOrAdd(A,FVector::ZeroVector);
+        // Smooth engagement AND release; a transient blade intersection must
+        // not teleport the IK goal outside reach. Respect the return speed too.
+        const double StepTime=FMath::Max(0.,Dt);
+        Offset+=((Desired-Offset)*(1.-FMath::Exp(-StepTime/.1))).GetClampedToMaxSize(R->Config.Speed*StepTime);
+        TorsoTarget.AddToTranslation(Offset);
+    };
     FTransform Target;
     if(Reference)
     {
         FTransform TorsoTarget=(LocalTarget*Frame).GetRelativeTransform(Torso);
-        if(const auto* Blade=ArmBlades.Find(A))
-            TorsoTarget.SetLocation(ClearBladePosition(TorsoTarget,Blade->Base,Blade->Tip,HalfWidth,Blade->Padding));
+        ClearSmoothly(TorsoTarget);
         Target=TorsoTarget*Torso;
     }
     else
     {
-        if(const auto* Blade=ArmBlades.Find(A))
-            LocalTarget.SetLocation(ClearBladePosition(LocalTarget,Blade->Base,Blade->Tip,HalfWidth,Blade->Padding));
+        ClearSmoothly(LocalTarget);
         Target=LocalTarget*Torso;
     }
     auto Carry=[&](const FTransform& V) { return V.GetRelativeTransform(PreviousFrame)*Frame; };
@@ -403,9 +495,17 @@ void ApplyPose(const AProphecyAgent* A,int32 ArmIndex,double Dt,const FTransform
         GuideElbow.SetRotation((Q*GuideElbow.GetRotation()).GetNormalized());
     }
     Shoulder=GuideShoulder;Elbow=GuideElbow;Wrist=GuideWrist;
+    // Fade the complete solved correction, including blade/elbow clearance,
+    // so no procedural residual is released abruptly when the timer retires.
+    const double ReturnWeight=ArmAlpha*(1.-Alpha);
+    if(ReturnWeight<1)BlendArmInfluence(Natural,ReturnWeight,Shoulder,Elbow,Wrist);
 #if WITH_EDITOR
     if(const auto* Audit=IConsoleManager::Get().FindConsoleVariable(TEXT("Prophecy.SlashReturn.Audit"));Audit && Audit->GetInt())
     {
+        if(A->IsPlayerControlled() && ArmIndex==1)
+            UE_LOG(LogTemp,Display,TEXT("ReturnSwordStep time=%.9f route=%.6f goal=%.6f nn=%.6f target=%.6f final=%.6f weight=%.6f"),
+                A->GetWorld()->GetTimeSeconds(),Weapon->Rotation.Yaw,Weapon->Goal.Yaw,(NN.GetRotation()*Weapon->Basis).Rotator().Yaw,
+                (Rotation*Weapon->Basis).Rotator().Yaw,(Wrist.GetRelativeTransform(Frame).GetRotation()*Weapon->Basis).Rotator().Yaw,ReturnWeight);
         auto V=[](const FVector& P){return FString::Printf(TEXT("%.6f,%.6f,%.6f"),P.X,P.Y,P.Z);};
         auto Transform=[&](const FTransform& P) { const FTransform L=P.GetRelativeTransform(Torso);const FQuat Q=L.GetRotation();
             return V(L.GetLocation())+FString::Printf(TEXT(",%.9f,%.9f,%.9f,%.9f"),Q.X,Q.Y,Q.Z,Q.W); };
@@ -438,16 +538,30 @@ bool UProphecySlashReturnLibrary::SetAttackArmReturnEnabled(AProphecyAgent* A,
     if(ProphecyAttackRecovery::IsEndEvent(A) && !Active(A))Begin(A,ProphecyAttackRecovery::EndEventAttack(A));
     return true;
 }
-bool UProphecySlashReturnLibrary::SetSlashRightArmReturnToNeutral(AProphecyAgent* A,bool Enabled,float Hold,float Blend,float Speed)
+bool UProphecySlashReturnLibrary::SetSlashRightArmReturnToNeutral(AProphecyAgent* A,bool Enabled,float Hold,float Blend,float Speed,
+    float LeftHold,float LeftBlend,float LeftAlpha,float RightAlpha)
 {
     using namespace ProphecySlashReturn;
     if(!IsInGameThread() || !IsValid(A) || A->IsActorBeingDestroyed() || !A->GetWorld() || A->GetWorld()->bIsTearingDown ||
-        !FMath::IsFinite(Hold) || !FMath::IsFinite(Blend) || !FMath::IsFinite(Speed) || Hold<0 || Blend<0 || Speed<0) return false;
+        !FMath::IsFinite(Hold) || !FMath::IsFinite(Blend) || !FMath::IsFinite(Speed) || Hold<0 || Blend<0 || Speed<0 ||
+        !FMath::IsFinite(LeftHold) || !FMath::IsFinite(LeftBlend) || (LeftHold<0 && LeftHold!=-1) || (LeftBlend<0 && LeftBlend!=-1) ||
+        !FMath::IsFinite(LeftAlpha) || !FMath::IsFinite(RightAlpha)) return false;
+    LeftAlpha=FMath::Clamp(LeftAlpha,0.f,1.f);RightAlpha=FMath::Clamp(RightAlpha,0.f,1.f);
     EnsureCleanup();
-    if(Enabled && Hold+Blend>0) if(const auto* Existing=Configs.Find(A))
-        if(Existing->Hold==Hold && Existing->Blend==Blend && Existing->Speed==Speed) return true;
+    const auto Previous=Options(A);
+    const FArmOptions New{LeftHold,LeftBlend,LeftAlpha,RightAlpha};
+    const bool Effective=Enabled && ((RightAlpha>0 && double(Hold)+Blend>0) ||
+        (LeftAlpha>0 && double(LeftHold<0?Hold:LeftHold)+(LeftBlend<0?Blend:LeftBlend)>0));
+    if(Effective && (LeftHold!=-1 || LeftBlend!=-1 || LeftAlpha!=1 || RightAlpha!=1))ArmOptions.Add(A,New);else ArmOptions.Remove(A);
+    if(Effective) if(const auto* Existing=Configs.Find(A))
+        if(Existing->Hold==Hold && Existing->Blend==Blend && Existing->Speed==Speed && Previous.LeftHold==LeftHold && Previous.LeftBlend==LeftBlend)
+        {
+            if(Previous.LeftAlpha!=LeftAlpha || Previous.RightAlpha!=RightAlpha)
+            { if(Active(A)) { SyncExtra(A);StartRemainingClock(A); } }
+            return true;
+        }
     Cancel(A);
-    if(Enabled && Hold+Blend>0) Configs.Add(A,FConfig{Hold,Blend,Speed});else Configs.Remove(A);
+    if(Effective) Configs.Add(A,FConfig{Hold,Blend,Speed});else Configs.Remove(A);
     if(ProphecyAttackRecovery::IsEndEvent(A)) Begin(A,ProphecyAttackRecovery::EndEventAttack(A));
     return true;
 }
@@ -515,6 +629,7 @@ bool UProphecySlashReturnLibrary::SetBothArmsReturnToNeutralEnabled(AProphecyAge
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+#include "ProphecySlashReturnArmSettingsTests.inl"
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyReturnAttackGateTest,"Prophecy.NN.SlashReturn.PerAttackGate",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyReturnAttackGateTest::RunTest(const FString&)

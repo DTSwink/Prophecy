@@ -1,4 +1,5 @@
 #include "ProphecyModeTransitions.h"
+#include "ProphecyBlendClock.h"
 #include "ProphecyAgent.h"
 #include "ProphecyAttackFists.h"
 #include "ProphecySwordComponent.h"
@@ -49,6 +50,13 @@ namespace
 		TMap<const void*, FSnapshot> Snapshots;
 	};
 	FStorage& ModeTransitionStorage() { static FStorage* S = new FStorage; return *S; }
+	// Only the manual physics proxy's nonphysical helpers survive the transition.
+	// Full captured poses and their blend clock retire at the deadline.
+	auto& ManualHelpers()
+	{
+		static auto* Helpers = new TMap<TWeakObjectPtr<const AProphecyAgent>, FSnapshot>;
+		return *Helpers;
+	}
 	struct FFinalizeRegistration { TWeakObjectPtr<USkeletalMeshComponent> Mesh; FDelegateHandle Handle; };
 	auto& FinalizeRegistrations()
 	{
@@ -70,7 +78,7 @@ namespace
 		if (!IsValid(Agent) || Agent->IsJoltPhysicalAnimationEnabled()
 			|| Agent->GetSimulationMode() == EProphecyAgentSimulationMode::Kinematic) return;
 		const FPose* Blend = ModeTransitionStorage().Blends.Find(Agent);
-		if (!Blend || Agent->GetWorld()->GetTimeSeconds() <= Blend->Start) return;
+		if (Blend && Blend->Start <= 0) return;
 		USkeletalMeshComponent* Mesh = Agent->GetPoseReferenceMesh();
 		if (!Mesh || !Mesh->GetSkeletalMeshAsset()) return;
 		const auto& Ref = Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
@@ -160,7 +168,9 @@ ProphecyModeTransitions::FScope::~FScope()
 	USkeletalMeshComponent* M = S.Mesh.Get();
 	if (!M || S.World.IsEmpty() || Agent->GetSimulationMode() == S.Mode) return;
 	const auto NewMode = Agent->GetSimulationMode();
-	S.Start = Agent->GetWorld()->GetTimeSeconds();
+	S.Start = 0;
+	ManualHelpers().Remove(Agent);
+	ProphecyBlendClock::Start(Agent, ProphecyBlendClock::EKind::ModeTransition, BlendSeconds);
 	// Mode switches can restore a different mesh carrier. Non-root local bones
 	// are invariant under that change; the root local transform is not.
 	S.Local[0] = S.World[0].GetRelativeTransform(M->GetComponentTransform());
@@ -200,22 +210,55 @@ void ProphecyModeTransitions::PreUpdate(const void* Proxy, const AProphecyAgent*
 	FSnapshot Snapshot;
 	if (A)
 	{
-		const FPose* S = ModeTransitionStorage().Blends.Find(A);
+		FPose* S = ModeTransitionStorage().Blends.Find(A);
 		USkeletalMeshComponent* M = A->GetPoseReferenceMesh();
 		if (S && M && S->Mesh == M)
 		{
-			const double T = FMath::Clamp((A->GetWorld()->GetTimeSeconds() - S->Start) / BlendSeconds, 0., 1.);
-			Snapshot.Alpha = float(T*T*(3-2*T));
-			Snapshot.bManualSim = A->bManualNNPoseApplication && A->GetSimulationMode() == EProphecyAgentSimulationMode::Physical;
-			Snapshot.bLocal = A->GetSimulationMode() != EProphecyAgentSimulationMode::Kinematic && T > 0;
-			Snapshot.Names = S->Names;
-			Snapshot.FromLocal = S->Local;
-			for (const FBody& B : S->Bodies) Snapshot.PhysicalBones.Add(B.Name);
-			for (const FTransform& W : S->World) Snapshot.FromCS.Add(W.GetRelativeTransform(M->GetComponentTransform()));
+			S->Start += ProphecyBlendClock::Consume(A, ProphecyBlendClock::EKind::ModeTransition);
+			const double T = FMath::Clamp((S->Start + 1.e-8) / BlendSeconds, 0., 1.);
+			const bool ManualSim = A->bManualNNPoseApplication && A->GetSimulationMode() == EProphecyAgentSimulationMode::Physical;
+			if (T >= 1)
+			{
+				if (ManualSim)
+				{
+					Snapshot.bLocal = true;
+					Snapshot.Alpha = 0;
+					TSet<FName> Physical;
+					for (const FBody& B : S->Bodies) Physical.Add(B.Name);
+					for (int32 I = 0; I < S->Names.Num(); ++I)
+						if (!Physical.Contains(S->Names[I]) && !IsFinger(S->Names[I]))
+						{ Snapshot.Names.Add(S->Names[I]); Snapshot.FromLocal.Add(S->Local[I]); }
+					ManualHelpers().Add(A, Snapshot);
+				}
+				ModeTransitionStorage().Blends.Remove(A);
+				ProphecyBlendClock::Stop(A, ProphecyBlendClock::EKind::ModeTransition);
+			}
+			else
+			{
+				Snapshot.Alpha = float(T*T*(3-2*T));
+				Snapshot.bManualSim = ManualSim;
+				Snapshot.bLocal = A->GetSimulationMode() != EProphecyAgentSimulationMode::Kinematic && S->Start > 0;
+				Snapshot.Names = S->Names;
+				Snapshot.FromLocal = S->Local;
+				for (const FBody& B : S->Bodies) Snapshot.PhysicalBones.Add(B.Name);
+				if (!Snapshot.bLocal)
+					for (const FTransform& W : S->World) Snapshot.FromCS.Add(W.GetRelativeTransform(M->GetComponentTransform()));
+			}
+		}
+		else if (S)
+		{
+			ModeTransitionStorage().Blends.Remove(A);
+			ManualHelpers().Remove(A);
+			ProphecyBlendClock::Stop(A, ProphecyBlendClock::EKind::ModeTransition);
+		}
+		else if (A->bManualNNPoseApplication && A->GetSimulationMode() == EProphecyAgentSimulationMode::Physical)
+		{
+			if (const auto* Helpers = ManualHelpers().Find(A)) Snapshot = *Helpers;
 		}
 	}
 	FScopeLock Lock(&ModeTransitionStorage().Lock);
-	ModeTransitionStorage().Snapshots.Add(Proxy, MoveTemp(Snapshot));
+	if (Snapshot.Names.IsEmpty()) ModeTransitionStorage().Snapshots.Remove(Proxy);
+	else ModeTransitionStorage().Snapshots.Add(Proxy, MoveTemp(Snapshot));
 }
 
 void ProphecyModeTransitions::Evaluate(const void* Proxy, FPoseContext& Output)
@@ -225,9 +268,9 @@ void ProphecyModeTransitions::Evaluate(const void* Proxy, FPoseContext& Output)
 	if (!S || S->Names.IsEmpty()) return;
 	const FBoneContainer& Container = Output.Pose.GetBoneContainer();
 	TArray<FTransform> Desired;
-	Desired.SetNum(Output.Pose.GetNumBones());
+	if (!S->bLocal) Desired.SetNum(Output.Pose.GetNumBones());
 	TArray<FTransform> Original;
-	Original.SetNum(Output.Pose.GetNumBones());
+	if (!S->bLocal) Original.SetNum(Output.Pose.GetNumBones());
 	for (const FCompactPoseBoneIndex I : Output.Pose.ForEachBoneIndex())
 	{
 		const int32 Source = S->Names.IndexOfByKey(Container.GetReferenceSkeleton().GetBoneName(Container.GetSkeletonIndex(I)));
@@ -266,12 +309,19 @@ void ProphecyModeTransitions::ReleaseProxy(const void* P)
 	FScopeLock Lock(&ModeTransitionStorage().Lock);
 	ModeTransitionStorage().Snapshots.Remove(P);
 }
+void ProphecyModeTransitions::FinishBlend(const AProphecyAgent* A)
+{
+	if (auto* S = ModeTransitionStorage().Blends.Find(A)) S->Start = BlendSeconds;
+	ProphecyBlendClock::Stop(A, ProphecyBlendClock::EKind::ModeTransition);
+}
 void ProphecyModeTransitions::ReleaseAgent(const AProphecyAgent* A)
 {
 	FFinalizeRegistration Registration;
 	if (FinalizeRegistrations().RemoveAndCopyValue(A, Registration))
 		if (auto* Mesh = Registration.Mesh.Get()) Mesh->UnregisterOnBoneTransformsFinalizedDelegate(Registration.Handle);
 	ModeTransitionStorage().Blends.Remove(A);
+	ManualHelpers().Remove(A);
+	ProphecyBlendClock::Stop(A, ProphecyBlendClock::EKind::ModeTransition);
 	ModeTransitionStorage().Captures.Remove(A);
 }
 
@@ -342,5 +392,46 @@ bool FProphecyModeTranslationCorrectionTest::RunTest(const FString& Parameters)
 		}
 	}
 	return true;
+}
+#endif
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyModeTickRetirementTest,"Prophecy.Agent.ModeTransitions.TickRetirement",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyModeTickRetirementTest::RunTest(const FString&)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* Agent=World ? World->SpawnActor<AProphecyAgent>() : nullptr;
+    if(!Agent) return false;
+    Agent->bManualNNPoseApplication=false;
+    int32 ProxyToken=0;
+    for(float Dt:{1.f/120.f,.2f,20.f})
+    {
+        FPose Pose;Pose.Mesh=Agent->GetPoseReferenceMesh();
+        Pose.Names.Add(TEXT("root"));Pose.Local.Add(FTransform::Identity);Pose.World.Add(FTransform::Identity);
+        TestNotNull(TEXT("Test agent has a pose mesh"),Pose.Mesh.Get());
+        ModeTransitionStorage().Blends.Add(Agent,Pose);
+        ProphecyBlendClock::Start(Agent,ProphecyBlendClock::EKind::ModeTransition,BlendSeconds);
+        for(int32 Tick=1;Tick<=15;++Tick)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(World,LEVELTICK_All,Dt);
+            ProphecyModeTransitions::PreUpdate(&ProxyToken,Agent);
+            ProphecyModeTransitions::PreUpdate(&ProxyToken,Agent);
+            TestEqual(TEXT("Full transition capture exists only before its 15-tick deadline"),ModeTransitionStorage().Blends.Contains(Agent),Tick<15);
+        }
+        TestFalse(TEXT("Completed transition has no per-proxy pose work"),ModeTransitionStorage().Snapshots.Contains(&ProxyToken));
+        ProphecyModeTransitions::PreUpdate(&ProxyToken,Agent);
+        TestFalse(TEXT("Completion cannot recreate the transition"),ModeTransitionStorage().Blends.Contains(Agent));
+    }
+    FPose ResetPose;ResetPose.Mesh=Agent->GetPoseReferenceMesh();
+    ResetPose.Names.Add(TEXT("root"));ResetPose.Local.Add(FTransform::Identity);ResetPose.World.Add(FTransform::Identity);
+    ModeTransitionStorage().Blends.Add(Agent,ResetPose);
+    ProphecyBlendClock::Start(Agent,ProphecyBlendClock::EKind::ModeTransition,BlendSeconds);
+    ProphecyModeTransitions::FinishBlend(Agent);
+    ProphecyBlendClock::Remove(Agent);
+    ProphecyModeTransitions::PreUpdate(&ProxyToken,Agent);
+    TestFalse(TEXT("Reset retires the capture even when the clock was removed"),ModeTransitionStorage().Blends.Contains(Agent));
+    ProphecyModeTransitions::ReleaseProxy(&ProxyToken);
+    ProphecyModeTransitions::ReleaseAgent(Agent);World->DestroyWorld(false);
+    return !HasAnyErrors();
 }
 #endif

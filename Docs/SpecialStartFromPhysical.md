@@ -1,5 +1,7 @@
 # Starting specials from the physical pose
 
+October3 current setup: the user removed the node and chose NN-centered entry. Default remains false; no automatic simulation-mode override exists. Pelvis/core/hands/feet entry inertia use NN history. The physical checkpoint-seed feature below remains available only through an explicit enable call. [Checks and current contract](NNEntry20261003.md).
+
 **Set Special Start From Physical** takes Agent and Enabled (default false). Call it before starting a special. The preference applies to newly started full attacks, half attacks, parries and dodges. Editing an ongoing attack, retargeting it or switching between full and half does not restart its history.
 
 Previously, entry always encoded the published NN component pose and previous NN pose (or the saved Armed activation history for queued defenses). Physical feedback can influence those predictions, but that is not the same as starting from the actual physical skeleton.

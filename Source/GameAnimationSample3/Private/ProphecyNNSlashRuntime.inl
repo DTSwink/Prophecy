@@ -9,6 +9,8 @@ namespace
 		TEXT("Opt-in live Slash audit: owning manager agent index."));
 	TAutoConsoleVariable<int32> CVarSlashTraceFrames(TEXT("Prophecy.SlashTraceFrames"), 0,
 		TEXT("Remaining live Slash steps to record to Saved/Diagnostics/SlashContacts/live_steps.jsonl."));
+	TAutoConsoleVariable<int32> CVarAttackEndExtensionAudit(TEXT("Prophecy.AttackEndExtension.Audit"),0,
+		TEXT("Log the one-frame natural attack ending decision."));
 	TAutoConsoleVariable<int32> CVarHalfTestUpperSource(TEXT("Prophecy.SlashTestHalfUpperSource"), -1,
 		TEXT("Opt-in paired test: match current upper pose on half triggers, suppress automatic full triggers. No history/lower copying."));
 	TAutoConsoleVariable<int32> CVarHalfTestRelativeTarget(TEXT("Prophecy.SlashTestHalfRelativeTarget"), 0,
@@ -409,6 +411,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		const bool bFamilyChanged = Slash.Family != Attack;
 		if (bFamilyChanged)
 		{
+			AttackEndPredictions.Remove(Actor);
 			const bool bWasKick = Slash.Family == TEXT("kickl") || Slash.Family == TEXT("kickr");
 			const bool bIsKick = Attack == TEXT("kickl") || Attack == TEXT("kickr");
 			if (bWasKick!=bIsKick)
@@ -486,6 +489,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	const FTransform StartCarrier = SlashComponentWorld(Actor, Agent.PublishedRoot, Agent.PublishedYaw);
 	if (bPhysicalSeed) for (auto& Bone:PhysicalSeed.Current) Bone=(Bone*Carrier).GetRelativeTransform(StartCarrier);
 	auto& Slash = Agent.Slash;
+	AttackEndPredictions.Remove(Actor);
 	Slash = FImpl::FAgent::FSlashAttack{};
 	Slash.Family = Attack; Slash.TargetWorld = TargetWorld; Slash.bHalf = bHalf;
 	Slash.AnchorWorld = StartCarrier; Slash.TailSteps = ProphecyAttackTrim::TailSteps(Actor,Attack,Impl->SlashTailSteps[Attack]);
@@ -524,10 +528,9 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	// Static initialization remains the explicit opt-in to discard entry velocity.
 	if (ProphecyAttackControls::IsStatic(Actor)) ProphecyAttackControls::MakeHistoryStatic(Slash.State);
 	if (bHalf) Slash.bHasPose = Slash.bNeedsFeedback = true;
-	// Physical seeding owns checkpoint history, not the preceding render endpoint.
-	// Locomotion can finish its already-published interval before the first attack
-	// prediction. Using the physical sample taken mid-interval here rewinds that
-	// first interpolation (especially a loco-drag foot released on prediction one).
+	// Retain the outgoing endpoint until the first prediction. Physical entry
+	// then samples the last displayed target in AdvanceSlashAttacks, so a Trigger
+	// between policy steps cannot leave a stale render endpoint behind.
 	const auto VisibleEntry=TransformSlice(Impl->ComponentTransformBuffer,Handle.Index);
 	for (const auto& Bone : VisibleEntry) Slash.VisibleWorldPose.Add(Bone * StartCarrier);
 	Slash.PreviousVisibleWorldPose = Slash.VisibleWorldPose;
@@ -536,10 +539,12 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	if (!bHalf && Attack!=TEXT("kickl") && Attack!=TEXT("kickr"))
 		ProphecyAttackFootLocomotion::Begin(Actor,PoseStoreAgentBase+Handle.Index,
 		Impl->BodyNames,Current,StartCarrier,TargetWorld);
+	// All entry inertias continue the published NN motion, in every simulation
+	// mode. Physical checkpoint initialization remains a separate explicit opt-in.
 	if (!bHalf) ProphecyAttackStartInertia::Begin(Actor,PoseStoreAgentBase+Handle.Index,
-        (bPhysicalSeed?PhysicalSeed.Previous[0]:TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index)[0])
-            *EntryPreviousCarrier,Current[0]*StartCarrier,
-		uint8(3&~ProphecyAttackFootLocomotion::Mask(Actor)));
+		TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index)[0]*EntryPreviousCarrier,
+		TransformSlice(Impl->ComponentTransformBuffer,Handle.Index)[0]*StartCarrier,
+		uint8(3&~ProphecyAttackFootLocomotion::Mask(Actor)),1./NNUpdateHz);
 	Slash.bActive = true;
 	if (!bHalf) ProphecyAttackControls::FullAttackStarted(Actor);
 #if !UE_BUILD_SHIPPING
@@ -551,7 +556,9 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	Actor->BeginAttackFists(Attack);
 	ProphecyAttackRecovery::EnterSpecial(Actor,bHalf);
 	ProphecyArmCone::BeginAttack(Actor,Attack);
-	ProphecyAttackStartHands::Begin(Actor);
+	ProphecyAttackStartFKCore::Begin(Actor,Impl->BodyNames,Impl->Parents,Impl->UpperCoreBoneNames);
+	ProphecyAttackStartHands::Begin(Actor,
+		HandInertiaRoot(Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw));
 	Actor->NotifySwordAttackState(true);
 	if (!bHalf) ProphecyKickFootLeeway::Begin(Actor,Attack);
 	ProphecyAttackCamera::Update(this, Actor, !bHalf);
@@ -663,10 +670,114 @@ void AProphecyNNLocomotionManager::RefreshAgentAttackTrim(FProphecyAgentHandle H
 	if (Slash.bActive)
 		if (const int32* Authored=Impl->SlashTailSteps.Find(Slash.Family))
 		{
-			Slash.TailSteps=ProphecyAttackTrim::TailSteps(Actor,Slash.Family,*Authored);
+			Slash.TailSteps=ProphecyAttackTrim::TailSteps(Actor,Slash.Family,*Authored)
+				+(AttackEndPredictions.Contains(Actor)?1:0);
 			if (Slash.HitFrame!=INDEX_NONE && Slash.TailSteps>0 && Slash.Frame>=Slash.HitFrame+Slash.TailSteps)
 				ProphecyAttackTrim::QueueHalfFrame(this,Actor,Slash.Family,Slash.Frame);
 		}
+}
+
+bool AProphecyNNLocomotionManager::TryExtendAgentAttackEnd(FProphecyAgentHandle Handle)
+{
+	auto* Actor=ResolveAgent(Handle);
+	if (!Actor || !Impl->bSlashInitialized || AttackEndPredictions.Contains(Actor)) return false;
+	auto& Slash=Impl->Agents[Handle.Index].Slash;
+	float Threshold;bool Sword,Left;
+	if (!Slash.bActive || Slash.HitFrame==INDEX_NONE || Slash.Frame<Slash.HitFrame+Slash.TailSteps ||
+		!ProphecyAttackEndExtension::Threshold(Actor,Slash.Family,Threshold,Sword,Left)) return false;
+	FName EndName=Left?TEXT("hand_l"):TEXT("hand_r");
+	FQuat Grip=FQuat::Identity;
+	if (Sword)
+	{
+		EndName=Actor->SwordHandSocket;
+		FTransform GripTransform=Actor->SwordGripTransform;
+		if (const auto* Mesh=Actor->GetPoseReferenceMesh())
+			if (const auto* Socket=Mesh->GetSocketByName(EndName))
+			{ EndName=Socket->BoneName;GripTransform=GripTransform*Socket->GetSocketLocalTransform(); }
+		Grip=GripTransform.GetRotation();
+	}
+	const int32 End=Impl->BodyNames.IndexOfByKey(EndName);
+	const int32 Mid=Impl->BodyNames.IndexOfByKey(Left?FName(TEXT("lowerarm_l")):FName(TEXT("lowerarm_r")));
+	if (!Slash.GhostPose.IsValidIndex(End) || (!Sword && !Slash.GhostPose.IsValidIndex(Mid))) return false;
+	const FVector Before=Sword ? Slash.GhostPose[End].GetRotation().RotateVector(Grip.RotateVector(FVector::UpVector))
+		: (Slash.GhostPose[End].GetLocation()-Slash.GhostPose[Mid].GetLocation()).GetSafeNormal();
+	if (Before.IsNearlyZero()) return false;
+	FSlashNative* Model=Impl->SlashModel.Get();
+	for (int32 Checkpoint:{1,2,3})
+		if (auto* Other=ProphecyAttackCheckpoint::Find(this,Checkpoint);Other && Other->Active.Contains(Actor))
+		{ Model=Other->Model.Get();break; }
+	FVector3f NativePosition=Impl->SlashRootPosition;FMat3f NativeRotation=Impl->SlashRootRotation;
+#if !UE_BUILD_SHIPPING
+	if (!Slash.bHalf) if (const auto* Frame=SlashTrainFrame::Find(Actor))
+	{ NativePosition=Frame->Position;NativeRotation=Frame->Rotation; }
+#endif
+	FAttackEndPrediction Prediction;Prediction.Input=Slash.State;
+	FVector Effective,Ghost;ResolveSlashTarget(*Impl,Actor,Handle.Index,Effective,Ghost);
+	WriteStateVec3(Prediction.Input.GetData(),262,
+		TransformRow(LocalUnrealToTraining(Slash.AnchorWorld.InverseTransformPosition(Ghost)),NativeRotation)+NativePosition);
+	FSlashNative::FStepSettings Option;
+	Option.FrozenPinIterations=Actor->AttackFootPinningIterations;
+	Option.LeftHandMaxBendDegrees=ProphecyAttackWrist::Degrees(Actor,EProphecyClampProfileMode::Attack,Slash.Family);
+	Option.bLeftHandConstraint=Option.LeftHandMaxBendDegrees>=0 && Option.LeftHandMaxBendDegrees<180;
+	Option.bBlockArmed=ProphecyAttackControls::ArmedBlocked(Actor);
+	FPelvisInertiaStepContext Inertia;
+	if (!Slash.bHalf && ProphecyPelvisInertia::HasTarget(Actor))
+	{
+		Inertia.Actor=Actor;Inertia.Carrier=Slash.AnchorWorld;Inertia.Step=1./NNUpdateHz;
+		Inertia.Time=double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds+Inertia.Step;
+		Option.PelvisInertia=&Inertia;
+	}
+	if (Model->InputBatchSize!=1 && !Model->SetBatch(1)) return false;
+#if !UE_BUILD_SHIPPING
+	FVector3f SavedPosition=NativePosition;FMat3f SavedRotation=NativeRotation;
+	const bool Audit=!Slash.bHalf && SlashTrainFrame::Find(Actor);
+	if (Audit) Model->SwapAuditFrame(SavedPosition,SavedRotation);
+#endif
+	auto Run=[&](){return Model->Run(Prediction.Input,Prediction.Output,MakeArrayView(&Option,1));};
+	const bool Ran=Option.PelvisInertia?ProphecyPelvisInertia::Preview(Actor,Run):Run();
+#if !UE_BUILD_SHIPPING
+	if (Audit) Model->SwapAuditFrame(SavedPosition,SavedRotation);
+#endif
+	if (!Ran) return false;
+	for (float Value:Prediction.Output) if (!FMath::IsFinite(Value)) return false;
+	auto Decode=[&](int32 Bone)
+	{
+		const int32 NativeBone=Impl->SlashBodyIndices.IndexOfByKey(Bone);
+		const float* Out=Prediction.Output.GetData();
+		FMat3f Rotation;for (int32 Row=0;Row<3;++Row) Rotation.Rows[Row]=ReadStateVec3(Out,206+9*NativeBone+3*Row);
+		return FTransform(MatrixToQuat(MirrorYBasis(Multiply(Rotation,Transpose(NativeRotation)))),
+			LocalTrainingToUnreal(TransformRow(ReadStateVec3(Out,131+3*NativeBone)-NativePosition,Transpose(NativeRotation))));
+	};
+	if (!Impl->SlashBodyIndices.Contains(End) || (!Sword && !Impl->SlashBodyIndices.Contains(Mid))) return false;
+	const FTransform NextEnd=Decode(End);
+	FVector After;
+	if (Sword) After=NextEnd.GetRotation().RotateVector(Grip.RotateVector(FVector::UpVector));
+	else
+	{
+		const FTransform NextMid=Decode(Mid);
+		const FVector Hand=ProphecyAttackWrist::FreePosition(Actor)?NextEnd.GetLocation():
+			NextMid.TransformPosition(LocalTrainingToUnreal(Impl->UpperLocalOffsets[End]));
+		After=(Hand-NextMid.GetLocation()).GetSafeNormal();
+	}
+	const float Dot=FMath::Clamp(float(FVector::DotProduct(Before,After)),-1.f,1.f);
+	const bool Accept=!After.IsNearlyZero() && Dot<FMath::Cos(FMath::DegreesToRadians(Threshold));
+#if !UE_BUILD_SHIPPING
+	if (CVarAttackEndExtensionAudit.GetValueOnGameThread())
+		UE_LOG(LogProphecyNNLocomotion,Display,TEXT("AttackEndExtension actor=%s family=%s frame=%d angle=%.6f threshold=%.6f accepted=%d time=%.6f"),
+			*Actor->GetName(),*Slash.Family.ToString(),Slash.Frame,FMath::RadiansToDegrees(FMath::Acos(Dot)),Threshold,Accept,GetWorld()->GetTimeSeconds());
+#endif
+	if (!Accept) return false;
+	const float* Frozen=Model->NetworkInputs[1].Num()!=51?Model->NetworkOutputs[0].GetData():nullptr;
+	const bool Both=Frozen && Frozen[41]<0 && Frozen[42]<0;
+	if (Frozen) Prediction.FrozenRaw=FVector2D(Frozen[41],Frozen[42]);
+	Prediction.FrozenPin=FVector2D(Both || (Frozen && Frozen[41]<=Frozen[42])?1:0,Both || (Frozen && Frozen[42]<Frozen[41])?1:0);
+	Prediction.AttackRaw=FVector2D(Model->NetworkOutputs[1][41],Model->NetworkOutputs[1][42]);
+	// A stateful pelvis correction must be committed at the real step. All other
+	// accepted predictions are reused directly (no duplicate inference).
+	if (Option.PelvisInertia) { Prediction.Input.Reset();Prediction.Output.Reset(); }
+	AttackEndPredictions.Add(Actor,MoveTemp(Prediction));
+	++Slash.TailSteps;
+	return true;
 }
 
 bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle, bool bReturnToLocomotion)
@@ -675,6 +786,8 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	if (!Actor) return false;
 	auto& Slash = Impl->Agents[Handle.Index].Slash;
 	if (!Slash.bActive) return false;
+	AttackEndPredictions.Remove(Actor);
+	ProphecyAttackStartFKCore::Cancel(Actor);
 	// A normal exit can precede the authored inertia window. Let that window
 	// finish against locomotion rather than dropping its remaining offset.
 	if (!bReturnToLocomotion) ProphecyAttackStartInertia::Cancel(Actor);
@@ -682,11 +795,15 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	ProphecyDefenseArmedGate::AttackEnded(Actor);
 	const FName EndedAttack = Slash.Family;
 	const bool bEndedHalfAttack = Slash.bHalf;
-	const auto& InertiaAgent=Impl->Agents[Handle.Index];
-	const FVector3f InertiaPreviousRoot=InertiaAgent.PreviousPublishedRoot,InertiaRoot=InertiaAgent.PublishedRoot;
-	const float InertiaPreviousYaw=InertiaAgent.PreviousPublishedYaw,InertiaYaw=InertiaAgent.PublishedYaw;
 	if (!bEndedHalfAttack) ReturnAttackLowerToLocomotion(Handle,bReturnToLocomotion);
 	Slash.bActive = false;
+	if (bReturnToLocomotion)
+		ProphecyFKReturn::Begin(Actor,EndedAttack,Impl->BodyNames,Impl->Parents,
+			TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index),
+			TransformSlice(Impl->ComponentTransformBuffer,Handle.Index),
+            Impl->Agents[Handle.Index].PublishedPoseTimeSeconds,1.f/NNUpdateHz,
+            uint32(FMath::RoundToInt(FMath::Clamp(Impl->AccumulatedStepSeconds,0.f,1.f/NNUpdateHz)*60.f)));
+	else ProphecyFKReturn::Cancel(Actor);
 	ProphecyAttackFootLocomotion::End(Actor);
 #if !UE_BUILD_SHIPPING
 	SlashTrainFrame::Ended(Actor);
@@ -695,10 +812,6 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	Actor->EndAttackFists();
 	Actor->NotifySwordAttackState(false);
 	ProphecyAttackRecovery::NotifyEnded(Actor,EndedAttack,bEndedHalfAttack,bReturnToLocomotion);
-	if (bReturnToLocomotion && !Slash.bActive && !Impl->Agents[Handle.Index].DefensePose && ProphecyUpperBodyInertia::Configured(Actor))
-		ProphecyUpperBodyInertia::Begin(Actor,Slash.PreviousVisibleWorldPose,Slash.VisibleWorldPose,
-			Impl->BodyNames,Impl->UpperCoreBoneNames,1./NNUpdateHz,
-			HandInertiaRoot(InertiaPreviousRoot,InertiaPreviousYaw),HandInertiaRoot(InertiaRoot,InertiaYaw));
 	return true;
 }
 
@@ -730,7 +843,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 {
 	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::Attack);
 	if (!Impl->bSlashInitialized) return;
-	TArray<int32, TInlineAllocator<BatchSize>> Active,AlternativeActive,Refresh2Active,September20Active;
+	TArray<int32, TInlineAllocator<BatchSize>> Active,AlternativeActive,Refresh2Active,September20Active,CachedActive;
 #if !UE_BUILD_SHIPPING
 	TArray<int32,TInlineAllocator<BatchSize>> AuditActive;
 #endif
@@ -742,6 +855,44 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 		auto& Agent = Impl->Agents[Index];
 		auto& Slash = Agent.Slash;
 		if (!Slash.bActive || !AgentActors[Index]->bNNInferenceEnabled) continue;
+		// A physical seed is sampled from the displayed interval, not its future
+		// locomotion endpoint. At the first prediction, start presentation from
+		// the last displayed target too; otherwise it runs ahead and then rewinds.
+		// Sample here (not at Trigger) so either trigger tick parity is continuous.
+		if (!Slash.bHasPose && !Slash.bHalf && ProphecySpecialStart::Enabled(AgentActors[Index]))
+		{
+			const auto* Mesh = AgentActors[Index]->GetPoseReferenceMesh();
+			if (AgentActors[Index]->IsJoltPhysicalAnimationEnabled() || (Mesh && Mesh->IsAnySimulatingPhysics()))
+			{
+				TArray<FName> Names;
+				TArray<FTransform> Future, Presented;
+				float Alpha;
+				if (AgentActors[Index]->ReadNNFutureWorldPose(Names, Future, Presented, Alpha))
+				{
+					// Drag legs still advance on the ordinary locomotion timeline.
+					// Retain their endpoint, then reconnect to the entry hip below.
+					const auto* Drag = ProphecyAttackFootLocomotion::FindActive(AgentActors[Index]);
+					FTransform LocoLegs[2][4];
+					if (Drag) for (int32 Side = 0; Side < 2; ++Side) if (Drag->Loco & (1 << Side))
+						for (int32 Part = 0; Part < 4; ++Part)
+							LocoLegs[Side][Part] = Slash.VisibleWorldPose[Drag->Legs[Side][Part]];
+					for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
+					{
+						const int32 Source = Names.IndexOfByKey(Impl->BodyNames[Bone]);
+						if (Presented.IsValidIndex(Source)) Slash.VisibleWorldPose[Bone] = Presented[Source];
+					}
+					ProphecyAttackStartFKCore::PrepareEntryPose(AgentActors[Index],Slash.VisibleWorldPose);
+					if (Drag) for (int32 Side = 0; Side < 2; ++Side) if (Drag->Loco & (1 << Side))
+					{
+						auto* Leg = LocoLegs[Side];
+						ProphecyAttackStartInertia::MoveHip(Leg[0], Leg[1], Leg[2], &Leg[3],
+							Slash.VisibleWorldPose[Drag->Legs[Side][0]].GetLocation());
+						for (int32 Part = 0; Part < 4; ++Part)
+							Slash.VisibleWorldPose[Drag->Legs[Side][Part]] = Leg[Part];
+					}
+				}
+			}
+		}
 		// The ghost performs the attack in its own fixed root frame. Moving the
 		// real locomotion capsule must not feed running translation into that NN.
 		FVector EffectiveTarget, GhostTarget;
@@ -761,6 +912,9 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			continue;
 		}
 		WriteStateVec3(Slash.State.GetData(), 262, Target);
+		if (!AttackEndPredictions.IsEmpty())
+			if (const auto* Cached=AttackEndPredictions.Find(AgentActors[Index]);Cached && !Cached->Output.IsEmpty())
+			{ CachedActive.Add(Index);continue; }
 #if !UE_BUILD_SHIPPING
 		if (AuditFrame) { AuditActive.Add(Index);continue; }
 #endif
@@ -769,7 +923,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 		else if (Comparison && Comparison->Active.Contains(AgentActors[Index])) AlternativeActive.Add(Index);
 		else Active.Add(Index);
 	}
-	if (Active.IsEmpty() && AlternativeActive.IsEmpty() && Refresh2Active.IsEmpty() && September20Active.IsEmpty()
+	if (Active.IsEmpty() && AlternativeActive.IsEmpty() && Refresh2Active.IsEmpty() && September20Active.IsEmpty() && CachedActive.IsEmpty()
 #if !UE_BUILD_SHIPPING
 		&& AuditActive.IsEmpty()
 #endif
@@ -778,11 +932,15 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 	// Keep recurrent histories and phase latches on agents; only inference batches
 	// split by the checkpoint latched at attack entry. Empty groups do no work.
 	auto RunGroup=[&](const TArray<int32,TInlineAllocator<BatchSize>>& Active,FSlashNative& Model,
-		const FVector3f& NativePosition,const FMat3f& NativeRotation,bool bAudit=false)
+		const FVector3f& NativePosition,const FMat3f& NativeRotation,bool bAudit=false,FAttackEndPrediction* Cached=nullptr)
 	{
 	if (Active.IsEmpty()) return;
 	const int32 Width = FMath::Min(BatchSize,Active.Num());
-	if (Model.InputBatchSize!=Width)
+	// Odd trims can defer the real step until the next tick. A changed target or
+	// recurrent state invalidates the cached prediction; keep using the real target.
+	const bool Reuse=Cached && Cached->Input.Num()==SlashInputDim && Width==1 &&
+		FMemory::Memcmp(Cached->Input.GetData(),Impl->Agents[Active[0]].Slash.State.GetData(),SlashInputDim*sizeof(float))==0;
+	if (!Reuse && Model.InputBatchSize!=Width)
 	{
 		if (!Model.SetBatch(Width))
 		{
@@ -835,7 +993,8 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 		FVector3f SavedPosition=NativePosition;FMat3f SavedRotation=NativeRotation;
 		if (bAudit) Model.SwapAuditFrame(SavedPosition,SavedRotation);
 #endif
-		const bool bRan=Model.Run(Impl->SlashInputBuffer, Impl->SlashOutputBuffer, MakeArrayView(Settings));
+		if (Reuse) FMemory::Memcpy(Impl->SlashOutputBuffer.GetData(),Cached->Output.GetData(),SlashOutputDim*sizeof(float));
+		const bool bRan=Reuse || Model.Run(Impl->SlashInputBuffer, Impl->SlashOutputBuffer, MakeArrayView(Settings));
 #if !UE_BUILD_SHIPPING
 		if (bAudit) Model.SwapAuditFrame(SavedPosition,SavedRotation);
 #endif
@@ -866,17 +1025,17 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			{
 				if (auto* Debug = Impl->PinningDebug.Find(Index); Debug && Debug->Owner.Get() == AgentActors[Index])
 				{
-					const bool HasFrozen=Model.NetworkInputs[1].Num()!=51*Model.InputBatchSize;
+					const bool HasFrozen=!Reuse && Model.NetworkInputs[1].Num()!=51*Model.InputBatchSize;
 					const float* Frozen = HasFrozen ? Model.NetworkOutputs[0].GetData() + Lane*43 : nullptr;
-					const float* Learned = Model.NetworkOutputs[1].GetData() + Lane*43;
+					const float* Learned = Reuse?nullptr:Model.NetworkOutputs[1].GetData() + Lane*43;
 					const bool Both = Frozen && Frozen[41]<0 && Frozen[42]<0;
-					Debug->Frozen.RawNetworkOutput = Frozen ? FVector2D(Frozen[41],Frozen[42]) : FVector2D::ZeroVector;
-					Debug->Frozen.RawPinning = Frozen ? FVector2D(Both || Frozen[41]<=Frozen[42] ? 1 : 0, Both || Frozen[42]<Frozen[41] ? 1 : 0) : FVector2D::ZeroVector;
+					Debug->Frozen.RawNetworkOutput = Reuse?Cached->FrozenRaw:(Frozen ? FVector2D(Frozen[41],Frozen[42]) : FVector2D::ZeroVector);
+					Debug->Frozen.RawPinning = Reuse?Cached->FrozenPin:(Frozen ? FVector2D(Both || Frozen[41]<=Frozen[42] ? 1 : 0, Both || Frozen[42]<Frozen[41] ? 1 : 0) : FVector2D::ZeroVector);
 					Debug->Frozen.EffectivePinning = Debug->Frozen.RawPinning;
 					Debug->Frozen.SampleTimeSeconds = GetWorld()->GetTimeSeconds();
 					Debug->Frozen.bWalkPolicy = HasFrozen;
 					Debug->Frozen.bAppliesToVisibleFeet = false; // Intermediate baseline, not the final feet.
-					Debug->Attack.RawNetworkOutput = FVector2D(Learned[41],Learned[42]);
+					Debug->Attack.RawNetworkOutput = Reuse?Cached->AttackRaw:FVector2D(Learned[41],Learned[42]);
 					Debug->Attack.RawPinning = FVector2D(Output[435],Output[436]);
 					Debug->Attack.EffectivePinning = Debug->Attack.RawPinning;
 					Debug->Attack.SampleTimeSeconds = GetWorld()->GetTimeSeconds();
@@ -921,6 +1080,23 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 	if (!AlternativeActive.IsEmpty()) RunGroup(AlternativeActive,*Comparison->Model,Impl->SlashRootPosition,Impl->SlashRootRotation);
 	if (!Refresh2Active.IsEmpty()) RunGroup(Refresh2Active,*Refresh2Comparison->Model,Impl->SlashRootPosition,Impl->SlashRootRotation);
 	if (!September20Active.IsEmpty()) RunGroup(September20Active,*September20Comparison->Model,Impl->SlashRootPosition,Impl->SlashRootRotation);
+	for (int32 Index:CachedActive)
+	{
+		AProphecyAgent* Actor=AgentActors[Index];
+		auto* Cached=AttackEndPredictions.Find(Actor);
+		FSlashNative* Model=Impl->SlashModel.Get();
+		for (int32 Checkpoint:{1,2,3})
+			if (auto* Other=ProphecyAttackCheckpoint::Find(this,Checkpoint);Other && Other->Active.Contains(Actor))
+			{ Model=Other->Model.Get();break; }
+		FVector3f Position=Impl->SlashRootPosition;FMat3f Rotation=Impl->SlashRootRotation;bool Audit=false;
+#if !UE_BUILD_SHIPPING
+		if (!Impl->Agents[Index].Slash.bHalf) if (const auto* Frame=SlashTrainFrame::Find(Actor))
+		{ Position=Frame->Position;Rotation=Frame->Rotation;Audit=true; }
+#endif
+		TArray<int32,TInlineAllocator<BatchSize>> Single;Single.Add(Index);
+		RunGroup(Single,*Model,Position,Rotation,Audit,Cached);
+		if (auto* Used=AttackEndPredictions.Find(Actor)) { Used->Input.Reset();Used->Output.Reset(); }
+	}
 #if !UE_BUILD_SHIPPING
 	for (int32 Index:AuditActive)
 	{
@@ -1076,8 +1252,11 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		// Full and half attacks share the locomotion roll convention. Apply at
 		// the UE boundary; the trained decoder/ghost and NN history stay intact.
 		// Cache the corrected pose so rendering, Jolt and defender colliders agree.
-		if (ProphecySpecialRoll::Forearms(AgentActors[AgentIndex])) for (const auto& Arm:Impl->UpperArms)
-			SetForearmRollFromHand(Impl->UpperLocalOffsets[Arm.End],Arm.LocalPoleAxes[1],Pose[Arm.Mid],Pose[Arm.End]);
+		if (ProphecySpecialRoll::Forearms(AgentActors[AgentIndex])) for (int32 Side=0;Side<2;++Side)
+		{
+			const auto& Arm=Impl->UpperArms[Side];
+			SetForearmRollFromUpperArm(Impl->UpperLocalOffsets[Arm.End],Side,Pose[Arm.Start],Pose[Arm.Mid],Pose[Arm.End]);
+		}
 		// Only full attacks replace the lower body. Half attacks already retain
 		// the locomotion calf, including its existing recovery continuity.
 		// Correct the accepted visible cache once, after endpoint clamps, so
@@ -1085,6 +1264,29 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		if (!Slash.bHalf && ProphecySpecialRoll::Calves(AgentActors[AgentIndex])) for (const auto& Leg:Impl->Limbs)
 			SetCalfRollFromThigh(Impl->LocalOffsets[Leg.Mid],Impl->LocalOffsets[Leg.End],
 				Leg.LocalPoleAxes[0],Leg.LocalPoleAxes[1],Pose[Leg.Start],Pose[Leg.Mid],Pose[Leg.End]);
+		if(ProphecyAttackStartFKCore::Active(AgentActors[AgentIndex]) &&
+			ProphecyAttackStartFKCore::Apply(AgentActors[AgentIndex],Pose,1./NNUpdateHz))
+		{
+			// Full attacks recur from the accepted local core and carried arms.
+			// Half-attack ghosts retain their independent moving-carrier convention.
+			if(!Slash.bHalf)
+			{
+				for(int32 C=0;C<Impl->UpperCoreBoneNames.Num();++C)
+				{
+					const int32 B=Impl->BodyNames.IndexOfByKey(Impl->UpperCoreBoneNames[C]),P=Impl->Parents[B];
+					Slash.GhostPose[B]=(Pose[B]*Carrier).GetRelativeTransform(Slash.AnchorWorld);
+					WriteRot6(Multiply(MirrorYBasis(QuatToMatrix(Pose[B].GetRotation())),
+						Transpose(MirrorYBasis(QuatToMatrix(Pose[P].GetRotation())))),Slash.State.GetData()+172+6*C);
+				}
+				for(int32 S=0;S<2;++S)
+				{
+					const auto& Arm=Impl->UpperArms[S];
+					for(int32 B:{Arm.Start,Arm.Mid,Arm.End})
+						Slash.GhostPose[B]=(Pose[B]*Carrier).GetRelativeTransform(Slash.AnchorWorld);
+					StoreInertiaArm(*Impl,S,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
+				}
+			}
+		}
 		if (ProphecyHandInertia::IsActive(AgentActors[AgentIndex],Agent.PublishedWalkWeight,true))
 		{
 			const FTransform Root=HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw);
@@ -1111,7 +1313,9 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 				}
 			}
 		}
-		if(const uint8 Hands=ProphecyAttackStartHands::Apply(AgentActors[AgentIndex],Impl->BodyNames,Pose,Carrier,1./NNUpdateHz))
+		if(ProphecyAttackStartHands::Active(AgentActors[AgentIndex]))
+		if(const uint8 Hands=ProphecyAttackStartHands::Apply(AgentActors[AgentIndex],Impl->BodyNames,Pose,Carrier,1./NNUpdateHz,
+			HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw)))
 		{
 			// Match the existing hand-inertia ownership rule: full attacks feed
 			// accepted arms into their checkpoint; half ghosts remain independent.
@@ -1122,7 +1326,7 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 				StoreInertiaArm(*Impl,I,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
 			}
 		}
-		if(ProphecyArmCone::Active(AgentActors[AgentIndex]))
+		if(ProphecyArmCone::AnyActive() && ProphecyArmCone::Active(AgentActors[AgentIndex]))
 		{
 			// Correct each accepted attack prediction once and retain the corrected
 			// endpoints for presentation and outgoing inertia at upper release.

@@ -1,5 +1,6 @@
 #include "ProphecyAttackStartInertiaLibrary.h"
 #include "ProphecyAttackStartInertia.h"
+#include "ProphecyAttackStartFKCore.h"
 #include "ProphecyAttackStartInertiaMath.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNPoseTypes.h"
@@ -66,27 +67,20 @@ bool Active(int32 Id)
     FReadScopeLock Lock(CorrectionLock);return Corrections.Contains(Id);
 }
 void BeginFeet(const AProphecyAgent* A,int32 Id,uint8 Mask){Feet::Begin(A,Id,Mask);}
-void Begin(const AProphecyAgent* A,int32 Id,const FTransform& Previous,const FTransform& Current,uint8 FootMask)
+bool Configured(const AProphecyAgent* A){return !Configs.IsEmpty() && Configs.Contains(A);}
+void Begin(const AProphecyAgent* A,int32 Id,const FTransform& Previous,const FTransform& Current,uint8 FootMask,
+    double SourceInterval)
 {
     Feet::CancelMask(A,uint8(3&~FootMask));
     Feet::Begin(A,Id,FootMask);
     const auto* C=Configs.IsEmpty()?nullptr:Configs.Find(A);if(!C)return;
     FEntry E;E.Config=*C;E.PoseId=Id;E.Tick=GFrameCounter;
-    const auto* H=History.Find(A);
-    if (H && H->Samples>=2 && H->Tick+1>=GFrameCounter)
-    {
-        E.Output=H->Current;E.Delta=H->Current.GetLocation()-H->Previous.GetLocation();
-        E.AngularDelta=ProphecyPelvisInertia::RotationVector(H->Current.GetRotation()*H->Previous.GetRotation().Inverse());
-    }
-    else
-    {
-        // A setter immediately followed by Trigger has no displayed history yet.
-        // Seed from the existing two 30 Hz policy poses; no permanent extra history.
-        E.Output=Current;
-        ProphecyNNPresentation::ReadPelvisWorld(Id,E.Output);
-        E.Delta=(Current.GetLocation()-Previous.GetLocation())*.5;
-        E.AngularDelta=ProphecyPelvisInertia::RotationVector(Current.GetRotation()*Previous.GetRotation().Inverse())*.5;
-    }
+    // Published NN pose and velocity, matching core and hands in every mode.
+    E.Output=Current;
+    ProphecyNNPresentation::ReadPelvisWorld(Id,E.Output);
+    const double Fraction=(1./60.)/FMath::Max(SourceInterval,1.e-6);
+    E.Delta=(Current.GetLocation()-Previous.GetLocation())*Fraction;
+    E.AngularDelta=ProphecyPelvisInertia::RotationVector(Current.GetRotation()*Previous.GetRotation().Inverse())*Fraction;
     Entries.Add(A,E);
 }
 static void Advance(const AProphecyAgent* A,int32 Id,const FTransform& Authored,uint64 Tick)
@@ -110,7 +104,10 @@ static void Advance(const AProphecyAgent* A,int32 Id,const FTransform& Authored,
             }
             else Output=Step(E->Output,Authored,E->Delta,E->AngularDelta,L,R);
             E->Output=Output;
-            FWriteScopeLock Lock(CorrectionLock);Corrections.Add(Id,{Authored,Output});HasCorrections.Store(true);
+            // Keep the captured motion on the same tick as the core seed, but
+            // expose both effects together when the first attack pose is ready.
+            if(!ProphecyAttackStartFKCore::AwaitingFirstPose(A))
+            {FWriteScopeLock Lock(CorrectionLock);Corrections.Add(Id,{Authored,Output});HasCorrections.Store(true);}
         }
     }
     H.Previous=H.Current;H.Current=Output;H.Samples=FMath::Min(2,H.Samples+1);H.Tick=Tick;
@@ -223,6 +220,13 @@ bool RunAttackStartInertiaChecks(FAutomationTestBase& Test)
     Test.TestTrue(TEXT("Pelvis-only read works without copying a full pose"),ProphecyNNPresentation::ReadPelvisWorld(Id,Sampled));
     Test.TestTrue(TEXT("Entry sampling includes root translation and rotation"),Sampled.GetLocation().Equals(
         ((LocalPelvis[0]*RootA).GetLocation()+(LocalPelvis[0]*RootB).GetLocation())*.5,1.e-9));
+    UProphecyAttackStartInertiaLibrary::SetAttackStartPelvisInertia(A,true,5,1,7,1);
+    Begin(A,Id,LocalPelvis[0]*RootA,LocalPelvis[0]*RootB,0,1./30.);
+    Test.TestTrue(TEXT("NN source begins at presented NN pose"),Entries.FindChecked(A).Output.Equals(Sampled,1.e-8));
+    Begin(A,Id,Start,Goal,0,1./30.);
+    Test.TestTrue(TEXT("Entry always retains presented NN pose"),Entries.FindChecked(A).Output.Equals(Sampled,1.e-8));
+    Test.TestTrue(TEXT("Entry momentum uses supplied NN history"),Entries.FindChecked(A).Delta.Equals(
+        (Goal.GetLocation()-Start.GetLocation())*.5,1.e-8));
     FProphecyNNPoseStore::ClearAgentPose(Id);
     for(int32 FPS:{30,60,120})
     {
@@ -232,7 +236,9 @@ bool RunAttackStartInertiaChecks(FAutomationTestBase& Test)
         H.Previous.AddToTranslation(-Delta);
         H.Previous.SetRotation((ProphecyPelvisInertia::RotationIncrement(-Angular)*Start.GetRotation()).GetNormalized());
         H.Samples=2;H.Tick=GFrameCounter;History.Add(A,H);
-        Begin(A,Id,Start,Goal);Entries.FindChecked(A).Tick=100;
+        FTransform Before=Start;Before.AddToTranslation(-2*Delta);
+        Before.SetRotation((ProphecyPelvisInertia::RotationIncrement(-2*Angular)*Start.GetRotation()).GetNormalized());
+        Begin(A,Id,Before,Start,3,1./30.);Entries.FindChecked(A).Tick=100;
         for(int32 Frame=1;Frame<=7;++Frame)
         {
             Advance(A,Id,Goal,100+Frame);

@@ -5,19 +5,32 @@
 namespace ProphecyNNRootWindow
 {
 static TMap<TWeakObjectPtr<const AProphecyAgent>, FState> States;
+// Optional override kept separate so live smoothing histories retain their layout.
+static TMap<TWeakObjectPtr<const AProphecyAgent>, float> DecelerationOverrides;
 FState* Find(const AProphecyAgent* Agent) { return States.IsEmpty() ? nullptr : States.Find(Agent); }
-void Remove(const AProphecyAgent* Agent) { States.Remove(Agent); }
+float GetDistanceDeceleration(const AProphecyAgent* Agent)
+{
+    const float* Value = DecelerationOverrides.IsEmpty() ? nullptr : DecelerationOverrides.Find(Agent);
+    return Value ? *Value : -1.f;
+}
+void Remove(const AProphecyAgent* Agent) { States.Remove(Agent); DecelerationOverrides.Remove(Agent); }
 }
 
 bool UProphecyNNRootWindowLibrary::SetLocomotionRootWindowSmoothing(AProphecyAgent* Agent,
-    float Distance, float Direction, float Orientation)
+    float Distance, float Direction, float Orientation, float DistanceDeceleration)
 {
     using namespace ProphecyNNRootWindow;
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()) return false;
     for (float Factor : {Distance, Direction, Orientation})
         if (!FMath::IsFinite(Factor) || Factor < 0.f || Factor > 1.f) return false;
+    if (!FMath::IsFinite(DistanceDeceleration) ||
+        (DistanceDeceleration != -1.f && (DistanceDeceleration < 0.f || DistanceDeceleration > 1.f))) return false;
     for (auto It = States.CreateIterator(); It; ++It) if (!It.Key().IsValid()) It.RemoveCurrent();
-    if (Distance == 1.f && Direction == 1.f && Orientation == 1.f) { Remove(Agent); return true; }
+    for (auto It = DecelerationOverrides.CreateIterator(); It; ++It) if (!It.Key().IsValid()) It.RemoveCurrent();
+    if (Distance == 1.f && Direction == 1.f && Orientation == 1.f &&
+        (DistanceDeceleration == -1.f || DistanceDeceleration == 1.f)) { Remove(Agent); return true; }
+    if (DistanceDeceleration < 0.f) DecelerationOverrides.Remove(Agent);
+    else DecelerationOverrides.Add(Agent, DistanceDeceleration);
     if (auto* Existing = Find(Agent)) { Existing->Factors = FVector(Distance, Direction, Orientation); return true; }
     auto& State = States.Add(Agent);
     State.Factors = FVector(Distance, Direction, Orientation);
@@ -37,9 +50,10 @@ bool UProphecyNNRootWindowLibrary::SetLocomotionRootWindowSmoothing(AProphecyAge
 }
 
 void UProphecyNNRootWindowLibrary::GetLocomotionRootWindowSmoothing(AProphecyAgent* Agent,
-    float& Distance, float& Direction, float& Orientation)
+    float& Distance, float& Direction, float& Orientation, float& DistanceDeceleration)
 {
     const auto* State = ProphecyNNRootWindow::Find(Agent);
     const FVector F = State ? State->Factors : FVector::OneVector;
     Distance = F.X; Direction = F.Y; Orientation = F.Z;
+    DistanceDeceleration = ProphecyNNRootWindow::GetDistanceDeceleration(Agent);
 }

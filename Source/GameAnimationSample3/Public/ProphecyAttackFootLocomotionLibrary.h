@@ -28,7 +28,7 @@ public:
      * knee direction blend immediately for each dragging foot. Zero disables this
      * extra correction. Uses the final authored foot rotation; half mode pauses it.
      * Configure before attack. Disabling releases remaining feet immediately. */
-    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent"))
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent",DisplayName="Set Attack Loco Drag"))
     static bool SetAttackFootLocomotion(AProphecyAgent* Agent,bool Enabled,
         EProphecyAttackFootLocomotionMode Mode=EProphecyAttackFootLocomotionMode::CurrentBlend,
         float DistanceLimitCm=40.f,float HeightLimitCm=15.f,
