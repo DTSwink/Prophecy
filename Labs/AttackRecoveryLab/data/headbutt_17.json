@@ -1,0 +1,16 @@
+{
+  "id": 17,
+  "kind": "volume",
+  "target": [
+    0.19236399233341217,
+    1.2476099729537964,
+    0.4469739496707916
+  ],
+  "file": "data/headbutt_17.bin",
+  "frames": 13,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "ebf9796313c04e8de1f0dd684c101d226203caf42ce30cf6b3385cb8284f539a",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

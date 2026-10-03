@@ -25,12 +25,15 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FHistory> History;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FEntry> Entries;
 static TMap<int32,FCorrection> Corrections;
+// Separate sidecar preserves retained Live Coding correction layouts.
+struct FEntryBends { FVector Local[2]={FVector::ZeroVector,FVector::ZeroVector}; };
+static TMap<int32,FEntryBends> EntryBends;
 static FRWLock CorrectionLock;
 static TAtomic<bool> HasCorrections(false);
 static FDelegateHandle Cleanup;
 static void EraseCorrection(int32 Id)
 {
-    FWriteScopeLock Lock(CorrectionLock);Corrections.Remove(Id);HasCorrections.Store(!Corrections.IsEmpty());
+    FWriteScopeLock Lock(CorrectionLock);Corrections.Remove(Id);EntryBends.Remove(Id);HasCorrections.Store(!Corrections.IsEmpty());
 }
 #include "ProphecyAttackStartFootInertia.inl"
 static void EnsureCleanup()
@@ -82,6 +85,26 @@ void Begin(const AProphecyAgent* A,int32 Id,const FTransform& Previous,const FTr
     E.Delta=(Current.GetLocation()-Previous.GetLocation())*Fraction;
     E.AngularDelta=ProphecyPelvisInertia::RotationVector(Current.GetRotation()*Previous.GetRotation().Inverse())*Fraction;
     Entries.Add(A,E);
+    FEntryBends Bends;
+    for(int32 Side=0;Side<2;++Side)
+    {
+        FTransform Hip,Knee,Foot;
+        if(ProphecyNNPresentation::ReadBoneWorld(Id,Side?TEXT("thigh_r"):TEXT("thigh_l"),Hip)
+            && ProphecyNNPresentation::ReadBoneWorld(Id,Side?TEXT("calf_r"):TEXT("calf_l"),Knee)
+            && ProphecyNNPresentation::ReadBoneWorld(Id,Side?TEXT("foot_r"):TEXT("foot_l"),Foot))
+        {
+            const FVector Axis=(Foot.GetLocation()-Hip.GetLocation()).GetSafeNormal();
+            const FVector Upper=Knee.GetLocation()-Hip.GetLocation();
+            const double Reach=Upper.Length()+(Foot.GetLocation()-Knee.GetLocation()).Length();
+            float Zone=0;FVector Reference;
+            if(ProphecyNNPresentation::ReadKneePopReference(Id,Side,Zone,Reference)
+                && Reach-(Foot.GetLocation()-Hip.GetLocation()).Length()<Zone && !Reference.IsNearlyZero())
+                Bends.Local[Side]=Reference;
+            else Bends.Local[Side]=Hip.InverseTransformVectorNoScale(
+                (Upper-Axis*FVector::DotProduct(Upper,Axis)).GetSafeNormal());
+        }
+    }
+    {FWriteScopeLock Lock(CorrectionLock);EntryBends.Add(Id,Bends);}
 }
 static void Advance(const AProphecyAgent* A,int32 Id,const FTransform& Authored,uint64 Tick)
 {
@@ -122,8 +145,9 @@ void Update(const AProphecyAgent* A,int32 Id)
 static void ApplyPelvis(int32 Id,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,const FTransform& Space)
 {
     if(!HasCorrections.Load())return;
-    FCorrection C;
-    {FReadScopeLock Lock(CorrectionLock);const auto* Found=Corrections.Find(Id);if(!Found)return;C=*Found;}
+    FCorrection C;FEntryBends Bends;
+    {FReadScopeLock Lock(CorrectionLock);const auto* Found=Corrections.Find(Id);if(!Found)return;C=*Found;
+        if(const auto* Bend=EntryBends.Find(Id))Bends=*Bend;}
     const FTransform Before=C.Authored.GetRelativeTransform(Space),After=C.Corrected.GetRelativeTransform(Space);
     if(Before.Equals(After,1.e-10))
     {
@@ -141,7 +165,8 @@ static void ApplyPelvis(int32 Id,TConstArrayView<FName> Names,TArrayView<FTransf
         for(int32 Part=0;Part<4;++Part) LegIndices[Side][Part]=Names.IndexOfByKey(LimbNames[Part]);
         const auto* I=LegIndices[Side];
         if(Pose.IsValidIndex(I[0]) && Pose.IsValidIndex(I[1]) && Pose.IsValidIndex(I[2]))
-            MoveHip(Pose[I[0]],Pose[I[1]],Pose[I[2]],Pose.IsValidIndex(I[3])?&Pose[I[3]]:nullptr,Move(Pose[I[0]].GetLocation()));
+            MoveHip(Pose[I[0]],Pose[I[1]],Pose[I[2]],Pose.IsValidIndex(I[3])?&Pose[I[3]]:nullptr,Move(Pose[I[0]].GetLocation()),
+                Pose[I[0]].TransformVectorNoScale(Bends.Local[Side]));
     }
     for(int32 B=0;B<Pose.Num();++B)
     {
@@ -323,6 +348,25 @@ bool RunAttackStartInertiaChecks(FAutomationTestBase& Test)
         Test.TestFalse(TEXT("Reach shell remains finite"),P[3].ContainsNaN()||P[4].ContainsNaN());
     }
     Test.TestTrue(TEXT("1001 translated hips preserve connected lengths"),WorstLength<1.e-7);
+    // Near-straight attack samples may disagree wildly about geometric pole.
+    // Moving the hip back inside reach must not turn that noise into knee orbit.
+    for(int32 SideSign:{-1,1})for(int32 Angle=-150;Angle<=150;Angle+=10)
+    {
+        const FVector Reference(SideSign,0,0);
+        const FVector Tiny=FQuat(FVector::UpVector,FMath::DegreesToRadians(double(Angle))).RotateVector(Reference)*.02;
+        FTransform H(FVector(0,0,100)),K(FVector(Tiny.X,Tiny.Y,50)),F(FVector::ZeroVector);
+        const double Segment=(K.GetLocation()-H.GetLocation()).Length();
+        MoveHip(H,K,F,nullptr,FVector(0,0,95),Reference);
+        const FVector Radial=FVector(K.GetLocation().X,K.GetLocation().Y,0).GetSafeNormal();
+        Test.TestTrue(TEXT("Straight-source noise is not amplified into bent-knee orbit"),FVector::DotProduct(Radial,Reference)>.999999);
+        Test.TestTrue(TEXT("Stable pole preserves ankle and both lengths"),F.GetLocation().IsNearlyZero(1.e-8)
+            && FMath::IsNearlyEqual((K.GetLocation()-H.GetLocation()).Length(),Segment,1.e-8)
+            && FMath::IsNearlyEqual((F.GetLocation()-K.GetLocation()).Length(),Segment,1.e-8));
+        FTransform WH(FVector(0,0,100)),WK(FVector(Tiny.X,Tiny.Y,50)),WF(FVector::ZeroVector);
+        WH=WH*Space;WK=WK*Space;WF=WF*Space;
+        MoveHip(WH,WK,WF,nullptr,Space.TransformPosition(FVector(0,0,95)),Space.TransformVectorNoScale(Reference));
+        Test.TestTrue(TEXT("Stable bend is independent of world/component coordinates"),WK.GetLocation().Equals(Space.TransformPosition(K.GetLocation()),1.e-7));
+    }
     Remove(A);World->DestroyWorld(false);
     Test.AddInfo(FString::Printf(TEXT("AttackStartPelvisInertia: world deltas, independent 5/7 ticks, reset/disable, dual-space parity and 1001 connected hips passed; max length error %.12g"),WorstLength));
     return !Test.HasAnyErrors();

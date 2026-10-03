@@ -233,6 +233,8 @@ bool LoadControlSettings(const std::string& path, ControlSettings& settings, std
             "sound_events", settings.sound_visualization);
         settings.xray_agents = root["visualization"].value(
             "xray_agents", settings.xray_agents);
+        settings.combat_lab = root["visualization"].value(
+            "combat_lab", settings.combat_lab);
     }
     if (root.contains("locomotion") && root["locomotion"].is_object()) {
         const Json& locomotion = root["locomotion"];
@@ -348,6 +350,7 @@ bool SaveControlSettings(const std::string& path, const ControlSettings& setting
         {"visualization", {
             {"sound_events", clamped.sound_visualization},
             {"xray_agents", clamped.xray_agents},
+            {"combat_lab", clamped.combat_lab},
         }},
         {"tactics", {
             {"target_commitment_seconds", clamped.target_commitment_seconds},

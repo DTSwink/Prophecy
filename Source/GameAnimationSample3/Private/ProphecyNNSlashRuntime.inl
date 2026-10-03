@@ -430,6 +430,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 				// Kicks never use loco drag, including an in-place family switch.
 				// Preserve configuration for later attacks and completed ownership.
 				ProphecyAttackFootLocomotion::Suspend(Actor,false);
+				ProphecyAttackFootLocomotion::CancelGhost(Actor,Slash.State.GetData());
 				if (auto* Drag=ProphecyAttackFootLocomotion::FindActive(Actor))
 				{
 					const uint8 Released=ProphecyAttackFootLocomotion::ReleaseAll(Actor);
@@ -539,6 +540,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	if (!bHalf && Attack!=TEXT("kickl") && Attack!=TEXT("kickr"))
 		ProphecyAttackFootLocomotion::Begin(Actor,PoseStoreAgentBase+Handle.Index,
 		Impl->BodyNames,Current,StartCarrier,TargetWorld);
+	if (!bHalf) ProphecyAttackFootLocomotion::BeginGhost(Actor,Slash.State.GetData(),Slash.GhostPose,Slash.AnchorWorld);
 	// All entry inertias continue the published NN motion, in every simulation
 	// mode. Physical checkpoint initialization remains a separate explicit opt-in.
 	if (!bHalf) ProphecyAttackStartInertia::Begin(Actor,PoseStoreAgentBase+Handle.Index,
@@ -635,6 +637,19 @@ bool AProphecyNNLocomotionManager::SetAgentNNHalfAttack(FProphecyAgentHandle Han
 			ProphecyAttackFootLocomotion::Begin(Actor,PoseStoreAgentBase+Handle.Index,Impl->BodyNames,
 			TransformSlice(Impl->ComponentTransformBuffer,Handle.Index),Slash.AnchorWorld,Slash.TargetWorld);
 		ProphecyAttackFootLocomotion::Suspend(Actor,false);
+		// Rejoin seeds only the real branch from the actual two lower poses in
+		// the new carrier. The independent attack/upper history is preserved.
+		if(auto* G=ProphecyAttackFootLocomotion::FindGhost(Actor))
+		{
+			TArray<FTransform,TInlineAllocator<FullBodyBoneCount>> InFrame;
+			float Lower[41],Upper[90];
+			const FTransform PrevCarrier=SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
+			for(const auto& T:TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index))InFrame.Add((T*PrevCarrier).GetRelativeTransform(Slash.AnchorWorld));
+			EncodeSlashPose(*Impl,Agent,MakeArrayView(InFrame),Lower,Upper);FMemory::Memcpy(G->PreviousLegs,Lower+9,sizeof(G->PreviousLegs));
+			EncodeSlashPose(*Impl,Agent,TransformSlice(Impl->ComponentTransformBuffer,Handle.Index),Lower,Upper);FMemory::Memcpy(G->CurrentLegs,Lower+9,sizeof(G->CurrentLegs));
+			G->HasReal=G->HasPose=false;
+			for(int32 I=0;I<9;++I){const int32 B=I?G->Legs[(I-1)/4][(I-1)%4]:0;G->PreviousWorld[I]=G->CurrentWorld[I]=Slash.GhostPose[B]*Slash.AnchorWorld;}
+		}
 		ProphecyAttackStartInertia::BeginFeet(Actor,PoseStoreAgentBase+Handle.Index,uint8(3&~ProphecyAttackFootLocomotion::Mask(Actor)));
 	}
 	if (bHalf)
@@ -993,8 +1008,48 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 		FVector3f SavedPosition=NativePosition;FMat3f SavedRotation=NativeRotation;
 		if (bAudit) Model.SwapAuditFrame(SavedPosition,SavedRotation);
 #endif
+		// Compact only opted-in full attacks. Their ordinary attack history is the
+		// ghost; accepted real legs get a second LOWER-only prediction. Both use
+		// the same actual previous/current pelvis, target and checkpoint.
+		TArray<int32,TInlineAllocator<BatchSize>> RealLanes;
+		for(int32 Lane=0;Lane<Count;++Lane)
+			if(!Impl->Agents[Active[Start+Lane]].Slash.bHalf && ProphecyAttackFootLocomotion::FindGhost(AgentActors[Active[Start+Lane]]))RealLanes.Add(Lane);
+		bool bRealRan=true;
+		if(!RealLanes.IsEmpty())
+		{
+			// Game-thread scratch shared by batches/managers; no steady-state heap
+			// allocation and no extra model instance or per-agent full-body buffer.
+			static TArray<float> RealInput,RealOutput;
+			TArray<FSlashNative::FStepSettings,TInlineAllocator<BatchSize>> RealSettings;
+			RealInput.SetNumUninitialized(RealLanes.Num()*SlashInputDim);RealSettings.SetNum(RealLanes.Num());
+			for(int32 R=0;R<RealLanes.Num();++R)
+			{
+				const int32 Lane=RealLanes[R];const auto* G=ProphecyAttackFootLocomotion::FindGhost(AgentActors[Active[Start+Lane]]);
+				float* In=RealInput.GetData()+R*SlashInputDim;
+				FMemory::Memcpy(In,Impl->SlashInputBuffer.GetData()+Lane*SlashInputDim,SlashInputDim*sizeof(float));
+				FMemory::Memcpy(In+9,G->PreviousLegs,sizeof(G->PreviousLegs));
+				FMemory::Memcpy(In+50,G->CurrentLegs,sizeof(G->CurrentLegs));
+				RealSettings[R]=Settings[Lane];RealSettings[R].PelvisInertia=nullptr; // Never advance an inertia twice.
+			}
+			bRealRan=(Model.InputBatchSize==RealLanes.Num() || Model.SetBatch(RealLanes.Num())) && Model.Run(RealInput,RealOutput,MakeArrayView(RealSettings),true);
+			if(bRealRan)for(int32 R=0;R<RealLanes.Num();++R)
+			{
+				auto* G=ProphecyAttackFootLocomotion::FindGhost(AgentActors[Active[Start+RealLanes[R]]]);
+				const float* Out=RealOutput.GetData()+R*SlashOutputDim;
+				for(int32 V=0;V<SlashOutputDim;++V)bRealRan &= FMath::IsFinite(Out[V]);
+				for(int32 S=0;S<2;++S)for(int32 B=0;B<4;++B)
+				{
+					const int32 Bone=17+S*4+B;
+					const FVector3f Position=TransformRow(ReadStateVec3(Out,131+Bone*3)-NativePosition,Transpose(NativeRotation));
+					FMat3f Rotation;for(int32 Row=0;Row<3;++Row)Rotation.Rows[Row]=ReadStateVec3(Out,206+Bone*9+Row*3);
+					G->RealPose[S*4+B]=FTransform(MatrixToQuat(MirrorYBasis(Multiply(Rotation,Transpose(NativeRotation)))),LocalTrainingToUnreal(Position));
+				}
+				G->HasReal=bRealRan;
+			}
+			bRealRan=(Model.InputBatchSize==Width || Model.SetBatch(Width)) && bRealRan;
+		}
 		if (Reuse) FMemory::Memcpy(Impl->SlashOutputBuffer.GetData(),Cached->Output.GetData(),SlashOutputDim*sizeof(float));
-		const bool bRan=Reuse || Model.Run(Impl->SlashInputBuffer, Impl->SlashOutputBuffer, MakeArrayView(Settings));
+		const bool bRan=bRealRan && (Reuse || Model.Run(Impl->SlashInputBuffer, Impl->SlashOutputBuffer, MakeArrayView(Settings)));
 #if !UE_BUILD_SHIPPING
 		if (bAudit) Model.SwapAuditFrame(SavedPosition,SavedRotation);
 #endif
@@ -1140,6 +1195,7 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 	{
 		Slash.PreviousVisibleWorldPose = Slash.VisibleWorldPose;
 		auto* FootAuthor=!Slash.bHalf ? ProphecyAttackFootLocomotion::FindActive(AgentActors[AgentIndex]) : nullptr;
+		auto* Ghost=!Slash.bHalf ? ProphecyAttackFootLocomotion::FindGhost(AgentActors[AgentIndex]) : nullptr;
 		// Keep the release sample locomotion-authored too. The next attack step
 		// must predict from this final real foot sample, not reveal its old ghost.
 		const uint8 LocoThisStep=FootAuthor ? FootAuthor->Loco : 0;
@@ -1186,6 +1242,23 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 			if (!Slash.bHalf) Pose[Bone] = (Slash.GhostPose[Bone] * Slash.AnchorWorld).GetRelativeTransform(Carrier);
 			else if (ProphecyHalfAttackMount::IsUpper(Bone,Spine01,Impl->Parents))
 				Pose[Bone] = ProphecyHalfAttackMount::Mount(Slash.GhostPose[Bone],Slash.GhostPose[0],HalfMount);
+		}
+		if(Ghost && Ghost->HasReal)
+		{
+			for(int32 I=0;I<9;++I)Ghost->PreviousWorld[I]=Ghost->CurrentWorld[I];
+			Ghost->CurrentWorld[0]=Pose[0]*Carrier;
+			for(int32 S=0;S<2;++S)
+			{
+				const auto* I=Ghost->Legs[S];const FVector Hip=Pose[I[0]].GetLocation();
+				for(int32 B=0;B<4;++B)
+				{
+					Ghost->CurrentWorld[1+S*4+B]=Pose[I[B]]*Carrier;
+					Pose[I[B]]=(Ghost->RealPose[S*4+B]*Slash.AnchorWorld).GetRelativeTransform(Carrier);
+				}
+				ProphecyAttackStartInertia::MoveHip(Pose[I[0]],Pose[I[1]],Pose[I[2]],&Pose[I[3]],Hip);
+			}
+			Ghost->HasPose=true;
+			FMemory::Memcpy(Ghost->PreviousLegs,Ghost->CurrentLegs,sizeof(Ghost->CurrentLegs));
 		}
 		// Hands remain at their anatomical forearm attachment in every attack.
 		const USkeletalMeshComponent* Mesh = AgentActors[AgentIndex]->GetPoseReferenceMesh();
@@ -1352,18 +1425,21 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		// fixed carrier. The normal state shift preserves the preceding sample.
 		// Include blending feet and their final release once. Both models receive
 		// the accepted mixed foot rather than an independently advancing ghost foot.
-		if(FootAuthor)for(int32 S=0;S<2;++S)if(LocoThisStep&(1<<S))
+		if(FootAuthor || Ghost)for(int32 S=0;S<2;++S)if(Ghost || (LocoThisStep&(1<<S)))
 		{
-			const auto* I=FootAuthor->Legs[S];
-			for(int32 B=0;B<4;++B)
-				Slash.GhostPose[I[B]]=Slash.VisibleWorldPose[I[B]].GetRelativeTransform(Slash.AnchorWorld);
-			const auto& Foot=Slash.GhostPose[I[2]];
+			const auto* I=Ghost?Ghost->Legs[S]:FootAuthor->Legs[S];
+			FTransform Real[4];for(int32 B=0;B<4;++B)
+			{
+				Real[B]=Slash.VisibleWorldPose[I[B]].GetRelativeTransform(Slash.AnchorWorld);
+				if(!Ghost)Slash.GhostPose[I[B]]=Real[B];
+			}
+			const auto& Foot=Real[2];
 			const FMat3f FootRot=MirrorYBasis(QuatToMatrix(Foot.GetRotation()));
-			const FMat3f ToeRot=MirrorYBasis(QuatToMatrix(Slash.GhostPose[I[3]].GetRotation()));
-			float* Leg=Slash.State.GetData()+41+9+16*S;
+			const FMat3f ToeRot=MirrorYBasis(QuatToMatrix(Real[3].GetRotation()));
+			float* Leg=Ghost?Ghost->CurrentLegs+16*S:Slash.State.GetData()+41+9+16*S;
 			WriteStateVec3(Leg,0,LocalUnrealToTraining(Foot.GetLocation()));
 			WriteRot6(FootRot,Leg+3);
-			WriteRot6(MirrorYBasis(QuatToMatrix(Slash.GhostPose[I[0]].GetRotation())),Leg+9);
+			WriteRot6(MirrorYBasis(QuatToMatrix(Real[0].GetRotation())),Leg+9);
 			Leg[15]=FMath::Clamp(FVector3f::DotProduct(
 				RotationVectorBetween(FMat3f(),Multiply(ToeRot,Transpose(FootRot))),
 				SafeNormal(Impl->Limbs[S].ToeAxis))/ToeAlphaRadians,-1.f,1.f);

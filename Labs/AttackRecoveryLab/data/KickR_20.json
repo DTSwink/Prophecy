@@ -1,0 +1,16 @@
+{
+  "id": 20,
+  "kind": "floor",
+  "target": [
+    0.07430248707532883,
+    0,
+    0.7281414866447449
+  ],
+  "file": "data/KickR_20.bin",
+  "frames": 17,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "55b730e16e197431f9f9f162adf30dfaaf9ffd54b14c24ac92d5af9565ed778d",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

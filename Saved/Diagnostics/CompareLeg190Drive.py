@@ -1,0 +1,2 @@
+import json,pathlib,numpy as np
+p=pathlib.Path('Saved/Diagnostics');a=json.loads((p/'Leg190-final.json').read_text());b=json.loads((p/'Leg190-final-drive.json').read_text());print('Final replay',b['reason'],len(b['rows']));da={x['tick']:x for x in a['rows']};db={x['tick']:x for x in b['rows']};print('Maximum authored point difference 180-205',max(np.linalg.norm(np.array(da[t]['targets'][n]['p'])-db[t]['targets'][n]['p']) for t in range(180,206) for n in da[t]['targets']))

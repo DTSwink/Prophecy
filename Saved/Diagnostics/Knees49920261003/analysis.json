@@ -1,0 +1,91 @@
+{
+  "rows": [
+    {
+      "tick": 495,
+      "alpha": 0.5,
+      "raw_radius_cm": 24.550229492887023,
+      "visible_radius_cm": 24.550229492887023,
+      "variant_radius_cm": 24.550229492887023,
+      "variant_raw_position_error_cm": 0.0
+    },
+    {
+      "tick": 496,
+      "alpha": 0.0,
+      "raw_radius_cm": 20.784490479589902,
+      "visible_radius_cm": 20.784490479589927,
+      "variant_radius_cm": 20.784490479589927,
+      "variant_raw_position_error_cm": 3.552713678800501e-14,
+      "raw_pole_step_deg": 4.558460569581433,
+      "visible_pole_step_deg": 4.558460569581513,
+      "variant_pole_step_deg": 4.558460569581513
+    },
+    {
+      "tick": 497,
+      "alpha": 0.5,
+      "raw_radius_cm": 10.359000772253921,
+      "visible_radius_cm": 12.901369432761426,
+      "variant_radius_cm": 10.359000772253932,
+      "variant_raw_position_error_cm": 1.7763568394002505e-14,
+      "raw_pole_step_deg": 8.916067654753354,
+      "visible_pole_step_deg": 1.9487468052118895,
+      "variant_pole_step_deg": 8.916067654753272
+    },
+    {
+      "tick": 498,
+      "alpha": 0.0,
+      "raw_radius_cm": 0.020080090265486586,
+      "visible_radius_cm": 13.01820088193292,
+      "variant_radius_cm": 0.020080090265486586,
+      "variant_raw_position_error_cm": 0.0,
+      "raw_pole_step_deg": 8.3730401371213,
+      "visible_pole_step_deg": 4.756616129759727,
+      "variant_pole_step_deg": 8.373040137121212
+    },
+    {
+      "tick": 499,
+      "alpha": 0.5,
+      "raw_radius_cm": 3.255735353999461,
+      "visible_radius_cm": 13.936837304389446,
+      "variant_radius_cm": 3.255735353999461,
+      "variant_raw_position_error_cm": 0.0,
+      "raw_pole_step_deg": 20.833790259783584,
+      "visible_pole_step_deg": 21.042281014765866,
+      "variant_pole_step_deg": 20.833790259783584
+    },
+    {
+      "tick": 500,
+      "alpha": 0.0,
+      "raw_radius_cm": 6.4894091828938345,
+      "visible_radius_cm": 15.017503080717255,
+      "variant_radius_cm": 6.4894091828938345,
+      "variant_raw_position_error_cm": 0.0,
+      "raw_pole_step_deg": 0.20669311001379806,
+      "visible_pole_step_deg": 0.9677269053298817,
+      "variant_pole_step_deg": 0.20669311001379806
+    },
+    {
+      "tick": 501,
+      "alpha": 0.5,
+      "raw_radius_cm": 9.364003207915614,
+      "visible_radius_cm": 15.39980566861429,
+      "variant_radius_cm": 9.364003207915614,
+      "variant_raw_position_error_cm": 0.0,
+      "raw_pole_step_deg": 4.769661158370919,
+      "visible_pole_step_deg": 4.729024625907815,
+      "variant_pole_step_deg": 4.769661158370919
+    },
+    {
+      "tick": 502,
+      "alpha": 0.0,
+      "raw_radius_cm": 12.273435633107232,
+      "visible_radius_cm": 16.540200704948916,
+      "variant_radius_cm": 12.273435633107232,
+      "variant_raw_position_error_cm": 0.0,
+      "raw_pole_step_deg": 2.5083269073987067,
+      "visible_pole_step_deg": 2.797019015337075,
+      "variant_pole_step_deg": 2.5083269073987067
+    }
+  ],
+  "prefix_presented_max_cm": 0.0,
+  "future_max_cm_494_502": 0.0
+}

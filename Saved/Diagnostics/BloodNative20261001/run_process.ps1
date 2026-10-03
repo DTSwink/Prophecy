@@ -1,0 +1,3 @@
+$experimentProcess = Start-Process -FilePath 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/UnrealEditor-Cmd.exe' -ArgumentList '"C:/Users/singerie/Documents/Unreal Projects/Prophecy/GameAnimationSample3.uproject" /Engine/Maps/Entry -game -RenderOffScreen -windowed -ResX=320 -ResY=240 -nosound -unattended -NoSplash -NoAutoSave -ExecCmds="Prophecy.Blood.EmitterExperiment,quit" -abslog="C:/Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Diagnostics/BloodNative20261001/emitter-process.log"' -WindowStyle Hidden -PassThru
+$experimentProcess.Id | Set-Content 'C:/Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Diagnostics/BloodNative20261001/process-id.txt'
+Write-Output $experimentProcess.Id

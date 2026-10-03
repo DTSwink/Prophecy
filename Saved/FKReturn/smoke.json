@@ -1,0 +1,114 @@
+{
+  "last": 4.333333075046539,
+  "ticks": 260,
+  "agents": 3,
+  "pose_samples": 17,
+  "saw_attack": true,
+  "ended": true,
+  "settings": true,
+  "rows": [
+    {
+      "time": 1.666666567325592,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999943971633911
+    },
+    {
+      "time": 1.8333332240581512,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999938607215881
+    },
+    {
+      "time": 1.9999998807907104,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999933242797852
+    },
+    {
+      "time": 2.1666665375232697,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999927282333374
+    },
+    {
+      "time": 2.333333194255829,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999921917915344
+    },
+    {
+      "time": 2.499999850988388,
+      "state": "(Name(\"slashLD\"), False, False, False, 1)",
+      "bones": 25,
+      "alpha": 0.9999915957450867
+    },
+    {
+      "time": 2.6666665077209473,
+      "state": "(Name(\"slashLD\"), True, True, False, 6)",
+      "bones": 25,
+      "alpha": 0.9999910593032837
+    },
+    {
+      "time": 2.8333331644535065,
+      "state": "(Name(\"slashLD\"), True, True, False, 11)",
+      "bones": 25,
+      "alpha": 0.9999905228614807
+    },
+    {
+      "time": 2.9999998211860657,
+      "state": "(Name(\"slashLD\"), True, True, True, 16)",
+      "bones": 25,
+      "alpha": 0.999989926815033
+    },
+    {
+      "time": 3.166666477918625,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.99998939037323
+    },
+    {
+      "time": 3.333333134651184,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.999988853931427
+    },
+    {
+      "time": 3.4999997913837433,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999882578849792
+    },
+    {
+      "time": 3.6666664481163025,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999877214431763
+    },
+    {
+      "time": 3.8333331048488617,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999871253967285
+    },
+    {
+      "time": 3.999999761581421,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999865889549255
+    },
+    {
+      "time": 4.16666641831398,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999860525131226
+    },
+    {
+      "time": 4.333333075046539,
+      "state": "None",
+      "bones": 25,
+      "alpha": 0.9999854564666748
+    }
+  ],
+  "error": ""
+}

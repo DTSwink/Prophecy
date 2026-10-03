@@ -2734,12 +2734,11 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::RayCast(const FVector& Sta
     JPH::RayCastResult Hit;
     // Default query filters admit every fixture layer; simulation pair policy does not filter this query.
     if (!Native->Physics.GetNarrowPhaseQuery().CastRay(Ray, Hit)) return {};
-    int32 SlotIndex = INDEX_NONE;
-    for (int32 Index = 0; Index < Native->Slots.Num(); ++Index)
-    {
-        if (Native->Slots[Index].Body == Hit.mBodyID) { SlotIndex = Index; break; }
-    }
-    if (SlotIndex == INDEX_NONE || Hit.mBodyID.IsInvalid())
+    // The admission/removal registry already maintains this index for contact delivery.
+    // Validate the complete BodyID (including its sequence), not only its reusable index.
+    const uint32 BodyIndex=Hit.mBodyID.GetIndex();
+    const int32 SlotIndex=BodyIndex<uint32(Native->NativeBodySlots.Num())?Native->NativeBodySlots[BodyIndex]:INDEX_NONE;
+    if (Hit.mBodyID.IsInvalid() || !Native->Slots.IsValidIndex(SlotIndex) || Native->Slots[SlotIndex].Body!=Hit.mBodyID)
         return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Ray hit body is absent from the adapter registry."));
     const JPH::BodyLockRead Lock(Native->Physics.GetBodyLockInterface(), Hit.mBodyID);
     if (!Lock.SucceededAndIsInBroadPhase())

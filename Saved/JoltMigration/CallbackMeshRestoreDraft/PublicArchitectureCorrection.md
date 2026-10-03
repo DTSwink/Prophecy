@@ -1,0 +1,9 @@
+# Character removal and animation restoration
+
+Character removal separates native physics ownership from Unreal animation cleanup. Disabling a Jolt character immediately removes its coordinator registration and destroys its rig, so old body handles become invalid and the remaining characters can keep stepping.
+
+A disable request can arrive inside a bone-finalization callback. Unreal does not allow its active AnimInstance to be replaced at that point. The character therefore retains the detached cleanup state until its owned pose-publication call returns from animation evaluation. It then restores the existing mesh settings, switches to the native NN locomotion AnimInstance, and evaluates the current kinematic pose. This completes within the same call and engine frame; it requires no timer or extra world tick.
+
+During that short cleanup interval, requests to enable Jolt or switch to Physical/HalfSim are refused, and repeated Kinematic requests are harmless. The Agent's cached mode becomes Kinematic before restored animation callbacks run. Direct component cleanup follows the same rule. Cleanup checks the original actor, mesh and skeletal asset throughout, and skips restoration if the owner is being destroyed, the mesh is unregistered, or its asset has changed.
+
+The R5 regression checks immediate native removal, restoration of the exact NN AnimInstance class, two fresh NN poses in the same frame, and Kinematic mode observed inside a direct component cleanup callback. These lifecycle checks run outside timed samples. The implementation has been promoted and its source matches the reviewed draft; the new package's build/runtime result must be recorded separately before describing the regression as passed. Existing R4 timing does not prove this corrected restoration behavior.

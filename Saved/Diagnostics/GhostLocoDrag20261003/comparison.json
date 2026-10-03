@@ -1,0 +1,572 @@
+{
+  "control": {
+    "attacks": [
+      {
+        "ordinal": 1,
+        "start": 157,
+        "end": 189,
+        "armed": 172,
+        "hit": 186,
+        "native": {
+          "lateral_max_cm": 4.067888023484617,
+          "lateral_travel_cm": 15.235692102454978,
+          "max_step_cm": 30.997979876449303
+        },
+        "future": {
+          "lateral_max_cm": 5.525127119865565,
+          "lateral_travel_cm": 22.89587243378761,
+          "max_step_cm": 30.790541292323912
+        },
+        "presented": {
+          "lateral_max_cm": 5.455720861904446,
+          "lateral_travel_cm": 25.230838984080027,
+          "max_step_cm": 17.318108060285827
+        },
+        "body": {
+          "lateral_max_cm": 5.45072111325853,
+          "lateral_travel_cm": 25.37496169743918,
+          "max_step_cm": 16.830339041796222
+        },
+        "sword": {
+          "lateral_max_cm": 5.450721113258519,
+          "lateral_travel_cm": 25.37496169743919,
+          "max_step_cm": 16.830339041796215
+        },
+        "drag_releases": {
+          "left": [
+            170
+          ],
+          "right": []
+        },
+        "foot_max_steps_cm": {
+          "l": 11.843591404038248,
+          "r": 7.81566390308631
+        },
+        "ghost_samples": 0
+      },
+      {
+        "ordinal": 2,
+        "start": 342,
+        "end": 375,
+        "armed": 358,
+        "hit": 372,
+        "native": {
+          "lateral_max_cm": 9.749636966047673,
+          "lateral_travel_cm": 32.145663065317734,
+          "max_step_cm": 23.426704200081637
+        },
+        "future": {
+          "lateral_max_cm": 14.291960182606148,
+          "lateral_travel_cm": 41.276707347356705,
+          "max_step_cm": 24.28488445203403
+        },
+        "presented": {
+          "lateral_max_cm": 14.24457526904778,
+          "lateral_travel_cm": 42.781418801628895,
+          "max_step_cm": 14.517191272580371
+        },
+        "body": {
+          "lateral_max_cm": 14.394404415716378,
+          "lateral_travel_cm": 43.554821456405115,
+          "max_step_cm": 14.033979283610506
+        },
+        "sword": {
+          "lateral_max_cm": 14.394404415716373,
+          "lateral_travel_cm": 43.554821456405286,
+          "max_step_cm": 14.033979283610506
+        },
+        "drag_releases": {
+          "left": [
+            344
+          ],
+          "right": [
+            356
+          ]
+        },
+        "foot_max_steps_cm": {
+          "l": 15.899820667000991,
+          "r": 9.442213451981107
+        },
+        "ghost_samples": 0
+      },
+      {
+        "ordinal": 3,
+        "start": 493,
+        "end": 523,
+        "armed": 506,
+        "hit": 520,
+        "native": {
+          "lateral_max_cm": 5.284783611299835,
+          "lateral_travel_cm": 14.685129883120016,
+          "max_step_cm": 34.16149113495549
+        },
+        "future": {
+          "lateral_max_cm": 4.945645042120415,
+          "lateral_travel_cm": 15.619791899685056,
+          "max_step_cm": 31.16462645214964
+        },
+        "presented": {
+          "lateral_max_cm": 5.054516818804974,
+          "lateral_travel_cm": 17.137004963562184,
+          "max_step_cm": 16.13256917001449
+        },
+        "body": {
+          "lateral_max_cm": 4.975740173705058,
+          "lateral_travel_cm": 17.456930890820033,
+          "max_step_cm": 15.692441299172541
+        },
+        "sword": {
+          "lateral_max_cm": 4.975740173705125,
+          "lateral_travel_cm": 17.456930890819994,
+          "max_step_cm": 15.692441299172586
+        },
+        "drag_releases": {
+          "left": [
+            506
+          ],
+          "right": [
+            496
+          ]
+        },
+        "foot_max_steps_cm": {
+          "l": 7.684101171573506,
+          "r": 15.671528270845036
+        },
+        "ghost_samples": 0
+      }
+    ]
+  },
+  "drag_off": {
+    "attacks": [
+      {
+        "ordinal": 1,
+        "start": 157,
+        "end": 189,
+        "armed": 172,
+        "hit": 186,
+        "native": {
+          "lateral_max_cm": 4.067888023484617,
+          "lateral_travel_cm": 15.235692102454978,
+          "max_step_cm": 30.997979876449303
+        },
+        "future": {
+          "lateral_max_cm": 5.525127119865565,
+          "lateral_travel_cm": 22.89587243378761,
+          "max_step_cm": 30.790541292323912
+        },
+        "presented": {
+          "lateral_max_cm": 5.455720861904446,
+          "lateral_travel_cm": 25.230838984080027,
+          "max_step_cm": 17.318108060285827
+        },
+        "body": {
+          "lateral_max_cm": 5.45072111325853,
+          "lateral_travel_cm": 25.37496169743918,
+          "max_step_cm": 16.830339041796222
+        },
+        "sword": {
+          "lateral_max_cm": 5.450721113258519,
+          "lateral_travel_cm": 25.37496169743919,
+          "max_step_cm": 16.830339041796215
+        },
+        "drag_releases": {
+          "left": [
+            170
+          ],
+          "right": []
+        },
+        "foot_max_steps_cm": {
+          "l": 11.843591404038248,
+          "r": 7.81566390308631
+        },
+        "ghost_samples": 0
+      },
+      {
+        "ordinal": 2,
+        "start": 342,
+        "end": 373,
+        "armed": 356,
+        "hit": 370,
+        "native": {
+          "lateral_max_cm": 4.996305664861639,
+          "lateral_travel_cm": 14.949293044151302,
+          "max_step_cm": 35.7115839501002
+        },
+        "future": {
+          "lateral_max_cm": 6.163921593450481,
+          "lateral_travel_cm": 18.04576135867217,
+          "max_step_cm": 32.407134224543356
+        },
+        "presented": {
+          "lateral_max_cm": 6.094370999498253,
+          "lateral_travel_cm": 19.337364686246733,
+          "max_step_cm": 16.282238836363245
+        },
+        "body": {
+          "lateral_max_cm": 5.9824712322809885,
+          "lateral_travel_cm": 19.05260402067982,
+          "max_step_cm": 16.773469753383875
+        },
+        "sword": {
+          "lateral_max_cm": 5.982471232281004,
+          "lateral_travel_cm": 19.05260402067968,
+          "max_step_cm": 16.773469753383864
+        },
+        "drag_releases": {
+          "left": [
+            343
+          ],
+          "right": [
+            343
+          ]
+        },
+        "foot_max_steps_cm": {
+          "l": 15.899820667000991,
+          "r": 6.126107037827059
+        },
+        "ghost_samples": 0
+      },
+      {
+        "ordinal": 3,
+        "start": 497,
+        "end": 527,
+        "armed": 510,
+        "hit": 524,
+        "native": {
+          "lateral_max_cm": 5.083060936142443,
+          "lateral_travel_cm": 15.360882914594368,
+          "max_step_cm": 27.736633966607734
+        },
+        "future": {
+          "lateral_max_cm": 6.874926980295161,
+          "lateral_travel_cm": 26.758881926503488,
+          "max_step_cm": 27.0615722134017
+        },
+        "presented": {
+          "lateral_max_cm": 7.372772998523962,
+          "lateral_travel_cm": 28.012805468513022,
+          "max_step_cm": 14.579302917228208
+        },
+        "body": {
+          "lateral_max_cm": 7.4575225636992,
+          "lateral_travel_cm": 28.27037744561636,
+          "max_step_cm": 14.475328293880402
+        },
+        "sword": {
+          "lateral_max_cm": 7.457522563699295,
+          "lateral_travel_cm": 28.270377445616695,
+          "max_step_cm": 14.475328293880391
+        },
+        "drag_releases": {
+          "left": [],
+          "right": []
+        },
+        "foot_max_steps_cm": {
+          "l": 8.708426931260071,
+          "r": 10.243200429334108
+        },
+        "ghost_samples": 0
+      }
+    ],
+    "prefix_position_error_cm": 0.0
+  },
+  "ghost": {
+    "attacks": [
+      {
+        "ordinal": 1,
+        "start": 157,
+        "end": 189,
+        "armed": 172,
+        "hit": 186,
+        "native": {
+          "lateral_max_cm": 4.067888023484617,
+          "lateral_travel_cm": 15.235692102454978,
+          "max_step_cm": 30.997979876449303
+        },
+        "future": {
+          "lateral_max_cm": 5.525127119865565,
+          "lateral_travel_cm": 22.89587243378761,
+          "max_step_cm": 30.790541292323912
+        },
+        "presented": {
+          "lateral_max_cm": 5.455720861904446,
+          "lateral_travel_cm": 25.230838984080027,
+          "max_step_cm": 17.318108060285827
+        },
+        "body": {
+          "lateral_max_cm": 5.45072111325853,
+          "lateral_travel_cm": 25.37496169743918,
+          "max_step_cm": 16.830339041796222
+        },
+        "sword": {
+          "lateral_max_cm": 5.450721113258519,
+          "lateral_travel_cm": 25.37496169743919,
+          "max_step_cm": 16.830339041796215
+        },
+        "drag_releases": {
+          "left": [
+            170
+          ],
+          "right": []
+        },
+        "foot_max_steps_cm": {
+          "l": 11.843591404038248,
+          "r": 7.81566390308631
+        },
+        "ghost_samples": 0
+      },
+      {
+        "ordinal": 2,
+        "start": 342,
+        "end": 373,
+        "armed": 356,
+        "hit": 370,
+        "native": {
+          "lateral_max_cm": 4.996305664861639,
+          "lateral_travel_cm": 14.949293044151302,
+          "max_step_cm": 35.7115839501002
+        },
+        "future": {
+          "lateral_max_cm": 6.163921593450455,
+          "lateral_travel_cm": 18.045761358672173,
+          "max_step_cm": 32.40713422454336
+        },
+        "presented": {
+          "lateral_max_cm": 6.094370999498224,
+          "lateral_travel_cm": 19.337364686246755,
+          "max_step_cm": 16.282238836363245
+        },
+        "body": {
+          "lateral_max_cm": 5.9827963923233005,
+          "lateral_travel_cm": 19.053349233266676,
+          "max_step_cm": 16.773265657478944
+        },
+        "sword": {
+          "lateral_max_cm": 5.982796392323243,
+          "lateral_travel_cm": 19.05334923326641,
+          "max_step_cm": 16.773265657478888
+        },
+        "drag_releases": {
+          "left": [
+            344
+          ],
+          "right": [
+            354
+          ]
+        },
+        "foot_max_steps_cm": {
+          "l": 15.899820667000991,
+          "r": 9.821342977112316
+        },
+        "ghost_samples": 30,
+        "ghost_pelvis_matches_presented_cm": 0.0,
+        "ghost_draw_succeeded": true,
+        "ghost_real_foot_separation_cm": 43.14640841230277
+      },
+      {
+        "ordinal": 3,
+        "start": 495,
+        "end": 525,
+        "armed": 508,
+        "hit": 522,
+        "native": {
+          "lateral_max_cm": 5.201100011877366,
+          "lateral_travel_cm": 15.566403452890297,
+          "max_step_cm": 27.894211049106055
+        },
+        "future": {
+          "lateral_max_cm": 7.123575891933902,
+          "lateral_travel_cm": 27.05282073334315,
+          "max_step_cm": 27.115043972559484
+        },
+        "presented": {
+          "lateral_max_cm": 7.631529008404184,
+          "lateral_travel_cm": 28.252249053488306,
+          "max_step_cm": 14.511862854358379
+        },
+        "body": {
+          "lateral_max_cm": 7.707126059668712,
+          "lateral_travel_cm": 28.492255887879605,
+          "max_step_cm": 14.407719218715958
+        },
+        "sword": {
+          "lateral_max_cm": 7.707126059668726,
+          "lateral_travel_cm": 28.492255887879665,
+          "max_step_cm": 14.40771921871603
+        },
+        "drag_releases": {
+          "left": [
+            510
+          ],
+          "right": [
+            496
+          ]
+        },
+        "foot_max_steps_cm": {
+          "l": 8.15652910578627,
+          "r": 15.196618684160997
+        },
+        "ghost_samples": 30,
+        "ghost_pelvis_matches_presented_cm": 0.0,
+        "ghost_draw_succeeded": true,
+        "ghost_real_foot_separation_cm": 12.70217064761107
+      }
+    ],
+    "prefix_position_error_cm": 0.0
+  },
+  "ghost_pelvis_off": {
+    "attacks": [
+      {
+        "ordinal": 1,
+        "start": 157,
+        "end": 189,
+        "armed": 172,
+        "hit": 186,
+        "native": {
+          "lateral_max_cm": 4.067888023484617,
+          "lateral_travel_cm": 15.235692102454978,
+          "max_step_cm": 30.997979876449303
+        },
+        "future": {
+          "lateral_max_cm": 5.525127119865565,
+          "lateral_travel_cm": 22.89587243378761,
+          "max_step_cm": 30.790541292323912
+        },
+        "presented": {
+          "lateral_max_cm": 5.455720861904446,
+          "lateral_travel_cm": 25.230838984080027,
+          "max_step_cm": 17.318108060285827
+        },
+        "body": {
+          "lateral_max_cm": 5.45072111325853,
+          "lateral_travel_cm": 25.37496169743918,
+          "max_step_cm": 16.830339041796222
+        },
+        "sword": {
+          "lateral_max_cm": 5.450721113258519,
+          "lateral_travel_cm": 25.37496169743919,
+          "max_step_cm": 16.830339041796215
+        },
+        "drag_releases": {
+          "left": [
+            170
+          ],
+          "right": []
+        },
+        "foot_max_steps_cm": {
+          "l": 11.843591404038248,
+          "r": 7.81566390308631
+        },
+        "ghost_samples": 0
+      },
+      {
+        "ordinal": 2,
+        "start": 342,
+        "end": 373,
+        "armed": 356,
+        "hit": 370,
+        "native": {
+          "lateral_max_cm": 4.996305664861639,
+          "lateral_travel_cm": 14.949293044151302,
+          "max_step_cm": 35.7115839501002
+        },
+        "future": {
+          "lateral_max_cm": 6.163921593450455,
+          "lateral_travel_cm": 18.045761358672173,
+          "max_step_cm": 32.40713422454336
+        },
+        "presented": {
+          "lateral_max_cm": 6.163921593450461,
+          "lateral_travel_cm": 19.242428146067525,
+          "max_step_cm": 16.282238836363245
+        },
+        "body": {
+          "lateral_max_cm": 6.0574190464366,
+          "lateral_travel_cm": 18.95826440116738,
+          "max_step_cm": 16.773261129669578
+        },
+        "sword": {
+          "lateral_max_cm": 6.057419046436584,
+          "lateral_travel_cm": 18.95826440116757,
+          "max_step_cm": 16.77326112966964
+        },
+        "drag_releases": {
+          "left": [
+            344
+          ],
+          "right": [
+            354
+          ]
+        },
+        "foot_max_steps_cm": {
+          "l": 15.899820667000991,
+          "r": 9.82134297711231
+        },
+        "ghost_samples": 30,
+        "ghost_pelvis_matches_presented_cm": 0.0,
+        "ghost_draw_succeeded": true,
+        "ghost_real_foot_separation_cm": 50.43039919390758
+      },
+      {
+        "ordinal": 3,
+        "start": 495,
+        "end": 525,
+        "armed": 508,
+        "hit": 522,
+        "native": {
+          "lateral_max_cm": 5.201189610473295,
+          "lateral_travel_cm": 15.56671502739379,
+          "max_step_cm": 27.894367591662267
+        },
+        "future": {
+          "lateral_max_cm": 7.123673165860932,
+          "lateral_travel_cm": 27.053130031173925,
+          "max_step_cm": 27.114961212910014
+        },
+        "presented": {
+          "lateral_max_cm": 7.9609846921523655,
+          "lateral_travel_cm": 28.475806393295624,
+          "max_step_cm": 14.511754185678328
+        },
+        "body": {
+          "lateral_max_cm": 8.038879123510661,
+          "lateral_travel_cm": 28.718521694970892,
+          "max_step_cm": 14.40761547440809
+        },
+        "sword": {
+          "lateral_max_cm": 8.03887912351062,
+          "lateral_travel_cm": 28.71852169497085,
+          "max_step_cm": 14.407615474408141
+        },
+        "drag_releases": {
+          "left": [
+            510
+          ],
+          "right": [
+            496
+          ]
+        },
+        "foot_max_steps_cm": {
+          "l": 8.156575795345741,
+          "r": 15.196509412361747
+        },
+        "ghost_samples": 30,
+        "ghost_pelvis_matches_presented_cm": 0.0,
+        "ghost_draw_succeeded": true,
+        "ghost_real_foot_separation_cm": 16.416875656366063
+      }
+    ],
+    "prefix_position_error_cm": 0.0
+  },
+  "pelvis_inertia_check": {
+    "native_output_max_error": 0.0,
+    "presented_max_position_effect_cm": 22.241597198793503
+  },
+  "ghost_vs_drag_off_native": {
+    "frame_counts": [
+      15,
+      15
+    ],
+    "max_error": 0.0
+  }
+}

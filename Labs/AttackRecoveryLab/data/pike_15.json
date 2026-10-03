@@ -1,0 +1,16 @@
+{
+  "id": 15,
+  "kind": "volume",
+  "target": [
+    0.4392606019973755,
+    1.4929487705230713,
+    1.1084203720092773
+  ],
+  "file": "data/pike_15.bin",
+  "frames": 18,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "f47d872d4892b48470ceb67233f3107cf978b6d267b3d875e766c29e81d03ad3",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

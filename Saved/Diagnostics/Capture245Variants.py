@@ -1,0 +1,11 @@
+import pathlib,unreal,sys
+p=pathlib.Path(unreal.Paths.project_saved_dir())/'Diagnostics/Head24520261003'
+mode=sys.argv[1] if len(sys.argv)>1 else 'return_baseline'
+(p/'mode.txt').write_text(mode)
+source=(p.parent/'CaptureHead505.py').read_text(encoding='utf-8-sig').replace('Diagnostics/Head50520261003','Diagnostics/Head24520261003').replace("s['frames']>=550","s['frames']>=280")
+trace2=p.parent/'SlashContacts/nn_inputs.jsonl'
+trace2_start=trace2.stat().st_size if trace2.exists() else 0
+old_nntrace=unreal.SystemLibrary.get_console_variable_int_value('Prophecy.NNInputTraceFrames')
+source=source.replace("   if mode=='core_off' and clock==504:","   if clock==200:unreal.SystemLibrary.execute_console_command(world,'Prophecy.NNInputTraceFrames 40')\n   if clock==211 and mode=='return_off':\n    unreal.get_default_object(unreal.ProphecyFKReturnLibrary).call_method('SetAttackFKReturn',(a,False,1.,0.))\n   if clock>=211 and mode=='gaze_zero':\n    a.set_upper_nn_gaze(0.,0.)\n   if clock>=230 and mode=='later_turn_stop':\n    intent=a.get_locomotion_input()\n    if clock==230:\n     f=intent.facing_world_direction;s['later_facing']=unreal.Vector((f.x+f.y)*.7071067811865476,(f.y-f.x)*.7071067811865476,0.)\n    a.set_locomotion_input(intent.world_move_input,intent.run,s['later_facing'],intent.speed_scale,intent.turn_scale)\n   if clock==230 and mode=='soft_turn_stop':\n    lib=unreal.get_default_object(unreal.ProphecyNNRootWindowLibrary)\n    settings=lib.call_method('GetLocomotionRootWindowSmoothing',(a,))\n    print('ROOT_SETTINGS',settings)\n    lib.call_method('SetLocomotionRootWindowSmoothing',(a,settings[0],settings[1],.2,settings[3]))\n   if clock==211 and mode=='return_soft':\n    unreal.get_default_object(unreal.ProphecyFKReturnLibrary).call_method('SetAttackFKReturn',(a,True,.1,0.))\n   if mode=='core_off' and clock==504:")
+source=source.replace(" print('HEAD_ENTRY_DONE'", " unreal.SystemLibrary.execute_console_command(ed.get_editor_world(),'Prophecy.NNInputTraceFrames '+str(old_nntrace))\n if trace2.exists():\n  with trace2.open('rb') as f:f.seek(trace2_start);(p/(mode+'-inputs.jsonl')).write_bytes(f.read())\n print('HEAD_ENTRY_DONE'")
+exec(compile(source,'Capture245Variants.py','exec'))

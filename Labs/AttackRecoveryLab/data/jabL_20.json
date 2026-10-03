@@ -1,0 +1,16 @@
+{
+  "id": 20,
+  "kind": "floor",
+  "target": [
+    0.1972111463546753,
+    0,
+    0.9092774987220764
+  ],
+  "file": "data/jabL_20.bin",
+  "frames": 12,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "14e65b14307bddb0ac0b637e8fbcfbc6817167bb30b6f5ee46d01c0769755023",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

@@ -1,0 +1,11 @@
+# Exact owner binding for the benchmark GT affinity diagnostic
+
+Read-only review found one concrete lifetime issue in the newly added helper: `UProphecyPhysicsBenchmarkSubsystem::ShouldCreateSubsystem` checks the process command line, so another transient world's subsystem can exist without starting a benchmark. Its unconditional `Deinitialize → global Restore` could undo the active benchmark owner's GT affinity. The presently isolated JoltCrowd path does not appear to create another world after Begin, so this finding is not evidence that a measured run was affected. Foundation query/body tests do create transient worlds, generally in a separate unflagged process.
+
+`OwnerBinding.merge.patch` adds only an exact non-owning UObject lifetime key to Begin/Restore. The game-thread affinity still remains one process-wide diagnostic because the game thread itself is shared, but an unrelated subsystem's teardown becomes a no-op. A second subsystem cannot acquire an already attempted flagged diagnostic. `FObjectKey` compares object index and serial, so address reuse cannot accidentally match a previous owner. It does not retain the UObject or depend on its weak `IsValid` state during Deinitialize.
+
+The original owner retains all existing error semantics: the exact previous affinity returned by SetThreadGroupAffinity is used for rollback; readback is required; restore failure remains pending so Deinitialize can retry; Begin's own verification rollback passes the same owner. Normal Finish and Deinitialize both supply `*this`. No tick, priority, CPU topology/mask choice, process affinity, worker affinity, CPU-set or timing behavior changes.
+
+No other blocking WinAPI issue was found for the bounded verified single-group host. The code rejects multiple active groups, unavailable/duplicate topology, undiscriminated classes, foreign allocation, and an existing process/thread mask that excludes any selected highest-class logical processor. It narrows only the GT mask and records both requested/applied/restored affinity plus sampled processor provenance. OS calls must still compile and pass actual runtime apply/restore checks; this review is not runtime validation.
+
+No active files, builds, editor or benchmark processes were changed here. Root owns promotion and testing.

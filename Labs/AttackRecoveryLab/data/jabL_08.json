@@ -1,0 +1,16 @@
+{
+  "id": 8,
+  "kind": "volume",
+  "target": [
+    -0.18277128040790558,
+    0.5719406604766846,
+    1.0964187383651733
+  ],
+  "file": "data/jabL_08.bin",
+  "frames": 12,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "dd4c227f06f336357d18b80b49a519a8ad85abed56fc3528ac12dd5b7facc677",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

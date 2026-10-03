@@ -1,0 +1,11 @@
+# Narrow R5 capsule-response export correction
+
+DRAFT only: no active source or validator changes. The C++ draft is not compiled or executed.
+
+UE 5.7 stores 32 responses in the public FCollisionResponseContainer::EnumArray[32] (EngineTypes.h:1510). Its final actual stored channel is ECC_GameTraceChannel18, value 31. The following ECC_OverlapAll_Deprecated value 32 is explicitly a nonserialized/transient flag, followed by ECC_MAX=33 (EngineTypes.h:1126-1133). CollisionProfile.cpp:14 independently defines MAX_CUSTOMIZABLE_COLLISIONCHANNEL as ECC_GameTraceChannel18. GetResponse at EngineTypes.h:1527 indexes EnumArray directly and does not validate the input.
+
+The source draft derives StoredChannelCount from UE_ARRAY_COUNT(Capsule->GetCollisionResponseToChannels().EnumArray), preserving the existing per-channel getter and all valid response values. UPrimitiveComponent publicly exposes virtual GetCollisionResponseToChannels (PrimitiveComponent.h:2555), returning the response container by const reference. UE_ARRAY_COUNT operates through sizeof(UEArrayCountHelper(...)) (UnrealTemplate.h:212); this uses the actual array extent in an unevaluated expression. It cannot include the deprecated enum sentinel and does not depend on an invented numeric count or a transient enum maximum.
+
+The source changes only the report-export loop bound and adds its explanation. The future validator additionally requires one policy per actual agent, exactly 32 numeric non-boolean response entries, values in 0/1/2, the expected WorldStatic-only blocking policy and unchanged channel/collision/radius/height. A 33rd zero is rejected just like 128. Existing R4 reports are intentionally incompatible with this corrected export gate; retain their failure and do not rewrite them.
+
+Files: ProphecyPhysicsBenchmarkNNJolt.cpp (full proposed source), CollisionPolicyExport.patch, Validate-PackagedNNCrowd-r5.py (full proposed validator), CollisionPolicyValidator-r5.patch, CollisionPolicyDraftBaseline.json (current/draft hashes). Root should promote only after checking those source hashes and give copied C++ fresh modification time before rebuilding. Full runtime checks remain required with the next snapshot revision.

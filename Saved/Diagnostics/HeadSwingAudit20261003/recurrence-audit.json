@@ -1,0 +1,1748 @@
+{
+  "feature_errors": [
+    {
+      "tick": 216,
+      "current_max": 4.172325134277344e-07,
+      "future_position_max": 4.76837158203125e-07,
+      "future_yaw_vector_max": 3.427267074584961e-07
+    },
+    {
+      "tick": 218,
+      "current_max": 2.980232238769531e-07,
+      "future_position_max": 6.556510925292969e-07,
+      "future_yaw_vector_max": 3.2782554626464844e-07
+    },
+    {
+      "tick": 220,
+      "current_max": 1.7881393432617188e-07,
+      "future_position_max": 4.172325134277344e-07,
+      "future_yaw_vector_max": 2.682209014892578e-07
+    },
+    {
+      "tick": 222,
+      "current_max": 1.341104507446289e-07,
+      "future_position_max": 2.980232238769531e-07,
+      "future_yaw_vector_max": 5.960464477539063e-08
+    },
+    {
+      "tick": 224,
+      "current_max": 7.450580596923828e-08,
+      "future_position_max": 1.7881393432617188e-07,
+      "future_yaw_vector_max": 0.0
+    },
+    {
+      "tick": 226,
+      "current_max": 5.960464477539063e-08,
+      "future_position_max": 2.384185791015625e-07,
+      "future_yaw_vector_max": 5.551115123125783e-17
+    },
+    {
+      "tick": 228,
+      "current_max": 0.0,
+      "future_position_max": 8.821487426757812e-06,
+      "future_yaw_vector_max": 0.0
+    },
+    {
+      "tick": 230,
+      "current_max": 0.0,
+      "future_position_max": 1.6868114471435547e-05,
+      "future_yaw_vector_max": 0.0
+    },
+    {
+      "tick": 232,
+      "current_max": 0.0,
+      "future_position_max": 2.580881118774414e-05,
+      "future_yaw_vector_max": 0.0
+    },
+    {
+      "tick": 234,
+      "current_max": 0.0,
+      "future_position_max": 3.409385681152344e-05,
+      "future_yaw_vector_max": 0.0
+    },
+    {
+      "tick": 236,
+      "current_max": 0.0,
+      "future_position_max": 4.2498111724853516e-05,
+      "future_yaw_vector_max": 0.0
+    },
+    {
+      "tick": 238,
+      "current_max": 0.0,
+      "future_position_max": 5.0902366638183594e-05,
+      "future_yaw_vector_max": 0.0
+    },
+    {
+      "tick": 240,
+      "current_max": 0.0,
+      "future_position_max": 5.894899368286133e-05,
+      "future_yaw_vector_max": 0.0
+    }
+  ],
+  "rollouts": {
+    "216_baseline": [
+      {
+        "tick": 216,
+        "head_deg_per_60hz_tick": 0.7882865059109812,
+        "state_error": 1.1920928955078125e-07,
+        "head_error_deg": 8.647848172610043e-07
+      },
+      {
+        "tick": 218,
+        "head_deg_per_60hz_tick": 0.6335022494792432,
+        "state_error": 0.06170150637626648,
+        "head_error_deg": 0.2381070845316801
+      },
+      {
+        "tick": 220,
+        "head_deg_per_60hz_tick": 0.41137229656068064,
+        "state_error": 0.10289186239242554,
+        "head_error_deg": 0.5409210855948736
+      },
+      {
+        "tick": 222,
+        "head_deg_per_60hz_tick": 0.6522350478979977,
+        "state_error": 0.12836065888404846,
+        "head_error_deg": 0.8901397665437537
+      },
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.6611802783891658,
+        "state_error": 0.14202073216438293,
+        "head_error_deg": 1.336864296365154
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.9553994514970032,
+        "state_error": 0.15113839507102966,
+        "head_error_deg": 1.8744672388467765
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.906962202497077,
+        "state_error": 0.15669357776641846,
+        "head_error_deg": 2.3316678725283624
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.836410282981668,
+        "state_error": 0.15586915612220764,
+        "head_error_deg": 2.652203277792678
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 3.357461331528658,
+        "state_error": 0.15487012267112732,
+        "head_error_deg": 2.9785145490313742
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.9688045107650223,
+        "state_error": 0.1813165247440338,
+        "head_error_deg": 3.3202869372387718
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.135023890607119,
+        "state_error": 0.19439537823200226,
+        "head_error_deg": 3.511457270396798
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.8998190476159579,
+        "state_error": 0.1939445286989212,
+        "head_error_deg": 3.576619065795132
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.34015571072461454,
+        "state_error": 0.18641653656959534,
+        "head_error_deg": 3.592722348531819
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 0.9492063299696414,
+        "state_error": 0.193710595369339,
+        "head_error_deg": 3.6661560524909946
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.5746588633737155,
+        "state_error": 0.20123618841171265,
+        "head_error_deg": 3.8115438119768497
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.8746240090803103,
+        "state_error": 0.21095651388168335,
+        "head_error_deg": 4.02164390399272
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.7303185490604398,
+        "state_error": 0.22015917301177979,
+        "head_error_deg": 4.345525764558981
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.506114777466994,
+        "state_error": 0.2255071997642517,
+        "head_error_deg": 4.666848727908557
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.5939363357864245,
+        "state_error": 0.22677576541900635,
+        "head_error_deg": 4.835217070994825
+      }
+    ],
+    "216_viewer_forearm_clamp": [
+      {
+        "tick": 216,
+        "head_deg_per_60hz_tick": 0.7882861385685985,
+        "state_error": 0.035301268100738525,
+        "head_error_deg": 1.1140203006028232e-06
+      },
+      {
+        "tick": 218,
+        "head_deg_per_60hz_tick": 0.5671885388708037,
+        "state_error": 0.07915481925010681,
+        "head_error_deg": 0.17591077222242305
+      },
+      {
+        "tick": 220,
+        "head_deg_per_60hz_tick": 0.36187463078314747,
+        "state_error": 0.10790291428565979,
+        "head_error_deg": 0.4489310223331415
+      },
+      {
+        "tick": 222,
+        "head_deg_per_60hz_tick": 0.6174963548882717,
+        "state_error": 0.12216073274612427,
+        "head_error_deg": 0.7363046731781829
+      },
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.62359974618228,
+        "state_error": 0.12841492891311646,
+        "head_error_deg": 1.0715201440975524
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.9154826271322944,
+        "state_error": 0.13550159335136414,
+        "head_error_deg": 1.5035945468357166
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.901465717325597,
+        "state_error": 0.1457335650920868,
+        "head_error_deg": 1.9347696663849887
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.8750168716331026,
+        "state_error": 0.1521756649017334,
+        "head_error_deg": 2.3096054707903813
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 3.4040452348975556,
+        "state_error": 0.17409247159957886,
+        "head_error_deg": 2.675533683989861
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.986708643479887,
+        "state_error": 0.18368685245513916,
+        "head_error_deg": 2.9873361798503737
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.1316494289196593,
+        "state_error": 0.18244148790836334,
+        "head_error_deg": 3.113819396549586
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.8933043667496791,
+        "state_error": 0.18812943994998932,
+        "head_error_deg": 3.1309734890092673
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.3461057620841196,
+        "state_error": 0.1844473034143448,
+        "head_error_deg": 3.132230427421724
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 0.9466631360544725,
+        "state_error": 0.18024146556854248,
+        "head_error_deg": 3.2393716209925754
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.532586195273221,
+        "state_error": 0.18124374747276306,
+        "head_error_deg": 3.443303117898518
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.8126431129070801,
+        "state_error": 0.1836308240890503,
+        "head_error_deg": 3.662873472009556
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.6895942500042518,
+        "state_error": 0.18608897924423218,
+        "head_error_deg": 3.907761384444211
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.5409206688641854,
+        "state_error": 0.18412435054779053,
+        "head_error_deg": 4.089152321516475
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.7027807435766584,
+        "state_error": 0.18193477392196655,
+        "head_error_deg": 4.100540438689144
+      }
+    ],
+    "216_actual_future_roots": [
+      {
+        "tick": 216,
+        "head_deg_per_60hz_tick": 0.7882889677221216,
+        "state_error": 2.384185791015625e-07,
+        "head_error_deg": 4.639551547001182e-06
+      },
+      {
+        "tick": 218,
+        "head_deg_per_60hz_tick": 0.6335019738557239,
+        "state_error": 0.06170159578323364,
+        "head_error_deg": 0.23810935420492227
+      },
+      {
+        "tick": 220,
+        "head_deg_per_60hz_tick": 0.4113724045063695,
+        "state_error": 0.10289198160171509,
+        "head_error_deg": 0.5409227359104039
+      },
+      {
+        "tick": 222,
+        "head_deg_per_60hz_tick": 0.6522345438987098,
+        "state_error": 0.12836074829101562,
+        "head_error_deg": 0.890141400481473
+      },
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.6611800968555979,
+        "state_error": 0.1420208215713501,
+        "head_error_deg": 1.3368661601197753
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.9554000992246094,
+        "state_error": 0.15113845467567444,
+        "head_error_deg": 1.874470776595104
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.906961681602745,
+        "state_error": 0.15669336915016174,
+        "head_error_deg": 2.3316718666885277
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.8364044722869526,
+        "state_error": 0.15586885809898376,
+        "head_error_deg": 2.652196903498168
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 3.35744895138934,
+        "state_error": 0.15486958622932434,
+        "head_error_deg": 2.9784773092589427
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.968793678595668,
+        "state_error": 0.1813139170408249,
+        "head_error_deg": 3.3202018678405474
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.1350187382934056,
+        "state_error": 0.19439078867435455,
+        "head_error_deg": 3.5112991473635913
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.8998214464283013,
+        "state_error": 0.19393698871135712,
+        "head_error_deg": 3.576400358085734
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.34010772542450546,
+        "state_error": 0.18640553951263428,
+        "head_error_deg": 3.5924129931863154
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 0.9492297467524948,
+        "state_error": 0.19370993971824646,
+        "head_error_deg": 3.665877830030278
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.586075949368428,
+        "state_error": 0.20124968886375427,
+        "head_error_deg": 3.7853350955819853
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.90477100906189,
+        "state_error": 0.2114211618900299,
+        "head_error_deg": 3.9293506622307928
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.7722767186346735,
+        "state_error": 0.2205381989479065,
+        "head_error_deg": 4.1658294837196435
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.5826378862773747,
+        "state_error": 0.22598177194595337,
+        "head_error_deg": 4.395217128681236
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.6694537503382874,
+        "state_error": 0.22682088613510132,
+        "head_error_deg": 4.498641750980577
+      }
+    ],
+    "216_later_root_only": [
+      {
+        "tick": 216,
+        "head_deg_per_60hz_tick": 1.2151918575160356,
+        "state_error": 0.1184718906879425,
+        "head_error_deg": 1.2244693469981915
+      },
+      {
+        "tick": 218,
+        "head_deg_per_60hz_tick": 0.9157313024741033,
+        "state_error": 0.2740064859390259,
+        "head_error_deg": 1.97825834338545
+      },
+      {
+        "tick": 220,
+        "head_deg_per_60hz_tick": 0.6836266790290452,
+        "state_error": 0.39991575479507446,
+        "head_error_deg": 2.5735974207231647
+      },
+      {
+        "tick": 222,
+        "head_deg_per_60hz_tick": 0.4405441100014706,
+        "state_error": 0.45863214135169983,
+        "head_error_deg": 3.079265786678828
+      },
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.0946679575353013,
+        "state_error": 0.5627923607826233,
+        "head_error_deg": 3.6206587840427056
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.163842229905974,
+        "state_error": 0.634492814540863,
+        "head_error_deg": 4.5045187607730135
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 2.9481298244808705,
+        "state_error": 0.6603966951370239,
+        "head_error_deg": 5.916761892389547
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 2.950266254766347,
+        "state_error": 0.6410915851593018,
+        "head_error_deg": 7.4732443072286525
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 2.721898696495545,
+        "state_error": 0.5693144202232361,
+        "head_error_deg": 8.6479895428014
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.705664382668086,
+        "state_error": 0.46138671040534973,
+        "head_error_deg": 8.989676251652533
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.3185867485193286,
+        "state_error": 0.3601064682006836,
+        "head_error_deg": 8.485986927784094
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 1.4223232301103268,
+        "state_error": 0.285017728805542,
+        "head_error_deg": 7.55282370577464
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.7002162782610885,
+        "state_error": 0.24291589856147766,
+        "head_error_deg": 6.606016255793166
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 0.6987567372258974,
+        "state_error": 0.22549575567245483,
+        "head_error_deg": 5.715270754936457
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.182487409750342,
+        "state_error": 0.22189825773239136,
+        "head_error_deg": 4.712669785212898
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.3961847630020616,
+        "state_error": 0.21843761205673218,
+        "head_error_deg": 3.6183671375964606
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.1967619362359656,
+        "state_error": 0.21214021742343903,
+        "head_error_deg": 2.76928816297503
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 0.8622736110661101,
+        "state_error": 0.21812766790390015,
+        "head_error_deg": 2.640820314546827
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 0.9094520486061055,
+        "state_error": 0.21628086268901825,
+        "head_error_deg": 3.4215878300501363
+      }
+    ],
+    "216_later_pelvis_only": [
+      {
+        "tick": 216,
+        "head_deg_per_60hz_tick": 0.7663762291376165,
+        "state_error": 0.006445333361625671,
+        "head_error_deg": 0.0786190316884179
+      },
+      {
+        "tick": 218,
+        "head_deg_per_60hz_tick": 0.6420709828897179,
+        "state_error": 0.054211556911468506,
+        "head_error_deg": 0.3178587138632833
+      },
+      {
+        "tick": 220,
+        "head_deg_per_60hz_tick": 0.4706966103919958,
+        "state_error": 0.09768354892730713,
+        "head_error_deg": 0.6159452047477758
+      },
+      {
+        "tick": 222,
+        "head_deg_per_60hz_tick": 0.6473705042001408,
+        "state_error": 0.12663879990577698,
+        "head_error_deg": 0.8716274014253432
+      },
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.6053867845029401,
+        "state_error": 0.1399681270122528,
+        "head_error_deg": 1.1834404703758785
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.9041439081250764,
+        "state_error": 0.14539632201194763,
+        "head_error_deg": 1.6322701182045503
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.8360116348877034,
+        "state_error": 0.14671331644058228,
+        "head_error_deg": 2.0088405711638297
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.7031450036541274,
+        "state_error": 0.14587900042533875,
+        "head_error_deg": 2.2680491171531876
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 3.1610057662427407,
+        "state_error": 0.1481972336769104,
+        "head_error_deg": 2.479053641824065
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.7721835087690745,
+        "state_error": 0.16465634107589722,
+        "head_error_deg": 2.6040972696274167
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.0925418681431602,
+        "state_error": 0.1786119043827057,
+        "head_error_deg": 2.7338195263285052
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.9819110606597299,
+        "state_error": 0.17683547735214233,
+        "head_error_deg": 2.976955159817139
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.48843193877826513,
+        "state_error": 0.1776636242866516,
+        "head_error_deg": 3.362250040930006
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 1.0317839251789331,
+        "state_error": 0.18700703978538513,
+        "head_error_deg": 3.772580853104879
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.5550578989748851,
+        "state_error": 0.20109684765338898,
+        "head_error_deg": 4.115064708908827
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.728920442085864,
+        "state_error": 0.21566200256347656,
+        "head_error_deg": 4.419488800826898
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.4854313562165196,
+        "state_error": 0.26545053720474243,
+        "head_error_deg": 4.731548037328798
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.2826157198471562,
+        "state_error": 0.25493142008781433,
+        "head_error_deg": 5.072781388085012
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.462463153637171,
+        "state_error": 0.20748527348041534,
+        "head_error_deg": 5.302437636818818
+      }
+    ],
+    "216_later_feet_only": [
+      {
+        "tick": 216,
+        "head_deg_per_60hz_tick": 0.786703594131374,
+        "state_error": 0.007922708988189697,
+        "head_error_deg": 0.22267408400802374
+      },
+      {
+        "tick": 218,
+        "head_deg_per_60hz_tick": 0.6296163933102754,
+        "state_error": 0.06075277924537659,
+        "head_error_deg": 0.44209642935879967
+      },
+      {
+        "tick": 220,
+        "head_deg_per_60hz_tick": 0.3863652923940121,
+        "state_error": 0.0999498963356018,
+        "head_error_deg": 0.6559868892781239
+      },
+      {
+        "tick": 222,
+        "head_deg_per_60hz_tick": 0.6093460466356689,
+        "state_error": 0.12428969144821167,
+        "head_error_deg": 0.8852696784695679
+      },
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.555274083192171,
+        "state_error": 0.1379372477531433,
+        "head_error_deg": 1.1481898131803276
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.7965294297357213,
+        "state_error": 0.1488778293132782,
+        "head_error_deg": 1.266742474157832
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.3445591577333817,
+        "state_error": 0.15862643718719482,
+        "head_error_deg": 1.2122598403584255
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.161193912088373,
+        "state_error": 0.16656318306922913,
+        "head_error_deg": 1.912196188335811
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 2.7651993095968623,
+        "state_error": 0.2189147174358368,
+        "head_error_deg": 2.9255238748166907
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.28845733526535,
+        "state_error": 0.2647831439971924,
+        "head_error_deg": 4.0867764282785375
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 1.3455120798157305,
+        "state_error": 0.2657315135002136,
+        "head_error_deg": 5.153625121452854
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.4642753285250797,
+        "state_error": 0.2554882764816284,
+        "head_error_deg": 5.795920261056323
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.7388821706247727,
+        "state_error": 0.28389906883239746,
+        "head_error_deg": 6.116422102050899
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 1.2421173602881574,
+        "state_error": 0.3786773383617401,
+        "head_error_deg": 6.377278364037468
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.382316315466413,
+        "state_error": 0.5145127177238464,
+        "head_error_deg": 6.113372522218724
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.3269637482003436,
+        "state_error": 0.5820688009262085,
+        "head_error_deg": 5.242156906399214
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.2429213070395613,
+        "state_error": 0.4997619092464447,
+        "head_error_deg": 4.404181490520592
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.3652741018777643,
+        "state_error": 0.3404134511947632,
+        "head_error_deg": 3.7426607834619365
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.5641768423337186,
+        "state_error": 0.21644257009029388,
+        "head_error_deg": 3.1409551497770987
+      }
+    ],
+    "216_later_all_lower": [
+      {
+        "tick": 216,
+        "head_deg_per_60hz_tick": 1.2397000838047574,
+        "state_error": 0.12433165311813354,
+        "head_error_deg": 1.3387068870863037
+      },
+      {
+        "tick": 218,
+        "head_deg_per_60hz_tick": 0.9579852846119151,
+        "state_error": 0.28628069162368774,
+        "head_error_deg": 2.2556313612253485
+      },
+      {
+        "tick": 220,
+        "head_deg_per_60hz_tick": 0.7051084208065128,
+        "state_error": 0.41363397240638733,
+        "head_error_deg": 2.9018337938828145
+      },
+      {
+        "tick": 222,
+        "head_deg_per_60hz_tick": 0.3993723566270472,
+        "state_error": 0.44898083806037903,
+        "head_error_deg": 3.4194862237723345
+      },
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 0.9894414345506154,
+        "state_error": 0.47548818588256836,
+        "head_error_deg": 4.052220646407774
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.062257377712431,
+        "state_error": 0.5378859043121338,
+        "head_error_deg": 5.13266859148663
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 2.5980873728445255,
+        "state_error": 0.5427261590957642,
+        "head_error_deg": 7.448225891198853
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 2.5529351296283944,
+        "state_error": 0.5318078994750977,
+        "head_error_deg": 10.118992912770858
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 2.4955948973339868,
+        "state_error": 0.47138404846191406,
+        "head_error_deg": 12.378812620893065
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.4217152102516946,
+        "state_error": 0.36759692430496216,
+        "head_error_deg": 14.077113445183901
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 1.866171801450306,
+        "state_error": 0.2397422045469284,
+        "head_error_deg": 14.788625108126112
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 1.1154984602098381,
+        "state_error": 0.24332758784294128,
+        "head_error_deg": 14.417857742715212
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.8138995342750178,
+        "state_error": 0.30655771493911743,
+        "head_error_deg": 13.406528838636673
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 1.023553518220749,
+        "state_error": 0.36070337891578674,
+        "head_error_deg": 12.30321651358828
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.1041671745375692,
+        "state_error": 0.4438669681549072,
+        "head_error_deg": 10.984908212610128
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.0037549955796876,
+        "state_error": 0.4859212636947632,
+        "head_error_deg": 9.376521128855547
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 0.7931288577367511,
+        "state_error": 0.38815584778785706,
+        "head_error_deg": 8.02637451286122
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 0.7615126609293645,
+        "state_error": 0.3323913812637329,
+        "head_error_deg": 7.0165549570992765
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 0.7875151497743466,
+        "state_error": 0.26943814754486084,
+        "head_error_deg": 5.899648027807579
+      }
+    ],
+    "216_gaze_zero": [
+      {
+        "tick": 216,
+        "head_deg_per_60hz_tick": 2.1828971399965815,
+        "state_error": 0.2790183126926422,
+        "head_error_deg": 3.456281585137833
+      },
+      {
+        "tick": 218,
+        "head_deg_per_60hz_tick": 1.1897581708209508,
+        "state_error": 0.5108669996261597,
+        "head_error_deg": 4.975038121193029
+      },
+      {
+        "tick": 220,
+        "head_deg_per_60hz_tick": 0.835067666132654,
+        "state_error": 0.6672449707984924,
+        "head_error_deg": 6.1699897991911925
+      },
+      {
+        "tick": 222,
+        "head_deg_per_60hz_tick": 0.5904704266914744,
+        "state_error": 0.7607762813568115,
+        "head_error_deg": 7.576927603023265
+      },
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 0.8891293690843584,
+        "state_error": 0.8082400560379028,
+        "head_error_deg": 9.268739393016624
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 1.841971074150561,
+        "state_error": 0.8457028269767761,
+        "head_error_deg": 11.327848227538938
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 2.615301560911538,
+        "state_error": 0.9003032445907593,
+        "head_error_deg": 13.696365796889728
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 2.5567738224806065,
+        "state_error": 0.9504239559173584,
+        "head_error_deg": 16.17179558348353
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 2.1741830047371207,
+        "state_error": 0.9812304377555847,
+        "head_error_deg": 18.423927843846254
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.059739617674358,
+        "state_error": 0.9975513219833374,
+        "head_error_deg": 20.01678531625023
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 1.6122869630001693,
+        "state_error": 1.005248785018921,
+        "head_error_deg": 21.013874875627913
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.47553462026786986,
+        "state_error": 1.0253486633300781,
+        "head_error_deg": 21.971090171345796
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.6209005317260307,
+        "state_error": 1.0409075021743774,
+        "head_error_deg": 23.031190134822044
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 1.5044352577121436,
+        "state_error": 1.0422499179840088,
+        "head_error_deg": 24.353176710837918
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 2.2603601260900392,
+        "state_error": 1.0391993522644043,
+        "head_error_deg": 25.91526560952619
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 2.5414753137904564,
+        "state_error": 1.0247669219970703,
+        "head_error_deg": 27.494271318529705
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 2.4076058863071688,
+        "state_error": 0.9901824593544006,
+        "head_error_deg": 28.971768131640815
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 2.289147007214178,
+        "state_error": 0.9593893885612488,
+        "head_error_deg": 30.151543311867147
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 2.3911643294052056,
+        "state_error": 0.994763970375061,
+        "head_error_deg": 31.07256303612223
+      }
+    ],
+    "224_baseline": [
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.417630289695968,
+        "state_error": 1.6391277313232422e-07,
+        "head_error_deg": 5.858685637290128e-06
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.8210802097404573,
+        "state_error": 0.07638457417488098,
+        "head_error_deg": 0.39386054041388563
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.930596378983488,
+        "state_error": 0.12041476368904114,
+        "head_error_deg": 0.9707188795938945
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.941626574703205,
+        "state_error": 0.14003866910934448,
+        "head_error_deg": 1.5285075189139024
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 3.4827428672429432,
+        "state_error": 0.14820155501365662,
+        "head_error_deg": 2.087510399957357
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 3.0835133661610064,
+        "state_error": 0.15693452954292297,
+        "head_error_deg": 2.6514402686399197
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.221263754914852,
+        "state_error": 0.167047917842865,
+        "head_error_deg": 3.051343970823665
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.9654231664573001,
+        "state_error": 0.17537936568260193,
+        "head_error_deg": 3.276079890429766
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.38253559209221466,
+        "state_error": 0.1846746802330017,
+        "head_error_deg": 3.397565565633596
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 0.9449970753387846,
+        "state_error": 0.1928328573703766,
+        "head_error_deg": 3.5328410042583442
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.5636475332470072,
+        "state_error": 0.2004028856754303,
+        "head_error_deg": 3.72189859421239
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.859542582990597,
+        "state_error": 0.21007788181304932,
+        "head_error_deg": 3.9730043410797116
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.7119352001363406,
+        "state_error": 0.21932440996170044,
+        "head_error_deg": 4.326495314986431
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.4883574880391466,
+        "state_error": 0.22487032413482666,
+        "head_error_deg": 4.6637603173447575
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.5813900083084151,
+        "state_error": 0.22634899616241455,
+        "head_error_deg": 4.838810617711449
+      }
+    ],
+    "224_viewer_forearm_clamp": [
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.417630289695968,
+        "state_error": 0.04339700937271118,
+        "head_error_deg": 5.858685637290128e-06
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.7625978560495295,
+        "state_error": 0.07981148362159729,
+        "head_error_deg": 0.2975648574363217
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.905440607901227,
+        "state_error": 0.11618369817733765,
+        "head_error_deg": 0.812426675120342
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.943456319248925,
+        "state_error": 0.13403525948524475,
+        "head_error_deg": 1.3458066605194714
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 3.5008629793322763,
+        "state_error": 0.1430322825908661,
+        "head_error_deg": 1.8857275719349895
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 3.085430911925178,
+        "state_error": 0.15082478523254395,
+        "head_error_deg": 2.388765184526026
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.205828790646939,
+        "state_error": 0.1593661606311798,
+        "head_error_deg": 2.6913862733474203
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.9511318605694075,
+        "state_error": 0.16621842980384827,
+        "head_error_deg": 2.8330285968303053
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.38132078341537495,
+        "state_error": 0.17304199934005737,
+        "head_error_deg": 2.921028298364283
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 0.9325115314048249,
+        "state_error": 0.17714303731918335,
+        "head_error_deg": 3.085162238535427
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.5133976666112239,
+        "state_error": 0.17871001362800598,
+        "head_error_deg": 3.33129736302506
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.793253411649037,
+        "state_error": 0.181553453207016,
+        "head_error_deg": 3.58938890170884
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.6706023277988207,
+        "state_error": 0.1844559907913208,
+        "head_error_deg": 3.8629602523755926
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.5249710520175674,
+        "state_error": 0.18295830488204956,
+        "head_error_deg": 4.060534330953559
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.692693585495113,
+        "state_error": 0.17988526821136475,
+        "head_error_deg": 4.076217987307867
+      }
+    ],
+    "224_actual_future_roots": [
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.41763008467385,
+        "state_error": 1.7881393432617188e-07,
+        "head_error_deg": 4.59882531649152e-06
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.821080800712268,
+        "state_error": 0.0763845145702362,
+        "head_error_deg": 0.39385914192045485
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.9305944123143344,
+        "state_error": 0.12041449546813965,
+        "head_error_deg": 0.9707162214043438
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.9416228851099353,
+        "state_error": 0.14003834128379822,
+        "head_error_deg": 1.528498868741016
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 3.482726362247072,
+        "state_error": 0.14820101857185364,
+        "head_error_deg": 2.0874668706231088
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 3.083501038760152,
+        "state_error": 0.15693387389183044,
+        "head_error_deg": 2.651353728580676
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.2212551913200422,
+        "state_error": 0.16704684495925903,
+        "head_error_deg": 3.051193427138399
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.9654256825619977,
+        "state_error": 0.17537805438041687,
+        "head_error_deg": 3.27587482204709
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.3824881942633943,
+        "state_error": 0.1846732497215271,
+        "head_error_deg": 3.3972809055648656
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 0.9450228362724157,
+        "state_error": 0.19283214211463928,
+        "head_error_deg": 3.532584910671756
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.5746884720279184,
+        "state_error": 0.20040979981422424,
+        "head_error_deg": 3.6988510238424683
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.8890823845633737,
+        "state_error": 0.21052107214927673,
+        "head_error_deg": 3.8891641146665132
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.7530530320511069,
+        "state_error": 0.21966487169265747,
+        "head_error_deg": 4.159701175148652
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.5645083178537915,
+        "state_error": 0.22530001401901245,
+        "head_error_deg": 4.407454417163119
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.6564238184144058,
+        "state_error": 0.22635114192962646,
+        "head_error_deg": 4.519260041456411
+      }
+    ],
+    "224_later_root_only": [
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 0.5686210560762306,
+        "state_error": 0.1676817685365677,
+        "head_error_deg": 1.897397851973461
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.239273061130384,
+        "state_error": 0.3065573573112488,
+        "head_error_deg": 2.8257755998441523
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.3271981481535566,
+        "state_error": 0.39074012637138367,
+        "head_error_deg": 3.620841399608981
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.2871901921821163,
+        "state_error": 0.4254205822944641,
+        "head_error_deg": 4.597422485295555
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 2.9265457859405193,
+        "state_error": 0.40614986419677734,
+        "head_error_deg": 5.412388140527506
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.7915187924637612,
+        "state_error": 0.34548628330230713,
+        "head_error_deg": 5.554257493478767
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.315936585237916,
+        "state_error": 0.2834048867225647,
+        "head_error_deg": 5.04294033364192
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 1.3764657093688957,
+        "state_error": 0.24225811660289764,
+        "head_error_deg": 4.307235090804157
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.6384197374062609,
+        "state_error": 0.23704302310943604,
+        "head_error_deg": 3.711184222823876
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 0.7322836518671255,
+        "state_error": 0.22418370842933655,
+        "head_error_deg": 3.2084765108947564
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.2714456128363267,
+        "state_error": 0.20187485218048096,
+        "head_error_deg": 2.658211994338372
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.4992535467574644,
+        "state_error": 0.19851244986057281,
+        "head_error_deg": 2.231016067515856
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.297993471456529,
+        "state_error": 0.1985866129398346,
+        "head_error_deg": 2.39059415395403
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 0.9769017411792597,
+        "state_error": 0.21217010915279388,
+        "head_error_deg": 3.1931915536126474
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.0006430933262445,
+        "state_error": 0.2116108387708664,
+        "head_error_deg": 4.387306339245685
+      }
+    ],
+    "224_later_pelvis_only": [
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.4052986948553678,
+        "state_error": 0.04344077408313751,
+        "head_error_deg": 0.12776705891350182
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.7862510154811178,
+        "state_error": 0.07904917746782303,
+        "head_error_deg": 0.227604301682466
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.852117127246161,
+        "state_error": 0.11039096117019653,
+        "head_error_deg": 0.8254335623481489
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.8031587080254607,
+        "state_error": 0.1289137899875641,
+        "head_error_deg": 1.5525271506873477
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 3.282682088903972,
+        "state_error": 0.1405203640460968,
+        "head_error_deg": 2.2053942414911254
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.8832471980349035,
+        "state_error": 0.16249769926071167,
+        "head_error_deg": 2.5873573916299892
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 2.1789029456427382,
+        "state_error": 0.17565423250198364,
+        "head_error_deg": 2.8278777856701067
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 1.0594224894423312,
+        "state_error": 0.1748279333114624,
+        "head_error_deg": 3.1320072121008304
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.5504671331095611,
+        "state_error": 0.17656934261322021,
+        "head_error_deg": 3.546393670894924
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 1.0347025606936082,
+        "state_error": 0.1864791214466095,
+        "head_error_deg": 3.9599300036169645
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.547525682557808,
+        "state_error": 0.20538273453712463,
+        "head_error_deg": 4.2964765620257435
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.716047975495541,
+        "state_error": 0.22871315479278564,
+        "head_error_deg": 4.597542877424582
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.4675739415878726,
+        "state_error": 0.27519041299819946,
+        "head_error_deg": 4.9052572009326605
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.2675536488897774,
+        "state_error": 0.26161330938339233,
+        "head_error_deg": 5.238179472389297
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.4554942151680643,
+        "state_error": 0.21178294718265533,
+        "head_error_deg": 5.457824981138106
+      }
+    ],
+    "224_later_feet_only": [
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.3855260132887854,
+        "state_error": 0.022280514240264893,
+        "head_error_deg": 0.3911524852931736
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.695437711765375,
+        "state_error": 0.0802522599697113,
+        "head_error_deg": 0.6817297820001635
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.337620546632612,
+        "state_error": 0.12333309650421143,
+        "head_error_deg": 1.2932393967019569
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 3.1840275549813755,
+        "state_error": 0.149461030960083,
+        "head_error_deg": 2.3591518716700346
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 2.786553667546185,
+        "state_error": 0.1966104954481125,
+        "head_error_deg": 3.4516958196827465
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.3040601724637813,
+        "state_error": 0.24452877044677734,
+        "head_error_deg": 4.626141446679002
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 1.358792293882134,
+        "state_error": 0.25635474920272827,
+        "head_error_deg": 5.660957972640423
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.4846595818076287,
+        "state_error": 0.245582714676857,
+        "head_error_deg": 6.261557727105165
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.7449834816847394,
+        "state_error": 0.2825130224227905,
+        "head_error_deg": 6.537168028974581
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 1.2347441118349816,
+        "state_error": 0.3748185634613037,
+        "head_error_deg": 6.746883572837445
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.3656473319569453,
+        "state_error": 0.5099028944969177,
+        "head_error_deg": 6.440136027789119
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.3028825409438616,
+        "state_error": 0.5782329440116882,
+        "head_error_deg": 5.529895350413699
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 1.2161867032665679,
+        "state_error": 0.4970259666442871,
+        "head_error_deg": 4.649441090456268
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 1.3415032187985432,
+        "state_error": 0.33852124214172363,
+        "head_error_deg": 3.939837691310733
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 1.5485609620175862,
+        "state_error": 0.22057326138019562,
+        "head_error_deg": 3.2931556074747834
+      }
+    ],
+    "224_later_all_lower": [
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 0.4736424927147711,
+        "state_error": 0.13804727792739868,
+        "head_error_deg": 1.907431977231064
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.1272081892718364,
+        "state_error": 0.2652173936367035,
+        "head_error_deg": 3.1010291644762407
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 2.9378984740406096,
+        "state_error": 0.32954931259155273,
+        "head_error_deg": 4.937968293635948
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 2.893369257054477,
+        "state_error": 0.33381208777427673,
+        "head_error_deg": 7.057058498350382
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 2.697392708345089,
+        "state_error": 0.31802600622177124,
+        "head_error_deg": 9.057077692982794
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 2.4781275084402457,
+        "state_error": 0.28510910272598267,
+        "head_error_deg": 10.760257495354193
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 1.8189905349967024,
+        "state_error": 0.20607240498065948,
+        "head_error_deg": 11.590223673527134
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.9911136097980277,
+        "state_error": 0.2641553580760956,
+        "head_error_deg": 11.470709253791693
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.7329898926392477,
+        "state_error": 0.3269737958908081,
+        "head_error_deg": 10.70518675629302
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 1.0722738794250657,
+        "state_error": 0.38011595606803894,
+        "head_error_deg": 9.86546570642002
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 1.1901032502253208,
+        "state_error": 0.4988099932670593,
+        "head_error_deg": 8.919276901936394
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 1.0801980234146442,
+        "state_error": 0.5338461995124817,
+        "head_error_deg": 7.781451902077249
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 0.868327615369794,
+        "state_error": 0.42525795102119446,
+        "head_error_deg": 6.928539765363648
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 0.845433535458804,
+        "state_error": 0.32936692237854004,
+        "head_error_deg": 6.3758217127533605
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 0.8650435778917318,
+        "state_error": 0.26438429951667786,
+        "head_error_deg": 5.652681448668049
+      }
+    ],
+    "224_gaze_zero": [
+      {
+        "tick": 224,
+        "head_deg_per_60hz_tick": 1.1532235415099914,
+        "state_error": 0.2777661383152008,
+        "head_error_deg": 3.7597578890135397
+      },
+      {
+        "tick": 226,
+        "head_deg_per_60hz_tick": 2.1689052345535957,
+        "state_error": 0.54315584897995,
+        "head_error_deg": 5.875783706192416
+      },
+      {
+        "tick": 228,
+        "head_deg_per_60hz_tick": 3.10855586385201,
+        "state_error": 0.700794517993927,
+        "head_error_deg": 7.52530877401311
+      },
+      {
+        "tick": 230,
+        "head_deg_per_60hz_tick": 2.8815976904657417,
+        "state_error": 0.7572196125984192,
+        "head_error_deg": 9.492621733350028
+      },
+      {
+        "tick": 232,
+        "head_deg_per_60hz_tick": 2.2843982870066446,
+        "state_error": 0.8283559679985046,
+        "head_error_deg": 11.682636194753904
+      },
+      {
+        "tick": 234,
+        "head_deg_per_60hz_tick": 1.9698131588252694,
+        "state_error": 0.903394341468811,
+        "head_error_deg": 13.451551102554191
+      },
+      {
+        "tick": 236,
+        "head_deg_per_60hz_tick": 1.4795196079378448,
+        "state_error": 0.9466809034347534,
+        "head_error_deg": 14.57310547735154
+      },
+      {
+        "tick": 238,
+        "head_deg_per_60hz_tick": 0.38100855190948046,
+        "state_error": 0.9913946390151978,
+        "head_error_deg": 15.49227662289062
+      },
+      {
+        "tick": 240,
+        "head_deg_per_60hz_tick": 0.5769699891935944,
+        "state_error": 1.025455117225647,
+        "head_error_deg": 16.538993817506597
+      },
+      {
+        "tick": 242,
+        "head_deg_per_60hz_tick": 1.534782689573235,
+        "state_error": 1.0385380983352661,
+        "head_error_deg": 17.97418061051211
+      },
+      {
+        "tick": 244,
+        "head_deg_per_60hz_tick": 2.3814494889437023,
+        "state_error": 1.0410161018371582,
+        "head_error_deg": 19.837461252202527
+      },
+      {
+        "tick": 246,
+        "head_deg_per_60hz_tick": 2.752557009379791,
+        "state_error": 1.0278979539871216,
+        "head_error_deg": 21.890725632868172
+      },
+      {
+        "tick": 248,
+        "head_deg_per_60hz_tick": 2.675091175104149,
+        "state_error": 0.9923884272575378,
+        "head_error_deg": 23.914482955925745
+      },
+      {
+        "tick": 250,
+        "head_deg_per_60hz_tick": 2.5810659746301305,
+        "state_error": 0.9587467312812805,
+        "head_error_deg": 25.644087762703787
+      },
+      {
+        "tick": 252,
+        "head_deg_per_60hz_tick": 2.6709000120434303,
+        "state_error": 0.991200864315033,
+        "head_error_deg": 27.10810321102234
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+# Optional AVX2 actual-NN diagnostic
+
+Independent reduction of the complete reports in `Avx2DiagnosticComparison.json`; all 26 workload, control, query and lifecycle checks pass for every run. The AVX2 runs preserve 100 agents, 60 warmup frames, 360 measured 60 Hz world frames, 180 actual 30 Hz NN steps, 18,000 physical feedback samples, all three CPU models at batch 100, 22 bodies/21 joints/88 bones per character, and movement-only camera/fist exclusions. No full-pipeline target is passed.
+
+| Report suffix | Native profile | Workers / configured job concurrency | World mean ms | Report median ms | p95 ms | Native Update ms | Manager total ms |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `nn_jolt_nolock_workers7_A_100_20260909_1452` | SSE2 | 7 / 8 | 11.304268 | 11.428997 | 14.014099 | 1.418071 | 2.302683 |
+| `avx2_nn_workers7_A_100_20260909_1507` | AVX2 + FMA, precise | 7 / 8 | 11.496969 | 11.319499 | 14.328603 | 1.509406 | 2.296519 |
+| `avx2_nn_workers11_A_100_20260909_1508` | AVX2 + FMA, precise | 11 / 12 | 11.484853 | 11.480004 | 14.302202 | 1.325217 | 2.414554 |
+
+Each setting has one process/run. The historical SSE2 control and newly compiled AVX2 consumer are different build artifacts. These results establish no whole-pipeline AVX2 speedup: seven-worker AVX2 is 0.192701 ms slower than the SSE2 control. Within AVX2, eleven workers reduce native Update by 0.184189 ms, while manager time rises 0.118035 ms and world mean changes only -0.012116 ms. Configured job concurrency does not measure worker utilization. Report medians use the harness's upper middle order statistic; the JSON also records conventional medians. Times are elapsed wall/GT intervals, not summed worker CPU cycles.
+
+Both AVX2 CPU launch sidecars record successful baseline preflight: required/supported ISA mask 2015, missing mask 0, POPCNT, XSAVE, OSXSAVE, XCR0 7 and AVX OS context. Both identify native DLL SHA256 `098F741EFAAECB54FA46654332F6A409DA5D2061AD742305505B362401953401` and probe SHA256 `F4C2A61DEDF34E79B4AA6478600EADCA0674F6263E38BD11930870684885BB31`. Each corresponding Unreal log line 918 independently reports the native AVX2/FMA contract, ISA mask 2015 and policy 3. The launcher recorded `powershell.exe` as its child; the Unreal startup fingerprint closes the subsequent native-profile check. This is a local guarded diagnostic, not an in-process fallback or portable CPU claim.
+
+Every run verifies 36,000 character records, 792,000 dynamic body checks, 3,168,000 bone checks and 36,000 unfiltered head rays with original character mesh/bone identity. All 2,200 native character bodies are active in all 360 frames. Own-capsule ignored fallback and filtered center-ray fallback are both zero. All sampled GT frame endpoints and 36,000 refresh entry observations are P-class; GT affinity is restored from `0xff` to original `0xfff`, with process affinity and priorities unchanged. Observations are not continuous residency evidence.
+
+All runs retain removal during bone-finalization, 22 stale removed-body handles, 2,178 surviving handles, 99 validated survivors after the extra step, pending-admission cancellation and floor-only teardown with zero native joints/owners/Chaos dynamic bodies. The actual-NN fixture intentionally skips synthetic pose mutation; it does not skip removal callbacks. Natural motion-edge ray coverage is zero, so the separately identified controlled post-EndPhysics foundation test remains necessary. NullRHI and query identity do not validate rendered FPS or blood pixels.
+
+Full source paths, report SHA256 hashes, sidecar contents, native log lines, all checks, exact counts, errors, CPU observations, controls and phase deltas are in the adjacent JSON. Root reports restoring SSE2 for the next experiment; this artifact does not assert or mutate the currently loaded profile.

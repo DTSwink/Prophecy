@@ -1,0 +1,16 @@
+const fs=require('fs'),assert=require('assert/strict'),crypto=require('crypto'),{chromium}=require('C:/Users/singerie/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+assert.equal(crypto.createHash('sha256').update(fs.readFileSync('recovery.js')).digest('hex'),crypto.createHash('sha256').update(fs.readFileSync('playback-performance-before/recovery.js')).digest('hex'),'Motion algorithm changed');
+(async()=>{const b=await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});try{const p=await b.newPage({viewport:{width:1440,height:900}});await p.goto('http://127.0.0.1:8817/');await p.waitForFunction(()=>recoveryLab.ready);const result=await p.evaluate(async()=>{
+ const source=await(await fetch('playback-performance-before/renderer.js')).text();eval(source+'\nwindow.LegacyRenderer=WebGLMotionRenderer;');let checked=0,maxError=0;
+ for(const attack of ['slashLU','hookL','KickR']){await recoveryLab.select(attack,20);for(const upperOnly of [false,true])for(const skeleton of [false,true]){
+ document.getElementById('upperOnly').checked=upperOnly;document.getElementById('skeleton').checked=skeleton;document.getElementById('idleGhost').checked=true;for(const id of ['handGizmos','lowerarmGizmos','upperarmGizmos'])document.getElementById(id).checked=true;
+ for(const t of [.371,recoveryLab.model().attackSeconds+.173]){recoveryLab.seek(t);const data=recoveryLab.currentPose,root=recoveryLab.model().poses[0].points[0],captures=[];
+ for(const Prototype of [LegacyRenderer.prototype,WebGLMotionRenderer.prototype]){const instance=Object.assign(Object.create(Prototype),{canvas:renderer.canvas,gl:renderer.gl,program:renderer.program,locations:renderer.locations});const arrays=[];instance.bindAndDraw=(_b,values)=>arrays.push(new Float32Array(values.view?values.view():values));instance.draw(data,root);captures.push(arrays);}
+ for(let k=0;k<captures[0].length;k++){const a=captures[0][k],b=captures[1][k];if(a.length!==b.length)throw Error('Tessellation changed');for(let i=0;i<a.length;i++){maxError=Math.max(maxError,Math.abs(a[i]-b[i]));if(a[i]!==b[i])throw Error('Rendered vertex differs '+i+' '+a[i]+' '+b[i]);}}
+ checked++;
+ }} }
+ recoveryLab.seek(.3);const expected=document.getElementById('viewport').toDataURL('image/png'),savedPose=JSON.stringify(recoveryLab.currentPose),pending=canvasPNG();recoveryLab.seek(.7);const actual=await pending;
+ const pixels=async url=>{const blob=await(await fetch(url)).blob(),bmp=await createImageBitmap(blob),c=new OffscreenCanvas(bmp.width,bmp.height),ctx=c.getContext('2d');ctx.drawImage(bmp,0,0);bmp.close();return new Uint8Array(ctx.getImageData(0,0,c.width,c.height).data.buffer)};
+ const [a,b]=await Promise.all([pixels(expected),pixels(actual)]);if(a.length!==b.length||a.some((v,i)=>v!==b[i]))throw Error('Async capture changed pixels');
+ return {checkedViews:checked,maxVertexError:maxError,asyncCaptureExact:true,advancedDuringCapture:savedPose!==JSON.stringify(recoveryLab.currentPose)};
+ });fs.writeFileSync('playback-fidelity-verification.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));}finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});

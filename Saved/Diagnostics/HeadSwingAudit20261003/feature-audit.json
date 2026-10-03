@@ -1,0 +1,658 @@
+{
+  "baseline": [
+    {
+      "tick": 216,
+      "previous_pelvis": 3.788380542601999e-08,
+      "current_pelvis": 6.739261770860594e-08,
+      "next_pelvis": 2.5250032814616574e-07,
+      "current_feet": 4.36837274131463e-08,
+      "next_feet": 2.577064765751924e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 218,
+      "previous_pelvis": 6.739261770860594e-08,
+      "current_pelvis": 4.210078363708902e-08,
+      "next_pelvis": 1.9837121667531932e-07,
+      "current_feet": 8.574004473071994e-08,
+      "next_feet": 1.5863105201630034e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 220,
+      "previous_pelvis": 4.210078363708902e-08,
+      "current_pelvis": 8.290064346105908e-08,
+      "next_pelvis": 1.226040121093952e-07,
+      "current_feet": 4.410337095528405e-08,
+      "next_feet": 1.3341383861553702e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 222,
+      "previous_pelvis": 8.290064346105908e-08,
+      "current_pelvis": 6.043385603060614e-08,
+      "next_pelvis": 5.6730134978533187e-08,
+      "current_feet": 3.219343835958455e-08,
+      "next_feet": 6.873649505134694e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 224,
+      "previous_pelvis": 6.043385603060614e-08,
+      "current_pelvis": 4.5481022836746376e-08,
+      "next_pelvis": 8.284016606019406e-08,
+      "current_feet": 5.4059984599952315e-08,
+      "next_feet": 7.706478877267386e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 226,
+      "previous_pelvis": 4.5481022836746376e-08,
+      "current_pelvis": 7.808587554336555e-08,
+      "next_pelvis": 9.999306649355333e-08,
+      "current_feet": 7.796578038732349e-08,
+      "next_feet": 9.023130376206723e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 228,
+      "previous_pelvis": 7.808587554336555e-08,
+      "current_pelvis": 9.985990090388697e-08,
+      "next_pelvis": 6.318266221327917e-08,
+      "current_feet": 9.030200254223075e-08,
+      "next_feet": 0.00021200627088546753,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 230,
+      "previous_pelvis": 9.985990090388697e-08,
+      "current_pelvis": 6.318266221327917e-08,
+      "next_pelvis": 6.175501632288416e-08,
+      "current_feet": 3.040821705546648e-08,
+      "next_feet": 9.834766387939453e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 232,
+      "previous_pelvis": 6.318266221327917e-08,
+      "current_pelvis": 6.175501632288416e-08,
+      "next_pelvis": 4.526157137973996e-08,
+      "current_feet": 7.691764714046201e-08,
+      "next_feet": 8.472800254821777e-05,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 234,
+      "previous_pelvis": 6.175501632288416e-08,
+      "current_pelvis": 4.526157137973996e-08,
+      "next_pelvis": 7.92820349371226e-08,
+      "current_feet": 8.826289488172989e-08,
+      "next_feet": 5.4746866226224045e-05,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 236,
+      "previous_pelvis": 4.526157137973996e-08,
+      "current_pelvis": 7.932424006540373e-08,
+      "next_pelvis": 1.4901161138336505e-08,
+      "current_feet": 6.356563209131139e-08,
+      "next_feet": 7.9870223999301e-06,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 238,
+      "previous_pelvis": 7.932424006540373e-08,
+      "current_pelvis": 1.4802750081255311e-08,
+      "next_pelvis": 7.209271535302264e-08,
+      "current_feet": 5.0611434598835103e-08,
+      "next_feet": 3.417455746168585e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 240,
+      "previous_pelvis": 1.4802750081255311e-08,
+      "current_pelvis": 7.209271535302264e-08,
+      "next_pelvis": 1.8989737671226692e-08,
+      "current_feet": 3.417455746168585e-08,
+      "next_feet": 6.583161127338144e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 242,
+      "previous_pelvis": 7.209271535302264e-08,
+      "current_pelvis": 1.8989737671226692e-08,
+      "next_pelvis": 1.6391277318783537e-07,
+      "current_feet": 6.583161127338144e-08,
+      "next_feet": 1.7881393432617188e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 244,
+      "previous_pelvis": 1.8989737671226692e-08,
+      "current_pelvis": 8.245283789065638e-08,
+      "next_pelvis": 1.490116118829654e-07,
+      "current_feet": 7.910356436546806e-08,
+      "next_feet": 1.4901161193847656e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 246,
+      "previous_pelvis": 8.245283789065638e-08,
+      "current_pelvis": 5.7037485956534795e-08,
+      "next_pelvis": 5.960464483090178e-08,
+      "current_feet": 5.137934577792436e-08,
+      "next_feet": 5.960464477539063e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 248,
+      "previous_pelvis": 5.7037485956534795e-08,
+      "current_pelvis": 5.532989733048055e-08,
+      "next_pelvis": 7.157887238484761e-08,
+      "current_feet": 4.778182971509892e-08,
+      "next_feet": 6.988559475562539e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 250,
+      "previous_pelvis": 5.532989733048055e-08,
+      "current_pelvis": 7.157887249586992e-08,
+      "next_pelvis": 7.521860867498731e-08,
+      "current_feet": 6.988559486664769e-08,
+      "next_feet": 7.450580596923828e-08,
+      "root_copy": 0.0
+    }
+  ],
+  "no_feedback": [
+    {
+      "tick": 216,
+      "previous_pelvis": 3.788380542601999e-08,
+      "current_pelvis": 6.739261770860594e-08,
+      "next_pelvis": 2.5250032814616574e-07,
+      "current_feet": 4.36837274131463e-08,
+      "next_feet": 2.577064765751924e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 218,
+      "previous_pelvis": 6.739261770860594e-08,
+      "current_pelvis": 4.210078363708902e-08,
+      "next_pelvis": 1.9837121667531932e-07,
+      "current_feet": 8.574004473071994e-08,
+      "next_feet": 1.5863105201630034e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 220,
+      "previous_pelvis": 4.210078363708902e-08,
+      "current_pelvis": 8.290064346105908e-08,
+      "next_pelvis": 1.226040121093952e-07,
+      "current_feet": 4.410337095528405e-08,
+      "next_feet": 1.3341383861553702e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 222,
+      "previous_pelvis": 8.290064346105908e-08,
+      "current_pelvis": 6.043385603060614e-08,
+      "next_pelvis": 5.6730134978533187e-08,
+      "current_feet": 3.219343835958455e-08,
+      "next_feet": 6.873649505134694e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 224,
+      "previous_pelvis": 6.043385603060614e-08,
+      "current_pelvis": 4.5481022836746376e-08,
+      "next_pelvis": 8.284016606019406e-08,
+      "current_feet": 5.4059984599952315e-08,
+      "next_feet": 7.706478877267386e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 226,
+      "previous_pelvis": 4.5481022836746376e-08,
+      "current_pelvis": 7.808587554336555e-08,
+      "next_pelvis": 9.999306649355333e-08,
+      "current_feet": 7.796578038732349e-08,
+      "next_feet": 9.023130376206723e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 228,
+      "previous_pelvis": 7.808587554336555e-08,
+      "current_pelvis": 9.985990090388697e-08,
+      "next_pelvis": 6.318266221327917e-08,
+      "current_feet": 9.030200254223075e-08,
+      "next_feet": 0.00021200627088546753,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 230,
+      "previous_pelvis": 9.985990090388697e-08,
+      "current_pelvis": 6.318266221327917e-08,
+      "next_pelvis": 6.175501632288416e-08,
+      "current_feet": 3.040821705546648e-08,
+      "next_feet": 9.834766387939453e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 232,
+      "previous_pelvis": 6.318266221327917e-08,
+      "current_pelvis": 6.175501632288416e-08,
+      "next_pelvis": 4.526157137973996e-08,
+      "current_feet": 7.691764714046201e-08,
+      "next_feet": 8.472800254821777e-05,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 234,
+      "previous_pelvis": 6.175501632288416e-08,
+      "current_pelvis": 4.526157137973996e-08,
+      "next_pelvis": 7.92820349371226e-08,
+      "current_feet": 8.826289488172989e-08,
+      "next_feet": 5.4746866226224045e-05,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 236,
+      "previous_pelvis": 4.526157137973996e-08,
+      "current_pelvis": 7.932424006540373e-08,
+      "next_pelvis": 1.4901161138336505e-08,
+      "current_feet": 6.356563209131139e-08,
+      "next_feet": 7.9870223999301e-06,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 238,
+      "previous_pelvis": 7.932424006540373e-08,
+      "current_pelvis": 1.4802750081255311e-08,
+      "next_pelvis": 7.209271535302264e-08,
+      "current_feet": 5.0611434598835103e-08,
+      "next_feet": 3.417455746168585e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 240,
+      "previous_pelvis": 1.4802750081255311e-08,
+      "current_pelvis": 7.209271535302264e-08,
+      "next_pelvis": 1.8989737671226692e-08,
+      "current_feet": 3.417455746168585e-08,
+      "next_feet": 6.583161127338144e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 242,
+      "previous_pelvis": 7.209271535302264e-08,
+      "current_pelvis": 1.8989737671226692e-08,
+      "next_pelvis": 1.6391277318783537e-07,
+      "current_feet": 6.583161127338144e-08,
+      "next_feet": 1.7881393432617188e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 244,
+      "previous_pelvis": 1.8989737671226692e-08,
+      "current_pelvis": 8.245283789065638e-08,
+      "next_pelvis": 1.490116118829654e-07,
+      "current_feet": 7.910356436546806e-08,
+      "next_feet": 1.4901161193847656e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 246,
+      "previous_pelvis": 8.245283789065638e-08,
+      "current_pelvis": 5.7037485956534795e-08,
+      "next_pelvis": 5.960464483090178e-08,
+      "current_feet": 5.137934577792436e-08,
+      "next_feet": 5.960464477539063e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 248,
+      "previous_pelvis": 5.7037485956534795e-08,
+      "current_pelvis": 5.532989733048055e-08,
+      "next_pelvis": 7.157887238484761e-08,
+      "current_feet": 4.778182971509892e-08,
+      "next_feet": 6.988559475562539e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 250,
+      "previous_pelvis": 5.532989733048055e-08,
+      "current_pelvis": 7.157887249586992e-08,
+      "next_pelvis": 7.521860867498731e-08,
+      "current_feet": 6.988559486664769e-08,
+      "next_feet": 7.450580596923828e-08,
+      "root_copy": 0.0
+    }
+  ],
+  "later_turn_stop": [
+    {
+      "tick": 216,
+      "previous_pelvis": 6.549122977261845e-08,
+      "current_pelvis": 6.865466217753635e-08,
+      "next_pelvis": 5.001558783801485e-07,
+      "current_feet": 6.568479904434099e-08,
+      "next_feet": 0.0003857910633087436,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 218,
+      "previous_pelvis": 6.865466217753635e-08,
+      "current_pelvis": 2.0565806613248583e-08,
+      "next_pelvis": 5.629484365332615e-07,
+      "current_feet": 9.093842734397839e-08,
+      "next_feet": 0.0003856420516968051,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 220,
+      "previous_pelvis": 2.0565806613248583e-08,
+      "current_pelvis": 6.010366204733941e-08,
+      "next_pelvis": 4.355191516869361e-07,
+      "current_feet": 4.5516090341202187e-08,
+      "next_feet": 2.5928020477572478e-06,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 222,
+      "previous_pelvis": 6.010366204733941e-08,
+      "current_pelvis": 8.252438576938914e-08,
+      "next_pelvis": 3.5876486320640666e-07,
+      "current_feet": 4.117423613170246e-08,
+      "next_feet": 3.467251144528838e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 224,
+      "previous_pelvis": 8.252438576938914e-08,
+      "current_pelvis": 1.1180223336015871e-07,
+      "next_pelvis": 2.703129760028844e-07,
+      "current_feet": 8.351877278656161e-08,
+      "next_feet": 0.0003357455134391646,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 226,
+      "previous_pelvis": 1.1180223336015871e-07,
+      "current_pelvis": 6.681892195103956e-08,
+      "next_pelvis": 1.7580081584922524e-07,
+      "current_feet": 5.8559506688204976e-08,
+      "next_feet": 0.0002607405185699463,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 228,
+      "previous_pelvis": 6.681892195103956e-08,
+      "current_pelvis": 3.87215376429495e-08,
+      "next_pelvis": 9.27033401154631e-08,
+      "current_feet": 6.794288898159806e-08,
+      "next_feet": 0.00021855533123016357,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 230,
+      "previous_pelvis": 3.87215376429495e-08,
+      "current_pelvis": 8.471276280452855e-08,
+      "next_pelvis": 1.0666961436367473e-07,
+      "current_feet": 5.746128584060983e-08,
+      "next_feet": 0.00012215971946716309,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 232,
+      "previous_pelvis": 8.471276280452855e-08,
+      "current_pelvis": 7.127481771451727e-08,
+      "next_pelvis": 7.573099969349073e-08,
+      "current_feet": 8.579191002056064e-08,
+      "next_feet": 8.472800254824553e-05,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 234,
+      "previous_pelvis": 7.127481771451727e-08,
+      "current_pelvis": 3.830284622807767e-08,
+      "next_pelvis": 5.689779103423831e-08,
+      "current_feet": 6.860068513248052e-08,
+      "next_feet": 2.8312206271086104e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 236,
+      "previous_pelvis": 3.830284622807767e-08,
+      "current_pelvis": 5.600501495894861e-08,
+      "next_pelvis": 3.210972843170623e-08,
+      "current_feet": 5.4466880006209806e-08,
+      "next_feet": 8.615158308966642e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 238,
+      "previous_pelvis": 5.600501495894861e-08,
+      "current_pelvis": 3.210972843170623e-08,
+      "next_pelvis": 4.730365099625544e-08,
+      "current_feet": 8.615158308966642e-08,
+      "next_feet": 5.725210788787294e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 240,
+      "previous_pelvis": 3.210972843170623e-08,
+      "current_pelvis": 2.858837766517297e-08,
+      "next_pelvis": 4.355086491436566e-08,
+      "current_feet": 4.1507067227719574e-08,
+      "next_feet": 3.1716521076141646e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 242,
+      "previous_pelvis": 2.858837766517297e-08,
+      "current_pelvis": 4.31898626862548e-08,
+      "next_pelvis": 1.1907407504452294e-07,
+      "current_feet": 2.353782380115632e-08,
+      "next_feet": 1.2882415073578457e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 244,
+      "previous_pelvis": 4.31898626862548e-08,
+      "current_pelvis": 2.110461538862296e-08,
+      "next_pelvis": 1.0313942859496716e-07,
+      "current_feet": 4.341847270605825e-08,
+      "next_feet": 1.1498267338261314e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 246,
+      "previous_pelvis": 2.110461538862296e-08,
+      "current_pelvis": 3.571269535651567e-08,
+      "next_pelvis": 5.260381885641152e-08,
+      "current_feet": 8.091302750035112e-08,
+      "next_feet": 1.0520013682402407e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 248,
+      "previous_pelvis": 3.571269535651567e-08,
+      "current_pelvis": 5.038201889018268e-08,
+      "next_pelvis": 1.2384454489700047e-07,
+      "current_feet": 1.1841927483047243e-07,
+      "next_feet": 1.377908903921199e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 250,
+      "previous_pelvis": 5.038201889018268e-08,
+      "current_pelvis": 3.9827533715453e-08,
+      "next_pelvis": 1.5269884579005577e-07,
+      "current_feet": 7.245423294666153e-08,
+      "next_feet": 1.6231925575871387e-07,
+      "root_copy": 0.0
+    }
+  ],
+  "gaze_zero": [
+    {
+      "tick": 216,
+      "previous_pelvis": 3.3709610880450214e-08,
+      "current_pelvis": 8.601943324304528e-08,
+      "next_pelvis": 1.938178810223512e-07,
+      "current_feet": 6.860740398018095e-08,
+      "next_feet": 2.0231624345279364e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 218,
+      "previous_pelvis": 8.601943324304528e-08,
+      "current_pelvis": 6.286035281188873e-08,
+      "next_pelvis": 1.5905720240905197e-07,
+      "current_feet": 7.790397138496274e-08,
+      "next_feet": 1.616983947849704e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 220,
+      "previous_pelvis": 6.286035281188873e-08,
+      "current_pelvis": 4.2946456280112955e-08,
+      "next_pelvis": 1.1306278779876777e-07,
+      "current_feet": 5.172603401160103e-08,
+      "next_feet": 1.1739433941615474e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 222,
+      "previous_pelvis": 4.2946456280112955e-08,
+      "current_pelvis": 2.6111697137842782e-08,
+      "next_pelvis": 5.4213771527589216e-08,
+      "current_feet": 6.012743181127433e-08,
+      "next_feet": 7.20625469297076e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 224,
+      "previous_pelvis": 2.6111697137842782e-08,
+      "current_pelvis": 3.323096142704429e-08,
+      "next_pelvis": 3.6532310510040134e-08,
+      "current_feet": 7.161540893640961e-08,
+      "next_feet": 1.0172195963331632e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 226,
+      "previous_pelvis": 3.323096142704429e-08,
+      "current_pelvis": 3.710986085092571e-08,
+      "next_pelvis": 5.798242808108256e-08,
+      "current_feet": 9.753963070568972e-08,
+      "next_feet": 6.019384646283044e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 228,
+      "previous_pelvis": 3.710986085092571e-08,
+      "current_pelvis": 5.798242808108256e-08,
+      "next_pelvis": 1.0430812841244474e-07,
+      "current_feet": 6.009505237880575e-08,
+      "next_feet": 0.00021200627088546753,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 230,
+      "previous_pelvis": 5.798242808108256e-08,
+      "current_pelvis": 5.8345734244014125e-08,
+      "next_pelvis": 3.9093717929539196e-08,
+      "current_feet": 1.0150532192554351e-07,
+      "next_feet": 9.760260581970215e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 232,
+      "previous_pelvis": 5.8345734244014125e-08,
+      "current_pelvis": 3.9093717929539196e-08,
+      "next_pelvis": 1.9842763876454228e-08,
+      "current_feet": 8.967359554912235e-08,
+      "next_feet": 8.472800254821777e-05,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 234,
+      "previous_pelvis": 3.9093717929539196e-08,
+      "current_pelvis": 1.9842763876454228e-08,
+      "next_pelvis": 2.2444332614668383e-08,
+      "current_feet": 8.097165105080961e-08,
+      "next_feet": 5.4746866226224045e-05,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 236,
+      "previous_pelvis": 1.9842763876454228e-08,
+      "current_pelvis": 2.244433250364608e-08,
+      "next_pelvis": 3.81623944667453e-08,
+      "current_feet": 8.090663050630553e-08,
+      "next_feet": 7.9870223999301e-06,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 238,
+      "previous_pelvis": 2.244433250364608e-08,
+      "current_pelvis": 3.81623944667453e-08,
+      "next_pelvis": 7.163152904166026e-08,
+      "current_feet": 8.443665910906617e-08,
+      "next_feet": 6.315096934272901e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 240,
+      "previous_pelvis": 3.81623944667453e-08,
+      "current_pelvis": 7.163152904166026e-08,
+      "next_pelvis": 4.5478099064411026e-08,
+      "current_feet": 6.315096945375132e-08,
+      "next_feet": 5.471353403674328e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 242,
+      "previous_pelvis": 7.163152904166026e-08,
+      "current_pelvis": 4.547809917543333e-08,
+      "next_pelvis": 1.192092896062924e-07,
+      "current_feet": 5.471353403674328e-08,
+      "next_feet": 1.1920928955078125e-07,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 244,
+      "previous_pelvis": 4.547809917543333e-08,
+      "current_pelvis": 2.564957668482748e-08,
+      "next_pelvis": 8.940696710757479e-08,
+      "current_feet": 5.8636705935199984e-08,
+      "next_feet": 8.940696716308594e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 246,
+      "previous_pelvis": 2.564957668482748e-08,
+      "current_pelvis": 7.491039788476428e-08,
+      "next_pelvis": 8.610119406338157e-08,
+      "current_feet": 2.804704812842118e-08,
+      "next_feet": 7.443609340018753e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 248,
+      "previous_pelvis": 7.491039788476428e-08,
+      "current_pelvis": 8.610119406338157e-08,
+      "next_pelvis": 1.4901161138336505e-08,
+      "current_feet": 7.443609351120983e-08,
+      "next_feet": 6.006637376376744e-08,
+      "root_copy": 0.0
+    },
+    {
+      "tick": 250,
+      "previous_pelvis": 8.610119406338157e-08,
+      "current_pelvis": 8.344505197932506e-09,
+      "next_pelvis": 4.478705972754682e-08,
+      "current_feet": 6.006637376376744e-08,
+      "next_feet": 7.012459990463071e-08,
+      "root_copy": 0.0
+    }
+  ]
+}

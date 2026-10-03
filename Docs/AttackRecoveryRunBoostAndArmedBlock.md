@@ -1,5 +1,7 @@
 # Attack recovery Run boost and Armed block
 
+**October 3 update:** all Run pin boosts and their Blueprint nodes were removed at the user's request. The recovery-boost section and its old validation below are historical. Armed blocking, phase rules and the ticks-since-attack counter remain. `TestAttackControls.py` now checks ArmedGate, EntryMagicAndTicks and regional ownership.
+
 ## Set Attack Recovery Run Pinning Boost
 
 Configure once per agent, or when changing the configuration. Inputs: **Enabled**, **Hold Duration Seconds**, **Blend Duration Seconds**, **Boost** (0..1). The feature starts unconfigured/off; node defaults when executed are Enabled=true, Hold=0, Blend=1, Boost=1.
@@ -24,7 +26,7 @@ The block affects only the transition into Armed, including recurrent feedback. 
 
 Set **Blocked=false** when ready. The checkpoint may then arm naturally on its next inference step; this does not force an immediate Armed or Hit. A late block does not rewind a strike that is already Armed/Hit. Current targets continue to update normally. Initial-agent reset restores the setting; EndPlay removes it.
 
-Example flow: configure the recovery boost during setup; set Armed Blocked=true; start your half attack; update its real target while approaching; set Armed Blocked=false at the desired distance. Switching full/half remains under your Blueprint's control.
+Example flow: set Armed Blocked=true; start your half attack; update its real target while approaching; set Armed Blocked=false at the desired distance. Switching full/half remains under your Blueprint's control.
 
 ## Full attack entry and ticks since last attack
 

@@ -1,0 +1,16 @@
+{
+  "id": 20,
+  "kind": "floor",
+  "target": [
+    -0.25107014179229736,
+    0,
+    0.7119870185852051
+  ],
+  "file": "data/hookL_20.bin",
+  "frames": 15,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "6c00ad485697fa8a32b7884df072f9d70cd3034dd8705e08db224080683eb4ed",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

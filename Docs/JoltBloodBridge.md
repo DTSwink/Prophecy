@@ -1,5 +1,7 @@
 # Functional Jolt blood bridge
 
+**Current status, October1:** no production native Niagara migration is installed. The [actual CPU emitter experiment](JoltBloodEmitterExperiment.md) now measures lower producer cost with buffered Jolt, tests exports and native operation without fixture UE query shapes, and rejects shortcuts that change placement. Best measured choices are native queries plus UE hit refinement for splat/arc, pure native queries for wound; approximately47–58% lower isolated producer cost, not gameplay FPS or paint acceptance. A supported DI, channel/coverage/identity handling and full receiver integration remain. Prior painting tests used UE QueryOnly receivers; ISM `SM impostors` provide separate paint masks and are not eliminated by a query backend change. The [query-only stage](JoltBloodNativeQueryExperiment.md) retains warmed backend numbers and the corrected cold-benchmark caveat. The September9 design below is historical context.
+
 **9 September 2026.** Source/manifest-backed implementation order for the user's current priority: physical animation, solid bodies/joints, and persistent blood on meshes, instanced objects and characters, with useful performance. Exact Chaos/Jolt trajectory equivalence is not this feature's acceptance criterion. Other retained project functionality remains in scope. This note changes no source, assets or configuration and launches no build or UE process.
 
 ## Reuse the current paint and presentation paths

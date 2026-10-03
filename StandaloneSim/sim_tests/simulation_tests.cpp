@@ -10,6 +10,7 @@
 #include <limits>
 #include <memory>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -234,20 +235,11 @@ void TestThreeVersusOneTacticalSteering() {
             agents[0].tactical_threat_count == 3U &&
             agents[0].tactical_threat_arc_radians < sim::kOutnumberedViewConeRadians,
         "the lone Hero must center its approved view cone on all three mobile threats");
-    std::bitset<sim::kApproachSectorCount> occupied_sectors{};
-    bool valid_sector_reservations = true;
-    for (std::size_t index = 1U; index < agents.size(); ++index) {
-        const sim::AgentSnapshot& attacker = agents[index];
-        valid_sector_reservations = valid_sector_reservations &&
-            attacker.tactical_sector_target_id == 1U &&
-            attacker.tactical_sector_index < sim::kApproachSectorCount &&
-            !occupied_sectors.test(attacker.tactical_sector_index);
-        if (attacker.tactical_sector_index < sim::kApproachSectorCount) {
-            occupied_sectors.set(attacker.tactical_sector_index);
-        }
+    for (const auto& agent : agents) {
+        Check(agent.tactical_sector_target_id == sim::kInvalidEntityId &&
+            agent.tactical_sector_influence == 0.0f,
+            "one-versus-three must not enable army approach sectors");
     }
-    Check(valid_sector_reservations,
-        "same-target Villains must reserve distinct deterministic soft approach sectors");
 
     const float initial_outer_gap = agents[1].tactical_nearest_peer_separation_radians;
     for (int tick = 0; tick < 45; ++tick) simulation.Tick();
@@ -431,89 +423,44 @@ void TestBalancedPerceivedTargetAllocation() {
         "allocation must reroute an earlier choice when that is required to cover every reachable enemy");
 }
 
-void TestMessySectorReservationsAndMotion() {
+void TestApproachRequiresTwoPerTeam() {
     constexpr float kHalfPi = 1.57079632679489661923f;
-    sim::SimulationConfig config{};
-    config.hero_agent_count = 10U;
-    config.villain_agent_count = 1U;
-    config.mode = sim::SimulationMode::Paired;
-    config.opening_transforms.reserve(11U);
-    for (std::uint32_t index = 0; index < 10U; ++index) {
-        config.opening_transforms.push_back({index + 1U,
-            {-8.0f, (static_cast<float>(index) - 4.5f) * 0.2f, 0.0f}, kHalfPi});
-    }
-    config.opening_transforms.push_back({11U, {0.0f, 0.0f, 0.0f}, -kHalfPi});
-
-    sim::Simulation first(config, 8801U);
-    sim::Simulation repeated(config, 8801U);
-    first.Tick();
-    repeated.Tick();
-    std::array<std::uint32_t, sim::kApproachSectorCount> occupancy{};
-    bool valid_reservations = true;
-    for (std::size_t index = 0; index < 10U; ++index) {
-        const sim::AgentSnapshot& attacker = first.Snapshot().agents[index];
-        valid_reservations = valid_reservations && attacker.attack_target_id == 11U &&
-            attacker.tactical_sector_target_id == 11U &&
-            attacker.tactical_sector_index < sim::kApproachSectorCount &&
-            attacker.target_commitment_seconds_remaining ==
-                sim::kDefaultTargetCommitmentSeconds;
-        if (attacker.tactical_sector_index < sim::kApproachSectorCount) {
-            ++occupancy[attacker.tactical_sector_index];
+    for (const auto counts : {std::pair{1U, 1U}, std::pair{1U, 10U},
+            std::pair{10U, 1U}, std::pair{2U, 2U}}) {
+        sim::SimulationConfig config{};
+        config.hero_agent_count = counts.first;
+        config.villain_agent_count = counts.second;
+        config.mode = sim::SimulationMode::Paired;
+        const bool army = counts.first >= 2U && counts.second >= 2U;
+        if (counts.first == 1U && counts.second == 1U) {
+            config.opening_transforms = {
+                {1U, {-12.0f, 0.0f, 0.0f}, kHalfPi},
+                {2U, {12.0f, 0.0f, 0.0f}, -kHalfPi}};
         }
-    }
-    const auto [minimum, maximum] = std::minmax_element(occupancy.begin(), occupancy.end());
-    Check(valid_reservations && *minimum == 1U && *maximum == 2U,
-        "ten same-target attackers must fill eight soft sectors with load differing by at most one");
-    Check(EqualAgents(first.Snapshot(), repeated.Snapshot()),
-        "the same seed must reproduce target commitment and sector reservations exactly");
-
-    bool curved_motion_seen = false;
-    bool diagonal_approach_seen = false;
-    bool forward_diagonal_respected = true;
-    for (int tick = 0; tick < 90; ++tick) {
-        const std::vector<sim::AgentSnapshot> previous_agents = first.Snapshot().agents;
-        first.Tick();
-        repeated.Tick();
-        const auto& agents = first.Snapshot().agents;
-        const sim::AgentSnapshot& target = previous_agents[10];
-        for (std::size_t left = 0; left < 10U; ++left) {
-            if (agents[left].tactical_sector_influence <= 0.0f ||
-                agents[left].speed_stick_amplitude == 0.0f) continue;
-            const float direct_yaw = std::atan2(
-                target.position.x - previous_agents[left].position.x,
-                target.position.y - previous_agents[left].position.y);
-            const float approach_offset = std::fabs(std::remainder(
-                agents[left].tactical_move_yaw_radians - direct_yaw,
-                2.0f * 3.14159265358979323846f));
-            const float target_distance = std::hypot(
-                target.position.x - previous_agents[left].position.x,
-                target.position.y - previous_agents[left].position.y);
-            diagonal_approach_seen |= approach_offset > 0.2f;
-            if (agents[left].attack_cooldown_seconds_remaining <= 0.0f &&
-                target_distance > config.attack_range_m + 0.01f &&
-                approach_offset > std::atan(0.36f) + 0.001f) {
-                forward_diagonal_respected = false;
-            }
-            for (std::size_t right = left + 1U;
-                right < 10U && !curved_motion_seen; ++right) {
-                if (agents[right].tactical_sector_influence <= 0.0f ||
-                    agents[right].speed_stick_amplitude == 0.0f) continue;
-                curved_motion_seen = std::fabs(std::remainder(
-                    agents[left].tactical_move_yaw_radians -
-                        agents[right].tactical_move_yaw_radians,
-                    2.0f * 3.14159265358979323846f)) > 0.2f;
-                if (curved_motion_seen) break;
+        sim::Simulation first(config, 85555888353100ULL);
+        sim::Simulation repeated(config, 85555888353100ULL);
+        bool sector_seen = false;
+        bool charged = false;
+        for (int tick = 0; tick < 90; ++tick) {
+            first.Tick(); repeated.Tick();
+            for (const auto& agent : first.Snapshot().agents) {
+                sector_seen |= agent.tactical_sector_target_id != sim::kInvalidEntityId;
+                if (!army) Check(agent.tactical_sector_target_id == sim::kInvalidEntityId &&
+                    agent.tactical_sector_influence == 0.0f,
+                    "army spreading must remain off if either team has fewer than two agents");
+                if (counts.first == 1U && counts.second == 1U) {
+                    charged |= agent.root_speed_mps > 1.0f;
+                    Check(std::fabs(agent.position.y) < 0.0001f,
+                        "one-versus-one charge must stay on the direct line, without sideways drift");
+                }
             }
         }
+        Check(sector_seen == army, "approach-sector spreading starts at two-versus-two");
+        if (counts.first == 1U && counts.second == 1U)
+            Check(charged, "the direct one-versus-one approach must actually move");
+        Check(EqualAgents(first.Snapshot(), repeated.Snapshot()),
+            "team-size gating and approach remain deterministic");
     }
-    Check(curved_motion_seen,
-        "seeded sectors must produce visibly different curved approach directions near a target");
-    Check(diagonal_approach_seen,
-        "sector spacing must retain a visible diagonal component during approach");
-    Check(forward_diagonal_respected,
-        "far spacing must remain a charge-dominant diagonal toward the target");
-    Check(EqualAgents(first.Snapshot(), repeated.Snapshot()),
-        "curved sector steering must remain deterministic through locomotion and combat");
 }
 
 void TestMixedFlankRolesAcrossSeparateTargets() {
@@ -2982,12 +2929,20 @@ void TestTickPerformance() {
 
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc > 1 && std::string_view(argv[1]) == "--approach") {
+        TestApproachRequiresTwoPerTeam();
+        TestThreeVersusOneTacticalSteering();
+        TestTwoVersusFourGeneralizationAndCountRestart();
+        TestMixedFlankRolesAcrossSeparateTargets();
+        if (failures == 0) std::printf("Approach steering tests passed.\n");
+        return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
     TestOpeningEncounter();
     TestThreeVersusOneTacticalSteering();
     TestTwoVersusFourGeneralizationAndCountRestart();
     TestBalancedPerceivedTargetAllocation();
-    TestMessySectorReservationsAndMotion();
+    TestApproachRequiresTwoPerTeam();
     TestMixedFlankRolesAcrossSeparateTargets();
     TestContainmentEarlyInfluenceOption();
     TestMoverDrivenMotionAndFutureRoots();

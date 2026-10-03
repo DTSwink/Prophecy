@@ -1,0 +1,16 @@
+{
+  "id": 8,
+  "kind": "volume",
+  "target": [
+    0.020361220464110374,
+    1.3303627967834473,
+    0.7919436693191528
+  ],
+  "file": "data/slashRD_08.bin",
+  "frames": 25,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "1a0636677fbb812fbcee6d68810b526b85ecf064258514cee5af6601da0ec3f8",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

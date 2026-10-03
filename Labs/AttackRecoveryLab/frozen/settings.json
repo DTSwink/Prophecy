@@ -1,0 +1,239 @@
+{
+  "contract": "final_harness_shared_settings_v1",
+  "version": 4,
+  "revision": 6071,
+  "updatedAt": "2026-09-17T16:22:17.440+02:00",
+  "harnessBranch": "live",
+  "preferencesInitialized": true,
+  "preferences": {
+    "variantType": "medium",
+    "liveInterpolationMode": "power",
+    "volumeCount": 50,
+    "floorCount": 10,
+    "easyFloorDepthCm": 50,
+    "hardDeltaCm": 55,
+    "armedDelayFrames": -15.0,
+    "weakDepartureFraction": 0.8,
+    "hardStepOverlapFraction": 0.7,
+    "hardPelvisSpeedFraction": 0.7,
+    "kickPelvisAccelerationFraction": 1.0,
+    "kickPelvisDecelerationFraction": 1.0,
+    "liveFootToleranceCm": 0.0,
+    "liveFootVerticalSpeedMps": 3.0,
+    "liveFootMaxVerticalSpeedHeightCm": 85.0,
+    "liveFootMaxVerticalSpeedMps": 9.0,
+    "liveFootDescentTargetAngleDeg": 45.0,
+    "liveFootDescentBaseVelocityBlend": 1.0,
+    "liveFootMaxClockCoefficient": 10.0,
+    "liveSecondFootDeparturePercent": 50.0,
+    "liveSecondFootAirborneThresholdCm": 20.0,
+    "liveHeadMaxWorldLinearSpeedMps": 10.0,
+    "livePelvisMaxWorldAngularSpeedDegPerSec": 1000.0,
+    "liveInterpolationCoefficient": 1.5,
+    "kickIntermediateStepSpeedMultiplier": 1.0,
+    "kickBalanceLimitCm": 60.0,
+    "kickPrestepPelvisDropCm": 3.0,
+    "pelvisSpreadDropMaxCm": 10.0,
+    "hardDirectSetupThresholdM": 0.1,
+    "hardIntermediateDirectReachM": 0.6,
+    "gazeReachFraction": 0.7,
+    "kickStrongFootSpeedOverrideMps": null,
+    "oppositePelvisSpin": false,
+    "startMirrored": true,
+    "drawSelectedArmedPose": true,
+    "invertFootDeparture": false,
+    "targetCloudVisible": false,
+    "footPelvisYawConstraintEnabled": true,
+    "skeletonView": false,
+    "liveUseGtLut": false,
+    "legReachClampEnabled": false,
+    "agentHidden": false,
+    "invertCandidate": false,
+    "kickPelvisTravelOnly": false,
+    "candidateStrongTravelsLess": false,
+    "liveInterpolationByAnimation": {
+      "headbutt": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "hookL": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "hookR": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "jabL": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "jabR": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "KickL": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "KickR": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "overL": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "overR": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "pike": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.5
+      },
+      "slashL": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.5
+      },
+      "slashLD": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.7
+      },
+      "slashLU": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.5
+      },
+      "slashR": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.5
+      },
+      "slashRD": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.0
+      },
+      "slashRU": {
+        "useLut": false,
+        "mode": "power",
+        "coefficient": 1.5,
+        "speedCoefficient": 1.45
+      }
+    },
+    "cylinderShiftCmByAnimation": {
+      "headbutt": 50.0,
+      "hookL": 50.0,
+      "hookR": 50.0,
+      "jabL": 50.0,
+      "jabR": 50.0,
+      "KickL": 50.0,
+      "KickR": 50.0,
+      "overL": 50.0,
+      "overR": 50.0,
+      "pike": 60.0,
+      "slashL": 50.0,
+      "slashLD": 50.0,
+      "slashLU": 50.0,
+      "slashR": 50.0,
+      "slashRD": 50.0,
+      "slashRU": 50.0
+    },
+    "travelPass": {
+      "heightMaxSpeedMps": 0.4,
+      "heightAccelerationFraction": 1.0,
+      "rotationMaxSpeedDegPerSec": 360.0,
+      "rotationAccelerationFraction": 1.0,
+      "distanceFinalFootPassMaxM": 0.3,
+      "heightIntensity": 1.0,
+      "rotationIntensity": 1.0
+    },
+    "postTailRecovery": {
+      "upperBodyReturnDurationSeconds": 1.0,
+      "pelvisSpeedMps": 0.1,
+      "pelvisRotationSpeedDegPerSec": 70.0
+    }
+  },
+  "targetsInitialized": true,
+  "targetsByMode": {
+    "easy": [
+      -0.1992536336183548,
+      0.9450515508651733,
+      0.8061697483062744
+    ],
+    "medium": [
+      0.6455260515213013,
+      1.1145092248916626,
+      0.510455310344696
+    ],
+    "hard": [
+      0.2033579119741113,
+      1.3922896111485308,
+      1.217952472286256
+    ]
+  },
+  "targetWriteTokens": {
+    "easy": {
+      "clientId": "af9b98c7-64fd-4238-b597-7e65d2809749",
+      "sequence": 6
+    },
+    "medium": {
+      "clientId": "7c3423ff-e4f1-455f-90f1-3a06f16e038c",
+      "sequence": 1
+    },
+    "hard": {
+      "clientId": "cf17ed73-0ba2-45dc-b574-1aa604dc593d",
+      "sequence": 4
+    }
+  },
+  "kickStepTranslationDelayPercent": 40.0,
+  "footMotion": {
+    "separate": true,
+    "common": {
+      "maxSpeedMps": 2.5,
+      "maxAngularSpeedDegPerSec": 360.0,
+      "accelerationFraction": 0.2,
+      "decelerationFraction": 0.1
+    },
+    "strong": {
+      "maxSpeedMps": 10.0,
+      "maxAngularSpeedDegPerSec": 1200.0,
+      "accelerationFraction": 0.2,
+      "decelerationFraction": 0.1
+    },
+    "weak": {
+      "maxSpeedMps": 6.0,
+      "maxAngularSpeedDegPerSec": 800.0,
+      "accelerationFraction": 0.1,
+      "decelerationFraction": 0.1
+    }
+  }
+}

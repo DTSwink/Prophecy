@@ -1714,6 +1714,19 @@ struct Simulation::Impl final {
     }
 
     void RefreshApproachSectors() noexcept {
+        // Army spreading starts at 2v2. Count the present teams so transient
+        // spawns participate too; this is independent of saved opening counts.
+        std::uint32_t heroes = 0U;
+        std::uint32_t villains = 0U;
+        for (const AgentRuntime& agent : agents) {
+            if (agent.team == Team::Hero) ++heroes;
+            else ++villains;
+            if (heroes >= 2U && villains >= 2U) break;
+        }
+        if (heroes < 2U || villains < 2U) {
+            for (AgentRuntime& agent : agents) ClearApproachSector(agent);
+            return;
+        }
         std::array<std::array<std::uint16_t, kApproachSectorCount>,
             kMaxSimulationAgentCount> occupancy{};
         const auto valid_reservation = [this](const AgentRuntime& agent) {

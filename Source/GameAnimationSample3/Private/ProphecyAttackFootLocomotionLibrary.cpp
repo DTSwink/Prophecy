@@ -12,6 +12,33 @@ namespace ProphecyAttackFootLocomotion
 {
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FRun> Runs;
+static TSet<TWeakObjectPtr<const AProphecyAgent>> GhostSettings,GhostBaselines;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FGhostRun> GhostRuns;
+FGhostRun* FindGhost(const AProphecyAgent* A)
+{
+    const auto* R=Runs.IsEmpty()?nullptr:Runs.Find(A);
+    return R && !R->Suspended && !GhostRuns.IsEmpty()?GhostRuns.Find(A):nullptr;
+}
+void CancelGhost(const AProphecyAgent* A,float* State)
+{
+    if(const auto* G=GhostRuns.Find(A))
+    {
+        FMemory::Memcpy(State+9,G->PreviousLegs,sizeof(G->PreviousLegs));
+        FMemory::Memcpy(State+50,G->CurrentLegs,sizeof(G->CurrentLegs));
+        GhostRuns.Remove(A);
+    }
+}
+void BeginGhost(const AProphecyAgent* A,const float* State,TConstArrayView<FTransform> Pose,const FTransform& Carrier)
+{
+    const auto* R=FindActive(A);if(!R || !GhostSettings.Contains(A))return;
+    auto& G=GhostRuns.FindOrAdd(A);G=FGhostRun{};G.PoseId=R->PoseId;
+    FMemory::Memcpy(G.Legs,R->Legs,sizeof(G.Legs));
+    FMemory::Memcpy(G.PreviousLegs,State+9,sizeof(G.PreviousLegs));
+    FMemory::Memcpy(G.CurrentLegs,State+50,sizeof(G.CurrentLegs));
+    G.PreviousWorld[0]=G.CurrentWorld[0]=Pose[0]*Carrier;
+    for(int32 S=0;S<2;++S)for(int32 B=0;B<4;++B)
+        G.PreviousWorld[1+S*4+B]=G.CurrentWorld[1+S*4+B]=Pose[G.Legs[S][B]]*Carrier;
+}
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> FreezeSettings,FreezeBaselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FFreezeWindow> FreezeWindows;
 struct FHandoffConfig { float Rotation=1,Duration[2]={0,0}; };
@@ -64,6 +91,10 @@ static void EnsureCleanup()
         for(auto* M:{&Configs,&Baselines})for(auto It=M->CreateIterator();It;++It)
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
         for(auto It=Runs.CreateIterator();It;++It)
+            if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
+        for(auto* M:{&GhostSettings,&GhostBaselines})for(auto It=M->CreateIterator();It;++It)
+            if(!It->IsValid()||It->Get()->GetWorld()==W)It.RemoveCurrent();
+        for(auto It=GhostRuns.CreateIterator();It;++It)
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
         for(auto* M:{&FreezeSettings,&FreezeBaselines})for(auto It=M->CreateIterator();It;++It)
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
@@ -173,17 +204,58 @@ void Suspend(const AProphecyAgent* A,bool Half)
     }
     R->Suspended=Half;
 }
-void End(const AProphecyAgent* A){if(!Runs.IsEmpty())Runs.Remove(A);ClearFreezeWindow(A);ClearHandoff(A);ClearPoles(A);}
-void Remove(const AProphecyAgent* A){End(A);Configs.Remove(A);Baselines.Remove(A);FreezeSettings.Remove(A);FreezeBaselines.Remove(A);HandoffSettings.Remove(A);HandoffBaselines.Remove(A);PoleSettings.Remove(A);PoleBaselines.Remove(A);}
+void End(const AProphecyAgent* A){if(!Runs.IsEmpty())Runs.Remove(A);GhostRuns.Remove(A);ClearFreezeWindow(A);ClearHandoff(A);ClearPoles(A);}
+void Remove(const AProphecyAgent* A){End(A);Configs.Remove(A);Baselines.Remove(A);FreezeSettings.Remove(A);FreezeBaselines.Remove(A);HandoffSettings.Remove(A);HandoffBaselines.Remove(A);PoleSettings.Remove(A);PoleBaselines.Remove(A);GhostSettings.Remove(A);GhostBaselines.Remove(A);}
 void CaptureReset(const AProphecyAgent* A){if(const auto* C=Configs.Find(A))Baselines.Add(A,*C);else Baselines.Remove(A);
+if(GhostSettings.Contains(A))GhostBaselines.Add(A);else GhostBaselines.Remove(A);
 if(const auto* V=FreezeSettings.Find(A))FreezeBaselines.Add(A,*V);else FreezeBaselines.Remove(A);
 if(const auto* V=HandoffSettings.Find(A))HandoffBaselines.Add(A,*V);else HandoffBaselines.Remove(A);
 if(const auto* V=PoleSettings.Find(A))PoleBaselines.Add(A,*V);else PoleBaselines.Remove(A);}
 void RestoreReset(const AProphecyAgent* A){End(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A))Configs.Add(A,*C);
+GhostSettings.Remove(A);if(GhostBaselines.Contains(A))GhostSettings.Add(A);
 FreezeSettings.Remove(A);if(const auto* V=FreezeBaselines.Find(A))FreezeSettings.Add(A,*V);
 HandoffSettings.Remove(A);if(const auto* V=HandoffBaselines.Find(A))HandoffSettings.Add(A,*V);
 PoleSettings.Remove(A);if(const auto* V=PoleBaselines.Find(A))PoleSettings.Add(A,*V);}
-void ForgetReset(const AProphecyAgent* A){Baselines.Remove(A);FreezeBaselines.Remove(A);HandoffBaselines.Remove(A);PoleBaselines.Remove(A);}
+void ForgetReset(const AProphecyAgent* A){Baselines.Remove(A);FreezeBaselines.Remove(A);HandoffBaselines.Remove(A);PoleBaselines.Remove(A);GhostBaselines.Remove(A);}
+}
+bool UProphecyAttackFootLocomotionLibrary::SetGhostLocoDrag(AProphecyAgent* A,bool Enabled)
+{
+    using namespace ProphecyAttackFootLocomotion;
+    if(!IsInGameThread()||!IsValid(A)||A->IsActorBeingDestroyed())return false;
+    EnsureCleanup();if(Enabled)GhostSettings.Add(A);else GhostSettings.Remove(A);
+    return true; // Latched; never splice a different history into an ongoing attack.
+}
+bool UProphecyAttackFootLocomotionLibrary::ReadGhostLocoDrag(AProphecyAgent* A,TArray<FName>& Names,TArray<FTransform>& WorldPose)
+{
+    Names.Reset();WorldPose.Reset();
+    if(!IsInGameThread()||!IsValid(A))return false;
+    const auto* G=ProphecyAttackFootLocomotion::FindGhost(A);if(!G || !G->HasPose)return false;
+    TArray<FName> AllNames;TArray<FTransform> Future,Presented;float Alpha=0;
+    if(!A->ReadNNFutureWorldPose(AllNames,Future,Presented,Alpha))return false;
+    const int32 Pelvis=AllNames.IndexOfByKey(TEXT("pelvis"));if(!Presented.IsValidIndex(Pelvis))return false;
+    FTransform GhostPelvis;
+    GhostPelvis.Blend(G->PreviousWorld[0],G->CurrentWorld[0],Alpha);
+    Names.Add(TEXT("pelvis"));WorldPose.Add(Presented[Pelvis]);
+    for(int32 S=0;S<2;++S)for(int32 B=0;B<4;++B)
+    {
+        const FName N[]={S?TEXT("thigh_r"):TEXT("thigh_l"),S?TEXT("calf_r"):TEXT("calf_l"),S?TEXT("foot_r"):TEXT("foot_l"),S?TEXT("ball_r"):TEXT("ball_l")};
+        FTransform T;T.Blend(G->PreviousWorld[1+S*4+B],G->CurrentWorld[1+S*4+B],Alpha);
+        Names.Add(N[B]);WorldPose.Add(T.GetRelativeTransform(GhostPelvis)*Presented[Pelvis]);
+    }
+    return true;
+}
+bool UProphecyAttackFootLocomotionLibrary::DrawGhostLocoDrag(AProphecyAgent* A,bool Enabled,FVector Offset,float Duration)
+{
+    if(!Enabled||Offset.ContainsNaN()||!FMath::IsFinite(Duration)||Duration<0)return false;
+    TArray<FName> Names;TArray<FTransform> Pose;
+    if(!ReadGhostLocoDrag(A,Names,Pose))return false;
+    for(int32 S=0;S<2;++S)for(int32 B=0;B<4;++B)
+    {
+        const int32 I=1+S*4+B,P=B?I-1:0;
+        DrawDebugLine(A->GetWorld(),Pose[P].GetLocation()+Offset,Pose[I].GetLocation()+Offset,FColor::Cyan,false,Duration,0,2.f);
+        DrawDebugSphere(A->GetWorld(),Pose[I].GetLocation()+Offset,2.5f,8,FColor::Cyan,false,Duration,0,1.f);
+    }
+    return true;
 }
 bool UProphecyAttackFootLocomotionLibrary::SetAttackFootLocomotion(AProphecyAgent* A,bool Enabled,EProphecyAttackFootLocomotionMode Mode,float DistanceLimitCm,float HeightLimitCm,float Freeze,float AlphaRotation,float LeftDuration,float RightDuration,float PoleDuration)
 {
@@ -245,6 +317,36 @@ void UProphecyAttackFootLocomotionLibrary::DrawAttackFootLocomotion(AProphecyAge
 #include "Misc/AutomationTest.h"
 #include "HAL/IConsoleManager.h"
 #include "GameFramework/PlayerController.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyGhostLocoLifecycle,"Prophecy.NN.GhostLocoDrag.Lifecycle",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyGhostLocoLifecycle::RunTest(const FString&)
+{
+    using namespace ProphecyAttackFootLocomotion;
+    using L=UProphecyAttackFootLocomotionLibrary;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;
+    if(!A)return false;
+    FRun R;R.Loco=3;for(int32 S=0;S<2;++S)for(int32 B=0;B<4;++B)R.Legs[S][B]=1+4*S+B;
+    Runs.Add(A,R);FTransform Pose[9];float State[82];for(int32 I=0;I<82;++I)State[I]=float(I);
+    BeginGhost(A,State,MakeArrayView(Pose),FTransform::Identity);
+    TestNull(TEXT("Disabled mode allocates no ghost"),FindGhost(A));
+    L::SetGhostLocoDrag(A,true);CaptureReset(A);
+    BeginGhost(A,State,MakeArrayView(Pose),FTransform::Identity);
+    auto* G=FindGhost(A);if(!TestNotNull(TEXT("Enabled entry creates separate history"),G))return false;
+    TestTrue(TEXT("Both actual leg histories seed exactly"),FMemory::Memcmp(G->PreviousLegs,State+9,32*sizeof(float))==0 && FMemory::Memcmp(G->CurrentLegs,State+50,32*sizeof(float))==0);
+    G->CurrentLegs[0]=1234;TestEqual(TEXT("Real feedback cannot overwrite ghost state"),State[50],50.f);
+    L::SetGhostLocoDrag(A,false);TestNotNull(TEXT("Option change latches next attack"),FindGhost(A));
+    Suspend(A,true);TestNull(TEXT("Half mode performs no extra lower work"),FindGhost(A));
+    Suspend(A,false);TestNotNull(TEXT("Full mode resumes its branch"),FindGhost(A));
+    ReleaseAll(A);TestNotNull(TEXT("Real branch survives final foot handoff"),FindGhost(A));
+    CancelGhost(A,State);TestNull(TEXT("Kick switch cancels ghost"),FindGhost(A));
+    TestEqual(TEXT("Cancellation seeds real leg history"),State[50],1234.f);
+    TestEqual(TEXT("Cancellation preserves pelvis history"),State[41],41.f);
+    RestoreReset(A);TestTrue(TEXT("Reset restores enabled configuration"),GhostSettings.Contains(A));
+    TestNull(TEXT("Reset retires prediction state"),FindGhost(A));
+    Remove(A);TestFalse(TEXT("Removal clears config"),GhostSettings.Contains(A));
+    TestFalse(TEXT("Removal clears baseline"),GhostBaselines.Contains(A));W->DestroyWorld(false);
+    return !HasAnyErrors();
+}
 // Development capture bridge for new enums whose Python wrappers are unavailable
 // until an editor restart after Live Coding. Only acts on the supplied PIE world.
 static FAutoConsoleCommandWithWorldAndArgs GTestFootAuthoring(

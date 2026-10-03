@@ -319,7 +319,7 @@ void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,f
 	Out[433]=NeuralUpper[90]; Out[434]=NeuralUpper[91]; Out[435]=W.Pins[0]; Out[436]=W.Pins[1];
 }
 
-bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayView<FStepSettings> Settings)
+bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayView<FStepSettings> Settings,bool bLowerOnly)
 {
 	if (Input.Num()!=InputBatchSize*272 || (!Settings.IsEmpty() && Settings.Num()!=InputBatchSize)) return false;
 	Output.SetNumUninitialized(InputBatchSize*437);
@@ -333,8 +333,11 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 		W.Heading=YawMatrix(-FMath::Atan2(D.X,D.Z)); W.Origin=FVector3f(Target.X,0,Target.Z);
 		Rebase(S,W.PrevLower,false,RootPosition,RootRotation,W.Origin,W.Heading);
 		Rebase(S+41,W.CurLower,false,RootPosition,RootRotation,W.Origin,W.Heading);
-		Rebase(S+82,W.PrevUpper,true,RootPosition,RootRotation,W.Origin,W.Heading);
-		Rebase(S+172,W.CurUpper,true,RootPosition,RootRotation,W.Origin,W.Heading);
+		if(!bLowerOnly)
+		{
+			Rebase(S+82,W.PrevUpper,true,RootPosition,RootRotation,W.Origin,W.Heading);
+			Rebase(S+172,W.CurUpper,true,RootPosition,RootRotation,W.Origin,W.Heading);
+		}
 		if (Current)
 		{
 			float* N=NetworkInputs[1].GetData()+51*Lane;
@@ -448,6 +451,25 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 				Option.Carrier,Option.Carrier,S+41,Root,Geometry);
 		}
 		Rebase(Root,W.NextLower,false,RootPosition,RootRotation,W.Origin,W.Heading);
+		if (bLowerOnly)
+		{
+			// The visible leg branch needs the trained lower geometry, not another
+			// upper evaluation or phase update. Its pelvis is remounted by the caller.
+			float* Out=Output.GetData()+437*Lane;
+			FMemory::Memzero(Out,437*sizeof(float));
+			Rebase(W.NextLower,Out,false,W.Origin,W.Heading,RootPosition,RootRotation);
+			FPose LegsPose;LegsPose.P[0]=TransformRow(Read(Root),RootRotation)+RootPosition;
+			LegsPose.R[0]=Multiply(MatrixFromRot6(Root+3),RootRotation);
+			for(const auto& L:Legs)LegsPose.P[L.Start]=TransformRow(RestOffsets[L.Start],LegsPose.R[0])+LegsPose.P[0];
+			for (const auto& L:Legs) SolveLimb(LegsPose,L,LowerOffsets,Out,!Settings.IsEmpty() && Settings[Lane].PelvisInertia);
+			for (int32 I=17;I<25;++I)
+			{
+				Write(Out,131+I*3,LegsPose.P[I]);
+				for (int32 Row=0;Row<3;++Row) Write(Out,206+I*9+Row*3,LegsPose.R[I].Rows[Row]);
+			}
+			Out[435]=W.Pins[0];Out[436]=W.Pins[1];
+			continue;
+		}
 		float CurrentBase[90],CurrentHeld[90],NextHeld[90]; FPose CurrentPose;
 		FrozenUpper(S+41,CurrentPose,CurrentBase); FrozenUpper(Root,W.FrozenPose,W.BaseUpper);
 		Rebase(CurrentBase,CurrentHeld,true,RootPosition,RootRotation,W.Origin,W.Heading);
@@ -459,6 +481,7 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 		FMemory::Memcpy(N+186,W.PrevLower,9*sizeof(float)); FMemory::Memcpy(N+195,W.CurLower,9*sizeof(float));
 		FMemory::Memcpy(N+204,W.NextLower,9*sizeof(float)); N[213]=S[270]; N[214]=S[271]; N[215]=N[216]=0;
 	}
+	if (bLowerOnly) return true;
 	if (!Models[2].Run(NetworkInputs[2],NetworkOutputs[2])) return false;
 	if(Models[0].InputWidth==0)for(int32 Lane=0;Lane<InputBatchSize;++Lane)
 		ClampNeuralUpper(NetworkInputs[2].GetData()+217*Lane,NetworkOutputs[2].GetData()+92*Lane);
@@ -470,6 +493,42 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 }
 
 #if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyGhostLowerOnlyTest,"Prophecy.NN.GhostLocoDrag.LowerOnlyParity",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyGhostLowerOnlyTest::RunTest(const FString&)
+{
+    for(const TCHAR* Suffix:{TEXT(""),TEXT("AttackSeptember20"),TEXT("Attack160664"),TEXT("Attack184064")})
+    {
+        const FString Dir=FPaths::ProjectContentDir()/TEXT("locomotion/NN")/Suffix;
+        FString Text;TSharedPtr<FJsonObject> Contract;
+        if(!FFileHelper::LoadFileToString(Text,*(Dir/TEXT("prophecy_slash_runtime.json"))) ||
+            !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Contract))return false;
+        FSlashNative Model;if(!Model.Initialize(Dir,Contract))return false;
+        TArray<float> State,Whole,Lower,Again;JsonFloatArray(Contract->GetArrayField(TEXT("seed_input")),State);
+        for(int32 Step=0;Step<16;++Step)
+        {
+            if(!Model.Run(State,Whole) || !Model.Run(State,Lower,{},true) || !Model.Run(State,Again))return false;
+            TestTrue(TEXT("Second lower call cannot contaminate primary inference"),FMemory::Memcmp(Whole.GetData(),Again.GetData(),Whole.Num()*sizeof(float))==0);
+            TestTrue(TEXT("Lower recurrent output matches whole prediction"),FMemory::Memcmp(Whole.GetData(),Lower.GetData(),41*sizeof(float))==0);
+            for(int32 Bone=17;Bone<25;++Bone)for(int32 Axis=0;Axis<3;++Axis)
+            {
+                TestTrue(TEXT("Lower-only position matches full decoder"),FMath::Abs(Whole[131+3*Bone+Axis]-Lower[131+3*Bone+Axis])<1.e-5f);
+                for(int32 Row=0;Row<3;++Row)TestTrue(TEXT("Lower-only rotation matches full decoder"),FMath::Abs(Whole[206+9*Bone+3*Row+Axis]-Lower[206+9*Bone+3*Row+Axis])<1.e-5f);
+            }
+            FMemory::Memmove(State.GetData(),State.GetData()+41,41*sizeof(float));
+            FMemory::Memmove(State.GetData()+82,State.GetData()+172,90*sizeof(float));
+            FMemory::Memcpy(State.GetData()+41,Whole.GetData(),41*sizeof(float));
+            FMemory::Memcpy(State.GetData()+172,Whole.GetData()+41,90*sizeof(float));
+            State[270]=Whole[431];State[271]=Whole[432];
+        }
+        // Changing compacted lower batch widths must not retain another lane's state.
+        TArray<float> Batched,BatchOut;for(int32 Lane=0;Lane<3;++Lane)Batched.Append(State);
+        if(!Model.SetBatch(3) || !Model.Run(Batched,BatchOut,{},true) || !Model.SetBatch(1) || !Model.Run(State,Lower,{},true))return false;
+        for(int32 Lane=0;Lane<3;++Lane)for(int32 I=0;I<41;++I)
+            TestTrue(TEXT("Compacted lower batch parity"),FMath::Abs(BatchOut[437*Lane+I]-Lower[I])<2.e-5f);
+    }
+    return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackWristModels,"Prophecy.NN.AttackWrist.AllCheckpoints",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyAttackWristModels::RunTest(const FString&)

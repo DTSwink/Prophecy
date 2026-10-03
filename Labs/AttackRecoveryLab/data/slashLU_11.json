@@ -1,0 +1,16 @@
+{
+  "id": 11,
+  "kind": "volume",
+  "target": [
+    -0.20546844601631165,
+    0.9878653287887573,
+    0.8225050568580627
+  ],
+  "file": "data/slashLU_11.bin",
+  "frames": 25,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "d9f835f9e444b1febb666dcdbc11442bbff02726acc143993073d3f2787c35dd",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

@@ -1,0 +1,30 @@
+# Processor provenance diagnostic draft
+
+Source-only checkpoint, 2026-09-09. No active source edits, builds, editor/game launches, affinity changes, priority changes or power-policy writes. Root promotes and validates.
+
+Apply `ProcessorProvenance.patch` against the four exact baselines in `BaselineHashes.json`. The profiling header/implementation are also supplied as draft copies. The only benchmark edits are one top-level JSON field in `Finish` and one per-frame field in `ValidateMultiJoltFrame`; all other current routing/profiling stays intact. The patch adds `EPhase::PublicationValidation` / `pose_publication_validation`; root supplies that scope in the character component separately.
+
+## Evidence captured
+
+- First profiled `BeginFrame`, before `TickStart`: CPU brand, one Windows CPU-set topology query mapping `(Group, LogicalProcessorIndex)` to CPU-set ID, physical core index and raw OS `EfficiencyClass`; initial process/thread priority, affinity and read-only power-throttling control/state masks. Query failures have explicit status/error fields. The final policy snapshot is generated during report serialization, outside timing.
+- Every profiled frame: game-thread processor at `BeginFrame` and `EndFrame`. These bracket the profiling interval: begin is just before the world timer; end is in `ValidateMultiJoltFrame` just after the world timer and small CSV/stat bookkeeping, before body/pose validation. `NNJoltCrowd` calls this validator first, before its NN validation.
+- Existing `FScope` instances for `Compose` and `RefreshBones`: sample processor immediately before their existing start timestamp, sample exit after their existing end timestamp, aggregate existing wall duration/calls by entry processor, and count differing exit processors. Other phase scopes receive no processor queries. With 100 characters, this is 400 in-world processor queries per frame plus two boundary queries. Fixed storage supports 64 distinct observed `(group,index)` pairs; additional entries increment an explicit overflow counter. No allocation, JSON or system topology queries occur in measured scope sampling.
+- Top-level `processor_environment`; each `multi_jolt_frames[]` row has `processor_provenance`. Group/index match the CPU-set mapping exactly. Correlate those rows with the same row's `character_cpu_ms` and the corresponding `world_ms` entry. Sum per-processor compose/refresh milliseconds and calls to check they reproduce the existing two phases. Any unsupported platform yields unavailable locations/topology, not invented classifications.
+
+## Interpretation and limits
+
+Processor sampling is additional explicit benchmark overhead included in world time, outside the sampled compose/refresh phase intervals (and inside enclosing scopes). No corrected/subtracted performance metric is invented. A repeated comparison should use the same instrumented binary/settings for every run.
+
+Entry-processor attribution is not CPU residency: a scope can be preempted, migrate and return between observations. A differing exit proves an observed placement change; a matching exit does not prove no change. Raw efficiency classes are OS labels, not hard-coded P/E assumptions. If all classes are identical, this diagnostic cannot classify them. Power control/state masks are reported raw; a zero state is not proof of no thermal or hardware throttling. No frequency, turbo, temperature or package-power telemetry is collected, so those causes remain unproved.
+
+## Source/API check
+
+The implementation follows the local Windows SDK 10.0.26100.0 `processthreadsapi.h` declarations for `GetCurrentProcessorNumberEx`, `GetSystemCpuSetInformation`, `GetProcessInformation`, `GetThreadInformation`, and read-only affinity APIs. CPU-set layouts come from the same SDK's `winnt.h`; guarded power-policy types tolerate unavailable target declarations. UE's `Windows/WindowsHWrapper.h` supplies the platform header; its own `WindowsPlatformProcess.cpp:819` uses the same OS processor-number family. There are no new module dependencies.
+
+## Standalone analysis
+
+`SummarizeProcessorPlacement.py report.json [report2.json ...] -o new-output.json` reads reports only. Output creation refuses overwrite. It groups world mean/median by observed frame-entry processor and raw efficiency class; groups existing compose/refresh wall durations, calls and differing-exit observations by entry processor/class; and reports world statistics for the exact unique frames represented in each scope group. Per-frame duration partitions must match within the explicit default `1e-6 ms` tolerance, counts exactly, with no overflow or missing observed CPU-set mapping. Exit code 2 marks unavailable/inconsistent reports. It does not subtract instrumentation or modify acceptance thresholds.
+
+The helper was checked with synthetic valid partitions and deliberately corrupted duration/count partitions, then against the two real 360-frame `jolt_processor_preA_100_20260909_1244.json` / `jolt_processor_normalA_100_20260909_1246.json` reports. Both real partitions matched exactly, without overflow. Results are in `Placement-preA-normalA-20260909.json`.
+
+Observed comparison: BelowNormal process priority 16384 placed all 36,000 compose and 36,000 refresh entries on class 0; Normal priority 32 placed 35,939 compose and 35,943 refresh entries on class 1. All Normal frame entries were class 1, but 61 compose and 57 refresh entries were class 0, demonstrating that frame starts do not prove full-frame residency. Process/thread affinity stayed `0xfff` in both initial/final snapshots. Both process/thread power-throttling queries returned error 87, so that state is **unknown**. World means were 17.881612 and 10.515264 ms respectively; this association is scheduling evidence, not evidence that a code optimization removed 7.37 ms. The script uses the conventional even-count median (average of both middle observations) and preserves the benchmark's original world summary separately for its percentile convention.

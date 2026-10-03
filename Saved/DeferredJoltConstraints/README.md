@@ -1,0 +1,3 @@
+Deferred by user on 2026-09-15: finish meshes now; user will request constraint integration tonight.
+
+Files here are an uninstalled draft, removed from Source before the mesh-only build. Do not copy back blindly. Draft supports hard component frames/limits and collision suppression, but still needs a deliberate design for motors/soft limits/break thresholds, world anchors, registration/rebinding and standard Blueprint creation. Preserve current sword's explicit Jolt grip/weld ownership; generic discovery must not create a second grip. No constraint integration is delivered in the mesh-only change.

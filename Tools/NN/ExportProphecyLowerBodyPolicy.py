@@ -199,9 +199,6 @@ def main() -> None:
             "pin_mode": str(simple_ctl.FOOT_ROLL_PIN_MODE),
             "ground_y": float(store.foot_roll_ground_y_tensor),
             "height_pin_gate_enabled": bool(simple_ctl.FOOT_ROLL_HEIGHT_PIN_GATE),
-            "near_floor_full_height_m": float(simple_ctl.FOOT_ROLL_NEAR_FLOOR_PIN_FULL_HEIGHT_M),
-            "near_floor_fade_height_m": float(simple_ctl.FOOT_ROLL_NEAR_FLOOR_PIN_FADE_HEIGHT_M),
-            "near_floor_minimum_pin_probability": float(simple_ctl.FOOT_ROLL_NEAR_FLOOR_PIN_MIN_PROB),
         },
         "output_layout": {
             "state_residual": [0, STATE_DIM],

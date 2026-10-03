@@ -1,0 +1,16 @@
+{
+  "id": 8,
+  "kind": "volume",
+  "target": [
+    -0.40246522426605225,
+    1.1347901821136475,
+    0.7243083715438843
+  ],
+  "file": "data/overL_08.bin",
+  "frames": 19,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "188f5e9f3584307ca91748e278a809a5c0b7a822690560304c185b68334d89f2",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

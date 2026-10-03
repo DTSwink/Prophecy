@@ -1,0 +1,1 @@
+import unreal; e=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem); print("PLAY",bool(e.get_game_world())); print("DIRTY",[p.get_path_name() for p in unreal.EditorLoadingAndSavingUtils.get_dirty_content_packages()]); print("MAP",e.get_editor_world().get_path_name())

@@ -1,0 +1,31 @@
+import fs from 'node:fs/promises';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const {chromium}=require(process.env.HARNESS_PLAYWRIGHT_MODULE||'playwright');
+const browser=await chromium.launch({headless:true,executablePath:process.env.HARNESS_CHROMIUM_EXECUTABLE,args:['--enable-webgl','--use-angle=swiftshader']});
+const errors=[];
+try{
+ const page=await browser.newPage({viewport:{width:1440,height:960}});page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8817');
+ await page.waitForFunction(()=>window.recoveryLab?.ready,null,{timeout:30000});
+ await page.selectOption('#attack','slashLU');await page.waitForFunction(()=>window.recoveryLab.model()?.clip.name==='slashLU');
+ await page.click('#floorTarget');await page.waitForFunction(()=>window.recoveryLab.model()?.meta.id===20);
+ await page.click('#hit');await page.screenshot({path:'verification-full.png'});
+ await page.check('#upperOnly');await page.click('#tail');
+ await page.evaluate(()=>recoveryLab.seek(recoveryLab.model().attackSeconds+.28));
+ await page.screenshot({path:'verification-upper.png'});
+ await page.click('#snapshot');await page.waitForFunction(()=>document.querySelector('#notice').textContent.startsWith('Saved snapshot_'));
+ const snapshot=await page.locator('#snapshots option').nth(1).getAttribute('value');
+ const before=await page.evaluate(()=>recoveryLab.state());
+ await page.click('#refresh');await page.waitForFunction(()=>window.recoveryLab?.ready);
+ const after=await page.evaluate(()=>recoveryLab.state());
+ if(before.attack!==after.attack||before.variant!==after.variant||Math.abs(before.time-after.time)>1e-5||!after.controls.upperOnly)throw Error('Refresh lost view state');
+ await page.selectOption('#attack','headbutt');await page.waitForFunction(()=>recoveryLab.model()?.clip.name==='headbutt');
+ if(!await page.locator('#floorTarget').isDisabled())throw Error('Headbutt floor button');
+ await page.selectOption('#snapshots',snapshot);await page.waitForFunction(()=>recoveryLab.model()?.clip.name==='slashLU'&&recoveryLab.model()?.meta.id===20);
+ await page.click('#play');await page.waitForTimeout(1200);await page.click('#play');
+ if(errors.length)throw Error(errors.join('\n'));
+ await page.uncheck('#upperOnly');await page.click('#start');
+ await fs.writeFile('verification-ui.json',JSON.stringify({ok:true,errors,snapshot,refreshRestored:true,snapshotRestored:true,playback:true,attackCount:await page.locator('#attack option').count(),variantCount:await page.locator('#variant option').count()},null,2));
+ console.log(await fs.readFile('verification-ui.json','utf8'));
+}finally{await browser.close();}

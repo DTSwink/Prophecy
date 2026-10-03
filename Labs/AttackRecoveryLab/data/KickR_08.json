@@ -1,0 +1,16 @@
+{
+  "id": 8,
+  "kind": "volume",
+  "target": [
+    -0.2576463222503662,
+    0.6468023061752319,
+    0.9566211104393005
+  ],
+  "file": "data/KickR_08.bin",
+  "frames": 17,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "45e7799490d9180acdde11f24e63fb9f87b2025cfc2d293533bf0788cc814dc6",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

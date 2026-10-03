@@ -1,0 +1,24 @@
+{
+  "added": [
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_144 | Draw Ghost Loco Drag\n  execute= None -> K2Node_CallFunction_51.then\n  then= None ->\n  self= /Script/GameAnimationSample3.Default__ProphecyAttackFootLocomotionLibrary ->\n  Agent= None ->\n  Enabled=true None ->\n  WorldOffset=0, 0, 0 None ->\n  Duration=0.000000 None ->\n  ReturnValue=false None ->",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_125 | Set Ghost Loco Drag\n  execute= None -> K2Node_CallFunction_12.then\n  then= None -> K2Node_CallFunction_218.execute\n  self= /Script/GameAnimationSample3.Default__ProphecyAttackFootLocomotionLibrary ->\n  Agent= None ->\n  Enabled=true None ->\n  ReturnValue=false None ->"
+  ],
+  "removed": [],
+  "changed": [
+    {
+      "key": "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_12",
+      "before": "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_12 | Set Attack Loco Drag\n  execute= None -> K2Node_CallFunction_274.then\n  then= None -> K2Node_CallFunction_218.execute\n  self= /Script/GameAnimationSample3.Default__ProphecyAttackFootLocomotionLibrary ->\n  Agent= None ->\n  Enabled=true None ->\n  Mode=Run None ->\n  DistanceLimitCm=40.000000 None ->\n  HeightLimitCm=15.000000 None ->\n  FreezeBlend=0.050000 None ->\n  AlphaRotation=0.000000 None ->\n  LeftBlendDurationSeconds=0.000000 None ->\n  RightBlendDurationSeconds=0.000000 None ->\n  KneePoleBlendDurationSeconds=1.000000 None ->\n  ReturnValue=false None ->",
+      "after": "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_12 | Set Attack Loco Drag\n  execute= None -> K2Node_CallFunction_274.then\n  then= None -> K2Node_CallFunction_125.execute\n  self= /Script/GameAnimationSample3.Default__ProphecyAttackFootLocomotionLibrary ->\n  Agent= None ->\n  Enabled=true None ->\n  Mode=Run None ->\n  DistanceLimitCm=40.000000 None ->\n  HeightLimitCm=15.000000 None ->\n  FreezeBlend=0.050000 None ->\n  AlphaRotation=0.000000 None ->\n  LeftBlendDurationSeconds=0.000000 None ->\n  RightBlendDurationSeconds=0.000000 None ->\n  KneePoleBlendDurationSeconds=1.000000 None ->\n  ReturnValue=false None ->"
+    },
+    {
+      "key": "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_218",
+      "before": "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_218 | SetAttackStartPelvisInertia\n  execute= None -> K2Node_CallFunction_12.then\n  then= None -> K2Node_CallFunction_157.execute\n  self= /Script/GameAnimationSample3.Default__ProphecyAttackStartInertiaLibrary ->\n  Agent= None ->\n  Enabled=true None ->\n  TranslationWindowFrames=19 None ->\n  TranslationInertia=1.000000 None ->\n  RotationWindowFrames=10 None ->\n  RotationInertia=1.000000 None ->\n  ReturnValue=false None ->",
+      "after": "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_218 | SetAttackStartPelvisInertia\n  execute= None -> K2Node_CallFunction_125.then\n  then= None -> K2Node_CallFunction_157.execute\n  self= /Script/GameAnimationSample3.Default__ProphecyAttackStartInertiaLibrary ->\n  Agent= None ->\n  Enabled=true None ->\n  TranslationWindowFrames=19 None ->\n  TranslationInertia=1.000000 None ->\n  RotationWindowFrames=10 None ->\n  RotationInertia=1.000000 None ->\n  ReturnValue=false None ->"
+    },
+    {
+      "key": "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_51",
+      "before": "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_51 | DrawAttackFootLocomotion\n  execute= None -> K2Node_ExecutionSequence_5.then_0\n  then= None ->\n  self= /Script/GameAnimationSample3.Default__ProphecyAttackFootLocomotionLibrary ->\n  Agent= None ->\n  Duration=0.000000 None ->",
+      "after": "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_51 | DrawAttackFootLocomotion\n  execute= None -> K2Node_ExecutionSequence_5.then_0\n  then= None -> K2Node_CallFunction_144.execute\n  self= /Script/GameAnimationSample3.Default__ProphecyAttackFootLocomotionLibrary ->\n  Agent= None ->\n  Duration=0.000000 None ->"
+    }
+  ]
+}

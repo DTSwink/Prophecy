@@ -1,0 +1,6 @@
+from pathlib import Path
+p=Path('ProjectJournal.md');s=p.read_text(encoding='utf-8')
+anchor='Temporary pre-drag comparison node/path removed at the user\'s request; corrected (former false) behavior retained. Wrist recoil and its debug arc now apply to the right hand only; left-hand constraint and the bilateral upper-arm cone retain ownership.'
+assert anchor in s
+s=s.replace(anchor,anchor+' One unwired temporary call removed from BP and compiled successfully; target BP saved with prior disk backup Saved/Diagnostics/ArmsDrag260/BeforeTempNodeRemoval.uasset. Current wrap investigation: cone strength150, wrist strength60000, limit5, hold/blend0.5/0.5; upper ends191. Native trace has continuous proposed/accepted angles, no +/-180 branch jump: at221 raw locomotion151.94degrees versus held5.58degrees; fade223–249 releases toward raw183.74degrees (accepted181.48), retiring251. The large right turn is timed catch-up, not a demonstrated wrap error; right logic/timing left unchanged. Right hand positions before/after left-disable match exactly, rotations within0.000003degrees; left wrist recoil bypass tested. All10 focused tests passed18:35:13UTC, owned350-tick captures ended/audits0. Evidence wrap_before/wrap_trace captures and native TwistAudit log in the same diagnostics directory.',1)
+p.write_text(s,encoding='utf-8')

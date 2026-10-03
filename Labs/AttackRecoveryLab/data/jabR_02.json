@@ -1,0 +1,16 @@
+{
+  "id": 2,
+  "kind": "volume",
+  "target": [
+    0.17139531672000885,
+    1.4183087348937988,
+    1.1590855121612549
+  ],
+  "file": "data/jabR_02.bin",
+  "frames": 13,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "3edd32e58dfb4c187e0988e7cfea0219935b79a9aa831ce38a49c381a6adc94f",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

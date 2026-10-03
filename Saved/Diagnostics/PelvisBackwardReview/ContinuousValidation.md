@@ -1,0 +1,17 @@
+# Continuous presentation — implemented and verified
+
+The user authorized the low-FPS timing change after reviewing the remaining endpoint-hold defect. The manager now uses accumulator/interval at every render cadence. The existing shared pose-ID/source-time publication supplies the same phase to the capsule, authored physical-animation readers and animation proxy. Unmanaged-source fallback also samples source time without switching on frame duration. Explicit interpolation=false remains an exact-pose request.
+
+This removes the slow-frame jump and subsequent recovery pause. NN inference remains 30 Hz, with the existing catch-up limit, models, feedback, physics steps and drive settings. No extra inference, pose pass or allocation layout was introduced. The accepted tradeoff is continuous presentation up to one policy interval (33.3 ms) behind the newest completed pose at low FPS; normal high-FPS interpolation is retained.
+
+## Verification
+
+- Six-file Live Coding build and patch loaded successfully. `ContinuousLiveCodingBuild.log` records 172.15 seconds. No editor restart or game asset save. The subsequent animation-proxy edit only updates an obsolete explanatory comment.
+- All 84 tests in `Prophecy.Jolt+Prophecy.NN.Presentation` pass. Cadence regression now asserts constant-speed displacement and fixed presentation delay at 60/30/5 FPS, zero-time refresh and recorded hitch sequences. Its negative control reproduces the previous endpoint-hold pause. Shared readers/fallback/lifecycle tests pass. Evidence: `continuous-regressions.json` and `continuous-Regressions.log`; ten existing fixture/expected-fault warnings remain recorded.
+- `continuous-113053.json` contains 3,693 samples over 65 seconds, including 24 deliberate post-tick sleeps of 35/43/52/69/72/95 ms. No remote status calls occurred during the capture. The sampler changes no gameplay settings; startup metadata and final settings are recorded separately. Final state is zero pelvis feedback tolerances, hand/head self-collision disabled, no held sword, and +X movement facing -Y. It is not evidence that startup settings stayed constant through every frame.
+- After startup, 3,414 steady-input frames and 26 slow-to-fast recovery frames pass. Maximum capsule speed error is **0.0267%** of the requested ~180 cm/s. There are **no target stops or reversals** and **no backward pelvis body steps**. Minimum target forward speed is 89.902% of mover speed; minimum physical pelvis advance is 2.05446 cm. This allows ordinary gait variation rather than flattening the animation.
+- Maximum per-frame pelvis motion relative to the capsule/camera is 1.04984 cm, versus 1.13756 cm relative to the capsule in the prior review. These extrema are descriptive across separate captures, not a matched physics-quality or performance benchmark.
+
+Analysis is reproducible with `analyze_continuous.py`; the script fails on root speed errors above 0.5%, target stops, significant backward body movement, missing injections or inadequate hitch recovery coverage. Full measurements: `continuous-analysis.json`. The previous 16.7/19.4 ms commanded pauses were captured in `capture-105914-analysis.json` and documented in `Review.md`.
+
+The timing defect is fixed within this scope; actual rendering pauses during a long frame are not eliminated by interpolation. User gameplay/visual acceptance remains separate. PIE is left running; the completed sampler unregistered its callback, and all deliberate sleeps have ended. No package or new performance result is claimed.

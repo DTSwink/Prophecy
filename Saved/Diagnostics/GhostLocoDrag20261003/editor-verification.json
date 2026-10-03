@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "world": "/Game/testNN.testNN",
+  "signatures": {
+    "ProphecyAttackFootLocomotionLibrary.set_ghost_loco_drag": "X.set_ghost_loco_drag(agent, enabled=True) -> bool",
+    "ProphecyAttackFootLocomotionLibrary.draw_ghost_loco_drag": "X.draw_ghost_loco_drag(agent, enabled=True, world_offset=[0.000000, 0.000000, 0.000000], duration=0.000000) -> bool",
+    "ProphecyAttackFootLocomotionLibrary.read_ghost_loco_drag": "X.read_ghost_loco_drag(agent) -> (names=Array[Name], world_pose=Array[Transform]) or None",
+    "ProphecyFKReturnLibrary.set_attack_fk_return": "X.set_attack_fk_return(agent, enabled=True, nn_takeover_coefficient=1.000000, alpha_hold=0.000000) -> bool",
+    "ProphecyAttackEndExtensionLibrary.set_attack_end_extension": "X.set_attack_end_extension(agent, enabled=True, slash_threshold_degrees=50.688107, hook_threshold_degrees=50.688107, over_threshold_degrees=50.688107) -> bool",
+    "ProphecyUpperCheckpointLibrary.set_upper_checkpoint": "X.set_upper_checkpoint(agent, checkpoint=ProphecyUpperCheckpoint.OCTOBER1_STEP82500) -> str or None",
+    "ProphecyUpperBodyInertiaLibrary.set_attack_upper_body_inertia": "X.set_attack_upper_body_inertia(agent, enabled=True, response_time_seconds=0.250000, hold_duration_seconds=0.000000, blend_to_normal_duration_seconds=0.500000, momentum_scale=1.000000, hand_inertia_space=ProphecyUpperHandInertiaSpace.ROOT_LOCAL, alpha=1.000000, arms_response_time_seconds=-1.000000, arms_blend_to_normal_duration_seconds=-1.000000, arms_alpha=-1.000000) -> bool",
+    "ProphecySlashReturnLibrary.set_slash_right_arm_return_to_neutral": "X.set_slash_right_arm_return_to_neutral(agent, enabled=True, hold_duration_seconds=0.300000, blend_to_nn_duration_seconds=0.500000, return_speed=100.000000, left_hold_duration_seconds=-1.000000, left_blend_to_nn_duration_seconds=-1.000000, left_alpha=1.000000, right_alpha=1.000000) -> bool"
+  },
+  "blueprint_inspection": "mode=Inspect parent=/Script/GameAnimationSample3.ProphecyAgent\nnative_properties=0 pin_types=0 status=3 wiring_preserved=1\n",
+  "assets_saved": false
+}

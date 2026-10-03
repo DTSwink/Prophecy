@@ -438,6 +438,78 @@ static FAutoConsoleCommand RemoveTemporaryDragCommand(TEXT("Prophecy.Editor.Remo
 
 }
 
+namespace ProphecyRunPinBoostCleanup
+{
+static void Run()
+{
+    if(!GEditor || GEditor->PlayWorld)return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if(!BP)return;
+    const TSet<FName> Retired={TEXT("SetRunPinningBoost"),TEXT("SetAttackRecoveryRunPinningBoost"),TEXT("SetLocomotionFootPinningThreshold")};
+    TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+    TArray<UEdGraphNode*> Targets;
+    TArray<UEdGraphPin*> ClearLabels;
+    for(auto* Graph:Graphs)for(UEdGraphNode* Base:Graph->Nodes)
+    {
+        auto* Node=Cast<UK2Node_CallFunction>(Base);
+        if(!Node)continue;
+        const FName Name=Node->FunctionReference.GetMemberName();
+        if(Name==TEXT("GetRunPinningBoost"))
+        {
+            auto* Result=Node->FindPin(TEXT("ReturnValue"));
+            if(!Result)return;
+            for(auto* Link:Result->LinkedTo)
+            {
+                auto* Convert=Cast<UK2Node_CallFunction>(Link->GetOwningNode());
+                if(!Convert || Convert->FunctionReference.GetMemberName()!=TEXT("Conv_DoubleToString"))return;
+                auto* Output=Convert->FindPin(TEXT("ReturnValue"));
+                if(!Output)return;
+                for(auto* Use:Output->LinkedTo)
+                {
+                    auto* Label=Use->GetOwningNode()->FindPin(TEXT("desc3"));
+                    if(Use->PinName!=TEXT("s3") || !Label || Label->DefaultValue!=TEXT("pin boost") || !Label->LinkedTo.IsEmpty())return;
+                    ClearLabels.Add(Label);
+                }
+                Targets.AddUnique(Convert);
+            }
+            Targets.AddUnique(Node);
+        }
+        else if(Retired.Contains(Name))
+        {
+            for(auto* Pin:Node->Pins)if(Pin && Pin->Direction==EGPD_Output && !Pin->LinkedTo.IsEmpty() &&
+                (Pin->PinType.PinCategory!=UEdGraphSchema_K2::PC_Exec || Pin->PinName!=TEXT("then") || Pin->LinkedTo.Num()>1))return;
+            Targets.AddUnique(Node);
+        }
+    }
+    const FString Dir=FPaths::ProjectSavedDir()/TEXT("Diagnostics/RemoveRunPinBoost20261003");
+    IFileManager::Get().MakeDirectory(*Dir,true);
+    const FString Backup=Dir/(TEXT("BP-live-before-")+FDateTime::Now().ToString(TEXT("%Y%m%d-%H%M%S"))+TEXT(".uasset"));
+    FSavePackageArgs Save;Save.TopLevelFlags=RF_Public|RF_Standalone;Save.SaveFlags=SAVE_KeepDirty;
+    if(!UPackage::SavePackage(BP->GetOutermost(),BP,*Backup,Save))return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","RemoveRunPinBoosts","Remove Run pin boosts"));
+    BP->Modify();FString Report;bool OK=true;
+    for(auto* Pin:ClearLabels){Pin->GetOwningNode()->Modify();Pin->DefaultValue.Empty();}
+    for(auto* Node:Targets)
+    {
+        auto* Graph=Node->GetGraph();Graph->Modify();Node->Modify();
+        TArray<UEdGraphPin*> In,Out;
+        if(auto* Pin=Node->FindPin(TEXT("execute")))In=Pin->LinkedTo;
+        if(auto* Pin=Node->FindPin(TEXT("then")))Out=Pin->LinkedTo;
+        for(auto* Pin:Node->Pins)if(Pin)for(auto* Link:Pin->LinkedTo)Link->GetOwningNode()->Modify();
+        Report+=Graph->GetName()+TEXT(" | ")+Node->GetName()+TEXT("\n");
+        Node->BreakAllNodeLinks();
+        for(auto* From:In)for(auto* To:Out)OK&=Graph->GetSchema()->TryCreateConnection(From,To);
+        FBlueprintEditorUtils::RemoveNode(BP,Node,true);
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    Report+=FString::Printf(TEXT("removed=%d connections_ok=%d status=%d asset_saved=0\nbackup=%s\n"),Targets.Num(),int32(OK),int32(BP->Status),*Backup);
+    FFileHelper::SaveStringToFile(Report,*(Dir/TEXT("cleanup-result.txt")));
+    UE_LOG(LogTemp,Display,TEXT("Run pin cleanup: %s"),*Report);
+}
+static FAutoConsoleCommand Command(TEXT("Prophecy.Editor.RemoveRunPinBoosts"),TEXT("Back up and remove Run pin boosts, preserve execution wiring, compile without saving."),FConsoleCommandDelegate::CreateStatic(&Run));
+}
+
 namespace ProphecyUpperRecoveryCleanup
 {
 // Explicit one-shot removal of the retired upper recovery stack. No runtime or

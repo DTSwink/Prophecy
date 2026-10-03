@@ -1,0 +1,16 @@
+{
+  "id": 20,
+  "kind": "floor",
+  "target": [
+    -0.1297699362039566,
+    0,
+    1.0568499565124512
+  ],
+  "file": "data/KickL_20.bin",
+  "frames": 17,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "61d3945556c0c96bc319e0b5df824e20295fd15f90e6a158a626ca7fbea473d2",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

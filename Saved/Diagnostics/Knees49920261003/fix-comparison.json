@@ -1,0 +1,194 @@
+{
+  "rows": [
+    {
+      "tick": 494,
+      "before_presented_pole_step": 5.602373366375135,
+      "before_body_pole_step": 5.666488214433044,
+      "after_presented_pole_step": 5.602525817280902,
+      "after_body_pole_step": 5.666649789039481
+    },
+    {
+      "tick": 495,
+      "before_presented_pole_step": 5.427059680393158,
+      "before_body_pole_step": 5.3226904327984155,
+      "after_presented_pole_step": 5.427114391747612,
+      "after_body_pole_step": 5.322766844216994
+    },
+    {
+      "tick": 496,
+      "before_presented_pole_step": 4.558460569581513,
+      "before_body_pole_step": 4.5429928906701225,
+      "after_presented_pole_step": 4.5584728586597345,
+      "after_body_pole_step": 4.543003452722302
+    },
+    {
+      "tick": 497,
+      "before_presented_pole_step": 1.9487468052118895,
+      "before_body_pole_step": 1.3288145417966417,
+      "after_presented_pole_step": 1.9515012035534882,
+      "after_body_pole_step": 1.3992112012764817
+    },
+    {
+      "tick": 498,
+      "before_presented_pole_step": 4.756616129759727,
+      "before_body_pole_step": 5.475629053007586,
+      "after_presented_pole_step": 4.947629395994989,
+      "after_body_pole_step": 5.054337961447748
+    },
+    {
+      "tick": 499,
+      "before_presented_pole_step": 21.042281014765866,
+      "before_body_pole_step": 20.505135467527598,
+      "after_presented_pole_step": 5.671893461742269,
+      "after_body_pole_step": 5.5711702218722925
+    },
+    {
+      "tick": 500,
+      "before_presented_pole_step": 0.9677269053298817,
+      "before_body_pole_step": 1.1829050141328155,
+      "after_presented_pole_step": 7.5642488612884735,
+      "after_body_pole_step": 7.404309663666119
+    },
+    {
+      "tick": 501,
+      "before_presented_pole_step": 4.729024625907815,
+      "before_body_pole_step": 4.706288639648635,
+      "after_presented_pole_step": 4.085434301407624,
+      "after_body_pole_step": 4.067664447241791
+    },
+    {
+      "tick": 502,
+      "before_presented_pole_step": 2.797019015337075,
+      "before_body_pole_step": 2.895940639498764,
+      "after_presented_pole_step": 2.1808621928149976,
+      "after_body_pole_step": 2.3866322859139033
+    },
+    {
+      "tick": 503,
+      "before_presented_pole_step": 3.104702589911867,
+      "before_body_pole_step": 3.3546457328427,
+      "after_presented_pole_step": 2.1132137924561065,
+      "after_body_pole_step": 2.301499045786146
+    },
+    {
+      "tick": 504,
+      "before_presented_pole_step": 2.7847109593652433,
+      "before_body_pole_step": 2.8459978132664534,
+      "after_presented_pole_step": 2.4598923625216313,
+      "after_body_pole_step": 2.57710664929096
+    },
+    {
+      "tick": 505,
+      "before_presented_pole_step": 2.4223041798345237,
+      "before_body_pole_step": 2.5596549719734365,
+      "after_presented_pole_step": 2.418235621526769,
+      "after_body_pole_step": 2.553723021337986
+    },
+    {
+      "tick": 506,
+      "before_presented_pole_step": 2.210559233478182,
+      "before_body_pole_step": 2.330190918790629,
+      "after_presented_pole_step": 2.2069044983476584,
+      "after_body_pole_step": 2.3334399826733474
+    },
+    {
+      "tick": 507,
+      "before_presented_pole_step": 1.9407149625274083,
+      "before_body_pole_step": 1.8743835130401876,
+      "after_presented_pole_step": 1.9407724107029243,
+      "after_body_pole_step": 1.8737447045862279
+    },
+    {
+      "tick": 508,
+      "before_presented_pole_step": 1.6340885660771125,
+      "before_body_pole_step": 1.5157891655851061,
+      "after_presented_pole_step": 1.6338428094694415,
+      "after_body_pole_step": 1.516403036262356
+    },
+    {
+      "tick": 509,
+      "before_presented_pole_step": 1.106382956617026,
+      "before_body_pole_step": 1.0299322579214254,
+      "after_presented_pole_step": 1.1080357694760232,
+      "after_body_pole_step": 1.0317014505112505
+    },
+    {
+      "tick": 510,
+      "before_presented_pole_step": 0.866376198935907,
+      "before_body_pole_step": 0.7645476478140301,
+      "after_presented_pole_step": 0.8676146882489456,
+      "after_body_pole_step": 0.7663061022884776
+    },
+    {
+      "tick": 511,
+      "before_presented_pole_step": 0.5483026726800431,
+      "before_body_pole_step": 0.4772467515308559,
+      "after_presented_pole_step": 0.5494017644794997,
+      "after_body_pole_step": 0.4785397843443698
+    },
+    {
+      "tick": 512,
+      "before_presented_pole_step": 0.4431787362752929,
+      "before_body_pole_step": 0.3776297773771168,
+      "after_presented_pole_step": 0.443431314470852,
+      "after_body_pole_step": 0.37803155862029736
+    },
+    {
+      "tick": 513,
+      "before_presented_pole_step": 0.34346755928450423,
+      "before_body_pole_step": 0.3303775823717343,
+      "after_presented_pole_step": 0.3434582522404544,
+      "after_body_pole_step": 0.33042742038538764
+    },
+    {
+      "tick": 514,
+      "before_presented_pole_step": 0.321893115629572,
+      "before_body_pole_step": 0.34898844240487154,
+      "after_presented_pole_step": 0.3219535647298396,
+      "after_body_pole_step": 0.3490060250764148
+    },
+    {
+      "tick": 515,
+      "before_presented_pole_step": 1.1352324813976737,
+      "before_body_pole_step": 1.241254077819694,
+      "after_presented_pole_step": 1.135140320663468,
+      "after_body_pole_step": 1.2411708951185223
+    },
+    {
+      "tick": 516,
+      "before_presented_pole_step": 1.2314421675114302,
+      "before_body_pole_step": 1.1565448663695026,
+      "after_presented_pole_step": 1.2313406018089128,
+      "after_body_pole_step": 1.156417243142807
+    },
+    {
+      "tick": 517,
+      "before_presented_pole_step": 2.700043541988779,
+      "before_body_pole_step": 2.8141695716822386,
+      "after_presented_pole_step": 2.699917921645138,
+      "after_body_pole_step": 2.814065405373095
+    },
+    {
+      "tick": 518,
+      "before_presented_pole_step": 2.9555963202407525,
+      "before_body_pole_step": 2.9677798624745453,
+      "after_presented_pole_step": 2.9554510446408204,
+      "after_body_pole_step": 2.9675618151469
+    },
+    {
+      "tick": 519,
+      "before_presented_pole_step": 2.348333736542302,
+      "before_body_pole_step": 2.353465532696345,
+      "after_presented_pole_step": 2.348360208665105,
+      "after_body_pole_step": 2.353528185682087
+    },
+    {
+      "tick": 520,
+      "before_presented_pole_step": 2.340746332926111,
+      "before_body_pole_step": 2.360155956855744,
+      "after_presented_pole_step": 2.340761311807345,
+      "after_body_pole_step": 2.3601405384810716
+    }
+  ],
+  "future_lower_max_cm_494_520": 0.0035181674176596543
+}

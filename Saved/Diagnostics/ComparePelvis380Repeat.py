@@ -1,0 +1,2 @@
+import pathlib,json,numpy as np
+p=pathlib.Path('Saved/Diagnostics');a=json.loads((p/'Pelvis380-capture.json').read_text());b=json.loads((p/'Pelvis380Repeat-capture.json').read_text());aa={r['tick']:r for r in a['rows']};bb={r['tick']:r for r in b['rows']};print(b['reason'],len(b['rows']));print('Pelvis repeat maximum position difference',max(np.linalg.norm(np.array(aa[t]['targets']['pelvis']['target']['p'])-bb[t]['targets']['pelvis']['target']['p']) for t in range(350,388)))

@@ -1,0 +1,29 @@
+{
+  "schema": "attack_recovery_source_v1",
+  "branch": "standard",
+  "difficulty": "easy",
+  "variantsPerAttack": 20,
+  "seed": 1234,
+  "files": {
+    "source.html": {
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_harness_standalone\\index.html",
+      "sha256": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+    },
+    "settings.json": {
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_harness_standalone\\persistent_settings.json",
+      "sha256": "065653c8a3b6447165c5109e3275f7b6a09e4c36d6c41f9119de7bba73ea186a"
+    },
+    "build_info.json": {
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_harness_standalone\\build_info.json",
+      "sha256": "05c0f666399692a74bc8316c1b38ae65c7fde7290a7e40cd0817cd3a99a300c8"
+    },
+    "renderer.js": {
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\temp_upper_dataset_viewer\\final_harness_webgl_renderer.js",
+      "sha256": "bb64a8c6218e4831b9f5154a1285ab73e060e1a5e656170878d74e0b0cc6a929"
+    },
+    "app-icon.ico": {
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_harness_standalone\\app-icon.ico",
+      "sha256": "fb7361aa3a15bac43f190be22f1c20920a6a0fea996bf0cd6add10b70a6a0410"
+    }
+  }
+}

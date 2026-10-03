@@ -738,15 +738,6 @@ public:
 	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Debug")
 	bool GetAttackFootPinning(FProphecyFootPinningSample& Sample, bool bFrozenStage = false) const;
 
-	/** Upper height of locomotion's near-ground forced pin (cm). Full strength below
-	 * max(0, Threshold-FadeRange). Zero threshold disables forcing, not learned pinning.
-	 * Defaults 2 / 0.5 preserve the current run policy. Legacy walk pinning is unchanged. */
-	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Locomotion")
-	bool SetLocomotionFootPinningThreshold(float ThresholdCm = 2.0f, float FadeRangeCm = 0.5f);
-
-	bool bOverrideLocomotionPinThreshold = false;
-	float LocomotionPinThresholdM = .02f, LocomotionFullPinHeightM = .015f;
-
 	/** Full attacks only: maximum hip-to-foot reach = rest leg length + Leeway Cm.
 	 * Locomotion/half-attack legs keep their manager settings. Invalid leeway is rejected. */
 	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|NN Attack")

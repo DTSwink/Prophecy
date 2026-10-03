@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "checkpoint_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\runs\\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3\\checkpoints\\20260617_234645_ik_ik_full_RESUME_best47200_k32fixed_s05_rootaccelx01_i_e8b756b3_init.pt",
-  "checkpoint_sha256": "CCC03FEE15E825EBCBCD24F9E71934D515B5133E760114ABE664445042D379C1",
+  "checkpoint_path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\RunCheckpoint20260930-135852\\source_checkpoint.pt",
+  "checkpoint_sha256": "0F2565AC72C5209153CBD910135209487F9EF8A0E234ED0C6D99DF2FF30A299E",
   "seed_clip_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\ue5\\animation_run_omni_only\\npz_final\\M_Neutral_Run_Loop_F.npz",
   "seed_clip_sha256": "317734C8319A564D902C05D8C8FA829A527A71FF8D58021727F67BF32A124A19",
-  "onnx_path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\locomotion\\NN\\prophecy_lower_body_run_b100.onnx",
-  "onnx_sha256": "75D9907B6FD62534CD4DC4FC7ED05C9E2DD32D1C173D4530044965887359C209",
+  "onnx_path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\RunCheckpoint20260930-135852\\export\\prophecy_lower_body_run_b100.onnx",
+  "onnx_sha256": "914FE944EDA9D7D65A807581A64620D821BD1B570447246AE258CFFC2C16E46C",
   "batch_size": 100,
   "input_dim": 152,
   "model_output_dim": 43,
@@ -305,11 +305,12 @@
     "integration_steps": 4,
     "side_blend_deg": 8.0,
     "pin_ste_scale": 8.0,
+    "pin_mode": "continuous_sigmoid",
     "ground_y": 0.0,
     "height_pin_gate_enabled": false,
     "near_floor_full_height_m": 0.015,
     "near_floor_fade_height_m": 0.02,
-    "near_floor_minimum_pin_probability": 1.0
+    "near_floor_minimum_pin_probability": 0.0
   },
   "output_layout": {
     "state_residual": [

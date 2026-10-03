@@ -1,74 +1,50 @@
-"""Transient correctness checks for pinning capture and per-agent threshold. No benchmarking."""
-import builtins,json,pathlib,traceback,math,unreal
+"""Owned 265-tick scene check: finite pin samples and unboosted pure Run weights."""
+import json, math, pathlib, time, traceback, unreal
 ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
-assert not ed.get_game_world()
-s=dict(actors={},phase=0,rows=[],forced=False,zero_checks=0,attack_checks=0,last=-1)
-builtins._foot_pin_nodes=s
-def vals(p):return [p.x,p.y]
-def record(p):return dict(raw=vals(p.raw_network_output),decoded=vals(p.raw_pinning),effective=vals(p.effective_pinning),time=p.sample_time_seconds,visible=p.applies_to_visible_feet,walk=p.walk_policy)
+level=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
+assert ed.get_game_world() is None, 'Preserve user Play'
+s=dict(world=None,actors=[],rows=[],ticks=0,last=None,start=time.monotonic(),run_checks=0,attack_seen=set())
 def finish(reason):
     unreal.unregister_slate_post_tick_callback(s['cb'])
-    (pathlib.Path(unreal.Paths.project_saved_dir())/'Diagnostics/BackwardTurn/PinningNodes.json').write_text(json.dumps(dict(reason=reason,forced=s['forced'],zero_checks=s['zero_checks'],attack_checks=s['attack_checks'],rows=s['rows'])))
-    unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_request_end_play()
-    print('PINNING_NODES_CHECK',reason)
+    out=pathlib.Path(unreal.Paths.project_saved_dir())/'Diagnostics/RemoveRunPinBoost20261003'
+    out.mkdir(exist_ok=True)
+    (out/'pin-readback.json').write_text(json.dumps(dict(reason=reason,run_checks=s['run_checks'],rows=s['rows'])))
+    if s['world'] is not None and ed.get_game_world()==s['world']:level.editor_request_end_play()
+    print('PINNING_NODES_CHECK',reason,'Run checks',s['run_checks'])
 def tick(_):
     try:
+        if time.monotonic()-s['start']>60:finish('Watchdog');return
         w=ed.get_game_world()
-        if not w:return
+        if w is None:
+            if s['world'] is not None:finish('Play ended early')
+            return
+        if s['world'] is None:
+            s['world']=w
+            s['actors']=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.ProphecyAgent)
+            assert s['actors']
+            for a in s['actors']:assert a.set_foot_pinning_debug_enabled(True)
+        if w!=s['world']:finish('World replaced');return
         t=unreal.GameplayStatics.get_time_seconds(w)
         if t==s['last']:return
-        s['last']=t
-        if not s['actors']:
-            s['actors']={a.get_agent_handle().index:a for a in unreal.GameplayStatics.get_all_actors_of_class(w,unreal.ProphecyAgent)}
-            assert 0 in s['actors'] and 2 in s['actors']
-            for a in s['actors'].values():assert a.get_locomotion_foot_pinning() is None
-            for i in [0,2]:assert s['actors'][i].set_foot_pinning_debug_enabled(True)
-            assert not s['actors'][0].set_locomotion_foot_pinning_threshold(-1,.5)
-            assert not s['actors'][0].set_locomotion_foot_pinning_threshold(2,-1)
-        a=s['actors'][0]
-        p=a.get_locomotion_foot_pinning()
-        if p:
-            r=record(p);r['t']=t;s['rows'].append(r)
-            assert all(math.isfinite(v) for k in ['raw','decoded','effective'] for v in r[k])
-            assert all(0<=v<=1 for k in ['decoded','effective'] for v in r[k])
-            if 1.2<t<2 and any(e>d+.1 for e,d in zip(r['effective'],r['decoded'])):s['forced']=True
-            if 2.25<t<2.7:
-                assert r['effective']==r['decoded']
-                s['zero_checks']+=1
-        if t>=2.17 and s['phase']==0:
-            assert a.set_locomotion_foot_pinning_threshold(0,.5)
-            s['phase']=1
-        if t>=2.8 and s['phase']==1:
-            assert a.set_locomotion_foot_pinning_threshold(2,.5)
-            for i in [0,2]:
-                actor=s['actors'][i]
-                actor.set_simulation_mode(unreal.ProphecyAgentSimulationMode.KINEMATIC)
-                actor.set_actor_tick_enabled(False)
-                actor.stop_nn_attack()
-                assert actor.trigger_nn_attack('hookR',actor.get_root_low_point()+unreal.Vector(-30,50,115),i==2)
-            s['phase']=2
-        if 2.9<t<3.2:
-            for i in [0,2]:
-                actor=s['actors'][i]
-                p=actor.get_attack_foot_pinning(False)
-                f=actor.get_attack_foot_pinning(True)
-                assert p and f
-                r=record(p);fr=record(f)
-                assert r['decoded']==r['effective']
-                assert r['visible']==(i==0) and not fr['visible']
-                for raw,e in zip(r['raw'],r['effective']):assert abs(max(0,min(1,2/(1+math.exp(-raw))-1))-e)<1e-6
-                l,rraw=fr['raw'];both=l<0 and rraw<0
-                assert fr['effective']==[float(both or l<=rraw),float(both or rraw<l)]
-                s['attack_checks']+=1
-        if t>=3.3:
-            assert s['forced'] and s['zero_checks']>5 and s['attack_checks']>5
-            for i in [0,2]:
-                actor=s['actors'][i]
-                actor.stop_nn_attack()
-                assert actor.get_attack_foot_pinning(False) is None
-                assert actor.set_foot_pinning_debug_enabled(False)
-                assert actor.get_locomotion_foot_pinning() is None
+        s['last']=t;s['ticks']+=1
+        for a in s['actors']:
+            p=a.get_locomotion_foot_pinning()
+            if p is None:continue
+            decoded=[p.raw_pinning.x,p.raw_pinning.y]
+            effective=[p.effective_pinning.x,p.effective_pinning.y]
+            assert all(math.isfinite(v) and 0<=v<=1 for v in decoded+effective)
+            if a.get_nn_attack_state():s['attack_seen'].add(a.get_name())
+            weights=a.get_locomotion_checkpoint_weights()
+            # Before the first attack, leg/pelvis mixtures agree. Later regional
+            # recovery can include independent Walk leg controls; skip equality there.
+            if p.applies_to_visible_feet and weights and weights[0]==0 and a.get_name() not in s['attack_seen']:
+                assert decoded==effective,(a.get_name(),decoded,effective,weights)
+                s['run_checks']+=1
+                s['rows'].append(dict(tick=s['ticks'],actor=a.get_name(),decoded=decoded,effective=effective))
+        if s['ticks']>=265:
+            assert s['run_checks']>20,s['run_checks']
             finish('passed')
     except Exception:finish(traceback.format_exc())
 s['cb']=unreal.register_slate_post_tick_callback(tick)
-unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_request_begin_play()
+level.editor_request_begin_play()
+print('PINNING_NODES_CHECK_STARTED')

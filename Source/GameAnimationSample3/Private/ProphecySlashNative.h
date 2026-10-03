@@ -27,7 +27,7 @@ public:
 	int32 InputBatchSize = 1;
 	bool Initialize(const FString& Directory, const TSharedPtr<FJsonObject>& Contract, bool bGpu = false, const FString& AuditGeometryPath = FString());
 	bool SetBatch(int32 Count);
-	bool Run(TArray<float>& Input, TArray<float>& Output, TConstArrayView<FStepSettings> Settings = {});
+	bool Run(TArray<float>& Input, TArray<float>& Output, TConstArrayView<FStepSettings> Settings = {}, bool bLowerOnly = false);
 #if !UE_BUILD_SHIPPING
 	// Scoped by the diagnostic caller; never changes weights or retained history.
 	void SwapAuditFrame(FVector3f& Position,FMat3f& Rotation)

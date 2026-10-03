@@ -35,4 +35,16 @@ uint8 Advance(const AProphecyAgent* Agent,FRun& Run,const FVector& Pelvis,const 
 uint8 ReleaseAll(const AProphecyAgent* Agent);
 // -1 means disabled for that foot. Clocks start at drag entry, not handoff.
 void AdvancePoles(const AProphecyAgent* Agent,uint8 Remaining,float (&AttackAlpha)[2]);
+// Separate sparse state keeps retained Live Coding layouts unchanged. The attack
+// state owns ghost legs/shared pelvis; this history owns the accepted real legs.
+struct FGhostRun
+{
+    float PreviousLegs[32],CurrentLegs[32];
+    FTransform RealPose[8],PreviousWorld[9],CurrentWorld[9];
+    int32 Legs[2][4],PoseId=INDEX_NONE;
+    bool HasPose=false,HasReal=false;
+};
+void BeginGhost(const AProphecyAgent* Agent,const float* AttackState,TConstArrayView<FTransform> Pose,const FTransform& Carrier);
+FGhostRun* FindGhost(const AProphecyAgent* Agent);
+void CancelGhost(const AProphecyAgent* Agent,float* AttackState);
 }

@@ -1,0 +1,82 @@
+{
+  "camera": {
+    "flight_speed": 18.0,
+    "look_sensitivity": 0.007000000216066837,
+    "pan_sensitivity": 0.10000000149011612,
+    "zoom_sensitivity": 2.5
+  },
+  "combat": {
+    "attack_cooldown_seconds": 1.0,
+    "attack_followup_probability": 0.5,
+    "drawn_sword_attack_probability": 0.800000011920929,
+    "melee_attack_stun_seconds": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "parried_attack_cooldown_seconds": 1.5,
+    "parry_probability": 0.5,
+    "sword_attack_stun_seconds": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "locomotion": {
+    "crawl_speed_scale": 0.20000000298023224,
+    "crawl_turn_scale": 0.20000000298023224
+  },
+  "look": {
+    "head_turn_speed_degrees_per_second": 360.0
+  },
+  "perception": {
+    "follow_stop_distance_m": 2.0,
+    "follow_walk_distance_m": 7.0,
+    "head_vision_angle_degrees": 180.0,
+    "non_threatening_maximum_seconds": 40.0,
+    "non_threatening_minimum_seconds": 30.0,
+    "proximity_threat_range_m": 3.0,
+    "running_sound_toward_leeway_degrees": 15.0,
+    "sound_maximum_range_m": 30.03472137451172,
+    "vision_range_m": 100.0
+  },
+  "simulation": {
+    "hero_agent_count": 1,
+    "seed": 85555888353100,
+    "villain_agent_count": 1
+  },
+  "tactics": {
+    "ally_spacing_distance_m": 2.0,
+    "containment_early_influence": 0.10000000149011612,
+    "sector_angle_variation_degrees": 12.0,
+    "sector_influence_distance_m": 30.0,
+    "sector_radius_variation_m": 0.15000000596046448,
+    "target_commitment_seconds": 1.5
+  },
+  "transport": {
+    "arrow_repeat_ticks_per_second": 30.0
+  },
+  "visualization": {
+    "combat_lab": true,
+    "sound_events": false,
+    "xray_agents": false
+  },
+  "wounds": {
+    "head_passed_out_seconds": 30.0,
+    "leg_agonising_seconds": 3.0,
+    "melee_wound_gain": 20.0,
+    "torso_agonising_seconds": 10.0,
+    "wound_decay_per_second": 1.0,
+    "wound_threshold": 100.0
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": 6,
+  "kind": "volume",
+  "target": [
+    -0.178925558924675,
+    0.8172786235809326,
+    0.5997164845466614
+  ],
+  "file": "data/overL_06.bin",
+  "frames": 19,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "8689976c209001324e4e6bf365719918704472fd505e365c9913b47711fe0175",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

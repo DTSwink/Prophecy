@@ -1,0 +1,16 @@
+{
+  "id": 14,
+  "kind": "volume",
+  "target": [
+    -0.6437846422195435,
+    0.9122056365013123,
+    1.069562315940857
+  ],
+  "file": "data/KickL_14.bin",
+  "frames": 17,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "3b173a49a45dd0ae25f2573cdd9f5f95a303df5d7be60ec264e3d727a4ad4b90",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

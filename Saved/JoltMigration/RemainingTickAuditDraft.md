@@ -1,0 +1,29 @@
+# Remove the repeated native animation update
+
+Status: source-backed DRAFT only. No active source, build, UE, benchmark or package changes were made by this audit. Proposed source files and `Proposed.patch` are in this directory; `Baseline.json` records source and draft SHA256 values. The regression is uncompiled and unexecuted.
+
+The highest-confidence remaining avoidable cost is a second zero-delta animation update on every completed Jolt pose publication. This is an actual missing native-proxy traversal update, not a speculative cache or a reduction in animation/query work.
+
+## Evidence and causal chain
+
+1. `Saved/JoltMigration/PhysicalFeedbackComparison.json:293` records **72,000 ProxyPreUpdate calls for 36,000 completed publications**, in Original, PreparedSerial and PreparedParallel alike. Each publication still has exactly one proxy evaluation and finalization. Original's explicit `anim_tick` scope averages **0.477425 ms per world frame**; both PreUpdates together average **0.159942 ms**. The second TickAnimation is nested inside RefreshBones and therefore absent from the explicit anim_tick scope. These times overlap and must not be added together. The existing reports do not isolate the second update's wall cost, so the potential saving is a hypothesis of roughly a fraction of one millisecond, not an established result or enough alone to guarantee <10 ms.
+2. `Source/GameAnimationSample3/Private/ProphecyJoltCharacterComponent.cpp:704` explicitly calls `Mesh->TickAnimation(0.0f, false)` and line 719 calls `RefreshBoneTransforms(nullptr)`. Both calls remain in the proposal.
+3. UE `Engine/Source/Runtime/Engine/Private/Animation/AnimInstance.cpp:835` (`NeedsImmediateUpdate`) forces immediate completion for DeltaSeconds == 0. The first tick thus executes the update and `PostUpdateAnimation`, which clears NeedsUpdate (`:722-729`).
+4. UE `Engine/Source/Runtime/Engine/Private/Animation/AnimInstanceProxy.cpp:126-148` increments `UpdateCounter` only when `InRootNode` is non-null. The native snapshot proxy overrides Evaluate and PreUpdate but supplies no graph root or UpdateAnimationNode override. UE's Initialize chooses the default null custom root and resets the counter (`:240-250`). Its actual update consequently leaves HasEverBeenUpdated false forever.
+5. UE `Engine/Source/Runtime/Engine/Private/Components/SkeletalMeshComponent.cpp:2748-2770` sees !NeedsUpdate and !HasEverBeenUpdated, then executes **another TickAnimation(0)** before evaluating. This directly explains the measured exact 2:1 count.
+
+## Minimal supported correction
+
+Override `FProphecyJoltPoseAnimInstanceProxy::UpdateAnimationNode`. If a graph root exists, call the unchanged base implementation. For this rootless native snapshot evaluator, increment the protected UpdateCounter **inside that actual update callback**. Do not modify the counter from PreUpdate, publication, BeginPlay or the benchmark, do not set a fake last-frame flag, and do not skip TickAnimation or RefreshBoneTransforms.
+
+This is UE's established native-proxy extension point: `Engine/Source/Runtime/AnimGraphRuntime/Private/AnimSequencerInstanceProxy.cpp:102-106` and `Engine/Source/Editor/AnimGraph/Private/AnimPreviewAttacheInstance.cpp:27-32` override UpdateAnimationNode and advance UpdateCounter themselves. The first is runtime source. `Engine/Public/Animation/AnimInstanceProxy.h:614` declares the virtual protected override; the protected counter is at line 1104. `Engine/Public/Animation/AnimTypes.h:174` provides Increment, including frame synchronization and reserved-value wrapping behavior.
+
+The proposed guard preserves base graph processing when a root exists. Snapshot copying, all 88 bones, 60 Hz publication, serial UE evaluation, pre/post callbacks, immediate query commit, buffer flip, attachments/finalization and lifecycle identity checks remain in their existing order. UE can still force its normal first update after a native proxy reinitialization. No Engine rebuild is required; the override lives entirely in the project game module.
+
+## Meaningful regression and acceptance
+
+The draft extends `Prophecy.Jolt.QueryPose.ImmediateFinalizeTraceAndScaleCache`, using its real 88-bone/22-body project mannequin and ordinary UE query/finalization pipeline. Every explicit publication must advance the real graph traversal counter, record one PreUpdate, one PreEvaluate, one Evaluate and one PostEvaluate, and Refresh must retain the counter value established by the explicit tick. The existing native receiver, socket, scale and current query-hit checks remain. The finalization callback now also compares every component-space bone with independently composed expected transforms.
+
+A fifth publication clears/reuses source revision 1 after public InitializeAnimation, changes root translation and head rotation, and verifies the reset traversal is updated and a fresh full pose/query state reaches finalization. All publications occur within the same engine frame, so this catches accidental once-per-GFrameCounter skips and stale snapshots. Existing teardown/removal controls are still required after promotion; this test does not replace them.
+
+Suggested root validation sequence: build current project source with fresh modification times; run the strengthened query test, all Jolt foundation tests and existing NN feedback/targets as required by the source change. Run a two-agent actual-NN smoke, then a quiet full 100-agent control. Admission should establish exactly 36,000 PreUpdates for 36,000 publications with all existing evaluations/body/bone/query/lifecycle counters unchanged. Compare disjoint world mean/p95 and RefreshBones before declaring a performance gain. Packaging manifests require a new source revision if this candidate is promoted into the isolated project; do not silently change the current accepted snapshot.

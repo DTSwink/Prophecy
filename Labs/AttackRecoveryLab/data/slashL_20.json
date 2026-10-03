@@ -1,0 +1,16 @@
+{
+  "id": 20,
+  "kind": "floor",
+  "target": [
+    0.05135298892855644,
+    0,
+    0.6374993324279785
+  ],
+  "file": "data/slashL_20.bin",
+  "frames": 24,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "70b97a7793536e000ef26ab62ea51cbf2354d29712068c3ebf01749c95d10ccb",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

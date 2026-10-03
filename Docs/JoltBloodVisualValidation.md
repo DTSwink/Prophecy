@@ -1,5 +1,7 @@
 # Blood validation — 10 September 2026
 
+**October1 follow-up:** these receiver tests remain valid, including their QueryOnly/native-particle-collision limitations. The [query-only stage](JoltBloodNativeQueryExperiment.md) and subsequent [actual CPU emitter experiment](JoltBloodEmitterExperiment.md) now test native queries, compiled particle simulation and export decisions numerically. The latter passes81 bounded trials and identifies approximately47–58% lower producer cost for its best quality-preserving choices, but does not invoke the paint callback. Production Niagara remains unmigrated; `SM impostors` remain a distinct per-instance painting workaround.
+
 Movement is accepted by the user; this pass checks blood receivers and runtime setup. Evidence lives in `Saved/Diagnostics/BloodVisual-20260910/` and `Saved/Diagnostics/BloodVisual/`. Rendered images come from Unreal SceneCapture2D with actual RHI/material shaders, not synthesized illustrations. Test staging used an unsaved Entry world; production setup changes below are deliberate and saved.
 
 ## Fixes found by the rendered/runtime checks

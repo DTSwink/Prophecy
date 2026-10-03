@@ -1,5 +1,33 @@
 # Continuous locomotion root window
 
+## World movement direction in forecasts (October 3)
+
+The shared mover's future-root predictor now holds the initial world movement
+direction across the horizon, re-expressing it relative to each projected root.
+Previously it reused the initial root-relative direction while the projected body
+turned. That curved the predicted path even though live world-space input stayed
+fixed; the next policy update corrected the forecast, producing a visible
+left/right sawtooth in the continuous trail around tick220.
+
+The first future root and actual one-step mover equations are unchanged. The
+correction affects future samples2–8, which both NN controllers also consume.
+The continuous getter, user smoothing settings, attack FK return, tick clocks
+and inference count are unchanged. This adds one scalar direction conversion per
+projected step, with no additional state or allocation.
+
+`Prophecy.NN.RootWindow.WorldDirectionForecast` compares all eight samples with
+repeated fixed-world-input mover steps and checks that consecutive forecasts
+overlap correctly. It covers Walk/Run/Crawl, zero/full input, wrapped headings
+and optional yaw momentum. Evidence is in
+`Saved/Diagnostics/RootTrail22020261003/`.
+
+Live replay verified October3 after patch15: the tick218–221 far-end headings
+changed from62.229→58.812→64.746→61.607deg to
+87.3342→87.3341→87.3335→87.3335deg. User smoothing, attack states and Blueprint
+graph were unchanged. All four focused root-window tests passed; owned Play
+ended. The corrected forecast affects NN motion, so the complete replay is not
+claimed identical (maximum root difference0.652cm over265ticks).
+
 `Get Continuous Locomotion Root Window` (Agent, default Self) returns world-space transforms and time offsets evaluated when the node executes:
 
 - Index **0**: the currently applied/displayed root low point and yaw; time **0**. During loco drag with positive Freeze Blend, its position is blended beneath the NN pelvis as described below.

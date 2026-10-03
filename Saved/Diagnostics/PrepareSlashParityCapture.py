@@ -1,0 +1,10 @@
+from pathlib import Path
+p=Path('Saved/Diagnostics/CaptureSlashTrainFeet.py').read_text()
+p=p.replace("late_fix=label=='late147'","late_fix=False")
+p=p.replace("bones=('pelvis','thigh_l','calf_l','foot_l','ball_l','thigh_r','calf_r','foot_r','ball_r')", "bones=json.loads((pathlib.Path(unreal.Paths.project_dir())/'Tools/NN/Fixtures/SlashTrain2026092223.json').read_text())['initial_history']['bone_names']")
+p=p.replace("f'SlashTrainFeet-{label}","f'SlashTrainParity-{label}")
+p=p.replace("r['meshes'][m.get_name()]={", "r['meshes'][m.get_name()]={")
+p=p.replace("if r['tick']>=(440 if label=='baseline' else 235):", "if r['tick']>=1050:")
+p=p.replace("'Prophecy.SlashTraceFrames 450'","'Prophecy.SlashTraceFrames 1200'")
+p=p.replace("time.monotonic()-s['wall']>120", "time.monotonic()-s['wall']>300")
+Path('Saved/Diagnostics/CaptureSlashTrainParity.py').write_text(p)

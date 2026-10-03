@@ -24,7 +24,6 @@ void NotifyEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLo
 void NotifyLowerEnded(AProphecyAgent* Agent,FName Attack,bool Half,bool ReturningToLocomotion,
     EProphecyAgentState Special=EProphecyAgentState::Attacking);
 bool IsEndEvent(const AProphecyAgent* Agent);
-bool IsLowerAttackEndEvent(const AProphecyAgent* Agent);
 FName EndEventAttack(const AProphecyAgent* Agent);
 // Overlay the normal selection without changing its ordinary blend state.
 void Step(const AProphecyAgent* Agent, float NormalWalkWeight, FWeights& Out);

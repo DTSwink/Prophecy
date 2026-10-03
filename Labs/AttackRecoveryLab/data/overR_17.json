@@ -1,0 +1,16 @@
+{
+  "id": 17,
+  "kind": "volume",
+  "target": [
+    0.5011098384857178,
+    1.0929818153381348,
+    0.9655393362045288
+  ],
+  "file": "data/overR_17.bin",
+  "frames": 15,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "545ce2fb2593a20f7772fcd660a8fe72da60892db7fcf99bdffcdbef1b042016",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

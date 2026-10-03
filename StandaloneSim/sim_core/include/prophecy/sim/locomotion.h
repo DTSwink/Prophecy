@@ -88,6 +88,8 @@ void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, doub
 void StepLocomotion(LocomotionState& state, const LocomotionIntent& intent, double dt,
     LocomotionTarget* out_target, bool allow_yaw_momentum = false,
     const RootBalanceSpring* balance = nullptr) noexcept;
+// Hold the initial world movement direction throughout the forecast; the input's
+// speed_direction_radians is relative to state.yaw_radians at the first step.
 FutureRootWindow PredictFutureRoots(const LocomotionState& state,
     const LocomotionIntent& intent, double dt, bool allow_yaw_momentum = false,
     const RootBalanceSpring* balance = nullptr) noexcept;

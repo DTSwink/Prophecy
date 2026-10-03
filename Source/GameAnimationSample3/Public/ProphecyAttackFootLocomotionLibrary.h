@@ -42,4 +42,15 @@ public:
     /** Draw explicitly per frame. Cyan = locomotion, red = attack. No debug tick/delegate. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent"))
     static void DrawAttackFootLocomotion(AProphecyAgent* Agent,float Duration=0.f);
+    /** Full attacks with Loco Drag: an independent attack-leg history predicts
+     * the shared pelvis/upper body. A second lower prediction preserves the real
+     * legs and drag handoff. Configure before attack; latched until its end. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent",DisplayName="Set Ghost Loco Drag"))
+    static bool SetGhostLocoDrag(AProphecyAgent* Agent,bool Enabled=true);
+    /** Interpolated ghost pelvis/legs in world space, available only while active. */
+    UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent"))
+    static bool ReadGhostLocoDrag(AProphecyAgent* Agent,TArray<FName>& Names,TArray<FTransform>& WorldPose);
+    /** Call each tick. Cyan ghost legs and shared pelvis; no persistent debug tick. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent",DisplayName="Draw Ghost Loco Drag"))
+    static bool DrawGhostLocoDrag(AProphecyAgent* Agent,bool Enabled=true,FVector WorldOffset=FVector::ZeroVector,float Duration=0.f);
 };

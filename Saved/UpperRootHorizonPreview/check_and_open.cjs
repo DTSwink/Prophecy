@@ -1,0 +1,20 @@
+const {chromium}=require('C:/Users/singerie/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:false,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',args:['--start-maximized']});
+ const page=await browser.newPage({viewport:null});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8021/turn_upper_horizon_temp.html');
+ await page.waitForFunction(()=>typeof payload!=='undefined'&&payload?.positions?.length&&playing);
+ const initial=await page.evaluate(()=>JSON.stringify({p:payload.controller_root_pos,q:payload.controller_root_rot,pins:payload.lower_pin_probabilities}));
+ await page.locator('#horizonSlider').fill('0.5');
+ await page.locator('#horizonSlider').dispatchEvent('change');
+ await page.waitForFunction(()=>payload?.metadata?.upper_rotation_horizon===0.5,{},{timeout:180000});
+ const result=await page.evaluate(()=>({factor:payload.metadata.upper_rotation_horizon,status:document.getElementById('horizonStatus').textContent,control:JSON.stringify({p:payload.controller_root_pos,q:payload.controller_root_rot,pins:payload.lower_pin_probabilities})}));
+ if(initial!==result.control)throw new Error('Root or pinning data changed');
+ delete result.control;
+ if(errors.length)throw new Error(errors.join('\n'));
+ await page.locator('#horizonSlider').fill('1');await page.locator('#horizonSlider').dispatchEvent('change');
+ await page.waitForFunction(()=>!payload?.metadata?.upper_rotation_horizon);
+ await page.bringToFront();
+ console.log(JSON.stringify({verified:result,defaultRestored:1,errors}));
+ page.on('close',()=>browser.close().catch(()=>{}));
+})();

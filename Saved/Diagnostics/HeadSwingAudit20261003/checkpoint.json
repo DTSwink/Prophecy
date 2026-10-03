@@ -1,0 +1,325 @@
+{
+  "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\UpperCheckpoint-20261001-145527\\source_checkpoint.pt",
+  "sha256": "02e73800b8e63dc1b79e3e9c67c0a5f269eb830d3a330fe81c2d11480ac6f5b4",
+  "step": 82500,
+  "metadata": {
+    "run_id": "20261001_121128_ik_upper_cached_ae1ae4_bs64_allk32_blend_noise50_initgaze50each",
+    "trainer": "/workspace/slash2/repo_upper_oct1_omni_kinmse/training/ik/train_upper_pose_controller_pelvis.py",
+    "schema": {
+      "name": "upper_cached_lower_controller",
+      "input_dim": 281,
+      "output_dim": 90,
+      "output_segments": {
+        "upper_pose_delta": [
+          0,
+          90
+        ]
+      },
+      "pelvis_output": "removed",
+      "pelvis_source": "continuous_frozen_lower_cache",
+      "physical_ae1_output_dim": 171,
+      "physical_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "spine_03",
+        "spine_04",
+        "spine_05",
+        "neck_01",
+        "neck_02",
+        "head",
+        "clavicle_l",
+        "clavicle_r",
+        "upperarm_l",
+        "hand_l",
+        "upperarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "thigh_r",
+        "calf_r"
+      ],
+      "ae1_scored_bones": [
+        "spine_01",
+        "spine_02",
+        "spine_03",
+        "spine_04",
+        "spine_05",
+        "neck_01",
+        "neck_02",
+        "head",
+        "clavicle_l",
+        "clavicle_r",
+        "upperarm_l",
+        "hand_l",
+        "upperarm_r",
+        "hand_r"
+      ],
+      "ae1_conditioning_only_bones": [
+        "pelvis",
+        "thigh_l",
+        "calf_l",
+        "thigh_r",
+        "calf_r"
+      ],
+      "feet": "continuous_frozen_lower_cache_not_ae_output",
+      "lower_rollout": "one_continuous_pass_from_frame_zero_per_clip",
+      "lower_inference_in_training_hot_loop": false,
+      "leg_fk_ik_in_training_hot_loop": false
+    },
+    "objective": "ae1_direct_mse_ae4_self_collision",
+    "lower_checkpoints": {
+      "walk": "/workspace/slash2/shared/training/experimental/lower_policy/D01D632F2EAB630D1DA8B7EE3FD113BF626F683EBF6C2CA15045CD675A23C666_20260927_220308_ik_run_turns_reface_mse0005_20260927_train_latest.pt",
+      "run": "/workspace/slash2/shared/training/experimental/lower_policy/D01D632F2EAB630D1DA8B7EE3FD113BF626F683EBF6C2CA15045CD675A23C666_20260927_220308_ik_run_turns_reface_mse0005_20260927_train_latest.pt"
+    },
+    "lower_selection": {
+      "walk": {
+        "name": "runpod_upper_shared_walk_run_policy",
+        "status": "run_scoped_frozen_walk_and_run_override",
+        "checkpoint": "/workspace/slash2/shared/training/experimental/lower_policy/D01D632F2EAB630D1DA8B7EE3FD113BF626F683EBF6C2CA15045CD675A23C666_20260927_220308_ik_run_turns_reface_mse0005_20260927_train_latest.pt",
+        "checkpoint_sha256": "D01D632F2EAB630D1DA8B7EE3FD113BF626F683EBF6C2CA15045CD675A23C666",
+        "foot_roll_pin_mode": "continuous_sigmoid",
+        "selection": "Explicit user-selected latest September 27 run-turns reface checkpoint; used for both walk and run."
+      },
+      "run": {
+        "name": "runpod_upper_shared_walk_run_policy",
+        "status": "run_scoped_frozen_walk_and_run_override",
+        "checkpoint": "/workspace/slash2/shared/training/experimental/lower_policy/D01D632F2EAB630D1DA8B7EE3FD113BF626F683EBF6C2CA15045CD675A23C666_20260927_220308_ik_run_turns_reface_mse0005_20260927_train_latest.pt",
+        "checkpoint_sha256": "D01D632F2EAB630D1DA8B7EE3FD113BF626F683EBF6C2CA15045CD675A23C666",
+        "foot_roll_pin_mode": "continuous_sigmoid",
+        "selection": "Explicit user-selected latest September 27 run-turns reface checkpoint; used for both walk and run."
+      }
+    },
+    "motion_scope": "full",
+    "modes": [
+      -1.0,
+      1.0
+    ],
+    "batch_size": 64,
+    "gradient_accumulation_steps": 1,
+    "learning_rate": 5e-06,
+    "loss": "58row_AE1_newest_171D_reconstruction_MSE_plus_6row_clean_upper90_direct_MSE_plus_weighted_AE4_absolute_pose_plus_hand_blade_self_collision_after_exact_forearm_wrist_clamp",
+    "gaze": "uniform_normalized_-1_to_1_with_5pct_exact_0_0_constant_per_rollout",
+    "initialization_gaze": {
+      "enabled": true,
+      "random_fraction_within_clean_rows": 0.5,
+      "random_fraction_within_noisy_rows": 0.5,
+      "random_distribution": "independent_uniform_normalized_yaw_pitch_-1_to_1",
+      "actual_gaze_input": "unchanged_uniform_-1_to_1_with_5pct_exact_zero_constant_per_rollout",
+      "application_order": "author_initial_pose_from_initialization_gaze_then_apply_episode_start_pose_noise"
+    },
+    "pelvis_output": "removed; pelvis is immutable cached-lower conditioning",
+    "lower_autoregressive_feedback": "none; one continuous frozen-lower trajectory was generated offline",
+    "lower_weights_frozen": true,
+    "lower_input_gradient": "none; cached lower trajectory is immutable",
+    "lower_motion_precomputed": true,
+    "lower_cache": "/workspace/slash2/shared/training/cache/upper_lower_cache_runturns_shared_d01d632f.pt",
+    "lower_cache_sha256": "D061F117C84B99D57DABD28F8CEF712F6FE25104B1B4FD4A2EBBD610256E2E2F",
+    "ae1_scored_bones": [
+      "spine_01",
+      "spine_02",
+      "spine_03",
+      "spine_04",
+      "spine_05",
+      "neck_01",
+      "neck_02",
+      "head",
+      "clavicle_l",
+      "clavicle_r",
+      "upperarm_l",
+      "hand_l",
+      "upperarm_r",
+      "hand_r"
+    ],
+    "ae1_conditioning_only_bones": [
+      "pelvis",
+      "thigh_l",
+      "calf_l",
+      "thigh_r",
+      "calf_r"
+    ],
+    "detach_rollout_gradient": false,
+    "rollout_gradient_window": 0,
+    "rollout_gradient_mode": "full",
+    "cuda_graph": true,
+    "cuda_graph_hot_loop": "upper_only_cached_lower_reusable_exact_horizon_cohort_graphs_shared_pool_plus_one_BS64_AdamW_update",
+    "tensorboard_url": "http://127.0.0.1:6006/#timeseries",
+    "direct_mse_enabled": false,
+    "ae1_enabled": true,
+    "ae22_enabled": false,
+    "ae4_enabled": true,
+    "forearm_wrist_clamp": {
+      "enabled": true,
+      "application": "final_pose_pass_after_reset_noise_and_each_prediction",
+      "changed_fields": [
+        "hand_l_position",
+        "hand_r_position"
+      ],
+      "target": "exact_per_clip_runtime_forearm_rest_length",
+      "loss": null
+    },
+    "self_collision": {
+      "weight": 4.2263792546,
+      "calibration_reference_total_loss": 0.07420068979263306,
+      "target_fraction_of_reference_total": 0.2,
+      "target_weighted_loss": 0.014840137958526612,
+      "sources": [
+        "hand_l",
+        "hand_r",
+        "blade_when_drawn"
+      ],
+      "targets": "upper_body_plus_pelvis_plus_thighs",
+      "adjacent_own_arm_excluded_for_hands": true
+    },
+    "episode_start_noise": {
+      "probability": 0.5,
+      "pelvis_rotation_deg_max": 0.0,
+      "pelvis_location_cm_max": 0.0,
+      "fk_rotation_deg_max": 7.5,
+      "hand_location_cm_max": 12.5,
+      "hand_rotation_deg_max": 10.0,
+      "sampling": "independent_uniform_magnitude_0_to_max_uniform_sphere_direction",
+      "lifetime": "current_pose_at_episode_reset_only",
+      "affected_pose": "local FK rotations on core and upperarms; direct hand root-relative translation and rotation; cached frozen-lower pelvis, thighs, calves, and feet remain untouched",
+      "exact_noisy_rows": 32,
+      "exact_clean_rows": 32
+    },
+    "rollout_horizon": {
+      "mode": "six_clean_omni_k8_pose_velocity_angular_velocity_mse_plus_remaining_k32_ae1",
+      "maximum_K": 32,
+      "direct_mse_K8_rows": 6,
+      "direct_mse_clip_scope": "walk_omni_plus_run_omni_only_no_transitions",
+      "direct_mse_terms": [
+        "absolute_position",
+        "absolute_rotation_6d",
+        "one_frame_linear_velocity",
+        "one_frame_angular_velocity_6d"
+      ],
+      "direct_mse_term_reduction": "equal_mean_of_four_terms",
+      "ae1_K32_rows": 58
+    },
+    "ae1_ae4_temporal_blend": {
+      "enabled": true,
+      "frame_zero": {
+        "ae1": 0.2,
+        "ae4": 0.8
+      },
+      "frame_32": {
+        "ae1": 0.5,
+        "ae4": 0.5
+      },
+      "interpolation": "linear_by_predicted_frame_index",
+      "scored_frames": "1_through_32; frame_0_is_the_unscored_seed_pose",
+      "formula": "ae1(frame)=0.2+0.3*frame/32; ae4(frame)=1-ae1(frame); blend applies after each objective's existing internal scale"
+    },
+    "hand_root_local_smoothness": {
+      "enabled": false,
+      "weight": 0.0
+    },
+    "attack_terminal_initialization": {
+      "bank": "/workspace/slash2/shared/training/experimental/attack_terminal_bank/76B0A91D9C4055474C314C716B14986A607498B274563840A81F9549ECF84E27_final_harness_easy_terminal_upper90_bank_v1.pt",
+      "bank_sha256": "76B0A91D9C4055474C314C716B14986A607498B274563840A81F9549ECF84E27",
+      "bank_kind": "final_harness_easy_terminal_upper90_bank",
+      "bank_rows": 490,
+      "noisy_rows": "exactly_half_attack_terminal_upper_and_half_authored_upper",
+      "affected_pose": "upper90_only; cached lower, pelvis, root and gaze input unchanged"
+    },
+    "ae4_checkpoint": "/workspace/slash2/shared/training/experimental/ae4/51C9069B4967AB2B786741583C314BA191ACD5CC1AB3FA94FFC4F6CBB710B211_20260815_091945_ik_upper_pose_ae4_absolute_full_final_latest.pt",
+    "ae4_sha256": "51C9069B4967AB2B786741583C314BA191ACD5CC1AB3FA94FFC4F6CBB710B211",
+    "ae4_step": 42000,
+    "ae4_loss_weight": 0.0704006081845134,
+    "ae4_loss_contract": "normalized absolute position and full-hand transform MSE against frozen condition-only AE4; non-hand rotation uses dead-zoned root-local geodesic angular error",
+    "ae4_rotation_loss": {
+      "hands": "normalized_6d_rotation_mse_after_true_geodesic_deadzone",
+      "hand_deadzone_degrees": 20.0,
+      "non_hand_bones": "true_root_local_geodesic_angle",
+      "deadzone_degrees": 10.0,
+      "ordinary_non_hand_weight_after_deadzone": 5.0,
+      "neck_head_bones": [
+        "neck_01",
+        "neck_02",
+        "head"
+      ],
+      "neck_head_weight_after_deadzone": 15.0,
+      "formula": "ordinary non-hand: 5 * max(angle_radians - radians(10), 0); neck_01/neck_02/head: 15 * max(angle_radians - radians(10), 0)",
+      "positions": "normalized_mse_after_per_bone_euclidean_deadzone",
+      "position_deadzone_meters": 0.14
+    },
+    "resumed_from_checkpoint": "/workspace/slash2/shared/training/runs/20261001_113301_ik_upper_cached_ae1ae4_bs64_allk32_blend_noise50_initgaze50each/checkpoints/checkpoint_step_081750.pt",
+    "resumed_from_checkpoint_sha256": "F52B8E46ADFE01072C27040853CC4EEC935CD932CD541D3738AA5DE203C669B8",
+    "resumed_from_step": 81750,
+    "resume_mode": "new_run_new_tensorboard_curve",
+    "ae1_checkpoint": "/workspace/slash2/shared/training/experimental/ae1/5A82844A286E4DA27F434D4D3EFA0598BB6A8EF82A24CF039AD76A3107D7E486_20260815_063837_ik_ae1_upper_pelvis_coherent_timid_hand5_finetune_cont1500_best.pt",
+    "ae1_sha256": "5A82844A286E4DA27F434D4D3EFA0598BB6A8EF82A24CF039AD76A3107D7E486",
+    "ae1_step": 14000,
+    "ae1_physical_scoring_weights": {
+      "normalization": "sum_weighted_squared_error_divided_by_sum_weights",
+      "default_transform_weight": 1.0,
+      "hand_l_transform_weight": 5.0,
+      "hand_r_transform_weight": 5.0
+    },
+    "best_metric_reset_on_resume": "loss, reset distribution, and frozen lower cache intentionally changed; model/optimizer resume unchanged"
+  },
+  "schema": {
+    "name": "upper_cached_lower_controller",
+    "input_dim": 281,
+    "output_dim": 90,
+    "output_segments": {
+      "upper_pose_delta": [
+        0,
+        90
+      ]
+    },
+    "pelvis_output": "removed",
+    "pelvis_source": "continuous_frozen_lower_cache",
+    "physical_ae1_output_dim": 171,
+    "physical_bones": [
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "spine_03",
+      "spine_04",
+      "spine_05",
+      "neck_01",
+      "neck_02",
+      "head",
+      "clavicle_l",
+      "clavicle_r",
+      "upperarm_l",
+      "hand_l",
+      "upperarm_r",
+      "hand_r",
+      "thigh_l",
+      "calf_l",
+      "thigh_r",
+      "calf_r"
+    ],
+    "ae1_scored_bones": [
+      "spine_01",
+      "spine_02",
+      "spine_03",
+      "spine_04",
+      "spine_05",
+      "neck_01",
+      "neck_02",
+      "head",
+      "clavicle_l",
+      "clavicle_r",
+      "upperarm_l",
+      "hand_l",
+      "upperarm_r",
+      "hand_r"
+    ],
+    "ae1_conditioning_only_bones": [
+      "pelvis",
+      "thigh_l",
+      "calf_l",
+      "thigh_r",
+      "calf_r"
+    ],
+    "feet": "continuous_frozen_lower_cache_not_ae_output",
+    "lower_rollout": "one_continuous_pass_from_frame_zero_per_clip",
+    "lower_inference_in_training_hot_loop": false,
+    "leg_fk_ik_in_training_hot_loop": false
+  }
+}

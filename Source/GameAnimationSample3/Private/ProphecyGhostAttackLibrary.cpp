@@ -2,7 +2,6 @@
 #include "ProphecyHalfAttackCompensation.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAttackRecovery.h"
-#include "ProphecyWalkPinningLibrary.h"
 #include "ProphecyRootPhysicsLibrary.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNLocomotionManager.h"

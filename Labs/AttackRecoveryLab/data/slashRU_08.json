@@ -1,0 +1,16 @@
+{
+  "id": 8,
+  "kind": "volume",
+  "target": [
+    -0.2317747324705124,
+    0.9199503660202026,
+    0.7837082743644714
+  ],
+  "file": "data/slashRU_08.bin",
+  "frames": 25,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "e172767dd5cd839434a57cf7b5adc4f3c450c0bc197efa384d88acd64d003266",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

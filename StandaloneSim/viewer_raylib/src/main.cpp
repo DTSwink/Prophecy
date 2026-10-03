@@ -1402,7 +1402,7 @@ void DrawWorld(const viewer::Scenario& scenario, const sim::SimulationSnapshot& 
     const prophecy::navigation::CrowdRuntime& navigation_crowd,
     const viewer::UnrealBridge& unreal_bridge,
     bool navigation_visible, bool navigation_test, bool navigation_crowd_test,
-    bool xray_agents, SolidBatch& solids) {
+    bool xray_agents, bool combat_lab, SolidBatch& solids) {
     const float min_x = scenario.simulation.world_min.x;
     const float max_x = scenario.simulation.world_max.x;
     const float min_z = scenario.simulation.world_min.y;
@@ -1410,7 +1410,7 @@ void DrawWorld(const viewer::Scenario& scenario, const sim::SimulationSnapshot& 
     static LineBatch line_batch{};
     line_batch.Clear();
     solids.Clear();
-    if (!environment_collision.IsLoaded()) {
+    if (combat_lab || !environment_collision.IsLoaded()) {
         DrawPlane({(min_x + max_x) * 0.5f, 0.0f, (min_z + max_z) * 0.5f},
             {max_x - min_x, max_z - min_z}, scenario.ground_color);
         for (int x = static_cast<int>(std::ceil(min_x)); x <= static_cast<int>(std::floor(max_x)); x += 4) {
@@ -1420,8 +1420,8 @@ void DrawWorld(const viewer::Scenario& scenario, const sim::SimulationSnapshot& 
             DrawLine3D({min_x, 0.003f, static_cast<float>(z)}, {max_x, 0.003f, static_cast<float>(z)}, scenario.grid_color);
         }
     }
-    environment_collision.Draw();
-    if (navigation_visible) navigation_debug.Draw();
+    if (!combat_lab) environment_collision.Draw();
+    if (!combat_lab && navigation_visible) navigation_debug.Draw();
     const bool navigation_only_test = navigation_test;
     if (!navigation_only_test) DrawGroundSticks(snapshot, solids);
     if (xray_agents) {
@@ -1969,12 +1969,14 @@ UiActions DrawUi(const viewer::Scenario& scenario, const sim::Simulation& simula
         if (GuiButton(segment, speed_labels[index])) time_scale = speeds[index];
     }
     DrawText(TextFormat("FPS %i", GetFPS()), 414, 84, 14, kText);
+    GuiCheckBox({512.0f, 83.0f, 21.0f, 21.0f}, "Combat lab", &settings.combat_lab);
 
     const float info_x = static_cast<float>(GetScreenWidth()) - 342.0f;
     const Rectangle info{info_x, 12.0f, 330.0f, kInfoPanelHeight};
     DrawRectangleRec(info, kPanel);
     DrawRectangleLinesEx(info, 1.0f, {73, 86, 88, 255});
-    DrawText(scenario.name.c_str(), static_cast<int>(info.x + 12.0f), 22, 18, kText);
+    DrawText(settings.combat_lab ? "Combat Lab" : scenario.name.c_str(),
+        static_cast<int>(info.x + 12.0f), 22, 18, kText);
     DrawText(TextFormat("%u locomotion agents  |  SIM %.0f Hz", static_cast<unsigned int>(snapshot.agents.size()),
         simulation.Config().tick_rate_hz), static_cast<int>(info.x + 12.0f), 50, 14, kMuted);
     DrawText(TextFormat("seed %llu  |  %.2fs", static_cast<unsigned long long>(snapshot.seed), snapshot.time_seconds),
@@ -3165,12 +3167,13 @@ int main(int argc, char** argv) {
         DrawWorld(scenario, simulation.Snapshot(), locomotion_poses,
             equipment_joints, selected_agent_id, selected_agents, render_prediction_seconds,
             settings.sound_visualization, flying_camera.camera, environment_collision,
-            navigation_debug, navigation_crowd, unreal_bridge, navigation_visible, arguments.navigation_test,
-            arguments.navigation_crowd_test,
-            settings.xray_agents, solid_batch);
+            navigation_debug, navigation_crowd, unreal_bridge, navigation_visible,
+            arguments.navigation_test && !settings.combat_lab,
+            arguments.navigation_crowd_test && !settings.combat_lab,
+            settings.xray_agents, settings.combat_lab, solid_batch);
         EndMode3D();
 
-        if (environment_collision.IsLoaded()) {
+        if (!settings.combat_lab && environment_collision.IsLoaded()) {
             const std::string collision_status = "UE collision debug: " +
                 std::to_string(environment_collision.ObjectCount()) + " object(s), " +
                 std::to_string(environment_collision.TriangleCount()) + " triangles" +
@@ -3179,7 +3182,7 @@ int main(int argc, char** argv) {
                     : "");
             DrawText(collision_status.c_str(), 16, GetScreenHeight() - 28, 16, kMuted);
         }
-        if (navigation_visible && navigation_debug.IsLoaded()) {
+        if (!settings.combat_lab && navigation_visible && navigation_debug.IsLoaded()) {
             const std::string navigation_status = "Walkable surface: " +
                 std::to_string(navigation_debug.TriangleCount()) +
                 " triangles, " + std::to_string(navigation_debug.PortalCount()) +
@@ -3246,6 +3249,19 @@ int main(int argc, char** argv) {
             DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(WHITE, opacity));
         }
         EndDrawing();
+
+        // This view switch persists immediately without saving unrelated option edits.
+        if (settings.combat_lab != saved_settings.combat_lab) {
+            viewer::ControlSettings persisted = saved_settings;
+            persisted.combat_lab = settings.combat_lab;
+            if (viewer::SaveControlSettings(ControlSettingsPath(), persisted, error)) {
+                saved_settings.combat_lab = settings.combat_lab;
+                settings_status = settings.combat_lab ? "Combat lab saved" : "World view saved";
+            } else {
+                settings.combat_lab = saved_settings.combat_lab;
+                settings_status = "View save failed";
+            }
+        }
 
         if (screenshot_requested) {
             const std::filesystem::path screenshot_path = ScreenshotPath(displayed_screenshot_number);

@@ -1,0 +1,11 @@
+# Static body foundation draft
+
+Draft only. No active source file, asset, scene owner, build or UE process was changed/launched by this task. `proposed/` contains seven project-relative files; `baseline/` contains the exact four existing files before the proposed edits. `draft-manifest.json` records their SHA-256 values. The final four-file baseline check still matches active source.
+
+New `ProphecyJoltStaticBody.h/.cpp` capture one actual static primitive body or one exact ISM/HISM native body slot. Effective Chaos simulation filtering selects analytic/convex simple geometry or cooked complex-as-simple triangles. Native wrappers are applied once; signed triangle scale reverses winding to retain Chaos's outward face. Cooked face/material/instance provenance remains separate from UE query hit identity. Unsupported geometry, moving/welded/query-only sources and mixed shape policies are rejected. No hull simplification is enabled.
+
+The private `BodyConversion.h`/`Rig.cpp` change extracts the existing strict geometry loop into `ValidateShapes`/`PrepareShapes`; dynamic COM and full inertia preparation remain in `PrepareShapeAndMass`. Static creation uses geometry only. `WorldSubsystem.h/.cpp` adds `CreateStaticBody` using existing profile interning, AddNative, weak component association and generation-safe cleanup. Scene discovery, later source mutation/removal and stable instance lifecycle ownership remain the next game-module slice.
+
+Three new `Prophecy.Jolt.StaticBody` tests use real registered Chaos components: simple floor contact and identity cleanup; transient complex-as-simple copy of the actual cooked Cube, reflected/nonuniform scale, matching native ray normals and a sphere landing on the imported front face; two actual ISM instances with distinct transforms and admission refusals. They do not save source assets. Run these plus existing Body/BodyOwner and Rig geometry tests because the geometry helper is shared. Draft source inspection and whitespace checks passed; compilation and runtime results are pending.
+
+Peer review found and closed ISM's fallback-to-base-BodyInstance hazard: capture requires a valid nonnull public InstanceBodies slot and exact returned-pointer equality. No other concrete UE5.7/Jolt API blocker was found in the new implementation/tests. Runtime reflected-mesh proof remains the test's job.

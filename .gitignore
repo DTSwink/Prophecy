@@ -2,7 +2,7 @@
 Binaries/
 Build/
 Config/*
-!Config/DefaultEngine.ini
+!Config/Default*.ini
 Content/*
 !Content/_mygame/
 Content/_mygame/*
@@ -48,7 +48,6 @@ Docs/old/
 # IDE and local machine state
 .vs/
 .vscode/
-.vsconfig
 *.sln
 *.suo
 *.user
@@ -77,3 +76,12 @@ __pycache__/
 !Content/locomotion/NN/prophecy_headbutt_preparation.json
 Thumbs.db
 Desktop.ini
+
+# Recovery snapshots are curated; bulk assets and generated outputs stay local.
+/Content - Copy*/
+/output/
+/tmp/
+/Labs/AttackRecoveryLab/current_view.*
+/Labs/AttackRecoveryLab/desktop_session.json
+/Labs/AttackRecoveryLab/captures/
+/Labs/AttackRecoveryLab/verification*/

@@ -1,0 +1,10 @@
+{
+  "schema": "native_attack_geometry_v1",
+  "checkpoint_sha256": "e0759ba5039db0db26f5dd17d58e74b72f1dc092f9f7bf6f54e4a622677f7d7b",
+  "source_upper_sha256": "1ce06e6265ebf53ae00a7648c3f1a352d404b60d66b2f1594a1b5ad9df9697f8",
+  "upper_file": "prophecy_slash_upper_neural.onnx",
+  "upper_sha256": "c1c3040be1140b7c9590ac4b1c0fadc9206cbd90adf03db23d6ff07f07a2ec07",
+  "cone_program_sha256": "659cd1c8d2a5e27628fbbb04024a71b599ad183ec684281d9f903f6ce866a772",
+  "hand_program_sha256": "f58ff4058f9cfe78cdebcc393d106e9251f71eb82a19dd98aeba35a98cb13e4d",
+  "node_count": 24
+}

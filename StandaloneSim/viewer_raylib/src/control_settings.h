@@ -39,6 +39,7 @@ struct ControlSettings {
     float crawl_turn_scale = ::prophecy::sim::kDefaultCrawlTurnScale;
     bool sound_visualization = true;
     bool xray_agents = false;
+    bool combat_lab = false;
     float attack_cooldown_seconds = 1.0f;
     float parried_attack_cooldown_seconds = 1.5f;
     float attack_followup_probability = ::prophecy::sim::kDefaultAttackFollowupProbability;

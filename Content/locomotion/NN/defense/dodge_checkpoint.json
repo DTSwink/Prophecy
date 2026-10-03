@@ -1,0 +1,29 @@
+{
+  "checkpoint": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\dodge_step_205525.pt",
+  "checkpoint_sha256": "256035eb190f0b2d683ea8089b3232936ee7cc93ec4d69aef6034b12a38aafb1",
+  "step": 205525,
+  "onnx_sha256": "385dc27e5f847bc38c7bd695eae834b1544353d6f639f36e04873bb3606357ba",
+  "input_dim": 362,
+  "output_dim": 112,
+  "frozen_lower_unchanged": true,
+  "contracts_checked": [
+    "kind",
+    "input_dim",
+    "output_dim",
+    "bank_contract",
+    "leg_contract",
+    "bank_names",
+    "bank_input_contract",
+    "bank_overrides",
+    "lower_identities",
+    "lower_runtime",
+    "foot_floor_contract",
+    "root_contract"
+  ],
+  "parity_batches": 17,
+  "parity_max_abs_error": 1.430511474609375e-06,
+  "installed": true,
+  "previous_onnx_sha256": "8cb9d345142dcacbd306847cf97e84251babcab6eb6ce36c9642ab2f933b4bba",
+  "installed_file": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\locomotion\\NN\\defense\\prophecy_dodge_upper.onnx",
+  "backup_folder": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\DefenseIntegration\\CheckpointUpdates\\205525_20260917_150529"
+}

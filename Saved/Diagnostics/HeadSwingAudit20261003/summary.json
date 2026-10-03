@@ -1,0 +1,478 @@
+{
+  "runtime": {
+    "baseline": {
+      "reason": "Complete",
+      "samples": 310,
+      "owned": true,
+      "graph_sha256": "3c6af696dde7d7f14ed3f69d0ed6392314d74823f5e590b99e2fab4a5c05a7de",
+      "prefix_through": null,
+      "prefix_max_bone_position_difference_cm": null,
+      "head_peak": {
+        "tick": 232,
+        "future_head_displacement_cm": 3.183343525831844,
+        "future_head_local_deg": 6.570245149105104,
+        "future_head_pelvis_deg": 9.286598129406867,
+        "presented_head_displacement_cm": 0.96515090079725,
+        "presented_head_local_deg": 3.7612758147808285,
+        "presented_head_pelvis_deg": 3.8307392113930785
+      },
+      "position_peak": {
+        "tick": 235,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 2.6596714936830765,
+        "presented_head_local_deg": 2.8428904864386966,
+        "presented_head_pelvis_deg": 5.6915453021879205
+      },
+      "torch_max_error": 3.948807716369629e-07,
+      "core_max_error_deg": 2.954311162407013e-05,
+      "modes_after_211": [
+        "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      ]
+    },
+    "gaze_zero": {
+      "reason": "Complete",
+      "samples": 310,
+      "owned": true,
+      "graph_sha256": "3c6af696dde7d7f14ed3f69d0ed6392314d74823f5e590b99e2fab4a5c05a7de",
+      "prefix_through": null,
+      "prefix_max_bone_position_difference_cm": null,
+      "head_peak": {
+        "tick": 231,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 0.9277321847454416,
+        "presented_head_local_deg": 3.023302541223323,
+        "presented_head_pelvis_deg": 0.6358646779010484
+      },
+      "position_peak": {
+        "tick": 236,
+        "future_head_displacement_cm": 4.550089424517821,
+        "future_head_local_deg": 3.9326789304498586,
+        "future_head_pelvis_deg": 4.289125353172731,
+        "presented_head_displacement_cm": 2.7873386933908764,
+        "presented_head_local_deg": 2.620206827240118,
+        "presented_head_pelvis_deg": 2.5645528354523073
+      },
+      "torch_max_error": 4.76837158203125e-07,
+      "core_max_error_deg": 8.60029741776688e-06,
+      "modes_after_211": [
+        "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      ]
+    },
+    "kinematic": {
+      "reason": "Complete",
+      "samples": 310,
+      "owned": true,
+      "graph_sha256": "3c6af696dde7d7f14ed3f69d0ed6392314d74823f5e590b99e2fab4a5c05a7de",
+      "prefix_through": null,
+      "prefix_max_bone_position_difference_cm": null,
+      "head_peak": {
+        "tick": 231,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 0.9709969620053673,
+        "presented_head_local_deg": 3.773087135150929,
+        "presented_head_pelvis_deg": 3.8052723015634724
+      },
+      "position_peak": {
+        "tick": 235,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 2.6465882110526477,
+        "presented_head_local_deg": 2.8528013065364743,
+        "presented_head_pelvis_deg": 5.681523925062392
+      },
+      "torch_max_error": 4.172325134277344e-07,
+      "core_max_error_deg": 4.626165077945374e-05,
+      "modes_after_211": [
+        "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      ]
+    },
+    "kinematic_late": {
+      "reason": "Complete",
+      "samples": 310,
+      "owned": true,
+      "graph_sha256": "3c6af696dde7d7f14ed3f69d0ed6392314d74823f5e590b99e2fab4a5c05a7de",
+      "prefix_through": 210,
+      "prefix_max_bone_position_difference_cm": 0.0,
+      "head_peak": {
+        "tick": 230,
+        "future_head_displacement_cm": 2.016610300230096,
+        "future_head_local_deg": 7.615889690153378,
+        "future_head_pelvis_deg": 7.840254580872158,
+        "presented_head_displacement_cm": 1.543447903492459,
+        "presented_head_local_deg": 3.8886091027562526,
+        "presented_head_pelvis_deg": 4.148124140102911
+      },
+      "position_peak": {
+        "tick": 235,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 2.6043623819605806,
+        "presented_head_local_deg": 2.934421977458842,
+        "presented_head_pelvis_deg": 5.841935207149763
+      },
+      "torch_max_error": 4.3213367462158203e-07,
+      "core_max_error_deg": 2.9200877146813463e-05,
+      "modes_after_211": [
+        "<ProphecyAgentSimulationMode.KINEMATIC: 0>"
+      ]
+    },
+    "later_turn_stop": {
+      "reason": "Complete",
+      "samples": 310,
+      "owned": true,
+      "graph_sha256": "3c6af696dde7d7f14ed3f69d0ed6392314d74823f5e590b99e2fab4a5c05a7de",
+      "prefix_through": 210,
+      "prefix_max_bone_position_difference_cm": 0.0,
+      "head_peak": {
+        "tick": 246,
+        "future_head_displacement_cm": 3.6649530763414737,
+        "future_head_local_deg": 5.07170982978832,
+        "future_head_pelvis_deg": 4.043824567995984,
+        "presented_head_displacement_cm": 2.0371002110418304,
+        "presented_head_local_deg": 2.590111433278359,
+        "presented_head_pelvis_deg": 2.6718663728368637
+      },
+      "position_peak": {
+        "tick": 234,
+        "future_head_displacement_cm": 3.3838254996364836,
+        "future_head_local_deg": 3.0488127056259184,
+        "future_head_pelvis_deg": 7.065416470574573,
+        "presented_head_displacement_cm": 2.07086600894817,
+        "presented_head_local_deg": 1.467670738966112,
+        "presented_head_pelvis_deg": 6.139062441119532
+      },
+      "torch_max_error": 5.178153514862061e-07,
+      "core_max_error_deg": 2.9706425270027486e-05,
+      "modes_after_211": [
+        "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      ]
+    },
+    "no_feedback": {
+      "reason": "Complete",
+      "samples": 310,
+      "owned": true,
+      "graph_sha256": "3c6af696dde7d7f14ed3f69d0ed6392314d74823f5e590b99e2fab4a5c05a7de",
+      "prefix_through": 210,
+      "prefix_max_bone_position_difference_cm": 0.0,
+      "head_peak": {
+        "tick": 230,
+        "future_head_displacement_cm": 2.0166126423127038,
+        "future_head_local_deg": 7.615888780499029,
+        "future_head_pelvis_deg": 7.840257970330736,
+        "presented_head_displacement_cm": 1.5434474358549024,
+        "presented_head_local_deg": 3.8886058401347587,
+        "presented_head_pelvis_deg": 4.148122925321
+      },
+      "position_peak": {
+        "tick": 235,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 2.604360918357949,
+        "presented_head_local_deg": 2.934424720956242,
+        "presented_head_pelvis_deg": 5.841940780108842
+      },
+      "torch_max_error": 4.172325134277344e-07,
+      "core_max_error_deg": 3.4426547793092644e-05,
+      "modes_after_211": [
+        "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      ]
+    },
+    "no_lower_tempering": {
+      "reason": "Complete",
+      "samples": 310,
+      "owned": true,
+      "graph_sha256": "3c6af696dde7d7f14ed3f69d0ed6392314d74823f5e590b99e2fab4a5c05a7de",
+      "prefix_through": 179,
+      "prefix_max_bone_position_difference_cm": 0.0,
+      "head_peak": {
+        "tick": 229,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 1.367041706469691,
+        "presented_head_local_deg": 3.6843150542175507,
+        "presented_head_pelvis_deg": 3.989379077899314
+      },
+      "position_peak": {
+        "tick": 235,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 2.694322389831422,
+        "presented_head_local_deg": 2.7245718993526293,
+        "presented_head_pelvis_deg": 5.655131367733143
+      },
+      "torch_max_error": 4.172325134277344e-07,
+      "core_max_error_deg": 3.089149256150332e-05,
+      "modes_after_211": [
+        "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      ]
+    },
+    "return_off": {
+      "reason": "Complete",
+      "samples": 310,
+      "owned": true,
+      "graph_sha256": "3c6af696dde7d7f14ed3f69d0ed6392314d74823f5e590b99e2fab4a5c05a7de",
+      "prefix_through": 195,
+      "prefix_max_bone_position_difference_cm": 0.0,
+      "head_peak": {
+        "tick": 231,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 0.9576081673861512,
+        "presented_head_local_deg": 3.6603096563797255,
+        "presented_head_pelvis_deg": 3.4993396739359697
+      },
+      "position_peak": {
+        "tick": 235,
+        "future_head_displacement_cm": 0.0,
+        "future_head_local_deg": 0.0,
+        "future_head_pelvis_deg": 0.0,
+        "presented_head_displacement_cm": 2.5869783898909096,
+        "presented_head_local_deg": 2.8132354671502777,
+        "presented_head_pelvis_deg": 5.489624631966322
+      },
+      "torch_max_error": 3.880704753100872e-07,
+      "core_max_error_deg": 4.1098833834945716e-05,
+      "modes_after_211": [
+        "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      ]
+    }
+  },
+  "viewer": [
+    {
+      "name": "viewer_B_L_no_sword_gaze-1",
+      "turn_end_frame": 16,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 1.683100356034137,
+        "peak_first_8_policy_steps_after_turn": 1.132399803194739,
+        "head_net_turn_first_8_policy_steps_deg": 9.690192928487031
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 4.130105534499026,
+        "peak_first_8_policy_steps_after_turn": 3.2563283947184782,
+        "head_net_turn_first_8_policy_steps_deg": 21.696657331830743
+      }
+    },
+    {
+      "name": "viewer_B_L_no_sword_gaze0",
+      "turn_end_frame": 16,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 1.9495254447381891,
+        "peak_first_8_policy_steps_after_turn": 1.1380815941332783,
+        "head_net_turn_first_8_policy_steps_deg": 9.717964603611003
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 4.130109305799994,
+        "peak_first_8_policy_steps_after_turn": 3.2563285731388403,
+        "head_net_turn_first_8_policy_steps_deg": 21.696661252804194
+      }
+    },
+    {
+      "name": "viewer_B_L_sword_gaze-1",
+      "turn_end_frame": 16,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 1.7737238641156383,
+        "peak_first_8_policy_steps_after_turn": 1.0170938229434634,
+        "head_net_turn_first_8_policy_steps_deg": 8.885737506824162
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 4.1301058801481165,
+        "peak_first_8_policy_steps_after_turn": 3.256327684198476,
+        "head_net_turn_first_8_policy_steps_deg": 21.696659736670032
+      }
+    },
+    {
+      "name": "viewer_B_L_sword_gaze0",
+      "turn_end_frame": 16,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 1.8591014359462086,
+        "peak_first_8_policy_steps_after_turn": 1.2224553541968228,
+        "head_net_turn_first_8_policy_steps_deg": 10.273436211557712
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 4.130110246263205,
+        "peak_first_8_policy_steps_after_turn": 3.256328792816203,
+        "head_net_turn_first_8_policy_steps_deg": 21.696662614448684
+      }
+    },
+    {
+      "name": "viewer_B_R_no_sword_gaze-1",
+      "turn_end_frame": 24,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 1.6893665787219252,
+        "peak_first_8_policy_steps_after_turn": 1.2090001356358362,
+        "head_net_turn_first_8_policy_steps_deg": 13.844490336606869
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.3355692049818453,
+        "peak_first_8_policy_steps_after_turn": 1.9872643767736347,
+        "head_net_turn_first_8_policy_steps_deg": 16.097328148423426
+      }
+    },
+    {
+      "name": "viewer_B_R_no_sword_gaze0",
+      "turn_end_frame": 24,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 2.0829088823474917,
+        "peak_first_8_policy_steps_after_turn": 1.6636343476043183,
+        "head_net_turn_first_8_policy_steps_deg": 17.481357745856517
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.3355662778733977,
+        "peak_first_8_policy_steps_after_turn": 1.987264224507597,
+        "head_net_turn_first_8_policy_steps_deg": 16.09731730194332
+      }
+    },
+    {
+      "name": "viewer_B_R_sword_gaze-1",
+      "turn_end_frame": 24,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 1.7728939676512538,
+        "peak_first_8_policy_steps_after_turn": 1.2998213400662983,
+        "head_net_turn_first_8_policy_steps_deg": 13.840676173869683
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.3355703891087893,
+        "peak_first_8_policy_steps_after_turn": 1.9872616373323764,
+        "head_net_turn_first_8_policy_steps_deg": 16.09731958737941
+      }
+    },
+    {
+      "name": "viewer_B_R_sword_gaze0",
+      "turn_end_frame": 24,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 1.9506217125455279,
+        "peak_first_8_policy_steps_after_turn": 1.5324747999686013,
+        "head_net_turn_first_8_policy_steps_deg": 17.14976973566799
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.3355680076618404,
+        "peak_first_8_policy_steps_after_turn": 1.987263666046585,
+        "head_net_turn_first_8_policy_steps_deg": 16.097316022271826
+      }
+    },
+    {
+      "name": "viewer_F_L_no_sword_gaze-1",
+      "turn_end_frame": 26,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.2676424296112803,
+        "peak_first_8_policy_steps_after_turn": 2.600604626910282,
+        "head_net_turn_first_8_policy_steps_deg": 27.75998515958411
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 4.157955242149551,
+        "peak_first_8_policy_steps_after_turn": 3.989816988606498,
+        "head_net_turn_first_8_policy_steps_deg": 8.344001245627904
+      }
+    },
+    {
+      "name": "viewer_F_L_no_sword_gaze0",
+      "turn_end_frame": 26,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.8372990826396376,
+        "peak_first_8_policy_steps_after_turn": 2.8608927525178864,
+        "head_net_turn_first_8_policy_steps_deg": 29.79832474701262
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 4.157952166047982,
+        "peak_first_8_policy_steps_after_turn": 3.9898219280728298,
+        "head_net_turn_first_8_policy_steps_deg": 8.344004405376753
+      }
+    },
+    {
+      "name": "viewer_F_L_sword_gaze-1",
+      "turn_end_frame": 26,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.106444828431413,
+        "peak_first_8_policy_steps_after_turn": 2.3875187435862406,
+        "head_net_turn_first_8_policy_steps_deg": 25.762214843803875
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 4.157954736123787,
+        "peak_first_8_policy_steps_after_turn": 3.9898174663671395,
+        "head_net_turn_first_8_policy_steps_deg": 8.34400081672985
+      }
+    },
+    {
+      "name": "viewer_F_L_sword_gaze0",
+      "turn_end_frame": 26,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.7422241749582983,
+        "peak_first_8_policy_steps_after_turn": 2.7300327062138887,
+        "head_net_turn_first_8_policy_steps_deg": 28.445138599616836
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 4.157952277202673,
+        "peak_first_8_policy_steps_after_turn": 3.989821838655658,
+        "head_net_turn_first_8_policy_steps_deg": 8.344003685803203
+      }
+    },
+    {
+      "name": "viewer_F_R_no_sword_gaze-1",
+      "turn_end_frame": 26,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.353683945654344,
+        "peak_first_8_policy_steps_after_turn": 2.3797474439405177,
+        "head_net_turn_first_8_policy_steps_deg": 17.564929270535973
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.5646940015576956,
+        "peak_first_8_policy_steps_after_turn": 1.768810027277116,
+        "head_net_turn_first_8_policy_steps_deg": 11.810095200888659
+      }
+    },
+    {
+      "name": "viewer_F_R_no_sword_gaze0",
+      "turn_end_frame": 26,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.7836666929281657,
+        "peak_first_8_policy_steps_after_turn": 2.7581504407908417,
+        "head_net_turn_first_8_policy_steps_deg": 23.535738939973385
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.564699793580143,
+        "peak_first_8_policy_steps_after_turn": 1.768814376660186,
+        "head_net_turn_first_8_policy_steps_deg": 11.810090294771786
+      }
+    },
+    {
+      "name": "viewer_F_R_sword_gaze-1",
+      "turn_end_frame": 26,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.252395618544372,
+        "peak_first_8_policy_steps_after_turn": 2.110883529858498,
+        "head_net_turn_first_8_policy_steps_deg": 15.755210398822197
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.564692956851499,
+        "peak_first_8_policy_steps_after_turn": 1.7688107372122015,
+        "head_net_turn_first_8_policy_steps_deg": 11.810090470307289
+      }
+    },
+    {
+      "name": "viewer_F_R_sword_gaze0",
+      "turn_end_frame": 26,
+      "generated": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.699681131340555,
+        "peak_first_8_policy_steps_after_turn": 2.5902806215990335,
+        "head_net_turn_first_8_policy_steps_deg": 21.699517658400765
+      },
+      "authored": {
+        "peak_after_authored_seed_deg_per_60hz_tick": 3.564699942421415,
+        "peak_first_8_policy_steps_after_turn": 1.7688146526223936,
+        "head_net_turn_first_8_policy_steps_deg": 11.810090922202152
+      }
+    }
+  ]
+}

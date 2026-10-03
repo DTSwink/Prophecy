@@ -1,0 +1,16 @@
+{
+  "id": 20,
+  "kind": "floor",
+  "target": [
+    -0.2132149487733841,
+    0,
+    0.33074232935905457
+  ],
+  "file": "data/pike_20.bin",
+  "frames": 18,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "10887a269b17773ded2eef935f5df88a20548b3b4ecb41df667ed0b0c14d24dc",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

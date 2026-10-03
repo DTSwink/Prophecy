@@ -1,0 +1,38 @@
+{
+  "contract": "final_harness_standalone_visible_v2",
+  "dataset_solver_contract": {
+    "schema": "final_harness_dataset_solver_contract_v1",
+    "visibleContract": "final_harness_standalone_visible_v2",
+    "payloadVersion": 2,
+    "deterministicState": "playback_free_harness_state_v1",
+    "locomotionPlan": "global_fixed_forward_easy_reference_transform_v16",
+    "footPlacement": "full_transform_easy_landing_travel_arc_pelvis_yaw_guard_v13",
+    "kneePole": "frame0_foot_local_v1",
+    "footYawGuard": "chronological_constrained_yaw_rebase_v4",
+    "startArmedTransitions": [
+      "animated_start_easy_to_selected_easy_armed_v3",
+      "hard_authored_prearm_from_frame0_overlapped_steps_v1"
+    ],
+    "strongFootReferences": [
+      "selected_armed_mirror_role_v1",
+      "kick_supporting_foot_to_easy_armed_v1"
+    ],
+    "armedTiming": "signed_offset_from_selected_departure_order_last_step_with_easy_gt_lower_bound_v2",
+    "hardCrossGuard": "shortest_arc_pose_then_opposite_arc_cross_guard_v2",
+    "hardEasyReference": "same_height_easy_volume_or_floor_band_v2",
+    "mediumForbiddenCylinder": "per_animation_armed_pelvis_distance_then_mapped_easy_attack_stages_v1",
+    "targetCatalog": "exact_float32_displayed_cloud_v1",
+    "motionDigest": "sha256_little_endian_float32_points_then_axes_v1"
+  },
+  "dataset_solver_contract_sha256": "e6a8ad65106673b1ea5ad630bf10782449ef340dcfcbb1b7c7cad5f0aab7cb1f",
+  "standalone_builder_sha256": "e80e897c8e06b69d9622123b9703f38779a66e3783b976efbe83897712337fa8",
+  "source_builder_sha256": "de0dd15729b6759b9af2c8766dc7f1619e636ca6385d19c80afae62d689a8f52",
+  "solver_contract_source_sha256": "188e012e030e2dcc9c770ba385dec07425dd53a8379685ed85a9e090a5441069",
+  "source_harness": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_base_mirror_attack_harness_viewer.html",
+  "source_harness_sha256": "3edfb26dbb68b61b76c9cf93087002a1d95efa6bb98f9882ac76ef3546fdfc6c",
+  "standalone": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_harness_standalone\\index.html",
+  "standalone_sha256": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2",
+  "live_initialization_count": "3200",
+  "live_initialization_data_sha256": "38a4fc58f5d895288ed536572f46e4d779d8a489d46ba924da393b4aac8992f7",
+  "live_initialization_manifest_sha256": "070345971296497f44f79c8032826200e9323bfe97ac78a2a214f2422834d899"
+}

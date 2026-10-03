@@ -1905,16 +1905,6 @@ bool AProphecyAgent::GetAttackFootPinning(FProphecyFootPinningSample& Sample, bo
 	return Manager && Manager->GetAgentFootPinning(AgentHandle, true, bFrozenStage, Sample);
 }
 
-bool AProphecyAgent::SetLocomotionFootPinningThreshold(float ThresholdCm, float FadeRangeCm)
-{
-	if (!FMath::IsFinite(ThresholdCm) || !FMath::IsFinite(FadeRangeCm) || ThresholdCm < 0 || FadeRangeCm < 0) return false;
-	bOverrideLocomotionPinThreshold = true;
-	LocomotionPinThresholdM = ThresholdCm * .01f;
-	LocomotionFullPinHeightM = FMath::Max(0.f, ThresholdCm-FadeRangeCm) * .01f;
-	return true;
-}
-
-
 bool AProphecyAgent::SetAttackFootClamp(bool bEnabled, float LeewayCm)
 {
 	if (!FMath::IsFinite(LeewayCm) || LeewayCm < 0) return false;

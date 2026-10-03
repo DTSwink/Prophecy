@@ -1,0 +1,16 @@
+{
+  "id": 20,
+  "kind": "floor",
+  "target": [
+    -0.08452436327934265,
+    0,
+    0.3781799376010895
+  ],
+  "file": "data/slashRD_20.bin",
+  "frames": 25,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "fee17fcbf23d1d4396fdac0328dee7681ddfd3997c58c614aec56021ece0c27c",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

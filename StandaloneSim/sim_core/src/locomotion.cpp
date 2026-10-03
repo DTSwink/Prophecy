@@ -552,10 +552,15 @@ FutureRootWindow PredictFutureRoots(const LocomotionState& state,
     const LocomotionIntent& intent, double dt, bool allow_yaw_momentum, const RootBalanceSpring* balance) noexcept {
     FutureRootWindow future{};
     LocomotionState projected = state;
+    LocomotionIntent projected_intent = intent;
+    const double world_direction = state.yaw_radians + intent.speed_direction_radians;
     for (RootTransform& root : future) {
-        StepLocomotion(projected, intent, dt, nullptr, allow_yaw_momentum, balance);
+        StepLocomotion(projected, projected_intent, dt, nullptr, allow_yaw_momentum, balance);
         root.position = projected.position;
         root.yaw_radians = projected.yaw_radians;
+        // Live input is world-fixed and re-expressed against the current root
+        // each step. Forecast the same input, rather than turning it with the body.
+        projected_intent.speed_direction_radians = SignedAngleDelta(projected.yaw_radians, world_direction);
     }
     return future;
 }

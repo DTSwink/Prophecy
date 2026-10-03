@@ -1,0 +1,16 @@
+{
+  "id": 16,
+  "kind": "volume",
+  "target": [
+    0.3089481592178345,
+    1.2840524911880493,
+    0.46984729170799255
+  ],
+  "file": "data/hookR_16.bin",
+  "frames": 15,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "2781449ef41355a0656b3f88c0652da04ac0bdf63d115c187cf9e314c411087d",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

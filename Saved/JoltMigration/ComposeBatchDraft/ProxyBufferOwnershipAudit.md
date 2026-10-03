@@ -1,0 +1,35 @@
+# Reusable proxy buffer handoff option (audit only)
+
+No implementation, active edits, builds or Unreal runs. Scope: remove the full 88-transform copy in native proxy `PreUpdate`, while preserving snapshot ownership and every normal animation callback. This is separate from the one-line redundant-reset patch.
+
+## Current ownership
+
+`UProphecyJoltPoseAnimInstance::PublishCompletedLocalPose` validates the supplied complete local pose and copies it into `CompletedLocalTransforms` (`ProphecyJoltPoseAnimInstance.cpp:81–109`). The native proxy's `PreUpdate` then copies `CompletedLocalTransforms` into its independent `Snapshot` when `PublicationSerial` changes (lines 18–38). The final engine evaluation reads the proxy-owned snapshot only. These two copies protect against source lifetimes and callbacks. Removing both copies would require a larger public ownership redesign and is not proposed.
+
+The first copy can stay, while the second becomes a buffer exchange. On a new valid publication, `PreUpdate` could `Swap(Snapshot, Instance->CompletedLocalTransforms)`, so the proxy owns the new immutable pose and the instance retains the previous proxy buffer for the next publication's validated copy. `PreUpdate` is on GT; its base implementation initializes objects/LOD/notify/sync state and must still run. `UAnimInstance::PreUpdateAnimation` acquires the game-thread proxy before invoking it (`AnimInstance.cpp:675–686`). `UAnimInstance::GetProxyOnGameThreadStatic` calls `HandleExistingParallelEvaluationTask` before returning the proxy (`Engine/Classes/Animation/AnimInstance.h:1658–1676`); preserve this existing synchronization path.
+
+## Required changes and exact pitfalls
+
+1. The current `PreUpdate` rejects the instance when `CompletedLocalTransforms.Num()` differs from mesh bone count **before** checking `SnapshotSerial`. A plain swap would fail on a second same-serial PreUpdate after initial transfer, because the returned old proxy buffer is initially empty. New-serial validation must inspect the pending instance buffer; same-serial validation must inspect the retained proxy snapshot instead. Binding/mesh/revision checks remain live in both branches.
+2. Same-serial repeated `TickAnimation(0)`/`RefreshBoneTransforms` must continue presenting the retained proxy snapshot, without swapping old buffers back.
+3. `ClearCompletedLocalPose` currently resets the pending instance buffer and increments the separate publication serial. A subsequent PreUpdate must clear its own proxy snapshot. Clear followed by a new source revision equal to a previous source revision must still transfer because `PublicationSerial`, not CompletedRevision, is the comparison key.
+4. Multiple valid publications before the next PreUpdate must leave the latest pending buffer authoritative. Failed validation must leave the current pending publication/serial unchanged. The unchanged `PublishCompletedLocalPose` already has that preflight ordering.
+5. After a swap, `CompletedLocalTransforms` is reusable storage, not a copy of the latest pose. It is private and currently consumed only by the native proxy, but all readers must be audited at implementation time. `CompletedRevision`, `PublishedMesh` and `PublicationSerial` remain the authoritative metadata. Do not expose the recycled buffer as a public current-pose getter.
+6. In-flight evaluation reads only proxy `Snapshot`. Publishing into the instance's distinct recycled storage remains safe before the caller's explicit `HandleExistingParallelEvaluationTask` (current Character.cpp699–703); do not alias or move the proxy buffer from `PublishCompletedLocalPose` itself.
+7. All original validation and per-bone math stay unchanged. This exchange does not bypass TickAnimation, PreUpdate base behavior, normal evaluation, curves, finalization, query commit or callbacks.
+
+## Expected value and regression gate
+
+The whole `pose_proxy_preupdate` phase was ~0.0936 ms/100 in the P-core baseline, and ~0.2731 ms/100 on the During+batch E-core run. The removed copy is only part of those totals, so this cannot explain or remove millisecond-scale refresh differences by itself. No speedup is assumed.
+
+If implemented, exercise initial publish, two PreUpdates with the same serial, Clear, Clear followed by reused source revision, two publications before PreUpdate, failed publication, asset replacement, and existing callback deletion/rebinding. Compare all bones with current output. Existing source-only layout/pure-compose tests do not establish this proxy transfer's runtime lifecycle.
+
+## Remaining normal Refresh work and measurement boundary
+
+`USkeletalMeshComponent::PerformAnimationProcessing` always finalizes the compact local pose and invokes `USkeletalMesh::FillComponentSpaceTransforms` (`SkeletalMeshComponent.cpp:2373–2393`), despite our already-computed component-space output. Both methods are nonvirtual; the normal public refresh route has no setter that consumes our component buffer while preserving the current finalization lifecycle. Replacing refresh or the skeletal component class is a larger integration change, not a low-risk next optimization.
+
+`PostAnimEvaluation` updates curves/morph overrides, calls PostEvaluate, marks the buffer for flip, calls kinematic/joint updates and then `FinalizeAnimationUpdate` (`SkeletalMeshComponent.cpp:3057–3143`). Our `SkipAllBones` and fixture `bUpdateJointsFromAnimation=false` already short-circuit their real physics work. `FinalizeAnimationUpdate` retains socket children, overlaps, invalidated bounds, render dirtiness and follower refresh (`PhysicsEngine/PhysAnim.cpp:468–523`). Current Normal/P-core `pose_finalize_after_query` is only ~0.2074 ms/100, so bypassing these public behaviors is both risky and limited in value.
+
+The During+batch run `Saved/Benchmarks/jolt_during_batch_100_20260909_1307.json` used Normal process priority (32) but all 360 frame entry/exit samples and all 36,000 refresh scope entries were logical processors 8–11, efficiency class 0. Refresh entries: 8=16,302; 9=7,834; 10=5,875; 11=5,989. Therefore that run is not comparable to the earlier Normal/P-core baseline merely because process priorities match. Sample endpoints do not measure residency inside scopes or clocks/temperature.
+
+The same run reports frame interval mean24.052 ms and timed world mean14.987 ms. The ~9.065 ms difference includes validation and all other out-of-world work, not a direct isolated validator measurement. `ProphecyPhysicsBenchmark.cpp:440–444` closes the world timer before validation, and `ValidateMultiJoltFrame` immediately ends phase profiling before all-body/bone/query validation (`MultiJolt.cpp:306–309`). The validator cannot directly inflate the current world timer, but may change cache state, subsequent scheduler behavior or thermal load. Current provenance does not prove such an indirect cause. Keep same validation and fixed P-core placement for the next same-binary serial/batch A/B before considering a separate capture-then-offline-validation diagnostic.

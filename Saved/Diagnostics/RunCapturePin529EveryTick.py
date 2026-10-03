@@ -1,0 +1,3 @@
+import pathlib,unreal
+src=pathlib.Path(unreal.Paths.project_saved_dir())/'Diagnostics/CapturePin529EveryTick.py'
+exec(compile(src.read_text(),str(src),'exec'),{'__name__':'pin529_everytick'})

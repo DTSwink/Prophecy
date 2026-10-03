@@ -1,0 +1,16 @@
+{
+  "id": 1,
+  "kind": "volume",
+  "target": [
+    -0.2389310747385025,
+    0.5167496204376221,
+    0.47791919112205505
+  ],
+  "file": "data/hookL_01.bin",
+  "frames": 15,
+  "joints": 26,
+  "fps": 30,
+  "phases": {},
+  "sha256": "fe02a6f93ac0c2e12b473ac49321a5bd7678f073ef53bb25ee462aa4993fa5eb",
+  "sourceSha": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2"
+}

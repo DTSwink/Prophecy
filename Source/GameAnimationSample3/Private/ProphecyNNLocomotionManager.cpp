@@ -988,9 +988,6 @@ struct AProphecyNNLocomotionManager::FImpl
 	float SideBlendRadians = FMath::DegreesToRadians(8.0f);
 	float PinScale = 8.0f;
 	float GroundHeight = 0.0f;
-	float NearFloorFullHeight = 0.015f;
-	float NearFloorFadeHeight = 0.020f;
-	float NearFloorMinPin = 1.0f;
 	int32 FootRollSteps = 4;
 	float MaxSpeedScaleFinal = 1.0f / 6.0f;
 	float MaxTurnRateScaleFinal = 0.41887902f;
@@ -2478,9 +2475,6 @@ bool AProphecyNNLocomotionManager::LoadRuntimeContract()
 	Impl->SideBlendRadians = FMath::DegreesToRadians(SideBlendDegrees);
 	(*FootRoll)->TryGetNumberField(TEXT("pin_ste_scale"), Impl->PinScale);
 	(*FootRoll)->TryGetNumberField(TEXT("ground_y"), Impl->GroundHeight);
-	(*FootRoll)->TryGetNumberField(TEXT("near_floor_full_height_m"), Impl->NearFloorFullHeight);
-	(*FootRoll)->TryGetNumberField(TEXT("near_floor_fade_height_m"), Impl->NearFloorFadeHeight);
-	(*FootRoll)->TryGetNumberField(TEXT("near_floor_minimum_pin_probability"), Impl->NearFloorMinPin);
 	if ((*FootRoll)->TryGetNumberField(TEXT("integration_steps"), Number)) Impl->FootRollSteps = FMath::Max(1, int32(Number));
 
 	Impl->PublishedBoneNames = Impl->BodyNames;
@@ -3932,7 +3926,6 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 				TemperLowerPose(*Tempering, StateSlice(Impl->PreviousPublishedStateBuffer, AgentIndex), Transition,RightTempering);
 			}
 	
-			float Heights[2] = { 0.0f, 0.0f };
 			float Pin[2];
 			if (bWalkPolicy && Impl->bWalkPinLegacy)
 			{
@@ -3950,30 +3943,9 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 			const int32 PosOffsets[2] = { 9, 25 };
 			const int32 RotOffsets[2] = { 12, 28 };
 			const int32 ToeOffsets[2] = { 24, 40 };
-			for (int32 LimbIndex = 0; LimbIndex < 2; ++LimbIndex)
-			{
-				Heights[LimbIndex] = Impl->LowestFootHeight(LimbIndex, ReadStateVec3(Transition, PosOffsets[LimbIndex]), MatrixFromRot6(Transition + RotOffsets[LimbIndex]), Transition[ToeOffsets[LimbIndex]], bWalkPolicy);
-			}
 			RawPin = FVector2f(Pin[0], Pin[1]);
 			if (PinSmoothing && bWalkPolicy && bVisiblePolicy)
 				ProphecyWalkPinning::SmoothPins(*PinSmoothing,Pin[0],Pin[1]);
-			const AProphecyAgent* PinActor = AgentActors.IsValidIndex(AgentIndex) ? AgentActors[AgentIndex] : nullptr;
-			const bool bOverridePin = PinActor && PinActor->bOverrideLocomotionPinThreshold;
-			const float FadeHeight = bOverridePin ? PinActor->LocomotionPinThresholdM : Impl->NearFloorFadeHeight;
-			const float FullHeight = bOverridePin ? PinActor->LocomotionFullPinHeightM : Impl->NearFloorFullHeight;
-			const bool bLeftBelow = !bWalkPolicy && Heights[0] < FadeHeight;
-			const bool bRightBelow = !bWalkPolicy && Heights[1] < FadeHeight;
-			if (bLeftBelow || bRightBelow)
-			{
-				const int32 Selected = bLeftBelow && bRightBelow ? (Raw[41] <= Raw[42] ? 0 : 1) : (Heights[0] <= Heights[1] ? 0 : 1);
-				const float FadeSpan = FMath::Max(1.0e-6f, FadeHeight - FullHeight);
-				const float Force = FMath::Clamp((FadeHeight - Heights[Selected]) / FadeSpan, 0.0f, 1.0f) * Impl->NearFloorMinPin;
-				Pin[Selected] = FMath::Max(Pin[Selected], Force);
-			}
-	
-            // Apply after the existing Run floor boost, before foot-roll correction.
-            // RawPin remains the decoded network value; EffectivePin includes this change.
-            if(!bWalkPolicy) ProphecyWalkPinning::BoostRunPin(PinActor,Pin[0],Pin[1]);
 			const bool bTransfer=PinTransferMultiplier>0 && bWalkPolicy && bVisiblePolicy;
 			if (bTransfer)
 			{
