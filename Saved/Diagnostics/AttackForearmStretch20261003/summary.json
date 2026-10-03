@@ -1,0 +1,375 @@
+{
+  "physical": {
+    "checks": [
+      {
+        "gt_target": "(<Struct 'Vector' (0x00000174F1545690) {x: 46.763917, y: -233.152652, z: 124.805124}>, '')",
+        "unchanged": true,
+        "mode": "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      }
+    ],
+    "modes": [
+      "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+    ],
+    "episodes": [
+      {
+        "start": 125,
+        "return_ticks": 18,
+        "capture_error": 1.0658141036401503e-14,
+        "max_curve_error": 2.980232416405215e-07,
+        "end": {
+          "tick": 169,
+          "error": 1.0658141036401503e-14,
+          "nn": [
+            22.34914600849151,
+            22.34924286604587
+          ],
+          "physical": [
+            22.3644088665079,
+            22.373762016763603
+          ]
+        }
+      },
+      {
+        "start": 209,
+        "return_ticks": 18,
+        "capture_error": 1.0658141036401503e-14,
+        "max_curve_error": 2.980232416405215e-07,
+        "end": {
+          "tick": 254,
+          "error": 1.4210854715202004e-14,
+          "nn": [
+            22.349146008491513,
+            22.349242866045874
+          ],
+          "physical": [
+            22.362948037169005,
+            22.37076023649091
+          ]
+        }
+      },
+      {
+        "start": 295,
+        "return_ticks": 18,
+        "capture_error": 2.1316282072803006e-14,
+        "max_curve_error": 2.980232594040899e-07,
+        "end": {
+          "tick": 339,
+          "error": 2.1316282072803006e-14,
+          "nn": [
+            22.34914600849152,
+            22.34924286604588
+          ],
+          "physical": [
+            22.363283153320477,
+            22.37277465975717
+          ]
+        }
+      }
+    ]
+  },
+  "kinematic": {
+    "checks": [
+      {
+        "gt_target": "(<Struct 'Vector' (0x00000174F1544740) {x: 48.452183, y: -235.133458, z: 124.805124}>, '')",
+        "unchanged": false,
+        "mode": "<ProphecyAgentSimulationMode.KINEMATIC: 0>"
+      }
+    ],
+    "modes": [
+      "<ProphecyAgentSimulationMode.KINEMATIC: 0>",
+      "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+    ],
+    "episodes": [
+      {
+        "start": 127,
+        "return_ticks": 18,
+        "capture_error": 7.105427357601002e-15,
+        "max_curve_error": 2.9802323453509416e-07,
+        "end": {
+          "tick": 169,
+          "error": 1.7763568394002505e-14,
+          "nn": [
+            22.349146008491527,
+            22.34924286604587
+          ],
+          "physical": [
+            22.349145889282237,
+            22.3492431640691
+          ]
+        }
+      },
+      {
+        "start": 211,
+        "return_ticks": 18,
+        "capture_error": 3.552713678800501e-15,
+        "max_curve_error": 2.980232238769531e-07,
+        "end": {
+          "tick": 254,
+          "error": 2.842170943040401e-14,
+          "nn": [
+            22.349146008491523,
+            22.349242866045888
+          ],
+          "physical": [
+            22.349145889282223,
+            22.349243164069108
+          ]
+        }
+      },
+      {
+        "start": 297,
+        "return_ticks": 18,
+        "capture_error": 7.105427357601002e-15,
+        "max_curve_error": 2.9802325585137623e-07,
+        "end": {
+          "tick": 339,
+          "error": 1.7763568394002505e-14,
+          "nn": [
+            22.34914600849152,
+            22.349242866045877
+          ],
+          "physical": [
+            22.34914588928223,
+            22.34924316406911
+          ]
+        }
+      }
+    ]
+  },
+  "half": {
+    "checks": [
+      {
+        "gt_target": "(<Struct 'Vector' (0x00000174F1545550) {x: 46.763917, y: -233.152652, z: 124.805124}>, '')",
+        "unchanged": true,
+        "mode": "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      },
+      {
+        "half_switch_tick": 85,
+        "result": true
+      }
+    ],
+    "modes": [
+      "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+    ],
+    "episodes": [
+      {
+        "start": 121,
+        "return_ticks": 18,
+        "capture_error": 2.4868995751603507e-14,
+        "max_curve_error": 2.980232416405215e-07,
+        "end": {
+          "tick": 169,
+          "error": 2.4868995751603507e-14,
+          "nn": [
+            22.349146008491505,
+            22.349242866045884
+          ],
+          "physical": [
+            22.357305916959255,
+            22.36306790943149
+          ]
+        }
+      },
+      {
+        "start": 209,
+        "return_ticks": 18,
+        "capture_error": 1.0658141036401503e-14,
+        "max_curve_error": 2.980232451932352e-07,
+        "end": {
+          "tick": 254,
+          "error": 1.4210854715202004e-14,
+          "nn": [
+            22.349146008491523,
+            22.349242866045874
+          ],
+          "physical": [
+            22.36350944802047,
+            22.371356409755094
+          ]
+        }
+      },
+      {
+        "start": 295,
+        "return_ticks": 18,
+        "capture_error": 1.0658141036401503e-14,
+        "max_curve_error": 2.9802321677152577e-07,
+        "end": {
+          "tick": 339,
+          "error": 7.105427357601002e-15,
+          "nn": [
+            22.349146008491513,
+            22.349242866045866
+          ],
+          "physical": [
+            22.36377805271166,
+            22.373200148499727
+          ]
+        }
+      },
+      {
+        "start": 379,
+        "return_ticks": 18,
+        "capture_error": 1.0658141036401503e-14,
+        "max_curve_error": 1.65568749821432e-08,
+        "end": {
+          "tick": 380,
+          "error": 1.65568749821432e-08,
+          "nn": [
+            20.780805754381227,
+            27.071357658075485
+          ],
+          "physical": [
+            20.988454196700673,
+            27.3033014113453
+          ]
+        }
+      }
+    ]
+  },
+  "long": {
+    "checks": [
+      {
+        "gt_target": "(<Struct 'Vector' (0x00000174F1544740) {x: 46.763917, y: -233.152652, z: 124.805124}>, '')",
+        "unchanged": true,
+        "mode": "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      },
+      {
+        "stop_tick": 100,
+        "duration": 0.6,
+        "result": true
+      }
+    ],
+    "modes": [
+      "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+    ],
+    "episodes": [
+      {
+        "start": 101,
+        "return_ticks": 36,
+        "capture_error": 0.1388874840739156,
+        "max_curve_error": 2.897448112548773e-07,
+        "end": {
+          "tick": 169,
+          "error": 1.7763568394002505e-14,
+          "nn": [
+            22.349146008491527,
+            22.349242866045874
+          ],
+          "physical": [
+            22.350304947079724,
+            22.35081150569103
+          ]
+        }
+      },
+      {
+        "start": 209,
+        "return_ticks": 36,
+        "capture_error": 1.0658141036401503e-14,
+        "max_curve_error": 2.9802323453509416e-07,
+        "end": {
+          "tick": 254,
+          "error": 2.4868995751603507e-14,
+          "nn": [
+            22.349146008491534,
+            22.349242866045874
+          ],
+          "physical": [
+            22.352111871728173,
+            22.40028578325877
+          ]
+        }
+      },
+      {
+        "start": 295,
+        "return_ticks": 36,
+        "capture_error": 1.7763568394002505e-14,
+        "max_curve_error": 2.9802323453509416e-07,
+        "end": {
+          "tick": 339,
+          "error": 1.7763568394002505e-14,
+          "nn": [
+            22.349146008491516,
+            22.349242866045877
+          ],
+          "physical": [
+            22.350712254444513,
+            22.40865471390614
+          ]
+        }
+      }
+    ]
+  },
+  "zero": {
+    "checks": [
+      {
+        "gt_target": "(<Struct 'Vector' (0x00000174F1545550) {x: 46.763917, y: -233.152652, z: 124.805124}>, '')",
+        "unchanged": true,
+        "mode": "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+      },
+      {
+        "stop_tick": 100,
+        "duration": 0.0,
+        "result": true
+      }
+    ],
+    "modes": [
+      "<ProphecyAgentSimulationMode.PHYSICAL: 1>"
+    ],
+    "episodes": [
+      {
+        "start": 101,
+        "return_ticks": 0,
+        "capture_error": 4.999949426661416,
+        "max_curve_error": 2.980232487459489e-07,
+        "end": {
+          "tick": 169,
+          "error": 1.4210854715202004e-14,
+          "nn": [
+            22.34914600849151,
+            22.349242866045874
+          ],
+          "physical": [
+            22.349966803913148,
+            22.349929021756033
+          ]
+        }
+      },
+      {
+        "start": 209,
+        "return_ticks": 0,
+        "capture_error": 4.999926870087577,
+        "max_curve_error": 2.9802325585137623e-07,
+        "end": {
+          "tick": 254,
+          "error": 2.4868995751603507e-14,
+          "nn": [
+            22.349146008491534,
+            22.349242866045874
+          ],
+          "physical": [
+            22.363422021839813,
+            22.370545392036643
+          ]
+        }
+      },
+      {
+        "start": 295,
+        "return_ticks": 0,
+        "capture_error": 4.99990403808598,
+        "max_curve_error": 2.980232594040899e-07,
+        "end": {
+          "tick": 339,
+          "error": 1.7763568394002505e-14,
+          "nn": [
+            22.349146008491527,
+            22.34924286604587
+          ],
+          "physical": [
+            22.363737972182573,
+            22.37240466499829
+          ]
+        }
+      }
+    ]
+  }
+}

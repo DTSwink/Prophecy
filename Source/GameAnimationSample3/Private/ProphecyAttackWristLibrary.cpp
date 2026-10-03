@@ -1,5 +1,6 @@
 #include "ProphecyAttackWristLibrary.h"
 #include "ProphecyAttackWrist.h"
+#include "ProphecyForearmStretch.h"
 #include "ProphecyAgent.h"
 #include "ProphecyClampEase.h"
 #include "Engine/World.h"
@@ -30,7 +31,7 @@ static void RefreshCleanup()
     if (!Any && ModeCleanup.IsValid())
     { FWorldDelegates::OnWorldCleanup.Remove(ModeCleanup);ModeCleanup.Reset(); }
 }
-bool FreePosition(const AProphecyAgent* Agent) { return !Freedom.IsEmpty() && (Freedom.FindRef(Agent)&1)!=0; }
+bool FreePosition(const AProphecyAgent* Agent) { return ProphecyForearmStretch::OwnsPosition(Agent) || (!Freedom.IsEmpty() && (Freedom.FindRef(Agent)&1)!=0); }
 bool FreeRotation(const AProphecyAgent* Agent) { return !Freedom.IsEmpty() && (Freedom.FindRef(Agent)&6)!=0; }
 float Degrees(const AProphecyAgent* Agent,EProphecyClampProfileMode Mode,FName Attack)
 {

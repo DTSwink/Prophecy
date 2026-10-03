@@ -8,6 +8,11 @@ Unreal content library or the Stepper training workspace.
 
 - Current game/editor C++, the Jolt plugin and its pinned build recipe, scripts,
   tests, project journals and diagnostic summary receipts.
+- Forearm leeway follow-up: attack wrist freedom, per-arm captured stretch return,
+  physical wrist constraints, and GT slash support in Sim/Half Sim. The saved
+  PoseAgent Blueprint enables the return with a 0.3-second duration. Implementation,
+  tests and diagnostic scripts/summary receipts are included; see
+  `Docs/AttackForearmStretchReturn.md` for behavior and measured solver lag.
 - All project `Config/Default*.ini` files and the Visual Studio workload manifest.
 - PoseAgent, sword and other Blueprint graphs; control rigs, input definitions,
   structs and enums; selected small material/physics/PCG/tuning assets; TestNN
@@ -70,9 +75,11 @@ This verifies stored files, not the availability of external Unreal assets.
    reliably. Live Coding patches, Binaries and Intermediate are intentionally not
    restored. No custom Unreal launch wrapper is required or provided.
 6. Open `GameAnimationSample3.uproject` on `/Game/testNN`, then verify the PoseAgent
-   Blueprint compiles and the three agents appear in Play. The last normal DLL
-   build and six focused ghost/foot/pelvis tests passed on October3; the user
-   subsequently accepted Ghost Loco Drag and the existing FK return.
+   Blueprint compiles and the three agents appear in Play. The forearm follow-up
+   passed a normal DLL build, six focused tests and five replay checks. The latest
+   October 3 reopening confirmed the build is current and the saved Blueprint
+   compiles without stale native properties or pin types. Ghost Loco Drag and
+   the existing FK return were previously accepted by the user.
 
 ## Standalone apps
 

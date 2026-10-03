@@ -10,7 +10,7 @@ bool AProphecyNNLocomotionManager::SetSlashTrainStartingPose(FProphecyAgentHandl
     if (!IsInGameThread() || !Actor || !Impl || !Impl->bInitialized || IsSimBridgeActive())
     { OutError=TEXT("Initialize the native NN agent first.");return false; }
     auto& A=Impl->Agents[Handle.Index];
-    if (Actor->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic || A.Slash.bActive || A.DefensePose || A.AnimationLayer.IsActive())
+    if ((OriginalGTAttack.IsNone() && Actor->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic) || A.Slash.bActive || A.DefensePose || A.AnimationLayer.IsActive())
     { OutError=TEXT("Seed an idle kinematic agent before its first special.");return false; }
     FString Text;TSharedPtr<FJsonObject> Data;
     const bool bOriginalGT=!OriginalGTAttack.IsNone();
@@ -29,6 +29,14 @@ bool AProphecyNNLocomotionManager::SetSlashTrainStartingPose(FProphecyAgentHandl
         { OutError=TEXT("Unknown original GT attack name.");return false; }
         LocalGTTarget=FVector((*Values)[0]->AsNumber(),(*Values)[1]->AsNumber(),(*Values)[2]->AsNumber());
         if (LocalGTTarget.ContainsNaN()) { OutError=TEXT("Invalid original GT target.");return false; }
+    }
+    if (bOriginalGT && Actor->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic)
+    {
+        // Simulated GT repeats keep the live pose, velocity and recurrent history.
+        // Only resolve the authored target in the current mover frame.
+        SlashTrainFrame::Frames.Remove(Actor);
+        if(OutGTTarget)*OutGTTarget=SlashComponentWorld(Actor,A.PublishedRoot,A.PublishedYaw).TransformPosition(LocalGTTarget);
+        return true;
     }
     const TSharedPtr<FJsonObject>* History=nullptr;
     if (!Data->TryGetObjectField(TEXT("initial_history"),History))

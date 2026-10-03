@@ -433,7 +433,7 @@ struct FRigRecord
 };
 
 // Sparse sidecar rather than changing the layout of retained live rig records.
-static TMap<const FRigRecord*,TArray<ProphecyJolt::FootExtension::FJoint>> FootExtensions;
+static TMap<const FRigRecord*,TArray<ProphecyJolt::FootExtension::FJoint>> FootExtensions,WristExtensions;
 // Sparse event state: no rig layout change, per-tick poll, or contact-time lookup.
 static TSet<const FRigRecord*> AttackSelfCollisionSuppressed;
 struct FFootColliderOriginal
@@ -454,6 +454,19 @@ static void RemoveFootExtensions(JPH::PhysicsSystem& Physics,const FRigRecord* R
             Entry.Original->SetTranslationLimits(Entry.Minimum,Entry.Maximum);
         }
         FootExtensions.Remove(Rig);
+    }
+}
+
+static void RemoveWristExtensions(JPH::PhysicsSystem& Physics,const FRigRecord* Rig)
+{
+    if (auto* Entries=WristExtensions.Find(Rig))
+    {
+        for (auto& Entry:*Entries)
+        {
+            Physics.RemoveConstraint(Entry.Translation.GetPtr());
+            Entry.Original->SetTranslationLimits(Entry.Minimum,Entry.Maximum);
+        }
+        WristExtensions.Remove(Rig);
     }
 }
 
@@ -1170,6 +1183,7 @@ public:
         ProphecyJolt::WorldPrivate::AttackSelfCollisionSuppressed.Remove(&Rig);
         ProphecyJolt::WorldPrivate::FootColliderOriginals.Remove(&Rig);
         RemoveFootExtensions(Physics,&Rig);
+        RemoveWristExtensions(Physics,&Rig);
         Rig.Targets.Reset();
         Rig.PublishedHandles.Reset();
         for (const auto& Constraint : Rig.Constraints) Physics.RemoveConstraint(Constraint.GetPtr());
@@ -1383,6 +1397,79 @@ bool UProphecyJoltFootJointLibrary::SetFootRange(UObject* WorldContext,FGuid Lif
         Native->Physics.AddConstraint(Entry.Translation.GetPtr());
     }
     FootExtensions.Add(Rig,MoveTemp(Pending)); Wake(); Owner->RefreshDiagnostics(); return true;
+}
+
+bool UProphecyJoltFootJointLibrary::SetWristRange(UObject* WorldContext,FGuid Lifetime,
+    int32 BodySlot,int64 BodyGeneration,FVector2D MinimumCm,FVector2D MaximumCm,FVector LeftAxis,FVector RightAxis,FString& OutError)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    using Axis=JPH::SixDOFConstraintSettings::EAxis;
+    OutError.Reset();
+    UWorld* World=IsValid(WorldContext) ? WorldContext->GetWorld() : nullptr;
+    auto* Owner=World ? World->GetSubsystem<UProphecyJoltWorldSubsystem>() : nullptr;
+    if (!Owner || !Owner->ValidateReady().IsSuccess() || MinimumCm.ContainsNaN() || MaximumCm.ContainsNaN() || MinimumCm.X>MaximumCm.X || MinimumCm.Y>MaximumCm.Y)
+    { OutError=TEXT("A ready Jolt world and finite nonnegative wrist range are required."); return false; }
+    auto* Native=Owner->Native.Get();
+    const auto* Body=Native->Find(FProphecyJoltBodyHandle{Lifetime,BodySlot,uint64(BodyGeneration)});
+    auto* Rig=Body ? Native->FindRig(Body->OwnerRig) : nullptr;
+    if (!Rig) { OutError=TEXT("Wrist leeway requires a live skeletal rig."); return false; }
+    const auto Wake=[&]()
+    {
+        for (const auto& Handle:Rig->Handles) Native->Wake(Handle);
+    };
+    if (MinimumCm.IsNearlyZero(0) && MaximumCm.IsNearlyZero(0))
+    {
+        const bool Changed=WristExtensions.Contains(Rig);
+        RemoveWristExtensions(Native->Physics,Rig);
+        if (Changed) { Wake(); Owner->RefreshDiagnostics(); }
+        return true;
+    }
+    if (auto* Entries=WristExtensions.Find(Rig))
+    {
+        bool Changed=false;
+        for(int Side=0;Side<Entries->Num();++Side)
+        {
+            auto& Entry=(*Entries)[Side];
+            const JPH::Vec3 Minimum(MinimumCm[Side]*.01f,0,0),Maximum(MaximumCm[Side]*.01f,0,0);
+            if (Entry.Translation->GetTranslationLimitsMin()!=Minimum || Entry.Translation->GetTranslationLimitsMax()!=Maximum)
+            { Entry.Translation->SetTranslationLimits(Minimum,Maximum);Changed=true; }
+        }
+        if (Changed) Wake(); return true;
+    }
+    TArray<ProphecyJolt::FootExtension::FJoint> Pending;
+    const FName Feet[]={TEXT("hand_l"),TEXT("hand_r")},Calves[]={TEXT("lowerarm_l"),TEXT("lowerarm_r")};
+    const FVector Directions[]={LeftAxis,RightAxis};
+    for (int32 Side=0;Side<2;++Side)
+    {
+        const int32 Index=Rig->JointDescriptions.IndexOfByPredicate([&](const FProphecyJoltRigJoint& J)
+            { return J.Bone1==Feet[Side] && J.Bone2==Calves[Side]; });
+        if (Index==INDEX_NONE || Directions[Side].ContainsNaN() || Directions[Side].IsNearlyZero())
+        { OutError=TEXT("Expected a hand-to-forearm joint and a valid parent-local forearm length axis on each side."); return false; }
+        auto* Original=ProphecyJolt::GetSixDOF(Rig->Constraints[Index].GetPtr());
+        if (!Original || !Original->IsFixedAxis(Axis::TranslationX) || !Original->IsFixedAxis(Axis::TranslationY)
+            || !Original->IsFixedAxis(Axis::TranslationZ))
+        { OutError=TEXT("Wrist extension expects authored locked wrist translations."); return false; }
+        auto Settings=ProphecyJolt::FootExtension::Settings(*Original,
+            ProphecyJolt::Conversions::ToJoltDirection(Directions[Side].GetSafeNormal()),float(MaximumCm[Side]*.01));
+        Settings.SetLimitedAxis(Axis::TranslationX,float(MinimumCm[Side]*.01),float(MaximumCm[Side]*.01));
+        JPH::Ref<JPH::TwoBodyConstraint> Extra=Native->Physics.GetBodyInterface().CreateConstraint(&Settings,
+            Original->GetBody1()->GetID(),Original->GetBody2()->GetID());
+        if (!Extra) { OutError=TEXT("Could not create the forearm-axis translation constraint."); return false; }
+        ProphecyJolt::FootExtension::FJoint Entry;
+        Entry.Original=Original;
+        Entry.Translation=static_cast<JPH::SixDOFConstraint*>(Extra.GetPtr());
+        Entry.Minimum=Original->GetTranslationLimitsMin(); Entry.Maximum=Original->GetTranslationLimitsMax();
+        Entry.Translation->SetNumVelocityStepsOverride(Original->GetNumVelocityStepsOverride());
+        Entry.Translation->SetNumPositionStepsOverride(Original->GetNumPositionStepsOverride());
+        Pending.Add(MoveTemp(Entry));
+    }
+    // Both wrists validated/allocated before changing any live constraint.
+    for (auto& Entry:Pending)
+    {
+        Entry.Original->SetTranslationLimits(JPH::Vec3::sReplicate(-FLT_MAX),JPH::Vec3::sReplicate(FLT_MAX));
+        Native->Physics.AddConstraint(Entry.Translation.GetPtr());
+    }
+    WristExtensions.Add(Rig,MoveTemp(Pending)); Wake(); Owner->RefreshDiagnostics(); return true;
 }
 
 bool UProphecyJoltBodyDriveLibrary::SetDriveFollower(UObject* WorldContext, FGuid Lifetime,
@@ -3070,7 +3157,7 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetRigSolverIterations(con
         auto* Six = ProphecyJolt::GetSixDOF(C.GetPtr());
         Six->SetNumVelocityStepsOverride(Velocity); Six->SetNumPositionStepsOverride(Position);
     }
-    if (auto* Entries=FootExtensions.Find(Rig)) for (auto& Entry:*Entries)
+    for(auto* Entries:{FootExtensions.Find(Rig),WristExtensions.Find(Rig)}) if(Entries) for (auto& Entry:*Entries)
     {
         Entry.Translation->SetNumVelocityStepsOverride(Velocity);
         Entry.Translation->SetNumPositionStepsOverride(Position);

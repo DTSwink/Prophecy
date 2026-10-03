@@ -52,6 +52,7 @@
 #include "ProphecyCrowdNameLookup.h"
 
 #include "ProphecyAgent.h"
+#include "ProphecyForearmStretch.h"
 #include "ProphecyAttackCamera.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAttackTrim.h"
@@ -2159,6 +2160,7 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 		ProphecyFKReturn::Remove(AgentActor);
 		ProphecyAttackStartInertia::Remove(AgentActor);
 		ProphecyAttackStartHands::Remove(AgentActor);
+		ProphecyForearmStretch::Remove(AgentActor);
 		ProphecyAttackStartFKCore::Remove(AgentActor);
 		ProphecyLowerTempering::ForgetProfiles(AgentActor);
 		ProphecyLegChainDebug::Remove(AgentActor);
@@ -5138,7 +5140,10 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	const bool bFKReturn=!bManualArmed && !Agent.Slash.bActive && !bDefensePose &&
 		ProphecyFKReturn::Apply(Controls,SourceTimeSeconds,
 			PreviousComponentTransforms,ComponentTransforms,LocalTransforms,&bNewFKSample);
-	if(bNewFKSample)CommitFKReturnUpperPose(*Impl,AgentIndex,ComponentTransforms);
+	const bool bLengthReturn=ProphecyForearmStretch::Apply(Controls,Impl->PublishedBoneNames,
+        PreviousComponentTransforms,ComponentTransforms,LocalTransforms,bFKReturn);
+
+	if(bNewFKSample || bLengthReturn)CommitFKReturnUpperPose(*Impl,AgentIndex,ComponentTransforms);
 	FProphecyNNPoseStore::SetAgentLocalPose(
 		PoseStoreAgentBase + AgentIndex,
 		Impl->PublishedBoneNames,

@@ -26,6 +26,7 @@ namespace
     }
 	FRWLock GProphecyNNPoseLock;
 	TMap<int32, FProphecyNNPoseSnapshot> GProphecyNNPoses;
+    TMap<int32,FVector2D> GForearmReturnLengths;
 	TMap<int32, EProphecyNNInterpolationMode> GInterpolationModes;
 	TSet<int32> GProphecyNNSpecialPresentation;
 	TSet<int32> GProphecyNNLowerSpecial;
@@ -451,6 +452,7 @@ void FProphecyNNPoseStore::ClearAgentPose(int32 AgentId)
 	GRecoveryUpperLengthWeights.Remove(AgentId);
 	GKneePopSmoothing.Remove(AgentId);
 	GKneeBendFrames.Remove(AgentId);
+    GForearmReturnLengths.Remove(AgentId);
 }
 
 void FProphecyNNPoseStore::ClearAllPoses()
@@ -466,6 +468,7 @@ void FProphecyNNPoseStore::ClearAllPoses()
 	GRecoveryUpperLengthWeights.Reset();
 	GKneePopSmoothing.Reset();
 	GKneeBendFrames.Reset();
+    GForearmReturnLengths.Reset();
 }
 
 bool FProphecyNNPoseStore::UsesLowerSpecialPresentation(int32 AgentId)
@@ -480,17 +483,31 @@ bool FProphecyNNPoseStore::UsesAttackPresentation(int32 AgentId)
 	return GProphecyNNSpecialPresentation.Contains(AgentId);
 }
 
+void FProphecyNNPoseStore::SetForearmReturnLengths(int32 AgentId,FVector2D Lengths)
+{
+    FWriteScopeLock Lock(GProphecyNNPoseLock);
+    if(Lengths.X>0 && Lengths.Y>0)GForearmReturnLengths.Add(AgentId,Lengths);
+    else GForearmReturnLengths.Remove(AgentId);
+}
+
 void FProphecyNNPoseStore::ApplyRigidForearms(int32 AgentId, const FProphecyNNPoseSnapshot& Snapshot,
 	TConstArrayView<FName> BoneNames, TArrayView<FTransform> Transforms)
 {
 	static const FName Hands[] = { TEXT("hand_l"), TEXT("hand_r") };
 	static const FName Forearms[] = { TEXT("lowerarm_l"), TEXT("lowerarm_r") };
+    FVector2D Lengths=FVector2D::ZeroVector;
+    { FReadScopeLock Lock(GProphecyNNPoseLock);if(const auto* L=GForearmReturnLengths.Find(AgentId))Lengths=*L; }
 	for (int32 Side=0;Side<2;++Side)
 	{
 		const int32 H=BoneNames.IndexOfByKey(Hands[Side]),E=BoneNames.IndexOfByKey(Forearms[Side]);
 		const FVector& Offset=Snapshot.FixedArms.ForearmOffsets[Side];
-		if(Transforms.IsValidIndex(H) && Transforms.IsValidIndex(E) && !Offset.IsNearlyZero())
-			Transforms[H].SetTranslation(Transforms[E].TransformPosition(Offset));
+		if(!Transforms.IsValidIndex(H) || !Transforms.IsValidIndex(E))continue;
+        if(Lengths[Side]>0)
+        {
+            const FVector Axis=(Transforms[H].GetLocation()-Transforms[E].GetLocation()).GetSafeNormal();
+            if(!Axis.IsNearlyZero())Transforms[H].SetTranslation(Transforms[E].GetLocation()+Axis*Lengths[Side]);
+        }
+        else if(!Offset.IsNearlyZero())Transforms[H].SetTranslation(Transforms[E].TransformPosition(Offset));
 	}
 }
 

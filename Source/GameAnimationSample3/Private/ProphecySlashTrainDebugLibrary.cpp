@@ -17,7 +17,7 @@ bool UProphecySlashTrainDebugLibrary::PrepareGTAttackFromIdle(AProphecyAgent* Ag
     FVector& TargetWorldLocation,FString& OutError)
 {
     TargetWorldLocation=FVector::ZeroVector;
-    OutError=TEXT("Select a supported attack on an initialized Kinematic agent.");
+    OutError=TEXT("Select a supported attack on an initialized idle agent.");
     if (!Attack.IsNone() && IsInGameThread() && IsValid(Agent) && Agent->GetWorld() && Agent->HasValidAgentHandle())
         for (TActorIterator<AProphecyNNLocomotionManager> It(Agent->GetWorld());It;++It)
             if (It->ResolveAgent(Agent->GetAgentHandle())==Agent)

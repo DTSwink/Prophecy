@@ -634,4 +634,52 @@ bool FProphecyFootExtensionTest::RunTest(const FString&)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyWristSignedReturnTest,"Prophecy.Jolt.Joints.WristSignedReturn",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyWristSignedReturnTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt;using namespace ProphecyJolt::JointTests;
+    if(!RuntimeReady(*this))return false;
+    FJointFixture Fixture;if(!Fixture.Init(*this,MakeJoint(),FQuat::Identity))return false;
+    auto& Original=Fixture.MutableJointConstraint();
+    const auto Min=Original.GetRotationLimitsMin(),Max=Original.GetRotationLimitsMax();
+    const auto LocalAxis=JPH::Vec3(.3f,.8f,-.4f).Normalized();
+    auto S=FootExtension::Settings(Original,LocalAxis,.05f);
+    S.SetLimitedAxis(JPH::SixDOFConstraintSettings::TranslationX,-.05f,.05f);
+    JPH::Ref<JPH::TwoBodyConstraint> Extra=Fixture.Bodies().CreateConstraint(&S,Original.GetBody1()->GetID(),Original.GetBody2()->GetID());
+    if(!Extra)return false;
+    auto* Translation=static_cast<JPH::SixDOFConstraint*>(Extra.GetPtr());
+    Original.SetTranslationLimits(JPH::Vec3::sReplicate(-FLT_MAX),JPH::Vec3::sReplicate(FLT_MAX));
+    Fixture.World().AddConstraint(Extra.GetPtr());
+    ON_SCOPE_EXIT {Fixture.World().RemoveConstraint(Extra.GetPtr());};
+    const auto Axis=Original.GetBody1()->GetRotation()*LocalAxis;
+    const auto Offset=[&]()
+    {
+        const auto P=Fixture.Bodies().GetCenterOfMassTransform(Original.GetBody1()->GetID())*Original.GetConstraintToBody1Matrix().GetTranslation();
+        const auto C=Fixture.Bodies().GetCenterOfMassTransform(Original.GetBody2()->GetID())*Original.GetConstraintToBody2Matrix().GetTranslation();
+        return JPH::Vec3(C-P);
+    };
+    for(float Sign:{-1.f,1.f})
+    {
+        for(int I=0;I<40;++I){Fixture.Bodies().SetLinearVelocity(Fixture.ChildID(),Axis*Sign);if(!Fixture.Step(*this,1))return false;}
+        TestNearlyEqual(TEXT("Symmetric five cm attack allowance"),Offset().Dot(Axis),Sign*.05f,.003f);
+        const float Captured=Offset().Dot(Axis);
+        for(int I=0;I<=18;++I)
+        {
+            const float Value=Captured*(1.f-float(I)/18);
+            Translation->SetTranslationLimits(JPH::Vec3(Value,0,0),JPH::Vec3(Value,0,0));
+            TestTrue(TEXT("Requested signed attachment is exact"),Translation->GetTranslationLimitsMin()==JPH::Vec3(Value,0,0)
+                && Translation->GetTranslationLimitsMax()==JPH::Vec3(Value,0,0));
+            // A moving hard limit has ordinary finite-iteration solver lag.
+            // Verify the actual equilibrium/sign rather than requiring a body
+            // teleport in one 2-position-iteration fixture step.
+            if(!Fixture.Step(*this,30))return false;
+            TestNearlyEqual(TEXT("Exact signed moving attachment"),Offset().Dot(Axis),Value,.003f);
+            TestTrue(TEXT("No lateral leeway"),(Offset()-Axis*Offset().Dot(Axis)).Length()<.001f);
+        }
+        Translation->SetTranslationLimits(JPH::Vec3(-.05f,0,0),JPH::Vec3(.05f,0,0));
+    }
+    TestTrue(TEXT("Angular constraints untouched"),Original.GetRotationLimitsMin()==Min && Original.GetRotationLimitsMax()==Max);
+    return !HasAnyErrors();
+}
 #endif // WITH_DEV_AUTOMATION_TESTS

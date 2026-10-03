@@ -1,0 +1,35 @@
+Using bundled DotNet SDK version: 8.0.412 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" GameAnimationSample3Editor Win64 Development "-Project=C:/Users/singerie/Documents/Unreal Projects/Prophecy/GameAnimationSample3.uproject" -WaitMutex -FromMsBuild
+Log file: C:\Users\singerie\AppData\Local\UnrealBuildTool\Log.txt
+Using 'git status' to determine working set for adaptive non-unity build (C:\Users\singerie\Documents\Unreal Projects\Prophecy).
+Building GameAnimationSample3Editor...
+Using Visual Studio 2022 14.44.35221 toolchain (C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207) and Windows 10.0.22621.0 SDK (C:\Program Files (x86)\Windows Kits\10).
+Determining max actions to execute in parallel (8 physical cores, 12 logical cores)
+  Executing up to 8 processes, one per physical core
+  Requested 1.5 GB memory per action, 5.81 GB available: limiting max parallel actions to 3
+Using Unreal Build Accelerator local executor to run 13 action(s)
+  Storage capacity 40Gb
+---- Starting trace: 261003_150509 ----
+UbaServer - Listening on 0.0.0.0:1345
+[1/13] Compile [x64] Module.GameAnimationSample3.12.cpp
+[2/13] Compile [x64] Module.GameAnimationSample3.11.cpp
+[3/13] Compile [x64] Module.GameAnimationSample3.13.cpp
+C:\Users\singerie\Documents\Unreal Projects\Prophecy\Source\GameAnimationSample3\Private\ProphecyJoltBloodEmitterExperiment.inl(79,26): warning C4996: 'FNiagaraEmitterInstance::GetUpdateExecutionContext': Please update your code to handle execution path for different emitter types - Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+        auto& Context=E->GetUpdateExecutionContext();
+                         ^
+[4/13] Compile [x64] ProphecyJoltJointTests.cpp
+[5/13] Link [x64] UnrealEditor-ProphecyJolt.lib
+[6/13] Link [x64] UnrealEditor-ProphecyJolt.dll
+[7/13] Compile [x64] Module.GameAnimationSample3.16.cpp
+[8/13] Link [x64] UnrealEditor-GameAnimationSample3.lib
+[9/13] Link [x64] UnrealEditor-GameAnimationSample3.dll
+[10/13] Compile [x64] ProphecyForearmStretchSetup.cpp
+[11/13] Link [x64] UnrealEditor-ProphecyEditor.lib
+[12/13] Link [x64] UnrealEditor-ProphecyEditor.dll
+[13/13] WriteMetadata GameAnimationSample3Editor.target [NoUba]
+
+Trace written to file C:/Users/singerie/AppData/Local/UnrealBuildTool/Log.uba with size 11.0kb
+Total time in Unreal Build Accelerator local executor: 72.72 seconds
+
+Result: Succeeded
+Total execution time: 74.19 seconds

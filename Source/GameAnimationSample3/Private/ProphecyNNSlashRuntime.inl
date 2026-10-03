@@ -557,6 +557,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	SetAgentTimeDilation(Handle,1.f);
 	Actor->BeginAttackFists(Attack);
 	ProphecyAttackRecovery::EnterSpecial(Actor,bHalf);
+	ProphecyForearmStretch::Begin(Actor);
 	ProphecyArmCone::BeginAttack(Actor,Attack);
 	ProphecyAttackStartFKCore::Begin(Actor,Impl->BodyNames,Impl->Parents,Impl->UpperCoreBoneNames);
 	ProphecyAttackStartHands::Begin(Actor,
@@ -802,6 +803,7 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	auto& Slash = Impl->Agents[Handle.Index].Slash;
 	if (!Slash.bActive) return false;
 	AttackEndPredictions.Remove(Actor);
+	ProphecyForearmStretch::End(Actor,bReturnToLocomotion);
 	ProphecyAttackStartFKCore::Cancel(Actor);
 	// A normal exit can precede the authored inertia window. Let that window
 	// finish against locomotion rather than dropping its remaining offset.

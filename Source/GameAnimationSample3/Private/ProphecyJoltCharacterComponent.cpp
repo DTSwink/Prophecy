@@ -20,6 +20,7 @@ static TAutoConsoleVariable<int32> CVarPhysicalFootRecoveryTrace(TEXT("Prophecy.
 #endif
 
 #include "ProphecyAgent.h"
+#include "ProphecyForearmStretch.h"
 #include "ProphecyAngularLimits.h"
 #include "ProphecyAttackFists.h"
 #include "ProphecyJoltPose.h"
@@ -607,7 +608,7 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     State->bActive = true;
     AddTickPrerequisiteActor(Agent);
     if (!PublishAuthoredTargets(GetWorld()->GetDeltaSeconds(), Error) || !PublishCompletedPose(Error)
-        || !CommitIsValid() || !SynchronizeAngularLimits(Error) || !ProphecyKickFootLeeway::Reapply(Agent,Error)
+        || !CommitIsValid() || !SynchronizeAngularLimits(Error) || !ProphecyKickFootLeeway::Reapply(Agent,Error) || !ProphecyForearmStretch::Reapply(Agent,Error)
         || !SetAttackSelfCollisionSuppressed(ProphecySwordAttackCollision::SuppressesOwner(Agent), Error)
         || !Coordinator->RegisterCharacter(*this, Error))
     {
@@ -687,6 +688,11 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
         if (!Interpolated.IsValidIndex(TargetIndex))
             return Fail(OutError, FString::Printf(TEXT("Published authored pose is missing rig bone %s."), *State->BodyNames[Index].ToString()));
         FTransform BodyWorld = Interpolated[TargetIndex];
+        if(State->BodyNames[Index]==TEXT("hand_l") || State->BodyNames[Index]==TEXT("hand_r"))
+        {
+            const int32 Parent=Names.IndexOfByKey(State->BodyNames[Index]==TEXT("hand_l")?FName(TEXT("lowerarm_l")):FName(TEXT("lowerarm_r")));
+            if(Interpolated.IsValidIndex(Parent))ProphecyForearmStretch::PhysicalTarget(Agent,State->BodyNames[Index],Interpolated[Parent],BodyWorld);
+        }
         State->AuthoredBodyScratch[Index] = BodyWorld;
         FProphecyBodyMagnetizationSettings Settings;
         Agent->GetBodyMagnetizationSettings(State->BodyNames[Index], Settings); // Missing entries intentionally use native defaults.

@@ -1,0 +1,1 @@
+connections_ok=1 status=3 asset_saved=0 gt_kinematic_bypassed=0 wrist_free_defaults_changed=1

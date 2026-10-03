@@ -10,6 +10,9 @@ class PROPHECYJOLT_API UProphecyJoltFootJointLibrary : public UBlueprintFunction
     GENERATED_BODY()
 public:
     UFUNCTION()
+    static bool SetWristRange(UObject* WorldContext,FGuid Lifetime,int32 BodySlot,int64 BodyGeneration,
+        FVector2D MinimumCm,FVector2D MaximumCm,FVector LeftAxis,FVector RightAxis,FString& OutError);
+    UFUNCTION()
     static bool SetFootExtension(UObject* WorldContext, FGuid Lifetime, int32 BodySlot, int64 BodyGeneration,
         float LeewayCm, FVector LeftCalfAxis, FVector RightCalfAxis, FString& OutError);
 

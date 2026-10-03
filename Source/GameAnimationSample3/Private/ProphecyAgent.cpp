@@ -1,4 +1,5 @@
 #include "ProphecyAgent.h"
+#include "ProphecyForearmStretch.h"
 #include "ProphecyFixedArmPhysics.h"
 #include "ProphecyHalfAttackCompensation.h"
 #include "ProphecyAttackControls.h"
@@ -2246,12 +2247,18 @@ bool AProphecyAgent::SetSimulationMode(EProphecyAgentSimulationMode NewMode)
     bResumeChaosPhysicalAfterJoltRestore = false;
     // Finish ordinary body/pose restoration before Jolt captures a HalfSim-to-Sim handoff.
     // Read the choice afterwards so an explicit Disable from a transition callback still wins.
+    const bool bWristModeChanged=NewMode!=GetSimulationMode();
+    if(bWristModeChanged)ProphecyForearmStretch::BeforeModeChange(this);
     if (!SetSimulationModeInternal(NewMode)) return false;
     if (NewMode == EProphecyAgentSimulationMode::Physical && bUseJoltForPhysicalMode
         && !IsJoltPhysicalAnimationEnabled())
     {
         if (GetSimulationMode() != EProphecyAgentSimulationMode::Physical) return false;
         return EnableJoltPhysicalAnimation();
+    }
+    if(bWristModeChanged)
+    {
+        FString Error;if(!ProphecyForearmStretch::Reapply(this,Error))UE_LOG(LogTemp,Warning,TEXT("Wrist mode handoff: %s"),*Error);
     }
     return true;
 }
@@ -2700,8 +2707,12 @@ void AProphecyAgent::ApplyAbsoluteWorldMagnetization(float DeltaSeconds)
 				const FTransform Forearm = BlendAuthoredWorldTransform(AuthoredPose, Parent,
 					AuthoredPose.PreviousComponentTransforms[Parent] * AuthoredPose.PreviousComponentWorldTransform,
 					AuthoredPose.ComponentTransforms[Parent] * AuthoredPose.ComponentWorldTransform, PoseAlpha);
-				const FVector& Offset=AuthoredPose.FixedArms.ForearmOffsets[bLeft?0:1];
-				if(!Offset.IsNearlyZero())BodyTarget.SetTranslation(Forearm.TransformPosition(Offset));
+				const FName Names[]={bLeft?FName(TEXT("lowerarm_l")):FName(TEXT("lowerarm_r")),BodySetup->BoneName};
+                FTransform Pair[]={Forearm,BodyTarget};
+                int32 PoseId;float Interval;bool Interpolate;
+                if(GetNNPoseDataSource(PoseId,Interval,Interpolate))FProphecyNNPoseStore::ApplyRigidForearms(PoseId,AuthoredPose,Names,Pair);
+                BodyTarget=Pair[1];
+                ProphecyForearmStretch::PhysicalTarget(this,BodySetup->BoneName,Forearm,BodyTarget);
 			}
 		}
         if(!InertiaNames.IsEmpty())

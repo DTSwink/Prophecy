@@ -90,6 +90,7 @@ struct GAMEANIMATIONSAMPLE3_API FProphecyNNPoseSnapshot
 class GAMEANIMATIONSAMPLE3_API FProphecyNNPoseStore
 {
 public:
+    static void SetForearmReturnLengths(int32 AgentId,FVector2D Lengths);
     // Replace only the eight cached leg transforms; preserve source time and upper pose.
     static void UpdateTickPinningLegs(int32 AgentId,TConstArrayView<int32> Indices,
         TConstArrayView<FTransform> Previous,TConstArrayView<FTransform> Current);

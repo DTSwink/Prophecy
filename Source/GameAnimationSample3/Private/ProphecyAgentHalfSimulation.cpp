@@ -1,5 +1,6 @@
 #include "ProphecyFixedArmPhysics.h"
 #include "ProphecyAgent.h"
+#include "ProphecyForearmStretch.h"
 #include "ProphecyModeTransitions.h"
 #include "ProphecyAttackFists.h"
 
@@ -145,6 +146,7 @@ bool AProphecyAgent::EnterHalfSimulation()
 	RefreshHalfSimulationDrives();
 	RestoreHalfTransitionBodies(PoseMesh, Bodies);
 	PoseMesh->WakeAllRigidBodies();
+    FString WristError;ProphecyForearmStretch::Reapply(this,WristError);
 	bPendingHalfSimulation = false;
 	SetActorTickEnabled(true);
 	return true;

@@ -1,6 +1,7 @@
 #include "ProphecyAttackStartHandInertia.h"
 #include "ProphecyAttackStartInertiaLibrary.h"
 #include "ProphecyAgent.h"
+#include "ProphecyForearmStretch.h"
 #include "ProphecyNNPoseTypes.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyHandChainMath.h"
@@ -116,7 +117,7 @@ static void Spring(FHand& M,const FTransform& Goal,double Response,double Dt)
     M.Rotation=(ProphecyPelvisInertia::RotationIncrement((R+V*Dt)*E)*Goal.GetRotation()).GetNormalized();
     M.AngularVelocity=(M.AngularVelocity-W*V*Dt)*E;
 }
-static void Solve(FState& State,TArrayView<FTransform> Pose,const FTransform& Carrier,double Dt,const FTransform& Root)
+static void Solve(FState& State,TArrayView<FTransform> Pose,const FTransform& Carrier,double Dt,const FTransform& Root,bool VariableLength=false)
 {
     const auto& C=State.Config;const double W=Weight(C,State.Elapsed),Follow=1.-W;
     const FTransform Frame=Reference(Root,Pose[State.Indices[1]]*Carrier,C.Reference);
@@ -130,7 +131,7 @@ static void Solve(FState& State,TArrayView<FTransform> Pose,const FTransform& Ca
         // by the connected arm. No whole-skeleton solve or physical force.
         const FVector LocalUpper=M.LocalUpper;
         ProphecyHandChain::Resolve(M.Accepted[0],M.Accepted[1],M.Accepted[2],Goal[0],Goal[1],Goal[2],
-            Target,LocalUpper,M.LocalPole,Follow,M.ForearmLength);
+            Target,LocalUpper,M.LocalPole,Follow,VariableLength?FVector::Distance(Goal[1].GetLocation(),Goal[2].GetLocation()):M.ForearmLength);
         if(!Goal[2].GetLocation().Equals(Target.GetLocation(),1.e-5))
         {
             const FVector Normal=(Target.GetLocation()-Goal[2].GetLocation()).GetSafeNormal();
@@ -160,7 +161,7 @@ uint8 Apply(const AProphecyAgent* A,TConstArrayView<FName> Names,TArrayView<FTra
         for(int S=0;S<2;++S)if(State->Config.Hand[S])for(int J=0;J<3;++J)
             Pose[State->Indices[2+S*3+J]]=(State->Hand[S].Accepted[J]*Frame).GetRelativeTransform(Carrier);
     }
-    else Solve(*State,Pose,Carrier,Dt>0?PoseStepSeconds:0.,Root);
+    else Solve(*State,Pose,Carrier,Dt>0?PoseStepSeconds:0.,Root,ProphecyForearmStretch::OwnsPosition(A));
     State->Applied=true;return uint8((State->Config.Hand[0]?1:0)|(State->Config.Hand[1]?2:0));
 }
 }

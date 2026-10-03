@@ -10,6 +10,14 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackWristLibrary : public UBlueprintFu
 {
     GENERATED_BODY()
 public:
+    /** Preserve checkpoint forearm compression/extension during full and half attacks.
+     * At upper-body release, capture each arm's length independently and return it
+     * to reference length over ReturnTime (60 game ticks per second). Physical
+     * wrists capture their own lengths and follow the same duration. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Animation",meta=(DefaultToSelf="Agent"))
+    static bool SetAttackForearmStretchReturn(AProphecyAgent* Agent,bool Enabled=true,
+        UPARAM(meta=(ClampMin="0")) float ReturnTime=.3f);
+
     /** NN only. Free Position bypasses fixed wrist attachment for both hands.
      * Free Rotation bypasses Set Left Hand Constraint in every mode, including attacks.
      * False restores the existing settings. Does not modify physical joints,

@@ -1,0 +1,35 @@
+{
+  "added": [
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_151 | SetAttackForearmStretchReturn"
+  ],
+  "removed": [],
+  "changed": [
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_0 | H",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_1 | Left Shift",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_10 | Left Parantheses",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_11 | \u00e7",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_12 | P",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_13 | Left Mouse Button",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_14 | Num .",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_15 | Left Alt",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_16 | Right Shift",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_18 | Num /",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_2 | Tab",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_3 | R",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_4 | Num *",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_5 | Right Mouse Button",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_6 | Caps Lock",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_7 | X",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_8 | C",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_InputKey_9 | Left Ctrl",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_10 | Set NN Wrist Freedom",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_114 | codex GT slash",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_12 | Set Attack Loco Drag",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_122 | SetSimulationMode",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_125 | Set Ghost Loco Drag",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_52 | codex GT slash",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_75 | SetSimulationMode",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_IfThenElse_5 | Branch",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_IfThenElse_7 | Branch"
+  ]
+}
