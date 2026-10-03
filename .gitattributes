@@ -5,6 +5,7 @@
 *.ubulk -filter -diff -merge -text
 *.uexp -filter -diff -merge -text
 *.onnx -filter -diff -merge -text
+*.pt -filter -diff -merge -text
 *.png -filter -diff -merge -text
 *.jpg -filter -diff -merge -text
 *.jpeg -filter -diff -merge -text

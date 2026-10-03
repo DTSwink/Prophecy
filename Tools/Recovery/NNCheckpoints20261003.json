@@ -1,0 +1,232 @@
+{
+  "date": "2026-10-03",
+  "scope": "Exact original checkpoints for installed runtime models and picker choices, plus defense export references; not every training-run save.",
+  "checkpoints": [
+    {
+      "path": "Tools/Recovery/Checkpoints/lower_body-0f2565ac72c5.pt",
+      "sha256": "0f2565ac72c5209153cbd910135209487f9ef8a0e234ed0c6d99df2ff30a299e",
+      "bytes": 4643925,
+      "contracts": [
+        "Content/locomotion/NN/prophecy_lower_body_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\RunCheckpoint20260930-135852\\source_checkpoint.pt",
+          "restore_root": "project",
+          "restore_path": "Saved/Diagnostics/RunCheckpoint20260930-135852/source_checkpoint.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/lower_body_walk_july5_best-860934962ad9.pt",
+      "sha256": "860934962ad94894e5af1262dd403d85da46733e02a6be4afc09cf5e1197f64e",
+      "bytes": 4532298,
+      "contracts": [
+        "Content/locomotion/NN/prophecy_lower_body_walk_july5_best_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\runs\\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final\\checkpoints\\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final_best.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/runs/20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final/checkpoints/20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final_best.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/lower_body_walk_july5-8bae21c5b315.pt",
+      "sha256": "8bae21c5b3159d69726cd98867c85000b51d566012708eed36374b2b5a9d4c79",
+      "bytes": 4532298,
+      "contracts": [
+        "Content/locomotion/NN/prophecy_lower_body_walk_july5_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\runs\\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final\\checkpoints\\20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final_latest.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/runs/20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final/checkpoints/20260705_142401_ik_walk_finetune_legcap30_idlepin03_from_final_latest.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/lower_body_walk-5fe44ca120cf.pt",
+      "sha256": "5fe44ca120cf79bf34cdcaa4f7227c205a35039322541aab2e100637a9176a3a",
+      "bytes": 4542521,
+      "contracts": [
+        "Content/locomotion/NN/prophecy_lower_body_walk_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\runs\\20260608_222748_ik_resume_inertiax10_latest\\checkpoints\\20260608_222748_ik_resume_inertiax10_latest_latest.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/runs/20260608_222748_ik_resume_inertiax10_latest/checkpoints/20260608_222748_ik_resume_inertiax10_latest_latest.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/slash-3c68cbeec601.pt",
+      "sha256": "3c68cbeec601b814d569c53c577812402b17cb4f94a931d657bcf3f8f9b5a61f",
+      "bytes": 8993770,
+      "contracts": [
+        "Content/locomotion/NN/prophecy_slash_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\runs\\20260922_latest_chained_variants\\best_total_172k175k_20260924\\checkpoint_step174664_3c68cbeec601.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/runs/20260922_latest_chained_variants/best_total_172k175k_20260924/checkpoint_step174664_3c68cbeec601.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/upper_body-02e73800b8e6.pt",
+      "sha256": "02e73800b8e63dc1b79e3e9c67c0a5f269eb830d3a330fe81c2d11480ac6f5b4",
+      "bytes": 5493543,
+      "contracts": [
+        "Content/locomotion/NN/prophecy_upper_body_runtime.json",
+        "Content/locomotion/NN/Upper82500/prophecy_upper_body_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\UpperCheckpoint-20261001-145527\\source_checkpoint.pt",
+          "restore_root": "project",
+          "restore_path": "Saved/Diagnostics/UpperCheckpoint-20261001-145527/source_checkpoint.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/Attack160664-73a549008e88.pt",
+      "sha256": "73a549008e883e3b945ce5ebdc1597c75a1a79a816e59c67e131a7af8a04a143",
+      "bytes": 8993770,
+      "contracts": [
+        "Content/locomotion/NN/Attack160664/prophecy_slash_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\runs\\20260922_latest_chained_variants\\latest_predictive_pin_x5_20260924_refresh1\\checkpoint_step160664_73a549008e88.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/runs/20260922_latest_chained_variants/latest_predictive_pin_x5_20260924_refresh1/checkpoint_step160664_73a549008e88.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/Attack184064-e0759ba5039d.pt",
+      "sha256": "e0759ba5039db0db26f5dd17d58e74b72f1dc092f9f7bf6f54e4a622677f7d7b",
+      "bytes": 8993770,
+      "contracts": [
+        "Content/locomotion/NN/Attack184064/prophecy_slash_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\runs\\20260922_latest_chained_variants\\latest_predictive_pin_x5_20260924_refresh2\\checkpoint_step184064_e0759ba5039d.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/runs/20260922_latest_chained_variants/latest_predictive_pin_x5_20260924_refresh2/checkpoint_step184064_e0759ba5039d.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/AttackSeptember20-6a76321d6e15.pt",
+      "sha256": "6a76321d6e1525c9e6bcfcedcd0ce46676b03dd15dd277c2bd87f6c834239072",
+      "bytes": 9185898,
+      "contracts": [
+        "Content/locomotion/NN/AttackSeptember20/prophecy_slash_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\runs\\done slash 2 2\\checkpoints\\good.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/runs/done slash 2 2/checkpoints/good.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/dodge-256035eb190f.pt",
+      "sha256": "256035eb190f0b2d683ea8089b3232936ee7cc93ec4d69aef6034b12a38aafb1",
+      "bytes": 9415334,
+      "contracts": [
+        "Content/locomotion/NN/defense/dodge_checkpoint.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\dodge_step_205525.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/slashes2/saved_defense_checkpoints/dodge_step_205525.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/Upper83750-3156bd02241d.pt",
+      "sha256": "3156bd02241d4516af3a02b749bda7dd31687f009d406a2c87f7f410d37bb680",
+      "bytes": 5496573,
+      "contracts": [
+        "Content/locomotion/NN/Upper83750/prophecy_upper_body_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\UpperCheckpoint83750-20261002-013908\\source_checkpoint.pt",
+          "restore_root": "project",
+          "restore_path": "Saved/Diagnostics/UpperCheckpoint83750-20261002-013908/source_checkpoint.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/Upper85750-f8fbd5ded77c.pt",
+      "sha256": "f8fbd5ded77c8b691043e6231f3c55d2baa1333b3f7938603275e22cc1210a40",
+      "bytes": 5495229,
+      "contracts": [
+        "Content/locomotion/NN/Upper85750/prophecy_upper_body_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\UpperCheckpoint-20261001-174707\\source_checkpoint.pt",
+          "restore_root": "project",
+          "restore_path": "Saved/Diagnostics/UpperCheckpoint-20261001-174707/source_checkpoint.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/Upper86750-cad549a41d20.pt",
+      "sha256": "cad549a41d20a075087b7e8df3dd47ee377eb82c270eb041fa21532cb8bd8f40",
+      "bytes": 5496317,
+      "contracts": [
+        "Content/locomotion/NN/Upper86750/prophecy_upper_body_runtime.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\UpperCheckpoint86750-20261001-230751\\source_checkpoint.pt",
+          "restore_root": "project",
+          "restore_path": "Saved/Diagnostics/UpperCheckpoint86750-20261001-230751/source_checkpoint.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/parry_step_770015-f4ee679611e1.pt",
+      "sha256": "f4ee679611e1013d72b5587e95c87798f92be58b0dfe2826ade6944b31107e3e",
+      "bytes": 5382769,
+      "contracts": [
+        "Tools/NN/StageDefenseReferences.py"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\parry_step_770015.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/slashes2/saved_defense_checkpoints/parry_step_770015.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/dodge_step_198044-2a4335520434.pt",
+      "sha256": "2a433552043490f7172e2df2aa5d007b4afbbf3f4f51a8e77d94cb120b5c8c4b",
+      "bytes": 9412774,
+      "contracts": [
+        "Tools/NN/StageDefenseReferences.py"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\dodge_step_198044.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/slashes2/saved_defense_checkpoints/dodge_step_198044.pt"
+        }
+      ]
+    }
+  ]
+}

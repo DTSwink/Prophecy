@@ -2,14 +2,14 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 5024,
-  "bytes": 339704173,
+  "file_count": 5041,
+  "bytes": 440329191,
   "files": [
     {
       "path": ".gitattributes",
-      "git_blob": "342a73d73be4ef3a011564074257a296d80c0d18",
-      "bytes": 595,
-      "sha256": "23830ab22ec109d58073eee12a4cc0c65b0a55164894f83daf6798fdf8085cce"
+      "git_blob": "40be660ea759964e5cdc5fb2b06a60233dc21f3b",
+      "bytes": 627,
+      "sha256": "c170920b472700ebc73286118eae35d40c13c13e9ba9e39e2896e2e7e70f242b"
     },
     {
       "path": ".gitignore",
@@ -6109,9 +6109,9 @@
     },
     {
       "path": "Docs/Recovery.md",
-      "git_blob": "25bf950f9e689e51a1c9545745de63624900bdd2",
-      "bytes": 5985,
-      "sha256": "a21aba100acbef522616f448bc68a114a5e6dfa7b2fcf160b7e09a9dd657f5b9"
+      "git_blob": "79470e29f8f8f5590e9631d66ceb5acc5b7113ef",
+      "bytes": 6768,
+      "sha256": "27fcacdfff11a111bd0f78d6cdf17ff235795c9f4443e9853e759910fcceee11"
     },
     {
       "path": "Docs/RegionalSpecialRecovery.md",
@@ -30120,10 +30120,112 @@
       "sha256": "e3bd2ed23513835833b8ed5749f63182efb5eb0e4129b03e1a3c79833db49094"
     },
     {
+      "path": "Tools/Recovery/Checkpoints/Attack160664-73a549008e88.pt",
+      "git_blob": "56ea8a8f75d329e6c2c635cf8b813c6077b710f0",
+      "bytes": 8993770,
+      "sha256": "73a549008e883e3b945ce5ebdc1597c75a1a79a816e59c67e131a7af8a04a143"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/Attack184064-e0759ba5039d.pt",
+      "git_blob": "59f72e5d96013b296cdc5c7c262dfc05f896c80d",
+      "bytes": 8993770,
+      "sha256": "e0759ba5039db0db26f5dd17d58e74b72f1dc092f9f7bf6f54e4a622677f7d7b"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/AttackSeptember20-6a76321d6e15.pt",
+      "git_blob": "f241aadcf35f8f77e019bc3622fdce52f28873b3",
+      "bytes": 9185898,
+      "sha256": "6a76321d6e1525c9e6bcfcedcd0ce46676b03dd15dd277c2bd87f6c834239072"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/Upper83750-3156bd02241d.pt",
+      "git_blob": "51347add36c01d4bf2e28ca49a3a39a56fd84da1",
+      "bytes": 5496573,
+      "sha256": "3156bd02241d4516af3a02b749bda7dd31687f009d406a2c87f7f410d37bb680"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/Upper85750-f8fbd5ded77c.pt",
+      "git_blob": "87f85204a7df51555524ce53b20576cb0aa50c47",
+      "bytes": 5495229,
+      "sha256": "f8fbd5ded77c8b691043e6231f3c55d2baa1333b3f7938603275e22cc1210a40"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/Upper86750-cad549a41d20.pt",
+      "git_blob": "746adeb8b61bdb574e64606269c64a237d4fc415",
+      "bytes": 5496317,
+      "sha256": "cad549a41d20a075087b7e8df3dd47ee377eb82c270eb041fa21532cb8bd8f40"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/dodge-256035eb190f.pt",
+      "git_blob": "417aa2567f1cb6f47f3bfb5d67af4228fe052adb",
+      "bytes": 9415334,
+      "sha256": "256035eb190f0b2d683ea8089b3232936ee7cc93ec4d69aef6034b12a38aafb1"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/dodge_step_198044-2a4335520434.pt",
+      "git_blob": "75a173fa9cbe6e51bce10a4f64d8450c66410cdf",
+      "bytes": 9412774,
+      "sha256": "2a433552043490f7172e2df2aa5d007b4afbbf3f4f51a8e77d94cb120b5c8c4b"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/lower_body-0f2565ac72c5.pt",
+      "git_blob": "26dacb823acfff591c94817ef64f4b498039e0fd",
+      "bytes": 4643925,
+      "sha256": "0f2565ac72c5209153cbd910135209487f9ef8a0e234ed0c6d99df2ff30a299e"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/lower_body_walk-5fe44ca120cf.pt",
+      "git_blob": "8b741752fb2814d1aaaea8a7212cc404877372df",
+      "bytes": 4542521,
+      "sha256": "5fe44ca120cf79bf34cdcaa4f7227c205a35039322541aab2e100637a9176a3a"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/lower_body_walk_july5-8bae21c5b315.pt",
+      "git_blob": "008846027cf0eed5bf3ac2f57a08910d393a9d7f",
+      "bytes": 4532298,
+      "sha256": "8bae21c5b3159d69726cd98867c85000b51d566012708eed36374b2b5a9d4c79"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/lower_body_walk_july5_best-860934962ad9.pt",
+      "git_blob": "354f1065486d4dc726243a15afe75c0895b913dc",
+      "bytes": 4532298,
+      "sha256": "860934962ad94894e5af1262dd403d85da46733e02a6be4afc09cf5e1197f64e"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/parry_step_770015-f4ee679611e1.pt",
+      "git_blob": "9f04a0be96f4791b782ea85ac5b501da08780b5d",
+      "bytes": 5382769,
+      "sha256": "f4ee679611e1013d72b5587e95c87798f92be58b0dfe2826ade6944b31107e3e"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/slash-3c68cbeec601.pt",
+      "git_blob": "7df76ac5b22e06424c51fb6fd7579594848e81c2",
+      "bytes": 8993770,
+      "sha256": "3c68cbeec601b814d569c53c577812402b17cb4f94a931d657bcf3f8f9b5a61f"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/upper_body-02e73800b8e6.pt",
+      "git_blob": "62e730bfc245bc12f8627f4a89526984c16b249f",
+      "bytes": 5493543,
+      "sha256": "02e73800b8e63dc1b79e3e9c67c0a5f269eb830d3a330fe81c2d11480ac6f5b4"
+    },
+    {
       "path": "Tools/Recovery/ExternalAssets20261003.json",
       "git_blob": "9cebbf454700a82e6a57b345057e9ab8b9156d82",
       "bytes": 1196231,
       "sha256": "e34b95ae0dee767c79270eeb625c9c22e4171ba38bfef58d24988c7a22dd7b95"
+    },
+    {
+      "path": "Tools/Recovery/NNCheckpoints20261003.json",
+      "git_blob": "02ab5bacf69f84f14f890f0b78f248ecb030f747",
+      "bytes": 10487,
+      "sha256": "2ef6794419481120fd13a6d2c292ee8979c1306442fdc05402d778b2fe8f99f6"
+    },
+    {
+      "path": "Tools/Recovery/RestoreNNCheckpoints.py",
+      "git_blob": "62acc6831b8bb0650df2c256f5f5473e6c589cc8",
+      "bytes": 2927,
+      "sha256": "bce51f518b070edebf8f4d5e5b2c6dbde5e761ae2ba239ff4c82f3ace683a70a"
     },
     {
       "path": "Tools/Recovery/StandaloneSimSettings/camera_settings.json",
