@@ -1,3 +1,4 @@
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyAttackStartFKCore.h"
 #include "ProphecyAttackStartInertiaLibrary.h"
 #include "ProphecyAgent.h"
@@ -327,3 +328,13 @@ bool FEntryFKCoreClockTest::RunTest(const FString&)
     Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif
+
+
+void ProphecyNNModifierDebug::EntryCore(FReport& R)
+{
+    using namespace ProphecyAttackStartFKCore;
+    const auto* S=States.Find(R.Agent);if(!R.Attack || !S)return;
+    R.Add(TEXT("EntryCore"),R.Half?TEXT("POSE"):TEXT("POSE+HISTORY"),TEXT("Attack-start FK core inertia"),
+        FString::Printf(TEXT("weight %.3f | response %.3g | elapsed %.3f / %.3f%s"),Weight(S->Config,S->Elapsed),
+        S->Config.Response,S->Elapsed,double(S->Config.Hold)+S->Config.Blend,S->Applied?TEXT(""):TEXT(" | entry seed, awaiting prediction")));
+}

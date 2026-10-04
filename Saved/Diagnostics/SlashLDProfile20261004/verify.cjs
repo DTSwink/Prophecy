@@ -1,0 +1,13 @@
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const p=__dirname,h=path.resolve(p,'../../../Source/GameAnimationSample3/Private/ProphecyFKReturnData.h');
+const before=fs.readFileSync(p+'/header-before.h','utf8'),after=fs.readFileSync(h,'utf8'),s=JSON.parse(fs.readFileSync(p+'/lab-state.json'));
+const select=t=>t.split(/\r?\n/).filter(l=>l.includes('{TEXT("slashLD")'));
+assert.equal(select(before).length,1);assert.equal(select(after).length,1);
+assert.equal(before.replace(select(before)[0],''),after.replace(select(after)[0],''),'Change escaped slashLD row');
+const fields=select(after)[0].match(/\),(.+),true,\{(.+)\}\},/);assert(fields);
+const numbers=t=>t.split(',').map(x=>Number(x.replace(/f$/,'')));
+assert.deepEqual(numbers(fields[1]),[s.attackReturnTimes.slashLD,s.attackReturnEasing.slashLD,s.attackMainInertia.slashLD,s.attackInertiaTiming.slashLD.hold,s.attackInertiaTiming.slashLD.decay,s.attackAngleTimeSeconds.slashLD]);
+assert.deepEqual(numbers(fields[2]),['spine','clavicle','upperarm','lowerarm','neck_01','neck_02','head'].map(k=>s.attackBoneInertia.slashLD[k]));
+assert.equal(s.attackInertiaTiming.slashLD.world,true);assert.equal(s.attackInertiaTiming.slashLD.spring,false);
+const result={onlyChangedAttack:'slashLD',other15Profiles:'byte-identical',canonicalIdle:'byte-identical',before:select(before)[0],after:select(after)[0],matchesCapturedLab:true};
+fs.writeFileSync(p+'/verification.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));

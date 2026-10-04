@@ -1,4 +1,5 @@
 #include "ProphecyAttackMotionInertiaLibrary.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyAttackMotionInertia.h"
 #include "ProphecyAgent.h"
 #include "ProphecyBlendClock.h"
@@ -334,12 +335,16 @@ bool FAttackMotionReturnHandoffTest::RunTest(const FString&)
     }
     ProphecyFKReturn::FCurve Curve;ProphecyFKReturn::FProfile Profile;
     TestTrue(TEXT("Return curve prepares from accepted samples"),ProphecyFKReturn::Prepare(Curve,Profile,1,Names,Parents,FinalPrevious,FinalCurrent,float(Step)));
-    for(int32 J=0;J<16;++J)
+    // The new seed includes world motion and subtracts the idle/parent return
+    // velocity. Check the resulting initial world motion, not the retired local delta.
+    Curve.SetAlphaHold(1.f);auto Near=FinalCurrent;constexpr float Epsilon=1.e-5f;
+    Curve.Apply(Epsilon,Near);
+    for(const auto& B:Curve.Bones)if(B.Group<ProphecyFKReturn::GroupCount && Profile.Weights[B.Group]*Profile.Inertia>0)
     {
-        const auto& B=Curve.Bones[J];
-        const FQuat P=FinalPrevious[B.Parent].GetRotation().Inverse()*FinalPrevious[B.Index].GetRotation();
-        const FQuat C=FinalCurrent[B.Parent].GetRotation().Inverse()*FinalCurrent[B.Index].GetRotation();
-        TestTrue(TEXT("Return momentum is measured from filtered motion"),Curve.Bones[J].Velocity.At(float(Step)).Equals(FQuat4f(P.Inverse()*C),1.e-5f));
+        ProphecyFKReturn::FArc Rate;
+        Rate.Set(FQuat4f(FinalCurrent[B.Index].GetRotation()*FinalPrevious[B.Index].GetRotation().Inverse()),1.f/float(Step));
+        const FQuat4f Actual(Near[B.Index].GetRotation()*FinalCurrent[B.Index].GetRotation().Inverse());
+        TestTrue(TEXT("Return continues filtered world angular motion"),Actual.Equals(Rate.At(Epsilon),2.e-5f));
     }
     const auto Accepted=Current;
     TestFalse(TEXT("Hit cannot apply attack inertia inside return"),Apply(A,Current,true,true));
@@ -348,3 +353,14 @@ bool FAttackMotionReturnHandoffTest::RunTest(const FString&)
 }
 
 #endif
+
+
+void ProphecyNNModifierDebug::AttackMotion(FReport& R)
+{
+    using namespace ProphecyAttackMotionInertia;
+    const auto* S=States.Find(R.Agent);if(!R.Attack || !S || !S->FilteringNow)return;
+    R.Add(TEXT("AttackMotion"),TEXT("POSE+HISTORY"),TEXT("Attack motion inertia"),
+        FString::Printf(TEXT("%s | response %.4g | Armed+%d ticks | %s"),
+        S->Config.CoreOnly&&!S->SawHit?TEXT("core, no clavicles/arms"):TEXT("whole upper"),S->Config.Response,S->Config.After,
+        S->SawHit?TEXT("after Hit"):S->SawArmed?TEXT("armed"):TEXT("pre-armed")));
+}

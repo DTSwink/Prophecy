@@ -1,4 +1,5 @@
 #include "ProphecyPhysicalFootTargetLibrary.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyPhysicalFootTarget.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNDefenseLibrary.h"
@@ -222,3 +223,26 @@ bool FProphecyPhysicalFootLeewayTest::RunTest(const FString&)
     return true;
 }
 #endif
+
+
+void ProphecyNNModifierDebug::ClampBlends(FReport& R)
+{
+    using namespace ProphecyClampEase;
+    const auto* S=States.Find(R.Agent);
+    const bool Physical=R.Agent->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic;
+    static const TCHAR* Names[]={TEXT("Foot reach"),TEXT("Calf length"),TEXT("Physical calf"),TEXT("Physical foot target"),TEXT("Left wrist")};
+    if(S)for(int32 I=0;I<int32(EChannel::Count);++I)
+    {
+        const auto& C=S->Values[I];if(!C.Active || ((I==2 || I==3) && !Physical))continue;
+        const FString Key=FString::Printf(TEXT("ClampTighten%d"),I);
+        R.Add(*Key,TEXT("CONSTRAINT"),*FString::Printf(TEXT("%s tightening"),Names[I]),FString::Printf(TEXT("%.3f -> %.3f | %.3f / %.3f"),C.Value,C.Target,C.Elapsed,Duration));
+    }
+    if(Physical)
+    {
+        const auto Mode=R.Defense?(R.Dodge?EProphecyAgentState::Dodging:EProphecyAgentState::Parrying):R.Attack&&!R.Half?EProphecyAgentState::Attacking:EProphecyAgentState::Locomotion;
+        const auto* C=ProphecyPhysicalFootTarget::Overrides.Find(R.Agent);
+        const float Foot=Current(R.Agent,EChannel::PhysicalFoot,C?C->For(Mode):0);
+        const float Calf=Current(R.Agent,EChannel::PhysicalCalf,ProphecyPhysicalFootTarget::CalfLeewayFor(R.Agent,Mode));
+        R.Add(TEXT("PhysicalFootTarget"),TEXT("PHYSICS"),TEXT("Physical foot target / calf joint limits"),FString::Printf(TEXT("foot offset %.3f cm | calf allowance %.3f cm"),Foot,Calf));
+    }
+}

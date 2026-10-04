@@ -3,13 +3,152 @@
 The current node names are **Set Attack FK Return** and **Set Attack FK Return
 Profile**, as specified by the user. Native function names remain unchanged.
 
+## Per-attack Hold / Trim (October 4)
+
+**Set Attack FK Return** now has one Vector2D input for each of the 16 attack
+families. **X = Alpha Hold, Y = Trim**, both fractions from 0 to 1. Every input
+defaults to **(0.1, 0.34)**. Enabled and NN Takeover Coefficient remain shared.
+These replace the old shared Alpha Hold and Trim scalar pins; lab motion profiles
+on Set Attack FK Return Profile are independent and unchanged.
+
+Trim 0.34 puts the NN endpoint at 66% of that attack's effective return duration
+(including its angle-based extra seconds). Hold 0.1 keeps full FK for the first
+10% of that shortened window, then the NN blends in over the remaining 90%.
+The FK/inertia curve keeps its original time scale. Values latch at attack end;
+changing a pair does not retime an already running return. Disable still cancels
+immediately. Reset snapshots copy all 16 pairs; removal/world cleanup clears them.
+Invalid components reject the entire update without partially changing families.
+
+The same defaults also apply to an agent that has never called the node. Existing
+placed nodes are refreshed to these requested defaults while preserving Enabled,
+the coefficient, Agent and execution wiring. The prior Hold1/Trim0 parity setup
+below documents the port test, not the new node defaults.
+
+Validation: normal Development Editor build succeeded; all 12 focused tests pass,
+including independent timing for all 16 families, defaults without a node call,
+atomic validation, latched timing, reset, full trim isolation, existing curve
+parity and accepted-pose clocks. Both placed node instances compiled and saved;
+an independent graph comparison found only their replaced timing inputs changed.
+The user's current Enabled/coeff1/Agent/execution wiring and unrelated edits were
+preserved. Map not saved, TestNN reopened normally with DPI awareness and no Play.
+An initial interactive test run hit Unreal's CEF GPU assertion when automation
+started; isolated headless tests passed, and the migration was repeated and saved
+in the recovered editor. No project renderer/browser settings were changed.
+Evidence: `Saved/Diagnostics/FKPerAttackTiming20261004/` (`tests-headless/index.json`,
+`graph-verification.json`, `complete.json`, and pre-change live Blueprint backup).
+
+## Accepted October 4 lab profiles
+
+The standalone lab backup was pushed as `a795dce` before this port. These values
+come from the registered desktop, including its per-attack main inertia. All
+profiles use **Blend + inertia, World space**. Continuous spring stays in the
+standalone lab and is not implemented in Unreal.
+
+| Attack | Base s | Main inertia | Easing | Inertia hold | Decay | Angle s/90deg | Bone weights: spine, clavicle, upperarm, lowerarm, neck1, neck2, head |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| headbutt | 0.23 | 0.25 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| hookL | 0.25 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| hookR | 0.25 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| jabL | 0.24 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| jabR | 0.23 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| KickL | 0.23 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| KickR | 0.22 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| overL | 0.22 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| overR | 0.22 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| pike | 0.28 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| slashL | 0.28 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| slashLD | 0.37 | 1.00 | 0.00 | 0.08 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| slashLU | 0.32 | 0.58 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| slashR | 0.28 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| slashRD | 0.27 | 1.00 | 0.87 | 0.15 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+| slashRU | 0.28 | 1.00 | 0.87 | 0.05 | 0.80 | 0.29 | 0.31, 1.00, 1.00, 0.36, 1.00, 1.00, 1.00 |
+
+The later October 4 slashLD-only tuning import updates that row from the live
+lab state: base .37, inertia 1, easing 0, inertia hold .08. All other profile rows
+and canonical idle data are byte-identical to the pre-import header. In
+particular, the separate lab slashRU angle-time edit to .20 was not imported;
+Unreal retains .29. Blueprint Alpha Hold/Trim and forearm stretch recovery were
+not changed. Evidence: `Saved/Diagnostics/SlashLDProfile20261004/`.
+
+At handoff, effective duration = base seconds + angle seconds * initial
+spine_01-to-pelvis rotation departure from canonical idle / 90 degrees. This
+value is latched, then Trim shortens the NN takeover window as before. Changing
+the base time does not change the added seconds. All duration uses unpaused
+game ticks / 60. Spine yaw is already present in Unreal's outgoing pose.
+
+The independent inertia envelope uses x=elapsed/effective duration. With a
+positive inertia hold H, phase=clamp((x-H)/(1-H),0,1)^2; with H=0, phase=x.
+Momentum is elapsed*(1-phase)^3*exp(-decay*phase/(.025+.45*main*bone)).
+This inertia hold is separate from **Alpha Hold**, which controls NN takeover.
+Hands remain excluded from their own angular and offset inertia.
+
+Initial angular rates are measured in the published world frame, with initial
+idle-pull velocity removed from the momentum correction. Active world-inertia
+bones rotate around fixed world axes independently of parent inertia; zero-weight
+bones and hands inherit their actual parents. For active world inertia, the captured
+pelvis orientation blends toward the moving pelvis with the same idle-return blend.
+This avoids adding the pelvis angular rate twice at entry while still ending at
+parent-local idle; the lower-body pose itself is not modified. FK offsets retain outgoing lengths.
+The curve is sampled with stack arrays, cached arcs and shared group exponentials;
+there is no iterative spring solve or second inference. Runtime uses the actual
+published interpolation's angular rate, including carrier rotation, while the
+lab parity fixture supplies the lab authored sampler's exact terminal derivative.
+Both use the same return math. This distinction matters for nonlinear forearm
+reconstruction between two authored lab frames.
+
+**Set Attack FK Return Profile** adds advanced Inertia Hold, Inertia Decay,
+World Inertia and Spine Angle Time pins. These default to the neutral legacy
+settings for existing explicit overrides. The built-in 16 profiles above apply
+when no override is set. The old active test-harness override call is disconnected
+so it does not overwrite the accepted profiles; its old values remain for reference.
+The initial port comparison retained Alpha Hold=1 and Trim=0. The later per-attack
+Vector2D controls above supersede that comparison setup.
+
+The native curve and accepted-pose pipeline are tested separately from the scene.
+Unreal still presents interpolated policy endpoints and retains moving lower-body
+and physical behavior, so identical source pose/velocity is required when making
+numeric lab equivalence comparisons. A different attack rollout is not an
+identical reference trajectory.
+
+October 4 port verification: normal Development Editor build succeeded, then all
+10 focused native tests passed in the reopened TestNN editor. The 320-variant
+fixture covers 2,560 pure lab samples (maximum error 0.0002542 cm / 0.0003236
+degrees) and 6,032 full runtime samples with Alpha Hold 1 / Trim 0 (maximum
+error 0.0011554 cm / 0.0003181 degrees). The isolated sampling benchmark measured
+4.204 microseconds per pose on this laptop, including the test's pose copy, not
+the NN/physics/rendering cost. Tests also check moving carrier/pelvis behavior,
+additive angle timing, no local hand inertia, lower isolation, accepted feedback,
+clock/trim/reset/lifecycle, the attack-inertia handoff, and exact NN endpoints.
+The float deadline comparison was corrected to avoid an extra FK evaluation
+when elapsed equals the endpoint but elapsed * inverse duration rounds below 1.
+
+The existing scene ran for 600 unpaused ticks with no runtime errors: three
+agents, 450 finite 25-bone pose samples, four completed slashR returns. Audit
+confirmed the imported values, world-rate capture, Alpha Hold 1 / Trim 0, NN
+weight 0 throughout each return and 1 at completion. The upgraded Blueprint
+compiled with status 3 and no stale native/pin types, was saved, and was checked
+again after a normal-DLL restart. Only the two profile nodes gained advanced
+pins and the old active override's execution wire was disconnected; original
+values and other wiring were preserved. The map was not saved. Play and audit
+were stopped; TestNN remains open. This is numerical and integration validation,
+not a claim that every physics-driven scene frame is identical to the frozen lab.
+
+Evidence: `Saved/Diagnostics/FKLabPort20261004/`, especially `desktop-parity.json`,
+`tests-complete/index.json`, `graph-verification.json`, `scene-verification.json`,
+`save-receipt.json` and `build-complete.log`. The backup JavaScript also reproduced
+the actual registered desktop's 71-sample slashLD variant 17 capture within
+4.58e-16 m / 1.54e-15 radians before porting. Lab commit: `a795dce` on
+`origin/codex/standalone-sim`. A low-disk startup block was cleared by removing
+4.53 GB of inventoried obsolete project Live Coding patch outputs only, after
+normal DLLs had rebuilt successfully; source/assets/normal DLLs were preserved.
+
 ## Trim (October 4)
 
-**Set Attack FK Return** has a shared **Trim** input, default0, range0–1. It removes
-that fraction from the end of every attack family's return. Effective end time is
-`profile ReturnTime * (1 - Trim)`: 0 preserves the full return; .5 reaches full NN
-at the original midpoint; 1 bypasses return entirely. This is a global setting
-on the agent, not a per-family profile override.
+Originally **Set Attack FK Return** had a shared Trim scalar; it is now the Y
+component of each family's vector above. It removes that fraction from the end
+of that family's return. Effective end time is `effective ReturnTime * (1 - Trim)`:
+0 preserves the full return; .5 reaches full NN at the original midpoint;
+1 bypasses return entirely. The current default is .34 independently per family.
 
 The FK path, easing and inertia decay retain their original time scale. Only NN
 takeover is normalized to the shorter window. Alpha Hold remains a fraction of
@@ -47,20 +186,20 @@ The accepted Attack Recovery Lab return is now the default upper-body handoff fo
 
 The reported slashR hand-velocity interruption around tick626 reproduced at the tick624 handoff in the current scene. Before the exit, right upperarm/lowerarm local rotations advanced 6.7959/10.6054 degrees per policy interval; the first returning interval advanced both by zero. The first new endpoint sampled curve time zero, repeating the outgoing arm pose for two game ticks while the pelvis continued. Captured momentum was present but could not affect that zero-time sample.
 
-The handoff now includes the policy scheduler’s already-spent game ticks since the outgoing publication. Natural exits start the next endpoint at 2/60; explicit stops between boundaries include only the spent portion and consume subsequent ticks normally. The clock is bounded to the remaining original deadline. This changes neither the lab curve nor inertia/profile settings and uses no world-time differences. Snapshot reads keep the original outgoing endpoints; the new sample feeds back through the existing accepted-pose path.
+The handoff now includes the policy schedulerâ€™s already-spent game ticks since the outgoing publication. Natural exits start the next endpoint at 2/60; explicit stops between boundaries include only the spent portion and consume subsequent ticks normally. The clock is bounded to the remaining original deadline. This changes neither the lab curve nor inertia/profile settings and uses no world-time differences. Snapshot reads keep the original outgoing endpoints; the new sample feeds back through the existing accepted-pose path.
 
 Evidence: `Saved/Diagnostics/FKExit626/` and `Saved/Diagnostics/Knee202/fk_exit626.json`. Live Coding loaded 18:41:06 UTC. The 660-tick replay confirms all four exits advance immediately; at tick624 the right upperarm/lowerarm advance 12.4491/5.0808 degrees in the first returning interval and hand Z changes -1.6040 cm (previously +0.9492 cm from pelvis motion with frozen arm locals). Owned Play ended. All seven focused checks passed: six existing FK/clock checks at18:42:31 UTC, and ExitInterval at18:48:22 UTC. ExitInterval covers ages0/1/2, 5/60/120FPS, immediate captured momentum with NN held off, original outgoing history, duplicate reads, exact deadline and timer retirement. Its initial overly strict comparison was corrected to the existing LabParityAndCost position budget after measuring the float local-cache round trip:0.000140036cm / 4.21468e-8rad. Final test-only Live Coding loaded18:48:04 UTC; gameplay source unchanged since the successful replay. No Blueprint/profile/asset changes. Normal DLL rebuild remains required before cold launch.
 
 ## Blueprint controls
 
-- **Set Lab Attack FK Return**: Agent, Enabled (true), NN Takeover Coefficient (1), **Alpha Hold (0)**. Hold .5 leaves full lab control for the first half, then blends to the NN over the second half. Hold 1 keeps lab control until the deadline, then uses the NN. The FK motion continues throughout the hold. Configure before attack end; settings latch at handoff, while disabling cancels immediately.
-- **Set Lab Attack FK Return Profile**: Agent, Attack, Return Time, Inertia, Easing, Bone Inertia. `None` applies to all attack families and clears previous family overrides. Otherwise override that family only. Changes affect the next return. The optional Bone Inertia struct uses symmetric Spine, Clavicle, UpperArm, LowerArm, Neck01, Neck02 and Head weights. All five spines share one weight. Effective inertia is the main Inertia multiplied by that weight.
+- **Set Attack FK Return**: Agent, Enabled (true), NN Takeover Coefficient (1), and 16 attack vectors, each **X=Hold .1 / Y=Trim .34**. Hold .5 leaves full lab control for the first half of that family's trimmed window, then blends to the NN over the second half. Hold 1 keeps lab control until its deadline, then uses the NN. The FK motion continues throughout the hold. Configure before attack end; settings latch at handoff, while disabling cancels immediately.
+- **Set Attack FK Return Profile**: Agent, Attack, Return Time, Inertia, Easing, Bone Inertia. `None` applies to all attack families and clears previous family overrides. Otherwise override that family only. Changes affect the next return. The optional Bone Inertia struct uses symmetric Spine, Clavicle, UpperArm, LowerArm, Neck01, Neck02 and Head weights. All five spines share one weight. Effective inertia is the main Inertia multiplied by that weight.
 
-The accepted lab profiles were imported for all 16 families: return time **0.26 seconds**, inertia **0.51**, easing **0.12**; spine **0**, clavicle **0.19**, upperarm **1**, lowerarm **0.63**, neck01/neck02/head **1**. The visualization's yaw slider is not an additional Unreal correction: real half-attack mounting is already present in the outgoing pose.
+The initial October 2 profiles, superseded by the October 4 table above, were imported for all 16 families: return time **0.26 seconds**, inertia **0.51**, easing **0.12**; spine **0**, clavicle **0.19**, upperarm **1**, lowerarm **0.63**, neck01/neck02/head **1**. The visualization's yaw slider is not an additional Unreal correction: real half-attack mounting is already present in the outgoing pose.
 
 For `x = clamp(elapsed / return time, 0, 1)` and hold `h < 1`, the NN weight is `clamp((x-h)/(1-h),0,1)^coefficient`. Hold 1 has weight zero before the deadline and one at completion. With hold .5, coefficient 1 gives 50% NN at 75% of the total window; coefficient 2 gives 25% there. Hold zero retains the previous curve. The coefficient must be finite and at least .01; hold must be finite in [0,1]. Return time zero bypasses recovery. **Time follows the project-wide golden rule: elapsed = unpaused game ticks / 60**, independent of FPS, DeltaSeconds and time dilation. A hitch spends one tick. The .26 default completes on tick16, about3.2 real seconds at5FPS. This corrects the initial world-time implementation.
 
-Easing controls the lab-to-idle path independently: `blend = lerp(x, quinticSmoothstep(x), easing)`. Each inertial bone adds the lab's outgoing angular momentum `elapsed * (1-x)^3 * exp(-elapsed/(duration*(0.025+0.45*effectiveInertia)))`. Position offsets follow spherical direction arcs while preserving the outgoing segment length. The final parent-local blend approaches the current NN local rotation and offset; at completion the original NN transforms pass through without a quaternion round trip.
+Easing controls the lab-to-idle path independently: `blend = lerp(x, quinticSmoothstep(x), easing)`. The original October 2 envelope (superseded by the inertia hold/decay formula above) added outgoing angular momentum `elapsed * (1-x)^3 * exp(-elapsed/(duration*(0.025+0.45*effectiveInertia)))`. Position offsets follow spherical direction arcs while preserving the outgoing segment length. The final parent-local blend approaches the current NN local rotation and offset; at completion the original NN transforms pass through without a quaternion round trip.
 
 ## Upper-body ownership
 
@@ -80,9 +219,9 @@ Only the new endpoint evaluates the curve and updates feedback; the two accepted
 
 Existing Unreal presentation interpolates the two accepted policy endpoints between updates. This is an approximation of continuously evaluating the analytic lab curve between samples. The visual interpolation and lower-body timing were not replaced. Fixed-hand publication projection is bypassed while returning so it cannot overwrite the lab's parent-local offset path.
 
-The independent JavaScript fixture covers all **320** generated lab variants, including extreme ±179-degree distributed spine turns: **2,560** lab samples and four takeover coefficients. Native errors were at most **0.000183 cm / 0.000199 degrees** against the lab, and **0.000134 cm / 0.000115 degrees** for the mixed parent-local poses. Lower transforms and completed NN endpoints are unchanged. Local hand inertia remains exactly zero.
+The independent JavaScript fixture covers all **320** generated lab variants, including extreme Â±179-degree distributed spine turns: **2,560** lab samples and four takeover coefficients. Native errors were at most **0.000183 cm / 0.000199 degrees** against the lab, and **0.000134 cm / 0.000115 degrees** for the mixed parent-local poses. Lower transforms and completed NN endpoints are unchanged. Local hand inertia remains exactly zero.
 
-On this laptop, isolated curve sampling measured approximately **3.0–5.3 microseconds per pose** across the earlier Development Editor runs, including the test's input-pose copy. The corrected runtime evaluates only the new endpoint. These historical isolated measurements exclude encoding/batching costs and are not a complete crowd/physics benchmark.
+On this laptop, isolated curve sampling measured approximately **3.0â€“5.3 microseconds per pose** across the earlier Development Editor runs, including the test's input-pose copy. The corrected runtime evaluates only the new endpoint. These historical isolated measurements exclude encoding/batching costs and are not a complete crowd/physics benchmark.
 
 ## Reproduction and evidence
 

@@ -1,5 +1,6 @@
-#include "ProphecyForearmConvention.h"
 #include "ProphecyArmedPoseLibrary.h"
+#include "ProphecyForearmConvention.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyArmedPose.h"
 #include "ProphecyAgent.h"
 #include "ProphecyBlendClock.h"
@@ -525,3 +526,18 @@ bool FProphecyArmedPoseEntryHistoryTest::RunTest(const FString&)
     Cancel(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif
+
+
+void ProphecyNNModifierDebug::Armed(FReport& R)
+{
+    using namespace ProphecyArmedPose;
+    const auto* S=States.Find(R.Agent);if(!S)return;
+    const auto* B=Blends.Find(R.Agent);
+    R.Add(TEXT("ManualArmed"),TEXT("POSE+HISTORY"),TEXT("Manual armed / GT pose"),FString::Printf(TEXT("%s | progress %.3f | %s | blend %.3f"),
+        *S->Attack.ToString(),S->Alpha,S->Holding?TEXT("holding"):TEXT("moving"),B?BlendWeight(*B):1.));
+    if(B)
+    {
+        FString Weights;for(int I=0;I<Count;++I)Weights+=FString::Printf(TEXT("%s%.2g"),I?TEXT(","):TEXT(""),B->Weights[I]);
+        R.Add(TEXT("ArmedWeights"),TEXT("POSE+HISTORY"),TEXT("Manual pose joint weights"),Weights);
+    }
+}

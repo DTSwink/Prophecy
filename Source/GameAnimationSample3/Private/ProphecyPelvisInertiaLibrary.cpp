@@ -1,4 +1,5 @@
 #include "ProphecyPelvisInertiaLibrary.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyPelvisInertia.h"
 #include "ProphecyPelvisInertiaMath.h"
 #include "ProphecyAgent.h"
@@ -163,4 +164,16 @@ void UProphecyPelvisInertiaLibrary::GetPelvisInertia(AProphecyAgent* Agent, bool
     bEnabled=S && S->bEnabled; bSimulatedBody=S && S->bSimulatedBody;
     HorizontalFollow=S ? S->Linear.X : 1.f; VerticalFollow=S ? S->Linear.Z : 1.f;
     YawFollow=S ? S->Angular.Z : 1.f; PitchRollFollow=S ? S->Angular.X : 1.f;
+}
+
+
+void ProphecyNNModifierDebug::PelvisInertia(FReport& R)
+{
+    using namespace ProphecyPelvisInertia;
+    const auto* S=States.Find(R.Agent);if(!S || !S->Active())return;
+    const bool Physical=BodyMode(R.Agent,*S);
+    if(!Physical && !R.LowerLoco && !R.Attack)return;
+    R.Add(TEXT("PelvisInertia"),Physical?TEXT("PHYSICS"):TEXT("POSE+HISTORY"),TEXT("Pelvis inertia"),
+        FString::Printf(TEXT("linear %s | angular %s%s"),*S->Linear.ToCompactString(),*S->Angular.ToCompactString(),
+        S->bSeeded||Physical?TEXT(""):TEXT(" | waiting for seed")));
 }

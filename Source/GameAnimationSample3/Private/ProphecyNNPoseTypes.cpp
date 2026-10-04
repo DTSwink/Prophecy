@@ -1,4 +1,5 @@
 #include "ProphecyNNPoseTypes.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyNNPresentation.h"
 #include "ProphecyNNInterpolation.h"
 #include "ProphecyRecoveryLegLength.h"
@@ -707,4 +708,12 @@ void FProphecyNNPoseStore::UpdateTickPinningLegs(int32 Id,TConstArrayView<int32>
             P->LocalTransforms[I]=Current[J].GetRelativeTransform(P->ComponentTransforms[Parent]);
     }
     P->Revision=AllocatePoseRevision();
+}
+
+
+void ProphecyNNModifierDebug::PosePresentation(FReport& R)
+{
+    FReadScopeLock Lock(GProphecyNNPoseLock);
+    if(const auto* Zone=GKneePopSmoothing.Find(R.PoseId))
+        R.Add(TEXT("KneeSoftIK"),TEXT("CONSTRAINT"),TEXT("Knee pop smoothing / soft IK"),FString::Printf(TEXT("zone %.3f cm | presentation only"),*Zone));
 }

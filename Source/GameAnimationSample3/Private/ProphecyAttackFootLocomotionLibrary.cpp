@@ -1,4 +1,5 @@
 #include "ProphecyAttackFootLocomotionLibrary.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyAttackFootLocomotion.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyNNPresentation.h"
@@ -597,3 +598,26 @@ bool FProphecyFootHandoffTest::RunTest(const FString&)
 }
 #include "ProphecyAttackFootPoleTests.inl"
 #endif
+
+
+void ProphecyNNModifierDebug::Drag(FReport& R)
+{
+    using namespace ProphecyAttackFootLocomotion;
+    if(!R.Attack || R.Half)return;
+    if(const auto* D=FindActive(R.Agent))
+    {
+        R.Add(TEXT("LocoDrag"),TEXT("POSE+HISTORY"),TEXT("Attack loco drag"),FString::Printf(TEXT("loco feet mask %d | mode %d | release distance %.3g height %.3g"),D->Loco,int32(D->Config.Mode),D->Config.Distance,D->Config.Height));
+        if(const auto* H=Handoffs.Find(R.Agent);H && H->Started)
+            R.Add(TEXT("DragHandoff"),TEXT("POSE+HISTORY"),TEXT("Loco-drag foot handoff"),FString::Printf(TEXT("mask %d | L %.3f/%.3g R %.3f/%.3g | rotation %.3g"),H->Started,H->Elapsed[0],H->Config.Duration[0],H->Elapsed[1],H->Config.Duration[1],H->Config.Rotation));
+        if(const auto* P=PoleBlends.Find(R.Agent);P && P->Feet)
+            R.Add(TEXT("DragPole"),TEXT("POSE+HISTORY"),TEXT("Loco-drag knee pole blend"),FString::Printf(TEXT("feet mask %d | L %.3f R %.3f / %.3f"),P->Feet,P->Elapsed[0],P->Elapsed[1],P->Duration));
+        if(FreezeWindows.Contains(R.Agent) && FreezeBlend(R.Agent)>0)
+            R.Add(TEXT("DragFreeze"),TEXT("INPUT"),TEXT("Loco-drag frozen root window"),FString::Printf(TEXT("alpha %.3g"),FreezeBlend(R.Agent)));
+    }
+    if(FindGhost(R.Agent))
+    {
+        R.Add(TEXT("GhostLoco"),TEXT("INPUT+HISTORY"),TEXT("Ghost loco drag"),TEXT("undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs"));
+        if(const auto* G=GhostInertiaRuns.Find(R.Agent))
+            R.Add(TEXT("GhostInertia"),TEXT("INPUT+HISTORY"),TEXT("Ghost loco inertia"),FString::Printf(TEXT("total %s cm | %.1f / %.1f ticks"),*G->Total.ToCompactString(),G->Elapsed*60.,G->Duration*60.));
+    }
+}

@@ -1,7 +1,7 @@
 // Export only accepted lab data and independent JS reference poses. No runtime JS/JSON work.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const project=path.resolve(__dirname,'../..');
-const lab=process.argv[2]||'C:/Users/singerie/Documents/Cursor/stepper/training/slashes2/AttackRecoveryLab';
+const lab=process.argv[2]||path.join(project,'Labs/AttackRecoveryLab');
 const R=require(path.join(lab,'recovery.js'));
 const manifest=JSON.parse(fs.readFileSync(path.join(lab,'data/manifest.json')));
 const state=JSON.parse(fs.readFileSync(path.join(lab,'state.json')));
@@ -11,7 +11,8 @@ if(upper.length!==16)throw Error('Unexpected upper hierarchy');
 const idle=R.localize(manifest.sharedIdle.points,manifest.sharedIdle.axes.map(R.fromAxes),manifest.parents);
 const uq=q=>[-q[0],q[1],-q[2],q[3]],up=p=>[p[0]*100,-p[1]*100,p[2]*100];
 const literal=n=>{let s=Number(n).toPrecision(10);return s+'f';};
-const profile=c=>({duration:state.attackReturnTimes[c.name],easing:state.attackReturnEasing[c.name],inertia:Number(state.controls.inertia),weights:groups.map(k=>state.attackBoneInertia[c.name][k])});
+const profile=c=>({duration:state.attackReturnTimes[c.name],easing:state.attackReturnEasing[c.name],inertia:state.attackMainInertia[c.name],hold:state.attackInertiaTiming[c.name].hold,decay:state.attackInertiaTiming[c.name].decay,world:state.attackInertiaTiming[c.name].world,angleTime:state.attackAngleTimeSeconds[c.name],weights:groups.map(k=>state.attackBoneInertia[c.name][k])});
+if(Object.values(state.attackInertiaTiming).some(p=>p.spring))throw Error('Continuous spring is not an accepted Unreal profile');
 const rows=upper.map(({name,j})=>`    {TEXT("${name}"), TEXT("${manifest.names[manifest.parents[j]]}"), ${groups.indexOf(name.replace(/^spine_0[1-5]$/,'spine').replace(/_[lr]$/,''))<0?7:groups.indexOf(name.replace(/^spine_0[1-5]$/,'spine').replace(/_[lr]$/,''))}, {${uq(idle.q[j]).map(literal)}}, {${up(idle.p[j]).map(literal)}}},`);
 const digest=crypto.createHash('sha256').update(fs.readFileSync(path.join(lab,'recovery.js'))).digest('hex');
 const out=path.join(project,'Source/GameAnimationSample3/Private/ProphecyFKReturnData.h');
@@ -24,9 +25,9 @@ struct FBone { const TCHAR* Name; const TCHAR* Parent; uint8 Group; float Q[4],P
 inline const FBone Bones[16]={
 ${rows.join('\n')}
 };
-struct FProfile { const TCHAR* Attack; float Duration,Easing,Inertia,Weights[7]; };
+struct FProfile { const TCHAR* Attack; float Duration,Easing,Inertia,InertiaHold,InertiaDecay,AngleTimeSeconds; bool WorldInertia; float Weights[7]; };
 inline const FProfile Profiles[]={
-${manifest.clips.map(c=>{const p=profile(c);return `    {TEXT("${c.name}"),${literal(p.duration)},${literal(p.easing)},${literal(p.inertia)},{${p.weights.map(literal)}}},`;}).join('\n')}
+${manifest.clips.map(c=>{const p=profile(c);return `    {TEXT("${c.name}"),${literal(p.duration)},${literal(p.easing)},${literal(p.inertia)},${literal(p.hold)},${literal(p.decay)},${literal(p.angleTime)},${p.world},{${p.weights.map(literal)}}},`;}).join('\n')}
 };
 }
 `);
@@ -37,10 +38,19 @@ for(const c of manifest.clips)for(const v of c.variants){
  const buf=fs.readFileSync(path.join(lab,v.file));
  const m=R.prepare(v,buf.buffer.slice(buf.byteOffset,buf.byteOffset+buf.byteLength),c,manifest.names,manifest.parents);
  const p=profile(c),yaw=v===c.variants[0]?179:v===c.variants.at(-1)?-179:0;
- const opt={duration:p.duration,returnEasing:p.easing,inertia:p.inertia,boneInertia:state.attackBoneInertia[c.name],spineTurn:yaw};
- cases.push({name:c.name,variant:v.id||v.file,fps:v.fps,options:p,
+ const opt={duration:p.duration,returnEasing:p.easing,inertia:p.inertia,boneInertia:state.attackBoneInertia[c.name],spineTurn:yaw,inertiaHold:p.hold,inertiaDecay:p.decay,worldInertia:p.world,angleTimeSeconds:p.angleTime};
+ const timing=R.returnTiming(m,opt);
+ R.sample(m,m.attackSeconds+1e-8,opt);const source=yaw?m.turnCache.model:m;
+ cases.push({name:c.name,variant:v.id||v.file,fps:v.fps,options:p,duration:timing.duration,
+  angularVelocity:source.worldVelocity.map(w=>[-w[0],w[1],-w[2]]),
   previous:convert(R.sample(m,m.attackSeconds-1/v.fps,{spineTurn:yaw})),current:convert(R.sample(m,m.attackSeconds,{spineTurn:yaw})),
-  samples:[0,.001,.1,.25,.5,.75,.99,1].map(x=>({x,pose:convert(R.sample(m,m.attackSeconds+x*p.duration,opt))}))});
+  samples:[0,.001,.1,.25,.5,.75,.99,1].map(x=>({x,pose:convert(R.sample(m,m.attackSeconds+x*timing.duration,opt))}))});
+ // A published UE interval uses global quaternion interpolation. Feed the lab
+ // that exact outgoing derivative to test the real Begin/Apply tick path too.
+ const savedRates=source.worldVelocity;
+ source.worldVelocity=source.poses.at(-1).q.map((q,j)=>R.mul(R.qlog(R.qm(q,R.qinv(source.poses.at(-2).q[j]))),v.fps));source.seedCache=null;
+ cases.at(-1).runtimeSamples=Array.from({length:Math.ceil(timing.duration*60-1e-5)},(_,i)=>({tick:i+1,pose:convert(R.sample(m,m.attackSeconds+(i+1)/60,opt))}));
+ source.worldVelocity=savedRates;source.seedCache=null;
 }
 const fixture=path.join(project,'Saved/FKReturn/lab-reference.json');fs.mkdirSync(path.dirname(fixture),{recursive:true});
 fs.writeFileSync(fixture,JSON.stringify({names:manifest.names,parents:manifest.parents,algorithmSha:digest,cases}));

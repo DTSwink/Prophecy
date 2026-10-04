@@ -2,8 +2,8 @@
   "passed": true,
   "world": "/Game/testNN.testNN",
   "signatures": {
-    "ProphecyFKReturnLibrary.set_attack_fk_return": "X.set_attack_fk_return(agent, enabled=True, nn_takeover_coefficient=1.000000, alpha_hold=0.000000) -> bool",
-    "ProphecyFKReturnLibrary.set_attack_fk_return_profile": "X.set_attack_fk_return_profile(agent, attack=\"None\", return_time=0.260000, inertia=0.510000, easing=0.120000, bone_inertia=[0.000000, 0.190000, 1.000000, 0.630000, 1.000000, 1.000000, 1.000000]) -> bool",
+    "ProphecyFKReturnLibrary.set_attack_fk_return": "X.set_attack_fk_return(agent, enabled=True, nn_takeover_coefficient=1.000000, alpha_hold=0.000000, trim=0.000000) -> bool",
+    "ProphecyFKReturnLibrary.set_attack_fk_return_profile": "X.set_attack_fk_return_profile(agent, attack=\"None\", return_time=0.260000, inertia=0.510000, easing=0.120000, bone_inertia=[0.000000, 0.190000, 1.000000, 0.630000, 1.000000, 1.000000, 1.000000], inertia_hold=0.000000, inertia_decay=1.000000, world_inertia=False, spine_angle_time=0.000000) -> bool",
     "ProphecyAttackEndExtensionLibrary.set_attack_end_extension": "X.set_attack_end_extension(agent, enabled=True, slash_threshold_degrees=50.688107, hook_threshold_degrees=50.688107, over_threshold_degrees=50.688107) -> bool",
     "ProphecyUpperCheckpointLibrary.set_upper_checkpoint": "X.set_upper_checkpoint(agent, checkpoint=ProphecyUpperCheckpoint.OCTOBER1_STEP82500) -> str or None",
     "ProphecyUpperBodyInertiaLibrary.set_attack_upper_body_inertia": "X.set_attack_upper_body_inertia(agent, enabled=True, response_time_seconds=0.250000, hold_duration_seconds=0.000000, blend_to_normal_duration_seconds=0.500000, momentum_scale=1.000000, hand_inertia_space=ProphecyUpperHandInertiaSpace.ROOT_LOCAL, alpha=1.000000, arms_response_time_seconds=-1.000000, arms_blend_to_normal_duration_seconds=-1.000000, arms_alpha=-1.000000) -> bool",

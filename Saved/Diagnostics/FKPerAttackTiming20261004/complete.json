@@ -1,0 +1,9 @@
+{
+  "map": "/Game/testNN.testNN",
+  "play": false,
+  "tests_passed": 12,
+  "inspection": "mode=Inspect parent=/Script/GameAnimationSample3.ProphecyAgent\nnative_properties=0 pin_types=0 status=3 wiring_preserved=1\n",
+  "saved": "..\\..\\..\\..\\..\\..\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\_mygame\\locomotion\\BP_ProphecyManualPoseAgent.uasset",
+  "default_hold": 0.1,
+  "default_trim": 0.34
+}

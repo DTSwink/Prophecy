@@ -13,6 +13,7 @@ class USkeletalMesh;
 class USkeletalMeshComponent;
 enum class EProphecyAgentState : uint8;
 struct FProphecyNNDefenseStatus;
+namespace ProphecyNNModifierDebug { struct FReport; }
 
 /** Read-only completed manager diagnostics; does not sample bodies or run inference. */
 struct FProphecyNNRuntimeBenchmarkStats
@@ -37,6 +38,7 @@ class GAMEANIMATIONSAMPLE3_API AProphecyNNLocomotionManager : public AActor
 
 public:
 	struct FImpl;
+	bool DescribeNNModifiers(const AProphecyAgent* Agent, ProphecyNNModifierDebug::FReport& Report) const;
 	// Event-only update of a registered lane; non-reflected and not a per-frame settings lookup.
 	void CacheUpperRootRotationHorizon(const AProphecyAgent* Agent, float Horizon);
 	// Event-only debug checkpoints; native storage is separate from retained manager layouts.

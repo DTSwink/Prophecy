@@ -1,4 +1,5 @@
 #include "ProphecyAttackStartInertiaLibrary.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyAttackStartFKCore.h"
 #include "ProphecyAttackStartInertiaMath.h"
@@ -452,3 +453,20 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyEntryPelvisTest,"Prophecy.NN.AttackEnt
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyEntryPelvisTest::RunTest(const FString&){return RunAttackStartInertiaChecks(*this);}
 #endif
+
+
+void ProphecyNNModifierDebug::Entry(FReport& R)
+{
+    using namespace ProphecyAttackStartInertia;
+    {FReadScopeLock Guard(CorrectionLock);
+    if(const auto* E=Entries.Find(R.Agent);E && Corrections.Contains(E->PoseId))
+        R.Add(TEXT("EntryPelvis"),TEXT("PRESENT"),TEXT("Attack-start pelvis inertia"),FString::Printf(TEXT("tick %d | linear %.3f angular %.3f; reconstructed legs"),E->Frame,
+            Weight(E->Frame,E->Config.LinearFrames,E->Config.Linear),Weight(E->Frame,E->Config.AngularFrames,E->Config.Angular)));}
+    {FReadScopeLock Guard(Feet::Lock);
+    if(const auto* P=Feet::Entries.Find(R.Agent))for(int32 I=0;I<2;++I)
+    {
+        const auto& E=P->Leg[I];const auto* T=Feet::Targets.Find(E.PoseId);if(!T || !(T->Active&(1<<I)))continue;
+        R.Add(I?TEXT("EntryFootR"):TEXT("EntryFootL"),TEXT("PRESENT"),I?TEXT("Attack-start right foot inertia"):TEXT("Attack-start left foot inertia"),
+            FString::Printf(TEXT("tick %d | linear %.3f angular %.3f"),E.Frame,Weight(E.Frame,E.Config.LinearFrames,E.Config.Linear),Weight(E.Frame,E.Config.AngularFrames,E.Config.Angular)));
+    }}
+}

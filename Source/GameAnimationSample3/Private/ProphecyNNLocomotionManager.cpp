@@ -1,5 +1,6 @@
-#include "ProphecyForearmConvention.h"
 #include "ProphecyNNLocomotionManager.h"
+#include "ProphecyForearmConvention.h"
+#include "ProphecyNNModifierDebug.h"
 #include "UObject/StrongObjectPtr.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyAttackStartHandInertia.h"
@@ -5145,7 +5146,7 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	bool bNewFKSample=false;
 	const bool bFKReturn=!bManualArmed && !Agent.Slash.bActive && !bDefensePose &&
 		ProphecyFKReturn::Apply(Controls,SourceTimeSeconds,
-			PreviousComponentTransforms,ComponentTransforms,LocalTransforms,&bNewFKSample);
+			PreviousComponentTransforms,ComponentTransforms,LocalTransforms,&bNewFKSample,ComponentWorldTransform.GetRotation());
 	const bool bLengthReturn=ProphecyForearmStretch::Apply(Controls,Impl->PublishedBoneNames,
         PreviousComponentTransforms,ComponentTransforms,LocalTransforms,bFKReturn);
 
@@ -6354,3 +6355,5 @@ bool RunCapturedKneeBendReturnChecks(FAutomationTestBase& Test)
     return !Test.HasAnyErrors();
 }
 #endif
+
+#include "ProphecyNNModifierManager.inl"

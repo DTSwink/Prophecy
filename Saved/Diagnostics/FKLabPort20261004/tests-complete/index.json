@@ -1,0 +1,217 @@
+﻿{
+	"devices": [
+		{
+			"deviceName": "DESKTOP-FD3KEAS",
+			"instance": "AC181919471686719D1C6E8E440859BC",
+			"instanceName": "DESKTOP-FD3KEAS-15068",
+			"platform": "WindowsEditor",
+			"oSVersion": "Windows 10 (22H2) [10.0.19045.6466] ",
+			"model": "Default",
+			"gPU": "Intel(R) UHD Graphics",
+			"cPUModel": "12th Gen Intel(R) Core(TM) i5-12450H",
+			"rAMInGB": 16,
+			"renderMode": "D3D12_SM6",
+			"rHI": "D3D12 (SM6)",
+			"appInstanceLog": ""
+		}
+	],
+	"reportCreatedOn": "2026.10.04-17.28.13",
+	"succeeded": 10,
+	"succeededWithWarnings": 0,
+	"failed": 0,
+	"notRun": 0,
+	"inProcess": 0,
+	"totalDuration": 2.3456599712371826,
+	"comparisonExported": false,
+	"comparisonExportDirectory": "",
+	"tests": [
+		{
+			"testDisplayName": "ReturnHandoff",
+			"fullTestPath": "Prophecy.Attack.MotionInertia.ReturnHandoff",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 0.09666839987039566,
+			"dateTime": "2026.10.04-17.28.10",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "SixtyTickClock",
+			"fullTestPath": "Prophecy.Blends.SixtyTickClock",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 0.070046901702880859,
+			"dateTime": "2026.10.04-17.28.10",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "AcceptedHistory",
+			"fullTestPath": "Prophecy.NN.FKReturn.AcceptedHistory",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 0.029186002910137177,
+			"dateTime": "2026.10.04-17.28.10",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "AngleTimeAndWorldFrame",
+			"fullTestPath": "Prophecy.NN.FKReturn.AngleTimeAndWorldFrame",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 0.01575160026550293,
+			"dateTime": "2026.10.04-17.28.10",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "ExitInterval",
+			"fullTestPath": "Prophecy.NN.FKReturn.ExitInterval",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 0.027530897408723831,
+			"dateTime": "2026.10.04-17.28.10",
+			"entries": [
+				{
+					"event":
+					{
+						"type": "Info",
+						"message": "Exit interval maximum round-trip error: 0.000140035627 cm / 4.21468485e-08 radians",
+						"context": "",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.10.04-17.28.10"
+				}
+			],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "FeedbackInput",
+			"fullTestPath": "Prophecy.NN.FKReturn.FeedbackInput",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 0.23140919208526611,
+			"dateTime": "2026.10.04-17.28.10",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "GoldenTickTiming",
+			"fullTestPath": "Prophecy.NN.FKReturn.GoldenTickTiming",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 0.018606800585985184,
+			"dateTime": "2026.10.04-17.28.11",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "LabParityAndCost",
+			"fullTestPath": "Prophecy.NN.FKReturn.LabParityAndCost",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 1.8228205442428589,
+			"dateTime": "2026.10.04-17.28.11",
+			"entries": [
+				{
+					"event":
+					{
+						"type": "Info",
+						"message": "runtime_samples=6032 runtime_cm=0.00115535844 runtime_degrees=0.00031807165",
+						"context": "",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.10.04-17.28.12"
+				},
+				{
+					"event":
+					{
+						"type": "Info",
+						"message": "cases=320 samples=2560 lab_cm=0.000254179503 lab_degrees=0.000323579086 length_cm=5.02985327e-05 mix_cm=0.000150078579 mix_degrees=0.000150157402 microseconds_per_pose=4.204280 checksum=-756818.924757",
+						"context": "",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.10.04-17.28.12"
+				}
+			],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "LifecycleAndCurve",
+			"fullTestPath": "Prophecy.NN.FKReturn.LifecycleAndCurve",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 0.018368899822235107,
+			"dateTime": "2026.10.04-17.28.13",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "Trim",
+			"fullTestPath": "Prophecy.NN.FKReturn.Trim",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"AC181919471686719D1C6E8E440859BC"
+			],
+			"duration": 0.015270698815584183,
+			"dateTime": "2026.10.04-17.28.13",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		}
+	]
+}

@@ -1,0 +1,11 @@
+{
+  "nodes": 2724,
+  "changed": [
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_224 | Set Attack FK Return Profile",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_MacroInstance_1 | For Each Loop",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_206 | Set Attack FK Return Profile"
+  ],
+  "hold": 1,
+  "trim": 0,
+  "verified": true
+}

@@ -47,16 +47,20 @@ inline FVector3f BlendOffset(const FVector3f& A,const FVector3f& B,float T)
 }
 struct FBone
 {
-    int32 Index=INDEX_NONE,Parent=INDEX_NONE;
+    int32 Index=INDEX_NONE,Parent=INDEX_NONE,ParentSlot=INDEX_NONE;
     uint8 Group=GroupCount; // Hands: no angular OR offset inertia.
     FQuat4f Start=FQuat4f::Identity;
     FVector3f Offset=FVector3f::ZeroVector;
-    FArc Return,Velocity,OffsetReturn,OffsetVelocity;
+    FArc Return,Velocity,OffsetReturn,OffsetVelocity,WorldCorrection;
 };
 struct FCurve
 {
     FBone Bones[BoneCount];
     float InverseDuration=1.f/.26f,Easing=.12f,Coefficient=1.f;
+    float InertiaHold=0.f,InertiaDecay=1.f;
+    bool WorldInertia=false;
+    FQuat SeedFrame=FQuat::Identity;
+    FQuat4f StartPelvis=FQuat4f::Identity;
     float AlphaHold=0.f,InverseTakeoverWindow=1.f;
     float TakeoverTimeScale=1.f; // Trim scales NN progress, never authored FK/inertia time.
     void SetAlphaHold(float Value){AlphaHold=Value;InverseTakeoverWindow=Value<1.f?1.f/(1.f-Value):0.f;}
@@ -71,12 +75,14 @@ struct FCurve
     struct FSample { float Blend,NN,Momentum[GroupCount+1]{}; };
     FSample Weights(float Elapsed) const
     {
-        const float X=FMath::Clamp(Elapsed*InverseDuration,0.f,1.f),Y=1-X;
+        const float X=Elapsed>=1.f/InverseDuration?1.f:FMath::Clamp(Elapsed*InverseDuration,0.f,1.f);
+        const float Fade=FMath::Clamp((X-InertiaHold)/(1-InertiaHold),0.f,1.f);
+        const float Phase=InertiaHold>0?Fade*Fade:X,Y=1-Phase;
         FSample S;S.Blend=X+(X*X*X*(10+X*(-15+6*X))-X)*Easing;
         S.NN=NNWeight(X);
         const float Base=FMath::Max(0.f,Elapsed)*Y*Y*Y;
         for(int32 G=0;G<GroupCount;++G)if(Decay[G]>0 && Base>0)
-            S.Momentum[G]=DecaySource[G]<G?S.Momentum[DecaySource[G]]:Base*FMath::Exp(-Elapsed*Decay[G]);
+            S.Momentum[G]=DecaySource[G]<G?S.Momentum[DecaySource[G]]:Base*FMath::Exp(-InertiaDecay*Phase*Decay[G]);
         return S;
     }
     static void Local(const FBone& B,const FSample& S,FQuat4f& Q,FVector3f& P)
@@ -87,23 +93,48 @@ struct FCurve
         if(M>0){Q=Q*B.Velocity.At(M);P=B.OffsetVelocity.At(M).RotateVector(P);}
         Q.Normalize();
     }
-    void Apply(float Elapsed,TArrayView<FTransform> Pose,TArrayView<FTransform> Locals={}) const
+    // Build the pure lab hierarchy before NN mixing. An excluded hand/zero-weight
+    // bone inherits its actual parent, while active world axes do not inherit inertia.
+    void SampleLocals(const FSample& S,const FQuat4f& Pelvis,const FQuat4f& FrameDelta,
+        FQuat4f (&Q)[BoneCount],FVector3f (&P)[BoneCount]) const
     {
-        if(Elapsed*InverseDuration*TakeoverTimeScale>=1.f)return; // Exact NN, no round trip at completion.
-        const FSample S=Weights(Elapsed);
-        // Read all NN locals before overwriting their parents. Stack storage only.
-        FTransform Target[BoneCount];
-        if(S.NN>0)for(int32 J=0;J<BoneCount;++J)
-        {const auto& B=Bones[J];Target[J]=Pose[B.Index].GetRelativeTransform(Pose[B.Parent]);}
+        FQuat4f Base[BoneCount],World[BoneCount];
+        // The lab freezes the pelvis. In game it keeps moving: gradually acquire
+        // that moving idle frame rather than add its angular rate a second time
+        // at entry. Static pelvis reproduces the lab exactly; endpoint is local idle.
+        const FQuat4f BaselinePelvis=FQuat4f::Slerp((FrameDelta*StartPelvis).GetNormalized(),Pelvis,S.Blend).GetNormalized();
         for(int32 J=0;J<BoneCount;++J)
         {
-            const auto& B=Bones[J];FQuat4f Q;FVector3f P;Local(B,S,Q,P);
+            const auto& B=Bones[J];Local(B,S,Q[J],P[J]);
+            if(!WorldInertia)continue;
+            const FQuat4f LocalBase=(B.Start*B.Return.At(S.Blend)).GetNormalized();
+            const FQuat4f ParentBase=B.ParentSlot<0?BaselinePelvis:Base[B.ParentSlot];
+            const FQuat4f ParentWorld=B.ParentSlot<0?Pelvis:World[B.ParentSlot];
+            Base[J]=(ParentBase*LocalBase).GetNormalized();
+            const float M=S.Momentum[B.Group];
+            World[J]=M>0?(FrameDelta*B.WorldCorrection.At(M)*FrameDelta.Inverse()*Base[J]).GetNormalized()
+                :(ParentWorld*LocalBase).GetNormalized();
+            Q[J]=(ParentWorld.Inverse()*World[J]).GetNormalized();
+        }
+    }
+    void Apply(float Elapsed,TArrayView<FTransform> Pose,TArrayView<FTransform> Locals={},
+        const FQuat& Frame=FQuat::Identity) const
+    {
+        if(Elapsed>=(1.f/InverseDuration)/TakeoverTimeScale)return;
+        const FSample S=Weights(Elapsed);
+        FTransform Target[BoneCount];FQuat4f Q[BoneCount];FVector3f P[BoneCount];
+        if(S.NN>0)for(int32 J=0;J<BoneCount;++J)
+        {const auto& B=Bones[J];Target[J]=Pose[B.Index].GetRelativeTransform(Pose[B.Parent]);}
+        SampleLocals(S,FQuat4f(Pose[Bones[0].Parent].GetRotation()),FQuat4f(Frame.Inverse()*SeedFrame),Q,P);
+        for(int32 J=0;J<BoneCount;++J)
+        {
+            const auto& B=Bones[J];
             if(S.NN>0)
             {
-                Q=FQuat4f::Slerp(Q,FQuat4f(Target[J].GetRotation()),S.NN).GetNormalized();
-                P=BlendOffset(P,FVector3f(Target[J].GetTranslation()),S.NN);
+                Q[J]=FQuat4f::Slerp(Q[J],FQuat4f(Target[J].GetRotation()),S.NN).GetNormalized();
+                P[J]=BlendOffset(P[J],FVector3f(Target[J].GetTranslation()),S.NN);
             }
-            FTransform L(FQuat(Q),FVector(P),S.NN>0?Target[J].GetScale3D():FVector::OneVector);
+            FTransform L(FQuat(Q[J]),FVector(P[J]),S.NN>0?Target[J].GetScale3D():FVector::OneVector);
             Pose[B.Index]=L*Pose[B.Parent];
             if(!Locals.IsEmpty())Locals[B.Index]=L;
         }

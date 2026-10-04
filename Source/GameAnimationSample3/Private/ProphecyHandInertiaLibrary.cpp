@@ -1,4 +1,5 @@
 #include "ProphecyHandInertiaLibrary.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyHandInertia.h"
 #include "ProphecyPelvisInertiaMath.h"
 #include "ProphecyAgent.h"
@@ -185,3 +186,18 @@ bool FProphecyHandInertiaTest::RunTest(const FString&)
     return true;
 }
 #endif
+
+
+void ProphecyNNModifierDebug::HandInertia(FReport& R)
+{
+    using namespace ProphecyHandInertia;
+    // Current locomotion output deliberately bypasses the legacy hand filter.
+    const auto* S=States.Find(R.Agent);if(!R.Attack || !S)return;
+    for(int32 I=0;I<2;++I)
+    {
+        const auto& H=S->Hands[I];const auto F=Resolve(H,R.Walk,true);if(!Active(H,F))continue;
+        R.Add(I?TEXT("HandInertiaR"):TEXT("HandInertiaL"),R.Half?TEXT("POSE"):TEXT("POSE+HISTORY"),I?TEXT("Right hand inertia"):TEXT("Left hand inertia"),
+            FString::Printf(TEXT("root-local linear %s | angular %s%s"),*F.Linear.ToCompactString(),*F.Angular.ToCompactString(),
+            H.Seeded?TEXT(""):TEXT(" | waiting for seed")));
+    }
+}

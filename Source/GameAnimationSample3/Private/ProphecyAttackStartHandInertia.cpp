@@ -1,4 +1,5 @@
 #include "ProphecyAttackStartHandInertia.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyAttackStartInertiaLibrary.h"
 #include "ProphecyAgent.h"
 #include "ProphecyForearmStretch.h"
@@ -278,3 +279,14 @@ bool FEntryHandsLifecycleTest::RunTest(const FString&)
 #endif
 
 #include "ProphecyAttackStartFKCore.inl"
+
+
+void ProphecyNNModifierDebug::EntryHands(FReport& R)
+{
+    using namespace ProphecyAttackStartHands;
+    const auto* S=States.Find(R.Agent);if(!R.Attack || !S)return;
+    R.Add(TEXT("EntryHands"),R.Half?TEXT("POSE"):TEXT("POSE+HISTORY"),TEXT("Attack-start hand inertia"),
+        FString::Printf(TEXT("L%d R%d | weight %.3f | response %.3g | root/spine ref %.3g | elapsed %.3f / %.3f%s"),
+        S->Config.Hand[0],S->Config.Hand[1],Weight(S->Config,S->Elapsed),S->Config.Response,S->Config.Reference,
+        S->Elapsed,double(S->Config.Hold)+S->Config.Blend,S->Applied?TEXT(""):TEXT(" | awaiting prediction")));
+}

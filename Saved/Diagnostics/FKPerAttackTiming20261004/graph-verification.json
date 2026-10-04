@@ -1,0 +1,12 @@
+{
+  "verified": true,
+  "nodes": 2725,
+  "changed": [
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_43 | Set Attack FK Return",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | tick debugging | K2Node_CallFunction_66 | Set Attack FK Return"
+  ],
+  "defaults": [
+    0.1,
+    0.34
+  ]
+}

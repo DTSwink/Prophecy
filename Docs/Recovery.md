@@ -1,8 +1,13 @@
 # Restoring Prophecy
 
-This October 3, 2026 snapshot is a source and authored-setup backup on
+This snapshot, updated through the accepted October 4, 2026 attack-recovery
+milestone, is a source and authored-setup backup on
 `DTSwink/Prophecy`, branch `codex/standalone-sim`. It does not contain the entire
 Unreal content library or the Stepper training workspace.
+
+Latest named recovery point: `milestone/2026-10-04-attack-recovery`.
+See [milestone contents and validation](Milestone20261004.md). The final slashLD
+profile was live-patched; a normal Editor build is required before a cold launch.
 
 ## Included
 

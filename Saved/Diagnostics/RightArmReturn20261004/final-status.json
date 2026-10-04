@@ -1,0 +1,9 @@
+{
+  "play": false,
+  "cvars": {
+    "Prophecy.SlashTraceAgent": -1,
+    "Prophecy.SlashTraceFrames": 0,
+    "Prophecy.NNInputTraceFrames": 0
+  },
+  "graph_unchanged": true
+}

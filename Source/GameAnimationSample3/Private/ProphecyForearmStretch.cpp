@@ -1,4 +1,5 @@
 #include "ProphecyForearmStretch.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyAttackWristLibrary.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNPoseTypes.h"
@@ -266,3 +267,14 @@ bool FProphecyForearmReturnTest::RunTest(const FString&)
     return !HasAnyErrors();
 }
 #endif
+
+
+void ProphecyNNModifierDebug::Forearm(FReport& R)
+{
+    using namespace ProphecyForearmStretch;
+    const auto* S=States.Find(R.Agent);if(!S)return;
+    R.Add(TEXT("ForearmStretch"),TEXT("POSE+PHYSICS"),TEXT("Forearm length / wrist freedom"),
+        S->Returning?FString::Printf(TEXT("return %llu/%llu ticks | weight %.3f | NN delta L %.3f R %.3f cm | physical delta L %.3f R %.3f cm"),
+            S->Tick,S->Total,S->Weight(),S->Delta.X*S->Weight(),S->Delta.Y*S->Weight(),S->PhysicalDelta.X*S->Weight(),S->PhysicalDelta.Y*S->Weight())
+        :TEXT("attack wrist translation free within trained +/-5 cm; arms follow NN stretch"));
+}

@@ -7,11 +7,13 @@ namespace ProphecyFKReturn
 struct FProfile
 {
     float Duration=.26f,Inertia=.51f,Easing=.12f;
+    float InertiaHold=0.f,InertiaDecay=1.f,AngleTimeSeconds=0.f;
+    bool WorldInertia=false;
     float Weights[GroupCount]={0.f,.19f,1.f,.63f,1.f,1.f,1.f};
 };
 bool Prepare(FCurve& Curve,const FProfile& Profile,float Coefficient,TConstArrayView<FName> Names,
     TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
-    TConstArrayView<FTransform> Current,float SampleSeconds);
+    TConstArrayView<FTransform> Current,float SampleSeconds,TConstArrayView<FVector3f> AngularVelocity={});
 // Cache only on handoff. Bones are mapped once, not during crowd updates.
 void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names,
     TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
@@ -23,7 +25,7 @@ void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names
 // The shared clock advances exactly 1/60 per unpaused game tick.
 bool Apply(const AProphecyAgent* Agent,double SourceTime,
     TArrayView<FTransform> Previous,TArrayView<FTransform> Current,TArrayView<FTransform> Local,
-    bool* NewSample=nullptr);
+    bool* NewSample=nullptr,const FQuat& Frame=FQuat::Identity);
 bool IsActive(const AProphecyAgent* Agent);
 // Spend pending game ticks before deciding whether this step needs the upper NN.
 bool NeedsInference(const AProphecyAgent* Agent);

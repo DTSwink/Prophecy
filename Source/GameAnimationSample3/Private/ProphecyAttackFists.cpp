@@ -1,4 +1,5 @@
 #include "ProphecyAttackFists.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNPoseAnimInstance.h"
@@ -328,3 +329,13 @@ bool FProphecyFistTickTest::RunTest(const FString&)
     return !HasAnyErrors();
 }
 #endif
+
+
+void ProphecyNNModifierDebug::Fists(FReport& R)
+{
+    if(!R.Agent->bEnableAttackFists)return;
+    const auto* S=Storage().States.Find(R.Agent);if(!S)return;
+    const double Alpha=S->Duration<=UE_SMALL_NUMBER?1.:FMath::Clamp((S->StartTime+1.e-7)/S->Duration,0.,1.);
+    const auto V=FMath::Lerp(S->Start,S->Target,Alpha);
+    if(!V.IsNearlyZero())R.Add(TEXT("Fingers"),TEXT("PRESENT"),TEXT("Authored closed fingers"),FString::Printf(TEXT("last accepted L %.3f R %.3f | does not change NN wrist channels"),V.X,V.Y));
+}

@@ -1,4 +1,6 @@
 #include "ProphecyLowerTemperingLibrary.h"
+#include "ProphecyNNModifierDebug.h"
+#include "ProphecyKickFootLeeway.h"
 #include "ProphecyLowerTempering.h"
 #include "ProphecyAgent.h"
 #include "Engine/World.h"
@@ -732,3 +734,29 @@ bool FProphecyReconstructionFadeTest::RunTest(const FString&)
     ForgetProfiles(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif
+
+
+void ProphecyNNModifierDebug::Lower(FReport& R)
+{
+    if(!R.LowerLoco)return;
+    using namespace ProphecyLowerTempering;
+    if(const auto* S=Settings.Find(R.Agent))
+    {
+        if(S->PelvisTranslation!=1 || S->PelvisTranslationZ!=1 || S->PelvisRotation!=1)
+            R.Add(TEXT("PelvisTempering"),TEXT("POSE+HISTORY"),TEXT("Pelvis tempering"),FString::Printf(TEXT("follow XY %.3f Z %.3f rotation %.3f"),S->PelvisTranslation,S->PelvisTranslationZ,S->PelvisRotation));
+        const auto& Right=RightFootSettings(R.Agent,*S);
+        for(int32 I=0;I<2;++I)
+        {
+            const auto& F=I?Right:*S;if(F.FeetAreIdentity())continue;
+            R.Add(I?TEXT("FootTemperR"):TEXT("FootTemperL"),TEXT("POSE+HISTORY"),I?TEXT("Right foot tempering"):TEXT("Left foot tempering"),
+                FString::Printf(TEXT("follow XY %.3f Z %.3f rotation %.3f"),F.FeetTranslation,F.FeetTranslationZ,F.FeetRotation));
+        }
+        if(Returns.Contains(R.Agent)||FeetReturns.Contains(R.Agent)||PelvisReturns.Contains(R.Agent))
+            R.Add(TEXT("TemperReturn"),TEXT("STATE"),TEXT("Tempering blend to normal"),TEXT("finite return running; values above are the last accepted sample"));
+    }
+    if(const auto* S=ProphecyLegRecovery::Active.Find(R.Agent))
+        R.Add(TEXT("KneeRecovery"),R.RecoveryPresentation?TEXT("PRESENT"):TEXT("POSE+HISTORY"),TEXT("Knee pole recovery"),FString::Printf(TEXT("%.3f / %.3g | pole speed %.3g deg/s"),S->Elapsed,S->Config.Duration,S->Config.Speed));
+    if(ProphecyLegChainDebug::IsEnabled(R.Agent) && (Settings.Contains(R.Agent) || R.Regional || ProphecyKickFootLeeway::HasLengthReturn(R.Agent)))
+        R.Add(TEXT("LegReconstruction"),R.RecoveryPresentation?TEXT("PRESENT"):TEXT("POSE+HISTORY"),TEXT("Leg chain reconstruction"),
+            FString::Printf(TEXT("preserves accepted feet; knee/length solver, minimum reach x%.3g"),MinimumLegReachMultiplier(R.Agent)));
+}

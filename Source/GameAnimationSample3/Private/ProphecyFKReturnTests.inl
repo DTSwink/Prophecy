@@ -5,6 +5,13 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 
+// Existing curve tests explicitly request their historical shared timing.
+static bool SetTestReturnTiming(AProphecyAgent* A,bool Enabled,float Coeff,float Hold=0,float Trim=0)
+{
+    const FVector2D V(Hold,Trim);
+    return UProphecyFKReturnLibrary::SetAttackFKReturn(A,Enabled,Coeff,V,V,V,V,V,V,V,V,V,V,V,V,V,V,V,V);
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyFKReturnParityTest,"Prophecy.NN.FKReturn.LabParityAndCost",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyFKReturnParityTest::RunTest(const FString&)
@@ -27,25 +34,35 @@ bool FProphecyFKReturnParityTest::RunTest(const FString&)
     };
     double MaxPosition=0,MaxAngle=0,MaxLength=0,MaxMixPosition=0,MaxMixAngle=0;
     int32 Cases=0,Samples=0;FCurve BenchmarkCurve;TArray<FTransform> BenchmarkPose;
+    double MaxRuntimePosition=0,MaxRuntimeAngle=0;int32 RuntimeSamples=0;
+    auto* RuntimeWorld=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* RuntimeAgent=RuntimeWorld?RuntimeWorld->SpawnActor<AProphecyAgent>():nullptr;
+    if(!RuntimeAgent)return false;
+    SetTestReturnTiming(RuntimeAgent,true,1,1,0);
     for(const auto& Row:Root->GetArrayField(TEXT("cases")))
     {
         const auto C=Row->AsObject(),O=C->GetObjectField(TEXT("options"));FProfile P;
+        P.InertiaHold=O->GetNumberField(TEXT("hold"));P.InertiaDecay=O->GetNumberField(TEXT("decay"));P.AngleTimeSeconds=O->GetNumberField(TEXT("angleTime"));P.WorldInertia=O->GetBoolField(TEXT("world"));
         P.Duration=O->GetNumberField(TEXT("duration"));P.Easing=O->GetNumberField(TEXT("easing"));P.Inertia=O->GetNumberField(TEXT("inertia"));
         for(int32 G=0;G<GroupCount;++G)P.Weights[G]=O->GetArrayField(TEXT("weights"))[G]->AsNumber();
         const auto Previous=Pose(C->GetArrayField(TEXT("previous"))),Current=Pose(C->GetArrayField(TEXT("current")));
-        FCurve Curve;if(!Prepare(Curve,P,1,Names,Parents,Previous,Current,1.f/C->GetNumberField(TEXT("fps"))))
+        TArray<FVector3f> AngularVelocity;for(const auto& V:C->GetArrayField(TEXT("angularVelocity")))
+        {const auto& A=V->AsArray();AngularVelocity.Add(FVector3f(A[0]->AsNumber(),A[1]->AsNumber(),A[2]->AsNumber()));}
+        FCurve Curve;if(!Prepare(Curve,P,1,Names,Parents,Previous,Current,1.f/C->GetNumberField(TEXT("fps")),AngularVelocity))
         {AddError(TEXT("Bad fixture hierarchy"));return false;}
         const auto& References=C->GetArrayField(TEXT("samples"));
         const auto NN=Pose(References.Last()->AsObject()->GetArrayField(TEXT("pose")));
         for(const auto& Sample:References)
         {
-            const float X=Sample->AsObject()->GetNumberField(TEXT("x")),Elapsed=X*P.Duration;
+            const float X=Sample->AsObject()->GetNumberField(TEXT("x")),Elapsed=X/Curve.InverseDuration;
             const auto Expected=Pose(Sample->AsObject()->GetArrayField(TEXT("pose")));
             auto Actual=Current;const auto W=Curve.Weights(Elapsed);
-            for(const auto& B:Curve.Bones)
+            FQuat4f Q[BoneCount];FVector3f V[BoneCount];
+            Curve.SampleLocals(W,FQuat4f(Current[Curve.Bones[0].Parent].GetRotation()),FQuat4f::Identity,Q,V);
+            for(int32 J=0;J<BoneCount;++J)
             {
-                FQuat4f Q;FVector3f V;FCurve::Local(B,W,Q,V);
-                Actual[B.Index]=FTransform(FQuat(Q),FVector(V))*Actual[B.Parent];
+                const auto& B=Curve.Bones[J];
+                Actual[B.Index]=FTransform(FQuat(Q[J]),FVector(V[J]))*Actual[B.Parent];
                 MaxPosition=FMath::Max(MaxPosition,FVector::Distance(Actual[B.Index].GetLocation(),Expected[B.Index].GetLocation()));
                 MaxAngle=FMath::Max(MaxAngle,Actual[B.Index].GetRotation().GetNormalized().AngularDistance(Expected[B.Index].GetRotation()));
                 MaxLength=FMath::Max(MaxLength,FMath::Abs(FVector::Distance(Actual[B.Index].GetLocation(),Actual[B.Parent].GetLocation())-
@@ -81,8 +98,32 @@ bool FProphecyFKReturnParityTest::RunTest(const FString&)
             FQuat4f QA,QB;FVector3f PA,PB;FCurve::Local(Curve.Bones[J],A,QA,PA);FCurve::Local(NoCurve.Bones[J],B,QB,PB);
             TestTrue(TEXT("Hands have no local rotational or positional inertia"),QA.Equals(QB,0) && PA.Equals(PB,0));
         }
+        // Full runtime lifecycle, using the published interval's own outgoing
+        // angular rate and the accepted per-family defaults. Hold1 / Trim0.
+        Begin(RuntimeAgent,FName(C->GetStringField(TEXT("name"))),Names,Parents,Previous,Current,0,1.f/C->GetNumberField(TEXT("fps")));
+        auto RuntimePrevious=Previous,RuntimeCurrent=Current,RuntimeLocal=Current;
+        for(const auto& V:C->GetArrayField(TEXT("runtimeSamples")))
+        {
+            const auto Sample=V->AsObject();const int32 Tick=Sample->GetIntegerField(TEXT("tick"));
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(RuntimeWorld,LEVELTICK_All,1.f/120);
+            const bool NeedNN=NeedsInference(RuntimeAgent);
+            if(Tick<TickPhases.FindChecked(RuntimeAgent).Limit)TestFalse(TEXT("Hold1 skips NN before endpoint"),NeedNN);
+            RuntimeCurrent=NN;Apply(RuntimeAgent,Tick,RuntimePrevious,RuntimeCurrent,RuntimeLocal);
+            const auto Expected=Pose(Sample->GetArrayField(TEXT("pose")));
+            for(const auto& Bone:Curve.Bones)
+            {
+                MaxRuntimePosition=FMath::Max(MaxRuntimePosition,FVector::Distance(RuntimeCurrent[Bone.Index].GetLocation(),Expected[Bone.Index].GetLocation()));
+                MaxRuntimeAngle=FMath::Max(MaxRuntimeAngle,RuntimeCurrent[Bone.Index].GetRotation().GetNormalized().AngularDistance(Expected[Bone.Index].GetRotation().GetNormalized()));
+            }
+            ++RuntimeSamples;
+        }
+        Cancel(RuntimeAgent);
         BenchmarkCurve=Curve;BenchmarkCurve.Coefficient=1;BenchmarkPose=NN;++Cases;
     }
+    Remove(RuntimeAgent);RuntimeWorld->DestroyWorld(false);
+    TestTrue(TEXT("Full runtime matches lab within .003cm"),MaxRuntimePosition<.003);
+    TestTrue(TEXT("Full runtime matches lab within .02deg"),MaxRuntimeAngle<FMath::DegreesToRadians(.02));
+    AddInfo(FString::Printf(TEXT("runtime_samples=%d runtime_cm=%.9g runtime_degrees=%.9g"),RuntimeSamples,MaxRuntimePosition,FMath::RadiansToDegrees(MaxRuntimeAngle)));
     TestEqual(TEXT("All lab variants"),Cases,320);
     TestTrue(TEXT("Native lab positions within 0.003 cm"),MaxPosition<.003);
     TestTrue(TEXT("Native lab rotations within 0.02 degrees"),MaxAngle<FMath::DegreesToRadians(.02));
@@ -122,10 +163,10 @@ bool FProphecyFKReturnLifecycleTest::RunTest(const FString&)
     TestEqual(TEXT("Full hold exact deadline"),C.Weights(1).NN,1.f);
     auto* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;
     if(!A)return false;
-    TestTrue(TEXT("Default control"),UProphecyFKReturnLibrary::SetAttackFKReturn(A,true,2));
-    TestFalse(TEXT("Reject zero coefficient"),UProphecyFKReturnLibrary::SetAttackFKReturn(A,true,0));
-    TestFalse(TEXT("Reject negative hold"),UProphecyFKReturnLibrary::SetAttackFKReturn(A,true,1,-.1f));
-    TestFalse(TEXT("Reject excessive hold"),UProphecyFKReturnLibrary::SetAttackFKReturn(A,true,1,1.1f));
+    TestTrue(TEXT("Default control"),SetTestReturnTiming(A,true,2));
+    TestFalse(TEXT("Reject zero coefficient"),SetTestReturnTiming(A,true,0));
+    TestFalse(TEXT("Reject negative hold"),SetTestReturnTiming(A,true,1,-.1f));
+    TestFalse(TEXT("Reject excessive hold"),SetTestReturnTiming(A,true,1,1.1f));
     TArray<FName> Names;TArray<int32> Parents;TArray<FTransform> P;
     Names.Add(TEXT("pelvis"));Parents.Add(INDEX_NONE);P.Add(FTransform::Identity);
     for(const auto& D:Data::Bones)
@@ -134,6 +175,7 @@ bool FProphecyFKReturnLifecycleTest::RunTest(const FString&)
         Parents.Add(Parent);Names.Add(FName(D.Name));
         P.Add(FTransform(FQuat(D.Q[0],D.Q[1],D.Q[2],D.Q[3]).GetNormalized(),FVector(D.P[0],D.P[1],D.P[2]))*P[Parent]);
     }
+    UProphecyFKReturnLibrary::SetAttackFKReturnProfile(A,NAME_None,.26f,.51f,.12f);
     Begin(A,TEXT("slashLU"),Names,Parents,P,P,10,1.f/30);
     TestTrue(TEXT("Begin is active"),Active.Contains(A));
     auto Prev=P,Now=P,Local=P;Apply(A,10.1,Prev,Now,Local);const auto First=Now;
@@ -141,18 +183,18 @@ bool FProphecyFKReturnLifecycleTest::RunTest(const FString&)
     for(int32 I=0;I<Now.Num();++I)TestTrue(TEXT("Republishing is deterministic"),Now[I].Equals(First[I],0));
     Cancel(A);TestFalse(TEXT("Replacement special cancels"),Active.Contains(A));
     Begin(A,TEXT("slashLU"),Names,Parents,P,P,10,1.f/30);
-    UProphecyFKReturnLibrary::SetAttackFKReturn(A,false,1);TestFalse(TEXT("Disable cancels"),Active.Contains(A));
+    SetTestReturnTiming(A,false,1);TestFalse(TEXT("Disable cancels"),Active.Contains(A));
     Begin(A,TEXT("slashLU"),Names,Parents,P,P,10,1.f/30);TestFalse(TEXT("Disabled begins no work"),Active.Contains(A));
-    UProphecyFKReturnLibrary::SetAttackFKReturn(A,true,1);Begin(A,TEXT("slashLU"),Names,Parents,P,P,10,1.f/30);
+    SetTestReturnTiming(A,true,1);Begin(A,TEXT("slashLU"),Names,Parents,P,P,10,1.f/30);
     for(int32 Tick=0;Tick<16;++Tick)FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,1.f/5);
     TestTrue(TEXT("Keep final interpolation interval"),Apply(A,12,Prev,Now,Local));
     TestFalse(TEXT("Completion retires recurring work"),Apply(A,13,Prev,Now,Local));
     TestFalse(TEXT("No retained active entry"),Active.Contains(A));
-    UProphecyFKReturnLibrary::SetAttackFKReturn(A,true,2,.5f);CaptureReset(A);
+    Configs.FindChecked(A).Profiles.Reset();SetTestReturnTiming(A,true,2,.5f);CaptureReset(A);
     UProphecyFKReturnLibrary::SetAttackFKReturnProfile(A,NAME_None,.7f,.1f,.9f,FProphecyFKInertiaWeights());
-    UProphecyFKReturnLibrary::SetAttackFKReturn(A,false,3);RestoreReset(A);
+    SetTestReturnTiming(A,false,3);RestoreReset(A);
     TestTrue(TEXT("Reset restores settings and copied profiles"),Configs.FindChecked(A).Enabled &&
-        Configs.FindChecked(A).Coefficient==2 && Configs.FindChecked(A).AlphaHold==.5f && Configs.FindChecked(A).Profiles.IsEmpty());
+        Configs.FindChecked(A).Coefficient==2 && Configs.FindChecked(A).Timing[0].X==.5f && Configs.FindChecked(A).Profiles.IsEmpty());
     Remove(A);TestFalse(TEXT("Remove clears settings"),Configs.Contains(A));W->DestroyWorld(false);
     return !HasAnyErrors();
 }
@@ -171,7 +213,8 @@ bool FProphecyFKReturnTickTest::RunTest(const FString&)
         const int32 Parent=Names.IndexOfByKey(FName(D.Parent));Parents.Add(Parent);Names.Add(FName(D.Name));
         P.Add(FTransform(FQuat(D.Q[0],D.Q[1],D.Q[2],D.Q[3]).GetNormalized(),FVector(D.P[0],D.P[1],D.P[2]))*P[Parent]);
     }
-    UProphecyFKReturnLibrary::SetAttackFKReturn(A,true,2);
+    SetTestReturnTiming(A,true,2);
+    UProphecyFKReturnLibrary::SetAttackFKReturnProfile(A,NAME_None,.26f,.51f,.12f);
     auto AttackPose=P;
     AttackPose.Last().SetRotation(FQuat(FVector::UpVector,1.1)*AttackPose.Last().GetRotation());
     auto Prev=P,Now=P,Local=P;
@@ -253,7 +296,7 @@ bool FProphecyFKReturnAcceptedHistoryTest::RunTest(const FString&)
     auto Attack=Idle;Attack.Last().SetRotation(FQuat(FVector::UpVector,1.1)*Attack.Last().GetRotation());
     for(float Coefficient:{1.f,10.f})for(float Hold:{0.f,.5f,1.f})
     {
-        UProphecyFKReturnLibrary::SetAttackFKReturn(A,true,Coefficient,Hold);
+        SetTestReturnTiming(A,true,Coefficient,Hold);
         UProphecyFKReturnLibrary::SetAttackFKReturnProfile(A,NAME_None,1,.51f,.12f,FProphecyFKInertiaWeights());
         Begin(A,TEXT("slashLU"),Names,Parents,Attack,Attack,0,1.f/30);
         TestEqual(TEXT("Hold latched on handoff"),Active.FindChecked(A).Curve.AlphaHold,Hold);
@@ -305,7 +348,8 @@ bool FProphecyFKReturnExitIntervalTest::RunTest(const FString&)
     auto Earlier=Idle;
     const int32 Arm=Names.IndexOfByKey(TEXT("upperarm_r"));
     Earlier[Arm].SetRotation((Earlier[Arm].GetRotation()*FQuat(FVector::UpVector,-.1)).GetNormalized());
-    UProphecyFKReturnLibrary::SetAttackFKReturn(A,true,1,1); // Isolate authored inertia.
+    SetTestReturnTiming(A,true,1,1); // Isolate authored inertia.
+    UProphecyFKReturnLibrary::SetAttackFKReturnProfile(A,NAME_None,.26f,.51f,.12f);
     double MaxPositionError=0,MaxRotationError=0;
     for(float FPS:{5.f,60.f,120.f})for(uint32 Age:{0u,1u,2u})
     {
@@ -367,8 +411,8 @@ bool FProphecyFKReturnTrimTest::RunTest(const FString&)
     TestEqual(TEXT("Coefficient shapes new remaining window"),Trimmed.Weights(.375f).NN,.25f);
     auto* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
     using L=UProphecyFKReturnLibrary;
-    TestFalse(TEXT("Negative trim rejected"),L::SetAttackFKReturn(A,true,1,0,-.1f));
-    TestFalse(TEXT("Trim above one rejected"),L::SetAttackFKReturn(A,true,1,0,1.1f));
+    TestFalse(TEXT("Negative trim rejected"),SetTestReturnTiming(A,true,1,0,-.1f));
+    TestFalse(TEXT("Trim above one rejected"),SetTestReturnTiming(A,true,1,0,1.1f));
     TArray<FName> Names;TArray<int32> Parents;TArray<FTransform> Idle;
     Names.Add(TEXT("pelvis"));Parents.Add(INDEX_NONE);Idle.Add(FTransform::Identity);
     for(const auto& D:Data::Bones)
@@ -379,7 +423,7 @@ bool FProphecyFKReturnTrimTest::RunTest(const FString&)
     auto Attack=Idle;Attack.Last().SetRotation(FQuat(FVector::UpVector,1)*Attack.Last().GetRotation());
     for(float Trim:{0.f,.5f,.9f,1.f})for(const auto& Profile:Data::Profiles)
     {
-        L::SetAttackFKReturn(A,true,2,.5f,Trim);
+        SetTestReturnTiming(A,true,2,.5f,Trim);
         Begin(A,FName(Profile.Attack),Names,Parents,Idle,Attack,0,1.f/30);
         if(Trim==1)
         {
@@ -402,17 +446,17 @@ bool FProphecyFKReturnTrimTest::RunTest(const FString&)
         TestFalse(TEXT("No FK influence after final interval"),Apply(A,double(Limit+1),Previous,Current,Local));
         TestFalse(TEXT("Timer state retired"),TickPhases.Contains(A));
     }
-    L::SetAttackFKReturn(A,true,1,0,.5f);CaptureReset(A);
+    SetTestReturnTiming(A,true,1,0,.5f);CaptureReset(A);
     Begin(A,TEXT("slashLU"),Names,Parents,Idle,Attack,0,1.f/30);
     const auto Limit=TickPhases.FindChecked(A).Limit;
-    L::SetAttackFKReturn(A,true,1,0,0);
+    SetTestReturnTiming(A,true,1,0,0);
     TestEqual(TEXT("Trim changes latch next return"),TickPhases.FindChecked(A).Limit,Limit);
-    RestoreReset(A);TestEqual(TEXT("Reset restores trim"),Trims.FindChecked(A),.5f);
+    RestoreReset(A);TestEqual(TEXT("Reset restores trim"),Configs.FindChecked(A).Timing[0].Y,.5f);
     TestFalse(TEXT("Reset removes active return"),IsActive(A));
-    L::SetAttackFKReturn(A,true,1,0,1);Begin(A,TEXT("slashLU"),Names,Parents,Idle,Attack,0,1.f/30);
+    SetTestReturnTiming(A,true,1,0,1);Begin(A,TEXT("slashLU"),Names,Parents,Idle,Attack,0,1.f/30);
     TestFalse(TEXT("Full trim starts no clock"),IsActive(A));
     TestEqual(TEXT("Full trim leaves no pending clock"),ProphecyBlendClock::Consume(A,ProphecyBlendClock::EKind::FKReturn),0.);
-    Remove(A);TestFalse(TEXT("Removal clears trim settings"),Trims.Contains(A)||TrimBaselines.Contains(A));
+    Remove(A);TestFalse(TEXT("Removal clears trim settings"),Configs.Contains(A)||Baselines.Contains(A));
     W->DestroyWorld(false);return !HasAnyErrors();
 }
 #endif

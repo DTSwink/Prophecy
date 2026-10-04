@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "ticks": 600,
+  "agents": 3,
+  "pose_samples": 450,
+  "completed_returns": 4,
+  "observed_nn_weights": [
+    0.0,
+    1.0
+  ],
+  "begins": [
+    "FKReturn begin actor=BP_ProphecyManualPoseAgent_C_0 attack=slashR duration=0.280000 inertia=1.000000 easing=0.870000 coefficient=2.000000 alpha_hold=1.000000 trim=0.000000 end_duration=0.331689 source=2.200000 inertia_hold=0.050000 decay=0.800000 world=1 angle_seconds=0.290000 world_seed=1",
+    "FKReturn begin actor=BP_ProphecyManualPoseAgent_C_0 attack=slashR duration=0.280000 inertia=1.000000 easing=0.870000 coefficient=2.000000 alpha_hold=1.000000 trim=0.000000 end_duration=0.334007 source=4.200000 inertia_hold=0.050000 decay=0.800000 world=1 angle_seconds=0.290000 world_seed=1",
+    "FKReturn begin actor=BP_ProphecyManualPoseAgent_C_0 attack=slashR duration=0.280000 inertia=1.000000 easing=0.870000 coefficient=2.000000 alpha_hold=1.000000 trim=0.000000 end_duration=0.331464 source=6.166666 inertia_hold=0.050000 decay=0.800000 world=1 angle_seconds=0.290000 world_seed=1",
+    "FKReturn begin actor=BP_ProphecyManualPoseAgent_C_0 attack=slashR duration=0.280000 inertia=1.000000 easing=0.870000 coefficient=2.000000 alpha_hold=1.000000 trim=0.000000 end_duration=0.333503 source=8.200000 inertia_hold=0.050000 decay=0.800000 world=1 angle_seconds=0.290000 world_seed=1"
+  ]
+}

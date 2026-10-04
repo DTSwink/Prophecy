@@ -1,4 +1,5 @@
 #include "ProphecyModeTransitions.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyAgent.h"
 #include "ProphecyAttackFists.h"
@@ -435,3 +436,10 @@ bool FProphecyModeTickRetirementTest::RunTest(const FString&)
     return !HasAnyErrors();
 }
 #endif
+
+
+void ProphecyNNModifierDebug::Presentation(FReport& R)
+{
+    const auto* S=ModeTransitionStorage().Blends.Find(R.Agent);
+    if(S)R.Add(TEXT("ModeTransition"),TEXT("PRESENT"),TEXT("Simulation mode pose blend"),FString::Printf(TEXT("%.3f / %.3f authored seconds"),S->Start,BlendSeconds));
+}

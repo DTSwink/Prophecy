@@ -1,4 +1,5 @@
 #include "ProphecyWalkPinningLibrary.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyWalkPinning.h"
 #include "ProphecyWalkTickPinning.h"
 #include "ProphecyNNPoseTypes.h"
@@ -690,3 +691,26 @@ bool FProphecyWalkPinningToleranceTest::RunTest(const FString&)
     return true;
 }
 #endif
+
+
+void ProphecyNNModifierDebug::Pinning(FReport& R)
+{
+    using namespace ProphecyWalkPinning;
+    if(!R.LowerLoco || !R.WalkFeet)return;
+    if(const auto* S=Settings.Find(R.Agent))
+        R.Add(TEXT("PinConflict"),TEXT("CONSTRAINT"),TEXT("Conflicting foot pin suppression"),FString::Printf(TEXT("tolerance %.3g fallback %.3g"),S->Tolerance,S->Fallback));
+    if(const auto* B=BackwardBounds.Find(R.Agent))
+        R.Add(TEXT("PinBackward"),TEXT("CONSTRAINT"),TEXT("Backward pin bound"),FString::Printf(TEXT("%.3g..%.3g cm | heading root %d"),B->MinCm,B->MaxCm,B->RootIndex));
+    if(const auto* B=CircleBounds.Find(R.Agent))
+        R.Add(TEXT("PinCircle"),TEXT("CONSTRAINT"),TEXT("Radial pin bound"),FString::Printf(TEXT("%.3g..%.3g cm"),B->MinCm,B->MaxCm));
+    if(const auto* V=BackwardTransfers.Find(R.Agent);V && *V>0)
+        R.Add(TEXT("PinTransfer"),TEXT("CONSTRAINT"),TEXT("Backward pin transfer"),FString::Printf(TEXT("multiplier %.3g"),*V));
+    if(const auto* V=BackwardTargetLerps.Find(R.Agent);V && *V>0)
+        R.Add(TEXT("PinHeading"),TEXT("INPUT"),TEXT("Pin bound target heading"),FString::Printf(TEXT("alpha %.3g"),*V));
+    if(const auto* S=Smoothing.Find(R.Agent);S && S->Active())
+        R.Add(TEXT("PinSmoothing"),TEXT("POSE+HISTORY"),TEXT("Foot pin smoothing"),FString::Printf(TEXT("L %.3f -> %.3f R %.3f -> %.3f | in %d out %d ticks"),S->Current[0],S->Target[0],S->Current[1],S->Target[1],S->InFrames,S->OutFrames));
+    if(const auto* S=ReachGuards.Find(R.Agent))
+        R.Add(TEXT("PinReach"),TEXT("CONSTRAINT"),TEXT("Foot pin reach rejection"),FString::Printf(TEXT("cooldown L%d R%d / %d ticks"),S->Remaining[0],S->Remaining[1],S->Frames));
+    if(const auto* S=TickPins.Find(R.Agent);S && S->HasBase)
+        R.Add(TEXT("TickPins"),TEXT("PRESENT"),TEXT("Game-tick pin smoothing"),FString::Printf(TEXT("effective L %.3f R %.3f"),S->Effective.X,S->Effective.Y));
+}

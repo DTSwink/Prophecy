@@ -6,8 +6,8 @@ root=Path(unreal.Paths.project_dir()).resolve()
 ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 assert ed.get_game_world() is None,'Preserve user Play'
 assert ed.get_editor_world().get_path_name()=='/Game/testNN.testNN'
-checks=[('ProphecyFKReturnLibrary','set_attack_fk_return',['nn_takeover_coefficient','alpha_hold']),
- ('ProphecyFKReturnLibrary','set_attack_fk_return_profile',['return_time','bone_inertia']),
+checks=[('ProphecyFKReturnLibrary','set_attack_fk_return',['nn_takeover_coefficient','headbutt','hook_l','hook_r','jab_l','jab_r','kick_l','kick_r','over_l','over_r','pike','slash_l','slash_ld','slash_lu','slash_r','slash_rd','slash_ru']),
+ ('ProphecyFKReturnLibrary','set_attack_fk_return_profile',['return_time','bone_inertia','inertia_hold','inertia_decay','world_inertia','spine_angle_time']),
  ('ProphecyAttackEndExtensionLibrary','set_attack_end_extension',[]),
  ('ProphecyUpperCheckpointLibrary','set_upper_checkpoint',[]),
  ('ProphecyUpperBodyInertiaLibrary','set_attack_upper_body_inertia',['arms_alpha']),

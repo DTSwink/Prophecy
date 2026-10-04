@@ -1,6 +1,6 @@
+#include "ProphecyDoubleReachAnimInstance.h"
 #include "Engine/World.h"
 #include "ProphecyBlendClock.h"
-#include "ProphecyDoubleReachAnimInstance.h"
 
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNodeBase.h"

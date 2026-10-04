@@ -16,7 +16,9 @@ inertia, bone weights, duration, easing, inertia hold/decay, world mode and addi
 spine-angle time are all per attack. Angle time adds seconds per 90 degrees
 (default .29), independently of base duration. Continuous spring remains a lab
 experiment and is not part of the requested Unreal port. This snapshot preserves
-the running lab before that port.
+the running lab before that port. The October 4 accepted milestone subsequently
+updates saved tuning and adds snapshots 11/12. Lab slashRU angle time .20 is
+preserved here independently of Unreal's deliberately unchanged .29 profile.
 
 ## Controls
 
