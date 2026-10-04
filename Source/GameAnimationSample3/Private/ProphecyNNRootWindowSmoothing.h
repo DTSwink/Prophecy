@@ -18,14 +18,16 @@ struct FSample
             Distance = Length; Direction = Heading; Orientation = Yaw; bInitialized = true;
             return Offset;
         }
-        const double DistanceFactor = Deceleration >= 0.f && Length < Distance ? double(Deceleration) : Factors.X;
+        // Above-one response is applied by the mover forecast. Never extrapolate
+        // this temporal filter: gains above one would oscillate around the goal.
+        const double DistanceFactor = FMath::Min(1., Deceleration >= 0.f && Length < Distance ? double(Deceleration) : Factors.X);
         Distance = FMath::Lerp(Distance, Length, DistanceFactor);
-        Direction += FMath::FindDeltaAngleRadians(Direction, Heading) * Factors.Y;
-        Orientation += FMath::FindDeltaAngleRadians(Orientation, Yaw) * Factors.Z;
+        Direction += FMath::FindDeltaAngleRadians(Direction, Heading) * FMath::Min(1., Factors.Y);
+        Orientation += FMath::FindDeltaAngleRadians(Orientation, Yaw) * FMath::Min(1., Factors.Z);
         // Preserve the incoming value exactly for unrestricted channels.
         if (Factors.Z < 1.) Yaw = Orientation;
         else Orientation = Yaw;
-        if (DistanceFactor == 1. && Factors.Y == 1.) return Offset;
+        if (DistanceFactor == 1. && Factors.Y >= 1.) return Offset;
         return FVector(Distance * FMath::Cos(Direction), Distance * FMath::Sin(Direction), Offset.Z);
     }
 };

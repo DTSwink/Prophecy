@@ -349,4 +349,70 @@ bool FProphecyFKReturnExitIntervalTest::RunTest(const FString&)
     AddInfo(FString::Printf(TEXT("Exit interval maximum round-trip error: %.9g cm / %.9g radians"),MaxPositionError,MaxRotationError));
     Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyFKReturnTrimTest,"Prophecy.NN.FKReturn.Trim",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyFKReturnTrimTest::RunTest(const FString&)
+{
+    using namespace ProphecyFKReturn;
+    FCurve Original;Original.InverseDuration=1;Original.Coefficient=2;
+    for(int32 G=0;G<GroupCount;++G)Original.Decay[G]=3;
+    auto Trimmed=Original;Trimmed.TakeoverTimeScale=2;
+    const auto Before=Original.Weights(.25f),After=Trimmed.Weights(.25f);
+    TestEqual(TEXT("Half trim rescales coefficient-2 takeover"),After.NN,.25f);
+    TestEqual(TEXT("Trimming does not speed up FK path"),After.Blend,Before.Blend);
+    for(int32 G=0;G<GroupCount;++G)TestEqual(TEXT("Trimming does not alter inertia decay"),After.Momentum[G],Before.Momentum[G]);
+    TestEqual(TEXT("Full NN at original midpoint"),Trimmed.Weights(.5f).NN,1.f);
+    Trimmed.SetAlphaHold(.5f);
+    TestEqual(TEXT("Hold is relative to new end"),Trimmed.Weights(.25f).NN,0.f);
+    TestEqual(TEXT("Coefficient shapes new remaining window"),Trimmed.Weights(.375f).NN,.25f);
+    auto* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    using L=UProphecyFKReturnLibrary;
+    TestFalse(TEXT("Negative trim rejected"),L::SetAttackFKReturn(A,true,1,0,-.1f));
+    TestFalse(TEXT("Trim above one rejected"),L::SetAttackFKReturn(A,true,1,0,1.1f));
+    TArray<FName> Names;TArray<int32> Parents;TArray<FTransform> Idle;
+    Names.Add(TEXT("pelvis"));Parents.Add(INDEX_NONE);Idle.Add(FTransform::Identity);
+    for(const auto& D:Data::Bones)
+    {
+        const int32 Parent=Names.IndexOfByKey(FName(D.Parent));Parents.Add(Parent);Names.Add(FName(D.Name));
+        Idle.Add(FTransform(FQuat(D.Q[0],D.Q[1],D.Q[2],D.Q[3]).GetNormalized(),FVector(D.P[0],D.P[1],D.P[2]))*Idle[Parent]);
+    }
+    auto Attack=Idle;Attack.Last().SetRotation(FQuat(FVector::UpVector,1)*Attack.Last().GetRotation());
+    for(float Trim:{0.f,.5f,.9f,1.f})for(const auto& Profile:Data::Profiles)
+    {
+        L::SetAttackFKReturn(A,true,2,.5f,Trim);
+        Begin(A,FName(Profile.Attack),Names,Parents,Idle,Attack,0,1.f/30);
+        if(Trim==1)
+        {
+            TestFalse(TEXT("Full trim bypasses every family"),IsActive(A));
+            TestTrue(TEXT("Full trim requests vanilla inference"),NeedsInference(A));continue;
+        }
+        const uint64 Limit=uint64(FMath::Max(1.,FMath::CeilToDouble(double(Profile.Duration)*(1.-double(Trim))*60.-1.e-5)));
+        TestEqual(TEXT("Global trim shortens each family deadline"),TickPhases.FindChecked(A).Limit,Limit);
+        TestEqual(TEXT("Original profile duration preserved"),Active.FindChecked(A).Curve.InverseDuration,1.f/Profile.Duration);
+        auto Previous=Idle,Current=Attack,Local=Idle;
+        for(uint64 Tick=1;Tick<=Limit;++Tick)
+        {
+            FWorldDelegates::OnWorldPreActorTick.Broadcast(W,LEVELTICK_All,Tick==2?20.f:1.f/120);
+            const bool Need=NeedsInference(A);
+            if(Tick==Limit)TestTrue(TEXT("NN runs by trimmed deadline"),Need);
+            Previous=Current;Current=Idle;Apply(A,double(Tick),Previous,Current,Local);
+        }
+        for(int32 J=0;J<Idle.Num();++J)TestTrue(TEXT("Exact NN at shortened deadline"),Current[J].Equals(Idle[J],0));
+        TestTrue(TEXT("Final interpolation interval retained"),IsActive(A));
+        TestFalse(TEXT("No FK influence after final interval"),Apply(A,double(Limit+1),Previous,Current,Local));
+        TestFalse(TEXT("Timer state retired"),TickPhases.Contains(A));
+    }
+    L::SetAttackFKReturn(A,true,1,0,.5f);CaptureReset(A);
+    Begin(A,TEXT("slashLU"),Names,Parents,Idle,Attack,0,1.f/30);
+    const auto Limit=TickPhases.FindChecked(A).Limit;
+    L::SetAttackFKReturn(A,true,1,0,0);
+    TestEqual(TEXT("Trim changes latch next return"),TickPhases.FindChecked(A).Limit,Limit);
+    RestoreReset(A);TestEqual(TEXT("Reset restores trim"),Trims.FindChecked(A),.5f);
+    TestFalse(TEXT("Reset removes active return"),IsActive(A));
+    L::SetAttackFKReturn(A,true,1,0,1);Begin(A,TEXT("slashLU"),Names,Parents,Idle,Attack,0,1.f/30);
+    TestFalse(TEXT("Full trim starts no clock"),IsActive(A));
+    TestEqual(TEXT("Full trim leaves no pending clock"),ProphecyBlendClock::Consume(A,ProphecyBlendClock::EKind::FKReturn),0.);
+    Remove(A);TestFalse(TEXT("Removal clears trim settings"),Trims.Contains(A)||TrimBaselines.Contains(A));
+    W->DestroyWorld(false);return !HasAnyErrors();
+}
 #endif

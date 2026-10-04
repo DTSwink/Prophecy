@@ -1,4 +1,5 @@
 // Explicit diagnostic node only; no tick hooks or normal-path lookups.
+#include "ProphecyCustomAttack.h"
 bool AProphecyNNLocomotionManager::SetSlashTrainStartingPose(FProphecyAgentHandle Handle,FString& OutError,
     FName OriginalGTAttack,FVector* OutGTTarget)
 {
@@ -14,7 +15,9 @@ bool AProphecyNNLocomotionManager::SetSlashTrainStartingPose(FProphecyAgentHandl
     { OutError=TEXT("Seed an idle kinematic agent before its first special.");return false; }
     FString Text;TSharedPtr<FJsonObject> Data;
     const bool bOriginalGT=!OriginalGTAttack.IsNone();
-    const TCHAR* Fixture=bOriginalGT?TEXT("Tools/NN/Fixtures/GTAttackIdle.json"):TEXT("Tools/NN/Fixtures/SlashTrain2026092223.json");
+    const bool bCustom=OriginalGTAttack==TEXT("CodexProblemSlashL");
+    TArray<float> CustomState;
+    const TCHAR* Fixture=bCustom?TEXT("Tools/NN/Fixtures/ProblemSlashL743.json"):bOriginalGT?TEXT("Tools/NN/Fixtures/GTAttackIdle.json"):TEXT("Tools/NN/Fixtures/SlashTrain2026092223.json");
     if (!FFileHelper::LoadFileToString(Text,*(FPaths::ProjectDir()/Fixture)) ||
         !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Data) || !Data.IsValid())
     { OutError=TEXT("Missing attack initial-history fixture.");return false; }
@@ -30,7 +33,7 @@ bool AProphecyNNLocomotionManager::SetSlashTrainStartingPose(FProphecyAgentHandl
         LocalGTTarget=FVector((*Values)[0]->AsNumber(),(*Values)[1]->AsNumber(),(*Values)[2]->AsNumber());
         if (LocalGTTarget.ContainsNaN()) { OutError=TEXT("Invalid original GT target.");return false; }
     }
-    if (bOriginalGT && Actor->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic)
+    if (bOriginalGT && !bCustom && Actor->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic)
     {
         // Simulated GT repeats keep the live pose, velocity and recurrent history.
         // Only resolve the authored target in the current mover frame.
@@ -38,13 +41,39 @@ bool AProphecyNNLocomotionManager::SetSlashTrainStartingPose(FProphecyAgentHandl
         if(OutGTTarget)*OutGTTarget=SlashComponentWorld(Actor,A.PublishedRoot,A.PublishedYaw).TransformPosition(LocalGTTarget);
         return true;
     }
+    SlashTrainFrame::FFrame Reference;
+    TArray<FTransform> Poses[2];
+    if (bCustom)
+    {
+        const TArray<TSharedPtr<FJsonValue>>* Values=nullptr;
+        if (!Data->TryGetArrayField(TEXT("initial_state"),Values) || Values->Num()!=SlashInputDim)
+        { OutError=TEXT("Invalid captured attack state.");return false; }
+        JsonFloatArray(*Values,CustomState);
+        for (float V:CustomState) if (!FMath::IsFinite(V))
+        { OutError=TEXT("Non-finite captured attack state.");return false; }
+        FLocomotionClamps Clamps;Clamps.bFixedArms=false;
+        for (int32 F=0;F<2;++F)
+        {
+            float Upper[UpperStateDim];FMemory::Memcpy(Upper,CustomState.GetData()+82+F*90,sizeof(Upper));
+            // Decoder uses heading-relative arms; the captured slash uses root-relative arms.
+            for (int32 O:{60,75})
+            {
+                WriteStateVec3(Upper,O,TransformRow(ReadStateVec3(Upper,O),Impl->SeedRootRot));
+                WriteRot6(Multiply(MatrixFromRot6(Upper+O+3),Impl->SeedRootRot),Upper+O+3);
+                WriteRot6(Multiply(MatrixFromRot6(Upper+O+9),Impl->SeedRootRot),Upper+O+9);
+            }
+            Poses[F].SetNum(FullBodyBoneCount);
+            DecodeLocomotionPose(Impl,CustomState.GetData()+F*41,Upper,A.PublishedWalkWeight,Poses[F],nullptr,Clamps);
+        }
+    }
+    else
+    {
     const TSharedPtr<FJsonObject>* History=nullptr;
     if (!Data->TryGetObjectField(TEXT("initial_history"),History))
     { OutError=TEXT("Re-extract the slash train fixture with initial history.");return false; }
     const auto& Names=(*History)->GetArrayField(TEXT("bone_names"));
     const auto& Positions=(*History)->GetArrayField(TEXT("positions"));
     const auto& Rotations=(*History)->GetArrayField(TEXT("rotations"));
-    SlashTrainFrame::FFrame Reference;
     const TArray<TSharedPtr<FJsonValue>>* ReferenceP=nullptr;const TArray<TSharedPtr<FJsonValue>>* ReferenceR=nullptr;
     if (!bOriginalGT)
     {
@@ -57,7 +86,6 @@ bool AProphecyNNLocomotionManager::SetSlashTrainStartingPose(FProphecyAgentHandl
     }
     if (Names.Num()!=FullBodyBoneCount || Positions.Num()!=2 || Rotations.Num()!=2)
     { OutError=TEXT("Invalid seed dimensions.");return false; }
-    TArray<FTransform> Poses[2];
     for (int32 F=0;F<2;++F)
     {
         Poses[F].SetNum(FullBodyBoneCount);
@@ -81,7 +109,9 @@ bool AProphecyNNLocomotionManager::SetSlashTrainStartingPose(FProphecyAgentHandl
             if (Poses[F][I].ContainsNaN()) { OutError=TEXT("Non-finite seed pose.");return false; }
         }
     }
+    }
     const int32 I=Handle.Index;
+    if (bCustom) ProphecyAttackRecovery::EnterSpecial(Actor);
     // A fresh stationary carrier, with actual two-pose skeletal velocity retained.
     ProphecyNNAgentReset::FCheckpoint Root;Root.Root=A.PublishedRoot;Root.Yaw=A.PublishedYaw;Root.bWalk=A.bUseWalkPolicy;
     ProphecyNNAgentReset::ClearMotion(A,Root,1.f/FMath::Max(1.f,NNUpdateHz));
@@ -127,6 +157,13 @@ bool AProphecyNNLocomotionManager::SetSlashTrainStartingPose(FProphecyAgentHandl
         Carrier,Carrier,A.PublishedPoseTimeSeconds,true,false,0.f,FVector2D::ZeroVector,
         FProphecyNNFixedArms(),false,!ProphecyAttackWrist::FreePosition(Actor));
     ProphecyNNPresentation::Publish(PoseId,A.PublishedPoseTimeSeconds,1.f);
+    if (bCustom)
+    {
+        if (!ProphecyCustomAttack::PlacePhysical(Actor,Impl->BodyNames,Poses[0],Poses[1],Carrier,OutError)) return false;
+        // Register existing world cleanup without changing the train's reference frame.
+        SlashTrainFrame::Set(Actor,SlashTrainFrame::FFrame{});SlashTrainFrame::Frames.Remove(Actor);
+        SlashTrainFrame::CustomSeeds.Add(Actor,MoveTemp(CustomState));
+    }
     return true;
 #endif
 }

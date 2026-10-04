@@ -58,9 +58,11 @@ struct FCurve
     FBone Bones[BoneCount];
     float InverseDuration=1.f/.26f,Easing=.12f,Coefficient=1.f;
     float AlphaHold=0.f,InverseTakeoverWindow=1.f;
+    float TakeoverTimeScale=1.f; // Trim scales NN progress, never authored FK/inertia time.
     void SetAlphaHold(float Value){AlphaHold=Value;InverseTakeoverWindow=Value<1.f?1.f/(1.f-Value):0.f;}
     float NNWeight(float X) const
     {
+        X*=TakeoverTimeScale;
         const float U=X>=1.f?1.f:FMath::Clamp((X-AlphaHold)*InverseTakeoverWindow,0.f,1.f);
         return Coefficient==1.f?U:Coefficient==2.f?U*U:FMath::Pow(U,Coefficient);
     }
@@ -87,7 +89,7 @@ struct FCurve
     }
     void Apply(float Elapsed,TArrayView<FTransform> Pose,TArrayView<FTransform> Locals={}) const
     {
-        if(Elapsed*InverseDuration>=1.f)return; // Exact NN, no round trip at completion.
+        if(Elapsed*InverseDuration*TakeoverTimeScale>=1.f)return; // Exact NN, no round trip at completion.
         const FSample S=Weights(Elapsed);
         // Read all NN locals before overwriting their parents. Stack storage only.
         FTransform Target[BoneCount];

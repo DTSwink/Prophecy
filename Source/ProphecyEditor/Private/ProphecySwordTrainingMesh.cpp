@@ -106,6 +106,6 @@ void InspectSwordBlueprint()
 		}
 	}
 }
-FAutoConsoleCommand InspectCommand(TEXT("Prophecy.Sword.InspectBlueprint"), TEXT("Read-only graph inventory for the existing sword Blueprint."),
+FAutoConsoleCommand SwordInspectCommand(TEXT("Prophecy.Sword.InspectBlueprint"), TEXT("Read-only graph inventory for the existing sword Blueprint."),
 	FConsoleCommandDelegate::CreateStatic(&InspectSwordBlueprint));
 }

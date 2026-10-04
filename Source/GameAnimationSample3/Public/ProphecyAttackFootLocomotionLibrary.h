@@ -47,6 +47,16 @@ public:
      * legs and drag handoff. Configure before attack; latched until its end. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent",DisplayName="Set Ghost Loco Drag"))
     static bool SetGhostLocoDrag(AProphecyAgent* Agent,bool Enabled=true);
+    /** Requires Ghost Loco Drag. At attack entry, capture Root+1 minus Root in world space.
+     * Add this single displacement times Multiplier equally to both ghost feet over
+     * Duration Ticks unpaused game ticks. Zero ticks applies it at the first prediction.
+     * Ghost leg feedback lets the normal model respond through the pelvis; real drag
+     * legs keep their existing path. Half mode pauses; attack end discards any remainder.
+     * Configure before attack; disabling cancels remaining displacement immediately. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent",DisplayName="Ghost Loco Inertia"))
+    static bool SetGhostLocoInertia(AProphecyAgent* Agent,bool Enabled=false,
+        UPARAM(meta=(ClampMin="0")) int32 DurationTicks=12,
+        UPARAM(meta=(ClampMin="0")) float Multiplier=1.f);
     /** Interpolated ghost pelvis/legs in world space, available only while active. */
     UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent"))
     static bool ReadGhostLocoDrag(AProphecyAgent* Agent,TArray<FName>& Names,TArray<FTransform>& WorldPose);

@@ -47,4 +47,6 @@ struct FGhostRun
 void BeginGhost(const AProphecyAgent* Agent,const float* AttackState,TConstArrayView<FTransform> Pose,const FTransform& Carrier);
 FGhostRun* FindGhost(const AProphecyAgent* Agent);
 void CancelGhost(const AProphecyAgent* Agent,float* AttackState);
+// Once per accepted prediction, before ghost visualization and recurrence publication.
+bool ApplyGhostInertia(const AProphecyAgent* Agent,TArrayView<FTransform> Pose,const FTransform& Carrier);
 }

@@ -69,6 +69,10 @@ DEFINE_LOG_CATEGORY_STATIC(LogProphecyJoltWorld, Log, All);
 namespace ProphecyJolt::WorldPrivate
 {
 std::atomic<int32> LiveSimulations{0};
+#if !UE_BUILD_SHIPPING
+TAutoConsoleVariable<int32> DebugRigTeleport(TEXT("Prophecy.Jolt.DebugRigTeleport"),0,
+    TEXT("Scoped diagnostic rig pose restoration. Off outside the explicit captured attack setup."),ECVF_Cheat);
+#endif
 static_assert(sizeof(JPH::ObjectLayer) == sizeof(uint16), "Review the collision profile capacity for a changed Jolt ABI.");
 static_assert(JPH::Body::cProphecyNumericalSafetyVersion == 1, "Rebuild the reviewed numerical-safety Jolt dependency.");
 
@@ -3365,12 +3369,32 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetBodyPose(const FProphec
     using namespace ProphecyJolt::Conversions;
     const auto Ready = ValidateReady(); if (!Ready.IsSuccess()) return Ready;
     const auto* Slot = Native->Find(Handle);
+#if !UE_BUILD_SHIPPING
+    // Existing exported entry point also supports live diagnostic patches across module boundaries.
+    if (Slot && Slot->OwnerRig.IsSet() && DebugRigTeleport.GetValueOnGameThread()!=0)
+        return DebugSetRigBodyPose(Handle,Pose);
+#endif
     if (!Slot || Slot->OwnerRig.IsSet() || !RigidJointFrame(Pose))
         return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Invalid independent body pose."));
     Native->Physics.GetBodyInterface().SetPositionAndRotation(Slot->Body,
         ToJoltPosition(Pose.GetLocation()), ToJoltRotation(Pose.GetRotation()), JPH::EActivation::Activate);
     return {};
 }
+
+#if !UE_BUILD_SHIPPING
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::DebugSetRigBodyPose(const FProphecyJoltBodyHandle& Handle, const FTransform& Pose)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    using namespace ProphecyJolt::Conversions;
+    const auto Ready = ValidateReady(); if (!Ready.IsSuccess()) return Ready;
+    const auto* Slot = Native->Find(Handle);
+    if (!Slot || !Slot->OwnerRig.IsSet() || !RigidJointFrame(Pose))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Invalid diagnostic rig body pose."));
+    Native->Physics.GetBodyInterface().SetPositionAndRotation(Slot->Body,
+        ToJoltPosition(Pose.GetLocation()), ToJoltRotation(Pose.GetRotation()), JPH::EActivation::Activate);
+    return {};
+}
+#endif
 
 FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetBodyRuntimeSettings(const FProphecyJoltBodyHandle& Handle,
     bool bGravity, float LinearDamping, float AngularDamping, bool bCCD)

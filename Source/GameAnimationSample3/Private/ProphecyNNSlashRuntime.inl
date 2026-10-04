@@ -457,7 +457,11 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	auto Current = TransformSlice(Impl->ComponentTransformBuffer, Handle.Index);
 	const FTransform EntryPreviousCarrier=SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw);
 	ProphecySpecialStart::FSeed PhysicalSeed;
-	const bool bPhysicalSeed=ProphecySpecialStart::Sample(Actor,Impl->PublishedBoneNames,
+	const bool bPhysicalSeed=
+#if !UE_BUILD_SHIPPING
+		!SlashTrainFrame::HasCustomSeed(Actor) &&
+#endif
+		ProphecySpecialStart::Sample(Actor,Impl->PublishedBoneNames,
 		EntryPreviousCarrier,Carrier,1.f/NNUpdateHz,PhysicalSeed);
 	if (bPhysicalSeed) Current=MakeArrayView(PhysicalSeed.Current);
 #if !UE_BUILD_SHIPPING
@@ -528,6 +532,14 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	}
 	// Static initialization remains the explicit opt-in to discard entry velocity.
 	if (ProphecyAttackControls::IsStatic(Actor)) ProphecyAttackControls::MakeHistoryStatic(Slash.State);
+#if !UE_BUILD_SHIPPING
+	if (const auto* Seed=SlashTrainFrame::CustomSeeds.Find(Actor))
+	{
+		// Explicit captured test entry, consumed once. No future poses are replayed.
+		FMemory::Memcpy(Slash.State.GetData(),Seed->GetData(),262*sizeof(float));
+		SlashTrainFrame::CustomSeeds.Remove(Actor);
+	}
+#endif
 	if (bHalf) Slash.bHasPose = Slash.bNeedsFeedback = true;
 	// Retain the outgoing endpoint until the first prediction. Physical entry
 	// then samples the last displayed target in AdvanceSlashAttacks, so a Trigger
@@ -562,6 +574,18 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	ProphecyAttackStartFKCore::Begin(Actor,Impl->BodyNames,Impl->Parents,Impl->UpperCoreBoneNames);
 	ProphecyAttackStartHands::Begin(Actor,
 		HandInertiaRoot(Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw));
+	if (ProphecyAttackMotionInertia::Configured(Actor))
+	{
+		TArray<FTransform,TInlineAllocator<FullBodyBoneCount>> Previous;
+		if (ProphecyAttackControls::IsStatic(Actor)) Previous.Append(Slash.GhostPose);
+		else
+		{
+			if (bPhysicalSeed) Previous.Append(PhysicalSeed.Previous);
+			else Previous.Append(TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index));
+			for (auto& Bone:Previous) Bone=(Bone*EntryPreviousCarrier).GetRelativeTransform(Slash.AnchorWorld);
+		}
+		ProphecyAttackMotionInertia::Begin(Actor,Impl->BodyNames,Impl->Parents,Previous,Slash.GhostPose);
+	}
 	Actor->NotifySwordAttackState(true);
 	if (!bHalf) ProphecyKickFootLeeway::Begin(Actor,Attack);
 	ProphecyAttackCamera::Update(this, Actor, !bHalf);
@@ -805,6 +829,7 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	AttackEndPredictions.Remove(Actor);
 	ProphecyForearmStretch::End(Actor,bReturnToLocomotion);
 	ProphecyAttackStartFKCore::Cancel(Actor);
+	ProphecyAttackMotionInertia::Cancel(Actor);
 	// A normal exit can precede the authored inertia window. Let that window
 	// finish against locomotion rather than dropping its remaining offset.
 	if (!bReturnToLocomotion) ProphecyAttackStartInertia::Cancel(Actor);
@@ -1117,6 +1142,35 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			FMemory::Memcpy(Slash.State.GetData() + 41, Output, 41 * sizeof(float));
 			FMemory::Memmove(Slash.State.GetData() + 82, Slash.State.GetData() + 172, 90 * sizeof(float));
 			FMemory::Memcpy(Slash.State.GetData() + 172, Output + 41, 90 * sizeof(float));
+			if(ProphecyAttackFootLocomotion::ApplyGhostInertia(AgentActors[Index],Slash.GhostPose,Slash.AnchorWorld))
+			{
+				// Only ghost leg channels change. Keep the accepted pelvis and real branch intact.
+				const auto* G=ProphecyAttackFootLocomotion::FindGhost(AgentActors[Index]);
+				for(int32 S=0;S<2;++S)
+				{
+					const auto* I=G->Legs[S];const auto& Foot=Slash.GhostPose[I[2]];
+					const FMat3f FootRot=MirrorYBasis(QuatToMatrix(Foot.GetRotation()));
+					const FMat3f ToeRot=MirrorYBasis(QuatToMatrix(Slash.GhostPose[I[3]].GetRotation()));
+					float* Leg=Slash.State.GetData()+50+16*S;
+					WriteStateVec3(Leg,0,LocalUnrealToTraining(Foot.GetLocation()));WriteRot6(FootRot,Leg+3);
+					WriteRot6(MirrorYBasis(QuatToMatrix(Slash.GhostPose[I[0]].GetRotation())),Leg+9);
+					Leg[15]=FMath::Clamp(FVector3f::DotProduct(RotationVectorBetween(FMat3f(),Multiply(ToeRot,Transpose(FootRot))),
+						SafeNormal(Impl->Limbs[S].ToeAxis))/ToeAlphaRadians,-1.f,1.f);
+				}
+			}
+			// Use the same forearm roll convention as the final UE pose. Applying
+			// the roll again after filtering would erase the lower-arm inertia.
+			if (ProphecyAttackMotionInertia::NeedsArmConvention(AgentActors[Index]) && ProphecySpecialRoll::Forearms(AgentActors[Index]))
+				for (int32 Side=0;Side<2;++Side)
+				{
+					const auto& Arm=Impl->UpperArms[Side];
+					SetForearmRollFromUpperArm(Impl->UpperLocalOffsets[Arm.End],Side,Slash.GhostPose[Arm.Start],Slash.GhostPose[Arm.Mid],Slash.GhostPose[Arm.End]);
+				}
+			if (ProphecyAttackMotionInertia::Apply(AgentActors[Index],Slash.GhostPose,Output[431]>.5f,Output[432]>.5f))
+			{
+				float UnusedLower[41];
+				EncodeSlashPose(*Impl,Impl->Agents[Index],MakeArrayView(Slash.GhostPose),UnusedLower,Slash.State.GetData()+172);
+			}
 			if (Output[431] > 0.5f && Slash.State[270] <= 0.5f)
 				ProphecySwordAttackCollision::Armed(AgentActors[Index]);
 			Slash.State[270] = Output[431]; Slash.State[271] = Output[432];
@@ -1327,7 +1381,7 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		// Full and half attacks share the locomotion roll convention. Apply at
 		// the UE boundary; the trained decoder/ghost and NN history stay intact.
 		// Cache the corrected pose so rendering, Jolt and defender colliders agree.
-		if (ProphecySpecialRoll::Forearms(AgentActors[AgentIndex])) for (int32 Side=0;Side<2;++Side)
+		if (ProphecySpecialRoll::Forearms(AgentActors[AgentIndex]) && !ProphecyAttackMotionInertia::FilteringArms(AgentActors[AgentIndex])) for (int32 Side=0;Side<2;++Side)
 		{
 			const auto& Arm=Impl->UpperArms[Side];
 			SetForearmRollFromUpperArm(Impl->UpperLocalOffsets[Arm.End],Side,Pose[Arm.Start],Pose[Arm.Mid],Pose[Arm.End]);

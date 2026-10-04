@@ -22,9 +22,9 @@ bool UProphecyNNRootWindowLibrary::SetLocomotionRootWindowSmoothing(AProphecyAge
     using namespace ProphecyNNRootWindow;
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()) return false;
     for (float Factor : {Distance, Direction, Orientation})
-        if (!FMath::IsFinite(Factor) || Factor < 0.f || Factor > 1.f) return false;
+        if (!FMath::IsFinite(Factor) || Factor < 0.f) return false;
     if (!FMath::IsFinite(DistanceDeceleration) ||
-        (DistanceDeceleration != -1.f && (DistanceDeceleration < 0.f || DistanceDeceleration > 1.f))) return false;
+        (DistanceDeceleration != -1.f && DistanceDeceleration < 0.f)) return false;
     for (auto It = States.CreateIterator(); It; ++It) if (!It.Key().IsValid()) It.RemoveCurrent();
     for (auto It = DecelerationOverrides.CreateIterator(); It; ++It) if (!It.Key().IsValid()) It.RemoveCurrent();
     if (Distance == 1.f && Direction == 1.f && Orientation == 1.f &&

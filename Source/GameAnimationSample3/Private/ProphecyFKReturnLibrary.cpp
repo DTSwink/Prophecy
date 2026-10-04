@@ -20,6 +20,8 @@ struct FActive
 #endif
 };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
+// Separate from retained configuration layouts for Live Coding.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,float> Trims,TrimBaselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FActive> Active;
 // Publication identity and bounded game-tick progress are separate.
 struct FTickPhase
@@ -40,7 +42,7 @@ static void EnsureCleanup()
     {
         auto Clean=[W](auto& Map){for(auto It=Map.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W)It.RemoveCurrent();};
-        Clean(Configs);Clean(Baselines);Clean(Active);Clean(TickPhases);
+        Clean(Configs);Clean(Baselines);Clean(Active);Clean(TickPhases);Clean(Trims);Clean(TrimBaselines);
     });
 }
 bool Prepare(FCurve& Curve,const FProfile& P,float Coefficient,TConstArrayView<FName> Names,
@@ -49,6 +51,7 @@ bool Prepare(FCurve& Curve,const FProfile& P,float Coefficient,TConstArrayView<F
 {
     if(P.Duration<=0 || Dt<=0 || Names.Num()!=Parents.Num() || Names.Num()!=Current.Num() || Current.Num()!=Previous.Num())return false;
     Curve.InverseDuration=1.f/P.Duration;Curve.Easing=P.Easing;Curve.Coefficient=Coefficient;
+    Curve.TakeoverTimeScale=1.f;
     Curve.SetAlphaHold(0.f);
     for(int32 G=0;G<GroupCount;++G)
     {
@@ -80,12 +83,14 @@ void Cancel(const AProphecyAgent* Agent)
     if(!TickPhases.IsEmpty())TickPhases.Remove(Agent);
     ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::FKReturn);
 }
-void Remove(const AProphecyAgent* Agent){Cancel(Agent);Configs.Remove(Agent);Baselines.Remove(Agent);}
+void Remove(const AProphecyAgent* Agent){Cancel(Agent);Configs.Remove(Agent);Baselines.Remove(Agent);Trims.Remove(Agent);TrimBaselines.Remove(Agent);}
 void CaptureReset(const AProphecyAgent* Agent)
-{EnsureCleanup();if(const auto* C=Configs.Find(Agent))Baselines.Add(Agent,*C);else Baselines.Remove(Agent);}
+{EnsureCleanup();if(const auto* C=Configs.Find(Agent))Baselines.Add(Agent,*C);else Baselines.Remove(Agent);
+if(const auto* T=Trims.Find(Agent))TrimBaselines.Add(Agent,*T);else TrimBaselines.Remove(Agent);}
 void RestoreReset(const AProphecyAgent* Agent)
-{Cancel(Agent);Configs.Remove(Agent);if(const auto* C=Baselines.Find(Agent))Configs.Add(Agent,*C);}
-void ForgetReset(const AProphecyAgent* Agent){Baselines.Remove(Agent);}
+{Cancel(Agent);Configs.Remove(Agent);if(const auto* C=Baselines.Find(Agent))Configs.Add(Agent,*C);
+Trims.Remove(Agent);if(const auto* T=TrimBaselines.Find(Agent))Trims.Add(Agent,*T);}
+void ForgetReset(const AProphecyAgent* Agent){Baselines.Remove(Agent);TrimBaselines.Remove(Agent);}
 void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names,
     TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
     TConstArrayView<FTransform> Current,double SourceTime,float SampleSeconds,uint32 PublishedAgeTicks)
@@ -93,6 +98,8 @@ void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names
     Cancel(Agent);if(!IsValid(Agent))return;
     const auto* C=Configs.IsEmpty()?nullptr:Configs.Find(Agent);
     if(C && !C->Enabled)return;
+    const auto* T=Trims.IsEmpty()?nullptr:Trims.Find(Agent);const float Trim=T?*T:0.f;
+    if(Trim>=1.f)return;
     FProfile Profile;
     for(const auto& P:Data::Profiles)if(Attack==FName(P.Attack))
     {
@@ -106,13 +113,15 @@ void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names
     FActive A;
     if(!Prepare(A.Curve,Profile,C?C->Coefficient:1.f,Names,Parents,Previous,Current,SampleSeconds))return;
     A.Curve.SetAlphaHold(C?C->AlphaHold:0.f);
+    A.Curve.TakeoverTimeScale=1.f/(1.f-Trim);
     for(int32 J=0;J<BoneCount;++J)
     {const auto& B=A.Curve.Bones[J];A.PreviousLocal[J]=Previous[B.Index].GetRelativeTransform(Previous[B.Parent]);
         A.CurrentLocal[J]=Current[B.Index].GetRelativeTransform(Current[B.Parent]);}
     EnsureCleanup();Active.Add(Agent,MoveTemp(A));
     FTickPhase Phase;Phase.Publication=SourceTime;
     // Match the bounded shared clock's integer deadline, including float pins such as .3.
-    Phase.Limit=uint64(FMath::Max(1.,FMath::CeilToDouble(FMath::Min(double(Profile.Duration)*60.,9.e15)-1.e-5)));
+    const double EndDuration=double(Profile.Duration)*(1.-double(Trim));
+    Phase.Limit=uint64(FMath::Max(1.,FMath::CeilToDouble(FMath::Min(EndDuration*60.,9.e15)-1.e-5)));
     // The outgoing endpoint was generated before the stop. The first new
     // endpoint must continue from it, rather than duplicate curve time zero.
     Phase.Ticks=PublishedAgeTicks;Phase.Elapsed=double(Phase.Ticks)/60.;
@@ -120,8 +129,8 @@ void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names
     if(Phase.Ticks<Phase.Limit)
         ProphecyBlendClock::Start(Agent,ProphecyBlendClock::EKind::FKReturn,double(Phase.Limit-Phase.Ticks)/60.);
 #if WITH_EDITOR
-    if(Audit.GetValueOnGameThread())UE_LOG(LogTemp,Display,TEXT("FKReturn begin actor=%s attack=%s duration=%.6f inertia=%.6f easing=%.6f coefficient=%.6f alpha_hold=%.6f source=%.6f"),
-        *Agent->GetName(),*Attack.ToString(),Profile.Duration,Profile.Inertia,Profile.Easing,C?C->Coefficient:1.f,C?C->AlphaHold:0.f,SourceTime);
+    if(Audit.GetValueOnGameThread())UE_LOG(LogTemp,Display,TEXT("FKReturn begin actor=%s attack=%s duration=%.6f inertia=%.6f easing=%.6f coefficient=%.6f alpha_hold=%.6f trim=%.6f end_duration=%.6f source=%.6f"),
+        *Agent->GetName(),*Attack.ToString(),Profile.Duration,Profile.Inertia,Profile.Easing,C?C->Coefficient:1.f,C?C->AlphaHold:0.f,Trim,EndDuration,SourceTime);
 #endif
 }
 bool Apply(const AProphecyAgent* Agent,double CurrentTime,
@@ -188,12 +197,14 @@ static bool Valid(const AProphecyAgent* Agent)
 {return IsInGameThread() && IsValid(Agent) && !Agent->IsActorBeingDestroyed() && Agent->GetWorld() && !Agent->GetWorld()->bIsTearingDown;}
 }
 
-bool UProphecyFKReturnLibrary::SetAttackFKReturn(AProphecyAgent* Agent,bool Enabled,float Coefficient,float AlphaHold)
+bool UProphecyFKReturnLibrary::SetAttackFKReturn(AProphecyAgent* Agent,bool Enabled,float Coefficient,float AlphaHold,float Trim)
 {
     using namespace ProphecyFKReturn;
     if(!Valid(Agent) || !FMath::IsFinite(Coefficient) || Coefficient<.01f ||
-        !FMath::IsFinite(AlphaHold) || AlphaHold<0.f || AlphaHold>1.f)return false;
+        !FMath::IsFinite(AlphaHold) || AlphaHold<0.f || AlphaHold>1.f ||
+        !FMath::IsFinite(Trim) || Trim<0.f || Trim>1.f)return false;
     EnsureCleanup();auto& C=Configs.FindOrAdd(Agent);C.Enabled=Enabled;C.Coefficient=Coefficient;C.AlphaHold=AlphaHold;
+    if(Trim>0)Trims.Add(Agent,Trim);else Trims.Remove(Agent);
     if(!Enabled)Cancel(Agent);return true;
 }
 bool UProphecyFKReturnLibrary::SetAttackFKReturnProfile(AProphecyAgent* Agent,FName Attack,float ReturnTime,

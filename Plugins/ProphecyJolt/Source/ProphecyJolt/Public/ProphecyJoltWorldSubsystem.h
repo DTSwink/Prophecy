@@ -441,6 +441,10 @@ public:
     FProphecyJoltWorldStatus SetBodyKinematic(const FProphecyJoltBodyHandle& Body);
     FProphecyJoltWorldStatus SetBodyDynamic(const FProphecyJoltBodyHandle& Body);
     FProphecyJoltWorldStatus SetBodyPose(const FProphecyJoltBodyHandle& Body, const FTransform& BodyOrigin);
+#if !UE_BUILD_SHIPPING
+    // Explicit diagnostic pose restoration outside Step; retains rig ownership and constraints.
+    FProphecyJoltWorldStatus DebugSetRigBodyPose(const FProphecyJoltBodyHandle& Body, const FTransform& BodyOrigin);
+#endif
     FProphecyJoltWorldStatus SetBodyRuntimeSettings(const FProphecyJoltBodyHandle& Body,
         bool bGravity, float LinearDamping, float AngularDamping, bool bCCD);
     /** Adds Source's collider to Parent without changing Parent mass, COM, inertia or constraints.

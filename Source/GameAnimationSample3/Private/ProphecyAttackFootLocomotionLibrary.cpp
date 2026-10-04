@@ -14,6 +14,40 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FRun> Runs;
 static TSet<TWeakObjectPtr<const AProphecyAgent>> GhostSettings,GhostBaselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FGhostRun> GhostRuns;
+// Separate storage leaves existing Live Coding ghost layouts intact.
+struct FGhostInertiaConfig { int32 Ticks=12;float Multiplier=1; };
+struct FGhostInertiaRun { FVector Total=FVector::ZeroVector;double Duration=0,Elapsed=0,Pending=0; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FGhostInertiaConfig> GhostInertiaSettings,GhostInertiaBaselines;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FGhostInertiaRun> GhostInertiaRuns;
+static constexpr auto GhostInertiaClock=ProphecyBlendClock::EKind::GhostLocoInertia;
+static void ClearGhostInertia(const AProphecyAgent* A)
+{if(!GhostInertiaRuns.IsEmpty() && GhostInertiaRuns.Remove(A))ProphecyBlendClock::Stop(A,GhostInertiaClock);}
+static FVector GhostInertiaStep(FGhostInertiaRun& R,double Seconds)
+{
+    const double Before=R.Duration>0?FMath::Clamp(R.Elapsed/R.Duration,0.,1.):0.;
+    R.Elapsed=FMath::Min(R.Duration,R.Elapsed+FMath::Max(0.,Seconds));
+    const double After=R.Duration>0?FMath::Clamp(R.Elapsed/R.Duration,0.,1.):1.;
+    return R.Total*(After-Before);
+}
+static void MoveGhostFeet(TArrayView<FTransform> Pose,const int32 (&Legs)[2][4],const FVector& Delta)
+{
+    for(int32 S=0;S<2;++S)
+    {
+        const auto* I=Legs[S];const FVector Hip=Pose[I[0]].GetLocation();
+        for(int32 B=0;B<4;++B)Pose[I[B]].AddToTranslation(Delta);
+        ProphecyAttackStartInertia::MoveHip(Pose[I[0]],Pose[I[1]],Pose[I[2]],&Pose[I[3]],Hip);
+    }
+}
+bool ApplyGhostInertia(const AProphecyAgent* A,TArrayView<FTransform> Pose,const FTransform& Carrier)
+{
+    auto* R=GhostInertiaRuns.IsEmpty()?nullptr:GhostInertiaRuns.Find(A);if(!R)return false;
+    const auto* G=FindGhost(A);if(!G)return false;
+    const FVector WorldDelta=GhostInertiaStep(*R,R->Pending+ProphecyBlendClock::Consume(A,GhostInertiaClock));R->Pending=0;
+    if(R->Elapsed>=R->Duration)ClearGhostInertia(A);
+    if(WorldDelta.IsZero())return false;
+    MoveGhostFeet(Pose,G->Legs,Carrier.InverseTransformVectorNoScale(WorldDelta));
+    return true;
+}
 FGhostRun* FindGhost(const AProphecyAgent* A)
 {
     const auto* R=Runs.IsEmpty()?nullptr:Runs.Find(A);
@@ -21,6 +55,7 @@ FGhostRun* FindGhost(const AProphecyAgent* A)
 }
 void CancelGhost(const AProphecyAgent* A,float* State)
 {
+    ClearGhostInertia(A);
     if(const auto* G=GhostRuns.Find(A))
     {
         FMemory::Memcpy(State+9,G->PreviousLegs,sizeof(G->PreviousLegs));
@@ -38,6 +73,18 @@ void BeginGhost(const AProphecyAgent* A,const float* State,TConstArrayView<FTran
     G.PreviousWorld[0]=G.CurrentWorld[0]=Pose[0]*Carrier;
     for(int32 S=0;S<2;++S)for(int32 B=0;B<4;++B)
         G.PreviousWorld[1+S*4+B]=G.CurrentWorld[1+S*4+B]=Pose[G.Legs[S][B]]*Carrier;
+    ClearGhostInertia(A);
+    if(const auto* C=GhostInertiaSettings.IsEmpty()?nullptr:GhostInertiaSettings.Find(A))
+    {
+        TArray<FTransform> Roots;TArray<float> Times;
+        if(A->GetLocomotionRootWindow(Roots,Times) && Roots.Num()>=3)
+        {
+            FGhostInertiaRun Run;Run.Total=(Roots[2].GetLocation()-Roots[1].GetLocation())*C->Multiplier;
+            Run.Duration=double(C->Ticks)/60.;
+            if(!Run.Total.ContainsNaN() && !Run.Total.IsZero())
+            {GhostInertiaRuns.Add(A,Run);ProphecyBlendClock::Start(A,GhostInertiaClock,Run.Duration);}
+        }
+    }
 }
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> FreezeSettings,FreezeBaselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FFreezeWindow> FreezeWindows;
@@ -95,6 +142,10 @@ static void EnsureCleanup()
         for(auto* M:{&GhostSettings,&GhostBaselines})for(auto It=M->CreateIterator();It;++It)
             if(!It->IsValid()||It->Get()->GetWorld()==W)It.RemoveCurrent();
         for(auto It=GhostRuns.CreateIterator();It;++It)
+            if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
+        for(auto* M:{&GhostInertiaSettings,&GhostInertiaBaselines})for(auto It=M->CreateIterator();It;++It)
+            if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
+        for(auto It=GhostInertiaRuns.CreateIterator();It;++It)
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
         for(auto* M:{&FreezeSettings,&FreezeBaselines})for(auto It=M->CreateIterator();It;++It)
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
@@ -191,6 +242,11 @@ void Begin(const AProphecyAgent* A,int32 Id,TConstArrayView<FName> Names,TConstA
 void Suspend(const AProphecyAgent* A,bool Half)
 {
     auto* R=Runs.Find(A);if(!R || R->Suspended==Half)return;
+    if(auto* I=GhostInertiaRuns.IsEmpty()?nullptr:GhostInertiaRuns.Find(A))
+    {
+        if(Half){I->Pending+=ProphecyBlendClock::Consume(A,GhostInertiaClock);ProphecyBlendClock::Stop(A,GhostInertiaClock);}
+        else ProphecyBlendClock::Start(A,GhostInertiaClock,FMath::Max(0.,I->Duration-I->Elapsed-I->Pending));
+    }
     if(auto* H=Handoffs.IsEmpty()?nullptr:Handoffs.Find(A))for(int32 S=0;S<2;++S)
         if((H->Started&R->Loco)&(1<<S))
         {
@@ -204,19 +260,28 @@ void Suspend(const AProphecyAgent* A,bool Half)
     }
     R->Suspended=Half;
 }
-void End(const AProphecyAgent* A){if(!Runs.IsEmpty())Runs.Remove(A);GhostRuns.Remove(A);ClearFreezeWindow(A);ClearHandoff(A);ClearPoles(A);}
-void Remove(const AProphecyAgent* A){End(A);Configs.Remove(A);Baselines.Remove(A);FreezeSettings.Remove(A);FreezeBaselines.Remove(A);HandoffSettings.Remove(A);HandoffBaselines.Remove(A);PoleSettings.Remove(A);PoleBaselines.Remove(A);GhostSettings.Remove(A);GhostBaselines.Remove(A);}
+void End(const AProphecyAgent* A){ClearGhostInertia(A);if(!Runs.IsEmpty())Runs.Remove(A);GhostRuns.Remove(A);ClearFreezeWindow(A);ClearHandoff(A);ClearPoles(A);}
+void Remove(const AProphecyAgent* A){End(A);Configs.Remove(A);Baselines.Remove(A);FreezeSettings.Remove(A);FreezeBaselines.Remove(A);HandoffSettings.Remove(A);HandoffBaselines.Remove(A);PoleSettings.Remove(A);PoleBaselines.Remove(A);GhostSettings.Remove(A);GhostBaselines.Remove(A);GhostInertiaSettings.Remove(A);GhostInertiaBaselines.Remove(A);}
 void CaptureReset(const AProphecyAgent* A){if(const auto* C=Configs.Find(A))Baselines.Add(A,*C);else Baselines.Remove(A);
 if(GhostSettings.Contains(A))GhostBaselines.Add(A);else GhostBaselines.Remove(A);
+if(const auto* C=GhostInertiaSettings.Find(A))GhostInertiaBaselines.Add(A,*C);else GhostInertiaBaselines.Remove(A);
 if(const auto* V=FreezeSettings.Find(A))FreezeBaselines.Add(A,*V);else FreezeBaselines.Remove(A);
 if(const auto* V=HandoffSettings.Find(A))HandoffBaselines.Add(A,*V);else HandoffBaselines.Remove(A);
 if(const auto* V=PoleSettings.Find(A))PoleBaselines.Add(A,*V);else PoleBaselines.Remove(A);}
 void RestoreReset(const AProphecyAgent* A){End(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A))Configs.Add(A,*C);
 GhostSettings.Remove(A);if(GhostBaselines.Contains(A))GhostSettings.Add(A);
+GhostInertiaSettings.Remove(A);if(const auto* C=GhostInertiaBaselines.Find(A))GhostInertiaSettings.Add(A,*C);
 FreezeSettings.Remove(A);if(const auto* V=FreezeBaselines.Find(A))FreezeSettings.Add(A,*V);
 HandoffSettings.Remove(A);if(const auto* V=HandoffBaselines.Find(A))HandoffSettings.Add(A,*V);
 PoleSettings.Remove(A);if(const auto* V=PoleBaselines.Find(A))PoleSettings.Add(A,*V);}
-void ForgetReset(const AProphecyAgent* A){Baselines.Remove(A);FreezeBaselines.Remove(A);HandoffBaselines.Remove(A);PoleBaselines.Remove(A);GhostBaselines.Remove(A);}
+void ForgetReset(const AProphecyAgent* A){Baselines.Remove(A);FreezeBaselines.Remove(A);HandoffBaselines.Remove(A);PoleBaselines.Remove(A);GhostBaselines.Remove(A);GhostInertiaBaselines.Remove(A);}
+}
+bool UProphecyAttackFootLocomotionLibrary::SetGhostLocoInertia(AProphecyAgent* A,bool Enabled,int32 DurationTicks,float Multiplier)
+{
+    using namespace ProphecyAttackFootLocomotion;
+    if(!IsInGameThread()||!IsValid(A)||A->IsActorBeingDestroyed()||DurationTicks<0||!FMath::IsFinite(Multiplier)||Multiplier<0)return false;
+    if(!Enabled || Multiplier==0){GhostInertiaSettings.Remove(A);ClearGhostInertia(A);return true;}
+    EnsureCleanup();GhostInertiaSettings.Add(A,{DurationTicks,Multiplier});return true;
 }
 bool UProphecyAttackFootLocomotionLibrary::SetGhostLocoDrag(AProphecyAgent* A,bool Enabled)
 {
@@ -346,6 +411,70 @@ bool FProphecyGhostLocoLifecycle::RunTest(const FString&)
     Remove(A);TestFalse(TEXT("Removal clears config"),GhostSettings.Contains(A));
     TestFalse(TEXT("Removal clears baseline"),GhostBaselines.Contains(A));W->DestroyWorld(false);
     return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyGhostInertiaMath,"Prophecy.NN.GhostLocoInertia.Displacement",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyGhostInertiaMath::RunTest(const FString&)
+{
+    using namespace ProphecyAttackFootLocomotion;
+    const FVector Total(8,-4,2);
+    for(int32 Batch:{1,2,5,20})
+    {
+        FGhostInertiaRun R;R.Total=Total*2.5;R.Duration=7./60.;FVector Sum=FVector::ZeroVector;
+        for(int32 T=0;T<21;T+=Batch)Sum+=GhostInertiaStep(R,double(Batch)/60.);
+        TestTrue(TEXT("One total displacement independent of prediction cadence; multiplier above one"),Sum.Equals(Total*2.5,1.e-10));
+        TestTrue(TEXT("No movement after duration"),GhostInertiaStep(R,1).IsZero());
+    }
+    FGhostInertiaRun Instant;Instant.Total=Total;
+    TestTrue(TEXT("Zero duration is one immediate displacement"),GhostInertiaStep(Instant,0).Equals(Total,0));
+    FGhostInertiaRun Paused;Paused.Total=Total;Paused.Duration=1;
+    TestTrue(TEXT("Repeated read or paused clock cannot advance"),GhostInertiaStep(Paused,0).IsZero());
+    int32 Legs[2][4]={{1,2,3,4},{5,6,7,8}};FTransform Pose[10];
+    for(int32 S=0;S<2;++S)
+    {
+        const float Y=S?15:-15;const auto* I=Legs[S];
+        Pose[I[0]].SetLocation(FVector(0,Y,80));Pose[I[1]].SetLocation(FVector(20,Y,40));
+        Pose[I[2]].SetLocation(FVector(0,Y,0));Pose[I[3]].SetLocation(FVector(15,Y,0));
+    }
+    FTransform Original[10];for(int32 I=0;I<10;++I)Original[I]=Pose[I];
+    const FTransform Carrier(FRotator(0,123,0),FVector(100,-200,7));
+    const FVector Delta=Carrier.InverseTransformVectorNoScale(Total);
+    MoveGhostFeet(MakeArrayView(Pose),Legs,Delta);
+    for(int32 S=0;S<2;++S)
+    {
+        const auto* I=Legs[S];
+        TestTrue(TEXT("Both feet get the same captured WORLD displacement"),Carrier.TransformVectorNoScale(Pose[I[2]].GetLocation()-Original[I[2]].GetLocation()).Equals(Total,1.e-8));
+        TestTrue(TEXT("Hip remains attached"),Pose[I[0]].GetLocation().Equals(Original[I[0]].GetLocation(),0));
+        for(int32 B=0;B<2;++B)TestTrue(TEXT("Leg segment length preserved"),FMath::IsNearlyEqual(
+            (Pose[I[B+1]].GetLocation()-Pose[I[B]].GetLocation()).Length(),
+            (Original[I[B+1]].GetLocation()-Original[I[B]].GetLocation()).Length(),1.e-8));
+        TestTrue(TEXT("Foot orientation unchanged"),Pose[I[2]].GetRotation().Equals(Original[I[2]].GetRotation(),0));
+        TestTrue(TEXT("Toe follows foot"),Pose[I[3]].GetRelativeTransform(Pose[I[2]]).Equals(Original[I[3]].GetRelativeTransform(Original[I[2]]),1.e-8));
+    }
+    TestTrue(TEXT("Pelvis and upper transforms untouched"),Pose[0].Equals(Original[0],0)&&Pose[9].Equals(Original[9],0));
+    return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyGhostInertiaLifecycle,"Prophecy.NN.GhostLocoInertia.Lifecycle",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyGhostInertiaLifecycle::RunTest(const FString&)
+{
+    using namespace ProphecyAttackFootLocomotion;using L=UProphecyAttackFootLocomotionLibrary;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    FTransform Pose[9];TestFalse(TEXT("Default disabled allocates no work"),ApplyGhostInertia(A,MakeArrayView(Pose),FTransform::Identity));
+    TestFalse(TEXT("Negative ticks rejected"),L::SetGhostLocoInertia(A,true,-1,1));
+    TestTrue(TEXT("Multiplier over one accepted"),L::SetGhostLocoInertia(A,true,12,3));CaptureReset(A);
+    FRun R;R.Loco=3;Runs.Add(A,R);FGhostRun G;for(int32 S=0;S<2;++S)for(int32 B=0;B<4;++B)G.Legs[S][B]=1+S*4+B;GhostRuns.Add(A,G);
+    FGhostInertiaRun I;I.Total=FVector(1,0,0);I.Duration=.2;GhostInertiaRuns.Add(A,I);ProphecyBlendClock::Start(A,GhostInertiaClock,.2);
+    Suspend(A,true);TestFalse(TEXT("Half mode applies no displacement"),ApplyGhostInertia(A,MakeArrayView(Pose),FTransform::Identity));
+    TestTrue(TEXT("Half mode keeps pending state"),GhostInertiaRuns.Contains(A));Suspend(A,false);
+    L::SetGhostLocoInertia(A,true,20,4);TestEqual(TEXT("Configuration changes do not reseed current attack"),GhostInertiaRuns[A].Duration,.2);
+    L::SetGhostLocoInertia(A,false,12,1);TestFalse(TEXT("Disable cancels remaining displacement"),GhostInertiaRuns.Contains(A));
+    RestoreReset(A);TestEqual(TEXT("Reset restores multiplier"),GhostInertiaSettings[A].Multiplier,3.f);
+    TestFalse(TEXT("Reset clears active displacement"),GhostInertiaRuns.Contains(A));
+    GhostInertiaRuns.Add(A,I);End(A);TestFalse(TEXT("Attack end cancels pending displacement"),GhostInertiaRuns.Contains(A));
+    GhostInertiaRuns.Add(A,I);float State[82]={};CancelGhost(A,State);TestFalse(TEXT("Kick switch clears pending displacement"),GhostInertiaRuns.Contains(A));
+    Remove(A);TestFalse(TEXT("Removal clears config and baseline"),GhostInertiaSettings.Contains(A)||GhostInertiaBaselines.Contains(A));
+    W->DestroyWorld(false);return !HasAnyErrors();
 }
 // Development capture bridge for new enums whose Python wrappers are unavailable
 // until an editor restart after Live Coding. Only acts on the supplied PIE world.

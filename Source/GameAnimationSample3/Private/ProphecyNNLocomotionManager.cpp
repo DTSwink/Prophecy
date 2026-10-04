@@ -4,6 +4,7 @@
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyAttackStartHandInertia.h"
 #include "ProphecyAttackStartFKCore.h"
+#include "ProphecyAttackMotionInertia.h"
 #include "ProphecyAttackFootLocomotion.h"
 #include "ProphecyAttackFootLocomotionMath.h"
 #include "ProphecyAttackStartInertiaMath.h"
@@ -29,6 +30,7 @@
 #include "ProphecyBlendClock.h"
 #include "ProphecyLowerTempering.h"
 #include "ProphecyNNRootWindowSmoothing.h"
+#include "ProphecyRootResponse.h"
 #include "ProphecyRootBalance.h"
 #include "ProphecyKickFootLeeway.h"
 #include "ProphecyRootPelvisBounds.h"
@@ -2162,6 +2164,7 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 		ProphecyAttackStartHands::Remove(AgentActor);
 		ProphecyForearmStretch::Remove(AgentActor);
 		ProphecyAttackStartFKCore::Remove(AgentActor);
+		ProphecyAttackMotionInertia::Remove(AgentActor);
 		ProphecyLowerTempering::ForgetProfiles(AgentActor);
 		ProphecyLegChainDebug::Remove(AgentActor);
 		ProphecyRootSpeedLimits::Remove(AgentActor);
@@ -3481,11 +3484,14 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 
 		const auto* PreparedBalance = ProphecyRootBalance::Prepare(InputActor, Agent.MoverState, Agent.MoverIntent,
 			!Agent.Slash.bActive || Agent.Slash.bHalf);
-		const prophecy::sim::FutureRootWindow FutureRoots = prophecy::sim::PredictFutureRoots(
-			Agent.MoverState, Agent.MoverIntent, StepSeconds, RootYawImpulseAgents.Contains(InputActor),
-			PreparedBalance);
 		auto* WindowSmoothing = ProphecyNNRootWindow::Find(InputActor);
 		const float WindowDeceleration = WindowSmoothing ? ProphecyNNRootWindow::GetDistanceDeceleration(InputActor) : -1.f;
+		const prophecy::sim::FutureRootWindow FutureRoots = WindowSmoothing
+			? ProphecyRootResponse::Predict(Agent.MoverState, Agent.MoverIntent, StepSeconds,
+				RootYawImpulseAgents.Contains(InputActor), PreparedBalance, WindowSmoothing->Factors.X,
+				WindowSmoothing->Factors.Y, WindowSmoothing->Factors.Z, WindowDeceleration)
+			: prophecy::sim::PredictFutureRoots(Agent.MoverState, Agent.MoverIntent, StepSeconds,
+				RootYawImpulseAgents.Contains(InputActor), PreparedBalance);
 		if (float* HistoryYaw = RootImpulseSmoothingYaw.Find(InputActor))
 		{
 			if (WindowSmoothing)

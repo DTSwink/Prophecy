@@ -86,6 +86,19 @@ bool FProphecyRootWindowDistanceTest::RunTest(const FString&)
     TestEqual(TEXT("Getter exposes braking override"),B,.75f);
     TestTrue(TEXT("Old three-factor call inherits"),L::SetLocomotionRootWindowSmoothing(Agent,.5,1,1));
     TestEqual(TEXT("Inheritance removes override"),GetDistanceDeceleration(Agent),-1.f);
+    TestTrue(TEXT("Above-one response factors accepted"),L::SetLocomotionRootWindowSmoothing(Agent,2,3,4,5));
+    L::GetLocomotionRootWindowSmoothing(Agent,A,D,O,B);
+    TestEqual(TEXT("Acceleration gain roundtrip"),A,2.f);
+    TestEqual(TEXT("Direction gain roundtrip"),D,3.f);
+    TestEqual(TEXT("Orientation gain roundtrip"),O,4.f);
+    TestEqual(TEXT("Braking gain roundtrip"),B,5.f);
+    TestEqual(TEXT("Enabling response gains preserves filter history"),Find(Agent)->Samples[0].Distance,12.5);
+    {
+        auto Sharp=Seed();double SharpYaw=1.;const FVector Candidate(3,4,2);
+        TestEqual(TEXT("Sharp response is not extrapolated a second time by filter"),
+            Sharp.Filter(Candidate,SharpYaw,FVector(2,3,4),5),Candidate);
+        TestEqual(TEXT("Sharp orientation passes forecast exactly"),SharpYaw,1.);
+    }
     TestTrue(TEXT("All resolved ones disable"),L::SetLocomotionRootWindowSmoothing(Agent,1,1,1,1));
     TestNull(TEXT("No smoothing work after disabling"),Find(Agent));
     TestEqual(TEXT("Override retired with state"),GetDistanceDeceleration(Agent),-1.f);

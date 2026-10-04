@@ -1,5 +1,42 @@
 # Future root-window smoothing
 
+## Above-one response (October 4)
+
+The setter now accepts finite nonnegative values above **1**. Values from **0
+through 1 retain the existing filter behavior exactly**. Above 1 accelerates
+the native mover's progress toward its requested speed/travel heading/facing:
+2 doubles a step's progress where the target has not yet been reached, bounded
+at that target. It does not multiply top speed or extrapolate the window filter
+past its candidate. Distance Acceleration and Distance Deceleration remain
+independent; -1 deceleration still inherits acceleration. Mixed settings work,
+such as acceleration 2, braking .5, direction 1, orientation 2.
+
+The eight-step forecast applies the response at each projected mover step;
+actual movement continues to use its filtered first step, as before. Existing
+NN input bounds, root speed limits and collisions remain downstream. Distance
+and direction gains leave the root balance spring alone. Orientation gain does
+not modify explicit angular-impulse momentum/stopping behavior. Gains do not
+amplify a native step still moving away from its goal.
+
+**All resolved factors at 1 remove the state and deceleration override.** This
+uses the original native forecast with no response helper, sample filtering,
+extra inference, timers or allocations. The pre-existing inactive-state check
+remains; this is a bypass, not a literal claim of zero CPU instructions.
+
+Implementation status: Live Coding compile succeeded and reload completed October 4
+at 00:58:18 UTC. PoseAgent compiled successfully with zero stale native/pin types;
+no asset save or Play session. Both Unreal tests `IndependentFactors` and
+`AccelerationDeceleration` passed at 00:58:46 UTC, including above-one setter,
+filter and all-one retirement checks. Normal on-disk DLL rebuild is required
+before cold launch. The isolated MSVC test using the actual mover and response
+helper also passed identity, acceleration/braking, direction/facing, target bounds,
+angle wrap, impulse/balance preservation and 2,000-step forecast/advancement
+consistency. Tests: `Tools/Tests/RootResponseTests.cpp`; receipts under
+`Saved/Diagnostics/RootResponse20261004/`. Existing non-UObject state layouts
+and reflected pins are unchanged. This is not a gameplay visual acceptance test.
+
+## Existing 0–1 behavior
+
 **Set Locomotion Root Window Smoothing** is a Blueprint function-library node with an **Agent** input and four factors:
 
 - **Distance Acceleration (0..1):** smooths each future sample's distance from the present root when the new prediction is farther away than its retained filtered distance. Retains the original `Distance` pin identity and wiring.
@@ -11,7 +48,7 @@ Acceleration, Direction and Orientation default to **1**; Deceleration defaults 
 
 Root0 remains the anchor while constructing each window; it is not moved by the smoothing operation itself. The mover then advances to the **filtered root1**. Retained future local transforms follow root0's translation and orientation. Thus all-zero factors from an idle, collapsed window keep the agent idle even when movement/turn intent changes. If enabled while moving, zero retains the previous local step instead. A zero-length displacement retains the previous travel direction.
 
-The setter seeds local history from the last window already sent to the NN when available. Before the first window exists, history starts collapsed onto root0. Changing either distance factor preserves the current history. Setting all resolved factors to 1 discards smoothing history and restores the original movement path. Invalid/nonfinite/out-of-range factors are rejected atomically. Deceleration 0 retains outgoing distance even when the candidate stops; deceleration 1 follows shortening predictions immediately, independently of acceleration.
+The setter seeds local history from the last window already sent to the NN when available. Before the first window exists, history starts collapsed onto root0. Changing either distance factor preserves the current history. Setting all resolved factors to 1 discards smoothing history and restores the original movement path. Negative/nonfinite factors are rejected atomically, except the -1 deceleration inheritance value. Deceleration 0 retains outgoing distance even when the candidate stops; deceleration 1 follows shortening predictions immediately, independently of acceleration.
 
 Movement, reported actual velocity, angular history, travelled distance, and ordinary/authored-layer pose rebasing all consume the same filtered first step. The existing intent/acceleration model still generates candidate windows, but smoothing now also determines the movement committed from that prediction. **Get Locomotion Root Window** and future-window drawing expose the filtered NN inputs. Existing input-range clamping still applies.
 

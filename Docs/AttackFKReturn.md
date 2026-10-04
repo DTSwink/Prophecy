@@ -1,5 +1,42 @@
 # Attack FK return
 
+The current node names are **Set Attack FK Return** and **Set Attack FK Return
+Profile**, as specified by the user. Native function names remain unchanged.
+
+## Trim (October 4)
+
+**Set Attack FK Return** has a shared **Trim** input, default0, range0–1. It removes
+that fraction from the end of every attack family's return. Effective end time is
+`profile ReturnTime * (1 - Trim)`: 0 preserves the full return; .5 reaches full NN
+at the original midpoint; 1 bypasses return entirely. This is a global setting
+on the agent, not a per-family profile override.
+
+The FK path, easing and inertia decay retain their original time scale. Only NN
+takeover is normalized to the shorter window. Alpha Hold remains a fraction of
+this new window, and the coefficient shapes its remaining blend as before.
+For a one-second profile, Trim.5/Hold.5 keeps full FK until.25 seconds, then
+blends to exact NN at.5 seconds. Positive durations use the existing rounded-up
+game-tick deadline and policy cadence. Completion preserves the outgoing accepted
+interpolation endpoint until both endpoints are vanilla NN, without applying any
+further FK correction to new predictions.
+
+Trim latches at the next attack end, follows reset snapshots, and is cleared on
+actor/world cleanup. Changing it does not reseed a running return. The existing
+Enabled=false behavior still cancels immediately. Trim0 retains existing behavior.
+
+Validation: nine focused tests passed October4 at02:03:06UTC, including Trim
+across all16 families at0/.5/.9/1, original lab parity, accepted feedback, tick
+timing, exit interval, and the attack-motion-inertia handoff. The new test checks
+unchanged FK/easing/momentum weights, shortened exact-NN deadlines, hold/coefficient,
+reset, latching and zero remaining timer after full trim. No live combat replay
+was needed for this clock/weight change; visual tuning remains the user's choice.
+Existing node refreshed with Trim0 and all prior values/links preserved. The only
+other graph change is the requested node display naming (without Lab). Blueprint
+compiled status3 with native_properties0/pin_types0 and was saved; map not saved.
+Archived library defaults were repaired before the pin refresh and final successful
+compile. Evidence: `Saved/Diagnostics/FKReturnTrim20261004/`. Loaded through Live
+Coding; normal Development Editor rebuild remains required before a cold launch.
+
 Forearm reconstruction now uses the upper arm and the same canonical idle reference as this return, replacing the incompatible hand-derived roll at both attack entry and NN takeover. See [forearm convention](ForearmRollConvention.md). The return curve itself is unchanged.
 
 The October 2 feedback correction makes the accepted mixed pose the next upper NN input. The initial version incorrectly advanced a separate NN trajectory behind the visible return. Each sample now evaluates the lab path, blends with one normal NN prediction when its weight is positive, and commits the result. At zero weight, that agent is excluded from upper inference entirely. Previous accepted poses are reused, not blended a second time.
@@ -16,8 +53,8 @@ Evidence: `Saved/Diagnostics/FKExit626/` and `Saved/Diagnostics/Knee202/fk_exit6
 
 ## Blueprint controls
 
-- **Set Attack FK Return**: Agent, Enabled (true), NN Takeover Coefficient (1), **Alpha Hold (0)**. Hold .5 leaves full lab control for the first half, then blends to the NN over the second half. Hold 1 keeps lab control until the deadline, then uses the NN. The FK motion continues throughout the hold. Configure before attack end; settings latch at handoff, while disabling cancels immediately.
-- **Set Attack FK Return Profile**: Agent, Attack, Return Time, Inertia, Easing, Bone Inertia. `None` applies to all attack families and clears previous family overrides. Otherwise override that family only. Changes affect the next return. The optional Bone Inertia struct uses symmetric Spine, Clavicle, UpperArm, LowerArm, Neck01, Neck02 and Head weights. All five spines share one weight. Effective inertia is the main Inertia multiplied by that weight.
+- **Set Lab Attack FK Return**: Agent, Enabled (true), NN Takeover Coefficient (1), **Alpha Hold (0)**. Hold .5 leaves full lab control for the first half, then blends to the NN over the second half. Hold 1 keeps lab control until the deadline, then uses the NN. The FK motion continues throughout the hold. Configure before attack end; settings latch at handoff, while disabling cancels immediately.
+- **Set Lab Attack FK Return Profile**: Agent, Attack, Return Time, Inertia, Easing, Bone Inertia. `None` applies to all attack families and clears previous family overrides. Otherwise override that family only. Changes affect the next return. The optional Bone Inertia struct uses symmetric Spine, Clavicle, UpperArm, LowerArm, Neck01, Neck02 and Head weights. All five spines share one weight. Effective inertia is the main Inertia multiplied by that weight.
 
 The accepted lab profiles were imported for all 16 families: return time **0.26 seconds**, inertia **0.51**, easing **0.12**; spine **0**, clavicle **0.19**, upperarm **1**, lowerarm **0.63**, neck01/neck02/head **1**. The visualization's yaw slider is not an additional Unreal correction: real half-attack mounting is already present in the outgoing pose.
 

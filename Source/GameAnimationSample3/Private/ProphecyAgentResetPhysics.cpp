@@ -7,6 +7,7 @@
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyAttackStartHandInertia.h"
 #include "ProphecyAttackStartFKCore.h"
+#include "ProphecyAttackMotionInertia.h"
 #include "ProphecyAttackFootLocomotion.h"
 #include "ProphecyAgent.h"
 #include "ProphecyForearmStretch.h"
@@ -76,6 +77,7 @@ void Remove(const AProphecyAgent* Agent)
     ProphecyAttackStartHands::ForgetReset(Agent);
     ProphecyForearmStretch::ForgetReset(Agent);
     ProphecyAttackStartFKCore::ForgetReset(Agent);
+    ProphecyAttackMotionInertia::Remove(Agent);
     ProphecyAttackFootLocomotion::ForgetReset(Agent);
     ProphecySlashReturn::ForgetReset(Agent);
     ProphecyArmCone::Remove(Agent);
@@ -120,6 +122,7 @@ bool Capture(AProphecyAgent* Agent,FString& Error)
     ProphecyAttackStartHands::CaptureReset(Agent);
     ProphecyForearmStretch::CaptureReset(Agent);
     ProphecyAttackStartFKCore::CaptureReset(Agent);
+    ProphecyAttackMotionInertia::CaptureReset(Agent);
     ProphecyAttackFootLocomotion::CaptureReset(Agent);
     ProphecySlashReturn::CaptureReset(Agent);
     ProphecyArmCone::CaptureReset(Agent);
@@ -168,6 +171,7 @@ void CancelBlends(AProphecyAgent* Agent)
     ProphecyAttackStartHands::Cancel(Agent);
     ProphecyForearmStretch::Cancel(Agent);
     ProphecyAttackStartFKCore::Cancel(Agent);
+    ProphecyAttackMotionInertia::Cancel(Agent);
     ProphecyAttackStartInertia::Cancel(Agent);
     ProphecySlashReturn::Cancel(Agent);
     ProphecyArmCone::Cancel(Agent);
@@ -207,6 +211,7 @@ bool Restore(AProphecyAgent* Agent,FString& Error)
     ProphecyAttackStartHands::RestoreReset(Agent);
     ProphecyForearmStretch::RestoreReset(Agent);
     ProphecyAttackStartFKCore::RestoreReset(Agent);
+    ProphecyAttackMotionInertia::RestoreReset(Agent);
     ProphecyAttackFootLocomotion::RestoreReset(Agent);
     ProphecySlashReturn::RestoreReset(Agent);
     ProphecyArmCone::RestoreReset(Agent);

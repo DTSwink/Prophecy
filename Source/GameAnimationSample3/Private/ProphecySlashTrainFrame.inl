@@ -2,6 +2,9 @@
 #if !UE_BUILD_SHIPPING
 namespace SlashTrainFrame
 {
+// Separate sidecar: do not resize existing Live Coding frame records.
+TMap<TWeakObjectPtr<AProphecyAgent>,TArray<float>> CustomSeeds;
+bool HasCustomSeed(AProphecyAgent* Agent){return !CustomSeeds.IsEmpty() && CustomSeeds.Contains(Agent);}
 struct FFrame { FTransform Anchor;FVector3f Position;FMat3f Rotation;int32 RemainingAttacks=30; };
 TMap<TWeakObjectPtr<AProphecyAgent>,FFrame> Frames;
 const FFrame* Find(AProphecyAgent* Agent)
@@ -11,6 +14,8 @@ void Set(AProphecyAgent* Agent,const FFrame& Frame)
     static FDelegateHandle Cleanup;
     if (!Cleanup.IsValid()) Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
     {
+        for (auto It=CustomSeeds.CreateIterator();It;++It)
+            if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
         for (auto It=Frames.CreateIterator();It;++It)
             if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
     });

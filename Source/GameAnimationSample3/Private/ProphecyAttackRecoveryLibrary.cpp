@@ -1,6 +1,7 @@
 #include "ProphecyAttackRecoveryLibrary.h"
 #include "ProphecyAttackStartHandInertia.h"
 #include "ProphecyAttackStartFKCore.h"
+#include "ProphecyAttackMotionInertia.h"
 #include "ProphecyAttackRecovery.h"
 #include "ProphecyFKReturn.h"
 #include "ProphecyArmedPose.h"
@@ -119,6 +120,7 @@ void EnterSpecial(const AProphecyAgent* Agent,bool Half)
     ProphecyFKReturn::Cancel(Agent);
     ProphecyAttackStartHands::Cancel(Agent);
     ProphecyAttackStartFKCore::Cancel(Agent);
+    ProphecyAttackMotionInertia::Cancel(Agent);
     ProphecyArmCone::Cancel(Agent);
     ProphecyArmedPose::Cancel(Agent);
     if (EndEventAgent==Agent) EndEventAgent=nullptr;
@@ -132,6 +134,7 @@ static void DispatchRegion(AProphecyAgent* Agent,FName Attack,bool Half,bool Ret
     TGuardValue<bool> Region(EndEventUpper,Upper);
     if(Upper) ProphecyAttackStartHands::Cancel(Agent);
     if(Upper) ProphecyAttackStartFKCore::Cancel(Agent);
+    if(Upper) ProphecyAttackMotionInertia::Cancel(Agent);
     if(Upper && !Returning) ProphecyArmCone::Cancel(Agent);
     if (Returning)
     {

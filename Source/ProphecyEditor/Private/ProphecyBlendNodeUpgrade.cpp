@@ -100,6 +100,8 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
         const bool HadDistanceToLimit=N->FindPin(TEXT("DistanceToLimit"))!=nullptr;
         const bool HadDistanceDeceleration=N->FindPin(TEXT("DistanceDeceleration"))!=nullptr;
         const bool HadAlphaHold=N->FindPin(TEXT("AlphaHold"))!=nullptr;
+        const bool HadTrim=N->FindPin(TEXT("Trim"))!=nullptr;
+        const bool HadAfterHit=N->FindPin(TEXT("AfterHit"))!=nullptr;
         const bool HadLerpTarget=N->FindPin(TEXT("LerpTarget"))!=nullptr;
         const bool HadPositionCompensation=N->FindPin(TEXT("CompensatePosition"))!=nullptr;
         const bool HadNonKicking=N->FindPin(TEXT("NonKickingFootTranslationXY"))!=nullptr;
@@ -154,12 +156,24 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
             }
         }
         auto After=PinValues(N);
+        if(!HadTrim && FunctionName==TEXT("SetAttackFKReturn"))
+        {
+            const auto* Pin=N->FindPin(TEXT("Trim"));
+            Preserved&=Pin && Pin->LinkedTo.IsEmpty() && FCString::Atof(*Pin->DefaultValue)==0.f;
+            After.RemoveAll([](const FString& Row){return Row.StartsWith(TEXT("Trim="));});
+        }
         if(!HadDistanceDeceleration && (FunctionName==TEXT("SetLocomotionRootWindowSmoothing") || FunctionName==TEXT("GetLocomotionRootWindowSmoothing")))
         {
             const auto* Pin=N->FindPin(TEXT("DistanceDeceleration"));
             Preserved&=Pin && Pin->LinkedTo.IsEmpty() &&
                 (FunctionName==TEXT("GetLocomotionRootWindowSmoothing") || FCString::Atof(*Pin->DefaultValue)==-1.f);
             After.RemoveAll([](const FString& Row){return Row.StartsWith(TEXT("DistanceDeceleration="));});
+        }
+        if(!HadAfterHit && FunctionName==TEXT("SetAttackMotionInertia"))
+        {
+            const auto* Pin=N->FindPin(TEXT("AfterHit"));
+            Preserved&=Pin && Pin->LinkedTo.IsEmpty() && Pin->DefaultValue==TEXT("false");
+            After.RemoveAll([](const FString& Row){return Row.StartsWith(TEXT("AfterHit="));});
         }
         if(!HadAlphaHold && FunctionName==TEXT("SetAttackFKReturn"))
         {
@@ -228,7 +242,11 @@ static void RefreshRootWindowDistance()
     RefreshOrderFor(TEXT("GetLocomotionRootWindowSmoothing"),TEXT("RootWindowDistanceGetterPins.txt"));
 }
 static FAutoConsoleCommand RootWindowDistanceCommand(TEXT("Prophecy.Editor.RefreshRootWindowDistance"),TEXT("Add inherited distance deceleration smoothing; preserve existing root-window values/wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshRootWindowDistance));
+static void RefreshMotionAfterHit(){RefreshOrderFor(TEXT("SetAttackMotionInertia"),TEXT("MotionInertiaAfterHitPins.txt"));}
+static FAutoConsoleCommand MotionAfterHitCommand(TEXT("Prophecy.Editor.RefreshMotionAfterHit"),TEXT("Append opt-in After Hit; retain current motion inertia values and wiring."),FConsoleCommandDelegate::CreateStatic(&RefreshMotionAfterHit));
 static void RefreshFKReturn(){RefreshOrderFor(TEXT("SetAttackFKReturn"),TEXT("FKReturnAlphaHoldPins.txt"));}
+static void RefreshFKReturnTrim(){RefreshOrderFor(TEXT("SetAttackFKReturn"),TEXT("FKReturnTrimPins.txt"));}
+static FAutoConsoleCommand FKReturnTrimCommand(TEXT("Prophecy.Editor.RefreshFKReturnTrim"),TEXT("Add default-zero Trim to FK return nodes, preserving values and wiring; leaves unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshFKReturnTrim));
 static FAutoConsoleCommand FKReturnCommand(TEXT("Prophecy.Editor.RefreshFKReturn"),TEXT("Add Alpha Hold to existing FK return nodes; preserve values/wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshFKReturn));
 static void RefreshSpinePosition() { RefreshOrderFor(TEXT("EnableSpine01CompensationHalfAttack"),TEXT("SpinePositionPins.txt")); }
 static FAutoConsoleCommand SpinePositionCommand(TEXT("Prophecy.Editor.RefreshSpinePosition"),TEXT("Add position compensation checkbox; preserve existing values and links, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshSpinePosition));
