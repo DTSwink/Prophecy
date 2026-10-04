@@ -29,9 +29,20 @@ for(const clip of manifest.clips){
    for(let j=0;j<model.upper.length;j++)if(model.upper[j]){const angle=R.length(R.qlog(R.qm(R.qinv(model.idle.q[j]),local.q[j])));errorStats.maxIdleAngle=Math.max(errorStats.maxIdleAngle,angle);assert(angle<1e-8,'did not reach parent-local idle');}
    const late=R.sample(model,model.attackSeconds+duration+5,opt);assert(maxDiff(idle.points,late.points)<1e-12,'completed recovery moved');
   }
-  // Angular velocity continuity is measured in the actual FK parent's coordinates.
-  const dt=1e-7,opt={duration:1,inertia:.6},pose=R.sample(model,model.attackSeconds+dt,opt),local=R.localize(pose.points,pose.q,manifest.parents);
-  for(let j=0;j<model.upper.length;j++)if(model.inertial[j]){const velocity=R.mul(R.qlog(R.qm(R.qinv(localEnd.q[j]),local.q[j])),1/dt);assert(R.length(R.sub(velocity,model.velocity[j]))<.001,'outgoing angular velocity lost');}
+  // Visible world velocity is continuous, rather than multiplied down the chain.
+  // Include easing's initial velocity and parents with no inertia of their own.
+  for(const returnEasing of [0,.12,1])for(const boneInertia of [{},{spine:0,clavicle:0,upperarm:1,lowerarm:.61}]){
+   const dt=1e-7,opt={duration:.26,inertia:1,returnEasing,boneInertia},pose=R.sample(model,model.attackSeconds+dt,opt);
+   for(let j=0;j<model.upper.length;j++)if(model.inertial[j]&&(boneInertia[model.inertiaKeys[j]]??1)>0){const actualWorld=R.mul(R.qlog(R.qm(pose.q[j],R.qinv(end.q[j]))),1/dt);assert(R.length(R.sub(actualWorld,model.worldVelocity[j]))<.002,'visible world angular velocity mismatch');}
+  }
+  for(const inertiaHold of [0,.25,.8])for(const inertiaDecay of [0,1,4]){
+   const opt={duration:.31,inertia:1,inertiaHold,inertiaDecay,returnEasing:.12},dt=1e-7;
+   const first=R.sample(model,model.attackSeconds+dt,opt);
+   for(let j=0;j<model.upper.length;j++)if(model.inertial[j]){const w=R.mul(R.qlog(R.qm(first.q[j],R.qinv(end.q[j]))),1/dt);assert(R.length(R.sub(w,model.worldVelocity[j]))<.005,'timing knob broke outgoing velocity');}
+   for(const fraction of [.1,.5,.9,.999999]){const pose=R.sample(model,model.attackSeconds+fraction*opt.duration,opt);assert(pose.points.flat().every(Number.isFinite));for(let j=0;j<model.upper.length;j++){if(!model.upper[j])assert(R.length(R.sub(pose.points[j],end.points[j]))<1e-8);else assert(Math.abs(R.length(R.sub(pose.points[j],pose.points[model.parents[j]]))-R.length(localEnd.p[j]))<1e-8);}}
+   assert.strictEqual(R.sample(model,model.attackSeconds+opt.duration,opt),model.idlePose,'timing knob missed idle deadline');
+   if(inertiaHold>0){const t=model.attackSeconds+inertiaHold*opt.duration,a=R.sample(model,t-dt,opt),b=R.sample(model,t,opt),c=R.sample(model,t+dt,opt);for(let j=0;j<model.upper.length;j++)if(model.inertial[j]){const before=R.mul(R.qlog(R.qm(b.q[j],R.qinv(a.q[j]))),1/dt),after=R.mul(R.qlog(R.qm(c.q[j],R.qinv(b.q[j]))),1/dt);assert(R.length(R.sub(before,after))<.01,'hold release velocity jump');}}
+  }
   for(const part of [.1,.4,.8]){
    const a=R.sample(model,model.attackSeconds+part,{duration:1,inertia:0}),b=R.sample(model,model.attackSeconds+part,{duration:1,inertia:1});
    const la=R.localize(a.points,a.q,manifest.parents),lb=R.localize(b.points,b.q,manifest.parents);

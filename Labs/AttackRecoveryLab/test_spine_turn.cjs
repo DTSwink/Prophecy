@@ -14,6 +14,8 @@ for(const clip of manifest.clips)for(const v of clip.variants){
   const seam=R.sample(m,m.attackSeconds+1e-8,opt);
   for(let j=0;j<m.names.length;j++){assert(angle(end.q[j],seam.q[j])<1e-5,'tail rotation seam');assert(R.length(R.sub(end.points[j],seam.points[j]))<1e-5,'tail position seam');}
   const idle=R.sample(m,m.attackSeconds+1,opt);assert.strictEqual(idle,m.idlePose,'idle target changed');
+  const dt=1e-7,after=R.sample(m,m.attackSeconds+dt,opt),previous=R.sample(m,m.attackSeconds-1e-6,opt);
+  for(let j=0;j<m.names.length;j++)if(m.inertial[j]){const actualWorld=R.mul(R.qlog(R.qm(after.q[j],R.qinv(end.q[j]))),1/dt),expectedWorld=R.mul(R.qlog(R.qm(end.q[j],R.qinv(previous.q[j]))),1e6);assert(R.length(R.sub(actualWorld,expectedWorld))<.002,'turned visible world angular velocity mismatch');}
   for(const t of [.1,.5,.9]){const p=R.sample(m,m.attackSeconds+t,opt);assert(p.points.flat().every(Number.isFinite));assert(p.axes.flat(2).every(Number.isFinite));}
   cases++;
  }

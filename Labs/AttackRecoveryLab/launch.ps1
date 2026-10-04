@@ -1,4 +1,3 @@
-param([string]$PythonExecutable = $env:PROPHECY_LAB_PYTHON)
 $ErrorActionPreference = 'Stop'
 $taskAppRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $taskPort = 8817
@@ -10,20 +9,8 @@ try {
         throw "Port $taskPort belongs to a different application."
     }
     if (-not $taskHealth) {
-        $taskPython = $PythonExecutable
-        if (-not $taskPython) {
-            $taskLegacyPython = [System.IO.Path]::GetFullPath((Join-Path $taskAppRoot '..\..\..\.tools\python310\pythonw.exe'))
-            if (Test-Path -LiteralPath $taskLegacyPython) { $taskPython = $taskLegacyPython }
-            else {
-                $taskPythonCommand = Get-Command pythonw.exe -ErrorAction SilentlyContinue
-                if ($taskPythonCommand) { $taskPython = $taskPythonCommand.Source }
-                else {
-                    $taskPyLauncher = Get-Command py.exe -ErrorAction SilentlyContinue
-                    if ($taskPyLauncher) { $taskPython = (& $taskPyLauncher.Source -3 -c 'import sys; print(sys.executable)').Trim() }
-                }
-            }
-        }
-        if (-not $taskPython -or -not (Test-Path -LiteralPath $taskPython)) { throw 'Install Python 3.10+ or set PROPHECY_LAB_PYTHON to its executable path.' }
+        $taskPython = [System.IO.Path]::GetFullPath((Join-Path $taskAppRoot '..\..\..\.tools\python310\pythonw.exe'))
+        if (-not (Test-Path -LiteralPath $taskPython)) { throw 'The local Python runtime is missing.' }
         if (-not (Test-Path -LiteralPath (Join-Path $taskAppRoot 'data\manifest.json'))) { throw 'The attack dataset is missing.' }
         $taskServer = Join-Path $taskAppRoot 'server.py'
         Start-Process -FilePath $taskPython -ArgumentList @(('"' + $taskServer + '"'), '--port', "$taskPort") -WorkingDirectory $taskAppRoot -WindowStyle Hidden

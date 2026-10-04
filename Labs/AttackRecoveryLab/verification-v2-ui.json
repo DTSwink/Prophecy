@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "phaseColors": true,
+  "guizmosPersist": true,
+  "desktopIdentity": true,
+  "imageMatchesState": true,
+  "inspectionCannotPublish": true,
+  "readOnlyCaptureFrames": 109,
+  "snapshotRestore": true,
+  "refresh": true,
+  "threePlaybackLoops": true,
+  "secondAttackPlayback": true,
+  "permanentRemovalAcrossRestart": true,
+  "userLibraryUntouched": true,
+  "errors": [],
+  "store": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\AttackRecoveryLab\\verification-v2\\90762e6a-88d5-4ecb-ad3c-de059f57a61d"
+}

@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "errors": [],
+  "snapshot": "snapshot_0001",
+  "refreshRestored": true,
+  "snapshotRestored": true,
+  "playback": true,
+  "attackCount": 16,
+  "variantCount": 20
+}

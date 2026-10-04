@@ -9,7 +9,26 @@ and one floor target (the harness's rounded 7% quota). Headbutt has 20 volume
 targets. Variant 20 is the floor target where applicable. Use the attack and
 variant selectors, or **Go to floor target**.
 
+## Accepted Unreal port baseline, October 4
+
+The saved state contains the accepted per-attack Blend + inertia profiles. Main
+inertia, bone weights, duration, easing, inertia hold/decay, world mode and additive
+spine-angle time are all per attack. Angle time adds seconds per 90 degrees
+(default .29), independently of base duration. Continuous spring remains a lab
+experiment and is not part of the requested Unreal port. This snapshot preserves
+the running lab before that port.
+
 ## Controls
+
+The attack/variant picker, top yaw slider, Snapshot and Refresh stay visible.
+**Motion** contains return tuning, method/space selectors, bone weights/profile
+copy and the per-attack Main inertia. **View** contains display/gizmos and
+camera reset. **Library** contains floor targets, saved snapshots and variant
+management. The selected tab and open side panel persist through refresh. Scripts and styles
+use content-versioned URLs so restoring an older file cannot reuse newer cached
+code through an old modification timestamp.
+Control explanations are under **Control guide**. Playback remains at the bottom.
+
 
 Sliders preview values while dragging and apply to playback only on release.
 Playback and saved snapshots keep the last committed settings during a drag.
@@ -21,16 +40,53 @@ Playback and saved snapshots keep the last committed settings during a drag.
   return (0) and the original quintic ease-in/out (1). It is independent of
   inertia; zero bone inertia still follows the selected easing. Durations and
   easing persist per attack in settings and snapshots.
-- **Inertia** is the only momentum control. Zero removes momentum carry;
-  increasing it carries the outgoing local angular motion farther into the
+- **Main inertia** saves per attack type, shared across that attack’s variants.
+  All attacks initialize to 100% when migrating from the old global control.
+  It is included in profile copies and snapshots. Zero removes momentum carry;
+  increasing it carries the outgoing world angular motion farther into the
   return. Both hands have no local rotation or offset inertia; they still
   inherit forearm/ancestor motion and follow the ordinary local idle blend.
   The end of the return is exact at every setting.
+- **Inertia hold · current attack** delays momentum decay for 0–80% of return
+  time; its label also shows seconds. The local momentum offset grows at its
+  initial rate during the hold, while the ordinary idle-return blend continues.
+  The envelope joins its fade smoothly after the hold.
+- **Inertia decay · current attack** scales the exponential decay: lower means
+  slower, higher means faster. Zero removes exponential damping, but the end
+  fade still brings the offset to zero at the return deadline. Hold 0% and decay
+  1× preserve the previous curve. Both values save per attack, share across its
+  variants, and are included in snapshots and profile copies. Long holds can
+  require a faster final return; increase Return time for a longer total window.
+- **Inertia space → World** carries each active joint's angular
+  correction about a fixed world axis instead of an axis carried by its parent.
+  Each joint uses the world orientation of the ordinary FK idle blend as its
+  baseline; parent inertia is not reapplied to its rotation. It still inherits
+  parent position, keeping every joint attached and segment lengths fixed.
+  Hands and zero-weight joints follow their parents normally. This controls
+  rotational inertia, not free world-space translation or rigid-body physics.
+  The selector saves per attack and copies with its profile. Parent local retains the
+  existing parent-local mode; old settings/snapshots retain their saved space.
+- **Method → Continuous spring** replaces the rejected hold-then-return experiment.
+  Active joints keep angular velocity and receive a spring torque toward their
+  parent-local idle target throughout the return. The spring grows continuously;
+  there is no hold phase or active-joint pose crossfade. **Pull ramp** controls
+  how gently attraction starts (higher = gentler early / stronger late).
+  **Spring damping** controls braking/overshoot; damping converges toward critical
+  damping near the deadline to settle. Per-bone inertia changes spring response;
+  lower nonzero values make the spring stiffer while retaining outgoing motion.
+  Zero-weight joints and hands retain their ordinary local idle return.
+  World space integrates angular velocity in world coordinates while pulling
+  toward each current parent's idle target. Local space integrates FK local
+  rotations. Both keep segment lengths fixed. This is an angular spring model
+  with FK constraints, not a mass-coupled rigid-body or collision simulation.
+  The trajectory is cached on a deterministic integration grid and sampled
+  through FK, so playback rate and seeking do not alter the simulation. Short
+  Return time still requires a fast finish. Old profiles default this mode off.
 - **Copy profile to attacks…** opens a source selector and destination checklist.
   Select one source and any number of targets (or Select all), then Copy. It
-  copies per-bone inertia multipliers, return time and easing as independent
+  copies per-bone inertia multipliers, inertia space/hold/decay, return time and easing as independent
   profiles, shared across each target's variants. Selected settings are replaced
-  and saved automatically; the main inertia multiplier remains shared.
+  and saved automatically; the main inertia multiplier is copied too.
 - **Attack spine rotation** applies −179° to +179° yaw to authored playback.
   Like Unreal half-attack distribution, each of spine_01 through spine_05 adds
   20% of the turn, with the pelvis and lower body fixed. Recovery captures the
@@ -67,7 +123,7 @@ Playback and saved snapshots keep the last committed settings during a drag.
 - **Snapshot (N)** shows the saved snapshot count and increments after a
   successful save. Snapshot / P saves a numbered PNG and JSON under `snapshots/`, including
   the actual displayed pose, target, source motion hash, frame, tuning and camera.
-  The snapshot selector restores that state. **Refresh harness** preserves it.
+  The snapshot selector in Library restores that state. **Refresh harness** preserves it.
 
 ## Playback fidelity
 
@@ -94,7 +150,15 @@ Authored positions and hand/sword rotations are preserved. Forearm rotations
 carry their frame-0 parent-local orientation with the upperarm and use the
 shortest swing to face the wrist, removing unstable decoder roll. This is
 applied at authored subframes too. At tail end, recovery captures
-the final two parent-local orientations and offsets. The local orientation
+the terminal authored world angular velocity and parent-local offsets. The
+velocity is measured from the actual displayed path, including forearm fitting
+and distributed spine yaw. Each bone subtracts the velocity it will inherit from
+its parent, then converts the residual into its terminal bone frame. The initial
+idle-easing velocity is subtracted too. These seeds are cached per profile and
+applied as parent-local FK offsets throughout recovery, so active joints keep
+their outgoing world angular velocity without counting parent motion twice.
+The frozen pelvis has zero return velocity; spine_01 therefore carries the
+pelvis contribution that would otherwise disappear. The local orientation
 returns along a quaternion shortest arc to the shared neutral animation's
 frame-0 idle. Local offset directions return on the sphere, at fixed segment
 length, which keeps shoulders/elbows/wrists attached throughout the return.
@@ -108,11 +172,17 @@ authored last-frame transforms during recovery; they are never corrected here.
 
 The return uses quintic smooth interpolation plus an analytic angular momentum
 offset. Except on hand_l and hand_r, the momentum preserves outgoing
-parent-local angular velocity and fades
-to exactly zero at the chosen end time, without a separate hold, alpha, core/arm
-setting or per-attack exception. All attacks use the same algorithm, including
+world angular velocity at the transition and fades
+to exactly zero at the chosen end time. Hold and decay tune its envelope;
+all attacks use the same algorithm, including
 slashLU. This is an initial FK return prototype; it does not contain a body
 collision avoidance solver.
+
+This is a kinematic momentum handoff, not rigid-body dynamics. Fixed bone lengths,
+local offset interpolation and the exclusion of hand inertia still constrain
+point velocities. The existing momentum envelope still brakes the motion after
+the transition. A zero inertia weight retains the ordinary idle interpolation
+for that joint; descendants account for the motion they actually inherit.
 
 Authored subframes use Final Harness's global position lerp and global quaternion
 slerp, followed by the forearm correction described above. FK applies to the new recovery. The original viewer interpolated authored

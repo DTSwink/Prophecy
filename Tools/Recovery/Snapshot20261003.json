@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 5061,
-  "bytes": 440413832,
+  "file_count": 5095,
+  "bytes": 442470915,
   "files": [
     {
       "path": ".gitattributes",
@@ -4429,9 +4429,9 @@
     },
     {
       "path": "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset",
-      "git_blob": "58a428fd7fa8ce5ce8566d858f075f01bd5c4b04",
-      "bytes": 4533655,
-      "sha256": "cbd121b1e1daf6286745c77998ad40c844e5346fa897e42275f395675853879a"
+      "git_blob": "3b1aed17a76119fd890b78ce88a0eb4db964cce4",
+      "bytes": 4690016,
+      "sha256": "a07e65de5fec34102efd1aaaa0a7dd5795dd7d93fe05a015bfe880ea5968ef40"
     },
     {
       "path": "Content/_mygame/locomotion/L_DoubleReachBallTest.umap",
@@ -5053,9 +5053,9 @@
     },
     {
       "path": "Content/testNN.umap",
-      "git_blob": "7c4ba0ea38c904c7218c6aba82f414fe59ddf085",
+      "git_blob": "819e9983daa308108d0b80c9f2f67e80c42a82c7",
       "bytes": 106660,
-      "sha256": "e3e906025a766ae5fde18523629eea43638b0c1bd57c62f473f109cb159eacca"
+      "sha256": "7c45463bfbd1e58f866dd86d92dda2352eb0c3b551aa7728313de5c5f4b89de7"
     },
     {
       "path": "Content/vfxmap.umap",
@@ -5191,9 +5191,9 @@
     },
     {
       "path": "Docs/AttackFKReturn.md",
-      "git_blob": "90c51b11d595ce07dd357a7e42bcda621f529437",
-      "bytes": 14820,
-      "sha256": "1ee18d71bc4a590f1f93ea963fef096877cff520d0a86ee242f656f92c1955df"
+      "git_blob": "94dfca8f52375b1a317b273d11b75fa7fb3693b3",
+      "bytes": 17208,
+      "sha256": "985987a99c0bbc426a9d1774d7f98c13178ece67cc235c79a6e1a42dfb238ddd"
     },
     {
       "path": "Docs/AttackFistsBlueprint.md",
@@ -5218,6 +5218,12 @@
       "git_blob": "8716da93b666e33df803ad75548bd829fcda7800",
       "bytes": 4000,
       "sha256": "f6b6d390cbfa7b7d6822580bdb20e9ba02818e3f79610abf920dce022442b806"
+    },
+    {
+      "path": "Docs/AttackMotionInertia.md",
+      "git_blob": "05ff3188c69d37338230b0438d52a46195a9a2e7",
+      "bytes": 8167,
+      "sha256": "9f170fede236138a9415c8edebbeb4dd01322821919ed8d7b8d25e5a45da290c"
     },
     {
       "path": "Docs/AttackPerformance.md",
@@ -5358,6 +5364,12 @@
       "sha256": "c300bef4f5a2044eab475bc5c39b268e76cc657f5651ae8d409cbe378a65bd04"
     },
     {
+      "path": "Docs/CustomAttackHarness.md",
+      "git_blob": "5bf59fcf87fc092df1847331d2e41adff8b4d271",
+      "bytes": 10073,
+      "sha256": "26d88fb63c0fc2eca1f63814499c5f6cb269f27c55fc9fa7817ba0a585914ffc"
+    },
+    {
       "path": "Docs/DebugCameraInput.md",
       "git_blob": "8e96c17f097acc606f3c391a72229ed72e384f59",
       "bytes": 2031,
@@ -5455,9 +5467,9 @@
     },
     {
       "path": "Docs/GhostLocoDrag.md",
-      "git_blob": "9dc8672b2cfe5e638047ae5a78a6652df6d8942e",
-      "bytes": 3750,
-      "sha256": "20b1f0948b1555c2a863c4801a2c173cda1f1b82ea745884b48cc1237686449b"
+      "git_blob": "d7816523527af9ec50d9a78b461b3ed5f2eae64d",
+      "bytes": 7754,
+      "sha256": "4824702bedbd0c514f6d49679412f041cf465a7b76f48e9cd4a1295971de495f"
     },
     {
       "path": "Docs/GoldenRulesAuditFix20261002.md",
@@ -5898,6 +5910,30 @@
       "sha256": "a6edf34139d71b48053e5e70c3a686706508cfecef63a952328f372e6315c681"
     },
     {
+      "path": "Docs/LabContinuousSpring.md",
+      "git_blob": "0352fcb12211326090e43aebc0e4369628f61f16",
+      "bytes": 4167,
+      "sha256": "eabe42866a1704713807f858a5fbc1f90ab86023372445028cad680b779b7987"
+    },
+    {
+      "path": "Docs/LabFollowThrough.md",
+      "git_blob": "c38a578d6e9ae5d50a508ecd1c5f93cffec99d43",
+      "bytes": 3507,
+      "sha256": "603171f3748a5f150ae1443d7c1afb9cc03015c853e39c28605e8c004f97a99f"
+    },
+    {
+      "path": "Docs/LabSpineSnapshot6.md",
+      "git_blob": "80ce56d4f380dcfa36e6be0f2baa8a0cea3da603",
+      "bytes": 2967,
+      "sha256": "fd420901f44502cdfc1f76de4de971baca26de997f133431bd99f0d134c27bd2"
+    },
+    {
+      "path": "Docs/LabWorldVelocityHandoff.md",
+      "git_blob": "95e92c57c9133743ec1ab6db0b02457efd433ae9",
+      "bytes": 2544,
+      "sha256": "9fd177f4c00407893e774c5cf66ab7fdb2650716e3e5cd5ffc46315b151432a7"
+    },
+    {
       "path": "Docs/LeftArmRebound550.md",
       "git_blob": "9e64d695784a8807db67015736111c22465cf68d",
       "bytes": 4500,
@@ -5953,9 +5989,9 @@
     },
     {
       "path": "Docs/LocomotionRootWindowSmoothing.md",
-      "git_blob": "e32a8aa1fc3a60a8dbe010d8327354988ebb97f8",
-      "bytes": 5777,
-      "sha256": "8a7c59ce0eb48a87b95797d8c895568769fd7a0b8cbe43af701471c4e7f0a90a"
+      "git_blob": "b94615f914ef4cc3857cfd6196ebf1ba61942aae",
+      "bytes": 8105,
+      "sha256": "803065a4cb05080d7d7ce02d9a96fcdf9e42c3c582e28beabbe10ba5283739aa"
     },
     {
       "path": "Docs/LocomotionRuntimeControls.md",
@@ -6481,15 +6517,15 @@
     },
     {
       "path": "Labs/AttackRecoveryLab/README.md",
-      "git_blob": "892f04ee4fe3ab03e1ffa50d6f163b3a08fe6cc4",
-      "bytes": 12007,
-      "sha256": "8512c8dac9eaf811d064730c2a1ea6621dcbcf4fca5f99cd53bb600087e87517"
+      "git_blob": "4b57dfff4df73ecabec43fd6320e1b5aabb5335f",
+      "bytes": 17010,
+      "sha256": "605fd64ef625b8e2f6fc0aa16aae6bc798b565b1e58cf48d25c0a40b61ac1e62"
     },
     {
       "path": "Labs/AttackRecoveryLab/app.js",
-      "git_blob": "5c325c182221f8de1fb1fa8d2c6f0206ef61c7b3",
-      "bytes": 26207,
-      "sha256": "e75c67f4614fcc6549fae350d83beaf90e14782524b877a44afdeafd5f83d270"
+      "git_blob": "5e2c8c686fdd987fc2a0c97bee2b76a246fd9e06",
+      "bytes": 32714,
+      "sha256": "809295705b175ae8b8b2055b768e2ff7dca53a95b79e0eb32bf97882dee283c5"
     },
     {
       "path": "Labs/AttackRecoveryLab/assets/attack-recovery-lab.ico",
@@ -10567,9 +10603,9 @@
     },
     {
       "path": "Labs/AttackRecoveryLab/index.html",
-      "git_blob": "05ff6b7bfa05a60e3e7968f5cf8a511026fa5bfc",
-      "bytes": 8983,
-      "sha256": "42a35579d11c04ba06728d1c1afa823ec3b07f1401e2a3bf811ed356f7000b29"
+      "git_blob": "8961aa28d92d6d677a5ab328d5b3b8f997b430e6",
+      "bytes": 11908,
+      "sha256": "586ba04325bf3526cd4719af81917b85b695ca107486dbc336a4478e49b686e8"
     },
     {
       "path": "Labs/AttackRecoveryLab/inspect_desktop.py",
@@ -10585,9 +10621,27 @@
     },
     {
       "path": "Labs/AttackRecoveryLab/launch.ps1",
-      "git_blob": "42ec88ba04220ab3a9c009de000aaccf3f4aae12",
-      "bytes": 3865,
-      "sha256": "6105f62532131b88ede5ee3f849ceb4659ff75fdf65e326e273cc1a7a599015b"
+      "git_blob": "0f1f9d15eaf79cfa2190b474d3ca44a55fcc11f1",
+      "bytes": 3092,
+      "sha256": "2fd67e70b97fdda69991fcf36ca41912995e73896c10d8c306a61a23f1eae54f"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/playback-fidelity-verification.json",
+      "git_blob": "904ba54be7136f348f13a23139f07799f0536e1f",
+      "bytes": 109,
+      "sha256": "72b1b9f095ddddf5f82a0896074de63070e772d73af8c8e7851c10135c8b93c6"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/playback-performance-after.json",
+      "git_blob": "3c4a8c45ab74e5da265cc283445eef5e250c0564",
+      "bytes": 442,
+      "sha256": "90b64ece1db360ee65660ad357687fb0c0712d9da17dea985a08c5e5792be292"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/playback-performance-baseline.json",
+      "git_blob": "0c5b292275d9c3a8bd2e51413c8f9ed7c1a8894f",
+      "bytes": 574,
+      "sha256": "0d44eeca4c6956179762d88f148a898df7d242c6429f63cf7e38d3316b204b0e"
     },
     {
       "path": "Labs/AttackRecoveryLab/prepare_assets.py",
@@ -10609,9 +10663,9 @@
     },
     {
       "path": "Labs/AttackRecoveryLab/recovery.js",
-      "git_blob": "e819b97dd36a3bb75796a70c40e6d473e455b8e5",
-      "bytes": 9738,
-      "sha256": "984d8d56b5611a7ccfb33c7e0b4b5cf711a0d9b5c10bd3da7cf945c22b46cd19"
+      "git_blob": "726aa2205427f46e8aaa3e127e4e16a86b064050",
+      "bytes": 17319,
+      "sha256": "7245f85fd9b2e13b351e1aed246ec8ec4b58634516978034565224d822487b0a"
     },
     {
       "path": "Labs/AttackRecoveryLab/renderer.js",
@@ -10692,34 +10746,136 @@
       "sha256": "a49ad6f193443ebe2c8d424e6e012eae4c942ad3885d721e7c8589f17352eac7"
     },
     {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0006.json",
+      "git_blob": "86f2818d36fedcb50a166fbbd318d09a60854202",
+      "bytes": 16965,
+      "sha256": "d84f969a5f0087bfc3f52fdf6b0266d90a16e373a1756654189e2370ec476e8c"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0006.png",
+      "git_blob": "e888f34a2500948852ab5896e1dab4e94ea71ebe",
+      "bytes": 407803,
+      "sha256": "16d5c29a672c825dbf6a0ce0ca8ef9d98b4b01a5214b422ddf8072e74f043280"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0007.json",
+      "git_blob": "4aa4fd238ea7e02f14969c428ac613b87319f8d9",
+      "bytes": 16949,
+      "sha256": "16f80fedf2dd38788b2e0e3e0c3ca02a0f54e8bf0ba5e4e4af7281e971409530"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0007.png",
+      "git_blob": "a585e33aed0ccdbdae55ba7c8133d938bc853294",
+      "bytes": 417507,
+      "sha256": "709b1950678d161dfd5cf78d117697d9b068210265613bf13f91293fcb8a82f3"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0008.json",
+      "git_blob": "9ddf79da9111802edd1218dd9d2cbb04ff8f9a53",
+      "bytes": 17018,
+      "sha256": "7c8cd3dbc067031b9e6e8ef4b815bdb8e853b063fc4339169a9b970533861d35"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0008.png",
+      "git_blob": "37ec2d4daf5146593f9341f35f3e55e4d35565c4",
+      "bytes": 272118,
+      "sha256": "82d35b19ac1297f444c97c90c3e82824f746110263c2a8f497f6d827a5930e1d"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0009.json",
+      "git_blob": "572dada76c0c9334475072d6e60638ef960089aa",
+      "bytes": 17003,
+      "sha256": "ee4231b796d73ce3a1c0bee1d9d2926ca6bb08a6ee1ea2285d198f1629143bd2"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0009.png",
+      "git_blob": "2fd23b8c8dcaf8f0b1e93b33d2ccd9e8886a5579",
+      "bytes": 272549,
+      "sha256": "c2a13d0f74d2e37bd509cf00026bf2e1652b52208dfacc25fc09c543d8113e27"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0010.json",
+      "git_blob": "c318f903b763f1a0e0be2f9ab964ef9f30047c61",
+      "bytes": 18795,
+      "sha256": "8e5fe3c70f198a871cdf27ec9ce6ca5cfbf14e8c59dba274f214ab3c8235569c"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/snapshots/snapshot_0010.png",
+      "git_blob": "9863c7cc56859553689842723ac0930f5bdc32b7",
+      "bytes": 222275,
+      "sha256": "611b32fe66ee155fd9fb086bf909267e576d6a372f6fb337c298fab0525503f5"
+    },
+    {
       "path": "Labs/AttackRecoveryLab/state.json",
-      "git_blob": "c46734e6fb4161d4a71b3f46d43a6fd608a85aba",
-      "bytes": 4765,
-      "sha256": "58305d1cf45ae78048c453381511b69059ff253d98f17f9669e800dc394498cc"
+      "git_blob": "0b7edfbc880c3988ccfdfb21484d8096b4d9244e",
+      "bytes": 7364,
+      "sha256": "83ca709eaff86436e9d025db23094909ce51049601446b33d973b99e62a2abce"
     },
     {
       "path": "Labs/AttackRecoveryLab/style.css",
-      "git_blob": "56fd418b6cd094428a846e9f8ca955bff660e8c5",
-      "bytes": 5159,
-      "sha256": "2a51028b5636976bef1a281f866ddb44c59d9180a802bc19af32f18f2cf9e693"
+      "git_blob": "24d6c304c4a51f019bb647e38bd0df02e4771cb8",
+      "bytes": 7057,
+      "sha256": "1a97ca4a6171f8230e1a4f1f770a9ec7094afcdee0fcafce88c84c45cd1a1d23"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/test_angle_time.cjs",
+      "git_blob": "1284f06b9f6ac2a5d4ef742e0c05fe99805f09c3",
+      "bytes": 2356,
+      "sha256": "a40e9b039cfa7b27dade40a535bc5f9723be71a4b7a7fd6a7156999ab14695ef"
     },
     {
       "path": "Labs/AttackRecoveryLab/test_recovery.cjs",
-      "git_blob": "2734a4bed66e38d11eee1ddb4f2dd6fe42f9818e",
-      "bytes": 6141,
-      "sha256": "7244f676feedb490485cee33b4e8591b7ab7e581ca6725be34f9973cb83b7ae2"
+      "git_blob": "7c64293ecbf36a6dea3cb79bad970ef2ef22e08e",
+      "bytes": 7742,
+      "sha256": "c8d1b724399dc4c66a56b2ca632ef70f5a60916fe11585245b7d8ecf843e34b5"
     },
     {
       "path": "Labs/AttackRecoveryLab/test_spine_turn.cjs",
-      "git_blob": "d71a7842840be931a54ef1cff732c2e7fa27a6c8",
-      "bytes": 1734,
-      "sha256": "5f76059494369bb307ad7a65fa882d4c79999d1c1589c375eb864c994feb29e6"
+      "git_blob": "66c6a81121d3575cb875ee275d80e36f55a0c066",
+      "bytes": 2140,
+      "sha256": "8885825d9a4d764a7e4a76664098e516c59d5b09943db83799408dec6d73bcac"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/test_spring_return.cjs",
+      "git_blob": "679dae5289c559dfb1599d3ebdd9c709cc40336c",
+      "bytes": 2911,
+      "sha256": "209c4789f17118c11e9a994b412c0dbdafed83886c71454ee2a0048a59979275"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/test_world_inertia.cjs",
+      "git_blob": "523466ac102cc332b81eba50d0de8c2b0b1c64b3",
+      "bytes": 2905,
+      "sha256": "671d0d3cd0ed5530560fd8e405a80319e4d42d2b19de76eecb2b3d0710673ed1"
     },
     {
       "path": "Labs/AttackRecoveryLab/verification-core.json",
-      "git_blob": "b56e1b656cb3d5fa4f20a57aeb1019d79f87315d",
-      "bytes": 320,
-      "sha256": "ea63d6f0da127c778e605c6ff20462160803a8b4be95f1579ec5430883f898f1"
+      "git_blob": "d89bb55870e5ba6573481b805a1e359e8b9fb6e4",
+      "bytes": 322,
+      "sha256": "157c28b11edc1328249e1f3363188cf4ef195da32db727fccbdb0b7f2472433b"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/verification-ui.json",
+      "git_blob": "aa67a6bb9c4cecc3358c7d10f4c24e45bbde3cbd",
+      "bytes": 181,
+      "sha256": "32e4f661db63e6be9f972ad077807faba36cffa17d751c13244817635f17c8c3"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/verification-v2-desktop.json",
+      "git_blob": "d1f89ac57da9b160b527723a922fed8e97305339",
+      "bytes": 13554,
+      "sha256": "fe961d335cfcd0f3a9c9eb45044d056b7fc454d2fd5c9e514b6709501dc5c4db"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/verification-v2-live.json",
+      "git_blob": "bc605add59f3742e6e42ab60836fe86c0a13ae28",
+      "bytes": 393,
+      "sha256": "2dfdc3cc7837cd14e3f853764bdc27ef96b58071c619d471abc7276ace3792e9"
+    },
+    {
+      "path": "Labs/AttackRecoveryLab/verification-v2-ui.json",
+      "git_blob": "c62032f23597c7aef6e061afff2e5f78fd9bc313",
+      "bytes": 541,
+      "sha256": "c9d7d868c3328389b4ea94a371393c633f8655663cd7a8fe2332973bd36846fb"
     },
     {
       "path": "Labs/AttackRecoveryLab/verify_playback_fidelity.cjs",
@@ -10867,9 +11023,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltWorldSubsystem.cpp",
-      "git_blob": "1f0e34c2c466381a8ca78170025475209ed8b965",
-      "bytes": 216652,
-      "sha256": "82964d70e11fc1cc72b63ddffa8912b07ae1ab73c083a75ec9e43ff09074b6a2"
+      "git_blob": "319d68d2e802a054659d4b3ade56e84bf8c3baa6",
+      "bytes": 217911,
+      "sha256": "986bb63702fb30ffbd5faff4af86e1b342c44cd1074905b1fa3d58764ac0b0a2"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltBodyTests.cpp",
@@ -11041,9 +11197,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltWorldSubsystem.h",
-      "git_blob": "2cf036b1a7708f3fe4d8ff671f24b6e74edaa50b",
-      "bytes": 27136,
-      "sha256": "d5641e429abce7dccc424e6c87afb15bcd03b24922a2c250a066d98fdb21c736"
+      "git_blob": "b7f7b95471b907dd9ec6d0331adfb01bfdae2931",
+      "bytes": 27380,
+      "sha256": "4f97e4e877e06e1402bcfc81398c0842521438f0249bf8c5af0bd84b1f77782b"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJoltEditor/Private/ProphecyJoltComponentAuditCommandlet.cpp",
@@ -11101,9 +11257,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "6c4ed74c2b852cbfa7c78bdd0615fa3c6b7e4bd1",
-      "bytes": 99802,
-      "sha256": "afdab06ca6b2abb1051a3688c0fdfa8059d6b14e2e0c549ed2db881431f55ff7"
+      "git_blob": "2ac9460e9c02548507811e4c6aa2e47f71e849e7",
+      "bytes": 131430,
+      "sha256": "12795d3d151262ada603851930973b0c212d560f61e291bb102df7569e624641"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -25843,9 +25999,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgentResetPhysics.cpp",
-      "git_blob": "3959fa1fcbf274d2b9197a64db557c4e0775e509",
-      "bytes": 17004,
-      "sha256": "22240259e44580b8ba8d3a9b8d70072997061f1d990c8a58d20cbedc0e2834b8"
+      "git_blob": "e2ab2a7319be28d6bfb295916a45de8b054a507f",
+      "bytes": 17249,
+      "sha256": "4cf2fddbc84f589503ea95d0f03397f368c6b19cdfc6da1a6315937f75d7b410"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgentResetPhysics.h",
@@ -25987,15 +26143,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackFootLocomotion.h",
-      "git_blob": "3720006a66da057acc02778f4e8c98daab7bea90",
-      "bytes": 2713,
-      "sha256": "a91f9d2d3f6430e75d62c27d4f9b4fcf359fc9a40a0d8f4eb6913f451ef302ce"
+      "git_blob": "db2a725051738ec8ce3999b41d11799596d595c3",
+      "bytes": 2908,
+      "sha256": "6df930984f23d1895292ff0e83fb864ab3bb932017f00fe93a34f05694cdf595"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackFootLocomotionLibrary.cpp",
-      "git_blob": "ac8a459159e961761ef849ffa9934e31ab2d6ffc",
-      "bytes": 31697,
-      "sha256": "c8e3a371141a5362729f053ae2700ac45980d7d74cbde8e56e854d2651dec50f"
+      "git_blob": "689baad7b92bd5a9002d3c5e500d7c5d155dcc3c",
+      "bytes": 40787,
+      "sha256": "91ed7ecc904c57a907332399682e9ad033fae0edc87b3f7b4ee835937d0cb068"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackFootLocomotionMath.h",
@@ -26008,6 +26164,18 @@
       "git_blob": "429478a459365b07c221cc5e16cb82a7be9fd7e6",
       "bytes": 4327,
       "sha256": "541e9f5cbbe9e92930f4eeb7b15948e2b847795c5c42b2a7d5237721a7aa63e2"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyAttackMotionInertia.h",
+      "git_blob": "ce1deb8c63fb96dfec4a280c1ecd69bdb87e3625",
+      "bytes": 752,
+      "sha256": "b9c1d551d443a7366f449f5d98b42a3f04673ffbac67cb3b9f7fe00ff8bc2af1"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyAttackMotionInertiaLibrary.cpp",
+      "git_blob": "7390b088acddbff16833e97483b7a1b8755d6c1e",
+      "bytes": 19834,
+      "sha256": "339844a6ec9f325c5a04210a807ea1c845b3299af1bedbc1e1fbcb5679146897"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackPerformance.inl",
@@ -26023,9 +26191,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackRecoveryLibrary.cpp",
-      "git_blob": "99bcf666de71f2afc0d52de8a4768f82630d5662",
-      "bytes": 32854,
-      "sha256": "70b3e72e9a47ae7539187ee9c7aa1cac0a97c4a5f1831c1086f4b7d4ae71bcef"
+      "git_blob": "f0e99c24767a6436d59ef380e2104d9a608b7ecf",
+      "bytes": 33001,
+      "sha256": "1018657b31e26bfc030c9acc728578119979bdecefe692ea45cf7ed086781e6b"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackStartFKCore.h",
@@ -26125,9 +26293,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyBlendClock.h",
-      "git_blob": "f36d4e0f3939d1e8310122bba893c4f407a7783a",
-      "bytes": 1135,
-      "sha256": "9c11497edf37817cb4aa7eb525ba2c508b45a2217acd95b95b1818fbd056e515"
+      "git_blob": "7e522324da602726d18a56ee8ccdc26f78515bac",
+      "bytes": 1174,
+      "sha256": "001833c0865bb3df5e71c62492b7f5b0efd59cb545bc8ee86b6d59b4e263ce06"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyBloodFluidPostProcessController.cpp",
@@ -26206,6 +26374,12 @@
       "git_blob": "4ec4b2dc3374f5d260758155d73c1adae170007d",
       "bytes": 2633,
       "sha256": "13665264fe7c853d9b60c62a792f08d57afa56a9420faa14591344faf09708f7"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyCustomAttack.h",
+      "git_blob": "dc14430ec0564b953a54b4191896eba397bad82b",
+      "bytes": 286,
+      "sha256": "9e929fc19226b70e1cbcea02e1823ffe28e0be63ec45a1968a5182b32be15bb4"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyDebugCameraController.h",
@@ -26407,21 +26581,21 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyFKReturnLibrary.cpp",
-      "git_blob": "e653ab8d43cc68848798a1e8e8ab67cea7354b94",
-      "bytes": 10815,
-      "sha256": "f75b4360fae2d0a02195f5e10678093d9064cceec08b268a269d3dab07d6665a"
+      "git_blob": "0dda96d118466bd54bba010c168ced64ea24b617",
+      "bytes": 11675,
+      "sha256": "079ddd91a48c768efe7b50236c3f617cbcb3d84dbd26736bdb1f51e2f4730f49"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyFKReturnMath.h",
-      "git_blob": "128d3a780d2b6c9b5410cd804b90f09b9bd7ab9b",
-      "bytes": 4553,
-      "sha256": "7f26cb03d147bc044590a5c88d8adff8fc11b9e57bbf6e3da07a8d7ed1074fad"
+      "git_blob": "30bc3919f997c97214a0e98cdca080ad83ebe33a",
+      "bytes": 4694,
+      "sha256": "97051cb859cac1cefbacb568f909ac7a5e802cd4743a515538551554aa60e115"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyFKReturnTests.inl",
-      "git_blob": "a5a39ac7d8bdede1a43b30ebfb7e8c0c463c5715",
-      "bytes": 24714,
-      "sha256": "f2ee21d879d6add5fe2f7d1f3fce209dfb739563fffa4355aa76609de58fc5da"
+      "git_blob": "8a9027e31424d294ad34a200b6acea7d86664d26",
+      "bytes": 29198,
+      "sha256": "8a17fc07d8ca27c0f7f8cb08eef920264dab953415b17122bf3694f8a9bcff3c"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyFixedArmPhysics.h",
@@ -27073,9 +27247,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNLocomotionManager.cpp",
-      "git_blob": "ba5879b4caf9da5e8489d5a527575a050b2d0b2d",
-      "bytes": 275181,
-      "sha256": "d6aa0333899b4c68ccd08c3d6e9e576cbd0970fceb9bc61ece9e1348f9b3812d"
+      "git_blob": "448d7788a894db5ef8746b25a15f7d4c8dae29f1",
+      "bytes": 275582,
+      "sha256": "7c3072f34475335ac86c0053a6ac4a053c022b02bf7c5cb7a843c748a1412054"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNLowerFeedbackAlignment.inl",
@@ -27145,27 +27319,27 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNRootWindowLibrary.cpp",
-      "git_blob": "d7a2f82d0532d088398d218a85791331ea76b780",
-      "bytes": 3286,
-      "sha256": "ea8c9cb0144237eba1df568bb98bdce00cee8cebea229d497735fcfba586407c"
+      "git_blob": "65e75720b14a56f46ecf9ae6b1da7ad86bc4f0ca",
+      "bytes": 3238,
+      "sha256": "c4b99fb5c15811d1ffa9ad16fa02ada93674462039c9a4e280c6a4c8c29bcef8"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNRootWindowSmoothing.h",
-      "git_blob": "e2af57cd8d40b54828f74baaa61f63bb51313437",
-      "bytes": 1784,
-      "sha256": "eff7b00923b4959c8f3e0d8b161f8579b8ea8c9565d891f8e6ea1186176a2675"
+      "git_blob": "faa705f20b8048474b34fbd2cc56583021bb1b3c",
+      "bytes": 1996,
+      "sha256": "ab1e4aa1367a73a90209a58086e6d1ba4a385b5c1ce4b701e8c6713879ab671a"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNRootWindowTests.cpp",
-      "git_blob": "8137b14e3215255f1e5e91232602aba7c44498bd",
-      "bytes": 5798,
-      "sha256": "4de1c277c1e0f0a1c33ff2473f5fb3159220fa19dd491937dccd53abad2ee3ec"
+      "git_blob": "a0f2e201dcd6ffd3564996959582bc8760c55793",
+      "bytes": 6629,
+      "sha256": "a76efe3b6023393e19ec7ce79c96dc6c0813e3137ec26ac812afc43ca3a29d32"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNSlashRuntime.inl",
-      "git_blob": "1339344ae078ba0383e45a078521842af151459e",
-      "bytes": 102257,
-      "sha256": "d0bd4ca17c02ae093d6ae5a537bec09b173517a44e5c32055918b9c4e37c5e2c"
+      "git_blob": "f897d76b2c3d463fcea0b6fd284fd07af557ac5b",
+      "bytes": 105090,
+      "sha256": "8b4a4513bc0bba5ea80279c83c2d39ff50a297aeea0c8cd6ddd6f94e8747e6ca"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNativePhysicalAgent.cpp",
@@ -27408,6 +27582,12 @@
       "sha256": "80d4fea85ce568998d3cbc9bd41b4675bc285b35409f0413d9c3e9fb03b51171"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyRootResponse.h",
+      "git_blob": "d87b61ba72c71d4728cfcc8e129bf0439e345bc1",
+      "bytes": 3899,
+      "sha256": "1c2399bf5734c1ddeb083337cb05c338d27973a0d81681b519f139a8a031ba12"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecyRootSpeedLimits.h",
       "git_blob": "490f4a1b8ec84a172657e191a70364f733864846",
       "bytes": 851,
@@ -27481,21 +27661,21 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySlashTrainDebug.inl",
-      "git_blob": "6508fc94b4ef02e764324f09523ed8b50ee8fc78",
-      "bytes": 8492,
-      "sha256": "7cea67e4ef592fbb4bb569f38ec13148370c031065c4cc707e1dd2449db8c0b0"
+      "git_blob": "c85433c073b8d5c89190a1a668542d25b7b5e12a",
+      "bytes": 10455,
+      "sha256": "f12b11790c8ec7d1bd6009d9a1130d51c21abcce8d4e3355dbb46adc9b2407a5"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySlashTrainDebugLibrary.cpp",
-      "git_blob": "229b2b6160a06ca75b8610d03e06c42502067f97",
-      "bytes": 1337,
-      "sha256": "bd7e89d5160354f8a65c0e2c83dc6fdb720450d6be9450883a72412b258c75ab"
+      "git_blob": "0ddd2dbc67ff304983bd00e75baddbd718177bd0",
+      "bytes": 6075,
+      "sha256": "e9be0167182d58462bfa7cf7965d7bf9cc8e7b380beb40ca3b64826e88dc106c"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySlashTrainFrame.inl",
-      "git_blob": "b0f0aeec79fe8f4cd721c2e4991730eb2c2a1fce",
-      "bytes": 1004,
-      "sha256": "134d25012a38366c65e37c5111cedbb425d2530000921509ba674882194607f5"
+      "git_blob": "3d309d2bab2cb4eb766e5e049dc29eb6688decf0",
+      "bytes": 1391,
+      "sha256": "8444385a47c0297575669b16a3ea9aef531f3f079cb54859ac5d9b0feceff7e7"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySpecialRoll.h",
@@ -27733,9 +27913,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyAttackFootLocomotionLibrary.h",
-      "git_blob": "0503b65256b056127af1a061c04eb40e2dddb006",
-      "bytes": 4044,
-      "sha256": "6241f6d10c8f293a57adef5e37c68cf5bfa5d098e38a78d23438b23ea1b5ca82"
+      "git_blob": "55f84a9c40d77aef690e2879b2ba71080279458e",
+      "bytes": 4909,
+      "sha256": "158ba2455b1f3c64b91d9ac96abd65371fcad2c899a8cc4dab9bba0c62ab82c9"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Public/ProphecyAttackMotionInertiaLibrary.h",
+      "git_blob": "030e970dece60ed42eeb9b6cb58d6aac36fc56e8",
+      "bytes": 1487,
+      "sha256": "6b76c65c9eba20afc4fc9c7989853eb8884d7a8d7395d0596b1c03207691ace4"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyAttackRecoveryLibrary.h",
@@ -27829,9 +28015,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyFKReturnLibrary.h",
-      "git_blob": "c5e2c9f3597dcfde8ea5c241da1f6d7f9a62afe1",
-      "bytes": 3477,
-      "sha256": "f12f5043d9f2ea0c5c19087f9d5f8555538fe6d3b0551a220d77ae3dde56741c"
+      "git_blob": "7c9519a231759642789554570373f9253fd62865",
+      "bytes": 3794,
+      "sha256": "df388f03ed5df9302b6ba298a63d5fe217fb072d672bd8cb9a850ee3a2b853c9"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyFoliageDecalGridComponent.h",
@@ -28129,9 +28315,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySlashTrainDebugLibrary.h",
-      "git_blob": "00cc11afa7dc5cbe47780ca51eadd45ce79ba2ee",
-      "bytes": 1654,
-      "sha256": "215862bf5df7cbd52803ceaeaeaf6b63f3cf216f61d8152eae66786db7a45d46"
+      "git_blob": "96b7d84fbe336c398ff8bbf2e1edbef16018a9aa",
+      "bytes": 2215,
+      "sha256": "ec26b734b1e8d4c2f087604715a87f381ef20d558c7dfb4f8efa216a65e74c9e"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySpecialRecoveryEvents.h",
@@ -28201,9 +28387,9 @@
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyBlendNodeUpgrade.cpp",
-      "git_blob": "1bdc7e5b2c7d92c8faa0281eea2fa1214a83e9ef",
-      "bytes": 46207,
-      "sha256": "ce7506c937f6ececb180fdce4308bed2bc22ec4064b0abb93b865f28bd7cbf0a"
+      "git_blob": "62748b493df76e4f21677baddf2544ee599ff818",
+      "bytes": 47727,
+      "sha256": "2be21dc766abded9251f73c6ab8fdfdc05d44481727e2323f66935eb388bc00c"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyBoatBuoyancyAutomationTest.cpp",
@@ -28228,6 +28414,12 @@
       "git_blob": "8f61fd2a4cea336b71d0e5bf7cd18094fc96b67a",
       "bytes": 3171,
       "sha256": "58a6eb0dd76f8505cbb1fd9564ca5041991d410911fa82411bb486ebfc453e7b"
+    },
+    {
+      "path": "Source/ProphecyEditor/Private/ProphecyCustomAttackBlueprint.cpp",
+      "git_blob": "c2ca810dcd537fb893937a2884565da9e4cddfe3",
+      "bytes": 17497,
+      "sha256": "6b274994b8758e4a35de09bd90a5b12a344a327422fed4549ff13aeb7b3e45d2"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyEditorModule.cpp",
@@ -28351,9 +28543,9 @@
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecySwordTrainingMesh.cpp",
-      "git_blob": "d9669c2b9b0cc72b343eb4aa8f99442f3c9f7df3",
-      "bytes": 4815,
-      "sha256": "9b9cab6f2b330a4ce821babbae30b99d840306b08ce4a0ec3d5ea2c3a3219036"
+      "git_blob": "35a34398f6c71c0b7b28f1bba8c142990ecba31d",
+      "bytes": 4820,
+      "sha256": "0cf28739fb04f9c3edc9d1ebb0b3376b7b417cfa862dcdb39c4c02396fa61f7f"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyWireBloodStainCommandlet.cpp",
@@ -29820,6 +30012,12 @@
       "sha256": "ae19be59fe951ae909ff090adbde43db2508d397f14ea447feed9e923d4d4bdf"
     },
     {
+      "path": "Tools/NN/Fixtures/ProblemSlashL743.json",
+      "git_blob": "943ec2b2454bc1f404156b48de5a243d2d21fc6b",
+      "bytes": 18272,
+      "sha256": "ba632d5ddafa1f35276ac17eed9f8a3dccbd722b55ae242bc7aea5543f46cc64"
+    },
+    {
       "path": "Tools/NN/Fixtures/SlashTrain2026092223.json",
       "git_blob": "e4847d3b5c80771b1abb041a57e9b111902da2a7",
       "bytes": 45050,
@@ -30370,6 +30568,12 @@
       "git_blob": "b026d4462443e69fc5939ba42b48ce5d61af1d02",
       "bytes": 1392,
       "sha256": "991ab13a55a8d32da3a8d0a509419e9c4aa4c961d2b22945f7e288264488b1c1"
+    },
+    {
+      "path": "Tools/Tests/RootResponseTests.cpp",
+      "git_blob": "966755066c8b1d01d3f2254778f40579429c9047",
+      "bytes": 4936,
+      "sha256": "c2057eae6d853cef99d9d2ccbf7d0151959be802996d3fb9e783f9a0a94cb1c4"
     }
   ]
 }

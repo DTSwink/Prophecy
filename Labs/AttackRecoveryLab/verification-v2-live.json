@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "clientId": "a234c97a-8e75-4e65-b8c4-81251038980a",
+  "frame": 37.344000005811566,
+  "attack": "slashLU",
+  "variant": 20,
+  "matchesPreUpdateState": {
+    "attack": true,
+    "variant": true,
+    "time": false,
+    "camera": false
+  },
+  "revision": "cea27cb1e6e41f8af588e45f492279bc04b8ae5719cdc8cc6276929f67fb783b",
+  "readOnlyCaptureSamples": 109,
+  "runtimeErrors": []
+}

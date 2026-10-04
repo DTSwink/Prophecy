@@ -3,8 +3,9 @@ const $=id=>document.getElementById(id), R=Recovery;
 const add=R.add,sub=R.sub,mul=R.mul,dot=R.dot,cross=R.cross,norm=R.length,normalize=R.unit;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 let names=[],parents=[],nameToIndex=new Map(),swordMesh=null,manifest=null,model=null;
-let selectionPlaying=null;
-let attackReturnTimes={},attackReturnEasing={},attackBoneInertia={};
+let selectionPlaying=null,workspaceTab='motion';
+function setWorkspaceTab(name,persist=true){workspaceTab=['motion','view','library'].includes(name)?name:'motion';for(const tab of ['motion','view','library']){$(tab+'Controls').hidden=tab!==workspaceTab;$(tab+'Tab').setAttribute('aria-selected',String(tab===workspaceTab));}if(persist)save();}
+let attackReturnTimes={},attackReturnEasing={},attackBoneInertia={},attackInertiaTiming={},attackMainInertia={},attackAngleTimeSeconds={};
 let renderer=null,playing=false,time=0,loadToken=0,lastTick=0,frameHandle=null,saveTimer=null;
 const loadedRevision=document.querySelector('meta[name="build-revision"]').content;
 const desktopToken=new URLSearchParams(location.search).get('desktopSession')||'';
@@ -16,16 +17,16 @@ window.addEventListener('unhandledrejection',e=>runtimeErrors.push(String(e.reas
 const cameraDefault={yaw:-.72,pitch:-.15,zoom:1.15,panX:0,panY:0};
 const cameraState={...cameraDefault}, cache=new Map();
 const inertiaBones=['spine','clavicle','upperarm','lowerarm','neck_01','neck_02','head'];
-const controls=[...inertiaBones.map(key=>'inertiaAlpha_'+key),'enabled','duration','returnEasing','inertia','spineTurn','phaseColors','gizmoSide','handGizmos','lowerarmGizmos','upperarmGizmos','upperOnly','skeleton','idleGhost','speed'];
+const controls=[...inertiaBones.map(key=>'inertiaAlpha_'+key),'enabled','duration','angleTimeSeconds','returnEasing','inertia','springReturn','worldInertia','inertiaHold','inertiaDecay','spineTurn','phaseColors','gizmoSide','handGizmos','lowerarmGizmos','upperarmGizmos','upperOnly','skeleton','idleGhost','speed'];
 const committedRanges=new Map(),draftRanges=new Set();
 function rangeValue(id){return committedRanges.get(id)??$(id).value;}
 function commitRanges(ids=controls){for(const id of ids)if($(id)?.type==='range'){committedRanges.set(id,$(id).value);draftRanges.delete(id);}}
 const posAt=(data,j)=>data.points[j],axisAt=(data,j,a)=>data.axes[j][a];
 function decodeBase64(text,Type){const raw=atob(text),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));return new Type(bytes.buffer);}
-function options(){return {enabled:$('enabled').checked,duration:Number(rangeValue('duration')),returnEasing:attackReturnEasing[model?.clip.name]??1,inertia:Number(rangeValue('inertia')),spineTurn:Number(rangeValue('spineTurn')),boneInertia:Object.fromEntries(inertiaBones.map(key=>[key,Number(rangeValue('inertiaAlpha_'+key))]))};}
-function endTime(){return model?model.attackSeconds+(options().enabled?options().duration:0)+.35:1;}
-function state(){return {schema:'attack_recovery_view_v1',attack:$('attack').value,variant:Number($('variant').value),time,camera:{...cameraState},openPanel:!$('boneInertiaPanel').hidden?'boneInertia':!$('copyProfilePanel').hidden?'copyProfile':null,copyProfile:{source:$('profileSource').value,targets:profileTargets().map(input=>input.value)},
- attackReturnTimes:{...attackReturnTimes},attackReturnEasing:{...attackReturnEasing},attackBoneInertia:Object.fromEntries(Object.entries(attackBoneInertia).map(([name,values])=>[name,{...values}])),controls:Object.fromEntries(controls.map(id=>[id,$(id).type==='checkbox'?$(id).checked:$(id).type==='range'?rangeValue(id):$(id).value])),motionSha:model?.meta.sha256,sourceSha:manifest?.sourceReceipt.files['source.html'].sha256,revision:loadedRevision};}
+function options(){return {enabled:$('enabled').checked,duration:Number(rangeValue('duration')),angleTimeSeconds:Number(rangeValue('angleTimeSeconds')),returnEasing:attackReturnEasing[model?.clip.name]??1,inertia:Number(rangeValue('inertia')),springReturn:$('springReturn').checked,worldInertia:$('worldInertia').checked,inertiaHold:Number(rangeValue('inertiaHold')),inertiaDecay:Number(rangeValue('inertiaDecay')),spineTurn:Number(rangeValue('spineTurn')),boneInertia:Object.fromEntries(inertiaBones.map(key=>[key,Number(rangeValue('inertiaAlpha_'+key))]))};}
+function endTime(){return model?model.attackSeconds+(options().enabled?R.returnTiming(model,options()).duration:0)+.35:1;}
+function state(){return {schema:'attack_recovery_view_v1',angleTimeDefaultsVersion:1,workspaceTab,attack:$('attack').value,variant:Number($('variant').value),time,camera:{...cameraState},openPanel:!$('boneInertiaPanel').hidden?'boneInertia':!$('copyProfilePanel').hidden?'copyProfile':null,copyProfile:{source:$('profileSource').value,targets:profileTargets().map(input=>input.value)},
+ attackAngleTimeSeconds:{...attackAngleTimeSeconds},attackMainInertia:{...attackMainInertia},attackInertiaTiming:Object.fromEntries(Object.entries(attackInertiaTiming).map(([name,value])=>[name,{...value}])),attackReturnTimes:{...attackReturnTimes},attackReturnEasing:{...attackReturnEasing},attackBoneInertia:Object.fromEntries(Object.entries(attackBoneInertia).map(([name,values])=>[name,{...values}])),controls:Object.fromEntries(controls.map(id=>[id,$(id).type==='checkbox'?$(id).checked:$(id).type==='range'?rangeValue(id):$(id).value])),motionSha:model?.meta.sha256,sourceSha:manifest?.sourceReceipt.files['source.html'].sha256,revision:loadedRevision};}
 async function post(url,value){const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Desktop-Session':desktopToken,'X-Client-Id':clientId},body:JSON.stringify(value),keepalive:url==='/state'});if(!response.ok)throw Error((await response.json()).error||`${url}: ${response.status}`);return response.json();}
 function save(){if(!desktopToken)return;clearTimeout(saveTimer);saveTimer=setTimeout(()=>{if(model&&$('attack').value===model.clip.name&&Number($('variant').value)===model.meta.id)post('/state',state()).catch(e=>notice('Settings could not be saved: '+e.message));},250);}
 function notice(message){$('notice').textContent=message;}
@@ -41,6 +42,14 @@ function stepFrame(direction){
 function tick(now){frameHandle=null;if(!playing)return;const elapsed=(now-lastTick)/1000;lastTick=now;time=(time+elapsed*Number($('speed').value))%endTime();drawAll();frameHandle=requestAnimationFrame(tick);}
 function textIfChanged(id,value){const element=$(id);if(element.textContent!==value)element.textContent=value;}
 function updateSliderLabels(){
+ const previewTiming=model?R.returnTiming(model,{...options(),duration:Number($('duration').value),angleTimeSeconds:Number($('angleTimeSeconds').value),spineTurn:Number($('spineTurn').value)}):{angle:0,addedSeconds:0,duration:Number($('duration').value)};
+ textIfChanged('angleTimeSecondsValue',Number($('angleTimeSeconds').value).toFixed(2)+' s at 90°');
+ textIfChanged('angleTimeResult',previewTiming.angle.toFixed(1)+'° from idle · '+'+'+previewTiming.addedSeconds.toFixed(2)+' s → '+previewTiming.duration.toFixed(2)+' s return');
+ const spring=$('springReturn').checked;$('returnMethod').value=spring?'spring':'blend';$('inertiaSpace').value=$('worldInertia').checked?'world':'parent';document.querySelector('label[for=returnEasing]').textContent=spring?'Pull ramp':'Easing';document.querySelector('label[for=inertiaDecay]').textContent=spring?'Spring damping':'Inertia decay';$('inertiaHoldControls').hidden=spring;$('inertiaHoldHelp').hidden=spring;
+ textIfChanged('returnEasingHelp',spring?'Pull starts gently and grows continuously. Higher = gentler early pull, stronger late pull.':'0 = constant-speed blend · 1 = smooth start and stop.');
+ textIfChanged('inertiaDecayHelp',spring?'Lower = more swing and overshoot. Higher = more damping.':'Lower = slower decay. Always finishes at the return endpoint.');
+ textIfChanged('inertiaHoldHelp','Keep momentum before fading, as a fraction of return time. Idle return continues.');
+ textIfChanged('inertiaHoldValue',Math.round(Number($('inertiaHold').value)*100)+'% · '+(Number($('inertiaHold').value)*previewTiming.duration).toFixed(2)+' s');textIfChanged('inertiaDecayValue',Number($('inertiaDecay').value).toFixed(2)+'×');
  textIfChanged('spineTurnValue',Number($('spineTurn').value)+'°');
  textIfChanged('returnEasingValue',Number($('returnEasing').value).toFixed(2));
  textIfChanged('durationValue',Number($('duration').value).toFixed(2)+' s');textIfChanged('inertiaValue',Math.round(Number($('inertia').value)*100)+'%');
@@ -50,7 +59,7 @@ function drawAll(){
  if(!model||!renderer)return;
  textIfChanged('boneInertiaAttack','For '+model.clip.name+' · all variants');
  updateSliderLabels();
- const viewOptions=options(),stop=model.attackSeconds+(viewOptions.enabled?viewOptions.duration:0)+.35;
+ const viewOptions=options(),returnDuration=R.returnTiming(model,viewOptions).duration,stop=model.attackSeconds+(viewOptions.enabled?returnDuration:0)+.35;
  let pose=R.sample(model,time,viewOptions);const upperOnly=$('upperOnly').checked;
  if(upperOnly)pose=R.anchor(model,pose,model.meta.target);
  const data={...pose,target:pose.target||model.meta.target,upperOnly,upper:model.upper,skeleton:$('skeleton').checked,
@@ -59,11 +68,11 @@ function drawAll(){
  data.tint=$('phaseColors').checked&&authored?[.23,.73,.41]:[.91,.49,.25];
  $('motionColor').style.color=`rgb(${data.tint.map(c=>Math.round(c*255)).join(',')})`;
  textIfChanged('motionLegend',$('phaseColors').checked?(authored?'Authored':'Our return'):'Motion');
- if($('idleGhost').checked){let ghost=R.sample(model,model.attackSeconds+viewOptions.duration+1,{...viewOptions,enabled:true});if(upperOnly)ghost=R.anchor(model,ghost,model.meta.target);data.ghost={...ghost,upperOnly,upper:model.upper,skeleton:true,hideSword:true,tint:[.28,.66,.86]};}
+ if($('idleGhost').checked){let ghost=R.sample(model,model.attackSeconds+returnDuration+1,{...viewOptions,enabled:true});if(upperOnly)ghost=R.anchor(model,ghost,model.meta.target);data.ghost={...ghost,upperOnly,upper:model.upper,skeleton:true,hideSword:true,tint:[.28,.66,.86]};}
  renderer.draw(data,model.poses[0].points[0]);
  $('timeline').max=String(stop);if(!draftRanges.has('timeline'))$('timeline').value=String(time);textIfChanged('time',`${time.toFixed(2)} / ${stop.toFixed(2)} s`);
  const phases=model.clip.phases||{};let phase='Attack';
- if(time<Number(phases.armed)/model.meta.fps)phase='Pre-arm';else if(time<Number(phases.hit)/model.meta.fps)phase='Armed';else if(time<=model.attackSeconds)phase='Hit / tail';else phase=!viewOptions.enabled?'Held end':time<model.attackSeconds+viewOptions.duration?'Returning':'Idle';
+ if(time<Number(phases.armed)/model.meta.fps)phase='Pre-arm';else if(time<Number(phases.hit)/model.meta.fps)phase='Armed';else if(time<=model.attackSeconds)phase='Hit / tail';else phase=!viewOptions.enabled?'Held end':time<model.attackSeconds+returnDuration?'Returning':'Idle';
  textIfChanged('phase',phase);textIfChanged('anchorLabel',upperOnly?'spine_01 fixed · lower body hidden':'');
  window.recoveryLab.currentPose=data;
  if(!playing){clearTimeout(liveTimer);liveTimer=setTimeout(publishLive,150);}
@@ -81,7 +90,7 @@ async function select(attack,variant=1,restoredTime=time,resumePlaying=selection
    if(!prepared){const response=await fetch(meta.file);if(!response.ok)throw Error('Motion file unavailable');const buffer=await response.arrayBuffer();
      const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',buffer)),b=>b.toString(16).padStart(2,'0')).join('');
      if(digest!==meta.sha256)throw Error('Motion checksum mismatch');prepared=R.prepare(meta,buffer,clip,names,parents);cache.set(meta.file,prepared);if(cache.size>12)cache.delete(cache.keys().next().value);}
-   if(token!==loadToken)return;model=prepared;$('returnEasing').value=String(attackReturnEasing[clip.name]??1);$('duration').value=String(attackReturnTimes[clip.name]??1);for(const key of inertiaBones)$('inertiaAlpha_'+key).value=String(attackBoneInertia[clip.name]?.[key]??1);commitRanges(['duration','returnEasing',...inertiaBones.map(key=>'inertiaAlpha_'+key)]);time=clamp(Number(restoredTime)||0,0,endTime());
+   if(token!==loadToken)return;model=prepared;$('angleTimeSeconds').value=String(attackAngleTimeSeconds[clip.name]??.29);$('inertia').value=String(attackMainInertia[clip.name]??1);$('springReturn').checked=attackInertiaTiming[clip.name]?.spring===true;$('worldInertia').checked=attackInertiaTiming[clip.name]?.world===true;$('inertiaHold').value=String(attackInertiaTiming[clip.name]?.hold??0);$('inertiaDecay').value=String(attackInertiaTiming[clip.name]?.decay??1);$('returnEasing').value=String(attackReturnEasing[clip.name]??1);$('duration').value=String(attackReturnTimes[clip.name]??1);for(const key of inertiaBones)$('inertiaAlpha_'+key).value=String(attackBoneInertia[clip.name]?.[key]??1);commitRanges(['inertia','duration','angleTimeSeconds','returnEasing','inertiaHold','inertiaDecay',...inertiaBones.map(key=>'inertiaAlpha_'+key)]);time=clamp(Number(restoredTime)||0,0,endTime());
    $('targetKind').textContent=meta.kind==='floor'?'Floor':'Volume';$('targetKind').classList.toggle('floor',meta.kind==='floor');
    const floors=clip.variants.filter(v=>v.kind==='floor').length;
    $('targetInfo').textContent=`${clip.variants.length-floors} volume targets${floors?' + '+floors+' floor target.':'.'}`;
@@ -125,17 +134,17 @@ function updateCopyProfile(){
  const count=profileTargets().length;
  $('applyProfile').disabled=!source||!count;
  $('applyProfile').textContent=count?'Copy to '+count+' attack'+(count===1?'':'s'):'Select destination attacks';
- textIfChanged('profileSummary',(attackReturnTimes[source]??1).toFixed(2)+' s return · '+(attackReturnEasing[source]??1).toFixed(2)+' easing');
+ const timing=attackInertiaTiming[source]||{};textIfChanged('profileSummary',Math.round((attackMainInertia[source]??1)*100)+'% inertia · '+(attackReturnTimes[source]??1).toFixed(2)+' s return · '+(attackAngleTimeSeconds[source]??.29).toFixed(2)+' s at 90° · '+(attackReturnEasing[source]??1).toFixed(2)+(timing.spring?' pull ramp · ':' easing · '+Math.round((timing.hold??0)*100)+'% hold · ')+(timing.decay??1).toFixed(2)+(timing.spring?'× damping · continuous spring':'× decay')+' · '+(timing.world?'world':'parent')+' space');
 }
 function copyAttackProfile(){
  const source=$('profileSource').value,targets=profileTargets().map(input=>input.value);
  if(!attackBoneInertia[source]||!targets.length)return;
- const bones={...attackBoneInertia[source]},duration=attackReturnTimes[source],easing=attackReturnEasing[source];
- for(const target of targets){attackBoneInertia[target]={...bones};attackReturnTimes[target]=duration;attackReturnEasing[target]=easing;}
+ const bones={...attackBoneInertia[source]},duration=attackReturnTimes[source],easing=attackReturnEasing[source],timing={...attackInertiaTiming[source]},mainInertia=attackMainInertia[source],angleSeconds=attackAngleTimeSeconds[source];
+ for(const target of targets){attackBoneInertia[target]={...bones};attackReturnTimes[target]=duration;attackReturnEasing[target]=easing;attackInertiaTiming[target]={...timing};attackMainInertia[target]=mainInertia;attackAngleTimeSeconds[target]=angleSeconds;}
  if(model&&targets.includes(model.clip.name)){
-  $('duration').value=String(duration);$('returnEasing').value=String(easing);
+  $('angleTimeSeconds').value=String(angleSeconds);$('inertia').value=String(mainInertia);$('duration').value=String(duration);$('returnEasing').value=String(easing);$('springReturn').checked=timing.spring===true;$('worldInertia').checked=timing.world===true;$('inertiaHold').value=String(timing.hold);$('inertiaDecay').value=String(timing.decay);
   for(const key of inertiaBones)$('inertiaAlpha_'+key).value=String(bones[key]);
-  commitRanges(['duration','returnEasing',...inertiaBones.map(key=>'inertiaAlpha_'+key)]);time=Math.min(time,endTime());drawAll();
+  commitRanges(['inertia','duration','angleTimeSeconds','returnEasing','inertiaHold','inertiaDecay',...inertiaBones.map(key=>'inertiaAlpha_'+key)]);time=Math.min(time,endTime());drawAll();
  }
  $('profileCopyStatus').textContent='Copied '+source+' to '+targets.join(', ')+'.';
  updateCopyProfile();save();
@@ -147,7 +156,11 @@ function showPanel(name,persist=true){
  if(persist)save();
 }
 function applyControls(saved){
+ setWorkspaceTab(saved?.workspaceTab??'motion',false);
  if(saved?.openPanel!==undefined)showPanel(saved.openPanel,false);
+ attackAngleTimeSeconds=Object.fromEntries(manifest.clips.map(clip=>{const value=Number(saved?.attackAngleTimeSeconds?.[clip.name]??.29);return [clip.name,clamp(Number.isFinite(value)?value:.29,0,4)];}));
+ attackMainInertia=Object.fromEntries(manifest.clips.map(clip=>{const value=Number(saved?.attackMainInertia?.[clip.name]??1);return [clip.name,clamp(Number.isFinite(value)?value:1,0,1)];}));
+ attackInertiaTiming=Object.fromEntries(manifest.clips.map(clip=>{const v=saved?.attackInertiaTiming?.[clip.name],hold=Number(v?.hold??0),decay=Number(v?.decay??1);return [clip.name,{spring:v?.spring===true,world:v?.world===true,hold:clamp(Number.isFinite(hold)?hold:0,0,.8),decay:clamp(Number.isFinite(decay)?decay:1,0,4)}];}));
  attackBoneInertia=Object.fromEntries(manifest.clips.map(clip=>[clip.name,normalizeBoneInertia(saved?.attackBoneInertia?.[clip.name],saved?.controls)]));
  attackReturnEasing=Object.fromEntries(manifest.clips.map(clip=>{const value=Number(saved?.attackReturnEasing?.[clip.name]??1);return [clip.name,clamp(Number.isFinite(value)?value:1,0,1)];}));
  const fallback=Number(saved?.controls?.duration??1);
@@ -183,7 +196,7 @@ async function publishLive(){
 async function captureTrajectory(command){
  const saved=publishedViews.get(command.fingerprint);
  if(!saved)return post('/capture',{id:command.id,error:'Requested view has expired',fingerprint:command.fingerprint});
- const stop=saved.model.attackSeconds+(saved.options.enabled?saved.options.duration:0),samples=[];
+ const stop=saved.model.attackSeconds+(saved.options.enabled?R.returnTiming(saved.model,saved.options).duration:0),samples=[];
  for(let frame=0;frame<=Math.ceil(stop*60);frame++){const seconds=Math.min(frame/60,stop);let pose=R.sample(saved.model,seconds,saved.options);if(saved.state.controls.upperOnly)pose=R.anchor(saved.model,pose,saved.model.meta.target);samples.push({seconds,points:pose.points,axes:pose.axes});}
  await post('/capture',{id:command.id,fingerprint:command.fingerprint,state:saved.state,view:saved.view,samples});
 }
@@ -193,6 +206,8 @@ async function removeVariant(){
 }
 async function init(){
  const [m,s,sword]=await Promise.all([fetch('data/manifest.json').then(r=>{if(!r.ok)throw Error('Dataset is not ready');return r.json();}),fetch('/state').then(r=>r.json()),fetch('data/sword.json').then(r=>r.json())]);
+ // One-time requested reset of all attack profiles; later tuning remains persistent.
+ if(s.angleTimeDefaultsVersion!==1){s.attackAngleTimeSeconds=Object.fromEntries(m.clips.map(c=>[c.name,.29]));s.angleTimeDefaultsVersion=1;}
  manifest=m;names=m.names;parents=m.parents;nameToIndex=new Map(names.map((n,i)=>[n,i]));
  $('profileSource').replaceChildren(...manifest.clips.map(clip=>new Option(clip.name,clip.name)));
  for(const clip of manifest.clips){const label=document.createElement('label');label.className='check';const input=document.createElement('input');input.type='checkbox';input.value=clip.name;label.append(input,document.createTextNode(clip.name));$('profileTargets').append(label);}
@@ -210,7 +225,10 @@ async function init(){
  document.addEventListener('input',event=>{if(event.target.matches('input[type=range]')){draftRanges.add(event.target.id);updateSliderLabels();}},true);
  document.addEventListener('change',event=>{if(event.target.matches('input[type=range]')){committedRanges.set(event.target.id,event.target.value);draftRanges.delete(event.target.id);}},true);
  document.addEventListener('pointerup',()=>{setTimeout(()=>{draftRanges.clear();updateSliderLabels();$('timeline').value=String(time);},0);},true);
- for(const id of controls)$(id).addEventListener($(id).type==='range'?'change':'input',()=>{if(id==='returnEasing'&&model)attackReturnEasing[model.clip.name]=Number($('returnEasing').value);if(id==='duration'&&model)attackReturnTimes[model.clip.name]=Number($('duration').value);if(id.startsWith('inertiaAlpha_')&&model)attackBoneInertia[model.clip.name][id.slice('inertiaAlpha_'.length)]=Number($(id).value);time=Math.min(time,endTime());drawAll();if(!$('copyProfilePanel').hidden)updateCopyProfile();save();});
+ for(const id of controls)$(id).addEventListener($(id).type==='range'?'change':'input',()=>{if(model&&id==='angleTimeSeconds')attackAngleTimeSeconds[model.clip.name]=Number($('angleTimeSeconds').value);if(model&&id==='inertia')attackMainInertia[model.clip.name]=Number($('inertia').value);if(model&&id==='springReturn')attackInertiaTiming[model.clip.name].spring=$('springReturn').checked;if(model&&id==='worldInertia')attackInertiaTiming[model.clip.name].world=$('worldInertia').checked;if(model&&(id==='inertiaHold'||id==='inertiaDecay'))attackInertiaTiming[model.clip.name][id==='inertiaHold'?'hold':'decay']=Number($(id).value);if(id==='returnEasing'&&model)attackReturnEasing[model.clip.name]=Number($('returnEasing').value);if(id==='duration'&&model)attackReturnTimes[model.clip.name]=Number($('duration').value);if(id.startsWith('inertiaAlpha_')&&model)attackBoneInertia[model.clip.name][id.slice('inertiaAlpha_'.length)]=Number($(id).value);time=Math.min(time,endTime());drawAll();if(!$('copyProfilePanel').hidden)updateCopyProfile();save();});
+ for(const button of document.querySelectorAll('[data-tab]'))button.onclick=()=>setWorkspaceTab(button.dataset.tab);
+ $('returnMethod').onchange=()=>{$('springReturn').checked=$('returnMethod').value==='spring';$('springReturn').dispatchEvent(new Event('input',{bubbles:true}));};
+ $('inertiaSpace').onchange=()=>{$('worldInertia').checked=$('inertiaSpace').value==='world';$('worldInertia').dispatchEvent(new Event('input',{bubbles:true}));};
  $('toggleCopyProfile').onclick=()=>{if($('copyProfilePanel').hidden){$('profileSource').value=model?.clip.name||$('profileSource').value;updateCopyProfile();showPanel('copyProfile');}else showPanel(null);};
  $('closeCopyProfile').onclick=()=>showPanel(null);
  $('profileSource').onchange=()=>{updateCopyProfile();save();};$('profileTargets').onchange=()=>{updateCopyProfile();save();};
@@ -221,7 +239,8 @@ async function init(){
  $('toggleBoneInertia').onclick=()=>showBoneInertia($('boneInertiaPanel').hidden);$('closeBoneInertia').onclick=()=>showBoneInertia(false);
  $('resetSpineTurn').onclick=()=>{$('spineTurn').value='0';commitRanges(['spineTurn']);drawAll();save();};
  $('play').onclick=()=>setPlaying(!playing);$('start').onclick=()=>seek(0);$('previous').onclick=()=>stepFrame(-1);$('next').onclick=()=>stepFrame(1);
- $('armed').onclick=()=>seek(model.clip.phases.armed/model.meta.fps);$('hit').onclick=()=>seek(model.clip.phases.hit/model.meta.fps);$('tail').onclick=()=>seek(model.attackSeconds);$('idle').onclick=()=>seek(model.attackSeconds+options().duration);
+ for(const [id,step] of [['durationMinus',-1],['durationPlus',1]])$(id).onclick=()=>{const slider=$('duration');slider.value=(clamp(Math.round(Number(rangeValue('duration'))*100)+step,Math.round(Number(slider.min)*100),Math.round(Number(slider.max)*100))/100).toFixed(2);slider.dispatchEvent(new Event('change',{bubbles:true}));};
+ $('armed').onclick=()=>seek(model.clip.phases.armed/model.meta.fps);$('hit').onclick=()=>seek(model.clip.phases.hit/model.meta.fps);$('tail').onclick=()=>seek(model.attackSeconds);$('idle').onclick=()=>seek(model.attackSeconds+R.returnTiming(model,options()).duration);
  $('timeline').onchange=()=>seek(Number($('timeline').value));$('resetCamera').onclick=resetCamera;$('snapshot').onclick=()=>snapshot().catch(fail);
  $('snapshots').onchange=async()=>{const name=$('snapshots').value;if(!name)return;try{await restore(await (await fetch('snapshots/'+name+'.json')).json());notice('Restored '+name);}catch(e){fail(e);}};
  $('refresh').onclick=async()=>{if(desktopToken)await post('/state',state());location.reload();};

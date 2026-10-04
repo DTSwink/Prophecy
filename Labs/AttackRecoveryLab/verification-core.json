@@ -1,10 +1,10 @@
 {
   "motions": 320,
   "floorMotions": 15,
-  "maxLengthError": 3.885780586188048e-16,
+  "maxLengthError": 4.440892098500626e-16,
   "maxLowerError": 9.453208419344605e-16,
   "maxIdleAngle": 5.599035007427257e-16,
-  "maxSeamPositionError": 4.751428452635033e-8,
+  "maxSeamPositionError": 4.3915592662197775e-8,
   "snapshot2HandErrorDeg": 0.000001624130627498659,
-  "averageRecoveryMicroseconds": 88.70173000000004
+  "averageRecoveryMicroseconds": 164.26424000000006
 }
