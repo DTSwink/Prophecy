@@ -1,5 +1,7 @@
 # Independent simulated-sword magnetisation
 
+The October 5 experimental contact motor for an attached sword was removed at the user's request: it did not resolve their observed jiggle. The original hand velocity servo is restored, with no contact activation bookkeeping or additional solver iterations. The independently simulated-sword drive below is unchanged.
+
 A held **simulated Jolt sword** now has its own linear/angular velocity servo, in
 addition to the fixed hand grip. It inherits the gripping hand's accepted drive
 packet (`hand_r` with the default socket): global strength multiplied by the hand's

@@ -83,48 +83,10 @@ namespace
         return INDEX_NONE;
     }
 
-    bool DefensePhysicalStop(AProphecyNNLocomotionManager::FImpl& Impl,FProphecyLiveDefensePose& P,
-        const ProphecyDefense::FPose& Before,const ProphecyDefense::FPose& After,const FVector3f& Origin)
-    {
-        auto* Actor=P.Owner.Get();auto* Attacker=P.Attacker.Get();
-        if (Actor->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic)
-        {
-            P.Order={};
-            P.Status.ContactCollider=NAME_None;P.Status.ContactTimeSeconds=-1;return false;
-        }
-        auto& D=*Impl.Defense;
-        if (!P.PhysicalContacts && !P.bPhysicalContactsFailed)
-        {
-            auto Contacts=MakeShared<FProphecyDefensePhysicalContacts>();FString Error;
-            if (Contacts->Build(*Actor,*Attacker,D.AttackContacts.Boxes[P.AttackerCollider].Name,Impl.BodyNames,Error))
-                P.PhysicalContacts=MoveTemp(Contacts);
-            else
-            {
-                P.bPhysicalContactsFailed=true;
-                UE_LOG(LogProphecyNNLocomotion,Error,TEXT("PHAT defense contact setup failed for %s: %s"),*Actor->GetName(),*Error);
-            }
-        }
-        if (!P.PhysicalContacts) return false;
-        FTransform Previous[25],Current[25];
-        auto Convert=[&](const ProphecyDefense::FPose& Pose,FTransform* Out)
-        {
-            for (int32 I=0;I<25;++I)
-            {
-                const auto& R=Pose.R[I];const FVector X(R.V[0].X,R.V[0].Z,R.V[0].Y),Y(-R.V[1].X,-R.V[1].Z,-R.V[1].Y);
-                const auto V=Pose.P[I]+Origin;
-                Out[D.Bones[I]]=FTransform(FRotationMatrix::MakeFromXY(X,Y).ToQuat(),FVector(V.X,V.Z,V.Y)*100.);
-            }
-        };
-        Convert(Before,Previous);Convert(After,Current);
-        const auto& Attack=Impl.Agents[P.AttackerIndex].Slash;
-        P.PhysicalContacts->Sweep(Previous,Current,Attack.PreviousVisibleWorldPose.GetData(),Attack.VisibleWorldPose.GetData(),P.Order,P.Status.CompletedSteps);
-        const int32 Contact=P.Order.Collider;
-        if (Contact==INDEX_NONE) return false;
-        P.Status.ContactCollider=P.PhysicalContacts->Defender[Contact].Name;
-        P.Status.ContactTimeSeconds=float(P.Order.Time/30.);
-        return true;
-    }
+
 }
+
+#include "ProphecyParryAudit.inl"
 
 #if WITH_DEV_AUTOMATION_TESTS
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyDefenseForearmBoundaryTest,
@@ -191,8 +153,8 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     auto& Agent=Impl->Agents[Handle.Index];const int32 AttackerIndex=Attacker->GetAgentHandle().Index;const auto& Attack=Impl->Agents[AttackerIndex].Slash;
     if (!Attack.bActive || Attack.VisibleWorldPose.Num()!=25 || Attack.State.Num()!=SlashInputDim)
     { Error=TEXT("Start the incoming attack first.");return false; }
-    if (Attack.HitFrame!=INDEX_NONE)
-    { Error=TEXT("The incoming attack has already output Hit; its parry window has ended.");return false; }
+    if (Attack.HitFrame!=INDEX_NONE && Attack.Frame-Attack.HitFrame>=ProphecyDefenseControls::GetFramesAfterHit(Actor,false))
+    { Error=TEXT("The incoming attack has passed its parry deadline.");return false; }
     if (Attack.State[270]<=0.5f)
     {
         StopAgentNNDefense(Handle);
@@ -237,6 +199,9 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
         if (I) { D.Geometry.LowerPose(L[I],Root.P,Root.R,BasePose);D.Geometry.EncodeUpper(BasePose,Root.P,Root.R,Base); }
     }
     P.State.Initialize(L[0],U[0],Roots[0],L[1],U[1],Roots[1],Base);
+#if !UE_BUILD_SHIPPING
+    if(ProphecyParryAudit::Enabled.GetValueOnGameThread()!=0) ProphecyParryAudit::Save(P,Attack.Frame,TEXT("initial"));
+#endif
     FTransform World[25];const auto Carrier=SlashComponentWorld(Actor,History?History->Root[1]:Agent.PublishedRoot,History?History->Yaw[1]:Agent.PublishedYaw);
     for (int32 I=0;I<25;++I) World[I]=P.CurrentComponent[I]*Carrier;
     DefenseWorldPose(World,D.Bones,P.CurrentPose);D.Contacts.Build(P.CurrentPose,P.PreviousBoxes);
@@ -293,6 +258,24 @@ EProphecyAgentState AProphecyNNLocomotionManager::GetAgentActivityState(FProphec
     if (Agent.DefensePose && Agent.DefensePose->Status.Active)
         return Agent.DefensePose->bDodge ? EProphecyAgentState::Dodging : EProphecyAgentState::Parrying;
     return Agent.Slash.bActive ? EProphecyAgentState::Attacking : EProphecyAgentState::Locomotion;
+}
+
+void AProphecyNNLocomotionManager::StopDefensesForAttacker(AProphecyAgent* Attacker)
+{
+    if (!Impl->Defense || !Impl->Defense->ActiveCount) return;
+    // End-event work only. Snapshot owners before callbacks can replace a defense.
+    struct FEnded { int32 Index; FProphecyLiveDefensePose* Pose; };
+    TArray<FEnded,TInlineAllocator<8>> Ended;
+    auto Collect=[&](const auto& Entries)
+    {
+        for (const auto& Pair:Entries)
+            if (Pair.Value->Status.Active && Pair.Value->Attacker.Get()==Attacker)
+                Ended.Add({Pair.Key,Pair.Value.Get()});
+    };
+    Collect(Impl->Defense->Parries);Collect(Impl->Defense->Dodges);
+    for (const auto& Item:Ended)
+        if (Impl->Agents.IsValidIndex(Item.Index) && Impl->Agents[Item.Index].DefensePose==Item.Pose)
+            StopAgentNNDefense(GetAgentHandle(Item.Index));
 }
 
 bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handle, bool bReturnToLocomotion)
@@ -363,10 +346,22 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
         auto& P=**Entry;auto* Actor=P.Owner.Get();auto* Attacker=P.Attacker.Get();
         if(!IsValid(Actor) || !IsValid(Attacker) || !Actor->bNNInferenceEnabled || !Attacker->bNNInferenceEnabled || !Impl->Agents.IsValidIndex(P.AttackerIndex))continue;
         const auto& Attack=Impl->Agents[P.AttackerIndex].Slash;
-        if(Attack.bActive && Attack.Family==P.Family && Attack.HitFrame!=INDEX_NONE)
+        if(Attack.bActive && Attack.Family==P.Family && Attack.HitFrame!=INDEX_NONE &&
+            Attack.Frame-Attack.HitFrame>=ProphecyDefenseControls::GetFramesAfterHit(Actor,false))
         {
             P.Status.AttackerFrame=Attack.Frame;StopAgentNNDefense(Actor->GetAgentHandle());
-            if(IsValid(Actor) && ResolveAgent(Actor->GetAgentHandle())==Actor) PublishAgentPose(Index,Impl->Agents[Index].PublishedPoseTimeSeconds);
+            if(IsValid(Actor) && ResolveAgent(Actor->GetAgentHandle())==Actor)
+            {
+                // Hit was learned AFTER this step's locomotion upper batch.
+                // Lower locomotion already advanced, but this defender's upper
+                // was skipped. Fill exactly that missing lane once instead of
+                // publishing the old upper pair again under a new timestamp.
+                // End callbacks may have started a new owner; normal eligibility
+                // checks below respect that replacement.
+                BuildUpperInputBatch(Index);
+                if(RunUpperModelBatch()) ApplyUpperOutputBatch(Index);
+                PublishAgentPose(Index,Impl->Agents[Index].PublishedPoseTimeSeconds);
+            }
         }
     }
     const int32 ParryCount=D.ActiveCount-D.ActiveDodgeCount;
@@ -383,10 +378,10 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
         if (!Actor->bNNInferenceEnabled || !Attacker->bNNInferenceEnabled) continue;
         if (!Attack.bActive || Attack.Family!=P.Family || Attack.Frame<P.Status.AttackerFrame || P.Status.CompletedSteps>=P.MaxSteps)
         { P.Status.Active=false;continue; }
-        if (Attack.HitFrame!=INDEX_NONE)
+        if (Attack.HitFrame!=INDEX_NONE && Attack.Frame-Attack.HitFrame>=ProphecyDefenseControls::GetFramesAfterHit(Actor,false))
         {
             // Hit is a learned attack output, independent of physical contact.
-            // Release ownership on this very policy step, not after the attack tail.
+            // Release when the configured post-Hit window expires.
             P.Status.AttackerFrame=Attack.Frame;
             P.Status.Active=false;
             continue;
@@ -437,6 +432,9 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
         const int32 Lane=D.Prepared.Num();
         if (!PrepareParry(P.State,P.NextLower,P.NextBaseline,Root,P.Context,Drawn?1.f:0.f,P.Work,D.Inputs.GetData()+Lane*258))
         { P.Status.Active=false;continue; }
+#if !UE_BUILD_SHIPPING
+        if(ProphecyParryAudit::Enabled.GetValueOnGameThread()!=0) ProphecyParryAudit::Save(P,Attack.Frame,TEXT("before"),D.Inputs.GetData()+Lane*258);
+#endif
         P.Status.AttackerFrame=Attack.Frame;D.Prepared.Add(Index);
     }
     if (D.Prepared.IsEmpty()) return;
@@ -447,10 +445,12 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
     {
         const int32 Index=D.Prepared[Lane];auto& P=*D.Parries.FindChecked(Index);auto& Agent=Impl->Agents[Index];
         const float* Delta=D.Outputs.GetData()+Lane*90;bool Finite=true;for (int32 I=0;I<90;++I) Finite&=FMath::IsFinite(Delta[I]);
-        FPose Pose;if (!Finite || !CompleteParry(P.State,P.Work,Delta,P.NextLower,P.NextBaseline,P.NextRoot,P.Frozen,D.Geometry,Pose))
+        FPose Pose;if (!Finite || !CompleteParry(P.State,P.Work,Delta,P.NextLower,P.NextBaseline,P.NextRoot,P.Frozen,D.Geometry,Pose,D.ParryNetwork.UsesExactForearms()))
         { P.Status.Active=false;continue; }
+#if !UE_BUILD_SHIPPING
+        if(ProphecyParryAudit::Enabled.GetValueOnGameThread()!=0) ProphecyParryAudit::Save(P,P.Status.AttackerFrame,TEXT("after"),nullptr,Delta);
+#endif
         if (ProphecySpecialRoll::Forearms(P.Owner.Get())) DefenseForearmRoll(*Impl,D.Bones,Pose,!ProphecyAttackWrist::FreePosition(P.Owner.Get()));
-        const bool bContactStop=DefensePhysicalStop(*Impl,P,P.CurrentPose,Pose,FVector3f::ZeroVector);
         FMemory::Memcpy(P.PreviousComponent,P.CurrentComponent,sizeof(P.CurrentComponent));
         DefenseComponentPose(Pose,P.NextRoot,D.Bones,P.CurrentComponent);P.CurrentPose=Pose;P.bHasPose=true;
         float Upper[90];DefenseUpperToLocomotion(P.State.CurrentUpper,Impl->SeedRootRot,Upper);
@@ -462,6 +462,5 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
         FMemory::Memcpy(TransformStateSlice(Impl->PreviousPelvisHeadingBuffer,Index),TransformStateSlice(Impl->CurrentPelvisHeadingBuffer,Index),9*sizeof(float));
         LowerTransformToHeading(StateSlice(Impl->CurStateBuffer,Index),0,3,*Impl,TransformStateSlice(Impl->CurrentPelvisHeadingBuffer,Index));
         ++P.Status.CompletedSteps;
-        if (bContactStop) P.Status.Active=false;
     }
 }

@@ -1,3 +1,4 @@
+#include "ProphecyPhysicalContext.h"
 #include "ProphecyNNModifierDebug.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNRootWindowSmoothing.h"
@@ -33,6 +34,9 @@ void ProphecyNNModifierDebug::Roots(FReport& R)
         R.Add(TEXT("ActorClock"),TEXT("CLOCK"),TEXT("Actor time / world pause"),FString::Printf(TEXT("actor dilation %.3g | paused %d | blend durations remain 60 game ticks"),A->CustomTimeDilation,A->GetWorld()->IsPaused()));
     if(A->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic)
     {
+        if(A->IsJoltPhysicalAnimationEnabled())
+            R.Add(TEXT("MagnetizationMode"),TEXT("PHYSICS"),TEXT("Magnetization coordinate mode"),
+                FString::Printf(TEXT("%.3g (0 physical-parent local / 1 world); pelvis always world"),ProphecyPhysicalContext::MagnetizationMode(A)));
         const auto* Mesh=A->GetPoseReferenceMesh();const auto* Asset=Mesh?Mesh->GetPhysicsAsset():nullptr;
         if(Asset)for(const USkeletalBodySetup* Body:Asset->SkeletalBodySetups)
         {

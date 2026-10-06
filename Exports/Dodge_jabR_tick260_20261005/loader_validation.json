@@ -1,0 +1,18 @@
+{
+  "initialization_max_abs": 0.0,
+  "initialization_errors": {
+    "previous_lower": 0.0,
+    "previous_upper": 0.0,
+    "current_lower": 0.0,
+    "current_upper": 0.0,
+    "initial_delta_world": 0.0,
+    "initial_delta_yaw": 0.0,
+    "remaining": 0.0,
+    "root_shift_world": 0.0,
+    "root_yaw_offset": 0.0
+  },
+  "attack_frame_start": 4,
+  "attack_frame_end": 13,
+  "frames": 10,
+  "finite": true
+}

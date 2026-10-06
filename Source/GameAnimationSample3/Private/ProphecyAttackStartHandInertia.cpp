@@ -1,4 +1,5 @@
 #include "ProphecyAttackStartHandInertia.h"
+#include "ProphecyAttackNNFeedback.h"
 #include "ProphecyNNModifierDebug.h"
 #include "ProphecyAttackStartInertiaLibrary.h"
 #include "ProphecyAgent.h"
@@ -131,8 +132,15 @@ static void Solve(FState& State,TArrayView<FTransform> Pose,const FTransform& Ca
         // The source hinge guides the elbow; the inertial wrist remains bounded
         // by the connected arm. No whole-skeleton solve or physical force.
         const FVector LocalUpper=M.LocalUpper;
+        // A held wrist needs the entry arm's reach. Immediately adopting a
+        // shorter NN forearm can make that same wrist unreachable and force
+        // the elbow straight. Hand ownership and permitted length hand over
+        // together; the trained length is fully restored as inertia fades.
+        const double ForearmLength=VariableLength
+            ? FMath::Lerp(FVector::Distance(Goal[1].GetLocation(),Goal[2].GetLocation()),M.ForearmLength,W)
+            : M.ForearmLength;
         ProphecyHandChain::Resolve(M.Accepted[0],M.Accepted[1],M.Accepted[2],Goal[0],Goal[1],Goal[2],
-            Target,LocalUpper,M.LocalPole,Follow,VariableLength?FVector::Distance(Goal[1].GetLocation(),Goal[2].GetLocation()):M.ForearmLength);
+            Target,LocalUpper,M.LocalPole,Follow,ForearmLength);
         if(!Goal[2].GetLocation().Equals(Target.GetLocation(),1.e-5))
         {
             const FVector Normal=(Target.GetLocation()-Goal[2].GetLocation()).GetSafeNormal();
@@ -276,6 +284,48 @@ bool FEntryHandsLifecycleTest::RunTest(const FString&)
     RestoreReset(A);TestTrue(TEXT("Reset restores configuration only"),Configs.Contains(A)&&!Active(A));
     Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FEntryHandsStretchTest,"Prophecy.NN.AttackEntry.HandStretchContinuity",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FEntryHandsStretchTest::RunTest(const FString&)
+{
+    using namespace ProphecyAttackStartHands;
+    FTransform Entry[8];Entry[0]=FTransform(FVector(0,0,70));Entry[1]=FTransform(FVector(0,0,110));
+    for(int Side=0;Side<2;++Side)
+    {
+        const int B=2+3*Side;const FVector Shoulder(0,Side?20:-20,100);
+        Entry[B]=FTransform(Shoulder);Entry[B+1]=FTransform(Shoulder+FVector(25,0,0));
+        Entry[B+2]=FTransform(Shoulder+FVector(45,0,-15));
+    }
+    // The held wrist is 47.43cm from the shoulder: adopting the NN's shorter
+    // 20cm forearm with a 25cm upper arm used to force full extension.
+    for(double Elapsed:{0.,.1,.2})for(bool Variable:{false,true})
+    {
+        FState S;S.Config.Hold=0;S.Config.Blend=.2f;S.Config.Reference=0;
+        Seed(S,Entry,Entry,Entry,1./30,FTransform::Identity,FTransform::Identity);S.Elapsed=Elapsed;
+        FTransform Pose[8];for(int I=0;I<8;++I){S.Indices[I]=I;Pose[I]=Entry[I];}
+        for(int Side=0;Side<2;++Side)
+        {
+            const int B=2+3*Side;
+            Pose[B+2].SetLocation(Pose[B+1].GetLocation()+FVector(16,0,-12));
+        }
+        const double W=Weight(S.Config,Elapsed),ExpectedLength=Variable?20.+5.*W:25.;
+        Solve(S,MakeArrayView(Pose),FTransform::Identity,0.,FTransform::Identity,Variable);
+        for(int Side=0;Side<2;++Side)
+        {
+            const int B=2+3*Side;
+            TestTrue(TEXT("Forearm length follows the same ownership weight as wrist"),
+                FMath::IsNearlyEqual(FVector::Distance(Pose[B+1].GetLocation(),Pose[B+2].GetLocation()),ExpectedLength,1.e-6));
+            TestTrue(TEXT("Upper arm length remains fixed"),
+                FMath::IsNearlyEqual(FVector::Distance(Pose[B].GetLocation(),Pose[B+1].GetLocation()),25.,1.e-6));
+            if(Elapsed==0.)
+            {
+                TestTrue(TEXT("Shorter prediction cannot move the fully held wrist"),Pose[B+2].GetLocation().Equals(Entry[B+2].GetLocation(),1.e-6));
+                TestTrue(TEXT("Shorter prediction cannot straighten the entry elbow"),Pose[B+1].GetLocation().Equals(Entry[B+1].GetLocation(),1.e-6));
+            }
+        }
+    }
+    return !HasAnyErrors();
+}
 #endif
 
 #include "ProphecyAttackStartFKCore.inl"
@@ -285,7 +335,7 @@ void ProphecyNNModifierDebug::EntryHands(FReport& R)
 {
     using namespace ProphecyAttackStartHands;
     const auto* S=States.Find(R.Agent);if(!R.Attack || !S)return;
-    R.Add(TEXT("EntryHands"),R.Half?TEXT("POSE"):TEXT("POSE+HISTORY"),TEXT("Attack-start hand inertia"),
+    R.Add(TEXT("EntryHands"),(R.Half || !ProphecyAttackNNFeedback::Enabled(R.Agent,ProphecyAttackNNFeedback::StartHand))?TEXT("POSE"):TEXT("POSE+HISTORY"),TEXT("Attack-start hand inertia"),
         FString::Printf(TEXT("L%d R%d | weight %.3f | response %.3g | root/spine ref %.3g | elapsed %.3f / %.3f%s"),
         S->Config.Hand[0],S->Config.Hand[1],Weight(S->Config,S->Elapsed),S->Config.Response,S->Config.Reference,
         S->Elapsed,double(S->Config.Hold)+S->Config.Blend,S->Applied?TEXT(""):TEXT(" | awaiting prediction")));

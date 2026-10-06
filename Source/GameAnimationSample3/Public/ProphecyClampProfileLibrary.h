@@ -16,13 +16,14 @@ class GAMEANIMATIONSAMPLE3_API UProphecyClampProfileLibrary : public UBlueprintF
     GENERATED_BODY()
 public:
     /** Restore only the selected existing clamp setting, shared left/right.
-     * Duration 1 = 60 unpaused ticks; <=0 is immediate. Off blends through 1000
+     * Hold Out Time delays the return without changing current values. Duration 1
+     * = 60 unpaused ticks after the hold; <=0 snaps when the hold ends. Off blends through 1000
      * allowance, then the saved enabled/override flags are restored exactly. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Physical Profiles",meta=(DefaultToSelf="Agent"))
     static bool BlendClampToSnapshot(AProphecyAgent* Agent,EProphecyClampType Clamp,float DurationSeconds=1.f,
-        FName SnapshotName=NAME_None,EProphecyClampProfileMode Mode=EProphecyClampProfileMode::All);
+        FName SnapshotName=NAME_None,EProphecyClampProfileMode Mode=EProphecyClampProfileMode::All,float HoldOutTime=0.f);
     /** Restore both leg clamp types in the selected mode(s). */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Physical Profiles",meta=(DefaultToSelf="Agent"))
     static int32 BlendAllClampsToSnapshot(AProphecyAgent* Agent,float DurationSeconds=1.f,
-        FName SnapshotName=NAME_None,EProphecyClampProfileMode Mode=EProphecyClampProfileMode::All);
+        FName SnapshotName=NAME_None,EProphecyClampProfileMode Mode=EProphecyClampProfileMode::All,float HoldOutTime=0.f);
 };

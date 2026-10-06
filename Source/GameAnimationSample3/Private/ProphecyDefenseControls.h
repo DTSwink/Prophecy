@@ -11,5 +11,7 @@ bool Set(AProphecyAgent* Agent,bool bDodge,ELimb Limb,bool bEnabled,float Leeway
 void RestoreClamp(AProphecyAgent* Agent,bool bDodge,ELimb Limb,FClamp Value);
 bool SetDodgeFramesAfterHit(AProphecyAgent* Agent,int32 Frames);
 int32 GetDodgeFramesAfterHit(const AProphecyAgent* Agent);
+bool SetDefenseFramesAfterHit(AProphecyAgent* Agent,int32 Frames);
+int32 GetFramesAfterHit(const AProphecyAgent* Agent,bool bDodge);
 void Remove(const AProphecyAgent* Agent);
 }

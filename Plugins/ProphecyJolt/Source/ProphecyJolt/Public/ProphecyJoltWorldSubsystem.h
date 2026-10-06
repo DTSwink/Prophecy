@@ -198,6 +198,12 @@ struct FProphecyJoltRigVelocityTarget
     float TrajectoryDurationSeconds = 0.0f;
     // World-Z acceleration before LinearStrength scaling; zero disables compensation.
     float GravityCompensationCmPerSecondSquared = 0.0f;
+    // Optional physical-parent reference. WorldAlpha=1 keeps the original world servo.
+    FProphecyJoltBodyHandle Parent;
+    FTransform ParentStart = FTransform::Identity;
+    FTransform ParentTarget = FTransform::Identity;
+    float WorldAlpha = 1.f;
+
 };
 
 struct FProphecyJoltCollisionUpdate

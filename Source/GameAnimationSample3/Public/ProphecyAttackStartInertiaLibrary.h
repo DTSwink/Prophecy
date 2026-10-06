@@ -14,7 +14,9 @@ public:
      * HoldOutTime retains full influence; BlendTime fades it to the attack. ResponseTime controls
      * spring softness; MomentumScale scales outgoing angular velocity; Alpha controls influence.
      * Times mean 60 unpaused game ticks per second. Disabled by default; disabled/Alpha 0/Response 0
-     * does no sampling or spring work. Settings latch at entry; disabling cancels immediately. */
+     * does no sampling or spring work. Settings latch at entry; disabling cancels immediately.
+     * Full attacks feed the corrected pose to the NN by default; Set Attack NN Feedback
+     * can disable that write-back. Half attacks remain presentation-only. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Upper Body", meta=(DefaultToSelf="Agent",DisplayName="Set Attack Start FK Core Inertia"))
     static bool SetAttackStartFKCoreInertia(AProphecyAgent* Agent, bool Enabled=false,
         float HoldOutTime=.1f, float BlendTime=.3f, float ResponseTime=.25f, float MomentumScale=1.f,
@@ -27,7 +29,9 @@ public:
      * Hold keeps full influence, then BlendTime fades to the attack checkpoint.
      * ResponseTime controls softness; MomentumScale scales entry velocity only.
      * Times use 60 unpaused ticks/second. Disabled/Alpha 0: no sampling or clock.
-     * Settings latch at entry; disabling cancels immediately. */
+     * Settings latch at entry; disabling cancels immediately.
+     * Full attacks feed the corrected pose to the NN by default; Set Attack NN Feedback
+     * can disable that write-back. Half attacks remain presentation-only. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Hands", meta=(DefaultToSelf="Agent",DisplayName="Set Attack Start Hand Inertia"))
     static bool SetAttackStartHandInertia(AProphecyAgent* Agent, bool Enabled,
         float HoldOutTime=.1f, float BlendTime=.3f,

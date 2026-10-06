@@ -18,6 +18,13 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackControlLibrary : public UBlueprint
 {
     GENERATED_BODY()
 public:
+    /** Attacking parts for an explicit attack name; no agent or active attack required.
+     * Punches: hand + lowerarm; kicks: foot + calf; headbutt: head.
+     * Slashes and pike return only the logical name "sword" (not a skeleton bone).
+     * Left/right follows the attack. Unknown/None returns an empty array. */
+    UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Attack", meta=(ReturnDisplayName="Bones"))
+    static TArray<FName> GetAttackBones(FName Attack);
+
     /** Clamp a wanted world target to this attack's horizontal GT reach + extra reach.
      * GT reach is measured from the first-frame flat feet midpoint to its saved hit target.
      * The live cylinder is centered on the agent's current flat feet midpoint (the normal
@@ -48,12 +55,21 @@ public:
         UPARAM(DisplayName="headbutt") float Headbutt=50.f,
         UPARAM(DisplayName="kickL") float KickL=50.f, UPARAM(DisplayName="kickR") float KickR=50.f);
 
-    /** Fade the full-attack camera's added horizontal pelvis offset back to zero after the attack.
+    /** Keep the attack camera on the capsule; compensate the capsule snap at the full-to-half
+     * or locomotion handoff and fade that offset to zero. Defense also uses this fade.
      * Only affects this agent while player-possessed. Default 1 means 60 unpaused game ticks,
      * independent of FPS/time dilation; 0 removes the offset immediately. Changes also retime
-     * an active fade from its current value. No camera tick is retained after completion. */
+     * an active fade from its current value. Chained attacks let the existing fade finish. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Camera", meta=(DefaultToSelf="Agent"))
     static bool SetAttackCameraOffsetFadeDuration(AProphecyAgent* Agent,float DurationSeconds=1.f);
+
+    /** Horizontal mass-weighted body-center follow during full attacks, for the possessed player only.
+     * 0 (default) stays on the capsule; 1 follows all horizontal COM displacement since attack entry.
+     * Intermediate values scale that displacement. No vertical bob. The follow offset joins the
+     * existing camera handoff/fade on full-to-half or attack exit. Missing physics bodies use pelvis.
+     * Settings may be configured before possession; NPCs do no follow work. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Camera", meta=(DefaultToSelf="Agent", ClampMin="0", ClampMax="1", DisplayName="Set Attack Camera COM Follow"))
+    static bool SetAttackCameraCOMFollow(AProphecyAgent* Agent,float Alpha=0.f);
 
     /** Read-only metadata for an ongoing NN attack, including before Armed.
      * BoneNames contains the attacking PHAT bodies, not every body that can collide.

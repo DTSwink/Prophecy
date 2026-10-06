@@ -1,0 +1,78 @@
+{
+  "global-baseline": {
+    "samples": 192,
+    "last_tick": 320,
+    "peaks": {
+      "max_speed": 2588.0719953927305,
+      "max_spin": 62.831855179919636,
+      "max_distance_from_pelvis": 91.11973289951638
+    },
+    "agents": [
+      "BP_ProphecyManualPoseAgent",
+      "BP_ProphecyManualPoseAgent2",
+      "BP_ProphecyManualPoseAgent4"
+    ]
+  },
+  "target-only": {
+    "samples": 480,
+    "last_tick": 800,
+    "peaks": {
+      "max_speed": 1546.8130666918755,
+      "max_spin": 62.83184767988737,
+      "max_distance_from_pelvis": 101.20115152301848
+    },
+    "agents": [
+      "BP_ProphecyManualPoseAgent",
+      "BP_ProphecyManualPoseAgent2",
+      "BP_ProphecyManualPoseAgent4"
+    ],
+    "hold_samples": {
+      "700": 1.0,
+      "730": 1.0,
+      "745": 0.5,
+      "760": 0.0,
+      "800": 0.0
+    }
+  },
+  "local-final": {
+    "samples": 840,
+    "last_tick": 1400,
+    "peaks": {
+      "max_speed": 1559.1593507436642,
+      "max_spin": 62.83185644438975,
+      "max_distance_from_pelvis": 101.20290077744866
+    },
+    "agents": [
+      "BP_ProphecyManualPoseAgent",
+      "BP_ProphecyManualPoseAgent2",
+      "BP_ProphecyManualPoseAgent4"
+    ]
+  },
+  "existing_snapshot_nodes_with_zero_hold": 9,
+  "native_tests": [
+    "Prophecy.Agent.PhysicalContext.SelectionAndAttacks",
+    "Prophecy.Agent.PhysicalContext.SnapshotHold",
+    "Prophecy.Agent.PhysicalContext.SpecialSnapshot1",
+    "Prophecy.Joints.DampingProfileBlend",
+    "Prophecy.Jolt.MultiRig.FailedCreationPreservesExistingRig",
+    "Prophecy.Jolt.MultiRig.IndependentPacketsOneWorldStep",
+    "Prophecy.Jolt.MultiRig.RemovalGenerationAndWorldLifetime",
+    "Prophecy.Jolt.MultiRig.TrajectoryLifetimeAndPreflight",
+    "Prophecy.Jolt.RigWorld.ServoHandlesAndWholeRigRemoval",
+    "Prophecy.Jolt.Servo.AuthoredTrajectorySubsteps",
+    "Prophecy.Jolt.Servo.BodyOriginVelocityWithRotatedOffsetCOM",
+    "Prophecy.Jolt.Servo.ChangingSubsteps",
+    "Prophecy.Jolt.Servo.ConditionalWakeIncludesFirstStepGravity",
+    "Prophecy.Jolt.Servo.GravityAndExternalForceAfterVelocityRewrite",
+    "Prophecy.Jolt.Servo.LocalGlobalParent",
+    "Prophecy.Jolt.Servo.NativeVelocityCaps",
+    "Prophecy.Jolt.Servo.OffsetCOMStrengthsAndDisabledChannels",
+    "Prophecy.Jolt.Servo.PelvisInertia",
+    "Prophecy.Jolt.Servo.RecordedDenominatorAcrossTwoCollisionSteps",
+    "Prophecy.Jolt.Servo.RejectedAndEmptyPacketsPreserveBodyState",
+    "Prophecy.Jolt.Servo.StrengthsAndQuaternionSign",
+    "Prophecy.Jolt.Servo.ZeroAndDisabledTargetsStayAsleep",
+    "Prophecy.NN.AgentReset.PhysicalBaseline",
+    "Prophecy.PhysicalProfiles.ClampSnapshots"
+  ]
+}

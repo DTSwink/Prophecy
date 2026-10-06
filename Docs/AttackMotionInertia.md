@@ -24,14 +24,20 @@ All 16 upper joints participate in the normal mode. The optional whole-attack
 core mode filters the five spine bones, two neck bones and head. Descendants
 follow the core while retaining their source local transforms.
 
-The accepted 30 Hz attack ghost is filtered before mounting onto either the
-full-body carrier or the half-attack locomotion pelvis. The accepted upper state
-is written back to the attack's existing recurrent history. When the window
-ends, the next prediction therefore starts from that history; an unfiltered
-parallel upper trajectory is not running behind it. Filtering can change future
-learned Armed/Hit timing. It does not override the gate outputs or filter lower
-body state. Existing entry inertia, ghost locomotion and lab return retain their
-own controls and lifecycle.
+The filter runs on the final accepted 30 Hz upper pose, after mounting,
+forearm convention, existing entry modifiers and NN history publication. It
+changes the displayed pose and physical drive targets, but does not encode that
+smoothed pose into the attack's recurrent history. Armed/Hit remain the NN's
+learned gates. Older hand/core entry inertia, general hand inertia, arm cones and
+the extra left-wrist constraint retain their original feedback by default.
+[Set Attack NN Feedback](AttackNNFeedback.md) can opt their direct writes out
+separately; all five off enables the isolated behavior from the fidelity audit.
+Previous-pose reads use the source before this motion filter. With wrist feedback
+off, the extra wrist constraint instead runs on the final pose after smoothing.
+
+This isolation is within an attack. Physical interactions, subsequent attack
+initialization and other explicitly enabled feedback controls can still change
+future inputs. It is not a guarantee that every learned attack reaches Armed.
 
 With After Hit enabled, the Armed-to-Hit gap observes the latest unfiltered local
 rotations and angular velocities without applying the spring. Reactivation uses
@@ -42,18 +48,21 @@ from them. It does not restart from raw NN poses or apply both filters together.
 The return's per-bone inertia weights and intentional hand behavior still apply;
 this does not force identical angular velocity through every return profile.
 
-Full-upper filtering uses the existing Unreal forearm roll convention before
-solving, and suppresses a second roll rewrite during the active window. Core-only
-mode without After Hit retains the normal arm processing path. After Hit tracks
-the same canonical arm convention through the gap. Presented poses and physical drive
-targets consume the same final accepted pose.
+Filtering uses the final Unreal forearm roll convention after the existing
+entry controls. Core-only mode keeps the local clavicle/arm joints unchanged.
+Presented poses, physical drives and defender collision samples consume the
+same final accepted pose. The raw attack ghost remains available independently.
 
 The hot path uses fixed stack scratch, cached bone/parent indices and cached
 spring coefficients. It adds no inference. Name lookup and state allocation are
-attack-entry work; disabled agents take the empty-map fast paths. Attack end,
+attack-entry work. A source-pose cache is allocated only for enabled attacks and
+retained while smoothing or waiting for After Hit; disabled agents take the empty-map fast paths. Attack end,
 defense replacement, reset, agent removal and world cleanup release active state.
 
 ## Reproduction and validation
+
+Earlier results below used recurrent smoothing and are historical; October 5
+changes isolate motion inertia from recurrence. See [stall investigation](ThirdAttackStall20261005.md).
 
 ### After Hit extension (October 3)
 

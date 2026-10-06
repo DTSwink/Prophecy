@@ -4,6 +4,57 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Serialization/JsonSerializer.h"
+#include "ProphecyDefenseNetwork.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyDefenseOctoberCheckpointTest,"Prophecy.NN.Defense.CheckpointUpdate20261005",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyDefenseOctoberCheckpointTest::RunTest(const FString&)
+{
+    using namespace ProphecyDefense;
+    const FString Stage=FPaths::ProjectSavedDir()/TEXT("DefenseIntegration/CheckpointUpdates/Defense20261005");
+    const FString Content=FPaths::ProjectContentDir()/TEXT("locomotion/NN/defense");
+    FString Text,Error;TSharedPtr<FJsonObject> Document;
+    if(!FFileHelper::LoadFileToString(Text,*(Stage/TEXT("validation.json"))) || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Document))
+    {AddError(TEXT("Stage checkpoints with InstallDefenseCheckpoints.py first."));return false;}
+    auto ReadValues=[](const TArray<TSharedPtr<FJsonValue>>& Values)
+    {TArray<float> Out;for(const auto& V:Values)Out.Add(float(V->AsNumber()));return Out;};
+    double MaxNetwork=0,MaxForearm=0;
+    for(const auto& Value:Document->GetArrayField(TEXT("networks")))
+    {
+        const auto C=Value->AsObject();const FString Name=C->GetStringField(TEXT("model"));
+        const int32 Width=C->GetIntegerField(TEXT("width")),Out=C->GetIntegerField(TEXT("out")),Batch=C->GetIntegerField(TEXT("batch"));
+        // Actual installed models, not the staging copy.
+        FProphecyDefenseNetwork Network;
+        if(!Network.Initialize(Content/Name,Width,Out,Error)){AddError(Error);return false;}
+        TestEqual(TEXT("Exact forearm contract latched with upper model"),Network.UsesExactForearms(),Name.Contains(TEXT("upper")));
+        const auto Input=ReadValues(C->GetArrayField(TEXT("input"))),Expected=ReadValues(C->GetArrayField(TEXT("expected")));
+        TArray<float> Actual;Actual.SetNumUninitialized(Batch*Out);
+        if(!Network.SetBatch(Batch) || !Network.Run(Input,Actual)){AddError(TEXT("Installed defense NNE execution failed"));return false;}
+        for(int32 I=0;I<Actual.Num();++I)
+        {
+            const float E=FMath::Abs(Actual[I]-Expected[I]);MaxNetwork=FMath::Max(MaxNetwork,double(E));
+            if(!FMath::IsFinite(Actual[I]) || E>1.e-5f+1.e-5f*FMath::Abs(Expected[I]))
+            {AddError(FString::Printf(TEXT("%s neural parity index %d error %.9g"),*Name,I,E));return false;}
+        }
+    }
+    for(const auto& Value:Document->GetArrayField(TEXT("forearms")))
+    {
+        const auto C=Value->AsObject();const FString Kind=C->GetStringField(TEXT("kind"));ProphecyDefense::FGeometry G;
+        if(!G.Load(Content/(Kind+TEXT("_skeleton.json")),Kind==TEXT("dodge"),Error)){AddError(Error);return false;}
+        const auto Lower=ReadValues(C->GetArrayField(TEXT("lower"))),Expected=ReadValues(C->GetArrayField(TEXT("expected")));
+        auto Upper=ReadValues(C->GetArrayField(TEXT("upper")));const auto Before=Upper;
+        G.ClampExactForearms(Lower.GetData(),Upper.GetData());
+        for(int32 I=0;I<90;++I)
+        {
+            const float E=FMath::Abs(Upper[I]-Expected[I]);MaxForearm=FMath::Max(MaxForearm,double(E));
+            if(!FMath::IsFinite(Upper[I]) || E>1.e-5f+1.e-5f*FMath::Abs(Expected[I]))
+            {AddError(FString::Printf(TEXT("%s trainer forearm parity index %d error %.9g"),*Kind,I,E));return false;}
+            if(!(I>=60&&I<63) && !(I>=75&&I<78))TestEqual(TEXT("Non-position channels unchanged"),Upper[I],Before[I]);
+        }
+    }
+    AddInfo(FString::Printf(TEXT("Installed 4 models at batches1/4; 24 trainer forearm cases. Max neural %.9g; forearm %.9g m"),MaxNetwork,MaxForearm));
+    return !HasAnyErrors();
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyDefenseGeometryParityTest,"Prophecy.NN.Defense.GeometryReference",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)

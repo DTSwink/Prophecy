@@ -80,7 +80,6 @@ void Advance(AProphecyNNLocomotionManager* Manager)
         FName Family; bool bHalf, bArmed, bHit; int32 Frame;
         if (!Manager->GetAgentNNAttackState(Attacker->GetAgentHandle(), Family, bHalf, bArmed, bHit, Frame))
         { It.RemoveCurrent(); continue; }
-        if (bHit && !Request.bDodge) { It.RemoveCurrent();continue; }
         if (!bArmed || !Defender->bNNInferenceEnabled || !Attacker->bNNInferenceEnabled) continue;
         Ready.Emplace(It.Key(), Request);
         It.RemoveCurrent();
@@ -94,7 +93,6 @@ void Advance(AProphecyNNLocomotionManager* Manager)
         if (!IsValid(Defender) || !IsValid(Attacker)) continue;
         FName Family; bool bHalf, bArmed, bHit; int32 Frame;
         if (!Manager->GetAgentNNAttackState(Attacker->GetAgentHandle(), Family, bHalf, bArmed, bHit, Frame) || !bArmed) continue;
-        if (bHit && !Pair.Value.bDodge) continue;
         FString Error;
         TGuardValue<const FHistory*> Scope(Activating,Pair.Value.History.Get());
         const bool Started = Pair.Value.bDodge

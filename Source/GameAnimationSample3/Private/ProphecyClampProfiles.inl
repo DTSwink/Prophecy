@@ -11,7 +11,7 @@ struct FBlend
 {
     FEntry Target;
     float Start=0,End=0;
-    double Elapsed=0,Duration=0;
+    double Elapsed=0,Duration=0,Hold=0;
 };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,TMap<FName,TArray<FEntry>>> Snapshots;
 static TMap<TWeakObjectPtr<AProphecyAgent>,TArray<FBlend>> Active;
@@ -73,10 +73,11 @@ static void Advance(UWorld* World,ELevelTick TickType,float Dt)
         for (int32 I=Blends.Num()-1;I>=0;--I)
         {
             auto& B=Blends[I];B.Elapsed+=1./60.;
-            if (B.Elapsed+1.e-9>=B.Duration) { Write(*A,B.Target);Blends.RemoveAtSwap(I,1,EAllowShrinking::No); }
+            if(B.Elapsed+1.e-9<B.Hold)continue;
+            if (B.Elapsed+1.e-9>=B.Hold+B.Duration) { Write(*A,B.Target);Blends.RemoveAtSwap(I,1,EAllowShrinking::No); }
             else
             {
-                const float T=float(B.Elapsed/B.Duration);
+                const float T=float((B.Elapsed-B.Hold)/B.Duration);
                 Write(*A,{B.Target.Mode,B.Target.Limb,{true,true,FMath::Lerp(B.Start,B.End,T*T*(3-2*T))}});
             }
         }
@@ -117,10 +118,10 @@ void Save(AProphecyAgent* A,FName Name)
             Saved.Add({M,L,Read(*A,M,L)});
     Snapshots.FindOrAdd(A).Add(Name,MoveTemp(Saved));Refresh();
 }
-int32 Restore(AProphecyAgent* A,FName Name,EMode Mode,int32 Limb,float Duration)
+int32 Restore(AProphecyAgent* A,FName Name,EMode Mode,int32 Limb,float Duration,float Hold)
 {
     if (!IsInGameThread() || !IsValid(A) || A->IsActorBeingDestroyed() || !A->GetWorld()
-        || A->GetWorld()->bIsTearingDown || !FMath::IsFinite(Duration) || uint8(Mode)>uint8(EMode::Dodge)) return 0;
+        || A->GetWorld()->bIsTearingDown || !FMath::IsFinite(Duration) || !FMath::IsFinite(Hold) || Hold<0 || uint8(Mode)>uint8(EMode::Dodge)) return 0;
     const auto* Names=Snapshots.Find(A);const auto* Saved=Names?Names->Find(Name):nullptr;
     if (!Saved) return 0;
     TArray<FBlend> Requests;
@@ -131,13 +132,13 @@ int32 Restore(AProphecyAgent* A,FName Name,EMode Mode,int32 Limb,float Duration)
         const auto T=Effective(*A,E.Mode,E.Limb,E.Value);
         const float Off=FMath::Max(1000.f,FMath::Max(S.LeewayCm,T.LeewayCm));
         const float Start=S.bEnabled?S.LeewayCm:Off,End=T.bEnabled?T.LeewayCm:Off;
-        Requests.Add({E,Start,End,0,(!S.bEnabled && !T.bEnabled) || Start==End?0:double(FMath::Max(0.f,Duration))});
+        Requests.Add({E,Start,End,0,(!S.bEnabled && !T.bEnabled) || Start==End?0:double(FMath::Max(0.f,Duration)),Hold});
     }
     for (const auto& B:Requests)
     {
         Cancel(A,B.Target.Mode,int32(B.Target.Limb));
-        if (B.Duration<=0) Write(*A,B.Target);
-        else { Write(*A,{B.Target.Mode,B.Target.Limb,{true,true,B.Start}});Active.FindOrAdd(A).Add(B); }
+        if (B.Duration<=0 && B.Hold<=0) Write(*A,B.Target);
+        else { if(B.Hold<=0)Write(*A,{B.Target.Mode,B.Target.Limb,{true,true,B.Start}});Active.FindOrAdd(A).Add(B); }
     }
     Refresh();return Requests.Num();
 }
@@ -155,7 +156,7 @@ FString Debug(const AProphecyAgent* A,FName Bone)
     return FString::Printf(TEXT(" / Clamp=Foot:%s Calf:%s"),*Text(ELimb::Foot),*Text(ELimb::Calf));
 }
 }
-bool UProphecyClampProfileLibrary::BlendClampToSnapshot(AProphecyAgent* A,EProphecyClampType Clamp,float Duration,FName Name,EProphecyClampProfileMode Mode)
+bool UProphecyClampProfileLibrary::BlendClampToSnapshot(AProphecyAgent* A,EProphecyClampType Clamp,float Duration,FName Name,EProphecyClampProfileMode Mode,float Hold)
 {
     using ELimb=ProphecyClampProfiles::ELimb;
     ELimb Limb;
@@ -165,10 +166,10 @@ bool UProphecyClampProfileLibrary::BlendClampToSnapshot(AProphecyAgent* A,EProph
     case EProphecyClampType::Foot: Limb=ELimb::Foot;break;
     default:return false;
     }
-    return ProphecyClampProfiles::Restore(A,Name,Mode,int32(Limb),Duration)>0;
+    return ProphecyClampProfiles::Restore(A,Name,Mode,int32(Limb),Duration,Hold)>0;
 }
-int32 UProphecyClampProfileLibrary::BlendAllClampsToSnapshot(AProphecyAgent* A,float Duration,FName Name,EProphecyClampProfileMode Mode)
-{ return ProphecyClampProfiles::Restore(A,Name,Mode,-1,Duration); }
+int32 UProphecyClampProfileLibrary::BlendAllClampsToSnapshot(AProphecyAgent* A,float Duration,FName Name,EProphecyClampProfileMode Mode,float Hold)
+{ return ProphecyClampProfiles::Restore(A,Name,Mode,-1,Duration,Hold); }
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
@@ -235,6 +236,18 @@ bool FProphecyClampSnapshotTest::RunTest(const FString&)
     TestTrue(TEXT("Only endpoints get clamp print"),Debug(A,TEXT("head")).IsEmpty() && Debug(A,TEXT("calf_l")).IsEmpty());
     TestEqual(TEXT("Hands report their invariant"),Debug(A,TEXT("hand_l")),FString(TEXT(" / Arm=FixedLength")));
     TestEqual(TEXT("Feet print both settings without units"),Debug(A,TEXT("foot_r")),FString(TEXT(" / Clamp=Foot:3.00 Calf:4.00")));
+    A->SetLocomotionFootClamp(false,23);
+    TestTrue(TEXT("Schedule clamp hold"),Lib::BlendClampToSnapshot(A,EProphecyClampType::Foot,1,TEXT("ClampBase"),EMode::Locomotion,.5f));
+    for(int I=0;I<29;++I)Advance(W,LEVELTICK_All,1.f/60.f);
+    TestTrue(TEXT("Hold preserves disabled flag and remembered allowance"),!A->bLocomotionFootClamp && A->LocomotionFootClampLeewayCm==23);
+    for(int I=0;I<61;++I)Advance(W,LEVELTICK_All,1.f/60.f);
+    TestTrue(TEXT("Clamp reaches saved endpoint after hold plus duration"),A->bLocomotionFootClamp && A->LocomotionFootClampLeewayCm==3);
+    A->SetLocomotionCalfClamp(true,17);
+    Lib::BlendClampToSnapshot(A,EProphecyClampType::Calf,0,TEXT("ClampBase"),EMode::Locomotion,.5f);
+    for(int I=0;I<29;++I)Advance(W,LEVELTICK_All,1.f/60.f);
+    TestEqual(TEXT("Zero-duration clamp waits"),A->LocomotionCalfClampLeewayCm,17.f);
+    Advance(W,LEVELTICK_All,1.f/60.f);
+    TestEqual(TEXT("Zero-duration clamp snaps after hold"),A->LocomotionCalfClampLeewayCm,4.f);
     TestTrue(TEXT("No ticking work remains"),Active.IsEmpty() && !TickHandle.IsValid());
     return true;
 }

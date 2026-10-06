@@ -124,8 +124,8 @@ bool UProphecyPhysicsBenchmarkSubsystem::PrepareManualAgent(int32 Index, bool bF
         // their unused transform subtree from the moving capsule as well as disabling ticks.
         USpringArmComponent* SpringArm = Agent->GetAgentSpringArm();
         UCameraComponent* Camera = Agent->GetAgentCamera();
-        if (!SpringArm || !Camera || !SpringArm->IsRegistered() || !Camera->IsRegistered()
-            || SpringArm->GetAttachParent() != Agent->GetAgentCapsule()
+        if (!SpringArm || !Camera
+            || (SpringArm->GetAttachParent() && SpringArm->GetAttachParent() != Agent->GetAgentCapsule())
             || Camera->GetAttachParent() != SpringArm || Agent->GetController())
         { Error = TEXT("Movement-only camera detachment requires the unpossessed native camera hierarchy."); return false; }
         for (FConstPlayerControllerIterator Controller = GetWorld()->GetPlayerControllerIterator(); Controller; ++Controller)

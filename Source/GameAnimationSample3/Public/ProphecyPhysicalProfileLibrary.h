@@ -11,6 +11,18 @@ class GAMEANIMATIONSAMPLE3_API UProphecyPhysicalProfileLibrary : public UBluepri
 {
     GENERATED_BODY()
 public:
+    /** 0 follows the actual physical parent; 1 keeps world targets. Pelvis stays global.
+     * Intermediate values use one blended target and one servo. Default is 1. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
+    static bool SetMagnetizationMode(AProphecyAgent* Agent, UPARAM(meta=(ClampMin="0",ClampMax="1")) float Mode=1.f);
+
+    UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
+    static float GetMagnetizationMode(AProphecyAgent* Agent);
+
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
+    static bool BlendMagnetizationModeToSnapshot(AProphecyAgent* Agent,float DurationSeconds=1.f,
+        FName SnapshotName=NAME_None,float HoldOutTime=0.f);
+
     /** Print one line per PHAT bone, head at the top and feet at the bottom.
      * Each pair is linear/angular: magnetization scales (including global scales,
      * zero when disabled) / feedback tolerances / inbound angular damping.
@@ -25,7 +37,7 @@ public:
 
     /** Call after configuring your agent. Saves every body's magnetization enabled/scales and
      * all supported feedback tolerances and joint damping, including all walk/run and drawn/sheathed profiles.
-     * Also captures shared left/right clamps for locomotion, attack, parry and dodge.
+     * Also captures magnetization mode and shared left/right clamps for locomotion, attack, parry and dodge.
      * Saves current blend values, not unfinished blend destinations. During attacks saves the
      * underlying locomotion profiles, not the temporary attack overrides. Same name overwrites.
      * Does not capture simulation membership, gravity, physics state or global drive settings. */
@@ -33,40 +45,40 @@ public:
     static bool SavePhysicalProfileSnapshot(AProphecyAgent* Agent, FName SnapshotName = NAME_None);
 
     /** Restore this bone's four saved profiles using the existing smoothstep blend.
-     * Duration <= 0 restores immediately. Missing snapshot/bone returns false without changes. */
+     * Hold Out Time delays interpolation without changing current values. Duration <= 0 snaps after the hold. Missing snapshot/bone returns false without changes. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles")
     static bool BlendBodyMagnetizationToSnapshot(AProphecyAgent* Agent, FName BoneName,
-        float DurationSeconds = 1.f, FName SnapshotName = NAME_None);
+        float DurationSeconds = 1.f, FName SnapshotName = NAME_None, float HoldOutTime = 0.f);
 
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles")
     static int32 BlendBodyMagnetizationBelowToSnapshot(AProphecyAgent* Agent, FName ParentBone,
-        bool bIncludeParent = true, float DurationSeconds = 1.f, FName SnapshotName = NAME_None);
+        bool bIncludeParent = true, float DurationSeconds = 1.f, FName SnapshotName = NAME_None, float HoldOutTime = 0.f);
 
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles")
     static int32 BlendAllBodyMagnetizationToSnapshot(AProphecyAgent* Agent,
-        float DurationSeconds = 1.f, FName SnapshotName = NAME_None);
+        float DurationSeconds = 1.f, FName SnapshotName = NAME_None, float HoldOutTime = 0.f);
 
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles")
     static bool BlendPhysicalFeedbackToleranceToSnapshot(AProphecyAgent* Agent, FName BoneName,
-        float DurationSeconds = 1.f, FName SnapshotName = NAME_None);
+        float DurationSeconds = 1.f, FName SnapshotName = NAME_None, float HoldOutTime = 0.f);
 
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles")
     static int32 BlendPhysicalFeedbackToleranceBelowToSnapshot(AProphecyAgent* Agent, FName ParentBone,
-        bool bIncludeParent = true, float DurationSeconds = 1.f, FName SnapshotName = NAME_None);
+        bool bIncludeParent = true, float DurationSeconds = 1.f, FName SnapshotName = NAME_None, float HoldOutTime = 0.f);
 
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles")
     static int32 BlendAllPhysicalFeedbackTolerancesToSnapshot(AProphecyAgent* Agent,
-        float DurationSeconds = 1.f, FName SnapshotName = NAME_None);
+        float DurationSeconds = 1.f, FName SnapshotName = NAME_None, float HoldOutTime = 0.f);
 
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles")
     static bool BlendJointAngularDampingToSnapshot(AProphecyAgent* Agent,FName ChildBone,
-        float DurationSeconds=1.f,FName SnapshotName=NAME_None);
+        float DurationSeconds=1.f,FName SnapshotName=NAME_None,float HoldOutTime=0.f);
 
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles")
     static int32 BlendJointAngularDampingBelowToSnapshot(AProphecyAgent* Agent,FName ParentBone,
-        bool IncludeParent=true,float DurationSeconds=1.f,FName SnapshotName=NAME_None);
+        bool IncludeParent=true,float DurationSeconds=1.f,FName SnapshotName=NAME_None,float HoldOutTime=0.f);
 
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles")
     static int32 BlendAllJointAngularDampingToSnapshot(AProphecyAgent* Agent,
-        float DurationSeconds=1.f,FName SnapshotName=NAME_None);
+        float DurationSeconds=1.f,FName SnapshotName=NAME_None,float HoldOutTime=0.f);
 };

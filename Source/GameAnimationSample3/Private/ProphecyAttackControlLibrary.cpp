@@ -105,6 +105,18 @@ bool ColliderRoles(FName Attack, TArray<FName>& Bones, bool& Sword)
 }
 }
 
+TArray<FName> UProphecyAttackControlLibrary::GetAttackBones(FName Attack)
+{
+    // The live collider query includes toes only where PHAT has separate bodies.
+    // This metadata query deliberately exposes the two requested kick bones.
+    if (Attack==TEXT("kickl"))return {TEXT("foot_l"),TEXT("calf_l")};
+    if (Attack==TEXT("kickr"))return {TEXT("foot_r"),TEXT("calf_r")};
+    TArray<FName> Bones;bool Sword=false;
+    ProphecyAttackControls::ColliderRoles(Attack,Bones,Sword);
+    if (Sword)Bones.Add(TEXT("sword"));
+    return Bones;
+}
+
 bool UProphecyAttackControlLibrary::SetAttackReturnToRootBalancing(AProphecyAgent* Agent,bool UseRootBalancingTarget)
 {
     using namespace ProphecyAttackControls;

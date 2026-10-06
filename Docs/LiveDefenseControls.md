@@ -1,5 +1,7 @@
 # Live control during parry and dodge
 
+October5 stop-rule update: **Set Defense Frames After Hit** controls both modes per defender (default3 at30Hz,0 for immediate Hit exit). Attack end/cancellation always ends associated defenses immediately. Automatic collision stopping and its PHAT sweeps were removed for both modes. Explicit Stop/maximum duration still apply; old physical-contact ownership notes below are historical.
+
 Both responses still wait for the incoming attack's learned Armed output. The defender keeps normal locomotion/attack ownership until then.
 
 During active defense, the existing locomotion input, facing, mover, root impulses, window smoothing, balancing, root speed limits, and both sets of magic velocities remain live. Use the same control nodes. The continuous root-window getter also works during Dodge. Root placement and pelvis bounds rebase the private defense history coherently; capsule collision no longer cancels Dodge.

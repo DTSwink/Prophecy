@@ -2654,9 +2654,18 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::PublishRigVelocityTargets(
             || (Target.TrajectoryDurationSeconds > 0.0f && (Target.StartPositionCm.ContainsNaN()
                 || Target.StartRotation.ContainsNaN() || !Target.StartRotation.IsNormalized())))
             return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Rig targets require unique bodies, finite endpoints, nonnegative finite strengths and valid optional trajectories."));
+        const FBodySlot* Parent=Target.WorldAlpha<1.f?Native->Find(Target.Parent):nullptr;
+        if(!FMath::IsFinite(Target.WorldAlpha) || Target.WorldAlpha<0 || Target.WorldAlpha>1 ||
+            (Target.WorldAlpha<1.f && (!Parent || !SameRig(Parent->OwnerRig,Handle) || Parent->Body==Slot->Body ||
+                Target.ParentStart.ContainsNaN() || Target.ParentTarget.ContainsNaN() ||
+                !Target.ParentStart.GetRotation().IsNormalized() || !Target.ParentTarget.GetRotation().IsNormalized())))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Local servo targets require a different valid parent in the same rig and finite parent frames."));
         UniqueSlots.Add(Target.Handle.Slot);
         ProphecyJolt::FVelocityServo::FTarget NativeTarget;
         NativeTarget.Body = Slot->Body;
+        if(Parent)
+        { NativeTarget.Parent=Parent->Body;NativeTarget.ParentStart=Target.ParentStart;NativeTarget.ParentTarget=Target.ParentTarget; }
+        NativeTarget.WorldAlpha=Target.WorldAlpha;
         NativeTarget.TargetPositionCm = Target.TargetPositionCm;
         NativeTarget.TargetRotation = Target.TargetRotation;
         NativeTarget.LinearStrength = Target.LinearStrength;

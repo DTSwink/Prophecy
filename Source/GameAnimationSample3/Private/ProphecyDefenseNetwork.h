@@ -10,6 +10,7 @@ public:
     ~FProphecyDefenseNetwork();
     bool Initialize(const FString& Filename, int32 InputWidth, int32 OutputWidth, FString& Error);
     bool SetBatch(int32 Count);
+    bool UsesExactForearms() const;
     bool Run(TConstArrayView<float> Input, TArrayView<float> Output);
 private:
     struct FState;

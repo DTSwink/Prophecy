@@ -30,7 +30,10 @@ public:
      * the NN rotation is unchanged; axial twist is not locked. Applies to the
      * selected mode, including full/half attacks. All includes locomotion,
      * attacks, parry and dodge. Disabled by default until configured.
-     * Positions/right hand unchanged; model-baked behavior is separate. */
+     * Positions/right hand unchanged; model-baked behavior is separate.
+     * Attacks use the original native/recurrent clamp by default. Unchecking
+     * Left Wrist Constraint on Set Attack NN Feedback moves this to the final
+     * visible/physical pose without writing that correction to attack history. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Animation",meta=(DefaultToSelf="Agent"))
     static bool SetLeftHandConstraint(AProphecyAgent* Agent,bool Enabled=false,
         EProphecyClampProfileMode Mode=EProphecyClampProfileMode::All,

@@ -1,0 +1,12 @@
+{
+  "world": "/Game/testNN.testNN",
+  "play": false,
+  "blueprint": "mode=Inspect parent=/Script/GameAnimationSample3.ProphecyAgent\nnative_properties=0 pin_types=0 status=3 wiring_preserved=1\n",
+  "dirty_content": [],
+  "dirty_maps": [],
+  "editor_modes": {
+    "BP_ProphecyManualPoseAgent": 1.0,
+    "BP_ProphecyManualPoseAgent2": 1.0,
+    "BP_ProphecyManualPoseAgent4": 1.0
+  }
+}

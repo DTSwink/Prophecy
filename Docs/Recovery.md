@@ -1,13 +1,13 @@
 # Restoring Prophecy
 
-This snapshot, updated through the accepted October 4, 2026 attack-recovery
+This snapshot, updated through the October 6, 2026 physics/combat
 milestone, is a source and authored-setup backup on
 `DTSwink/Prophecy`, branch `codex/standalone-sim`. It does not contain the entire
 Unreal content library or the Stepper training workspace.
 
-Latest named recovery point: `milestone/2026-10-04-attack-recovery`.
-See [milestone contents and validation](Milestone20261004.md). The final slashLD
-profile was live-patched; a normal Editor build is required before a cold launch.
+Latest named recovery point: `milestone/2026-10-06-physics-combat`.
+See [milestone contents and validation](Milestone20261006.md). The current normal
+Editor build is verified; rebuilding is still required on a replacement machine.
 
 ## Included
 

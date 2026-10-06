@@ -42,11 +42,17 @@ public:
     UFUNCTION(BlueprintPure,Category="Prophecy|NN Defense",meta=(DefaultToSelf="Agent"))
     static bool GetNNDefenseStatus(AProphecyAgent* Agent,FProphecyNNDefenseStatus& Status);
 
-    /** Per defender. End Dodge at first attacker Hit frame + Frames (30 Hz NN frames).
-     * 0 ends on Hit itself; default 1. Changes also affect an ongoing Dodge.
-     * Earlier contact, attack end/cancellation and maximum duration still apply. */
+    /** Set both Dodge and Parry to end at first attacker Hit frame + Frames (30 Hz NN frames).
+     * 0 ends on Hit itself; default 3. Updates ongoing defenses. Attack end/cancellation
+     * and maximum duration still end defense earlier; collisions never end it automatically. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|NN Defense",meta=(DefaultToSelf="Agent",ClampMin="0"))
+    static bool SetDefenseFramesAfterHit(AProphecyAgent* Agent,int32 Frames=3);
+    UFUNCTION(BlueprintPure,Category="Prophecy|NN Defense",meta=(DefaultToSelf="Agent"))
+    static void GetDefenseFramesAfterHit(AProphecyAgent* Agent,int32& DodgeFrames,int32& ParryFrames);
+
+    /** Dodge-only override retained for existing Blueprints. The shared setter updates both modes. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|NN Defense|Dodge",meta=(DefaultToSelf="Agent",ClampMin="0"))
-    static bool SetDodgeFramesAfterHit(AProphecyAgent* Agent,int32 Frames=1);
+    static bool SetDodgeFramesAfterHit(AProphecyAgent* Agent,int32 Frames=3);
     UFUNCTION(BlueprintPure,Category="Prophecy|NN Defense|Dodge",meta=(DefaultToSelf="Agent"))
     static int32 GetDodgeFramesAfterHit(AProphecyAgent* Agent);
 

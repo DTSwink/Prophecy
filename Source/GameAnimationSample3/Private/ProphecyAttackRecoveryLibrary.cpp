@@ -18,6 +18,7 @@
 #include "ProphecyUpperBodyInertia.h"
 #include "ProphecySpecialRecoveryEvents.h"
 #include "ProphecyKickFootLeeway.h"
+#include "ProphecyPhysicalContext.h"
 
 namespace ProphecyAttackRecovery
 {
@@ -127,11 +128,13 @@ void EnterSpecial(const AProphecyAgent* Agent,bool Half)
     if (!Half) EnterLowerSpecial(Agent);
     ProphecyHandRecovery::CancelMotion(Agent);ProphecyCoreTempering::CancelMotion(Agent);
     ProphecySlashReturn::Cancel(Agent);ProphecyUpperBodyInertia::Cancel(Agent);
+    ProphecyPhysicalContext::EnterSpecial(const_cast<AProphecyAgent*>(Agent));
 }
 static void DispatchRegion(AProphecyAgent* Agent,FName Attack,bool Half,bool Returning,
     EProphecyAgentState Special,bool Upper)
 {
     TGuardValue<bool> Region(EndEventUpper,Upper);
+    if(Upper) ProphecyPhysicalContext::ExitSpecial(Agent);
     if(Upper) ProphecyAttackStartHands::Cancel(Agent);
     if(Upper) ProphecyAttackStartFKCore::Cancel(Agent);
     if(Upper) ProphecyAttackMotionInertia::Cancel(Agent);

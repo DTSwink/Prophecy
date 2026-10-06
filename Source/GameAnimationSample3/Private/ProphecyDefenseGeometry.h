@@ -21,6 +21,7 @@ struct FGeometry
     bool bSignedLegHinge=false;
 
     bool Load(const FString& Filename,bool bDodge,FString& Error);
+    void ClampExactForearms(const float* Lower,float* Upper) const;
     void LowerPose(const float* Lower,const FVector3f& RootP,const FRows& RootR,FPose& Out,bool bIncludeLegs=true) const;
     static void EncodeUpper(const FPose& Pose,const FVector3f& RootP,const FRows& RootR,float* Upper);
     void RawPose(const float* Lower,const float* Upper,const FVector3f& RootP,const FRows& RootR,FPose& Out,bool bIncludeLegs=true) const;

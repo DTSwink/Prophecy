@@ -1,6 +1,10 @@
 # NN defense integration
 
-Current live delivery: the saved **upper-only parry**, checkpoint 770015, and **full-body dodge**, checkpoint **205525** (fine-tune installed 2026-09-17). Both are installed in the normal Editor build; the latest private batching/policy-handoff refinement is installed through Live Coding.
+**Current stop rules (October 5):** neither Dodge nor Parry stops automatically on collision. **Set Defense Frames After Hit** sets both delays per defender, default3 NN frames at30Hz;0 ends on Hit. Changes affect ongoing defenses. **Get Defense Frames After Hit** returns both effective values. The older Dodge-only setter remains supported. Ending/cancelling the attacker ends its active defenses immediately, even if their post-Hit delay has not expired. Explicit Stop and maximum duration still apply. Historical contact-stop and immediate-Parry-Hit descriptions below are superseded.
+
+Current installed checkpoints: **upper-only parry 1037725** and **full-body dodge 322925**, updated October 5, 2026. This includes the new dodge lower networks/settings and the checkpoint-required exact forearm projection before recurrence. See [current installation and validation](DefenseCheckpoints20261005.md). Earlier checkpoint numbers and results below are historical integration references.
+
+October 5 combat investigation: corrected a backwards/forwards publication at Hit exits by providing the missing locomotion sample. Active native Dodge/Parry matches the original trainer with matching geometry/inputs. See [contact and defense evidence](CombatContactAndDefense20261005.md).
 
 Blueprint nodes on `ProphecyNNDefenseLibrary`:
 
@@ -17,7 +21,7 @@ One lazy CPU model/geometry set is shared per manager. Only agents started throu
 
 Dodge runs after completed attacks too. It groups active defenders into walk/run lower batches, followed by one upper batch, with reusable buffers and no normal locomotion encode/cleanup for those lanes. It keeps the original 13 defender colliders and uses the attack hit event for conditioning. Its private recurrent root advances independently of presentation interpolation; stopping transfers the completed lower/upper history back to locomotion. The continuous locomotion-window getter returns false while full-body Dodge owns the root. Physical feedback is not injected into its private recurrence.
 
-Kinematic contact stops use the pose-reference mesh's actual PHAT simple shapes and the held sword's simple collision, swept through translation and rotation between completed policy poses. No training enlargement is applied to stop geometry. The earliest confirmed contact ends defense regardless of the contacted limb; there is no selected blocking arm or success/damage classification. Contact ends defense after publishing that completed pose; the next step resumes locomotion. Sim/HalfSim leave contact stopping to gameplay Hit events. Explicit stop, opponent end/restart and duration also end defense. Status remains readable until another defense replaces it. These kinematic geometric queries do not create physical bodies or emit Hit events.
+Automatic kinematic contact sweeps were removed. Physical collisions and gameplay Hit events are unchanged, but native defense does not stop on them. Gameplay can still call Stop NN Defense explicitly. ContactCollider/ContactTimeSeconds remain empty/-1 in the defense status for Blueprint compatibility. Status remains readable until another defense replaces it.
 
 The live attack source uses a separate training attacker catalog: raw forearm attachments for punches, calf attachments for kicks, head, and the hand_r blade for pike/slashes, with reference size scaling. Defender-specific thinning/reconstruction never defines the attack input. Synthetic spear needs a separate projectile source. Physical target following retains existing agent settings. A predicted parry is not a guaranteed successful block from arbitrary live initial conditions. See [DodgeHookLViewerMismatch.md](DodgeHookLViewerMismatch.md) for the corrected input/timing fixes, physical contact stopping, and exact Python/native replay evidence.
 
@@ -47,7 +51,7 @@ Current controls, independent clamp nodes, victim/response readback and feet-mid
 
 Parry ends on the incoming attack's first learned **Hit** output, using the existing locomotion handoff immediately in that same policy step. It does not continue through the attack's recovery tail, and does not require a physical collision. Earlier contact/explicit stops still apply. Requests made after Hit are rejected; a queued Parry cannot activate after Hit. Dodge has its separate configurable post-Hit delay described below. Six current-scene trials across both demo roles verified same-frame release.
 
-## Current Dodge checkpoint: 205525
+## Previous Dodge checkpoint: 205525
 
 Installed `training/slashes2/saved_defense_checkpoints/dodge_step_205525.pt` at the user's request. Export/runtime contract remains 362 inputs and112 outputs. Only upper-network weights changed; embedded frozen walk/run weights, lower identities/settings, bank settings and geometry contracts match198044 exactly. `Content/locomotion/NN/defense/prophecy_dodge_upper.onnx` is the live model; `dodge_checkpoint.json` records provenance and rollback location.
 

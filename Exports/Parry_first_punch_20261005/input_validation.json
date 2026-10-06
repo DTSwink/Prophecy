@@ -1,0 +1,37 @@
+[
+  {
+    "frame": 7,
+    "pelvis_max_abs": 2.384185791015625e-07,
+    "collider_max_abs": 2.384185791015625e-07
+  },
+  {
+    "frame": 8,
+    "pelvis_max_abs": 2.384185791015625e-07,
+    "collider_max_abs": 2.384185791015625e-07
+  },
+  {
+    "frame": 9,
+    "pelvis_max_abs": 2.384185791015625e-07,
+    "collider_max_abs": 1.1920928955078125e-07
+  },
+  {
+    "frame": 10,
+    "pelvis_max_abs": 2.384185791015625e-07,
+    "collider_max_abs": 1.1920928955078125e-07
+  },
+  {
+    "frame": 11,
+    "pelvis_max_abs": 2.384185791015625e-07,
+    "collider_max_abs": 2.384185791015625e-07
+  },
+  {
+    "frame": 12,
+    "pelvis_max_abs": 2.384185791015625e-07,
+    "collider_max_abs": 2.384185791015625e-07
+  },
+  {
+    "frame": 13,
+    "pelvis_max_abs": 2.384185791015625e-07,
+    "collider_max_abs": 2.384185791015625e-07
+  }
+]

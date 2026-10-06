@@ -1,0 +1,92 @@
+{
+  "schema": "prophecy_authored_attack_parry_seed_v1",
+  "attack": "hookL",
+  "policy_hz": 30,
+  "first_attack_game_tick": 31,
+  "last_attack_game_tick": 59,
+  "attack_end_game_tick": 60,
+  "armed_attack_frame": 7,
+  "hit_attack_frame": 11,
+  "first_parry_game_tick": 42,
+  "parry_primer_attack_frames": [
+    5,
+    6
+  ],
+  "last_parry_attack_frame": 13,
+  "frame_count": 16,
+  "target_training_m": [
+    0.16769927740097046,
+    1.4777947664260864,
+    -2.4449257850646973
+  ],
+  "target_ue_cm": [
+    16.76992833045004,
+    -244.4925881477647,
+    147.77948302216828
+  ],
+  "world_origin_training_m": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "checkpoint_sha256": "8eaf1239a902f0a81271ea6571b0dd3a7212954bc31c5433984ad1435ec15a1b",
+  "checkpoint_step": 1037725,
+  "post_hit_frames": [
+    3,
+    3
+  ],
+  "attacker": "BP_ProphecyManualPoseAgent_C_0",
+  "defender": "BP_ProphecyManualPoseAgent_C_3",
+  "defender_drawn": 1,
+  "coordinate_convention": "Metres, Y up, row bases. UE [x,y,z]cm -> [x,z,y]/100. Rotation rows: UE +X,-Y,+Z directions with world Y/Z swapped. No episode origin shift for Parry.",
+  "attacker_source": "Recorded completed authored UE poses; no attack NN required.",
+  "defender_source": "Two initial encoded upper primers. The recorded lower-only cache is the immutable locomotion input required by FrozenUpperParry, never a future upper proposal. Vanilla root command remains initialized from primers; UE later planned-root overrides are diagnostic only.",
+  "contact_rule": "No automatic contact stopping; attacker Hit is a learned latch, not a geometric collision.",
+  "native_input_comparison": [
+    {
+      "frame": 7,
+      "pelvis_max_abs": 2.384185791015625e-07,
+      "collider_max_abs": 2.384185791015625e-07
+    },
+    {
+      "frame": 8,
+      "pelvis_max_abs": 2.384185791015625e-07,
+      "collider_max_abs": 2.384185791015625e-07
+    },
+    {
+      "frame": 9,
+      "pelvis_max_abs": 2.384185791015625e-07,
+      "collider_max_abs": 1.1920928955078125e-07
+    },
+    {
+      "frame": 10,
+      "pelvis_max_abs": 2.384185791015625e-07,
+      "collider_max_abs": 1.1920928955078125e-07
+    },
+    {
+      "frame": 11,
+      "pelvis_max_abs": 2.384185791015625e-07,
+      "collider_max_abs": 2.384185791015625e-07
+    },
+    {
+      "frame": 12,
+      "pelvis_max_abs": 2.384185791015625e-07,
+      "collider_max_abs": 2.384185791015625e-07
+    },
+    {
+      "frame": 13,
+      "pelvis_max_abs": 2.384185791015625e-07,
+      "collider_max_abs": 2.384185791015625e-07
+    }
+  ],
+  "source_git_head": "225e76e58dde2e125cdc3aa57eea58f36453e35f",
+  "trainer_source_sha256": {
+    "frozen_parry_agent.py": "535225b3669d9a130e7ebac565f8dd1d407a33b0cfe64d93306a561436fda868",
+    "frozen_parry_hand_clamp.py": "8a0083d011643facc6dbd17909161ef1eb559104631aa9d7d4ecef0d09071d36",
+    "transition_agents.py": "a99ceb64d5901518db1e931299beb20de3f9f915079bc2746e3baf02b5c61f27",
+    "transition_features.py": "d087d1b8464701349aa5011fe59001a79940cf244383494d9b686fbb3f143365"
+  },
+  "source_setup": "Current in-memory TestNN; existing dirty BP_ProphecyManualPoseAgent and TestNN map preserved, no asset saves or edits.",
+  "defender_actor_label": "BP_ProphecyManualPoseAgent4",
+  "recording_attack_end_game_tick": 60
+}

@@ -29,11 +29,12 @@ bool PrepareParry(const FParryState& S,const float* NextLower,const float* NextB
     Input[257]=Drawn;W.StateStep=S.CompletedSteps;return true;
 }
 bool CompleteParry(FParryState& S,const FParryWork& W,const float* Delta,const float* NextLower,
-    const float* NextBaseline,const FRootFrame& NextRoot,const FPose& Frozen,const FGeometry& Geometry,FPose& Out)
+    const float* NextBaseline,const FRootFrame& NextRoot,const FPose& Frozen,const FGeometry& Geometry,FPose& Out,bool bExactForearms)
 {
     if (!S.bInitialized || W.StateStep!=S.CompletedSteps) return false;
     float Upper[90];CarryUpper(S.CurrentUpper,S.CurrentBaseline,W.HeldBaseline,Upper);
     for (int32 I=0;I<90;++I) Upper[I]+=Delta[I];CleanUpper(Upper);
+    if(bExactForearms)Geometry.ClampExactForearms(W.HeldLower,Upper);
     Geometry.Finish(W.HeldLower,Upper,S.CurrentRoot.P,S.CurrentRoot.R,Frozen,W.HeldBaseline,Out);
     FMemory::Memcpy(S.PreviousLower,S.CurrentLower,sizeof(S.PreviousLower));
     FMemory::Memcpy(S.PreviousUpper,S.CurrentUpper,sizeof(S.PreviousUpper));

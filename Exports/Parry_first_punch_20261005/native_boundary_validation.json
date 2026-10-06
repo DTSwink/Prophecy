@@ -1,0 +1,45 @@
+{
+  "one_step_native_boundary_checks": [
+    {
+      "frame": 7,
+      "input_max_abs": 2.384185791015625e-07,
+      "output_max_abs": 9.834766387939453e-07
+    },
+    {
+      "frame": 8,
+      "input_max_abs": 2.384185791015625e-07,
+      "output_max_abs": 8.344650268554688e-07
+    },
+    {
+      "frame": 9,
+      "input_max_abs": 2.384185791015625e-07,
+      "output_max_abs": 4.3213367462158203e-07
+    },
+    {
+      "frame": 10,
+      "input_max_abs": 2.384185791015625e-07,
+      "output_max_abs": 5.960464477539062e-07
+    },
+    {
+      "frame": 11,
+      "input_max_abs": 2.384185791015625e-07,
+      "output_max_abs": 4.172325134277344e-07
+    },
+    {
+      "frame": 12,
+      "input_max_abs": 2.384185791015625e-07,
+      "output_max_abs": 6.360933184623718e-07
+    },
+    {
+      "frame": 13,
+      "input_max_abs": 2.384185791015625e-07,
+      "output_max_abs": 7.003545761108398e-07
+    }
+  ],
+  "max_input_error": 2.384185791015625e-07,
+  "max_output_error": 9.834766387939453e-07,
+  "vanilla_first_input_max_abs": 0.00017268909141421318,
+  "vanilla_all_inputs_max_abs": 0.006491459906101227,
+  "initialization_max_abs": 0.0,
+  "scope": "One-step parity uses native recurrent states for verification only. load_case.py never reads these future upper states or future UE root-command overrides."
+}

@@ -31,6 +31,14 @@ public:
         // Runtime clock, retained by the owning rig between flattened packets.
         // Public publication starts it at zero; only owner recommits preserve it.
         double TrajectoryElapsedSeconds = 0.0;
+        JPH::BodyID Parent;
+        FTransform ParentStart = FTransform::Identity, ParentTarget = FTransform::Identity;
+        float WorldAlpha = 1.f;
+    };
+    struct FParentSample
+    {
+        FTransform Pose;
+        bool Valid=false;
     };
     struct FSample
     {
@@ -74,6 +82,8 @@ private:
 
     TArray<FTarget> Targets;
     TArray<FSample> Samples;
+    TArray<FParentSample> ParentSamples;
+    bool HasLocalTargets=false;
     float DenominatorSeconds = 1.f / 60.f;
     float LastIntegrationSeconds = 0.0f;
     uint64 Invocations = 0;

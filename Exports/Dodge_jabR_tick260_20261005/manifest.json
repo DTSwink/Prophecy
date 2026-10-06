@@ -1,0 +1,89 @@
+{
+  "schema": "prophecy_authored_attack_dodge_seed_v1",
+  "attack": "jabR",
+  "policy_hz": 30,
+  "first_attack_game_tick": 241,
+  "last_attack_game_tick": 264,
+  "armed_attack_frame": 6,
+  "hit_attack_frame": 10,
+  "first_dodge_game_tick": 250,
+  "dodge_primer_attack_frames": [
+    4,
+    5
+  ],
+  "frame_count": 14,
+  "category": "walk",
+  "target_training_m": [
+    0.03776194155216217,
+    1.4779255390167236,
+    -0.0006811618804931641
+  ],
+  "target_ue_cm": [
+    24.048850382756147,
+    -224.2674235306592,
+    147.29253691621125
+  ],
+  "world_origin_training_m": [
+    0.2027265578508377,
+    -0.005000169854611158,
+    -2.241992950439453
+  ],
+  "checkpoint_sha256": "bb2187cbc321819cf5a99b2f2bc8291a215d29ff8fa6133d6f6c8e068d0fbea7",
+  "checkpoint_step": 322925,
+  "post_hit_frames": [
+    3,
+    3
+  ],
+  "coordinate_convention": "Native defense training row bases, metres, Y up. UE position [x,y,z] cm -> [x,z,y]/100 minus world_origin; basis rows are UE +X,-Y,+Z directions with swapped world Y/Z.",
+  "attacker_source": "Recorded completed authored UE poses. No attack NN required for replay. Raw network traces are diagnostics only.",
+  "defender_source": "Only the two initial recurrent poses at Armed are inputs. Vanilla replay must not use subsequent UE defender poses, planned root windows, balancing, inertia, or physical feedback.",
+  "contact_rule": "No automatic collision stop. Hit event is the learned attacker latch, not a geometric collision.",
+  "native_input_comparison": [
+    {
+      "frame": 6,
+      "pelvis_max_abs": 2.384185791015625e-07,
+      "collider_max_abs": 2.682209014892578e-07
+    },
+    {
+      "frame": 7,
+      "pelvis_max_abs": 2.980232238769531e-07,
+      "collider_max_abs": 2.682209014892578e-07
+    },
+    {
+      "frame": 8,
+      "pelvis_max_abs": 2.980232238769531e-07,
+      "collider_max_abs": 1.1920928955078125e-07
+    },
+    {
+      "frame": 9,
+      "pelvis_max_abs": 1.7881393432617188e-07,
+      "collider_max_abs": 1.1920928955078125e-07
+    },
+    {
+      "frame": 10,
+      "pelvis_max_abs": 1.1920928955078125e-07,
+      "collider_max_abs": 8.940696716308594e-08
+    },
+    {
+      "frame": 11,
+      "pelvis_max_abs": 1.7881393432617188e-07,
+      "collider_max_abs": 1.1920928955078125e-07
+    },
+    {
+      "frame": 12,
+      "pelvis_max_abs": 1.7881393432617188e-07,
+      "collider_max_abs": 1.1920928955078125e-07
+    }
+  ],
+  "trainer_source_hashes": {
+    "dodge_banked_agent.py": "dc219392b3bc284189b3350fd8880928e6fcd1e2769d63ac704146195f103f79",
+    "dodge_banked_checkpoint.py": "3bcd07f7c24318f9518f1b190c48773b6e65f35e205c95e04b93178118f02bf6",
+    "dodge_movement_banks.py": "37bd4c8f1950479493ce948cfe197416aa8f38c32063dd07e9d6c17019f1e73d",
+    "transition_rollout.py": "e733a1fe6cf34033762a00b067d41b6792c2ab7a33b88b539462c0408f1b4a08",
+    "transition_features.py": "d087d1b8464701349aa5011fe59001a79940cf244383494d9b686fbb3f143365",
+    "build_ue5_dodge_reference.py": "8b0d8b9230771257fa22e7f11160e6a9dbbca1b130ef144417110d6f85ba8577"
+  },
+  "unreal_commit": "225e76e58dde2e125cdc3aa57eea58f36453e35f",
+  "unreal_has_uncommitted_work": true,
+  "stepper_commit": "e59e334a7d784bf7c1f58b1ac54da20c0e371791"
+}

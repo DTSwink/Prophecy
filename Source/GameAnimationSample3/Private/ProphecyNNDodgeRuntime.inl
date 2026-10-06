@@ -4,7 +4,6 @@
 namespace ProphecyDodgeAudit
 {
 static TAutoConsoleVariable<int32> Enabled(TEXT("Prophecy.Debug.DodgeTrace"),0,TEXT("Development-only live Dodge boundary trace."));
-static TAutoConsoleVariable<int32> ContinueAfterContact(TEXT("Prophecy.Debug.DodgeContinueAfterContact"),0,TEXT("Development-only isolation: do not end Dodge on predicted contact."));
 void Array(const TSharedPtr<FJsonObject>& Doc,const TCHAR* Key,const float* Data,int32 Count)
 {
     TArray<TSharedPtr<FJsonValue>> Values;Values.Reserve(Count);
@@ -29,7 +28,7 @@ void Save(const FProphecyLiveDodge& P,int32 Frame,const TCHAR* Stage,const TShar
 {
     const FString Dir=FPaths::ProjectSavedDir()/TEXT("Diagnostics/DodgeMismatch/NativeTrace");
     IFileManager::Get().MakeDirectory(*Dir,true);
-    const FString Path=Dir/FString::Printf(TEXT("%s_%s_%03d_%s.json"),ContinueAfterContact.GetValueOnGameThread()?TEXT("continue"):TEXT("normal"),*GetNameSafe(P.Owner.Get()),Frame,Stage);
+    const FString Path=Dir/FString::Printf(TEXT("%s_%s_%03d_%s.json"),TEXT("normal"),*GetNameSafe(P.Owner.Get()),Frame,Stage);
     FString Json;FJsonSerializer::Serialize(Doc.ToSharedRef(),TJsonWriterFactory<>::Create(&Json));
     FFileHelper::SaveStringToFile(Json,*Path);
 }
@@ -279,7 +278,7 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
         }
 #endif
         if (!Finite || !CompleteDodge(P.State,P.Work,P.NextLower,Output,D.DodgeGeometry,Pose,Modified,Upper,&PlannedRoot,
-            ProphecyLegChainDebug::IsEnabled(AgentActors[Index]))) { P.Status.Active=false;continue; }
+            ProphecyLegChainDebug::IsEnabled(AgentActors[Index]),D.DodgeUpper.UsesExactForearms())) { P.Status.Active=false;continue; }
 #if !UE_BUILD_SHIPPING
         if (Audit)
         {
@@ -291,7 +290,6 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
 #endif
         FMemory::Memcpy(P.PreviousComponent,P.CurrentComponent,sizeof(P.CurrentComponent));
         if (ProphecySpecialRoll::Forearms(P.Owner.Get())) DefenseForearmRoll(*Impl,D.Bones,Pose,!ProphecyAttackWrist::FreePosition(P.Owner.Get()));
-        const bool bContactStop=DefensePhysicalStop(*Impl,P,P.CurrentPose,Pose,P.WorldOrigin);
         DefenseComponentPose(Pose,PoseRoot,D.Bones,P.CurrentComponent);P.CurrentPose=Pose;
         Agent.PreviousPublishedRoot=Agent.PublishedRoot;Agent.PreviousPublishedYaw=Agent.PublishedYaw;
         Agent.PublishedRoot=DodgeManagedPosition(P,PoseRoot);Agent.PublishedYaw=DodgeManagedYaw(P,PoseRoot);
@@ -341,12 +339,6 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
         LowerTransformToHeading(P.State.PreviousLower,0,3,*Impl,TransformStateSlice(Impl->PreviousPelvisHeadingBuffer,Index));
         LowerTransformToHeading(P.State.CurrentLower,0,3,*Impl,TransformStateSlice(Impl->CurrentPelvisHeadingBuffer,Index));
         ++P.Status.CompletedSteps;P.Status.AttackerFrame=Impl->Agents[P.AttackerIndex].Slash.Frame;
-        if (bContactStop)
-        {
-#if !UE_BUILD_SHIPPING
-            if (!ProphecyDodgeAudit::ContinueAfterContact.GetValueOnGameThread())
-#endif
-                P.Status.Active=false;
-        }
+
     }
 }

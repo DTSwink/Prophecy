@@ -9,7 +9,8 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackMotionInertiaLibrary : public UBlu
 {
     GENERATED_BODY()
 public:
-    /** Optional parent-local angular inertia on the attack's upper-body prediction.
+    /** Optional parent-local angular inertia on the final attack upper-body pose.
+     * Presentation and physical targets only; its smoothed pose is not fed back to the NN.
      * Off by default. Inertia is the response time in authored seconds; zero bypasses.
      * Frames After Armed counts 60 Hz game ticks, not policy steps. The Armed
      * prediction is included when this is positive; zero ends before that prediction.

@@ -1,0 +1,37 @@
+[
+  {
+    "frame": 6,
+    "pelvis_max_abs": 2.384185791015625e-07,
+    "collider_max_abs": 2.682209014892578e-07
+  },
+  {
+    "frame": 7,
+    "pelvis_max_abs": 2.980232238769531e-07,
+    "collider_max_abs": 2.682209014892578e-07
+  },
+  {
+    "frame": 8,
+    "pelvis_max_abs": 2.980232238769531e-07,
+    "collider_max_abs": 1.1920928955078125e-07
+  },
+  {
+    "frame": 9,
+    "pelvis_max_abs": 1.7881393432617188e-07,
+    "collider_max_abs": 1.1920928955078125e-07
+  },
+  {
+    "frame": 10,
+    "pelvis_max_abs": 1.1920928955078125e-07,
+    "collider_max_abs": 8.940696716308594e-08
+  },
+  {
+    "frame": 11,
+    "pelvis_max_abs": 1.7881393432617188e-07,
+    "collider_max_abs": 1.1920928955078125e-07
+  },
+  {
+    "frame": 12,
+    "pelvis_max_abs": 1.7881393432617188e-07,
+    "collider_max_abs": 1.1920928955078125e-07
+  }
+]

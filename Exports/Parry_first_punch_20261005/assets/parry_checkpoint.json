@@ -1,0 +1,14 @@
+{
+  "file": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\parry_step_1037725.pt",
+  "sha256": "8eaf1239a902f0a81271ea6571b0dd3a7212954bc31c5433984ad1435ec15a1b",
+  "step": 1037725,
+  "exact_forearms": true,
+  "models": {
+    "prophecy_parry_upper.onnx": {
+      "sha256": "3abdd6562067503e1d64d8b829e835c3ca34060b5cefb651b537fe5abd09d890",
+      "parity_batches": 15,
+      "max_abs_error": 9.5367431640625e-07
+    }
+  },
+  "backup_folder": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\DefenseIntegration\\CheckpointUpdates\\Defense20261005\\backup"
+}

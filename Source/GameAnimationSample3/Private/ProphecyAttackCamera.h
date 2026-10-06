@@ -24,9 +24,15 @@ public:
 	virtual void OnUnregister() override;
 
 private:
+	friend class FProphecyAttackCameraComTest;
 	void Restore();
 	void ReleasePrerequisites();
 	void SetMesh(USkeletalMeshComponent* NewMesh);
+	FVector ReadCenterOfMass(bool bRebuild);
+	struct FBoneMass { int32 Index; double Mass; FVector LocalCenter; };
+	TArray<FBoneMass,TInlineAllocator<32>> BoneMasses;
+	FVector InitialComFromRoot=FVector::ZeroVector;
+	bool bTrackingCom=false;
 	TWeakObjectPtr<AActor> Manager;
 	TWeakObjectPtr<AProphecyAgent> Agent;
 	TWeakObjectPtr<USpringArmComponent> Spring;
@@ -34,10 +40,13 @@ private:
 	FVector InitialPelvisFromRoot = FVector::ZeroVector;
 	FVector AppliedOffset = FVector::ZeroVector;
 	bool bFollowing = false;
+	bool bTrackingPelvis = false;
 };
 
 namespace ProphecyAttackCamera
 {
+	// Keep inherited Blueprint references; only possessed players register/tick the rig in game.
+	void RefreshPlayerRig(AProphecyAgent* Agent);
 	void Stop(const AActor* Manager);
 	void End(const AActor* Manager);
 	void Update(AActor* Manager, AProphecyAgent* Player, bool bFullAttack);

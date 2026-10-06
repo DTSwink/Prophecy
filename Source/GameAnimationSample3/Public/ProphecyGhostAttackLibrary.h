@@ -12,9 +12,19 @@ public:
     /** Unpaused world ticks since BeginPlay/reset or the last full lower release.
      * Counts immediately from BeginPlay; zero throughout a full attack. Full entry,
      * including half-to-full, resets it; full-to-half starts counting. Pure half
-     * attacks do not reset it. Reads do not advance it. Initial-agent reset restarts it. */
+     * attacks do not reset it. Reads do not advance it. Initial-agent reset restarts
+     * at the last manually set value (zero if never set). */
     UFUNCTION(BlueprintPure,Category="Prophecy|Agent|Attack",meta=(DefaultToSelf="Agent"))
     static int64 GetTicksSinceLastAttack(AProphecyAgent* Agent);
+
+    /** Set elapsed attack ticks now and the starting value for initial-agent resets.
+     * Call once at startup; counting continues from Ticks on subsequent unpaused ticks.
+     * The latest explicit value is remembered even if reset was initialized earlier.
+     * Real full attacks still hold zero and start from zero on lower release.
+     * Rejects negative values, invalid agents and calls during a full attack.
+     * Does not start/stop attacks or change their NN inputs or phase clocks. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Attack",meta=(DefaultToSelf="Agent"))
+    static bool SetTicksSinceLastAttack(AProphecyAgent* Agent,UPARAM(meta=(ClampMin="0")) int64 Ticks=1000);
 
     /** Prevent the Armed phase latch while the checkpoint continues wind-up.
      * Hit keeps its existing rules and is not independently blocked.

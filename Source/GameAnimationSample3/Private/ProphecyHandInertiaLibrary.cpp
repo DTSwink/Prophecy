@@ -1,4 +1,5 @@
 #include "ProphecyHandInertiaLibrary.h"
+#include "ProphecyAttackNNFeedback.h"
 #include "ProphecyNNModifierDebug.h"
 #include "ProphecyHandInertia.h"
 #include "ProphecyPelvisInertiaMath.h"
@@ -196,7 +197,7 @@ void ProphecyNNModifierDebug::HandInertia(FReport& R)
     for(int32 I=0;I<2;++I)
     {
         const auto& H=S->Hands[I];const auto F=Resolve(H,R.Walk,true);if(!Active(H,F))continue;
-        R.Add(I?TEXT("HandInertiaR"):TEXT("HandInertiaL"),R.Half?TEXT("POSE"):TEXT("POSE+HISTORY"),I?TEXT("Right hand inertia"):TEXT("Left hand inertia"),
+        R.Add(I?TEXT("HandInertiaR"):TEXT("HandInertiaL"),(R.Half || !ProphecyAttackNNFeedback::Enabled(R.Agent,ProphecyAttackNNFeedback::Hand))?TEXT("POSE"):TEXT("POSE+HISTORY"),I?TEXT("Right hand inertia"):TEXT("Left hand inertia"),
             FString::Printf(TEXT("root-local linear %s | angular %s%s"),*F.Linear.ToCompactString(),*F.Angular.ToCompactString(),
             H.Seeded?TEXT(""):TEXT(" | waiting for seed")));
     }

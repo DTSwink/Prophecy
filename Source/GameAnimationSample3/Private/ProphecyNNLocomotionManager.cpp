@@ -4,6 +4,7 @@
 #include "UObject/StrongObjectPtr.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyAttackStartHandInertia.h"
+#include "ProphecyAttackNNFeedback.h"
 #include "ProphecyAttackStartFKCore.h"
 #include "ProphecyAttackMotionInertia.h"
 #include "ProphecyAttackFootLocomotion.h"
@@ -3214,6 +3215,21 @@ void AProphecyNNLocomotionManager::StepSimulation(float StepSeconds)
 	for (int32 Index = 0; Index < AgentActors.Num(); ++Index)
 	{
 		if (Clock && !Clock->Step->Due[Index]) continue;
+		// A known defense Hit deadline must release ownership BEFORE inference.
+		// Releasing it after the locomotion batches have skipped this agent leaves
+		// its old publication pair stamped as a new sample: a one-frame rewind.
+		if (SharedStep && Impl->Agents[Index].DefensePose)
+		{
+			const auto& D=*Impl->Agents[Index].DefensePose;
+			if (D.Status.Active && AgentActors[Index]->bNNInferenceEnabled && D.Attacker.IsValid() &&
+				D.Attacker->bNNInferenceEnabled && Impl->Agents.IsValidIndex(D.AttackerIndex))
+			{
+				const auto& A=Impl->Agents[D.AttackerIndex].Slash;
+				if (A.bActive && A.Family==D.Family && A.HitFrame!=INDEX_NONE &&
+					A.Frame+1-A.HitFrame>=ProphecyDefenseControls::GetFramesAfterHit(AgentActors[Index],D.bDodge))
+					StopAgentNNDefense(GetAgentHandle(Index));
+			}
+		}
 		if (Impl->Agents[Index].DefensePose && !Impl->Agents[Index].DefensePose->Status.Active)
 		{
 			StopAgentNNDefense(GetAgentHandle(Index));
@@ -4267,13 +4283,13 @@ void AProphecyNNLocomotionManager::CacheUpperRootRotationHorizon(const AProphecy
 		Impl->Agents[Handle.Index].UpperRootRotationHorizon = Horizon;
 }
 
-void AProphecyNNLocomotionManager::BuildUpperInputBatch()
+void AProphecyNNLocomotionManager::BuildUpperInputBatch(int32 OnlyAgent)
 {
 	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::UpperInput);
 	const auto* Clock=ProphecyAgentTime::Context(this);
 	Impl->UpperInferenceAgents.Reset();
 	Impl->UpperInferenceRequested.Init(0,BatchSize);
-	for (int32 AgentIndex = 0; AgentIndex < CrowdSize; ++AgentIndex)
+	for (int32 AgentIndex = OnlyAgent==INDEX_NONE?0:OnlyAgent; AgentIndex < (OnlyAgent==INDEX_NONE?CrowdSize:OnlyAgent+1); ++AgentIndex)
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		if (Impl->Agents[AgentIndex].DefensePose) continue;
@@ -4380,11 +4396,11 @@ bool AProphecyNNLocomotionManager::RunUpperModelBatch()
 	return true; // One vanilla upper inference. No auxiliary walk/run hand policies.
 }
 
-void AProphecyNNLocomotionManager::ApplyUpperOutputBatch()
+void AProphecyNNLocomotionManager::ApplyUpperOutputBatch(int32 OnlyAgent)
 {
 	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::UpperOutput);
 	const auto* Clock=ProphecyAgentTime::Context(this);
-	for (int32 AgentIndex = 0; AgentIndex < CrowdSize; ++AgentIndex)
+	for (int32 AgentIndex = OnlyAgent==INDEX_NONE?0:OnlyAgent; AgentIndex < (OnlyAgent==INDEX_NONE?CrowdSize:OnlyAgent+1); ++AgentIndex)
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		if (Impl->Agents[AgentIndex].DefensePose) continue;
@@ -5047,8 +5063,8 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		ComponentTransforms[Leg.Mid].SetRotation(TemperCalfRotation(PreviousCalfRotations[I],
 			ComponentTransforms[Leg.Mid].GetRotation(),LocalTrainingToUnreal(Impl->LocalOffsets[Leg.End]),Follow));
 	}
-	// Attack constraints are applied with attack recurrence. Only defense needs
-	// a publication wrist limit; locomotion remains the clean NN target.
+	// Attack wrist limits run in its native step (feedback on) or cached final
+	// pose (feedback off). Only defense needs the limit here.
 	bool bWristChanged=false;
 	if (bDefensePose)
 	{

@@ -584,4 +584,53 @@ bool FProphecyAttackWristModels::RunTest(const FString&)
     TestTrue(TEXT("Fixture exercises an actual excess-bend correction"),Corrections>0);
     return !HasAnyErrors();
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackWristPresentationModels,"Prophecy.NN.AttackWrist.PresentationAllCheckpoints",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyAttackWristPresentationModels::RunTest(const FString&)
+{
+    int32 Corrections=0;
+    for (const TCHAR* Suffix:{TEXT(""),TEXT("AttackSeptember20"),TEXT("Attack160664"),TEXT("Attack184064")})
+    {
+        const FString Dir=FPaths::ProjectContentDir()/TEXT("locomotion/NN")/Suffix;
+        FString Text;TSharedPtr<FJsonObject> Contract;
+        if (!FFileHelper::LoadFileToString(Text,*(Dir/TEXT("prophecy_slash_runtime.json"))) ||
+            !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Contract))
+        { AddError(TEXT("Missing checkpoint fixture: ")+Dir);return false; }
+        FSlashNative Model;
+        if (!TestTrue(TEXT("Model loads"),Model.Initialize(Dir,Contract))) return false;
+        TArray<float> State,Off;
+        JsonFloatArray(Contract->GetArrayField(TEXT("seed_input")),State);
+        // Deliberate bad wrist history ensures the old checkpoints exercise
+        // the active correction rather than only their already-valid seed.
+        for (int32 Base:{82,172})
+        {
+            State[Base+63]=-State[Base+63];State[Base+64]=-State[Base+64];State[Base+65]=-State[Base+65];
+        }
+        // The optional UE wrist limit is applied to the final presentation pose.
+        // Exercise that same function on decoded outputs from every checkpoint,
+        // while continuing exclusively from the unmodified recurrent channels.
+        for (int32 Step=0;Step<20;++Step)
+        {
+            const float Limits[]={0.f,20.f,55.f,110.f,180.f};
+            const float Limit=Limits[Step%UE_ARRAY_COUNT(Limits)];
+            if (!Model.Run(State,Off)) { AddError(TEXT("Inference failed"));return false; }
+            FMat3f R;for(int32 Row=0;Row<3;++Row)R.Rows[Row]=ReadStateVec3(Off.GetData(),287+3*Row);
+            FTransform Hand(MatrixToQuat(R),FVector(ReadStateVec3(Off.GetData(),158)));
+            const FTransform Raw=Hand;
+            const FVector Elbow(ReadStateVec3(Off.GetData(),155));
+            if(ProphecyAttackWrist::ConstrainPose(Hand,Elbow,Limit))++Corrections;
+            TestTrue(TEXT("Decoded wrist respects presentation angle"),FVector::DotProduct(
+                Hand.GetRotation().GetAxisX(),(Hand.GetLocation()-Elbow).GetSafeNormal())>=FMath::Cos(FMath::DegreesToRadians(Limit))-3.e-5);
+            TestTrue(TEXT("Wrist constraint preserves position"),Hand.GetLocation()==Raw.GetLocation());
+            if(Limit==180)TestTrue(TEXT("Full leeway preserves decoded pose"),Hand.Equals(Raw,0));
+            FMemory::Memcpy(State.GetData(),State.GetData()+41,41*sizeof(float));
+            FMemory::Memcpy(State.GetData()+82,State.GetData()+172,90*sizeof(float));
+            FMemory::Memcpy(State.GetData()+41,Off.GetData(),41*sizeof(float));
+            FMemory::Memcpy(State.GetData()+172,Off.GetData()+41,90*sizeof(float));
+            State[270]=Off[431];State[271]=Off[432];
+        }
+    }
+    TestTrue(TEXT("Fixture exercises an actual excess-bend correction"),Corrections>0);
+    return !HasAnyErrors();
+}
 #endif

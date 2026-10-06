@@ -32,5 +32,5 @@ struct FParryWork
 bool PrepareParry(const FParryState& State,const float* NextLower,const float* NextBaseline,
     const FRootFrame& NextRoot,FContext Context,float Drawn,FParryWork& Work,float* Input258);
 bool CompleteParry(FParryState& State,const FParryWork& Work,const float* Delta90,const float* NextLower,
-    const float* NextBaseline,const FRootFrame& NextRoot,const FPose& Frozen,const FGeometry& Geometry,FPose& Out);
+    const float* NextBaseline,const FRootFrame& NextRoot,const FPose& Frozen,const FGeometry& Geometry,FPose& Out,bool bExactForearms=false);
 }

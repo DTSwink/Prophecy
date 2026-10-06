@@ -1,5 +1,32 @@
 # Attack controls
 
+## Attack-name bone list
+
+**Get Attack Bones** is a pure node taking an Attack name and returning a Bones
+Name array. It requires no agent or active attack. Jab/hook/over return hand then
+lowerarm on the selected side; kick returns foot then calf; headbutt returns
+`head`; all six slash families and pike return only `sword`. The latter is a
+logical item name, not a skeleton bone. Unknown/None names return an empty list.
+Names are case-insensitive. The existing **Get NN Attack Colliders** node retains
+its agent/current-attack, PHAT and actual sword-component behavior unchanged.
+
+## Manually setting ticks since last attack
+
+**Set Ticks Since Last Attack** takes Agent and Ticks (default **1000**). Call it
+once at startup to set the counter immediately; each subsequent unpaused world
+tick increments it. It also remembers that exact explicit value for **Reset
+Initial Agents**, regardless of whether reset initialization happened before or
+after the setter. Reset does not capture the later, incremented count.
+
+Agents that never call it retain the original zero initial/reset value. Setting
+zero restores that reset behavior. A real full attack (including half-to-full)
+still holds the counter at zero, then lower release starts counting from zero.
+Pure half attacks leave it running. The setter rejects negative values, invalid
+agents and active full attacks without changing either count or reset setting.
+It returns success/failure and does not change NN attack phases, history or timers.
+The stored manual setting is per agent and is removed with that agent.
+
+
 **Set Attack Return To Root Balancing** chooses the per-agent root placement when
 a full/half attack ends or is cancelled into locomotion. **Use Root Balancing
 Target=true** is the default, including when no node is called: the flat midpoint

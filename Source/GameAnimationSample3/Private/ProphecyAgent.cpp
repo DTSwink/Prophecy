@@ -36,6 +36,7 @@
 #include "PBDRigidsSolver.h"
 #include "Chaos/SimCallbackObject.h"
 #include "Camera/CameraComponent.h"
+#include "ProphecyAttackCamera.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PoseableMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -1430,6 +1431,7 @@ void AProphecyAgent::BeginPlay()
 {
 	ProphecyAttackControls::StartAttackTickCounter(this);
 	Super::BeginPlay();
+	ProphecyAttackCamera::RefreshPlayerRig(this);
 	if (bAutoInitializeAgentRuntime)
 	{
 		InitializeAgentRuntime();

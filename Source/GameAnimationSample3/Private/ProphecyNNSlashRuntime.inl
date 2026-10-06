@@ -758,7 +758,7 @@ bool AProphecyNNLocomotionManager::TryExtendAgentAttackEnd(FProphecyAgentHandle 
 	FSlashNative::FStepSettings Option;
 	Option.FrozenPinIterations=Actor->AttackFootPinningIterations;
 	Option.LeftHandMaxBendDegrees=ProphecyAttackWrist::Degrees(Actor,EProphecyClampProfileMode::Attack,Slash.Family);
-	Option.bLeftHandConstraint=Option.LeftHandMaxBendDegrees>=0 && Option.LeftHandMaxBendDegrees<180;
+	Option.bLeftHandConstraint=Option.LeftHandMaxBendDegrees>=0 && Option.LeftHandMaxBendDegrees<180 && ProphecyAttackNNFeedback::Enabled(Actor,ProphecyAttackNNFeedback::Wrist);
 	Option.bBlockArmed=ProphecyAttackControls::ArmedBlocked(Actor);
 	FPelvisInertiaStepContext Inertia;
 	if (!Slash.bHalf && ProphecyPelvisInertia::HasTarget(Actor))
@@ -839,6 +839,7 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	const bool bEndedHalfAttack = Slash.bHalf;
 	if (!bEndedHalfAttack) ReturnAttackLowerToLocomotion(Handle,bReturnToLocomotion);
 	Slash.bActive = false;
+	StopDefensesForAttacker(Actor);
 	if (bReturnToLocomotion)
 		ProphecyFKReturn::Begin(Actor,EndedAttack,Impl->BodyNames,Impl->Parents,
 			TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index),
@@ -1018,7 +1019,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				auto& Option = Settings[Lane];
 				Option.FrozenPinIterations = Actor->AttackFootPinningIterations;
 				Option.LeftHandMaxBendDegrees = ProphecyAttackWrist::Degrees(Actor,EProphecyClampProfileMode::Attack,Slash.Family);
-				Option.bLeftHandConstraint = Option.LeftHandMaxBendDegrees>=0 && Option.LeftHandMaxBendDegrees<180;
+				Option.bLeftHandConstraint = Option.LeftHandMaxBendDegrees>=0 && Option.LeftHandMaxBendDegrees<180 && ProphecyAttackNNFeedback::Enabled(Actor,ProphecyAttackNNFeedback::Wrist);
 				Option.bBlockArmed = ProphecyAttackControls::ArmedBlocked(Actor);
 				if (!Slash.bHalf && ProphecyPelvisInertia::HasTarget(Actor))
 				{
@@ -1158,19 +1159,6 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 						SafeNormal(Impl->Limbs[S].ToeAxis))/ToeAlphaRadians,-1.f,1.f);
 				}
 			}
-			// Use the same forearm roll convention as the final UE pose. Applying
-			// the roll again after filtering would erase the lower-arm inertia.
-			if (ProphecyAttackMotionInertia::NeedsArmConvention(AgentActors[Index]) && ProphecySpecialRoll::Forearms(AgentActors[Index]))
-				for (int32 Side=0;Side<2;++Side)
-				{
-					const auto& Arm=Impl->UpperArms[Side];
-					SetForearmRollFromUpperArm(Impl->UpperLocalOffsets[Arm.End],Side,Slash.GhostPose[Arm.Start],Slash.GhostPose[Arm.Mid],Slash.GhostPose[Arm.End]);
-				}
-			if (ProphecyAttackMotionInertia::Apply(AgentActors[Index],Slash.GhostPose,Output[431]>.5f,Output[432]>.5f))
-			{
-				float UnusedLower[41];
-				EncodeSlashPose(*Impl,Impl->Agents[Index],MakeArrayView(Slash.GhostPose),UnusedLower,Slash.State.GetData()+172);
-			}
 			if (Output[431] > 0.5f && Slash.State[270] <= 0.5f)
 				ProphecySwordAttackCollision::Armed(AgentActors[Index]);
 			Slash.State[270] = Output[431]; Slash.State[271] = Output[432];
@@ -1250,6 +1238,9 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 	if (Slash.bNeedsFeedback)
 	{
 		Slash.PreviousVisibleWorldPose = Slash.VisibleWorldPose;
+		const uint8 NNFeedback=ProphecyAttackNNFeedback::Mask(AgentActors[AgentIndex]);
+		const auto SourceHistory=ProphecyAttackMotionInertia::PreviousSource(AgentActors[AgentIndex]);
+		const auto PreviousFeedback=SourceHistory.Num()==FullBodyBoneCount ? SourceHistory : MakeArrayView(Slash.PreviousVisibleWorldPose);
 		auto* FootAuthor=!Slash.bHalf ? ProphecyAttackFootLocomotion::FindActive(AgentActors[AgentIndex]) : nullptr;
 		auto* Ghost=!Slash.bHalf ? ProphecyAttackFootLocomotion::FindGhost(AgentActors[AgentIndex]) : nullptr;
 		// Keep the release sample locomotion-authored too. The next attack step
@@ -1381,7 +1372,7 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		// Full and half attacks share the locomotion roll convention. Apply at
 		// the UE boundary; the trained decoder/ghost and NN history stay intact.
 		// Cache the corrected pose so rendering, Jolt and defender colliders agree.
-		if (ProphecySpecialRoll::Forearms(AgentActors[AgentIndex]) && !ProphecyAttackMotionInertia::FilteringArms(AgentActors[AgentIndex])) for (int32 Side=0;Side<2;++Side)
+		if (ProphecySpecialRoll::Forearms(AgentActors[AgentIndex])) for (int32 Side=0;Side<2;++Side)
 		{
 			const auto& Arm=Impl->UpperArms[Side];
 			SetForearmRollFromUpperArm(Impl->UpperLocalOffsets[Arm.End],Side,Pose[Arm.Start],Pose[Arm.Mid],Pose[Arm.End]);
@@ -1398,7 +1389,7 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		{
 			// Full attacks recur from the accepted local core and carried arms.
 			// Half-attack ghosts retain their independent moving-carrier convention.
-			if(!Slash.bHalf)
+			if(!Slash.bHalf && (NNFeedback&ProphecyAttackNNFeedback::StartCore))
 			{
 				for(int32 C=0;C<Impl->UpperCoreBoneNames.Num();++C)
 				{
@@ -1426,11 +1417,11 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 			{
 				const auto& Arm=Impl->UpperArms[I];
 				if (CorrectInertiaArm(*Impl,AgentActors[AgentIndex],I,Agent.PublishedWalkWeight,true,Time,Dt,
-					PrevRoot,Root,Slash.PreviousVisibleWorldPose[Arm.End],Carrier,Pose))
+					PrevRoot,Root,PreviousFeedback[Arm.End],Carrier,Pose))
 				{
 					// Half-attack presentation must not feed the moving real carrier back
 					// into the independent ghost. Full attacks retain their inertia feedback.
-					if (!Slash.bHalf)
+					if (!Slash.bHalf && (NNFeedback&ProphecyAttackNNFeedback::Hand))
 					{
 						for (int32 Bone:{Arm.Start,Arm.Mid,Arm.End})
 						{
@@ -1448,7 +1439,7 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		{
 			// Match the existing hand-inertia ownership rule: full attacks feed
 			// accepted arms into their checkpoint; half ghosts remain independent.
-			if(!Slash.bHalf) for(int I=0;I<2;++I)if(Hands&(1<<I))
+			if(!Slash.bHalf && (NNFeedback&ProphecyAttackNNFeedback::StartHand)) for(int I=0;I<2;++I)if(Hands&(1<<I))
 			{
 				const auto& Arm=Impl->UpperArms[I];
 				for(int Bone:{Arm.Start,Arm.Mid,Arm.End})Slash.GhostPose[Bone]=(Pose[Bone]*Carrier).GetRelativeTransform(Slash.AnchorWorld);
@@ -1460,23 +1451,21 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 			// Correct each accepted attack prediction once and retain the corrected
 			// endpoints for presentation and outgoing inertia at upper release.
 			for(int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
-				PreviousPose[Bone]=Slash.PreviousVisibleWorldPose[Bone].GetRelativeTransform(PreviousCarrier);
+				PreviousPose[Bone]=PreviousFeedback[Bone].GetRelativeTransform(PreviousCarrier);
 			if(ProphecyArmCone::ApplyNNPublication(AgentActors[AgentIndex],Impl->BodyNames,Impl->Parents,
 				PreviousPose,Pose,PreviousCarrier,Carrier,1.f/NNUpdateHz,true))
 			{
-				if(!Slash.bHalf) for(int32 I=0;I<2;++I)
+				if(!Slash.bHalf && (NNFeedback&ProphecyAttackNNFeedback::Cone)) for(int32 I=0;I<2;++I)
 				{
 					const auto& Arm=Impl->UpperArms[I];
 					for(int32 Bone:{Arm.Start,Arm.Mid,Arm.End})
 						Slash.GhostPose[Bone]=(Pose[Bone]*Carrier).GetRelativeTransform(Slash.AnchorWorld);
 					StoreInertiaArm(*Impl,I,Slash.GhostPose,FMat3f(),Slash.State.GetData()+172);
 				}
-				for(int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
+				if(SourceHistory.IsEmpty())for(int32 Bone=0;Bone<FullBodyBoneCount;++Bone)
 					Slash.PreviousVisibleWorldPose[Bone]=PreviousPose[Bone]*PreviousCarrier;
 			}
 		}
-		for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)
-			Slash.VisibleWorldPose[Bone] = Pose[Bone] * Carrier;
 		// Feed only locomotion-owned legs into the attack recurrence, in its
 		// fixed carrier. The normal state shift preserves the preceding sample.
 		// Include blending feet and their final release once. Both models receive
@@ -1486,7 +1475,7 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 			const auto* I=Ghost?Ghost->Legs[S]:FootAuthor->Legs[S];
 			FTransform Real[4];for(int32 B=0;B<4;++B)
 			{
-				Real[B]=Slash.VisibleWorldPose[I[B]].GetRelativeTransform(Slash.AnchorWorld);
+				Real[B]=(Pose[I[B]]*Carrier).GetRelativeTransform(Slash.AnchorWorld);
 				if(!Ghost)Slash.GhostPose[I[B]]=Real[B];
 			}
 			const auto& Foot=Real[2];
@@ -1521,6 +1510,22 @@ void AProphecyNNLocomotionManager::ApplySlashPose(int32 AgentIndex, TArrayView<F
 		RebaseUpperHeadingState(CurrentUpper, UpperDelta, WrapAngle(Agent.CurRootYaw - Agent.PublishedYaw));
 		BuildUpperBaseFromLower(Current, *Impl, UpperStateSlice(Impl->UpperCurrentBaseBuffer, AgentIndex));
 		LowerTransformToHeading(Current, 0, 3, *Impl, TransformStateSlice(Impl->CurrentPelvisHeadingBuffer, AgentIndex));
+		// Motion inertia affects the accepted visible/physical endpoint only. All
+		// NN history above, including older entry modifiers, uses its unfiltered source.
+		// Pure half attacks may publish their entry seed before the first prediction.
+		if(Slash.Frame>1)ProphecyAttackMotionInertia::Publish(AgentActors[AgentIndex],Pose,Carrier,Slash.State[270]>.5f,Slash.State[271]>.5f);
+		// Opt-out preserves the visible limit after smoothing, without writing it to the model.
+		// Checked uses the original native clamp/order above for numerical compatibility.
+		if(!(NNFeedback&ProphecyAttackNNFeedback::Wrist))
+		{
+			const float Wrist=ProphecyAttackWrist::Degrees(AgentActors[AgentIndex],EProphecyClampProfileMode::Attack,Slash.Family);
+			if(Wrist>=0 && Wrist<180)
+			{
+				const auto& Arm=Impl->UpperArms[0];
+				ProphecyAttackWrist::ConstrainPose(Pose[Arm.End],Pose[Arm.Mid].GetLocation(),Wrist);
+			}
+		}
+		for(int32 Bone=0;Bone<FullBodyBoneCount;++Bone)Slash.VisibleWorldPose[Bone]=Pose[Bone]*Carrier;
 		Slash.bNeedsFeedback = false;
 	}
 	for (int32 Bone = 0; Bone < FullBodyBoneCount; ++Bone)

@@ -19,6 +19,14 @@ The enabled entry reads the existing NN pose snapshot once. Wrist positions and 
 
 The correction runs on the accepted attack NN pose before its existing publication/history update. Physical meshes follow normal targets. Full attacks feed accepted arm channels into attack recurrence. Half attacks keep the existing independent ghost policy and publish the corrected real upper pose/history. No extra checkpoint inference, physics impulses, persistent full-pose history or mesh-only offset.
 
+When attack forearm stretch is enabled, the arm solver blends from the captured
+entry forearm length to the predicted length using the same influence as hand
+inertia. Full influence retains entry length; zero influence restores the
+predicted length. This prevents an immediately shorter forearm from making a
+held wrist unreachable and forcing the elbow straight. Fixed-length arms keep
+their existing behavior. The existing physical wrist allowance and inertia
+timing remain unchanged; no additional timer or inference is needed.
+
 Full-attack feedback can change Armed/Hit timing: this influences the checkpoint's actual motion rather than applying a cosmetic offset over an unchanged attack.
 
 Disabled or completed instances have no entry sampling, active clock, spring/IK math or extra inference. Hooks are cheap sparse-state guards; configured idle agents do not continuously sample hands. New state lives in separate maps rather than resizing retained Live Coding allocations.

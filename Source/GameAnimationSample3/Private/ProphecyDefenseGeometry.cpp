@@ -123,6 +123,35 @@ bool FGeometry::Load(const FString& Filename,bool bDodge,FString& Error)
     for (int32 I=0;I<2;++I) Next.ProjectionToeAxes[I]=Read(Projection.GetData()+3*I);
     *this=Next;return true;
 }
+void FGeometry::ClampExactForearms(const float* Lower,float* Upper) const
+{
+    // Trainer HandClamp with zero margin: only shoulder ancestors and elbows.
+    // Operate before decoding and recurrence; preserve every rotation channel.
+    constexpr int32 Slots[]={0,1,2,3,4,8,9},Bones[]={1,2,3,4,5,6,10},ParentSlots[]={0,1,2,3,4,5,5};
+    FVector3f P[8];FRows R[8];P[0]=Read(Lower);R[0]=Rot6(Lower+3);
+    for(int32 I=0;I<7;++I)
+    {
+        const int32 Parent=ParentSlots[I];
+        P[I+1]=P[Parent]+Transform(FullOffsets[Bones[I]],R[Parent]);
+        R[I+1]=Multiply(Rot6(Upper+6*Slots[I]),R[Parent]);
+    }
+    for(int32 Side=0;Side<2;++Side)
+    {
+        const int32 Shoulder=7+4*Side,Offset=60+15*Side,Parent=6+Side;
+        const FRows Arm=Rot6(Upper+Offset+9);
+        const FVector3f Elbow=P[Parent]+Transform(FullOffsets[Shoulder],R[Parent])+Transform(FullOffsets[Shoulder+1],Arm);
+        const FVector3f Delta=Read(Upper+Offset)-Elbow;const float Distance=Delta.Size(),Length=FullLimbs[Side].Length[1];
+        if(Distance==Length)continue;
+        FVector3f Direction;
+        if(Distance>1.e-8f)Direction=Delta/Distance;
+        else
+        {
+            const FVector3f Fallback=Transform(FullOffsets[Shoulder+2],Arm);const float Norm=Fallback.Size();
+            Direction=Norm>1.e-8f?Fallback/Norm:FVector3f(1,0,0);
+        }
+        Write(Upper+Offset,Elbow+Direction*Length);
+    }
+}
 void FGeometry::LowerPose(const float* Input,const FVector3f& RootP,const FRows& RootR,FPose& Out,bool bIncludeLegs) const
 {
     float Lower[41];FMemory::Memcpy(Lower,Input,sizeof(Lower));if (bIncludeLegs) CleanLower(Lower);else Clean6(Lower+3);

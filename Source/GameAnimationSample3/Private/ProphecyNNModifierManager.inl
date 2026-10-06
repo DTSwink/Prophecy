@@ -40,6 +40,10 @@ bool AProphecyNNLocomotionManager::DescribeNNModifiers(const AProphecyAgent* A,P
         R.Add(TEXT("AnimLayer"),TEXT("POSE+HISTORY"),TEXT("Authored animation layer"),FString::Printf(TEXT("%s | weight %.3f bone mask 0x%x"),*GetNameSafe(S.AnimationLayer.Animation.Get()),S.AnimationLayer.BlendWeight,S.AnimationLayer.BoneMask));
     if(R.Attack)
     {
+        const uint8 Feedback=ProphecyAttackNNFeedback::Mask(A);
+        R.Add(TEXT("AttackNNFeedback"),TEXT("CONFIG"),TEXT("Attack direct NN feedback"),FString::Printf(TEXT("entry core %d hand %d | general hand %d | cone %d | wrist %d (1 old behavior)"),
+            !!(Feedback&ProphecyAttackNNFeedback::StartCore),!!(Feedback&ProphecyAttackNNFeedback::StartHand),!!(Feedback&ProphecyAttackNNFeedback::Hand),!!(Feedback&ProphecyAttackNNFeedback::Cone),!!(Feedback&ProphecyAttackNNFeedback::Wrist)));
+
         R.Add(TEXT("AttackTiming"),TEXT("STATE"),TEXT("Attack phase / end"),FString::Printf(TEXT("policy frame %d | Hit frame %d | latched tail %d"),Slash.Frame,Slash.HitFrame,Slash.TailSteps));
         bool Parry=false,Dodge=false;GetAgentAttackDefenseState(A->GetAgentHandle(),Parry,Dodge);
         if(Parry||Dodge)R.Add(TEXT("AttackResponse"),TEXT("INPUT"),TEXT("Defender response conditioning"),FString::Printf(TEXT("parry %d dodge %d"),Parry,Dodge));
@@ -55,13 +59,13 @@ bool AProphecyNNLocomotionManager::DescribeNNModifiers(const AProphecyAgent* A,P
         if(ProphecyAttackEndExtension::Threshold(A,Slash.Family,Limit,Sword,Left))
             R.Add(TEXT("EndExtension"),TEXT("GATE"),TEXT("Attack end angle extension"),FString::Printf(TEXT("%.3g degrees | %s | checked at end boundary"),Limit,Sword?TEXT("sword"):Left?TEXT("left hand"):TEXT("right hand")));
         if(ProphecyArmCone::AnyActive() && ProphecyArmCone::Active(A))
-            R.Add(TEXT("ArmCone"),R.Half?TEXT("POSE"):TEXT("POSE+HISTORY"),TEXT("Arm repellant cone / wrist recoil"),TEXT("active attack constraint"));
+            R.Add(TEXT("ArmCone"),(R.Half || !ProphecyAttackNNFeedback::Enabled(A,ProphecyAttackNNFeedback::Cone))?TEXT("POSE"):TEXT("POSE+HISTORY"),TEXT("Arm repellant cone"),TEXT("active attack constraint"));
         if(ProphecySpecialStart::Enabled(A) && Slash.Frame<=2)
             R.Add(TEXT("PhysicalSeed"),TEXT("ENTRY"),TEXT("Physical special-entry seed"),TEXT("enabled at entry; sampling availability determines whether physical pose replaced history"));
     }
     if(R.Attack || R.Defense)
     {
-        if(ProphecySpecialRoll::Forearms(A))R.Add(TEXT("ForearmRoll"),TEXT("POSE"),TEXT("Forearm roll convention"),TEXT("UE canonical roll (attack motion filter may also encode it into history)"));
+        if(ProphecySpecialRoll::Forearms(A))R.Add(TEXT("ForearmRoll"),TEXT("POSE"),TEXT("Forearm roll convention"),TEXT("UE canonical roll; attack motion smoothing is isolated from NN history"));
         if(!R.Half && ProphecySpecialRoll::Calves(A))R.Add(TEXT("CalfRoll"),TEXT("POSE"),TEXT("Calf roll convention"),TEXT("UE thigh-aligned calf frame"));
         const auto Mode=R.Attack?EProphecyClampProfileMode::Attack:R.Dodge?EProphecyClampProfileMode::Dodge:EProphecyClampProfileMode::Parry;
         const float Wrist=ProphecyAttackWrist::Degrees(A,Mode,R.Attack?Slash.Family:NAME_None);

@@ -5,6 +5,12 @@
 #include "Modules/ModuleManager.h"
 #include "Misc/FileHelper.h"
 #include "UObject/StrongObjectPtr.h"
+#include "Misc/Paths.h"
+#include "Serialization/JsonSerializer.h"
+
+// Separate from retained network allocations so old Live Coding instances keep
+// their old contract. New metadata is latched together with new model bytes.
+static TMap<const FProphecyDefenseNetwork*,bool> ExactForearmModels;
 
 struct FProphecyDefenseNetwork::FState
 {
@@ -24,7 +30,8 @@ struct FProphecyDefenseNetwork::FState
     }
 };
 FProphecyDefenseNetwork::FProphecyDefenseNetwork()=default;
-FProphecyDefenseNetwork::~FProphecyDefenseNetwork()=default;
+FProphecyDefenseNetwork::~FProphecyDefenseNetwork(){ExactForearmModels.Remove(this);}
+bool FProphecyDefenseNetwork::UsesExactForearms() const{return ExactForearmModels.Contains(this);}
 bool FProphecyDefenseNetwork::Initialize(const FString& Filename,int32 InputWidth,int32 OutputWidth,FString& Error)
 {
     Error.Reset();
@@ -32,6 +39,19 @@ bool FProphecyDefenseNetwork::Initialize(const FString& Filename,int32 InputWidt
     { Error=TEXT("Defense model initialization requires valid dimensions and the game thread.");return false; }
     TArray64<uint8> Bytes;
     if (!FFileHelper::LoadFileToArray(Bytes,*Filename)) { Error=TEXT("Cannot read defense model: ")+Filename;return false; }
+    bool ExactForearms=false;
+    const FString Name=FPaths::GetCleanFilename(Filename);
+    if(Name==TEXT("prophecy_parry_upper.onnx") || Name==TEXT("prophecy_dodge_upper.onnx"))
+    {
+        const FString Metadata=FPaths::GetPath(Filename)/(Name.Contains(TEXT("parry"))?TEXT("parry_checkpoint.json"):TEXT("dodge_checkpoint.json"));
+        if(FPaths::FileExists(Metadata))
+        {
+            FString Text;TSharedPtr<FJsonObject> Document;
+            if(!FFileHelper::LoadFileToString(Text,*Metadata) || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Document) || !Document)
+            {Error=TEXT("Invalid defense checkpoint metadata: ")+Metadata;return false;}
+            Document->TryGetBoolField(TEXT("exact_forearms"),ExactForearms);
+        }
+    }
     FModuleManager::Get().LoadModule(TEXT("NNERuntimeORT"));
     auto Runtime=UE::NNE::GetRuntime<INNERuntimeCPU>(TEXT("NNERuntimeORTCpu"));
     auto Next=MakeUnique<FState>();
@@ -52,7 +72,9 @@ bool FProphecyDefenseNetwork::Initialize(const FString& Filename,int32 InputWidt
     if (!Matches(Next->Instance->GetInputTensorDescs(),InputWidth) || !Matches(Next->Instance->GetOutputTensorDescs(),OutputWidth))
     { Error=TEXT("Defense model tensor descriptors do not match the float32 batch contract.");return false; }
     if (!Next->Shape(1)) { Error=TEXT("Defense model shape does not match its contract.");return false; }
-    State=MoveTemp(Next);return true;
+    State=MoveTemp(Next);
+    if(ExactForearms)ExactForearmModels.Add(this,true);else ExactForearmModels.Remove(this);
+    return true;
 }
 bool FProphecyDefenseNetwork::SetBatch(int32 Count) { return State && State->Shape(Count); }
 bool FProphecyDefenseNetwork::Run(TConstArrayView<float> Input,TArrayView<float> Output)

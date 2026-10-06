@@ -26,6 +26,7 @@ struct FState
     int32 Count=0;
     double W=0,E=0,Elapsed=0,ArmedAt=0;
     bool SawArmed=false,SawHit=false,FilteringNow=true;
+    TArray<FTransform> SourceWorld;
 };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FState> States;
@@ -43,8 +44,6 @@ static void EnsureCleanup()
 bool Configured(const AProphecyAgent* A){return !Configs.IsEmpty() && Configs.Contains(A);}
 bool FilteringArms(const AProphecyAgent* A)
 {const auto* S=States.IsEmpty()?nullptr:States.Find(A);return S && S->FilteringNow && (!S->Config.CoreOnly || S->SawHit);}
-bool NeedsArmConvention(const AProphecyAgent* A)
-{const auto* S=States.IsEmpty()?nullptr:States.Find(A);return S && (!S->Config.CoreOnly || S->Config.AfterHit);}
 void Cancel(const AProphecyAgent* A)
 {if(!States.IsEmpty() && States.Remove(A))ProphecyBlendClock::Stop(A,K::AttackMotionInertia);}
 void Remove(const AProphecyAgent* A){Cancel(A);Configs.Remove(A);Baselines.Remove(A);}
@@ -57,6 +56,7 @@ static bool Prepare(FState& S,const FConfig& C,TConstArrayView<FName> Names,TCon
     if(Names.Num()!=Parents.Num() || Names.Num()!=Current.Num() || Current.Num()!=Previous.Num())return false;
     const int32 Spine=Names.IndexOfByKey(TEXT("spine_01"));if(Spine==INDEX_NONE)return false;
     S.Config=C;S.W=2./C.Response;S.E=FMath::Exp(-S.W*Step);
+    S.SourceWorld.Reserve(Current.Num());
     for(int32 B=0;B<Names.Num();++B)
     {
         const int32 Parent=Parents[B];bool Upper=false;
@@ -130,6 +130,8 @@ bool Apply(const AProphecyAgent* A,TArrayView<FTransform> Pose,bool Armed,bool H
     S->FilteringNow=InWindow(*S,Armed,ProphecyBlendClock::Consume(A,K::AttackMotionInertia),Hit);
     if(!S->FilteringNow)
     {
+        // Previous source was consumed before Publish. This endpoint is now raw,
+        // so the next step can safely use its ordinary previous-visible cache.
         if(!S->Config.AfterHit){Cancel(A);return false;}
         // Observe the current unfiltered local motion while waiting for Hit.
         // Never restart from the obsolete wind-up spring pose/velocity.
@@ -141,6 +143,24 @@ bool Apply(const AProphecyAgent* A,TArrayView<FTransform> Pose,bool Armed,bool H
         return false;
     }
     Solve(*S,Pose);return true;
+}
+
+TConstArrayView<FTransform> PreviousSource(const AProphecyAgent* A)
+{
+    const auto* S=States.IsEmpty()?nullptr:States.Find(A);
+    return S?TConstArrayView<FTransform>(S->SourceWorld):TConstArrayView<FTransform>();
+}
+void TranslateSource(const AProphecyAgent* A,const FVector& Delta)
+{
+    if(auto* S=States.IsEmpty()?nullptr:States.Find(A))
+        for(auto& Bone:S->SourceWorld)Bone.AddToTranslation(Delta);
+}
+void Publish(const AProphecyAgent* A,TArrayView<FTransform> Pose,const FTransform& Carrier,bool Armed,bool Hit)
+{
+    auto* S=States.IsEmpty()?nullptr:States.Find(A);if(!S)return;
+    S->SourceWorld.SetNumUninitialized(Pose.Num());
+    for(int32 B=0;B<Pose.Num();++B)S->SourceWorld[B]=Pose[B]*Carrier;
+    Apply(A,Pose,Armed,Hit);
 }
 }
 
@@ -300,6 +320,37 @@ bool FAttackMotionAfterHitTest::RunTest(const FString&)
 
 #include "ProphecyFKReturn.h"
 #include "ProphecyFKReturnData.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAttackMotionSourceTest,"Prophecy.Attack.MotionInertia.SourceIsolation",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FAttackMotionSourceTest::RunTest(const FString&)
+{
+    using namespace ProphecyAttackMotionInertia;
+    UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* A=World?World->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    const FName Names[]={TEXT("pelvis"),TEXT("spine_01"),TEXT("hand_r")};const int32 Parents[]={-1,0,1};
+    FTransform Pose[3]={FTransform::Identity,FTransform(FVector(0,0,10)),FTransform(FVector(0,0,20))};
+    UProphecyAttackMotionInertiaLibrary::SetAttackMotionInertia(A,true,.03f,0);
+    Begin(A,Names,Parents,Pose,Pose);
+    Pose[1].SetRotation(FRotator(0,60,0).Quaternion());
+    Pose[2]=FTransform(FVector(0,0,10))*Pose[1];
+    const FTransform Source[]={Pose[0],Pose[1],Pose[2]};
+    const FTransform Carrier(FRotator(0,35,0),FVector(100,200,0));
+    Publish(A,Pose,Carrier,false,false);
+    const auto History=PreviousSource(A);
+    TestEqual(TEXT("Source history retains full pose"),History.Num(),3);
+    for(int32 B=0;B<3;++B)TestTrue(TEXT("Entry feedback receives unsmoothed world source"),History[B].Equals(Source[B]*Carrier,1.e-8));
+    TestFalse(TEXT("Displayed spine is smoothed"),Pose[1].Equals(Source[1],1.e-6));
+    TestTrue(TEXT("Pelvis stays untouched"),Pose[0].Equals(Source[0],0));
+    TranslateSource(A,FVector(20,0,0));
+    TestTrue(TEXT("Explicit root relocation also moves source history"),PreviousSource(A)[1].GetLocation().Equals((Source[1]*Carrier).GetLocation()+FVector(20,0,0),1.e-8));
+    for(int32 B=0;B<3;++B)Pose[B]=Source[B];
+    Publish(A,Pose,Carrier,true,false);
+    TestFalse(TEXT("Zero extra frames releases at Armed"),FilteringArms(A));
+    for(int32 B=0;B<3;++B)TestTrue(TEXT("Released output is source"),Pose[B].Equals(Source[B],0));
+    TestTrue(TEXT("Raw release endpoint needs no remaining source cache"),PreviousSource(A).IsEmpty());
+    Cancel(A);TestTrue(TEXT("Attack end releases source history"),PreviousSource(A).IsEmpty());
+    Remove(A);World->DestroyWorld(false);return true;
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAttackMotionReturnHandoffTest,"Prophecy.Attack.MotionInertia.ReturnHandoff",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FAttackMotionReturnHandoffTest::RunTest(const FString&)
@@ -359,7 +410,7 @@ void ProphecyNNModifierDebug::AttackMotion(FReport& R)
 {
     using namespace ProphecyAttackMotionInertia;
     const auto* S=States.Find(R.Agent);if(!R.Attack || !S || !S->FilteringNow)return;
-    R.Add(TEXT("AttackMotion"),TEXT("POSE+HISTORY"),TEXT("Attack motion inertia"),
+    R.Add(TEXT("AttackMotion"),TEXT("POSE+PHYSICS"),TEXT("Attack motion inertia (NN feedback isolated)"),
         FString::Printf(TEXT("%s | response %.4g | Armed+%d ticks | %s"),
         S->Config.CoreOnly&&!S->SawHit?TEXT("core, no clavicles/arms"):TEXT("whole upper"),S->Config.Response,S->Config.After,
         S->SawHit?TEXT("after Hit"):S->SawArmed?TEXT("armed"):TEXT("pre-armed")));

@@ -35,7 +35,7 @@ bool PrepareDodge(const FDodgeState& S,const float* Frozen,FContext Context,FDod
     Write(Input+359,InTransposedBasis(S.RootShift,S.CurrentRoot.R));W.StateStep=S.CompletedSteps;return true;
 }
 bool CompleteDodge(FDodgeState& S,const FDodgeWork& W,const float* Frozen,const float* Output,
-    const FGeometry& Geometry,FPose& Pose,float* ModifiedLower,float* UnrebasedUpper,const FRootFrame* PlannedRoot,bool bReconstructLegs)
+    const FGeometry& Geometry,FPose& Pose,float* ModifiedLower,float* UnrebasedUpper,const FRootFrame* PlannedRoot,bool bReconstructLegs,bool bExactForearms)
 {
     if (!S.bInitialized || W.StateStep!=S.CompletedSteps) return false;
     const float PelvisHeight=(Transform(Read(Frozen),S.CurrentRoot.R)+S.CurrentRoot.P).Y;
@@ -49,6 +49,7 @@ bool CompleteDodge(FDodgeState& S,const FDodgeWork& W,const float* Frozen,const 
     Geometry.LowerPose(Modified,FVector3f::ZeroVector,Identity,NextBasePose);
     Geometry.EncodeUpper(NextBasePose,FVector3f::ZeroVector,Identity,NextBase);
     CarryUpper(S.CurrentUpper,CurrentBase,NextBase,Upper);for (int32 I=0;I<90;++I) Upper[I]+=Output[I];CleanUpper(Upper);
+    if(bExactForearms)Geometry.ClampExactForearms(Modified,Upper);
     if (UnrebasedUpper) FMemory::Memcpy(UnrebasedUpper,Upper,sizeof(Upper));
     for (int32 I=0;I<25;++I)
     {

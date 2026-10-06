@@ -45,3 +45,7 @@ bool UProphecyNNDefenseLibrary::SetDodgeFramesAfterHit(AProphecyAgent* Agent,int
 { return ProphecyDefenseControls::SetDodgeFramesAfterHit(Agent,Frames); }
 int32 UProphecyNNDefenseLibrary::GetDodgeFramesAfterHit(AProphecyAgent* Agent)
 { return ProphecyDefenseControls::GetDodgeFramesAfterHit(Agent); }
+bool UProphecyNNDefenseLibrary::SetDefenseFramesAfterHit(AProphecyAgent* Agent,int32 Frames)
+{ return ProphecyDefenseControls::SetDefenseFramesAfterHit(Agent,Frames); }
+void UProphecyNNDefenseLibrary::GetDefenseFramesAfterHit(AProphecyAgent* Agent,int32& DodgeFrames,int32& ParryFrames)
+{ DodgeFrames=ProphecyDefenseControls::GetFramesAfterHit(Agent,true);ParryFrames=ProphecyDefenseControls::GetFramesAfterHit(Agent,false); }

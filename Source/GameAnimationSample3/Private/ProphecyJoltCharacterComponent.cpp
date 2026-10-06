@@ -1,3 +1,4 @@
+#include "ProphecyPhysicalContext.h"
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyFixedArmPhysics.h"
 #include "ProphecySwordAttackCollision.h"
@@ -132,6 +133,7 @@ struct FProphecyJoltCharacterState
     TArray<FProphecyJoltBodyMaterial> OriginalBodyMaterials; // Immutable reset values for this admission.
     TArray<FName> SkeletonNames;
     TArray<int32> Parents;
+    TArray<int32> BodyParents;
     TArray<FProphecyJoltPoseBodyMapping> Mappings;
     TArray<FTransform> BaseLocalPose;
     FProphecyNNPoseSnapshot AuthoredSnapshot;
@@ -470,6 +472,16 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
             Body.EffectiveFrictionCombineMode, Body.EffectiveRestitutionCombineMode});
         InitialBodies.Add(Body.BodyOriginToWorld);
     }
+    Pending->BodyParents.Init(INDEX_NONE,Pending->BodyNames.Num());
+    for(int32 I=0;I<Pending->BodyNames.Num();++I)
+    {
+        if(Pending->BodyNames[I]==TEXT("pelvis"))continue;
+        for(int32 B=Skeleton.GetParentIndex(Pending->Mappings[I].BoneIndex);B!=INDEX_NONE;B=Skeleton.GetParentIndex(B))
+        {
+            const int32 P=Pending->BodyNames.IndexOfByKey(Skeleton.GetBoneName(B));
+            if(P!=INDEX_NONE){Pending->BodyParents[I]=P;break;}
+        }
+    }
     if (!Pending->ComposeLayout.Build(Pending->BaseLocalPose.Num(), Pending->Parents, Pending->Mappings, Error)
         || !Pending->ComposeLayout.Compose(Pending->BaseLocalPose, InitialBodies,
             Mesh->GetComponentTransform(), Pending->Completed, Error)) return Fail(OutError, Error);
@@ -674,6 +686,7 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     {
     Profile::FScope PhaseTiming(Profile::EPhase::TargetPacket);
     State->TargetNameLookup.Update(Names, State->BodyNames);
+    const float WorldAlpha=ProphecyPhysicalContext::MagnetizationMode(Agent);
     const float CalfFootLeeway=ProphecyPhysicalFootTarget::CalfLeeway(Agent);
     const float FootTargetLeeway=FMath::Max(ProphecyPhysicalFootTarget::Leeway(Agent),CalfFootLeeway);
     const float KickFootLeeway=ProphecyKickFootLeeway::Current(Agent);
@@ -739,6 +752,15 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
         Target.Handle = State->Handles[Index];
         Target.TargetPositionCm = BodyWorld.GetLocation();
         Target.TargetRotation = BodyWorld.GetRotation();
+        const int32 Parent=State->BodyParents[Index];
+        if(WorldAlpha<1.f && Parent!=INDEX_NONE)
+        {
+            const int32 P=State->TargetNameLookup.GetIndices()[Parent];
+            if(!Interpolated.IsValidIndex(P))return Fail(OutError,TEXT("Missing authored physical-parent target."));
+            Target.Parent=State->Handles[Parent];Target.ParentTarget=Interpolated[P];
+            const auto* Start=State->AuthoredTargetHistory.GetStart(Parent,State->ExpectedWorldSteps);
+            Target.ParentStart=Start?*Start:Target.ParentTarget;Target.WorldAlpha=WorldAlpha;
+        }
         if (DeltaSeconds > 0.0f)
         {
             if (const FTransform* Start = State->AuthoredTargetHistory.GetStart(Index, State->ExpectedWorldSteps))

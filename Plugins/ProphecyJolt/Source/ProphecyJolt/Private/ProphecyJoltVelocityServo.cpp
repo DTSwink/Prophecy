@@ -24,10 +24,22 @@ struct FVelocityRewrite
     JPH::Vec3 NativeAngular = JPH::Vec3::sZero();
 };
 
+bool ReadParent(const FVelocityServo::FTarget& Target,const JPH::BodyLockInterface& Locks,FVelocityServo::FParentSample& Sample)
+{
+    using namespace Conversions;
+    Sample.Valid=false;
+    if(Target.WorldAlpha>=1.f)return true;
+    JPH::BodyLockRead Lock(Locks,Target.Parent);
+    if(!Lock.SucceededAndIsInBroadPhase())return false;
+    const auto& B=Lock.GetBody();
+    Sample.Pose=FTransform(FromJoltRotation(B.GetRotation()),FromJoltPosition(B.GetPosition()));
+    Sample.Valid=true;return true;
+}
+
 bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Body, float DenominatorSeconds,
     double TrajectoryElapsedSeconds, float IntegrationSeconds,
     FVelocityServo::FSample& Sample, FVelocityRewrite& Rewrite, const FFollow* Follow,
-    const FTransform* TargetOffset)
+    const FTransform* TargetOffset,const FVelocityServo::FParentSample* Parent=nullptr)
 {
     using namespace Conversions;
     Sample.PositionCm = FromJoltPosition(Body.GetPosition());
@@ -48,6 +60,19 @@ bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Bo
     {
         const FTransform Shifted = *TargetOffset * FTransform(TargetRotation, TargetPositionCm);
         TargetPositionCm = Shifted.GetLocation(); TargetRotation = Shifted.GetRotation();
+    }
+    if(Target.WorldAlpha<1.f)
+    {
+        if(!Parent || !Parent->Valid)return false;
+        const double Alpha=Target.TrajectoryDurationSeconds>0
+            ? FMath::Clamp(TrajectoryElapsedSeconds/Target.TrajectoryDurationSeconds,0.,1.) : 1.;
+        const FTransform AuthoredParent(FQuat::Slerp(Target.ParentStart.GetRotation(),Target.ParentTarget.GetRotation(),Alpha).GetNormalized(),
+            FMath::Lerp(Target.ParentStart.GetLocation(),Target.ParentTarget.GetLocation(),Alpha));
+        const FTransform LocalTarget=FTransform(TargetRotation,TargetPositionCm).GetRelativeTransform(AuthoredParent)*Parent->Pose;
+        TargetPositionCm=FMath::Lerp(LocalTarget.GetLocation(),TargetPositionCm,Target.WorldAlpha);
+        TargetRotation=FQuat::Slerp(LocalTarget.GetRotation(),TargetRotation,Target.WorldAlpha).GetNormalized();
+        // Only move the target frame. Reinjecting the parent's previous physical
+        // velocity here creates positive feedback through the joint solver.
     }
     // The authored target is the body origin; Jolt stores linear velocity at the COM.
     // Convert the requested origin velocity to COM velocity after calculating W below.
@@ -134,7 +159,11 @@ bool FVelocityServo::PublishPerTarget(TConstArrayView<FTarget> InTargets, FStrin
     TSet<uint32> UniqueBodies;
     for (const FTarget& Target : InTargets)
     {
-        if (Target.Body.IsInvalid() || UniqueBodies.Contains(Target.Body.GetIndexAndSequenceNumber()) ||
+        if (!FMath::IsFinite(Target.WorldAlpha) || Target.WorldAlpha<0 || Target.WorldAlpha>1 ||
+            (Target.WorldAlpha<1 && (Target.Parent.IsInvalid() || Target.Parent==Target.Body ||
+                Target.ParentStart.ContainsNaN() || Target.ParentTarget.ContainsNaN() ||
+                !Target.ParentStart.GetRotation().IsNormalized() || !Target.ParentTarget.GetRotation().IsNormalized())) ||
+            Target.Body.IsInvalid() || UniqueBodies.Contains(Target.Body.GetIndexAndSequenceNumber()) ||
             Target.TargetPositionCm.ContainsNaN() || Target.TargetRotation.ContainsNaN() || !Target.TargetRotation.IsNormalized() ||
             !FMath::IsFinite(Target.GravityCompensationCmPerSecondSquared) ||
             !FMath::IsFinite(Target.LinearStrength) || Target.LinearStrength < 0.0f ||
@@ -156,8 +185,11 @@ void FVelocityServo::CommitValidatedTargets(TConstArrayView<FTarget> InTargets)
     check(IsInGameThread());
     Targets.Reset(InTargets.Num());
     Targets.Append(InTargets.GetData(), InTargets.Num());
-    for (FTarget& Target : Targets) Target.DenominatorSeconds = FMath::Max(Target.DenominatorSeconds, UE_SMALL_NUMBER);
+    HasLocalTargets=false;
+    for (FTarget& Target : Targets)
+    { Target.DenominatorSeconds = FMath::Max(Target.DenominatorSeconds, UE_SMALL_NUMBER);HasLocalTargets|=Target.WorldAlpha<1.f; }
     Samples.SetNum(InTargets.Num()); // All allocation happens before Update.
+    ParentSamples.SetNum(HasLocalTargets?Targets.Num():0);
     for (FSample& Sample : Samples) Sample = FSample();
     DenominatorSeconds = Targets.IsEmpty() ? 0.0f : Targets[0].DenominatorSeconds;
     for (const FTarget& Target : Targets)
@@ -179,6 +211,9 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
     // Validate every candidate before mutating any activation state. This pass does not write V/W.
     for (const FTarget& Target : Targets)
     {
+        FParentSample Parent;
+        if(!ReadParent(Target,ReadLocks,Parent))
+        { ++InvalidBodies;OutError=TEXT("Invalid physical parent in servo packet.");return false; }
         const JPH::BodyLockRead Lock(ReadLocks, Target.Body);
         if (!Lock.SucceededAndIsInBroadPhase() || !Lock.GetBody().IsDynamic())
         { ++InvalidBodies; OutError = TEXT("Fixture servo activation found an invalid/non-dynamic body."); return false; }
@@ -191,7 +226,7 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
         if (!CalculateRewrite(Target, Body, H, Target.TrajectoryElapsedSeconds + H,
             FirstStepSeconds > 0.0f ? FirstStepSeconds : H, Sample, Rewrite,
             BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr,
-            Offsets ? Offsets->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr))
+            Offsets ? Offsets->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr, &Parent))
         { ++InvalidBodies; OutError = TEXT("Fixture servo sleeping-body candidate overflows native velocity precision."); return false; }
         if (RequiresNativeWake(Target, Rewrite) || HasPendingTrajectoryMotion(Target)) BodiesToWake.Add(Target.Body);
     }
@@ -221,7 +256,7 @@ void FVelocityServo::Clear()
 {
     check(IsInGameThread());
     Targets.Reset();
-    Samples.Reset();
+    Samples.Reset();ParentSamples.Reset();HasLocalTargets=false;
     Invocations = 0;
     InvalidBodies = 0;
     LastIntegrationSeconds = 0.0f;
@@ -250,6 +285,8 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
     LastIntegrationSeconds = Context.mDeltaTime;
     const auto* BodyFollows = Follows.IsEmpty() ? nullptr : Follows.Find(this);
     const auto* Offsets = TargetOffsets.IsEmpty() ? nullptr : TargetOffsets.Find(this);
+    if(HasLocalTargets)for(int32 I=0;I<Targets.Num();++I)
+        ReadParent(Targets[I],Context.mPhysicsSystem->GetBodyLockInterfaceNoLock(),ParentSamples[I]);
     for (int32 Index = 0; Index < Targets.Num(); ++Index)
     {
         FTarget& Target = Targets[Index];
@@ -268,7 +305,7 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
         const float H = Target.TrajectoryDurationSeconds > 0.0f ? Context.mDeltaTime : Target.DenominatorSeconds;
         if (!CalculateRewrite(Target, Body, H, Target.TrajectoryElapsedSeconds, Context.mDeltaTime, Sample, Rewrite,
             BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr,
-            Offsets ? Offsets->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr)
+            Offsets ? Offsets->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr,HasLocalTargets?&ParentSamples[Index]:nullptr)
             || (!Body.IsActive() && RequiresNativeWake(Target, Rewrite)))
         { ++InvalidBodies; continue; }
         // Stock clamped setters enforce the body's captured caps without changing those limits.

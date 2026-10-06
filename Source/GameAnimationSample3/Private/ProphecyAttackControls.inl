@@ -4,6 +4,8 @@ namespace ProphecyAttackControls
 static TSet<TWeakObjectPtr<const AProphecyAgent>> Blocked,ResetBlocked;
 static TSet<TWeakObjectPtr<const AProphecyAgent>> FullAttackHeld;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,int64> SinceLowerAttack;
+// Explicit user setting, independent of when Initialize Agent Reset was called.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,int64> CounterResetTicks;
 static FDelegateHandle CounterTick;
 static void RefreshTick();
 static void Tick(UWorld* World,ELevelTick Type,float Dt)
@@ -26,7 +28,7 @@ bool ArmedBlocked(const AProphecyAgent* A) {return !Blocked.IsEmpty() && Blocked
 void StartAttackTickCounter(const AProphecyAgent* A)
 {
     if(FullAttackHeld.Contains(A) || SinceLowerAttack.Contains(A))return;
-    SinceLowerAttack.Add(A,0);RefreshTick();
+    SinceLowerAttack.Add(A,CounterResetTicks.FindRef(A));RefreshTick();
 }
 void FullAttackStarted(AProphecyAgent* A)
 {
@@ -43,7 +45,7 @@ void LowerAttackFinished(const AProphecyAgent* A)
 }
 void ForgetReset(const AProphecyAgent* A) {ResetBlocked.Remove(A);}
 void Remove(const AProphecyAgent* A)
-{SinceLowerAttack.Remove(A);FullAttackHeld.Remove(A);RefreshTick();Blocked.Remove(A);ForgetReset(A);}
+{SinceLowerAttack.Remove(A);CounterResetTicks.Remove(A);FullAttackHeld.Remove(A);RefreshTick();Blocked.Remove(A);ForgetReset(A);}
 void CaptureReset(const AProphecyAgent* A)
 {
     if(ArmedBlocked(A))ResetBlocked.Add(A);else ResetBlocked.Remove(A);
@@ -67,6 +69,14 @@ bool UProphecyGhostAttackLibrary::SetAttackArmedBlocked(AProphecyAgent* Agent,bo
 {
     if(!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown)return false;
     if(Blocked)ProphecyAttackControls::Blocked.Add(Agent);else ProphecyAttackControls::Blocked.Remove(Agent);
+    return true;
+}
+bool UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(AProphecyAgent* Agent,int64 Ticks)
+{
+    using namespace ProphecyAttackControls;
+    if(!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld() ||
+        Agent->GetWorld()->bIsTearingDown || Ticks<0 || FullAttackHeld.Contains(Agent))return false;
+    CounterResetTicks.Add(Agent,Ticks);SinceLowerAttack.Add(Agent,Ticks);RefreshTick();
     return true;
 }
 #if WITH_DEV_AUTOMATION_TESTS
@@ -140,6 +150,34 @@ bool FProphecyAttackEntryMagicClockTest::RunTest(const FString&)
     FullAttackStarted(A);LowerAttackFinished(A);Remove(A);
     TestFalse(TEXT("Removal retires count"),SinceLowerAttack.Contains(A));
     if(SinceLowerAttack.IsEmpty())TestFalse(TEXT("No counter leaves no callback"),CounterTick.IsValid());
+    W->DestroyWorld(false);W->MarkAsGarbage();return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyManualAttackTicksTest,"Prophecy.NN.AttackControls.ManualTicks",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyManualAttackTicksTest::RunTest(const FString&)
+{
+    using namespace ProphecyAttackControls;
+    auto* W=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
+    auto Count=[&](){return UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(A);};
+    CaptureReset(A); // Setter works even after reset initialization.
+    TestTrue(TEXT("Manual seed accepted"),UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(A,1000));
+    TestEqual(TEXT("Immediately visible"),Count(),int64(1000));
+    for(float Dt:{1.f/30,1.f/60,1.f/120})Tick(W,LEVELTICK_All,Dt);
+    TestEqual(TEXT("Counts ticks, not seconds"),Count(),int64(1003));
+    TestFalse(TEXT("Negative rejected"),UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(A,-1));
+    TestEqual(TEXT("Rejected write is atomic"),Count(),int64(1003));
+    RestoreReset(A);TestEqual(TEXT("Reset uses explicit seed"),Count(),int64(1000));
+    FullAttackStarted(A);TestEqual(TEXT("Full attack still zero"),Count(),int64(0));
+    TestFalse(TEXT("Cannot rewrite active full attack"),UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(A,99));
+    LowerAttackFinished(A);TestEqual(TEXT("Real release still zero"),Count(),int64(0));
+    Tick(W,LEVELTICK_All,.016f);TestEqual(TEXT("Counts after release"),Count(),int64(1));
+    RestoreReset(A);TestEqual(TEXT("Real attack retains reset seed"),Count(),int64(1000));
+    UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(A,MAX_int64);Tick(W,LEVELTICK_All,.016f);
+    TestEqual(TEXT("Saturates without overflow"),Count(),int64(MAX_int64));
+    UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(A,0);RestoreReset(A);
+    TestEqual(TEXT("Explicit zero restores original reset behavior"),Count(),int64(0));
+    Remove(A);TestFalse(TEXT("Removal forgets manual setting"),CounterResetTicks.Contains(A));
     W->DestroyWorld(false);W->MarkAsGarbage();return !HasAnyErrors();
 }
 #endif

@@ -56,76 +56,90 @@ uses kinematic playback, like the saved SlashChain reference.
 User Blueprint/map settings were not rewritten. The capture changed only transient
 PIE settings. The manager's clamp switches affect all agents it owns.
 
-## Player camera
+## Player camera (current: 2026-10-05)
 
-A transient `UProphecyAttackCameraComponent` is created only on a player-possessed
-full attacker. It reads the completed mesh pelvis in PostPhysics before the
-ordinary spring-arm tick. Its horizontal translation offset follows the body;
-camera height, rotation, arm length, collision test and capsule/NN state retain
-their existing behavior. Half attacks use the locomotion camera.
+By default attacks keep the camera on the capsule. Animated pelvis displacement
+does not change the camera offset at follow alpha 0. A transient `UProphecyAttackCameraComponent` is created
+only for a possessed full attacker (or defense); NPCs receive no camera work.
+Defense retains its pelvis-follow behavior.
 
-The component remains allocated while owned by that player, ticks only while
-following or fading its offset after an attack, and restores its added offset
-immediately on loss of possession or teardown.
-Unreal owns its lifetime so a pending tick remains valid during a stop/destruction.
-The initial manually allocated tick experiment crashed on retirement and was
-replaced before final verification.
+**Set Attack Camera COM Follow** takes Agent and Alpha (default 0, clamped 0–1).
+During a full attack, 0 keeps the capsule camera, 1 follows the horizontal
+mass-weighted center of the displayed body, and 0.5 follows half its displacement.
+Only XY is added; the camera's vertical behavior is unchanged. The reference is
+captured at the first completed attack frame. PHAT body masses and local mass
+centers are cached per attack, using captured Jolt masses when active. Missing
+physics bodies fall back to the pelvis. Alpha 0 skips COM sampling entirely.
 
-### Attack-end offset fade (2026-09-21)
+The COM offset is combined with inverse capsule-snap compensation at full-to-half
+or attack exit and fades using **Set Attack Camera Offset Fade Duration**. Any
+previous fade continues during a new attack alongside that attack's COM offset.
+Disabling follow mid-attack fades its existing offset rather than dropping it.
+Settings can be assigned before possession, but only the player computes COM.
 
-**Set Attack Camera Offset Fade Duration** takes Agent and Duration Seconds,
-default1. One authored second means60 unpaused game ticks, ignoring frame delta
-and time dilation;0 restores immediately. Nonfinite/negative durations are rejected.
-The setting may be configured before possession, but only the player-possessed
-full-attack follower uses it. NPCs receive no camera follower or fade work.
+NPCs keep the inherited camera/spring objects so existing Blueprint references
+and authored settings survive. In game those components are unregistered, their
+ticks disabled, and their subtree detached from the capsule: no camera/spring
+updates or collision sweeps. Possession reattaches/registers the same configured
+rig; unpossession immediately removes its follow offset and parks the rig again.
+Editor camera templates/previews remain intact. This avoids runtime rig work on
+NPCs; it does not eliminate the inherited UObject allocations.
 
-At attack exit, the handoff samples the possessed player's spring origin before
-the attack carrier catch-up and balancing/pelvis root placement, then subtracts
-their combined **actual** origin displacement from the existing camera offset.
-Thus `new spring origin + new offset = old spring origin + old offset` at the
-snap. This compensates actual applied movement rather than the requested target
-and avoids counting the intermediate catch-up twice. The combined offset then
-eases to zero with smoothstep over the requested tick count. Duration0 retains
-the immediate handoff without compensation. Camera baseline settings and any
-independent Blueprint TargetOffset are preserved by applying only the change in
-this component's offset. A new attack cancels the return and resumes pelvis
-tracking from the remaining offset. Updating the duration during a fade retimes
-it from its current value;0 stops immediately. Loss of possession and teardown
-restore immediately. The finished fade removes its state and disables the
-component tick; default duration needs no per-agent settings entry.
+COM validation: `Saved/Diagnostics/CameraCOM20261005/`. Both native camera tests
+passed, including mass weighting/local mass centers, late handoff movement,
+NPC registration state and possession/re-possession. Three unchanged 350-tick
+TestNN runs at alpha 0, 0.5 and 1 had identical root positions; half strength
+matched the midpoint within 4e-15 cm and added zero vertical offset. First attack
+exit pivot error was zero at all strengths. A separate full-to-half capture at
+alpha 1 also had zero handoff pivot error. NPC rigs remained detached/inactive.
 
-This fades the added offset plus inverse handoff displacement; it does not change actor/root movement,
-camera rotation, arm collision or full-attack pelvis tracking. Uses the existing
-PostPhysics component tick, without another timer or inference. Live component
-layout is unchanged; transient return/settings data lives in weak-object maps.
+At full-to-half or attack-to-locomotion handoff, the existing root handoff samples
+the spring origin before carrier catch-up and balancing/pelvis root placement.
+The camera subtracts their combined **actual** origin displacement:
+`new spring origin + new offset = old spring origin + old offset`.
+This includes translation caused by yaw of an off-center spring attachment and
+avoids counting intermediate catch-up twice. Compensation is finalized in
+PostPhysics, after the agent and manager updates, so later Blueprint/physics
+capsule corrections in the handoff frame join the same fade. The snap frame
+retains the exact compensated pivot; the fade begins on the next game tick.
 
-Validation2026-09-21: Live Coding loaded12:45:59UTC; reflected node/default1 checked.
-`Prophecy.Camera.AttackOffsetFade` passed12:46:47UTC, including60-tick completion,
-paused/duplicate suppression, retiming/zero, possessed-only activation and real
-component retirement on unpossession while retaining another camera offset.
-Existing pose-agent Blueprint compiled status3 with no stale types or wiring
-changes. Reload emitted handled RigVM delegate-access ensures; reload completed
-and subsequent checks passed. No gameplay rollout or asset save/restart.
+**Set Attack Camera Offset Fade Duration** is unchanged: default 1 means 60
+unpaused game ticks, independent of frame delta/time dilation. The offset fades
+with the existing smoothstep curve. Zero removes it immediately; nonfinite or
+negative durations are rejected. Changing duration during a fade retimes from the
+current offset. Chained attacks let an existing fade continue; a subsequent root
+snap combines its inverse displacement with the remaining offset and starts a
+new fade. No animated pelvis offset is introduced by a new attack.
 
-The follow-up root-snap regression test translates the actor twice and changes its
-yaw with an off-center spring attachment. It checks continuity of the world-space
-camera pivot, exactly-once inverse displacement, the combined fade's initial value,
-and a new attack retaining that corrected offset. This is translation/pivot
-compensation; camera rotation, arm collision and unrelated Blueprint teleports are
-not interpolated by this feature.
-The correction loaded through Live Coding12:55:49UTC on2026-09-21; the expanded
-`Prophecy.Camera.AttackOffsetFade` test passed12:56:13UTC. Existing Blueprint
-duration/node unchanged. No gameplay rollout, explicit asset save or restart.
+Independent Blueprint TargetOffset edits are preserved: the component adds only
+the difference in its own offset. Loss of possession and teardown restore that
+offset. Component ticks retire after the fade when no full attack/defense needs
+them. The actor/root, NN, camera rotation, arm length and spring collision behavior
+are unchanged. This guarantees pivot translation continuity at the handoff; it
+does not interpolate camera rotation, collision reactions or unrelated teleports.
 
-Validation:40s in the current scene; within-attack horizontal pelvis-to-camera
-offset change below3e-14cm. A further20s test switched possession to the other
-attacking pawn, unpossessed, repossessed and stopped all attacks.4,804 actor
-samples, nonplayer added offset0 after the first completed tick following possession changes,
-final restored offset0, at most one follower
-component per actor, clean PIE teardown. No camera component is created on an
-agent that has never been possessed for an attack. The final normal-build run
-recorded a residual offset up to2.531cm in the test callback immediately after
-unpossessing, before another game tick ran; it was restored on that next tick.
+The earlier September implementation followed the pelvis during full attacks and
+cancelled the fade on a new attack. That behavior is superseded by the capsule
+camera above. Historical September captures remain in `Saved/Diagnostics/SlashContacts/`.
+
+Initial capsule-camera validation and reproduction: `Saved/Diagnostics/CapsuleAttackCamera20261005/`;
+the native regression is `Prophecy.Camera.AttackOffsetFade` (passed on the final normal DLL).
+Two owned TestNN captures (175 and 120 ticks) checked full-to-half, attack-to-locomotion
+and chained attacks. The first handoff moved the capsule/spring origin 18.7204 cm
+with exactly 0 cm pivot error; attack pelvis movement added 0 cm camera offset.
+The fade completed and a full attack remained ready for another snap when the
+previous fade expired. The Blueprint compiled with status 3 and no stale native types.
+
+The initial synchronous handoff check missed later same-frame root updates in the
+normal Blueprint sequence. With Duration Seconds = 10, the first hookL had a
+4.85 cm pivot jump after its synchronous compensation; camera lag spread the
+visible displacement over the next few frames. This is covered by the final
+PostPhysics compensation above. The node was already using the requested
+600-tick fade. Replaying the unchanged Blueprint with the fix reduced the tick-60
+rendered-camera jump from 1.212344 cm to 4e-13 cm (pivot: 4.849376 cm to zero).
+Root positions matched exactly across all 350 captured ticks. The expanded native
+regression passed, including late same-frame motion and the 600-tick duration.
+Evidence: `Saved/Diagnostics/CameraHitch20261005/`.
 
 ## Cost and reproducibility
 

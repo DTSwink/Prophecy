@@ -7,6 +7,7 @@
 #include "ProphecyAngularLimits.h"
 #include "ProphecyAngularLimitBlend.h"
 #include "ProphecySpecialSolver.h"
+#include "ProphecyAttackCamera.h"
 
 namespace ProphecySpecialSolver
 {
@@ -67,6 +68,7 @@ bool ApplyParentJointLimits(AProphecyAgent& Agent, FName ChildBone,
 
 void AProphecyAgent::NotifyControllerChanged()
 {
+	ProphecyAttackCamera::RefreshPlayerRig(this);
     // Update physics policy before Blueprint/controller-change listeners run.
     if (JoltCharacter) JoltCharacter->RefreshPlayerSwingLimits();
     Super::NotifyControllerChanged();

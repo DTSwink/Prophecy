@@ -264,6 +264,7 @@ bool AProphecyNNLocomotionManager::SetAgentLocomotionRootWindowLocation(
 	{
 		for (auto& Bone : Agent.Slash.PreviousVisibleWorldPose) Bone.AddToTranslation(WorldDelta);
 		for (auto& Bone : Agent.Slash.VisibleWorldPose) Bone.AddToTranslation(WorldDelta);
+		ProphecyAttackMotionInertia::TranslateSource(Actor,WorldDelta);
 	}
 	// The cached target is already in world coordinates. Bounds must leave it
 	// (and Jolt's target history) untouched; ordinary explicit placement translates it.

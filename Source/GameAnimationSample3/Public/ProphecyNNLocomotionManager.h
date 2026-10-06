@@ -318,13 +318,14 @@ private:
 	void RebaseDefenseAfterRootCollision(int32 AgentIndex,const FVector3f& PreviousRoot,float PreviousYaw,const FVector3f& Root,float Yaw);
 	bool RunModelBatch();
 	void ApplyOutputBatch(float StepSeconds);
-	void BuildUpperInputBatch();
+	void BuildUpperInputBatch(int32 OnlyAgent = INDEX_NONE);
 	bool RunUpperModelBatch();
-	void ApplyUpperOutputBatch();
+	void ApplyUpperOutputBatch(int32 OnlyAgent = INDEX_NONE);
 	void ApplyAnimationLayers(float StepSeconds);
 	bool InitializeSlashNNE();
 	void AdvanceSlashAttacks();
 	void AdvanceNNDefenses();
+	void StopDefensesForAttacker(AProphecyAgent* Attacker);
 	void AdvanceNNDodges();
 	void ApplySlashPose(int32 AgentIndex, TArrayView<FTransform> PreviousPose, TArrayView<FTransform> Pose);
 	void PublishAgentPose(int32 AgentIndex, double SourceTimeSeconds);
