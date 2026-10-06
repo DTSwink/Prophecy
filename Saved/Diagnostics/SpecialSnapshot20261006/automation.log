@@ -1,0 +1,69 @@
+Found 6 automation tests based on 'Prophecy.Agent.PhysicalContext+Prophecy.PhysicalProfiles.ClampSnapshots+Prophecy.NN.SpecialRecovery+Prophecy.NN.AgentReset.PhysicalBaseline'
+[2026.10.05-22.45.49:860][ 76]LogAutomationCommandLine: Display: 	Prophecy.Agent.PhysicalContext.SelectionAndAttacks
+[2026.10.05-22.45.49:860][ 76]LogAutomationCommandLine: Display: 	Prophecy.Agent.PhysicalContext.SpecialSnapshot1
+[2026.10.05-22.45.49:860][ 76]LogAutomationCommandLine: Display: 	Prophecy.NN.AgentReset.PhysicalBaseline
+[2026.10.05-22.45.49:860][ 76]LogAutomationCommandLine: Display: 	Prophecy.NN.SpecialRecovery.AllExitsAndRetirement
+[2026.10.05-22.45.49:860][ 76]LogAutomationCommandLine: Display: 	Prophecy.NN.SpecialRecovery.RegionalOwnership
+[2026.10.05-22.45.49:860][ 76]LogAutomationCommandLine: Display: 	Prophecy.PhysicalProfiles.ClampSnapshots
+[2026.10.05-22.45.49:861][ 76]LogAutomationController: Sending StopTests to 38C66D864526971BB0943C938BD83462
+[2026.10.05-22.45.49:865][ 76]LogAutomationController: Sending StartTestSession to 38C66D864526971BB0943C938BD83462
+[2026.10.05-22.45.49:865][ 76]LogAutomationController: Display: Clearing ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Logs/ and ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Tmp/
+[2026.10.05-22.45.49:866][ 76]AutomationTestingLog: -----Test Run 3----
+[2026.10.05-22.45.49:914][ 76]LogAutomationController: Sending RunTest SelectionAndAttacks to 38C66D864526971BB0943C938BD83462
+[2026.10.05-22.45.49:914][ 77]LogAutomationController: Display: Test Started. Name={SelectionAndAttacks} Path={Prophecy.Agent.PhysicalContext.SelectionAndAttacks}
+[2026.10.05-22.45.49:923][ 77]LogAutomationWorker: Received StopTests from EB1460D24BD17C3E3A5C2698678ED507
+[2026.10.05-22.45.49:923][ 77]LogAutomationWorker: Received StartTestSession from EB1460D24BD17C3E3A5C2698678ED507
+[2026.10.05-22.45.49:923][ 77]LogAutomationWorker: Received RunTests SelectionAndAttacks from EB1460D24BD17C3E3A5C2698678ED507
+[2026.10.05-22.45.49:927][ 77]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.05-22.45.49:939][ 77]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.05-22.45.49:939][ 77]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.05-22.45.49:983][ 78]LogAutomationController: Display: Test Completed. Result={Success} Name={SelectionAndAttacks} Path={Prophecy.Agent.PhysicalContext.SelectionAndAttacks}
+[2026.10.05-22.45.49:983][ 78]LogAutomationController: BeginEvents: Prophecy.Agent.PhysicalContext.SelectionAndAttacks
+[2026.10.05-22.45.49:983][ 78]LogAutomationController: EndEvents: Prophecy.Agent.PhysicalContext.SelectionAndAttacks
+[2026.10.05-22.45.49:984][ 78]LogAutomationController: Sending RunTest SpecialSnapshot1 to 38C66D864526971BB0943C938BD83462
+[2026.10.05-22.45.49:984][ 79]LogAutomationController: Display: Test Started. Name={SpecialSnapshot1} Path={Prophecy.Agent.PhysicalContext.SpecialSnapshot1}
+[2026.10.05-22.45.50:009][ 79]LogAutomationWorker: Received RunTests SpecialSnapshot1 from EB1460D24BD17C3E3A5C2698678ED507
+[2026.10.05-22.45.50:010][ 79]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.05-22.45.50:015][ 79]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.05-22.45.50:015][ 79]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.05-22.45.50:032][ 81]LogAutomationController: Display: Test Completed. Result={Success} Name={SpecialSnapshot1} Path={Prophecy.Agent.PhysicalContext.SpecialSnapshot1}
+[2026.10.05-22.45.50:033][ 81]LogAutomationController: BeginEvents: Prophecy.Agent.PhysicalContext.SpecialSnapshot1
+[2026.10.05-22.45.50:033][ 81]LogAutomationController: EndEvents: Prophecy.Agent.PhysicalContext.SpecialSnapshot1
+[2026.10.05-22.45.50:043][ 81]LogAutomationController: Sending RunTest PhysicalBaseline to 38C66D864526971BB0943C938BD83462
+[2026.10.05-22.45.50:043][ 81]LogAutomationController: Display: Test Started. Name={PhysicalBaseline} Path={Prophecy.NN.AgentReset.PhysicalBaseline}
+[2026.10.05-22.45.50:060][ 82]LogAutomationWorker: Received RunTests PhysicalBaseline from EB1460D24BD17C3E3A5C2698678ED507
+[2026.10.05-22.45.50:060][ 82]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.05-22.45.50:064][ 82]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.05-22.45.50:064][ 82]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.05-22.45.50:082][ 84]LogAutomationController: Display: Test Completed. Result={Success} Name={PhysicalBaseline} Path={Prophecy.NN.AgentReset.PhysicalBaseline}
+[2026.10.05-22.45.50:082][ 84]LogAutomationController: BeginEvents: Prophecy.NN.AgentReset.PhysicalBaseline
+[2026.10.05-22.45.50:082][ 84]LogAutomationController: EndEvents: Prophecy.NN.AgentReset.PhysicalBaseline
+[2026.10.05-22.45.50:094][ 84]LogAutomationController: Sending RunTest AllExitsAndRetirement to 38C66D864526971BB0943C938BD83462
+[2026.10.05-22.45.50:094][ 84]LogAutomationController: Display: Test Started. Name={AllExitsAndRetirement} Path={Prophecy.NN.SpecialRecovery.AllExitsAndRetirement}
+[2026.10.05-22.45.50:109][ 85]LogAutomationWorker: Received RunTests AllExitsAndRetirement from EB1460D24BD17C3E3A5C2698678ED507
+[2026.10.05-22.45.50:110][ 85]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.05-22.45.50:122][ 85]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.05-22.45.50:123][ 85]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.05-22.45.50:135][ 86]LogAutomationController: Display: Test Completed. Result={Success} Name={AllExitsAndRetirement} Path={Prophecy.NN.SpecialRecovery.AllExitsAndRetirement}
+[2026.10.05-22.45.50:135][ 86]LogAutomationController: BeginEvents: Prophecy.NN.SpecialRecovery.AllExitsAndRetirement
+[2026.10.05-22.45.50:135][ 86]LogAutomationController: EndEvents: Prophecy.NN.SpecialRecovery.AllExitsAndRetirement
+[2026.10.05-22.45.50:136][ 86]LogAutomationController: Sending RunTest RegionalOwnership to 38C66D864526971BB0943C938BD83462
+[2026.10.05-22.45.50:136][ 87]LogAutomationController: Display: Test Started. Name={RegionalOwnership} Path={Prophecy.NN.SpecialRecovery.RegionalOwnership}
+[2026.10.05-22.45.50:151][ 87]LogAutomationWorker: Received RunTests RegionalOwnership from EB1460D24BD17C3E3A5C2698678ED507
+[2026.10.05-22.45.50:152][ 87]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.05-22.45.50:157][ 87]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.05-22.45.50:157][ 87]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.05-22.45.50:171][ 88]LogAutomationController: Display: Test Completed. Result={Success} Name={RegionalOwnership} Path={Prophecy.NN.SpecialRecovery.RegionalOwnership}
+[2026.10.05-22.45.50:171][ 88]LogAutomationController: BeginEvents: Prophecy.NN.SpecialRecovery.RegionalOwnership
+[2026.10.05-22.45.50:171][ 88]LogAutomationController: EndEvents: Prophecy.NN.SpecialRecovery.RegionalOwnership
+[2026.10.05-22.45.50:174][ 88]LogAutomationController: Sending RunTest ClampSnapshots to 38C66D864526971BB0943C938BD83462
+[2026.10.05-22.45.50:174][ 89]LogAutomationController: Display: Test Started. Name={ClampSnapshots} Path={Prophecy.PhysicalProfiles.ClampSnapshots}
+[2026.10.05-22.45.50:185][ 89]LogAutomationWorker: Received RunTests ClampSnapshots from EB1460D24BD17C3E3A5C2698678ED507
+[2026.10.05-22.45.50:186][ 89]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.05-22.45.50:190][ 89]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.05-22.45.50:190][ 89]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.05-22.45.50:209][ 91]LogAutomationController: Display: Test Completed. Result={Success} Name={ClampSnapshots} Path={Prophecy.PhysicalProfiles.ClampSnapshots}
+[2026.10.05-22.45.50:209][ 91]LogAutomationController: BeginEvents: Prophecy.PhysicalProfiles.ClampSnapshots
+[2026.10.05-22.45.50:209][ 91]LogAutomationController: EndEvents: Prophecy.PhysicalProfiles.ClampSnapshots
+[2026.10.05-22.45.50:219][ 91]LogAutomationController: Sending StopTestSession to 38C66D864526971BB0943C938BD83462
+[2026.10.05-22.45.50:220][ 91]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 6 tests performed.

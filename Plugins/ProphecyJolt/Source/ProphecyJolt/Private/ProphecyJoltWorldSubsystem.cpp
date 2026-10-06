@@ -616,6 +616,9 @@ public:
         JPH::RVec3Arg PointA, JPH::RVec3Arg PointB, JPH::Vec3Arg Normal, float Impulse) override
     {
         using namespace ProphecyJolt::Conversions;
+        // Solved speculative impulses may occur while shapes are still separated.
+        // Keep their physical response, but require touching for gameplay Hit (0.001 cm tolerance).
+        if (JPH::Vec3(PointB-PointA).Dot(Normal)>1.e-5f) return;
         FProphecyJoltPendingHit Hit;
         Hit.Body1 = HitHandle(A, ShapeA); Hit.Body2 = HitHandle(B, ShapeB);
         const auto* Slot1 = Find(Hit.Body1); const auto* Slot2 = Find(Hit.Body2);
@@ -3757,12 +3760,24 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::Step(float DeltaSeconds, i
             if (Slot.Body.IsInvalid() || Slot.WeldParent.IsSet()) continue;
             Candidates.Add(Slot.Body.GetIndexAndSequenceNumber());
             const auto* Component = Cast<UPrimitiveComponent>(Slot.AssociatedObject.Get());
-            if (!Slot.OwnerRig.IsSet() || !Component || Component->GetFName() != TEXT("PhysicalMesh")) continue;
-            if (const auto* Settings = ProphecyJolt::PHATSweeps::Find(Component->GetOwner()))
-                Selected.Add({Slot.Body.GetIndexAndSequenceNumber(), *Settings});
+            const auto* BodySettings=ProphecyJolt::PHATSweeps::FindBody(Component,Slot.HitBone);
+            uint8 Parts=BodySettings ? 1 : 0;
+            const ProphecyJolt::PHATSweeps::FSettings* SwordSettings=nullptr;
+            if (Slot.Weld) if (const auto* Source=Native->Find(Slot.Weld->SourceHandle))
+            {
+                SwordSettings=ProphecyJolt::PHATSweeps::FindBody(Cast<UPrimitiveComponent>(Source->AssociatedObject.Get()),Source->HitBone);
+                if (SwordSettings) Parts|=2;
+            }
+            if (!Parts) continue;
+            auto Settings=BodySettings ? *BodySettings : *SwordSettings;
+            if (BodySettings && SwordSettings)
+            {
+                Settings.Strength=FMath::Max(Settings.Strength,SwordSettings->Strength);
+                Settings.MaxIterations=FMath::Max(Settings.MaxIterations,SwordSettings->MaxIterations);
+            }
+            Selected.Add({Slot.Body.GetIndexAndSequenceNumber(),Settings,Parts});
         }
-        ProphecyJolt::PHATSweeps::Publish(&Native->Physics, &Native->ObjectPairs, MoveTemp(Selected), MoveTemp(Candidates),
-            Native->HitEnabledBodies ? Native.Get() : nullptr);
+        ProphecyJolt::PHATSweeps::Publish(&Native->Physics, &Native->ObjectPairs, MoveTemp(Selected), MoveTemp(Candidates));
     }
     else ProphecyJolt::PHATSweeps::Forget(&Native->Physics);
     const uint64 PreviousServoInvocations = Native->Servo.GetInvocationCount();

@@ -1,0 +1,19 @@
+{
+  "reason": "passed",
+  "checks": [
+    "Manual return 9999",
+    "Getter 9999",
+    "Manual return 0",
+    "Getter 0",
+    "Manual return 1",
+    "Getter 1",
+    "Ticks since last attack unchanged",
+    "Accepted new attack",
+    "Automatic entry still increments once",
+    "Manual increment during active attack",
+    "Manual increment preserves attack state",
+    "Accepted retrigger",
+    "Retrigger preserves manual count",
+    "Other agents unchanged"
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "reason": "Traceback (most recent call last):\n  File \"<string>\", line 34, in tick\nAttributeError: type object 'GameplayStatics' has no attribute 'begin_deferred_actor_spawn_from_class'\n",
+  "events": [],
+  "rows": []
+}

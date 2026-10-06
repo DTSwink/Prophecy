@@ -3,6 +3,8 @@
 #include "ProphecyNNModifierDebug.h"
 #include "ProphecyAttackStartInertiaLibrary.h"
 #include "ProphecyAgent.h"
+#include "ProphecyGhostAttackLibrary.h"
+#include "ProphecyAttackControls.h"
 #include "ProphecyForearmStretch.h"
 #include "ProphecyNNPoseTypes.h"
 #include "ProphecyBlendClock.h"
@@ -37,6 +39,8 @@ static const FName Bones[]={TEXT("pelvis"),TEXT("spine_05"),TEXT("upperarm_l"),T
     TEXT("upperarm_r"),TEXT("lowerarm_r"),TEXT("hand_r")};
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FState> States;
+// Keep the retained config/state layouts stable across Live Coding updates.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,int64> TickThresholds,ResetTickThresholds,EntryTickCounts;
 static FDelegateHandle Cleanup;
 static FTransform Reference(const FTransform& Root,const FTransform& Spine,float Alpha)
 {
@@ -50,15 +54,23 @@ static void EnsureCleanup()
     {
         auto Clean=[W](auto& Map){for(auto It=Map.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W)It.RemoveCurrent();};
-        Clean(Configs);Clean(Baselines);Clean(States);
+        Clean(Configs);Clean(Baselines);Clean(States);Clean(TickThresholds);Clean(ResetTickThresholds);Clean(EntryTickCounts);
     });
 }
 bool Active(const AProphecyAgent* A){return !States.IsEmpty() && States.Contains(A);}
-void Cancel(const AProphecyAgent* A){if(!States.IsEmpty() && States.Remove(A))ProphecyBlendClock::Stop(A,K::AttackStartHands);}
-void Remove(const AProphecyAgent* A){Cancel(A);Configs.Remove(A);Baselines.Remove(A);}
-void CaptureReset(const AProphecyAgent* A){if(const auto* C=Configs.Find(A))Baselines.Add(A,*C);else Baselines.Remove(A);}
-void RestoreReset(const AProphecyAgent* A){Cancel(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A))Configs.Add(A,*C);}
-void ForgetReset(const AProphecyAgent* A){Baselines.Remove(A);}
+void Cancel(const AProphecyAgent* A){if(!States.IsEmpty() && States.Remove(A)){ProphecyBlendClock::Stop(A,K::AttackStartHands);EntryTickCounts.Remove(A);}}
+void Remove(const AProphecyAgent* A){Cancel(A);Configs.Remove(A);Baselines.Remove(A);TickThresholds.Remove(A);ResetTickThresholds.Remove(A);}
+void CaptureReset(const AProphecyAgent* A)
+{
+    if(const auto* C=Configs.Find(A))Baselines.Add(A,*C);else Baselines.Remove(A);
+    if(const auto* T=TickThresholds.Find(A))ResetTickThresholds.Add(A,*T);else ResetTickThresholds.Remove(A);
+}
+void RestoreReset(const AProphecyAgent* A)
+{
+    Cancel(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A))Configs.Add(A,*C);
+    TickThresholds.Remove(A);if(const auto* T=ResetTickThresholds.Find(A))TickThresholds.Add(A,*T);
+}
+void ForgetReset(const AProphecyAgent* A){Baselines.Remove(A);ResetTickThresholds.Remove(A);}
 static void Seed(FState& State,const FTransform* Previous,const FTransform* Current,const FTransform* Future,double Dt,
     const FTransform& PreviousRoot,const FTransform& Root)
 {
@@ -81,10 +93,15 @@ static void Seed(FState& State,const FTransform* Previous,const FTransform* Curr
             M.Accepted[1].GetLocation()-M.Accepted[0].GetLocation(),Axis,M.Accepted[0].GetRotation().GetAxisZ()));
     }
 }
-void Begin(const AProphecyAgent* A,const FTransform& PreviousRoot,const FTransform& Root)
+int64 CaptureEntryTicks(AProphecyAgent* A)
+{
+    return !Configs.IsEmpty() && Configs.Contains(A) ? UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(A) : 0;
+}
+void Begin(const AProphecyAgent* A,const FTransform& PreviousRoot,const FTransform& Root,int64 EntryTicks)
 {
     Cancel(A);
     const auto* C=Configs.IsEmpty()?nullptr:Configs.Find(A);if(!C)return;
+    if(EntryTicks<=TickThresholds.FindRef(A))return;
     // Entry-only sampling; no rolling pose history and no disabled bone reads.
     TArray<FName> Names;TArray<FTransform> Future,Visible;float Alpha=1;FProphecyNNPoseSnapshot Snapshot;
     if(!A->ReadNNFutureWorldPoseWithSnapshot(Names,Future,Visible,Alpha,Snapshot))return;
@@ -102,6 +119,7 @@ void Begin(const AProphecyAgent* A,const FTransform& PreviousRoot,const FTransfo
     // Seeding from the halfway displayed pose would rewind a half-entry's
     // immediate publication and lag one half interval at full entry.
     FState State;State.Config=*C;Seed(State,P,F,F,Interval,PreviousRoot,Root);
+    EntryTickCounts.Add(A,EntryTicks);
     States.Add(A,MoveTemp(State));ProphecyBlendClock::Start(A,K::AttackStartHands,double(C->Hold)+C->Blend);
 }
 static double Weight(const FConfig& C,double Elapsed)
@@ -176,15 +194,17 @@ uint8 Apply(const AProphecyAgent* A,TConstArrayView<FName> Names,TArrayView<FTra
 }
 
 bool UProphecyAttackStartInertiaLibrary::SetAttackStartHandInertia(AProphecyAgent* A,bool Enabled,
-    float Hold,float Blend,float ReferenceAlpha,float Response,float Momentum,float Alpha,bool Left,bool Right)
+    float Hold,float Blend,float ReferenceAlpha,float Response,float Momentum,float Alpha,bool Left,bool Right,int64 LastAttackTickThreshold)
 {
     using namespace ProphecyAttackStartHands;
     if(!IsInGameThread()||!IsValid(A)||A->IsActorBeingDestroyed()||!A->GetWorld()||A->GetWorld()->bIsTearingDown)return false;
+    if(LastAttackTickThreshold<0)return false;
     for(float V:{Hold,Blend,Response,Momentum})if(!FMath::IsFinite(V)||V<0)return false;
     if(!FMath::IsFinite(ReferenceAlpha)||!FMath::IsFinite(Alpha))return false;
     Alpha=FMath::Clamp(Alpha,0.f,1.f);ReferenceAlpha=FMath::Clamp(ReferenceAlpha,0.f,1.f);
-    if(!Enabled||Alpha==0||Response==0||(Hold==0&&Blend==0)||(!Left&&!Right)){Cancel(A);Configs.Remove(A);return true;}
+    if(!Enabled||Alpha==0||Response==0||(Hold==0&&Blend==0)||(!Left&&!Right)){Cancel(A);Configs.Remove(A);TickThresholds.Remove(A);return true;}
     EnsureCleanup();Configs.Add(A,FConfig{Hold,Blend,ReferenceAlpha,Response,Momentum,Alpha,{Left,Right}});
+    if(LastAttackTickThreshold)TickThresholds.Add(A,LastAttackTickThreshold);else TickThresholds.Remove(A);
     return true; // Configure next entry; per-tick setters do not restart active motion.
 }
 
@@ -262,7 +282,7 @@ bool FEntryHandsLifecycleTest::RunTest(const FString&)
     UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
     FTransform P[8];P[0]=FTransform(FVector(0,0,70));P[1]=FTransform(FVector(0,0,110));
     for(int S=0;S<2;++S){const int B=2+3*S;P[B]=FTransform(FVector(0,S?20:-20,100));P[B+1]=FTransform(P[B].GetLocation()+FVector(25,0,0));P[B+2]=FTransform(P[B+1].GetLocation()+FVector(0,0,-25));}
-    TestFalse(TEXT("Disabled apply has no state"),Apply(A,Bones,P,FTransform::Identity,1./30,FTransform::Identity)!=0);Begin(A,FTransform::Identity,FTransform::Identity);TestFalse(TEXT("Disabled entry samples nothing"),Active(A));
+    TestFalse(TEXT("Disabled apply has no state"),Apply(A,Bones,P,FTransform::Identity,1./30,FTransform::Identity)!=0);Begin(A,FTransform::Identity,FTransform::Identity,CaptureEntryTicks(A));TestFalse(TEXT("Disabled entry samples nothing"),Active(A));
     TestTrue(TEXT("Configure node"),L::SetAttackStartHandInertia(A,true,.1,.2,.5,.25,1,1,false,true));
     CaptureReset(A);FState State;State.Config=Configs.FindChecked(A);Seed(State,P,P,P,1./30,FTransform::Identity,FTransform::Identity);States.Add(A,State);
     const FTransform EntryWrist=P[7];auto Left=P[4];P[7].AddToTranslation(FVector(5,0,5));
@@ -282,7 +302,29 @@ bool FEntryHandsLifecycleTest::RunTest(const FString&)
     TestFalse(TEXT("Default float durations retire exactly on tick 24"),Apply(A,Bones,P,FTransform::Identity,1./30,FTransform::Identity)!=0);
     L::SetAttackStartHandInertia(A,true,.1,.2,.5,.25,1,0);TestFalse(TEXT("Zero alpha removes configuration"),Configs.Contains(A));
     RestoreReset(A);TestTrue(TEXT("Reset restores configuration only"),Configs.Contains(A)&&!Active(A));
-    Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
+    TestTrue(TEXT("Configure strict entry threshold"),L::SetAttackStartHandInertia(A,true,.1,.2,.5,.25,1,1,false,true,25));
+    CaptureReset(A);
+    for(int64 T:{int64(0),int64(24),int64(25),int64(26),int64(1000)})
+    {
+        ProphecyAttackControls::LowerAttackFinished(A);
+        TestTrue(TEXT("Seed existing tick counter"),UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(A,T));
+        const int64 Captured=CaptureEntryTicks(A);
+        TestEqual(TEXT("Capture counter before accepted full entry"),Captured,T);
+        ProphecyAttackControls::FullAttackStarted(A);
+        TestEqual(TEXT("Full entry clears live counter"),UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(A),int64(0));
+        TestEqual(TEXT("Latched count retains strict threshold decision after reset"),Captured>TickThresholds.FindRef(A),T>25);
+        if(T<=25)
+        {
+            States.Add(A,State);ProphecyBlendClock::Start(A,K::AttackStartHands,1.);
+            Begin(A,FTransform::Identity,FTransform::Identity,Captured);
+            TestFalse(TEXT("Rejected entry removes any previous hand inertia"),Active(A));
+        }
+    }
+    TestFalse(TEXT("Negative threshold rejected"),L::SetAttackStartHandInertia(A,true,.1,.2,.5,.25,1,1,false,true,-1));
+    TestEqual(TEXT("Invalid threshold preserves prior config"),TickThresholds.FindRef(A),int64(25));
+    L::SetAttackStartHandInertia(A,true,.1,.2,.5,.25,1,1,false,true,99);RestoreReset(A);
+    TestEqual(TEXT("Reset restores threshold"),TickThresholds.FindRef(A),int64(25));
+    ProphecyAttackControls::Remove(A);Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FEntryHandsStretchTest,"Prophecy.NN.AttackEntry.HandStretchContinuity",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -336,7 +378,7 @@ void ProphecyNNModifierDebug::EntryHands(FReport& R)
     using namespace ProphecyAttackStartHands;
     const auto* S=States.Find(R.Agent);if(!R.Attack || !S)return;
     R.Add(TEXT("EntryHands"),(R.Half || !ProphecyAttackNNFeedback::Enabled(R.Agent,ProphecyAttackNNFeedback::StartHand))?TEXT("POSE"):TEXT("POSE+HISTORY"),TEXT("Attack-start hand inertia"),
-        FString::Printf(TEXT("L%d R%d | weight %.3f | response %.3g | root/spine ref %.3g | elapsed %.3f / %.3f%s"),
+        FString::Printf(TEXT("L%d R%d | weight %.3f | response %.3g | root/spine ref %.3g | elapsed %.3f / %.3f | entry ticks %lld%s"),
         S->Config.Hand[0],S->Config.Hand[1],Weight(S->Config,S->Elapsed),S->Config.Response,S->Config.Reference,
-        S->Elapsed,double(S->Config.Hold)+S->Config.Blend,S->Applied?TEXT(""):TEXT(" | awaiting prediction")));
+        S->Elapsed,double(S->Config.Hold)+S->Config.Blend,EntryTickCounts.FindRef(R.Agent),S->Applied?TEXT(""):TEXT(" | awaiting prediction")));
 }

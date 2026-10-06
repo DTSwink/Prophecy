@@ -188,6 +188,10 @@ bool Restore(AProphecyAgent* Agent,FString& Error)
     Error.Reset();const auto* Found=States.Find(Agent);
     if (!Found) { Error=TEXT("Physics reset baseline is missing; start a new Play session and initialize after delayed BeginPlay setup.");return false; }
     const FState S=*Found;
+    Agent->ResetRealisticModeState();
+    if(!IsValid(Agent) || Agent->IsActorBeingDestroyed())
+    { Error=TEXT("Agent was destroyed by End Realistic during reset.");return false; }
+    Agent->DisableStunned();
     CancelBlends(Agent);
     ProphecyJointDamping::Remove(Agent); // Discard cached death damping before the replacement rig is admitted.
     Agent->BodyMagnetizationSettings=S.Bodies;

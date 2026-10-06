@@ -1,0 +1,1931 @@
+{
+  "reason": "complete",
+  "events": [
+    {
+      "tick": 20,
+      "mode": 1.0
+    }
+  ],
+  "rows": [
+    {
+      "tick": 5,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 260.5601482038585,
+      "max_spin": 16.724133541879578,
+      "max_distance_from_pelvis": 84.20313918104262
+    },
+    {
+      "tick": 5,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 146.66858246130485,
+      "max_spin": 4.40868862317216,
+      "max_distance_from_pelvis": 83.06459441369066
+    },
+    {
+      "tick": 5,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 351.209485762691,
+      "max_spin": 38.559095177635335,
+      "max_distance_from_pelvis": 83.66875854670197
+    },
+    {
+      "tick": 10,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 114.21642032277734,
+      "max_spin": 4.654116534729314,
+      "max_distance_from_pelvis": 84.53472709795861
+    },
+    {
+      "tick": 10,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 65.49148273040446,
+      "max_spin": 1.4840477637132927,
+      "max_distance_from_pelvis": 80.6959849750922
+    },
+    {
+      "tick": 10,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 135.50891524500463,
+      "max_spin": 4.804173934580383,
+      "max_distance_from_pelvis": 81.26973595582008
+    },
+    {
+      "tick": 15,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 108.39926749837193,
+      "max_spin": 5.88232214365308,
+      "max_distance_from_pelvis": 84.42858962963301
+    },
+    {
+      "tick": 15,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 48.66234851456372,
+      "max_spin": 1.93391537827279,
+      "max_distance_from_pelvis": 80.88364083998765
+    },
+    {
+      "tick": 15,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 123.24774793094386,
+      "max_spin": 5.676077373375816,
+      "max_distance_from_pelvis": 82.08561276459835
+    },
+    {
+      "tick": 20,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 135.51184800089166,
+      "max_spin": 3.833116014638641,
+      "max_distance_from_pelvis": 82.1084440534006
+    },
+    {
+      "tick": 20,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 62.65377055984035,
+      "max_spin": 1.3285192553309961,
+      "max_distance_from_pelvis": 81.95195140541331
+    },
+    {
+      "tick": 20,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 102.53317523979169,
+      "max_spin": 3.1998033038807816,
+      "max_distance_from_pelvis": 81.13136955048911
+    },
+    {
+      "tick": 25,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 117.66417668512356,
+      "max_spin": 5.30923899930752,
+      "max_distance_from_pelvis": 81.4580923528652
+    },
+    {
+      "tick": 25,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 78.02869574970441,
+      "max_spin": 1.2346985106168178,
+      "max_distance_from_pelvis": 82.10678551371805
+    },
+    {
+      "tick": 25,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 144.7221525867783,
+      "max_spin": 48.373016012012634,
+      "max_distance_from_pelvis": 80.1835705845568
+    },
+    {
+      "tick": 30,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 54.976032410415165,
+      "max_spin": 1.4073500002987684,
+      "max_distance_from_pelvis": 80.6879796188363
+    },
+    {
+      "tick": 30,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 30.19657310485039,
+      "max_spin": 1.1382259651666806,
+      "max_distance_from_pelvis": 81.67391556895474
+    },
+    {
+      "tick": 30,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 134.72630683420815,
+      "max_spin": 3.5994742948982137,
+      "max_distance_from_pelvis": 79.76695426800484
+    },
+    {
+      "tick": 35,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"hookL\"), False, False, False, 3)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 138.99073291324385,
+      "max_spin": 7.513189780162683,
+      "max_distance_from_pelvis": 80.94192233619435
+    },
+    {
+      "tick": 35,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 28.730614532550696,
+      "max_spin": 1.8840977696843728,
+      "max_distance_from_pelvis": 81.8028239632637
+    },
+    {
+      "tick": 35,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 43.789915143057364,
+      "max_spin": 2.082007238871898,
+      "max_distance_from_pelvis": 80.05636874292183
+    },
+    {
+      "tick": 40,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"hookL\"), False, False, False, 6)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 593.1823852930945,
+      "max_spin": 18.169561054812753,
+      "max_distance_from_pelvis": 82.4981857765843
+    },
+    {
+      "tick": 40,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 61.83238517564167,
+      "max_spin": 1.2924025096426013,
+      "max_distance_from_pelvis": 82.14416399201635
+    },
+    {
+      "tick": 40,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 76.86231879601296,
+      "max_spin": 1.7480087305306289,
+      "max_distance_from_pelvis": 81.35396603386958
+    },
+    {
+      "tick": 45,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"hookL\"), False, True, False, 8)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 443.81162211115486,
+      "max_spin": 16.456637591337618,
+      "max_distance_from_pelvis": 83.39792375210169
+    },
+    {
+      "tick": 45,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 40.13005314528304,
+      "max_spin": 1.0357813231538378,
+      "max_distance_from_pelvis": 82.6623104821472
+    },
+    {
+      "tick": 45,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 194.3470569845106,
+      "max_spin": 9.22106634363722,
+      "max_distance_from_pelvis": 81.93514036116059
+    },
+    {
+      "tick": 50,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"hookL\"), False, True, True, 11)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 1087.6076462009082,
+      "max_spin": 30.67471807876093,
+      "max_distance_from_pelvis": 84.0610742776009
+    },
+    {
+      "tick": 50,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 27.373759607310777,
+      "max_spin": 0.941239820495681,
+      "max_distance_from_pelvis": 83.51782941770084
+    },
+    {
+      "tick": 50,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 92.16190427986743,
+      "max_spin": 1.7334910756046231,
+      "max_distance_from_pelvis": 81.62308946640192
+    },
+    {
+      "tick": 55,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"hookL\"), False, True, True, 13)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 1260.9416046081094,
+      "max_spin": 55.79864876009353,
+      "max_distance_from_pelvis": 83.77740754780572
+    },
+    {
+      "tick": 55,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 20.489854102882724,
+      "max_spin": 0.3926454726251677,
+      "max_distance_from_pelvis": 83.86703219366619
+    },
+    {
+      "tick": 55,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 124.63898297259715,
+      "max_spin": 3.6103577328842857,
+      "max_distance_from_pelvis": 80.04740643444113
+    },
+    {
+      "tick": 60,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 425.90304072524003,
+      "max_spin": 20.158196774737583,
+      "max_distance_from_pelvis": 83.98290320733125
+    },
+    {
+      "tick": 60,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 16.927120180338402,
+      "max_spin": 0.3948765494599309,
+      "max_distance_from_pelvis": 83.75972914820422
+    },
+    {
+      "tick": 60,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 48.59455560285589,
+      "max_spin": 1.5983929347710624,
+      "max_distance_from_pelvis": 78.98734265034336
+    },
+    {
+      "tick": 65,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"pike\"), False, False, False, 3)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 307.1535485091327,
+      "max_spin": 14.53342699672641,
+      "max_distance_from_pelvis": 83.2064602055049
+    },
+    {
+      "tick": 65,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 11.692967603115125,
+      "max_spin": 0.2690106261203788,
+      "max_distance_from_pelvis": 83.70645598116135
+    },
+    {
+      "tick": 65,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 87.5533220175161,
+      "max_spin": 2.8444143101824726,
+      "max_distance_from_pelvis": 79.9919396806593
+    },
+    {
+      "tick": 70,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"pike\"), False, False, False, 6)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 395.44061503440463,
+      "max_spin": 8.996550123887243,
+      "max_distance_from_pelvis": 77.41584622605808
+    },
+    {
+      "tick": 70,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 9.126618504569654,
+      "max_spin": 0.23151277074328125,
+      "max_distance_from_pelvis": 83.65678903768597
+    },
+    {
+      "tick": 70,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 82.39631387537531,
+      "max_spin": 2.5502812106678494,
+      "max_distance_from_pelvis": 80.88868152860486
+    },
+    {
+      "tick": 75,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"pike\"), False, False, False, 8)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 480.1841201344308,
+      "max_spin": 16.788943182507467,
+      "max_distance_from_pelvis": 75.63555348995828
+    },
+    {
+      "tick": 75,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 6.053968852934007,
+      "max_spin": 0.12393325336115096,
+      "max_distance_from_pelvis": 83.6245515215592
+    },
+    {
+      "tick": 75,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 45.78666790293773,
+      "max_spin": 2.048231843939974,
+      "max_distance_from_pelvis": 81.67427994269244
+    },
+    {
+      "tick": 80,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"pike\"), False, True, False, 11)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 453.2265604382487,
+      "max_spin": 34.10396560809594,
+      "max_distance_from_pelvis": 79.75918576648742
+    },
+    {
+      "tick": 80,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 4.285830795074089,
+      "max_spin": 0.11214067844967647,
+      "max_distance_from_pelvis": 83.65184643760406
+    },
+    {
+      "tick": 80,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 54.44157257080268,
+      "max_spin": 7.481832515051531,
+      "max_distance_from_pelvis": 83.13874545377894
+    },
+    {
+      "tick": 85,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"pike\"), False, True, False, 13)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 443.9683643344096,
+      "max_spin": 21.79241955008504,
+      "max_distance_from_pelvis": 77.01995850258172
+    },
+    {
+      "tick": 85,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 2.6854506065341233,
+      "max_spin": 0.07255022823770078,
+      "max_distance_from_pelvis": 83.70207070580827
+    },
+    {
+      "tick": 85,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 25.094174153855523,
+      "max_spin": 0.6801614379247767,
+      "max_distance_from_pelvis": 83.75420207453736
+    },
+    {
+      "tick": 90,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"pike\"), False, True, False, 16)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 567.8150739009571,
+      "max_spin": 21.98543583443425,
+      "max_distance_from_pelvis": 76.05584163063335
+    },
+    {
+      "tick": 90,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 1.8722022976153152,
+      "max_spin": 0.048326564720256183,
+      "max_distance_from_pelvis": 83.72515831688665
+    },
+    {
+      "tick": 90,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 46.42034991422894,
+      "max_spin": 0.6932664874551626,
+      "max_distance_from_pelvis": 83.26477484095219
+    },
+    {
+      "tick": 95,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"pike\"), False, True, True, 18)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 121.69983565150989,
+      "max_spin": 8.022162261954556,
+      "max_distance_from_pelvis": 76.74949307792856
+    },
+    {
+      "tick": 95,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 1.0854649480414584,
+      "max_spin": 0.026089314633443054,
+      "max_distance_from_pelvis": 83.73289421705559
+    },
+    {
+      "tick": 95,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 40.01706536403953,
+      "max_spin": 0.9012247930790824,
+      "max_distance_from_pelvis": 82.80268113979623
+    },
+    {
+      "tick": 100,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 110.76101624834058,
+      "max_spin": 7.727361886097661,
+      "max_distance_from_pelvis": 76.51454486441312
+    },
+    {
+      "tick": 100,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.7853671958836936,
+      "max_spin": 0.018897218986465566,
+      "max_distance_from_pelvis": 83.73603246147005
+    },
+    {
+      "tick": 100,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 68.43235300347897,
+      "max_spin": 2.1478512608658664,
+      "max_distance_from_pelvis": 83.44058870955934
+    },
+    {
+      "tick": 105,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 368.0196216660077,
+      "max_spin": 9.267873134944509,
+      "max_distance_from_pelvis": 77.75441112203691
+    },
+    {
+      "tick": 105,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.5207296015731199,
+      "max_spin": 0.01277639833736926,
+      "max_distance_from_pelvis": 83.73764984234239
+    },
+    {
+      "tick": 105,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 65.69344645687062,
+      "max_spin": 2.1183441632511637,
+      "max_distance_from_pelvis": 83.91716324192748
+    },
+    {
+      "tick": 110,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 406.64577063981005,
+      "max_spin": 16.024085957909364,
+      "max_distance_from_pelvis": 79.64769815942385
+    },
+    {
+      "tick": 110,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.4063210807672858,
+      "max_spin": 0.019601647899607482,
+      "max_distance_from_pelvis": 83.73894913629333
+    },
+    {
+      "tick": 110,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 55.906516909646456,
+      "max_spin": 1.9988927997419088,
+      "max_distance_from_pelvis": 83.73381732591942
+    },
+    {
+      "tick": 115,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 273.48225945585966,
+      "max_spin": 6.334952902620352,
+      "max_distance_from_pelvis": 81.0353257126838
+    },
+    {
+      "tick": 115,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.2775548908600039,
+      "max_spin": 0.00675470195395982,
+      "max_distance_from_pelvis": 83.74019745357326
+    },
+    {
+      "tick": 115,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 63.020616263859885,
+      "max_spin": 1.5363464899989758,
+      "max_distance_from_pelvis": 83.24903130560287
+    },
+    {
+      "tick": 120,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 173.30316061985204,
+      "max_spin": 3.6251878877658674,
+      "max_distance_from_pelvis": 82.06548539936173
+    },
+    {
+      "tick": 120,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.22364228358276445,
+      "max_spin": 0.006697444054337554,
+      "max_distance_from_pelvis": 83.74141371292274
+    },
+    {
+      "tick": 120,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 40.2707649189994,
+      "max_spin": 4.487525326221821,
+      "max_distance_from_pelvis": 83.42731763831534
+    },
+    {
+      "tick": 125,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overL\"), False, False, False, 3)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 295.88905682429595,
+      "max_spin": 7.021499149903419,
+      "max_distance_from_pelvis": 81.18815330556053
+    },
+    {
+      "tick": 125,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.21193652302442498,
+      "max_spin": 0.011527677683570568,
+      "max_distance_from_pelvis": 83.74255022219319
+    },
+    {
+      "tick": 125,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 23.367096347295092,
+      "max_spin": 0.7747183803396124,
+      "max_distance_from_pelvis": 84.15260679777582
+    },
+    {
+      "tick": 130,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overL\"), False, False, False, 6)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 415.83959789817555,
+      "max_spin": 9.048208417944197,
+      "max_distance_from_pelvis": 73.47907459292112
+    },
+    {
+      "tick": 130,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.22169617645165546,
+      "max_spin": 0.017949193173839913,
+      "max_distance_from_pelvis": 83.743601930499
+    },
+    {
+      "tick": 130,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 22.412125121821457,
+      "max_spin": 0.6667862538184521,
+      "max_distance_from_pelvis": 84.5793265059583
+    },
+    {
+      "tick": 135,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overL\"), False, False, False, 8)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 630.1534041879038,
+      "max_spin": 22.041032727141715,
+      "max_distance_from_pelvis": 79.0033914817683
+    },
+    {
+      "tick": 135,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.1664321473433188,
+      "max_spin": 0.010646920493666036,
+      "max_distance_from_pelvis": 83.74460940307647
+    },
+    {
+      "tick": 135,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 24.619969277102,
+      "max_spin": 1.915386948151722,
+      "max_distance_from_pelvis": 84.57619047895828
+    },
+    {
+      "tick": 140,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overL\"), False, True, False, 11)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 480.35531909444865,
+      "max_spin": 18.37006391908691,
+      "max_distance_from_pelvis": 82.48079958999767
+    },
+    {
+      "tick": 140,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.1552105607709805,
+      "max_spin": 0.012857553927996113,
+      "max_distance_from_pelvis": 83.74547948490493
+    },
+    {
+      "tick": 140,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 76.88632259149168,
+      "max_spin": 21.26221198130961,
+      "max_distance_from_pelvis": 84.57647878554698
+    },
+    {
+      "tick": 145,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overL\"), False, True, False, 13)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 1120.150792836275,
+      "max_spin": 26.6489568839114,
+      "max_distance_from_pelvis": 82.3201054936561
+    },
+    {
+      "tick": 145,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.13217381871759068,
+      "max_spin": 0.009725522250556576,
+      "max_distance_from_pelvis": 83.74635366822373
+    },
+    {
+      "tick": 145,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 139.57838298764707,
+      "max_spin": 33.68156733551927,
+      "max_distance_from_pelvis": 84.57498747901234
+    },
+    {
+      "tick": 150,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overL\"), False, True, True, 16)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 2588.0719953927305,
+      "max_spin": 62.831855179919636,
+      "max_distance_from_pelvis": 81.99314833700234
+    },
+    {
+      "tick": 150,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.16500178783158967,
+      "max_spin": 0.016184598771685366,
+      "max_distance_from_pelvis": 83.74712879061202
+    },
+    {
+      "tick": 150,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 330.9386543953105,
+      "max_spin": 10.649953286664907,
+      "max_distance_from_pelvis": 83.69730511206764
+    },
+    {
+      "tick": 155,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overL\"), False, True, True, 18)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 306.2241552208444,
+      "max_spin": 16.589683394242847,
+      "max_distance_from_pelvis": 82.34040929264582
+    },
+    {
+      "tick": 155,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.12577410549974666,
+      "max_spin": 0.011843719747598836,
+      "max_distance_from_pelvis": 83.747888846655
+    },
+    {
+      "tick": 155,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 138.13740274265868,
+      "max_spin": 2.7434332906770775,
+      "max_distance_from_pelvis": 83.96598399324712
+    },
+    {
+      "tick": 160,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 109.60842540855153,
+      "max_spin": 8.901499605377506,
+      "max_distance_from_pelvis": 82.8509589533394
+    },
+    {
+      "tick": 160,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.13668140860095737,
+      "max_spin": 0.010251506272722961,
+      "max_distance_from_pelvis": 83.74856501158833
+    },
+    {
+      "tick": 160,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 89.59261537155191,
+      "max_spin": 3.533715913346372,
+      "max_distance_from_pelvis": 83.78237813796082
+    },
+    {
+      "tick": 165,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 308.4060495481451,
+      "max_spin": 17.284934648484096,
+      "max_distance_from_pelvis": 82.08664846128627
+    },
+    {
+      "tick": 165,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.11064299140038193,
+      "max_spin": 0.010692321026366776,
+      "max_distance_from_pelvis": 83.74924602177562
+    },
+    {
+      "tick": 165,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 169.18907026644962,
+      "max_spin": 4.987258892874106,
+      "max_distance_from_pelvis": 84.7506476609583
+    },
+    {
+      "tick": 170,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 269.42810943606605,
+      "max_spin": 9.040353381577203,
+      "max_distance_from_pelvis": 81.31277849194345
+    },
+    {
+      "tick": 170,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.12567199043784247,
+      "max_spin": 0.00951365707822711,
+      "max_distance_from_pelvis": 83.74985653705212
+    },
+    {
+      "tick": 170,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 78.2961826627945,
+      "max_spin": 2.9506936166397533,
+      "max_distance_from_pelvis": 84.89062759500764
+    },
+    {
+      "tick": 175,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 130.50135666769572,
+      "max_spin": 13.525042642246618,
+      "max_distance_from_pelvis": 80.33642264456137
+    },
+    {
+      "tick": 175,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.0,
+      "max_spin": 0.0,
+      "max_distance_from_pelvis": 83.750457539233
+    },
+    {
+      "tick": 175,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 63.91385528768674,
+      "max_spin": 1.9989791983422165,
+      "max_distance_from_pelvis": 84.64602942408605
+    },
+    {
+      "tick": 180,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 114.00242330794721,
+      "max_spin": 10.345905934008544,
+      "max_distance_from_pelvis": 79.83918060626166
+    },
+    {
+      "tick": 180,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.11907901213815711,
+      "max_spin": 0.013111604539738442,
+      "max_distance_from_pelvis": 83.75100424035962
+    },
+    {
+      "tick": 180,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 34.07684963088828,
+      "max_spin": 3.2101722205135346,
+      "max_distance_from_pelvis": 84.67388132909048
+    },
+    {
+      "tick": 185,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashL\"), False, False, False, 3)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 179.51158273362705,
+      "max_spin": 23.74799971619478,
+      "max_distance_from_pelvis": 79.8808539987071
+    },
+    {
+      "tick": 185,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.09534130720320494,
+      "max_spin": 0.010872837645378875,
+      "max_distance_from_pelvis": 83.75153298388379
+    },
+    {
+      "tick": 185,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 32.47806894151811,
+      "max_spin": 3.500966749264911,
+      "max_distance_from_pelvis": 84.85423186580445
+    },
+    {
+      "tick": 190,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashL\"), False, False, False, 6)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 199.61320597580277,
+      "max_spin": 10.34404669847024,
+      "max_distance_from_pelvis": 72.17243738200713
+    },
+    {
+      "tick": 190,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.11587378119897643,
+      "max_spin": 0.008444406059251123,
+      "max_distance_from_pelvis": 83.75200096306313
+    },
+    {
+      "tick": 190,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 35.99356338616537,
+      "max_spin": 10.780614961599994,
+      "max_distance_from_pelvis": 84.80336797143528
+    },
+    {
+      "tick": 195,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashL\"), False, False, False, 8)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 627.0470806850827,
+      "max_spin": 19.67443537645354,
+      "max_distance_from_pelvis": 71.16159465624807
+    },
+    {
+      "tick": 195,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.10893062125616791,
+      "max_spin": 0.007888166259677214,
+      "max_distance_from_pelvis": 83.75247411038606
+    },
+    {
+      "tick": 195,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 72.0116775757344,
+      "max_spin": 4.822106098338758,
+      "max_distance_from_pelvis": 84.65714833385496
+    },
+    {
+      "tick": 200,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashL\"), False, True, False, 11)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 302.3012377409645,
+      "max_spin": 11.92735571872864,
+      "max_distance_from_pelvis": 71.94022215721351
+    },
+    {
+      "tick": 200,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.12206103902371147,
+      "max_spin": 0.007532465661328114,
+      "max_distance_from_pelvis": 83.75290331573129
+    },
+    {
+      "tick": 200,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 10.620330504394758,
+      "max_spin": 0.4022388847947263,
+      "max_distance_from_pelvis": 84.5407037806563
+    },
+    {
+      "tick": 205,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashL\"), False, True, False, 13)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 753.5402087255071,
+      "max_spin": 27.341184651360383,
+      "max_distance_from_pelvis": 72.23994048893779
+    },
+    {
+      "tick": 205,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.11140485103411003,
+      "max_spin": 0.006521720788107611,
+      "max_distance_from_pelvis": 83.75330585043042
+    },
+    {
+      "tick": 205,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 5.98874797705374,
+      "max_spin": 0.5475175767437355,
+      "max_distance_from_pelvis": 84.42768589348488
+    },
+    {
+      "tick": 210,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashL\"), False, True, False, 16)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 1410.3507148133688,
+      "max_spin": 39.74019435988933,
+      "max_distance_from_pelvis": 82.15487986755288
+    },
+    {
+      "tick": 210,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.17169795618652506,
+      "max_spin": 0.011408235455589973,
+      "max_distance_from_pelvis": 83.75365190882198
+    },
+    {
+      "tick": 210,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 6.047835539826116,
+      "max_spin": 0.4339457562470957,
+      "max_distance_from_pelvis": 84.33972730864544
+    },
+    {
+      "tick": 215,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashL\"), False, True, True, 18)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 1146.36556729518,
+      "max_spin": 41.22580843046692,
+      "max_distance_from_pelvis": 73.43654971093568
+    },
+    {
+      "tick": 215,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.14951337678265933,
+      "max_spin": 0.016624176536408648,
+      "max_distance_from_pelvis": 83.75404674089681
+    },
+    {
+      "tick": 215,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 194.87686351019514,
+      "max_spin": 5.308017509711195,
+      "max_distance_from_pelvis": 84.20096728244472
+    },
+    {
+      "tick": 220,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashL\"), False, True, True, 21)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 479.0137605088147,
+      "max_spin": 37.260920165325956,
+      "max_distance_from_pelvis": 73.76682024039678
+    },
+    {
+      "tick": 220,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.10188101209897733,
+      "max_spin": 0.006944152154898534,
+      "max_distance_from_pelvis": 83.75434847263219
+    },
+    {
+      "tick": 220,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 54.89862755239354,
+      "max_spin": 1.4403189299395378,
+      "max_distance_from_pelvis": 83.46041031022303
+    },
+    {
+      "tick": 225,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 173.0379177668292,
+      "max_spin": 7.766415848560562,
+      "max_distance_from_pelvis": 74.0163163258005
+    },
+    {
+      "tick": 225,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.0822407189439518,
+      "max_spin": 0.007098722332996772,
+      "max_distance_from_pelvis": 83.7546884504583
+    },
+    {
+      "tick": 225,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 39.72556222389646,
+      "max_spin": 1.9038435010303603,
+      "max_distance_from_pelvis": 83.25145678503938
+    },
+    {
+      "tick": 230,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 401.15662196137237,
+      "max_spin": 11.50871498944489,
+      "max_distance_from_pelvis": 75.28058383774949
+    },
+    {
+      "tick": 230,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.18454724983490386,
+      "max_spin": 0.0171273929776127,
+      "max_distance_from_pelvis": 83.75497109136143
+    },
+    {
+      "tick": 230,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 77.87144446942087,
+      "max_spin": 2.232848539096051,
+      "max_distance_from_pelvis": 84.1073337491857
+    },
+    {
+      "tick": 235,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 651.7190636051737,
+      "max_spin": 22.26275213437663,
+      "max_distance_from_pelvis": 77.1467655697296
+    },
+    {
+      "tick": 235,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.08299553215989768,
+      "max_spin": 0.010284045073545101,
+      "max_distance_from_pelvis": 83.75527409997346
+    },
+    {
+      "tick": 235,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 39.372491973404955,
+      "max_spin": 0.9675087365632413,
+      "max_distance_from_pelvis": 84.30090347966319
+    },
+    {
+      "tick": 240,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 495.7322438617499,
+      "max_spin": 18.313294487876732,
+      "max_distance_from_pelvis": 79.0113249428133
+    },
+    {
+      "tick": 240,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.16027882881286334,
+      "max_spin": 0.013005802800009167,
+      "max_distance_from_pelvis": 83.75555176183829
+    },
+    {
+      "tick": 240,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 22.127046939398888,
+      "max_spin": 6.820573237561722,
+      "max_distance_from_pelvis": 84.34705942967902
+    },
+    {
+      "tick": 245,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"jabR\"), False, False, False, 3)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 161.88178052347837,
+      "max_spin": 7.0113463622174015,
+      "max_distance_from_pelvis": 80.0483772930521
+    },
+    {
+      "tick": 245,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.1532421735673824,
+      "max_spin": 0.012735241826853027,
+      "max_distance_from_pelvis": 83.7558053610112
+    },
+    {
+      "tick": 245,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 10.438484803526185,
+      "max_spin": 1.254483485854808,
+      "max_distance_from_pelvis": 84.26972863677864
+    },
+    {
+      "tick": 250,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"jabR\"), False, True, False, 6)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 419.8632861709716,
+      "max_spin": 14.512839890021024,
+      "max_distance_from_pelvis": 78.63414759152126
+    },
+    {
+      "tick": 250,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.07603765005090546,
+      "max_spin": 0.00645662556566786,
+      "max_distance_from_pelvis": 83.75604888952759
+    },
+    {
+      "tick": 250,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 19.701015966814683,
+      "max_spin": 2.1972113481743376,
+      "max_distance_from_pelvis": 84.36344397220363
+    },
+    {
+      "tick": 255,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"jabR\"), False, True, False, 8)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 296.70011471867787,
+      "max_spin": 9.701565797283383,
+      "max_distance_from_pelvis": 78.47563445871535
+    },
+    {
+      "tick": 255,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.16439821519154607,
+      "max_spin": 0.013254086051386524,
+      "max_distance_from_pelvis": 83.75626931302426
+    },
+    {
+      "tick": 255,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 10.672861923811993,
+      "max_spin": 0.7799069719177923,
+      "max_distance_from_pelvis": 84.46131217624445
+    },
+    {
+      "tick": 260,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"jabR\"), False, True, True, 11)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 433.56415076898406,
+      "max_spin": 19.692275334171033,
+      "max_distance_from_pelvis": 77.92571770622172
+    },
+    {
+      "tick": 260,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.14495268332221398,
+      "max_spin": 0.012613306029324176,
+      "max_distance_from_pelvis": 83.75648050845705
+    },
+    {
+      "tick": 260,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 109.48654871750958,
+      "max_spin": 2.643340678553894,
+      "max_distance_from_pelvis": 84.40056941112137
+    },
+    {
+      "tick": 265,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 130.2685961240056,
+      "max_spin": 7.14863445200637,
+      "max_distance_from_pelvis": 82.87949464612223
+    },
+    {
+      "tick": 265,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.073565328472944,
+      "max_spin": 0.009872959798457186,
+      "max_distance_from_pelvis": 83.75668578333324
+    },
+    {
+      "tick": 265,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 148.17177295445066,
+      "max_spin": 3.890682697469477,
+      "max_distance_from_pelvis": 83.55843265966016
+    },
+    {
+      "tick": 270,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 306.3564572315592,
+      "max_spin": 8.39043718791394,
+      "max_distance_from_pelvis": 76.49614865798702
+    },
+    {
+      "tick": 270,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.1473978754315646,
+      "max_spin": 0.01170234649553512,
+      "max_distance_from_pelvis": 83.75688203239615
+    },
+    {
+      "tick": 270,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 50.64043213595691,
+      "max_spin": 2.401806957729498,
+      "max_distance_from_pelvis": 83.20697550845587
+    },
+    {
+      "tick": 275,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overR\"), False, False, False, 3)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 647.9042166225906,
+      "max_spin": 19.439896077293092,
+      "max_distance_from_pelvis": 78.07829859258663
+    },
+    {
+      "tick": 275,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.1378087760990085,
+      "max_spin": 0.011748393669100413,
+      "max_distance_from_pelvis": 83.75705776541884
+    },
+    {
+      "tick": 275,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 100.03229794806482,
+      "max_spin": 2.7545878979878697,
+      "max_distance_from_pelvis": 83.6673970710077
+    },
+    {
+      "tick": 280,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overR\"), False, True, False, 6)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 225.2507447177159,
+      "max_spin": 12.202087070428494,
+      "max_distance_from_pelvis": 78.69767044959815
+    },
+    {
+      "tick": 280,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.0710574380112129,
+      "max_spin": 0.005868158736935397,
+      "max_distance_from_pelvis": 83.75722455751844
+    },
+    {
+      "tick": 280,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 91.05389189180275,
+      "max_spin": 2.606403994251829,
+      "max_distance_from_pelvis": 84.22321930580728
+    },
+    {
+      "tick": 285,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overR\"), False, True, False, 8)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 964.4260400043318,
+      "max_spin": 29.46999906491172,
+      "max_distance_from_pelvis": 79.77786081059082
+    },
+    {
+      "tick": 285,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.14501693571393842,
+      "max_spin": 0.01150486248431476,
+      "max_distance_from_pelvis": 83.75740022529496
+    },
+    {
+      "tick": 285,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 48.5279396290138,
+      "max_spin": 2.083342991443656,
+      "max_distance_from_pelvis": 84.34020910283712
+    },
+    {
+      "tick": 290,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overR\"), False, True, True, 11)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 644.9132444378149,
+      "max_spin": 31.930266011636565,
+      "max_distance_from_pelvis": 88.27205607996358
+    },
+    {
+      "tick": 290,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.1650571083449289,
+      "max_spin": 0.023399503358013066,
+      "max_distance_from_pelvis": 83.75755092828949
+    },
+    {
+      "tick": 290,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 628.6464759158455,
+      "max_spin": 20.29232874166627,
+      "max_distance_from_pelvis": 82.75457063122757
+    },
+    {
+      "tick": 295,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"overR\"), False, True, True, 13)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 1089.457938568453,
+      "max_spin": 40.48490771282848,
+      "max_distance_from_pelvis": 91.11973289951638
+    },
+    {
+      "tick": 295,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.07669437731544962,
+      "max_spin": 0.011233619711887516,
+      "max_distance_from_pelvis": 83.75770413014972
+    },
+    {
+      "tick": 295,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 1144.8456663051172,
+      "max_spin": 32.465467046763585,
+      "max_distance_from_pelvis": 80.40760923315601
+    },
+    {
+      "tick": 300,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 296.0622104586424,
+      "max_spin": 10.345522058659599,
+      "max_distance_from_pelvis": 73.17214996969504
+    },
+    {
+      "tick": 300,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.13727695103891968,
+      "max_spin": 0.01091175929183827,
+      "max_distance_from_pelvis": 83.75784003573673
+    },
+    {
+      "tick": 300,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 559.7926407094296,
+      "max_spin": 28.787022091375956,
+      "max_distance_from_pelvis": 80.7583747173767
+    },
+    {
+      "tick": 305,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashLU\"), False, False, False, 3)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 298.4711190916839,
+      "max_spin": 13.210919317655762,
+      "max_distance_from_pelvis": 72.8008199464783
+    },
+    {
+      "tick": 305,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.13191635233042284,
+      "max_spin": 0.010888298393863075,
+      "max_distance_from_pelvis": 83.7579826317202
+    },
+    {
+      "tick": 305,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 407.4081172009967,
+      "max_spin": 23.340106169266846,
+      "max_distance_from_pelvis": 77.7037534077934
+    },
+    {
+      "tick": 310,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashLU\"), False, False, False, 6)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 436.76529488853333,
+      "max_spin": 11.873738145873032,
+      "max_distance_from_pelvis": 68.26378454193919
+    },
+    {
+      "tick": 310,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.06550922552353457,
+      "max_spin": 0.005500232756949649,
+      "max_distance_from_pelvis": 83.75811871866158
+    },
+    {
+      "tick": 310,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 431.18030665870026,
+      "max_spin": 14.611127093515385,
+      "max_distance_from_pelvis": 77.99451725513096
+    },
+    {
+      "tick": 315,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashLU\"), False, False, False, 8)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 441.08236003425765,
+      "max_spin": 18.982911171912715,
+      "max_distance_from_pelvis": 66.0469486991211
+    },
+    {
+      "tick": 315,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.13367931414497275,
+      "max_spin": 0.010607580097973447,
+      "max_distance_from_pelvis": 83.75823988978016
+    },
+    {
+      "tick": 315,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 267.5616412980614,
+      "max_spin": 8.688491401342942,
+      "max_distance_from_pelvis": 78.5783828146247
+    },
+    {
+      "tick": 320,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "mode": 1.0,
+      "attack": "(Name(\"slashLU\"), False, True, False, 11)",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 522.2986693571305,
+      "max_spin": 18.5409660917443,
+      "max_distance_from_pelvis": 70.65375944901557
+    },
+    {
+      "tick": 320,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 0.14424701624954547,
+      "max_spin": 0.02058821282430434,
+      "max_distance_from_pelvis": 83.75835810691582
+    },
+    {
+      "tick": 320,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "mode": 1.0,
+      "attack": "None",
+      "simulation": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_speed": 219.3588203519973,
+      "max_spin": 41.79807917740893,
+      "max_distance_from_pelvis": 80.16924180401519
+    }
+  ]
+}

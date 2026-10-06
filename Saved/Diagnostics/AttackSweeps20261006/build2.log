@@ -1,0 +1,26 @@
+Using bundled DotNet SDK version: 8.0.412 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" GameAnimationSample3Editor Win64 Development "-Project=C:/Users/singerie/Documents/Unreal Projects/Prophecy/GameAnimationSample3.uproject" -WaitMutex -NoHotReloadFromIDE
+Log file: C:\Users\singerie\AppData\Local\UnrealBuildTool\Log.txt
+Using 'git status' to determine working set for adaptive non-unity build (C:\Users\singerie\Documents\Unreal Projects\Prophecy).
+Building GameAnimationSample3Editor...
+Using Visual Studio 2022 14.44.35221 toolchain (C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207) and Windows 10.0.22621.0 SDK (C:\Program Files (x86)\Windows Kits\10).
+Determining max actions to execute in parallel (8 physical cores, 12 logical cores)
+  Executing up to 8 processes, one per physical core
+  Requested 1.5 GB memory per action, 4.24 GB available: limiting max parallel actions to 2
+Using Unreal Build Accelerator local executor to run 7 action(s)
+  Storage capacity 40Gb
+---- Starting trace: 261006_191049 ----
+UbaServer - Listening on 0.0.0.0:1345
+[1/7] Compile [x64] ProphecyJoltPHATSweeps.cpp
+[2/7] Link [x64] UnrealEditor-ProphecyJolt.lib
+[3/7] Link [x64] UnrealEditor-ProphecyJolt.dll
+[4/7] Compile [x64] Module.GameAnimationSample3.14.cpp
+[5/7] Link [x64] UnrealEditor-GameAnimationSample3.lib
+[6/7] Link [x64] UnrealEditor-GameAnimationSample3.dll
+[7/7] WriteMetadata GameAnimationSample3Editor.target [NoUba]
+
+Trace written to file C:/Users/singerie/AppData/Local/UnrealBuildTool/Log.uba with size 6.3kb
+Total time in Unreal Build Accelerator local executor: 31.57 seconds
+
+Result: Succeeded
+Total execution time: 32.81 seconds

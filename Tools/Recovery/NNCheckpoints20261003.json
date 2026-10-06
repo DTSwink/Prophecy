@@ -227,6 +227,37 @@
           "restore_path": "training/slashes2/saved_defense_checkpoints/dodge_step_198044.pt"
         }
       ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/dodge_step_322925-bb2187cbc321.pt",
+      "sha256": "bb2187cbc321819cf5a99b2f2bc8291a215d29ff8fa6133d6f6c8e068d0fbea7",
+      "bytes": 9339494,
+      "contracts": [
+        "Content/locomotion/NN/defense/dodge_checkpoint.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\20261004_150744_dodge_bs256_unchanged_resume_8h_step322925.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/slashes2/saved_defense_checkpoints/20261004_150744_dodge_bs256_unchanged_resume_8h_step322925.pt"
+        }
+      ]
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/parry_step_1149700-91b134deb6da.pt",
+      "sha256": "91b134deb6dad3b5dfc972979aa6713c62fbc62973b5ca27c75080e9cb8776c9",
+      "bytes": 5387437,
+      "contracts": [
+        "Content/locomotion/NN/defense/parry_checkpoint.json"
+      ],
+      "sources": [
+        {
+          "original_path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\parry_step_1149700.pt",
+          "restore_root": "stepper",
+          "restore_path": "training/slashes2/saved_defense_checkpoints/parry_step_1149700.pt"
+        }
+      ]
     }
-  ]
+  ],
+  "updated": "2026-10-06"
 }

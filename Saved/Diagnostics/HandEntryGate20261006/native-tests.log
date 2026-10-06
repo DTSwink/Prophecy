@@ -1,0 +1,45 @@
+[2026.10.06-20.28.24:176][671]LogAutomationWorker: Set 6955 tests to 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-20.28.24:177][671]LogAutomationController: Received RequestTestsReplyCompleteMessage from 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-20.28.24:182][671]LogAutomationController: 6955 tests available on 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-20.28.24:224][671]LogAutomationCommandLine: Display: Found 3 automation tests based on 'Prophecy.NN.AttackEntry.HandLifecycle+Prophecy.NN.AttackControls.EntryMagicAndTicks+Prophecy.NN.AttackControls.ManualTicks'
+[2026.10.06-20.28.24:224][671]LogAutomationCommandLine: Display: 	Prophecy.NN.AttackControls.EntryMagicAndTicks
+[2026.10.06-20.28.24:224][671]LogAutomationCommandLine: Display: 	Prophecy.NN.AttackControls.ManualTicks
+[2026.10.06-20.28.24:224][671]LogAutomationCommandLine: Display: 	Prophecy.NN.AttackEntry.HandLifecycle
+[2026.10.06-20.28.24:225][671]LogAutomationController: Sending StopTests to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-20.28.24:225][671]LogAutomationController: Sending StopTestSession to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-20.28.24:235][671]LogAutomationController: Sending StartTestSession to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-20.28.24:235][671]LogAutomationController: Display: Clearing ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Logs/ and ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Tmp/
+[2026.10.06-20.28.24:235][671]AutomationTestingLog: -----Test Run 15----
+[2026.10.06-20.28.24:236][671]LogAutomationController: Sending RunTest EntryMagicAndTicks to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-20.28.24:236][672]LogAutomationController: Display: Test Started. Name={EntryMagicAndTicks} Path={Prophecy.NN.AttackControls.EntryMagicAndTicks}
+[2026.10.06-20.28.24:253][672]LogAutomationWorker: Received StopTests from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-20.28.24:253][672]LogAutomationWorker: Received StopTestSession from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-20.28.24:254][672]LogAutomationWorker: Received StartTestSession from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-20.28.24:254][672]LogAutomationWorker: Received RunTests EntryMagicAndTicks from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-20.28.24:261][672]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.06-20.28.24:273][672]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.06-20.28.24:274][672]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.06-20.28.24:294][673]LogAutomationController: Display: Test Completed. Result={Success} Name={EntryMagicAndTicks} Path={Prophecy.NN.AttackControls.EntryMagicAndTicks}
+[2026.10.06-20.28.24:294][673]LogAutomationController: BeginEvents: Prophecy.NN.AttackControls.EntryMagicAndTicks
+[2026.10.06-20.28.24:294][673]LogAutomationController: EndEvents: Prophecy.NN.AttackControls.EntryMagicAndTicks
+[2026.10.06-20.28.24:295][673]LogAutomationController: Sending RunTest ManualTicks to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-20.28.24:295][674]LogAutomationController: Display: Test Started. Name={ManualTicks} Path={Prophecy.NN.AttackControls.ManualTicks}
+[2026.10.06-20.28.24:311][674]LogAutomationWorker: Received RunTests ManualTicks from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-20.28.24:312][674]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.06-20.28.24:317][674]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.06-20.28.24:317][674]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.06-20.28.24:336][676]LogAutomationController: Display: Test Completed. Result={Success} Name={ManualTicks} Path={Prophecy.NN.AttackControls.ManualTicks}
+[2026.10.06-20.28.24:336][676]LogAutomationController: BeginEvents: Prophecy.NN.AttackControls.ManualTicks
+[2026.10.06-20.28.24:336][676]LogAutomationController: EndEvents: Prophecy.NN.AttackControls.ManualTicks
+[2026.10.06-20.28.24:354][676]LogAutomationController: Sending RunTest HandLifecycle to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-20.28.24:354][676]LogAutomationController: Display: Test Started. Name={HandLifecycle} Path={Prophecy.NN.AttackEntry.HandLifecycle}
+[2026.10.06-20.28.24:370][677]LogAutomationWorker: Received RunTests HandLifecycle from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-20.28.24:371][677]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.06-20.28.24:376][677]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.06-20.28.24:377][677]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.06-20.28.24:394][679]LogAutomationController: Display: Test Completed. Result={Success} Name={HandLifecycle} Path={Prophecy.NN.AttackEntry.HandLifecycle}
+[2026.10.06-20.28.24:394][679]LogAutomationController: BeginEvents: Prophecy.NN.AttackEntry.HandLifecycle
+[2026.10.06-20.28.24:394][679]LogAutomationController: EndEvents: Prophecy.NN.AttackEntry.HandLifecycle
+[2026.10.06-20.28.24:411][679]LogAutomationController: Sending StopTestSession to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-20.28.24:411][680]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 3 tests performed.
+[2026.10.06-20.28.24:426][680]LogAutomationWorker: Received StopTestSession from 7B33EDD9444441FFE9E9CAA62228155D

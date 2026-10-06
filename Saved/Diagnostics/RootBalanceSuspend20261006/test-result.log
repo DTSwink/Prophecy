@@ -1,0 +1,27 @@
+[2026.10.06-18.52.15:219][434]LogAutomationController: Sending StartTestSession to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-18.52.15:219][434]LogAutomationController: Display: Clearing ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Logs/ and ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Tmp/
+[2026.10.06-18.52.15:219][434]AutomationTestingLog: -----Test Run 6----
+[2026.10.06-18.52.15:220][434]LogAutomationController: Sending RunTest KickSelfBalancingException to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-18.52.15:221][435]LogAutomationController: Display: Test Started. Name={KickSelfBalancingException} Path={Prophecy.Root.KickSelfBalancingException}
+[2026.10.06-18.52.15:235][435]LogAutomationWorker: Received StopTests from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-18.52.15:235][435]LogAutomationWorker: Received StopTestSession from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-18.52.15:235][435]LogAutomationWorker: Received StartTestSession from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-18.52.15:235][435]LogAutomationWorker: Received RunTests KickSelfBalancingException from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-18.52.15:239][435]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.06-18.52.15:252][435]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.06-18.52.15:253][435]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.06-18.52.15:272][436]LogAutomationController: Display: Test Completed. Result={Success} Name={KickSelfBalancingException} Path={Prophecy.Root.KickSelfBalancingException}
+[2026.10.06-18.52.15:272][436]LogAutomationController: BeginEvents: Prophecy.Root.KickSelfBalancingException
+[2026.10.06-18.52.15:272][436]LogAutomationController: EndEvents: Prophecy.Root.KickSelfBalancingException
+[2026.10.06-18.52.15:273][436]LogAutomationController: Sending RunTest SelfBalancingSuspension to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-18.52.15:273][437]LogAutomationController: Display: Test Started. Name={SelfBalancingSuspension} Path={Prophecy.Root.SelfBalancingSuspension}
+[2026.10.06-18.52.15:290][437]LogAutomationWorker: Received RunTests SelfBalancingSuspension from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-18.52.15:292][437]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.06-18.52.15:298][437]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.06-18.52.15:298][437]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.06-18.52.15:314][438]LogAutomationController: Display: Test Completed. Result={Success} Name={SelfBalancingSuspension} Path={Prophecy.Root.SelfBalancingSuspension}
+[2026.10.06-18.52.15:314][438]LogAutomationController: BeginEvents: Prophecy.Root.SelfBalancingSuspension
+[2026.10.06-18.52.15:314][438]LogAutomationController: EndEvents: Prophecy.Root.SelfBalancingSuspension
+[2026.10.06-18.52.15:315][438]LogAutomationController: Sending StopTestSession to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-18.52.15:315][439]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 2 tests performed.
+[2026.10.06-18.52.15:330][439]LogAutomationWorker: Received StopTestSession from 7B33EDD9444441FFE9E9CAA62228155D

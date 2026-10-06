@@ -1,0 +1,139 @@
+{
+  "native_tests": [
+    [
+      "Success",
+      "Prophecy.Agent.PhysicalContext.BoneModes"
+    ],
+    [
+      "Success",
+      "Prophecy.Agent.PhysicalContext.SelectionAndAttacks"
+    ],
+    [
+      "Success",
+      "Prophecy.Agent.PhysicalContext.SnapshotHold"
+    ],
+    [
+      "Success",
+      "Prophecy.Agent.PhysicalContext.SpecialSnapshot1"
+    ],
+    [
+      "Success",
+      "Prophecy.Agent.RealisticMode.ThresholdAndOptIn"
+    ],
+    [
+      "Success",
+      "Prophecy.Joints.DampingProfileBlend"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.MultiRig.FailedCreationPreservesExistingRig"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.MultiRig.IndependentPacketsOneWorldStep"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.MultiRig.RemovalGenerationAndWorldLifetime"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.MultiRig.TrajectoryLifetimeAndPreflight"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.RigWorld.ServoHandlesAndWholeRigRemoval"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.AuthoredTrajectorySubsteps"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.BodyOriginVelocityWithRotatedOffsetCOM"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.ChangingSubsteps"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.ConditionalWakeIncludesFirstStepGravity"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.GravityAndExternalForceAfterVelocityRewrite"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.LocalGlobalParent"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.NativeVelocityCaps"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.OffsetCOMStrengthsAndDisabledChannels"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.PelvisInertia"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.RecordedDenominatorAcrossTwoCollisionSteps"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.RejectedAndEmptyPacketsPreserveBodyState"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.StrengthsAndQuaternionSign"
+    ],
+    [
+      "Success",
+      "Prophecy.Jolt.Servo.ZeroAndDisabledTargetsStayAsleep"
+    ],
+    [
+      "Success",
+      "Prophecy.NN.AgentReset.PhysicalBaseline"
+    ],
+    [
+      "Success",
+      "Prophecy.PhysicalProfiles.ClampSnapshots"
+    ]
+  ],
+  "live_rows": 540,
+  "actors": [
+    "BP_ProphecyManualPoseAgent",
+    "BP_ProphecyManualPoseAgent2",
+    "BP_ProphecyManualPoseAgent4"
+  ],
+  "max_span_cm": 100.4786866767643,
+  "events": [
+    {
+      "tick": 20,
+      "mixed": true
+    },
+    {
+      "tick": 80,
+      "threshold_crossings": 4,
+      "height_cm": 9.537486532407009,
+      "mode_strength_unchanged": true
+    }
+  ],
+  "hold_blend_hand_samples": {
+    "30": 0.699999988079071,
+    "45": 0.3499999940395355,
+    "60": 0.0
+  },
+  "probe_event_dispatch": [
+    "start",
+    "end",
+    "start",
+    "end"
+  ],
+  "scope": "900 tick scene: mixed modes retained on player; NPC Blueprint overwrites mode to .25. Isolated native probe verifies uncancelled hold/blend and event dispatch."
+}

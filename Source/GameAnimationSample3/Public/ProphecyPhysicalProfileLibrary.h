@@ -19,9 +19,29 @@ public:
     UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
     static float GetMagnetizationMode(AProphecyAgent* Agent);
 
+    /** Change one physical body's configured mode. Pelvis still stays global. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
+    static bool SetBodyMagnetizationMode(AProphecyAgent* Agent,FName BoneName,float Mode=1.f);
+
+    /** Change physical bodies in this skeletal subtree; returns the number changed. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
+    static int32 SetMagnetizationModeBelow(AProphecyAgent* Agent,FName ParentBone,float Mode=1.f,bool IncludeParent=true);
+
+    /** Read this body's configured mode. The pelvis always uses world targets regardless. */
+    UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
+    static float GetBodyMagnetizationMode(AProphecyAgent* Agent,FName BoneName);
+
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
     static bool BlendMagnetizationModeToSnapshot(AProphecyAgent* Agent,float DurationSeconds=1.f,
         FName SnapshotName=NAME_None,float HoldOutTime=0.f);
+
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
+    static bool BlendBodyMagnetizationModeToSnapshot(AProphecyAgent* Agent,FName BoneName,float DurationSeconds=1.f,
+        FName SnapshotName=NAME_None,float HoldOutTime=0.f);
+
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
+    static int32 BlendMagnetizationModeBelowToSnapshot(AProphecyAgent* Agent,FName ParentBone,bool IncludeParent=true,
+        float DurationSeconds=1.f,FName SnapshotName=NAME_None,float HoldOutTime=0.f);
 
     /** Print one line per PHAT bone, head at the top and feet at the bottom.
      * Each pair is linear/angular: magnetization scales (including global scales,

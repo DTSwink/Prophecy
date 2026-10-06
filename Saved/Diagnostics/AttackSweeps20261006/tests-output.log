@@ -1,0 +1,90 @@
+Exit: 0
+{
+	"devices": [
+		{
+			"deviceName": "DESKTOP-FD3KEAS",
+			"instance": "0E5346C24FCA05DA4677B3B4CA79FCE1",
+			"instanceName": "DESKTOP-FD3KEAS-19728",
+			"platform": "WindowsEditor",
+			"oSVersion": "Windows 10 (22H2) [10.0.19045.6466] ",
+			"model": "Default",
+			"gPU": "Intel(R) UHD Graphics",
+			"cPUModel": "12th Gen Intel(R) Core(TM) i5-12450H",
+			"rAMInGB": 16,
+			"renderMode": "SM6",
+			"rHI": "",
+			"appInstanceLog": ""
+		}
+	],
+	"reportCreatedOn": "2026.10.06-17.12.11",
+	"succeeded": 4,
+	"succeededWithWarnings": 0,
+	"failed": 0,
+	"notRun": 0,
+	"inProcess": 0,
+	"totalDuration": 0.094875998795032501,
+	"comparisonExported": false,
+	"comparisonExportDirectory": "",
+	"tests": [
+		{
+			"testDisplayName": "AttackSweepGate",
+			"fullTestPath": "Prophecy.Jolt.ContactShapes.AttackSweepGate",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"0E5346C24FCA05DA4677B3B4CA79FCE1"
+			],
+			"duration": 0.0076366998255252838,
+			"dateTime": "2026.10.06-17.12.11",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "PenetrationDepth",
+			"fullTestPath": "Prophecy.Jolt.ContactShapes.PenetrationDepth",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"0E5346C24FCA05DA4677B3B4CA79FCE1"
+			],
+			"duration": 0.0166034996509552,
+			"dateTime": "2026.10.06-17.12.11",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "SelectiveSweeps",
+			"fullTestPath": "Prophecy.Jolt.ContactShapes.SelectiveSweeps",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"0E5346C24FCA05DA4677B3B4CA79FCE1"
+			],
+			"duration": 0.046882301568984985,
+			"dateTime": "2026.10.06-17.12.11",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "SolvedImpulseAndLifetime",
+			"fullTestPath": "Prophecy.Jolt.HitEvents.SolvedImpulseAndLifetime",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"0E5346C24FCA05DA4677B3B4CA79FCE1"
+			],
+			"duration": 0.02375350147485733,
+			"dateTime": "2026.10.06-17.12.11",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		}
+	]
+}

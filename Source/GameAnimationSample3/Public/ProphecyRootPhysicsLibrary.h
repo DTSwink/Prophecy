@@ -143,4 +143,14 @@ public:
     UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Root")
     static void GetRootSelfBalancingState(AProphecyAgent* Agent, bool& bEnabled,
         bool& bActive, FVector& FlatFeetMidpoint);
+
+    /** Temporarily suppress only the root balance spring, preserving its configuration.
+     * Duration uses 60 unpaused world ticks per second, independent of FPS/time dilation.
+     * Repeated calls replace the remaining duration; zero resumes early. Reset cancels it.
+     * Root drag, steering, collision and authored attack root motion remain unchanged. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Root", meta=(DefaultToSelf="Agent"))
+    static bool SuspendRootSelfBalancing(AProphecyAgent* Agent, float DurationSeconds = 1.f);
+
+    UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Root", meta=(DefaultToSelf="Agent"))
+    static bool IsRootSelfBalancingSuspended(AProphecyAgent* Agent);
 };

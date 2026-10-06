@@ -1,0 +1,25 @@
+[2026.10.06-18.42.43:678][608]LogAutomationCommandLine: Display: Found 1 automation tests based on 'Prophecy.Jolt.Sword.AttackCollisionPhases'
+[2026.10.06-18.42.43:678][608]LogAutomationCommandLine: Display: 	Prophecy.Jolt.Sword.AttackCollisionPhases
+[2026.10.06-18.42.43:678][608]LogAutomationController: Sending StopTests to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-18.42.43:685][608]LogAutomationController: Sending StartTestSession to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-18.42.43:685][608]LogAutomationController: Display: Clearing ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Logs/ and ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Tmp/
+[2026.10.06-18.42.43:685][608]AutomationTestingLog: -----Test Run 3----
+[2026.10.06-18.42.43:687][609]LogAutomationController: Sending RunTest AttackCollisionPhases to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-18.42.43:687][609]LogAutomationController: Display: Test Started. Name={AttackCollisionPhases} Path={Prophecy.Jolt.Sword.AttackCollisionPhases}
+[2026.10.06-18.42.43:700][609]LogAutomationWorker: Received StopTests from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-18.42.43:700][609]LogAutomationWorker: Received StartTestSession from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-18.42.43:701][609]LogAutomationWorker: Received RunTests AttackCollisionPhases from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-18.42.43:705][609]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.06-18.42.43:713][609]LogWorld: Bringing World /Temp/Untitled_1.Untitled up for play (max tick rate 60) at 2026.10.06-20.42.43
+[2026.10.06-18.42.43:713][609]LogWorld: Bringing up level for play took: 0.004199
+[2026.10.06-18.42.43:735][609]LogWorld: BeginTearingDown for /Temp/Untitled_1
+[2026.10.06-18.42.43:735][609]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.06-18.42.43:736][609]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.06-18.42.43:837][611]LogAutomationController: Display: Test Completed. Result={Success} Name={AttackCollisionPhases} Path={Prophecy.Jolt.Sword.AttackCollisionPhases}
+[2026.10.06-18.42.43:837][611]LogAutomationController: BeginEvents: Prophecy.Jolt.Sword.AttackCollisionPhases
+[2026.10.06-18.42.43:837][611]LogAutomationController: EndEvents: Prophecy.Jolt.Sword.AttackCollisionPhases
+[2026.10.06-18.42.43:874][611]LogAutomationController: Sending StopTestSession to 391563F741F89B05AE8697AC55DC5ED5
+[2026.10.06-18.42.43:875][611]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 1 tests performed.
+[2026.10.06-18.42.43:891][612]LogAutomationWorker: Received StopTestSession from 7B33EDD9444441FFE9E9CAA62228155D
+[2026.10.06-18.42.53:965][165]LogUObjectHash: Compacting FUObjectHashTables data took   3.64ms
+[2026.10.06-18.42.53:968][165]LogFileHelpers: Editor autosave (incl. external actors) for '/Game/testNN' took 0.477

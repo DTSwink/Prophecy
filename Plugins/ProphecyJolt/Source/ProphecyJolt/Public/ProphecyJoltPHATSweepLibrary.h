@@ -3,20 +3,23 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "ProphecyJoltPHATSweepLibrary.generated.h"
 
-/** Selective contact prediction, gated by attack and active defense lifecycles. */
+class UPrimitiveComponent;
+/** Selective contact prediction on the active attack's striking parts. */
 UCLASS()
 class PROPHECYJOLT_API UProphecyJoltPHATSweepLibrary : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 public:
-    /** Sweep this agent's PhysicalMesh PHAT bodies (including an attached welded sword).
+    /** Sweep only this agent's active attacking parts: punch hand/forearm, kick foot/calf,
+     * headbutt head, or sword only (including its welded shape, excluding the hand).
      * Predicts translation AND rotation against other registered Jolt bodies; applies a
      * mass/inertia-weighted contact impulse. Does not teleport bodies, enable Jolt CCD,
      * change global substeps, or affect the NN. Existing overlaps use the normal solver.
      * Strength 0 disables work; 1 applies full predicted normal response. Experimental:
      * the subsequent joint solve can still change motion, so this is not an overlap guarantee.
-     * Runs during attacks and active dodge/parry checkpoint control (not waiting for Armed).
-     * These states default to Strength 1 / 64 iterations unless
+     * Runs only during attacks, including wind-up; never during dodge/parry or locomotion.
+     * Predictive impulses do NOT emit Hit events. Normal touching contacts still do.
+     * Attacks default to Strength 1 / 64 iterations unless
      * overridden here; Enabled false disables automatic sweeps for this agent.
      * Call once or on state changes. Settings can be supplied before the rig exists. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Jolt", meta=(DisplayName="Set Jolt PHAT Sweeps"))
@@ -29,7 +32,10 @@ public:
     UFUNCTION(meta=(BlueprintInternalUseOnly="true"))
     static void NotifyAttackState(AActor* Agent, bool Attacking);
 
-    /** Active checkpoint ownership only: queued defenses must not enable sweeps. */
+    // Game module supplies GetAttackBones once at entry; no per-tick attack/name polling.
+    static void SetAttackParts(AActor* Agent, const TArray<FName>& Bones, UPrimitiveComponent* Sword);
+
+    /** Legacy internal bridge, retained for compatibility; defense never enables sweeps. */
     UFUNCTION(meta=(BlueprintInternalUseOnly="true"))
     static void NotifyDefenseState(AActor* Agent, bool Defending);
 };

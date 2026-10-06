@@ -1,0 +1,800 @@
+{
+  "length_before": {
+    "reason": "complete",
+    "ticks": {
+      "960": {
+        "attack": null,
+        "sides": {
+          "l": {
+            "future_bend": 38.360417283893504,
+            "presented_bend": 39.393129319065814,
+            "body_bend": 39.54096452182121,
+            "forearm_length": 22.34914600849153,
+            "elbow_step_degrees": 1.2536980996153695
+          },
+          "r": {
+            "future_bend": 40.54969725235965,
+            "presented_bend": 43.123914956368864,
+            "body_bend": 43.408923485479164,
+            "forearm_length": 22.349242866045874,
+            "elbow_step_degrees": 1.315655371740509
+          }
+        }
+      },
+      "961": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          1
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 38.360417283893504,
+            "presented_bend": 38.875925613018715,
+            "body_bend": 39.01376639009628,
+            "forearm_length": 22.34914600849153,
+            "elbow_step_degrees": 1.2428643941491
+          },
+          "r": {
+            "future_bend": 40.54969725235965,
+            "presented_bend": 41.82761196817235,
+            "body_bend": 42.077989594867454,
+            "forearm_length": 22.349242866045874,
+            "elbow_step_degrees": 1.0885726694304256
+          }
+        }
+      },
+      "962": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          2
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 0.0,
+            "presented_bend": 38.360417283893504,
+            "body_bend": 38.36265684498284,
+            "forearm_length": 17.349127879141037,
+            "elbow_step_degrees": 1.242864394150273
+          },
+          "r": {
+            "future_bend": 24.257926557868135,
+            "presented_bend": 40.54969725235966,
+            "body_bend": 40.53946003000581,
+            "forearm_length": 20.82674753186723,
+            "elbow_step_degrees": 1.088572669431765
+          }
+        }
+      },
+      "963": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          2
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 0.0,
+            "presented_bend": 20.553431606252627,
+            "body_bend": 20.497129080752437,
+            "forearm_length": 17.349127879141037,
+            "elbow_step_degrees": 12.247187136437226
+          },
+          "r": {
+            "future_bend": 24.257926557868135,
+            "presented_bend": 32.57601082597854,
+            "body_bend": 32.577906571092555,
+            "forearm_length": 20.82674753186723,
+            "elbow_step_degrees": 6.108624648987271
+          }
+        }
+      },
+      "964": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          3
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 6.954378545285407,
+            "presented_bend": 0.0,
+            "body_bend": 0.4203409974570341,
+            "forearm_length": 17.349152951003134,
+            "elbow_step_degrees": 11.680843772475342
+          },
+          "r": {
+            "future_bend": 1.7075472925031877e-06,
+            "presented_bend": 24.257926557868103,
+            "body_bend": 24.24425778135047,
+            "forearm_length": 17.91092678946966,
+            "elbow_step_degrees": 5.746912301936724
+          }
+        }
+      },
+      "965": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          3
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 6.954378545285407,
+            "presented_bend": 3.4790801919089493,
+            "body_bend": 3.4717843630220138,
+            "forearm_length": 17.349152951003134,
+            "elbow_step_degrees": 3.9883682813108017
+          },
+          "r": {
+            "future_bend": 1.7075472925031877e-06,
+            "presented_bend": 12.641609279979415,
+            "body_bend": 12.59607861814404,
+            "forearm_length": 17.91092678946966,
+            "elbow_step_degrees": 7.459752398997465
+          }
+        }
+      },
+      "966": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          4
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 12.504461301632045,
+            "presented_bend": 6.954378545285512,
+            "body_bend": 6.929560373252153,
+            "forearm_length": 17.349153802711207,
+            "elbow_step_degrees": 4.9661381585525
+          },
+          "r": {
+            "future_bend": 3.078324659199975e-06,
+            "presented_bend": 1.7075472925031877e-06,
+            "body_bend": 0.10784092277856626,
+            "forearm_length": 17.34913268791,
+            "elbow_step_degrees": 8.31826009729174
+          }
+        }
+      },
+      "968": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          5
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 21.654938343636985,
+            "presented_bend": 12.504461301631927,
+            "body_bend": 12.530051852886167,
+            "forearm_length": 17.863825567716432,
+            "elbow_step_degrees": 3.9795092475128544
+          },
+          "r": {
+            "future_bend": 22.04208051380136,
+            "presented_bend": 3.078324659199975e-06,
+            "body_bend": 0.096901440366717,
+            "forearm_length": 17.34913207188695,
+            "elbow_step_degrees": 3.930196267207493
+          }
+        }
+      },
+      "970": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          6
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 30.534082089836463,
+            "presented_bend": 21.65493834363695,
+            "body_bend": 21.667944530975067,
+            "forearm_length": 19.817272009461888,
+            "elbow_step_degrees": 4.2297999459425935
+          },
+          "r": {
+            "future_bend": 35.764028957249295,
+            "presented_bend": 22.042080513801412,
+            "body_bend": 21.68269060380386,
+            "forearm_length": 17.349121919484215,
+            "elbow_step_degrees": 12.044663835405187
+          }
+        }
+      },
+      "972": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          7
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 39.301435526913494,
+            "presented_bend": 30.534082089836463,
+            "body_bend": 30.586149216419628,
+            "forearm_length": 22.308199393716087,
+            "elbow_step_degrees": 1.885017981440912
+          },
+          "r": {
+            "future_bend": 32.0600981935434,
+            "presented_bend": 35.76402895724933,
+            "body_bend": 35.23578783213077,
+            "forearm_length": 18.847102001870056,
+            "elbow_step_degrees": 13.99016083902998
+          }
+        }
+      },
+      "974": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          8
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 40.57497106649549,
+            "presented_bend": 39.301435526913494,
+            "body_bend": 39.32555794960772,
+            "forearm_length": 22.389559676588803,
+            "elbow_step_degrees": 4.471785607986646
+          },
+          "r": {
+            "future_bend": 39.95178494153489,
+            "presented_bend": 32.06009819354337,
+            "body_bend": 30.908244350943416,
+            "forearm_length": 21.226289307423542,
+            "elbow_step_degrees": 23.544366412995668
+          }
+        }
+      },
+      "976": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          9
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 46.86542538704573,
+            "presented_bend": 40.57497106649549,
+            "body_bend": 40.57585256361179,
+            "forearm_length": 21.884369101074796,
+            "elbow_step_degrees": 5.532247941076253
+          },
+          "r": {
+            "future_bend": 51.802226535654924,
+            "presented_bend": 39.95178494153489,
+            "body_bend": 38.07866301093985,
+            "forearm_length": 26.822718818162567,
+            "elbow_step_degrees": 29.38739338051966
+          }
+        }
+      },
+      "978": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          10
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 60.99505698609444,
+            "presented_bend": 46.86542538704573,
+            "body_bend": 46.59065574101776,
+            "forearm_length": 26.84562370548566,
+            "elbow_step_degrees": 10.976271985839398
+          },
+          "r": {
+            "future_bend": 54.444446842327594,
+            "presented_bend": 51.802226535654924,
+            "body_bend": 51.40138217651595,
+            "forearm_length": 27.34913736400523,
+            "elbow_step_degrees": 20.02587535360722
+          }
+        }
+      },
+      "980": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          11
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 65.97255467314872,
+            "presented_bend": 60.99505698609444,
+            "body_bend": 60.47584701769171,
+            "forearm_length": 27.34914027444828,
+            "elbow_step_degrees": 13.127292265587114
+          },
+          "r": {
+            "future_bend": 55.8584844897994,
+            "presented_bend": 54.444446842327594,
+            "body_bend": 54.54968626194349,
+            "forearm_length": 27.34912861774253,
+            "elbow_step_degrees": 5.4699322389441765
+          }
+        }
+      },
+      "982": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          12
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 63.409963316510044,
+            "presented_bend": 65.97255467314872,
+            "body_bend": 65.96104425076766,
+            "forearm_length": 26.93502798919406,
+            "elbow_step_degrees": 4.941396178069459
+          },
+          "r": {
+            "future_bend": 60.377841184822095,
+            "presented_bend": 55.8584844897994,
+            "body_bend": 55.98355022769559,
+            "forearm_length": 27.34913480152679,
+            "elbow_step_degrees": 7.330394774286919
+          }
+        }
+      },
+      "984": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          13
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 59.11619448778979,
+            "presented_bend": 63.409963316510044,
+            "body_bend": 63.316835356696224,
+            "forearm_length": 25.163291278509075,
+            "elbow_step_degrees": 7.999452129788886
+          },
+          "r": {
+            "future_bend": 63.36423939957263,
+            "presented_bend": 60.377841184822095,
+            "body_bend": 60.6375127342892,
+            "forearm_length": 27.34912688568153,
+            "elbow_step_degrees": 13.001375210154418
+          }
+        }
+      }
+    }
+  },
+  "length_after": {
+    "reason": "complete",
+    "ticks": {
+      "960": {
+        "attack": null,
+        "sides": {
+          "l": {
+            "future_bend": 39.53978407797215,
+            "presented_bend": 40.95146068374741,
+            "body_bend": 41.19294554457911,
+            "forearm_length": 22.349146008491523,
+            "elbow_step_degrees": 1.3516861691374482
+          },
+          "r": {
+            "future_bend": 41.44624124034125,
+            "presented_bend": 44.11002987937505,
+            "body_bend": 44.38826658569775,
+            "forearm_length": 22.349242866045874,
+            "elbow_step_degrees": 1.3119189392103159
+          }
+        }
+      },
+      "961": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          1
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 39.53978407797215,
+            "presented_bend": 40.2448873579502,
+            "body_bend": 40.52815078682048,
+            "forearm_length": 22.349146008491523,
+            "elbow_step_degrees": 1.3920694464669061
+          },
+          "r": {
+            "future_bend": 41.44624124034125,
+            "presented_bend": 42.76839317001042,
+            "body_bend": 43.018048130116824,
+            "forearm_length": 22.349242866045874,
+            "elbow_step_degrees": 1.0619180851648442
+          }
+        }
+      },
+      "962": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          2
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 36.96317299861741,
+            "presented_bend": 39.53978407797208,
+            "body_bend": 39.54393815367243,
+            "forearm_length": 22.26350678948907,
+            "elbow_step_degrees": 1.3920694464648116
+          },
+          "r": {
+            "future_bend": 38.062579895523555,
+            "presented_bend": 41.44624124034126,
+            "body_bend": 41.44206064121992,
+            "forearm_length": 22.323251295690405,
+            "elbow_step_degrees": 1.0619180851620984
+          }
+        }
+      },
+      "963": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          2
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 36.96317299861741,
+            "presented_bend": 38.184454642559245,
+            "body_bend": 38.10554874003759,
+            "forearm_length": 22.26350678948907,
+            "elbow_step_degrees": 6.84339680857453
+          },
+          "r": {
+            "future_bend": 38.062579895523555,
+            "presented_bend": 39.68180998030981,
+            "body_bend": 39.78894782164954,
+            "forearm_length": 22.323251295690405,
+            "elbow_step_degrees": 4.183380367884009
+          }
+        }
+      },
+      "964": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          3
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 32.475734731329275,
+            "presented_bend": 36.96317299861741,
+            "body_bend": 36.93778821013865,
+            "forearm_length": 21.722751276548948,
+            "elbow_step_degrees": 5.761666227557472
+          },
+          "r": {
+            "future_bend": 33.66881984676764,
+            "presented_bend": 38.062579895523605,
+            "body_bend": 38.046046043585626,
+            "forearm_length": 21.98021590107268,
+            "elbow_step_degrees": 2.974038433328542
+          }
+        }
+      },
+      "965": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          3
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 32.475734731329275,
+            "presented_bend": 34.64267525998508,
+            "body_bend": 34.61899831519681,
+            "forearm_length": 21.722751276548948,
+            "elbow_step_degrees": 3.9145435607243164
+          },
+          "r": {
+            "future_bend": 33.66881984676764,
+            "presented_bend": 35.87159129898215,
+            "body_bend": 35.88171613193882,
+            "forearm_length": 21.98021590107268,
+            "elbow_step_degrees": 3.4963194097923056
+          }
+        }
+      },
+      "966": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          4
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 28.0238691577222,
+            "presented_bend": 32.475734731329304,
+            "body_bend": 32.4155581984415,
+            "forearm_length": 21.063321985338554,
+            "elbow_step_degrees": 5.293636258296572
+          },
+          "r": {
+            "future_bend": 29.541967010878896,
+            "presented_bend": 33.668819846767626,
+            "body_bend": 33.67580952147059,
+            "forearm_length": 20.92294823900227,
+            "elbow_step_degrees": 5.048010722864946
+          }
+        }
+      },
+      "968": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          5
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 28.128616822037863,
+            "presented_bend": 28.023869157722185,
+            "body_bend": 27.966239849363085,
+            "forearm_length": 20.923052266761918,
+            "elbow_step_degrees": 5.672729935371634
+          },
+          "r": {
+            "future_bend": 33.93074698940677,
+            "presented_bend": 29.54196701087897,
+            "body_bend": 29.517945775168318,
+            "forearm_length": 19.229959051585247,
+            "elbow_step_degrees": 4.202926255952145
+          }
+        }
+      },
+      "970": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          6
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 33.78265008009238,
+            "presented_bend": 28.12861682203785,
+            "body_bend": 28.11373638908014,
+            "forearm_length": 21.950821070043638,
+            "elbow_step_degrees": 4.045375715597826
+          },
+          "r": {
+            "future_bend": 43.32927751956887,
+            "presented_bend": 33.930746989406806,
+            "body_bend": 33.80633985030986,
+            "forearm_length": 18.204476309877077,
+            "elbow_step_degrees": 5.9537304190072176
+          }
+        }
+      },
+      "972": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          7
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 44.34355488486472,
+            "presented_bend": 33.78265008009238,
+            "body_bend": 33.80554544108377,
+            "forearm_length": 23.745674481792303,
+            "elbow_step_degrees": 1.4721749381908098
+          },
+          "r": {
+            "future_bend": 35.704767062330816,
+            "presented_bend": 43.329277519568905,
+            "body_bend": 42.71281012327753,
+            "forearm_length": 21.367789830363073,
+            "elbow_step_degrees": 14.377573434680793
+          }
+        }
+      },
+      "974": {
+        "attack": [
+          "slashLD",
+          false,
+          false,
+          false,
+          8
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 43.98945733581565,
+            "presented_bend": 44.34355488486472,
+            "body_bend": 44.377568694095416,
+            "forearm_length": 22.638691298095587,
+            "elbow_step_degrees": 2.2032272101073618
+          },
+          "r": {
+            "future_bend": 32.813576259773704,
+            "presented_bend": 35.70476706233071,
+            "body_bend": 34.5991058767928,
+            "forearm_length": 22.813057508261192,
+            "elbow_step_degrees": 23.305482912119988
+          }
+        }
+      },
+      "976": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          9
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 43.47927167119568,
+            "presented_bend": 43.98945733581565,
+            "body_bend": 43.98685223263514,
+            "forearm_length": 21.557731883593256,
+            "elbow_step_degrees": 3.1954310709586156
+          },
+          "r": {
+            "future_bend": 47.79064316088823,
+            "presented_bend": 32.813576259773704,
+            "body_bend": 31.938603872281593,
+            "forearm_length": 25.113657597525926,
+            "elbow_step_degrees": 26.676684985921156
+          }
+        }
+      },
+      "978": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          10
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 54.728926591849216,
+            "presented_bend": 43.47927167119568,
+            "body_bend": 43.31791250424847,
+            "forearm_length": 24.795186280596504,
+            "elbow_step_degrees": 9.067837438857222
+          },
+          "r": {
+            "future_bend": 56.0789340168293,
+            "presented_bend": 47.79064316088823,
+            "body_bend": 47.33291292383629,
+            "forearm_length": 27.349147831406928,
+            "elbow_step_degrees": 22.041502952110825
+          }
+        }
+      },
+      "980": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          11
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 59.19825632456938,
+            "presented_bend": 54.728926591849216,
+            "body_bend": 53.97421782939948,
+            "forearm_length": 27.029127041011844,
+            "elbow_step_degrees": 15.693225193164661
+          },
+          "r": {
+            "future_bend": 60.77507527745864,
+            "presented_bend": 56.0789340168293,
+            "body_bend": 56.1647970942325,
+            "forearm_length": 27.349137117100916,
+            "elbow_step_degrees": 7.933774686101453
+          }
+        }
+      },
+      "982": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          12
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 58.690040665001526,
+            "presented_bend": 59.19825632456938,
+            "body_bend": 59.377423627085776,
+            "forearm_length": 26.59345000182444,
+            "elbow_step_degrees": 6.160802085909281
+          },
+          "r": {
+            "future_bend": 70.56079858059826,
+            "presented_bend": 60.77507527745864,
+            "body_bend": 60.94808151605731,
+            "forearm_length": 27.349145913787943,
+            "elbow_step_degrees": 6.784483148371829
+          }
+        }
+      },
+      "984": {
+        "attack": [
+          "slashLD",
+          false,
+          true,
+          false,
+          13
+        ],
+        "sides": {
+          "l": {
+            "future_bend": 55.35441737704842,
+            "presented_bend": 58.690040665001526,
+            "body_bend": 58.68366924726881,
+            "forearm_length": 25.19796911374276,
+            "elbow_step_degrees": 7.724808119974813
+          },
+          "r": {
+            "future_bend": 78.08656990464513,
+            "presented_bend": 70.56079858059826,
+            "body_bend": 70.83664977465718,
+            "forearm_length": 27.15208709212394,
+            "elbow_step_degrees": 11.661940662585774
+          }
+        }
+      }
+    }
+  }
+}

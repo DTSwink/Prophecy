@@ -1,0 +1,743 @@
+{
+  "baseline": {
+    "start": 419,
+    "armed": 440,
+    "hit": 446,
+    "prefix_pose_max_error": 0.0,
+    "prefix_nn_max_error": 0.0,
+    "first_headbutt_input_output_max_error": 0.0,
+    "head_motion_cm_per_tick": {
+      "420": {
+        "future": 5.940076185297354,
+        "presented": 1.0452002328775334,
+        "body": 1.0396224033139059
+      },
+      "421": {
+        "future": 0.0,
+        "presented": 0.8788199119477167,
+        "body": 0.8573390245433191
+      },
+      "422": {
+        "future": 4.79477828515952,
+        "presented": 1.2677414160161866,
+        "body": 1.3487847073122026
+      },
+      "423": {
+        "future": 0.0,
+        "presented": 3.3252179710644665,
+        "body": 3.293905148366096
+      },
+      "424": {
+        "future": 1.2081015927210932,
+        "presented": 3.7085063120740194,
+        "body": 3.7586111461782075
+      },
+      "425": {
+        "future": 0.0,
+        "presented": 2.7802715958112136,
+        "body": 2.7445564671695197
+      },
+      "426": {
+        "future": 7.049618516022335,
+        "presented": 1.2656524616468592,
+        "body": 1.2329641960730398
+      },
+      "427": {
+        "future": 0.0,
+        "presented": 2.336984099779977,
+        "body": 2.329305038235919
+      },
+      "428": {
+        "future": 13.185282857628469,
+        "presented": 3.9765168541790126,
+        "body": 3.976400722827388
+      },
+      "429": {
+        "future": 0.0,
+        "presented": 7.157277072677568,
+        "body": 7.195058591591808
+      },
+      "430": {
+        "future": 12.354018939332285,
+        "presented": 7.242770607899847,
+        "body": 7.265166971247749
+      },
+      "431": {
+        "future": 0.0,
+        "presented": 6.983876660409555,
+        "body": 7.0387053601406775
+      },
+      "432": {
+        "future": 2.7544368606513445,
+        "presented": 6.762051372523957,
+        "body": 6.789109869045527
+      },
+      "433": {
+        "future": 0.0,
+        "presented": 1.8933399569516367,
+        "body": 1.916169013782689
+      },
+      "434": {
+        "future": 0.6974050053114704,
+        "presented": 1.5459607946597462,
+        "body": 1.5573223230048412
+      },
+      "435": {
+        "future": 0.0,
+        "presented": 0.3487025026557101,
+        "body": 0.2660384413753198
+      },
+      "436": {
+        "future": 1.1240900241185383,
+        "presented": 0.34870250265576036,
+        "body": 0.30991681394960213
+      },
+      "437": {
+        "future": 0.0,
+        "presented": 0.5620450120592692,
+        "body": 0.6266693192983054
+      },
+      "438": {
+        "future": 0.8257752941554896,
+        "presented": 0.5620450120592692,
+        "body": 0.6007189137690279
+      },
+      "439": {
+        "future": 0.0,
+        "presented": 0.41288764707774417,
+        "body": 0.4529473088620247
+      },
+      "440": {
+        "future": 0.2206553474520779,
+        "presented": 0.41288764707774533,
+        "body": 0.4355581023864958
+      },
+      "441": {
+        "future": 0.0,
+        "presented": 0.11032767372603973,
+        "body": 0.12312826727127424
+      },
+      "442": {
+        "future": 6.708362591071928,
+        "presented": 0.11032767372603816,
+        "body": 0.11624821578297058
+      },
+      "443": {
+        "future": 0.0,
+        "presented": 3.354181295535964,
+        "body": 3.2606188886332736
+      },
+      "444": {
+        "future": 11.126259421176941,
+        "presented": 3.354181295535964,
+        "body": 3.31168884821339
+      },
+      "445": {
+        "future": 0.0,
+        "presented": 5.563129710588484,
+        "body": 5.371130934316423
+      },
+      "446": {
+        "future": 14.002150748315623,
+        "presented": 5.563129710588457,
+        "body": 5.260147009066682
+      }
+    },
+    "report_420": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 0.000 L 0.000 R 0.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 1 hand 1 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 2 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[CONSTRAINT] Root speed limits: linear 900 cm/s angular 800 deg/s | last window clamped 0\n[CONSTRAINT] Root / physical pelvis bound: radius 20 cm; requires simulated pelvis\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[POSE+HISTORY] Attack loco drag: loco feet mask 2 | mode 1 | release distance 40 height 15\n[POSE+HISTORY] Loco-drag knee pole blend: feet mask 2 | L 0.000 R 0.017 / 1.000\n[INPUT] Loco-drag frozen root window: alpha 0.15\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE+HISTORY] Attack-start FK core inertia: weight 0.926 | response 0.25 | elapsed 0.017 / 0.100\n[POSE+HISTORY] Attack-start hand inertia: L1 R1 | weight 0.980 | response 1 | root/spine ref 1 | elapsed 0.017 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 1 | linear 1.000 angular 1.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 19.998 -> 0.000 | 0.033 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 19.998 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.952 R 0.952 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_430": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 1.000 L 1.000 R 1.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 1 hand 1 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 7 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE+HISTORY] Attack-start hand inertia: L1 R1 | weight 0.020 | response 1 | root/spine ref 1 | elapsed 0.183 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 11 | linear 0.286 angular 0.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 2.186 -> 0.000 | 0.200 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 2.186 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.973 R 0.973 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_440": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 1.000 L 1.000 R 1.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 1 hand 1 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 12 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 0.000 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.994 R 0.994 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n"
+  },
+  "motion_off": {
+    "start": 419,
+    "armed": 440,
+    "hit": 446,
+    "prefix_pose_max_error": 0.0,
+    "prefix_nn_max_error": 0.0,
+    "first_headbutt_input_output_max_error": 0.0,
+    "head_motion_cm_per_tick": {
+      "420": {
+        "future": 5.940076185297354,
+        "presented": 1.0452002328775334,
+        "body": 1.0396224033139059
+      },
+      "421": {
+        "future": 0.0,
+        "presented": 0.8788199119477167,
+        "body": 0.8573390245433191
+      },
+      "422": {
+        "future": 4.79477828515952,
+        "presented": 1.2677414160161866,
+        "body": 1.3487847073122026
+      },
+      "423": {
+        "future": 0.0,
+        "presented": 3.3252179710644665,
+        "body": 3.293905148366096
+      },
+      "424": {
+        "future": 1.2081015927210932,
+        "presented": 3.7085063120740194,
+        "body": 3.7586111461782075
+      },
+      "425": {
+        "future": 0.0,
+        "presented": 2.7802715958112136,
+        "body": 2.7445564671695197
+      },
+      "426": {
+        "future": 7.049618516022335,
+        "presented": 1.2656524616468592,
+        "body": 1.2329641960730398
+      },
+      "427": {
+        "future": 0.0,
+        "presented": 2.336984099779977,
+        "body": 2.329305038235919
+      },
+      "428": {
+        "future": 13.185282857628469,
+        "presented": 3.9765168541790126,
+        "body": 3.976400722827388
+      },
+      "429": {
+        "future": 0.0,
+        "presented": 7.157277072677568,
+        "body": 7.195058591591808
+      },
+      "430": {
+        "future": 12.354018939332285,
+        "presented": 7.242770607899847,
+        "body": 7.265166971247749
+      },
+      "431": {
+        "future": 0.0,
+        "presented": 6.983876660409555,
+        "body": 7.0387053601406775
+      },
+      "432": {
+        "future": 2.7544368606513445,
+        "presented": 6.762051372523957,
+        "body": 6.789109869045527
+      },
+      "433": {
+        "future": 0.0,
+        "presented": 1.8933399569516367,
+        "body": 1.916169013782689
+      },
+      "434": {
+        "future": 0.6974050053114704,
+        "presented": 1.5459607946597462,
+        "body": 1.5573223230048412
+      },
+      "435": {
+        "future": 0.0,
+        "presented": 0.3487025026557101,
+        "body": 0.2660384413753198
+      },
+      "436": {
+        "future": 1.1240900241185383,
+        "presented": 0.34870250265576036,
+        "body": 0.30991681394960213
+      },
+      "437": {
+        "future": 0.0,
+        "presented": 0.5620450120592692,
+        "body": 0.6266693192983054
+      },
+      "438": {
+        "future": 0.8257752941554896,
+        "presented": 0.5620450120592692,
+        "body": 0.6007189137690279
+      },
+      "439": {
+        "future": 0.0,
+        "presented": 0.41288764707774417,
+        "body": 0.4529473088620247
+      },
+      "440": {
+        "future": 0.2206553474520779,
+        "presented": 0.41288764707774533,
+        "body": 0.4355581023864958
+      },
+      "441": {
+        "future": 0.0,
+        "presented": 0.11032767372603973,
+        "body": 0.12312826727127424
+      },
+      "442": {
+        "future": 6.708362591071928,
+        "presented": 0.11032767372603816,
+        "body": 0.11624821578297058
+      },
+      "443": {
+        "future": 0.0,
+        "presented": 3.354181295535964,
+        "body": 3.2606188886332736
+      },
+      "444": {
+        "future": 11.126259421176941,
+        "presented": 3.354181295535964,
+        "body": 3.31168884821339
+      },
+      "445": {
+        "future": 0.0,
+        "presented": 5.563129710588484,
+        "body": 5.371130934316423
+      },
+      "446": {
+        "future": 14.002150748315623,
+        "presented": 5.563129710588457,
+        "body": 5.260147009066682
+      }
+    },
+    "whole_capture_native_and_bones_exact": true,
+    "report_420": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 0.000 L 0.000 R 0.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 1 hand 1 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 2 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[CONSTRAINT] Root speed limits: linear 900 cm/s angular 800 deg/s | last window clamped 0\n[CONSTRAINT] Root / physical pelvis bound: radius 20 cm; requires simulated pelvis\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[POSE+HISTORY] Attack loco drag: loco feet mask 2 | mode 1 | release distance 40 height 15\n[POSE+HISTORY] Loco-drag knee pole blend: feet mask 2 | L 0.000 R 0.017 / 1.000\n[INPUT] Loco-drag frozen root window: alpha 0.15\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE+HISTORY] Attack-start FK core inertia: weight 0.926 | response 0.25 | elapsed 0.017 / 0.100\n[POSE+HISTORY] Attack-start hand inertia: L1 R1 | weight 0.980 | response 1 | root/spine ref 1 | elapsed 0.017 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 1 | linear 1.000 angular 1.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 19.998 -> 0.000 | 0.033 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 19.998 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.952 R 0.952 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_430": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 1.000 L 1.000 R 1.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 1 hand 1 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 7 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE+HISTORY] Attack-start hand inertia: L1 R1 | weight 0.020 | response 1 | root/spine ref 1 | elapsed 0.183 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 11 | linear 0.286 angular 0.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 2.186 -> 0.000 | 0.200 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 2.186 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.973 R 0.973 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_440": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 1.000 L 1.000 R 1.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 1 hand 1 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 12 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 0.000 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.994 R 0.994 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n"
+  },
+  "feedback_off": {
+    "start": 419,
+    "armed": 428,
+    "hit": 434,
+    "prefix_pose_max_error": 0.0,
+    "prefix_nn_max_error": 0.0,
+    "first_headbutt_input_output_max_error": 0.0,
+    "head_motion_cm_per_tick": {
+      "420": {
+        "future": 5.940076185297354,
+        "presented": 1.0452002328775334,
+        "body": 1.0396224033139059
+      },
+      "421": {
+        "future": 0.0,
+        "presented": 0.8788199119477167,
+        "body": 0.8573390245433191
+      },
+      "422": {
+        "future": 8.045789699459336,
+        "presented": 1.2677414160161866,
+        "body": 1.3487847073122026
+      },
+      "423": {
+        "future": 0.0,
+        "presented": 4.961310725873344,
+        "body": 4.7840043979805404
+      },
+      "424": {
+        "future": 7.240460106419702,
+        "presented": 5.352488746448816,
+        "body": 5.3629840108052935
+      },
+      "425": {
+        "future": 0.0,
+        "presented": 6.434779992325993,
+        "body": 6.11574697906586
+      },
+      "426": {
+        "future": 4.606203921689487,
+        "presented": 4.796194545931679,
+        "body": 4.751689722991856
+      },
+      "427": {
+        "future": 0.0,
+        "presented": 0.987778595910499,
+        "body": 0.9495239179335063
+      },
+      "428": {
+        "future": 18.267239576365146,
+        "presented": 2.63815578874308,
+        "body": 2.614284077325834
+      },
+      "429": {
+        "future": 0.0,
+        "presented": 9.698135437777077,
+        "body": 9.440574599779241
+      },
+      "430": {
+        "future": 21.49359187475542,
+        "presented": 9.787652930741098,
+        "body": 9.699358146176163
+      },
+      "431": {
+        "future": 0.0,
+        "presented": 11.551128625454636,
+        "body": 11.383755220468316
+      },
+      "432": {
+        "future": 18.75543359317273,
+        "presented": 11.330610759569916,
+        "body": 11.286899071388032
+      },
+      "433": {
+        "future": 0.0,
+        "presented": 9.979120872248936,
+        "body": 9.750525495663236
+      },
+      "434": {
+        "future": 12.69738864467511,
+        "presented": 9.586242939245748,
+        "body": 8.95592798860269
+      },
+      "435": {
+        "future": 0.0,
+        "presented": 6.348694322337555,
+        "body": 3.863756541242706
+      },
+      "436": {
+        "future": 4.548733995486623,
+        "presented": 6.348694322337555,
+        "body": 4.868918208526222
+      },
+      "437": {
+        "future": 0.0,
+        "presented": 2.2743669977433116,
+        "body": 2.9460219415392133
+      },
+      "438": {
+        "future": 2.3809631366922135,
+        "presented": 2.2743608675925695,
+        "body": 2.2704602329994454
+      },
+      "439": {
+        "future": 0.0,
+        "presented": 1.1904810072493592,
+        "body": 1.7042735562217803
+      },
+      "440": {
+        "future": 3.4329253238489925,
+        "presented": 1.190481564138766,
+        "body": 1.599333364736357
+      },
+      "441": {
+        "future": 0.0,
+        "presented": 1.7164597864740827,
+        "body": 1.3492632644903184
+      },
+      "442": {
+        "future": 6.817066087425751,
+        "presented": 1.716459786474092,
+        "body": 1.3122365512433398
+      },
+      "443": {
+        "future": 0.0,
+        "presented": 3.4085330437128563,
+        "body": 3.1891831690628814
+      },
+      "444": {
+        "future": 6.874616094986759,
+        "presented": 3.4085330437128945,
+        "body": 3.3417942430861522
+      },
+      "445": {
+        "future": 0.0,
+        "presented": 3.4373080474933855,
+        "body": 3.3480015599227526
+      },
+      "446": {
+        "future": 5.843180729812163,
+        "presented": 3.437308047493374,
+        "body": 3.4264110798098693
+      }
+    },
+    "report_420": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 0.000 L 0.000 R 0.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 0 hand 0 | general hand 0 | cone 0 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 2 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[CONSTRAINT] Root speed limits: linear 900 cm/s angular 800 deg/s | last window clamped 0\n[CONSTRAINT] Root / physical pelvis bound: radius 20 cm; requires simulated pelvis\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[POSE+HISTORY] Attack loco drag: loco feet mask 2 | mode 1 | release distance 40 height 15\n[POSE+HISTORY] Loco-drag knee pole blend: feet mask 2 | L 0.000 R 0.017 / 1.000\n[INPUT] Loco-drag frozen root window: alpha 0.15\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE] Attack-start FK core inertia: weight 0.926 | response 0.25 | elapsed 0.017 / 0.100\n[POSE] Attack-start hand inertia: L1 R1 | weight 0.980 | response 1 | root/spine ref 1 | elapsed 0.017 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 1 | linear 1.000 angular 1.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 19.998 -> 0.000 | 0.033 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 19.998 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.952 R 0.952 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_430": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 1.000 L 1.000 R 1.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 0 hand 0 | general hand 0 | cone 0 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 7 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE] Attack-start hand inertia: L1 R1 | weight 0.020 | response 1 | root/spine ref 1 | elapsed 0.183 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 11 | linear 0.286 angular 0.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 2.186 -> 0.000 | 0.200 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 2.186 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.973 R 0.973 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_440": "[STATE] NN ownership: locomotion | inference enabled | lower Walk 0.999 L 0.999 R 0.999 | 30 Hz\n[POSE+HISTORY] Regional locomotion recovery: Walk pelvis 0.999 left 0.999 right 0.999 | normal 0.000\n[INPUT] Upper gaze / equipment: yaw -0.300 pitch -0.000 sword 1\n[INPUT] Upper root rotation horizon: 0.2\n[INPUT] Root self-balancing: frequency 2 damping 1 max speed 0.3 m/s\n[CONSTRAINT] Foot reach clamp: leeway 23.194 cm\n[CONSTRAINT] Calf length clamp: leeway 19.941 cm\n[POSE+PHYSICS] Calf length return: weight 0.997 | delta L 0.873 R 5.027 cm\n[CODEC] Foot contacts / toe roll: pin L 0.667 R 0.000 | integration 4 steps; geometry projection/rotation normalization\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 9.97e+18 cm | angular 9.97e+18 deg\n[HISTORY] Feedback ball_l: linear 1e+19 cm | angular 1e+19 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 9.97e+18 cm | angular 9.97e+18 deg\n[HISTORY] Feedback ball_r: linear 1e+19 cm | angular 1e+19 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[CONSTRAINT] Root speed limits: linear 900 cm/s angular 800 deg/s | last window clamped 0\n[CONSTRAINT] Root / physical pelvis bound: radius 20 cm; requires simulated pelvis\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[POSE+HISTORY] Pelvis tempering: follow XY 0.210 Z 0.210 rotation 0.210\n[POSE+HISTORY] Left foot tempering: follow XY 0.013 Z 0.013 rotation 0.013\n[POSE+HISTORY] Right foot tempering: follow XY 0.013 Z 0.013 rotation 0.013\n[STATE] Tempering blend to normal: finite return running; values above are the last accepted sample\n[PRESENT] Knee pole recovery: 0.033 / 1 | pole speed 90 deg/s\n[PRESENT] Leg chain reconstruction: preserves accepted feet; knee/length solver, minimum reach x1.2\n[CONSTRAINT] Backward pin bound: 40..55 cm | heading root 7\n[INPUT] Pin bound target heading: alpha 0.75\n[POSE+HISTORY] Foot pin smoothing: L 0.667 -> 1.000 R 0.000 -> 0.000 | in 3 out 1 ticks\n[PRESENT] Game-tick pin smoothing: effective L 0.667 R 0.000\n[POSE+HISTORY] Attack FK return / lab inertia: NN 0.344 | tick 4/10 | coeff 1 | ease 0.87 | hold 0.1\n[POSE+HISTORY] FK momentum coefficients (seconds): spine 0.0275 | clav 0.0413 | upperarm 0.0413 | forearm 0.0292 | neck1 0.0413 | neck2 0.0413 | head 0.0413\n[POSE+PHYSICS] Forearm length / wrist freedom: return 2/18 ticks | weight 0.889 | NN delta L -3.122 R -0.743 cm | physical delta L -3.370 R -0.952 cm\n[CONSTRAINT] Physical calf tightening: 20.000 -> 19.941 | 0.017 / 0.250\n[CONSTRAINT] Physical foot target tightening: 0.051 -> 0.000 | 0.033 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 0.051 cm | calf allowance 20.000 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.957 R 0.957 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n"
+  },
+  "core_feedback_off": {
+    "start": 419,
+    "armed": 438,
+    "hit": 444,
+    "prefix_pose_max_error": 0.0,
+    "prefix_nn_max_error": 0.0,
+    "first_headbutt_input_output_max_error": 0.0,
+    "head_motion_cm_per_tick": {
+      "420": {
+        "future": 5.940076185297354,
+        "presented": 1.0452002328775334,
+        "body": 1.0396224033139059
+      },
+      "421": {
+        "future": 0.0,
+        "presented": 0.8788199119477167,
+        "body": 0.8573390245433191
+      },
+      "422": {
+        "future": 7.551368758971857,
+        "presented": 1.2677414160161866,
+        "body": 1.3487847073122026
+      },
+      "423": {
+        "future": 0.0,
+        "presented": 4.723885469633553,
+        "body": 4.586511211424092
+      },
+      "424": {
+        "future": 4.4190689368522476,
+        "presented": 5.1010988925251946,
+        "body": 5.133143827659719
+      },
+      "425": {
+        "future": 0.0,
+        "presented": 5.03653581566065,
+        "body": 4.899763701446405
+      },
+      "426": {
+        "future": 6.285332413424053,
+        "presented": 3.3758350424774624,
+        "body": 3.3830466322121406
+      },
+      "427": {
+        "future": 0.0,
+        "presented": 1.8924760076522185,
+        "body": 1.8613471283659229
+      },
+      "428": {
+        "future": 13.528535298440277,
+        "presented": 3.5742349439856733,
+        "body": 3.5725903634939993
+      },
+      "429": {
+        "future": 0.0,
+        "presented": 7.32985670753943,
+        "body": 7.3261517420049955
+      },
+      "430": {
+        "future": 14.106489095935634,
+        "presented": 7.417537419193702,
+        "body": 7.421829605400536
+      },
+      "431": {
+        "future": 0.0,
+        "presented": 7.859590114712987,
+        "body": 7.844810772478498
+      },
+      "432": {
+        "future": 8.112027468239125,
+        "presented": 7.637751987114707,
+        "body": 7.635598919182575
+      },
+      "433": {
+        "future": 0.0,
+        "presented": 4.664291928204678,
+        "body": 4.561287832612341
+      },
+      "434": {
+        "future": 1.2176877589688457,
+        "presented": 4.270233647160706,
+        "body": 4.22981480181839
+      },
+      "435": {
+        "future": 0.0,
+        "presented": 0.6088438794844223,
+        "body": 0.5206879907534073
+      },
+      "436": {
+        "future": 1.4471981803308327,
+        "presented": 0.6088438794844234,
+        "body": 0.5528830813531181
+      },
+      "437": {
+        "future": 0.0,
+        "presented": 0.723599090165393,
+        "body": 0.761437474281569
+      },
+      "438": {
+        "future": 0.9483895633825743,
+        "presented": 0.7235990901654397,
+        "body": 0.7473965598116481
+      },
+      "439": {
+        "future": 0.0,
+        "presented": 0.4741947816912621,
+        "body": 0.49387459695845504
+      },
+      "440": {
+        "future": 6.322126321580991,
+        "presented": 0.4741947816913122,
+        "body": 0.48464402478663643
+      },
+      "441": {
+        "future": 0.0,
+        "presented": 3.1610631607904955,
+        "body": 3.0653303546414845
+      },
+      "442": {
+        "future": 11.128930400399266,
+        "presented": 3.1610631607904955,
+        "body": 3.120829900451683
+      },
+      "443": {
+        "future": 0.0,
+        "presented": 5.564465200199661,
+        "body": 5.370867873539504
+      },
+      "444": {
+        "future": 14.061224583001287,
+        "presented": 5.564465200199606,
+        "body": 5.35309070206048
+      },
+      "445": {
+        "future": 0.0,
+        "presented": 7.030612291500644,
+        "body": 4.010159874103383
+      },
+      "446": {
+        "future": 4.381604184634818,
+        "presented": 7.030612291500644,
+        "body": 6.162270398484832
+      }
+    },
+    "report_420": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 0.000 L 0.000 R 0.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 0 hand 1 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 2 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[CONSTRAINT] Root speed limits: linear 900 cm/s angular 800 deg/s | last window clamped 0\n[CONSTRAINT] Root / physical pelvis bound: radius 20 cm; requires simulated pelvis\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[POSE+HISTORY] Attack loco drag: loco feet mask 2 | mode 1 | release distance 40 height 15\n[POSE+HISTORY] Loco-drag knee pole blend: feet mask 2 | L 0.000 R 0.017 / 1.000\n[INPUT] Loco-drag frozen root window: alpha 0.15\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE] Attack-start FK core inertia: weight 0.926 | response 0.25 | elapsed 0.017 / 0.100\n[POSE+HISTORY] Attack-start hand inertia: L1 R1 | weight 0.980 | response 1 | root/spine ref 1 | elapsed 0.017 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 1 | linear 1.000 angular 1.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 19.998 -> 0.000 | 0.033 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 19.998 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.952 R 0.952 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_430": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 1.000 L 1.000 R 1.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 0 hand 1 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 7 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE+HISTORY] Attack-start hand inertia: L1 R1 | weight 0.020 | response 1 | root/spine ref 1 | elapsed 0.183 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 11 | linear 0.286 angular 0.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 2.186 -> 0.000 | 0.200 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 2.186 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.973 R 0.973 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_440": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 1.000 L 1.000 R 1.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 0 hand 1 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 12 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 0.000 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.994 R 0.994 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n"
+  },
+  "hand_feedback_off": {
+    "start": 419,
+    "armed": 430,
+    "hit": 436,
+    "prefix_pose_max_error": 0.0,
+    "prefix_nn_max_error": 0.0,
+    "first_headbutt_input_output_max_error": 0.0,
+    "head_motion_cm_per_tick": {
+      "420": {
+        "future": 5.940076185297354,
+        "presented": 1.0452002328775334,
+        "body": 1.0396224033139059
+      },
+      "421": {
+        "future": 0.0,
+        "presented": 0.8788199119477167,
+        "body": 0.8573390245433191
+      },
+      "422": {
+        "future": 5.358345740818116,
+        "presented": 1.2677414160161866,
+        "body": 1.3487847073122026
+      },
+      "423": {
+        "future": 0.0,
+        "presented": 3.591197784768181,
+        "body": 3.5181017393026317
+      },
+      "424": {
+        "future": 2.788939189840838,
+        "presented": 3.9924816611972322,
+        "body": 4.022771389892735
+      },
+      "425": {
+        "future": 0.0,
+        "presented": 3.941322324645094,
+        "body": 3.801842116331027
+      },
+      "426": {
+        "future": 3.3072875601797795,
+        "presented": 2.41225813848148,
+        "body": 2.3476360120547803
+      },
+      "427": {
+        "future": 0.0,
+        "presented": 0.976572160619092,
+        "body": 0.9454324871152016
+      },
+      "428": {
+        "future": 12.004777343827772,
+        "presented": 2.014504767203103,
+        "body": 2.01850781427933
+      },
+      "429": {
+        "future": 0.0,
+        "presented": 6.548904568542491,
+        "body": 6.513924955367324
+      },
+      "430": {
+        "future": 18.310936599356648,
+        "presented": 6.6555771749334856,
+        "body": 6.644986371893874
+      },
+      "431": {
+        "future": 0.0,
+        "presented": 9.957759741736435,
+        "body": 9.75810576125632
+      },
+      "432": {
+        "future": 11.65090702107599,
+        "presented": 9.7380073814707,
+        "body": 9.663733286435122
+      },
+      "433": {
+        "future": 0.0,
+        "presented": 6.434278058623965,
+        "body": 6.299270601125451
+      },
+      "434": {
+        "future": 11.165629738619579,
+        "presented": 6.039433925077856,
+        "body": 5.966339678041888
+      },
+      "435": {
+        "future": 0.0,
+        "presented": 5.582814869309776,
+        "body": 5.337331000336359
+      },
+      "436": {
+        "future": 11.897694754267082,
+        "presented": 5.582814869309803,
+        "body": 4.972124430719682
+      },
+      "437": {
+        "future": 0.0,
+        "presented": 5.948847377133553,
+        "body": 3.7200394608240384
+      },
+      "438": {
+        "future": 4.464575281283699,
+        "presented": 5.9488473771335295,
+        "body": 4.760133185855168
+      },
+      "439": {
+        "future": 0.0,
+        "presented": 2.2322876406418493,
+        "body": 2.6749206928340867
+      },
+      "440": {
+        "future": 2.2652593222434594,
+        "presented": 2.2322912597019955,
+        "body": 2.2945303644195305
+      },
+      "441": {
+        "future": 0.0,
+        "presented": 1.1326296064301073,
+        "body": 1.61101110127442
+      },
+      "442": {
+        "future": 3.4693076685814606,
+        "presented": 1.1326301254526152,
+        "body": 1.5469801984050375
+      },
+      "443": {
+        "future": 0.0,
+        "presented": 1.7346516223311637,
+        "body": 1.2953107922662261
+      },
+      "444": {
+        "future": 6.801919990468487,
+        "presented": 1.734651622331181,
+        "body": 1.2849312963745572
+      },
+      "445": {
+        "future": 0.0,
+        "presented": 3.400959995234231,
+        "body": 3.197438391290127
+      },
+      "446": {
+        "future": 6.8664055958358095,
+        "presented": 3.4009599952342557,
+        "body": 3.33594745729411
+      }
+    },
+    "report_420": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 0.000 L 0.000 R 0.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 1 hand 0 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 2 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[CONSTRAINT] Root speed limits: linear 900 cm/s angular 800 deg/s | last window clamped 0\n[CONSTRAINT] Root / physical pelvis bound: radius 20 cm; requires simulated pelvis\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[POSE+HISTORY] Attack loco drag: loco feet mask 2 | mode 1 | release distance 40 height 15\n[POSE+HISTORY] Loco-drag knee pole blend: feet mask 2 | L 0.000 R 0.017 / 1.000\n[INPUT] Loco-drag frozen root window: alpha 0.15\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE+HISTORY] Attack-start FK core inertia: weight 0.926 | response 0.25 | elapsed 0.017 / 0.100\n[POSE] Attack-start hand inertia: L1 R1 | weight 0.980 | response 1 | root/spine ref 1 | elapsed 0.017 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 1 | linear 1.000 angular 1.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 19.998 -> 0.000 | 0.033 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 19.998 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.952 R 0.952 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_430": "[STATE] NN ownership: headbutt | inference enabled | lower Walk 1.000 L 1.000 R 1.000 | 30 Hz\n[CONFIG] Attack direct NN feedback: entry core 1 hand 0 | general hand 1 | cone 1 | wrist 0 (1 old behavior)\n[STATE] Attack phase / end: policy frame 7 | Hit frame -1 | latched tail 1\n[INPUT] Attack target conditioning: requested V(X=16.21, Y=-227.87, Z=146.68) | anchored attack frame\n[POSE] Forearm roll convention: UE canonical roll; attack motion smoothing is isolated from NN history\n[POSE] Calf roll convention: UE thigh-aligned calf frame\n[CONSTRAINT] Left wrist bend limit: 10.000 degrees\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback ball_r: linear 7 cm | angular 20 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[INPUT+HISTORY] Ghost loco drag: undragged legs drive shared pelvis/upper recurrence; extra lower pass drives real legs\n[POSE] Attack-start hand inertia: L1 R1 | weight 0.020 | response 1 | root/spine ref 1 | elapsed 0.183 / 0.200\n[POSE+PHYSICS] Forearm length / wrist freedom: attack wrist translation free within trained +/-5 cm; arms follow NN stretch\n[PRESENT] Attack-start pelvis inertia: tick 11 | linear 0.286 angular 0.000; reconstructed legs\n[CONSTRAINT] Physical calf tightening: 2.186 -> 0.000 | 0.200 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 1000.000 cm | calf allowance 2.186 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.973 R 0.973 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n",
+    "report_440": "[STATE] NN ownership: locomotion | inference enabled | lower Walk 1.000 L 1.000 R 1.000 | 30 Hz\n[INPUT] Upper gaze / equipment: yaw -0.100 pitch -0.000 sword 1\n[INPUT] Upper root rotation horizon: 0.2\n[INPUT] Root self-balancing: frequency 2 damping 1 max speed 0.3 m/s\n[CONSTRAINT] Foot reach clamp: leeway 20.000 cm\n[CONSTRAINT] Calf length clamp: leeway 20.000 cm\n[POSE+PHYSICS] Calf length return: weight 1.000 | delta L 0.835 R 4.997 cm\n[CODEC] Foot contacts / toe roll: pin L 0.000 R 0.000 | integration 4 steps; geometry projection/rotation normalization\n[PHYSICS] Physical pose: Jolt | mode 1 MACD 0 | contact, gravity, joint limits, drive and external forces\n[HISTORY] Physical locomotion feedback: last sample valid; tolerances below are deadbands; attack uses separate recurrence\n[HISTORY] Feedback pelvis: linear 20 cm | angular 30 deg\n[HISTORY] Feedback spine_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_03: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_04: linear 10 cm | angular 30 deg\n[HISTORY] Feedback spine_05: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_01: linear 10 cm | angular 30 deg\n[HISTORY] Feedback neck_02: linear 10 cm | angular 30 deg\n[HISTORY] Feedback head: linear 10 cm | angular 30 deg\n[HISTORY] Feedback clavicle_l: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_l: linear 5 cm | angular 35 deg\n[HISTORY] Feedback clavicle_r: linear 10 cm | angular 30 deg\n[HISTORY] Feedback upperarm_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback hand_r: linear 5 cm | angular 35 deg\n[HISTORY] Feedback thigh_l: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_l: linear 1e+19 cm | angular 1e+19 deg\n[HISTORY] Feedback ball_l: linear 1e+19 cm | angular 1e+19 deg\n[HISTORY] Feedback thigh_r: linear 7 cm | angular 20 deg\n[HISTORY] Feedback foot_r: linear 1e+19 cm | angular 1e+19 deg\n[HISTORY] Feedback ball_r: linear 1e+19 cm | angular 1e+19 deg\n[PRESENT] NN interpolation: mode 2 | interpolation 1 | interval 0.033333 | manual application 1\n[CONSTRAINT] Root speed limits: linear 900 cm/s angular 800 deg/s | last window clamped 0\n[CONSTRAINT] Root / physical pelvis bound: radius 20 cm; requires simulated pelvis\n[PHYSICS] Magnetization coordinate mode: base 1 (0 physical-parent local / 1 world); 0 bone overrides; pelvis always world\n[PHYSICS] Drive pelvis: magnet L 1 A 1 | gravity cancel 1 | extra joint damping n/a\n[PHYSICS] Drive spine_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_02: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_03: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_04: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive spine_05: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive clavicle_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive clavicle_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive upperarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive lowerarm_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive hand_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive neck_01: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive head: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 100.0\n[PHYSICS] Drive thigh_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_l: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive thigh_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive calf_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[PHYSICS] Drive foot_r: magnet L 1 A 1 | gravity cancel 1 | extra joint damping 0.0\n[POSE+HISTORY] Pelvis tempering: follow XY 0.200 Z 0.200 rotation 0.200\n[POSE+HISTORY] Left foot tempering: follow XY 0.000 Z 0.000 rotation 0.000\n[POSE+HISTORY] Right foot tempering: follow XY 0.000 Z 0.000 rotation 0.000\n[STATE] Tempering blend to normal: finite return running; values above are the last accepted sample\n[PRESENT] Knee pole recovery: 0.000 / 1 | pole speed 90 deg/s\n[PRESENT] Leg chain reconstruction: preserves accepted feet; knee/length solver, minimum reach x1.2\n[CONSTRAINT] Backward pin bound: 40..55 cm | heading root 7\n[INPUT] Pin bound target heading: alpha 0.75\n[POSE+HISTORY] Foot pin smoothing: L 0.000 -> 1.000 R 0.000 -> 0.000 | in 3 out 1 ticks\n[PRESENT] Game-tick pin smoothing: effective L 0.000 R 0.000\n[POSE+HISTORY] Attack FK return / lab inertia: NN 0.116 | tick 2/10 | coeff 1 | ease 0.87 | hold 0.1\n[POSE+HISTORY] FK momentum coefficients (seconds): spine 0.0292 | clav 0.0311 | upperarm 0.0311 | forearm 0.0295 | neck1 0.0311 | neck2 0.0311 | head 0.0311\n[POSE+PHYSICS] Forearm length / wrist freedom: return 0/18 ticks | weight 1.000 | NN delta L -2.783 R -0.116 cm | physical delta L -3.014 R -0.334 cm\n[CONSTRAINT] Physical foot target tightening: 0.053 -> 0.000 | 0.000 / 0.250\n[PHYSICS] Physical foot target / calf joint limits: foot offset 0.053 cm | calf allowance 20.000 cm\n[PRESENT] Simulation mode pose blend: 0.000 / 0.250 authored seconds\n[PRESENT] Authored closed fingers: last accepted L 0.994 R 0.994 | does not change NN wrist channels\n[CONSTRAINT] Knee pop smoothing / soft IK: zone 1.000 cm | presentation only\n[SCOPE] Runtime snapshot: Reads accepted state; no history rewind, raw-output delta attribution or arbitrary Blueprint/AnimGraph tracing.\n"
+  }
+}

@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 5316,
-  "bytes": 483255145,
+  "file_count": 5513,
+  "bytes": 502594288,
   "files": [
     {
       "path": ".gitattributes",
@@ -43,9 +43,9 @@
     },
     {
       "path": "Config/DefaultGame.ini",
-      "git_blob": "0fec074844bef6f43a43ff69c42861862debe8b7",
-      "bytes": 1406,
-      "sha256": "10e3023ee61b50d177d69dfbba86ce315718d6275f1c039092350f2852741f0f"
+      "git_blob": "a326869b124cab4eff90c623d3e1edfea20eb121",
+      "bytes": 1520,
+      "sha256": "a60c85d43d636603a528a345188656fc6ed8f40404d3d856596b3818faebd867"
     },
     {
       "path": "Config/DefaultGameplayTags.ini",
@@ -3486,6 +3486,12 @@
       "sha256": "eb5d4172b4b839c17c4d61628c5445f566b7dbd1d182420e7f633a9a37be40b9"
     },
     {
+      "path": "Content/_mygame/SKM_UEFN_Mannequin.uasset",
+      "git_blob": "bdb4d7e49cc4b330bbf59e9986f8b18ed3458142",
+      "bytes": 2410624,
+      "sha256": "e71b92d88800a91410fa15054cf624dec00be8fd62b36ed3392353a7b1398d05"
+    },
+    {
       "path": "Content/_mygame/SK_UEFN_Mannequin.uasset",
       "git_blob": "5647cf1c322553c9edf627b758a807f22fd2d44e",
       "bytes": 103562,
@@ -4429,15 +4435,33 @@
     },
     {
       "path": "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset",
-      "git_blob": "15f5ea93d1160d38fdf5c067bbaa4717f41bc225",
-      "bytes": 5006716,
-      "sha256": "0456043a78a17845abe9a4916f7f9855f36840114d847896656daf00144e0641"
+      "git_blob": "8bafc57d5c37a229c5af8a6f267747fcbfde9b23",
+      "bytes": 5180196,
+      "sha256": "cbe431bda7fbd4583040d1761912dbb4a4bd24f5da00025fac04941202029727"
     },
     {
       "path": "Content/_mygame/locomotion/L_DoubleReachBallTest.umap",
       "git_blob": "5c4346577adb5af794712724b144bb318692f700",
       "bytes": 26233,
       "sha256": "95fbdbc53809984b0a3d0927dbffbdafb03f2ddbddf9143cc23626a9cbacda6a"
+    },
+    {
+      "path": "Content/_mygame/materials/LimbColors/M_UEFN_Bicolor_LimbColors.uasset",
+      "git_blob": "7ee699f3d8175cfd0d747840890406acd9dbce00",
+      "bytes": 30826,
+      "sha256": "8736d6bb4a99ead2b9e642ecb1da9f08b5c9933770777f9b6df2350a7dd50e62"
+    },
+    {
+      "path": "Content/_mygame/materials/LimbColors/M_UEFN_LimbColors.uasset",
+      "git_blob": "f03b8f24cabbd399d5700e6682289bfbfec26131",
+      "bytes": 19280,
+      "sha256": "6081b09541b96ee35874549db72dd733394de9b12903551e38d54a0a2bf186ef"
+    },
+    {
+      "path": "Content/_mygame/materials/LimbColors/T_LimbPalette.uasset",
+      "git_blob": "0ad61e89c8843f16fbd609077b47aadc2a2f9d3f",
+      "bytes": 11132,
+      "sha256": "abac14a8f8bdab910baf77dcea1d0e4dc02c4ddc32923db2e4240afc43b49313"
     },
     {
       "path": "Content/_mygame/materials/M_PBRdefault.uasset",
@@ -4872,6 +4896,12 @@
       "sha256": "290fd8bb61c42dcb2844c086cd7f88beec01aac97079bfc21a3e3710297403b1"
     },
     {
+      "path": "Content/locomotion/NN/defense/parry_checkpoint.json",
+      "git_blob": "40275d043982fc0a9fd777eca54a5cb230058300",
+      "bytes": 633,
+      "sha256": "e496fbc5caab73178daad1a80479b04d1f34bdd285bf81a989f71c44cb0d18fd"
+    },
+    {
       "path": "Content/locomotion/NN/defense/parry_colliders.json",
       "git_blob": "0f318568fc0c7d08abd4533f18cdfe5a4165d154",
       "bytes": 8521,
@@ -4903,9 +4933,9 @@
     },
     {
       "path": "Content/locomotion/NN/defense/prophecy_parry_upper.onnx",
-      "git_blob": "da75f84f8a13cf94184896d4dbcbab8b09e49def",
+      "git_blob": "a37698ac7ae86a82f5a2388bc25501a57ea31fd9",
       "bytes": 1775420,
-      "sha256": "3abdd6562067503e1d64d8b829e835c3ca34060b5cefb651b537fe5abd09d890"
+      "sha256": "49f26f9ee1a38e35c825914305a06ae7508f6df5ab39c1b1ae10ae47400030a7"
     },
     {
       "path": "Content/locomotion/NN/prophecy_headbutt_preparation.json",
@@ -5053,9 +5083,9 @@
     },
     {
       "path": "Content/testNN.umap",
-      "git_blob": "29a6ec168df551b2809b45e3eefac68d569e188c",
+      "git_blob": "fc2c5d30b3e9a397845d8a538959b3e3b645a05d",
       "bytes": 106660,
-      "sha256": "431f04b805f31aa6e895b571308faaed84ab05116ba03e23d83de73e8fcb1325"
+      "sha256": "d8afdd9a88c263508a53195257d5142e6e49f7cc877b78f61cbb3d7bea772817"
     },
     {
       "path": "Content/vfxmap.umap",
@@ -5179,9 +5209,15 @@
     },
     {
       "path": "Docs/AttackControls.md",
-      "git_blob": "d8a6147ab7c4a37eab544ad47aaa4d9f322a9452",
-      "bytes": 9151,
-      "sha256": "27204a4a161852c031be5956378c71a54114c8ea133cf49852b5833b061670e3"
+      "git_blob": "da3fd4b698d592ee199efeeecc1aab273e3bdd8c",
+      "bytes": 9547,
+      "sha256": "eef5201235fd28ad83037eea12cc6c4628eea600066f86af0241791ce6a4d8ff"
+    },
+    {
+      "path": "Docs/AttackCounter.md",
+      "git_blob": "65daca03f349d2c94fbc2f021728d9e4c568200a",
+      "bytes": 1508,
+      "sha256": "795dabd170cf0a155b56e7fe3ccaa2ab9fef7a219b1ed233a635a6db21a97ee4"
     },
     {
       "path": "Docs/AttackEndExtension.md",
@@ -5281,9 +5317,9 @@
     },
     {
       "path": "Docs/AttackStartHandInertia.md",
-      "git_blob": "b143664ae775e40c0d2f61f3655bc09038c82da1",
-      "bytes": 8131,
-      "sha256": "e927b1bc87d780a6705a10412d311204bcdd0524a77d05751857773cbc144728"
+      "git_blob": "19c45aa2ae3393dc24bdb29668ab3755bdd47fd6",
+      "bytes": 8875,
+      "sha256": "60570711711f4ee73ceb29c4a34ab1195b431c9df6d2fbafd54bdb8222db7028"
     },
     {
       "path": "Docs/AttackStartPelvisInertia.md",
@@ -5401,9 +5437,9 @@
     },
     {
       "path": "Docs/DefenseCheckpoints20261005.md",
-      "git_blob": "125007b07739197f34918935c52d58a9db37952f",
-      "bytes": 3189,
-      "sha256": "29f56097fb1af00e5519365d8f126b6fefb934fbf90c54212f0dc67113d85507"
+      "git_blob": "4c035fd6bfe1fd67d89f7b364e29d71504e3d699",
+      "bytes": 4774,
+      "sha256": "871d1abc82cc8c6e88a64e9dc2d597436e0a1892f4c734159a717afb2d97db66"
     },
     {
       "path": "Docs/DodgeHookLViewerMismatch.md",
@@ -5773,9 +5809,9 @@
     },
     {
       "path": "Docs/JoltPHATSweeps.md",
-      "git_blob": "ce629b19de34e3ae2001823d703df752ac730bb2",
-      "bytes": 4616,
-      "sha256": "5d7dcc5a917c7f9a1d6660b831f9323c30e79bf6f37d67b9744e62a71aab45d6"
+      "git_blob": "0f79270415dd6d1fba5242d45cabf0ccc36bc15c",
+      "bytes": 3212,
+      "sha256": "29f8bac548417836aedc54780ab34ae35890210aad9cb9dbad01799c3bb3fda3"
     },
     {
       "path": "Docs/JoltPenetrationSlop.md",
@@ -5785,9 +5821,9 @@
     },
     {
       "path": "Docs/JoltPhysicalHitEvents.md",
-      "git_blob": "ff6c8c06e02e01e8538a3fdc49d4f68ef37fb8b0",
-      "bytes": 5434,
-      "sha256": "072d25910601c53965ccd1c4bb73e0eb80a4cd55425148c1c23afe0f6173e312"
+      "git_blob": "75e2236ab34ba04427205eba9e1bdd1f2fe6f448",
+      "bytes": 5605,
+      "sha256": "b0cf263c879d4802247b320d3bdfe90112e92d028017b1e06c59af0139b193b3"
     },
     {
       "path": "Docs/JoltRuntimeCollisionChannels.md",
@@ -6006,6 +6042,12 @@
       "sha256": "9488114a58401ece6674e62f52b52bc86b27394d5bb528467978bab1a63cadae"
     },
     {
+      "path": "Docs/LimbColors.md",
+      "git_blob": "c6abcd11147dc5456c74bf879dadaf8894d488bb",
+      "bytes": 1988,
+      "sha256": "ae2c4a5e82dcee8f291f63b6b29b0b0ab554217469b1d86142e80eb31caa8904"
+    },
+    {
       "path": "Docs/LiveDefenseControls.md",
       "git_blob": "8a8225a8498624f4a36ef5c61fe4a1efb9ef7117",
       "bytes": 7396,
@@ -6064,6 +6106,12 @@
       "git_blob": "2a2044df92c8e87b9e759bbd6c2acab3a9313ba3",
       "bytes": 1504,
       "sha256": "cb904d5e0028afb4223b923e9a858eeb18e99baf405ff4dab4d6a17842c7c7d5"
+    },
+    {
+      "path": "Docs/Milestone20261006CombatControls.md",
+      "git_blob": "4d66441c076399d52bcac6a372a833794b9d7698",
+      "bytes": 2192,
+      "sha256": "1a25aac2cf6abeb12b9e35afc1bd299e5f1c114f54a2eeb15815aabd0dc33ce4"
     },
     {
       "path": "Docs/NNDefense.md",
@@ -6181,9 +6229,9 @@
     },
     {
       "path": "Docs/PhysicalProfileSnapshots.md",
-      "git_blob": "28d7c2b536c49fc208e5af7d34311c25b2a4f0c8",
-      "bytes": 9503,
-      "sha256": "67da97b6742d1b9c8f98b947ba7bea88433264faadb2fb6889ee38ca977e2e0a"
+      "git_blob": "1baac2e008e98e22cacc036c69efc6b7fdf8cfb5",
+      "bytes": 10678,
+      "sha256": "99e10f349bf1098c04474a93d02aae3073d3227a4050638377317cee22b112e0"
     },
     {
       "path": "Docs/PhysicalPropertyBlends.md",
@@ -6204,10 +6252,16 @@
       "sha256": "4921a65edc2f3144b2e16cfd8d9d3be4eb2239def0e466e3a4160bf0858356b2"
     },
     {
+      "path": "Docs/RealisticFootEvents.md",
+      "git_blob": "17218babe96bde04d18ad58c421389ed442ebbeb",
+      "bytes": 3557,
+      "sha256": "9e975edac2ffc8a6a2bda2aeef27d240ff6de11f7fec18975a5142a2d694c664"
+    },
+    {
       "path": "Docs/Recovery.md",
-      "git_blob": "a4da3e46a5d7165189f1621eec0b6ed6239df9f9",
-      "bytes": 7594,
-      "sha256": "0b0bffbfde8cc60caf8036c896a89370863aa8e8d4ecc55e7941e6e6953efd84"
+      "git_blob": "6f31cf5073facfd9af7f75cdc325a385b68f59f3",
+      "bytes": 7675,
+      "sha256": "9ec86287b46b8dca482204904d3ae8dd52d5d2745a9a8a8763f0bbf2850dcefc"
     },
     {
       "path": "Docs/RegionalSpecialRecovery.md",
@@ -6289,9 +6343,9 @@
     },
     {
       "path": "Docs/RootSelfBalancing.md",
-      "git_blob": "79f7d46e192af93fb70d4ea177854681cba0a42f",
-      "bytes": 7667,
-      "sha256": "eeacfc3e72a636b4211231f91b1f336a9011ee81afc9a3b3856fcccac38f397f"
+      "git_blob": "33f5e5e623d8a4074013932bf23542b65d820681",
+      "bytes": 8992,
+      "sha256": "9b7a6034cb222defeac9de129ec631f92b99dff89d20d7917228a91c9c989340"
     },
     {
       "path": "Docs/RootVelocityLimits.md",
@@ -6420,6 +6474,12 @@
       "sha256": "59100caf38754b958c46dd206ac199e4e5d6bc26646b02268e70f5c5a456f448"
     },
     {
+      "path": "Docs/StunnedMode.md",
+      "git_blob": "1d9e6fbb8f2f1981b7f85d43124fe62e7ab6267b",
+      "bytes": 1393,
+      "sha256": "28ebdce322e87d7228ea57f7e6a16d7fd0bf22f60e5a9786ef9d64af74ffa12e"
+    },
+    {
       "path": "Docs/SupportingFootRecovery.md",
       "git_blob": "2519e93730c6a8d8382d0c5575d2a8ded56ee15b",
       "bytes": 3679,
@@ -6439,9 +6499,15 @@
     },
     {
       "path": "Docs/SwordAttackCollision.md",
-      "git_blob": "9b0f22c4f933589a2dfe77880549e62566dca21b",
-      "bytes": 7906,
-      "sha256": "693a397bcfdb869414730d81422f8e2074f4da50b69c12848f788199c072a107"
+      "git_blob": "a8f97c961fe7a6fcb8d79100c02357dd651e881a",
+      "bytes": 8317,
+      "sha256": "0f87b1460d50de192d71002a96a46f9bcdef6f7ba708944e81bfdc4165bb3d42"
+    },
+    {
+      "path": "Docs/SwordBodyState.md",
+      "git_blob": "05725b56c8965702309df9f5561c50acd8aab1ae",
+      "bytes": 974,
+      "sha256": "7c20e58c49fc86959bb8a6ef169977b1bd4ea1336c93b79f071a350b75bd69a6"
     },
     {
       "path": "Docs/SwordCollisionToggle.md",
@@ -11527,15 +11593,15 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltPHATSweeps.cpp",
-      "git_blob": "2781f34a7b92906746e9c69ff8c421d4e0665c6a",
-      "bytes": 16181,
-      "sha256": "d131bd3e37748303f8a6a65e0ef87630f66fbcccde33b61634d566f91d10726a"
+      "git_blob": "36f73a4cae87acda85e0152c59b180a1c21770ee",
+      "bytes": 18743,
+      "sha256": "8e02e38875dc33149a0f50de5c3278a3c673bdb6c2600a16fd1f316bf4bdc1ea"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltPHATSweeps.h",
-      "git_blob": "ea27198dfc2d1bddba3252d9b355a72381d7d309",
-      "bytes": 983,
-      "sha256": "2100780fff7339a041ccfe373566fb5d2ae1fd627f15022a93295e879dfe3a9f"
+      "git_blob": "8a9ec7f8301d0ae47b6bd9dae10945b7759b9c5d",
+      "bytes": 1131,
+      "sha256": "1b9c8922f34a4ef3224ec8ee0cb60d534bd73808862126e05b12606a67b661b1"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltRadialJoint.h",
@@ -11581,9 +11647,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltWorldSubsystem.cpp",
-      "git_blob": "b9c63e8b416cf01250640a6da852a62c1d0031a3",
-      "bytes": 218800,
-      "sha256": "c4353023c48908eb14a114b44dc97b4e7e83a636e27bbbd51bb08d62429038a1"
+      "git_blob": "cc1181379bc2801511cc3176daafbda1e5f039a7",
+      "bytes": 219678,
+      "sha256": "53ed69c80d77de4b1b94bb0c1b627c3dbf677eb0fd13790fe3116b5c51b1e10f"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltBodyTests.cpp",
@@ -11671,9 +11737,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltVelocityServoTests.cpp",
-      "git_blob": "8b1eda144141bdd317358cafe03ee9e26165f15c",
-      "bytes": 54378,
-      "sha256": "29e79326820cb1524f4b20400fd5c49b9be1cc92d1634a4cbd21a9dbb29cc99f"
+      "git_blob": "c4c37dbdb891f1ef2419f6dbaf39605812189222",
+      "bytes": 55845,
+      "sha256": "1b76f756f96889f4316f8735ae27093d1e193a3bc6f90c6f204461730eef8990"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltWorldSubsystemTests.cpp",
@@ -11725,9 +11791,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltPHATSweepLibrary.h",
-      "git_blob": "34a664b07e79573178601363c61f6a80ef32d408",
-      "bytes": 2060,
-      "sha256": "af91b163e2ea753c419e524c9a3e7ea6c14f90f4dc5646e875016b60c9bba0dd"
+      "git_blob": "fd92ded991f842d0a70129fd5e71c7fc106d537c",
+      "bytes": 2448,
+      "sha256": "46ef79d64af00af72d6ceb43fcac83addbc21861b80d1fc2b7aa699b49609b4e"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltPhysicsCommand.h",
@@ -11815,9 +11881,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "bc359f7d1a659fd6d102fa16df0dd80fcb85067a",
-      "bytes": 159832,
-      "sha256": "5a2c896a18582c56759d6036a531f25c20b884edebc2d6b23ab36bfd9a7a8af5"
+      "git_blob": "85a2297a75134c6047f773f046615144f6600c7c",
+      "bytes": 181279,
+      "sha256": "feab690e038dce05437350489ee935005bf493f05b3f713858764c4f7c322eca"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -12730,6 +12796,132 @@
       "git_blob": "0310630445fa0d4c5e9746c7ac3bc138d91f339b",
       "bytes": 1611,
       "sha256": "347323def786b684054cedb47f2f110d9400821f35ab63431e4efd4f4c9b8d5e"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/compile.py",
+      "git_blob": "07c0daaa3f982bc6ae787bb1eac09b59e29d3b6f",
+      "bytes": 276,
+      "sha256": "d834473e828d592237398248c3636f347992412474be730afa3ea7154866d793"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/dodge_banks.json",
+      "git_blob": "b247f82e10971b0e6ca503f9023926da11075c60",
+      "bytes": 106,
+      "sha256": "d32a3a0ca56074792a6c7953731d9a3cf4a4427ce635d71f28d09abd4eace875"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/dodge_checkpoint.json",
+      "git_blob": "8932234d19193b419443d956a8517edd6b7f69bc",
+      "bytes": 1061,
+      "sha256": "d7ba622933e810ef131efcbbf8fd4129885dfce9541c956003373e3b92e7e103"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/dodge_lower_settings.json",
+      "git_blob": "0b4a191c633b4527c82d42b365538fa13fd9be3a",
+      "bytes": 680,
+      "sha256": "0786d98280b9f0d49c3edc6233eee5a1edf02a470be103e5b50de6d55474873e"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/editor_status.py",
+      "git_blob": "1e4b1073b5b07712a7f4c0ba16f8e12e4edea85e",
+      "bytes": 179,
+      "sha256": "4765bd69bacfe321ea4a33b66c71c35f4862ccf0799ae03c41c3a5a1d3910d12"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/native-tests.log",
+      "git_blob": "cc05b616cfb5372c3c563192eb30d8d32a7aabf8",
+      "bytes": 128712,
+      "sha256": "4ad33fbb860e05e76c45e7b2f242cb93d82885ac1031d9a6a042f3a4d176506e"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/parry_checkpoint.json",
+      "git_blob": "4a105a506129345a8b045ed685f30fbd59c5a28a",
+      "bytes": 625,
+      "sha256": "4ed70fe26b33d688241910aa076b92177fcd2cb1341227f7d53276bd82d07594"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/report.json",
+      "git_blob": "6cb5d5fd34b2f3104fee4e11ae7c1845d5f2f322",
+      "bytes": 2681,
+      "sha256": "8ad5481013c3cff9e36ebdf3d1af0a6d39b79c7eff9ff5c24391f117a9beb2fc"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/validation.json",
+      "git_blob": "0c58f69803cfd8bfe9041893041efdac98989928",
+      "bytes": 216869,
+      "sha256": "ff41e416eca69c2e916050d8b2acad33784c5e52daad00fee44334c1e95466b1"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Defense20261005/verify.py",
+      "git_blob": "34cc513fcc5fcd8a55d4e23e6c260b619d7a65e3",
+      "bytes": 396,
+      "sha256": "7b13ed3404babd57d2b3ad28ac61b6dfe756233c485389cdcefe83d0439d9be0"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/dodge_banks.json",
+      "git_blob": "b247f82e10971b0e6ca503f9023926da11075c60",
+      "bytes": 106,
+      "sha256": "d32a3a0ca56074792a6c7953731d9a3cf4a4427ce635d71f28d09abd4eace875"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/dodge_checkpoint.json",
+      "git_blob": "231cab0d8b85f2b676f861e78faf02eaf5077543",
+      "bytes": 1067,
+      "sha256": "e5d42502ab5b8f22850a0207c6bf165477832c1c910d21b99aa3fe5cdf10ff80"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/dodge_lower_settings.json",
+      "git_blob": "0b4a191c633b4527c82d42b365538fa13fd9be3a",
+      "bytes": 680,
+      "sha256": "0786d98280b9f0d49c3edc6233eee5a1edf02a470be103e5b50de6d55474873e"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/editor-state.json",
+      "git_blob": "9d2fe63ed95c3f2f25d6d31b87679a4c27d401f4",
+      "bytes": 96,
+      "sha256": "8ab1d08326208c169bc02aa64be204cb830a52ba901ad6834a31d23733491291"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/export.log",
+      "git_blob": "06137aeb170dae3b27aa67b10b44794f34e24593",
+      "bytes": 1660,
+      "sha256": "fa10a39d8ac2eb0eb147796e4f987161dbd7839c3cf67d4c52a48aef8866f508"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/install.json",
+      "git_blob": "9ec749acab6dd6603957db05bff029037ed42dac",
+      "bytes": 995,
+      "sha256": "9981bb89fb493fedcfed4c16b1b704eda5239c3b66733e7f4cbdb76a7b2f1790"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/native-test.log",
+      "git_blob": "e30d6fcd2b319440a38b795cf27c4ec2a26e427a",
+      "bytes": 463,
+      "sha256": "158b798814b590091ad72e568e34b172922fdf40d37695aa6f2f5c1cc8e45407"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/parry_checkpoint.json",
+      "git_blob": "40275d043982fc0a9fd777eca54a5cb230058300",
+      "bytes": 633,
+      "sha256": "e496fbc5caab73178daad1a80479b04d1f34bdd285bf81a989f71c44cb0d18fd"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/report.json",
+      "git_blob": "06137aeb170dae3b27aa67b10b44794f34e24593",
+      "bytes": 1660,
+      "sha256": "fa10a39d8ac2eb0eb147796e4f987161dbd7839c3cf67d4c52a48aef8866f508"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/validation.json",
+      "git_blob": "0c58f69803cfd8bfe9041893041efdac98989928",
+      "bytes": 216869,
+      "sha256": "ff41e416eca69c2e916050d8b2acad33784c5e52daad00fee44334c1e95466b1"
+    },
+    {
+      "path": "Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/verify_editor.py",
+      "git_blob": "b2f65af692b7f66be846294940d2ec288065ed47",
+      "bytes": 792,
+      "sha256": "3c7dd382c526289e8484c45d608f4d796409c3a0f8ef34688369972821537f3d"
     },
     {
       "path": "Saved/DefenseIntegration/CompareDodgeBackends.py",
@@ -14862,6 +15054,96 @@
       "sha256": "f30b915d45738ff51c415fd65bfa6d993d9760e7f9f3b588ccfabb10eae60590"
     },
     {
+      "path": "Saved/Diagnostics/AttackBonesSword20261006/compile.py",
+      "git_blob": "126f53e28b518b54032e3b00e050db19501489db",
+      "bytes": 513,
+      "sha256": "22a93e48d1d0000df78d36733667abe3128cea9938e8aaea90fa130153031186"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackBonesSword20261006/migration-report.txt",
+      "git_blob": "ee679567bae3623e4497584b41e11a8876172d68",
+      "bytes": 60,
+      "sha256": "da08e36dddda03836fad7e8f24490797c7705321870142e2bf0eef58d643ab6c"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackBonesSword20261006/tests.py",
+      "git_blob": "dc5245dcca4123617a909d0fda6b50235c7bc2c4",
+      "bytes": 263,
+      "sha256": "112c0eedfddb16bf9459ececa8b68112faf0c6edc356785346f5ccc7e731d85b"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackBonesSword20261006/verify.py",
+      "git_blob": "37b45a54ea6dcae3e0ab17d5d45ef5344a5d3c45",
+      "bytes": 993,
+      "sha256": "1906044fdfcbe679d46b0622ccc478095c8655011bf7d71a1f988de9f8d11c0b"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounter20261006/build.log",
+      "git_blob": "8763e8f5b91d5dbe0dbecae0ab728de53061e794",
+      "bytes": 3356,
+      "sha256": "4a8dd4304ca10b634b34869ca5ba8b5e8f97beb15106580e28860ea2cf3f0092"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounter20261006/live-test.json",
+      "git_blob": "48779c15948d30dbd8347249e71e419c9a5a0d95",
+      "bytes": 19474,
+      "sha256": "a710f18b68f79b2b205598eb3415dd8ba47e914823c9964a4be6cee7f3706861"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounter20261006/live_test.py",
+      "git_blob": "552b29eb2462c3cf27ff1a67c2168fedffe96020",
+      "bytes": 4686,
+      "sha256": "42accce19f660a75eec06571195712b320d5948bfe178067fb4b52295e879714"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounter20261006/save_close.py",
+      "git_blob": "0fb93dd2f253ed65c263e756344885e87dcd954b",
+      "bytes": 1472,
+      "sha256": "c646a73dbce82494c036c4fc424a9bf5e74e91f2fcc33d615fdfd891c3e668f4"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounter20261006/saved.json",
+      "git_blob": "2d2579530378ed71e262abccbfb5bb0ec98d2ee4",
+      "bytes": 239,
+      "sha256": "6befd5c92fe24632ed87b5e83203bc13f50ee847132156be3efa66735e7c1869"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounter20261006/verify.json",
+      "git_blob": "b8d022eab92a52853d4de9e9fe3cce359a0969e1",
+      "bytes": 92,
+      "sha256": "a4d1cf3b63b40df919dd4857d0560732238a57e05f5769ab3d53dbd7d7349d88"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounter20261006/verify.py",
+      "git_blob": "3ab6cae5312e1fb89ff421c17689acc1bea7fa62",
+      "bytes": 732,
+      "sha256": "0cdd81a0937bef0ec1589d59222e8079f81e576befb39cb6280ca409548b797a"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounter20261006/verify_editor.py",
+      "git_blob": "5e04ca24ab30c620d4260c33525a9d20a98d0e66",
+      "bytes": 867,
+      "sha256": "709b97d65b1b282f6cd8775206007e505d0e8153f0da94083eee1faa35ec70f2"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounterWrap20261006/compile.py",
+      "git_blob": "6adc87583d13943b348e91479f07ba44ec69b38a",
+      "bytes": 199,
+      "sha256": "f1359cc6c79d564beeea5e6be2f4e5e78b4475f981717a3d5b4c5d50dc59e47d"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounterWrap20261006/test.json",
+      "git_blob": "cb9480e72f11c64d90a95af02295b6d7c8039146",
+      "bytes": 68,
+      "sha256": "9ed148812d7d5e4e3fb59c674d464b513cbc253245983d95e20baa0037b39dfe"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackCounterWrap20261006/test.py",
+      "git_blob": "c955ad972a23f9486d46871dd284b0e5caa66a1a",
+      "bytes": 1980,
+      "sha256": "7acdc66810a738a7bdc1600e176534501bc27beef0604bfcacdc50ee761028d4"
+    },
+    {
       "path": "Saved/Diagnostics/AttackForearmStretch20261003/analyze.py",
       "git_blob": "4627191fc2c09a3a605cc1c430e1f29477e63759",
       "bytes": 1680,
@@ -15022,6 +15304,84 @@
       "git_blob": "51593caad5a8f609acc5846e2232567a75c8a94a",
       "bytes": 1688,
       "sha256": "ff1866b8e694215c4fb1f51ffe00185c4b7b26ff9fd03b220aed49a03ba1cc19"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/after-hits.json",
+      "git_blob": "3982a3613cbb07312ed940564c84e56e3be80cea",
+      "bytes": 19534,
+      "sha256": "8aa15cd74cd7f6490277b2751dbd1030fe164f85693b30e0b652eea5bb955278"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/analysis.json",
+      "git_blob": "33d364cb477fdd226696e4c2235c4da2dd6204bd",
+      "bytes": 2012,
+      "sha256": "545a2bb5b7407ae7d76be61e69d946a46e248651f819208f6d269ad73a547e1d"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/analyze.py",
+      "git_blob": "1a744ce2dc3592f76dc51a19af1efc85c5397785",
+      "bytes": 842,
+      "sha256": "0764d5c1ce10adfa64eda3e8859eabdefca00d54753c5c24e1688c979f9d14ee"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/build.log",
+      "git_blob": "d931facdbcc9ab20ec368e0a97c137c1985e8327",
+      "bytes": 4252,
+      "sha256": "ebc20c065df3fa3a5f8cc24be8a305882e1cecc59aa9c67ce43c137a7b2ce060"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/build2.log",
+      "git_blob": "fc5136f8ab8272558aafdeb63d095f6d15016def",
+      "bytes": 1738,
+      "sha256": "04966766db5291568bc214d4c4ad479f45ff2a301ff463a43b75ae0bf94acff3"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/capture.py",
+      "git_blob": "f60ba0c889a987607fa45f67d52f4ed9b2874557",
+      "bytes": 4631,
+      "sha256": "41950910a095284e61acacccf79e538ac57ae9a16f8f68872146695825beca94"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/run_tests.ps1",
+      "git_blob": "8bf76c9061e3ba12b371f8f79bd81738290a8abb",
+      "bytes": 834,
+      "sha256": "688336478f69434822b71d9e9fbb0baf88b1c8b9d88ca5a211694d4f8610354b"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/save_close.py",
+      "git_blob": "89631254acc1a3cc208bc373b97aa498f21b07f4",
+      "bytes": 1471,
+      "sha256": "a2ea365fc03731db479dcfedaa2519c0e88db296c8e70d8212a1cfd0a91efcc7"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/saved.json",
+      "git_blob": "2d2579530378ed71e262abccbfb5bb0ec98d2ee4",
+      "bytes": 239,
+      "sha256": "6befd5c92fe24632ed87b5e83203bc13f50ee847132156be3efa66735e7c1869"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/tests-output.log",
+      "git_blob": "f909f3f4f5eec59eeda8223fbc7f1cfadd70a759",
+      "bytes": 2188,
+      "sha256": "3d2eeb6b7fe75edfabd04b8076d3e79747095d213620e6fd03038c50fd727abe"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/verify.json",
+      "git_blob": "b8d022eab92a52853d4de9e9fe3cce359a0969e1",
+      "bytes": 92,
+      "sha256": "a4d1cf3b63b40df919dd4857d0560732238a57e05f5769ab3d53dbd7d7349d88"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/verify.py",
+      "git_blob": "f5890e76a66dba405f59c394bd56c0440dc68ce3",
+      "bytes": 730,
+      "sha256": "1792185b44d36bc80ff19ae524bd85008ad5c031a3ddd532f90fe8c77bfcb9d5"
+    },
+    {
+      "path": "Saved/Diagnostics/AttackSweeps20261006/verify_editor.py",
+      "git_blob": "a10e90b7a2e7d5bd6009b504f0d87a9976c4f09d",
+      "bytes": 610,
+      "sha256": "05401b0b07a66bac21e0625e3214c0ff881bd5e656a9520f026bd16562d48996"
     },
     {
       "path": "Saved/Diagnostics/AuditCurrentPhysicalMaterials.py",
@@ -17520,6 +17880,54 @@
       "sha256": "3faf4de81219b26d9bdde1d819a5bc0e30048b937419786667cd3e633b889fe5"
     },
     {
+      "path": "Saved/Diagnostics/EarlyHit20261006/analysis.json",
+      "git_blob": "ee2b2012518d86ef574ce5c8a778c50a1eed5d33",
+      "bytes": 8377,
+      "sha256": "57c92de805015e1626e32edd247c5ad1f409072db5dea844883ba644d35968a8"
+    },
+    {
+      "path": "Saved/Diagnostics/EarlyHit20261006/analyze.py",
+      "git_blob": "a18d309bbc53c30e3264836679f9a4f26c7376ec",
+      "bytes": 1882,
+      "sha256": "0917bf1b6f93707c9857a77812213808a3505237cd83fac4a5e4be5ab1084288"
+    },
+    {
+      "path": "Saved/Diagnostics/EarlyHit20261006/baseline-hits.json",
+      "git_blob": "47ba68bd748772909e9a892175a17fc1c8e83df7",
+      "bytes": 43406,
+      "sha256": "b1883a6d2647158cf4afef5371f5adbc614a9b9c9f97526a0a978a85b0d7f70c"
+    },
+    {
+      "path": "Saved/Diagnostics/EarlyHit20261006/capture.py",
+      "git_blob": "7ca974e3daac1a3e9bfd54eceb2ad90e6008ac14",
+      "bytes": 4627,
+      "sha256": "39d798cee868cd510b12989ce40ad30ba16f594132a1c81f3e2d11ba10545041"
+    },
+    {
+      "path": "Saved/Diagnostics/EarlyHit20261006/sweeps_off-hits.json",
+      "git_blob": "2e040416119dbbb8f128eebf7fe774c4d2f05e26",
+      "bytes": 33878,
+      "sha256": "a0506b4b48c7e83d7fd40919a0cc6b4a082c610b3049cc8deba2d93ea9920322"
+    },
+    {
+      "path": "Saved/Diagnostics/EarlyHit20261006/sweeps_off_late-hits.json",
+      "git_blob": "e9445f9d63532daf16f49f70d49009f83f6ef749",
+      "bytes": 33200,
+      "sha256": "480d785fbc76ca4072910df89d9e6a67e849b696f73ade0caf054c0ee0273c81"
+    },
+    {
+      "path": "Saved/Diagnostics/EarlyHit20261006/verify.json",
+      "git_blob": "854517d1ca157323594de457f280ef1cc999ecf3",
+      "bytes": 43,
+      "sha256": "3dcd0997736c3faebb8a2c519612f49a697ed42bd9b4f08b42d6e7701d187afa"
+    },
+    {
+      "path": "Saved/Diagnostics/EarlyHit20261006/verify.py",
+      "git_blob": "4937ab6265d18711abcd090f92b1f4995e80cf6c",
+      "bytes": 491,
+      "sha256": "7d5322fdbe0fe79c1edcca5152408bd611425e58b9794938fc00cb909af2a97d"
+    },
+    {
       "path": "Saved/Diagnostics/EditIndependentHalfGhost.py",
       "git_blob": "3a92ef22d8ffba282f72379fbe35ad9c58a6ee37",
       "bytes": 2386,
@@ -17548,6 +17956,42 @@
       "git_blob": "72e79783a246f0b7bdb3114012c3aa7642e935de",
       "bytes": 704,
       "sha256": "4500d799fcd8e8a60f9f2b4f2dd2d8c63ce730f6e33ff1a6dc645439d36af6fc"
+    },
+    {
+      "path": "Saved/Diagnostics/ElbowSlide20261006/capture.py",
+      "git_blob": "914f37356afd5384cd0ed5ceaaf5c6b21187ee2e",
+      "bytes": 5889,
+      "sha256": "ff185263b7501bc715d828f2e956b108439a2de107ea1b17977412bc6e4a8c42"
+    },
+    {
+      "path": "Saved/Diagnostics/ElbowSlide20261006/compare_length.py",
+      "git_blob": "f0398ee678da22249a68981ccdc2ced70f798dee",
+      "bytes": 1366,
+      "sha256": "61bf4e3ee0f11c7b841c7e85460ab020cf60f95b3f8fd2185055a64c506674fa"
+    },
+    {
+      "path": "Saved/Diagnostics/ElbowSlide20261006/findings.json",
+      "git_blob": "dfe47a9970de8c1fcb2f05b51a2ff7e53203f188",
+      "bytes": 1121,
+      "sha256": "5d8b245b79661408e1740b7c7f2e93506e3d6229e55211f1d1c715d9ca3e6b90"
+    },
+    {
+      "path": "Saved/Diagnostics/ElbowSlide20261006/length-comparison.json",
+      "git_blob": "5762e1bb282b60d3adceee2fda4da7d500df88b4",
+      "bytes": 22687,
+      "sha256": "e36f28fe24de7c5a7c5c81f1f50006bc6232c1d44b373d5dbb6f1492654db1d9"
+    },
+    {
+      "path": "Saved/Diagnostics/ElbowSlide20261006/length-tests.log",
+      "git_blob": "957b0e52959dd28ce30509f9a0cbdb74bc72ca22",
+      "bytes": 2802,
+      "sha256": "689437e13e460c0369dd0cf0c30ce0172486ee1bda8f6cf5f8992f6e38ff35eb"
+    },
+    {
+      "path": "Saved/Diagnostics/ElbowSlide20261006/tests.py",
+      "git_blob": "bca7864b9025d390650cbd02c8ebbcd3b25f19b8",
+      "bytes": 316,
+      "sha256": "226ec95781465f70b977c45fcee17ede2a32523991442dd107dc0ff15cadf7dc"
     },
     {
       "path": "Saved/Diagnostics/ExperimentElbowBlend.py",
@@ -18546,6 +18990,72 @@
       "sha256": "8f89a77d15a558628b7a3dc9534602acb315b2cdae1ea0e5b5abc31004f4a495"
     },
     {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/increment-types.txt",
+      "git_blob": "6e9bdcacd87f55ef2ddda17de459659a9ceccb17",
+      "bytes": 123,
+      "sha256": "6c30984fc55eee7deefecb417fef14564431ca891bafd3ec7696af39fac75d01"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/increment.json",
+      "git_blob": "b8483179dbf09077b9ce3ad99c9894d165921a5a",
+      "bytes": 466,
+      "sha256": "84319bca907d130a4ba7a22e1ad4a329e8e03238daa67d4d8dd3f04c0a900310"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/live.json",
+      "git_blob": "097f48767e9e133ee0147978b19d8fd3196d4795",
+      "bytes": 63659,
+      "sha256": "7a1144b568ccbda17b73094cf3a4613e46e82f804b3b7a2c25d9e6159845dee5"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/migration.txt",
+      "git_blob": "ee679567bae3623e4497584b41e11a8876172d68",
+      "bytes": 60,
+      "sha256": "da08e36dddda03836fad7e8f24490797c7705321870142e2bf0eef58d643ab6c"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/milestone-save.json",
+      "git_blob": "b29ace7f35e52bc494969fe393de3a987ead5fcc",
+      "bytes": 123,
+      "sha256": "e974d5fe87c370f6629feb4d09197abb604f8091a462ce8ac1d49d8ba6230a53"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/native-tests.log",
+      "git_blob": "8493f265d3ba906fca881a9cebb7733d39333ddd",
+      "bytes": 5510,
+      "sha256": "c321639a7ab5099a35ca8c20df1d38c00bfae7ea69cd8c40b5db2032af7804b2"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/prepare_recovery.py",
+      "git_blob": "db02b65395ef7d76c5fee583ea41ada0244ca9db",
+      "bytes": 2190,
+      "sha256": "3722d26c89aacacebf34d7f3318ae9bd9c396184830b7db384a778527070fba9"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/save_milestone.py",
+      "git_blob": "d160cd15fe58cb60daae3875f7bb5e1ad1ba6741",
+      "bytes": 1252,
+      "sha256": "d457646f93fb0159de8ee37a6e32fb380b07cf8dc25e9222b64e7001ed949b70"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/test_increment.py",
+      "git_blob": "417a1ec61c80cb005cc91ef768694dbce1f0aed6",
+      "bytes": 3363,
+      "sha256": "5a1bbde0253f9cc146e5abcae9e29d57fc3db8498b5891672557fa61146cd438"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/test_live.py",
+      "git_blob": "13d5ebabe383055bac1bb966396cfd09c5e2de14",
+      "bytes": 3342,
+      "sha256": "a50f4f783be53af8f18dff6de61cc25abef7fc4458dbd7afcc5254da183696c9"
+    },
+    {
+      "path": "Saved/Diagnostics/HandEntryGate20261006/verify.py",
+      "git_blob": "9cc6c797c46ac562fd1fcfca14d185674db249d3",
+      "bytes": 1276,
+      "sha256": "d5a0ca9ccf63daa221e437a8142968e0a3d33b1c0b6f711e762ee289338faf22"
+    },
+    {
       "path": "Saved/Diagnostics/HandPhysical200/analyze.py",
       "git_blob": "5de60473607c11ee4d34cc4825c5f5fa37a19d42",
       "bytes": 1871,
@@ -18760,6 +19270,108 @@
       "git_blob": "4eb6d6e328b148318ba32869e19fc3bb2640c06b",
       "bytes": 3044,
       "sha256": "fd946bc4e38701ab95d92421c68b442098f366f6495ee4dcf5852b5306c01ee3"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/analysis.json",
+      "git_blob": "bd6cde65865c560a4a0fc8832c8e1fb1469534e1",
+      "bytes": 101032,
+      "sha256": "9a43cb99c693cee543927f16ee5ac032fe36373300b3c8f97f70eb1a2cd6da7b"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/analyze.py",
+      "git_blob": "2c4744ec30b56cf35b8e951b595062484a122923",
+      "bytes": 2734,
+      "sha256": "83a1efd9d4b2acc2e570128bb4b61b68aff9ac84ef693de0095c1fe03d6a24f0"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/analyze_blend.py",
+      "git_blob": "701b8f092e0bf19faad311f8ebdb4e8057cef513",
+      "bytes": 1621,
+      "sha256": "ba3070b617e9b437a1c6675512d663e74d04e6962aa82933eb9d8ecd48132024"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/baseline-progress.json",
+      "git_blob": "931a55471b2531a426a2197f344e95c67468d4e6",
+      "bytes": 27,
+      "sha256": "537e2b40bb19b88f3fc75ee7da96f8a39fae4ce1392a4047ace8448686bb6900"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/blend-analysis.json",
+      "git_blob": "f766e3f4932a0626e677f6b2079337205638a3dd",
+      "bytes": 8764,
+      "sha256": "8869bd02d466712efd750f003697d2456dc5d2c215422116b683c409d66ad8a7"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/blend_0.05-progress.json",
+      "git_blob": "47c4325ea42f56ae92706b0e2107ef2af9153327",
+      "bytes": 27,
+      "sha256": "77ecbf1eef0e47a242a2fa204dc5121a650b2ee039224bd3da295e486cd4f80b"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/blend_0.1-progress.json",
+      "git_blob": "47c4325ea42f56ae92706b0e2107ef2af9153327",
+      "bytes": 27,
+      "sha256": "77ecbf1eef0e47a242a2fa204dc5121a650b2ee039224bd3da295e486cd4f80b"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/blend_0.2-progress.json",
+      "git_blob": "47c4325ea42f56ae92706b0e2107ef2af9153327",
+      "bytes": 27,
+      "sha256": "77ecbf1eef0e47a242a2fa204dc5121a650b2ee039224bd3da295e486cd4f80b"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/capture.py",
+      "git_blob": "5a249c8fa4e38ffdcd32890241edea3b0cc6be27",
+      "bytes": 4751,
+      "sha256": "3423b47894e11105f28e4d7a0b6d1958438acdd6bdb10442f3f7d46f1a6228cc"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/core_feedback_off-progress.json",
+      "git_blob": "47c4325ea42f56ae92706b0e2107ef2af9153327",
+      "bytes": 27,
+      "sha256": "77ecbf1eef0e47a242a2fa204dc5121a650b2ee039224bd3da295e486cd4f80b"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/feedback_off-progress.json",
+      "git_blob": "47c4325ea42f56ae92706b0e2107ef2af9153327",
+      "bytes": 27,
+      "sha256": "77ecbf1eef0e47a242a2fa204dc5121a650b2ee039224bd3da295e486cd4f80b"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/hand_feedback_off-progress.json",
+      "git_blob": "47c4325ea42f56ae92706b0e2107ef2af9153327",
+      "bytes": 27,
+      "sha256": "77ecbf1eef0e47a242a2fa204dc5121a650b2ee039224bd3da295e486cd4f80b"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/inspect.json",
+      "git_blob": "75d9fc306b2accb6528bffa0c5193f4e456a2b98",
+      "bytes": 38,
+      "sha256": "12dac44a400982fe2a9350ceda31fda59b629da5f04100d90725ec1c8f0e6cb5"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/inspect.py",
+      "git_blob": "87c4002ba835bf90f96dc96625617ce0cf035dfb",
+      "bytes": 1016,
+      "sha256": "41962da71b4e0bbb3f032bf8f7b086687b9fe670ce626c091631845bd7a53ea2"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/motion_off-progress.json",
+      "git_blob": "47c4325ea42f56ae92706b0e2107ef2af9153327",
+      "bytes": 27,
+      "sha256": "77ecbf1eef0e47a242a2fa204dc5121a650b2ee039224bd3da295e486cd4f80b"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/verify.json",
+      "git_blob": "8f892488ec9afc8a58c776542dacdcd2e1df8c09",
+      "bytes": 139,
+      "sha256": "30df9b5d027379d77397e45139dee19a973976f78dca82c726a355b069c0aec4"
+    },
+    {
+      "path": "Saved/Diagnostics/Headbutt44020261006/verify.py",
+      "git_blob": "6f3e8255f37db21aebeebd179e0ee6ab86306beb",
+      "bytes": 653,
+      "sha256": "6c433b2cd1063a2d239288268125a93d38b256f5f2727cc1ac8c4eb0f886bf6a"
     },
     {
       "path": "Saved/Diagnostics/ImplementFootEntryInertia.py",
@@ -19836,6 +20448,84 @@
       "sha256": "df93b863eb81de08c0ea59eb956d4766fc52f6749e5f4c9fc027984a4bac2235"
     },
     {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/apply_assets.py",
+      "git_blob": "b00cb429a857e01d0052b1fc6e856c2a26fc118e",
+      "bytes": 391,
+      "sha256": "91fbe4ad795a1cdfeb5f4ca5b56e63e07f9d7af167365c248129a68dbd105a88"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/finalize.py",
+      "git_blob": "d356d71e8527f88b1d55bdabf7be361913a44bf3",
+      "bytes": 1311,
+      "sha256": "3e8a935f51ca57d437528e23a76f533cecdc187411e173f19fd70d7d22714bcf"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/inspect_material.py",
+      "git_blob": "62cc533d0e44264c1c698d5d6438df2a1648ef62",
+      "bytes": 542,
+      "sha256": "7d4280d720c17528d0e5b0c7b2e44741fcf02d33d58e86269256c256f8cdb50c"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/inspect_mesh.py",
+      "git_blob": "52529e36298b50b7809f672438ebc8363e1d84c1",
+      "bytes": 736,
+      "sha256": "a3a452c74ec1a0930cfe6fa31127567012ce6e136eefa33c8ad6d486f1f3a708"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/material_parameters.json",
+      "git_blob": "4cfee2b111b00ef4d99472d9623d31cdfacba149",
+      "bytes": 373,
+      "sha256": "40e9a62d9dc80730aaa57ce41c3a6ef0286f3a5aa72adb8be08a5636f79b7c1d"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/meshes.json",
+      "git_blob": "90d6984c7a94dad12677007993d374a30062cb6d",
+      "bytes": 1898,
+      "sha256": "abad287bbd341e688f6483713f9e7fcbf55a7c0c945289b34ac610c32547ed65"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/neutral_palette.png",
+      "git_blob": "ead609e62afdfdc8d63e52866d4b6f130368dcff",
+      "bytes": 69,
+      "sha256": "2ed6dc77e0c34e93b2f73f7a18b0f1c3788fecf6d654c2e20ee4b219e65d00ec"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/prepare.txt",
+      "git_blob": "6b873434b318af1a79cfd22e046ef132714fe0ac",
+      "bytes": 501,
+      "sha256": "9ef80eede8a50984c7475df735472aa720c86f75d86be9ea5e9c78370656c693"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/prepare_assets.py",
+      "git_blob": "26c36ca85d9c4ef54dddd8147f7e215deae6b595",
+      "bytes": 1339,
+      "sha256": "6f4c003961ad846410379209e18ea1f5c75ca4bd37d34514b86ef746253e105b"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/resume_capture.py",
+      "git_blob": "704c8666d0382a277d7371e63196fdf25ef156cc",
+      "bytes": 210,
+      "sha256": "563a7c0e9cb4f1a02beee1e9902271d6334a3500fefbfaedc777c97e8a76c2fc"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/test.json",
+      "git_blob": "ac842f2d34671a567001cbed036b6d178aef41a1",
+      "bytes": 992,
+      "sha256": "3eec09e5c6591ad70c83677e765485bedd4738c69d693b33194f44b70e2882af"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/test_live.py",
+      "git_blob": "b6824f42ec64a7cdf31ce932b5c4a63a4dfe20b4",
+      "bytes": 4235,
+      "sha256": "1c29c66a2783786cad2282029c1386a280991619dd951c4dec9de903f86cae97"
+    },
+    {
+      "path": "Saved/Diagnostics/LimbMaterials20261006/verified.json",
+      "git_blob": "835b2c401b7158d4cbdbf5d89315f9bf7978f64d",
+      "bytes": 443,
+      "sha256": "ac0297693cc61648e783c30862a373cc981d5e79393195011219e5bc446bbaa6"
+    },
+    {
       "path": "Saved/Diagnostics/LocoDragFreeze20261002/finish_rename.py",
       "git_blob": "156341735729b21753697246f34ef75b4636f68c",
       "bytes": 1234,
@@ -19848,10 +20538,70 @@
       "sha256": "ccd1bdea31d5489a1d2a34f51e234d9f9d193e3de3100324c6f4784b7527ffdc"
     },
     {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/build-final.log",
+      "git_blob": "fc302c1fda98a74811459e272527c42f7742cf9c",
+      "bytes": 8269,
+      "sha256": "159c7c9ec713100a455cc2bffb36955728b3d2307dd8d470da0ad8320fd6bb18"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/edit_hold_tests.py",
+      "git_blob": "65c6f8c9077406ee9c2530fd4780768a97bc1c57",
+      "bytes": 4335,
+      "sha256": "29e01edc3e590d780ff4c7b49fc5a26f7aa863d0e4ab9d0e5f0fa49ca71165d3"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/edit_profiles.py",
+      "git_blob": "1883e55d82b7711311beaa609cf70c9288534fa5",
+      "bytes": 8565,
+      "sha256": "f91f10086b506c245c71666a6460a8c16d0438a4b4ab030aefc45e9c4293b628"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/edit_servo.py",
+      "git_blob": "cf00c68cf5d7c98d97abda997eda74e30a16fc92",
+      "bytes": 9092,
+      "sha256": "6c4f97ab042905fad1928905fbbe5bf64bc78ad714a1376c1a72873c1afc47b5"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/edit_tests.py",
+      "git_blob": "103013af93ee66513fa700082b10ff7dbd5d2bc4",
+      "bytes": 4124,
+      "sha256": "a2fe118669c59edc7fd23ef26ecb7497c434684c4c7aaffe3e3b7c02b1e31454"
+    },
+    {
       "path": "Saved/Diagnostics/MagnetizationLocal20261006/final-state.json",
       "git_blob": "bce840b94f1c0b43d395284daa517662162bdced",
       "bytes": 383,
       "sha256": "d187f91cef69079a397b16558ca3cfc3099ce25bbf7c014472087321eb089341"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/finish.py",
+      "git_blob": "6200e69deb3120cbccf2d13cd216f723636afe41",
+      "bytes": 1104,
+      "sha256": "f0a8bb8f61060ab62a256576b6a1f3d0fa23f25d45d9203d5323416e4760fafe"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/global-baseline.json",
+      "git_blob": "c19da8a8cadf5ca542bc4587369c48857834faf2",
+      "bytes": 61817,
+      "sha256": "385478f228dc95726c2ca222713fee1b6d655fe8ea200595557a586439b9b037"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/global.py",
+      "git_blob": "58d8793c79c61367bd3eeb9dd70a79a6ecee2328",
+      "bytes": 3213,
+      "sha256": "1430e743f2f54f33379d8892f8a3392fc394a234797d9ed9bebe908d72a4f43b"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/live.json",
+      "git_blob": "80602b2690f11454d546d470b56df3f76c895fda",
+      "bytes": 151386,
+      "sha256": "039a7a60c49da0fdbdbe74a9c63dad00864b2b0e5013549ed78808050bdc34de"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/live.py",
+      "git_blob": "4996f7049dcd75d148e4da7f12bfbbdd945c8fef",
+      "bytes": 3243,
+      "sha256": "b0d495c6ecb4f340607a938b0c7729872e5edda146187c0dd0171e821a3c1c92"
     },
     {
       "path": "Saved/Diagnostics/MagnetizationLocal20261006/local_final.py",
@@ -19860,10 +20610,58 @@
       "sha256": "3307ad2272f8ef2a140e84ffa2b1a3f024592017137cf611015f389c3a0d8889"
     },
     {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/patch.py",
+      "git_blob": "8636be080d302108686cb0adc5d6e2792a7edae9",
+      "bytes": 542,
+      "sha256": "17b35895b6a7132c28f3cfc575c586a099993c055b62ac21e58fdbfa0e46d474"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/reflection.json",
+      "git_blob": "bf4f518f2f801c79418c80f599b25668e854a81f",
+      "bytes": 2626,
+      "sha256": "d6590236d939e6b5aad2c15096afbd9aa9708909be980070b0ad1c47d14cf139"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/save_close.py",
+      "git_blob": "3f3e6096dd5d02c3ac7d6fbf1c7d70c93d4e1359",
+      "bytes": 1477,
+      "sha256": "caa3dbb90808017b90fdd095fe5a7536c4b40530c9341f57bd7a9c3bfcbf2ee8"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/save_close_final.py",
+      "git_blob": "d12bf1c92d2dcf71a003b693819c7c64ba36a464",
+      "bytes": 1496,
+      "sha256": "5d5b92ad563801886b5d6663be34c98b8864dc5e77076ed009071f727397804e"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/saved-final-build.json",
+      "git_blob": "d8dc801d0cf4d4255c521ec7e4c4ba3c79ff8bce",
+      "bytes": 178,
+      "sha256": "1db0517a22a01ee2404033506872891234d7a8bd333540d1fc3751a5453f2ead"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/saved.json",
+      "git_blob": "6ff1115ea1f8a726217ddc11d2aa53c2daf9a701",
+      "bytes": 261,
+      "sha256": "1f754ac8e9e221d3c5e6ee1256cc719454a15a0de1d4e7a3739e9aae342e6e22"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/target-only.json",
+      "git_blob": "3eb2ea50d49a9d2567277c89972b12b28f52c739",
+      "bytes": 154790,
+      "sha256": "7578e0684537e8f1e56fc8c5ac82e7e2f1d8f2b051b255ac62779a09b8a98f0f"
+    },
+    {
       "path": "Saved/Diagnostics/MagnetizationLocal20261006/target_only.py",
       "git_blob": "bd6c0f5253dfdda82dc06a7af33ccf0709d5da05",
       "bytes": 3297,
       "sha256": "e2d725a59ecce4d93af4bf47e530b76163c867979a200945af78ca7f987c7a17"
+    },
+    {
+      "path": "Saved/Diagnostics/MagnetizationLocal20261006/update_journal.py",
+      "git_blob": "ac3cb2f56795586083bdf9c961f913b6b196f52f",
+      "bytes": 2756,
+      "sha256": "587607dd93d7fd6f1fe21438cb6dc3fc6ca4f8c9f86534b22f13b2604b7c1058"
     },
     {
       "path": "Saved/Diagnostics/MagnetizationLocal20261006/validation.json",
@@ -20736,6 +21534,126 @@
       "sha256": "574bdf0cdafb8f217e94d7cd00245890c8b5f9c1acc85b56829e46456d33380d"
     },
     {
+      "path": "Saved/Diagnostics/RealisticMag20261006/add_tests.py",
+      "git_blob": "08107609f6ab66b1690e3db7c86c9dc7a8dc9aaa",
+      "bytes": 5507,
+      "sha256": "a9b9b9222d85bd94104003d737b3ae8653b8ca91e23772598e0af9bbe8377037"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/analyze.py",
+      "git_blob": "62b108587a0ba4515f7d588684d59b96a7b5b96a",
+      "bytes": 1496,
+      "sha256": "9d00c24e6e993c60d4ab5e685fcb84db1c9f9b11605f2990ea3c4287a57ae5cc"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/build.log",
+      "git_blob": "14fd1fb3b7ced7dc7de88de6e8400637581ea2ff",
+      "bytes": 5024,
+      "sha256": "da5c15261c19c2b4773c9201fd594c0ea5940fffb55860bf2927dd9a8a10996b"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/edit_component.py",
+      "git_blob": "8979fe6373664c3a2ebee352d0416e070b4e11df",
+      "bytes": 1843,
+      "sha256": "3515453ae77f244a49a9bcd563a2c3a4d9fb02ed29315ecd0395f64274681440"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/final-state.json",
+      "git_blob": "bce840b94f1c0b43d395284daa517662162bdced",
+      "bytes": 383,
+      "sha256": "d187f91cef69079a397b16558ca3cfc3099ce25bbf7c014472087321eb089341"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/finish.py",
+      "git_blob": "12015303009c7a03eb73f9be2732954b1285b8f3",
+      "bytes": 1098,
+      "sha256": "182354fdd6d286fb07ee462bab8204bb786c35134b0e253491985220c24f1f6e"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/live.json",
+      "git_blob": "f090ab6e252b0cb5d0580651eb7ab23dcfbeb590",
+      "bytes": 172226,
+      "sha256": "f5b5d18f887ba0faf2095dbfd35faa25b7c00ad2e360bd6b885521aadeda7f69"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/live.py",
+      "git_blob": "c05ad37c5527b02b683b95d9fda15f9a48fee19c",
+      "bytes": 4624,
+      "sha256": "52ad43f28bc09b73dfd1403116bcee2ed05d00126eb5b756aed2ecc20f59456f"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/probe-api-error.json",
+      "git_blob": "b066d6c489f0aa57c43c0b5ebb05ba6920fe0891",
+      "bytes": 227,
+      "sha256": "23873669f74ba473891dbe7afc626b902e9f954842c3539238958b847daeca6f"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/probe-fixture-tick-disabled.json",
+      "git_blob": "da1f556b585a338e8c080b47d2768e353f48ed20",
+      "bytes": 5927,
+      "sha256": "9a2b7b1cdbe095dc5e7bacbf5b6ffdbaf804fe8be35e2391db2c8e385584367c"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/probe-no-physical-rig.json",
+      "git_blob": "6a5cf61960203288928a777a7ed47048fca435c0",
+      "bytes": 645,
+      "sha256": "56744c4f936c21b4f7f6fb93a54a92f911d7311f274685a128c10fff62447708"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/probe.json",
+      "git_blob": "e3165d77667fc8e173e2ce1f8bf51a3a184ae7c7",
+      "bytes": 5733,
+      "sha256": "4024e5a143acdf29e43563b9c3de3e012099239ad530aa9ec8500993331acca0"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/probe.py",
+      "git_blob": "f28a7cd894a8de7d4f760732d7383cd7ce94e53e",
+      "bytes": 3809,
+      "sha256": "ee5d81121bd7228ddeb66d49d1b9bee39a7f54a58fc0ac737ac78dc9548d1eb5"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/push-save.json",
+      "git_blob": "d19834fe4208cb9f2fc126f17c3a863e65b76fac",
+      "bytes": 162,
+      "sha256": "8b0a16aa803acb809a80b68cdc15e9141decd530c0948a75a4b1e53326de0388"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/reflection.json",
+      "git_blob": "bcfe25d242f9bf524aa30880a3de2dff767262a1",
+      "bytes": 3046,
+      "sha256": "dac5dda6fdc21d5b109794af1fa417a1310d5dff2ae1fbc09ad99034373bbb71"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/save.py",
+      "git_blob": "08728aba4b0de2925fcdcfb67536d8dc068176ad",
+      "bytes": 805,
+      "sha256": "1661db7eb3f8bc0bdd10901c7bac21a210fbecdcadbe13d0514eda768592e4fd"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/save_close.py",
+      "git_blob": "fa7fff7d013daf6de11baf973e68ec0a456e1235",
+      "bytes": 1471,
+      "sha256": "3f73f35b8f924a028265adce6a56c73114e0a47664ebf08a00eb9107f5dc5999"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/saved.json",
+      "git_blob": "d8dc801d0cf4d4255c521ec7e4c4ba3c79ff8bce",
+      "bytes": 178,
+      "sha256": "1db0517a22a01ee2404033506872891234d7a8bd333540d1fc3751a5453f2ead"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/validation.json",
+      "git_blob": "19f58898724303930f28558d4f0507ffbf0a0995",
+      "bytes": 3048,
+      "sha256": "cadcb52440e26f4fffaba8e33dd56aa0f11c3794e0be448db24f58677b0e0f1d"
+    },
+    {
+      "path": "Saved/Diagnostics/RealisticMag20261006/verify.py",
+      "git_blob": "1979ec83f13a48a42f63d4aedfe91cb8d47d0efb",
+      "bytes": 1844,
+      "sha256": "ddf58aeab3dffbc394f336b7d35c923fa76a840cca02f0300efdabb961c37ca2"
+    },
+    {
       "path": "Saved/Diagnostics/RecordHover260Diagnosis.py",
       "git_blob": "56053bd92cf106609a8c44b0e5872c1d96ef5107",
       "bytes": 3638,
@@ -21124,6 +22042,36 @@
       "git_blob": "ab7a2cd362b78a03bb580fb882378407162702fa",
       "bytes": 689,
       "sha256": "c57de30b4c3de19bddd88fab0308e156bbce5f24d5c37b6ff43a774c8997440c"
+    },
+    {
+      "path": "Saved/Diagnostics/RootBalanceSuspend20261006/compile.py",
+      "git_blob": "6adc87583d13943b348e91479f07ba44ec69b38a",
+      "bytes": 199,
+      "sha256": "f1359cc6c79d564beeea5e6be2f4e5e78b4475f981717a3d5b4c5d50dc59e47d"
+    },
+    {
+      "path": "Saved/Diagnostics/RootBalanceSuspend20261006/test-result.log",
+      "git_blob": "f216c93a9f2e709c695a467d86aa637613687682",
+      "bytes": 3375,
+      "sha256": "4bc0db1dc3d19e6a3d484d1f73431549dbaa106d7b9c521d843f5e12a18bf42a"
+    },
+    {
+      "path": "Saved/Diagnostics/RootBalanceSuspend20261006/tests.py",
+      "git_blob": "b734167b4117bef1c8f679c78eb51ce1be17afbb",
+      "bytes": 300,
+      "sha256": "4d7ea789e373a744aea17526a7ca34125aa381c67b64699b7307aef4f27cf831"
+    },
+    {
+      "path": "Saved/Diagnostics/RootBalanceSuspend20261006/verification.json",
+      "git_blob": "e1ad9fa0303f504488de3c0230aad935faeb93e1",
+      "bytes": 172,
+      "sha256": "43fc91520bfe809e6fb31c01f7c3ffcada9eabb10cd90a870bb3e9c4b5ae2f7f"
+    },
+    {
+      "path": "Saved/Diagnostics/RootBalanceSuspend20261006/verify.py",
+      "git_blob": "4c9691f30a4427c70718b8ef1f93ae82f89f64fd",
+      "bytes": 973,
+      "sha256": "f3aaaa3a5c9c4959d725295b348fe28f2c30c486dc1ce5c663cd4f8618616cce"
     },
     {
       "path": "Saved/Diagnostics/RootCubeRunaway/capture.py",
@@ -21924,6 +22872,60 @@
       "sha256": "2c5124e5f7840173aadef8477d4ac8d99b13078ab8d21195131c5250e83c82ee"
     },
     {
+      "path": "Saved/Diagnostics/SpecialSnapshot20261006/api.py",
+      "git_blob": "2ce60e49e24dd660bb385a16beaf1f3603199089",
+      "bytes": 379,
+      "sha256": "5133a5ac2a5e13d5fa4e599fb4fce13af09ec7e2bc80a4b9da9e247b51dc44a4"
+    },
+    {
+      "path": "Saved/Diagnostics/SpecialSnapshot20261006/automation.log",
+      "git_blob": "39bf84f8e01be587a2132831640373343e2aa3f5",
+      "bytes": 8579,
+      "sha256": "b9af9d0708635d10db0a51f273987bb1154a730e18768a4892e09107b52c9a4b"
+    },
+    {
+      "path": "Saved/Diagnostics/SpecialSnapshot20261006/first_run_no_defense.json",
+      "git_blob": "68f35c4310372629a35ba21c8b7d3aa866db039f",
+      "bytes": 25993,
+      "sha256": "a76954757570eb22fcbc64c28b80eff7ef19d53f2d0cc054e89d2e27a69f2a20"
+    },
+    {
+      "path": "Saved/Diagnostics/SpecialSnapshot20261006/live.py",
+      "git_blob": "e1f17e35be18da413d293194576996f002193c95",
+      "bytes": 3958,
+      "sha256": "c5ba29dbeb0da5825335341d62d4d2d4120b38ad2bacbe422da993d365d8b400"
+    },
+    {
+      "path": "Saved/Diagnostics/SpecialSnapshot20261006/live_dodge.json",
+      "git_blob": "0f68f2098f814934e26e514884a066e57fe1e0c8",
+      "bytes": 25247,
+      "sha256": "7c92898f079bbb8d36b4e8cc7bde5e7dafd540cad85fb09b8a38e447d55756c6"
+    },
+    {
+      "path": "Saved/Diagnostics/SpecialSnapshot20261006/live_parry.json",
+      "git_blob": "7668ec3ebeabbaf433cffa4d32af8f34ca012d2a",
+      "bytes": 25516,
+      "sha256": "58003129095aac81a052c81eebdcbc903af7151ad01f2901eb2411e6b217936b"
+    },
+    {
+      "path": "Saved/Diagnostics/SpecialSnapshot20261006/script_property_error.json",
+      "git_blob": "96ea65cd01660330a9ad4cdf9f3cf9852d91d601",
+      "bytes": 383,
+      "sha256": "7d4e39e2410550b75e046df49050ff9e2714542ab4182fc39baa4cd49195ef2e"
+    },
+    {
+      "path": "Saved/Diagnostics/SpecialSnapshot20261006/tests.py",
+      "git_blob": "7fc3583b528bebd0c828e1c4147f5653f2aa34ca",
+      "bytes": 407,
+      "sha256": "0f0be91af7a335362c7e4847918f8b23cf278081d53cf5b8d65791bd350d10aa"
+    },
+    {
+      "path": "Saved/Diagnostics/SpecialSnapshot20261006/validation.json",
+      "git_blob": "be8a95ded3b48a62dd6e6f029bed55b3267ff892",
+      "bytes": 673,
+      "sha256": "65f258512b8cc2f6524aee723f8835a0fdb284d0d542a1f0d9c324d7f66a96c9"
+    },
+    {
       "path": "Saved/Diagnostics/StageNNEntryBackup.py",
       "git_blob": "3576893ddf186ac323b08debd661e6fc5c1ed853",
       "bytes": 2120,
@@ -21952,6 +22954,42 @@
       "git_blob": "7ef8d221d2e2ed2e7cf9d638b3c7593832514ea9",
       "bytes": 168,
       "sha256": "a12cfafb60079815a54967ac4250d7f41b318d0e946b5ac4095534929b85dec7"
+    },
+    {
+      "path": "Saved/Diagnostics/Stunned20261006/build.log",
+      "git_blob": "b131f945cdc9391e13cacfe1a0035281cfdc1ab5",
+      "bytes": 11548,
+      "sha256": "c333f8b6145827890df7c4db7116ff7ebef7c48102d61318bf9bee98e5a6e053"
+    },
+    {
+      "path": "Saved/Diagnostics/Stunned20261006/finish.py",
+      "git_blob": "861e08bb26d2771bf1b9da9acccf75b69dc27cd4",
+      "bytes": 1094,
+      "sha256": "1226fcd4b876de9ad612f9cf9f3d1aad92b792c5908138a75e13ca481408f6ee"
+    },
+    {
+      "path": "Saved/Diagnostics/Stunned20261006/live.py",
+      "git_blob": "e66f3d755773a158f68158942d4abfa9cb08c9ba",
+      "bytes": 4349,
+      "sha256": "47090c4d5c07f7745c98e2da92aca1121138d82e62c65be76952e4f6b987a164"
+    },
+    {
+      "path": "Saved/Diagnostics/Stunned20261006/save_close.py",
+      "git_blob": "c122d0837989048048b31ee1f018b386e30fe1b6",
+      "bytes": 1466,
+      "sha256": "e6f784484a447ecc3632bf2066ccde53d973d3843d3784c72261c187c17551f4"
+    },
+    {
+      "path": "Saved/Diagnostics/Stunned20261006/saved.json",
+      "git_blob": "2d2579530378ed71e262abccbfb5bb0ec98d2ee4",
+      "bytes": 239,
+      "sha256": "6befd5c92fe24632ed87b5e83203bc13f50ee847132156be3efa66735e7c1869"
+    },
+    {
+      "path": "Saved/Diagnostics/Stunned20261006/verify.py",
+      "git_blob": "9c83713cf6f7235bea0d514ea815012ea174a472",
+      "bytes": 1082,
+      "sha256": "42b6a0af2eb712f00b480b054397e96c81b7ab235129b21072c15aae5032f033"
     },
     {
       "path": "Saved/Diagnostics/SummarizeCurrentKickLength.py",
@@ -22020,10 +23058,100 @@
       "sha256": "f613502d40e13129891d4bc48c000ba5b2d88fbb0faf344c98e3f076edbdabc7"
     },
     {
+      "path": "Saved/Diagnostics/SwordBodyState20261006/compile.py",
+      "git_blob": "6adc87583d13943b348e91479f07ba44ec69b38a",
+      "bytes": 199,
+      "sha256": "f1359cc6c79d564beeea5e6be2f4e5e78b4475f981717a3d5b4c5d50dc59e47d"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordBodyState20261006/live-read.json",
+      "git_blob": "75d9fc306b2accb6528bffa0c5193f4e456a2b98",
+      "bytes": 38,
+      "sha256": "12dac44a400982fe2a9350ceda31fda59b629da5f04100d90725ec1c8f0e6cb5"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordBodyState20261006/read.py",
+      "git_blob": "460a5c90584186be9f56a20bf6eac9f054d5c8b7",
+      "bytes": 920,
+      "sha256": "1fc01097ecf213dd0ce8257f86a6c1b82d3d4267b3e05eb7cbd59c2f0a523aac"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordBodyState20261006/test-result.log",
+      "git_blob": "70e1d72720ad406adb85d73a8f7a2b768c28e013",
+      "bytes": 2999,
+      "sha256": "f173613424db2a061fb9a3cfda8d9f971964c83e675ef7aca2c00aa96af95461"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordBodyState20261006/tests.py",
+      "git_blob": "dc5245dcca4123617a909d0fda6b50235c7bc2c4",
+      "bytes": 263,
+      "sha256": "112c0eedfddb16bf9459ececa8b68112faf0c6edc356785346f5ccc7e731d85b"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordHead20261006/analyze.py",
+      "git_blob": "c2e71079c8b4ba2897af6fd0838d97ef406a684f",
+      "bytes": 1288,
+      "sha256": "86a107abd7534d8e823f38d55493a748742bfad4fcf56a0f287ab0645d17d03b"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordHead20261006/capture.py",
+      "git_blob": "71ada532e11c3b5baf1f0b7f74c747e00d2d6e68",
+      "bytes": 2878,
+      "sha256": "b70d4dd5b1d72ee3253949097d8a589535ea5434fa8cd1ce4ed17579392ba493"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordHead20261006/hits.json",
+      "git_blob": "c4609a2a039293b54de1c671af23f752ad12f768",
+      "bytes": 31034,
+      "sha256": "1883dbe2381c66ae958922e8be3e68788d9a12a4668f0ab9669c6d98a0d9a211"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordHead20261006/inspect.json",
+      "git_blob": "c4d152427eb9910bbbcfad0706a8268f8ed42df0",
+      "bytes": 35,
+      "sha256": "605257342fa044b4b4ddb2afdac3122d6e775a0b9adb4d2ee4c85dde6ba69688"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordHead20261006/inspect_editor.py",
+      "git_blob": "ab9158f96c47be0b253ccb34ab0f8b0ab9396b53",
+      "bytes": 1367,
+      "sha256": "a2e2c8bbc5e0562c6066926a8beaf027d2475438c2ddc06de975a261fe9eda47"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordHead20261006/near-head.json",
+      "git_blob": "c9361f9129228a966b337c661d1473c3fe7ce44b",
+      "bytes": 15662,
+      "sha256": "41d33ea567919030df6d8fac2a50978ffdba77bb46f85942de53ae2415a1ab97"
+    },
+    {
       "path": "Saved/Diagnostics/SwordNNInput/Check.py",
       "git_blob": "0af494bed17fe4b7f0dcea56eb93545d2fc797b8",
       "bytes": 2706,
       "sha256": "f3a0ef4ac715957cc231ada0388d944fd7da170b9604a246688666e378c05c74"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordOwnerPhase20261006/capture.py",
+      "git_blob": "4c5d0099feb6d1bef11d9a394ae7f26f595882c9",
+      "bytes": 2884,
+      "sha256": "7a98f6a6e7c62a7166d7254fd8252b9b383e92d809c614fecc1467e8272729f4"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordOwnerPhase20261006/hits.json",
+      "git_blob": "eb5662bb36865af7705f43d883f7b1e8f435baf3",
+      "bytes": 11367,
+      "sha256": "d7f09ec01ed528ce3e88f98e2430fdffc3706ffaae8b65c73af4cf690a9a7c10"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordOwnerPhase20261006/summary.json",
+      "git_blob": "9f9b990026af9eeda474781504eeaf9db28236f2",
+      "bytes": 148,
+      "sha256": "190e099e6148ecbf4e525d8260097a148afab6113d2a420df5ef5e0a8cd8f0ad"
+    },
+    {
+      "path": "Saved/Diagnostics/SwordOwnerPhase20261006/tests.py",
+      "git_blob": "dc5245dcca4123617a909d0fda6b50235c7bc2c4",
+      "bytes": 263,
+      "sha256": "112c0eedfddb16bf9459ececa8b68112faf0c6edc356785346f5ccc7e731d85b"
     },
     {
       "path": "Saved/Diagnostics/SwordThigh/AnalyzeIsolation.py",
@@ -27175,9 +28303,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/GameAnimationSample3.Build.cs",
-      "git_blob": "d0287f5761f8a4ec842a1b3505c83485b60a6b10",
-      "bytes": 3395,
-      "sha256": "ecac8b646a436c0913b397da4710ed7f9caffbda5a55a0bc023ad25aaee0266c"
+      "git_blob": "b936c8202d6e173fc8c04759da23db09279a586c",
+      "bytes": 3426,
+      "sha256": "19bb16b3e5d381c0497b674e5e9ad46c282041aefbb6cd0dc96107df51989a6b"
     },
     {
       "path": "Source/GameAnimationSample3/GameAnimationSample3.cpp",
@@ -27205,9 +28333,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgent.cpp",
-      "git_blob": "536cac846b562f0fce0a6379607a6667d2204a40",
-      "bytes": 147662,
-      "sha256": "85bd1ae097a0fa979b71121da3cd1c7d013dc7d795356b0ed73638b2d26a52c0"
+      "git_blob": "f84c6d91304f297cbad8ad528ac85fc43c271296",
+      "bytes": 148260,
+      "sha256": "d6f2b630654fe081ca7c63c78c43ce72aaa03c7578899562e813471f71986c00"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgentHalfSimulation.cpp",
@@ -27229,9 +28357,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgentResetPhysics.cpp",
-      "git_blob": "8e98f14f8c3595fca93bdef4cb351c844ee18079",
-      "bytes": 17439,
-      "sha256": "5a36ea4d452ab33c87406f494103efde6c64bb82517ec9021f380b39ef9926a9"
+      "git_blob": "93827b2ecc2854070226b73ce84fb66a494a80d7",
+      "bytes": 17651,
+      "sha256": "f1854745a944bef961f50c75df0f5c4c29d2cb089bba95273532e61db2b8c18a"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgentResetPhysics.h",
@@ -27331,9 +28459,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackControlLibrary.cpp",
-      "git_blob": "0fe68437f19aab6dd0c5a810aa3e4ab4a85effcf",
-      "bytes": 15082,
-      "sha256": "077b9912bd2ff98da24b1b6fdc9ec19fac9f2769c1a312e6b7b39164b550bab5"
+      "git_blob": "a072fd7f4c0a78f5d0b3b6f7f52adf05634e429f",
+      "bytes": 15853,
+      "sha256": "842bcfb3a0a28860c783beb3c8743826d9584dbdc853f752a4344e1afa32331f"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackControls.h",
@@ -27457,15 +28585,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackStartHandInertia.cpp",
-      "git_blob": "f489fa2cf7b4d2284d2ed6086c8ab2daf8ecbe88",
-      "bytes": 21027,
-      "sha256": "6f9849dc83d8f456ef51ef4dbb2cea60551020a565ab95d3662e40f7eedc13f3"
+      "git_blob": "251f29f5cb60309e322fba1f2225dcb00d30165c",
+      "bytes": 23802,
+      "sha256": "1ee0d2d99cfad71a5f5707e151fa9b0cb31d6f14d6c5481b84c06673a685aa1f"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackStartHandInertia.h",
-      "git_blob": "e0d372b5ed48af9ea1fb51ce7147ac68845ab595",
-      "bytes": 607,
-      "sha256": "960443aee5a5022fa930a0152619091ab0e296328b1671e9c7af5976b6619e46"
+      "git_blob": "9e20583b41b9847f4290e0c059f43f57a9f08b29",
+      "bytes": 749,
+      "sha256": "1f71cef18991d9dd3fd85bd9381f4b5f915bbaaf689805b4bc37bbd7cd13f901"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackStartInertia.h",
@@ -28105,9 +29233,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltCharacterComponent.cpp",
-      "git_blob": "e8aa6e400a1176dce5343c642b1d8fa5761703e1",
-      "bytes": 94398,
-      "sha256": "6463ed42e2f6578f82cbb68df0f0785d24216874e0b189a85fcaefb656d9b17e"
+      "git_blob": "0c774255c03411245b011287cfe60af67b5a1f89",
+      "bytes": 95215,
+      "sha256": "457e3b78e86591243ac242f6f263bc82a07f91d15e95b10bfda9eca3c7d33505"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltCharacterProfiling.cpp",
@@ -28171,9 +29299,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltHitEventTests.cpp",
-      "git_blob": "12162a54a161d48ed7c30c00bf1f4e9b11ca9536",
-      "bytes": 6690,
-      "sha256": "78bb24843580fa950b94c0c7a1cfc004fbc0496c40b562b573897ea78a242c24"
+      "git_blob": "a75e9dfb72002c00d85bcfe04f8cf8a4896a7ef5",
+      "bytes": 7664,
+      "sha256": "f5853fc8a23b9137569b558e3b0c7ccbcb9663d2f2faa3914d52dbfef872b389"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltISMBloodFixture.cpp",
@@ -28321,9 +29449,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltSwordFixture.cpp",
-      "git_blob": "4bb9466b508f38f930ad55fd8546ff9d36bbd6ad",
-      "bytes": 179194,
-      "sha256": "2460465f252da9eaec62ffb39e2aa18ff02c4bcc3768905d55ec089e253c460e"
+      "git_blob": "07fc71afed0303bd5cfd52a8ab5a5b5d60632c88",
+      "bytes": 183357,
+      "sha256": "d7b3c5759edc1b9c35639df11e2166b758bab5473c7fafdf056bf44957645a53"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltVisualCheck.cpp",
@@ -28375,9 +29503,27 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyLimbCollisionLibrary.cpp",
-      "git_blob": "9f29ea227b75895eebea30da78d57421f7a3a428",
-      "bytes": 9497,
-      "sha256": "ca97452b52670ecc070b7553b0b46346494d95a674f5eab78ffba28dafb28271"
+      "git_blob": "fdde47f23f68f85b01c2632787bec59cff3ef47e",
+      "bytes": 8857,
+      "sha256": "b457fad4ddc2a59ad4fed9be30515365085ecf5c68503855e9e5efc16add06c9"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyLimbColorLibrary.cpp",
+      "git_blob": "12e34a71e70c1812ab486b99ffaf21e08a9ed027",
+      "bytes": 5320,
+      "sha256": "b3b6b274546742eeac6a1d9e19bd680be8dc7890ab81ac82c0e45d8281e51e6a"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyLimbColorNames.h",
+      "git_blob": "a5430280a739f431c110aec33be43d6da0fa4f6e",
+      "bytes": 1027,
+      "sha256": "325b5ff27cc5eb0cedd59d34ef254bb1a94c590337a1a9f55444b9d612087c05"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyLimbColorPrepare.cpp",
+      "git_blob": "0af589809ac4d4c8c79d08de09ee932c454cf71f",
+      "bytes": 7266,
+      "sha256": "e135a9a8a4dc18cd7ff153be5d8d5ee2147a55e22de586d7bac8eab2f7b36007"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyLowerTempering.h",
@@ -28519,9 +29665,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNModifierInputs.cpp",
-      "git_blob": "5ad46eb8cb1951967c9762473e46a666567a3ebf",
-      "bytes": 5045,
-      "sha256": "a674440061da7c54c781724604d7b605b602104232abc31d9aa7cd981ee93c33"
+      "git_blob": "e0f4a614bf27d0610a7db84776c12ac98991d744",
+      "bytes": 5407,
+      "sha256": "2394016dda1b364e601e12afeff049ae32639d94925cee7d483b8140e59560c2"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNModifierManager.inl",
@@ -28609,9 +29755,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNSlashRuntime.inl",
-      "git_blob": "d58430b324e7638d379831d0d29c28b849c708f0",
-      "bytes": 105814,
-      "sha256": "d2dae9d499228d91f94698be51d2a28cec7152cca24e5c7ac3d31a8f6b8174e5"
+      "git_blob": "b33aecd5fdeea3db14ba4725bd4ade5054a4ce7e",
+      "bytes": 106115,
+      "sha256": "7338a589739181218bfdf672b7e17be28f8ad03f6b624898dc6beba874e5e46d"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNativePhysicalAgent.cpp",
@@ -28693,15 +29839,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicalContext.cpp",
-      "git_blob": "e63880f4af76b47f2220d568e1b06a709433e37d",
-      "bytes": 51939,
-      "sha256": "5a5722d66f8717ed6190301369adb3b4c281875ca9f48d2b30ad502472efb0fd"
+      "git_blob": "d7cf3ae0014c13c54e41e2cd614172b5c3aea7a0",
+      "bytes": 61965,
+      "sha256": "6f772819aab15bf2a108551a2e960ff2b12ac4ca11598e1fa9a7f4a33ebb98cc"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicalContext.h",
-      "git_blob": "d65086d33b62c90451502ae39bae14e2b8bdc206",
-      "bytes": 1325,
-      "sha256": "8d74f5d530a6ecd604679735e4ebb111ed276872d2099560b4c60a97a81ce82d"
+      "git_blob": "fd2eced1882db93418368eed7341830c039265a8",
+      "bytes": 1565,
+      "sha256": "b57bf28b557c0a64c8e66a3e1739f332630fa59311393f10399928175154429c"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicalFootTarget.h",
@@ -28794,6 +29940,12 @@
       "sha256": "c366d80116860db40d42c651189783ec415f74826057269d1239ead424023957"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyRealisticMode.cpp",
+      "git_blob": "4dbd1affdfb89754d014a84c6491607f96520f50",
+      "bytes": 5606,
+      "sha256": "0ea1f6cfa5773b16743246f6a378a3d5d74b27a5bcbfa86c4164540614771e4d"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecyRecoveryLegLength.h",
       "git_blob": "fb852a4a7732c0d15ea6804345bf827992b1a1fb",
       "bytes": 3091,
@@ -28855,9 +30007,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyRootPhysicsLibrary.cpp",
-      "git_blob": "c25b19f881d54149ec2c5c740a6b99696a870909",
-      "bytes": 24929,
-      "sha256": "80d4fea85ce568998d3cbc9bd41b4675bc285b35409f0413d9c3e9fb03b51171"
+      "git_blob": "bf035e7c8d1dab93fbdbf8a9985fe2c1ac077125",
+      "bytes": 32650,
+      "sha256": "35bf3e07b91d2805ef980c5c159e42be7d94b452bfd8b1050b521192db6f42a8"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyRootResponse.h",
@@ -28992,6 +30144,12 @@
       "sha256": "f9a2d1bf508369c00b6e05f3a034b393e58b92c099cf61c3a8ba34e1fed39d3a"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyStunned.cpp",
+      "git_blob": "51541946095c17ae974ff2802c7edd87aeb32b48",
+      "bytes": 6065,
+      "sha256": "a9f5b24ce3081fb82b4630ad829f4d2b949c5c0a873986f5c5b1b65493f0eb12"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordAttackCollision.h",
       "git_blob": "25ce8ccdea1feb0e05898803240810f0b416b436",
       "bytes": 669,
@@ -28999,9 +30157,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordComponent.cpp",
-      "git_blob": "d689fc28eb5162d9457a66fa591b7a17607239ef",
-      "bytes": 46092,
-      "sha256": "2f1d2230ac167c197d2ee19f6f4d03aabc4f7b9c5145f63110b118e306f48ff6"
+      "git_blob": "7f11ffc6a7ffbce1bcea3930bf61554f81e60fc7",
+      "bytes": 48305,
+      "sha256": "3776a94db06fc4e41bf9adf14d34b6ab8eefc484d7d4ca0619915579712434e1"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyUpperBodyInertia.h",
@@ -29143,9 +30301,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyAgent.h",
-      "git_blob": "09e05b9439429a6058c6d7256251509785fe894f",
-      "bytes": 63389,
-      "sha256": "d842377653d3b98b4421fae6036a1911486bf411f3895471f3854e1ff0979ff4"
+      "git_blob": "97bf92a3381be79f1e6eec4a2cb4f8b60dfc201f",
+      "bytes": 66527,
+      "sha256": "045d632175ee222a891757b0284bb99a305410990e5a8c82429a20bc0b936024"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyAgentResetLibrary.h",
@@ -29185,9 +30343,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyAttackControlLibrary.h",
-      "git_blob": "f31496254e9f727204274088ca70a96539699e3c",
-      "bytes": 6885,
-      "sha256": "2ec20820dd2765284bd0f0bd75761936d7bd448dd0295ed7a04dfcc9b01a1ebf"
+      "git_blob": "27237e532339d00f41f3803f910e2fc9a58fb48e",
+      "bytes": 7105,
+      "sha256": "9e8b83538158f62fb4b86f8f09dd191e60b1174de3a0b1a3d8ab3a6e81c7423b"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyAttackEndExtensionLibrary.h",
@@ -29227,9 +30385,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyAttackStartInertiaLibrary.h",
-      "git_blob": "ba062981e83942314bac41638c4ea474fc0df676",
-      "bytes": 4238,
-      "sha256": "e988aa490f4acc4c18dd6ad0c683c56f642135a89c79ebc79efb07c736dec424"
+      "git_blob": "928675a490d58abaea24fc41c2b22af720aa976a",
+      "bytes": 4515,
+      "sha256": "faaae440684d05b6743cc9647795588f40d011a2f5ffb98f0f5c3f81592eaf6d"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyAttackTrimLibrary.h",
@@ -29454,6 +30612,12 @@
       "sha256": "baa5568e531830fbbcae0389a960c034d7c9189b2b9399625a441d218fdae8fd"
     },
     {
+      "path": "Source/GameAnimationSample3/Public/ProphecyLimbColorLibrary.h",
+      "git_blob": "ce1f080289c32307da0e9d9d0fd554c120f8e611",
+      "bytes": 2207,
+      "sha256": "79b9fcf021c970240b4ec2560ea5b803036e93ae5fb88fd445056185f1479704"
+    },
+    {
       "path": "Source/GameAnimationSample3/Public/ProphecyLowerTemperingLibrary.h",
       "git_blob": "629d7d486e09881842a71c6b74a924cfdc2ad8dd",
       "bytes": 7990,
@@ -29539,9 +30703,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyPhysicalProfileLibrary.h",
-      "git_blob": "ffb0c81e97c95028326b1711f2be7652f0aeb09c",
-      "bytes": 5652,
-      "sha256": "2b9f431aab15a89270b167e5dd60cda670f27569dc0e32d52d4b813bfad7b58b"
+      "git_blob": "90420a92c2d67d4f7888484448cde9aede879d03",
+      "bytes": 7140,
+      "sha256": "0d36d6bf181b423b26d5c15b89a0e3bffa442bb43b6be6ba2dd909644a21cc8f"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyPhysicsBenchmark.h",
@@ -29587,9 +30751,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyRootPhysicsLibrary.h",
-      "git_blob": "e11cc20cd51e145f71ad612950a2a23fa1d05ae1",
-      "bytes": 10688,
-      "sha256": "a66d4578125d5460694d6c387fb9dd3df0ec98d13290d10c54c8b77368512c41"
+      "git_blob": "14c437523e46560c7ddb32aebe111b96ae7acc3f",
+      "bytes": 11402,
+      "sha256": "c5b656c1a6389e2c03e6266d63ac1d085986bf6cf6e5748776dde8cb5da03c2b"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyRootSpeedLimitsLibrary.h",
@@ -29641,9 +30805,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySwordComponent.h",
-      "git_blob": "317292db9986711a9887d27ca97f91b0f5f4ce21",
-      "bytes": 2476,
-      "sha256": "d4a1391307d755d51d2999fbeb8ff45787c3546aa23d498857c03330a3b1bd0c"
+      "git_blob": "16ac9fab64ef0ad6bae3e399f4e36b96f90f0c3e",
+      "bytes": 2604,
+      "sha256": "b897e1eeec7fd95b71976cf1e2c64d7c544e096ffcdf7896c43c5c3733079404"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySwordPhysicsLibrary.h",
@@ -29689,9 +30853,9 @@
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyBlendNodeUpgrade.cpp",
-      "git_blob": "62748b493df76e4f21677baddf2544ee599ff818",
-      "bytes": 47727,
-      "sha256": "2be21dc766abded9251f73c6ab8fdfdc05d44481727e2323f66935eb388bc00c"
+      "git_blob": "3bd68ddf8ecfac1dfce212552ee75f16f6d8b5c2",
+      "bytes": 50472,
+      "sha256": "6551d188caa6f7a1d1d6596488b8a1c4d0ba3584e398e67b61a350a4149f72db"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyBoatBuoyancyAutomationTest.cpp",
@@ -31428,6 +32592,12 @@
       "sha256": "112238dd0e6fe3ce758b2ea61956d6c0a04c489ac07359ea17409d99ba5decca"
     },
     {
+      "path": "Tools/NN/RefreshParryCheckpoint.py",
+      "git_blob": "b6f7d1485893b8bc87b7dc2a3862588139e5e044",
+      "bytes": 3015,
+      "sha256": "cc0ed1c20ccb6a4a24450f807aeb9f542cc23402f44a67e9c8bf54256ae62ed7"
+    },
+    {
       "path": "Tools/NN/ReplayProphecySlashContacts.py",
       "git_blob": "fec22b3f67bf40cfd2e8c93095103c817f67fd12",
       "bytes": 1315,
@@ -31812,6 +32982,12 @@
       "sha256": "2a433552043490f7172e2df2aa5d007b4afbbf3f4f51a8e77d94cb120b5c8c4b"
     },
     {
+      "path": "Tools/Recovery/Checkpoints/dodge_step_322925-bb2187cbc321.pt",
+      "git_blob": "dc63da78fc63391318d88d87f124a4597952b671",
+      "bytes": 9339494,
+      "sha256": "bb2187cbc321819cf5a99b2f2bc8291a215d29ff8fa6133d6f6c8e068d0fbea7"
+    },
+    {
       "path": "Tools/Recovery/Checkpoints/lower_body-0f2565ac72c5.pt",
       "git_blob": "26dacb823acfff591c94817ef64f4b498039e0fd",
       "bytes": 4643925,
@@ -31834,6 +33010,12 @@
       "git_blob": "354f1065486d4dc726243a15afe75c0895b913dc",
       "bytes": 4532298,
       "sha256": "860934962ad94894e5af1262dd403d85da46733e02a6be4afc09cf5e1197f64e"
+    },
+    {
+      "path": "Tools/Recovery/Checkpoints/parry_step_1149700-91b134deb6da.pt",
+      "git_blob": "986b6834c99b61c27bbbc73c06613e2c7ed2baa5",
+      "bytes": 5387437,
+      "sha256": "91b134deb6dad3b5dfc972979aa6713c62fbc62973b5ca27c75080e9cb8776c9"
     },
     {
       "path": "Tools/Recovery/Checkpoints/parry_step_770015-f4ee679611e1.pt",
@@ -31861,9 +33043,9 @@
     },
     {
       "path": "Tools/Recovery/NNCheckpoints20261003.json",
-      "git_blob": "02ab5bacf69f84f14f890f0b78f248ecb030f747",
-      "bytes": 10487,
-      "sha256": "2ef6794419481120fd13a6d2c292ee8979c1306442fdc05402d778b2fe8f99f6"
+      "git_blob": "e7c0b3175a26d46897a57ffec8ec8eb62976b65c",
+      "bytes": 11829,
+      "sha256": "c93ee8bb365393fdc1284821be5c4f59775d07443358569b88cdf1610b4b843b"
     },
     {
       "path": "Tools/Recovery/RestoreNNCheckpoints.py",

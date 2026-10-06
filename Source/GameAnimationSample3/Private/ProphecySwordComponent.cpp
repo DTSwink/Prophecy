@@ -94,11 +94,15 @@ bool SuppressesOwner(const AProphecyAgent* Agent)
 // Keep the automatic body-body attack mask separate from this sword-only preference.
 bool SuppressesSwordOwner(const AProphecyAgent* Agent)
 {
-    return OwnCollisionDisabled.Contains(Agent) || SuppressesOwner(Agent);
+    const auto* Gate=Gates.Find(Agent);
+    // Weapon wind-up gates only the owner's pairs; melee retains its until-Hit rule.
+    return OwnCollisionDisabled.Contains(Agent)
+        || (Gate && Gate->bWeapon ? !Gate->bAllowed : SuppressesOwner(Agent));
 }
 bool IsAllowed(const AProphecyAgent* Agent)
 {
-	const auto* Gate=Gates.Find(Agent);return !CollisionDisabled.Contains(Agent) && (!Gate || Gate->bAllowed);
+	const auto* Gate=Gates.Find(Agent);
+    return !CollisionDisabled.Contains(Agent) && (!Gate || Gate->bWeapon || Gate->bAllowed);
 }
 void Refresh(AProphecyAgent* Agent)
 {
@@ -127,13 +131,13 @@ void Begin(AProphecyAgent* Agent,FName Family)
 	Gate.bAllowed=false;
 	Gate.bWeapon=Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash"),ESearchCase::IgnoreCase);
 	SetBodySuppressed(Agent, true);
-	Refresh(Agent);
+	RefreshOwner(Agent);
 }
 void Armed(AProphecyAgent* Agent)
 {
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate || !Gate->bWeapon || Gate->bAllowed) return;
-	Gate->bAllowed=true;Refresh(Agent);
+	Gate->bAllowed=true;RefreshOwner(Agent);
 }
 void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit)
 {
@@ -143,7 +147,7 @@ void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit)
 	if (Gate->bWeapon==bWeapon) return; // Preserve the already-latched collision phase.
 	Gate->bWeapon=bWeapon;
 	Gate->bAllowed=bWeapon ? bArmed : bHit;
-	Refresh(Agent); // Retain original responses, body and grip; no End/Begin cycle.
+	RefreshOwner(Agent); // Retain original responses, body and grip; no End/Begin cycle.
 }
 void Hit(AProphecyAgent* Agent)
 {
@@ -949,6 +953,44 @@ void UProphecySwordComponent::TickComponent(float Dt, ELevelTick Type, FActorCom
 	bHasPrevious = true;
 }
 
+bool UProphecySwordComponent::GetHeldBodyState(FTransform& WorldTransform, FVector& LinearVelocity,
+	FVector& AngularVelocity, bool& bSimulating) const
+{
+	WorldTransform = FTransform::Identity;
+	LinearVelocity = AngularVelocity = FVector::ZeroVector;
+	bSimulating = false;
+	if (!IsValid(Sword) || !IsValid(Blade) || Sword->IsActorBeingDestroyed()) return false;
+	if (JoltBody && JoltBody->IsJoltBody())
+	{
+		FProphecyJoltBodyState State;
+		if (!JoltBody->GetBodyState(State)) return false;
+		WorldTransform = FTransform(State.Rotation, State.PositionCm);
+		LinearVelocity = State.CenterOfMassVelocityCmPerSecond;
+		AngularVelocity = State.AngularVelocityRadiansPerSecond;
+		bSimulating = State.bDynamic;
+		return true;
+	}
+	if (Blade->IsSimulatingPhysics())
+	{
+		const FBodyInstance* Body = Blade->GetBodyInstance();
+		if (!Body || !Body->IsValidBodyInstance()) return false;
+		WorldTransform = Body->GetUnrealWorldTransform();
+		LinearVelocity = Body->GetUnrealWorldVelocity();
+		AngularVelocity = Body->GetUnrealWorldAngularVelocityInRadians();
+		bSimulating = true;
+		return true;
+	}
+	WorldTransform = Blade->GetComponentTransform();
+	if (bHasPrevious)
+	{
+		// Reuse existing carried-motion samples; convert component-origin velocity to COM.
+		AngularVelocity = CarriedAngular;
+		LinearVelocity = CarriedLinear + FVector::CrossProduct(CarriedAngular,
+			Blade->GetCenterOfMass() - WorldTransform.GetLocation());
+	}
+	return true;
+}
+
 namespace
 {
 	UProphecySwordComponent* SwordController(AProphecyAgent* A, bool bCreate)
@@ -1034,9 +1076,21 @@ bool AProphecyAgent::SetSwordInertiaScale(float Scale)
 }
 #include "ProphecyPhysicalContext.h"
 #include "ProphecySpecialSolver.h"
+#include "ProphecyAttackControlLibrary.h"
+#include "ProphecyJoltPHATSweepLibrary.h"
 void AProphecyAgent::NotifySwordAttackState(bool bAttacking)
 {
     ProphecySpecialSolver::AttackChanged(this,bAttacking);
+    if (bAttacking)
+    {
+        FName Attack;bool Half,Armed,Hit;int32 Frame;
+        if (GetNNAttackState(Attack,Half,Armed,Hit,Frame))
+        {
+            const auto Bones=UProphecyAttackControlLibrary::GetAttackBones(Attack,this);
+            AActor* Sword=Bones.Contains(TEXT("sword")) ? GetHeldSword() : nullptr;
+            UProphecyJoltPHATSweepLibrary::SetAttackParts(this,Bones,Sword ? Cast<UPrimitiveComponent>(Sword->GetRootComponent()) : nullptr);
+        }
+    }
 	// Event-only reflected dispatch avoids a new cross-DLL import during Live Coding.
 	// The plugin owns configuration versus effective activation; BeginPlay/Tick setters
 	// cannot accidentally leave sweeps running after this attack ends.

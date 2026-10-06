@@ -1,0 +1,1248 @@
+{
+  "mode": "dodge",
+  "reason": "complete",
+  "setup": {
+    "attacker": {
+      "saved": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "perturbed": {
+        "mag": [
+          0.8999999761581421,
+          0.8999999761581421
+        ],
+        "feedback": [
+          80.0,
+          90.0
+        ],
+        "damping": 96.0
+      },
+      "damping_set_result": ""
+    },
+    "defender": {
+      "saved": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "perturbed": {
+        "mag": [
+          0.8999999761581421,
+          0.8999999761581421
+        ],
+        "feedback": [
+          80.0,
+          90.0
+        ],
+        "damping": 96.0
+      },
+      "damping_set_result": ""
+    }
+  },
+  "defense_request": "",
+  "rows": [
+    {
+      "tick": 20,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8999999761581421,
+          0.8999999761581421
+        ],
+        "feedback": [
+          80.0,
+          90.0
+        ],
+        "damping": 96.0
+      },
+      "defender": {
+        "mag": [
+          0.8999999761581421,
+          0.8999999761581421
+        ],
+        "feedback": [
+          80.0,
+          90.0
+        ],
+        "damping": 96.0
+      }
+    },
+    {
+      "tick": 21,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8999943733215332,
+          0.8999960422515869
+        ],
+        "feedback": [
+          79.99939727783203,
+          89.99944305419922
+        ],
+        "damping": 95.99925231933594
+      },
+      "defender": {
+        "mag": [
+          0.8999943733215332,
+          0.8999960422515869
+        ],
+        "feedback": [
+          79.99939727783203,
+          89.99944305419922
+        ],
+        "damping": 95.99925231933594
+      }
+    },
+    {
+      "tick": 22,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8999776840209961,
+          0.8999843597412109
+        ],
+        "feedback": [
+          79.99760437011719,
+          89.99777221679688
+        ],
+        "damping": 95.99700927734375
+      },
+      "defender": {
+        "mag": [
+          0.8999776840209961,
+          0.8999843597412109
+        ],
+        "feedback": [
+          79.99760437011719,
+          89.99777221679688
+        ],
+        "damping": 95.99700927734375
+      }
+    },
+    {
+      "tick": 23,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8999499082565308,
+          0.8999648690223694
+        ],
+        "feedback": [
+          79.99462127685547,
+          89.9949951171875
+        ],
+        "damping": 95.99327087402344
+      },
+      "defender": {
+        "mag": [
+          0.8999499082565308,
+          0.8999648690223694
+        ],
+        "feedback": [
+          79.99462127685547,
+          89.9949951171875
+        ],
+        "damping": 95.99327087402344
+      }
+    },
+    {
+      "tick": 24,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8999110460281372,
+          0.8999375700950623
+        ],
+        "feedback": [
+          79.99044036865234,
+          89.99110412597656
+        ],
+        "damping": 95.98805236816406
+      },
+      "defender": {
+        "mag": [
+          0.8999110460281372,
+          0.8999375700950623
+        ],
+        "feedback": [
+          79.99044036865234,
+          89.99110412597656
+        ],
+        "damping": 95.98805236816406
+      }
+    },
+    {
+      "tick": 25,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8998611569404602,
+          0.8999025821685791
+        ],
+        "feedback": [
+          79.9850845336914,
+          89.98612213134766
+        ],
+        "damping": 95.98135375976562
+      },
+      "defender": {
+        "mag": [
+          0.8998611569404602,
+          0.8999025821685791
+        ],
+        "feedback": [
+          79.9850845336914,
+          89.98612213134766
+        ],
+        "damping": 95.98135375976562
+      }
+    },
+    {
+      "tick": 26,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8998003005981445,
+          0.8998599052429199
+        ],
+        "feedback": [
+          79.97854614257812,
+          89.98003387451172
+        ],
+        "damping": 95.97318267822266
+      },
+      "defender": {
+        "mag": [
+          0.8998003005981445,
+          0.8998599052429199
+        ],
+        "feedback": [
+          79.97854614257812,
+          89.98003387451172
+        ],
+        "damping": 95.97318267822266
+      }
+    },
+    {
+      "tick": 27,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.899728536605835,
+          0.8998095393180847
+        ],
+        "feedback": [
+          79.9708251953125,
+          89.97285461425781
+        ],
+        "damping": 95.96353912353516
+      },
+      "defender": {
+        "mag": [
+          0.899728536605835,
+          0.8998095393180847
+        ],
+        "feedback": [
+          79.9708251953125,
+          89.97285461425781
+        ],
+        "damping": 95.96353912353516
+      }
+    },
+    {
+      "tick": 28,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8996458053588867,
+          0.8997515439987183
+        ],
+        "feedback": [
+          79.96194458007812,
+          89.96458435058594
+        ],
+        "damping": 95.95242309570312
+      },
+      "defender": {
+        "mag": [
+          0.8996458053588867,
+          0.8997515439987183
+        ],
+        "feedback": [
+          79.96194458007812,
+          89.96458435058594
+        ],
+        "damping": 95.95242309570312
+      }
+    },
+    {
+      "tick": 29,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8995522260665894,
+          0.8996859192848206
+        ],
+        "feedback": [
+          79.95188903808594,
+          89.95523071289062
+        ],
+        "damping": 95.93985748291016
+      },
+      "defender": {
+        "mag": [
+          0.8995522260665894,
+          0.8996859192848206
+        ],
+        "feedback": [
+          79.95188903808594,
+          89.95523071289062
+        ],
+        "damping": 95.93985748291016
+      }
+    },
+    {
+      "tick": 30,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.8994478583335876,
+          0.8996126651763916
+        ],
+        "feedback": [
+          79.94066619873047,
+          89.94478607177734
+        ],
+        "damping": 95.92583465576172
+      },
+      "defender": {
+        "mag": [
+          0.8994478583335876,
+          0.8996126651763916
+        ],
+        "feedback": [
+          79.94066619873047,
+          89.94478607177734
+        ],
+        "damping": 95.92583465576172
+      }
+    },
+    {
+      "tick": 31,
+      "attack_frame": 1,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8993326425552368,
+          0.8995318412780762
+        ],
+        "feedback": [
+          79.92828369140625,
+          89.93326568603516
+        ],
+        "damping": 95.91036224365234
+      }
+    },
+    {
+      "tick": 32,
+      "attack_frame": 2,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8992066979408264,
+          0.899443507194519
+        ],
+        "feedback": [
+          79.91474914550781,
+          89.92066955566406
+        ],
+        "damping": 95.89344024658203
+      }
+    },
+    {
+      "tick": 33,
+      "attack_frame": 2,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8990700244903564,
+          0.8993476033210754
+        ],
+        "feedback": [
+          79.90006256103516,
+          89.9070053100586
+        ],
+        "damping": 95.87508392333984
+      }
+    },
+    {
+      "tick": 34,
+      "attack_frame": 3,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8989226818084717,
+          0.8992442488670349
+        ],
+        "feedback": [
+          79.88423156738281,
+          89.89226531982422
+        ],
+        "damping": 95.85528564453125
+      }
+    },
+    {
+      "tick": 35,
+      "attack_frame": 3,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8987646698951721,
+          0.8991333842277527
+        ],
+        "feedback": [
+          79.86724853515625,
+          89.87647247314453
+        ],
+        "damping": 95.83406066894531
+      }
+    },
+    {
+      "tick": 36,
+      "attack_frame": 4,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8985960483551025,
+          0.8990151286125183
+        ],
+        "feedback": [
+          79.84912872314453,
+          89.85961151123047
+        ],
+        "damping": 95.81141662597656
+      }
+    },
+    {
+      "tick": 37,
+      "attack_frame": 4,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8984168767929077,
+          0.898889422416687
+        ],
+        "feedback": [
+          79.82987213134766,
+          89.84169006347656
+        ],
+        "damping": 95.78734588623047
+      }
+    },
+    {
+      "tick": 38,
+      "attack_frame": 5,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8982271552085876,
+          0.8987563848495483
+        ],
+        "feedback": [
+          79.80948638916016,
+          89.82271575927734
+        ],
+        "damping": 95.7618637084961
+      }
+    },
+    {
+      "tick": 39,
+      "attack_frame": 5,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8980269432067871,
+          0.8986158967018127
+        ],
+        "feedback": [
+          79.78797149658203,
+          89.80269622802734
+        ],
+        "damping": 95.7349624633789
+      }
+    },
+    {
+      "tick": 40,
+      "attack_frame": 6,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8978163003921509,
+          0.8984681367874146
+        ],
+        "feedback": [
+          79.76533508300781,
+          89.78163146972656
+        ],
+        "damping": 95.7066650390625
+      }
+    },
+    {
+      "tick": 41,
+      "attack_frame": 6,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.8975951671600342,
+          0.898313045501709
+        ],
+        "feedback": [
+          79.7415771484375,
+          89.759521484375
+        ],
+        "damping": 95.67696380615234
+      }
+    },
+    {
+      "tick": 42,
+      "attack_frame": 7,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 43,
+      "attack_frame": 7,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 44,
+      "attack_frame": 8,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 45,
+      "attack_frame": 8,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 46,
+      "attack_frame": 9,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 47,
+      "attack_frame": 9,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 48,
+      "attack_frame": 10,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 49,
+      "attack_frame": 10,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 50,
+      "attack_frame": 11,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 51,
+      "attack_frame": 11,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 52,
+      "attack_frame": 12,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 53,
+      "attack_frame": 12,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 54,
+      "attack_frame": 13,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 55,
+      "attack_frame": 13,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.DODGING: 2>",
+      "defense": true,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 56,
+      "attack_frame": 14,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 57,
+      "attack_frame": 14,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 58,
+      "attack_frame": 15,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 59,
+      "attack_frame": 15,
+      "attack": "hookL",
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    },
+    {
+      "tick": 60,
+      "attack_frame": null,
+      "attack": null,
+      "mode": "<ProphecyAgentState.LOCOMOTION: 0>",
+      "defense": false,
+      "attacker": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      },
+      "defender": {
+        "mag": [
+          0.23000000417232513,
+          0.4300000071525574
+        ],
+        "feedback": [
+          8.0,
+          23.0
+        ],
+        "damping": 6.0
+      }
+    }
+  ]
+}

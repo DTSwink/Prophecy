@@ -2,13 +2,18 @@
 
 ## Attack-name bone list
 
-**Get Attack Bones** is a pure node taking an Attack name and returning a Bones
-Name array. It requires no agent or active attack. Jab/hook/over return hand then
-lowerarm on the selected side; kick returns foot then calf; headbutt returns
+**Get Attack Bones** is a pure node taking an Attack name and optional Agent,
+returning a Bones Name array. No active attack is required. Jab/hook/over return
+hand then lowerarm on the selected side, followed by `sword` only when that Agent
+holds a sword in the punching hand. A missing, dropped, hidden or opposite-hand
+sword is excluded. Agent defaults to self in an Agent Blueprint; when querying
+another attacker, connect that attacker explicitly. Without Agent, punches retain
+the static hand/lowerarm list. Kick returns foot then calf; headbutt returns
 `head`; all six slash families and pike return only `sword`. The latter is a
 logical item name, not a skeleton bone. Unknown/None names return an empty list.
-Names are case-insensitive. The existing **Get NN Attack Colliders** node retains
-its agent/current-attack, PHAT and actual sword-component behavior unchanged.
+Names are case-insensitive. **Get NN Attack Colliders** also returns the held
+Sword Collider for same-hand punches, alongside its existing PHAT bone list.
+Sword collision phase gates remain unchanged. Selection adds no ticking/history.
 
 ## Manually setting ticks since last attack
 

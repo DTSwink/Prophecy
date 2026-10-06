@@ -35,8 +35,13 @@ void ProphecyNNModifierDebug::Roots(FReport& R)
     if(A->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic)
     {
         if(A->IsJoltPhysicalAnimationEnabled())
+        {
+            const auto Modes=ProphecyPhysicalContext::MagnetizationModes(A);
             R.Add(TEXT("MagnetizationMode"),TEXT("PHYSICS"),TEXT("Magnetization coordinate mode"),
-                FString::Printf(TEXT("%.3g (0 physical-parent local / 1 world); pelvis always world"),ProphecyPhysicalContext::MagnetizationMode(A)));
+                FString::Printf(TEXT("base %.3g (0 physical-parent local / 1 world); %d bone overrides; pelvis always world"),Modes.Uniform,Modes.Overrides?Modes.Overrides->Num():0));
+            if(Modes.Overrides)for(const auto& Pair:*Modes.Overrides)
+                R.Add(*(TEXT("MagMode/")+Pair.Key.ToString()),TEXT("PHYSICS"),*(TEXT("Mag mode ")+Pair.Key.ToString()),FString::Printf(TEXT("%.3g"),Pair.Value));
+        }
         const auto* Mesh=A->GetPoseReferenceMesh();const auto* Asset=Mesh?Mesh->GetPhysicsAsset():nullptr;
         if(Asset)for(const USkeletalBodySetup* Body:Asset->SkeletalBodySetups)
         {

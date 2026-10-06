@@ -1,0 +1,14 @@
+{
+  "sections_per_lod": [
+    1,
+    1,
+    1
+  ],
+  "saved_assets": [
+    "/Game/_mygame/SKM_UEFN_Mannequin",
+    "/Game/_mygame/Materials/LimbColors/T_LimbPalette",
+    "/Game/_mygame/Materials/LimbColors/M_UEFN_LimbColors",
+    "/Game/_mygame/Materials/LimbColors/M_UEFN_Bicolor_LimbColors"
+  ],
+  "blueprint": "mode=Inspect parent=/Script/GameAnimationSample3.ProphecyAgent\nnative_properties=0 pin_types=0 status=3 wiring_preserved=1\n"
+}

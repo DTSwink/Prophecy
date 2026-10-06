@@ -12,6 +12,16 @@ Blueprint node: **Set Attack Start Hand Inertia**, category **Prophecy → Agent
 | Momentum Scale | 1 | Scale incoming reference-local linear/angular velocity. Zero removes incoming momentum but retains spring lag. |
 | Alpha | 1 | Overall influence, clamped0–1. Zero disables completely. |
 | Left Hand / Right Hand | true / true | Select either or both hands. |
+| Last Attack Tick Threshold | 0 | Start only when the existing **Get Ticks Since Last Attack** count is strictly greater than this value. |
+
+The gate captures the count at accepted attack entry **before** the full-attack
+reset to zero, then uses that captured value when initializing hand inertia.
+For threshold25:25 skips,26 enables. Default0 skips a zero-count immediate chain.
+It checks once per new attack, before pose sampling or clock creation. Raising or
+lowering the threshold later applies to the next attack; it never switches an
+ongoing effect on/off. The counter's existing full/half/lower-release/reset and
+manual seed behavior is unchanged. The modifier debug report includes the captured
+entry count when this effect is active.
 
 Hold/blend use the shared60-unpaused-tick authored-second clock. Settings latch when a new attack starts; repeated setter calls do not restart an active window. Retriggering/retargeting an existing attack or switching half/full does not restart it. Disabling or setting Alpha0 cancels immediately. New attacks capture fresh entry motion; an upper attack end, replacement non-attack special, reset, actor removal, or world cleanup cancels the entry state. Lower-end events during a full→half switch leave it running.
 

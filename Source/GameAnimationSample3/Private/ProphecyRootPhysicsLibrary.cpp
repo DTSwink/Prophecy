@@ -256,12 +256,52 @@ struct FStateWithMagicLimits
     bool bActive = false;
 };
 static TMap<TWeakObjectPtr<const AProphecyAgent>, FStateWithMagicLimits> StatesWithMagicLimits;
+// Separate sparse storage keeps existing live balance-state layouts unchanged.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,uint64> Suspensions;
+static FDelegateHandle SuspensionTick,SuspensionCleanup;
+static void RefreshSuspensionClock();
+static bool IsSuspended(const AProphecyAgent* Agent)
+{ return !Suspensions.IsEmpty() && Suspensions.Contains(Agent); }
+static void AdvanceSuspensions(UWorld* World,ELevelTick Type,float DeltaSeconds)
+{
+    if (!World || World->IsPaused() || Type!=LEVELTICK_All || DeltaSeconds<=0) return;
+    for (auto It=Suspensions.CreateIterator();It;++It)
+    {
+        const auto* Agent=It.Key().Get();
+        if (!Agent || Agent->IsActorBeingDestroyed()) { It.RemoveCurrent();continue; }
+        if (Agent->GetWorld()==World && --It.Value()==0) It.RemoveCurrent();
+    }
+    if (Suspensions.IsEmpty()) RefreshSuspensionClock();
+}
+static void CleanupSuspensions(UWorld* World,bool,bool)
+{
+    for (auto It=Suspensions.CreateIterator();It;++It)
+        if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+    RefreshSuspensionClock();
+}
+static void RefreshSuspensionClock()
+{
+    if (Suspensions.IsEmpty())
+    {
+        FWorldDelegates::OnWorldPreActorTick.Remove(SuspensionTick);SuspensionTick.Reset();
+        FWorldDelegates::OnWorldCleanup.Remove(SuspensionCleanup);SuspensionCleanup.Reset();
+    }
+    else if (!SuspensionTick.IsValid())
+    {
+        SuspensionTick=FWorldDelegates::OnWorldPreActorTick.AddStatic(&AdvanceSuspensions);
+        SuspensionCleanup=FWorldDelegates::OnWorldCleanup.AddStatic(&CleanupSuspensions);
+    }
+}
+static void CancelSuspension(const AProphecyAgent* Agent)
+{ if (!Suspensions.IsEmpty() && Suspensions.Remove(Agent)) RefreshSuspensionClock(); }
 void Remove(const AProphecyAgent* Agent)
 {
+    CancelSuspension(Agent);
     StatesWithMagicLimits.Remove(Agent);KickSettings.Remove(Agent);CancelKickException(Agent);
 }
 void ResetMotion(const AProphecyAgent* Agent)
 {
+    CancelSuspension(Agent);
     CancelKickException(Agent);
     if (auto* S = StatesWithMagicLimits.Find(Agent))
     { S->bActive = false; S->FlatMidpoint = FVector::ZeroVector; S->Spring.target = {}; }
@@ -277,7 +317,7 @@ const prophecy::sim::RootBalanceSpring* Prepare(const AProphecyAgent* Agent, con
     auto* State = StatesWithMagicLimits.IsEmpty() ? nullptr : StatesWithMagicLimits.Find(Agent);
     if (!State) return nullptr;
     State->bActive = false;
-    if (!bAllowed || !IsValid(Agent) || !Agent->bNNInferenceEnabled ||
+    if (!bAllowed || IsSuspended(Agent) || !IsValid(Agent) || !Agent->bNNInferenceEnabled ||
         !prophecy::sim::IsRootBalanceActive(Mover, Intent, State->Spring)) return nullptr;
     // Gate before sampling either foot; disabled balancing never reaches this lookup.
     if (const auto* Magic = ProphecyRootMagic::Find(Agent))
@@ -381,8 +421,93 @@ void UProphecyRootPhysicsLibrary::GetRootSelfBalancingState(AProphecyAgent* Agen
     FlatFeetMidpoint = State ? State->FlatMidpoint : FVector::ZeroVector;
 }
 
+bool UProphecyRootPhysicsLibrary::SuspendRootSelfBalancing(AProphecyAgent* Agent,float DurationSeconds)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld()
+        || Agent->GetWorld()->bIsTearingDown || !FMath::IsFinite(DurationSeconds) || DurationSeconds<0.f) return false;
+    using namespace ProphecyRootBalance;
+    if (DurationSeconds==0.f) { CancelSuspension(Agent);return true; }
+    const uint64 Ticks=uint64(FMath::Max(1.,FMath::CeilToDouble(FMath::Min(double(DurationSeconds)*60.,9.e15)-1.e-5)));
+    Suspensions.Add(Agent,Ticks);
+    // Invalidate the already prepared spring immediately, including same-tick readback.
+    if (auto* State=StatesWithMagicLimits.Find(Agent)) State->bActive=false;
+    RefreshSuspensionClock();return true;
+}
+
+bool UProphecyRootPhysicsLibrary::IsRootSelfBalancingSuspended(AProphecyAgent* Agent)
+{ return IsInGameThread() && IsValid(Agent) && ProphecyRootBalance::IsSuspended(Agent); }
+
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
+#include "Engine/SkeletalMesh.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyBalanceSuspensionTest,"Prophecy.Root.SelfBalancingSuspension",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyBalanceSuspensionTest::RunTest(const FString&)
+{
+    using namespace ProphecyRootBalance;
+    using L=UProphecyRootPhysicsLibrary;
+    UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
+    if (!TestNotNull(TEXT("World"),World)) return false;
+    auto* A=World->SpawnActor<AProphecyAgent>();auto* B=World->SpawnActor<AProphecyAgent>();
+    ON_SCOPE_EXIT { Remove(A);Remove(B);World->DestroyWorld(false); };
+    if (!A || !B) return false;
+    A->bAutoEnsureStandaloneNNManager=false;B->bAutoEnsureStandaloneNNManager=false;
+    auto* Mesh=LoadObject<USkeletalMesh>(nullptr,TEXT("/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin"));
+    if (!TestNotNull(TEXT("Feet fixture mesh"),Mesh)) return false;
+    A->GetAgentMesh()->SetSkeletalMesh(Mesh);A->bNNInferenceEnabled=true;
+    TestTrue(TEXT("Configure balance"),L::SetRootSelfBalancing(A,true,500,.1,3,.7,45,2));
+    prophecy::sim::LocomotionState Mover;Mover.position={10,-5};Mover.velocity={.12,.05};
+    prophecy::sim::LocomotionIntent Intent;Intent.speed_amplitude=0;
+    TestNotNull(TEXT("Balance initially active"),Prepare(A,Mover,Intent,true));
+    TestTrue(TEXT("Suspend accepted"),L::SuspendRootSelfBalancing(A,1));
+    TestNull(TEXT("Same-tick prepared spring is cleared"),GetPrepared(A));
+    TestNull(TEXT("Prediction excludes spring"),Prepare(A,Mover,Intent,true));
+    bool Enabled,Active;FVector Target;L::GetRootSelfBalancingState(A,Enabled,Active,Target);
+    TestTrue(TEXT("Configuration stays enabled, activity stops"),Enabled&&!Active);
+    TestEqual(TEXT("Tuning retained"),StatesWithMagicLimits.FindChecked(A).Spring.frequency_hz,3.);
+    auto Ordinary=Mover,Suppressed=Mover;
+    prophecy::sim::StepLocomotion(Ordinary,Intent,1./30);
+    prophecy::sim::StepLocomotion(Suppressed,Intent,1./30,nullptr,false,GetPrepared(A));
+    TestTrue(TEXT("Suspension produces ordinary motor response without balance correction"),
+        Ordinary.velocity.x==Suppressed.velocity.x && Ordinary.velocity.z==Suppressed.velocity.z
+        && Ordinary.position.x==Suppressed.position.x && Ordinary.position.z==Suppressed.position.z);
+    for (float FPS:{30.f,60.f,120.f})
+    {
+        A->CustomTimeDilation=.2f;L::SuspendRootSelfBalancing(A,1);
+        for (int I=0;I<59;++I) AdvanceSuspensions(World,LEVELTICK_All,1/FPS);
+        TestTrue(TEXT("Still suspended at59 ticks regardless of FPS/dilation"),IsSuspended(A));
+        AdvanceSuspensions(World,LEVELTICK_TimeOnly,1/FPS);AdvanceSuspensions(World,LEVELTICK_All,0);
+        TestTrue(TEXT("Non-game/zero-delta tick does not advance"),IsSuspended(A));
+        AdvanceSuspensions(World,LEVELTICK_All,1/FPS);
+        TestFalse(TEXT("Expires at60 ticks"),IsSuspended(A));
+        TestNotNull(TEXT("Original balance resumes at next preparation"),Prepare(A,Mover,Intent,true));
+    }
+    L::SuspendRootSelfBalancing(A,.1f);L::SuspendRootSelfBalancing(B,1);
+    for (int I=0;I<3;++I) AdvanceSuspensions(World,LEVELTICK_All,.1f);
+    TestFalse(TEXT("Invalid duration rejected"),L::SuspendRootSelfBalancing(A,-1));
+    TestEqual(TEXT("Invalid call preserves countdown"),Suspensions.FindChecked(A),uint64(3));
+    L::SuspendRootSelfBalancing(A,.1f);
+    for (int I=0;I<5;++I) AdvanceSuspensions(World,LEVELTICK_All,.1f);
+    TestTrue(TEXT("Repeated call restarts full duration"),IsSuspended(A));
+    AdvanceSuspensions(World,LEVELTICK_All,.1f);
+    TestTrue(TEXT("Agent countdowns are independent"),!IsSuspended(A)&&IsSuspended(B));
+    L::SuspendRootSelfBalancing(B,0);TestFalse(TEXT("Zero resumes early"),IsSuspended(B));
+    L::SuspendRootSelfBalancing(A,.001f);AdvanceSuspensions(World,LEVELTICK_All,.1f);
+    TestFalse(TEXT("Positive sub-tick duration uses one tick"),IsSuspended(A));
+    L::SuspendRootSelfBalancing(A,.001f);L::SetRootSelfBalancing(A,false);
+    AdvanceSuspensions(World,LEVELTICK_All,.1f);
+    TestNull(TEXT("Expiry never reenables explicitly disabled balance"),Prepare(A,Mover,Intent,true));
+    L::SuspendRootSelfBalancing(A,.1f);L::SetRootSelfBalancing(A,true);
+    TestNull(TEXT("Configuring balance during suspension cannot bypass it"),Prepare(A,Mover,Intent,true));
+    ResetMotion(A);TestFalse(TEXT("Reset cancels suspension"),IsSuspended(A));
+    TestNotNull(TEXT("Reset preserves configured balance"),Prepare(A,Mover,Intent,true));
+    L::SuspendRootSelfBalancing(A,1);Remove(A);TestFalse(TEXT("Removal cancels suspension"),IsSuspended(A));
+    L::SuspendRootSelfBalancing(B,1);CleanupSuspensions(World,false,false);
+    TestFalse(TEXT("Cleanup cancels suspension"),IsSuspended(B));
+    if (Suspensions.IsEmpty()) TestFalse(TEXT("No dormant countdown hook"),SuspensionTick.IsValid());
+    return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyKickBalanceTest,"Prophecy.Root.KickSelfBalancingException",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyKickBalanceTest::RunTest(const FString&)

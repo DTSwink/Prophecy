@@ -2,6 +2,14 @@
 
 Call **Set Root Self Balancing** with your agent (`Self`), once to enable or whenever you want to retune it. It is disabled until you enable it. You do not need to call it on Tick.
 
+## Temporary suspension after a hit
+
+Call **Suspend Root Self Balancing** with the victim and **Duration Seconds** (default1). It immediately clears the prepared balance spring and excludes it from future-root prediction and actual movement. Apply your root velocity/impulse after this node. The existing balance configuration is preserved; normal eligibility and current settings apply again at the next policy step after expiry. Root drag, steering, root-window smoothing, collision and authored full-attack root motion still apply.
+
+Duration follows the project convention: **1 second =60 unpaused game-world ticks**, independent of FPS or agent time dilation. Repeating the call replaces the countdown; `0` cancels it early. Negative/nonfinite durations are rejected without changing an existing countdown. **Is Root Self Balancing Suspended** reports the countdown. During suspension, **Get Root Self Balancing State** still reports the configured Enabled value, with Active=false.
+
+Retuning/enabling balancing cannot bypass an active suspension. Explicitly disabling balancing during it stays disabled after expiry. Agent reset/removal cancels suspension. Only suspended agents have countdown entries; the shared countdown callback is removed when none remain. No new component, bone reads or inference is introduced.
+
 | Input | Meaning | Default |
 |---|---|---|
 | Enabled | Enable automatic balancing for this agent. False removes its balance state. | Explicit choice |

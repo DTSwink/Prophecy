@@ -1,0 +1,6 @@
+{
+  "mode": "parry",
+  "reason": "Traceback (most recent call last):\n  File \"<string>\", line 47, in tick\n  File \"<string>\", line 16, in setup\n  File \"<string>\", line 11, in values\nException: ProphecyAgent: Failed to find property 'LocomotionFootClampLeewayCm' for attribute 'LocomotionFootClampLeewayCm' on 'BP_ProphecyManualPoseAgent_C'\n",
+  "setup": null,
+  "rows": []
+}

@@ -1,0 +1,7 @@
+{
+  "reason": "complete",
+  "samples": 360,
+  "active_weapon_samples": 87,
+  "prearmed_samples": 43,
+  "all_weapon_external_responses_block": true
+}

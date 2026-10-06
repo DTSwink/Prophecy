@@ -1,0 +1,24 @@
+{
+  "file": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\20261004_150744_dodge_bs256_unchanged_resume_8h_step322925.pt",
+  "sha256": "bb2187cbc321819cf5a99b2f2bc8291a215d29ff8fa6133d6f6c8e068d0fbea7",
+  "step": 322925,
+  "exact_forearms": true,
+  "models": {
+    "prophecy_dodge_upper.onnx": {
+      "sha256": "37c45e6e4cabc69bab0f7163239eb281a68e4f31a07b2b462e862a7c20af9dbf",
+      "parity_batches": 17,
+      "max_abs_error": 1.1920928955078125e-06
+    },
+    "prophecy_dodge_walk.onnx": {
+      "sha256": "849986b85c4ed5a7930226bb0bb26ffe01bb9ca30e2a226b13ca1b63eae5d852",
+      "parity_batches": 17,
+      "max_abs_error": 1.9073486328125e-06
+    },
+    "prophecy_dodge_run.onnx": {
+      "sha256": "f710c3f4c6d1d96d50b2d1b9ca964bee4e7ba7d97991e50fbc41c2d18a6173cd",
+      "parity_batches": 17,
+      "max_abs_error": 2.0265579223632812e-06
+    }
+  },
+  "backup_folder": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\DefenseIntegration\\CheckpointUpdates\\Parry1149700-20261006\\backup"
+}

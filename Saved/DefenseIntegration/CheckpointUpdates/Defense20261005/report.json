@@ -1,0 +1,62 @@
+{
+  "checkpoints": {
+    "dodge": {
+      "file": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\20261004_150744_dodge_bs256_unchanged_resume_8h_step322925.pt",
+      "sha256": "bb2187cbc321819cf5a99b2f2bc8291a215d29ff8fa6133d6f6c8e068d0fbea7",
+      "step": 322925
+    },
+    "parry": {
+      "file": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\parry_step_1037725.pt",
+      "sha256": "8eaf1239a902f0a81271ea6571b0dd3a7212954bc31c5433984ad1435ec15a1b",
+      "step": 1037725
+    }
+  },
+  "runtime_requires_exact_forearms": true,
+  "dodge_lower_identities": {
+    "walk": "0f2565ac72c5209153cbd910135209487f9ef8a0e234ed0c6d99df2ff30a299e",
+    "run": "0f2565ac72c5209153cbd910135209487f9ef8a0e234ed0c6d99df2ff30a299e"
+  },
+  "models": {
+    "prophecy_dodge_upper.onnx": {
+      "sha256": "37c45e6e4cabc69bab0f7163239eb281a68e4f31a07b2b462e862a7c20af9dbf",
+      "parity_batches": 17,
+      "max_abs_error": 1.1920928955078125e-06
+    },
+    "prophecy_dodge_walk.onnx": {
+      "sha256": "849986b85c4ed5a7930226bb0bb26ffe01bb9ca30e2a226b13ca1b63eae5d852",
+      "parity_batches": 17,
+      "max_abs_error": 1.9073486328125e-06
+    },
+    "prophecy_dodge_run.onnx": {
+      "sha256": "f710c3f4c6d1d96d50b2d1b9ca964bee4e7ba7d97991e50fbc41c2d18a6173cd",
+      "parity_batches": 17,
+      "max_abs_error": 2.0265579223632812e-06
+    },
+    "prophecy_parry_upper.onnx": {
+      "sha256": "3abdd6562067503e1d64d8b829e835c3ca34060b5cefb651b537fe5abd09d890",
+      "parity_batches": 15,
+      "max_abs_error": 9.5367431640625e-07
+    }
+  },
+  "installed": true,
+  "previous_sha256": {
+    "prophecy_dodge_upper.onnx": "385dc27e5f847bc38c7bd695eae834b1544353d6f639f36e04873bb3606357ba",
+    "prophecy_dodge_walk.onnx": "230e03d83b6f3688dd9e46001765d190bd95a34f7dd02620ec65e56be2931f06",
+    "prophecy_dodge_run.onnx": "56561eabc118a177053dba97eb20b8607b7b4e23db81f26985ea6ee020e9d0f0",
+    "prophecy_parry_upper.onnx": "6bc3e11017590f4e40646608b14df46fdabad298bebc2bc7d94249239bbff1de",
+    "dodge_banks.json": "1ddbeb0dd7978427464ee0ea6f53a02f222044e83d87c7888a9d003f35e56913",
+    "dodge_lower_settings.json": "b51320b5085fd3d6f054afb8249b07e24f0b4993be61705500e51a69b1a25b6a",
+    "dodge_checkpoint.json": "69bd5232b84a4b498d23527c11a328e5c037034b0a51516c36e84a97be6e74fa",
+    "parry_checkpoint.json": null
+  },
+  "installed_files": [
+    "prophecy_dodge_upper.onnx",
+    "prophecy_dodge_walk.onnx",
+    "prophecy_dodge_run.onnx",
+    "prophecy_parry_upper.onnx",
+    "dodge_banks.json",
+    "dodge_lower_settings.json",
+    "dodge_checkpoint.json",
+    "parry_checkpoint.json"
+  ]
+}

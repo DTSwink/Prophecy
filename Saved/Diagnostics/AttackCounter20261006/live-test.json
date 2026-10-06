@@ -1,0 +1,951 @@
+{
+  "reason": "complete",
+  "checks": [
+    {
+      "check": "two registered agents",
+      "passed": true
+    },
+    {
+      "check": "new agents start zero",
+      "passed": true
+    },
+    {
+      "check": "reset snapshot available",
+      "passed": true,
+      "result": "(3, '')"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "slashL",
+      "counter": 0
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "slashL"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "slashL",
+      "counter": 1
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "slashL"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "slashL"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "slashL"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "slashL"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "slashL"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "slashL"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "slashL"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "slashL"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "slashR",
+      "counter": 1
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "slashR"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "slashR",
+      "counter": 2
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "slashR"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "slashR"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "slashR"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "slashR"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "slashR"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "slashR"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "slashR"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "slashR"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "slashLU",
+      "counter": 2
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "slashLU"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "slashLU",
+      "counter": 3
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "slashLU"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "slashLU"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "slashLU"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "slashLU"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "slashLU"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "slashLU"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "slashLU"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "slashLU"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "slashRU",
+      "counter": 3
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "slashRU"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "slashRU",
+      "counter": 4
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "slashRU"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "slashRU"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "slashRU"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "slashRU"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "slashRU"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "slashRU"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "slashRU"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "slashRU"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "slashLD",
+      "counter": 4
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "slashLD"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "slashLD",
+      "counter": 5
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "slashLD"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "slashLD"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "slashLD"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "slashLD"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "slashLD"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "slashLD"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "slashLD"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "slashLD"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "slashRD",
+      "counter": 5
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "slashRD"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "slashRD",
+      "counter": 6
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "slashRD"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "slashRD"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "slashRD"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "slashRD"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "slashRD"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "slashRD"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "slashRD"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "slashRD"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "pike",
+      "counter": 6
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "pike"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "pike",
+      "counter": 7
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "pike"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "pike"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "pike"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "pike"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "pike"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "pike"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "pike"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "pike"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "jabL",
+      "counter": 7
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "jabL"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "jabL",
+      "counter": 8
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "jabL"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "jabL"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "jabL"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "jabL"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "jabL"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "jabL"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "jabL"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "jabL"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "jabR",
+      "counter": 8
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "jabR"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "jabR",
+      "counter": 9
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "jabR"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "jabR"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "jabR"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "jabR"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "jabR"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "jabR"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "jabR"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "jabR"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "hookL",
+      "counter": 9
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "hookL"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "hookL",
+      "counter": 10
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "hookL"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "hookL"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "hookL"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "hookL"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "hookL"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "hookL"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "hookL"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "hookL"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "hookR",
+      "counter": 10
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "hookR"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "hookR",
+      "counter": 11
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "hookR"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "hookR"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "hookR"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "hookR"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "hookR"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "hookR"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "hookR"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "hookR"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "overL",
+      "counter": 11
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "overL"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "overL",
+      "counter": 12
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "overL"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "overL"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "overL"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "overL"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "overL"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "overL"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "overL"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "overL"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "overR",
+      "counter": 12
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "overR"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "overR",
+      "counter": 13
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "overR"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "overR"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "overR"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "overR"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "overR"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "overR"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "overR"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "overR"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "headbutt",
+      "counter": 13
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "headbutt"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "headbutt",
+      "counter": 14
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "headbutt"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "headbutt"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "headbutt"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "headbutt"
+    },
+    {
+      "check": "half transition succeeds",
+      "passed": true,
+      "family": "headbutt"
+    },
+    {
+      "check": "half transition retains number",
+      "passed": true,
+      "family": "headbutt"
+    },
+    {
+      "check": "full transition succeeds",
+      "passed": true,
+      "family": "headbutt"
+    },
+    {
+      "check": "full transition retains number",
+      "passed": true,
+      "family": "headbutt"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "kickL",
+      "counter": 14
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "kickL"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "kickL",
+      "counter": 15
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "kickL"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "kickL"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "kickL"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "kickL"
+    },
+    {
+      "check": "stop retains number",
+      "passed": true,
+      "family": "kickR",
+      "counter": 15
+    },
+    {
+      "check": "valid attack starts",
+      "passed": true,
+      "family": "kickR"
+    },
+    {
+      "check": "accepted entry increments once",
+      "passed": true,
+      "family": "kickR",
+      "counter": 16
+    },
+    {
+      "check": "repeat trigger succeeds",
+      "passed": true,
+      "family": "kickR"
+    },
+    {
+      "check": "repeat trigger retains number",
+      "passed": true,
+      "family": "kickR"
+    },
+    {
+      "check": "invalid attack rejected",
+      "passed": true,
+      "family": "kickR"
+    },
+    {
+      "check": "failure retains number",
+      "passed": true,
+      "family": "kickR"
+    },
+    {
+      "check": "other agent independent",
+      "passed": true
+    },
+    {
+      "check": "other agent attack starts",
+      "passed": true
+    },
+    {
+      "check": "independent sequence",
+      "passed": true
+    },
+    {
+      "check": "no increment per tick",
+      "passed": true,
+      "frame": 21
+    },
+    {
+      "check": "no increment per tick",
+      "passed": true,
+      "frame": 22
+    },
+    {
+      "check": "no increment per tick",
+      "passed": true,
+      "frame": 23
+    },
+    {
+      "check": "no increment per tick",
+      "passed": true,
+      "frame": 24
+    },
+    {
+      "check": "reset accepted",
+      "passed": true,
+      "result": ""
+    },
+    {
+      "check": "reset completed",
+      "passed": true
+    },
+    {
+      "check": "reset keeps attack numbers",
+      "passed": true
+    },
+    {
+      "check": "attack after reset starts",
+      "passed": true
+    },
+    {
+      "check": "attack after reset gets fresh number",
+      "passed": true
+    },
+    {
+      "check": "retarget family succeeds",
+      "passed": true
+    },
+    {
+      "check": "retarget keeps ongoing number",
+      "passed": true
+    }
+  ]
+}

@@ -8,6 +8,14 @@ enum class EKind : uint8 { Magnetization, Feedback, Damping, Mode };
 bool IsManaged(const AProphecyAgent* Agent,FName Bone,EKind Kind);
 bool IsApplying();
 float MagnetizationMode(const AProphecyAgent* Agent);
+float MagnetizationMode(const AProphecyAgent* Agent,FName Bone);
+struct FModeView
+{
+    float Uniform=1.f;
+    const TMap<FName,float>* Overrides=nullptr;
+    uint64 Revision=0;
+};
+FModeView MagnetizationModes(const AProphecyAgent* Agent);
 bool Set(AProphecyAgent& Agent,FName Bone,EKind Kind,bool Enabled,FVector2f Value,float Duration,
     EProphecyLocomotionSelection Locomotion=EProphecyLocomotionSelection::Both,
     EProphecyEquipmentSelection Equipment=EProphecyEquipmentSelection::Both);

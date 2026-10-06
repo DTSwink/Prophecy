@@ -65,6 +65,7 @@ public class GameAnimationSample3 : ModuleRules
 			{
 				"AssetTools",
 				"MaterialEditor",
+				"SkeletalMeshDescription",
 				"UnrealEd"
 			});
 		}

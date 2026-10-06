@@ -1,0 +1,31 @@
+{
+  "reason": "Traceback (most recent call last):\n  File \"<string>\", line 49, in tick\n  File \"<string>\", line 49, in <genexpr>\nTypeError: 'NoneType' object is not subscriptable\n",
+  "events": [],
+  "rows": [
+    {
+      "tick": 0,
+      "hand_r": 0.699999988079071,
+      "hand_l": 1.0
+    },
+    {
+      "tick": 1,
+      "hand_r": 0.699999988079071,
+      "hand_l": 1.0
+    },
+    {
+      "tick": 2,
+      "hand_r": 0.699999988079071,
+      "hand_l": 1.0
+    },
+    {
+      "tick": 3,
+      "hand_r": 0.699999988079071,
+      "hand_l": 1.0
+    },
+    {
+      "tick": 4,
+      "hand_r": 0.699999988079071,
+      "hand_l": 1.0
+    }
+  ]
+}

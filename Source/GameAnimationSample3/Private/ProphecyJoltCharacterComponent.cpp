@@ -1,5 +1,5 @@
-#include "ProphecyPhysicalContext.h"
 #include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyPhysicalContext.h"
 #include "ProphecyFixedArmPhysics.h"
 #include "ProphecySwordAttackCollision.h"
 #include "ProphecyPelvisInertia.h"
@@ -134,6 +134,8 @@ struct FProphecyJoltCharacterState
     TArray<FName> SkeletonNames;
     TArray<int32> Parents;
     TArray<int32> BodyParents;
+    TArray<float> BodyModes;
+    uint64 BodyModeRevision=0;
     TArray<FProphecyJoltPoseBodyMapping> Mappings;
     TArray<FTransform> BaseLocalPose;
     FProphecyNNPoseSnapshot AuthoredSnapshot;
@@ -686,7 +688,14 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     {
     Profile::FScope PhaseTiming(Profile::EPhase::TargetPacket);
     State->TargetNameLookup.Update(Names, State->BodyNames);
-    const float WorldAlpha=ProphecyPhysicalContext::MagnetizationMode(Agent);
+    const auto Modes=ProphecyPhysicalContext::MagnetizationModes(Agent);
+    if(Modes.Overrides && State->BodyModeRevision!=Modes.Revision)
+    {
+        State->BodyModes.SetNumUninitialized(State->BodyNames.Num());
+        for(int32 I=0;I<State->BodyNames.Num();++I)
+        { const auto* V=Modes.Overrides->Find(State->BodyNames[I]);State->BodyModes[I]=V?*V:Modes.Uniform; }
+        State->BodyModeRevision=Modes.Revision;
+    }
     const float CalfFootLeeway=ProphecyPhysicalFootTarget::CalfLeeway(Agent);
     const float FootTargetLeeway=FMath::Max(ProphecyPhysicalFootTarget::Leeway(Agent),CalfFootLeeway);
     const float KickFootLeeway=ProphecyKickFootLeeway::Current(Agent);
@@ -695,8 +704,12 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     const bool TraceFeet=CVarPhysicalFootRecoveryTrace.GetValueOnGameThread()>0 && Agent->IsPlayerControlled();
     if(TraceFeet)CVarPhysicalFootRecoveryTrace->Set(CVarPhysicalFootRecoveryTrace.GetValueOnGameThread()-1,ECVF_SetByConsole);
 #endif
+    // Dispatch once: the uniform loop has no per-bone mode lookup or branch.
+    const auto BuildTargets=[&](auto ModeAt)->bool
+    {
     for (int32 Index = 0; Index < State->Handles.Num(); ++Index)
     {
+        const float WorldAlpha=ModeAt(Index);
         const int32 TargetIndex = State->TargetNameLookup.GetIndices()[Index];
         if (!Interpolated.IsValidIndex(TargetIndex))
             return Fail(OutError, FString::Printf(TEXT("Published authored pose is missing rig bone %s."), *State->BodyNames[Index].ToString()));
@@ -774,6 +787,12 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
         Target.AngularStrength = FMath::Max(0.0f, Agent->WorldMagnetizationAngularStrengthScale * Settings.AngularStrengthScale);
         Target.GravityCompensationCmPerSecondSquared = Settings.bCancelGravity ? -Agent->GetWorld()->GetGravityZ() : 0.0f;
     }
+    return true;
+    };
+    if(Modes.Overrides)
+    { if(!BuildTargets([&](int32 I){return State->BodyModes[I];}))return false; }
+    else
+    { if(!BuildTargets([Value=Modes.Uniform](int32){return Value;}))return false; }
     }
     const UPhysicsSettings* Physics = UPhysicsSettings::Get();
     const float H = ProphecyJolt::StepTiming::Duration(DeltaSeconds, Physics, GetWorld());

@@ -1,0 +1,23 @@
+{
+  "previous_step": 1037725,
+  "installed": {
+    "file": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\parry_step_1149700.pt",
+    "sha256": "91b134deb6dad3b5dfc972979aa6713c62fbc62973b5ca27c75080e9cb8776c9",
+    "step": 1149700,
+    "exact_forearms": true,
+    "models": {
+      "prophecy_parry_upper.onnx": {
+        "sha256": "49f26f9ee1a38e35c825914305a06ae7508f6df5ab39c1b1ae10ae47400030a7",
+        "parity_batches": 15,
+        "max_abs_error": 8.195638656616211e-07
+      }
+    },
+    "backup_folder": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\DefenseIntegration\\CheckpointUpdates\\Parry1149700-20261006\\backup"
+  },
+  "changed_files": [
+    "prophecy_parry_upper.onnx",
+    "parry_checkpoint.json"
+  ],
+  "other_defense_files_unchanged": true,
+  "native_fixture": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\DefenseIntegration\\CheckpointUpdates\\Defense20261005\\validation.json"
+}

@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "ProphecyAgent.h"
+#include "ProphecyAttackControlLibrary.h"
 #include "ProphecySwordAttackCollision.h"
 #include "ProphecySwordComponent.h"
 #include "ProphecySwordPhysicsLibrary.h"
@@ -931,11 +932,37 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
     if (!World || !World->InitializeSimulation(Settings).IsSuccess()) return false;
     AProphecyAgent* Agent=nullptr;FString Error;
     if (!PrepareAgent(Fixture,Agent,Error)) { AddError(Error);return false; }
+    const auto CheckNoSword=[&]()
+    {
+        FTransform Pose(FVector(1,2,3));FVector V(1,2,3),W(4,5,6);bool Sim=true;
+        TestFalse(TEXT("No held sword reports failure"),Agent->GetPhysicalBodyState(TEXT("sword"),Pose,V,W,Sim));
+        TestTrue(TEXT("No held sword clears all outputs"),Pose.Equals(FTransform::Identity)&&V.IsZero()&&W.IsZero()&&!Sim);
+    };
+    CheckNoSword();
+    const auto CheckPunchBones=[&](bool Holding,FName HeldHand)
+    {
+        using L=UProphecyAttackControlLibrary;
+        for (FName Attack:{FName(TEXT("jabL")),FName(TEXT("hookL")),FName(TEXT("overL")),
+            FName(TEXT("jabR")),FName(TEXT("hookR")),FName(TEXT("overR"))})
+        {
+            const auto Base=L::GetAttackBones(Attack);
+            const auto Actual=L::GetAttackBones(Attack,Agent);
+            const bool Expected=Holding && Base.Contains(HeldHand);
+            TestEqual(TEXT("Only a punch with the sword-holding hand includes sword"),Actual.Contains(TEXT("sword")),Expected);
+            TestEqual(TEXT("Punch retains hand and forearm without duplicates"),Actual.Num(),2+int32(Expected));
+            for (FName Bone:Base) TestTrue(TEXT("Original punch bone retained"),Actual.Contains(Bone));
+        }
+        for (FName Attack:{FName(TEXT("kickL")),FName(TEXT("kickR")),FName(TEXT("headbutt")),FName(NAME_None)})
+            TestFalse(TEXT("Other unarmed attacks never acquire sword"),L::GetAttackBones(Attack,Agent).Contains(TEXT("sword")));
+        TestTrue(TEXT("Slash name-only convention retained"),L::GetAttackBones(TEXT("slashL"),Agent)==TArray<FName>{TEXT("sword")});
+    };
+    CheckPunchBones(false,TEXT("hand_r"));
     UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(Agent,false);
     for (bool bSimulated:{true,false})
     {
         FProphecyJoltWorldDiagnostics Unequipped;World->GetDiagnostics(Unequipped);
         if (!TestTrue(TEXT("Equip mode"),Agent->EquipSword(bSimulated))) return false;
+        CheckPunchBones(true,TEXT("hand_r"));
         auto* Sword=Agent->GetHeldSword();auto* Blade=Cast<UStaticMeshComponent>(Sword->GetRootComponent());
         auto* Body=Sword->FindComponentByClass<UProphecyJoltBodyComponent>();
         FProphecyJoltBodyHandle Handle;if (!Body || !Body->GetBodyHandle(Handle)) return false;
@@ -991,7 +1018,7 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
             ProphecySwordAttackCollision::SuppressesOwner(Agent));
         UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(Agent,false);
         Agent->NotifySwordAttackState(true);
-        ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));CheckOwn(true);Check(false);CheckBody(false);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));CheckOwn(true);Check(true);CheckBody(false);
         ProphecySwordAttackCollision::Armed(Agent);CheckOwn(true);Check(true);
         ProphecySwordAttackCollision::Hit(Agent);CheckOwn(true);Check(true);CheckBody(true);
         Agent->NotifySwordAttackState(false);CheckOwn(true);Check(true);CheckBody(true);
@@ -1000,22 +1027,24 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         Agent->NotifySwordAttackState(true);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));
         UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(Agent,false);
-        UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(Agent,true);CheckOwn(true);Check(false);
-        ProphecySwordAttackCollision::Armed(Agent);CheckOwn(true);Check(true);
+        UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(Agent,true);CheckOwn(true);Check(true);
+        ProphecySwordAttackCollision::Armed(Agent);CheckOwn(false);Check(true);CheckBody(false);
         ProphecySwordAttackCollision::Hit(Agent);CheckOwn(false);Check(true);
         Agent->NotifySwordAttackState(false);
         for (FName Family:{FName(TEXT("slashl")),FName(TEXT("slashrd")),FName(TEXT("pike")),FName(TEXT("hookl")),FName(TEXT("headbutt"))})
         {
             Agent->NotifySwordAttackState(true);
-            ProphecySwordAttackCollision::Begin(Agent,Family);Check(false);CheckBody(false);
+            const bool Weapon=Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash"));
+            ProphecySwordAttackCollision::Begin(Agent,Family);Check(Weapon);CheckBody(false);CheckOwn(true);
             auto* Controller=Agent->FindComponentByClass<UProphecySwordComponent>();
             if (!Controller) return false;
             Controller->RefreshOwnerCollision();
             FProphecyJoltWorldDiagnostics Suppressed;World->GetDiagnostics(Suppressed);
             TestTrue(TEXT("Before Hit sword suppresses owner body pairs"),Suppressed.SuppressedBodyPairCount>Before.SuppressedBodyPairCount);
             ProphecySwordAttackCollision::Armed(Agent);
-            CheckBody(false); // Armed only changes the weapon's external collision gate.
-            Check(Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash")));
+            CheckBody(false); // Weapon owner pairs restore; body-body mask remains until Hit.
+            Check(Weapon);CheckOwn(!Weapon);
+            Controller->RefreshOwnerCollision();Check(Weapon);CheckOwn(!Weapon);
             ProphecySwordAttackCollision::Hit(Agent);Check(true);CheckBody(true);
             FProphecyJoltWorldDiagnostics Restored;World->GetDiagnostics(Restored);
             TestEqual(TEXT("Hit retains hand and forearm exclusions"),Restored.SuppressedBodyPairCount,Before.SuppressedBodyPairCount);
@@ -1027,8 +1056,9 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
             ProphecySwordAttackCollision::Hit(Agent);Check(true); // repeated Hit is harmless
             Agent->NotifySwordAttackState(false);Check(true);
         }
-        ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));Check(false);
-        ProphecySwordAttackCollision::Hit(Agent);Check(false); // weapon still requires Armed
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));Check(true);CheckOwn(true);
+        ProphecySwordAttackCollision::Hit(Agent);Check(true);CheckOwn(true); // Owner still requires Armed.
+        ProphecySwordAttackCollision::Armed(Agent);Check(true);CheckOwn(false);
         Agent->NotifySwordAttackState(false);Check(true);CheckBody(true); // shared cancel/failure path
         ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));ProphecySwordAttackCollision::Armed(Agent);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("hookr"));Check(false);
@@ -1036,8 +1066,10 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         ProphecySwordAttackCollision::Hit(Agent);Check(true);
         ProphecySwordAttackCollision::End(Agent);Check(true);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));
-        ProphecySwordAttackCollision::Armed(Agent);Check(true);
-        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("pike"),false,false);Check(true);
+        ProphecySwordAttackCollision::Armed(Agent);Check(true);CheckOwn(false);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("pike"),false,false);Check(true);CheckOwn(false);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("hookl"),true,false);Check(false);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("slashr"),false,false);Check(true);CheckOwn(true);
         ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("hookl"),true,false);Check(false);
         ProphecySwordAttackCollision::Hit(Agent);Check(true);
         ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("kickr"),false,false);Check(true);
@@ -1048,7 +1080,7 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
         Agent->NotifySwordAttackState(true);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));Check(false);
-        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);Check(false); // Still before Armed.
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);Check(true);CheckOwn(true); // Weapon wind-up is owner-only.
         UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);
         ProphecySwordAttackCollision::Armed(Agent);Check(false);
         ProphecySwordAttackCollision::Hit(Agent);Check(false);
@@ -1057,7 +1089,19 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("hookl"));
         UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(Agent,false);CheckOwn(true);
+        FProphecyJoltBodyHandle Moving=Handle;
+        if (!bSimulated && !Agent->GetJoltCharacterComponent()->GetBodyHandle(TEXT("hand_r"),Moving)) return false;
+        if (!World->SetBodyVelocity(Moving,FVector(30,40,50),FVector(1,2,3),true).IsSuccess()) return false;
+        FProphecyJoltBodyState Expected;
+        if (!Body->GetBodyState(Expected)) return false;
+        FTransform Pose;FVector V,W;bool Sim=false;
+        TestTrue(TEXT("Sword alias returns held native body"),Agent->GetPhysicalBodyState(TEXT("sword"),Pose,V,W,Sim));
+        TestTrue(TEXT("Sword alias matches native COM velocity, rotation and pose in both held modes"),
+            Pose.Equals(FTransform(Expected.Rotation,Expected.PositionCm)) && V.Equals(Expected.CenterOfMassVelocityCmPerSecond)
+            && W.Equals(Expected.AngularVelocityRadiansPerSecond) && Sim==bSimulated && !V.IsNearlyZero() && !W.IsNearlyZero());
         auto* Dropped=Agent->DropSword();
+        CheckNoSword();
+        CheckPunchBones(false,TEXT("hand_r"));
         CheckBody(false); // Dropping the weapon does not end body suppression.
         TestTrue(TEXT("Drop restores collision before releasing ownership"),Dropped==Sword && Blade->GetCollisionResponseToChannels()==Original);
         ProphecySwordAttackCollision::End(Agent);CheckBody(true);
@@ -1075,7 +1119,7 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
     auto* Blade=Cast<UStaticMeshComponent>(Agent->GetHeldSword()->GetRootComponent());
     const auto Original=Blade->GetCollisionResponseToChannels();
     ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));
-    TestTrue(TEXT("Kinematic sword ignores all channels before Armed"),Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
+    TestTrue(TEXT("Kinematic weapon keeps external channels before Armed"),Blade->GetCollisionResponseToChannels()==Original);
     ProphecySwordAttackCollision::Armed(Agent);
     TestTrue(TEXT("Kinematic sword restores original channels on Armed"),Blade->GetCollisionResponseToChannels()==Original);
     ProphecySwordAttackCollision::End(Agent);
@@ -1089,6 +1133,21 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
     TestTrue(TEXT("Kinematic manual disable"),Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
     UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);
     TestTrue(TEXT("Kinematic manual restore"),Blade->GetCollisionResponseToChannels()==Original);
+    auto* Controller=Agent->FindComponentByClass<UProphecySwordComponent>();
+    if (!Controller) return false;
+    Controller->TickComponent(.1f,LEVELTICK_All,nullptr);
+    Blade->AddWorldOffset(FVector(15,0,0),false,nullptr,ETeleportType::TeleportPhysics);
+    Controller->TickComponent(.1f,LEVELTICK_All,nullptr);
+    FTransform Pose;FVector V,W;bool Sim=true;
+    TestTrue(TEXT("Kinematic sword alias available"),Agent->GetPhysicalBodyState(TEXT("sword"),Pose,V,W,Sim));
+    TestTrue(TEXT("Kinematic sword reuses carried velocity"),Pose.Equals(Blade->GetComponentTransform())
+        && V.Equals(FVector(150,0,0),.01) && W.IsNearlyZero() && !Sim);
+    Agent->HideSword();CheckNoSword();
+    CheckPunchBones(false,TEXT("hand_r"));
+    Agent->SwordHandSocket=TEXT("hand_l");
+    if (!Agent->EquipSword(false)) return false;
+    CheckPunchBones(true,TEXT("hand_l"));
+    Agent->HideSword();CheckPunchBones(false,TEXT("hand_l"));
     return !HasAnyErrors();
 }
 

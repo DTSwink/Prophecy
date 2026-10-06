@@ -1,0 +1,7577 @@
+{
+  "reason": "complete",
+  "events": [
+    {
+      "tick": 20,
+      "mixed": true
+    },
+    {
+      "tick": 80,
+      "threshold_crossings": 4,
+      "height_cm": 9.537486532407009,
+      "mode_strength_unchanged": true
+    }
+  ],
+  "rows": [
+    {
+      "tick": 5,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 84.36419011835578
+    },
+    {
+      "tick": 5,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.54064494945517
+    },
+    {
+      "tick": 5,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.1374769649129
+    },
+    {
+      "tick": 10,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 84.60904305692577
+    },
+    {
+      "tick": 10,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.25091503460074
+    },
+    {
+      "tick": 10,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.07708740154499
+    },
+    {
+      "tick": 15,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 84.42179511708852
+    },
+    {
+      "tick": 15,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.90536540274118
+    },
+    {
+      "tick": 15,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.81629951027774
+    },
+    {
+      "tick": 20,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 82.10333429275539
+    },
+    {
+      "tick": 20,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 81.43510749796175
+    },
+    {
+      "tick": 20,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 82.92759796004597
+    },
+    {
+      "tick": 25,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 81.35082540012863
+    },
+    {
+      "tick": 25,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 80.93679390387979
+    },
+    {
+      "tick": 25,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 80.50652551122678
+    },
+    {
+      "tick": 30,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 80.62835379438704
+    },
+    {
+      "tick": 30,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.24429220305944
+    },
+    {
+      "tick": 30,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 79.08837469090064
+    },
+    {
+      "tick": 35,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 80.9899113196777
+    },
+    {
+      "tick": 35,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.65286778372584
+    },
+    {
+      "tick": 35,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 79.55053435110071
+    },
+    {
+      "tick": 40,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 82.29032651555175
+    },
+    {
+      "tick": 40,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.82213575466643
+    },
+    {
+      "tick": 40,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.18084772701897
+    },
+    {
+      "tick": 45,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.22055029371934
+    },
+    {
+      "tick": 45,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.54542727850871
+    },
+    {
+      "tick": 45,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.34789408089377
+    },
+    {
+      "tick": 50,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.91467638953237
+    },
+    {
+      "tick": 50,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.53192209298595
+    },
+    {
+      "tick": 50,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 80.6561900674992
+    },
+    {
+      "tick": 55,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.63173112877539
+    },
+    {
+      "tick": 55,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.90018311146893
+    },
+    {
+      "tick": 55,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 79.24361011216402
+    },
+    {
+      "tick": 60,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.80291860223363
+    },
+    {
+      "tick": 60,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.84382634173646
+    },
+    {
+      "tick": 60,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.85722556239361
+    },
+    {
+      "tick": 65,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.24916695962389
+    },
+    {
+      "tick": 65,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.78036623380311
+    },
+    {
+      "tick": 65,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 78.1449883258495
+    },
+    {
+      "tick": 70,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.86131702310558
+    },
+    {
+      "tick": 70,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.79822167802
+    },
+    {
+      "tick": 70,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 79.48883866595065
+    },
+    {
+      "tick": 75,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 78.74204888574171
+    },
+    {
+      "tick": 75,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.82420929943518
+    },
+    {
+      "tick": 75,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.05112080751151
+    },
+    {
+      "tick": 80,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 78.57243650522086
+    },
+    {
+      "tick": 80,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.83432361176263
+    },
+    {
+      "tick": 80,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.86684786155256
+    },
+    {
+      "tick": 85,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 89.38342848342019
+    },
+    {
+      "tick": 85,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.89543476961941
+    },
+    {
+      "tick": 85,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.57564616036925
+    },
+    {
+      "tick": 90,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 82.41326480911086
+    },
+    {
+      "tick": 90,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.93334709153363
+    },
+    {
+      "tick": 90,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 80.50441125122306
+    },
+    {
+      "tick": 95,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 76.36004022098926
+    },
+    {
+      "tick": 95,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9487450789798
+    },
+    {
+      "tick": 95,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 80.42651181474368
+    },
+    {
+      "tick": 100,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 73.22109487930538
+    },
+    {
+      "tick": 100,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9540814668437
+    },
+    {
+      "tick": 100,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.55271660657151
+    },
+    {
+      "tick": 105,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 71.35754537599233
+    },
+    {
+      "tick": 105,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9561175098844
+    },
+    {
+      "tick": 105,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.60101523449286
+    },
+    {
+      "tick": 110,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 73.66364687538616
+    },
+    {
+      "tick": 110,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9571023236312
+    },
+    {
+      "tick": 110,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.11785374257889
+    },
+    {
+      "tick": 115,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 75.90592991439732
+    },
+    {
+      "tick": 115,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.95788887567662
+    },
+    {
+      "tick": 115,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.41608516261735
+    },
+    {
+      "tick": 120,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 77.19179452038253
+    },
+    {
+      "tick": 120,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.95879757590964
+    },
+    {
+      "tick": 120,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.92048485838392
+    },
+    {
+      "tick": 125,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 76.93185522613841
+    },
+    {
+      "tick": 125,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.95985286569754
+    },
+    {
+      "tick": 125,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.33683647403957
+    },
+    {
+      "tick": 130,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 71.2847530095671
+    },
+    {
+      "tick": 130,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96096228406564
+    },
+    {
+      "tick": 130,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.14260912506512
+    },
+    {
+      "tick": 135,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 69.17278264508039
+    },
+    {
+      "tick": 135,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96205633743534
+    },
+    {
+      "tick": 135,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.27518476461793
+    },
+    {
+      "tick": 140,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 70.11193326430704
+    },
+    {
+      "tick": 140,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96314845704191
+    },
+    {
+      "tick": 140,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.3915240274197
+    },
+    {
+      "tick": 145,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 77.59760337319301
+    },
+    {
+      "tick": 145,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96418107813211
+    },
+    {
+      "tick": 145,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.46038298812114
+    },
+    {
+      "tick": 150,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 73.62118635492494
+    },
+    {
+      "tick": 150,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9651412456538
+    },
+    {
+      "tick": 150,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.46514511580851
+    },
+    {
+      "tick": 155,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 67.2631314772236
+    },
+    {
+      "tick": 155,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96606418484238
+    },
+    {
+      "tick": 155,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.4253539158302
+    },
+    {
+      "tick": 160,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 69.506692104975
+    },
+    {
+      "tick": 160,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96692200583875
+    },
+    {
+      "tick": 160,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.783138224088
+    },
+    {
+      "tick": 165,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 70.10175764357723
+    },
+    {
+      "tick": 165,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96771722680519
+    },
+    {
+      "tick": 165,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.25264376654799
+    },
+    {
+      "tick": 170,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 73.29564307822665
+    },
+    {
+      "tick": 170,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96845960707074
+    },
+    {
+      "tick": 170,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.71892339529889
+    },
+    {
+      "tick": 175,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 78.11757464680372
+    },
+    {
+      "tick": 175,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96917580761783
+    },
+    {
+      "tick": 175,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.61108009494907
+    },
+    {
+      "tick": 180,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 80.69057753025417
+    },
+    {
+      "tick": 180,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.96982834730522
+    },
+    {
+      "tick": 180,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.60599947647408
+    },
+    {
+      "tick": 185,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 80.83572107027094
+    },
+    {
+      "tick": 185,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97042252537248
+    },
+    {
+      "tick": 185,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.61280743950974
+    },
+    {
+      "tick": 190,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 77.89209330815132
+    },
+    {
+      "tick": 190,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97096883334221
+    },
+    {
+      "tick": 190,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.49327003545275
+    },
+    {
+      "tick": 195,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 72.5474764653572
+    },
+    {
+      "tick": 195,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97147446561084
+    },
+    {
+      "tick": 195,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.41891363600426
+    },
+    {
+      "tick": 200,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 75.00701871633615
+    },
+    {
+      "tick": 200,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97192851272395
+    },
+    {
+      "tick": 200,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.40236282109775
+    },
+    {
+      "tick": 205,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 81.08753121199403
+    },
+    {
+      "tick": 205,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97235270494107
+    },
+    {
+      "tick": 205,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.42667185766332
+    },
+    {
+      "tick": 210,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 82.30521083881727
+    },
+    {
+      "tick": 210,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97275758222065
+    },
+    {
+      "tick": 210,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.44522980399553
+    },
+    {
+      "tick": 215,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 81.0117552794981
+    },
+    {
+      "tick": 215,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9731258842136
+    },
+    {
+      "tick": 215,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.44997316310268
+    },
+    {
+      "tick": 220,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 82.68553263114258
+    },
+    {
+      "tick": 220,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97347511931858
+    },
+    {
+      "tick": 220,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.41750328702139
+    },
+    {
+      "tick": 225,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.76417844692033
+    },
+    {
+      "tick": 225,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97378008722526
+    },
+    {
+      "tick": 225,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.40523551899803
+    },
+    {
+      "tick": 230,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.67527362264647
+    },
+    {
+      "tick": 230,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97406092896595
+    },
+    {
+      "tick": 230,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.38422918295029
+    },
+    {
+      "tick": 235,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.47043947398045
+    },
+    {
+      "tick": 235,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97433265598875
+    },
+    {
+      "tick": 235,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.18590656650197
+    },
+    {
+      "tick": 240,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 82.61771344717964
+    },
+    {
+      "tick": 240,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97456558190282
+    },
+    {
+      "tick": 240,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.82569800064485
+    },
+    {
+      "tick": 245,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 81.30775669732013
+    },
+    {
+      "tick": 245,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97478204605893
+    },
+    {
+      "tick": 245,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.45777975204172
+    },
+    {
+      "tick": 250,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.23629063956731
+    },
+    {
+      "tick": 250,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97498646647986
+    },
+    {
+      "tick": 250,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.78957682254367
+    },
+    {
+      "tick": 255,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 84.43030597949911
+    },
+    {
+      "tick": 255,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97517351948125
+    },
+    {
+      "tick": 255,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.51894622470607
+    },
+    {
+      "tick": 260,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 89.67903981408037
+    },
+    {
+      "tick": 260,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97534908804057
+    },
+    {
+      "tick": 260,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.42989760607989
+    },
+    {
+      "tick": 265,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 87.29789058830069
+    },
+    {
+      "tick": 265,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97551149122113
+    },
+    {
+      "tick": 265,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.27885160726812
+    },
+    {
+      "tick": 270,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 85.63250202189695
+    },
+    {
+      "tick": 270,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97565025957859
+    },
+    {
+      "tick": 270,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.15135389977074
+    },
+    {
+      "tick": 275,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 80.91287755734878
+    },
+    {
+      "tick": 275,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97578714211497
+    },
+    {
+      "tick": 275,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.26790322474888
+    },
+    {
+      "tick": 280,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 73.77873196414406
+    },
+    {
+      "tick": 280,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97590340474481
+    },
+    {
+      "tick": 280,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.26451534034601
+    },
+    {
+      "tick": 285,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 72.54804079919437
+    },
+    {
+      "tick": 285,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97601469095763
+    },
+    {
+      "tick": 285,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.22927047232312
+    },
+    {
+      "tick": 290,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 76.66082529172463
+    },
+    {
+      "tick": 290,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9761146775771
+    },
+    {
+      "tick": 290,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.69230586779555
+    },
+    {
+      "tick": 295,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 79.45252580358323
+    },
+    {
+      "tick": 295,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97620763383746
+    },
+    {
+      "tick": 295,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.92996038912251
+    },
+    {
+      "tick": 300,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 71.89713583650347
+    },
+    {
+      "tick": 300,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.699999988079071,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97630648468073
+    },
+    {
+      "tick": 300,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 79.85563518778663
+    },
+    {
+      "tick": 305,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 72.93415188507089
+    },
+    {
+      "tick": 305,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97639924143381
+    },
+    {
+      "tick": 305,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 73.83876148657525
+    },
+    {
+      "tick": 310,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 70.18794598345039
+    },
+    {
+      "tick": 310,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97647054115751
+    },
+    {
+      "tick": 310,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 70.41196430641246
+    },
+    {
+      "tick": 315,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 72.38514570070495
+    },
+    {
+      "tick": 315,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9765389719918
+    },
+    {
+      "tick": 315,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 76.24676834158052
+    },
+    {
+      "tick": 320,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 74.59829229202401
+    },
+    {
+      "tick": 320,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97658224530626
+    },
+    {
+      "tick": 320,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 78.4567283255206
+    },
+    {
+      "tick": 325,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 76.96862870834737
+    },
+    {
+      "tick": 325,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97664833553922
+    },
+    {
+      "tick": 325,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 78.84346034741154
+    },
+    {
+      "tick": 330,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 77.26956954563913
+    },
+    {
+      "tick": 330,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97669855459037
+    },
+    {
+      "tick": 330,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 78.02806714084852
+    },
+    {
+      "tick": 335,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 76.40020748273471
+    },
+    {
+      "tick": 335,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97674425629562
+    },
+    {
+      "tick": 335,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 75.02383522237406
+    },
+    {
+      "tick": 340,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 71.6154736276818
+    },
+    {
+      "tick": 340,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97678856808123
+    },
+    {
+      "tick": 340,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.72515916009904
+    },
+    {
+      "tick": 345,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 70.50936641884712
+    },
+    {
+      "tick": 345,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97683402662109
+    },
+    {
+      "tick": 345,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.60762071331834
+    },
+    {
+      "tick": 350,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 69.78226519870452
+    },
+    {
+      "tick": 350,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97687492437584
+    },
+    {
+      "tick": 350,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.1747060633238
+    },
+    {
+      "tick": 355,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 81.0655455229887
+    },
+    {
+      "tick": 355,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97690639247848
+    },
+    {
+      "tick": 355,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 78.63196199793897
+    },
+    {
+      "tick": 360,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 70.24047181189361
+    },
+    {
+      "tick": 360,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97693088090809
+    },
+    {
+      "tick": 360,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 76.25672035359501
+    },
+    {
+      "tick": 365,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 73.75839536674442
+    },
+    {
+      "tick": 365,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97697599051547
+    },
+    {
+      "tick": 365,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 76.35089838771886
+    },
+    {
+      "tick": 370,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 79.20077431846542
+    },
+    {
+      "tick": 370,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97700154184255
+    },
+    {
+      "tick": 370,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.88045572743326
+    },
+    {
+      "tick": 375,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 80.4398820791798
+    },
+    {
+      "tick": 375,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9770264049499
+    },
+    {
+      "tick": 375,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.56865405584199
+    },
+    {
+      "tick": 380,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 80.4310543939193
+    },
+    {
+      "tick": 380,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97704680468964
+    },
+    {
+      "tick": 380,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.12025196190496
+    },
+    {
+      "tick": 385,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 79.77523263631902
+    },
+    {
+      "tick": 385,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9770607435867
+    },
+    {
+      "tick": 385,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.67198623537095
+    },
+    {
+      "tick": 390,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 79.24216721425167
+    },
+    {
+      "tick": 390,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97709310678815
+    },
+    {
+      "tick": 390,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 76.5893881719618
+    },
+    {
+      "tick": 395,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 77.5252829903936
+    },
+    {
+      "tick": 395,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.977104280793
+    },
+    {
+      "tick": 395,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 75.86854314777315
+    },
+    {
+      "tick": 400,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 74.69318883223183
+    },
+    {
+      "tick": 400,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97713132925794
+    },
+    {
+      "tick": 400,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.29678885238144
+    },
+    {
+      "tick": 405,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 74.43181852278116
+    },
+    {
+      "tick": 405,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97714814572427
+    },
+    {
+      "tick": 405,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 79.47445342837929
+    },
+    {
+      "tick": 410,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 75.5545995743341
+    },
+    {
+      "tick": 410,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97717394650002
+    },
+    {
+      "tick": 410,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 79.58091468052721
+    },
+    {
+      "tick": 415,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 72.59772576644218
+    },
+    {
+      "tick": 415,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9771862888869
+    },
+    {
+      "tick": 415,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 80.16159968014571
+    },
+    {
+      "tick": 420,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 74.9636799019529
+    },
+    {
+      "tick": 420,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97720810968073
+    },
+    {
+      "tick": 420,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 79.58943547249834
+    },
+    {
+      "tick": 425,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 78.33206374827692
+    },
+    {
+      "tick": 425,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9772227586942
+    },
+    {
+      "tick": 425,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 78.89798967577755
+    },
+    {
+      "tick": 430,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 78.74251086022032
+    },
+    {
+      "tick": 430,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97723422265639
+    },
+    {
+      "tick": 430,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 80.79882451028423
+    },
+    {
+      "tick": 435,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 79.87640233603136
+    },
+    {
+      "tick": 435,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97724463234162
+    },
+    {
+      "tick": 435,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.66622764036752
+    },
+    {
+      "tick": 440,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 83.78603413071131
+    },
+    {
+      "tick": 440,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9772550014936
+    },
+    {
+      "tick": 440,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.99943720642187
+    },
+    {
+      "tick": 445,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 0.20000000298023224,
+        "upperarm_r": 0.0,
+        "lowerarm_r": 0.0,
+        "hand_r": 0.0,
+        "lowerarm_l": 0.800000011920929,
+        "hand_l": 1.0
+      },
+      "max_span": 82.43816772352007
+    },
+    {
+      "tick": 445,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97727338264042
+    },
+    {
+      "tick": 445,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.27722682481496
+    },
+    {
+      "tick": 450,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 85.1972063801614
+    },
+    {
+      "tick": 450,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 83.97728963838429
+    },
+    {
+      "tick": 450,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 80.85067244828755
+    },
+    {
+      "tick": 455,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 83.23501648461354
+    },
+    {
+      "tick": 455,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97729903233949
+    },
+    {
+      "tick": 455,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.69865426149653
+    },
+    {
+      "tick": 460,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 75.84373374719313
+    },
+    {
+      "tick": 460,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97731022767624
+    },
+    {
+      "tick": 460,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.75085428575282
+    },
+    {
+      "tick": 465,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 74.58645163964388
+    },
+    {
+      "tick": 465,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97732415928849
+    },
+    {
+      "tick": 465,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.73887783749738
+    },
+    {
+      "tick": 470,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 74.02374979709977
+    },
+    {
+      "tick": 470,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9772779790436
+    },
+    {
+      "tick": 470,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.96353645559876
+    },
+    {
+      "tick": 475,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 76.35804292463703
+    },
+    {
+      "tick": 475,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97725804602665
+    },
+    {
+      "tick": 475,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 81.93056973452065
+    },
+    {
+      "tick": 480,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 87.28117154503175
+    },
+    {
+      "tick": 480,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97726463833881
+    },
+    {
+      "tick": 480,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.37132907346846
+    },
+    {
+      "tick": 485,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 85.40546397195173
+    },
+    {
+      "tick": 485,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97729691706229
+    },
+    {
+      "tick": 485,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 82.80121435615676
+    },
+    {
+      "tick": 490,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 74.09908828204736
+    },
+    {
+      "tick": 490,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9773103511569
+    },
+    {
+      "tick": 490,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.42176395584633
+    },
+    {
+      "tick": 495,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 70.21510112357969
+    },
+    {
+      "tick": 495,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97732155138858
+    },
+    {
+      "tick": 495,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.89040024822371
+    },
+    {
+      "tick": 500,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 65.62892736287498
+    },
+    {
+      "tick": 500,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97732991125821
+    },
+    {
+      "tick": 500,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.17231477023044
+    },
+    {
+      "tick": 505,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 69.98028555406762
+    },
+    {
+      "tick": 505,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97733621621758
+    },
+    {
+      "tick": 505,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.44447644306057
+    },
+    {
+      "tick": 510,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 67.50907820161275
+    },
+    {
+      "tick": 510,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97735113079457
+    },
+    {
+      "tick": 510,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.5699284824717
+    },
+    {
+      "tick": 515,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 75.88834739742329
+    },
+    {
+      "tick": 515,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9773207623824
+    },
+    {
+      "tick": 515,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.70952164036756
+    },
+    {
+      "tick": 520,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 77.88099913183723
+    },
+    {
+      "tick": 520,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97731747159145
+    },
+    {
+      "tick": 520,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.73811331291904
+    },
+    {
+      "tick": 525,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 76.92419946523002
+    },
+    {
+      "tick": 525,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97731129056483
+    },
+    {
+      "tick": 525,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.74532193950428
+    },
+    {
+      "tick": 530,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 78.05015015792564
+    },
+    {
+      "tick": 530,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9773181333722
+    },
+    {
+      "tick": 530,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 84.21426070981501
+    },
+    {
+      "tick": 535,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 87.28894755444126
+    },
+    {
+      "tick": 535,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97732190232813
+    },
+    {
+      "tick": 535,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 77.93333944514544
+    },
+    {
+      "tick": 540,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 72.33678809480371
+    },
+    {
+      "tick": 540,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97732268943057
+    },
+    {
+      "tick": 540,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 68.78766006547208
+    },
+    {
+      "tick": 545,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 65.63047599054131
+    },
+    {
+      "tick": 545,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97732603586054
+    },
+    {
+      "tick": 545,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 62.86794277661018
+    },
+    {
+      "tick": 550,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 69.06298309408604
+    },
+    {
+      "tick": 550,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97733753564248
+    },
+    {
+      "tick": 550,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 63.40462263000633
+    },
+    {
+      "tick": 555,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 76.40521703213778
+    },
+    {
+      "tick": 555,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97735186955215
+    },
+    {
+      "tick": 555,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 68.33303699062658
+    },
+    {
+      "tick": 560,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 76.34924542325096
+    },
+    {
+      "tick": 560,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9773467524306
+    },
+    {
+      "tick": 560,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 71.83464496534945
+    },
+    {
+      "tick": 565,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 83.17972207376427
+    },
+    {
+      "tick": 565,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97735373960434
+    },
+    {
+      "tick": 565,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 65.30996139193783
+    },
+    {
+      "tick": 570,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 73.67867969428363
+    },
+    {
+      "tick": 570,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97735849518158
+    },
+    {
+      "tick": 570,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 65.63955987181994
+    },
+    {
+      "tick": 575,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 75.215047682151
+    },
+    {
+      "tick": 575,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97738958165523
+    },
+    {
+      "tick": 575,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 66.38403731612594
+    },
+    {
+      "tick": 580,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 70.38400751270957
+    },
+    {
+      "tick": 580,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741905208865
+    },
+    {
+      "tick": 580,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 67.65961455546187
+    },
+    {
+      "tick": 585,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 70.67075369121659
+    },
+    {
+      "tick": 585,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97745775439694
+    },
+    {
+      "tick": 585,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 67.25455134763679
+    },
+    {
+      "tick": 590,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 75.58715025719496
+    },
+    {
+      "tick": 590,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774551843815
+    },
+    {
+      "tick": 590,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 69.23497091390865
+    },
+    {
+      "tick": 595,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 71.8072619531627
+    },
+    {
+      "tick": 595,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97743789774442
+    },
+    {
+      "tick": 595,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 70.2246829700834
+    },
+    {
+      "tick": 600,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 69.31652345887971
+    },
+    {
+      "tick": 600,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774207833473
+    },
+    {
+      "tick": 600,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 69.90502596991725
+    },
+    {
+      "tick": 605,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 71.27616825894907
+    },
+    {
+      "tick": 605,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741774646208
+    },
+    {
+      "tick": 605,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 72.04248320032738
+    },
+    {
+      "tick": 610,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 70.75806427379204
+    },
+    {
+      "tick": 610,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774142404133
+    },
+    {
+      "tick": 610,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 71.6335534987998
+    },
+    {
+      "tick": 615,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 71.14863690293008
+    },
+    {
+      "tick": 615,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774033962283
+    },
+    {
+      "tick": 615,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 73.1903667729515
+    },
+    {
+      "tick": 620,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 68.86266866950383
+    },
+    {
+      "tick": 620,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774046754441
+    },
+    {
+      "tick": 620,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 74.63838141834906
+    },
+    {
+      "tick": 625,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 85.54109754634943
+    },
+    {
+      "tick": 625,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97739385672375
+    },
+    {
+      "tick": 625,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 72.19349517139744
+    },
+    {
+      "tick": 630,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 64.74144834135213
+    },
+    {
+      "tick": 630,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9773833903914
+    },
+    {
+      "tick": 630,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 72.91475703480647
+    },
+    {
+      "tick": 635,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 65.31870647596652
+    },
+    {
+      "tick": 635,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97740328375993
+    },
+    {
+      "tick": 635,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 72.24486642613526
+    },
+    {
+      "tick": 640,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 68.47486107157727
+    },
+    {
+      "tick": 640,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741730251995
+    },
+    {
+      "tick": 640,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 71.78333586123776
+    },
+    {
+      "tick": 645,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 1.0,
+        "hand_r": 1.0,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 71.64060427650061
+    },
+    {
+      "tick": 645,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97743486306236
+    },
+    {
+      "tick": 645,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 69.96595811572944
+    },
+    {
+      "tick": 650,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 77.54735062047106
+    },
+    {
+      "tick": 650,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97744950316485
+    },
+    {
+      "tick": 650,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 69.0021015994407
+    },
+    {
+      "tick": 655,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 77.6228846145528
+    },
+    {
+      "tick": 655,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97743044013535
+    },
+    {
+      "tick": 655,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 67.29206601486561
+    },
+    {
+      "tick": 660,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 76.74565993575692
+    },
+    {
+      "tick": 660,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774025404528
+    },
+    {
+      "tick": 660,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 65.27730472843439
+    },
+    {
+      "tick": 665,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 75.93812064712563
+    },
+    {
+      "tick": 665,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97739680758698
+    },
+    {
+      "tick": 665,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 64.3028926532874
+    },
+    {
+      "tick": 670,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 68.94281300898142
+    },
+    {
+      "tick": 670,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97739481132533
+    },
+    {
+      "tick": 670,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 62.00652090688159
+    },
+    {
+      "tick": 675,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 68.58983356850675
+    },
+    {
+      "tick": 675,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97740860111006
+    },
+    {
+      "tick": 675,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 59.21097484059332
+    },
+    {
+      "tick": 680,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 74.1644095861608
+    },
+    {
+      "tick": 680,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741449223376
+    },
+    {
+      "tick": 680,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 58.09190159567223
+    },
+    {
+      "tick": 685,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 78.61630526365708
+    },
+    {
+      "tick": 685,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741796775568
+    },
+    {
+      "tick": 685,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.711610899921794
+    },
+    {
+      "tick": 690,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 77.95692902738638
+    },
+    {
+      "tick": 690,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97743449979538
+    },
+    {
+      "tick": 690,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 54.974704054840856
+    },
+    {
+      "tick": 695,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 83.93636016426314
+    },
+    {
+      "tick": 695,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97745285086556
+    },
+    {
+      "tick": 695,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 54.16047749781236
+    },
+    {
+      "tick": 700,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 85.06135851641633
+    },
+    {
+      "tick": 700,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97746562380884
+    },
+    {
+      "tick": 700,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 53.56895904752043
+    },
+    {
+      "tick": 705,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 85.88030550916784
+    },
+    {
+      "tick": 705,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774503256974
+    },
+    {
+      "tick": 705,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 53.24973181925133
+    },
+    {
+      "tick": 710,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 85.8846028113016
+    },
+    {
+      "tick": 710,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.977422789787
+    },
+    {
+      "tick": 710,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 52.994227525245016
+    },
+    {
+      "tick": 715,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 83.26905686864782
+    },
+    {
+      "tick": 715,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774040445335
+    },
+    {
+      "tick": 715,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 52.65824472403461
+    },
+    {
+      "tick": 720,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 80.39121582072073
+    },
+    {
+      "tick": 720,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97739872534207
+    },
+    {
+      "tick": 720,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 53.08562675008601
+    },
+    {
+      "tick": 725,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 76.71330951725709
+    },
+    {
+      "tick": 725,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97740331347032
+    },
+    {
+      "tick": 725,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 53.565942403414596
+    },
+    {
+      "tick": 730,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 75.26031174952011
+    },
+    {
+      "tick": 730,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97742979149669
+    },
+    {
+      "tick": 730,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 54.07481611440224
+    },
+    {
+      "tick": 735,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 75.2456508428002
+    },
+    {
+      "tick": 735,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774346465968
+    },
+    {
+      "tick": 735,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 54.49877892387621
+    },
+    {
+      "tick": 740,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 72.71121571752488
+    },
+    {
+      "tick": 740,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97744037152277
+    },
+    {
+      "tick": 740,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 54.78192265487357
+    },
+    {
+      "tick": 745,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 75.99786588900434
+    },
+    {
+      "tick": 745,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774479051839
+    },
+    {
+      "tick": 745,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.011996653888446
+    },
+    {
+      "tick": 750,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 71.17018779988662
+    },
+    {
+      "tick": 750,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97745258132642
+    },
+    {
+      "tick": 750,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.15929945027589
+    },
+    {
+      "tick": 755,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 73.31714342481186
+    },
+    {
+      "tick": 755,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97745587793965
+    },
+    {
+      "tick": 755,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.22369610102471
+    },
+    {
+      "tick": 760,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 67.84182105485634
+    },
+    {
+      "tick": 760,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97746936265794
+    },
+    {
+      "tick": 760,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.22335498022012
+    },
+    {
+      "tick": 765,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 66.5008424331971
+    },
+    {
+      "tick": 765,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97744410059066
+    },
+    {
+      "tick": 765,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.17466536763359
+    },
+    {
+      "tick": 770,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 71.71164211208
+    },
+    {
+      "tick": 770,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774227594806
+    },
+    {
+      "tick": 770,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.1088345045388
+    },
+    {
+      "tick": 775,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 73.09388968776422
+    },
+    {
+      "tick": 775,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97740561110534
+    },
+    {
+      "tick": 775,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.006747919350154
+    },
+    {
+      "tick": 780,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 69.8607569284028
+    },
+    {
+      "tick": 780,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97739771889546
+    },
+    {
+      "tick": 780,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 54.96731950222582
+    },
+    {
+      "tick": 785,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 69.66513433393831
+    },
+    {
+      "tick": 785,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741236933685
+    },
+    {
+      "tick": 785,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.00595084197714
+    },
+    {
+      "tick": 790,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 71.42824448287925
+    },
+    {
+      "tick": 790,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97743724830275
+    },
+    {
+      "tick": 790,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.10429716348568
+    },
+    {
+      "tick": 795,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 75.66740071735254
+    },
+    {
+      "tick": 795,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97745538133519
+    },
+    {
+      "tick": 795,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.039995423857384
+    },
+    {
+      "tick": 800,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 98.63040969198993
+    },
+    {
+      "tick": 800,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97746642417715
+    },
+    {
+      "tick": 800,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.43240051469862
+    },
+    {
+      "tick": 805,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 100.4786866767643
+    },
+    {
+      "tick": 805,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97745199809013
+    },
+    {
+      "tick": 805,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.64288884632617
+    },
+    {
+      "tick": 810,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 91.1748765390693
+    },
+    {
+      "tick": 810,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97742828866215
+    },
+    {
+      "tick": 810,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 55.83750395070343
+    },
+    {
+      "tick": 815,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 90.18504117377591
+    },
+    {
+      "tick": 815,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774170383038
+    },
+    {
+      "tick": 815,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.03005566188759
+    },
+    {
+      "tick": 820,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 90.85554751581213
+    },
+    {
+      "tick": 820,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774073122147
+    },
+    {
+      "tick": 820,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.22320484570645
+    },
+    {
+      "tick": 825,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 80.84663248091287
+    },
+    {
+      "tick": 825,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97740509751875
+    },
+    {
+      "tick": 825,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.4026002723758
+    },
+    {
+      "tick": 830,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 80.64787157034739
+    },
+    {
+      "tick": 830,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97742202893586
+    },
+    {
+      "tick": 830,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.562140589239924
+    },
+    {
+      "tick": 835,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 84.70096440114729
+    },
+    {
+      "tick": 835,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97743607990331
+    },
+    {
+      "tick": 835,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.70272217273564
+    },
+    {
+      "tick": 840,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 80.95492199072095
+    },
+    {
+      "tick": 840,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97745011142737
+    },
+    {
+      "tick": 840,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.825566005251225
+    },
+    {
+      "tick": 845,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 78.71970449755189
+    },
+    {
+      "tick": 845,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97745384192852
+    },
+    {
+      "tick": 845,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.937732006426025
+    },
+    {
+      "tick": 850,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 74.49647677396305
+    },
+    {
+      "tick": 850,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97747042133189
+    },
+    {
+      "tick": 850,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 57.03940533861146
+    },
+    {
+      "tick": 855,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 68.86011251982417
+    },
+    {
+      "tick": 855,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97745027159357
+    },
+    {
+      "tick": 855,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 57.12758702873193
+    },
+    {
+      "tick": 860,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 72.42077434434128
+    },
+    {
+      "tick": 860,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97742990539093
+    },
+    {
+      "tick": 860,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 57.18718174991233
+    },
+    {
+      "tick": 865,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 80.4606531734734
+    },
+    {
+      "tick": 865,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741362131453
+    },
+    {
+      "tick": 865,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 57.17111370501605
+    },
+    {
+      "tick": 870,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 83.41180515814396
+    },
+    {
+      "tick": 870,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741007598597
+    },
+    {
+      "tick": 870,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 57.125993411070816
+    },
+    {
+      "tick": 875,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 82.4405558382026
+    },
+    {
+      "tick": 875,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741159612325
+    },
+    {
+      "tick": 875,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.96346559977559
+    },
+    {
+      "tick": 880,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 78.87466248912011
+    },
+    {
+      "tick": 880,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741659012371
+    },
+    {
+      "tick": 880,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 57.03425117163876
+    },
+    {
+      "tick": 885,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 77.55200146782056
+    },
+    {
+      "tick": 885,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.9774169607072
+    },
+    {
+      "tick": 885,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.98309659108834
+    },
+    {
+      "tick": 890,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 70.78153127402838
+    },
+    {
+      "tick": 890,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97742054441011
+    },
+    {
+      "tick": 890,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.929373713357855
+    },
+    {
+      "tick": 895,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 68.72683927006236
+    },
+    {
+      "tick": 895,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741983757308
+    },
+    {
+      "tick": 895,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.91035658194835
+    },
+    {
+      "tick": 900,
+      "actor": "BP_ProphecyManualPoseAgent",
+      "active": false,
+      "modes": {
+        "head": 1.0,
+        "upperarm_r": 1.0,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 1.0,
+        "hand_l": 1.0
+      },
+      "max_span": 72.23925100504786
+    },
+    {
+      "tick": 900,
+      "actor": "BP_ProphecyManualPoseAgent2",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 83.97741727416546
+    },
+    {
+      "tick": 900,
+      "actor": "BP_ProphecyManualPoseAgent4",
+      "active": false,
+      "modes": {
+        "head": 0.25,
+        "upperarm_r": 0.25,
+        "lowerarm_r": 0.25,
+        "hand_r": 0.25,
+        "lowerarm_l": 0.25,
+        "hand_l": 0.25
+      },
+      "max_span": 56.945542487525195
+    }
+  ]
+}

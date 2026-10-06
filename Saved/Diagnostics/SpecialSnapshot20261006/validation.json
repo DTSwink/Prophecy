@@ -1,0 +1,25 @@
+{
+  "parry": {
+    "attack_snap_tick": 31,
+    "defense_snap_tick": 42,
+    "entry_exact": true,
+    "damping_stable": true,
+    "queue_preserved": true,
+    "later_defender_changes": [
+      52,
+      53,
+      54,
+      55
+    ]
+  },
+  "dodge": {
+    "attack_snap_tick": 31,
+    "defense_snap_tick": 42,
+    "entry_exact": true,
+    "damping_stable": true,
+    "queue_preserved": true,
+    "later_defender_changes": []
+  },
+  "note": "Parry scene applies head magnetization .05/.05 and tolerance0/0 at tick52 then a new return. The entry snap does not prevent later setters. Isolated native tests verify older pending timelines cannot resume.",
+  "automation_passed": 6
+}

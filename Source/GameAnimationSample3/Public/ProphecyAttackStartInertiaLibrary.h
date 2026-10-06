@@ -29,7 +29,9 @@ public:
      * Hold keeps full influence, then BlendTime fades to the attack checkpoint.
      * ResponseTime controls softness; MomentumScale scales entry velocity only.
      * Times use 60 unpaused ticks/second. Disabled/Alpha 0: no sampling or clock.
-     * Settings latch at entry; disabling cancels immediately.
+     * Settings latch at entry; disabling cancels immediately. Entry requires ticks since
+     * last attack strictly greater than LastAttackTickThreshold (default 0). The counter
+     * is captured before full-attack entry resets it; it is not checked again mid-attack.
      * Full attacks feed the corrected pose to the NN by default; Set Attack NN Feedback
      * can disable that write-back. Half attacks remain presentation-only. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Hands", meta=(DefaultToSelf="Agent",DisplayName="Set Attack Start Hand Inertia"))
@@ -38,7 +40,8 @@ public:
         UPARAM(meta=(ClampMin="0",ClampMax="1")) float ReferenceAlpha=1.f,
         float ResponseTime=.25f, float MomentumScale=1.f,
         UPARAM(meta=(ClampMin="0",ClampMax="1")) float Alpha=1.f,
-        bool LeftHand=true, bool RightHand=true);
+        bool LeftHand=true, bool RightHand=true,
+        UPARAM(meta=(ClampMin="0")) int64 LastAttackTickThreshold=0);
 
     /** Full attack entry only; retriggering an ongoing attack does not restart it.
      * Windows count unpaused game ticks (60 Hz convention), independently of FPS.

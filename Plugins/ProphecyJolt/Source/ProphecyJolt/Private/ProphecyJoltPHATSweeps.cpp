@@ -1,5 +1,6 @@
 #include "ProphecyJoltPHATSweepLibrary.h"
 #include "ProphecyJoltPHATSweeps.h"
+#include "ProphecyJoltMaterial.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
@@ -20,14 +21,17 @@ static TMap<TWeakObjectPtr<const AActor>, FSettings> Requests;
 struct FConfiguration { FSettings Settings; bool Enabled = true; };
 static TMap<TWeakObjectPtr<const AActor>, FConfiguration> Configurations;
 static TSet<TWeakObjectPtr<const AActor>> AttackingAgents;
-static TSet<TWeakObjectPtr<const AActor>> DefendingAgents;
+struct FParts { TArray<FName,TInlineAllocator<2>> Bones; TWeakObjectPtr<const UPrimitiveComponent> Sword; };
+static TMap<TWeakObjectPtr<const AActor>,FParts> AttackParts;
+static TMap<TWeakObjectPtr<const UPrimitiveComponent>,TWeakObjectPtr<const AActor>> SwordOwners;
 static bool IsCombatActive(const AActor* Agent)
-{ return AttackingAgents.Contains(Agent) || DefendingAgents.Contains(Agent); }
+{ return AttackingAgents.Contains(Agent); }
 
 static void RefreshRequest(AActor* Agent)
 {
     const auto* Config = Configurations.Find(Agent);
-    if (!IsCombatActive(Agent) || (Config && !Config->Enabled))
+    const auto* Parts = AttackParts.Find(Agent);
+    if (!IsCombatActive(Agent) || !Parts || (Parts->Bones.IsEmpty() && !Parts->Sword.IsValid()) || (Config && !Config->Enabled))
     { Requests.Remove(Agent); return; }
     TInlineComponentArray<USkeletalMeshComponent*> Meshes(Agent);
     if (!Meshes.ContainsByPredicate([](const auto* Mesh) { return Mesh->GetFName() == TEXT("PhysicalMesh"); }))
@@ -39,8 +43,7 @@ struct FPacket
     const JPH::ObjectLayerPairFilter* Filter = nullptr;
     TArray<FBody> Selected;
     TArray<uint32> Candidates;
-    JPH::ContactImpulseListener* Listener = nullptr;
-    TMap<uint32, FSettings> SelectedByID;
+    TMap<uint32, FBody> SelectedByID;
 };
 static TMap<JPH::PhysicsSystem*, FPacket> Packets;
 bool HasRequests(const UWorld* World)
@@ -59,6 +62,20 @@ bool HasRequests(const UWorld* World)
     return false;
 }
 const FSettings* Find(const AActor* Agent) { return Requests.Find(Agent); }
+const FSettings* FindBody(const UPrimitiveComponent* Component, FName Bone)
+{
+    if (Requests.IsEmpty() || !Component) return nullptr;
+    if (const auto* Owner=SwordOwners.Find(Component))
+    {
+        const AActor* Weapon=Component->GetOwner();
+        return Weapon && Weapon->GetOwner()==Owner->Get() ? Requests.Find(*Owner) : nullptr;
+    }
+    if (Component->GetFName()!=TEXT("PhysicalMesh")) return nullptr;
+    const auto* Agent=Component->GetOwner();
+    const auto* Settings=Requests.Find(Agent);
+    const auto* Parts=Settings ? AttackParts.Find(Agent) : nullptr;
+    return Parts && Parts->Bones.Contains(Bone) ? Settings : nullptr;
+}
 void ForgetWorld(const UWorld* World)
 {
     for (auto It = Requests.CreateIterator(); It; ++It)
@@ -67,16 +84,18 @@ void ForgetWorld(const UWorld* World)
         if (!It.Key().IsValid() || It.Key()->GetWorld() == World) It.RemoveCurrent();
     for (auto It = AttackingAgents.CreateIterator(); It; ++It)
         if (!It->IsValid() || It->Get()->GetWorld() == World) It.RemoveCurrent();
-    for (auto It = DefendingAgents.CreateIterator(); It; ++It)
-        if (!It->IsValid() || It->Get()->GetWorld() == World) It.RemoveCurrent();
+    for (auto It = AttackParts.CreateIterator(); It; ++It)
+        if (!It.Key().IsValid() || It.Key()->GetWorld() == World) It.RemoveCurrent();
+    for (auto It = SwordOwners.CreateIterator(); It; ++It)
+        if (!It.Key().IsValid() || !It.Value().IsValid() || It.Value()->GetWorld() == World) It.RemoveCurrent();
 }
 void Publish(JPH::PhysicsSystem* Physics, const JPH::ObjectLayerPairFilter* Filter,
-    TArray<FBody>&& Selected, TArray<uint32>&& Candidates, JPH::ContactImpulseListener* Listener)
+    TArray<FBody>&& Selected, TArray<uint32>&& Candidates)
 {
     if (Selected.IsEmpty()) { Forget(Physics); return; }
     Selected.Sort([](const FBody& A, const FBody& B) { return A.ID < B.ID; });
-    FPacket Packet; Packet.Filter = Filter; Packet.Selected = MoveTemp(Selected); Packet.Candidates = MoveTemp(Candidates); Packet.Listener = Listener;
-    for (const auto& Body : Packet.Selected) Packet.SelectedByID.Add(Body.ID, Body.Settings);
+    FPacket Packet; Packet.Filter = Filter; Packet.Selected = MoveTemp(Selected); Packet.Candidates = MoveTemp(Candidates);
+    for (const auto& Body : Packet.Selected) Packet.SelectedByID.Add(Body.ID, Body);
     Packets.Add(Physics, MoveTemp(Packet));
 }
 void Forget(JPH::PhysicsSystem* Physics) { if (!Packets.IsEmpty()) Packets.Remove(Physics); }
@@ -84,15 +103,24 @@ void Forget(JPH::PhysicsSystem* Physics) { if (!Packets.IsEmpty()) Packets.Remov
 class FPairShapeFilter final : public JPH::ShapeFilter
 {
 public:
-    FPairShapeFilter(const JPH::PhysicsSystem& P, const JPH::Body& InA, const JPH::Body& InB)
-        : Filter(P.GetSimShapeFilter()), A(InA), B(InB) {}
+    FPairShapeFilter(const JPH::PhysicsSystem& P, const JPH::Body& InA, const JPH::Body& InB, uint8 InPartsA, uint8 InPartsB)
+        : Filter(P.GetSimShapeFilter()), A(InA), B(InB), PartsA(InPartsA), PartsB(InPartsB) {}
     bool ShouldCollide(const JPH::Shape* SA, const JPH::SubShapeID& IA,
         const JPH::Shape* SB, const JPH::SubShapeID& IB) const override
-    { return !Filter || Filter->ShouldCollide(A, SA, IA, B, SB, IB); }
+    {
+        const auto* WA=Material::AttachedData(A);const auto* WB=Material::AttachedData(B);
+        // Compound roots must remain traversable until the leaf's identity is known.
+        if ((WA && (SA==WA->CarrierRoot || SA==WA->Compound)) ||
+            (WB && (SB==WB->CarrierRoot || SB==WB->Compound))) return true;
+        const bool SelectedA=WA ? (PartsA & (WA->IsSource(IA)?2:1))!=0 : PartsA!=0;
+        const bool SelectedB=WB ? (PartsB & (WB->IsSource(IB)?2:1))!=0 : PartsB!=0;
+        return (SelectedA || SelectedB) && (!Filter || Filter->ShouldCollide(A, SA, IA, B, SB, IB));
+    }
 private:
     const JPH::SimShapeFilter* Filter;
     const JPH::Body& A;
     const JPH::Body& B;
+    uint8 PartsA,PartsB;
 };
 
 static float Radius(const JPH::Body& B)
@@ -106,7 +134,7 @@ static JPH::Quat PredictedRotation(const JPH::Body& B, float Time)
     return Speed > 1.e-8f ? (JPH::Quat::sRotation(W / Speed, Speed * Time) * B.GetRotation()).Normalized() : B.GetRotation();
 }
 bool Respond(JPH::PhysicsSystem& Physics, JPH::Body& A, JPH::Body& B, float Seconds, const FSettings& Settings,
-    JPH::ContactImpulseListener* Listener)
+    uint8 PartsA, uint8 PartsB)
 {
     if (Settings.Strength <= 0 || Seconds <= 0 || A.IsSensor() || B.IsSensor()
         || (!A.IsDynamic() && !B.IsDynamic()) || (!A.IsActive() && !B.IsActive())) return false;
@@ -118,7 +146,7 @@ bool Respond(JPH::PhysicsSystem& Physics, JPH::Body& A, JPH::Body& B, float Seco
     if ((Relative + Travel * T).LengthSq() > R * R) return false;
     const float Speed = Travel.Length() + Seconds * (A.GetAngularVelocity().Length() * Radius(A) + B.GetAngularVelocity().Length() * Radius(B));
     if (Speed <= 1.e-8f) return false;
-    FPairShapeFilter Filter(Physics, A, B);
+    FPairShapeFilter Filter(Physics, A, B, PartsA, PartsB);
     JPH::CollideShapeSettings Query;
     Query.mCollisionTolerance = 1.e-6f;
     Query.mMaxSeparationDistance = Speed + 1.e-4f;
@@ -158,10 +186,7 @@ bool Respond(JPH::PhysicsSystem& Physics, JPH::Body& A, JPH::Body& B, float Seco
             auto& BI = Physics.GetBodyInterfaceNoLock();
             if (A.IsDynamic()) { BI.ActivateBody(A.GetID()); A.AddImpulse(-N * Magnitude, Base + JPH::RVec3(RA)); }
             if (B.IsDynamic()) { BI.ActivateBody(B.GetID()); B.AddImpulse(N * Magnitude, B.GetCenterOfMassPosition() + JPH::RVec3(RB)); }
-            // Report the impulse actually applied, through the same physical hit bridge.
-            if (Listener && Listener->WantsContactImpulse(A, B))
-                Listener->OnContactImpulse(A, B, Hit.mHit.mSubShapeID1, Hit.mHit.mSubShapeID2,
-                    Base + JPH::RVec3(Hit.mHit.mContactPointOn1), Base + JPH::RVec3(Hit.mHit.mContactPointOn2), N, Magnitude);
+            // This is prevention, not an actual contact. Only the normal solver may emit Hit.
             return true;
         }
         Fraction += Gap / (Speed * 1.01f);
@@ -189,8 +214,8 @@ void AfterServo(JPH::PhysicsSystem* Physics, float Seconds)
             if (!Packet->Filter->ShouldCollide(A.GetObjectLayer(), B.GetObjectLayer())
                 || !A.GetCollisionGroup().CanCollide(B.GetCollisionGroup())) continue;
             FSettings Effective = Source.Settings;
-            if (Other) { Effective.Strength = FMath::Max(Effective.Strength, Other->Strength); Effective.MaxIterations = FMath::Max(Effective.MaxIterations, Other->MaxIterations); }
-            Respond(*Physics, A, B, Seconds, Effective, Packet->Listener);
+            if (Other) { Effective.Strength = FMath::Max(Effective.Strength, Other->Settings.Strength); Effective.MaxIterations = FMath::Max(Effective.MaxIterations, Other->Settings.MaxIterations); }
+            Respond(*Physics, A, B, Seconds, Effective, Source.Parts, Other ? Other->Parts : 0);
         }
     }
 }
@@ -224,17 +249,30 @@ void UProphecyJoltPHATSweepLibrary::NotifyAttackState(AActor* Agent, bool Attack
     if (!Configurations.Contains(Agent))
         if (const auto* Existing = Requests.Find(Agent)) Configurations.Add(Agent, {*Existing, true});
     if (Attacking) AttackingAgents.Add(Agent);
-    else AttackingAgents.Remove(Agent);
+    else
+    {
+        AttackingAgents.Remove(Agent);
+        if (const auto* Parts=AttackParts.Find(Agent)) SwordOwners.Remove(Parts->Sword);
+        AttackParts.Remove(Agent);
+    }
+    RefreshRequest(Agent);
+}
+
+void UProphecyJoltPHATSweepLibrary::SetAttackParts(AActor* Agent, const TArray<FName>& Bones, UPrimitiveComponent* Sword)
+{
+    using namespace ProphecyJolt::PHATSweeps;
+    if (!IsInGameThread() || !IsValid(Agent)) return;
+    if (const auto* Previous=AttackParts.Find(Agent)) SwordOwners.Remove(Previous->Sword);
+    auto& Parts=AttackParts.FindOrAdd(Agent);Parts.Bones.Reset();Parts.Sword=nullptr;
+    for (FName Bone:Bones) if (Bone!=TEXT("sword")) Parts.Bones.AddUnique(Bone);
+    if (Bones.Contains(TEXT("sword")) && IsValid(Sword))
+    { Parts.Sword=Sword;SwordOwners.Add(Sword,Agent); }
     RefreshRequest(Agent);
 }
 
 void UProphecyJoltPHATSweepLibrary::NotifyDefenseState(AActor* Agent, bool Defending)
 {
-    using namespace ProphecyJolt::PHATSweeps;
-    if (!IsInGameThread() || !IsValid(Agent)) return;
-    if (Defending) DefendingAgents.Add(Agent);
-    else DefendingAgents.Remove(Agent);
-    RefreshRequest(Agent);
+    // Compatibility entry point only. Defense never owns predictive sweeps.
 }
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -252,7 +290,9 @@ bool FProphecySweepAttackGateTest::RunTest(const FString&)
     ON_SCOPE_EXIT { ProphecyJolt::PHATSweeps::ForgetWorld(World); World->DestroyWorld(false); };
     AActor* Agent = World->SpawnActor<AActor>();
     if (!TestNotNull(TEXT("Test agent"), Agent)) return false;
-    Agent->AddInstanceComponent(NewObject<USkeletalMeshComponent>(Agent, TEXT("PhysicalMesh")));
+    auto* Mesh=NewObject<USkeletalMeshComponent>(Agent, TEXT("PhysicalMesh"));Agent->AddInstanceComponent(Mesh);
+    AActor* Weapon=World->SpawnActor<AActor>();Weapon->SetOwner(Agent);
+    auto* Sword=NewObject<USkeletalMeshComponent>(Weapon,TEXT("Sword"));Weapon->AddInstanceComponent(Sword);
     using L = UProphecyJoltPHATSweepLibrary;
     auto Check = [&](bool Expected, float ExpectedStrength, int32 ExpectedIterations)
     {
@@ -263,34 +303,37 @@ bool FProphecySweepAttackGateTest::RunTest(const FString&)
         TestEqual(TEXT("Iterations retained"), Iterations, ExpectedIterations);
         TestEqual(TEXT("No sweep packet requested outside attack"), ProphecyJolt::PHATSweeps::HasRequests(World), Expected);
     };
-    Check(false, 1.f, 64);
-    L::NotifyAttackState(Agent, true); Check(true, 1.f, 64);
-    L::NotifyAttackState(Agent, false); Check(false, 1.f, 64);
-    TestTrue(TEXT("Configure outside attack"), L::SetJoltPHATSweeps(Agent, true, .5f, 32)); Check(false, .5f, 32);
-    L::NotifyAttackState(Agent, true); Check(true, .5f, 32);
-    L::NotifyAttackState(Agent, false); Check(false, .5f, 32);
-    L::SetJoltPHATSweeps(Agent, true, .5f, 32); Check(false, .5f, 32); // repeated Blueprint setter cannot bypass gate
-    L::NotifyAttackState(Agent, true); Check(true, .5f, 32); // next chained/restarted attack
-    L::SetJoltPHATSweeps(Agent, false, .5f, 32); Check(false, .5f, 32);
-    L::NotifyAttackState(Agent, false); L::NotifyAttackState(Agent, true); Check(false, .5f, 32);
-    L::SetJoltPHATSweeps(Agent, true, 0.f, 32); Check(false, 0.f, 32);
-    L::NotifyAttackState(Agent, false); Check(false, 0.f, 32);
-    L::NotifyDefenseState(Agent, true); Check(false, 0.f, 32); // zero applies to defense too
-    L::SetJoltPHATSweeps(Agent, true, .8f, 48); Check(true, .8f, 48);
-    L::NotifyAttackState(Agent, false); Check(true, .8f, 48); // attack cleanup cannot stop defense
-    L::NotifyDefenseState(Agent, false); Check(false, .8f, 48);
-    L::NotifyDefenseState(Agent, true); Check(true, .8f, 48); // next dodge or parry
-    L::NotifyAttackState(Agent, true); Check(true, .8f, 48);
-    L::NotifyDefenseState(Agent, false); Check(true, .8f, 48); // defense cleanup cannot stop attack
-    L::NotifyAttackState(Agent, false); Check(false, .8f, 48);
-    L::NotifyDefenseState(Agent, true);
-    L::SetJoltPHATSweeps(Agent, false, .8f, 48); Check(false, .8f, 48);
-    L::NotifyDefenseState(Agent, false);
-    L::NotifyDefenseState(Agent, true); Check(false, .8f, 48); // explicit opt-out survives new defense
-    ProphecyJolt::PHATSweeps::ForgetWorld(World);
-    Check(false, 1.f, 64);
-    L::NotifyDefenseState(Agent, true); Check(true, 1.f, 64); // default defense, without setter
-    L::NotifyDefenseState(Agent, false); Check(false, 1.f, 64);
+    const auto Begin=[&](const TArray<FName>& Bones,UPrimitiveComponent* Weapon=nullptr)
+    { L::SetAttackParts(Agent,Bones,Weapon);L::NotifyAttackState(Agent,true); };
+    const auto Selected=[&](FName Bone){return ProphecyJolt::PHATSweeps::FindBody(Mesh,Bone)!=nullptr;};
+    Check(false,1.f,64);
+    L::NotifyDefenseState(Agent,true);Check(false,1.f,64);
+    L::NotifyAttackState(Agent,true);Check(false,1.f,64); // no implicit whole-body fallback
+    Begin({TEXT("hand_l"),TEXT("lowerarm_l")});Check(true,1.f,64);
+    TestTrue(TEXT("Punch selects hand and forearm only"),Selected(TEXT("hand_l"))&&Selected(TEXT("lowerarm_l"))&&!Selected(TEXT("head"))&&!Selected(TEXT("hand_r")));
+    Begin({TEXT("foot_r"),TEXT("calf_r")});
+    TestTrue(TEXT("Chain replaces selection with foot/calf only"),Selected(TEXT("foot_r"))&&Selected(TEXT("calf_r"))&&!Selected(TEXT("hand_l"))&&!Selected(TEXT("ball_r")));
+    Begin({TEXT("head")});TestTrue(TEXT("Headbutt only head"),Selected(TEXT("head"))&&!Selected(TEXT("neck_01")));
+    Begin({TEXT("sword")},Sword);
+    TestTrue(TEXT("Sword only, not carrier hand"),ProphecyJolt::PHATSweeps::FindBody(Sword,NAME_None)!=nullptr&&!Selected(TEXT("hand_r")));
+    Weapon->SetOwner(nullptr);
+    TestNull(TEXT("Dropped sword no longer initiates sweeps"),ProphecyJolt::PHATSweeps::FindBody(Sword,NAME_None));
+    Weapon->SetOwner(Agent);
+    L::SetJoltPHATSweeps(Agent,false,.5f,32);Check(false,.5f,32);
+    TestNull(TEXT("Disabled sword not selected"),ProphecyJolt::PHATSweeps::FindBody(Sword,NAME_None));
+    L::NotifyAttackState(Agent,false);Begin({TEXT("head")});Check(false,.5f,32);
+    L::SetJoltPHATSweeps(Agent,true,.5f,32);Check(true,.5f,32);
+    TestNull(TEXT("Prior sword selection cleared"),ProphecyJolt::PHATSweeps::FindBody(Sword,NAME_None));
+    L::NotifyDefenseState(Agent,false);Check(true,.5f,32);
+    L::SetJoltPHATSweeps(Agent,true,0.f,32);Check(false,0.f,32);
+    L::NotifyAttackState(Agent,false);Check(false,0.f,32);
+    L::SetJoltPHATSweeps(Agent,true,.8f,48);Check(false,.8f,48);
+    L::NotifyDefenseState(Agent,true);Check(false,.8f,48);
+    Begin({TEXT("sword")});Check(false,.8f,48); // no held weapon, no sweep
+    Begin({});Check(false,.8f,48);
+    Begin({TEXT("head")});Check(true,.8f,48);
+    L::NotifyAttackState(Agent,false);Check(false,.8f,48);
+    ProphecyJolt::PHATSweeps::ForgetWorld(World);Check(false,1.f,64);
     return true;
 }
 #endif

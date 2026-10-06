@@ -1,0 +1,6 @@
+mesh=/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin lods=3 materials=1 apply=1
+lod0 vertices=4778 triangles=9324 uv=1 hash=1190393493
+lod1 generated/no source description
+lod2 generated/no source description
+lod0 before=3427388978 after=3427388978 unchanged_geometry_weights_original_uv=1 regions: 1=1748 2=910 3=192 4=322 5=456 6=800 7=576 8=32 9=2588 10=230 11=1418 12=1200 13=3090 14=230 15=1418 16=1200 17=3090 18=1632 19=1488 20=1116 21=1632 22=1488 23=1116
+materials_ready=1 assets_saved=0

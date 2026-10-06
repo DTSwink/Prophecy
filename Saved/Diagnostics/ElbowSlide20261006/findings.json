@@ -1,0 +1,39 @@
+{
+  "BP_ProphecyManualPoseAgent": {
+    "baseline_drift_1200_1300_cm": 2.5358910842575595,
+    "balance_off_drift_1200_1300_cm": 0.0003975350818842981,
+    "balance_off_prefix_max_root_difference_cm": 0.0
+  },
+  "BP_ProphecyManualPoseAgent2": {
+    "baseline_drift_1200_1300_cm": 1.399577789556781,
+    "balance_off_drift_1200_1300_cm": 5.331201499700045e-05,
+    "balance_off_prefix_max_root_difference_cm": 0.0
+  },
+  "BP_ProphecyManualPoseAgent4": {
+    "baseline_drift_1200_1300_cm": 1.427664459059348,
+    "balance_off_drift_1200_1300_cm": 2.9802322387695312e-06,
+    "balance_off_prefix_max_root_difference_cm": 0.0
+  },
+  "entry_off_prefix_max_pose_difference_cm": 0.0,
+  "elbow_evidence": {
+    "entry_tick": 961,
+    "baseline_left_bend_degrees_tick960_962": [
+      39.08,
+      0
+    ],
+    "baseline_right_bend_degrees_tick960_964": [
+      42.24,
+      0
+    ],
+    "entry_off_left_bend_tick962": 19.69,
+    "entry_off_right_bend_tick964": 61.63,
+    "left_forearm_length_cm_tick960_962": [
+      22.349,
+      17.828
+    ],
+    "right_forearm_length_cm_tick960_964": [
+      22.349,
+      18.995
+    ]
+  }
+}

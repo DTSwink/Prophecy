@@ -83,8 +83,24 @@ bool FProphecyJoltHitEventsTest::RunTest(const FString& Parameters)
     Sink->OnReceived = nullptr;
     Owner->DestroyBody(BallHandle);
 
-    // CCD-only impact: a 1 m box crosses the entire floor in one step without CCD.
     if (!Owner->CreateBox(FVector(500,500,5), 0, Floor, FloorHandle).IsSuccess()) return false;
+    // A solved preventive impulse at a positive gap must not masquerade as touching.
+    Ball.PositionCm.Z=11;
+    if(!Owner->CreateSphere(10,Ball,BallHandle).IsSuccess())return false;
+    Owner->SetBodyVelocity(BallHandle,FVector(0,0,-100),FVector::ZeroVector,true);
+    Owner->SetBodyHitEvents(BallHandle,true);
+    const int64 BeforeSpeculative=Sink->ComponentHits;
+    if(!Step())return false;
+    Owner->ReadBody(BallHandle,After);
+    Owner->DispatchPendingHitEvents();
+    TestEqual(TEXT("Separated speculative impulse emits no gameplay hit"),Sink->ComponentHits,BeforeSpeculative);
+    TestTrue(TEXT("Speculative prevention still changes velocity"),After.CenterOfMassVelocityCmPerSecond.Z>-100.);
+    for(int32 I=0;I<3 && Sink->ComponentHits==BeforeSpeculative;++I)
+    { if(!Step())return false;Owner->DispatchPendingHitEvents(); }
+    TestTrue(TEXT("Real touching contact still emits"),Sink->ComponentHits>BeforeSpeculative);
+    Owner->DestroyBody(BallHandle);
+
+    // CCD-only impact: a 1 m box crosses the entire floor in one step without CCD.
     auto* Cube = NewObject<UStaticMeshComponent>(BallActor);
     BallActor->AddInstanceComponent(Cube);
     Cube->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")));

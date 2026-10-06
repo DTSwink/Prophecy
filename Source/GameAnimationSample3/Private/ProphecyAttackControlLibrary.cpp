@@ -105,7 +105,22 @@ bool ColliderRoles(FName Attack, TArray<FName>& Bones, bool& Sword)
 }
 }
 
-TArray<FName> UProphecyAttackControlLibrary::GetAttackBones(FName Attack)
+namespace
+{
+AActor* HeldPunchSword(const AProphecyAgent* Agent,const TArray<FName>& Bones)
+{
+    if (!IsValid(Agent)) return nullptr;
+    const FName Hand=Bones.Contains(TEXT("hand_r")) ? FName(TEXT("hand_r"))
+        : Bones.Contains(TEXT("hand_l")) ? FName(TEXT("hand_l")) : NAME_None;
+    if (Hand.IsNone()) return nullptr;
+    AActor* Sword=Agent->GetHeldSword();
+    if (!IsValid(Sword) || Sword->IsActorBeingDestroyed()) return nullptr;
+    const auto* Mesh=Agent->GetPoseReferenceMesh();
+    return Mesh && Mesh->GetSocketBoneName(Agent->SwordHandSocket)==Hand ? Sword : nullptr;
+}
+}
+
+TArray<FName> UProphecyAttackControlLibrary::GetAttackBones(FName Attack,AProphecyAgent* Agent)
 {
     // The live collider query includes toes only where PHAT has separate bodies.
     // This metadata query deliberately exposes the two requested kick bones.
@@ -113,7 +128,7 @@ TArray<FName> UProphecyAttackControlLibrary::GetAttackBones(FName Attack)
     if (Attack==TEXT("kickr"))return {TEXT("foot_r"),TEXT("calf_r")};
     TArray<FName> Bones;bool Sword=false;
     ProphecyAttackControls::ColliderRoles(Attack,Bones,Sword);
-    if (Sword)Bones.Add(TEXT("sword"));
+    if (Sword || HeldPunchSword(Agent,Bones))Bones.Add(TEXT("sword"));
     return Bones;
 }
 
@@ -148,6 +163,7 @@ bool UProphecyAttackControlLibrary::GetNNAttackColliders(AProphecyAgent* Agent, 
     }
     else
     {
+        if (AActor* Held=HeldPunchSword(Agent,BoneNames)) SwordCollider=Cast<UStaticMeshComponent>(Held->GetRootComponent());
         const auto* Mesh = Agent->GetPoseReferenceMesh();
         const auto* Asset = Mesh ? Mesh->GetPhysicsAsset() : nullptr;
         // ball_* is returned only when it is a separate PHAT body, just like contact detection.

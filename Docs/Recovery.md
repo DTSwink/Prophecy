@@ -5,9 +5,10 @@ milestone, is a source and authored-setup backup on
 `DTSwink/Prophecy`, branch `codex/standalone-sim`. It does not contain the entire
 Unreal content library or the Stepper training workspace.
 
-Latest named recovery point: `milestone/2026-10-06-physics-combat`.
-See [milestone contents and validation](Milestone20261006.md). The current normal
-Editor build is verified; rebuilding is still required on a replacement machine.
+Latest named recovery point: `milestone/2026-10-06-combat-controls`.
+See [milestone contents and validation](Milestone20261006CombatControls.md).
+Current changes passed Live Coding builds; rebuild the normal Editor DLL before
+any cold launch, including on this laptop. Saved Blueprints use the new nodes.
 
 ## Included
 
@@ -22,12 +23,12 @@ Editor build is verified; rebuilding is still required on a replacement machine.
 - PoseAgent, sword and other Blueprint graphs; control rigs, input definitions,
   structs and enums; selected small material/physics/PCG/tuning assets; TestNN
   and project maps. Authored assets are stored as real Git blobs, not LFS pointers.
-- All 66 installed NN export/contract files under `Content/locomotion/NN`, including
+- All 67 installed NN export/contract files under `Content/locomotion/NN`, including
   upper checkpoint choices, attack checkpoints and defense networks. Original
   training checkpoints are not necessary for running these exports.
-- Follow-up checkpoint backup: **15 original `.pt` files (100,610,789 bytes)** in
+- Follow-up checkpoint backup: **17 original `.pt` files (115,337,720 bytes)** in
   `Tools/Recovery/Checkpoints`, covering installed Run/Walk/Upper/Attack models,
-  every current picker option, Parry and current/reference Dodge. They are real
+  every current picker option, latest Parry and current/reference Dodge. They are real
   Git blobs, including training state present in the originals. The manifest
   `Tools/Recovery/NNCheckpoints20261003.json` records SHA-256, original paths,
   restore locations and referring runtime contracts. This is not every historical

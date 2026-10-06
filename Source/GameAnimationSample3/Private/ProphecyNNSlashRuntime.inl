@@ -559,7 +559,11 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 		TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index)[0]*EntryPreviousCarrier,
 		TransformSlice(Impl->ComponentTransformBuffer,Handle.Index)[0]*StartCarrier,
 		uint8(3&~ProphecyAttackFootLocomotion::Mask(Actor)),1./NNUpdateHz);
+	// Snapshot this before FullAttackStarted clears it. Half entry uses the same
+	// existing counter; ongoing retriggers/full-half switches never reach this gate.
+	const int64 StartHandEntryTicks=ProphecyAttackStartHands::CaptureEntryTicks(Actor);
 	Slash.bActive = true;
+	Actor->IncrementAttackCounter();
 	if (!bHalf) ProphecyAttackControls::FullAttackStarted(Actor);
 #if !UE_BUILD_SHIPPING
 	if (!bHalf) SlashTrainFrame::Started(Actor);
@@ -573,7 +577,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	ProphecyArmCone::BeginAttack(Actor,Attack);
 	ProphecyAttackStartFKCore::Begin(Actor,Impl->BodyNames,Impl->Parents,Impl->UpperCoreBoneNames);
 	ProphecyAttackStartHands::Begin(Actor,
-		HandInertiaRoot(Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw));
+		HandInertiaRoot(Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),HandInertiaRoot(Agent.PublishedRoot,Agent.PublishedYaw),StartHandEntryTicks);
 	if (ProphecyAttackMotionInertia::Configured(Actor))
 	{
 		TArray<FTransform,TInlineAllocator<FullBodyBoneCount>> Previous;

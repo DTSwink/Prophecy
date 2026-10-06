@@ -1,4 +1,5 @@
 #include "ProphecyAgent.h"
+#include "ProphecySwordComponent.h"
 #include "ProphecyForearmStretch.h"
 #include "ProphecyFixedArmPhysics.h"
 #include "ProphecyHalfAttackCompensation.h"
@@ -1497,6 +1498,7 @@ bool AProphecyAgent::EnsureStandaloneNNManager()
 
 void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	DisableStunned();
 	ProphecyHalfAttackCompensation::Remove(this);
 	ProphecyAttackControls::Remove(this);
 	if (const auto* Manager=FindOwningNNManager(this))
@@ -2022,6 +2024,11 @@ void AProphecyAgent::Tick(float DeltaSeconds)
 	}
 
 	Super::Tick(DeltaSeconds);
+	if(bMonitorRealisticMode)
+	{
+		UpdateRealisticMode();
+		if(IsActorBeingDestroyed())return;
+	}
 	ProphecyPhysicalContext::Update(this);
 	{
 		ProphecyJolt::CharacterProfiling::FScope JoltFistTiming(ProphecyJolt::CharacterProfiling::EPhase::EnsureFists);
@@ -3286,6 +3293,16 @@ bool AProphecyAgent::GetPhysicalBodyState(
 	FVector& AngularVelocityRadiansPerSecond,
 	bool& bIsSimulating) const
 {
+	static const FName SwordName(TEXT("sword"));
+	if (BoneName == SwordName)
+	{
+		if (const auto* Sword = FindComponentByClass<UProphecySwordComponent>())
+			return Sword->GetHeldBodyState(WorldTransform, LinearVelocityCmPerSecond, AngularVelocityRadiansPerSecond, bIsSimulating);
+		WorldTransform = FTransform::Identity;
+		LinearVelocityCmPerSecond = AngularVelocityRadiansPerSecond = FVector::ZeroVector;
+		bIsSimulating = false;
+		return false;
+	}
 	if (IsJoltPhysicalAnimationEnabled())
 		return JoltCharacter->GetBodyState(BoneName, WorldTransform, LinearVelocityCmPerSecond, AngularVelocityRadiansPerSecond, bIsSimulating);
 	WorldTransform = FTransform::Identity;

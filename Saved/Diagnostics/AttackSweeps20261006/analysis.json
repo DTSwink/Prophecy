@@ -1,0 +1,93 @@
+{
+  "reason": "complete",
+  "player_attacks": [
+    "hookL",
+    "jabR",
+    "slashL"
+  ],
+  "first_actual_hit_absolute_tick": 48,
+  "first_actual_hits": [
+    {
+      "time": 0.7999999523162842,
+      "self": "BP_ProphecyManualPoseAgent_C_3",
+      "other": "BP_ProphecyManualPoseAgent_C_0",
+      "mesh_match": true,
+      "not_self": true,
+      "state": 3,
+      "active": true,
+      "armed": true,
+      "hit": true,
+      "policy_frame": 10,
+      "attack": "hookL",
+      "my_bone": "head",
+      "other_bone": "hand_l",
+      "absolute_tick": 48
+    },
+    {
+      "time": 0.8166666179895401,
+      "self": "BP_ProphecyManualPoseAgent_C_3",
+      "other": "BP_ProphecyManualPoseAgent_C_0",
+      "mesh_match": true,
+      "not_self": true,
+      "state": 3,
+      "active": true,
+      "armed": true,
+      "hit": true,
+      "policy_frame": 10,
+      "attack": "hookL",
+      "my_bone": "head",
+      "other_bone": "hand_l",
+      "absolute_tick": 49
+    },
+    {
+      "time": 1.249999925494194,
+      "self": "BP_ProphecyManualPoseAgent_C_3",
+      "other": "BP_ProphecyManualPoseAgent_C_0",
+      "mesh_match": true,
+      "not_self": true,
+      "state": 3,
+      "active": true,
+      "armed": true,
+      "hit": true,
+      "policy_frame": 8,
+      "attack": "jabR",
+      "my_bone": "head",
+      "other_bone": "hand_r",
+      "absolute_tick": 75
+    },
+    {
+      "time": 1.3333332538604736,
+      "self": "BP_ProphecyManualPoseAgent_C_3",
+      "other": "BP_ProphecyManualPoseAgent_C_0",
+      "mesh_match": true,
+      "not_self": true,
+      "state": 3,
+      "active": true,
+      "armed": true,
+      "hit": true,
+      "policy_frame": 11,
+      "attack": "jabR",
+      "my_bone": "head",
+      "other_bone": "hand_r",
+      "absolute_tick": 80
+    }
+  ],
+  "sweep_states": [
+    [
+      "idle",
+      "(False, 1.0, 64)"
+    ],
+    [
+      "hookL",
+      "(True, 1.0, 64)"
+    ],
+    [
+      "jabR",
+      "(True, 1.0, 64)"
+    ],
+    [
+      "slashL",
+      "(True, 1.0, 64)"
+    ]
+  ]
+}

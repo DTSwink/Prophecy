@@ -1,0 +1,706 @@
+[
+  {
+    "tick": 61,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      1
+    ],
+    "distance_to_sword_bounds_cm": 10.031238821688547,
+    "head_in_sword_local": [
+      5.1793886826181685,
+      16.999700522728727,
+      16.61029546229928
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 62,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      2
+    ],
+    "distance_to_sword_bounds_cm": 1.5879181938876021,
+    "head_in_sword_local": [
+      1.7215672094596952,
+      -6.205005959694236,
+      32.01689511695589
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 93,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      2
+    ],
+    "distance_to_sword_bounds_cm": 14.960450079625819,
+    "head_in_sword_local": [
+      0.9807056110222105,
+      23.65820794888303,
+      13.147831981286776
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 94,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      3
+    ],
+    "distance_to_sword_bounds_cm": 2.948644481334936,
+    "head_in_sword_local": [
+      1.3327484768213542,
+      7.980960005746602,
+      23.827057531982224
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 95,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      3
+    ],
+    "distance_to_sword_bounds_cm": 0.0,
+    "head_in_sword_local": [
+      0.5767702519661031,
+      -1.1182718419512385,
+      28.977152757881125
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 96,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      4
+    ],
+    "distance_to_sword_bounds_cm": 6.730808249623723,
+    "head_in_sword_local": [
+      0.045224984958818916,
+      -12.91726598490959,
+      32.72348989755348
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 97,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      4
+    ],
+    "distance_to_sword_bounds_cm": 6.708237111091928,
+    "head_in_sword_local": [
+      -7.095797595110877,
+      -11.635150206547392,
+      34.310428053283246
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 98,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      5
+    ],
+    "distance_to_sword_bounds_cm": 10.71800062973363,
+    "head_in_sword_local": [
+      -14.60692670920092,
+      -9.942093461940129,
+      35.24944829106648
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 152,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      2
+    ],
+    "distance_to_sword_bounds_cm": 4.430452019364022,
+    "head_in_sword_local": [
+      3.6094396616187865,
+      9.87230112596609,
+      29.144643757104586
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 153,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      2
+    ],
+    "distance_to_sword_bounds_cm": 4.26383101972666,
+    "head_in_sword_local": [
+      3.6790913926697026,
+      -9.642953678916937,
+      37.755361160853596
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 183,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      2
+    ],
+    "distance_to_sword_bounds_cm": 5.644677266367792,
+    "head_in_sword_local": [
+      5.200623867462242,
+      11.083649322165641,
+      12.552458167161696
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 184,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      3
+    ],
+    "distance_to_sword_bounds_cm": 3.1543098595353407,
+    "head_in_sword_local": [
+      6.733643302014909,
+      -2.719932146448175,
+      21.65855006959041
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 185,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      3
+    ],
+    "distance_to_sword_bounds_cm": 5.343860255606715,
+    "head_in_sword_local": [
+      6.012408315134082,
+      -10.261717571472534,
+      26.0572426397103
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 186,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      4
+    ],
+    "distance_to_sword_bounds_cm": 12.582613047692902,
+    "head_in_sword_local": [
+      5.492797111650266,
+      -20.321149771716073,
+      29.244403299844688
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 187,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      4
+    ],
+    "distance_to_sword_bounds_cm": 11.27798333445792,
+    "head_in_sword_local": [
+      -2.086805643337746,
+      -18.85202663870683,
+      31.563808668274962
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 188,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      5
+    ],
+    "distance_to_sword_bounds_cm": 11.633016920294672,
+    "head_in_sword_local": [
+      -10.268701058437612,
+      -17.0479449072965,
+      33.20182247808742
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 189,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      5
+    ],
+    "distance_to_sword_bounds_cm": 15.37109210118715,
+    "head_in_sword_local": [
+      -21.316897804847738,
+      -2.824248954570308,
+      32.055508711032445
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 212,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      2
+    ],
+    "distance_to_sword_bounds_cm": 15.725718416225355,
+    "head_in_sword_local": [
+      4.776154508478611,
+      24.561599580893194,
+      -0.23938385809191665
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 213,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      2
+    ],
+    "distance_to_sword_bounds_cm": 11.747901701723949,
+    "head_in_sword_local": [
+      1.6532656229393272,
+      19.465339771191704,
+      12.84569987175996
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 214,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      3
+    ],
+    "distance_to_sword_bounds_cm": 0.34582321636239594,
+    "head_in_sword_local": [
+      1.9222726911303978,
+      4.583879193145995,
+      22.702917667136642
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 215,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      3
+    ],
+    "distance_to_sword_bounds_cm": 0.0,
+    "head_in_sword_local": [
+      1.1253920724326818,
+      -3.91507033618517,
+      27.531590784354584
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 216,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      4
+    ],
+    "distance_to_sword_bounds_cm": 8.241259782396677,
+    "head_in_sword_local": [
+      0.5047677969266584,
+      -14.888636816014396,
+      31.035601620674207
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 217,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      4
+    ],
+    "distance_to_sword_bounds_cm": 7.516338181352188,
+    "head_in_sword_local": [
+      -6.41586035852299,
+      -13.189414323694917,
+      32.69189086555201
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 218,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      5
+    ],
+    "distance_to_sword_bounds_cm": 10.382300038490788,
+    "head_in_sword_local": [
+      -13.622093915239935,
+      -11.055680901388827,
+      33.74178276300731
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 300,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      1
+    ],
+    "distance_to_sword_bounds_cm": 15.299498147968263,
+    "head_in_sword_local": [
+      10.353457617935632,
+      22.395305262483316,
+      0.0017444210765879715
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 301,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      1
+    ],
+    "distance_to_sword_bounds_cm": 9.403905322175182,
+    "head_in_sword_local": [
+      7.907335347901381,
+      15.154248932921968,
+      19.889883206883265
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 302,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      2
+    ],
+    "distance_to_sword_bounds_cm": 9.776724994708688,
+    "head_in_sword_local": [
+      13.428240236900473,
+      -9.791842704113526,
+      34.52809907827046
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 339,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      5
+    ],
+    "distance_to_sword_bounds_cm": 13.603924236084799,
+    "head_in_sword_local": [
+      8.324593868150313,
+      -20.894110959975205,
+      44.00793461697815
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 340,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      6
+    ],
+    "distance_to_sword_bounds_cm": 0.0,
+    "head_in_sword_local": [
+      0.3724271910760741,
+      -3.451420032487605,
+      45.3190296607241
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 341,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      6
+    ],
+    "distance_to_sword_bounds_cm": 9.520829200496502,
+    "head_in_sword_local": [
+      -6.770853491486261,
+      15.842516211176536,
+      43.205154181885874
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 419,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      1
+    ],
+    "distance_to_sword_bounds_cm": 9.683094380696492,
+    "head_in_sword_local": [
+      6.974187511866664,
+      15.987227190005541,
+      15.535106179019596
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  },
+  {
+    "tick": 420,
+    "other": "BP_ProphecyManualPoseAgent_C_3",
+    "attack": [
+      "slashL",
+      false,
+      false,
+      false,
+      2
+    ],
+    "distance_to_sword_bounds_cm": 2.103913554501018,
+    "head_in_sword_local": [
+      3.1379717415959343,
+      -6.872186999670238,
+      31.12238015869694
+    ],
+    "responses": [
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>",
+      "<CollisionResponseType.ECR_IGNORE: 0>"
+    ]
+  }
+]

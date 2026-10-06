@@ -119,7 +119,29 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
             && (!HadNonKicking || (!IFileManager::Get().FileExists(*(Diagnostics/TEXT("KickTemperingRoles.txt")))
                 && OldKickGraph.Contains(NodeKey)));
         auto Before=PinValues(N);
+        const bool HadAttackBoneAgent=N->FindPin(TEXT("Agent"))!=nullptr;
+        const bool HadHandTickThreshold=N->FindPin(TEXT("LastAttackTickThreshold"))!=nullptr;
         N->Modify();N->ReconstructNode();++Count;
+        bool BoundAttackBoneAgent=false;
+        if(FunctionName==TEXT("GetAttackBones"))
+        {
+            auto* AgentPin=N->FindPin(TEXT("Agent"));auto* AttackPin=N->FindPin(TEXT("Attack"));
+            if(AgentPin && AgentPin->LinkedTo.IsEmpty() && !AgentPin->DefaultObject
+                && AttackPin && AttackPin->LinkedTo.Num()==1)
+            {
+                auto* Source=Cast<UK2Node_CallFunction>(AttackPin->LinkedTo[0]->GetOwningNode());
+                if(Source && Source->FunctionReference.GetMemberName()==TEXT("GetNNAttackState"))
+                {
+                    if(auto* Target=Source->FindPin(TEXT("self")))
+                    {
+                        if(Target->LinkedTo.Num()==1)
+                        { BoundAttackBoneAgent=Graph->GetSchema()->TryCreateConnection(Target->LinkedTo[0],AgentPin);Preserved&=BoundAttackBoneAgent; }
+                        else if(Target->DefaultObject)
+                        { AgentPin->DefaultObject=Target->DefaultObject;BoundAttackBoneAgent=true; }
+                    }
+                }
+            }
+        }
         const TCHAR* ReachPins[]={TEXT("SlashR"),TEXT("SlashLD"),TEXT("SlashRD"),TEXT("SlashLU"),TEXT("SlashRU"),TEXT("Pike"),
             TEXT("JabL"),TEXT("JabR"),TEXT("HookL"),TEXT("HookR"),TEXT("OverL"),TEXT("OverR"),TEXT("Headbutt"),TEXT("KickL"),TEXT("KickR")};
         if (MigrateReach)
@@ -227,6 +249,17 @@ static void RefreshOrderFor(FName FunctionName,const TCHAR* ReportName)
                 Row.StartsWith(TEXT("BlendInTime->")) || Row.Contains(TEXT("Alpha=")) || Row.Contains(TEXT("Alpha->"));};
             Before.RemoveAll(Added);After.RemoveAll(Added);
         }
+        if(FunctionName==TEXT("GetAttackBones") && (!HadAttackBoneAgent || BoundAttackBoneAgent))
+        {
+            const auto Added=[](const FString& Row){return Row.StartsWith(TEXT("Agent=")) || Row.StartsWith(TEXT("Agent->"));};
+            Before.RemoveAll(Added);After.RemoveAll(Added);
+        }
+        if(FunctionName==TEXT("SetAttackStartHandInertia") && !HadHandTickThreshold)
+        {
+            const auto* Pin=N->FindPin(TEXT("LastAttackTickThreshold"));
+            Preserved&=Pin && Pin->DefaultValue==TEXT("0") && Pin->LinkedTo.IsEmpty();
+            After.RemoveAll([](const FString& Row){return Row.StartsWith(TEXT("LastAttackTickThreshold="));});
+        }
         Preserved&=Before==After;
     }
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
@@ -252,6 +285,10 @@ static void RefreshSpinePosition() { RefreshOrderFor(TEXT("EnableSpine01Compensa
 static FAutoConsoleCommand SpinePositionCommand(TEXT("Prophecy.Editor.RefreshSpinePosition"),TEXT("Add position compensation checkbox; preserve existing values and links, leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshSpinePosition));
 static void RefreshTemperingOrder() { RefreshOrderFor(TEXT("SetLocomotionLowerBodyTempering"),TEXT("TemperingPinOrder.txt")); }
 static void RefreshAttackTargetMargin() { RefreshOrderFor(TEXT("GetValidAttackTarget"),TEXT("AttackTargetMarginPins.txt")); }
+static void RefreshAttackBonesAgent() { RefreshOrderFor(TEXT("GetAttackBones"),TEXT("AttackBonesAgentPins.txt")); }
+static void RefreshStartHandTickThreshold() { RefreshOrderFor(TEXT("SetAttackStartHandInertia"),TEXT("StartHandTickThresholdPins.txt")); }
+static FAutoConsoleCommand StartHandTickThresholdCommand(TEXT("Prophecy.Editor.RefreshStartHandTickThreshold"),TEXT("Add the hand-entry tick threshold; preserve existing settings/wiring and leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshStartHandTickThreshold));
+static FAutoConsoleCommand AttackBonesAgentCommand(TEXT("Prophecy.Editor.RefreshAttackBonesAgent"),TEXT("Add the held-sword Agent input to attack bone queries, preserving existing values and links; no save."),FConsoleCommandDelegate::CreateStatic(&RefreshAttackBonesAgent));
 static void RefreshAttackTargetExtraReach() { RefreshOrderFor(TEXT("SetAttackTargetExtraReach"),TEXT("AttackTargetExtraReachPins.txt")); }
 static void RefreshWalkBoundTarget() { RefreshOrderFor(TEXT("SetWalkPinningBackwardBound"),TEXT("WalkBoundTargetPins.txt")); }
 static void RestorePelvisOnlyInertia() { RefreshOrderFor(TEXT("SetAttackStartPelvisInertia"),TEXT("RestorePelvisOnlyPins.txt")); }

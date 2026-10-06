@@ -26,6 +26,23 @@ Clamps retain shared left/right Foot and Calf settings in Locomotion, Attack, Pa
 
 **Get Magnetization Mode** reads the current value. Save Physical Profile Snapshot captures it, and **Blend Magnetization Mode To Snapshot** restores it using the same hold and smoothstep timing. The existing per-bone/Below/All magnetization-strength returns remain independent; they do not change the agent-wide mode. Special entry restores the mode saved in slot1 immediately and cancels its pending hold/blend, like the other saved values. Set the desired mode before saving slot1 if you want that mode during specials. Reset restores its captured baseline. No new inference, additional solver, continuous idle blend timer or saved-asset format is introduced.
 
+**Per-body modes (October 6):** **Set Body Magnetization Mode** changes one physical
+bone, and **Set Magnetization Mode Below** changes physical bones in a skeletal
+subtree, with Include Parent. **Set Magnetization Mode** replaces every override
+and cancels all mode returns. **Get Body Magnetization Mode** reads the selected
+bone's configured value; the older getter reads the shared baseline. The pelvis
+always uses world targets regardless of its configured mode.
+
+Snapshots capture every body's mode. **Blend Body Magnetization Mode To Snapshot**
+and **Blend Magnetization Mode Below To Snapshot** restore only their selection;
+the original mode-return node restores the whole saved mode profile. All have
+Hold Out Time. A single-body setter cancels only that body's return, including
+when it is assigned the current value during a whole-body return. Slot1 and reset
+also restore mixed profiles. Uniform profiles and uniform-to-uniform returns use
+one scalar, with no per-body mode lookup in the drive loop. Mixed profiles cache
+their values in physical-body order when edited; unchanged frames use indexed
+reads. Completed identical profiles collapse back to uniform.
+
 `Print Physical Bone Profiles` shows fixed attachment for hands and locomotion Foot/Calf clamps on foot rows, without units, for example ` / Clamp=Foot:3.00 Calf:4.00`. Other rows and the magnetization/tolerance/damping fields keep their format.
 
 Magnetization captures enabled plus linear/angular scales. Restoring disabled magnetization fades toward zero, then restores the disabled flag and its remembered scales. Simulation membership, gravity cancellation, global strength/gate settings and physics state are intentionally not part of these strength/tolerance profiles.

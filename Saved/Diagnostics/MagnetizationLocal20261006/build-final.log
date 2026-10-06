@@ -1,0 +1,95 @@
+Log started at 10/06/2026 03:19:37 (2026-10-06T01:19:37Z)
+Resolved project argument C:/Users/singerie/Documents/Unreal Projects/Prophecy/GameAnimationSample3.uproject to C:\Users\singerie\Documents\Unreal Projects\Prophecy\GameAnimationSample3.uproject
+No config file at C:\ProgramData\Unreal Engine\UnrealBuildTool\BuildConfiguration.xml
+No config file at C:\Users\singerie\AppData\Local\Unreal Engine\UnrealBuildTool\BuildConfiguration.xml
+No config file at C:\Users\singerie\Documents\Unreal Engine\UnrealBuildTool\BuildConfiguration.xml
+Configuration will be read from:
+  C:\Users\singerie\AppData\Roaming\Unreal Engine\UnrealBuildTool\BuildConfiguration.xml
+Reading configuration file from cache (C:\Users\singerie\Documents\Unreal Projects\Prophecy\Intermediate\Build\XmlConfigCache.bin): C:\Users\singerie\AppData\Roaming\Unreal Engine\UnrealBuildTool\BuildConfiguration.xml
+Reading configuration file from cache (C:\Users\singerie\Documents\Unreal Projects\Prophecy\Intermediate\Build\XmlConfigCache.bin): C:\Users\singerie\Documents\Unreal Projects\Prophecy\Saved\UnrealBuildTool\BuildConfiguration.xml
+Reading configuration file from cache (C:\Users\singerie\Documents\Unreal Projects\Prophecy\Intermediate\Build\XmlConfigCache.bin): C:\Users\singerie\AppData\Local\UnrealEngine\Intermediate\Build\UnrealBuildTool.Env.BuildConfiguration.xml
+Setting temp directory to 'C:\Users\singerie\AppData\Local\Temp\UnrealBuildTool\9de8e132'
+    Registering build platform: UnrealBuildTool.AndroidPlatformFactory
+    Registering build platform: UnrealBuildTool.IOSPlatformFactory
+    Registering build platform: UnrealBuildTool.LinuxPlatformFactory
+    Registering build platform: UnrealBuildTool.MacPlatformFactory
+    Registering build platform: UnrealBuildTool.TVOSPlatformFactory
+    Registering build platform: UnrealBuildTool.WindowsPlatformFactory
+Found Windows 10 SDK root at C:\Program Files (x86)\Windows Kits\10 (1)
+Found Windows 10 SDK root at C:\Program Files (x86)\Windows Kits\10 (2)
+Found Windows 10 SDK version 10.0.19041.0 at C:\Program Files (x86)\Windows Kits\10
+Found Universal CRT version 10.0.19041.0 at C:\Program Files (x86)\Windows Kits\10
+Found Windows 10 SDK version 10.0.22621.0 at C:\Program Files (x86)\Windows Kits\10
+Found Universal CRT version 10.0.22621.0 at C:\Program Files (x86)\Windows Kits\10
+Found Windows 10 SDK version 10.0.26100.0 at C:\Program Files (x86)\Windows Kits\10
+Found Universal CRT version 10.0.26100.0 at C:\Program Files (x86)\Windows Kits\10
+Win64 Installed SDK(s): MinVersion_Sdk=10.0.19041.0, MaxVersion_Sdk=10.9.99999.0, CurrentVersion_Sdk=10.0.22621.0, Version_AutoSdk=10.0.22621.0, CurrentVersion_AutoSdk=
+        Registering build platform: Win64 - buildable: True
+    Registering build platform: UnrealBuildTool.VisionOSPlatformFactory
+Command line: "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" GameAnimationSample3Editor Win64 Development "-Project=C:/Users/singerie/Documents/Unreal Projects/Prophecy/GameAnimationSample3.uproject" -WaitMutex -NoHotReloadFromIDE
+Log file: C:\Users\singerie\AppData\Local\UnrealBuildTool\Log.txt
+Deleting old log file: C:\Users\singerie\AppData\Local\UnrealBuildTool\Log-backup-2025.12.06-08.24.51.txt
+
+Using 'git status' to determine working set for adaptive non-unity build (C:\Users\singerie\Documents\Unreal Projects\Prophecy).
+UnrealHeaderTool needs to run because SavedTimestamp is older than HeaderFileTimestamp (C:\Users\singerie\Documents\Unreal Projects\Prophecy\Source\GameAnimationSample3\Public\ProphecyClampProfileLibrary.h) for module GameAnimationSample3
+Parsing headers for GameAnimationSample3Editor
+  Running Internal UnrealHeaderTool "C:\Users\singerie\Documents\Unreal Projects\Prophecy\GameAnimationSample3.uproject" "C:\Users\singerie\Documents\Unreal Projects\Prophecy\Intermediate\Build\Win64\GameAnimationSample3Editor\Development\GameAnimationSample3Editor.uhtmanifest" -WarningsAsErrors -installed
+Reading engine version from file: C:\Program Files\Epic Games\UE_5.7\Engine\Source\Runtime\Launch\Resources\Version.h
+Got engine version 5.7.4
+Step - Exports
+       Exporter Stats skipped
+       Exporter Json skipped
+       Running exporter CodeGen
+UHT processed GameAnimationSample3Editor in 13.9732364 seconds (2 files written)
+Deleting outdated item: C:\Users\singerie\Documents\Unreal Projects\Prophecy\Intermediate\Build\Win64\x64\UnrealEditor\Development\GameAnimationSample3\UnrealEditor-GameAnimationSample3.lib
+Deleting outdated item: C:\Users\singerie\Documents\Unreal Projects\Prophecy\Plugins\ProphecyJolt\Intermediate\Build\Win64\x64\UnrealEditor\Development\ProphecyJolt\UnrealEditor-ProphecyJolt.lib
+Deleting outdated item: C:\Users\singerie\Documents\Unreal Projects\Prophecy\Binaries\Win64\UnrealEditor-GameAnimationSample3.pdb
+Deleting outdated item: C:\Users\singerie\Documents\Unreal Projects\Prophecy\Plugins\ProphecyJolt\Binaries\Win64\UnrealEditor-ProphecyJolt.pdb
+Deleting outdated item: C:\Users\singerie\Documents\Unreal Projects\Prophecy\Binaries\Win64\UnrealEditor-ProphecyEditor.pdb
+Deleting outdated item: C:\Users\singerie\Documents\Unreal Projects\Prophecy\Intermediate\Build\Win64\x64\UnrealEditor\Development\ProphecyEditor\UnrealEditor-ProphecyEditor.lib
+Building GameAnimationSample3Editor...
+Using Visual Studio 2022 14.44.35221 toolchain (C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207) and Windows 10.0.22621.0 SDK (C:\Program Files (x86)\Windows Kits\10).
+Determining max actions to execute in parallel (8 physical cores, 12 logical cores)
+  Executing up to 8 processes, one per physical core
+  Requested 1.5 GB memory per action, 4.08 GB available: limiting max parallel actions to 2
+Using Unreal Build Accelerator local executor to run 21 action(s)
+  Storage capacity 40Gb
+  RootDir C:\ProgramData\Epic\UnrealBuildAccelerator
+Deleting old log file: C:\Users\singerie\AppData\Local\UnrealBuildTool\Log-backup-2026.10.05-04.07.32.uba
+---- Starting trace: 261006_031953 ----
+UbaServer - Listening on 0.0.0.0:1345
+Cache bucket 3593192836 used. Action: Compile [x64] Module.GameAnimationSample3.1.cpp ()
+Cache bucket 416513229 used. Action: Link [x64] UnrealEditor-GameAnimationSample3.lib ()
+Cache bucket 2611342960 used. Action: Compile [x64] ProphecyJoltVelocityServo.cpp ()
+All processes queued
+[1/21] Compile [x64] Module.GameAnimationSample3.1.cpp
+[2/21] Compile [x64] Module.GameAnimationSample3.12.cpp
+[3/21] Compile [x64] Module.GameAnimationSample3.11.cpp
+[4/21] Compile [x64] Module.GameAnimationSample3.16.cpp
+[5/21] Compile [x64] Module.GameAnimationSample3.13.cpp
+C:\Users\singerie\Documents\Unreal Projects\Prophecy\Source\GameAnimationSample3\Private\ProphecyJoltBloodEmitterExperiment.inl(79,26): warning C4996: 'FNiagaraEmitterInstance::GetUpdateExecutionContext': Please update your code to handle execution path for different emitter types - Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+        auto& Context=E->GetUpdateExecutionContext();
+                         ^
+[6/21] Compile [x64] Module.GameAnimationSample3.17.cpp
+[7/21] Compile [x64] Module.GameAnimationSample3.2.cpp
+[8/21] Compile [x64] Module.GameAnimationSample3.3.cpp
+[9/21] Compile [x64] Module.GameAnimationSample3.7.cpp
+[10/21] Compile [x64] ProphecyJoltVelocityServo.cpp
+[11/21] Compile [x64] ProphecyJoltVelocityServoTests.cpp
+[12/21] Compile [x64] Module.GameAnimationSample3.18.cpp
+[13/21] Link [x64] UnrealEditor-GameAnimationSample3.lib
+[14/21] Compile [x64] ProphecyJoltWorldSubsystem.cpp
+[15/21] Link [x64] UnrealEditor-ProphecyJolt.lib
+[16/21] Link [x64] UnrealEditor-GameAnimationSample3.dll
+[17/21] Link [x64] UnrealEditor-ProphecyJolt.dll
+[18/21] Compile [x64] Module.ProphecyEditor.cpp
+[19/21] Link [x64] UnrealEditor-ProphecyEditor.lib
+[20/21] Link [x64] UnrealEditor-ProphecyEditor.dll
+[21/21] WriteMetadata GameAnimationSample3Editor.target [NoUba]
+
+Trace written to file C:/Users/singerie/AppData/Local/UnrealBuildTool/Log.uba with size 21.6kb
+Total time in Unreal Build Accelerator local executor: 190.20 seconds
+WriteFileIfChanged() wrote 0 changed files of 1 requested writes.
+
+Result: Succeeded
+Total execution time: 206.09 seconds

@@ -6,6 +6,8 @@
 #include "ProphecyJoltConversions.h"
 #include "ProphecyJoltVelocityServo.h"
 #include "ProphecyJoltPHATSweeps.h"
+#include "ProphecyJoltMaterial.h"
+#include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Body/BodyLock.h>
 #include <limits>
@@ -858,7 +860,7 @@ bool FProphecyPHATSweepTest::RunTest(const FString&)
             TArray<PHATSweeps::FBody> Selected{{A.GetIndexAndSequenceNumber(), {Mode == 2 ? 0.f : 1.f, 64}}};
             TArray<uint32> Candidates{A.GetIndexAndSequenceNumber(), B.GetIndexAndSequenceNumber()};
             PHATSweeps::Publish(&F.System(), Mode == 3 ? static_cast<const JPH::ObjectLayerPairFilter*>(&Reject) : &Allow,
-                MoveTemp(Selected), MoveTemp(Candidates), nullptr);
+                MoveTemp(Selected), MoveTemp(Candidates));
         }
         if (!F.Step(*this, 1.f/60)) return false;
         const float AX = float(F.Bodies().GetPosition(A).GetX()), BX = float(F.Bodies().GetPosition(B).GetX());
@@ -881,6 +883,27 @@ bool FProphecyPHATSweepTest::RunTest(const FString&)
         JPH::BodyLockWrite LB(F.System().GetBodyLockInterfaceNoLock(), B);
         TestTrue(TEXT("Pure angular sweep finds an intermediate contact"), PHATSweeps::Respond(F.System(), LA.GetBody(), LB.GetBody(), 1.f/30, {}));
         TestTrue(TEXT("Angular response changes angular velocity"), LA.GetBody().GetAngularVelocity().GetZ() < 40.f);
+    }
+    // A welded sword and its hand share a rigid body but not sweep eligibility.
+    for (uint8 Parts:{uint8(1),uint8(2)}) for (int32 Child:{0,1})
+    {
+        FServoFixture F;
+        JPH::StaticCompoundShapeSettings Builder;
+        Builder.AddShape(JPH::Vec3::sZero(),JPH::Quat::sIdentity(),Sphere.GetPtr(),0);
+        Builder.AddShape(JPH::Vec3(0,.3f,0),JPH::Quat::sIdentity(),Sphere.GetPtr(),1);
+        const auto Built=Builder.Create();if(!TestFalse(TEXT("Weld fixture shape"),Built.HasError()))return false;
+        const auto A=F.Add(Built.Get(),FTransform::Identity);
+        const auto B=F.Add(Sphere,FTransform(FVector(30,Child*30,0)));
+        Material::FAttachedMaterialData Weld;
+        Weld.Compound=static_cast<const JPH::CompoundShape*>(Built.Get().GetPtr());Weld.CarrierRoot=Built.Get().GetPtr();
+        F.Bodies().SetUserData(A,uint64(reinterpret_cast<UPTRINT>(&Weld))|Material::AttachedMarker);
+        F.Bodies().SetLinearVelocity(A,JPH::Vec3(24,0,0));
+        {
+            JPH::BodyLockWrite LA(F.System().GetBodyLockInterfaceNoLock(),A),LB(F.System().GetBodyLockInterfaceNoLock(),B);
+            const bool Responded=PHATSweeps::Respond(F.System(),LA.GetBody(),LB.GetBody(),1.f/60,{},Parts,0);
+            TestEqual(TEXT("Only selected welded leaf can initiate sweep"),Responded,Parts==(1<<Child));
+        }
+        F.Bodies().SetUserData(A,0);
     }
     return true;
 }

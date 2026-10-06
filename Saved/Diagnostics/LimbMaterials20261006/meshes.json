@@ -1,0 +1,68 @@
+[
+  {
+    "agent": "BP_ProphecyManualPoseAgent_C_0",
+    "component": "Mesh",
+    "asset": "/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin",
+    "slots": [
+      "lambert1"
+    ],
+    "materials": [
+      "/Game/Characters/UEFN_Mannequin/Materials/M_UEFN_Mannequin.M_UEFN_Mannequin"
+    ]
+  },
+  {
+    "agent": "BP_ProphecyManualPoseAgent_C_0",
+    "component": "PhysicalMesh",
+    "asset": "/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin",
+    "slots": [
+      "lambert1"
+    ],
+    "materials": [
+      "/Game/Characters/UEFN_Mannequin/Materials/M_UEFN_Mannequin_Masked_Bicolor.M_UEFN_Mannequin_Masked_Bicolor"
+    ]
+  },
+  {
+    "agent": "BP_ProphecyManualPoseAgent_C_2",
+    "component": "Mesh",
+    "asset": "/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin",
+    "slots": [
+      "lambert1"
+    ],
+    "materials": [
+      "/Game/Characters/UEFN_Mannequin/Materials/M_UEFN_Mannequin.M_UEFN_Mannequin"
+    ]
+  },
+  {
+    "agent": "BP_ProphecyManualPoseAgent_C_2",
+    "component": "PhysicalMesh",
+    "asset": "/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin",
+    "slots": [
+      "lambert1"
+    ],
+    "materials": [
+      "/Game/Characters/UEFN_Mannequin/Materials/M_UEFN_Mannequin_Masked_Bicolor.M_UEFN_Mannequin_Masked_Bicolor"
+    ]
+  },
+  {
+    "agent": "BP_ProphecyManualPoseAgent_C_3",
+    "component": "Mesh",
+    "asset": "/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin",
+    "slots": [
+      "lambert1"
+    ],
+    "materials": [
+      "/Game/Characters/UEFN_Mannequin/Materials/M_UEFN_Mannequin.M_UEFN_Mannequin"
+    ]
+  },
+  {
+    "agent": "BP_ProphecyManualPoseAgent_C_3",
+    "component": "PhysicalMesh",
+    "asset": "/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin",
+    "slots": [
+      "lambert1"
+    ],
+    "materials": [
+      "/Game/Characters/UEFN_Mannequin/Materials/M_UEFN_Mannequin_Masked_Bicolor.M_UEFN_Mannequin_Masked_Bicolor"
+    ]
+  }
+]

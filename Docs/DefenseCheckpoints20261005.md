@@ -1,5 +1,31 @@
 # Defense checkpoint update — October 5, 2026
 
+## Parry refresh — October 6
+
+Current Parry is **parry_step_1149700.pt**, replacing1037725. Dodge remains322925;
+every other defense file was hash-verified unchanged. Only
+`prophecy_parry_upper.onnx` and `parry_checkpoint.json` were installed. The new
+checkpoint retains the258-input/90-output architecture and exact-forearm
+runtime contract. Changed loss weights and training scene sampling do not add
+runtime modifiers or automatically change sword equipment.
+
+Reproduce with `Tools/NN/RefreshParryCheckpoint.py <checkpoint> --stage <fresh-folder>`.
+It uses the established exporter and retains rollback files under the stage's
+`backup/`. This update's stage is
+`Saved/DefenseIntegration/CheckpointUpdates/Parry1149700-20261006/`.
+Source SHA256: `91b134deb6dad3b5dfc972979aa6713c62fbc62973b5ca27c75080e9cb8776c9`.
+ONNX SHA256: `49f26f9ee1a38e35c825914305a06ae7508f6df5ab39c1b1ae10ae47400030a7`.
+
+All15 Parry saved/random input batches passed PyTorch/ONNX parity, maximum error
+8.19564e-7. Unreal's installed-model native test passed at15:29:02UTC: all four
+defense networks at batches1/4 and24 forearm cases (combined maximum neural error
+2.02656e-6, geometry5.96046e-8m). Its fixed Saved validation fixture was updated
+only for the new Parry network expectations, with the old fixture backed up.
+No C++ rebuild, Blueprint/map edit, asset save or restart was needed. TestNN
+was outside Play with no dirty packages. **The next Play loads the new model**;
+an already-running manager keeps its loaded weights. No live fight-quality
+claim or push. Historical October5 details follow.
+
 Requested files:
 
 - Dodge: `20261004_150744_dodge_bs256_unchanged_resume_8h_step322925.pt`

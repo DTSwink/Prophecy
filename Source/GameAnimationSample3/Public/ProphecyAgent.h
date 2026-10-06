@@ -890,8 +890,57 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Prophecy|Agent|NN Attack", meta=(DisplayName="On Attack Ended"))
 	void OnNNAttackEnded(FName Attack, bool bHalfAttack);
 
+	/** Opt-in foot-height events only. No automatic physics/magnetization changes.
+	 * Threshold is min(foot_l.Z, foot_r.Z) above the capsule's lowest world-Z point.
+	 * Uses physical feet when available, displayed feet otherwise. Default disabled. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical|Realistic")
+	bool SetRealisticMode(bool Enabled=false,float FootThresholdCm=10.f);
+
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Physical|Realistic")
+	bool IsRealisticModeActive() const { return bRealisticModeActive; }
+
+	/** Fired once when both feet exceed the threshold. */
+	UFUNCTION(BlueprintImplementableEvent, Category="Prophecy|Agent|Physical|Realistic",meta=(DisplayName="Start Realistic"))
+	void OnStartRealistic();
+
+	/** Fired once on returning to/below the threshold, disabling, or reset. */
+	UFUNCTION(BlueprintImplementableEvent, Category="Prophecy|Agent|Physical|Realistic",meta=(DisplayName="End Realistic"))
+	void OnEndRealistic();
+
+	// Reset the crossing state while preserving the user's enabled/threshold settings.
+	void ResetRealisticModeState();
+
+	/** Start/restart the stunned state. One second means 60 unpaused world ticks,
+	 * regardless of FPS/time dilation. Zero expires immediately; invalid durations
+	 * are rejected. State/event only: Blueprint decides the gameplay response. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Stunned")
+	bool StartStunned(float DurationSeconds=1.f);
+
+	/** Cancel the current stun without firing Stunned Ended. */
+	UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Stunned")
+	void DisableStunned();
+
+	UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Stunned")
+	bool IsStunned() const;
+
+	/** Natural expiry only. Is Stunned is already false; restarting here is safe. */
+	UFUNCTION(BlueprintImplementableEvent, Category="Prophecy|Agent|Stunned", meta=(DisplayName="Stunned Ended"))
+	void OnStunnedEnded();
+
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|NN Attack")
 	bool GetNNAttackState(FName& Attack, bool& bHalfAttack, bool& bArmed, bool& bHit, int32& PolicyFrame) const;
+
+	/** Per-agent attack number: 0 before the first attack, incremented once at accepted
+	 * attack entry. Retargets/full-half switches keep the number. Survives agent resets;
+	 * a newly spawned agent starts at 0. Compare together with the agent reference. */
+	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|NN Attack", meta=(DisplayName="Get Attack Counter"))
+	int64 GetAttackCounter() const { return AttackCounter; }
+
+	/** Manually advance this agent's attack number by one and return the new value.
+	 * Wraps 9,999 to 0, exactly like automatic attack entry. Does not start an attack
+	 * or change ticks since last attack; automatic entry still increments normally. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|NN Attack", meta=(DisplayName="Increment Attack Counter", ReturnDisplayName="Attack Counter"))
+	int64 IncrementAttackCounter() { AttackCounter = AttackCounter >= 9999 ? 0 : AttackCounter + 1; return AttackCounter; }
 
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Animation Layer")
 	bool IsNNAnimationLayerActive() const;
@@ -1171,6 +1220,8 @@ private:
 	EProphecyNNInterpolationMode NNInterpolationMode = EProphecyNNInterpolationMode::Current;
 
 	friend class AProphecyNNLocomotionManager;
+	UPROPERTY(Transient, DuplicateTransient)
+	int64 AttackCounter = 0;
 	bool EnterHalfSimulation();
 	bool LeaveHalfSimulation(EProphecyAgentSimulationMode NextMode);
 	void ReleaseHalfSimulationState();
@@ -1194,6 +1245,13 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prophecy|Agent", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCapsuleComponent> Capsule;
+
+	bool bMonitorRealisticMode=false;
+	bool bRealisticModeActive=false;
+	float RealisticFootThresholdCm=10.f;
+	void UpdateRealisticMode();
+	void SetRealisticModeActive(bool Active);
+	friend class FProphecyRealisticModeTest;
 
 	/** Blueprint subclasses may replace this component's mesh with any mesh using the same skeleton. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prophecy|Agent", meta = (AllowPrivateAccess = "true"))

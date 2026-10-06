@@ -5,7 +5,7 @@ manual owner-only control. Pass the agent and **Enabled = false** to suppress
 contact between their held sword and their own physical bodies. Other agents,
 world contact, sword channel responses, body-body self-collision, grip and
 velocities retain their existing rules. True restores the normal attack-phase
-owner behavior below; it does not force owner collisions on before Hit, and the
+owner behavior below; it does not bypass the attack's owner-suppression phase, and the
 gripping-hand and gripping-forearm exclusions remain. It is enabled by default and can be configured
 before equip. The preference survives attack Hit/end, rebind and future equips;
 drop removes the released sword's exclusions. Agent/controller EndPlay and world
@@ -18,21 +18,24 @@ The attack phase automatically controls the held sword's collision:
 
 | Phase | Slash / pike | Punch / kick / headbutt |
 | --- | --- | --- |
-| Attack starts | Ignore all channels | Ignore all channels |
-| First Armed output | Restore original responses | Remain suppressed until Hit |
-| First Hit output | Keep Armed-based state | Restore original responses |
-| Attack finished, stopped, replaced or interrupted | Restore original responses | Restore original responses |
+| Attack starts | Suppress sword-owner pairs only; external channels stay active | Ignore all channels |
+| First Armed output | Restore normal sword-owner pairs | Remain suppressed until Hit |
+| First Hit output | Keep Armed-based sword-owner state | Restore original responses and normal owner pairs |
+| Attack finished, stopped, replaced or interrupted | Restore normal owner pairs | Restore original responses and normal owner pairs |
 
 For slash/pike, Armed is latched for collision for the rest of the attack. For melee (punch/kick/headbutt), the first learned Hit output above 0.5 restores collision immediately, including the remaining recovery animation; Armed alone does not. These are NN outputs, not physical Event Hit callbacks. Once restored, a later low NN output does not suppress collision again. Full and half attacks share the rule. Active Trigger updates do not restart the gate: same weapon/melee class retains its collision latch; changing between classes applies the new rule to the preserved Armed/Hit phase, retaining original responses/body/grip. Stop followed by a fresh Trigger resets the gate. Dropping restores the released sword's original responses.
 
-Owner-body exclusions are separate: the sword ignores its wielder until the first
-NN **Hit** output, then restores normal sword-owner contact during the remaining
-attack animation. The gripping hand and its parent forearm stay excluded for the
+Since October 6, slash/pike preparation no longer disables sword contact with
+opponents or the world. It suppresses only the owner's pairs until **Armed**.
+Punch/kick/headbutt behavior remains unchanged: all sword channels and owner
+contact remain suppressed until the first NN **Hit** output. The explicit global
+**Set Sword Collision Enabled=false** still overrides either attack family.
+The gripping hand and its parent forearm stay excluded for the
 entire held lifetime, including after Hit/end, owner-collision re-enabling, and
 grip/backend refresh. Dropping removes these held exclusions and restores normal
 collision eligibility. This applies to simulated and attached swords on Jolt and
-Chaos, using the configured hand socket to choose the arm. This is latched for every
-attack family, including equipment/rebinding after Hit; it does not switch off
+Chaos, using the configured hand socket to choose the arm. Phase state is latched,
+including equipment/rebinding after Armed/Hit; it does not switch off
 attack sweeps, special solver iterations or attack physical profiles. Stops,
 interruptions and completion still restore normally if Hit never occurs. Re-enabled collision retains the original channel responses rather than forcing BlockAll. Equipping or rebinding a held sword during an attack reapplies the current phase.
 
@@ -54,7 +57,7 @@ contact caches. No bodies/constraints are rebuilt; no per-tick or per-contact
 lookup, timer, NN change, or new locomotion work is introduced. This body mask is
 for the Jolt physical backend; kinematic presentation has no body self response.
 
-Implementation: `ProphecySwordAttackCollision` in `ProphecySwordComponent.cpp`, attack start/exit through `NotifySwordAttackState`, Armed transition and first latched HitFrame in `ProphecyNNSlashRuntime.inl`. Jolt updates the existing body's collision profile (including welded sword subshapes); the UE query/Chaos receiver uses the same response container. Bodies, grip constraints, mass and velocities remain intact. Kinematic PHAT/sword defense-stop queries respect the gate. Neural conditioning boxes are unchanged.
+Implementation: `ProphecySwordAttackCollision` in `ProphecySwordComponent.cpp`, attack start/exit through `NotifySwordAttackState`, Armed transition and first latched HitFrame in `ProphecyNNSlashRuntime.inl`. Owner changes update existing Jolt/Chaos pair exclusions, including welded sword subshapes. Melee and explicit global disable still update the existing body's channel profile and UE receiver. Bodies, grip constraints, mass and velocities remain intact. Kinematic PHAT/sword defense-stop queries accept weapon preparation, while retaining the melee/global-disable gate. Neural conditioning boxes are unchanged.
 
 No added Tick callback, timer, actor scan or locomotion polling. Changes run on attack/equip/drop/backend events and the existing Armed/first-Hit transitions.
 

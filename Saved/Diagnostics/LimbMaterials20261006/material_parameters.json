@@ -1,0 +1,22 @@
+[
+  {
+    "name": "M_UEFN_Mannequin",
+    "scalar": [],
+    "vector": [],
+    "texture": []
+  },
+  {
+    "name": "M_UEFN_Mannequin_Masked_Bicolor",
+    "scalar": [
+      "Primary Metallic",
+      "Primary Roughness",
+      "Secondary Metallic",
+      "Secondary Roughness"
+    ],
+    "vector": [
+      "Primary Color",
+      "Secondary Color"
+    ],
+    "texture": []
+  }
+]

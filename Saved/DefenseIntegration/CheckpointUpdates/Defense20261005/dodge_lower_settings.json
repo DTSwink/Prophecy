@@ -1,0 +1,28 @@
+{
+  "walk": {
+    "pose_delta_scale": 0.06666666666666667,
+    "speed_scale": 0.16666666666666666,
+    "turn_scale": 0.41887902047863906,
+    "ground": 0.0,
+    "side_blend": 0.13962634015954636,
+    "full_height": 0.015,
+    "fade_height": 0.02,
+    "minimum_pin": 0,
+    "steps": 60,
+    "legacy_pin": false,
+    "height_gate": false
+  },
+  "run": {
+    "pose_delta_scale": 0.06666666666666667,
+    "speed_scale": 0.16666666666666666,
+    "turn_scale": 0.41887902047863906,
+    "ground": 0.0,
+    "side_blend": 0.13962634015954636,
+    "full_height": 0.015,
+    "fade_height": 0.02,
+    "minimum_pin": 0,
+    "steps": 60,
+    "legacy_pin": false,
+    "height_gate": false
+  }
+}

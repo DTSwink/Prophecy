@@ -35,6 +35,7 @@ public:
 	void RefreshOwnerCollision();
 	AActor* GetSword() const { return Sword; }
 	bool IsSimulated() const { return Sword && bPhysicsHold; }
+	bool GetHeldBodyState(FTransform& WorldTransform, FVector& LinearVelocity, FVector& AngularVelocity, bool& bSimulating) const;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 private:

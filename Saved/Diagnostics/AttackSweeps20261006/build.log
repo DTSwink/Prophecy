@@ -1,0 +1,49 @@
+Using bundled DotNet SDK version: 8.0.412 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" GameAnimationSample3Editor Win64 Development "-Project=C:/Users/singerie/Documents/Unreal Projects/Prophecy/GameAnimationSample3.uproject" -WaitMutex -NoHotReloadFromIDE
+Log file: C:\Users\singerie\AppData\Local\UnrealBuildTool\Log.txt
+Using 'git status' to determine working set for adaptive non-unity build (C:\Users\singerie\Documents\Unreal Projects\Prophecy).
+Parsing headers for GameAnimationSample3Editor
+  Running Internal UnrealHeaderTool "C:\Users\singerie\Documents\Unreal Projects\Prophecy\GameAnimationSample3.uproject" "C:\Users\singerie\Documents\Unreal Projects\Prophecy\Intermediate\Build\Win64\GameAnimationSample3Editor\Development\GameAnimationSample3Editor.uhtmanifest" -WarningsAsErrors -installed
+UHT processed GameAnimationSample3Editor in 11.5959904 seconds (3 files written)
+Failed to delete file 'C:\Users\singerie\Documents\Unreal Projects\Prophecy\Binaries\Win64\UnrealEditor-GameAnimationSample3.pdb'
+    Exception: Access to the path 'C:\Users\singerie\Documents\Unreal Projects\Prophecy\Binaries\Win64\UnrealEditor-GameAnimationSample3.pdb' is denied.
+Attempting to retry...
+Failed to delete file 'C:\Users\singerie\Documents\Unreal Projects\Prophecy\Binaries\Win64\UnrealEditor-GameAnimationSample3.pdb'
+    Exception: Access to the path 'C:\Users\singerie\Documents\Unreal Projects\Prophecy\Binaries\Win64\UnrealEditor-GameAnimationSample3.pdb' is denied.
+Attempting to retry...
+Failed to delete file 'C:\Users\singerie\Documents\Unreal Projects\Prophecy\Binaries\Win64\UnrealEditor-GameAnimationSample3.pdb'
+    Exception: Access to the path 'C:\Users\singerie\Documents\Unreal Projects\Prophecy\Binaries\Win64\UnrealEditor-GameAnimationSample3.pdb' is denied.
+ERROR: Exhausted all retries!
+Building GameAnimationSample3Editor...
+Using Visual Studio 2022 14.44.35221 toolchain (C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207) and Windows 10.0.22621.0 SDK (C:\Program Files (x86)\Windows Kits\10).
+Determining max actions to execute in parallel (8 physical cores, 12 logical cores)
+  Executing up to 8 processes, one per physical core
+  Requested 1.5 GB memory per action, 965.26 MB available: limiting max parallel actions to 1
+Using Unreal Build Accelerator local executor to run 13 action(s)
+  Storage capacity 40Gb
+---- Starting trace: 261006_190827 ----
+UbaServer - Listening on 0.0.0.0:1345
+[1/13] Compile [x64] Module.ProphecyJolt.gen.cpp
+[2/13] Compile [x64] ProphecyJoltPHATSweeps.cpp
+[3/13] Compile [x64] ProphecyJoltVelocityServo.cpp
+[4/13] Compile [x64] ProphecyJoltVelocityServoTests.cpp
+[5/13] Compile [x64] ProphecyJoltWorldSubsystem.cpp
+[6/13] Link [x64] UnrealEditor-ProphecyJolt.lib
+[7/13] Link [x64] UnrealEditor-ProphecyJolt.dll
+[8/13] Compile [x64] Module.GameAnimationSample3.14.cpp
+C:\Users\singerie\Documents\Unreal Projects\Prophecy\Source\GameAnimationSample3\Private\ProphecyJoltHitEventTests.cpp(90,12): error C2660: 'UProphecyJoltWorldSubsystem::SetBodyVelocity': function does not take 3 arguments
+    Owner->SetBodyVelocity(BallHandle,FVector(0,0,-100),FVector::ZeroVector);
+           ^
+C:\Users\singerie\Documents\Unreal Projects\Prophecy\Plugins\ProphecyJolt\Source\ProphecyJolt\Public\ProphecyJoltWorldSubsystem.h(429,30): note: see declaration of 'UProphecyJoltWorldSubsystem::SetBodyVelocity'
+    FProphecyJoltWorldStatus SetBodyVelocity(const FProphecyJoltBodyHandle& Handle,
+                             ^
+C:\Users\singerie\Documents\Unreal Projects\Prophecy\Source\GameAnimationSample3\Private\ProphecyJoltHitEventTests.cpp(90,12): note: while trying to match the argument list '(FProphecyJoltBodyHandle, FVector, const UE::Math::TVector<double>)'
+    Owner->SetBodyVelocity(BallHandle,FVector(0,0,-100),FVector::ZeroVector);
+           ^
+[9/13] Compile [x64] Module.GameAnimationSample3.15.cpp
+[10/13] Compile [x64] Module.GameAnimationSample3.19.cpp
+Trace written to file C:/Users/singerie/AppData/Local/UnrealBuildTool/Log.uba with size 14.5kb
+Total time in Unreal Build Accelerator local executor: 115.37 seconds
+
+Result: Failed (OtherCompilationError)
+Total execution time: 131.80 seconds

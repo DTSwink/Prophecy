@@ -1,0 +1,22 @@
+[2026.10.06-00.12.14:459][908]LogAutomationCommandLine: Display: Found 4 automation tests based on 'Prophecy.NN.AttackEntry.Hand+Prophecy.Attack.ForearmStretch'
+[2026.10.06-00.12.14:460][908]LogAutomationCommandLine: Display: 	Prophecy.Attack.ForearmStretch.Return
+[2026.10.06-00.12.14:460][908]LogAutomationCommandLine: Display: 	Prophecy.NN.AttackEntry.HandLifecycle
+[2026.10.06-00.12.14:460][908]LogAutomationCommandLine: Display: 	Prophecy.NN.AttackEntry.HandReference
+[2026.10.06-00.12.14:460][908]LogAutomationCommandLine: Display: 	Prophecy.NN.AttackEntry.HandStretchContinuity
+[2026.10.06-00.12.14:475][909]LogAutomationController: Display: Test Started. Name={Return} Path={Prophecy.Attack.ForearmStretch.Return}
+[2026.10.06-00.12.14:549][910]LogAutomationController: Display: Test Completed. Result={Success} Name={Return} Path={Prophecy.Attack.ForearmStretch.Return}
+[2026.10.06-00.12.14:549][910]LogAutomationController: BeginEvents: Prophecy.Attack.ForearmStretch.Return
+[2026.10.06-00.12.14:549][910]LogAutomationController: EndEvents: Prophecy.Attack.ForearmStretch.Return
+[2026.10.06-00.12.14:550][911]LogAutomationController: Display: Test Started. Name={HandLifecycle} Path={Prophecy.NN.AttackEntry.HandLifecycle}
+[2026.10.06-00.12.14:587][912]LogAutomationController: Display: Test Completed. Result={Success} Name={HandLifecycle} Path={Prophecy.NN.AttackEntry.HandLifecycle}
+[2026.10.06-00.12.14:587][912]LogAutomationController: BeginEvents: Prophecy.NN.AttackEntry.HandLifecycle
+[2026.10.06-00.12.14:587][912]LogAutomationController: EndEvents: Prophecy.NN.AttackEntry.HandLifecycle
+[2026.10.06-00.12.14:588][912]LogAutomationController: Display: Test Started. Name={HandReference} Path={Prophecy.NN.AttackEntry.HandReference}
+[2026.10.06-00.12.14:622][914]LogAutomationController: Display: Test Completed. Result={Success} Name={HandReference} Path={Prophecy.NN.AttackEntry.HandReference}
+[2026.10.06-00.12.14:622][914]LogAutomationController: BeginEvents: Prophecy.NN.AttackEntry.HandReference
+[2026.10.06-00.12.14:622][914]LogAutomationController: EndEvents: Prophecy.NN.AttackEntry.HandReference
+[2026.10.06-00.12.14:623][915]LogAutomationController: Display: Test Started. Name={HandStretchContinuity} Path={Prophecy.NN.AttackEntry.HandStretchContinuity}
+[2026.10.06-00.12.14:653][916]LogAutomationController: Display: Test Completed. Result={Success} Name={HandStretchContinuity} Path={Prophecy.NN.AttackEntry.HandStretchContinuity}
+[2026.10.06-00.12.14:653][916]LogAutomationController: BeginEvents: Prophecy.NN.AttackEntry.HandStretchContinuity
+[2026.10.06-00.12.14:653][916]LogAutomationController: EndEvents: Prophecy.NN.AttackEntry.HandStretchContinuity
+[2026.10.06-00.12.14:654][916]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 4 tests performed.
