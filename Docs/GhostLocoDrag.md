@@ -21,6 +21,16 @@ Implementation shares the existing checkpoint and batches only opted-in real leg
 
 ## Ghost Loco Inertia
 
+October 8: **Set Ghost Loco Inertia Kick** (`SetGhostLocoInertiaKick`) provides
+an independent `kickL`/`kickR` profile with the same Enabled=false,
+Duration Ticks=12 and Multiplier=1 pins. Configure it before the kick. Once
+called, its kick override wins over the general node, including explicit disable.
+Changing/disabling the general node cannot overwrite this profile or cancel an
+active kick using it. The kick node cannot cancel non-kick inertia. Reset captures
+and restores both profiles independently. Agents that never configure the kick
+node keep the existing general-node behavior. To enable only kicks, leave the
+general node disabled and enable the kick node. Ghost Loco Drag is still required.
+
 `Ghost Loco Inertia` (`SetGhostLocoInertia`) is a separate opt-in setting, configured
 before the attack. Pins: **Enabled=false**, **Duration Ticks=12**, **Multiplier=1**.
 Multipliers above 1 are supported. It requires an active Ghost Loco Drag branch;

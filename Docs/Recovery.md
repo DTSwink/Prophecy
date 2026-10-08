@@ -1,12 +1,12 @@
 # Restoring Prophecy
 
-This snapshot, updated through the October 6, 2026 physics/combat
+This snapshot, updated through the October 8, 2026 combat recovery
 milestone, is a source and authored-setup backup on
 `DTSwink/Prophecy`, branch `codex/standalone-sim`. It does not contain the entire
 Unreal content library or the Stepper training workspace.
 
-Latest named recovery point: `milestone/2026-10-06-combat-controls`.
-See [milestone contents and validation](Milestone20261006CombatControls.md).
+Latest named recovery point: `milestone/2026-10-08-combat-recovery`.
+See [milestone contents and validation](Milestone20261008CombatRecovery.md).
 Current changes passed Live Coding builds; rebuild the normal Editor DLL before
 any cold launch, including on this laptop. Saved Blueprints use the new nodes.
 

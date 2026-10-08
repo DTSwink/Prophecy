@@ -247,6 +247,35 @@ bool NeedsInference(const AProphecyAgent* Agent)
 }
 static bool Valid(const AProphecyAgent* Agent)
 {return IsInGameThread() && IsValid(Agent) && !Agent->IsActorBeingDestroyed() && Agent->GetWorld() && !Agent->GetWorld()->bIsTearingDown;}
+// Resolve only when a setter executes; the handoff/tick path is unchanged.
+static FProfile CurrentProfile(const FConfig& C,FName Attack)
+{
+    if(const auto* P=C.Profiles.Find(Attack))return *P;
+    if(const auto* P=C.Profiles.Find(NAME_None))return *P;
+    FProfile R;
+    for(const auto& P:Data::Profiles)if(Attack==FName(P.Attack))
+    {
+        R.Duration=P.Duration;R.Inertia=P.Inertia;R.Easing=P.Easing;
+        R.InertiaHold=P.InertiaHold;R.InertiaDecay=P.InertiaDecay;
+        R.WorldInertia=P.WorldInertia;R.AngleTimeSeconds=P.AngleTimeSeconds;
+        FMemory::Memcpy(R.Weights,P.Weights,sizeof(R.Weights));break;
+    }
+    return R;
+}
+template<typename F> static void UpdateProfileFields(AProphecyAgent* Agent,FName Attack,F&& Update)
+{
+    EnsureCleanup();auto& C=Configs.FindOrAdd(Agent);
+    if(!Attack.IsNone())
+    {
+        FProfile P=CurrentProfile(C,Attack);Update(P);C.Profiles.Add(Attack,P);return;
+    }
+    // Resolve every family before replacing the fallback, preserving per-attack differences.
+    TMap<FName,FProfile> Updated=C.Profiles;
+    for(const auto& P:Data::Profiles)Updated.FindOrAdd(FName(P.Attack));
+    Updated.FindOrAdd(NAME_None);
+    for(auto& Entry:Updated){Entry.Value=CurrentProfile(C,Entry.Key);Update(Entry.Value);}
+    C.Profiles=MoveTemp(Updated);
+}
 }
 
 bool UProphecyFKReturnLibrary::SetAttackFKReturn(AProphecyAgent* Agent,bool Enabled,float Coefficient,
@@ -262,6 +291,29 @@ bool UProphecyFKReturnLibrary::SetAttackFKReturn(AProphecyAgent* Agent,bool Enab
     EnsureCleanup();auto& C=Configs.FindOrAdd(Agent);C.Enabled=Enabled;C.Coefficient=Coefficient;
     for(int32 I=0;I<AttackCount;++I)C.Timing[I]=FVector2f(Values[I]);
     if(!Enabled)Cancel(Agent);return true;
+}
+bool UProphecyFKReturnLibrary::SetAttackFKReturnValues(AProphecyAgent* Agent,FName Attack,float ReturnTime,float Inertia,float Easing)
+{
+    using namespace ProphecyFKReturn;
+    if(!Valid(Agent) || !FMath::IsFinite(ReturnTime) || ReturnTime<0)return false;
+    for(float V:{Inertia,Easing})if(!FMath::IsFinite(V) || V<0 || V>1)return false;
+    UpdateProfileFields(Agent,Attack,[=](FProfile& P){P.Duration=ReturnTime;P.Inertia=Inertia;P.Easing=Easing;});
+    return true;
+}
+bool UProphecyFKReturnLibrary::SetAttackFKReturnInertiaProfile(AProphecyAgent* Agent,FName Attack,
+    FProphecyFKInertiaWeights BoneInertia,float InertiaHold,float InertiaDecay,bool WorldInertia,float SpineAngleTime)
+{
+    using namespace ProphecyFKReturn;
+    if(!Valid(Agent))return false;
+    const float W[]={BoneInertia.Spine,BoneInertia.Clavicle,BoneInertia.UpperArm,BoneInertia.LowerArm,
+        BoneInertia.Neck01,BoneInertia.Neck02,BoneInertia.Head};
+    for(float V:W)if(!FMath::IsFinite(V) || V<0 || V>1)return false;
+    if(!FMath::IsFinite(InertiaHold) || InertiaHold<0 || InertiaHold>.8f ||
+        !FMath::IsFinite(InertiaDecay) || InertiaDecay<0 || InertiaDecay>4 ||
+        !FMath::IsFinite(SpineAngleTime) || SpineAngleTime<0 || SpineAngleTime>4)return false;
+    UpdateProfileFields(Agent,Attack,[&](FProfile& P){P.InertiaHold=InertiaHold;P.InertiaDecay=InertiaDecay;
+        P.WorldInertia=WorldInertia;P.AngleTimeSeconds=SpineAngleTime;FMemory::Memcpy(P.Weights,W,sizeof(W));});
+    return true;
 }
 bool UProphecyFKReturnLibrary::SetAttackFKReturnProfile(AProphecyAgent* Agent,FName Attack,float ReturnTime,
     float Inertia,float Easing,FProphecyFKInertiaWeights BoneInertia,float InertiaHold,float InertiaDecay,bool WorldInertia,float SpineAngleTime)

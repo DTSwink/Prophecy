@@ -1,4 +1,6 @@
 #include "ProphecyAgent.h"
+#include "ProphecyPhysicalToleranceDelay.h"
+#include "ProphecyRootVelocityDelay.h"
 #include "ProphecySwordComponent.h"
 #include "ProphecyForearmStretch.h"
 #include "ProphecyFixedArmPhysics.h"
@@ -1253,8 +1255,12 @@ bool AProphecyAgent::GetMassWeightedPoseError(FVector& LinearErrorKgCm, FVector&
 
 bool AProphecyAgent::SetAllPhysicalFeedbackTolerances(
 	float LinearToleranceCm,
-	float AngularToleranceDegrees)
+	float AngularToleranceDegrees, float Delay)
 {
+	if (!FMath::IsFinite(Delay) || Delay<0) return false;
+	if (Delay>0) return ProphecyPhysicalToleranceDelay::Schedule(*this,
+		ProphecyPhysicalToleranceDelay::EScope::All,NAME_None,true,LinearToleranceCm,AngularToleranceDegrees,
+		EProphecyLocomotionSelection::Both,EProphecyEquipmentSelection::Both,Delay);
 	CancelPhysicalFeedbackToleranceBlend();
 	const float Linear = FMath::Max(0.0f, LinearToleranceCm);
 	const float Angular = FMath::Max(0.0f, AngularToleranceDegrees);
@@ -1278,8 +1284,13 @@ bool AProphecyAgent::SetAllPhysicalFeedbackTolerances(
 bool AProphecyAgent::SetPhysicalFeedbackTolerance(
 	FName BoneName,
 	float LinearToleranceCm,
-	float AngularToleranceDegrees,EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
+	float AngularToleranceDegrees,EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment,float Delay)
 {
+	if (!FMath::IsFinite(Delay) || Delay<0) return false;
+	if (Delay>0)
+		return PhysicalFeedbackBoneNames().Contains(BoneName) && ProphecyPhysicalToleranceDelay::Schedule(*this,
+			ProphecyPhysicalToleranceDelay::EScope::Single,BoneName,true,LinearToleranceCm,AngularToleranceDegrees,
+			Locomotion,Equipment,Delay);
 	if (Locomotion!=EProphecyLocomotionSelection::Both || Equipment!=EProphecyEquipmentSelection::Both
 		|| ProphecyPhysicalContext::IsManaged(this,BoneName,ProphecyPhysicalContext::EKind::Feedback))
 		return ProphecyPhysicalContext::Set(*this,BoneName,ProphecyPhysicalContext::EKind::Feedback,true,
@@ -1303,8 +1314,9 @@ int32 AProphecyAgent::SetPhysicalFeedbackToleranceBelow(
 	FName ParentBone,
 	bool bIncludeParent,
 	float LinearToleranceCm,
-	float AngularToleranceDegrees,EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment)
+	float AngularToleranceDegrees,EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment,float Delay)
 {
+	if (!FMath::IsFinite(Delay) || Delay<0) return 0;
 	if (!ProphecyPhysicalContext::Valid(Locomotion,Equipment)) return 0;
 	const USkeletalMeshComponent* PoseMesh = GetPoseReferenceMesh();
 	const USkeletalMesh* SkeletalMesh = PoseMesh ? PoseMesh->GetSkeletalMeshAsset() : nullptr;
@@ -1332,12 +1344,15 @@ int32 AProphecyAgent::SetPhysicalFeedbackToleranceBelow(
 				break;
 			}
 		}
-		if (bDescendant && ProphecyPhysicalContext::Set(*this,BoneName,ProphecyPhysicalContext::EKind::Feedback,true,
-			{LinearToleranceCm,AngularToleranceDegrees},0,Locomotion,Equipment))
+		if (bDescendant && (Delay>0 || ProphecyPhysicalContext::Set(*this,BoneName,ProphecyPhysicalContext::EKind::Feedback,true,
+			{LinearToleranceCm,AngularToleranceDegrees},0,Locomotion,Equipment)))
 		{
 			++ChangedBones;
 		}
 	}
+	if (Delay>0 && ChangedBones>0 && !ProphecyPhysicalToleranceDelay::Schedule(*this,
+		ProphecyPhysicalToleranceDelay::EScope::Below,ParentBone,bIncludeParent,LinearToleranceCm,AngularToleranceDegrees,
+		Locomotion,Equipment,Delay)) return 0;
 	return ChangedBones;
 }
 
@@ -1498,6 +1513,7 @@ bool AProphecyAgent::EnsureStandaloneNNManager()
 
 void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ProphecyRootVelocityDelay::Cancel(this);
 	DisableStunned();
 	ProphecyHalfAttackCompensation::Remove(this);
 	ProphecyAttackControls::Remove(this);

@@ -1,0 +1,38 @@
+{
+  "samples": 660,
+  "max_position_cm": {
+    "future": [
+      0.0,
+      [
+        "BP_ProphecyManualPoseAgent4",
+        220
+      ],
+      "upperarm_r"
+    ],
+    "presented": [
+      0.0,
+      [
+        "BP_ProphecyManualPoseAgent4",
+        220
+      ],
+      "upperarm_r"
+    ],
+    "body": [
+      0.0,
+      [
+        "BP_ProphecyManualPoseAgent4",
+        220
+      ],
+      "upperarm_r"
+    ]
+  },
+  "max_quaternion_component": {
+    "future": 0.0,
+    "presented": 0.0,
+    "body": 0.0
+  },
+  "phase_mismatches": [],
+  "first_difference": null,
+  "native_steps": 12,
+  "native_steps_exact": true
+}

@@ -1,5 +1,7 @@
 # Upper-body authoring benchmark — September 28, 2026
 
+October 7 maintenance note: Armed blocking was removed from the runtime. These measured results and benchmark evidence are retained for reference; the original checkpoint-hold reproducer depends on the retired node and cannot run unchanged.
+
 Quick result: the current animation-layer upper-body path was approximately **7.1x cheaper** than the half-attack checkpoint path in measured upper-authoring stages.
 
 | Method | Measured cost |

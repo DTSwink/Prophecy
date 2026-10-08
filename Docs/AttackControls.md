@@ -1,19 +1,48 @@
 # Attack controls
 
+## Kick ownership and supporting-foot locomotion
+
+For `kickL` and `kickR`, **Trigger NN Attack** uses full-body mode even
+when **Half Attack** is checked. It starts the kick instead of rejecting it.
+**Set NN Half Attack Enabled** during an active kick is a successful no-op: the
+kick retains both upper and lower ownership, history and phase. It emits no
+lower-end event or recovery merely because Half was requested. Retargeting an
+already-half attack into a kick rejoins full-body mode using the existing
+half-to-full path. Other families and invalid/inactive requests are unchanged.
+The check runs only when either node is called; no extra tick work or inference.
+
+**Set Kick Locomotion** optionally enables supporting-foot loco drag. The kicking
+leg stays attack-owned, while a hidden running version of that leg protects the
+locomotion prediction. The kick half-mode option has been removed.
+[Full contract](KickLocomotion.md).
+
+## Previous attack name
+
+**Get NN Attack State** has a separate **Previous Attack Name** output. It starts
+as None and changes only when an active upper-body attack ends, whether naturally
+or through an explicit stop/interruption. While a new attack runs, it still names
+the preceding ended attack. Entry, retargeting and full/half switches do not change
+it. Repeated idle stops leave it alone. Agent reset retains it (ending an active
+attack during reset records that attack); newly spawned agents start with None.
+
+The original outputs are unchanged: idle returns false, Attack=None, phase flags
+false and Policy Frame=0. Previous Attack Name remains available even while idle.
+This adds one FName per agent, one assignment at attack end and one output read;
+no timer, tick work or history collection.
+
 ## Attack-name bone list
 
 **Get Attack Bones** is a pure node taking an Attack name and optional Agent,
 returning a Bones Name array. No active attack is required. Jab/hook/over return
-hand then lowerarm on the selected side, followed by `sword` only when that Agent
-holds a sword in the punching hand. A missing, dropped, hidden or opposite-hand
-sword is excluded. Agent defaults to self in an Agent Blueprint; when querying
-another attacker, connect that attacker explicitly. Without Agent, punches retain
-the static hand/lowerarm list. Kick returns foot then calf; headbutt returns
-`head`; all six slash families and pike return only `sword`. The latter is a
-logical item name, not a skeleton bone. Unknown/None names return an empty list.
-Names are case-insensitive. **Get NN Attack Colliders** also returns the held
-Sword Collider for same-hand punches, alongside its existing PHAT bone list.
-Sword collision phase gates remain unchanged. Selection adds no ticking/history.
+hand then lowerarm on the selected side, even when holding a sword. The Agent
+pin remains for existing Blueprint compatibility. Kick returns foot then calf;
+headbutt returns `head`; all six slash families and pike return `hand_r`, then
+`sword`. The latter is a logical item name, not a skeleton bone. Unknown/None
+names return an empty list. Names are case-insensitive.
+**Get NN Attack Colliders** returns a held Sword Collider only for slash/pike;
+punches return their PHAT bone list with a null Sword Collider. Selection adds
+no ticking/history. Right punches suppress held-sword collision from Armed until
+upper attack end, including after NN Hit; see [collision phases](SwordAttackCollision.md).
 
 ## Manually setting ticks since last attack
 
@@ -111,7 +140,7 @@ on-demand metadata, including the pre-Armed phase; it does not enable collision.
 | kickl | calf_l, foot_l; ball_l only if it has a PHAT body |
 | kickr | calf_r, foot_r; ball_r only if it has a PHAT body |
 | headbutt | head |
-| slashl/r/ld/rd/lu/ru, pike | Sword Collider component only; empty bone list |
+| slashl/r/ld/rd/lu/ru, pike | hand_r plus Sword Collider component |
 
 Only body names present in the agent's current reference Physics Asset are returned.
 The sword component is null if no sword is held. Sword readiness still follows the

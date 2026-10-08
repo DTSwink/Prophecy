@@ -28,22 +28,6 @@ inline FTransform CompensatedSpine(const FTransform& GhostSpine,const FTransform
     Spine.SetRotation((InversePelvisDifference*Spine.GetRotation()).GetNormalized());
     return Spine;
 }
-inline FQuat AimFromPivot(const FVector& Pivot,const FVector& VirtualTarget,const FVector& RealTarget)
-{
-    FVector From=VirtualTarget-Pivot,To=RealTarget-Pivot;
-    if(From.ContainsNaN() || To.ContainsNaN() || !From.Normalize(1.e-8) || !To.Normalize(1.e-8)
-        || From.Equals(To,1.e-10)) return FQuat::Identity;
-    return FQuat::FindBetweenNormals(From,To).GetNormalized();
-}
-inline void CompensateSpinePosition(FTransform& Spine,const FTransform& GhostSpine,
-    const FVector& GhostTarget,const FVector& RealTarget)
-{
-    // Transport the *target*, not the hand: preserve the learned wind-up/swing
-    // relative to its aim ray. Only the ray's parallax changes with translation.
-    const FVector VirtualTarget=Spine.TransformPosition(GhostSpine.InverseTransformPosition(GhostTarget));
-    const FQuat Aim=AimFromPivot(Spine.GetLocation(),VirtualTarget,RealTarget);
-    Spine.SetRotation((Aim*Spine.GetRotation()).GetNormalized());
-}
 inline void BuildDistributedSpines(TConstArrayView<FTransform> Ghost,TConstArrayView<int32> Spines,
     const FTransform& RealPelvis,const FQuat& Counter,FTransform (&Corrected)[5])
 {
@@ -56,36 +40,31 @@ inline void BuildDistributedSpines(TConstArrayView<FTransform> Ghost,TConstArray
         Corrected[I].SetRotation((Step*Corrected[I].GetRotation()).GetNormalized());
     }
 }
+// Inverse of the upper mount: the NN must see the actual torso-to-target
+// distance as well as direction. Ghost and real transforms share one frame.
+inline FVector ReachTarget(const FTransform (&Ghost)[6],const FTransform& RealPelvis,
+    const FVector& RealTarget,bool bDistributed)
+{
+    if(bDistributed)
+    {
+        const int32 Spines[]={1,2,3,4,5};
+        FTransform Corrected[5];
+        BuildDistributedSpines(MakeArrayView(Ghost),MakeArrayView(Spines),RealPelvis,
+            (Ghost[0].GetRotation()*RealPelvis.GetRotation().Inverse()).GetNormalized(),Corrected);
+        return Ghost[5].TransformPosition(Corrected[4].InverseTransformPosition(RealTarget));
+    }
+    const FTransform Spine=CompensatedSpine(Ghost[1],Ghost[0],RealPelvis,FTransform::Identity,FTransform::Identity);
+    return Ghost[1].TransformPosition(Spine.InverseTransformPosition(RealTarget));
+}
 inline bool MountDistributed(TConstArrayView<FTransform> Ghost,TArrayView<FTransform> Pose,
     TConstArrayView<int32> Parents,TConstArrayView<int32> Spines,const FTransform& RealPelvis,
-    const FTransform& GhostAnchor,const FTransform& RealCarrier,const FVector* TargetWorld=nullptr)
+    const FTransform& GhostAnchor,const FTransform& RealCarrier)
 {
     if(Spines.Num()!=5 || Ghost.Num()!=Pose.Num() || Parents.Num()!=Ghost.Num()) return false;
     for(int32 Bone:Spines) if(!Ghost.IsValidIndex(Bone)) return false;
     FQuat Counter=PelvisCounterRotation(Ghost[0],RealPelvis,GhostAnchor,RealCarrier);
     FTransform Corrected[5];
     BuildDistributedSpines(Ghost,Spines,RealPelvis,Counter,Corrected);
-    if(TargetWorld)
-    {
-        const FVector RealTarget=RealCarrier.InverseTransformPosition(*TargetWorld);
-        const FVector ChestLocalTarget=Ghost[Spines[4]].InverseTransformPosition(GhostAnchor.InverseTransformPosition(*TargetWorld));
-        FVector VirtualTarget=Corrected[4].TransformPosition(ChestLocalTarget);
-        double Error=FVector::DistSquared(VirtualTarget,RealTarget);
-        // A distributed turn also moves the chest. At most two bounded five-link
-        // evaluations account for that movement; accept only improvements. No
-        // iterative convergence loop, allocations, history or extra inference.
-        for(int32 Pass=0;Pass<2 && Error>1.e-8;++Pass)
-        {
-            const FQuat CandidateCounter=(AimFromPivot(Corrected[0].GetLocation(),VirtualTarget,RealTarget)*Counter).GetNormalized();
-            FTransform Candidate[5];
-            BuildDistributedSpines(Ghost,Spines,RealPelvis,CandidateCounter,Candidate);
-            const FVector CandidateTarget=Candidate[4].TransformPosition(ChestLocalTarget);
-            const double CandidateError=FVector::DistSquared(CandidateTarget,RealTarget);
-            if(!FMath::IsFinite(CandidateError) || CandidateError>=Error) break;
-            for(int32 I=0;I<5;++I) Corrected[I]=Candidate[I];
-            Counter=CandidateCounter;VirtualTarget=CandidateTarget;Error=CandidateError;
-        }
-    }
     // Each subtree follows its nearest spine joint. This keeps attachment
     // translations/bone lengths and works independently of bone array ordering.
     for(int32 Bone=0;Bone<Ghost.Num();++Bone)

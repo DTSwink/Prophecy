@@ -101,22 +101,8 @@ bool ColliderRoles(FName Attack, TArray<FName>& Bones, bool& Sword)
     if (Attack == TEXT("kickr")) { Bones = {TEXT("calf_r"), TEXT("foot_r"), TEXT("ball_r")}; return true; }
     Sword = Attack == TEXT("pike") || Attack == TEXT("slashl") || Attack == TEXT("slashr")
         || Attack == TEXT("slashld") || Attack == TEXT("slashrd") || Attack == TEXT("slashlu") || Attack == TEXT("slashru");
+    if (Sword) Bones.Add(TEXT("hand_r"));
     return Sword;
-}
-}
-
-namespace
-{
-AActor* HeldPunchSword(const AProphecyAgent* Agent,const TArray<FName>& Bones)
-{
-    if (!IsValid(Agent)) return nullptr;
-    const FName Hand=Bones.Contains(TEXT("hand_r")) ? FName(TEXT("hand_r"))
-        : Bones.Contains(TEXT("hand_l")) ? FName(TEXT("hand_l")) : NAME_None;
-    if (Hand.IsNone()) return nullptr;
-    AActor* Sword=Agent->GetHeldSword();
-    if (!IsValid(Sword) || Sword->IsActorBeingDestroyed()) return nullptr;
-    const auto* Mesh=Agent->GetPoseReferenceMesh();
-    return Mesh && Mesh->GetSocketBoneName(Agent->SwordHandSocket)==Hand ? Sword : nullptr;
 }
 }
 
@@ -128,7 +114,7 @@ TArray<FName> UProphecyAttackControlLibrary::GetAttackBones(FName Attack,AProphe
     if (Attack==TEXT("kickr"))return {TEXT("foot_r"),TEXT("calf_r")};
     TArray<FName> Bones;bool Sword=false;
     ProphecyAttackControls::ColliderRoles(Attack,Bones,Sword);
-    if (Sword || HeldPunchSword(Agent,Bones))Bones.Add(TEXT("sword"));
+    if (Sword)Bones.Add(TEXT("sword"));
     return Bones;
 }
 
@@ -161,14 +147,10 @@ bool UProphecyAttackControlLibrary::GetNNAttackColliders(AProphecyAgent* Agent, 
     {
         if (AActor* Held = Agent->GetHeldSword()) SwordCollider = Cast<UStaticMeshComponent>(Held->GetRootComponent());
     }
-    else
-    {
-        if (AActor* Held=HeldPunchSword(Agent,BoneNames)) SwordCollider=Cast<UStaticMeshComponent>(Held->GetRootComponent());
-        const auto* Mesh = Agent->GetPoseReferenceMesh();
-        const auto* Asset = Mesh ? Mesh->GetPhysicsAsset() : nullptr;
-        // ball_* is returned only when it is a separate PHAT body, just like contact detection.
-        BoneNames.RemoveAll([Asset](FName Bone) { return !Asset || Asset->FindBodyIndex(Bone) == INDEX_NONE; });
-    }
+    const auto* Mesh = Agent->GetPoseReferenceMesh();
+    const auto* Asset = Mesh ? Mesh->GetPhysicsAsset() : nullptr;
+    // Return only actual PHAT bodies, including the sword attack's right hand.
+    BoneNames.RemoveAll([Asset](FName Bone) { return !Asset || Asset->FindBodyIndex(Bone) == INDEX_NONE; });
     return true;
 }
 
@@ -265,7 +247,7 @@ bool FProphecyAttackControlsTest::RunTest(const FString&)
     for (FName Attack : {FName(TEXT("pike")), FName(TEXT("slashl")), FName(TEXT("slashr")), FName(TEXT("slashld")), FName(TEXT("slashrd")), FName(TEXT("slashlu")), FName(TEXT("slashru"))})
     {
         ProphecyAttackControls::ColliderRoles(Attack, Bones, Sword);
-        TestTrue(TEXT("Sword attacks exclude arm bodies"), Sword && Bones.IsEmpty());
+        TestTrue(TEXT("Sword attacks include right hand only alongside sword"), Sword && Bones == TArray<FName>{TEXT("hand_r")});
     }
     ProphecyAttackControls::ColliderRoles(TEXT("kickl"), Bones, Sword);
     TestTrue(TEXT("Left kick bodies"), Bones == TArray<FName>{TEXT("calf_l"), TEXT("foot_l"), TEXT("ball_l")});

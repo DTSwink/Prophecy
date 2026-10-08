@@ -12,6 +12,11 @@ public:
 		FQuat UpperArmRotation = FQuat::Identity;
 	};
 	struct FPreparationPose { FArmPreparation Arms[2]; };
+	struct FHalfReach
+	{
+		FTransform RealPelvis; // In the fixed ghost anchor, using the next published lower pose.
+		bool bDistributed = false;
+	};
 	struct FStepSettings
 	{
 		int32 FrozenPinIterations = 0; // 0 uses the geometry contract (audits).
@@ -20,9 +25,9 @@ public:
 		const FPreparationPose* EntryPose = nullptr;
 		// Transient per-call context; no persistent native model layout change.
 		const FPelvisInertiaStepContext* PelvisInertia = nullptr;
+		const FHalfReach* HalfReach = nullptr;
 		bool bLeftHandConstraint = false;
 		float LeftHandMaxBendDegrees = 55.f;
-		bool bBlockArmed = false;
 	};
 	int32 InputBatchSize = 1;
 	bool Initialize(const FString& Directory, const TSharedPtr<FJsonObject>& Contract, bool bGpu = false, const FString& AuditGeometryPath = FString());

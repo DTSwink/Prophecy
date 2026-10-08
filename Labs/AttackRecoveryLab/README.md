@@ -22,6 +22,10 @@ preserved here independently of Unreal's deliberately unchanged .29 profile.
 
 ## Controls
 
+The October 8 recovery milestone refreshes this snapshot's saved lab state,
+including hookR main inertia .10, return time .28 seconds and easing 0.
+The runtime algorithm and portable launcher are unchanged.
+
 The attack/variant picker, top yaw slider, Snapshot and Refresh stay visible.
 **Motion** contains return tuning, method/space selectors, bone weights/profile
 copy and the per-attack Main inertia. **View** contains display/gizmos and

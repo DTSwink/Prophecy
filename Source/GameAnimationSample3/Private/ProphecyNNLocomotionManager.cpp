@@ -8,9 +8,11 @@
 #include "ProphecyAttackStartFKCore.h"
 #include "ProphecyAttackMotionInertia.h"
 #include "ProphecyAttackFootLocomotion.h"
+#include "ProphecyKickLocomotion.h"
 #include "ProphecyAttackFootLocomotionMath.h"
 #include "ProphecyAttackStartInertiaMath.h"
 #include "ProphecyHalfAttackCompensation.h"
+#include "ProphecyHalfAttackMount.h"
 #include "ProphecySpecialRoll.h"
 #include "ProphecySpecialStart.h"
 #include "ProphecyAttackWrist.h"
@@ -18,6 +20,7 @@
 #include "ProphecyRootFacing.h"
 #include "ProphecyAgentTime.h"
 #include "ProphecySwordAttackCollision.h"
+#include "ProphecyGhostAttackLibrary.h"
 #include "ProphecyLimbCollision.h"
 #include "ProphecyNNDefenseRuntime.h"
 #include "ProphecyDefenseArmedGate.h"
@@ -148,6 +151,8 @@ namespace
 	struct FAttackEndPrediction
 	{
 		TArray<float> Input,Output;
+		FTransform HalfReachPelvis;
+		bool bHalfReach=false,bDistributed=false;
 		FVector2D FrozenRaw=FVector2D::ZeroVector,FrozenPin=FVector2D::ZeroVector,AttackRaw=FVector2D::ZeroVector;
 	};
 	// Exists only after an accepted one-frame extension; no live FImpl layout change.
@@ -1574,6 +1579,7 @@ namespace
 		CleanState(OutLowerState, Impl);
 		}
 
+		if (!OutUpperState) return;
 		FMemory::Memzero(OutUpperState, UpperStateDim * sizeof(float));
 		for (int32 CoreIndex = 0; CoreIndex < Impl.UpperCoreBoneNames.Num(); ++CoreIndex)
 		{
@@ -1609,6 +1615,25 @@ namespace
 				OutUpperState + Offset + 9);
 		}
 		CleanUpperState(OutUpperState);
+	}
+
+	void RestoreKickRunFrame(const AProphecyNNLocomotionManager::FImpl& Impl,
+		const ProphecyKickLocomotion::FRunLegFrame& Frame,int32 Side,float* State,const FVector3f& Root,float Yaw)
+	{
+		float* Leg=State+9+16*Side;
+		FMemory::Memcpy(Leg,Frame.Leg,sizeof(Frame.Leg));
+		if(Root==Frame.Root && Yaw==Frame.Yaw)return;
+		const FVector3f Delta=TransformRow(Root-Frame.Root,YawMatrix(Frame.Yaw));
+		const FMat3f From=Impl.SeedRootRot,ToInverse=Transpose(Multiply(From,YawMatrix(-WrapAngle(Yaw-Frame.Yaw))));
+		WriteStateVec3(Leg,0,TransformRow(TransformRow(ReadStateVec3(Leg,0),From)-Delta,ToInverse));
+		for(int32 Offset:{3,9})WriteRot6(Multiply(Multiply(MatrixFromRot6(Leg+Offset),From),ToInverse),Leg+Offset);
+	}
+	void RestoreKickRunHistory(AProphecyNNLocomotionManager::FImpl& Impl,int32 Index,const AProphecyAgent* Actor)
+	{
+		const auto* H=ProphecyKickLocomotion::FindRunLeg(Actor);if(!H)return;
+		const auto& A=Impl.Agents[Index];
+		RestoreKickRunFrame(Impl,H->Current,H->Side,StateSlice(Impl.CurStateBuffer,Index),A.CurRootPos,A.CurRootYaw);
+		RestoreKickRunFrame(Impl,H->Previous,H->Side,StateSlice(Impl.PrevStateBuffer,Index),A.PrevRootPos,A.PrevRootYaw);
 	}
 
 	// Accepted FK output is the next NN prior, in the same predicted mover frame
@@ -3483,6 +3508,14 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 		auto* SpeedLimits = !bBridgeDriving && (!Agent.Slash.bActive || Agent.Slash.bHalf)
 			? ProphecyRootSpeedLimits::Find(InputActor) : nullptr;
 		double LimitedWindowYaw[FutureWindow];
+		// Restore after physical sampling, before both pose and velocity inputs are
+		// built. A visible kick (including physical feedback) cannot enter this leg.
+		if(Agent.Slash.bActive && ProphecyKickLocomotion::Side(Agent.Slash.Family)!=INDEX_NONE)
+		{
+			if(!Agent.Slash.bHalf && ProphecyAttackFootLocomotion::Mask(InputActor))
+				RestoreKickRunHistory(*Impl,AgentIndex,InputActor);
+			else ProphecyKickLocomotion::ClearRunLeg(InputActor);
+		}
 		const float* CurrentState = StateSlice(Impl->CurStateBuffer, AgentIndex);
 		const float* PreviousState = StateSlice(Impl->PrevStateBuffer, AgentIndex);
 		float* Write = Impl->InputBuffer.GetData() + AgentIndex * InputDim;
@@ -6355,6 +6388,7 @@ void UProphecyNNLocomotionWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 #include "ProphecySlashNative.inl"
 #include "Tests/ProphecySlashFastGeometryTests.inl"
 #include "ProphecyNNSlashRuntime.inl"
+#include "Tests/ProphecyKickRunGhostTests.inl"
 #include "ProphecyNNDefenseRuntime.inl"
 #include "ProphecyNNDodgeRuntime.inl"
 

@@ -1,6 +1,8 @@
 #include "ProphecyAttackFootLocomotionLibrary.h"
+#include "ProphecyKickLocomotion.h"
 #include "ProphecyNNModifierDebug.h"
 #include "ProphecyAttackFootLocomotion.h"
+#include "ProphecyGhostLocoInertia.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyNNPresentation.h"
 #include "ProphecyAgent.h"
@@ -17,12 +19,23 @@ static TSet<TWeakObjectPtr<const AProphecyAgent>> GhostSettings,GhostBaselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FGhostRun> GhostRuns;
 // Separate storage leaves existing Live Coding ghost layouts intact.
 struct FGhostInertiaConfig { int32 Ticks=12;float Multiplier=1; };
-struct FGhostInertiaRun { FVector Total=FVector::ZeroVector;double Duration=0,Elapsed=0,Pending=0; };
+struct FGhostInertiaRun { FVector Total=FVector::ZeroVector;double Duration=0,Elapsed=0,Pending=0;bool bKick=false,bKickOverride=false; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FGhostInertiaConfig> GhostInertiaSettings,GhostInertiaBaselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FGhostInertiaRun> GhostInertiaRuns;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FGhostInertiaConfig> KickInertiaSettings,KickInertiaBaselines;
+static const FGhostInertiaConfig* InertiaConfig(const AProphecyAgent* A,bool Kick)
+{
+    if(Kick)if(const auto* C=KickInertiaSettings.IsEmpty()?nullptr:KickInertiaSettings.Find(A))return C->Multiplier>0?C:nullptr;
+    return GhostInertiaSettings.IsEmpty()?nullptr:GhostInertiaSettings.Find(A);
+}
 static constexpr auto GhostInertiaClock=ProphecyBlendClock::EKind::GhostLocoInertia;
 static void ClearGhostInertia(const AProphecyAgent* A)
 {if(!GhostInertiaRuns.IsEmpty() && GhostInertiaRuns.Remove(A))ProphecyBlendClock::Stop(A,GhostInertiaClock);}
+void RetargetGhostInertia(const AProphecyAgent* A,FName Attack)
+{
+    if(const auto* R=GhostInertiaRuns.IsEmpty()?nullptr:GhostInertiaRuns.Find(A);
+        R && R->bKick && ProphecyKickLocomotion::Side(Attack)==INDEX_NONE)ClearGhostInertia(A);
+}
 static FVector GhostInertiaStep(FGhostInertiaRun& R,double Seconds)
 {
     const double Before=R.Duration>0?FMath::Clamp(R.Elapsed/R.Duration,0.,1.):0.;
@@ -64,7 +77,7 @@ void CancelGhost(const AProphecyAgent* A,float* State)
         GhostRuns.Remove(A);
     }
 }
-void BeginGhost(const AProphecyAgent* A,const float* State,TConstArrayView<FTransform> Pose,const FTransform& Carrier)
+void BeginGhost(const AProphecyAgent* A,const float* State,TConstArrayView<FTransform> Pose,const FTransform& Carrier,FName Attack)
 {
     const auto* R=FindActive(A);if(!R || !GhostSettings.Contains(A))return;
     auto& G=GhostRuns.FindOrAdd(A);G=FGhostRun{};G.PoseId=R->PoseId;
@@ -75,13 +88,14 @@ void BeginGhost(const AProphecyAgent* A,const float* State,TConstArrayView<FTran
     for(int32 S=0;S<2;++S)for(int32 B=0;B<4;++B)
         G.PreviousWorld[1+S*4+B]=G.CurrentWorld[1+S*4+B]=Pose[G.Legs[S][B]]*Carrier;
     ClearGhostInertia(A);
-    if(const auto* C=GhostInertiaSettings.IsEmpty()?nullptr:GhostInertiaSettings.Find(A))
+    const bool Kick=ProphecyKickLocomotion::Side(Attack)!=INDEX_NONE;
+    if(const auto* C=InertiaConfig(A,Kick))
     {
         TArray<FTransform> Roots;TArray<float> Times;
         if(A->GetLocomotionRootWindow(Roots,Times) && Roots.Num()>=3)
         {
             FGhostInertiaRun Run;Run.Total=(Roots[2].GetLocation()-Roots[1].GetLocation())*C->Multiplier;
-            Run.Duration=double(C->Ticks)/60.;
+            Run.Duration=double(C->Ticks)/60.;Run.bKick=Kick;Run.bKickOverride=Kick && KickInertiaSettings.Contains(A);
             if(!Run.Total.ContainsNaN() && !Run.Total.IsZero())
             {GhostInertiaRuns.Add(A,Run);ProphecyBlendClock::Start(A,GhostInertiaClock,Run.Duration);}
         }
@@ -144,7 +158,7 @@ static void EnsureCleanup()
             if(!It->IsValid()||It->Get()->GetWorld()==W)It.RemoveCurrent();
         for(auto It=GhostRuns.CreateIterator();It;++It)
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
-        for(auto* M:{&GhostInertiaSettings,&GhostInertiaBaselines})for(auto It=M->CreateIterator();It;++It)
+        for(auto* M:{&GhostInertiaSettings,&GhostInertiaBaselines,&KickInertiaSettings,&KickInertiaBaselines})for(auto It=M->CreateIterator();It;++It)
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
         for(auto It=GhostInertiaRuns.CreateIterator();It;++It)
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
@@ -216,13 +230,24 @@ uint8 ReleaseAll(const AProphecyAgent* A)
     uint8 Released=0;if(auto* R=Runs.Find(A)){Released=R->Loco;R->Loco=0;}
     ClearHandoff(A);ClearFreezeWindow(A);ClearPoles(A);return Released;
 }
+uint8 RestrictFeet(const AProphecyAgent* A,uint8 Allowed)
+{
+    if(!Allowed)return ReleaseAll(A);
+    auto* R=Runs.Find(A);if(!R)return 0;
+    const uint8 Released=R->Loco&~Allowed;R->Loco&=Allowed;
+    for(int32 S=0;S<2;++S)if(Released&(1<<S))
+    {ProphecyBlendClock::Stop(A,HandoffClock(S));ProphecyBlendClock::Stop(A,PoleClock(S));}
+    if(auto* H=Handoffs.Find(A))H->Started&=Allowed;
+    if(auto* P=PoleBlends.Find(A)){P->Feet&=Allowed;P->Running&=Allowed;}
+    return Released;
+}
 float WalkWeight(const FRun& R,float Current)
 {return R.Config.Mode==EProphecyAttackFootLocomotionMode::Walk?1.f:R.Config.Mode==EProphecyAttackFootLocomotionMode::Run?0.f:Current;}
-void Begin(const AProphecyAgent* A,int32 Id,TConstArrayView<FName> Names,TConstArrayView<FTransform> Pose,const FTransform& Carrier,const FVector& Target)
+void Begin(const AProphecyAgent* A,int32 Id,TConstArrayView<FName> Names,TConstArrayView<FTransform> Pose,const FTransform& Carrier,const FVector& Target,uint8 AllowedFeet)
 {
     if(Runs.Contains(A))return; // Half/full toggles never reacquire an attack-owned foot.
     const auto* C=Configs.IsEmpty()?nullptr:Configs.Find(A);if(!C || Pose.IsEmpty())return;
-    FRun R;R.Config=*C;R.PoseId=Id;R.Loco=3;
+    FRun R;R.Config=*C;R.PoseId=Id;R.Loco=AllowedFeet&3;
     for(int32 Side=0;Side<2;++Side)
     {
         const FName N[]={Side?TEXT("thigh_r"):TEXT("thigh_l"),Side?TEXT("calf_r"):TEXT("calf_l"),Side?TEXT("foot_r"):TEXT("foot_l"),Side?TEXT("ball_r"):TEXT("ball_l")};
@@ -262,27 +287,42 @@ void Suspend(const AProphecyAgent* A,bool Half)
     R->Suspended=Half;
 }
 void End(const AProphecyAgent* A){ClearGhostInertia(A);if(!Runs.IsEmpty())Runs.Remove(A);GhostRuns.Remove(A);ClearFreezeWindow(A);ClearHandoff(A);ClearPoles(A);}
-void Remove(const AProphecyAgent* A){End(A);Configs.Remove(A);Baselines.Remove(A);FreezeSettings.Remove(A);FreezeBaselines.Remove(A);HandoffSettings.Remove(A);HandoffBaselines.Remove(A);PoleSettings.Remove(A);PoleBaselines.Remove(A);GhostSettings.Remove(A);GhostBaselines.Remove(A);GhostInertiaSettings.Remove(A);GhostInertiaBaselines.Remove(A);}
-void CaptureReset(const AProphecyAgent* A){if(const auto* C=Configs.Find(A))Baselines.Add(A,*C);else Baselines.Remove(A);
+void Remove(const AProphecyAgent* A){ProphecyKickLocomotion::Remove(A);End(A);Configs.Remove(A);Baselines.Remove(A);FreezeSettings.Remove(A);FreezeBaselines.Remove(A);HandoffSettings.Remove(A);HandoffBaselines.Remove(A);PoleSettings.Remove(A);PoleBaselines.Remove(A);GhostSettings.Remove(A);GhostBaselines.Remove(A);GhostInertiaSettings.Remove(A);GhostInertiaBaselines.Remove(A);KickInertiaSettings.Remove(A);KickInertiaBaselines.Remove(A);}
+void CaptureReset(const AProphecyAgent* A){ProphecyKickLocomotion::CaptureReset(A);if(const auto* C=Configs.Find(A))Baselines.Add(A,*C);else Baselines.Remove(A);
 if(GhostSettings.Contains(A))GhostBaselines.Add(A);else GhostBaselines.Remove(A);
 if(const auto* C=GhostInertiaSettings.Find(A))GhostInertiaBaselines.Add(A,*C);else GhostInertiaBaselines.Remove(A);
+if(const auto* C=KickInertiaSettings.Find(A))KickInertiaBaselines.Add(A,*C);else KickInertiaBaselines.Remove(A);
 if(const auto* V=FreezeSettings.Find(A))FreezeBaselines.Add(A,*V);else FreezeBaselines.Remove(A);
 if(const auto* V=HandoffSettings.Find(A))HandoffBaselines.Add(A,*V);else HandoffBaselines.Remove(A);
 if(const auto* V=PoleSettings.Find(A))PoleBaselines.Add(A,*V);else PoleBaselines.Remove(A);}
-void RestoreReset(const AProphecyAgent* A){End(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A))Configs.Add(A,*C);
+void RestoreReset(const AProphecyAgent* A){ProphecyKickLocomotion::RestoreReset(A);End(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A))Configs.Add(A,*C);
 GhostSettings.Remove(A);if(GhostBaselines.Contains(A))GhostSettings.Add(A);
 GhostInertiaSettings.Remove(A);if(const auto* C=GhostInertiaBaselines.Find(A))GhostInertiaSettings.Add(A,*C);
+KickInertiaSettings.Remove(A);if(const auto* C=KickInertiaBaselines.Find(A))KickInertiaSettings.Add(A,*C);
 FreezeSettings.Remove(A);if(const auto* V=FreezeBaselines.Find(A))FreezeSettings.Add(A,*V);
 HandoffSettings.Remove(A);if(const auto* V=HandoffBaselines.Find(A))HandoffSettings.Add(A,*V);
 PoleSettings.Remove(A);if(const auto* V=PoleBaselines.Find(A))PoleSettings.Add(A,*V);}
-void ForgetReset(const AProphecyAgent* A){Baselines.Remove(A);FreezeBaselines.Remove(A);HandoffBaselines.Remove(A);PoleBaselines.Remove(A);GhostBaselines.Remove(A);GhostInertiaBaselines.Remove(A);}
+void ForgetReset(const AProphecyAgent* A){ProphecyKickLocomotion::ForgetReset(A);Baselines.Remove(A);FreezeBaselines.Remove(A);HandoffBaselines.Remove(A);PoleBaselines.Remove(A);GhostBaselines.Remove(A);GhostInertiaBaselines.Remove(A);KickInertiaBaselines.Remove(A);}
 }
 bool UProphecyAttackFootLocomotionLibrary::SetGhostLocoInertia(AProphecyAgent* A,bool Enabled,int32 DurationTicks,float Multiplier)
 {
     using namespace ProphecyAttackFootLocomotion;
     if(!IsInGameThread()||!IsValid(A)||A->IsActorBeingDestroyed()||DurationTicks<0||!FMath::IsFinite(Multiplier)||Multiplier<0)return false;
-    if(!Enabled || Multiplier==0){GhostInertiaSettings.Remove(A);ClearGhostInertia(A);return true;}
+    if(!Enabled || Multiplier==0)
+    {
+        GhostInertiaSettings.Remove(A);
+        if(const auto* R=GhostInertiaRuns.Find(A);R && !R->bKickOverride)ClearGhostInertia(A);
+        return true;
+    }
     EnsureCleanup();GhostInertiaSettings.Add(A,{DurationTicks,Multiplier});return true;
+}
+bool UProphecyAttackFootLocomotionLibrary::SetGhostLocoInertiaKick(AProphecyAgent* A,bool Enabled,int32 DurationTicks,float Multiplier)
+{
+    using namespace ProphecyAttackFootLocomotion;
+    if(!IsInGameThread()||!IsValid(A)||A->IsActorBeingDestroyed()||DurationTicks<0||!FMath::IsFinite(Multiplier)||Multiplier<0)return false;
+    EnsureCleanup();KickInertiaSettings.Add(A,{DurationTicks,Enabled?Multiplier:0.f});
+    if(!Enabled || Multiplier==0)if(const auto* R=GhostInertiaRuns.Find(A);R && R->bKick)ClearGhostInertia(A);
+    return true;
 }
 bool UProphecyAttackFootLocomotionLibrary::SetGhostLocoDrag(AProphecyAgent* A,bool Enabled)
 {
@@ -474,7 +514,30 @@ bool FProphecyGhostInertiaLifecycle::RunTest(const FString&)
     TestFalse(TEXT("Reset clears active displacement"),GhostInertiaRuns.Contains(A));
     GhostInertiaRuns.Add(A,I);End(A);TestFalse(TEXT("Attack end cancels pending displacement"),GhostInertiaRuns.Contains(A));
     GhostInertiaRuns.Add(A,I);float State[82]={};CancelGhost(A,State);TestFalse(TEXT("Kick switch clears pending displacement"),GhostInertiaRuns.Contains(A));
-    Remove(A);TestFalse(TEXT("Removal clears config and baseline"),GhostInertiaSettings.Contains(A)||GhostInertiaBaselines.Contains(A));
+    TestTrue(TEXT("Kick override accepted"),L::SetGhostLocoInertiaKick(A,true,18,2));
+    TestEqual(TEXT("Kick selects independent duration"),InertiaConfig(A,true)->Ticks,18);
+    TestEqual(TEXT("Non-kick retains general multiplier"),InertiaConfig(A,false)->Multiplier,3.f);
+    CaptureReset(A);
+    I.bKick=I.bKickOverride=true;GhostInertiaRuns.Add(A,I);
+    L::SetGhostLocoInertia(A,false,12,1);
+    TestTrue(TEXT("General disable cannot cancel active kick override"),GhostInertiaRuns.Contains(A));
+    TestTrue(TEXT("General disable leaves kick configuration"),InertiaConfig(A,true)!=nullptr);
+    RetargetGhostInertia(A,TEXT("jabR"));
+    TestFalse(TEXT("Changing a kick into a punch cancels remaining kick displacement"),GhostInertiaRuns.Contains(A));
+    GhostInertiaRuns.Add(A,I);
+    TestNull(TEXT("Other attacks disabled"),InertiaConfig(A,false));
+    L::SetGhostLocoInertia(A,true,40,4);
+    TestEqual(TEXT("General setter cannot overwrite kick"),InertiaConfig(A,true)->Multiplier,2.f);
+    L::SetGhostLocoInertiaKick(A,false,18,2);
+    TestNull(TEXT("Explicit kick disable overrides enabled general"),InertiaConfig(A,true));
+    TestFalse(TEXT("Kick disable cancels active kick"),GhostInertiaRuns.Contains(A));
+    I.bKick=I.bKickOverride=false;GhostInertiaRuns.Add(A,I);
+    L::SetGhostLocoInertiaKick(A,false,18,2);
+    TestTrue(TEXT("Kick setter cannot cancel non-kick displacement"),GhostInertiaRuns.Contains(A));
+    RestoreReset(A);
+    TestEqual(TEXT("Reset restores kick profile"),InertiaConfig(A,true)->Ticks,18);
+    TestEqual(TEXT("Reset restores general independently"),InertiaConfig(A,false)->Multiplier,3.f);
+    Remove(A);TestFalse(TEXT("Removal clears config and baseline"),GhostInertiaSettings.Contains(A)||GhostInertiaBaselines.Contains(A)||KickInertiaSettings.Contains(A)||KickInertiaBaselines.Contains(A));
     W->DestroyWorld(false);return !HasAnyErrors();
 }
 // Development capture bridge for new enums whose Python wrappers are unavailable
@@ -516,6 +579,11 @@ bool FProphecyAttackFootAuthoringTest::RunTest(const FString&)
     R.Loco=2;R.Suspended=false;Runs.Add(A,R);
     Suspend(A,true);TestEqual(TEXT("Half mode has no extra foot policy request"),Mask(A),uint8(0));
     Suspend(A,false);TestEqual(TEXT("Full rejoin preserves one-way progress"),Mask(A),uint8(2));
+    R.Loco=3;Runs.Add(A,R);
+    TestEqual(TEXT("Kick restriction releases only striking foot"),RestrictFeet(A,2),uint8(1));
+    TestEqual(TEXT("Kick restriction preserves support"),Mask(A),uint8(2));
+    TestEqual(TEXT("Restriction cannot reacquire released foot"),RestrictFeet(A,3),uint8(0));
+    TestEqual(TEXT("Released kick foot stays released"),Mask(A),uint8(2));
     CaptureReset(A);RestoreReset(A);TestNull(TEXT("Reset removes transient ownership"),FindActive(A));
     TestTrue(TEXT("Reset retains config"),Configs.Contains(A));
     L::SetAttackFootLocomotion(A,false,EProphecyAttackFootLocomotionMode::Walk,40,15);

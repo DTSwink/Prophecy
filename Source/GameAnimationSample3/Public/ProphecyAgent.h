@@ -230,7 +230,7 @@ public:
 	float GetSwordAttachedInertiaScale() const { return SwordAttachedInertiaScale; }
 
 	/** Internal attack lifecycle notification; includes full and half attacks. */
-	void NotifySwordAttackState(bool bAttacking);
+	void NotifySwordAttackState(bool bAttacking, int64 EntryTicks=-1);
 	bool IsSwordAttackActive() const { return bSwordAttackActive; }
 
 private:
@@ -575,12 +575,12 @@ public:
 	bool GetMassWeightedPoseError(FVector& LinearErrorKgCm, FVector& AngularErrorKgRadians,
 		float& TotalMassKg, int32& BodyCount) const;
 
-	/** Sets the same linear and angular feedback tolerance on every feedback limb. */
+	/** Sets every feedback limb. Delay seconds use 60 unpaused ticks/second; zero applies now. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback",
 		meta = (DisplayName = "Set All Physical Feedback Tolerances", ClampMin = "0.0"))
-	bool SetAllPhysicalFeedbackTolerances(float LinearToleranceCm, float AngularToleranceDegrees);
+	bool SetAllPhysicalFeedbackTolerances(float LinearToleranceCm, float AngularToleranceDegrees, float Delay = 0.f);
 
-	/** Sets the linear and angular feedback tolerance on one recurrently controlled bone. */
+	/** Sets one recurrently controlled bone. Delay seconds use 60 unpaused ticks/second; zero applies now. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback",
 		meta = (DisplayName = "Set Physical Feedback Tolerance", ClampMin = "0.0"))
 	bool SetPhysicalFeedbackTolerance(
@@ -588,9 +588,10 @@ public:
 		float LinearToleranceCm,
 		float AngularToleranceDegrees,
 		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
-		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both,
+		float Delay = 0.f);
 
-	/** Sets feedback tolerances on every recurrently controlled bone at or below ParentBone. */
+	/** Sets feedback bones at/below ParentBone. Delay seconds use 60 unpaused ticks/second; zero applies now. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Physical Feedback",
 		meta = (DisplayName = "Set Physical Feedback Tolerance Below", ClampMin = "0.0"))
 	int32 SetPhysicalFeedbackToleranceBelow(
@@ -599,7 +600,8 @@ public:
 		float LinearToleranceCm,
 		float AngularToleranceDegrees,
 		EProphecyLocomotionSelection Locomotion = EProphecyLocomotionSelection::Both,
-		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both);
+		EProphecyEquipmentSelection Equipment = EProphecyEquipmentSelection::Both,
+		float Delay = 0.f);
 
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|Physical Feedback")
 	bool GetPhysicalFeedbackTolerance(
@@ -701,7 +703,7 @@ public:
 
 	/** Start the accepted Slash2 policy from this agent's current pose, not a recorded clip.
 	 * Attack: slashL/R/LD/RD/LU/RU, pike, jabL/R, hookL/R, overL/R, headbutt, kickL/R.
-	 * Target is an absolute Unreal world position in centimetres. Kicks reject half mode.
+	 * Target is an absolute Unreal world position in centimetres. Kicks ignore half requests and use full mode.
 	 * While already attacking, updates target/family/victim and half/full ownership in place.
 	 * Preserves Armed, Hit, policy progress and recurrent pose history; no end/start event.
 	 * Use Stop NN Attack first when a fresh attack/reset is wanted.
@@ -870,7 +872,8 @@ public:
 	bool GetNNAttackTarget(FVector& RequestedWorldTarget, FVector& EffectiveWorldTarget,
 		FVector& GhostWorldTarget) const;
 
-	/** Change full/upper-only ownership without restarting the attack or its ghost history. */
+	/** Change full/upper-only ownership without restarting the attack or its ghost history.
+	 * Kicks stay full-body: half requests succeed without changing their ownership. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|NN Attack")
 	bool SetNNHalfAttackEnabled(bool bEnabled);
 
@@ -927,7 +930,16 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category="Prophecy|Agent|Stunned", meta=(DisplayName="Stunned Ended"))
 	void OnStunnedEnded();
 
+	/** Current attack outputs remain inactive/None while idle. PreviousAttackName is
+	 * the most recently ended attack, including explicit stops/interruption; None
+	 * until the first attack ends. Entry/retarget/full-half changes do not update it. */
 	UFUNCTION(BlueprintPure, Category = "Prophecy|Agent|NN Attack")
+	bool GetNNAttackState(FName& Attack, bool& bHalfAttack, bool& bArmed, bool& bHit, int32& PolicyFrame, FName& PreviousAttackName) const
+	{
+		PreviousAttackName=LastEndedAttackName;
+		return GetNNAttackState(Attack,bHalfAttack,bArmed,bHit,PolicyFrame);
+	}
+	// Native callers that only need current state retain the existing fast path.
 	bool GetNNAttackState(FName& Attack, bool& bHalfAttack, bool& bArmed, bool& bHit, int32& PolicyFrame) const;
 
 	/** Per-agent attack number: 0 before the first attack, incremented once at accepted
@@ -1222,6 +1234,8 @@ private:
 	friend class AProphecyNNLocomotionManager;
 	UPROPERTY(Transient, DuplicateTransient)
 	int64 AttackCounter = 0;
+	UPROPERTY(Transient, DuplicateTransient)
+	FName LastEndedAttackName = NAME_None;
 	bool EnterHalfSimulation();
 	bool LeaveHalfSimulation(EProphecyAgentSimulationMode NextMode);
 	void ReleaseHalfSimulationState();

@@ -10,7 +10,7 @@ struct FRun
 uint8 Mask(const AProphecyAgent* Agent);
 FRun* FindActive(const AProphecyAgent* Agent);
 void Begin(const AProphecyAgent* Agent,int32 Id,TConstArrayView<FName> Names,
-    TConstArrayView<FTransform> Pose,const FTransform& Carrier,const FVector& Target);
+    TConstArrayView<FTransform> Pose,const FTransform& Carrier,const FVector& Target,uint8 AllowedFeet=3);
 void Suspend(const AProphecyAgent* Agent,bool Half);
 void End(const AProphecyAgent* Agent);
 void Remove(const AProphecyAgent* Agent);
@@ -33,6 +33,7 @@ uint8 Step(FRun& Run,const FVector& Pelvis,const FVector& Target,float Floor,
 uint8 Advance(const AProphecyAgent* Agent,FRun& Run,const FVector& Pelvis,const FVector& Target,float Floor,
     const FVector& Left,const FVector& Right,float (&Position)[2],float& AlphaRotation);
 uint8 ReleaseAll(const AProphecyAgent* Agent);
+uint8 RestrictFeet(const AProphecyAgent* Agent,uint8 AllowedFeet);
 // -1 means disabled for that foot. Clocks start at drag entry, not handoff.
 void AdvancePoles(const AProphecyAgent* Agent,uint8 Remaining,float (&AttackAlpha)[2]);
 // Separate sparse state keeps retained Live Coding layouts unchanged. The attack
@@ -44,7 +45,7 @@ struct FGhostRun
     int32 Legs[2][4],PoseId=INDEX_NONE;
     bool HasPose=false,HasReal=false;
 };
-void BeginGhost(const AProphecyAgent* Agent,const float* AttackState,TConstArrayView<FTransform> Pose,const FTransform& Carrier);
+void BeginGhost(const AProphecyAgent* Agent,const float* AttackState,TConstArrayView<FTransform> Pose,const FTransform& Carrier,FName Attack=NAME_None);
 FGhostRun* FindGhost(const AProphecyAgent* Agent);
 void CancelGhost(const AProphecyAgent* Agent,float* AttackState);
 // Once per accepted prediction, before ghost visualization and recurrence publication.

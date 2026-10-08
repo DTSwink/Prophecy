@@ -4,6 +4,8 @@
 #include "ProphecySwordAttackCollision.h"
 #include "ProphecySwordComponent.h"
 #include "ProphecySwordPhysicsLibrary.h"
+#include "ProphecyGhostAttackLibrary.h"
+#include "ProphecyAttackControls.h"
 #include "ProphecySpecialStartLibrary.h"
 #include "ProphecySpecialStart.h"
 #include "ProphecyAngularLimits.h"
@@ -932,6 +934,9 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
     if (!World || !World->InitializeSimulation(Settings).IsSuccess()) return false;
     AProphecyAgent* Agent=nullptr;FString Error;
     if (!PrepareAgent(Fixture,Agent,Error)) { AddError(Error);return false; }
+    // Exercise the legacy phases with the new cooldown explicitly disabled.
+    UProphecySwordPhysicsLibrary::SetSwordCollisionCooldown(Agent,0);
+    UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(Agent,0);
     const auto CheckNoSword=[&]()
     {
         FTransform Pose(FVector(1,2,3));FVector V(1,2,3),W(4,5,6);bool Sim=true;
@@ -939,7 +944,7 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         TestTrue(TEXT("No held sword clears all outputs"),Pose.Equals(FTransform::Identity)&&V.IsZero()&&W.IsZero()&&!Sim);
     };
     CheckNoSword();
-    const auto CheckPunchBones=[&](bool Holding,FName HeldHand)
+    const auto CheckPunchBones=[&]()
     {
         using L=UProphecyAttackControlLibrary;
         for (FName Attack:{FName(TEXT("jabL")),FName(TEXT("hookL")),FName(TEXT("overL")),
@@ -947,22 +952,21 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         {
             const auto Base=L::GetAttackBones(Attack);
             const auto Actual=L::GetAttackBones(Attack,Agent);
-            const bool Expected=Holding && Base.Contains(HeldHand);
-            TestEqual(TEXT("Only a punch with the sword-holding hand includes sword"),Actual.Contains(TEXT("sword")),Expected);
-            TestEqual(TEXT("Punch retains hand and forearm without duplicates"),Actual.Num(),2+int32(Expected));
+            TestFalse(TEXT("Punch never lists sword, including the holding hand"),Actual.Contains(TEXT("sword")));
+            TestEqual(TEXT("Punch retains exactly hand and forearm"),Actual.Num(),2);
             for (FName Bone:Base) TestTrue(TEXT("Original punch bone retained"),Actual.Contains(Bone));
         }
         for (FName Attack:{FName(TEXT("kickL")),FName(TEXT("kickR")),FName(TEXT("headbutt")),FName(NAME_None)})
             TestFalse(TEXT("Other unarmed attacks never acquire sword"),L::GetAttackBones(Attack,Agent).Contains(TEXT("sword")));
-        TestTrue(TEXT("Slash name-only convention retained"),L::GetAttackBones(TEXT("slashL"),Agent)==TArray<FName>{TEXT("sword")});
+        TestTrue(TEXT("Slash includes right hand and logical sword"),L::GetAttackBones(TEXT("slashL"),Agent)==TArray<FName>{TEXT("hand_r"),TEXT("sword")});
     };
-    CheckPunchBones(false,TEXT("hand_r"));
+    CheckPunchBones();
     UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(Agent,false);
     for (bool bSimulated:{true,false})
     {
         FProphecyJoltWorldDiagnostics Unequipped;World->GetDiagnostics(Unequipped);
         if (!TestTrue(TEXT("Equip mode"),Agent->EquipSword(bSimulated))) return false;
-        CheckPunchBones(true,TEXT("hand_r"));
+        CheckPunchBones();
         auto* Sword=Agent->GetHeldSword();auto* Blade=Cast<UStaticMeshComponent>(Sword->GetRootComponent());
         auto* Body=Sword->FindComponentByClass<UProphecyJoltBodyComponent>();
         FProphecyJoltBodyHandle Handle;if (!Body || !Body->GetBodyHandle(Handle)) return false;
@@ -1031,10 +1035,12 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         ProphecySwordAttackCollision::Armed(Agent);CheckOwn(false);Check(true);CheckBody(false);
         ProphecySwordAttackCollision::Hit(Agent);CheckOwn(false);Check(true);
         Agent->NotifySwordAttackState(false);
-        for (FName Family:{FName(TEXT("slashl")),FName(TEXT("slashrd")),FName(TEXT("pike")),FName(TEXT("hookl")),FName(TEXT("headbutt"))})
+        for (FName Family:{FName(TEXT("slashl")),FName(TEXT("slashrd")),FName(TEXT("pike")),FName(TEXT("hookl")),FName(TEXT("headbutt")),
+            FName(TEXT("jabR")),FName(TEXT("hookR")),FName(TEXT("overR"))})
         {
             Agent->NotifySwordAttackState(true);
             const bool Weapon=Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash"));
+            const bool RightPunch=Family==TEXT("jabR") || Family==TEXT("hookR") || Family==TEXT("overR");
             ProphecySwordAttackCollision::Begin(Agent,Family);Check(Weapon);CheckBody(false);CheckOwn(true);
             auto* Controller=Agent->FindComponentByClass<UProphecySwordComponent>();
             if (!Controller) return false;
@@ -1045,15 +1051,15 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
             CheckBody(false); // Weapon owner pairs restore; body-body mask remains until Hit.
             Check(Weapon);CheckOwn(!Weapon);
             Controller->RefreshOwnerCollision();Check(Weapon);CheckOwn(!Weapon);
-            ProphecySwordAttackCollision::Hit(Agent);Check(true);CheckBody(true);
+            ProphecySwordAttackCollision::Hit(Agent);Check(!RightPunch);CheckBody(true);
             FProphecyJoltWorldDiagnostics Restored;World->GetDiagnostics(Restored);
             TestEqual(TEXT("Hit retains hand and forearm exclusions"),Restored.SuppressedBodyPairCount,Before.SuppressedBodyPairCount);
             TestTrue(TEXT("Hit does not end attack context"),Agent->IsSwordAttackActive());
             TestFalse(TEXT("Hit is latched for deferred grip/rebind"),ProphecySwordAttackCollision::SuppressesOwner(Agent));
             Controller->RefreshOwnerCollision();World->GetDiagnostics(Restored);
             TestEqual(TEXT("Refresh after Hit keeps owner collisions restored"),Restored.SuppressedBodyPairCount,Before.SuppressedBodyPairCount);
-            ProphecySwordAttackCollision::Refresh(Agent);Check(true); // latched through recovery/rebind
-            ProphecySwordAttackCollision::Hit(Agent);Check(true); // repeated Hit is harmless
+            ProphecySwordAttackCollision::Refresh(Agent);Check(!RightPunch); // latched through recovery/rebind
+            ProphecySwordAttackCollision::Hit(Agent);Check(!RightPunch); // repeated Hit is harmless
             Agent->NotifySwordAttackState(false);Check(true);
         }
         ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"));Check(true);CheckOwn(true);
@@ -1063,8 +1069,18 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));ProphecySwordAttackCollision::Armed(Agent);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("hookr"));Check(false);
         ProphecySwordAttackCollision::Armed(Agent);Check(false);
-        ProphecySwordAttackCollision::Hit(Agent);Check(true);
+        ProphecySwordAttackCollision::Hit(Agent);Check(false);
         ProphecySwordAttackCollision::End(Agent);Check(true);
+        // Right-punch Armed is a hard collision override, including when Hit came first.
+        Agent->NotifySwordAttackState(true);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("jabR"),3);Check(false);
+        ProphecySwordAttackCollision::Hit(Agent);Check(true);CheckBody(true);
+        ProphecySwordAttackCollision::Armed(Agent);Check(false);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("overR"),false,false);Check(false);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("hookL"),true,true);Check(true);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("hookR"),true,true);Check(false);
+        ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("slashL"),true,true);Check(true);
+        Agent->NotifySwordAttackState(false);Check(true);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("slashl"));
         ProphecySwordAttackCollision::Armed(Agent);Check(true);CheckOwn(false);
         ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("pike"),false,false);Check(true);CheckOwn(false);
@@ -1076,6 +1092,43 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("slashr"),true,true);Check(true);
         ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("jabl"),true,true);Check(true);
         ProphecySwordAttackCollision::End(Agent);Check(true);
+        // Fresh-entry gap is sampled before full attack clears the public counter.
+        // Exercise both sides of the strict default boundary in simulated/attached modes.
+        for (int64 Gap:{int64(2),int64(3)})
+        {
+            UProphecySwordPhysicsLibrary::SetSwordCollisionMeleeGapThreshold(Agent,2);
+            UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(Agent,Gap);
+            const int64 Entry=UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(Agent);
+            ProphecyAttackControls::FullAttackStarted(Agent);
+            TestEqual(TEXT("Full entry resets the live counter"),UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(Agent),int64(0));
+            Agent->NotifySwordAttackState(true);
+            ProphecySwordAttackCollision::Begin(Agent,TEXT("slashL"),Entry);
+            Check(Gap==2);CheckOwn(true);CheckBody(false);
+            // Setter edits do not change an already selected attack rule.
+            UProphecySwordPhysicsLibrary::SetSwordCollisionMeleeGapThreshold(Agent,100);
+            ProphecySwordAttackCollision::Armed(Agent);
+            Check(Gap==2);CheckOwn(Gap>2);CheckBody(false);
+            ProphecySwordAttackCollision::RetargetFamily(Agent,TEXT("pike"),true,false);
+            Check(Gap==2);CheckOwn(Gap>2);
+            ProphecySwordAttackCollision::Hit(Agent);Check(true);CheckOwn(false);CheckBody(true);
+            ProphecySwordAttackCollision::Hit(Agent);Check(true);
+            Agent->NotifySwordAttackState(false);Check(true);
+            ProphecyAttackControls::LowerAttackFinished(Agent);
+        }
+        UProphecySwordPhysicsLibrary::SetSwordCollisionMeleeGapThreshold(Agent,2);
+        UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(Agent,0);
+        // A long-gap slash must not be reopened by residual cooldown from an earlier slash.
+        Agent->NotifySwordAttackState(true);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionCooldown(Agent,4);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("slashL"),0);
+        ProphecySwordAttackCollision::Armed(Agent);ProphecySwordAttackCollision::End(Agent);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("slashRD"),3);Check(false);CheckOwn(true);
+        ProphecySwordAttackCollision::Armed(Agent);Check(false);CheckOwn(true);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);
+        ProphecySwordAttackCollision::Hit(Agent);Check(false);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);Check(true);
+        Agent->NotifySwordAttackState(false);Check(true);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionCooldown(Agent,0);
         UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
         UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
         Agent->NotifySwordAttackState(true);
@@ -1089,6 +1142,30 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
         UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
         ProphecySwordAttackCollision::Begin(Agent,TEXT("hookl"));
         UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(Agent,false);CheckOwn(true);
+        // A completed armed slash carries external channels into the next melee,
+        // while native owner/body masks and explicit global overrides still win.
+        // Mirror the manager's active-attack flag: manual collision setters discard
+        // stale gates on idle agents, which is not the case being exercised here.
+        Agent->NotifySwordAttackState(true);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionCooldown(Agent,4);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("slashL"));
+        ProphecySwordAttackCollision::Armed(Agent);ProphecySwordAttackCollision::End(Agent);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("hookL"));Check(true);CheckOwn(true);CheckBody(false);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);Check(true);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("jabR"),0);Check(true);
+        ProphecySwordAttackCollision::Armed(Agent);Check(false);CheckBody(false);
+        ProphecySwordAttackCollision::Hit(Agent);Check(false);CheckBody(true);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);Check(false);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);
+        Agent->NotifySwordAttackState(false);Check(false); // Manual disable survives punch end.
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);Check(true);
+        Agent->NotifySwordAttackState(true);
+        ProphecySwordAttackCollision::Begin(Agent,TEXT("hookL"));Check(true);
+        UProphecySwordPhysicsLibrary::SetSwordCollisionCooldown(Agent,0);Check(false);
+        // The existing drop/re-equip case below deliberately retains this override.
+        UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);Check(false);
         FProphecyJoltBodyHandle Moving=Handle;
         if (!bSimulated && !Agent->GetJoltCharacterComponent()->GetBodyHandle(TEXT("hand_r"),Moving)) return false;
         if (!World->SetBodyVelocity(Moving,FVector(30,40,50),FVector(1,2,3),true).IsSuccess()) return false;
@@ -1101,10 +1178,10 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
             && W.Equals(Expected.AngularVelocityRadiansPerSecond) && Sim==bSimulated && !V.IsNearlyZero() && !W.IsNearlyZero());
         auto* Dropped=Agent->DropSword();
         CheckNoSword();
-        CheckPunchBones(false,TEXT("hand_r"));
+        CheckPunchBones();
         CheckBody(false); // Dropping the weapon does not end body suppression.
         TestTrue(TEXT("Drop restores collision before releasing ownership"),Dropped==Sword && Blade->GetCollisionResponseToChannels()==Original);
-        ProphecySwordAttackCollision::End(Agent);CheckBody(true);
+        Agent->NotifySwordAttackState(false);CheckBody(true);
         FProphecyJoltWorldDiagnostics AfterDrop;World->GetDiagnostics(AfterDrop);
         TestTrue(TEXT("Drop releases native owner-sword exclusions"),AfterDrop.SuppressedBodyPairCount<Before.SuppressedBodyPairCount);
         TestEqual(TEXT("Drop restores forearm contact and removes all held exclusions"),
@@ -1129,10 +1206,35 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
     ProphecySwordAttackCollision::Hit(Agent);
     TestTrue(TEXT("Kinematic melee restores on Hit"),Blade->GetCollisionResponseToChannels()==Original);
     ProphecySwordAttackCollision::End(Agent);
+    for (FName Punch:{FName(TEXT("jabR")),FName(TEXT("hookR")),FName(TEXT("overR"))})
+    {
+        ProphecySwordAttackCollision::Begin(Agent,Punch,0);
+        ProphecySwordAttackCollision::Armed(Agent);
+        ProphecySwordAttackCollision::Hit(Agent);
+        TestTrue(TEXT("Kinematic right punch stays suppressed through Hit"),Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
+        ProphecySwordAttackCollision::RetargetFamily(Agent,Punch,false,false);
+        TestFalse(TEXT("Kinematic right punch remains latched"),ProphecySwordAttackCollision::IsAllowed(Agent));
+        ProphecySwordAttackCollision::End(Agent);
+        TestTrue(TEXT("Kinematic right punch restores authored responses at end"),Blade->GetCollisionResponseToChannels()==Original);
+    }
+    UProphecySwordPhysicsLibrary::SetSwordCollisionCooldown(Agent,4);
+    ProphecySwordAttackCollision::Begin(Agent,TEXT("slashL"));
+    ProphecySwordAttackCollision::Armed(Agent);ProphecySwordAttackCollision::End(Agent);
+    ProphecySwordAttackCollision::Begin(Agent,TEXT("hookL"));
+    TestTrue(TEXT("Kinematic melee retains external channels during cooldown"),Blade->GetCollisionResponseToChannels()==Original);
+    UProphecySwordPhysicsLibrary::SetSwordCollisionCooldown(Agent,0);
+    TestTrue(TEXT("Kinematic zero cancels into current melee phase"),Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
+    ProphecySwordAttackCollision::End(Agent);
     UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,false);
     TestTrue(TEXT("Kinematic manual disable"),Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
     UProphecySwordPhysicsLibrary::SetSwordCollisionEnabled(Agent,true);
     TestTrue(TEXT("Kinematic manual restore"),Blade->GetCollisionResponseToChannels()==Original);
+    ProphecySwordAttackCollision::Begin(Agent,TEXT("pike"),3);
+    ProphecySwordAttackCollision::Armed(Agent);
+    TestTrue(TEXT("Kinematic long-gap pike stays suppressed through Armed"),Blade->GetCollisionResponseToChannels()==FCollisionResponseContainer(ECR_Ignore));
+    ProphecySwordAttackCollision::Hit(Agent);
+    TestTrue(TEXT("Kinematic long-gap pike restores on Hit"),Blade->GetCollisionResponseToChannels()==Original);
+    ProphecySwordAttackCollision::End(Agent);
     auto* Controller=Agent->FindComponentByClass<UProphecySwordComponent>();
     if (!Controller) return false;
     Controller->TickComponent(.1f,LEVELTICK_All,nullptr);
@@ -1143,11 +1245,11 @@ bool FProphecySwordAttackCollisionTest::RunTest(const FString&)
     TestTrue(TEXT("Kinematic sword reuses carried velocity"),Pose.Equals(Blade->GetComponentTransform())
         && V.Equals(FVector(150,0,0),.01) && W.IsNearlyZero() && !Sim);
     Agent->HideSword();CheckNoSword();
-    CheckPunchBones(false,TEXT("hand_r"));
+    CheckPunchBones();
     Agent->SwordHandSocket=TEXT("hand_l");
     if (!Agent->EquipSword(false)) return false;
-    CheckPunchBones(true,TEXT("hand_l"));
-    Agent->HideSword();CheckPunchBones(false,TEXT("hand_l"));
+    CheckPunchBones();
+    Agent->HideSword();CheckPunchBones();
     return !HasAnyErrors();
 }
 

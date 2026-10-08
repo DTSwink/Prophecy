@@ -57,6 +57,14 @@ public:
     static bool SetGhostLocoInertia(AProphecyAgent* Agent,bool Enabled=false,
         UPARAM(meta=(ClampMin="0")) int32 DurationTicks=12,
         UPARAM(meta=(ClampMin="0")) float Multiplier=1.f);
+    /** Independent kickL/kickR override. Once configured, the general Ghost Loco
+     * Inertia node cannot overwrite it or cancel its active kick displacement.
+     * Disabled explicitly disables kicks even if the general setting is enabled.
+     * Requires Ghost Loco Drag; same timing and displacement as the general node. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent",DisplayName="Set Ghost Loco Inertia Kick"))
+    static bool SetGhostLocoInertiaKick(AProphecyAgent* Agent,bool Enabled=false,
+        UPARAM(meta=(ClampMin="0")) int32 DurationTicks=12,
+        UPARAM(meta=(ClampMin="0")) float Multiplier=1.f);
     /** Interpolated ghost pelvis/legs in world space, available only while active. */
     UFUNCTION(BlueprintPure, Category="Prophecy|Agent|Attack Feet",meta=(DefaultToSelf="Agent"))
     static bool ReadGhostLocoDrag(AProphecyAgent* Agent,TArray<FName>& Names,TArray<FTransform>& WorldPose);

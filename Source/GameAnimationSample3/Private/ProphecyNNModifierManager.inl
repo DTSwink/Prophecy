@@ -49,7 +49,6 @@ bool AProphecyNNLocomotionManager::DescribeNNModifiers(const AProphecyAgent* A,P
         if(Parry||Dodge)R.Add(TEXT("AttackResponse"),TEXT("INPUT"),TEXT("Defender response conditioning"),FString::Printf(TEXT("parry %d dodge %d"),Parry,Dodge));
         R.Add(TEXT("AttackTarget"),TEXT("INPUT"),TEXT("Attack target conditioning"),FString::Printf(TEXT("requested %s | %s"),*Slash.TargetWorld.ToCompactString(),R.Half?TEXT("real-pelvis radius clamp, mapped to ghost carrier"):TEXT("anchored attack frame")));
         if(ProphecyAttackControls::IsStatic(A))R.Add(TEXT("StaticAttack"),TEXT("INPUT+HISTORY"),TEXT("Static attack history"),TEXT("previous state replaced by current"));
-        if(ProphecyAttackControls::ArmedBlocked(A))R.Add(TEXT("ArmedBlock"),TEXT("INPUT"),TEXT("Armed transition blocked"));
         if(R.Half)
         {
             R.Add(TEXT("HalfMount"),TEXT("POSE"),TEXT("Half-attack upper mount"),FString::Printf(TEXT("spine compensation %d distributed %d position %d | target radius %.3g cm"),

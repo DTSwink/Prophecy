@@ -16,20 +16,65 @@ Collision Enabled** is the separate global held-sword collision toggle.
 
 The attack phase automatically controls the held sword's collision:
 
-| Phase | Slash / pike | Punch / kick / headbutt |
-| --- | --- | --- |
-| Attack starts | Suppress sword-owner pairs only; external channels stay active | Ignore all channels |
-| First Armed output | Restore normal sword-owner pairs | Remain suppressed until Hit |
-| First Hit output | Keep Armed-based sword-owner state | Restore original responses and normal owner pairs |
-| Attack finished, stopped, replaced or interrupted | Restore normal owner pairs | Restore original responses and normal owner pairs |
+**Set Sword Collision Melee Gap Threshold** takes Agent and **Ticks** (default **2**).
+At each fresh attack start, the existing **Get Ticks Since Last Attack** value is
+captured before full-attack entry clears it. A value strictly greater than the
+threshold uses the melee sword rule for that attack, including slash/pike: all
+sword channels and owner contact are suppressed until the first NN Hit, or until
+the attack ends. Right punches remain suppressed from Armed through end even after Hit. Armed alone does not restore them. At exactly2 ticks or fewer,
+the usual family rules below apply. This is the existing lower-body-release
+counter, including its manual/reset seed, not a new timer. Full and half entries
+use the same check; ongoing retargets retain the entry decision. Config edits
+apply to future attacks only. Negative thresholds are rejected; zero requires a
+zero-tick gap to keep the usual family rules. Configuration is per agent and
+survives reset/drop. No new per-tick work or actor scan is added.
 
-For slash/pike, Armed is latched for collision for the rest of the attack. For melee (punch/kick/headbutt), the first learned Hit output above 0.5 restores collision immediately, including the remaining recovery animation; Armed alone does not. These are NN outputs, not physical Event Hit callbacks. Once restored, a later low NN output does not suppress collision again. Full and half attacks share the rule. Active Trigger updates do not restart the gate: same weapon/melee class retains its collision latch; changing between classes applies the new rule to the preserved Armed/Hit phase, retaining original responses/body/grip. Stop followed by a fresh Trigger resets the gate. Dropping restores the released sword's original responses.
+The long-gap rule takes precedence over a remaining sword collision cooldown;
+explicit collision disable still overrides everything. Actual slash Armed
+qualification is retained, so an armed long-gap slash can start the ordinary
+cooldown when it ends.
 
-Since October 6, slash/pike preparation no longer disables sword contact with
-opponents or the world. It suppresses only the owner's pairs until **Armed**.
-Punch/kick/headbutt behavior remains unchanged: all sword channels and owner
-contact remain suppressed until the first NN **Hit** output. The explicit global
-**Set Sword Collision Enabled=false** still overrides either attack family.
+**Set Sword Collision Cooldown** takes Agent and **Ticks** (default **4**).
+When a slash that reached Armed ends, external sword collision remains eligible
+through the next four complete unpaused world ticks, even if a short-gap melee
+preparation starts meanwhile. The ending frame is not charged. The countdown expires after
+physics, then the current attack's ordinary channel rule takes over. Duration is
+per agent, independent of FPS/dilation; 0 disables and cancels immediately.
+Positive edits apply to the next qualifying end. A newly completed armed slash
+refreshes the budget; melee starts and repeated end notifications do not.
+Pikes and slashes cancelled before Armed do not create this cooldown.
+
+The cooldown restores authored external channel responses; it does not override
+right-punch Armed-to-end suppression, an explicit **Set Sword Collision Enabled=false**, owner-pair exclusions or body
+self-collision rules. Drop/hide/reset clears the active cooldown. The configured
+duration persists through reset; world/owner teardown discards it. Only agents
+with active countdowns participate in the temporary post-physics callback; there
+is no dormant Tick subscription or body rebuild. It does not prolong attack
+metadata, NN motion, Armed/Hit outputs or attack-only sweep selection.
+
+| Phase (without long-gap override) | Slash / pike | Right punch: jabR / hookR / overR | Other melee |
+| --- | --- | --- | --- |
+| Attack starts | Suppress owner pairs only | Ignore all channels (existing cooldown may allow pre-Armed contact) | Ignore all channels |
+| First Armed output | Restore normal owner pairs | Force all sword channels off until upper attack end | Remain suppressed until Hit |
+| First Hit output | Keep Armed-based owner state | Remain off if Armed was reached | Restore original responses and normal owner pairs |
+| Attack finished, stopped or interrupted | Restore normal owner pairs | Restore original responses | Restore original responses and normal owner pairs |
+
+For right punches, Armed suppression overrides residual slash cooldown and NN Hit.
+A Hit before Armed retains the existing restoration rule until Armed arrives.
+Full-to-half transition does not end this suppression: the upper attack must end.
+Manual global disable still wins, including at attack end. Manual enable cannot
+bypass the Armed right-punch gate. Retargeting between right punches keeps the
+latched phase; retargeting to another family applies that family's preserved
+Armed/Hit rules. A new attack resets the gate. Punch metadata and attack-only
+sweep selection contain hand + forearm only, never sword.
+
+For slash/pike, Armed is latched for the rest of the attack. Other melee restores
+sword collision at the first learned NN Hit output above 0.5, including recovery.
+These are NN outputs, not physical Event Hit callbacks. Repeated low outputs do
+not clear latched phases. Active Trigger updates retain same-category latches;
+changing category applies the new rule to the preserved Armed/Hit phase without
+recreating the body or grip. Dropping restores the released sword's responses.
+
 The gripping hand and its parent forearm stay excluded for the
 entire held lifetime, including after Hit/end, owner-collision re-enabling, and
 grip/backend refresh. Dropping removes these held exclusions and restores normal

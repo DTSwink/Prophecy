@@ -1,0 +1,7 @@
+{
+  "attack": "hookR",
+  "inertia": 0.1,
+  "otherProfilesAndIdleUnchanged": true,
+  "returnTime": 0.28,
+  "easing": 0
+}

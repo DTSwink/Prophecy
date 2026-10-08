@@ -24,7 +24,7 @@ public:
     static bool SetBodyMagnetizationMode(AProphecyAgent* Agent,FName BoneName,float Mode=1.f);
 
     /** Change physical bodies in this skeletal subtree; returns the number changed. */
-    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent"))
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Physical Profiles", meta=(DefaultToSelf="Agent", DisplayName="Set Body Magnetization Mode Below"))
     static int32 SetMagnetizationModeBelow(AProphecyAgent* Agent,FName ParentBone,float Mode=1.f,bool IncludeParent=true);
 
     /** Read this body's configured mode. The pelvis always uses world targets regardless. */

@@ -18,6 +18,62 @@ using FBodyFollows = TMap<uint32, FFollow>;
 TMap<const FVelocityServo*, FBodyFollows> Follows;
 TMap<const FVelocityServo*, TMap<uint32, FTransform>> TargetOffsets;
 
+// Cached packet topology; no live servo layout change and no allocation in Update.
+// A child uses its parent's command for THIS step, never last step's solved spin.
+struct FLocalCommands
+{
+    TArray<JPH::BodyID> Bodies, Parents;
+    TArray<int32> ParentIndices, Order;
+    TArray<uint8> Needed;
+    TArray<FVelocityServo::FParentSample> EndFrames;
+    void Prepare(TConstArrayView<FVelocityServo::FTarget> Targets)
+    {
+        bool Same=Bodies.Num()==Targets.Num();
+        for(int32 I=0;Same && I<Targets.Num();++I)
+            Same=Bodies[I]==Targets[I].Body && Parents[I]==(Targets[I].WorldAlpha<1.f?Targets[I].Parent:JPH::BodyID());
+        if(Same)return;
+        Bodies.Reset();Parents.Reset();Order.Reset();
+        ParentIndices.Init(INDEX_NONE,Targets.Num());EndFrames.SetNum(Targets.Num());Needed.Init(0,Targets.Num());
+        TMap<uint32,int32> Indices;
+        for(int32 I=0;I<Targets.Num();++I)
+        {
+            Bodies.Add(Targets[I].Body);
+            Parents.Add(Targets[I].WorldAlpha<1.f?Targets[I].Parent:JPH::BodyID());
+            Indices.Add(Bodies.Last().GetIndexAndSequenceNumber(),I);
+        }
+        for(int32 I=0;I<Targets.Num();++I)
+            if(const int32* P=Indices.Find(Parents[I].GetIndexAndSequenceNumber()))ParentIndices[I]=*P;
+        TArray<uint8> Marks;Marks.Init(0,Targets.Num());
+        const auto Visit=[&](auto&& Self,int32 I)->void
+        {
+            if(Marks[I]==2)return;
+            if(Marks[I]==1){ensureMsgf(false,TEXT("Cyclic local drive parents"));ParentIndices[I]=INDEX_NONE;return;}
+            Marks[I]=1;
+            if(ParentIndices[I]!=INDEX_NONE)Self(Self,ParentIndices[I]);
+            Marks[I]=2;Order.Add(I);
+        };
+        for(int32 I=0;I<Targets.Num();++I)Visit(Visit,I);
+        for(int32 P:ParentIndices)if(P!=INDEX_NONE)Needed[P]=1;
+    }
+};
+TMap<const FVelocityServo*,FLocalCommands> LocalCommands;
+
+void PredictCommandFrame(const FVelocityServo::FTarget& Target,const JPH::Body& Body,
+    const FVector& Linear,const FVector& Angular,float H,FVelocityServo::FParentSample& Frame)
+{
+    using namespace Conversions;
+    const FQuat Rotation=FromJoltRotation(Body.GetRotation());
+    const FVector COM=Rotation.RotateVector(FromJoltPosition(JPH::RVec3(Body.GetShape()->GetCenterOfMass())));
+    FVector OriginVelocity=Linear-Angular.Cross(COM);
+    // Each child's servo cancels its own gravity. Do not propagate that cancellation
+    // up the chain as fictitious upward parent movement.
+    OriginVelocity.Z-=Target.GravityCompensationCmPerSecondSquared*H*Target.LinearStrength;
+    const double Speed=Angular.Size();
+    const FQuat EndRotation=Speed>UE_SMALL_NUMBER ? (FQuat(Angular/Speed,Speed*H)*Rotation).GetNormalized() : Rotation;
+    Frame.Pose=FTransform(EndRotation,FromJoltPosition(Body.GetPosition())+OriginVelocity*H);
+    Frame.Valid=true;
+}
+
 struct FVelocityRewrite
 {
     JPH::Vec3 NativeLinear = JPH::Vec3::sZero();
@@ -71,8 +127,8 @@ bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Bo
         const FTransform LocalTarget=FTransform(TargetRotation,TargetPositionCm).GetRelativeTransform(AuthoredParent)*Parent->Pose;
         TargetPositionCm=FMath::Lerp(LocalTarget.GetLocation(),TargetPositionCm,Target.WorldAlpha);
         TargetRotation=FQuat::Slerp(LocalTarget.GetRotation(),TargetRotation,Target.WorldAlpha).GetNormalized();
-        // Only move the target frame. Reinjecting the parent's previous physical
-        // velocity here creates positive feedback through the joint solver.
+        // Parent->Pose is the current step's predicted commanded endpoint when
+        // the parent is driven. A stationary physical frame fights joint motion.
     }
     // The authored target is the body origin; Jolt stores linear velocity at the COM.
     // Convert the requested origin velocity to COM velocity after calculating W below.
@@ -191,6 +247,8 @@ void FVelocityServo::CommitValidatedTargets(TConstArrayView<FTarget> InTargets)
     Samples.SetNum(InTargets.Num()); // All allocation happens before Update.
     ParentSamples.SetNum(HasLocalTargets?Targets.Num():0);
     for (FSample& Sample : Samples) Sample = FSample();
+    if(HasLocalTargets)LocalCommands.FindOrAdd(this).Prepare(Targets);
+    else LocalCommands.Remove(this);
     DenominatorSeconds = Targets.IsEmpty() ? 0.0f : Targets[0].DenominatorSeconds;
     for (const FTarget& Target : Targets)
         if (Target.DenominatorSeconds != DenominatorSeconds) { DenominatorSeconds = 0.0f; break; }
@@ -208,17 +266,62 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
     const JPH::BodyLockInterface& ReadLocks = bUseNoLockIdleReads
         ? static_cast<const JPH::BodyLockInterface&>(Physics.GetBodyLockInterfaceNoLock())
         : static_cast<const JPH::BodyLockInterface&>(Physics.GetBodyLockInterface());
-    // Validate every candidate before mutating any activation state. This pass does not write V/W.
-    for (const FTarget& Target : Targets)
+    auto* Local=HasLocalTargets?LocalCommands.Find(this):nullptr;
+    if(Local)for(auto& Frame:Local->EndFrames)Frame.Valid=false;
+    // Only sleeping local children need this look-ahead during activation. Awake
+    // crowds retain the cheap validation pass; their commands run once in OnStep.
+    const auto PredictParent=[&](auto&& Self,int32 Index)->bool
     {
+        if(Local->EndFrames[Index].Valid)return true;
+        const FTarget& Target=Targets[Index];
+        FParentSample Parent;
+        if(!ReadParent(Target,ReadLocks,Parent))return false;
+        const int32 P=Local->ParentIndices[Index];
+        if(P!=INDEX_NONE)
+        {
+            if(!Self(Self,P))return false;
+            Parent=Local->EndFrames[P];
+        }
+        const JPH::BodyLockRead Lock(ReadLocks,Target.Body);
+        if(!Lock.SucceededAndIsInBroadPhase() || !Lock.GetBody().IsDynamic())return false;
+        const JPH::Body& Body=Lock.GetBody();
+        FSample Sample;FVelocityRewrite Rewrite;
+        const float H=Target.TrajectoryDurationSeconds>0 && FirstStepSeconds>0?FirstStepSeconds:Target.DenominatorSeconds;
+        if(!CalculateRewrite(Target,Body,H,Target.TrajectoryElapsedSeconds+H,FirstStepSeconds>0?FirstStepSeconds:H,
+            Sample,Rewrite,BodyFollows?BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()):nullptr,
+            Offsets?Offsets->Find(Target.Body.GetIndexAndSequenceNumber()):nullptr,&Parent))return false;
+        PredictCommandFrame(Target,Body,
+            Target.LinearStrength>0?Conversions::FromJoltLinearVelocity(Rewrite.NativeLinear):Sample.LinearBeforeCmPerSecond,
+            Target.AngularStrength>0?Conversions::FromJoltAngularVelocity(Rewrite.NativeAngular):Sample.AngularBeforeRadiansPerSecond,
+            FirstStepSeconds>0?FirstStepSeconds:H,Local->EndFrames[Index]);
+        return true;
+    };
+    // Validate every candidate before mutating any activation state. This pass does not write V/W.
+    for (int32 Ordinal=0;Ordinal<Targets.Num();++Ordinal)
+    {
+        const int32 Index=Local?Local->Order[Ordinal]:Ordinal;
+        const FTarget& Target=Targets[Index];
         FParentSample Parent;
         if(!ReadParent(Target,ReadLocks,Parent))
         { ++InvalidBodies;OutError=TEXT("Invalid physical parent in servo packet.");return false; }
-        const JPH::BodyLockRead Lock(ReadLocks, Target.Body);
-        if (!Lock.SucceededAndIsInBroadPhase() || !Lock.GetBody().IsDynamic())
-        { ++InvalidBodies; OutError = TEXT("Fixture servo activation found an invalid/non-dynamic body."); return false; }
-        const JPH::Body& Body = Lock.GetBody();
-        if (Body.IsActive()) continue;
+        {
+            const JPH::BodyLockRead Lock(ReadLocks,Target.Body);
+            if(!Lock.SucceededAndIsInBroadPhase() || !Lock.GetBody().IsDynamic())
+            { ++InvalidBodies;OutError=TEXT("Fixture servo activation found an invalid/non-dynamic body.");return false; }
+            if(Lock.GetBody().IsActive())continue;
+        }
+        // Release the child's read lock before visiting ancestors: different
+        // body IDs may share a native mutex stripe.
+        if(Local && Local->ParentIndices[Index]!=INDEX_NONE)
+        {
+            if(!PredictParent(PredictParent,Local->ParentIndices[Index]))
+            { ++InvalidBodies;OutError=TEXT("Invalid sleeping local servo ancestor.");return false; }
+            Parent=Local->EndFrames[Local->ParentIndices[Index]];
+        }
+        const JPH::BodyLockRead Lock(ReadLocks,Target.Body);
+        if(!Lock.SucceededAndIsInBroadPhase())
+        { ++InvalidBodies;OutError=TEXT("Sleeping servo body disappeared.");return false; }
+        const JPH::Body& Body=Lock.GetBody();
         FSample Sample;
         FVelocityRewrite Rewrite;
         const float H = Target.TrajectoryDurationSeconds > 0.0f && FirstStepSeconds > 0.0f
@@ -228,6 +331,10 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
             BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr,
             Offsets ? Offsets->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr, &Parent))
         { ++InvalidBodies; OutError = TEXT("Fixture servo sleeping-body candidate overflows native velocity precision."); return false; }
+        if(Local && Local->Needed[Index])PredictCommandFrame(Target,Body,
+            Target.LinearStrength>0 ? Conversions::FromJoltLinearVelocity(Rewrite.NativeLinear) : Sample.LinearBeforeCmPerSecond,
+            Target.AngularStrength>0 ? Conversions::FromJoltAngularVelocity(Rewrite.NativeAngular) : Sample.AngularBeforeRadiansPerSecond,
+            FirstStepSeconds>0?FirstStepSeconds:H,Local->EndFrames[Index]);
         if (RequiresNativeWake(Target, Rewrite) || HasPendingTrajectoryMotion(Target)) BodiesToWake.Add(Target.Body);
     }
     // No body locks remain held here. Ordinary BodyInterface activation takes its own write lock.
@@ -257,6 +364,7 @@ void FVelocityServo::Clear()
     check(IsInGameThread());
     Targets.Reset();
     Samples.Reset();ParentSamples.Reset();HasLocalTargets=false;
+    LocalCommands.Remove(this);
     Invocations = 0;
     InvalidBodies = 0;
     LastIntegrationSeconds = 0.0f;
@@ -285,11 +393,15 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
     LastIntegrationSeconds = Context.mDeltaTime;
     const auto* BodyFollows = Follows.IsEmpty() ? nullptr : Follows.Find(this);
     const auto* Offsets = TargetOffsets.IsEmpty() ? nullptr : TargetOffsets.Find(this);
-    if(HasLocalTargets)for(int32 I=0;I<Targets.Num();++I)
-        ReadParent(Targets[I],Context.mPhysicsSystem->GetBodyLockInterfaceNoLock(),ParentSamples[I]);
-    for (int32 Index = 0; Index < Targets.Num(); ++Index)
+    auto* Local=HasLocalTargets?LocalCommands.Find(this):nullptr;
+    if(Local)for(auto& Frame:Local->EndFrames)Frame.Valid=false;
+    for (int32 Ordinal = 0; Ordinal < Targets.Num(); ++Ordinal)
     {
+        const int32 Index=Local?Local->Order[Ordinal]:Ordinal;
         FTarget& Target = Targets[Index];
+        if(Local && Local->ParentIndices[Index]!=INDEX_NONE && Local->EndFrames[Local->ParentIndices[Index]].Valid)
+            ParentSamples[Index]=Local->EndFrames[Local->ParentIndices[Index]];
+        else if(Local)ReadParent(Target,Context.mPhysicsSystem->GetBodyLockInterfaceNoLock(),ParentSamples[Index]);
         if (Target.TrajectoryDurationSeconds > 0.0f)
             Target.TrajectoryElapsedSeconds = FMath::Min(double(Target.TrajectoryDurationSeconds),
                 Target.TrajectoryElapsedSeconds + Context.mDeltaTime);
@@ -314,6 +426,8 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
         Sample.LinearAfterCmPerSecond = FromJoltLinearVelocity(Body.GetLinearVelocity());
         Sample.AngularAfterRadiansPerSecond = FromJoltAngularVelocity(Body.GetAngularVelocity());
         Sample.bValid = true;
+        if(Local && Local->Needed[Index])PredictCommandFrame(Target,Body,Sample.LinearAfterCmPerSecond,Sample.AngularAfterRadiansPerSecond,
+            Context.mDeltaTime,Local->EndFrames[Index]);
     }
     // Ordered after ALL target velocities; a separate Jolt listener could race this servo.
     PHATSweeps::AfterServo(Context.mPhysicsSystem, Context.mDeltaTime);

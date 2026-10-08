@@ -1,4 +1,7 @@
 #include "ProphecyAgentResetPhysics.h"
+#include "ProphecyPhysicalToleranceDelay.h"
+#include "ProphecyRootVelocityDelay.h"
+#include "ProphecySwordAttackCollision.h"
 #include "ProphecyAttackFists.h"
 #include "ProphecyModeTransitions.h"
 #include "ProphecyArmedPose.h"
@@ -71,7 +74,6 @@ void Remove(const AProphecyAgent* Agent)
     ProphecyHandRecovery::ForgetReset(Agent);
     ProphecyCoreTempering::ForgetReset(Agent);
     ProphecyHalfAttackCompensation::ForgetReset(Agent);
-    ProphecyAttackControls::ForgetReset(Agent);
     ProphecyAttackNNFeedback::ForgetReset(Agent);
     ProphecyUpperBodyInertia::ForgetReset(Agent);
     ProphecyFKReturn::ForgetReset(Agent);
@@ -117,7 +119,6 @@ bool Capture(AProphecyAgent* Agent,FString& Error)
     ProphecyHandRecovery::CaptureReset(Agent);
     ProphecyCoreTempering::CaptureReset(Agent);
     ProphecyHalfAttackCompensation::CaptureReset(Agent);
-    ProphecyAttackControls::CaptureReset(Agent);
     ProphecyUpperBodyInertia::CaptureReset(Agent);
     ProphecyFKReturn::CaptureReset(Agent);
     ProphecyAttackStartInertia::CaptureReset(Agent);
@@ -153,6 +154,9 @@ bool RestoreEquipment(AProphecyAgent* Agent,FString& Error)
 }
 void CancelBlends(AProphecyAgent* Agent)
 {
+    ProphecyPhysicalToleranceDelay::Cancel(Agent);
+    ProphecyRootVelocityDelay::Cancel(Agent);
+    ProphecySwordAttackCollision::CancelCooldown(Agent);
 	// Complete pose-only fades before removing their clocks; never freeze a
 	// partially closed fist or partially switched mesh when resetting an agent.
 	ProphecyAttackFists::FinishBlend(Agent);

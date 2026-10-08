@@ -138,6 +138,7 @@ void ProphecyNNPresentation::SetRecoveryCalfLengths(int32 AgentId,const FVector2
 {
 	SetRecoveryCalfLengthsWithUpperBlend(AgentId,UpperCm,LowerCm,1.f);
 }
+
 void ProphecyNNPresentation::SetRecoveryCalfLengthsWithUpperBlend(int32 AgentId,const FVector2D& UpperCm,const FVector2D& LowerCm,float RemainingWeight)
 {
 	FWriteScopeLock Lock(GProphecyNNPoseLock);

@@ -1,7 +1,6 @@
 // Included by ProphecyGhostAttackLibrary.cpp; sparse state, no retained UObject layout changes.
 namespace ProphecyAttackControls
 {
-static TSet<TWeakObjectPtr<const AProphecyAgent>> Blocked,ResetBlocked;
 static TSet<TWeakObjectPtr<const AProphecyAgent>> FullAttackHeld;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,int64> SinceLowerAttack;
 // Explicit user setting, independent of when Initialize Agent Reset was called.
@@ -24,7 +23,6 @@ static void RefreshTick()
     if(SinceLowerAttack.IsEmpty()) {FWorldDelegates::OnWorldPreActorTick.Remove(CounterTick);CounterTick.Reset();}
     else if(!CounterTick.IsValid())CounterTick=FWorldDelegates::OnWorldPreActorTick.AddStatic(&Tick);
 }
-bool ArmedBlocked(const AProphecyAgent* A) {return !Blocked.IsEmpty() && Blocked.Contains(A);}
 void StartAttackTickCounter(const AProphecyAgent* A)
 {
     if(FullAttackHeld.Contains(A) || SinceLowerAttack.Contains(A))return;
@@ -43,17 +41,11 @@ void LowerAttackFinished(const AProphecyAgent* A)
     if(!FullAttackHeld.Remove(A))return;
     SinceLowerAttack.Add(A,0);RefreshTick();
 }
-void ForgetReset(const AProphecyAgent* A) {ResetBlocked.Remove(A);}
 void Remove(const AProphecyAgent* A)
-{SinceLowerAttack.Remove(A);CounterResetTicks.Remove(A);FullAttackHeld.Remove(A);RefreshTick();Blocked.Remove(A);ForgetReset(A);}
-void CaptureReset(const AProphecyAgent* A)
-{
-    if(ArmedBlocked(A))ResetBlocked.Add(A);else ResetBlocked.Remove(A);
-}
+{SinceLowerAttack.Remove(A);CounterResetTicks.Remove(A);FullAttackHeld.Remove(A);RefreshTick();}
 void RestoreReset(const AProphecyAgent* A)
 {
     SinceLowerAttack.Remove(A);FullAttackHeld.Remove(A);StartAttackTickCounter(A);
-    if(ResetBlocked.Contains(A))Blocked.Add(A);else Blocked.Remove(A);
 }
 }
 int64 UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(AProphecyAgent* Agent)
@@ -65,12 +57,6 @@ int64 UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(AProphecyAgent* Agent
         ProphecyAttackControls::StartAttackTickCounter(Agent);
     return T?*T:0;
 }
-bool UProphecyGhostAttackLibrary::SetAttackArmedBlocked(AProphecyAgent* Agent,bool Blocked)
-{
-    if(!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown)return false;
-    if(Blocked)ProphecyAttackControls::Blocked.Add(Agent);else ProphecyAttackControls::Blocked.Remove(Agent);
-    return true;
-}
 bool UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(AProphecyAgent* Agent,int64 Ticks)
 {
     using namespace ProphecyAttackControls;
@@ -80,34 +66,26 @@ bool UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(AProphecyAgent* Agent,
     return true;
 }
 #if WITH_DEV_AUTOMATION_TESTS
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackArmedGateTest,"Prophecy.NN.AttackControls.ArmedGate",
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackPhaseLatchesTest,"Prophecy.NN.AttackControls.PhaseLatches",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
-bool FProphecyAttackArmedGateTest::RunTest(const FString&)
+bool FProphecyAttackPhaseLatchesTest::RunTest(const FString&)
 {
     using namespace ProphecyAttackControls;
-    auto* W=UWorld::CreateWorld(EWorldType::Editor,false);
-    auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
-    TestFalse(TEXT("Armed block defaults off"),ArmedBlocked(A));
-    UProphecyGhostAttackLibrary::SetAttackArmedBlocked(A,true);CaptureReset(A);
-    UProphecyGhostAttackLibrary::SetAttackArmedBlocked(A,false);
-    RestoreReset(A);TestTrue(TEXT("Reset restores block"),ArmedBlocked(A));
     for(bool Legacy:{false,true})
     {
         float Armed=0,Hit=0;
-        for(int32 I=0;I<120;++I)PhaseLatches(true,Legacy,Armed,Hit,1,1,.6f,Armed,Hit);
-        TestTrue(TEXT("Block prevents Armed; existing Hit rule requires prior Armed"),Armed==0 && Hit==0);
-        PhaseLatches(false,Legacy,Armed,Hit,1,1,.6f,Armed,Hit);
-        TestTrue(TEXT("Release arms without same-step hit"),Armed==1 && Hit==0);
-        PhaseLatches(false,Legacy,Armed,Hit,1,1,.6f,Armed,Hit);
+        PhaseLatches(Legacy,Armed,Hit,.59f,.59f,.6f,Armed,Hit);
+        TestTrue(TEXT("Below threshold remains preparing"),Armed==0 && Hit==0);
+        PhaseLatches(Legacy,Armed,Hit,.6f,1,.6f,Armed,Hit);
+        TestTrue(TEXT("Arms at threshold without same-step hit"),Armed==1 && Hit==0);
+        PhaseLatches(Legacy,Armed,Hit,0,.6f,.6f,Armed,Hit);
         TestTrue(TEXT("Next step can hit"),Armed==1 && Hit==1);
-        PhaseLatches(true,Legacy,Armed,Hit,0,0,.6f,Armed,Hit);
-        TestTrue(TEXT("Late block never rewinds a committed attack"),Armed==1 && Hit==1);
-        PhaseLatches(true,Legacy,1,0,0,1,.6f,Armed,Hit);
-        TestTrue(TEXT("Block does not suppress Hit on an already Armed attack"),Armed==1 && Hit==1);
+        PhaseLatches(Legacy,Armed,Hit,0,0,.6f,Armed,Hit);
+        TestTrue(TEXT("Low requests never rewind a committed attack"),Armed==1 && Hit==1);
+        PhaseLatches(Legacy,0,0,0,1,.6f,Armed,Hit);
+        TestTrue(TEXT("Hit request arms only legacy checkpoints"),Armed==(Legacy?1.f:0.f) && Hit==0);
     }
-    Remove(A);TestFalse(TEXT("Remove clears block"),ArmedBlocked(A));
-    if(SinceLowerAttack.IsEmpty())TestFalse(TEXT("No counters leaves no tick delegate"),CounterTick.IsValid());
-    W->DestroyWorld(false);W->MarkAsGarbage();return !HasAnyErrors();
+    return !HasAnyErrors();
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackEntryMagicClockTest,"Prophecy.NN.AttackControls.EntryMagicAndTicks",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -160,7 +138,7 @@ bool FProphecyManualAttackTicksTest::RunTest(const FString&)
     auto* W=UWorld::CreateWorld(EWorldType::Editor,false);
     auto* A=W?W->SpawnActor<AProphecyAgent>():nullptr;if(!A)return false;
     auto Count=[&](){return UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(A);};
-    CaptureReset(A); // Setter works even after reset initialization.
+    RestoreReset(A); // Setter works even after reset initialization.
     TestTrue(TEXT("Manual seed accepted"),UProphecyGhostAttackLibrary::SetTicksSinceLastAttack(A,1000));
     TestEqual(TEXT("Immediately visible"),Count(),int64(1000));
     for(float Dt:{1.f/30,1.f/60,1.f/120})Tick(W,LEVELTICK_All,Dt);

@@ -26,14 +26,6 @@ public:
     UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Attack",meta=(DefaultToSelf="Agent"))
     static bool SetTicksSinceLastAttack(AProphecyAgent* Agent,UPARAM(meta=(ClampMin="0")) int64 Ticks=1000);
 
-    /** Prevent the Armed phase latch while the checkpoint continues wind-up.
-     * Hit keeps its existing rules and is not independently blocked.
-     * Set true before Armed, then false to allow the checkpoint to arm naturally.
-     * Does not rewind an already Armed/Hit attack. Persists across attacks until changed.
-     * Applies to full and half attacks. Default false; no timer or extra inference. */
-    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Attack",meta=(DefaultToSelf="Agent"))
-    static bool SetAttackArmedBlocked(AProphecyAgent* Agent,bool Blocked=true);
-
     /** Counter the real NN pelvis versus ghost pelvis rotation at spine_01 during
      * half attacks. Keeps the spine attachment and lower body, and preserves the
      * ghost upper body's world orientation. Distribute Along Spine01 To Spine05

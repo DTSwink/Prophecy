@@ -21,6 +21,7 @@ THIRD_PARTY_INCLUDES_START
 #include <Jolt/Physics/Collision/Shape/OffsetCenterOfMassShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/Physics/Constraints/PointConstraint.h>
 #include <Jolt/RegisterTypes.h>
 THIRD_PARTY_INCLUDES_END
 
@@ -78,6 +79,7 @@ public:
         // that the real registered listener can access.
         Jobs.Reset();
         Physics.RemoveStepListener(&Servo);
+        Servo.Clear();
         for (const JPH::BodyID ID : IDs)
         {
             Servo.RemoveBodyFollow(ID);
@@ -914,25 +916,67 @@ bool FProphecyJoltParentServoTest::RunTest(const FString&)
 {
     using namespace ProphecyJolt;using namespace ProphecyJolt::Conversions;using namespace ProphecyJolt::VelocityServoTests;
     if(!RuntimeReady(*this))return false;
-    for(float Mode:{0.f,.5f,1.f})for(bool Reverse:{false,true})
+    for(float Mode:{0.f,.5f,1.f})for(float ParentStrength:{0.f,.25f,1.f})for(bool Reverse:{false,true})
     {
         FServoFixture F;const JPH::RefConst<JPH::Shape> Shape=new JPH::SphereShape(.05f);
         const auto Parent=F.Add(Shape,FTransform(FQuat(FVector::UpVector,UE_PI/2),FVector(10,0,0)));
         const auto Child=F.Add(Shape,FTransform(FVector(20,0,0)));
         F.Bodies().SetLinearVelocity(Parent,ToJoltLinearVelocity(FVector(20,0,0)));
         FVelocityServo::FTarget P,C;P.Body=Parent;P.TargetPositionCm=FVector(30,0,0);
+        P.LinearStrength=ParentStrength;
         P.TargetRotation=FQuat(FVector::UpVector,UE_PI/2);
         C.Body=Child;C.TargetPositionCm=FVector(10,0,0);C.Parent=Parent;C.WorldAlpha=Mode;
         TArray<FVelocityServo::FTarget> Targets=Reverse?TArray<FVelocityServo::FTarget>{C,P}:TArray<FVelocityServo::FTarget>{P,C};
         if(!F.Publish(*this,Targets,.1f) || !F.Step(*this,.1f) || !F.CheckSamples(*this,2))return false;
         const auto& Result=F.Listener().GetLastSamples()[Reverse?0:1];
-        const FVector Expected(-100.,100.*(1.-Mode),0);
-        TestTrue(TEXT("Local/global target matches analytic result without injecting parent velocity in either order"),
+        const double ParentSpeed=20.+180.*ParentStrength;
+        const FVector Expected(-100.+ParentSpeed*(1.-Mode),100.*(1.-Mode),0);
+        TestTrue(TEXT("Local child follows this-step parent command at each strength and packet order"),
             Result.LinearAfterCmPerSecond.Equals(Expected,.005));
         TestTrue(TEXT("Local/global rotation follows physical parent"),
             FMath::IsNearlyEqual(Result.AngularAfterRadiansPerSecond.Z,(1.-Mode)*UE_PI/2/.1,1.e-4));
         const auto& Root=F.Listener().GetLastSamples()[Reverse?1:0];
-        TestTrue(TEXT("Parent with no parent remains world-driven"),Root.LinearAfterCmPerSecond.Equals(FVector(200,0,0),.005));
+        TestTrue(TEXT("Parent with no parent remains world-driven"),Root.LinearAfterCmPerSecond.Equals(FVector(ParentSpeed,0,0),.005));
+    }
+    return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltLocalConnectedRecoveryTest,
+    "Prophecy.Jolt.Servo.LocalConnectedRecovery", ProphecyJolt::VelocityServoTests::Flags)
+bool FProphecyJoltLocalConnectedRecoveryTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt;using namespace ProphecyJolt::Conversions;using namespace ProphecyJolt::VelocityServoTests;
+    if(!RuntimeReady(*this))return false;
+    for(float Mode:{0.f,.5f,1.f})
+    {
+        FServoFixture F;
+        const JPH::RefConst<JPH::Shape> Shape=new JPH::SphereShape(.04f);
+        const FQuat Bend(FVector::ForwardVector,.5);
+        TArray<FVelocityServo::FTarget> Targets;
+        TArray<JPH::Ref<JPH::TwoBodyConstraint>> Joints;
+        for(int32 I=0;I<5;++I)
+        {
+            const FVector Authored(0,0,I*10.);
+            const FVector Actual=Bend.RotateVector(Authored);
+            const auto ID=F.Add(Shape,FTransform(Bend,Actual));
+            FVelocityServo::FTarget T;T.Body=ID;T.TargetPositionCm=Authored;
+            if(I>0)
+            {
+                T.Parent=Targets.Last().Body;T.WorldAlpha=Mode;
+                T.ParentStart=T.ParentTarget=FTransform(Targets.Last().TargetPositionCm);
+                JPH::PointConstraintSettings Joint;
+                Joint.mPoint1=Joint.mPoint2=ToJoltPosition(Actual);
+                JPH::Ref<JPH::TwoBodyConstraint> Native=F.Bodies().CreateConstraint(&Joint,Targets.Last().Body,ID);
+                F.System().AddConstraint(Native.GetPtr());Joints.Add(Native);
+            }
+            Targets.Add(T);
+        }
+        bool Ok=F.Publish(*this,Targets,1.f/60);
+        for(int32 Step=0;Ok && Step<30;++Step)Ok=F.Step(*this,1.f/60);
+        const double Error=(FromJoltPosition(F.Bodies().GetPosition(Targets.Last().Body))-Targets.Last().TargetPositionCm).Size();
+        TestTrue(FString::Printf(TEXT("Connected chain straightens without position-drive stall (mode%.1f, error%.4fcm)"),Mode,Error),Ok && Error<.5);
+        TestEqual(TEXT("No invalid local commands"),F.Listener().GetInvalidBodyCount(),uint64(0));
+        for(const auto& Joint:Joints)F.System().RemoveConstraint(Joint.GetPtr());
     }
     return !HasAnyErrors();
 }

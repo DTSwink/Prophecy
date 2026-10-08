@@ -47,6 +47,17 @@ class GAMEANIMATIONSAMPLE3_API UPhysicsHitVelocityLibrary : public UBlueprintFun
 	GENERATED_BODY()
 
 public:
+	/** Earliest point interception in 3D at constant victim velocity and attacker speed.
+	 * Locations are world cm, velocities cm/s, Duration seconds. Assumes instant steering,
+	 * no acceleration limit or obstacles. Faster victims can still be intercepted when approaching.
+	 * Unreachable: Can Catch Up=false, Duration=10000; velocity aims at the victim's current
+	 * location at Attacker Speed (naive pursuit). Invalid inputs return false/10000/zero.
+	 * Already coincident: true, zero duration/velocity. No time cap on a reachable solution.
+	 * Direct analytic solve; no iteration, allocation, actor access or ticking. */
+	UFUNCTION(BlueprintPure, Category="Prophecy|Physics|Trajectory", meta=(DisplayName="Compute Catch Up", ReturnDisplayName="Can Catch Up", Keywords="intercept pursuit lead target"))
+	static bool ComputeCatchUp(FVector VictimLocation, FVector VictimVelocity,
+		FVector AttackerLocation, double AttackerSpeed, double& Duration, FVector& OptimalAttackerVelocity);
+
 	/** Launch a ballistic projectile toward a target moving at constant world velocity (cm/s).
 	 * Angle is elevation in degrees: 0 horizontal, 90 up, -90 down. Values are clamped to this range.
 	 * Keeps the angle even when no hit is possible: minimizes point-to-point miss within the advanced

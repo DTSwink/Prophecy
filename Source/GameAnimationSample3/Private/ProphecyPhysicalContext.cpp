@@ -1,4 +1,5 @@
 #include "ProphecyPhysicalContext.h"
+#include "ProphecyPhysicalToleranceDelay.h"
 #include "ProphecyAgent.h"
 #include "ProphecyPhysicalBlendSubsystem.h"
 #include "ProphecyPhysicalProfileLibrary.h"
@@ -37,6 +38,15 @@ struct FCell
         Target=NewValue; Hold=HoldSeconds; Begin=Clock+Hold;
         Duration=Seconds>0 && !(Start==Target) ? Seconds : 0;
         if(Hold<=0) Value=Duration>0 ? FValue{Start.Scales,true} : Target;
+    }
+    bool SetHeldSource(FValue NewValue,double Clock)
+    {
+        if(Hold<=0 || Clock>Begin+1.e-9)return false;
+        // Preserve destination and deadline. Includes the first interpolation
+        // tick, regardless of which pre-actor delegate runs first.
+        Value=Start=NewValue;
+        if(!Start.Enabled)Start.Scales=FVector2f::ZeroVector;
+        return true;
     }
 };
 struct FEntry
@@ -118,7 +128,7 @@ bool IsApplying() { return Applying; }
 bool Valid(EProphecyLocomotionSelection L,EProphecyEquipmentSelection E)
 { return uint8(L)<=uint8(EProphecyLocomotionSelection::Run) && uint8(E)<=uint8(EProphecyEquipmentSelection::Sheathed); }
 void Remove(const AProphecyAgent* Agent)
-{ Modes.Remove(Agent);States.Remove(Agent); Snapshots.Remove(Agent);SnapshotSpecials.Remove(Agent);ProphecyBlendClock::Remove(Agent);ProphecyClampProfiles::Remove(Agent); }
+{ ProphecyPhysicalToleranceDelay::Cancel(Agent);Modes.Remove(Agent);States.Remove(Agent); Snapshots.Remove(Agent);SnapshotSpecials.Remove(Agent);ProphecyBlendClock::Remove(Agent);ProphecyClampProfiles::Remove(Agent); }
 bool IsManaged(const AProphecyAgent* Agent,FName Bone,EKind Kind)
 {
     if (Applying || States.IsEmpty()) return false;
@@ -265,14 +275,20 @@ bool Set(AProphecyAgent& Agent,FName Bone,EKind Kind,bool Enabled,FVector2f Valu
         else if (Kind==EKind::Damping) ProphecyJointDamping::ReleasePolicy(&Agent,Bone);
         else if(Kind!=EKind::Mode) Agent.CancelBodyMagnetizationBlend(Bone);
     }
-    for (int32 I=0;I<4;++I) if (Matches(I,L,E)) Entry->Cells[I].Write({Value,Enabled},Duration,State->Clock);
+    const bool DelayedTolerance=Kind==EKind::Feedback && Duration<=0 && ProphecyPhysicalToleranceDelay::IsApplying(&Agent);
+    for (int32 I=0;I<4;++I) if (Matches(I,L,E))
+    {
+        auto& Cell=Entry->Cells[I];
+        if(!DelayedTolerance || !Cell.SetHeldSource({Value,Enabled},State->Clock))
+            Cell.Write({Value,Enabled},Duration,State->Clock);
+    }
     State->ValidContext=false;
     Update(&Agent);
     if (Universal && Duration<=0 && !Agent.IsSwordAttackActive())
     {
         if (auto* Remaining=States.Find(&Agent))
         {
-            Remaining->Entries.RemoveAllSwap([&](const FEntry& X) { return X.Bone==Bone && X.Kind==Kind; });
+            Remaining->Entries.RemoveAllSwap([&](const FEntry& X) { return X.Bone==Bone && X.Kind==Kind && !X.Running(); });
             if (Remaining->Entries.IsEmpty()) States.Remove(&Agent);
         }
     }
@@ -362,7 +378,12 @@ void Cancel(AProphecyAgent* Agent,FName Bone,EKind Kind)
     if (!State) return;
     AdvanceClock(*Agent,*State);
     for (auto& Entry:State->Entries) if (Entry.Kind==Kind && (Bone.IsNone() || Entry.Bone==Bone))
-        for (auto& Cell:Entry.Cells) { Cell.Sample(State->Clock); Cell.Duration=0;Cell.Hold=0; }
+        for (auto& Cell:Entry.Cells)
+        {
+            if(Kind==EKind::Feedback && ProphecyPhysicalToleranceDelay::IsApplying(Agent)
+                && Cell.Hold>0 && State->Clock<=Cell.Begin+1.e-9)continue;
+            Cell.Sample(State->Clock);Cell.Duration=0;Cell.Hold=0;
+        }
     State->ValidContext=false;
     Update(Agent);
 }
@@ -480,7 +501,13 @@ static int32 RestoreSnapshot(AProphecyAgent* Agent,FName Name,EKind Kind,FName B
         }
         auto* Entry=State.Entries.FindByPredicate([&](const FEntry& X) { return X.Bone==Target->Bone && X.Kind==Kind; });
         if (!Entry) Entry=&State.Entries.Add_GetRef(Current);
-        for (int32 I=0;I<4;++I) Entry->Cells[I].Write(Target->Cells[I].Value,Duration,State.Clock,Hold);
+        for (int32 I=0;I<4;++I)
+        {
+            auto& Cell=Entry->Cells[I];
+            Cell.Write(Target->Cells[I].Value,Duration,State.Clock,Hold);
+            // Equality now does not mean equality after a delayed tolerance write.
+            if(Kind==EKind::Feedback && Hold>0 && Duration>0)Cell.Duration=Duration;
+        }
         Entry->AppliedValid=false;
     }
     State.ValidContext=false;
@@ -501,6 +528,7 @@ bool EnterSpecial(AProphecyAgent* Agent)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
         || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown) return false;
+    ProphecyPhysicalToleranceDelay::Cancel(Agent);
     static const FName Slot(TEXT("1"));
     const auto* Saved=Snapshots.Find(Agent);
     if (!Saved || !Saved->Contains(Slot)) { SnapshotSpecials.Remove(Agent);return false; }

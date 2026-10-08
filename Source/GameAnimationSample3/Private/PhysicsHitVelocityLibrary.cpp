@@ -1,9 +1,58 @@
 #include "PhysicsHitVelocityLibrary.h"
+#include <limits>
 
 #include "Components/PrimitiveComponent.h"
 #include "Engine/World.h"
 #include "PhysicsEngine/BodyInstance.h"
 #include "ProphecyHitTrajectory.inl"
+
+bool UPhysicsHitVelocityLibrary::ComputeCatchUp(FVector VictimLocation, FVector VictimVelocity,
+    FVector AttackerLocation, double AttackerSpeed, double& Duration, FVector& OptimalAttackerVelocity)
+{
+    Duration=10000.;
+    OptimalAttackerVelocity=FVector::ZeroVector;
+    if (VictimLocation.ContainsNaN() || VictimVelocity.ContainsNaN() || AttackerLocation.ContainsNaN()
+        || !FMath::IsFinite(AttackerSpeed) || AttackerSpeed<0.) return false;
+    const FVector R=VictimLocation-AttackerLocation;
+    const double C=R.SizeSquared();
+    if (!FMath::IsFinite(C)) return false;
+    if (C==0.) { Duration=0.;return true; }
+    // Only compute pursuit on failure; successful interception keeps its original cost.
+    const auto Pursue=[&]()
+    {
+        OptimalAttackerVelocity=(R/FMath::Sqrt(C))*AttackerSpeed;
+        return false;
+    };
+
+    // |R + V*t|^2 = speed^2*t^2. Use half the linear coefficient.
+    const double A=VictimVelocity.SizeSquared()-AttackerSpeed*AttackerSpeed;
+    const double B=FVector::DotProduct(R,VictimVelocity);
+    if (!FMath::IsFinite(A) || !FMath::IsFinite(B)) return false;
+    if (A>=0. && B>=0.) return Pursue();
+    double T;
+    if (A==0.) T=-C/(2.*B); // Equal speeds: the quadratic reduces to a line.
+    else
+    {
+        const double BB=B*B,AC=A*C;
+        double D=BB-AC;
+        if (!FMath::IsFinite(D)) return false;
+        // Admit exact tangency affected only by double-precision roundoff.
+        if (D<0.)
+        {
+            if (D < -8.*std::numeric_limits<double>::epsilon()*FMath::Max(BB,FMath::Abs(AC))) return Pursue();
+            D=0.;
+        }
+        const double Root=FMath::Sqrt(D);
+        // Earliest positive root, rationalized to avoid catastrophic cancellation.
+        T=B<0. ? C/(Root-B) : (Root+B)/(-A);
+    }
+    if (!FMath::IsFinite(T) || T<=0.) return false;
+    const FVector Velocity=VictimVelocity+R/T;
+    if (Velocity.ContainsNaN()) return false;
+    Duration=T;
+    OptimalAttackerVelocity=Velocity;
+    return true;
+}
 
 FVector UPhysicsHitVelocityLibrary::GetHitTrajectory(
     const UObject* WorldContextObject,FVector StartLocation,FVector CurrentTargetLocation,
@@ -183,3 +232,4 @@ FVector UPhysicsHitVelocityLibrary::angspring_cpp(
 }
 
 #include "ProphecyHitTrajectoryTests.inl"
+#include "ProphecyCatchUpTests.inl"

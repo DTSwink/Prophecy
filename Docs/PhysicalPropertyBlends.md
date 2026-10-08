@@ -13,6 +13,22 @@ Use **Blend Body Magnetization Below** for an entire limb, with Parent Bone and 
 
 ## Feedback
 
+**Set Physical Feedback Tolerance**, **Set Physical Feedback Tolerance Below**, and
+**Set All Physical Feedback Tolerances** have a **Delay** pin (seconds, default `0`).
+Zero follows the original immediate setter path. Positive delay queues the actual
+setter: `0.1` means six subsequent unpaused ticks, `1` means sixty. Fractions round
+up to a whole tick; frame rate and time dilation do not change the tick budget.
+The execution output continues immediately. Bool/count outputs describe accepted
+scheduling and the currently selected bones, not a completed application.
+
+While waiting, no tolerance/profile is written and existing blends keep running.
+At expiry the original setter runs, including its usual blend cancellation and
+Walk/Run, Drawn/Sheathed selection rules. Every delayed invocation is independent;
+issuing another setter does not cancel an already queued call. Calls due together
+apply in their original order. Reset, special start, destruction and world teardown
+discard pending calls. Negative/nonfinite delays are rejected. Delay zero has no
+queue allocation or ticking cost; the shared callback exists only while calls wait.
+
 **Blend Physical Feedback Tolerance** and **Blend Physical Feedback Tolerance Below** interpolate the existing Linear Tolerance Cm and Angular Tolerance Degrees. For example: set head tolerances to `0 cm / 0°`, then blend to `3 cm / 5°` over `1` second.
 
 These are deadband tolerances, **not a normalized feedback weight**. Zero tolerance allows full physical feedback; increasing the tolerance admits more deviation before feedback changes the recurrent pose. The supported NN feedback bones are unchanged: lowerarms are reconstructed, not direct feedback channels.

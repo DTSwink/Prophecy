@@ -288,13 +288,14 @@ void FSlashNative::ClampNeuralUpper(const float* Input,float* Output) const
 void FSlashNative::Finish(FWork& W,const float* State,const float* NeuralUpper,float* Out,const FStepSettings* Settings) const
 {
 	for (int32 I=0; I<90; ++I) W.NextUpper[I]+=NeuralUpper[I]; Clean(W.NextUpper,true);
-	Rebase(W.NextLower,Out,false,W.Origin,W.Heading,RootPosition,RootRotation);
+	if(Settings && Settings->HalfReach) FMemory::Memcpy(Out,W.Frozen,sizeof(W.Frozen));
+	else Rebase(W.NextLower,Out,false,W.Origin,W.Heading,RootPosition,RootRotation);
 	Rebase(W.NextUpper,Out+41,true,W.Origin,W.Heading,RootPosition,RootRotation);
 	// Only upper FK differs between the decoder baseline and candidate. Solve
 	// the legs once, not in all three full-skeleton FK passes of the oracle.
 	for (const auto& L:Legs) SolveLimb(W.FrozenPose,L,LowerOffsets,Out,Settings && Settings->PelvisInertia);
 	// Learned phase latches; headbutt arms remain entirely checkpoint-authored.
-	ProphecyAttackControls::PhaseLatches(Settings && Settings->bBlockArmed,Models[1].InputWidth!=51,
+	ProphecyAttackControls::PhaseLatches(Models[1].InputWidth!=51,
 		State[270],State[271],NeuralUpper[90],NeuralUpper[91],GateThreshold,Out[431],Out[432]);
 	FPose Base,Candidate; RawUpper(Out,W.BaseUpper,Base);
 	RawUpper(Out,Out+41,Candidate);
@@ -470,6 +471,30 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 			Out[435]=W.Pins[0];Out[436]=W.Pins[1];
 			continue;
 		}
+		float UpperTargetHeight=S[263];
+		if (!Settings.IsEmpty() && Settings[Lane].HalfReach)
+		{
+			Rebase(W.NextLower,W.Frozen,false,W.Origin,W.Heading,RootPosition,RootRotation);
+			const auto& Reach=*Settings[Lane].HalfReach;
+			FTransform Ghost[6];
+			Ghost[0]=FTransform(MatrixToQuat(MirrorYBasis(MatrixFromRot6(Root+3))),LocalTrainingToUnreal(Read(Root)));
+			for(int32 Bone=1;Bone<=5;++Bone)
+				Ghost[Bone]=FTransform(MatrixToQuat(MirrorYBasis(MatrixFromRot6(S+172+6*CoreSlots[Bone]))),
+					LocalTrainingToUnreal(FullOffsets[Bone]))*Ghost[Parents[Bone]];
+			const FVector Target=LocalTrainingToUnreal(TransformRow(Read(S,262)-RootPosition,Transpose(RootRotation)));
+			const FVector Virtual=ProphecyHalfAttackMount::ReachTarget(Ghost,Reach.RealPelvis,Target,Reach.bDistributed);
+			const FVector3f UpperTarget=TransformRow(LocalUnrealToTraining(Virtual),RootRotation)+RootPosition;
+			const FVector3f D=UpperTarget-(TransformRow(Read(S,41),RootRotation)+RootPosition);
+			// Only the upper held-target frame changes. The lower prediction, pinning
+			// and recurrent ghost stay untouched; no additional inference is needed.
+			if(D.X*D.X+D.Z*D.Z>1.e-10f) W.Heading=YawMatrix(-FMath::Atan2(D.X,D.Z));
+			W.Origin=FVector3f(UpperTarget.X,0,UpperTarget.Z);UpperTargetHeight=UpperTarget.Y;
+			Rebase(S,W.PrevLower,false,RootPosition,RootRotation,W.Origin,W.Heading);
+			Rebase(S+41,W.CurLower,false,RootPosition,RootRotation,W.Origin,W.Heading);
+			Rebase(S+82,W.PrevUpper,true,RootPosition,RootRotation,W.Origin,W.Heading);
+			Rebase(S+172,W.CurUpper,true,RootPosition,RootRotation,W.Origin,W.Heading);
+			Rebase(Root,W.NextLower,false,RootPosition,RootRotation,W.Origin,W.Heading);
+		}
 		float CurrentBase[90],CurrentHeld[90],NextHeld[90]; FPose CurrentPose;
 		FrozenUpper(S+41,CurrentPose,CurrentBase); FrozenUpper(Root,W.FrozenPose,W.BaseUpper);
 		Rebase(CurrentBase,CurrentHeld,true,RootPosition,RootRotation,W.Origin,W.Heading);
@@ -477,7 +502,7 @@ bool FSlashNative::Run(TArray<float>& Input,TArray<float>& Output,TConstArrayVie
 		for (int32 I=0; I<90; ++I) W.NextUpper[I]=NextHeld[I]+(W.CurUpper[I]-CurrentHeld[I]); Clean(W.NextUpper,true);
 		float* N=NetworkInputs[2].GetData()+217*Lane;
 		FMemory::Memcpy(N,W.PrevUpper,90*sizeof(float)); FMemory::Memcpy(N+90,W.NextUpper,90*sizeof(float));
-		N[180]=S[263]; FMemory::Memcpy(N+181,S+265,5*sizeof(float));
+		N[180]=UpperTargetHeight; FMemory::Memcpy(N+181,S+265,5*sizeof(float));
 		FMemory::Memcpy(N+186,W.PrevLower,9*sizeof(float)); FMemory::Memcpy(N+195,W.CurLower,9*sizeof(float));
 		FMemory::Memcpy(N+204,W.NextLower,9*sizeof(float)); N[213]=S[270]; N[214]=S[271]; N[215]=N[216]=0;
 	}
@@ -631,6 +656,43 @@ bool FProphecyAttackWristPresentationModels::RunTest(const FString&)
         }
     }
     TestTrue(TEXT("Fixture exercises an actual excess-bend correction"),Corrections>0);
+    return !HasAnyErrors();
+}
+#endif
+
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyHalfReachNativeTest,"Prophecy.NN.HalfAttack.ReachNativeIsolation",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyHalfReachNativeTest::RunTest(const FString&)
+{
+    for(const TCHAR* Suffix:{TEXT(""),TEXT("AttackSeptember20"),TEXT("Attack160664"),TEXT("Attack184064")})
+    {
+        const FString Dir=FPaths::ProjectContentDir()/TEXT("locomotion/NN")/Suffix;
+        FString Text;TSharedPtr<FJsonObject> Contract;
+        if(!FFileHelper::LoadFileToString(Text,*(Dir/TEXT("prophecy_slash_runtime.json"))) ||
+            !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Contract))return false;
+        FSlashNative Model;if(!TestTrue(TEXT("Model loads"),Model.Initialize(Dir,Contract)))return false;
+        TArray<float> State,Baseline,Corrected,Disabled;JsonFloatArray(Contract->GetArrayField(TEXT("seed_input")),State);
+        if(!TestTrue(TEXT("Baseline run"),Model.Run(State,Baseline)))return false;
+        const auto LowerInputs=Model.NetworkInputs[1];const auto LowerOutputs=Model.NetworkOutputs[1];
+        const auto UpperInputs=Model.NetworkInputs[2];
+        FSlashNative::FHalfReach Reach;
+        Reach.RealPelvis=FTransform(MatrixToQuat(MirrorYBasis(MatrixFromRot6(Baseline.GetData()+3))),LocalTrainingToUnreal(ReadStateVec3(Baseline.GetData(),0)));
+        Reach.RealPelvis.AddToTranslation(FVector(35,12,-5));Reach.bDistributed=true;
+        FSlashNative::FStepSettings Option;Option.HalfReach=&Reach;
+        if(!TestTrue(TEXT("Corrected run"),Model.Run(State,Corrected,MakeArrayView(&Option,1))))return false;
+        TestTrue(TEXT("Lower NN input and prediction bit-identical"),LowerInputs==Model.NetworkInputs[1] && LowerOutputs==Model.NetworkOutputs[1]);
+        TestTrue(TEXT("Lower recurrent state bit-identical"),FMemory::Memcmp(Baseline.GetData(),Corrected.GetData(),41*sizeof(float))==0);
+        TestTrue(TEXT("Upper receives changed reach"),UpperInputs!=Model.NetworkInputs[2]);
+        for(int32 Bone:{0,17,18,19,20,21,22,23,24})
+        {
+            TestTrue(TEXT("Pelvis and legs positions bit-identical"),FMemory::Memcmp(Baseline.GetData()+131+Bone*3,Corrected.GetData()+131+Bone*3,3*sizeof(float))==0);
+            TestTrue(TEXT("Pelvis and legs rotations bit-identical"),FMemory::Memcmp(Baseline.GetData()+206+Bone*9,Corrected.GetData()+206+Bone*9,9*sizeof(float))==0);
+        }
+        for(float Value:Corrected)if(!FMath::IsFinite(Value)){AddError(TEXT("Nonfinite reach output"));return false;}
+        if(!TestTrue(TEXT("Disabled run"),Model.Run(State,Disabled)))return false;
+        TestTrue(TEXT("Full/disabled path bit-identical after correction"),Disabled==Baseline);
+    }
     return !HasAnyErrors();
 }
 #endif

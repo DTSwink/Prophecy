@@ -1,4 +1,5 @@
 #if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/ScopeExit.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -142,6 +143,49 @@ bool FProphecyFKReturnParityTest::RunTest(const FString&)
     const FString Report=FString::Printf(TEXT("cases=%d samples=%d lab_cm=%.9g lab_degrees=%.9g length_cm=%.9g mix_cm=%.9g mix_degrees=%.9g microseconds_per_pose=%.6f checksum=%.6f"),
         Cases,Samples,MaxPosition,FMath::RadiansToDegrees(MaxAngle),MaxLength,MaxMixPosition,FMath::RadiansToDegrees(MaxMixAngle),Us,Checksum);
     AddInfo(Report);FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("FKReturn/native-parity.txt")));
+    return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyFKReturnSeparateSettersTest,"Prophecy.NN.FKReturn.SeparateSetters",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyFKReturnSeparateSettersTest::RunTest(const FString&)
+{
+    using namespace ProphecyFKReturn;
+    UWorld* W=UWorld::CreateWorld(EWorldType::Editor,false);
+    auto* A=W->SpawnActor<AProphecyAgent>();auto* B=W->SpawnActor<AProphecyAgent>();
+    ON_SCOPE_EXIT {Remove(A);ForgetReset(A);Remove(B);ForgetReset(B);W->DestroyWorld(false);};
+    const FName Hook(TEXT("hookR")),Slash(TEXT("slashLD"));
+    const FConfig Empty;const FProfile Imported=CurrentProfile(Empty,Hook),Other=CurrentProfile(Empty,Slash);
+    auto Read=[](AProphecyAgent* Agent,FName Attack){return CurrentProfile(Configs.FindChecked(Agent),Attack);};
+    auto SameProfile=[](const FProfile& X,const FProfile& Y){return X.InertiaHold==Y.InertiaHold && X.InertiaDecay==Y.InertiaDecay &&
+        X.WorldInertia==Y.WorldInertia && X.AngleTimeSeconds==Y.AngleTimeSeconds && FMemory::Memcmp(X.Weights,Y.Weights,sizeof(X.Weights))==0;};
+    TestTrue(TEXT("Values setter succeeds"),UProphecyFKReturnLibrary::SetAttackFKReturnValues(A,Hook,.28f,.7f,0));
+    TestTrue(TEXT("Values preserve every imported profile field"),SameProfile(Read(A,Hook),Imported));
+    TestEqual(TEXT("Other attack duration retained"),Read(A,Slash).Duration,Other.Duration);
+    FProphecyFKInertiaWeights Weights;Weights.Spine=.42f;Weights.LowerArm=.23f;
+    TestTrue(TEXT("Profile setter succeeds"),UProphecyFKReturnLibrary::SetAttackFKReturnInertiaProfile(A,Hook,Weights,.2f,1.3f,false,.4f));
+    auto P=Read(A,Hook);TestEqual(TEXT("Profile keeps duration"),P.Duration,.28f);
+    TestEqual(TEXT("Profile keeps inertia"),P.Inertia,.7f);TestEqual(TEXT("Profile keeps easing"),P.Easing,0.f);
+    UProphecyFKReturnLibrary::SetAttackFKReturnInertiaProfile(B,Hook,Weights,.2f,1.3f,false,.4f);
+    UProphecyFKReturnLibrary::SetAttackFKReturnValues(B,Hook,.28f,.7f,0);
+    TestTrue(TEXT("Setter order independent"),SameProfile(P,Read(B,Hook)) && Read(B,Hook).Duration==P.Duration);
+    UProphecyFKReturnLibrary::SetAttackFKReturnValues(A,NAME_None,.9f,.6f,.5f);
+    TestTrue(TEXT("All values preserve individual hook profile"),SameProfile(Read(A,Hook),P));
+    TestTrue(TEXT("All values preserve individual slash profile"),SameProfile(Read(A,Slash),Other));
+    TestEqual(TEXT("All values reach slash"),Read(A,Slash).Duration,.9f);
+    UProphecyFKReturnLibrary::SetAttackFKReturnValues(A,Hook,.31f,.21f,.11f);
+    UProphecyFKReturnLibrary::SetAttackFKReturnInertiaProfile(A,NAME_None,Weights,.3f,2.f,true,.6f);
+    TestEqual(TEXT("All profiles preserve hook duration"),Read(A,Hook).Duration,.31f);
+    TestEqual(TEXT("All profiles preserve other duration"),Read(A,Slash).Duration,.9f);
+    TestEqual(TEXT("All profiles apply weights"),Read(A,Slash).Weights[0],.42f);
+    const auto Before=Read(A,Hook);
+    TestFalse(TEXT("Bad values rejected"),UProphecyFKReturnLibrary::SetAttackFKReturnValues(A,Hook,.8f,2.f,0));
+    TestFalse(TEXT("Bad profile rejected"),UProphecyFKReturnLibrary::SetAttackFKReturnInertiaProfile(A,Hook,Weights,-1));
+    TestEqual(TEXT("Invalid call leaves values untouched"),Read(A,Hook).Duration,Before.Duration);
+    TestTrue(TEXT("Invalid call leaves profile untouched"),SameProfile(Read(A,Hook),Before));
+    CaptureReset(A);UProphecyFKReturnLibrary::SetAttackFKReturnValues(A,Hook,1,0,0);RestoreReset(A);
+    TestEqual(TEXT("Reset retains partial updates"),Read(A,Hook).Duration,Before.Duration);
+    TestTrue(TEXT("Reset retains profile"),SameProfile(Read(A,Hook),Before));
     return !HasAnyErrors();
 }
 

@@ -1,5 +1,6 @@
 #include "ProphecySwordComponent.h"
 #include "ProphecySwordPhysicsLibrary.h"
+#include "ProphecyGhostAttackLibrary.h"
 #if WITH_EDITOR
 #include "StaticMeshCompiler.h"
 #endif
@@ -21,6 +22,7 @@
 #include "PBDRigidsSolver.h"
 #include "Chaos/PBDRigidsEvolution.h"
 #include "Chaos/Collision/CollisionConstraintFlags.h"
+#include "ProphecySwordCollisionCooldown.inl"
 
 namespace ProphecySwordAttackCollision
 {
@@ -28,10 +30,20 @@ namespace
 {
 struct FGate
 {
-	bool bWeapon=false,bAllowed=false,bSuppressed=false;
+	// Keep the previous one-byte family field/layout for existing Live Coding state.
+	enum : uint8 { Weapon=1, RightPunch=2, PunchArmed=4 };
+	uint8 Family=0;
+	bool bAllowed=false,bSuppressed=false,bGapMelee=false;
+	bool IsWeapon() const { return (Family&Weapon)!=0; }
+	bool SuppressesPunch() const { return (Family&(RightPunch|PunchArmed))==(RightPunch|PunchArmed); }
 	TWeakObjectPtr<UStaticMeshComponent> Blade;
 	FCollisionResponseContainer Original;
 };
+uint8 CollisionFamily(FName Family)
+{
+	if (Family==TEXT("jabR") || Family==TEXT("hookR") || Family==TEXT("overR")) return FGate::RightPunch;
+	return Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash"),ESearchCase::IgnoreCase) ? FGate::Weapon : 0;
+}
 TMap<TWeakObjectPtr<const AProphecyAgent>,FGate> Gates;
 TSet<TWeakObjectPtr<const AProphecyAgent>> HitOwners;
 // Event-only preference; no component layout changes or per-tick collision polling.
@@ -97,12 +109,13 @@ bool SuppressesSwordOwner(const AProphecyAgent* Agent)
     const auto* Gate=Gates.Find(Agent);
     // Weapon wind-up gates only the owner's pairs; melee retains its until-Hit rule.
     return OwnCollisionDisabled.Contains(Agent)
-        || (Gate && Gate->bWeapon ? !Gate->bAllowed : SuppressesOwner(Agent));
+        || (Gate && Gate->IsWeapon() && !Gate->bGapMelee ? !Gate->bAllowed : SuppressesOwner(Agent));
 }
 bool IsAllowed(const AProphecyAgent* Agent)
 {
 	const auto* Gate=Gates.Find(Agent);
-    return !CollisionDisabled.Contains(Agent) && (!Gate || Gate->bWeapon || Gate->bAllowed);
+	return !CollisionDisabled.Contains(Agent) && (!Gate || (!Gate->SuppressesPunch() && (Gate->bAllowed
+        || (!Gate->bGapMelee && (Gate->IsWeapon() || ProphecySwordCooldown::Active.Contains(Agent))))));
 }
 void Refresh(AProphecyAgent* Agent)
 {
@@ -123,30 +136,51 @@ void Refresh(AProphecyAgent* Agent)
 	Gate->bSuppressed=true;
 	Responses(*Blade,FCollisionResponseContainer(ECR_Ignore));
 }
-void Begin(AProphecyAgent* Agent,FName Family)
+void Begin(AProphecyAgent* Agent,FName Family,int64 EntryTicks)
 {
 	if (!Agent) return;
 	End(Agent);
+	ProphecySwordCooldown::Family(Agent,Family,false);
 	auto& Gate=Gates.FindOrAdd(Agent);
 	Gate.bAllowed=false;
-	Gate.bWeapon=Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash"),ESearchCase::IgnoreCase);
+	Gate.bGapMelee=(EntryTicks>=0 ? EntryTicks : UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(Agent))
+		>ProphecySwordCooldown::MeleeGapThreshold(Agent);
+	Gate.Family=CollisionFamily(Family);
 	SetBodySuppressed(Agent, true);
 	RefreshOwner(Agent);
 }
 void Armed(AProphecyAgent* Agent)
 {
 	auto* Gate=Gates.Find(Agent);
-	if (!Gate || !Gate->bWeapon || Gate->bAllowed) return;
+	if (!Gate) return;
+	if ((Gate->Family&FGate::RightPunch)!=0)
+	{
+		if (!Gate->SuppressesPunch()) { Gate->Family|=FGate::PunchArmed;Refresh(Agent); }
+		return;
+	}
+	if (!Gate->IsWeapon()) return;
+	ProphecySwordCooldown::Armed(Agent);
+	if (Gate->bGapMelee) return; // Actual slash still qualifies for its eventual end cooldown.
+	if (Gate->bAllowed) return;
 	Gate->bAllowed=true;RefreshOwner(Agent);
 }
 void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit)
 {
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate) return;
-	const bool bWeapon=Family==TEXT("pike") || Family.ToString().StartsWith(TEXT("slash"),ESearchCase::IgnoreCase);
-	if (Gate->bWeapon==bWeapon) return; // Preserve the already-latched collision phase.
-	Gate->bWeapon=bWeapon;
-	Gate->bAllowed=bWeapon ? bArmed : bHit;
+	ProphecySwordCooldown::Family(Agent,Family,bArmed);
+	const uint8 Kind=CollisionFamily(Family);
+	const uint8 PreviousKind=Gate->Family&(FGate::Weapon|FGate::RightPunch);
+	const uint8 Phase=Kind==FGate::RightPunch && (bArmed || (PreviousKind==Kind && Gate->SuppressesPunch()))
+		? FGate::PunchArmed : 0;
+	if (PreviousKind==Kind)
+	{
+		if (Gate->Family!=(Kind|Phase)) { Gate->Family=Kind|Phase;Refresh(Agent); }
+		return; // Preserve the already-latched collision phase.
+	}
+	Gate->Family=Kind|Phase;
+	const bool bWeapon=Gate->IsWeapon();
+	Gate->bAllowed=bWeapon && !Gate->bGapMelee ? bArmed : bHit;
 	RefreshOwner(Agent); // Retain original responses, body and grip; no End/Begin cycle.
 }
 void Hit(AProphecyAgent* Agent)
@@ -157,11 +191,12 @@ void Hit(AProphecyAgent* Agent)
     // Restore owner pairs for every attack family without ending any attack systems.
     if (First) { SetBodySuppressed(Agent, false); RefreshOwner(Agent); }
 	auto* Gate=Gates.Find(Agent);
-	if (!Gate || Gate->bWeapon || Gate->bAllowed) return;
+	if (!Gate || (Gate->IsWeapon() && !Gate->bGapMelee) || Gate->bAllowed) return;
 	Gate->bAllowed=true;Refresh(Agent);
 }
 void End(AProphecyAgent* Agent)
 {
+	ProphecySwordCooldown::End(Agent);
 	SetBodySuppressed(Agent, false);
 	FGate Gate;if (Gates.RemoveAndCopyValue(Agent,Gate)) Restore(Gate);
     HitOwners.Remove(Agent);
@@ -169,8 +204,10 @@ void End(AProphecyAgent* Agent)
 }
 void ReleaseSword(AProphecyAgent* Agent)
 {
+	ProphecySwordCooldown::Cancel(Agent);
 	if (auto* Gate=Gates.Find(Agent)) Restore(*Gate);
 }
+void CancelCooldown(AProphecyAgent* Agent) { ProphecySwordCooldown::Cancel(Agent);Refresh(Agent); }
 }
 
 struct FProphecyJoltSwordBinding
@@ -922,6 +959,7 @@ void UProphecySwordComponent::Disappear()
 
 void UProphecySwordComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
+	ProphecySwordCooldown::Remove(Agent());
 	ProphecySwordAttackCollision::CollisionDisabled.Remove(Agent());
 	ProphecySwordAttackCollision::OwnCollisionDisabled.Remove(Agent());
 	ProphecySwordAttackCollision::End(Agent());
@@ -1078,7 +1116,7 @@ bool AProphecyAgent::SetSwordInertiaScale(float Scale)
 #include "ProphecySpecialSolver.h"
 #include "ProphecyAttackControlLibrary.h"
 #include "ProphecyJoltPHATSweepLibrary.h"
-void AProphecyAgent::NotifySwordAttackState(bool bAttacking)
+void AProphecyAgent::NotifySwordAttackState(bool bAttacking,int64 EntryTicks)
 {
     ProphecySpecialSolver::AttackChanged(this,bAttacking);
     if (bAttacking)
@@ -1104,7 +1142,7 @@ void AProphecyAgent::NotifySwordAttackState(bool bAttacking)
 	if (bAttacking)
 	{
 		FName Family;bool Half,Armed,Hit;int32 Frame;
-		if (GetNNAttackState(Family,Half,Armed,Hit,Frame)) ProphecySwordAttackCollision::Begin(this,Family);
+		if (GetNNAttackState(Family,Half,Armed,Hit,Frame)) ProphecySwordAttackCollision::Begin(this,Family,EntryTicks);
 	}
 	ProphecyPhysicalContext::AttackChanged(this);
 	if (auto* C = SwordController(this, false)) C->RefreshOwnerCollision();

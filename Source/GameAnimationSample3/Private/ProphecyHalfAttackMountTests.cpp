@@ -123,45 +123,34 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyHalfAttackPositionCompensationTest,"Pr
 bool FProphecyHalfAttackPositionCompensationTest::RunTest(const FString& Parameters)
 {
     using namespace ProphecyHalfAttackMount;
-    const FTransform GhostSpine(FVector(0,0,100));
-    const FVector Target(100,0,100);
-    FTransform Spine(FVector(0,-20,100));
-    CompensateSpinePosition(Spine,GhostSpine,Target,Target);
-    const FVector Virtual=Spine.TransformPosition(GhostSpine.InverseTransformPosition(Target));
-    TestTrue(TEXT("Left displacement countersteers right"),Spine.GetRotation().RotateVector(FVector::ForwardVector).Y>0);
-    TestTrue(TEXT("Shifted target ray is aligned"),(Virtual-Spine.GetLocation()).GetSafeNormal().Equals((Target-Spine.GetLocation()).GetSafeNormal(),1.e-8));
-    TestTrue(TEXT("20cm lateral miss becomes under 2cm radial reach error"),FVector::Dist(Virtual,Target)<2.);
-    TestTrue(TEXT("Spine attachment stays fixed"),Spine.GetLocation().Equals(FVector(0,-20,100),0));
-    TestTrue(TEXT("Target at pivot safely bypasses"),AimFromPivot(Target,Virtual,Target).Equals(FQuat::Identity,0));
-    TestTrue(TEXT("Zero virtual ray safely bypasses"),AimFromPivot(Target,Target,Virtual).Equals(FQuat::Identity,0));
-    TestFalse(TEXT("Opposite rays remain finite"),AimFromPivot(FVector::ZeroVector,FVector(1,0,0),FVector(-1,0,0)).ContainsNaN());
-    FTransform NoShift=GhostSpine;
-    CompensateSpinePosition(NoShift,GhostSpine,Target,Target);
-    TestTrue(TEXT("No displacement has no correction"),NoShift.Equals(GhostSpine,0));
-    for(FVector Shift:{FVector(0,-20,0),FVector(0,20,0),FVector(10,-15,10)})
+    for(bool Distributed:{false,true})for(double Yaw:{0.,90.,179.,-179.})
     {
-        TArray<FTransform> Ghost{FTransform(FRotator(12,23,-8),FVector(0,0,90))};
-        for(int32 I=0;I<5;++I) Ghost.Add(FTransform(FRotator(2,-3,1),FVector(0,0,7))*Ghost.Last());
-        Ghost.Add(FTransform(FVector(70,-20,10))*Ghost.Last());
-        Ghost.Add(FTransform(FVector(-20,0,-60))*Ghost[0]);
-        const TArray<int32> Parents{INDEX_NONE,0,1,2,3,4,5,0};
-        const int32 Spines[]={1,2,3,4,5};
-        const FTransform Anchor(FRotator(0,50,0),FVector(170,20,0)),Carrier(FRotator(0,-30,0),FVector(-10,30,0));
-        FTransform Pelvis=(Ghost[0]*Anchor).GetRelativeTransform(Carrier);Pelvis.AddToTranslation(Shift);
-        TArray<FTransform> Before;
-        for(const auto& Bone:Ghost) Before.Add(Mount(Bone,Ghost[0],Pelvis));
-        MountDistributed(Ghost,Before,Parents,MakeArrayView(Spines),Pelvis,Anchor,Carrier);
-        const FVector WorldTarget=(Ghost[5]*Anchor).TransformPosition(FVector(110,25,0));
-        const FVector LocalTarget=Ghost[5].InverseTransformPosition(Anchor.InverseTransformPosition(WorldTarget));
-        const FVector ComponentTarget=Carrier.InverseTransformPosition(WorldTarget);
-        auto After=Before;
-        TestTrue(TEXT("Distributed position correction accepted"),MountDistributed(Ghost,After,Parents,MakeArrayView(Spines),Pelvis,Anchor,Carrier,&WorldTarget));
-        TestTrue(TEXT("Distributed target displacement reduced"),FVector::DistSquared(After[5].TransformPosition(LocalTarget),ComponentTarget)
-            <FVector::DistSquared(Before[5].TransformPosition(LocalTarget),ComponentTarget));
-        for(int32 I=1;I<=5;++I)
-            TestTrue(TEXT("Position compensation preserves spine lengths and local offsets"),After[I].GetRelativeTransform(After[I-1]).GetLocation().Equals(Ghost[I].GetRelativeTransform(Ghost[I-1]).GetLocation(),1.e-6));
-        TestTrue(TEXT("Position compensation preserves pelvis"),After[0].Equals(Before[0],0));
-        TestTrue(TEXT("Position compensation preserves legs"),After[7].Equals(Before[7],0));
+        FTransform Ghost[6];Ghost[0]=FTransform(FRotator(13,35,-11),FVector(30,20,95));
+        for(int32 I=1;I<=5;++I)Ghost[I]=FTransform(FRotator(2,-3,1),FVector(1,0,7))*Ghost[I-1];
+        const FTransform RealPelvis(FRotator(-19,Yaw,16),FVector(100,-50,110));
+        const FVector Target(130,20,155);
+        const auto Virtual=ReachTarget(Ghost,RealPelvis,Target,Distributed);
+        FTransform RealPivot;int32 Pivot;
+        if(Distributed)
+        {
+            const int32 Spines[]={1,2,3,4,5};FTransform Corrected[5];
+            BuildDistributedSpines(MakeArrayView(Ghost),MakeArrayView(Spines),RealPelvis,
+                Ghost[0].GetRotation()*RealPelvis.GetRotation().Inverse(),Corrected);
+            RealPivot=Corrected[4];Pivot=5;
+        }
+        else {RealPivot=CompensatedSpine(Ghost[1],Ghost[0],RealPelvis,FTransform::Identity,FTransform::Identity);Pivot=1;}
+        TestTrue(TEXT("Virtual target maps exactly to actual target, including reach"),
+            RealPivot.TransformPosition(Ghost[Pivot].InverseTransformPosition(Virtual)).Equals(Target,1.e-6));
+        TestTrue(TEXT("Identical torso-target distance in both frames"),
+            FMath::IsNearlyEqual(FVector::Dist(Virtual,Ghost[Pivot].GetLocation()),FVector::Dist(Target,RealPivot.GetLocation()),1.e-6));
+        const FVector Shift(150,-80,12);FTransform Moved=RealPelvis;Moved.AddToTranslation(Shift);
+        TestTrue(TEXT("Attacker and target moving together do not stretch the attack"),
+            ReachTarget(Ghost,Moved,Target+Shift,Distributed).Equals(Virtual,1.e-6));
+        TestTrue(TEXT("Matching pelvis leaves target unchanged"),ReachTarget(Ghost,Ghost[0],Target,Distributed).Equals(Target,1.e-6));
+        const FTransform Frame(FRotator(10,65,-20),FVector(250,-100,85));
+        FTransform RotatedGhost[6];for(int32 I=0;I<6;++I)RotatedGhost[I]=Ghost[I]*Frame;
+        TestTrue(TEXT("Coordinate-frame rotation and translation are covariant"),
+            ReachTarget(RotatedGhost,RealPelvis*Frame,Frame.TransformPosition(Target),Distributed).Equals(Frame.TransformPosition(Virtual),1.e-6));
     }
     return !HasAnyErrors();
 }

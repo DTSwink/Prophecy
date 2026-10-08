@@ -18,16 +18,29 @@ After your existing per-bone setters temporarily change values, use:
 
 Use the same snapshot name and an authored duration: 1 means60 unpaused game ticks regardless of actual FPS or time dilation. Every To Snapshot node has **Hold Out Time**, default0 seconds. It retains the current values before interpolation starts; duration counts only the interpolation after that hold. Zero or negative duration snaps at the end of the hold. Negative/nonfinite hold is rejected without changing the previous request. Single-bone nodes return success; Below/All return the number of matching saved entries. Below respects Include Parent. Missing names/bones do nothing and return false/zero. Saving captures magnetization, magnetization mode, tolerance, damping and clamps; restoring each kind is independent and does not alter the others. Snapshots are reusable. Damping requires a live Jolt rig when restoring; it covers anatomical inbound joints, not the sword grip. Re-save snapshots made before the new kind was supported.
 
+**Delayed tolerance writes during a snapshot hold (October 7):** a tolerance
+snapshot return keeps its requested interpolation duration even when its current
+value already matches the snapshot. If a delayed tolerance setter expires during
+that hold (including the positive-duration blend's first tick), it changes the
+starting tolerance without cancelling the scheduled return or restarting its
+hold. This applies to single/Below/All returns and setter scopes, preserving the
+four walk/run/equipment cells. Example: schedule a delayed tolerance change and
+an All Tolerances To Snapshot return with Hold1/Duration1; the delayed value stays
+until the original hold ends, then returns over the following60 ticks. A new
+snapshot blend still replaces the old request. Ordinary immediate setters and
+explicit cancellations retain their cancellation behavior; a delayed setter
+after interpolation has begun is also a new overriding write.
+
 Magnetization/tolerance/damping entries include all four walk/run × drawn/sheathed profiles. Restores blend each cell independently with the existing smoothstep curve, so policy changes during restoration continue to select/blend the correct values. Saving an unfinished blend captures its current values, not its destination. Without a slot `1` restore, legacy attack defaults remain in force and save/restore operates on underlying locomotion profiles. With slot `1`, restored profiles remain effective during the attack and normal context selection still applies.
 
 Clamps retain shared left/right Foot and Calf settings in Locomotion, Attack, Parry and Dodge: eight saved entries. Save includes enabled state, remembered leeway and override/inheritance flags. Inherited settings return to inheritance at the endpoint. Mode defaults to All and can restrict the return to one mode. Hand/Forearm clamp entries mentioned in the historical validation below are no longer supported.
 
-**Set Magnetization Mode** configures the current Jolt drive for this agent:0 follows the actual physical parent,1 keeps the existing world target, intermediate values blend those targets. Default1 preserves existing setups. The pelvis remains world-driven. Bones without their own simulated parent use the nearest physical ancestor. Each body uses one servo; local and intermediate modes share the same parent sampling path. Parent links are cached at rig admission and the physical parent frames are sampled before the drive loop. The existing velocity correction then follows this target; it does not reinject parent velocity through the joint chain. Global mode bypasses parent sampling. This mode is distinct from magnetization strength.
+**Set Magnetization Mode** configures the current Jolt drive for this agent:0 follows the actual physical parent,1 keeps the existing world target, intermediate values blend those targets. Default1 preserves existing setups. The pelvis remains world-driven. Bones without their own simulated parent use the nearest physical ancestor. Each body uses one servo; local and intermediate modes share the same parent sampling path. Parent links are cached at rig admission. The servo evaluates parents before children and carries each local target with its parent's commanded endpoint for the current physics step. This allows the connected chain to straighten without its position drives resisting its angular drives. Gravity cancellation is not inherited a second time; the previous solved parent velocity is not added on top of the correction. A parent without a drive retains the existing physical-frame fallback. Global mode bypasses the local hierarchy. Topology is cached, endpoint scratch is reused, and no allocation occurs in the physics step. This mode is distinct from magnetization strength.
 
 **Get Magnetization Mode** reads the current value. Save Physical Profile Snapshot captures it, and **Blend Magnetization Mode To Snapshot** restores it using the same hold and smoothstep timing. The existing per-bone/Below/All magnetization-strength returns remain independent; they do not change the agent-wide mode. Special entry restores the mode saved in slot1 immediately and cancels its pending hold/blend, like the other saved values. Set the desired mode before saving slot1 if you want that mode during specials. Reset restores its captured baseline. No new inference, additional solver, continuous idle blend timer or saved-asset format is introduced.
 
 **Per-body modes (October 6):** **Set Body Magnetization Mode** changes one physical
-bone, and **Set Magnetization Mode Below** changes physical bones in a skeletal
+bone, and **Set Body Magnetization Mode Below** changes physical bones in a skeletal
 subtree, with Include Parent. **Set Magnetization Mode** replaces every override
 and cancels all mode returns. **Get Body Magnetization Mode** reads the selected
 bone's configured value; the older getter reads the shared baseline. The pelvis
@@ -44,6 +57,13 @@ their values in physical-body order when edited; unchanged frames use indexed
 reads. Completed identical profiles collapse back to uniform.
 
 `Print Physical Bone Profiles` shows fixed attachment for hands and locomotion Foot/Calf clamps on foot rows, without units, for example ` / Clamp=Foot:3.00 Calf:4.00`. Other rows and the magnetization/tolerance/damping fields keep their format.
+
+**Magnetization strength (October7 rollback):** original momentum-preserving
+velocity blend: `v += strength * (error / duration - v)`.0 disables that channel;
+1 uses the original full-strength command. All anti-wobble experiments were
+removed at the user's request: direct fractional landing, predictive crossing
+brakes and the experimental small-angle calculation. The earlier accepted local
+parent prediction fix remains. Overshoot can occur with the original response.
 
 Magnetization captures enabled plus linear/angular scales. Restoring disabled magnetization fades toward zero, then restores the disabled flag and its remembered scales. Simulation membership, gravity cancellation, global strength/gate settings and physics state are intentionally not part of these strength/tolerance profiles.
 

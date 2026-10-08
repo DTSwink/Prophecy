@@ -19,9 +19,9 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackControlLibrary : public UBlueprint
     GENERATED_BODY()
 public:
     /** Attacking parts for an explicit attack name; no active attack required.
-     * Punches: hand + lowerarm, plus "sword" when Agent holds one in that hand.
-     * Kicks: foot + calf; headbutt: head. Null Agent keeps name-only metadata.
-     * Slashes and pike return only the logical name "sword" (not a skeleton bone).
+     * Punches: hand + lowerarm only, even when holding a sword.
+     * Kicks: foot + calf; headbutt: head. Agent is retained for Blueprint compatibility.
+     * Slashes and pike return hand_r plus the logical name "sword" (not a skeleton bone).
      * Left/right follows the attack. Unknown/None returns an empty array. */
     UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Attack", meta=(ReturnDisplayName="Bones", DefaultToSelf="Agent"))
     static TArray<FName> GetAttackBones(FName Attack, AProphecyAgent* Agent = nullptr);
@@ -74,8 +74,8 @@ public:
 
     /** Read-only metadata for an ongoing NN attack, including before Armed.
      * BoneNames contains the attacking PHAT bodies, not every body that can collide.
-     * Slash/pike returns only SwordCollider, with an empty BoneNames array.
-     * Punches also return SwordCollider when the punching hand holds the sword.
+     * Slash/pike returns hand_r and SwordCollider.
+     * Punches return hand + lowerarm only; their SwordCollider is null.
      * A missing/dropped sword returns null. False/inactive clears every output.
      * This does not change collision, Armed gating, or hit detection. */
     UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Attack", meta=(DisplayName="Get NN Attack Colliders"))

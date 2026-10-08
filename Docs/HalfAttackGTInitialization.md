@@ -27,7 +27,12 @@ in world position as the real agent moves. The exact-world-target guarantee is
 for the ghost policy, not a guarantee of physical hand contact.
 
 Active retriggers and half/full ownership switches retain history, phases and
-frame count. Stop then Trigger starts fresh. Half kicks remain rejected. The
+frame count. Stop then Trigger starts fresh. **October7 kick exception:** a half
+request for kickL/kickR now becomes full mode instead of rejecting the attack;
+Set NN Half Attack Enabled is a successful no-op during a kick.
+Kick half mode has been removed; **Set Kick Locomotion** only controls
+supporting-foot drag (see [kick locomotion](KickLocomotion.md)). This supersedes
+the half-kick rejection described in historical test notes below. The
 existing half-to-full rejoin uses the current locomotion carrier.
 
 Recovery now follows [regional ownership](RegionalSpecialRecovery.md): ending a

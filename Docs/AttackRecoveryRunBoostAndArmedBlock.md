@@ -1,8 +1,10 @@
 # Attack recovery Run boost and Armed block
 
-**October 3 update:** all Run pin boosts and their Blueprint nodes were removed at the user's request. The recovery-boost section and its old validation below are historical. Armed blocking, phase rules and the ticks-since-attack counter remain. `TestAttackControls.py` now checks ArmedGate, EntryMagicAndTicks and regional ownership.
+**October 7 current status:** Armed blocking and its Blueprint node have also been removed at the user's request. Normal checkpoint Armed/Hit progression and the ticks-since-attack counter remain. `TestAttackControls.py` checks PhaseLatches, EntryMagicAndTicks, ManualTicks and regional ownership. The dedicated Armed-block and dependent scripted entry captures have been retired; their saved evidence is retained.
 
-## Set Attack Recovery Run Pinning Boost
+**October 3 update:** all Run pin boosts and their Blueprint nodes were removed. Their descriptions and validation below are historical.
+
+## Historical: Set Attack Recovery Run Pinning Boost
 
 Configure once per agent, or when changing the configuration. Inputs: **Enabled**, **Hold Duration Seconds**, **Blend Duration Seconds**, **Boost** (0..1). The feature starts unconfigured/off; node defaults when executed are Enabled=true, Hold=0, Blend=1, Boost=1.
 
@@ -18,7 +20,7 @@ This correction compiled and loaded **September27 12:49:26 UTC**, with no reflec
 
 Durations follow the project clock contract: 60 unpaused game ticks per authored second, independent of FPS/dilation. Hold>0 with Blend=0 holds then returns immediately. Both zero or Enabled=false removes the configuration. Only active returns have a tick callback; completion retires the entry/callback even if Run is never evaluated. Initial-agent reset restores configuration and cancels transient progress. EndPlay removes configuration, progress and reset state.
 
-## Set Attack Armed Blocked
+## Historical: Set Attack Armed Blocked (removed October 7)
 
 Call with **Blocked=true** before the checkpoint reaches Armed (before attack entry is simplest). The per-agent setting persists across attacks until set false. It covers both full and half attacks and remains independent of the user's mode/distance Blueprint logic.
 
@@ -38,17 +40,17 @@ Counting shares the existing recovery callback. Full ownership keeps only a mark
 
 Startup correction: the original implementation stayed0 until the first full lower release. The user requested immediate counting instead; BeginPlay/reset are now wired to start it. Patch39 compiled and loaded September27 **12:08:01 UTC**; library-default repair38, Blueprint status3, other wiring/values preserved, no explicit save/restart. No tests or Play session run for this correction, as requested. The validation below describes the preceding build's attack-transition behavior.
 
-Focused reproduction: `Tools/NN/AttackControls/TestAttackEntry.py` and `CaptureAttackEntry.py`. The latter performs owned-PIE checks before the authored attack at120: full entry, full-to-half, half retarget, half-to-full, half completion, pure half entry/exit, a second full entry and full completion. It checks all four magic values immediately at transitions and exact tick counts afterward.
+Current focused entry checks: `Tools/NN/AttackControls/TestAttackEntry.py` (EntryMagicAndTicks and ManualTicks). The retired `CaptureAttackEntry.py` historically performed owned-PIE checks before the authored attack at120: full entry, full-to-half, half retarget, half-to-full, half completion, pure half entry/exit, a second full entry and full completion. It checks all four magic values immediately at transitions and exact tick counts afterward.
 
 September27 entry validation: patch38 loaded **11:13:47 UTC**; **2/2 focused tests passed** at11:14:11 (EntryMagicAndTicks and RecoveryAndArmedGate). Final owned live capture passed48 samples: all four channels cleared at full entry/reacquisition, remained unchanged by pure half/rejected entry, counter stayed0 in full mode and counted exactly1 per subsequent lower-free tick. At full-to-half45 it read0, at50 it read5; reacquisition55 reset0; half end65 preserved5; pure half entry70 preserved10 and end75 preserved15; full entry80 reset0; full completion82 started0; tick87 read5. The first capture's scheduled full completion was preempted by the authored automatic half switch at83; the counter correctly advanced at84, so the final test explicitly stopped the full attack at82. Evidence: `Saved/Diagnostics/AttackControls/entry-magic-ticks*.json`. Owned PIE ended. Live Coding library-default repair changed38 archived CDO references, BP status3, other values/wiring preserved, no explicit asset save/restart.
 
-## Recovery and Armed verification
+## Historical recovery and Armed verification
 
 September27 inactive-state getter correction: `GetAgentNNAttackState` now initializes Attack=None, Half/Armed/Hit=false and Frame=0, and returns false before reading retained Slash history when inactive. Previously it returned false but still populated those outputs from the finished attack. Blueprint consumers using an output pin without the bool gate could therefore read a stale half attack (and stale Armed/Hit). Current-scene capture `Saved/Diagnostics/AttackState400.json`: hookL starts162, switches half169, ends187; activity is Locomotion throughout399–520, with no active attack. Retained history and special-end event payloads are preserved; this changes getter readback only, with no new ticking/allocation/inference.
 
-`Tools/NN/AttackControls/TestAttackControls.py` runs the new recovery/latch test, existing regional ownership test, and existing Run boost test. Coverage includes full-to-half, pure half end, full reacquisition, defense exclusion, 30/60/120 FPS timing, hold-only/zero durations, current normal destination, actual effective Run pin, reset/removal, completed callback retirement, legacy/current phase gates and release.
+At the time of this September validation, `TestAttackControls.py` ran the recovery/latch, regional ownership and Run boost tests. Coverage includes full-to-half, pure half end, full reacquisition, defense exclusion, 30/60/120 FPS timing, hold-only/zero durations, current normal destination, actual effective Run pin, reset/removal, completed callback retirement, legacy/current phase gates and release.
 
-`Tools/NN/AttackControls/CaptureArmedBlock.py` uses an owned PIE session with the authored scene: blocks at tick95, releases at170, records phase progression through230, and ends its own session. It makes no Blueprint changes.
+The retired `CaptureArmedBlock.py` used an owned PIE session with the authored scene: blocks at tick95, releases at170, records phase progression through230, and ends its own session. It makes no Blueprint changes.
 
 Passing `half` additionally switches the owned attack to half at121. This second live test also passed: half attack stayed unarmed/not-Hit through170, Armed171 and Hit187 after release. Both owned sessions ended. Evidence is under `Saved/Diagnostics/AttackControls/`.
 

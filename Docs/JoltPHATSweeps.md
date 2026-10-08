@@ -1,11 +1,13 @@
 # Per-agent attack PHAT sweeps
 
+**Current user choice (October7):** sweeps disabled in the user's setup. The user reports that this resolves the missing punch/head Hit event near absolute1150 without visible penetration. Leave this choice in place; do not automatically enable sweeps or substitute CCD/additional substeps. Automatic code defaults below are unchanged. See [investigation and user acceptance](PunchHit115020261007.md).
+
 Predictive sweeps automatically run only during an attack, including pre-Armed preparation. Locomotion, dodge and parry do not enable them. Attack entry captures the existing `Get Attack Bones` selection:
 
-- Punch: striking hand and lowerarm, plus the sword if held in that hand.
+- Punch: striking hand and lowerarm only, even when holding a sword.
 - Kick: striking foot and calf.
 - Headbutt: head.
-- Slash/pike: held sword only. A welded sword selects its compound leaf, not the carrier hand.
+- Slash/pike: right hand plus held sword. A welded sword selects its compound leaf alongside the selected right-hand body.
 
 Attack completion/cancellation clears the selection; a chained attack replaces it. Missing weapons and empty selections never fall back to the whole body. Other bodies remain ordinary collision partners.
 

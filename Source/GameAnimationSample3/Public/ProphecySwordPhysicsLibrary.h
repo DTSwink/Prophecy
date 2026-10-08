@@ -9,6 +9,22 @@ class GAMEANIMATIONSAMPLE3_API UProphecySwordPhysicsLibrary : public UBlueprintF
 {
     GENERATED_BODY()
 public:
+    /** At fresh attack entry, a gap strictly greater than this many ticks forces the
+     * melee sword rule, including for slash/pike: suppress all sword collision until
+     * first NN Hit (or attack end). Read before the existing last-attack counter resets.
+     * Default 2. Applies to subsequent attacks; does not change the current phase.
+     * This entry rule takes precedence over residual sword collision cooldown. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Sword", meta=(DefaultToSelf="Agent"))
+    static bool SetSwordCollisionMeleeGapThreshold(AProphecyAgent* Agent, UPARAM(meta=(ClampMin="0")) int32 Ticks=2);
+
+    /** After an armed slash ends, retain external sword collision through this many
+     * subsequent unpaused world ticks, including a new melee attack's preparation.
+     * Default 4; 0 disables and cancels the current cooldown. Positive edits apply
+     * to the next qualifying end. Owner rules and explicit global disable still win.
+     * Pikes and slashes that never reached Armed do not start the cooldown. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Sword", meta=(DefaultToSelf="Agent"))
+    static bool SetSwordCollisionCooldown(AProphecyAgent* Agent, UPARAM(meta=(ClampMin="0")) int32 Ticks=4);
+
     /** Toggle all held-sword collision without changing its grip, simulation or momentum.
      * Retained for future equips. Enabled restores normal attack Armed/Hit collision timing;
      * disabled overrides it. Dropped swords regain their original collision responses. */

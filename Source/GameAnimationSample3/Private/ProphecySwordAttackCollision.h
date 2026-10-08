@@ -6,13 +6,14 @@ class AProphecyAgent;
 // body self-collision until first Hit. Does not alter NN conditioning geometry.
 namespace ProphecySwordAttackCollision
 {
-void Begin(AProphecyAgent* Agent,FName Family);
+void Begin(AProphecyAgent* Agent,FName Family,int64 EntryTicks=-1);
 void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit);
 void Armed(AProphecyAgent* Agent);
 void Hit(AProphecyAgent* Agent);
 void End(AProphecyAgent* Agent);
 void Refresh(AProphecyAgent* Agent);
 void ReleaseSword(AProphecyAgent* Agent);
+void CancelCooldown(AProphecyAgent* Agent);
 bool SuppressesOwner(const AProphecyAgent* Agent);
 bool IsAllowed(const AProphecyAgent* Agent);
 }

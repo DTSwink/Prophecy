@@ -58,7 +58,28 @@ public:
         FVector2D SlashRD=FVector2D(0.1, 0.34),
         FVector2D SlashRU=FVector2D(0.1, 0.34));
 
-    /** Override one attack family's lab profile. None applies to all families.
+    /** Change only Return Time, Inertia and Easing. Preserve the imported/current inertia profile.
+     * None changes these three values for every attack while retaining each attack's other settings.
+     * Takes effect at the next attack end. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Recovery", meta=(DefaultToSelf="Agent", DisplayName="Set Attack FK Return Values"))
+    static bool SetAttackFKReturnValues(AProphecyAgent* Agent, FName Attack=NAME_None,
+        UPARAM(meta=(ClampMin="0")) float ReturnTime=.28f,
+        UPARAM(meta=(ClampMin="0", ClampMax="1")) float Inertia=.7f,
+        UPARAM(meta=(ClampMin="0", ClampMax="1")) float Easing=0.f);
+
+    /** Change only bone weights, momentum timing, reference space and spine-angle time.
+     * Preserve Return Time, Inertia and Easing. None updates every attack independently.
+     * Takes effect at the next attack end. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Recovery", meta=(DefaultToSelf="Agent", DisplayName="Set Attack FK Return Inertia Profile"))
+    static bool SetAttackFKReturnInertiaProfile(AProphecyAgent* Agent, FName Attack=NAME_None,
+        FProphecyFKInertiaWeights BoneInertia=FProphecyFKInertiaWeights(),
+        UPARAM(meta=(ClampMin="0", ClampMax="0.8")) float InertiaHold=.05f,
+        UPARAM(meta=(ClampMin="0", ClampMax="4")) float InertiaDecay=.8f,
+        bool WorldInertia=true,
+        UPARAM(meta=(ClampMin="0", ClampMax="4", Units="s")) float SpineAngleTime=.29f);
+
+    /** Legacy combined override retained for existing Blueprints. Use the separate Values and Inertia Profile nodes.
+     * Override one attack family's lab profile. None applies to all families.
      * Accepted lab profiles are already installed; this node is optional.
      * Effective inertia = Inertia * the bone group's weight. Easing 0 is linear,
      * 1 is quintic smoothstep. Hands follow their parents and return without local inertia.
@@ -67,7 +88,7 @@ public:
      * spine_01 departure from idle relative to pelvis; independent of base return time.
      * World Inertia keeps rotational momentum axes independent of parent inertia.
      * Continuous spring is intentionally not included. */
-    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Recovery", meta=(DefaultToSelf="Agent", DisplayName="Set Attack FK Return Profile", AdvancedDisplay="BoneInertia,InertiaHold,InertiaDecay,WorldInertia,SpineAngleTime"))
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Recovery", meta=(DefaultToSelf="Agent", DisplayName="Set Attack FK Return Combined (Legacy)", BlueprintInternalUseOnly="true", AdvancedDisplay="BoneInertia,InertiaHold,InertiaDecay,WorldInertia,SpineAngleTime"))
     static bool SetAttackFKReturnProfile(AProphecyAgent* Agent, FName Attack=NAME_None,
         UPARAM(meta=(ClampMin="0")) float ReturnTime=.26f,
         UPARAM(meta=(ClampMin="0", ClampMax="1")) float Inertia=.51f,
