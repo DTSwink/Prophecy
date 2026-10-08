@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 5542,
-  "bytes": 503229342,
+  "file_count": 5554,
+  "bytes": 503687790,
   "files": [
     {
       "path": ".gitattributes",
@@ -4435,9 +4435,9 @@
     },
     {
       "path": "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset",
-      "git_blob": "ff4479322e086727937d41b6e61c22194e0f7f54",
-      "bytes": 5590270,
-      "sha256": "f43b578bdebbb77132a516cad9239f79dc2b343aa3fd87fa8e4c821d3d636a0e"
+      "git_blob": "fc68a5d0494a253245a4f12a08e33799a4c0762d",
+      "bytes": 5986225,
+      "sha256": "2e8369a80ef70a28b6050073a679fd37cec4ab492bf51d650195b3c6ac929fa1"
     },
     {
       "path": "Content/_mygame/locomotion/L_DoubleReachBallTest.umap",
@@ -5083,9 +5083,9 @@
     },
     {
       "path": "Content/testNN.umap",
-      "git_blob": "9b324627e2d213ddcb4362c2aa1c46abceea2a0f",
+      "git_blob": "93aeff3b182f10bab45b593c3f8949d8febf1cff",
       "bytes": 106660,
-      "sha256": "16621962da93bd93342d6ca057d46df8107b07a40de4137b08b9c2af6ed59e69"
+      "sha256": "92172d24145b5a4de8a2792063dbe575a8eb96c7d54c1d59d40a764615077981"
     },
     {
       "path": "Content/vfxmap.umap",
@@ -5658,6 +5658,12 @@
       "sha256": "5140e791f827d35592e1c0b1685f3fb87f2a36b335a80e62bf0a98a1a9da84de"
     },
     {
+      "path": "Docs/HitImpactSpeed.md",
+      "git_blob": "820f5998a794e990243227fb21a2deb8b127e548",
+      "bytes": 2019,
+      "sha256": "6d8f6edaea46f19042e6e1dae333383c8bc3c6f25f916cb13d0713502ceb1c0b"
+    },
+    {
       "path": "Docs/HitTrajectory.md",
       "git_blob": "577b98b6e26753005704beb46a65689d19f8d3a3",
       "bytes": 4324,
@@ -5845,9 +5851,9 @@
     },
     {
       "path": "Docs/JoltPHATSweeps.md",
-      "git_blob": "25a3dab11f48c2492722b0a6ff3a50a144567d5d",
-      "bytes": 3638,
-      "sha256": "b240e20f9235660bd9ddb2d2f3a918cd9629e32acd9a958a961a50e6e2967008"
+      "git_blob": "f76ab516e455c00a6aa59756c37136842071e01e",
+      "bytes": 3721,
+      "sha256": "13f44cb076b2854baac88fb82eacc74fa18635ae2ddf7d03f4c364abff4c6025"
     },
     {
       "path": "Docs/JoltPenetrationSlop.md",
@@ -6397,9 +6403,9 @@
     },
     {
       "path": "Docs/RootMagicVelocities.md",
-      "git_blob": "942bc51c594985d64256224514a332b6f2ecafc2",
-      "bytes": 1553,
-      "sha256": "72539274a596c9b27fe5f11bc1232c13eeb53bf725fa96514e94d78faeb32c4a"
+      "git_blob": "e12beedec26b4d4d6532bbad057517120c9482b8",
+      "bytes": 4608,
+      "sha256": "b2c69d4d3515e9c0497cfc40f8b2cb870d85d6252877c9bc12553557deecd959"
     },
     {
       "path": "Docs/RootOffsets.md",
@@ -11640,6 +11646,12 @@
       "sha256": "82f28fd33a4a20a5512dce7b233cdac6903c35242706ac44780bfad64c10f88a"
     },
     {
+      "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltHitImpact.h",
+      "git_blob": "57097dedd189b2ef811e9a412e75f08f0623390d",
+      "bytes": 1973,
+      "sha256": "01b0a4426ba94b0201500fa6123495a2b6efa99b8ac713082904c075d725d8c1"
+    },
+    {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltJointConversion.cpp",
       "git_blob": "769601eaeffd6afb5242c2dbc5a8456b97efdc6b",
       "bytes": 10037,
@@ -11725,9 +11737,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltWorldSubsystem.cpp",
-      "git_blob": "cc1181379bc2801511cc3176daafbda1e5f039a7",
-      "bytes": 219678,
-      "sha256": "53ed69c80d77de4b1b94bb0c1b627c3dbf677eb0fd13790fe3116b5c51b1e10f"
+      "git_blob": "6276a86385d4f4b50c63db24865569f69d41604b",
+      "bytes": 222431,
+      "sha256": "b0891a8388c055cdce042c3b1c307723ffba26a500c7c18e21a606075a7e518f"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltBodyTests.cpp",
@@ -11868,6 +11880,12 @@
       "sha256": "84c557b93ae835f2a970ab2deabbe15fb9fbeb9b7789dc3f048c4d81a6b9dd2e"
     },
     {
+      "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltHitImpactLibrary.h",
+      "git_blob": "372831a2ebf194360757626b7e893e24a4d8a5e9",
+      "bytes": 1337,
+      "sha256": "07d0375c66e63b1205489bdfe67c117c9ccf5e0aa93da53515af40cb221451cf"
+    },
+    {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltPHATSweepLibrary.h",
       "git_blob": "fd92ded991f842d0a70129fd5e71c7fc106d537c",
       "bytes": 2448,
@@ -11959,9 +11977,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "4ca9d5afc19d5b9d552a8bb44f442c3184526bb1",
-      "bytes": 227380,
-      "sha256": "5f70bab5424dd91f92d8265eebd6e469e5bf324ef45ae4c406b09038753fc61e"
+      "git_blob": "d76cd66f207a04a29bd7a749c815566a15985267",
+      "bytes": 240930,
+      "sha256": "e28264b29def4fb441cf1f85837b2f1f00b5c342047828274f4e466737a7c33c"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -28549,9 +28567,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackControls.inl",
-      "git_blob": "8cf1afea74ed687398c2f85431dc442c591062ab",
-      "bytes": 9437,
-      "sha256": "ad3553e07218dbd909cef377d20c85211cc49a3fb483a56de2f8465abca680c8"
+      "git_blob": "6460639aa819a7244d36d313826c4358efc512f2",
+      "bytes": 9127,
+      "sha256": "f527c38f362dd8fb80818aa2448d2f13260363f0ead9e5e3221f6ad250c84b8f"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackEndExtension.h",
@@ -29119,9 +29137,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyGhostAttackLibrary.cpp",
-      "git_blob": "b81ea648c8922722c0e0bde4af48f80c0ed00768",
-      "bytes": 10268,
-      "sha256": "3a3eaa714199de2f4c87d907efb48654927f07d91ab76e33d5501b175fd64344"
+      "git_blob": "3d199c3afe7658e6203cb700fed8fe7cf2c1274f",
+      "bytes": 10299,
+      "sha256": "fd5c9cafb53470f4bae05d32e61564830ba3fdb860bab6f6c8e75913d237e23b"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyGhostLocoInertia.h",
@@ -29389,9 +29407,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltHitEventTests.cpp",
-      "git_blob": "a75e9dfb72002c00d85bcfe04f8cf8a4896a7ef5",
-      "bytes": 7664,
-      "sha256": "f5853fc8a23b9137569b558e3b0c7ccbcb9663d2f2faa3914d52dbfef872b389"
+      "git_blob": "8cec8d1a6a512b2c9df47aae5d84ca2b15d2fbe6",
+      "bytes": 12383,
+      "sha256": "25f536315459e8f8f9b1b5cd5ad653ede4176d756fbe93cf265b06ef1bc84a77"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltISMBloodFixture.cpp",
@@ -30108,6 +30126,12 @@
       "sha256": "8b57d081b6212b430a6529b4f75325f297d29670bd47eb391fc940e870301748"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyRootMagic3.inl",
+      "git_blob": "4b1acb87987e17d6087a0d1fcb9ab0a19e29fa48",
+      "bytes": 17354,
+      "sha256": "c8dc28a2c1c2a467493a438b15ee913008e55a92988015747bbb19504a3990a6"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecyRootPelvisBounds.h",
       "git_blob": "c808c3da7c3a1055a6af7a702f94068210f4f641",
       "bytes": 1083,
@@ -30121,9 +30145,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyRootPhysicsLibrary.cpp",
-      "git_blob": "bf035e7c8d1dab93fbdbf8a9985fe2c1ac077125",
-      "bytes": 32650,
-      "sha256": "35bf3e07b91d2805ef980c5c159e42be7d94b452bfd8b1050b521192db6f42a8"
+      "git_blob": "2544fac4ac1c599895ac44cb629de99f0a079550",
+      "bytes": 33875,
+      "sha256": "5a9e03c5fe69b5bd037462a2affb75b6305cacaa83130bd6eef68cf214530e87"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyRootResponse.h",
@@ -30882,6 +30906,12 @@
       "sha256": "075a9676443da4ff0bef57714bfc422cce36f1b16494199f80ca0027dc10a4ab"
     },
     {
+      "path": "Source/GameAnimationSample3/Public/ProphecyRootMagic3Library.h",
+      "git_blob": "10d63021909b0341bc637bfb6f0ddf5a5b53c7ae",
+      "bytes": 2259,
+      "sha256": "52a85458bcc25eec573d18748de2c277ddd9893b4459fb258d1b674ad1ac6b7d"
+    },
+    {
       "path": "Source/GameAnimationSample3/Public/ProphecyRootPelvisBoundsLibrary.h",
       "git_blob": "3fb8f12836bef23731fdd8bcbe350b6109e92c52",
       "bytes": 1613,
@@ -30991,9 +31021,9 @@
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyBlendNodeUpgrade.cpp",
-      "git_blob": "da22c7947e3104781e4b0c32a9b983935b7743d2",
-      "bytes": 54185,
-      "sha256": "5907c9bdbc0159d10b8c162d83415473ee423e0cc9cc2731512d11af98bf791b"
+      "git_blob": "5a8c17cfc1ff2b7b610f135244a62aedd3cbeeff",
+      "bytes": 57485,
+      "sha256": "893162ea127d6860307529ed064a8be2dbff12f01175db52f3515f50fe1bffe2"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyBoatBuoyancyAutomationTest.cpp",
@@ -33220,6 +33250,48 @@
       "git_blob": "6950d1858d9c4ef04aad27699c592179c2b14fd1",
       "bytes": 74,
       "sha256": "33c9c652522a45d0f9b27511713a8666754a10b80b39e88ff936facd3c94d752"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261008HitAndMagic/graph-check.json",
+      "git_blob": "870574763630884731f1e561f59c7bca4b35510e",
+      "bytes": 770,
+      "sha256": "1526fce100e72a570f27ac28e6cdfe74bc4f4c9296d4c14ec63ef7cc17e0fba8"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261008HitAndMagic/magic3-defaults.json",
+      "git_blob": "668b2532672c22df0344aa2fe6a7262b55f589ac",
+      "bytes": 115,
+      "sha256": "8d17f08ca75c2b9fef9797c042374f7fa2e906dab7ba0414f1ce38d553bf0ca9"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261008HitAndMagic/magic3-tests.log",
+      "git_blob": "e2e04a5ff0d902564f4fa2593e4d47a8322b8d55",
+      "bytes": 4675,
+      "sha256": "36955738ffc80a29c0301718399863a8357807ed26ef55b58aed7bbc89ce7b3f"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261008HitAndMagic/migration.txt",
+      "git_blob": "265b1e168bd6bfd91900596f3b36a4e9a9d1d018",
+      "bytes": 61,
+      "sha256": "37e854eb6ee5af308ab7bdadc94ec5950382be1158e13ed457c60df6d67c7b68"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261008HitAndMagic/saved.json",
+      "git_blob": "3383a10a5971dd6e78839b2fb1c8de3ef1e04813",
+      "bytes": 276,
+      "sha256": "da69f4c27cd6a3da82ad7e16ea8349b73ebf357a6106fcd1064ce5448b0b4931"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261008HitAndMagic/test-result.log",
+      "git_blob": "86cdcd632f4c823be84c4ee3c89523320d50ade9",
+      "bytes": 3125,
+      "sha256": "b48c8741e8a215838b1860adbcb5a5c5a9e163a897191376a16f358986bb4566"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261008HitAndMagic/types.txt",
+      "git_blob": "6e9bdcacd87f55ef2ddda17de459659a9ceccb17",
+      "bytes": 123,
+      "sha256": "6c30984fc55eee7deefecb417fef14564431ca891bafd3ec7696af39fac75d01"
     },
     {
       "path": "Tools/Recovery/RestoreNNCheckpoints.py",

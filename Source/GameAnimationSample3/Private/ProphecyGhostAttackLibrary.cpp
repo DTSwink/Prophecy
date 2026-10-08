@@ -3,6 +3,7 @@
 #include "ProphecyAttackControls.h"
 #include "ProphecyAttackRecovery.h"
 #include "ProphecyRootPhysicsLibrary.h"
+#include "ProphecyRootMagic.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNLocomotionManager.h"
 #include "EngineUtils.h"

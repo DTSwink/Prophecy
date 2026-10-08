@@ -30,10 +30,7 @@ void StartAttackTickCounter(const AProphecyAgent* A)
 }
 void FullAttackStarted(AProphecyAgent* A)
 {
-    UProphecyRootPhysicsLibrary::SetRootMagicVelocity(A,FVector::ZeroVector,false);
-    UProphecyRootPhysicsLibrary::SetRootMagicAngVelocity(A,FVector::ZeroVector,false);
-    UProphecyRootPhysicsLibrary::SetRootMagicVelocity2(A,FVector::ZeroVector,false);
-    UProphecyRootPhysicsLibrary::SetRootMagicAngVelocity2(A,FVector::ZeroVector,false);
+    ProphecyRootMagic::Remove(A);
     SinceLowerAttack.Remove(A);FullAttackHeld.Add(A);RefreshTick();
 }
 void LowerAttackFinished(const AProphecyAgent* A)

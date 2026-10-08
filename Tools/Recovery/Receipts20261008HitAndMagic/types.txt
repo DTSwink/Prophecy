@@ -1,0 +1,2 @@
+mode=Inspect parent=/Script/GameAnimationSample3.ProphecyAgent
+native_properties=0 pin_types=0 status=3 wiring_preserved=1

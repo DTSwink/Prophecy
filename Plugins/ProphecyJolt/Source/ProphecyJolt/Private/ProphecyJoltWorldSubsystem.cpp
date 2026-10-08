@@ -3,6 +3,7 @@
 #include "ProphecyJoltBodyDriveLibrary.h"
 #include "ProphecyJoltFootJointLibrary.h"
 #include "ProphecyJoltPhysicsCommand.h"
+#include "ProphecyJoltHitImpactLibrary.h"
 
 #include "Components/PrimitiveComponent.h"
 #include "Engine/Engine.h"
@@ -54,6 +55,7 @@ THIRD_PARTY_INCLUDES_START
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/RegisterTypes.h>
 THIRD_PARTY_INCLUDES_END
+#include "ProphecyJoltHitImpact.h"
 #include "ProphecyJoltSpeculativeJoint.h"
 #include "ProphecyJoltRadialJoint.h"
 #include "ProphecyJoltJointDamping.h"
@@ -516,6 +518,7 @@ struct FProphecyJoltPendingHit
 {
     FProphecyJoltBodyHandle Body1, Body2;
     FVector Point1, Point2, Normal, Impulse;
+    ProphecyJolt::HitImpact::FSample Incoming;
 };
 
 namespace ProphecyJolt::DriveFollowers
@@ -529,7 +532,7 @@ struct FBinding
 static TMap<const FProphecyJoltWorldState*, TMap<uint32, FBinding>> Bindings;
 }
 
-class FProphecyJoltWorldState final : public JPH::ContactImpulseListener
+class FProphecyJoltWorldState final : public JPH::ContactImpulseListener, public JPH::ContactListener
 {
 public:
     explicit FProphecyJoltWorldState(const FProphecyJoltWorldSettings& InSettings)
@@ -576,6 +579,7 @@ public:
     int32 HitEnabledBodies = 0;
     FCriticalSection HitMutex;
     TArray<FProphecyJoltPendingHit> PendingHits;
+    TMap<ProphecyJolt::HitImpact::FKey,ProphecyJolt::HitImpact::FSample> IncomingHits;
     uint64 DeliveredHits = 0;
     bool bDispatchingHits = false;
 
@@ -611,14 +615,30 @@ public:
         Handle.Generation = Slot->Generation;
         return Handle;
     }
+    void CaptureIncoming(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& Manifold)
+    {
+        if (!WantsContactImpulse(A,B)) return;
+        const auto Sample=ProphecyJolt::HitImpact::Sample(A,B,Manifold);
+        FScopeLock Lock(&HitMutex);
+        IncomingHits.Add(ProphecyJolt::HitImpact::Key(A.GetID(),Manifold.mSubShapeID1,B.GetID(),Manifold.mSubShapeID2),Sample);
+    }
+    void OnContactAdded(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& Manifold,JPH::ContactSettings&) override
+    { CaptureIncoming(A,B,Manifold); }
+    void OnContactPersisted(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& Manifold,JPH::ContactSettings&) override
+    { CaptureIncoming(A,B,Manifold); }
+    void OnContactRemoved(const JPH::SubShapeIDPair& Pair) override
+    {
+        FScopeLock Lock(&HitMutex);
+        IncomingHits.Remove(ProphecyJolt::HitImpact::Key(Pair.GetBody1ID(),Pair.GetSubShapeID1(),Pair.GetBody2ID(),Pair.GetSubShapeID2()));
+    }
     void OnContactImpulse(const JPH::Body& A, const JPH::Body& B,
         const JPH::SubShapeID& ShapeA, const JPH::SubShapeID& ShapeB,
         JPH::RVec3Arg PointA, JPH::RVec3Arg PointB, JPH::Vec3Arg Normal, float Impulse) override
     {
         using namespace ProphecyJolt::Conversions;
-        // Solved speculative impulses may occur while shapes are still separated.
-        // Keep their physical response, but require touching for gameplay Hit (0.001 cm tolerance).
-        if (JPH::Vec3(PointB-PointA).Dot(Normal)>1.e-5f) return;
+        // Report the normal solver's actual blocking impulse, including speculative
+        // contacts: they can stop a strike before the shapes touch. PHAT sweep
+        // prevention does not use this callback and still emits no gameplay Hit.
         FProphecyJoltPendingHit Hit;
         Hit.Body1 = HitHandle(A, ShapeA); Hit.Body2 = HitHandle(B, ShapeB);
         const auto* Slot1 = Find(Hit.Body1); const auto* Slot2 = Find(Hit.Body2);
@@ -627,6 +647,8 @@ public:
         Hit.Normal = FromJoltDirection(Normal);
         Hit.Impulse = Hit.Normal * (Impulse * MetersToCentimeters);
         FScopeLock Lock(&HitMutex);
+        IncomingHits.RemoveAndCopyValue(ProphecyJolt::HitImpact::Key(A.GetID(),ShapeA,B.GetID(),ShapeB),Hit.Incoming);
+        if (A.GetID().GetIndexAndSequenceNumber()>B.GetID().GetIndexAndSequenceNumber()) Hit.Incoming.RelativeVelocity*=-1.;
         PendingHits.Add(Hit);
     }
     void SetHitEnabled(ProphecyJolt::WorldPrivate::FBodySlot& Slot, bool bEnabled)
@@ -635,6 +657,8 @@ public:
         Slot.bHitEvents = bEnabled;
         HitEnabledBodies += bEnabled ? 1 : -1;
         Physics.SetContactImpulseListener(HitEnabledBodies ? this : nullptr);
+        Physics.SetContactListener(HitEnabledBodies ? this : nullptr);
+        if (!HitEnabledBodies) IncomingHits.Reset();
     }
 
     // Only the GT owner uses this before synchronous Update or after all its jobs joined.
@@ -3647,6 +3671,7 @@ void UProphecyJoltWorldSubsystem::DispatchPendingHitEvents()
         {
             Swap(Hit.Body1, Hit.Body2); Swap(Hit.Point1, Hit.Point2);
             Hit.Normal = -Hit.Normal; Hit.Impulse = -Hit.Impulse;
+            Hit.Incoming.RelativeVelocity*=-1.;
         }
     Hits.Sort([](const auto& A, const auto& B) {
         if (A.Body1.Slot != B.Body1.Slot) return A.Body1.Slot < B.Body1.Slot;
@@ -3659,7 +3684,10 @@ void UProphecyJoltWorldSubsystem::DispatchPendingHitEvents()
     {
         auto& Hit = Hits[I];
         while (I + 1 < Hits.Num() && Hit.Body1.Slot == Hits[I+1].Body1.Slot && Hit.Body2.Slot == Hits[I+1].Body2.Slot)
-            Hit.Impulse += Hits[++I].Impulse;
+        {
+            const auto& Next=Hits[++I];Hit.Impulse+=Next.Impulse;
+            if (Next.Incoming.Valid && (!Hit.Incoming.Valid || Next.Incoming.Speed>Hit.Incoming.Speed)) Hit.Incoming=Next.Incoming;
+        }
         for (int32 Side = 0; Side < 2; ++Side)
         {
             // A previous delegate may destroy a body, disable notifications or shut down the world.
@@ -3685,6 +3713,9 @@ void UProphecyJoltWorldSubsystem::DispatchPendingHitEvents()
                 MyBody ? MyBody->GetSimplePhysicalMaterial() : nullptr,
                 OtherBody ? OtherBody->GetSimplePhysicalMaterial() : nullptr);
             ++Native->DeliveredHits;
+            ProphecyJolt::HitImpact::FDispatch Incoming{MyComp,OtherComp,Mine->HitBone,Other->HitBone,Hit.Incoming};
+            if (Side) Incoming.Sample.RelativeVelocity*=-1.;
+            TGuardValue<const ProphecyJolt::HitImpact::FDispatch*> Scope(ProphecyJolt::HitImpact::Current,&Incoming);
             Actor->DispatchPhysicsCollisionHit(MyInfo, OtherInfo, Impact);
         }
     }
@@ -3693,6 +3724,20 @@ void UProphecyJoltWorldSubsystem::DispatchPendingHitEvents()
         Native->bDispatchingHits = false;
         Hits.Reset(); Swap(Hits, Native->PendingHits);
     }
+}
+
+bool UProphecyJoltHitImpactLibrary::GetHitImpactSpeed(const UObject* HitReceiver,
+    double& ImpactSpeed, FVector& RelativeVelocity)
+{
+    ImpactSpeed=0.;RelativeVelocity=FVector::ZeroVector;
+    if (!IsInGameThread()) return false;
+    const auto* Current=ProphecyJolt::HitImpact::Current;
+    if (!Current || !Current->Sample.Valid || !IsValid(HitReceiver)
+        || !IsValid(Current->Mine) || !IsValid(Current->Other)
+        || (HitReceiver!=Current->Mine && HitReceiver!=Current->Mine->GetOwner())) return false;
+    ImpactSpeed=Current->Sample.Speed;
+    RelativeVelocity=Current->Sample.RelativeVelocity;
+    return true;
 }
 
 void UProphecyJoltWorldSubsystem::RefreshDiagnostics()

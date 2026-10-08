@@ -14,6 +14,23 @@
 #include "PhysicsEngine/BodyInstance.h"
 #include "UObject/StrongObjectPtr.h"
 
+namespace HitImpactTest
+{
+// Exercise the actual Blueprint call path, also avoiding a new cross-module
+// import that Live Coding cannot resolve until a normal editor relink.
+struct FLibrary
+{
+    static bool GetHitImpactSpeed(const UObject* Receiver,double& Speed,FVector& Velocity)
+    {
+        struct FParams { const UObject* Receiver; double Speed=0.; FVector Velocity=FVector::ZeroVector; bool Valid=false; } Params{Receiver};
+        UClass* Class=FindObject<UClass>(nullptr,TEXT("/Script/ProphecyJolt.ProphecyJoltHitImpactLibrary"));
+        UFunction* Function=Class ? Class->FindFunctionByName(TEXT("GetHitImpactSpeed")) : nullptr;
+        if (Function) Class->GetDefaultObject()->ProcessEvent(Function,&Params);
+        Speed=Params.Speed;Velocity=Params.Velocity;return Params.Valid;
+    }
+};
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltHitEventsTest,
     "Prophecy.Jolt.HitEvents.SolvedImpulseAndLifetime",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -84,8 +101,17 @@ bool FProphecyJoltHitEventsTest::RunTest(const FString& Parameters)
     Owner->DestroyBody(BallHandle);
 
     if (!Owner->CreateBox(FVector(500,500,5), 0, Floor, FloorHandle).IsSuccess()) return false;
-    // A solved preventive impulse at a positive gap must not masquerade as touching.
+    // A normal solver impulse must notify gameplay even at a speculative gap:
+    // otherwise a strike can be physically stopped without a Hit event.
     Ball.PositionCm.Z=11;
+    double IncomingSpeed=-1.;FVector IncomingVelocity;bool IncomingValid=false;
+    Sink->OnReceived=[&] {
+        IncomingValid=HitImpactTest::FLibrary::GetHitImpactSpeed(BallActor,IncomingSpeed,IncomingVelocity);
+        double Speed=0.;FVector Velocity;
+        TestTrue(TEXT("Receiver component also accepted"),HitImpactTest::FLibrary::GetHitImpactSpeed(BallComponent,Speed,Velocity));
+        TestFalse(TEXT("Wrong receiver rejected"),HitImpactTest::FLibrary::GetHitImpactSpeed(FloorActor,Speed,Velocity));
+        TestEqual(TEXT("Invalid output cleared"),Speed,0.);
+    };
     if(!Owner->CreateSphere(10,Ball,BallHandle).IsSuccess())return false;
     Owner->SetBodyVelocity(BallHandle,FVector(0,0,-100),FVector::ZeroVector,true);
     Owner->SetBodyHitEvents(BallHandle,true);
@@ -93,12 +119,53 @@ bool FProphecyJoltHitEventsTest::RunTest(const FString& Parameters)
     if(!Step())return false;
     Owner->ReadBody(BallHandle,After);
     Owner->DispatchPendingHitEvents();
-    TestEqual(TEXT("Separated speculative impulse emits no gameplay hit"),Sink->ComponentHits,BeforeSpeculative);
+    TestEqual(TEXT("Solved speculative blocking impulse emits a gameplay hit"),Sink->ComponentHits,BeforeSpeculative+1);
+    TestTrue(TEXT("Speculative hit carries actual outward impulse"),Sink->LastImpulse.Z>0. && Sink->LastHit.bBlockingHit);
     TestTrue(TEXT("Speculative prevention still changes velocity"),After.CenterOfMassVelocityCmPerSecond.Z>-100.);
-    for(int32 I=0;I<3 && Sink->ComponentHits==BeforeSpeculative;++I)
+    TestTrue(TEXT("Incoming sample available"),IncomingValid);
+    TestTrue(TEXT("Captured before solver response, including gravity"),FMath::Abs(IncomingSpeed-(100.+981.*Dt))<0.1);
+    TestTrue(TEXT("Incoming relative point velocity orientation"),FMath::Abs(IncomingVelocity.Z+IncomingSpeed)<0.1);
+    double OutsideSpeed=123.;FVector OutsideVelocity(123.);
+    TestFalse(TEXT("No stale sample outside event"),HitImpactTest::FLibrary::GetHitImpactSpeed(BallActor,OutsideSpeed,OutsideVelocity));
+    TestTrue(TEXT("Outside outputs cleared"),OutsideSpeed==0. && OutsideVelocity.IsZero());
+    const int64 AfterSpeculative=Sink->ComponentHits;
+    for(int32 I=0;I<3 && Sink->ComponentHits==AfterSpeculative;++I)
     { if(!Step())return false;Owner->DispatchPendingHitEvents(); }
-    TestTrue(TEXT("Real touching contact still emits"),Sink->ComponentHits>BeforeSpeculative);
+    TestTrue(TEXT("Subsequent touching contact still emits"),Sink->ComponentHits>AfterSpeculative);
     Owner->DestroyBody(BallHandle);
+
+    // Rotation contributes at an off-centre contact even with zero COM velocity.
+    Ball.PositionCm.Z=10;
+    if(!Owner->CreateBox(FVector(10),0,Ball,BallHandle).IsSuccess())return false;
+    Owner->SetBodyVelocity(BallHandle,FVector::ZeroVector,FVector(0,2,0),true);
+    Owner->SetBodyHitEvents(BallHandle,true);
+    IncomingValid=false;
+    if(!Step())return false;
+    Owner->DispatchPendingHitEvents();
+    TestTrue(TEXT("Angular contact speed captured"),IncomingValid && IncomingSpeed>30. && IncomingSpeed<40.);
+    Owner->DestroyBody(BallHandle);
+
+    // Both bodies move: use closing speed, not attacker's absolute speed.
+    Owner->DestroyBody(FloorHandle);
+    Floor.bDynamic=true;Floor.MassKg=2;Floor.PositionCm.Z=0;
+    Ball.PositionCm.Z=21;
+    if(!Owner->CreateSphere(10,Floor,FloorHandle).IsSuccess() || !Owner->CreateSphere(10,Ball,BallHandle).IsSuccess())return false;
+    Owner->SetBodyVelocity(FloorHandle,FVector(0,0,-100),FVector::ZeroVector,true);
+    Owner->SetBodyVelocity(BallHandle,FVector(0,0,-200),FVector::ZeroVector,true);
+    Owner->SetBodyHitEvents(BallHandle,true);Owner->SetBodyHitEvents(FloorHandle,true);
+    TStrongObjectPtr<UProphecyHitEventTestSink> OtherSink(NewObject<UProphecyHitEventTestSink>());
+    FloorComponent->OnComponentHit.AddDynamic(OtherSink.Get(),&UProphecyHitEventTestSink::ComponentHit);
+    double OtherSpeed=-1.;FVector OtherVelocity;bool OtherValid=false;
+    OtherSink->OnReceived=[&] { OtherValid=HitImpactTest::FLibrary::GetHitImpactSpeed(FloorActor,OtherSpeed,OtherVelocity); };
+    IncomingValid=false;
+    if(!Step())return false;
+    Owner->DispatchPendingHitEvents();
+    TestTrue(TEXT("Moving target subtracted"),IncomingValid && FMath::Abs(IncomingSpeed-100.)<0.1);
+    TestTrue(TEXT("Both receivers share speed and opposite relative velocities"),OtherValid && FMath::Abs(OtherSpeed-IncomingSpeed)<0.001 && (OtherVelocity+IncomingVelocity).Size()<0.001);
+    Owner->DestroyBody(BallHandle);Owner->DestroyBody(FloorHandle);
+    Floor.bDynamic=false;Floor.PositionCm.Z=-5;
+    if(!Owner->CreateBox(FVector(500,500,5),0,Floor,FloorHandle).IsSuccess())return false;
+    Sink->OnReceived=nullptr;OtherSink->OnReceived=nullptr;
 
     // CCD-only impact: a 1 m box crosses the entire floor in one step without CCD.
     auto* Cube = NewObject<UStaticMeshComponent>(BallActor);
@@ -115,10 +182,14 @@ bool FProphecyJoltHitEventsTest::RunTest(const FString& Parameters)
     Cube->OnComponentHit.AddDynamic(Sink.Get(), &UProphecyHitEventTestSink::ComponentHit);
     Owner->SetBodyHitEvents(BallHandle, true);
     const int64 BeforeCCD = Sink->ComponentHits;
+    Sink->OnReceived=[&] { IncomingValid=HitImpactTest::FLibrary::GetHitImpactSpeed(Cube,IncomingSpeed,IncomingVelocity); };
+    IncomingValid=false;
     if (!Step()) return false;
     Owner->DispatchPendingHitEvents();
     TestEqual(TEXT("CCD crossing emits a solved hit"), Sink->ComponentHits, BeforeCCD + 1);
     TestTrue(TEXT("CCD impulse opposes incoming motion"), Sink->LastImpulse.Z > 0 && Sink->LastHit.ImpactNormal.Z > 0.99);
+    TestTrue(TEXT("CCD pre-impact speed available"),IncomingValid && IncomingSpeed>11900. && IncomingSpeed<12100.);
+    Sink->OnReceived=nullptr;
     Owner->DestroyBody(BallHandle); Owner->DestroyBody(FloorHandle);
     Owner->ShutdownSimulation();
     return true;

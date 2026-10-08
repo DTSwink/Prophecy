@@ -1,0 +1,1 @@
+removed=3 relative_velocity_readout=1 status=3 asset_saved=0

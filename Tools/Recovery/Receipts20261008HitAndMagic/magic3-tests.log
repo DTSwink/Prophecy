@@ -1,0 +1,39 @@
+[2026.10.08-03.29.14:319][ 87]LogAutomationWorker: Received FindWorkersMessage from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-03.29.14:319][ 87]LogAutomationController: Received FindWorkersResponseMessage from C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:326][ 87]LogAutomationController: Requesting test list from C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:342][ 88]LogAutomationWorker: Received RequestTestsMessage from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-03.29.14:491][ 88]LogAutomationWorker: Set 6967 tests to 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-03.29.14:491][ 88]LogAutomationController: Received RequestTestsReplyCompleteMessage from C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:495][ 88]LogAutomationController: 6967 tests available on C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:547][ 88]LogAutomationCommandLine: Display: Found 2 automation tests based on 'Prophecy.Root.MagicThree'
+[2026.10.08-03.29.14:547][ 88]LogAutomationCommandLine: Display: 	Prophecy.Root.MagicThree.Braking
+[2026.10.08-03.29.14:547][ 88]LogAutomationCommandLine: Display: 	Prophecy.Root.MagicThree.DelaySpreadIsolation
+[2026.10.08-03.29.14:548][ 88]LogAutomationController: Sending StopTests to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:548][ 88]LogAutomationController: Sending StopTestSession to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:556][ 88]LogAutomationController: Sending StartTestSession to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:556][ 88]LogAutomationController: Display: Clearing ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Logs/ and ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Tmp/
+[2026.10.08-03.29.14:557][ 88]AutomationTestingLog: -----Test Run 18----
+[2026.10.08-03.29.14:559][ 89]LogAutomationController: Sending RunTest Braking to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:559][ 89]LogAutomationController: Display: Test Started. Name={Braking} Path={Prophecy.Root.MagicThree.Braking}
+[2026.10.08-03.29.14:577][ 89]LogAutomationWorker: Received StopTests from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-03.29.14:577][ 89]LogAutomationWorker: Received StopTestSession from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-03.29.14:577][ 89]LogAutomationWorker: Received StartTestSession from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-03.29.14:577][ 89]LogAutomationWorker: Received RunTests Braking from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-03.29.14:582][ 89]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.08-03.29.14:604][ 89]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.08-03.29.14:610][ 89]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.08-03.29.14:644][ 90]LogAutomationController: Display: Test Completed. Result={Success} Name={Braking} Path={Prophecy.Root.MagicThree.Braking}
+[2026.10.08-03.29.14:644][ 90]LogAutomationController: BeginEvents: Prophecy.Root.MagicThree.Braking
+[2026.10.08-03.29.14:644][ 90]LogAutomationController: EndEvents: Prophecy.Root.MagicThree.Braking
+[2026.10.08-03.29.14:645][ 90]LogAutomationController: Sending RunTest DelaySpreadIsolation to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:645][ 90]LogAutomationController: Display: Test Started. Name={DelaySpreadIsolation} Path={Prophecy.Root.MagicThree.DelaySpreadIsolation}
+[2026.10.08-03.29.14:663][ 91]LogAutomationWorker: Received RunTests DelaySpreadIsolation from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-03.29.14:663][ 91]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.08-03.29.14:667][ 91]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.08-03.29.14:668][ 91]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.08-03.29.14:690][ 92]LogAutomationController: Display: Test Completed. Result={Success} Name={DelaySpreadIsolation} Path={Prophecy.Root.MagicThree.DelaySpreadIsolation}
+[2026.10.08-03.29.14:690][ 92]LogAutomationController: BeginEvents: Prophecy.Root.MagicThree.DelaySpreadIsolation
+[2026.10.08-03.29.14:690][ 92]LogAutomationController: EndEvents: Prophecy.Root.MagicThree.DelaySpreadIsolation
+[2026.10.08-03.29.14:691][ 92]LogAutomationController: Sending StopTestSession to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-03.29.14:691][ 92]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 2 tests performed.
+[2026.10.08-03.29.14:709][ 93]LogAutomationWorker: Received StopTestSession from 9B8C03484F4EBDC51972A0AB633B8690

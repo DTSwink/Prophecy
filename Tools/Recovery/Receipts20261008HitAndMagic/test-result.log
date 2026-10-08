@@ -1,0 +1,25 @@
+[2026.10.08-04.03.14:082][253]LogAutomationWorker: Set 6967 tests to 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-04.03.14:083][253]LogAutomationController: Received RequestTestsReplyCompleteMessage from C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-04.03.14:087][253]LogAutomationController: 6967 tests available on C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-04.03.14:143][253]LogAutomationCommandLine: Display: Found 1 automation tests based on 'Prophecy.Jolt.HitEvents.SolvedImpulseAndLifetime'
+[2026.10.08-04.03.14:143][253]LogAutomationCommandLine: Display: 	Prophecy.Jolt.HitEvents.SolvedImpulseAndLifetime
+[2026.10.08-04.03.14:144][253]LogAutomationController: Sending StopTests to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-04.03.14:144][253]LogAutomationController: Sending StopTestSession to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-04.03.14:157][253]LogAutomationController: Sending StartTestSession to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-04.03.14:157][253]LogAutomationController: Display: Clearing ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Logs/ and ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Tmp/
+[2026.10.08-04.03.14:158][253]AutomationTestingLog: -----Test Run 24----
+[2026.10.08-04.03.14:159][253]LogAutomationController: Sending RunTest SolvedImpulseAndLifetime to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-04.03.14:159][254]LogAutomationController: Display: Test Started. Name={SolvedImpulseAndLifetime} Path={Prophecy.Jolt.HitEvents.SolvedImpulseAndLifetime}
+[2026.10.08-04.03.14:175][254]LogAutomationWorker: Received StopTests from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-04.03.14:175][254]LogAutomationWorker: Received StopTestSession from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-04.03.14:175][254]LogAutomationWorker: Received StartTestSession from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-04.03.14:175][254]LogAutomationWorker: Received RunTests SolvedImpulseAndLifetime from 9B8C03484F4EBDC51972A0AB633B8690
+[2026.10.08-04.03.14:187][254]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.08-04.03.14:283][254]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.08-04.03.14:298][254]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.08-04.03.14:337][255]LogAutomationController: Display: Test Completed. Result={Success} Name={SolvedImpulseAndLifetime} Path={Prophecy.Jolt.HitEvents.SolvedImpulseAndLifetime}
+[2026.10.08-04.03.14:337][255]LogAutomationController: BeginEvents: Prophecy.Jolt.HitEvents.SolvedImpulseAndLifetime
+[2026.10.08-04.03.14:337][255]LogAutomationController: EndEvents: Prophecy.Jolt.HitEvents.SolvedImpulseAndLifetime
+[2026.10.08-04.03.14:338][255]LogAutomationController: Sending StopTestSession to C79B539D49139206DD4B1EB071BACEC6
+[2026.10.08-04.03.14:338][256]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 1 tests performed.
+[2026.10.08-04.03.14:356][256]LogAutomationWorker: Received StopTestSession from 9B8C03484F4EBDC51972A0AB633B8690

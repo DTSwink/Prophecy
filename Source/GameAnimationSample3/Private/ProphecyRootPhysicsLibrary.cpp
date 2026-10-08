@@ -1,4 +1,5 @@
 #include "ProphecyRootPhysicsLibrary.h"
+#include "ProphecyRootMagic3Library.h"
 #include "ProphecyAgent.h"
 #include "ProphecyRootBalance.h"
 #include "ProphecyRootMagic.h"
@@ -32,6 +33,7 @@ float UProphecyRootPhysicsLibrary::GetLocomotionAutoRunSpeedThreshold(AProphecyA
     return IsInGameThread() && IsValid(Agent) ? ProphecyAutoRun::Threshold(Agent) : 100000.f;
 }
 
+namespace ProphecyRootMagic3 { void Cancel(const AProphecyAgent* Agent); }
 namespace ProphecyRootMagic
 {
 static TMap<TWeakObjectPtr<const AProphecyAgent>, FVelocity> Velocities;
@@ -39,33 +41,49 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>, FVelocity> Velocities;
 // Extra source storage exists only for agents with a nonzero second set.
 struct FVelocityPair { FVelocity First, Second; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>, FVelocityPair> PairedVelocities;
+// Separate storage preserves retained two-channel allocations during Live Coding.
+struct FVelocityTriple { FVelocity First, Second, Third; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>, FVelocityTriple> TripleVelocities;
 const FVelocity* Find(const AProphecyAgent* Agent) { return Velocities.IsEmpty() ? nullptr : Velocities.Find(Agent); }
-void Remove(const AProphecyAgent* Agent) { Velocities.Remove(Agent); PairedVelocities.Remove(Agent); }
-static const FVelocity* FindChannel(const AProphecyAgent* Agent, bool Second)
+void Remove(const AProphecyAgent* Agent)
+{ ProphecyRootMagic3::Cancel(Agent);Velocities.Remove(Agent);PairedVelocities.Remove(Agent);TripleVelocities.Remove(Agent); }
+static const FVelocity* FindChannel(const AProphecyAgent* Agent, int32 Channel)
 {
+    if (const auto* Triple=TripleVelocities.IsEmpty()?nullptr:TripleVelocities.Find(Agent))
+        return Channel==2 ? &Triple->Third : Channel==1 ? &Triple->Second : &Triple->First;
+    if (Channel==2) return nullptr;
     if (const auto* Pair = PairedVelocities.IsEmpty() ? nullptr : PairedVelocities.Find(Agent))
-        return Second ? &Pair->Second : &Pair->First;
-    return Second ? nullptr : Find(Agent);
+        return Channel ? &Pair->Second : &Pair->First;
+    return Channel ? nullptr : Find(Agent);
 }
-static bool StoreChannel(const AProphecyAgent* Agent, const FVelocity& Value, bool Second)
+static bool StoreChannel(const AProphecyAgent* Agent, const FVelocity& Value, int32 Channel)
 {
-    FVelocityPair Pair;
-    if (const auto* Existing = PairedVelocities.IsEmpty() ? nullptr : PairedVelocities.Find(Agent)) Pair = *Existing;
+    FVelocityTriple Pair;
+    if (const auto* Triple=TripleVelocities.IsEmpty()?nullptr:TripleVelocities.Find(Agent)) Pair=*Triple;
+    else if (const auto* Existing = PairedVelocities.IsEmpty() ? nullptr : PairedVelocities.Find(Agent))
+    { Pair.First=Existing->First;Pair.Second=Existing->Second; }
     else if (const auto* First = Find(Agent)) Pair.First = *First;
-    (Second ? Pair.Second : Pair.First) = Value;
-    const FVelocity Total{Pair.First.Linear + Pair.Second.Linear, Pair.First.Yaw + Pair.Second.Yaw};
+    (Channel==2 ? Pair.Third : Channel==1 ? Pair.Second : Pair.First) = Value;
+    const FVelocity Total{Pair.First.Linear + Pair.Second.Linear + Pair.Third.Linear, Pair.First.Yaw + Pair.Second.Yaw + Pair.Third.Yaw};
     if (Total.Linear.ContainsNaN() || !FMath::IsFinite(Total.Yaw) || !FMath::IsFinite(float(Total.Yaw))) return false;
     for (auto It = Velocities.CreateIterator(); It; ++It) if (!It.Key().IsValid()) It.RemoveCurrent();
     for (auto It = PairedVelocities.CreateIterator(); It; ++It) if (!It.Key().IsValid()) It.RemoveCurrent();
+    for (auto It = TripleVelocities.CreateIterator(); It; ++It) if (!It.Key().IsValid()) It.RemoveCurrent();
     if (Total.Linear.IsZero() && Total.Yaw == 0) Velocities.Remove(Agent);
     else Velocities.Add(Agent, Total);
     // Opposing sets may cancel in the sum but must remain independently editable.
-    if (Pair.Second.Linear.IsZero() && Pair.Second.Yaw == 0) PairedVelocities.Remove(Agent);
-    else PairedVelocities.Add(Agent, Pair);
+    if (!Pair.Third.Linear.IsZero() || Pair.Third.Yaw!=0)
+    { TripleVelocities.Add(Agent,Pair);PairedVelocities.Remove(Agent); }
+    else
+    {
+        TripleVelocities.Remove(Agent);
+        if (Pair.Second.Linear.IsZero() && Pair.Second.Yaw == 0) PairedVelocities.Remove(Agent);
+        else PairedVelocities.Add(Agent, {Pair.First,Pair.Second});
+    }
     return true;
 }
 
-static bool SetLinear(AProphecyAgent* Agent, FVector WorldLinearVelocity, bool bAddToCurrent, bool Second)
+static bool SetLinear(AProphecyAgent* Agent, FVector WorldLinearVelocity, bool bAddToCurrent, int32 Second)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || WorldLinearVelocity.ContainsNaN()) return false;
     const auto* Current = FindChannel(Agent, Second);
@@ -76,7 +94,7 @@ static bool SetLinear(AProphecyAgent* Agent, FVector WorldLinearVelocity, bool b
     return StoreChannel(Agent, Value, Second);
 }
 
-static bool SetAngular(AProphecyAgent* Agent, FVector WorldAngularVelocityDegrees, bool bAddToCurrent, bool Second)
+static bool SetAngular(AProphecyAgent* Agent, FVector WorldAngularVelocityDegrees, bool bAddToCurrent, int32 Second)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || WorldAngularVelocityDegrees.ContainsNaN()) return false;
     const auto* Current = FindChannel(Agent, Second);
@@ -87,6 +105,8 @@ static bool SetAngular(AProphecyAgent* Agent, FVector WorldAngularVelocityDegree
     return StoreChannel(Agent, Value, Second);
 }
 }
+
+#include "ProphecyRootMagic3.inl"
 
 bool UProphecyRootPhysicsLibrary::SetRootMagicVelocity(AProphecyAgent* Agent, FVector Value, bool Add)
 { return ProphecyRootMagic::SetLinear(Agent, Value, Add, false); }

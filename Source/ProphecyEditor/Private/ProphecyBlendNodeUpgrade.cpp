@@ -14,6 +14,41 @@
 
 namespace ProphecyBlendNodeUpgrade
 {
+// Explicit cleanup of the discarded hit-energy experiment, preserving the
+// already-restored Relative Velocity reaction path and its speed readout.
+static void RemoveHitEnergy()
+{
+    if (!GEditor || GEditor->PlayWorld) return;
+    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+    if (!BP) return;
+    auto* G=FBlueprintEditorUtils::FindEventGraph(BP);if (!G) return;
+    auto Find=[&](const TCHAR* Name)->UEdGraphNode* {for(UEdGraphNode* N:G->Nodes)if(N->GetFName()==Name)return N;return nullptr;};
+    auto* Energy=Cast<UK2Node_CallFunction>(Find(TEXT("K2Node_CallFunction_319")));
+    if(!Energy || Energy->FunctionReference.GetMemberName()!=TEXT("GetHitImpactEnergy"))return;
+    auto* Flatten=Find(TEXT("K2Node_CallFunction_318"));auto* Scale=Find(TEXT("K2Node_PromotableOperator_52"));
+    auto* Readout=Find(TEXT("K2Node_CallFunction_310"));auto* Relative=Find(TEXT("K2Node_CallFunction_320"));
+    if(!Flatten || !Scale || !Readout || !Relative)return;
+    auto* Source=Relative->FindPin(TEXT("v'"));auto* Target=Readout->FindPin(TEXT("A"));
+    auto OnlyLink=[](UEdGraphNode* A,const TCHAR* AP,UEdGraphNode* B,const TCHAR* BPName)
+    {auto* P=A->FindPin(AP);auto* Q=B->FindPin(BPName);return P && Q && P->LinkedTo.Num()==1 && P->LinkedTo[0]==Q;};
+    if(!Source || !Target || !OnlyLink(Energy,TEXT("NormalImpulseNewtonSeconds"),Flatten,TEXT("v"))
+        || !OnlyLink(Flatten,TEXT("v'"),Scale,TEXT("A")) || !OnlyLink(Scale,TEXT("ReturnValue"),Readout,TEXT("A")))return;
+    for(const TCHAR* Name:{TEXT("EnergyEstimateJoules"),TEXT("ReturnValue"),TEXT("HitReceiver")})
+        if(auto* P=Energy->FindPin(Name);P && !P->LinkedTo.IsEmpty())return;
+    FScopedTransaction Tx(NSLOCTEXT("Prophecy","RemoveHitEnergy","Remove discarded hit energy experiment"));
+    BP->Modify();G->Modify();Readout->Modify();Relative->Modify();
+    Target->BreakAllPinLinks();
+    if(!G->GetSchema()->TryCreateConnection(Source,Target)){Tx.Cancel();return;}
+    for(auto* N:{static_cast<UEdGraphNode*>(Energy),Flatten,Scale})
+    {N->Modify();FBlueprintEditorUtils::RemoveNode(BP,N,true);}
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+    FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+    const FString Report=FString::Printf(TEXT("removed=3 relative_velocity_readout=1 status=%d asset_saved=0\n"),int32(BP->Status));
+    FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/RemoveHitEnergy20261008/migration.txt")));
+    UE_LOG(LogTemp,Display,TEXT("Hit energy cleanup: %s"),*Report);
+}
+static FAutoConsoleCommand RemoveHitEnergyCommand(TEXT("Prophecy.Editor.RemoveHitEnergy"),TEXT("Remove the discarded hit-energy experiment and restore the relative-speed readout; leaves BP unsaved."),FConsoleCommandDelegate::CreateStatic(&RemoveHitEnergy));
+
 // Explicit one-shot editor migration. No startup/game hook and no asset save.
 static void Run()
 {
@@ -309,6 +344,8 @@ static void RefreshRootVelocityDelay()
     RefreshOrderFor(TEXT("SetRootAngVelocity"),TEXT("RootAngVelocityDelayPins.txt"));
 }
 static FAutoConsoleCommand RootVelocityDelayCommand(TEXT("Prophecy.Editor.RefreshRootVelocityDelay"),TEXT("Add default-zero root velocity delays; preserve settings and links, no save."),FConsoleCommandDelegate::CreateStatic(&RefreshRootVelocityDelay));
+static void RefreshRootMagicBraking(){RefreshOrderFor(TEXT("SetRootMagicVelocity3"),TEXT("RootMagic3BrakingPins.txt"));}
+static FAutoConsoleCommand RootMagicBrakingCommand(TEXT("Prophecy.Editor.RefreshRootMagicBraking"),TEXT("Add idle braking to existing channel3 nodes, preserving values/wiring; leave unsaved."),FConsoleCommandDelegate::CreateStatic(&RefreshRootMagicBraking));
 static FAutoConsoleCommand ToleranceDelayCommand(TEXT("Prophecy.Editor.RefreshToleranceDelay"),TEXT("Add default-zero tolerance delays; preserve settings and links, no save."),FConsoleCommandDelegate::CreateStatic(&RefreshToleranceDelay));
 static void RefreshRootWindowDistance()
 {

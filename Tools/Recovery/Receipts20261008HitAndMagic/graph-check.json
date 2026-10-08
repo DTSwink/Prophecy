@@ -1,0 +1,12 @@
+{
+  "removed": [
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_CallFunction_318 | flatten V",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_CallFunction_319 | Get Hit Impact Energy",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_PromotableOperator_52 | vector * vector"
+  ],
+  "added": [],
+  "changed": [
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_CallFunction_310 | Vector Length XY",
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent | EventGraph | K2Node_CallFunction_320 | flatten V"
+  ]
+}
