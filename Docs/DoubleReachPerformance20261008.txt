@@ -1,0 +1,35 @@
+DOUBLE REACH: DIRECT NN POSE VS CONTROL RIG - 8 OCTOBER 2026
+
+Recommendation: keep this fixed solver native, and use the NN component-space pose buffer directly when integrating it.
+
+Median CPU milliseconds for 100 active agent pose jobs:
+
+Workload   Execution   Direct     Native pose bridge   Control Rig   Direct saving
+easy       serial        0.373            0.994          2.128       82.5%
+easy       parallel      0.114            0.277          0.545       79.2%
+balls      serial       11.629           12.302         14.032       17.1%
+balls      parallel      2.491            2.673          3.048       18.3%
+hard       serial       12.040           12.747         14.458       16.7%
+hard       parallel      2.499            2.693          3.056       18.2%
+
+CPU wall time of reaching only, not a gameplay FPS benchmark. Independent agent pose jobs and Control Rig instances, all active; no NN inference, physics, rendering, Blueprint Tick, asset loading, rig construction or animation decompression inside the measured region.
+
+Exact accepted double-reach solver copied by hash into one shared non-inlined C++ function. Direct 26-bone component-space pose path; native animation pose bridge matching the existing proxy; genuine Control Rig Blueprint/RigVM native solve unit through FAnimNode_ControlRigBase on the full 88-bone mesh with UE5.7 pose adapter enabled. An efficient Control Rig implementation, not the different saved 392-node CR_Reach graph.
+
+Steady Both-hand solve; identical compressed idle inputs sampled at 60Hz and phase-offset per agent; transition/hand/elbow/body smoothing omitted equally to isolate the common solve and transport. Frame0 has the existing idle; targets: easy reachable, reflected moving-ball harness, unreachable asymmetric hard targets.
+
+Serial loops or identical UE ParallelFor dispatch over independent agent state. This measures both frameworks with parallelism, not a multithreaded-versus-single-threaded comparison.
+
+30 warm-up batches per method; 240 samples x5 repeats per configuration; ABC/BCA/CAB order rotates each frame. Every unique input and three complete crowd frames checked outside timings; finite transforms, pose error thresholds .001cm/.001deg. Shared immutable bone-container data; mutable RigVM/hierarchy/cache/output per agent.
+
+Hardware: 12th Gen Intel(R) Core(TM) i5-12450H; 12 logical cores; AC connected=True.
+Validation: 19200 pose pairs; max difference 1.11557472e-13 cm / 2.41483654e-06 degrees.
+The original double-reach runtime already uses native C++ in an animation proxy. The native-bridge column measures that transport pattern with the common solver, not its complete animation instance with all optional limits enabled.
+The Control Rig graph has one native solve unit. This is deliberately favorable to Control Rig; the existing CR_Reach uses different math and was inspected but not ranked against this solver.
+Large target distances make the iterative body solve dominate. Moving the same math into a different framework does not remove that cost.
+These Development Editor CPU costs do not establish packaged Shipping FPS, GPU cost, collision behavior or a live NN feedback-integration result. No production reaching/NN behavior was changed.
+
+All 1/10/50/100-agent serial and parallel results: Docs/DoubleReachPerformance20261008.json
+Raw samples and process logs: Saved/Benchmarks/DoubleReach20261008/final/
+Reproduce: Tools/Benchmarks/PrepareDoubleReachBenchmark.py; normal Editor build; Tools/Benchmarks/RunDoubleReachBenchmark.py --tag <new-tag>.
+Production source SHA256: cad7a758d56380aa3e805835a8610fab107657b42c9685b9a751f3f698fb4eb3

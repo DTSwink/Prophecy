@@ -78,7 +78,12 @@ namespace
 		int32 Index,FSlashNative::FHalfReach& Reach)
 	{
 		const auto& Agent=Impl.Agents[Index];
-		if(!Agent.Slash.bHalf || !ProphecyHalfAttackCompensation::Position(Actor))return false;
+		if(!Agent.Slash.bHalf)return false;
+		Reach.bCompensate=ProphecyHalfAttackCompensation::Position(Actor);
+		Reach.MinimumReach=ProphecyHalfAttackCompensation::MinimumReach(Actor);
+		if(!Reach.bCompensate && Reach.MinimumReach<=0)return false;
+		Reach.Up=Agent.Slash.AnchorWorld.InverseTransformVectorNoScale(FVector::UpVector);
+		Reach.Forward=Agent.Slash.AnchorWorld.InverseTransformVectorNoScale(Actor->GetActorForwardVector());
 		const float* Lower=StateSlice(Impl.PublishedStateBuffer,Index);
 		const FTransform Pelvis(MatrixToQuat(MirrorYBasis(MatrixFromRot6(Lower+3))),LocalTrainingToUnreal(ReadStateVec3(Lower,0)));
 		Reach.RealPelvis=(Pelvis*SlashComponentWorld(Actor,Agent.PublishedRoot,Agent.PublishedYaw)).GetRelativeTransform(Agent.Slash.AnchorWorld);
@@ -89,8 +94,8 @@ namespace
 	void ResolveSlashTarget(const AProphecyNNLocomotionManager::FImpl& Impl,
 		const AProphecyAgent* Actor, int32 Index, FVector& EffectiveWorld, FVector& GhostWorld)
 	{
-		// The lower ghost keeps the requested world point. Half reach compensation
-		// changes only the upper held-target frame inside the native prediction.
+		// Before an accepted prediction, fall back to the gameplay request.
+		// Half reach readback replaces this with the shared lower/upper target cache.
 		EffectiveWorld = GhostWorld = Impl.Agents[Index].Slash.TargetWorld;
 	}
 
@@ -827,6 +832,7 @@ bool AProphecyNNLocomotionManager::TryExtendAgentAttackEnd(FProphecyAgentHandle 
 	{
 		Option.HalfReach=&Reach;Prediction.bHalfReach=true;
 		Prediction.HalfReachPelvis=Reach.RealPelvis;Prediction.bDistributed=Reach.bDistributed;
+		Prediction.bCompensate=Reach.bCompensate;Prediction.MinimumReach=Reach.MinimumReach;Prediction.ReachForward=Reach.Forward;
 	}
 	Option.FrozenPinIterations=Actor->AttackFootPinningIterations;
 	Option.LeftHandMaxBendDegrees=ProphecyAttackWrist::Degrees(Actor,EProphecyClampProfileMode::Attack,Slash.Family);
@@ -850,6 +856,7 @@ bool AProphecyNNLocomotionManager::TryExtendAgentAttackEnd(FProphecyAgentHandle 
 	if (Audit) Model->SwapAuditFrame(SavedPosition,SavedRotation);
 #endif
 	if (!Ran) return false;
+	if(Option.HalfReach){Prediction.UpperTarget=Reach.UpperTarget;Prediction.RealTarget=Reach.RealTarget;}
 	for (float Value:Prediction.Output) if (!FMath::IsFinite(Value)) return false;
 	auto Decode=[&](int32 Bone)
 	{
@@ -933,9 +940,10 @@ bool AProphecyNNLocomotionManager::StopAgentNNAttack(FProphecyAgentHandle Handle
 	return true;
 }
 
-bool AProphecyNNLocomotionManager::GetAgentNNAttackState(FProphecyAgentHandle Handle, FName& Attack, bool& bHalf, bool& bArmed, bool& bHit, int32& Frame) const
+bool AProphecyNNLocomotionManager::GetAgentNNAttackState(FProphecyAgentHandle Handle, FName& Attack, bool& bHalf, bool& bArmed, bool& bHit, int32& Frame,int64* TicksSinceArmed) const
 {
 	Attack = NAME_None; bHalf = bArmed = bHit = false; Frame = 0;
+	if(TicksSinceArmed)*TicksSinceArmed=-1;
 	if (!ResolveAgent(Handle)) return false;
 	const auto& Slash = Impl->Agents[Handle.Index].Slash;
 	// Retained history belongs to the finished attack, not the current state pins.
@@ -943,6 +951,17 @@ bool AProphecyNNLocomotionManager::GetAgentNNAttackState(FProphecyAgentHandle Ha
 	Attack = Slash.Family; bHalf = Slash.bHalf; Frame = Slash.Frame;
 	bArmed = Slash.State.Num() == SlashInputDim && Slash.State[270] > 0.5f;
 	bHit = Slash.State.Num() == SlashInputDim && Slash.State[271] > 0.5f;
+	if(TicksSinceArmed)*TicksSinceArmed=ProphecyDefenseArmedGate::ArmedElapsed(Impl->GameTick,Slash.ArmedGameTick);
+	return true;
+}
+
+bool AProphecyNNLocomotionManager::GetAgentNNAttackOutputValues(FProphecyAgentHandle Handle, float& Armed, float& Hit) const
+{
+	Armed = Hit = -1.f;
+	if (!ResolveAgent(Handle)) return false;
+	const auto& Slash = Impl->Agents[Handle.Index].Slash;
+	if (!Slash.bActive) return false;
+	Armed = Slash.ArmedOutput; Hit = Slash.HitOutput;
 	return true;
 }
 
@@ -954,6 +973,8 @@ bool AProphecyNNLocomotionManager::GetAgentNNAttackTarget(FProphecyAgentHandle H
 	if (!Actor || !Impl->Agents[Handle.Index].Slash.bActive) return false;
 	Requested = Impl->Agents[Handle.Index].Slash.TargetWorld;
 	ResolveSlashTarget(*Impl, Actor, Handle.Index, Effective, Ghost);
+	const auto& Slash=Impl->Agents[Handle.Index].Slash;
+	if(Slash.bHalf)ProphecyHalfAttackCompensation::ReadUpperTarget(Actor,Slash.Frame,Ghost,&Effective);
 	return true;
 }
 
@@ -1059,7 +1080,8 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 	FSlashNative::FHalfReach CachedReach;
 	const bool HasReach=Cached && Width==1 && BuildHalfReach(*Impl,AgentActors[Active[0]],Active[0],CachedReach);
 	const bool SameMount=Cached && Cached->bHalfReach==HasReach && (!HasReach ||
-		(Cached->bDistributed==CachedReach.bDistributed && Cached->HalfReachPelvis.Equals(CachedReach.RealPelvis,1.e-8)));
+		(Cached->bDistributed==CachedReach.bDistributed && Cached->bCompensate==CachedReach.bCompensate &&
+		 Cached->MinimumReach==CachedReach.MinimumReach && Cached->ReachForward==CachedReach.Forward && Cached->HalfReachPelvis.Equals(CachedReach.RealPelvis,1.e-8)));
 	const bool Reuse=SameMount && Cached && Cached->Input.Num()==SlashInputDim && Width==1 &&
 		FMemory::Memcmp(Cached->Input.GetData(),Impl->Agents[Active[0]].Slash.State.GetData(),SlashInputDim*sizeof(float))==0;
 	if (!Reuse && Model.InputBatchSize!=Width)
@@ -1097,7 +1119,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				const AProphecyAgent* Actor = AgentActors[Index];
 				const auto& Slash = Impl->Agents[Index].Slash;
 				auto& Option = Settings[Lane];
-				if(Slash.bHalf && ProphecyHalfAttackCompensation::Position(Actor))
+				if(Slash.bHalf)
 				{
 					auto& Reach=ReachContexts.AddDefaulted_GetRef();
 					if(BuildHalfReach(*Impl,Actor,Index,Reach))Option.HalfReach=&Reach;
@@ -1188,6 +1210,9 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				UE_LOG(LogProphecyNNLocomotion, Error, TEXT("Slash2 rejected non-finite output for agent %d."), Index);
 				continue;
 			}
+			if(const auto* Reach=Settings[Lane].HalfReach)
+				ProphecyHalfAttackCompensation::CacheUpperTarget(AgentActors[Index],Slash.AnchorWorld.TransformPosition(Reuse?Cached->UpperTarget:Reach->UpperTarget),Slash.AnchorWorld.TransformPosition(Reuse?Cached->RealTarget:Reach->RealTarget),Slash.Frame+1);
+			else ProphecyHalfAttackCompensation::ClearUpperTarget(AgentActors[Index]);
 			if (!Impl->PinningDebug.IsEmpty())
 			{
 				if (auto* Debug = Impl->PinningDebug.Find(Index); Debug && Debug->Owner.Get() == AgentActors[Index])
@@ -1244,8 +1269,12 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 				}
 			}
 			if (Output[431] > 0.5f && Slash.State[270] <= 0.5f)
+			{
+				if(Slash.ArmedGameTick<0)Slash.ArmedGameTick=Impl->GameTick;
 				ProphecySwordAttackCollision::Armed(AgentActors[Index]);
+			}
 			Slash.State[270] = Output[431]; Slash.State[271] = Output[432];
+			Slash.ArmedOutput = Output[433]; Slash.HitOutput = Output[434];
 			++Slash.Frame;
 			if (Slash.HitFrame == INDEX_NONE && Output[432] > 0.5f)
 			{
@@ -1306,6 +1335,7 @@ bool AProphecyNNLocomotionManager::ReadAgentAttackGhost(FProphecyAgentHandle Han
     Names=Impl->BodyNames;
     for (const auto& Pose:Slash.GhostPose) WorldPose.Add(Pose*Slash.AnchorWorld);
     FVector Effective; ResolveSlashTarget(*Impl,Actor,Handle.Index,Effective,GhostTarget);
+    if(Slash.bHalf)ProphecyHalfAttackCompensation::ReadUpperTarget(Actor,Slash.Frame,GhostTarget);
     return true;
 #else
     return false;

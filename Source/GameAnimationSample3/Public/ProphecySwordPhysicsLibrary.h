@@ -9,6 +9,23 @@ class GAMEANIMATIONSAMPLE3_API UProphecySwordPhysicsLibrary : public UBlueprintF
 {
     GENERATED_BODY()
 public:
+    /** Jolt: held sword contacts push the other body without pushing/rotating the holder back.
+     * Default off. Includes attached and simulated swords; direct hand contacts stay normal.
+     * Retained for future equips; dropped swords regain normal contact response. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Sword", meta=(DefaultToSelf="Agent"))
+    static bool SetSwordNoReaction(AProphecyAgent* Agent, bool Enabled=false);
+
+    /** Automatic held-sword no reaction from first Armed until slash end, except
+     * while the attack's victim is actively dodging or parrying. Default off.
+     * Without an assigned victim, any active defense against this attack blocks it.
+     * Pending defenses do not block it. Pikes/melee are excluded. The manual
+     * Set Sword No Reaction remains an unconditional override.
+     * Strength: 0=normal response, 1=no reaction; intermediate values scale
+     * contact inverse mass/inertia by 1-Strength without changing actual mass. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Sword", meta=(DefaultToSelf="Agent"))
+    static bool SetSlashSwordNoReaction(AProphecyAgent* Agent, bool Enabled=false,
+        UPARAM(meta=(ClampMin="0",ClampMax="1")) float Strength=1.f);
+
     /** At fresh attack entry, a gap strictly greater than this many ticks forces the
      * melee sword rule, including for slash/pike: suppress all sword collision until
      * first NN Hit (or attack end). Read before the existing last-attack counter resets.

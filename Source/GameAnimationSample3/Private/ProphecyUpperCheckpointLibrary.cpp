@@ -2,6 +2,7 @@
 #include "ProphecyAgent.h"
 #include "ProphecyNNLocomotionManager.h"
 #include "EngineUtils.h"
+#include "ProphecyDefenseCheckpoint.h"
 
 namespace
 {
@@ -31,4 +32,25 @@ bool UProphecyUpperCheckpointLibrary::GetUpperCheckpoint(AProphecyAgent* Agent,E
     if (Index<0) return false;
     Checkpoint=EProphecyUpperCheckpoint(Index);
     return true;
+}
+
+bool UProphecyUpperCheckpointLibrary::SetParryCheckpoint(AProphecyAgent* Agent,EProphecyParryCheckpoint Checkpoint,FString& OutError)
+{
+    auto* M=UpperManager(Agent);if(!M){OutError=TEXT("Agent is not initialized.");return false;}
+    return ProphecyDefenseCheckpoint::Set(M,false,int32(Checkpoint),OutError);
+}
+bool UProphecyUpperCheckpointLibrary::GetParryCheckpoint(AProphecyAgent* Agent,EProphecyParryCheckpoint& Checkpoint)
+{
+    Checkpoint=EProphecyParryCheckpoint::ProjectDefault;auto* M=UpperManager(Agent);if(!M)return false;
+    Checkpoint=EProphecyParryCheckpoint(ProphecyDefenseCheckpoint::Get(M,false));return true;
+}
+bool UProphecyUpperCheckpointLibrary::SetDodgeCheckpoint(AProphecyAgent* Agent,EProphecyDodgeCheckpoint Checkpoint,FString& OutError)
+{
+    auto* M=UpperManager(Agent);if(!M){OutError=TEXT("Agent is not initialized.");return false;}
+    return ProphecyDefenseCheckpoint::Set(M,true,int32(Checkpoint),OutError);
+}
+bool UProphecyUpperCheckpointLibrary::GetDodgeCheckpoint(AProphecyAgent* Agent,EProphecyDodgeCheckpoint& Checkpoint)
+{
+    Checkpoint=EProphecyDodgeCheckpoint::ProjectDefault;auto* M=UpperManager(Agent);if(!M)return false;
+    Checkpoint=EProphecyDodgeCheckpoint(ProphecyDefenseCheckpoint::Get(M,true));return true;
 }

@@ -1,5 +1,9 @@
 // Shared optional defense path. Included after the normal locomotion/attack
 // implementations so all coordinate conversions stay at the UE boundary.
+#include "ProphecyDefenseInputDebug.h"
+#include "ProphecyGhostDrawing.h"
+#include "PhysicsEngine/PhysicsAsset.h"
+#include "PhysicsEngine/SkeletalBodySetup.h"
 namespace
 {
     ProphecyDefense::FRows DefenseAxes(const FQuat& Q)
@@ -155,7 +159,8 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     { Error=TEXT("Start the incoming attack first.");return false; }
     if (Attack.HitFrame!=INDEX_NONE && Attack.Frame-Attack.HitFrame>=ProphecyDefenseControls::GetFramesAfterHit(Actor,false))
     { Error=TEXT("The incoming attack has passed its parry deadline.");return false; }
-    if (Attack.State[270]<=0.5f)
+    if (!ProphecyDefenseArmedGate::CanStart(Actor,Attack.Family,Attack.State[270]>0.5f,false,
+        ProphecyDefenseArmedGate::ArmedElapsed(Impl->GameTick,Attack.ArmedGameTick)))
     {
         StopAgentNNDefense(Handle);
         ProphecyDefenseArmedGate::Queue(this,Actor,Attacker,false,MaximumSeconds);
@@ -167,7 +172,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     auto& D=*Impl->Defense;
     if (!D.bParryReady)
     {
-        if (!D.ParryNetwork.Initialize(FPaths::ProjectContentDir()/TEXT("locomotion/NN/defense/prophecy_parry_upper.onnx"),258,90,Error)) return false;
+        if (!ProphecyDefenseCheckpoint::Initialize(this,false,D.ParryNetwork,Error)) return false;
         D.bParryReady=true;
     }
     const int32 AttackCollider=DefenseAttackCollider(D,Attack);
@@ -214,7 +219,10 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     ProphecyRootBalance::CancelKickException(Actor);
     Agent.DefensePose=New.Get();D.Parries.Add(Handle.Index,MoveTemp(New));++D.ActiveCount;
     SetAgentTimeDilation(Handle,1.f);
-    ProphecyLimbCollision::DefenseChanged(Actor,true);Error.Reset();return true;
+    ProphecyLimbCollision::DefenseChanged(Actor,true);
+    ProphecyDefenseControls::CaptureRelativeTarget(Actor,Attack.TargetWorld,P.Status);
+    ProphecyDefenseCollision::Start(Actor,Attacker,Attack.Family,false);
+    Error.Reset();return true;
 }
 
 void AProphecyNNLocomotionManager::RebaseDefenseAfterRootCollision(int32 Index,const FVector3f& PreviousRoot,float PreviousYaw,const FVector3f& Root,float Yaw)
@@ -282,6 +290,8 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
 {
     AProphecyAgent* Actor=ResolveAgent(Handle);
     if (!Actor) return false;
+    ProphecyDefenseControls::ClearRelativeTarget(Actor);
+    ProphecyDefenseCollision::Stop(Actor);
     const bool bCancelled=ProphecyDefenseArmedGate::Cancel(Actor);
     if (!Impl->Agents[Handle.Index].DefensePose) return bCancelled;
     auto& Agent=Impl->Agents[Handle.Index];
@@ -298,6 +308,19 @@ bool AProphecyNNLocomotionManager::StopAgentNNDefense(FProphecyAgentHandle Handl
         --Impl->Defense->ActiveDodgeCount;Agent.bHasPhysicalSample=false;
         if (auto* Smoothing=ProphecyNNRootWindow::Find(ResolveAgent(Handle)))
             for (auto& Sample:Smoothing->Samples) Sample.bInitialized=false;
+    }
+    if(bReturnToLocomotion)
+    {
+        const uint32 Age=uint32(FMath::RoundToInt(FMath::Clamp(Impl->AccumulatedStepSeconds,0.f,1.f/NNUpdateHz)*60.f));
+        const auto Previous=TransformSlice(Impl->PreviousComponentTransformBuffer,Handle.Index);
+        const auto Current=TransformSlice(Impl->ComponentTransformBuffer,Handle.Index);
+        if(WasDodge)
+            ProphecyUpperBodyInertia::BeginDodge(Actor,Impl->BodyNames,Impl->Parents,Impl->UpperCoreBoneNames,
+                Previous,Current,SlashComponentWorld(Actor,Agent.PreviousPublishedRoot,Agent.PreviousPublishedYaw),
+                SlashComponentWorld(Actor,Agent.PublishedRoot,Agent.PublishedYaw),Agent.PublishedPoseTimeSeconds,1.f/NNUpdateHz,Age);
+        else
+            ProphecyFKReturn::BeginParry(Actor,Impl->BodyNames,Impl->Parents,Previous,Current,
+                Agent.PublishedPoseTimeSeconds,1.f/NNUpdateHz,Age);
     }
     Agent.DefensePose->Status.Active=false;Agent.DefensePose=nullptr;
     if (bReturnToLocomotion) ProphecyRootPelvisBounds::ResetMagicCubeToRoot(Actor);
@@ -318,6 +341,64 @@ bool AProphecyNNLocomotionManager::GetAgentNNDefenseStatus(FProphecyAgentHandle 
     if (const auto* P=Impl->Defense->Dodges.Find(Handle.Index))
         if ((*P)->Owner.Get()==ResolveAgent(Handle)) { Status=(*P)->Status;return true; }
     return false;
+}
+
+bool AProphecyNNLocomotionManager::DrawAgentDefenseInputGhost(FProphecyAgentHandle Handle,
+    const FVector& WorldOffset,bool ShowPrevious,float Duration,float Thickness) const
+{
+#if !UE_BUILD_SHIPPING
+    if(!IsInGameThread() || !ResolveAgent(Handle) || !Impl->Defense || WorldOffset.ContainsNaN()
+        || !FMath::IsFinite(Duration) || Duration<0 || !FMath::IsFinite(Thickness) || Thickness<0)return false;
+    const auto* P=Impl->Agents[Handle.Index].DefensePose;
+    if(!P || !P->Status.Active || P->Status.CompletedSteps<=0 || !P->bHasPose)return false;
+    const auto& D=*Impl->Defense;
+    if(P->AttackerCollider<0 || P->AttackerCollider>=D.AttackContacts.Count)return false;
+    // Context is the retained, filtered source of the last completed NN input.
+    // Never resample the attacker's newer pose or use unfiltered NextAttack.
+    const FVector3f Origin=P->bDodge?static_cast<const FProphecyLiveDodge*>(P)->WorldOrigin:FVector3f::ZeroVector;
+    // This is the completed defender pose belonging to the retained input. Parry
+    // includes its accepted locomotion legs; Dodge includes its predicted legs.
+    // Do not remount it onto a newer real capsule or read the simulated mesh.
+    FTransform Defender[25];
+    for(int32 Bone=0;Bone<25;++Bone)
+        Defender[D.Bones[Bone]]=ProphecyDefenseInputDebug::WorldBone(P->CurrentPose.P[Bone],P->CurrentPose.R[Bone],Origin,WorldOffset);
+    const FColor DefenderColor(60,255,100);
+    for(int32 Bone=0;Bone<25;++Bone)
+        if(Impl->Parents[Bone]>=0)
+            DrawDebugLine(GetWorld(),Defender[Impl->Parents[Bone]].GetLocation(),Defender[Bone].GetLocation(),DefenderColor,false,Duration,0,Thickness);
+    const auto* Mesh=P->Owner->GetPoseReferenceMesh();
+    const auto* Asset=Mesh?Mesh->GetPhysicsAsset():nullptr;
+    if(Asset)for(const USkeletalBodySetup* Body:Asset->SkeletalBodySetups)
+    {
+        if(!Body)continue;
+        const int32 Bone=Impl->BodyNames.IndexOfByKey(Body->BoneName);
+        if(Bone!=INDEX_NONE)ProphecyGhostDrawing::DrawShapes(GetWorld(),Body->AggGeom,Defender[Bone],DefenderColor,Duration,Thickness);
+    }
+    ProphecyDefenseInputDebug::FSample Samples[2];
+    for(int32 Frame=ShowPrevious?0:1;Frame<2;++Frame)
+    {
+        auto& S=Samples[Frame];S=ProphecyDefenseInputDebug::Build(P->Context.AttackerPelvis[Frame],
+            P->Context.AttackerCollider[Frame],P->AttackerHalf,Origin,WorldOffset);
+        const FColor PelvisColor=Frame?FColor::Cyan:FColor(80,100,255);
+        const FColor ColliderColor=Frame?FColor::Yellow:FColor(255,100,0);
+        DrawDebugPoint(GetWorld(),S.Pelvis,8, PelvisColor,false,Duration);
+        for(int32 Axis=0;Axis<3;++Axis)
+            DrawDebugDirectionalArrow(GetWorld(),S.Pelvis,S.Pelvis+S.PelvisAxes[Axis]*12.,3,PelvisColor,false,Duration,0,Thickness);
+        for(int32 I=0;I<8;++I)for(int32 Axis=0;Axis<3;++Axis)
+            if(!(I&(1<<Axis)))DrawDebugLine(GetWorld(),S.Corners[I],S.Corners[I|(1<<Axis)],ColliderColor,false,Duration,0,Thickness);
+    }
+    if(ShowPrevious)
+    {
+        DrawDebugDirectionalArrow(GetWorld(),Samples[0].Pelvis,Samples[1].Pelvis,4,FColor::Cyan,false,Duration,0,Thickness);
+        DrawDebugDirectionalArrow(GetWorld(),Samples[0].Collider,Samples[1].Collider,4,FColor::Yellow,false,Duration,0,Thickness);
+    }
+    const FString Label=FString::Printf(TEXT("%s input | %s | frame %d"),P->bDodge?TEXT("Dodge"):TEXT("Parry"),
+        *D.AttackContacts.Boxes[P->AttackerCollider].Name.ToString(),P->Status.AttackerFrame);
+    DrawDebugString(GetWorld(),Samples[1].Collider+FVector(0,0,12),Label,nullptr,FColor::Yellow,Duration,false,.8f);
+    return true;
+#else
+    return false;
+#endif
 }
 
 void AProphecyNNLocomotionManager::GetAgentAttackDefenseState(FProphecyAgentHandle Handle,bool& bParry,bool& bDodge) const
@@ -422,6 +503,8 @@ void AProphecyNNLocomotionManager::AdvanceNNDefenses()
             Write(P.Context.AttackerCollider[Frame]+3,Box.Axes.V[0]);Write(P.Context.AttackerCollider[Frame]+6,Box.Axes.V[1]);
         }
         P.Context.Event=Attack.Frame>=2?1.f:0.f;
+        const auto& AttackerState=Impl->Agents[P.AttackerIndex];
+        ProphecyDefenseControls::FilterHalfAttack(Actor,Attack.bHalf,P.Context,AttackerState.PreviousPublishedRoot,AttackerState.PublishedRoot);
         P.Context.TargetWorld=UnrealToTraining(Attack.TargetWorld);
         const auto PlannedRoot=DefenseRoot(SlashComponentWorld(Actor,Agent.CurRootPos,Agent.CurRootYaw));
         P.State.InitialWorldDelta=PlannedRoot.P-Root.P;

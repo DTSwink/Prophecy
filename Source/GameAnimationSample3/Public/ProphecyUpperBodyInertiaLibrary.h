@@ -15,11 +15,12 @@ class GAMEANIMATIONSAMPLE3_API UProphecyUpperBodyInertiaLibrary : public UBluepr
     GENERATED_BODY()
 public:
     /** Preserve outgoing core angular motion and reference-local arm/hand motion after
-     * any special, then fade to normal controls. Hand targets remain reachable;
+     * dodge only, then fade to normal controls. Attacks and parry are unaffected.
+     * Hand targets remain reachable;
      * forearms retain their fixed anatomical length. Response
      * controls spring softness; larger is more inertial.
      * Hold/blend use 60 unpaused game ticks per authored second. Configure before
-     * a special ends or inside Special Ended. Core Alpha and Arms Alpha scale
+     * dodge ends. Core Alpha and Arms Alpha scale
      * their own regions from zero (disabled) to one (full). Arms Alpha -1 inherits
      * Core Alpha. Alpha-only changes preserve ongoing spring motion and timing;
      * zero retires only that region, which can restart at the next special end.
@@ -27,7 +28,7 @@ public:
      * ArmsResponseTimeSeconds and ArmsBlendToNormalDurationSeconds apply equally
      * to both arms; -1 inherits the corresponding core value. Hold is shared.
      * Zero response or hold plus blend zero bypasses that region only. */
-    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Locomotion",meta=(DefaultToSelf="Agent",DisplayName="Set Attack Upper Body Inertia"))
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Defense Recovery",meta=(DefaultToSelf="Agent",DisplayName="Set Dodge Upper Body Inertia"))
     static bool SetAttackUpperBodyInertia(AProphecyAgent* Agent,bool Enabled=true,
         UPARAM(DisplayName="Core Response Time Seconds") float ResponseTimeSeconds=.25f,float HoldDurationSeconds=0.f,
         UPARAM(DisplayName="Core Blend To Normal Duration Seconds") float BlendToNormalDurationSeconds=.5f,float MomentumScale=1.f,

@@ -9,6 +9,11 @@ class AProphecyNNLocomotionManager;
 // Kept outside retained manager allocations so this fix can be live patched.
 namespace ProphecyDefenseArmedGate
 {
+// Pin order: headbutt, hooks, jabs, kicks, overs, pike, left slashes, right slashes.
+bool SetStartDelays(AProphecyAgent* Defender,bool Dodge,TConstArrayView<int32> Values);
+void RemoveStartDelays(const AProphecyAgent* Agent);
+inline int64 ArmedElapsed(int64 Tick,int64 ArmedTick) { return ArmedTick<0 ? -1 : FMath::Max<int64>(0,Tick-ArmedTick); }
+bool CanStart(const AProphecyAgent* Defender,FName Family,bool Armed,bool Dodge,int64 TicksSinceArmed);
 struct FHistory
 {
     FTransform Pose[2][25];

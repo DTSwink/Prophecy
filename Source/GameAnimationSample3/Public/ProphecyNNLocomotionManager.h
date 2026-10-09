@@ -283,7 +283,9 @@ public:
 	bool StopAgentNNDefense(FProphecyAgentHandle Handle, bool bReturnToLocomotion = true);
 	EProphecyAgentState GetAgentActivityState(FProphecyAgentHandle Handle) const;
 	bool GetAgentNNDefenseStatus(FProphecyAgentHandle Handle,FProphecyNNDefenseStatus& Status) const;
-	bool GetAgentNNAttackState(FProphecyAgentHandle Handle, FName& Attack, bool& bHalf, bool& bArmed, bool& bHit, int32& Frame) const;
+	bool DrawAgentDefenseInputGhost(FProphecyAgentHandle Handle,const FVector& WorldOffset,bool ShowPrevious,float Duration,float Thickness) const;
+	bool GetAgentNNAttackState(FProphecyAgentHandle Handle, FName& Attack, bool& bHalf, bool& bArmed, bool& bHit, int32& Frame, int64* TicksSinceArmed=nullptr) const;
+	bool GetAgentNNAttackOutputValues(FProphecyAgentHandle Handle, float& Armed, float& Hit) const;
 	/** Development console audit; not part of the gameplay Blueprint surface. */
 	UFUNCTION(Exec)
 	bool AuditSlashReference(const FString& ReferenceDirectory);

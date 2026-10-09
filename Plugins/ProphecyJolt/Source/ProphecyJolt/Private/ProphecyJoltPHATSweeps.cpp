@@ -21,7 +21,7 @@ static TMap<TWeakObjectPtr<const AActor>, FSettings> Requests;
 struct FConfiguration { FSettings Settings; bool Enabled = true; };
 static TMap<TWeakObjectPtr<const AActor>, FConfiguration> Configurations;
 static TSet<TWeakObjectPtr<const AActor>> AttackingAgents;
-struct FParts { TArray<FName,TInlineAllocator<2>> Bones; TWeakObjectPtr<const UPrimitiveComponent> Sword; };
+struct FParts { TWeakObjectPtr<const UPrimitiveComponent> Sword; };
 static TMap<TWeakObjectPtr<const AActor>,FParts> AttackParts;
 static TMap<TWeakObjectPtr<const UPrimitiveComponent>,TWeakObjectPtr<const AActor>> SwordOwners;
 static bool IsCombatActive(const AActor* Agent)
@@ -31,7 +31,7 @@ static void RefreshRequest(AActor* Agent)
 {
     const auto* Config = Configurations.Find(Agent);
     const auto* Parts = AttackParts.Find(Agent);
-    if (!IsCombatActive(Agent) || !Parts || (Parts->Bones.IsEmpty() && !Parts->Sword.IsValid()) || (Config && !Config->Enabled))
+    if (!IsCombatActive(Agent) || !Parts || !Parts->Sword.IsValid() || (Config && !Config->Enabled))
     { Requests.Remove(Agent); return; }
     TInlineComponentArray<USkeletalMeshComponent*> Meshes(Agent);
     if (!Meshes.ContainsByPredicate([](const auto* Mesh) { return Mesh->GetFName() == TEXT("PhysicalMesh"); }))
@@ -70,11 +70,7 @@ const FSettings* FindBody(const UPrimitiveComponent* Component, FName Bone)
         const AActor* Weapon=Component->GetOwner();
         return Weapon && Weapon->GetOwner()==Owner->Get() ? Requests.Find(*Owner) : nullptr;
     }
-    if (Component->GetFName()!=TEXT("PhysicalMesh")) return nullptr;
-    const auto* Agent=Component->GetOwner();
-    const auto* Settings=Requests.Find(Agent);
-    const auto* Parts=Settings ? AttackParts.Find(Agent) : nullptr;
-    return Parts && Parts->Bones.Contains(Bone) ? Settings : nullptr;
+    return nullptr;
 }
 void ForgetWorld(const UWorld* World)
 {
@@ -263,8 +259,9 @@ void UProphecyJoltPHATSweepLibrary::SetAttackParts(AActor* Agent, const TArray<F
     using namespace ProphecyJolt::PHATSweeps;
     if (!IsInGameThread() || !IsValid(Agent)) return;
     if (const auto* Previous=AttackParts.Find(Agent)) SwordOwners.Remove(Previous->Sword);
-    auto& Parts=AttackParts.FindOrAdd(Agent);Parts.Bones.Reset();Parts.Sword=nullptr;
-    for (FName Bone:Bones) if (Bone!=TEXT("sword")) Parts.Bones.AddUnique(Bone);
+    auto& Parts=AttackParts.FindOrAdd(Agent);Parts.Sword=nullptr;
+    // Only the held blade initiates sweeps. The hand remains a collision partner,
+    // but its carrier leaf must not add predictive impulses of its own.
     if (Bones.Contains(TEXT("sword")) && IsValid(Sword))
     { Parts.Sword=Sword;SwordOwners.Add(Sword,Agent); }
     RefreshRequest(Agent);
@@ -309,12 +306,12 @@ bool FProphecySweepAttackGateTest::RunTest(const FString&)
     Check(false,1.f,64);
     L::NotifyDefenseState(Agent,true);Check(false,1.f,64);
     L::NotifyAttackState(Agent,true);Check(false,1.f,64); // no implicit whole-body fallback
-    Begin({TEXT("hand_l"),TEXT("lowerarm_l")});Check(true,1.f,64);
-    TestTrue(TEXT("Punch selects hand and forearm only"),Selected(TEXT("hand_l"))&&Selected(TEXT("lowerarm_l"))&&!Selected(TEXT("head"))&&!Selected(TEXT("hand_r")));
+    Begin({TEXT("hand_l"),TEXT("lowerarm_l")});Check(false,1.f,64);
+    TestTrue(TEXT("Punch never initiates sweeps"),!Selected(TEXT("hand_l"))&&!Selected(TEXT("lowerarm_l")));
     Begin({TEXT("foot_r"),TEXT("calf_r")});
-    TestTrue(TEXT("Chain replaces selection with foot/calf only"),Selected(TEXT("foot_r"))&&Selected(TEXT("calf_r"))&&!Selected(TEXT("hand_l"))&&!Selected(TEXT("ball_r")));
-    Begin({TEXT("head")});TestTrue(TEXT("Headbutt only head"),Selected(TEXT("head"))&&!Selected(TEXT("neck_01")));
-    Begin({TEXT("sword")},Sword);
+    TestTrue(TEXT("Kick never initiates sweeps"),!Selected(TEXT("foot_r"))&&!Selected(TEXT("calf_r")));
+    Begin({TEXT("head")});Check(false,1.f,64);
+    Begin({TEXT("sword"),TEXT("hand_r")},Sword);
     TestTrue(TEXT("Sword only, not carrier hand"),ProphecyJolt::PHATSweeps::FindBody(Sword,NAME_None)!=nullptr&&!Selected(TEXT("hand_r")));
     Weapon->SetOwner(nullptr);
     TestNull(TEXT("Dropped sword no longer initiates sweeps"),ProphecyJolt::PHATSweeps::FindBody(Sword,NAME_None));
@@ -322,16 +319,18 @@ bool FProphecySweepAttackGateTest::RunTest(const FString&)
     L::SetJoltPHATSweeps(Agent,false,.5f,32);Check(false,.5f,32);
     TestNull(TEXT("Disabled sword not selected"),ProphecyJolt::PHATSweeps::FindBody(Sword,NAME_None));
     L::NotifyAttackState(Agent,false);Begin({TEXT("head")});Check(false,.5f,32);
-    L::SetJoltPHATSweeps(Agent,true,.5f,32);Check(true,.5f,32);
+    L::SetJoltPHATSweeps(Agent,true,.5f,32);Check(false,.5f,32);
     TestNull(TEXT("Prior sword selection cleared"),ProphecyJolt::PHATSweeps::FindBody(Sword,NAME_None));
-    L::NotifyDefenseState(Agent,false);Check(true,.5f,32);
+    L::NotifyDefenseState(Agent,false);Check(false,.5f,32);
+    Begin({TEXT("sword")},Sword);Check(true,.5f,32);
     L::SetJoltPHATSweeps(Agent,true,0.f,32);Check(false,0.f,32);
     L::NotifyAttackState(Agent,false);Check(false,0.f,32);
     L::SetJoltPHATSweeps(Agent,true,.8f,48);Check(false,.8f,48);
     L::NotifyDefenseState(Agent,true);Check(false,.8f,48);
     Begin({TEXT("sword")});Check(false,.8f,48); // no held weapon, no sweep
     Begin({});Check(false,.8f,48);
-    Begin({TEXT("head")});Check(true,.8f,48);
+    Begin({TEXT("head")});Check(false,.8f,48);
+    Begin({TEXT("sword")},Sword);Check(true,.8f,48);
     L::NotifyAttackState(Agent,false);Check(false,.8f,48);
     ProphecyJolt::PHATSweeps::ForgetWorld(World);Check(false,1.f,64);
     return true;

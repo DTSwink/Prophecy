@@ -1,0 +1,48 @@
+{
+  "tests": {
+    "Prophecy.Jolt.ArmsAntiJiggle.Lifecycle": "Success",
+    "Prophecy.Jolt.ArmsAntiJiggle.TickDuration": "Success",
+    "Prophecy.Jolt.ContactShapes.AttackSweepGate": "Success",
+    "Prophecy.Jolt.ContactShapes.SelectiveSweeps": "Success"
+  },
+  "motor_counts": {
+    "99": [
+      0,
+      3
+    ],
+    "100": [
+      0,
+      0
+    ],
+    "101": [
+      0,
+      0
+    ],
+    "105": [
+      0,
+      0
+    ],
+    "106": [
+      0,
+      3
+    ],
+    "107": [
+      0,
+      3
+    ],
+    "140": [
+      0,
+      3
+    ],
+    "141": [
+      0,
+      3
+    ],
+    "142": [
+      0,
+      3
+    ]
+  },
+  "live_completed": true,
+  "ticks": 165
+}

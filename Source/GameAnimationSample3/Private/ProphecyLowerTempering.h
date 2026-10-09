@@ -35,6 +35,7 @@ struct FSettings
         && FeetTranslationZ == 1.f && PelvisTranslationZ == 1.f; }
 };
 void SelectAttackProfile(const AProphecyAgent* Agent,FName Attack);
+void SelectDefenseProfile(const AProphecyAgent* Agent,bool Dodge);
 void ClearAttackSelection(const AProphecyAgent* Agent);
 void ForgetProfiles(const AProphecyAgent* Agent);
 const FSettings* Find(const AProphecyAgent* Agent);

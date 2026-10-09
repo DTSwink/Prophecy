@@ -1,5 +1,6 @@
 #include "ProphecyLimbCollisionLibrary.h"
 #include "ProphecyLimbCollision.h"
+#include "ProphecyDefenseCollision.h"
 #include "ProphecySpecialSolver.h"
 #include "ProphecyAgent.h"
 #include "ProphecyJoltCharacterComponent.h"
@@ -71,6 +72,7 @@ static FProphecyJoltCollisionUpdate Resolve(const FBodyOverride& Body,bool Comba
 }
 bool Update(AProphecyAgent* Agent,const FProphecyJoltBodyHandle& RigBody,FString& Error)
 {
+    ProphecyDefenseCollision::Refresh(Agent);
     auto* S=Overrides.IsEmpty() ? nullptr : Overrides.Find(Agent);
     if (!S) return true;
     const bool Combat=Agent->IsSwordAttackActive() || S->bDefense;

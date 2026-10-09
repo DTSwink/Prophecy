@@ -30,6 +30,9 @@ struct FActive
 };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FActive> Active;
+struct FParryConfig { FProfile Profile;float Coefficient=1;FVector2f Timing{.1f,.34f}; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FParryConfig> ParryConfigs,ParryBaselines;
+static TSet<TWeakObjectPtr<const AProphecyAgent>> ParryActive;
 // Publication identity and bounded game-tick progress are separate.
 struct FTickPhase
 {
@@ -49,12 +52,38 @@ static void EnsureCleanup()
     {
         auto Clean=[W](auto& Map){for(auto It=Map.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W)It.RemoveCurrent();};
-        Clean(Configs);Clean(Baselines);Clean(Active);Clean(TickPhases);
+        Clean(Configs);Clean(Baselines);Clean(Active);Clean(TickPhases);Clean(ParryConfigs);Clean(ParryBaselines);
+        for(auto It=ParryActive.CreateIterator();It;++It)if(!It->IsValid() || It->Get()->GetWorld()==W)It.RemoveCurrent();
     });
 }
-bool Prepare(FCurve& Curve,const FProfile& P,float Coefficient,TConstArrayView<FName> Names,
+// UE yaw about +world Z is clockwise viewed from above (X forward, Y right).
+// This changes a cached arc only; unaffected returns use exactly the old sampler.
+static bool SelectSlashWinding(FCurve& Curve,FName Attack,TConstArrayView<FTransform> Current)
+{
+    static const FName Left[]={TEXT("slashL"),TEXT("slashLU"),TEXT("slashLD")};
+    static const FName Right[]={TEXT("slashR"),TEXT("slashRU"),TEXT("slashRD")};
+    const float Direction=(Attack==Left[0] || Attack==Left[1] || Attack==Left[2])?1.f:
+        (Attack==Right[0] || Attack==Right[1] || Attack==Right[2])?-1.f:0.f;
+    if(Direction==0)return false;
+    // Fixed canonical slots: spine_05, upperarm_r, lowerarm_r. All six sword
+    // slashes use the right arm. Manny spine_05 local +Z points to its right.
+    const auto& Spine=Current[Curve.Bones[4].Index];
+    auto& Arm=Curve.Bones[10];
+    const FVector Shaft=Current[Curve.Bones[11].Index].GetLocation()-Current[Arm.Index].GetLocation();
+    if(Spine.GetRotation().UnrotateVector(Shaft).Z>=-1.e-4* Shaft.Size())return false;
+    const FVector Up=Curve.SeedFrame.UnrotateVector(FVector::UpVector);
+    const FVector Omega=Current[Arm.Index].GetRotation().RotateVector(FVector(Arm.Return.Axis));
+    // Signed horizontal motion of the actual shoulder->elbow direction, not
+    // humeral roll or a bone Euler angle. Near-vertical/zero arcs retain the old path.
+    const double Sweep=FVector::DotProduct(Up,FVector::CrossProduct(Shaft,FVector::CrossProduct(Omega,Shaft)));
+    if(Arm.Return.HalfAngle<=1.e-5f || Direction*Sweep>=-1.e-4* Shaft.SizeSquared())return false;
+    Arm.Return.Axis=-Arm.Return.Axis;
+    Arm.Return.HalfAngle=PI-Arm.Return.HalfAngle;
+    return true;
+}
+static bool PrepareForAttack(FCurve& Curve,const FProfile& P,float Coefficient,TConstArrayView<FName> Names,
     TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
-    TConstArrayView<FTransform> Current,float Dt,TConstArrayView<FVector3f> AngularVelocity)
+    TConstArrayView<FTransform> Current,float Dt,TConstArrayView<FVector3f> AngularVelocity,FName Attack)
 {
     if(P.Duration<=0 || Dt<=0 || Names.Num()!=Parents.Num() || Names.Num()!=Current.Num() || Current.Num()!=Previous.Num())return false;
     Curve.Easing=P.Easing;Curve.Coefficient=Coefficient;
@@ -87,6 +116,7 @@ bool Prepare(FCurve& Curve,const FProfile& P,float Coefficient,TConstArrayView<F
     Curve.StartPelvis=FQuat4f(Current[Curve.Bones[0].Parent].GetRotation());
     const float AngleDegrees=FMath::RadiansToDegrees(2.f*Curve.Bones[0].Return.HalfAngle);
     Curve.InverseDuration=1.f/(P.Duration+P.AngleTimeSeconds*AngleDegrees/90.f);
+    SelectSlashWinding(Curve,Attack,Current);
     FVector3f BaseRate[BoneCount],ReturnRate[BoneCount];
     for(int32 J=0;J<BoneCount;++J)
     {
@@ -106,38 +136,30 @@ bool Prepare(FCurve& Curve,const FProfile& P,float Coefficient,TConstArrayView<F
     }
     return true;
 }
+bool Prepare(FCurve& Curve,const FProfile& P,float Coefficient,TConstArrayView<FName> Names,
+    TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
+    TConstArrayView<FTransform> Current,float Dt,TConstArrayView<FVector3f> AngularVelocity)
+{
+    return PrepareForAttack(Curve,P,Coefficient,Names,Parents,Previous,Current,Dt,AngularVelocity,NAME_None);
+}
 void Cancel(const AProphecyAgent* Agent)
 {
-    if(!Active.IsEmpty())Active.Remove(Agent);
+    if(!Active.IsEmpty())Active.Remove(Agent);ParryActive.Remove(Agent);
     if(!TickPhases.IsEmpty())TickPhases.Remove(Agent);
     ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::FKReturn);
 }
-void Remove(const AProphecyAgent* Agent){Cancel(Agent);Configs.Remove(Agent);Baselines.Remove(Agent);}
+void Remove(const AProphecyAgent* Agent){Cancel(Agent);Configs.Remove(Agent);Baselines.Remove(Agent);ParryConfigs.Remove(Agent);ParryBaselines.Remove(Agent);}
 void CaptureReset(const AProphecyAgent* Agent)
-{EnsureCleanup();if(const auto* C=Configs.Find(Agent))Baselines.Add(Agent,*C);else Baselines.Remove(Agent);}
+{EnsureCleanup();if(const auto* C=Configs.Find(Agent))Baselines.Add(Agent,*C);else Baselines.Remove(Agent);if(const auto* P=ParryConfigs.Find(Agent))ParryBaselines.Add(Agent,*P);else ParryBaselines.Remove(Agent);}
 void RestoreReset(const AProphecyAgent* Agent)
-{Cancel(Agent);Configs.Remove(Agent);if(const auto* C=Baselines.Find(Agent))Configs.Add(Agent,*C);}
-void ForgetReset(const AProphecyAgent* Agent){Baselines.Remove(Agent);}
-void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names,
+{Cancel(Agent);Configs.Remove(Agent);if(const auto* C=Baselines.Find(Agent))Configs.Add(Agent,*C);ParryConfigs.Remove(Agent);if(const auto* P=ParryBaselines.Find(Agent))ParryConfigs.Add(Agent,*P);}
+void ForgetReset(const AProphecyAgent* Agent){Baselines.Remove(Agent);ParryBaselines.Remove(Agent);}
+static void BeginResolved(const AProphecyAgent* Agent,FName Attack,const FProfile& Profile,
+    float Coefficient,FVector2f Timing,TConstArrayView<FName> Names,
     TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
     TConstArrayView<FTransform> Current,double SourceTime,float SampleSeconds,uint32 PublishedAgeTicks)
 {
-    Cancel(Agent);if(!IsValid(Agent))return;
-    const auto* C=Configs.IsEmpty()?nullptr:Configs.Find(Agent);
-    if(C && !C->Enabled)return;
-    FVector2f Timing(.1f,.34f);FProfile Profile;
-    for(int32 I=0;I<AttackCount;++I)if(Attack==FName(Data::Profiles[I].Attack))
-    {
-        const auto& P=Data::Profiles[I];if(C)Timing=C->Timing[I];
-        Profile.Duration=P.Duration;Profile.Inertia=P.Inertia;Profile.Easing=P.Easing;
-        Profile.InertiaHold=P.InertiaHold;Profile.InertiaDecay=P.InertiaDecay;Profile.AngleTimeSeconds=P.AngleTimeSeconds;Profile.WorldInertia=P.WorldInertia;
-        FMemory::Memcpy(Profile.Weights,P.Weights,sizeof(Profile.Weights));break;
-    }
     const float AlphaHold=Timing.X,Trim=Timing.Y;if(Trim>=1.f)return;
-    if(C)
-    {
-        const auto* P=C->Profiles.Find(Attack);if(!P)P=C->Profiles.Find(NAME_None);if(P)Profile=*P;
-    }
     FActive A;
     // Capture published WORLD angular rates once, including the mover's carrier yaw.
     // The live source interpolates bone rotations; seed that source rather than a
@@ -163,7 +185,7 @@ void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names
             Rates[J]=FVector3f(A.Curve.SeedFrame.UnrotateVector(Rate));
         }
     }
-    if(!Prepare(A.Curve,Profile,C?C->Coefficient:1.f,Names,Parents,Previous,Current,SampleSeconds,Rates))return;
+    if(!PrepareForAttack(A.Curve,Profile,Coefficient,Names,Parents,Previous,Current,SampleSeconds,Rates,Attack))return;
     A.Curve.SetAlphaHold(AlphaHold);
     A.Curve.TakeoverTimeScale=1.f/(1.f-Trim);
     for(int32 J=0;J<BoneCount;++J)
@@ -182,8 +204,38 @@ void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names
         ProphecyBlendClock::Start(Agent,ProphecyBlendClock::EKind::FKReturn,double(Phase.Limit-Phase.Ticks)/60.);
 #if WITH_EDITOR
     if(Audit.GetValueOnGameThread())UE_LOG(LogTemp,Display,TEXT("FKReturn begin actor=%s attack=%s duration=%.6f inertia=%.6f easing=%.6f coefficient=%.6f alpha_hold=%.6f trim=%.6f end_duration=%.6f source=%.6f inertia_hold=%.6f decay=%.6f world=%d angle_seconds=%.6f world_seed=%d"),
-        *Agent->GetName(),*Attack.ToString(),Profile.Duration,Profile.Inertia,Profile.Easing,C?C->Coefficient:1.f,AlphaHold,Trim,EndDuration,SourceTime,Profile.InertiaHold,Profile.InertiaDecay,int32(Profile.WorldInertia),Profile.AngleTimeSeconds,int32(!Rates.IsEmpty()));
+        *Agent->GetName(),*Attack.ToString(),Profile.Duration,Profile.Inertia,Profile.Easing,Coefficient,AlphaHold,Trim,EndDuration,SourceTime,Profile.InertiaHold,Profile.InertiaDecay,int32(Profile.WorldInertia),Profile.AngleTimeSeconds,int32(!Rates.IsEmpty()));
 #endif
+}
+void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names,
+    TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
+    TConstArrayView<FTransform> Current,double SourceTime,float SampleSeconds,uint32 PublishedAgeTicks)
+{
+    Cancel(Agent);if(!IsValid(Agent))return;
+    const auto* C=Configs.IsEmpty()?nullptr:Configs.Find(Agent);
+    if(C && !C->Enabled)return;
+    FVector2f Timing(.1f,.34f);FProfile Profile;
+    for(int32 I=0;I<AttackCount;++I)if(Attack==FName(Data::Profiles[I].Attack))
+    {
+        const auto& P=Data::Profiles[I];if(C)Timing=C->Timing[I];
+        Profile.Duration=P.Duration;Profile.Inertia=P.Inertia;Profile.Easing=P.Easing;
+        Profile.InertiaHold=P.InertiaHold;Profile.InertiaDecay=P.InertiaDecay;Profile.AngleTimeSeconds=P.AngleTimeSeconds;Profile.WorldInertia=P.WorldInertia;
+        FMemory::Memcpy(Profile.Weights,P.Weights,sizeof(Profile.Weights));break;
+    }
+    if(C)
+    {
+        const auto* P=C->Profiles.Find(Attack);if(!P)P=C->Profiles.Find(NAME_None);if(P)Profile=*P;
+    }
+    BeginResolved(Agent,Attack,Profile,C?C->Coefficient:1.f,Timing,Names,Parents,Previous,Current,SourceTime,SampleSeconds,PublishedAgeTicks);
+}
+void BeginParry(const AProphecyAgent* Agent,TConstArrayView<FName> Names,
+    TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
+    TConstArrayView<FTransform> Current,double SourceTime,float SampleSeconds,uint32 PublishedAgeTicks)
+{
+    Cancel(Agent);if(!IsValid(Agent))return;
+    const auto* C=ParryConfigs.IsEmpty()?nullptr:ParryConfigs.Find(Agent);if(!C)return;
+    BeginResolved(Agent,NAME_None,C->Profile,C->Coefficient,C->Timing,Names,Parents,Previous,Current,SourceTime,SampleSeconds,PublishedAgeTicks);
+    if(Active.Contains(Agent))ParryActive.Add(Agent);
 }
 bool Apply(const AProphecyAgent* Agent,double CurrentTime,
     TArrayView<FTransform> Previous,TArrayView<FTransform> Current,TArrayView<FTransform> Local,bool* NewSample,const FQuat& Frame)
@@ -278,6 +330,23 @@ template<typename F> static void UpdateProfileFields(AProphecyAgent* Agent,FName
 }
 }
 
+bool UProphecyFKReturnLibrary::SetParryFKReturn(AProphecyAgent* Agent,bool Enabled,float ReturnTime,float Inertia,float Easing,
+    FVector2D HoldTrim,float Coefficient,FProphecyFKInertiaWeights BoneInertia,float InertiaHold,float InertiaDecay,bool WorldInertia,float SpineAngleTime)
+{
+    using namespace ProphecyFKReturn;
+    if(!Valid(Agent) || !FMath::IsFinite(ReturnTime) || ReturnTime<0 || !FMath::IsFinite(Coefficient) || Coefficient<.01f)return false;
+    for(double V:{double(Inertia),double(Easing),HoldTrim.X,HoldTrim.Y})if(!FMath::IsFinite(V) || V<0 || V>1)return false;
+    const float W[]={BoneInertia.Spine,BoneInertia.Clavicle,BoneInertia.UpperArm,BoneInertia.LowerArm,BoneInertia.Neck01,BoneInertia.Neck02,BoneInertia.Head};
+    for(float V:W)if(!FMath::IsFinite(V) || V<0 || V>1)return false;
+    if(!FMath::IsFinite(InertiaHold) || InertiaHold<0 || InertiaHold>.8f || !FMath::IsFinite(InertiaDecay) || InertiaDecay<0 || InertiaDecay>4 ||
+        !FMath::IsFinite(SpineAngleTime) || SpineAngleTime<0 || SpineAngleTime>4)return false;
+    if(!Enabled){ParryConfigs.Remove(Agent);if(ParryActive.Contains(Agent))Cancel(Agent);return true;}
+    FParryConfig C;C.Coefficient=Coefficient;C.Timing=FVector2f(HoldTrim);
+    C.Profile.Duration=ReturnTime;C.Profile.Inertia=Inertia;C.Profile.Easing=Easing;C.Profile.InertiaHold=InertiaHold;
+    C.Profile.InertiaDecay=InertiaDecay;C.Profile.WorldInertia=WorldInertia;C.Profile.AngleTimeSeconds=SpineAngleTime;
+    FMemory::Memcpy(C.Profile.Weights,W,sizeof(W));EnsureCleanup();ParryConfigs.Add(Agent,C);return true;
+}
+
 bool UProphecyFKReturnLibrary::SetAttackFKReturn(AProphecyAgent* Agent,bool Enabled,float Coefficient,
     FVector2D Headbutt, FVector2D HookL, FVector2D HookR, FVector2D JabL, FVector2D JabR, FVector2D KickL, FVector2D KickR, FVector2D OverL, FVector2D OverR, FVector2D Pike, FVector2D SlashL, FVector2D SlashLD, FVector2D SlashLU, FVector2D SlashR, FVector2D SlashRD, FVector2D SlashRU)
 {
@@ -290,7 +359,7 @@ bool UProphecyFKReturnLibrary::SetAttackFKReturn(AProphecyAgent* Agent,bool Enab
         V.X<0 || V.X>1 || V.Y<0 || V.Y>1)return false;
     EnsureCleanup();auto& C=Configs.FindOrAdd(Agent);C.Enabled=Enabled;C.Coefficient=Coefficient;
     for(int32 I=0;I<AttackCount;++I)C.Timing[I]=FVector2f(Values[I]);
-    if(!Enabled)Cancel(Agent);return true;
+    if(!Enabled && !ParryActive.Contains(Agent))Cancel(Agent);return true;
 }
 bool UProphecyFKReturnLibrary::SetAttackFKReturnValues(AProphecyAgent* Agent,FName Attack,float ReturnTime,float Inertia,float Easing)
 {
@@ -334,6 +403,8 @@ bool UProphecyFKReturnLibrary::SetAttackFKReturnProfile(AProphecyAgent* Agent,FN
 }
 
 #include "ProphecyFKReturnTests.inl"
+#include "Tests/ProphecyFKReturnWindingTests.inl"
+#include "Tests/ProphecyParryReturnTests.inl"
 
 
 void ProphecyNNModifierDebug::FKReturn(FReport& R)
@@ -342,7 +413,7 @@ void ProphecyNNModifierDebug::FKReturn(FReport& R)
     if(!R.UpperLoco)return;
     const auto* S=Active.Find(R.Agent);const auto* P=TickPhases.Find(R.Agent);if(!S || !P)return;
     const auto W=S->Curve.Weights(float(P->Elapsed));
-    R.Add(TEXT("FKReturn"),TEXT("POSE+HISTORY"),TEXT("Attack FK return / lab inertia"),
+    R.Add(TEXT("FKReturn"),TEXT("POSE+HISTORY"),ParryActive.Contains(R.Agent)?TEXT("Parry FK return / lab inertia"):TEXT("Attack FK return / lab inertia"),
         FString::Printf(TEXT("NN %.3f | tick %llu/%llu | coeff %.3g | ease %.3g | hold %.3g%s"),
         P->Complete?1.f:W.NN,P->Ticks,P->Limit,S->Curve.Coefficient,S->Curve.Easing,S->Curve.AlphaHold,
         P->Complete?TEXT(" | previous endpoint still returning"):TEXT("")));

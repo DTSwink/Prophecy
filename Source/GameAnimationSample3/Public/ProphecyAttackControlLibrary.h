@@ -18,6 +18,12 @@ class GAMEANIMATIONSAMPLE3_API UProphecyAttackControlLibrary : public UBlueprint
 {
     GENERATED_BODY()
 public:
+    /** Latest accepted continuous NN scores, not the latched Armed/Hit flags.
+     * Returns false and -1/-1 outside an NN attack. Before its first output,
+     * an active attack returns 0/0. Read-only; no inference or ticking. */
+    UFUNCTION(BlueprintPure, Category="Prophecy|Agent|NN Attack", meta=(DefaultToSelf="Agent", DisplayName="Get NN Attack Output Values"))
+    static bool GetNNAttackOutputValues(AProphecyAgent* Agent, float& Armed, float& Hit);
+
     /** Attacking parts for an explicit attack name; no active attack required.
      * Punches: hand + lowerarm only, even when holding a sword.
      * Kicks: foot + calf; headbutt: head. Agent is retained for Blueprint compatibility.

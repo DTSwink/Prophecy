@@ -128,8 +128,11 @@ namespace ProphecyLowerTempering
 {
 static TMap<TWeakObjectPtr<const AProphecyAgent>, FSettings> Settings;
 // Configuration is independent of the active values consumed by Blend To Normal.
-static TMap<TWeakObjectPtr<const AProphecyAgent>, FSettings> RegularProfiles,KickProfiles;
+static TMap<TWeakObjectPtr<const AProphecyAgent>, FSettings> RegularProfiles,KickProfiles,DodgeProfiles;
 static TSet<TWeakObjectPtr<const AProphecyAgent>> KickSelected,RightKickSelected;
+// Selection is checked only at configuration/dispatch, never by the pose tick.
+static TSet<TWeakObjectPtr<const AProphecyAgent>> DefenseSelected,DodgeSelected;
+enum class EProfile : uint8 { Regular,Kick,Dodge };
 // Opt-in separation keeps existing shared-return graphs working until the kick
 // node is used. Configuration only; no tick work or additional return clock.
 static TSet<TWeakObjectPtr<const AProphecyAgent>> SeparateKickReturns;
@@ -289,11 +292,11 @@ static void EnsureCleanup()
     if (Cleanup.IsValid()) return;
     Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
     {
-        for (auto* Map:{&Settings,&RegularProfiles,&KickProfiles,&NonKickingProfiles,&RightValues,&ReturnRightInitial,&FeetReturnRightInitial}) for (auto It=Map->CreateIterator();It;++It)
+        for (auto* Map:{&Settings,&RegularProfiles,&KickProfiles,&DodgeProfiles,&NonKickingProfiles,&RightValues,&ReturnRightInitial,&FeetReturnRightInitial}) for (auto It=Map->CreateIterator();It;++It)
             if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
         for (auto* Map:{&Returns,&FeetReturns,&PelvisReturns}) for (auto It=Map->CreateIterator();It;++It)
             if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
-        for (auto* Set:{&KickSelected,&RightKickSelected,&SeparateKickReturns}) for (auto It=Set->CreateIterator();It;++It)
+        for (auto* Set:{&KickSelected,&RightKickSelected,&SeparateKickReturns,&DefenseSelected,&DodgeSelected}) for (auto It=Set->CreateIterator();It;++It)
             if (!It->IsValid() || It->Get()->GetWorld()==World) It.RemoveCurrent();
     });
 }
@@ -302,17 +305,26 @@ static void Apply(const AProphecyAgent* Agent,const FSettings& Value)
     Remove(Agent);
     if (!Value.IsIdentity()) { EnsureCleanup();Settings.Add(Agent,Value); }
 }
-void ClearAttackSelection(const AProphecyAgent* Agent) { KickSelected.Remove(Agent);RightKickSelected.Remove(Agent); }
+void ClearAttackSelection(const AProphecyAgent* Agent)
+{ KickSelected.Remove(Agent);RightKickSelected.Remove(Agent);DefenseSelected.Remove(Agent);DodgeSelected.Remove(Agent); }
 void ForgetProfiles(const AProphecyAgent* Agent)
-{ Remove(Agent);ClearAttackSelection(Agent);SeparateKickReturns.Remove(Agent);RegularProfiles.Remove(Agent);KickProfiles.Remove(Agent);NonKickingProfiles.Remove(Agent); }
+{ Remove(Agent);ClearAttackSelection(Agent);SeparateKickReturns.Remove(Agent);RegularProfiles.Remove(Agent);KickProfiles.Remove(Agent);NonKickingProfiles.Remove(Agent);DodgeProfiles.Remove(Agent); }
+void SelectDefenseProfile(const AProphecyAgent* Agent,bool Dodge)
+{
+    ClearAttackSelection(Agent);EnsureCleanup();DefenseSelected.Add(Agent);
+    if(Dodge) DodgeSelected.Add(Agent);
+    const auto* Profile=Dodge ? DodgeProfiles.Find(Agent) : nullptr;
+    Apply(Agent,Profile ? *Profile : FSettings{});
+}
 void SelectAttackProfile(const AProphecyAgent* Agent,FName Attack)
 {
+    DefenseSelected.Remove(Agent);DodgeSelected.Remove(Agent);
     const bool Kick=Attack==TEXT("kickl") || Attack==TEXT("kickr");
     if (Kick) { EnsureCleanup();KickSelected.Add(Agent); } else KickSelected.Remove(Agent);
     if (Attack==TEXT("kickr")) RightKickSelected.Add(Agent);else RightKickSelected.Remove(Agent);
     const auto* Special=KickProfiles.Find(Agent);
     const auto* Regular=RegularProfiles.Find(Agent);
-    if (!Kick || !Special) { if (Regular || Special) Apply(Agent,Regular ? *Regular : FSettings{});return; }
+    if (!Kick || !Special) { Apply(Agent,Regular ? *Regular : FSettings{});return; }
     const auto* NonKicking=NonKickingProfiles.Find(Agent);
     FSettings Left=*Special,Right=NonKicking ? *NonKicking : *Special;
     if (Attack==TEXT("kickr")) Swap(Left,Right);
@@ -320,7 +332,7 @@ void SelectAttackProfile(const AProphecyAgent* Agent,FName Attack)
     Left.PelvisTranslation=Special->PelvisTranslation;Left.PelvisTranslationZ=Special->PelvisTranslationZ;Left.PelvisRotation=Special->PelvisRotation;
     Apply(Agent,Left);RestoreRightFootSettings(Agent,Right);
 }
-static bool SetProfile(bool Kick,AProphecyAgent* Agent,bool Enabled,
+static bool SetProfile(bool Dodge,AProphecyAgent* Agent,bool Enabled,
     float FeetXY,float FeetZ,float FeetR,float PelvisXY,float PelvisZ,float PelvisR)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
@@ -328,9 +340,9 @@ static bool SetProfile(bool Kick,AProphecyAgent* Agent,bool Enabled,
     if (Enabled) for (float V:{FeetXY,FeetZ,FeetR,PelvisXY,PelvisZ,PelvisR})
         if (!FMath::IsFinite(V) || V<0 || V>1) return false;
     const FSettings Value=Enabled ? FSettings{FeetXY,FeetR,PelvisXY,PelvisR,FeetZ,PelvisZ} : FSettings{};
-    EnsureCleanup();(Kick ? KickProfiles : RegularProfiles).Add(Agent,Value);
+    EnsureCleanup();(Dodge ? DodgeProfiles : RegularProfiles).Add(Agent,Value);
     const bool UsesKick=KickSelected.Contains(Agent) && KickProfiles.Contains(Agent);
-    if (Kick==UsesKick) Apply(Agent,Value);
+    if (Dodge ? DodgeSelected.Contains(Agent) : !DefenseSelected.Contains(Agent) && !UsesKick) Apply(Agent,Value);
     return true;
 }
 }
@@ -340,6 +352,14 @@ bool UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(AProphecyAg
     float PelvisTranslation,float PelvisTranslationZ,float PelvisRotation)
 {
     return ProphecyLowerTempering::SetProfile(false,Agent,Enabled,FeetTranslation,FeetTranslationZ,FeetRotation,
+        PelvisTranslation,PelvisTranslationZ,PelvisRotation);
+}
+
+bool UProphecyLowerTemperingLibrary::SetDodgeLocomotionLowerBodyTempering(AProphecyAgent* Agent,bool Enabled,
+    float FeetTranslation,float FeetTranslationZ,float FeetRotation,
+    float PelvisTranslation,float PelvisTranslationZ,float PelvisRotation)
+{
+    return ProphecyLowerTempering::SetProfile(true,Agent,Enabled,FeetTranslation,FeetTranslationZ,FeetRotation,
         PelvisTranslation,PelvisTranslationZ,PelvisRotation);
 }
 
@@ -361,7 +381,7 @@ bool UProphecyLowerTemperingLibrary::SetKickLocomotionLowerBodyTempering(AProphe
     return true;
 }
 
-static bool BlendSelectedLowerBodyTemperingToNormal(bool Kick,AProphecyAgent* Agent,
+static bool BlendSelectedLowerBodyTemperingToNormal(ProphecyLowerTempering::EProfile Profile,AProphecyAgent* Agent,
     float DurationSeconds,float HoldDurationSeconds,float PelvisDurationSeconds,float PelvisHoldDurationSeconds)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
@@ -371,7 +391,11 @@ static bool BlendSelectedLowerBodyTemperingToNormal(bool Kick,AProphecyAgent* Ag
         || !FMath::IsFinite(PelvisDurationSeconds) || PelvisDurationSeconds<0
         || !FMath::IsFinite(PelvisHoldDurationSeconds) || PelvisHoldDurationSeconds<0) return false;
     using namespace ProphecyLowerTempering;
+    const bool Kick=Profile==EProfile::Kick;
     if (Kick) { EnsureCleanup();SeparateKickReturns.Add(Agent); }
+    if(Profile==EProfile::Dodge)
+    { if(!DodgeSelected.Contains(Agent)) return true; }
+    else if(DefenseSelected.Contains(Agent)) return true;
     if ((Kick && !KickSelected.Contains(Agent))
         || (!Kick && SeparateKickReturns.Contains(Agent) && KickSelected.Contains(Agent))) return true;
     if (DurationSeconds!=PelvisDurationSeconds || HoldDurationSeconds!=PelvisHoldDurationSeconds)
@@ -395,22 +419,27 @@ static bool BlendSelectedLowerBodyTemperingToNormal(bool Kick,AProphecyAgent* Ag
 
 bool UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(
     AProphecyAgent* Agent,float DurationSeconds,float HoldDurationSeconds,float PelvisDurationSeconds,float PelvisHoldDurationSeconds)
-{ return BlendSelectedLowerBodyTemperingToNormal(false,Agent,DurationSeconds,HoldDurationSeconds,PelvisDurationSeconds,PelvisHoldDurationSeconds); }
+{ return BlendSelectedLowerBodyTemperingToNormal(ProphecyLowerTempering::EProfile::Regular,Agent,DurationSeconds,HoldDurationSeconds,PelvisDurationSeconds,PelvisHoldDurationSeconds); }
+
+bool UProphecyLowerTemperingLibrary::BlendDodgeLocomotionLowerBodyTemperingToNormal(
+    AProphecyAgent* Agent,float DurationSeconds,float HoldDurationSeconds,float PelvisDurationSeconds,float PelvisHoldDurationSeconds)
+{ return BlendSelectedLowerBodyTemperingToNormal(ProphecyLowerTempering::EProfile::Dodge,Agent,DurationSeconds,HoldDurationSeconds,PelvisDurationSeconds,PelvisHoldDurationSeconds); }
 
 bool UProphecyLowerTemperingLibrary::BlendKickLocomotionLowerBodyTemperingToNormal(
     AProphecyAgent* Agent,float DurationSeconds,float HoldDurationSeconds,float PelvisDurationSeconds,float PelvisHoldDurationSeconds)
-{ return BlendSelectedLowerBodyTemperingToNormal(true,Agent,DurationSeconds,HoldDurationSeconds,PelvisDurationSeconds,PelvisHoldDurationSeconds); }
+{ return BlendSelectedLowerBodyTemperingToNormal(ProphecyLowerTempering::EProfile::Kick,Agent,DurationSeconds,HoldDurationSeconds,PelvisDurationSeconds,PelvisHoldDurationSeconds); }
 
 bool UProphecyLowerTemperingLibrary::BlendLocomotionFeetTemperingToNormal(
     AProphecyAgent* Agent,float DurationSeconds,float HoldDurationSeconds)
-{ return ProphecyLowerTempering::BlendPart(Agent,true,DurationSeconds,HoldDurationSeconds); }
+{ return ProphecyLowerTempering::DefenseSelected.Contains(Agent) ? true : ProphecyLowerTempering::BlendPart(Agent,true,DurationSeconds,HoldDurationSeconds); }
 
 bool UProphecyLowerTemperingLibrary::BlendLocomotionPelvisTemperingToNormal(
     AProphecyAgent* Agent,float DurationSeconds,float HoldDurationSeconds)
-{ return ProphecyLowerTempering::BlendPart(Agent,false,DurationSeconds,HoldDurationSeconds); }
+{ return ProphecyLowerTempering::DefenseSelected.Contains(Agent) ? true : ProphecyLowerTempering::BlendPart(Agent,false,DurationSeconds,HoldDurationSeconds); }
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+#include "Tests/ProphecyDodgeLowerTemperingTests.inl"
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyLegRecoveryClockTest,"Prophecy.NN.LowerTempering.IndependentRecoveryClock",
     EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyLegRecoveryClockTest::RunTest(const FString&)
@@ -499,7 +528,7 @@ bool FProphecyTemperingSeparateReturnsTest::RunTest(const FString&)
     int32 VisibleNodes=0;
     for (TFieldIterator<UFunction> It(L::StaticClass(),EFieldIteratorFlags::ExcludeSuper);It;++It)
         if (It->HasAnyFunctionFlags(FUNC_BlueprintCallable) && !It->GetBoolMetaData(TEXT("BlueprintInternalUseOnly"))) ++VisibleNodes;
-    TestEqual(TEXT("Regular and kick Set/Blend exposed"),VisibleNodes,4);
+    TestEqual(TEXT("Regular, kick and dodge Set/Blend exposed"),VisibleNodes,6);
 #endif
     UWorld* World=UWorld::CreateWorld(EWorldType::Editor,false);
     auto* Agent=World ? World->SpawnActor<AProphecyAgent>() : nullptr;

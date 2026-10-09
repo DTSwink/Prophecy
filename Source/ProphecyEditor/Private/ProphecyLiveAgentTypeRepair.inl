@@ -108,8 +108,9 @@ void RepairLibraryDefaults()
         if (!P || P->PinName!=TEXT("self") || !P->LinkedTo.IsEmpty() || !P->DefaultObject
             || !P->DefaultObject->GetName().StartsWith(TEXT("BPGC_ARCH_FOR_CDO_"))) continue;
         auto* Class=Cast<UClass>(P->PinType.PinSubCategoryObject.Get());
-        if (!Class || !Class->IsChildOf(UBlueprintFunctionLibrary::StaticClass())
-            || Class->GetOutermost()->GetName()!=TEXT("/Script/GameAnimationSample3")) continue;
+        if (!Class || !Class->IsChildOf(UBlueprintFunctionLibrary::StaticClass())) continue;
+        const FString Module=Class->GetOutermost()->GetName();
+        if (Module!=TEXT("/Script/GameAnimationSample3") && Module!=TEXT("/Script/ProphecyJolt")) continue;
         const FString OldPath=P->DefaultObject->GetPathName();
         N->Modify();P->DefaultObject=Class->GetDefaultObject();++Count;
         for (auto& Row:Expected) Row.ReplaceInline(*OldPath,*P->DefaultObject->GetPathName());

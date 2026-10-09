@@ -94,6 +94,25 @@ struct FContext
     FVector3f TargetWorld=FVector3f::ZeroVector;
     float AttackControls[6] = {};
 };
+inline void RemoveAttackerHorizontalVelocity(FContext& C)
+{
+    if(C.AttackControls[5]>=.5f)return; // Synthetic spear, not sword pike.
+    for(int32 Axis:{0,2}) // Training Y is vertical.
+    {
+        const float Delta=C.AttackerPelvis[1][Axis]-C.AttackerPelvis[0][Axis];
+        C.AttackerPelvis[0][Axis]=C.AttackerPelvis[1][Axis];
+        C.AttackerCollider[0][Axis]+=Delta;
+    }
+}
+inline void RemoveAttackerRootHorizontalVelocity(FContext& C,const FVector3f& RootDelta)
+{
+    if(C.AttackControls[5]>=.5f)return;
+    for(int32 Axis:{0,2})
+    {
+        C.AttackerPelvis[0][Axis]+=RootDelta[Axis];
+        C.AttackerCollider[0][Axis]+=RootDelta[Axis];
+    }
+}
 inline bool Conditioning(const FContext& C,float* Out50)
 {
     const auto& R=C.RootAxes;

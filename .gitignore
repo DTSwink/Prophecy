@@ -1,6 +1,10 @@
 # Unreal generated state
 Binaries/
 Build/
+!Tools/Build/
+!Tools/Build/*.cs
+!Tools/Build/*.ps1
+!Tools/Build/*.py
 Config/*
 !Config/Default*.ini
 Content/*
@@ -23,6 +27,9 @@ Content/locomotion/NN/*
 !Content/locomotion/NN/prophecy_lower_body_walk_july5_best_runtime.json
 !Content/locomotion/NN/prophecy_upper_body_b100.onnx
 !Content/locomotion/NN/prophecy_upper_body_runtime.json
+!Content/locomotion/NN/defense/
+Content/locomotion/NN/defense/*
+!Content/locomotion/NN/defense/pickers/
 !Content/locomotion/NN/prophecy_slash_step_b1.onnx
 !Content/locomotion/NN/prophecy_slash_runtime.json
 SourceArt/

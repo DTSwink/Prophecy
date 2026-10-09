@@ -35,7 +35,7 @@ bool FProphecyFKReturnParityTest::RunTest(const FString&)
     };
     double MaxPosition=0,MaxAngle=0,MaxLength=0,MaxMixPosition=0,MaxMixAngle=0;
     int32 Cases=0,Samples=0;FCurve BenchmarkCurve;TArray<FTransform> BenchmarkPose;
-    double MaxRuntimePosition=0,MaxRuntimeAngle=0;int32 RuntimeSamples=0;
+    double MaxRuntimePosition=0,MaxRuntimeAngle=0;int32 RuntimeSamples=0,RedirectedRuntimeSamples=0;
     auto* RuntimeWorld=UWorld::CreateWorld(EWorldType::Editor,false);
     auto* RuntimeAgent=RuntimeWorld?RuntimeWorld->SpawnActor<AProphecyAgent>():nullptr;
     if(!RuntimeAgent)return false;
@@ -102,6 +102,10 @@ bool FProphecyFKReturnParityTest::RunTest(const FString&)
         // Full runtime lifecycle, using the published interval's own outgoing
         // angular rate and the accepted per-family defaults. Hold1 / Trim0.
         Begin(RuntimeAgent,FName(C->GetStringField(TEXT("name"))),Names,Parents,Previous,Current,0,1.f/C->GetNumberField(TEXT("fps")));
+        // These legacy JS references intentionally retain shortest winding.
+        // Redirected runtime curves are checked by SlashWinding's independent
+        // selector oracle, endpoint/velocity checks and exact unaffected poses.
+        const bool Redirected=Active.FindChecked(RuntimeAgent).Curve.Bones[10].Return.HalfAngle!=Curve.Bones[10].Return.HalfAngle;
         auto RuntimePrevious=Previous,RuntimeCurrent=Current,RuntimeLocal=Current;
         for(const auto& V:C->GetArrayField(TEXT("runtimeSamples")))
         {
@@ -111,12 +115,12 @@ bool FProphecyFKReturnParityTest::RunTest(const FString&)
             if(Tick<TickPhases.FindChecked(RuntimeAgent).Limit)TestFalse(TEXT("Hold1 skips NN before endpoint"),NeedNN);
             RuntimeCurrent=NN;Apply(RuntimeAgent,Tick,RuntimePrevious,RuntimeCurrent,RuntimeLocal);
             const auto Expected=Pose(Sample->GetArrayField(TEXT("pose")));
-            for(const auto& Bone:Curve.Bones)
+            for(const auto& Bone:Curve.Bones)if(!Redirected)
             {
                 MaxRuntimePosition=FMath::Max(MaxRuntimePosition,FVector::Distance(RuntimeCurrent[Bone.Index].GetLocation(),Expected[Bone.Index].GetLocation()));
                 MaxRuntimeAngle=FMath::Max(MaxRuntimeAngle,RuntimeCurrent[Bone.Index].GetRotation().GetNormalized().AngularDistance(Expected[Bone.Index].GetRotation().GetNormalized()));
             }
-            ++RuntimeSamples;
+            if(Redirected)++RedirectedRuntimeSamples;else ++RuntimeSamples;
         }
         Cancel(RuntimeAgent);
         BenchmarkCurve=Curve;BenchmarkCurve.Coefficient=1;BenchmarkPose=NN;++Cases;
@@ -124,7 +128,7 @@ bool FProphecyFKReturnParityTest::RunTest(const FString&)
     Remove(RuntimeAgent);RuntimeWorld->DestroyWorld(false);
     TestTrue(TEXT("Full runtime matches lab within .003cm"),MaxRuntimePosition<.003);
     TestTrue(TEXT("Full runtime matches lab within .02deg"),MaxRuntimeAngle<FMath::DegreesToRadians(.02));
-    AddInfo(FString::Printf(TEXT("runtime_samples=%d runtime_cm=%.9g runtime_degrees=%.9g"),RuntimeSamples,MaxRuntimePosition,FMath::RadiansToDegrees(MaxRuntimeAngle)));
+    AddInfo(FString::Printf(TEXT("unchanged_runtime_samples=%d redirected_samples_verified_by_SlashWinding=%d runtime_cm=%.9g runtime_degrees=%.9g"),RuntimeSamples,RedirectedRuntimeSamples,MaxRuntimePosition,FMath::RadiansToDegrees(MaxRuntimeAngle)));
     TestEqual(TEXT("All lab variants"),Cases,320);
     TestTrue(TEXT("Native lab positions within 0.003 cm"),MaxPosition<.003);
     TestTrue(TEXT("Native lab rotations within 0.02 degrees"),MaxAngle<FMath::DegreesToRadians(.02));

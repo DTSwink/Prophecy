@@ -17,3 +17,10 @@ void CancelCooldown(AProphecyAgent* Agent);
 bool SuppressesOwner(const AProphecyAgent* Agent);
 bool IsAllowed(const AProphecyAgent* Agent);
 }
+
+namespace ProphecySwordNoReaction
+{
+// Existing attack/defense transitions call these; no new tick subscription.
+void DefenseChanged();
+void VictimChanged(AProphecyAgent* Agent);
+}

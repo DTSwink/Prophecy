@@ -32,6 +32,14 @@ struct FProphecyDefenseNetwork::FState
 FProphecyDefenseNetwork::FProphecyDefenseNetwork()=default;
 FProphecyDefenseNetwork::~FProphecyDefenseNetwork(){ExactForearmModels.Remove(this);}
 bool FProphecyDefenseNetwork::UsesExactForearms() const{return ExactForearmModels.Contains(this);}
+void FProphecyDefenseNetwork::SwapWith(FProphecyDefenseNetwork& Other)
+{
+    if(this==&Other)return;
+    const bool A=UsesExactForearms(),B=Other.UsesExactForearms();
+    Swap(State,Other.State);
+    if(B)ExactForearmModels.Add(this,true);else ExactForearmModels.Remove(this);
+    if(A)ExactForearmModels.Add(&Other,true);else ExactForearmModels.Remove(&Other);
+}
 bool FProphecyDefenseNetwork::Initialize(const FString& Filename,int32 InputWidth,int32 OutputWidth,FString& Error)
 {
     Error.Reset();
@@ -76,6 +84,8 @@ bool FProphecyDefenseNetwork::Initialize(const FString& Filename,int32 InputWidt
     if(ExactForearms)ExactForearmModels.Add(this,true);else ExactForearmModels.Remove(this);
     return true;
 }
+
+#include "ProphecyDefenseCheckpoint.inl"
 bool FProphecyDefenseNetwork::SetBatch(int32 Count) { return State && State->Shape(Count); }
 bool FProphecyDefenseNetwork::Run(TConstArrayView<float> Input,TArrayView<float> Output)
 {

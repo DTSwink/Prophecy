@@ -1,0 +1,9 @@
+{
+  "world": "/Game/testNN.testNN",
+  "no_play": true,
+  "graph_exact_after_repair": true,
+  "dirty_packages": [
+    "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent"
+  ],
+  "assets_saved": false
+}

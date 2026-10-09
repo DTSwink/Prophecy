@@ -3,6 +3,16 @@
 
 namespace ProphecyHalfAttackMount
 {
+inline FVector ClampHorizontalReach(const FVector& Target,const FVector& Pelvis,
+    const FVector& Up,const FVector& Forward,double Minimum)
+{
+    const FVector Delta=Target-Pelvis;
+    const FVector Flat=Delta-Up*FVector::DotProduct(Delta,Up);
+    const double D2=Flat.SizeSquared();
+    if(Minimum<=0 || D2>=Minimum*Minimum)return Target;
+    const FVector Direction=D2>1.e-12?Flat/FMath::Sqrt(D2):(Forward-Up*FVector::DotProduct(Forward,Up)).GetSafeNormal();
+    return Target+Direction*Minimum-Flat;
+}
 inline bool IsUpper(int32 Bone,int32 Spine01,TConstArrayView<int32> Parents)
 {
     if (Spine01==INDEX_NONE) return false;

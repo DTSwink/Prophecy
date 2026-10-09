@@ -1,5 +1,6 @@
 #include "ProphecyUpperBodyInertiaLibrary.h"
 #include "ProphecyUpperBodyInertia.h"
+#include "ProphecyNNModifierDebug.h"
 #include "ProphecyPelvisInertiaMath.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyAgent.h"
@@ -26,6 +27,14 @@ struct FMotion { FQuat Rotation=FQuat::Identity;FVector Velocity=FVector::ZeroVe
 struct FReturn { FConfig Config;TArray<FMotion> Joints;double Elapsed=0; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FConfig> Configs,Baselines;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FReturn> Returns;
+struct FDodgeBone { int32 Index,Parent;bool Core;FTransform Previous,Current; };
+struct FDodgePublication
+{
+    TArray<FDodgeBone,TInlineAllocator<24>> Bones;
+    double Time=0;
+    bool Complete=false,PreviousComplete=false,Sampled=true;
+};
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FDodgePublication> DodgePublications;
 // Separate storage keeps retained Live Coding config/return layouts unchanged.
 struct FArmTiming { float Response=-1,Blend=-1; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FArmTiming> ArmTimings,ArmTimingBaselines,ActiveArmTimings;
@@ -83,7 +92,7 @@ static void EnsureCleanup()
     {
         auto Clean=[W](auto& M) { for(auto It=M.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W) It.RemoveCurrent(); };
-        Clean(Configs);Clean(Baselines);Clean(Returns);Clean(Handoffs);Clean(Arms);Clean(BlendOffsets);
+        Clean(Configs);Clean(Baselines);Clean(Returns);Clean(Handoffs);Clean(Arms);Clean(BlendOffsets);Clean(DodgePublications);
         Clean(Spaces);Clean(SpaceBaselines);Clean(ArmReferences);
         Clean(Influences);Clean(InfluenceBaselines);
         Clean(ArmInfluences);Clean(ArmInfluenceBaselines);
@@ -104,7 +113,8 @@ bool Active(const AProphecyAgent* A) { return !Returns.IsEmpty() && Returns.Cont
 bool CoreActive(const AProphecyAgent* A) { const auto* R=Returns.IsEmpty()?nullptr:Returns.Find(A);return R && !R->Joints.IsEmpty(); }
 bool Configured(const AProphecyAgent* A) { return !Configs.IsEmpty() && Configs.Contains(A); }
 bool ArmsActive(const AProphecyAgent* A) { return !Arms.IsEmpty() && Arms.Contains(A); }
-void Cancel(const AProphecyAgent* A) { ActiveArmTimings.Remove(A);BlendOffsets.Remove(A);ArmReferences.Remove(A);Arms.Remove(A);Handoffs.Remove(A);HandoffReady.Remove(A);if(Returns.Remove(A)) ProphecyBlendClock::Stop(A,K::UpperBodyInertia); }
+static void ClearMotion(const AProphecyAgent* A) { ActiveArmTimings.Remove(A);BlendOffsets.Remove(A);ArmReferences.Remove(A);Arms.Remove(A);Handoffs.Remove(A);HandoffReady.Remove(A);if(Returns.Remove(A)) ProphecyBlendClock::Stop(A,K::UpperBodyInertia); }
+void Cancel(const AProphecyAgent* A) { DodgePublications.Remove(A);ClearMotion(A); }
 void Remove(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);Baselines.Remove(A);Spaces.Remove(A);SpaceBaselines.Remove(A);Influences.Remove(A);InfluenceBaselines.Remove(A);ArmTimings.Remove(A);ArmTimingBaselines.Remove(A);ArmInfluences.Remove(A);ArmInfluenceBaselines.Remove(A); }
 void CaptureReset(const AProphecyAgent* A) { EnsureCleanup();if(const auto* C=Configs.Find(A)) Baselines.Add(A,*C);else Baselines.Remove(A);SpaceBaselines.Add(A,Spaces.FindRef(A));InfluenceBaselines.Add(A,Influence(A));ArmTimingBaselines.Add(A,ArmTimings.FindRef(A));ArmInfluenceBaselines.Add(A,ArmOverride(A)); }
 void RestoreReset(const AProphecyAgent* A) { Cancel(A);Configs.Remove(A);if(const auto* C=Baselines.Find(A)) Configs.Add(A,*C);Spaces.Add(A,SpaceBaselines.FindRef(A));const float* V=InfluenceBaselines.Find(A);Influences.Add(A,V?*V:1.f);ArmTimings.Add(A,ArmTimingBaselines.FindRef(A));const float* AV=ArmInfluenceBaselines.Find(A);ArmInfluences.Add(A,AV?*AV:-1.f); }
@@ -136,7 +146,7 @@ void Advance(const AProphecyAgent* A)
         if(R->Elapsed+1.e-6>=Duration(Response,R->Config.Hold,Blend))
         { Arms.Remove(A);ArmReferences.Remove(A);ActiveArmTimings.Remove(A); }
     }
-    if(R->Joints.IsEmpty() && !ArmsActive(A))Cancel(A);
+    if(R->Joints.IsEmpty() && !ArmsActive(A))ClearMotion(A);
 }
 void Begin(const AProphecyAgent* A,TConstArrayView<FTransform> Previous,TConstArrayView<FTransform> World,
     TConstArrayView<FName> Names,TConstArrayView<FName> Core,double Dt,const FTransform& PreviousRoot,const FTransform& Root)
@@ -317,6 +327,7 @@ void Apply(const AProphecyAgent* A,TConstArrayView<int32> Parents,TConstArrayVie
         Pose[B].SetRotation((Carrier.GetRotation().Inverse()*Q).GetNormalized());
     }
 }
+#include "ProphecyDodgeReturn.inl"
 }
 bool UProphecyUpperBodyInertiaLibrary::SetAttackUpperBodyInertia(AProphecyAgent* A,bool Enabled,float Response,float Hold,float Blend,float Momentum,EProphecyUpperHandInertiaSpace Space,float Alpha,float ArmsResponse,float ArmsBlend,float ArmsAlpha)
 {
@@ -596,4 +607,16 @@ bool FProphecyCoreInertiaTest::RunTest(const FString&)
     Remove(A);W->DestroyWorld(false);return !HasAnyErrors();
 }
 #include "ProphecyUpperBodyInertiaSettingsTests.inl"
+#include "Tests/ProphecyDodgeReturnTests.inl"
 #endif
+
+void ProphecyNNModifierDebug::DodgeReturn(FReport& R)
+{
+    using namespace ProphecyUpperBodyInertia;
+    if(!R.UpperLoco || !HasDodgeReturn(R.Agent))return;
+    const auto* S=Returns.Find(R.Agent);
+    R.Add(TEXT("DodgeInertia"),TEXT("POSE+HISTORY"),TEXT("Dodge upper body inertia"),S?
+        FString::Printf(TEXT("elapsed %.3fs | core %d | arms %d | response %.3g | hold %.3g | blend %.3g"),
+            S->Elapsed,CoreActive(R.Agent),ArmsActive(R.Agent),S->Config.Response,S->Config.Hold,S->Config.Blend):
+        TEXT("Final interpolation interval; current endpoint is vanilla NN"));
+}

@@ -16,6 +16,12 @@ public:
 	{
 		FTransform RealPelvis; // In the fixed ghost anchor, using the next published lower pose.
 		bool bDistributed = false;
+		bool bCompensate = true;
+		float MinimumReach = 0;
+		FVector Up=FVector::UpVector,Forward=FVector::ForwardVector;
+		mutable FVector UpperTarget=FVector::ZeroVector;
+		mutable FVector RealTarget=FVector::ZeroVector;
+		mutable bool bAdjusted=false;
 	};
 	struct FStepSettings
 	{

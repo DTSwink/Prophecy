@@ -50,9 +50,23 @@ public:
      * constraints take priority over an impossible pinned endpoint. Disabled or
      * all-one values bypass tempering, history copies and its leg solve entirely.
      * Affects locomotion only; all active full/half attacks, parries and dodges
-     * bypass tempering. Values must be finite and in [0,1]. */
+     * bypass tempering. Restored after attacks; Dodge uses its separate profile,
+     * and Parry never selects tempering. Calls after either defense configure
+     * this regular profile without changing that defense's recovery.
+     * Values must be finite and in [0,1]. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion", meta=(DisplayName="Set Locomotion Lower Body Tempering"))
     static bool SetLocomotionLowerBodyTempering(AProphecyAgent* Agent, bool Enabled = true,
+        UPARAM(DisplayName="Feet Translation XY") float FeetTranslation = 1.f,
+        float FeetTranslationZ = 1.f, float FeetRotation = 1.f,
+        UPARAM(DisplayName="Pelvis Translation XY") float PelvisTranslation = 1.f,
+        float PelvisTranslationZ = 1.f, float PelvisRotation = 1.f);
+
+    /** Independent dodge-exit profile. Same root-local follow controls as regular tempering.
+     * Configure before Dodge ends, or in On NN Lower Special Ended. Only applies to
+     * locomotion after Dodge; does not change attack/kick recovery or Parry.
+     * Disabled/all-one bypasses all tempering work. Values must be finite in [0,1]. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion", meta=(DisplayName="Set Dodge Locomotion Lower Body Tempering"))
+    static bool SetDodgeLocomotionLowerBodyTempering(AProphecyAgent* Agent, bool Enabled = true,
         UPARAM(DisplayName="Feet Translation XY") float FeetTranslation = 1.f,
         float FeetTranslationZ = 1.f, float FeetRotation = 1.f,
         UPARAM(DisplayName="Pelvis Translation XY") float PelvisTranslation = 1.f,
@@ -80,9 +94,20 @@ public:
      * this return; another Blend starts from the current values. Each authored second
      * means 60 unpaused game ticks, independent of FPS/time dilation. Zero duration snaps after the optional hold.
      * Once the kick return node is used on this agent, this node leaves kick returns untouched.
-     * Existing graphs without the kick return node retain their shared return behavior. */
+     * Existing graphs without the kick return node retain their shared return behavior.
+     * Never modifies Dodge or Parry recovery. */
     UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion")
     static bool BlendLocomotionLowerBodyTemperingToNormal(AProphecyAgent* Agent,
+        UPARAM(DisplayName="Feet Duration Seconds") float DurationSeconds = 1.f,
+        UPARAM(DisplayName="Feet Hold Duration Seconds") float HoldDurationSeconds = 0.f,
+        float PelvisDurationSeconds = 1.f, float PelvisHoldDurationSeconds = 0.f);
+
+    /** Hold and restore the selected dodge-exit profile to normal. Call after its Set
+     * in On NN Lower Special Ended. Feet and pelvis have independent timing;
+     * one second = 60 unpaused game ticks. Does nothing for attack/kick or Parry.
+     * Regular/kick blend nodes cannot overwrite this return. Zero/zero snaps to normal. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Locomotion")
+    static bool BlendDodgeLocomotionLowerBodyTemperingToNormal(AProphecyAgent* Agent,
         UPARAM(DisplayName="Feet Duration Seconds") float DurationSeconds = 1.f,
         UPARAM(DisplayName="Feet Hold Duration Seconds") float HoldDurationSeconds = 0.f,
         float PelvisDurationSeconds = 1.f, float PelvisHoldDurationSeconds = 0.f);

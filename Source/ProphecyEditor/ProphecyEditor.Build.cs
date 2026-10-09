@@ -11,7 +11,14 @@ public class ProphecyEditor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new[]
 		{
 			"AnimationCore",
+			"AnimationBlueprintLibrary",
+			"ControlRig",
+			"ControlRigDeveloper",
+			"ControlRigEditor",
+			"RigVM",
+			"RigVMDeveloper",
 			"AssetTools",
+			"AssetRegistry",
 			"Core",
 			"CoreUObject",
 			"Blutility",

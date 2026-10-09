@@ -27,6 +27,9 @@ bool Apply(const AProphecyAgent* Agent,double SourceTime,
     TArrayView<FTransform> Previous,TArrayView<FTransform> Current,TArrayView<FTransform> Local,
     bool* NewSample=nullptr,const FQuat& Frame=FQuat::Identity);
 bool IsActive(const AProphecyAgent* Agent);
+void BeginParry(const AProphecyAgent* Agent,TConstArrayView<FName> Names,
+    TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
+    TConstArrayView<FTransform> Current,double SourceTime,float SampleSeconds,uint32 PublishedAgeTicks=0);
 // Spend pending game ticks before deciding whether this step needs the upper NN.
 bool NeedsInference(const AProphecyAgent* Agent);
 void Cancel(const AProphecyAgent* Agent);

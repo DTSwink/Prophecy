@@ -23,8 +23,10 @@
 #include "ProphecyGhostAttackLibrary.h"
 #include "ProphecyLimbCollision.h"
 #include "ProphecyNNDefenseRuntime.h"
+#include "ProphecyDefenseCheckpoint.h"
 #include "ProphecyDefenseArmedGate.h"
 #include "ProphecyDefenseControls.h"
+#include "ProphecyDefenseCollision.h"
 #include "ProphecyNNLegClamps.h"
 #include "ProphecyNNPolicyBlend.h"
 #include "ProphecyAttackRecovery.h"
@@ -153,6 +155,9 @@ namespace
 		TArray<float> Input,Output;
 		FTransform HalfReachPelvis;
 		bool bHalfReach=false,bDistributed=false;
+		bool bCompensate=false;
+		float MinimumReach=0;
+		FVector ReachForward=FVector::ForwardVector,UpperTarget=FVector::ZeroVector,RealTarget=FVector::ZeroVector;
 		FVector2D FrozenRaw=FVector2D::ZeroVector,FrozenPin=FVector2D::ZeroVector,AttackRaw=FVector2D::ZeroVector;
 	};
 	// Exists only after an accepted one-frame extension; no live FImpl layout change.
@@ -877,8 +882,10 @@ struct AProphecyNNLocomotionManager::FImpl
 			bool bHalf = false;
 			bool bHasPose = false;
 			bool bNeedsFeedback = false;
+			float ArmedOutput = 0.f, HitOutput = 0.f;
 			int32 Frame = 1;
 			int32 HitFrame = INDEX_NONE;
+			int64 ArmedGameTick = -1;
 			int32 TailSteps = 0;
 		};
 		struct FAnimationLayer
@@ -1117,6 +1124,7 @@ struct AProphecyNNLocomotionManager::FImpl
 	bool bAbsoluteMotionAuditCanCapture = false;
 	bool bAbsoluteMotionAuditWritten = false;
 	int32 AbsoluteMotionReferenceFrame = 1;
+	int64 GameTick = 0;
 	int32 AbsoluteMotionSampleCount = 0;
 	float AbsoluteMotionLastRenderedPhase = 1.0f;
 	float AbsoluteMotionRenderHz = 120.0f;
@@ -1852,6 +1860,7 @@ AProphecyNNLocomotionManager::AProphecyNNLocomotionManager()
 
 AProphecyNNLocomotionManager::~AProphecyNNLocomotionManager()
 {
+    ProphecyDefenseCheckpoint::Remove(this);
 	delete Impl;
 	Impl = nullptr;
 }
@@ -2245,6 +2254,7 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 	const float StepSeconds = 1.0f / NNUpdateHz;
 	// One authored tick per unpaused game tick, independent of FPS/dilation.
 	const float TickBudget = ProphecyBlendClock::TickBudget(!GetWorld() || GetWorld()->IsPaused(), DeltaSeconds);
+	if(TickBudget>0) ++Impl->GameTick;
 	if (ProphecyAgentTime::HasClocks(this) && !IsSimBridgeActive())
 	{
 		ProphecyAgentTime::Advance(this,TickBudget,StepSeconds,BatchSize,MaxCatchUpStepsPerTick,
@@ -2268,7 +2278,7 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 		// Policy steps must also see the last accepted return pose. Ordinary
 		// agents retain their existing publication cadence; the FK clock still
 		// spends at most one tick regardless of how many NN steps are due.
-		for(int32 I=0;I<CrowdSize;++I)if(ProphecyFKReturn::IsActive(AgentActors[I]))
+		for(int32 I=0;I<CrowdSize;++I)if(ProphecyFKReturn::IsActive(AgentActors[I]) || ProphecyUpperBodyInertia::HasDodgeReturn(AgentActors[I]))
 		{
 			const double Time=GetWorld()?double(GetWorld()->GetTimeSeconds())-Impl->AccumulatedStepSeconds:0.;
 			PublishAgentPose(I,FMath::Max(Time,Impl->Agents[I].PublishedPoseTimeSeconds+1.e-6));
@@ -5199,7 +5209,12 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	const bool bLengthReturn=ProphecyForearmStretch::Apply(Controls,Impl->PublishedBoneNames,
         PreviousComponentTransforms,ComponentTransforms,LocalTransforms,bFKReturn);
 
-	if(bNewFKSample || bLengthReturn)CommitFKReturnUpperPose(*Impl,AgentIndex,ComponentTransforms);
+	bool bNewDodgeSample=false;
+	if(!bManualArmed && !Agent.Slash.bActive && !bDefensePose)
+		ProphecyUpperBodyInertia::ApplyDodge(Controls,Impl->BodyNames,Impl->Parents,Impl->UpperCoreBoneNames,
+			PreviousComponentTransforms,ComponentTransforms,LocalTransforms,ComponentWorldTransform,SourceTimeSeconds,1./NNUpdateHz,
+			FVector2D(Impl->UpperArms[0].Lengths.Y*100.,Impl->UpperArms[1].Lengths.Y*100.),bNewDodgeSample);
+	if(bNewFKSample || bLengthReturn || bNewDodgeSample)CommitFKReturnUpperPose(*Impl,AgentIndex,ComponentTransforms);
 	FProphecyNNPoseStore::SetAgentLocalPose(
 		PoseStoreAgentBase + AgentIndex,
 		Impl->PublishedBoneNames,

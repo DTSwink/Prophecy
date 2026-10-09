@@ -1,15 +1,13 @@
 # Per-agent attack PHAT sweeps
 
-**Current user choice (October7):** sweeps disabled in the user's setup. The user reports that this resolves the missing punch/head Hit event near absolute1150 without visible penetration. Leave this choice in place; do not automatically enable sweeps or substitute CCD/additional substeps. Automatic code defaults below are unchanged. See [investigation and user acceptance](PunchHit115020261007.md).
+**Current user choice (October9):** sweeps enabled, restricted to the held sword during the six slash attacks. This supersedes the October7 disabled choice. Current Blueprint already has Enabled=true, Strength=1, MaxIterations=64; preserve it. No CCD, adaptive substeps or enlarged collision geometry added.
 
-Predictive sweeps automatically run only during an attack, including pre-Armed preparation. Locomotion, dodge and parry do not enable them. Attack entry captures the existing `Get Attack Bones` selection:
+Predictive sweeps run only during slashL/LU/LD/R/RU/RD, including pre-Armed preparation where existing collision rules permit contact. Attack entry and family changes select the held sword once; no per-tick attack-name checks.
 
-- Punch: striking hand and lowerarm only, even when holding a sword.
-- Kick: striking foot and calf.
-- Headbutt: head.
-- Slash/pike: right hand plus held sword. A welded sword selects its compound leaf alongside the selected right-hand body.
+- Slash: held sword shape only. A welded sword selects its compound leaf, excluding its carrier hand leaf. Physics still applies the sword's response through the hand because they are welded.
+- Punch, kick, headbutt, pike, locomotion and defense: no outgoing sweeps.
 
-Attack completion/cancellation clears the selection; a chained attack replaces it. Missing weapons and empty selections never fall back to the whole body. Other bodies remain ordinary collision partners.
+Attack completion/cancellation clears the selection; a chained or retargeted attack replaces it. Missing/dropped weapons and empty selections never fall back to the whole body. Other bodies remain ordinary collision partners. Existing object responses, pair exclusions and defense filters decide which contacts are allowed, rather than restricting contacts to only the named victim. `Get Attack Bones` remains unchanged, including hand_r for sword attacks; gameplay hit selection is separate from predictive sweep selection.
 
 **Set Jolt PHAT Sweeps** takes Agent, Enabled (pin default false), Strength (1), Max Iterations (64). `Enabled=false` opts that agent out, including subsequent attacks. `Enabled=true` restores permission; idle agents still do not sweep. Automatic permission is enabled until explicitly overridden. Call on BeginPlay or state changes, not every Tick. Valid strength is 0–1; iterations 1–128. Invalid input leaves the configuration unchanged; zero strength also disables requests.
 
@@ -21,6 +19,6 @@ A converged future contact applies equal/opposite normal impulses, weighted by d
 
 Already touching pairs remain the normal solver's responsibility. Exhausted queries do nothing. This supplementary response does not enable Jolt LinearCast CCD, add friction/restitution, teleport bodies, or guarantee no penetration after later forces/joint solving.
 
-When no agent requests sweeps, empty-registry guards skip body enumeration and queries. During attacks, selection is one to three strike parts instead of the whole rig; attack names are resolved once at entry. The enabled pass still enumerates registered bodies and checks filtered/bounded candidate pairs. No new frame-rate benchmark is claimed. Disabling one agent stops its outgoing sweeps; another attacking agent can still sweep against it as a collision partner.
+When no agent requests sweeps, empty-registry guards skip body enumeration and queries. During slashes, selection is only the held sword. The enabled pass still enumerates registered bodies and checks filtered/bounded candidate pairs. No new frame-rate benchmark is claimed. Disabling one agent stops its outgoing sweeps; another slashing agent can still sweep against it as a collision partner.
 
 Focused tests: `Prophecy.Jolt.ContactShapes.AttackSweepGate`, `Prophecy.Jolt.ContactShapes.SelectiveSweeps`, and `Prophecy.Jolt.HitEvents.SolvedImpulseAndLifetime` cover lifecycle/opt-out, selection replacement, welded leaf masks, translation/rotation prevention, solved speculative impulse notification, resting hits and CCD hits.

@@ -15,6 +15,13 @@ void Begin(const AProphecyAgent* Agent,TConstArrayView<FTransform> PreviousWorld
     TConstArrayView<FName> Names,TConstArrayView<FName> CoreNames,double Dt,
     const FTransform& PreviousRoot=FTransform::Identity,const FTransform& Root=FTransform::Identity);
 bool Configured(const AProphecyAgent* Agent);
+void BeginDodge(const AProphecyAgent* Agent,TConstArrayView<FName> Names,TConstArrayView<int32> Parents,
+    TConstArrayView<FName> CoreNames,TConstArrayView<FTransform> Previous,TConstArrayView<FTransform> Current,
+    const FTransform& PreviousCarrier,const FTransform& Carrier,double SourceTime,double Dt,uint32 PublishedAgeTicks=0);
+bool HasDodgeReturn(const AProphecyAgent* Agent);
+bool ApplyDodge(const AProphecyAgent* Agent,TConstArrayView<FName> Names,TConstArrayView<int32> Parents,
+    TConstArrayView<FName> CoreNames,TArrayView<FTransform> Previous,TArrayView<FTransform> Current,
+    TArrayView<FTransform> Local,const FTransform& Carrier,double SourceTime,double Dt,const FVector2D& ForearmLengths,bool& NewSample);
 void Apply(const AProphecyAgent* Agent,TConstArrayView<int32> Parents,TConstArrayView<FName> Names,
     TConstArrayView<FName> CoreNames,const FTransform& Carrier,TArrayView<FTransform> Pose,double PoseStepSeconds=-1);
 void Cancel(const AProphecyAgent* Agent);

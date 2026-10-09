@@ -7,6 +7,15 @@ public class GameAnimationSample3 : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/prophecy_slash_half_gt.json", StagedFileType.UFS);
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/prophecy_parry_upper.onnx", StagedFileType.UFS);
+		foreach (string Kind in new[] { "parry", "dodge" })
+			RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/" + Kind + "_checkpoint.json", StagedFileType.UFS);
+		foreach (string Choice in new[] { "Parry1149700", "Parry1178405", "Parry1216457", "Dodge322925", "Dodge151341" })
+		{
+			string Kind = Choice.StartsWith("Parry") ? "parry" : "dodge";
+			string Folder = "$(ProjectDir)/Content/locomotion/NN/defense/pickers/" + Choice + "/";
+			RuntimeDependencies.Add(Folder + "prophecy_" + Kind + "_upper.onnx", StagedFileType.UFS);
+			RuntimeDependencies.Add(Folder + Kind + "_checkpoint.json", StagedFileType.UFS);
+		}
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/parry_skeleton.json", StagedFileType.UFS);
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/parry_colliders.json", StagedFileType.UFS);
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/attacker_colliders.json", StagedFileType.UFS);

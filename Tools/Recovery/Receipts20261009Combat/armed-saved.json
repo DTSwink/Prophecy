@@ -1,0 +1,10 @@
+{
+  "saved": "..\\..\\..\\..\\..\\..\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\_mygame\\locomotion\\BP_ProphecyManualPoseAgent.uasset",
+  "sha256": "7cd4e2c33cc837c62e955819b9547cd910d089a670064892071bfc149612e14d",
+  "types": "mode=Inspect parent=/Script/GameAnimationSample3.ProphecyAgent\nnative_properties=0 pin_types=0 status=3 wiring_preserved=1\n",
+  "world": "/Game/testNN.testNN",
+  "no_play": true,
+  "graph_unchanged": true,
+  "map_saved": false,
+  "cold_launch_requires_normal_build": true
+}

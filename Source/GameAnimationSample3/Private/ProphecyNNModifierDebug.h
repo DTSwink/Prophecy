@@ -21,6 +21,7 @@ void EntryCore(FReport& R);
 void EntryHands(FReport& R);
 void AttackMotion(FReport& R);
 void FKReturn(FReport& R);
+void DodgeReturn(FReport& R);
 void HandInertia(FReport& R);
 void PelvisInertia(FReport& R);
 void Lower(FReport& R);

@@ -12,6 +12,7 @@ public:
     bool SetBatch(int32 Count);
     bool UsesExactForearms() const;
     bool Run(TConstArrayView<float> Input, TArrayView<float> Output);
+    void SwapWith(FProphecyDefenseNetwork& Other);
 private:
     struct FState;
     TUniquePtr<FState> State;

@@ -23,6 +23,17 @@ class GAMEANIMATIONSAMPLE3_API UProphecyFKReturnLibrary : public UBlueprintFunct
 {
     GENERATED_BODY()
 public:
+    /** Configure this agent's parry-only lab return. Opt-in; attack profiles are untouched.
+     * Same FK curve/idle as attack return, with independent NN takeover and inertia.
+     * Configure before Parry ends. Disabling cancels only a running parry return.
+     * Seconds use 60 unpaused game ticks; the next special cancels the return. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Defense Recovery", meta=(DefaultToSelf="Agent", DisplayName="Set Parry FK Return", AdvancedDisplay="NNTakeoverCoefficient,BoneInertia,InertiaHold,InertiaDecay,WorldInertia,SpineAngleTime"))
+    static bool SetParryFKReturn(AProphecyAgent* Agent, bool Enabled=true,
+        float ReturnTime=.28f, float Inertia=.7f, float Easing=0.f,
+        FVector2D HoldTrim=FVector2D(0.1, 0.34), float NNTakeoverCoefficient=1.f,
+        FProphecyFKInertiaWeights BoneInertia=FProphecyFKInertiaWeights(),
+        float InertiaHold=.05f, float InertiaDecay=.8f, bool WorldInertia=true, float SpineAngleTime=.29f);
+
     /** Enabled by default for all attacks. At attack end, use the lab's FK idle return and
      * blend toward the upper NN, which predicts from the accepted blended pose.
      * Each attack vector is X = Alpha Hold, Y = Trim, both fractions in [0,1].

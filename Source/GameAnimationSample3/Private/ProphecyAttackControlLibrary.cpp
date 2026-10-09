@@ -1,6 +1,8 @@
 #include "ProphecyAttackControlLibrary.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAgent.h"
+#include "ProphecyNNLocomotionManager.h"
+#include "EngineUtils.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
@@ -8,6 +10,17 @@
 #include "ProphecyRootBalance.h"
 #include "ProphecyAttackTargetReach.inl"
 #include <cmath>
+
+bool UProphecyAttackControlLibrary::GetNNAttackOutputValues(AProphecyAgent* Agent, float& Armed, float& Hit)
+{
+    Armed = Hit = -1.f;
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
+        || !Agent->GetWorld() || !Agent->HasValidAgentHandle()) return false;
+    const auto Handle = Agent->GetAgentHandle();
+    for (TActorIterator<AProphecyNNLocomotionManager> It(Agent->GetWorld()); It; ++It)
+        if (It->ResolveAgent(Handle) == Agent) return It->GetAgentNNAttackOutputValues(Handle, Armed, Hit);
+    return false;
+}
 
 namespace ProphecyAttackTargetReach
 {

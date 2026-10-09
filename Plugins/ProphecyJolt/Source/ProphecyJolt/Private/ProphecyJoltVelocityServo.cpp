@@ -1,11 +1,15 @@
 #include "ProphecyJoltVelocityServo.h"
 #include "ProphecyJoltConversions.h"
 #include "ProphecyJoltPHATSweeps.h"
+#include "ProphecyJoltArmMotors.h"
 
 THIRD_PARTY_INCLUDES_START
 #include <Jolt/Physics/Body/BodyLock.h>
 #include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/Physics/Body/MotionProperties.h>
 THIRD_PARTY_INCLUDES_END
+
+#include "ProphecyJoltArmMotors.inl"
 
 namespace ProphecyJolt
 {
@@ -260,6 +264,7 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
     OutError.Reset();
     if (!IsInGameThread())
     { OutError = TEXT("Fixture servo activation preparation requires the game thread outside Update."); return false; }
+    ArmMotors::Prepare(Physics, Targets);
     TArray<JPH::BodyID, TInlineAllocator<32>> BodiesToWake;
     const auto* BodyFollows = Follows.IsEmpty() ? nullptr : Follows.Find(this);
     const auto* Offsets = TargetOffsets.IsEmpty() ? nullptr : TargetOffsets.Find(this);
@@ -391,6 +396,7 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
     if (Targets.IsEmpty()) { PHATSweeps::AfterServo(Context.mPhysicsSystem, Context.mDeltaTime); return; }
     ++Invocations;
     LastIntegrationSeconds = Context.mDeltaTime;
+    auto* ArmDrives = ArmMotors::Find(*Context.mPhysicsSystem);
     const auto* BodyFollows = Follows.IsEmpty() ? nullptr : Follows.Find(this);
     const auto* Offsets = TargetOffsets.IsEmpty() ? nullptr : TargetOffsets.Find(this);
     auto* Local=HasLocalTargets?LocalCommands.Find(this):nullptr;
@@ -421,12 +427,25 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
             || (!Body.IsActive() && RequiresNativeWake(Target, Rewrite)))
         { ++InvalidBodies; continue; }
         // Stock clamped setters enforce the body's captured caps without changing those limits.
-        if (Target.LinearStrength > 0.0f) Body.SetLinearVelocityClamped(Rewrite.NativeLinear);
-        if (Target.AngularStrength > 0.0f) Body.SetAngularVelocityClamped(Rewrite.NativeAngular);
+        bool MotorDriven = false;
+        if (ArmDrives)
+        {
+            const auto* Follow = BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr;
+            MotorDriven = ArmMotors::Apply(ArmDrives, Body, Target, Context.mDeltaTime,
+                Rewrite.NativeLinear, Rewrite.NativeAngular, Follow ? Follow->Linear : FVector::OneVector,
+                Follow ? Follow->Angular : FVector::OneVector);
+        }
+        if (!MotorDriven)
+        {
+            if (Target.LinearStrength > 0.0f) Body.SetLinearVelocityClamped(Rewrite.NativeLinear);
+            if (Target.AngularStrength > 0.0f) Body.SetAngularVelocityClamped(Rewrite.NativeAngular);
+        }
         Sample.LinearAfterCmPerSecond = FromJoltLinearVelocity(Body.GetLinearVelocity());
         Sample.AngularAfterRadiansPerSecond = FromJoltAngularVelocity(Body.GetAngularVelocity());
         Sample.bValid = true;
-        if(Local && Local->Needed[Index])PredictCommandFrame(Target,Body,Sample.LinearAfterCmPerSecond,Sample.AngularAfterRadiansPerSecond,
+        if(Local && Local->Needed[Index])PredictCommandFrame(Target,Body,
+            MotorDriven && Target.LinearStrength>0 ? FromJoltLinearVelocity(Rewrite.NativeLinear) : Sample.LinearAfterCmPerSecond,
+            MotorDriven && Target.AngularStrength>0 ? FromJoltAngularVelocity(Rewrite.NativeAngular) : Sample.AngularAfterRadiansPerSecond,
             Context.mDeltaTime,Local->EndFrames[Index]);
     }
     // Ordered after ALL target velocities; a separate Jolt listener could race this servo.

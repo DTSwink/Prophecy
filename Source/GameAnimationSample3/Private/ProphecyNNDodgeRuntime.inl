@@ -42,13 +42,13 @@ FVector3f DodgeManagedPosition(const FProphecyLiveDodge& P,const ProphecyDefense
 { return Root.P+P.WorldOrigin-ProphecyDefense::Transform(P.CarrierOffset,Root.R); }
 float DodgeManagedYaw(const FProphecyLiveDodge& P,const ProphecyDefense::FRootFrame& Root)
 { return P.InitialManagedYaw+WrapAngle(DodgeRootYaw(Root)-P.InitialNativeYaw); }
-bool InitializeDodgeRuntime(FProphecyLiveDefenseRuntime& D,FString& Error)
+bool InitializeDodgeRuntime(AProphecyNNLocomotionManager* Manager,FProphecyLiveDefenseRuntime& D,FString& Error)
 {
     if (D.bDodgeReady) return true;
     const FString Dir=FPaths::ProjectContentDir()/TEXT("locomotion/NN/defense");
     if (!D.DodgeGeometry.Load(Dir/TEXT("dodge_skeleton.json"),true,Error)
         || !D.DodgeContacts.Load(Dir/TEXT("dodge_colliders.json"),Error)
-        || !D.DodgeUpper.Initialize(Dir/TEXT("prophecy_dodge_upper.onnx"),362,112,Error)) return false;
+        || !ProphecyDefenseCheckpoint::Initialize(Manager,true,D.DodgeUpper,Error)) return false;
     for (int32 I=0;I<2;++I)
     {
         const FString Kind=I?TEXT("run"):TEXT("walk");
@@ -84,7 +84,8 @@ bool AProphecyNNLocomotionManager::StartAgentNNDodge(FProphecyAgentHandle Handle
     { Error=TEXT("Start the incoming attack first.");return false; }
     if (Attack.HitFrame!=INDEX_NONE && Attack.Frame-Attack.HitFrame>=ProphecyDefenseControls::GetDodgeFramesAfterHit(Actor))
     { Error=TEXT("The incoming attack's post-Hit Dodge window has ended.");return false; }
-    if (Attack.State[270]<=0.5f)
+    if (!ProphecyDefenseArmedGate::CanStart(Actor,Attack.Family,Attack.State[270]>0.5f,true,
+        ProphecyDefenseArmedGate::ArmedElapsed(Impl->GameTick,Attack.ArmedGameTick)))
     {
         StopAgentNNDefense(Handle);
         ProphecyDefenseArmedGate::Queue(this,Actor,Attacker,true,MaximumSeconds);
@@ -92,7 +93,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNDodge(FProphecyAgentHandle Handle
     }
     if (Agent.AnimationLayer.IsActive())
     { Error=TEXT("Defender has an active animation layer.");return false; }
-    if (!InitializeDefenseRuntime(*Impl,Error) || !InitializeDodgeRuntime(*Impl->Defense,Error)) return false;
+    if (!InitializeDefenseRuntime(*Impl,Error) || !InitializeDodgeRuntime(this,*Impl->Defense,Error)) return false;
     auto& D=*Impl->Defense;const int32 AttackCollider=DefenseAttackCollider(D,Attack);
     if (AttackCollider==INDEX_NONE) { Error=TEXT("Unsupported attack collider for Dodge.");return false; }
     ProphecyDefenseArmedGate::Cancel(Actor);
@@ -142,6 +143,8 @@ bool AProphecyNNLocomotionManager::StartAgentNNDodge(FProphecyAgentHandle Handle
     D.Parries.Remove(Handle.Index);Agent.DefensePose=New.Get();D.Dodges.Add(Handle.Index,MoveTemp(New));
     SetAgentTimeDilation(Handle,1.f);
     ProphecyLimbCollision::DefenseChanged(Actor,true);
+    ProphecyDefenseControls::CaptureRelativeTarget(Actor,Attack.TargetWorld,P.Status);
+    ProphecyDefenseCollision::Start(Actor,Attacker,Attack.Family,true);
     ++D.ActiveCount;++D.ActiveDodgeCount;Error.Reset();return true;
 }
 
@@ -194,6 +197,8 @@ void AProphecyNNLocomotionManager::AdvanceNNDodges()
             Write(P.Context.AttackerCollider[Frame],Box.Center);Write(P.Context.AttackerCollider[Frame]+3,Box.Axes.V[0]);Write(P.Context.AttackerCollider[Frame]+6,Box.Axes.V[1]);
         }
         P.Context.Event=Attack.HitFrame!=INDEX_NONE?1.f:0.f;
+        const auto& AttackerState=Impl->Agents[P.AttackerIndex];
+        ProphecyDefenseControls::FilterHalfAttack(Actor,Attack.bHalf,P.Context,AttackerState.PreviousPublishedRoot,AttackerState.PublishedRoot);
         P.Context.TargetWorld=UnrealToTraining(Attack.TargetWorld)-P.WorldOrigin;
         P.Category=Agent.bUseWalkPolicy?0:1;
         P.PresentMask=D.DodgeContacts.PresentMask(IsValid(Actor->GetHeldSword()));

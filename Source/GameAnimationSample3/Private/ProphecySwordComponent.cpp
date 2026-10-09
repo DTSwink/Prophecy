@@ -5,6 +5,9 @@
 #include "StaticMeshCompiler.h"
 #endif
 #include "ProphecySwordAttackCollision.h"
+#include "ProphecyJoltPHATSweepLibrary.h"
+#include "ProphecyDefenseCollision.h"
+#include "ProphecyDefenseArmedGate.h"
 #include "ProphecyAgent.h"
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltCharacterComponent.h"
@@ -24,10 +27,93 @@
 #include "Chaos/Collision/CollisionConstraintFlags.h"
 #include "ProphecySwordCollisionCooldown.inl"
 
+namespace ProphecySwordNoReaction
+{
+static TSet<TWeakObjectPtr<const AProphecyAgent>> EnabledAgents;
+struct FAutomatic { bool Slash=false,Armed=false; float Strength=1.f; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FAutomatic> Automatic;
+static FDelegateHandle Cleanup;
+static void EnsureCleanup()
+{
+    if(Cleanup.IsValid())return;
+    Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World,bool,bool)
+    {
+        for(auto It=EnabledAgents.CreateIterator();It;++It)
+            if(!It->IsValid() || It->Get()->GetWorld()==World)It.RemoveCurrent();
+        for(auto It=Automatic.CreateIterator();It;++It)
+            if(!It.Key().IsValid() || It.Key()->GetWorld()==World)It.RemoveCurrent();
+        if(EnabledAgents.IsEmpty() && Automatic.IsEmpty()){FWorldDelegates::OnWorldCleanup.Remove(Cleanup);Cleanup.Reset();}
+    });
+}
+static bool Apply(UProphecyJoltBodyComponent* Body,float Strength)
+{
+    FProphecyJoltBodyHandle H;
+    if(!Body || !Body->GetBodyHandle(H))return true; // Preference is applied on admission.
+    auto* World=Body->GetWorldOwner();if(!World)return false;
+    const auto Result=World->SetBodyContactReactionScale(H,1.f-Strength);
+    if(!Result.IsSuccess())UE_LOG(LogTemp,Warning,TEXT("Sword contact response: %s"),*Result.Message);
+    return Result.IsSuccess();
+}
+static float Desired(const AProphecyAgent* Agent)
+{
+    if(EnabledAgents.Contains(Agent))return 1.f;
+    const auto* State=Automatic.Find(Agent);
+    return State && State->Slash && State->Armed && State->Strength>0.f
+        && !ProphecyDefenseCollision::BlocksSlashSwordNoReaction(Agent) ? State->Strength : 0.f;
+}
+static bool Refresh(AProphecyAgent* Agent)
+{
+    auto* Sword=Agent?Agent->GetHeldSword():nullptr;
+    return !Sword || Apply(Sword->FindComponentByClass<UProphecyJoltBodyComponent>(),Desired(Agent));
+}
+static void Family(AProphecyAgent* Agent,FName Name,bool Armed)
+{
+    if(auto* State=Automatic.Find(Agent))
+    {
+        State->Slash=Name.ToString().StartsWith(TEXT("slash"),ESearchCase::IgnoreCase);
+        State->Armed|=Armed;Refresh(Agent);
+    }
+}
+static void Armed(AProphecyAgent* Agent)
+{
+    if(auto* State=Automatic.Find(Agent)){State->Armed=true;Refresh(Agent);}
+}
+static void End(AProphecyAgent* Agent)
+{
+    if(auto* State=Automatic.Find(Agent)){State->Slash=false;State->Armed=false;Refresh(Agent);}
+}
+void DefenseChanged()
+{
+    for(const auto& Entry:Automatic)if(Entry.Value.Slash && Entry.Value.Armed)
+        if(auto* Agent=const_cast<AProphecyAgent*>(Entry.Key.Get()))Refresh(Agent);
+}
+void VictimChanged(AProphecyAgent* Agent)
+{
+    if(Automatic.Contains(Agent))Refresh(Agent);
+}
+}
+
 namespace ProphecySwordAttackCollision
 {
 namespace
 {
+void SetAttackArmWindow(AProphecyAgent* Agent,bool Active)
+{
+    if (!Agent) return;
+    // Phase events only; reflected dispatch avoids a new live cross-DLL import.
+    struct FParams { AActor* Agent; bool Active; } Params{Agent,Active};
+    auto* Library=FindObjectChecked<UClass>(nullptr,TEXT("/Script/ProphecyJolt.ProphecyJoltBodyDriveLibrary"))->GetDefaultObject();
+    Library->ProcessEvent(Library->FindFunctionChecked(TEXT("NotifyArmsAntiJiggleAttackWindow")),&Params);
+}
+void SelectSlashSweep(AProphecyAgent* Agent,FName Family)
+{
+    static const FName Slashes[]={TEXT("slashL"),TEXT("slashLU"),TEXT("slashLD"),TEXT("slashR"),TEXT("slashRU"),TEXT("slashRD")};
+    bool Slash=false;
+    for (FName Name:Slashes) Slash|=Family==Name;
+    AActor* Sword=Slash && Agent ? Agent->GetHeldSword() : nullptr;
+    UProphecyJoltPHATSweepLibrary::SetAttackParts(Agent,Sword ? TArray<FName>{TEXT("sword")} : TArray<FName>{},
+        Sword ? Cast<UPrimitiveComponent>(Sword->GetRootComponent()) : nullptr);
+}
 struct FGate
 {
 	// Keep the previous one-byte family field/layout for existing Live Coding state.
@@ -141,6 +227,7 @@ void Begin(AProphecyAgent* Agent,FName Family,int64 EntryTicks)
 	if (!Agent) return;
 	End(Agent);
 	ProphecySwordCooldown::Family(Agent,Family,false);
+	ProphecySwordNoReaction::Family(Agent,Family,false);
 	auto& Gate=Gates.FindOrAdd(Agent);
 	Gate.bAllowed=false;
 	Gate.bGapMelee=(EntryTicks>=0 ? EntryTicks : UProphecyGhostAttackLibrary::GetTicksSinceLastAttack(Agent))
@@ -151,8 +238,10 @@ void Begin(AProphecyAgent* Agent,FName Family,int64 EntryTicks)
 }
 void Armed(AProphecyAgent* Agent)
 {
+	ProphecySwordNoReaction::Armed(Agent);
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate) return;
+	if (!HitOwners.Contains(Agent)) SetAttackArmWindow(Agent,true);
 	if ((Gate->Family&FGate::RightPunch)!=0)
 	{
 		if (!Gate->SuppressesPunch()) { Gate->Family|=FGate::PunchArmed;Refresh(Agent); }
@@ -168,7 +257,11 @@ void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit)
 {
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate) return;
+    SelectSlashSweep(Agent,Family);
+    if (bHit) SetAttackArmWindow(Agent,false);
+    else if (bArmed && !HitOwners.Contains(Agent)) SetAttackArmWindow(Agent,true);
 	ProphecySwordCooldown::Family(Agent,Family,bArmed);
+	ProphecySwordNoReaction::Family(Agent,Family,bArmed);
 	const uint8 Kind=CollisionFamily(Family);
 	const uint8 PreviousKind=Gate->Family&(FGate::Weapon|FGate::RightPunch);
 	const uint8 Phase=Kind==FGate::RightPunch && (bArmed || (PreviousKind==Kind && Gate->SuppressesPunch()))
@@ -186,6 +279,7 @@ void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit)
 void Hit(AProphecyAgent* Agent)
 {
     if (!Agent || !Gates.Contains(Agent)) return;
+    SetAttackArmWindow(Agent,false);
     const bool First=!HitOwners.Contains(Agent);
     HitOwners.Add(Agent);
     // Restore owner pairs for every attack family without ending any attack systems.
@@ -196,6 +290,8 @@ void Hit(AProphecyAgent* Agent)
 }
 void End(AProphecyAgent* Agent)
 {
+	SetAttackArmWindow(Agent,false);
+	ProphecySwordNoReaction::End(Agent);
 	ProphecySwordCooldown::End(Agent);
 	SetBodySuppressed(Agent, false);
 	FGate Gate;if (Gates.RemoveAndCopyValue(Agent,Gate)) Restore(Gate);
@@ -445,6 +541,7 @@ void UProphecySwordComponent::CancelJoltAdmission()
 
 bool UProphecySwordComponent::ReleaseJoltGrip()
 {
+    if(!ProphecySwordNoReaction::Apply(JoltBody,false))return false;
 	if (JoltBinding && JoltBinding->World.IsValid() && JoltBinding->World->OwnsJoint(JoltBinding->Joint))
 	{
 		const auto Result = JoltBinding->World->DestroyJoint(JoltBinding->Joint);
@@ -511,7 +608,7 @@ bool UProphecySwordComponent::FinishJoltGrip(UProphecyJoltCharacterComponent& Ch
 		Blade->AttachToComponent(&Mesh, FAttachmentTransformRules::KeepWorldTransform, A->SwordHandSocket);
 		Blade->SetRelativeTransform(A->SwordGripTransform);
 		Blade->UpdateComponentToWorld();
-		return true;
+		return ProphecySwordNoReaction::Apply(JoltBody,ProphecySwordNoReaction::Desired(A));
 	}
 	FTransform Anchor = Mesh.GetSocketTransform(A->SwordHandSocket);
 	Anchor.SetScale3D(FVector::OneVector);
@@ -563,7 +660,7 @@ bool UProphecySwordComponent::FinishJoltGrip(UProphecyJoltCharacterComponent& Ch
 		return false;
 	}
 	ProphecySwordAttackCollision::Refresh(A);
-	return true;
+	return ProphecySwordNoReaction::Apply(JoltBody,ProphecySwordNoReaction::Desired(A));
 }
 
 bool UProphecySwordComponent::BindJolt(bool bSnapToGrip)
@@ -959,6 +1056,8 @@ void UProphecySwordComponent::Disappear()
 
 void UProphecySwordComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
+	ProphecySwordNoReaction::EnabledAgents.Remove(Agent());
+	ProphecySwordNoReaction::Automatic.Remove(Agent());
 	ProphecySwordCooldown::Remove(Agent());
 	ProphecySwordAttackCollision::CollisionDisabled.Remove(Agent());
 	ProphecySwordAttackCollision::OwnCollisionDisabled.Remove(Agent());
@@ -1045,6 +1144,46 @@ namespace
 }
 
 bool AProphecyAgent::EquipSword(bool bSimulated) { return SwordController(this, true)->Equip(bSimulated); }
+bool UProphecySwordPhysicsLibrary::SetSwordNoReaction(AProphecyAgent* Agent,bool Enabled)
+{
+	if(!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown)return false;
+	using namespace ProphecySwordNoReaction;
+	// Event-only preference; do not create a component or add a tick before equip.
+	const bool WasEnabled=EnabledAgents.Contains(Agent);
+	if(Enabled){EnabledAgents.Add(Agent);EnsureCleanup();}else EnabledAgents.Remove(Agent);
+	if(!Refresh(Agent)){if(WasEnabled)EnabledAgents.Add(Agent);else EnabledAgents.Remove(Agent);return false;}
+	return true;
+}
+bool UProphecySwordPhysicsLibrary::SetSlashSwordNoReaction(AProphecyAgent* Agent,bool Enabled,float Strength)
+{
+    if(!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown)return false;
+    if(!FMath::IsFinite(Strength))return false;
+    Strength=FMath::Clamp(Strength,0.f,1.f);
+    using namespace ProphecySwordNoReaction;
+    const auto* Previous=Automatic.Find(Agent);
+    const bool WasEnabled=Previous!=nullptr;
+    const FAutomatic Saved=Previous?*Previous:FAutomatic{};
+    if(Enabled)
+    {
+        if(!Previous)
+        {
+            FName Name;bool Half,IsArmed,Hit;int32 Frame;
+            FAutomatic State;
+            if(Agent->GetNNAttackState(Name,Half,IsArmed,Hit,Frame))
+            {
+                State.Slash=Name.ToString().StartsWith(TEXT("slash"),ESearchCase::IgnoreCase);
+                State.Armed=IsArmed || ProphecySwordCooldown::Qualified.Contains(Agent);
+            }
+            Automatic.Add(Agent,State);
+        }
+        Automatic.FindChecked(Agent).Strength=Strength;
+        EnsureCleanup();
+    }
+    else Automatic.Remove(Agent);
+    if(Refresh(Agent))return true;
+    if(WasEnabled)Automatic.Add(Agent,Saved);else Automatic.Remove(Agent);
+    return false;
+}
 void UProphecySwordPhysicsLibrary::SetOwnSwordCollisionEnabled(AProphecyAgent* Agent, bool Enabled)
 {
 	if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld() || Agent->GetWorld()->bIsTearingDown) return;
@@ -1124,10 +1263,9 @@ void AProphecyAgent::NotifySwordAttackState(bool bAttacking,int64 EntryTicks)
         FName Attack;bool Half,Armed,Hit;int32 Frame;
         if (GetNNAttackState(Attack,Half,Armed,Hit,Frame))
         {
-            const auto Bones=UProphecyAttackControlLibrary::GetAttackBones(Attack,this);
-            AActor* Sword=Bones.Contains(TEXT("sword")) ? GetHeldSword() : nullptr;
-            UProphecyJoltPHATSweepLibrary::SetAttackParts(this,Bones,Sword ? Cast<UPrimitiveComponent>(Sword->GetRootComponent()) : nullptr);
+            ProphecySwordAttackCollision::SelectSlashSweep(this,Attack);
         }
+        else UProphecyJoltPHATSweepLibrary::SetAttackParts(this,{},nullptr);
     }
 	// Event-only reflected dispatch avoids a new cross-DLL import during Live Coding.
 	// The plugin owns configuration versus effective activation; BeginPlay/Tick setters
@@ -1171,3 +1309,69 @@ bool AProphecyAgent::IsSwordSimulated() const
 	const UProphecySwordComponent* C = FindComponentByClass<UProphecySwordComponent>();
 	return C && C->IsSimulated();
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySlashSwordNoReactionTest,"Prophecy.Sword.SlashNoReactionGate",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecySlashSwordNoReactionTest::RunTest(const FString&)
+{
+    using namespace ProphecySwordNoReaction;
+    auto* World=UWorld::CreateWorld(EWorldType::Game,false);if(!World)return false;
+    auto* A=World->SpawnActor<AProphecyAgent>();auto* D=World->SpawnActor<AProphecyAgent>();
+    auto* Other=World->SpawnActor<AProphecyAgent>();
+    if(!A || !D || !Other){World->DestroyWorld(false);return false;}
+    ProphecyDefenseArmedGate::SetVictim(A,D);
+    TestFalse(TEXT("Default disabled"),Desired(A)!=0.f);
+    TestTrue(TEXT("Can configure before equipping"),UProphecySwordPhysicsLibrary::SetSlashSwordNoReaction(A,true));
+    for(const TCHAR* Name:{TEXT("slashL"),TEXT("slashLU"),TEXT("slashLD"),TEXT("slashR"),TEXT("slashRU"),TEXT("slashRD")})
+    {
+        End(A);Family(A,FName(Name),false);
+        TestFalse(TEXT("Wind-up remains normal"),Desired(A)!=0.f);
+        Armed(A);TestTrue(TEXT("First Armed enables slash"),Desired(A)!=0.f);
+        Family(A,FName(Name),false);TestTrue(TEXT("Armed remains latched"),Desired(A)!=0.f);
+        UProphecySwordPhysicsLibrary::SetSlashSwordNoReaction(A,true);
+        TestTrue(TEXT("Repeated enable preserves phase"),Desired(A)!=0.f);
+        for(bool Dodge:{false,true})
+        {
+            ProphecyDefenseCollision::Start(D,A,FName(Name),Dodge);
+            TestFalse(TEXT("Active parry/dodge overrides automatic mode"),Desired(A)!=0.f);
+            UProphecySwordPhysicsLibrary::SetSwordNoReaction(A,true);
+            TestTrue(TEXT("Explicit manual override preserved"),Desired(A)!=0.f);
+            UProphecySwordPhysicsLibrary::SetSwordNoReaction(A,false);
+            TestFalse(TEXT("Clearing manual restores automatic defense gate"),Desired(A)!=0.f);
+            ProphecyDefenseCollision::Stop(D);
+            TestTrue(TEXT("Defense exit restores an ongoing armed slash"),Desired(A)!=0.f);
+        }
+        End(A);TestFalse(TEXT("Attack end clears immediately"),Desired(A)!=0.f);
+    }
+    for(const TCHAR* Name:{TEXT("pike"),TEXT("jabR"),TEXT("hookR"),TEXT("overR")})
+    {End(A);Family(A,FName(Name),false);Armed(A);TestFalse(TEXT("Non-slash excluded"),Desired(A)!=0.f);}
+    Family(A,TEXT("slashL"),true);
+    ProphecyDefenseCollision::Start(Other,A,TEXT("slashL"),false);
+    TestTrue(TEXT("Unrelated defender does not replace assigned victim"),Desired(A)!=0.f);
+    ProphecyDefenseArmedGate::SetVictim(A,nullptr);
+    TestFalse(TEXT("No assigned victim uses active defenses against attacker"),Desired(A)!=0.f);
+    ProphecyDefenseCollision::Stop(Other);
+    TestTrue(TEXT("Unassigned defense exit restores slash"),Desired(A)!=0.f);
+    UProphecySwordPhysicsLibrary::SetSlashSwordNoReaction(A,true,.35f);
+    TestEqual(TEXT("Fractional strength during slash"),Desired(A),.35f);
+    ProphecyDefenseCollision::Start(D,A,TEXT("slashL"),true);
+    TestEqual(TEXT("Defense fully suspends fractional strength"),Desired(A),0.f);
+    ProphecyDefenseCollision::Stop(D);
+    TestEqual(TEXT("Defense exit restores fractional setting"),Desired(A),.35f);
+    End(A);Family(A,TEXT("slashR"),false);Armed(A);
+    TestEqual(TEXT("Strength survives attack boundaries"),Desired(A),.35f);
+    UProphecySwordPhysicsLibrary::SetSwordNoReaction(A,true);
+    TestEqual(TEXT("Manual override remains full strength"),Desired(A),1.f);
+    UProphecySwordPhysicsLibrary::SetSwordNoReaction(A,false);
+    TestEqual(TEXT("Manual release restores fractional mode"),Desired(A),.35f);
+    UProphecySwordPhysicsLibrary::SetSlashSwordNoReaction(A,true,0.f);
+    TestEqual(TEXT("Zero strength gives normal response"),Desired(A),0.f);
+    UProphecySwordPhysicsLibrary::SetSlashSwordNoReaction(A,false);
+    TestFalse(TEXT("Disable removes automatic effect immediately"),Desired(A)!=0.f);
+    TestFalse(TEXT("Disable releases preference"),Automatic.Contains(A));
+    ProphecyDefenseArmedGate::RemoveAgent(A);
+    World->DestroyWorld(false);World->MarkAsGarbage();return !HasAnyErrors();
+}
+#endif

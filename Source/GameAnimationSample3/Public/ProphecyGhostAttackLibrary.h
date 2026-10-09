@@ -9,6 +9,10 @@ class GAMEANIMATIONSAMPLE3_API UProphecyGhostAttackLibrary : public UBlueprintFu
 {
     GENERATED_BODY()
 public:
+    /** Minimum horizontal pelvis-to-target distance for the half-attack upper NN,
+     * in cm. Preserves world height; zero disables the clamp. Default 30 cm. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Agent|Attack",meta=(DefaultToSelf="Agent",ClampMin="0"))
+    static bool SetHalfAttackMinimumReach(AProphecyAgent* Agent,float DistanceCm=30.f);
     /** Unpaused world ticks since BeginPlay/reset or the last full lower release.
      * Counts immediately from BeginPlay; zero throughout a full attack. Full entry,
      * including half-to-full, resets it; full-to-half starts counting. Pure half

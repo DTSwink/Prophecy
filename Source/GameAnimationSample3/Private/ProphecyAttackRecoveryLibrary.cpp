@@ -146,12 +146,14 @@ static void DispatchRegion(AProphecyAgent* Agent,FName Attack,bool Half,bool Ret
             // Legacy nodes can still exist in assets, but no upper modifiers enter
             // locomotion. The attack handoff has already captured its FK return.
             ProphecyHandRecovery::CancelMotion(Agent);ProphecyCoreTempering::CancelMotion(Agent);
-            ProphecySlashReturn::Cancel(Agent);ProphecyUpperBodyInertia::Cancel(Agent);
+            ProphecySlashReturn::Cancel(Agent);
+            if(Special!=EProphecyAgentState::Dodging)ProphecyUpperBodyInertia::Cancel(Agent);
             ProphecyArmCone::Cancel(Agent);
         }
         else
         {
-            ProphecyLowerTempering::SelectAttackProfile(Agent,Attack);
+            if(Special==EProphecyAgentState::Attacking) ProphecyLowerTempering::SelectAttackProfile(Agent,Attack);
+            else ProphecyLowerTempering::SelectDefenseProfile(Agent,Special==EProphecyAgentState::Dodging);
             ProphecyLegRecovery::Begin(Agent);
         }
     }
@@ -347,9 +349,23 @@ bool FProphecyRegionalRecoveryTest::RunTest(const FString&)
     TestTrue(TEXT("Half to full ends both regions"),Events.Num()==2 && !Events[0] && Events[1]);
     for(auto Kind:{EProphecyAgentState::Parrying,EProphecyAgentState::Dodging})
     {
+        RegionObserver=[&](bool Upper)
+        {
+            Events.Add(Upper);
+            if(Upper)return;
+            UProphecyLowerTemperingLibrary::SetLocomotionLowerBodyTempering(A,true,.2,.3,.4,.5,.6,.7);
+            UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(A,0,0,0,0);
+            UProphecyLowerTemperingLibrary::SetDodgeLocomotionLowerBodyTempering(A,true,.8,.7,.6,.4,.3,.2);
+            UProphecyLowerTemperingLibrary::BlendDodgeLocomotionLowerBodyTemperingToNormal(A,1,.5,1,.5);
+        };
         Events.Reset();EnterSpecial(A);NotifyEnded(A,NAME_None,false,true,Kind);
         TestTrue(TEXT("Defense emits both regions"),Events.Num()==2 && !Events[0] && Events[1]);
+        const auto* Lower=ProphecyLowerTempering::Find(A);
+        if(Kind==EProphecyAgentState::Dodging)
+            TestTrue(TEXT("Dodge selection precedes the shared Blueprint callback"),Lower && Lower->FeetTranslation==.8f);
+        else TestNull(TEXT("Shared callback cannot temper Parry"),Lower);
     }
+    RegionObserver=[&](bool Upper){Events.Add(Upper);};
     Events.Reset();EnterSpecial(A);NotifyEnded(A,TEXT("slashR"),false,false);
     TestTrue(TEXT("Interrupted full emits both notifications"),Events.Num()==2);
     TestFalse(TEXT("Interrupted full starts no knee recovery"),ProphecyLegRecovery::Step(A,Pole));
@@ -376,7 +392,9 @@ bool FProphecySpecialRecoveryTest::RunTest(const FString&)
             && !ProphecyHandRecovery::Tempering(A) && !ProphecyHandRecovery::Frame(A) && ProphecyCoreTempering::Rotation(A)==1);
         Begin(A);NotifyEnded(A,NAME_None,false,true,Kind);
         const auto* L=ProphecyLowerTempering::Find(A);
-        TestTrue(TEXT("All exits restore the regular lower profile without a kick override"),L && L->FeetTranslation==.2f && L->PelvisTranslation==.5f);
+        if(Kind==EProphecyAgentState::Attacking)
+            TestTrue(TEXT("Attack restores its regular lower profile"),L && L->FeetTranslation==.2f && L->PelvisTranslation==.5f);
+        else TestNull(TEXT("Parry and unconfigured Dodge cannot inherit attack tempering"),L);
         TestTrue(TEXT("Upper exits leave unfiltered NN controls"),!ProphecyHandRecovery::Tempering(A)
             && !ProphecyHandRecovery::Frame(A) && ProphecyCoreTempering::Rotation(A)==1.f);
         UProphecyLowerTemperingLibrary::BlendLocomotionLowerBodyTemperingToNormal(A,.5,0,.5,0);

@@ -123,7 +123,7 @@ int32 UProphecyNNModifierDebugLibrary::PrintNNModifiers(AProphecyAgent* Agent,FS
     if(Found)
     {
         Roots(R);Lower(R);Pinning(R);Drag(R);PelvisInertia(R);HandInertia(R);
-        EntryCore(R);EntryHands(R);AttackMotion(R);Armed(R);FKReturn(R);Forearm(R);
+        EntryCore(R);EntryHands(R);AttackMotion(R);Armed(R);FKReturn(R);DodgeReturn(R);Forearm(R);
         Entry(R);ClampBlends(R);Presentation(R);Fists(R);PosePresentation(R);
     }
     else R.Add(TEXT("Unregistered"),TEXT("STATE"),TEXT("No registered NN lane"),TEXT("No inference modifier state is available for this agent."));

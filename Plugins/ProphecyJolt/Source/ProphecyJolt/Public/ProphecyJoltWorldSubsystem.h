@@ -465,6 +465,17 @@ public:
     /** Pair exclusions owned by a standalone body, automatically released with that body. */
     FProphecyJoltWorldStatus UpdateBodySuppressedPairs(const FProphecyJoltBodyHandle& Body,
         TConstArrayView<FProphecyJoltBodyPair> Pairs);
+    /** Independent event-scoped rules. Suppressed pairs never contact; protected pairs
+     * retain contact but A has zero inverse mass/inertia for that contact only.
+     * Owner is an opaque identity; replace with empty arrays before its lifetime ends. */
+    FProphecyJoltWorldStatus UpdateScopedContactRules(const void* Owner,
+        TConstArrayView<FProphecyJoltBodyPair> Suppressed,TConstArrayView<FProphecyJoltBodyPair> Protected);
+    /** Disable reaction on this logical body's contacts only; welded leaves remain distinct from their carrier.
+     * Other contact endpoints still respond. Released automatically when the body is destroyed. */
+    FProphecyJoltWorldStatus SetBodyContactReactionEnabled(const FProphecyJoltBodyHandle& Body, bool bEnabled);
+    /** Contact-only inverse mass/inertia scale: 0=no reaction, 1=normal.
+     * Welded leaves stay distinct; composes with scoped zero-response protection. */
+    FProphecyJoltWorldStatus SetBodyContactReactionScale(const FProphecyJoltBodyHandle& Body, float Scale);
     FProphecyJoltWorldStatus ReadJoint(const FProphecyJoltJointHandle& Joint, FProphecyJoltJointSettings& OutSettings) const;
     FProphecyJoltWorldStatus ReadJointReaction(const FProphecyJoltJointHandle& Joint,
         FVector& Force, FVector& Torque) const;
