@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 5603,
-  "bytes": 504212376,
+  "file_count": 5608,
+  "bytes": 504218073,
   "files": [
     {
       "path": ".gitattributes",
@@ -4435,9 +4435,9 @@
     },
     {
       "path": "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset",
-      "git_blob": "c8c677c4ac4a4759414a765fdcdfde16a34b0ca6",
+      "git_blob": "7409ca30de3edf6100938906534834808ac8ef4f",
       "bytes": 6089787,
-      "sha256": "7cd4e2c33cc837c62e955819b9547cd910d089a670064892071bfc149612e14d"
+      "sha256": "3c8369f6c7c4ec5af09eedf5d0672fd8ed4b74f9bfb95268481087e139e435ac"
     },
     {
       "path": "Content/_mygame/locomotion/L_DoubleReachBallTest.umap",
@@ -5185,9 +5185,9 @@
     },
     {
       "path": "Docs/ArmsAntiJiggle.md",
-      "git_blob": "c3ad8e19e6ebdf8caa99731eb7003e9cf5d82cce",
-      "bytes": 3275,
-      "sha256": "9b82d497f5759cfc9963b4adb150b946681c0f009559cea0a213b097d2625a34"
+      "git_blob": "e29cf91262bb5f8bb30f75cf1b72e0ddfdf60cbb",
+      "bytes": 3558,
+      "sha256": "2871c0bd0f5f06f9432318859a69c4c27d6c6a00938506881ff6c1f43856afb9"
     },
     {
       "path": "Docs/Attack1400Stall20261005.md",
@@ -12073,9 +12073,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "9d71c26963ff827fd1b09b83d18034cb351886cb",
-      "bytes": 297513,
-      "sha256": "fbb3c5711966edc4670b5efa3863632edeef7204c5bfe66d807849aa4cf23dda"
+      "git_blob": "7bc5b34c8436ac0efaf60c0c2306e7069716462b",
+      "bytes": 301004,
+      "sha256": "7c1811f4d59fc895d7be495d9ce93f7914eeea9fcfbab84eeeca7cc63955ca9b"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -30445,9 +30445,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordComponent.cpp",
-      "git_blob": "b97773b28a70f55648fea2c862502a54319623b4",
-      "bytes": 60642,
-      "sha256": "c5d1f470a3350ac391374874e850dcaaeed18b39770a1e86e0e9c5588f4dd929"
+      "git_blob": "70869056dbfac2b2b06f6af0c4084a6e5aa64a7d",
+      "bytes": 60764,
+      "sha256": "94fa0c0c3bfa50e4f17ed78f9b1e61dad5c99b5e88eecdb6d6fccf3ab1efd60a"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyUpperBodyInertia.h",
@@ -33570,6 +33570,12 @@
       "sha256": "c3935f46d6c05c1c8329e4a6f63ecc78860e4849270515338a22449961cc5f0e"
     },
     {
+      "path": "Tools/Recovery/Receipts20261009Combat/early-restore-diagnosis.json",
+      "git_blob": "f04bb82a6b5901835e9777c2b357789663ad502f",
+      "bytes": 729,
+      "sha256": "bd62e86e28cd2c235b4390bbb389d860bb7e3bbec9222199578fca99d5546269"
+    },
+    {
       "path": "Tools/Recovery/Receipts20261009Combat/slash-sweeps-final.json",
       "git_blob": "8cf959ea351b87d562a0508250dbb7014daede9d",
       "bytes": 201,
@@ -33583,6 +33589,30 @@
     },
     {
       "path": "Tools/Recovery/Receipts20261009Combat/slash-sweeps-verified.json",
+      "git_blob": "be5c64f1d72b96f4c83f136f0fa7378516685289",
+      "bytes": 269,
+      "sha256": "c3935f46d6c05c1c8329e4a6f63ecc78860e4849270515338a22449961cc5f0e"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261009Combat/sword-end-final.json",
+      "git_blob": "7f413c3bc1b57610b94a62d8df1da7ca9246d969",
+      "bytes": 137,
+      "sha256": "cecba226d85924efecb2e8a56c9034db9c6cd38af6b107446bd949741c167e13"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261009Combat/sword-end-results.json",
+      "git_blob": "5f80b1333952a7bce97497fa6ee75d635aefabe8",
+      "bytes": 213,
+      "sha256": "6318eabeaea90696f139380ff0b3bc0b0948712bbd099084555aa0735f81d4f3"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261009Combat/sword-end-saved.json",
+      "git_blob": "b6a505023edb90bad8a6753d4c98bebf1713012f",
+      "bytes": 453,
+      "sha256": "b1c1bc25570ddc5d5c03bb45c8ef2903a791d1b87be50c8a2ec72616c0573d29"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261009Combat/sword-end-verified.json",
       "git_blob": "be5c64f1d72b96f4c83f136f0fa7378516685289",
       "bytes": 269,
       "sha256": "c3935f46d6c05c1c8329e4a6f63ecc78860e4849270515338a22449961cc5f0e"

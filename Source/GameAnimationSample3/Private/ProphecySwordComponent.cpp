@@ -117,7 +117,7 @@ void SelectSlashSweep(AProphecyAgent* Agent,FName Family)
 struct FGate
 {
 	// Keep the previous one-byte family field/layout for existing Live Coding state.
-	enum : uint8 { Weapon=1, RightPunch=2, PunchArmed=4 };
+	enum : uint8 { Weapon=1, RightPunch=2, PunchArmed=4, ArmedSeen=8 };
 	uint8 Family=0;
 	bool bAllowed=false,bSuppressed=false,bGapMelee=false;
 	bool IsWeapon() const { return (Family&Weapon)!=0; }
@@ -241,7 +241,8 @@ void Armed(AProphecyAgent* Agent)
 	ProphecySwordNoReaction::Armed(Agent);
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate) return;
-	if (!HitOwners.Contains(Agent)) SetAttackArmWindow(Agent,true);
+	Gate->Family|=FGate::ArmedSeen;
+	SetAttackArmWindow(Agent,Gate->IsWeapon());
 	if ((Gate->Family&FGate::RightPunch)!=0)
 	{
 		if (!Gate->SuppressesPunch()) { Gate->Family|=FGate::PunchArmed;Refresh(Agent); }
@@ -258,14 +259,15 @@ void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit)
 	auto* Gate=Gates.Find(Agent);
 	if (!Gate) return;
     SelectSlashSweep(Agent,Family);
-    if (bHit) SetAttackArmWindow(Agent,false);
-    else if (bArmed && !HitOwners.Contains(Agent)) SetAttackArmWindow(Agent,true);
 	ProphecySwordCooldown::Family(Agent,Family,bArmed);
 	ProphecySwordNoReaction::Family(Agent,Family,bArmed);
 	const uint8 Kind=CollisionFamily(Family);
+	const uint8 ArmedPhase=bArmed || (Gate->Family&FGate::ArmedSeen) ? FGate::ArmedSeen : 0;
+	// NN Hit precedes physical contact. Keep sword-arm suppression through follow-through.
+	SetAttackArmWindow(Agent,(Kind&FGate::Weapon)!=0 && ArmedPhase!=0);
 	const uint8 PreviousKind=Gate->Family&(FGate::Weapon|FGate::RightPunch);
-	const uint8 Phase=Kind==FGate::RightPunch && (bArmed || (PreviousKind==Kind && Gate->SuppressesPunch()))
-		? FGate::PunchArmed : 0;
+	const uint8 Phase=ArmedPhase | (Kind==FGate::RightPunch && (bArmed || (PreviousKind==Kind && Gate->SuppressesPunch()))
+		? FGate::PunchArmed : 0);
 	if (PreviousKind==Kind)
 	{
 		if (Gate->Family!=(Kind|Phase)) { Gate->Family=Kind|Phase;Refresh(Agent); }
@@ -279,7 +281,6 @@ void RetargetFamily(AProphecyAgent* Agent,FName Family,bool bArmed,bool bHit)
 void Hit(AProphecyAgent* Agent)
 {
     if (!Agent || !Gates.Contains(Agent)) return;
-    SetAttackArmWindow(Agent,false);
     const bool First=!HitOwners.Contains(Agent);
     HitOwners.Add(Agent);
     // Restore owner pairs for every attack family without ending any attack systems.

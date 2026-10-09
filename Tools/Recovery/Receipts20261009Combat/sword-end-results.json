@@ -1,0 +1,11 @@
+{
+  "on": {
+    "samples_verified": 250,
+    "no_errors": true,
+    "max_position_error_vs_fully_off_cm_90_101": 0.00012377560990059253
+  },
+  "families": {
+    "samples_verified": 250,
+    "no_errors": true
+  }
+}

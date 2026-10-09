@@ -1,0 +1,22 @@
+{
+  "replays": 3,
+  "ticks_per_replay": 299,
+  "all_graphs_unchanged": true,
+  "on_hold_exact_prefix_through": 89,
+  "off_hold_max_body_position_difference_cm_ticks90_106": 0.0003379533048894027,
+  "NN_hit_tick": 90,
+  "motors_resume_tick": 90,
+  "physical_head_response_ticks": [
+    92,
+    93
+  ],
+  "peak_head_speed_cm_s_ticks90_96": {
+    "off": 160.47286353179828,
+    "on": 44.765495351842304,
+    "hold": 160.472458789585
+  },
+  "transient_hold_seconds": 0.3,
+  "transient_hold_start_tick": 89,
+  "transient_hold_restore_tick": 107,
+  "hit_audit_limitation": "Existing Reset.HitAudit only records other ProphecyAgent actors, so it omits sword-actor events; conclusions use measured body motion and native motor counts."
+}
