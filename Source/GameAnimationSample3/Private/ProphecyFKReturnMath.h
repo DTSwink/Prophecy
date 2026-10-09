@@ -45,6 +45,18 @@ inline FVector3f BlendOffset(const FVector3f& A,const FVector3f& B,float T)
     const FQuat4f Q=Swing(A,B);
     return FQuat4f::Slerp(FQuat4f::Identity,Q,T).RotateVector(A/LA)*FMath::Lerp(LA,LB,T);
 }
+inline FQuat4f RemoveAxialInertia(const FQuat4f& Baseline,const FQuat4f& Candidate,
+    const FVector3f& Axis,float Amount)
+{
+    const FQuat4f Delta=Baseline.Inverse()*Candidate;
+    const float Along=FVector3f::DotProduct(FVector3f(Delta.X,Delta.Y,Delta.Z),Axis);
+    const float N2=Along*Along+Delta.W*Delta.W;
+    if(N2<1.e-16f)return Candidate; // Undefined twist at a 180-degree swing.
+    const float Scale=(Delta.W<0?-1.f:1.f)*FMath::InvSqrt(N2);
+    const FQuat4f Twist(Axis.X*Along*Scale,Axis.Y*Along*Scale,Axis.Z*Along*Scale,Delta.W*Scale);
+    const FQuat4f Removed=Amount>=1?Twist:FQuat4f::Slerp(FQuat4f::Identity,Twist,Amount).GetNormalized();
+    return (Candidate*Removed.Inverse()).GetNormalized();
+}
 struct FBone
 {
     int32 Index=INDEX_NONE,Parent=INDEX_NONE,ParentSlot=INDEX_NONE;
@@ -58,6 +70,7 @@ struct FCurve
     FBone Bones[BoneCount];
     float InverseDuration=1.f/.26f,Easing=.12f,Coefficient=1.f;
     float InertiaHold=0.f,InertiaDecay=1.f;
+    float UpperArmTwistRemoval=0.f;
     bool WorldInertia=false;
     FQuat SeedFrame=FQuat::Identity;
     FQuat4f StartPelvis=FQuat4f::Identity;
@@ -99,6 +112,8 @@ struct FCurve
         FQuat4f (&Q)[BoneCount],FVector3f (&P)[BoneCount]) const
     {
         FQuat4f Base[BoneCount],World[BoneCount];
+        const bool RemoveTwist=UpperArmTwistRemoval>0 && S.Momentum[2]>0;
+        FQuat4f ArmBaseline[2];
         // The lab freezes the pelvis. In game it keeps moving: gradually acquire
         // that moving idle frame rather than add its angular rate a second time
         // at entry. Static pelvis reproduces the lab exactly; endpoint is local idle.
@@ -115,6 +130,16 @@ struct FCurve
             World[J]=M>0?(FrameDelta*B.WorldCorrection.At(M)*FrameDelta.Inverse()*Base[J]).GetNormalized()
                 :(ParentWorld*LocalBase).GetNormalized();
             Q[J]=(ParentWorld.Inverse()*World[J]).GetNormalized();
+            if(RemoveTwist && (J==6 || J==10))
+                ArmBaseline[J==6?0:1]=(ParentWorld.Inverse()*Base[J]).GetNormalized();
+        }
+        // Children keep their original parent-local rotations, carrying the removed
+        // shoulder twist naturally through the existing FK pass, including world inertia.
+        if(RemoveTwist)for(int32 J:{6,10})
+        {
+            const FQuat4f Baseline=WorldInertia?ArmBaseline[J==6?0:1]
+                :(Bones[J].Start*Bones[J].Return.At(S.Blend)).GetNormalized();
+            Q[J]=RemoveAxialInertia(Baseline,Q[J],P[J+1].GetSafeNormal(),UpperArmTwistRemoval);
         }
     }
     void Apply(float Elapsed,TArrayView<FTransform> Pose,TArrayView<FTransform> Locals={},

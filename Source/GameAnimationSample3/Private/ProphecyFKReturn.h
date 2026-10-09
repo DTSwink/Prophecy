@@ -9,6 +9,7 @@ struct FProfile
     float Duration=.26f,Inertia=.51f,Easing=.12f;
     float InertiaHold=0.f,InertiaDecay=1.f,AngleTimeSeconds=0.f;
     bool WorldInertia=false;
+    float UpperArmTwistRemoval=0.f;
     float Weights[GroupCount]={0.f,.19f,1.f,.63f,1.f,1.f,1.f};
 };
 bool Prepare(FCurve& Curve,const FProfile& Profile,float Coefficient,TConstArrayView<FName> Names,

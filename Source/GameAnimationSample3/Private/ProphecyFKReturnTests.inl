@@ -45,6 +45,7 @@ bool FProphecyFKReturnParityTest::RunTest(const FString&)
         const auto C=Row->AsObject(),O=C->GetObjectField(TEXT("options"));FProfile P;
         P.InertiaHold=O->GetNumberField(TEXT("hold"));P.InertiaDecay=O->GetNumberField(TEXT("decay"));P.AngleTimeSeconds=O->GetNumberField(TEXT("angleTime"));P.WorldInertia=O->GetBoolField(TEXT("world"));
         P.Duration=O->GetNumberField(TEXT("duration"));P.Easing=O->GetNumberField(TEXT("easing"));P.Inertia=O->GetNumberField(TEXT("inertia"));
+        P.UpperArmTwistRemoval=O->GetNumberField(TEXT("twistRemoval"));
         for(int32 G=0;G<GroupCount;++G)P.Weights[G]=O->GetArrayField(TEXT("weights"))[G]->AsNumber();
         const auto Previous=Pose(C->GetArrayField(TEXT("previous"))),Current=Pose(C->GetArrayField(TEXT("current")));
         TArray<FVector3f> AngularVelocity;for(const auto& V:C->GetArrayField(TEXT("angularVelocity")))
@@ -129,7 +130,7 @@ bool FProphecyFKReturnParityTest::RunTest(const FString&)
     TestTrue(TEXT("Full runtime matches lab within .003cm"),MaxRuntimePosition<.003);
     TestTrue(TEXT("Full runtime matches lab within .02deg"),MaxRuntimeAngle<FMath::DegreesToRadians(.02));
     AddInfo(FString::Printf(TEXT("unchanged_runtime_samples=%d redirected_samples_verified_by_SlashWinding=%d runtime_cm=%.9g runtime_degrees=%.9g"),RuntimeSamples,RedirectedRuntimeSamples,MaxRuntimePosition,FMath::RadiansToDegrees(MaxRuntimeAngle)));
-    TestEqual(TEXT("All lab variants"),Cases,320);
+    TestEqual(TEXT("All lab variants including captured slashLD"),Cases,321);
     TestTrue(TEXT("Native lab positions within 0.003 cm"),MaxPosition<.003);
     TestTrue(TEXT("Native lab rotations within 0.02 degrees"),MaxAngle<FMath::DegreesToRadians(.02));
     TestTrue(TEXT("FK lengths within 0.0001 cm"),MaxLength<.0001);
@@ -162,7 +163,7 @@ bool FProphecyFKReturnSeparateSettersTest::RunTest(const FString&)
     const FConfig Empty;const FProfile Imported=CurrentProfile(Empty,Hook),Other=CurrentProfile(Empty,Slash);
     auto Read=[](AProphecyAgent* Agent,FName Attack){return CurrentProfile(Configs.FindChecked(Agent),Attack);};
     auto SameProfile=[](const FProfile& X,const FProfile& Y){return X.InertiaHold==Y.InertiaHold && X.InertiaDecay==Y.InertiaDecay &&
-        X.WorldInertia==Y.WorldInertia && X.AngleTimeSeconds==Y.AngleTimeSeconds && FMemory::Memcmp(X.Weights,Y.Weights,sizeof(X.Weights))==0;};
+        X.WorldInertia==Y.WorldInertia && X.AngleTimeSeconds==Y.AngleTimeSeconds && X.UpperArmTwistRemoval==Y.UpperArmTwistRemoval && FMemory::Memcmp(X.Weights,Y.Weights,sizeof(X.Weights))==0;};
     TestTrue(TEXT("Values setter succeeds"),UProphecyFKReturnLibrary::SetAttackFKReturnValues(A,Hook,.28f,.7f,0));
     TestTrue(TEXT("Values preserve every imported profile field"),SameProfile(Read(A,Hook),Imported));
     TestEqual(TEXT("Other attack duration retained"),Read(A,Slash).Duration,Other.Duration);

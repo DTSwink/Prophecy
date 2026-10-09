@@ -1,0 +1,125 @@
+{
+  "last": 180,
+  "ticks": 180,
+  "rows": [
+    {
+      "tick": 10,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 20,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 30,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 40,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 50,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 60,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 70,
+      "attack": "(Name(\"slashLD\"), False, False, False, 6, Name(\"None\"))",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 76,
+      "requested_dodge": "",
+      "victim": "BP_ProphecyManualPoseAgent_C_3"
+    },
+    {
+      "tick": 80,
+      "attack": "(Name(\"slashLD\"), False, True, False, 11, Name(\"None\"))",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 90,
+      "attack": "(Name(\"slashLD\"), False, True, False, 16, Name(\"None\"))",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 100,
+      "attack": "(Name(\"slashLD\"), False, True, True, 21, Name(\"None\"))",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 110,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 120,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 130,
+      "attack": "(Name(\"slashLD\"), False, False, False, 6, Name(\"slashLD\"))",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 140,
+      "attack": "(Name(\"slashLD\"), False, True, False, 11, Name(\"slashLD\"))",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 150,
+      "attack": "(Name(\"slashLD\"), False, True, True, 16, Name(\"slashLD\"))",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 160,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 170,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    },
+    {
+      "tick": 180,
+      "attack": "None",
+      "agents": 3,
+      "bones": 25
+    }
+  ],
+  "dodge_requested": true,
+  "dodge_seen": true,
+  "attack_seen": true,
+  "audit": 0,
+  "reason": "complete",
+  "mode": "dodge"
+}

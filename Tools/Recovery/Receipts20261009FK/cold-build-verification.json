@@ -1,0 +1,112 @@
+{
+  "normal_build_succeeded": true,
+  "world": "/Game/testNN.testNN",
+  "tests": [
+    [
+      "Success",
+      "ScopedDefense",
+      "Prophecy.Jolt.Contacts.ScopedDefense"
+    ],
+    [
+      "Success",
+      "SelectiveSweeps",
+      "Prophecy.Jolt.ContactShapes.SelectiveSweeps"
+    ],
+    [
+      "Success",
+      "WeldedHandContacts",
+      "Prophecy.Jolt.GenericJoint.WeldedHandContacts"
+    ],
+    [
+      "Success",
+      "ContactLifetime",
+      "Prophecy.NN.Defense.ContactLifetime"
+    ],
+    [
+      "Success",
+      "ParryIsolation",
+      "Prophecy.NN.DefenseReturn.ParryIsolation"
+    ],
+    [
+      "Success",
+      "AcceptedHistory",
+      "Prophecy.NN.FKReturn.AcceptedHistory"
+    ],
+    [
+      "Success",
+      "AngleTimeAndWorldFrame",
+      "Prophecy.NN.FKReturn.AngleTimeAndWorldFrame"
+    ],
+    [
+      "Success",
+      "ExitInterval",
+      "Prophecy.NN.FKReturn.ExitInterval"
+    ],
+    [
+      "Success",
+      "FeedbackInput",
+      "Prophecy.NN.FKReturn.FeedbackInput"
+    ],
+    [
+      "Success",
+      "GoldenTickTiming",
+      "Prophecy.NN.FKReturn.GoldenTickTiming"
+    ],
+    [
+      "Success",
+      "LabParityAndCost",
+      "Prophecy.NN.FKReturn.LabParityAndCost"
+    ],
+    [
+      "Success",
+      "LifecycleAndCurve",
+      "Prophecy.NN.FKReturn.LifecycleAndCurve"
+    ],
+    [
+      "Success",
+      "PerAttackHoldTrim",
+      "Prophecy.NN.FKReturn.PerAttackHoldTrim"
+    ],
+    [
+      "Success",
+      "SeparateSetters",
+      "Prophecy.NN.FKReturn.SeparateSetters"
+    ],
+    [
+      "Success",
+      "SlashWinding",
+      "Prophecy.NN.FKReturn.SlashWinding"
+    ],
+    [
+      "Success",
+      "Trim",
+      "Prophecy.NN.FKReturn.Trim"
+    ],
+    [
+      "Success",
+      "TwistInertia",
+      "Prophecy.NN.FKReturn.TwistInertia"
+    ]
+  ],
+  "play_checks": [
+    {
+      "mode": "normal",
+      "ticks": 180,
+      "reason": "complete"
+    },
+    {
+      "mode": "dodge",
+      "ticks": 180,
+      "reason": "complete"
+    }
+  ],
+  "dodge_pair_audit": [
+    "[2026.10.09-19.11.37:136][407]LogTemp: Display: DefenseContacts defender=BP_ProphecyManualPoseAgent_C_3 attacker=BP_ProphecyManualPoseAgent_C_0 dodge=1 pairs=46 defenderBodies=23 attackBodies=2 bones=pelvis,spine_01,spine_02,spine_03,spine_04,spine_05,clavicle_l,upperarm_l,lowerarm_l,hand_l,clavicle_r,upperarm_r,lowerarm_r,hand_r,neck_01,head,thigh_l,calf_l,foot_l,thigh_r,calf_r,foot_r,",
+    "[2026.10.09-19.11.38:952][465]LogTemp: Display: DefenseContacts defender=BP_ProphecyManualPoseAgent_C_3 attacker=BP_ProphecyManualPoseAgent_C_0 dodge=1 pairs=46 defenderBodies=23 attackBodies=2 bones=pelvis,spine_01,spine_02,spine_03,spine_04,spine_05,clavicle_l,upperarm_l,lowerarm_l,hand_l,clavicle_r,upperarm_r,lowerarm_r,hand_r,neck_01,head,thigh_l,calf_l,foot_l,thigh_r,calf_r,foot_r,",
+    "[2026.10.09-19.13.23:197][330]LogTemp: Display: DefenseContacts defender=BP_ProphecyManualPoseAgent_C_3 attacker=BP_ProphecyManualPoseAgent_C_0 dodge=1 pairs=46 defenderBodies=23 attackBodies=2 bones=pelvis,spine_01,spine_02,spine_03,spine_04,spine_05,clavicle_l,upperarm_l,lowerarm_l,hand_l,clavicle_r,upperarm_r,lowerarm_r,hand_r,neck_01,head,thigh_l,calf_l,foot_l,thigh_r,calf_r,foot_r,",
+    "[2026.10.09-19.13.24:883][388]LogTemp: Display: DefenseContacts defender=BP_ProphecyManualPoseAgent_C_3 attacker=BP_ProphecyManualPoseAgent_C_0 dodge=1 pairs=46 defenderBodies=23 attackBodies=2 bones=pelvis,spine_01,spine_02,spine_03,spine_04,spine_05,clavicle_l,upperarm_l,lowerarm_l,hand_l,clavicle_r,upperarm_r,lowerarm_r,hand_r,neck_01,head,thigh_l,calf_l,foot_l,thigh_r,calf_r,foot_r,"
+  ],
+  "blueprint_graph_unchanged": true,
+  "play_active": false,
+  "note": "Sword backend refresh errors occur during PIE world teardown only; no gameplay errors observed."
+}

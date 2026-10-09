@@ -1,0 +1,77 @@
+{
+  "id": 21,
+  "kind": "unreal",
+  "label": "Unreal first slash \u00b7 Oct 9",
+  "target": [
+    -0.09641939494581735,
+    1.4875387124910384,
+    0.8503276853176959
+  ],
+  "file": "data/slashLD_21.bin",
+  "frames": 21,
+  "joints": 26,
+  "fps": 30,
+  "phases": {
+    "armed": 8,
+    "hit": 16
+  },
+  "sha256": "910926eedcc80238ca226d3e21cd1bd0d73e59070e62e9073ce183c4a52c1961",
+  "sourceSha": "700b0b98d872713af9bbbd806d8c60a451da2279425421179ffe0f25f9ebec54",
+  "unrealBoneRotations": true,
+  "provenance": {
+    "kind": "Unreal authored future world pose; physical body motion and existing post-attack recovery excluded",
+    "absoluteTicks": [
+      61,
+      62,
+      64,
+      66,
+      68,
+      70,
+      72,
+      74,
+      76,
+      78,
+      80,
+      82,
+      84,
+      86,
+      88,
+      90,
+      92,
+      94,
+      96,
+      98,
+      100
+    ],
+    "policyFrames": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21
+    ],
+    "originUnrealCm": [
+      22.80384600162506,
+      -329.3242931365967,
+      -0.49996799789369106
+    ],
+    "coordinates": "Unreal XYZ cm -> lab XZY metres; bone axes C * R * diag(1,-1,1)",
+    "capture": "Saved/Diagnostics/FirstSlashLab20261009/capture.json"
+  }
+}

@@ -23,6 +23,13 @@ class GAMEANIMATIONSAMPLE3_API UProphecyFKReturnLibrary : public UBlueprintFunct
 {
     GENERATED_BODY()
 public:
+    /** Remove only the axial part of upperarm FK-return inertia, symmetrically.
+     * 0 retains original inertia, 1 removes its twist while preserving swing.
+     * Preserves all other profile values. None updates all attacks; next return only. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Recovery", meta=(DefaultToSelf="Agent", DisplayName="Set Attack FK Return Twist Inertia"))
+    static bool SetAttackFKReturnTwistInertia(AProphecyAgent* Agent, FName Attack=NAME_None,
+        UPARAM(meta=(ClampMin="0", ClampMax="1")) float RemoveTwist=0.f);
+
     /** Configure this agent's parry-only lab return. Opt-in; attack profiles are untouched.
      * Same FK curve/idle as attack return, with independent NN takeover and inertia.
      * Configure before Parry ends. Disabling cancels only a running parry return.

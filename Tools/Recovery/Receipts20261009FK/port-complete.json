@@ -1,0 +1,57 @@
+{
+  "tests": [
+    [
+      "Success",
+      "AcceptedHistory"
+    ],
+    [
+      "Success",
+      "AngleTimeAndWorldFrame"
+    ],
+    [
+      "Success",
+      "ExitInterval"
+    ],
+    [
+      "Success",
+      "FeedbackInput"
+    ],
+    [
+      "Success",
+      "GoldenTickTiming"
+    ],
+    [
+      "Success",
+      "LabParityAndCost"
+    ],
+    [
+      "Success",
+      "LifecycleAndCurve"
+    ],
+    [
+      "Success",
+      "PerAttackHoldTrim"
+    ],
+    [
+      "Success",
+      "SeparateSetters"
+    ],
+    [
+      "Success",
+      "SlashWinding"
+    ],
+    [
+      "Success",
+      "Trim"
+    ],
+    [
+      "Success",
+      "TwistInertia"
+    ]
+  ],
+  "allOtherProfileRowsAndIdleUnchanged": true,
+  "loadedLiveCoding": true,
+  "normalDLLRebuildRequiredBeforeColdLaunch": true,
+  "assetEdits": false,
+  "sceneReplay": false
+}

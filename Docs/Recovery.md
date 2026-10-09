@@ -1,14 +1,20 @@
 # Restoring Prophecy
 
-This snapshot, updated through the October 8, 2026 combat recovery
+This snapshot, updated through the October 9, 2026 FK-return and collision recovery
 milestone, is a source and authored-setup backup on
 `DTSwink/Prophecy`, branch `codex/standalone-sim`. It does not contain the entire
 Unreal content library or the Stepper training workspace.
 
 Latest named recovery point: `milestone/2026-10-08-combat-recovery`.
 See [milestone contents and validation](Milestone20261008CombatRecovery.md).
-Current changes passed Live Coding builds; rebuild the normal Editor DLL before
-any cold launch, including on this laptop. Saved Blueprints use the new nodes.
+Latest branch work includes upperarm twist-inertia removal, the tuned slashLD
+profile, imported lab variant21, current lab settings, dodge held-sword coverage,
+and the freshly saved PoseAgent Blueprint. See [current handoff](../ProjectJournal.md)
+and `Tools/Recovery/Receipts20261009FK` for validation. The normal DLL rebuild and
+two Play checks passed on October9; the current laptop editor is up to date.
+On a replacement machine, build normal Editor DLLs before opening saved BPs.
+The current local TestNN modification and generated defense picker exports were
+excluded from this lightweight push; previously committed copies are older.
 
 ## Included
 
@@ -39,7 +45,8 @@ any cold launch, including on this laptop. Saved Blueprints use the new nodes.
 - Standalone simulation source/data and a snapshot of its camera, combat options
   and opening layout under `Tools/Recovery/StandaloneSimSettings`.
 - `Labs/AttackRecoveryLab`: an independent copy of the working app, accepted
-  profiles, 320 generated variants, frozen harness/idle inputs, icon and snapshots.
+  profiles, 320 generated variants plus captured Unreal slashLD variant21,
+  frozen harness/idle inputs, icon and snapshots.
   The only portability adjustment is its Python launcher lookup. The original
   live lab under the Stepper workspace is unchanged.
 - Previously ignored project Python/PowerShell/JavaScript scripts under `Saved`.
@@ -71,7 +78,10 @@ This verifies stored files, not the availability of external Unreal assets.
    powershell -File Tools/Jolt/BuildJolt.ps1 -Configuration Development
    ```
 
-5. Build the normal Editor DLL **before opening the saved Blueprints**:
+5. Install the automatic RAM-aware compiler scheduler with
+   `Tools/ConfigureBuildWorkers.ps1` after restoring/verifying the engine; see
+   [build-worker recovery](DynamicBuildWorkers.md). Then build the normal Editor
+   DLL **before opening the saved Blueprints**:
 
    ```powershell
    & 'C:/Program Files/Epic Games/UE_5.7/Engine/Build/BatchFiles/Build.bat' GameAnimationSample3Editor Win64 Development "-Project=$PWD/GameAnimationSample3.uproject" -WaitMutex -FromMsBuild

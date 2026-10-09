@@ -262,3 +262,31 @@ fingerprint without changing selection, frame, camera, playback or focus.
 Verify the returned fingerprint; expired views fail explicitly.
 `current_view.json` and `current_view.png` mirror the latest published view.
 Numbered snapshots remain stable historical evidence for specific complaints.
+
+## Upperarm twist inertia removal (October 9)
+
+**Remove upperarm twist inertia** replaces the removed angle limit entirely.
+The 0–100% slider is saved per attack and shared by both arms. Zero preserves
+the original sampler. At 100%, swing/twist decomposition removes the axial
+part of the finite inertia rotation while preserving its swing exactly.
+The axis is the actual shoulder-to-elbow segment, expressed in the upperarm
+frame. Partial values remove the corresponding fraction of that twist.
+
+World inertia carries the removed shoulder rotation through the forearm and
+hand so their parent-local rotations remain unchanged; independent world
+forearm inertia must not undo the shoulder correction. Shoulder and elbow
+positions match the original path, wrist position follows the corrected bend.
+No pose clamp, forced elbow-down target or normal-idle-return change.
+The optional continuous spring remains unchanged and hides this control.
+The filter is skipped after return ends, at zero inertia or zero removal.
+
+Numeric verification across 321 variants preserves swing and forearm/hand
+local rotations within floating-point precision; zero removal is bit-identical.
+For slashLD21 at 0.125 seconds into recovery, world pole elevation changes
+from +55.0 degrees to -25.1 degrees at full removal. Some upward pole motion
+remains later; this is not a guarantee that the elbow always points downward.
+Slider changes commit on release; refresh, snapshots and profile copy retain it.
+Legacy twist-limit settings are ignored. Ported to Unreal on October 9 as
+**Set Attack FK Return Twist Inertia**. The accepted slashLD profile was imported;
+other native attack profiles were preserved. See `Docs/AttackFKReturn.md` in the
+repository root for the native contract and numerical parity limits.

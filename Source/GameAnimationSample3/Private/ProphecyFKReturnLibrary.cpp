@@ -88,6 +88,7 @@ static bool PrepareForAttack(FCurve& Curve,const FProfile& P,float Coefficient,T
     if(P.Duration<=0 || Dt<=0 || Names.Num()!=Parents.Num() || Names.Num()!=Current.Num() || Current.Num()!=Previous.Num())return false;
     Curve.Easing=P.Easing;Curve.Coefficient=Coefficient;
     Curve.InertiaHold=P.InertiaHold;Curve.InertiaDecay=P.InertiaDecay;Curve.WorldInertia=P.WorldInertia;
+    Curve.UpperArmTwistRemoval=P.UpperArmTwistRemoval;
     Curve.TakeoverTimeScale=1.f;
     Curve.SetAlphaHold(0.f);
     for(int32 G=0;G<GroupCount;++G)
@@ -220,6 +221,7 @@ void Begin(const AProphecyAgent* Agent,FName Attack,TConstArrayView<FName> Names
         const auto& P=Data::Profiles[I];if(C)Timing=C->Timing[I];
         Profile.Duration=P.Duration;Profile.Inertia=P.Inertia;Profile.Easing=P.Easing;
         Profile.InertiaHold=P.InertiaHold;Profile.InertiaDecay=P.InertiaDecay;Profile.AngleTimeSeconds=P.AngleTimeSeconds;Profile.WorldInertia=P.WorldInertia;
+        Profile.UpperArmTwistRemoval=P.UpperArmTwistRemoval;
         FMemory::Memcpy(Profile.Weights,P.Weights,sizeof(Profile.Weights));break;
     }
     if(C)
@@ -310,6 +312,7 @@ static FProfile CurrentProfile(const FConfig& C,FName Attack)
         R.Duration=P.Duration;R.Inertia=P.Inertia;R.Easing=P.Easing;
         R.InertiaHold=P.InertiaHold;R.InertiaDecay=P.InertiaDecay;
         R.WorldInertia=P.WorldInertia;R.AngleTimeSeconds=P.AngleTimeSeconds;
+        R.UpperArmTwistRemoval=P.UpperArmTwistRemoval;
         FMemory::Memcpy(R.Weights,P.Weights,sizeof(R.Weights));break;
     }
     return R;
@@ -328,6 +331,13 @@ template<typename F> static void UpdateProfileFields(AProphecyAgent* Agent,FName
     for(auto& Entry:Updated){Entry.Value=CurrentProfile(C,Entry.Key);Update(Entry.Value);}
     C.Profiles=MoveTemp(Updated);
 }
+}
+
+bool UProphecyFKReturnLibrary::SetAttackFKReturnTwistInertia(AProphecyAgent* Agent,FName Attack,float RemoveTwist)
+{
+    using namespace ProphecyFKReturn;
+    if(!Valid(Agent) || !FMath::IsFinite(RemoveTwist) || RemoveTwist<0 || RemoveTwist>1)return false;
+    UpdateProfileFields(Agent,Attack,[=](FProfile& P){P.UpperArmTwistRemoval=RemoveTwist;});return true;
 }
 
 bool UProphecyFKReturnLibrary::SetParryFKReturn(AProphecyAgent* Agent,bool Enabled,float ReturnTime,float Inertia,float Easing,
@@ -451,3 +461,4 @@ bool FFKModifierReadTest::RunTest(const FString&)
 #endif
 #include "Tests/ProphecyFKLabTimingTests.inl"
 #include "Tests/ProphecyFKPerAttackTimingTests.inl"
+#include "Tests/ProphecyFKTwistInertiaTests.inl"

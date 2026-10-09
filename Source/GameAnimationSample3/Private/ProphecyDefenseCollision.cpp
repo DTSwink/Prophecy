@@ -85,6 +85,9 @@ void Start(AProphecyAgent* D,AProphecyAgent* A,FName Family,bool Dodge)
     Stop(D);if(!IsValid(D) || !IsValid(A) || D==A)return;
     FBinding B;B.Defender=D;B.Attacker=A;B.Dodge=Dodge;
     ProphecyAttackControls::ColliderRoles(Family,B.AttackBones,B.Sword);
+    // A dodger ignores its attacker's held weapon even when the current family
+    // uses a hand/foot collider. Parry retains the exact attacking-body roles.
+    B.Sword|=Dodge;
     if(Dodge)
     {
         auto* Mesh=D->GetPoseReferenceMesh();auto* Asset=Mesh?Mesh->GetPhysicsAsset():nullptr;
@@ -138,6 +141,12 @@ bool FProphecyDefenseContactLifetimeTest::RunTest(const FString&)
     TestEqual(TEXT("Two independent defenses"),Bindings.Num(),InitialBindings+2);
     TestTrue(TEXT("Both arms protected"),Bindings.FindChecked(B).DefenseBones.Contains(TEXT("hand_l")) && Bindings.FindChecked(B).DefenseBones.Contains(TEXT("upperarm_r")));
     TestTrue(TEXT("Slash hand and sword attack roles"),Bindings.FindChecked(B).Sword && Bindings.FindChecked(B).AttackBones.Contains(TEXT("hand_r")));
+    TestTrue(TEXT("Dodging a punch also excludes the attacker's held sword"),Bindings.FindChecked(D).Sword);
+    for(const TCHAR* Family:{TEXT("slashL"),TEXT("slashLD"),TEXT("pike"),TEXT("jabL"),TEXT("jabR"),TEXT("KickL"),TEXT("headbutt")})
+    {
+        Start(D,C,FName(Family),true);
+        TestTrue(TEXT("Every dodge family includes the held sword"),Bindings.FindChecked(D).Sword);
+    }
     // Model cleanup after the weak attacker becomes invalid, without using a
     // dangling UObject or changing the live world's actors.
     Bindings.FindChecked(B).Attacker.Reset();

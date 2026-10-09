@@ -72,7 +72,8 @@ function prepare(meta,buffer,clip,names,parents){
  // Authored forearm correction retains its original reference; only recovery uses common idle.
  const attackFrame0=clip.attackFrame0||clip.idle;
  const armIdle=localize(attackFrame0.points,attackFrame0.axes.map(fromAxes),parents);
- const arms=['l','r'].map(side=>{const bone=names.indexOf('lowerarm_'+side),hand=names.indexOf('hand_'+side);return {bone,hand,parent:parents[bone],localQ:armIdle.q[bone],axis:unit(armIdle.p[hand])};});
+ // Imported Unreal poses already contain the final forearm rotation.
+ const arms=meta.unrealBoneRotations?[]:['l','r'].map(side=>{const bone=names.indexOf('lowerarm_'+side),hand=names.indexOf('hand_'+side);return {bone,hand,parent:parents[bone],localQ:armIdle.q[bone],axis:unit(armIdle.p[hand])};});
  const poses=[],locals=[];
  for(let f=0;f<meta.frames;f++){const points=[],axes=[];for(let j=0;j<names.length;j++){const i=f*names.length+j;points.push(Array.from(values.subarray(i*3,i*3+3)));axes.push([0,1,2].map(k=>Array.from(values.subarray(positionCount+i*9+k*3,positionCount+i*9+k*3+3))));}const pose=fitForearms({points,axes,q:axes.map(fromAxes)},arms);poses.push(pose);locals.push(localize(points,pose.q,parents));}
  const spine=names.indexOf('spine_01'),upper=parents.map((_,j)=>{let i=j;while(i>=0){if(i===spine)return true;i=parents[i];}return false;});
@@ -85,6 +86,15 @@ function prepare(meta,buffer,clip,names,parents){
  const model={meta,clip,names,parents,arms,inertiaKeys:names.map(name=>/^spine_0[1-5]$/.test(name)?'spine':name.replace(/_(l|r)$/,'')),poses,locals,idle,idleOffsets,idlePose,spine,upper,inertial,offsetVelocity,attackSeconds:(meta.frames-1)/meta.fps};
  model.worldVelocity=worldAngularVelocity(poses.at(-1),sampleBase(model,model.attackSeconds-seedInterval));
  return model;
+}
+// Remove only axial twist from the finite inertia rotation; keep its swing exact.
+function removeAxialInertia(baseline,candidate,axis,amount){
+ const delta=qm(qinv(baseline),candidate),along=dot(delta.slice(0,3),axis),n=Math.hypot(along,delta[3]);
+ if(n<1e-8)return candidate; // Undefined twist at a 180-degree pure swing.
+ let twist=[...mul(axis,along/n),delta[3]/n];
+ if(twist[3]<0)twist=mul(twist,-1);
+ const removed=amount>=1?twist:qslerp(ident,twist,amount);
+ return unit(qm(candidate,qinv(removed)));
 }
 function sampleBase(model,seconds,options={}){
  const {meta,parents,poses,locals}=model;const t=clamp(seconds,0,1e5),tail=model.attackSeconds;
@@ -103,6 +113,7 @@ function sampleBase(model,seconds,options={}){
  const fade=clamp((x-hold)/(1-hold),0,1),momentumPhase=hold>0?fade*fade:x;
  const momentumBase=elapsed*Math.pow(1-momentumPhase,3);
  const seeds=recoverySeeds(model,options,duration,easing,inertia);
+ const twistRemoval=clamp(Number(options.upperArmTwistRemoval)||0,0,1);
  const last=locals.at(-1),q=last.q.slice(),p=last.p.slice(),worldMode=options.worldInertia===true,momenta=worldMode?[]:null;
  for(let j=0;j<parents.length;j++){if(!model.upper[j])continue;
    q[j]=qslerp(last.q[j],model.idle.q[j],blend);
@@ -112,16 +123,36 @@ function sampleBase(model,seconds,options={}){
    if(worldMode)momenta[j]=momentum;
    if(momentum>0){if(!worldMode)q[j]=unit(qm(q[j],qexp(mul(seeds.velocity[j],momentum))));p[j]=rotate(qexp(mul(model.offsetVelocity[j],momentum)),p[j]);}
  }
+ if(!worldMode&&twistRemoval>0)for(const side of ['l','r']){
+  const j=model.names.indexOf('upperarm_'+side),child=model.names.indexOf('lowerarm_'+side);
+  if(j<0||child<0||seeds.effective[j]<=0||momentumBase<=0)continue;
+  const baseline=qslerp(last.q[j],model.idle.q[j],blend);
+  q[j]=removeAxialInertia(baseline,q[j],unit(p[child]),twistRemoval);
+ }
  if(worldMode){
   // Baseline uses only the parent-local idle return. Apply each active bone's
   // correction about a fixed WORLD axis, independently of parent inertia.
   // Positions still follow the actual parent, keeping the skeleton connected;
   // excluded hands and zero-weight bones retain ordinary parent inheritance.
-  const base=[],world=[],points=[];
+  const base=[],world=[],points=[],carry=twistRemoval>0?[]:null,raw=carry?[]:world;
   for(let j=0;j<parents.length;j++){
    const parent=parents[j];
    base[j]=parent<0?q[j]:unit(qm(base[parent],q[j]));
-   world[j]=momenta[j]>0?unit(qm(qexp(mul(seeds.worldCorrection[j],momenta[j])),base[j])):parent<0?q[j]:unit(qm(world[parent],q[j]));
+   raw[j]=momenta[j]>0?unit(qm(qexp(mul(seeds.worldCorrection[j],momenta[j])),base[j])):parent<0?q[j]:unit(qm(raw[parent],q[j]));
+   world[j]=raw[j];
+   // Carry the removed shoulder twist through the forearm/hand, preserving
+   // their local rotations even when their inertia is evaluated in world space.
+   if(carry){
+    carry[j]=parent<0?null:carry[parent];
+    if(momenta[j]>0&&model.inertiaKeys[j]==='upperarm'){
+     const child=model.names.indexOf(model.names[j].replace('upperarm_','lowerarm_'));
+     if(child>=0){
+      const original=world[j];
+      world[j]=removeAxialInertia(base[j],original,unit(p[child]),twistRemoval);
+      carry[j]=unit(qm(world[j],qinv(original)));
+     }
+    }else if(carry[j])world[j]=unit(qm(carry[j],world[j]));
+   }
    points[j]=parent<0?p[j]:add(points[parent],rotate(world[parent],p[j]));
   }
   return {points,q:world,axes:world.map(toAxes)};
@@ -220,6 +251,6 @@ function sample(model,seconds,options={}){
  return sampleBase(turnedRecovery(model,degrees),seconds,options);
 }
 function anchor(model,pose,target){const shift=sub(model.poses[0].points[model.spine],pose.points[model.spine]);return {...pose,points:pose.points.map(p=>add(p,shift)),target:add(target,shift)};}
-const api={prepare,sample,returnTiming,anchor,fk,localize,fromAxes,toAxes,qm,qinv,qlog,qexp,rotate,qslerp,fromTo,offsetBlend,add,sub,mul,dot,cross,length,unit};
+const api={removeAxialInertia,prepare,sample,returnTiming,anchor,fk,localize,fromAxes,toAxes,qm,qinv,qlog,qexp,rotate,qslerp,fromTo,offsetBlend,add,sub,mul,dot,cross,length,unit};
 if(typeof module!=='undefined')module.exports=api;else root.Recovery=api;
 })(globalThis);

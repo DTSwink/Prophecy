@@ -1,0 +1,154 @@
+Cmd: Automation RunTests Prophecy.NN.FKReturn
+[2026.10.09-18.39.21:278][739]Automation: RunTests='Prophecy.NN.FKReturn' Queued.
+[2026.10.09-18.39.21:278][739]LogPython: TWIST_REFLECTION_VERIFIED_FK_TESTS_STARTED
+
+[2026.10.09-18.39.21:289][739]LogAutomationController: Ignoring very large delta of 3.18 seconds in calls to FAutomationControllerManager::Tick() and not penalizing unresponsive tests
+[2026.10.09-18.39.21:289][739]LogEngineAutomationLatentCommand: FWaitForInteractiveFrameRate: Starting wait for framerate of >= 10 FPS
+[2026.10.09-18.39.27:986][ 30]LogEngineAutomationLatentCommand: FWaitForInteractiveFrameRate: Hit 34.79 FPS for 5 seconds after 7 seconds of waiting
+[2026.10.09-18.39.27:991][ 31]LogAutomationCommandLine: Display: Ready to start automation
+[2026.10.09-18.39.33:326][321]LogUObjectHash: Compacting FUObjectHashTables data took   1.54ms
+[2026.10.09-18.39.33:340][321]LogFileHelpers: Editor autosave (incl. external actors) for '/Game/testNN' took 0.060
+[2026.10.09-18.39.33:346][321]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent] ([2] browsable assets)...
+[2026.10.09-18.39.33:749][321]OBJ SavePackage:     Rendered thumbnail for [Blueprint /Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent]
+[2026.10.09-18.39.33:750][321]OBJ SavePackage: Finished generating thumbnails for package [/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent]
+[2026.10.09-18.39.34:416][321]LogSavePackage: Moving output files for package: /Temp/Autosaves/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent_Auto2
+[2026.10.09-18.39.34:418][321]LogSavePackage: Moving '../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/BP_ProphecyManualPoseAgent_Auto2FB32486749B7F6BFE4A2F3B55DEAB34C.tmp' to '../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Autosaves/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent_Auto2.uasset'
+[2026.10.09-18.39.34:427][321]LogFileHelpers: Auto-saving content packages took 1.087
+[2026.10.09-18.39.34:671][332]LogAutomationWorker: Received FindWorkersMessage from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.34:672][332]LogAutomationController: Received FindWorkersResponseMessage from 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.34:775][332]LogAutomationController: Requesting test list from 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.34:790][333]LogAutomationWorker: Received RequestTestsMessage from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.35:209][333]LogAutomationWorker: Set 6987 tests to CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.35:210][333]LogAutomationController: Received RequestTestsReplyCompleteMessage from 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.35:215][333]LogAutomationController: 6987 tests available on 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: Found 12 automation tests based on 'Prophecy.NN.FKReturn'
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.AcceptedHistory
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.AngleTimeAndWorldFrame
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.ExitInterval
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.FeedbackInput
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.GoldenTickTiming
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.LabParityAndCost
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.LifecycleAndCurve
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.PerAttackHoldTrim
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.SeparateSetters
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.SlashWinding
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.Trim
+[2026.10.09-18.39.35:263][333]LogAutomationCommandLine: Display: 	Prophecy.NN.FKReturn.TwistInertia
+[2026.10.09-18.39.35:264][333]LogAutomationController: Sending StopTests to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.35:264][333]LogAutomationController: Sending StopTestSession to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.35:276][333]LogAutomationController: Sending StartTestSession to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.35:276][333]LogAutomationController: Display: Clearing ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Logs/ and ../../../../../../Users/singerie/Documents/Unreal Projects/Prophecy/Saved/Automation/Tmp/
+[2026.10.09-18.39.35:277][333]AutomationTestingLog: -----Test Run 24----
+[2026.10.09-18.39.35:280][333]LogAutomationController: Sending RunTest AcceptedHistory to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.35:280][334]LogAutomationController: Display: Test Started. Name={AcceptedHistory} Path={Prophecy.NN.FKReturn.AcceptedHistory}
+[2026.10.09-18.39.35:306][334]LogAutomationWorker: Received StopTests from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.35:306][334]LogAutomationWorker: Received StopTestSession from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.35:306][334]LogAutomationWorker: Received StartTestSession from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.35:306][334]LogAutomationWorker: Received RunTests AcceptedHistory from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.35:328][334]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.09-18.39.35:479][334]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.09-18.39.35:489][334]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.09-18.39.35:536][335]LogAutomationController: Display: Test Completed. Result={Success} Name={AcceptedHistory} Path={Prophecy.NN.FKReturn.AcceptedHistory}
+[2026.10.09-18.39.35:536][335]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.AcceptedHistory
+[2026.10.09-18.39.35:536][335]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.AcceptedHistory
+[2026.10.09-18.39.35:537][335]LogAutomationController: Sending RunTest AngleTimeAndWorldFrame to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.35:537][335]LogAutomationController: Display: Test Started. Name={AngleTimeAndWorldFrame} Path={Prophecy.NN.FKReturn.AngleTimeAndWorldFrame}
+[2026.10.09-18.39.35:556][336]LogAutomationWorker: Received RunTests AngleTimeAndWorldFrame from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.35:578][337]LogAutomationController: Display: Test Completed. Result={Success} Name={AngleTimeAndWorldFrame} Path={Prophecy.NN.FKReturn.AngleTimeAndWorldFrame}
+[2026.10.09-18.39.35:579][337]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.AngleTimeAndWorldFrame
+[2026.10.09-18.39.35:579][337]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.AngleTimeAndWorldFrame
+[2026.10.09-18.39.35:579][337]LogAutomationController: Sending RunTest ExitInterval to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.35:579][337]LogAutomationController: Display: Test Started. Name={ExitInterval} Path={Prophecy.NN.FKReturn.ExitInterval}
+[2026.10.09-18.39.35:598][338]LogAutomationWorker: Received RunTests ExitInterval from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.35:600][338]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.09-18.39.35:607][338]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.09-18.39.35:607][338]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.09-18.39.35:632][339]LogAutomationController: Display: Test Completed. Result={Success} Name={ExitInterval} Path={Prophecy.NN.FKReturn.ExitInterval}
+[2026.10.09-18.39.35:632][339]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.ExitInterval
+[2026.10.09-18.39.35:632][339]LogAutomationController: Exit interval maximum round-trip error: 0.000140035627 cm / 4.21468485e-08 radians
+[2026.10.09-18.39.35:632][339]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.ExitInterval
+[2026.10.09-18.39.35:634][339]LogAutomationController: Sending RunTest FeedbackInput to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.35:634][340]LogAutomationController: Display: Test Started. Name={FeedbackInput} Path={Prophecy.NN.FKReturn.FeedbackInput}
+[2026.10.09-18.39.36:054][340]LogAutomationWorker: Received RunTests FeedbackInput from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.36:300][342]LogAutomationController: Display: Test Completed. Result={Success} Name={FeedbackInput} Path={Prophecy.NN.FKReturn.FeedbackInput}
+[2026.10.09-18.39.36:300][342]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.FeedbackInput
+[2026.10.09-18.39.36:300][342]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.FeedbackInput
+[2026.10.09-18.39.36:323][342]LogAutomationController: Sending RunTest GoldenTickTiming to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.36:323][342]LogAutomationController: Display: Test Started. Name={GoldenTickTiming} Path={Prophecy.NN.FKReturn.GoldenTickTiming}
+[2026.10.09-18.39.36:323][342]LogAutomationWorker: Received RunTests GoldenTickTiming from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.36:325][342]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.09-18.39.36:332][342]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.09-18.39.36:332][342]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.09-18.39.36:358][344]LogAutomationController: Display: Test Completed. Result={Success} Name={GoldenTickTiming} Path={Prophecy.NN.FKReturn.GoldenTickTiming}
+[2026.10.09-18.39.36:359][344]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.GoldenTickTiming
+[2026.10.09-18.39.36:359][344]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.GoldenTickTiming
+[2026.10.09-18.39.36:384][344]LogAutomationController: Sending RunTest LabParityAndCost to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.36:384][344]LogAutomationController: Display: Test Started. Name={LabParityAndCost} Path={Prophecy.NN.FKReturn.LabParityAndCost}
+[2026.10.09-18.39.36:406][345]LogAutomationWorker: Received RunTests LabParityAndCost from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.38:050][345]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.09-18.39.38:210][345]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.09-18.39.38:210][345]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.09-18.39.38:505][346]LogAutomationController: Ignoring very large delta of 2.10 seconds in calls to FAutomationControllerManager::Tick() and not penalizing unresponsive tests
+[2026.10.09-18.39.38:528][347]LogAutomationController: Display: Test Completed. Result={Success} Name={LabParityAndCost} Path={Prophecy.NN.FKReturn.LabParityAndCost}
+[2026.10.09-18.39.38:528][347]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.LabParityAndCost
+[2026.10.09-18.39.38:528][347]LogAutomationController: unchanged_runtime_samples=6010 redirected_samples_verified_by_SlashWinding=202 runtime_cm=0.00115535844 runtime_degrees=0.000269451828
+[2026.10.09-18.39.38:528][347]LogAutomationController: cases=321 samples=2568 lab_cm=0.000207683503 lab_degrees=0.000281377682 length_cm=5.16034689e-05 mix_cm=0.000125264945 mix_degrees=0.000150157402 microseconds_per_pose=4.666288 checksum=-756818.924757
+[2026.10.09-18.39.38:528][347]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.LabParityAndCost
+[2026.10.09-18.39.38:549][347]LogAutomationController: Sending RunTest LifecycleAndCurve to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.38:549][347]LogAutomationController: Display: Test Started. Name={LifecycleAndCurve} Path={Prophecy.NN.FKReturn.LifecycleAndCurve}
+[2026.10.09-18.39.38:569][348]LogAutomationWorker: Received RunTests LifecycleAndCurve from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.38:569][348]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.09-18.39.38:576][348]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.09-18.39.38:576][348]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.09-18.39.38:596][349]LogAutomationController: Display: Test Completed. Result={Success} Name={LifecycleAndCurve} Path={Prophecy.NN.FKReturn.LifecycleAndCurve}
+[2026.10.09-18.39.38:596][349]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.LifecycleAndCurve
+[2026.10.09-18.39.38:597][349]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.LifecycleAndCurve
+[2026.10.09-18.39.38:597][349]LogAutomationController: Sending RunTest PerAttackHoldTrim to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.38:597][349]LogAutomationController: Display: Test Started. Name={PerAttackHoldTrim} Path={Prophecy.NN.FKReturn.PerAttackHoldTrim}
+[2026.10.09-18.39.38:616][350]LogAutomationWorker: Received RunTests PerAttackHoldTrim from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.38:616][350]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.09-18.39.38:623][350]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.09-18.39.38:623][350]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.09-18.39.38:644][351]LogAutomationController: Display: Test Completed. Result={Success} Name={PerAttackHoldTrim} Path={Prophecy.NN.FKReturn.PerAttackHoldTrim}
+[2026.10.09-18.39.38:644][351]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.PerAttackHoldTrim
+[2026.10.09-18.39.38:644][351]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.PerAttackHoldTrim
+[2026.10.09-18.39.38:645][351]LogAutomationController: Sending RunTest SeparateSetters to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.38:645][351]LogAutomationController: Display: Test Started. Name={SeparateSetters} Path={Prophecy.NN.FKReturn.SeparateSetters}
+[2026.10.09-18.39.38:667][352]LogAutomationWorker: Received RunTests SeparateSetters from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.38:668][352]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.09-18.39.38:674][352]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.09-18.39.38:674][352]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.09-18.39.38:696][354]LogAutomationController: Display: Test Completed. Result={Success} Name={SeparateSetters} Path={Prophecy.NN.FKReturn.SeparateSetters}
+[2026.10.09-18.39.38:696][354]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.SeparateSetters
+[2026.10.09-18.39.38:696][354]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.SeparateSetters
+[2026.10.09-18.39.38:715][354]LogAutomationController: Sending RunTest SlashWinding to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.38:715][354]LogAutomationController: Display: Test Started. Name={SlashWinding} Path={Prophecy.NN.FKReturn.SlashWinding}
+[2026.10.09-18.39.38:734][355]LogAutomationWorker: Received RunTests SlashWinding from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.39:214][355]LogTemp: Display: FKSlashWinding failures=0 unchanged=321 changed=23 samples=24768
+[2026.10.09-18.39.39:244][356]LogAutomationController: Display: Test Completed. Result={Success} Name={SlashWinding} Path={Prophecy.NN.FKReturn.SlashWinding}
+[2026.10.09-18.39.39:244][356]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.SlashWinding
+[2026.10.09-18.39.39:244][356]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.SlashWinding
+[2026.10.09-18.39.39:244][356]LogAutomationController: Sending RunTest Trim to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.39:244][357]LogAutomationController: Display: Test Started. Name={Trim} Path={Prophecy.NN.FKReturn.Trim}
+[2026.10.09-18.39.39:263][357]LogAutomationWorker: Received RunTests Trim from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.39:264][357]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.09-18.39.39:273][357]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.09-18.39.39:273][357]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.09-18.39.39:298][358]LogAutomationController: Display: Test Completed. Result={Success} Name={Trim} Path={Prophecy.NN.FKReturn.Trim}
+[2026.10.09-18.39.39:298][358]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.Trim
+[2026.10.09-18.39.39:298][358]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.Trim
+[2026.10.09-18.39.39:299][358]LogAutomationController: Sending RunTest TwistInertia to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.39:299][358]LogAutomationController: Display: Test Started. Name={TwistInertia} Path={Prophecy.NN.FKReturn.TwistInertia}
+[2026.10.09-18.39.39:322][359]LogAutomationWorker: Received RunTests TwistInertia from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.39:322][359]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.10.09-18.39.39:329][359]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.09-18.39.39:330][359]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.09-18.39.39:352][360]LogAutomationController: Display: Test Completed. Result={Success} Name={TwistInertia} Path={Prophecy.NN.FKReturn.TwistInertia}
+[2026.10.09-18.39.39:352][360]LogAutomationController: BeginEvents: Prophecy.NN.FKReturn.TwistInertia
+[2026.10.09-18.39.39:352][360]LogAutomationController: EndEvents: Prophecy.NN.FKReturn.TwistInertia
+[2026.10.09-18.39.39:354][360]LogAutomationController: Sending StopTestSession to 74EC661C4A825638A9DAC3A196E301BE
+[2026.10.09-18.39.39:354][360]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 12 tests performed.
+[2026.10.09-18.39.39:373][361]LogAutomationWorker: Received StopTestSession from CE6E3C1D44F9C8185486D6862094DCB6
+[2026.10.09-18.39.44:233][623]LogEOSSDK: LogEOS: Updating Product SDK Config, Time: 62699.285156
+[2026.10.09-18.39.44:468][636]LogEOSSDK: LogEOS: SDK Config Product Update Request Completed - No Change
+[2026.10.09-18.39.44:468][637]LogEOSSDK: LogEOS: ScheduleNextSDKConfigDataUpdate - Time: 62699.500000, Update Interval: 340.648834

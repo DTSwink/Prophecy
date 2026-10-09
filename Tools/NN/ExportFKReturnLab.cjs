@@ -13,7 +13,7 @@ const digest=crypto.createHash('sha256').update(fs.readFileSync(path.join(lab,'r
 if(referenceOnly){
  const header=fs.readFileSync(out,'utf8');
  if(!header.includes(`SHA256 ${digest}.`))throw Error('Accepted C++ algorithm differs from lab; do not regenerate this reference');
- const profiles=new Map([...header.matchAll(/\{TEXT\("([^"]+)"\),([^{}]+),\{([^{}]+)\}\}/g)].map(m=>[m[1].toLowerCase(),m]));
+ const profiles=new Map([...header.matchAll(/\{TEXT\("([^"]+)"\),([^{}]+),\{([^{}]+)\}(?:,([^{}]+))?\}/g)].map(m=>[m[1].toLowerCase(),m]));
  for(const c of manifest.clips){
   const m=profiles.get(c.name.toLowerCase());if(!m)throw Error(`Missing accepted profile ${c.name}`);
   const fields=m[2].split(',');if(fields.length!==7)throw Error(`Invalid accepted profile ${c.name}`);
@@ -22,7 +22,7 @@ if(referenceOnly){
   if(nums.some(v=>!Number.isFinite(v))||weights.length!==groups.length||weights.some(v=>!Number.isFinite(v)))throw Error('Invalid numeric profile');
   const [duration,easing,inertia,hold,decay,angleTime]=nums;
   state.attackReturnTimes[c.name]=duration;state.attackReturnEasing[c.name]=easing;state.attackMainInertia[c.name]=inertia;
-  state.attackInertiaTiming[c.name]={hold,decay,world:fields[6].trim()==='true',spring:false};
+  state.attackInertiaTiming[c.name]={hold,decay,world:fields[6].trim()==='true',spring:false,twistRemoval:Number((m[4]||'0').replace(/f$/,''))};
   state.attackAngleTimeSeconds[c.name]=angleTime;state.attackBoneInertia[c.name]=Object.fromEntries(groups.map((g,i)=>[g,weights[i]]));
  }
 }
@@ -31,7 +31,7 @@ if(upper.length!==16)throw Error('Unexpected upper hierarchy');
 const idle=R.localize(manifest.sharedIdle.points,manifest.sharedIdle.axes.map(R.fromAxes),manifest.parents);
 const uq=q=>[-q[0],q[1],-q[2],q[3]],up=p=>[p[0]*100,-p[1]*100,p[2]*100];
 const literal=n=>{let s=Number(n).toPrecision(10);return s+'f';};
-const profile=c=>({duration:state.attackReturnTimes[c.name],easing:state.attackReturnEasing[c.name],inertia:state.attackMainInertia[c.name],hold:state.attackInertiaTiming[c.name].hold,decay:state.attackInertiaTiming[c.name].decay,world:state.attackInertiaTiming[c.name].world,angleTime:state.attackAngleTimeSeconds[c.name],weights:groups.map(k=>state.attackBoneInertia[c.name][k])});
+const profile=c=>({duration:state.attackReturnTimes[c.name],easing:state.attackReturnEasing[c.name],inertia:state.attackMainInertia[c.name],hold:state.attackInertiaTiming[c.name].hold,decay:state.attackInertiaTiming[c.name].decay,world:state.attackInertiaTiming[c.name].world,twistRemoval:state.attackInertiaTiming[c.name].twistRemoval??0,angleTime:state.attackAngleTimeSeconds[c.name],weights:groups.map(k=>state.attackBoneInertia[c.name][k])});
 if(Object.values(state.attackInertiaTiming).some(p=>p.spring))throw Error('Continuous spring is not an accepted Unreal profile');
 const rows=upper.map(({name,j})=>`    {TEXT("${name}"), TEXT("${manifest.names[manifest.parents[j]]}"), ${groups.indexOf(name.replace(/^spine_0[1-5]$/,'spine').replace(/_[lr]$/,''))<0?7:groups.indexOf(name.replace(/^spine_0[1-5]$/,'spine').replace(/_[lr]$/,''))}, {${uq(idle.q[j]).map(literal)}}, {${up(idle.p[j]).map(literal)}}},`);
 if(!referenceOnly)fs.writeFileSync(out,`#pragma once
@@ -43,9 +43,9 @@ struct FBone { const TCHAR* Name; const TCHAR* Parent; uint8 Group; float Q[4],P
 inline const FBone Bones[16]={
 ${rows.join('\n')}
 };
-struct FProfile { const TCHAR* Attack; float Duration,Easing,Inertia,InertiaHold,InertiaDecay,AngleTimeSeconds; bool WorldInertia; float Weights[7]; };
+struct FProfile { const TCHAR* Attack; float Duration,Easing,Inertia,InertiaHold,InertiaDecay,AngleTimeSeconds; bool WorldInertia; float Weights[7]; float UpperArmTwistRemoval=0.f; };
 inline const FProfile Profiles[]={
-${manifest.clips.map(c=>{const p=profile(c);return `    {TEXT("${c.name}"),${literal(p.duration)},${literal(p.easing)},${literal(p.inertia)},${literal(p.hold)},${literal(p.decay)},${literal(p.angleTime)},${p.world},{${p.weights.map(literal)}}},`;}).join('\n')}
+${manifest.clips.map(c=>{const p=profile(c);return `    {TEXT("${c.name}"),${literal(p.duration)},${literal(p.easing)},${literal(p.inertia)},${literal(p.hold)},${literal(p.decay)},${literal(p.angleTime)},${p.world},{${p.weights.map(literal)}},${literal(p.twistRemoval)}},`;}).join('\n')}
 };
 }
 `);
@@ -55,8 +55,8 @@ const convert=pose=>pose.q.map((q,j)=>[...uq(q),...up(pose.points[j])]);
 for(const c of manifest.clips)for(const v of c.variants){
  const buf=fs.readFileSync(path.join(lab,v.file));
  const m=R.prepare(v,buf.buffer.slice(buf.byteOffset,buf.byteOffset+buf.byteLength),c,manifest.names,manifest.parents);
- const p=profile(c),yaw=v===c.variants[0]?179:v===c.variants.at(-1)?-179:0;
- const opt={duration:p.duration,returnEasing:p.easing,inertia:p.inertia,boneInertia:state.attackBoneInertia[c.name],spineTurn:yaw,inertiaHold:p.hold,inertiaDecay:p.decay,worldInertia:p.world,angleTimeSeconds:p.angleTime};
+ const p=profile(c),yaw=v.unrealBoneRotations?0:v===c.variants[0]?179:v===c.variants.at(-1)?-179:0;
+ const opt={duration:p.duration,returnEasing:p.easing,inertia:p.inertia,boneInertia:state.attackBoneInertia[c.name],spineTurn:yaw,inertiaHold:p.hold,inertiaDecay:p.decay,worldInertia:p.world,angleTimeSeconds:p.angleTime,upperArmTwistRemoval:p.twistRemoval};
  const timing=R.returnTiming(m,opt);
  R.sample(m,m.attackSeconds+1e-8,opt);const source=yaw?m.turnCache.model:m;
  cases.push({name:c.name,variant:v.id||v.file,fps:v.fps,options:p,duration:timing.duration,

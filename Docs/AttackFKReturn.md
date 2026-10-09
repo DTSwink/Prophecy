@@ -93,6 +93,34 @@ Evidence: `Saved/Diagnostics/FKPerAttackTiming20261004/` (`tests-headless/index.
 
 ## Accepted October 4 lab profiles
 
+October 9 slashLD-only follow-up imports the accepted lab settings: base **.39s**,
+main inertia **.18**, easing **0**, inertia hold **.08**, decay **.8**, world inertia,
+spine angle time **.29s/90deg**, bone weights **.31/1/1/.36/1/1/1**, and new
+**upperarm twist removal .98**. Other 15 profile rows and canonical idle are
+unchanged. Existing Blueprint NN takeover Hold **.17** / Trim **0** is separate
+and retained; this means the live result still blends with the NN after that hold.
+
+**Set Attack FK Return Twist Inertia** accepts Agent, Attack, Remove Twist (0–1).
+It changes only that field at the next handoff; None applies to all families,
+reset snapshots retain it, and the other separate setters preserve it. Zero is
+the original curve. Full removal decomposes the finite inertia rotation around
+the actual shoulder-to-elbow axis, removes twist and keeps swing. The unchanged
+forearm/hand parent-local rotations carry the shoulder correction naturally in
+the existing FK pass, including world-inertia mode. There is no elbow-down target,
+pose limit, new bone traversal, allocation or inference. Only the two upperarm
+rotations are filtered, only while their inertia is nonzero and FK is active;
+the completed-return fast path remains unchanged. Parry defaults remain zero.
+Continuous spring is not ported.
+
+October 9 validation: all 12 FK tests pass. 321 lab variants / 2,568 pure samples
+match within .000208cm and .000282deg; 6,010 unchanged-winding runtime samples
+match within .001156cm and .000270deg. The 202 redirected winding samples retain
+their separate winding-oracle test. Partial/full filtering, both inertia spaces,
+preserved swing/local forearm rotations, setter isolation and reset are covered.
+Loaded via Live Coding; Blueprint compiles, normalized graph unchanged, no asset
+save or scene replay. Normal DLL rebuild remains required before a cold launch.
+Evidence: `Saved/Diagnostics/FKUpperArmTwistPort20261009/`.
+
 October 8 slashL-only follow-up: imported main inertia **0** and easing **0**
 from the live desktop lab in stepper/training/slashes2/AttackRecoveryLab. Base
 duration remains **.28s**; every other slashL field, all other attack rows and

@@ -1,0 +1,28 @@
+{
+  "attack": "slashLD",
+  "values": [
+    0.39,
+    0,
+    0.18,
+    0.08,
+    0.8,
+    0.29
+  ],
+  "weights": [
+    0.31,
+    1,
+    1,
+    0.36,
+    1,
+    1,
+    1
+  ],
+  "timing": {
+    "spring": false,
+    "world": true,
+    "hold": 0.08,
+    "decay": 0.8,
+    "twistRemoval": 0.98
+  },
+  "otherRowsAndIdleByteIdentical": true
+}

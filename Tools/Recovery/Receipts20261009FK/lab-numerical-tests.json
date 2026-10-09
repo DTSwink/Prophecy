@@ -1,0 +1,9 @@
+{
+  "checks": 10914,
+  "variants": 321,
+  "maxSwingError": 1.1537776118301384e-15,
+  "maxResidualTwist": 1.6653345369377348e-16,
+  "maxShoulderElbowAndUnrelatedPositionErrorMetres": 5.558049685633556e-16,
+  "maxForearmHandLocalQuaternionError": 9.163544378420584e-16,
+  "noFilterCallsAfterReturnOrZeroInertia": true
+}
