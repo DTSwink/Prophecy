@@ -1,0 +1,36 @@
+{
+  "checkpoint": "4fbd4dc",
+  "status": "awaiting_curve_scope_clarification",
+  "lab_timing": {
+    "start": 25,
+    "idle_sheathe": {
+      "reach": 75,
+      "slide_end": 106,
+      "complete": 168
+    },
+    "walk_sheathe": {
+      "reach": 76,
+      "slide_end": 107,
+      "complete": 169
+    },
+    "idle_draw": {
+      "reach": 55,
+      "slide_end": 86,
+      "complete": 148
+    },
+    "walk_draw": {
+      "reach": 55,
+      "slide_end": 86,
+      "complete": 148
+    }
+  },
+  "unreal_audit": {
+    "kinematic_supported": false,
+    "solver": "per-publication two-bone IK; no body reach/head/FK return/retime port yet",
+    "reach_gate": "actual hand within 2cm and 5deg",
+    "slide_finish_gate": "native sword position within .5cm",
+    "editor_play": false,
+    "dirty_map_preserved": true
+  },
+  "pending_question": "Should curves retime procedural D/S only while live NN locomotion keeps normal timing? Lab currently retimes the full recorded base pose."
+}
