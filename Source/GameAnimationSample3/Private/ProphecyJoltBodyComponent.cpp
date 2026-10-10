@@ -360,7 +360,11 @@ bool UProphecyJoltBodyComponent::PublishCompletedBody(FString& OutError)
     if (ComponentWorld.ContainsNaN() || !ComponentWorld.GetRotation().IsNormalized())
         return Fail(OutError, TEXT("The completed standalone component transform is invalid."));
     UPrimitiveComponent* Source = State->Snapshot.SourceComponent.Get();
-    Source->SetWorldTransform(ComponentWorld, false, nullptr, ETeleportType::TeleportPhysics);
+    // Attached kinematic receivers are targets authored by their parent. Publishing
+    // the previous native pose here would rewrite the relative attachment every step
+    // and cancel the parent's motion (the holstered sword stayed behind in world space).
+    if(State->bSimpleKinematic && Source->GetAttachParent())ComponentWorld=Source->GetComponentTransform();
+    else Source->SetWorldTransform(ComponentWorld, false, nullptr, ETeleportType::TeleportPhysics);
     // SetWorldTransform may dispatch transform/overlap callbacks which remove or replace this body.
     // Never keep a State reference or dereference the old native actor across that boundary.
     if (State.Get() != Publishing || !State || !SameBody(State->Handle, Handle)
@@ -608,6 +612,26 @@ bool UProphecyJoltBodyComponent::SetMassKg(float MassKg, FString& OutError)
     const auto Result = State->WorldOwner->SetBodyMassKg(State->Handle, MassKg);
     if (!Result.IsSuccess()) return Fail(OutError, Result.Message);
     return true;
+}
+bool UProphecyJoltBodyComponent::ScaleBladeAxis(float Factor,FString& OutError)
+{
+    if(!FMath::IsFinite(Factor) || Factor<=0 || !ValidateBinding(OutError) || State->bAttachedCollider)return false;
+    if(!State->Snapshot.BodyOriginToComponent.GetRotation().GetAxisZ().Equals(FVector::UpVector,1.e-4))
+        return Fail(OutError,TEXT("Blade scaling requires the captured body's Z axis to match the mesh blade axis."));
+    if(FMath::IsNearlyEqual(Factor,1.f,1.e-7f))return true;
+    struct FParams { UObject* WorldContext;FGuid Lifetime;int32 BodySlot;int64 BodyGeneration;float Factor;bool ReturnValue; };
+    FParams P{this,State->Handle.WorldLifetime,State->Handle.Slot,int64(State->Handle.Generation),Factor,false};
+    auto* Library=FindObjectChecked<UClass>(nullptr,TEXT("/Script/ProphecyJolt.ProphecyJoltBodyDriveLibrary"))->GetDefaultObject();
+    Library->ProcessEvent(Library->FindFunctionChecked(TEXT("ScaleStandaloneBody")),&P);
+    if(!P.ReturnValue){OutError=TEXT("Native sword shape resize failed.");return false;}
+    TGuardValue<bool> Guard(bPublishing,true);
+    const FVector AxisScale(1,1,Factor);
+    const FVector Scale=State->Snapshot.ComponentToWorld.GetScale3D()*AxisScale;
+    State->Snapshot.ComponentToWorld.SetScale3D(Scale);
+    State->Snapshot.BodyOriginToComponent.ScaleTranslation(AxisScale);
+    State->Snapshot.SourceComponent->SetWorldScale3D(Scale);
+    ++State->Revision;
+    return ValidateBinding(OutError);
 }
 void UProphecyJoltBodyComponent::SynchronizeSourceTransform()
 {

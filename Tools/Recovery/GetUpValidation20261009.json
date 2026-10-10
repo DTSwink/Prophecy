@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-09",
+  "build": {
+    "result": "Succeeded",
+    "seconds": 57.99,
+    "actions": 4
+  },
+  "native_tests": [
+    {
+      "name": "Prophecy.Blends.SixtyTickClock",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.GetUp.PoseMath",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.GetUp.TimingAndIsolation",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.NN.CoreTempering.Lifecycle",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.NN.HandRecovery.SpineReference",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.NN.LowerTempering.DodgeIsolation",
+      "state": "Success"
+    }
+  ],
+  "play_checks": [
+    {
+      "fall_bool": true,
+      "clip": "AS_GetUp_Front1",
+      "play_rate": 2,
+      "lower_handoff_alpha": 0.85,
+      "upper_handoff_alpha": 1,
+      "follow_values": 0.35,
+      "blend_seconds": 0.3,
+      "trigger_absolute_tick": 120,
+      "completed_absolute_tick": 430,
+      "last_absolute_tick": 490,
+      "split_handoff_observed": true,
+      "mode": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_entry_error_cm": 1.4525179830258887e-13,
+      "last_physical_pelvis_cm": [
+        19.219450116813036,
+        -349.1983123924278,
+        90.20829965028891
+      ]
+    },
+    {
+      "fall_bool": false,
+      "clip": "AS_GetUp_Back1",
+      "play_rate": 2,
+      "lower_handoff_alpha": 0.85,
+      "upper_handoff_alpha": 1,
+      "follow_values": 0.35,
+      "blend_seconds": 0.3,
+      "trigger_absolute_tick": 120,
+      "completed_absolute_tick": 415,
+      "last_absolute_tick": 475,
+      "split_handoff_observed": true,
+      "mode": "<ProphecyAgentSimulationMode.PHYSICAL: 1>",
+      "max_entry_error_cm": 1.2146956150103533e-13,
+      "last_physical_pelvis_cm": [
+        43.23361303188096,
+        -234.0453093555136,
+        89.96788357238533
+      ]
+    }
+  ],
+  "blueprint_sha256": "c11b682f687e9a9d887c7b9d6159135eacf65d3de7a7a4ff7a0f5fb38034e817",
+  "saved_blueprint_unchanged": true,
+  "dirty_packages": [],
+  "motion_approved": false,
+  "blueprint_tick30_followup": {
+    "saved": true,
+    "compiled": true,
+    "absolute_tick": 30,
+    "first_active_tick_in_play": 30,
+    "player_only": true,
+    "play_rate": 1,
+    "existing_wiring_and_defaults_preserved": true,
+    "editor_build_seconds": 68.37,
+    "dirty_packages": [],
+    "blueprint_sha256": "3c2ab67e6dc12ec98f9e337adc67049ce43dd356dab8800b69bf9e8ccc0bff62"
+  }
+}

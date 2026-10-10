@@ -1,0 +1,167 @@
+{
+  "schema": "sword_holster_lab_v1",
+  "parameters": {
+    "motion": "idle",
+    "sheathe": true,
+    "startTick": 25,
+    "maxReachSpeed": 250,
+    "maxReachRotationSpeed": 2500,
+    "slidingSpeed": 150,
+    "shrinkPercent": 15,
+    "unshrinkDuration": 0.5,
+    "holsterX": 0,
+    "holsterY": 0,
+    "holsterZ": 0,
+    "holsterPitch": 0,
+    "holsterYaw": 0,
+    "holsterRoll": 0,
+    "duration": 8,
+    "spineClavicleAngleLimit": 45,
+    "maxSpineClavicleAngularSpeed": 90,
+    "drawReturn": {
+      "enabled": true,
+      "duration": 1,
+      "returnEasing": 1,
+      "inertia": 1,
+      "inertiaHold": 0,
+      "inertiaDecay": 1,
+      "worldInertia": false,
+      "springReturn": false,
+      "angleTimeSeconds": 0.29,
+      "upperArmTwistRemoval": 0,
+      "boneInertia": {
+        "spine": 1,
+        "clavicle": 1,
+        "upperarm": 1,
+        "lowerarm": 1,
+        "neck_01": 1,
+        "neck_02": 1,
+        "head": 1
+      }
+    },
+    "sheatheReturn": {
+      "enabled": true,
+      "duration": 1,
+      "returnEasing": 1,
+      "inertia": 1,
+      "inertiaHold": 0,
+      "inertiaDecay": 1,
+      "worldInertia": false,
+      "springReturn": false,
+      "angleTimeSeconds": 0.29,
+      "upperArmTwistRemoval": 0,
+      "boneInertia": {
+        "spine": 1,
+        "clavicle": 1,
+        "upperarm": 1,
+        "lowerarm": 1,
+        "neck_01": 1,
+        "neck_02": 1,
+        "head": 1
+      }
+    },
+    "headLookAtAlpha": 0.5,
+    "headLookInExponent": 2,
+    "headLookOutExponent": 2,
+    "maxHeadLookInVelocity": 120,
+    "maxHeadLookOutVelocity": 110,
+    "drawHeadLookOutThreshold": 0.3,
+    "sheatheHeadLookOutThreshold": 0.5,
+    "drawCurve": [
+      [
+        0.12035926109088917,
+        0.06965517232365878
+      ],
+      [
+        0.38862275386866246,
+        0.4437027977650636
+      ],
+      [
+        0.5663472710639236,
+        0.688768305251455
+      ],
+      [
+        0.9050299670725398,
+        0.9918757535169326
+      ]
+    ],
+    "sheatheCurve": [
+      [
+        0.20083831851807013,
+        0.06119108139624617
+      ],
+      [
+        0.4020359141167777,
+        0.3320528156629226
+      ],
+      [
+        0.6166466699636005,
+        0.564220086752473
+      ],
+      [
+        0.8983233549689856,
+        0.9249662598391809
+      ]
+    ],
+    "drawSlideCurve": [
+      [
+        0.2,
+        0.2
+      ],
+      [
+        0.4,
+        0.4
+      ],
+      [
+        0.6,
+        0.6
+      ],
+      [
+        0.8,
+        0.8
+      ]
+    ],
+    "sheatheSlideCurve": [
+      [
+        0.13712572739078147,
+        0.04043271696188657
+      ],
+      [
+        0.650179602563385,
+        0.7111385494636496
+      ],
+      [
+        0.8849101307618773,
+        0.9562043029634382
+      ],
+      [
+        0.9553293659722167,
+        0.9884497709488423
+      ]
+    ]
+  },
+  "time": 0.09580000000005415,
+  "camera": {
+    "yaw": -30.953599121092804,
+    "pitch": 0.4635998535156239,
+    "zoom": 1.473715355540367,
+    "panX": 0,
+    "panY": 65
+  },
+  "workspaceTab": "motion",
+  "fkReturnPanelOpen": false,
+  "controls": {
+    "bicolor": true,
+    "upperOnly": true,
+    "skeleton": false,
+    "idleGhost": false,
+    "showTarget": true,
+    "handGizmos": false,
+    "lowerarmGizmos": false,
+    "upperarmGizmos": false,
+    "gizmoSide": "r",
+    "speed": "1"
+  },
+  "sourceHash": "798839ed6d374fdde8084d0d9aba549606e9648ff7a846c0010de4c6b73f50e8",
+  "revision": "6a953f3ab772be81eabd0383ef6b0322f02425e3691aa63f2c603051cfb47fcb"
+}

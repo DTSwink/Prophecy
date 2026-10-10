@@ -69,7 +69,7 @@ int32 AProphecyNNLocomotionManager::CaptureInitialAgentResetState(FString& Error
         auto* Actor = AgentActors[I].Get();
         if (!IsValid(Actor) || !Impl->Agents.IsValidIndex(I)) continue;
         const auto& A = Impl->Agents[I];
-        if (A.Slash.bActive || A.DefensePose || A.AnimationLayer.IsActive())
+        if (A.Slash.bActive || A.DefensePose || A.AnimationLayer.IsActive() || ProphecyGetUp::IsActive(Actor))
         { Error = TEXT("Capture the initial reset state before attacks, defense or animation layers start."); return 0; }
         auto& S = Captured.AddDefaulted_GetRef();
         S.Actor = Actor; S.Handle = Actor->GetAgentHandle();
@@ -123,6 +123,7 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
         if (!ProphecyAgentResetPhysics::Has(Actor))
         { Error+=TEXT("Physics baseline missing: begin a new Play session and initialize reset after setup; ");continue; }
         ProphecyAgentResetPhysics::CancelBlends(Actor);
+        ProphecyGetUp::Cancel(Actor);
         const auto Mode = Actor->GetSimulationMode();
         if (auto* Mesh = Actor->GetPoseReferenceMesh())
         {

@@ -1,0 +1,6 @@
+__pycache__/
+server.*.log
+desktop_session.json
+current_view.json
+current_view.png
+captures/

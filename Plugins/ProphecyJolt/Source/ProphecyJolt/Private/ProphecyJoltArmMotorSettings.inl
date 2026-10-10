@@ -3,6 +3,7 @@ namespace ProphecyJolt::ArmMotorSettings
 struct FArms { bool Left = false, Right = false; };
 static TMap<TWeakObjectPtr<AActor>, FArms> Preferences;
 static TSet<TWeakObjectPtr<AActor>> AttackWindows;
+static TSet<TWeakObjectPtr<AActor>> GetUpWindows;
 struct FHold { FArms Restore; uint64 Remaining = 0; };
 static TMap<TWeakObjectPtr<AActor>, FHold> Holds;
 static FDelegateHandle HoldTick;
@@ -38,7 +39,10 @@ static bool Wants(const FArms& Arms, FName Bone)
     return false;
 }
 static const FArms* Effective(AActor* Agent)
-{ return AttackWindows.Contains(Agent) ? nullptr : Preferences.Find(Agent); }
+{
+    static const FArms Both{true,true};
+    return GetUpWindows.Contains(Agent) ? &Both : AttackWindows.Contains(Agent) ? nullptr : Preferences.Find(Agent);
+}
 static void Apply(FProphecyJoltWorldState& Native, const WorldPrivate::FRigRecord& Rig, AActor* Agent)
 {
     const auto* Arms = Effective(Agent);
@@ -61,6 +65,8 @@ static void ApplyAgent(FProphecyJoltWorldState* Native,AActor* Agent)
 }
 static void ForgetWorld(UWorld* World)
 {
+    for (auto It=GetUpWindows.CreateIterator();It;++It)
+        if (!It->IsValid() || It->Get()->GetWorld()==World) It.RemoveCurrent();
     for (auto It=AttackWindows.CreateIterator();It;++It)
         if (!It->IsValid() || It->Get()->GetWorld()==World) It.RemoveCurrent();
     for (auto It=Holds.CreateIterator();It;++It)
@@ -116,4 +122,16 @@ bool UProphecyJoltBodyDriveLibrary::DisableArmsAntiJiggleForDuration(AActor* Age
         Holds.Add(Agent,{Restore,Ticks});RefreshHoldTick();
     }
     return true;
+}
+
+void UProphecyJoltBodyDriveLibrary::NotifyArmsAntiJiggleGetUpWindow(AActor* Agent,bool Active)
+{
+    if (!IsInGameThread() || !IsValid(Agent)) return;
+    auto* World=Agent->GetWorld();
+    auto* Owner=World && World->IsGameWorld() ? World->GetSubsystem<UProphecyJoltWorldSubsystem>() : nullptr;
+    if (!Owner || Owner->bStepInProgress || Owner->bWorldEnding) return;
+    using namespace ProphecyJolt::ArmMotorSettings;
+    if (GetUpWindows.Contains(Agent)==Active) return;
+    if (Active) GetUpWindows.Add(Agent); else GetUpWindows.Remove(Agent);
+    ApplyAgent(Owner->Native.Get(),Agent);
 }

@@ -1,0 +1,13 @@
+{
+  "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\AttackRecoveryLab",
+  "files": {
+    "renderer.js": "edec2410aefe56fea4459a33afee844f126aac99a35781faf2da603f80026909",
+    "recovery.js": "42add41d2e68ff818828dd56a44f2a4f0d51d921e17bbd1c6528b3631a045de0",
+    "backend.py": "0a10bf087ebed31d963b504fcf6e11c4dc193d221b7c6e32fe4f6cb2ab2101d8",
+    "server.py": "15746154616f19e76e59ba786889587dda756409af73878c8442c47339ce12ee",
+    "style.css": "9343d6f48b5e5740233ebd10beeee3a7b8300fad0726c40a22bd2ba3098a62a7",
+    "launch.ps1": "2fd67e70b97fdda69991fcf36ca41912995e73896c10d8c306a61a23f1eae54f",
+    "install_shortcut.ps1": "d49eca6e06924a30fe53cd0490a3dedda4c656bd0278a6ed6aa48bfa8132bf81"
+  },
+  "notes": "Renderer pelvis block adapted; backend identity/revision/port adapted; launcher runtime path adapted. Original lab untouched."
+}

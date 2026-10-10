@@ -1,0 +1,164 @@
+{
+  "date": "2026-10-09",
+  "cause": "Get-up alignment used final ankle/toe positions rather than PHAT collider surfaces. Prone pelvis, hands and kneeling feet targets intersected the floor; simulated drives fought contacts.",
+  "fix": "Cache PHAT support points at start; lift each connected source pose to its supporting floor plane before regional NN handoff. Preserve initial physical snapshot and normal NN endpoint. No PHAT, collision, magnetization, animation asset or Blueprint edits.",
+  "captures": {
+    "physical": {
+      "reason": "complete",
+      "rows": 656,
+      "physical_throughout": true
+    },
+    "kinematic": {
+      "reason": "complete",
+      "rows": 656,
+      "physical_throughout": false
+    },
+    "free_limits": {
+      "reason": "complete",
+      "rows": 656,
+      "physical_throughout": true
+    },
+    "no_floor": {
+      "reason": "complete",
+      "rows": 656,
+      "physical_throughout": true
+    },
+    "fixed": {
+      "reason": "complete",
+      "rows": 656,
+      "physical_throughout": true
+    },
+    "fixed_back": {
+      "reason": "complete",
+      "rows": 656,
+      "physical_throughout": true
+    },
+    "fixed_free_limits": {
+      "reason": "complete",
+      "rows": 656,
+      "physical_throughout": true
+    },
+    "fixed_no_sword": {
+      "reason": "complete",
+      "rows": 656,
+      "physical_throughout": true
+    }
+  },
+  "matched_prefix_max_component_difference": {
+    "kinematic": 0.0,
+    "free_limits": 0.0,
+    "no_floor": 0.0,
+    "fixed": 0.0,
+    "fixed_free_limits": 0.0,
+    "fixed_no_sword": 0.0
+  },
+  "identical_clip_targets_max_component_difference": {
+    "kinematic": 0.0,
+    "free_limits": 0.0,
+    "no_floor": 0.0
+  },
+  "fixed_initial_target_max_component_difference": 0.0,
+  "fixed_control_targets_max_component_difference": {
+    "fixed_free_limits": 0.0,
+    "fixed_no_sword": 0.0
+  },
+  "floor_surface_z_cm": -0.5,
+  "remaining_right_hand": "Held-sword contact is the main remaining front-recovery disturbance. At tick30, disabling only held-sword collision drops right-hand jitter RMS 0.764 to 0.098 and mean position error 2.56cm to 0.067cm (ticks151-400). Freeing PHAT angular limits gives 0.369 jitter RMS. Saved sword collisions and PHAT limits stay enabled; changing get-up sword behavior needs the user decision.",
+  "limits": "Numbers diagnose contact/drive conflict; they do not establish visual acceptance. Ground fit covers published skeleton bodies on the captured supporting plane, not the held sword, arbitrary obstacles or moving platforms.",
+  "middle_clip_jitter_rms_cm_per_tick_squared": {
+    "physical": {
+      "pelvis": 2.198,
+      "hand_l": 1.944,
+      "hand_r": 0.693,
+      "foot_l": 2.521
+    },
+    "kinematic": {
+      "pelvis": 0.031,
+      "hand_l": 0.017,
+      "hand_r": 0.015,
+      "foot_l": 0.167
+    },
+    "free_limits": {
+      "pelvis": 2.227,
+      "hand_l": 1.817,
+      "hand_r": 0.81,
+      "foot_l": 2.878
+    },
+    "no_floor": {
+      "pelvis": 0.043,
+      "hand_l": 0.126,
+      "hand_r": 0.979,
+      "foot_l": 0.284
+    },
+    "fixed": {
+      "pelvis": 0.117,
+      "hand_l": 0.193,
+      "hand_r": 0.764,
+      "foot_l": 0.439
+    },
+    "fixed_back": {
+      "pelvis": 0.342,
+      "hand_l": 1.201,
+      "hand_r": 1.174,
+      "foot_l": 0.415
+    },
+    "fixed_free_limits": {
+      "pelvis": 0.105,
+      "hand_l": 0.098,
+      "hand_r": 0.369,
+      "foot_l": 0.191
+    },
+    "fixed_no_sword": {
+      "pelvis": 0.117,
+      "hand_l": 0.196,
+      "hand_r": 0.098,
+      "foot_l": 0.423
+    }
+  },
+  "physical_minimum_interpolated_clip_clearance_cm": -7.859867478833589,
+  "fixed_minimum_interpolated_clip_clearance_cm": -0.26260490334616726,
+  "fixed_back_minimum_interpolated_clip_clearance_cm": -0.006792511213896901,
+  "tests/index": {
+    "succeeded": 3,
+    "succeededWithWarnings": 0,
+    "failed": 0,
+    "notRun": 0
+  },
+  "verification": {
+    "play": false,
+    "map": "/Game/testNN.testNN",
+    "dirty": [],
+    "graph_unchanged": true,
+    "graph_normalization": "Only PlayRateMultiplier 1.0 -> 1.000000 textual float formatting after restart; saved bytes identical.",
+    "blueprint_unchanged": true,
+    "assets": {
+      "Content\\_mygame\\locomotion\\BP_ProphecyManualPoseAgent.uasset": "3c2ab67e6dc12ec98f9e337adc67049ce43dd356dab8800b69bf9e8ccc0bff62",
+      "Content\\testNN.umap": "889d1dde6201f385c89f92d0516c4a1117f15d0240388717b5160756f59ae8d3"
+    },
+    "blueprint_and_map_hashes_unchanged": true
+  },
+  "build": {
+    "result": [
+      "Succeeded"
+    ],
+    "seconds": [
+      "127.83 seconds"
+    ]
+  },
+  "completed": "2026-10-10",
+  "full_evidence": "Saved/Diagnostics/GetUpJiggle20261009",
+  "clearance_tick_windows": {
+    "physical": [
+      53,
+      584
+    ],
+    "fixed": [
+      53,
+      584
+    ],
+    "fixed_back": [
+      53,
+      550
+    ]
+  }
+}

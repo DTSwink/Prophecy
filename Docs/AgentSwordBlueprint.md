@@ -37,6 +37,8 @@ Validated on the normal 13 September editor build: 35 actual-sword fixture check
 
 ## Defaults and calibration
 
+**October10 scale update:** A_Sword's mesh component now owns the normal sword scale. Equip spawns at unit actor scale and applies the asset's component scale once; `Sword Grip Transform` supplies location/rotation, while its historical scale below is ignored. Do not multiply that scale into the asset again. Procedural holster shrinking resizes only blade-local Z in this normal scale and its native collider, preserving width and thickness; see [SwordHolster](SwordHolster.md).
+
 `Sword Blueprint`, `Sword Hand Socket`, `Sword Grip Transform`, `Sword Training Mesh`, and `Sword Mass Kg` are Blueprint-editable. The defaults select A_Sword, hand_r, the calibrated Slash grip, the exact training mesh copy, and 1 kg. The mesh override applies only to the known original Sword_GL01 geometry, not arbitrary user replacement meshes.
 
 The grip is copied from the accepted Slash handoff (`Saved/SlashChain/sword_preview.json`, sword record): translation in cm `(-7.111970982, 2.713666069, -0.108021118)`, quaternion XYZW `(-0.020187417, -0.106108461, 0.621049195, 0.776293347)`, scale `(0.837726780, 0.766193508, 1.311941499)`.

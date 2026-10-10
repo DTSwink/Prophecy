@@ -28,6 +28,7 @@ void AdoptBlend(AProphecyAgent& Agent,FName Bone,EKind Kind,FVector2f Start,FVec
 void Cancel(AProphecyAgent* Agent,FName Bone,EKind Kind);
 void Discard(AProphecyAgent* Agent,EKind Kind);
 bool RestoreResetSnapshot(AProphecyAgent* Agent,FName SnapshotName);
+bool RestoreSnapshotPhysicalMaterial(AProphecyAgent* Agent,FName SnapshotName);
 void DeleteSnapshot(const AProphecyAgent* Agent,FName SnapshotName);
 void Remove(const AProphecyAgent* Agent);
 bool Valid(EProphecyLocomotionSelection Locomotion,EProphecyEquipmentSelection Equipment);

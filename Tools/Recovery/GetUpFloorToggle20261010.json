@@ -1,0 +1,70 @@
+{
+  "date": "2026-10-10",
+  "node": "Set Get Up Floor Correction",
+  "enabled_default": true,
+  "usage": "Call before Get Up; Enabled=false removes only automatic PHAT floor-clearance lift. Applies to subsequent rises; other profile settings and original floor alignment remain.",
+  "disabled_work": "No PHAT support capture or per-sample source-world/clearance calculation.",
+  "build_seconds": "235.34 seconds",
+  "tests": {
+    "succeeded": 3,
+    "failed": 0,
+    "notRun": 0
+  },
+  "play": {
+    "test_clip": "AS_GetUp_Front1 assigned to both clip choices on temporary PIE actors to isolate the toggle; actual BP unchanged",
+    "on": [
+      {
+        "tick": 30,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=1 clip=AS_GetUp_Front1 time=0.000000 playback=0.000000 feet=0.000000 pelvis=0.000000 left=0.000000 right=0.000000 core=0.000000 frozen=1 finished=0 floor_correction=1 floor_supports=68"
+      },
+      {
+        "tick": 52,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=1 clip=AS_GetUp_Front1 time=0.366667 playback=0.016667 feet=0.000000 pelvis=0.000000 left=0.000000 right=0.000000 core=0.000000 frozen=1 finished=0 floor_correction=1 floor_supports=68"
+      },
+      {
+        "tick": 65,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=1 clip=AS_GetUp_Front1 time=0.566667 playback=0.216667 feet=0.000000 pelvis=0.000000 left=0.000000 right=0.000000 core=0.000000 frozen=1 finished=0 floor_correction=1 floor_supports=68"
+      }
+    ],
+    "off": [
+      {
+        "tick": 30,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=1 clip=AS_GetUp_Front1 time=0.000000 playback=0.000000 feet=0.000000 pelvis=0.000000 left=0.000000 right=0.000000 core=0.000000 frozen=1 finished=0 floor_correction=0 floor_supports=0"
+      },
+      {
+        "tick": 52,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=1 clip=AS_GetUp_Front1 time=0.366667 playback=0.016667 feet=0.000000 pelvis=0.000000 left=0.000000 right=0.000000 core=0.000000 frozen=1 finished=0 floor_correction=0 floor_supports=0"
+      },
+      {
+        "tick": 65,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=1 clip=AS_GetUp_Front1 time=0.566667 playback=0.216667 feet=0.000000 pelvis=0.000000 left=0.000000 right=0.000000 core=0.000000 frozen=1 finished=0 floor_correction=0 floor_supports=0"
+      }
+    ],
+    "matched_physical_prefix_max_difference": 0.0,
+    "initial_target_max_difference": 0.0,
+    "tick65_nonheight_max_difference": 0.0,
+    "tick65_height_lift_cm": [
+      3.6411136131437694,
+      3.641113613143773
+    ]
+  },
+  "verification": {
+    "node_reflected": true,
+    "blueprint_healthy": true,
+    "user_edits_saved": true,
+    "graph_preserved": true,
+    "saved_assets_preserved": true,
+    "play": false,
+    "map": "/Game/testNN.testNN",
+    "dirty": []
+  },
+  "preserved_user_edits": [
+    "force vector Y=10000",
+    "execution link from Add Force to Set PhysicalMaterial Override disconnected"
+  ],
+  "asset_sha256": {
+    "Content\\_mygame\\locomotion\\BP_ProphecyManualPoseAgent.uasset": "91cbfec4d91db06d663e163f95e86b4ae3b577cb963beb4a5936a2c9294561eb",
+    "Content\\testNN.umap": "889d1dde6201f385c89f92d0516c4a1117f15d0240388717b5160756f59ae8d3"
+  },
+  "full_evidence": "Saved/Diagnostics/GetUpFloorToggle20261010"
+}

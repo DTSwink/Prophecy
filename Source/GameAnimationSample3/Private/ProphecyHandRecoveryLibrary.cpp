@@ -1,5 +1,6 @@
 #include "ProphecyHandRecoveryLibrary.h"
 #include "ProphecyHandRecovery.h"
+#include "ProphecyGetUp.h"
 #include "ProphecyHandChainMath.h"
 #include "ProphecyAttackRecovery.h"
 #include "ProphecyBlendClock.h"
@@ -93,6 +94,7 @@ FFrame* Frame(const AProphecyAgent* A)
 bool HasRecovery() { return !Active.IsEmpty(); }
 const FTempering* Tempering(const AProphecyAgent* A)
 {
+    if(ProphecyGetUp::IsActive(A))return ProphecyGetUp::Hands(A);
     auto* V=Values.IsEmpty()?nullptr:Values.Find(A);if (!V) return nullptr;
     for(int32 I=0;I<2;++I)
     {

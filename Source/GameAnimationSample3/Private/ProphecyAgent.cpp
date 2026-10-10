@@ -18,6 +18,7 @@
 #include "ProphecyPelvisInertia.h"
 #include "ProphecyHandInertia.h"
 #include "ProphecyHandRecovery.h"
+#include "ProphecyGetUp.h"
 #include "ProphecyPhysicalContext.h"
 #include "ProphecyPhysicalBlendSubsystem.h"
 
@@ -1513,6 +1514,7 @@ bool AProphecyAgent::EnsureStandaloneNNManager()
 
 void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ProphecyGetUp::Remove(this);
     ProphecyRootVelocityDelay::Cancel(this);
 	DisableStunned();
 	ProphecyHalfAttackCompensation::Remove(this);

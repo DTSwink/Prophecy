@@ -1,5 +1,6 @@
 #include "ProphecyCoreTemperingLibrary.h"
 #include "ProphecyCoreTempering.h"
+#include "ProphecyGetUp.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyAgent.h"
 #include "Engine/World.h"
@@ -34,6 +35,7 @@ static void SetValue(const AProphecyAgent* A,float V)
 { CancelMotion(A);if(V<1) { EnsureCleanup();Values.Add(A,FValue{V}); } }
 float Rotation(const AProphecyAgent* A)
 {
+    if(ProphecyGetUp::IsActive(A))return ProphecyGetUp::Core(A);
     auto* V=Values.IsEmpty()?nullptr:Values.Find(A);if(!V) return 1;
     if(V->Returning)
     {

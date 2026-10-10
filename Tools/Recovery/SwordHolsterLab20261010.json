@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-10",
+  "lab": "Labs/SwordHolsterLab",
+  "url": "http://127.0.0.1:8818",
+  "shortcut": "C:/Users/singerie/Desktop/D-S Sword Holster Lab.lnk",
+  "acronym": "D/S = drawing (unsheathing) / sheathing",
+  "old_lab_unchanged": true,
+  "unreal_gameplay_changed": false,
+  "core": {
+    "passed": true,
+    "cases": 12,
+    "deterministicSeeking": true,
+    "speedCaps": true,
+    "axisOnlyScale": true,
+    "ueMeasuredGeometryErrorCm": 14.143196676378677,
+    "referenceBladeCm": 89.41054874149812
+  },
+  "ui": {
+    "passed": true,
+    "errors": [],
+    "refresh": true,
+    "snapshot": true,
+    "keyboard": true,
+    "liveCapture": true
+  },
+  "limits": "Authored clips, forward walk in place, pelvis rest holster attachment; no Jolt or NN simulation."
+}

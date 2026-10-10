@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-10",
+  "feature": "Sword blade-axis shrinking and moving-holster parenting fix",
+  "build_seconds": 354.9,
+  "restarts": 0,
+  "editor_pid": 22876,
+  "normal_dlls": "stale; normal build before cold launch",
+  "user_profile": {
+    "shrink_percent": 35,
+    "unshrink_duration": 0.5
+  },
+  "diagnostic_shrink_percent": 70,
+  "baseline": {
+    "last": 303,
+    "held_tick": 104,
+    "max_xy": 0.7000000336862819,
+    "min_z": 0.29999996631371817,
+    "max_local_cm": 1804.0819125644507,
+    "max_local_deg": 96.92714134545471,
+    "parent_motion": 138.7646926783694,
+    "max_native_gap": null,
+    "reason": "baseline captured"
+  },
+  "after": {
+    "last": 289,
+    "held_tick": 105,
+    "max_xy": 2.220446049250313e-16,
+    "min_z": 0.30000001192092896,
+    "max_local_cm": 0,
+    "max_local_deg": 3.4150945850063755e-06,
+    "parent_motion": 139.67637129105373,
+    "max_native_gap": 3.878559942095178,
+    "reason": "passed"
+  },
+  "validation": {
+    "graph_identical": true,
+    "hashes_identical": false,
+    "hashes": {
+      "..\\..\\..\\..\\..\\..\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\_mygame\\locomotion\\BP_ProphecyManualPoseAgent.uasset": "185f2c19da2ceaa9ad871081089ce6849f40a9d80ddb6149c635a06d9143af80",
+      "..\\..\\..\\..\\..\\..\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\testNN.umap": "aaa860a367155e3efaef9c4a471c2634838c18debfc3870facc5ccd1607543cd",
+      "..\\..\\..\\..\\..\\..\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\_mygame\\sword\\A_Sword.uasset": "ff7baf67e07acce36be264aa880f03ebe495fc16f1eebe63b7fb56f8c15fe62f"
+    },
+    "dirty": [
+      "/Game/testNN"
+    ]
+  },
+  "repaired_archived_library_defaults": 18,
+  "evidence": "Saved\\Diagnostics\\SwordHolsterFix20261010",
+  "limitations": "Numerical Play verification, no visual motion-quality claim. Native collider follows through shared physics step."
+}

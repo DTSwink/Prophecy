@@ -10,6 +10,15 @@ Cost: three additional constraints/up to eighteen motor rows per enabled arm, pl
 
 Original experiment and comparison: Saved/Diagnostics/SwordJiggleTrials20261009/Results.txt. Node verification: Saved/Diagnostics/ArmsAntiJiggle20261009/.
 
+**Get-up entry to lower handoff:** accepted Get Up forces both arms on until its
+lower-body Handoff Alpha marker, then releases the override. The independent arm
+preferences and timed-disable countdown remain intact underneath it; explicit
+preference edits during this interval still apply once released. Cancel/reset
+also releases it. This gate forces motors even if a prior timed disable is still
+running; after release that hold/sword-attack gate resumes its normal effect.
+World teardown clears the gate. Existing get-up transitions drive it without a
+new tick callback or physics query.
+
 **Disable Arms Anti Jiggle For Duration** temporarily removes both arms' motors and restores their original independent selections on expiry. Duration Seconds defaults to0.1 (six ticks). One second means60 unpaused world ticks, independent of FPS, actor/world time dilation and physics substeps; positive fractions round upward to whole ticks. Repeating the node restarts the countdown while preserving the original selection. Zero restores immediately. An explicit `Set Arms Anti Jiggle` cancels the pending restoration and wins. Negative/nonfinite durations fail without changing state.
 
 The timer survives rig recreation/reset for the same actor, while motors stay disabled, unless reset explicitly calls the normal setter. Actor destruction/world teardown cancel it. Already-disabled arms need no timer; when no holds remain, the shared world-tick callback is removed. Enabled motors are removed/restored only on transitions, with no extra physics query or inference.

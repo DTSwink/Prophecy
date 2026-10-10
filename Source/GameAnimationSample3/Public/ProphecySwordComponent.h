@@ -32,6 +32,7 @@ public:
 	bool BreakGripConstraint();
 	bool SetInertiaScale(float Scale);
 	bool SetAttachedInertiaScale(float Scale);
+    bool StartHolster(bool Sheathe,float ReachSpeed,float RotationSpeed,float SlidingSpeed);
 	void RefreshOwnerCollision();
 	AActor* GetSword() const { return Sword; }
 	bool IsSimulated() const { return Sword && bPhysicsHold; }
@@ -49,6 +50,9 @@ private:
 	void CancelJoltAdmission();
 	AActor* FinishDrop();
 	FTransform GripWorld() const;
+    FTransform GripLocal() const;
+    bool TickHolster();
+    void ClearHolster();
 	bool ApplyMass(float MassKg);
 	float BaseMassKg = 1.0f;
 	UPROPERTY(Transient) TObjectPtr<AActor> Sword;

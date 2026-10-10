@@ -50,6 +50,7 @@ THIRD_PARTY_INCLUDES_START
 #include <Jolt/Physics/Collision/SimShapeFilter.h>
 #include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
 #include <Jolt/Physics/Collision/Shape/OffsetCenterOfMassShape.h>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Constraints/FixedConstraint.h>
 #include <Jolt/Physics/Constraints/SixDOFConstraint.h>
 #include <Jolt/Physics/PhysicsSettings.h>
@@ -1517,6 +1518,28 @@ bool UProphecyJoltFootJointLibrary::SetWristRange(UObject* WorldContext,FGuid Li
 
 #include "ProphecyJoltArmMotorSettings.inl"
 #include "Tests/ProphecyJoltArmMotorTests.inl"
+
+bool UProphecyJoltBodyDriveLibrary::ScaleStandaloneBody(UObject* Context,FGuid Lifetime,int32 SlotIndex,int64 Generation,float Factor)
+{
+    UWorld* W=Context?Context->GetWorld():nullptr;
+    auto* Owner=W?W->GetSubsystem<UProphecyJoltWorldSubsystem>():nullptr;
+    if(!IsInGameThread() || !Owner || Owner->bStepInProgress || !Owner->ValidateReady().IsSuccess() || !FMath::IsFinite(Factor) || Factor<=0)return false;
+    FProphecyJoltBodyHandle H{Lifetime,SlotIndex,uint64(Generation)};
+    const auto* Slot=Owner->Native->Find(H);
+    if(!Slot || Slot->Weld || Slot->WeldParent.IsSet() || Slot->OwnerRig.IsSet())return false;
+    auto& BI=Owner->Native->Physics.GetBodyInterface();
+    JPH::RefConst<JPH::Shape> Inner=BI.GetShape(Slot->Body);
+    // Sword fitting changes blade length only; width and thickness stay authored.
+    JPH::Vec3 Scale(1.f,1.f,Factor);
+    if(Inner->GetSubType()==JPH::EShapeSubType::Scaled)
+    {
+        const auto* Existing=static_cast<const JPH::ScaledShape*>(Inner.GetPtr());
+        Scale*=Existing->GetScale();Inner=Existing->GetInnerShape();
+    }
+    JPH::RefConst<JPH::Shape> Shape=new JPH::ScaledShape(Inner.GetPtr(),Scale);
+    BI.SetShape(Slot->Body,Shape.GetPtr(),false,JPH::EActivation::Activate);
+    return true;
+}
 
 bool UProphecyJoltBodyDriveLibrary::SetDriveFollower(UObject* WorldContext, FGuid Lifetime,
     int32 BodySlot, int64 BodyGeneration, int32 ParentSlot, int64 ParentGeneration,

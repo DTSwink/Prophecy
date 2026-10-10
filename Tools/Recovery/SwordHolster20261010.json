@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-10",
+  "feature": "Procedural sword holster",
+  "status": "implemented, saved, actual Play verified with reachable transient profile",
+  "restarts": 0,
+  "editor_pid": 22876,
+  "normal_dlls": "stale; normal build required before cold launch",
+  "latest_compile_seconds": 191.68,
+  "nodes": {
+    "profile": {
+      "shrink_percent": 10,
+      "unshrink_duration": 0.25
+    },
+    "wiring": "existing unused tick25 True; construction and begin_f capture",
+    "draw_sword": {
+      "max_reach_rotation_speed": 180,
+      "sheathe": true,
+      "max_reach_speed": 100,
+      "sliding_speed": 60
+    }
+  },
+  "scale": {
+    "blade_length_cm": 89.3492,
+    "normal": [
+      0.837727,
+      0.766194,
+      1.311941
+    ],
+    "source": "A_Sword mesh, applied once",
+    "shrink_10_means": "10% smaller, 90% retained",
+    "marker": "base blade"
+  },
+  "validation": {
+    "final_asset_scale_restored": true,
+    "other_graph_unchanged": true,
+    "existing_nodes_changed_execution_links_only": 4,
+    "final_world_joint_count": 14,
+    "repeat_cycles": 2,
+    "duplicate_calls": 5,
+    "fifty_percent_trial_shortfall_cm": 6,
+    "motion_quality": "requires user inspection",
+    "last_absolute_tick": 324,
+    "ten_percent_default_reach_shortfall_cm": 30,
+    "graph_added_nodes": 4,
+    "transient_shrink_percent": 70,
+    "joint_identity_and_count_preserved": true
+  },
+  "evidence": "Saved/Diagnostics/SwordDraw20261010",
+  "contract": "Docs/SwordHolster.md",
+  "saved": {
+    "agent": "1c617a3765cae9c42a6d3a458a0b0c0cec84717be59861710717e2ee1b691097",
+    "sword": "6defcc03b209d101ded79e9063b77e69a5830f06fb7aac92f17f7c67d76c955e",
+    "map_sha256": "aaa860a367155e3efaef9c4a471c2634838c18debfc3870facc5ccd1607543cd",
+    "dirty": [
+      "/Game/testNN"
+    ],
+    "play": false
+  }
+}

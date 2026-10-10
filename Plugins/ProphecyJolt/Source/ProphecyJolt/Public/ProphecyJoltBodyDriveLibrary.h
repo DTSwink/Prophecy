@@ -35,6 +35,13 @@ public:
     UFUNCTION(meta=(BlueprintInternalUseOnly="true"))
     static void NotifyArmsAntiJiggleAttackWindow(AActor* Agent, bool Active);
 
+    /** Internal get-up gate. Forces both arms without replacing their preferences or timed holds. */
+    UFUNCTION(meta=(BlueprintInternalUseOnly="true"))
+    static void NotifyArmsAntiJiggleGetUpWindow(AActor* Agent, bool Active);
+
+    UFUNCTION()
+    static bool ScaleStandaloneBody(UObject* WorldContext,FGuid Lifetime,int32 BodySlot,int64 BodyGeneration,float Factor);
+
     UFUNCTION()
     static bool SetDriveFollower(UObject* WorldContext, FGuid Lifetime, int32 BodySlot, int64 BodyGeneration,
         int32 ParentSlot, int64 ParentGeneration, FTransform BodyToParent, bool Enabled);

@@ -2,6 +2,14 @@
 
 At the end of delayed BeginPlay setup, call **Save Physical Profile Snapshot** with this agent. Leave `Snapshot Name` as `None` for one default snapshot, or use names for multiple presets. Names belong to each individual agent. Calling Save again with the same name replaces that snapshot. These are runtime snapshots, not disk saves; they are removed when the agent ends play.
 
+Saving also captures the **PhysicalMesh physical-material override**, including a
+null override. Get Up immediately restores this value from slot `1` through the
+existing Jolt-aware mesh setter. Material assets are retained while saved; replacing
+or deleting the snapshot releases the old reference. Missing snapshots leave the
+material alone. This addition does not change material on attack/defense entry or
+ordinary strength/tolerance/mode snapshot returns. Re-save pre-patch snapshots to
+capture their material.
+
 To start returns at attack completion, add **Event On Attack Ended** in the pose-agent Blueprint. It is an inherited `AProphecyAgent` Blueprint event (`OnNNAttackEnded`), with the ended attack's name as an output. It fires once after native cleanup on natural completion, explicit stop/cancel, or replacement by another attack/defense. It does not fire merely when the NN outputs Hit, or when Stop is called while already inactive. Connect the desired blend nodes directly to this event. The event has no polling, timer or per-frame work. During Reset Initial Agents, the reset's baseline restore still takes precedence over blends started by the attack-ended event.
 
 **Special entry (October 6):** an actual attack (full or half), Parry or Dodge immediately restores this agent's snapshot named **`1`**. This restores every saved magnetization, feedback-tolerance and joint-damping profile cell, plus all supported clamp modes, with exact enabled/override flags and remembered leeways. Pending returns for these saved values are cancelled; they cannot resume after the special. A queued defense waits until Armed/activation. Full/half mode changes are not new special entries. Slot `1` replaces the old hardcoded attack magnetization/tolerance/damping defaults for that special. Missing slot `1` leaves previous behavior unchanged. Other named/default snapshots and the private reset snapshot are not selected automatically. No new node, timer, inference or recurring snapshot scan is added; save slot `1` during setup. Global strength/gate controls, simulation membership and gravity remain outside this snapshot's scope.

@@ -97,8 +97,10 @@ FAutoConsoleCommand Command(TEXT("Prophecy.Editor.LiveAgentTypes"),TEXT("Inspect
 void RepairLibraryDefaults()
 {
     if (!GEditor || GEditor->PlayWorld) return;
-    auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
-    if (!BP) return;
+    for(const TCHAR* Path:{TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"),TEXT("/Game/_mygame/sword/A_Sword.A_Sword")})
+    {
+    auto* BP=LoadObject<UBlueprint>(nullptr,Path);
+    if (!BP) continue;
     auto Expected=Wiring(BP);
     FScopedTransaction Tx(NSLOCTEXT("Prophecy","RepairLibraryDefaults","Repair Live Coding library defaults"));
     BP->Modify();int32 Count=0;
@@ -122,6 +124,7 @@ void RepairLibraryDefaults()
     const FString Report=FString::Printf(TEXT("repaired_defaults=%d status=%d other_values_and_wiring_preserved=%d asset_saved=0\n"),Count,int32(BP->Status),int32(Preserved));
     FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/LiveLibraryDefaults.txt")));
     UE_LOG(LogTemp,Display,TEXT("LiveLibraryDefaults: %s"),*Report);
+    }
 }
 FAutoConsoleCommand LibraryDefaultsCommand(TEXT("Prophecy.Editor.RepairLibraryDefaults"),TEXT("Repair archived Live Coding library CDOs on unlinked self pins; preserve values/connections and leave asset unsaved."),FConsoleCommandDelegate::CreateStatic(&RepairLibraryDefaults));
 

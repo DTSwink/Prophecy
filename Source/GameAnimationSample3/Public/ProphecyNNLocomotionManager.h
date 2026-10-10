@@ -253,6 +253,7 @@ public:
 		float PlayRate,
 		bool bLoop);
 	bool StopAgentAnimationLayer(FProphecyAgentHandle Handle, float BlendOutSeconds);
+	bool StartAgentGetUp(FProphecyAgentHandle Handle, float PlayRateMultiplier);
 	bool TriggerAgentNNAttack(FProphecyAgentHandle Handle, FName Attack, FVector TargetWorld, bool bHalf);
 	bool SetAgentAttackCheckpointIndex(FProphecyAgentHandle Handle, int32 Checkpoint, FString& OutError);
 	bool SetUpperCheckpointIndex(int32 Checkpoint, FString& OutError);

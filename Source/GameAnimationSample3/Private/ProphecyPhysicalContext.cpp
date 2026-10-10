@@ -9,6 +9,8 @@
 #include "Engine/World.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "PhysicsEngine/SkeletalBodySetup.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
+#include "UObject/StrongObjectPtr.h"
 #include "ProphecyClampProfiles.inl"
 
 namespace ProphecyPhysicalContext
@@ -85,6 +87,8 @@ struct FAgentState
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FAgentState> States;
 // Only allocated by an explicit save; never visited by the update path.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,TMap<FName,TArray<FEntry>>> Snapshots;
+// Presence is meaningful even for a null override (restore the mesh's body materials).
+static TMap<TWeakObjectPtr<const AProphecyAgent>,TMap<FName,TStrongObjectPtr<UPhysicalMaterial>>> MaterialSnapshots;
 // A restored special owns its saved profiles instead of the legacy attack defaults.
 // Separate storage keeps existing Live Coding state layouts unchanged.
 static TSet<TWeakObjectPtr<const AProphecyAgent>> SnapshotSpecials;
@@ -128,7 +132,7 @@ bool IsApplying() { return Applying; }
 bool Valid(EProphecyLocomotionSelection L,EProphecyEquipmentSelection E)
 { return uint8(L)<=uint8(EProphecyLocomotionSelection::Run) && uint8(E)<=uint8(EProphecyEquipmentSelection::Sheathed); }
 void Remove(const AProphecyAgent* Agent)
-{ ProphecyPhysicalToleranceDelay::Cancel(Agent);Modes.Remove(Agent);States.Remove(Agent); Snapshots.Remove(Agent);SnapshotSpecials.Remove(Agent);ProphecyBlendClock::Remove(Agent);ProphecyClampProfiles::Remove(Agent); }
+{ ProphecyPhysicalToleranceDelay::Cancel(Agent);Modes.Remove(Agent);States.Remove(Agent); Snapshots.Remove(Agent);MaterialSnapshots.Remove(Agent);SnapshotSpecials.Remove(Agent);ProphecyBlendClock::Remove(Agent);ProphecyClampProfiles::Remove(Agent); }
 bool IsManaged(const AProphecyAgent* Agent,FName Bone,EKind Kind)
 {
     if (Applying || States.IsEmpty()) return false;
@@ -457,6 +461,8 @@ static bool SaveSnapshot(AProphecyAgent* Agent,FName Name)
     if (Saved.IsEmpty()) return false;
     for (auto It=Snapshots.CreateIterator();It;++It) if (!It.Key().IsValid()) It.RemoveCurrent();
     Snapshots.FindOrAdd(Agent).Add(Name,MoveTemp(Saved));
+    for (auto It=MaterialSnapshots.CreateIterator();It;++It) if (!It.Key().IsValid()) It.RemoveCurrent();
+    MaterialSnapshots.FindOrAdd(Agent).Add(Name,TStrongObjectPtr<UPhysicalMaterial>(Mesh->BodyInstance.GetPhysMaterialOverride()));
     ProphecyClampProfiles::Save(Agent,Name);
     return true;
 }
@@ -524,6 +530,16 @@ bool RestoreResetSnapshot(AProphecyAgent* Agent,FName Name)
     ProphecyClampProfiles::Restore(Agent,Name,ProphecyClampProfiles::EMode::All,-1,0);
     return true;
 }
+bool RestoreSnapshotPhysicalMaterial(AProphecyAgent* Agent,FName Name)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()) return false;
+    const auto* Saved=MaterialSnapshots.Find(Agent);
+    const auto* Material=Saved?Saved->Find(Name):nullptr;
+    auto* Mesh=Agent->GetPoseReferenceMesh();
+    if (!Material || !Mesh) return false;
+    Mesh->SetPhysMaterialOverride(Material->Get());
+    return true;
+}
 bool EnterSpecial(AProphecyAgent* Agent)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()
@@ -541,6 +557,8 @@ void ExitSpecial(const AProphecyAgent* Agent) { SnapshotSpecials.Remove(Agent); 
 void DeleteSnapshot(const AProphecyAgent* Agent,FName Name)
 {
     ProphecyClampProfiles::Delete(Agent,Name);
+    if (auto* Saved=MaterialSnapshots.Find(Agent))
+    { Saved->Remove(Name);if (Saved->IsEmpty()) MaterialSnapshots.Remove(Agent); }
     if (auto* Saved=Snapshots.Find(Agent))
     { Saved->Remove(Name);if (Saved->IsEmpty()) Snapshots.Remove(Agent); }
 }
@@ -671,6 +689,20 @@ bool FProphecySpecialSnapshotTest::RunTest(const FString&)
     auto* Mesh=LoadObject<USkeletalMesh>(nullptr,TEXT("/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin"));
     if (!TestNotNull(TEXT("Skeleton"),Mesh)) return false;
     Agent->GetAgentMesh()->SetSkeletalMeshAsset(Mesh);
+    auto* PhysicalMesh=Agent->GetPoseReferenceMesh();
+    auto* SavedMaterial=NewObject<UPhysicalMaterial>();
+    auto* OtherMaterial=NewObject<UPhysicalMaterial>();
+    PhysicalMesh->SetPhysMaterialOverride(SavedMaterial);
+    TestTrue(TEXT("Save material with named profile"),SaveSnapshot(Agent,TEXT("MaterialTest")));
+    PhysicalMesh->SetPhysMaterialOverride(OtherMaterial);
+    TestFalse(TEXT("Missing material slot leaves override alone"),RestoreSnapshotPhysicalMaterial(Agent,TEXT("Missing")));
+    TestTrue(TEXT("Restore saved material"),RestoreSnapshotPhysicalMaterial(Agent,TEXT("MaterialTest")));
+    TestEqual(TEXT("Exact saved override"),PhysicalMesh->BodyInstance.GetPhysMaterialOverride(),SavedMaterial);
+    PhysicalMesh->SetPhysMaterialOverride(nullptr);SaveSnapshot(Agent,TEXT("MaterialTest"));
+    PhysicalMesh->SetPhysMaterialOverride(OtherMaterial);RestoreSnapshotPhysicalMaterial(Agent,TEXT("MaterialTest"));
+    TestNull(TEXT("Overwritten null snapshot clears override"),PhysicalMesh->BodyInstance.GetPhysMaterialOverride());
+    DeleteSnapshot(Agent,TEXT("MaterialTest"));
+    TestFalse(TEXT("Delete removes material too"),RestoreSnapshotPhysicalMaterial(Agent,TEXT("MaterialTest")));
     auto Mag=[&]() { FProphecyBodyMagnetizationSettings V;Agent->GetBodyMagnetizationSettings(TEXT("head"),V);return V; };
     auto Feedback=[&]() { FProphecyPhysicalFeedbackToleranceSettings V;Agent->GetPhysicalFeedbackTolerance(TEXT("head"),V);return V; };
     Agent->SetBodyMagnetization(TEXT("head"),true,.2f,.4f);

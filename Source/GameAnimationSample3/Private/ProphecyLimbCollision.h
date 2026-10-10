@@ -8,4 +8,5 @@ bool Update(AProphecyAgent* Agent,const FProphecyJoltBodyHandle& RigBody,FString
 void Invalidate(AProphecyAgent* Agent);
 void DefenseChanged(AProphecyAgent* Agent,bool bActive);
 void Remove(const AProphecyAgent* Agent);
+bool SetHolsterArmSuppressed(AProphecyAgent* Agent,bool Suppressed,FString& Error);
 }

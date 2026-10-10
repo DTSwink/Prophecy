@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-10",
+  "removed": "Automatic get-up PHAT floor-clearance lift, support cache, profile flag, Blueprint setter and feature-only tests/diagnostic fields.",
+  "preserved": "Original clip-height alignment and Ground Offset, entry blend, magnetization, simulation, handoffs and all user Blueprint settings apart from removal of the obsolete call.",
+  "editor_restarts": 1,
+  "restart_reason": "Retained native profile/active-state layout and reflected function removal; not safe for Live Coding.",
+  "build_seconds": "58.59 seconds",
+  "first_build_attempt": "Refused during graceful editor shutdown while Live Coding was still active; retried after exit, no extra restart.",
+  "second_build_attempt": "Runtime compiled; editor helper had an auto-pointer deduction error for TObjectPtr graph nodes. Fixed with explicit UEdGraphNode pointer; final build recompiles editor module only.",
+  "verification": {
+    "native_node_removed": true,
+    "removed_graph_node": "K2Node_CallFunction_280",
+    "execution_reconnected": "K2Node_CallFunction_81.then -> K2Node_CallFunction_281.execute",
+    "all_other_nodes_pins_links_preserved": true,
+    "saved": true,
+    "blueprint_status": 3,
+    "map_unchanged": true,
+    "dirty": [],
+    "blueprint_sha256": "05e202ef0788bd62c8c75a03f40b4dd107f18561daa6c1f39682ec69e9bcd81e"
+  },
+  "play": {
+    "reason": "passed",
+    "status": [
+      {
+        "tick": 29,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=0"
+      },
+      {
+        "tick": 30,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=1 clip=AS_GetUp_Back1 time=0.000000 playback=0.000000 feet=0.000000 pelvis=0.000000 left=0.000000 right=0.000000 core=0.000000 frozen=1 finished=0"
+      },
+      {
+        "tick": 52,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=1 clip=AS_GetUp_Back1 time=0.366667 playback=0.016667 feet=0.000000 pelvis=0.000000 left=0.000000 right=0.000000 core=0.000000 frozen=1 finished=0"
+      },
+      {
+        "tick": 65,
+        "value": "BP_ProphecyManualPoseAgent_C_0 active=1 clip=AS_GetUp_Back1 time=0.566667 playback=0.216667 feet=0.000000 pelvis=0.000000 left=0.000000 right=0.000000 core=0.000000 frozen=1 finished=0"
+      }
+    ]
+  },
+  "map": "/Game/testNN.testNN",
+  "dirty": [],
+  "full_evidence": "Saved/Diagnostics/GetUpFloorRemoval20261010"
+}

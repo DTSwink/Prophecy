@@ -1,0 +1,11 @@
+{
+  "play": false,
+  "dirty": [
+    "/Game/testNN"
+  ],
+  "agent_sha256": "185f2c19da2ceaa9ad871081089ce6849f40a9d80ddb6149c635a06d9143af80",
+  "sword_sha256": "ff7baf67e07acce36be264aa880f03ebe495fc16f1eebe63b7fb56f8c15fe62f",
+  "dirty_after": [
+    "/Game/testNN"
+  ]
+}

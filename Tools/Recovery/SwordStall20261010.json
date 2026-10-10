@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-10",
+  "diagnosis": "Unreachable sheath mouth target; arm solve saturates and arrival gate never opens",
+  "settings_unchanged": true,
+  "owned_play_ended": true,
+  "absolute_tick": 221,
+  "state": "BP_ProphecyManualPoseAgent_C_0 reference=1 length=89.3492 phase=1 attached=0 scale=0.650000 insertion=0.000000 progress=1.000000 joint=1 distance=14.089 angle=0.633 target=X=13.181 Y=-294.501 Z=155.635 goal=X=13.181 Y=-294.501 Z=155.635 joint_slot=8 joint_generation=3 world_joints=13",
+  "physical": {
+    "arm_length": 49.05617876307565,
+    "shoulder_target": 63.1427878297744,
+    "reach_shortfall": 14.086609066698745,
+    "hand_target_error": 14.088990130824849,
+    "shoulder_hand": 49.055253554150326
+  },
+  "nn": {
+    "arm_length": 49.00066570500706,
+    "shoulder_target": 63.14286238138571,
+    "reach_shortfall": 14.14219667637865,
+    "hand_target_error": 14.144402472603112,
+    "shoulder_hand": 48.99969388339816
+  },
+  "physical_nn_hand_error_cm": 0.058144237432303056,
+  "collision": {
+    "upperarm_r": "(<CollisionChannel.ECC_PHYSICS_BODY: 5>, <CollisionResponseType.ECR_IGNORE: 0>, False, False)",
+    "lowerarm_r": "(<CollisionChannel.ECC_PHYSICS_BODY: 5>, <CollisionResponseType.ECR_IGNORE: 0>, False, False)",
+    "hand_r": "(<CollisionChannel.ECC_PHYSICS_BODY: 5>, <CollisionResponseType.ECR_IGNORE: 0>, False, False)"
+  },
+  "arrival_tolerance_cm": 2,
+  "rotation_tolerance_degrees": 5,
+  "source": "ProphecyNNLocomotionManager.cpp arm solve fixes shoulder and clamps hand distance to L1+L2-.001; ProphecySwordHolsterRuntime.inl waits for real hand within2cm",
+  "evidence": "Saved\\Diagnostics\\SwordStall20261010"
+}

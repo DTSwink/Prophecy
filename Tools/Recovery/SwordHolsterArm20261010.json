@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-10",
+  "feature": "Right arm collision suppression during sword holster actions",
+  "compile_seconds": 290.15,
+  "reload": "succeeded; no object changes",
+  "restarts": 0,
+  "normal_dlls": "stale; normal build before cold launch",
+  "validation": {
+    "last_tick": 150,
+    "events": [
+      [
+        28,
+        "sheath immediate suppression"
+      ],
+      [
+        40,
+        "configure/reset while suppressed and duplicate calls"
+      ],
+      [
+        99,
+        "sheathed collision restored"
+      ],
+      [
+        142,
+        "draw completed collision restored"
+      ],
+      [
+        150,
+        "hide interruption collision restored"
+      ]
+    ],
+    "checks": 125,
+    "channels": 19,
+    "reason": "passed",
+    "graph_assets": {
+      "graph_identical": true,
+      "hashes_identical": true,
+      "hashes": {
+        "..\\..\\..\\..\\..\\..\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\_mygame\\locomotion\\BP_ProphecyManualPoseAgent.uasset": "185f2c19da2ceaa9ad871081089ce6849f40a9d80ddb6149c635a06d9143af80",
+        "..\\..\\..\\..\\..\\..\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\testNN.umap": "aaa860a367155e3efaef9c4a471c2634838c18debfc3870facc5ccd1607543cd",
+        "..\\..\\..\\..\\..\\..\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\_mygame\\sword\\A_Sword.uasset": "ff7baf67e07acce36be264aa880f03ebe495fc16f1eebe63b7fb56f8c15fe62f"
+      },
+      "dirty": [
+        "/Game/testNN"
+      ]
+    }
+  },
+  "evidence": "Saved\\Diagnostics\\SwordHolsterArm20261010",
+  "teardown": "Other active agents can log empty restoration warnings after their rigs retire; character EndPlay clears temporary state."
+}

@@ -53,6 +53,7 @@ public:
     bool GetBodyState(FProphecyJoltBodyState& OutState) const;
     bool SetSimulationEnabled(bool bEnabled, FString& OutError);
     bool SetMassKg(float MassKg, FString& OutError);
+    bool ScaleBladeAxis(float Factor,FString& OutError);
     void SynchronizeSourceTransform();
     bool GetBodyOriginToComponent(FTransform& OutTransform) const;
     UProphecyJoltWorldSubsystem* GetWorldOwner() const;

@@ -1,0 +1,84 @@
+{
+  "tick": 221,
+  "state": "BP_ProphecyManualPoseAgent_C_0 reference=1 length=89.3492 phase=1 attached=0 scale=0.650000 insertion=0.000000 progress=1.000000 joint=1 distance=14.089 angle=0.633 target=X=13.181 Y=-294.501 Z=155.635 goal=X=13.181 Y=-294.501 Z=155.635 joint_slot=8 joint_generation=3 world_joints=13",
+  "physical": {
+    "upperarm_r": [
+      12.96814528354417,
+      -351.20213527697155,
+      127.85105488617286
+    ],
+    "lowerarm_r": [
+      12.96772751267181,
+      -327.205522652391,
+      139.45417291947211
+    ],
+    "hand_r": [
+      12.956024173161403,
+      -307.1595507918482,
+      149.45356645801172
+    ],
+    "clavicle_r": [
+      23.472757008400166,
+      -340.5080211021631,
+      131.8364035415476
+    ],
+    "pelvis": [
+      26.062961462629808,
+      -333.00034820859776,
+      90.20696920228785
+    ]
+  },
+  "nn": {
+    "pelvis": [
+      26.020189025439322,
+      -333.0323990434408,
+      90.2026551309973
+    ],
+    "clavicle_r": [
+      23.446005303412676,
+      -340.47026969492435,
+      131.80475407280028
+    ],
+    "upperarm_r": [
+      12.968065217137337,
+      -351.20222866535187,
+      127.8510766569525
+    ],
+    "lowerarm_r": [
+      12.9675119803673,
+      -327.20871993721477,
+      139.45325972056577
+    ],
+    "hand_r": [
+      12.970959698366514,
+      -307.2129843234294,
+      149.43617277708472
+    ]
+  },
+  "alpha": 0.5,
+  "goal": [
+    13.181,
+    -294.501,
+    155.635
+  ],
+  "physical_metrics": {
+    "arm_length": 49.05617876307565,
+    "shoulder_target": 63.1427878297744,
+    "reach_shortfall": 14.086609066698745,
+    "hand_target_error": 14.088990130824849,
+    "shoulder_hand": 49.055253554150326
+  },
+  "nn_metrics": {
+    "arm_length": 49.00066570500706,
+    "shoulder_target": 63.14286238138571,
+    "reach_shortfall": 14.14219667637865,
+    "hand_target_error": 14.144402472603112,
+    "shoulder_hand": 48.99969388339816
+  },
+  "physical_nn_hand_error": 0.058144237432303056,
+  "collision": {
+    "upperarm_r": "(<CollisionChannel.ECC_PHYSICS_BODY: 5>, <CollisionResponseType.ECR_IGNORE: 0>, False, False)",
+    "lowerarm_r": "(<CollisionChannel.ECC_PHYSICS_BODY: 5>, <CollisionResponseType.ECR_IGNORE: 0>, False, False)",
+    "hand_r": "(<CollisionChannel.ECC_PHYSICS_BODY: 5>, <CollisionResponseType.ECR_IGNORE: 0>, False, False)"
+  }
+}

@@ -7,6 +7,7 @@
 #include "ProphecyArmedPose.h"
 #include "ProphecyAttackControls.h"
 #include "ProphecyAgent.h"
+#include "ProphecyGetUp.h"
 #include "ProphecyForearmStretch.h"
 #include "Engine/World.h"
 #include "ProphecyBlendClock.h"
@@ -117,6 +118,7 @@ void EnterLowerSpecial(const AProphecyAgent* Agent)
 }
 void EnterSpecial(const AProphecyAgent* Agent,bool Half)
 {
+    ProphecyGetUp::Cancel(Agent);
     ProphecyForearmStretch::Cancel(const_cast<AProphecyAgent*>(Agent));
     ProphecyFKReturn::Cancel(Agent);
     ProphecyAttackStartHands::Cancel(Agent);

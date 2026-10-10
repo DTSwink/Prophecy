@@ -1,5 +1,13 @@
 #include "ProphecySwordComponent.h"
 #include "ProphecySwordPhysicsLibrary.h"
+#include "ProphecySwordHolsterLibrary.h"
+#include "ProphecySwordHolster.h"
+#include "ProphecyLimbCollision.h"
+#include "ProphecyJoltSceneCollisionComponent.h"
+#include "Components/ChildActorComponent.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "Engine/SimpleConstructionScript.h"
+#include "Engine/SCS_Node.h"
 #include "ProphecyGhostAttackLibrary.h"
 #if WITH_EDITOR
 #include "StaticMeshCompiler.h"
@@ -17,6 +25,9 @@
 #include "Engine/World.h"
 #include "Engine/StaticMesh.h"
 #include "EngineUtils.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "UObject/UnrealType.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "PhysicsEngine/PhysicsAsset.h"
@@ -412,9 +423,11 @@ UProphecySwordComponent::~UProphecySwordComponent() = default;
 
 AProphecyAgent* UProphecySwordComponent::Agent() const { return Cast<AProphecyAgent>(GetOwner()); }
 
+#include "ProphecySwordHolsterRuntime.inl"
+
 FTransform UProphecySwordComponent::GripWorld() const
 {
-	return Agent()->SwordGripTransform * Agent()->GetPoseReferenceMesh()->GetSocketTransform(Agent()->SwordHandSocket);
+	return GripLocal() * Agent()->GetPoseReferenceMesh()->GetSocketTransform(Agent()->SwordHandSocket);
 }
 
 bool UProphecySwordComponent::Equip(bool bSimulated)
@@ -448,7 +461,8 @@ bool UProphecySwordComponent::Equip(bool bSimulated)
 	P.Instigator = A;
 	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	P.bDeferConstruction = true;
-	Sword = GetWorld()->SpawnActor<AActor>(Class, GripWorld(), P);
+	FTransform SpawnTransform=GripWorld();SpawnTransform.SetScale3D(FVector::OneVector);
+	Sword = GetWorld()->SpawnActor<AActor>(Class, SpawnTransform, P);
 	if (!Sword) return false;
 	if (bKnownSword)
 	{
@@ -459,12 +473,14 @@ bool UProphecySwordComponent::Equip(bool bSimulated)
 		if (FIntProperty* Unfreeze = FindFProperty<FIntProperty>(Class, TEXT("unfreeze tick"))) Unfreeze->SetPropertyValue_InContainer(Sword, 0);
 		if (FBoolProperty* Gravity = FindFProperty<FBoolProperty>(Class, TEXT("enable gravity"))) Gravity->SetPropertyValue_InContainer(Sword, true);
 	}
-	Sword->FinishSpawning(GripWorld());
+	Sword->FinishSpawning(SpawnTransform);
 	TArray<UStaticMeshComponent*> Meshes;
 	Sword->GetComponents(Meshes);
 	for (UStaticMeshComponent* C : Meshes) if (C->GetFName() == TEXT("sword")) Blade = C;
 	if (!Blade && Meshes.Num() == 1) Blade = Meshes[0];
 	if (!Blade || !Blade->GetStaticMesh()) { Disappear(); return false; }
+	ProphecySwordHolster::AssetScales.Add(this,Blade->GetComponentScale());
+	ProphecySwordHolster::EnsureCleanup();
 	if (Blade->GetStaticMesh()->GetPathName() == TEXT("/Game/_mygame/sword/geometry/Sword_GL01.Sword_GL01"))
 	{
 		if (UStaticMesh* Exact = A->SwordTrainingMesh.LoadSynchronous()) Blade->SetStaticMesh(Exact);
@@ -598,7 +614,7 @@ bool UProphecySwordComponent::FinishJoltGrip(UProphecyJoltCharacterComponent& Ch
 	{
 		if (!ReleaseJoltGrip()) return false;
 		FString Error;
-		if (!JoltBody->FollowWelded(Hand, Mesh, A->SwordHandSocket, A->SwordGripTransform, Error))
+		if (!JoltBody->FollowWelded(Hand, Mesh, A->SwordHandSocket, GripLocal(), Error))
 		{ UE_LOG(LogTemp, Error, TEXT("Attached sword collider failed: %s"), *Error); return false; }
 		if (!SetAttachedInertiaScale(A->GetSwordAttachedInertiaScale())) return false;
 		JoltBinding.Reset(new FProphecyJoltSwordBinding);
@@ -607,7 +623,7 @@ bool UProphecySwordComponent::FinishJoltGrip(UProphecyJoltCharacterComponent& Ch
 		JoltBinding->Hand = Hand;
 		RefreshOwnerCollision();
 		Blade->AttachToComponent(&Mesh, FAttachmentTransformRules::KeepWorldTransform, A->SwordHandSocket);
-		Blade->SetRelativeTransform(A->SwordGripTransform);
+		Blade->SetRelativeTransform(GripLocal());
 		Blade->UpdateComponentToWorld();
 		return ProphecySwordNoReaction::Apply(JoltBody,ProphecySwordNoReaction::Desired(A));
 	}
@@ -796,7 +812,7 @@ bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 		// Chaos owns a moving, non-simulated collider while the socket owns presentation.
 		Blade->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Blade->AttachToComponent(M, FAttachmentTransformRules::KeepWorldTransform, A->SwordHandSocket);
-		Blade->SetRelativeTransform(A->SwordGripTransform);
+		Blade->SetRelativeTransform(GripLocal());
 		// An unchanged relative transform can early-out after a mode switch has
 		// temporarily propagated a different socket pose to attached children.
 		Blade->UpdateComponentToWorld();
@@ -957,6 +973,12 @@ AActor* UProphecySwordComponent::Drop()
 	if (bDropPending) return Sword;
 	AProphecyAgent* A = Agent();
 	if (A && A->GetJoltCharacterComponent() && A->GetJoltCharacterComponent()->IsKinematicRestorePending()) return nullptr;
+	if(auto* S=ProphecySwordHolster::States.Find(A))
+	{
+		FString Error;
+		if(!JoltBody || !JoltBody->ScaleBladeAxis(1/S->Scale,Error) || !JoltBody->SetSimulationEnabled(true,Error))return nullptr;
+		ClearHolster();
+	}
 	TGuardValue<bool> BindingGuard(bBinding, true);
 	// Restore the hand shape and re-admit the sword as an independent dynamic on drop.
 	if (JoltBody && JoltBody->IsAttachedCollider() && !ReleaseJoltBody()) return nullptr;
@@ -1039,6 +1061,8 @@ AActor* UProphecySwordComponent::Drop()
 
 void UProphecySwordComponent::Disappear()
 {
+	ClearHolster();
+	ProphecySwordHolster::AssetScales.Remove(this);
 	ProphecySwordAttackCollision::ReleaseSword(Agent());
 	CancelJoltAdmission();
 	ReleaseJoltBody(); // Generic grip is always removed before its native body.
@@ -1064,6 +1088,7 @@ void UProphecySwordComponent::EndPlay(const EEndPlayReason::Type Reason)
 	ProphecySwordAttackCollision::OwnCollisionDisabled.Remove(Agent());
 	ProphecySwordAttackCollision::End(Agent());
 	Disappear();
+	ProphecySwordHolster::Remove(Agent());
 	Super::EndPlay(Reason);
 }
 
@@ -1073,6 +1098,8 @@ void UProphecySwordComponent::TickComponent(float Dt, ELevelTick Type, FActorCom
 	if (!IsValid(Sword) || !IsValid(Blade)) { Disappear(); return; }
 	AProphecyAgent* A = Agent();
 	if (!A) return;
+	if (Type==LEVELTICK_PauseTick || GetWorld()->IsPaused())return;
+	if (TickHolster())return;
 	if (!bDropPending && (bRefreshPending || BoundMesh != A->GetPoseReferenceMesh()
 		|| (!PendingJoltBindId.IsValid()
 			&& A->IsJoltPhysicalAnimationEnabled() != bool(JoltBinding)))) RefreshHandConstraint();
@@ -1302,11 +1329,13 @@ void AProphecyAgent::HideSword()
 }
 AActor* AProphecyAgent::GetHeldSword() const
 {
+	if(ProphecySwordHolster::InHolster(this))return nullptr;
 	const UProphecySwordComponent* C = FindComponentByClass<UProphecySwordComponent>();
 	return C ? C->GetSword() : nullptr;
 }
 bool AProphecyAgent::IsSwordSimulated() const
 {
+	if(ProphecySwordHolster::InHolster(this))return false;
 	const UProphecySwordComponent* C = FindComponentByClass<UProphecySwordComponent>();
 	return C && C->IsSimulated();
 }

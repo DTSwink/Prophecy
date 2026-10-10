@@ -2,6 +2,7 @@
 #include "ProphecyNNModifierDebug.h"
 #include "ProphecyKickFootLeeway.h"
 #include "ProphecyLowerTempering.h"
+#include "ProphecyGetUp.h"
 #include "ProphecyAgent.h"
 #include "Engine/World.h"
 #include "ProphecyBlendClock.h"
@@ -141,6 +142,7 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FSettings> NonKickingProfiles,R
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FSettings> ReturnRightInitial,FeetReturnRightInitial;
 const FSettings& RightFootSettings(const AProphecyAgent* Agent,const FSettings& Left)
 {
+    if(ProphecyGetUp::IsActive(Agent))return Left;
     const auto* Right=RightValues.IsEmpty() ? nullptr : RightValues.Find(Agent);
     return Right ? *Right : Left;
 }
@@ -188,6 +190,7 @@ static void CancelReturns(const AProphecyAgent* Agent)
 }
 const FSettings* Find(const AProphecyAgent* Agent)
 {
+    if(ProphecyGetUp::IsActive(Agent))return ProphecyGetUp::Lower(Agent);
     auto* Value=Settings.IsEmpty() ? nullptr : Settings.Find(Agent);
     if (!Value) return nullptr;
     if (auto* Return=Returns.IsEmpty() ? nullptr : Returns.Find(Agent))
@@ -223,6 +226,7 @@ const FSettings* Find(const AProphecyAgent* Agent)
 }
 FVector2f ReconstructionWeights(const AProphecyAgent* Agent,const FSettings& Left)
 {
+    if(const auto* S=ProphecyGetUp::Find(Agent))return FVector2f(FMath::Max(1-S->FeetAlpha,1-S->PelvisAlpha));
     auto Remaining=[](const FReturnTimeline* T)
     {
         if(!T)return 1.f;

@@ -1,5 +1,6 @@
 #include "ProphecyRootPelvisBoundsLibrary.h"
 #include "ProphecyRootPelvisBounds.h"
+#include "ProphecyGetUp.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNLocomotionManager.h"
 #include "ProphecyRootPhysicsLibrary.h"
@@ -51,7 +52,7 @@ void Apply(AProphecyNNLocomotionManager& Manager)
         const auto* Actor = It.Key().Get();
         if (!IsValid(Actor) || Actor->IsActorBeingDestroyed()) { MagicCubes.Remove(It.Key()); It.RemoveCurrent(); continue; }
         const auto Handle = Actor->GetAgentHandle();
-        if (!Actor->bNNInferenceEnabled || Manager.ResolveAgent(Handle) != Actor) continue;
+        if (!Actor->bNNInferenceEnabled || ProphecyGetUp::OwnsLower(Actor) || Manager.ResolveAgent(Handle) != Actor) continue;
         FTransform Pelvis;
         FVector LinearVelocity, AngularVelocity;
         bool bSimulated = false;

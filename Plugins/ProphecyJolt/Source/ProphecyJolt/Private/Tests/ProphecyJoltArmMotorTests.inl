@@ -146,7 +146,21 @@ bool FProphecyArmMotorAttackWindowTest::RunTest(const FString&)
     L::NotifyArmsAntiJiggleAttackWindow(Agent,true);
     L::NotifyArmsAntiJiggleAttackWindow(Agent,false);
     TestFalse(TEXT("Repeated phases leave no stale window"),AttackWindows.Contains(Agent));
+    L::SetArmsAntiJiggle(Agent,false,true);
+    L::NotifyArmsAntiJiggleGetUpWindow(Agent,true);
+    TestTrue(TEXT("Get-up forces both with asymmetric preference"),Effective(Agent) && Effective(Agent)->Left && Effective(Agent)->Right);
+    L::NotifyArmsAntiJiggleGetUpWindow(Agent,false);
+    TestTrue(TEXT("Lower handoff restores asymmetric preference"),Effective(Agent) && !Effective(Agent)->Left && Effective(Agent)->Right);
+    L::DisableArmsAntiJiggleForDuration(Agent,.1f);
+    L::NotifyArmsAntiJiggleGetUpWindow(Agent,true);
+    TestTrue(TEXT("Get-up forces both during prior hold"),Effective(Agent) && Effective(Agent)->Left && Effective(Agent)->Right);
+    L::NotifyArmsAntiJiggleGetUpWindow(Agent,false);
+    TestNull(TEXT("Prior hold still owns the released arms"),Effective(Agent));
+    for(int I=0;I<6;++I)AdvanceHolds(World,LEVELTICK_All,.1f);
+    TestTrue(TEXT("Original timer survives get-up"),Effective(Agent) && !Effective(Agent)->Left && Effective(Agent)->Right);
+    L::NotifyArmsAntiJiggleGetUpWindow(Agent,true);
     ForgetWorld(World);World->DestroyWorld(false);
+    TestFalse(TEXT("World cleanup clears get-up gate"),GetUpWindows.Contains(Agent));
     return !HasAnyErrors();
 }
 #endif

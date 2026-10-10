@@ -27,7 +27,12 @@ struct FAgentOverrides
 };
 // Separate optional native storage: no extension of existing live character/map layouts.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FAgentOverrides> Overrides;
-void Remove(const AProphecyAgent* Agent) { Overrides.Remove(Agent); ProphecySpecialSolver::Remove(Agent); }
+static TMap<TWeakObjectPtr<const AProphecyAgent>,TSet<FName>> HolsterArms;
+void Remove(const AProphecyAgent* Agent) { HolsterArms.Remove(Agent); Overrides.Remove(Agent); ProphecySpecialSolver::Remove(Agent); }
+static bool HolsterSuppressed(const AProphecyAgent* Agent,FName Bone)
+{ const auto* Bones=HolsterArms.Find(Agent);return Bones && Bones->Contains(Bone); }
+static bool Configured(const FBodyOverride& Body)
+{ return Body.ObjectChannel!=ECC_MAX || !Body.Responses.IsEmpty(); }
 void Invalidate(AProphecyAgent* Agent)
 { if (auto* S=Overrides.IsEmpty() ? nullptr : Overrides.Find(Agent)) S->bDirty=true; }
 void DefenseChanged(AProphecyAgent* Agent,bool Active)
@@ -60,7 +65,7 @@ static bool Select(AProphecyAgent* Agent,FName Bone,bool Children,TArray<FName>&
         if (Setup && Setup->BoneName!=Bone && Mesh->BoneIsChildOf(Setup->BoneName,Bone)) Out.Add(Setup->BoneName);
     return true;
 }
-static FProphecyJoltCollisionUpdate Resolve(const FBodyOverride& Body,bool Combat)
+static FProphecyJoltCollisionUpdate Resolve(const FBodyOverride& Body,bool Combat,bool Holster=false)
 {
     auto Result=Body.Original;
     if (!Combat)
@@ -68,6 +73,7 @@ static FProphecyJoltCollisionUpdate Resolve(const FBodyOverride& Body,bool Comba
         if (Body.ObjectChannel!=ECC_MAX) Result.ObjectChannel=Body.ObjectChannel;
         for (const auto& Pair:Body.Responses) Result.Responses.SetResponse(Pair.Key,Pair.Value);
     }
+    if(Holster)Result.Responses.SetAllChannels(ECR_Ignore);
     return Result;
 }
 bool Update(AProphecyAgent* Agent,const FProphecyJoltBodyHandle& RigBody,FString& Error)
@@ -82,7 +88,7 @@ bool Update(AProphecyAgent* Agent,const FProphecyJoltBodyHandle& RigBody,FString
     for (auto& Pair:S->Bodies)
     {
         if (NewRig && !Read(Agent,Pair.Key,Pair.Value.Original,Error)) return false;
-        Updates.Add(Resolve(Pair.Value,Combat));
+        Updates.Add(Resolve(Pair.Value,Combat,HolsterSuppressed(Agent,Pair.Key)));
     }
     const auto Result=Agent->GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>()->UpdateBodyCollision(Updates);
     if (!Result.IsSuccess()) { Error=Result.Message;return false; }
@@ -123,10 +129,48 @@ static bool Configure(AProphecyAgent* Agent,FName Bone,bool Children,ECollisionC
         else Body->Responses.Add(Channel,Response);
     }
     TArray<FProphecyJoltCollisionUpdate,TInlineAllocator<32>> Updates;
-    for (const auto& Pair:Next.Bodies) Updates.Add(Resolve(Pair.Value,Next.bCombat));
+    for (const auto& Pair:Next.Bodies) Updates.Add(Resolve(Pair.Value,Next.bCombat,HolsterSuppressed(Agent,Pair.Key)));
     const auto Result=Agent->GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>()->UpdateBodyCollision(Updates);
     if (!Result.IsSuccess()) { Error=Result.Message;return false; }
     Next.bDirty=false;Next.bApplied=true;Overrides.Add(Agent,MoveTemp(Next));return true;
+}
+bool SetHolsterArmSuppressed(AProphecyAgent* Agent,bool Suppressed,FString& Error)
+{
+    Error.Reset();
+    if(Suppressed==HolsterArms.Contains(Agent))return true;
+    TArray<FName> Bones;
+    if(Suppressed && !Select(Agent,TEXT("upperarm_r"),true,Bones,Error))return false;
+    auto* Existing=Overrides.Find(Agent);
+    if(Existing)
+    {
+        FProphecyJoltBodyHandle RigBody;
+        if(!Agent->GetJoltCharacterComponent()->GetRigIdentityBody(RigBody) || !Update(Agent,RigBody,Error))return false;
+    }
+    FAgentOverrides Next=Existing?*Existing:FAgentOverrides{};
+    if(!Existing)
+    {
+        Agent->GetJoltCharacterComponent()->GetRigIdentityBody(Next.RigBody);
+        FProphecyNNDefenseStatus Defense;
+        Next.bDefense=UProphecyNNDefenseLibrary::GetNNDefenseStatus(Agent,Defense) && Defense.Active;
+    }
+    Next.bCombat=Agent->IsSwordAttackActive() || Next.bDefense;
+    if(Suppressed)for(FName Bone:Bones)if(!Next.Bodies.Contains(Bone))
+    { FBodyOverride Body;if(!Read(Agent,Bone,Body.Original,Error))return false;Next.Bodies.Add(Bone,MoveTemp(Body)); }
+    TArray<FProphecyJoltCollisionUpdate,TInlineAllocator<32>> Updates;
+    for(const auto& Pair:Next.Bodies)
+        Updates.Add(Resolve(Pair.Value,Next.bCombat,Suppressed && Bones.Contains(Pair.Key)));
+    const auto Result=Agent->GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>()->UpdateBodyCollision(Updates);
+    if(!Result.IsSuccess()){Error=Result.Message;return false;}
+    if(Suppressed)
+    { auto& Selected=HolsterArms.Add(Agent);for(FName Bone:Bones)Selected.Add(Bone); }
+    else
+    {
+        HolsterArms.Remove(Agent);
+        for(auto It=Next.Bodies.CreateIterator();It;++It)if(!Configured(It.Value()))It.RemoveCurrent();
+    }
+    Next.bDirty=false;Next.bApplied=true;
+    if(Next.Bodies.IsEmpty())Overrides.Remove(Agent);else Overrides.Add(Agent,MoveTemp(Next));
+    return true;
 }
 }
 
@@ -139,7 +183,8 @@ bool UProphecyLimbCollisionLibrary::SetJoltLimbCollisionResponse(AProphecyAgent*
 TArray<FName> UProphecyLimbCollisionLibrary::GetModifiedLimbCollisionBones(AProphecyAgent* Agent)
 {
     TArray<FName> Bones;
-    if (const auto* S=ProphecyLimbCollision::Overrides.Find(Agent)) S->Bodies.GetKeys(Bones);
+    if (const auto* S=ProphecyLimbCollision::Overrides.Find(Agent))
+        for(const auto& Pair:S->Bodies)if(ProphecyLimbCollision::Configured(Pair.Value))Bones.Add(Pair.Key);
     Bones.Sort(FNameLexicalLess());return Bones;
 }
 bool UProphecyLimbCollisionLibrary::ResetJoltLimbCollision(AProphecyAgent* Agent,FName BoneName,FString& OutError,bool bIncludeChildren)
@@ -151,13 +196,19 @@ bool UProphecyLimbCollisionLibrary::ResetJoltLimbCollision(AProphecyAgent* Agent
     FProphecyJoltBodyHandle RigBody;Agent->GetJoltCharacterComponent()->GetRigIdentityBody(RigBody);
     if (!Update(Agent,RigBody,OutError)) return false;
     TArray<FProphecyJoltCollisionUpdate,TInlineAllocator<32>> Updates;
-    for (FName Name:Bones) if (const auto* Body=S->Bodies.Find(Name)) Updates.Add(Body->Original);
+    for (FName Name:Bones) if (const auto* Body=S->Bodies.Find(Name))
+    { FBodyOverride Cleared;Cleared.Original=Body->Original;Updates.Add(Resolve(Cleared,false,HolsterSuppressed(Agent,Name))); }
     if (!Updates.IsEmpty())
     {
         const auto Result=Agent->GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>()->UpdateBodyCollision(Updates);
         if (!Result.IsSuccess()) { OutError=Result.Message;return false; }
     }
-    for (FName Name:Bones) S->Bodies.Remove(Name);
+    for (FName Name:Bones)
+    {
+        if(HolsterSuppressed(Agent,Name))
+        { if(auto* Body=S->Bodies.Find(Name)){Body->ObjectChannel=ECC_MAX;Body->Responses.Reset();} }
+        else S->Bodies.Remove(Name);
+    }
     if (S->Bodies.IsEmpty()) Overrides.Remove(Agent);
     return true;
 }
@@ -171,6 +222,6 @@ bool UProphecyLimbCollisionLibrary::GetJoltLimbCollisionResponse(AProphecyAgent*
     if (Channel<0 || Channel>=ECC_MAX || !Read(Agent,BoneName,Body,Error)) return false;
     ObjectChannel=Body.ObjectChannel;Response=Body.Responses.GetResponse(Channel);
     if (const auto* S=Overrides.Find(Agent))
-    { bModified=S->Bodies.Contains(BoneName);bLocomotionOverrideActive=bModified && S->bApplied && !S->bCombat; }
+    { const auto* B=S->Bodies.Find(BoneName);bModified=B && Configured(*B);bLocomotionOverrideActive=bModified && S->bApplied && !S->bCombat && !HolsterSuppressed(Agent,BoneName); }
     return true;
 }
