@@ -8,6 +8,9 @@ class GAMEANIMATIONSAMPLE3_API UProphecySwordHolsterLibrary : public UBlueprintF
 {
     GENERATED_BODY()
 public:
+    /** Import independent timing curves, body/head controls and D/S FK return profiles from a lab JSON file. */
+    UFUNCTION(BlueprintCallable,Category="Prophecy|Sword",meta=(DefaultToSelf="Agent",DisplayName="Set Sword Holster Lab Profile"))
+    static bool SetSwordHolsterLabProfile(AProphecyAgent* Agent,const FString& ProfileFile);
     /** Sheathe=true reaches the mouth and slides in. False reaches the grip and slides out.
      * Linear speeds are cm per authored second; rotation is degrees per authored second.
      * One authored second is 60 unpaused game ticks. Both reach limits bound one shared progress. */

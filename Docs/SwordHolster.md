@@ -1,7 +1,27 @@
 # Procedural sword holster
 
-Implemented and saved October10 through Live Coding; no editor restart.
+Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
+
+## Current lab port (October10)
+
+The native lab port supersedes the original hand-path IK sequence below. `Set Sword Holster Lab Profile` imports the saved JSON curves, body/head controls and independent D/S FK-return profiles. The existing tick25 Blueprint chain now loads `Content/locomotion/SwordHolsterProfile.json` before its existing profile and Draw Sword calls. Current saved values are15% axial shrink,250cm/s maximum reach,2500deg/s maximum reach rotation,150cm/s slide and.5 authored seconds unshrink. Node defaults are unchanged.
+
+- The live NN keeps its own normal locomotion clock. The procedural overlay reads that base and is shared by visual and physical targets; it never writes its authored upper pose into NN recurrence. Lower physical feedback remains enabled. This prevents a post-release feedback loop that caused rapidly rotating wrist targets and stretched physical joints.
+- Reaching uses parent-local FK interpolation and generated destination poses, with a duration bounded by wrist displacement and joint/wrist rotation. Four independent monotone curves remap D/S reach and slide. Sparse FK slide guides follow the moving holster; there is no per-sample Cartesian hand-path IK.
+- Spine twist and two-axis clavicle swing minimize shoulder-to-clear-target distance within the saved limits. The lower spines receive20/40/60/80/100% net correction; pelvis remains the NN pose. Body targets update against live geometry with angular-rate bounds. Drawing waits for its turn; sheathing releases clavicle correction from its actual slide-entry value as insertion advances.
+- Head/neck gaze uses the actual holster mouth, independent look-in/out speeds and sigmoid exponents, independent D/S look-out thresholds and look-at alpha. Neck sharing is1/3,2/3,full head. Head time is never curve-remapped.
+- Independent D/S FK return starts at authored slide completion, on its own60-tick clock. Both local/world inertia, ordinary/spring return, timing/easing/hold/decay, bone weights and upperarm twist removal match the lab math. The spring evaluator keeps two rolling integration samples rather than an entire per-agent pose bank.
+- The sword uses the same actor throughout, with one reusable temporary joint. Ownership/joint release uses the authored slide endpoint. S leaves the sword attached to the holster; D reparents it to the hand and unshrinks independently. Completion waits for FK/head/unshrink, but completed pose ownership retires immediately so a long unshrink cannot freeze NN motion.
+- Right-arm contact suppression lasts through the return and restores the underlying user settings. Native PHAT limits, magnetization values and motors were not retuned to mask the release problem.
+- In kinematic mode the holster follows the pelvis; its previous simulation/attachment state is restored when returning to Sim. A moving physical holster can still change reachability relative to a rigid mount. The saved shrink/angle limits are not silently increased to accommodate an unreachable target; the arrival gate continues to require a real reachable grip.
+- Explicit JSON configuration caches parsing across agents and reloads when the file timestamp changes. Inactive/completed controllers have no recurring fit, pose-copy, head or return work. Shared output reads use the existing pose IDs and a reader/writer lock; worker feedback receives immutable per-agent isolation flags.
+
+Verification and remaining limits are recorded in `Tools/SwordHolster/Verification20261010.md` and the current ProjectJournal status. Regenerate math fixtures with `node Tools/SwordHolster/export_parity.cjs`, then run `Tools/SwordHolster/RunParity.ps1` against current normal DLLs in a separate headless process. Do not run Automation in the user's interactive editor.
+
+## Historical original implementation
+
+The sections below document the original implementation and old tuning, not the current lab port.
 
 ## User-facing controls
 

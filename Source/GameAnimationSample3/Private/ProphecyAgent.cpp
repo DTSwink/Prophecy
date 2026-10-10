@@ -1,4 +1,6 @@
 #include "ProphecyAgent.h"
+#include "ProphecySwordHolsterPose.h"
+#include "ProphecySwordHolster.h"
 #include "ProphecyPhysicalToleranceDelay.h"
 #include "ProphecyRootVelocityDelay.h"
 #include "ProphecySwordComponent.h"
@@ -1900,6 +1902,7 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 			InterpolatedWorldTransform = Transforms[BoneName == Names[1] ? 1 : 2];
 		}
 	}
+	ProphecySwordHolsterPose::Apply(PoseAgentId,MakeArrayView(&BoneName,1),MakeArrayView(&InterpolatedWorldTransform,1));
 	return true;
 }
 
@@ -2153,6 +2156,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 		FProphecyNNPoseStore::ApplyRigidForearms(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
 		FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms,InterpolationAlpha);
 		ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
+	ProphecySwordHolsterPose::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 		return BoneNames.Num() > 0;
 	}
 
@@ -2173,6 +2177,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 	FProphecyNNPoseStore::ApplyRigidForearms(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms);
 	FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms,InterpolationAlpha);
 	ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
+	ProphecySwordHolsterPose::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	return true;
 }
 
@@ -2275,6 +2280,8 @@ bool AProphecyAgent::SetSimulationMode(EProphecyAgentSimulationMode NewMode)
     // Finish ordinary body/pose restoration before Jolt captures a HalfSim-to-Sim handoff.
     // Read the choice afterwards so an explicit Disable from a transition callback still wins.
     const bool bWristModeChanged=NewMode!=GetSimulationMode();
+    struct FHolsterModeFinish { AProphecyAgent* Agent; ~FHolsterModeFinish(){ProphecySwordHolster::AfterModeChange(Agent);} } HolsterModeFinish{this};
+    if(bWristModeChanged)ProphecySwordHolster::BeforeModeChange(this,NewMode==EProphecyAgentSimulationMode::Kinematic);
     if(bWristModeChanged)ProphecyForearmStretch::BeforeModeChange(this);
     if (!SetSimulationModeInternal(NewMode)) return false;
     if (NewMode == EProphecyAgentSimulationMode::Physical && bUseJoltForPhysicalMode

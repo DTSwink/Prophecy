@@ -1,4 +1,6 @@
 #include "ProphecyNNLocomotionManager.h"
+#include "ProphecySwordHolsterPose.h"
+#include "Misc/ScopeExit.h"
 #include "ProphecySwordHolster.h"
 #include "ProphecyForearmConvention.h"
 #include "ProphecyNNModifierDebug.h"
@@ -3341,6 +3343,7 @@ void AProphecyNNLocomotionManager::ResamplePhysicalAgents()
 	const auto* Clock=ProphecyAgentTime::Context(this);
 	ProphecyJolt::CharacterProfiling::FScope Timing(ProphecyJolt::CharacterProfiling::EPhase::ManagerPhysicalResample);
 	Impl->PhysicalFeedbackIndices.Reset();
+    TArray<uint8,TInlineAllocator<128>> RetainNNUpper;
     TArray<FAlignedLowerFeedback>* Alignment = nullptr;
 	for (int32 AgentIndex = 0; AgentIndex < AgentActors.Num(); ++AgentIndex)
 	{
@@ -3397,6 +3400,11 @@ void AProphecyNNLocomotionManager::ResamplePhysicalAgents()
 			}
 			if (bPrepared) Impl->PhysicalFeedbackIndices.Add(AgentIndex);
 			else ++Impl->FailedPhysicalSamples;
+            ProphecySwordHolsterPose::FStatus HolsterStatus;
+            if(bPrepared&&ProphecySwordHolsterPose::Status(AgentActor,HolsterStatus)&&!HolsterStatus.Finished){
+                if(RetainNNUpper.IsEmpty())RetainNNUpper.Init(0,AgentActors.Num());
+                RetainNNUpper[AgentIndex]=1;
+            }
 		}
 	}
 	if (PhysicalFeedbackExecutionMode != 0 && !Impl->PhysicalFeedbackIndices.IsEmpty())
@@ -3404,7 +3412,7 @@ void AProphecyNNLocomotionManager::ResamplePhysicalAgents()
 		{
 			ProphecyJolt::CharacterProfiling::FScope JoinedTiming(ProphecyJolt::CharacterProfiling::EPhase::PhysicalFeedbackBatch);
 			ExecutePhysicalFeedbackBatch(*Impl, Impl->PhysicalFeedbackWorkItems, Impl->PhysicalFeedbackIndices,
-				PhysicalFeedbackExecutionMode == 1, Alignment ? MakeArrayView(*Alignment) : TArrayView<FAlignedLowerFeedback>());
+				PhysicalFeedbackExecutionMode == 1, Alignment ? MakeArrayView(*Alignment) : TArrayView<FAlignedLowerFeedback>(),RetainNNUpper);
 		}
 		++Impl->PreparedPhysicalBatches;
 		for (const int32 AgentIndex : Impl->PhysicalFeedbackIndices)
@@ -3439,7 +3447,9 @@ bool AProphecyNNLocomotionManager::ResamplePhysicalAgentState(int32 AgentIndex)
 	}
 	FAlignedLowerFeedback Alignment;
 	PrepareAlignedLowerFeedback(*Impl, AgentIndex, *AgentActors[AgentIndex], Alignment);
-	return CommitPhysicalSampleSerial(*Impl, AgentIndex, ActualTransforms, Alignment.bAligned ? Alignment.State : nullptr);
+    ProphecySwordHolsterPose::FStatus HolsterStatus;
+    const bool RetainNNUpper=ProphecySwordHolsterPose::Status(AgentActors[AgentIndex],HolsterStatus)&&!HolsterStatus.Finished;
+	return CommitPhysicalSampleSerial(*Impl, AgentIndex, ActualTransforms, Alignment.bAligned ? Alignment.State : nullptr,RetainNNUpper);
 }
 
 void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
@@ -5233,42 +5243,8 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	if(bNewFKSample || bLengthReturn || bNewDodgeSample)CommitFKReturnUpperPose(*Impl,AgentIndex,ComponentTransforms);
 	const bool bGetUpPose=ApplyGetUpPresentation(*Impl,AgentIndex,AgentActors[AgentIndex],
 		PreviousComponentTransforms,ComponentTransforms,LocalTransforms,PreviousComponentWorldTransform,ComponentWorldTransform);
-	FTransform HolsterHand;
-	const bool bHolsterPose=ProphecySwordHolster::HandTarget(AgentActors[AgentIndex],HolsterHand);
-	if(bHolsterPose)
-	{
-		const int32 Shoulder=Impl->BodyNames.IndexOfByKey(FName(TEXT("upperarm_r")));
-		const int32 Elbow=Impl->BodyNames.IndexOfByKey(FName(TEXT("lowerarm_r")));
-		const int32 Hand=Impl->BodyNames.IndexOfByKey(FName(TEXT("hand_r")));
-		if(Shoulder!=INDEX_NONE && Elbow!=INDEX_NONE && Hand!=INDEX_NONE)
-		{
-			auto Solve=[&](TArrayView<FTransform> Pose,const FTransform& Carrier)
-			{
-				const FTransform Goal=HolsterHand.GetRelativeTransform(Carrier);
-				const FVector A=Pose[Shoulder].GetLocation(),B=Pose[Elbow].GetLocation(),C0=Pose[Hand].GetLocation();
-				const double L1=FVector::Distance(A,B),L2=FVector::Distance(B,C0);
-				if(L1<.001 || L2<.001)return;
-				const FVector Direction=(Goal.GetLocation()-A).GetSafeNormal(SMALL_NUMBER,FVector::ForwardVector);
-				const double D=FMath::Clamp(FVector::Distance(A,Goal.GetLocation()),FMath::Abs(L1-L2)+.001,L1+L2-.001);
-				FVector Pole=FVector::VectorPlaneProject(B-A,Direction).GetSafeNormal();
-				if(Pole.IsNearlyZero()){FVector Other;Direction.FindBestAxisVectors(Pole,Other);}
-				const double Along=(L1*L1+D*D-L2*L2)/(2*D);
-				const FVector E=A+Direction*Along+Pole*FMath::Sqrt(FMath::Max(0.,L1*L1-Along*Along));
-				const FVector H=A+Direction*D;
-				Pose[Shoulder].SetRotation((FQuat::FindBetweenNormals((B-A).GetSafeNormal(),(E-A).GetSafeNormal())*Pose[Shoulder].GetRotation()).GetNormalized());
-				Pose[Elbow].SetLocation(E);
-				Pose[Elbow].SetRotation((FQuat::FindBetweenNormals((C0-B).GetSafeNormal(),(H-E).GetSafeNormal())*Pose[Elbow].GetRotation()).GetNormalized());
-				Pose[Hand].SetLocation(H);Pose[Hand].SetRotation(Goal.GetRotation());
-			};
-			Solve(PreviousComponentTransforms,PreviousComponentWorldTransform);Solve(ComponentTransforms,ComponentWorldTransform);
-			for(int32 Bone=0;Bone<LocalTransforms.Num();++Bone)
-			{
-				const int32 Parent=Impl->Parents[Bone];
-				LocalTransforms[Bone]=Parent>=0?ComponentTransforms[Bone].GetRelativeTransform(ComponentTransforms[Parent]):ComponentTransforms[Bone];
-			}
-			CommitFKReturnUpperPose(*Impl,AgentIndex,ComponentTransforms);
-		}
-	}
+	ProphecySwordHolsterPose::FStatus HolsterStatus;
+	const bool bHolsterPose=ProphecySwordHolsterPose::Status(AgentActors[AgentIndex],HolsterStatus)&&!HolsterStatus.Finished;
 	FProphecyNNPoseStore::SetAgentLocalPose(
 		PoseStoreAgentBase + AgentIndex,
 		Impl->PublishedBoneNames,
@@ -5307,6 +5283,7 @@ void AProphecyNNLocomotionManager::UpdateVisualRoots()
 	for (int32 AgentIndex = 0; AgentIndex < AgentActors.Num(); ++AgentIndex)
 	{
 		if (!AgentActors[AgentIndex]) continue;
+        ON_SCOPE_EXIT { ProphecySwordHolsterPose::Update(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex); };
 		const float Alpha = ProphecyAgentTime::Alpha(this,AgentIndex,Impl->VisualPoseAlpha);
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
 		ProphecyNNPresentation::Publish(PoseStoreAgentBase + AgentIndex, Agent.PublishedPoseTimeSeconds, Alpha);

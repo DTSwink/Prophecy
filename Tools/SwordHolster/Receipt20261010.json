@@ -1,0 +1,935 @@
+{
+  "date": "2026-10-10",
+  "known_limit": "Saved15% shrink/45-degree profile has geometric shortfalls for true kinematic and repeat-S starting poses;25% used only in explicit diagnostic PIE fixtures. No perfect-motion claim.",
+  "saved_tuning": {
+    "shrink_percent": 15,
+    "reach_cm_per_authored_second": 250,
+    "reach_degrees_per_authored_second": 2500,
+    "slide_cm_per_authored_second": 150,
+    "unshrink_authored_seconds": 0.5
+  },
+  "native_tests": {
+    "succeeded": 7,
+    "failed": 0,
+    "tests": [
+      {
+        "path": "Prophecy.Blends.SixtyTickClock",
+        "state": "Success"
+      },
+      {
+        "path": "Prophecy.NN.PhysicalFeedback.HolsterUpperIsolation",
+        "state": "Success"
+      },
+      {
+        "path": "Prophecy.NN.PhysicalFeedback.LowerTargetAlignment",
+        "state": "Success"
+      },
+      {
+        "path": "Prophecy.NN.PhysicalFeedback.PreparedBatchFullState",
+        "state": "Success"
+      },
+      {
+        "path": "Prophecy.NN.PhysicalFeedback.RotationCacheRawEncoder",
+        "state": "Success"
+      },
+      {
+        "path": "Prophecy.NN.PhysicalFeedbackTolerance",
+        "state": "Success"
+      },
+      {
+        "path": "Prophecy.SwordHolster.NativeParity",
+        "state": "Success"
+      }
+    ]
+  },
+  "native_parity": "curve=3.33066907388e-16 body_rad=1.24126708e-16 duration_seconds=1.34336986e-14 head_deg=5.92496766e-05 return_deg=7.24450962e-06 return_cm=4.36931696e-06",
+  "performance_procedural_only": [
+    "idle S0 agents=1 frames=123 mean_ms=0.008337 peak_ms=0.043400",
+    "idle S0 agents=10 frames=123 mean_ms=0.079859 peak_ms=0.408900",
+    "idle S0 agents=100 frames=123 mean_ms=0.850710 peak_ms=4.207500",
+    "idle S1 agents=1 frames=128 mean_ms=0.008261 peak_ms=0.042700",
+    "idle S1 agents=10 frames=128 mean_ms=0.082143 peak_ms=0.408400",
+    "idle S1 agents=100 frames=128 mean_ms=0.872246 peak_ms=4.176600",
+    "walk S0 agents=1 frames=123 mean_ms=0.008110 peak_ms=0.042100",
+    "walk S0 agents=10 frames=123 mean_ms=0.083748 peak_ms=0.425300",
+    "walk S0 agents=100 frames=123 mean_ms=0.841640 peak_ms=4.298400",
+    "walk S1 agents=1 frames=128 mean_ms=0.009658 peak_ms=0.043500",
+    "walk S1 agents=10 frames=128 mean_ms=0.088662 peak_ms=0.428800",
+    "walk S1 agents=100 frames=128 mean_ms=0.848320 peak_ms=4.405300"
+  ],
+  "performance_excludes": [
+    "admission fitting",
+    "NN reads and inference",
+    "output publication",
+    "physics",
+    "rendering"
+  ],
+  "actual_play": {
+    "final-saved-profile": {
+      "result": "passed",
+      "options": {
+        "name": "final-saved-profile",
+        "kinematic": false,
+        "walk": false,
+        "shrink_percent": null,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": false,
+        "cancel_phase": null
+      },
+      "cycles": 1,
+      "events": [
+        [
+          26,
+          "sheathe",
+          1
+        ],
+        [
+          68,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          161,
+          "sheathe",
+          3
+        ],
+        [
+          162,
+          "draw",
+          1
+        ],
+        [
+          191,
+          "draw",
+          2
+        ],
+        [
+          222,
+          "draw",
+          4
+        ],
+        [
+          284,
+          "draw",
+          -1
+        ]
+      ],
+      "return_metrics": {
+        "sheathe": {
+          "max_hand_tracking_cm": 0.2072522192617377,
+          "max_hand_angular_step_degrees": 8.467098231299587,
+          "samples": 62
+        },
+        "draw": {
+          "max_hand_tracking_cm": 1.2918323901568687,
+          "max_hand_angular_step_degrees": 7.778519724708654,
+          "samples": 62
+        }
+      },
+      "collision_suppression_frames": 257,
+      "duplicates_unchanged": true,
+      "pelvis_travel_cm": 11.911658603677514
+    },
+    "final-sim": {
+      "result": "geometric or physical stall",
+      "options": {
+        "name": "final-sim",
+        "kinematic": false,
+        "shrink_percent": null,
+        "repeat": 2,
+        "pause": true,
+        "cancel_phase": null
+      },
+      "cycles": 1,
+      "events": [
+        [
+          26,
+          "sheathe",
+          1
+        ],
+        [
+          68,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          99,
+          "pause verified"
+        ],
+        [
+          161,
+          "sheathe",
+          3
+        ],
+        [
+          162,
+          "draw",
+          1
+        ],
+        [
+          191,
+          "draw",
+          2
+        ],
+        [
+          222,
+          "draw",
+          4
+        ],
+        [
+          284,
+          "draw",
+          -1
+        ],
+        [
+          285,
+          "sheathe",
+          1
+        ]
+      ],
+      "return_metrics": {
+        "sheathe": {
+          "max_hand_tracking_cm": 0.2072522192617377,
+          "max_hand_angular_step_degrees": 8.467098231299587,
+          "samples": 62
+        },
+        "draw": {
+          "max_hand_tracking_cm": 1.2918323901568687,
+          "max_hand_angular_step_degrees": 7.778519724708654,
+          "samples": 62
+        }
+      },
+      "collision_suppression_frames": null,
+      "duplicates_unchanged": null,
+      "pelvis_travel_cm": 12.010797779956793,
+      "known_limit_last_state": "BP_ProphecyManualPoseAgent_C_0 reference=1 length=89.3492 phase=1 attached=0 scale=0.850000 insertion=0.000000 progress=1.000000 joint=1 distance=8.792 angle=52.846 target=X=6.914 Y=-288.923 Z=169.564 goal=X=6.914 Y=-288.923 Z=169.564 joint_slot=8 joint_generation=6 world_joints=12 pose_tick=817 reach_ticks=42 slide_ticks=31 pose_error=3.995625 finished=0 kinematic=0"
+    },
+    "final-sim-fit": {
+      "result": "passed",
+      "options": {
+        "name": "final-sim-fit",
+        "kinematic": false,
+        "shrink_percent": 25.0,
+        "repeat": 2,
+        "pause": true,
+        "switch_back": false,
+        "cancel_phase": null
+      },
+      "cycles": 2,
+      "events": [
+        [
+          33,
+          "explicit diagnostic sheathe"
+        ],
+        [
+          33,
+          "sheathe",
+          0
+        ],
+        [
+          34,
+          "sheathe",
+          1
+        ],
+        [
+          71,
+          "sheathe",
+          2
+        ],
+        [
+          98,
+          "sheathe",
+          4
+        ],
+        [
+          98,
+          "pause verified"
+        ],
+        [
+          160,
+          "sheathe",
+          3
+        ],
+        [
+          161,
+          "draw",
+          1
+        ],
+        [
+          190,
+          "draw",
+          2
+        ],
+        [
+          217,
+          "draw",
+          4
+        ],
+        [
+          279,
+          "draw",
+          -1
+        ],
+        [
+          280,
+          "sheathe",
+          1
+        ],
+        [
+          320,
+          "sheathe",
+          2
+        ],
+        [
+          347,
+          "sheathe",
+          4
+        ],
+        [
+          409,
+          "sheathe",
+          3
+        ],
+        [
+          410,
+          "draw",
+          1
+        ],
+        [
+          439,
+          "draw",
+          2
+        ],
+        [
+          466,
+          "draw",
+          4
+        ],
+        [
+          528,
+          "draw",
+          -1
+        ]
+      ],
+      "return_metrics": {
+        "sheathe": {
+          "max_hand_tracking_cm": 0.6261494153401995,
+          "max_hand_angular_step_degrees": 8.486099590403494,
+          "samples": 124
+        },
+        "draw": {
+          "max_hand_tracking_cm": 1.1949035146612283,
+          "max_hand_angular_step_degrees": 7.4084865169690985,
+          "samples": 124
+        }
+      },
+      "collision_suppression_frames": 492,
+      "duplicates_unchanged": true,
+      "pelvis_travel_cm": 8.356155181848973
+    },
+    "final-kinematic-fit": {
+      "result": "passed",
+      "options": {
+        "name": "final-kinematic-fit",
+        "kinematic": true,
+        "shrink_percent": 25.0,
+        "repeat": 2,
+        "pause": true,
+        "cancel_phase": null
+      },
+      "cycles": 2,
+      "events": [
+        [
+          33,
+          "explicit diagnostic sheathe"
+        ],
+        [
+          33,
+          "sheathe",
+          0
+        ],
+        [
+          34,
+          "sheathe",
+          1
+        ],
+        [
+          72,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          99,
+          "pause verified"
+        ],
+        [
+          161,
+          "sheathe",
+          3
+        ],
+        [
+          162,
+          "draw",
+          1
+        ],
+        [
+          191,
+          "draw",
+          2
+        ],
+        [
+          218,
+          "draw",
+          4
+        ],
+        [
+          280,
+          "draw",
+          -1
+        ],
+        [
+          281,
+          "sheathe",
+          1
+        ],
+        [
+          321,
+          "sheathe",
+          2
+        ],
+        [
+          348,
+          "sheathe",
+          4
+        ],
+        [
+          410,
+          "sheathe",
+          3
+        ],
+        [
+          411,
+          "draw",
+          1
+        ],
+        [
+          440,
+          "draw",
+          2
+        ],
+        [
+          467,
+          "draw",
+          4
+        ],
+        [
+          529,
+          "draw",
+          -1
+        ]
+      ],
+      "return_metrics": {
+        "sheathe": {
+          "max_hand_tracking_cm": 2.490956510280015e-13,
+          "max_hand_angular_step_degrees": 8.468943567366589,
+          "samples": 124
+        },
+        "draw": {
+          "max_hand_tracking_cm": 2.0605739337042905e-13,
+          "max_hand_angular_step_degrees": 7.2142382423901665,
+          "samples": 124
+        }
+      },
+      "collision_suppression_frames": null,
+      "duplicates_unchanged": null,
+      "pelvis_travel_cm": 8.442357896399184
+    },
+    "final-cancel-reach": {
+      "result": "passed cancellation",
+      "options": {
+        "name": "final-cancel-reach",
+        "kinematic": false,
+        "shrink_percent": null,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": false,
+        "cancel_phase": 1
+      },
+      "cycles": 0,
+      "events": [
+        [
+          26,
+          "sheathe",
+          1
+        ],
+        [
+          26,
+          "hide cancellation"
+        ],
+        [
+          27,
+          "sheathe",
+          -1
+        ]
+      ],
+      "return_metrics": {},
+      "collision_suppression_frames": 1,
+      "duplicates_unchanged": null,
+      "pelvis_travel_cm": 2.589704274166719
+    },
+    "final-cancel-slide": {
+      "result": "passed cancellation",
+      "options": {
+        "name": "final-cancel-slide",
+        "kinematic": false,
+        "shrink_percent": null,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": false,
+        "cancel_phase": 2
+      },
+      "cycles": 0,
+      "events": [
+        [
+          26,
+          "sheathe",
+          1
+        ],
+        [
+          68,
+          "sheathe",
+          2
+        ],
+        [
+          68,
+          "hide cancellation"
+        ],
+        [
+          69,
+          "sheathe",
+          -1
+        ]
+      ],
+      "return_metrics": {},
+      "collision_suppression_frames": 43,
+      "duplicates_unchanged": true,
+      "pelvis_travel_cm": 11.434475461232429
+    },
+    "final-cancel-return": {
+      "result": "passed cancellation",
+      "options": {
+        "name": "final-cancel-return",
+        "kinematic": false,
+        "shrink_percent": null,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": false,
+        "cancel_phase": 4
+      },
+      "cycles": 0,
+      "events": [
+        [
+          26,
+          "sheathe",
+          1
+        ],
+        [
+          68,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          99,
+          "hide cancellation"
+        ],
+        [
+          100,
+          "sheathe",
+          -1
+        ]
+      ],
+      "return_metrics": {
+        "sheathe": {
+          "max_hand_tracking_cm": 0.2072522192617377,
+          "max_hand_angular_step_degrees": 0.060140601255811395,
+          "samples": 1
+        }
+      },
+      "collision_suppression_frames": 74,
+      "duplicates_unchanged": true,
+      "pelvis_travel_cm": 16.29574902806015
+    },
+    "final-exact-grow": {
+      "result": "passed",
+      "options": {
+        "name": "final-exact-grow",
+        "kinematic": true,
+        "walk": false,
+        "shrink_percent": 25.0,
+        "repeat": 1,
+        "unshrink": 3.0,
+        "pause": false,
+        "switch_back": true,
+        "cancel_phase": null
+      },
+      "cycles": 1,
+      "events": [
+        [
+          33,
+          "explicit diagnostic sheathe"
+        ],
+        [
+          33,
+          "sheathe",
+          0
+        ],
+        [
+          34,
+          "sheathe",
+          1
+        ],
+        [
+          72,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          161,
+          "sheathe",
+          3
+        ],
+        [
+          162,
+          "draw",
+          1
+        ],
+        [
+          191,
+          "draw",
+          2
+        ],
+        [
+          218,
+          "draw",
+          4
+        ],
+        [
+          398,
+          "draw",
+          -1
+        ],
+        [
+          458,
+          "Sim and holster simulation restored"
+        ]
+      ],
+      "return_metrics": {
+        "sheathe": {
+          "max_hand_tracking_cm": 2.490956510280015e-13,
+          "max_hand_angular_step_degrees": 8.42109488428859,
+          "samples": 62
+        },
+        "draw": {
+          "max_hand_tracking_cm": 2.980232573623101e-07,
+          "max_hand_angular_step_degrees": 7.2142382423901665,
+          "samples": 180
+        }
+      },
+      "collision_suppression_frames": null,
+      "duplicates_unchanged": true,
+      "pelvis_travel_cm": 8.428826173460887,
+      "unshrink_ticks": 180,
+      "holster_pelvis_distance_before": 42.55011744171086,
+      "holster_pelvis_distance_after_60_ticks": 43.56579199799251
+    },
+    "final-zero-grow": {
+      "result": "passed",
+      "options": {
+        "name": "final-zero-grow",
+        "kinematic": true,
+        "walk": false,
+        "shrink_percent": 25.0,
+        "repeat": 1,
+        "unshrink": 0.0,
+        "pause": false,
+        "switch_back": false,
+        "cancel_phase": null
+      },
+      "cycles": 1,
+      "events": [
+        [
+          33,
+          "explicit diagnostic sheathe"
+        ],
+        [
+          33,
+          "sheathe",
+          0
+        ],
+        [
+          34,
+          "sheathe",
+          1
+        ],
+        [
+          72,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          161,
+          "sheathe",
+          3
+        ],
+        [
+          162,
+          "draw",
+          1
+        ],
+        [
+          191,
+          "draw",
+          2
+        ],
+        [
+          218,
+          "draw",
+          4
+        ],
+        [
+          280,
+          "draw",
+          -1
+        ]
+      ],
+      "return_metrics": {
+        "sheathe": {
+          "max_hand_tracking_cm": 2.490956510280015e-13,
+          "max_hand_angular_step_degrees": 8.42109488428859,
+          "samples": 62
+        },
+        "draw": {
+          "max_hand_tracking_cm": 2.0605739337042905e-13,
+          "max_hand_angular_step_degrees": 7.2142382423901665,
+          "samples": 62
+        }
+      },
+      "collision_suppression_frames": null,
+      "duplicates_unchanged": true,
+      "pelvis_travel_cm": 8.416490561085977,
+      "scale_at_handoff": 1.0
+    },
+    "final-walk-sim-straight": {
+      "result": "passed",
+      "options": {
+        "name": "final-walk-sim-straight",
+        "kinematic": false,
+        "walk": true,
+        "shrink_percent": 25.0,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": false,
+        "cancel_phase": null
+      },
+      "cycles": 1,
+      "events": [
+        [
+          33,
+          "explicit diagnostic sheathe"
+        ],
+        [
+          33,
+          "sheathe",
+          0
+        ],
+        [
+          34,
+          "sheathe",
+          1
+        ],
+        [
+          86,
+          "sheathe",
+          2
+        ],
+        [
+          113,
+          "sheathe",
+          4
+        ],
+        [
+          175,
+          "sheathe",
+          3
+        ],
+        [
+          176,
+          "draw",
+          1
+        ],
+        [
+          205,
+          "draw",
+          2
+        ],
+        [
+          232,
+          "draw",
+          4
+        ],
+        [
+          294,
+          "draw",
+          -1
+        ]
+      ],
+      "return_metrics": {
+        "sheathe": {
+          "max_hand_tracking_cm": 0.061067092461382165,
+          "max_hand_angular_step_degrees": 7.789463539265192,
+          "samples": 62
+        },
+        "draw": {
+          "max_hand_tracking_cm": 1.3451463571279831,
+          "max_hand_angular_step_degrees": 11.009389267613978,
+          "samples": 62
+        }
+      },
+      "collision_suppression_frames": 260,
+      "duplicates_unchanged": true,
+      "pelvis_travel_cm": 433.608201163977
+    },
+    "final-walk-kinematic-straight": {
+      "result": "passed",
+      "options": {
+        "name": "final-walk-kinematic-straight",
+        "kinematic": true,
+        "walk": true,
+        "shrink_percent": 25.0,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": false,
+        "cancel_phase": null
+      },
+      "cycles": 1,
+      "events": [
+        [
+          33,
+          "explicit diagnostic sheathe"
+        ],
+        [
+          33,
+          "sheathe",
+          0
+        ],
+        [
+          34,
+          "sheathe",
+          1
+        ],
+        [
+          93,
+          "sheathe",
+          2
+        ],
+        [
+          120,
+          "sheathe",
+          4
+        ],
+        [
+          182,
+          "sheathe",
+          3
+        ],
+        [
+          183,
+          "draw",
+          1
+        ],
+        [
+          212,
+          "draw",
+          2
+        ],
+        [
+          239,
+          "draw",
+          4
+        ],
+        [
+          301,
+          "draw",
+          -1
+        ]
+      ],
+      "return_metrics": {
+        "sheathe": {
+          "max_hand_tracking_cm": 2.21980646867526e-13,
+          "max_hand_angular_step_degrees": 7.460292344655865,
+          "samples": 62
+        },
+        "draw": {
+          "max_hand_tracking_cm": 1.7053025658242404e-13,
+          "max_hand_angular_step_degrees": 8.175769624470606,
+          "samples": 62
+        }
+      },
+      "collision_suppression_frames": null,
+      "duplicates_unchanged": true,
+      "pelvis_travel_cm": 446.37335822319665
+    }
+  },
+  "editor": {
+    "editor_world": "/Game/testNN.testNN",
+    "play": false,
+    "dirty": [],
+    "hashes": {
+      "Content/testNN.umap": "d97c3e25e23b105b7c474900a1ed4851f5c59f90adf1145b273680cd51f3c81b",
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "1f8152a0d17f35b8f51ed679ffa66a75a5b8bc75e7fe92aa2c33dde8a917cf7f",
+      "Content/_mygame/sword/A_Sword.uasset": "ff7baf67e07acce36be264aa880f03ebe495fc16f1eebe63b7fb56f8c15fe62f",
+      "Content/locomotion/SwordHolsterProfile.json": "37c4b0d354254e71ae04eb706e93ab0b50b739f2dd2e1c5787a8e3d1b04443f8"
+    }
+  },
+  "graph_exact_match": true,
+  "reflection": "mode=Inspect parent=/Script/GameAnimationSample3.ProphecyAgent\nnative_properties=0 pin_types=0 status=3 wiring_preserved=1",
+  "normal_build": "build-final-ownership.txt succeeded27.23s, after build-unshrink.txt succeeded73.06s",
+  "raw_evidence_directory": "Saved\\Diagnostics\\SwordLabPort20261010"
+}

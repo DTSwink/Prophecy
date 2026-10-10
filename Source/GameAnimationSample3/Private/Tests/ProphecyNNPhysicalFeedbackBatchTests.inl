@@ -267,3 +267,39 @@ bool FProphecyNNLowerFeedbackAlignmentTest::RunTest(const FString& Parameters)
         Limited.Equals(FQuat(FVector::UpVector, FMath::DegreesToRadians(15.0)), 1.e-5));
     return Same(*this, *Serial, *Prepared, TEXT("aligned serial/prepared"), 0);
 }
+
+// Procedural D/S targets must not become their own next NN destination.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyNNHolsterFeedbackTest,
+    "Prophecy.NN.PhysicalFeedback.HolsterUpperIsolation",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyNNHolsterFeedbackTest::RunTest(const FString&)
+{
+    using namespace PhysicalFeedbackBatchTests;
+    constexpr int32 Count=100;
+    auto Serial=MakeUnique<FImpl>(),Batch=MakeUnique<FImpl>(),Ordinary=MakeUnique<FImpl>();
+    if(!Initialize(*this,*Serial,Count)||!Initialize(*this,*Batch,Count)||!Initialize(*this,*Ordinary,Count))return false;
+    TArray<int32> Indices;TArray<uint8> Retain;Retain.Init(0,Count);
+    for(int32 I=0;I<Count;++I)Indices.Add(I);
+    for(int Pass=0;Pass<3;++Pass){
+        for(int32 I:Indices){
+            Retain[I]=Pass<2&&I%2==0;
+            for(FImpl* Data:{Serial.Get(),Batch.Get(),Ordinary.Get()})FillPose(TransformSlice(Data->PhysicalTransformBuffer,I),I,Pass);
+            float Current[UpperStateDim],Previous[UpperStateDim];
+            FMemory::Memcpy(Current,UpperStateSlice(Serial->UpperCurrentStateBuffer,I),sizeof(Current));
+            FMemory::Memcpy(Previous,UpperStateSlice(Serial->UpperPreviousStateBuffer,I),sizeof(Previous));
+            PreparePhysicalFeedbackWork(*Batch,I);
+            CommitPhysicalSampleSerial(*Serial,I,TransformSlice(Serial->PhysicalTransformBuffer,I),nullptr,Retain[I]!=0);
+            CommitPhysicalSampleSerial(*Ordinary,I,TransformSlice(Ordinary->PhysicalTransformBuffer,I));
+            if(Retain[I]){
+                TestTrue(TEXT("Current NN upper preserved bit for bit"),!FMemory::Memcmp(Current,UpperStateSlice(Serial->UpperCurrentStateBuffer,I),sizeof(Current)));
+                TestTrue(TEXT("Previous NN upper preserved bit for bit"),!FMemory::Memcmp(Previous,UpperStateSlice(Serial->UpperPreviousStateBuffer,I),sizeof(Previous)));
+                TestTrue(TEXT("Release feedback baseline follows retained NN"),!FMemory::Memcmp(Current,UpperStateSlice(Serial->UpperPreviousPhysicalStateBuffer,I),sizeof(Current)));
+            }
+            TestTrue(TEXT("Lower feedback remains unchanged"),!FMemory::Memcmp(StateSlice(Serial->CurStateBuffer,I),StateSlice(Ordinary->CurStateBuffer,I),StateDim*sizeof(float)));
+        }
+        ExecutePhysicalFeedbackBatch(*Batch,Batch->PhysicalFeedbackWorkItems,Indices,false,{},Retain);
+        for(int32 I:Indices)Batch->Agents[I].bHasPhysicalSample=Batch->PhysicalFeedbackWorkItems[I].bHasPhysicalSample;
+        if(!Same(*this,*Serial,*Batch,TEXT("holster mixed active/inactive and release"),Pass))return false;
+    }
+    return true;
+}
