@@ -50,6 +50,7 @@ bool Status(const AProphecyAgent* Agent,FStatus& Out);
 void SetSliding(const AProphecyAgent* Agent,bool Sliding);
 bool TrySheathe(const AProphecyAgent* Agent,const FTransform& ActualBlade);
 bool SwordTarget(const AProphecyAgent* Agent,FTransform& Hand,double& Scale);
+bool PhysicsSwordTarget(const AProphecyAgent* Agent,FTransform& Blade);
 void SetTargets(const AProphecyAgent* Agent,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth);
 void Apply(int32 PoseId,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,
     const FTransform& SpaceToWorld=FTransform::Identity);

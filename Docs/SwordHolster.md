@@ -5,6 +5,28 @@ This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
 ## Current lab port (October11)
 
+**Overnight follow-up:** the current profile uses230cm/s reach and600deg/s
+rotation (the two corresponding Blueprint literals were saved); head vertical-axis
+tilt45deg, factory70. All other saved wiring/tuning is preserved. The tilt bound
+compares head localX with spine_05 localX, preserving vertical twist/yaw;90 disables
+it. See [overnight decisions, evidence and remaining limits](SwordHolsterOvernight20261011.md).
+The dated measurements below predate this follow-up.
+
+Moving Sim holsters are sampled from native COM/angular velocity one60Hz tick
+ahead for planning, preserving actual pelvis lag. Kinematic planning carries the
+completed holster through previous/current NN pelvis frames. Acceptance still
+uses actual physical geometry. Sliding sword and hand address the same upcoming
+physics step. Sheathing retains the ordinary nominal grip; drawing still captures
+the current placement. Reach refits keep the preceding elbow solution, and sliding
+guides rejoin the integer sampling grid after a fractional correction cutoff.
+
+Head authoring and current-NN head coordinates share a signed world reference.
+Their separate weighted factors cancel exactly through the whole neck at handoff;
+spine-parent cancellation is distributed independently. This avoids the old
+combined-log full turn that could leave each neck bone120deg wrong while the head
+itself matched. Current gaze, speed/exponents, independent timing, segment lengths
+and fractional lab playback are preserved. No new public controls or motor tuning.
+
 The current lab profile is loaded in Unreal through the existing `Set Sword Holster Lab Profile` call and `Content/locomotion/SwordHolsterProfile.json`. Blueprint links and literals are unchanged. Current tuning:15% axial shrink, .5s unshrink,250cm/s reach,2500deg/s reach rotation,150cm/s slide;15° sheath acceptance tolerance, .45 rotation-correction time fraction,1000deg/s spine/clavicle speed, early return S=.7 and D=.9. The exported lab gaze170 is metadata: Unreal uses each agent's current live gaze.
 
 The port includes tip-at-mouth acceptance while aiming perfect, continuous captured entry position/orientation/scale, unrestricted signed spine twist, coordinated speed-bounded clavicle/spine, and elapsed-time slide rotation correction independent of the sliding curve. Head movement has its own60-tick clock, continuous signed world-space rotation, inherited-spine cancellation, neck detail, gaze-dependent in/out speeds, shared exponents, look-in arrival timing alpha, sheathing tip-to-mouth target alpha and current-gaze look-out. There is no artificial head-angle clamp.

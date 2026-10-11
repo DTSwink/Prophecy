@@ -12,12 +12,15 @@ parser.add_argument('--action',choices=['complete','hide','drop','mode','sword_d
 parser.add_argument('--phase',type=int,choices=[1,2,4],default=1)
 parser.add_argument('--drawing',action='store_true')
 parser.add_argument('--custom',action='store_true')
+parser.add_argument('--output',default='Saved/Diagnostics/SwordNeckLimits20261011')
 args=parser.parse_args()
 editor=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 level=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 assert not editor.get_game_world(),'Existing Play is left untouched.'
 root=pathlib.Path(unreal.Paths.project_dir())
-out=root/'Saved/Diagnostics/SwordNeckLimits20261011'
+preset=json.loads((root/'Content/locomotion/SwordHolsterProfile.json').read_text())['parameters']
+speeds=tuple(float(preset[k]) for k in ['maxReachSpeed','maxReachRotationSpeed','slidingSpeed'])
+out=root/args.output
 out.mkdir(parents=True,exist_ok=True)
 api=unreal.get_default_object(unreal.load_class(None,'/Script/GameAnimationSample3.ProphecySwordHolsterLibrary'))
 lib=unreal.ConstraintInstanceBlueprintLibrary
@@ -103,7 +106,7 @@ def tick(_):
         if phase==3 and not state['drawing']:
             state['events'].append([n,'S complete, limits restored'])
             state['drawing']=True
-            assert api.call_method('DrawSword',args=(actor,False,250.,2500.,150.))
+            assert api.call_method('DrawSword',args=(actor,False,*speeds))
         elif phase==-1 and state['drawing']:
             state['events'].append([n,'D complete, limits restored'])
             state['after']=current

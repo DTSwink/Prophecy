@@ -17,18 +17,19 @@ for file in sorted(folder.glob('*.json')):
     result['dt_range']=[min(r['dt'] for r in rows),max(r['dt'] for r in rows)]
     result['fps']=(rows[-1]['tick']-rows[0]['tick'])/(rows[-1]['wall']-rows[0]['wall'])
     for name in rows[0]['actors']:
-        events=[];old=None;peaks={};lengths={};nonfinite=0
+        events=[];old=None;peaks={};lengths={};nonfinite=0;last_active=-100
         def peak(key,val,tick,bone=''):
             if key not in peaks or val>peaks[key][0]:peaks[key]=[val,tick,bone]
         for i,row in enumerate(rows):
             n=row['tick'];v=row['actors'][name];phase=v['fields'].get('phase');active=phase in (0,1,2,4)
+            if active:last_active=n
             if phase!=old:events.append([n,phase]);old=phase
             for ch in ('future','target','physical'):
                 for b,p in v[ch].items():nonfinite+=sum(not math.isfinite(x) for x in p)
             if i==0:continue
             previous=rows[i-1];pv=previous['actors'][name];dt=n-previous['tick']
             peak('root_speed_cm_s',math.dist(v['root'][:3],pv['root'][:3])*60/dt,n)
-            if not(active or pv['fields'].get('phase') in (0,1,2,4)): continue
+            if n>last_active+15: continue
             peak('hand_tracking_cm',math.dist(v['target']['hand_r'][:3],v['physical']['hand_r'][:3]),n)
             if phase==2:peak('sliding_grip_cm',v['fields'].get('pose_error',0),n)
             for ch in ('future','target','physical'):

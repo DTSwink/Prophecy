@@ -22,12 +22,15 @@ parser.add_argument('--unshrink', type=float, default=.5)
 parser.add_argument('--pause', action='store_true')
 parser.add_argument('--switch-back', action='store_true')
 parser.add_argument('--cancel-phase', type=int, choices=[1, 2, 4])
+parser.add_argument('--output',default='Saved/Diagnostics/SwordLabPort20261010')
 args = parser.parse_args()
 editor = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 level = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 assert not editor.get_game_world(), 'An existing Play session is never interrupted.'
 root = pathlib.Path(unreal.Paths.project_dir())
-out = root / 'Saved/Diagnostics/SwordLabPort20261010'
+preset=json.loads((root/'Content/locomotion/SwordHolsterProfile.json').read_text())['parameters']
+speeds=tuple(float(preset[k]) for k in ['maxReachSpeed','maxReachRotationSpeed','slidingSpeed'])
+out = root / args.output
 api = unreal.get_default_object(unreal.load_class(None, '/Script/GameAnimationSample3.ProphecySwordHolsterLibrary'))
 state = {'world': None, 'last': -1, 'start': time.monotonic(), 'rows': [], 'events': [], 'cycles': 0, 'drawing': False}
 
@@ -38,7 +41,7 @@ def command(world, text):
 
 def report(world, actor):
     command(world, 'Prophecy.Sword.HolsterReport')
-    raw = (out.parent / 'SwordDraw20261010/state.txt').read_bytes()
+    raw = (root / 'Saved/Diagnostics/SwordDraw20261010/state.txt').read_bytes()
     text = raw.decode('utf-16' if raw.startswith(b'\xff\xfe') else 'utf-8-sig')
     return next(line for line in text.splitlines() if line.startswith(actor.get_name() + ' '))
 
@@ -140,7 +143,7 @@ def tick(_):
                     return
                 assert api.call_method('SetSwordHolsterLabProfile', args=(actor, 'Content/locomotion/SwordHolsterProfile.json'))
                 assert api.call_method('SetSwordHolsterProfile', args=(actor, args.shrink_percent, args.unshrink))
-                assert api.call_method('DrawSword', args=(actor, True, 250., 2500., 150.))
+                assert api.call_method('DrawSword', args=(actor, True, *speeds))
                 state['manual_start'] = n
                 state['events'].append([n, 'explicit diagnostic sheathe'])
         if n < 26:
@@ -179,7 +182,7 @@ def tick(_):
                 assert filters(actor, right) == state['collision_before'], 'Right-arm collision not restored'
         if phase == 2 and not state.get('duplicates_checked'):
             for _ in range(5):
-                assert api.call_method('DrawSword', args=(actor, not state['drawing'], 250., 2500., 150.))
+                assert api.call_method('DrawSword', args=(actor, not state['drawing'], *speeds))
             assert report(world, actor) == line, 'Duplicate calls changed the transfer or joint'
             state['duplicates_checked'] = True
         if args.cancel_phase == phase and not state.get('cancel_tick'):
@@ -198,7 +201,7 @@ def tick(_):
         if phase == 3 and not state['drawing']:
             assert fields['joint'] == 0 and fields['attached'] == 1
             state['drawing'] = True
-            assert api.call_method('DrawSword', args=(actor, False, 250., 2500., 150.))
+            assert api.call_method('DrawSword', args=(actor, False, *speeds))
         elif phase == -1 and state['drawing']:
             assert actor.get_held_sword() == state['sword'], 'Sword actor was replaced'
             assert fields['joint'] == 0
@@ -213,7 +216,7 @@ def tick(_):
                 finish('passed')
                 return
             state['drawing'] = False
-            assert api.call_method('DrawSword', args=(actor, True, 250., 2500., 150.))
+            assert api.call_method('DrawSword', args=(actor, True, *speeds))
         if fields['pose_tick'] > 550 or n > 550 * (state['cycles'] + 1):
             finish('geometric or physical stall')
     except Exception:

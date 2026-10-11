@@ -1,5 +1,7 @@
 #include "ProphecySwordHolsterPose.h"
 #include "ProphecyAgent.h"
+#include "ProphecyJoltBodyComponent.h"
+#include "ProphecyJoltWorldSubsystem.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyNNLocomotionAnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -171,8 +173,9 @@ struct FActive : FReturnTrack
  FQuat Head=FQuat::Identity,HeadStart=FQuat::Identity;bool Sheathe=true,Sliding=false,HeadOut=false,HeadDone=false,Initialized=false;
  // Retained legacy cap fields remain used by the development benchmark oracle.
  double HeadCapSpeed=-1,HeadCapSin=0,HeadCapCos=1;
- FQuat HeadReference=FQuat::Identity,NeutralHead=FQuat::Identity,NeutralSpine=FQuat::Identity;
- FVector HeadDelta=FVector::ZeroVector,HeadFrom=FVector::ZeroVector,HeadTargetDelta=FVector::ZeroVector,HeadAim=FVector::ZeroVector,HeadCorrection=FVector::ZeroVector;
+ FQuat HeadReference=FQuat::Identity,NeutralHead=FQuat::Identity;
+ FVector HeadDelta=FVector::ZeroVector,HeadFrom=FVector::ZeroVector,HeadTargetDelta=FVector::ZeroVector,HeadAim=FVector::ZeroVector;
+ FVector HeadBaseDelta=FVector::ZeroVector,NeckParentDelta=FVector::ZeroVector;
  bool HeadInitialized=false,HeadTargetValid=false,HeadAimValid=false;
  double Gaze=0,StartGaze=0;FVector2D GazeInput=FVector2D::ZeroVector;
  FGeometry Geometry;FTransform Full;FQuat EntryRotation=FQuat::Identity;FVector EntryTipError=FVector::ZeroVector;
@@ -328,10 +331,29 @@ static FTransform HandAtTip(const FActive& S,double Scale,FVector Tip,FQuat Rota
  const FTransform G=GripAt(S,Scale);const FQuat Q=(Rotation*G.GetRotation().Inverse()).GetNormalized();
  return FTransform(Q,Tip-Rotation.RotateVector(G.GetScale3D()*S.Geometry.TipLocal)-Q.RotateVector(G.GetLocation()));
 }
-static void RefreshGeometry(FActive& S)
+static void RefreshGeometry(FActive& S,bool ForPose=true)
 {
  if(!S.Geometry.Valid)return;
- if(auto* H=S.Geometry.Holster.Get())S.Full=S.Geometry.Seated*H->GetComponentTransform();
+ if(auto* H=S.Geometry.Holster.Get()){
+  FTransform Holster=H->GetComponentTransform();
+  // Author for the upcoming physics step, not the completed one. A simulated
+  // holster has its own velocity; transporting it with the NN pelvis erases
+  // lag or mispredicts its rotation during a turn. Read its native state once.
+  if(ForPose){bool Predicted=false;
+   if(const auto* A=Cast<AProphecyAgent>(H->GetOwner());A&&A->IsJoltPhysicalAnimationEnabled()){
+    TInlineComponentArray<UProphecyJoltBodyComponent*> Bodies(A);
+    for(const auto* B:Bodies)if(B->GetSourceComponent()==H){FProphecyJoltBodyState State;
+     if(B->GetBodyState(State)){
+      const FQuat Turn=Exp(State.AngularVelocityRadiansPerSecond/60.);
+      Holster.SetLocation(State.CenterOfMassPositionCm+State.CenterOfMassVelocityCmPerSecond/60.+Turn.RotateVector(Holster.GetLocation()-State.CenterOfMassPositionCm));
+      Holster.SetRotation((Turn*Holster.GetRotation()).GetNormalized());Predicted=true;
+     }break;
+    }
+   }
+   if(!Predicted&&S.LastBase.IsValidIndex(S.Pelvis))Holster=Holster.GetRelativeTransform(S.LastBase[S.Pelvis])*S.Base[S.Pelvis];
+  }
+  S.Full=S.Geometry.Seated*Holster;
+ }
  S.Mouth=S.Full.TransformPosition(S.Geometry.BaseLocal);
  const double Scale=S.Geometry.Retained;const FTransform G=GripAt(S,Scale);
  const FQuat Q=(S.Full.GetRotation()*G.GetRotation().Inverse()).GetNormalized();
@@ -364,31 +386,23 @@ static void NeutralFacing(FActive& S)
   FQuat Local=(S.Base[P].GetRotation().Inverse()*S.Base[J].GetRotation()).GetNormalized();
   if(K>=5&&S.GazeInput.Y!=0){const double Weight=K==7?.4:.6*K/13.;Local=Local*FQuat(FVector::UpVector,FMath::DegreesToRadians(85*S.GazeInput.Y*Weight));}
   Parent=(Parent*Local*FQuat(FVector::ForwardVector,-Yaw*(K+1)/36.)).GetNormalized();
-  if(K==4)S.NeutralSpine=Parent;
  }
  S.NeutralHead=Parent;
 }
 static void NeutralNeck(FActive& S,FTransform (&Out)[3])
 {
+ S.NeckParentDelta=ContinuousLog(S.Pose[S.Spine[4]].GetRotation()*S.Base[S.Spine[4]].GetRotation().Inverse(),&S.NeckParentDelta);
+ const FQuat Third=Exp(S.NeckParentDelta/3.);
  FTransform Parent=S.Pose[S.Spine[4]];
  for(int K=0;K<3;++K){const int J=S.Neck[K],P=S.Parents[J];const FQuat D=(Parent.GetRotation()*S.Base[P].GetRotation().Inverse()).GetNormalized();
-  Out[K]=FTransform((D*S.Base[J].GetRotation()).GetNormalized(),Parent.GetLocation()+D.RotateVector(S.Base[J].GetLocation()-S.Base[P].GetLocation()).GetSafeNormal()*FVector::Distance(S.Pose[J].GetLocation(),S.Pose[P].GetLocation()));Parent=Out[K];
+  Out[K]=FTransform(((K==0?Third*Third:K==1?Third:FQuat::Identity)*S.Base[J].GetRotation()).GetNormalized(),Parent.GetLocation()+D.RotateVector(S.Base[J].GetLocation()-S.Base[P].GetLocation()).GetSafeNormal()*FVector::Distance(S.Pose[J].GetLocation(),S.Pose[P].GetLocation()));Parent=Out[K];
  }
- const FQuat Neutral=(S.Pose[S.Spine[4]].GetRotation()*S.NeutralSpine.Inverse()*S.NeutralHead).GetNormalized();
- const FVector Gaze=Log(Out[2].GetRotation()*Neutral.Inverse());FTransform Captured[3]={Out[0],Out[1],Out[2]};
- for(int K=0;K<3;++K){if(K)Out[K].SetLocation(Out[K-1].GetLocation()+(Out[K-1].GetRotation()*Captured[K-1].GetRotation().Inverse()).RotateVector(Captured[K].GetLocation()-Captured[K-1].GetLocation()));
-  Out[K].SetRotation((Exp(Gaze*(-(K+1)/3.))*Captured[K].GetRotation()).GetNormalized());}
 }
-static FVector HeadPosition(const FTransform (&Neck)[3],FVector Correction)
+static void HeadFactors(const FActive& S,const FQuat& BaseThird,FQuat& Third,FQuat& Two)
 {
- const FQuat Third=Exp(Correction/3),Two=Third*Third;
- return Neck[0].GetLocation()+Third.RotateVector(Neck[1].GetLocation()-Neck[0].GetLocation())+Two.RotateVector(Neck[2].GetLocation()-Neck[1].GetLocation());
-}
-static void HeadPose(FActive& S,const TArray<FTransform>& Input,FQuat Q,TArray<FTransform>& Out)
-{
- Out=Input;const FVector C=ContinuousLog(Q*Input[S.Neck[2]].GetRotation().Inverse(),&S.HeadCorrection);
- for(int K=0;K<3;++K){const int J=S.Neck[K],P=S.Parents[J];const FQuat Carry=(Out[P].GetRotation()*Input[P].GetRotation().Inverse()).GetNormalized();
-  Out[J]=FTransform((Exp(C*((K+1)/3.))*Input[J].GetRotation()).GetNormalized(),Out[P].GetLocation()+Carry.RotateVector(Input[J].GetLocation()-Input[P].GetLocation()));}
+ // Separate signed head/base factors cancel exactly throughout the neck.
+ const FQuat HeadThird=Exp(S.HeadDelta/3.);
+ Third=HeadThird*BaseThird;Two=(HeadThird*HeadThird)*(BaseThird*BaseThird);
 }
 static FQuat LimitHeadTilt(const FActive& S,FQuat Q)
 {
@@ -404,7 +418,9 @@ static FQuat LimitHeadTilt(const FActive& S,FQuat Q)
 static void HeadStep(FActive& S)
 {
  NeutralFacing(S);FTransform Neck[3];NeutralNeck(S,Neck);
- if(!S.HeadInitialized){S.HeadReference=S.NeutralHead;S.HeadDelta=Log(S.Head*S.HeadReference.Inverse());S.HeadFrom=S.HeadDelta;S.HeadCorrection=Log(S.Head*Neck[2].GetRotation().Inverse());S.HeadInitialized=true;}
+ if(!S.HeadInitialized){S.HeadReference=S.NeutralHead;S.HeadDelta=Log(S.Head*S.HeadReference.Inverse());S.HeadBaseDelta=S.HeadDelta;S.HeadFrom=S.HeadDelta;S.HeadInitialized=true;}
+ S.HeadBaseDelta=ContinuousLog(S.Base[S.Neck[2]].GetRotation()*S.HeadReference.Inverse(),&S.HeadBaseDelta);
+ const FQuat BaseThird=Exp(-S.HeadBaseDelta/3.);
  const bool Out=S.Sliding&&S.Status.SlideProgress>=(S.Sheathe?S.Profile.SheatheHeadOut:S.Profile.DrawHeadOut)-1.e-8;
  if(Out!=S.HeadOut){S.HeadOut=Out;S.HeadFrom=S.HeadDelta;S.HeadStartTick=S.Status.Tick-1;S.HeadDuration=-1;S.HeadTargetValid=S.HeadAimValid=false;}
  const double Speed=Out?FMath::Lerp(S.Profile.HeadOutSpeed,S.Profile.HeadOutMaxGaze,Clamp(S.Gaze)):FMath::Lerp(S.Profile.HeadInSpeed,S.Profile.HeadInMaxGaze,Clamp(S.StartGaze));
@@ -420,11 +436,11 @@ static void HeadStep(FActive& S)
  FQuat Desired=Forward;
  for(int I=0;I<(Out?1:8);++I){
   Desired=Forward;
-  if(!Out){const FVector Position=HeadPosition(Neck,ContinuousLog(S.Head*Neck[2].GetRotation().Inverse(),&S.HeadCorrection)),Direction=TargetPosition-Position;
+  if(!Out){FQuat Third,Two;HeadFactors(S,BaseThird,Third,Two);const FVector Position=Neck[0].GetLocation()+Third.RotateVector(Neck[1].GetLocation()-Neck[0].GetLocation())+Two.RotateVector(Neck[2].GetLocation()-Neck[1].GetLocation()),Direction=TargetPosition-Position;
    if(!Direction.IsNearlyZero()){S.HeadAim=ContinuousLog(FQuat::FindBetweenVectors(Forward.GetAxisY(),Direction),S.HeadAimValid?&S.HeadAim:nullptr);S.HeadAimValid=true;Desired=(Exp(S.HeadAim*S.Profile.HeadAlpha)*Forward).GetNormalized();}
   }
   Desired=LimitHeadTilt(S,Desired);
-  S.HeadTargetDelta=ContinuousLog(Desired*S.HeadReference.Inverse(),S.HeadTargetValid?&S.HeadTargetDelta:nullptr);S.HeadTargetValid=true;
+  S.HeadTargetDelta=ContinuousLog(Desired*S.HeadReference.Inverse(),S.HeadTargetValid?&S.HeadTargetDelta:Out?&S.HeadBaseDelta:nullptr);S.HeadTargetValid=true;
   FVector Wanted=S.HeadTargetDelta;const bool WithHand=!Out&&S.Profile.HeadSpeedAlpha<1;
   if(Exponent>1||WithHand){if(S.HeadDuration<0){const double Fast=FMath::Max(1.,Exponent*FMath::RadiansToDegrees((Wanted-S.HeadFrom).Size())/Speed*60);S.HeadDuration=WithHand?FMath::Lerp(Fast,FMath::Max(Fast,double(S.Status.ReachTicks)),1-S.Profile.HeadSpeedAlpha):Fast;}
    const double U=Clamp((S.Status.Tick-S.HeadStartTick)/S.HeadDuration),X=FMath::Pow(U,Exponent),Y=FMath::Pow(1-U,Exponent);Wanted=FMath::Lerp(S.HeadFrom,Wanted,X/(X+Y));}
@@ -443,9 +459,8 @@ static void HeadStep(FActive& S)
   }
   if(FMath::Min((S.Head-Last).SizeSquared(),(S.Head+Last).SizeSquared())<1.e-24)break;
  }
- S.Status.HeadStep=Angle(Previous,S.Head);S.HeadDone=Out&&Angle(S.Head,Desired)<.001;
- S.HeadCorrection=ContinuousLog(S.Head*Neck[2].GetRotation().Inverse(),&S.HeadCorrection);
- const FQuat Third=Exp(S.HeadCorrection/3),Two=Third*Third;const FVector P1=Neck[0].GetLocation()+Third.RotateVector(Neck[1].GetLocation()-Neck[0].GetLocation());
+ S.Status.HeadStep=Angle(Previous,S.Head);S.HeadDone=Out&&FMath::Max(Angle(S.Head,Desired),FMath::RadiansToDegrees((S.HeadDelta-S.HeadTargetDelta).Size()))<.001;
+ FQuat Third,Two;HeadFactors(S,BaseThird,Third,Two);const FVector P1=Neck[0].GetLocation()+Third.RotateVector(Neck[1].GetLocation()-Neck[0].GetLocation());
  S.Pose[S.Neck[0]]=FTransform((Third*Neck[0].GetRotation()).GetNormalized(),Neck[0].GetLocation());
  S.Pose[S.Neck[1]]=FTransform((Two*Neck[1].GetRotation()).GetNormalized(),P1);
  S.Pose[S.Neck[2]]=FTransform(S.Head,P1+Two.RotateVector(Neck[2].GetLocation()-Neck[1].GetLocation()));
@@ -521,8 +536,8 @@ bool Begin(AProphecyAgent* A,bool Sheathe,double Reach,double Rotation,double Sl
  S->Status.ReachTicks=FMath::Max(S->Status.ReachTicks,FMath::CeilToInt(BodyTicks));
  S->Status.SlideTicks=FMath::Max(1,FMath::CeilToInt(Length/Slide*60));
  S->Pose=S->Before=S->Entry=S->LastBase=S->LastBody=S->Base;S->Head=S->Base[S->Neck[2]].GetRotation();S->HeadStart=S->Head;S->Status.Ready=true;
- S->HeadReference=S->NeutralHead;S->HeadDelta=Log(S->Head*S->HeadReference.Inverse());S->HeadFrom=S->HeadDelta;
- FTransform NeckSeed[3];NeutralNeck(*S,NeckSeed);S->HeadCorrection=Log(S->Head*NeckSeed[2].GetRotation().Inverse());S->HeadInitialized=true;
+ S->HeadReference=S->NeutralHead;S->HeadDelta=Log(S->Head*S->HeadReference.Inverse());S->HeadBaseDelta=S->HeadDelta;S->HeadFrom=S->HeadDelta;
+ S->HeadInitialized=true;
  S->RefreshSlot=ProphecySwordHolsterSchedule::Slot(A);
  if(S->RefreshSlot>=0)S->NextRefresh=ProphecySwordHolsterSchedule::NextSlot(ProphecySwordHolsterSchedule::Tick(A)+1,S->RefreshSlot);
  Publish(*S);Active.Add(A,MoveTemp(S));EnsureCleanup();ProphecyBlendClock::Start(A,ProphecyBlendClock::EKind::SwordHolster);return true;
@@ -533,7 +548,7 @@ void SetSliding(const AProphecyAgent* A,bool Value){if(auto* P=Active.Find(A)){a
 bool TrySheathe(const AProphecyAgent* A,const FTransform& Blade)
 {
  auto* P=Active.Find(A);if(!P)return false;auto& S=**P;if(!S.Sheathe||S.Sliding||!S.Geometry.Valid)return false;
- RefreshGeometry(S);
+ RefreshGeometry(S,false);
  if(FVector::Dist(Blade.TransformPosition(S.Geometry.TipLocal),S.Mouth)>2||Angle(Blade.GetRotation(),S.Full.GetRotation())>S.Profile.RotationTolerance+1.e-5)return false;
  S.EntryScale=1-(1-S.Geometry.Retained)*S.Status.Progress;
  S.EntryRotation=(S.Full.GetRotation().Inverse()*Blade.GetRotation()).GetNormalized();
@@ -546,7 +561,13 @@ bool SwordTarget(const AProphecyAgent* A,FTransform& Hand,double& Scale)
  Scale=S.Sheathe?(S.Sliding?SlideScale(S,S.Status.SlideProgress):1-(1-S.Geometry.Retained)*S.Status.Progress):S.Geometry.Retained;
  Hand=S.Sliding?SlideGoal(S,S.Status.SlideProgress,Clamp(double(S.Status.Tick-S.SlideStart)/S.Status.SlideTicks)):S.Sheathe?S.Clear:S.Seat;return true;
 }
-void SetTargets(const AProphecyAgent* A,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth){if(auto* P=Active.Find(A)){if((*P)->Geometry.Valid)RefreshGeometry(**P);else{(*P)->Clear=Clear;(*P)->Seat=Seat;(*P)->Mouth=Mouth;}}}
+bool PhysicsSwordTarget(const AProphecyAgent* A,FTransform& Blade)
+{
+ const auto* P=Active.Find(A);if(!P||!(**P).Sliding||!(**P).Geometry.Valid)return false;
+ FTransform Hand;double Scale;if(!SwordTarget(A,Hand,Scale))return false;
+ Blade=GripAt(**P,Scale)*Hand;return true;
+}
+void SetTargets(const AProphecyAgent* A,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth){if(auto* P=Active.Find(A)){if((*P)->Geometry.Valid)RefreshGeometry(**P,false);else{(*P)->Clear=Clear;(*P)->Seat=Seat;(*P)->Mouth=Mouth;}}}
 static void BeginReturn(FActive& S,FReturnTrack& Track)
 {
  FBoneOrder Order;if(!HierarchyOrder(S.Parents,Order))return; // Validated at admission.
@@ -684,7 +705,7 @@ static void SlideArm(FActive& S)
  while(Tick>S.GuideB){
   S.GuideA=S.GuideB;for(int K=0;K<3;++K)S.SlideA[K]=S.SlideB[K];
   const double Spacing=FMath::Clamp(2*S.Status.SlideTicks/FMath::Max(S.SlideLength,1.),1.,4.);
-  S.GuideB=FMath::Min(double(S.Status.SlideTicks),FMath::Max(Tick,S.GuideA+Spacing));
+  S.GuideB=FMath::Min(double(S.Status.SlideTicks),FMath::Max(Tick,(FMath::FloorToDouble(S.GuideA/Spacing+1.e-8)+1)*Spacing));
   const double Cut=S.Status.SlideTicks*S.Profile.RotationCorrection;
   if(S.Sheathe&&Cut>S.GuideA&&Cut<S.GuideB)S.GuideB=Cut;
   const double U=S.GuideB/S.Status.SlideTicks,P=S.Profile.Slide[S.Sheathe].Sample(U);
@@ -720,7 +741,7 @@ static void Advance(FActive& S,int Steps,uint64 WorldTick=0)
   if(!S.Sheathe&&!S.Sliding)S.Status.ReachDone&=FMath::Max(FMath::Abs(S.Desired.X-S.Body.X),FVector2D(S.Desired.Y-S.Body.Y,S.Desired.Z-S.Body.Z).Size())<FMath::DegreesToRadians(.25);
   const int Release=S.SlideStart+S.Status.SlideTicks;const bool Holding=S.Sliding&&S.Status.Tick<=Release;
   if(!S.Status.Returning||Holding)BodyPose(S,S.Base,S.Body,S.Pose);
-  if(!S.Sliding)ReachArm(S,Refit,[&](FTransform (&Destination)[3]){Endpoint(S,S.Desired,S.Sheathe?S.Clear:S.Seat,S.SourceArm,Destination);});
+  if(!S.Sliding)ReachArm(S,Refit,[&](FTransform (&Destination)[3]){Endpoint(S,S.Desired,S.Sheathe?S.Clear:S.Seat,S.DestinationArm,Destination);});
   else if(Holding&&!S.Status.Returning)SlideArm(S);
   const auto& Profile=S.Profile.Return[S.Sheathe];
   if(S.Sliding&&!S.Status.Returning&&S.Status.SlideProgress>=Profile.StartFraction-1.e-8&&(Profile.Enabled||SlideTime>=1)){
@@ -760,6 +781,34 @@ void Update(AProphecyAgent* A,int32 Id)
  S.GazeInput={-double(A->UpperNNGazeYawNormalized),double(A->UpperNNGazePitchNormalized)};S.Gaze=FMath::Abs(S.GazeInput.X);
  Advance(S,Steps,S.RefreshSlot>=0?ProphecySwordHolsterSchedule::Tick(A):0);Publish(S);if(S.Status.Finished){ProphecyBlendClock::Stop(A,ProphecyBlendClock::EKind::SwordHolster);ProphecySwordHolsterSchedule::Remove(A);}
 }
+#if WITH_EDITOR
+static FAutoConsoleCommand GeometryBenchCommand(TEXT("Prophecy.Sword.BenchGeometry"),TEXT("On-demand active holster sampling cost; owned diagnostics only."),FConsoleCommandDelegate::CreateLambda([]{
+ FString Text=TEXT("agent,repeat,samples,microseconds_per_sample\n");
+ for(const auto& Item:Active)if(const auto* A=Item.Key.Get()){
+  FActive S=*Item.Value;if(!S.Geometry.Valid)continue;
+  for(int Repeat=-1;Repeat<7;++Repeat){const double Start=FPlatformTime::Seconds();
+   for(int K=0;K<1000;++K)RefreshGeometry(S);
+   const double Microseconds=(FPlatformTime::Seconds()-Start)*1000.;
+   if(Repeat>=0)Text+=FString::Printf(TEXT("%s,%d,1000,%.9f\n"),*A->GetName(),Repeat,Microseconds);
+  }
+ }
+ FFileHelper::SaveStringToFile(Text,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/SwordOvernight20261011/geometry-benchmark.csv")));
+}));
+static FAutoConsoleCommand PoseReportCommand(TEXT("Prophecy.Sword.PoseReport"),TEXT("On-demand numerical D/S inputs; no recurring capture."),FConsoleCommandDelegate::CreateLambda([]{
+ auto Root=MakeShared<FJsonObject>();
+ auto Vector=[](FVector V){TArray<TSharedPtr<FJsonValue>> R;for(int K=0;K<3;++K)R.Add(MakeShared<FJsonValueNumber>(V[K]));return R;};
+ for(const auto& Item:Active)if(const auto* A=Item.Key.Get()){
+  const auto& S=*Item.Value;auto J=MakeShared<FJsonObject>();J->SetNumberField(TEXT("tick"),S.Status.Tick);
+  J->SetArrayField(TEXT("body"),Vector(S.Body));J->SetArrayField(TEXT("desired"),Vector(S.Desired));
+  J->SetArrayField(TEXT("baseDelta"),Vector(S.HeadBaseDelta));J->SetArrayField(TEXT("headDelta"),Vector(S.HeadDelta));J->SetArrayField(TEXT("parentDelta"),Vector(S.NeckParentDelta));
+  auto Poses=[&](const TArray<FTransform>& P){auto Out=MakeShared<FJsonObject>();for(int I=0;I<S.Names.Num();++I){auto Values=Vector(P[I].GetLocation());const auto Q=P[I].GetRotation();for(double V:{Q.X,Q.Y,Q.Z,Q.W})Values.Add(MakeShared<FJsonValueNumber>(V));Out->SetArrayField(S.Names[I].ToString(),Values);}return Out;};
+  J->SetObjectField(TEXT("base"),Poses(S.Base));J->SetObjectField(TEXT("bodyPose"),Poses(S.LastBody));
+  Root->SetObjectField(A->GetName(),J);
+ }
+ FString Text;FJsonSerializer::Serialize(Root,TJsonWriterFactory<>::Create(&Text));
+ FFileHelper::SaveStringToFile(Text,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/SwordOvernight20261011/pose-detail.json")));
+}));
+#endif
 }
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"

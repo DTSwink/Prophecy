@@ -15,11 +15,11 @@ for(const motion of ['idle','walk'])for(const sheathe of [false,true]){
   const base=H.motion(data,motion,f.tick/60);
   if(f.tick<=m.o.startTick){for(const j of ctx.chain){assert(dist(f.pose[j].p,base[j].p)<1e-8);assert(H.angle(f.pose[j].q,base[j].q)<1e-5);}continue;}
   assertHeadBudget(m,f.tick);
-  const inherited=L.inheritNeck(ctx,H.sampleBody(m,f.tick/60).pose,H.motion(data,motion,H.recordedTime(m,f.tick/60))),correction=R.qm(f.pose[ctx.head].q,R.qinv(inherited[ctx.head].q));
+  const inherited=H.sampleBody(m,f.tick/60).pose,track=m.headTrack[f.tick];
   assert.deepEqual(f.pose[ctx.anchor],inherited[ctx.anchor],'spine_05 untouched');
   for(const [k,j] of ctx.chain.entries()){
-   const net=R.qm(f.pose[j].q,R.qinv(inherited[j].q));
-   assert(H.angle(net,R.qexp(R.mul(m.headTrack[f.tick].correction,(k+1)/3)))<1e-5,'continuous neck net shares 1/3, 2/3, head 1');
+   const w=(k+1)/3,expected=R.qm(R.qm(R.qm(R.qexp(R.mul(track.worldDelta,w)),R.qexp(R.mul(track.baseDelta,-w))),R.qexp(R.mul(track.parentCorrection,1-w))),base[j].q);
+   assert(H.angle(f.pose[j].q,expected)<1e-5,'parent cancellation and signed head path distribute independently');
    assert(Math.abs(dist(f.pose[j].p,f.pose[data.parents[j]].p)-dist(inherited[j].p,inherited[data.parents[j]].p))<1e-6,'head overlay preserves incoming FK bone length');
   }
   const full=H.compose(setup.seated,f.holster),mouth=R.add(full.p,R.rotate(full.q,setup.baseBladeLocal.map((v,j)=>v*full.s[j])));

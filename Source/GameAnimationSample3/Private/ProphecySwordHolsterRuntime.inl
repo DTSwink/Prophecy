@@ -118,11 +118,15 @@ void AfterModeChange(AProphecyAgent* A)
         KinematicMounts.Remove(A);
     }
 }
-bool HandTarget(const AProphecyAgent* A,FTransform& World)
+bool PhysicsTarget(const UPrimitiveComponent* Source,const FProphecyJoltBodyHandle& Body,FTransform& World)
 {
+    if(States.IsEmpty()||!Source||!Source->GetOwner())return false;
+    const auto* A=Cast<AProphecyAgent>(Source->GetOwner()->GetOwner());
     const auto* S=States.IsEmpty()?nullptr:States.Find(A);
-    if(!S || (S->Phase!=EPhase::Reach && S->Phase!=EPhase::Slide))return false;
-    World=S->TargetHand;return true;
+    if(!S||S->Kinematic||S->Phase!=EPhase::Slide)return false;
+    const auto& Held=S->JointSettings.BodyB;
+    if(Held.WorldLifetime!=Body.WorldLifetime||Held.Slot!=Body.Slot||Held.Generation!=Body.Generation)return false;
+    return ProphecySwordHolsterPose::PhysicsSwordTarget(A,World);
 }
 static void DestroyJoint(FState& S)
 {
@@ -361,11 +365,18 @@ bool UProphecySwordComponent::TickHolster()
         FProphecyJoltBodyState HB,SB;
         if(!World->ReadBody(Hand,HB).IsSuccess() || !World->ReadBody(SwordBody,SB).IsSuccess())return false;
         const FTransform HandWorld=Mesh->GetSocketTransform(A->SwordHandSocket);
-        // Capture the current grip without snapping either body. Subsequent shrinking
-        // scales this anchor in the existing joint instead of adding another constraint.
+        // Drawing captures the current grip without snapping either body.
+        // Shrinking updates this joint instead of adding another constraint.
         S->JointSettings.Type=EProphecyJoltJointType::Fixed;S->JointSettings.BodyA=Hand;S->JointSettings.BodyB=SwordBody;
         S->JointSettings.FrameA=HandWorld.GetRelativeTransform(FTransform(HB.Rotation,HB.PositionCm));
         S->JointSettings.FrameB=HandWorld.GetRelativeTransform(FTransform(SB.Rotation,SB.PositionCm));
+        if(S->Sheathe&&!S->Attached){
+            // During reach this replaces the existing nominal held grip. Do not
+            // bake transient physical tracking error into a new fixed rest pose.
+            FTransform BodyOrigin;if(!JoltBody->GetBodyOriginToComponent(BodyOrigin))return false;
+            FTransform Component=GripLocal()*HandWorld;Component.RemoveScaling();
+            S->JointSettings.FrameB=HandWorld.GetRelativeTransform(BodyOrigin*Component);
+        }
         S->JointSettings.FrameA.RemoveScaling();S->JointSettings.FrameB.RemoveScaling();
         S->JointScale=S->Scale;
         return World->CreateJoint(S->JointSettings,{},S->Joint).IsSuccess()&&Drive();

@@ -1,4 +1,5 @@
 #include "ProphecyJoltBodyComponent.h"
+#include "ProphecySwordHolster.h"
 
 #include "ProphecyJoltBody.h"
 #include "ProphecyJoltCharacterWorldSubsystem.h"
@@ -468,6 +469,10 @@ bool UProphecyJoltBodyComponent::PrepareJoltWorldStep(float DeltaSeconds, bool b
     if (State->bSimpleKinematic)
     {
         FTransform Target = State->Snapshot.SourceComponent->GetComponentTransform(); Target.RemoveScaling();
+        // Sliding equipment and the authored gripping hand must address the
+        // same upcoming step. The rendered component is the completed pose.
+        ProphecySwordHolster::PhysicsTarget(State->Snapshot.SourceComponent.Get(),State->Handle,Target);
+        Target.RemoveScaling();
         const auto Moved = State->WorldOwner->MoveKinematicBody(State->Handle, State->Snapshot.BodyOriginToComponent * Target, DeltaSeconds);
         if (!Moved.IsSuccess()) return Fail(OutError, Moved.Message);
     }

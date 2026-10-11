@@ -14,7 +14,7 @@ for(const motion of ['idle','walk'])for(const sheathe of [true,false])for(const 
  }
  for(let i=0;i<m.frames.length;i++){
   maxCorrection=Math.max(maxCorrection,R.length(m.headTrack[i].correction)*180/Math.PI);
-  assert(R.length(m.headTrack[i].correction)<Math.PI,'fixture has no extra full-turn neck winding');
+  assert(R.length(R.sub(m.headTrack[i].worldDelta,m.headTrack[i].baseDelta))<2*Math.PI,'signed head path has no extra full-turn winding');
   const f=m.frames[i],body=H.sampleBody(m,i/60);
   for(let j=0;j<data.names.length;j++)if(!ctx.chain.includes(j))assert.deepEqual(f.pose[j],body.pose[j],'head authoring leaves body and arms untouched');
   if(i)for(const j of ctx.chain)maxNeckStep=Math.max(maxNeckStep,H.angle(f.pose[j].q,m.frames[i-1].pose[j].q));

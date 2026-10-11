@@ -244,7 +244,7 @@ function retime(source,input){
   const tip=o.sheathe&&o.sheatheHeadTargetAlpha<1?point(f.sword,model.tip):mouth;
   const headTarget=o.sheathe&&o.sheatheHeadTargetAlpha<1?add(tip,mul(sub(mouth,tip),o.sheatheHeadTargetAlpha)):mouth;
   const look=Head.step(model.headContext,f.pose,motion(model.data,o.motion,t),headTarget,state,{tick,startTick:o.startTick,lookOutTick,maxLookIn:headSpeed(o,false,model.startGaze),maxLookOut:headSpeed(o,true,o.gazeYaw),lookAtAlpha:o.headLookAtAlpha,maxDownAngle:o.headMaxDownAngle,lookInSpeedAlpha:o.headLookInSpeedAlpha,handArrivalTick:model.plan?.arrives?model.plan.endTick:null,lookInExponent:o.headLookInExponent,lookOutExponent:o.headLookOutExponent,neckBase:motion(model.data,o.motion,t),gazeNeckBase:motion(model.data,o.motion,t,o.gazeYaw),lookOutQ:tick>=lookOutTick?motion(model.data,o.motion,t,o.gazeYaw)[model.headContext.head].q:null});
-  state=look.state;model.headTrack.push({q:state.q,correction:state.correction,info:look.info});
+  state=look.state;model.headTrack.push({q:state.q,correction:state.correction,parentCorrection:state.parentCorrection,worldDelta:state.worldDelta,baseDelta:state.baseDelta,info:look.info});
   const active=f.active||!look.info.done;
   model.frames.push({...f,tick,pose:look.pose,headLook:look.info,active});
   if(tick>=o.startTick&&!active){model.completionTick=tick;model.playbackDuration=Math.min(o.duration,t);break;}
@@ -362,7 +362,9 @@ function sample(model,t){
  if(u<1e-10)return model.frames[i];
  const f=sampleBody(model,t),a=model.headTrack[i],b=model.headTrack[Math.min(i+1,model.headTrack.length-1)];
  const reference=add(a.correction,mul(sub(b.correction,a.correction),u));
- const pose=t*60<=model.o.startTick?f.pose:Head.apply(model.headContext,f.pose,qslerp(a.q,b.q,u),reference,motion(model.data,model.o.motion,t),motion(model.data,model.o.motion,t,model.o.gazeYaw),model.o.headMaxDownAngle);
+ const parentReference=a.parentCorrection.map((v,k)=>v+(b.parentCorrection[k]-v)*u);
+ const frameDeltas={head:a.worldDelta.map((v,k)=>v+(b.worldDelta[k]-v)*u),base:a.baseDelta.map((v,k)=>v+(b.baseDelta[k]-v)*u)};
+ const pose=t*60<=model.o.startTick?f.pose:Head.apply(model.headContext,f.pose,qslerp(a.q,b.q,u),reference,motion(model.data,model.o.motion,t),motion(model.data,model.o.motion,t,model.o.gazeYaw),model.o.headMaxDownAngle,parentReference,frameDeltas);
  return {...f,pose,headLook:a.info,active:f.active||!a.info.done};
 }
 const api={headSpeed,sheathSlideGoal,gazePose,bladeTip,point,handForTip,defaults,sanitize,prepare,sample,sampleBody,retime,recordedTime,motion,solve,compose,scaledGrip,seatHandAtScale,angle};if(typeof module!=='undefined')module.exports=api;else root.Holster=api;

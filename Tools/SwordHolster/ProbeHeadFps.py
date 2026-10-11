@@ -32,6 +32,11 @@ parser.add_argument('--gaze', type=float, help='Temporary normalized UE yaw on o
 parser.add_argument('--motion', choices=['idle','walk','run','transition','turn'], default='idle')
 parser.add_argument('--cycles', type=int, default=0, help='Automatically draw/sheathe after each completed action')
 parser.add_argument('--gaze-change', action='store_true')
+parser.add_argument('--pose-detail', action='store_true')
+parser.add_argument('--no-action', action='store_true', help='Hide sword before the Blueprint trigger; locomotion control only')
+parser.add_argument('--free-neck-on-exit', action='store_true', help='Diagnostic: suppress only restoration of neck angular modes')
+parser.add_argument('--clear-lane', action='store_true', help='Disable only Cube collision in the owned PIE world')
+parser.add_argument('--solo', action='store_true', help='Owned PIE control: remove NPCs before the action')
 args = parser.parse_args()
 editor = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 level = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
@@ -43,6 +48,7 @@ old_fps = unreal.SystemLibrary.get_console_variable_float_value('t.MaxFPS')
 unreal.SystemLibrary.execute_console_command(editor.get_editor_world(), f't.MaxFPS {args.fps}')
 state = dict(world=None, actors=[], rows=[], start=time.monotonic(), last=-1, mode_set=False, feedback_set=False)
 swords = {}
+physics_api=unreal.get_default_object(unreal.load_class(None,'/Script/GameAnimationSample3.ProphecyJoltStandardPhysicsLibrary')) if args.arm else None
 profile = json.loads((root/'Content/locomotion/SwordHolsterProfile.json').read_text(encoding='utf-8-sig'))
 profile = profile.get('parameters', profile)
 speeds = (profile['maxReachSpeed'], profile['maxReachRotationSpeed'], profile['slidingSpeed'])
@@ -80,9 +86,23 @@ def tick(_):
                 finish('world ended externally')
             return
         state['world'] = world
+        if args.clear_lane and not state.get('lane_cleared'):
+            obstacles=[a for a in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.Actor) if a.get_actor_label()=='Cube']
+            assert len(obstacles)==1,'Expected one known run-lane obstacle'
+            state['disabled_obstacle']=obstacles[0].get_path_name()
+            # Notify both UE and the native scene importer explicitly. Destroying
+            # an actor during initial physics admission is an unreliable fixture.
+            for component in obstacles[0].get_components_by_class(unreal.PrimitiveComponent):
+                component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+            obstacles[0].set_actor_enable_collision(False)
+            state['lane_cleared']=True
         player = unreal.GameplayStatics.get_player_pawn(world, 0)
         if not isinstance(player, unreal.ProphecyAgent):
             return
+        if args.solo and not state.get('solo_set'):
+            for actor in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.ProphecyAgent):
+                if actor!=player:actor.destroy_actor()
+            state['solo_set']=True
         n = int(player.get_editor_property('absolute tick debug'))
         if n == state['last']:
             return
@@ -90,6 +110,9 @@ def tick(_):
         if not state['actors']:
             state['actors'] = sorted(unreal.GameplayStatics.get_all_actors_of_class(world, unreal.ProphecyAgent), key=lambda a: a.get_name())
             state['player'] = player.get_name()
+        if args.no_action and n >= 22 and not state.get('action_removed'):
+            for actor in state['actors']: actor.hide_sword()
+            state['action_removed']=n
         if args.draw_at >= 0 and n >= args.draw_at and not state.get('draw_requested'):
             api = unreal.get_default_object(unreal.load_class(None, '/Script/GameAnimationSample3.ProphecySwordHolsterLibrary'))
             state['draw_requested'] = n
@@ -148,7 +171,17 @@ def tick(_):
                 report = raw.decode('utf-16' if raw.startswith(b'\xff\xfe') else 'utf-8-sig')
                 fields = {line.split()[0]: {k: float(v) for k, v in re.findall(r'(\w+)=(-?\d+(?:\.\d+)?)', line)} for line in report.splitlines() if line.strip()}
             row = dict(tick=n, wall=time.monotonic()-state['start'], dt=unreal.GameplayStatics.get_world_delta_seconds(world), actors={})
+            if args.pose_detail:
+                unreal.SystemLibrary.execute_console_command(world,'Prophecy.Sword.PoseReport')
+                detail=json.loads((root/'Saved/Diagnostics/SwordOvernight20261011/pose-detail.json').read_text(encoding='utf-8-sig'))
             for actor in state['actors']:
+                if args.free_neck_on_exit:
+                    phase=fields.get(actor.get_name(),{}).get('phase',-1)
+                    prior=state.setdefault('prior_phase',{}).get(actor.get_name(),-1)
+                    if prior in (0,1,2,4) and phase in (-1,3):
+                        for bone in ['neck_01','neck_02','head']:
+                            actor.set_physical_joint_angular_limits(bone,unreal.AngularConstraintMotion.ACM_FREE,180.,unreal.AngularConstraintMotion.ACM_FREE,180.,unreal.AngularConstraintMotion.ACM_FREE,180.)
+                    state['prior_phase'][actor.get_name()]=phase
                 names, future, presented, alpha = actor.read_nn_future_world_pose()
                 mesh = actor.get_pose_reference_mesh()
                 values = dict(fields=fields.get(actor.get_name(), {}), alpha=alpha,
@@ -158,6 +191,7 @@ def tick(_):
                               future={str(k): pose(t) for k, t in zip(names, future) if str(k) in bones},
                               target={str(k): pose(t) for k, t in zip(names, presented) if str(k) in bones},
                               physical={k: pose(mesh.get_socket_transform(k)) for k in bones})
+                if args.pose_detail:values['authored']=detail.get(actor.get_name())
                 if n == 20:
                     values['names'] = [str(k) for k in names]
                     values['parents'] = [str(mesh.get_parent_bone(k)) for k in names]
@@ -172,7 +206,7 @@ def tick(_):
                             values['joints'].append([pair, str(lib.get_angular_limits(constraint)[1:])])
                 if not args.light:
                     values['native'] = {}
-                    for bone in (['clavicle_r', 'upperarm_r', 'lowerarm_r', 'hand_r'] if args.arm else ['neck_01', 'neck_02', 'head']):
+                    for bone in (['pelvis','neck_01','neck_02','head','clavicle_r', 'upperarm_r', 'lowerarm_r', 'hand_r'] if args.arm else ['neck_01', 'neck_02', 'head']):
                         body = actor.get_physical_body_state(bone)
                         if body:
                             tr, velocity, angular, sim = body
@@ -184,6 +218,9 @@ def tick(_):
                     for comp in actor.get_components_by_class(unreal.StaticMeshComponent):
                         if comp.get_name().lower() == 'holster':
                             values['equipment']['holster'] = pose(comp.get_world_transform())
+                            vel=physics_api.call_method('GetPhysicsLinearVelocityAtPoint',args=(comp,comp.get_world_transform().translation,unreal.Name('None')))
+                            ang=physics_api.call_method('GetPhysicsAngularVelocityInRadians',args=(comp,unreal.Name('None')))
+                            values['holster_velocity']=[vel.x,vel.y,vel.z,ang.x,ang.y,ang.z]
                     held = actor.get_held_sword()
                     if held:
                         swords[actor.get_name()] = held
@@ -210,7 +247,9 @@ def tick(_):
                         if action['cycles'] < args.cycles:
                             assert api.call_method('DrawSword', args=(actor, True, *speeds))
                             action.update(draw=False,last_request=n)
-                if all(a['cycles'] >= args.cycles for a in actions.values()): return finish('cycles completed')
+                if all(a['cycles'] >= args.cycles for a in actions.values()):
+                    state.setdefault('completed_tick',n)
+                    if n>=state['completed_tick']+30:return finish('cycles completed')
         if n >= args.ticks:
             finish('captured')
     except Exception:

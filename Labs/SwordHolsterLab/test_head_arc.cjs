@@ -19,5 +19,6 @@ for(let tick=103;tick<110;tick+=.125){
  assert(H.angle(a.pose[head].q,b.pose[head].q)<.2,'smooth fractional playback through the reported interval');
  assert.deepEqual(H.sample(model,tick/60),a,'seeking is deterministic');
 }
-assert.equal(model.completionTick,296);
+// Separate parent/head distribution changes the moving eye position slightly.
+assert.equal(model.completionTick,298);
 console.log(JSON.stringify({passed:true,interval:[98,112],peakVelocityChangeDegreesPerTick:peakChange}));

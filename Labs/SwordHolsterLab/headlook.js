@@ -24,48 +24,33 @@ function correctionLog(q,reference){
  const turns=Math.round((dot(reference,axis)-a)/(2*Math.PI));
  return mul(axis,a+turns*2*Math.PI);
 }
-function inheritNeck(ctx,pose,base,gazeBase=null){
- if(!base)return pose;
- const neutral=base;
- base=gazeBase||base;
- const out=pose.slice();
- for(const j of ctx.chain){
-  const parent=ctx.parents[j],delta=unit(qm(out[parent].q,qinv(base[parent].q)));
-  out[j]={...pose[j],p:add(out[parent].p,mul(unit(rotate(delta,sub(base[j].p,base[parent].p))),len(sub(pose[j].p,pose[parent].p)))),q:unit(qm(delta,base[j].q))};
- }
- if(gazeBase){
-  // Retain the NN neck's local detail while removing its aggregate gaze turn.
-  // Reapplying that same turn must reconstruct the original NN pose exactly.
-  const neutralHead=unit(qm(qm(pose[ctx.anchor].q,qinv(neutral[ctx.anchor].q)),neutral[ctx.head].q));
-  const gaze=qlog(unit(qm(out[ctx.head].q,qinv(neutralHead)))),captured=out.slice();
-  for(const [k,j] of ctx.chain.entries()){
-   const parent=ctx.parents[j],delta=unit(qm(out[parent].q,qinv(captured[parent].q)));
-   out[j]={...out[j],p:add(out[parent].p,rotate(delta,sub(captured[j].p,captured[parent].p))),q:unit(qm(qexp(mul(gaze,-(k+1)/ctx.chain.length)),captured[j].q))};
-  }
- }
- return out;
-}
-function apply(ctx,pose,headQ,reference=null,neckBase=null,gazeNeckBase=null,maxDownAngle=90){
+function apply(ctx,pose,headQ,reference=null,neckBase=null,gazeNeckBase=null,maxDownAngle=90,parentReference=null,frameDeltas=null){
  headQ=limitDown(ctx,pose,headQ,maxDownAngle);
- pose=inheritNeck(ctx,pose,neckBase,gazeNeckBase);
- const correction=correctionLog(unit(qm(headQ,qinv(pose[ctx.head].q))),reference),out=pose.slice();
+ const base=gazeNeckBase||neckBase||pose;
+ const parentCorrection=correctionLog(unit(qm(pose[ctx.anchor].q,qinv(base[ctx.anchor].q))),parentReference);
+ const correction=correctionLog(unit(qm(headQ,qinv(base[ctx.head].q))),reference),out=pose.slice();
  for(const [k,j] of ctx.chain.entries()){
-  const parent=ctx.parents[j],inherited=unit(qm(out[parent].q,qinv(pose[parent].q)));
-  out[j]={...pose[j],p:add(out[parent].p,rotate(inherited,sub(pose[j].p,pose[parent].p))),q:unit(qm(qexp(mul(correction,(k+1)/ctx.chain.length)),pose[j].q))};
+  const parent=ctx.parents[j],w=(k+1)/ctx.chain.length,inherited=unit(qm(out[parent].q,qinv(base[parent].q)));
+  // Keep parent cancellation and the authored head path separate. Combining
+  // them in one logarithm can leave a full turn shared across the neck at exit.
+  const headDelta=frameDeltas?qm(qexp(mul(frameDeltas.head,w)),qexp(mul(frameDeltas.base,-w))):qexp(mul(correction,w));
+  out[j]={...pose[j],p:add(out[parent].p,rotate(inherited,mul(unit(sub(base[j].p,base[parent].p)),len(sub(pose[j].p,pose[parent].p))))),q:j===ctx.head?headQ:unit(qm(qm(headDelta,qexp(mul(parentCorrection,1-w))),base[j].q))};
  }
  return out;
 }
 function step(ctx,pose,base,target,state,{tick,startTick,lookOutTick,maxLookIn,maxLookOut,lookAtAlpha=1,lookInExponent=1,lookOutExponent=1,lookOutQ=null,lookInSpeedAlpha=1,handArrivalTick=null,neckBase=null,gazeNeckBase=null,maxDownAngle=90}){
  const initialPose=pose,initialQ=pose[ctx.head].q;
- pose=inheritNeck(ctx,pose,neckBase,gazeNeckBase);
+ const currentBase=gazeNeckBase||neckBase||base;
  if(tick<=startTick){
-  const q=initialQ,correction=qlog(unit(qm(q,qinv(pose[ctx.head].q))));
-  return {pose:initialPose,state:{q,correction,referenceQ:base[ctx.head].q,worldDelta:qlog(unit(qm(q,qinv(base[ctx.head].q))))},info:{mode:tick<startTick?'Idle':'Look in',done:tick<startTick,target,lookOutTick,angularStep:0}};
+  const q=initialQ,correction=qlog(unit(qm(q,qinv(currentBase[ctx.head].q))));
+  const worldDelta=qlog(unit(qm(q,qinv(base[ctx.head].q))));
+  return {pose:initialPose,state:{q,correction,parentCorrection:[0,0,0],referenceQ:base[ctx.head].q,worldDelta,baseDelta:worldDelta},info:{mode:tick<startTick?'Idle':'Look in',done:tick<startTick,target,lookOutTick,angularStep:0}};
  }
  const lookingOut=tick>=lookOutTick,speed=lookingOut?maxLookOut:maxLookIn,previous=state.q;
  const exponent=lookingOut?lookOutExponent:lookInExponent;
  const referenceQ=state.referenceQ||base[ctx.head].q;
  const previousDelta=state.worldDelta||qlog(unit(qm(previous,qinv(referenceQ))));
+ const baseDelta=correctionLog(unit(qm(currentBase[ctx.head].q,qinv(referenceQ))),state.baseDelta||previousDelta);
  let transition=state.transition;
  if(!transition||transition.lookingOut!==lookingOut)transition={lookingOut,from:previousDelta,startTick:lookingOut?tick-1:startTick,duration:null};
  const cap=speed/60*Math.PI/180,forwardQ=lookingOut&&lookOutQ?lookOutQ:base[ctx.head].q;
@@ -73,7 +58,7 @@ function step(ctx,pose,base,target,state,{tick,startTick,lookOutTick,maxLookIn,m
  for(let iteration=0;iteration<(lookingOut?1:8);iteration++){
   desired=forwardQ;
   if(!lookingOut){
-   const p=apply(ctx,pose,headQ,state.correction)[ctx.head].p,direction=sub(target,p);
+   const p=apply(ctx,pose,headQ,state.correction,currentBase,null,90,state.parentCorrection,{head:worldDelta,base:baseDelta})[ctx.head].p,direction=sub(target,p);
    if(len(direction)>=1e-8){
     const aimDelta=correctionLog(fromTo(rotate(forwardQ,[0,1,0]),direction),transition.aimDelta);
     transition={...transition,aimDelta};
@@ -84,7 +69,7 @@ function step(ctx,pose,base,target,state,{tick,startTick,lookOutTick,maxLookIn,m
   // Keep the ungazed world reference captured at action start for BOTH phases.
   // A look-out must return through the same signed coordinates, not pick the
   // other side by measuring a fresh shortest arc from the current head.
-  const targetDelta=correctionLog(unit(qm(desired,qinv(referenceQ))),transition.targetDelta);
+  const targetDelta=correctionLog(unit(qm(desired,qinv(referenceQ))),transition.targetDelta||(lookingOut?baseDelta:null));
   transition={...transition,targetDelta};
   let wanted=targetDelta;
   const timeWithHand=!lookingOut&&lookInSpeedAlpha<1&&Number.isFinite(handArrivalTick)&&handArrivalTick>startTick;
@@ -120,11 +105,12 @@ function step(ctx,pose,base,target,state,{tick,startTick,lookOutTick,maxLookIn,m
    worldDelta=correctionLog(unit(qm(headQ,qinv(referenceQ))),worldDelta);
   }
  }
- const correction=correctionLog(unit(qm(headQ,qinv(pose[ctx.head].q))),state.correction);
- result=apply(ctx,pose,headQ,correction);
- const remaining=angle(headQ,desired),done=lookingOut&&remaining<.001;
+ const correction=correctionLog(unit(qm(headQ,qinv(currentBase[ctx.head].q))),state.correction);
+ const parentCorrection=correctionLog(unit(qm(pose[ctx.anchor].q,qinv(currentBase[ctx.anchor].q))),state.parentCorrection);
+ result=apply(ctx,pose,headQ,correction,currentBase,null,90,parentCorrection,{head:worldDelta,base:baseDelta});
+ const remaining=Math.max(angle(headQ,desired),len(sub(worldDelta,transition.targetDelta))*180/Math.PI),done=lookingOut&&remaining<.001;
  const forward=rotate(headQ,[0,1,0]),direction=unit(sub(target,result[ctx.head].p));
- return {pose:result,state:{q:headQ,transition,correction,referenceQ,worldDelta},info:{mode:done?'Forward':lookingOut?'Look out':'Look in',done,target,lookOutTick,remainingDegrees:remaining,aimErrorDegrees:Math.acos(Math.max(-1,Math.min(1,dot(forward,direction))))*180/Math.PI,angularStep:angle(previous,headQ),speedLimit:speed,exponent}};
+ return {pose:result,state:{q:headQ,transition,correction,parentCorrection,referenceQ,worldDelta,baseDelta},info:{mode:done?'Forward':lookingOut?'Look out':'Look in',done,target,lookOutTick,remainingDegrees:remaining,aimErrorDegrees:Math.acos(Math.max(-1,Math.min(1,dot(forward,direction))))*180/Math.PI,angularStep:angle(previous,headQ),speedLimit:speed,exponent}};
 }
-const api={make,apply,step,angle,correctionLog,inheritNeck,limitDown};if(typeof module!=='undefined')module.exports=api;else root.HeadLook=api;
+const api={make,apply,step,angle,correctionLog,limitDown};if(typeof module!=='undefined')module.exports=api;else root.HeadLook=api;
 })(globalThis);

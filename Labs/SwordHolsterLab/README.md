@@ -100,7 +100,19 @@ The distributed neck reference retains the gaze animation's local neck detail, t
 
 For exponent greater than1, each phase uses the symmetric power sigmoid `u^p / (u^p + (1-u)^p)` between its starting signed rotation and its moving target, in the fixed action reference described above. Duration uses that vector path length divided by maximum speed, multiplied by the exponent (the sigmoid's peak slope). Each tick limits the vector step, which also bounds the resulting world head rotation. Exponent1 uses capped pursuit without sigmoid shaping. Look-out captures the current rotation even if look-in is unfinished, retaining the same reference. After the shaped transition, capped tracking follows the moving target. Both phases use independent exponents and ordinary playback time, unaffected by D/S curves.
 
-The net correction relative to the spine-inherited pose is shared1/3 at neck_01,2/3 at neck_02, and fully at the head, preserving the underlying neck motion. These are total component-space shares, not stacked local amounts. A continuous correction branch is retained across180 degrees, including fractional samples, so equivalent head orientations cannot flip the neck shares. The profile runs in an independent world-facing frame. Application computes the difference between that desired head orientation and the spine-inherited head orientation, sharing this compensating correction through the neck. Spine rotation therefore cannot drag the target or retime the head profile. The world look-in target is the holster mouth for D and the selected tip-to-mouth point for S; the moving head origin is still considered when calculating its direction. Positions follow FK with unchanged bone lengths; spine_05, torso, arms and equipment are unaffected. The neck display now uses its own bone rotation rather than the head’s rotation. Aim is reevaluated from the shifted head position; the angular budget is applied once per authored60Hz tick. The head uses its own playback clock: reach/slide curve slopes do not multiply head angular speed. Its target follows the retimed holster, and look-out starts when actual slide progress crosses the threshold.
+Head authoring has total shares1/3 at neck_01,2/3 at neck_02, and1 at the head.
+Authored and current-base head rotations retain separate signed coordinates in
+one world reference; their weighted factors cancel exactly at handoff. Inherited
+spine rotation is canceled separately with complementary shares. Combining these
+rotations into one continuous logarithm previously retained a whole turn at exit,
+leaving120deg neck error despite a correct head. Fractional playback uses the same
+separate factors. The frozen Unreal replay in `test_head_handoff.cjs` guards this.
+Spine motion cannot drag the independent head target or retime its profile.
+Look-in aims at the mouth for D and selected tip-to-mouth point for S, accounting
+for the moving eye position. Positions follow FK with unchanged segment lengths;
+torso, arms and equipment are unaffected. The angular budget applies once per
+60Hz tick; reach/slide curves do not multiply it. Look-out starts when actual slide
+progress crosses the threshold and returns to the current gaze-modified base.
 
 The head continues looking at the moving entrance until slide progress crosses its threshold. Its overlay stays independent while FK return changes the underlying body pose. If the arm never reaches the slide, look-out does not start. D/S completion now also waits for the head’s gaze-facing return, capped by the configured Timeline length; slow limits never cause an end snap. Existing draw unshrink and sword parenting remain intact. Seeking is deterministic because head poses are prepared with the rest of the recording.
 
