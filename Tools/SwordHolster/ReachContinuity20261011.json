@@ -1,0 +1,869 @@
+{
+  "date": "2026-10-11",
+  "status": "fixed_loaded_verified_numerically",
+  "causes": [
+    "Four-tick FK destination refits were applied in one step.",
+    "Shortest-path wrist interpolation reversed when the destination crossed 180 degrees from the original source."
+  ],
+  "correction": [
+    "Spread destination corrections over at most four authored ticks, ending at existing reach deadline.",
+    "Keep destination quaternion signs continuous and retain the chosen interpolation arc.",
+    "Reuse existing guide scratch; unchanged body-search and endpoint-solve cadence, no retained layout change."
+  ],
+  "arrival_gate": {
+    "authored_cm": 2,
+    "physical_cm": 2,
+    "physical_degrees": 5,
+    "requires_reach_done": true,
+    "draw_body_degrees": 0.25
+  },
+  "native": [
+    "passed=1 cases=16 fits=192 max_step_deg=2.8 old_step_deg=38.55 endpoint_deg=2.41483653945e-06 length_cm=2.13162820728e-14 lifecycle_deg=7.24450961835e-06 lifecycle_cm=1.9168318913e-07 timing_mismatch=0",
+    "passed=1 cases=480 samples=61290 timing_mismatch=0 nonfinite=0 max_deg=5.39973865676e-06 max_cm=0 length_cm=0 seed_rate_rad_s=0 old_order_fixture_deg=34.3774677078 error="
+  ],
+  "live_matrix": {
+    "all_replays_completed": true,
+    "all_draw_requests_accepted": true,
+    "all_pose_samples_identical": true,
+    "all_event_ticks_identical": true,
+    "baseline_event_ticks_preserved": true,
+    "selected_player_steps": {
+      "after-a": {
+        "61": {
+          "tick": 61,
+          "pose_tick": 36.0,
+          "progress": 0.992717,
+          "hand_cm": 1.9450652786788678,
+          "tracking_cm": 0.1287299366478127,
+          "upperarm_r": 0.9100133145786925,
+          "lowerarm_r": 0.3084480939873879,
+          "hand_r": 1.4264091459169275
+        },
+        "65": {
+          "tick": 65,
+          "pose_tick": 40.0,
+          "progress": 0.99995,
+          "hand_cm": 0.5692692318480788,
+          "tracking_cm": 0.03198909433108558,
+          "upperarm_r": 1.573202206857379,
+          "lowerarm_r": 0.03528135804033655,
+          "hand_r": 1.5269197625563857
+        },
+        "205": {
+          "tick": 205,
+          "pose_tick": 20.0,
+          "progress": 0.945939,
+          "hand_cm": 1.7363950502823984,
+          "tracking_cm": 0.030697089926961168,
+          "upperarm_r": 1.2289064129040816,
+          "lowerarm_r": 2.4279163003646413,
+          "hand_r": 5.5707729122033385
+        }
+      },
+      "after-b": {
+        "61": {
+          "tick": 61,
+          "pose_tick": 36.0,
+          "progress": 0.992717,
+          "hand_cm": 1.9450652786788678,
+          "tracking_cm": 0.1287299366478127,
+          "upperarm_r": 0.9100133145786925,
+          "lowerarm_r": 0.3084480939873879,
+          "hand_r": 1.4264091459169275
+        },
+        "65": {
+          "tick": 65,
+          "pose_tick": 40.0,
+          "progress": 0.99995,
+          "hand_cm": 0.5692692318480788,
+          "tracking_cm": 0.03198909433108558,
+          "upperarm_r": 1.573202206857379,
+          "lowerarm_r": 0.03528135804033655,
+          "hand_r": 1.5269197625563857
+        },
+        "205": {
+          "tick": 205,
+          "pose_tick": 20.0,
+          "progress": 0.945939,
+          "hand_cm": 1.7363950502823984,
+          "tracking_cm": 0.030697089926961168,
+          "upperarm_r": 1.2289064129040816,
+          "lowerarm_r": 2.4279163003646413,
+          "hand_r": 5.5707729122033385
+        }
+      },
+      "after-c": {
+        "61": {
+          "tick": 61,
+          "pose_tick": 36.0,
+          "progress": 0.992717,
+          "hand_cm": 1.9450652786788678,
+          "tracking_cm": 0.1287299366478127,
+          "upperarm_r": 0.9100133145786925,
+          "lowerarm_r": 0.3084480939873879,
+          "hand_r": 1.4264091459169275
+        },
+        "65": {
+          "tick": 65,
+          "pose_tick": 40.0,
+          "progress": 0.99995,
+          "hand_cm": 0.5692692318480788,
+          "tracking_cm": 0.03198909433108558,
+          "upperarm_r": 1.573202206857379,
+          "lowerarm_r": 0.03528135804033655,
+          "hand_r": 1.5269197625563857
+        },
+        "205": {
+          "tick": 205,
+          "pose_tick": 20.0,
+          "progress": 0.945939,
+          "hand_cm": 1.7363950502823984,
+          "tracking_cm": 0.030697089926961168,
+          "upperarm_r": 1.2289064129040816,
+          "lowerarm_r": 2.4279163003646413,
+          "hand_r": 5.5707729122033385
+        }
+      },
+      "before-a": {
+        "61": {
+          "tick": 61,
+          "pose_tick": 36.0,
+          "progress": 0.992717,
+          "hand_cm": 0.9684399848917178,
+          "tracking_cm": 0.09983487935377817,
+          "upperarm_r": 3.38560780533584,
+          "lowerarm_r": 0.28093962090371916,
+          "hand_r": 4.1061731584110035
+        },
+        "65": {
+          "tick": 65,
+          "pose_tick": 40.0,
+          "progress": 0.99995,
+          "hand_cm": 0.9106802318890178,
+          "tracking_cm": 0.010172164510739887,
+          "upperarm_r": 3.158638564230424,
+          "lowerarm_r": 0.05803534648659263,
+          "hand_r": 3.0370853862006846
+        },
+        "205": {
+          "tick": 205,
+          "pose_tick": 20.0,
+          "progress": 0.945939,
+          "hand_cm": 1.9029329213957022,
+          "tracking_cm": 0.3091622722485617,
+          "upperarm_r": 0.9127882290205973,
+          "lowerarm_r": 4.341038784263296,
+          "hand_r": 27.541319512557163
+        }
+      },
+      "before-b": {
+        "61": {
+          "tick": 61,
+          "pose_tick": 36.0,
+          "progress": 0.992717,
+          "hand_cm": 0.9684399848917178,
+          "tracking_cm": 0.09983487935377817,
+          "upperarm_r": 3.38560780533584,
+          "lowerarm_r": 0.28093962090371916,
+          "hand_r": 4.1061731584110035
+        },
+        "65": {
+          "tick": 65,
+          "pose_tick": 40.0,
+          "progress": 0.99995,
+          "hand_cm": 0.9106802318890178,
+          "tracking_cm": 0.010172164510739887,
+          "upperarm_r": 3.158638564230424,
+          "lowerarm_r": 0.05803534648659263,
+          "hand_r": 3.0370853862006846
+        },
+        "205": {
+          "tick": 205,
+          "pose_tick": 20.0,
+          "progress": 0.945939,
+          "hand_cm": 1.9029329213957022,
+          "tracking_cm": 0.3091622722485617,
+          "upperarm_r": 0.9127882290205973,
+          "lowerarm_r": 4.341038784263296,
+          "hand_r": 27.541319512557163
+        }
+      }
+    }
+  },
+  "actual_fps": {
+    "after-a": 30.214882237008823,
+    "after-b": 19.94919769530605,
+    "after-c": 36.40886476714465,
+    "before-a": 34.10456730775315,
+    "before-b": 33.018181818181816
+  },
+  "events": {
+    "after-a": {
+      "BP_ProphecyManualPoseAgent_C_0": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          66,
+          2.0
+        ],
+        [
+          97,
+          4.0
+        ],
+        [
+          159,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ],
+        [
+          246,
+          4.0
+        ],
+        [
+          308,
+          -1.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_2": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ],
+        [
+          246,
+          4.0
+        ],
+        [
+          308,
+          -1.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_3": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          26,
+          0.0
+        ],
+        [
+          27,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          216,
+          2.0
+        ],
+        [
+          247,
+          4.0
+        ],
+        [
+          309,
+          -1.0
+        ]
+      ]
+    },
+    "after-b": {
+      "BP_ProphecyManualPoseAgent_C_0": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          66,
+          2.0
+        ],
+        [
+          97,
+          4.0
+        ],
+        [
+          159,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ],
+        [
+          246,
+          4.0
+        ],
+        [
+          308,
+          -1.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_2": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ],
+        [
+          246,
+          4.0
+        ],
+        [
+          308,
+          -1.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_3": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          26,
+          0.0
+        ],
+        [
+          27,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          216,
+          2.0
+        ],
+        [
+          247,
+          4.0
+        ],
+        [
+          309,
+          -1.0
+        ]
+      ]
+    },
+    "after-c": {
+      "BP_ProphecyManualPoseAgent_C_0": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          66,
+          2.0
+        ],
+        [
+          97,
+          4.0
+        ],
+        [
+          159,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ],
+        [
+          246,
+          4.0
+        ],
+        [
+          308,
+          -1.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_2": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ],
+        [
+          246,
+          4.0
+        ],
+        [
+          308,
+          -1.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_3": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          26,
+          0.0
+        ],
+        [
+          27,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          216,
+          2.0
+        ],
+        [
+          247,
+          4.0
+        ],
+        [
+          309,
+          -1.0
+        ]
+      ]
+    },
+    "before-a": {
+      "BP_ProphecyManualPoseAgent_C_0": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          66,
+          2.0
+        ],
+        [
+          97,
+          4.0
+        ],
+        [
+          159,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_2": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_3": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          26,
+          0.0
+        ],
+        [
+          27,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          216,
+          2.0
+        ]
+      ]
+    },
+    "before-b": {
+      "BP_ProphecyManualPoseAgent_C_0": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          66,
+          2.0
+        ],
+        [
+          97,
+          4.0
+        ],
+        [
+          159,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_2": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          185,
+          0.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          215,
+          2.0
+        ]
+      ],
+      "BP_ProphecyManualPoseAgent_C_3": [
+        [
+          18,
+          -1.0
+        ],
+        [
+          26,
+          0.0
+        ],
+        [
+          27,
+          1.0
+        ],
+        [
+          62,
+          2.0
+        ],
+        [
+          93,
+          4.0
+        ],
+        [
+          155,
+          3.0
+        ],
+        [
+          186,
+          1.0
+        ],
+        [
+          216,
+          2.0
+        ]
+      ]
+    }
+  },
+  "build": {
+    "type": "Live Coding",
+    "compile_seconds": 80.49,
+    "log": "Saved/Diagnostics/SwordReachJitter20261011/build-3.txt",
+    "reload": true,
+    "reflected_changes": false,
+    "normal_dlls_stale": true
+  },
+  "preservation": {
+    "play": null,
+    "dirty": [
+      "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent",
+      "/Game/testNN"
+    ],
+    "cvars": {
+      "t.MaxFPS": 60.0,
+      "r.VSync": 0.0,
+      "t.IdleWhenNotForeground": 0.0
+    },
+    "hashes": {
+      "Content/testNN.umap": "d97c3e25e23b105b7c474900a1ed4851f5c59f90adf1145b273680cd51f3c81b",
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "1f8152a0d17f35b8f51ed679ffa66a75a5b8bc75e7fe92aa2c33dde8a917cf7f",
+      "Content/_mygame/sword/A_Sword.uasset": "ff7baf67e07acce36be264aa880f03ebe495fc16f1eebe63b7fb56f8c15fe62f",
+      "Content/locomotion/SwordHolsterProfile.json": "37c4b0d354254e71ae04eb706e93ab0b50b739f2dd2e1c5787a8e3d1b04443f8"
+    },
+    "graph_identical": true,
+    "disk_identical": true
+  },
+  "limits": [
+    "Numerical captures; no human playback acceptance.",
+    "Actual FPS 19.95-36.41, fixed world delta 1/60; not sustained 60 FPS coverage.",
+    "No fresh CPU benchmark or kinematic replay; unchanged solve cadence verified by pure check.",
+    "Historical legacy kernels retained; their lifecycle now shares reach continuity staging."
+  ],
+  "evidence": "Saved/Diagnostics/SwordReachJitter20261011/"
+}

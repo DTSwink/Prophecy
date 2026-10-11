@@ -18,9 +18,9 @@ class RetimeEditor{
  x(v){return 20+250*v;} y(v){return 140-130*v;}
  set(points){this.points=Retime.sanitize(points);this.draw();}
  draw(){
-  const curve=Retime.prepare(this.points);this.path.setAttribute('d',Array.from({length:101},(_,i)=>`${i?'L':'M'}${this.x(i/100)},${this.y(Retime.sample(curve,i/100))}`).join(' '));
+  const curve=this.curve=Retime.prepare(this.points);this.path.setAttribute('d',Array.from({length:101},(_,i)=>`${i?'L':'M'}${this.x(i/100)},${this.y(Retime.sample(curve,i/100))}`).join(' '));
   this.handles.innerHTML=this.points.map((p,i)=>`<circle data-point="${i}" cx="${this.x(p[0])}" cy="${this.y(p[1])}" r="6"><title>Playback ${(p[0]*100).toFixed(0)}% → motion ${(p[1]*100).toFixed(0)}%</title></circle>`).join('');
   this.dot.style.display=this.marker===null?'none':'';if(this.marker!==null){this.dot.setAttribute('cx',this.x(this.marker));this.dot.setAttribute('cy',this.y(Retime.sample(curve,this.marker)));}
  }
- showProgress(value){this.marker=value;const curve=Retime.prepare(this.points);this.dot.style.display=value===null?'none':'';if(value!==null){this.dot.setAttribute('cx',this.x(value));this.dot.setAttribute('cy',this.y(Retime.sample(curve,value)));}}
+ showProgress(value){if(value===this.marker)return;this.marker=value;this.dot.style.display=value===null?'none':'';if(value!==null){this.dot.setAttribute('cx',this.x(value));this.dot.setAttribute('cy',this.y(Retime.sample(this.curve,value)));}}
 }

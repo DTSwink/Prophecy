@@ -25,7 +25,7 @@ function duration(a,b,linearSpeed,angularSpeed){
   previous=pose;localPrevious=local;
  }return seconds*1.002;
 }
-function plan({arm,parents,frameAt,startTick,lastTick,o,solve,minimumEndTick=startTick+1,buildGuides=true}){
+function plan({arm,parents,frameAt,startTick,lastTick,o,solve,minimumEndTick=startTick+1,buildGuides=true,arrivalCheck=null,beginSlide=null,earlyArrival=true}){
  const first=frameAt(startTick),source=capture(first.base,arm,parents);let endTick=Math.max(startTick+1,minimumEndTick),destination=source,solves=0;
  const endpoint=(tick,insertion,seed)=>{
   const f=frameAt(Math.min(lastTick,tick)),pose=apply(f.pose,arm,parents,seed);
@@ -35,31 +35,54 @@ function plan({arm,parents,frameAt,startTick,lastTick,o,solve,minimumEndTick=sta
  for(let iteration=0;iteration<16;iteration++){
   destination=endpoint(endTick,o.sheathe?0:1,source);
   let required=startTick+Math.ceil(duration(source,destination,o.maxReachSpeed,o.maxReachRotationSpeed)*60);
+  // The arm destination is parent-local to the turned shoulder. Give the body
+  // enough time to reach that shoulder pose before freezing the arm endpoint.
+  const turn=frameAt(Math.min(lastTick,Math.max(endTick,required))).body.desired;
+  required=Math.max(required,startTick+Math.ceil(Math.max(Math.abs(turn[0]),Math.hypot(turn[1],turn[2]))*180/Math.PI/o.maxSpineClavicleAngularSpeed*60));
   if(!o.sheathe){let ready=Math.min(Math.max(endTick,required),lastTick);while(ready<=lastTick&&frameAt(ready).body.remainingDegrees>.25)ready++;required=Math.max(required,ready);}
   if(required<=endTick)break;
   endTick=required;
  }
  destination=endpoint(endTick,o.sheathe?0:1,source);
- const arrivalFrame=frameAt(Math.min(lastTick,endTick)),arrivalPose=apply(arrivalFrame.pose,arm,parents,destination),goal=arrivalFrame.goalAt(o.sheathe?0:1);
- const arrives=endTick<=lastTick&&len(sub(arrivalPose[arm[2]].p,goal.p))<=2&&angle(arrivalPose[arm[2]].q,goal.q)<=5;
+ // Keep the speed-bounded curve aimed at perfect alignment. S may leave that
+ // curve on the first acceptable tick; do not retime it to the earlier endpoint.
+ const reachEndTick=endTick,reachDestination=destination;
+ let arrivalFrame,arrivalPose,arrivalProgress=1,arrives=false;
+ if(o.sheathe&&arrivalCheck){
+  for(let tick=earlyArrival?startTick:reachEndTick;tick<=(earlyArrival?lastTick:Math.min(lastTick,reachEndTick));tick++){
+   const f=frameAt(tick),progress=ease(clamp((tick-startTick)/(reachEndTick-startTick))),local=blend(source,reachDestination,progress),pose=apply(f.pose,arm,parents,local);
+   if(arrivalCheck(f,pose,progress)){endTick=tick;destination=local;arrivalFrame=f;arrivalPose=pose;arrivalProgress=progress;arrives=true;break;}
+  }
+ }else{
+  arrivalFrame=frameAt(Math.min(lastTick,endTick));arrivalPose=apply(arrivalFrame.pose,arm,parents,destination);
+  const goal=arrivalFrame.goalAt(o.sheathe?0:1);
+  arrives=endTick<=lastTick&&len(sub(arrivalPose[arm[2]].p,goal.p))<=2&&angle(arrivalPose[arm[2]].q,goal.q)<=5;
+ }
+ if(arrives&&beginSlide)beginSlide(arrivalFrame,arrivalPose,endTick,arrivalProgress);
  const slideTicks=Math.max(1,Math.ceil(first.slideLength/o.slidingSpeed*60)),slideEnd=endTick+slideTicks,keys=[{tick:endTick,local:destination}];
  if(arrives&&buildGuides){
   // Spaced guide poses keep the FK path near the straight sheath; no hand-path IK
   // runs while sampling the transition or playback. Reuse the preceding arm frame.
   const count=Math.min(slideTicks,Math.max(1,Math.ceil(slideTicks/4),Math.ceil(first.slideLength/2)));
   let seed=destination;
-  for(let i=1;i<=count;i++){
-   const tick=endTick+Math.round(slideTicks*i/count);if(tick>lastTick+4)break;
+  const ticks=Array.from({length:count},(_,i)=>endTick+Math.round(slideTicks*(i+1)/count));
+  if(o.sheathe&&o.slideRotationCorrection>0)ticks.push(endTick+slideTicks*o.slideRotationCorrection);
+  ticks.sort((a,b)=>a-b);
+  for(const tick of [...new Set(ticks)]){
+   if(tick>lastTick+4)break;
    const fraction=(tick-endTick)/slideTicks,insertion=o.sheathe?fraction:1-fraction;
    seed=endpoint(tick,insertion,seed);keys.push({tick,local:seed});
   }
  }
- return {source,destination,startTick,endTick,slideEnd,keys,arrives,endpointSolves:solves};
+ return {source,destination,reachDestination,reachEndTick,startTick,endTick,slideEnd,keys,arrives,endpointSolves:solves};
 }
 function at(plan,tick){
- if(tick<=plan.endTick||!plan.arrives){const progress=clamp((tick-plan.startTick)/(plan.endTick-plan.startTick));return {local:blend(plan.source,plan.destination,ease(progress)),progress:ease(progress)};}
+ if(tick<=plan.endTick||!plan.arrives){
+  const progress=ease(clamp((tick-plan.startTick)/(plan.reachEndTick-plan.startTick)));
+  return {local:blend(plan.source,plan.reachDestination,progress),progress};
+ }
  let k=1;while(k<plan.keys.length-1&&plan.keys[k].tick<tick)k++;
- const a=plan.keys[k-1],b=plan.keys[k]||a,t=clamp((tick-a.tick)/Math.max(1,b.tick-a.tick));
+ const a=plan.keys[k-1],b=plan.keys[k]||a,t=clamp((tick-a.tick)/Math.max(1e-12,b.tick-a.tick));
  return {local:blend(a.local,b.local,t),progress:1};
 }
 const api={capture,blend,apply,duration,plan,at,ease};if(typeof module!=='undefined')module.exports=api;else root.ArmFK=api;

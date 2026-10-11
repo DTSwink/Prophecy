@@ -102,4 +102,26 @@ static void ImportLab()
  FFileHelper::SaveStringToFile(FString::Printf(TEXT("connections=%d status=%d added=1 saved=0\n"),OK,int32(BP->Status)),*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/SwordLabPort20261010/import.txt")));
 }
 static FAutoConsoleCommand ImportCommand(TEXT("Prophecy.Editor.ImportSwordHolsterLab"),TEXT("Import captured lab profile into existing sword nodes; compile without saving."),FConsoleCommandDelegate::CreateStatic(&ImportLab));
+static void RefreshLabValues()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ FString Text;if(!FFileHelper::LoadFileToString(Text,*(FPaths::ProjectContentDir()/TEXT("locomotion/SwordHolsterProfile.json"))))return;
+ TSharedPtr<FJsonObject> Root;if(!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Root))return;
+ const TSharedPtr<FJsonObject>* Nested;const auto P=Root->TryGetObjectField(TEXT("parameters"),Nested)?*Nested:Root;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));if(!BP)return;
+ TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);TArray<UEdGraphPin*> Pins;TArray<double> Values;
+ const TCHAR* Functions[]={TEXT("DrawSword"),TEXT("SetSwordHolsterProfile")};
+ const TCHAR* Names[]={TEXT("MaxReachSpeed"),TEXT("MaxReachRotationSpeed"),TEXT("SlidingSpeed"),TEXT("ShrinkPercent"),TEXT("UnshrinkDuration")};
+ const TCHAR* Keys[]={TEXT("maxReachSpeed"),TEXT("maxReachRotationSpeed"),TEXT("slidingSpeed"),TEXT("shrinkPercent"),TEXT("unshrinkDuration")};
+ for(int I=0;I<5;++I){UEdGraphPin* Pin=nullptr;
+  for(auto* G:Graphs)if(G->GetFName()==TEXT("tick debugging"))for(UEdGraphNode* N:G->Nodes)if(auto* C=Cast<UK2Node_CallFunction>(N))if(C->FunctionReference.GetMemberName()==Functions[I<3?0:1]){
+   if(Pin)return;Pin=C->FindPin(Names[I]);}
+  double V;if(!Pin||!Pin->LinkedTo.IsEmpty()||!P->TryGetNumberField(Keys[I],V)||!FMath::IsFinite(V))return;
+  Pins.Add(Pin);Values.Add(V);
+ }
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","RefreshHolsterValues","Refresh sword holster lab values"));BP->Modify();
+ for(int I=0;I<Pins.Num();++I){Pins[I]->GetOwningNode()->Modify();GetDefault<UEdGraphSchema_K2>()->TrySetDefaultValue(*Pins[I],FString::SanitizeFloat(Values[I]));}
+ FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+}
+static FAutoConsoleCommand RefreshCommand(TEXT("Prophecy.Editor.RefreshSwordHolsterValues"),TEXT("Refresh five unlinked existing sword literals from native profile; compile without saving."),FConsoleCommandDelegate::CreateStatic(&RefreshLabValues));
 }

@@ -8,8 +8,9 @@ const length=a=>Math.hypot(...a), unit=a=>mul(a,1/(length(a)||1));
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const ident=[0,0,0,1];
 const qinv=q=>[-q[0],-q[1],-q[2],q[3]];
-function qm(a,b){return [a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-dot(a.slice(0,3),b.slice(0,3))];}
-function rotate(q,v){const t=mul(cross(q,v),2);return add(v,add(mul(t,q[3]),cross(q,t)));}
+function qm(a,b){return [a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-(a[0]*b[0]+a[1]*b[1]+a[2]*b[2])];}
+// Same quaternion algebra, without temporary vectors in every bone/vertex.
+function rotate(q,v){const x=2*(q[1]*v[2]-q[2]*v[1]),y=2*(q[2]*v[0]-q[0]*v[2]),z=2*(q[0]*v[1]-q[1]*v[0]);return [v[0]+(x*q[3]+q[1]*z-q[2]*y),v[1]+(y*q[3]+q[2]*x-q[0]*z),v[2]+(z*q[3]+q[0]*y-q[1]*x)];}
 function qlog(q){if(q[3]<0)q=mul(q,-1);const n=length(q.slice(0,3));return n<1e-10?mul(q.slice(0,3),2):mul(q.slice(0,3),2*Math.atan2(n,q[3])/n);}
 function qexp(v){const n=length(v);return n<1e-10?unit([...mul(v,.5),1]):[...mul(v,Math.sin(n*.5)/n),Math.cos(n*.5)];}
 function qslerp(a,b,t){let c=dot(a,b);if(c<0){b=mul(b,-1);c=-c;}if(c>.9995)return unit(add(mul(a,1-t),mul(b,t)));const theta=Math.acos(clamp(c,-1,1)),s=Math.sin(theta);return add(mul(a,Math.sin((1-t)*theta)/s),mul(b,Math.sin(t*theta)/s));}
@@ -20,7 +21,7 @@ function fromAxes(a){const m00=a[0][0],m01=a[1][0],m02=a[2][0],m10=a[0][1],m11=a
  else if(m00>m11&&m00>m22){s=Math.sqrt(1+m00-m11-m22)*2;q=[s/4,(m01+m10)/s,(m02+m20)/s,(m21-m12)/s];}
  else if(m11>m22){s=Math.sqrt(1+m11-m00-m22)*2;q=[(m01+m10)/s,s/4,(m12+m21)/s,(m02-m20)/s];}
  else{s=Math.sqrt(1+m22-m00-m11)*2;q=[(m02+m20)/s,(m12+m21)/s,s/4,(m10-m01)/s];}return unit(q);}
-const toAxes=q=>[[1,0,0],[0,1,0],[0,0,1]].map(v=>rotate(q,v));
+const toAxes=q=>{const [x,y,z,w]=q;return [[1-2*(y*y+z*z),2*(x*y+w*z),2*(x*z-w*y)],[2*(x*y-w*z),1-2*(x*x+z*z),2*(y*z+w*x)],[2*(x*z+w*y),2*(y*z-w*x),1-2*(x*x+y*y)]];};
 // Use the actual authored sampler's terminal derivative, including forearm fit
 // and distributed yaw. A full-frame difference can miss those nonlinear paths.
 const seedInterval=1e-6;

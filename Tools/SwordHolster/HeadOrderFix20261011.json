@@ -1,0 +1,181 @@
+{
+  "date": "2026-10-11",
+  "status": "fixed_loaded_verified",
+  "cause": "D/S consumed PHAT body order as parent-first: head15 reads neck_02=22 before initialization.",
+  "correction": [
+    "Cached parent-first upper traversal at admission reused by every hierarchical D/S pass.",
+    "Full parent-first return-entry traversal initializes both world quaternion arrays before child reads.",
+    "Source indices, physical mappings, clocks, tuning and retained layouts unchanged."
+  ],
+  "native_regression": "passed=1 cases=480 samples=61290 timing_mismatch=0 nonfinite=0 max_deg=5.39973865676e-06 max_cm=0 length_cm=0 seed_rate_rad_s=0 old_order_fixture_deg=34.3774677078 error=",
+  "live_matrix": {
+    "runs": 6,
+    "all_captures_complete": true,
+    "all_draw_requests_accepted": true,
+    "all_actor_samples_identical": false,
+    "all_pose_samples_identical": true,
+    "max_repeat_pose_difference_degrees": 0.0,
+    "max_repeat_position_difference_cm": 0.0,
+    "action_ticks_identical": true,
+    "all_cycles_complete": true,
+    "max_return_step_degrees": {
+      "target_neck_01": 0.9843406560043546,
+      "target_neck_02": 1.3213914446754902,
+      "target_head": 1.833333333334664,
+      "physical_head": 3.4345541425893242
+    }
+  },
+  "actual_fps": {
+    "sim120-a": 32.2,
+    "sim20-a": 19.968992248062015,
+    "sim20-b": 19.872863050041893,
+    "sim60-a": 30.666666666666668,
+    "sim60-b": 31.90329931637848,
+    "sim60-c": 32.148562300309024
+  },
+  "world_deltas": [
+    0.01666666567325592
+  ],
+  "kinematic": {
+    "reason": "passed",
+    "temporary_shrink_percent": 25,
+    "events": [
+      [
+        33,
+        "simultaneous S requests"
+      ],
+      [
+        33,
+        "queued pause verified"
+      ],
+      [
+        156,
+        "queued D cancelled; other D continues"
+      ],
+      [
+        275,
+        "D complete; all slots/joints released"
+      ]
+    ],
+    "max_return_target_step_degrees": {
+      "neck_01": 0.9881544540878242,
+      "head": 1.8333333333354591,
+      "neck_02": 1.3362812176148284
+    }
+  },
+  "source_contract_audit": [
+    {
+      "path": "Content\\locomotion\\NN\\prophecy_lower_body_runtime.json",
+      "bones": 25,
+      "violations": []
+    },
+    {
+      "path": "Content\\locomotion\\NN\\prophecy_lower_body_walk_july5_best_runtime.json",
+      "bones": 25,
+      "violations": []
+    },
+    {
+      "path": "Content\\locomotion\\NN\\prophecy_lower_body_walk_july5_runtime.json",
+      "bones": 25,
+      "violations": []
+    },
+    {
+      "path": "Content\\locomotion\\NN\\prophecy_lower_body_walk_runtime.json",
+      "bones": 25,
+      "violations": []
+    },
+    {
+      "path": "Content\\locomotion\\NN\\prophecy_slash_runtime.json",
+      "bones": 25,
+      "violations": []
+    },
+    {
+      "path": "Content\\locomotion\\NN\\prophecy_upper_body_runtime.json",
+      "bones": 25,
+      "violations": []
+    },
+    {
+      "path": "Content\\locomotion\\NN\\defense\\parry_skeleton.json",
+      "bones": 25,
+      "violations": []
+    },
+    {
+      "path": "Content\\locomotion\\NN\\defense\\dodge_skeleton.json",
+      "bones": 25,
+      "violations": []
+    },
+    {
+      "path": "Labs\\SwordHolsterLab\\data\\motions.json",
+      "bones": 26,
+      "violations": []
+    },
+    {
+      "path": "Saved\\Diagnostics\\SwordLabPort20261010\\parity.json",
+      "bones": 26,
+      "violations": []
+    },
+    {
+      "path": "Labs\\AttackRecoveryLab\\data\\manifest.json",
+      "bones": 26,
+      "violations": []
+    },
+    {
+      "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\AttackRecoveryLab\\data\\manifest.json",
+      "bones": 26,
+      "violations": []
+    },
+    {
+      "path": "Content\\locomotion\\NN\\prophecy_slash_native.json",
+      "bones": 25,
+      "violations": []
+    }
+  ],
+  "audited_paths": [
+    "D/S body propagation, return seeding, local/world/spring return, twist correction and mounting",
+    "Get-up, Dodge/upper inertia, attack-start FK and attack-motion inertia: canonical model array inputs",
+    "Attack/Parry FK return: own canonical name binding and parent validation",
+    "Armed pose: snapshot order with parent-before-child validation",
+    "Jolt mesh composition and NN physical target expansion: reference-skeleton traversal",
+    "Jolt physical parent targets: read completed transforms",
+    "Hand/foot inertia and arm cone: explicit chains or independent world transforms",
+    "Sword/Attack Recovery labs: ordered recorded datasets"
+  ],
+  "build": {
+    "method": "Live Coding",
+    "compile_seconds": 45.35,
+    "reload_succeeded": true,
+    "retained_layout_changes": false,
+    "editor_restarted": false,
+    "normal_dlls_current": false,
+    "next_cold_launch": "Normal build required before reopening; interactive editor contains verified patch.",
+    "test_execution": "Pure native check invoked directly; Automation wrapper added but no interactive Automation run."
+  },
+  "preservation": {
+    "play": null,
+    "dirty": [
+      "/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent",
+      "/Game/testNN"
+    ],
+    "cvars": {
+      "t.MaxFPS": 60.0,
+      "r.VSync": 0.0,
+      "t.IdleWhenNotForeground": 0.0
+    },
+    "hashes": {
+      "Content/testNN.umap": "d97c3e25e23b105b7c474900a1ed4851f5c59f90adf1145b273680cd51f3c81b",
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "1f8152a0d17f35b8f51ed679ffa66a75a5b8bc75e7fe92aa2c33dde8a917cf7f",
+      "Content/_mygame/sword/A_Sword.uasset": "ff7baf67e07acce36be264aa880f03ebe495fc16f1eebe63b7fb56f8c15fe62f",
+      "Content/locomotion/SwordHolsterProfile.json": "37c4b0d354254e71ae04eb706e93ab0b50b739f2dd2e1c5787a8e3d1b04443f8"
+    },
+    "graph_identical": true,
+    "disk_identical": true
+  },
+  "limitations": [
+    "Actual FPS ~20-32; higher caps did not attain 60 or 120 FPS.",
+    "Player physical-head target tracking difference reached10.74deg under unchanged PHAT settings.",
+    "Saved15% reach limits unchanged; separate kinematic reachable fixture temporarily used25%.",
+    "Numerical motion validation; no human motion-quality acceptance claimed."
+  ],
+  "evidence_directory": "Saved/Diagnostics/SwordHeadFix20261011",
+  "historical_diagnosis": "Tools/SwordHolster/HeadFpsDiagnosis20261011.json"
+}

@@ -1,0 +1,552 @@
+{
+  "method": "Seven alternating paired repeats after warmup, 100 independent agents. Includes initial pose math on admission ticks. Excludes NN reads/inference, skeleton discovery, cache publication, equipment, physics and rendering.",
+  "cases": [
+    {
+      "name": "idle draw",
+      "before": {
+        "frames": 124.0,
+        "total_ms": 73.513099982,
+        "peak_ms": 2.493999986,
+        "start_peak_ms": 2.493999986,
+        "cycle_peak_ms": 2.084699983,
+        "max_starts": 100.0,
+        "max_refits": 100.0,
+        "mean_ms": 0.5928475805,
+        "worst_observed_ms": 2.782800002
+      },
+      "after": {
+        "frames": 127.0,
+        "total_ms": 73.35120003,
+        "peak_ms": 1.27149999,
+        "start_peak_ms": 1.029100007,
+        "cycle_peak_ms": 1.27149999,
+        "max_starts": 25.0,
+        "max_refits": 25.0,
+        "mean_ms": 0.5775685041732284,
+        "worst_observed_ms": 1.493100019
+      }
+    },
+    {
+      "name": "idle sheathe",
+      "before": {
+        "frames": 129.0,
+        "total_ms": 76.229599974,
+        "peak_ms": 2.522900002,
+        "start_peak_ms": 2.522900002,
+        "cycle_peak_ms": 2.013400022,
+        "max_starts": 100.0,
+        "max_refits": 100.0,
+        "mean_ms": 0.5909271315813953,
+        "worst_observed_ms": 2.959400008
+      },
+      "after": {
+        "frames": 132.0,
+        "total_ms": 79.090000014,
+        "peak_ms": 1.064399985,
+        "start_peak_ms": 1.006800012,
+        "cycle_peak_ms": 1.064399985,
+        "max_starts": 25.0,
+        "max_refits": 25.0,
+        "mean_ms": 0.5991666667727272,
+        "worst_observed_ms": 1.110399986
+      }
+    },
+    {
+      "name": "walk draw",
+      "before": {
+        "frames": 124.0,
+        "total_ms": 73.310300126,
+        "peak_ms": 2.540699992,
+        "start_peak_ms": 2.540699992,
+        "cycle_peak_ms": 2.01180001,
+        "max_starts": 100.0,
+        "max_refits": 100.0,
+        "mean_ms": 0.5912120977903226,
+        "worst_observed_ms": 2.614600002
+      },
+      "after": {
+        "frames": 127.0,
+        "total_ms": 73.695599975,
+        "peak_ms": 1.264500024,
+        "start_peak_ms": 1.031199994,
+        "cycle_peak_ms": 1.264500024,
+        "max_starts": 25.0,
+        "max_refits": 25.0,
+        "mean_ms": 0.5802803147637795,
+        "worst_observed_ms": 1.312800014
+      }
+    },
+    {
+      "name": "walk sheathe",
+      "before": {
+        "frames": 129.0,
+        "total_ms": 77.417500026,
+        "peak_ms": 2.535599982,
+        "start_peak_ms": 2.535599982,
+        "cycle_peak_ms": 1.996400009,
+        "max_starts": 100.0,
+        "max_refits": 100.0,
+        "mean_ms": 0.6001356591162791,
+        "worst_observed_ms": 2.668100002
+      },
+      "after": {
+        "frames": 132.0,
+        "total_ms": 77.533500007,
+        "peak_ms": 1.072000014,
+        "start_peak_ms": 1.01029998,
+        "cycle_peak_ms": 1.072000014,
+        "max_starts": 25.0,
+        "max_refits": 25.0,
+        "mean_ms": 0.5873750000530303,
+        "worst_observed_ms": 1.132899983
+      }
+    },
+    {
+      "name": "mixed simultaneous",
+      "before": {
+        "frames": 129.0,
+        "total_ms": 80.514900037,
+        "peak_ms": 2.809700003,
+        "start_peak_ms": 2.809700003,
+        "cycle_peak_ms": 1.694100007,
+        "max_starts": 100.0,
+        "max_refits": 100.0,
+        "mean_ms": 0.6241465119147287,
+        "worst_observed_ms": 3.106100019
+      },
+      "after": {
+        "frames": 132.0,
+        "total_ms": 77.531099989,
+        "peak_ms": 1.250600006,
+        "start_peak_ms": 1.110800018,
+        "cycle_peak_ms": 1.250600006,
+        "max_starts": 25.0,
+        "max_refits": 25.0,
+        "mean_ms": 0.5873568180984848,
+        "worst_observed_ms": 1.404400013
+      }
+    },
+    {
+      "name": "mixed arrivals over 19 ticks",
+      "before": {
+        "frames": 147.0,
+        "total_ms": 77.033799986,
+        "peak_ms": 1.097999979,
+        "start_peak_ms": 0.910000002,
+        "cycle_peak_ms": 1.097999979,
+        "max_starts": 6.0,
+        "max_refits": 27.0,
+        "mean_ms": 0.5240394556870749,
+        "worst_observed_ms": 1.170699979
+      },
+      "after": {
+        "frames": 150.0,
+        "total_ms": 77.247999958,
+        "peak_ms": 1.101199974,
+        "start_peak_ms": 0.923199987,
+        "cycle_peak_ms": 1.101199974,
+        "max_starts": 5.0,
+        "max_refits": 25.0,
+        "mean_ms": 0.5149866663866667,
+        "worst_observed_ms": 1.175300014
+      }
+    }
+  ],
+  "native_tests": {
+    "succeeded": 9,
+    "failed": 0,
+    "notRun": 0
+  },
+  "parity": "cycles=32 pose_deg=3.41509458501e-06 position_cm=0 timing_mismatch=0 offset_pose_deg=1.91414137189 offset_position_cm=0.785045789665 offset_completion_ticks=0",
+  "build": "Saved/Diagnostics/SwordStagger20261011/build-3.txt; normal build succeeded in 68.19s; one editor shutdown/reopen",
+  "editor": {
+    "pid": 12024,
+    "map": "/Game/testNN.testNN",
+    "dirty": [],
+    "hashes": {
+      "Content/testNN.umap": "d97c3e25e23b105b7c474900a1ed4851f5c59f90adf1145b273680cd51f3c81b",
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "1f8152a0d17f35b8f51ed679ffa66a75a5b8bc75e7fe92aa2c33dde8a917cf7f",
+      "Content/_mygame/sword/A_Sword.uasset": "ff7baf67e07acce36be264aa880f03ebe495fc16f1eebe63b7fb56f8c15fe62f",
+      "Content/locomotion/SwordHolsterProfile.json": "37c4b0d354254e71ae04eb706e93ab0b50b739f2dd2e1c5787a8e3d1b04443f8"
+    },
+    "graph_identical": true
+  },
+  "runtime": {
+    "player": "immediate; original local cadence",
+    "crowd_delay_ticks": [
+      0,
+      3
+    ],
+    "body_refit_interval": 4,
+    "motion_tick_interval": 1,
+    "guide_prefetch": false,
+    "start_and_reach_load_independent": true,
+    "queue_deadline": "next eligible component tick at or after due world tick; pause excluded",
+    "idle_tick_callback": false
+  },
+  "play_checks": [
+    {
+      "name": "stagger-player-sim",
+      "reason": "passed",
+      "events": [
+        [
+          26,
+          "sheathe",
+          1
+        ],
+        [
+          68,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          161,
+          "sheathe",
+          3
+        ],
+        [
+          162,
+          "draw",
+          1
+        ],
+        [
+          191,
+          "draw",
+          2
+        ],
+        [
+          222,
+          "draw",
+          4
+        ],
+        [
+          284,
+          "draw",
+          -1
+        ]
+      ],
+      "options": {
+        "name": "stagger-player-sim",
+        "kinematic": false,
+        "walk": false,
+        "shrink_percent": null,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": false,
+        "cancel_phase": null
+      },
+      "rows": 259,
+      "source": "Saved\\Diagnostics\\SwordLabPort20261010\\stagger-player-sim.json",
+      "max_s_return_tracking_cm": 0.20724784719278755,
+      "max_d_return_tracking_cm": 1.2926399088415008,
+      "collision_checks": 257
+    },
+    {
+      "name": "stagger-player-kinematic",
+      "reason": "passed",
+      "events": [
+        [
+          33,
+          "explicit diagnostic sheathe"
+        ],
+        [
+          33,
+          "sheathe",
+          0
+        ],
+        [
+          34,
+          "sheathe",
+          1
+        ],
+        [
+          72,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          161,
+          "sheathe",
+          3
+        ],
+        [
+          162,
+          "draw",
+          1
+        ],
+        [
+          191,
+          "draw",
+          2
+        ],
+        [
+          218,
+          "draw",
+          4
+        ],
+        [
+          280,
+          "draw",
+          -1
+        ],
+        [
+          340,
+          "Sim and holster simulation restored"
+        ]
+      ],
+      "options": {
+        "name": "stagger-player-kinematic",
+        "kinematic": true,
+        "walk": false,
+        "shrink_percent": 25.0,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": true,
+        "cancel_phase": null
+      },
+      "rows": 248,
+      "source": "Saved\\Diagnostics\\SwordLabPort20261010\\stagger-player-kinematic.json",
+      "max_s_return_tracking_cm": 5.904883742358415e-14,
+      "max_d_return_tracking_cm": 1.0173423748423967e-13,
+      "collision_checks": 0
+    },
+    {
+      "name": "crowd-sim",
+      "reason": "passed",
+      "events": [
+        [
+          33,
+          "simultaneous S requests",
+          {
+            "BP_ProphecyManualPoseAgent_C_3": {
+              "reference": 1.0,
+              "length": 89.3492,
+              "phase": -1.0,
+              "attached": 0.0,
+              "scale": 1.0,
+              "insertion": 0.0,
+              "progress": 0.0,
+              "joint": 0.0,
+              "distance": 0.0,
+              "angle": 0.0,
+              "X": 181.221,
+              "Y": -233.187,
+              "Z": 83.514,
+              "joint_slot": -1.0,
+              "joint_generation": 0.0,
+              "world_joints": 14.0,
+              "pose_tick": 0.0,
+              "reach_ticks": 0.0,
+              "slide_ticks": 0.0,
+              "pose_error": 0.0,
+              "finished": 0.0,
+              "kinematic": 0.0,
+              "queued": 1.0,
+              "refresh_slot": 1.0
+            },
+            "BP_ProphecyManualPoseAgent_C_2": {
+              "reference": 1.0,
+              "length": 89.3492,
+              "phase": 0.0,
+              "attached": 0.0,
+              "scale": 1.0,
+              "insertion": 0.0,
+              "progress": 0.0,
+              "joint": 0.0,
+              "distance": 93.803,
+              "angle": 130.504,
+              "X": -401.843,
+              "Y": -346.904,
+              "Z": 162.059,
+              "joint_slot": -1.0,
+              "joint_generation": 0.0,
+              "world_joints": 14.0,
+              "pose_tick": 0.0,
+              "reach_ticks": 32.0,
+              "slide_ticks": 27.0,
+              "pose_error": 0.0,
+              "finished": 0.0,
+              "kinematic": 0.0,
+              "queued": 0.0,
+              "refresh_slot": 0.0
+            },
+            "BP_ProphecyManualPoseAgent_C_0": {
+              "reference": 1.0,
+              "length": 89.3492,
+              "phase": 1.0,
+              "attached": 0.0,
+              "scale": 0.99978,
+              "insertion": 0.0,
+              "progress": 0.001469,
+              "joint": 1.0,
+              "distance": 109.43,
+              "angle": 127.269,
+              "X": 5.1,
+              "Y": -282.778,
+              "Z": 170.029,
+              "joint_slot": 8.0,
+              "joint_generation": 3.0,
+              "world_joints": 14.0,
+              "pose_tick": 8.0,
+              "reach_ticks": 43.0,
+              "slide_ticks": 31.0,
+              "pose_error": 110.262954,
+              "finished": 0.0,
+              "kinematic": 0.0,
+              "queued": 0.0,
+              "refresh_slot": -1.0
+            }
+          }
+        ],
+        [
+          33,
+          "queued pause verified"
+        ],
+        [
+          158,
+          "queued D cancelled; other D continues"
+        ],
+        [
+          277,
+          "D complete; all slots/joints released"
+        ]
+      ],
+      "actors": [
+        "BP_ProphecyManualPoseAgent_C_2",
+        "BP_ProphecyManualPoseAgent_C_3"
+      ],
+      "rows": 244,
+      "source": "Saved\\Diagnostics\\SwordStagger20261011\\crowd-sim.json",
+      "temporary_shrink_percent": 25
+    },
+    {
+      "name": "crowd-kinematic",
+      "reason": "passed",
+      "events": [
+        [
+          33,
+          "simultaneous S requests",
+          {
+            "BP_ProphecyManualPoseAgent_C_0": {
+              "reference": 1.0,
+              "length": 89.3492,
+              "phase": 1.0,
+              "attached": 0.0,
+              "scale": 0.99978,
+              "insertion": 0.0,
+              "progress": 0.001469,
+              "joint": 1.0,
+              "distance": 109.43,
+              "angle": 127.269,
+              "X": 5.1,
+              "Y": -282.778,
+              "Z": 170.029,
+              "joint_slot": 8.0,
+              "joint_generation": 3.0,
+              "world_joints": 10.0,
+              "pose_tick": 8.0,
+              "reach_ticks": 43.0,
+              "slide_ticks": 31.0,
+              "pose_error": 110.262954,
+              "finished": 0.0,
+              "kinematic": 0.0,
+              "queued": 0.0,
+              "refresh_slot": -1.0
+            },
+            "BP_ProphecyManualPoseAgent_C_2": {
+              "reference": 1.0,
+              "length": 89.3492,
+              "phase": 0.0,
+              "attached": 0.0,
+              "scale": 1.0,
+              "insertion": 0.0,
+              "progress": 0.0,
+              "joint": 0.0,
+              "distance": 94.37,
+              "angle": 130.034,
+              "X": -399.846,
+              "Y": -347.1,
+              "Z": 161.746,
+              "joint_slot": -1.0,
+              "joint_generation": 0.0,
+              "world_joints": 10.0,
+              "pose_tick": 0.0,
+              "reach_ticks": 33.0,
+              "slide_ticks": 27.0,
+              "pose_error": 0.0,
+              "finished": 0.0,
+              "kinematic": 1.0,
+              "queued": 0.0,
+              "refresh_slot": 0.0
+            },
+            "BP_ProphecyManualPoseAgent_C_3": {
+              "reference": 1.0,
+              "length": 89.3492,
+              "phase": -1.0,
+              "attached": 0.0,
+              "scale": 1.0,
+              "insertion": 0.0,
+              "progress": 0.0,
+              "joint": 0.0,
+              "distance": 0.0,
+              "angle": 0.0,
+              "X": 180.486,
+              "Y": -234.072,
+              "Z": 82.15,
+              "joint_slot": -1.0,
+              "joint_generation": 0.0,
+              "world_joints": 10.0,
+              "pose_tick": 0.0,
+              "reach_ticks": 0.0,
+              "slide_ticks": 0.0,
+              "pose_error": 0.0,
+              "finished": 0.0,
+              "kinematic": 0.0,
+              "queued": 1.0,
+              "refresh_slot": 1.0
+            }
+          }
+        ],
+        [
+          33,
+          "queued pause verified"
+        ],
+        [
+          156,
+          "queued D cancelled; other D continues"
+        ],
+        [
+          275,
+          "D complete; all slots/joints released"
+        ]
+      ],
+      "actors": [
+        "BP_ProphecyManualPoseAgent_C_2",
+        "BP_ProphecyManualPoseAgent_C_3"
+      ],
+      "rows": 242,
+      "source": "Saved\\Diagnostics\\SwordStagger20261011\\crowd-kinematic.json",
+      "temporary_shrink_percent": 25
+    }
+  ],
+  "source_hashes": {
+    "Source\\GameAnimationSample3\\Private\\ProphecySwordComponent.cpp": "7a7b6d049f32102316f606302371e7c33b96964fd2fc16eb538961012a36ef5d",
+    "Source\\GameAnimationSample3\\Private\\ProphecySwordHolsterRuntime.inl": "e34c1732689cce0c00347a95d61bfa86efa27df556d65f100345ec87efae67fb",
+    "Source\\GameAnimationSample3\\Private\\ProphecySwordHolsterPose.cpp": "f1a9bf079c6365b2e9a536d78264516016d5d2070ee215ae692dfc1f18eb320d",
+    "Source\\GameAnimationSample3\\Private\\ProphecySwordHolsterSchedule.h": "3f139f4076e6250df4d81e9afa6bd79f4c438d2bb1cab54fdc03443dd2781cec",
+    "Source\\GameAnimationSample3\\Private\\ProphecySwordHolsterSchedule.inl": "6b7465d73b37237002568cadc0e50ba2b6fdce240f30361a4f4e0620589c8d36",
+    "Source\\GameAnimationSample3\\Private\\Tests\\ProphecySwordHolsterStaggerTests.inl": "41d8129b4e0a31a236eefe863ed4095be92ad9bbc1cb3013249d3cfd6e2c0d84"
+  }
+}

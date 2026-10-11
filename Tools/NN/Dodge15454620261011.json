@@ -1,0 +1,17 @@
+{
+  "step": 154546,
+  "checkpoint_sha256": "6ce41ddd4ef418bc8afd38700efa52015c9428bcd55c0bbec1468397c91bfe10",
+  "model_sha256": "a435d80ac35a61f7b5fae723544850409b597fd1dc948c78e2ae8347e2f8e222",
+  "defaults_unchanged": true,
+  "lower_models_settings_banks_identical": true,
+  "parity": {
+    "sha256": "a435d80ac35a61f7b5fae723544850409b597fd1dc948c78e2ae8347e2f8e222",
+    "parity_batches": 17,
+    "max_abs_error": 1.5497207641601562e-06
+  },
+  "target": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Content\\locomotion\\NN\\defense\\pickers\\Dodge154546",
+  "status": "source_and_export_added_pending_native_build",
+  "label": "Dodge 154546 - Post-hit return 5 / Free pelvis",
+  "native_test": "Extended; not compiled or run",
+  "editor_touched": false
+}

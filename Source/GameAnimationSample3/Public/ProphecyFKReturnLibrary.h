@@ -23,6 +23,13 @@ class GAMEANIMATIONSAMPLE3_API UProphecyFKReturnLibrary : public UBlueprintFunct
 {
     GENERATED_BODY()
 public:
+    /** Make the pure attack FK return aim at gaze-adjusted idle, including during NN Alpha Hold.
+     * Uses the agent's current upper-NN yaw/pitch and follows changes during return.
+     * Call before the attack ends. Default without this node is disabled; Parry is unchanged.
+     * Existing return timing, inertia and NN takeover controls remain independent. */
+    UFUNCTION(BlueprintCallable, Category="Prophecy|Agent|Attack Recovery", meta=(DefaultToSelf="Agent", DisplayName="Set Attack FK Return Gaze"))
+    static bool SetAttackFKReturnGaze(AProphecyAgent* Agent, bool Enabled=true);
+
     /** Remove only the axial part of upperarm FK-return inertia, symmetrically.
      * 0 retains original inertia, 1 removes its twist while preserving swing.
      * Preserves all other profile values. None updates all attacks; next return only. */

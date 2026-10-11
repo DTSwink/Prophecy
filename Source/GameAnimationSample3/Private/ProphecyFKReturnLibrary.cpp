@@ -2,6 +2,7 @@
 #include "ProphecyNNModifierDebug.h"
 #include "ProphecyFKReturn.h"
 #include "ProphecyFKReturnData.h"
+#include "ProphecyFKReturnGaze.h"
 #include "ProphecyAgent.h"
 #include "ProphecyNNPoseTypes.h"
 #include "ProphecyBlendClock.h"
@@ -33,6 +34,14 @@ static TMap<TWeakObjectPtr<const AProphecyAgent>,FActive> Active;
 struct FParryConfig { FProfile Profile;float Coefficient=1;FVector2f Timing{.1f,.34f}; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FParryConfig> ParryConfigs,ParryBaselines;
 static TSet<TWeakObjectPtr<const AProphecyAgent>> ParryActive;
+// Separate storage keeps the existing retained profile/curve layouts unchanged.
+static TSet<TWeakObjectPtr<const AProphecyAgent>> GazeEnabled,GazeBaselines;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FVector2f> ActiveGaze;
+static FVector2f ReadGaze(const AProphecyAgent* Agent)
+{
+    auto Value=[](float V){return FMath::IsFinite(V)?FMath::Clamp(V,-1.f,1.f):0.f;};
+    return FVector2f(Value(Agent->UpperNNGazeYawNormalized),Value(Agent->UpperNNGazePitchNormalized));
+}
 // Publication identity and bounded game-tick progress are separate.
 struct FTickPhase
 {
@@ -52,7 +61,9 @@ static void EnsureCleanup()
     {
         auto Clean=[W](auto& Map){for(auto It=Map.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W)It.RemoveCurrent();};
-        Clean(Configs);Clean(Baselines);Clean(Active);Clean(TickPhases);Clean(ParryConfigs);Clean(ParryBaselines);
+        Clean(Configs);Clean(Baselines);Clean(Active);Clean(TickPhases);Clean(ParryConfigs);Clean(ParryBaselines);Clean(ActiveGaze);
+        for(auto* Set:{&GazeEnabled,&GazeBaselines})for(auto It=Set->CreateIterator();It;++It)
+            if(!It->IsValid() || It->Get()->GetWorld()==W)It.RemoveCurrent();
         for(auto It=ParryActive.CreateIterator();It;++It)if(!It->IsValid() || It->Get()->GetWorld()==W)It.RemoveCurrent();
     });
 }
@@ -83,7 +94,7 @@ static bool SelectSlashWinding(FCurve& Curve,FName Attack,TConstArrayView<FTrans
 }
 static bool PrepareForAttack(FCurve& Curve,const FProfile& P,float Coefficient,TConstArrayView<FName> Names,
     TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
-    TConstArrayView<FTransform> Current,float Dt,TConstArrayView<FVector3f> AngularVelocity,FName Attack)
+    TConstArrayView<FTransform> Current,float Dt,TConstArrayView<FVector3f> AngularVelocity,FName Attack,const FTransform* Target=nullptr)
 {
     if(P.Duration<=0 || Dt<=0 || Names.Num()!=Parents.Num() || Names.Num()!=Current.Num() || Current.Num()!=Previous.Num())return false;
     Curve.Easing=P.Easing;Curve.Coefficient=Coefficient;
@@ -109,8 +120,8 @@ static bool PrepareForAttack(FCurve& Curve,const FProfile& P,float Coefficient,T
         const auto A=Previous[B.Index].GetRelativeTransform(Previous[B.Parent]);
         const auto Z=Current[B.Index].GetRelativeTransform(Current[B.Parent]);
         B.Start=FQuat4f(Z.GetRotation());B.Offset=FVector3f(Z.GetTranslation());
-        B.Return.Set(B.Start.Inverse()*FQuat4f(D.Q[0],D.Q[1],D.Q[2],D.Q[3]));
-        B.OffsetReturn.Set(Swing(B.Offset,FVector3f(D.P[0],D.P[1],D.P[2])));
+        B.Return.Set(B.Start.Inverse()*(Target?FQuat4f(Target[J].GetRotation()):FQuat4f(D.Q[0],D.Q[1],D.Q[2],D.Q[3])));
+        B.OffsetReturn.Set(Swing(B.Offset,Target?FVector3f(Target[J].GetTranslation()):FVector3f(D.P[0],D.P[1],D.P[2])));
         B.Velocity.Set(FQuat4f(A.GetRotation()).Inverse()*B.Start,1.f/Dt);
         B.OffsetVelocity.Set(Swing(FVector3f(A.GetTranslation()),B.Offset),1.f/Dt);
     }
@@ -145,16 +156,16 @@ bool Prepare(FCurve& Curve,const FProfile& P,float Coefficient,TConstArrayView<F
 }
 void Cancel(const AProphecyAgent* Agent)
 {
-    if(!Active.IsEmpty())Active.Remove(Agent);ParryActive.Remove(Agent);
+    if(!Active.IsEmpty())Active.Remove(Agent);ParryActive.Remove(Agent);ActiveGaze.Remove(Agent);
     if(!TickPhases.IsEmpty())TickPhases.Remove(Agent);
     ProphecyBlendClock::Stop(Agent,ProphecyBlendClock::EKind::FKReturn);
 }
-void Remove(const AProphecyAgent* Agent){Cancel(Agent);Configs.Remove(Agent);Baselines.Remove(Agent);ParryConfigs.Remove(Agent);ParryBaselines.Remove(Agent);}
+void Remove(const AProphecyAgent* Agent){Cancel(Agent);GazeEnabled.Remove(Agent);GazeBaselines.Remove(Agent);Configs.Remove(Agent);Baselines.Remove(Agent);ParryConfigs.Remove(Agent);ParryBaselines.Remove(Agent);}
 void CaptureReset(const AProphecyAgent* Agent)
-{EnsureCleanup();if(const auto* C=Configs.Find(Agent))Baselines.Add(Agent,*C);else Baselines.Remove(Agent);if(const auto* P=ParryConfigs.Find(Agent))ParryBaselines.Add(Agent,*P);else ParryBaselines.Remove(Agent);}
+{EnsureCleanup();if(GazeEnabled.Contains(Agent))GazeBaselines.Add(Agent);else GazeBaselines.Remove(Agent);if(const auto* C=Configs.Find(Agent))Baselines.Add(Agent,*C);else Baselines.Remove(Agent);if(const auto* P=ParryConfigs.Find(Agent))ParryBaselines.Add(Agent,*P);else ParryBaselines.Remove(Agent);}
 void RestoreReset(const AProphecyAgent* Agent)
-{Cancel(Agent);Configs.Remove(Agent);if(const auto* C=Baselines.Find(Agent))Configs.Add(Agent,*C);ParryConfigs.Remove(Agent);if(const auto* P=ParryBaselines.Find(Agent))ParryConfigs.Add(Agent,*P);}
-void ForgetReset(const AProphecyAgent* Agent){Baselines.Remove(Agent);ParryBaselines.Remove(Agent);}
+{Cancel(Agent);GazeEnabled.Remove(Agent);if(GazeBaselines.Contains(Agent))GazeEnabled.Add(Agent);Configs.Remove(Agent);if(const auto* C=Baselines.Find(Agent))Configs.Add(Agent,*C);ParryConfigs.Remove(Agent);if(const auto* P=ParryBaselines.Find(Agent))ParryConfigs.Add(Agent,*P);}
+void ForgetReset(const AProphecyAgent* Agent){GazeBaselines.Remove(Agent);Baselines.Remove(Agent);ParryBaselines.Remove(Agent);}
 static void BeginResolved(const AProphecyAgent* Agent,FName Attack,const FProfile& Profile,
     float Coefficient,FVector2f Timing,TConstArrayView<FName> Names,
     TConstArrayView<int32> Parents,TConstArrayView<FTransform> Previous,
@@ -186,7 +197,11 @@ static void BeginResolved(const AProphecyAgent* Agent,FName Attack,const FProfil
             Rates[J]=FVector3f(A.Curve.SeedFrame.UnrotateVector(Rate));
         }
     }
-    if(!PrepareForAttack(A.Curve,Profile,Coefficient,Names,Parents,Previous,Current,SampleSeconds,Rates,Attack))return;
+    const bool UseGaze=!Attack.IsNone() && GazeEnabled.Contains(Agent);
+    FTransform Target[BoneCount];const FVector2f Gaze=UseGaze?ReadGaze(Agent):FVector2f::ZeroVector;
+    if(UseGaze)GazeIdle(Gaze,Target);
+    if(!PrepareForAttack(A.Curve,Profile,Coefficient,Names,Parents,Previous,Current,SampleSeconds,Rates,Attack,UseGaze?Target:nullptr))return;
+    if(UseGaze)ActiveGaze.Add(Agent,Gaze);
     A.Curve.SetAlphaHold(AlphaHold);
     A.Curve.TakeoverTimeScale=1.f/(1.f-Trim);
     for(int32 J=0;J<BoneCount;++J)
@@ -255,7 +270,16 @@ bool Apply(const AProphecyAgent* Agent,double CurrentTime,
         Phase->Elapsed=double(Phase->Ticks)/60.;Phase->Complete=Phase->Ticks>=Phase->Limit;
         Phase->Publication=CurrentTime;Phase->Sampled=false;
         FMemory::Memcpy(A->PreviousLocal,A->CurrentLocal,sizeof(A->CurrentLocal));
-        if(!Phase->Complete)A->Curve.Apply(float(Phase->Elapsed),Current,Local,Frame);
+        if(!Phase->Complete)
+        {
+            if(auto* Last=ActiveGaze.IsEmpty()?nullptr:ActiveGaze.Find(Agent))
+            {
+                const FVector2f Gaze=ReadGaze(Agent);
+                if(Gaze!=*Last){FTransform Target[BoneCount];GazeIdle(Gaze,Target);RetargetGaze(A->Curve,Target);*Last=Gaze;}
+            }
+            A->Curve.Apply(float(Phase->Elapsed),Current,Local,Frame);
+        }
+        else ActiveGaze.Remove(Agent);
         for(int32 J=0;J<BoneCount;++J)
         {const auto& B=A->Curve.Bones[J];A->CurrentLocal[J]=Current[B.Index].GetRelativeTransform(Current[B.Parent]);}
     }
@@ -331,6 +355,13 @@ template<typename F> static void UpdateProfileFields(AProphecyAgent* Agent,FName
     for(auto& Entry:Updated){Entry.Value=CurrentProfile(C,Entry.Key);Update(Entry.Value);}
     C.Profiles=MoveTemp(Updated);
 }
+}
+
+bool UProphecyFKReturnLibrary::SetAttackFKReturnGaze(AProphecyAgent* Agent,bool Enabled)
+{
+    using namespace ProphecyFKReturn;
+    if(!Valid(Agent))return false;
+    EnsureCleanup();if(Enabled)GazeEnabled.Add(Agent);else GazeEnabled.Remove(Agent);return true;
 }
 
 bool UProphecyFKReturnLibrary::SetAttackFKReturnTwistInertia(AProphecyAgent* Agent,FName Attack,float RemoveTwist)
@@ -413,6 +444,7 @@ bool UProphecyFKReturnLibrary::SetAttackFKReturnProfile(AProphecyAgent* Agent,FN
 }
 
 #include "ProphecyFKReturnTests.inl"
+#include "Tests/ProphecyFKReturnGazeTests.inl"
 #include "Tests/ProphecyFKReturnWindingTests.inl"
 #include "Tests/ProphecyParryReturnTests.inl"
 

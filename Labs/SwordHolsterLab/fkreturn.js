@@ -4,10 +4,10 @@
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
 const {unit,qm,qinv,qlog,rotate,fromTo,length:len,mul,sub}=R;
 const bones=['spine','clavicle','upperarm','lowerarm','neck_01','neck_02','head'];
-const defaults=()=>({enabled:true,duration:1,returnEasing:1,inertia:1,inertiaHold:0,inertiaDecay:1,worldInertia:false,springReturn:false,angleTimeSeconds:.29,upperArmTwistRemoval:0,boneInertia:Object.fromEntries(bones.map(k=>[k,1]))});
+const defaults=()=>({enabled:true,startFraction:.9,duration:1,returnEasing:1,inertia:1,inertiaHold:0,inertiaDecay:1,worldInertia:false,springReturn:false,angleTimeSeconds:.29,upperArmTwistRemoval:0,boneInertia:Object.fromEntries(bones.map(k=>[k,1]))});
 function sanitize(input={}){
  const o={...defaults(),...input};
- for(const [k,lo,hi] of [['duration',.1,5],['returnEasing',0,1],['inertia',0,1],['inertiaHold',0,.8],['inertiaDecay',0,4],['angleTimeSeconds',0,4],['upperArmTwistRemoval',0,1]])o[k]=Math.max(lo,Math.min(hi,Number.isFinite(Number(o[k]))?Number(o[k]):defaults()[k]));
+ for(const [k,lo,hi] of [['startFraction',0,1],['duration',.1,5],['returnEasing',0,1],['inertia',0,1],['inertiaHold',0,.8],['inertiaDecay',0,4],['angleTimeSeconds',0,4],['upperArmTwistRemoval',0,1]])o[k]=Math.max(lo,Math.min(hi,Number.isFinite(Number(o[k]))?Number(o[k]):defaults()[k]));
  for(const k of ['enabled','worldInertia','springReturn'])o[k]=!!o[k];
  o.boneInertia=Object.fromEntries(bones.map(k=>[k,Math.max(0,Math.min(1,Number.isFinite(Number(input.boneInertia?.[k]))?Number(input.boneInertia[k]):1))]));return o;
 }

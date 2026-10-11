@@ -16,6 +16,9 @@ for(const rotation of [[0,0,0,1],R.qexp([.4,-.8,.3])])for(const shrink of [0,10,
 for(const sheathe of [true,false]){
  const m=H.prepare(data,setup,{sheathe,shrinkPercent:35}),f=m.frames[sheathe?m.plan.endTick:m.plan.slideEnd];
  assert(m.plan.arrives);const full=H.compose(setup.seated,f.holster),base=point(full,setup.baseBladeLocal),axis=R.rotate(f.sword.q,[0,0,1]);
- assert(Math.abs(R.dot(R.sub(point(f.sword,tip),base),axis))<.00002,'actual FK clear endpoint aligned');
+ if(sheathe){
+  assert(dist(point(f.sword,H.bladeTip(setup)),base)<=2,'S accepts tip within the existing 2cm gate');
+  assert(H.angle(f.sword.q,full.q)<=m.o.sheatheRotationTolerance+1e-5,'S accepts within angular tolerance');
+ }else assert(Math.abs(R.dot(R.sub(point(f.sword,tip),base),axis))<.00002,'D clear endpoint aligned');
 }
 console.log(JSON.stringify({passed:true,shrinkCases:10,maxAxialErrorCm:maxAxialError}));

@@ -1,140 +1,177 @@
 {
-  "motion": "idle",
-  "sheathe": true,
-  "startTick": 25,
-  "maxReachSpeed": 250,
-  "maxReachRotationSpeed": 2500,
-  "slidingSpeed": 150,
-  "shrinkPercent": 15,
-  "unshrinkDuration": 0.5,
-  "holsterX": 0,
-  "holsterY": 0,
-  "holsterZ": 0,
-  "holsterPitch": 0,
-  "holsterYaw": 0,
-  "holsterRoll": 0,
-  "duration": 8,
-  "spineClavicleAngleLimit": 45,
-  "maxSpineClavicleAngularSpeed": 90,
-  "drawReturn": {
-    "enabled": true,
-    "duration": 1,
-    "returnEasing": 1,
-    "inertia": 1,
-    "inertiaHold": 0,
-    "inertiaDecay": 1,
-    "worldInertia": false,
-    "springReturn": false,
-    "angleTimeSeconds": 0.29,
-    "upperArmTwistRemoval": 0,
-    "boneInertia": {
-      "spine": 1,
-      "clavicle": 1,
-      "upperarm": 1,
-      "lowerarm": 1,
-      "neck_01": 1,
-      "neck_02": 1,
-      "head": 1
-    }
+  "schema": "sword_holster_lab_v1",
+  "parameters": {
+    "gazeYaw": -24,
+    "sheatheRotationTolerance": 15,
+    "slideRotationCorrection": 0.45,
+    "motion": "walk",
+    "sheathe": true,
+    "startTick": 25,
+    "maxReachSpeed": 230,
+    "maxReachRotationSpeed": 600,
+    "slidingSpeed": 150,
+    "shrinkPercent": 15,
+    "unshrinkDuration": 0.5,
+    "holsterX": 0,
+    "holsterY": 0,
+    "holsterZ": 0,
+    "holsterPitch": 0,
+    "holsterYaw": 0,
+    "holsterRoll": 0,
+    "duration": 8,
+    "spineClavicleAngleLimit": 45,
+    "maxSpineClavicleAngularSpeed": 1000,
+    "drawReturn": {
+      "enabled": true,
+      "startFraction": 0.9,
+      "duration": 1,
+      "returnEasing": 1,
+      "inertia": 1,
+      "inertiaHold": 0,
+      "inertiaDecay": 1,
+      "worldInertia": false,
+      "springReturn": false,
+      "angleTimeSeconds": 0.29,
+      "upperArmTwistRemoval": 0,
+      "boneInertia": {
+        "spine": 1,
+        "clavicle": 1,
+        "upperarm": 1,
+        "lowerarm": 1,
+        "neck_01": 1,
+        "neck_02": 1,
+        "head": 1
+      }
+    },
+    "sheatheReturn": {
+      "enabled": true,
+      "startFraction": 0.7,
+      "duration": 1,
+      "returnEasing": 1,
+      "inertia": 1,
+      "inertiaHold": 0,
+      "inertiaDecay": 1,
+      "worldInertia": false,
+      "springReturn": false,
+      "angleTimeSeconds": 0.29,
+      "upperArmTwistRemoval": 0,
+      "boneInertia": {
+        "spine": 1,
+        "clavicle": 1,
+        "upperarm": 1,
+        "lowerarm": 1,
+        "neck_01": 1,
+        "neck_02": 1,
+        "head": 1
+      }
+    },
+    "headLookAtAlpha": 1,
+    "headMaxDownAngle": 45,
+    "headLookInSpeedAlpha": 0.21,
+    "sheatheHeadTargetAlpha": 0.9,
+    "headLookInExponent": 2,
+    "headLookOutExponent": 2,
+    "maxHeadLookInVelocity": 170,
+    "maxHeadLookOutVelocity": 100,
+    "maxHeadLookInVelocityAtMaxGaze": 300,
+    "maxHeadLookOutVelocityAtMaxGaze": 300,
+    "drawHeadLookOutThreshold": 0.3,
+    "sheatheHeadLookOutThreshold": 0.5,
+    "drawCurve": [
+      [
+        0.2,
+        0.2
+      ],
+      [
+        0.4,
+        0.4
+      ],
+      [
+        0.6,
+        0.6
+      ],
+      [
+        0.8,
+        0.8
+      ]
+    ],
+    "sheatheCurve": [
+      [
+        0.14718561356661616,
+        0.05756312182913238
+      ],
+      [
+        0.4221556864684471,
+        0.29617963412380177
+      ],
+      [
+        0.6166466699636005,
+        0.564220086752473
+      ],
+      [
+        0.9519759959614464,
+        0.9672884365700237
+      ]
+    ],
+    "drawSlideCurve": [
+      [
+        0.2,
+        0.2
+      ],
+      [
+        0.4,
+        0.4
+      ],
+      [
+        0.6,
+        0.6
+      ],
+      [
+        0.8,
+        0.8
+      ]
+    ],
+    "sheatheSlideCurve": [
+      [
+        0.13712572739078147,
+        0.04043271696188657
+      ],
+      [
+        0.650179602563385,
+        0.7111385494636496
+      ],
+      [
+        0.8849101307618773,
+        0.9562043029634382
+      ],
+      [
+        0.9553293659722167,
+        0.9884497709488423
+      ]
+    ]
   },
-  "sheatheReturn": {
-    "enabled": true,
-    "duration": 1,
-    "returnEasing": 1,
-    "inertia": 1,
-    "inertiaHold": 0,
-    "inertiaDecay": 1,
-    "worldInertia": false,
-    "springReturn": false,
-    "angleTimeSeconds": 0.29,
-    "upperArmTwistRemoval": 0,
-    "boneInertia": {
-      "spine": 1,
-      "clavicle": 1,
-      "upperarm": 1,
-      "lowerarm": 1,
-      "neck_01": 1,
-      "neck_02": 1,
-      "head": 1
-    }
+  "time": 1.2607999999821138,
+  "camera": {
+    "yaw": 19.254401123046872,
+    "pitch": -0.04599999999999972,
+    "zoom": 1.8,
+    "panX": 0,
+    "panY": 65
   },
-  "headLookAtAlpha": 0.5,
-  "headLookInExponent": 2,
-  "headLookOutExponent": 2,
-  "maxHeadLookInVelocity": 120,
-  "maxHeadLookOutVelocity": 110,
-  "drawHeadLookOutThreshold": 0.3,
-  "sheatheHeadLookOutThreshold": 0.5,
-  "drawCurve": [
-    [
-      0.12035926109088917,
-      0.06965517232365878
-    ],
-    [
-      0.38862275386866246,
-      0.4437027977650636
-    ],
-    [
-      0.5663472710639236,
-      0.688768305251455
-    ],
-    [
-      0.9050299670725398,
-      0.9918757535169326
-    ]
-  ],
-  "sheatheCurve": [
-    [
-      0.20083831851807013,
-      0.06119108139624617
-    ],
-    [
-      0.4020359141167777,
-      0.3320528156629226
-    ],
-    [
-      0.6166466699636005,
-      0.564220086752473
-    ],
-    [
-      0.8983233549689856,
-      0.9249662598391809
-    ]
-  ],
-  "drawSlideCurve": [
-    [
-      0.2,
-      0.2
-    ],
-    [
-      0.4,
-      0.4
-    ],
-    [
-      0.6,
-      0.6
-    ],
-    [
-      0.8,
-      0.8
-    ]
-  ],
-  "sheatheSlideCurve": [
-    [
-      0.13712572739078147,
-      0.04043271696188657
-    ],
-    [
-      0.650179602563385,
-      0.7111385494636496
-    ],
-    [
-      0.8849101307618773,
-      0.9562043029634382
-    ],
-    [
-      0.9553293659722167,
-      0.9884497709488423
-    ]
-  ]
+  "workspaceTab": "motion",
+  "fkReturnPanelOpen": false,
+  "controls": {
+    "bicolor": true,
+    "upperOnly": true,
+    "skeleton": false,
+    "idleGhost": false,
+    "showTarget": true,
+    "handGizmos": false,
+    "lowerarmGizmos": false,
+    "upperarmGizmos": false,
+    "gizmoSide": "r",
+    "speed": "1"
+  },
+  "sourceHash": "798839ed6d374fdde8084d0d9aba549606e9648ff7a846c0010de4c6b73f50e8",
+  "revision": "fa230599754b187cd56e26c86c1d02ca08532cdce76b350af44871faa99f7190"
 }

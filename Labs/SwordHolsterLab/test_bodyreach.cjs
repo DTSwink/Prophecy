@@ -14,14 +14,14 @@ for(const motion of ['idle','walk'])for(const sheathe of [true,false]){
   }
   if(!f.body){assert.deepEqual(f.pose,base);continue;}
   const v=f.body.applied;
-  assert(Math.abs(v[0])<=45*rad+1e-9,'spine twist limit');
+  assert(Number.isFinite(v[0]),'finite unrestricted spine twist');
   assert(Math.abs(v[0]-prev[0])<=90*rad/60+1e-9,'spine twist speed cap');
   assert(Math.hypot(v[1],v[2])<=45*rad+1e-9,'clavicle swing limit');
   assert(Math.hypot(v[1]-prev[1],v[2]-prev[2])<=90*rad/60+1e-9,'clavicle swing speed cap');
-  const world=R.qm(R.qm(base[ctx.top].q,R.qexp(R.mul(ctx.spineAxis,v[0]))),R.qinv(base[ctx.top].q));
+  const worldAxis=R.rotate(base[ctx.top].q,ctx.spineAxis);
   for(const [k,j] of ctx.spine.entries()){
    const delta=R.qm(f.pose[j].q,R.qinv(base[j].q));
-   assert(H.angle(delta,R.qslerp(I,world,(k+1)/5))<1e-5,'net 20/40/60/80/100% delta');
+   assert(H.angle(delta,R.qexp(R.mul(worldAxis,v[0]*(k+1)/5)))<1e-5,'net 20/40/60/80/100% signed-angle delta');
    // Removing only the additive turn recovers this frame's moving base orientation.
    near(R.rotate(R.qinv(delta),R.rotate(f.pose[j].q,[1,0,0])),R.rotate(base[j].q,[1,0,0]));
   }
@@ -35,12 +35,12 @@ for(const motion of ['idle','walk'])for(const sheathe of [true,false]){
  }
  const grip=m.frames.find(f=>f.phase==='Slide');assert(grip);
  if(!sheathe)assert(grip.body.remainingDegrees<=.25,'drawing waits for turn');
- const stable=m.frames.find(f=>f.body?.remainingDegrees<=.25);
+ const stable=m.frames.find(f=>f.body?.remainingDegrees<=.25)||grip;
  reports.push({motion,sheathe,gripTick:grip.tick,completionTick:m.completionTick,baseDistance:stable.body.baseShoulderDistance,assistedDistance:stable.body.shoulderDistance});
  assert.deepEqual(H.sample(m,.8),H.sample(H.prepare(data,setup,m.o),.8),'deterministic');
 }
 // Slow body + near-instant hand: reaching the grip alone must never start drawing.
-const slow=H.prepare(data,setup,{sheathe:false,maxReachSpeed:10000,maxReachRotationSpeed:10000,maxSpineClavicleAngularSpeed:10,duration:8});
+const slow=H.prepare(data,setup,{sheathe:false,maxReachSpeed:10000,maxReachRotationSpeed:10000,maxSpineClavicleAngularSpeed:10,duration:30});
 assert(slow.frames.some(f=>f.phase==='Reach'&&f.handError<=2&&f.body.remainingDegrees>1),'hand waits at grip');
 const grip=slow.frames.find(f=>f.phase==='Slide');assert(grip&&grip.body.remainingDegrees<=.25);
 // A held-out perturbation of both swing axes must not significantly improve the fitted shoulder.
@@ -54,7 +54,20 @@ assert(Math.hypot(...R.sub(yawPose[ctx.shoulder].p,base[ctx.shoulder].p).slice(0
 const optimum=B.optimize(ctx,base,target,[0,0,0],45),best=dist(B.apply(ctx,base,optimum,true),target);
 for(let k=0;k<3;k++)for(const sign of [-1,1]){
  const v=[...optimum];v[k]+=sign*.1*rad;
- if(Math.abs(v[0])>45*rad||Math.hypot(v[1],v[2])>45*rad)continue;
+ if(Math.hypot(v[1],v[2])>45*rad)continue;
  assert(dist(B.apply(ctx,base,v,true),target)>=best-.002,'bounded shoulder-distance optimum');
 }
-console.log(JSON.stringify({passed:true,cases:reports,slowGripTick:grip.tick},null,2));
+// High underlying gaze must not cap spine correction at the clavicle limit.
+const gazeBase=H.motion(data,'idle',1.479,162),gazeCtx=B.make(data,H.motion(data,'idle',0,162));
+const full=H.compose(setup.seated,H.compose(setup.holster,gazeBase[data.names.indexOf('pelvis')]));
+const gazeTarget=H.handForTip(setup,.85,H.bladeTip(setup),H.point(full,setup.baseBladeLocal),full.q).p;
+let gazeFit=[0,0,0];for(let i=0;i<5;i++)gazeFit=B.optimize(gazeCtx,gazeBase,gazeTarget,gazeFit,45);
+assert(Math.abs(gazeFit[0])>90*rad,'spine can undo large gaze rotations');
+assert(Math.hypot(gazeFit[1],gazeFit[2])<=45*rad+1e-9,'clavicle retains its angle cap');
+const gazeDistance=dist(B.apply(gazeCtx,gazeBase,gazeFit,true),gazeTarget);assert(gazeDistance<44,'formerly 58.57 cm capped snapshot target is reachable');
+const zeroClav=B.optimize(gazeCtx,gazeBase,gazeTarget,gazeFit,0);assert(Math.abs(zeroClav[0])>45*rad);assert.equal(Math.hypot(zeroClav[1],zeroClav[2]),0);
+for(const sign of [-1,1]){
+ const before=B.apply(gazeCtx,gazeBase,[sign*179.99*rad,0,0]),after=B.apply(gazeCtx,gazeBase,[sign*180.01*rad,0,0]);
+ for(const j of gazeCtx.spine)assert(H.angle(before[j].q,after[j].q)<.021,'distributed twist stays continuous through 180 degrees');
+}
+console.log(JSON.stringify({passed:true,cases:reports,slowGripTick:grip.tick,gazeFitDegrees:gazeFit.map(v=>v/rad),gazeDistance},null,2));

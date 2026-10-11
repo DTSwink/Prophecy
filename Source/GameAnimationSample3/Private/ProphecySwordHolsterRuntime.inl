@@ -18,10 +18,65 @@ struct FState
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FProfile> Profiles;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FReference> References;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FState> States;
+struct FRequest { bool Sheathe;float Reach,Rotation,Sliding; };
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FRequest> Pending;
 static TMap<TWeakObjectPtr<const UProphecySwordComponent>,FVector> AssetScales;
 // A new sidecar; existing retained holster state layouts are unchanged.
 struct FKinematicMount { TWeakObjectPtr<UPrimitiveComponent> Holster;TWeakObjectPtr<USceneComponent> Parent;FName Socket;FTransform PelvisLocal;bool Simulated=false; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FKinematicMount> KinematicMounts;
+// Entry/exit only. Separate new storage keeps the already-live FState layout intact.
+struct FNeckLimit
+{
+    FName Joint,Bone1,Bone2;
+    EAngularConstraintMotion Swing1,Swing2,Twist;
+    float Angle1,Angle2,AngleTwist;
+};
+using FNeckLimits=TArray<FNeckLimit,TInlineAllocator<3>>;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FNeckLimits> NeckLimits;
+static bool ApplyNeckLimits(AProphecyAgent* A,bool Free,FString& Error)
+{
+    auto* Saved=NeckLimits.Find(A);
+    if(Free?Saved!=nullptr:Saved==nullptr)return true;
+    auto* Mesh=A?A->GetPoseReferenceMesh():nullptr;
+    if(!Mesh){if(!Free)NeckLimits.Remove(A);return !Free;}
+    TArray<FConstraintProfileProperties> JointProfiles;FNeckLimits Captured;
+    JointProfiles.Reserve(Mesh->Constraints.Num());
+    for(const auto* Joint:Mesh->Constraints)
+    {
+        if(!Joint){Error=TEXT("Missing physical joint while changing D/S neck limits");return false;}
+        auto& P=JointProfiles.Add_GetRef(Joint->ProfileInstance);
+        if(Free)
+        {
+            const auto IsNeck=[](FName Bone){return Bone==TEXT("neck_01")||Bone==TEXT("neck_02")||Bone==TEXT("head");};
+            if(!IsNeck(Joint->ConstraintBone1)&&!IsNeck(Joint->ConstraintBone2))continue;
+            Captured.Add({Joint->JointName,Joint->ConstraintBone1,Joint->ConstraintBone2,
+                P.ConeLimit.Swing1Motion.GetValue(),P.ConeLimit.Swing2Motion.GetValue(),P.TwistLimit.TwistMotion.GetValue(),
+                P.ConeLimit.Swing1LimitDegrees,P.ConeLimit.Swing2LimitDegrees,P.TwistLimit.TwistLimitDegrees});
+            P.ConeLimit.Swing1Motion=ACM_Free;P.ConeLimit.Swing2Motion=ACM_Free;P.TwistLimit.TwistMotion=ACM_Free;
+        }
+        else for(const auto& Before:*Saved)
+            if(Joint->JointName==Before.Joint&&Joint->ConstraintBone1==Before.Bone1&&Joint->ConstraintBone2==Before.Bone2)
+            {
+                P.ConeLimit.Swing1Motion=Before.Swing1;P.ConeLimit.Swing2Motion=Before.Swing2;P.TwistLimit.TwistMotion=Before.Twist;
+                P.ConeLimit.Swing1LimitDegrees=Before.Angle1;P.ConeLimit.Swing2LimitDegrees=Before.Angle2;P.TwistLimit.TwistLimitDegrees=Before.AngleTwist;
+                break;
+            }
+    }
+    if(Free&&Captured.IsEmpty())return true;
+    auto* Character=A->GetJoltCharacterComponent();
+    if(A->IsJoltPhysicalAnimationEnabled()&&Character&&!Character->IsSteppingStopped())
+    {
+        if(!Character->ApplyAngularLimitProfiles(JointProfiles,Error))return false;
+    }
+    else for(int I=0;I<JointProfiles.Num();++I)
+        if(!ProphecyAngularLimits::Equal(Mesh->Constraints[I]->ProfileInstance,JointProfiles[I]))ProphecyAngularLimits::Apply(*Mesh->Constraints[I],JointProfiles[I]);
+    if(Free)NeckLimits.Add(A,MoveTemp(Captured));else NeckLimits.Remove(A);
+    return true;
+}
+static void RestoreNeckLimits(AProphecyAgent* A)
+{
+    FString Error;if(!ApplyNeckLimits(A,false,Error))UE_LOG(LogTemp,Warning,TEXT("Sword holster neck limits restore: %s"),*Error);
+}
 static FDelegateHandle Cleanup;
 static void EnsureCleanup()
 {
@@ -30,7 +85,7 @@ static void EnsureCleanup()
     {
         auto Clean=[W](auto& Map){for(auto It=Map.CreateIterator();It;++It)
             if(!It.Key().IsValid() || It.Key()->GetWorld()==W)It.RemoveCurrent();};
-        Clean(States);Clean(References);Clean(Profiles);Clean(AssetScales);Clean(KinematicMounts);
+        Clean(States);Clean(Pending);Clean(References);Clean(Profiles);Clean(AssetScales);Clean(KinematicMounts);Clean(NeckLimits);
         if(States.IsEmpty() && References.IsEmpty() && Profiles.IsEmpty() && AssetScales.IsEmpty())
         {FWorldDelegates::OnWorldCleanup.Remove(Cleanup);Cleanup.Reset();}
     });
@@ -38,6 +93,8 @@ static void EnsureCleanup()
 bool InHolster(const AProphecyAgent* A){const auto* S=States.Find(A);return S && S->Attached;}
 void BeforeModeChange(AProphecyAgent* A,bool Kinematic)
 {
+    // Restore before backend teardown captures its source constraint profiles.
+    RestoreNeckLimits(A);
     if(!Kinematic || KinematicMounts.Contains(A))return;
     const auto* R=References.Find(A);auto* H=R?Cast<UPrimitiveComponent>(R->Holster.Get()):nullptr;
     auto* M=A?A->GetPoseReferenceMesh():nullptr;if(!H||!M||!M->DoesSocketExist(TEXT("pelvis")))return;
@@ -68,15 +125,22 @@ bool HandTarget(const AProphecyAgent* A,FTransform& World)
     World=S->TargetHand;return true;
 }
 static void DestroyJoint(FState& S)
-{if(S.World.IsValid() && S.World->OwnsJoint(S.Joint))S.World->DestroyJoint(S.Joint);S.Joint={};}
-static void RestoreArmCollision(AProphecyAgent* A)
 {
+ if(S.World.IsValid()){
+  if(S.Sheathe&&!S.Attached&&S.World->OwnsBody(S.JointSettings.BodyB))SwordDriveFollower(S.World.Get(),S.JointSettings.BodyB,S.JointSettings.BodyA,FTransform::Identity,false);
+  if(S.World->OwnsJoint(S.Joint))S.World->DestroyJoint(S.Joint);
+ }
+ S.Joint={};
+}
+static void RestoreActionPhysics(AProphecyAgent* A)
+{
+    RestoreNeckLimits(A);
     FString Error;
     if(!ProphecyLimbCollision::SetHolsterArmSuppressed(A,false,Error))
         UE_LOG(LogTemp,Warning,TEXT("Sword holster collision restore: %s"),*Error);
 }
 void Remove(const AProphecyAgent* A)
-{RestoreArmCollision(const_cast<AProphecyAgent*>(A));if(auto* S=States.Find(A))DestroyJoint(*S);States.Remove(A);References.Remove(A);Profiles.Remove(A);KinematicMounts.Remove(A);ProphecySwordHolsterPose::Remove(A,true);}
+{RestoreActionPhysics(const_cast<AProphecyAgent*>(A));if(auto* S=States.Find(A))DestroyJoint(*S);States.Remove(A);Pending.Remove(A);References.Remove(A);Profiles.Remove(A);KinematicMounts.Remove(A);ProphecySwordHolsterPose::Remove(A,true);}
 static FTransform ScaledGrip(const AProphecyAgent* A,const FVector& BaseScale,float Scale)
 {
     FTransform Grip=A->SwordGripTransform;
@@ -120,11 +184,11 @@ static void Report()
         ProphecySwordHolsterPose::FStatus PS;ProphecySwordHolsterPose::Status(A,PS);
         FProphecyJoltWorldDiagnostics Diagnostics;
         if(auto* W=A->GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>())W->GetDiagnostics(Diagnostics);
-        Text+=FString::Printf(TEXT("%s reference=1 length=%.4f phase=%d attached=%d scale=%.6f insertion=%.6f progress=%.6f joint=%d distance=%.3f angle=%.3f target=%s goal=%s joint_slot=%d joint_generation=%llu world_joints=%u pose_tick=%d reach_ticks=%d slide_ticks=%d pose_error=%.6f finished=%d kinematic=%d\n"),
+        Text+=FString::Printf(TEXT("%s reference=1 length=%.4f phase=%d attached=%d scale=%.6f insertion=%.6f progress=%.6f joint=%d distance=%.3f angle=%.3f target=%s goal=%s joint_slot=%d joint_generation=%llu world_joints=%u pose_tick=%d reach_ticks=%d slide_ticks=%d pose_error=%.6f finished=%d kinematic=%d queued=%d refresh_slot=%d returning=%d slide_progress=%.9f head_step=%.9f\n"),
             *A->GetName(),Item.Value.Length,S?int32(S->Phase):-1,S?S->Attached:0,S?S->Scale:1,S?S->Insertion:0,S?S->ReachProgress:0,
             S && S->World.IsValid() && S->World->OwnsJoint(S->Joint),FVector::Distance(Hand.GetLocation(),Goal.GetLocation()),
             FMath::RadiansToDegrees(Hand.GetRotation().AngularDistance(Goal.GetRotation())),S?*S->TargetHand.GetLocation().ToString():TEXT("none"),*Goal.GetLocation().ToString(),
-            S?S->Joint.Slot:INDEX_NONE,S?S->Joint.Generation:0,Diagnostics.GenericJointCount,PS.Tick,PS.ReachTicks,PS.SlideTicks,PS.HandError,PS.Finished,S?S->Kinematic:0);
+            S?S->Joint.Slot:INDEX_NONE,S?S->Joint.Generation:0,Diagnostics.GenericJointCount,PS.Tick,PS.ReachTicks,PS.SlideTicks,PS.HandError,PS.Finished,S?S->Kinematic:0,Pending.Contains(A),ProphecySwordHolsterSchedule::Slot(A),PS.Returning,PS.SlideProgress,PS.HeadStep);
     }
     FFileHelper::SaveStringToFile(Text,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/SwordDraw20261010/state.txt")));
 }
@@ -185,7 +249,8 @@ FTransform UProphecySwordComponent::GripLocal() const
 }
 void UProphecySwordComponent::ClearHolster()
 {
-    ProphecySwordHolster::RestoreArmCollision(Agent());
+    ProphecySwordHolster::Pending.Remove(Agent());
+    ProphecySwordHolster::RestoreActionPhysics(Agent());
     if(auto* S=ProphecySwordHolster::States.Find(Agent()))
     {
         ProphecySwordHolster::DestroyJoint(*S);
@@ -201,9 +266,17 @@ bool UProphecySwordComponent::StartHolster(bool Sheathe,float Reach,float Rotati
     auto* A=Agent();const auto* Reference=References.Find(A);auto* Existing=States.Find(A);
     if(!A || !Reference || !Reference->Holster.IsValid() || !IsValid(Sword) || !IsValid(Blade)
         || bDropPending || PendingJoltBindId.IsValid() || bBinding)return false;
+    if(const auto* Request=Pending.Find(A))return Request->Sheathe==Sheathe;
     if(Existing && Existing->Phase!=EPhase::Holstered)return Existing->Sheathe==Sheathe; // Idempotent; never add another joint.
     if(Sheathe && Existing)return true;
     if(!Sheathe && !Existing)return false;
+    // Waiting changes no pose, collision, grip, scale or ownership. Admission
+    // below is repeated against the current NN/holster when the slot is due.
+    ProphecySwordHolsterSchedule::Reserve(A);
+    bool Accepted=false;ON_SCOPE_EXIT {if(!Accepted)ProphecySwordHolsterSchedule::Remove(A);};
+    if(!ProphecySwordHolsterSchedule::Ready(A)){
+        Pending.Add(A,{Sheathe,Reach,Rotation,Sliding});EnsureCleanup();SetComponentTickEnabled(true);Accepted=true;return true;
+    }
     FState S=Existing?*Existing:FState{};S.Reference=*Reference;
     if(const auto* P=Profiles.Find(A))
     {if(Sheathe)S.Profile=*P;else S.Profile.Unshrink=P->Unshrink;}
@@ -217,15 +290,29 @@ bool UProphecySwordComponent::StartHolster(bool Sheathe,float Reach,float Rotati
     FString CollisionError;
     if(!S.Kinematic && !ProphecyLimbCollision::SetHolsterArmSuppressed(A,true,CollisionError))
     {if(Sheathe&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster collision admission: %s"),*CollisionError);return false;}
+    if(!S.Kinematic&&!ApplyNeckLimits(A,true,CollisionError))
+    {RestoreActionPhysics(A);if(Sheathe&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster neck limits admission: %s"),*CollisionError);return false;}
     const FTransform Full=S.Reference.Seated*S.Reference.Holster->GetComponentTransform();
-    if(!ProphecySwordHolsterPose::Begin(A,Sheathe,Reach,Rotation,Sliding,S.Reference.Length*(1-S.Profile.Shrink*.01f),GoalHand(A,S,0),GoalHand(A,S,1),Full.TransformPosition(S.Reference.BaseLocal)))
-    {RestoreArmCollision(A);if(Sheathe&&!S.Kinematic&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster: no compatible live NN pose for admission."));return false;}
-    S.Phase=EPhase::Prepare;States.Add(A,MoveTemp(S));EnsureCleanup();SetComponentTickEnabled(true);return true;
+    ProphecySwordHolsterPose::FGeometry Geometry;Geometry.Valid=true;Geometry.Holster=S.Reference.Holster;Geometry.Seated=S.Reference.Seated;
+    Geometry.Grip=A->SwordGripTransform;Geometry.AssetScale=AssetScales.FindRef(this);Geometry.BaseLocal=S.Reference.BaseLocal;
+    Geometry.TipLocal=FVector(0,0,Blade->GetStaticMesh()->GetBoundingBox().Max.Z);Geometry.Retained=1-S.Profile.Shrink*.01;
+    if(!ProphecySwordHolsterPose::Begin(A,Sheathe,Reach,Rotation,Sliding,S.Reference.Length*(1-S.Profile.Shrink*.01f),GoalHand(A,S,0),GoalHand(A,S,1),Full.TransformPosition(S.Reference.BaseLocal),Geometry))
+    {RestoreActionPhysics(A);if(Sheathe&&!S.Kinematic&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster: no compatible live NN pose for admission."));return false;}
+    S.Phase=EPhase::Prepare;States.Add(A,MoveTemp(S));EnsureCleanup();SetComponentTickEnabled(true);Accepted=true;return true;
 }
 bool UProphecySwordComponent::TickHolster()
 {
     using namespace ProphecySwordHolster;
-    auto* A=Agent();auto* S=States.Find(A);if(!S)return false;
+    auto* A=Agent();
+    if(const auto* Request=Pending.Find(A))if(ProphecySwordHolsterSchedule::Ready(A)){
+        const FRequest R=*Request;Pending.Remove(A);
+        if(!StartHolster(R.Sheathe,R.Reach,R.Rotation,R.Sliding)){
+            ProphecySwordHolsterSchedule::Remove(A);
+            if(const auto* Held=States.Find(A))if(Held->Phase==EPhase::Holstered)SetComponentTickEnabled(false);
+            UE_LOG(LogTemp,Warning,TEXT("Queued sword holster start no longer admissible: %s"),*GetNameSafe(A));
+        }
+    }
+    auto* S=States.Find(A);if(!S)return false;
     if(!S->Reference.Holster.IsValid() || (!S->Kinematic && (!JoltBody || JoltBody->IsSteppingStopped())))
     {ClearHolster();return false;}
     if(S->Phase==EPhase::Holstered)return true;
@@ -256,11 +343,20 @@ bool UProphecySwordComponent::TickHolster()
     auto Joint=[&]()
     {
         if(S->Kinematic)return true;
+        auto Drive=[&]()
+        {
+            if(!S->Sheathe||S->Attached)return true;
+            FTransform BodyOrigin;if(!JoltBody->GetBodyOriginToComponent(BodyOrigin))return false;
+            FTransform Component=GripLocal()*Mesh->GetSocketTransform(A->SwordHandSocket);Component.RemoveScaling();
+            FTransform Offset=(BodyOrigin*Component).GetRelativeTransform(Mesh->GetSocketTransform(Mesh->GetSocketBoneName(A->SwordHandSocket)));
+            Offset.RemoveScaling();Offset.NormalizeRotation();
+            return SwordDriveFollower(this,SwordBody,Hand,Offset,true);
+        };
         if(World->OwnsJoint(S->Joint))
         {
             if(FMath::IsNearlyEqual(S->Scale,S->JointScale,1.e-7f))return true;
             S->JointSettings.FrameB.ScaleTranslation(FVector(1,1,S->Scale/S->JointScale));S->JointScale=S->Scale;
-            return World->UpdateJoint(S->Joint,S->JointSettings).IsSuccess();
+            return World->UpdateJoint(S->Joint,S->JointSettings).IsSuccess()&&Drive();
         }
         FProphecyJoltBodyState HB,SB;
         if(!World->ReadBody(Hand,HB).IsSuccess() || !World->ReadBody(SwordBody,SB).IsSuccess())return false;
@@ -272,7 +368,7 @@ bool UProphecySwordComponent::TickHolster()
         S->JointSettings.FrameB=HandWorld.GetRelativeTransform(FTransform(SB.Rotation,SB.PositionCm));
         S->JointSettings.FrameA.RemoveScaling();S->JointSettings.FrameB.RemoveScaling();
         S->JointScale=S->Scale;
-        return World->CreateJoint(S->JointSettings,{},S->Joint).IsSuccess();
+        return World->CreateJoint(S->JointSettings,{},S->Joint).IsSuccess()&&Drive();
     };
     if(S->Phase==EPhase::Prepare)
     {
@@ -295,18 +391,21 @@ bool UProphecySwordComponent::TickHolster()
     ProphecySwordHolsterPose::SetTargets(A,GoalHand(A,*S,0),GoalHand(A,*S,1),Full.TransformPosition(S->Reference.BaseLocal));
     if(S->Phase==EPhase::Reach)
     {
-        const FTransform Goal=GoalHand(A,*S,S->Sheathe?0:1);
+        FTransform Goal;double TargetScale;
+        if(!ProphecySwordHolsterPose::SwordTarget(A,Goal,TargetScale))return Fail(TEXT("Missing sword target"));
         S->TargetHand=Goal;S->ReachProgress=PoseStatus.Progress;
         if(S->Sheathe)
         {
-            if(!SetScale(1-S->Profile.Shrink*.01f*S->ReachProgress) || !Joint())return Fail(Error.IsEmpty()?TEXT("Could not resize the held grip."):Error);
+            if(!SetScale(TargetScale) || !Joint())return Fail(Error.IsEmpty()?TEXT("Could not resize the held grip."):Error);
         }
         FTransform Actual=Mesh->GetSocketTransform(A->SwordHandSocket);
-        const bool Arrived=PoseStatus.ReachDone && PoseStatus.HandError<=2 && FVector::Distance(Actual.GetLocation(),Goal.GetLocation())<=2
+        const bool Arrived=S->Sheathe?ProphecySwordHolsterPose::TrySheathe(A,Blade->GetComponentTransform()):
+            PoseStatus.ReachDone && PoseStatus.HandError<=2 && FVector::Distance(Actual.GetLocation(),Goal.GetLocation())<=2
             && FMath::RadiansToDegrees(Actual.GetRotation().AngularDistance(Goal.GetRotation()))<=5;
         if(!Arrived)return true;
         if(S->Sheathe)
         {
+            if(!S->Kinematic&&!SwordDriveFollower(this,SwordBody,Hand,FTransform::Identity,false))return Fail(TEXT("Could not release held sword drive."));
             if(!S->Kinematic && !JoltBody->SetSimulationEnabled(false,Error))return Fail(Error);
             if(!Blade->AttachToComponent(S->Reference.Holster.Get(),FAttachmentTransformRules::KeepWorldTransform))
                 return Fail(TEXT("Could not attach the sword to its holster."));
@@ -318,7 +417,9 @@ bool UProphecySwordComponent::TickHolster()
     if(S->Phase==EPhase::Slide)
     {
         S->Insertion=S->Sheathe?PoseStatus.SlideProgress:1-PoseStatus.SlideProgress;
-        S->TargetHand=GoalHand(A,*S,S->Insertion);
+        double TargetScale;
+        if(!ProphecySwordHolsterPose::SwordTarget(A,S->TargetHand,TargetScale))return Fail(TEXT("Missing sliding target"));
+        if(!SetScale(TargetScale)||!Joint())return Fail(TEXT("Could not update sliding grip"));
         const FVector Base=AssetScales.FindRef(this);
         Blade->SetWorldTransform(BladeForHand(A,S->TargetHand,Base,S->Scale),false,nullptr,ETeleportType::TeleportPhysics);
         // Ownership changes on the authored endpoint. Waiting for the previous
@@ -336,7 +437,7 @@ bool UProphecySwordComponent::TickHolster()
     }
     if(S->Phase==EPhase::Grow)
     {
-        if(S->Sheathe){if(PoseStatus.Finished){RestoreArmCollision(A);S->Phase=EPhase::Holstered;ProphecySwordHolsterPose::Remove(A);SetComponentTickEnabled(false);}return true;}
+        if(S->Sheathe){if(PoseStatus.Finished){RestoreActionPhysics(A);S->Phase=EPhase::Holstered;ProphecySwordHolsterPose::Remove(A);SetComponentTickEnabled(false);}return true;}
         const float T=ProphecySwordHolsterPose::UnshrinkAlpha(S->GrowTicks,S->Profile.Unshrink);
         if(!SetScale(FMath::Lerp(1-S->Profile.Shrink*.01f,1.f,T)))return Fail(Error);
         Blade->SetRelativeTransform(GripLocal());

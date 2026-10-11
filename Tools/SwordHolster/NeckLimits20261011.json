@@ -1,0 +1,307 @@
+{
+  "date": "2026-10-11",
+  "status": "Loaded and verified",
+  "scope": "Free neck/head angular limits only for physical D/S, through complete head/FK return; restore entry modes and angles on completion or interruption.",
+  "implementation": {
+    "storage": "New compact action snapshot; retained FState/controller layouts unchanged",
+    "joints": "Select actual constraints connected to neck_01/neck_02/head; current rig has spine_05-neck_01 and neck_01-head",
+    "changed": "Angular modes Free during action; prior modes and degree fields restored exactly",
+    "unrelated_joints": "Unchanged, including changes made outside the selected neck joints",
+    "cadence": "Admission/cleanup only, one batched native request per transition; no per-tick scan or application",
+    "cleanup": [
+      "normal S completion",
+      "normal D completion",
+      "failed pose admission",
+      "runtime action failure",
+      "hide/despawn",
+      "drop",
+      "invalid/destroyed sword",
+      "actor teardown",
+      "before simulation-mode/backend transition"
+    ],
+    "queued_kinematic": "No temporary neck change",
+    "duplicate_requests": "Existing idempotent admission prevents capturing the temporary Free state twice"
+  },
+  "tests": {
+    "complete-1-sheathe-custom": {
+      "reason": "passed",
+      "checks": 244,
+      "events": [
+        [
+          147,
+          "S complete, limits restored"
+        ],
+        [
+          268,
+          "D complete, limits restored"
+        ]
+      ]
+    },
+    "complete-1-sheathe": {
+      "reason": "passed",
+      "checks": 244,
+      "events": [
+        [
+          147,
+          "S complete, limits restored"
+        ],
+        [
+          268,
+          "D complete, limits restored"
+        ]
+      ]
+    },
+    "drop-2-sheathe": {
+      "reason": "passed",
+      "checks": 27,
+      "events": [
+        [
+          51,
+          "drop",
+          2
+        ]
+      ]
+    },
+    "hide-1-sheathe-custom": {
+      "reason": "passed",
+      "checks": 2,
+      "events": [
+        [
+          26,
+          "hide",
+          1
+        ]
+      ]
+    },
+    "hide-2-draw-custom": {
+      "reason": "passed",
+      "checks": 148,
+      "events": [
+        [
+          147,
+          "S complete, limits restored"
+        ],
+        [
+          172,
+          "hide",
+          2
+        ]
+      ]
+    },
+    "hide-2-sheathe": {
+      "reason": "passed",
+      "checks": 27,
+      "events": [
+        [
+          51,
+          "hide",
+          2
+        ]
+      ]
+    },
+    "hide-4-sheathe": {
+      "reason": "passed",
+      "checks": 58,
+      "events": [
+        [
+          82,
+          "hide",
+          4
+        ]
+      ]
+    },
+    "mode-4-sheathe": {
+      "reason": "passed",
+      "checks": 58,
+      "events": [
+        [
+          82,
+          "mode",
+          4
+        ]
+      ]
+    },
+    "sword_destroy-1-sheathe": {
+      "reason": "passed",
+      "checks": 2,
+      "events": [
+        [
+          26,
+          "sword_destroy",
+          1
+        ]
+      ]
+    }
+  },
+  "motion": {
+    "BP_ProphecyManualPoseAgent_C_0": {
+      "events": [
+        [
+          19,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          51,
+          2.0
+        ],
+        [
+          82,
+          4.0
+        ],
+        [
+          147,
+          3.0
+        ],
+        [
+          300,
+          0.0
+        ],
+        [
+          301,
+          1.0
+        ],
+        [
+          324,
+          2.0
+        ],
+        [
+          355,
+          4.0
+        ],
+        [
+          420,
+          -1.0
+        ]
+      ],
+      "physical_head_return_peak_degrees": 3.424296786516985,
+      "head_return_tracking_degrees": 4.679766491475966
+    },
+    "BP_ProphecyManualPoseAgent_C_2": {
+      "events": [
+        [
+          19,
+          -1.0
+        ],
+        [
+          25,
+          0.0
+        ],
+        [
+          26,
+          1.0
+        ],
+        [
+          50,
+          2.0
+        ],
+        [
+          81,
+          4.0
+        ],
+        [
+          145,
+          3.0
+        ],
+        [
+          300,
+          0.0
+        ],
+        [
+          301,
+          1.0
+        ],
+        [
+          324,
+          2.0
+        ],
+        [
+          355,
+          4.0
+        ],
+        [
+          419,
+          -1.0
+        ]
+      ],
+      "physical_head_return_peak_degrees": 1.7727343412589383,
+      "head_return_tracking_degrees": 6.763048548011479
+    },
+    "BP_ProphecyManualPoseAgent_C_3": {
+      "events": [
+        [
+          19,
+          -1.0
+        ],
+        [
+          26,
+          0.0
+        ],
+        [
+          27,
+          1.0
+        ],
+        [
+          52,
+          2.0
+        ],
+        [
+          83,
+          4.0
+        ],
+        [
+          147,
+          3.0
+        ],
+        [
+          301,
+          1.0
+        ],
+        [
+          325,
+          2.0
+        ],
+        [
+          356,
+          4.0
+        ],
+        [
+          420,
+          -1.0
+        ]
+      ],
+      "physical_head_return_peak_degrees": 1.7608870206034817,
+      "head_return_tracking_degrees": 6.844027197260607
+    }
+  },
+  "editor": {
+    "map": "/Game/testNN.testNN",
+    "dirty": [],
+    "graph_equal": true,
+    "assets_equal": {
+      "Content/testNN.umap": true,
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": true,
+      "Content/_mygame/sword/A_Sword.uasset": true
+    }
+  },
+  "build": {
+    "live_coding": true,
+    "compile_seconds": 87.73,
+    "reload": "Succeeded, no object changes detected",
+    "restarts": 0,
+    "cold_launch": "Normal DLLs still require a normal build before cold launch"
+  },
+  "notes": [
+    "One initial compile failed on a local name shadowing the existing Profiles map; corrected before successful build/reload.",
+    "The old runtime failed the active-free assertion in before-patch.json; the same complete-cycle check passes with the loaded change.",
+    "Blueprint links/literals, PHAT assets, lab tuning and physical drive settings preserved.",
+    "No claim of zero physical tracking noise or human motion acceptance."
+  ]
+}

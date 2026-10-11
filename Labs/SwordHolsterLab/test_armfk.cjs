@@ -5,12 +5,12 @@ vm.runInContext(fs.readFileSync(__dirname+'/holster.js','utf8').replace('functio
 const H=context.module.exports,dist=(a,b)=>R.length(R.sub(a,b)),reports=[];
 for(const motion of ['idle','walk'])for(const sheathe of [true,false]){
  context.endpointCalls=0;
- const m=H.prepare(data,setup,{motion,sheathe,duration:8}),p=m.plan;
+ const m=H.prepare(data,setup,{motion,sheathe,duration:8,drawReturn:{startFraction:1},sheatheReturn:{startFraction:1}}),p=m.plan;
  assert(m.completionTick!==null,'action completes');assert.equal(context.endpointCalls,p.endpointSolves);
  assert(p.endpointSolves<(m.completionTick-m.o.startTick)/2,'only guide poses solved');
  let maxSlideError=0,maxSpeed=0,maxAngular=0;
  for(let tick=m.o.startTick;tick<=p.endTick;tick++){
-  const f=m.frames[tick],actual=FK.capture(f.pose,m.arm,m.parents),expected=FK.blend(p.source,p.destination,FK.ease((tick-p.startTick)/(p.endTick-p.startTick)));
+  const f=m.frames[tick],actual=FK.capture(f.pose,m.arm,m.parents),expected=FK.blend(p.source,p.reachDestination,FK.ease((tick-p.startTick)/(p.reachEndTick-p.startTick)));
   for(let j=0;j<3;j++)assert(H.angle(actual[j].q,expected[j].q)<1e-5,'parent-local quaternion interpolation');
   if(tick>m.o.startTick){
    const previous=m.frames[tick-1],parent=m.parents[m.arm[0]];
@@ -26,12 +26,13 @@ for(const motion of ['idle','walk'])for(const sheathe of [true,false]){
   const f=H.sample(m,t),i=Math.floor(t*60),u=t*60-i;
   for(const j of m.arm.slice(1)){
    const parent=m.parents[j],a=m.frames[i].pose,b=m.frames[Math.min(i+1,m.frames.length-1)].pose;
-   let expectedLength=dist(a[j].p,a[parent].p)*(1-u)+dist(b[j].p,b[parent].p)*u;
+   const liveBase=H.motion(data,motion,t);
+   let expectedLength=dist(liveBase[j].p,liveBase[parent].p);
    if(f.fkReturn){
     const base=H.motion(data,motion,t);
     expectedLength=m.fkReturn.model.upper[j]&&f.fkReturn.active?R.length(m.fkReturn.model.locals.at(-1).p[j]):dist(base[j].p,base[parent].p);
    }
-   assert(Math.abs(dist(f.pose[j].p,f.pose[parent].p)-expectedLength)<1e-7,'subframe FK keeps bone lengths');
+   assert(Math.abs(dist(f.pose[j].p,f.pose[parent].p)-expectedLength)<1e-7,`subframe FK length ${motion} S=${sheathe} t=${t} ${data.names[j]} actual=${dist(f.pose[j].p,f.pose[parent].p)} expected=${expectedLength}`);
   }
  }
  assert.equal(context.endpointCalls,calls,'sampling never runs IK');
@@ -41,4 +42,7 @@ for(const motion of ['idle','walk'])for(const sheathe of [true,false]){
  }
  reports.push({motion,sheathe,guideSolves:calls,reachEnd:p.endTick,completion:m.completionTick,maxSlideErrorCm:maxSlideError,maxReachCmPerSecond:maxSpeed,maxReachDegreesPerSecond:maxAngular});
 }
+const early=H.prepare(data,setup,{}),preparedCalls=context.endpointCalls;
+for(let t=early.fkReturn.start;t<early.playbackDuration;t+=.007)H.sample(early,t);
+assert.equal(context.endpointCalls,preparedCalls,'early return also performs no playback solves');
 console.log(JSON.stringify({passed:true,reports},null,2));

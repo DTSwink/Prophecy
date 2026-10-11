@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-11",
+  "node": "Set Attack FK Return Gaze",
+  "pins": {
+    "Agent": "Self by default",
+    "Enabled": true
+  },
+  "default_without_node": false,
+  "gaze": "Current agent UpperNNGazeYawNormalized and UpperNNGazePitchNormalized, followed throughout attack return on new publications",
+  "clock": "Existing 60 unpaused game ticks per second; gaze updates do not restart or retime return",
+  "parry_unchanged": true,
+  "native": {
+    "cases": 15,
+    "native_failures": 0,
+    "checks": 2837,
+    "position_max_component_cm": 1.162555388345421e-05,
+    "axis_max_component": 2.0235670583623744e-07,
+    "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\ik\\train_upper_pose_autoencoder.py",
+    "source_sha256": "8883b9d3341027d208647bb2d4b54be6008df5bf2bbfd7b53eae3ebcefbb64fc"
+  },
+  "lab": {
+    "head_look_out": "Gaze-modified underlying animation head orientation in world space, independent of procedural spine",
+    "checks": [
+      "test_headlook.cjs",
+      "test_head_clock.cjs",
+      "test_head_exponent.cjs",
+      "test_large_turn.cjs (8 cases)",
+      "test_fkreturn.cjs (16 cases)",
+      "test_duration.cjs"
+    ],
+    "live_state_modified": false,
+    "refresh_required": true
+  },
+  "editor": {
+    "node": "/Script/GameAnimationSample3.ProphecyFKReturnLibrary:SetAttackFKReturnGaze",
+    "graph_identical": true,
+    "status": "mode=Inspect parent=/Script/GameAnimationSample3.ProphecyAgent\nnative_properties=0 pin_types=0 status=3 wiring_preserved=1\n",
+    "map_unchanged": true,
+    "dirty": [
+      "/Game/testNN"
+    ]
+  },
+  "build": {
+    "method": "Live Coding",
+    "compile_seconds": [
+      302.86,
+      270.05,
+      93.61
+    ],
+    "reload_confirmed": true,
+    "restarts": 0,
+    "normal_dlls_still_require_build_before_cold_launch": true
+  },
+  "preservation": {
+    "unsaved_agent_bp_saved_and_backed_up_before_reflection": true,
+    "graph_before_sha256": "19402edbf16e7993ea1f2d63046bbe20348dfb788285f18f299b1064ba06a00e",
+    "graph_after_sha256": "19402edbf16e7993ea1f2d63046bbe20348dfb788285f18f299b1064ba06a00e",
+    "library_cdo_references_repaired": 85,
+    "dodge_checkpoint_selection": "Inertia151341",
+    "related_pending_dodge154546_enum_loaded": true,
+    "assets_saved": [
+      "BP_ProphecyManualPoseAgent",
+      "A_Sword"
+    ],
+    "map_saved": false
+  },
+  "limitations": [
+    "Numerical/native reflection verification; no human motion acceptance or gameplay performance benchmark this turn.",
+    "Original Attack Recovery Lab unchanged.",
+    "D/S gaze head endpoint changed in standalone lab only; not ported into native D/S."
+  ],
+  "evidence": "Saved/Diagnostics/AttackFKGaze20261011/"
+}

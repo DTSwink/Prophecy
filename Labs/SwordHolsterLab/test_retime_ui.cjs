@@ -1,7 +1,7 @@
 const {chromium}=require(process.env.HARNESS_PLAYWRIGHT_MODULE||'C:/Users/singerie/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),net=require('node:net'),{spawn}=require('node:child_process');
 (async()=>{
- const out=path.resolve(__dirname,'../../Saved/Diagnostics/SwordHolsterRetime');fs.mkdirSync(out,{recursive:true});
+ const out=process.env.HARNESS_OUTPUT_DIR||path.resolve(__dirname,'../../Saved/Diagnostics/SwordHolsterRetime');fs.mkdirSync(out,{recursive:true});
  const store=fs.mkdtempSync(path.join(out,'persistence-'));
  const probe=net.createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));
  const server=spawn('C:/Users/singerie/Documents/Cursor/stepper/.tools/python310/python.exe',[path.join(__dirname,'backend.py'),'--port',String(port),'--state-dir',store],{windowsHide:true,stdio:'ignore'});
@@ -40,13 +40,14 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   assert.equal(new Set(Object.values(curves).map(JSON.stringify)).size,4,'four distinct profiles');
   await page.fill('#maxReachSpeed','120');await page.locator('#maxReachSpeed').dispatchEvent('change');
   assert.equal(await page.locator('#headCorrectionAlpha').count(),0);
-  const headControls={headLookAtAlpha:.7,headLookInExponent:1.8,headLookOutExponent:2.4,maxHeadLookInVelocity:150,maxHeadLookOutVelocity:210,drawHeadLookOutThreshold:.25,sheatheHeadLookOutThreshold:.65};
+  const headControls={headLookInSpeedAlpha:.28,sheatheHeadTargetAlpha:.37,sheatheRotationTolerance:22,slideRotationCorrection:.17,headLookAtAlpha:.7,headLookInExponent:1.8,headLookOutExponent:2.4,maxHeadLookInVelocity:150,maxHeadLookOutVelocity:210,maxHeadLookInVelocityAtMaxGaze:330,maxHeadLookOutVelocityAtMaxGaze:420,drawHeadLookOutThreshold:.25,sheatheHeadLookOutThreshold:.65};
   assert.equal(await page.locator('#drawHeadLookOutThreshold').inputValue(),'0.3');assert.equal(await page.locator('#sheatheHeadLookOutThreshold').inputValue(),'0.5');
-  for(const [id,value] of Object.entries(headControls)){await page.fill('#'+id,String(value));await page.locator('#'+id).dispatchEvent('change');}
-  const check=async()=>{const o=await page.evaluate(()=>holsterLab.state().parameters);for(const [id,value] of Object.entries(headControls)){assert.equal(o[id],value);assert.equal(await page.locator('#'+id).inputValue(),String(value));}for(const [k,v] of Object.entries(curves))assert.deepEqual(o[k],v,k);};
+  for(const [id,value] of Object.entries(headControls)){if(['sheatheHeadTargetAlpha','headLookInSpeedAlpha'].includes(id)){await page.evaluate(()=>{window.targetSource=holsterLab.model().sourceFrames;holsterLab.setPlaying(true);});await page.locator('#'+id).evaluate((el,v)=>{el.value=String(v);el.dispatchEvent(new Event('input',{bubbles:true}));},value);}else await page.fill('#'+id,String(value));await page.locator('#'+id).dispatchEvent('change');if(['sheatheHeadTargetAlpha','headLookInSpeedAlpha'].includes(id)){assert(await page.evaluate(()=>holsterLab.model().sourceFrames===window.targetSource),'target edit reuses arm plan');assert.equal(await page.locator('#play').textContent(),'Pause','target edit keeps playing');await page.evaluate(()=>holsterLab.setPlaying(false));}}
+  await page.locator('#gazeYaw').evaluate(el=>{el.value='35';el.dispatchEvent(new Event('change',{bubbles:true}));});
+  const check=async()=>{assert.equal(await page.locator('#gazeYaw').inputValue(),'35');assert.equal(await page.locator('#gazeYawValue').textContent(),'35°');const o=await page.evaluate(()=>holsterLab.state().parameters);for(const [id,value] of Object.entries(headControls)){assert.equal(o[id],value);assert.equal(await page.locator('#'+id).inputValue(),String(value));}for(const [k,v] of Object.entries(curves))assert.deepEqual(o[k],v,k);};
   await check();
   for(const action of ['draw','sheathe']){
-   await page.selectOption('#action',action);await check();
+   await page.selectOption('#action',action);await check();assert.equal(await page.locator('#sheatheEntryControls').isVisible(),action==='sheathe');assert.equal(await page.locator('#sheatheHeadTargetControl').isVisible(),action==='sheathe');
    for(const phase of ['reach','slide']){
     const key=action+(phase==='slide'?'SlideCurve':'Curve');
     const cy=Number(await page.locator('#'+phase+'CurveEditor [data-point="1"]').getAttribute('cy'));
@@ -60,6 +61,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   for(const action of ['draw','sheathe']){
    await page.selectOption('#action',action);
    assert.equal(await page.locator('#fkReturnTitle').textContent(),(action==='draw'?'Drawing':'Sheathing')+' FK return');
+   await page.fill('#fk_startFraction',action==='draw'?'0.3':'0.9');await page.locator('#fk_startFraction').dispatchEvent('change');
+   assert.equal(await page.evaluate(a=>holsterLab.state().parameters[a+'Return'].startFraction,action),action==='draw'?.7:.9,'drawing UI uses descending insertion');
    await page.fill('#fk_duration',action==='draw'?'0.4':'0.8');await page.locator('#fk_duration').dispatchEvent('change');
    await page.fill('#fk_inertia',action==='draw'?'0.2':'0.7');await page.locator('#fk_inertia').dispatchEvent('change');
    await page.locator('#fkReturnPanel summary').filter({hasText:'Inertia options'}).click();
@@ -94,6 +97,18 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   assert.equal(await page.locator('#play').textContent(),'Pause','linear reset keeps playing');
   const afterReset=await page.evaluate(()=>holsterLab.state().time);
   await page.waitForFunction(t=>holsterLab.state().time>t+.05,afterReset);
+  for(const action of ['draw','sheathe']){
+   await page.evaluate(s=>holsterLab.restore(s),saved);await page.selectOption('#action',action);
+   const before=await page.evaluate(()=>holsterLab.state().parameters);
+   await page.evaluate(a=>{holsterLab.seek(.5);window.preResetFrames=holsterLab.model().sourceFrames;holsterLab.setPlaying(a==='draw');},action);
+   await page.click('#resetCurves');
+   assert.deepEqual(await page.evaluate(()=>holsterLab.state().parameters),{...before,[action+'Curve']:linear,[action+'SlideCurve']:linear},'pair reset preserves other action and tuning');
+   assert.equal(await page.locator('#play').textContent(),action==='draw'?'Pause':'Play','pair reset preserves playback state');
+   assert(await page.evaluate(()=>holsterLab.model().sourceFrames===window.preResetFrames),'pair reset reuses source plan');
+   await Promise.all([page.waitForEvent('load'),page.click('#refresh')]);await page.waitForFunction(()=>window.holsterLab?.ready);
+   assert.deepEqual(await page.evaluate(()=>holsterLab.state().parameters),{...before,[action+'Curve']:linear,[action+'SlideCurve']:linear},'pair reset persists through refresh');
+   await page.click('#retimeControls summary');
+  }
   await page.evaluate(s=>holsterLab.restore(s),saved);
   await page.evaluate(()=>{const s=holsterLab.model().retimeSegments.slide;holsterLab.seek((s.start+s.end)/2);});
   await page.locator('#retimeControls').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'contextual-curves.png')});

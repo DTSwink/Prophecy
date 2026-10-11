@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),H=require('./holster.js'),F=require('./fkreturn.js'),R=require('./recovery.js'),data=require('./data/motions.json'),setup=require('./data/unreal-setup.json');
 const dist=(a,b)=>R.length(R.sub(a,b)),reports=[];
 for(const motion of ['idle','walk'])for(const sheathe of [false,true])for(const worldInertia of [false,true])for(const springReturn of [false,true]){
- const action=sheathe?'sheathe':'draw',m=H.prepare(data,setup,{motion,sheathe,[action+'Return']:{...F.defaults(),worldInertia,springReturn,duration:.65,inertia:.6}}),ret=m.fkReturn,start=ret.start,end=start+ret.timing.duration;
+ const action=sheathe?'sheathe':'draw',m=H.prepare(data,setup,{motion,sheathe,[action+'Return']:{...F.defaults(),startFraction:1,worldInertia,springReturn,duration:.65,inertia:.6}}),ret=m.fkReturn,start=ret.start,end=start+ret.timing.duration;
  assert.equal(start,m.plan.slideEnd/60,'starts exactly when sliding finishes');
  assert(m.completionTick/60>=end&&m.playbackDuration<8,'clamp waits for return');
  const entry=H.sampleBody(m,start),source=m.sourceFrames[m.plan.slideEnd];

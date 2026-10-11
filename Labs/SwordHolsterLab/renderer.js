@@ -9,20 +9,21 @@ class LabVertexStream {
   view(){return this.data.subarray(0,this.length);}
 }
 const labCapsuleTemplates=new Map();
-function labCapsuleTemplate(segments,steps){
- const key=segments+':'+steps;if(labCapsuleTemplates.has(key))return labCapsuleTemplates.get(key);
+function labCapsuleTemplate(segments,steps,half=false){
+ const key=segments+':'+steps+':'+half;if(labCapsuleTemplates.has(key))return labCapsuleTemplates.get(key);
  const coefficients=[],indices=[];
- const ring=(end,phi)=>{for(let j=0;j<segments;j++){const theta=j*Math.PI*2/segments;coefficients.push(end,Math.sin(phi),Math.cos(phi),Math.cos(theta),Math.sin(theta));}};
+ const columns=segments+(half?1:0);
+ const ring=(end,phi)=>{for(let j=0;j<columns;j++){const theta=half?-Math.PI*.5+j*Math.PI/segments:j*Math.PI*2/segments;coefficients.push(end,Math.sin(phi),Math.cos(phi),Math.cos(theta),Math.sin(theta));}};
  for(let i=0;i<=steps;i++)ring(0,-Math.PI*.5+Math.PI*.5*i/steps);
  ring(1,0);for(let i=1;i<=steps;i++)ring(1,Math.PI*.5*i/steps);
- for(let i=0;i<2*steps+1;i++)for(let j=0;j<segments;j++){const next=(j+1)%segments,a=i*segments+j,b=(i+1)*segments+j,c=(i+1)*segments+next,d=i*segments+next;indices.push(a,b,c,a,c,d);}
+ for(let i=0;i<2*steps+1;i++)for(let j=0;j<segments;j++){const next=half?j+1:(j+1)%segments,a=i*columns+j,b=(i+1)*columns+j,c=(i+1)*columns+next,d=i*columns+next;indices.push(a,b,c,a,c,d);}
  const template={coefficients:new Float64Array(coefficients),indices:new Uint32Array(indices),vertices:new Float64Array(coefficients.length/5*6)};
  labCapsuleTemplates.set(key,template);return template;
 }
 "use strict";
 
 class WebGLMotionRenderer {
-  constructor(canvas) {
+  constructor(canvas, options = {}) {
     this.canvas = canvas;
     this.gl = canvas.getContext("webgl2", {
       alpha: false, preserveDrawingBuffer: true,
@@ -38,8 +39,15 @@ class WebGLMotionRenderer {
     if (!this.gl) throw new Error("The dataset viewer requires WebGL with a depth buffer");
     this.drag = null;
     this.initProgram();
+    this.pixelRatio=options.pixelRatio;
+    this.rect=options.rect||canvas.getBoundingClientRect();
+    if(options.interactive===false)return;
     this.bindCamera();
-    new ResizeObserver(() => drawAll()).observe(canvas);
+    new ResizeObserver(entries => {
+      const rect=entries[0].contentRect;
+      if(rect.width===this.rect.width&&rect.height===this.rect.height)return;
+      this.rect=rect;drawAll();
+    }).observe(canvas);
   }
 
   compile(type, source) {
@@ -235,13 +243,13 @@ class WebGLMotionRenderer {
     }
   }
 
-  capsule(target, pointA, pointB, radius, color, segments = 18, hemisphereSteps = 6, tangentOverride = null) {
+  capsule(target, pointA, pointB, radius, color, segments = 18, hemisphereSteps = 6, tangentOverride = null, half = false) {
     let axis = normalize(sub(pointB, pointA));
     if (norm(axis) < 1e-6) axis = [0, 1, 0];
     const reference = Math.abs(axis[1]) < .88 ? [0, 1, 0] : [1, 0, 0];
     const tangent = tangentOverride || normalize(cross(axis, reference));
     const bitangent = normalize(cross(axis, tangent));
-    const {coefficients:c,indices,vertices:v}=labCapsuleTemplate(segments,hemisphereSteps);
+    const {coefficients:c,indices,vertices:v}=labCapsuleTemplate(segments,hemisphereSteps,half);
     for(let k=0,n=0;k<c.length;k+=5,n+=6){
       const center=c[k]?pointB:pointA,s=c[k+1],co=c[k+2],ct=c[k+3],st=c[k+4];
       let nx=axis[0]*s+(tangent[0]*ct+bitangent[0]*st)*co;
@@ -265,9 +273,8 @@ class WebGLMotionRenderer {
   limbLongAxisHalf(mesh,solution,start,end,radius,outwardSign){
   const pointA=solution.points[start],pointB=solution.points[end];let axis=normalize(sub(pointB,pointA));if(norm(axis)<1e-7)return;
   let outward=mul(solution.axes[start][1],outwardSign);outward=sub(outward,mul(axis,dot(outward,axis)));if(norm(outward)<1e-7){outward=mul(solution.axes[start][2],outwardSign);outward=sub(outward,mul(axis,dot(outward,axis)))}if(norm(outward)<1e-7)return;
-  outward=normalize(cross(axis,normalize(outward)));const bitangent=normalize(cross(axis,outward)),expandedRadius=radius+.0008,color=[.08,.86,.94],segments=10,hemisphereSteps=5,rings=[],addRing=(center,phi)=>{const sinPhi=Math.sin(phi),cosPhi=Math.cos(phi),ring=[];for(let segment=0;segment<=segments;segment++){const theta=-Math.PI*.5+Math.PI*segment/segments,radial=add(mul(outward,Math.cos(theta)),mul(bitangent,Math.sin(theta))),normal=normalize(add(mul(axis,sinPhi),mul(radial,cosPhi)));ring.push({position:add(center,mul(normal,expandedRadius)),normal})}rings.push(ring)};
-  for(let step=0;step<=hemisphereSteps;step++)addRing(pointA,-Math.PI*.5+Math.PI*.5*step/hemisphereSteps);addRing(pointB,0);for(let step=1;step<=hemisphereSteps;step++)addRing(pointB,Math.PI*.5*step/hemisphereSteps);
-  for(let ringIndex=0;ringIndex<rings.length-1;ringIndex++)for(let segment=0;segment<segments;segment++){const a=rings[ringIndex][segment],b=rings[ringIndex+1][segment],c=rings[ringIndex+1][segment+1],d=rings[ringIndex][segment+1];this.vertex(mesh,a.position,a.normal,color);this.vertex(mesh,b.position,b.normal,color);this.vertex(mesh,c.position,c.normal,color);this.vertex(mesh,a.position,a.normal,color);this.vertex(mesh,c.position,c.normal,color);this.vertex(mesh,d.position,d.normal,color)}
+  outward=normalize(cross(axis,normalize(outward)));
+  this.capsule(mesh,pointA,pointB,radius+.0008,[.08,.86,.94],10,5,outward,true);
 }
 
   controllerAxis(target, origin, direction, color, length = .20) {
@@ -564,8 +571,8 @@ class WebGLMotionRenderer {
 
   draw(data, sharedRoot) {
     const gl = this.gl;
-    const rect = this.canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const rect = this.rect;
+    const dpr = this.pixelRatio || globalThis.devicePixelRatio || 1;
     const width = Math.max(1, Math.floor(rect.width * dpr));
     const height = Math.max(1, Math.floor(rect.height * dpr));
     if (this.canvas.width !== width || this.canvas.height !== height) {

@@ -1,0 +1,152 @@
+{
+  "date": "2026-10-11",
+  "status": "Native port loaded; remaining Sim head divergence traced to Blueprint neck-limit reset calls, no production override added",
+  "profile": "Content/locomotion/SwordHolsterProfile.json",
+  "profile_sha256": "b1a57d5d26690af494e6bdebb9531e8b049c437e2ffb0c599ce8520de2b0ec8e",
+  "changes": [
+    "Imported frozen current lab tuning through the existing Blueprint JSON-profile node; preserved all node literals and links.",
+    "Sheathing aims perfect but accepts actual blade tip within 2 cm and orientation within configured tolerance; captures residual orientation, tip offset and axial scale continuously.",
+    "Slide rotation correction uses elapsed authored slide ticks, independently of sliding curve; tip insertion/residual shrink retain insertion time.",
+    "Unrestricted signed spine twist with existing angular speed bound; coordinated clavicle schedule and sheathing release retained.",
+    "Independent head world-space signed path with spine cancellation, current-gaze look-out and preserved local neck detail; no artificial head-angle clamp.",
+    "Gaze-dependent in/out speeds, shared per-direction exponents, hand-arrival speed alpha and sheathing tip-to-mouth target alpha.",
+    "Independent D/S early body FK return at actual insertion threshold; held right clavicle/arm retains grip until endpoint and then returns from actual release pose.",
+    "Reuses optimized return engine, shoulder-only fit, fixed-arc sampling, four-slot staggering and output cache. Rolling slide guides, no full per-agent pose bank.",
+    "Restores existing sword drive follower during dynamic sheathing reach; updates offset only with shrinking joint geometry, unregisters on holster transfer/cancellation. Fixes reproduced NPC physical stall without changing PHAT/motors.",
+    "Preserved same sword actor, blade-axis-only scale, holster parenting, one reusable temporary joint, collision suppression/restoration and tick-based clocks."
+  ],
+  "native": {
+    "suite": "Saved/Diagnostics/SwordLabSync20261011/full-suite/automation/index.json",
+    "passed": 12,
+    "failed": 0,
+    "head_samples": 3600,
+    "slide_geometry_samples": 500,
+    "head_degrees": 2.41483654e-06,
+    "neck_degrees": 7.24450962e-06,
+    "neck_cm": 5.37835985e-07,
+    "head_done_tick_mismatches": 0,
+    "slide_cm": 1.76836747e-13,
+    "slide_degrees": 2.95755867e-06,
+    "bone_order_cases": 480,
+    "bone_order_ticks": 63540
+  },
+  "benchmark": [
+    {
+      "scenario": 0,
+      "mean_ms": 0.7370434425655737,
+      "peak_ms": 1.496199984,
+      "admission_peak_ms": 1.347100013,
+      "repeats": 7,
+      "agents": 100
+    },
+    {
+      "scenario": 1,
+      "mean_ms": 0.765874015952756,
+      "peak_ms": 1.431499986,
+      "admission_peak_ms": 1.341800002,
+      "repeats": 7,
+      "agents": 100
+    },
+    {
+      "scenario": 2,
+      "mean_ms": 0.7358221308606558,
+      "peak_ms": 1.502300001,
+      "admission_peak_ms": 1.287500025,
+      "repeats": 7,
+      "agents": 100
+    },
+    {
+      "scenario": 3,
+      "mean_ms": 0.7722160307022901,
+      "peak_ms": 1.412299986,
+      "admission_peak_ms": 1.292899979,
+      "repeats": 7,
+      "agents": 100
+    },
+    {
+      "scenario": 4,
+      "mean_ms": 0.7235572516946565,
+      "peak_ms": 1.451199991,
+      "admission_peak_ms": 1.289300009,
+      "repeats": 7,
+      "agents": 100
+    },
+    {
+      "scenario": 5,
+      "mean_ms": 0.6379812077651007,
+      "peak_ms": 1.273000002,
+      "admission_peak_ms": 1.250700006,
+      "repeats": 7,
+      "agents": 100
+    }
+  ],
+  "benchmark_scope": "Procedural D/S pose math including admission; excludes NN, physics, rendering, equipment mutations and pose-publication copies. 100-agent medians, six scenarios, seven repeats. Pose code before implementation-only sword drive fix, which does not alter this benchmark.",
+  "play_summary": "Saved/Diagnostics/SwordLabSync20261011/motion-summary.json",
+  "checks": {
+    "lab-sync-cancel-reach": "passed cancellation",
+    "lab-sync-cancel-return": "passed cancellation",
+    "lab-sync-cancel-slide": "passed cancellation",
+    "lab-sync-drive-sim": "passed",
+    "lab-sync-kinematic": "passed",
+    "lab-sync-sim": "passed",
+    "lab-sync-walk-kinematic": "passed",
+    "lab-sync-walk-sim": "passed"
+  },
+  "fps": {
+    "caps": [
+      60,
+      20
+    ],
+    "observed": [
+      39.232727,
+      19.993673
+    ],
+    "world_delta": 0.01666666567325592,
+    "target_physical_equipment_and_phase_ticks_identical": true
+  },
+  "physical_head": {
+    "cause": "EventGraph SetUseAuthoredAngularLimits(false) is followed later by connected tick debugging ResetPhysicalJointAngularLimits neck_01, neck_02, head calls. They restore PHAT limits.",
+    "reset_nodes": [
+      "K2Node_CallFunction_94",
+      "K2Node_CallFunction_96",
+      "K2Node_CallFunction_82"
+    ],
+    "saved_limits": "neck_01 and head: Limited 30/20/20 degrees",
+    "baseline_player_return_peak_step_degrees": 18.31541502198,
+    "baseline_player_peak_tracking_degrees": 53.8575433744,
+    "temporary_free_during_ds_peak_step_degrees": 3.423462905,
+    "temporary_free_during_ds_peak_tracking_degrees": 4.66859034,
+    "restoration_next_10_ticks_peak_step_degrees": 0.130710737,
+    "production_physics_change": false,
+    "prediction_disabled_control": "Same 18.32-degree jump; not caused by the optional predictive limit correction.",
+    "extreme_gaze": "Current limits also cause roughly 53-degree physical head steps in the -1 normalized gaze NPC diagnostic, despite <5-degree commanded steps."
+  },
+  "preservation": {
+    "map": "/Game/testNN.testNN",
+    "dirty": [],
+    "graph_equal": true,
+    "assets_equal": {
+      "Content/testNN.umap": true,
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": true,
+      "Content/_mygame/sword/A_Sword.uasset": true
+    }
+  },
+  "build": {
+    "normal_build_succeeded": true,
+    "required_restarts": 1,
+    "reason": "Retained controller/profile and nested return state layout changed",
+    "saved_dirty_before_restart": [
+      "/Game/testNN"
+    ],
+    "live_coding_after_restart": "Implementation-only sword drive fix compiled and reload succeeded; no object changes.",
+    "cold_launch": "Normal DLLs include the math port but not the final sword drive fix: normal build required before next cold launch."
+  },
+  "limits": [
+    "Live NN base and moving simulated holster differ from recorded lab animation/rest attachment; exact absolute reach ticks across those inputs are not promised.",
+    "Saved-setup slide length is31ticks in both modes; physical sheathe entry differs by at most1tick in measured matching setup.",
+    "Head look-in hand-arrival timing uses the planned perfect-reach deadline online. Unlike the offline lab, it cannot know in advance which physical tip-tolerance tick will qualify.",
+    "Physical neck/head limit reset calls still block the unconstrained lab path. User asked whether all limits were disabled; graph cause confirmed. No additional override or Blueprint edit applied.",
+    "Numerical pose and timing evidence; no human motion acceptance claimed.",
+    "Desktop computer-use helper failed initialization twice (missing kernel-assets path); no UI input occurred. Unreal remote checks remain operational."
+  ]
+}

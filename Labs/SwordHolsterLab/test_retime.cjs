@@ -26,8 +26,11 @@ for(const motion of ['idle','walk'])for(const sheathe of [true,false]){
  for(const t of [0,start,quarter(reach),reach.end,quarter(slide),slide.end,end]){
   const source=H.recordedTime(retimed,t),a=H.sample(retimed,t),b=H.sample(original,source);
   if(a.fkReturn||b.fkReturn)continue;
-  for(let j=0;j<data.names.length;j++)if(!['neck_01','neck_02','head'].includes(data.names[j]))assert.deepEqual(a.pose[j],b.pose[j],'body/arm share recorded frame');
-  assert.deepEqual(a.sword,b.sword,'equipment shares body time');
+  const base=H.motion(data,motion,t),holster=H.compose(retimed.holsterLocal,base[retimed.pelvis]);
+  for(let j=0;j<data.names.length;j++)if(/^(root|pelvis|thigh|calf|foot|ball)/.test(data.names[j]))assert(R.length(R.sub(a.pose[j].p,base[j].p))<1e-7&&H.angle(a.pose[j].q,base[j].q)<1e-5,'locomotion keeps playback clock');
+  assert(R.length(R.sub(a.holster.p,holster.p))<1e-7&&H.angle(a.holster.q,holster.q)<1e-5,'holster follows current pelvis');
+  assert(Math.abs(a.insertion-b.insertion)<1e-8,'insertion still follows curve');
+  assert(Math.abs(a.scale-b.scale)<1e-8,'shrink keeps authored clock');
  }
  assert.equal(H.recordedTime(retimed,start),start);assert.equal(H.recordedTime(retimed,end),end);
  for(const segment of [reach,slide])assert(H.recordedTime(retimed,quarter(segment))<quarter(segment)-.01,'each phase retimed');
@@ -45,4 +48,4 @@ for(const input of [{startTick:800},{maxReachSpeed:.01},{spineClavicleAngleLimit
  let previous=-1;for(let i=0;i<=300;i++){const t=m.playbackDuration*i/300,s=H.recordedTime(m,t);assert(s>=previous&&s>=0&&s<=m.playbackDuration);previous=s;}
  assert.equal(H.recordedTime(m,m.playbackDuration),m.playbackDuration);
 }
-console.log('PASS: independent reach/slide curves for both actions, fixed phase boundaries, unchanged unshrink, shared poses/equipment, legacy settings, truncated/unreachable actions and head compensation.');
+console.log('PASS: independent reach/slide curves for both actions, fixed phase boundaries, unchanged unshrink, independent locomotion/equipment clock, legacy settings, truncated/unreachable actions and head compensation.');

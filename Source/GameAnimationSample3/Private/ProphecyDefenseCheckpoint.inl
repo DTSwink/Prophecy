@@ -20,7 +20,7 @@ static FString ModelPath(bool Dodge,int32 Index)
     if(Index)
     {
         static const TCHAR* Parry[]={TEXT("Parry1149700"),TEXT("Parry1178405"),TEXT("Parry1216457")};
-        static const TCHAR* Dodges[]={TEXT("Dodge322925"),TEXT("Dodge151341")};
+        static const TCHAR* Dodges[]={TEXT("Dodge322925"),TEXT("Dodge151341"),TEXT("Dodge154546")};
         Dir=Dir/TEXT("pickers")/(Dodge?Dodges[Index-1]:Parry[Index-1]);
     }
     return Dir/(Dodge?TEXT("prophecy_dodge_upper.onnx"):TEXT("prophecy_parry_upper.onnx"));
@@ -53,7 +53,7 @@ int32 Get(const AProphecyNNLocomotionManager* Manager,bool Dodge)
 bool Set(AProphecyNNLocomotionManager* Manager,bool Dodge,int32 Index,FString& Error)
 {
     Error.Reset();
-    if(!IsInGameThread() || !IsValid(Manager) || Manager->IsActorBeingDestroyed() || Index<0 || Index>(Dodge?2:3))
+    if(!IsInGameThread() || !IsValid(Manager) || Manager->IsActorBeingDestroyed() || Index<0 || Index>3)
     {Error=TEXT("Invalid defense checkpoint selection or manager.");return false;}
     if(Get(Manager,Dodge)==Index)return true;
     auto Next=MakeUnique<FProphecyDefenseNetwork>();
@@ -95,12 +95,18 @@ bool FProphecyDefensePickerTest::RunTest(const FString&)
     const FString File=FPaths::ProjectSavedDir()/TEXT("Diagnostics/DefensePickers20261008/export/validation.json");
     if(!FFileHelper::LoadFileToString(Text,*File) || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Oracle))
     {AddError(TEXT("BuildDefensePickers.py must prepare the checkpoint oracles."));return false;}
+    TSharedPtr<FJsonObject> AddedOracle;
+    if(!FFileHelper::LoadFileToString(Text,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/Dodge15454620261011/export/picker-validation.json")))
+        || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),AddedOracle))
+    {AddError(TEXT("BuildDodgePicker.py must prepare the Dodge154546 oracle."));return false;}
+    TArray<TSharedPtr<FJsonValue>> Networks=Oracle->GetArrayField(TEXT("networks"));
+    Networks.Append(AddedOracle->GetArrayField(TEXT("networks")));
     double MaxError=0.;int32 Cases=0;
     auto Check=[&](bool Dodge,int32 Index,FProphecyDefenseNetwork& Network)
     {
         const FString Folder=FPaths::GetCleanFilename(FPaths::GetPath(ModelPath(Dodge,Index?Index:1)));
         int32 Matched=0;
-        for(const auto& V:Oracle->GetArrayField(TEXT("networks")))
+        for(const auto& V:Networks)
         {
             const auto R=V->AsObject();if(R->GetStringField(TEXT("folder"))!=Folder)continue;
             ++Matched;++Cases;
@@ -139,7 +145,7 @@ bool FProphecyDefensePickerTest::RunTest(const FString&)
         TestEqual(TEXT("Parry does not switch Dodge"),Get(Manager.Get(),true),0);
     }
     if(!Initialize(Manager.Get(),true,Dodge,Error)){AddError(Error);return false;}
-    for(int32 Index:{0,2,1,0})
+    for(int32 Index:{0,2,3,3,1,0})
     {
         if(!Set(Manager.Get(),true,Index,Error)){AddError(Error);return false;}
         TestEqual(TEXT("Dodge getter"),Get(Manager.Get(),true),Index);

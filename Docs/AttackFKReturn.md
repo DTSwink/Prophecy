@@ -1,5 +1,34 @@
 # Attack FK return
 
+## Live gaze target (October 11)
+
+**Set Attack FK Return Gaze** takes Agent and Enabled (true). Call it before
+the attack ends to enable gaze for that agent's attack returns. Without the
+node, the original behavior is retained. The switch latches at attack end;
+the target reads the agent's **current** upper NN gaze yaw and pitch on each
+new pose publication, including changes made during the return.
+
+The pure FK destination is canonical idle with the same distributed spine,
+neck and head gaze overlay used in upper-NN training. It therefore responds
+during NN Alpha Hold too. Local arm poses retain their original idle targets;
+their world poses follow the turned torso. Parry is unaffected. Existing
+inertia, easing, Hold/Trim and NN takeover continue to apply. Duration is set
+once at entry; changing gaze does not restart or retime it. Continuous cached
+arcs avoid a branch flip when a destination crosses 180 degrees.
+
+Stable gaze reuses its cached destination; only a changed gaze rebuilds it.
+There is no additional NN inference or per-frame skeleton search. Completion
+and cancellation discard active gaze state; reset snapshots retain the
+enabled setting. The original Attack Recovery Lab is unchanged.
+
+Focused diagnostic: `Prophecy.FKReturn.VerifyGaze`, also registered as
+`Prophecy.NN.FKReturn.LiveGaze`. Independent training comparison and native
+reports: `Saved/Diagnostics/AttackFKGaze20261011/`; reproducible oracle script
+`Tools/NN/VerifyFKReturnGaze.py`. Verified2837 native checks and15 training
+yaw/pitch cases (max position0.00001163cm, axis component0.000000203).
+Built and loaded through Live Coding; zero restarts. The complete existing
+Blueprint graph and settings were preserved; [receipt](../Tools/Recovery/AttackFKGaze20261011.json).
+
 The current node names are **Set Attack FK Return** and **Set Attack FK Return
 Profile**, as specified by the user. Native function names remain unchanged.
 

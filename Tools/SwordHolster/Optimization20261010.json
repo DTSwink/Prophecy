@@ -1,0 +1,745 @@
+{
+  "method": "Seven alternating-order paired trials after warmup; same process, same inputs, 100 synchronized agents. Medians. No staggering, reduced update rate or shared cross-agent results. Cycle is procedural-only; planning excludes skeleton discovery/NN reads/runtime admission.",
+  "parity": "fit_rad=0 head_deg=2.41483653945e-06 pose_deg=1.1066171233e-05 position_cm=1.09540231132e-06 duration_s=5.76987357198e-10 trig_error=5.55111512313e-16 third_quat_squared_error=1.42518815885e-31 head_state_mismatch=0 timing_mismatch=0",
+  "results": [
+    {
+      "motion": "idle",
+      "sheathe": false,
+      "stage": "cycle",
+      "before_ms": 1.4608861794308943,
+      "after_ms": 0.5773308942926829,
+      "speedup": 2.530414003256658,
+      "before_peak_ms": 7.244999986,
+      "after_peak_ms": 1.998699998,
+      "frames_before": [
+        123
+      ],
+      "frames_after": [
+        123
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": false,
+      "stage": "duration",
+      "before_ms": 7.405299984,
+      "after_ms": 1.298899995,
+      "speedup": 5.701208724694776,
+      "before_peak_ms": 7.405299984,
+      "after_peak_ms": 1.298899995,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": false,
+      "stage": "endpoint",
+      "before_ms": 0.266899995,
+      "after_ms": 0.241100002,
+      "speedup": 1.1070095096888468,
+      "before_peak_ms": 0.266899995,
+      "after_peak_ms": 0.241100002,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": false,
+      "stage": "fit",
+      "before_ms": 5.751000019,
+      "after_ms": 0.507500023,
+      "speedup": 11.332019228302578,
+      "before_peak_ms": 5.751000019,
+      "after_peak_ms": 0.507500023,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": false,
+      "stage": "head_in",
+      "before_ms": 0.836099993,
+      "after_ms": 0.13239999,
+      "speedup": 6.314955106869721,
+      "before_peak_ms": 0.836099993,
+      "after_peak_ms": 0.13239999,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": false,
+      "stage": "head_out",
+      "before_ms": 0.166300015,
+      "after_ms": 0.047700014,
+      "speedup": 3.486372456829887,
+      "before_peak_ms": 0.166300015,
+      "after_peak_ms": 0.047700014,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": false,
+      "stage": "initial_fit",
+      "before_ms": 9.847399982,
+      "after_ms": 0.864900008,
+      "speedup": 11.385593584131405,
+      "before_peak_ms": 9.847399982,
+      "after_peak_ms": 0.864900008,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": false,
+      "stage": "planning",
+      "before_ms": 17.660999991,
+      "after_ms": 2.42959999,
+      "speedup": 7.26909782009013,
+      "before_peak_ms": 17.660999991,
+      "after_peak_ms": 2.42959999,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": false,
+      "stage": "return",
+      "before_ms": 0.7835,
+      "after_ms": 0.182599993,
+      "speedup": 4.290799726372389,
+      "before_peak_ms": 0.7835,
+      "after_peak_ms": 0.182599993,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": true,
+      "stage": "cycle",
+      "before_ms": 1.8261179686796876,
+      "after_ms": 0.7000335940546875,
+      "speedup": 2.608614763903786,
+      "before_peak_ms": 9.129500017,
+      "after_peak_ms": 2.460200019,
+      "frames_before": [
+        128
+      ],
+      "frames_after": [
+        128
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": true,
+      "stage": "duration",
+      "before_ms": 9.100900003,
+      "after_ms": 1.6359,
+      "speedup": 5.563237363530778,
+      "before_peak_ms": 9.100900003,
+      "after_peak_ms": 1.6359,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": true,
+      "stage": "endpoint",
+      "before_ms": 0.323400018,
+      "after_ms": 0.297099992,
+      "speedup": 1.088522472932278,
+      "before_peak_ms": 0.323400018,
+      "after_peak_ms": 0.297099992,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": true,
+      "stage": "fit",
+      "before_ms": 6.915100006,
+      "after_ms": 0.632400013,
+      "speedup": 10.934693016839011,
+      "before_peak_ms": 6.915100006,
+      "after_peak_ms": 0.632400013,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": true,
+      "stage": "head_in",
+      "before_ms": 1.050799998,
+      "after_ms": 0.165099977,
+      "speedup": 6.364628373025152,
+      "before_peak_ms": 1.050799998,
+      "after_peak_ms": 0.165099977,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": true,
+      "stage": "head_out",
+      "before_ms": 0.197200017,
+      "after_ms": 0.0573,
+      "speedup": 3.4415360732984297,
+      "before_peak_ms": 0.197200017,
+      "after_peak_ms": 0.0573,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": true,
+      "stage": "initial_fit",
+      "before_ms": 12.13019999,
+      "after_ms": 1.083899988,
+      "speedup": 11.191253920375539,
+      "before_peak_ms": 12.13019999,
+      "after_peak_ms": 1.083899988,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": true,
+      "stage": "planning",
+      "before_ms": 22.28959999,
+      "after_ms": 2.891299984,
+      "speedup": 7.70919659438562,
+      "before_peak_ms": 22.28959999,
+      "after_peak_ms": 2.891299984,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "idle",
+      "sheathe": true,
+      "stage": "return",
+      "before_ms": 0.924199994,
+      "after_ms": 0.238000008,
+      "speedup": 3.88319312157334,
+      "before_peak_ms": 0.924199994,
+      "after_peak_ms": 0.238000008,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": false,
+      "stage": "cycle",
+      "before_ms": 1.4582487803739836,
+      "after_ms": 0.5785016256829268,
+      "speedup": 2.5207341096967646,
+      "before_peak_ms": 7.223099994,
+      "after_peak_ms": 1.982200018,
+      "frames_before": [
+        123
+      ],
+      "frames_after": [
+        123
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": false,
+      "stage": "duration",
+      "before_ms": 7.470699988,
+      "after_ms": 1.297900017,
+      "speedup": 5.755990361467112,
+      "before_peak_ms": 7.470699988,
+      "after_peak_ms": 1.297900017,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": false,
+      "stage": "endpoint",
+      "before_ms": 0.2676,
+      "after_ms": 0.238700013,
+      "speedup": 1.1210724148557127,
+      "before_peak_ms": 0.2676,
+      "after_peak_ms": 0.238700013,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": false,
+      "stage": "fit",
+      "before_ms": 5.761299981,
+      "after_ms": 0.505500007,
+      "speedup": 11.397230269474555,
+      "before_peak_ms": 5.761299981,
+      "after_peak_ms": 0.505500007,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": false,
+      "stage": "head_in",
+      "before_ms": 0.843700022,
+      "after_ms": 0.133599999,
+      "speedup": 6.315119972418564,
+      "before_peak_ms": 0.843700022,
+      "after_peak_ms": 0.133599999,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": false,
+      "stage": "head_out",
+      "before_ms": 0.168300001,
+      "after_ms": 0.048099988,
+      "speedup": 3.498961392672281,
+      "before_peak_ms": 0.168300001,
+      "after_peak_ms": 0.048099988,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": false,
+      "stage": "initial_fit",
+      "before_ms": 10.530899977,
+      "after_ms": 0.910600007,
+      "speedup": 11.564792330382664,
+      "before_peak_ms": 10.530899977,
+      "after_peak_ms": 0.910600007,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": false,
+      "stage": "planning",
+      "before_ms": 18.353899999,
+      "after_ms": 2.477000002,
+      "speedup": 7.409729505119314,
+      "before_peak_ms": 18.353899999,
+      "after_peak_ms": 2.477000002,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": false,
+      "stage": "return",
+      "before_ms": 0.807300006,
+      "after_ms": 0.194099994,
+      "speedup": 4.15919645005244,
+      "before_peak_ms": 0.807300006,
+      "after_peak_ms": 0.194099994,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": true,
+      "stage": "cycle",
+      "before_ms": 1.50722031253125,
+      "after_ms": 0.5787992186015625,
+      "speedup": 2.604046902780634,
+      "before_peak_ms": 7.259399979,
+      "after_peak_ms": 1.975899999,
+      "frames_before": [
+        128
+      ],
+      "frames_after": [
+        128
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": true,
+      "stage": "duration",
+      "before_ms": 7.421199989,
+      "after_ms": 1.298100018,
+      "speedup": 5.716970869805504,
+      "before_peak_ms": 7.421199989,
+      "after_peak_ms": 1.298100018,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": true,
+      "stage": "endpoint",
+      "before_ms": 0.268999982,
+      "after_ms": 0.239300018,
+      "speedup": 1.124111833539436,
+      "before_peak_ms": 0.268999982,
+      "after_peak_ms": 0.239300018,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": true,
+      "stage": "fit",
+      "before_ms": 5.732600024,
+      "after_ms": 0.509899983,
+      "speedup": 11.242597009460972,
+      "before_peak_ms": 5.732600024,
+      "after_peak_ms": 0.509899983,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": true,
+      "stage": "head_in",
+      "before_ms": 0.852500001,
+      "after_ms": 0.133199996,
+      "speedup": 6.400150349854366,
+      "before_peak_ms": 0.852500001,
+      "after_peak_ms": 0.133199996,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": true,
+      "stage": "head_out",
+      "before_ms": 0.162799988,
+      "after_ms": 0.047899986,
+      "speedup": 3.3987481332458014,
+      "before_peak_ms": 0.162799988,
+      "after_peak_ms": 0.047899986,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": true,
+      "stage": "initial_fit",
+      "before_ms": 10.455900017,
+      "after_ms": 0.913700002,
+      "speedup": 11.443471592550132,
+      "before_peak_ms": 10.455900017,
+      "after_peak_ms": 0.913700002,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": true,
+      "stage": "planning",
+      "before_ms": 18.306600017,
+      "after_ms": 2.475999994,
+      "speedup": 7.393618764685668,
+      "before_peak_ms": 18.306600017,
+      "after_peak_ms": 2.475999994,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    },
+    {
+      "motion": "walk",
+      "sheathe": true,
+      "stage": "return",
+      "before_ms": 0.769299979,
+      "after_ms": 0.194699998,
+      "speedup": 3.9512069178346882,
+      "before_peak_ms": 0.769299979,
+      "after_peak_ms": 0.194699998,
+      "frames_before": [
+        1
+      ],
+      "frames_after": [
+        1
+      ]
+    }
+  ],
+  "native_tests": {
+    "succeeded": 8,
+    "failed": 0
+  },
+  "build": {
+    "log": "Saved/Diagnostics/SwordOptimization20261010/build-final.txt",
+    "seconds": 67.34,
+    "normal_build": true,
+    "editor_restarts": 1,
+    "editor_pid": 17896
+  },
+  "editor": {
+    "map": "/Game/testNN.testNN",
+    "dirty": [],
+    "hashes": {
+      "Content/testNN.umap": "d97c3e25e23b105b7c474900a1ed4851f5c59f90adf1145b273680cd51f3c81b",
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "1f8152a0d17f35b8f51ed679ffa66a75a5b8bc75e7fe92aa2c33dde8a917cf7f",
+      "Content/_mygame/sword/A_Sword.uasset": "ff7baf67e07acce36be264aa880f03ebe495fc16f1eebe63b7fb56f8c15fe62f",
+      "Content/locomotion/SwordHolsterProfile.json": "37c4b0d354254e71ae04eb706e93ab0b50b739f2dd2e1c5787a8e3d1b04443f8"
+    },
+    "graph_identical": true
+  },
+  "baseline_source_sha256": "5673c208ca1d5508e72381b96fedf84107bfe8603d1298c7b1a1aeca22050408",
+  "runtime_source_sha256": "d32b4aafce573eac1cd5ffd5979933a113ebbd45182d7e8c67ac79194caa9631",
+  "live": {
+    "optimized-saved-sim": {
+      "reason": "passed",
+      "options": {
+        "name": "optimized-saved-sim",
+        "kinematic": false,
+        "walk": false,
+        "shrink_percent": null,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": false,
+        "cancel_phase": null
+      },
+      "events": [
+        [
+          26,
+          "sheathe",
+          1
+        ],
+        [
+          68,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          161,
+          "sheathe",
+          3
+        ],
+        [
+          162,
+          "draw",
+          1
+        ],
+        [
+          191,
+          "draw",
+          2
+        ],
+        [
+          222,
+          "draw",
+          4
+        ],
+        [
+          284,
+          "draw",
+          -1
+        ]
+      ],
+      "cycles": 1,
+      "suppression_checks": 257,
+      "duplicates_checked": true,
+      "holster_pelvis_distance": null,
+      "holster_pelvis_distance_after": null,
+      "sheath_return_tracking_error_cm": 0.20724784719278755,
+      "draw_return_tracking_error_cm": 1.2927094727317152
+    },
+    "optimized-kinematic": {
+      "reason": "passed",
+      "options": {
+        "name": "optimized-kinematic",
+        "kinematic": true,
+        "walk": false,
+        "shrink_percent": 25.0,
+        "repeat": 1,
+        "unshrink": 0.5,
+        "pause": false,
+        "switch_back": true,
+        "cancel_phase": null
+      },
+      "events": [
+        [
+          33,
+          "explicit diagnostic sheathe"
+        ],
+        [
+          33,
+          "sheathe",
+          0
+        ],
+        [
+          34,
+          "sheathe",
+          1
+        ],
+        [
+          72,
+          "sheathe",
+          2
+        ],
+        [
+          99,
+          "sheathe",
+          4
+        ],
+        [
+          161,
+          "sheathe",
+          3
+        ],
+        [
+          162,
+          "draw",
+          1
+        ],
+        [
+          191,
+          "draw",
+          2
+        ],
+        [
+          218,
+          "draw",
+          4
+        ],
+        [
+          280,
+          "draw",
+          -1
+        ],
+        [
+          340,
+          "Sim and holster simulation restored"
+        ]
+      ],
+      "cycles": 1,
+      "suppression_checks": null,
+      "duplicates_checked": true,
+      "holster_pelvis_distance": 42.55011744171087,
+      "holster_pelvis_distance_after": null
+    }
+  }
+}

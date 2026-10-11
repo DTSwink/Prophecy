@@ -3,6 +3,9 @@
 #include "ProphecySwordHolsterLibrary.h"
 #include "ProphecySwordHolster.h"
 #include "ProphecySwordHolsterPose.h"
+#include "ProphecySwordHolsterSchedule.h"
+#include "ProphecyAngularLimits.h"
+#include "Misc/ScopeExit.h"
 #include "ProphecyJoltStandardPhysicsLibrary.h"
 #include "ProphecyLimbCollision.h"
 #include "ProphecyJoltSceneCollisionComponent.h"
@@ -976,6 +979,7 @@ AActor* UProphecySwordComponent::Drop()
 	if (bDropPending) return Sword;
 	AProphecyAgent* A = Agent();
 	if (A && A->GetJoltCharacterComponent() && A->GetJoltCharacterComponent()->IsKinematicRestorePending()) return nullptr;
+	if(ProphecySwordHolster::Pending.Remove(A))ProphecySwordHolsterSchedule::Remove(A);
 	if(auto* S=ProphecySwordHolster::States.Find(A))
 	{
 		FString Error;

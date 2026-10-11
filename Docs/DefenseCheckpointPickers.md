@@ -9,6 +9,18 @@
 
 - Project Default: installed Dodge322925.
 - Frozen Dodge322925 and Dodge151341 (October7 inertia x3 run).
+- Frozen Dodge154546 — Post-hit return5 / Free pelvis (October10 run). **Added to source/export October11; subsequently compiled/loaded with the attack FK gaze work.** Existing defaults and enum values are unchanged; this appends value3.
+
+The154546 export passed17 saved/random upper-network batches against PyTorch
+(maximum absolute error1.54972e-6). Frozen walk/run ONNX bytes, lower settings
+and banks exactly match the installed default, so this choice also changes only
+upper weights. Source checkpoint SHA256:
+`6ce41ddd4ef418bc8afd38700efa52015c9428bcd55c0bbec1468397c91bfe10`.
+`Tools/NN/BuildDodgePicker.py` reproduces the incremental export; raw validation
+and native-test oracle are under `Saved/Diagnostics/Dodge15454620261011/export/`.
+The picker native test now includes value3 and repeated selection, but has not
+been run against a compiled154546 picker. No editor, Blueprint, active selection
+or default-model change was performed in the original picker side conversation. The subsequent FK gaze build loaded the appended enum; its stale Blueprint pin was repaired while preserving the existing Inertia151341 selection and the complete graph. That reload does not constitute running the new native picker oracle; this remains unverified. See `Tools/Recovery/AttackFKGaze20261011.json`.
 
 Connect any initialized agent as `Agent` (Self works). Selection affects **all
 agents using that agent's locomotion manager**, like Set Upper Checkpoint.

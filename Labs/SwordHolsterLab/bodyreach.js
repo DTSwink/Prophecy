@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
-const {add,sub,mul,dot,cross,length:len,unit,qm,qinv,rotate,qexp}=R,I=[0,0,0,1],RAD=Math.PI/180;
+const {add,sub,mul,dot,cross,length:len,unit,qm,qinv,rotate,qexp}=R,RAD=Math.PI/180;
 function basis(axis){
  axis=unit(axis);const u=unit(cross(axis,Math.abs(axis[0])<.8?[1,0,0]:[0,1,0]));
  return [u,cross(axis,u)];
@@ -17,20 +17,22 @@ function make(data,base){
   spineAxis:unit(axis(top,index('neck_01'))),clavBasis:basis(axis(clav,shoulder)),weights:new Map(spine.map((j,k)=>[j,(k+1)/5]))};
 }
 function apply(ctx,base,v,onlyShoulder=false){
- const localSpine=qexp(mul(ctx.spineAxis,v[0])),worldSpine=unit(qm(qm(base[ctx.top].q,localSpine),qinv(base[ctx.top].q)));
+ const worldSpineAxis=rotate(base[ctx.top].q,ctx.spineAxis);
  const clavSwing=swing(ctx.clavBasis,v.slice(1)),out=base.slice();
  for(const j of onlyShoulder?ctx.chain:ctx.affected){
   const p=ctx.parents[j];if(p<0)continue;
   const inherited=unit(qm(out[p].q,qinv(base[p].q)));
   let q=unit(qm(inherited,base[j].q));
-  if(ctx.weights.has(j))q=unit(qm(R.qslerp(I,worldSpine,ctx.weights.get(j)),base[j].q));
+  // Weight the signed angle directly: shortest-arc slerp would flip the lower
+  // spine's correction when the unrestricted top twist crosses 180 degrees.
+  if(ctx.weights.has(j))q=unit(qm(qexp(mul(worldSpineAxis,v[0]*ctx.weights.get(j))),base[j].q));
   if(j===ctx.clav)q=unit(qm(q,clavSwing));
   out[j]={...base[j],p:add(out[p].p,rotate(inherited,sub(base[j].p,base[p].p))),q};
  }
  return onlyShoulder?out[ctx.shoulder].p:out;
 }
 function bounded(v,limit){
- v=[...v];v[0]=Math.max(-limit,Math.min(limit,v[0]));
+ v=[...v];
  const n=Math.hypot(v[1],v[2]);if(n>limit){v[1]*=limit/n;v[2]*=limit/n;}return v;
 }
 function optimize(ctx,base,target,seed,limitDegrees){

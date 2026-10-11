@@ -8,6 +8,8 @@ All accept Agent and Attack. Attack None updates the respective fields for all f
 
 The former combined native function remains compatible with existing Blueprint wiring, named **Set Attack FK Return Combined (Legacy)**, and is hidden from the new-node menu. Replace the earlier combined node with **Set Attack FK Return Values** to adjust only the three main controls. Keeping the legacy node connected still applies all its old hidden overrides.
 
-The setters resolve and merge profiles only when executed. There is no additional per-tick lookup, inference, allocation or blending. Reset snapshots retain the merged profiles through the existing mechanism.
+The profile setters resolve and merge profiles only when executed. There is no additional per-tick lookup, inference, allocation or blending for those setters. Reset snapshots retain the merged profiles through the existing mechanism.
+
+**Set Attack FK Return Gaze** is a separate Agent / Enabled switch for all attack families. Enabled defaults true on the node; omitting it retains the original gaze-independent pure FK target. Call before attack end. While enabled, the target follows current agent upper-NN yaw and pitch throughout return, including NN Alpha Hold; stable gaze reuses its cached target. It does not alter the return clock or other profile controls, and does not affect Parry. Reset retains the switch. See [live gaze behavior](AttackFKReturn.md).
 
 Focused test `Prophecy.NN.FKReturn.SeparateSetters` covers imported defaults, independent updates, call order, all-family preservation, input rejection and reset restoration. Existing `LifecycleAndCurve` checks compatibility of the combined API.

@@ -28,7 +28,8 @@ enum class EProphecyDodgeCheckpoint : uint8
 {
     ProjectDefault = 0 UMETA(DisplayName="Project Default (current 322925)"),
     Step322925 = 1 UMETA(DisplayName="Dodge 322925"),
-    Inertia151341 = 2 UMETA(DisplayName="Dodge 151341 - Inertia x3")
+    Inertia151341 = 2 UMETA(DisplayName="Dodge 151341 - Inertia x3"),
+    PostHitReturn154546 = 3 UMETA(DisplayName="Dodge 154546 - Post-hit return 5 / Free pelvis")
 };
 
 UCLASS()
