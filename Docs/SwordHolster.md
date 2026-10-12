@@ -5,6 +5,63 @@ This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
 ## Newer lab-only changes (October12)
 
+Lab **S → D · after full return** plays sheathing then drawing using the existing
+independent profiles and a continuous locomotion clock. Drawing starts at S’s
+full FK/head completion; timeline/captures extend through both actions. Settings,
+contextual controls, body-worker edits and snapshots support the sequence.
+This is playback composition only, not a new Unreal action system.
+
+
+Lab D hand release inertia now also includes its local position-offset motion
+using the existing length-preserving FK inertia/spring framework. Same controls;
+most global translation was already carried through arm inertia, so the current
+setup changes only slightly. Bone lengths/rotation behavior retained. Lab-only.
+
+
+Lab D right-hand rotation now participates in FK inertia at0% release; its
+Drawing return per-bone weight defaults1. Existing inertia controls shape it,
+0 restores previous inheritance. Sliding/wrist position/S unchanged. Current
+first-tick turn6.65→.11deg; broader run/spring return residuals remain documented
+in the journal. Not ported to Unreal.
+
+
+Lab reach elbow preference now slows to arrive with the hand for both D/S,
+using the existing unwarped reach deadline and max pole speed as a ceiling.
+An insufficient cap is respected; sliding continues the existing pursuit.
+This scheduling change is not ported to Unreal.
+
+
+**Body poses is now independent for Drawing and Sheathing.** All panel controls
+are saved in separate `drawBody`/`sheatheBody` profiles. Old settings clone their
+shared values into both. The selected action controls which profile is edited;
+this supersedes the shared-panel descriptions below. Lab-only, no native change.
+
+
+Lab **Body poses → Pelvis rotation compensation** is now saved/shared by D/S,
+default1 (full current correction),0 (follow pelvis rotation), with coherent
+whole-chain quaternion interpolation between them. Translation is unchanged.
+Slider updates replan in the background without pause/seek. Not ported to Unreal.
+
+
+The lab now also has **Sword-relative pole while sliding**, saved/default off,
+shared by D/S. It carries the slide-entry elbow reference with the sword under
+the existing scalar speed cap. Reach and ordinary arm return retain their
+references. See the lab README for verification and the existing extreme
+immediate-return grip limitation. This has not been ported to Unreal.
+
+The current user-approved lab model authors the captured spine/right-arm FK
+chain while canceling pelvis rotation, discarding ongoing gait on those bones.
+The whole authored spine chain, including its first positional offset, uses the
+pelvis orientation captured at entry with current pelvis translation. This fixes
+the residual sideways head-position sway left by correcting only top orientation.
+Bone lengths are retained; the pelvis/holster remain unchanged. Right
+clavicle targets remain relative to corrected spine05. The left
+clavicle-to-hand chain retains its current local animation/additive clavicle
+motion. Entry inertia now covers all13 spine/arm joints through both hands and
+runs after pole correction. Existing early return and independent head aiming
+remain. This supersedes the earlier additive spine/right-arm implementation;
+see the lab README for the precise contract and numerical/UI verification.
+
 The lab also has saved0%/100% elbow preference angles in a moving arm/spine-up
 frame, with an independent scalar angular-speed cap. Preview samples the actual
 prepared playback pose, including early FK return. These changes remain lab-only.

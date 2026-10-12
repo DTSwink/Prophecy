@@ -27,7 +27,7 @@ assert.equal(P.target({clear:{pole:170},seated:{pole:-170}},.5),180,'endpoints i
 let cases=0,maxPreviewDifference=0,maxGripError=0,maxMeasuredSpeed=0;
 for(const motion of ['idle','walk'])for(const sheathe of [true,false]){
  const targets=H.sanitize(saved).bodyTargets;targets.clear.pole=-40;targets.seated.pole=70;
- const m=H.prepare(data,setup,{...saved,motion,sheathe,duration:10,bodyTargets:targets,maxElbowPoleAngularSpeed:25});
+ const m=H.prepare(data,setup,{...saved,motion,sheathe,duration:10,bodyTargets:targets,maxElbowPoleAngularSpeed:25,swordRelativeSlidePole:false,entryInertia:0});
  assert(m.plan.arrives&&m.completionTick!==null,'new pole settings complete');
  const keys=m.poleGuides.keys;
  for(let k=1;k<keys.length;k++)assert(Math.abs(keys[k].angle-keys[k-1].angle)<=25/240+1e-8,'angle cap uses playback time despite timing curves');

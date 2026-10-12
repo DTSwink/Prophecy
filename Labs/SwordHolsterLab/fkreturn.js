@@ -3,7 +3,7 @@
 'use strict';
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
 const {unit,qm,qinv,qlog,rotate,fromTo,length:len,mul,sub}=R;
-const bones=['spine','clavicle','upperarm','lowerarm','neck_01','neck_02','head'];
+const bones=['spine','clavicle','upperarm','lowerarm','hand','neck_01','neck_02','head'];
 const defaults=()=>({enabled:true,startFraction:.9,duration:1,returnEasing:1,inertia:1,inertiaHold:0,inertiaDecay:1,worldInertia:false,springReturn:false,angleTimeSeconds:.29,upperArmTwistRemoval:0,boneInertia:Object.fromEntries(bones.map(k=>[k,1]))});
 function sanitize(input={}){
  const o={...defaults(),...input};
@@ -12,7 +12,7 @@ function sanitize(input={}){
  o.boneInertia=Object.fromEntries(bones.map(k=>[k,Math.max(0,Math.min(1,Number.isFinite(Number(input.boneInertia?.[k]))?Number(input.boneInertia[k]):1))]));return o;
 }
 const local=(pose,parents)=>R.localize(pose.map(p=>p.p),pose.map(p=>p.q),parents);
-function prepare({names,parents,last,previous,base,previousBase,dt,profile}){
+function prepare({names,parents,last,previous,base,previousBase,dt,profile,handInertia=false}){
  const idle=local(base,parents),spine=names.indexOf('spine_01');
  const upper=names.map((_,j)=>{for(let k=j;k>=0;k=parents[k])if(k===spine)return true;return false;});
  // Express the incoming residual relative to moving locomotion in a fixed
@@ -24,7 +24,7 @@ function prepare({names,parents,last,previous,base,previousBase,dt,profile}){
  const end=reference(last,base),before=reference(previous,previousBase),poses=[R.fk(before,parents),R.fk(end,parents)];
  const idleOffsets=idle.p.map((p,j)=>len(p)>1e-8?mul(unit(p),len(end.p[j])):end.p[j]);
  const model={names,parents,spine,upper,idle,idleOffsets,arms:[],meta:{fps:1/dt,frames:2},attackSeconds:dt,poses,locals:[before,end],
-  inertial:upper.map((u,j)=>u&&!/^hand_[lr]$/.test(names[j])),inertiaKeys:names.map(n=>/^spine_0[1-5]$/.test(n)?'spine':n.replace(/_(l|r)$/,'')),
+  inertial:upper.map((u,j)=>u&&(!/^hand_[lr]$/.test(names[j])||(handInertia&&names[j]==='hand_r'))),inertiaKeys:names.map(n=>/^spine_0[1-5]$/.test(n)?'spine':n.replace(/_(l|r)$/,'')),
   worldVelocity:poses[1].q.map((q,j)=>mul(qlog(qm(q,qinv(poses[0].q[j]))),1/dt)),
   offsetVelocity:end.p.map((p,j)=>len(p)>1e-8&&len(before.p[j])>1e-8?mul(qlog(fromTo(before.p[j],p)),1/dt):[0,0,0])};
  model.idlePose=R.fk({q:end.q.map((q,j)=>upper[j]?idle.q[j]:q),p:end.p.map((p,j)=>upper[j]?idleOffsets[j]:p)},parents);

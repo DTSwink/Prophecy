@@ -33,7 +33,7 @@ def read_json(path, default):
 
 def revision():
     digest = hashlib.sha256()
-    for name in ('index.html', 'app.js', 'recovery.js', 'style.css', 'renderer.js', 'bodyreach.js', 'body-target-panel.js', 'body-plan-worker.js', 'headlook.js', 'fkreturn.js', 'fkreturn-panel.js', 'armfk.js', 'retime.js', 'curve-editor.js', 'elbowpole.js', 'holster.js', 'equipment.js', 'capture.js', 'capture-worker.js'):
+    for name in ('index.html', 'app.js', 'recovery.js', 'style.css', 'renderer.js', 'bodyreach.js', 'body-target-panel.js', 'body-plan-worker.js', 'headlook.js', 'fkreturn.js', 'fkreturn-panel.js', 'armfk.js', 'retime.js', 'curve-editor.js', 'elbowpole.js', 'holster.js', 'sequence.js', 'equipment.js', 'capture.js', 'capture-worker.js'):
         digest.update((ROOT / name).read_bytes())
     return digest.hexdigest()
 
@@ -223,6 +223,9 @@ def main():
     if sys.stdout is None:sys.stdout=(STORE/'server.stdout.log').open('a',encoding='utf-8')
     if sys.stderr is None:sys.stderr=(STORE/'server.stderr.log').open('a',encoding='utf-8')
     print(f'D-S Sword Holster Lab http://127.0.0.1:{args.port}',flush=True)
+    # Refresh loads the script bundle alongside capture/worker connections.
+    # Keep that burst from overflowing HTTPServer's small default listen queue.
+    ThreadingHTTPServer.request_queue_size = 64
     ThreadingHTTPServer(('127.0.0.1',args.port),Handler).serve_forever()
 
 if __name__ == '__main__':

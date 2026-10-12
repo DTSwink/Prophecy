@@ -1,5 +1,12 @@
 # Initial agent reset
 
+## October12 holster reset correction
+
+Holster drift reproduced across five resets on three agents: the saved component transform appeared for one frame, then the native body resumed its old transform. The player jump grew12.05→43.54cm. Switching a standalone Jolt body from kinematic back to dynamic now first transfers its current source-component transform to the native body. This handles a reset that changes pose and resumes simulation before any intervening physics step; ordinary per-tick work is unchanged. Four subsequent reset trajectories became bit-identical after this change.
+
+Reset now also hides/cancels current sword D/S before publishing the checkpoint pose and recreating the rig, so ongoing D/S does not contaminate the first restored pose or pelvis/holster constraint frames. The captured sword is recreated afterwards through the existing equipment restore. No Blueprint wiring, motor settings or asset changes. Final normal build succeeded49.12s. Five resets on each of three agents pass in both Sim and Kinematic (30 resets), including the first interrupted D/S. Maximum repeated-trajectory differences: Sim0.00445cm/0.0642deg; Kinematic0cm/<0.000003deg. The editor remains open on TestNN, Play stopped, assets clean. Evidence/scripts: `Saved/Diagnostics/HolsterReset20261012/`, `Tools/SwordHolster/ProbeHolsterReset.py`.
+
+
 Call **Initialize Agent Reset** once after the NN manager has initialized its agents and all agents have completed their delayed BeginPlay physics setup, before starting movement. `Agent Count` reports captured agents. Check `Return Value` / `Out Error`: calling before NN initialization is rejected and can be retried. Calling again after success keeps the original checkpoint.
 
 Connect a key's **Pressed** execution pin to **Reset Initial Agents**. The request is queued once at the next timer boundary, so an input or hit callback cannot tear down a physics rig during its publication. Repeated requests before that boundary coalesce. Success means accepted; a later per-agent failure is reported in the Output Log.

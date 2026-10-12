@@ -3,8 +3,12 @@ out=pathlib.Path(unreal.Paths.project_dir())/'Labs/SwordHolsterLab/data'
 names=['root','pelvis','spine_01','spine_02','spine_03','spine_04','spine_05','clavicle_l','upperarm_l','lowerarm_l','hand_l','clavicle_r','upperarm_r','lowerarm_r','hand_r','neck_01','neck_02','head','thigh_l','calf_l','foot_l','ball_l','thigh_r','calf_r','foot_r','ball_r']
 parents=[-1,0,1,2,3,4,5,6,7,8,9,6,11,12,13,6,15,16,1,18,19,20,1,22,23,24]
 result={'names':names,'parents':parents,'fps':30,'coordinates':'Unreal component XYZ centimetres, quaternion XYZW','motions':{}}
+if (out/'motions.json').exists():
+ result=json.loads((out/'motions.json').read_text(encoding='utf-8'))
+ assert result['names']==names and result['parents']==parents
 options=unreal.AnimPoseEvaluationOptions(evaluation_type=unreal.AnimDataEvalType.RAW,should_retarget=False)
 for key,name in [('idle','M_Neutral_Stand_Idle_Loop'),('walk','M_Neutral_Walk_Loop_F')]:
+ if result['motions'].get(key,{}).get('recording'):continue # Live NN recordings are imported separately.
  asset=unreal.load_asset('/Game/_mygame/'+name)
  if not asset:
   paths=unreal.EditorAssetLibrary.list_assets('/Game',recursive=True,include_folder=False)

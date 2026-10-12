@@ -4,6 +4,205 @@ Open **D-S Sword Holster Lab** on the Windows desktop. The teal D/S sword icon l
 
 **D/S** means **drawing (unsheathing) / sheathing** in this project.
 
+**Play both actions:** the checkbox below Base motion/Action follows the selected
+mode: Drawing plays **D → S**, Sheathing plays **S → D**. The selected action
+starts at the configured tick; the other starts after its complete FK/head
+return (and drawing’s unshrink), with no second delay. Changing **First action**
+rebuilds the order while preserving each action’s tuning. Its controls and
+endpoint previews follow the selected mode. Idle/walk/run continues on one
+clock; the timeline and captures cover both actions. Each retains independent
+speeds, body poses, curves and FK return. Duration is a time budget per action.
+An incomplete first action or disabled first FK return prevents the second and
+shows a status message. Checkbox and selected mode persist in settings/snapshots.
+Head/FK clocks remain unmodulated. Tests: `test_sequence.cjs`,
+`test_sequence_ui.cjs`, `test_sequence_speeds.cjs` cover both orders, continuous
+joins, independent motion/timing, worker edits, retiming and save/reload.
+
+**Holster placement → Rotation stabilization · lab only** is a saved, shared D/S
+slider. Default0 retains pelvis attachment;1 holds the holster’s world rotation
+at underlying animation time0, with intermediate values blending between them.
+Position keeps the original pelvis-local attachment. Both sequence segments use
+the same reference, so S → D does not reset the rotation. Planning, targets,
+sword attachment and fractional playback all use the stabilized holster on the
+unmodulated locomotion clock. Slider edits use the existing background planner
+without stopping or seeking playback. This does not change Unreal: its D/S
+continues following the actual physical holster.
+
+**Drawing/Sheathing speeds are independent.** Max reach speed, max reach rotation
+speed and sliding speed follow the Action selector and persist with its profile,
+including in S → D. Older files clone their shared speeds into both actions;
+existing per-action values take precedence.
+
+**Drawing hand release inertia:** at0% insertion the returning right hand now
+preserves its incoming rotation and local positional motion using the existing
+FK inertia engine. Position inertia rotates the local bone offset while retaining
+its length. Most global hand translation already inherits arm inertia; enabling
+the hand-local contribution has only a small effect in the current saved setup.
+Drawing FK return → Per-bone inertia → **Right hand · draw release** defaults1;
+0 disables that hand’s local inertia. Main inertia and its existing
+decay/hold/space/spring settings apply. Sliding is unchanged;
+sheathing and the left hand remain as before. Current captured first-tick turn
+fell6.65→.11deg. Broader running/early-return spring cases still have residual
+rotation discontinuities; this is not a complete return-continuity repair.
+
+**Body poses has independent Drawing and Sheathing profiles.** The panel follows
+the selected action. Both insertion poses, elbow settings, reach/pole speed caps
+and pelvis compensation are saved per action. Older settings and snapshots copy
+the existing shared values into both profiles, preserving the original motion.
+
+**Max pole speed is an upper bound.** During D/S reach, the elbow preference
+slows to arrive at its entry target with the hand, using unwarped reach time.
+If the cap prevents arrival, it continues catching up during sliding. Zero holds
+the starting preference. Sliding keeps its existing target pursuit and reference;
+entry inertia remains a separate transient contribution.
+
+**Body poses → Pelvis rotation compensation** is saved per action.
+Default1 keeps full correction;0 follows pelvis rotation. Intermediate values
+blend the live and entry pelvis orientations, applied to the whole authored
+chain including its first offset. Translation is unchanged. Slider edits use
+the background planner without pausing or seeking playback.
+
+
+**D/S authoring with pelvis counterrotation, October12 — current lab contract:** the user
+superseded additive spine/right-arm motion. Capture the local FK chain at D/S
+entry. Spine01–05, right clavicle and right arm use that captured geometry and
+are authored from that geometry; ongoing locomotion rotations/offsets
+on those bones are discarded until FK return. Spine05 uses the pelvis orientation
+captured at D/S entry: cancel the current pelvis rotation before continuing the
+authored turn. Right clavicle targets are relative to corrected spine05. Lower
+spines receive20/40/60/80/100% of the change from the captured spine05 rotation;
+their entry shape is retained, with no ongoing gait underneath. Existing target
+sliders, reach schedule/caps, curves, pole controls and saved values remain.
+Pelvis translation remains. The holster still follows the actual pelvis; the arm
+follows its moving grip. **Head-position correction:** the initial implementation
+only corrected the top's orientation by distributing inverse pelvis rotation down
+the spine. Its lower joints still moved spine05 sideways. Now the entire authored
+spine chain, including the spine01 offset, uses the entry pelvis orientation plus
+the live pelvis position. Only the authored spine turn is distributed20..100%.
+This cancels pelvis rotational transport of both position and orientation, keeps
+bone lengths and preserves entry continuity. The spine01 local offset counterturns
+with the chain; the pelvis itself is not changed. No positional filter or new knob.
+The calculation is stateless, so seek/frame rate cannot accumulate drift. Slider
+previews use the same entry orientation. Early FK return still resumes locomotion;
+independent head look is unchanged. This is not a promise of a stationary head.
+
+`test_pelvis_counterrotation.cjs` now verifies positions as well as orientations
+for361 combined yaw/pitch/roll samples, unchanged translation and lengths, plus4
+walk/run D/S reverse-scrub trajectories. Six body motion cases pass(max grip.081cm),
+12 entry-inertia cases and head-clock checks pass. In the captured run/S123..143,
+spine05 sideways position relative to pelvis, after removing the endpoint-linear
+authored trend, falls from2.99530cm peak-to-peak to.000466cm. Integer/fractional
+head-position seams before the fix were already below.000002cm: the problem was
+spatial transport, not sampling discontinuities. Evidence and prior source:
+`Saved/Diagnostics/SwordHeadPosition20261012/`. User state/Unreal untouched.
+
+Left clavicle through hand retains current parent-local animation, including the
+existing additive left-clavicle target. Entry inertia covers all13 FK joints
+(spine01–05 plus both clavicle/upperarm/forearm/hand chains), using the existing
+amount and duration. The residual runs after pole correction so the elbow cannot
+erase incoming arm velocity. As with reach inertia already, this transient is
+additional to planned speed bounds; the pole cap governs the authored preference
+and is exact again after the fade. Sliding is unaffected by entry inertia.
+Head/neck keep the existing independent look controller. Existing early FK
+return still resumes locomotion on its selected schedule; the gripping right
+branch remains held until release. No new controls or playback hand-target solve.
+
+Verification:27 pose cases check pelvis invariance, fixed authored right side,
+live left locals and lengths;6 idle/walk/run D/S cases complete with max slide
+grip.09004cm and entry position step.00002515cm across.2us. An adversarial D/S
+replay replacing every future driven gait rotation leaves the authored trajectory
+unchanged (max1.64e-13cm). Twelve linear/curved inertia cases check local angular
+velocity continuity on all13 joints, arm geometry and fade;8 arrival/cap schedules,
+both pole-reference tests, independent head clock and isolated slider/worker/
+preview/persistence tests pass. In the user's bypassed run/S segment, tick100→105
+hand-target distance now54.55→38.46cm (previously57.01→65.97cm). This removes
+that measured retreat; no global monotonic-path or all-extreme-profile guarantee.
+Tests: `test_bodyreach.cjs`, `test_pelvis_authoring.cjs`, `test_entry_inertia.cjs`.
+Evidence/backups: `Saved/Diagnostics/SwordPelvisAuthoring20261012/`.
+**Lab only; refresh.** User tuning and Unreal untouched.
+
+**Sword-relative sliding pole, October12 — lab-only:** **Body poses → Right
+elbow direction → Sword-relative pole while sliding** is saved, shared by D/S,
+and off by default. Reach keeps its existing reference. At slide entry capture
+that reference's zero direction in sword-local space; carry it with the sword
+and project perpendicular to shoulder–wrist during sliding. Existing endpoint
+angles interpolate in this reference under the same unwarped scalar speed cap.
+The transfer preserves the current elbow direction. Sword rotation carries the
+reference without spending the preference speed budget. Fractional sampling,
+early return and preview use the same track; ordinary arm return resumes at
+release. Saved key `swordRelativeSlidePole` is included in settings/snapshots/JSON.
+Toggle reuses source planning and the existing240Hz track/O(1) lookup, with no
+new playback hand-target solve.
+
+`test_sword_pole.cjs` passes12 idle/walk/run × D/S × FK-return start70%/100%
+cases:25°/s cap, max grip.08222cm, entry/release elbow step.00002149cm across
+.2µs, unchanged reach within numerical precision, preserved lengths, restored
+motion on unchecking and preview parity. Existing pole tests pass. Isolated
+`test_sword_pole_ui.cjs` verifies save/reload, shared D/S, unchanged targets/time
+and uninterrupted playback. Additional immediate-return0% stress probe retains
+the existing folded-arm guide limitation: idle/D, pole−40→70°,25°/s, tick133.875
+grip error.7513cm with old reference and1.0801cm with sword reference. That probe
+is not included in the12-case pass and was not repaired by this change.
+User settings and Unreal were untouched; refresh lab.
+
+**Earlier entry inertia implementation (superseded scope above):** below the curves, **Inertia amount** defaults1
+(0 disables it) and **Fade time · s** defaults0.2. At reach entry, capture the
+incoming animation's parent-local angular/offset-direction velocities and the
+new reach's outgoing velocities. Their difference becomes a compact FK momentum
+residual, `elapsed * (1 - elapsed / duration)^3`, on the driven spine, clavicles
+and right arm. Including the ancestors avoids a new torso turn kicking the hand.
+Pelvis/legs and left-arm local animation stay untouched; segment lengths are
+preserved. No hand-path IK or per-frame velocity fitting. Work retires after the
+fade, capped at reach end so sliding and its grip poses remain unchanged.
+The fade uses normal authored time even with curve modulation; changing these
+controls reuses the prepared path. The planned reach speed bounds still govern
+that path; incoming inertia is an additional transient motion contribution.
+
+Eight idle/walk × D/S × linear/curved cases pass entry/exit pose continuity,
+lengths, held sword attachment, zero-duration bypass and unchanged plan/slide
+timing. In the captured walking/S/tick70 case, hand velocity mismatch relative
+to pelvis falls121.55→8.06cm/s and247.36→0.054deg/s: reduced, not a claim of exact
+world-space velocity continuity. Numerical evidence is in
+`Saved/Diagnostics/SwordEntryInertia20261012/numerical.json`. Head-clock, gait-clock
+and elbow-cap tests pass; earlier extreme-gaze limitations below remain.
+
+Each curve has its own **Reset curve** button. It resets only that phase for
+the selected action; the combined reset button has been removed. Shared inertia settings and all four independent resets pass isolated UI persistence/playback checks. Repeated-refresh connection failures found during testing were addressed by increasing the backend listen queue to64 (takes effect on its next launch).
+
+**Debug curve bypass:** **Bypass timing curves · linear D/S**, above the timing
+curve panel, temporarily uses linear reach/slide timing for both actions. Saved
+curve points remain editable and unchanged by the switch; uncheck to restore
+them. The checkbox is saved with view/debug controls, separately from the four
+curve profiles, including snapshots. Switching does not stop playback or seek.
+Other edits and background body planning respect the bypass. This bypasses the
+four time-modulation curves; existing FK easing and head profiles still apply.
+
+**Earlier additive body poses, October12 — superseded for spine/right arm:** the saved spine/clavicle poses
+now add offsets to current locomotion instead of cancelling its rotations.
+Zero leaves the animation untouched. Spine offsets use the pelvis frame and
+clavicle offsets use spine_05; existing0%/100% sliders and saved values remain.
+The authored poses are reference poses, not fixed orientations during walking.
+Reach starts with zero addition, sliding interpolates the two additions, and
+existing early FK return removes them. No new controls or playback IK.
+Checkpoint `ef4ed92` was pushed before this change.
+
+Current-profile idle/walk D/S complete with maximum fractional grip error
+0.0574cm and continuous phase boundaries. A held target retains the walk's
+32.284° spine and10.950° clavicle rotation ranges instead of cancelling them.
+Neutral,30 pose cases,8 speed schedules,4 gait-clock cases, elbow-pole speed,
+head-clock and isolated slider/persistence checks pass. Extended early-return
+coverage completes48 cases with one grip-tolerance failure: walk/S, gaze−162°,
+return at slide start,0.8673cm between guides near the fully folded arm. The
+return guard now checks minimum as well as maximum arm reach; this does not
+eliminate that fractional interpolation error. The historical `test_head_arc`
+fixed-tick deceleration assertion also fails after this trajectory change.
+Follow-up diagnosis found a real reach stall in that fixture's170° gaze setup,
+lasting even with a30s timeline: sliding never starts, so neither does head
+look-out. The tested98–112 interval has no head reversal or speed-cap violation;
+this must not be dismissed as only a stale timing assertion. Its old307
+completion tick was already stale at checkpoint299. Neither test was
+weakened. Evidence: `Saved/Diagnostics/SwordBodyAdditive20261012/`.
+
 **Elbow pole authoring, October12 — lab-only:** **Body poses → Right elbow
 direction** adds a saved angle to each0%/100% insertion target.0° means down,
 ±90° either side and±180° up. The reference frame follows shoulder→hand and uses
@@ -118,7 +317,7 @@ All three controls persist through ordinary settings, JSON and snapshots. Sheath
 
 ## Controls
 
-- Choose **Idle** or **Walk forward · in place**, then **Sheathe** or **Draw / unsheathe**.
+- Choose **Idle**, **Walk forward · in place** or **Run forward · in place**, then **Sheathe** or **Draw / unsheathe**.
 - **D/S start tick** schedules entry; one authored second is60 ticks. The timeline supports any start point, playback, seeking and single-tick stepping.
 - Playback ends at D/S completion if earlier than **Timeline length**, including FK return, drawing unshrink and any remaining head look-out. The timeline, End button, stepping and .35s loop pause use that endpoint; pose and base-motion ghost freeze there. Stalled or unfinished actions retain the configured limit. The configured length remains saved, so changing parameters can lengthen the action again. `node test_duration.cjs` verifies completion and transport behavior.
 - **FK return controls →**, always visible at the top-right of the viewport, opens a separate panel on the right. It shows the selected action’s independent return profile, saved for Drawing and Sheathing separately; panel open/closed state also persists. Start at insertion fraction runs S0→1 and D1→0; drawing defaults.3 (mirroring current S=.7), while the factory S default remains.9. The gripping right clavicle/arm stays with the sword until fully inserted for S or fully out for D, then starts its own return. Return time, easing and main inertia are visible; method/space/hold/decay/spine-angle extra time/twist removal and per-bone weights are under expandable sections. Defaults reuse the previous lab: enabled,1s, easing1, inertia1, hold0, decay1, parent-local, blend+inertia, extra.29s/90°, twist removal0, bone weights1.
@@ -138,7 +337,11 @@ Snapshots preserve a numbered PNG, exact displayed pose, equipment transforms, p
 
 ## Data and fidelity
 
-`data/motions.json` contains the actual Unreal raw authored animation samples (30Hz):301 idle frames from `/Game/_mygame/M_Neutral_Stand_Idle_Loop` and121 forward-walk frames from the exported asset named in the file. `export_motion.py` regenerates through existing remote Python without saving or changing Unreal assets. Root travel is removed before the procedural pass so the upper-body walk can be inspected in place; the walk's pelvis height, sway, rotations and arm movement remain.
+`data/motions.json` retains the301-frame30Hz idle asset and now uses actual presented Unreal NN recordings for forward walk/run, sampled every authored60Hz tick. Each owned kinematic session sets neutral gaze, stabilizes for180 moving ticks, then records721 poses over12seconds. All26 lab bones are captured; component coordinates use the ordinary Mesh (capsule-to-skeleton offset included), not detached PhysicalMesh. Horizontal travel is removed for inspection; gait height, sway and rotations remain. **User-corrected WalkF:** run checkpoint, movement input length0.4, speed scale1 (about200cm/s). Run retains full input/500cm/s. The original walk-policy/half-speed100cm/s capture was an incorrect assumption and is superseded. No physical response is baked in.
+
+`Tools/SwordHolster/RecordLocomotion.py --motion walk|run --output <folder>` records through existing remote Python without saving editor assets. `node Labs/SwordHolsterLab/import_recorded_motion.cjs <folder> [walk|run]` verifies the recordings, backs up data/settings and selects matching gait phases spanning at least10seconds. Only the final fractional sample is interpolated; no crossfade or speed change. Corrected WalkF loop10.8424s (652frames), endpoint difference0.19892cm/0.33943deg; run remains10.0369s,0.1511cm/0.2414deg. Corrected WalkF raw capture/import/verification: `Saved/Diagnostics/LocomotionCapture20261012/run-policy-walk/`; unchanged run: `Saved/Diagnostics/LocomotionCapture20261012/gc-verified/`. All721 corrected WalkF samples verify checkpoint weights walk0/run1 and speed199.9969..200.0027cm/s; imported whole-tick poses match raw capture exactly. Idle/run clips remain byte-equivalent as JSON values. No editor restart or asset writes; isolated UI migration/persistence passes. `export_motion.py` preserves recorded clips when regenerating asset samples.
+
+Each clip has its own sampling rate; locomotion stays independent of D/S curves. Existing autosaved settings migrate only from explicitly recorded previous source hashes, preserving tuning/camera. Exact historical snapshots still reject a different source hash. `test_recorded_motion.cjs` checks recorded ticks, finite two-loop sampling, independent gait time and current-profile D/S completion for both motions; max fractional grip0.0757cm. Isolated UI checks cover migration, both selections, reload persistence and snapshot protection.
 
 `data/unreal-setup.json` contains the current placed agent's holster transform relative to pelvis, the SwordRef seated local transform, grip transform, A_Sword component scale, blade-base marker and actual triangle geometry. The displayed sword uses the same Training mesh substituted by runtime Equip; length comes from the reference sword mesh. Scale is applied once. `export_setup.py` reads the editor scene without modifying it. Re-export intentionally changes the source fingerprint; old snapshots then require their original dataset.
 
@@ -152,24 +355,25 @@ Snapshots preserve a numbered PNG, exact displayed pose, equipment transforms, p
 removed. `bodyTargets.clear` and `.seated` each contain `spine`, `right`, `left`
 XYZ-degree triplets. The UI values are parent-frame Euler offsets from a fixed
 imported neutral reference (ungazed idle tick0), composed Rz*Ry*Rx before that
-reference rotation. Zero restores that bone's neutral orientation in its named
-parent frame. This creates fixed parent-relative targets independent of gaze
-or selected animation. Defaults were sampled once from the prior current S
+reference rotation. Subtracting that fixed reference gives an additive rotation
+in the named parent frame. Zero preserves current animation, including gaze;
+the final orientations follow that animation around the authored pose.
+Defaults were sampled once from the prior current S
 pose; there is no background fitting. Left clavicle starts neutral.
 
-Reach captures each current relative orientation and interpolates to S's0% or
-D's100% target. All three are scheduled to arrive with the hand, under the shared
+Reach starts with zero added rotation and interpolates to S's0% or
+D's100% offset. All three are scheduled to arrive with the hand, under the shared
 per-bone angular-speed cap; a slow body extends the reach. Slide admission keeps
 the existing hand/tip tolerances and additionally requires the authored entry
 pose to be reached, preventing an endpoint snap. During sliding the three local
-orientations slerp between the saved endpoints by actual insertion, including
+offsets slerp between the saved endpoints by actual insertion, including
 fractional samples and sliding curves. Sliding is governed by insertion speed,
 not the reach angular cap. The former automatic S clavicle-to-neutral fade is
 replaced by the user's100% target.
 
 The net spine_05 correction is distributed at20/40/60/80/100% over spine_01…05,
-retaining underlying animation beneath the lower spines. Pelvis/legs and segment
-lengths are preserved. Both clavicles receive their authored rotations relative
+retaining underlying animation throughout the spine. Pelvis/legs and segment
+lengths are preserved. Both clavicles receive their authored additions relative
 to the resulting spine_05. The left arm keeps its moving animation relative to
 that clavicle. Right-arm FK, independent gait/head clocks and existing early FK
 return remain: spine/left can return early; the gripping right branch follows
@@ -178,7 +382,8 @@ the lab does not secretly move the chosen shoulder or increase shrink.
 
 `test_bodyreach.cjs` verifies30 parent-frame/rotation-distribution cases plus
 idle/walk D/S endpoint/fractional/preview/early-return cases; `test_spine_timing.cjs`
-checks8 slow/normal-speed arrival schedules for all three bones. The48-case early
+checks8 slow/normal-speed arrival schedules for all three bones. Before the
+additive change above, the48-case early
 return suite passes (max grip error.0402cm), current profile/palm-in checks pass,
 and4 nonlinear motion-clock cases preserve gait with no playback solves (max
 grip error.0149cm). Independent head clock and signed-direction checks pass.
@@ -267,7 +472,7 @@ Validation: `test_armfk.cjs` checks FK rotations, local-frame speed bounds, guid
 
 `fkreturn.js` adapts the unchanged `recovery.js` engine copied from Attack Recovery Lab. Both actions capture the body at the first60Hz playback tick reaching the selected actual slide fraction (default90%), including the sliding curve. The gripping right clavicle/arm captures its own return at100%. Reaching and the original source sliding guides remain unchanged. Drawing returns the sword with the hand while unshrinking. Sheathing leaves the sword parented to the holster while the hand releases and the upper body returns. During the overlap, additional arm destination guides are prepared on the returning torso at quarter-tick intervals, then sampled with parent-local FK. No solver runs during playback. The sword stays on its holster slide path until100%; only then can drawing transfer it to the returning hand. The arm branch is composed under the currently returning torso, preserving attachment and lengths. If an early body return would exceed the held arm’s reach, its progress waits at that boundary and resumes at release. This can extend body completion; it does not alter the sword’s slide timing.
 
-The engine operates on the outgoing residual relative to the moving idle/walk base, in a fixed reference pose. Its parent-local FK interpolation, analytic angular momentum envelope, optional continuous spring, world/parent inertia modes, spine-angle duration adjustment and upperarm axial-inertia removal are reused directly. The result is transported back onto the current moving base pose, reaching it exactly at the return deadline. Root/pelvis/legs continue baseline motion. The World option refers to the recovery engine’s fixed reference before transport onto the moving base, not unconstrained world-space physics. Hands have no local inertia. Head/neck aiming is applied afterward and retains its independent timing/velocity limits.
+The engine operates on the outgoing residual relative to the moving idle/walk base, in a fixed reference pose. Its parent-local FK interpolation, analytic angular momentum envelope, optional continuous spring, world/parent inertia modes, spine-angle duration adjustment and upperarm axial-inertia removal are reused directly. The result is transported back onto the current moving base pose, reaching it exactly at the return deadline. Root/pelvis/legs continue baseline motion. The World option refers to the recovery engine’s fixed reference before transport onto the moving base, not unconstrained world-space physics. Drawing’s right hand has rotation inertia at release; the other hand/action retains ordinary inheritance. Head/neck aiming is applied afterward and retains its independent timing/velocity limits.
 
 Body and gripping-arm return clocks advance at ordinary playback speed from their respective start ticks, never accelerated by reach/slide curves. The geometric reach-boundary hold above is the sole body-clock exception. During overlap, underlying locomotion and the holster continue sharing recorded slide time; after release they resume ordinary playback time. Curves can affect the incoming velocity used to seed momentum; they do not alter return duration or its clock. Timeline completion waits for both FK returns, unshrink and head look-out, within the configured limit. Turning off return skips the recovery and retains the source action’s body pose. Profile edits preserve playing/paused state and reuse the planned body/arm trajectory. Drawing and Sheathing profile objects and bone weights are copied independently and saved in settings/snapshots/JSON; reopening the panel loads the active action’s profile.
 

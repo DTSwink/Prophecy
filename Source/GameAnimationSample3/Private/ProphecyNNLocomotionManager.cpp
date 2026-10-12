@@ -3884,8 +3884,8 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 	for (int32 AgentIndex = 0; AgentIndex < CrowdSize; ++AgentIndex)
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
-		if (AgentActors.IsValidIndex(AgentIndex) && AgentActors[AgentIndex] &&
-			(!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex])))
+		if (!AgentActors.IsValidIndex(AgentIndex) || !IsValid(AgentActors[AgentIndex]) ||
+			!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex]))
 		{
 			continue;
 		}
@@ -4982,6 +4982,8 @@ namespace
 
 void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double SourceTimeSeconds)
 {
+	if (!Impl || !Impl->Agents.IsValidIndex(AgentIndex) || !AgentActors.IsValidIndex(AgentIndex)
+		|| !IsValid(AgentActors[AgentIndex])) return;
 	ProphecyJolt::CharacterProfiling::FScope Timing(ProphecyJolt::CharacterProfiling::EPhase::ManagerPosePublish);
 	const bool bHasPreviousPose=Impl->Agents[AgentIndex].PublishedPoseTimeSeconds>0.;
 	const bool bNewPoseTime=SourceTimeSeconds>Impl->Agents[AgentIndex].PublishedPoseTimeSeconds;

@@ -597,6 +597,16 @@ bool UProphecyJoltBodyComponent::IsJoltBody() const { return IsInGameThread() &&
 bool UProphecyJoltBodyComponent::SetSimulationEnabled(bool bEnabled, FString& OutError)
 {
     if (!ValidateBinding(OutError)) return false;
+    if (bEnabled && State->bSimpleKinematic)
+    {
+        // A reset/mode change can move the attached source and resume dynamics
+        // before another kinematic step. Admit that current pose, not the last
+        // native sample; otherwise it snaps back and rebinding shifts the joint.
+        FTransform ComponentWorld = State->Snapshot.SourceComponent->GetComponentTransform();
+        ComponentWorld.RemoveScaling();
+        const auto Pose = State->WorldOwner->SetBodyPose(State->Handle, State->Snapshot.BodyOriginToComponent * ComponentWorld);
+        if (!Pose.IsSuccess()) return Fail(OutError, Pose.Message);
+    }
     const auto Result = bEnabled ? State->WorldOwner->SetBodyDynamic(State->Handle) : State->WorldOwner->SetBodyKinematic(State->Handle);
     if (!Result.IsSuccess()) return Fail(OutError, Result.Message);
     State->bSimpleKinematic = !bEnabled;

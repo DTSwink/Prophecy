@@ -38,9 +38,29 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
    }
   }
   assert.equal(new Set(Object.values(curves).map(JSON.stringify)).size,4,'four distinct profiles');
+  for(const action of ['draw','sheathe']){
+   await page.selectOption('#action',action);
+   await page.evaluate(()=>{holsterLab.seek(.5);window.beforeBypass=holsterLab.model();});
+   await page.check('#bypassCurves');
+   assert(await page.evaluate(()=>model.sourceFrames===window.beforeBypass.sourceFrames&&model.retimeSegments.reach.curve.identity&&model.retimeSegments.slide.curve.identity),'bypass reuses planning and makes both phases linear');
+   assert.equal(await page.evaluate(()=>holsterLab.state().time),.5,'bypass does not seek');
+   const bypassState=await page.evaluate(()=>holsterLab.state());
+   for(const [key,value] of Object.entries(curves))assert.deepEqual(bypassState.parameters[key],value,'saved curves retained');
+   await page.evaluate(()=>holsterLab.setPlaying(true));
+   await page.uncheck('#bypassCurves');
+   assert.equal(await page.locator('#play').textContent(),'Pause','restoring curves keeps playback running');
+   assert(await page.evaluate(()=>!model.retimeSegments.reach.curve.identity&&!model.retimeSegments.slide.curve.identity),'saved nonlinear curves restored');
+   assert(await page.evaluate(()=>JSON.stringify(Holster.sample(model,.75).pose)===JSON.stringify(Holster.sample(window.beforeBypass,.75).pose)),'restores same authored pose, including cached guides');
+   await page.evaluate(()=>holsterLab.setPlaying(false));
+  }
+  await page.check('#bypassCurves');await page.waitForTimeout(400);await page.reload();await page.waitForFunction(()=>window.holsterLab?.ready);
+  assert(await page.isChecked('#bypassCurves'),'debug toggle persists separately from curve points');
+  assert(await page.evaluate(()=>model.retimeSegments.reach.curve.identity&&model.retimeSegments.slide.curve.identity),'reload applies bypass');
+  for(const [key,value] of Object.entries(curves))assert.deepEqual(await page.evaluate(k=>holsterLab.state().parameters[k],key),value,'reload preserves all curve points');
+  await page.uncheck('#bypassCurves');await page.click('#retimeControls summary');
   await page.fill('#maxReachSpeed','120');await page.locator('#maxReachSpeed').dispatchEvent('change');
   assert.equal(await page.locator('#headCorrectionAlpha').count(),0);
-  const headControls={headLookInSpeedAlpha:.28,sheatheHeadTargetAlpha:.37,sheatheRotationTolerance:22,slideRotationCorrection:.17,headLookAtAlpha:.7,headLookInExponent:1.8,headLookOutExponent:2.4,maxHeadLookInVelocity:150,maxHeadLookOutVelocity:210,maxHeadLookInVelocityAtMaxGaze:330,maxHeadLookOutVelocityAtMaxGaze:420,drawHeadLookOutThreshold:.25,sheatheHeadLookOutThreshold:.65};
+  const headControls={entryInertia:.65,entryInertiaDuration:.3,headLookInSpeedAlpha:.28,sheatheHeadTargetAlpha:.37,sheatheRotationTolerance:22,slideRotationCorrection:.17,headLookAtAlpha:.7,headLookInExponent:1.8,headLookOutExponent:2.4,maxHeadLookInVelocity:150,maxHeadLookOutVelocity:210,maxHeadLookInVelocityAtMaxGaze:330,maxHeadLookOutVelocityAtMaxGaze:420,drawHeadLookOutThreshold:.25,sheatheHeadLookOutThreshold:.65};
   assert.equal(await page.locator('#drawHeadLookOutThreshold').inputValue(),'0.3');assert.equal(await page.locator('#sheatheHeadLookOutThreshold').inputValue(),'0.5');
   for(const [id,value] of Object.entries(headControls)){if(['sheatheHeadTargetAlpha','headLookInSpeedAlpha'].includes(id)){await page.evaluate(()=>{window.targetSource=holsterLab.model().sourceFrames;holsterLab.setPlaying(true);});await page.locator('#'+id).evaluate((el,v)=>{el.value=String(v);el.dispatchEvent(new Event('input',{bubbles:true}));},value);}else await page.fill('#'+id,String(value));await page.locator('#'+id).dispatchEvent('change');if(['sheatheHeadTargetAlpha','headLookInSpeedAlpha'].includes(id)){assert(await page.evaluate(()=>holsterLab.model().sourceFrames===window.targetSource),'target edit reuses arm plan');assert.equal(await page.locator('#play').textContent(),'Pause','target edit keeps playing');await page.evaluate(()=>holsterLab.setPlaying(false));}}
   await page.locator('#gazeYaw').evaluate(el=>{el.value='35';el.dispatchEvent(new Event('change',{bubbles:true}));});
@@ -97,16 +117,18 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   assert.equal(await page.locator('#play').textContent(),'Pause','linear reset keeps playing');
   const afterReset=await page.evaluate(()=>holsterLab.state().time);
   await page.waitForFunction(t=>holsterLab.state().time>t+.05,afterReset);
-  for(const action of ['draw','sheathe']){
+  assert.equal(await page.locator('#resetCurves').count(),0,'no combined reset');
+  for(const action of ['draw','sheathe'])for(const phase of ['reach','slide']){
    await page.evaluate(s=>holsterLab.restore(s),saved);await page.selectOption('#action',action);
+   const resetKey=action+(phase==='reach'?'Curve':'SlideCurve');
    const before=await page.evaluate(()=>holsterLab.state().parameters);
    await page.evaluate(a=>{holsterLab.seek(.5);window.preResetFrames=holsterLab.model().sourceFrames;holsterLab.setPlaying(a==='draw');},action);
-   await page.click('#resetCurves');
-   assert.deepEqual(await page.evaluate(()=>holsterLab.state().parameters),{...before,[action+'Curve']:linear,[action+'SlideCurve']:linear},'pair reset preserves other action and tuning');
-   assert.equal(await page.locator('#play').textContent(),action==='draw'?'Pause':'Play','pair reset preserves playback state');
-   assert(await page.evaluate(()=>holsterLab.model().sourceFrames===window.preResetFrames),'pair reset reuses source plan');
+   await page.locator('#'+phase+'CurveEditor button').click();
+   assert.deepEqual(await page.evaluate(()=>holsterLab.state().parameters),{...before,[resetKey]:linear},'individual reset preserves other action and tuning');
+   assert.equal(await page.locator('#play').textContent(),action==='draw'?'Pause':'Play','individual reset preserves playback state');
+   assert(await page.evaluate(()=>holsterLab.model().sourceFrames===window.preResetFrames),'individual reset reuses source plan');
    await Promise.all([page.waitForEvent('load'),page.click('#refresh')]);await page.waitForFunction(()=>window.holsterLab?.ready);
-   assert.deepEqual(await page.evaluate(()=>holsterLab.state().parameters),{...before,[action+'Curve']:linear,[action+'SlideCurve']:linear},'pair reset persists through refresh');
+   assert.deepEqual(await page.evaluate(()=>holsterLab.state().parameters),{...before,[resetKey]:linear},'individual reset persists through refresh');
    await page.click('#retimeControls summary');
   }
   await page.evaluate(s=>holsterLab.restore(s),saved);

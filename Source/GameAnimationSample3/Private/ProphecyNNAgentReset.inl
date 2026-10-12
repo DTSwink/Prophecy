@@ -122,6 +122,10 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
         if (!Impl->Agents.IsValidIndex(I)) continue;
         if (!ProphecyAgentResetPhysics::Has(Actor))
         { Error+=TEXT("Physics baseline missing: begin a new Play session and initialize reset after setup; ");continue; }
+        // Retire D/S authoring and its temporary grip before publishing the
+        // checkpoint pose or rebuilding the pelvis/holster constraint frames.
+        // RestoreEquipment recreates the captured sword after the rig is ready.
+        Actor->HideSword();
         ProphecyAgentResetPhysics::CancelBlends(Actor);
         ProphecyGetUp::Cancel(Actor);
         const auto Mode = Actor->GetSimulationMode();

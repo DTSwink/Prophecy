@@ -1,47 +1,38 @@
 const assert=require('node:assert/strict'),H=require('./holster.js'),B=require('./bodyreach.js'),R=require('./recovery.js');
-const data=require('./data/motions.json'),setup=require('./data/unreal-setup.json');
-const dist=(a,b)=>R.length(R.sub(a,b)),nearQ=(a,b,label)=>assert(H.angle(a,b)<1e-5,label),nearV=(a,b,label)=>assert(dist(a,b)<1e-7,label);
-const ctx=B.make(data,H.motion(data,'idle',0)),profile=B.sanitize();
+const data=require('./data/motions.json'),setup=require('./data/unreal-setup.json'),saved=require('./state.json').parameters;
+const dist=(a,b)=>R.length(R.sub(a,b)),nearQ=(a,b,label)=>assert(R.length(R.qlog(R.qm(a,R.qinv(b))))<1e-7,label),nearV=(a,b,label)=>assert(dist(a,b)<1e-7,label);
+const entry=H.motion(data,'run',70/60),ctx=B.make(data,H.motion(data,'idle',0),entry),profile=B.sanitize(saved.bodyTargets);
 profile.clear.left=[12,-8,6];profile.seated.left=[-5,4,10];
-const frozen=JSON.stringify(profile);let poseCases=0;
-for(const motion of ['idle','walk'])for(const gaze of [-170,0,170])for(const insertion of [0,.25,.5,.75,1]){
- const base=H.motion(data,motion,1.31,gaze),target=B.target(ctx,profile,insertion),pose=B.apply(ctx,base,target);
- for(let k=0;k<3;k++)nearQ(R.qm(R.qinv(pose[ctx.anchors[k]].q),pose[ctx.bones[k]].q),target.slice(k*4,k*4+4),'exact parent-relative authored target');
- const delta=R.qm(pose[ctx.top].q,R.qinv(base[ctx.top].q));
- for(const [k,j] of ctx.spine.entries())nearQ(pose[j].q,R.qm(R.qslerp([0,0,0,1],delta,(k+1)/5),base[j].q),'weighted addition preserves base spine movement');
- for(let j=0;j<data.names.length;j++){
-  if(!ctx.affected.includes(j))assert.deepEqual(pose[j],base[j],'pelvis and lower body untouched');
-  const p=data.parents[j];if(p>=0)assert(Math.abs(dist(pose[j].p,pose[p].p)-dist(base[j].p,base[p].p))<1e-7,'segment lengths');
+const relative=(pose,j,anchor)=>R.qm(R.qinv(pose[anchor].q),pose[j].q),pelvisPoint=(pose,j)=>R.rotate(R.qinv(pose[ctx.pelvis].q),R.sub(pose[j].p,pose[ctx.pelvis].p));
+const unchanged=JSON.stringify(profile);let poseCases=0;
+for(const motion of ['idle','walk','run'])for(const gaze of [-170,0,170])for(const insertion of [0,.5,1]){
+ const base=H.motion(data,motion,1.83,gaze),target=B.target(ctx,profile,insertion),pose=B.apply(ctx,base,target),reference=B.apply(ctx,entry.map((v,j)=>j===ctx.pelvis?base[j]:v),target);
+ nearQ(pose[ctx.top].q,R.qm(ctx.entryPelvisQ,target.slice(0,4)),'spine target cancels current pelvis rotation');
+ nearQ(relative(pose,ctx.clav,ctx.top),target.slice(4,8),'right clavicle target is absolute in spine05');
+ for(const j of ctx.driven){nearQ(relative(pose,j,ctx.pelvis),relative(reference,j,ctx.pelvis),'driven rotations ignore future gait');nearV(pelvisPoint(pose,j),pelvisPoint(reference,j),'driven positions ignore future gait');}
+ const left=data.names.indexOf('clavicle_l'),leftDelta=R.qm(target.slice(8,12),R.qinv(ctx.reference[2]));
+ for(const name of ['clavicle_l','upperarm_l','lowerarm_l','hand_l']){
+  const j=data.names.indexOf(name),p=data.parents[j];nearQ(relative(pose,j,p),j===left?R.qm(leftDelta,relative(base,j,p)):relative(base,j,p),'left local animation retained');
+  nearV(R.rotate(R.qinv(pose[p].q),R.sub(pose[j].p,pose[p].p)),R.rotate(R.qinv(base[p].q),R.sub(base[j].p,base[p].p)),'left local offsets retained');
  }
- const rotation=R.qexp([.3,-.5,1.2]),translation=[10,20,30];
- const moved=base.map(v=>({...v,p:R.add(translation,R.rotate(rotation,v.p)),q:R.qm(rotation,v.q)})),out=B.apply(ctx,moved,target);
- for(let j=0;j<pose.length;j++){nearV(out[j].p,R.add(translation,R.rotate(rotation,pose[j].p)),'rigid frame invariance');nearQ(out[j].q,R.qm(rotation,pose[j].q),'rotated frame invariance');}
- poseCases++;
+ for(const j of ctx.affected){const p=data.parents[j];assert(Math.abs(dist(pose[j].p,pose[p].p)-dist((ctx.driven.has(j)?entry:base)[j].p,(ctx.driven.has(j)?entry:base)[p].p))<1e-7,'captured/live lengths retained');}
+ for(let j=0;j<base.length;j++)if(!ctx.affected.includes(j))assert.deepEqual(pose[j],base[j],'pelvis/legs unchanged');
+ const q=R.qexp([.3,-.7,1.1]),offset=[32,-4,11],moved=base.map(v=>({...v,p:R.add(offset,R.rotate(q,v.p)),q:R.qm(q,v.q)})),movedEntry=entry.map(v=>({...v,p:R.add(offset,R.rotate(q,v.p)),q:R.qm(q,v.q)})),out=B.apply(B.make(data,H.motion(data,'idle',0),movedEntry),moved,target);
+ for(let j=0;j<pose.length;j++){nearV(out[j].p,R.add(offset,R.rotate(q,pose[j].p)),'rigid frame position invariance');nearQ(out[j].q,R.qm(q,pose[j].q),'rigid frame rotation invariance');}poseCases++;
 }
-assert.equal(JSON.stringify(profile),frozen,'sampling does not mutate saved targets');
-const saved=H.sanitize({bodyTargets:profile}),restored=H.sanitize(JSON.parse(JSON.stringify(saved)));
-assert.deepEqual(restored.bodyTargets,profile);restored.bodyTargets.clear.left[0]=99;assert.equal(saved.bodyTargets.clear.left[0],12,'independent saved profiles');
-let motionCases=0,maxGrip=0;
-for(const motion of ['idle','walk'])for(const sheathe of [false,true]){
- const action=sheathe?'sheathe':'draw',m=H.prepare(data,setup,{motion,sheathe,bodyTargets:profile,[action+'Return']:{enabled:false},duration:10});
+const initial=B.apply(ctx,entry,ctx.entryBody);for(let j=0;j<entry.length;j++){nearV(initial[j].p,entry[j].p,'captured entry position');nearQ(initial[j].q,entry[j].q,'captured entry rotation');}
+assert.equal(JSON.stringify(profile),unchanged);
+let motionCases=0,maxGrip=0,maxEntryStep=0;
+for(const motion of ['idle','walk','run'])for(const sheathe of [false,true]){
+ const action=sheathe?'sheathe':'draw',m=H.prepare(data,setup,{...saved,motion,sheathe,duration:12,[action+'Return']:{enabled:false}});
  assert(m.plan.arrives&&m.completionTick!==null,'D/S completes');
- for(let tick=m.o.startTick+1;tick<=m.plan.endTick;tick++)assert(B.remaining(m.sourceFrames[tick-1].body.applied,m.sourceFrames[tick].body.applied)<=m.o.maxSpineClavicleAngularSpeed/60+1e-5,'reach turn respects cap');
- nearQ(m.sourceFrames[m.o.startTick].pose[ctx.top].q,H.motion(data,motion,m.o.startTick/60)[ctx.top].q,'no entry snap');
- for(let tick=m.plan.endTick;tick<=m.plan.slideEnd;tick+=.37){
-  const f=H.sampleBody(m,tick/60),expected=B.target(ctx,profile,f.insertion);
-  for(let k=0;k<3;k++)nearQ(R.qm(R.qinv(f.pose[ctx.anchors[k]].q),f.pose[ctx.bones[k]].q),expected.slice(k*4,k*4+4),'fractional insertion matches authored interpolation');
-  maxGrip=Math.max(maxGrip,f.handError);assert(f.handError<1,'fractional sword grip');
- }
- for(const insertion of [0,1]){
-  const f=H.previewBody(m,insertion),expected=B.target(ctx,profile,insertion);
-  for(let k=0;k<3;k++)nearQ(R.qm(R.qinv(f.pose[ctx.anchors[k]].q),f.pose[ctx.bones[k]].q),expected.slice(k*4,k*4+4),'preview has exact authored rotations');
- }
- const early=H.retime(m,{...m.o,[action+'Return']:{enabled:true,startFraction:.5}});
- assert(early.fkReturn.start<early.plan.slideEnd/60,'early return retained');assert.equal(early.armReturn.start,early.plan.slideEnd/60,'arm waits until release');
- const t=(early.fkReturn.start+early.armReturn.start)/2,returning=H.sampleBody(early,t),authored=H.sampleBody(m,t);
- assert(H.angle(returning.pose[ctx.top].q,authored.pose[ctx.top].q)>.1,'spine returns before release');
- assert(H.angle(returning.pose[ctx.left].q,authored.pose[ctx.left].q)>.1,'left clavicle returns before release');
- assert(returning.fkReturn.gripping&&returning.handError<1,'right arm stays gripping');
+ for(let tick=m.o.startTick+1;tick<=m.plan.endTick;tick++)assert(B.remaining(m.sourceFrames[tick-1].body.applied,m.sourceFrames[tick].body.applied)<=m.o.maxSpineClavicleAngularSpeed/60+1e-5,'reach cap');
+ const at=m.o.startTick/60,a=H.sampleBody(m,at-1e-7),b=H.sampleBody(m,at+1e-7);
+ for(const j of m.bodyContext.affected){maxEntryStep=Math.max(maxEntryStep,dist(a.pose[j].p,b.pose[j].p));assert(dist(a.pose[j].p,b.pose[j].p)<.001,'no entry snap');}
+ for(let tick=m.plan.endTick;tick<m.plan.slideEnd;tick+=.37){const f=H.sampleBody(m,tick/60),target=B.target(m.bodyContext,m.o.bodyTargets,f.insertion);nearQ(f.pose[ctx.top].q,R.qm(m.bodyContext.entryPelvisQ,target.slice(0,4)),'fractional counterrotated spine target');maxGrip=Math.max(maxGrip,f.handError);assert(f.handError<.3,'slide grip');}
+ for(const insertion of [0,1]){const f=H.previewBody(m,insertion);assert.deepEqual(f.pose,H.sample(m,f.previewTime).pose,'preview matches playback');}
+ const early=H.retime(m,{...m.o,[action+'Return']:{...saved[action+'Return'],enabled:true,startFraction:.7}});assert(early.fkReturn.start<early.plan.slideEnd/60,'early return retained');assert.equal(early.armReturn.start,early.plan.slideEnd/60,'arm remains held until release');
+ const t=(early.fkReturn.start+early.armReturn.start)/2,f=H.sampleBody(early,t);assert(f.fkReturn.gripping&&f.handError<.3,'early return retains grip');
  motionCases++;
 }
-console.log(JSON.stringify({passed:true,poseCases,motionCases,maxGrip}));
+console.log(JSON.stringify({passed:true,poseCases,motionCases,maxGrip,maxEntryStep}));

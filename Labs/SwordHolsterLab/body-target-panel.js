@@ -1,8 +1,9 @@
-/* Two saved insertion poses, shared by drawing and sheathing. */
+/* Two insertion poses for the currently selected D/S action. */
 class BodyTargetPanel{
  constructor(host,onEdit,onSelect){
   this.host=host;this.onEdit=onEdit;this.onSelect=onSelect;this.endpoint='clear';
-  host.innerHTML=`<div class="pinned-actions labelrow"><h2>Body poses</h2><button id="closeBodyTargets" aria-label="Close body poses">×</button></div><div class="sidebar-content">
+  host.innerHTML=`<div class="pinned-actions labelrow"><h2 id="bodyTargetsTitle">Body poses</h2><button id="closeBodyTargets" aria-label="Close body poses">×</button></div><div class="sidebar-content">
+   <label for="pelvisRotationCompensation">Pelvis rotation compensation · <span id="pelvisRotationCompensationValue">1.00</span></label><input id="pelvisRotationCompensation" type="range" min="0" max="1" step="0.01" value="1"><p class="muted">0 follows pelvis rotation · 1 cancels it.</p>
    <label for="bodyEndpoint">Insertion target</label><select id="bodyEndpoint"><option value="clear">0% · blade outside</option><option value="seated">100% · blade seated</option></select>
    <div id="bodyRotations"></div>
    <div class="row-actions"><button id="copyBodyTarget">Copy other target</button><button id="neutralBodyTarget">Neutral target</button></div>
@@ -18,7 +19,7 @@ class BodyTargetPanel{
    }
    host.querySelector('#bodyRotations').append(group);
   }
-  const pole=document.createElement('details');pole.open=true;pole.innerHTML=`<summary>Right elbow direction</summary><p class="muted">Angle in the moving arm frame. 0° = down; ±90° = either side; ±180° = up. Shared by D/S at this insertion target.</p><div class="body-angle"><label for="body_pole">°</label><input id="body_pole" type="range" min="-180" max="180" step="0.1"><input id="body_pole_number" aria-label="Elbow pole angle degrees" type="number" min="-180" max="180" step="0.1"></div><label for="maxElbowPoleAngularSpeed">Max pole speed · °/s</label><input id="maxElbowPoleAngularSpeed" type="number" min="0" max="10000" step="10" value="180"><p class="muted">Limits changes of elbow preference. Arm sweeps and torso turns do not consume this speed. 0 holds the starting preference.</p>`;
+  const pole=document.createElement('details');pole.open=true;pole.innerHTML=`<summary>Right elbow direction</summary><p class="muted">Angle in the moving arm frame. 0° = down; ±90° = either side; ±180° = up. Saved for this action at this insertion target.</p><div class="body-angle"><label for="body_pole">°</label><input id="body_pole" type="range" min="-180" max="180" step="0.1"><input id="body_pole_number" aria-label="Elbow pole angle degrees" type="number" min="-180" max="180" step="0.1"></div><label><input id="swordRelativeSlidePole" type="checkbox"> Sword-relative pole while sliding</label><p class="muted">Carries the entry reference with the sword during sliding. Reach is unchanged.</p><label for="maxElbowPoleAngularSpeed">Max pole speed · °/s</label><input id="maxElbowPoleAngularSpeed" type="number" min="0" max="10000" step="10" value="180"><p class="muted">Upper speed limit. During reach, slows down to arrive with the hand; if capped, keeps catching up during sliding. Arm sweeps and torso turns do not consume this speed. 0 holds the starting preference.</p>`;
   host.querySelector('#bodyRotations').append(pole);
   const range=pole.querySelector('#body_pole'),number=pole.querySelector('#body_pole_number');
   const editPole=(el,commit)=>{range.value=number.value=el.value;this.profile[this.endpoint].pole=Number(el.value);this.onEdit(BodyReach.sanitize(this.profile),commit);};

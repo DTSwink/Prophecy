@@ -2,7 +2,7 @@
 class RetimeEditor{
  constructor(host,title,onCommit){
   this.host=host;this.onCommit=onCommit;this.points=Retime.linear();this.active=-1;this.marker=null;
-  host.className='retime-editor';host.innerHTML=`<div class="retime-heading"><strong>${title}</strong><button type="button">Linear</button></div><svg viewBox="0 0 280 160" aria-label="${title} retiming curve"><g class="curve-grid"></g><path class="curve-line"/><g class="curve-handles"></g><circle class="curve-marker" r="3"/></svg><div class="retime-axes"><span>Playback time →</span><span>↑ Motion progress</span></div>`;
+  host.className='retime-editor';host.innerHTML=`<div class="retime-heading"><strong>${title}</strong><button type="button" title="Reset only this curve to linear">Reset curve</button></div><svg viewBox="0 0 280 160" aria-label="${title} retiming curve"><g class="curve-grid"></g><path class="curve-line"/><g class="curve-handles"></g><circle class="curve-marker" r="3"/></svg><div class="retime-axes"><span>Playback time →</span><span>↑ Motion progress</span></div>`;
   this.svg=host.querySelector('svg');this.path=host.querySelector('.curve-line');this.handles=host.querySelector('.curve-handles');this.dot=host.querySelector('.curve-marker');
   const grid=host.querySelector('.curve-grid');for(const v of [0,.25,.5,.75,1])grid.innerHTML+=`<path d="M${this.x(v)},10 V140 M20,${this.y(v)} H270"/>`;
   host.querySelector('button').onclick=()=>{this.set(Retime.linear());this.onCommit(this.points);};
