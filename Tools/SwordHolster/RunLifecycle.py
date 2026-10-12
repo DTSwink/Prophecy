@@ -1,7 +1,7 @@
 """Collect owned-PIE lifecycle checks, preserving every result and user assets."""
 import pathlib,subprocess,sys,time,json,argparse
-p=argparse.ArgumentParser();p.add_argument('--label',default='lifecycle');args=p.parse_args()
-root=pathlib.Path(__file__).resolve().parents[2];out=root/'Saved/Diagnostics/SwordOvernight20261011'/args.label;out.mkdir(exist_ok=True)
+p=argparse.ArgumentParser();p.add_argument('--label',default='lifecycle');p.add_argument('--output',default='Saved/Diagnostics/SwordOvernight20261011');args=p.parse_args()
+root=pathlib.Path(__file__).resolve().parents[2];out=root/args.output/args.label;out.mkdir(parents=True,exist_ok=True)
 cases=[]
 for action,phase,drawing,custom in [('complete',1,False,False),('complete',1,False,True),('hide',1,False,False),('hide',2,False,False),('hide',4,False,False),('drop',2,False,False),('mode',4,False,False),('sword_destroy',1,False,False),('hide',2,True,True)]:
  name=f"{action}-{phase}-{'draw' if drawing else 'sheathe'}"+('-custom' if custom else '')

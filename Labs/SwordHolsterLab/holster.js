@@ -73,7 +73,13 @@ function sheathSlideGoal(setup,holster,scale,tip,entry,insertion,alpha,rotationP
  return handForTip(setup,scale,tip,position,q);
 }
 function solve(pose,idx,goal){
- const [s,e,h]=idx,A=pose[s].p,B=pose[e].p,C=pose[h].p,L1=len(sub(B,A)),L2=len(sub(C,B));
+ const [s,e,h]=idx,A=pose[s].p;let B=pose[e].p,C=pose[h].p;
+ // Transport the existing arm plane before bending. Projecting the old elbow
+ // directly onto a new target line flips its plane near a straight arm.
+ const carry=fromTo(sub(C,A),sub(goal.p,A));
+ B=add(A,rotate(carry,sub(B,A)));C=add(A,rotate(carry,sub(C,A)));
+ pose[s]={...pose[s],q:unit(qm(carry,pose[s].q))};pose[e]={...pose[e],q:unit(qm(carry,pose[e].q))};
+ const L1=len(sub(B,A)),L2=len(sub(C,B));
  const delta=sub(goal.p,A),direction=len(delta)>1e-8?unit(delta):[1,0,0],distance=len(delta),D=clamp(distance,Math.abs(L1-L2)+.001,L1+L2-.001);
  let pole=sub(sub(B,A),mul(direction,dot(sub(B,A),direction)));
  if(len(pole)<1e-7)pole=cross(direction,Math.abs(direction[2])<.9?[0,0,1]:[0,1,0]);pole=unit(pole);
@@ -209,12 +215,13 @@ function retime(source,input){
   model.fkReturn=makeReturn(start,sampleSlide(model,start).pose,sampleSlide(model,start-dt).pose);
   if(start<release){
    model.gripBranch=model.names.map((_,j)=>{for(let k=j;k>=0;k=model.parents[k])if(model.names[k]==='clavicle_r')return true;return false;});
-   const guides=[],guideRate=240,guideTicks=[];let bodyElapsed=0,previousTick=startTick*4,armSeed=null,poleBasis=null;
+   const guides=[],poles=[],guideRate=240,guideTicks=[];let bodyElapsed=0,previousTick=startTick*4,armSeed=null,poleBasis=null;
    for(let tick=startTick*4;tick<=model.plan.slideEnd*4;tick++)guideTicks.push(tick);
    const correctionTick=(model.plan.endTick+(model.plan.slideEnd-model.plan.endTick)*o.slideRotationCorrection)*4;
    const cutoff=o.slideRotationCorrection===0?correctionTick+4e-6:correctionTick;
    const extraCutoff=model.slideGuides&&cutoff>startTick*4&&cutoff<model.plan.slideEnd*4&&!Number.isInteger(cutoff);
    if(extraCutoff){guideTicks.push(cutoff);guideTicks.sort((a,b)=>a-b);}
+   let previousPoleAngle=null;
    for(const tick of guideTicks){
     const t=tick/guideRate,f=sampleSlide(model,t);
     let pose=f.pose;
@@ -241,13 +248,15 @@ function retime(source,input){
     }
     const pole=samplePole(model,t);
     if(tick===startTick*4)poleBasis=pole.basis;
-    else{const reference=poleReference(model,f,pole);poleBasis=Pole.frame(pose,model.arm,reference,poleBasis);pose=Pole.apply(pose,model.arm,reference,pole.angle,poleBasis);}
+    else{const reference=poleReference(model,f,pole),budget=Math.max(0,o.maxElbowPoleAngularSpeed*(tick-previousTick)/guideRate-Math.abs(pole.angle-previousPoleAngle));poleBasis=Pole.frame(pose,model.arm,reference,poleBasis,budget);pose=Pole.apply(pose,model.arm,reference,pole.angle,poleBasis);}
+    previousPoleAngle=pole.angle;
+    poles.push({tick:tick/4,angle:pole.angle,basis:poleBasis,swordDown:pole.swordDown});
     armSeed=FK.capture(pose,model.arm,model.parents);
     guides.push(R.localize(pose.map(p=>p.p),pose.map(p=>p.q),model.parents));
     previousTick=tick;
    }
    model.fkReturn.gripDelay=Math.max(0,release-start-bodyElapsed);
-   model.gripGuides={startTick:startTick*4,rate:guideRate,release,guides,ticks:extraCutoff?guideTicks:null};
+   model.gripGuides={startTick:startTick*4,rate:guideRate,release,guides,poles,ticks:extraCutoff?guideTicks:null};
    model.armReturn=makeReturn(release,sampleBody(model,release).pose,sampleBody(model,release-dt).pose);
   }
  }
@@ -349,22 +358,25 @@ function preparePoleGuides(model,cached){
  const reachTarget=Pole.target(model.o.bodyTargets,model.o.sheathe?0:1);
  for(let tick=start;tick<=end+1e-8;tick+=.25){
   const f=samplePlannedArm(model,tick/60);
+  const previousAngle=angle;
+  if(tick!==start)angle=Pole.advance(angle,tick<=entry?reachTarget:Pole.target(model.o.bodyTargets,f.insertion),tick<=entry?reachSpeed:model.o.maxElbowPoleAngularSpeed,1/240);
+  const budget=Math.max(0,model.o.maxElbowPoleAngularSpeed/240-Math.abs(angle-previousAngle));
   if(useSword&&tick>=entry&&!swordDown){
    // Capture the existing zero direction in sword space at the exact transfer.
    // Only the reference changes; the elbow angle and physical pose are continuous.
-   basis=Pole.frame(f.pose,model.arm,model.bodyContext.top,basis);
+   basis=Pole.frame(f.pose,model.arm,model.bodyContext.top,basis,budget);
    const toSword=qm(qinv(f.sword.q),f.pose[model.bodyContext.top].q);
    basis={d:rotate(toSword,basis.d),zero:rotate(toSword,basis.zero)};
    swordDown=basis.zero;
   }
   const reference=swordDown?{q:f.sword.q,down:swordDown}:model.bodyContext.top;
-  basis=Pole.frame(f.pose,model.arm,reference,basis);
+  basis=Pole.frame(f.pose,model.arm,reference,basis,budget);
   if(tick===start){
    angle=Pole.measure(f.pose,model.arm,reference,basis);
    // Use the available reach time, with the knob as a ceiling. Curves do not
    // change this clock; a capped pole continues catching up during sliding.
    if(model.plan.arrives&&entry>start)reachSpeed=Math.min(reachSpeed,Math.abs(Pole.wrap(reachTarget-angle))*60/(entry-start));
-  }else angle=Pole.advance(angle,tick<=entry?reachTarget:Pole.target(model.o.bodyTargets,f.insertion),tick<=entry?reachSpeed:model.o.maxElbowPoleAngularSpeed,1/240);
+  }
   const pose=Pole.apply(f.pose,model.arm,reference,angle,basis);
   keys.push({tick,angle,basis,swordDown,local:FK.capture(pose,model.arm,model.parents)});
  }
@@ -372,12 +384,17 @@ function preparePoleGuides(model,cached){
 }
 function samplePole(model,t){
  const keys=model.poleGuides.keys,x=clamp((t*60-keys[0].tick)*4,0,keys.length-1),i=Math.floor(x),a=keys[i],b=keys[Math.min(i+1,keys.length-1)],u=x-i;
- return {angle:a.angle+(b.angle-a.angle)*u,basis:a.basis,swordDown:a.swordDown,local:FK.blend(a.local,b.local,u)};
+ return interpolatePole(model,a,b,u);
+}
+function interpolatePole(model,a,b,u){
+ let right=b.basis;
+ if(!a.swordDown&&b.swordDown){const f=samplePlannedArm(model,b.tick/60),change=qm(qinv(f.pose[model.bodyContext.top].q),f.sword.q);right={d:rotate(change,right.d),zero:rotate(change,right.zero)};}
+ return {angle:a.angle+(b.angle-a.angle)*u,basis:Pole.interpolate(a.basis,right,u),swordDown:a.swordDown,local:a.local?FK.blend(a.local,b.local,u):null};
 }
 const poleReference=(model,f,pole)=>pole.swordDown?{q:f.sword.q,down:pole.swordDown}:model.bodyContext.top;
-function correctPole(model,f,t){
+function correctPole(model,f,t,prepared=null){
  if(!model.poleGuides||t*60<=model.o.startTick||t*60>model.plan.slideEnd)return f;
- const pole=samplePole(model,t),reference=poleReference(model,f,pole),basis=Pole.frame(f.pose,model.arm,reference,pole.basis);
+ const pole=prepared||samplePole(model,t),reference=poleReference(model,f,pole),basis=Pole.frame(f.pose,model.arm,reference,pole.basis,0);
  const pose=Pole.apply(f.pose,model.arm,reference,pole.angle,basis);
  // This is only a rigid swivel about the current shoulder/wrist axis: no hand
  // target solve. It removes tiny angle errors introduced by FK guide sampling.
@@ -422,11 +439,12 @@ function sampleBody(model,t){
  if(!ret||t<ret.start)return f;
  const grip=model.gripGuides,arm=model.armReturn,elapsed=t-ret.start-(grip&&t>=grip.release?ret.gripDelay:0);
  const armActive=arm&&t-arm.start<arm.timing.duration-1e-12,returnActive=elapsed<ret.timing.duration-1e-12||!!armActive;
- let pose=f.pose;
+ let pose=f.pose,gripPole=null;
  if(grip&&t<=grip.release){
   const x=clamp(t*grip.rate-grip.startTick,0,grip.guides.length-1);let i=Math.floor(x),u=x-i;
   if(grip.ticks){let lo=0,hi=grip.ticks.length-1;while(hi-lo>1){const mid=(lo+hi)>>1;if(grip.ticks[mid]<t*grip.rate)lo=mid;else hi=mid;}i=lo;u=clamp((t*grip.rate-grip.ticks[lo])/(grip.ticks[hi]-grip.ticks[lo]),0,1);}
   const a=grip.guides[i],b=grip.guides[Math.min(i+1,grip.guides.length-1)];
+  gripPole=interpolatePole(model,grip.poles[i],grip.poles[Math.min(i+1,grip.poles.length-1)],u);
   const lower=R.localize(f.pose.map(p=>p.p),f.pose.map(p=>p.q),model.parents);
   const offsets=a.p.map((p,j)=>{
    if(!ret.model.upper[j])return lower.p[j];
@@ -445,7 +463,7 @@ function sampleBody(model,t){
  const sword=model.o.sheathe||gripping?f.sword:compose(scaledGrip(model.setup,f.scale),pose[model.arm[2]]);
  const handError=len(sub(pose[model.arm[2]].p,f.goal.p));
  const result={...f,pose,sword,handError,metrics:f.metrics?{...f.metrics,handError}:null,phase:gripping?'Slide':returnActive?'FK return':f.phase,active:f.active||returnActive,fkReturn:{elapsed,duration:ret.timing.duration,active:returnActive,gripping:!!gripping,armStart:arm?.start}};
- return grip&&t<=grip.release?correctPole(model,result,t):result;
+ return grip&&t<=grip.release?correctPole(model,result,t,gripPole):result;
 }
 function transplantGrip(model,body,donor){
  const local=pose=>R.localize(pose.map(p=>p.p),pose.map(p=>p.q),model.parents),a=local(body),b=local(donor);
@@ -479,7 +497,7 @@ function previewBody(model,insertion,targets=model.o.bodyTargets,time=previewTim
  // second elbow solution. The worker supplies the exact updated motion on release.
  const adjusted=[0,4,8].flatMap((k,i)=>unit(qm(qm(edited.slice(k,k+4),qinv(planned.slice(k,k+4))),ctx.reference[i])));
  let pose=Body.adjust(ctx,f.pose,adjusted);
- const initial=Pole.frame(f.pose,model.arm,ctx.top),pole=model.poleGuides?samplePole(model,t):{angle:Pole.measure(f.pose,model.arm,ctx.top,initial),basis:initial},reference=poleReference(model,f,pole),basis=Pole.frame(pose,model.arm,reference,pole.basis);
+ const initial=Pole.frame(f.pose,model.arm,ctx.top),pole=model.poleGuides?samplePole(model,t):{angle:Pole.measure(f.pose,model.arm,ctx.top,initial),basis:initial},reference=poleReference(model,f,pole),basis=Pole.frame(pose,model.arm,reference,pole.basis,0);
  pose=Pole.apply(pose,model.arm,reference,pole.angle+poleDelta,basis);
  const handError=len(sub(pose[model.arm[2]].p,f.goal.p));
  return {...f,pose,handError,previewTime:t,previewPending:true};

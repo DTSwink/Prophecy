@@ -270,6 +270,7 @@ bool UProphecySwordComponent::StartHolster(bool Sheathe,float Reach,float Rotati
     auto* A=Agent();const auto* Reference=References.Find(A);auto* Existing=States.Find(A);
     if(!A || !Reference || !Reference->Holster.IsValid() || !IsValid(Sword) || !IsValid(Blade)
         || bDropPending || PendingJoltBindId.IsValid() || bBinding)return false;
+    const bool LabProfile=ProphecySwordHolsterPose::ActionSpeeds(A,Sheathe,Reach,Rotation,Sliding);
     if(const auto* Request=Pending.Find(A))return Request->Sheathe==Sheathe;
     if(Existing && Existing->Phase!=EPhase::Holstered)return Existing->Sheathe==Sheathe; // Idempotent; never add another joint.
     if(Sheathe && Existing)return true;
@@ -282,6 +283,12 @@ bool UProphecySwordComponent::StartHolster(bool Sheathe,float Reach,float Rotati
         Pending.Add(A,{Sheathe,Reach,Rotation,Sliding});EnsureCleanup();SetComponentTickEnabled(true);Accepted=true;return true;
     }
     FState S=Existing?*Existing:FState{};S.Reference=*Reference;
+    if(LabProfile){
+        // Palm-in roll about the blade axis at the mouth, exactly as the lab.
+        auto& Seat=S.Reference.Seated;const FVector Mouth=Seat.TransformPosition(S.Reference.BaseLocal);
+        const FQuat Q=(Seat.GetRotation()*FQuat(FVector::UpVector,PI)).GetNormalized();
+        Seat.SetRotation(Q);Seat.SetLocation(Mouth-Q.RotateVector(Seat.GetScale3D()*S.Reference.BaseLocal));
+    }
     if(const auto* P=Profiles.Find(A))
     {if(Sheathe)S.Profile=*P;else S.Profile.Unshrink=P->Unshrink;}
     S.Kinematic=!A->IsJoltPhysicalAnimationEnabled();S.Sheathe=Sheathe;S.ReachSpeed=Reach;S.RotationSpeed=Rotation;S.SlideSpeed=Sliding;
@@ -475,5 +482,6 @@ bool UProphecySwordHolsterLibrary::SetSwordHolsterLabProfile(AProphecyAgent* A,c
  if(!P||P->Stamp!=Stamp){ProphecySwordHolsterPose::FProfile Loaded;FString Error;
   if(!ProphecySwordHolsterPose::LoadProfile(Path,Loaded,Error)){UE_LOG(LogTemp,Warning,TEXT("%s"),*Error);return false;}
   P=&FileCache.Add(Path,{Stamp,Loaded});}
- ProphecySwordHolsterPose::Configure(A,P->Profile);return true;
+ ProphecySwordHolsterPose::Configure(A,P->Profile);
+ ProphecySwordHolster::Profiles.Add(A,{float(P->Profile.Shrink),float(P->Profile.Unshrink)});ProphecySwordHolster::EnsureCleanup();return true;
 }

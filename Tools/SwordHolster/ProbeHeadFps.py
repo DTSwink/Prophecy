@@ -28,6 +28,7 @@ parser.add_argument('--control-at', type=int, default=90)
 parser.add_argument('--no-head-contacts', action='store_true')
 parser.add_argument('--output', default='Saved/Diagnostics/SwordHeadFps20261011')
 parser.add_argument('--draw-at', type=int, default=-1)
+parser.add_argument('--start-at', type=int, default=-1, help='Owned PIE: replace tick25 action with a later start after locomotion settles')
 parser.add_argument('--gaze', type=float, help='Temporary normalized UE yaw on owned PIE agents')
 parser.add_argument('--motion', choices=['idle','walk','run','transition','turn'], default='idle')
 parser.add_argument('--cycles', type=int, default=0, help='Automatically draw/sheathe after each completed action')
@@ -110,9 +111,19 @@ def tick(_):
         if not state['actors']:
             state['actors'] = sorted(unreal.GameplayStatics.get_all_actors_of_class(world, unreal.ProphecyAgent), key=lambda a: a.get_name())
             state['player'] = player.get_name()
-        if args.no_action and n >= 22 and not state.get('action_removed'):
+        if (args.no_action or args.start_at>=0) and n >= 22 and not state.get('action_removed'):
             for actor in state['actors']: actor.hide_sword()
+            swords.clear()
             state['action_removed']=n
+        if args.start_at>=0 and n>=args.start_at-4 and not state.get('manual_equipped'):
+            assert all(actor.equip_sword(not args.kinematic) for actor in state['actors'])
+            state['manual_equipped']=n
+        if args.start_at>=0 and n>=args.start_at and not state.get('manual_started'):
+            api=unreal.get_default_object(unreal.load_class(None,'/Script/GameAnimationSample3.ProphecySwordHolsterLibrary'))
+            for actor in state['actors']:
+                assert api.call_method('SetSwordHolsterLabProfile',args=(actor,'Content/locomotion/SwordHolsterProfile.json'))
+                assert api.call_method('DrawSword',args=(actor,True,*speeds))
+            state['manual_started']=n
         if args.draw_at >= 0 and n >= args.draw_at and not state.get('draw_requested'):
             api = unreal.get_default_object(unreal.load_class(None, '/Script/GameAnimationSample3.ProphecySwordHolsterLibrary'))
             state['draw_requested'] = n
@@ -126,6 +137,14 @@ def tick(_):
                 actor.set_upper_nn_gaze(args.gaze, 0.)
             state['gaze_set'] = n
         if n >= 6:
+            if not state.get('input_owned'):
+                for actor in state['actors']:
+                    if args.motion!='idle':
+                        unreal.get_default_object(unreal.SystemLibrary).call_method('SetBoolPropertyByName',(actor,'disable auto locomotion debug',True))
+                        actor.set_locomotion_walk_checkpoint_speed_threshold(-1.)
+                    if args.gaze is not None or args.gaze_change:
+                        unreal.get_default_object(unreal.SystemLibrary).call_method('SetBoolPropertyByName',(actor,'disable gaze debug',True))
+                state['input_owned']=n
             if 'directions' not in state:
                 state['directions'] = {a.get_name(): [a.get_actor_forward_vector().x,a.get_actor_forward_vector().y] for a in state['actors']}
             if args.motion != 'idle':
@@ -134,8 +153,9 @@ def tick(_):
                     angle = max(0,n-75)*math.pi/360 if args.motion == 'turn' else 0
                     direction = unreal.Vector(x*math.cos(angle)-y*math.sin(angle),x*math.sin(angle)+y*math.cos(angle),0)
                     moving = args.motion != 'transition' or n%240 < 160
-                    running = args.motion in ['run','turn'] or (args.motion == 'transition' and n%240>=80)
-                    actor.set_locomotion_input(direction if moving else unreal.Vector(), running, direction, 1. if running else .5, 1.)
+                    running = args.motion in ['walk','run','turn'] or (args.motion == 'transition' and n%240>=80)
+                    # WalkF is the user's run checkpoint with input length .4.
+                    actor.set_locomotion_input(direction*(.4 if args.motion=='walk' else 1.) if moving else unreal.Vector(), running, direction, 1. if running else .5, 1.)
             if args.gaze_change:
                 for actor in state['actors']:
                     actor.set_upper_nn_gaze(.8*math.sin(n/90), 0.)
@@ -224,7 +244,7 @@ def tick(_):
                     held = actor.get_held_sword()
                     if held:
                         swords[actor.get_name()] = held
-                    sword = swords.get(actor.get_name())
+                    sword = swords.get(actor.get_name()) if args.start_at<0 or state.get('manual_equipped') else None
                     if sword:
                         for comp in sword.get_components_by_class(unreal.StaticMeshComponent):
                             values['equipment'][comp.get_name()] = pose(comp.get_world_transform())
@@ -232,12 +252,12 @@ def tick(_):
                             values['equipment_scale'][comp.get_name()]=[scale.x,scale.y,scale.z]
                 row['actors'][actor.get_name()] = values
             state['rows'].append(row)
-            if args.cycles and n >= 26:
+            if args.cycles and n >= 26 and (args.start_at<0 or state.get('manual_started')):
                 api = unreal.get_default_object(unreal.load_class(None, '/Script/GameAnimationSample3.ProphecySwordHolsterLibrary'))
                 actions = state.setdefault('actions', {})
                 for actor in state['actors']:
                     name = actor.get_name(); phase = fields.get(name,{}).get('phase',-1)
-                    action = actions.setdefault(name, {'draw':False, 'cycles':0, 'last_request':25})
+                    action = actions.setdefault(name, {'draw':False, 'cycles':0, 'last_request':state.get('manual_started',25)})
                     if n <= action['last_request']+4 or action['cycles'] >= args.cycles: continue
                     if not action['draw'] and phase == 3:
                         assert api.call_method('DrawSword', args=(actor, False, *speeds))

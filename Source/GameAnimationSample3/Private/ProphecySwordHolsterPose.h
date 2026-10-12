@@ -15,7 +15,14 @@ struct FReturn
 {
     bool Enabled=true,World=false,Spring=false;
     double Duration=1,Easing=1,Inertia=1,Hold=0,Decay=1,AngleTime=.29,TwistRemoval=0,StartFraction=.9;
-    double Weights[7]={1,1,1,1,1,1,1};
+    double Weights[8]={1,1,1,1,1,1,1,1}; // Last group: drawing hand at release.
+};
+struct FBodyProfile
+{
+    bool Authored=false,SwordPole=false,HasSpeeds=false;
+    FQuat Targets[2][3]; // Clear/seated: spine relative pelvis, clavicles relative spine05.
+    double Pole[2]={0,0},PoleSpeed=180,Compensation=1,Speed=90;
+    double Reach=100,Rotation=180,Sliding=60;
 };
 struct FProfile
 {
@@ -23,6 +30,9 @@ struct FProfile
     double HeadInExponent=1,HeadOutExponent=1,DrawHeadOut=.3,SheatheHeadOut=.5;
     double RotationTolerance=15,RotationCorrection=.1,HeadTargetAlpha=1,HeadSpeedAlpha=1,HeadInMaxGaze=180,HeadOutMaxGaze=180;
     double HeadMaxTilt=70;
+    double EntryInertia=0,EntryDuration=.2,Shrink=10,Unshrink=.25;
+    FQuat BodyReference[3]={FQuat::Identity,FQuat::Identity,FQuat::Identity};
+    FBodyProfile Body[2];
     FCurve Reach[2],Slide[2]; // Draw, sheathe.
     FReturn Return[2];
 };
@@ -43,6 +53,7 @@ struct FGeometry
 float UnshrinkAlpha(float& ElapsedTicks,float Duration);
 bool LoadProfile(const FString& Path,FProfile& Out,FString& Error);
 void Configure(const AProphecyAgent* Agent,const FProfile& Profile);
+bool ActionSpeeds(const AProphecyAgent* Agent,bool Sheathe,float& Reach,float& Rotation,float& Slide);
 bool Begin(AProphecyAgent* Agent,bool Sheathe,double ReachSpeed,double RotationSpeed,double SlideSpeed,
     double SlideLength,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth,const FGeometry& Geometry=FGeometry());
 void Update(AProphecyAgent* Agent,int32 PoseId);

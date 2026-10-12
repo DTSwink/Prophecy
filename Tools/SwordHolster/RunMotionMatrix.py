@@ -1,9 +1,9 @@
 """Run owned PIE cases sequentially; collect failures without aborting the matrix."""
 import subprocess, sys, pathlib, json, time, argparse
-p=argparse.ArgumentParser();p.add_argument('--label',default='initial');p.add_argument('--extended',action='store_true');p.add_argument('--only');p.add_argument('--clear-lane',action='store_true');p.add_argument('--cycles',type=int,default=1);a=p.parse_args()
-root=pathlib.Path(__file__).resolve().parents[2];out=root/f'Saved/Diagnostics/SwordOvernight20261011/{a.label}'
+p=argparse.ArgumentParser();p.add_argument('--label',default='initial');p.add_argument('--extended',action='store_true');p.add_argument('--only');p.add_argument('--clear-lane',action='store_true');p.add_argument('--cycles',type=int,default=1);p.add_argument('--output',default='Saved/Diagnostics/SwordOvernight20261011');p.add_argument('--gaze',type=float,default=-24/170);a=p.parse_args()
+root=pathlib.Path(__file__).resolve().parents[2];out=root/a.output/a.label
 out.mkdir(parents=True,exist_ok=True)
-cases=[(mode,motion,60,-24/170,False) for mode in ['kinematic','sim'] for motion in ['idle','walk','run']]
+cases=[(mode,motion,60,a.gaze,False) for mode in ['kinematic','sim'] for motion in ['idle','walk','run']]
 if a.extended: cases += [(mode,motion,60,0,True) for mode in ['kinematic','sim'] for motion in ['transition','turn']]+[('sim','run',20,-24/170,False),('sim','walk',60,.95,False),('sim','walk',60,-.95,False)]
 results=[]
 for mode,motion,fps,gaze,change in cases:

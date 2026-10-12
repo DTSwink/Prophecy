@@ -53,8 +53,16 @@ the existing shared values into both profiles, preserving the original motion.
 **Max pole speed is an upper bound.** During D/S reach, the elbow preference
 slows to arrive at its entry target with the hand, using unwarped reach time.
 If the cap prevents arrival, it continues catching up during sliding. Zero holds
-the starting preference. Sliding keeps its existing target pursuit and reference;
-entry inertia remains a separate transient contribution.
+the starting preference. The unused speed budget also bounds adjustment of the
+reference around the arm axis, so aligning the arm with the sword/spine reference
+cannot introduce an unbounded swivel. Ordinary transport with the moving frame
+does not spend this budget; entry inertia remains a separate contribution.
+
+Guide solves carry the existing arm plane toward the new wrist target before
+bending. This prevents an almost straight arm from choosing a different plane
+and acquiring a large axial twist. Both corrections are shared with the October12
+Unreal port, with no added controls or changes to saved tuning. Regressions:
+`test_straight_arm.cjs`, `test_pole_reference_speed.cjs`.
 
 **Body poses → Pelvis rotation compensation** is saved per action.
 Default1 keeps full correction;0 follows pelvis rotation. Intermediate values

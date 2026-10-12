@@ -8,7 +8,7 @@ class GAMEANIMATIONSAMPLE3_API UProphecySwordHolsterLibrary : public UBlueprintF
 {
     GENERATED_BODY()
 public:
-    /** Import independent timing curves, body/head controls and D/S FK return profiles from a lab JSON file. */
+    /** Import authored body/pole targets, independent D/S speeds, curves, inertia and head/return tuning. Saved action speeds override Draw Sword speed pins while this profile is configured; the real holster transform is unchanged. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Sword",meta=(DefaultToSelf="Agent",DisplayName="Set Sword Holster Lab Profile"))
     static bool SetSwordHolsterLabProfile(AProphecyAgent* Agent,const FString& ProfileFile);
     /** Sheathe=true reaches the mouth and slides in. False reaches the grip and slides out.

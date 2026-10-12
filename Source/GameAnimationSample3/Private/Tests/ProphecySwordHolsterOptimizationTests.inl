@@ -2,6 +2,9 @@
 static FActive OptimizationFixture(const TSharedPtr<FJsonObject>& Root,const TSharedPtr<FJsonObject>& Row)
 {
  FActive S;FString Error;LoadProfile(FPaths::ProjectContentDir()/TEXT("locomotion/SwordHolsterProfile.json"),S.Profile,Error);
+ // This fixture compares the historical optimizer to its optimized equivalent.
+ // The authored controller has a separate current-lab oracle and benchmark.
+ for(auto& B:S.Profile.Body)B.Authored=B.HasSpeeds=false;
  for(const auto& N:Root->GetArrayField(TEXT("names")))S.Names.Add(FName(*N->AsString()));for(const auto& P:Root->GetArrayField(TEXT("parents")))S.Parents.Add(int(P->AsNumber()));
  S.Base=JsonPoses(Row->GetArrayField(TEXT("base")));S.Clear=JsonPose(Row->GetObjectField(TEXT("clear")));S.Seat=JsonPose(Row->GetObjectField(TEXT("seat")));S.Mouth=JsonVector(Row->GetArrayField(TEXT("mouth")));S.Sheathe=Row->GetBoolField(TEXT("sheathe"));
  auto Find=[&](const TCHAR* N){return S.Names.IndexOfByKey(FName(N));};S.Pelvis=Find(TEXT("pelvis"));S.Clav=Find(TEXT("clavicle_r"));for(int I=0;I<5;++I)S.Spine[I]=Find(*FString::Printf(TEXT("spine_0%d"),I+1));

@@ -3,80 +3,33 @@
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
-## Newer lab-only changes (October12)
+## Current port (October12)
 
-Lab **S → D · after full return** plays sheathing then drawing using the existing
-independent profiles and a continuous locomotion clock. Drawing starts at S’s
-full FK/head completion; timeline/captures extend through both actions. Settings,
-contextual controls, body-worker edits and snapshots support the sequence.
-This is playback composition only, not a new Unreal action system.
+The lab/saved tuning and PoseAgent Blueprint checkpoint is pushed as `e0da908`.
+The new native port uses independent Drawing/Sheathing body, elbow, speed and
+return profiles, authored spine/clavicle endpoints, captured FK entry inertia,
+and drawing hand rotation/translation return inertia. Native compensation follows
+character heading while cancelling pelvis gait. The left arm keeps its live
+local locomotion. Saved tuning is D260/900/250, S230/600/150, compensation .96,
+entry inertia1/.5s, axial shrink15%, unshrink .5s. Blueprint wiring is preserved.
 
+`Tools/SwordHolster/SyncLabProfile.cjs` exports current saved tuning and neutral
+body references to `Content/locomotion/SwordHolsterProfile.json`. A configured
+lab profile supplies action-specific speeds through the existing Draw Sword
+function. Head/FK clocks, gaze, curves, early return and physical cleanup retain
+the established native implementation. Unreal follows its actual holster;
+**lab holster rotation stabilization is intentionally not ported**. Lab sequence
+order is preview composition; Unreal callers invoke the same D/S actions.
 
-Lab D hand release inertia now also includes its local position-offset motion
-using the existing length-preserving FK inertia/spring framework. Same controls;
-most global translation was already carried through arm inertia, so the current
-setup changes only slightly. Bone lengths/rotation behavior retained. Lab-only.
+Both implementations now transport the arm's existing bend plane before solving
+a guide. This prevents a nearly straight arm from acquiring a large axial twist
+when the target moves across its previous elbow direction. There are no new
+knobs or changes to saved tuning. Numerical/live verification is recorded; see
+[the implementation and test annex](SwordHolsterPort20261012.md) for current
+results, remaining limits and build state. The following dated sections describe
+the prior implementation and are superseded where they disagree.
 
-
-Lab D right-hand rotation now participates in FK inertia at0% release; its
-Drawing return per-bone weight defaults1. Existing inertia controls shape it,
-0 restores previous inheritance. Sliding/wrist position/S unchanged. Current
-first-tick turn6.65→.11deg; broader run/spring return residuals remain documented
-in the journal. Not ported to Unreal.
-
-
-Lab reach elbow preference now slows to arrive with the hand for both D/S,
-using the existing unwarped reach deadline and max pole speed as a ceiling.
-An insufficient cap is respected; sliding continues the existing pursuit.
-This scheduling change is not ported to Unreal.
-
-
-**Body poses is now independent for Drawing and Sheathing.** All panel controls
-are saved in separate `drawBody`/`sheatheBody` profiles. Old settings clone their
-shared values into both. The selected action controls which profile is edited;
-this supersedes the shared-panel descriptions below. Lab-only, no native change.
-
-
-Lab **Body poses → Pelvis rotation compensation** is now saved/shared by D/S,
-default1 (full current correction),0 (follow pelvis rotation), with coherent
-whole-chain quaternion interpolation between them. Translation is unchanged.
-Slider updates replan in the background without pause/seek. Not ported to Unreal.
-
-
-The lab now also has **Sword-relative pole while sliding**, saved/default off,
-shared by D/S. It carries the slide-entry elbow reference with the sword under
-the existing scalar speed cap. Reach and ordinary arm return retain their
-references. See the lab README for verification and the existing extreme
-immediate-return grip limitation. This has not been ported to Unreal.
-
-The current user-approved lab model authors the captured spine/right-arm FK
-chain while canceling pelvis rotation, discarding ongoing gait on those bones.
-The whole authored spine chain, including its first positional offset, uses the
-pelvis orientation captured at entry with current pelvis translation. This fixes
-the residual sideways head-position sway left by correcting only top orientation.
-Bone lengths are retained; the pelvis/holster remain unchanged. Right
-clavicle targets remain relative to corrected spine05. The left
-clavicle-to-hand chain retains its current local animation/additive clavicle
-motion. Entry inertia now covers all13 spine/arm joints through both hands and
-runs after pole correction. Existing early return and independent head aiming
-remain. This supersedes the earlier additive spine/right-arm implementation;
-see the lab README for the precise contract and numerical/UI verification.
-
-The lab also has saved0%/100% elbow preference angles in a moving arm/spine-up
-frame, with an independent scalar angular-speed cap. Preview samples the actual
-prepared playback pose, including early FK return. These changes remain lab-only.
-
-The lab now uses two saved parent-relative body poses at0%/100% insertion,
-replacing shoulder-distance optimization. Spine_05 is relative to pelvis;
-both clavicles are relative to spine_05. The separate **Body poses** panel
-edits them, shares them between D/S, and previews each endpoint. Fractional
-insertion interpolates all three; existing early FK return remains per the
-user's explicit answer. See [current lab contract](../Labs/SwordHolsterLab/README.md).
-This and the palm-in grip change are **not yet ported to Unreal**. The native
-status below remains the previous implementation; no editor/build/asset change
-was made for this lab task.
-
-## Current lab port (October11)
+## Previous lab port (October11)
 
 **Overnight follow-up:** the current profile uses230cm/s reach and600deg/s
 rotation (the two corresponding Blueprint literals were saved); head vertical-axis

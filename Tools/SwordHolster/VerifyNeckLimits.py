@@ -78,6 +78,9 @@ def tick(_):
         if n<25:return
         f=report(world,actor);phase=int(f['phase']);current=limits(actor)
         if state.get('interrupted'):
+            # Reset is queued to the next manager timer boundary; unlike Hide,
+            # accepting its request does not synchronously rebuild the rig.
+            if args.action=='reset' and phase!=-1 and n<=state['interrupted']+2:return
             assert current==state['before'],f'Limits not restored: {current}'
             if n>=state['interrupted']+5:
                 assert phase==-1 and f['joint']==0,(phase,f)
@@ -101,7 +104,7 @@ def tick(_):
                 result=unreal.ProphecyAgentResetLibrary.reset_initial_agents(world)
                 state['reset_result']=str(result)
             state['interrupted']=n
-            if args.action!='sword_destroy':assert limits(actor)==state['before'],'Limits not restored synchronously'
+            if args.action not in ('sword_destroy','reset'):assert limits(actor)==state['before'],'Limits not restored synchronously'
             return
         if phase==3 and not state['drawing']:
             state['events'].append([n,'S complete, limits restored'])

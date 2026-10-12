@@ -1,0 +1,166 @@
+{
+  "checkpoint": "e0da908c53df3a76e5d06503b9a44868d0a54d7d",
+  "matrix_cases": 13,
+  "agent_sequences": 39,
+  "lifecycle": [
+    {
+      "name": "complete-1-sheathe",
+      "reason": "passed"
+    },
+    {
+      "name": "complete-1-sheathe-custom",
+      "reason": "passed"
+    },
+    {
+      "name": "hide-1-sheathe",
+      "reason": "passed"
+    },
+    {
+      "name": "hide-2-sheathe",
+      "reason": "passed"
+    },
+    {
+      "name": "hide-4-sheathe",
+      "reason": "passed"
+    },
+    {
+      "name": "drop-2-sheathe",
+      "reason": "passed"
+    },
+    {
+      "name": "mode-4-sheathe",
+      "reason": "passed"
+    },
+    {
+      "name": "sword_destroy-1-sheathe",
+      "reason": "passed"
+    },
+    {
+      "name": "hide-2-draw-custom",
+      "reason": "passed"
+    },
+    {
+      "name": "repeat-sim",
+      "reason": "passed"
+    },
+    {
+      "name": "repeat-kinematic",
+      "reason": "passed"
+    }
+  ],
+  "reset": "passed",
+  "fps": {
+    "samples": 267,
+    "max_component_delta": 0,
+    "phase_mismatches": 0
+  },
+  "performance": [
+    {
+      "motion": "idle",
+      "action": "D",
+      "agents": 100,
+      "repeats": 7,
+      "planning_ms": 2.29030004,
+      "mean_ms": 0.538327551,
+      "peak_ms": 1.49520003,
+      "worst_ms": 1.6739
+    },
+    {
+      "motion": "idle",
+      "action": "S",
+      "agents": 100,
+      "repeats": 7,
+      "planning_ms": 2.18370004,
+      "mean_ms": 0.584342753,
+      "peak_ms": 1.4903,
+      "worst_ms": 1.5901
+    },
+    {
+      "motion": "run",
+      "action": "D",
+      "agents": 100,
+      "repeats": 7,
+      "planning_ms": 2.28390004,
+      "mean_ms": 0.529017442,
+      "peak_ms": 1.50259997,
+      "worst_ms": 1.66319998
+    },
+    {
+      "motion": "run",
+      "action": "S",
+      "agents": 100,
+      "repeats": 7,
+      "planning_ms": 2.1322,
+      "mean_ms": 0.531418055,
+      "peak_ms": 1.43499998,
+      "worst_ms": 2.03950005
+    },
+    {
+      "motion": "walk",
+      "action": "D",
+      "agents": 100,
+      "repeats": 7,
+      "planning_ms": 3.37750005,
+      "mean_ms": 0.578349484,
+      "peak_ms": 1.52629998,
+      "worst_ms": 3.87339998
+    },
+    {
+      "motion": "walk",
+      "action": "S",
+      "agents": 100,
+      "repeats": 7,
+      "planning_ms": 2.16900004,
+      "mean_ms": 0.604818116,
+      "peak_ms": 1.54530001,
+      "worst_ms": 1.73079997
+    }
+  ],
+  "performance_scope": "100 simultaneous controllers without stagger; seven warmed repeats. Core planning, inertia seeds, pose copies and active body/arm/head/return math. Excludes JSON configuration load, live NN/snapshot reads, cache publication, equipment, physics and rendering. Peak is median per-run maximum; worst is the largest observed.",
+  "primitive_and_timing": "body_cm=7.19018694365e-13 body_deg=2.95755866694e-06 pole_cm=2.86428933844e-14 pole_deg=4.1826195783e-06 pole_angle=7.1054273576e-14 entry_cm=1.23153762773e-11 entry_deg=4.1826195783e-06\nidle 0 reach=29 lab_reach=29 slide_start=29 lab_slide_start=29 slide_ticks=19 finish=98 mean_us=6.1051022 peak_us=24.4000112\nidle 1 reach=56 lab_reach=56 slide_start=56 lab_slide_start=56 slide_ticks=31 finish=138 mean_us=5.60362241 peak_us=21.9999929\nwalk 0 reach=32 lab_reach=32 slide_start=32 lab_slide_start=32 slide_ticks=19 finish=97 mean_us=5.23814701 peak_us=21.3999883\nwalk 1 reach=57 lab_reach=57 slide_start=57 lab_slide_start=57 slide_ticks=31 finish=138 mean_us=5.33623371 peak_us=19.7999761\nrun 0 reach=23 lab_reach=23 slide_start=23 lab_slide_start=23 slide_ticks=19 finish=86 mean_us=4.71511157 peak_us=18.8999693\nrun 1 reach=45 lab_reach=44 slide_start=45 lab_slide_start=44 slide_ticks=31 finish=144 mean_us=5.90347069 peak_us=24.900015\n",
+  "recorded_full_pose": [
+    {
+      "motion": "idle",
+      "action": "D",
+      "max_deg": 9.04683713,
+      "max_cm": 3.00323602
+    },
+    {
+      "motion": "idle",
+      "action": "S",
+      "max_deg": 4.09921597,
+      "max_cm": 1.41006135
+    },
+    {
+      "motion": "run",
+      "action": "D",
+      "max_deg": 6.95886186,
+      "max_cm": 2.9224654
+    },
+    {
+      "motion": "run",
+      "action": "S",
+      "max_deg": 25.6987216,
+      "max_cm": 10.759971
+    },
+    {
+      "motion": "walk",
+      "action": "D",
+      "max_deg": 10.044211,
+      "max_cm": 3.39461434
+    },
+    {
+      "motion": "walk",
+      "action": "S",
+      "max_deg": 13.3186755,
+      "max_cm": 6.95232904
+    }
+  ],
+  "limitations": [
+    "Actual holster geometry and online refits differ from the lab future-clip planner. Five of six reach deadlines match; recorded run S differs by one 60Hz tick. Full-path errors above are not bitwise parity.",
+    "Extreme +.95 gaze releases an already constrained physical head at admission, retaining an existing physical kick; limits and motor tuning were not changed.",
+    "Three historical lab tests fail on the checkpoint too: test_armfk, test_motion_clock, test_slide_rotation_clock. Current targeted regressions are separate.",
+    "Normal DLL is stale after layout-safe Live Coding; rebuild before a cold launch. Editor remains open with the latest patch."
+  ],
+  "evidence": "Saved\\Diagnostics\\SwordPort20261012"
+}
