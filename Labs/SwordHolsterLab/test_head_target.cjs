@@ -12,7 +12,7 @@ for(const motion of ['idle','walk'])for(const sheathe of [false,true]){
   assert.equal(m.sourceFrames,original.sourceFrames,'no arm replan');
   if(!sheathe||alpha===1)assert.deepEqual(m.frames,original.frames,'drawing and entrance default unchanged');
   for(const f of m.frames){
-   const mouth=H.point(H.compose(setup.seated,f.holster),setup.baseBladeLocal),tip=H.point(f.sword,m.tip);
+   const mouth=H.point(H.seatedSword(setup,f.holster),setup.baseBladeLocal),tip=H.point(f.sword,m.tip);
    const wanted=sheathe?R.add(R.mul(tip,1-alpha),R.mul(mouth,alpha)):mouth;
    assert(R.length(R.sub(wanted,f.headLook.target))<1e-8,'target follows actual scaled blade and moving entrance');
    if(f.tick>m.o.startTick)assertHeadBudget(m,f.tick);

@@ -1,25 +1,17 @@
-const assert=require('node:assert/strict'),H=require('./holster.js'),data=require('./data/motions.json'),setup=require('./data/unreal-setup.json');
-const degrees=180/Math.PI;
-for(const motion of ['idle','walk'])for(const sheathe of [true,false]){
- const m=H.prepare(data,setup,{motion,sheathe,sheatheRotationTolerance:0}),end=m.plan.endTick,start=m.o.startTick;
- const first=m.frames[start].body,mid=m.frames[Math.floor((start+end)/2)].body,last=m.frames[end].body;
- assert.equal(first.applied[0],0,'no spine entry snap');assert.equal(last.spineArrivalTick,end);
- assert.deepEqual(first.applied.slice(1),[0,0],'no clavicle entry snap');assert.equal(last.clavicleArrivalTick,end);
- assert(Math.hypot(last.applied[1]-last.desired[1],last.applied[2]-last.desired[2])<1e-9,'clavicle and hand arrive together');
- const clavicleRatio=Math.hypot(...mid.applied.slice(1))/Math.hypot(...last.applied.slice(1));
- assert(clavicleRatio>.35&&clavicleRatio<.65,'clavicle turn spread across reach');
- assert(m.frames.slice(start,end-1).every(f=>Math.hypot(f.body.applied[1]-f.body.desired[1],f.body.applied[2]-f.body.desired[2])>.001),'no early clavicle finish');
- for(let i=start+1;i<m.frames.length;i++)assert(Math.hypot(m.frames[i].body.applied[1]-m.frames[i-1].body.applied[1],m.frames[i].body.applied[2]-m.frames[i-1].body.applied[2])*degrees<=m.o.maxSpineClavicleAngularSpeed/60+1e-8,'clavicle speed cap');
- assert(Math.abs(last.applied[0]-last.desired[0])<1e-9,'spine and hand arrive together');
- const ratio=Math.abs(mid.applied[0]/last.applied[0]);assert(ratio>.35&&ratio<.65,'turn spread across reach');
- assert(m.frames.slice(start,end-1).every(f=>Math.abs(f.body.applied[0]-f.body.desired[0])>.001),'no early finish');
- for(let i=start+1;i<m.frames.length;i++)assert(Math.abs(m.frames[i].body.applied[0]-m.frames[i-1].body.applied[0])*degrees<=m.o.maxSpineClavicleAngularSpeed/60+1e-8,'speed cap');
+const assert=require('node:assert/strict'),H=require('./holster.js'),B=require('./bodyreach.js'),data=require('./data/motions.json'),setup=require('./data/unreal-setup.json');
+let cases=0;
+for(const motion of ['idle','walk'])for(const sheathe of [true,false])for(const maxSpineClavicleAngularSpeed of [10,90]){
+ const m=H.prepare(data,setup,{motion,sheathe,maxSpineClavicleAngularSpeed,duration:30}),end=m.plan.endTick,start=m.o.startTick;
+ assert(m.plan.arrives,'speed-limited body extends the reach plan');
+ const first=m.sourceFrames[start].body,last=m.sourceFrames[end].body,target=B.target(m.bodyContext,m.o.bodyTargets,sheathe?0:1);
+ assert(B.remaining(first.entry,first.applied)<1e-5,'no entry rotation snap');
+ assert(B.remaining(last.applied,target)<1e-5,'all three bones reach authored endpoint with hand');
+ const mid=m.sourceFrames[Math.floor((start+end)/2)].body;
+ for(let k=0;k<12;k+=4){
+  const total=H.angle(first.applied.slice(k,k+4),target.slice(k,k+4));
+  if(total>1){const ratio=H.angle(first.applied.slice(k,k+4),mid.applied.slice(k,k+4))/total;assert(ratio>.45&&ratio<.55,'turn spread across hand reach');}
+ }
+ for(let tick=start+1;tick<=end;tick++)assert(B.remaining(m.sourceFrames[tick-1].body.applied,m.sourceFrames[tick].body.applied)<=maxSpineClavicleAngularSpeed/60+1e-5,'per-bone angular cap');
+ cases++;
 }
-const slow=H.prepare(data,setup,{sheathe:true,sheatheRotationTolerance:0,maxReachSpeed:10000,maxReachRotationSpeed:10000,maxSpineClavicleAngularSpeed:10,duration:30});
-const arrival=slow.frames[slow.plan.endTick].body;
-assert(slow.plan.arrives,'slow body extends the arm plan instead of leaving an obsolete endpoint');
-assert(Math.abs(arrival.applied[0]-arrival.desired[0])*degrees<.25,'spine is ready at the planned endpoint');
-assert(Math.hypot(arrival.applied[1]-arrival.desired[1],arrival.applied[2]-arrival.desired[2])*degrees<.25,'clavicle is ready at the planned endpoint');
-for(let i=slow.o.startTick+1;i<slow.frames.length;i++)assert(Math.abs(slow.frames[i].body.applied[0]-slow.frames[i-1].body.applied[0])*degrees<=10/60+1e-8);
-for(let i=slow.o.startTick+1;i<=slow.plan.endTick;i++)assert(Math.hypot(slow.frames[i].body.applied[1]-slow.frames[i-1].body.applied[1],slow.frames[i].body.applied[2]-slow.frames[i-1].body.applied[2])*degrees<=10/60+1e-8);
-console.log('PASS: idle/walk draw/sheath spine AND clavicle arrive with FK reach; slower body extends the plan while respecting both angular-speed caps.');
+console.log(JSON.stringify({passed:true,cases,description:'All three authored bones arrive with hand; slow caps extend reach.'}));

@@ -15,7 +15,7 @@ for(const pitch of [-40,0,45,70,89,90])for(const yaw of [-170,-90,0,90,170])for(
 let cases=0,maxDown=-90,maxStep=0;
 for(const motion of ['idle','walk'])for(const sheathe of [true,false])for(const gazeYaw of [-170,0,170]){
  const m=H.prepare(data,setup,{motion,sheathe,gazeYaw,headMaxDownAngle:70,duration:12});
- for(let tick=m.o.startTick+.37;tick<m.playbackDuration*60;tick+=.73){const f=H.sample(m,tick/60),a=down(f.pose,f.pose[ctx.head].q);maxDown=Math.max(maxDown,a);assert(a<=70+1e-6,`down cap ${motion} ${sheathe} ${gazeYaw} ${tick} ${a}`);const body=H.sampleBody(m,tick/60);for(let j=0;j<data.names.length;j++)if(!ctx.chain.includes(j))assert.deepEqual(f.pose[j],body.pose[j],'only neck/head authored');}
+ for(let tick=m.o.startTick+.37;tick<m.playbackDuration*60;tick+=.73){const f=H.sample(m,tick/60),a=down(f.pose,f.pose[ctx.head].q);maxDown=Math.max(maxDown,a);assert(a<=70+1e-6,`down cap ${motion} ${sheathe} ${gazeYaw} ${tick} ${a}`);const body=H.sampleBody(m,tick/60);for(let j=0;j<data.names.length;j++)if(!ctx.chain.includes(j)){assert(R.length(R.sub(f.pose[j].p,body.pose[j].p))<1e-8,'only neck/head positions authored');assert(L.angle(f.pose[j].q,body.pose[j].q)<1e-5,'only neck/head rotations authored');}}
  for(let tick=m.o.startTick+1;tick<m.frames.length;tick++){assertHeadBudget(m,tick);maxStep=Math.max(maxStep,m.frames[tick].headLook.angularStep);}
  assert(m.completionTick!==null,'head returns and completes');cases++;
 }

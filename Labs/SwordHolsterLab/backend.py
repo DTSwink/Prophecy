@@ -33,7 +33,7 @@ def read_json(path, default):
 
 def revision():
     digest = hashlib.sha256()
-    for name in ('index.html', 'app.js', 'recovery.js', 'style.css', 'renderer.js', 'bodyreach.js', 'headlook.js', 'fkreturn.js', 'fkreturn-panel.js', 'armfk.js', 'retime.js', 'curve-editor.js', 'holster.js', 'equipment.js', 'capture.js', 'capture-worker.js'):
+    for name in ('index.html', 'app.js', 'recovery.js', 'style.css', 'renderer.js', 'bodyreach.js', 'body-target-panel.js', 'body-plan-worker.js', 'headlook.js', 'fkreturn.js', 'fkreturn-panel.js', 'armfk.js', 'retime.js', 'curve-editor.js', 'elbowpole.js', 'holster.js', 'equipment.js', 'capture.js', 'capture-worker.js'):
         digest.update((ROOT / name).read_bytes())
     return digest.hexdigest()
 

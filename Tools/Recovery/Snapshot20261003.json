@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 5623,
-  "bytes": 504318115,
+  "file_count": 5826,
+  "bytes": 509168219,
   "files": [
     {
       "path": ".gitattributes",
@@ -4441,9 +4441,9 @@
     },
     {
       "path": "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset",
-      "git_blob": "0446a0843fdb8c003f7c927f96206e21cd457b65",
-      "bytes": 6082047,
-      "sha256": "62b24d6fb3f03749c792efabb41a384a4a83a55641d51acb93db769520e181d1"
+      "git_blob": "e69ee9c63e249752c08eab6f5331441b70d4fc18",
+      "bytes": 6138225,
+      "sha256": "2a96fbdff373b6fb7b99be47652ebf8bf1f47b389d608f28b6280c370ec46274"
     },
     {
       "path": "Content/_mygame/locomotion/L_DoubleReachBallTest.umap",
@@ -4639,9 +4639,9 @@
     },
     {
       "path": "Content/_mygame/sword/A_Sword.uasset",
-      "git_blob": "c2639db4c957432a25710e7eb61c874475fdf3e7",
-      "bytes": 2253594,
-      "sha256": "3a7796e45df755f5de003b59f1c90e1b2ab2fd540455f6fa6d57209ffaaa8c6d"
+      "git_blob": "f75a6f8a6000d89fc9a1cfe983dbc93d004db78a",
+      "bytes": 2262897,
+      "sha256": "b24a3ad86c9c7630e7382d507de5a13065da91638fc42cd10431513315528cfe"
     },
     {
       "path": "Content/_mygame/sword/ST_Cut.uasset",
@@ -5082,6 +5082,12 @@
       "sha256": "07362b4213e7b4f502cba130aea8fb25b6299479fbda17acdc1034a55715cb4b"
     },
     {
+      "path": "Content/locomotion/SwordHolsterProfile.json",
+      "git_blob": "c164713a83090caaab7bcdec007f6a987bb6e338",
+      "bytes": 3665,
+      "sha256": "4d9a0c4e25337cc00f7d03fbb4096718905aeba7bb89a00a6b99e19045c12493"
+    },
+    {
       "path": "Content/mybasic.umap",
       "git_blob": "4079f4c0591a0b42103bda6ef1a269640e7b9754",
       "bytes": 11186424,
@@ -5089,9 +5095,9 @@
     },
     {
       "path": "Content/testNN.umap",
-      "git_blob": "93aeff3b182f10bab45b593c3f8949d8febf1cff",
-      "bytes": 106660,
-      "sha256": "92172d24145b5a4de8a2792063dbe575a8eb96c7d54c1d59d40a764615077981"
+      "git_blob": "d4366c135203107d332f9b9df34995885f106a29",
+      "bytes": 119939,
+      "sha256": "f436c3b524132a898321c53ead054d2d878940a33e46e86da33483a524cba040"
     },
     {
       "path": "Content/vfxmap.umap",
@@ -5131,9 +5137,9 @@
     },
     {
       "path": "Docs/AgentSwordBlueprint.md",
-      "git_blob": "cfcdcb6ba9d6934609d6cdcd36c44e05b9a31987",
-      "bytes": 13650,
-      "sha256": "cad5d9321dfd7589999ace727144c39fb3398c4e09910016b429d285fbc646d2"
+      "git_blob": "13060725145cf51ca5ba2dab1200360eb2bfd663",
+      "bytes": 14132,
+      "sha256": "f3c4aca1ab2d84f2b39dca534d8200bb33904639cc61e9201f15e1f669307218"
     },
     {
       "path": "Docs/AgentTimeDilation.md",
@@ -5191,9 +5197,9 @@
     },
     {
       "path": "Docs/ArmsAntiJiggle.md",
-      "git_blob": "e29cf91262bb5f8bb30f75cf1b72e0ddfdf60cbb",
-      "bytes": 3558,
-      "sha256": "2871c0bd0f5f06f9432318859a69c4c27d6c6a00938506881ff6c1f43856afb9"
+      "git_blob": "3b9d5ef206c31212697816caf440c583b5711c53",
+      "bytes": 4151,
+      "sha256": "75181c6200011e21d8f787cb95b94ecdd81565c2f15a5a5a72757c0f8ff7f666"
     },
     {
       "path": "Docs/Attack1400Stall20261005.md",
@@ -5245,9 +5251,9 @@
     },
     {
       "path": "Docs/AttackFKReturn.md",
-      "git_blob": "a400f5d46f5306602398e50f7a7ed18be360ba39",
-      "bytes": 33064,
-      "sha256": "b925b49fe5e16be781c8dac3262e7e882a401c81f44c88498ce3b4a9dd03e1aa"
+      "git_blob": "918a7555ea5c1020096fead3c0913a041a0f1cac",
+      "bytes": 34831,
+      "sha256": "3aa6d290097e731e51775420807ccf559ba561d908baf85254db99e7a7526752"
     },
     {
       "path": "Docs/AttackFidelity20261005.md",
@@ -5455,9 +5461,9 @@
     },
     {
       "path": "Docs/DefenseCheckpointPickers.md",
-      "git_blob": "9b9b5e4f18d6ec92ec534a61b4b4716957a441b5",
-      "bytes": 2731,
-      "sha256": "f05ae484d0f2f5912d01abf87a4c25d0ebd053e64934bdcb7718b20a38dfbf41"
+      "git_blob": "20c954904922a14a9295f2bc47f99fdfcee4438f",
+      "bytes": 4033,
+      "sha256": "db3f4c26de4a64bd8e7fbd3349827e93e5c3ac8645fa448b8ddbc8afae3d72e6"
     },
     {
       "path": "Docs/DefenseCheckpoints20261005.md",
@@ -5533,9 +5539,9 @@
     },
     {
       "path": "Docs/FKReturnSeparateControls.md",
-      "git_blob": "9f3ef3c81445d6f093b03d972094d028c8361b3e",
-      "bytes": 2077,
-      "sha256": "85106f9f66e8fc9f27e1dc49ab5e95c7814772617787c2635721a4e67effbcc7"
+      "git_blob": "0e97c1ba94e3091ee28f949db290daebdab3932f",
+      "bytes": 2634,
+      "sha256": "11c9f95cb9c07fdf9fe0a39b695bd79eea258c5fc27d342c281b498484f38ba8"
     },
     {
       "path": "Docs/FixedArmAttachments.md",
@@ -5602,6 +5608,12 @@
       "git_blob": "119ec104e8ee6588a40bbdfeca40644f01df253a",
       "bytes": 3186,
       "sha256": "b261637de0b37d4ea806f608c5254d83a5608afb0c7c56bb89700ab328436856"
+    },
+    {
+      "path": "Docs/GetUp.md",
+      "git_blob": "60baccb8cd4cb77332db03f05f3a7e4d51a21dbd",
+      "bytes": 7967,
+      "sha256": "0cbdb8b9707dfc0a7a93518ec3eb9de725ac8706a4aff43252be2a70ea6abd00"
     },
     {
       "path": "Docs/GhostAttackLean20261008.md",
@@ -5982,6 +5994,12 @@
       "sha256": "ee333a8ed71f5b9de296edf69df131f87180b923ad954155a8769566719990c0"
     },
     {
+      "path": "Docs/Journal/GetUp-floor-correction-history-2026-10-10.md",
+      "git_blob": "171a25da6542e592b232ef78f695c3021175ba8c",
+      "bytes": 3387,
+      "sha256": "3faf7f28e76e61424a6f1c1580c557e952d9c90f103da4d4602973fcf302e724"
+    },
+    {
       "path": "Docs/Journal/ProjectJournal-history-through-2026-09-18.md",
       "git_blob": "c93290cb20736ef760bf13e7d0e094792c2c4bb7",
       "bytes": 253550,
@@ -6151,9 +6169,9 @@
     },
     {
       "path": "Docs/LimbCollisionChannels.md",
-      "git_blob": "72b7d16bdd08e1c8ae11749e5694e127d17304c7",
-      "bytes": 3211,
-      "sha256": "9488114a58401ece6674e62f52b52bc86b27394d5bb528467978bab1a63cadae"
+      "git_blob": "f607a5b66478a1d640d6ef64fb377f326cdcc6cf",
+      "bytes": 3689,
+      "sha256": "b9f18dde6b0f1be778d8a86b85c39cb56a6f18d1359fee64cf99beec24bf8ee1"
     },
     {
       "path": "Docs/LimbColors.md",
@@ -6361,9 +6379,9 @@
     },
     {
       "path": "Docs/PhysicalProfileSnapshots.md",
-      "git_blob": "98421d94d03553b25d2633a0a255c9801b737727",
-      "bytes": 12445,
-      "sha256": "c7623852acd26a1a4de02aa85b5b8aab31be7d6138dfdb367ff6cc628b43c1a7"
+      "git_blob": "aa1544748d8d4b3781986d33ae6fe15d8daa0794",
+      "bytes": 12962,
+      "sha256": "2493143584a2a7f0c676b24e93850beab7d6a7c423c567df430bee45ea89883d"
     },
     {
       "path": "Docs/PhysicalPropertyBlends.md",
@@ -6664,6 +6682,24 @@
       "git_blob": "3428093433bf7003d7314fc03de16a98157f6425",
       "bytes": 2745,
       "sha256": "79a2298fa0de69026a260465aff97b3982fa16919e000b6b6379dce546ac38f9"
+    },
+    {
+      "path": "Docs/SwordDrawingResearch.md",
+      "git_blob": "1ca19a5924ce1f0235306640f406f2aeccc1e0e0",
+      "bytes": 3625,
+      "sha256": "d44de282075f3f0c273d6ad336b14616c8865fbb3df0e8cd2636567021fe8d56"
+    },
+    {
+      "path": "Docs/SwordHolster.md",
+      "git_blob": "059994e8ba2af7a8edd7d6ab5bf23dbd409f84f1",
+      "bytes": 42450,
+      "sha256": "3e3bf9c0e003f1e4287732038bca26b0dbeed07d63d4597101292a6211b3f779"
+    },
+    {
+      "path": "Docs/SwordHolsterOvernight20261011.md",
+      "git_blob": "082c8367a20f01954779454a3b7b3a88908c917a",
+      "bytes": 20651,
+      "sha256": "d937706f0ed9229af71e9e7d557589a6029fa38585fb696fcf805f6f17a74fd9"
     },
     {
       "path": "Docs/SwordMagnetization.md",
@@ -11676,6 +11712,468 @@
       "sha256": "a06d655ebbf8af192e2e132f2afbf573dbeb7678d43ab6b3ca6c284567af7d53"
     },
     {
+      "path": "Labs/SwordHolsterLab/.gitignore",
+      "git_blob": "e3e4f89f5f1a1f57ddf029cff93fc877d6aee9fe",
+      "bytes": 92,
+      "sha256": "9f82e19285f523242a2e38eb992fbe57d36d3e8a06642b7472817473e9b81661"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/README.md",
+      "git_blob": "63f27b90e5adc294280dd1fde211abec4c5feb86",
+      "bytes": 54284,
+      "sha256": "53d6bd2b440cef830fe6f9253a096d8bf390f3e18331a3d3337e434d9d46974e"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/app.js",
+      "git_blob": "b0f3553bd605c338d5500bd5c4b5d313488fc2f1",
+      "bytes": 22491,
+      "sha256": "9601090688f472acb2df0cdee66a37aa3d46faab63e660a65730fa7f9256655e"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/armfk.js",
+      "git_blob": "51e20a77fbc03605621812dd23b86f2d6025ab80",
+      "bytes": 5977,
+      "sha256": "80ae37a0c67609e3390eff3e244b9c5c64686730d64a87b6399d429575d87f06"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/assets/sword-holster-lab.ico",
+      "git_blob": "360382c98b9e9aaaef96380cd1ad1e82bbf86368",
+      "bytes": 21045,
+      "sha256": "9490c6b8a5ba9256030b9b11451c84896c26a6dc6d4820335928f1867ec557ef"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/assets/sword-holster-lab.png",
+      "git_blob": "fc3e8abb069afffab92ede7a8785fa17f4be85a2",
+      "bytes": 4429,
+      "sha256": "639a69b27bbe8845fcb5a5968b1e95e7b15534abb6b345e1997cd2477bc3de56"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/assets/sword-holster-lab.svg",
+      "git_blob": "0b6f042b2a2e33a252881368b3ff6c1587ced7f4",
+      "bytes": 473,
+      "sha256": "524a4c79782adc8c49b0de84ffdcabb110ec536fbcf9376fda49a7df3f18e43e"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/backend.py",
+      "git_blob": "19b98b081dff078b04878c3a70747e0083530358",
+      "bytes": 12014,
+      "sha256": "b08952f618b7e36484c24f989ad88fb751f5ceb9f82e06ecc63f1df344307078"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/benchmark_playback.cjs",
+      "git_blob": "ef0b9ce406988b26f9bde32b4ac3d1b99dad0b46",
+      "bytes": 4240,
+      "sha256": "ff8d7d4b019029340bed3178a2718f77e403f137c7e03edccac0c043ce4f087d"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/body-plan-worker.js",
+      "git_blob": "6b3107b06074dc79e8e450df7af8dfab96240a12",
+      "bytes": 657,
+      "sha256": "7577e45c88abbf2bd124f4e98a2d0338400ff17d7956392b42a9a2d3002b2a9c"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/body-target-panel.js",
+      "git_blob": "68a5a363e8111eeffa95ed487b9cde311b781758",
+      "bytes": 4517,
+      "sha256": "e21abe57cc98fa68bffad228c84188458f3f5c299f9eb7a329e0d44337cf2f5a"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/bodyreach.js",
+      "git_blob": "3530db5181282896261e2324fe6ca7c9559fe48b",
+      "bytes": 3160,
+      "sha256": "d43a0824d7516001769d7c0efdb7a26ad96f04e09ba691b7933f43a68317bb70"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/capture-worker.js",
+      "git_blob": "8e3be28c72259c16700fce62f0d7dc8d26e2e0d8",
+      "bytes": 2736,
+      "sha256": "886059c8d389ae975f9f9c6e881c4f8221b09b16a322a96872abc80ab259d4c5"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/capture.js",
+      "git_blob": "e54e520a1ba9b076d18d2b0b33505bf2da9352f6",
+      "bytes": 1442,
+      "sha256": "ced6b38cce88096418d4c84521c630f33ec1d725b3d68b4a353e6c5ec5c5b76e"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/check_ui.cjs",
+      "git_blob": "91a001fd11224826ce71b9641549daccb793e9ff",
+      "bytes": 3596,
+      "sha256": "8836acdcbd175a94f9f2376726f18117b3ee79b9ca10d2bf0ee76ab392eaa4ab"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/curve-editor.js",
+      "git_blob": "53bb2dc1c3b117539c27cb0c831647a0369c52b3",
+      "bytes": 3026,
+      "sha256": "a677f6bdc2b93b4be5612c9e50e76cf6a99c8f4fd3054a19e1d2a22b5256cafe"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/data/grip-side-regression.json",
+      "git_blob": "46f62dd87e6f741b3e36f81b140b8cce0cf49938",
+      "bytes": 2666,
+      "sha256": "a45019cf0fe139eaf1ff73d27c29a82c672ead070a951d4ce0b9f6a4f4a5c2a6"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/data/head-handoff-regression.json",
+      "git_blob": "e22c3ecceb636a7dad7a161a1874ed945d3a1609",
+      "bytes": 1339329,
+      "sha256": "dadb93c0e515815686a08e1084429f1388d3389043542af553efa18245ad6db0"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/data/head-tilt-regression.json",
+      "git_blob": "a26a4aea4ab6537bcc3bdbf1faff727b77506f51",
+      "bytes": 3000,
+      "sha256": "294585c083c4408db5f66ed883031a466c0c5176fe45247e305843e740d65871"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/data/manifest.json",
+      "git_blob": "312c5ae1a2933bccbc3ed61ecb01fb5037860d67",
+      "bytes": 47,
+      "sha256": "f1ab20c878147810deda37ef4a63c97e213ae443d70e676c802d973fa1894f0a"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/data/motions.json",
+      "git_blob": "de0fb0058aae77cfdf660ac58c2f0b5493c4f125",
+      "bytes": 1468098,
+      "sha256": "941734082a2812880961ed1c286adeaf467f580d4b07b6c3c31934b3953cdcf4"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/data/owl-regression.json",
+      "git_blob": "838609a763df220a6f1dcd8dc2851de19ffbed90",
+      "bytes": 2763,
+      "sha256": "92afa620c8e2cabcb7a414eb8e0fdd2a3f48801b974887261e4a04c305979280"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/data/ue-stall-fixture.json",
+      "git_blob": "2858d145e87e46ab28c2fd7ec7955594ea83a4c0",
+      "bytes": 2315,
+      "sha256": "01834bc2a47916e66739f4fd69620eab630556d3e0c48f6c51142bdf5233e1de"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/data/unreal-setup.json",
+      "git_blob": "a3b28afc24f8abbddd83b81983af70dc86c1e45f",
+      "bytes": 35665,
+      "sha256": "dbfd2004d8527cea213841a6a51580a932f9d36760147d4973549d10c195b26b"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/elbowpole.js",
+      "git_blob": "d4f3ca6cab3b561e3fc0749ad6f84db8cf97be1a",
+      "bytes": 2305,
+      "sha256": "e56ca1135a6431b54af839422e263bead6f00df6d9addf320e4a4edb67180c13"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/equipment.js",
+      "git_blob": "89e1c8d950fd7168b203a4ff371d90c8680a9347",
+      "bytes": 1586,
+      "sha256": "3600ad396b25191f1ae7055e2e29d94181d98565091497a1a42ea582d04c71b4"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/export_motion.py",
+      "git_blob": "842f58491bc7d0ae5f55827c3fc4d31f4f0f1ffd",
+      "bytes": 1669,
+      "sha256": "17d434d19fb5c81667e857b7f4aa22765d1b9baea97a490bdc553f86626efc70"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/export_setup.py",
+      "git_blob": "17a19489d7d50a0cabca2135f5806a7305a272da",
+      "bytes": 2527,
+      "sha256": "35bfd5b09fec2aeb1c77c55c1d99e16e260a6424fcddb4d8f03993e286d1b088"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/fkreturn-panel.js",
+      "git_blob": "477ad99c877518fc2e6466a63329362d9b7c087a",
+      "bytes": 4502,
+      "sha256": "faca72ba306e6a14211c97ba4989d123a0314572e9cfb3ef41304789ed2e1702"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/fkreturn.js",
+      "git_blob": "d471e82fcaf6eac40cb4893059f3f9a1c0a4fcf5",
+      "bytes": 3531,
+      "sha256": "f484a36e6f7cb3068a57682924c430689d460461e3d2377ae615069c05ea5c57"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/head-test-helpers.cjs",
+      "git_blob": "65596f96b940375f72b6e749b9ae1f5fc0ee5f06",
+      "bytes": 386,
+      "sha256": "12a92e47a615a902fa4a9764e3c9def746b7bd4692895af329984bd89254bba4"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/headlook.js",
+      "git_blob": "188394121148bc15d5695ad883f1f715bceef1d2",
+      "bytes": 7889,
+      "sha256": "e6ed8f45064b333cf2d4a68dd2bb9b08a6f2e5b9042049661972e5860900c5d2"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/holster.js",
+      "git_blob": "8dd74a652497973fd4e12cd8864b5f4e03aab008",
+      "bytes": 35490,
+      "sha256": "c361eef1946dfbda45c6e1b4b87051d1014ee6f73821e1cffb9c9950b6d66f33"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/index.html",
+      "git_blob": "bb65e788c6f053a484be1482e7dc8e8d4d001f80",
+      "bytes": 14404,
+      "sha256": "949cfb870cc63907360beaa5624ee348ae711f5aff6465f6cbb0476a927c2b2a"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/install_shortcut.ps1",
+      "git_blob": "70fc76dac8a2aca5c02d7f99e01ef6164ed28da8",
+      "bytes": 890,
+      "sha256": "c6b19f85b3d68f85f55f8ee49cec7a702b99059e6dd4266b9ebdb91ffe4d507c"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/launch.ps1",
+      "git_blob": "a4c957b12e5927c0621d595acd59ce4fa395657f",
+      "bytes": 3064,
+      "sha256": "668489b64c2f6787ac7a581001357b55614846bb93e2db86dc73793f223225c4"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/recovery.js",
+      "git_blob": "f7272a25191fa86651e9c32a60d1cd916731a74a",
+      "bytes": 19336,
+      "sha256": "206f1ff8801aaba85beb7cfcbefd78c6ba6e58e9a9d322aed22b4f7bd16ded5e"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/renderer.js",
+      "git_blob": "1f9b050f477c8e9e7b6e081c9df990b13c0585b5",
+      "bytes": 33082,
+      "sha256": "d5819036fcef8d47eb3baf537684a10626514dc49e7343934dc6bb37152238b2"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/retime.js",
+      "git_blob": "766a98ee58acae24ed5dba8be9e86a2e89d91b1b",
+      "bytes": 1506,
+      "sha256": "d1ffbf8f5cdee3905095c8caf881006ce24377d8982786c6c92d2fdd40655234"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/reuse-receipt.json",
+      "git_blob": "2f3e40f8c9128b69178e9595b72f23d385c6bc83",
+      "bytes": 873,
+      "sha256": "78f5252f592a894bf7e2501d1a9ce9ec92683fa2588dafbc66a698ffa45ef0e9"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/server.py",
+      "git_blob": "c1f407fccee8903c990c94b4af051061e76548f0",
+      "bytes": 132,
+      "sha256": "5416aa2436202892b5bee4025696f3532babdb845d39fc912757d62f00e91ce7"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/snapshots/snapshot_0001.json",
+      "git_blob": "110c9559946822e8e6e2c8dc1828d961d0c0fcc8",
+      "bytes": 18538,
+      "sha256": "c919b7f233fc24b0364ac675599283c4f3369354c944104c9954f68039651f80"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/snapshots/snapshot_0001.png",
+      "git_blob": "16602d69f97cbf999f7f0a990c93785b404219e2",
+      "bytes": 309784,
+      "sha256": "b91d381c63a46f98db62efe260a02aaaa4223d1c549b69aa61d364d7d441e5d2"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/state.json",
+      "git_blob": "4ae5f9f570d846b53f3c6cad00f111b510f70a6a",
+      "bytes": 4351,
+      "sha256": "43cb99c1d4ad5d192c98c2672dd0ac149a297fd935bea4c1851bd6f6ea2feb69"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/style.css",
+      "git_blob": "8332830db796ea6acc0d2c0be1e08ccc00e8d69d",
+      "bytes": 9221,
+      "sha256": "abd3f373715c433a3e8010bebe8f05a004ad94a3d5f6751eb3cfd13ceb282be1"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_armfk.cjs",
+      "git_blob": "f80f0aacc1715ded12035c5ac01a0dea8dcc7c94",
+      "bytes": 3672,
+      "sha256": "29b83f2b132a54b2390c5fbdf7c324f5cf38d4db4c7f772f5fcac5838fccdcc6"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_bicolor.cjs",
+      "git_blob": "732040f0830654d5cef9bbf877c99e4a75d0b870",
+      "bytes": 1328,
+      "sha256": "0658229504de2ebf96f8a3f614146ad677e606aa9dec56125e54ab1fa1254a78"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_bodyreach.cjs",
+      "git_blob": "0e95ed9da3f2ff6657bdba5ff61f52626bb8e153",
+      "bytes": 4235,
+      "sha256": "f78896f9f098db155fd4ae1651420c226c246d59210a534c80c0c968f2c5fe64"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_bodyreach_ui.cjs",
+      "git_blob": "2c04f271f76a642a09bc492e4043424ba94c82d9",
+      "bytes": 13094,
+      "sha256": "bc36e030ed740c13b2939fabf35a20baa2d48a966ff2a1be00a1f824a4c54087"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_capture.cjs",
+      "git_blob": "ce05403518cd356b2502193ea9c89d35ebf2cca1",
+      "bytes": 2940,
+      "sha256": "daab050ccd2db8741642a88d156fe664421de0119b6be5a8a0e9aff9dd693db1"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_display.cjs",
+      "git_blob": "e3b7223ea881ccf743a190f4314b990e0cebe6ce",
+      "bytes": 1049,
+      "sha256": "02ac78ba93ed3c89434aed69361b7052f07113b9f31386ea3550751e21a4cc61"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_duration.cjs",
+      "git_blob": "c83bdb49db301698abde2c2ad3eb56687cd6fa04",
+      "bytes": 2750,
+      "sha256": "9e4b98fae8f5f4815a666d31f65c6a25557ddc076df18ae0b7ee02ccf8783cc0"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_early_return.cjs",
+      "git_blob": "1c08b98dfa30eaf6f4960f024bf9141f181425b3",
+      "bytes": 3290,
+      "sha256": "b94384c0e4b090086934b1cdeda2c018c31b0cb8931b5d800703262b52954e1b"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_elbowpole.cjs",
+      "git_blob": "49de033ec7899bb51de049de6cafbaeced57c19d",
+      "bytes": 4085,
+      "sha256": "a4ff1180ab1ea341095deccc40ca0172b77ad2850fafecc223ad23cfcfef1b54"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_fkreturn.cjs",
+      "git_blob": "6e3be356c7b4014a9c9a3bd079960d6c180ef009",
+      "bytes": 2893,
+      "sha256": "7467ae475dd8b79000d9d800ff9d8b99f090ce10981a5b1f4ab26ee04c610427"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_grip_side.cjs",
+      "git_blob": "8688b763316b1d82329cbb9a6d5b279f24d58819",
+      "bytes": 2791,
+      "sha256": "3c615363b3839774717bab9059170213a429ee0f3a77ab299d48b80fb37e2540"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_head_arc.cjs",
+      "git_blob": "ba3e687c481d3bb9420515029b9e02ab52241aaf",
+      "bytes": 1559,
+      "sha256": "39c904de3e4597065f1acca575c4136995a888660ba7877329f7fd351e03b848"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_head_clock.cjs",
+      "git_blob": "3bb9f3b42cfcf84e63e064d5598a256c9e67d6c2",
+      "bytes": 1956,
+      "sha256": "cf276600daa8a4f36d2b7017b4b9f5c049073235c04d0f9b892c47c4139c5c1e"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_head_direction.cjs",
+      "git_blob": "d632f5d1045a7cd4969f98dd975a412cf9e9154b",
+      "bytes": 4144,
+      "sha256": "e3cec603d4b6cdb023a761bb3669cfab71f82db7d1dc38152aa120f29b499ecc"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_head_down_limit.cjs",
+      "git_blob": "982565a0969c15c3354ef8008bd387b8bacfd0b3",
+      "bytes": 4494,
+      "sha256": "e44f628fff471b50c4f02454ae0c62e3b2f2ce1a36866ddb5d970f70a32ef188"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_head_exponent.cjs",
+      "git_blob": "69d7aa63006f5ae439411b0b895a62d68eb15401",
+      "bytes": 2502,
+      "sha256": "71742ab2c8a511dfe083c04afd9a90c627a79668a7921647c551986c6c6e00b9"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_head_gaze_speed.cjs",
+      "git_blob": "32aca839f19e3d720d2909647a5ef1fdcc4638b1",
+      "bytes": 1349,
+      "sha256": "b1420b085a754e79eb92540d839d767cc7281bf905f7f93dc1950eb196aa1651"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_head_handoff.cjs",
+      "git_blob": "6d069dd4a1ee5b46c59b09f1d2b6ecaa5360b115",
+      "bytes": 2201,
+      "sha256": "a91ad9e143f7f068bc62717246468759b2e22d0762fe83352380cd02137877a5"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_head_target.cjs",
+      "git_blob": "ab040771d7576ff79913c08dc04a0bcb83dae398",
+      "bytes": 1644,
+      "sha256": "82f78388f4095e769a9ca2ca4185589c0934c2a5ac0b45175c693eb1464a4483"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_head_timing.cjs",
+      "git_blob": "a5551e02d5a8f8817728e679f14ca229d5ff3a09",
+      "bytes": 2468,
+      "sha256": "583fd64981844f285c3add45298906e6b28949eb42b0f4e72f3a9f28e771e994"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_headlook.cjs",
+      "git_blob": "5bb6dcaec71d9ce4bc62f06bde3ef9180ec898e8",
+      "bytes": 5548,
+      "sha256": "dfe9b311b184bd35b85f7e74b7b72d6c701ae57df9e5ffb1d952d3c4917d17a1"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_holster.cjs",
+      "git_blob": "6f20f401801efe368118333c332bf4dc4f92874e",
+      "bytes": 2439,
+      "sha256": "b2d56c2453292f665dfa8e7b1bd7c1329f34fb493e8618f84bf6e0b6b511ede7"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_keyboard.cjs",
+      "git_blob": "4785508e47f9e32f4f107d6e947c39a7fa95a4c1",
+      "bytes": 3339,
+      "sha256": "37695ce00ee20918b05b1f70da486da587c89746d39c30e8b8484b2f3b49d7e2"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_large_turn.cjs",
+      "git_blob": "208588547db96d756299db7e4605e66d10bc324b",
+      "bytes": 4606,
+      "sha256": "258cc165095406954e1f96bbb0d592854a22addfcd921b4f0fad7d74f9e862dd"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_motion_clock.cjs",
+      "git_blob": "aad2f998bfae56a30b5466612c75e7c28a1045bd",
+      "bytes": 3242,
+      "sha256": "74f053e97744131cae7ae1b67b67a66dfee573b80e51fe097e7f2dc138a98ff9"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_mouth_alignment.cjs",
+      "git_blob": "d7669226bcb65365bf6d5671e90715c9f9f10dd5",
+      "bytes": 2009,
+      "sha256": "6aa04041f6cd8db51eca1976cfeab783a18366974675e984648a4c71823ecdbf"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_owl.cjs",
+      "git_blob": "a9afa403ab6362b867bf02f773704c89541e0310",
+      "bytes": 2369,
+      "sha256": "c38bbe86367eb4b0f1af32bfcaa134d749fa527499b145a805d822b3c3401102"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_retime.cjs",
+      "git_blob": "6451858568add4950a495501d92ba9cb63c9ffb8",
+      "bytes": 4420,
+      "sha256": "a0b14c82ffbb950d00ddc8c28b3fb617a197e4c15db2e59b9c7631bde9bbebe4"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_retime_ui.cjs",
+      "git_blob": "a6b623515e19042b8716d4345ab9ea357b0bd906",
+      "bytes": 13183,
+      "sha256": "0269f802ad03861b2d98160001f9ef0b49777654c4a650888fd348ee784a5002"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_slide_rotation_clock.cjs",
+      "git_blob": "6e77cdfc4814ae608b45f87c538fbf7d376b52ce",
+      "bytes": 4720,
+      "sha256": "69f2c5db7352ef9d60b135205debf41308a47acacde724178fb4da9526c77786"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_spine_timing.cjs",
+      "git_blob": "d3041cc2c6c0cd26c65f33675022ec6c437aa4e4",
+      "bytes": 1467,
+      "sha256": "3d4a67e96deb0a9db5193c545b8bee540d982d72bf769a866d2447792a99ed19"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_tip_entry.cjs",
+      "git_blob": "9eaf68d79886f9d241e223e99d38c673ff4ea267",
+      "bytes": 4952,
+      "sha256": "c3ecd9a2ec3378fa7106c345b74d7f86d1f5b3e98a831743863c0da99ed4bf76"
+    },
+    {
       "path": "Plugins/ProphecyJolt/ProphecyJolt.uplugin",
       "git_blob": "3570162d0c3db49e62d9e4e458219de05310bd88",
       "bytes": 780,
@@ -11689,9 +12187,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltArmMotorSettings.inl",
-      "git_blob": "9db0244cc36b190d76ac04dcd0d7fc90632fe146",
-      "bytes": 5657,
-      "sha256": "750e102c7b259548f787eb6ff821cd93222c4833d268dadbc300d44189ed06d7"
+      "git_blob": "a2d009352b25318fe0c8e849537f29bf6dbad272",
+      "bytes": 6521,
+      "sha256": "62d1653a8b45932b13bed2e3d797c317aee8d69936adf138789b4de075c5630c"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltArmMotors.h",
@@ -11845,15 +12343,15 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltWorldSubsystem.cpp",
-      "git_blob": "3f91b328299f1fee19174c0d1ee96363101848c8",
-      "bytes": 226541,
-      "sha256": "17815e1d7327774c221132fa76c56df371b421869600cf71faab67e37bdefa7b"
+      "git_blob": "d741d600f3a3a6d6013cb90f04394afc89e9b0f7",
+      "bytes": 227856,
+      "sha256": "49174ea8eca8a2cf39da908181079a0ac54003d06ab978693b12f79e5d91a3eb"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltArmMotorTests.inl",
-      "git_blob": "3d04fd00fb2c2b5029956e600085c29db899d738",
-      "bytes": 10311,
-      "sha256": "d29d42b6efaa14367756be0e306a391e02a41ca4c3c9f611d51e6b12ca5d2399"
+      "git_blob": "5e2f4e269bb6aa289eb0fe4f31465be648336b1a",
+      "bytes": 11431,
+      "sha256": "d2f0298424006f62cbf333ca1137553b9aee7a11b0d2c7c68dd8e914df970e7a"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltBodyTests.cpp",
@@ -11977,9 +12475,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltBodyDriveLibrary.h",
-      "git_blob": "ed72eaca529c68c92844a6280b1438ce64f64af4",
-      "bytes": 2741,
-      "sha256": "a8612f961682671e67a573f59d9173e6a28ae84bf8bb7b1c1feded33a8f3df16"
+      "git_blob": "3d1a027529624fc4291134192dcf1e48fd1da108",
+      "bytes": 3116,
+      "sha256": "7207ea5d17d98bc4b8ac1a142aab97d6a0b8ed2324d8ed80dfb48f42b3783e7d"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltContactSettingsLibrary.h",
@@ -12097,9 +12595,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "d7cf74fa9545cee05d30e66f8c6eec2f1e86eca2",
-      "bytes": 20311,
-      "sha256": "c2a5c11a8349cfc695f78ba6ed6897d887fd9148121d96b8178de773853033da"
+      "git_blob": "d98911205870222a992b066924d8629081f44d89",
+      "bytes": 85298,
+      "sha256": "170ae04b153951e25ffa46ea4738c367741f6a297dbc777bdbef2d5b0b2b1e93"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -28519,9 +29017,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/GameAnimationSample3.Build.cs",
-      "git_blob": "5e1e8b71ef17c4572dccc533ad0e0ee289e1dba8",
-      "bytes": 4060,
-      "sha256": "fe03a19fcf11aa8cf52b89cd626eee7db1a4b26897201e48769fc9f26aba0e6b"
+      "git_blob": "42603931ab39d6a9a89b415b38816b8838f7a0e5",
+      "bytes": 4189,
+      "sha256": "3e37da0ff83cee86a10bb2c384927b6a1d3d74e14497ca0b2a0034a4c0664305"
     },
     {
       "path": "Source/GameAnimationSample3/GameAnimationSample3.cpp",
@@ -28549,9 +29047,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgent.cpp",
-      "git_blob": "2a06cbe74899a787bbca05dbc0fa9aade64ef090",
-      "bytes": 149352,
-      "sha256": "5c3522a92dd1097bb4dc8b1adc1a5aff6f33cfa62893ae3bb38636b292c2e4da"
+      "git_blob": "2421ea4b3fcd0160165941a624676d4e842462d3",
+      "bytes": 150044,
+      "sha256": "4597a937a37ed8214eb1ea8ace00a8f9df6074afc6da1f13e345533232ceab44"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgentHalfSimulation.cpp",
@@ -28777,9 +29275,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackRecoveryLibrary.cpp",
-      "git_blob": "9839e30122c94a3cdd1d57c07207b9d02de9891c",
-      "bytes": 34397,
-      "sha256": "ad19267a595d8fba253084e9fec88fc1becfa0e2bb860c4c436a11e3c3511164"
+      "git_blob": "96bb64c8a86ef8ba62e1b0ead0dccc0fd84a26d6",
+      "bytes": 34458,
+      "sha256": "30275f2729020a91045e5846d5ce2bf8dc02c3aebb9f10e6524f72fa09eaa668"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAttackStartFKCore.h",
@@ -28879,9 +29377,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyBlendClock.h",
-      "git_blob": "7e522324da602726d18a56ee8ccdc26f78515bac",
-      "bytes": 1174,
-      "sha256": "001833c0865bb3df5e71c62492b7f5b0efd59cb545bc8ee86b6d59b4e263ce06"
+      "git_blob": "bc528491ce7abe1eae573906c1d6b84ef318a1fe",
+      "bytes": 1195,
+      "sha256": "c52fd52994d4a719dbfbae0f39cd58b812a7a734454c3707ef8a41c9427348fb"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyBloodFluidPostProcessController.cpp",
@@ -28957,9 +29455,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyCoreTemperingLibrary.cpp",
-      "git_blob": "d9f0fb2e157f9e37b072ce59eac8dbfdb1fa8a32",
-      "bytes": 5887,
-      "sha256": "3b6be191b7ead79af4450800c6f080d90cfbd760c67e8003eaea2ac9cd700363"
+      "git_blob": "967f33141f06933617af13b38073d5413024b1b9",
+      "bytes": 5979,
+      "sha256": "078401a74e0243713ba673fe3c4b09cd668ca738b5089625309b9436eb158b40"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyCrowdNameLookup.h",
@@ -29011,9 +29509,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyDefenseCheckpoint.inl",
-      "git_blob": "0a2215c118a0d4596df5e00f444e2f87616b9197",
-      "bytes": 9133,
-      "sha256": "d395dfc06ad6eda081049d2911a58aa9d60a059e2f9678b3e01c80da6cd746a2"
+      "git_blob": "74301930823d36134e775eecb8cbd3dd23c49194",
+      "bytes": 9637,
+      "sha256": "110b628cda3ce678b03875a4c0c0cd1fdb9b83822baf83a640aac8984565b660"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyDefenseCollision.cpp",
@@ -29214,10 +29712,16 @@
       "sha256": "3be4d80d6403d9d62a3928cb3538f1554e7b17119129c3a1226f72ee0269b002"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyFKReturnGaze.h",
+      "git_blob": "367d0cdfeda41baa7c2dbbb98ce22aa564819883",
+      "bytes": 2840,
+      "sha256": "e12c14641634bc7de78199cce736cdf704d1f0a040e2a4e8033ad613a110e338"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecyFKReturnLibrary.cpp",
-      "git_blob": "225652f89e7e7e2c030569b683fbff892b514b67",
-      "bytes": 28352,
-      "sha256": "ef5009220f380968b039408e1262bbdec549fdf0c70f30919a7148b283eb3c36"
+      "git_blob": "f3ccbab546fccabee0ca8b98827fd48caec3addb",
+      "bytes": 30400,
+      "sha256": "6f4f60472cb6067f536848a47a917a88ce26f53d253ac4448cefaa482b950910"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyFKReturnMath.h",
@@ -29290,6 +29794,24 @@
       "git_blob": "61483533d4a9af43e8d154010d53197b847ec49a",
       "bytes": 177,
       "sha256": "ecca2e0f6d66ebe95d519d559f31362219cd8e27041e2f7dc23acd74e7aed9aa"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyGetUp.h",
+      "git_blob": "6b98ba4f5d716841855c8cd3defb5d411faaa0f9",
+      "bytes": 1989,
+      "sha256": "8b8595ec57baf48589ad5dd1381290e1edfc855e123b1d8d62e84e95e930fe57"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyGetUpLibrary.cpp",
+      "git_blob": "7e67b2534da448e50ad286692522742fe518b154",
+      "bytes": 15577,
+      "sha256": "a4a3db33308f8a3b049911516efdcca6f54b9e4ae6c52a15bfee92dcc0a8190b"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyGetUpRuntime.inl",
+      "git_blob": "95a21511111d46e44af5bea37ac56a651762fabb",
+      "bytes": 17392,
+      "sha256": "6bfadcc4435dd50c58e02ead418e48574dd1b00768aaf9574a5251ad25476881"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyGhostAttackLibrary.cpp",
@@ -29365,9 +29887,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyHandRecoveryLibrary.cpp",
-      "git_blob": "b327c870ec25cad07b1effdb6814a037a18b24a9",
-      "bytes": 23505,
-      "sha256": "a664e4685c9f1ef1c709051cc2a4a33e550510647ec24f1410f7bcd48b0e127d"
+      "git_blob": "27ca73d1f239e2755c2fd2950cc721c78c344dde",
+      "bytes": 23598,
+      "sha256": "2ee52b5e65a38d280b84fc806f502979a4c21afdfc2b338a423e1c3bc69f8aff"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyHitEventTestSink.h",
@@ -29485,9 +30007,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltBodyComponent.cpp",
-      "git_blob": "85712dbf147e6d4b1861f0d125f56cbe6ac5251c",
-      "bytes": 40285,
-      "sha256": "a12ee810933abea866f98c43a6d59a8eb4d7b363d42c9180126ddbc9da49b4b7"
+      "git_blob": "4bef9ab6d2e9f8965a10ca24aade931a499ca0b0",
+      "bytes": 42437,
+      "sha256": "21594da67e779f996bff74d84bfeeb4681488a77a345e7fe21d8501d5b54b945"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltBodyComponentTests.cpp",
@@ -29779,15 +30301,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyLimbCollision.h",
-      "git_blob": "1965d35cae761579b551799ed02ee5d2e9d88d65",
-      "bytes": 357,
-      "sha256": "e37f403ad53ce48215e883421bdf67cd1c6894b5f36fe35444c6077e6969eb77"
+      "git_blob": "7b2cf4e842476d908b47d715ff67e2965711e9ca",
+      "bytes": 441,
+      "sha256": "e55da677f61c278c5a9c50c592356c4909a1174602269464f6d114c0d0a91e6e"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyLimbCollisionLibrary.cpp",
-      "git_blob": "c5f69ffa3241b67c22d271cf124273e31a5621e6",
-      "bytes": 8941,
-      "sha256": "00831bb4a28890bdede6740f43944eb3ffd1ceb0a4f899e1760eed65c4b8a140"
+      "git_blob": "db6144ad87accfe49c5a80f892463f73e02eed03",
+      "bytes": 11767,
+      "sha256": "7974042e6fa89aaa8c6e71333134ee2ca47834aa51ca24807821f6bee73a2d21"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyLimbColorLibrary.cpp",
@@ -29821,9 +30343,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyLowerTemperingLibrary.cpp",
-      "git_blob": "6729f99bd04c3b7c787d112afdb0e13dac7b282d",
-      "bytes": 47848,
-      "sha256": "34af80f5866e6070615ea780413f0ccfafde7bc9e08a5dc2498d9cfce2de3129"
+      "git_blob": "69151b5d7c2fefcc6b9f707120eaf435ec9e6312",
+      "bytes": 48111,
+      "sha256": "41ab6fc694a8acb89f522a39d7a1a01362ba751c463542f4e0ed3682d6789bb1"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyModeTransitions.cpp",
@@ -29839,9 +30361,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNAgentReset.inl",
-      "git_blob": "218d565f79461330cdef47caaa2379140f6fdaa5",
-      "bytes": 14963,
-      "sha256": "24d54988c8c3b1aedbe8fcf9e29ef19eca9cc8104b31e3b63b76986547d86655"
+      "git_blob": "54e4ea885cd004e1a4548265c7a77338ad0c6078",
+      "bytes": 15035,
+      "sha256": "89ed73b9ddc57683fac49093abfea570cd40d7bce872507b7f358f68159f0158"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNCrowdBenchmark.cpp",
@@ -29917,15 +30439,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNLocomotionAnimInstance.cpp",
-      "git_blob": "692fb33a55be8a8fd37c2142da3de31abf40d4fe",
-      "bytes": 20154,
-      "sha256": "30479a6a0b23d2cfe141f7b40626ea7510aab4ee5d3ee79196e9eec3c01c3d85"
+      "git_blob": "4c8e111e4f0fbd85d3f87c86bffb7c6e76d088e7",
+      "bytes": 20346,
+      "sha256": "31f340ccd2e46224f7b1068600facb3b5662eb6b47f5c598dade3153ec3d89a1"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNLocomotionManager.cpp",
-      "git_blob": "8b9d2aacb9088331659981670f5bf3781792fb63",
-      "bytes": 279474,
-      "sha256": "69b81e38c4449661c0e045c9e1fc92c26960f3d3fd50b5913d710c51ca069a53"
+      "git_blob": "03d63ab6601de6261d5d925efcf975f95e913cbe",
+      "bytes": 282073,
+      "sha256": "036260f4093e44379f4b74dcdc3fab4f8c072d83286fca7cbcab0c017066cc2f"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNLowerFeedbackAlignment.inl",
@@ -29959,9 +30481,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNPhysicalFeedbackBatch.inl",
-      "git_blob": "b9a657d6d5a6fee05b8daf9a3b3e77f349ed84e2",
-      "bytes": 21391,
-      "sha256": "88107d73c2273cd35a7fbe2012ecc1e1d06953aa09407bab5120f6641e1652c3"
+      "git_blob": "8870eb1d9c10f714398e03eb4057cf25b3e3da09",
+      "bytes": 21816,
+      "sha256": "18d33e42ce40936874855e446f5112fa9b52bbf90b5b7790837511a9e891290d"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNPhysicalTargetPose.cpp",
@@ -30121,15 +30643,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicalContext.cpp",
-      "git_blob": "6908ca83f7de1bc8d6667e3949af5a9ff5967c81",
-      "bytes": 63179,
-      "sha256": "2bb1fbba5c6ba97da494e2f4aaa5ce3144f158c29527d205fab36ac01bf246ff"
+      "git_blob": "e21902149a91f9863e61eed68a7c972c796008f1",
+      "bytes": 65519,
+      "sha256": "b777d734fb944929571d9c6b8a191d52d51ace68a362ec649f7037d6a7de36f6"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicalContext.h",
-      "git_blob": "fd2eced1882db93418368eed7341830c039265a8",
-      "bytes": 1565,
-      "sha256": "b57bf28b557c0a64c8e66a3e1739f332630fa59311393f10399928175154429c"
+      "git_blob": "c97175f2740540f0e464f99278201c32aa19b9f0",
+      "bytes": 1645,
+      "sha256": "34ae816fcde070f1378ebd0ec723f125e0165c4fd1d1f751e7dd2d82f5c54c66"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicalFootTarget.h",
@@ -30301,9 +30823,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyRootPelvisBoundsLibrary.cpp",
-      "git_blob": "d1971f03b9ee14865ec5b1f8cdb194c7cfe53050",
-      "bytes": 9224,
-      "sha256": "a452038dd6b5d9837e41e6fac441837951acde9565832c65d8daaff4bd6c7c99"
+      "git_blob": "129a66ce7f3a7592d8712e09af13eb37f8f5a2eb",
+      "bytes": 9286,
+      "sha256": "2ede4e41ac32566d75629dfccac99577dbdfa3cef203a03b6896b89bbd73298f"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyRootPhysicsLibrary.cpp",
@@ -30469,9 +30991,45 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordComponent.cpp",
-      "git_blob": "70869056dbfac2b2b06f6af0c4084a6e5aa64a7d",
-      "bytes": 60764,
-      "sha256": "94fa0c0c3bfa50e4f17ed78f9b1e61dad5c99b5e88eecdb6d6fccf3ab1efd60a"
+      "git_blob": "7652b3b0e982755197d526ca5052ff80c3f7a583",
+      "bytes": 62207,
+      "sha256": "1201789149226fa148f070c2fefaf482ea2946ea08e31b9b59617f5e41818cab"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecySwordHolster.h",
+      "git_blob": "66b3ae4b8ff2565502a330f5f1f9ba4d6f67d3f2",
+      "bytes": 456,
+      "sha256": "2a449b9d72e0ce14fe6a744dc6a603cf5cf2684ecb30890e6269b13dc40d46b1"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterPose.cpp",
+      "git_blob": "70991a946a3372ad29914946a83a82e942258058",
+      "bytes": 70161,
+      "sha256": "e5d72cff0d6cc830e77a591337670df5fc22518ca88d571c4492b2e96f98cd70"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterPose.h",
+      "git_blob": "a85539e974282fbd5414e671e37a97609fd120b4",
+      "bytes": 2513,
+      "sha256": "0fba7a7924071195206703f7090868e4dfb2d197eaaf754a5c48cfc1ddf3e9f0"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterRuntime.inl",
+      "git_blob": "66067aa5593b339ae52a1e55d9addc16819ffa7a",
+      "bytes": 29908,
+      "sha256": "8656a1c60ee52dbef60cd0d381daf079931c6f922b276e3920c1d2ab9dc75d74"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterSchedule.h",
+      "git_blob": "64aa2fcedff8902429b844ce656d28c552912341",
+      "bytes": 1403,
+      "sha256": "3f139f4076e6250df4d81e9afa6bd79f4c438d2bb1cab54fdc03443dd2781cec"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterSchedule.inl",
+      "git_blob": "0d5b3cf5065589074b7f5fd5b4bd729ae9c8e318",
+      "bytes": 2577,
+      "sha256": "6b7465d73b37237002568cadc0e50ba2b6fdce240f30361a4f4e0620589c8d36"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyUpperBodyInertia.h",
@@ -30535,9 +31093,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyWalkTickPinningRuntime.inl",
-      "git_blob": "7b24543395ac0a71b49d90c7c09bcef991532b64",
-      "bytes": 13687,
-      "sha256": "f9536510fab56829df7dc019e2697c25ac8ef39c2c5c1a22e60da934eaf1ade0"
+      "git_blob": "0aa116cd4f154d41af5712e0bb3fca2d80e2f8bb",
+      "bytes": 13717,
+      "sha256": "e16a305ea9419cf657ce6343b348370178b5e8f09519bd3096774d6760eef0a6"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyDefenseCombatRulesTests.cpp",
@@ -30582,6 +31140,12 @@
       "sha256": "7b5a806572d72b7e8fa85be83ae25c8227f754921b31d2ac5b703bd7615739a0"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecyFKReturnGazeTests.inl",
+      "git_blob": "18fde357ae3bd4f22f8607a55642aa9cfac4f6eb",
+      "bytes": 7048,
+      "sha256": "7a4a885da24ed974a5ad4dd4d079437d022ec7e70a0c8f5e9854652dc305a8cd"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyFKReturnWindingTests.inl",
       "git_blob": "e71cf22719d800a2237e67656cb80b705a5d3d50",
       "bytes": 7759,
@@ -30613,9 +31177,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyNNPhysicalFeedbackBatchTests.inl",
-      "git_blob": "892290a930c0175ec8791f46185bee9327a2b8dc",
-      "bytes": 14836,
-      "sha256": "88158565f609472c7638a2818ab2610788e03ba436a56fe2b7391e7d1e788d3e"
+      "git_blob": "d9df683a9443eef5cf3166eb69315f588c45343b",
+      "bytes": 17488,
+      "sha256": "a86bbbbfd2cf0bb5be02cf828c0058545b2db7168609ff24ef5fffcafe07cd8d"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyNNPhysicalRotationCacheTests.inl",
@@ -30640,6 +31204,42 @@
       "git_blob": "45032b5f5fc45acc9c8a1d0ab77bea9fe3acb19d",
       "bytes": 4822,
       "sha256": "822d77ed832f42571092fa9854ea6f78ae5c87b1e2deea4cca694c5ad8d47542"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterChannelsTests.inl",
+      "git_blob": "2c6c609c5ccbf65a1909a8697ff153510510ac4a",
+      "bytes": 5183,
+      "sha256": "8966247410c6b830e1f1f5d6153e241832e22976d41ed94fe8272b2fca9d2b91"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterLegacy.inl",
+      "git_blob": "b421b2246450ed096debb4d72598487a2d778a46",
+      "bytes": 19619,
+      "sha256": "fe3df2dd38bc298ea76826183de8ddfaab8632176cd803b9fc07a677798e6ac8"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterOptimizationTests.inl",
+      "git_blob": "afa5653d6379602b5a5a5667890821311a154ea3",
+      "bytes": 11278,
+      "sha256": "520ee05ca9476d764f90e53c8c999ba8149d5484757df5476135a9efca3c3b2b"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterOrderTests.inl",
+      "git_blob": "add6005ac9eeee1cf1c862be49b02778115fcc79",
+      "bytes": 7429,
+      "sha256": "1423af1ebeb7f8bdcf17f6b7522e6a3b49a6a22a2bb3e0b8ecf858167d185d6d"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterReachTests.inl",
+      "git_blob": "6ac320d1df92520a11ee3a7dc517c01733cf09c0",
+      "bytes": 3233,
+      "sha256": "e5ee551cc5950745b5f1bb8faf5988e93ccc259fb2622b51ffe0820de2812da7"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterStaggerTests.inl",
+      "git_blob": "06f7ca25b34c71f6ebdfd48893d571c242333009",
+      "bytes": 10210,
+      "sha256": "8b9f5787d0bb4792b7f7da8a5f850d1aff6d318f2a3156122e53008b3cb24344"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyWalkPinningSpaceTests.inl",
@@ -30829,9 +31429,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyFKReturnLibrary.h",
-      "git_blob": "434fc68487e4f38119bc941b359fad2ffad78814",
-      "bytes": 8511,
-      "sha256": "bad3f683146bca0018dd143b26ef40f79c2f23f23946f0531d925f7c66688d99"
+      "git_blob": "9bd28ecdb34ff650dd457b377445c751d41dd87f",
+      "bytes": 9106,
+      "sha256": "cc967969f5ab6045f59f2590102ef0fe6990202cae02b4172c563a0ed9dcca02"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyFoliageDecalGridComponent.h",
@@ -30850,6 +31450,12 @@
       "git_blob": "8ec03fe8468f21753d03b3260e44a40aad22a136",
       "bytes": 1099,
       "sha256": "9005f248545767c97d3b6006ebce1414d3e04e1eab4e6fccf84e58d53efefb65"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Public/ProphecyGetUpLibrary.h",
+      "git_blob": "8e08cff1ab3765eb2dd6eb149892e939a33337a0",
+      "bytes": 4691,
+      "sha256": "d842a3a976ff9f98ff08eb94214810e7924f7e055ef46b70841241972cf4284f"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyGhostAttackLibrary.h",
@@ -30895,9 +31501,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyJoltBodyComponent.h",
-      "git_blob": "9c772d1ca913d9c23fcad179b9aca5740f65180c",
-      "bytes": 5435,
-      "sha256": "5b3815b3f6df369115e766f86ebe85890fb464beae0ae35c5d57e78b19c4ef11"
+      "git_blob": "c3a5725006e43dbf81b21033c01d6e24d05386ca",
+      "bytes": 5492,
+      "sha256": "758f5fde56189725a2be3144814e4c8a38521f8db8488aa6d5e1fa2f11985d1a"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyJoltCharacterComponent.h",
@@ -31015,9 +31621,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyNNLocomotionManager.h",
-      "git_blob": "a9cba1bd7133ccb346a3b668d826dcb327a96382",
-      "bytes": 19139,
-      "sha256": "7caa18a5f60d22f6fd0e9590d83bf6aa5a7a7515d045835abf8937818a1c1853"
+      "git_blob": "a1542b86be4febb8cd89052f2bab06b756746edc",
+      "bytes": 19217,
+      "sha256": "a725ec08052e93e28fd06bc131b1b7ad16f93b1705ff8da74cd1efc628c6d376"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyNNModifierDebugLibrary.h",
@@ -31177,9 +31783,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySwordComponent.h",
-      "git_blob": "16ac9fab64ef0ad6bae3e399f4e36b96f90f0c3e",
-      "bytes": 2604,
-      "sha256": "b897e1eeec7fd95b71976cf1e2c64d7c544e096ffcdf7896c43c5c3733079404"
+      "git_blob": "71be761512ebc5ce901e2bc5378469a22a2ac9d0",
+      "bytes": 2780,
+      "sha256": "6f05af6863e816dcfd023213192c06542e92beccb46e383dcb4d2ad9d86dc658"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Public/ProphecySwordHolsterLibrary.h",
+      "git_blob": "26557e0017ce18aa3671406cc646a9181940a7d3",
+      "bytes": 1832,
+      "sha256": "0f4929402fbc5eaf689ca950ee2bed6d4c802aaa256592274bd32b3edfefd4dc"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySwordPhysicsLibrary.h",
@@ -31195,9 +31807,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyUpperCheckpointLibrary.h",
-      "git_blob": "151db11ae0e33b878f763dc96f90bd72f094b150",
-      "bytes": 3765,
-      "sha256": "ee52234228cdd4895b688a48412616c81e4158eff3ea82c3c69eab8d30564232"
+      "git_blob": "e6345732342e68f4f775b71161740a960f02fad5",
+      "bytes": 3862,
+      "sha256": "100f1207f2f899821e755f53cc9bd79eac57cc879ba150911e87869ecf96c255"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyUpperRootHorizonLibrary.h",
@@ -31308,6 +31920,12 @@
       "sha256": "0a3fac642baec83aad4de89a1299181090553b55aae46756d4443e3a418bf9f3"
     },
     {
+      "path": "Source/ProphecyEditor/Private/ProphecyGetUpSetup.cpp",
+      "git_blob": "b006cf7f66048d7a433ab929f6f74c8bed9665b6",
+      "bytes": 7852,
+      "sha256": "b2567e3c7e9c47922555d504711a6092da1438c93432affb6d64a9153474050d"
+    },
+    {
       "path": "Source/ProphecyEditor/Private/ProphecyGhostLocoDragSetup.cpp",
       "git_blob": "bcbaf4c12127ec73323a9915db3d4b1574b328d7",
       "bytes": 3822,
@@ -31339,9 +31957,9 @@
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyLiveAgentTypeRepair.inl",
-      "git_blob": "4334715bcb6602a8b99e089b0617aa0974f75b61",
-      "bytes": 10491,
-      "sha256": "aa8e3b7c78490217ec13e30546b6d47655e387eaa89969650c0b3c6cd7c4cb2d"
+      "git_blob": "a508413787fe047a00c5f1221794a0893139fad5",
+      "bytes": 11488,
+      "sha256": "c4e70c28a196e5df5637906e7189bed2755454e7ad39419f461f5ec3a85f22a4"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyPhysicsReceiverUpgrade.cpp",
@@ -31414,6 +32032,12 @@
       "git_blob": "b8f1f162d62d99dd51d8b1a5bb8799b7061ca7ce",
       "bytes": 15655,
       "sha256": "407ce1a6c550bcfabe606aebe1f30e1bfe0f38498c91d66bc92d0f5689f1029c"
+    },
+    {
+      "path": "Source/ProphecyEditor/Private/ProphecySwordHolsterSetup.cpp",
+      "git_blob": "1006c4502ed8633b89a5a12d88ec2792e2b3a480",
+      "bytes": 10179,
+      "sha256": "5efa93a5bbc2ce816d6e3e953b58cbb7d00e012b05d1102d6a8fb065e03cb0b9"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecySwordTrainingMesh.cpp",
@@ -32766,6 +33390,12 @@
       "sha256": "f11340d7748d10601d1fc05c828e47e8a812c693653972687997c8e0ae7e7d27"
     },
     {
+      "path": "Tools/NN/BuildDodgePicker.py",
+      "git_blob": "20fe134c091769a9a43af585a6d795fad6b4cb3f",
+      "bytes": 3211,
+      "sha256": "5eda8203dca37496c53f594559c97962bb398215e7fa7041bc19f0fb4cff5012"
+    },
+    {
       "path": "Tools/NN/BuildSlashWindingFixture.py",
       "git_blob": "8bc24cd3ace03200cd0cc9b7da2a3644ed46ff6e",
       "bytes": 3337,
@@ -32812,6 +33442,12 @@
       "git_blob": "bb5cd2daee93489024b3dfb3b8c002e5b8b669cb",
       "bytes": 2308,
       "sha256": "ec729e447fcf7439608d6599a40d42f557f8dba040e146806684363f486a4ac3"
+    },
+    {
+      "path": "Tools/NN/Dodge15454620261011.json",
+      "git_blob": "f29b33bb792fc34e9639ee37f27a1a3bce19219b",
+      "bytes": 775,
+      "sha256": "14f8c578f6d5b8f7f474479a5aa84024f9960d0edafc4cf35070f3f7e9201f6a"
     },
     {
       "path": "Tools/NN/ExportAttackTargetReach.py",
@@ -33372,6 +34008,12 @@
       "sha256": "d2cf2f55bcd751f14f13489448bfca6bb191b5a52d090a9c73ec8b19d15fa4fa"
     },
     {
+      "path": "Tools/NN/VerifyFKReturnGaze.py",
+      "git_blob": "1e48368000ae0db2a667d6c741d3b077ad76c183",
+      "bytes": 2331,
+      "sha256": "9c6548e16cf710f1e2a18d80f0aeb9d46af473e5f5900a7d73de619d273b573e"
+    },
+    {
       "path": "Tools/NN/VisualizeProphecySlashParity.py",
       "git_blob": "2ef479bd5031e6f4e1c1ae88ac06e514796ba295",
       "bytes": 3637,
@@ -33382,6 +34024,12 @@
       "git_blob": "ef35e44d534d19b03208faa0ece0332df3e423c7",
       "bytes": 17687,
       "sha256": "e3bd2ed23513835833b8ed5749f63182efb5eb0e4129b03e1a3c79833db49094"
+    },
+    {
+      "path": "Tools/Recovery/AttackFKGaze20261011.json",
+      "git_blob": "1c317b1b6677a445bd205a4dfac51f164705d611",
+      "bytes": 2693,
+      "sha256": "2a15c3e6e6e4ad544365ce12e5f28138d7552d2bf5dce64fd6754d610013eaa5"
     },
     {
       "path": "Tools/Recovery/Checkpoints/Attack160664-73a549008e88.pt",
@@ -33490,6 +34138,36 @@
       "git_blob": "9cebbf454700a82e6a57b345057e9ab8b9156d82",
       "bytes": 1196231,
       "sha256": "e34b95ae0dee767c79270eeb625c9c22e4171ba38bfef58d24988c7a22dd7b95"
+    },
+    {
+      "path": "Tools/Recovery/GetUpFloorRemoval20261010.json",
+      "git_blob": "61bc96407fbe1483148190cc36ce3b2f45d88559",
+      "bytes": 2333,
+      "sha256": "72146ad12adb8b8c6194bebb9f7eb1da73875daca840c17007f81f58d9f5d674"
+    },
+    {
+      "path": "Tools/Recovery/GetUpFloorToggle20261010.json",
+      "git_blob": "4727e6fa75121941dd9200ecec2a1cb0d7eba03e",
+      "bytes": 3283,
+      "sha256": "ed9035166f884567cf3b5de4f4ca4eaf3912e479c04b572cd6d8d44095f6a8b6"
+    },
+    {
+      "path": "Tools/Recovery/GetUpGroundFit20261009.json",
+      "git_blob": "c60bb51fd8b5db629ac361c464072dcf448fc051",
+      "bytes": 4837,
+      "sha256": "fd2ab67e82c05c6b000f75107f156904112812c8e91a1340056f9859af60e560"
+    },
+    {
+      "path": "Tools/Recovery/GetUpPhysics20261010.json",
+      "git_blob": "5afbf356840d2ec48738ac097ac769878d8667ee",
+      "bytes": 3092,
+      "sha256": "c9a3f0d949d87100d146dfedb6ae0b57ce7be3e89d57f37e22ad3364d902ed2a"
+    },
+    {
+      "path": "Tools/Recovery/GetUpValidation20261009.json",
+      "git_blob": "099b3018b54493dac4318aa5819a978ced81e335",
+      "bytes": 2458,
+      "sha256": "2c232f92b363112ede2c2ef2ba330e29c3f2a6a8d4af4ac8afd2c29ba5f81e44"
     },
     {
       "path": "Tools/Recovery/NNCheckpoints20261003.json",
@@ -33726,6 +34404,300 @@
       "sha256": "0e8c04ab7142dac3ec112d0d224016c02d4fc3c1b394a83353bc1664de10b4ef"
     },
     {
+      "path": "Tools/Recovery/SwordHolster20261010.json",
+      "git_blob": "5725396cf1db1cdcdb43b7f33efa3be2300c60f8",
+      "bytes": 1809,
+      "sha256": "547ff88901b7c4e14e32e5b9c7903f879b4b839dad3a8400bdd6d71d66a35b15"
+    },
+    {
+      "path": "Tools/Recovery/SwordHolsterArm20261010.json",
+      "git_blob": "3df414dd8d341f23d5699a67218dad67b3dfef99",
+      "bytes": 1725,
+      "sha256": "4adfae96428028e88010de42b1c0e1d2816b4bacc9839223c96d37381b61d510"
+    },
+    {
+      "path": "Tools/Recovery/SwordHolsterAxisParent20261010.json",
+      "git_blob": "d18c96269509fa36746025bd3926c0140c69a317",
+      "bytes": 1933,
+      "sha256": "c4fab228d170a22044699aae6a48e60c0ab5d05b3132034c11b257a868c2d25e"
+    },
+    {
+      "path": "Tools/Recovery/SwordHolsterLab20261010.json",
+      "git_blob": "c225a381551cbc2ac7339eaa1552807425529bee",
+      "bytes": 771,
+      "sha256": "7f6d5d0027018cb7f60fbf8adcb8cd0e62526bd60f5709a99667c5fff321b358"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/assets.json",
+      "git_blob": "91c51d5d0b9ef8e8bd85c51739d479ac6d3884c6",
+      "bytes": 271,
+      "sha256": "4fdcc86785d6f42fc3885066cbd4cfaf2a20c8e475cda2dd7942ee8061920291"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/lab-state.json",
+      "git_blob": "a56f71280c41de3bd842b60e9b48e2300b0e8d27",
+      "bytes": 3467,
+      "sha256": "667a2364ad7dc30d546d537dfaa40d484d18e8d921d3aab38f9ad7edaa7d2348"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/parity-baseline.json",
+      "git_blob": "22498c8aaebb55cb8d6f2c535bbe50bfee62eb20",
+      "bytes": 973,
+      "sha256": "8337b32dbba742f235004bb79f95ae9a1b8bab24faba12b85a862328915a8504"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpFloorRemoval20261010/FinalVerify.py",
+      "git_blob": "abe28264f808c4b811ec703baa6fce9a55316825",
+      "bytes": 2219,
+      "sha256": "1c74a66bf00f43c9a9ba593ea6edb591b01536952febe0a2fcee3742171c7834"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpFloorRemoval20261010/FinishMigration.py",
+      "git_blob": "a25fcfaed8df72db69aed83bc112b3a9e91c0f8a",
+      "bytes": 2550,
+      "sha256": "b90d50dae01b69d09ee42ebf1a0663878f28de86357f0874ea74163469e298a1"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpFloorRemoval20261010/Inspect.py",
+      "git_blob": "f8b229ccde9ebe5f0684725b01baaf2d5dfc57d1",
+      "bytes": 1189,
+      "sha256": "b2d6453a95927fb4810fc3c82da67c48dc933c2f7f40b5fed7fcf624c133148d"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpFloorRemoval20261010/RemoveRuntime.py",
+      "git_blob": "03fdeb9dd256cbc5f7fb197457cf62d291ad62cd",
+      "bytes": 829,
+      "sha256": "d6e2bced2d178337ca5ca0f3b2e73c7916da34bb8367b4043216534aca697d2b"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpFloorRemoval20261010/SaveClose.py",
+      "git_blob": "03c1af874d0900b423f27a26a0596a209d349439",
+      "bytes": 2069,
+      "sha256": "219531c2b49fbec052ea55b9d2415de4153f66538bd5ee4cde4dcab991afaca4"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpFloorRemoval20261010/Smoke.py",
+      "git_blob": "e316389ab2200e8000968986a7851743895d6fc6",
+      "bytes": 2157,
+      "sha256": "46d83bf156b32fbc9ec0045494e3fc9c345fadb960ebee0e7be1353879692307"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpFloorRemoval20261010/UpdateDocs.py",
+      "git_blob": "9abe98c2558ca733451483bf7f5d0ce48fbe83f0",
+      "bytes": 1730,
+      "sha256": "40831560259f86b4d378d39fcabb917f84c8209524e811934c4bbee483875b08"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpFloorRemoval20261010/UpdateHandoff.py",
+      "git_blob": "65ea14eb37dc8790ced084e6feb9a847a14a58c2",
+      "bytes": 2873,
+      "sha256": "2a4116e1e12e2acc1a49d80a8de0bbb0b590a11ea36db6410d8bc79e3aa01f9e"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpPhysics20261010/Compile.py",
+      "git_blob": "eee67125a903db308e465935b93ce9b42b8a8015",
+      "bytes": 687,
+      "sha256": "917ac4ac925c2f2fcabe912ad32dec78a4939938bee64e9a43aa1febbff21f3a"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpPhysics20261010/FinalVerify.py",
+      "git_blob": "da7aaf90fcd6f8186cf4d54cef639d18a54c5462",
+      "bytes": 2447,
+      "sha256": "b4d66afe96c06b39b11e5ea7741ad3e62e2076e87fa774a5148870b5b4e503c8"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpPhysics20261010/Inspect.py",
+      "git_blob": "9f4c62837abd24a910d4f0953989708fd76b9064",
+      "bytes": 910,
+      "sha256": "ac0f63b16b0e67e23ddc8ef7db4856429e2feaa59723effa0b293ade270c5805"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpPhysics20261010/Repair.py",
+      "git_blob": "b7c925d0c0e5eaaf392a297678e966edb79f1058",
+      "bytes": 595,
+      "sha256": "e98612af33c5b045128c633ae0a3ed81a2783b5f7137bc8bdd42093664769af4"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpPhysics20261010/Smoke.py",
+      "git_blob": "e8115f1ed5159a797312e1f028ddbd18dbdf55f3",
+      "bytes": 4171,
+      "sha256": "df3fe4bb49ffe665ba96f96f38c3b86f953aad6664097ee93c1cf796ccb7ecef"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/GetUpPhysics20261010/VerifyReload.py",
+      "git_blob": "8d7cc19237abbe75e4766dfa0a10cad5cf5f64b3",
+      "bytes": 929,
+      "sha256": "41e102ad809e1e5192bb9ce325a177a2e4790718c165970c06413d4f6211d2b2"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/CompareGraph.py",
+      "git_blob": "2d6e8301ae48907bc9ec713b98247afbcde8e7b8",
+      "bytes": 2032,
+      "sha256": "935031c8dbf126760492a6a5dcc886da7a2a5fb204bdc9becaeee495769874fd"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/Compile.py",
+      "git_blob": "e88d8dfada0ba22d3b0441a8c86df44f92b7ad1a",
+      "bytes": 767,
+      "sha256": "d9023fdc80098355d1f2a54d754d467001d7c322f37ac07e97ab72b0b996bcf6"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/Inspect.py",
+      "git_blob": "ee3e11e02b6e6c630ab5e9dec2384a2b7bb812ac",
+      "bytes": 1603,
+      "sha256": "2befa3489bc35a9bfc4299c9c1d80c284175a19c425af75492dc2c52e456eab2"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/InspectSword.py",
+      "git_blob": "3b6260fb114bd804e7ba6302bddafd20d1f21fdf",
+      "bytes": 692,
+      "sha256": "e61e4bef178ed6203798576b2214afa046be064683b01e8767a0b1ba50367455"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/InspectUpdated.py",
+      "git_blob": "cc819aaeaec3f96ea7ef755242e13c15218cdcbd",
+      "bytes": 1159,
+      "sha256": "c45061fee5a694c04177c54b9f00ff0462fdf2f96531d73e1399ffe4aefc0dcd"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/Pose.py",
+      "git_blob": "6e37de0e40a19b4ff70bcb580185b34d128d7798",
+      "bytes": 810,
+      "sha256": "080485b88b156bec5978391d6b211f7b8d405f1550646527149a378b77e18266"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/ReachProbe.py",
+      "git_blob": "6b9c8d7be9f79fab7849e46a89de13d933e50697",
+      "bytes": 2779,
+      "sha256": "cfe373129363ab885d86171a3017cc6fa85e3adc4dc3b9f6bbb6273313c89d4a"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/RepairFinal.py",
+      "git_blob": "e36a34b1b37fdc75c3876605452fba385e6c0f5c",
+      "bytes": 769,
+      "sha256": "9f46aaaa484ac6ae6f160ff84d3cfe47fda618fd034a53d3df2528d4c79219c1"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/Repeat.py",
+      "git_blob": "3c61015faad9ba5642e13772bd0d32d0d567d22a",
+      "bytes": 3904,
+      "sha256": "8c702fd220710c350bd8964ae8ef800034780d73b50c529f0d0c5292e1957849"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/SaveFinal.py",
+      "git_blob": "48ac22a81fbe033b77fb0c5a5998efc5f4a75e19",
+      "bytes": 1183,
+      "sha256": "66a65ace769dc390daefe993500473b807ef1319b1451cfd9c4f641f7e97312a"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/Smoke.py",
+      "git_blob": "dd870e0d5c9a8d146d343821a18aa06b1eb8fee8",
+      "bytes": 2720,
+      "sha256": "4fb8c4b23d4ced16aa13a36805662193157a3a3743d51a45b99bc96a3415fc32"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/Smoke50.py",
+      "git_blob": "cff8296f2cdefbc0abf2974e1bc6dcbabc9e76af",
+      "bytes": 3022,
+      "sha256": "6c01249dfb5e3e63037a98f0f328147f4df9416f17dd108d47569782515e004e"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/Smoke70.py",
+      "git_blob": "ce6380047f57b2dfeb5257ae57a0d9c442c39dc0",
+      "bytes": 3023,
+      "sha256": "574503030418d0af3bba36788462affc7c766d47c004078c7495008f00e44207"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordDraw20261010/Wire.py",
+      "git_blob": "81e750ed60dad85d6b231077fa9a7fed1cca06c5",
+      "bytes": 1026,
+      "sha256": "f435c5797a6004f9948cc2c312eaeaef56cad8e87a437e7839992bf00d3be885"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterArm20261010/Compile.py",
+      "git_blob": "145410e9cb527ba8aa7296e9828423cbdf8a1edb",
+      "bytes": 935,
+      "sha256": "55987e68980f40a3de2bdbbe7cf096cace4c90368f28b8fecc934fb391a01197"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterArm20261010/Inspect.py",
+      "git_blob": "8a780d721c7e7eebb98752e553e083f759ad18bb",
+      "bytes": 599,
+      "sha256": "b9b6020c48d1e7a9c66261eac4c0318f61b6653a9e0b27e5b6522dd725076d5a"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterArm20261010/Repair.py",
+      "git_blob": "9f80fb298193403d44de3af61b1ce5b3b7a6c480",
+      "bytes": 855,
+      "sha256": "0540238818628c5b21746d6d9a00b670ffed8d80c4a274ad5ce2100ce921ad70"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterArm20261010/SaveSword.py",
+      "git_blob": "73bcaadc1866dd49703a1003bb426903f65158b7",
+      "bytes": 469,
+      "sha256": "7db9c1da4c9d7f5797b61787b4f1fcc2f65f1fc3491c47614618ae074afcdb9e"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterArm20261010/Test.py",
+      "git_blob": "9849fef1f6bd3f7f3575ea60dfa363e839226217",
+      "bytes": 4576,
+      "sha256": "34da139e5fe91053a9458ebebbbe4e51c64c618062e99fd033e0c3080a7f3fa9"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterArm20261010/Verify.py",
+      "git_blob": "7f302b1607a0d0ecb253251b3a616dea1202317b",
+      "bytes": 1172,
+      "sha256": "39870ba519a77deadca36ed083ec8ff6d4095818c0b6870a895b001d64279f0f"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterFix20261010/Compile.py",
+      "git_blob": "722ffda4af106d65593dc8783f1527abf3b35ca3",
+      "bytes": 935,
+      "sha256": "d31bf2560d6775215a8a5949caf8a629dc2b7202cea1a532c1470779ab600d42"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterFix20261010/Inspect.py",
+      "git_blob": "b7e7893132f11b16d9090ac4983d42162a145658",
+      "bytes": 599,
+      "sha256": "1ee1df6053e56774e1685c008531e7c064fd610e09edaedba662a9e84da00850"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterFix20261010/Repair.py",
+      "git_blob": "edc38f33c335cb0784fbbc65b0dbd9911230123f",
+      "bytes": 855,
+      "sha256": "3c114ec9a4d14aba9fe97100fd6d6d358c3b190569ff30ed71c90e8bb2b6137f"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterFix20261010/SaveSword.py",
+      "git_blob": "13b5552588df0aef4bdcf5416449f43884880cb5",
+      "bytes": 469,
+      "sha256": "62b9eae0a110f39e0ae046addb485ed4f25d4eb11669149d7197f1bb7cbb8f7a"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterFix20261010/Test.py",
+      "git_blob": "fc81561a161efdb5d4ed97091627378400776420",
+      "bytes": 5400,
+      "sha256": "05ee13d60f63d58fdf30998b332e01727f3465d55b5ed530e1454db939b06735"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordHolsterFix20261010/Verify.py",
+      "git_blob": "48d4830092a476d3f7285d05b98d64cab6fa3cc6",
+      "bytes": 1172,
+      "sha256": "e0d16b7cf4afbf8fec7bc01c39e573605b22491fdfacb90c1338741f7b687bf1"
+    },
+    {
+      "path": "Tools/Recovery/SwordLabCheckpoint20261010/scripts/SwordStall20261010/Probe.py",
+      "git_blob": "9beb948bfa54b1f4f6bc60397495943520a3a8b7",
+      "bytes": 3148,
+      "sha256": "ef8541ffbd82c82dcf23269276d3011aedbec32ea02cba6a1428b96c43f84a70"
+    },
+    {
+      "path": "Tools/Recovery/SwordStall20261010.json",
+      "git_blob": "f91ffb7edb83640d862b3e89156f2295c94b71c5",
+      "bytes": 1664,
+      "sha256": "37dc04f2dc5ecb06c99d8fd6290e782a868d6a5d7e3bf28572d03bdae557d07e"
+    },
+    {
       "path": "Tools/Recovery/VerifySnapshot.py",
       "git_blob": "a88570e0b081262b1af9e2a90964a64eb63f4f89",
       "bytes": 4589,
@@ -33736,6 +34708,252 @@
       "git_blob": "b026d4462443e69fc5939ba42b48ce5d61af1d02",
       "bytes": 1392,
       "sha256": "991ab13a55a8d32da3a8d0a509419e9c4aa4c961d2b22945f7e288264488b1c1"
+    },
+    {
+      "path": "Tools/SwordHolster/BenchLiveGeometry.py",
+      "git_blob": "8ea0ed6497d7360bbc5485ca2e08c8eeba60b9c7",
+      "bytes": 1531,
+      "sha256": "d4af92126ddb88be05d3e8c9502207ad1a8e13a08bea10e80fdddf87ebd97b2d"
+    },
+    {
+      "path": "Tools/SwordHolster/CompileOvernight.py",
+      "git_blob": "fa7262a9094236ec9bf53adb7355b15968b2d323",
+      "bytes": 548,
+      "sha256": "797206232a4d99f82ab804d9633c429b99e09d8cc0a8fa3bcdf369f4c340b200"
+    },
+    {
+      "path": "Tools/SwordHolster/HeadFpsDiagnosis20261011.json",
+      "git_blob": "5e97f3fda63ef6831229bfe13fca1cec0a4775be",
+      "bytes": 181316,
+      "sha256": "2cd9a3590d6dae6710cc65f58ebdcc16a3b1ec918ec8bc7310f5e23d132cfd45"
+    },
+    {
+      "path": "Tools/SwordHolster/HeadOrderFix20261011.json",
+      "git_blob": "b117b357c36ae2f0a340fc64d6cfa4bd6b838d6e",
+      "bytes": 6250,
+      "sha256": "223f9f87817dce01889c321b78eb5c6a674366d67d6b52d39b96ab84f76e96c8"
+    },
+    {
+      "path": "Tools/SwordHolster/InspectHeadExit.py",
+      "git_blob": "991b48351628a15024d7eb119f479b993b5c9b31",
+      "bytes": 696,
+      "sha256": "be1232d0e6213c248c7eae1208dd407a353e45d91a0094394a845e815f0d46c2"
+    },
+    {
+      "path": "Tools/SwordHolster/InspectMotionCapture.py",
+      "git_blob": "848ec189fabe95ce69d076dd8c402b647b2012da",
+      "bytes": 792,
+      "sha256": "ec7b9168584d5e5ebf93bd45dd9dc002f2c0e3dbd9f67e70079d21793ab48da5"
+    },
+    {
+      "path": "Tools/SwordHolster/InspectPoseWindow.py",
+      "git_blob": "352d38259a9361752014a10506a104bd597a0383",
+      "bytes": 868,
+      "sha256": "fe53c2714c6e7cb378e9a1ad37a50503b48a9f4b1e83c547d8632bf43fd6015a"
+    },
+    {
+      "path": "Tools/SwordHolster/LabSync20261011.json",
+      "git_blob": "87044dd86a763d755a7963f8f568f730b3fff309",
+      "bytes": 7265,
+      "sha256": "13225793bcf460992adb4a6a3fde0e996be69865c489c14f1cd5b138e8a76807"
+    },
+    {
+      "path": "Tools/SwordHolster/NeckLimits20261011.json",
+      "git_blob": "ebc4065670700f7351f82b0f8123c74a0010a271",
+      "bytes": 6199,
+      "sha256": "71693b4157f099e9c1b1125a3f64c6ce72634c4db5d6f99ffc041336817e097e"
+    },
+    {
+      "path": "Tools/SwordHolster/Optimization20261010.json",
+      "git_blob": "48ad4ae19ac8da20b7e0e7615f15612040239d91",
+      "bytes": 16563,
+      "sha256": "d3c6baab6fe90a4a61eb459972236738863ede8f30b53ea6c519afd07542939d"
+    },
+    {
+      "path": "Tools/SwordHolster/Optimization20261010.md",
+      "git_blob": "25b45a29eea902babc858d19b9a7dcd52fa27fda",
+      "bytes": 7152,
+      "sha256": "6600e59720a3cf66bbc9da6b7692f66acf1822cd9969414b134a9be92981b3f7"
+    },
+    {
+      "path": "Tools/SwordHolster/Overnight20261011.json",
+      "git_blob": "2969a757dc85583b35f185c01f03cfb38b15d8ba",
+      "bytes": 221978,
+      "sha256": "9235acf31e8deda74d8e9b3ac6d852b55b3e8f3fce40ffcbd998c583fe76b2e2"
+    },
+    {
+      "path": "Tools/SwordHolster/OvernightPort.py",
+      "git_blob": "76f01ce5ddbfe2fb1b0b154c76dcb259e7df57d6",
+      "bytes": 1780,
+      "sha256": "4b1eab8f14a1eaf01513465f6e9036760361f17c3feaae012d5dbfaf5f1a6a01"
+    },
+    {
+      "path": "Tools/SwordHolster/OvernightPostflight.py",
+      "git_blob": "dbbc8df01541f8f76edb9d9a8a33952133defad8",
+      "bytes": 1880,
+      "sha256": "35f77ef2f12d7a6f2dc093a9608196a98a33040ccd327564a3f251438c7311fc"
+    },
+    {
+      "path": "Tools/SwordHolster/OvernightSnapshot.py",
+      "git_blob": "4ca88a72cda4b72c698e6df247a6010c7f61aea9",
+      "bytes": 1524,
+      "sha256": "006005219a25733943fb9a307a4f42b81f3429d2c6990eb47fb752b3ea29ad9a"
+    },
+    {
+      "path": "Tools/SwordHolster/PerformanceAudit20261010.json",
+      "git_blob": "40e9d371b9cda422d12452098214df340d110c26",
+      "bytes": 45186,
+      "sha256": "bc1cb81cd4d8e1f9a596b035bf0fd06d69cbc94fd9ee89b3cd813d05d46f50cc"
+    },
+    {
+      "path": "Tools/SwordHolster/PerformanceAudit20261010.md",
+      "git_blob": "7b43e750027cf5d5a6eb5d4038c756f523bdf9d9",
+      "bytes": 5389,
+      "sha256": "8aee31807bdd7bffbfef439f1a94dcb9ab32ceec327d42dcc13874bcafec852c"
+    },
+    {
+      "path": "Tools/SwordHolster/ProbeHeadFps.py",
+      "git_blob": "aea10416af48008ae9b2f63c0f88faba513300ee",
+      "bytes": 17028,
+      "sha256": "701ec4460e6f24760dea9c5bf807b961abaa5d79a2c2b378922e6612ef0c1ba3"
+    },
+    {
+      "path": "Tools/SwordHolster/ReachContinuity20261011.json",
+      "git_blob": "87c6f5568fd318d8d26aa6bcb439aa25c1e7ed77",
+      "bytes": 16305,
+      "sha256": "719b25f9ceb38c7ec59b2e6d44dee1ede49ea58afa503b6eb4cb606166b8fbc1"
+    },
+    {
+      "path": "Tools/SwordHolster/Receipt20261010.json",
+      "git_blob": "c84147ebb67768a595640d1b0b59581eb9f2fcc7",
+      "bytes": 20076,
+      "sha256": "0e948dda9b043aa127cc1c72ca0d8936b4e635651ed4064743ff90ac498144ea"
+    },
+    {
+      "path": "Tools/SwordHolster/RunControls.py",
+      "git_blob": "c71b78dc945cf135a492289558b3b035095eade8",
+      "bytes": 1151,
+      "sha256": "2f72b820bea8d29b5ad00123d4f5f5f22eebc01be6edebc10c32373d47a9700f"
+    },
+    {
+      "path": "Tools/SwordHolster/RunLabSuite.py",
+      "git_blob": "920d1cc4d98b6e45bbf146ae34f5c063550681c5",
+      "bytes": 1198,
+      "sha256": "28f5b1d59abac5bd64c0afc31e59c2bd6553f965180da38000daa64ac900baed"
+    },
+    {
+      "path": "Tools/SwordHolster/RunLifecycle.py",
+      "git_blob": "4930b1528c0ca3fe0f715bd9f3300f472b5966ed",
+      "bytes": 1841,
+      "sha256": "732d866ec9049a33c89ec9780896bc1edae158f16b3f4fcc1a250e2509041c66"
+    },
+    {
+      "path": "Tools/SwordHolster/RunMotionMatrix.py",
+      "git_blob": "65aca6ba234b9df3125d80dc5b0df92275c3eb75",
+      "bytes": 2377,
+      "sha256": "ccdbea39211cee844235a680eff00d42aa8041d5925bfc8bd4b8cf9cfd820d49"
+    },
+    {
+      "path": "Tools/SwordHolster/RunParity.ps1",
+      "git_blob": "a136ea06d8aff514ce3c796a166979c43b851603",
+      "bytes": 1555,
+      "sha256": "3956c794f07a134449f459d30ed5b010b4f4c979b5fcb5e3bff86a7c1924ece8"
+    },
+    {
+      "path": "Tools/SwordHolster/Stagger20261011.json",
+      "git_blob": "865dee5c87b88a63f75b195f47592792ae4d6e23",
+      "bytes": 15660,
+      "sha256": "c0f152a3ce388f10974213fa9fcad22304bbbe26c6320da759f35b85c5b015ee"
+    },
+    {
+      "path": "Tools/SwordHolster/Stagger20261011.md",
+      "git_blob": "10badd1cbf46c3fb0321ce665ab8d8088361bf0d",
+      "bytes": 4508,
+      "sha256": "880fe697be466befbce4e3f27d6e6fc843dc71889d23a0a092757afe35674d98"
+    },
+    {
+      "path": "Tools/SwordHolster/SummarizeHeadFix.py",
+      "git_blob": "6ac62cb2aa34616ccf978ba6933ea0ed95ba8526",
+      "bytes": 4858,
+      "sha256": "dad043a401a1dfcb8cddd70e1f8838be4798fa0f77a6a4a3e51f73f94aeb43f9"
+    },
+    {
+      "path": "Tools/SwordHolster/SummarizeHeadFps.py",
+      "git_blob": "f929af1899c7f96fb757c62ad7db2cf8feaa3bed",
+      "bytes": 5738,
+      "sha256": "6d0e8d6ed97adc1dd8b1c74b40c7c1927a3e291b730e1c541814a90455fc9e2e"
+    },
+    {
+      "path": "Tools/SwordHolster/SummarizeMotionMatrix.py",
+      "git_blob": "4fa72b5c700e9fa32b4539f71a2aab690322526d",
+      "bytes": 3802,
+      "sha256": "a855e73707185d2ea42f3c825b59c45324ab75df33a8a12c724de6a885660fcc"
+    },
+    {
+      "path": "Tools/SwordHolster/SummarizeOptimization.py",
+      "git_blob": "228933ceca117dc952c5a50f3aeaf6911f5c60d9",
+      "bytes": 2124,
+      "sha256": "110e9cc2d8b19a4037e5fd9035f52310a594b9653111830b651f363f66fca6e2"
+    },
+    {
+      "path": "Tools/SwordHolster/SummarizeOvernight.py",
+      "git_blob": "7213cd5f2d7a0a68d3f59b4727ab4f3f8119dc13",
+      "bytes": 4686,
+      "sha256": "08ad9d7fda5fc89c09bf924c4a2300aeb6937e538d0bd08ba12911344f2f054f"
+    },
+    {
+      "path": "Tools/SwordHolster/SummarizeReachJitter.py",
+      "git_blob": "6c593f71e25aac63ffc2e7ff7ef4248dbc244e4c",
+      "bytes": 4662,
+      "sha256": "aecb6840bfed700ca8daff2b4cfa89e0a931c21d4f364fdcbd1b5968e9fe7013"
+    },
+    {
+      "path": "Tools/SwordHolster/SummarizeStagger.py",
+      "git_blob": "3b5a9a64f90cb16cf614267393d3dc9cec21e609",
+      "bytes": 3525,
+      "sha256": "ff2ffb73488fa5869139193f16f91941ba646cb34019dbc70975f249142bb682"
+    },
+    {
+      "path": "Tools/SwordHolster/Verification20261010.md",
+      "git_blob": "73c6d12c72a5e23a213d2130d33b6e667c2ab78a",
+      "bytes": 10785,
+      "sha256": "d540f801299db31350a514c2b34e7e5265cf307645757c9ee9ff39297053a7e2"
+    },
+    {
+      "path": "Tools/SwordHolster/VerifyNeckLimits.py",
+      "git_blob": "e8273920e39be5293b6e5734df0fc0dcaacbd3a9",
+      "bytes": 6293,
+      "sha256": "1392af12c6a48ae2a341d490e5a28a6d634d40558e84d6164e6c4e9d445fd105"
+    },
+    {
+      "path": "Tools/SwordHolster/VerifyPlay.py",
+      "git_blob": "797fd18d58e0305bc5d9384c24adb98d500ad5b7",
+      "bytes": 11978,
+      "sha256": "879a4094d35603bc7d15ddb3e6162f81b8f69a5ea1598ca396f8c615c2b235af"
+    },
+    {
+      "path": "Tools/SwordHolster/VerifyStagger.py",
+      "git_blob": "ed08e3e4cb21e9528aecc64c76586f9716b3ee1a",
+      "bytes": 7890,
+      "sha256": "8297aaa48cc8cb22b2660682d4b2b21668dfa604eb13b5d2061400fe2bd5ea87"
+    },
+    {
+      "path": "Tools/SwordHolster/export_channels.cjs",
+      "git_blob": "26fe4b4bc14c6c378b6961e006562f3bac9a3a79",
+      "bytes": 2504,
+      "sha256": "0a0d6890d69748d1f62208fedd82fa097cbf646d167ef66a8db7b6a5af0f14d2"
+    },
+    {
+      "path": "Tools/SwordHolster/export_head_handoff.cjs",
+      "git_blob": "d53522f892ba3154fa22e7d1d614be50c9773044",
+      "bytes": 927,
+      "sha256": "6646d87eea4d362e667193b9f898e0e7c5d5991bc8ccfb37d7d53b8fdcf0100f"
+    },
+    {
+      "path": "Tools/SwordHolster/export_parity.cjs",
+      "git_blob": "fbb23ba7d74b8b3d3bc31ca849f3870765f7bbd4",
+      "bytes": 3104,
+      "sha256": "7353089ce55c60ca1539ca76fb18c50313e08ee3666b8dbcd341e95cc78c79aa"
     },
     {
       "path": "Tools/Tests/RootResponseTests.cpp",

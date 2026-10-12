@@ -1,7 +1,46 @@
 {
   "schema": "sword_holster_lab_v1",
   "parameters": {
-    "gazeYaw": -24,
+    "maxElbowPoleAngularSpeed": 180,
+    "bodyTargets": {
+      "clear": {
+        "spine": [
+          -71.6,
+          -5.125,
+          1.287
+        ],
+        "right": [
+          -36.3,
+          43.499,
+          5.962
+        ],
+        "left": [
+          0,
+          0,
+          0
+        ],
+        "pole": 100.2
+      },
+      "seated": {
+        "spine": [
+          -65,
+          -5.177,
+          1.942
+        ],
+        "right": [
+          18.7,
+          0,
+          0.045
+        ],
+        "left": [
+          0,
+          0,
+          0
+        ],
+        "pole": 84.8
+      }
+    },
+    "gazeYaw": 0,
     "sheatheRotationTolerance": 15,
     "slideRotationCorrection": 0.45,
     "motion": "walk",
@@ -150,15 +189,17 @@
       ]
     ]
   },
-  "time": 0.9556666666487417,
+  "time": 2.962233333333329,
   "camera": {
-    "yaw": 19.254401123046872,
-    "pitch": -0.04599999999999972,
-    "zoom": 1.8,
+    "yaw": 0.016006103515507054,
+    "pitch": -0.2524021606445311,
+    "zoom": 1.3334727972270919,
     "panX": 0,
     "panY": 65
   },
   "workspaceTab": "motion",
+  "bodyTargetsPanelOpen": true,
+  "bodyPoseEndpoint": "seated",
   "fkReturnPanelOpen": false,
   "controls": {
     "bicolor": true,
@@ -173,5 +214,5 @@
     "speed": "1"
   },
   "sourceHash": "798839ed6d374fdde8084d0d9aba549606e9648ff7a846c0010de4c6b73f50e8",
-  "revision": "fa230599754b187cd56e26c86c1d02ca08532cdce76b350af44871faa99f7190"
+  "revision": "21e054dee2edd154b6cdea071170bf3053b7f3bfc3eb382be9718e1658ad8dc0"
 }

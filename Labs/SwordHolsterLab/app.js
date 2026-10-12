@@ -10,11 +10,63 @@ let sequence=Number(sessionStorage.dsSequence)||0,liveBusy=false;
 const runtimeErrors=[],published=new Map();
 window.addEventListener('error',e=>runtimeErrors.push(e.message));window.addEventListener('unhandledrejection',e=>runtimeErrors.push(String(e.reason)));
 const cameraDefault={yaw:-.72,pitch:-.22,zoom:1.8,panX:0,panY:65},cameraState={...cameraDefault};
-const parameters=['gazeYaw','sheatheRotationTolerance','slideRotationCorrection','sheatheHeadTargetAlpha','headLookInSpeedAlpha','headLookAtAlpha','headMaxDownAngle','headLookInExponent','headLookOutExponent','maxHeadLookInVelocity','maxHeadLookOutVelocity','maxHeadLookInVelocityAtMaxGaze','maxHeadLookOutVelocityAtMaxGaze','drawHeadLookOutThreshold','sheatheHeadLookOutThreshold','spineClavicleAngleLimit','maxSpineClavicleAngularSpeed','motion','startTick','maxReachSpeed','maxReachRotationSpeed','slidingSpeed','shrinkPercent','unshrinkDuration','duration','holsterX','holsterY','holsterZ','holsterPitch','holsterYaw','holsterRoll'];
+const parameters=['maxElbowPoleAngularSpeed','gazeYaw','sheatheRotationTolerance','slideRotationCorrection','sheatheHeadTargetAlpha','headLookInSpeedAlpha','headLookAtAlpha','headMaxDownAngle','headLookInExponent','headLookOutExponent','maxHeadLookInVelocity','maxHeadLookOutVelocity','maxHeadLookInVelocityAtMaxGaze','maxHeadLookOutVelocityAtMaxGaze','drawHeadLookOutThreshold','sheatheHeadLookOutThreshold','maxSpineClavicleAngularSpeed','motion','startTick','maxReachSpeed','maxReachRotationSpeed','slidingSpeed','shrinkPercent','unshrinkDuration','duration','holsterX','holsterY','holsterZ','holsterPitch','holsterYaw','holsterRoll'];
 const views=['bicolor','upperOnly','skeleton','idleGhost','showTarget','handGizmos','lowerarmGizmos','upperarmGizmos','gizmoSide','speed'];
 let committed={...Holster.defaults},sourceHash='';
+let bodyPreview=null,bodyPreviewFrame=null,bodyPreviewTargets=null,bodyPreviewHandle=null,bodyPreviewLast=0,bodyDragging=false,bodyAutoPreview=false;
+let bodyPlanWorker=null,bodyPlanVersion=0,bodyPlanBusy=false,bodyPlanDirty=false;
+const bodyPanel=new BodyTargetPanel($('bodyTargetsPanel'),(profile,commit)=>{
+ if(bodyPreview===null){bodyAutoPreview=true;bodyPreview=bodyPanel.endpoint;bodyPreviewTargets=BodyReach.sanitize(committed.bodyTargets);refreshBodyPreview();}
+ committed={...committed,bodyTargets:profile};bodyDragging=!commit;
+ bodyPlanDirty=true;bodyPlanVersion++;
+ requestBodyPreview();
+ if(commit){save();buildBodyPlan();}
+},endpoint=>{
+ setPlaying(false);bodyAutoPreview=false;bodyPreview=endpoint;bodyPreviewTargets=BodyReach.sanitize(committed.bodyTargets);time=Holster.previewTime(model,endpoint==='clear'?0:1);refreshBodyPreview();drawAll();
+ save();
+});
+function buildBodyPlan(){
+ if(bodyPlanBusy||bodyDragging||!bodyPlanDirty)return;
+ if(!bodyPlanWorker){
+  bodyPlanWorker=new Worker('body-plan-worker.js?v='+loadedRevision);
+  bodyPlanWorker.onmessage=({data})=>{
+   bodyPlanBusy=false;
+   if(data.version!==bodyPlanVersion){buildBodyPlan();return;}
+   if(data.error){bodyPlanDirty=false;fail(Error(data.error));return;}
+   bodyPlanDirty=false;model={...data.model,data:motionData,setup:equipmentSetup};
+   fkPanel.timing(model);
+   if(bodyPreview!==null)requestBodyPreview();
+   drawAll();save();
+  };
+  bodyPlanWorker.onerror=e=>{bodyPlanBusy=false;bodyPlanDirty=false;bodyPlanWorker.terminate();bodyPlanWorker=null;fail(Error(e.message));};
+ }
+ bodyPlanBusy=true;bodyPlanWorker.postMessage({version:bodyPlanVersion,options:committed});
+}
+function requestBodyPreview(){if(bodyPreview!==null&&!playing&&bodyPreviewHandle===null)bodyPreviewHandle=requestAnimationFrame(animateBodyPreview);}
+function animateBodyPreview(now){bodyPreviewHandle=null;updateBodyPreview(now);drawAll();if(bodyPreviewLast)requestBodyPreview();}
+function updateBodyPreview(now){
+ if(bodyPreview===null)return;
+ if(playing&&bodyAutoPreview&&!bodyPlanDirty&&!bodyDragging){clearBodyPreview();return;}
+ const dt=bodyPreviewLast?Math.min(.1,(now-bodyPreviewLast)/1000):1/60;
+ bodyPreviewLast=now;bodyPreviewTargets=committed.bodyTargets;
+ const next=Holster.previewBody(model,bodyPreview==='clear'?0:1,committed.bodyTargets,time);
+ const result=Holster.blendPreview(bodyPreviewFrame,next,1-Math.exp(-dt/.035),model.parents);
+ bodyPreviewFrame=result.frame;
+ if(result.settled){bodyPreviewLast=0;if(playing&&bodyAutoPreview&&!bodyPlanDirty&&!bodyDragging)clearBodyPreview();}
+}
+function refreshBodyPreview(){
+ bodyPreviewFrame=bodyPreview!==null&&model?Holster.previewBody(model,bodyPreview==='clear'?0:1,committed.bodyTargets,time):null;
+}
+function clearBodyPreview(){bodyPreview=null;bodyPreviewFrame=null;bodyPreviewTargets=null;bodyPreviewLast=0;bodyAutoPreview=false;if(bodyPreviewHandle!==null)cancelAnimationFrame(bodyPreviewHandle);bodyPreviewHandle=null;}
+function showBodyTargets(open){
+ $('bodyTargetsPanel').hidden=!open;$('openBodyTargets').setAttribute('aria-expanded',String(open));
+ if(open){$('fkReturnPanel').hidden=true;$('openFKReturn').setAttribute('aria-expanded','false');}else clearBodyPreview();
+ requestAnimationFrame(drawAll);save();
+}
+$('openBodyTargets').onclick=()=>showBodyTargets($('bodyTargetsPanel').hidden);$('closeBodyTargets').onclick=()=>showBodyTargets(false);
+$('bodyEndpoint').addEventListener('change',save);
 const fkPanel=new FKReturnPanel($('fkReturnPanel'),profile=>{applyParameters({...committed,[(committed.sheathe?'sheathe':'draw')+'Return']:profile});model=Holster.retime(model,committed);time=Math.min(time,model.playbackDuration);fkPanel.timing(model);drawAll();save();});
-function showFKReturn(open){$('fkReturnPanel').hidden=!open;$('openFKReturn').setAttribute('aria-expanded',String(open));requestAnimationFrame(drawAll);save();}
+function showFKReturn(open){if(open){$('bodyTargetsPanel').hidden=true;$('openBodyTargets').setAttribute('aria-expanded','false');clearBodyPreview();}$('fkReturnPanel').hidden=!open;$('openFKReturn').setAttribute('aria-expanded',String(open));requestAnimationFrame(drawAll);save();}
 $('openFKReturn').onclick=()=>showFKReturn($('fkReturnPanel').hidden);$('closeFKReturn').onclick=()=>showFKReturn(false);
 const curveKey=phase=>(committed.sheathe?'sheathe':'draw')+(phase==='slide'?'SlideCurve':'Curve');
 function commitCurves(values){
@@ -32,16 +84,16 @@ for(const [id,label,unit,step] of [['holsterX','X','cm',1],['holsterY','Y','cm',
 function notice(s){$('notice').textContent=s;}
 function fail(e){runtimeErrors.push(String(e));$('error').hidden=false;$('error').textContent=e.message||String(e);console.error(e);}
 async function post(url,value){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Desktop-Session':desktopToken,'X-Client-Id':clientId},body:JSON.stringify(value),keepalive:url==='/state'});if(!r.ok)throw Error((await r.json()).error||r.status);return r.json();}
-function state(){return {schema:'sword_holster_lab_v1',parameters:{...committed},time,camera:{...cameraState},workspaceTab,fkReturnPanelOpen:!$('fkReturnPanel').hidden,controls:Object.fromEntries(views.map(id=>[id,$(id).type==='checkbox'?$(id).checked:$(id).value])),sourceHash,revision:loadedRevision};}
+function state(){return {schema:'sword_holster_lab_v1',parameters:{...committed},time,camera:{...cameraState},workspaceTab,bodyTargetsPanelOpen:!$('bodyTargetsPanel').hidden,bodyPoseEndpoint:bodyPanel.endpoint,fkReturnPanelOpen:!$('fkReturnPanel').hidden,controls:Object.fromEntries(views.map(id=>[id,$(id).type==='checkbox'?$(id).checked:$(id).value])),sourceHash,revision:loadedRevision};}
 function save(){if(!desktopToken||!model)return;clearTimeout(saveTimer);saveTimer=setTimeout(()=>post('/state',state()).catch(fail),250);}
 function setWorkspaceTab(tab,persist=true){workspaceTab=tab;for(const k of ['motion','view','library']){$(k+'Controls').hidden=k!==tab;$(k+'Tab').setAttribute('aria-selected',String(k===tab));}if(persist)save();}
-function applyParameters(o){committed=Holster.sanitize(o);fkPanel.set(committed.sheathe?'sheathe':'draw',committed[(committed.sheathe?'sheathe':'draw')+'Return']);for(const id of parameters)$(id).value=committed[id];$('action').value=committed.sheathe?'sheathe':'draw';$('sheatheEntryControls').hidden=!committed.sheathe;$('sheatheHeadTargetControl').hidden=!committed.sheathe;$('sheatheHeadTargetAlphaValue').textContent=committed.sheatheHeadTargetAlpha.toFixed(2);$('headLookInSpeedAlphaValue').textContent=committed.headLookInSpeedAlpha.toFixed(2);$('gazeYawValue').textContent=committed.gazeYaw+'°';$('retimeTitle').textContent=(committed.sheathe?'Sheathing':'Drawing')+' timing curves';for(const phase of ['reach','slide'])curveEditors[phase].set(committed[curveKey(phase)]);}
-function rebuild(){model=Holster.prepare(motionData,equipmentSetup,committed);time=Math.min(time,model.playbackDuration);fkPanel.timing(model);drawAll();save();}
+function applyParameters(o){if(bodyPlanDirty)bodyPlanVersion++;committed=Holster.sanitize(o);bodyPanel.set(committed.bodyTargets);fkPanel.set(committed.sheathe?'sheathe':'draw',committed[(committed.sheathe?'sheathe':'draw')+'Return']);for(const id of parameters)$(id).value=committed[id];$('action').value=committed.sheathe?'sheathe':'draw';$('sheatheEntryControls').hidden=!committed.sheathe;$('sheatheHeadTargetControl').hidden=!committed.sheathe;$('sheatheHeadTargetAlphaValue').textContent=committed.sheatheHeadTargetAlpha.toFixed(2);$('headLookInSpeedAlphaValue').textContent=committed.headLookInSpeedAlpha.toFixed(2);$('gazeYawValue').textContent=committed.gazeYaw+'°';$('retimeTitle').textContent=(committed.sheathe?'Sheathing':'Drawing')+' timing curves';for(const phase of ['reach','slide'])curveEditors[phase].set(committed[curveKey(phase)]);}
+function rebuild(){bodyPlanVersion++;bodyPlanDirty=false;model=Holster.prepare(motionData,equipmentSetup,committed);refreshBodyPreview();time=Math.min(time,model.playbackDuration);fkPanel.timing(model);drawAll();save();}
 function commit(event){applyParameters({...committed,...Object.fromEntries(parameters.map(id=>[id,$(id).value])),sheathe:$('action').value==='sheathe'});if(['sheatheHeadTargetAlpha','headLookInSpeedAlpha','headLookAtAlpha','headMaxDownAngle','headLookInExponent','headLookOutExponent','maxHeadLookInVelocity','maxHeadLookOutVelocity','maxHeadLookInVelocityAtMaxGaze','maxHeadLookOutVelocityAtMaxGaze','drawHeadLookOutThreshold','sheatheHeadLookOutThreshold'].includes(event?.target.id)){model=Holster.retime(model,committed);time=Math.min(time,model.playbackDuration);fkPanel.timing(model);drawAll();save();}else rebuild();}
-function setPlaying(v){playing=!!v;$('play').textContent=playing?'Pause':'Play';lastTick=performance.now();if(playing&&frameHandle===null)frameHandle=requestAnimationFrame(tick);if(!playing)save();}
-function seek(t){setPlaying(false);time=clamp(t,0,model.playbackDuration);drawAll();save();}
+function setPlaying(v){if(v){if(bodyPreview!==null)bodyAutoPreview=true;if(bodyPlanDirty)buildBodyPlan();}playing=!!v;$('play').textContent=playing?'Pause':'Play';lastTick=performance.now();if(playing&&frameHandle===null)frameHandle=requestAnimationFrame(tick);if(!playing){requestBodyPreview();save();}}
+function seek(t){clearBodyPreview();if(bodyPlanDirty)buildBodyPlan();setPlaying(false);time=clamp(t,0,model.playbackDuration);drawAll();save();}
 function stepFrame(d){let t=time+d/60;seek(t<0?model.playbackDuration:t>model.playbackDuration?0:t);}
-function tick(now){frameHandle=null;if(!playing)return;time=(time+(now-lastTick)/1000*Number($('speed').value))%(model.playbackDuration+.35);lastTick=now;drawAll();frameHandle=requestAnimationFrame(tick);}
+function tick(now){frameHandle=null;if(!playing)return;time=(time+(now-lastTick)/1000*Number($('speed').value))%(model.playbackDuration+.35);lastTick=now;if(bodyPreview!==null)updateBodyPreview(now);drawAll();frameHandle=requestAnimationFrame(tick);}
 function resetCamera(){Object.assign(cameraState,cameraDefault);$('orbitYaw').value=String(cameraState.yaw*180/Math.PI);drawAll();save();}
 function displayPoint(p,shift=[0,0,0]){const v=sub(p,shift);return [v[0]/100,v[2]/100,v[1]/100];}
 // Renderer bone basis is UE local X,-Y,Z; only world coordinates swap Y/Z.
@@ -52,13 +104,13 @@ function drawAll(){
  if(!model||!renderer)return;
  const playbackTime=Math.min(time,model.playbackDuration),sourceTime=Holster.recordedTime(model,playbackTime);
  for(const phase of ['reach','slide']){const {start,end}=model.retimeSegments[phase];curveEditors[phase].showProgress(end>start&&playbackTime>=start&&playbackTime<=end?(playbackTime-start)/(end-start):null);}
- const f=Holster.sample(model,playbackTime),root=f.pose[model.pelvis].p,shift=[root[0],root[1],0];
+ const f=bodyPreviewFrame||Holster.sample(model,playbackTime),root=f.pose[model.pelvis].p,shift=[root[0],root[1],0];
  const data={bicolor:$('bicolor').checked,points:f.pose.map(p=>displayPoint(p.p,shift)),axes:f.pose.map(p=>displayAxes(p.q)),upperOnly:$('upperOnly').checked,upper:upperMask,skeleton:$('skeleton').checked,tint:f.blocked?[.96,.56,.28]:[.91,.49,.25],gizmoSide:$('gizmoSide').value,handGizmos:$('handGizmos').checked,lowerarmGizmos:$('lowerarmGizmos').checked,upperarmGizmos:$('upperarmGizmos').checked,target:$('showTarget').checked?displayPoint(f.goal.p,shift):null,equipment:{sword:f.sword,holster:f.holster},shift};
  if($('idleGhost').checked){const base=Holster.motion(motionData,committed.motion,playbackTime,committed.gazeYaw);data.ghost={...data,points:base.map(p=>displayPoint(p.p,shift)),axes:base.map(p=>displayAxes(p.q)),equipment:null,hideSword:true,skeleton:true,tint:[.28,.66,.86]};}
  renderer.draw(data,[0,0,0]);currentPose={...data,diagnostics:{fkReturn:f.fkReturn,headLook:f.headLook,body:f.body,phase:f.phase,blocked:f.blocked,handError:f.handError,metrics:f.metrics,scale:f.scale,insertion:f.insertion,progress:f.progress,tick:Math.floor(sourceTime*60),sourceTime,playbackTime}};
  textIfChanged('caseTitle','D/S · '+(committed.sheathe?'Sheathe':'Draw / unsheathe'));textIfChanged('caseSubtitle',(committed.motion==='idle'?'Idle':'Walk forward')+' · starts at tick '+committed.startTick);
  textIfChanged('phase',f.blocked?'Reach limited':f.phase);textIfChanged('handError',f.handError.toFixed(1)+' cm');textIfChanged('reachError',(f.metrics?.unreachable||0).toFixed(1)+' cm');textIfChanged('retained',(f.scale*100).toFixed(1)+'%');textIfChanged('insertion',(f.insertion*100).toFixed(1)+'%');
- const statusClass=f.blocked?'warning':'muted';if($('status').className!==statusClass)$('status').className=statusClass;textIfChanged('status',f.blocked?'Slide is waiting for a reachable tip and the rotation tolerance.':f.phase==='Reach'&&f.body?.remainingDegrees>.25?'Turning spine / clavicle · '+f.body.remainingDegrees.toFixed(1)+'° remaining'+(committed.sheathe?'': ' before grip') :f.fkReturn?.active?'FK return to moving '+committed.motion+'.':f.headLook?.mode==='Look out'?'Head returning to gaze.':f.active?'D/S active · FK arm interpolation.':'Arm returned to base motion. '+(f.phase==='Holstered'?'Sword follows holster.':'Sword follows hand.'));
+ const statusClass=f.blocked?'warning':'muted';if($('status').className!==statusClass)$('status').className=statusClass;textIfChanged('status',bodyPreview!==null?'Editing '+(bodyPreview==='clear'?'0':'100')+'% insertion · '+(bodyPlanDirty?'updating motion…':'playback pose, including early FK return.'):f.blocked?'Slide is waiting for a reachable tip and the rotation tolerance.':f.phase==='Reach'&&f.body?.remainingDegrees>.25?'Turning spine / clavicle · '+f.body.remainingDegrees.toFixed(1)+'° remaining'+(committed.sheathe?'': ' before grip') :f.fkReturn?.active?'FK return to moving '+committed.motion+'.':f.headLook?.mode==='Look out'?'Head returning to gaze.':f.active?'D/S active · FK arm interpolation.':'Arm returned to base motion. '+(f.phase==='Holstered'?'Sword follows holster.':'Sword follows hand.'));
  if($('timeline').max!==String(model.playbackDuration))$('timeline').max=String(model.playbackDuration);if(!timelineDragging)$('timeline').value=String(Math.min(time,model.playbackDuration));textIfChanged('time',`${Math.min(time,model.playbackDuration).toFixed(2)} / ${model.playbackDuration.toFixed(2)} s · ${Math.floor(Math.min(time,model.playbackDuration)*60)}`);
 }
 let frameCapture=null;
@@ -66,8 +118,8 @@ function canvasPNG({preview=false}={}){return (frameCapture||(frameCapture=new L
 async function fingerprint(value){const b=new TextEncoder().encode(JSON.stringify(value));return [...new Uint8Array(await crypto.subtle.digest('SHA-256',b))].map(x=>x.toString(16).padStart(2,'0')).join('');}
 async function snapshotList(){const names=await(await fetch('/snapshots')).json();$('snapshot').textContent='Snapshot ('+names.length+')';$('snapshots').replaceChildren(new Option('Restore snapshot…',''),...names.map(n=>new Option('#'+n.split('_')[1],n)));}
 async function snapshot(){drawAll();const packet={...state(),displayedPose:structuredClone(currentPose)};packet.image=await canvasPNG();const r=await post('/snapshot',packet);await snapshotList();notice('Saved '+r.name+' · PNG + exact pose and settings.');}
-function restore(s){if(s.schema!=='sword_holster_lab_v1')throw Error('Not a D/S lab settings file');if(s.sourceHash&&s.sourceHash!==sourceHash)throw Error('Snapshot uses different source assets');applyParameters(s.parameters||{});for(const k of views)if(s.controls?.[k]!==undefined){if($(k).type==='checkbox')$(k).checked=!!s.controls[k];else $(k).value=s.controls[k];}for(const k of Object.keys(cameraDefault))if(Number.isFinite(s.camera?.[k]))cameraState[k]=s.camera[k];setWorkspaceTab(['motion','view','library'].includes(s.workspaceTab)?s.workspaceTab:'motion',false);$('fkReturnPanel').hidden=!s.fkReturnPanelOpen;$('openFKReturn').setAttribute('aria-expanded',String(!!s.fkReturnPanelOpen));time=Number(s.time)||0;rebuild();seek(time);}
-async function publishLive(){if(!desktopToken||liveBusy||!currentPose)return;liveBusy=true;try{
+function restore(s){if(s.schema!=='sword_holster_lab_v1')throw Error('Not a D/S lab settings file');if(s.sourceHash&&s.sourceHash!==sourceHash)throw Error('Snapshot uses different source assets');applyParameters(s.parameters||{});for(const k of views)if(s.controls?.[k]!==undefined){if($(k).type==='checkbox')$(k).checked=!!s.controls[k];else $(k).value=s.controls[k];}for(const k of Object.keys(cameraDefault))if(Number.isFinite(s.camera?.[k]))cameraState[k]=s.camera[k];setWorkspaceTab(['motion','view','library'].includes(s.workspaceTab)?s.workspaceTab:'motion',false);clearBodyPreview();bodyPanel.endpoint=s.bodyPoseEndpoint==='seated'?'seated':'clear';bodyPanel.set(committed.bodyTargets);$('bodyTargetsPanel').hidden=!s.bodyTargetsPanelOpen;$('openBodyTargets').setAttribute('aria-expanded',String(!!s.bodyTargetsPanelOpen));$('fkReturnPanel').hidden=!!s.bodyTargetsPanelOpen||!s.fkReturnPanelOpen;$('openFKReturn').setAttribute('aria-expanded',String(!$('fkReturnPanel').hidden));time=Number(s.time)||0;rebuild();seek(time);}
+async function publishLive(){if(!desktopToken||liveBusy||!currentPose||bodyDragging||bodyPreviewLast)return;liveBusy=true;try{
  const saved=state(),pose=structuredClone(currentPose),frozenModel=model,image=canvasPNG({preview:playing});const view={state:saved,displayedPose:pose,playing,frame:Math.floor(time*60),fps:60,phase:pose.diagnostics.phase,runtimeErrors:[...runtimeErrors]};
  const [key,png]=await Promise.all([fingerprint(view),image]);published.set(key,{model:frozenModel,state:saved});if(published.size>8)published.delete(published.keys().next().value);
  const r=await post('/desktop-view',{...view,fingerprint:key,sequence:++sequence,image:png,capturedAt:new Date().toISOString(),clientId});sessionStorage.dsSequence=sequence;$('sharing').textContent='Desktop view shared · '+clientId.slice(0,8);

@@ -3,7 +3,7 @@ const H=require('./holster.js'),R=require('./recovery.js'),data=require('./data/
 const curves=[[[.2,.02],[.4,.1],[.6,.9],[.8,.98]],[[.2,0],[.4,0],[.6,.1],[.8,.7]]];
 const dist=(a,b)=>R.length(R.sub(a,b)),local=p=>R.localize(p.map(v=>v.p),p.map(v=>v.q),data.parents);
 const lower=data.names.map((n,j)=>/^(root|pelvis|thigh|calf|foot|ball)/.test(n)?j:-1).filter(j=>j>=0);
-const left=data.names.map((n,j)=>/^(clavicle|upperarm|lowerarm|hand)_l$/.test(n)?j:-1).filter(j=>j>=0);
+const left=data.names.map((n,j)=>/^(upperarm|lowerarm|hand)_l$/.test(n)?j:-1).filter(j=>j>=0);
 let cases=0,maxBaseError=0,maxGripError=0;
 for(const sheathe of [true,false]){
  const action=sheathe?'sheathe':'draw',original=H.prepare(data,setup,{motion:'walk',sheathe,gazeYaw:35,duration:12});

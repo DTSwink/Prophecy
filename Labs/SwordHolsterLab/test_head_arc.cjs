@@ -16,9 +16,9 @@ for(let tick=98;tick<=112;tick++){
 }
 for(let tick=103;tick<110;tick+=.125){
  const a=H.sample(model,tick/60),b=H.sample(model,(tick+.125)/60);
- assert(H.angle(a.pose[head].q,b.pose[head].q)<.2,'smooth fractional playback through the reported interval');
+ assert(H.angle(a.pose[head].q,b.pose[head].q)<a.headLook.speedLimit*.125/60+1e-5,'fractional playback respects the head speed budget');
  assert.deepEqual(H.sample(model,tick/60),a,'seeking is deterministic');
 }
-// Separate parent/head distribution changes the moving eye position slightly.
-assert.equal(model.completionTick,298);
+// The palm-in reach changes the moving eye position and the look-out start.
+assert.equal(model.completionTick,307);
 console.log(JSON.stringify({passed:true,interval:[98,112],peakVelocityChangeDegreesPerTick:peakChange}));

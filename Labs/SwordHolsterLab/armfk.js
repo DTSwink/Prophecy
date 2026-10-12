@@ -37,8 +37,8 @@ function plan({arm,parents,frameAt,startTick,lastTick,o,solve,minimumEndTick=sta
   let required=startTick+Math.ceil(duration(source,destination,o.maxReachSpeed,o.maxReachRotationSpeed)*60);
   // The arm destination is parent-local to the turned shoulder. Give the body
   // enough time to reach that shoulder pose before freezing the arm endpoint.
-  const turn=frameAt(Math.min(lastTick,Math.max(endTick,required))).body.desired;
-  required=Math.max(required,startTick+Math.ceil(Math.max(Math.abs(turn[0]),Math.hypot(turn[1],turn[2]))*180/Math.PI/o.maxSpineClavicleAngularSpeed*60));
+  const turn=frameAt(Math.min(lastTick,Math.max(endTick,required))).body.requiredDegrees;
+  required=Math.max(required,startTick+Math.ceil(turn/o.maxSpineClavicleAngularSpeed*60));
   if(!o.sheathe){let ready=Math.min(Math.max(endTick,required),lastTick);while(ready<=lastTick&&frameAt(ready).body.remainingDegrees>.25)ready++;required=Math.max(required,ready);}
   if(required<=endTick)break;
   endTick=required;

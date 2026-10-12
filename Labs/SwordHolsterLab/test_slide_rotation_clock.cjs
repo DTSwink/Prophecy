@@ -11,7 +11,7 @@ for(const motion of ['idle','walk'])for(const gazeYaw of [0,170])for(const alpha
   assert(m.slideGuides,'fixture exercises separate-clock arm guides');
   const initial=H.angle(m.sheathEntry.q,[0,0,0,1]);
   for(let tick=p.endTick;tick<=p.slideEnd;tick+=.125){
-   const t=tick/60,u=(tick-p.endTick)/(p.slideEnd-p.endTick),f=H.sampleBody(m,t),full=H.compose(setup.seated,f.holster);
+   const t=tick/60,u=(tick-p.endTick)/(p.slideEnd-p.endTick),f=H.sampleBody(m,t),full=H.seatedSword(setup,f.holster);
    const expected=initial*(1-(alpha>0?Math.min(1,u/alpha):u>0?1:0));
    const error=Math.abs(H.angle(f.sword.q,full.q)-expected);maxAngleError=Math.max(maxAngleError,error);
    assert(error<.0001,'rotation depends only on elapsed slide time');
@@ -23,7 +23,7 @@ for(const motion of ['idle','walk'])for(const gazeYaw of [0,170])for(const alpha
    for(const j of m.arm.slice(1)){const parent=m.parents[j],base=H.motion(data,motion,t,gazeYaw);assert(Math.abs(dist(f.pose[j].p,f.pose[parent].p)-dist(base[j].p,base[parent].p))<1e-7,'bone lengths preserved');}
   }
   const cutoff=(p.endTick+(p.slideEnd-p.endTick)*alpha)/60;
-  if(alpha>0){const f=H.sampleBody(m,cutoff);assert(H.angle(f.sword.q,H.compose(setup.seated,f.holster).q)<1e-5,'exact time cutoff, including fractional ticks');}
+  if(alpha>0){const f=H.sampleBody(m,cutoff);assert(H.angle(f.sword.q,H.seatedSword(setup,f.holster).q)<1e-5,'exact time cutoff, including fractional ticks');}
   for(const time of [p.endTick/60,p.slideEnd/60,m.fkReturn.start]){
    if(alpha===0&&time===p.endTick/60)continue; // explicit immediate correction
    const a=H.sampleBody(m,time-1e-7),b=H.sampleBody(m,time+1e-7);

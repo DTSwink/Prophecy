@@ -3,6 +3,22 @@
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
+## Newer lab-only changes (October12)
+
+The lab also has saved0%/100% elbow preference angles in a moving arm/spine-up
+frame, with an independent scalar angular-speed cap. Preview samples the actual
+prepared playback pose, including early FK return. These changes remain lab-only.
+
+The lab now uses two saved parent-relative body poses at0%/100% insertion,
+replacing shoulder-distance optimization. Spine_05 is relative to pelvis;
+both clavicles are relative to spine_05. The separate **Body poses** panel
+edits them, shares them between D/S, and previews each endpoint. Fractional
+insertion interpolates all three; existing early FK return remains per the
+user's explicit answer. See [current lab contract](../Labs/SwordHolsterLab/README.md).
+This and the palm-in grip change are **not yet ported to Unreal**. The native
+status below remains the previous implementation; no editor/build/asset change
+was made for this lab task.
+
 ## Current lab port (October11)
 
 **Overnight follow-up:** the current profile uses230cm/s reach and600deg/s

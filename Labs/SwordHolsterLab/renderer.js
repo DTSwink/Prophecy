@@ -289,7 +289,7 @@ class WebGLMotionRenderer {
     this.capsule(target, tip, add(head, mul(side, -.026)), .009, color, 10, 4);
   }
 
-  box(target, box, color) {
+  box(target, box, color, palmColor = null) {
     const hx = box.dims[0] * .5;
     const hy = box.dims[1] * .5;
     const hz = box.dims[2] * .5;
@@ -302,14 +302,15 @@ class WebGLMotionRenderer {
       corner(-hx,-hy,hz), corner(hx,-hy,hz), corner(hx,hy,hz), corner(-hx,hy,hz),
     ];
     const faces = [
-      [[0,3,2,1], mul(axisZ, -1)], [[4,5,6,7], axisZ],
+      [[0,3,2,1], mul(axisZ, -1), box.palmFace < 0 ? palmColor || color : color],
+      [[4,5,6,7], axisZ, box.palmFace < 0 ? color : palmColor || color],
       [[0,1,5,4], mul(axisY, -1)], [[1,2,6,5], axisX],
       [[2,3,7,6], axisY], [[3,0,4,7], mul(axisX, -1)],
     ];
-    for (const [indices, normal] of faces) {
+    for (const [indices, normal, faceColor = color] of faces) {
       const [a, b, c, d] = indices.map(index => corners[index]);
-      this.triangle(target, a, b, c, normal, color);
-      this.triangle(target, a, c, d, normal, color);
+      this.triangle(target, a, b, c, normal, faceColor);
+      this.triangle(target, a, c, d, normal, faceColor);
     }
   }
 
@@ -385,7 +386,7 @@ class WebGLMotionRenderer {
     const dims = [.145, .090, .045];
     const hand = posAt(data, spec.hand);
     const center = add(add(hand, mul(forward, dims[0] * .5)), mul(palmNormal, -.0025));
-    return { center, forward, side, palmNormal, dims };
+    return { center, forward, side, palmNormal, dims, palmFace: spec.side === 1 ? -1 : 1 };
   }
 
   footBoxes(data, spec) {
@@ -522,7 +523,7 @@ class WebGLMotionRenderer {
       { hand: nameToIndex.get("hand_l"), lower: nameToIndex.get("lowerarm_l"), side: 0 },
       { hand: nameToIndex.get("hand_r"), lower: nameToIndex.get("lowerarm_r"), side: 1 },
     ].filter(spec => spec.hand !== undefined && spec.lower !== undefined);
-    for (const spec of handSpecs) this.box(mesh, this.handBox(data, spec), bodyColor);
+    for (const spec of handSpecs) this.box(mesh, this.handBox(data, spec), bodyColor, data.bicolor ? [1, .82, .06] : null);
 
     const footSpecs = [
       { ankle: nameToIndex.get("foot_l"), toe: nameToIndex.get("ball_l"), side: 0 },

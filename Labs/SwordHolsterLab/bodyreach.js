@@ -1,65 +1,40 @@
-/* Additive spine twist + clavicle swing. UE component-space poses, cm/radians. */
+/* Authored parent-relative body targets; quaternion interpolation, no search. */
 (function(root){
 'use strict';
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
-const {add,sub,mul,dot,cross,length:len,unit,qm,qinv,rotate,qexp}=R,RAD=Math.PI/180;
-function basis(axis){
- axis=unit(axis);const u=unit(cross(axis,Math.abs(axis[0])<.8?[1,0,0]:[0,1,0]));
- return [u,cross(axis,u)];
-}
-const swing=(b,v)=>qexp(add(mul(b[0],v[0]),mul(b[1],v[1])));
-function make(data,base){
+const {add,sub,unit,qm,qinv,rotate,qexp,qslerp}=R,RAD=Math.PI/180,I=[0,0,0,1];
+const defaults={clear:{pole:0,spine:[-94.051,-5.125,1.287],right:[-.124,43.499,5.962],left:[0,0,0]},seated:{pole:0,spine:[-93.854,-5.177,1.942],right:[-1.987,4.215,.045],left:[0,0,0]}};
+function sanitize(input={}){return Object.fromEntries(['clear','seated'].map(e=>[e,{...Object.fromEntries(['spine','right','left'].map(b=>[b,[0,1,2].map(k=>{const v=Number(input?.[e]?.[b]?.[k]??defaults[e][b][k]);return Number.isFinite(v)?Math.max(-180,Math.min(180,v)):defaults[e][b][k];})])),pole:Number.isFinite(Number(input?.[e]?.pole))?Math.max(-180,Math.min(180,Number(input[e].pole))):0}]));}
+const euler=v=>unit(qm(qm(qexp([0,0,v[2]*RAD]),qexp([0,v[1]*RAD,0])),qexp([v[0]*RAD,0,0])));
+const angle=(a,b)=>2*Math.acos(Math.min(1,Math.abs(R.dot(unit(a),unit(b)))))/RAD;
+function make(data,reference){
  const index=n=>data.names.indexOf(n),spine=[1,2,3,4,5].map(i=>index('spine_0'+i));
- const top=spine[4],clav=index('clavicle_r'),shoulder=index('upperarm_r');
- const axis=(a,b)=>rotate(qinv(base[a].q),sub(base[b].p,base[a].p));
+ const pelvis=index('pelvis'),top=spine[4],clav=index('clavicle_r'),left=index('clavicle_l');
+ const bones=[top,clav,left],anchors=[pelvis,top,top];
  const affected=data.names.map((_,i)=>i).filter(i=>{for(let j=i;j>=0;j=data.parents[j])if(j===spine[0])return true;return false;});
- return {parents:data.parents,spine,top,clav,shoulder,head:index('head'),affected,chain:[...spine,clav,shoulder],
-  spineAxis:unit(axis(top,index('neck_01'))),clavBasis:basis(axis(clav,shoulder)),weights:new Map(spine.map((j,k)=>[j,(k+1)/5]))};
+ return {parents:data.parents,spine,pelvis,top,clav,left,shoulder:index('upperarm_r'),bones,anchors,affected,
+  reference:bones.map((j,k)=>unit(qm(qinv(reference[anchors[k]].q),reference[j].q))),weights:new Map(spine.map((j,k)=>[j,(k+1)/5]))};
 }
-function apply(ctx,base,v,onlyShoulder=false){
- const worldSpineAxis=rotate(base[ctx.top].q,ctx.spineAxis);
- const clavSwing=swing(ctx.clavBasis,v.slice(1)),out=base.slice();
- for(const j of onlyShoulder?ctx.chain:ctx.affected){
-  const p=ctx.parents[j];if(p<0)continue;
-  const inherited=unit(qm(out[p].q,qinv(base[p].q)));
+function capture(ctx,pose){return ctx.bones.flatMap((j,k)=>unit(qm(qinv(pose[ctx.anchors[k]].q),pose[j].q)));}
+function blend(a,b,t){return [0,4,8].flatMap(k=>qslerp(a.slice(k,k+4),b.slice(k,k+4),t));}
+function target(ctx,profile,insertion){
+ const endpoint=key=>['spine','right','left'].flatMap((b,k)=>unit(qm(euler(profile[key][b]),ctx.reference[k])));
+ return blend(endpoint('clear'),endpoint('seated'),Math.max(0,Math.min(1,insertion)));
+}
+function apply(ctx,base,v){
+ const out=base.slice(),top=unit(qm(base[ctx.pelvis].q,v.slice(0,4))),delta=unit(qm(top,qinv(base[ctx.top].q)));
+ for(const j of ctx.affected){
+  const p=ctx.parents[j],inherited=unit(qm(out[p].q,qinv(base[p].q)));
   let q=unit(qm(inherited,base[j].q));
-  // Weight the signed angle directly: shortest-arc slerp would flip the lower
-  // spine's correction when the unrestricted top twist crosses 180 degrees.
-  if(ctx.weights.has(j))q=unit(qm(qexp(mul(worldSpineAxis,v[0]*ctx.weights.get(j))),base[j].q));
-  if(j===ctx.clav)q=unit(qm(q,clavSwing));
+  if(ctx.weights.has(j))q=unit(qm(qslerp(I,delta,ctx.weights.get(j)),base[j].q));
+  if(j===ctx.top)q=top;
+  if(j===ctx.clav||j===ctx.left)q=unit(qm(out[ctx.top].q,v.slice(j===ctx.clav?4:8,j===ctx.clav?8:12)));
   out[j]={...base[j],p:add(out[p].p,rotate(inherited,sub(base[j].p,base[p].p))),q};
  }
- return onlyShoulder?out[ctx.shoulder].p:out;
+ return out;
 }
-function bounded(v,limit){
- v=[...v];
- const n=Math.hypot(v[1],v[2]);if(n>limit){v[1]*=limit/n;v[2]*=limit/n;}return v;
-}
-function optimize(ctx,base,target,seed,limitDegrees){
- const limit=limitDegrees*RAD,score=v=>{const d=sub(apply(ctx,base,v,true),target);return dot(d,d);};
- let best=bounded(seed,limit),cost=score(best);
- // Include neutral so a previous gait frame cannot force a worse solution.
- if(score([0,0,0])<cost){best=[0,0,0];cost=score(best);}
- for(const degrees of [16,8,4,2,1,.5,.125,.03125]){
-  for(let sweep=0;sweep<4;sweep++){
-   let improved=false;
-   for(let k=0;k<3;k++)for(const sign of [-1,1]){
-    const trial=[...best];trial[k]+=sign*degrees*RAD;
-    const v=bounded(trial,limit),s=score(v);
-    if(s<cost-1e-9){best=v;cost=s;improved=true;}
-   }
-   if(!improved)break;
-  }
- }
- return best;
-}
-function advance(current,desired,degreesPerSecond){
- const v=[...current],step=degreesPerSecond*RAD/60;
- v[0]+=Math.max(-step,Math.min(step,desired[0]-v[0]));
- const delta=[desired[1]-v[1],desired[2]-v[2]],n=Math.hypot(...delta),f=n>0?Math.min(1,step/n):0;v[1]+=delta[0]*f;v[2]+=delta[1]*f;
- return v;
-}
-const remaining=(v,target)=>Math.max(Math.abs(v[0]-target[0]),Math.hypot(v[1]-target[1],v[2]-target[2]))/RAD;
-const api={make,apply,optimize,advance,remaining,swing};
+const remaining=(a,b)=>Math.max(...[0,4,8].map(k=>angle(a.slice(k,k+4),b.slice(k,k+4))));
+function advance(a,b,degreesPerSecond){return [0,4,8].flatMap(k=>{const x=a.slice(k,k+4),y=b.slice(k,k+4),d=angle(x,y);return qslerp(x,y,d>0?Math.min(1,degreesPerSecond/60/d):1);});}
+const api={make,apply,capture,target,blend,advance,remaining,sanitize,defaults,euler};
 if(typeof module!=='undefined')module.exports=api;else root.BodyReach=api;
 })(globalThis);

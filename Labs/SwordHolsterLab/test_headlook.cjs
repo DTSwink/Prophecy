@@ -22,7 +22,7 @@ for(const motion of ['idle','walk'])for(const sheathe of [false,true]){
    assert(H.angle(f.pose[j].q,expected)<1e-5,'parent cancellation and signed head path distribute independently');
    assert(Math.abs(dist(f.pose[j].p,f.pose[data.parents[j]].p)-dist(inherited[j].p,inherited[data.parents[j]].p))<1e-6,'head overlay preserves incoming FK bone length');
   }
-  const full=H.compose(setup.seated,f.holster),mouth=R.add(full.p,R.rotate(full.q,setup.baseBladeLocal.map((v,j)=>v*full.s[j])));
+  const full=H.seatedSword(setup,f.holster),mouth=R.add(full.p,R.rotate(full.q,setup.baseBladeLocal.map((v,j)=>v*full.s[j])));
   assert(dist(f.headLook.target,mouth)<1e-9,'uses actual blade-base mouth, not grip');
  }
  assert(m.frames.at(-1).headLook.done);assert(H.angle(m.frames.at(-1).pose[ctx.head].q,H.motion(data,motion,m.playbackDuration)[ctx.head].q)<.001);
