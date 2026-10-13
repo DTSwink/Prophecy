@@ -1,4 +1,5 @@
 #include "ProphecyAttackFists.h"
+#include "ProphecyReachRuntime.h"
 #include "ProphecyNNModifierDebug.h"
 #include "ProphecyBlendClock.h"
 #include "ProphecyAgent.h"
@@ -242,6 +243,10 @@ void ProphecyAttackFists::PreUpdate(const void* Proxy, const AProphecyAgent* Age
 			}
 		}
 	}
+	ProphecyReach::Fingers(Agent,[&](FName Name,const FTransform& Local){
+		if(auto* Existing=Bones.FindByPredicate([&](const FFistBone& B){return B.Name==Name;})) Existing->Local=Local;
+		else Bones.Add({Name,Local});
+	});
 	FScopeLock Lock(&Storage().SnapshotLock);
 	Storage().Snapshots.Add(Proxy,MoveTemp(Bones));
 }

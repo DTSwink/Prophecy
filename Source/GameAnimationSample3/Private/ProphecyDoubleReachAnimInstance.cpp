@@ -1,6 +1,7 @@
 #include "ProphecyDoubleReachAnimInstance.h"
 #include "Engine/World.h"
 #include "ProphecyBlendClock.h"
+#include "ProphecyDoubleReachSolver.h"
 
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNodeBase.h"
@@ -1148,6 +1149,65 @@ FCompactPoseBoneIndex ResolveCompactBoneIndex(const FBoneContainer& RequiredBone
 		? FCompactPoseBoneIndex(INDEX_NONE)
 		: RequiredBones.GetCompactPoseIndexFromSkeletonIndex(SkeletonIndex);
 }
+}
+
+TConstArrayView<FName> ProphecyNativeReach::BoneNames()
+{
+    return MakeArrayView(ProphecyDoubleReach::JointNames);
+}
+
+bool ProphecyNativeReach::Step(TConstArrayView<FTransform> Base, EProphecyDoubleReachMode Mode,
+    const FVector (&Requested)[2], const float (&Speed)[2], FState& State,
+    TArray<FTransform>& Output, double Dt)
+{
+    using namespace ProphecyDoubleReach;
+    if (Base.Num() != JointCount || Dt <= 0) return false;
+    FSourcePose Source;
+    for (int I=0; I<JointCount; ++I)
+    {
+        if (Base[I].ContainsNaN()) return false;
+        Source.ComponentTransforms[I]=Base[I];
+        Source.Positions[I]=Base[I].GetLocation()*.01;
+    }
+    for (int K=0; K<2; ++K)
+    {
+        Source.Arms[K]=MakeArmSpec(Source,K==0);
+        Source.Legs[K]=MakeLegSpec(Source,K==0);
+    }
+    FVector Targets[2];
+    for (int K=0; K<2; ++K)
+    {
+        const bool Active=ModeUsesHand(Mode,K);
+        const FVector Hand=At(Source.Positions,Source.Arms[K].Hand);
+        if (!State.Active[K]) { State.Targets[K]=Hand; State.Elbows[K]=At(Source.Positions,Source.Arms[K].Elbow); }
+        State.Active[K]=Active;
+        State.Targets[K]=Active ? FMath::VInterpConstantTo(State.Targets[K],Requested[K]*.01,Dt,FMath::Max(0.f,Speed[K])*.01) : Hand;
+        Targets[K]=State.Targets[K];
+    }
+    const auto Desired=SolveMode(Source,Targets,Mode);
+    FBodyParameters Current;
+    for (int I=0; I<6; ++I) SetParameter(Current,I,State.Body[I]);
+    Current=LimitBodyParameterMotion(Current,Desired.Parameters,Dt,.075,1.8,FMath::DegreesToRadians(240.));
+    for (int I=0; I<6; ++I) State.Body[I]=GetParameter(Current,I);
+    const auto Solved=SolveModeWithBodyParameters(Source,Targets,Mode,Current);
+    FJointTransforms Pose;
+    BuildEndpointTransforms(Source,Solved,Mode,Pose);
+    for (int K=0; K<2; ++K) if (State.Active[K])
+    {
+        const auto& Arm=Source.Arms[K];
+        const int S=JointIndex(Arm.Shoulder),E=JointIndex(Arm.Elbow),H=JointIndex(Arm.Hand);
+        const FVector Shoulder=Pose[S].GetLocation()*.01,Hand=Pose[H].GetLocation()*.01;
+        const FVector Natural=Pose[E].GetLocation()*.01;
+        const FVector RequestedElbow=FMath::VInterpConstantTo(State.Elbows[K],Natural,Dt,FMath::Max(0.f,Speed[K])*1.2*.01);
+        State.Elbows[K]=ProjectElbowToFeasibleCircle(Arm,Shoulder,Hand,Natural,RequestedElbow);
+        Pose[E].SetLocation(State.Elbows[K]*100);
+        Pose[S].SetRotation(AlignRotation(Base[S].GetRotation(),At(Source.Positions,Arm.Elbow)-At(Source.Positions,Arm.Shoulder),State.Elbows[K]-Shoulder));
+        Pose[E].SetRotation(AlignRotation(Base[E].GetRotation(),At(Source.Positions,Arm.Hand)-At(Source.Positions,Arm.Elbow),Hand-State.Elbows[K]));
+        Pose[H].SetRotation(AlignRotation(Base[H].GetRotation(),At(Source.Positions,Arm.Hand)-At(Source.Positions,Arm.Elbow),Hand-State.Elbows[K]));
+    }
+    Output.Reset(JointCount);
+    for (const auto& T:Pose) Output.Add(T);
+    return true;
 }
 
 class FProphecyDoubleReachAnimInstanceProxy final : public FAnimInstanceProxy

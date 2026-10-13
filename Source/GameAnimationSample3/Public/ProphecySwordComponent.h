@@ -5,6 +5,7 @@
 #include "ProphecySwordComponent.generated.h"
 
 class AProphecyAgent;
+namespace ProphecySwordHolsterPose { struct FEntryPose; }
 class UStaticMeshComponent;
 class UPhysicsConstraintComponent;
 class USkeletalMeshComponent;
@@ -32,7 +33,7 @@ public:
 	bool BreakGripConstraint();
 	bool SetInertiaScale(float Scale);
 	bool SetAttachedInertiaScale(float Scale);
-    bool StartHolster(bool Sheathe,float ReachSpeed,float RotationSpeed,float SlidingSpeed);
+    bool StartHolster(bool Sheathe,float ReachSpeed,float RotationSpeed,float SlidingSpeed,const ProphecySwordHolsterPose::FEntryPose* Previous=nullptr);
 	void RefreshOwnerCollision();
 	AActor* GetSword() const { return Sword; }
 	bool IsSimulated() const { return Sword && bPhysicsHold; }

@@ -1,5 +1,6 @@
 #include "ProphecyNNLocomotionAnimInstance.h"
 #include "ProphecySwordHolsterPose.h"
+#include "ProphecyReachRuntime.h"
 #include "ProphecyAttackStartInertia.h"
 #include "ProphecyNNInterpolation.h"
 
@@ -401,6 +402,7 @@ private:
 		if (bApplyPelvis && bApplyLegs && bApplyUpperBody)
             ProphecyAttackStartInertia::Apply(AgentId,CurrentPose.BoneNames,DesiredComponentTransforms,EvaluationComponentWorldTransform);
         if (bApplyUpperBody) ProphecySwordHolsterPose::Apply(AgentId,CurrentPose.BoneNames,DesiredComponentTransforms,EvaluationComponentWorldTransform);
+        ProphecyReach::Apply(AgentId,CurrentPose.BoneNames,DesiredComponentTransforms,EvaluationComponentWorldTransform);
 		const bool bRecoveringCalfLength=!bPhysicalAgent && ProphecyNNPresentation::HasRecoveryCalfLengths(AgentId);
 		// The model viewer draws each lower-leg segment all the way from the calf
 		// point to the predicted foot point. Mirror that here: keep the predicted

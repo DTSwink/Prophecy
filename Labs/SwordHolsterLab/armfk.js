@@ -3,7 +3,7 @@
 'use strict';
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
 const {add,sub,mul,length:len,qm,qinv,rotate,qslerp,unit}=R;
-const clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>x*x*x*(10+x*(-15+6*x));
+const clamp=x=>Math.max(0,Math.min(1,x));
 const angle=(a,b)=>len(R.qlog(qm(qinv(a),b)))*180/Math.PI;
 function capture(pose,arm,parents){return arm.map(j=>({q:unit(qm(qinv(pose[parents[j]].q),pose[j].q)),p:rotate(qinv(pose[parents[j]].q),sub(pose[j].p,pose[parents[j]].p))}));}
 function blend(a,b,t){return a.map((v,k)=>({q:qslerp(v.q,b[k].q,t),p:R.offsetBlend(v.p,b[k].p,t)}));}
@@ -19,7 +19,7 @@ function duration(a,b,linearSpeed,angularSpeed){
  const chain=locals=>{let p=[0,0,0],q=[0,0,0,1];return locals.map((v,k)=>{if(k)p=add(p,rotate(q,v.p));q=unit(qm(q,v.q));return {p,q};});};
  let previous=chain(a),localPrevious=a,seconds=1/60;
  for(let i=1;i<=96;i++){
-  const local=blend(a,b,ease(i/96)),pose=chain(local);
+  const local=blend(a,b,i/96),pose=chain(local);
   seconds=Math.max(seconds,len(sub(pose[2].p,previous[2].p))*96/linearSpeed,angle(previous[2].q,pose[2].q)*96/angularSpeed);
   for(let j=0;j<3;j++)seconds=Math.max(seconds,angle(localPrevious[j].q,local[j].q)*96/angularSpeed);
   previous=pose;localPrevious=local;
@@ -50,7 +50,7 @@ function plan({arm,parents,frameAt,startTick,lastTick,o,solve,minimumEndTick=sta
  let arrivalFrame,arrivalPose,arrivalProgress=1,arrives=false;
  if(o.sheathe&&arrivalCheck){
   for(let tick=earlyArrival?startTick:reachEndTick;tick<=(earlyArrival?lastTick:Math.min(lastTick,reachEndTick));tick++){
-   const f=frameAt(tick),progress=ease(clamp((tick-startTick)/(reachEndTick-startTick))),local=blend(source,reachDestination,progress),pose=apply(f.pose,arm,parents,local);
+   const f=frameAt(tick),progress=clamp((tick-startTick)/(reachEndTick-startTick)),local=blend(source,reachDestination,progress),pose=apply(f.pose,arm,parents,local);
    if(arrivalCheck(f,pose,progress)){endTick=tick;destination=local;arrivalFrame=f;arrivalPose=pose;arrivalProgress=progress;arrives=true;break;}
   }
  }else{
@@ -78,12 +78,12 @@ function plan({arm,parents,frameAt,startTick,lastTick,o,solve,minimumEndTick=sta
 }
 function at(plan,tick){
  if(tick<=plan.endTick||!plan.arrives){
-  const progress=ease(clamp((tick-plan.startTick)/(plan.reachEndTick-plan.startTick)));
+  const progress=clamp((tick-plan.startTick)/(plan.reachEndTick-plan.startTick));
   return {local:blend(plan.source,plan.reachDestination,progress),progress};
  }
  let k=1;while(k<plan.keys.length-1&&plan.keys[k].tick<tick)k++;
  const a=plan.keys[k-1],b=plan.keys[k]||a,t=clamp((tick-a.tick)/Math.max(1e-12,b.tick-a.tick));
  return {local:blend(a.local,b.local,t),progress:1};
 }
-const api={capture,blend,apply,duration,plan,at,ease};if(typeof module!=='undefined')module.exports=api;else root.ArmFK=api;
+const api={capture,blend,apply,duration,plan,at};if(typeof module!=='undefined')module.exports=api;else root.ArmFK=api;
 })(globalThis);

@@ -25,7 +25,7 @@ for(const motion of ['idle','walk'])for(const sheathe of [false,true])for(const 
   }
   for(const boundary of [ret.start,release]){
    const a=H.sampleBody(m,boundary-1e-7),b=H.sampleBody(m,boundary+1e-7);
-   for(let j=0;j<data.names.length;j++){assert(distance(a.pose[j].p,b.pose[j].p)<.001,'no boundary position pop');assert(H.angle(a.pose[j].q,b.pose[j].q)<.01,`no boundary rotation pop: ${motion} S=${sheathe} gaze=${gazeYaw} fraction=${startFraction} time=${boundary} bone=${data.names[j]} degrees=${H.angle(a.pose[j].q,b.pose[j].q)}`);}
+   for(let j=0;j<data.names.length;j++){assert(distance(a.pose[j].p,b.pose[j].p)<.001,'no boundary position pop');assert(H.angle(a.pose[j].q,b.pose[j].q)<.01,'no boundary rotation pop');}
   }
   const end=Math.max(ret.start+ret.timing.duration+(ret.gripDelay||0),m.armReturn?release+m.armReturn.timing.duration:0),f=H.sampleBody(m,end+1e-5),base=H.motion(data,motion,end+1e-5,gazeYaw);
   assert(m.completionTick/60>=end-1e-8,'completion waits for both returns');

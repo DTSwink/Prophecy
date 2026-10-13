@@ -11,9 +11,79 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "ScopedTransaction.h"
+#include "Engine/SimpleConstructionScript.h"
+#include "Engine/SCS_Node.h"
+#include "EngineUtils.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "PhysicsEngine/PhysicsConstraintComponent.h"
 
 namespace ProphecySwordHolsterSetup
 {
+static void RefreshGripProfilePins()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+ if(!BP)return;
+ TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);TArray<UK2Node_CallFunction*> Nodes;
+ for(auto* G:Graphs)for(UEdGraphNode* N:G->Nodes)if(auto* C=Cast<UK2Node_CallFunction>(N))
+  if(C->FunctionReference.GetMemberName()==TEXT("SetSwordHolsterProfile")&&!C->FindPin(TEXT("SheatheTipDistanceThreshold")))Nodes.Add(C);
+ if(Nodes.IsEmpty())return;
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","GripHolsterPins","Expose holster grip stabilization controls"));BP->Modify();
+ for(auto* N:Nodes){N->Modify();N->ReconstructNode();}
+ FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+ UE_LOG(LogTemp,Display,TEXT("Refreshed %d existing holster profile nodes; not saved."),Nodes.Num());
+}
+static FAutoConsoleCommand GripProfilePins(TEXT("Prophecy.Editor.RefreshHolsterGripPins"),TEXT("Expose new controls on existing profile nodes without changing wiring or tuning; no save."),FConsoleCommandDelegate::CreateStatic(&RefreshGripProfilePins));
+// Explicit editor operation for the user's temporary, non-physical pelvis mount.
+// If the obsolete joint still exists, retain its settings but remove its endpoints.
+static void MountRigidHolster()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+ if(!BP||!BP->SimpleConstructionScript)return;
+ USCS_Node* HolsterNode=nullptr;USCS_Node* JointNode=nullptr;
+ for(auto* N:BP->SimpleConstructionScript->GetAllNodes()){
+  if(N->GetVariableName()==TEXT("holster"))HolsterNode=N;
+  if(N->GetVariableName()==TEXT("PhysicsConstraint"))JointNode=N;
+ }
+ auto* Template=HolsterNode?Cast<UPrimitiveComponent>(HolsterNode->ComponentTemplate):nullptr;
+ auto* Joint=JointNode?Cast<UPhysicsConstraintComponent>(JointNode->ComponentTemplate):nullptr;
+ if(!Template||Template->BodyInstance.bSimulatePhysics||Template->GetCollisionEnabled()!=ECollisionEnabled::NoCollision)return;
+ FTransform Local;bool Found=false;
+ for(TActorIterator<AActor> It(GEditor->GetEditorWorldContext().World());It;++It)if(It->GetClass()==BP->GeneratedClass){
+  TInlineComponentArray<UPrimitiveComponent*> Parts(*It);UPrimitiveComponent* H=nullptr;USkeletalMeshComponent* M=nullptr;
+  for(auto* C:Parts){if(C->GetFName()==TEXT("holster"))H=C;if(C->GetFName()==TEXT("PhysicalMesh"))M=Cast<USkeletalMeshComponent>(C);}
+  if(H&&M&&H->GetAttachParent()==M&&M->DoesSocketExist(TEXT("pelvis"))){
+   const FTransform Candidate=H->GetComponentTransform().GetRelativeTransform(M->GetSocketTransform(TEXT("pelvis")));
+   if(Found&&!Local.Equals(Candidate,.001)){UE_LOG(LogTemp,Error,TEXT("Rigid holster: differing actor placements; no changes."));return;}
+   Local=Candidate;Found=true;
+  }
+ }
+ if(!Found)return;
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","RigidHolster","Attach non-physical holster to pelvis"));
+ BP->Modify();HolsterNode->Modify();Template->Modify();
+ HolsterNode->AttachToName=TEXT("pelvis");Template->SetRelativeTransform(Local);
+ if(Joint){
+  Joint->Modify();
+  Joint->ComponentName1.ComponentName=NAME_None;Joint->ComponentName2.ComponentName=NAME_None;
+  Joint->ConstraintActor1=nullptr;Joint->ConstraintActor2=nullptr;Joint->OverrideComponent1=nullptr;Joint->OverrideComponent2=nullptr;
+ }
+ // Clear placed-instance copies too; otherwise their inherited old endpoint values
+ // can survive the reconstruction and recreate the pelvis motor in PIE.
+ for(TActorIterator<AActor> It(GEditor->GetEditorWorldContext().World());It;++It)if(It->GetClass()==BP->GeneratedClass){
+  TInlineComponentArray<UPhysicsConstraintComponent*> Joints(*It);
+  for(auto* C:Joints)if(C->GetFName()==TEXT("PhysicsConstraint")){C->Modify();C->BreakConstraint();C->ComponentName1.ComponentName=NAME_None;C->ComponentName2.ComponentName=NAME_None;C->OverrideComponent1=nullptr;C->OverrideComponent2=nullptr;}
+ }
+ FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+ FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+ for(TActorIterator<AActor> It(GEditor->GetEditorWorldContext().World());It;++It)if(It->GetClass()==BP->GeneratedClass){
+  TInlineComponentArray<UPrimitiveComponent*> Parts(*It);
+  for(auto* C:Parts)if(C->GetFName()==TEXT("holster")){C->Modify();C->SetRelativeTransform(Local);}
+ }
+ UE_LOG(LogTemp,Display,TEXT("Rigid holster: pelvis socket, saved local placement, old motor endpoints cleared. BP status=%d; not saved."),int32(BP->Status));
+}
+static FAutoConsoleCommand RigidCommand(TEXT("Prophecy.Editor.MountRigidHolster"),TEXT("Preserve current placed holster placement as a pelvis socket mount; disable its old motor endpoints. Does not save."),FConsoleCommandDelegate::CreateStatic(&MountRigidHolster));
+
 static void Wire()
 {
     if(!GEditor || GEditor->PlayWorld)return;
@@ -109,19 +179,21 @@ static void RefreshLabValues()
  TSharedPtr<FJsonObject> Root;if(!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text),Root))return;
  const TSharedPtr<FJsonObject>* Nested;const auto P=Root->TryGetObjectField(TEXT("parameters"),Nested)?*Nested:Root;
  auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));if(!BP)return;
- TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);TArray<UEdGraphPin*> Pins;TArray<double> Values;
- const TCHAR* Functions[]={TEXT("DrawSword"),TEXT("SetSwordHolsterProfile")};
- const TCHAR* Names[]={TEXT("MaxReachSpeed"),TEXT("MaxReachRotationSpeed"),TEXT("SlidingSpeed"),TEXT("ShrinkPercent"),TEXT("UnshrinkDuration")};
- const TCHAR* Keys[]={TEXT("maxReachSpeed"),TEXT("maxReachRotationSpeed"),TEXT("slidingSpeed"),TEXT("shrinkPercent"),TEXT("unshrinkDuration")};
- for(int I=0;I<5;++I){UEdGraphPin* Pin=nullptr;
-  for(auto* G:Graphs)if(G->GetFName()==TEXT("tick debugging"))for(UEdGraphNode* N:G->Nodes)if(auto* C=Cast<UK2Node_CallFunction>(N))if(C->FunctionReference.GetMemberName()==Functions[I<3?0:1]){
+ TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);TArray<UEdGraphPin*> Pins;TArray<FString> Values;
+ const TCHAR* Names[]={TEXT("ShrinkPercent"),TEXT("UnshrinkDuration"),TEXT("GripHolsterStabilizationPercent"),TEXT("HolsterReturnDuration"),TEXT("ShrinkDuration"),TEXT("MaxAttachedSpeed"),TEXT("MaxAttachedRotationSpeed"),TEXT("LeewayAttachmentPhase"),TEXT("SheatheTipDistanceThreshold")};
+ const TCHAR* Keys[]={TEXT("shrinkPercent"),TEXT("unshrinkDuration"),TEXT("holsterRotationStabilization"),TEXT("holsterReturnDuration"),TEXT("shrinkDuration"),TEXT("maxAttachedSpeed"),TEXT("maxAttachedRotationSpeed"),TEXT("leewayPhase"),TEXT("sheatheTipTolerance")};
+ for(int I=0;I<UE_ARRAY_COUNT(Names);++I){UEdGraphPin* Pin=nullptr;
+  for(auto* G:Graphs)if(G->GetFName()==TEXT("tick debugging"))for(UEdGraphNode* N:G->Nodes)if(auto* C=Cast<UK2Node_CallFunction>(N))if(C->FunctionReference.GetMemberName()==TEXT("SetSwordHolsterProfile")){
    if(Pin)return;Pin=C->FindPin(Names[I]);}
-  double V;if(!Pin||!Pin->LinkedTo.IsEmpty()||!P->TryGetNumberField(Keys[I],V)||!FMath::IsFinite(V))return;
-  Pins.Add(Pin);Values.Add(V);
+  if(!Pin||!Pin->LinkedTo.IsEmpty())return;
+  FString Value;
+  if(I==7){bool V;if(!P->TryGetBoolField(Keys[I],V))return;Value=V?TEXT("true"):TEXT("false");}
+  else {double V;if(!P->TryGetNumberField(Keys[I],V)||!FMath::IsFinite(V))return;Value=FString::SanitizeFloat(I==2?100*V:V);}
+  Pins.Add(Pin);Values.Add(Value);
  }
  const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","RefreshHolsterValues","Refresh sword holster lab values"));BP->Modify();
- for(int I=0;I<Pins.Num();++I){Pins[I]->GetOwningNode()->Modify();GetDefault<UEdGraphSchema_K2>()->TrySetDefaultValue(*Pins[I],FString::SanitizeFloat(Values[I]));}
+ for(int I=0;I<Pins.Num();++I){Pins[I]->GetOwningNode()->Modify();GetDefault<UEdGraphSchema_K2>()->TrySetDefaultValue(*Pins[I],Values[I]);}
  FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
 }
-static FAutoConsoleCommand RefreshCommand(TEXT("Prophecy.Editor.RefreshSwordHolsterValues"),TEXT("Refresh five unlinked existing sword literals from native profile; compile without saving."),FConsoleCommandDelegate::CreateStatic(&RefreshLabValues));
+static FAutoConsoleCommand RefreshCommand(TEXT("Prophecy.Editor.RefreshSwordHolsterValues"),TEXT("Refresh existing basic profile literals from the accepted lab export; preserve wiring and action-specific speeds; compile without saving."),FConsoleCommandDelegate::CreateStatic(&RefreshLabValues));
 }

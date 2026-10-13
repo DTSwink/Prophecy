@@ -2,7 +2,9 @@ param([int]$TimeoutSeconds = 240, [string]$Tests = "Prophecy.SwordHolster+Prophe
 $ErrorActionPreference = 'Stop'
 $holsterRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../..')).Path
 $holsterOut = Join-Path $holsterRoot $OutputDirectory
-$holsterArgs = '"' + (Join-Path $holsterRoot 'GameAnimationSample3.uproject') + '" /Engine/Maps/Entry -nullrhi -nocef -unattended -nosplash -nosound -nop4 -ExecCmds="Automation RunTests ' + $Tests + '" -TestExit="Automation Test Queue Empty" -ReportExportPath="' + (Join-Path $holsterOut 'automation') + '" -abslog="' + (Join-Path $holsterOut 'automation.log') + '"'
+# Fab cannot restore its browser tab with CEF disabled. Keep this isolated run
+# from writing editor configuration; normal interactive launches are unaffected.
+$holsterArgs = '"' + (Join-Path $holsterRoot 'GameAnimationSample3.uproject') + '" /Engine/Maps/Entry -nullrhi -nocef -DisablePlugins=Fab -nowrite -unattended -nosplash -nosound -nop4 -ExecCmds="Automation RunTests ' + $Tests + '" -TestExit="Automation Test Queue Empty" -ReportExportPath="' + (Join-Path $holsterOut 'automation') + '" -abslog="' + (Join-Path $holsterOut 'automation.log') + '"'
 $holsterProcess = Start-Process 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/UnrealEditor-Cmd.exe' -ArgumentList $holsterArgs -WindowStyle Hidden -PassThru
 $holsterDeadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
 while (-not $holsterProcess.WaitForExit(1000)) {

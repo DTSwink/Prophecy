@@ -1,8 +1,78 @@
 # D/S Sword Holster Lab
 
+The solid-body view includes a separate darker pelvis box rigidly following the pelvis bone, also in upper-body-only mode. The lowest spine block remains above it; its shape is not a pelvis orientation reference.
+
+Temporary viewport diagnostic **Distance to pelvis · temp** draws a yellow line from the selected holster rotation pivot to the displayed pelvis bone and labels its measured length in centimetres. It updates during playback/scrubbing and changes no motion. The HTML distance label is viewport-only; saved pose data includes endpoints/distance and image capture includes the line.
+
+The viewport's **Right hand · holster frame** counter shows actual hand speed in
+cm/s and angular speed in °/s relative to the holster. It measures one
+authored tick (1/60 s), independent of playback speed or rendering FPS. Pausing
+or scrubbing shows that interval's speed; body-pose editing shows dashes while
+previewing. These are measured hand speeds, not target speeds; inherited holster
+motion is excluded. During attraction the grip target translates and rotates
+independently under the reach limits. Rotation pivots about the grip so blade
+rotation cannot add hand travel. Alignment preserves the captured axial grip position;
+the tip can now curve during the approach. Unreachable arms retain visible error.
+
+**Shrink duration · seconds**, under Set Sword Holster Profile, is the time from
+S start to reach the chosen shrink amount. Default.25s; independent of curves.
+Previously saved shrink rates migrate to the equivalent duration automatically.
+Attachment still freezes length; any remaining shrink finishes using the existing
+slide correction. Drawing keeps its separate unshrink duration. The setting is
+persistent. Actual shrink percentage appears below the viewport velocity counters.
+
+**Reach / Attached** columns share two speed rows. Attached values control maximum
+hand translation (cm/s) and angular speed (°/s) relative to the holster after
+attachment and before sliding. They initially copy the existing sheathing reach
+limits; subsequent edits are independent and persistent. Sliding retains its
+own speed control. **Slide %** appears below Shrink in the viewport:0% is the
+entrance,100% fully sheathed; drawing counts downward.
+
 Open **D-S Sword Holster Lab** on the Windows desktop. The teal D/S sword icon launches its own window and local service at `http://127.0.0.1:8818`. Unreal is not required to run the lab. The original Attack Recovery Lab and its saved state are untouched.
 
 **D/S** means **drawing (unsheathing) / sheathing** in this project.
+
+**Leeway attachment phase** is a saved viewport checkbox, on by default.
+On keeps the current early attachment → tip alignment → sliding behavior.
+Off keeps S in the hand until the actual blade tip is within2cm of the entrance
+and full rotation is within the selected tolerance, then attaches and slides
+directly (no Align tip phase). It captures actual rotation, tip offset and scale
+at transfer, using the existing slide correction to close those residuals.
+Holster compensation starts at that transfer. Unreachable cases remain waiting;
+there is no early-attachment fallback. Drawing is unaffected. This motion control
+is separate from **Show sheathing leeway**, which only controls the overlay.
+Both planners and sequence actions use the same selected rule.
+
+**Show sheathing leeway**, beneath **No cheat** at viewport top-left, persists as a view setting. During S reach and tip alignment it draws the same Unreal colors: tilt cone that turns from cyan to green when full rotation is within tolerance, cyan perfect axis, green/red actual blade ray (full rotation including roll), adjacent roll dial with its remaining cyan allowance, and a green/amber 2cm entrance sphere with actual tip/connector. The readout shows rotation, roll, tip distance and body readiness. It follows the displayed sword including shrink, works in both planners and sequence orders, and does not change motion.
+
+**Sheathing attachment and tip alignment (October13):** the first tick inside the full rotation tolerance captures the sword relative to the holster without changing its world transform or scale. The **Align tip** phase aims the blade toward the mouth, projects that rotation inside the allowed full-rotation angle, and aligns sideways while preserving the grip position along the holster. Grip translation and rotation independently run at their respective max reach speeds in the holster frame on normal time, each stopping at its own target; there is no shared duration or rotational travel budget. Reach/slide timing curves do not retime this stage. Shrink freezes during alignment, then resumes the existing slide correction. **The holster owns the sword path from capture onward; the arm follows.** Sliding starts at the insertion depth reached by that alignment, independently of hand reach. It covers the remaining distance to 100%; it does not reset to 0%. A negative starting value means the tip is still outside the entrance. Sheathing FK/head thresholds still refer to actual insertion, while rotation correction keeps its own elapsed slide clock. An unreachable hand leaves a visible tracking gap, reported in the existing hand-error readout; it cannot drag or stall the sword, and the arm is not stretched. Integer and fractional playback use the same ownership. The authored body retains its reach schedule, then blends from the body pose reached at slide entry toward the seated target. No added controls. Drawing is unchanged. `test_tipalign.cjs` and `test_sword_owner.cjs` cover both planners, motion/curve/shrink cases, speed limits, ownership under a deliberately displaced arm, and sequence orders.
+
+**No cheat · live target planning** (viewport top-left) is a persistent,
+shared D/S checkbox. Off uses the original future-recording reach planner.
+
+**Attachment body continuity:** attaching the sword does not change the spine
+or clavicle speed rule. They retain their original reach-curve schedule during
+tip alignment; sliding starts from the body pose actually reached. The angular
+speed ceiling is not used as a new requested speed at attachment. Regression:
+`test_attach_body_schedule.cjs`.
+
+Both planning modes share the selected sheathing arrival rule.
+On prepares the trajectory chronologically at60Hz: only the current gait pose
+and observed history are available, while authored body/curve targets remain
+known. Initial reach duration uses the current holster, followed by native-style
+four-tick destination refits/filtering and per-tick pursuit after the deadline.
+Torso/pole/head timing uses the estimated deadline, not a future successful
+arrival. Slide guides use the current holster; the shared sheathing continuation and
+its early held-arm return advance at60Hz (the older off-mode return used240Hz). Head/return and underlying locomotion retain
+their independent clocks. Curves rerun the causal calculation instead of
+replaying a trajectory planned with later gait samples. The worker still caches
+output for smooth playback/scrubbing; rendering performs no destination solves.
+Both sequence actions and body previews support this mode. It is a kinematic
+recorded-input test of Unreal's information constraints, **not** a Jolt/NN
+recurrence simulator or proof of full engine pose parity. Refit phase is fixed
+for the single lab agent; holster stabilization remains the explicit lab-only
+control. Tests: `test_online.cjs`, `test_online_ui.cjs` (future-input and time-budget
+independence, motion/sequence/curves, persistence and isolated UI).
 
 **Play both actions:** the checkbox below Base motion/Action follows the selected
 mode: Drawing plays **D → S**, Sheathing plays **S → D**. The selected action
@@ -18,15 +88,24 @@ Head/FK clocks remain unmodulated. Tests: `test_sequence.cjs`,
 `test_sequence_ui.cjs`, `test_sequence_speeds.cjs` cover both orders, continuous
 joins, independent motion/timing, worker edits, retiming and save/reload.
 
-**Holster placement → Rotation stabilization · lab only** is a saved, shared D/S
-slider. Default0 retains pelvis attachment;1 holds the holster’s world rotation
-at underlying animation time0, with intermediate values blending between them.
-Position keeps the original pelvis-local attachment. Both sequence segments use
-the same reference, so S → D does not reset the rotation. Planning, targets,
-sword attachment and fractional playback all use the stabilized holster on the
-unmodulated locomotion clock. Slider edits use the existing background planner
-without stopping or seeking playback. This does not change Unreal: its D/S
-continues following the actual physical holster.
+**Body poses → Holster rotation compensation**, at the top of the right panel,
+is shared by D/S. S captures rotation at attachment and holds through alignment
+and sliding; D holds only during sliding. 0 follows pelvis rotation, 1 holds the
+world orientation captured at grip. **Holster return duration** (default .25s)
+returns to the original pelvis-relative placement after sliding on the normal
+clock. Each sequence action captures its own reference.
+
+**Holster axial pivot** is shared and saved: 0% is the bottom of the exported
+holster mesh, 50% its current centre, 100% the entrance end (local Z bounds).
+Default50 preserves the previous pivot. Compensation rotates about this point,
+which remains attached to the pelvis; the component centre consequently moves
+when an off-centre pivot is selected. Neutral placement is unchanged and restored
+at return completion. The temporary distance overlay measures this same selected pivot,
+not the component centre. Fractional playback anchors the pivot to the displayed pelvis as well.
+Slider edits use the background planner without pausing or seeking. These are
+lab controls; no Unreal changes were made in this update. No-cheat-off drawing
+with compensation retains reference reach and uses the shared current-tick
+continuation thereafter; zero compensation retains its original planner.
 
 **Drawing/Sheathing speeds are independent.** Max reach speed, max reach rotation
 speed and sliding speed follow the Action selector and persist with its profile,
@@ -53,16 +132,8 @@ the existing shared values into both profiles, preserving the original motion.
 **Max pole speed is an upper bound.** During D/S reach, the elbow preference
 slows to arrive at its entry target with the hand, using unwarped reach time.
 If the cap prevents arrival, it continues catching up during sliding. Zero holds
-the starting preference. The unused speed budget also bounds adjustment of the
-reference around the arm axis, so aligning the arm with the sword/spine reference
-cannot introduce an unbounded swivel. Ordinary transport with the moving frame
-does not spend this budget; entry inertia remains a separate contribution.
-
-Guide solves carry the existing arm plane toward the new wrist target before
-bending. This prevents an almost straight arm from choosing a different plane
-and acquiring a large axial twist. Both corrections are shared with the October12
-Unreal port, with no added controls or changes to saved tuning. Regressions:
-`test_straight_arm.cjs`, `test_pole_reference_speed.cjs`.
+the starting preference. Sliding keeps its existing target pursuit and reference;
+entry inertia remains a separate transient contribution.
 
 **Body poses → Pelvis rotation compensation** is saved per action.
 Default1 keeps full correction;0 follows pelvis rotation. Intermediate values
@@ -183,7 +254,7 @@ curve points remain editable and unchanged by the switch; uncheck to restore
 them. The checkbox is saved with view/debug controls, separately from the four
 curve profiles, including snapshots. Switching does not stop playback or seek.
 Other edits and background body planning respect the bypass. This bypasses the
-four time-modulation curves; existing FK easing and head profiles still apply.
+four time-modulation curves. Reach progress is linear when bypassed; requested entry inertia, head and FK return profiles still apply.
 
 **Earlier additive body poses, October12 — superseded for spine/right arm:** the saved spine/clavicle poses
 now add offsets to current locomotion instead of cancelling its rotations.
@@ -466,7 +537,7 @@ The seated hand target is derived from the **shortened sword**, keeping the auth
 
 ### FK arm interpolation and two-colour limbs
 
-The user approved calculating destination poses automatically, then interpolating the bones as in Attack Recovery Lab. `armfk.js` reuses that lab's parent-local quaternion slerp, quintic easing, length-preserving offset interpolation and forward kinematics. The reach plan predicts the destination on the moving, turned body, solves that destination pose, and interpolates upperarm_r/lowerarm_r/hand_r local rotations from the captured starting pose. A few planning iterations reconcile destination time with the speed controls. The hand's orientation now interpolates with the arm instead of being assigned directly each tick.
+The user approved calculating destination poses automatically, then interpolating the bones as in Attack Recovery Lab. `armfk.js` reuses that lab's parent-local quaternion slerp, length-preserving offset interpolation and forward kinematics. The reach plan predicts the destination on the moving, turned body, solves that destination pose, and interpolates upperarm_r/lowerarm_r/hand_r local rotations from the captured starting pose. A few planning iterations reconcile destination time with the speed controls. The hand's orientation now interpolates with the arm instead of being assigned directly each tick.
 
 Reach duration is bounded by the FK wrist arc and wrist/joint angular motion. **Max reach speed** and **Max reach rotation speed** limit the arm transition relative to its moving clavicle; inherited locomotion and body turning are additional movement. Reaching a close hand target does not allow a large elbow/wrist rotation to snap. Drawing still waits for the torso turn before gripping.
 

@@ -1,7 +1,11 @@
 {
   "schema": "sword_holster_lab_v1",
   "parameters": {
-    "holsterRotationStabilization": 0.32,
+    "noCheat": true,
+    "leewayPhase": false,
+    "holsterRotationStabilization": 0.78,
+    "holsterReturnDuration": 0.25,
+    "holsterPivotPercent": 90,
     "pelvisRotationCompensation": 0.96,
     "entryInertia": 1,
     "entryInertiaDuration": 0.5,
@@ -42,19 +46,23 @@
           0,
           0
         ],
-        "pole": 69.4
+        "pole": 34.1
       }
     },
     "gazeYaw": 0,
     "sheatheRotationTolerance": 15,
+    "sheatheTipTolerance": 2,
     "slideRotationCorrection": 0.45,
-    "motion": "walk",
-    "sheathe": false,
+    "motion": "idle",
+    "sheathe": true,
     "startTick": 50,
-    "maxReachSpeed": 260,
-    "maxReachRotationSpeed": 900,
-    "slidingSpeed": 250,
-    "shrinkPercent": 15,
+    "maxReachSpeed": 230,
+    "maxReachRotationSpeed": 600,
+    "maxAttachedSpeed": 150,
+    "maxAttachedRotationSpeed": 200,
+    "slidingSpeed": 170,
+    "shrinkPercent": 25,
+    "shrinkDuration": 0.25,
     "unshrinkDuration": 0.5,
     "holsterX": 0,
     "holsterY": 0,
@@ -179,8 +187,8 @@
     ],
     "sheatheSlideCurve": [
       [
-        0.13712572739078147,
-        0.04043271696188657
+        0.14047903344255855,
+        0.13958743261164513
       ],
       [
         0.650179602563385,
@@ -287,35 +295,36 @@
       "swordRelativeSlidePole": true,
       "maxReachSpeed": 230,
       "maxReachRotationSpeed": 600,
-      "slidingSpeed": 150
+      "slidingSpeed": 170
     }
   },
-  "time": 0.45199999998820795,
+  "time": 2.320033333321781,
   "camera": {
-    "yaw": -49.87199829101577,
-    "pitch": -0.33519934082031316,
-    "zoom": 1.3228475724163253,
+    "yaw": 0.8224011230468755,
+    "pitch": -0.14319970703125004,
+    "zoom": 1.8,
     "panX": 0,
     "panY": 65
   },
   "workspaceTab": "motion",
-  "bodyTargetsPanelOpen": false,
+  "bodyTargetsPanelOpen": true,
   "bodyPoseEndpoint": "seated",
-  "fkReturnPanelOpen": true,
+  "fkReturnPanelOpen": false,
   "controls": {
+    "showPelvisDistance": false,
+    "showLeeway": true,
     "sequenceMode": true,
     "bypassCurves": false,
     "bicolor": true,
     "upperOnly": true,
     "skeleton": false,
     "idleGhost": false,
-    "showTarget": true,
     "handGizmos": false,
     "lowerarmGizmos": false,
     "upperarmGizmos": false,
     "gizmoSide": "r",
     "speed": "1"
   },
-  "sourceHash": "38eac96f3f752fff615acbe2a3c62a769cc023356aff68d956b7ef2f8e96b5fb",
-  "revision": "64cf33e2f334caedb1ecc91a23f6634ed646fac06ae3f59a22da5a8869ef306f"
+  "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
+  "revision": "a52e21067fb3e299ab2d92a819cb24a8eb88d992d7d5d23e99cdbcb9df15a61f"
 }

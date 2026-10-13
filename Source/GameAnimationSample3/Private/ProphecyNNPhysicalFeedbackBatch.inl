@@ -1,7 +1,7 @@
 // Included in the manager's anonymous namespace after the native math helpers.
 // The serial reference preserves the previous operation order and GT profiling.
 bool CommitPhysicalSampleSerial(AProphecyNNLocomotionManager::FImpl& Impl, int32 AgentIndex,
-    TConstArrayView<FTransform> ActualTransforms, const float* AlignedLower = nullptr,bool RetainNNUpper=false)
+    TConstArrayView<FTransform> ActualTransforms, const float* AlignedLower = nullptr,bool RetainNNUpper=false, const float* AlignedUpper=nullptr)
 {
     using FImpl = AProphecyNNLocomotionManager::FImpl;
 	float* Sample = StateSlice(Impl.PhysicalStateBuffer, AgentIndex);
@@ -102,7 +102,8 @@ bool CommitPhysicalSampleSerial(AProphecyNNLocomotionManager::FImpl& Impl, int32
 	if(!RetainNNUpper){
 	{
 		ProphecyJolt::CharacterProfiling::FScope Timing(ProphecyJolt::CharacterProfiling::EPhase::PhysicalRawEncode);
-		EncodePhysicalUpperSample(Impl, ActualTransforms, TrainingRotations, UpperSample);
+		if (AlignedUpper) FMemory::Memcpy(UpperSample, AlignedUpper, UpperStateDim * sizeof(float));
+		else EncodePhysicalUpperSample(Impl, ActualTransforms, TrainingRotations, UpperSample);
 	}
 
 	auto ApplyUpperLinearTolerance = [&](int32 Offset, FName BoneName)
@@ -164,7 +165,7 @@ bool CommitPhysicalSampleSerial(AProphecyNNLocomotionManager::FImpl& Impl, int32
 	}
 	}
 	if(RetainNNUpper)FMemory::Memcpy(UpperSample,UpperCurrent,UpperStateDim*sizeof(float));
-	else CleanUpperState(UpperSample);
+	else if (!AlignedUpper || FMemory::Memcmp(UpperSample,UpperCurrent,UpperStateDim*sizeof(float))) CleanUpperState(UpperSample);
 
 	bool bMatchesKinematicState = true;
 	for (int32 StateIndex = 0; StateIndex < StateDim; ++StateIndex)
@@ -234,7 +235,7 @@ bool CommitPhysicalSampleSerial(AProphecyNNLocomotionManager::FImpl& Impl, int32
 }
 
 bool CommitPreparedPhysicalSample(const AProphecyNNLocomotionManager::FImpl& Impl,
-    AProphecyNNLocomotionManager::FImpl::FPhysicalFeedbackWorkItem& Work, const float* AlignedLower = nullptr,bool RetainNNUpper=false)
+    AProphecyNNLocomotionManager::FImpl::FPhysicalFeedbackWorkItem& Work, const float* AlignedLower = nullptr,bool RetainNNUpper=false, const float* AlignedUpper=nullptr)
 {
     using FImpl = AProphecyNNLocomotionManager::FImpl;
     const TConstArrayView<FTransform> ActualTransforms = Work.ActualTransforms;
@@ -331,7 +332,8 @@ bool CommitPreparedPhysicalSample(const AProphecyNNLocomotionManager::FImpl& Imp
 	float* UpperPreviousPhysical = Work.UpperPreviousPhysical;
 	if(!RetainNNUpper){
 	{
-		EncodePhysicalUpperSample(Impl, ActualTransforms, TrainingRotations, UpperSample);
+		if (AlignedUpper) FMemory::Memcpy(UpperSample, AlignedUpper, UpperStateDim * sizeof(float));
+		else EncodePhysicalUpperSample(Impl, ActualTransforms, TrainingRotations, UpperSample);
 	}
 
 	auto ApplyUpperLinearTolerance = [&](int32 Offset, const FPhysicalFeedbackTolerance& Tolerance)
@@ -390,7 +392,7 @@ bool CommitPreparedPhysicalSample(const AProphecyNNLocomotionManager::FImpl& Imp
 	}
 	}
 	if(RetainNNUpper)FMemory::Memcpy(UpperSample,UpperCurrent,UpperStateDim*sizeof(float));
-	else CleanUpperState(UpperSample);
+	else if (!AlignedUpper || FMemory::Memcmp(UpperSample,UpperCurrent,UpperStateDim*sizeof(float))) CleanUpperState(UpperSample);
 
 	bool bMatchesKinematicState = true;
 	for (int32 StateIndex = 0; StateIndex < StateDim; ++StateIndex)
@@ -497,7 +499,7 @@ bool PreparePhysicalFeedbackWork(AProphecyNNLocomotionManager::FImpl& Impl, int3
 
 void ExecutePhysicalFeedbackBatch(const AProphecyNNLocomotionManager::FImpl& ReadOnlyLayout,
     TArrayView<AProphecyNNLocomotionManager::FImpl::FPhysicalFeedbackWorkItem> WorkItems,
-    TConstArrayView<int32> Indices, bool bForceSerial, TConstArrayView<FAlignedLowerFeedback> Alignment = {},TConstArrayView<uint8> RetainNNUpper = {})
+    TConstArrayView<int32> Indices, bool bForceSerial, TConstArrayView<FAlignedPhysicalFeedback> Alignment = {},TConstArrayView<uint8> RetainNNUpper = {})
 {
     check(IsInGameThread());
     ParallelFor(TEXT("ProphecyNN.PhysicalFeedback"), Indices.Num(), 4,
@@ -506,6 +508,7 @@ void ExecutePhysicalFeedbackBatch(const AProphecyNNLocomotionManager::FImpl& Rea
             auto& Work = WorkItems[Indices[ItemIndex]];
             const auto* Aligned = Alignment.IsValidIndex(Indices[ItemIndex]) ? &Alignment[Indices[ItemIndex]] : nullptr;
             Work.bSucceeded = CommitPreparedPhysicalSample(ReadOnlyLayout, Work,
-                Aligned && Aligned->bAligned ? Aligned->State : nullptr,RetainNNUpper.IsValidIndex(Indices[ItemIndex])&&RetainNNUpper[Indices[ItemIndex]]);
+                Aligned && Aligned->bAligned ? Aligned->State : nullptr,RetainNNUpper.IsValidIndex(Indices[ItemIndex])&&RetainNNUpper[Indices[ItemIndex]],
+                Aligned && Aligned->bUpperAligned ? Aligned->Upper : nullptr);
         }, bForceSerial ? EParallelForFlags::ForceSingleThread : EParallelForFlags::None);
 }

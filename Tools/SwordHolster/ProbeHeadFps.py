@@ -37,6 +37,9 @@ parser.add_argument('--pose-detail', action='store_true')
 parser.add_argument('--no-action', action='store_true', help='Hide sword before the Blueprint trigger; locomotion control only')
 parser.add_argument('--free-neck-on-exit', action='store_true', help='Diagnostic: suppress only restoration of neck angular modes')
 parser.add_argument('--clear-lane', action='store_true', help='Disable only Cube collision in the owned PIE world')
+parser.add_argument('--grip-stabilization', type=float, help='Owned manual-start profile, percent')
+parser.add_argument('--holster-return', type=float, default=.25)
+parser.add_argument('--shrink', type=float, help='Owned manual-start axial shrink override')
 parser.add_argument('--solo', action='store_true', help='Owned PIE control: remove NPCs before the action')
 args = parser.parse_args()
 editor = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
@@ -122,6 +125,8 @@ def tick(_):
             api=unreal.get_default_object(unreal.load_class(None,'/Script/GameAnimationSample3.ProphecySwordHolsterLibrary'))
             for actor in state['actors']:
                 assert api.call_method('SetSwordHolsterLabProfile',args=(actor,'Content/locomotion/SwordHolsterProfile.json'))
+                if args.grip_stabilization is not None or args.shrink is not None:
+                    assert api.call_method('SetSwordHolsterProfile',args=(actor,args.shrink if args.shrink is not None else float(profile['shrinkPercent']),float(profile['unshrinkDuration']),args.grip_stabilization if args.grip_stabilization is not None else float(profile['holsterRotationStabilization'])*100,args.holster_return,float(profile['shrinkDuration']),float(profile['maxAttachedSpeed']),float(profile['maxAttachedRotationSpeed']),bool(profile['leewayPhase']),float(profile['sheatheTipTolerance'])))
                 assert api.call_method('DrawSword',args=(actor,True,*speeds))
             state['manual_started']=n
         if args.draw_at >= 0 and n >= args.draw_at and not state.get('draw_requested'):
@@ -139,15 +144,19 @@ def tick(_):
         if n >= 6:
             if not state.get('input_owned'):
                 for actor in state['actors']:
+                    unreal.get_default_object(unreal.SystemLibrary).call_method('SetBoolPropertyByName',(actor,'disable auto locomotion debug',True))
                     if args.motion!='idle':
-                        unreal.get_default_object(unreal.SystemLibrary).call_method('SetBoolPropertyByName',(actor,'disable auto locomotion debug',True))
                         actor.set_locomotion_walk_checkpoint_speed_threshold(-1.)
                     if args.gaze is not None or args.gaze_change:
                         unreal.get_default_object(unreal.SystemLibrary).call_method('SetBoolPropertyByName',(actor,'disable gaze debug',True))
                 state['input_owned']=n
             if 'directions' not in state:
                 state['directions'] = {a.get_name(): [a.get_actor_forward_vector().x,a.get_actor_forward_vector().y] for a in state['actors']}
-            if args.motion != 'idle':
+            if args.motion == 'idle':
+                for actor in state['actors']:
+                    x,y = state['directions'][actor.get_name()]
+                    actor.set_locomotion_input(unreal.Vector(),False,unreal.Vector(x,y,0),1.,1.)
+            else:
                 for actor in state['actors']:
                     x,y = state['directions'][actor.get_name()]
                     angle = max(0,n-75)*math.pi/360 if args.motion == 'turn' else 0
@@ -238,6 +247,8 @@ def tick(_):
                     for comp in actor.get_components_by_class(unreal.StaticMeshComponent):
                         if comp.get_name().lower() == 'holster':
                             values['equipment']['holster'] = pose(comp.get_world_transform())
+                            values['holster_local']=pose(comp.get_relative_transform())
+                            values['holster_absolute_rotation']=comp.get_editor_property('absolute_rotation')
                             vel=physics_api.call_method('GetPhysicsLinearVelocityAtPoint',args=(comp,comp.get_world_transform().translation,unreal.Name('None')))
                             ang=physics_api.call_method('GetPhysicsAngularVelocityInRadians',args=(comp,unreal.Name('None')))
                             values['holster_velocity']=[vel.x,vel.y,vel.z,ang.x,ang.y,ang.z]
@@ -248,6 +259,10 @@ def tick(_):
                     if sword:
                         for comp in sword.get_components_by_class(unreal.StaticMeshComponent):
                             values['equipment'][comp.get_name()] = pose(comp.get_world_transform())
+                            if comp == sword.get_editor_property('root_component'):
+                                parent = comp.get_attach_parent()
+                                values['sword_parent'] = parent.get_path_name() if parent else None
+                                values['sword_local'] = pose(comp.get_relative_transform())
                             scale=comp.get_world_transform().scale3d
                             values['equipment_scale'][comp.get_name()]=[scale.x,scale.y,scale.z]
                 row['actors'][actor.get_name()] = values
@@ -260,6 +275,8 @@ def tick(_):
                     action = actions.setdefault(name, {'draw':False, 'cycles':0, 'last_request':state.get('manual_started',25)})
                     if n <= action['last_request']+4 or action['cycles'] >= args.cycles: continue
                     if not action['draw'] and phase == 3:
+                        if args.grip_stabilization is not None:
+                            assert api.call_method('SetSwordHolsterProfile',args=(actor,args.shrink if args.shrink is not None else float(profile['shrinkPercent']),float(profile['unshrinkDuration']),args.grip_stabilization,args.holster_return,float(profile['shrinkDuration']),float(profile['maxAttachedSpeed']),float(profile['maxAttachedRotationSpeed']),bool(profile['leewayPhase']),float(profile['sheatheTipTolerance'])))
                         assert api.call_method('DrawSword', args=(actor, False, *speeds))
                         action.update(draw=True,last_request=n)
                     elif action['draw'] and phase == -1:

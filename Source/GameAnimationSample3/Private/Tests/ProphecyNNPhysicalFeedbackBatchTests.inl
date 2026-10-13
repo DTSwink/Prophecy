@@ -303,3 +303,58 @@ bool FProphecyNNHolsterFeedbackTest::RunTest(const FString&)
     }
     return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyNNUpperFeedbackAlignmentTest,
+    "Prophecy.NN.PhysicalFeedback.UpperTargetAlignment",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyNNUpperFeedbackAlignmentTest::RunTest(const FString&)
+{
+    using namespace PhysicalFeedbackBatchTests;
+    auto Serial=MakeUnique<FImpl>(), Batch=MakeUnique<FImpl>();
+    if(!Initialize(*this,*Serial,1)||!Initialize(*this,*Batch,1))return false;
+    float Authored[UpperStateDim],Actual[UpperStateDim],Aligned[UpperStateDim];
+    IdentityUpper(Authored);
+    for(int32 I=0;I<60;I+=6)WriteRot6(QuatToMatrix(FQuat(FVector(1,2,3).GetSafeNormal(),1.7)),Authored+I);
+    for(int32 I:{63,69,78,84})WriteRot6(QuatToMatrix(FQuat(FVector::UpVector,-2.3)),Authored+I);
+    WriteStateVec3(Authored,60,FVector3f(3,7,-4));WriteStateVec3(Authored,75,FVector3f(-2,6,8));
+    // Entry, ownership, early return, release and interruption use different
+    // targets, but perfect physical tracking must never rewrite NN history.
+    for(int32 Pass=0;Pass<6;++Pass)
+    {
+        const bool Retain=Pass==1||Pass==2;
+        float Previous[UpperStateDim],Current[UpperStateDim];
+        FMemory::Memcpy(Previous,UpperStateSlice(Serial->UpperPreviousStateBuffer,0),sizeof(Previous));
+        FMemory::Memcpy(Current,UpperStateSlice(Serial->UpperCurrentStateBuffer,0),sizeof(Current));
+        WriteStateVec3(Authored,75,FVector3f(Pass*10.f,6,8));
+        ApplyUpperPhysicalDeviation(Authored,Authored,Current,Aligned);
+        TestTrue(TEXT("Different commanded frame/pose with zero tracking error preserves raw upper state"),!FMemory::Memcmp(Current,Aligned,sizeof(Current)));
+        PreparePhysicalFeedbackWork(*Batch,0);
+        CommitPhysicalSampleSerial(*Serial,0,TransformSlice(Serial->PhysicalTransformBuffer,0),nullptr,Retain,Aligned);
+        CommitPreparedPhysicalSample(*Batch,Batch->PhysicalFeedbackWorkItems[0],nullptr,Retain,Aligned);
+        Batch->Agents[0].bHasPhysicalSample=Batch->PhysicalFeedbackWorkItems[0].bHasPhysicalSample;
+        TestTrue(TEXT("Zero error preserves both recurrent frames across ownership changes"),
+            !FMemory::Memcmp(Current,UpperStateSlice(Serial->UpperCurrentStateBuffer,0),sizeof(Current))&&
+            !FMemory::Memcmp(Previous,UpperStateSlice(Serial->UpperPreviousStateBuffer,0),sizeof(Previous)));
+        if(!Same(*this,*Serial,*Batch,TEXT("aligned upper transition"),Pass))return false;
+    }
+    FMemory::Memcpy(Actual,Authored,sizeof(Actual));
+    WriteStateVec3(Actual,75,ReadStateVec3(Authored,75)+FVector3f(.08f,0,0));
+    const auto Error=QuatToMatrix(FQuat(FVector::UpVector,FMath::DegreesToRadians(20.)));
+    WriteRot6(Multiply(MatrixFromRot6(Authored+78),Error),Actual+78);
+    ApplyUpperPhysicalDeviation(Actual,Authored,UpperStateSlice(Serial->UpperCurrentStateBuffer,0),Aligned);
+    for(auto* Data:{Serial.Get(),Batch.Get()})
+    {
+        auto& T=Data->Agents[0].PhysicalFeedbackTolerances.FindOrAdd(Data->BodyNames[Data->UpperArms[1].End]);
+        T.LinearCm=5;T.AngularDegrees=5;
+    }
+    PreparePhysicalFeedbackWork(*Batch,0);
+    CommitPhysicalSampleSerial(*Serial,0,TransformSlice(Serial->PhysicalTransformBuffer,0),nullptr,false,Aligned);
+    CommitPreparedPhysicalSample(*Batch,Batch->PhysicalFeedbackWorkItems[0],nullptr,false,Aligned);
+    Batch->Agents[0].bHasPhysicalSample=Batch->PhysicalFeedbackWorkItems[0].bHasPhysicalSample;
+    TestTrue(TEXT("Actual 8 cm tracking error still contributes 3 cm past the unchanged 5 cm tolerance"),
+        FMath::IsNearlyEqual(ReadStateVec3(UpperStateSlice(Serial->UpperCurrentStateBuffer,0),75).X,.03f,1.e-5f));
+    TestTrue(TEXT("Real hand angular error still passes through its tolerance"),
+        MatrixToQuat(MatrixFromRot6(UpperStateSlice(Serial->UpperCurrentStateBuffer,0)+78)).Equals(
+            FQuat(FVector::UpVector,FMath::DegreesToRadians(15.)),1.e-5));
+    return Same(*this,*Serial,*Batch,TEXT("real upper deviation"),6);
+}

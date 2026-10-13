@@ -3,6 +3,12 @@
 Status: native feature port implemented and numerically verified. Full-motion
 parity and physical limitations are explicit below; no visual approval is claimed.
 
+**Subsequent user-requested rollback:** lab runtime restored to pre-port pushed
+checkpoint `e0da908c` after the user reported incorrect hand wrapping. Current
+saved tuning is preserved; Unreal is unchanged. This report and its added
+regression fixtures record the earlier modified lab, not current lab parity.
+Do not change reference-lab behavior without telling the user beforehand.
+
 ## Preserved baseline
 
 - User requested a Git checkpoint first, then the latest lab behavior and values

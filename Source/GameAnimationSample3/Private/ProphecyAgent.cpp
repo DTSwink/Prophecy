@@ -1,5 +1,6 @@
 #include "ProphecyAgent.h"
 #include "ProphecySwordHolsterPose.h"
+#include "ProphecyReachRuntime.h"
 #include "ProphecySwordHolster.h"
 #include "ProphecyPhysicalToleranceDelay.h"
 #include "ProphecyRootVelocityDelay.h"
@@ -1540,6 +1541,7 @@ void AProphecyAgent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	DisableJoltPhysicalAnimationForModeChange();
 	ProphecyModeTransitions::ReleaseAgent(this);
 	ReleaseAttackFists();
+	ProphecyReach::Remove(this);
 	ReleaseHalfSimulationState();
 	ReleaseManualFollowerSubstepCallback(this);
 	NNPoseDataSources.Remove(this);
@@ -1903,6 +1905,7 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 		}
 	}
 	ProphecySwordHolsterPose::Apply(PoseAgentId,MakeArrayView(&BoneName,1),MakeArrayView(&InterpolatedWorldTransform,1));
+	ProphecyReach::Apply(PoseAgentId,MakeArrayView(&BoneName,1),MakeArrayView(&InterpolatedWorldTransform,1));
 	return true;
 }
 
@@ -2157,6 +2160,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 		FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms,InterpolationAlpha);
 		ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	ProphecySwordHolsterPose::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
+	ProphecyReach::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 		return BoneNames.Num() > 0;
 	}
 
@@ -2178,6 +2182,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 	FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId, Pose, BoneNames, InterpolatedWorldTransforms,InterpolationAlpha);
 	ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	ProphecySwordHolsterPose::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
+	ProphecyReach::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	return true;
 }
 
@@ -2280,6 +2285,7 @@ bool AProphecyAgent::SetSimulationMode(EProphecyAgentSimulationMode NewMode)
     // Finish ordinary body/pose restoration before Jolt captures a HalfSim-to-Sim handoff.
     // Read the choice afterwards so an explicit Disable from a transition callback still wins.
     const bool bWristModeChanged=NewMode!=GetSimulationMode();
+    if(bWristModeChanged)ProphecyReach::Remove(this);
     struct FHolsterModeFinish { AProphecyAgent* Agent; ~FHolsterModeFinish(){ProphecySwordHolster::AfterModeChange(Agent);} } HolsterModeFinish{this};
     if(bWristModeChanged)ProphecySwordHolster::BeforeModeChange(this,NewMode==EProphecyAgentSimulationMode::Kinematic);
     if(bWristModeChanged)ProphecyForearmStretch::BeforeModeChange(this);

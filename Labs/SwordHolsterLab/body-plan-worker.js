@@ -1,5 +1,7 @@
 // Full trajectories are preparation work; keep them off the interactive thread.
-importScripts('recovery.js','bodyreach.js','armfk.js','retime.js','headlook.js','fkreturn.js','elbowpole.js','holster.js','sequence.js');
+// Use the worker's content revision so a rollback cannot reuse newer cached scripts.
+const revision=new URL(self.location.href).search;
+importScripts(...['recovery.js','bodyreach.js','armfk.js','retime.js','headlook.js','fkreturn.js','elbowpole.js','tipalign.js','online.js','holster.js','sequence.js'].map(file=>file+revision));
 const assets=Promise.all(['data/motions.json','data/unreal-setup.json'].map(url=>fetch(url).then(r=>r.json())));
 onmessage=async({data:{version,options}})=>{
  try{

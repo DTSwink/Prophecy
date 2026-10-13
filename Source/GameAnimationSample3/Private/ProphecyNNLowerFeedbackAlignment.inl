@@ -1,16 +1,21 @@
 // Included after the encoders; only plain arrays cross the parallel feedback boundary.
-struct FAlignedLowerFeedback
+struct FAlignedPhysicalFeedback
 {
     float State[StateDim] = {};
     bool bAligned = false;
+    float Upper[UpperStateDim] = {};
+    bool bUpperAligned = false;
 };
-TMap<TWeakObjectPtr<AProphecyNNLocomotionManager>, TArray<FAlignedLowerFeedback>> AlignedLowerFeedbackBatches;
+TMap<TWeakObjectPtr<AProphecyNNLocomotionManager>, TArray<FAlignedPhysicalFeedback>> AlignedPhysicalFeedbackBatches;
 
 #if !UE_BUILD_SHIPPING
 // Diagnostic A/B switch only; the corrected path remains the production default.
 static TAutoConsoleVariable<int32> CVarLowerFeedbackAlignment(
     TEXT("Prophecy.NNLowerFeedbackAlignment"), 1,
     TEXT("1: aligned lower physical deviation (default). 0: legacy absolute physical sample. Restart PIE between comparisons."));
+static TAutoConsoleVariable<int32> CVarUpperFeedbackAlignment(
+    TEXT("Prophecy.NNUpperFeedbackAlignment"), 1,
+    TEXT("1: completed-target upper physical deviation (default). 0: legacy absolute sample, diagnostic comparisons only."));
 #endif
 
 void ApplyLowerPhysicalDeviation(const float* Actual, const float* Authored,
@@ -40,21 +45,51 @@ void ApplyLowerPhysicalDeviation(const float* Actual, const float* Authored,
     }
 }
 
-void PrepareAlignedLowerFeedback(const AProphecyNNLocomotionManager::FImpl& Impl, int32 AgentIndex,
-    AProphecyAgent& Actor, FAlignedLowerFeedback& Out)
+// Upper feedback measures the deviation from the target of the same completed
+// physics step. Presentation interpolation and fixed arm length are not impacts.
+void ApplyUpperPhysicalDeviation(const float* Actual, const float* Authored,
+    const float* Current, float* Out)
 {
-    Out.bAligned = false;
-#if !UE_BUILD_SHIPPING
-    if (CVarLowerFeedbackAlignment.GetValueOnGameThread() == 0) return;
-#endif
+    FMemory::Memcpy(Out, Current, UpperStateDim * sizeof(float));
+    for (const int32 Offset : { 60, 75 })
+    {
+        const FVector3f Error = ReadStateVec3(Actual, Offset) - ReadStateVec3(Authored, Offset);
+        if (Error.SizeSquared() > 1.e-12f)
+            WriteStateVec3(Out, Offset, ReadStateVec3(Current, Offset) + Error);
+    }
+    auto Rotation = [&](int32 Offset)
+    {
+        const FMat3f Error = Multiply(Transpose(MatrixFromRot6(Authored + Offset)), MatrixFromRot6(Actual + Offset));
+        FQuat Q = MatrixToQuat(Error).GetNormalized();
+        if (Q.W < 0) Q = Q * -1.0;
+        if (!Q.Equals(FQuat::Identity, 1.e-6))
+            WriteRot6(Multiply(MatrixFromRot6(Current + Offset), Error), Out + Offset);
+    };
+    for (int32 Offset = 0; Offset < 60; Offset += 6) Rotation(Offset);
+    for (const int32 Offset : { 63, 69, 78, 84 }) Rotation(Offset);
+}
+
+void PrepareAlignedPhysicalFeedback(const AProphecyNNLocomotionManager::FImpl& Impl, int32 AgentIndex,
+    AProphecyAgent& Actor, FAlignedPhysicalFeedback& Out, bool RetainNNUpper)
+{
+    Out.bAligned = Out.bUpperAligned = false;
     auto* Character = Actor.GetJoltCharacterComponent();
     if (!Character || !Character->IsJoltPhysical()) return;
     const auto& Agent = Impl.Agents[AgentIndex];
     const float* Current = StateSlice(Impl.CurStateBuffer, AgentIndex);
-    // While a new binding has no paired completed target, retain recurrence.
-    // Never fall back to the mismatched absolute physical pose for one frame.
+    const float* Upper = UpperStateSlice(Impl.UpperCurrentStateBuffer, AgentIndex);
+    // A new binding has no completed target pair yet. Retain recurrence until
+    // it does; never inject one frame of unaligned feedback at a transition.
     Out.bAligned = true;
+#if !UE_BUILD_SHIPPING
+    Out.bAligned = CVarLowerFeedbackAlignment.GetValueOnGameThread() != 0;
+#endif
+    Out.bUpperAligned = !RetainNNUpper;
+#if !UE_BUILD_SHIPPING
+    Out.bUpperAligned &= CVarUpperFeedbackAlignment.GetValueOnGameThread() != 0;
+#endif
     FMemory::Memcpy(Out.State, Current, sizeof(Out.State));
+    if (Out.bUpperAligned) FMemory::Memcpy(Out.Upper, Upper, sizeof(Out.Upper));
     const auto* Mesh = Actor.GetAgentMesh();
     const auto* Capsule = Actor.GetAgentCapsule();
     if (!Mesh || !Capsule) return;
@@ -62,22 +97,23 @@ void PrepareAlignedLowerFeedback(const AProphecyNNLocomotionManager::FImpl& Impl
         TrainingToUnreal(Agent.CurRootPos) + FVector::UpVector * Capsule->GetScaledCapsuleHalfHeight());
     const FTransform Reference = (Actor.bManualNNPoseApplication ? Mesh->GetRelativeTransform()
         : Actor.GetAuthoredMeshRelativeTransform()) * Root;
-    const auto& Left = Agent.bUseWalkPolicy ? Impl.WalkLimbs[0] : Impl.Limbs[0];
-    const auto& Right = Agent.bUseWalkPolicy ? Impl.WalkLimbs[1] : Impl.Limbs[1];
-    const int32 Indices[] = { 0, Left.Start, Left.End, Left.Toe, Right.Start, Right.End, Right.Toe };
-    FName Names[7];
-    for (int32 I = 0; I < 7; ++I) Names[I] = Impl.BodyNames[Indices[I]];
-    FTransform Actual[7], Authored[7];
-    if (!Character->SampleCompletedLowerFeedbackPose(Names, Reference, Actual, Authored)) return;
-    FTransform ActualPose[FullBodyBoneCount], AuthoredPose[FullBodyBoneCount];
-    for (int32 I = 0; I < 7; ++I)
+    // Reuse the existing revision-paired target capture for the whole skeleton.
+    // One fixed name set avoids rebinding it when D/S ownership changes.
+    FTransform Actual[FullBodyBoneCount], Authored[FullBodyBoneCount];
+    if (!Character->SampleCompletedLowerFeedbackPose(Impl.BodyNames, Reference, Actual, Authored)) return;
+    FSampledTrainingRotations ActualRotations(Actual), AuthoredRotations(Authored);
+    if (Out.bAligned)
     {
-        ActualPose[Indices[I]] = Actual[I];
-        AuthoredPose[Indices[I]] = Authored[I];
+        float ActualState[StateDim], AuthoredState[StateDim];
+        EncodePhysicalLowerSample(Impl, Agent.bUseWalkPolicy, Actual, ActualRotations, ActualState);
+        EncodePhysicalLowerSample(Impl, Agent.bUseWalkPolicy, Authored, AuthoredRotations, AuthoredState);
+        ApplyLowerPhysicalDeviation(ActualState, AuthoredState, Current, Out.State);
     }
-    float ActualState[StateDim], AuthoredState[StateDim];
-    FSampledTrainingRotations ActualRotations(ActualPose), AuthoredRotations(AuthoredPose);
-    EncodePhysicalLowerSample(Impl, Agent.bUseWalkPolicy, ActualPose, ActualRotations, ActualState);
-    EncodePhysicalLowerSample(Impl, Agent.bUseWalkPolicy, AuthoredPose, AuthoredRotations, AuthoredState);
-    ApplyLowerPhysicalDeviation(ActualState, AuthoredState, Current, Out.State);
+    if (Out.bUpperAligned)
+    {
+        float ActualState[UpperStateDim], AuthoredState[UpperStateDim];
+        EncodePhysicalUpperSample(Impl, Actual, ActualRotations, ActualState);
+        EncodePhysicalUpperSample(Impl, Authored, AuthoredRotations, AuthoredState);
+        ApplyUpperPhysicalDeviation(ActualState, AuthoredState, Upper, Out.Upper);
+    }
 }

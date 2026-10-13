@@ -17,7 +17,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   await page.goto(url+'/?desktopSession='+token);await page.waitForFunction(()=>window.holsterLab?.ready);
   assert.deepEqual(await page.evaluate(()=>committed.bodyTargets),saved.parameters.bodyTargets,'migration preserves authored targets');
   await page.evaluate(()=>setPlaying(false));
-  await page.locator('details').filter({has:page.locator('#holsterRotationStabilization')}).locator('summary').click();
+  await page.evaluate(()=>showBodyTargets(true));
+  assert(await page.evaluate(()=>$('holsterRotationStabilization').closest('#bodyTargetsPanel')!==null));
+  await page.fill('#holsterReturnDuration','0.6');await page.locator('#holsterReturnDuration').dispatchEvent('change');
   assert.equal(await page.locator('#holsterRotationStabilization').inputValue(),'0','old settings preserve pelvis attachment');
   const before=await page.evaluate(()=>({time,targets:committed.bodyTargets}));
   const save=page.waitForResponse(r=>r.url().endsWith('/state')&&r.request().method()==='POST');
@@ -28,6 +30,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   assert.deepEqual(await page.evaluate(()=>committed.bodyTargets),before.targets);
   await page.reload();await page.waitForFunction(()=>window.holsterLab?.ready);
   assert.equal(await page.locator('#holsterRotationStabilization').inputValue(),'0.5');
+  assert.equal(await page.locator('#holsterReturnDuration').inputValue(),'0.6');
   const action=await page.locator('#action').inputValue();
   await page.locator('#action').selectOption(action==='draw'?'sheathe':'draw');
   assert.equal(await page.evaluate(()=>model.sequence.first.o.holsterRotationStabilization),.5,'environment control is shared between actions');

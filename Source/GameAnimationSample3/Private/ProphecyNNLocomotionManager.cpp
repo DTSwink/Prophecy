@@ -1,5 +1,6 @@
 #include "ProphecyNNLocomotionManager.h"
 #include "ProphecySwordHolsterPose.h"
+#include "ProphecyReachRuntime.h"
 #include "Misc/ScopeExit.h"
 #include "ProphecySwordHolster.h"
 #include "ProphecyForearmConvention.h"
@@ -2173,7 +2174,7 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 {
 	ProphecyAgentTime::Remove(this);
     ProphecyDefenseArmedGate::RemoveManager(this);
-    AlignedLowerFeedbackBatches.Remove(this);
+    AlignedPhysicalFeedbackBatches.Remove(this);
 	ProphecyAttackCamera::End(this);
 	ResolvedMoverTargets.Remove(this);
 	ClearInitialAgentResetState();
@@ -3344,7 +3345,7 @@ void AProphecyNNLocomotionManager::ResamplePhysicalAgents()
 	ProphecyJolt::CharacterProfiling::FScope Timing(ProphecyJolt::CharacterProfiling::EPhase::ManagerPhysicalResample);
 	Impl->PhysicalFeedbackIndices.Reset();
     TArray<uint8,TInlineAllocator<128>> RetainNNUpper;
-    TArray<FAlignedLowerFeedback>* Alignment = nullptr;
+    TArray<FAlignedPhysicalFeedback>* Alignment = nullptr;
 	for (int32 AgentIndex = 0; AgentIndex < AgentActors.Num(); ++AgentIndex)
 	{
 		// One completed physics observation must not be fed back repeatedly when
@@ -3383,6 +3384,8 @@ void AProphecyNNLocomotionManager::ResamplePhysicalAgents()
 				bSampled = AgentActor->SampleActualComponentPose(Impl->PublishedBoneNames,
 					TransformSlice(Impl->PhysicalTransformBuffer, AgentIndex));
 			}
+            ProphecySwordHolsterPose::FStatus HolsterStatus;
+            const bool RetainUpper=(ProphecySwordHolsterPose::Status(AgentActor,HolsterStatus)&&!HolsterStatus.Finished)||ProphecyReach::Active(AgentActor);
 			bool bPrepared = false;
 			if (bSampled)
 			{
@@ -3392,16 +3395,15 @@ void AProphecyNNLocomotionManager::ResamplePhysicalAgents()
 				{
 					if (!Alignment)
 					{
-						Alignment = &AlignedLowerFeedbackBatches.FindOrAdd(this);
+						Alignment = &AlignedPhysicalFeedbackBatches.FindOrAdd(this);
 						Alignment->SetNum(AgentActors.Num());
 					}
-					PrepareAlignedLowerFeedback(*Impl, AgentIndex, *AgentActor, (*Alignment)[AgentIndex]);
+					PrepareAlignedPhysicalFeedback(*Impl, AgentIndex, *AgentActor, (*Alignment)[AgentIndex], RetainUpper);
 				}
 			}
 			if (bPrepared) Impl->PhysicalFeedbackIndices.Add(AgentIndex);
 			else ++Impl->FailedPhysicalSamples;
-            ProphecySwordHolsterPose::FStatus HolsterStatus;
-            if(bPrepared&&ProphecySwordHolsterPose::Status(AgentActor,HolsterStatus)&&!HolsterStatus.Finished){
+            if(bPrepared&&RetainUpper){
                 if(RetainNNUpper.IsEmpty())RetainNNUpper.Init(0,AgentActors.Num());
                 RetainNNUpper[AgentIndex]=1;
             }
@@ -3412,7 +3414,7 @@ void AProphecyNNLocomotionManager::ResamplePhysicalAgents()
 		{
 			ProphecyJolt::CharacterProfiling::FScope JoinedTiming(ProphecyJolt::CharacterProfiling::EPhase::PhysicalFeedbackBatch);
 			ExecutePhysicalFeedbackBatch(*Impl, Impl->PhysicalFeedbackWorkItems, Impl->PhysicalFeedbackIndices,
-				PhysicalFeedbackExecutionMode == 1, Alignment ? MakeArrayView(*Alignment) : TArrayView<FAlignedLowerFeedback>(),RetainNNUpper);
+				PhysicalFeedbackExecutionMode == 1, Alignment ? MakeArrayView(*Alignment) : TArrayView<FAlignedPhysicalFeedback>(),RetainNNUpper);
 		}
 		++Impl->PreparedPhysicalBatches;
 		for (const int32 AgentIndex : Impl->PhysicalFeedbackIndices)
@@ -3445,11 +3447,12 @@ bool AProphecyNNLocomotionManager::ResamplePhysicalAgentState(int32 AgentIndex)
 			return false;
 		}
 	}
-	FAlignedLowerFeedback Alignment;
-	PrepareAlignedLowerFeedback(*Impl, AgentIndex, *AgentActors[AgentIndex], Alignment);
+	FAlignedPhysicalFeedback Alignment;
     ProphecySwordHolsterPose::FStatus HolsterStatus;
-    const bool RetainNNUpper=ProphecySwordHolsterPose::Status(AgentActors[AgentIndex],HolsterStatus)&&!HolsterStatus.Finished;
-	return CommitPhysicalSampleSerial(*Impl, AgentIndex, ActualTransforms, Alignment.bAligned ? Alignment.State : nullptr,RetainNNUpper);
+    const bool RetainNNUpper=(ProphecySwordHolsterPose::Status(AgentActors[AgentIndex],HolsterStatus)&&!HolsterStatus.Finished)||ProphecyReach::Active(AgentActors[AgentIndex]);
+	PrepareAlignedPhysicalFeedback(*Impl, AgentIndex, *AgentActors[AgentIndex], Alignment,RetainNNUpper);
+	return CommitPhysicalSampleSerial(*Impl, AgentIndex, ActualTransforms, Alignment.bAligned ? Alignment.State : nullptr,RetainNNUpper,
+        Alignment.bUpperAligned ? Alignment.Upper : nullptr);
 }
 
 void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
@@ -5285,7 +5288,7 @@ void AProphecyNNLocomotionManager::UpdateVisualRoots()
 	for (int32 AgentIndex = 0; AgentIndex < AgentActors.Num(); ++AgentIndex)
 	{
 		if (!AgentActors[AgentIndex]) continue;
-        ON_SCOPE_EXIT { ProphecySwordHolsterPose::Update(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex); };
+        ON_SCOPE_EXIT { ProphecySwordHolsterPose::Update(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex);ProphecyReach::Update(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex); };
 		const float Alpha = ProphecyAgentTime::Alpha(this,AgentIndex,Impl->VisualPoseAlpha);
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
 		ProphecyNNPresentation::Publish(PoseStoreAgentBase + AgentIndex, Agent.PublishedPoseTimeSeconds, Alpha);

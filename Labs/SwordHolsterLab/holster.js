@@ -2,6 +2,7 @@
 (function(root){
 'use strict';
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
+const Online=typeof module!=='undefined'?require('./online.js'):root.HolsterOnline;
 const Retime=typeof module!=='undefined'?require('./retime.js'):root.Retime;
 const FK=typeof module!=='undefined'?require('./armfk.js'):root.ArmFK;
 const Return=typeof module!=='undefined'?require('./fkreturn.js'):root.FKReturn;
@@ -14,8 +15,8 @@ const had=(a,b)=>a.map((x,i)=>x*b[i]);
 const copy=t=>({p:[...t.p],q:[...t.q],s:[...(t.s||[1,1,1])]});
 const compose=(a,b)=>({p:add(b.p,rotate(b.q,had(b.s||[1,1,1],a.p))),q:unit(qm(b.q,a.q)),s:had(a.s||[1,1,1],b.s||[1,1,1])});
 const angle=(a,b)=>2*Math.acos(clamp(Math.abs(dot(a,b)),-1,1))*180/Math.PI;
-const defaults={holsterRotationStabilization:0,pelvisRotationCompensation:1,entryInertia:1,entryInertiaDuration:.2,maxElbowPoleAngularSpeed:180,swordRelativeSlidePole:false,bodyTargets:Body.sanitize(),gazeYaw:0,sheatheRotationTolerance:15,slideRotationCorrection:.1,motion:'idle',sheathe:true,startTick:25,maxReachSpeed:100,maxReachRotationSpeed:180,slidingSpeed:60,shrinkPercent:35,unshrinkDuration:.5,holsterX:0,holsterY:0,holsterZ:0,holsterPitch:0,holsterYaw:0,holsterRoll:0,duration:8,spineClavicleAngleLimit:45,maxSpineClavicleAngularSpeed:90,drawReturn:{...Return.defaults(),startFraction:.7},sheatheReturn:Return.defaults(),headLookAtAlpha:1,headMaxDownAngle:70,headLookInSpeedAlpha:1,sheatheHeadTargetAlpha:1,headLookInExponent:1,headLookOutExponent:1,maxHeadLookInVelocity:180,maxHeadLookOutVelocity:180,maxHeadLookInVelocityAtMaxGaze:180,maxHeadLookOutVelocityAtMaxGaze:180,drawHeadLookOutThreshold:.3,sheatheHeadLookOutThreshold:.5,drawCurve:Retime.linear(),sheatheCurve:Retime.linear(),drawSlideCurve:Retime.linear(),sheatheSlideCurve:Retime.linear()};
-function sanitize(input={}){const o={...defaults,...input};o.bodyTargets=Body.sanitize(input.bodyTargets);for(const k of ['maxHeadLookInVelocity','maxHeadLookOutVelocity'])if(input[k+'AtMaxGaze']===undefined)o[k+'AtMaxGaze']=o[k];for(const k of Object.keys(defaults))if(typeof defaults[k]==='number')o[k]=Number.isFinite(Number(o[k]))?Number(o[k]):defaults[k];o.holsterRotationStabilization=clamp(o.holsterRotationStabilization,0,1);o.pelvisRotationCompensation=clamp(o.pelvisRotationCompensation,0,1);o.entryInertia=clamp(o.entryInertia,0,1);o.entryInertiaDuration=clamp(o.entryInertiaDuration,0,1);o.maxElbowPoleAngularSpeed=clamp(o.maxElbowPoleAngularSpeed,0,10000);o.gazeYaw=clamp(o.gazeYaw,-170,170);o.sheatheRotationTolerance=clamp(o.sheatheRotationTolerance,0,90);o.slideRotationCorrection=clamp(o.slideRotationCorrection,0,1);o.startTick=Math.round(clamp(o.startTick,0,3600));o.duration=clamp(o.duration,1,60);o.shrinkPercent=clamp(o.shrinkPercent,0,99.9);o.unshrinkDuration=clamp(o.unshrinkDuration,0,10);for(const k of ['maxReachSpeed','maxReachRotationSpeed','slidingSpeed'])o[k]=clamp(o[k],.01,10000);o.spineClavicleAngleLimit=clamp(o.spineClavicleAngleLimit,0,90);o.maxSpineClavicleAngularSpeed=clamp(o.maxSpineClavicleAngularSpeed,.01,10000);o.drawReturn=Return.sanitize(o.drawReturn);o.sheatheReturn=Return.sanitize(o.sheatheReturn);delete o.headCorrectionAlpha;for(const k of ['headLookInExponent','headLookOutExponent'])o[k]=clamp(o[k],1,8);o.headLookAtAlpha=clamp(o.headLookAtAlpha,0,1);o.headMaxDownAngle=clamp(o.headMaxDownAngle,0,90);o.headLookInSpeedAlpha=clamp(o.headLookInSpeedAlpha,0,1);o.sheatheHeadTargetAlpha=clamp(o.sheatheHeadTargetAlpha,0,1);for(const k of ['maxHeadLookInVelocity','maxHeadLookOutVelocity','maxHeadLookInVelocityAtMaxGaze','maxHeadLookOutVelocityAtMaxGaze'])o[k]=clamp(o[k],.01,10000);for(const k of ['drawHeadLookOutThreshold','sheatheHeadLookOutThreshold'])o[k]=clamp(o[k],0,1);o.motion=['walk','run'].includes(o.motion)?o.motion:'idle';o.sheathe=!!o.sheathe;o.swordRelativeSlidePole=o.swordRelativeSlidePole===true;o.drawCurve=Retime.sanitize(o.drawCurve);o.sheatheCurve=Retime.sanitize(o.sheatheCurve);o.drawSlideCurve=Retime.sanitize(o.drawSlideCurve);o.sheatheSlideCurve=Retime.sanitize(o.sheatheSlideCurve);return o;}
+const defaults={noCheat:false,leewayPhase:true,holsterRotationStabilization:0,holsterReturnDuration:.25,holsterPivotPercent:50,pelvisRotationCompensation:1,entryInertia:1,entryInertiaDuration:.2,maxElbowPoleAngularSpeed:180,swordRelativeSlidePole:false,bodyTargets:Body.sanitize(),gazeYaw:0,sheatheRotationTolerance:15,sheatheTipTolerance:2,slideRotationCorrection:.1,motion:'idle',sheathe:true,startTick:25,maxReachSpeed:100,maxReachRotationSpeed:180,maxAttachedSpeed:100,maxAttachedRotationSpeed:180,slidingSpeed:60,shrinkPercent:35,shrinkDuration:.25,unshrinkDuration:.5,holsterX:0,holsterY:0,holsterZ:0,holsterPitch:0,holsterYaw:0,holsterRoll:0,duration:8,spineClavicleAngleLimit:45,maxSpineClavicleAngularSpeed:90,drawReturn:{...Return.defaults(),startFraction:.7},sheatheReturn:Return.defaults(),headLookAtAlpha:1,headMaxDownAngle:70,headLookInSpeedAlpha:1,sheatheHeadTargetAlpha:1,headLookInExponent:1,headLookOutExponent:1,maxHeadLookInVelocity:180,maxHeadLookOutVelocity:180,maxHeadLookInVelocityAtMaxGaze:180,maxHeadLookOutVelocityAtMaxGaze:180,drawHeadLookOutThreshold:.3,sheatheHeadLookOutThreshold:.5,drawCurve:Retime.linear(),sheatheCurve:Retime.linear(),drawSlideCurve:Retime.linear(),sheatheSlideCurve:Retime.linear()};
+function sanitize(input={}){const o={...defaults,...input};for(const [to,from] of [['maxAttachedSpeed','maxReachSpeed'],['maxAttachedRotationSpeed','maxReachRotationSpeed']])if(input[to]===undefined)o[to]=input.sheatheBody?.[from]??input[from]??defaults[to];if(input.shrinkDuration===undefined&&input.shrinkSpeed!==undefined)o.shrinkDuration=Number(o.shrinkPercent)/Math.max(.01,Number(input.shrinkSpeed)||100);delete o.shrinkSpeed;o.noCheat=input.noCheat===true;o.leewayPhase=input.leewayPhase!==false;o.bodyTargets=Body.sanitize(input.bodyTargets);for(const k of ['maxHeadLookInVelocity','maxHeadLookOutVelocity'])if(input[k+'AtMaxGaze']===undefined)o[k+'AtMaxGaze']=o[k];for(const k of Object.keys(defaults))if(typeof defaults[k]==='number')o[k]=Number.isFinite(Number(o[k]))?Number(o[k]):defaults[k];o.holsterRotationStabilization=clamp(o.holsterRotationStabilization,0,1);o.holsterReturnDuration=clamp(o.holsterReturnDuration,0,10);o.holsterPivotPercent=clamp(o.holsterPivotPercent,0,100);o.pelvisRotationCompensation=clamp(o.pelvisRotationCompensation,0,1);o.entryInertia=clamp(o.entryInertia,0,1);o.entryInertiaDuration=clamp(o.entryInertiaDuration,0,1);o.maxElbowPoleAngularSpeed=clamp(o.maxElbowPoleAngularSpeed,0,10000);o.gazeYaw=clamp(o.gazeYaw,-170,170);o.sheatheRotationTolerance=clamp(o.sheatheRotationTolerance,0,90);o.sheatheTipTolerance=clamp(o.sheatheTipTolerance,0,100);o.slideRotationCorrection=clamp(o.slideRotationCorrection,0,1);o.startTick=Math.round(clamp(o.startTick,0,3600));o.duration=clamp(o.duration,1,60);o.shrinkPercent=clamp(o.shrinkPercent,0,99.9);o.shrinkDuration=clamp(o.shrinkDuration,.01,60);o.unshrinkDuration=clamp(o.unshrinkDuration,0,10);for(const k of ['maxReachSpeed','maxReachRotationSpeed','maxAttachedSpeed','maxAttachedRotationSpeed','slidingSpeed'])o[k]=clamp(o[k],.01,10000);o.spineClavicleAngleLimit=clamp(o.spineClavicleAngleLimit,0,90);o.maxSpineClavicleAngularSpeed=clamp(o.maxSpineClavicleAngularSpeed,.01,10000);o.drawReturn=Return.sanitize(o.drawReturn);o.sheatheReturn=Return.sanitize(o.sheatheReturn);delete o.headCorrectionAlpha;for(const k of ['headLookInExponent','headLookOutExponent'])o[k]=clamp(o[k],1,8);o.headLookAtAlpha=clamp(o.headLookAtAlpha,0,1);o.headMaxDownAngle=clamp(o.headMaxDownAngle,0,90);o.headLookInSpeedAlpha=clamp(o.headLookInSpeedAlpha,0,1);o.sheatheHeadTargetAlpha=clamp(o.sheatheHeadTargetAlpha,0,1);for(const k of ['maxHeadLookInVelocity','maxHeadLookOutVelocity','maxHeadLookInVelocityAtMaxGaze','maxHeadLookOutVelocityAtMaxGaze'])o[k]=clamp(o[k],.01,10000);for(const k of ['drawHeadLookOutThreshold','sheatheHeadLookOutThreshold'])o[k]=clamp(o[k],0,1);o.motion=['walk','run'].includes(o.motion)?o.motion:'idle';o.sheathe=!!o.sheathe;o.swordRelativeSlidePole=o.swordRelativeSlidePole===true;o.drawCurve=Retime.sanitize(o.drawCurve);o.sheatheCurve=Retime.sanitize(o.sheatheCurve);o.drawSlideCurve=Retime.sanitize(o.drawSlideCurve);o.sheatheSlideCurve=Retime.sanitize(o.sheatheSlideCurve);return o;}
 function euler(p,y,r){return qm(qm(R.qexp([0,0,y*Math.PI/180]),R.qexp([0,-p*Math.PI/180,0])),R.qexp([-r*Math.PI/180,0,0]));}
 // Accepted training/viewer gaze yaw overlay: local-X subtree rotations with
 // incremental 1..8 / 36 weights. Pelvis and lower body remain authored.
@@ -40,6 +41,13 @@ function motion(data,key,t,gaze=0){
  const rootNow=add(frames[i][0].slice(0,3),mul(sub(frames[i+1][0].slice(0,3),frames[i][0].slice(0,3)),v));
  return gazePose(data,frames[i].map((a,j)=>({p:sub(add(a.slice(0,3),mul(sub(frames[i+1][j].slice(0,3),a.slice(0,3)),v)),[rootNow[0],rootNow[1],0]),q:qslerp(a.slice(3),frames[i+1][j].slice(3),v),s:[1,1,1]})),gaze);
 }
+// Axial pivot in mesh-local coordinates; changing it never edits neutral placement.
+function holsterPivot(setup,percent){
+ let lo=Infinity,hi=-Infinity;
+ for(const section of setup.holsterMesh.sections)for(const v of section.vertices){lo=Math.min(lo,v[2]);hi=Math.max(hi,v[2]);}
+ return [0,0,lo+(hi-lo)*percent/100];
+}
+function reachScale(o,tick){return 1-o.shrinkPercent/100*clamp((tick-o.startTick)/60/o.shrinkDuration,0,1);}
 function scaledGrip(setup,scale){const g=copy(setup.grip);g.p=rotate(g.q,had(rotate(qinv(g.q),g.p),[1,1,scale]));g.s=had(setup.assetScale,[1,1,scale]);return g;}
 function seatHandAtScale(setup,full,scale){
  // Keep the authored blade-base point seated while shortening about the grip.
@@ -69,17 +77,12 @@ function sheathSlideGoal(setup,holster,scale,tip,entry,insertion,alpha,rotationP
  const seat=compose(scaledGrip(setup,scale),seatHandAtScale(setup,full,scale));
  const correction=slideCorrection(insertion,alpha);
  const q=unit(qm(full.q,qslerp(entry.q,I,slideCorrection(rotationProgress,alpha))));
- const position=add(add(mouth,mul(sub(point(seat,tip),mouth),insertion)),mul(rotate(full.q,entry.tipError),1-correction));
+ const depth=(entry.insertion??0)+(1-(entry.insertion??0))*insertion;
+ const position=add(add(mouth,mul(sub(point(seat,tip),mouth),depth)),mul(rotate(full.q,entry.tipError),1-correction));
  return handForTip(setup,scale,tip,position,q);
 }
 function solve(pose,idx,goal){
- const [s,e,h]=idx,A=pose[s].p;let B=pose[e].p,C=pose[h].p;
- // Transport the existing arm plane before bending. Projecting the old elbow
- // directly onto a new target line flips its plane near a straight arm.
- const carry=fromTo(sub(C,A),sub(goal.p,A));
- B=add(A,rotate(carry,sub(B,A)));C=add(A,rotate(carry,sub(C,A)));
- pose[s]={...pose[s],q:unit(qm(carry,pose[s].q))};pose[e]={...pose[e],q:unit(qm(carry,pose[e].q))};
- const L1=len(sub(B,A)),L2=len(sub(C,B));
+ const [s,e,h]=idx,A=pose[s].p,B=pose[e].p,C=pose[h].p,L1=len(sub(B,A)),L2=len(sub(C,B));
  const delta=sub(goal.p,A),direction=len(delta)>1e-8?unit(delta):[1,0,0],distance=len(delta),D=clamp(distance,Math.abs(L1-L2)+.001,L1+L2-.001);
  let pole=sub(sub(B,A),mul(direction,dot(sub(B,A),direction)));
  if(len(pole)<1e-7)pole=cross(direction,Math.abs(direction[2])<.9?[0,0,1]:[0,1,0]);pole=unit(pole);
@@ -87,22 +90,22 @@ function solve(pose,idx,goal){
  pose[s].q=unit(qm(fromTo(sub(B,A),sub(E,A)),pose[s].q));pose[e].q=unit(qm(fromTo(sub(C,B),sub(H,E)),pose[e].q));pose[e].p=E;pose[h].p=H;pose[h].q=[...goal.q];
  return {armLength:L1+L2,shoulderTarget:distance,unreachable:Math.max(0,distance-L1-L2),handError:len(sub(H,goal.p))};
 }
-// Lab-only environment control. Translation keeps the real pelvis attachment;
-// rotation blends toward one timeline-zero reference shared by both S/D segments.
-function holsterPose(local,pelvis,reference,stabilization){
- const result=compose(local,pelvis);
- if(stabilization>0)result.q=qslerp(result.q,reference,stabilization);
- return result;
-}
 function prepare(data,setup,input,motionOffset=0){
+ if(input?.noCheat)return Online.prepare(api,data,setup,input,motionOffset);
+ const o=sanitize(input);
+ // The original reach planner sees the neutral mount. Grip-relative holster
+ // motion starts only after admission, in the shared current-tick continuation.
+ const reference=prepareReference(data,setup,{...o,holsterRotationStabilization:0},motionOffset);
+ return reference.plan&&(o.sheathe||o.holsterRotationStabilization>0)?Online.prepare(api,data,setup,o,motionOffset,reference):reference;
+}
+function prepareReference(data,setup,input,motionOffset=0){
  const o=sanitize(input),N=data.names,arm=['upperarm_r','lowerarm_r','hand_r'].map(x=>N.indexOf(x)),pelvis=N.indexOf('pelvis');
  const bladeLength=setup.bladeLength,retained=1-o.shrinkPercent/100,lastTick=Math.ceil(o.duration*60),bodyContext=Body.make(data,motion(data,'idle',0),motion(data,o.motion,motionOffset+o.startTick/60,o.gazeYaw),o.pelvisRotationCompensation),tip=bladeTip(setup);
  const local=copy(setup.holster);local.p=add(local.p,[o.holsterX,o.holsterY,o.holsterZ]);local.q=unit(qm(euler(o.holsterPitch,o.holsterYaw,o.holsterRoll),local.q));
- const holsterReference=o.holsterRotationStabilization>0?compose(local,motion(data,o.motion,0,o.gazeYaw)[pelvis]).q:null;
  const track=[],entryBody=bodyContext.entryBody;
  const bodyDesired=Body.target(bodyContext,o.bodyTargets,o.sheathe?0:1);let bodyState=[...entryBody],slideEntry=null;
  for(let tick=0;tick<=lastTick;tick++){
-  const base=motion(data,o.motion,motionOffset+tick/60,o.gazeYaw),holster=holsterPose(local,base[pelvis],holsterReference,o.holsterRotationStabilization),full=seatedSword(setup,holster);
+  const base=motion(data,o.motion,motionOffset+tick/60,o.gazeYaw),holster=compose(local,base[pelvis]),full=seatedSword(setup,holster);
   const seatHand=seatHandAtScale(setup,full,retained);
   const mouth=point(full,setup.baseBladeLocal);
   const goalAt=x=>{
@@ -117,14 +120,14 @@ function prepare(data,setup,input,motionOffset=0){
    body={entry:[...entryBody],requiredDegrees:Body.remaining(entryBody,bodyDesired),applied:[...bodyState],desired:[...bodyDesired],remainingDegrees:Body.remaining(bodyState,bodyDesired),clearTarget,
     baseShoulderDistance:len(sub(base[arm[0]].p,clearTarget)),shoulderDistance:len(sub(pose[arm[0]].p,clearTarget))};
   }
-  track.push({base,pose,body,holster,full,mouth,seatHand,goalAt,slideLength:bladeLength*retained});
+  track.push({tick,base,pose,body,holster,full,mouth,seatHand,goalAt,slideLength:bladeLength*retained});
  }
  const frameAt=t=>track[clamp(Math.round(t),0,lastTick)];
  let plan=null;
  if(o.startTick<=lastTick){
   const args={arm,parents:data.parents,frameAt,startTick:o.startTick,lastTick,o,solve,
-   arrivalCheck:o.sheathe?(f,pose,progress)=>{const sword=compose(scaledGrip(setup,1-o.shrinkPercent/100*progress),pose[arm[2]]);return f.body.remainingDegrees<1e-5&&len(sub(point(sword,tip),f.mouth))<=2&&angle(sword.q,f.full.q)<=o.sheatheRotationTolerance+1e-5;}:null,
-   beginSlide:o.sheathe?(f,pose,tick,progress)=>{const scale=1-o.shrinkPercent/100*progress,sword=compose(scaledGrip(setup,scale),pose[arm[2]]);slideEntry={tick,scale,q:unit(qm(qinv(f.full.q),sword.q)),tipError:rotate(qinv(f.full.q),sub(point(sword,tip),f.mouth))};}:null};
+   arrivalCheck:o.sheathe?(f,pose,progress)=>{const sword=compose(scaledGrip(setup,reachScale(o,f.tick)),pose[arm[2]]);return f.body.remainingDegrees<1e-5&&len(sub(point(sword,tip),f.mouth))<=(o.leewayPhase?2:o.sheatheTipTolerance)&&angle(sword.q,f.full.q)<=o.sheatheRotationTolerance+1e-5;}:null,
+   beginSlide:o.sheathe?(f,pose,tick,progress)=>{const scale=reachScale(o,tick),sword=compose(scaledGrip(setup,scale),pose[arm[2]]);slideEntry={tick,scale,q:unit(qm(qinv(f.full.q),sword.q)),tipError:rotate(qinv(f.full.q),sub(point(sword,tip),f.mouth))};}:null};
   let totalSolves=0;
   const makePlan=options=>{slideEntry=null;const p=FK.plan({...args,...options});totalSolves+=p.endpointSolves;return p;};
   const scheduleBody=arrivalTick=>{
@@ -165,7 +168,7 @@ function prepare(data,setup,input,motionOffset=0){
   if(plan&&tick>=o.startTick){
    const armFrame=FK.at(plan,tick);progress=armFrame.progress;
    pose=FK.apply(f.pose,arm,data.parents,armFrame.local);phase='Reach';
-   if(o.sheathe)scale=1-o.shrinkPercent/100*progress;
+   if(o.sheathe)scale=reachScale(o,tick);
    if(plan.arrives&&tick>=plan.endTick){
     phase='Slide';const slide=clamp((tick-plan.endTick)/(plan.slideEnd-plan.endTick),0,1);insertion=o.sheathe?slide:1-slide;goal=f.goalAt(insertion);
     if(o.sheathe)scale=sheathScale(retained,slideEntry,insertion,o.slideRotationCorrection);
@@ -185,7 +188,7 @@ function prepare(data,setup,input,motionOffset=0){
   frames.push({tick,body:f.body,pose,holster:f.holster,sword,goal,commandedHand:plan&&tick>=o.startTick?copy(pose[arm[2]]):null,phase,scale,insertion,progress,active,metrics,handError:error,blocked:phase==='Reach'&&progress>=1&&error>2});
  }
  const locals=frames.map(f=>R.localize(f.pose.map(t=>t.p),f.pose.map(t=>t.q),data.parents));
- return retime({o,motionOffset,sourceFrames:frames,sourceLocals:locals,plan,bladeLength,tip,sheathEntry:slideEntry,names:N,parents:data.parents,arm,pelvis,setup,data,bodyContext,holsterLocal:local,holsterReference,headContext:Head.make(data)},o);
+ return retime({o,motionOffset,sourceFrames:frames,sourceLocals:locals,plan,bladeLength,tip,sheathEntry:slideEntry,names:N,parents:data.parents,arm,pelvis,setup,data,bodyContext,holsterLocal:local,headContext:Head.make(data)},o);
 }
 const baseMotion=(model,t,gaze=model.o.gazeYaw)=>motion(model.data,model.o.motion,(model.motionOffset||0)+t,gaze);
 function headSpeed(o,lookingOut,gaze){
@@ -193,6 +196,7 @@ function headSpeed(o,lookingOut,gaze){
  return o[key]+(o[key+'AtMaxGaze']-o[key])*clamp(Math.abs(gaze)/170,0,1);
 }
 function retime(source,input){
+ if(input.noCheat||source.tickPlayback)return prepare(source.data,source.setup,input,source.motionOffset||0);
  const o=sanitize(input);
  // A curve/FK edit may arrive while the slider's worker is still rebuilding.
  // A changed holster path needs fresh reach/slide geometry, not cached guides.
@@ -215,13 +219,12 @@ function retime(source,input){
   model.fkReturn=makeReturn(start,sampleSlide(model,start).pose,sampleSlide(model,start-dt).pose);
   if(start<release){
    model.gripBranch=model.names.map((_,j)=>{for(let k=j;k>=0;k=model.parents[k])if(model.names[k]==='clavicle_r')return true;return false;});
-   const guides=[],poles=[],guideRate=240,guideTicks=[];let bodyElapsed=0,previousTick=startTick*4,armSeed=null,poleBasis=null;
+   const guides=[],guideRate=240,guideTicks=[];let bodyElapsed=0,previousTick=startTick*4,armSeed=null,poleBasis=null;
    for(let tick=startTick*4;tick<=model.plan.slideEnd*4;tick++)guideTicks.push(tick);
    const correctionTick=(model.plan.endTick+(model.plan.slideEnd-model.plan.endTick)*o.slideRotationCorrection)*4;
    const cutoff=o.slideRotationCorrection===0?correctionTick+4e-6:correctionTick;
    const extraCutoff=model.slideGuides&&cutoff>startTick*4&&cutoff<model.plan.slideEnd*4&&!Number.isInteger(cutoff);
    if(extraCutoff){guideTicks.push(cutoff);guideTicks.sort((a,b)=>a-b);}
-   let previousPoleAngle=null;
    for(const tick of guideTicks){
     const t=tick/guideRate,f=sampleSlide(model,t);
     let pose=f.pose;
@@ -248,15 +251,13 @@ function retime(source,input){
     }
     const pole=samplePole(model,t);
     if(tick===startTick*4)poleBasis=pole.basis;
-    else{const reference=poleReference(model,f,pole),budget=Math.max(0,o.maxElbowPoleAngularSpeed*(tick-previousTick)/guideRate-Math.abs(pole.angle-previousPoleAngle));poleBasis=Pole.frame(pose,model.arm,reference,poleBasis,budget);pose=Pole.apply(pose,model.arm,reference,pole.angle,poleBasis);}
-    previousPoleAngle=pole.angle;
-    poles.push({tick:tick/4,angle:pole.angle,basis:poleBasis,swordDown:pole.swordDown});
+    else{const reference=poleReference(model,f,pole);poleBasis=Pole.frame(pose,model.arm,reference,poleBasis);pose=Pole.apply(pose,model.arm,reference,pole.angle,poleBasis);}
     armSeed=FK.capture(pose,model.arm,model.parents);
     guides.push(R.localize(pose.map(p=>p.p),pose.map(p=>p.q),model.parents));
     previousTick=tick;
    }
    model.fkReturn.gripDelay=Math.max(0,release-start-bodyElapsed);
-   model.gripGuides={startTick:startTick*4,rate:guideRate,release,guides,poles,ticks:extraCutoff?guideTicks:null};
+   model.gripGuides={startTick:startTick*4,rate:guideRate,release,guides,ticks:extraCutoff?guideTicks:null};
    model.armReturn=makeReturn(release,sampleBody(model,release).pose,sampleBody(model,release-dt).pose);
   }
  }
@@ -278,6 +279,7 @@ function retime(source,input){
 }
 const blendT=(a,b,t)=>({p:add(a.p,mul(sub(b.p,a.p),t)),q:qslerp(a.q,b.q,t),s:add(a.s,mul(sub(b.s,a.s),t))});
 function recordedTime(model,t){
+ if(model.tickPlayback)return t;
  for(const segment of Object.values(model.retimeSegments))if(t>segment.start&&t<segment.end)return Retime.time(segment.curve,t,segment.start,segment.end);
  return t;
 }
@@ -296,12 +298,16 @@ function sampleSource(model,t){
 // Only the authored body turn/arm pose uses the curved clock. Carry it on the
 // current locomotion pose; the pelvis and its holster never follow that clock.
 function motionFrame(model,t){
- const sourceTime=recordedTime(model,t),f=sampleSource(model,sourceTime);
+ const sourceTime=recordedTime(model,t);let f=sampleSource(model,sourceTime);
+ if(model.o.sheathe&&(f.phase==='Held'||f.phase==='Reach')){
+  const scale=reachScale(model.o,t*60);
+  f={...f,scale,sword:compose(scaledGrip(model.setup,scale),f.pose[model.arm[2]])};
+ }
  if(Math.abs(sourceTime-t)<1e-12&&Math.abs(t*60-Math.round(t*60))<1e-8)return f;
  const base=baseMotion(model,t);
  let pose=f.body?Body.apply(model.bodyContext,base,f.body.applied):base;
  if(model.plan&&sourceTime*60>=model.o.startTick)pose=FK.apply(pose,model.arm,model.parents,FK.capture(f.pose,model.arm,model.parents));
- const holster=holsterPose(model.holsterLocal,base[model.pelvis],model.holsterReference,model.o.holsterRotationStabilization),delta=unit(qm(holster.q,qinv(f.holster.q)));
+ const holster=compose(model.holsterLocal,base[model.pelvis]),delta=unit(qm(holster.q,qinv(f.holster.q)));
  const carry=v=>({...v,p:add(holster.p,rotate(delta,sub(v.p,f.holster.p))),q:unit(qm(delta,v.q))});
  const goal=carry(f.goal),held=f.phase==='Held'||f.phase==='Unshrink'||(f.phase==='Reach'&&model.o.sheathe);
  const sword=held?compose(scaledGrip(model.setup,f.scale),pose[model.arm[2]]):carry(f.sword);
@@ -358,25 +364,22 @@ function preparePoleGuides(model,cached){
  const reachTarget=Pole.target(model.o.bodyTargets,model.o.sheathe?0:1);
  for(let tick=start;tick<=end+1e-8;tick+=.25){
   const f=samplePlannedArm(model,tick/60);
-  const previousAngle=angle;
-  if(tick!==start)angle=Pole.advance(angle,tick<=entry?reachTarget:Pole.target(model.o.bodyTargets,f.insertion),tick<=entry?reachSpeed:model.o.maxElbowPoleAngularSpeed,1/240);
-  const budget=Math.max(0,model.o.maxElbowPoleAngularSpeed/240-Math.abs(angle-previousAngle));
   if(useSword&&tick>=entry&&!swordDown){
    // Capture the existing zero direction in sword space at the exact transfer.
    // Only the reference changes; the elbow angle and physical pose are continuous.
-   basis=Pole.frame(f.pose,model.arm,model.bodyContext.top,basis,budget);
+   basis=Pole.frame(f.pose,model.arm,model.bodyContext.top,basis);
    const toSword=qm(qinv(f.sword.q),f.pose[model.bodyContext.top].q);
    basis={d:rotate(toSword,basis.d),zero:rotate(toSword,basis.zero)};
    swordDown=basis.zero;
   }
   const reference=swordDown?{q:f.sword.q,down:swordDown}:model.bodyContext.top;
-  basis=Pole.frame(f.pose,model.arm,reference,basis,budget);
+  basis=Pole.frame(f.pose,model.arm,reference,basis);
   if(tick===start){
    angle=Pole.measure(f.pose,model.arm,reference,basis);
    // Use the available reach time, with the knob as a ceiling. Curves do not
    // change this clock; a capped pole continues catching up during sliding.
    if(model.plan.arrives&&entry>start)reachSpeed=Math.min(reachSpeed,Math.abs(Pole.wrap(reachTarget-angle))*60/(entry-start));
-  }
+  }else angle=Pole.advance(angle,tick<=entry?reachTarget:Pole.target(model.o.bodyTargets,f.insertion),tick<=entry?reachSpeed:model.o.maxElbowPoleAngularSpeed,1/240);
   const pose=Pole.apply(f.pose,model.arm,reference,angle,basis);
   keys.push({tick,angle,basis,swordDown,local:FK.capture(pose,model.arm,model.parents)});
  }
@@ -384,17 +387,12 @@ function preparePoleGuides(model,cached){
 }
 function samplePole(model,t){
  const keys=model.poleGuides.keys,x=clamp((t*60-keys[0].tick)*4,0,keys.length-1),i=Math.floor(x),a=keys[i],b=keys[Math.min(i+1,keys.length-1)],u=x-i;
- return interpolatePole(model,a,b,u);
-}
-function interpolatePole(model,a,b,u){
- let right=b.basis;
- if(!a.swordDown&&b.swordDown){const f=samplePlannedArm(model,b.tick/60),change=qm(qinv(f.pose[model.bodyContext.top].q),f.sword.q);right={d:rotate(change,right.d),zero:rotate(change,right.zero)};}
- return {angle:a.angle+(b.angle-a.angle)*u,basis:Pole.interpolate(a.basis,right,u),swordDown:a.swordDown,local:a.local?FK.blend(a.local,b.local,u):null};
+ return {angle:a.angle+(b.angle-a.angle)*u,basis:a.basis,swordDown:a.swordDown,local:FK.blend(a.local,b.local,u)};
 }
 const poleReference=(model,f,pole)=>pole.swordDown?{q:f.sword.q,down:pole.swordDown}:model.bodyContext.top;
-function correctPole(model,f,t,prepared=null){
+function correctPole(model,f,t){
  if(!model.poleGuides||t*60<=model.o.startTick||t*60>model.plan.slideEnd)return f;
- const pole=prepared||samplePole(model,t),reference=poleReference(model,f,pole),basis=Pole.frame(f.pose,model.arm,reference,pole.basis,0);
+ const pole=samplePole(model,t),reference=poleReference(model,f,pole),basis=Pole.frame(f.pose,model.arm,reference,pole.basis);
  const pose=Pole.apply(f.pose,model.arm,reference,pole.angle,basis);
  // This is only a rigid swivel about the current shoulder/wrist axis: no hand
  // target solve. It removes tiny angle errors introduced by FK guide sampling.
@@ -435,16 +433,16 @@ function applyEntryInertia(model,f,t){
  return {...f,pose,sword:model.o.sheathe?compose(scaledGrip(model.setup,f.scale),pose[model.arm[2]]):f.sword,handError,metrics:f.metrics?{...f.metrics,handError}:null};
 }
 function sampleBody(model,t){
+ if(model.tickPlayback)return Online.sample(model,t);
  const f=sampleSlide(model,t),ret=model.fkReturn;
  if(!ret||t<ret.start)return f;
  const grip=model.gripGuides,arm=model.armReturn,elapsed=t-ret.start-(grip&&t>=grip.release?ret.gripDelay:0);
  const armActive=arm&&t-arm.start<arm.timing.duration-1e-12,returnActive=elapsed<ret.timing.duration-1e-12||!!armActive;
- let pose=f.pose,gripPole=null;
+ let pose=f.pose;
  if(grip&&t<=grip.release){
   const x=clamp(t*grip.rate-grip.startTick,0,grip.guides.length-1);let i=Math.floor(x),u=x-i;
   if(grip.ticks){let lo=0,hi=grip.ticks.length-1;while(hi-lo>1){const mid=(lo+hi)>>1;if(grip.ticks[mid]<t*grip.rate)lo=mid;else hi=mid;}i=lo;u=clamp((t*grip.rate-grip.ticks[lo])/(grip.ticks[hi]-grip.ticks[lo]),0,1);}
   const a=grip.guides[i],b=grip.guides[Math.min(i+1,grip.guides.length-1)];
-  gripPole=interpolatePole(model,grip.poles[i],grip.poles[Math.min(i+1,grip.poles.length-1)],u);
   const lower=R.localize(f.pose.map(p=>p.p),f.pose.map(p=>p.q),model.parents);
   const offsets=a.p.map((p,j)=>{
    if(!ret.model.upper[j])return lower.p[j];
@@ -463,7 +461,7 @@ function sampleBody(model,t){
  const sword=model.o.sheathe||gripping?f.sword:compose(scaledGrip(model.setup,f.scale),pose[model.arm[2]]);
  const handError=len(sub(pose[model.arm[2]].p,f.goal.p));
  const result={...f,pose,sword,handError,metrics:f.metrics?{...f.metrics,handError}:null,phase:gripping?'Slide':returnActive?'FK return':f.phase,active:f.active||returnActive,fkReturn:{elapsed,duration:ret.timing.duration,active:returnActive,gripping:!!gripping,armStart:arm?.start}};
- return grip&&t<=grip.release?correctPole(model,result,t,gripPole):result;
+ return grip&&t<=grip.release?correctPole(model,result,t):result;
 }
 function transplantGrip(model,body,donor){
  const local=pose=>R.localize(pose.map(p=>p.p),pose.map(p=>p.q),model.parents),a=local(body),b=local(donor);
@@ -471,6 +469,7 @@ function transplantGrip(model,body,donor){
  return body.map((p,j)=>model.gripBranch[j]?{...p,p:fk.points[j],q:fk.q[j]}:p);
 }
 function sample(model,t){
+ if(model.tickPlayback)return Online.sample(model,t);
  t=clamp(t,0,model.playbackDuration);
  const x=Math.min(t*60,model.headTrack.length-1),i=Math.floor(x),u=x-i;
  if(u<1e-10)return model.frames[i];
@@ -483,7 +482,8 @@ function sample(model,t){
 }
 function previewTime(model,insertion){
  const p=model.plan;if(!p)return Math.min(model.o.startTick/60,model.playbackDuration);
- const progress=model.o.sheathe?insertion:1-insertion,segment=model.retimeSegments.slide;
+ const start=model.sheathEntry?.insertion??0;
+ const progress=model.o.sheathe?clamp((insertion-start)/Math.max(1e-8,1-start),0,1):1-insertion,segment=model.retimeSegments.slide;
  let lo=0,hi=1;
  for(let i=0;i<32;i++){const mid=(lo+hi)/2;if(Retime.sample(segment.curve,mid)<progress)lo=mid;else hi=mid;}
  return Math.min(model.playbackDuration,model.fkReturn?.start??Infinity,(p.endTick+(p.slideEnd-p.endTick)*(progress<=0?0:progress>=1?1:(lo+hi)/2))/60);
@@ -497,7 +497,7 @@ function previewBody(model,insertion,targets=model.o.bodyTargets,time=previewTim
  // second elbow solution. The worker supplies the exact updated motion on release.
  const adjusted=[0,4,8].flatMap((k,i)=>unit(qm(qm(edited.slice(k,k+4),qinv(planned.slice(k,k+4))),ctx.reference[i])));
  let pose=Body.adjust(ctx,f.pose,adjusted);
- const initial=Pole.frame(f.pose,model.arm,ctx.top),pole=model.poleGuides?samplePole(model,t):{angle:Pole.measure(f.pose,model.arm,ctx.top,initial),basis:initial},reference=poleReference(model,f,pole),basis=Pole.frame(pose,model.arm,reference,pole.basis,0);
+ const initial=Pole.frame(f.pose,model.arm,ctx.top),pole=model.poleGuides?samplePole(model,t):{angle:Pole.measure(f.pose,model.arm,ctx.top,initial),basis:initial},reference=poleReference(model,f,pole),basis=Pole.frame(pose,model.arm,reference,pole.basis);
  pose=Pole.apply(pose,model.arm,reference,pole.angle+poleDelta,basis);
  const handError=len(sub(pose[model.arm[2]].p,f.goal.p));
  return {...f,pose,handError,previewTime:t,previewPending:true};
@@ -513,5 +513,5 @@ function blendPreview(previous,next,alpha,parents){
  const transform=(a,b)=>({...b,p:add(a.p,mul(sub(b.p,a.p),alpha)),q:qslerp(a.q,b.q,alpha),s:(b.s||[1,1,1]).map((v,k)=>(a.s?.[k]??1)+(v-(a.s?.[k]??1))*alpha)});
  return {frame:{...next,pose:next.pose.map((v,j)=>({...v,p:fk.points[j],q:fk.q[j]})),sword:transform(previous.sword,next.sword),holster:transform(previous.holster,next.holster)},settled:false};
 }
-const api={headSpeed,seatedSword,sheathSlideGoal,gazePose,bladeTip,point,handForTip,defaults,sanitize,prepare,sample,sampleBody,previewTime,previewBody,blendPreview,retime,recordedTime,motion,solve,compose,scaledGrip,seatHandAtScale,angle};if(typeof module!=='undefined')module.exports=api;else root.Holster=api;
+const api={holsterPivot,reachScale,headSpeed,seatedSword,sheathSlideGoal,gazePose,bladeTip,point,handForTip,defaults,sanitize,prepare,sample,sampleBody,previewTime,previewBody,blendPreview,retime,recordedTime,motion,solve,compose,scaledGrip,seatHandAtScale,angle};if(typeof module!=='undefined')module.exports=api;else root.Holster=api;
 })(globalThis);

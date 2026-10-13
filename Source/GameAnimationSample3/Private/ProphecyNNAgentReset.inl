@@ -208,6 +208,17 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
         for (const auto& C : S.Components)
         {
             if (!C.Component.IsValid()) continue;
+            // A rigid socket-mounted holster is authored in the class viewport.
+            // Replaying its old world transform against the restored NN pelvis
+            // would bake the old physical/NN pose difference into its local mount.
+            const auto* Template=Cast<UPrimitiveComponent>(C.Component->GetArchetype());
+            if (C.Component->GetFName()==TEXT("holster") && Template && !Template->BodyInstance.bSimulatePhysics
+                && C.Component->GetAttachParent()==Actor->GetPoseReferenceMesh() && C.Component->GetAttachSocketName()==TEXT("pelvis"))
+            {
+                C.Component->SetUsingAbsoluteRotation(Template->IsUsingAbsoluteRotation());
+                C.Component->SetRelativeTransform(Template->GetRelativeTransform());
+                continue;
+            }
             FHitResult Hit;
             UProphecyJoltStandardPhysicsLibrary::K2_SetWorldTransform(C.Component.Get(), C.World, false, Hit, true);
             if (auto* Primitive = Cast<UPrimitiveComponent>(C.Component.Get()))

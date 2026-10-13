@@ -3,7 +3,194 @@
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
-## Current port (October12)
+## Stationary head/neck diagnosis (October13; no fix applied)
+
+Two independent problems are now isolated in the unchanged stationary second S:
+
+**PHAT provenance clarified:** this is NOT a Jolt import omission. The current clean
+`/Game/Characters/UEFN_Mannequin/Rigs/PA_UEFN_Mannequin` asset itself defines bodies
+neck_01/head and the direct head↔neck_01 constraint; no neck_02 body. The importer
+copies every Physics Asset body and each live constraint's endpoints. This topology
+is independently documented in committed `Tools/SwordHolster/NeckLimits20261011.json`
+(commit822cf423, October11). The asset file's last-write timestamp is July10,2026;
+that is supporting metadata, not a versioned proof of topology since July. The
+asset is Git-ignored, so its original author/date/reason cannot be established from
+repository history. No unsaved changes on this PHAT at inspection; unrelated dirty
+agent BP/map preserved. Do not describe this as the physics backend removing neck_02.
+
+1. **Head/right-clavicle self-contact causes the extra bobble.** Actual hit events
+   name only `head` and `clavicle_r`, player284–292 and NPCs283–293. Holster arm
+   collision suppression starts at `upperarm_r` (`ProphecyLimbCollisionLibrary.cpp`),
+   so the clavicle is omitted. Disabling ONLY that pair gives an identical physical
+   trajectory to disabling every neck/head contact through325. Head travel283–293
+   falls2.456159→.693067cm (command.701616cm), position error289 falls1.303158→.346655cm.
+   These are owned-PIE diagnostic overrides, not saved changes.
+2. **The requested neck chain is incompatible with the physical joint.** Both lab
+   and native head authoring distribute rotation across neck_01/neck_02/head. The
+   current PA_UEFN_Mannequin has neck_01/head bodies but no neck_02 body, with a direct
+   neck_01→head joint. Asset head anchor is zero; neck_01 anchor is
+   (9.926639,-.543086,0)cm. Requested world transforms place those anchors1.340642cm
+   apart at289. Without the contact, physics closes them to.004718cm while the neck
+   turns6.796841deg away from its command. Turning off only the head's linear drive
+   in that contact-free test reduces neck error to3.656910deg, but increases head
+   position error to1.033735cm. That is evidence of conflicting targets, not a fix
+   or a proposal to remove head magnetisation. Free angular limits still retain the
+   positional joint connection. A three-bone authored chain cannot be assumed to
+   match a two-body articulation automatically.
+
+Both actual neck/head angular modes are Free at289; configured global/body drive
+strengths are1 and mode1. Enlarging head/neck recurrent-feedback tolerances produces
+zero physical trajectory difference. Hit-event logging also preserves the baseline
+trajectory. Earlier attribution of the entire visible difference to neck rotation
+was incomplete: removing contact improves head position while neck angle error grows.
+
+No runtime source, lab, tuning, Blueprint or asset edits; all temporary tests ended,
+editor left open outside Play. Fix choice remains for user discussion. Do not silently
+change lab authoring or PHAT. Evidence and rerunnable analysis:
+`Saved/Diagnostics/HeadParent29020261013/root-cause.json`, `analyze-root.py`,
+`baseline-detail.json`, `no-head-clavicle-detail.json`, `no-contacts-detail.json`,
+`head-angular-only-detail.json`, `no-feedback-detail.json`, `hits-bones2-detail.json`,
+`physics-asset.t3d`. Asset export was read-only. Earlier reflection-only frame reads
+were unsupported/protected; final anchor analysis uses the successful standard T3D
+export, checked against the physical joint's measured closure.
+
+Prior comparison: same setup kinematic head path.705621cm versus current lab.589126cm;
+kinematic positional tracking<9e-14cm. Live lab stabilization.78 differs from native.48;
+preserved; activation is later than the divergence. World-head rotation excursion in
+the selected window is not greater than lab, so do not claim all rotational motion is worse.
+
+## Accepted-lab port integrated (October13)
+
+The accepted lab is frozen and remains unchanged. Native source now shares its
+linear FK reach progress, independent attached translation/rotation limits,
+shrink duration, optional leeway alignment, configurable direct-entry tip
+threshold, and slide from the reached depth. The saved lab profile supplies
+these values. Earlier descriptions below are historical where they conflict.
+
+Unreal deliberately uses the mesh/component origin as its stabilization pivot,
+per the user's clarification. The lab axial-pivot percentage is neither exported
+nor exposed on the Unreal node. The class viewport placement remains authoritative.
+
+User-approved timing: capture the preceding NN pose after a request, admit the
+player on the next unpaused tick, and spread NPC admissions over ticks1..4.
+Pending requests retain only their last pose; skipped ticks require a fresh
+consecutive pair. Active target refits run at action-relative4,8,12…; the former
+independent world-slot refit scheduler is removed. Entry inertia uses measured
+preceding-tick movement rather than an interpolation-derivative estimate.
+
+Twelve recorded idle/walk/run D/S comparisons with saved entry inertia on/off match every
+reach/slide/completion tick, with maximum pose difference.000036cm/.000078deg.
+This comparison exposed and corrected missing torso ancestor rates when seeding
+arm-return inertia. Tip alignment and stagger lifecycle tests pass.
+
+The existing BP profile is saved with25% shrink/.25s shrink/.5s unshrink,
+48% stabilization/.25s return, attached150cm/s/200deg/s, leeway off/tip2cm.
+All other defaults and links are preserved; per-action profiles load from JSON.
+Six live idle/walk/run × kinematic/sim cases complete two cycles on three agents
+each. Eight alignment/slide × hide/drop/mode/reset cases verify removed grip
+joints, restored angular limits and original holster placement. Mode/reset apply
+at tick boundaries; the user's looping BP may start another action afterwards.
+Tests distinguish a fresh action from incomplete cleanup.
+
+Remaining physical limitation: with saved Cube collision enabled, the third
+running agent stops at X≈−876cm and its second sheathing attempt stalls. The
+same owned-PIE test completes on all agents with only that obstacle disabled.
+Saved map/collision untouched. Completed sim grip error maxima:.70cm idle,
+1.47cm walking,2.16cm unobstructed running; rendered/native sword gap<.000005cm.
+This does not establish universal physical parity or artistic motion perfection.
+No fresh full-runtime crowd FPS benchmark was run; old references are preserved.
+
+Normal runtime build-entry.log is current. A later editor-only value-refresh
+helper compiled/reloaded via Live Coding (85.02s), with no runtime layout change
+or restart. Rebuild that editor helper normally before the next cold launch.
+Final TestNN: open, no Play, no dirty packages/maps, saved healthy agent BP.
+Lab code and motion tuning are unchanged; user camera/playback changes preserved.
+Logs still contain unsupported-MACD scene-admission messages and sword rebind
+failures during world teardown; no physics fallback was added to hide them.
+Evidence: `Saved/Diagnostics/SwordAcceptedPort20261013/` completion.json,
+live-final-verification.json, lifecycle-verification.json and editor-final.json.
+
+## Earlier port (October13)
+
+Sheathing now captures the sword at the full rotation-tolerance gate, attaches
+without a world-transform jump, aligns the tip in the holster frame, then slides.
+Alignment freezes shrink and uses the existing reach speed limits on the normal
+60-tick clock. Body motion continues under its angular bound; slide entry uses
+the body pose actually reached. After capture, the sword path is authoritative:
+an unreachable wrist cannot drag the sword away from the holster-local path or
+block tip arrival. The hand follows through the existing joint, whose frames are
+updated at capture to preserve the actual grip; the authored arm uses that same
+grip. The lab now also gives the holster-local sword path authority during
+alignment/sliding, with arm tracking error exposed rather than stalling the
+sword. See [lab ownership correction](LabSwordOwnership20261013.md). Full
+lab/Unreal pose parity has not been established.
+
+**Mesh/native synchronization:** during constrained alignment/sliding the mesh
+presents the completed Jolt sword pose. Sim predicts the holster from its real
+physical parent, not the NN pelvis. Passive holster/hand attachments synchronize
+both mesh and native collider, including axial resize and handoff. Repeated
+moving cycles measured position mismatch below.000006cm and reported rotation
+below.05deg. Native hand-grip constraint error is separate and remains nonzero;
+see [verification and limitations](SwordPhysicsPresentation20261013.md). This
+supersedes the old unconditional attached-kinematic publication rule below.
+
+**Set Sword Holster Profile** has two additional pins:
+
+- **Grip Holster Stabilization Percent**, default0:0 follows the pelvis;
+  100 holds the captured world rotation throughout grip, including S tip
+  alignment. Intermediate values mix those rotations. Translation follows pelvis.
+- **Holster Return Duration**, default.25 authored seconds: after sliding ends,
+  restore the class-authored local rotation over this duration. Interruption
+  restores the mount and rotation inheritance immediately and preserves a
+  released sword's world transform.
+
+The existing class viewport placement is authoritative at game reference capture;
+old placed-instance overrides cannot replace it. Runtime stabilization never
+writes the class template. The lab's separate always-on stabilization is still
+not imported. **Visualize Sheathing Leeway** now turns the cone green at rotation
+admission and continues through tip alignment; the tip distance is a separate
+alignment readout, not the former2cm pre-attachment gate.
+
+[Implementation decisions, verification and limits](HolsterTipAlignPort20261013.md).
+
+## Previous port (October12)
+
+**Drawing grip conflict corrected:** both temporary grip actions now derive
+the sword-side joint frame from the authored grip and native body origin.
+Drawing previously captured transient acquisition/physics-publication error,
+opposing the authored wrist through sliding. Matched-prefix before/after test:
+first release physical step14.93→2.99deg with unchanged2.96deg command;
+9 repeated D releases end within.504deg wrist error. No damping, speed changes
+or extra per-tick work. S pursuit/slide-entry issues remain. The lab now has
+an optional **No cheat** causal mode; off preserves the original reference.
+[Implementation, tests and remaining differences](NoCheatGrip20261012.md).
+
+**Sheathing entry visualization (October12):** `Visualize Sheathing Leeway`
+is an optional Blueprint Tick call (Agent defaults to self). It reads the live
+S profile, currently15deg, and only draws during S reach. Cyan cone/axis shows
+the maximum blade tilt and perfect alignment; the green/red ray shows actual
+blade direction but its color uses the **full quaternion rotation** gate,
+including roll. The adjacent roll dial's cyan arc is the remaining allowance at
+the current tilt, not an independent15deg roll limit. The2cm mouth sphere,
+actual tip dot/connector, distance text and authored-body ready/waiting label
+show the other entry conditions. Display Length40cm only scales the illustration;
+advanced Duration0 is one frame. No planner mutation, persistent controller,
+tuning/acceptance changes or unused per-tick work. Uses the same actual component
+transforms/scales as `TrySheathe`, not its next-tick predicted pose.
+
+**Latest incremental pass:** the holster is now a non-physical pelvis-socket child
+in the PoseAgent Blueprint; the user subsequently deleted its former motor
+constraint. Runtime D/S does not require it. The user's
+new placement is copied into the lab. Unreal's arm-plane/pole-budget changes are
+reverted to the restored lab rules; rigid mount prediction and slide-entry pole
+capture are aligned. Early-return arm parity is still incomplete. See
+[current fix, measurements and pending question](HolsterRigid20261012.md).
+
+**Later October12 rollback:** at the user's request, the lab motion code is back
+to pushed checkpoint `e0da908c`, with current user settings preserved. Unreal
+retains the port changes. The shared-solver descriptions and parity evidence
+below describe the pre-rollback verification, not agreement with today's lab.
+Tell the user before changing reference-lab behavior.
 
 The lab/saved tuning and PoseAgent Blueprint checkpoint is pushed as `e0da908`.
 The new native port uses independent Drawing/Sheathing body, elbow, speed and

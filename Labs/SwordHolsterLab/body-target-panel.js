@@ -3,6 +3,9 @@ class BodyTargetPanel{
  constructor(host,onEdit,onSelect){
   this.host=host;this.onEdit=onEdit;this.onSelect=onSelect;this.endpoint='clear';
   host.innerHTML=`<div class="pinned-actions labelrow"><h2 id="bodyTargetsTitle">Body poses</h2><button id="closeBodyTargets" aria-label="Close body poses">×</button></div><div class="sidebar-content">
+   <label for="holsterRotationStabilization">Holster rotation compensation · <span id="holsterRotationStabilizationValue">0.00</span></label><input id="holsterRotationStabilization" type="range" min="0" max="1" step="0.01" value="0"><p class="muted">S: attachment through sliding. D: sliding only. 0 follows pelvis rotation · 1 holds rotation captured at grip. Shared by D/S.</p>
+   <label for="holsterPivotPercent">Holster axial pivot · <span id="holsterPivotPercentValue">50.00</span>%</label><input id="holsterPivotPercent" type="range" min="0" max="100" step="1" value="50"><p class="muted">0% bottom · 50% centre · 100% entrance end. Rotation compensation pivots here; neutral placement stays unchanged. Shared by D/S.</p>
+   <label for="holsterReturnDuration">Holster return duration · seconds</label><input id="holsterReturnDuration" type="number" min="0" max="10" step="0.05" value="0.25"><p class="muted">After sliding, return to the original pelvis-relative placement. The selected pivot follows the pelvis.</p>
    <label for="pelvisRotationCompensation">Pelvis rotation compensation · <span id="pelvisRotationCompensationValue">1.00</span></label><input id="pelvisRotationCompensation" type="range" min="0" max="1" step="0.01" value="1"><p class="muted">0 follows pelvis rotation · 1 cancels it.</p>
    <label for="bodyEndpoint">Insertion target</label><select id="bodyEndpoint"><option value="clear">0% · blade outside</option><option value="seated">100% · blade seated</option></select>
    <div id="bodyRotations"></div>

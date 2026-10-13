@@ -35,11 +35,11 @@ static void AuthoredBodyPose(const FActive& S,TConstArrayView<FTransform> Base,c
 }
 static void AdvanceAuthored(FActive& S,double ReachFraction)
 {
- if(S.Sliding){AuthoredTarget(S,S.Sheathe?S.Status.SlideProgress:1-S.Status.SlideProgress,S.Authored.Current);return;}
+ if(S.Sliding){AuthoredTarget(S,S.Sheathe?S.Status.SlideProgress:1-S.Status.SlideProgress,S.Authored.Current);if(S.Sheathe)for(int K=0;K<3;++K)S.Authored.Current[K]=FQuat::Slerp(S.SlideBody[K],S.Profile.Body[1].Targets[1][K],S.Status.SlideProgress).GetNormalized();return;}
  // The initial deadline includes all three angular caps; curve time only retimes this authored path.
  for(int K=0;K<3;++K)S.Authored.Current[K]=FQuat::Slerp(S.Authored.Entry[K],S.Authored.Destination[K],ReachFraction).GetNormalized();
 }
-static void PoleFrame(FActive& S,const FQuat& Reference,const FVector& Down,double MaxTurn=DBL_MAX)
+static void PoleFrame(FActive& S,const FQuat& Reference,const FVector& Down)
 {
  auto& A=S.Authored;const FVector Direction=Reference.UnrotateVector(S.Pose[S.Arm[2]].GetLocation()-S.Pose[S.Arm[0]].GetLocation()).GetSafeNormal();
  const FVector Carried=A.PoleValid?FVector::VectorPlaneProject(FQuat::FindBetweenNormals(A.PoleDirection,Direction).RotateVector(A.PoleZero),Direction).GetSafeNormal():FVector::ZeroVector;
@@ -49,7 +49,6 @@ static void PoleFrame(FActive& S,const FQuat& Reference,const FVector& Down,doub
   if(Zero.Size()<1.e-7)Zero=FVector::VectorPlaneProject(Reference.UnrotateVector(S.Pose[S.Arm[0]].GetRotation().GetAxisZ()),Direction);
  }
  Zero.Normalize();if(A.PoleValid&&FVector::DotProduct(Zero,Carried)<0)Zero=-Zero;
- if(A.PoleValid&&MaxTurn<DBL_MAX){const double Turn=FMath::Atan2(FVector::DotProduct(Direction,FVector::CrossProduct(Carried,Zero)),FVector::DotProduct(Carried,Zero)),Limit=FMath::DegreesToRadians(MaxTurn);Zero=FQuat(Direction,FMath::Clamp(Turn,-Limit,Limit)).RotateVector(Carried);}
  A.PoleDirection=Direction;A.PoleZero=Zero;A.PoleValid=true;
 }
 static double PoleTarget(const FActive& S,double Insertion)
@@ -64,16 +63,14 @@ static void PreparePole(FActive& S)
 static void ApplyPole(FActive& S,bool Advance=true)
 {
  auto& A=S.Authored;const auto& B=S.Profile.Body[S.Sheathe];FQuat Reference=S.Pose[S.Spine[4]].GetRotation();FVector Down=-FVector::ForwardVector;
- const double PreviousAngle=A.PoleAngle;
- if(Advance){const double Target=PoleTarget(S,S.Sliding?(S.Sheathe?S.Status.SlideProgress:1-S.Status.SlideProgress):(S.Sheathe?0:1));
-  const double Speed=S.Sliding?B.PoleSpeed:A.PoleReachSpeed;A.PoleAngle+=FMath::Clamp(WrappedDegrees(Target-A.PoleAngle),-Speed/60,Speed/60);}
- const double Budget=Advance?FMath::Max(0.,B.PoleSpeed/60-FMath::Abs(A.PoleAngle-PreviousAngle)):DBL_MAX;
  if(S.Sliding&&B.SwordPole){
   const FQuat Sword=(S.Pose[S.Arm[2]].GetRotation()*S.Geometry.Grip.GetRotation()).GetNormalized();
-  if(!A.UseSword){PoleFrame(S,Reference,Down,Budget);const FQuat Change=(Sword.Inverse()*Reference).GetNormalized();A.PoleDirection=Change.RotateVector(A.PoleDirection);A.PoleZero=Change.RotateVector(A.PoleZero);A.SwordDown=A.PoleZero;A.UseSword=true;}
+  if(!A.UseSword){PoleFrame(S,Reference,Down);const FQuat Change=(Sword.Inverse()*Reference).GetNormalized();A.PoleDirection=Change.RotateVector(A.PoleDirection);A.PoleZero=Change.RotateVector(A.PoleZero);A.SwordDown=A.PoleZero;A.UseSword=true;}
   Reference=Sword;Down=A.SwordDown;
  }
- PoleFrame(S,Reference,Down,Budget);
+ PoleFrame(S,Reference,Down);
+ if(Advance){const double Target=PoleTarget(S,S.Sliding?S.Status.Insertion:(S.Sheathe?0:1));
+  const double Speed=S.Sliding?B.PoleSpeed:A.PoleReachSpeed;A.PoleAngle+=FMath::Clamp(WrappedDegrees(Target-A.PoleAngle),-Speed/60,Speed/60);}
  const int U=S.Arm[0],E=S.Arm[1],H=S.Arm[2];const FVector Origin=S.Pose[U].GetLocation(),Direction=(S.Pose[H].GetLocation()-Origin).GetSafeNormal();
  const FVector Existing=FVector::VectorPlaneProject(S.Pose[E].GetLocation()-Origin,Direction).GetSafeNormal();
  const FVector Wanted=Reference.RotateVector(FQuat(A.PoleDirection,FMath::DegreesToRadians(A.PoleAngle)).RotateVector(A.PoleZero));

@@ -361,10 +361,11 @@ bool UProphecyJoltBodyComponent::PublishCompletedBody(FString& OutError)
     if (ComponentWorld.ContainsNaN() || !ComponentWorld.GetRotation().IsNormalized())
         return Fail(OutError, TEXT("The completed standalone component transform is invalid."));
     UPrimitiveComponent* Source = State->Snapshot.SourceComponent.Get();
-    // Attached kinematic receivers are targets authored by their parent. Publishing
-    // the previous native pose here would rewrite the relative attachment every step
-    // and cancel the parent's motion (the holstered sword stayed behind in world space).
-    if(State->bSimpleKinematic && Source->GetAttachParent())ComponentWorld=Source->GetComponentTransform();
+    // A constrained D/S sword presents the completed native body. Passive carried
+    // equipment is instead attachment-owned; its transform updates synchronize
+    // the kinematic body, without feeding last step's pose back into the mount.
+    if(State->bSimpleKinematic && Source->GetAttachParent()
+        && !ProphecySwordHolster::IsPhysicsDriven(Source,State->Handle))ComponentWorld=Source->GetComponentTransform();
     else Source->SetWorldTransform(ComponentWorld, false, nullptr, ETeleportType::TeleportPhysics);
     // SetWorldTransform may dispatch transform/overlap callbacks which remove or replace this body.
     // Never keep a State reference or dereference the old native actor across that boundary.
@@ -661,7 +662,8 @@ void UProphecyJoltBodyComponent::SynchronizeSourceTransform()
         Snapshot.Body.BodyOriginToWorld = Snapshot.BodyOriginToComponent * RigidComponent;
         return;
     }
-    if (!State || State->bAttachedCollider || State->bSimpleKinematic) return;
+    if (!State || State->bAttachedCollider) return;
+    if(State->bSimpleKinematic&&!ProphecySwordHolster::FollowsAttachment(Source))return;
     FTransform RigidComponent = Source->GetComponentTransform(); RigidComponent.RemoveScaling();
     const auto Result = State->WorldOwner->SetBodyPose(State->Handle, State->Snapshot.BodyOriginToComponent * RigidComponent);
     if (!Result.IsSuccess()) LastError = Result.Message;

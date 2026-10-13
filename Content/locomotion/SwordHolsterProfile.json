@@ -1,7 +1,11 @@
 {
   "schema": "sword_holster_runtime_v2",
-  "sourceHash": "e637e78c010fbc7c2f6fc1805704cb0d01a7d2c8b41e36bab874fed9470bbffe",
+  "sourceHash": "39b607e3daa1e4d41931789b8a0c8d7235b9d161c0099857fac0b2bfaf7594d7",
   "parameters": {
+    "noCheat": true,
+    "leewayPhase": false,
+    "holsterRotationStabilization": 0.48,
+    "holsterReturnDuration": 0.25,
     "pelvisRotationCompensation": 0.96,
     "entryInertia": 1,
     "entryInertiaDuration": 0.5,
@@ -42,15 +46,19 @@
           0,
           0
         ],
-        "pole": 69.4
+        "pole": 34.1
       }
     },
     "sheatheRotationTolerance": 15,
+    "sheatheTipTolerance": 2,
     "slideRotationCorrection": 0.45,
-    "maxReachSpeed": 260,
-    "maxReachRotationSpeed": 900,
-    "slidingSpeed": 250,
-    "shrinkPercent": 15,
+    "maxReachSpeed": 230,
+    "maxReachRotationSpeed": 600,
+    "maxAttachedSpeed": 150,
+    "maxAttachedRotationSpeed": 200,
+    "slidingSpeed": 170,
+    "shrinkPercent": 25,
+    "shrinkDuration": 0.25,
     "unshrinkDuration": 0.5,
     "spineClavicleAngleLimit": 45,
     "maxSpineClavicleAngularSpeed": 1000,
@@ -168,8 +176,8 @@
     ],
     "sheatheSlideCurve": [
       [
-        0.13712572739078147,
-        0.04043271696188657
+        0.14047903344255855,
+        0.13958743261164513
       ],
       [
         0.650179602563385,
@@ -276,7 +284,7 @@
       "swordRelativeSlidePole": true,
       "maxReachSpeed": 230,
       "maxReachRotationSpeed": 600,
-      "slidingSpeed": 150
+      "slidingSpeed": 170
     },
     "bodyReference": {
       "spine": [

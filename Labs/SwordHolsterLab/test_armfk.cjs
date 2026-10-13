@@ -10,7 +10,7 @@ for(const motion of ['idle','walk'])for(const sheathe of [true,false]){
  assert(p.endpointSolves<(m.completionTick-m.o.startTick)/2,'only guide poses solved');
  let maxSlideError=0,maxSpeed=0,maxAngular=0;
  for(let tick=m.o.startTick;tick<=p.endTick;tick++){
-  const f=m.frames[tick],actual=FK.capture(f.pose,m.arm,m.parents),expected=FK.blend(p.source,p.reachDestination,FK.ease((tick-p.startTick)/(p.reachEndTick-p.startTick)));
+  const f=m.frames[tick],actual=FK.capture(f.pose,m.arm,m.parents),expected=FK.blend(p.source,p.reachDestination,Math.max(0,Math.min(1,(tick-p.startTick)/(p.reachEndTick-p.startTick))));
   for(let j=0;j<3;j++)assert(H.angle(actual[j].q,expected[j].q)<1e-5,'parent-local quaternion interpolation');
   if(tick>m.o.startTick){
    const previous=m.frames[tick-1],parent=m.parents[m.arm[0]];

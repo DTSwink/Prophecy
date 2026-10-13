@@ -11,6 +11,8 @@ public class ProphecyEditor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new[]
 		{
 			"AnimationCore",
+			"AnimGraph",
+			"AnimGraphRuntime",
 			"AnimationBlueprintLibrary",
 			"ControlRig",
 			"ControlRigDeveloper",

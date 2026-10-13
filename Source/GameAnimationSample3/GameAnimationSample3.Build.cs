@@ -44,7 +44,7 @@ public class GameAnimationSample3 : ModuleRules
 			// both explicit profiles. Shared PCHs do not key on MinCpuArchX64.
 		}
 
-		PrivateDependencyModuleNames.AddRange(new[] { "ProphecyJolt", "RHI", "PCG" });
+		PrivateDependencyModuleNames.AddRange(new[] { "ProphecyJolt", "RHI", "PCG", "AnimGraphRuntime" });
 		PrivateIncludePaths.Add(System.IO.Path.GetFullPath(System.IO.Path.Combine(
 			ModuleDirectory, "..", "..", "StandaloneSim", "sim_core", "include")));
 

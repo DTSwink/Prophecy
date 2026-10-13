@@ -1,4 +1,5 @@
 #include "ProphecyAgentResetPhysics.h"
+#include "ProphecyReachRuntime.h"
 #include "ProphecyPhysicalToleranceDelay.h"
 #include "ProphecyRootVelocityDelay.h"
 #include "ProphecySwordAttackCollision.h"
@@ -154,6 +155,7 @@ bool RestoreEquipment(AProphecyAgent* Agent,FString& Error)
 }
 void CancelBlends(AProphecyAgent* Agent)
 {
+    ProphecyReach::Remove(Agent);
     ProphecyPhysicalToleranceDelay::Cancel(Agent);
     ProphecyRootVelocityDelay::Cancel(Agent);
     ProphecySwordAttackCollision::CancelCooldown(Agent);

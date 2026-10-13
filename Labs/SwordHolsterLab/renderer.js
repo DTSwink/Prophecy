@@ -90,7 +90,9 @@ class WebGLMotionRenderer {
       uniform vec3 uFogColor;
       uniform float uFogNear;
       uniform float uFogFar;
+      uniform bool uUnlit;
       void main() {
+        if (uUnlit) { gl_FragColor = vec4(vColor, 1.0); return; }
         vec3 normal = normalize(vNormal);
         vec3 lightDirection = normalize(uLightDirection);
         vec3 viewDirection = normalize(uCamera - vWorld);
@@ -125,6 +127,7 @@ class WebGLMotionRenderer {
       fogColor: gl.getUniformLocation(this.program, "uFogColor"),
       fogNear: gl.getUniformLocation(this.program, "uFogNear"),
       fogFar: gl.getUniformLocation(this.program, "uFogFar"),
+      unlit: gl.getUniformLocation(this.program, "uUnlit"),
     };
     this.meshBuffer = gl.createBuffer();
     this.lineBuffer = gl.createBuffer();
@@ -464,6 +467,16 @@ class WebGLMotionRenderer {
       this.addSword(mesh, data);
       return;
     }
+    // Separate hip volume: follow the pelvis bone, not the spine above it.
+    const pelvis = nameToIndex.get("pelvis");
+    if (pelvis !== undefined) {
+      const up = axisAt(data, pelvis, 0);
+      this.box(mesh, {
+        center: add(posAt(data, pelvis), mul(up, -.070)),
+        forward: axisAt(data, pelvis, 1), side: axisAt(data, pelvis, 2), up,
+        dims: [.170, .280, .130],
+      }, bodyColor.map(v => v * .82));
+    }
     const defs = [
       ["pelvis", "spine_01", .125], ["spine_01", "spine_02", .135], ["spine_02", "spine_03", .145],
       ["spine_03", "spine_04", .145], ["spine_04", "spine_05", .135], ["spine_05", "neck_01", .085],
@@ -611,6 +624,7 @@ class WebGLMotionRenderer {
     const view = this.lookAt(eye, target, [0, 1, 0]);
     const projection = this.perspective(45 * Math.PI / 180, width / height, .02, 60);
     const viewProjection = this.matrixMultiply(projection, view);
+    this.viewProjection = viewProjection;
 
     gl.useProgram(this.program);
     gl.uniformMatrix4fv(this.locations.viewProjection, false, viewProjection);
@@ -659,13 +673,6 @@ class WebGLMotionRenderer {
         for (let axis = 0; axis < 3; axis++) this.controllerAxis(mesh, origin, axisAt(data, joint, axis), colors[axis], length);
       }
     }
-    if (data.target) {
-      const color = data.floorTarget ? [.97, .70, .30] : [.30, .92, .73];
-      this.capsule(mesh, data.target, data.target, .045, color, 16, 4);
-      this.line(lines, data.target, [data.target[0], .005, data.target[2]], color);
-      this.groundRing(mesh, [data.target[0], .008, data.target[2]], .075, .083, color);
-    }
-
     this.bindAndDraw(this.meshBuffer, mesh, gl.TRIANGLES);
     this.bindAndDraw(this.lineBuffer, lines, gl.LINES);
   }
