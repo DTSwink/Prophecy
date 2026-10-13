@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 5931,
-  "bytes": 514257557,
+  "file_count": 5932,
+  "bytes": 514385245,
   "files": [
     {
       "path": ".gitattributes",
@@ -1078,6 +1078,12 @@
       "git_blob": "09693557a12cb91ed02131120c577a3a1ae33ab9",
       "bytes": 120865,
       "sha256": "24bcd6fdbee8322d8b859e38475adb014d3fc24b9e002f984345446e1d55d533"
+    },
+    {
+      "path": "Content/Characters/UEFN_Mannequin/Rigs/PA_UEFN_Mannequin.uasset",
+      "git_blob": "d96ebab266f06f7192fcb0821b8d7301f56cf603",
+      "bytes": 127688,
+      "sha256": "1322cd2161e8ce3e9035ee8ab5cc235d785105994aecc563a5867461ceb1216a"
     },
     {
       "path": "Content/Fab/Megascans/Plants/BP_GlobalFoliageActor.uasset",
