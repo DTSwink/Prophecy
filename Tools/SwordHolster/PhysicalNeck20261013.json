@@ -1,0 +1,750 @@
+{
+  "checkpoint": "3c8d11b6c7778dd7815076fa31130e7fa16899d6",
+  "phat": "/Game/Characters/UEFN_Mannequin/Rigs/PA_UEFN_Mannequin",
+  "saved": {
+    "phat_saved": true,
+    "migration_idempotent": {
+      "bodies_before": 23,
+      "joints_before": 22,
+      "already_has_neck_02": true,
+      "neck_02_reference_local": "4.562678,0.000000,-0.000000|-0.000000,-5.781335,-0.000000|1.000000,1.000000,1.000000",
+      "head_reference_local": "5.391383,-0.000000,-0.000000|0.000000,-13.202170,-0.000000|1.000000,1.000000,1.000000",
+      "neck_01_mass_kg": 0.5974839329719543,
+      "bodies_after": 23,
+      "joints_after": 22,
+      "success": true,
+      "applied": true,
+      "error": ""
+    },
+    "blueprint_graph_exact": true,
+    "checkpoint_assets_unchanged": {
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": true,
+      "Content/_mygame/sword/A_Sword.uasset": true
+    },
+    "phat_sha256": "5c3f98c01afb385ba5a64d7b8910f0850dbbfaa3311941891c4bca83bbc9bb9d",
+    "dirty_content": [],
+    "dirty_maps": [
+      "/Game/testNN"
+    ],
+    "play": false,
+    "world": "/Game/testNN.testNN",
+    "backup_comparison_note": "The local BP backup predates the explicitly saved pre-change checkpoint. Compare the current BP to the pushed checkpoint; both saved bytes and full graph are unchanged."
+  },
+  "bodies": 23,
+  "joints": 22,
+  "original_neck_mass_kg": 1.1949678659439087,
+  "each_neck_mass_kg": 0.5974839329719543,
+  "head_clavicle_collision_scope": "D/S only; completion and interruption release independent scope",
+  "lab_changed": false,
+  "blueprint_changed": false,
+  "live_cases": [
+    {
+      "case": "kinematic-idle-60-0.000",
+      "reason": "cycles completed",
+      "rows": 410,
+      "missing_ticks": 0,
+      "actors": {
+        "BP_ProphecyManualPoseAgent_C_0": {
+          "nonfinite": 0,
+          "max_head_error_cm": 7.105427357601002e-14,
+          "max_neck02_error_cm": 7.105427357601002e-14,
+          "max_grip_cm": 0,
+          "max_render_cm": 0,
+          "max_head_step_deg": 2.8332816719987854
+        },
+        "BP_ProphecyManualPoseAgent_C_2": {
+          "nonfinite": 0,
+          "max_head_error_cm": 5.684341886080802e-14,
+          "max_neck02_error_cm": 5.684341886080802e-14,
+          "max_grip_cm": 0,
+          "max_render_cm": 0,
+          "max_head_step_deg": 2.833314531606569
+        },
+        "BP_ProphecyManualPoseAgent_C_3": {
+          "nonfinite": 0,
+          "max_head_error_cm": 8.526512829121202e-14,
+          "max_neck02_error_cm": 8.526512829121202e-14,
+          "max_grip_cm": 0,
+          "max_render_cm": 0,
+          "max_head_step_deg": 2.833274042183154
+        }
+      }
+    },
+    {
+      "case": "kinematic-run-60-0.000",
+      "reason": "cycles completed",
+      "rows": 412,
+      "missing_ticks": 0,
+      "actors": {
+        "BP_ProphecyManualPoseAgent_C_0": {
+          "nonfinite": 0,
+          "max_head_error_cm": 6.355287432313019e-14,
+          "max_neck02_error_cm": 6.355287432313019e-14,
+          "max_grip_cm": 0,
+          "max_render_cm": 0,
+          "max_head_step_deg": 2.8332479122702856
+        },
+        "BP_ProphecyManualPoseAgent_C_2": {
+          "nonfinite": 0,
+          "max_head_error_cm": 5.684341886080802e-14,
+          "max_neck02_error_cm": 5.684341886080802e-14,
+          "max_grip_cm": 0,
+          "max_render_cm": 0,
+          "max_head_step_deg": 2.8333309710077654
+        },
+        "BP_ProphecyManualPoseAgent_C_3": {
+          "nonfinite": 0,
+          "max_head_error_cm": 8.987733679556355e-14,
+          "max_neck02_error_cm": 8.987733679556355e-14,
+          "max_grip_cm": 0,
+          "max_render_cm": 0,
+          "max_head_step_deg": 2.8333085569796292
+        }
+      }
+    },
+    {
+      "case": "kinematic-walk-60-0.000",
+      "reason": "cycles completed",
+      "rows": 400,
+      "missing_ticks": 0,
+      "actors": {
+        "BP_ProphecyManualPoseAgent_C_0": {
+          "nonfinite": 0,
+          "max_head_error_cm": 7.105427357601002e-14,
+          "max_neck02_error_cm": 7.105427357601002e-14,
+          "max_grip_cm": 0,
+          "max_render_cm": 0,
+          "max_head_step_deg": 2.8332808015770476
+        },
+        "BP_ProphecyManualPoseAgent_C_2": {
+          "nonfinite": 0,
+          "max_head_error_cm": 7.815970093361102e-14,
+          "max_neck02_error_cm": 7.105427357601002e-14,
+          "max_grip_cm": 0,
+          "max_render_cm": 0,
+          "max_head_step_deg": 2.8332644248835877
+        },
+        "BP_ProphecyManualPoseAgent_C_3": {
+          "nonfinite": 0,
+          "max_head_error_cm": 1.0247593068766006e-13,
+          "max_neck02_error_cm": 1.0247593068766006e-13,
+          "max_grip_cm": 0,
+          "max_render_cm": 0,
+          "max_head_step_deg": 2.8332876002321137
+        }
+      }
+    },
+    {
+      "case": "sim-idle-60-0.000",
+      "reason": "cycles completed",
+      "rows": 411,
+      "missing_ticks": 0,
+      "actors": {
+        "BP_ProphecyManualPoseAgent_C_0": {
+          "nonfinite": 0,
+          "max_head_error_cm": 0.4211149547860957,
+          "max_neck02_error_cm": 1.0447967563588796,
+          "max_grip_cm": 0.623260461,
+          "max_render_cm": 3.464e-06,
+          "max_head_step_deg": 2.8387122732150933
+        },
+        "BP_ProphecyManualPoseAgent_C_2": {
+          "nonfinite": 0,
+          "max_head_error_cm": 0.4509001874088267,
+          "max_neck02_error_cm": 1.0619632264578596,
+          "max_grip_cm": 0.699421385,
+          "max_render_cm": 3.628e-06,
+          "max_head_step_deg": 2.838253388157357
+        },
+        "BP_ProphecyManualPoseAgent_C_3": {
+          "nonfinite": 0,
+          "max_head_error_cm": 0.46280077319557417,
+          "max_neck02_error_cm": 1.0849536655696679,
+          "max_grip_cm": 0.674546386,
+          "max_render_cm": 3.181e-06,
+          "max_head_step_deg": 2.8402451236262114
+        }
+      }
+    },
+    {
+      "case": "sim-run-60-0.000",
+      "reason": "cycles completed",
+      "rows": 410,
+      "missing_ticks": 0,
+      "actors": {
+        "BP_ProphecyManualPoseAgent_C_0": {
+          "nonfinite": 0,
+          "max_head_error_cm": 1.6389471184003428,
+          "max_neck02_error_cm": 1.6023597275702048,
+          "max_grip_cm": 2.014161045,
+          "max_render_cm": 2.811e-06,
+          "max_head_step_deg": 2.9083601472944713
+        },
+        "BP_ProphecyManualPoseAgent_C_2": {
+          "nonfinite": 0,
+          "max_head_error_cm": 1.6260747575823453,
+          "max_neck02_error_cm": 1.6894986607026807,
+          "max_grip_cm": 0.932666432,
+          "max_render_cm": 3.335e-06,
+          "max_head_step_deg": 2.8928695462746807
+        },
+        "BP_ProphecyManualPoseAgent_C_3": {
+          "nonfinite": 0,
+          "max_head_error_cm": 1.6377685490351004,
+          "max_neck02_error_cm": 1.6791642665373594,
+          "max_grip_cm": 2.157285386,
+          "max_render_cm": 3.422e-06,
+          "max_head_step_deg": 2.89064876769911
+        }
+      }
+    },
+    {
+      "case": "sim-walk-60-0.000",
+      "reason": "cycles completed",
+      "rows": 400,
+      "missing_ticks": 0,
+      "actors": {
+        "BP_ProphecyManualPoseAgent_C_0": {
+          "nonfinite": 0,
+          "max_head_error_cm": 0.7446610369366359,
+          "max_neck02_error_cm": 0.9394983904412055,
+          "max_grip_cm": 0.917292254,
+          "max_render_cm": 3.761e-06,
+          "max_head_step_deg": 2.8675892280551776
+        },
+        "BP_ProphecyManualPoseAgent_C_2": {
+          "nonfinite": 0,
+          "max_head_error_cm": 0.7219948378238327,
+          "max_neck02_error_cm": 0.8686256669428194,
+          "max_grip_cm": 1.462753571,
+          "max_render_cm": 3.903e-06,
+          "max_head_step_deg": 2.84957326541592
+        },
+        "BP_ProphecyManualPoseAgent_C_3": {
+          "nonfinite": 0,
+          "max_head_error_cm": 0.7462834908227794,
+          "max_neck02_error_cm": 1.013746828249997,
+          "max_grip_cm": 0.944103014,
+          "max_render_cm": 3.281e-06,
+          "max_head_step_deg": 2.856000734689593
+        }
+      }
+    }
+  ],
+  "lifecycle": [
+    {
+      "case": "complete-1-sheathe-custom",
+      "result": "passed",
+      "checks": 180,
+      "contact_checks": 180,
+      "events": [
+        [
+          124,
+          "S complete, limits restored"
+        ],
+        [
+          204,
+          "D complete, limits restored"
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          49,
+          2,
+          33
+        ],
+        [
+          73,
+          4,
+          33
+        ],
+        [
+          124,
+          3,
+          31
+        ],
+        [
+          125,
+          1,
+          33
+        ],
+        [
+          142,
+          2,
+          33
+        ],
+        [
+          159,
+          4,
+          33
+        ],
+        [
+          204,
+          -1,
+          10
+        ]
+      ]
+    },
+    {
+      "case": "complete-1-sheathe",
+      "result": "passed",
+      "checks": 180,
+      "contact_checks": 180,
+      "events": [
+        [
+          124,
+          "S complete, limits restored"
+        ],
+        [
+          204,
+          "D complete, limits restored"
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          49,
+          2,
+          33
+        ],
+        [
+          73,
+          4,
+          33
+        ],
+        [
+          124,
+          3,
+          31
+        ],
+        [
+          125,
+          1,
+          33
+        ],
+        [
+          142,
+          2,
+          33
+        ],
+        [
+          159,
+          4,
+          33
+        ],
+        [
+          204,
+          -1,
+          10
+        ]
+      ]
+    },
+    {
+      "case": "drop-2-sheathe",
+      "result": "passed",
+      "checks": 25,
+      "contact_checks": 30,
+      "events": [
+        [
+          49,
+          "drop",
+          2
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          49,
+          2,
+          33
+        ],
+        [
+          50,
+          -1,
+          8
+        ]
+      ]
+    },
+    {
+      "case": "hide-1-sheathe",
+      "result": "passed",
+      "checks": 1,
+      "contact_checks": 6,
+      "events": [
+        [
+          25,
+          "hide",
+          1
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          26,
+          -1,
+          8
+        ]
+      ]
+    },
+    {
+      "case": "hide-2-draw-custom",
+      "result": "passed",
+      "checks": 118,
+      "contact_checks": 123,
+      "events": [
+        [
+          124,
+          "S complete, limits restored"
+        ],
+        [
+          142,
+          "hide",
+          2
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          49,
+          2,
+          33
+        ],
+        [
+          73,
+          4,
+          33
+        ],
+        [
+          124,
+          3,
+          31
+        ],
+        [
+          125,
+          1,
+          33
+        ],
+        [
+          142,
+          2,
+          33
+        ],
+        [
+          143,
+          -1,
+          8
+        ]
+      ]
+    },
+    {
+      "case": "hide-2-sheathe",
+      "result": "passed",
+      "checks": 25,
+      "contact_checks": 30,
+      "events": [
+        [
+          49,
+          "hide",
+          2
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          49,
+          2,
+          33
+        ],
+        [
+          50,
+          -1,
+          8
+        ]
+      ]
+    },
+    {
+      "case": "hide-4-sheathe",
+      "result": "passed",
+      "checks": 49,
+      "contact_checks": 54,
+      "events": [
+        [
+          73,
+          "hide",
+          4
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          49,
+          2,
+          33
+        ],
+        [
+          73,
+          4,
+          33
+        ],
+        [
+          74,
+          -1,
+          8
+        ]
+      ]
+    },
+    {
+      "case": "mode-4-sheathe",
+      "result": "passed",
+      "checks": 49,
+      "contact_checks": 54,
+      "events": [
+        [
+          73,
+          "mode",
+          4
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          49,
+          2,
+          33
+        ],
+        [
+          73,
+          4,
+          33
+        ],
+        [
+          74,
+          -1,
+          8
+        ],
+        [
+          76,
+          1,
+          8
+        ]
+      ]
+    },
+    {
+      "case": "reset-2-sheathe",
+      "result": "passed",
+      "checks": 25,
+      "contact_checks": 30,
+      "events": [
+        [
+          49,
+          "reset",
+          2
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          49,
+          2,
+          33
+        ],
+        [
+          50,
+          -1,
+          8
+        ],
+        [
+          51,
+          -1,
+          14
+        ]
+      ]
+    },
+    {
+      "case": "sword_destroy-1-sheathe",
+      "result": "passed",
+      "checks": 1,
+      "contact_checks": 6,
+      "events": [
+        [
+          25,
+          "sword_destroy",
+          1
+        ]
+      ],
+      "pairs": [
+        [
+          25,
+          1,
+          33
+        ],
+        [
+          26,
+          -1,
+          8
+        ]
+      ]
+    }
+  ],
+  "repeat_pause_mode": [
+    {
+      "name": "repeat-sim",
+      "reason": "passed"
+    },
+    {
+      "name": "repeat-kinematic",
+      "reason": "passed"
+    }
+  ],
+  "automation": {
+    "passed": 57,
+    "total": 58,
+    "failures": [
+      {
+        "result": "Fail",
+        "name": "Prophecy.Jolt.Character.AuthoredTrajectoryAcrossSubstepChanges"
+      }
+    ]
+  },
+  "known_failure_control": {
+    "test": "AuthoredTrajectoryAcrossSubstepChanges",
+    "step": 32,
+    "limit_cm_s": 0.5,
+    "original_rig_cm_s": 0.520108903,
+    "new_rig_cm_s": 0.607406365,
+    "no_tolerance_relaxation": true
+  },
+  "live_head_result": {
+    "BP_ProphecyManualPoseAgent_C_0": {
+      "physical_head_path_283_293_cm": 0.6688580211379536,
+      "target_head_path_283_293_cm": 0.701550559613743,
+      "at_289": {
+        "neck_01": {
+          "position_error_cm": 0.35357629674830166,
+          "rotation_error_deg": 2.3743080666644314
+        },
+        "neck_02": {
+          "position_error_cm": 0.17266885709499874,
+          "rotation_error_deg": 1.5097420555432215
+        },
+        "head": {
+          "position_error_cm": 0.05510581277129931,
+          "rotation_error_deg": 0.060148927651811866
+        }
+      },
+      "max_native_visual_gap_cm": 6.07087979554246e-14,
+      "joint_gaps_at_289": {
+        "physical": {
+          "neck01_neck02": 0.014021287170121289,
+          "neck02_head": 0.008759630160538875
+        },
+        "target": {
+          "neck01_neck02": 1.5263884431191005e-06,
+          "neck02_head": 5.06470865502742e-07
+        }
+      },
+      "self_contact_pairs": {}
+    },
+    "BP_ProphecyManualPoseAgent_C_2": {
+      "physical_head_path_283_293_cm": 0.7605304245839211,
+      "target_head_path_283_293_cm": 0.795148496599705,
+      "at_289": {
+        "neck_01": {
+          "position_error_cm": 0.35377752327521705,
+          "rotation_error_deg": 2.400846792399614
+        },
+        "neck_02": {
+          "position_error_cm": 0.17425904760306718,
+          "rotation_error_deg": 1.4662500466203328
+        },
+        "head": {
+          "position_error_cm": 0.07704029591156837,
+          "rotation_error_deg": 0.09121408365576301
+        }
+      },
+      "max_native_visual_gap_cm": 6.355287432313019e-14,
+      "joint_gaps_at_289": {
+        "physical": {
+          "neck01_neck02": 0.009647738730733347,
+          "neck02_head": 0.004312892732912434
+        },
+        "target": {
+          "neck01_neck02": 5.110182762552849e-06,
+          "neck02_head": 2.5031752228884225e-06
+        }
+      },
+      "self_contact_pairs": {}
+    },
+    "BP_ProphecyManualPoseAgent_C_3": {
+      "physical_head_path_283_293_cm": 0.8119154304945609,
+      "target_head_path_283_293_cm": 0.8603374808389134,
+      "at_289": {
+        "neck_01": {
+          "position_error_cm": 0.41170130360171053,
+          "rotation_error_deg": 2.700799266107248
+        },
+        "neck_02": {
+          "position_error_cm": 0.2069324977205228,
+          "rotation_error_deg": 1.7195615999747522
+        },
+        "head": {
+          "position_error_cm": 0.08245546493072654,
+          "rotation_error_deg": 0.09766365455001244
+        }
+      },
+      "max_native_visual_gap_cm": 8.526512829121202e-14,
+      "joint_gaps_at_289": {
+        "physical": {
+          "neck01_neck02": 0.012576251318498866,
+          "neck02_head": 0.007327392679336505
+        },
+        "target": {
+          "neck01_neck02": 1.6207383112816867e-06,
+          "neck02_head": 1.9003801425114002e-06
+        }
+      },
+      "self_contact_pairs": {}
+    }
+  },
+  "build": "Live Coding compile/reload passed; normal DLLs require build before cold launch",
+  "performance": "No fresh full-runtime/crowd measurement. One body and joint added; two event-only suppression pairs per active D/S agent. Benchmark count/replay code updated and compiled.",
+  "final_changes_pushed": false,
+  "evidence": "Saved/Diagnostics/NeckRig20261013"
+}

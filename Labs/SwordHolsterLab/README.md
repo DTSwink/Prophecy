@@ -1,5 +1,28 @@
 # D/S Sword Holster Lab
 
+**October13: drawing IK trial removed; FK wrist reversal corrected.** D/S use
+FK reach again; the trial checkbox and implementation are removed. Old saved
+`drawReachIK` fields are discarded. Unreal's trial had already been reverted;
+its source still matches the pre-trial backup. No Unreal launch or build here.
+
+Wrist reach now selects its rotation arc relative to the imported neutral wrist
+joint orientation. Previously selecting the shortest rotation independently
+between start and target reversed the wrist when their separation crossed180°.
+The chosen arc remains continuous through live target refits. Duration planning,
+entry-inertia sampling and playback use the same arc in both planners. Shoulder
+and elbow keep their existing interpolation; target poses and tuning are unchanged.
+This chooses an interpolation direction; it adds no anatomical joint limits.
+
+Current run/S fixture: at spine clear X−50°, reach hand rotation falls265.64° to
+140.57°, with arrival80→74; the good−40° trajectory remains unchanged (139.91°).
+Regression `test_fk_wrist.cjs` checks21 neighboring settings,48 quaternion-sign /
+rotated-reference cases, long-arc timing and12 idle/walk/run ×D/S ×planner cases.
+Causal input/time-budget and isolated UI/worker/persistence/sequence tests pass.
+The earlier full sequence suite's fractional-gait precision issue remains outside
+this change. Evidence: `Saved/Diagnostics/FKWrist20261013/`.
+
+Motion experiments start here; port only after an explicit user request.
+
 The solid-body view includes a separate darker pelvis box rigidly following the pelvis bone, also in upper-body-only mode. The lowest spine block remains above it; its shape is not a pelvis orientation reference.
 
 Temporary viewport diagnostic **Distance to pelvis · temp** draws a yellow line from the selected holster rotation pivot to the displayed pelvis bone and labels its measured length in centimetres. It updates during playback/scrubbing and changes no motion. The HTML distance label is viewport-only; saved pose data includes endpoints/distance and image capture includes the line.

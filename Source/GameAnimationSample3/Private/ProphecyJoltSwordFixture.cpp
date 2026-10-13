@@ -37,6 +37,7 @@
 #include "HAL/IConsoleManager.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/ScopeExit.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "PhysicsEngine/BodyInstance.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
@@ -145,8 +146,8 @@ bool PrepareAgent(FWorldFixture& Fixture, AProphecyAgent*& Agent, FString& Error
     Physical->TickAnimation(0.0f, false);
     Physical->RefreshBoneTransforms();
     if (!Agent->SetSimulationMode(EProphecyAgentSimulationMode::Physical)
-        || Agent->GetPoseReferenceMesh() != Physical || Physical->Bodies.Num() != 22 || Physical->Constraints.Num() != 21)
-    { Error = TEXT("Manual PhysicalMesh did not produce its actual 22 bodies and 21 PHAT joints."); return false; }
+        || Agent->GetPoseReferenceMesh() != Physical || Physical->Bodies.Num() != 23 || Physical->Constraints.Num() != 22)
+    { Error = TEXT("Manual PhysicalMesh did not produce its actual 23 bodies and 22 PHAT joints."); return false; }
     Agent->GetAgentCapsule()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     // Match the existing manual Jolt fixture's discrete character-body contract.
     Agent->SetMACDEnabled(false);
@@ -214,7 +215,7 @@ bool Run(FJsonObject& Report, FString& Error)
             && D.ConstraintCount == Constraints && D.GenericJointCount == Joints && D.SuppressedBodyPairCount == Pairs
             && Coordinator->GetRegisteredStepClientCount() == Clients, Name);
     };
-    if (!Counts(TEXT("character_only_22_bodies_21_joints"), 22, 21, 0, 0, 1)) return false;
+    if (!Counts(TEXT("character_only_23_bodies_22_joints"), 23, 22, 0, 0, 1)) return false;
     Report.SetStringField(TEXT("stage"), TEXT("equip_physical"));
     if (!Check(Agent->EquipSword(true), TEXT("actual_sword_physical_equip"))) return false;
     AActor* Sword = Agent->GetHeldSword();
@@ -227,11 +228,11 @@ bool Run(FJsonObject& Report, FString& Error)
     Body->bAutomaticStep = false;
     if (!Check(Blade->BodyInstance.bUseCCD && !Blade->BodyInstance.GetUseMACD(),
         TEXT("physical_equip_retains_CCD_and_disables_MACD"))) return false;
-    if (!Counts(TEXT("locomotion_excludes_only_gripping_hand"), 23, 22, 1, 1, 2)) return false;
+    if (!Counts(TEXT("locomotion_excludes_only_gripping_hand"), 24, 23, 1, 1, 2)) return false;
     Agent->NotifySwordAttackState(true);
-    if (!Counts(TEXT("attack_excludes_all_owner_bodies"), 23, 22, 1, 22, 2)) return false;
+    if (!Counts(TEXT("attack_excludes_all_owner_bodies"), 24, 23, 1, 23, 2)) return false;
     Agent->NotifySwordAttackState(false);
-    if (!Counts(TEXT("attack_end_restores_owner_collision"), 23, 22, 1, 1, 2)) return false;
+    if (!Counts(TEXT("attack_end_restores_owner_collision"), 24, 23, 1, 1, 2)) return false;
     Agent->NotifySwordAttackState(true);
     // Both kinds of impulse prove the live native mass/inertia, without stepping or changing the grip.
     const auto ImpulseResponse = [&](FVector& Linear, FVector& Angular)
@@ -280,17 +281,17 @@ bool Run(FJsonObject& Report, FString& Error)
     if (!Check(Agent->SetSwordSimulated(false) && Agent->GetHeldSword() == Sword && Body->IsJoltBody() && Body->IsAttachedCollider()
         && !Blade->IsAnySimulatingPhysics() && Blade->GetAttachParent() == Physical
         && Blade->GetCollisionEnabled() == ECollisionEnabled::QueryOnly, TEXT("attached_mode_welds_collider_without_grip_joint"))
-        || !Counts(TEXT("attached_mode_native_body_and_owner_pairs"), 23, 21, 0, 22, 2)) return false;
+        || !Counts(TEXT("attached_mode_native_body_and_owner_pairs"), 24, 22, 0, 23, 2)) return false;
     Agent->NotifySwordAttackState(false);
-    if (!Counts(TEXT("attached_locomotion_allows_body_contacts"),23,21,0,1,2) || !Step()) return false;
+    if (!Counts(TEXT("attached_locomotion_allows_body_contacts"),24, 22, 0, 1, 2) || !Step()) return false;
     if (!Check(Agent->GetSwordAttachedInertiaScale()==1.0f && Agent->SetSwordAttachedInertiaScale(5.0f)
         && Agent->GetSwordAttachedInertiaScale()==5.0f && !Agent->SetSwordAttachedInertiaScale(-1)
         && Agent->GetSwordAttachedInertiaScale()==5.0f,TEXT("attached_inertia_runtime_set_get_and_reject_invalid")) || !Step()) return false;
     Agent->NotifySwordAttackState(true);
-    if (!Counts(TEXT("attached_attack_disables_owner_contacts"),23,21,0,22,2) || !Step()) return false;
+    if (!Counts(TEXT("attached_attack_disables_owner_contacts"),24, 22, 0, 23, 2) || !Step()) return false;
     if (!Check(Agent->SetSwordSimulated(true) && Body->IsJoltBody() && !Body->IsEnablePending()
         && !Blade->GetAttachParent() && Agent->GetHeldSword() == Sword, TEXT("same_item_returns_to_native_physical_grip"))
-        || !Counts(TEXT("physical_roundtrip_restores_counts"), 23, 22, 1, 22, 2)) return false;
+        || !Counts(TEXT("physical_roundtrip_restores_counts"), 24, 23, 1, 23, 2)) return false;
     if (!Step()) return false;
     Report.SetStringField(TEXT("stage"), TEXT("drop"));
     if (!ImpulseResponse(ScaledLinear, ScaledAngular)
@@ -305,7 +306,7 @@ bool Run(FJsonObject& Report, FString& Error)
         && Handle.WorldLifetime == DroppedHandle.WorldLifetime && Handle.Slot == DroppedHandle.Slot && Handle.Generation == DroppedHandle.Generation
         && Body->GetBodyState(AfterDrop) && AfterDrop.CenterOfMassVelocityCmPerSecond.Equals(BeforeDrop.CenterOfMassVelocityCmPerSecond, 1.0e-6)
         && AfterDrop.AngularVelocityRadiansPerSecond.Equals(BeforeDrop.AngularVelocityRadiansPerSecond, 1.0e-6), TEXT("drop_preserves_native_body_identity_and_linear_angular_velocity"))
-        || !Counts(TEXT("drop_removes_only_grip_and_pair_exclusions"), 23, 21, 0, 0, 2)) return false;
+        || !Counts(TEXT("drop_removes_only_grip_and_pair_exclusions"), 24, 22, 0, 0, 2)) return false;
     if (!ImpulseResponse(ScaledLinear, ScaledAngular)
         || !Check(ScaledLinear.Equals(BaseLinear, 1.e-5) && ScaledAngular.Equals(ExpectedDroppedAngular, 1.e-5),
             TEXT("drop_restores_ordinary_mass_and_inertia"))
@@ -323,16 +324,16 @@ bool Run(FJsonObject& Report, FString& Error)
         && AttachedBody && AttachedBody->IsJoltBody() && AttachedBlade
         && AttachedBlade->BodyInstance.bUseCCD && !AttachedBlade->BodyInstance.GetUseMACD(),
         TEXT("attached_direct_drop_admits_CCD_body_without_MACD"))
-        || !Counts(TEXT("two_independent_drops_and_character"), 24, 21, 0, 0, 3)) return false;
+        || !Counts(TEXT("two_independent_drops_and_character"), 25, 22, 0, 0, 3)) return false;
     if (!Check(AttachedDrop->Destroy(), TEXT("attached_drop_cleanup"))
-        || !Counts(TEXT("first_drop_and_character_remain"), 23, 21, 0, 0, 2)) return false;
+        || !Counts(TEXT("first_drop_and_character_remain"), 24, 22, 0, 0, 2)) return false;
     Report.SetStringField(TEXT("stage"), TEXT("owner_cleanup"));
     if (!Check(Agent->EquipSword(true), TEXT("equip_second_held_item_for_owner_cleanup"))) return false;
     AActor* Held = Agent->GetHeldSword();
     auto* HeldBody = Held ? Held->FindComponentByClass<UProphecyJoltBodyComponent>() : nullptr;
     FProphecyJoltBodyHandle HeldHandle;
     if (!Check(Held && Held != Dropped && HeldBody && HeldBody->GetBodyHandle(HeldHandle), TEXT("second_held_native_body_exists"))) return false;
-    if (!Counts(TEXT("dropped_plus_held_and_character_counts"), 24, 22, 1, 22, 3)) return false;
+    if (!Counts(TEXT("dropped_plus_held_and_character_counts"), 25, 23, 1, 23, 3)) return false;
     if (!Check(Agent->Destroy(), TEXT("normal_owner_destruction"))) return false;
     if (!Check(!World->OwnsBody(HeldHandle) && (!IsValid(Held) || Held->IsActorBeingDestroyed())
         && IsValid(Dropped) && !Dropped->IsActorBeingDestroyed() && World->OwnsBody(Handle), TEXT("owner_cleanup_removes_held_item_but_keeps_dropped_body"))
@@ -713,10 +714,10 @@ bool FighterContactTrial(bool bContact, FJsonObject& Report, FFighterContactTria
     const auto Counts = [&]()
     {
         FProphecyJoltWorldDiagnostics D;
-        return World->GetDiagnostics(D).IsSuccess() && !D.bFaulted && D.BodyCount == 45 && D.ConstraintCount == 43
+        return World->GetDiagnostics(D).IsSuccess() && !D.bFaulted && D.BodyCount == 47 && D.ConstraintCount == 45
             && D.GenericJointCount == 1 && D.SuppressedBodyPairCount == 1 && Coordinator->GetRegisteredStepClientCount() == 3;
     };
-    if (!Counts()) { Error = TEXT("Expected two 22-body rigs, one held blade/grip and only 22 owner exclusions."); return false; }
+    if (!Counts()) { Error = TEXT("Expected two 23-body rigs, one held blade/grip and one gripping-hand exclusion."); return false; }
     Report.SetStringField(TEXT("stage"), TEXT("held_blade_head_depenetration"));
     TArray<TSharedPtr<FJsonValue>> Samples;
     for (int32 Frame = 1; Frame <= 12; ++Frame)
@@ -775,8 +776,8 @@ void FighterContactCommand(const TArray<FString>& Args)
     }
     if (bPassed)
     {
-        bool bSameInitial = Trials[0].InitialStates.Num() == 45 && Trials[1].InitialStates.Num() == 45;
-        for (int32 Index = 0; bSameInitial && Index < 45; ++Index)
+        bool bSameInitial = Trials[0].InitialStates.Num() == 47 && Trials[1].InitialStates.Num() == 47;
+        for (int32 Index = 0; bSameInitial && Index < 47; ++Index)
         {
             const auto& A = Trials[0].InitialStates[Index]; const auto& B = Trials[1].InitialStates[Index];
             bSameInitial = A.PositionCm.Equals(B.PositionCm, 1.0e-5) && A.Rotation.Equals(B.Rotation, 1.0e-6)
@@ -800,7 +801,7 @@ void FighterContactCommand(const TArray<FString>& Args)
             MaxVelocityDelta = FMath::Max(MaxVelocityDelta, FVector::Distance(Trials[0].HeadStates[Frame].CenterOfMassVelocityCmPerSecond,
                 Trials[1].HeadStates[Frame].CenterOfMassVelocityCmPerSecond));
         }
-        Report->SetBoolField(TEXT("all_45_initial_native_states_match"), bSameInitial);
+        Report->SetBoolField(TEXT("all_47_initial_native_states_match"), bSameInitial);
         Report->SetBoolField(TEXT("only_sword_victim_filter_differs"), bOnlyFilter);
         Report->SetNumberField(TEXT("max_contact_control_head_position_delta_cm"), MaxPositionDelta);
         Report->SetNumberField(TEXT("max_contact_control_head_velocity_delta_cm_s"), MaxVelocityDelta);
@@ -1623,8 +1624,8 @@ bool FProphecyJoltAngularLimitControlsTest::RunTest(const FString& Parameters)
         }
         FProphecyJoltWorldDiagnostics D;
         TestTrue(TEXT("Live angular changes preserve anatomical joints, fixed grip and exclusions"), World->GetDiagnostics(D).IsSuccess()
-            && D.BodyCount == 23 && D.ConstraintCount == 22 && D.GenericJointCount == 1
-            && D.SuppressedBodyPairCount == 1 && D.CompletedSteps == 0);
+            && D.BodyCount == 24 && D.ConstraintCount == 23 && D.GenericJointCount == 1
+            && D.SuppressedBodyPairCount == 2 && D.CompletedSteps == 0);
         FProphecyBodyMagnetizationSettings HeadDrive;
         TestTrue(TEXT("Angular edits retain existing physical-animation controls"), Agent->GetBodyMagnetizationSettings(TEXT("head"), HeadDrive)
             && HeadDrive.bMagnetizationEnabled && HeadDrive.LinearStrengthScale == 1.0f && HeadDrive.AngularStrengthScale == 0.0f);
@@ -1662,7 +1663,7 @@ bool FProphecyJoltAngularLimitControlsTest::RunTest(const FString& Parameters)
             && Blade->GetBodyHandle(CurrentSword) && CurrentSword.WorldLifetime == SwordHandle.WorldLifetime
             && CurrentSword.Slot == SwordHandle.Slot && CurrentSword.Generation == SwordHandle.Generation
             && World->GetDiagnostics(D).IsSuccess() && !D.bFaulted && D.GenericJointCount == 1
-            && D.SuppressedBodyPairCount == 1 && Character->GetRevision() == 9);
+            && D.SuppressedBodyPairCount == 2 && Character->GetRevision() == 9);
         Agent->HideSword();
         Agent->DisableJoltPhysicalAnimation();
         TestTrue(TEXT("Angular frontend fixture cleans up all native ownership"), World->GetDiagnostics(D).IsSuccess()
@@ -1739,7 +1740,7 @@ bool FProphecyJoltHighMagnetizationSafetyTest::RunTest(const FString& Parameters
         auto* Mesh = Agent->GetPoseReferenceMesh();
         if (!TestTrue(TEXT("Full simulated Jolt character owns the real PHAT rig"), Character && Mesh
             && Character->IsJoltPhysical() && !Character->IsEnablePending() && !Character->IsSteppingStopped()
-            && Captured.Bodies.Num() == 22 && Captured.Joints.Num() == 21
+            && Captured.Bodies.Num() == 23 && Captured.Joints.Num() == 22
             && Mesh->GetCollisionEnabled() == ECollisionEnabled::QueryOnly && !Mesh->IsAnySimulatingPhysics())) return false;
         Agent->bWorldMagnetizationEnabled = true;
         Agent->WorldMagnetizationLinearStrengthScale = Gain;
@@ -1784,6 +1785,10 @@ bool FProphecyJoltHighMagnetizationSafetyTest::RunTest(const FString& Parameters
         double MaximumBodyMovementCm = 0.0;
         double MaximumSpeedCmPerSecond = 0.0;
         FProphecyJoltWorldDiagnostics Diagnostics;
+        const FName NeckNames[] = {TEXT("neck_01"), TEXT("neck_02"), TEXT("head")};
+        FTransform NeckActual[3], NeckAuthored[3];
+        // Bind the same completed-step sampler used by NN feedback before stepping.
+        Character->SampleCompletedLowerFeedbackPose(NeckNames, FTransform::Identity, NeckActual, NeckAuthored);
         for (int32 Step = 0; Step < RequestedSteps; ++Step)
         {
             // Both previous/current targets deliberately agree: the test drives actual motion
@@ -1837,6 +1842,18 @@ bool FProphecyJoltHighMagnetizationSafetyTest::RunTest(const FString& Parameters
                 break;
             }
             ++SuccessfulSteps;
+            if (!TestTrue(TEXT("Both physical necks reach the completed NN feedback sampler"),
+                Character->SampleCompletedLowerFeedbackPose(NeckNames, FTransform::Identity, NeckActual, NeckAuthored))) return false;
+            for (int32 Neck = 0; Neck < 3; ++Neck)
+            {
+                FTransform Body; FVector Linear, Angular; bool Simulating = false;
+                const bool Read = Character->GetBodyState(NeckNames[Neck], Body, Linear, Angular, Simulating);
+                if (!TestTrue(*FString::Printf(TEXT("Feedback uses native %s at %s step %d: read=%d dynamic=%d actual=%s native=%s"),
+                    *NeckNames[Neck].ToString(), *Label, Step, Read, Simulating, *NeckActual[Neck].ToString(), *Body.ToString()),
+                    Read && Simulating && NeckActual[Neck].GetLocation().Equals(Body.GetLocation(), 1.e-5)
+                    && NeckActual[Neck].GetRotation().Equals(Body.GetRotation(), 1.e-5)
+                    && NeckActual[Neck].GetScale3D().Equals(Mesh->GetSocketTransform(NeckNames[Neck]).GetScale3D(), 1.e-5))) return false;
+            }
             if (!TestTrue(TEXT("Successful step uses the expected worker/substep configuration and publishes exactly once"),
                 !Diagnostics.bFaulted && !Character->IsSteppingStopped() && Diagnostics.Settings.WorkerThreads == 2
                 && Diagnostics.LastCollisionSteps == ExpectedCollisionSteps && Diagnostics.CompletedSteps == BeforeSteps + 1
@@ -1913,6 +1930,9 @@ bool FProphecyJoltAuthoredTrajectoryTest::RunTest(const FString& Parameters)
     Fixture.World = UWorld::CreateWorld(EWorldType::Game, false, NAME_None, nullptr, true, ERHIFeatureLevel::Num, &Values);
     if (!TestNotNull(TEXT("Authored trajectory character world"), Fixture.World)
         || !TestNotNull(TEXT("Engine"), GEngine)) return false;
+    // Native gravity and the gameplay value used by gravity cancellation must agree.
+    Fixture.World->GetWorldSettings()->bGlobalGravitySet = true;
+    Fixture.World->GetWorldSettings()->GlobalGravityZ = 0;
     GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(Fixture.World);
     Fixture.World->InitializeActorsForPlay(FURL());
     Fixture.World->GetWorldSettings()->NotifyBeginPlay();
@@ -1928,9 +1948,9 @@ bool FProphecyJoltAuthoredTrajectoryTest::RunTest(const FString& Parameters)
     if (!PrepareAgent(Fixture, Agent, Error, PoseId, FTransform(FVector(0, 0, 400)), &Captured))
     { AddError(Error); return false; }
     auto* Character = Agent->GetJoltCharacterComponent();
-    if (!TestTrue(TEXT("Trajectory exercises the actual 22-body, 21-joint dynamic character"),
+    if (!TestTrue(TEXT("Trajectory exercises the actual 23-body, 22-joint dynamic character"),
         Character && Character->IsJoltPhysical() && !Character->IsEnablePending()
-        && Captured.Bodies.Num() == 22 && Captured.Joints.Num() == 21)) return false;
+        && Captured.Bodies.Num() == 23 && Captured.Joints.Num() == 22)) return false;
     Agent->bWorldMagnetizationEnabled = true;
     Agent->WorldMagnetizationLinearStrengthScale = 1.0f;
     Agent->WorldMagnetizationAngularStrengthScale = 1.0f;
@@ -2019,7 +2039,7 @@ bool FProphecyJoltAuthoredTrajectoryTest::RunTest(const FString& Parameters)
         if (!TestTrue(TEXT("Read actual dynamic pelvis and native completed substep count"),
             Character->GetBodyState(TEXT("pelvis"), Pelvis, Velocity, AngularVelocity, bSimulating) && bSimulating
             && World->GetDiagnostics(Diagnostics).IsSuccess() && Diagnostics.LastCollisionSteps == ExpectedCollisionSteps
-            && Diagnostics.BodyCount == 22 && Diagnostics.ConstraintCount == 21)) return false;
+            && Diagnostics.BodyCount == 23 && Diagnostics.ConstraintCount == 22)) return false;
         if (!TestTrue(TEXT("Actual pelvis state remains finite in both matched trials"),
             !Pelvis.ContainsNaN() && !Velocity.ContainsNaN() && !AngularVelocity.ContainsNaN())) return false;
         if (!bMoving)
@@ -2055,10 +2075,10 @@ bool FProphecyJoltAuthoredTrajectoryTest::RunTest(const FString& Parameters)
         PreviousTrackingError = TrackingError;
     }
     if (!bMoving)
-        AddInfo(FString::Printf(TEXT("Matched stationary 22-body rig with free angular limits: max pelvis speed=%.9f cm/s"),
+        AddInfo(FString::Printf(TEXT("Matched stationary 23-body rig with free angular limits: max pelvis speed=%.9f cm/s"),
             MaximumStationarySpeedCmPerSecond));
     else
-        AddInfo(FString::Printf(TEXT("Real 22-body rig relative to stationary control: %d alternating steps, final %d with duplicate publications; max_endpoint_cm=%.9f max_velocity_error_cm_s=%.9f max_tracking_change_cm=%.9f"),
+        AddInfo(FString::Printf(TEXT("Real 23-body rig relative to stationary control: %d alternating steps, final %d with duplicate publications; max_endpoint_cm=%.9f max_velocity_error_cm_s=%.9f max_tracking_change_cm=%.9f"),
             RequestedSteps, RequestedSteps / 2, MaximumEndpointErrorCm, MaximumVelocityErrorCmPerSecond, MaximumTrackingChangeCm));
     Agent->DisableJoltPhysicalAnimation();
     TestTrue(TEXT("Trajectory cleanup retires every actual body and anatomical joint"), World->GetDiagnostics(Diagnostics).IsSuccess()
@@ -2076,6 +2096,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltBackendPreferenceTest,
 bool FProphecyJoltBackendPreferenceTest::RunTest(const FString& Parameters)
 {
     using namespace ProphecyJolt::SwordFixture;
+    // This fixture owns/configures its native world; a full world tick must not
+    // also spawn the ordinary gameplay owner with a different configuration.
+    auto* DefaultPhysics = IConsoleManager::Get().FindConsoleVariable(TEXT("Prophecy.Jolt.DefaultPhysics"));
+    const int32 PreviousDefault = DefaultPhysics ? DefaultPhysics->GetInt() : 0;
+    if (DefaultPhysics) DefaultPhysics->Set(0, ECVF_SetByCode);
+    ON_SCOPE_EXIT { if (DefaultPhysics) DefaultPhysics->Set(PreviousDefault, ECVF_SetByCode); };
     FWorldFixture Fixture;
     const auto Values = UWorld::InitializationValues().AllowAudioPlayback(false).RequiresHitProxies(false)
         .CreatePhysicsScene(true).CreateNavigation(false).CreateAISystem(false).ShouldSimulatePhysics(true)
@@ -2110,7 +2136,7 @@ bool FProphecyJoltBackendPreferenceTest::RunTest(const FString& Parameters)
             && Agent->GetNNPoseDataSource(CurrentPoseId, Interval, bInterpolate) && CurrentPoseId == PoseId
             && Character->IsJoltPhysical() == bJolt && !Character->IsEnablePending()
             && World->GetDiagnostics(Diagnostics).IsSuccess() && !Diagnostics.bFaulted
-            && Diagnostics.BodyCount == (bJolt ? 22 : 0) && Diagnostics.ConstraintCount == (bJolt ? 21 : 0)
+            && Diagnostics.BodyCount == (bJolt ? 23 : 0) && Diagnostics.ConstraintCount == (bJolt ? 22 : 0)
             && (bJolt || Diagnostics.SuppressedBodyPairCount == 0)
             && Coordinator->GetRegisteredCharacterCount() == (bJolt ? 1 : 0)
             && Mesh->IsAnySimulatingPhysics() == (!bJolt && Mode != EProphecyAgentSimulationMode::Kinematic);
@@ -2308,7 +2334,8 @@ bool FProphecyJoltRuntimeSelfCollisionControlsTest::RunTest(const FString& Param
             FProphecyJoltBodyHandle Current;
             FProphecyJoltBodyState State;
             if (!Character->GetBodyHandle(BodyNames[Index], Current) || !SameHandle(Current, Handles[Index])
-                || !World->ReadBody(Current, State).IsSuccess() || !SameBody(State, Before[Index])) return false;
+                || !World->ReadBody(Current, State).IsSuccess() || !SameBody(State, Before[Index]))
+            { AddError(TEXT("Policy edit changed native body: ") + BodyNames[Index].ToString()); return false; }
         }
         for (const auto& Source : Captured.Joints)
         {
@@ -2319,15 +2346,19 @@ bool FProphecyJoltRuntimeSelfCollisionControlsTest::RunTest(const FString& Param
             if (A.ConeLimit.Swing1Motion != B.ConeLimit.Swing1Motion || A.ConeLimit.Swing2Motion != B.ConeLimit.Swing2Motion
                 || A.TwistLimit.TwistMotion != B.TwistLimit.TwistMotion || A.ConeLimit.Swing1LimitDegrees != B.ConeLimit.Swing1LimitDegrees
                 || A.ConeLimit.Swing2LimitDegrees != B.ConeLimit.Swing2LimitDegrees || A.TwistLimit.TwistLimitDegrees != B.TwistLimit.TwistLimitDegrees
-                || A.bDisableCollision != B.bDisableCollision) return false;
+                || A.bDisableCollision != B.bDisableCollision)
+            { AddError(TEXT("Policy check differs from captured joint: ") + Source.JointName.ToString()); return false; }
         }
         FProphecyJoltBodyHandle CurrentSword;
         FProphecyJoltBodyState CurrentSwordState;
         FProphecyJoltWorldDiagnostics D;
+        World->GetDiagnostics(D);
+        AddInfo(FString::Printf(TEXT("Preserved rig: bodies=%d constraints=%d grips=%d pairs=%d steps=%llu"),
+            D.BodyCount, D.ConstraintCount, D.GenericJointCount, D.SuppressedBodyPairCount, D.CompletedSteps));
         return Agent->GetHeldSword() == Sword && Blade->GetBodyHandle(CurrentSword) && SameHandle(CurrentSword, SwordHandle)
             && World->ReadBody(CurrentSword, CurrentSwordState).IsSuccess() && SameBody(CurrentSwordState, SwordBefore)
-            && World->GetDiagnostics(D).IsSuccess() && !D.bFaulted && D.BodyCount == 23 && D.ConstraintCount == 22
-            && D.GenericJointCount == 1 && D.SuppressedBodyPairCount == 1 && D.CompletedSteps == 0
+            && World->GetDiagnostics(D).IsSuccess() && !D.bFaulted && D.BodyCount == 24 && D.ConstraintCount == 23
+            && D.GenericJointCount == 1 && D.SuppressedBodyPairCount == 2 && D.CompletedSteps == 0
             && Mesh->GetCollisionEnabled() == ECollisionEnabled::QueryOnly && !Mesh->IsAnySimulatingPhysics();
     };
     const TSet<int32> BodyOverlay = { PairA };
@@ -2423,9 +2454,11 @@ bool FProphecyJoltRuntimeSelfCollisionControlsTest::RunTest(const FString& Param
         && !Agent->SetJoltBodyPairSelfCollisionEnabled(BodyNames[PairA], BodyNames[PairB], false, Error)
         && !Agent->ResetJoltSelfCollision(Error) && !Agent->GetJoltBodyPairSelfCollisionEnabled(BodyNames[PairA], BodyNames[PairB], bIgnored, Error)
         && !Error.IsEmpty() && World->GetDiagnostics(D).IsSuccess() && D.BodyCount == 0 && D.ConstraintCount == 0)) return false;
-    if (!TestTrue(TEXT("Rebind starts with the authored collision matrix and no retained runtime layers"),
+    if (!TestTrue(TEXT("Rebind preserves the user's collision preference by bone name"),
         Agent->SetSimulationMode(EProphecyAgentSimulationMode::Physical) && Agent->EnableJoltPhysicalAnimation()
-        && Agent->GetJoltCharacterComponent()->IsJoltPhysical() && CheckMatrix(true, {}, {}))) return false;
+        && Agent->GetJoltCharacterComponent()->IsJoltPhysical() && CheckMatrix(true, {}, PairOverlay))) return false;
+    if (!TestTrue(TEXT("Explicit reset after rebind restores the authored matrix"),
+        Agent->ResetJoltSelfCollision(Error) && CheckMatrix(true, {}, {}))) return false;
     Agent->GetJoltCharacterComponent()->bAutomaticStep = false;
     Agent->DisableJoltPhysicalAnimation();
     TestTrue(TEXT("Self-collision fixture releases rig, sword and suppression ownership"), World->GetDiagnostics(D).IsSuccess()

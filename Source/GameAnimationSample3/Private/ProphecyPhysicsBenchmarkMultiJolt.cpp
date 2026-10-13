@@ -30,8 +30,8 @@ TSharedPtr<FJsonObject> DiagnosticsJson(const FProphecyJoltWorldDiagnostics& Dia
 
 namespace ProphecySterileBench::MultiJolt
 {
-constexpr int32 BodiesPerAgent = 22;
-constexpr int32 JointsPerAgent = 21;
+constexpr int32 BodiesPerAgent = 23;
+constexpr int32 JointsPerAgent = 22;
 constexpr int32 BonesPerAgent = 88;
 constexpr float StepSeconds = 1.0f / 60.0f;
 constexpr double PositionToleranceCm = 0.02;
@@ -179,7 +179,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::InitializeMultiJoltCase(FString& Error)
         auto Capture = MakeShared<FProphecyJoltRigSnapshot>();
         if (!ProphecyJolt::Rig::CaptureLiveRig(*Physical, *Capture, Error)) return false;
         if (Capture->Bodies.Num() != Multi::BodiesPerAgent || Capture->Joints.Num() != Multi::JointsPerAgent)
-        { Error = FString::Printf(TEXT("JoltCrowd source agent %d must have 22 bodies and 21 joints."), AgentIndex); return false; }
+        { Error = FString::Printf(TEXT("JoltCrowd source agent %d must have 23 bodies and 22 joints."), AgentIndex); return false; }
         if (AgentIndex == 0) ManualInitialRig = Capture;
         for (int32 BodyIndex = 0; BodyIndex < Capture->Bodies.Num(); ++BodyIndex)
             if (Capture->Bodies[BodyIndex].BodyName != ManualInitialRig->Bodies[BodyIndex].BodyName)
@@ -389,7 +389,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::ValidateMultiJoltFrame(FString& Error)
         || Diagnostics.ConstraintCount != uint32(Count * Multi::JointsPerAgent)
         || Diagnostics.CompletedSteps != uint64(LiveJoltFrames.Num() + 1) || Diagnostics.LastCollisionSteps != 1
         || !FMath::IsNearlyEqual(Diagnostics.LastRequestedDeltaSeconds, Multi::StepSeconds))
-        return Fail(TEXT("Expected 22N bodies, 21N joints, optional floor and exactly one fixed world step per measured frame."));
+        return Fail(TEXT("Expected 23N bodies, 22N joints, optional floor and exactly one fixed world step per measured frame."));
     int32 ChaosDynamic = 0;
     FString ReadError;
     if (!Live::CountChaosDynamicBodies(*GetWorld(), ChaosDynamic, ReadError)) return Fail(ReadError);
@@ -897,7 +897,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::SaveMultiJoltCase(TSharedPtr<FJsonObjec
     if (!CheckUnchangedNativeRegistry(TEXT("request"))) return LateFail(Error);
     int32 ChaosDuringPending = 0;
     if (!Live::CountChaosDynamicBodies(*GetWorld(), ChaosDuringPending, Error) || ChaosDuringPending != Multi::BodiesPerAgent)
-        return LateFail(Error.IsEmpty() ? TEXT("Only the pending agent's 22 Chaos bodies should be dynamic.") : Error);
+        return LateFail(Error.IsEmpty() ? TEXT("Only the pending agent's 23 Chaos bodies should be dynamic.") : Error);
     LateAdmission->SetNumberField(TEXT("chaos_dynamic_bodies_while_pending"), ChaosDuringPending);
     LateAdmission->SetNumberField(TEXT("native_bodies_while_pending"), AfterSurvivorStep.BodyCount);
     LateAdmission->SetNumberField(TEXT("native_joints_while_pending"), AfterSurvivorStep.ConstraintCount);

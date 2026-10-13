@@ -85,7 +85,7 @@ bool FProphecyJoltImmediateQueryPoseTest::RunTest(const FString& Parameters)
     Mesh->SetComponentTickEnabled(false);
     auto* Anim = Cast<UProphecyJoltPoseAnimInstance>(Mesh->GetAnimInstance());
     if (!TestNotNull(TEXT("Native completed pose instance"), Anim)
-        || !TestEqual(TEXT("Actual PHAT has all bodies"), Mesh->Bodies.Num(), 22)
+        || !TestEqual(TEXT("Actual PHAT has all bodies"), Mesh->Bodies.Num(), 23)
         || !TestTrue(TEXT("Fixture postprocess pose evaluation is disabled"), Mesh->GetDisablePostProcessBlueprint())) return false;
 
     FProphecyJoltQueryPose QueryPose;

@@ -12,6 +12,7 @@ parser.add_argument('--action',choices=['complete','hide','drop','mode','sword_d
 parser.add_argument('--phase',type=int,choices=[1,2,4],default=1)
 parser.add_argument('--drawing',action='store_true')
 parser.add_argument('--custom',action='store_true')
+parser.add_argument('--contacts',action='store_true',help='Verify temporary head/clavicle exclusions and retained user preferences too')
 parser.add_argument('--output',default='Saved/Diagnostics/SwordNeckLimits20261011')
 args=parser.parse_args()
 editor=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
@@ -25,6 +26,17 @@ out.mkdir(parents=True,exist_ok=True)
 api=unreal.get_default_object(unreal.load_class(None,'/Script/GameAnimationSample3.ProphecySwordHolsterLibrary'))
 lib=unreal.ConstraintInstanceBlueprintLibrary
 state=dict(world=None,last=-1,start=time.monotonic(),checks=0,events=[],drawing=False)
+
+def check_contacts(world):
+    # Existing read-only native probe reports unique scoped pairs, independently
+    # of PHAT/user self-collision preferences. No extra runtime instrumentation.
+    unreal.SystemLibrary.execute_console_command(world,'Prophecy.Reach.Inspect -713')
+    raw=(root/'Saved/Diagnostics/ReachGrasp20261012/native--713.csv').read_bytes()
+    text=raw.decode('utf-16' if raw.startswith(b'\xff\xfe') else 'utf-8-sig')
+    actual=int(text.splitlines()[0].split(',')[3])
+    state['contact_checks']=state.get('contact_checks',0)+1
+    return actual
+
 
 def limits(actor):
     result={}
@@ -63,31 +75,50 @@ def tick(_):
         n=int(actor.get_editor_property('absolute tick debug'))
         if n==state['last']:return
         state['last']=n
-        if n>=20 and 'before' not in state:
+        if n>=6 and 'before' not in state and actor.is_jolt_physical_animation_enabled():
             if args.custom:
-                for bone,angles in [('neck_01',(17.,11.,8.)),('head',(24.,13.,9.))]:
+                for bone,angles in [('neck_01',(17.,11.,8.)),('neck_02',(19.,12.,7.)),('head',(24.,13.,9.))]:
                     error=actor.set_physical_joint_angular_limits(bone,unreal.AngularConstraintMotion.ACM_LIMITED,angles[0],unreal.AngularConstraintMotion.ACM_LOCKED,angles[1],unreal.AngularConstraintMotion.ACM_FREE,angles[2])
                     assert not error,error
             state['before']=limits(actor)
             state['selected']=[k for k in state['before'] if set(k.split('|')) & {'neck_01','neck_02','head'}]
             assert state['selected']
             state['sword']=actor.get_held_sword()
+            if args.contacts:
+                for other in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.ProphecyAgent):
+                    if other!=actor:other.hide_sword()
+                state['contact_counts']=[]
+                if args.custom:
+                    assert not actor.set_jolt_body_pair_self_collision_enabled('head','clavicle_l',False)
+                state['contact_preferences']=[str(actor.get_jolt_body_pair_self_collision_enabled('head',b)) for b in ['clavicle_l','clavicle_r']]
             if args.action=='reset':
                 result=unreal.ProphecyAgentResetLibrary.initialize_agent_reset(world)
                 state['reset_init']=str(result)
-        if n<25:return
+        if n<25 or 'before' not in state:return
         f=report(world,actor);phase=int(f['phase']);current=limits(actor)
+        if args.contacts:
+            count=check_contacts(world)
+            counts=state['contact_counts']
+            if not counts or counts[-1][1:]!=[phase,count]:counts.append([n,phase,count])
+            if phase==3 and len(counts)>1 and counts[-2][1]==4:
+                assert counts[-2][2]-count==2,'Head/clavicle pairs not released at S completion'
+            if actor.is_jolt_physical_animation_enabled():
+                assert state['contact_preferences']==[str(actor.get_jolt_body_pair_self_collision_enabled('head',b)) for b in ['clavicle_l','clavicle_r']],'User collision preferences changed'
         if state.get('interrupted'):
             # Reset is queued to the next manager timer boundary; unlike Hide,
             # accepting its request does not synchronously rebuild the rig.
             if args.action=='reset' and phase!=-1 and n<=state['interrupted']+2:return
+            if args.action=='mode':
+                if phase==-1:state['cancelled_at_boundary']=n
+                elif not state.get('cancelled_at_boundary') and n<=state['interrupted']+2:return
             assert current==state['before'],f'Limits not restored: {current}'
             if n>=state['interrupted']+5:
-                assert phase==-1 and f['joint']==0,(phase,f)
+                new_kinematic=args.action=='mode' and state.get('cancelled_at_boundary') and f['kinematic']==1 and f['pose_tick']<=n-state['interrupted']
+                assert (phase==-1 or new_kinematic) and f['joint']==0,(phase,f)
                 state['after']=current
                 return finish('passed')
             return
-        active=phase in (0,1,2,4)
+        active=phase in (0,1,2,4,5)
         for key,value in current.items():
             if active and key in state['selected']:
                 assert value[::2]==[0,0,0],f'Active neck not free: {key} {value}'

@@ -199,8 +199,9 @@ bool UProphecyPhysicsBenchmarkSubsystem::PrepareManualAgent(int32 Index, bool bF
         Body->SetUseCCD(false);
         Body->SetUseMACD(false);
     }
-    if (Physical->Bodies.Num() != 22 || Physical->Constraints.Num() != 21)
-    { Error = TEXT("Manual fixture expected 22 bodies and 21 authored joints"); return false; }
+    if (Physical->Bodies.Num() != Physical->GetPhysicsAsset()->SkeletalBodySetups.Num()
+        || Physical->Constraints.Num() != Physical->GetPhysicsAsset()->ConstraintSetup.Num())
+    { Error = TEXT("Manual fixture did not instantiate every authored PHAT body and joint"); return false; }
     Meshes.Add(Physical);
     return true;
 }
@@ -348,7 +349,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::SaveManualCapture(TSharedPtr<FJsonObjec
         const FPacket& Packet = Capture.Packets[Index];
         const FStep& Step = Capture.Steps[Index];
         if (Packet.Sequence != static_cast<uint64>(Index + 1) || Step.Sequence != Packet.Sequence ||
-            Step.PacketSequence != Packet.Sequence || Packet.BodyCount != 22 || Step.BodyCount != 22 ||
+            Step.PacketSequence != Packet.Sequence || Packet.BodyCount != ManualInitialRig->Bodies.Num() || Step.BodyCount != Packet.BodyCount ||
             !FMath::IsNearlyEqual(Step.CallbackDeltaSeconds, 1.0 / 60.0, 1.e-6) ||
             !FMath::IsNearlyEqual(static_cast<double>(Step.DenominatorSeconds), 1.0 / 60.0, 1.e-6) ||
             Step.bRepeatedPacket || Step.bStaleAfterFailedPublish || Step.bUnrecordedPacket)
@@ -416,7 +417,10 @@ bool UProphecyPhysicsBenchmarkSubsystem::SaveManualCapture(TSharedPtr<FJsonObjec
         {
             if (Capture.Packets[Index].SourceSequence != ManualSealedCapture->Packets[Index].Sequence)
             { Error = TEXT("Manual replay source sequence mismatch"); return false; }
-            for (int32 Bone = 0; Bone < 22; ++Bone)
+            if (Capture.Packets[Index].BodyCount != ManualSealedCapture->Packets[Index].BodyCount
+                || Capture.Steps[Index].BodyCount != ManualSealedCapture->Steps[Index].BodyCount)
+            { Error = TEXT("Manual replay body count mismatch"); return false; }
+            for (int32 Bone = 0; Bone < Capture.Packets[Index].BodyCount; ++Bone)
             {
                 const FBoneTarget& SourceTarget = ManualSealedCapture->Packets[Index].Bodies[Bone];
                 const FBoneTarget& ReplayTarget = Capture.Packets[Index].Bodies[Bone];

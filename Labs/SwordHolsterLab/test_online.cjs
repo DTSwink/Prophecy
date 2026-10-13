@@ -43,6 +43,6 @@ for(const sheathe of [true,false]){
  const sequence=Playback.prepare(data,setup,{...options,sequenceMode:true});
  assert(sequence.sequence.second?.online,'both sequence actions use causal planning');
  assert.equal(sequence.sequence.second.motionOffset,sequence.sequence.offset);
- const off=H.retime(a,{...options,noCheat:false});assert(!off.online,'unchecked restores original planner');
+ const off=H.retime(a,{...options,noCheat:false});assert(!off.online,'reference planner restored');
 }
 console.log(JSON.stringify({pass:true,cases:report},null,2));

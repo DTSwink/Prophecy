@@ -405,6 +405,13 @@ static void Solve(FActive& S,TArray<FTransform>& P,const FTransform& Goal)
  const FVector E=X+D*Along+Pole*FMath::Sqrt(FMath::Max(0.,L1*L1-Along*Along)),H=X+D*L;
  P[A].SetRotation((FQuat::FindBetweenVectors(Y-X,E-X)*P[A].GetRotation()).GetNormalized());P[B]=FTransform((FQuat::FindBetweenVectors(Z-Y,H-E)*P[B].GetRotation()).GetNormalized(),E);P[C]=FTransform(Goal.GetRotation(),H);
 }
+static void PreserveArmRoll(FActive& S,const FTransform (&Before)[3])
+{
+ // Pole placement determines the elbow, not an extra axial rotation. Near
+ // full extension that rotation is undefined and can inject a half-turn.
+ for(int K=0;K<2;++K){const FVector From=Before[K+1].GetLocation()-Before[K].GetLocation(),To=S.Pose[S.Arm[K+1]].GetLocation()-S.Pose[S.Arm[K]].GetLocation();
+  S.Pose[S.Arm[K]].SetRotation((FQuat::FindBetweenVectors(From,To)*Before[K].GetRotation()).GetNormalized());}
+}
 static double ArmDuration(const FTransform (&A)[3],const FTransform (&B)[3],double Linear,double Angular)
 {
  FRotationArc Rotation[3];FOffsetArc Translation[2];double Seconds=1./60.;
@@ -682,11 +689,27 @@ bool CaptureEntryPose(AProphecyAgent* A,FEntryPose& Out)
  TGuardValue<bool> Guard(ReadingBase,true);
  return A->ReadNNFutureWorldPoseWithSnapshot(Out.Names,Future,Out.Pose,Alpha,Snapshot);
 }
+static void SetRootFrame(FActive& S,const FQuat& Frame)
+{
+ // Keep the complete head history root-local. Its stored world-space form
+ // must move with the root before spending this tick's look-in/out budget.
+ // Transport signed rotation vectors too; moving only the head quaternion
+ // leaves the old world winding in the neck distribution and return target.
+ const FQuat Delta=(Frame*S.Authored.Frame.Inverse()).GetNormalized();
+ S.Authored.Frame=Frame;
+ if(Delta.Equals(FQuat::Identity,1.e-12))return;
+ // Stabilize pelvis motion inside the root frame, never the root turn itself.
+ if(S.Stabilizing)S.StableHolster=(Delta*S.StableHolster).GetNormalized();
+ if(!S.HeadInitialized)return;
+ S.Head=(Delta*S.Head).GetNormalized();S.HeadStart=(Delta*S.HeadStart).GetNormalized();S.HeadReference=(Delta*S.HeadReference).GetNormalized();
+ for(FVector* V:{&S.HeadDelta,&S.HeadFrom,&S.HeadTargetDelta,&S.HeadAim,&S.HeadBaseDelta,&S.NeckParentDelta})*V=Delta.RotateVector(*V);
+}
 static bool ReadBase(AProphecyAgent* A,FActive& S)
 {
  float Alpha;TGuardValue<bool> Guard(ReadingBase,true);
- if(const auto* Mesh=A->GetAgentMesh())S.Authored.Frame=Mesh->GetComponentQuat();
- return A->ReadNNFutureWorldPoseWithSnapshot(S.ReadNames,S.Future,S.Base,Alpha,S.Snapshot)&&S.ReadNames==S.Names;
+ if(!A->ReadNNFutureWorldPoseWithSnapshot(S.ReadNames,S.Future,S.Base,Alpha,S.Snapshot)||S.ReadNames!=S.Names)return false;
+ if(const auto* Mesh=A->GetAgentMesh())SetRootFrame(S,Mesh->GetComponentQuat());
+ return true;
 }
 bool Begin(AProphecyAgent* A,bool Sheathe,double Reach,double Rotation,double Slide,double Length,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth,const FGeometry& Geometry,const FEntryPose* Previous)
 {
@@ -956,8 +979,7 @@ static void Advance(FActive& S,int Steps)
   if(S.Status.Aligning){
    ApplyArm(S,S.Pose,S.HeldArm);FTransform Seed[3];for(int K=0;K<3;++K)Seed[K]=S.Pose[S.Arm[K]];
    Solve(S,S.Pose,AlignmentGoal(S));if(S.Profile.Body[S.Sheathe].Authored)ApplyPole(S);
-   for(int K=0;K<2;++K){const FVector Before=Seed[K+1].GetLocation()-Seed[K].GetLocation(),After=S.Pose[S.Arm[K+1]].GetLocation()-S.Pose[S.Arm[K]].GetLocation();
-    S.Pose[S.Arm[K]].SetRotation((FQuat::FindBetweenVectors(Before,After)*Seed[K].GetRotation()).GetNormalized());}
+   PreserveArmRoll(S,Seed);
    CaptureArm(S,S.Pose,S.HeldArm);
    const FTransform Sword=GripAt(S,S.TipAlignment.Scale)*AlignmentGoal(S);
    if(S.Status.Tick>=S.TipAlignment.Start+S.TipAlignment.Ticks&&FVector::Distance(Sword.TransformPosition(S.Geometry.TipLocal),S.HolsterFrame.GetLocation()+S.HolsterFrame.GetRotation().RotateVector(S.TipAlignment.TargetTip))<=1.e-4){
@@ -994,7 +1016,8 @@ static void Advance(FActive& S,int Steps)
      if(GripReachable(S,Target))for(int I=0;I<8;++I){const double Mid=(Lo+Hi)*.5;At(Mid);if(GripReachable(S,Target))Lo=Mid;else Hi=Mid;}
      Accepted=Lo;At(Accepted);
     }
-    S.BodyElapsed=Accepted;ApplyArm(S,S.Pose,S.HeldArm);Solve(S,S.Pose,Target);if(S.Profile.Body[S.Sheathe].Authored)ApplyPole(S);CaptureArm(S,S.Pose,S.HeldArm);
+    S.BodyElapsed=Accepted;ApplyArm(S,S.Pose,S.HeldArm);FTransform Seed[3];for(int K=0;K<3;++K)Seed[K]=S.Pose[S.Arm[K]];
+    Solve(S,S.Pose,Target);if(S.Profile.Body[S.Sheathe].Authored)ApplyPole(S);PreserveArmRoll(S,Seed);CaptureArm(S,S.Pose,S.HeldArm);
    }else{S.BodyElapsed+=1./60.;ReturnStep(S,S.BodyElapsed);}
   }
   if(S.Sliding&&S.Status.Tick==Release&&S.ReturnTick<Release&&Profile.Enabled){
@@ -1122,6 +1145,8 @@ static FQuat JsonQuat(const TArray<TSharedPtr<FJsonValue>>& A){return FQuat(A[0]
 static FTransform JsonPose(const TSharedPtr<FJsonObject>& J){return FTransform(JsonQuat(J->GetArrayField(TEXT("q"))),JsonVector(J->GetArrayField(TEXT("p"))));}
 static TArray<FTransform> JsonPoses(const TArray<TSharedPtr<FJsonValue>>& A){TArray<FTransform> Out;for(const auto& V:A)Out.Add(JsonPose(V->AsObject()));return Out;}
 #include "Tests/ProphecySwordHolsterChannelsTests.inl"
+#include "Tests/ProphecySwordHolsterRollTests.inl"
+#include "Tests/ProphecySwordHolsterHeadRootTests.inl"
 #include "Tests/ProphecySwordHolsterLegacy.inl"
 #include "Tests/ProphecySwordHolsterOptimizationTests.inl"
 #include "Tests/ProphecySwordHolsterStaggerTests.inl"

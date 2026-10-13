@@ -156,10 +156,35 @@ static void DestroyJoint(FState& S)
  }
  S.Joint={};
 }
+static bool SetHeadClavicleSuppressed(AProphecyAgent* A,bool Suppressed,FString& Error)
+{
+    auto* Owner=A?A->FindComponentByClass<UProphecySwordComponent>():nullptr;
+    auto* World=A&&A->GetWorld()?A->GetWorld()->GetSubsystem<UProphecyJoltWorldSubsystem>():nullptr;
+    FProphecyJoltWorldDiagnostics D;
+    if(!Owner||!World||!World->GetDiagnostics(D).IsSuccess()||!D.bInitialized)return !Suppressed;
+    TArray<FProphecyJoltBodyPair,TInlineAllocator<2>> Pairs;
+    if(Suppressed)
+    {
+        auto* Character=A->GetJoltCharacterComponent();FProphecyJoltBodyHandle Head,Clavicle;
+        if(!Character||!Character->GetBodyHandle(TEXT("head"),Head)){Error=TEXT("Missing D/S physical head");return false;}
+        for(FName Bone:{FName(TEXT("clavicle_l")),FName(TEXT("clavicle_r"))})
+        {
+            if(!Character->GetBodyHandle(Bone,Clavicle)){Error=TEXT("Missing D/S physical clavicle");return false;}
+            Pairs.Add({Head,Clavicle});
+        }
+    }
+    // Independent ownership preserves PHAT and user collision settings on release.
+    // Only admission/cleanup touch these two pairs; no per-tick collision work.
+    const auto Result=World->UpdateScopedContactRules(Owner,Pairs,{});
+    if(!Result.IsSuccess())Error=Result.Message;
+    return Result.IsSuccess();
+}
 static void RestoreActionPhysics(AProphecyAgent* A)
 {
     RestoreNeckLimits(A);
     FString Error;
+    if(!SetHeadClavicleSuppressed(A,false,Error))
+        UE_LOG(LogTemp,Warning,TEXT("Sword holster head collision restore: %s"),*Error);
     if(!ProphecyLimbCollision::SetHolsterArmSuppressed(A,false,Error))
         UE_LOG(LogTemp,Warning,TEXT("Sword holster collision restore: %s"),*Error);
 }
@@ -349,6 +374,8 @@ bool UProphecySwordComponent::StartHolster(bool Sheathe,float Reach,float Rotati
     {if(Sheathe&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster collision admission: %s"),*CollisionError);return false;}
     if(!S.Kinematic&&!ApplyNeckLimits(A,true,CollisionError))
     {RestoreActionPhysics(A);if(Sheathe&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster neck limits admission: %s"),*CollisionError);return false;}
+    if(!S.Kinematic&&!SetHeadClavicleSuppressed(A,true,CollisionError))
+    {RestoreActionPhysics(A);if(Sheathe&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster head collision admission: %s"),*CollisionError);return false;}
     const FTransform Full=S.Reference.Seated*S.Reference.Holster->GetComponentTransform();
     ProphecySwordHolsterPose::FGeometry Geometry;Geometry.Valid=true;Geometry.Holster=S.Reference.Holster;Geometry.Seated=S.Reference.Seated;
     Geometry.GripStabilization=S.Profile.Stabilization;Geometry.HolsterReturnDuration=S.Profile.ReturnDuration;

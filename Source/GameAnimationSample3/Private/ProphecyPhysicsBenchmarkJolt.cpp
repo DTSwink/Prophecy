@@ -20,6 +20,10 @@ bool UProphecyPhysicsBenchmarkSubsystem::ReplayManualCaptureInJolt(TSharedPtr<FJ
     if (!ManualInitialRig || !ManualSealedCapture || ManualSealedCapture->Steps.IsEmpty())
     { Error = TEXT("Jolt replay requires a complete sealed Chaos capture and complete rig"); return false; }
     FProphecyJoltRigSnapshot Rig = *ManualInitialRig;
+    for (const auto& P : ManualSealedCapture->Packets)
+        if (P.BodyCount != Rig.Bodies.Num()) { Error = TEXT("Sealed packet body count differs from rig"); return false; }
+    for (const auto& S : ManualSealedCapture->Steps)
+        if (S.BodyCount != Rig.Bodies.Num()) { Error = TEXT("Sealed step body count differs from rig"); return false; }
     Rig.CaptureId = FGuid::NewGuid();
     TMap<FName, int32> BodyIndices;
     for (int32 Index = 0; Index < Rig.Bodies.Num(); ++Index) BodyIndices.Add(Rig.Bodies[Index].BodyName, Index);
@@ -67,13 +71,13 @@ bool UProphecyPhysicsBenchmarkSubsystem::ReplayManualCaptureInJolt(TSharedPtr<FJ
     TArray<FProphecyJoltBodyHandle> Handles;
     TArray<FString> Coverage;
     if (!Check(Owner->CreateRigFixture(Rig, Prepared, Handles, Coverage))) return false;
-    if (Handles.Num() != 22) { Error = TEXT("Jolt fixture body count differs from sealed rig"); return false; }
+    if (Handles.Num() != Rig.Bodies.Num()) { Error = TEXT("Jolt fixture body count differs from sealed rig"); return false; }
     auto Root = MakeShared<FJsonObject>();
     Root->SetNumberField(TEXT("schema_version"), 1);
     Root->SetStringField(TEXT("input_capture"), ManualSealedCapturePath);
     Root->SetStringField(TEXT("input_sha1"), ManualSealedCaptureHash);
     Root->SetStringField(TEXT("jolt_commit"), TEXT("e77f175595e64cb44218cc9d9d56fc365ad0e36a"));
-    Root->SetStringField(TEXT("scope"), TEXT("One native 22-body rig consuming complete sealed manual endpoints; independent execution diagnostic, fixture only, production remains Chaos"));
+    Root->SetStringField(TEXT("scope"), TEXT("One native rig consuming complete sealed manual endpoints; independent execution diagnostic, fixture only"));
     Root->SetObjectField(TEXT("chaos_replay_comparison"), CaseResult->GetObjectField(TEXT("chaos_replay_comparison")));
     Root->SetStringField(TEXT("angular_policy"), TEXT("User-approved stock hard limits with original PHAT angle values; no retuning. Remaining solver/contact compatibility notes below are not parity claims."));
     Root->SetStringField(TEXT("initialization"), TEXT("Captured raw first-preintegrate body X/R/V/W, captured mass/COM/inertia/geometry/activation; no solver warm-start cache transfer"));
@@ -82,7 +86,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::ReplayManualCaptureInJolt(TSharedPtr<FJ
     for (const FString& Note : Coverage) Notes.Add(MakeShared<FJsonValueString>(Note));
     Root->SetArrayField(TEXT("coverage_notes"), Notes);
     TArray<FProphecyJoltRigVelocityTarget> Targets;
-    Targets.SetNum(22);
+    Targets.SetNum(Rig.Bodies.Num());
     double MaxPositionDifference = 0, MaxAngleDifference = 0, SumPositionSquared = 0;
     double TotalUpdateSeconds = 0, MaxFirstLinearDifference = 0, MaxFirstAngularDifference = 0;
     uint64 Comparisons = 0;
@@ -90,7 +94,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::ReplayManualCaptureInJolt(TSharedPtr<FJ
     {
         const FPacket& Packet = ManualSealedCapture->Packets[Index];
         const FStep& Reference = ManualSealedCapture->Steps[Index];
-        for (int32 Bone = 0; Bone < 22; ++Bone)
+        for (int32 Bone = 0; Bone < Rig.Bodies.Num(); ++Bone)
         {
             const FBoneTarget& Input = Packet.Bodies[Bone];
             const int32* BodyIndex = BodyIndices.Find(Input.BoneName);
@@ -102,8 +106,8 @@ bool UProphecyPhysicsBenchmarkSubsystem::ReplayManualCaptureInJolt(TSharedPtr<FJ
         FProphecyJoltRigServoState Servo;
         FProphecyJoltWorldDiagnostics Diagnostics;
         if (!Check(Owner->ReadRigFixtureServoSamples(Servo)) || !Check(Owner->GetDiagnostics(Diagnostics))) return false;
-        if (Servo.InvocationCount != static_cast<uint64>(Index + 1) || Servo.InvalidBodyCount || Servo.Samples.Num() != 22 ||
-            !FMath::IsNearlyEqual(Servo.LastIntegrationSeconds, 1.f / 60.f) || Diagnostics.ConstraintCount != 21)
+        if (Servo.InvocationCount != static_cast<uint64>(Index + 1) || Servo.InvalidBodyCount || Servo.Samples.Num() != Rig.Bodies.Num() ||
+            !FMath::IsNearlyEqual(Servo.LastIntegrationSeconds, 1.f / 60.f) || Diagnostics.ConstraintCount != uint32(Rig.Joints.Num()))
         { Error = TEXT("Jolt fixture callback/body/constraint count failed; no wake or activation fallback applied"); return false; }
         TotalUpdateSeconds += Diagnostics.LastStepWallSeconds;
         auto Step = MakeShared<FJsonObject>();
@@ -111,7 +115,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::ReplayManualCaptureInJolt(TSharedPtr<FJ
         Step->SetNumberField(TEXT("integration_seconds"), Servo.LastIntegrationSeconds);
         Step->SetNumberField(TEXT("denominator_seconds"), Servo.DenominatorSeconds);
         TArray<TSharedPtr<FJsonValue>> Bodies;
-        for (int32 Bone = 0; Bone < 22; ++Bone)
+        for (int32 Bone = 0; Bone < Rig.Bodies.Num(); ++Bone)
         {
             const FProphecyJoltRigServoSample& Sample = Servo.Samples[Bone];
             FProphecyJoltBodyState Completed;

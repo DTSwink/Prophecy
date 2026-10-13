@@ -22,8 +22,8 @@
 
 namespace ProphecySterileBench::LiveJolt
 {
-constexpr int32 ExpectedBodies = 22;
-constexpr int32 ExpectedJoints = 21;
+constexpr int32 ExpectedBodies = 23;
+constexpr int32 ExpectedJoints = 22;
 constexpr int32 ExpectedBones = 88;
 constexpr double PositionToleranceCm = 0.02;
 constexpr double AngleToleranceDegrees = 0.02;
@@ -170,11 +170,11 @@ bool UProphecyPhysicsBenchmarkSubsystem::InitializeLiveJoltCase(FString& Error)
     ManualInitialRig = MakeShared<FProphecyJoltRigSnapshot>();
     if (!ProphecyJolt::Rig::CaptureLiveRig(*Physical, *ManualInitialRig, Error)) return false;
     if (ManualInitialRig->Bodies.Num() != Live::ExpectedBodies || ManualInitialRig->Joints.Num() != Live::ExpectedJoints)
-    { Error = TEXT("Live Jolt source rig must contain 22 bodies and 21 joints."); return false; }
+    { Error = TEXT("Live Jolt source rig must contain 23 bodies and 22 joints."); return false; }
     int32 ChaosBefore = 0;
     if (!Live::CountChaosDynamicBodies(*GetWorld(), ChaosBefore, Error)) return false;
     if (ChaosBefore != Live::ExpectedBodies)
-    { Error = FString::Printf(TEXT("Live Jolt handoff expected 22 native Chaos dynamic bodies, found %d."), ChaosBefore); return false; }
+    { Error = FString::Printf(TEXT("Live Jolt handoff expected 23 native Chaos dynamic bodies, found %d."), ChaosBefore); return false; }
 
     auto Provenance = MakeShared<FJsonObject>();
     Before->SetObjectField(TEXT("live_jolt_handoff"), Provenance);
@@ -311,7 +311,7 @@ bool UProphecyPhysicsBenchmarkSubsystem::ValidateLiveJoltFrame(FString& Error)
         || Diagnostics.BodyCount != ExpectedTotal || Diagnostics.ConstraintCount != Live::ExpectedJoints
         || Diagnostics.CompletedSteps != static_cast<uint64>(LiveJoltFrames.Num() + 1)
         || Diagnostics.LastCollisionSteps != 1 || !FMath::IsNearlyEqual(Diagnostics.LastRequestedDeltaSeconds, 1.0f / 60.0f))
-        return Fail(TEXT("World diagnostics require 22 rig bodies, optional floor, 21 joints and exactly one fixed step per measured frame."));
+        return Fail(TEXT("World diagnostics require 23 rig bodies, optional floor, 22 joints and exactly one fixed step per measured frame."));
     int32 ChaosDynamic = 0;
     FString ReadError;
     if (!Live::CountChaosDynamicBodies(*GetWorld(), ChaosDynamic, ReadError)) return Fail(ReadError);

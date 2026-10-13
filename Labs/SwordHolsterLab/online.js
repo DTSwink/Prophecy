@@ -9,10 +9,6 @@ const Tip=dep('tipalign','HolsterTipAlign');
 const Pole=dep('elbowpole','ElbowPole'),Head=dep('headlook','HeadLook'),Return=dep('fkreturn','FKReturn'),Curve=dep('retime','Retime');
 const {add,sub,mul,dot,length:len,unit,qm,qinv,rotate,qslerp,qlog,qexp,fromTo}=R;
 const clamp=x=>Math.max(0,Math.min(1,x)),copy=t=>({p:[...t.p],q:[...t.q],s:[...(t.s||[1,1,1])]});
-function fullSlerp(a,b,t){
- const d=Math.max(-1,Math.min(1,dot(a,b))),theta=Math.acos(d),s=Math.sin(theta);
- return Math.abs(s)<1e-8?[...a]:unit(a.map((v,k)=>(v*Math.sin((1-t)*theta)+b[k]*Math.sin(t*theta))/s));
-}
 function prepare(H,data,setup,input,motionOffset=0,reference=null){
  const o=H.sanitize(input),names=data.names,parents=data.parents,arm=['upperarm_r','lowerarm_r','hand_r'].map(n=>names.indexOf(n)),pelvis=names.indexOf('pelvis');
  const action=o.sheathe?'sheathe':'draw',profile=o[action+'Return'],reachCurve=Curve.prepare(o[action+'Curve']),slideCurve=Curve.prepare(o[action+'SlideCurve']);
@@ -20,7 +16,7 @@ function prepare(H,data,setup,input,motionOffset=0,reference=null){
  let slideLength=setup.bladeLength*retained,slideTicks=Math.max(1,Math.ceil(slideLength/o.slidingSpeed*60));
  const local=copy(setup.holster);local.p=add(local.p,[o.holsterX,o.holsterY,o.holsterZ]);
  local.q=unit(qm(qm(qm(qexp([0,0,o.holsterYaw*Math.PI/180]),qexp([0,-o.holsterPitch*Math.PI/180,0])),qexp([-o.holsterRoll*Math.PI/180,0,0])),local.q));
- const neutral=H.motion(data,'idle',0),holsterReturnTicks=Math.ceil(o.holsterReturnDuration*60-1e-5);
+ const neutral=H.motion(data,'idle',0),neutralArm=FK.capture(neutral,arm,parents),holsterReturnTicks=Math.ceil(o.holsterReturnDuration*60-1e-5);
  const model={o,motionOffset,names,parents,arm,pelvis,setup,data,tip,bladeLength:setup.bladeLength,holsterLocal:local,holsterReference:null,frames:[],sourceFrames:[],sourceLocals:[],headTrack:[],headContext:Head.make(data),completionTick:null,playbackDuration:o.duration,plan:null,online:!reference,tickPlayback:true};
  model.holsterPivot=H.holsterPivot(setup,o.holsterPivotPercent).map((v,i)=>v*local.s[i]);
  model.gripBranch=names.map((_,j)=>{for(let k=j;k>=0;k=parents[k])if(names[k]==='clavicle_r')return true;return false;});
@@ -70,11 +66,11 @@ function prepare(H,data,setup,input,motionOffset=0,reference=null){
    const bodyTicks=Math.ceil(Body.remaining(entry,desired)/o.maxSpineClavicleAngularSpeed*60);
    for(let pass=0;!reference&&pass<16;pass++){
     const body=[0,4,8].flatMap(k=>{const a=entry.slice(k,k+4),b=desired.slice(k,k+4),d=H.angle(a,b);return qslerp(a,b,d>0?Math.min(1,o.maxSpineClavicleAngularSpeed*reachTicks/60/d):1);});
-    destination=endpoint(base,body,goal,source);const required=Math.max(bodyTicks,Math.ceil(FK.duration(source,destination,o.maxReachSpeed,o.maxReachRotationSpeed)*60));
+    destination=endpoint(base,body,goal,source);const required=Math.max(bodyTicks,Math.ceil(FK.duration(source,destination,o.maxReachSpeed,o.maxReachRotationSpeed,neutralArm)*60));
     if(required<=reachTicks)break;reachTicks=required;
    }
    if(reference)reachTicks=reference.plan.reachEndTick-tick;
-   destination=reference?reference.plan.reachDestination:endpoint(base,desired,goal,source);destination=destination.map((v,k)=>({...v,q:dot(source[k].q,v.q)<0?mul(v.q,-1):v.q}));filtered=destination;
+   destination=reference?reference.plan.reachDestination:endpoint(base,desired,goal,source);destination=FK.reachDestination(source,destination,neutralArm);filtered=destination;
    Object.assign(model.plan,{reachEndTick:tick+reachTicks,endTick:tick+reachTicks,slideEnd:tick+reachTicks+slideTicks});
    basis=Pole.frame(base,arm,ctx.top);poleAngle=Pole.measure(base,arm,ctx.top,basis);poleSpeed=Math.min(o.maxElbowPoleAngularSpeed,Math.abs(Pole.wrap(Pole.target(o.bodyTargets,o.sheathe?0:1)-poleAngle))*60/reachTicks);
    // Native entry inertia subtracts the first procedural velocity (body, arm
@@ -84,7 +80,7 @@ function prepare(H,data,setup,input,motionOffset=0,reference=null){
     const dt=1e-4,prior=beforeBase||base;
     const predicted=sign=>base.map((v,j)=>({...v,p:add(v.p,mul(sub(v.p,prior[j].p),sign*dt*60)),q:unit(qm(v.q,qexp(mul(qlog(qm(qinv(prior[j].q),v.q)),sign*dt*60))))}));
     const fraction=Curve.sample(reachCurve,dt*60/reachTicks);
-    let nextPose=applyArm(Body.apply(ctx,predicted(1),Body.blend(entry,desired,fraction)),FK.blend(source,destination,fraction));
+    let nextPose=applyArm(Body.apply(ctx,predicted(1),Body.blend(entry,desired,fraction)),FK.reach(source,destination,fraction));
     const nextBasis=Pole.frame(nextPose,arm,ctx.top,basis),nextAngle=Pole.advance(poleAngle,Pole.target(o.bodyTargets,o.sheathe?0:1),poleSpeed,dt);
     nextPose=Pole.apply(nextPose,arm,ctx.top,nextAngle,nextBasis);
     const prev=entryLocal(predicted(-1)),next=entryLocal(nextPose);
@@ -104,7 +100,7 @@ function prepare(H,data,setup,input,motionOffset=0,reference=null){
      const fit=endpoint(base,desired,goal,source);destination=fit.map((v,k)=>({...v,q:dot(destination[k].q,v.q)<0?mul(v.q,-1):v.q}));lastRefit=elapsed;
     }
     const target=FK.blend(filtered,destination,clamp((elapsed-lastRefit+1)/4));
-    pose=applyArm(pose,source.map((v,k)=>({q:fullSlerp(v.q,target[k].q,progress),p:R.offsetBlend(v.p,target[k].p,progress)})));heldArm=FK.capture(pose,arm,parents);
+    pose=applyArm(pose,FK.reach(source,target,progress));heldArm=FK.capture(pose,arm,parents);
    }else if(sliding&&tick<=slideStart+slideTicks&&!model.fkReturn){
     const at=tick-slideStart;
     while(at>guideTickB){

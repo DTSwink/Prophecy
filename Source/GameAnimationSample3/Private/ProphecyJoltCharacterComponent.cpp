@@ -434,8 +434,8 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     FProphecyJoltPreparedRig Prepared;
     if (!ProphecyJolt::Rig::CaptureLiveRig(*Mesh, Snapshot, Error) || !Prepared.Build(Snapshot, Error))
         return Fail(OutError, Error);
-    if (Snapshot.Bodies.Num() != 22 || Snapshot.Joints.Num() != 21)
-        return Fail(OutError, TEXT("This first character pilot requires the current 22-body / 21-joint manual rig."));
+    // Capture/Prepared validate identities, shapes and joint endpoints. Body count is
+    // authored in PHAT; adding a physical skeleton bone must not require a pilot constant.
 
     TUniquePtr<FProphecyJoltCharacterState> Pending = MakeUnique<FProphecyJoltCharacterState>();
     Pending->Agent = Agent;

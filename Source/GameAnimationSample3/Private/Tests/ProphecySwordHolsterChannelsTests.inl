@@ -13,7 +13,7 @@ bool FHolsterLabChannels::RunTest(const FString&)
   S.Profile.HeadMaxTilt=Row->GetNumberField(TEXT("tilt"));
   S.Profile.HeadInSpeed=S.Profile.HeadInMaxGaze=180;S.Profile.HeadOutSpeed=S.Profile.HeadOutMaxGaze=240;S.Profile.HeadInExponent=S.Profile.HeadOutExponent=Row->GetNumberField(TEXT("exponent"));S.Status.ReachTicks=75;
   const auto& Frames=Row->GetArrayField(TEXT("frames"));
-  for(int Tick=0;Tick<Frames.Num();++Tick){const auto F=Frames[Tick]->AsObject();S.Base=JsonPoses(F->GetArrayField(TEXT("base")));S.Pose=JsonPoses(F->GetArrayField(TEXT("pose")));S.Mouth=JsonVector(F->GetArrayField(TEXT("target")));S.Status.Tick=Tick;S.Sliding=Tick>=90;S.Status.SlideProgress=S.Sliding?1:0;
+  for(int Tick=0;Tick<Frames.Num();++Tick){const auto F=Frames[Tick]->AsObject();S.Base=JsonPoses(F->GetArrayField(TEXT("base")));S.Pose=JsonPoses(F->GetArrayField(TEXT("pose")));S.Mouth=JsonVector(F->GetArrayField(TEXT("target")));S.Status.Tick=Tick;S.Sliding=Tick>=90;S.Status.Insertion=S.Status.SlideProgress=S.Sliding?1:0;
    if(Tick==0){S.Head=JsonQuat(F->GetArrayField(TEXT("q")));NeutralFacing(S);S.HeadReference=S.NeutralHead;S.HeadDelta=Log(S.Head*S.HeadReference.Inverse());S.HeadBaseDelta=S.HeadDelta;S.HeadFrom=S.HeadDelta;S.HeadInitialized=true;continue;}
    HeadStep(S);HeadError=FMath::Max(HeadError,Angle(S.Head,JsonQuat(F->GetArrayField(TEXT("q")))));DoneMismatch+=S.HeadDone!=F->GetBoolField(TEXT("done"));
    const auto Expected=JsonPoses(F->GetArrayField(TEXT("neck")));for(int K=0;K<3;++K){NeckError=FMath::Max(NeckError,Angle(S.Pose[S.Neck[K]].GetRotation(),Expected[K].GetRotation()));PositionError=FMath::Max(PositionError,FVector::Dist(S.Pose[S.Neck[K]].GetLocation(),Expected[K].GetLocation()));}

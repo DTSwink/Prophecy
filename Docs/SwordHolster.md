@@ -3,19 +3,47 @@
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
-## Stationary head/neck diagnosis (October13; no fix applied)
+## Drawing IK trial removed (October13)
+
+User chose FK. The lab trial and checkbox are removed. Unreal's trial was already
+reverted and `ProphecySwordHolsterPose.cpp` still matches its pre-trial backup,
+retaining the earlier head/holster root-frame and arm-roll fixes. Trial-only
+native tests are absent; rollback normal build70.63s passed previously.
+
+The subsequent wrist-arc correction is **lab only**: see the
+[lab contract](../Labs/SwordHolsterLab/README.md). No Unreal launch/build or native
+motion edit in this turn; another session owns the closed-editor robotics work.
+
+## Physical neck correction (October13; current)
+
+Subsequent current-scene D/S loops and release spikes were separate authoring
+errors: world-fixed head/holster history opposed root turns, and a nearly straight
+held-arm solve injected axial roll into return inertia. Both are now corrected;
+head/holster history follows the root and the held solve preserves segment roll.
+Sim and kinematic captures cover591 consecutive ticks each with unchanged user
+inputs. The reported missed drawing grip remains deferred by the user. Lab,
+Blueprint tuning and PHAT were not changed by these fixes. See the linked report
+for exact measurements, test status and build state.
+
+The original PHAT now contains neck_01→neck_02→head. Both necks permanently
+exclude head/clavicles; head–clavicle exclusions apply only during D/S and restore
+on completion/interruption. Player head error at289 is .055cm; physical feedback
+uses both real neck bodies. Lab and Blueprint motion settings are unchanged.
+See [decisions, saved/build state and validation](PhysicalNeck20261013.md).
+
+## Original stationary head/neck diagnosis (historical; before correction)
 
 Two independent problems are now isolated in the unchanged stationary second S:
 
-**PHAT provenance clarified:** this is NOT a Jolt import omission. The current clean
+**PHAT provenance clarified:** this is NOT a Jolt import omission. The original clean
 `/Game/Characters/UEFN_Mannequin/Rigs/PA_UEFN_Mannequin` asset itself defines bodies
 neck_01/head and the direct head↔neck_01 constraint; no neck_02 body. The importer
 copies every Physics Asset body and each live constraint's endpoints. This topology
 is independently documented in committed `Tools/SwordHolster/NeckLimits20261011.json`
 (commit822cf423, October11). The asset file's last-write timestamp is July10,2026;
 that is supporting metadata, not a versioned proof of topology since July. The
-asset is Git-ignored, so its original author/date/reason cannot be established from
-repository history. No unsaved changes on this PHAT at inspection; unrelated dirty
+asset was Git-ignored until the pre-change checkpoint `3c8d11b6` force-added it;
+its original author/date/reason cannot be established from earlier history. No unsaved changes on this PHAT at inspection; unrelated dirty
 agent BP/map preserved. Do not describe this as the physics backend removing neck_02.
 
 1. **Head/right-clavicle self-contact causes the extra bobble.** Actual hit events

@@ -54,7 +54,7 @@ bool FProphecyJoltQueryValidationTest::RunTest(const FString&)
     Mesh->SetAllBodiesSimulatePhysics(false);
     Mesh->SetSimulatePhysics(false);
     Mesh->SetComponentTickEnabled(false);
-    if (!TestEqual(TEXT("Actual body count"), Mesh->Bodies.Num(), 22)) return false;
+    if (!TestEqual(TEXT("Actual body count"), Mesh->Bodies.Num(), 23)) return false;
     FProphecyJoltQueryPose Publisher;
     FString Error;
     if (!Publisher.Initialize(*Mesh, Error)) { AddError(Error); return false; }

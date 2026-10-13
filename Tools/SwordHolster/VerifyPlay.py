@@ -113,18 +113,21 @@ def tick(_):
             if n >= state['switch_tick'] + 60:
                 h = next(x for x in actor.get_components_by_class(unreal.PrimitiveComponent) if x.get_name() == 'holster')
                 lib = unreal.get_default_object(unreal.load_class(None, '/Script/GameAnimationSample3.ProphecyJoltStandardPhysicsLibrary'))
-                assert lib.call_method('IsSimulatingPhysics', args=(h, unreal.Name('None'))), 'Holster simulation was not restored'
+                assert lib.call_method('IsSimulatingPhysics', args=(h, unreal.Name('None')))==state['holster_simulated_before'], 'Holster simulation preference was not restored'
                 assert actor.get_editor_property('simulation_mode') == unreal.ProphecyAgentSimulationMode.PHYSICAL
                 gap = math.dist(vec(h.get_world_transform().translation), vec(actor.get_pose_reference_mesh().get_socket_location('pelvis')))
                 assert abs(gap - state['holster_pelvis_distance']) < 15, 'Holster fell away after mode restoration'
                 state['restored_holster_pelvis_distance'] = gap
-                state['events'].append([n, 'Sim and holster simulation restored'])
+                state['events'].append([n, 'Sim and original holster simulation preference restored'])
                 finish('passed')
             return
-        if not args.kinematic and n >= 20 and not state.get('collision_before'):
+        if not args.kinematic and n >= 6 and not state.get('collision_before'):
             state['collision_before'] = filters(actor, right)
             state['collision_unrelated'] = filters(actor, left)
         if args.kinematic and n >= 6 and not state.get('mode_set'):
+            h = next(x for x in actor.get_components_by_class(unreal.PrimitiveComponent) if x.get_name() == 'holster')
+            lib = unreal.get_default_object(unreal.load_class(None, '/Script/GameAnimationSample3.ProphecyJoltStandardPhysicsLibrary'))
+            state['holster_simulated_before']=lib.call_method('IsSimulatingPhysics',args=(h,unreal.Name('None')))
             assert actor.set_simulation_mode(unreal.ProphecyAgentSimulationMode.KINEMATIC)
             state['mode_set'] = True
         if args.shrink_percent is not None:

@@ -642,7 +642,7 @@ bool FProphecyJoltPostEndPhysicsQueryTest::RunTest(const FString&)
     Mesh->SetComponentTickEnabled(false);
     auto* Anim = Cast<UProphecyJoltPoseAnimInstance>(Mesh->GetAnimInstance());
     if (!TestNotNull(TEXT("Completed pose AnimInstance"), Anim)
-        || !TestEqual(TEXT("All native query bodies retained"), Mesh->Bodies.Num(), 22)) return false;
+        || !TestEqual(TEXT("All native query bodies retained"), Mesh->Bodies.Num(), 23)) return false;
     const FReferenceSkeleton& Skeleton = Asset->GetRefSkeleton();
     TArray<FTransform> Local = Skeleton.GetRefBonePose(), Component, CompletedWorld;
     if (!TestEqual(TEXT("All skeleton bones retained"), Local.Num(), 88)) return false;

@@ -28,7 +28,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   await page.waitForFunction(()=>!bodyPlanBusy&&!bodyPlanDirty);assert(await page.evaluate(()=>model.sequence.second?.online));
   await page.uncheck('#sequenceMode');await page.locator('#noCheat').scrollIntoViewIfNeeded();
   await page.evaluate(()=>seek(model.plan.endTick/60));await page.screenshot({path:path.join(out,'no-cheat-ui.png')});
-  await page.uncheck('#noCheat');assert(await page.evaluate(()=>!model.online),'original mode restored');
+  await page.uncheck('#noCheat');assert(await page.evaluate(()=>!model.online),'D reference planner restored');
+  assert.equal(await page.locator('#drawReachIK').count(),0,'IK trial removed');
   assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>runtimeErrors),[]);
   console.log('PASS: checkbox, no seek, independent settings, curves, both-action sequence, worker, persistence/reload, original mode. Isolated state only.');
  }finally{if(browser)await browser.close();server.kill();}

@@ -14,12 +14,12 @@
     "bodyTargets": {
       "clear": {
         "spine": [
-          -71.6,
+          -50,
           -5.125,
           1.287
         ],
         "right": [
-          -1.1,
+          -47,
           42.9,
           5.962
         ],
@@ -32,12 +32,12 @@
       },
       "seated": {
         "spine": [
-          -65,
+          -55,
           -5.177,
           1.942
         ],
         "right": [
-          18.7,
+          -37,
           0,
           0.045
         ],
@@ -53,7 +53,7 @@
     "sheatheRotationTolerance": 15,
     "sheatheTipTolerance": 2,
     "slideRotationCorrection": 0.45,
-    "motion": "idle",
+    "motion": "run",
     "sheathe": true,
     "startTick": 50,
     "maxReachSpeed": 230,
@@ -207,12 +207,12 @@
       "bodyTargets": {
         "clear": {
           "spine": [
-            -71.6,
+            -50,
             -5.125,
             1.287
           ],
           "right": [
-            -1.1,
+            -27,
             42.9,
             5.962
           ],
@@ -225,12 +225,12 @@
         },
         "seated": {
           "spine": [
-            -65,
+            -40.7,
             -5.177,
             1.942
           ],
           "right": [
-            18.7,
+            -47.3,
             0,
             0.045
           ],
@@ -254,12 +254,12 @@
       "bodyTargets": {
         "clear": {
           "spine": [
-            -71.6,
+            -50,
             -5.125,
             1.287
           ],
           "right": [
-            -1.1,
+            -47,
             42.9,
             5.962
           ],
@@ -272,12 +272,12 @@
         },
         "seated": {
           "spine": [
-            -65,
+            -55,
             -5.177,
             1.942
           ],
           "right": [
-            18.7,
+            -37,
             0,
             0.045
           ],
@@ -298,22 +298,22 @@
       "slidingSpeed": 170
     }
   },
-  "time": 2.320033333321781,
+  "time": 1.351333333333336,
   "camera": {
-    "yaw": 0.8224011230468755,
-    "pitch": -0.14319970703125004,
-    "zoom": 1.8,
+    "yaw": 1.8655986328125007,
+    "pitch": -0.29080010986328075,
+    "zoom": 1.4026385170069589,
     "panX": 0,
     "panY": 65
   },
   "workspaceTab": "motion",
   "bodyTargetsPanelOpen": true,
-  "bodyPoseEndpoint": "seated",
+  "bodyPoseEndpoint": "clear",
   "fkReturnPanelOpen": false,
   "controls": {
     "showPelvisDistance": false,
     "showLeeway": true,
-    "sequenceMode": true,
+    "sequenceMode": false,
     "bypassCurves": false,
     "bicolor": true,
     "upperOnly": true,
@@ -326,5 +326,5 @@
     "speed": "1"
   },
   "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
-  "revision": "a52e21067fb3e299ab2d92a819cb24a8eb88d992d7d5d23e99cdbcb9df15a61f"
+  "revision": "0daf6d2ecf42fb2105ae47cb04a5deacadf2330f53434483727b2b38a3a6f9b0"
 }
