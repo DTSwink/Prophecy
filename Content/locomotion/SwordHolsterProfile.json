@@ -1,10 +1,10 @@
 {
   "schema": "sword_holster_runtime_v2",
-  "sourceHash": "39b607e3daa1e4d41931789b8a0c8d7235b9d161c0099857fac0b2bfaf7594d7",
+  "sourceHash": "ce0740103ff6021b71a816f5fd8c59368f725c0a2c53f825f29bcaf23fab78c8",
   "parameters": {
     "noCheat": true,
     "leewayPhase": false,
-    "holsterRotationStabilization": 0.48,
+    "holsterRotationStabilization": 0.78,
     "holsterReturnDuration": 0.25,
     "pelvisRotationCompensation": 0.96,
     "entryInertia": 1,
@@ -14,12 +14,12 @@
     "bodyTargets": {
       "clear": {
         "spine": [
-          -71.6,
+          -50,
           -5.125,
           1.287
         ],
         "right": [
-          -1.1,
+          -27,
           42.9,
           5.962
         ],
@@ -32,12 +32,12 @@
       },
       "seated": {
         "spine": [
-          -65,
+          -40.7,
           -5.177,
           1.942
         ],
         "right": [
-          18.7,
+          -47.3,
           0,
           0.045
         ],
@@ -46,17 +46,17 @@
           0,
           0
         ],
-        "pole": 34.1
+        "pole": 69.4
       }
     },
     "sheatheRotationTolerance": 15,
     "sheatheTipTolerance": 2,
     "slideRotationCorrection": 0.45,
-    "maxReachSpeed": 230,
-    "maxReachRotationSpeed": 600,
+    "maxReachSpeed": 260,
+    "maxReachRotationSpeed": 900,
     "maxAttachedSpeed": 150,
     "maxAttachedRotationSpeed": 200,
-    "slidingSpeed": 170,
+    "slidingSpeed": 330,
     "shrinkPercent": 25,
     "shrinkDuration": 0.25,
     "unshrinkDuration": 0.5,
@@ -65,15 +65,40 @@
     "drawReturn": {
       "enabled": true,
       "startFraction": 0.9,
-      "duration": 0.7,
+      "duration": 0.5,
       "returnEasing": 0.5,
       "inertia": 0.5,
       "inertiaHold": 0,
-      "inertiaDecay": 1,
+      "inertiaDecay": 0.1,
       "worldInertia": false,
       "springReturn": false,
       "angleTimeSeconds": 0.29,
       "upperArmTwistRemoval": 0,
+      "handRotationFKAlpha": 1,
+      "armIKEnabled": true,
+      "armIKStart": 0.25,
+      "armIKEnd": 1,
+      "swordPointSpeed": 800,
+      "swordPointExponent": 1.5,
+      "swordPointCutoff": 0.4,
+      "timingCurve": [
+        [
+          0.19912770595412405,
+          0.2570395962483323
+        ],
+        [
+          0.3840499176275009,
+          0.48518074820020346
+        ],
+        [
+          0.5864170785291621,
+          0.693192325502077
+        ],
+        [
+          0.8166976488988538,
+          0.8810738162180758
+        ]
+      ],
       "boneInertia": {
         "spine": 1,
         "clavicle": 1,
@@ -88,7 +113,7 @@
     "sheatheReturn": {
       "enabled": true,
       "startFraction": 0.7,
-      "duration": 0.8,
+      "duration": 0.9,
       "returnEasing": 1,
       "inertia": 1,
       "inertiaHold": 0,
@@ -97,6 +122,31 @@
       "springReturn": false,
       "angleTimeSeconds": 0.29,
       "upperArmTwistRemoval": 0,
+      "handRotationFKAlpha": 1,
+      "armIKEnabled": false,
+      "armIKStart": 0,
+      "armIKEnd": 0.25,
+      "swordPointSpeed": 0,
+      "swordPointExponent": 1.5,
+      "swordPointCutoff": 0.5,
+      "timingCurve": [
+        [
+          0.2,
+          0.2
+        ],
+        [
+          0.4,
+          0.4
+        ],
+        [
+          0.6,
+          0.6
+        ],
+        [
+          0.8,
+          0.8
+        ]
+      ],
       "boneInertia": {
         "spine": 1,
         "clavicle": 1,
@@ -196,12 +246,12 @@
       "bodyTargets": {
         "clear": {
           "spine": [
-            -71.6,
+            -50,
             -5.125,
             1.287
           ],
           "right": [
-            -1.1,
+            -27,
             42.9,
             5.962
           ],
@@ -214,12 +264,12 @@
         },
         "seated": {
           "spine": [
-            -65,
+            -40.7,
             -5.177,
             1.942
           ],
           "right": [
-            18.7,
+            -47.3,
             0,
             0.045
           ],
@@ -237,18 +287,18 @@
       "swordRelativeSlidePole": true,
       "maxReachSpeed": 260,
       "maxReachRotationSpeed": 900,
-      "slidingSpeed": 250
+      "slidingSpeed": 330
     },
     "sheatheBody": {
       "bodyTargets": {
         "clear": {
           "spine": [
-            -71.6,
+            -50,
             -5.125,
             1.287
           ],
           "right": [
-            -1.1,
+            -47,
             42.9,
             5.962
           ],
@@ -261,12 +311,12 @@
         },
         "seated": {
           "spine": [
-            -65,
+            -55,
             -5.177,
             1.942
           ],
           "right": [
-            18.7,
+            -27,
             0,
             0.045
           ],
@@ -305,6 +355,12 @@
         -0.010674666335401593,
         0.6582264318118826
       ]
-    }
+    },
+    "wristReference": [
+      0.6162170622330014,
+      0.013270161848469686,
+      -0.039260521841435136,
+      0.7864852487123855
+    ]
   }
 }

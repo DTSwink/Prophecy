@@ -4,7 +4,7 @@ namespace ProphecySwordHolster
 struct FProfile {
  float Shrink=10,Unshrink=.25f,Stabilization=0,ReturnDuration=.25f;
  float ShrinkDuration=.25f,AttachedSpeed=100,AttachedRotation=180,TipTolerance=2;
- bool LeewayPhase=true;
+ bool LeewayPhase=true,HigherSolverAccuracy=false;
 };
 struct FReference { TWeakObjectPtr<USceneComponent> Holster;FTransform Seated;float Length=0;FVector BaseLocal=FVector::ZeroVector; };
 enum class EPhase : uint8 { Prepare,Reach,Slide,Holstered,Grow,AlignTip };
@@ -181,6 +181,7 @@ static bool SetHeadClavicleSuppressed(AProphecyAgent* A,bool Suppressed,FString&
 }
 static void RestoreActionPhysics(AProphecyAgent* A)
 {
+    ProphecySpecialSolver::HolsterChanged(A,false);
     RestoreNeckLimits(A);
     FString Error;
     if(!SetHeadClavicleSuppressed(A,false,Error))
@@ -298,13 +299,15 @@ bool UProphecySwordHolsterLibrary::CaptureSwordHolsterReference(AProphecyAgent* 
     ProphecySwordHolster::References.Add(A,{Holster,Blade->GetComponentTransform().GetRelativeTransform(Holster->GetComponentTransform()),Length,BaseLocal});
     ProphecySwordHolster::EnsureCleanup();return true;
 }
-bool UProphecySwordHolsterLibrary::SetSwordHolsterProfile(AProphecyAgent* A,float Shrink,float Duration,float Stabilization,float ReturnDuration,float ShrinkDuration,float AttachedSpeed,float AttachedRotation,bool LeewayPhase,float TipTolerance)
+bool UProphecySwordHolsterLibrary::SetSwordHolsterProfile(AProphecyAgent* A,float Shrink,float Duration,float Stabilization,float ReturnDuration,float ShrinkDuration,float AttachedSpeed,float AttachedRotation,bool LeewayPhase,float TipTolerance,bool HigherSolverAccuracy,FVector2D DrawNNBlendRange,FVector2D SheatheNNBlendRange)
 {
     if(!IsInGameThread() || !IsValid(A) || !FMath::IsFinite(Shrink) || Shrink<0 || Shrink>=100 || !FMath::IsFinite(Duration) || Duration<0)return false;
     if(!FMath::IsFinite(Stabilization)||Stabilization<0||Stabilization>100||!FMath::IsFinite(ReturnDuration)||ReturnDuration<0)return false;
     for(float V:{ShrinkDuration,AttachedSpeed,AttachedRotation})if(!FMath::IsFinite(V)||V<=0)return false;
     if(!FMath::IsFinite(TipTolerance)||TipTolerance<0||TipTolerance>100)return false;
-    ProphecySwordHolster::Profiles.Add(A,{Shrink,Duration,Stabilization*.01f,ReturnDuration,ShrinkDuration,AttachedSpeed,AttachedRotation,TipTolerance,LeewayPhase});ProphecySwordHolster::EnsureCleanup();return true;
+    for(const FVector2D Range:{DrawNNBlendRange,SheatheNNBlendRange})if(!FMath::IsFinite(Range.X)||!FMath::IsFinite(Range.Y)||Range.X<.5||Range.Y>1||Range.Y<Range.X)return false;
+    ProphecySwordHolsterPose::ConfigureReturnBlend(A,DrawNNBlendRange,SheatheNNBlendRange);
+    ProphecySwordHolster::Profiles.Add(A,{Shrink,Duration,Stabilization*.01f,ReturnDuration,ShrinkDuration,AttachedSpeed,AttachedRotation,TipTolerance,LeewayPhase,HigherSolverAccuracy});ProphecySwordHolster::EnsureCleanup();return true;
 }
 bool UProphecySwordHolsterLibrary::DrawSword(AProphecyAgent* A,bool Sheathe,float Reach,float Rotation,float Sliding)
 {
@@ -384,6 +387,7 @@ bool UProphecySwordComponent::StartHolster(bool Sheathe,float Reach,float Rotati
     Geometry.TipLocal=FVector(0,0,Blade->GetStaticMesh()->GetBoundingBox().Max.Z);Geometry.Retained=1-S.Profile.Shrink*.01;
     if(!ProphecySwordHolsterPose::Begin(A,Sheathe,Reach,Rotation,Sliding,S.Reference.Length*(1-S.Profile.Shrink*.01f),GoalHand(A,S,0),GoalHand(A,S,1),Full.TransformPosition(S.Reference.BaseLocal),Geometry,Previous))
     {RestoreActionPhysics(A);if(Sheathe&&!S.Kinematic&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster: no compatible live NN pose for admission."));return false;}
+    ProphecySpecialSolver::HolsterChanged(A,S.Profile.HigherSolverAccuracy);
     S.Phase=EPhase::Prepare;States.Add(A,MoveTemp(S));EnsureCleanup();SetComponentTickEnabled(true);Accepted=true;return true;
 }
 bool UProphecySwordComponent::TickHolster()

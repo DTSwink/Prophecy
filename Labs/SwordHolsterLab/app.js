@@ -83,7 +83,7 @@ function showFKReturn(open){if(open){$('bodyTargetsPanel').hidden=true;$('openBo
 $('openFKReturn').onclick=()=>showFKReturn($('fkReturnPanel').hidden);$('closeFKReturn').onclick=()=>showFKReturn(false);
 function motionOptions(){
  const o={...committed,...bodyProfiles,[bodyAction(committed.sheathe)]:bodyProfile(committed),sequenceMode:$('sequenceMode').checked};
- return $('bypassCurves').checked?{...o,...Object.fromEntries(['drawCurve','drawSlideCurve','sheatheCurve','sheatheSlideCurve'].map(key=>[key,Retime.linear()]))}:o;
+ return $('bypassCurves').checked?{...o,...Object.fromEntries(['drawCurve','drawSlideCurve','sheatheCurve','sheatheSlideCurve'].map(key=>[key,Retime.linear()])),drawReturn:{...o.drawReturn,timingCurve:Retime.linear()},sheatheReturn:{...o.sheatheReturn,timingCurve:Retime.linear()}}:o;
 }
 function refreshReturnTiming(){const part=Playback.edited(model,committed.sheathe);fkPanel.timing(part.model,part.offset);}
 
@@ -165,12 +165,15 @@ function drawAll(){
   row('leewayTip',`Tip ${leeway.tipError.toFixed(1)} / ${leeway.tipLimit.toFixed(1)} cm · body ${leeway.bodyOK?'ready':'waiting'}`,leeway.tipOK?c.green:c.amber);
   row('leewayGates',f.phase==='Align tip'?'Attached · aligning tip':!part.model.o.leewayPhase?(leeway.rotationOK&&leeway.tipOK?'Tip and rotation ready · attach and slide':'Waiting for tip at entrance and rotation tolerance'):leeway.rotationOK?'Rotation ready · attach to holster':'Waiting for rotation tolerance',leeway.rotationOK?c.green:c.amber);
  }
+ const armReturn=part.model.armReturn||part.model.fkReturn;
+ const armReturnFraction=bodyPreview!==null||!armReturn?null:clamp((playbackTime-part.offset-armReturn.start)/armReturn.timing.duration,0,1);
+ textIfChanged('armReturnReadout',armReturnFraction===null?'\u2014':armReturnFraction.toFixed(3));
  const handVelocity=handSpeeds(playbackTime);
  textIfChanged('handLinearSpeed',handVelocity?handVelocity.linear.toFixed(1)+' cm/s':'—');
  textIfChanged('handAngularSpeed',handVelocity?handVelocity.angular.toFixed(1)+' °/s':'—');
  textIfChanged('swordShrinkReadout',((1-f.scale)*100).toFixed(1)+'%');
  textIfChanged('swordSlideReadout',(f.insertion*100).toFixed(1)+'%');
- renderer.draw(data,[0,0,0]);currentPose={...data,diagnostics:{handVelocity,sequenceAction:f.sequenceAction,fkReturn:f.fkReturn,headLook:f.headLook,body:f.body,phase:f.phase,blocked:f.blocked,handError:f.handError,metrics:f.metrics,scale:f.scale,insertion:f.insertion,progress:f.progress,tick:Math.floor(sourceTime*60),sourceTime,playbackTime}};
+ renderer.draw(data,[0,0,0]);currentPose={...data,diagnostics:{handVelocity,armReturnFraction,sequenceAction:f.sequenceAction,fkReturn:f.fkReturn,headLook:f.headLook,body:f.body,phase:f.phase,blocked:f.blocked,handError:f.handError,metrics:f.metrics,scale:f.scale,insertion:f.insertion,progress:f.progress,tick:Math.floor(sourceTime*60),sourceTime,playbackTime}};
  const distanceLabel=$('pelvisDistanceLabel');distanceLabel.hidden=!data.pelvisDistance;
  if(data.pelvisDistance){
   const p=displayPoint(mul(add(data.pelvisDistance.holster,root),.5),shift),m=renderer.viewProjection,w=m[3]*p[0]+m[7]*p[1]+m[11]*p[2]+m[15];

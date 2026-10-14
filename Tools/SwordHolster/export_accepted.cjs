@@ -7,14 +7,19 @@ const H=require(lab+'/holster'),saved=require(lab+'/state.json');
 const data=require(lab+'/data/motions.json'),setup=require(lab+'/data/unreal-setup.json');
 const p=structuredClone(saved.parameters);
 if(saved.controls?.bypassCurves)for(const k of ['drawCurve','drawSlideCurve','sheatheCurve','sheatheSlideCurve'])p[k]=require(lab+'/retime').linear();
+if(saved.controls?.bypassCurves)for(const k of ['drawReturn','sheatheReturn'])p[k].timingCurve=require(lab+'/retime').linear();
 const rows=[];
-for(const motion of ['idle','walk','run'])for(const sheathe of [false,true])for(const inertia of [false,true]){
- const m=H.prepare(data,setup,{...p,...p[(sheathe?'sheathe':'draw')+'Body'],motion,sheathe,noCheat:true,entryInertia:inertia?p.entryInertia:0,duration:12});
+const cases=[];
+for(const motion of ['idle','walk','run'])for(const sheathe of [false,true])for(const inertia of [false,true])cases.push({motion,sheathe,inertia});
+for(const spring of [false,true])for(const world of [false,true])for(const startFraction of [.9,1])cases.push({motion:'idle',sheathe:false,inertia:true,variant:{spring,world,startFraction,handAlpha:.35}});
+for(const {motion,sheathe,inertia,variant} of cases){
+ const options=structuredClone(p);if(variant)Object.assign(options.drawReturn,{springReturn:variant.spring,worldInertia:variant.world,startFraction:variant.startFraction,handRotationFKAlpha:variant.handAlpha});
+ const m=H.prepare(data,setup,{...options,...p[(sheathe?'sheathe':'draw')+'Body'],motion,sheathe,noCheat:true,entryInertia:inertia?p.entryInertia:0,duration:12});
  const start=m.o.startTick;
- rows.push({motion,sheathe,inertia,start,prior:H.motion(data,motion,(start-1)/60,m.o.gazeYaw),entry:H.motion(data,motion,start/60,m.o.gazeYaw),reachTicks:m.plan.reachEndTick-start,
+ rows.push({motion,sheathe,inertia,variant,start,prior:H.motion(data,motion,(start-1)/60,m.o.gazeYaw),entry:H.motion(data,motion,start/60,m.o.gazeYaw),reachTicks:m.plan.reachEndTick-start,
   slideStart:m.plan.endTick-start,slideTicks:m.plan.slideEnd-m.plan.endTick,finish:m.completionTick===null?null:m.completionTick-start,
   frames:m.frames.slice(start).map(f=>({base:H.motion(data,motion,f.tick/60,m.o.gazeYaw),full:H.seatedSword(setup,f.holster),holster:f.holster,pose:f.pose,sword:f.sword,phase:f.phase,scale:f.scale,insertion:f.insertion}))});
 }
-const out=root+'/Saved/Diagnostics/SwordAcceptedPort20261013';
+const out=root+'/Saved/Diagnostics/SwordHolsterParity';fs.mkdirSync(out,{recursive:true});
 fs.writeFileSync(out+'/motion-oracle.json',JSON.stringify({names:data.names,parents:data.parents,setup:{grip:setup.grip,assetScale:setup.assetScale,baseBladeLocal:setup.baseBladeLocal,tip:H.bladeTip(setup),bladeLength:setup.bladeLength},rows}));
 console.log(rows.map(({motion,sheathe,reachTicks,slideStart,slideTicks,finish})=>({motion,sheathe,reachTicks,slideStart,slideTicks,finish})));

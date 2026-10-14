@@ -240,6 +240,7 @@ function turnedRecovery(model,degrees){
 // Measure once from the authored endpoint in pelvis-local space, relative to idle.
 // A 90-degree departure adds the selected seconds; idle gets no extra time.
 function returnTiming(model,options={}){
+ if(model.fixedReturnDuration!==undefined)return {angle:0,addedSeconds:0,duration:model.fixedReturnDuration};
  const degrees=clamp(Number(options.spineTurn)||0,-179,179),source=degrees?turnedRecovery(model,degrees):model;
  const angle=length(qlog(qm(qinv(source.idle.q[source.spine]),source.locals.at(-1).q[source.spine])))*180/Math.PI;
  const base=clamp(Number(options.duration)||1,.1,5),seconds=clamp(Number(options.angleTimeSeconds)||0,0,4),addedSeconds=seconds*angle/90;

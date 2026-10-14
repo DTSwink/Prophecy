@@ -21,9 +21,14 @@ public:
      * Holster return restores the authored local mount over this many 60-tick seconds.
      * Attached speeds independently limit hand translation/rotation in the holster frame.
      * Stabilization rotates around the holster mesh/component origin.
-     * Without the leeway phase, S waits for tip-at-entrance within tolerance, then slides. */
+     * Without the leeway phase, S waits for tip-at-entrance within tolerance, then slides.
+     * Higher Solver Accuracy uses 10 velocity / 32 position iterations during the next D/S action,
+     * including return, and restores the configured solver counts on completion or interruption.
+     * Independent Draw/Sheathe NN Blend Ranges: X starts blending to the live NN, Y completes it.
+     * Fractions of elapsed torso return; .5,.8 blends from 50% through 80%. .5 <= X <= Y <= 1.
+     * Does not accelerate the motion or release the gripping arm before slide completion. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Sword",meta=(DefaultToSelf="Agent",DisplayName="Set Sword Holster Profile"))
-    static bool SetSwordHolsterProfile(AProphecyAgent* Agent,float ShrinkPercent=10,float UnshrinkDuration=.25f,float GripHolsterStabilizationPercent=0,float HolsterReturnDuration=.25f,float ShrinkDuration=.25f,float MaxAttachedSpeed=100,float MaxAttachedRotationSpeed=180,bool LeewayAttachmentPhase=true,float SheatheTipDistanceThreshold=2);
+    static bool SetSwordHolsterProfile(AProphecyAgent* Agent,float ShrinkPercent=10,float UnshrinkDuration=.25f,float GripHolsterStabilizationPercent=0,float HolsterReturnDuration=.25f,float ShrinkDuration=.25f,float MaxAttachedSpeed=100,float MaxAttachedRotationSpeed=180,bool LeewayAttachmentPhase=true,float SheatheTipDistanceThreshold=2,bool HigherSolverAccuracy=false,FVector2D DrawNNBlendRange=FVector2D(0.5,0.8),FVector2D SheatheNNBlendRange=FVector2D(0.5,0.8));
     /** Capture the authored SwordRef and base blade marker before BeginPlay deletes them. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Sword",meta=(DefaultToSelf="Agent",DisplayName="Capture Sword Holster Reference"))
     static bool CaptureSwordHolsterReference(AProphecyAgent* Agent);

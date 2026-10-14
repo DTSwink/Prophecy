@@ -19,21 +19,30 @@
 
 namespace ProphecySwordHolsterSetup
 {
-static void RefreshGripProfilePins()
+static void RefreshGripProfilePins(const TArray<FString>& Args)
 {
  if(!GEditor||GEditor->PlayWorld)return;
- auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
- if(!BP)return;
+ const bool Migrate=Args.Num()==3&&Args[0]==TEXT("ReturnRanges");
+ double Ends[2]={1,1};
+ if(Migrate)for(int I=0;I<2;++I){if(!LexTryParseString(Ends[I],*Args[I+1])||!FMath::IsFinite(Ends[I])||Ends[I]<.5||Ends[I]>1)return;}
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));if(!BP)return;
  TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);TArray<UK2Node_CallFunction*> Nodes;
  for(auto* G:Graphs)for(UEdGraphNode* N:G->Nodes)if(auto* C=Cast<UK2Node_CallFunction>(N))
-  if(C->FunctionReference.GetMemberName()==TEXT("SetSwordHolsterProfile")&&!C->FindPin(TEXT("SheatheTipDistanceThreshold")))Nodes.Add(C);
+  if(C->FunctionReference.GetMemberName()==TEXT("SetSwordHolsterProfile")&&(Migrate||!C->FindPin(TEXT("DrawNNBlendRange"))))Nodes.Add(C);
  if(Nodes.IsEmpty())return;
- const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","GripHolsterPins","Expose holster grip stabilization controls"));BP->Modify();
- for(auto* N:Nodes){N->Modify();N->ReconstructNode();}
+ for(auto* N:Nodes)for(const TCHAR* Name:{TEXT("FKReturnCutoff"),TEXT("SheatheFKReturnCutoff"),TEXT("DrawNNBlendRange"),TEXT("SheatheNNBlendRange")})
+  if(const auto* Pin=N->FindPin(Name))if(!Pin->LinkedTo.IsEmpty()){UE_LOG(LogTemp,Error,TEXT("Return range migration requires unlinked literals; nothing changed."));return;}
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","HolsterReturnRanges","Expose independent sword NN blend ranges"));BP->Modify();
+ for(auto* N:Nodes){N->Modify();
+  for(const TCHAR* Name:{TEXT("FKReturnCutoff"),TEXT("SheatheFKReturnCutoff")})if(auto* Pin=N->FindPin(Name))N->RemovePin(Pin);
+  N->ReconstructNode();
+  if(Migrate){const TCHAR* Names[]={TEXT("DrawNNBlendRange"),TEXT("SheatheNNBlendRange")};
+   for(int I=0;I<2;++I)if(auto* Pin=N->FindPin(Names[I]))N->GetSchema()->TrySetDefaultValue(*Pin,FString::Printf(TEXT("(X=0.500000,Y=%.6f)"),Ends[I]));}
+ }
  FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
  UE_LOG(LogTemp,Display,TEXT("Refreshed %d existing holster profile nodes; not saved."),Nodes.Num());
 }
-static FAutoConsoleCommand GripProfilePins(TEXT("Prophecy.Editor.RefreshHolsterGripPins"),TEXT("Expose new controls on existing profile nodes without changing wiring or tuning; no save."),FConsoleCommandDelegate::CreateStatic(&RefreshGripProfilePins));
+static FAutoConsoleCommand GripProfilePins(TEXT("Prophecy.Editor.RefreshHolsterGripPins"),TEXT("Refresh existing profile pins; ReturnRanges <draw-end> <sheathe-end> explicitly migrates unlinked cutoffs to ranges starting at .5. No save."),FConsoleCommandWithArgsDelegate::CreateStatic(&RefreshGripProfilePins));
 // Explicit editor operation for the user's temporary, non-physical pelvis mount.
 // If the obsolete joint still exists, retain its settings but remove its endpoints.
 static void MountRigidHolster()

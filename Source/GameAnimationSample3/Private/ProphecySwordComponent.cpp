@@ -4,6 +4,7 @@
 #include "ProphecySwordHolster.h"
 #include "ProphecySwordHolsterPose.h"
 #include "ProphecySwordHolsterSchedule.h"
+#include "ProphecySpecialSolver.h"
 #include "ProphecyAngularLimits.h"
 #include "Misc/ScopeExit.h"
 #include "ProphecyJoltStandardPhysicsLibrary.h"
@@ -1287,7 +1288,6 @@ bool AProphecyAgent::SetSwordInertiaScale(float Scale)
 	return true;
 }
 #include "ProphecyPhysicalContext.h"
-#include "ProphecySpecialSolver.h"
 #include "ProphecyAttackControlLibrary.h"
 #include "ProphecyJoltPHATSweepLibrary.h"
 void AProphecyAgent::NotifySwordAttackState(bool bAttacking,int64 EntryTicks)

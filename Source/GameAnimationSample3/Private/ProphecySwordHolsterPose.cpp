@@ -78,9 +78,9 @@ struct FRotationArc
 {
  FQuat A=FQuat::Identity,B=FQuat::Identity,Tangent=FQuat(0,0,0,0);
  double Theta=0;bool Linear=true,Constant=true;
- void Prepare(FQuat From,FQuat To)
+ void Prepare(FQuat From,FQuat To,bool FullPath=false)
  {
-  A=From;B=To;double Dot=A|B;if(Dot<0){B=B*-1.;Dot=-Dot;}
+  A=From;B=To;double Dot=A|B;if(!FullPath&&Dot<0){B=B*-1.;Dot=-Dot;}
   Constant=(A-B).SizeSquared()<1.e-24;Linear=Dot>=.9999;
   if(!Linear){Theta=FMath::Acos(FMath::Clamp(Dot,-1.,1.));Tangent=(B-A*Dot)*(1/FMath::Sin(Theta));}
  }
@@ -88,7 +88,7 @@ struct FRotationArc
  {
   if(Constant)return A;
   if(Linear)return (A*(1-T)+B*T).GetNormalized();
-  double Sin,Cos;ShortArcSinCos(T*Theta,Sin,Cos);return (A*Cos+Tangent*Sin).GetNormalized();
+  double Sin,Cos;const double X=T*Theta;if(FMath::Abs(X)<=PI*.5)ShortArcSinCos(X,Sin,Cos);else FMath::SinCos(&Sin,&Cos,X);return (A*Cos+Tangent*Sin).GetNormalized();
  }
 };
 struct FOffsetArc
@@ -150,6 +150,13 @@ bool LoadProfile(const FString& Path,FProfile& P,FString& Error)
   P.BodyReference[K]=FQuat((*Q)[0]->AsNumber(),(*Q)[1]->AsNumber(),(*Q)[2]->AsNumber(),(*Q)[3]->AsNumber()).GetNormalized();
  }
 
+ const TArray<TSharedPtr<FJsonValue>>* Wrist;
+ if(J->TryGetArrayField(TEXT("wristReference"),Wrist)){
+  if(Wrist->Num()!=4){Error=TEXT("Invalid neutral wrist reference");return false;}
+  P.WristReference=FQuat((*Wrist)[0]->AsNumber(),(*Wrist)[1]->AsNumber(),(*Wrist)[2]->AsNumber(),(*Wrist)[3]->AsNumber());
+  if(P.WristReference.ContainsNaN()||P.WristReference.SizeSquared()<1.e-12){Error=TEXT("Invalid neutral wrist reference");return false;}
+  P.WristReference.Normalize();P.HasWristReference=true;
+ }
  for(int A=0;A<2;++A)
  {
   const FString Prefix=A?TEXT("sheathe"):TEXT("draw");
@@ -186,6 +193,14 @@ bool LoadProfile(const FString& Path,FProfile& P,FString& Error)
   {
    const auto& V=*Nested;auto& R=P.Return[A];V->TryGetBoolField(TEXT("enabled"),R.Enabled);V->TryGetBoolField(TEXT("worldInertia"),R.World);V->TryGetBoolField(TEXT("springReturn"),R.Spring);
    R.StartFraction=Number(V,TEXT("startFraction"),.9,0,1);R.Duration=Number(V,TEXT("duration"),1,.1,5);R.Easing=Number(V,TEXT("returnEasing"),1,0,1);R.Inertia=Number(V,TEXT("inertia"),1,0,1);R.Hold=Number(V,TEXT("inertiaHold"),0,0,.8);R.Decay=Number(V,TEXT("inertiaDecay"),1,0,4);R.AngleTime=Number(V,TEXT("angleTimeSeconds"),.29,0,4);R.TwistRemoval=Number(V,TEXT("upperArmTwistRemoval"),0,0,1);
+   R.HandRotationFKAlpha=Number(V,TEXT("handRotationFKAlpha"),1,0,1);
+   V->TryGetBoolField(TEXT("armIKEnabled"),R.ArmIKEnabled);R.ArmIKStart=Number(V,TEXT("armIKStart"),0,0,1);R.ArmIKEnd=Number(V,TEXT("armIKEnd"),.25,R.ArmIKStart,1);
+   R.SwordPointSpeed=Number(V,TEXT("swordPointSpeed"),0,-3600,3600);R.SwordPointExponent=Number(V,TEXT("swordPointExponent"),1.5,1,8);R.SwordPointCutoff=Number(V,TEXT("swordPointCutoff"),.5,0,.99);
+   const TArray<TSharedPtr<FJsonValue>>* Timing;
+   if(V->TryGetArrayField(TEXT("timingCurve"),Timing)&&Timing->Num()==4)
+    for(int I=0;I<4;++I){const TArray<TSharedPtr<FJsonValue>>* Pair;if(!(*Timing)[I]->TryGetArray(Pair)||Pair->Num()!=2){Error=TEXT("Invalid return curve point");return false;}
+     R.Timing.Points[I+1]={FMath::Clamp((*Pair)[0]->AsNumber(),R.Timing.Points[I].X+.01,1-(4-I)*.01),FMath::Clamp((*Pair)[1]->AsNumber(),R.Timing.Points[I].Y,1.)};}
+   R.Timing.Prepare();
    const TSharedPtr<FJsonObject>* Weights;if(V->TryGetObjectField(TEXT("boneInertia"),Weights))
    {const TCHAR* Keys[]={TEXT("spine"),TEXT("clavicle"),TEXT("upperarm"),TEXT("lowerarm"),TEXT("neck_01"),TEXT("neck_02"),TEXT("head"),TEXT("hand")};for(int I=0;I<8;++I)R.Weights[I]=Number(*Weights,Keys[I],1,0,1);}
   }
@@ -194,8 +209,31 @@ bool LoadProfile(const FString& Path,FProfile& P,FString& Error)
  P.AttachedRotation=Number(J,TEXT("maxAttachedRotationSpeed"),P.Body[1].Rotation,.01,10000);
  return true;
 }
+// One root-relative rotational joint, sampled only after drawing releases.
+struct FHandReturn
+{
+ bool Valid=false;int Step=0;FReturnBone Prepared;
+ FQuat Idle=FQuat::Identity,Frames[2]={FQuat::Identity,FQuat::Identity};
+ FVector Rate=FVector::ZeroVector;double Times[2]={0,0};
+};
+struct FReturnPole {FVector Direction=FVector::ForwardVector,Pole=FVector::RightVector;};
+struct FArmIKReturn
+{
+ bool Enabled=false,Anchored=false;double PreviousElapsed=0;
+ FTransform Previous[3],PreviousBase[3];FVector Point=FVector::ZeroVector;
+ FReturnPole Pole,BasePole;
+};
+struct FHandAxisTurn
+{
+ bool Active=false;
+ double PreviousTime=0,Window=0,Duration=0;
+ FQuat Q=FQuat::Identity,PreviousHand=FQuat::Identity,PreviousRoot=FQuat::Identity,SourceHand=FQuat::Identity,SourceRoot=FQuat::Identity;
+ FHandReturn Resume;
+};
 struct FReturnTrack
 {
+ FHandReturn Hand;FArmIKReturn IK;
+
  TArray<FTransform> ReturnStart,ReturnIdle;
  TArray<FVector> Velocity,OffsetVelocity,WorldVelocity,WorldCorrection;
  TArray<FQuat> ReturnWorld,ReturnBaselineWorld,ReturnActualWorld;
@@ -214,6 +252,7 @@ struct FAuthoredState
 };
 struct FActive : FReturnTrack
 {
+ FTransform RootFrame=FTransform::Identity,PreviousRootFrame=FTransform::Identity;
  FAuthoredState Authored;FProfile Profile;FStatus Status;int32 PoseId=INDEX_NONE,Pelvis=0,Spine[5],Clav,Arm[3],Neck[3];
  TArray<FName> Names;TArray<int32> Parents,Upper,Groups,GripUpper;
  TArray<FTransform> Base,Pose,Before,Entry,LastBase,LastBody,Work,HeadWork,Future,SlidePose;
@@ -232,7 +271,7 @@ struct FActive : FReturnTrack
  FTransform NeutralMount;FQuat StableHolster=FQuat::Identity;bool Stabilizing=false,OriginalAbsoluteRotation=false;
  FGeometry Geometry;FTransform Full,HolsterFrame;FQuat EntryRotation=FQuat::Identity;FVector EntryTipError=FVector::ZeroVector;
  double EntryScale=1,EntryInsertion=0,Scale=1,GuideA=0,GuideB=0;
- FReturnTrack ArmReturn;bool ArmReturning=false;int ReturnTick=-1;double BodyElapsed=0;
+ FReturnTrack ArmReturn;FHandAxisTurn HandAxis;bool ArmReturning=false;int ReturnTick=-1;double BodyElapsed=0;
  int32 SlideStart=-1,HeadStartTick=0,LastGuide=-1;double ReachSpeed=100,RotationSpeed=180,SlideSpeed=60,SlideLength=1,HeadDuration=-1;
 };
 struct FCached {TMap<FName,FTransform> Bones;};
@@ -276,6 +315,7 @@ static void EnsureCleanup()
  });
 }
 void Configure(const AProphecyAgent* A,const FProfile& P){Profiles.Add(A,P);EnsureCleanup();}
+void ConfigureReturnBlend(const AProphecyAgent* A,FVector2D DrawRange,FVector2D SheatheRange){auto& P=Profiles.FindOrAdd(A);P.ReturnBlend[0]=DrawRange;P.ReturnBlend[1]=SheatheRange;EnsureCleanup();}
 bool ActionSpeeds(const AProphecyAgent* A,bool Sheathe,float& Reach,float& Rotation,float& Slide)
 {
  const auto* P=Profiles.Find(A);if(!P||!P->Body[Sheathe].HasSpeeds)return false;
@@ -396,12 +436,12 @@ static void ApplyArm(const FActive& S,TArray<FTransform>& Pose,const FTransform 
   if(K>0)L.SetTranslation(L.GetLocation().GetSafeNormal()*(S.Profile.Body[S.Sheathe].Authored?S.Authored.Local[J].GetLocation().Size():FVector::Distance(S.Base[J].GetLocation(),S.Base[P].GetLocation())));
   Pose[J]=L*Pose[P];if(K==0)Pose[J].SetTranslation(Original);}
 }
-static void Solve(FActive& S,TArray<FTransform>& P,const FTransform& Goal)
+static void Solve(FActive& S,TArray<FTransform>& P,const FTransform& Goal,const FVector* Hint=nullptr)
 {
  const int A=S.Arm[0],B=S.Arm[1],C=S.Arm[2];const FVector X=P[A].GetLocation(),Y=P[B].GetLocation(),Z=P[C].GetLocation();
  const double L1=(Y-X).Size(),L2=(Z-Y).Size();const FVector D=(Goal.GetLocation()-X).GetSafeNormal(SMALL_NUMBER,FVector::ForwardVector);
  const double L=FMath::Clamp((Goal.GetLocation()-X).Size(),FMath::Abs(L1-L2)+.001,L1+L2-.001),Along=(L1*L1+L*L-L2*L2)/(2*L);
- FVector Pole=FVector::VectorPlaneProject(Y-X,D).GetSafeNormal();if(Pole.IsNearlyZero())Pole=FVector::CrossProduct(D,FMath::Abs(D.Z)<.9?FVector::UpVector:FVector::RightVector).GetSafeNormal();
+ FVector Pole=FVector::VectorPlaneProject(Hint?*Hint:Y-X,D);if(Hint&&Pole.Size()<1.e-7)Pole=FVector::VectorPlaneProject(Y-X,D);Pole=Pole.GetSafeNormal();if(Pole.IsNearlyZero())Pole=FVector::CrossProduct(D,FMath::Abs(D.Z)<.9?FVector::UpVector:FVector::RightVector).GetSafeNormal();
  const FVector E=X+D*Along+Pole*FMath::Sqrt(FMath::Max(0.,L1*L1-Along*Along)),H=X+D*L;
  P[A].SetRotation((FQuat::FindBetweenVectors(Y-X,E-X)*P[A].GetRotation()).GetNormalized());P[B]=FTransform((FQuat::FindBetweenVectors(Z-Y,H-E)*P[B].GetRotation()).GetNormalized(),E);P[C]=FTransform(Goal.GetRotation(),H);
 }
@@ -412,10 +452,18 @@ static void PreserveArmRoll(FActive& S,const FTransform (&Before)[3])
  for(int K=0;K<2;++K){const FVector From=Before[K+1].GetLocation()-Before[K].GetLocation(),To=S.Pose[S.Arm[K+1]].GetLocation()-S.Pose[S.Arm[K]].GetLocation();
   S.Pose[S.Arm[K]].SetRotation((FQuat::FindBetweenVectors(From,To)*Before[K].GetRotation()).GetNormalized());}
 }
-static double ArmDuration(const FTransform (&A)[3],const FTransform (&B)[3],double Linear,double Angular)
+static FQuat ReachDestination(const FQuat& Source,FQuat Target,int Bone,const FProfile& Profile)
+{
+ // Same neutral-joint branch as the lab; a 180-degree start/target separation
+ // must not reverse the wrist independently of the rest of the arm.
+ const FQuat Anchor=Bone==2&&Profile.HasWristReference?Profile.WristReference:Source;
+ const double Sign=(Anchor|Source)<0?-1.:1.;
+ return (Anchor|Target)*Sign<0?Target*-1.:Target;
+}
+static double ArmDuration(const FTransform (&A)[3],const FTransform (&B)[3],double Linear,double Angular,const FProfile* Profile=nullptr)
 {
  FRotationArc Rotation[3];FOffsetArc Translation[2];double Seconds=1./60.;
- for(int J=0;J<3;++J){Rotation[J].Prepare(A[J].GetRotation(),B[J].GetRotation());if(J)Translation[J-1].Prepare(A[J].GetLocation(),B[J].GetLocation());
+ for(int J=0;J<3;++J){Rotation[J].Prepare(A[J].GetRotation(),Profile?ReachDestination(A[J].GetRotation(),B[J].GetRotation(),J,*Profile):B[J].GetRotation(),Profile!=nullptr);if(J)Translation[J-1].Prepare(A[J].GetLocation(),B[J].GetLocation());
   // Linear source progress; normalized-linear near-equal quaternions peak
   // at the centre interval. Keep the same 96-sample budget as the lab.
   Seconds=FMath::Max(Seconds,Angle(Rotation[J].At(47./96),Rotation[J].At(.5))*96/Angular);
@@ -625,14 +673,15 @@ static void PlanReach(FActive& S)
   S.Status.ReachTicks=1;
   for(int Pass=0;Pass<16;++Pass){FQuat Body[3];for(int K=0;K<3;++K){const double Degrees=Angle(S.Authored.Entry[K],S.Authored.Destination[K]);Body[K]=FQuat::Slerp(S.Authored.Entry[K],S.Authored.Destination[K],Degrees>0?FMath::Min(1.,B.Speed*S.Status.ReachTicks/60/Degrees):1.).GetNormalized();}
    Endpoint(S,FVector::ZeroVector,Goal,S.SourceArm,S.DestinationArm,Body);
-   const int Required=FMath::Max(BodyTicks,FMath::CeilToInt(ArmDuration(S.SourceArm,S.DestinationArm,S.ReachSpeed,S.RotationSpeed)*60));
+   const int Required=FMath::Max(BodyTicks,FMath::CeilToInt(ArmDuration(S.SourceArm,S.DestinationArm,S.ReachSpeed,S.RotationSpeed,&S.Profile)*60));
    if(Required<=S.Status.ReachTicks)break;S.Status.ReachTicks=Required;
   }
-  Endpoint(S,FVector::ZeroVector,Goal,S.SourceArm,S.DestinationArm);return;
+  Endpoint(S,FVector::ZeroVector,Goal,S.SourceArm,S.DestinationArm);
+  for(int K=0;K<3;++K)S.DestinationArm[K].SetRotation(ReachDestination(S.SourceArm[K].GetRotation(),S.DestinationArm[K].GetRotation(),K,S.Profile));return;
  }
  S.Desired=Optimize(S);Endpoint(S,S.Desired,Goal,S.SourceArm,S.DestinationArm);
  const double BodyTicks=FMath::Max(FMath::Abs(S.Desired.X),FVector2D(S.Desired.Y,S.Desired.Z).Size())/FMath::DegreesToRadians(S.Profile.BodySpeed)*60;
- S.Status.ReachTicks=FMath::Max(FMath::CeilToInt(ArmDuration(S.SourceArm,S.DestinationArm,S.ReachSpeed,S.RotationSpeed)*60),FMath::CeilToInt(BodyTicks));
+ S.Status.ReachTicks=FMath::Max(FMath::CeilToInt(ArmDuration(S.SourceArm,S.DestinationArm,S.ReachSpeed,S.RotationSpeed,&S.Profile)*60),FMath::CeilToInt(BodyTicks));
 }
 // Reach and slide never run together. Reuse the guide buffers for the filtered
 // destination during reach; SetSliding resets their key before slide sampling.
@@ -645,7 +694,7 @@ static void ReachArm(FActive& S,bool Refit,FEndpoint&& Fit)
  // pursuing a moving target; shortening this window forces a deadline snap.
  constexpr double Window=4;
  if(S.LastGuide<0){
-  for(int K=0;K<3;++K){auto& D=S.DestinationArm[K];if((S.SourceArm[K].GetRotation()|D.GetRotation())<0)D.SetRotation(D.GetRotation()*-1.);S.SlideA[K]=D;}
+  for(int K=0;K<3;++K){auto& D=S.DestinationArm[K];D.SetRotation(ReachDestination(S.SourceArm[K].GetRotation(),D.GetRotation(),K,S.Profile));S.SlideA[K]=D;}
   S.LastGuide=0;
  }
  if(Refit||S.Status.ReachDone){
@@ -679,7 +728,7 @@ static void PrepareEntryInertia(FActive& S,TConstArrayView<FTransform> Prior)
  // Use a tiny forward procedural sample to subtract its outgoing FK velocity.
  FActive Next=S;Next.Base=After;const double Fraction=S.Profile.Reach[S.Sheathe].Sample(Dt*60/FMath::Max(1,S.Status.ReachTicks));
  AdvanceAuthored(Next,Fraction);BodyPose(Next,Next.Base,FVector::ZeroVector,Next.Pose);
- FTransform Arm[3];for(int K=0;K<3;++K)Arm[K]=Blend(S.SourceArm[K],S.DestinationArm[K],Fraction);ApplyArm(Next,Next.Pose,Arm);
+ FTransform Arm[3];for(int K=0;K<3;++K)Arm[K]=FTransform(FQuat::SlerpFullPath(S.SourceArm[K].GetRotation(),S.DestinationArm[K].GetRotation(),Fraction).GetNormalized(),Offset(S.SourceArm[K].GetLocation(),S.DestinationArm[K].GetLocation(),Fraction));ApplyArm(Next,Next.Pose,Arm);
  const double Want=WrappedDegrees(PoleTarget(S,S.Sheathe?0:1)-Next.Authored.PoleAngle);Next.Authored.PoleAngle+=FMath::Clamp(Want,-Next.Authored.PoleReachSpeed*Dt,Next.Authored.PoleReachSpeed*Dt);ApplyPole(Next,false);
  SeedEntryInertia(S,Before,Next.Pose,Dt);
 }
@@ -689,12 +738,13 @@ bool CaptureEntryPose(AProphecyAgent* A,FEntryPose& Out)
  TGuardValue<bool> Guard(ReadingBase,true);
  return A->ReadNNFutureWorldPoseWithSnapshot(Out.Names,Future,Out.Pose,Alpha,Snapshot);
 }
-static void SetRootFrame(FActive& S,const FQuat& Frame)
+static void SetRootFrame(FActive& S,const FTransform& Root)
 {
  // Keep the complete head history root-local. Its stored world-space form
  // must move with the root before spending this tick's look-in/out budget.
  // Transport signed rotation vectors too; moving only the head quaternion
  // leaves the old world winding in the neck distribution and return target.
+ S.RootFrame=FTransform(Root.GetRotation(),Root.GetLocation());const FQuat Frame=Root.GetRotation();
  const FQuat Delta=(Frame*S.Authored.Frame.Inverse()).GetNormalized();
  S.Authored.Frame=Frame;
  if(Delta.Equals(FQuat::Identity,1.e-12))return;
@@ -708,7 +758,7 @@ static bool ReadBase(AProphecyAgent* A,FActive& S)
 {
  float Alpha;TGuardValue<bool> Guard(ReadingBase,true);
  if(!A->ReadNNFutureWorldPoseWithSnapshot(S.ReadNames,S.Future,S.Base,Alpha,S.Snapshot)||S.ReadNames!=S.Names)return false;
- if(const auto* Mesh=A->GetAgentMesh())SetRootFrame(S,Mesh->GetComponentQuat());
+ if(const auto* Mesh=A->GetAgentMesh())SetRootFrame(S,Mesh->GetComponentTransform());
  return true;
 }
 bool Begin(AProphecyAgent* A,bool Sheathe,double Reach,double Rotation,double Slide,double Length,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth,const FGeometry& Geometry,const FEntryPose* Previous)
@@ -733,7 +783,8 @@ bool Begin(AProphecyAgent* A,bool Sheathe,double Reach,double Rotation,double Sl
  }
  if(!PrepareUpperOrder(*S))return false;
  if(S->Profile.EntryInertia>0&&(!Previous||Previous->Names!=S->Names||Previous->Pose.Num()!=S->Base.Num()))return false;
- if(const auto* AgentMesh=A->GetAgentMesh())S->Authored.Frame=AgentMesh->GetComponentQuat();
+ if(const auto* AgentMesh=A->GetAgentMesh())SetRootFrame(*S,AgentMesh->GetComponentTransform());
+ S->PreviousRootFrame=S->RootFrame;
  if(S->Profile.Body[Sheathe].Authored&&!PrepareAuthored(*S))return false;
  if(!Sheathe&&S->Profile.Body[Sheathe].Authored)S->Groups[S->Arm[2]]=7;
  const FQuat Top=S->Base[S->Spine[4]].GetRotation();S->SpineAxis=Top.UnrotateVector(S->Base[S->Neck[0]].GetLocation()-S->Base[S->Spine[4]].GetLocation()).GetSafeNormal();
@@ -790,6 +841,16 @@ bool PhysicsSwordTarget(const AProphecyAgent* A,FTransform& Blade)
  Blade=GripAt(**P,Scale)*Hand;return true;
 }
 void SetTargets(const AProphecyAgent* A,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth){if(auto* P=Active.Find(A)){if((*P)->Geometry.Valid)RefreshGeometry(**P,false);else{(*P)->Clear=Clear;(*P)->Seat=Seat;(*P)->Mouth=Mouth;}}}
+static void PrepareHandReturn(FHandReturn& H,const FReturn& R,FQuat Start,FQuat Previous,FQuat Base,FQuat PreviousBase,double Dt,double Duration)
+{
+ H=FHandReturn();H.Valid=true;H.Idle=Base;
+ Previous=(Base*PreviousBase.Inverse()*Previous).GetNormalized();
+ const FVector World=Log(Start*Previous.Inverse())/Dt,IdleRate=Log(Start.Inverse()*Base)*((1-R.Easing)/Duration);
+ H.Prepared.Rotation.Prepare(Start,Base);H.Prepared.Angular.Prepare(Start.UnrotateVector(World)-IdleRate);H.Prepared.World.Prepare(World-Start.RotateVector(IdleRate));
+ H.Frames[0]=H.Frames[1]=Start;H.Rate=R.World?World:Start.UnrotateVector(World);
+}
+static void CaptureReturnArm(const FActive& S,const FTransform& Root,const TArray<FTransform>& Pose,FTransform (&Out)[3])
+{for(int K=0;K<3;++K)Out[K]=Pose[S.Arm[K]].GetRelativeTransform(Root);}
 static void BeginReturn(FActive& S,FReturnTrack& Track)
 {
  FBoneOrder Order;if(!HierarchyOrder(S.Parents,Order))return; // Validated at admission.
@@ -808,19 +869,27 @@ static void BeginReturn(FActive& S,FReturnTrack& Track)
  TArray<FVector> ActualRate,BaseRate;ActualRate.Init(FVector::ZeroVector,N);BaseRate.Init(FVector::ZeroVector,N);
  // Even a grip-only return inherits the torso's incoming rotation. Evaluate
  // its ancestor rates before subtracting them from the clavicle/arm rates.
- for(int J:S.Upper){const int P=S.Parents[J],G=S.Groups[J];const FVector IdleVelocity=Log(Track.ReturnStart[J].GetRotation().Inverse()*Track.ReturnIdle[J].GetRotation())*((1-R.Easing)/Track.ReturnDuration);
+ for(int J:S.Upper){const int P=S.Parents[J],G=J==S.Arm[2]&&!Track.OnlyGrip?-1:S.Groups[J];const FVector IdleVelocity=Log(Track.ReturnStart[J].GetRotation().Inverse()*Track.ReturnIdle[J].GetRotation())*((1-R.Easing)/Track.ReturnDuration);
   BaseRate[J]=(P>=0?BaseRate[P]:FVector::ZeroVector)+Track.ReturnWorld[J].RotateVector(IdleVelocity);
   Track.WorldCorrection[J]=Track.WorldVelocity[J]-BaseRate[J];const bool Inertial=G>=0&&R.Inertia*R.Weights[G]>0;
   Track.Velocity[J]=Inertial?Track.ReturnWorld[J].UnrotateVector(Track.WorldVelocity[J]-(P>=0?ActualRate[P]:FVector::ZeroVector))-IdleVelocity:FVector::ZeroVector;
   ActualRate[J]=(P>=0?ActualRate[P]:FVector::ZeroVector)+Track.ReturnWorld[J].RotateVector(IdleVelocity+Track.Velocity[J]);
  }
  Track.PreparedReturn.SetNum(N);
- for(int J:(Track.OnlyGrip?S.GripUpper:S.Upper)){auto& C=Track.PreparedReturn[J];const auto& Start=Track.ReturnStart[J];const auto& Idle=Track.ReturnIdle[J];
+ for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper)){auto& C=Track.PreparedReturn[J];const auto& Start=Track.ReturnStart[J];const auto& Idle=Track.ReturnIdle[J];
   C.Rotation.Prepare(Start.GetRotation(),Idle.GetRotation());C.Offset.Prepare(Start.GetLocation(),Idle.GetLocation().GetSafeNormal()*Start.GetLocation().Size());
   C.Angular.Prepare(Track.Velocity[J]);C.Translation.Prepare(Track.OffsetVelocity[J]);C.World.Prepare(Track.WorldCorrection[J]);
   C.OffsetAlongIdle=C.Offset.Constant&&(Start.GetLocation().GetSafeNormal()-Idle.GetLocation().GetSafeNormal()).SizeSquared()<1.e-24;
   C.Child=S.Groups[J]==2?S.Names.IndexOfByKey(FName(*S.Names[J].ToString().Replace(TEXT("upperarm"),TEXT("lowerarm")))):INDEX_NONE;
  }
+ Track.Hand=FHandReturn();
+ if(!S.Sheathe&&S.Sliding&&S.Status.Tick>=S.SlideStart+S.Status.SlideTicks&&R.HandRotationFKAlpha<1){
+  const int J=S.Arm[2];
+  auto Relative=[&](const TArray<FTransform>& Pose,const FTransform& Root){return (Root.GetRotation().Inverse()*Pose[J].GetRotation()).GetNormalized();};
+  PrepareHandReturn(Track.Hand,R,Relative(S.Pose,S.RootFrame),Relative(S.LastBody,S.PreviousRootFrame),Relative(S.Base,S.RootFrame),Relative(S.LastBase,S.PreviousRootFrame),1./60,Track.ReturnDuration);
+ }
+ Track.IK=FArmIKReturn();
+ if(R.Enabled&&R.ArmIKEnabled){auto& IK=Track.IK;IK.Enabled=true;CaptureReturnArm(S,S.RootFrame,S.Pose,IK.Previous);CaptureReturnArm(S,S.RootFrame,S.Base,IK.PreviousBase);}
  S.Status.Returning=true;
 }
 static void MountReturn(FActive& S,FReturnTrack& Track,const TArray<FTransform>& Locals)
@@ -835,7 +904,7 @@ static void AdvanceSpring(FActive& S,FReturnTrack& Track,double Elapsed)
  if(Track.SpringFrames.IsEmpty()){
   Track.SpringCount=FMath::CeilToInt(Track.ReturnDuration*480);Track.SpringStep=0;Track.SpringFrames.Add(Track.ReturnStart);Track.SpringFrames.Add(Track.ReturnStart);Track.SpringTimes={0,0};
   Track.SpringRates=Track.Velocity;Track.SpringOffsetRates=Track.OffsetVelocity;Track.SpringParentRates.Init(FVector::ZeroVector,N);Track.SpringWorld=Track.ReturnWorld;
-  for(int J:(Track.OnlyGrip?S.GripUpper:S.Upper))Track.SpringRates[J]=R.World?Track.WorldVelocity[J]:Track.Velocity[J]+Log(Track.ReturnStart[J].GetRotation().Inverse()*Track.ReturnIdle[J].GetRotation())*((1-R.Easing)/Track.ReturnDuration);
+  for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper))Track.SpringRates[J]=R.World?Track.WorldVelocity[J]:Track.Velocity[J]+Log(Track.ReturnStart[J].GetRotation().Inverse()*Track.ReturnIdle[J].GetRotation())*((1-R.Easing)/Track.ReturnDuration);
  }
  // Only two neighbouring samples are retained. No per-agent 480-Hz pose bank.
  while(Track.SpringTimes[1]<Elapsed&&Track.SpringStep<Track.SpringCount){
@@ -843,7 +912,7 @@ static void AdvanceSpring(FActive& S,FReturnTrack& Track,double Elapsed)
   const double Time=Track.ReturnDuration*(1-FMath::Square(1-double(Track.SpringStep)/Track.SpringCount)),Dt=Time-Track.SpringTimes[0],X=Time/Track.ReturnDuration,Ordinary=X+(Ease(X)-X)*R.Easing;
   const double Frequency=(.15+6*FMath::Pow(X,1+3*R.Easing))/FMath::Max(Track.ReturnDuration-Time,Dt);Track.SpringPreviousWorld=Track.SpringWorld;
   auto& Local=Track.SpringFrames[1];auto& World=Track.SpringWorld;auto& Rates=Track.SpringRates;auto& OffsetRates=Track.SpringOffsetRates;auto& ParentRates=Track.SpringParentRates;const auto& Previous=Track.SpringPreviousWorld;
-  for(int J:(Track.OnlyGrip?S.GripUpper:S.Upper)){const int P=S.Parents[J],G=S.Groups[J];const double Effective=G>=0?R.Inertia*R.Weights[G]:0;
+  for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper)){const int P=S.Parents[J],G=J==S.Arm[2]&&!Track.OnlyGrip?-1:S.Groups[J];const double Effective=G>=0?R.Inertia*R.Weights[G]:0;
    if(Effective>0){const double K=Frequency*Frequency/FMath::Max(.05,Effective),C=2*FMath::Sqrt(K)*((.35+.65*R.Decay)*(1-X*X)+X*X),Den=1+C*Dt+K*Dt*Dt;
     if(R.World){const FQuat Target=(World[P]*Track.ReturnIdle[J].GetRotation()).GetNormalized();Rates[J]=(Rates[J]+(Log(Target*Previous[J].Inverse())*K+ParentRates[P]*C)*Dt)/Den;World[J]=(Exp(Rates[J]*Dt)*Previous[J]).GetNormalized();Local[J].SetRotation((World[P].Inverse()*World[J]).GetNormalized());}
     else{Rates[J]=(Rates[J]+Log(Local[J].GetRotation().Inverse()*Track.ReturnIdle[J].GetRotation())*(K*Dt))/Den;Local[J].SetRotation((Local[J].GetRotation()*Exp(Rates[J]*Dt)).GetNormalized());World[J]=(World[P]*Local[J].GetRotation()).GetNormalized();}
@@ -852,25 +921,25 @@ static void AdvanceSpring(FActive& S,FReturnTrack& Track,double Elapsed)
    ParentRates[J]=Log(World[J]*Previous[J].Inverse())/Dt;
   }
   Track.SpringTimes[1]=Time;
-  if(Track.SpringStep==Track.SpringCount)for(int J:(Track.OnlyGrip?S.GripUpper:S.Upper)){auto& End=Local[J];End=Track.ReturnIdle[J];End.SetTranslation(End.GetLocation().GetSafeNormal()*Track.ReturnStart[J].GetLocation().Size());}
+  if(Track.SpringStep==Track.SpringCount)for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper)){auto& End=Local[J];End=Track.ReturnIdle[J];End.SetTranslation(End.GetLocation().GetSafeNormal()*Track.ReturnStart[J].GetLocation().Size());}
  }
 }
 static void ReturnStep(FActive& S,FReturnTrack& Track,double Elapsed)
 {
- const auto& R=S.Profile.Return[S.Sheathe];if(!R.Enabled){MountReturn(S,Track,Track.ReturnStart);return;}const double X=Clamp(Elapsed/Track.ReturnDuration);if(X>=1){
+ const auto& R=S.Profile.Return[S.Sheathe];if(!R.Enabled){MountReturn(S,Track,Track.ReturnStart);return;}const double X=R.Timing.Sample(Clamp(Elapsed/Track.ReturnDuration));Elapsed=X*Track.ReturnDuration;if(X>=1){
   if(!Track.OnlyGrip)S.Pose=S.Base;
   else for(int J:S.GripUpper){const int P=S.Parents[J];S.Pose[J]=S.Base[J].GetRelativeTransform(S.Base[P])*S.Pose[P];}
   return;
  }
  auto& Locals=S.Work;
- if(R.Spring&&R.Inertia>0){Locals=Track.ReturnStart;AdvanceSpring(S,Track,Elapsed);const double T=Clamp((Elapsed-Track.SpringTimes[0])/FMath::Max(1.e-12,Track.SpringTimes[1]-Track.SpringTimes[0]));for(int J:(Track.OnlyGrip?S.GripUpper:S.Upper))Locals[J]=Blend(Track.SpringFrames[0][J],Track.SpringFrames[1][J],T);MountReturn(S,Track,Locals);return;}
+ if(R.Spring&&R.Inertia>0){Locals=Track.ReturnStart;AdvanceSpring(S,Track,Elapsed);const double T=Clamp((Elapsed-Track.SpringTimes[0])/FMath::Max(1.e-12,Track.SpringTimes[1]-Track.SpringTimes[0]));for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper))Locals[J]=Blend(Track.SpringFrames[0][J],Track.SpringFrames[1][J],T);MountReturn(S,Track,Locals);return;}
  const double BlendAlpha=X+(Ease(X)-X)*R.Easing,Fade=Clamp((X-R.Hold)/(1-R.Hold)),Phase=R.Hold>0?Fade*Fade:X,Envelope=Elapsed*FMath::Pow(1-Phase,3);
  double GroupEnvelope[8];for(int G=0;G<8;++G){const double Effective=R.Inertia*R.Weights[G];GroupEnvelope[G]=G>0&&R.Weights[G]==R.Weights[0]?GroupEnvelope[0]:Effective>0?Envelope*FMath::Exp(-R.Decay*Phase/(.025+.45*Effective)):0;}
  // Local return needs neither world-inertia hierarchies nor an intermediate
  // pose. Unchanged offsets only follow the moving bone direction, retaining
  // the captured length even when the live NN changes its segment lengths.
  if(!R.World&&R.TwistRemoval==0){
-  for(int J:(Track.OnlyGrip?S.GripUpper:S.Upper)){const int P=S.Parents[J],G=S.Groups[J];const auto& C=Track.PreparedReturn[J];const double M=G>=0?GroupEnvelope[G]:0;
+  for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper)){const int P=S.Parents[J],G=J==S.Arm[2]&&!Track.OnlyGrip?-1:S.Groups[J];const auto& C=Track.PreparedReturn[J];const double M=G>=0?GroupEnvelope[G]:0;
    const auto& Base=S.Base[J];const auto& ParentBase=S.Base[P];const auto& Parent=S.Pose[P];const FQuat Carry=Parent.GetRotation()*ParentBase.GetRotation().Inverse();
    if(ParentBase.GetScale3D()!=FVector::OneVector||Parent.GetScale3D()!=FVector::OneVector){
     const auto Moving=Base.GetRelativeTransform(ParentBase);FQuat Local=C.Rotation.At(BlendAlpha);FVector V=C.Offset.At(BlendAlpha);
@@ -890,7 +959,7 @@ static void ReturnStep(FActive& S,FReturnTrack& Track,double Elapsed)
  }
  Locals=Track.ReturnStart;
  if(R.World){Track.ReturnBaselineWorld=Track.ReturnWorld;Track.ReturnActualWorld=Track.ReturnWorld;}
- for(int J:(Track.OnlyGrip?S.GripUpper:S.Upper)){const int P=S.Parents[J],G=S.Groups[J];const auto& C=Track.PreparedReturn[J];const FQuat Baseline=C.Rotation.At(BlendAlpha);FQuat Q=Baseline;FVector V=C.Offset.At(BlendAlpha);
+ for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper)){const int P=S.Parents[J],G=J==S.Arm[2]&&!Track.OnlyGrip?-1:S.Groups[J];const auto& C=Track.PreparedReturn[J];const FQuat Baseline=C.Rotation.At(BlendAlpha);FQuat Q=Baseline;FVector V=C.Offset.At(BlendAlpha);
   const double M=G>=0?GroupEnvelope[G]:0;
   if(R.World)Track.ReturnBaselineWorld[J]=(Track.ReturnBaselineWorld[P]*Baseline).GetNormalized();
   if(M>0){if(!R.World)Q=(Q*C.Angular.At(M)).GetNormalized();V=C.Translation.At(M).RotateVector(V);}
@@ -900,7 +969,7 @@ static void ReturnStep(FActive& S,FReturnTrack& Track,double Elapsed)
  if(R.TwistRemoval>0&&Envelope>0){
   TArray<FQuat,TInlineAllocator<32>> Corrected,Carry;
   if(R.World){Corrected.Append(Track.ReturnActualWorld);Carry.Init(FQuat::Identity,S.Names.Num());}
-  for(int J:(Track.OnlyGrip?S.GripUpper:S.Upper)){const int P=S.Parents[J],G=S.Groups[J];
+  for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper)){const int P=S.Parents[J],G=J==S.Arm[2]&&!Track.OnlyGrip?-1:S.Groups[J];
    if(R.World)Carry[J]=Carry[P];
    if(G==2&&R.Inertia*R.Weights[G]>0){const int Child=Track.PreparedReturn[J].Child;if(Child>=0){
     const FQuat Baseline=R.World?Track.ReturnBaselineWorld[J]:Track.PreparedReturn[J].Rotation.At(BlendAlpha);
@@ -913,8 +982,90 @@ static void ReturnStep(FActive& S,FReturnTrack& Track,double Elapsed)
  }
  MountReturn(S,Track,Locals);
 }
+static FQuat SampleHandReturn(FHandReturn& H,const FReturn& R,double Duration,double Elapsed)
+{
+ const double X=R.Timing.Sample(Clamp(Elapsed/Duration));Elapsed=X*Duration;
+ FQuat Q=H.Idle;
+ if(X<1){
+  const double Effective=R.Inertia*R.Weights[7],Alpha=X+(Ease(X)-X)*R.Easing;
+  if(R.Spring&&R.Inertia>0){
+   const int Count=FMath::CeilToInt(Duration*480);
+   while(H.Times[1]<Elapsed&&H.Step<Count){
+    ++H.Step;H.Frames[0]=H.Frames[1];H.Times[0]=H.Times[1];
+    const double Time=Duration*(1-FMath::Square(1-double(H.Step)/Count)),Dt=Time-H.Times[0],U=Time/Duration;
+    if(Effective>0){
+     const double Frequency=(.15+6*FMath::Pow(U,1+3*R.Easing))/FMath::Max(Duration-Time,Dt),K=Frequency*Frequency/FMath::Max(.05,Effective),C=2*FMath::Sqrt(K)*((.35+.65*R.Decay)*(1-U*U)+U*U);
+     const FVector Error=Log(R.World?H.Idle*H.Frames[0].Inverse():H.Frames[0].Inverse()*H.Idle);
+     H.Rate=(H.Rate+Error*(K*Dt))/(1+C*Dt+K*Dt*Dt);const FQuat Delta=Exp(H.Rate*Dt);
+     H.Frames[1]=(R.World?Delta*H.Frames[0]:H.Frames[0]*Delta).GetNormalized();
+    }else H.Frames[1]=H.Prepared.Rotation.At(U+(Ease(U)-U)*R.Easing);
+    H.Times[1]=Time;if(H.Step==Count)H.Frames[1]=H.Idle;
+   }
+   Q=FQuat::Slerp(H.Frames[0],H.Frames[1],Clamp((Elapsed-H.Times[0])/FMath::Max(1.e-12,H.Times[1]-H.Times[0]))).GetNormalized();
+  }else{
+   Q=H.Prepared.Rotation.At(Alpha);
+   if(Effective>0){const double Fade=Clamp((X-R.Hold)/(1-R.Hold)),Phase=R.Hold>0?Fade*Fade:X,M=Elapsed*FMath::Pow(1-Phase,3)*FMath::Exp(-R.Decay*Phase/(.025+.45*Effective));
+    Q=(R.World?H.Prepared.World.At(M)*Q:Q*H.Prepared.Angular.At(M)).GetNormalized();}
+  }
+ }
+ return Q;
+}
+static void ApplyHandReturn(FActive& S,FReturnTrack& Track,double Elapsed)
+{
+ auto& H=Track.Hand;const auto& R=S.Profile.Return[S.Sheathe];if(!H.Valid||Elapsed<=0||!R.Enabled)return;
+ const FQuat Q=SampleHandReturn(H,R,Track.ReturnDuration,Elapsed);
+ const int J=S.Arm[2];const FQuat Independent=(S.Base[J].GetRotation()*H.Idle.Inverse()*Q).GetNormalized();
+ S.Pose[J].SetRotation(FQuat::Slerp(Independent,S.Pose[J].GetRotation(),R.HandRotationFKAlpha).GetNormalized());
+}
 static void BeginReturn(FActive& S){BeginReturn(S,S);}
 static void ReturnStep(FActive& S,double Elapsed){ReturnStep(S,S,Elapsed);}
+static FReturnPole ReturnArmPole(const FTransform (&Arm)[3])
+{
+ FReturnPole P;P.Direction=(Arm[2].GetLocation()-Arm[0].GetLocation()).GetSafeNormal();
+ P.Pole=FVector::VectorPlaneProject(Arm[1].GetLocation()-Arm[0].GetLocation(),P.Direction);
+ for(const FVector Axis:{FVector::RightVector,FVector::UpVector})if(P.Pole.Size()<1.e-7)P.Pole=FVector::VectorPlaneProject(Arm[0].GetRotation().RotateVector(Axis),P.Direction);
+ P.Pole.Normalize();return P;
+}
+static double BendAngle(const FVector& A,const FVector& B,const FVector& D){return FMath::Atan2(FVector::DotProduct(D,FVector::CrossProduct(A,B)),FVector::DotProduct(A,B));}
+static FVector CarryReturnPole(const FReturnPole& P,const FVector& D){return FQuat::FindBetweenVectors(P.Direction,D).RotateVector(P.Pole);}
+static void ApplyArmIKReturn(FActive& S,FReturnTrack& Track,double Elapsed)
+{
+ auto& IK=Track.IK;if(!IK.Enabled||Elapsed<=0||Elapsed>=Track.ReturnDuration)return;const auto& R=S.Profile.Return[S.Sheathe];const double Start=R.ArmIKStart*Track.ReturnDuration;
+ FTransform Arm[3],Base[3];CaptureReturnArm(S,S.RootFrame,S.Pose,Arm);CaptureReturnArm(S,S.RootFrame,S.Base,Base);
+ if(!IK.Anchored){
+  if(Elapsed<Start){for(int K=0;K<3;++K){IK.Previous[K]=Arm[K];IK.PreviousBase[K]=Base[K];}IK.PreviousElapsed=Elapsed;return;}
+  const double U=Elapsed>IK.PreviousElapsed?Clamp((Start-IK.PreviousElapsed)/(Elapsed-IK.PreviousElapsed)):0;FTransform At[3],Idle[3];
+  for(int K=0;K<3;++K){At[K]=FTransform(FQuat::Slerp(IK.Previous[K].GetRotation(),Arm[K].GetRotation(),U),FMath::Lerp(IK.Previous[K].GetLocation(),Arm[K].GetLocation(),U));Idle[K]=FTransform(FQuat::Slerp(IK.PreviousBase[K].GetRotation(),Base[K].GetRotation(),U),FMath::Lerp(IK.PreviousBase[K].GetLocation(),Base[K].GetLocation(),U));}
+  IK.Point=At[2].GetLocation();IK.Pole=ReturnArmPole(At);IK.BasePole=ReturnArmPole(Idle);IK.Anchored=true;
+ }
+ const double X=Elapsed/Track.ReturnDuration,Weight=R.ArmIKEnd>R.ArmIKStart?Clamp((X-R.ArmIKStart)/(R.ArmIKEnd-R.ArmIKStart)):double(X>=R.ArmIKStart);if(Weight<=0)return;
+ auto Progress=[&](double T){const double V=R.Timing.Sample(Clamp(T/Track.ReturnDuration));return V+(Ease(V)-V)*R.Easing;};
+ const double P0=Progress(Start),P=Clamp((Progress(Elapsed)-P0)/FMath::Max(1.e-12,1-P0));const auto& Root=S.RootFrame;
+ const FVector Path=Root.TransformPosition(FMath::Lerp(IK.Point,Base[2].GetLocation(),P)),Target=FMath::Lerp(S.Pose[S.Arm[2]].GetLocation(),Path,Weight);
+ const FVector D=Root.GetRotation().UnrotateVector(Target-S.Pose[S.Arm[0]].GetLocation()).GetSafeNormal(),Initial=CarryReturnPole(IK.Pole,D),Idle=CarryReturnPole(ReturnArmPole(Base),D);
+ const double Reference=BendAngle(Initial,CarryReturnPole(IK.BasePole,D),D),Delta=BendAngle(Initial,Idle,D),Angle=Delta+2*UE_DOUBLE_PI*FMath::FloorToDouble((Reference-Delta)/(2*UE_DOUBLE_PI)+.5);
+ const FVector Wanted=Exp(D*(Angle*P)).RotateVector(Initial),Existing=CarryReturnPole(ReturnArmPole(Arm),D),Pole=Root.GetRotation().RotateVector(Exp(D*(BendAngle(Existing,Wanted,D)*Weight)).RotateVector(Existing));
+ S.Work=S.Pose;Solve(S,S.Pose,FTransform(S.Pose[S.Arm[2]].GetRotation(),Target),&Pole);
+ // Preserve local transforms of any fingers/twist children carried by the arm.
+ for(int J:S.GripUpper){if(J==S.Arm[0]||J==S.Arm[1]||J==S.Arm[2])continue;for(int Parent=S.Parents[J];Parent>=0;Parent=S.Parents[Parent])if(Parent==S.Arm[0]){S.Pose[J]=S.Work[J].GetRelativeTransform(S.Work[S.Parents[J]])*S.Pose[S.Parents[J]];break;}}
+}
+static void HandAxisStep(FActive& S,int Release)
+{
+ const auto& R=S.Profile.Return[0];if(S.Sheathe||!S.Status.Returning||!R.Enabled||!R.SwordPointSpeed||!R.SwordPointCutoff)return;
+ auto& H=S.HandAxis;const auto& Track=S.ArmReturning?S.ArmReturn:static_cast<FReturnTrack&>(S);const int J=S.Arm[2];
+ if(S.Status.Tick==Release){H=FHandAxisTurn();H.Active=true;H.Duration=Track.ReturnDuration;H.Window=H.Duration*R.SwordPointCutoff;H.PreviousHand=H.SourceHand=S.Pose[J].GetRotation();H.PreviousRoot=H.SourceRoot=S.RootFrame.GetRotation();H.Q=(H.SourceRoot.Inverse()*H.SourceHand).GetNormalized();return;}
+ if(!H.Active)return;const double Time=double(S.Status.Tick-Release)/60;const FQuat SourceHand=S.Pose[J].GetRotation(),SourceRoot=S.RootFrame.GetRotation();
+ if(Time>=H.Duration){H.Active=false;return;}
+ if(H.PreviousTime<H.Window-1.e-12){
+  const double At=FMath::Min(Time,H.Window),U=(At-H.PreviousTime)/(Time-H.PreviousTime);const FQuat AnchorHand=FQuat::Slerp(H.SourceHand,SourceHand,U),AnchorRoot=FQuat::Slerp(H.SourceRoot,SourceRoot,U);
+  auto Progress=[&](double T){const double X=Clamp(T/H.Window);if(R.SwordPointExponent==1)return X;const double A=FMath::Pow(X,R.SwordPointExponent),B=FMath::Pow(1-X,R.SwordPointExponent);return A/(A+B)/R.SwordPointExponent;};
+  const double Budget=FMath::DegreesToRadians(R.SwordPointSpeed)*H.Window*(Progress(At)-Progress(H.PreviousTime));H.Q=(H.Q*Exp(FVector(Budget,0,0))).GetNormalized();
+  if(At>=H.Window-1.e-12){PrepareHandReturn(H.Resume,R,H.Q,(H.PreviousRoot.Inverse()*H.PreviousHand).GetNormalized(),(AnchorRoot.Inverse()*AnchorHand).GetNormalized(),(H.SourceRoot.Inverse()*H.SourceHand).GetNormalized(),At-H.PreviousTime,H.Duration-H.Window);}
+  H.PreviousHand=(AnchorRoot*H.Q).GetNormalized();H.PreviousRoot=AnchorRoot;H.PreviousTime=At;
+ }
+ const FQuat Result=Time<=H.Window+1.e-12?SourceRoot*H.Q:SourceHand*H.Resume.Idle.Inverse()*SampleHandReturn(H.Resume,R,H.Duration-H.Window,Time-H.Window);
+ S.Pose[J].SetRotation(Result.GetNormalized());H.SourceHand=SourceHand;H.SourceRoot=SourceRoot;
+}
 static void StartSlide(FActive& S)
 {
  BeginHolsterGrip(S);
@@ -956,6 +1107,23 @@ static bool GripReachable(const FActive& S,const FTransform& Target)
 {
  const double Length=FVector::Distance(S.Pose[S.Arm[1]].GetLocation(),S.Pose[S.Arm[0]].GetLocation())+FVector::Distance(S.Pose[S.Arm[2]].GetLocation(),S.Pose[S.Arm[1]].GetLocation());
  return FVector::Distance(S.Pose[S.Arm[0]].GetLocation(),Target.GetLocation())<=Length-.001;
+}
+static double ReturnBlendAlpha(const FActive& S)
+{
+ const auto Range=S.Profile.ReturnBlend[S.Sheathe];
+ if(!S.Status.Returning||!S.Profile.Return[S.Sheathe].Enabled||Range.X>=1)return 0;
+ const double Fraction=S.BodyElapsed/FMath::Max(S.ReturnDuration,1.e-8);
+ return Range.Y>Range.X?Clamp((Fraction-Range.X)/(Range.Y-Range.X)):(Fraction>=Range.Y?1:0);
+}
+static void BlendReturnToNN(FActive& S,double Alpha)
+{
+ if(Alpha<=0)return;
+ if(Alpha>=1){for(int J:S.Upper)S.Pose[J]=S.Base[J];return;}
+ // Parent-local interpolation preserves the arm/spine lengths while the root
+ // and lower body keep their normal motion. Reuse the existing scratch pose.
+ S.Work=S.Pose;
+ for(int J:S.Upper){const int P=S.Parents[J];
+  S.Pose[J]=Blend(S.Work[J].GetRelativeTransform(S.Work[P]),S.Base[J].GetRelativeTransform(S.Base[P]),Alpha)*S.Pose[P];}
 }
 static void Advance(FActive& S,int Steps)
 {
@@ -1016,18 +1184,27 @@ static void Advance(FActive& S,int Steps)
      if(GripReachable(S,Target))for(int I=0;I<8;++I){const double Mid=(Lo+Hi)*.5;At(Mid);if(GripReachable(S,Target))Lo=Mid;else Hi=Mid;}
      Accepted=Lo;At(Accepted);
     }
-    S.BodyElapsed=Accepted;ApplyArm(S,S.Pose,S.HeldArm);FTransform Seed[3];for(int K=0;K<3;++K)Seed[K]=S.Pose[S.Arm[K]];
-    Solve(S,S.Pose,Target);if(S.Profile.Body[S.Sheathe].Authored)ApplyPole(S);PreserveArmRoll(S,Seed);CaptureArm(S,S.Pose,S.HeldArm);
+    S.BodyElapsed=Accepted;ApplyArm(S,S.Pose,S.HeldArm);
+    // Match the lab's held-arm solve and pole before seeding release inertia.
+    Solve(S,S.Pose,Target);if(S.Profile.Body[S.Sheathe].Authored)ApplyPole(S);CaptureArm(S,S.Pose,S.HeldArm);
    }else{S.BodyElapsed+=1./60.;ReturnStep(S,S.BodyElapsed);}
   }
   if(S.Sliding&&S.Status.Tick==Release&&S.ReturnTick<Release&&Profile.Enabled){
    S.ArmReturn.OnlyGrip=true;BeginReturn(S,S.ArmReturn);S.ArmReturning=true;
   }
   if(S.ArmReturning&&S.Status.Tick>Release)ReturnStep(S,S.ArmReturn,double(S.Status.Tick-Release)/60);
+  if(S.Status.Returning&&S.Sliding&&S.Status.Tick>Release)ApplyArmIKReturn(S,S.ArmReturning?S.ArmReturn:static_cast<FReturnTrack&>(S),S.ArmReturning?double(S.Status.Tick-Release)/60:S.BodyElapsed);
+  if(!S.Sheathe&&S.Status.Returning&&S.Status.Tick>Release)ApplyHandReturn(S,S.ArmReturning?S.ArmReturn:static_cast<FReturnTrack&>(S),S.ArmReturning?double(S.Status.Tick-Release)/60:S.BodyElapsed);
   const FTransform Target=S.Status.Aligning?AlignmentGoal(S):S.Sliding?SlideGoal(S,S.Status.SlideProgress,SlideTime):S.Sheathe?S.Clear:S.Seat;
   S.Status.HandError=FVector::Distance(S.Pose[S.Arm[2]].GetLocation(),Target.GetLocation());
   S.Status.Blocked=!S.Sliding&&S.Status.ReachDone&&S.Status.HandError>2;S.LastBody=S.Pose;HeadStep(S);S.LastBase=S.Base;
-  S.Status.Finished=S.Sliding&&SlideTime>=1&&HolsterWeight(S)<=0&&S.HeadDone&&(!Profile.Enabled||(S.BodyElapsed>=S.ReturnDuration&&(!S.ArmReturning||double(S.Status.Tick-Release)/60>=S.ArmReturn.ReturnDuration)));
+  if(S.Sliding)HandAxisStep(S,Release);S.PreviousRootFrame=S.RootFrame;
+  const bool Window=Profile.Enabled&&S.Profile.ReturnBlend[S.Sheathe].X<1;
+  const double NNAlpha=ReturnBlendAlpha(S);
+  BlendReturnToNN(S,NNAlpha);
+  if(Holding&&NNAlpha>0){Solve(S,S.Pose,SlideGoal(S,S.Status.SlideProgress,SlideTime));if(S.Profile.Body[S.Sheathe].Authored)ApplyPole(S);CaptureArm(S,S.Pose,S.HeldArm);}
+  S.Status.Finished=S.Sliding&&SlideTime>=1&&HolsterWeight(S)<=0&&
+   (Window?NNAlpha>=1:S.HeadDone&&(!Profile.Enabled||(S.BodyElapsed>=S.ReturnDuration&&(!S.ArmReturning||double(S.Status.Tick-Release)/60>=S.ArmReturn.ReturnDuration))));
  }
 }
 
@@ -1057,6 +1234,10 @@ static FAutoConsoleCommand PoseReportCommand(TEXT("Prophecy.Sword.PoseReport"),T
  auto Vector=[](FVector V){TArray<TSharedPtr<FJsonValue>> R;for(int K=0;K<3;++K)R.Add(MakeShared<FJsonValueNumber>(V[K]));return R;};
  for(const auto& Item:Active)if(const auto* A=Item.Key.Get()){
   const auto& S=*Item.Value;auto J=MakeShared<FJsonObject>();J->SetNumberField(TEXT("tick"),S.Status.Tick);
+  auto Carrier=Vector(S.RootFrame.GetLocation());const auto QRoot=S.RootFrame.GetRotation();for(double V:{QRoot.X,QRoot.Y,QRoot.Z,QRoot.W})Carrier.Add(MakeShared<FJsonValueNumber>(V));J->SetArrayField(TEXT("rootFrame"),Carrier);
+  J->SetBoolField(TEXT("handAxisActive"),S.HandAxis.Active);J->SetNumberField(TEXT("handAxisSpeed"),S.Profile.Return[0].SwordPointSpeed);J->SetNumberField(TEXT("handAxisWindow"),S.HandAxis.Window);
+  J->SetBoolField(TEXT("armIKEnabled"),S.Profile.Return[S.Sheathe].ArmIKEnabled);J->SetBoolField(TEXT("armIKAnchored"),(S.ArmReturning?S.ArmReturn.IK:S.IK).Anchored);
+  J->SetNumberField(TEXT("nnBlendAlpha"),ReturnBlendAlpha(S));J->SetNumberField(TEXT("returnFraction"),S.Status.Returning?S.BodyElapsed/FMath::Max(S.ReturnDuration,1.e-8):0);
   J->SetBoolField(TEXT("aligning"),S.Status.Aligning);J->SetNumberField(TEXT("alignmentStart"),S.TipAlignment.Start);J->SetNumberField(TEXT("alignmentTicks"),S.TipAlignment.Ticks);
   J->SetNumberField(TEXT("slideStart"),S.SlideStart);J->SetNumberField(TEXT("holsterWeight"),HolsterWeight(S));
   J->SetArrayField(TEXT("mouth"),Vector(S.Mouth));J->SetArrayField(TEXT("tipLocal"),Vector(S.Geometry.TipLocal));

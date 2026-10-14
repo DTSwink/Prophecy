@@ -3,6 +3,312 @@
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
+## October14 accepted lab return port
+
+**Root omission corrected and live-verified:** the earlier oracle included `root`, while the live
+25-bone NN/PHAT pose omits it. Bone-name guards silently disabled hand-axis,
+FK/IK and independent hand rotation in live use. Completion/position checks
+missed this. The controller now uses explicit current/previous character mesh
+frames. Four native tests pass:40 recorded cases (20 using the exact live order),
+signed hand-axis/root-motion covariance, head-root invariance and NN blend.
+Live sim and kin each completed6actions/243ticks; all3agents activate IK and39
+angular samples per mode match the saved sigmoid profile within.000002415deg.
+The requested turn is111.5967deg; simulated wrist angular tracking error stays
+below.66543deg during the hand-axis lifetime. Earlier recorded-input results
+remain valid but did not prove live activation. Lab and tuning are unchanged.
+One necessary retained-layout restart; normal build77.44s. Editor25668 open
+TestNN outside Play, clean/status3, graph values/wiring preserved. Evidence:
+`Saved/Diagnostics/SwordRootReturn20261014/` (`angular-summary.json`, native,
+motion-result, sim/kin, final-check). No universal physics/visual-perfect claim.
+
+The approved lab revision `a42b66717cfd98cdefcfd247fa31de215b237857a6c064591ccef1b664795eb4`
+is now implemented in the native controller. No lab motion/tuning files were changed.
+`Set Sword Holster Lab Profile` loads independent D/S `armIKEnabled`,
+`armIKStart`, `armIKEnd`, plus drawing `swordPointSpeed`, `swordPointExponent`,
+`swordPointCutoff` from the existing JSON export. No extra Blueprint nodes.
+
+The released-arm return captures its actual outgoing root-local FK pose at
+blend Start, using bracketing ticks for fractional starts. Its wrist path then
+reaches current locomotion at full return; the Start/End window blends ownership.
+Bend directions and their angle branch exactly follow the accepted lab, including
+its documented limitations in other configurations. Fingers/twist children keep
+local transforms. The left arm and held grip retain existing behavior.
+
+The drawing hand-axis turn postmultiplies hand-local X rotation after release.
+Signed speed, sigmoid integral and cutoff match the lab. At cutoff its reached
+rotation and preceding velocity seed the existing one-joint return over the
+remaining interval, toward the original moving wrist path. This is applied after
+saving the controller's unmodified pose history, and before the existing NN blend.
+There is no future-pose lookup, Control Rig pass or idle history recording.
+
+Latest exported drawing return: base duration .5s, easing .5, inertia .5,
+decay .1, FK/IK .25→1 enabled; hand-axis 800deg/s, exponent1.5, cutoff .4.
+Sheathing stays independent (duration .9s, early start .7, IK disabled).
+The user's current native NN windows D(.8,1)/S(.8,1) are preserved; they blend
+onto live NN and therefore intentionally differ from the lab near completion.
+Unreal continues to use the actual holster/mesh pivot and live NN inputs.
+
+Normal native build succeeded. Recorded-input AcceptedMotion (20 cases: idle,
+walk/run, D/S, entry inertia, root-hand alpha, spring/world/full/early return)
+and ReturnBlend tests pass. Reach, slide and completion ticks match exactly;
+maximum bone error .000036141cm/.000096140deg. This establishes authored
+controller parity for those inputs, not perfect physical response or every
+possible tuning. The accepted lab's known other-case large arm steps are not
+silently modified. Evidence: `Saved/Diagnostics/AcceptedReturnPort20261014/`.
+
+Live verification after saving: 9 simulated actions over403ticks and6 kinematic
+actions over303ticks completed on the current scene, with no missing ticks or
+nonfinite poses. Maximum right-hand target/mesh discrepancy was .31424cm in sim
+and .000000304cm in kinematic. No visual-perfection claim. Existing basic profile
+pin changes were numeric formatting only; new return tuning lives in the JSON.
+Both current NN blend ranges (.8,1), higher solver checkbox and all graph links
+were preserved. User BP/map edits saved before the one necessary restart;
+editor21432 remains open on TestNN outside Play, clean/status3, graph unchanged
+after tests. Startup low-space dialog was dismissed; no further restart.
+
+## October14 NN blend ranges — current implementation
+
+**Set Sword Holster Profile** replaces the two scalar cutoffs with **Draw NN Blend
+Range** and **Sheathe NN Blend Range**. X starts the linear blend; Y finishes it.
+For example, (.5,.8) leaves FK unchanged through 50% of the elapsed torso-return
+interval, then increases the NN weight from zero to one by 80%. It uses the
+existing 60-tick clock, independently for D/S. Valid values are .5 <= X <= Y <= 1;
+(1,1) retains the full lab return. Each action captures its configured range.
+The user confirmed that blending will not begin while grip still needs a separate
+return, so there is no second delayed arm-blend mechanism.
+
+The NN continues running beneath D/S. During the window, parent-local transforms
+blend the authored pose onto that live NN pose, preserving segment lengths and
+normal root motion. The whole upper body, including the head, participates.
+Grip protection remains until slide completion. At Y, the published pose is
+already the current NN pose and the authored override retires. This replaces the
+hard-transfer history/reseeding/one-tick repeated presentation implementation;
+there is no extra inference or history collection. The lab is unchanged.
+
+Current BP saved **D(.5,.9), S(.5,.8)**, preserving the user's last scalar
+endpoints. Every other graph default/link matches; healthy status3, no stale
+native properties/pin types, no dirty packages after tests. Normal build277.60s
+passed; one required layout/reflection restart, editor23068 open TestNN outside
+Play. No lab changes or push.
+
+Native ReturnBlend validates independent weights, unchanged pre-window/lower
+poses, segment lengths, rigid-root invariance and exact NN endpoint/retirement.
+AcceptedMotion's20 recorded lab cases still match exact event ticks and prior
+pose tolerances. Live current setup: simulated15actions/583ticks and kinematic
+9actions/363ticks, no missing ticks,421 interior blend samples with zero weight
+error, all24 actions complete, none overlap grip. Drawing player seam now slows
+right-hand speed4.92→1.19→.34cm/s rather than the former12.8→0→31.7cm/s kick.
+**Linear pose weighting does not guarantee endpoint velocity continuity:** the
+player's later S window ends with right-hand speed117.86→66.59→.03cm/s. This is
+recorded rather than hidden behind unrequested easing. No full crowd benchmark
+or universal simulated tracking/smoothness claim. Evidence:
+`Saved/Diagnostics/SwordReturnRange20261014/` (native, verified.json,
+current-verification.json, kinematic-verification.json, final-check.json).
+
+## October14 former hard-handoff velocity seam — historical diagnosis
+
+User rejected the handoff's velocity seam. Current D.9/S.8 capture reproduces
+both hands moving outward after drawing. At player absolute206, left hand speed
+is1.9→0→20.8cm/s and right12.8→0→31.7cm/s. There is a duplicated presentation tick,
+then the NN prediction changes direction/speed. Previous/current core input
+features match recorded outgoing transforms within1.22e-7; this drawing example's
+hand-history errors are below.000106cm. Removing the NN delta in offline decoding
+leaves only.00056cm wrist displacement. Applying the actual delta reproduces the
+outward motion; reconstructed predictions match all15 handoff future endpoints
+within.000026cm. Correct history alone does not enforce velocity continuity.
+
+No runtime, lab, tuning or asset changes this diagnosis; no build or restart.
+Current editor left open outside Play. Evidence:
+`Saved/Diagnostics/SwordHandoffVelocity20261014/`. The prior checks below establish
+pose continuity, not a fully smooth handoff. Do not silently add a correction blend.
+
+## October14 early handoff repair and separate D/S cutoffs — superseded
+
+**Set Sword Holster Profile** exposes **Draw FK Return Cutoff** and
+**Sheathe FK Return Cutoff**, defaults1. Both existing Blueprint literals were
+copied from the user's latest0.8, preserving all other defaults and wiring.
+The old internal `FKReturnCutoff` pin remains Draw for link compatibility;
+`SheatheFKReturnCutoff` is independent. Each action snapshots its own value.
+
+For cutoff below1, the torso return fraction requests one whole-upper transfer
+at the next normal NN update; FK continues until consumed. Current and previous
+actual authored poses span one policy interval in root-local space. Both NN
+history samples, pelvis heading/base and presentation starting endpoint are
+seeded together. A still-held arm follows the sword through slide completion;
+its release transfers only right-arm history without reseeding the torso.
+No extra inference, time compression or blend. Cutoff1 and lab unchanged.
+
+Three native groups pass: independent D/S cutoff selection, pose/motion history
+including fractional intervals and grip-only transfer, plus20 recorded lab cases
+with unchanged exact event timing.18 live actions complete with no missing ticks:
+kinematic idle.5; simulated run Draw.25/Sheathe.75; simulated idle0.23 measured
+handoff boundaries preserve parent-local transforms within3.4e-13cm/.000002415deg.
+All20 captured NN-owned pre-release held frames retain the grip joint.
+
+Limits: this establishes pose continuity and correct input history, not exact
+velocity continuity of subsequent NN predictions. The boundary presents the
+last authored pose once before interpolation advances; following speed comes
+from the model response. Simulated running return hand tracking reaches2.4922cm.
+No new full performance benchmark or exhaustive interruption matrix this pass.
+
+Final normal binaries current; editor10492 open TestNN, Play off, healthy saved
+BP/status3, clean packages, graph unchanged after tests. The required initial
+native-layout restart was followed by an avoidable helper-migration restart:
+a changed console-command delegate remained registered with its old signature
+through Live Coding. User explicitly reiterated not to close Unreal needlessly;
+acknowledged and recorded. Final helper build76.43s. Lab untouched, no push.
+Evidence: `Saved/Diagnostics/SwordNNHandoff20261014/`, `split/verified.json`,
+`split/native/automation/index.json`, `live/` and the three transfer reports.
+
+## October14 early cutoff: teleport confirmed, unresolved
+
+User reports upper-body teleport with cutoff.5. The current implementation forces
+return progress to1 at the selected fraction, replacing the unfinished authored
+pose with the independently running NN pose. The .5 test verified this switch,
+not continuity; its passing result is not evidence of a smooth handoff. The saved
+half-cutoff capture contains spine steps up to18.75deg. D/S isolates its authored
+upper pose from recurrent NN input. A true early handoff needs to transfer the
+current pose/motion into NN recurrence and presentation history while retaining
+the still-gripping arm. No fix or new blend has been applied. Full-return recorded
+parity below remains valid; early-cutoff smoothness is explicitly not verified.
+
+## October14 return controls port and cutoff — prior verification
+
+Native D/S loads the lab's independent return timing curves and drawing
+`handRotationFKAlpha`. Drawing's root-local hand rotation starts after release,
+follows the current NN hand destination, and leaves wrist position on the FK arm.
+The one-joint return uses the same curve, duration, inertia and spring method;
+alpha1 skips its work. The rejected exponent is removed and is not ported.
+Latest saved D/S poses, speeds, return values and curves are exported by
+`Tools/SwordHolster/SyncLabProfile.cjs`; curve bypass also includes return curves.
+
+**Set Sword Holster Profile → FK Return Cutoff** is an Unreal-only override,
+default1. It switches each FK return to the current NN pose when that fraction
+of its original elapsed duration is reached; it does not accelerate or reshape
+the preceding motion. Body return and the separately released arm each use their
+own return interval. The gripping arm remains on the sword through sliding.
+Head look, sword unshrink and holster rotation restoration retain their own
+completion clocks. Lowering the cutoff deliberately truncates the pose and may
+produce a discontinuity; no extra blending is inserted. Applies on the next D/S.
+
+Normal build242.04s passed; interactive editor23480 is open on TestNN, outside
+Play, no dirty packages, status3/native_properties0/pin_types0. The existing node
+was reconstructed and saved with cutoff1, Higher Solver Accuracy stilltrue,
+and current profile literals (including78% holster stabilization). User's dirty
+Blueprint/map were saved before the required restart; original bytes backed up.
+All other graph defaults/wiring are preserved. Post-PIE audit differs only by10
+empty lines in one dumped string field; nonblank graph content is identical.
+
+**Verification:**20 recorded-input cases (idle/walk/run D/S, entry inertia off/on,
+plus early/full drawing return ×local/world inertia ×blend/spring with alpha.35)
+match exact reach, slide admission, slide duration and completion ticks. Maximum
+pose error.000036141cm/.000096140deg. Two additional pre-existing implementation
+differences surfaced and were fixed: whole-body return must disable FK wrist
+inertia, and world-inertia grip return must sample its ancestor frames internally
+before publishing only the grip branch. No lab motion change beyond removing the
+requested exponent. Cutoff automation verifies unchanged first-half motion and
+exact current-NN destination at.5/0. Lab16 hand cases,8 return-curve cases/two
+sequences and isolated UI/persistence checks pass.
+
+Six live idle/walk/run ×kinematic/sim cases completed72 D/S actions on three
+agents, with no missing captured ticks or nonfinite poses. A separate simulated
+run cutoff.5 completed6 actions. Testing temporarily disabled only the known
+Cube obstacle in owned PIE; saved scene/collision is unchanged. **This is not
+perfect physical parity:** simulated hand tracking reached2.3584cm and neck
+tracking5.9458deg. One kinematic running reach also contains a67.53deg parent-local
+upper-arm twist (NPC_C_3 absolute49); wrist rotation step there is2.93deg. This
+occurs before slide/return and was not changed or concealed by this return port.
+A new reach-motion experiment would still need to start in the lab.
+
+Evidence and compact receipt: `Saved/Diagnostics/FinalReturnPort20261014/`.
+`Saved/Diagnostics/SwordHolsterParity/` is the reusable oracle output; earlier
+ dated evidence remains unchanged. No fresh performance benchmark or push.
+
+## October14 parity port — controller matched; physical neck residual remains
+
+### Solver comparison checkbox (October14)
+
+**Set Sword Holster Profile → Higher Solver Accuracy** defaults off. On requests
+the existing attack/defense policy (10 velocity / 32 position iterations) from
+successful D/S admission through the full return. Off leaves configured ordinary
+counts in effect (normally 0/0 overrides, meaning world defaults 10/2). Changing
+the profile applies to the next action. Cleanup restores configured counts on
+completion, cancellation, hide/drop and mode changes; another active attack or
+defense keeps its own override. No polling or new per-tick work is added.
+
+Controlled run tests changed only solver counts at tick480, with identical pose
+history beforehand. Across three agents in return ticks499–550, 10/32 reduces
+worst neck_01 angle error25.8205→6.3432deg and worst head position error
+1.5075→.2621cm. Self-collision suppression is identical to baseline; damping
+removal does not resolve it; more position passes help substantially whereas
+more velocity passes alone do not. This demonstrates insufficient positional
+convergence as a contributor, not exact physical parity or zero residual.
+Evidence: `Saved/Diagnostics/NeckTracking20261014/special-result.json` and
+the corresponding damping/contact/velocity/position controls. This checkbox is
+an Unreal physics comparison; lab motion and tuning are unchanged.
+
+Normal build243.82s and `Prophecy.Jolt.SpecialSolver.Lifecycle` pass, including
+D/S overlap with attack/defense, repeated notifications and custom-count restore.
+Existing Blueprint checkbox saved unchecked; every previous graph line is unchanged.
+Three-agent run S/D cycles pass checked and unchecked, with effective counts verified
+each tick and restored on both completions; three-agent hide interruption restores
+counts too. Test fixture reapplies its temporary checkbox for D because the saved
+Blueprint reconfigures the unchecked profile between actions. Editor11260 remains
+open outside Play, no dirty packages, status3/native_properties0/pin_types0.
+Map/sword/PHAT/lab settings/runtime JSON hashes preserved. No new performance
+claim or push. Evidence/build log:
+`Saved/Diagnostics/HolsterSolverCheckbox20261014/`.
+
+Native FK wrist interpolation now uses the lab's neutral-joint reference, including
+reach duration and entry inertia. The runtime JSON/exporter carries `wristReference`;
+profiles without it retain the earlier selection. No new Blueprint pin or IK path.
+
+Identical recorded-input tests exposed another difference: native held early FK
+return overwrote arm roll after the pole solve, unlike the lab. Removing that
+extra step restores matching return and release inertia. Alignment's existing
+roll transport remains. This supersedes the held-return part of the October13
+roll fix below; live simulated releases must be rechecked for its original symptom.
+
+All12 idle/walk/run ×D/S ×entry-inertia cases pass. Reach, slide, slide duration
+and completion ticks match exactly; upper-body max error.000036141cm/.000096261deg.
+Normal DLLs rebuilt successfully. Interactive TestNN is open, outside Play.
+Idle/walk/run in kinematic mode each completed two S/D cycles on three agents.
+Simulation did the same with an unobstructed path: 72 completed actions across
+these six configurations. Saved-scene walk/run obstruct the third NPC at Cube;
+disabling only that collider in owned PIE removes both stalls. The saved scene
+and collision settings were not changed.
+
+For unobstructed simulated releases, hand tracking error is at most .076cm/.313deg.
+The earlier large release spikes were not reproduced. Maximum grip residuals
+are .372cm idle, 1.244cm walk and 1.658cm run; rendered/native sword position
+separation stays below .000005cm. These are physical residuals, not exact parity.
+
+**Remaining physical neck deviation:** run neck_01 reaches 3.385cm/25.821deg
+from the commanded pose, while head orientation remains within 1.5deg (position
+within1.634cm). Idle also has a brief10.631deg head tracking error at entry181.
+Owned-PIE neck/head collision suppression gives identical run results; freeing
+all three neck/head joints leaves neck error25.833deg. Neither intervention
+explains/removes the residual. Target neck parent-local offsets change by less
+than .016cm, excluding a large changing target bone length. No physics tuning,
+PHAT change or pose correction was applied to hide this. The subsequent solver comparison above demonstrates insufficient positional
+convergence as a substantial contributor; do not claim complete simulated1:1 parity.
+
+Saved BP/map/sword/PHAT/lab settings hashes are unchanged; no dirty packages.
+Normal DLLs are current, Blueprint status3/native_properties0/pin_types0.
+No new performance claim or push. Live captures, tracking summaries and the two
+neck controls are in the evidence folder below.
+Evidence: `Saved/Diagnostics/SwordParity20261013/`.
+
+## Saved body/inertia tuning sync (October13; editor closed)
+
+The runtime JSON now contains the current lab's independent D/S body poses,
+entry inertia and both return profiles. Drawing return is inertia1, easing0,
+decay.1. These fields load through the existing Set Sword Holster Lab Profile
+node; no Blueprint rewrite or build is needed. Other runtime tuning is preserved.
+JSON values and loader support verified offline; live execution deferred during
+robotics training. The lab FK wrist-arc code correction is not part of this sync.
+Evidence: `Saved/Diagnostics/SwordProfile20261013/verification.json`.
+
 ## Drawing IK trial removed (October13)
 
 User chose FK. The lab trial and checkbox are removed. Unreal's trial was already

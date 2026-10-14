@@ -15,6 +15,10 @@ struct FReturn
 {
     bool Enabled=true,World=false,Spring=false;
     double Duration=1,Easing=1,Inertia=1,Hold=0,Decay=1,AngleTime=.29,TwistRemoval=0,StartFraction=.9;
+    double HandRotationFKAlpha=1;
+    bool ArmIKEnabled=false;double ArmIKStart=0,ArmIKEnd=.25;
+    double SwordPointSpeed=0,SwordPointExponent=1.5,SwordPointCutoff=.5;
+    FCurve Timing;
     double Weights[8]={1,1,1,1,1,1,1,1}; // Last group: drawing hand at release.
 };
 struct FBodyProfile
@@ -34,9 +38,12 @@ struct FProfile
     double ShrinkDuration=.25,AttachedSpeed=100,AttachedRotation=180,Stabilization=0,HolsterReturnDuration=.25,TipTolerance=2;
     bool LeewayPhase=true;
     FQuat BodyReference[3]={FQuat::Identity,FQuat::Identity,FQuat::Identity};
+    FQuat WristReference=FQuat::Identity;
+    bool HasWristReference=false;
     FBodyProfile Body[2];
     FCurve Reach[2],Slide[2]; // Draw, sheathe.
     FReturn Return[2];
+    FVector2D ReturnBlend[2]={{1,1},{1,1}}; // Draw, sheathe: start/end of linear NN weight. (1,1) keeps the full lab return.
 };
 struct FStatus
 {
@@ -59,6 +66,7 @@ bool CaptureEntryPose(AProphecyAgent* Agent,FEntryPose& Out);
 float UnshrinkAlpha(float& ElapsedTicks,float Duration);
 bool LoadProfile(const FString& Path,FProfile& Out,FString& Error);
 void Configure(const AProphecyAgent* Agent,const FProfile& Profile);
+void ConfigureReturnBlend(const AProphecyAgent* Agent,FVector2D DrawRange,FVector2D SheatheRange);
 bool ActionSpeeds(const AProphecyAgent* Agent,bool Sheathe,float& Reach,float& Rotation,float& Slide);
 bool Begin(AProphecyAgent* Agent,bool Sheathe,double ReachSpeed,double RotationSpeed,double SlideSpeed,
     double SlideLength,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth,const FGeometry& Geometry=FGeometry(),const FEntryPose* Previous=nullptr);

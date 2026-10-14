@@ -81,22 +81,23 @@ function sheathSlideGoal(setup,holster,scale,tip,entry,insertion,alpha,rotationP
  const position=add(add(mouth,mul(sub(point(seat,tip),mouth),depth)),mul(rotate(full.q,entry.tipError),1-correction));
  return handForTip(setup,scale,tip,position,q);
 }
-function solve(pose,idx,goal){
+function solve(pose,idx,goal,poleHint=null){
  const [s,e,h]=idx,A=pose[s].p,B=pose[e].p,C=pose[h].p,L1=len(sub(B,A)),L2=len(sub(C,B));
  const delta=sub(goal.p,A),direction=len(delta)>1e-8?unit(delta):[1,0,0],distance=len(delta),D=clamp(distance,Math.abs(L1-L2)+.001,L1+L2-.001);
- let pole=sub(sub(B,A),mul(direction,dot(sub(B,A),direction)));
+ let pole=poleHint?sub(poleHint,mul(direction,dot(poleHint,direction))):sub(sub(B,A),mul(direction,dot(sub(B,A),direction)));
+ if(len(pole)<1e-7&&poleHint)pole=sub(sub(B,A),mul(direction,dot(sub(B,A),direction)));
  if(len(pole)<1e-7)pole=cross(direction,Math.abs(direction[2])<.9?[0,0,1]:[0,1,0]);pole=unit(pole);
  const along=(L1*L1+D*D-L2*L2)/(2*D),E=add(add(A,mul(direction,along)),mul(pole,Math.sqrt(Math.max(0,L1*L1-along*along)))),H=add(A,mul(direction,D));
  pose[s].q=unit(qm(fromTo(sub(B,A),sub(E,A)),pose[s].q));pose[e].q=unit(qm(fromTo(sub(C,B),sub(H,E)),pose[e].q));pose[e].p=E;pose[h].p=H;pose[h].q=[...goal.q];
  return {armLength:L1+L2,shoulderTarget:distance,unreachable:Math.max(0,distance-L1-L2),handError:len(sub(H,goal.p))};
 }
 function prepare(data,setup,input,motionOffset=0){
- if(input?.noCheat)return Online.prepare(api,data,setup,input,motionOffset);
+ if(input?.noCheat)return Return.prepareSwordPoint(Online.prepare(api,data,setup,input,motionOffset),compose,scaledGrip);
  const o=sanitize(input);
  // The original reach planner sees the neutral mount. Grip-relative holster
  // motion starts only after admission, in the shared current-tick continuation.
  const reference=prepareReference(data,setup,{...o,holsterRotationStabilization:0},motionOffset);
- return reference.plan&&(o.sheathe||o.holsterRotationStabilization>0)?Online.prepare(api,data,setup,o,motionOffset,reference):reference;
+ return reference.plan&&(o.sheathe||o.holsterRotationStabilization>0)?Return.prepareSwordPoint(Online.prepare(api,data,setup,o,motionOffset,reference),compose,scaledGrip):reference;
 }
 function prepareReference(data,setup,input,motionOffset=0){
  const o=sanitize(input),N=data.names,arm=['upperarm_r','lowerarm_r','hand_r'].map(x=>N.indexOf(x)),pelvis=N.indexOf('pelvis');
@@ -201,7 +202,7 @@ function retime(source,input){
  // A curve/FK edit may arrive while the slider's worker is still rebuilding.
  // A changed holster path needs fresh reach/slide geometry, not cached guides.
  if(o.holsterRotationStabilization!==(source.o.holsterRotationStabilization??0))return prepare(source.data,source.setup,o,source.motionOffset||0);
- const model={...source,o,frames:[],headTrack:[],completionTick:null,playbackDuration:o.duration};
+ const model={...source,o,swordPoint:null,frames:[],headTrack:[],completionTick:null,playbackDuration:o.duration};
  const action=o.sheathe?'sheathe':'draw',reachEnd=Math.min(o.duration,model.plan?model.plan.endTick/60:o.duration);
  model.retimeSegments={reach:{start:o.startTick/60,end:reachEnd,curve:Retime.prepare(o[action+'Curve'])},slide:{start:reachEnd,end:model.plan?.arrives?Math.min(o.duration,model.plan.slideEnd/60):reachEnd,curve:Retime.prepare(o[action+'SlideCurve'])}};
  model.entryInertia=null;model.fkReturn=null;model.armReturn=null;model.gripGuides=null;model.startGaze=o.gazeYaw;
@@ -275,7 +276,7 @@ function retime(source,input){
   model.frames.push({...f,tick,pose:look.pose,headLook:look.info,active});
   if(tick>=o.startTick&&!active){model.completionTick=tick;model.playbackDuration=Math.min(o.duration,t);break;}
  }
- return model;
+ return Return.prepareSwordPoint(model,compose,scaledGrip);
 }
 const blendT=(a,b,t)=>({p:add(a.p,mul(sub(b.p,a.p),t)),q:qslerp(a.q,b.q,t),s:add(a.s,mul(sub(b.s,a.s),t))});
 function recordedTime(model,t){
@@ -458,10 +459,12 @@ function sampleBody(model,t){
   if(arm&&returnActive)pose=transplantGrip(model,pose,Return.sample(arm,base,t-arm.start));
  }
  const gripping=grip&&t<grip.release;
+ if(t>model.plan.slideEnd/60)pose=Return.applyArmIK(arm||ret,baseMotion(model,t),arm?t-arm.start:elapsed,pose,solve);
+ if((arm||ret).handRotation&&t>model.plan.slideEnd/60)pose=Return.applyHandRotation(arm||ret,baseMotion(model,t),arm?t-arm.start:elapsed,pose);
  const sword=model.o.sheathe||gripping?f.sword:compose(scaledGrip(model.setup,f.scale),pose[model.arm[2]]);
  const handError=len(sub(pose[model.arm[2]].p,f.goal.p));
  const result={...f,pose,sword,handError,metrics:f.metrics?{...f.metrics,handError}:null,phase:gripping?'Slide':returnActive?'FK return':f.phase,active:f.active||returnActive,fkReturn:{elapsed,duration:ret.timing.duration,active:returnActive,gripping:!!gripping,armStart:arm?.start}};
- return grip&&t<=grip.release?correctPole(model,result,t):result;
+ return Return.applySwordPoint(model,grip&&t<=grip.release?correctPole(model,result,t):result,t,compose,scaledGrip);
 }
 function transplantGrip(model,body,donor){
  const local=pose=>R.localize(pose.map(p=>p.p),pose.map(p=>p.q),model.parents),a=local(body),b=local(donor);

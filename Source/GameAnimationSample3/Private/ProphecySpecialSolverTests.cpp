@@ -30,6 +30,17 @@ bool FProphecySpecialSolverTest::RunTest(const FString&)
     // Both committed parry and dodge use this same activation/exit hook.
     ProphecyLimbCollision::DefenseChanged(Agent,true);Check(10,32);
     ProphecyLimbCollision::DefenseChanged(Agent,false);Check(9,6);
+    ProphecySpecialSolver::HolsterChanged(Agent,true);Check(10,32);
+    ProphecySpecialSolver::HolsterChanged(Agent,true);Check(10,32);
+    Agent->NotifySwordAttackState(true);Check(10,32);
+    ProphecySpecialSolver::HolsterChanged(Agent,false);Check(10,32);
+    Agent->NotifySwordAttackState(false);Check(9,6);
+    ProphecySpecialSolver::HolsterChanged(Agent,true);Check(10,32);
+    ProphecyLimbCollision::DefenseChanged(Agent,true);Check(10,32);
+    ProphecyLimbCollision::DefenseChanged(Agent,false);Check(10,32);
+    Agent->SetJoltSolverIterations(8,5,Error);Check(10,32);
+    ProphecySpecialSolver::HolsterChanged(Agent,false);Check(8,5);
+    ProphecySpecialSolver::HolsterChanged(Agent,false);Check(8,5);
     Agent->SetJoltSolverIterations(0,0,Error);
     Agent->NotifySwordAttackState(true);Check(10,32);
     Agent->NotifySwordAttackState(false);Check(0,0);

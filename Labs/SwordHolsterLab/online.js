@@ -43,7 +43,7 @@ function prepare(H,data,setup,input,motionOffset=0,reference=null){
   if(advance)poleAngle=Pole.advance(poleAngle,Pole.target(o.bodyTargets,sliding?insertion:o.sheathe?0:1),sliding?o.maxElbowPoleAngularSpeed:poleSpeed,1/60);
   return Pole.apply(pose,arm,reference,poleAngle,basis);
  }
- function makeReturn(tick,pose,base,handInertia=false){return {...Return.prepare({names,parents,last:pose,previous:beforePose||pose,base,previousBase:beforeBase||base,dt:1/60,profile,handInertia}),start:tick/60};}
+ function makeReturn(tick,pose,base,handInertia=false){return {...Return.prepare({names,parents,last:pose,previous:beforePose||pose,base,previousBase:beforeBase||base,dt:1/60,profile,handInertia,handRotationReturn:!o.sheathe&&slideStart!==null&&tick>=slideStart+slideTicks}),start:tick/60};}
  for(let tick=0;tick<=Math.ceil(o.duration*60);tick++){
   // These are the only time-varying input reads. Nothing below samples tick+1.
   const base=H.motion(data,o.motion,motionOffset+tick/60,o.gazeYaw),ungazed=H.motion(data,o.motion,motionOffset+tick/60,0);
@@ -191,6 +191,8 @@ function prepare(H,data,setup,input,motionOffset=0,reference=null){
     }
     if(ret&&tick===release&&ret.start<release/60){model.armReturn=makeReturn(tick,pose,base,!o.sheathe);ret.gripDelay=Math.max(0,release/60-ret.start-bodyElapsed);}
     if(model.armReturn&&tick>release)pose=transplant(pose,Return.sample(model.armReturn,base,(tick-release)/60));
+    if(ret&&tick>release)pose=Return.applyArmIK(model.armReturn||ret,base,model.armReturn?(tick-release)/60:bodyElapsed,pose,H.solve);
+    if(!o.sheathe&&ret&&tick>release)pose=Return.applyHandRotation(model.armReturn||ret,base,model.armReturn?(tick-release)/60:bodyElapsed,pose);
     returnActive=!!ret&&(bodyElapsed<ret.timing.duration-1e-12||!!model.armReturn&&(tick-release)/60<model.armReturn.timing.duration-1e-12);
     if(tick>=release){const grow=o.unshrinkDuration<=0?1:clamp((tick-release)/60/o.unshrinkDuration);if(!o.sheathe)scale=retained+(1-retained)*grow;phase=returnActive?'FK return':o.sheathe?'Holstered':grow>=1?'Held':'Unshrink';}
     if((o.sheathe?insertion:slideProgress)>=(o.sheathe?o.sheatheHeadLookOutThreshold:o.drawHeadLookOutThreshold)-1e-8&&lookOutTick===Infinity)lookOutTick=tick;
@@ -237,7 +239,9 @@ function sample(model,t){
    ({sword,goal}=Tip.sample(H,model.setup,model.tip,model.tipAlign,holster,x));
   }else{sword=blend(carry(a.sword,a.holster),carry(b.sword,b.holster));goal=blend(carry(a.goal,a.holster),carry(b.goal,b.holster));}
  }
- return {...a,pose:a.pose.map((p,j)=>({...p,p:fk.points[j],q:fk.q[j]})),sword,holster,goal,insertion:a.insertion+(b.insertion-a.insertion)*u,scale:a.scale+(b.scale-a.scale)*u,progress:a.progress+(b.progress-a.progress)*u};
+ const pose=a.pose.map((p,j)=>({...p,p:fk.points[j],q:fk.q[j]}));
+ if((model.swordPoint||!model.o.sheathe&&(model.armReturn||model.fkReturn)?.armIK)&&x>model.plan.slideEnd){const H=typeof module!=='undefined'?require('./holster.js'):root.Holster;sword=H.compose(H.scaledGrip(model.setup,a.scale+(b.scale-a.scale)*u),pose[model.arm[2]]);}
+ return {...a,pose,sword,holster,goal,insertion:a.insertion+(b.insertion-a.insertion)*u,scale:a.scale+(b.scale-a.scale)*u,progress:a.progress+(b.progress-a.progress)*u};
 }
 const api={prepare,sample};if(typeof module!=='undefined')module.exports=api;else root.HolsterOnline=api;
 })(globalThis);

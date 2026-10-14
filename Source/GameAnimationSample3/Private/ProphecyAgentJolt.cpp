@@ -11,19 +11,19 @@
 
 namespace ProphecySpecialSolver
 {
-struct FState { bool Attack=false, Defense=false; };
+struct FState { bool Attack=false, Defense=false, Holster=false; };
 // Event-owned state preserves existing live UObject/native layouts. Locomotion has no entry.
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FState> States;
 bool IsActive(const AProphecyAgent* Agent) { return !States.IsEmpty() && States.Contains(Agent); }
 void Remove(const AProphecyAgent* Agent) { States.Remove(Agent); }
-static void Change(AProphecyAgent* Agent,bool Defense,bool Active)
+static void Change(AProphecyAgent* Agent,bool FState::* Owner,bool Active)
 {
     if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed()) return;
     const bool WasActive=IsActive(Agent);
     if (!WasActive && !Active) return;
     auto& State=States.FindOrAdd(Agent);
-    (Defense ? State.Defense : State.Attack)=Active;
-    const bool NowActive=State.Attack || State.Defense;
+    State.*Owner=Active;
+    const bool NowActive=State.Attack || State.Defense || State.Holster;
     if (!NowActive) States.Remove(Agent);
     if (WasActive==NowActive || !Agent->IsJoltPhysicalAnimationEnabled()) return;
     int32 Velocity,Position; Agent->GetJoltSolverIterations(Velocity,Position);
@@ -31,8 +31,9 @@ static void Change(AProphecyAgent* Agent,bool Defense,bool Active)
     if (!Agent->GetJoltCharacterComponent()->SetSolverIterations(Velocity,Position,Error))
         UE_LOG(LogTemp,Error,TEXT("Special solver transition failed on %s: %s"),*Agent->GetName(),*Error);
 }
-void AttackChanged(AProphecyAgent* Agent,bool Active) { Change(Agent,false,Active); }
-void DefenseChanged(AProphecyAgent* Agent,bool Active) { Change(Agent,true,Active); }
+void AttackChanged(AProphecyAgent* Agent,bool Active) { Change(Agent,&FState::Attack,Active); }
+void DefenseChanged(AProphecyAgent* Agent,bool Active) { Change(Agent,&FState::Defense,Active); }
+void HolsterChanged(AProphecyAgent* Agent,bool Active) { Change(Agent,&FState::Holster,Active); }
 }
 
 namespace

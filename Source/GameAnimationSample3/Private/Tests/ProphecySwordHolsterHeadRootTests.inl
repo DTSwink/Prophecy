@@ -14,7 +14,7 @@ bool FHolsterHeadRoot::RunTest(const FString&)
  for(double Spin:{-2.,2.,7.}){FActive Fixed=Seed,Turning=Seed;
   for(int Tick=1;Tick<=720;++Tick){const FQuat Heading(FVector::UpVector,FMath::DegreesToRadians(Spin*Tick));const FTransform Frame(Heading,FVector(Tick*2,-Tick,0));
    Fixed.Base=Base;Fixed.Pose=Pose;Fixed.Mouth=Mouth;Turning.Base=Base;Turning.Pose=Pose;
-   for(auto& T:Turning.Base)T=T*Frame;for(auto& T:Turning.Pose)T=T*Frame;Turning.Mouth=Frame.TransformPosition(Mouth);SetRootFrame(Turning,Heading);
+   for(auto& T:Turning.Base)T=T*Frame;for(auto& T:Turning.Pose)T=T*Frame;Turning.Mouth=Frame.TransformPosition(Mouth);SetRootFrame(Turning,Frame);
    if(Tick==1)Turning.Head=(Heading*Fixed.Head).GetNormalized();
    Fixed.Status.Tick=Turning.Status.Tick=Tick;Fixed.Sliding=Turning.Sliding=Tick>=90;Fixed.Status.Insertion=Turning.Status.Insertion=Fixed.Status.SlideProgress=Turning.Status.SlideProgress=Tick>=90?1:0;
    HeadStep(Fixed);HeadStep(Turning);CompletionMismatch+=Fixed.HeadDone!=Turning.HeadDone;
@@ -31,7 +31,7 @@ bool FHolsterHeadRoot::RunTest(const FString&)
  for(double Weight:{0.,.48,1.}){FActive A;A.Stabilizing=true;A.Geometry.GripStabilization=Weight;A.Geometry.HolsterReturnDuration=.25;A.Sliding=true;A.SlideStart=0;A.Status.SlideTicks=20;
   A.NeutralMount=FTransform(FQuat(FVector::ForwardVector,.4),FVector(8,-16,10));A.StableHolster=FQuat(FVector::RightVector,.3);
   for(int Tick=1;Tick<=40;++Tick){A.Status.Tick=Tick;const FTransform Pelvis(FQuat(FVector::ForwardVector,.15*FMath::Sin(Tick*.3)),FVector(1,2,90));
-   const FTransform RootFrame(FQuat(FVector::UpVector,Tick*.12),FVector(Tick,0,0));FActive B=A;SetRootFrame(B,RootFrame.GetRotation());
+   const FTransform RootFrame(FQuat(FVector::UpVector,Tick*.12),FVector(Tick,0,0));FActive B=A;SetRootFrame(B,RootFrame);
    const FTransform Expected=MountedHolster(A,Pelvis)*RootFrame,Got=MountedHolster(B,Pelvis*RootFrame);
    MountError=FMath::Max3(MountError,Angle(Expected.GetRotation(),Got.GetRotation()),FVector::Distance(Expected.GetLocation(),Got.GetLocation()));
   }

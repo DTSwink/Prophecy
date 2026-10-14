@@ -1,5 +1,110 @@
 # D/S Sword Holster Lab
 
+**October14 accepted live version restored at the user's request.** The user
+approved the motion in the already-open lab and explicitly stopped further
+changes. Its exact script revision was
+`a42b66717cfd98cdefcfd247fa31de215b237857a6c064591ccef1b664795eb4`.
+Restored the matching fkreturn.js and panel bytes, verified the server revision
+matches, and preserved saved tuning unchanged. Captured drawing tuning: return
+.5s, FK/IK Start.25 / End1. Do not resume the discarded refinements implicitly.
+
+This accepted version captures the outgoing root-local hand pose at **blend
+Start** (interpolating bracketing authored ticks), then directs the IK path from
+that point toward current locomotion over the remaining return. Existing curve
+and easing are rebased to the remaining interval. The window blends the moving
+FK donor into that path; End means full IK ownership, with arrival still at
+full return. The first implementation incorrectly anchored this path at release.
+The later direct-live-target experiment and angle-history changes are NOT in
+the accepted version. Other motion/UI behavior remains as previously described.
+
+Verification of this restoration is exact revision equality, syntax checks and
+unchanged saved-state hash, not a fresh broad motion pass. Known diagnostic
+limitation from this anchor version: the older 12-case suite passes geometry,
+root and pose checks but fails its <30deg arm-step assertion in some other
+walking configurations (up to61.38deg). The user accepted their visible setup;
+do not silently repair those cases. Earlier 12-case pass below applies to the
+pre-anchor version. Evidence/retained experiments:
+`Saved/Diagnostics/ReturnIK20261014/accepted-restoration.json`,
+`accepted-live-view.json`, `candidate-*.js` and `uturn/`.
+
+
+**October14: optional right-arm FK -> IK return (lab only).** In the right-side
+FK return controls, below Main inertia, **Blend right arm FK -> IK** enables an
+independent persistent D/S window: **Start / End - return fraction**. Defaults
+off, start0/end.25. End is clamped to at least Start; equal values switch
+immediately. The panel reports the resulting duration in seconds. Fractions use
+the released-arm clock (the viewport Arm return readout), not early torso return
+or a modulated clock. Grip/slide/reach are unchanged. No Unreal edits/port.
+
+IK moves the wrist from its captured blend-start position toward the current base
+animation wrist in root-local coordinates, using the existing return curve and
+easing. During the window the wrist goal blends from the existing FK/inertia
+path to that direct path; after the window it is fully IK. Thus FK momentum fades
+with FK ownership; there is no additional IK inertia/spring solver. Current
+locomotion, torso/left arm, wrist rotation alpha and hand-axis turn remain
+independent. The existing two-bone solver respects arm length, clamping any
+unreachable positional target; this is not a collision-avoidance system.
+
+Elbow bend directions are transported onto the current shoulder-to-wrist line
+before angular interpolation from release to current animation. Initial idle
+reference chooses the angle branch. The first position-interpolated elbow trial
+crossed this line and caused 56deg steps; replaced before delivery (final frozen
+12-case maximum26.55deg/tick, not a new speed cap or visual-motion approval).
+No future locomotion read or per-render-tick history. Both planners use the same
+function, sampled on the existing causal tick path where applicable.
+
+`test_return_ik.cjs`:12 idle/walk/run x D/S x planner cases, root equivariance,
+exact reachable blended wrist target (max1.23e-13cm error), lengths (2.85e-14cm),
+unchanged grip/other bones/wrist rotation and completion, deterministic scrubbing
+and continuous blend boundaries. Disabled output compared against pre-change
+source: four cases exactly match all pose/sword samples. Existing sword-turn
+8shape/8motion regressions pass. Isolated `test_return_ik_ui.cjs` verifies
+controls, independent action settings, live playback, disk reload, JSON restore
+and both planners. User saved-state hash unchanged; **Refresh lab** and enable
+the checkbox to try. Evidence: `Saved/Diagnostics/ReturnIK20261014/`.
+
+
+The viewport readout now shows **Arm return** below Slide, as a0.000-1.000
+fraction. It uses the released-arm clock used by the hand-axis turn cutoff,
+follows the currently playing action in sequences, and updates while scrubbing.
+Shows a dash when return is disabled or previewing body poses. Display only.
+
+**October14: drawing hand-axis angular velocity (lab only).** Drawing's right
+FK return panel includes **Draw - hand-axis turn**, below the hand-rotation
+alpha: signed **Angular speed**, **Sigmoid exponent**, **Cutoff - return fraction**.
+The user replaced the forward/holster vector target with a direct turn about
+hand_r local X, matching the drawn blade sweep. Post-multiply the root-local
+hand orientation by the local-X increment; positive follows the outward sweep
+in the supplied view, negative reverses it. There is no target lookup, projected
+vector, antipodal fallback or target-arrival clamp. The former target machinery
+was removed. Existing saved values and internal setting keys are preserved.
+
+Starts at D0% release on the released-arm return clock. Exponent1 is constant
+angular speed; higher exponents ease both ends, with the specified speed as the
+peak. A .5 cutoff compresses the full sigmoid into the first half. Defaults are
+speed0(off), exponent1.5, cutoff.5; cutoff0 disables it, max.99 leaves continuation
+time. The angular budget remains speed * window *
+[u^e/(u^e+(1-u)^e)]/e. Root turns carry the motion; spine/holster motion cannot
+steer the axis. Hand position and other bones retain their existing paths;
+the sword follows the hand at integer and fractional playback samples. Full
+turns are allowed when the chosen speed and duration produce them.
+
+At cutoff, the reached rotation and previous motion seed the existing one-joint
+return over the remaining duration. It continues toward the original animated
+hand return with the existing inertia/method/curve profile, without snapping
+back. Completion/sequence timing stays unchanged. Speed0 restores the old path.
+The angular-speed window remains independent of the return timing curve.
+
+`test_sword_point_return.cjs` passes8 speed/sign/exponent and8 planner/motion/
+method cases, unchanged positions/other bones, release/cutoff/endpoint checks,
+fractional sword attachment, exact disable, root equivariance, signed full turns,
+rotated-hand local-axis order and independence from spine/holster movement.
+Isolated UI covers D-only controls, playback, persistence, JSON restore and both
+planners. Saved state bytes unchanged; Unreal untouched. **Refresh lab.**
+Evidence: `Saved/Diagnostics/DrawWristAxis20261014/`. Earlier vector-target
+experiments are superseded; their evidence remains in DrawSwordPoint20261014
+and SwordPointHolsterAxis20261014.
+
 **October13: drawing IK trial removed; FK wrist reversal corrected.** D/S use
 FK reach again; the trial checkbox and implementation are removed. Old saved
 `drawReachIK` fields are discarded. Unreal's trial had already been reverted;
@@ -147,6 +252,33 @@ sheathing and the left hand remain as before. Current captured first-tick turn
 fell6.65→.11deg. Broader running/early-return spring cases still have residual
 rotation discontinuities; this is not a complete return-continuity repair.
 
+**Drawing hand rotation reference (October14; lab only):** Drawing FK return now
+has **Hand rotation · FK alpha**, default1. At1 the original FK motion is exact;
+at0 the released hand rotates independently toward the current underlying
+animation's hand orientation in the character-root frame. Intermediate values
+blend those two rotations. Hand position and the rest of the arm remain FK;
+reaching/sliding and S are unchanged. Activation is at D0% release, including
+when the body started returning early. The sword follows the resulting hand.
+
+The independent rotation reuses the existing return engine on one rotational
+joint: same arm-return duration, curve, easing, inertia/hand weight, decay and
+spring method. Incoming angular motion and the moving animation target are
+measured relative to root; current root turns carry the result. It is applied
+after the early body/arm poses are combined, so their parent rotations cannot
+turn it a second time. Only this small prepared joint supplies an explicit
+duration to the lab-local recovery engine; other recovery behavior is unchanged.
+At alpha1 no independent joint is prepared or sampled. No anatomical clamp,
+position solve, new IK or Unreal port is included.
+
+The slider persists through action changes, refresh, snapshots and JSON; it is
+hidden for S and commits on release without pausing playback.16 focused tests
+cover both planners, early/full return, blend/spring and both inertia spaces,
+alpha blending, root turning, exact endpoints and unchanged positions/other
+bones. Eight pre-change/default-alpha1 trajectories are byte-identical. Isolated
+UI checks pass. Captured current D release78/completion122 remains unchanged;
+the root path removes the initial additional downward blade tilt seen in FK.
+Evidence: `Saved/Diagnostics/DrawHandRootReturn20261014/`.
+
 **Body poses has independent Drawing and Sheathing profiles.** The panel follows
 the selected action. Both insertion poses, elbow settings, reach/pole speed caps
 and pelvis compensation are saved per action. Older settings and snapshots copy
@@ -272,12 +404,12 @@ Each curve has its own **Reset curve** button. It resets only that phase for
 the selected action; the combined reset button has been removed. Shared inertia settings and all four independent resets pass isolated UI persistence/playback checks. Repeated-refresh connection failures found during testing were addressed by increasing the backend listen queue to64 (takes effect on its next launch).
 
 **Debug curve bypass:** **Bypass timing curves · linear D/S**, above the timing
-curve panel, temporarily uses linear reach/slide timing for both actions. Saved
+curve panel, temporarily uses linear reach/slide/FK-return timing for both actions. Saved
 curve points remain editable and unchanged by the switch; uncheck to restore
 them. The checkbox is saved with view/debug controls, separately from the four
 curve profiles, including snapshots. Switching does not stop playback or seek.
 Other edits and background body planning respect the bypass. This bypasses the
-four time-modulation curves. Reach progress is linear when bypassed; requested entry inertia, head and FK return profiles still apply.
+six time-modulation curves. Reach progress is linear when bypassed; requested entry inertia, head and FK return profiles still apply.
 
 **Earlier additive body poses, October12 — superseded for spine/right arm:** the saved spine/clavicle poses
 now add offsets to current locomotion instead of cancelling its rotations.
@@ -388,6 +520,35 @@ its signed direction, angular budget and continuity still pass. Head-only scope
 uses numerical precision rather than bitwise equality of reconstructed transforms.
 
 **Unreal port status, October11:** the overnight algorithms and frozen tuning are loaded through the existing JSON-profile node; the newer authored body targets and palm-in change above is not ported. The native math/kinematic/timing checks pass. The user-authorized native override frees neck/head angular limits during D/S and restores their entry settings on completion/interruption; existing Blueprint reset calls remain unchanged. See [current native contract and verification](../../Docs/SwordHolster.md). Earlier lab-only statements below describe the dates of those individual changes.
+
+## FK return timing curves (October14; lab only)
+
+**FK return controls → Return timing** adds four draggable points and an independent
+**Reset curve** button for each D/S return profile. Both default to linear; existing
+tuning and saved motion remain unchanged. Horizontal position is elapsed return
+time, vertical position is return progress. The curve remaps the existing return,
+including its inertia or spring motion, within the same return duration. Existing
+easing remains part of that motion. The body and released arm each use the selected
+action's curve over their own return interval; the gripping arm stays on the sword
+until release. Existing reach-limit pauses during early body return still apply.
+
+Locomotion, head aiming, sliding, shrink and holster return keep their own clocks.
+The existing **Bypass timing curves** checkbox also makes both return curves linear
+without erasing their saved points. Profiles persist through action switching,
+refresh, snapshots and JSON. Drag commits on release without pausing playback.
+No Unreal port or changes to the shared Attack Recovery Lab engine.
+
+`test_return_curve.cjs` checks both planners, D/S, blend/spring return, exact current
+base destination, unchanged pre-return/lower-body/slide motion and both sequence
+orders. `test_return_curve_ui.cjs` checks drag/playback, independent profiles,
+individual reset, bypass, disk reload and JSON/snapshot restore in an isolated lab.
+Twelve pre-change/current trajectories with default linear curves are byte-identical,
+including completion ticks. The broader48-case early-return regression was stopped after~160CPU seconds/4GB
+memory; no pass claimed. The older `test_fkreturn.cjs` already fails its
+`entry pose exact` assertion with the pre-change adapter; not claimed as a pass.
+The default causal-draw test fixture retains its pre-existing1.872cm grip error at
+return entry; sword ownership/path is unchanged. Evidence:
+`Saved/Diagnostics/FKReturnCurve20261014/`. **Refresh lab** to load.
 
 ## Playback and capture performance (October11)
 

@@ -5,5 +5,6 @@ namespace ProphecySpecialSolver
 bool IsActive(const AProphecyAgent* Agent);
 void AttackChanged(AProphecyAgent* Agent, bool Active);
 void DefenseChanged(AProphecyAgent* Agent, bool Active);
+void HolsterChanged(AProphecyAgent* Agent, bool Active);
 void Remove(const AProphecyAgent* Agent);
 }

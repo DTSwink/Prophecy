@@ -19,7 +19,7 @@
           1.287
         ],
         "right": [
-          -47,
+          -27,
           42.9,
           5.962
         ],
@@ -32,12 +32,12 @@
       },
       "seated": {
         "spine": [
-          -55,
+          -40.7,
           -5.177,
           1.942
         ],
         "right": [
-          -37,
+          -47.3,
           0,
           0.045
         ],
@@ -46,21 +46,21 @@
           0,
           0
         ],
-        "pole": 34.1
+        "pole": 69.4
       }
     },
     "gazeYaw": 0,
     "sheatheRotationTolerance": 15,
     "sheatheTipTolerance": 2,
     "slideRotationCorrection": 0.45,
-    "motion": "run",
-    "sheathe": true,
+    "motion": "walk",
+    "sheathe": false,
     "startTick": 50,
-    "maxReachSpeed": 230,
-    "maxReachRotationSpeed": 600,
+    "maxReachSpeed": 260,
+    "maxReachRotationSpeed": 900,
     "maxAttachedSpeed": 150,
     "maxAttachedRotationSpeed": 200,
-    "slidingSpeed": 170,
+    "slidingSpeed": 330,
     "shrinkPercent": 25,
     "shrinkDuration": 0.25,
     "unshrinkDuration": 0.5,
@@ -76,15 +76,40 @@
     "drawReturn": {
       "enabled": true,
       "startFraction": 0.9,
-      "duration": 0.7,
+      "duration": 0.5,
       "returnEasing": 0.5,
       "inertia": 0.5,
       "inertiaHold": 0,
-      "inertiaDecay": 1,
+      "inertiaDecay": 0.1,
       "worldInertia": false,
       "springReturn": false,
       "angleTimeSeconds": 0.29,
       "upperArmTwistRemoval": 0,
+      "handRotationFKAlpha": 1,
+      "armIKEnabled": true,
+      "armIKStart": 0.25,
+      "armIKEnd": 1,
+      "swordPointSpeed": 800,
+      "swordPointExponent": 1.5,
+      "swordPointCutoff": 0.4,
+      "timingCurve": [
+        [
+          0.19912770595412405,
+          0.2570395962483323
+        ],
+        [
+          0.3840499176275009,
+          0.48518074820020346
+        ],
+        [
+          0.5864170785291621,
+          0.693192325502077
+        ],
+        [
+          0.8166976488988538,
+          0.8810738162180758
+        ]
+      ],
       "boneInertia": {
         "spine": 1,
         "clavicle": 1,
@@ -99,7 +124,7 @@
     "sheatheReturn": {
       "enabled": true,
       "startFraction": 0.7,
-      "duration": 0.8,
+      "duration": 0.9,
       "returnEasing": 1,
       "inertia": 1,
       "inertiaHold": 0,
@@ -108,6 +133,31 @@
       "springReturn": false,
       "angleTimeSeconds": 0.29,
       "upperArmTwistRemoval": 0,
+      "handRotationFKAlpha": 1,
+      "armIKEnabled": false,
+      "armIKStart": 0,
+      "armIKEnd": 0.25,
+      "swordPointSpeed": 0,
+      "swordPointExponent": 1.5,
+      "swordPointCutoff": 0.5,
+      "timingCurve": [
+        [
+          0.2,
+          0.2
+        ],
+        [
+          0.4,
+          0.4
+        ],
+        [
+          0.6,
+          0.6
+        ],
+        [
+          0.8,
+          0.8
+        ]
+      ],
       "boneInertia": {
         "spine": 1,
         "clavicle": 1,
@@ -248,7 +298,7 @@
       "swordRelativeSlidePole": true,
       "maxReachSpeed": 260,
       "maxReachRotationSpeed": 900,
-      "slidingSpeed": 250
+      "slidingSpeed": 330
     },
     "sheatheBody": {
       "bodyTargets": {
@@ -277,7 +327,7 @@
             1.942
           ],
           "right": [
-            -37,
+            -27,
             0,
             0.045
           ],
@@ -298,22 +348,22 @@
       "slidingSpeed": 170
     }
   },
-  "time": 1.351333333333336,
+  "time": 1.3460999999523737,
   "camera": {
-    "yaw": 1.8655986328125007,
-    "pitch": -0.29080010986328075,
-    "zoom": 1.4026385170069589,
+    "yaw": -12.527999267578126,
+    "pitch": 0.23119989013671796,
+    "zoom": 1.3268220739049315,
     "panX": 0,
     "panY": 65
   },
   "workspaceTab": "motion",
-  "bodyTargetsPanelOpen": true,
-  "bodyPoseEndpoint": "clear",
-  "fkReturnPanelOpen": false,
+  "bodyTargetsPanelOpen": false,
+  "bodyPoseEndpoint": "seated",
+  "fkReturnPanelOpen": true,
   "controls": {
     "showPelvisDistance": false,
     "showLeeway": true,
-    "sequenceMode": false,
+    "sequenceMode": true,
     "bypassCurves": false,
     "bicolor": true,
     "upperOnly": true,
@@ -326,5 +376,5 @@
     "speed": "1"
   },
   "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
-  "revision": "0daf6d2ecf42fb2105ae47cb04a5deacadf2330f53434483727b2b38a3a6f9b0"
+  "revision": "a42b66717cfd98cdefcfd247fa31de215b237857a6c064591ccef1b664795eb4"
 }
