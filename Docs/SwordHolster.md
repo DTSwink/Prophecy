@@ -3,6 +3,634 @@
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
+## October14 Unreal elbow port and body-pose refresh
+
+### Current request: restore IK correction in both implementations
+
+The user explicitly requested restoring the coordinated shoulder/elbow IK
+correction in the lab and porting it to Unreal. The independent D/S checkbox is
+under FK return controls → Inertia options, default on, soft zone15deg. Off is
+unrestricted return. The forearm-only limiter remains deleted. This is the prior
+IK algorithm, preserving wrist direction/orientation and allowing a small radial
+reach adjustment near straight/folded; it is not a new hand-path design.
+
+Native uses fixed-size per-arm plane-angle state and restores it during
+speculative body-return probes. Correction runs after optimized FK and before
+the existing FK-to-IK blend and wrist-axis turn. No per-tick allocations.
+Lab8-case geometry,3600 inertia samples and recorded sword-arc tests pass.
+Normal build/restart completed.128 variants/4800 samples pass native parity:
+max .000089462cm/.000274273deg, duration error3.45e-15s.
+The comparison exposed an existing spring fallback changing the non-inertial
+hand offset length; it now uses the prepared fixed-length offset, matching the
+lab. New correction normalization and exact half-turn axis match the lab too.
+Owned430tick Play completed425 finite samples and D/S return phases. Editor26208
+is open on TestNN outside Play; BP graph byte-identical, health status3, no dirty
+packages, original60FPS cap restored. Normal DLLs current. User-requested Git
+checkpoint includes current lab tuning, Blueprint and dependencies. Refresh lab.
+Evidence: `Saved/Diagnostics/ElbowIKRestore20261014/`.
+
+Main inertia strength has also been ported: Drawing0.5/Sheathing0.7, preserving
+duration/decay timing and existing BP overrides. Continuous spring unchanged.
+The implementation-only patch successfully loaded before the IK request; its
+standalone live audit was interrupted by that request. Current normal build
+includes it. Original Attack Recovery lab remains unchanged. Earlier removal
+and “awaiting port” statements below describe the preceding state.
+
+### Main inertia zero discontinuity — diagnosed after removal
+
+**Lab correction now implemented for Blend + inertia:** Main scales the carried
+angular and offset motion, using the existing full-strength decay envelope.
+Return duration, timing curve, hold and decay timing do not change with Main.
+0 and1 preserve old poses; intermediate values now have meaningful strength.
+At.001 the reported first bend is+2.397deg, close to zero's+2.444deg, with the
+same .637869725s computed return (including existing spine-angle time).
+3600 continuity samples and448 old endpoint comparisons pass. No elbow limits
+or other solver changes. Optional Continuous spring remains unchanged.
+Unreal and original Attack Recovery lab are untouched; await lab review/port.
+
+Current problem_4 at UE1138 bends+2.444deg at inertia0 versus−39.261deg
+at.001;1e−9 is still−39.162deg. Main inertia selects full incoming velocity
+for any positive value and changes its decay rate, without scaling strength.
+The decay denominator has a .025 floor, so the positive-value limit remains
+finite instead of approaching the hard-disabled zero case. Same expression
+exists in native D/S return/hand return, still awaiting this port; do not
+reintroduce elbow limits to hide this. See InertiaZero20261014 evidence.
+
+### User-requested removal — current behavior
+
+Both the experimental coordinated elbow IK correction and forearm bend limiter
+are removed from the lab. Native limiter code/profile/state are removed too.
+The native trial was never ported. Their controls are gone; old saved lab keys
+are discarded. No replacement correction, bend constraint or smoothing added.
+The existing FK-to-IK return and its signed-angle continuity, hand-root return
+and sword arc remain. Native profile cleanup removes only elbowSoftZone entries;
+user lab state, body poses and other tuning remain untouched.
+
+Verification:1200 old-unrestricted comparisons have identical positions,
+12 D/S cases pass, and browser tests cover all6 problem selections, deleted
+controls, ordinary controls, reload/playback and sword arc. Deleted solver tests
+are retained only as local historical evidence. Necessary normal build passed
+in200.10s; editor restarted because retained native layouts were removed.
+Native return oracle:32 variants agree within .00000353cm/.00000452deg;
+ReturnPoleContinuity passes. The broader legacy NativeParity test is NOT fully
+green: its untouched head and reach-duration fixtures differ by43.75deg/.2349s.
+The old full fixture exporter calls removed `B.optimize`; only its return
+samples were regenerated. No head/reach change or relaxed test thresholds.
+Editor13852 reopened TestNN and owned260tick Play check completed:255 finite
+consecutive samples, D/S return reached, no crash. Owned Play ended. Full BP
+graph byte-identical, reflection status3, no dirty packages; user BP/map edits
+were saved before the necessary restart. Normal DLLs current. Refresh lab.
+
+The following trial descriptions are historical and superseded by this removal.
+
+### Lab-only coordinated elbow trial and exact return cases
+
+Current user review rejects the enabled trial's hand route. For saved problem_4,
+the trial deviates up to42.956cm from the recording while retaining the
+unconstrained FK wrist route. Removing inertia does not remove its broad sweep.
+Preserving an unconstrained endpoint and bone lengths did not establish a good
+return path. Latest sword-arc fix itself leaves wrist positions unchanged;
+trial-off reconstruction now independently matches the full recording's final
+visible hand rotation within .00000684deg, in all3 cases. This is diagnosis,
+not acceptance or a new solver change. User tuning and Unreal remain untouched.
+
+Sword-arc replay correction: the exporter uses native `LastBody`/`bodyPose`,
+which is saved before `HeadStep` and `HandAxisStep`, not the final pose.
+The replay incorrectly copied that intermediate hand quaternion and skipped
+the independent hand return and sword arc. It now calls the existing
+`applyHandRotation` and `prepareSwordPoint` stages used by normal D; no new
+rotation algorithm. Signed speed, exponent and cutoff work in all3 recordings,
+including fractional scrubbing, and arc changes leave every bone position
+unchanged. The captured torso/neck/head remain intermediate body inputs;
+this fix does not establish final head or full visible/physical pose parity.
+All3 recorded cases pass numerical arc checks and isolated browser checks
+for positive/negative speed, disabling, reload persistence and real playback.
+Normal sword-arc regression also passes. Saved tuning and Unreal untouched.
+
+Reload follow-up: captured-return model omitted `bladeLength`. Startup source
+information called `.toFixed` on it, so refreshing with a captured case selected
+failed even though switching into that case after normal startup worked.
+Added actual `setup.bladeLength`; no formatter fallback/error suppression.
+Browser regression reproduced the reported crash before the fix, then passed
+reloading all3 recorded selections, readiness, playback and controls afterward.
+Recorded arm parity and normal saved tuning unchanged. No Unreal changes.
+
+Display follow-up: initial exact captures incorrectly used the old100cm lab
+cube with unit scale, despite captures coming from the newer baked-size holster.
+Read-only export of `/Game/_mygame/fake_holster` now supplies per-recording mesh
+geometry (including changed pivot), shared by viewport/snapshot rendering.
+Normal lab geometry/settings remain untouched. Recorded fully-seated grip
+provides the seated sword transform, avoiding the old pivot-dependent offset.
+Geometry dimensions2.825×7.6445×89.2197cm verified; integer/fractional replay and
+full isolated UI pass. Screenshots inspected after fix. Source export script:
+`Saved/Diagnostics/Elbow43020261014/export-captured-holster.py`; stored geometry
+`Labs/SwordHolsterLab/diagnostics/captured-holster-mesh.json`.
+
+User authorized trying IK correction in the lab before any Unreal integration.
+`elbowIKCorrection` defaults true and is independently saved in D/S return
+profiles. FK return → Inertia options → **Trial: preserve hand path with IK**
+selects coordinated shoulder/elbow correction; false retains the old limiter.
+The original FK wrist position supplies the target. A C2 rounded magnitude
+softens straight/folded reach; elbow pole approaches the valid bend plane in
+the soft zone. Plane interpolates from release toward current base-animation
+plane, with angle continuity; neither release nor moving endpoint is replaced.
+Wrist orientation is counterrotated. No shared Recovery engine/native change.
+
+Geometry tests: eight frozen inputs (including reported658/1137 releases),
+13520 synthetic samples,24 reconstructed motions,48 hand-inertia cases pass.
+All15 captured returns tested separately: radial wrist adjustment≤.05842cm,
+no sideways adjustment, lengths preserved, wrist orientation error<.000004deg.
+Old45deg early-forearm-step regression still fails at agent1 tick181:47.04deg.
+This is a reviewable experiment, not a claim of universally smooth motion.
+
+User interrupted to require the problem motions themselves in the lab.
+The normal Problem selector now includes3 additional exact captured-return
+entries: player UE660, player UE1135–1138, agent1 fast trial elbow UE181.
+First two default to the old correction, third to the trial. They begin15ticks
+before actual release, retain captured torso/head/holster and regenerate the
+right-arm return from the exact captured current/previous poses and live NN
+base samples. Hand-axis rotation is regenerated with the normal lab pipeline
+(see correction above); it was not present in the selected capture field.
+Visible description explains that return controls apply while body/reach
+controls do not rewrite recordings. Existing3 fully editable NN clips remain.
+Timeline shows absolute UE tick; normal play/scrub/step/panels remain available.
+Old-correction positions match recorded native arms within.00000673cm.
+`test_problem_motions_ui.cjs` passes all6 choices, real playback, comparison
+toggles, persistence, worker and normal-state restore using isolated storage.
+Export script: `Tools/SwordHolster/ExportReturnProblems.cjs`.
+No live state overwrite, Unreal action or push. User must refresh existing lab;
+CUA failed to initialize with kernel-assets OS error3, so live refresh is not
+claimed. Await user vetting before Unreal integration or more solver changes.
+
+### Subsequent visible failures — current unresolved status
+
+The initial completion/parity checks did not establish acceptable return motion.
+The user's tick430 failure was reproduced in commanded poses and in an exact
+lab replay of native release inputs: player tick424 forearm step65.39deg. The
+limiter derived its bend plane from a nearly straight non-inertial baseline;
+that plane changed57.62deg in one tick. A release-plane reference and minimal
+3D direction correction replaced it in lab/native, followed by matching
+projected baseline measurement. Both implementation-only Live Coding builds
+succeeded without restart. Normal DLLs remain stale. Added six frozen release
+regressions and13520 mirrored/spring/boundary checks pass; these are limited
+checks, not evidence of universally acceptable motion.
+
+User then reported the hand shooting sideways immediately after draw sliding
+around660 and1135. Fresh1250tick capture reproduces this: player releases658
+and1137. At660 the soft constraint displaces the wrist15.121946cm from the
+same return with only the soft constraint disabled. At1138, first return tick,
+it displaces the wrist16.936601cm and commands an11.937841cm hand step (physical
+11.957066cm). This is not physics drift. Raw forearm inertia crosses backward
+(-12.76deg at659, -38.69deg at660; -44.55deg at1138). Correcting that forearm
+alone while retaining the upper-arm rotation breaks their combined wrist path.
+It is a coupled-arm constraint problem; do not hide it with another hand blend.
+
+Exact15-release replay of captured inputs matches native wrist positions within
+0.00001cm. Comparison uses identical duration0.6s/current live NN poses with
+only elbowSoftZone disabled offline; user settings/Blueprint are untouched.
+Evidence: `Saved/Diagnostics/Elbow43020261014/release6601135.json`,
+`release-analysis.json`, `release-fixtures.json`, `analyze-release.cjs`,
+`inspect-soft.cjs`; earlier axis diagnosis in `baseline.json`/`replay.json`.
+Owned Play ended, capture arrays released and original t.MaxFPS0 restored.
+No runtime changes/push/restart for this latest diagnosis. A coordinated
+shoulder/elbow correction to preserve wrist path would be a two-bone solve;
+that design change needs to be explained, not silently introduced as FK.
+
+The lab soft elbow barrier now runs in native D/S return, with independent
+`elbowSoftZone` profile values (15deg default; 0 off). Both spring/world and
+ordinary returns use it. Wrist counterrotation preserves authored orientation.
+Fixed-size per-arm angle state replaces lab playback keys; held-grip reachability
+trials restore that state before testing another candidate time. No extra
+pose-history bank, timer or inactive work. Native already retained both FK/IK
+angle branches; shoulder-coincident target handling was also brought across.
+The previous elbow plane is transported into the current NN reference before
+being used as the exactly-straight fallback, as in the lab.
+
+Latest normal lab body values exported: clear right clavicle X=-17 for D/S;
+seated right X=-37.3 D/-37 S; seated S spine X=-40 and pole34.1. Full independent
+body settings are in the JSON. Blueprint overrides preserved: D duration0.6s,
+holster compensation80%, S kinematic fraction0.5, NN ranges D1/1 S0.7/1.
+Lab code/settings were not edited. No push.
+
+Verification: normal build145.39s succeeded; four isolated tests passed,
+including64 full lab/native comparisons across idle/walk/run and the three
+problem inputs, D/S, entry inertia on/off, both skeleton layouts and return
+variants. Reach/slide/finish ticks exact; max0.000088771cm/0.000219392deg.
+The added raw problem-input tests initially failed because the historical
+fixture captured the mount with identity root before applying the recording's
+initial heading. `export_accepted.cjs --problems` expresses each clip in its
+entry-root frame on BOTH sides; relative transforms and subsequent root motion
+are preserved. Raw recordings/lab remain unchanged. Production Begin already
+sets the root before capturing authored state. Root-frame regression also passes.
+
+Live checks: simulated430ticks/9 completed actions; kinematic310ticks/4 completed
+actions,425/305 consecutive samples and finite poses. Third kinematic agent
+remains in its FIRST S reach (hand-target error7–9cm), never entering return;
+that separate reach issue was left untouched. An interim progress update said
+six kinematic completions incorrectly and was explicitly corrected. Simulated
+grip tracking max1.509854cm/3.247759deg. Authored parity does not mean exact
+physical tracking or universal visual perfection.
+
+The isolated suite preceded the final straight-elbow fallback normalization.
+That implementation-only adjustment compiled/reloaded via Live Coding170.64s,
+no object changes, no second restart. **Normal DLLs are now stale: build before
+cold launch.** Editor12548 remains open TestNN. User dirty PoseAgent/TestNN were
+saved before the one required retained-layout restart; full Blueprint graph
+byte-identical afterward, status3, no dirty packages. Final post-patch simulated240tick check completed6 actions with235 consecutive
+finite samples. Capture arrays released; pre-test t.MaxFPS0 restored. Editor
+remains outside Play, graph byte-identical/status3/clean. Full evidence in
+`Saved/Diagnostics/ElbowPort20261014/`.
+
+## October14 lab elbow correction and soft bend limit
+
+User authorized fixing both angle-wrap paths and adding a smooth elbow limit.
+`fkreturn.js` continues both the moving target angle and the FK→IK blend angle
+against chronological keys. Fractional/backward sampling uses the surrounding
+keys, not the latest queried pose. A target exactly at the shoulder uses the
+current arm direction for the existing minimum reach constraint, avoiding a
+world-axis fallback. No new timing/easing/speed cap is added.
+
+FK return → Inertia options → **Elbow soft limit zone** defaults to15degrees,
+independent D/S;0 disables it. It softens both extension through0 and folding
+through180degrees. The reference bend plane comes from non-inertial FK in the
+upper-arm frame; straight-reference fallback uses captured/previous local bone
+geometry. Bend angles are continued across turns before constraining them.
+Below a knee k, with x=(k-angle)/k, the mapped bend is k/(1+x+x²): positive,
+monotone, matching position/velocity/acceleration where it joins identity.
+The knee is bounded by the baseline bend, preserving release and final poses.
+Only the forearm bend is corrected; the hand's local rotation counters that
+correction to keep its existing authored world orientation. Both arms share
+this mechanism; lengths, torso and shared Recovery.js remain unchanged.
+
+Validation:
+-13520 synthetic samples: mirrored arms,0.1..179.9deg starting bends,±300 and
+ ±2800deg/s, both inertia methods, reverse sampling, exact release/endpoints,
+ finite poses and lengths (worst error<1e-12cm).
+-24 captured-input reconstructions:3cases×D/S×both planners×soft on/off, finite
+ complete motions, deterministic reverse/fractional samples, exact final arm
+ positions. Reported problem2 seam elbow10.793→3.348cm and forearm43.375→10.142deg.
+-48 hand-inertia regressions retain original wrist-step results after adding
+ wrist counterrotation. Test contract now permits forearm rotation correction
+ when hand-offset inertia changes its direction; unrelated bones/elbow position
+ remain exact.
+-16 hand-root,8return-curve+2sequence,8hand-axis and pole-reference tests pass.
+ UI test uses isolated verified storage: real advancing playback, panels,
+ editable inertia, per-case persistence/reload, worker rebuild, normal restore.
+-Old test_fkreturn entry equality and test_early_return source-frame identity
+ also fail unchanged code. The old12case IK test's30deg all-motion cap remains
+ failing: old61.38deg max, new46.63deg in a continuous fast walking arc. Its
+ hand path/length/root/reverse-sampling assertions pass. No universal visual
+ perfection claim; these failures are not hidden by changing their thresholds.
+-20 local full problem2 preparations: median21.2ms versus22.0ms prior; same
+ cached playback architecture. This is not an Unreal crowd benchmark.
+
+Evidence/backup: `Saved/Diagnostics/ElbowSmooth20261014/`. No Unreal changes,
+restart, asset edits, user tuning overwrite or push. Problem motion UI is now
+an editable reconstruction in the main lab, not the earlier diagnostic clip.
+
+## October14 lab problem_2 tick71–72 diagnosis
+
+Current Problem checkbox case Agent2 (problem_2), Draw with inertia.5 and
+FK→IK .25..1 reproduces the user's live tick72 pose within1.2e-12cm.
+This is a distinct snap during FK→IK interpolation, not the initial extension
+through straight. The elbow is54.177deg bent at71 and59.723deg at72.
+`fkreturn.js:applyArmIK` takes a freshly wrapped signed angle from the current
+FK elbow direction to the desired IK elbow direction, then multiplies by the
+partial blend weight. That signed angle changes−148.394→+178.688deg; the
+continuous value would be−181.312deg. Multiplying equivalent angles by a
+fraction makes them inequivalent: at tick72's.205559 weight the bend plane
+changes by74deg solely from the representation wrap. Spine step1.44deg and
+hand step5.80cm remain smooth; elbow step10.793cm and forearm step43.375deg spike.
+An isolated in-memory module experiment continuing only this angle, with all
+inertia/settings/timing retained, yields4.309cm elbow and6.408deg forearm steps;
+hand position and elbow bend stay identical. No production fix applied, no
+Unreal edits/builds, and no tuning changes. Evidence and instrumentation:
+`Saved/Diagnostics/ElbowSnap7172/{state,desktop-view,analysis}.json`, `analyze.cjs`.
+
+The former read-only Problems tab is superseded by the user's requested Problem
+checkbox beside the normal motion selector. Captured NN clips now feed the
+normal planner with normal editing controls; reconstruction is not exact physics
+replay. UI work was interrupted by the request to diagnose this snap first.
+
+## October14 first-draw elbow diagnosis and lab captures
+
+Current user scene: compensation80%, S kinematic fraction.5, D NN blend1/1,
+Blueprint Set Sword FK Return Duration overrides D to.6seconds. Preserve those
+values; prior78%/.8/.5–1 descriptions are earlier measurements.
+
+Three first draws reproduce a commanded bend-side reversal immediately after
+release: player two-tick turn~135deg at178–179, NPC single-tick~172deg at178
+and~174deg at180. Physical tracking closely follows the command. FK-to-IK has
+not started at this first reversal. A separate later swing occurs during its
+blend; do not claim that later motion diagnosed/fixed by this investigation.
+
+Imported actual release/current+previous authored poses and underlying NN poses
+into the unchanged lab FK return adapter. Including the BP .6second override,
+all three early elbow trajectories match Unreal within.0000023cm. Retained compact
+fixtures in `Labs/SwordHolsterLab/diagnostics/elbow-cases.json`.
+The main lab now has **Problems → Problematic motions**, also accessible at
+`http://127.0.0.1:8818/#problems`. Three selectable first-nine-tick cases use
+the existing viewport, timeline, playback speed and keyboard controls. Original
+versus forearm-angular-inertia-off is a diagnostic comparison, not a solver fix.
+The torso is recorded; the right arm is evaluated through the unchanged lab
+return adapter. Equipment and physics are not replayed in these short clips.
+Leaving restores normal motion/time/camera/speed/panels. Normal saved settings
+are frozen while inspecting captures; snapshot and remote motion capture are
+unavailable there to avoid mislabelling a diagnostic clip as normal D/S.
+The rejected separate HTML/controller have been removed. Regression
+`Labs/SwordHolsterLab/test_problem_motions_ui.cjs` passes all3cases×2variants,
+captured elbow parity, standard transport, settings/disk preservation and normal
+motion restoration. No production solver or profile edit.
+
+All three share excessive extension momentum through straightness. Initial
+forearm angular correction magnitudes~1496/2709/2829deg/s, with two release
+elbows already within6.52/3.67deg of straight. Isolating only forearm angular
+inertia reduces first-nine-tick bend-direction max steps86/172/174 to3/18/41deg.
+Removing translation inertia or upper-arm twist does not remove the reversal.
+An elbow-aware extension-inertia treatment is the proposed general correction;
+no anatomical constraint, speed cap, damping change or finished fix was added.
+
+The earlier temporary UE all-inertia-off control also reset D duration to the
+file's.5; it is not a clean single-variable proof. The subsequent offline lab
+component-isolation tests retain the correct.6 and establish the cause.
+No further Unreal build/restart after the user redirected to the lab. Both
+owned captures completed/ended. UI all3cases×2variants passes without errors;
+geometry screenshot verifies display only, not subjective motion acceptance.
+Evidence/scripts: `Saved/Diagnostics/ElbowDraw20261014/`.
+
+## October14 D return pop
+
+Current idle draws reproduced an elbow/upper-arm target discontinuity around
+absolute ticks196–198, also in kinematic mode. Two signed-angle branches in
+FK-to-IK return crossed ±180 degrees. Blending their wrapped values made the
+elbow jump; the simulated torso/neck reacted on the following tick.
+
+Keep the goal and blend angle continuous against their own preceding value,
+reset at return entry. No velocity cap, pose smoothing, tuning change or extra
+solve. Removed the unused previous base pole. The lab remains untouched.
+
+Three isolated native tests pass, including both seam directions, repeated
+turns, moving root frames, the recorded branch and reset behavior. Live9draws
+simulated and6kinematic complete with unchanged initial completion ticks.
+Worst seam elbow step drops roughly18→10–11cm and upper-arm step37→17deg;
+physical head angular-step change drops6.4→1.38deg. The residual fast continuous
+arm swing was reported. User reviewed and accepted the current motion before
+requesting breathing speed controls.
+
+One required native-layout restart; normal build100.22s succeeds. User BP/map
+saved beforehand; graph unchanged except unused InputKey output None values
+serialized as blank. Editor24960 open TestNN, Play off, clean/status3. Normal
+DLLs current at this checkpoint. No push. Evidence:
+`Saved/Diagnostics/DrawPop20261014/`.
+
+## October14 Draw Sword speed-pin cleanup
+
+**Draw Sword** now takes only **Agent** and **Sheathe**. Removed the misleading
+Max Reach Speed, Max Reach Rotation Speed and Sliding Speed pins: the configured
+lab profile already supplies separate D/S speeds. The existing no-profile native
+defaults100cm/s,180deg/s,60cm/s remain internally; current lab-profile behavior
+and tuning are unchanged. The old editor import no longer writes those pins.
+
+Applied with Live Coding, no restart or retained-layout changes. Corrected two
+editor-helper compilation errors before the successful72.41s build/reload.
+Refreshed the existing node, repaired library defaults and verified the complete
+Blueprint graph differs only by those three removed pins. Existing Agent,
+Sheathe, execution and result connections are preserved. Reflection status3,
+native_properties0/pin_types0; two-argument reflected call verified. Saved the
+user's PoseAgent edits before reload and the refreshed Blueprint afterward;
+their dirty TestNN map remains unsaved. No motion-suite rerun for this signature
+cleanup. Editor18792 remains open outside Play; normal DLLs are stale again and
+must be rebuilt before a cold launch. No lab/tuning edits or push.
+
+Evidence: `Saved/Diagnostics/SwordSpeedPins20261014/`.
+
+## October14 early sheathing kinematic fraction
+
+**Set Sword Holster Profile** now exposes **Sheathe Kinematic Fraction**,
+default0.8, accepted range0..1. It uses the existing curve-modulated S reach
+progress, on authored ticks. Zero takes ownership as reaching begins; one waits
+until reaching completes. Attachment takes ownership earlier if its existing
+admission gate passes first. Drawing still takes ownership at grip.
+
+This calls the existing mount takeover without starting rotation compensation:
+the holster keeps its current world pose and follows the pelvis from that pose.
+Compensation still begins at attachment/tip alignment. Release and cancellation,
+including interruption between the early switch and attachment, use the same
+return-to-class-rest duration and restore the selected physics mode/joint.
+The value is copied with the action profile; changing it affects the next action.
+No extra per-agent clock, callback, solver or pose history. Lab unchanged.
+
+One required retained-profile-layout restart; normal build187.69s succeeds.
+Existing Blueprint automatically reconstructs the new pin at0.8; saved it after
+verifying every old pin/default/link unchanged. Live345ticks/three agents:
+six S reaches switch on the first sample crossing0.8, three D grips retain their
+existing timing, all nine releases restore physics after15ticks. Compensation
+stays off throughout early S ownership. Separate145tick run covers fractions
+0/0.8/1 and three cancellations (two before attachment), including selecting
+kinematic or physical while temporarily held; all return to the selected mode,
+no accumulated joints and finite consecutive poses. These are mode/lifecycle
+checks, not a claim that every visible jitter is eliminated.
+
+Editor26036 open TestNN, Play off, normal DLLs current, BP healthy/status3,
+no dirty packages. No lab changes or push. Evidence:
+`Saved/Diagnostics/HolsterEarly20261014/` (capture/analyze scripts and receipts).
+
+### Fractional compensation checked in live slides
+
+User questioned whether the holster was completely frozen or the return blend
+was overriding compensation. Read-only capture of the current scene (three
+agents, six S/D slides) confirms weight0.779999971 throughout every slide;
+mount return is inactive and the NN blend is0 in these windows. Measured
+root-relative holster excursion / pelvis excursion is0.220000029 in all six.
+Example player S ticks64–87: pelvis7.210487deg, holster1.586307deg. Physical
+swing is absent while kinematic, but the remaining22% of pelvis rotation is
+applied. No runtime/Blueprint/tuning change or restart. Evidence:
+`Saved/Diagnostics/HolsterCompensation20261014/`.
+
+## October14 physical holster slide override
+
+Physical holsters temporarily become kinematic at S attachment/tip alignment
+or D grip. The current world pose is preserved; the original pelvis joint is
+suspended before the next native physics step. Grip rotation compensation uses
+the existing setting (current78%). Release or cancellation starts the existing
+return-to-class-rest motion (current.25seconds/15ticks); physics and the original
+joint resume afterward if still selected. A selection made during grip wins
+after release. Repeating the same mode call cannot cancel the automatic return.
+Originally kinematic holsters retain their prior compensation fade.
+
+The first live test exposed incorrect relative rotation on return: changing
+`SetUsingAbsoluteRotation` alone left the transform cache unchanged, allowing
+the subsequent world-pose setter to early-out with a world quaternion still
+stored as relative. Next tick produced a170degree deflection. Use the engine's
+`SetAbsolute` cache update before restoring the world/relative pose, at both
+compensation entry and release. No cap, corrective blend or motion retiming.
+
+Validation:
+
+- Physical12 slides and kinematic12 slides on three moving agents: finite,
+  consecutive captures, correct mode/compensation, no accumulated joints;
+  all12 physical resumes occur15ticks after release. Max physical hand-grip
+  error1.662cm; this is not a claim of perfect hand tracking.
+- Leeway enabled only in temporary PIE instances: three S attachment/alignment
+  phases and slides pass, including compensation during alignment.
+- Six cancellations (S/D): ordinary cancellation, selecting kinematic during
+  grip, and selecting kinematic then physical. All return to rest and the selected
+  mode; immediate holster change<.000001cm/.000004deg. Same-mode calls every tick
+  tested in normal runs. Registry handles can still be reported on the admission
+  tick; existing constraint preparation retires them before the next native step.
+- Three existing native regressions pass: StandardComponents constraint frames,
+  ReturnBlend and ReturnPoleContinuity. No new per-agent idle callback; the shared
+  return callback retires when no return/backend transition remains.
+
+**Unresolved separate case:** changing the whole character to Kinematic during
+active D/S causes the sword body to fault the shared Jolt step with “Collision
+synchronization lost its source or Chaos simulation was enabled externally.”
+Physical re-enable then fails because stopped clients remain. It also reproduces
+with an already-kinematic holster (no physical-holster takeover); the holster
+itself is forced kinematic and reaches rest correctly. The sword mode-refresh
+path is unchanged. Do not treat this as verified whole-character mode switching,
+or silently cancel/restart D/S to hide it; get direction before changing that
+behavior. Failed S/D and kinematic-holster control recordings are retained.
+
+Saved user PoseAgent/TestNN before one required retained-layout restart.
+Normal build135.72s, then implementation-only Live Coding160.72s and113.28s,
+both successful reloads without object changes. Editor23968 open TestNN, Play
+off; full graph byte-identical, status3/no stale types/no dirty packages.
+**Normal DLLs stale: build before cold launch.** No lab/tuning changes or push.
+Evidence: `Saved/Diagnostics/HolsterSlideMode20261014/` (build/native, before-cache
+failure, five passing live captures/summary, failed-character-switch S/D,
+control-character-kinematic, and final graph check).
+
+## October14 independent holster physics
+
+**Set Holster Simulate Physics** takes Agent and Simulate. The class holster's
+simulation setting is the initial selection. Character Kinematic forces the
+holster kinematic but retains the selection; returning to Physical restores it.
+Call this node for mode changes rather than toggling the component directly.
+
+Physical to kinematic preserves the current world pose, suspends the authored
+pelvis joint, attaches to PhysicalMesh/pelvis and returns to the class viewport
+placement over the existing **Holster Return Duration**. Current .25 means15
+unpaused world ticks. Physical resumes from the current pose with the original
+constraint frames/drives; it does not recapture rest anchors from a deflection.
+Changing back during a return cancels that return. Physical activation requires
+Jolt and an authored holster/pelvis joint; failure returns false.
+
+D/S follows the actual physical holster during reach. At S attachment/tip
+alignment or D grip, it temporarily switches the holster to kinematic, preserves
+its current world pose and suspends the authored pelvis joint. Existing rotation
+compensation then runs throughout the grip/slide. The selected simulation mode
+remains remembered; even compensation0 still gets the temporary kinematic hold.
+
+At release, a previously physical holster stays kinematic while returning to
+the class viewport placement over **Holster Return Duration**, then resumes
+the original joint frames/drives if simulation is still selected. Cancellation
+uses the same return. A mode selection during grip applies after release;
+repeated calls requesting the same mode cannot cut the return short. Character
+Kinematic still forces holster kinematic. Originally kinematic holsters retain
+their existing compensation fade and stay kinematic. The temporary override
+adds no ordinary-idle tick work or extra joint.
+
+The mesh pivot and user class placement are unchanged. Startup restoration: a detached
+simulated holster must receive the pelvis-relative rest transformed to world,
+not that local transform interpreted as a world position.
+
+One shared tick callback exists only while a return or backend transition is
+pending; it is removed when idle. World/actor teardown clears retained state.
+No lab, tuning or graph changes. Saved user PoseAgent/TestNN before the required
+retained-state restart. Normal build250.83s passed; after a stalled startup and
+user-authorized restart, editor9036 is open on TestNN outside Play. Low-space
+dialog was dismissed by the user. Normal DLLs are current.
+
+Validation in `Saved/Diagnostics/HolsterModes20261014/`:
+
+- Native StandardComponents constraint test passes suspend/resume with exactly
+  preserved anchor frames.
+- Three agents,33 mode calls: all succeed; immediate pose changes below
+  .000001cm/.000005deg. Includes interrupted returns, forced kinematic, retained
+  physical selection, and retained kinematic selection. Return completes in15
+  ticks; joint count0 in kinematic and1 after physical resumes.
+- Current physical-holster setup:383 samples through tick400,9 completed D/S
+  actions; maximum constrained hand error .08047cm/.34390deg.
+- Actual character/holster kinematic control:223 samples through240,6 completed
+  actions. Another223-sample run switches the holster at60/65 during S sliding
+  and158/161 during D sliding:6 actions complete, release ticks166/166/167
+  unchanged; maximum grip error .08084cm/.34420deg.
+- Final full Blueprint graph byte-identical, status3/no stale native types,
+  no dirty packages. These tests establish mode/constraint lifecycle and the
+  current D/S cases, not universal visual or velocity continuity. Startup logs
+  still contain existing unsupported-MACD admission warnings; current agents
+  nevertheless enter Jolt and live grip joints are verified.
+
+## October14 D release: failed Jolt startup and false kinematic classification
+
+The new level `fake_holster` mesh has query geometry but no effective solid shapes,
+even though its component requests QueryAndPhysics. The scene importer rejected it
+and aborted Jolt FightSetup. D/S then misclassified Chaos Physical as kinematic
+because it only checked whether Jolt was enabled. No grip joint was created;
+at D0% the sword snapped to the lagging physical hand (up to13.20cm blade-tip
+step and10.23deg rotation).
+
+Scene admission now checks the actual native shapes: purely non-simulation
+geometry retains its UE queries and observation, without importing a fabricated
+solid or aborting other actors. Physics rebuild can admit newly added solids.
+Unsupported/probe/invalid geometry still follows strict capture. This check runs
+on admission, not every physics tick. D/S checks the actual simulation mode and
+rejects simulated admission without active Jolt instead of taking a kinematic path.
+No mesh, collision setting, Blueprint, lab, tuning or release blending was changed.
+
+Live Coding159.27s, no restart/layout changes. Two native scene tests pass,
+including preserved query hits and subsequent solid admission. Current unchanged
+scene400ticks completes9actions with automatic Jolt startup; three D releases at
+166/166/167 have real joints and sword step<=.06429deg, hand tracking<=.04032cm
+and.065deg. Actual kinematic control240ticks completes6actions on the same release
+ticks; blade-tip steps5.1546–5.1558cm versus simulated5.1802–5.1820cm
+(baseline13.135–13.2021cm). These are final slide displacements, not zero-motion
+requirements. No universal visual-perfect claim. Earlier pivot captures below
+were Chaos Physical incorrectly labelled kinematic; their geometry result remains.
+
+Evidence `Saved/Diagnostics/SwordRelease20261014/`: current, modes, startup,
+jolt-control, fixed, kinematic, summary, final and native-test receipts.
+User's unsaved PoseAgent/fake_holster/TestNN and exact graph preserved. Editor25668
+remains open, Play off; normal DLLs need rebuilding before any cold launch.
+
+## October14 holster pivot/scale capture correction
+
+The user replaced the holster mesh, baked its dimensions into the mesh at scale1,
+and changed its pivot/viewport placement. Placed agents retained the former mount.
+Capture restored the class mount before measuring SwordRef. Its simulated blade
+stayed in the old world pose, producing a false entrance43.871269cm from the
+authored one on all3agents. Independently expressing the old blade-base point in
+the new mount reproduces the erroneous local coordinates to.000004cm.
+
+Capture now measures seated transform, marker and blade length before restoring
+the class mount. No pivot offsets, scale multiplier, layout changes or motion
+retuning. The real mesh origin remains the stabilization pivot. Live Coding
+134.84s succeeded without restart; normal DLLs still need building before cold
+launch. User's unsaved PoseAgent/fake_holster/TestNN and complete graph preserved.
+
+Correction: these captures were Chaos Physical, incorrectly labelled kinematic by D/S.
+Original243ticks left all3agents reaching. Corrected
+463tick replay completes8actions, including S and D for every agent; entrance
+error stays below9e-14cm. Blade length89.3492cm and normal sword scale unchanged.
+This verifies the geometry defect, not universal motion quality: one first D
+takes174ticks to reach, and two later D reaches remain active at capture480.
+No change to FK pursuit/arrival rules or lab tuning was made to conceal that.
+Evidence `Saved/Diagnostics/HolsterPivot20261014/` (inspection, mount-check,
+before/after/after-repeat, analysis, final).
+
+## Blueprint FK return duration
+
+**Set Sword FK Return Duration** overrides the selected action's base return time:
+`Sheathe=false` changes D, `true` changes S. `Duration` accepts 0.1..5 authored
+seconds (60 unpaused game ticks per second); invalid values return false.
+Call it after **Set Sword Holster Lab Profile** and before **Draw Sword**.
+It changes only that agent/action's configured duration; active actions keep
+their captured profile, and loading a lab profile again replaces the override.
+The lab's angle-dependent extra time, inertia amount/decay, curves and NN blend
+fractions stay unchanged. This is the base FK duration, not inertia decay time.
+There are no new retained fields or recurring work.
+
 ## October14 accepted lab return port
 
 **Root omission corrected and live-verified:** the earlier oracle included `root`, while the live

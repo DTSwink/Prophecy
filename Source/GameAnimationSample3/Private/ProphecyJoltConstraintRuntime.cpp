@@ -40,6 +40,7 @@ struct FWorldBindings
 };
 TMap<TWeakObjectPtr<UWorld>, FWorldBindings> Worlds;
 TSet<TWeakObjectPtr<UPhysicsConstraintComponent>> Pending;
+TSet<TWeakObjectPtr<UPhysicsConstraintComponent>> Suspended;
 
 // Listen only while a Jolt scene exists. Construction notifications do not inspect
 // unfinished components or mutate physics; the shared-step boundary drains them.
@@ -99,7 +100,7 @@ FProphecyJoltAxisLimit Angular(TEnumAsByte<EAngularConstraintMotion> Motion, flo
 void Reconcile(UPhysicsConstraintComponent& Component, FBinding& Binding,
     UWorld& World, FWorldBindings& Registry, UProphecyJoltWorldSubsystem& Native)
 {
-    if (Component.IsBroken()) { Retire(Native, Binding); return; }
+    if (Component.IsBroken() || Suspended.Contains(&Component)) { Retire(Native, Binding); return; }
     UPrimitiveComponent* A = nullptr; UPrimitiveComponent* B = nullptr; FName BoneA, BoneB;
     Component.GetConstrainedComponents(A, BoneA, B, BoneB);
     // A named endpoint that disappeared is not an intentional world anchor.
@@ -225,6 +226,7 @@ void Enable(UWorld* World)
 
 void Disable(UWorld* World)
 {
+    for(auto It=Suspended.CreateIterator();It;++It)if(!It->IsValid()||It->Get()->GetWorld()==World)It.RemoveCurrent();
     auto* Registry = Worlds.Find(World);
     if (!Registry) return;
     if (auto* Native = World->GetSubsystem<UProphecyJoltWorldSubsystem>())
@@ -267,6 +269,13 @@ void Prepare(UWorld* World)
         if (!Component->IsRegistered()) { Retire(*Native, It.Value()); continue; }
         Reconcile(*Component, It.Value(), *World, *Registry, *Native);
     }
+}
+
+void SetSuspended(UPhysicsConstraintComponent* Component,bool Value)
+{
+    if(!IsValid(Component))return;
+    if(Value){Suspended.Add(Component);Component->TermComponentConstraint();}
+    else Suspended.Remove(Component);
 }
 
 bool GetJoint(UPhysicsConstraintComponent* Component, FProphecyJoltJointHandle& Joint, FString& Error)

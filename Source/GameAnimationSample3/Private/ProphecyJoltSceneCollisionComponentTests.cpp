@@ -16,6 +16,8 @@
 #include "GameFramework/Actor.h"
 #include "Misc/AutomationTest.h"
 #include "PhysicsEngine/PhysicsSettings.h"
+#include "PhysicsEngine/BodyInstance.h"
+#include "Chaos/ShapeInstance.h"
 #include "ProphecyJoltStandardPhysicsLibrary.h"
 #include "ProphecyJoltStaticMeshLibrary.h"
 #include "ProphecyJoltConstraintRuntime.h"
@@ -75,6 +77,54 @@ UStaticMeshComponent* AddMesh(FWorldFixture& Fixture, UStaticMesh& Asset, const 
     if (bDynamic) Mesh->SetSimulatePhysics(true);
     return Mesh;
 }
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltSceneQueryGeometryTest,
+    "Prophecy.Jolt.SceneCollision.QueryGeometryDoesNotAbortStartup",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FProphecyJoltSceneQueryGeometryTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::SceneCollisionTests;
+    FWorldFixture Fixture;
+    if (!TestNotNull(TEXT("World"), Fixture.World)) return false;
+    Fixture.World->InitializeActorsForPlay(FURL());
+    FString Error;
+    if (!UProphecyJoltBlueprintLibrary::InitializeJoltWorld(Fixture.World, Error, 16, 0))
+    { AddError(Error); return false; }
+    auto* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+    if (!TestNotNull(TEXT("Collision fixture"), Cube)) return false;
+    auto* Solid = AddMesh(Fixture, *Cube, FTransform(FVector(500, 0, 0)), false);
+    auto* Query = AddMesh(Fixture, *Cube, FTransform::Identity, false);
+    if (!TestNotNull(TEXT("Solid"), Solid) || !TestNotNull(TEXT("Query geometry"), Query)) return false;
+    auto* Body = Query->GetBodyInstance();
+    if (!TestTrue(TEXT("Real native body"), Body && Body->IsValidBodyInstance())) return false;
+    // Reproduce a component advertising QueryAndPhysics while all its cooked
+    // geometry is query-only, without changing a shared asset or component policy.
+    if (!FPhysicsCommand::ExecuteWrite(Body->GetPhysicsActor(), [&](const FPhysicsActorHandle&)
+    {
+        TArray<FPhysicsShapeHandle> Shapes; Body->GetAllShapes_AssumesLocked(Shapes);
+        for (auto& Shape : Shapes) Shape.Shape->SetSimEnabled(false);
+    })) return false;
+    auto* Actor = Fixture.SpawnActor();
+    auto* Scene = NewObject<UProphecyJoltSceneCollisionComponent>(Actor);
+    Actor->AddInstanceComponent(Scene); Scene->RegisterComponent(); Actor->DispatchBeginPlay();
+    if (!Scene->EnableSceneCollision(Error)) { AddError(Error); return false; }
+    FProphecyJoltBodyHandle Handle;
+    TestEqual(TEXT("Only the real solid is imported"), Scene->GetImportedBodyCount(), 1);
+    TestTrue(TEXT("Solid preserved"), Scene->GetBodyHandle(*Solid, INDEX_NONE, Handle));
+    TestFalse(TEXT("No fabricated query solid"), Scene->GetBodyHandle(*Query, INDEX_NONE, Handle));
+    FHitResult Hit;
+    TestTrue(TEXT("Original UE query still hits the same component"), Fixture.World->LineTraceSingleByChannel(
+        Hit, FVector(0, 0, 200), FVector(0, 0, -200), ECC_Visibility) && Hit.GetComponent() == Query);
+    TestEqual(TEXT("Authored collision setting untouched"), Query->GetCollisionEnabled(), ECollisionEnabled::QueryAndPhysics);
+    Scene->DisableSceneCollision();
+    Query->RecreatePhysicsState();
+    if (!Scene->EnableSceneCollision(Error)) { AddError(Error); return false; }
+    TestEqual(TEXT("Restored simulation geometry is admitted normally"), Scene->GetImportedBodyCount(), 2);
+    TestTrue(TEXT("Rebuilt query component now owns a solid"), Scene->GetBodyHandle(*Query, INDEX_NONE, Handle));
+    Scene->DisableSceneCollision();
+    return !HasAnyErrors();
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltSceneCollisionPromotionTest,
@@ -449,6 +499,16 @@ bool FProphecyJoltStandardConstraintsTest::RunTest(const FString&)
     if (!TestTrue(TEXT("Existing ordinary component imports a native joint"), ProphecyJolt::Constraints::GetJoint(Placed,Joint,Error)))
     { AddError(Error); return false; }
     TestFalse(TEXT("Retained source no longer owns a Chaos joint"), Placed->ConstraintInstance.IsValidConstraintInstance());
+    const FTransform OriginalFrames[]={Placed->ConstraintInstance.GetRefFrame(EConstraintFrame::Frame1),Placed->ConstraintInstance.GetRefFrame(EConstraintFrame::Frame2)};
+    ProphecyJolt::Constraints::SetSuspended(Placed,true);
+    if(!Step(1))return false;
+    TestFalse(TEXT("Suspended joint exerts no native constraint"),ProphecyJolt::Constraints::GetJoint(Placed,Joint,Error));
+    ProphecyJolt::Constraints::SetSuspended(Placed,false);
+    if(!Step(1))return false;
+    TestTrue(TEXT("Resume recreates the original joint"),ProphecyJolt::Constraints::GetJoint(Placed,Joint,Error));
+    TestTrue(TEXT("Suspend/resume preserves authored anchors"),
+        Placed->ConstraintInstance.GetRefFrame(EConstraintFrame::Frame1).Equals(OriginalFrames[0],0)
+        &&Placed->ConstraintInstance.GetRefFrame(EConstraintFrame::Frame2).Equals(OriginalFrames[1],0));
     Adapter->SetBodyVelocity(FVector(0,1000,0),FVector(1,2,3),true,Error);
     if (!Step(30)) return false;
     TestTrue(TEXT("Native fixed connection holds the original offset under impulse"), Dynamic->GetComponentLocation().Equals(FVector(150,0,500),.5));

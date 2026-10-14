@@ -1,4 +1,6 @@
 #include "ProphecyNNLocomotionManager.h"
+#include "ProphecyBreathing.h"
+#include "ProphecyBreathingLibrary.h"
 #include "ProphecySwordHolsterPose.h"
 #include "ProphecyReachRuntime.h"
 #include "Misc/ScopeExit.h"
@@ -1665,6 +1667,24 @@ namespace
 			TransformRow(Agent.CurRootPos-Agent.PublishedRoot,YawMatrix(Agent.PublishedYaw)),
 			WrapAngle(Agent.CurRootYaw-Agent.PublishedYaw));
 	}
+	void CommitBreathingPose(AProphecyNNLocomotionManager::FImpl& Impl,int32 Index,
+		TConstArrayView<FTransform> Pose,EProphecyBreathingMode Mode)
+	{
+		CommitFKReturnUpperPose(Impl,Index,Pose);
+		if(Mode!=EProphecyBreathingMode::UpperAndPelvis)return;
+		const auto& Agent=Impl.Agents[Index];
+		float* Published=StateSlice(Impl.PublishedStateBuffer,Index);
+		EncodeComponentPoseToNNStates(Impl,Agent,Pose,Published,nullptr);
+		float* Current=StateSlice(Impl.CurStateBuffer,Index);
+		FMemory::Memcpy(Current,Published,StateDim*sizeof(float));
+		RebaseStateRoot(Current,Impl,
+			TransformRow(Agent.CurRootPos-Agent.PublishedRoot,YawMatrix(Agent.PublishedYaw)),
+			WrapAngle(Agent.CurRootYaw-Agent.PublishedYaw));
+		BuildUpperBaseFromLower(Current,Impl,UpperStateSlice(Impl.UpperCurrentBaseBuffer,Index));
+		LowerTransformToHeading(Current,0,3,Impl,TransformStateSlice(Impl.CurrentPelvisHeadingBuffer,Index));
+		// Existing output stages shift current into previous on the next policy
+		// step. Leave the preceding accepted pose intact: it supplies velocity.
+	}
 	void WriteUpperPoseHistory(const float* Previous,const float* Current,const float* CurrentBase,
 		const float* NextBase,float* Write)
 	{
@@ -1762,6 +1782,7 @@ namespace
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Tests/ProphecyNNPhysicalFeedbackBatchTests.inl"
 #include "Tests/ProphecyFKReturnFeedbackTests.inl"
+#include "Tests/ProphecyBreathingHistoryTests.inl"
 #endif
 
 	void BlendStateVector(float* State, const float* Target, int32 Offset, float Weight)
@@ -2186,6 +2207,7 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 	}
 	for (AProphecyAgent* AgentActor : AgentActors)
 	{
+		ProphecyBreathing::Remove(AgentActor);
 		ProphecySwordAttackCollision::End(AgentActor);
 		ProphecyDefenseControls::Remove(AgentActor);
 		SlashRootMinusStartPelvis.Remove(AgentActor);
@@ -5250,6 +5272,14 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		PreviousComponentTransforms,ComponentTransforms,LocalTransforms,PreviousComponentWorldTransform,ComponentWorldTransform);
 	ProphecySwordHolsterPose::FStatus HolsterStatus;
 	const bool bHolsterPose=ProphecySwordHolsterPose::Status(AgentActors[AgentIndex],HolsterStatus)&&!HolsterStatus.Finished;
+	const bool bNoMovement=Controls->bUseBlueprintLocomotionInput
+		? Controls->LocomotionInput.WorldMoveInput.IsZero() : Agent.MoverIntent.speed_amplitude==0.;
+	const bool bOrdinaryLocomotion=bNoMovement && Controls->bNNInferenceEnabled && !Agent.Slash.bActive && !bDefensePose && !bManualArmed
+		&& !bFKReturn && !ProphecyUpperBodyInertia::HasDodgeReturn(Controls) && !ProphecyGetUp::IsActive(Controls)
+		&& !ProphecyReach::Active(Controls) && !Agent.AnimationLayer.IsActive();
+	const auto BreathingMode=ProphecyBreathing::Apply(Controls,Impl->GameTick,bOrdinaryLocomotion,
+		Impl->PublishedBoneNames,Impl->Parents,ComponentTransforms,LocalTransforms);
+	if(BreathingMode!=EProphecyBreathingMode::None)CommitBreathingPose(*Impl,AgentIndex,ComponentTransforms,BreathingMode);
 	FProphecyNNPoseStore::SetAgentLocalPose(
 		PoseStoreAgentBase + AgentIndex,
 		Impl->PublishedBoneNames,

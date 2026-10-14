@@ -1,5 +1,36 @@
 # D/S Sword Holster Lab
 
+**Main inertia in Blend + inertia mode** now scales the carried motion's
+strength without changing its duration or decay timing. 0 is ordinary FK;
+1 retains the original full-strength return. Continuous spring is unchanged.
+This changes this lab's copied recovery engine and the native D/S return;
+the original Attack Recovery Lab is unchanged.
+
+**October14 IK restoration:** the shoulder-and-elbow IK correction is restored
+under FK return controls → Inertia options → Correct elbow with IK, independently
+for D/S. Default on, soft zone15°. Off is unrestricted return; the old
+forearm-only limiter remains deleted. Return duration and Main inertia values
+are unchanged. Existing FK-to-IK return and hand-axis sword rotation remain.
+
+**Recorded return inputs:** the Problem selector includes UE tick660,
+UE tick1135–1138 and agent1 UE tick181. These start15ticks before release;
+return controls regenerate the arm from captured poses/NN input. They now
+use the selected IK correction, so they do not reproduce the removed limiter.
+Recorded torso/head inputs are intermediate authored poses, not final physics.
+Original three editable full-motion cases and the UE tick readout remain.
+
+**Problem motions:** tick **Problem** above the normal motion selector to choose
+one of the three captured NN inputs. The normal lab regenerates reach, slide and
+return, with body poses, curves, inertia, equipment, snapshots and playback all
+available. Each case keeps its edits; unticking restores normal settings.
+These are editable reconstructions, not exact replays of Unreal physics.
+Direct link: `http://127.0.0.1:8818/#problems`.
+
+**Angle continuity remains:** both FK-to-IK angle interpolations retain their
+continuous turn across the signed-angle seam. This is separate from the
+removed elbow constraints. Tests: `test_elbow_return_cases.cjs`,
+`test_recorded_return.cjs`, `test_problem_motions_ui.cjs`.
+
 **October14 accepted live version restored at the user's request.** The user
 approved the motion in the already-open lab and explicitly stopped further
 changes. Its exact script revision was

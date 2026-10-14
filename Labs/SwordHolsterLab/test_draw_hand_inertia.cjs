@@ -18,7 +18,13 @@ for(const motion of ['idle','walk','run'])for(const startFraction of [.7,1])for(
   const f=H.sampleBody(m,at),prior=H.sampleBody(old,at),base=H.motion(data,motion,at,m.o.gazeYaw);
   for(let j=0;j<data.names.length;j++){
    let handChild=false;for(let k=j;k>=0;k=data.parents[k])if(k===h)handChild=true;
-   if(!handChild){assert.deepEqual(f.pose[j],prior.pose[j],'rotation inertia only changes hand subtree');}
+   if(!handChild){
+    // Coupled correction may rotate shoulder and move elbow when hand-offset
+    // inertia changes the wrist path. The shoulder anchor and other bones stay put.
+    if(j===m.arm[0])assert.deepEqual(f.pose[j].p,prior.pose[j].p,'shoulder position remains unchanged');
+    else if(j===m.arm[1])assert(Math.abs(R.length(R.sub(f.pose[j].p,f.pose[m.arm[0]].p))-R.length(R.sub(prior.pose[j].p,prior.pose[m.arm[0]].p)))<1e-8,'upper arm length');
+    else assert.deepEqual(f.pose[j],prior.pose[j],'hand inertia leaves unrelated bones unchanged');
+   }
    assert(f.pose[j].q.every(Number.isFinite));
   }
   assert(Math.abs(R.length(R.sub(f.pose[h].p,f.pose[m.parents[h]].p))-R.length(R.sub(prior.pose[h].p,prior.pose[m.parents[h]].p)))<1e-8,'hand offset inertia preserves forearm length');

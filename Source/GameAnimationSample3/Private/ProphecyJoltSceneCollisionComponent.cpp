@@ -17,6 +17,8 @@
 #include "InstancedStaticMeshDelegates.h"
 #include "PhysicsEngine/BodyInstance.h"
 #include "PhysicsEngine/PhysicsSettings.h"
+#include "Chaos/Collision/CollisionFilter.h"
+#include "Chaos/ShapeInstance.h"
 #include "UObject/UObjectIterator.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogProphecyJoltSceneCollision, Log, All);
@@ -76,6 +78,28 @@ FString SourceError(const FProphecyJoltSceneCollisionSource& Source, int32 Insta
 {
     return InstanceIndex == INDEX_NONE ? FString::Printf(TEXT("%s: %s"), *Source.Path, *Error)
         : FString::Printf(TEXT("%s[%d]: %s"), *Source.Path, InstanceIndex, *Error);
+}
+
+bool HasOnlyNonSimulationShapes(const FBodyInstance* Body)
+{
+    if (!Body || !Body->IsValidBodyInstance() || Body->WeldParent) return false;
+    bool bOnlyQueries = false;
+    const bool bRead = FPhysicsCommand::ExecuteRead(Body->GetPhysicsActor(), [&](const FPhysicsActorHandle&)
+    {
+        TArray<FPhysicsShapeHandle> Shapes;
+        Body->GetAllShapes_AssumesLocked(Shapes);
+        for (const auto& Shape : Shapes)
+        {
+            // Invalid/probe geometry must still reach strict capture and report its error.
+            if (!Shape.IsValid() || Shape.Shape->GetIsProbe()) return;
+            const auto* Leaf = Shape.Shape->GetLeafGeometry();
+            if (!Leaf) return;
+            const auto Type = Chaos::GetInnerType(Leaf->GetCollisionType());
+            if (Shape.Shape->GetSimEnabled() && Chaos::DoCollide(Type, Shape.Shape)) return;
+        }
+        bOnlyQueries = true;
+    });
+    return bRead && bOnlyQueries;
 }
 
 bool RetireBody(FProphecyJoltSceneCollisionState& State, FProphecyJoltSceneCollisionSource& Source, int32 Index, FString& Error)
@@ -465,6 +489,13 @@ bool UProphecyJoltSceneCollisionComponent::ReconcileSources(FString& OutError)
                 FProphecyJoltStaticBodySnapshot Snapshot;
                 FProphecyJoltPreparedStaticBody Prepared;
                 FString Error;
+                // QueryAndPhysics on the component does not guarantee a solid shape
+                // (e.g. a complex-query mesh with no simple collision). Keep its UE
+                // queries and observation; a later physics rebuild can admit a solid.
+                const FBodyInstance* Body = ISM
+                    ? (ISM->InstanceBodies.IsValidIndex(Index) ? ISM->InstanceBodies[Index] : nullptr)
+                    : Source->GetBodyInstance(NAME_None, false);
+                if (HasOnlyNonSimulationShapes(Body)) continue;
                 if (!ProphecyJolt::StaticBody::CaptureStaticBody(*Source, Index, Snapshot, Error, true) || !Prepared.Build(Snapshot, Error))
                     return Fail(OutError, SourceError(*Entry, Index, Error));
                 FProphecyJoltBodyHandle Handle; TArray<FString> Notes;

@@ -15,7 +15,8 @@ struct FReturn
 {
     bool Enabled=true,World=false,Spring=false;
     double Duration=1,Easing=1,Inertia=1,Hold=0,Decay=1,AngleTime=.29,TwistRemoval=0,StartFraction=.9;
-    double HandRotationFKAlpha=1;
+    double HandRotationFKAlpha=1,ElbowSoftZone=15;
+    bool ElbowIKCorrection=true;
     bool ArmIKEnabled=false;double ArmIKStart=0,ArmIKEnd=.25;
     double SwordPointSpeed=0,SwordPointExponent=1.5,SwordPointCutoff=.5;
     FCurve Timing;
@@ -72,9 +73,10 @@ bool Begin(AProphecyAgent* Agent,bool Sheathe,double ReachSpeed,double RotationS
     double SlideLength,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth,const FGeometry& Geometry=FGeometry(),const FEntryPose* Previous=nullptr);
 void Update(AProphecyAgent* Agent,int32 PoseId);
 bool Status(const AProphecyAgent* Agent,FStatus& Out);
-void SetSliding(const AProphecyAgent* Agent,bool Sliding);
+bool SetSliding(const AProphecyAgent* Agent,bool Sliding);
 void UpdateHolsterMount(const AProphecyAgent* Agent);
 void RestoreHolsterMount(const AProphecyAgent* Agent);
+void ReleaseHolsterMount(const AProphecyAgent* Agent);
 bool TrySheathe(const AProphecyAgent* Agent,const FTransform& ActualBlade);
 bool SwordTarget(const AProphecyAgent* Agent,FTransform& Hand,double& Scale);
 bool PhysicsSwordTarget(const AProphecyAgent* Agent,FTransform& Blade);

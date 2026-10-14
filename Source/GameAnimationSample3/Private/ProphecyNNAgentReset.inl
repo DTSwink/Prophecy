@@ -128,6 +128,7 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
         Actor->HideSword();
         ProphecyAgentResetPhysics::CancelBlends(Actor);
         ProphecyGetUp::Cancel(Actor);
+        ProphecyBreathing::Reset(Actor);
         const auto Mode = Actor->GetSimulationMode();
         if (auto* Mesh = Actor->GetPoseReferenceMesh())
         {

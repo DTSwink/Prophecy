@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 5932,
-  "bytes": 514385245,
+  "file_count": 5974,
+  "bytes": 530457274,
   "files": [
     {
       "path": ".gitattributes",
@@ -1081,9 +1081,9 @@
     },
     {
       "path": "Content/Characters/UEFN_Mannequin/Rigs/PA_UEFN_Mannequin.uasset",
-      "git_blob": "d96ebab266f06f7192fcb0821b8d7301f56cf603",
-      "bytes": 127688,
-      "sha256": "1322cd2161e8ce3e9035ee8ab5cc235d785105994aecc563a5867461ceb1216a"
+      "git_blob": "ea0808d0e6b1bf24ef71a1709637d0398345adcf",
+      "bytes": 133816,
+      "sha256": "5c3f98c01afb385ba5a64d7b8910f0850dbbfaa3311941891c4bca83bbc9bb9d"
     },
     {
       "path": "Content/Fab/Megascans/Plants/BP_GlobalFoliageActor.uasset",
@@ -4447,9 +4447,9 @@
     },
     {
       "path": "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset",
-      "git_blob": "3ddd8aa101721b533ff2c2f1ff349c1d6b83dee1",
-      "bytes": 6182794,
-      "sha256": "6f3a7ae936b52affbc7c323ce9e91fafa8efa19085e07b0569172bd76b0a4aad"
+      "git_blob": "eb7f2d557d518037d2332b9d69ab8b208299d4b0",
+      "bytes": 6228049,
+      "sha256": "5ab7fff1d46932c8c97600d1b11345b6ba66521cf02033bf30fc2908461c1653"
     },
     {
       "path": "Content/_mygame/locomotion/L_DoubleReachBallTest.umap",
@@ -4645,9 +4645,9 @@
     },
     {
       "path": "Content/_mygame/sword/A_Sword.uasset",
-      "git_blob": "e3ebe5e60b4eb4de42a3dac4fd96e79be5a0644b",
-      "bytes": 2263830,
-      "sha256": "c63f52f2e7dc5381e7d2a46c69bf809b955edee2fa18815c9bbaf0f114d8b4f0"
+      "git_blob": "7aed2473851494e25e43a63e8eebd633246f68e6",
+      "bytes": 2262853,
+      "sha256": "260584f47dc95d0caee2407f417a64cced10aada273dcd99dee0b19685573bb2"
     },
     {
       "path": "Content/_mygame/sword/ST_Cut.uasset",
@@ -5089,9 +5089,9 @@
     },
     {
       "path": "Content/locomotion/SwordHolsterProfile.json",
-      "git_blob": "c21e59d4acc99196df6da1ed87bf2b01c9246573",
-      "bytes": 6211,
-      "sha256": "f6c49234912ffb92a96a3cbda8d1ea76f81ca6fb22e73964b7ea604f2c2bcd0f"
+      "git_blob": "f892b8612df1f12e8db77da1b9cb06a7b89364d6",
+      "bytes": 7450,
+      "sha256": "9e2dbada90f4daaf8b72818cecf996ec6b8cc2e7a245f44aa348fa3d173ea41b"
     },
     {
       "path": "Content/mybasic.umap",
@@ -5101,9 +5101,9 @@
     },
     {
       "path": "Content/testNN.umap",
-      "git_blob": "d4366c135203107d332f9b9df34995885f106a29",
-      "bytes": 119939,
-      "sha256": "f436c3b524132a898321c53ead054d2d878940a33e46e86da33483a524cba040"
+      "git_blob": "5007c2a0f54f7226d75d1e9110b529eb5d091038",
+      "bytes": 120887,
+      "sha256": "59df65db71755e6778b33b9c378564b43c2ca084a8c34813b71d2ef48c2033c8"
     },
     {
       "path": "Content/vfxmap.umap",
@@ -5386,6 +5386,12 @@
       "git_blob": "2258f61315b6db38dc1f717e4e42bffe1e180056",
       "bytes": 15734,
       "sha256": "d7af44014bced64794ce08c566a3a019dc85ec1fe25f64ae8c306b9812fffd63"
+    },
+    {
+      "path": "Docs/Breathing.md",
+      "git_blob": "a624eaf26395a2c1a969edd570279b3d7f179008",
+      "bytes": 14719,
+      "sha256": "7d9ca8b50748d4ab0cc9a6bb2f4e24e6da034a9d3d678b92257905ca2c8a0706"
     },
     {
       "path": "Docs/CalfRollDuringAttacks.md",
@@ -6450,6 +6456,12 @@
       "sha256": "8ffc2b54987de18761aa93a1f8321a8c7b9625829e40777050221d07aab760cc"
     },
     {
+      "path": "Docs/PhysicalNeck20261013.md",
+      "git_blob": "d69c87ad563da3b886efcd76c7144714356c4992",
+      "bytes": 14027,
+      "sha256": "b8997af1d374f7280e3015a00d5a4dccafd9c8aa35bcf9ccedfcb429c8732273"
+    },
+    {
       "path": "Docs/PhysicalProfileSnapshots.md",
       "git_blob": "aa1544748d8d4b3781986d33ae6fe15d8daa0794",
       "bytes": 12962,
@@ -6781,9 +6793,9 @@
     },
     {
       "path": "Docs/SwordHolster.md",
-      "git_blob": "71ad3dbe44e8d50c7d5154ea4e549b4c8198c2eb",
-      "bytes": 55704,
-      "sha256": "09661e4188519aaf55ed4d82bc2add62a910a1fb741518bac4f71a5691c70cbb"
+      "git_blob": "0b47f0ccbad0fa5c0135e89d812307d93658cbd3",
+      "bytes": 118297,
+      "sha256": "1dd596ba79d60dfad7976716d5614380ffe230bd9dce1192911f338a91b28cae"
     },
     {
       "path": "Docs/SwordHolsterOvernight20261011.md",
@@ -11821,21 +11833,21 @@
     },
     {
       "path": "Labs/SwordHolsterLab/README.md",
-      "git_blob": "1d5b241283c116e5504440a34bb9afc92e0cf0ce",
-      "bytes": 78489,
-      "sha256": "b1e88dae9ca800f6b0d069e52270cb4f7db65b5e92791214eeaf087c750c637b"
+      "git_blob": "2825eb02687a388ea0450a159da1ee79720e4d70",
+      "bytes": 92665,
+      "sha256": "ee21aa0f0141b69f400e4d1b76b07eefb37555616e3a125f38d3d6c824117dc8"
     },
     {
       "path": "Labs/SwordHolsterLab/app.js",
-      "git_blob": "d9226c394775c22e5caf35f087a711e338fa1f98",
-      "bytes": 30537,
-      "sha256": "0d192748c6b641a6170600494a2915ffaa70c52a01f3cc4a02081480e6797956"
+      "git_blob": "84fe9dc14a8a80216631f6e9e7ec9d2224013aeb",
+      "bytes": 33407,
+      "sha256": "55f983ac68c47639b6e59c97bb4d817aa349ac8f9795679aa3f1db866feb99e4"
     },
     {
       "path": "Labs/SwordHolsterLab/armfk.js",
-      "git_blob": "6bf98b7d91c383a1fcaca0fafaf57dad830e41d8",
-      "bytes": 5923,
-      "sha256": "5ccb782c3cec50846009304593aeee201f52db4ec08ef9726657d7676fc95527"
+      "git_blob": "c6bd0105a2feccf25d543c7044481395bcf1085a",
+      "bytes": 7030,
+      "sha256": "571ca242404f354c2aaad31a59d0f8b29b9943f258c9641e1c292bf4236106cf"
     },
     {
       "path": "Labs/SwordHolsterLab/assets/sword-holster-lab.ico",
@@ -11857,9 +11869,9 @@
     },
     {
       "path": "Labs/SwordHolsterLab/backend.py",
-      "git_blob": "323e389005fab27f17cb2b71177246b21b8a542b",
-      "bytes": 12274,
-      "sha256": "ef850417ce24787568ac982b6585165788144c84b68c7432542b99ea9168cbb4"
+      "git_blob": "53ec3d404ef8e42415b90e47957880c71857d8c7",
+      "bytes": 12296,
+      "sha256": "7609632b7f6778b0dd2f5c983ecf8dc4343e4f5eb717ab891dc800e9d051d7f9"
     },
     {
       "path": "Labs/SwordHolsterLab/benchmark_playback.cjs",
@@ -11869,9 +11881,9 @@
     },
     {
       "path": "Labs/SwordHolsterLab/body-plan-worker.js",
-      "git_blob": "caa644c8d59e69193723db6e5b60a568310e70ec",
-      "bytes": 865,
-      "sha256": "ee0fd94d64075dd4ce9d52fb17a09a593af3fba7619187639eb0152a777add90"
+      "git_blob": "1db72c35780055a32c6db0c4d2b9f36b9173aba6",
+      "bytes": 1093,
+      "sha256": "570e1ce960d9be846dd7a7221e240f4a58d8bdce1509be935d524e30a5e640c8"
     },
     {
       "path": "Labs/SwordHolsterLab/body-target-panel.js",
@@ -11952,6 +11964,12 @@
       "sha256": "92afa620c8e2cabcb7a414eb8e0fdd2a3f48801b974887261e4a04c305979280"
     },
     {
+      "path": "Labs/SwordHolsterLab/data/return-ik-regression.json",
+      "git_blob": "e21c8f28230a6c2e62d9adce41b077757757d20f",
+      "bytes": 6018,
+      "sha256": "86513e57e36d90e74d709003a75339ae7a31112b49e11e5a4fe90dd33ffd3286"
+    },
+    {
       "path": "Labs/SwordHolsterLab/data/straight-arm-regression.json",
       "git_blob": "ba1d2ea7b75f5763edc155766b6121fcb0f9c741",
       "bytes": 16993,
@@ -11970,6 +11988,36 @@
       "sha256": "c5bdd0f2690f7d64cfbc908f67025879702b4feaeb3209d9d39e480522b0ef95"
     },
     {
+      "path": "Labs/SwordHolsterLab/diagnostics/captured-holster-mesh.json",
+      "git_blob": "f1b1ad984581bd92f552f8b80d22fa8a6af6457f",
+      "bytes": 3429,
+      "sha256": "c3ff2543545f2e45d16fd89c8fb0f408fb1268e23a7ec87eac6c3fb17bc2001f"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/diagnostics/elbow-cases.json",
+      "git_blob": "449846b00b940747139269e44b69cfabe9f2afdb",
+      "bytes": 283658,
+      "sha256": "06f5ab20ea94658241650a4f1d112acaa59da00b6b0dd074dac3584473f08480"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/diagnostics/elbow-ik-return-regressions.json",
+      "git_blob": "d68dd7ca2e1d659641908a9db94211094014ad78",
+      "bytes": 677386,
+      "sha256": "5625856f84151bf7091d899d8428be929e746642de3c4b062121fb3642cd307a"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/diagnostics/elbow-return-regressions.json",
+      "git_blob": "b07b926280ebeb3509db948e1a0b5d18e67ae09d",
+      "bytes": 1947413,
+      "sha256": "a66b1ebc0b665f181bcd4c95f9e71755718b13063f7fd1df82a782f41aa07c5f"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/diagnostics/problem-motions.json",
+      "git_blob": "563ef4672b34158a70f1ca73768891951424d53f",
+      "bytes": 3846606,
+      "sha256": "825c299f29aaf2530c33baeef4752167f59a752d1c557282c718fc4b8ba9d811"
+    },
+    {
       "path": "Labs/SwordHolsterLab/elbowpole.js",
       "git_blob": "181f8884f99db22cd3dc6d6266fa078b71c04a16",
       "bytes": 2436,
@@ -11977,9 +12025,9 @@
     },
     {
       "path": "Labs/SwordHolsterLab/equipment.js",
-      "git_blob": "0083e22f29e813643abbcd033db80e76cdaac846",
-      "bytes": 3269,
-      "sha256": "9f574bdfa613b4742836d0a761f94272379cbb28135682ecc2a9622aa99b28bc"
+      "git_blob": "f53cdfd7226768e71eaa5ea6ef9e7a5589a9f4a8",
+      "bytes": 3297,
+      "sha256": "3c14f1731d2746c08e711365bed87836dc95febb1d5224b2ae7731728d95cb1f"
     },
     {
       "path": "Labs/SwordHolsterLab/export_motion.py",
@@ -11995,15 +12043,15 @@
     },
     {
       "path": "Labs/SwordHolsterLab/fkreturn-panel.js",
-      "git_blob": "0e8238c81ac41f0caa93263000b4a6d69b0ae641",
-      "bytes": 4718,
-      "sha256": "54ec4a5c708ae4b79bb23f4f66751ff6cce44007c62cb720a126865dbf6764af"
+      "git_blob": "a2e1f06596a184a02c18c2c588155024b6342b8c",
+      "bytes": 8459,
+      "sha256": "a8a8f25a1841a92fb1ffb118dd814587f313cc6833e5c37280f760ec53b1b94f"
     },
     {
       "path": "Labs/SwordHolsterLab/fkreturn.js",
-      "git_blob": "35b2ce23e55ed072aa5ec23c2a068fa8f3cd2380",
-      "bytes": 3594,
-      "sha256": "e1a54558faf46b98c21c880b9d1f3e78d4564163107f21d9f51974b7067bc084"
+      "git_blob": "c3c7b09b87499ee01f596cd0c70b78cbba3a7f3e",
+      "bytes": 20404,
+      "sha256": "f4c929a6fbfbb24ceaf050b0d94ca2a3b1eabadee29c986bf6fb2663e1bc9315"
     },
     {
       "path": "Labs/SwordHolsterLab/head-test-helpers.cjs",
@@ -12019,9 +12067,9 @@
     },
     {
       "path": "Labs/SwordHolsterLab/holster.js",
-      "git_blob": "5f673a7958c788a4e44022c7f213a76187a5671f",
-      "bytes": 42548,
-      "sha256": "4b4fa7493c330fde66465b6760c14a1c39fe284e6090394aa3a2587ab51ff1e1"
+      "git_blob": "9a468efc800ac1b09614ecde1e18849c94b83f70",
+      "bytes": 43326,
+      "sha256": "646d3b7254c7c62783710b51f892bae9c2033bcd795daf083cc85f7437f71d6b"
     },
     {
       "path": "Labs/SwordHolsterLab/import_recorded_motion.cjs",
@@ -12031,9 +12079,9 @@
     },
     {
       "path": "Labs/SwordHolsterLab/index.html",
-      "git_blob": "4906b6c39076c8b1b72d66a001fe2d6f1ba78325",
-      "bytes": 18836,
-      "sha256": "067185c94f371a856adacbab9055f55a7651be173ed19dc57e91791bf78bedfa"
+      "git_blob": "ebf9ebd9a40cee4696341b8f599c48d26fe325fa",
+      "bytes": 19208,
+      "sha256": "8aa958bc92cb51ff633982feca0eb8ac0a657a421819cc7b4e15e8e3a2180e5c"
     },
     {
       "path": "Labs/SwordHolsterLab/install_shortcut.ps1",
@@ -12055,15 +12103,21 @@
     },
     {
       "path": "Labs/SwordHolsterLab/online.js",
-      "git_blob": "232f754d6c6a7fad4e2a66f7c5de2113aeb23fff",
-      "bytes": 22059,
-      "sha256": "5f9f8e5553ac6bbed8975281407d1fdd861dc638d32e6d3cb7bb613472eb0ab1"
+      "git_blob": "c7cb168ac9ce7ecf83216b751816dc7b9651c49a",
+      "bytes": 22450,
+      "sha256": "0011e0fb7f90b169abf69c8b6a0802c62deeef67cee3e1163d36e4432ac590f2"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/recorded-return.js",
+      "git_blob": "f5baceb1f3c5734aca404249d29f384f78671a26",
+      "bytes": 4017,
+      "sha256": "ba7cec59538b44249712a134d5f7a7855392346ca9e8df1e87624d17fdab6afc"
     },
     {
       "path": "Labs/SwordHolsterLab/recovery.js",
-      "git_blob": "f7272a25191fa86651e9c32a60d1cd916731a74a",
-      "bytes": 19336,
-      "sha256": "206f1ff8801aaba85beb7cfcbefd78c6ba6e58e9a9d322aed22b4f7bd16ded5e"
+      "git_blob": "f5e7d24f1edc105b8d76f0f34c5c30c4628b312b",
+      "bytes": 19433,
+      "sha256": "b0e685a3fe41da51297e00270e20364847d3eacdbb44e3cd98763d2909249847"
     },
     {
       "path": "Labs/SwordHolsterLab/renderer.js",
@@ -12085,9 +12139,9 @@
     },
     {
       "path": "Labs/SwordHolsterLab/sequence.js",
-      "git_blob": "269b420f2b6ae65a215a907ae967bd2b5117e0e1",
-      "bytes": 4101,
-      "sha256": "0073042a4cd00d6ad094efef7afc9647790c00f613ff80d2b3aa8e1642ef0720"
+      "git_blob": "2603d84d774369d364a5b46917c64fe7c8d5bdec",
+      "bytes": 4534,
+      "sha256": "a8e61c00035a29ec503ef48643fa3959b77bcd7315e936a720ad48ca5945fa97"
     },
     {
       "path": "Labs/SwordHolsterLab/server.py",
@@ -12133,9 +12187,9 @@
     },
     {
       "path": "Labs/SwordHolsterLab/state.json",
-      "git_blob": "63262b9263e1335dea6018f86b0c86a685a4f436",
-      "bytes": 6717,
-      "sha256": "9d973472fd86d7f3ea99f239717c5ce2d69d99327b357287073e60c63d0d584a"
+      "git_blob": "9e6942e306d065174515d6bf6f2c58906edc46a0",
+      "bytes": 76166,
+      "sha256": "42d7c208b46b1d621110e63669d8b827af1b6c0068416e59cbdf5d9fdd91374a"
     },
     {
       "path": "Labs/SwordHolsterLab/style.css",
@@ -12199,9 +12253,9 @@
     },
     {
       "path": "Labs/SwordHolsterLab/test_draw_hand_inertia.cjs",
-      "git_blob": "ae502b26cb0bc34d31d1c52d04ac31f2c221c273",
-      "bytes": 4427,
-      "sha256": "d2f6e8b3c336f8c9ee31cdc4bba56cf837626499097c300c994e438def3b8dba"
+      "git_blob": "8c7e74fa4a79cc5f01eab3a83eb2de5465f4880c",
+      "bytes": 4884,
+      "sha256": "daefb64e1a799e934c9849349eeeadae3acf5e25742dea9ae805af9a2a9d27a4"
     },
     {
       "path": "Labs/SwordHolsterLab/test_draw_hand_inertia_ui.cjs",
@@ -12222,6 +12276,18 @@
       "sha256": "b94384c0e4b090086934b1cdeda2c018c31b0cb8931b5d800703262b52954e1b"
     },
     {
+      "path": "Labs/SwordHolsterLab/test_elbow_ik_correction.cjs",
+      "git_blob": "758de001c7a80a11f3eac2ff1d14e06789c09f35",
+      "bytes": 2758,
+      "sha256": "ad64a4d1c367ae54dd5f4feddc904af84c369bdd0abf9c797287860b308d50df"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_elbow_return_cases.cjs",
+      "git_blob": "c24924c9e990c9104cc97b527c81a1f238b33ce6",
+      "bytes": 1703,
+      "sha256": "9a9d78b8d8c5720ffed833dd5a2ad2195ba994ef177dcf2388cfece1416a5cfb"
+    },
+    {
       "path": "Labs/SwordHolsterLab/test_elbowpole.cjs",
       "git_blob": "3f1f9434beae568a372a1d20ada0c6b793b151a4",
       "bytes": 4129,
@@ -12232,6 +12298,12 @@
       "git_blob": "d15a30bf948f3a2b23365e3a30a37799489d792b",
       "bytes": 3382,
       "sha256": "0fad5b16a62df474cbfc2450dfa39554a7615f37022032f228304594c3486751"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_fk_wrist.cjs",
+      "git_blob": "c1e1eedbe82bb14742ed0311d3fa1b2c1bb7353c",
+      "bytes": 3163,
+      "sha256": "e0879620df07887561b678af28354eb62aae07fa3fc14209c052ae2c94c7612e"
     },
     {
       "path": "Labs/SwordHolsterLab/test_fkreturn.cjs",
@@ -12250,6 +12322,18 @@
       "git_blob": "8688b763316b1d82329cbb9a6d5b279f24d58819",
       "bytes": 2791,
       "sha256": "3c615363b3839774717bab9059170213a429ee0f3a77ab299d48b80fb37e2540"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_hand_root_return.cjs",
+      "git_blob": "d95cf6cac0d9b810f77d1a2257c350c8726305bc",
+      "bytes": 2867,
+      "sha256": "b5acea30c08442f4fcf22bc26840d832a12c796c5848f5198d3839eca50166bb"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_hand_root_return_ui.cjs",
+      "git_blob": "ef6151a06a5b6301d36d541d2cba4b754afab7e4",
+      "bytes": 4276,
+      "sha256": "7ab1aa96cff4ab90f33df8a18ce0adc602a0571d93621601c484765eba3d457f"
     },
     {
       "path": "Labs/SwordHolsterLab/test_hand_translation.cjs",
@@ -12342,6 +12426,12 @@
       "sha256": "4a507d41d87e030b59785d0cdf0e157d44e3fd6c5e52ff261240ceff8023f712"
     },
     {
+      "path": "Labs/SwordHolsterLab/test_inertia_strength.cjs",
+      "git_blob": "93395659ec3e7d1ef57385e5fde5446633e76a87",
+      "bytes": 2475,
+      "sha256": "9d05afd7818aff0e9fefd2469941b98d409c9170347a8d39070aa5e8e1678eb3"
+    },
+    {
       "path": "Labs/SwordHolsterLab/test_keyboard.cjs",
       "git_blob": "4785508e47f9e32f4f107d6e947c39a7fa95a4c1",
       "bytes": 3339,
@@ -12379,15 +12469,15 @@
     },
     {
       "path": "Labs/SwordHolsterLab/test_online.cjs",
-      "git_blob": "5f1d8edea27d41f4889e2313707f421181d81321",
-      "bytes": 3837,
-      "sha256": "e57e0bad79514fedb06b9b2a5e0be9a763b72ce5a513c185c29eddde7e300cfb"
+      "git_blob": "a883f5fad3d81f5458db510d9620f3655b49d165",
+      "bytes": 3828,
+      "sha256": "f4948d3d8e112736340d6f8174a588e55f235a041ad5c6b7bb11949baf3bb6fc"
     },
     {
       "path": "Labs/SwordHolsterLab/test_online_ui.cjs",
-      "git_blob": "805f1648ecf687cb13d1ba0c283b996d5494acc8",
-      "bytes": 4176,
-      "sha256": "ff6fc127c59d8894ab64beae238b9c3564517fdc2098c3a7d2429f1e4dc07947"
+      "git_blob": "1707308ad82c24b80b6649076ee59d49b5c2b81e",
+      "bytes": 4263,
+      "sha256": "2f8e800e1066f86f0c33445a051b1fe2a4043cb891106dd48b39282178734da9"
     },
     {
       "path": "Labs/SwordHolsterLab/test_owl.cjs",
@@ -12420,6 +12510,12 @@
       "sha256": "1d3c39f979a3f5ed6baf9b81766bc59f575e2c6f50aff2a2d1dfbbb7aad7a5b4"
     },
     {
+      "path": "Labs/SwordHolsterLab/test_problem_motions_ui.cjs",
+      "git_blob": "e38bce37b3216ca69dde39f9587e96e5a50de305",
+      "bytes": 9364,
+      "sha256": "80b3cc314020513b7e98fb363f402a1e3c571770367784f2e6072bb544a21f0a"
+    },
+    {
       "path": "Labs/SwordHolsterLab/test_recorded_motion.cjs",
       "git_blob": "edc451bc424c3828243db481883daffca85a42da",
       "bytes": 2052,
@@ -12432,6 +12528,12 @@
       "sha256": "4bf4ba1dacaf1ca2b8149e07620c936f36dc67acbcc0bb1b12a4d0c78822c3ed"
     },
     {
+      "path": "Labs/SwordHolsterLab/test_recorded_return.cjs",
+      "git_blob": "e5d6ec27c564e8cf47e9ebf4b5bbc1843243a8a0",
+      "bytes": 3812,
+      "sha256": "46df28e202851eb6b632071e6c2e5173c32896ffd17fa2d8477b9ba4cce23118"
+    },
+    {
       "path": "Labs/SwordHolsterLab/test_retime.cjs",
       "git_blob": "6451858568add4950a495501d92ba9cb63c9ffb8",
       "bytes": 4420,
@@ -12442,6 +12544,30 @@
       "git_blob": "faf71308789bd92c1af24bab021ab9ea0f7ecc95",
       "bytes": 15400,
       "sha256": "78aa19912f5a5ee7f9830b09181920d02cb75209118e1f66607586e0e83e9cc5"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_return_curve.cjs",
+      "git_blob": "9498b836984a98381df8d11127d9e88e74b3c417",
+      "bytes": 3249,
+      "sha256": "b29319ba5ca755fdc9de1890a11cb7620dd2f2f53f30766b9b9324cc535cd101"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_return_curve_ui.cjs",
+      "git_blob": "3fffaea5e9ed5ecd42d9ed1248439e601266420d",
+      "bytes": 5497,
+      "sha256": "35bb74d3bfa6bf4706b946c80431bf1237f2cdc7fb2bc92b9b13e778854d14e9"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_return_ik.cjs",
+      "git_blob": "52ca7157bad2dbca31ce78f8877974c15eb76044",
+      "bytes": 4425,
+      "sha256": "e928d6108c1d1ca2252a6145a0e9242f7fe2c2fa8e4d29a2adf425044eb1e8a2"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_return_ik_ui.cjs",
+      "git_blob": "92365ad8e6a8723c3d8ebddec624af6046904b7a",
+      "bytes": 4402,
+      "sha256": "fc867ca054d1e7779b8e0c324de531c6cfec39cc8450c636d44875f01820eb4d"
     },
     {
       "path": "Labs/SwordHolsterLab/test_return_pole_reference.cjs",
@@ -12510,6 +12636,18 @@
       "sha256": "994d023754bd185d809d615be0deab09972fbfe70794fb8c776bfb92e9f60efe"
     },
     {
+      "path": "Labs/SwordHolsterLab/test_sword_point_return.cjs",
+      "git_blob": "c7182622b47ea58e7f3ef4b0c18a751e8e14c451",
+      "bytes": 5476,
+      "sha256": "dbc69c5736c9fe7c063510271fa861d8e440ccfa760e7f6530231cd8e70dff4c"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/test_sword_point_return_ui.cjs",
+      "git_blob": "406520f5ca344a7494ecc05c33ef25b6cea3d2fd",
+      "bytes": 4010,
+      "sha256": "6ddb2e6dbbc92daf11b719beaadf940216b91ef3e908c70d060f92f1305f9b90"
+    },
+    {
       "path": "Labs/SwordHolsterLab/test_sword_pole.cjs",
       "git_blob": "206e4339d2b70b87c41ffc11dc06aecb0ae5fb25",
       "bytes": 3149,
@@ -12538,6 +12676,12 @@
       "git_blob": "0ebce2e9b44334da04f5a4ff406dacf747918a22",
       "bytes": 5150,
       "sha256": "9db55dc4e1b08a4f5f9011a64db8869da0405d47673a6be1044fdfbe87a2b9b3"
+    },
+    {
+      "path": "Labs/SwordHolsterLab/tests/fk-wrist-profile.json",
+      "git_blob": "879d799d19f8c486615036db83fa8caa53a2a56c",
+      "bytes": 19239,
+      "sha256": "214d630a549df2303511c58a8cd52d030ce4266f2bbed394e7a9058cecc67060"
     },
     {
       "path": "Labs/SwordHolsterLab/tipalign.js",
@@ -12967,9 +13111,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "5b6ad12489c0425ea76e0d888691f4ef38e702fc",
-      "bytes": 161053,
-      "sha256": "f8ef1a0ad932f443f2e06388033da9310cb6528fb72ff62e004602ac9c11767a"
+      "git_blob": "52f57f67be428417988190726ef18ad8e30c9f80",
+      "bytes": 216809,
+      "sha256": "09e908e208e3091f5ec2dc49fdf458952831ddce577f1c4608dfa6a2d1123449"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -29431,9 +29575,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgentJolt.cpp",
-      "git_blob": "67563465c215266a1a4fa3658182d86e9e7a4d83",
-      "bytes": 17273,
-      "sha256": "3adf659fe2942b3c62ecf4f84b2e2d0618eadef3ade3fa411061d5c09ca27090"
+      "git_blob": "4a6719ff22c9286f8193787b13554bfcf4f239f1",
+      "bytes": 17405,
+      "sha256": "5f19e298ed977915207819b77280f6d6a034c9ddd7b8212501976c5f853d9cdb"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgentResetLibrary.cpp",
@@ -29776,6 +29920,24 @@
       "git_blob": "50cb2c39555b7fd4514e3a9126f28bce6dd2a932",
       "bytes": 57386,
       "sha256": "d3ba9df70eaae8d76e7fc46b3fbccf5902af22ff6493d52b2b084123b98c69e8"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyBreathing.cpp",
+      "git_blob": "e3e238577b0d4e6b433224c12c68327bfcf09832",
+      "bytes": 10860,
+      "sha256": "2dfae49a20c34ee394fffe3657a1895dd1a99333d08712b6cf77c96a74b3bce5"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyBreathing.h",
+      "git_blob": "7b3737d010380e38204ef4ed0c70dcffadabbb7b",
+      "bytes": 437,
+      "sha256": "44b68e7c1ae9cc8dec6aa74e967cd2c57e3a73e9eb6006feb947cd5607d8b392"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyBreathingData.h",
+      "git_blob": "93d761b819eaad08ef4a07da0807502154fd316e",
+      "bytes": 8763555,
+      "sha256": "a40a7927c1f0fa6c0b0610110a78b4c03998dad5aa0a2cb80e897f5032af66e0"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyCatchUpTests.inl",
@@ -30288,6 +30450,18 @@
       "sha256": "b0be0073a753699452d9ab7c9f9886598b6b4e7ddb58e25684581e37d5fd3cf2"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyHolsterMount.cpp",
+      "git_blob": "e9dd6dffed099c2c7c62b2b80f9eaa949edf2ab5",
+      "bytes": 11190,
+      "sha256": "eaf1b3c4ae7617037cfda08019669f263875b111d4ce8c7d32f936ec106573a2"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyHolsterMount.h",
+      "git_blob": "2d0e846c1971b347a809b6a00f583251bde1fac1",
+      "bytes": 626,
+      "sha256": "906760c1feb136005e2ddd62727ee9388356dc57b0a5d155819d3bafa9b3b617"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecyHolsterStrapComponent.cpp",
       "git_blob": "8f6c3f3f39f9670203bbc853ccb272088796cdc8",
       "bytes": 9008,
@@ -30409,9 +30583,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltCharacterComponent.cpp",
-      "git_blob": "0c774255c03411245b011287cfe60af67b5a1f89",
-      "bytes": 95215,
-      "sha256": "457e3b78e86591243ac242f6f263bc82a07f91d15e95b10bfda9eca3c7d33505"
+      "git_blob": "1fbebe5f2a2a8823fb534998b987317537af5aed",
+      "bytes": 95207,
+      "sha256": "2e7d54305c3a0a3b291a74ee579ae11b24d75e63e50b054b70c3561f310ad898"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltCharacterProfiling.cpp",
@@ -30445,15 +30619,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltConstraintRuntime.cpp",
-      "git_blob": "a51731a0a4d5f09245709b10a84fee71a4f2d0c8",
-      "bytes": 17454,
-      "sha256": "7e2f03c910916ef918cdc5a6adbc0b3ca2cf5d82282ae15e9b8674f8333f916a"
+      "git_blob": "771826aad7b1953391cca2e93eecef28ec9a30e0",
+      "bytes": 17893,
+      "sha256": "d4d5091c2be7e4c4ce0d53c58c6d983654dd7a494c9eb1908f83b787b2f1d927"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltConstraintRuntime.h",
-      "git_blob": "59e0a02b8e57c4605833bdef2c0c77e755598f56",
-      "bytes": 546,
-      "sha256": "deaa509eab84930d90d6347f6ff9e74be61c50d591b275c7b9c352192a8c5a1c"
+      "git_blob": "0be555ab078f759d6453edb508a619fa1ab689c6",
+      "bytes": 700,
+      "sha256": "9b6b34ba84867c68b6b3531aa726bd08ae646152f0ec447deaad73759eca3fe0"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltDefaultPhysics.cpp",
@@ -30510,6 +30684,12 @@
       "sha256": "b68de15ec457193265692bb085738bf2a92d106b9a29a80f5981b4413adbaf7b"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyJoltNeckRigTests.cpp",
+      "git_blob": "e6a6597b75aa2e52a51054b7e6c47ad6355c4a28",
+      "bytes": 4196,
+      "sha256": "90de7527bdac1ebd541787bc566e1c53a083612c8536f867d3f2071ba4441821"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltPose.cpp",
       "git_blob": "203cd0b2ece1aebc2413d820878b97283b029446",
       "bytes": 11435,
@@ -30547,9 +30727,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltPostPhysicsQueryValidation.cpp",
-      "git_blob": "89290bb9def90d05cd4b99232e74c3b8be42f9dd",
+      "git_blob": "0819ca436a485554caad208da5780a58e0c1fe30",
       "bytes": 49675,
-      "sha256": "12204972bfb795da76989b5ddc9386824ddce1b2af0ded975f1c267c8ca45be7"
+      "sha256": "4ed9b07a4e9f6516ca9ab1bcad7f0b7cacd32d04e070e90edcef6073f249fdb7"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltPostPhysicsQueryValidation.h",
@@ -30577,27 +30757,27 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltQueryPoseTests.cpp",
-      "git_blob": "7f26cd34a49a672a0b709ff62802314139541b00",
+      "git_blob": "12e395614fa6e380697d42f47a8606339f7a082b",
       "bytes": 14127,
-      "sha256": "10e6a84aec9eeaaf94b62b4c453a59af1c6f7d13db5405017195a5810526a1b5"
+      "sha256": "5e28aea9d34ca7d0ed7632f6d79790132091fde665e0ad3da628f77950b3e116"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltQueryValidationTests.cpp",
-      "git_blob": "11e8c8e7930a2525379500a76b2ad1b8778d6ca1",
+      "git_blob": "c8e65962de8329147b21ae3e452b95bc2871f8cb",
       "bytes": 7266,
-      "sha256": "ac6289774c60667843214aec1f4a491c978a4b0074aef775122b4b6ac26c0fda"
+      "sha256": "ac442ab353f0e67a541edf98760107ed0c222391f8ff636d3b619b0cae73aad3"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltSceneCollisionComponent.cpp",
-      "git_blob": "bc71409fe5cc75910985f3aaa555f08ac1462e96",
-      "bytes": 32407,
-      "sha256": "8fcca1731dbb7a78624705db40bda9065c67898035afeaaccf2b21a4d01761c6"
+      "git_blob": "4bc320f8f6828e52f5ceef5c52b6445a63ed013c",
+      "bytes": 33966,
+      "sha256": "ed6e8101149133f409f3050a0cb3d59fb78ca81baf6bf2b722adbe81d49f31f3"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltSceneCollisionComponentTests.cpp",
-      "git_blob": "3f2437cfd78cdb0be1fdc0bb174e706de1553b3a",
-      "bytes": 34037,
-      "sha256": "b3094edc0481e95d945eb435ef877641f529fe46a94d8b5512f16749e5d8d3b7"
+      "git_blob": "aeed4759f4504bae7e07dc12cbca96813d4ec560",
+      "bytes": 38006,
+      "sha256": "360e1d381958ef3ef678c515c9fb9d94c2fc0de921db29c4ccd25229fd46f5e0"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltStandardPhysicsLibrary.cpp",
@@ -30625,9 +30805,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltSwordFixture.cpp",
-      "git_blob": "0c89cf00307681e2e56f0390e915c8620413d35d",
-      "bytes": 190974,
-      "sha256": "f53c4c6ea5108cc55d44f24b37ac62c10289045d5fb02cc8e0d99f24a6105273"
+      "git_blob": "0eeb9a867438ba483ab23247ea9451e7edf80e60",
+      "bytes": 193794,
+      "sha256": "666af4f5a54eb7eb8c811242d963715f192cecbb33a347b9476cf0ac0a4cad09"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltVisualCheck.cpp",
@@ -30745,9 +30925,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNAgentReset.inl",
-      "git_blob": "e2756965e9c492e9799b5a8959af9f45beeb93c3",
-      "bytes": 16114,
-      "sha256": "43611bd0ed5840d59f9e372c160cb71dac89e5d5a07dde260264580ebe60ea73"
+      "git_blob": "389ae4c083156709315adb34042f8cac69717b7e",
+      "bytes": 16155,
+      "sha256": "2e6fddeecc7452b3224b28912597de7ea781035591815f78c9605789fdd38ee2"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNCrowdBenchmark.cpp",
@@ -30829,9 +31009,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNLocomotionManager.cpp",
-      "git_blob": "c42ad1f32646f4347d539c7aff876bfea16a7f84",
-      "bytes": 282579,
-      "sha256": "36585f1ec83f6ed307374d0321f0e50aa91dcf430ad5ea43eef56982cd48a33b"
+      "git_blob": "b9394794b1c93c23f7cb41c338abccde3184b8ab",
+      "bytes": 284570,
+      "sha256": "8ead9409fad5e4bb45cfc07b5775e2f7cbe295cf41a190d2def74006e958e4a4"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNLowerFeedbackAlignment.inl",
@@ -31075,21 +31255,21 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicsBenchmarkJolt.cpp",
-      "git_blob": "392176ed1512f4aadd4a751d9f61e638d8c85a87",
-      "bytes": 11562,
-      "sha256": "1fadb5082b2c55d3657594df4e6a39d5bc1299c7efa05e372afe10191e9eeef7"
+      "git_blob": "6e19147fe048b3fb31d138c6935d5ac522c217f4",
+      "bytes": 11970,
+      "sha256": "9f7f64e75d6aa472b889c945f2e9f2b2f15790be6a8222a6c0f662b246c44e34"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicsBenchmarkLiveJolt.cpp",
-      "git_blob": "14b72c08a50b402ee90a3baa63a36c301048e7e8",
+      "git_blob": "9e0b63770306a425abde1d91c5c16869795bf337",
       "bytes": 35117,
-      "sha256": "416abfa4d586e63c56a515b87270a0148e88d377891c5d12217e5b1a59a7bfd7"
+      "sha256": "1a64f5e1fcb8b46a5ddbeb83b618b085a3bd0a254d3ccb992ddd20475517a9e4"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicsBenchmarkManual.cpp",
-      "git_blob": "0df7babf23660523e6445ee4a80dad2714e392c6",
-      "bytes": 32355,
-      "sha256": "119405a7c79f2de2fdf5387ba56a1948b28ce3f592afc7c8379abd4217bdcefb"
+      "git_blob": "d660a4a8c77f80dc754a1441e587f5419246ddf0",
+      "bytes": 32824,
+      "sha256": "407e40948ed5cf2105cd093052a316f0fe4d4b4dccee2ee1f9da742e0f2eaedb"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicsBenchmarkManualCrowd.cpp",
@@ -31099,9 +31279,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicsBenchmarkMultiJolt.cpp",
-      "git_blob": "3422fd0548a13e7666dcc30f6ef3e7fb0a5c6654",
+      "git_blob": "0702c14e1783ec119c2fa49fe519a84e6a52a476",
       "bytes": 76070,
-      "sha256": "7238c320c54fc53d987b82ae809f96776ac9d5c1ad38da17ec19ee52ba00af0d"
+      "sha256": "32cf990d7211994e4c0fecae62453e3890ce00e0ca209644610b1561c410a996"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyPhysicsBenchmarkNNJolt.cpp",
@@ -31345,15 +31525,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySpecialSolver.h",
-      "git_blob": "dbf7e0508f7709a50bf344ebbf03863f3b383bcf",
-      "bytes": 270,
-      "sha256": "badc061622f9c30b62c8732909b994625b12a00dd5fc3c1fa3ed69d4a8aab0d5"
+      "git_blob": "c5e6852625eaf98491218614167710ee4ac261f2",
+      "bytes": 327,
+      "sha256": "cee6f96243d16155ad0d5aa96dcf1b20a63d7e2a14d7f1e4853acafe2df0e6eb"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySpecialSolverTests.cpp",
-      "git_blob": "531515b83753e603247519cd6167b6b9d3e740ed",
-      "bytes": 1983,
-      "sha256": "4809dab71a7e316b81154b9b9b17e65e0132c5e5670a1a88a1d48c93badc9e63"
+      "git_blob": "071bed11cf79193e3577a2ed6c312a067715eb57",
+      "bytes": 2694,
+      "sha256": "d3df8b203d065bf61f79e03e2f385ec54628e60af8a974906c135ff96262ea6a"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySpecialStart.h",
@@ -31387,9 +31567,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordComponent.cpp",
-      "git_blob": "7652b3b0e982755197d526ca5052ff80c3f7a583",
-      "bytes": 62207,
-      "sha256": "1201789149226fa148f070c2fefaf482ea2946ea08e31b9b59617f5e41818cab"
+      "git_blob": "d8dc8f0d48cf7ea44f5c144b46f7a60d59e7e4d0",
+      "bytes": 62241,
+      "sha256": "9f1be2748aa3c9d0c8f362c3408c4789ca9dcc5b58bccfad84d845a73b7c3f32"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolster.h",
@@ -31405,21 +31585,21 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterPose.cpp",
-      "git_blob": "def1201bbab10c74a9a9d9485a69ee632045caf5",
-      "bytes": 92830,
-      "sha256": "413dd4a544268dd79e56dd72361d39f4c344a9f4d435e86eee406b7547491a22"
+      "git_blob": "84aa0d2c3f18a70ec8c2e0581b4bcfa2e0115c46",
+      "bytes": 120542,
+      "sha256": "397cec0e554d0622ac59a1e542abc37e20ca9166ad9c1a65def376a97ef07ff0"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterPose.h",
-      "git_blob": "b90ad8d5e33da9f03f532861cf0109403ed51f91",
-      "bytes": 3727,
-      "sha256": "504afdeceb13c280ceeef209be47686b3dc0fb032c31a671869c0bddf55699ff"
+      "git_blob": "e7b556f33e3048de7758836596bcd23f8aba0af1",
+      "bytes": 4321,
+      "sha256": "d0f048c6755effae4341274fcf19f18a7ba4ec1ff0071797ef69d23027b8bad0"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterRuntime.inl",
-      "git_blob": "05632eab45648a0033eae4bdf92866485109d917",
-      "bytes": 37282,
-      "sha256": "de050ec134457875907178442d5b1b5073fe2f7d8fed14a75b7ea00d98cf64c6"
+      "git_blob": "ae311c38e0838851f073775420670fb77b985709",
+      "bytes": 40338,
+      "sha256": "4558369a3fc09093fb8cca21bff9382ac3ad657aca13a64bbf94c796bcd80827"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterSchedule.h",
@@ -31504,6 +31684,18 @@
       "git_blob": "0aa116cd4f154d41af5712e0bb3fca2d80e2f8bb",
       "bytes": 13717,
       "sha256": "e16a305ea9419cf657ce6343b348370178b5e8f09519bd3096774d6760eef0a6"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecyBreathingHistoryTests.inl",
+      "git_blob": "37d0b3e7cb9b473011b8bc112afb2b1e1a8ab6a1",
+      "bytes": 4137,
+      "sha256": "b9dd3f89c7b5a5eebb13a9c439d5f5be6ecf61b59adfda74b64a272d2843a281"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecyBreathingTests.inl",
+      "git_blob": "bc897686ecfaf8f377c332d50c395b49b227144c",
+      "bytes": 13333,
+      "sha256": "6cda4c6872739522228fb0b751d4a5400b73f4d044c06d3540f5d9e6409fb667"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyDefenseCombatRulesTests.cpp",
@@ -31627,9 +31819,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordAcceptedMotionTests.inl",
-      "git_blob": "e2013c3f36b9c5cc38f75007e4a6f38591b9405e",
-      "bytes": 4591,
-      "sha256": "9c055a849bee95b0f6f78ac6f1a2d51bf732a6c905809f594387e23d80b68c2e"
+      "git_blob": "227276086efc63fb7f934c8e5be23157edbfb192",
+      "bytes": 11851,
+      "sha256": "f4d19b77da2af91bf26a2bef12004c02fd35f12d7ab307b442d09a1ff36edf85"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordElbowIKTests.inl",
+      "git_blob": "a8730f3f3bf885c272d15cdd123cbea8ecfc152a",
+      "bytes": 4308,
+      "sha256": "d1155e7dfae6df3b1ae880ff29e5ef9c929fa79ea200989e8bb354fe5f519b8c"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterAuthoredTests.inl",
@@ -31639,9 +31837,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterChannelsTests.inl",
-      "git_blob": "2c6c609c5ccbf65a1909a8697ff153510510ac4a",
-      "bytes": 5183,
-      "sha256": "8966247410c6b830e1f1f5d6153e241832e22976d41ed94fe8272b2fca9d2b91"
+      "git_blob": "ffb321428652e7378ab5953683fe240f9af1de95",
+      "bytes": 5202,
+      "sha256": "f47daa63828f488a9e171d586589607d94c0eb9f8dbf1cd530ed1dfe5573e42b"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterHeadRootTests.inl",
+      "git_blob": "8128f409c4f820a8936d4add5d4bfce803e37c06",
+      "bytes": 4454,
+      "sha256": "1cfe44e885d837c33ad408a5a8bd4923d8e630d9828bb9d05b13abb26cd4bddb"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterLegacy.inl",
@@ -31668,10 +31872,22 @@
       "sha256": "8b9626814aeec4a767c83780ee3bb6cd0e992bdbd9d7be99c627520e974d5829"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterRollTests.inl",
+      "git_blob": "35ef9219573bf41ef19b1132221ee47a4b28cb0b",
+      "bytes": 1589,
+      "sha256": "4bb4bac4888d132e3cf6363a662f03d79a5642f4bb67862ff47206132f89eebd"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordHolsterStaggerTests.inl",
       "git_blob": "b13fb35d24c88d2ecdc30541bfaf9c396f02df35",
       "bytes": 8304,
       "sha256": "be30cac06b8338d41cbe0d3270c47b93c873b833b1b9a8d22e83698f7b5410f3"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordReturnPoleTests.inl",
+      "git_blob": "aee7836eba761df53c42e207d5e0bf6e6584b489",
+      "bytes": 2444,
+      "sha256": "cad7a169a4dc03d2a70e56641a1ff9fc7a46efc008877557d80bb92317f27678"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecySwordTipAlignmentTests.inl",
@@ -31828,6 +32044,12 @@
       "git_blob": "89417c39148c571e1734d83107d266bb69d84194",
       "bytes": 11775,
       "sha256": "73b4e848b36e3c000369b27afe0568ceaf9f27408ca2eb7e098614855984560b"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Public/ProphecyBreathingLibrary.h",
+      "git_blob": "0ba9e8c1e91f610ae7b33583367af39b747d300c",
+      "bytes": 1785,
+      "sha256": "26940f8b6247239853d20e63fab19d229a8deb8a2b2347f59bed43f673fda12e"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyClampProfileLibrary.h",
@@ -32239,9 +32461,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySwordHolsterLibrary.h",
-      "git_blob": "e5ce01375a367dfc0515e0fd870f2e697361c935",
-      "bytes": 3359,
-      "sha256": "2c2c36932ea3627873408ff4fe192159640f4cdafcd775fb27f2533a7a7edad9"
+      "git_blob": "25df9bf1143f1d0295f53d9ec45c57863b450460",
+      "bytes": 5070,
+      "sha256": "40579e83aecf4b24a105c1fd91a37bdbcfe0c620a48abe19351dba8c51b754ee"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySwordPhysicsLibrary.h",
@@ -32418,6 +32640,12 @@
       "sha256": "c4e70c28a196e5df5637906e7189bed2755454e7ad39419f461f5ec3a85f22a4"
     },
     {
+      "path": "Source/ProphecyEditor/Private/ProphecyNeckRigSetup.cpp",
+      "git_blob": "ebd64e23c4b86b03298a8188b16765d5560e0e8c",
+      "bytes": 8413,
+      "sha256": "bf16e08eac24bf271fde5d08a23223e0a71878947f62e446ce7d8f4a2e0e8d4a"
+    },
+    {
       "path": "Source/ProphecyEditor/Private/ProphecyPhysicsReceiverUpgrade.cpp",
       "git_blob": "719bd660c8a3e36dd0727c90eaf08f0b60b0d09f",
       "bytes": 6786,
@@ -32491,9 +32719,9 @@
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecySwordHolsterSetup.cpp",
-      "git_blob": "c93f893d2009c776345532c4e82581a5e7264287",
-      "bytes": 15836,
-      "sha256": "2ea608aed81d3f00440610aa48c1cf236ff6e46f8ba0ad7f292b9c39c1091aa7"
+      "git_blob": "96b2b8f2a41b35d073bfec58deff073eee9be745",
+      "bytes": 18028,
+      "sha256": "116ce5ba3f54e18be9500e6bdda71550c4a5e1e149c6fe7e4b93f2c1fcadb366"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecySwordTrainingMesh.cpp",
@@ -33978,6 +34206,12 @@
       "sha256": "e02b6281747b7fba027368e78b73b0064bc74b97acd54230c86eaecc9cacf022"
     },
     {
+      "path": "Tools/NN/ExportBreathing.py",
+      "git_blob": "497c9d8e54ca25a0e96c79a6aae59fa0198f9988",
+      "bytes": 3241,
+      "sha256": "3a74e1a3985a1c577ee6c1e8205270106b40b75bc322b38f009e396f2258b3d1"
+    },
+    {
       "path": "Tools/NN/ExportCurrentSlashCheckpoint.py",
       "git_blob": "a618b32682af927bb3b9ab7490f6fe096b068f93",
       "bytes": 9931,
@@ -35298,6 +35532,12 @@
       "sha256": "797206232a4d99f82ab804d9633c429b99e09d8cc0a8fa3bcdf369f4c340b200"
     },
     {
+      "path": "Tools/SwordHolster/ExportReturnProblems.cjs",
+      "git_blob": "5b59951f2db71b36610ff442e3da4e9f87c900b2",
+      "bytes": 2847,
+      "sha256": "98299b285c5c8f193b49ee736c794c7a9675ffa0dcead9ce7abb928acdff65d0"
+    },
+    {
       "path": "Tools/SwordHolster/HeadFpsDiagnosis20261011.json",
       "git_blob": "5e97f3fda63ef6831229bfe13fca1cec0a4775be",
       "bytes": 181316,
@@ -35386,6 +35626,12 @@
       "git_blob": "7b43e750027cf5d5a6eb5d4038c756f523bdf9d9",
       "bytes": 5389,
       "sha256": "8aee31807bdd7bffbfef439f1a94dcb9ab32ceec327d42dcc13874bcafec852c"
+    },
+    {
+      "path": "Tools/SwordHolster/PhysicalNeck20261013.json",
+      "git_blob": "150d8a39d1999b07496b5a33f2e12ece1c628375",
+      "bytes": 17441,
+      "sha256": "b4b4a89f503cac36b6bbdad458bb6eb95769b155cee16840f1443f4832af0f5c"
     },
     {
       "path": "Tools/SwordHolster/Port20261012.json",
@@ -35521,9 +35767,9 @@
     },
     {
       "path": "Tools/SwordHolster/SyncLabProfile.cjs",
-      "git_blob": "f0b492d35c470bef01bdedf3dc296c75a8515959",
-      "bytes": 1340,
-      "sha256": "8f7091421eba4aa6858177f449eb42d99281fd90c3590b8373e5996ce26628e2"
+      "git_blob": "fba2bc01439f8f2df338a9e98c17ae6e28401df2",
+      "bytes": 1767,
+      "sha256": "40e3689bcb23c5e7b272a03c7f91113f4ade32332c4c5e2ff04960926bba1225"
     },
     {
       "path": "Tools/SwordHolster/Verification20261010.md",
@@ -35539,15 +35785,15 @@
     },
     {
       "path": "Tools/SwordHolster/VerifyNeckLimits.py",
-      "git_blob": "353e6316c912c99b1aba014d121c85e4ad85c846",
-      "bytes": 6551,
-      "sha256": "8c4229de60e7972e06b4f6988aaaf39895ac341a656ca8a1f428ac8a4f74ca60"
+      "git_blob": "736b390c62fdd3a5cb64245344c57a292b3a060d",
+      "bytes": 8850,
+      "sha256": "1daa03f032d362b63ccc8adc1c64a3347d68964b08431166d967414b1867f7fa"
     },
     {
       "path": "Tools/SwordHolster/VerifyPlay.py",
-      "git_blob": "797fd18d58e0305bc5d9384c24adb98d500ad5b7",
-      "bytes": 11978,
-      "sha256": "879a4094d35603bc7d15ddb3e6162f81b8f69a5ea1598ca396f8c615c2b235af"
+      "git_blob": "1956793446284fa6eff1de3a643746e7e3cf5613",
+      "bytes": 12412,
+      "sha256": "b326b7032e6785842ad77b9ca63d515a1db72ff642feb236e77338092b64f037"
     },
     {
       "path": "Tools/SwordHolster/VerifyStagger.py",
@@ -35557,9 +35803,9 @@
     },
     {
       "path": "Tools/SwordHolster/export_accepted.cjs",
-      "git_blob": "ad51399a772f24a8ce99fae9b3a7f215abeb403f",
-      "bytes": 2062,
-      "sha256": "9d3243efa324c6da61c73b7a2f30f4ea1f63e6faa0ee5fb78136250c07321004"
+      "git_blob": "60af888751a37c077abc3951afd4ccd56d14e0fa",
+      "bytes": 3496,
+      "sha256": "ed853f64c4eb4e3a16fcceafa42ffc7c1e8b7a3a6c0d64fe40e04001a713c76b"
     },
     {
       "path": "Tools/SwordHolster/export_authored.cjs",
@@ -35572,6 +35818,12 @@
       "git_blob": "26fe4b4bc14c6c378b6961e006562f3bac9a3a79",
       "bytes": 2504,
       "sha256": "0a0d6890d69748d1f62208fedd82fa097cbf646d167ef66a8db7b6a5af0f14d2"
+    },
+    {
+      "path": "Tools/SwordHolster/export_elbow_ik.cjs",
+      "git_blob": "ac60380ccc0d11d3d1feed7def5dd8135d3abe37",
+      "bytes": 1291,
+      "sha256": "f2e29cec061c8d3347bfc7a4fe2d58b349544ffceef85c504374b43cc188eee2"
     },
     {
       "path": "Tools/SwordHolster/export_head_handoff.cjs",

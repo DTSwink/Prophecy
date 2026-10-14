@@ -32,7 +32,7 @@ class HolsterRenderer extends WebGLMotionRenderer {
   if(!data.equipment||data.hideSword)return;
   this.equipmentPoints ||= new WeakMap();
   for(const [key,color] of [['holster',[.13,.64,.58]],['sword',[.83,.87,.91]]]){
-   const item=data.equipment[key],geometry=equipmentSetup[key+'Mesh'];
+   const item=data.equipment[key],geometry=data.equipment[key+'Mesh']||equipmentSetup[key+'Mesh'];
    const axes=Recovery.toAxes(item.q).map((v,j)=>v.map(x=>x*item.s[j]/100));
    const origin=displayPoint(item.p,data.shift);
    for(const section of geometry.sections){

@@ -1,4 +1,6 @@
 #include "ProphecySwordHolsterPose.h"
+#include "ProphecyHolsterMount.h"
+#include "ProphecyJoltStandardPhysicsLibrary.h"
 #include "ProphecySwordTipAlignment.h"
 #include "ProphecySwordHolsterLibrary.h"
 #include "ProphecySwordComponent.h"
@@ -192,7 +194,7 @@ bool LoadProfile(const FString& Path,FProfile& P,FString& Error)
   if(J->TryGetObjectField(Prefix+TEXT("Return"),Nested))
   {
    const auto& V=*Nested;auto& R=P.Return[A];V->TryGetBoolField(TEXT("enabled"),R.Enabled);V->TryGetBoolField(TEXT("worldInertia"),R.World);V->TryGetBoolField(TEXT("springReturn"),R.Spring);
-   R.StartFraction=Number(V,TEXT("startFraction"),.9,0,1);R.Duration=Number(V,TEXT("duration"),1,.1,5);R.Easing=Number(V,TEXT("returnEasing"),1,0,1);R.Inertia=Number(V,TEXT("inertia"),1,0,1);R.Hold=Number(V,TEXT("inertiaHold"),0,0,.8);R.Decay=Number(V,TEXT("inertiaDecay"),1,0,4);R.AngleTime=Number(V,TEXT("angleTimeSeconds"),.29,0,4);R.TwistRemoval=Number(V,TEXT("upperArmTwistRemoval"),0,0,1);
+   R.StartFraction=Number(V,TEXT("startFraction"),.9,0,1);R.Duration=Number(V,TEXT("duration"),1,.1,5);R.Easing=Number(V,TEXT("returnEasing"),1,0,1);R.Inertia=Number(V,TEXT("inertia"),1,0,1);R.Hold=Number(V,TEXT("inertiaHold"),0,0,.8);R.Decay=Number(V,TEXT("inertiaDecay"),1,0,4);R.AngleTime=Number(V,TEXT("angleTimeSeconds"),.29,0,4);R.TwistRemoval=Number(V,TEXT("upperArmTwistRemoval"),0,0,1);R.ElbowSoftZone=Number(V,TEXT("elbowSoftZone"),15,0,45);V->TryGetBoolField(TEXT("elbowIKCorrection"),R.ElbowIKCorrection);
    R.HandRotationFKAlpha=Number(V,TEXT("handRotationFKAlpha"),1,0,1);
    V->TryGetBoolField(TEXT("armIKEnabled"),R.ArmIKEnabled);R.ArmIKStart=Number(V,TEXT("armIKStart"),0,0,1);R.ArmIKEnd=Number(V,TEXT("armIKEnd"),.25,R.ArmIKStart,1);
    R.SwordPointSpeed=Number(V,TEXT("swordPointSpeed"),0,-3600,3600);R.SwordPointExponent=Number(V,TEXT("swordPointExponent"),1.5,1,8);R.SwordPointCutoff=Number(V,TEXT("swordPointCutoff"),.5,0,.99);
@@ -221,7 +223,7 @@ struct FArmIKReturn
 {
  bool Enabled=false,Anchored=false;double PreviousElapsed=0;
  FTransform Previous[3],PreviousBase[3];FVector Point=FVector::ZeroVector;
- FReturnPole Pole,BasePole;
+ FReturnPole Pole;double GoalAngle=0,BlendAngle=0;
 };
 struct FHandAxisTurn
 {
@@ -230,9 +232,13 @@ struct FHandAxisTurn
  FQuat Q=FQuat::Identity,PreviousHand=FQuat::Identity,PreviousRoot=FQuat::Identity,SourceHand=FQuat::Identity,SourceRoot=FQuat::Identity;
  FHandReturn Resume;
 };
+struct FElbowIKReturn
+{
+ int Elbow=INDEX_NONE,Hand=INDEX_NONE;double PlaneAngle=0;bool Seeded=false;FVector PreviousPlane=FVector::ZeroVector;
+};
 struct FReturnTrack
 {
- FHandReturn Hand;FArmIKReturn IK;
+ FHandReturn Hand;FArmIKReturn IK;FElbowIKReturn Elbows[2];
 
  TArray<FTransform> ReturnStart,ReturnIdle;
  TArray<FVector> Velocity,OffsetVelocity,WorldVelocity,WorldCorrection;
@@ -330,12 +336,24 @@ static void RestoreHolsterMount(FActive& S,bool PreserveSword=false)
   USceneComponent* Blade=nullptr;FTransform SwordWorld;
   if(PreserveSword)if(const auto* A=Cast<AProphecyAgent>(H->GetOwner()))if(const auto* C=A->FindComponentByClass<UProphecySwordComponent>())
    if(auto* Sword=C->GetSword())if(auto* Root=Sword->GetRootComponent();Root&&Root->GetAttachParent()==H){Blade=Root;SwordWorld=Root->GetComponentTransform();}
-  H->SetUsingAbsoluteRotation(S.OriginalAbsoluteRotation);H->SetRelativeLocationAndRotation(S.NeutralMount.GetLocation(),S.NeutralMount.GetRotation());
+  H->SetAbsolute(H->IsUsingAbsoluteLocation(),S.OriginalAbsoluteRotation,H->IsUsingAbsoluteScale());H->SetRelativeLocationAndRotation(S.NeutralMount.GetLocation(),S.NeutralMount.GetRotation());
   if(Blade)Blade->SetWorldTransform(SwordWorld,false,nullptr,ETeleportType::TeleportPhysics);
  }
  S.Stabilizing=false;
 }
 void RestoreHolsterMount(const AProphecyAgent* A){if(auto* P=Active.Find(A))RestoreHolsterMount(**P,true);}
+void ReleaseHolsterMount(const AProphecyAgent* A)
+{
+ if(auto* P=Active.Find(A)){auto& S=**P;if(!S.Stabilizing)return;
+  if(auto* H=S.Geometry.Holster.Get()){
+   // SetAbsolute refreshes the transform cache. Merely changing the flag can
+   // make SetWorldTransform early-out, leaving a world quaternion in local space.
+   const FTransform World=H->GetComponentTransform();H->SetAbsolute(H->IsUsingAbsoluteLocation(),S.OriginalAbsoluteRotation,H->IsUsingAbsoluteScale());
+   H->SetWorldTransform(World,false,nullptr,ETeleportType::TeleportPhysics);
+  }
+  S.Stabilizing=false;
+ }
+}
 static double HolsterWeight(const FActive& S)
 {
  if(!S.Stabilizing)return 0;
@@ -350,14 +368,18 @@ static FTransform MountedHolster(const FActive& S,const FTransform& Parent)
  T.SetRotation(FQuat::Slerp(T.GetRotation(),S.StableHolster,HolsterWeight(S)).GetNormalized());
  return T;
 }
-static void BeginHolsterGrip(FActive& S)
+static bool BeginHolsterGrip(FActive& S)
 {
- if(S.Stabilizing||S.Geometry.GripStabilization<=0)return;
  if(auto* H=S.Geometry.Holster.Get()){
+  if(!ProphecyHolsterMount::BeginGrip(Cast<AProphecyAgent>(H->GetOwner()),S.Geometry.HolsterReturnDuration))return false;
+  if(S.Stabilizing||S.Geometry.GripStabilization<=0)return true;
+  if(UProphecyJoltStandardPhysicsLibrary::IsSimulatingPhysics(H,NAME_None)
+     ||ProphecyHolsterMount::OwnsReturn(Cast<AProphecyAgent>(H->GetOwner())))return false;
   S.NeutralMount=H->GetRelativeTransform();S.OriginalAbsoluteRotation=H->IsUsingAbsoluteRotation();
   S.StableHolster=H->GetComponentQuat();S.Stabilizing=true;
-  H->SetUsingAbsoluteRotation(true);H->SetWorldRotation(S.StableHolster);
+  H->SetAbsolute(H->IsUsingAbsoluteLocation(),true,H->IsUsingAbsoluteScale());H->SetWorldRotation(S.StableHolster);
  }
+ return true;
 }
 void UpdateHolsterMount(const AProphecyAgent* A)
 {
@@ -369,6 +391,7 @@ void UpdateHolsterMount(const AProphecyAgent* A)
 }
 void Remove(const AProphecyAgent* A,bool ClearProfile)
 {
+ ProphecyHolsterMount::EndGrip(const_cast<AProphecyAgent*>(A));
  if(auto* S=Active.Find(A)){RestoreHolsterMount(**S,true);FWriteScopeLock Lock(OutputLock);Outputs.Remove((*S)->PoseId);AnyOutput.Store(!Outputs.IsEmpty());}
  Active.Remove(A);ProphecyBlendClock::Stop(A,ProphecyBlendClock::EKind::SwordHolster);
  ProphecySwordHolsterSchedule::Remove(A);
@@ -800,8 +823,8 @@ bool Begin(AProphecyAgent* A,bool Sheathe,double Reach,double Rotation,double Sl
  Publish(*S);Active.Add(A,MoveTemp(S));EnsureCleanup();ProphecyBlendClock::Start(A,ProphecyBlendClock::EKind::SwordHolster);return true;
 }
 bool Status(const AProphecyAgent* A,FStatus& Out){const auto* S=Active.IsEmpty()?nullptr:Active.Find(A);if(!S)return false;Out=(*S)->Status;return true;}
-static void StartSlide(FActive& S);
-void SetSliding(const AProphecyAgent* A,bool Value){if(auto* P=Active.Find(A)){auto& S=**P;if(Value&&!S.Sliding){StartSlide(S);}}}
+static bool StartSlide(FActive& S);
+bool SetSliding(const AProphecyAgent* A,bool Value){if(auto* P=Active.Find(A)){auto& S=**P;return !Value||S.Sliding||StartSlide(S);}return false;}
 static bool SheatheReady(const FActive& S,const FTransform& Blade)
 {return Angle(Blade.GetRotation(),S.Full.GetRotation())<=S.Profile.RotationTolerance+1.e-5&&
  (S.Geometry.LeewayPhase||FVector::Distance(Blade.TransformPosition(S.Geometry.TipLocal),S.Mouth)<=S.Geometry.TipTolerance);}
@@ -809,13 +832,14 @@ bool TrySheathe(const AProphecyAgent* A,const FTransform& Blade)
 {
  auto* P=Active.Find(A);if(!P)return false;auto& S=**P;if(!S.Sheathe||S.Sliding||S.Status.Aligning||!S.Geometry.Valid)return false;
  RefreshGeometry(S,false);if(!SheatheReady(S,Blade))return false;
+ if(!BeginHolsterGrip(S))return false;
  S.EntryScale=ReachScale(S);
  const auto* Mesh=A->GetPoseReferenceMesh();const FTransform HandWorld=Mesh->GetSocketTransform(A->SwordHandSocket);const FVector Hand=HandWorld.GetLocation();
  CaptureGrip(S,Blade,HandWorld,S.EntryScale);
  CaptureArm(S,S.Pose,S.HeldArm);
  if(S.Geometry.LeewayPhase){
   S.TipAlignment.Begin(S.HolsterFrame,S.Full,Blade,S.Geometry.TipLocal,S.Geometry.BaseLocal,S.Mouth,Hand,S.EntryScale,S.Status.Tick,S.Profile.RotationTolerance,S.Geometry.AttachedSpeed,S.Geometry.AttachedRotation);
-  S.Status.Aligning=true;BeginHolsterGrip(S);
+  S.Status.Aligning=true;
  }else{
   S.EntryRotation=(S.Full.GetRotation().Inverse()*Blade.GetRotation()).GetNormalized();
   S.EntryTipError=S.Full.GetRotation().UnrotateVector(Blade.TransformPosition(S.Geometry.TipLocal)-S.Mouth);StartSlide(S);
@@ -871,7 +895,7 @@ static void BeginReturn(FActive& S,FReturnTrack& Track)
  // its ancestor rates before subtracting them from the clavicle/arm rates.
  for(int J:S.Upper){const int P=S.Parents[J],G=J==S.Arm[2]&&!Track.OnlyGrip?-1:S.Groups[J];const FVector IdleVelocity=Log(Track.ReturnStart[J].GetRotation().Inverse()*Track.ReturnIdle[J].GetRotation())*((1-R.Easing)/Track.ReturnDuration);
   BaseRate[J]=(P>=0?BaseRate[P]:FVector::ZeroVector)+Track.ReturnWorld[J].RotateVector(IdleVelocity);
-  Track.WorldCorrection[J]=Track.WorldVelocity[J]-BaseRate[J];const bool Inertial=G>=0&&R.Inertia*R.Weights[G]>0;
+  Track.WorldCorrection[J]=Track.WorldVelocity[J]-BaseRate[J];const bool Inertial=G>=0&&(R.Spring?R.Inertia:1.)*R.Weights[G]>0;
   Track.Velocity[J]=Inertial?Track.ReturnWorld[J].UnrotateVector(Track.WorldVelocity[J]-(P>=0?ActualRate[P]:FVector::ZeroVector))-IdleVelocity:FVector::ZeroVector;
   ActualRate[J]=(P>=0?ActualRate[P]:FVector::ZeroVector)+Track.ReturnWorld[J].RotateVector(IdleVelocity+Track.Velocity[J]);
  }
@@ -881,6 +905,18 @@ static void BeginReturn(FActive& S,FReturnTrack& Track)
   C.Angular.Prepare(Track.Velocity[J]);C.Translation.Prepare(Track.OffsetVelocity[J]);C.World.Prepare(Track.WorldCorrection[J]);
   C.OffsetAlongIdle=C.Offset.Constant&&(Start.GetLocation().GetSafeNormal()-Idle.GetLocation().GetSafeNormal()).SizeSquared()<1.e-24;
   C.Child=S.Groups[J]==2?S.Names.IndexOfByKey(FName(*S.Names[J].ToString().Replace(TEXT("upperarm"),TEXT("lowerarm")))):INDEX_NONE;
+ }
+ for(int Side=0;Side<2;++Side){
+  auto& E=Track.Elbows[Side];E=FElbowIKReturn();
+  E.Elbow=S.Names.IndexOfByKey(Side?FName(TEXT("lowerarm_r")):FName(TEXT("lowerarm_l")));E.Hand=S.Names.IndexOfByKey(Side?FName(TEXT("hand_r")):FName(TEXT("hand_l")));
+  if(E.Elbow<0||E.Hand<0||S.Parents[E.Hand]!=E.Elbow||(Track.OnlyGrip&&Side==0)){E.Elbow=INDEX_NONE;continue;}
+  const auto& A=Track.ReturnStart[E.Elbow];const FVector U=A.GetLocation().GetSafeNormal(),V=A.GetRotation().RotateVector(Track.ReturnStart[E.Hand].GetLocation().GetSafeNormal());
+  const auto Before=S.LastBody[E.Elbow].GetRelativeTransform(S.LastBody[S.Parents[E.Elbow]]),HandBefore=S.LastBody[E.Hand].GetRelativeTransform(S.LastBody[E.Elbow]);
+  const auto BaseBefore=S.LastBase[E.Elbow].GetRelativeTransform(S.LastBase[S.Parents[E.Elbow]]),HandBaseBefore=S.LastBase[E.Hand].GetRelativeTransform(S.LastBase[E.Elbow]);
+  const FVector PreviousUpper=FQuat::FindBetweenVectors(BaseBefore.GetLocation(),Track.ReturnIdle[E.Elbow].GetLocation()).RotateVector(Before.GetLocation()).GetSafeNormal();
+  const FVector PreviousLower=FQuat::FindBetweenVectors(HandBaseBefore.GetLocation(),Track.ReturnIdle[E.Hand].GetLocation()).RotateVector(HandBefore.GetLocation()).GetSafeNormal();
+  const FQuat PreviousRotation=(Track.ReturnIdle[E.Elbow].GetRotation()*BaseBefore.GetRotation().Inverse()*Before.GetRotation()).GetNormalized();
+  E.PreviousPlane=FQuat::FindBetweenVectors(PreviousUpper,U).RotateVector(FVector::CrossProduct(PreviousUpper,PreviousRotation.RotateVector(PreviousLower)));
  }
  Track.Hand=FHandReturn();
  if(!S.Sheathe&&S.Sliding&&S.Status.Tick>=S.SlideStart+S.Status.SlideTicks&&R.HandRotationFKAlpha<1){
@@ -892,7 +928,73 @@ static void BeginReturn(FActive& S,FReturnTrack& Track)
  if(R.Enabled&&R.ArmIKEnabled){auto& IK=Track.IK;IK.Enabled=true;CaptureReturnArm(S,S.RootFrame,S.Pose,IK.Previous);CaptureReturnArm(S,S.RootFrame,S.Base,IK.PreviousBase);}
  S.Status.Returning=true;
 }
-static void MountReturn(FActive& S,FReturnTrack& Track,const TArray<FTransform>& Locals)
+static double ContinueBendAngle(double Angle,double Previous);
+static double ElbowSoftMagnitude(double Value,double Knee)
+{
+ const double A=FMath::Abs(Value);if(Knee<=1.e-10||A>=Knee)return A;
+ const double T=A/Knee;return Knee*(.375+T*T*(.75-.125*T*T));
+}
+// Same shoulder-frame two-bone correction as the lab. The wrist keeps its
+// direction/orientation; only the soft zone can slightly shorten its reach.
+// Match the lab's normalization and half-turn axis, including near-straight
+// bend planes whose magnitude is below FVector's default normalization cutoff.
+static FQuat ElbowDirectionRotation(FVector A,FVector B)
+{
+ A=A.GetSafeNormal(1.e-20);B=B.GetSafeNormal(1.e-20);const double C=FVector::DotProduct(A,B);
+ if(C<-.999999){FVector Axis=FVector::CrossProduct(A,FVector::ForwardVector);if(Axis.Size()<1.e-5)Axis=FVector::CrossProduct(A,FVector::RightVector);Axis=Axis.GetSafeNormal(1.e-20);return FQuat(Axis.X,Axis.Y,Axis.Z,0);}
+ const FVector Cross=FVector::CrossProduct(A,B);return FQuat(Cross.X,Cross.Y,Cross.Z,1+C).GetNormalized();
+}
+static void CorrectElbowsIK(FActive& S,FReturnTrack& Track,double X)
+{
+ const auto& R=S.Profile.Return[S.Sheathe];if(!R.ElbowIKCorrection||R.ElbowSoftZone<=0||X<=0||X>=1)return;
+ const double Zone=FMath::DegreesToRadians(R.ElbowSoftZone),Alpha=X+(Ease(X)-X)*R.Easing;
+ for(auto& E:Track.Elbows){
+  if(E.Elbow<0)continue;const int J=E.Elbow,H=E.Hand,A=S.Parents[J];
+  const auto Local=S.Pose[J].GetRelativeTransform(S.Pose[A]),Hand=S.Pose[H].GetRelativeTransform(S.Pose[J]);
+  const auto Moving=S.Base[J].GetRelativeTransform(S.Base[A]),HandMoving=S.Base[H].GetRelativeTransform(S.Base[J]);
+  const auto& Start=Track.ReturnStart[J];const auto& Idle=Track.ReturnIdle[J];
+  const FVector Upper=Local.GetLocation(),Lower=Local.GetRotation().RotateVector(Hand.GetLocation());
+  const double L1=Upper.Size(),L2=Lower.Size();if(L1<1.e-8||L2<1.e-8)continue;
+  const FVector U=Upper/L1,V=Lower/L2,SeedU=Idle.GetLocation().GetSafeNormal(1.e-20),SeedV=Idle.GetRotation().RotateVector(Track.ReturnIdle[H].GetLocation().GetSafeNormal(1.e-20));
+  FVector ReferenceU=Start.GetLocation().GetSafeNormal(1.e-20),Axis=FVector::CrossProduct(ReferenceU,Start.GetRotation().RotateVector(Track.ReturnStart[H].GetLocation().GetSafeNormal(1.e-20)));
+  if(Axis.Size()<1.e-8){ReferenceU=SeedU;Axis=FVector::CrossProduct(SeedU,SeedV);}
+  if(Axis.Size()<1.e-8){ReferenceU=Start.GetLocation().GetSafeNormal(1.e-20);Axis=E.PreviousPlane;}
+  if(Axis.Size()<1.e-8)continue;
+  Axis=ElbowDirectionRotation(ReferenceU,U).RotateVector(Axis.GetSafeNormal(1.e-20)).GetSafeNormal(1.e-20);
+  const FVector IdleU=Moving.GetLocation().GetSafeNormal(1.e-20),IdleV=Moving.GetRotation().RotateVector(HandMoving.GetLocation().GetSafeNormal(1.e-20));
+  FVector EndAxis=FVector::CrossProduct(IdleU,IdleV);
+  if(EndAxis.Size()>1.e-8){
+   EndAxis=ElbowDirectionRotation(IdleU,U).RotateVector(EndAxis.GetSafeNormal(1.e-20));
+   if(!E.Seeded){const FVector SeedAxis=FVector::CrossProduct(SeedU,SeedV).GetSafeNormal(1.e-20),StartAxis=ElbowDirectionRotation(U,SeedU).RotateVector(Axis).GetSafeNormal(1.e-20);
+    E.PlaneAngle=SeedAxis.Size()>1.e-8?FMath::Atan2(FVector::DotProduct(SeedU,FVector::CrossProduct(StartAxis,SeedAxis)),FVector::DotProduct(StartAxis,SeedAxis)):0;E.Seeded=true;}
+   E.PlaneAngle=ContinueBendAngle(FMath::Atan2(FVector::DotProduct(U,FVector::CrossProduct(Axis,EndAxis)),FVector::DotProduct(Axis,EndAxis)),E.PlaneAngle);
+   Axis=Exp(U*(E.PlaneAngle*Alpha)).RotateVector(Axis);
+  }
+  const FQuat Carry=(Moving.GetRotation()*Idle.GetRotation().Inverse()).GetNormalized();
+  const FQuat OffsetCarry=ElbowDirectionRotation(Idle.GetLocation(),Moving.GetLocation()),HandCarry=ElbowDirectionRotation(Track.ReturnIdle[H].GetLocation(),HandMoving.GetLocation());
+  const FVector BU=OffsetCarry.RotateVector(Track.PreparedReturn[J].Offset.At(Alpha)).GetSafeNormal(1.e-20);
+  const FVector BV=(Carry*Track.PreparedReturn[J].Rotation.At(Alpha)).RotateVector(HandCarry.RotateVector(Track.PreparedReturn[H].Offset.At(Alpha)).GetSafeNormal(1.e-20));
+  const double Bend=FMath::Acos(FMath::Clamp(FVector::DotProduct(BU,BV),-1.,1.));
+  const FVector Wrist=Upper+Lower;const double Distance=Wrist.Size();const FVector D=Distance>1.e-8?Wrist/Distance:U;
+  const FVector Reference=FVector::CrossProduct(D,ElbowDirectionRotation(U,D).RotateVector(Axis)).GetSafeNormal(1.e-20),Pole=Upper-D*FVector::DotProduct(Upper,D);
+  const double Knee=FMath::Min3(Zone,Bend,UE_DOUBLE_PI-Bend),KneeReach=FMath::Sqrt(FMath::Max(0.,L1*L1+L2*L2+2*L1*L2*FMath::Cos(Knee)));
+  const double Width=KneeReach>1.e-8?L1*L2*FMath::Sin(Knee)/KneeReach:0,Side=FVector::DotProduct(Pole,Reference);
+  const double Weight=Ease(Width>1.e-10?Clamp(Side/Width):double(Side>0));
+  FVector PoleDirection=Reference*(1-Weight)+Pole.GetSafeNormal(1.e-20)*Weight;PoleDirection=PoleDirection.Size()>1.e-8?PoleDirection.GetSafeNormal(1.e-20):Reference;
+  const double Actual=FMath::Acos(FMath::Clamp(FVector::DotProduct(U,V),-1.,1.));
+  const double Limited=UE_DOUBLE_PI-ElbowSoftMagnitude(UE_DOUBLE_PI-ElbowSoftMagnitude(Actual,FMath::Min(Zone,Bend)),FMath::Min(Zone,UE_DOUBLE_PI-Bend));
+  const double Reach=FMath::Sqrt(FMath::Max(0.,L1*L1+L2*L2+2*L1*L2*FMath::Cos(Limited))),Along=Reach>1.e-8?(L1*L1+Reach*Reach-L2*L2)/(2*Reach):0;
+  const FVector TargetElbow=D*Along+PoleDirection*FMath::Sqrt(FMath::Max(0.,L1*L1-Along*Along)),TargetLower=D*Reach-TargetElbow;
+  const FQuat UpperTurn=ElbowDirectionRotation(Upper,TargetElbow),LowerTurn=ElbowDirectionRotation(Lower,TargetLower),Before=S.Pose[A].GetRotation();
+  S.Pose[A].SetRotation((Before*UpperTurn).GetNormalized());
+  S.Pose[J].SetLocation(S.Pose[A].TransformPosition(Local.GetLocation()));
+  S.Pose[J].SetRotation((Before*LowerTurn*Local.GetRotation()).GetNormalized());
+  S.Pose[H].SetLocation(S.Pose[J].TransformPosition(Hand.GetLocation()));
+  // Hand world rotation is exactly preserved, including its authored sword arc.
+ }
+}
+
+static void MountReturn(FActive& S,FReturnTrack& Track,TArray<FTransform>& Locals)
 {
  for(int J:(Track.OnlyGrip?S.GripUpper:S.Upper)){const int P=S.Parents[J];const auto Moving=S.Base[J].GetRelativeTransform(S.Base[P]);const auto& Idle=Track.ReturnIdle[J];
   const FQuat Q=(Moving.GetRotation()*Idle.GetRotation().Inverse()*Locals[J].GetRotation()).GetNormalized();
@@ -917,7 +1019,7 @@ static void AdvanceSpring(FActive& S,FReturnTrack& Track,double Elapsed)
     if(R.World){const FQuat Target=(World[P]*Track.ReturnIdle[J].GetRotation()).GetNormalized();Rates[J]=(Rates[J]+(Log(Target*Previous[J].Inverse())*K+ParentRates[P]*C)*Dt)/Den;World[J]=(Exp(Rates[J]*Dt)*Previous[J]).GetNormalized();Local[J].SetRotation((World[P].Inverse()*World[J]).GetNormalized());}
     else{Rates[J]=(Rates[J]+Log(Local[J].GetRotation().Inverse()*Track.ReturnIdle[J].GetRotation())*(K*Dt))/Den;Local[J].SetRotation((Local[J].GetRotation()*Exp(Rates[J]*Dt)).GetNormalized());World[J]=(World[P]*Local[J].GetRotation()).GetNormalized();}
     OffsetRates[J]=(OffsetRates[J]+Log(FQuat::FindBetweenVectors(Local[J].GetLocation(),Track.ReturnIdle[J].GetLocation()))*(K*Dt))/Den;Local[J].SetTranslation(Exp(OffsetRates[J]*Dt).RotateVector(Local[J].GetLocation()));
-   }else{Local[J]=Blend(Track.ReturnStart[J],Track.ReturnIdle[J],Ordinary);World[J]=(World[P]*Local[J].GetRotation()).GetNormalized();}
+   }else{const auto& C=Track.PreparedReturn[J];Local[J]=FTransform(C.Rotation.At(Ordinary),C.Offset.At(Ordinary));World[J]=(World[P]*Local[J].GetRotation()).GetNormalized();}
    ParentRates[J]=Log(World[J]*Previous[J].Inverse())/Dt;
   }
   Track.SpringTimes[1]=Time;
@@ -932,9 +1034,9 @@ static void ReturnStep(FActive& S,FReturnTrack& Track,double Elapsed)
   return;
  }
  auto& Locals=S.Work;
- if(R.Spring&&R.Inertia>0){Locals=Track.ReturnStart;AdvanceSpring(S,Track,Elapsed);const double T=Clamp((Elapsed-Track.SpringTimes[0])/FMath::Max(1.e-12,Track.SpringTimes[1]-Track.SpringTimes[0]));for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper))Locals[J]=Blend(Track.SpringFrames[0][J],Track.SpringFrames[1][J],T);MountReturn(S,Track,Locals);return;}
+ if(R.Spring&&R.Inertia>0){Locals=Track.ReturnStart;AdvanceSpring(S,Track,Elapsed);const double T=Clamp((Elapsed-Track.SpringTimes[0])/FMath::Max(1.e-12,Track.SpringTimes[1]-Track.SpringTimes[0]));for(int J:(Track.OnlyGrip&&!R.World?S.GripUpper:S.Upper))Locals[J]=Blend(Track.SpringFrames[0][J],Track.SpringFrames[1][J],T);MountReturn(S,Track,Locals);CorrectElbowsIK(S,Track,X);return;}
  const double BlendAlpha=X+(Ease(X)-X)*R.Easing,Fade=Clamp((X-R.Hold)/(1-R.Hold)),Phase=R.Hold>0?Fade*Fade:X,Envelope=Elapsed*FMath::Pow(1-Phase,3);
- double GroupEnvelope[8];for(int G=0;G<8;++G){const double Effective=R.Inertia*R.Weights[G];GroupEnvelope[G]=G>0&&R.Weights[G]==R.Weights[0]?GroupEnvelope[0]:Effective>0?Envelope*FMath::Exp(-R.Decay*Phase/(.025+.45*Effective)):0;}
+ double GroupEnvelope[8];for(int G=0;G<8;++G){const double Effective=R.Weights[G];GroupEnvelope[G]=G>0&&R.Weights[G]==R.Weights[0]?GroupEnvelope[0]:Effective>0?R.Inertia*Envelope*FMath::Exp(-R.Decay*Phase/(.025+.45*Effective)):0;}
  // Local return needs neither world-inertia hierarchies nor an intermediate
  // pose. Unchanged offsets only follow the moving bone direction, retaining
  // the captured length even when the live NN changes its segment lengths.
@@ -955,7 +1057,7 @@ static void ReturnStep(FActive& S,FReturnTrack& Track,double Elapsed)
     Position=Parent.GetLocation()+Parent.GetRotation().RotateVector(FQuat::FindBetweenVectors(Track.ReturnIdle[J].GetLocation(),Moving).RotateVector(V));}
    S.Pose[J]=FTransform(Q,Position);
   }
-  return;
+  CorrectElbowsIK(S,Track,X);return;
  }
  Locals=Track.ReturnStart;
  if(R.World){Track.ReturnBaselineWorld=Track.ReturnWorld;Track.ReturnActualWorld=Track.ReturnWorld;}
@@ -980,7 +1082,7 @@ static void ReturnStep(FActive& S,FReturnTrack& Track,double Elapsed)
    if(R.World)Locals[J].SetRotation((Corrected[P].Inverse()*Corrected[J]).GetNormalized());
   }
  }
- MountReturn(S,Track,Locals);
+ MountReturn(S,Track,Locals);CorrectElbowsIK(S,Track,X);
 }
 static FQuat SampleHandReturn(FHandReturn& H,const FReturn& R,double Duration,double Elapsed)
 {
@@ -1004,7 +1106,7 @@ static FQuat SampleHandReturn(FHandReturn& H,const FReturn& R,double Duration,do
    Q=FQuat::Slerp(H.Frames[0],H.Frames[1],Clamp((Elapsed-H.Times[0])/FMath::Max(1.e-12,H.Times[1]-H.Times[0]))).GetNormalized();
   }else{
    Q=H.Prepared.Rotation.At(Alpha);
-   if(Effective>0){const double Fade=Clamp((X-R.Hold)/(1-R.Hold)),Phase=R.Hold>0?Fade*Fade:X,M=Elapsed*FMath::Pow(1-Phase,3)*FMath::Exp(-R.Decay*Phase/(.025+.45*Effective));
+   if(Effective>0){const double Fade=Clamp((X-R.Hold)/(1-R.Hold)),Phase=R.Hold>0?Fade*Fade:X,M=R.Inertia*Elapsed*FMath::Pow(1-Phase,3)*FMath::Exp(-R.Decay*Phase/(.025+.45*R.Weights[7]));
     Q=(R.World?H.Prepared.World.At(M)*Q:Q*H.Prepared.Angular.At(M)).GetNormalized();}
   }
  }
@@ -1021,13 +1123,15 @@ static void BeginReturn(FActive& S){BeginReturn(S,S);}
 static void ReturnStep(FActive& S,double Elapsed){ReturnStep(S,S,Elapsed);}
 static FReturnPole ReturnArmPole(const FTransform (&Arm)[3])
 {
- FReturnPole P;P.Direction=(Arm[2].GetLocation()-Arm[0].GetLocation()).GetSafeNormal();
+ FReturnPole P;const FVector Line=Arm[2].GetLocation()-Arm[0].GetLocation();P.Direction=(Line.Size()>1.e-8?Line:Arm[1].GetLocation()-Arm[0].GetLocation()).GetSafeNormal();
  P.Pole=FVector::VectorPlaneProject(Arm[1].GetLocation()-Arm[0].GetLocation(),P.Direction);
  for(const FVector Axis:{FVector::RightVector,FVector::UpVector})if(P.Pole.Size()<1.e-7)P.Pole=FVector::VectorPlaneProject(Arm[0].GetRotation().RotateVector(Axis),P.Direction);
  P.Pole.Normalize();return P;
 }
 static double BendAngle(const FVector& A,const FVector& B,const FVector& D){return FMath::Atan2(FVector::DotProduct(D,FVector::CrossProduct(A,B)),FVector::DotProduct(A,B));}
 static FVector CarryReturnPole(const FReturnPole& P,const FVector& D){return FQuat::FindBetweenVectors(P.Direction,D).RotateVector(P.Pole);}
+static double ContinueBendAngle(double Angle,double Previous)
+{return Angle+2*UE_DOUBLE_PI*FMath::FloorToDouble((Previous-Angle)/(2*UE_DOUBLE_PI)+.5);}
 static void ApplyArmIKReturn(FActive& S,FReturnTrack& Track,double Elapsed)
 {
  auto& IK=Track.IK;if(!IK.Enabled||Elapsed<=0||Elapsed>=Track.ReturnDuration)return;const auto& R=S.Profile.Return[S.Sheathe];const double Start=R.ArmIKStart*Track.ReturnDuration;
@@ -1036,15 +1140,23 @@ static void ApplyArmIKReturn(FActive& S,FReturnTrack& Track,double Elapsed)
   if(Elapsed<Start){for(int K=0;K<3;++K){IK.Previous[K]=Arm[K];IK.PreviousBase[K]=Base[K];}IK.PreviousElapsed=Elapsed;return;}
   const double U=Elapsed>IK.PreviousElapsed?Clamp((Start-IK.PreviousElapsed)/(Elapsed-IK.PreviousElapsed)):0;FTransform At[3],Idle[3];
   for(int K=0;K<3;++K){At[K]=FTransform(FQuat::Slerp(IK.Previous[K].GetRotation(),Arm[K].GetRotation(),U),FMath::Lerp(IK.Previous[K].GetLocation(),Arm[K].GetLocation(),U));Idle[K]=FTransform(FQuat::Slerp(IK.PreviousBase[K].GetRotation(),Base[K].GetRotation(),U),FMath::Lerp(IK.PreviousBase[K].GetLocation(),Base[K].GetLocation(),U));}
-  IK.Point=At[2].GetLocation();IK.Pole=ReturnArmPole(At);IK.BasePole=ReturnArmPole(Idle);IK.Anchored=true;
+  IK.Point=At[2].GetLocation();IK.Pole=ReturnArmPole(At);
+  IK.GoalAngle=BendAngle(IK.Pole.Pole,CarryReturnPole(ReturnArmPole(Idle),IK.Pole.Direction),IK.Pole.Direction);
+  IK.BlendAngle=0;IK.Anchored=true;
  }
  const double X=Elapsed/Track.ReturnDuration,Weight=R.ArmIKEnd>R.ArmIKStart?Clamp((X-R.ArmIKStart)/(R.ArmIKEnd-R.ArmIKStart)):double(X>=R.ArmIKStart);if(Weight<=0)return;
  auto Progress=[&](double T){const double V=R.Timing.Sample(Clamp(T/Track.ReturnDuration));return V+(Ease(V)-V)*R.Easing;};
  const double P0=Progress(Start),P=Clamp((Progress(Elapsed)-P0)/FMath::Max(1.e-12,1-P0));const auto& Root=S.RootFrame;
- const FVector Path=Root.TransformPosition(FMath::Lerp(IK.Point,Base[2].GetLocation(),P)),Target=FMath::Lerp(S.Pose[S.Arm[2]].GetLocation(),Path,Weight);
+ const FVector Path=Root.TransformPosition(FMath::Lerp(IK.Point,Base[2].GetLocation(),P));FVector Target=FMath::Lerp(S.Pose[S.Arm[2]].GetLocation(),Path,Weight);
+ if(FVector::Distance(Target,S.Pose[S.Arm[0]].GetLocation())<1.e-8){const double A=FVector::Distance(Arm[0].GetLocation(),Arm[1].GetLocation()),B=FVector::Distance(Arm[1].GetLocation(),Arm[2].GetLocation());Target=S.Pose[S.Arm[0]].GetLocation()+Root.GetRotation().RotateVector(ReturnArmPole(Arm).Direction)*(FMath::Abs(A-B)+.001);}
  const FVector D=Root.GetRotation().UnrotateVector(Target-S.Pose[S.Arm[0]].GetLocation()).GetSafeNormal(),Initial=CarryReturnPole(IK.Pole,D),Idle=CarryReturnPole(ReturnArmPole(Base),D);
- const double Reference=BendAngle(Initial,CarryReturnPole(IK.BasePole,D),D),Delta=BendAngle(Initial,Idle,D),Angle=Delta+2*UE_DOUBLE_PI*FMath::FloorToDouble((Reference-Delta)/(2*UE_DOUBLE_PI)+.5);
- const FVector Wanted=Exp(D*(Angle*P)).RotateVector(Initial),Existing=CarryReturnPole(ReturnArmPole(Arm),D),Pole=Root.GetRotation().RotateVector(Exp(D*(BendAngle(Existing,Wanted,D)*Weight)).RotateVector(Existing));
+ // atan2 wraps at +/-pi. Neither the moving target nor the FK-to-IK blend
+ // may choose a different turn midway through a return. A moving reference
+ // angle also wraps, so continue from the preceding sample of each angle.
+ IK.GoalAngle=ContinueBendAngle(BendAngle(Initial,Idle,D),IK.GoalAngle);
+ const FVector Wanted=Exp(D*(IK.GoalAngle*P)).RotateVector(Initial),Existing=CarryReturnPole(ReturnArmPole(Arm),D);
+ IK.BlendAngle=ContinueBendAngle(BendAngle(Existing,Wanted,D),IK.BlendAngle);
+ const FVector Pole=Root.GetRotation().RotateVector(Exp(D*(IK.BlendAngle*Weight)).RotateVector(Existing));
  S.Work=S.Pose;Solve(S,S.Pose,FTransform(S.Pose[S.Arm[2]].GetRotation(),Target),&Pole);
  // Preserve local transforms of any fingers/twist children carried by the arm.
  for(int J:S.GripUpper){if(J==S.Arm[0]||J==S.Arm[1]||J==S.Arm[2])continue;for(int Parent=S.Parents[J];Parent>=0;Parent=S.Parents[Parent])if(Parent==S.Arm[0]){S.Pose[J]=S.Work[J].GetRelativeTransform(S.Work[S.Parents[J]])*S.Pose[S.Parents[J]];break;}}
@@ -1066,9 +1178,9 @@ static void HandAxisStep(FActive& S,int Release)
  const FQuat Result=Time<=H.Window+1.e-12?SourceRoot*H.Q:SourceHand*H.Resume.Idle.Inverse()*SampleHandReturn(H.Resume,R,H.Duration-H.Window,Time-H.Window);
  S.Pose[J].SetRotation(Result.GetNormalized());H.SourceHand=SourceHand;H.SourceRoot=SourceRoot;
 }
-static void StartSlide(FActive& S)
+static bool StartSlide(FActive& S)
 {
- BeginHolsterGrip(S);
+ if(!BeginHolsterGrip(S))return false;
  if(S.Profile.Body[S.Sheathe].Authored)for(int K=0;K<3;++K)S.SlideBody[K]=S.Authored.Current[K];
  S.Status.Aligning=false;S.Sliding=true;S.Desired=S.Body;S.SlideStart=S.Status.Tick;S.LastGuide=-1;
  if(S.Sheathe){S.SlideLength*=FMath::Abs(1-S.EntryInsertion);S.Status.SlideTicks=FMath::Max(1,FMath::CeilToInt(S.SlideLength/S.SlideSpeed*60));}
@@ -1078,6 +1190,7 @@ static void StartSlide(FActive& S)
  // Capture the sword-relative pole at the transfer pose, not after the first
  // sliding step. Reframing does not advance the angle or consume a tick.
  if(S.Profile.Body[S.Sheathe].Authored&&S.Profile.Body[S.Sheathe].SwordPole)ApplyPole(S,false);
+ return true;
 }
 static void SlideArm(FActive& S)
 {
@@ -1176,7 +1289,8 @@ static void Advance(FActive& S,int Steps)
    if(Holding&&S.ReturnTick<Release){
     S.SlidePose=S.Pose;const FTransform Target=SlideGoal(S,S.Status.SlideProgress,SlideTime);
     TOptional<FReturnTrack> SpringBefore;if(Profile.Spring&&Profile.Inertia>0)SpringBefore=static_cast<const FReturnTrack&>(S);
-    auto At=[&](double Time){if(SpringBefore)static_cast<FReturnTrack&>(S)=SpringBefore.GetValue();S.Pose=S.Base;ReturnStep(S,Time);TransplantGrip(S,S.SlidePose);};
+    const FElbowIKReturn ElbowsBefore[2]={S.Elbows[0],S.Elbows[1]};
+    auto At=[&](double Time){for(int Side=0;Side<2;++Side)S.Elbows[Side]=ElbowsBefore[Side];if(SpringBefore)static_cast<FReturnTrack&>(S)=SpringBefore.GetValue();S.Pose=S.Base;ReturnStep(S,Time);TransplantGrip(S,S.SlidePose);};
     const double Next=S.BodyElapsed+1./60.;At(Next);
     double Accepted=Next;
     if(!GripReachable(S,Target)){
@@ -1258,6 +1372,14 @@ static FAutoConsoleCommand PoseReportCommand(TEXT("Prophecy.Sword.PoseReport"),T
 }));
 #endif
 }
+bool UProphecySwordHolsterLibrary::SetSwordFKReturnDuration(AProphecyAgent* Agent,bool Sheathe,float Duration)
+{
+ if(!IsInGameThread()||!IsValid(Agent)||!FMath::IsFinite(Duration)||Duration<.1f||Duration>5.f)return false;
+ auto& Profile=ProphecySwordHolsterPose::Profiles.FindOrAdd(Agent);
+ Profile.Return[Sheathe?1:0].Duration=Duration;
+ ProphecySwordHolsterPose::EnsureCleanup();
+ return true;
+}
 bool UProphecySwordHolsterLibrary::VisualizeSheathingLeeway(AProphecyAgent* A,float DisplayLength,float Duration)
 {
 #if ENABLE_DRAW_DEBUG
@@ -1328,6 +1450,8 @@ static TArray<FTransform> JsonPoses(const TArray<TSharedPtr<FJsonValue>>& A){TAr
 #include "Tests/ProphecySwordHolsterChannelsTests.inl"
 #include "Tests/ProphecySwordHolsterRollTests.inl"
 #include "Tests/ProphecySwordHolsterHeadRootTests.inl"
+#include "Tests/ProphecySwordReturnPoleTests.inl"
+#include "Tests/ProphecySwordElbowIKTests.inl"
 #include "Tests/ProphecySwordHolsterLegacy.inl"
 #include "Tests/ProphecySwordHolsterOptimizationTests.inl"
 #include "Tests/ProphecySwordHolsterStaggerTests.inl"

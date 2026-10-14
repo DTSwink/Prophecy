@@ -19,6 +19,24 @@
 
 namespace ProphecySwordHolsterSetup
 {
+static void RefreshDrawPins()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));if(!BP)return;
+ TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);TArray<UK2Node_CallFunction*> Nodes;
+ for(auto* G:Graphs)for(UEdGraphNode* N:G->Nodes)if(auto* C=Cast<UK2Node_CallFunction>(N))
+  if(C->FunctionReference.GetMemberName()==TEXT("DrawSword"))Nodes.Add(C);
+ for(auto* N:Nodes)for(const TCHAR* Name:{TEXT("MaxReachSpeed"),TEXT("MaxReachRotationSpeed"),TEXT("SlidingSpeed")})
+  if(const auto* P=N->FindPin(Name))if(!P->LinkedTo.IsEmpty()){UE_LOG(LogTemp,Error,TEXT("Draw Sword speed pin is wired; no migration performed."));return;}
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","DrawSwordPins","Remove obsolete Draw Sword speed pins"));BP->Modify();
+ for(auto* N:Nodes){N->Modify();
+  for(const TCHAR* Name:{TEXT("MaxReachSpeed"),TEXT("MaxReachRotationSpeed"),TEXT("SlidingSpeed")})if(auto* P=N->FindPin(Name))N->RemovePin(P);
+  N->ReconstructNode();
+ }
+ FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+ UE_LOG(LogTemp,Display,TEXT("Refreshed %d Draw Sword nodes; BP status=%d; not saved."),Nodes.Num(),int32(BP->Status));
+}
+static FAutoConsoleCommand DrawPinsCommand(TEXT("Prophecy.Editor.RefreshDrawSwordPins"),TEXT("Remove unlinked obsolete speed pins from existing Draw Sword nodes; preserves other wiring, no save."),FConsoleCommandDelegate::CreateStatic(&RefreshDrawPins));
 static void RefreshGripProfilePins(const TArray<FString>& Args)
 {
  if(!GEditor||GEditor->PlayWorld)return;
@@ -167,15 +185,12 @@ static void ImportLab()
  for(auto* G:Graphs)for(UEdGraphNode* N:G->Nodes)if(auto* C=Cast<UK2Node_CallFunction>(N))
  {const auto F=C->FunctionReference.GetMemberName();if(F==TEXT("SetSwordHolsterLabProfile"))return;if(G->GetFName()==TEXT("tick debugging")){if(F==TEXT("DrawSword"))Draw=C;if(F==TEXT("SetSwordHolsterProfile"))Profile=C;}}
  if(!Draw||!Profile||Profile->GetExecPin()->LinkedTo.Num()!=1)return;
- const TCHAR* DrawPins[]={TEXT("MaxReachSpeed"),TEXT("MaxReachRotationSpeed"),TEXT("SlidingSpeed")};
- for(auto N:DrawPins)if(!Draw->FindPin(N)||!Draw->FindPin(N)->LinkedTo.IsEmpty())return;
  for(auto N:{TEXT("ShrinkPercent"),TEXT("UnshrinkDuration")})if(!Profile->FindPin(N)||!Profile->FindPin(N)->LinkedTo.IsEmpty())return;
  const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","ImportHolsterLab","Import sword holster lab controls"));BP->Modify();Profile->GetGraph()->Modify();Profile->Modify();Draw->Modify();
  auto* Previous=Profile->GetExecPin()->LinkedTo[0];Previous->GetOwningNode()->Modify();
  FGraphNodeCreator<UK2Node_CallFunction> Create(*Profile->GetGraph());auto* Node=Create.CreateNode();Node->SetFromFunction(Lib->FindFunctionByName(TEXT("SetSwordHolsterLabProfile")));Node->NodePosX=Profile->NodePosX-320;Node->NodePosY=Profile->NodePosY+220;Create.Finalize();
  const auto* Schema=GetDefault<UEdGraphSchema_K2>();Schema->TrySetDefaultValue(*Node->FindPinChecked(TEXT("ProfileFile")),TEXT("Content/locomotion/SwordHolsterProfile.json"));
  Profile->GetExecPin()->BreakAllPinLinks();bool OK=Schema->TryCreateConnection(Previous,Node->GetExecPin())&&Schema->TryCreateConnection(Node->GetThenPin(),Profile->GetExecPin());
- const TCHAR* Keys[]={TEXT("maxReachSpeed"),TEXT("maxReachRotationSpeed"),TEXT("slidingSpeed")};for(int I=0;I<3;++I)Schema->TrySetDefaultValue(*Draw->FindPinChecked(DrawPins[I]),FString::SanitizeFloat(P->GetNumberField(Keys[I])));
  Schema->TrySetDefaultValue(*Profile->FindPinChecked(TEXT("ShrinkPercent")),FString::SanitizeFloat(P->GetNumberField(TEXT("shrinkPercent"))));Schema->TrySetDefaultValue(*Profile->FindPinChecked(TEXT("UnshrinkDuration")),FString::SanitizeFloat(P->GetNumberField(TEXT("unshrinkDuration"))));
  FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
  FFileHelper::SaveStringToFile(FString::Printf(TEXT("connections=%d status=%d added=1 saved=0\n"),OK,int32(BP->Status)),*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/SwordLabPort20261010/import.txt")));

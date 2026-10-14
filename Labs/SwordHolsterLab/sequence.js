@@ -2,6 +2,7 @@
 (function(root){
 'use strict';
 const H=typeof module!=='undefined'?require('./holster.js'):root.Holster;
+const C=typeof module!=='undefined'?require('./recorded-return.js'):root.RecordedReturn;
 const actionOptions=(o,sheathe)=>({...o,...o[sheathe?'sheatheBody':'drawBody'],sheathe});
 const actionName=model=>model.o.sheathe?'S':'D';
 function assemble(first,second,options,reason=''){
@@ -18,12 +19,14 @@ function waiting(first){
  return '';
 }
 function prepare(data,setup,options){
+ if(data.motions[options.motion]?.returnCapture)return C.prepare(H,data,setup,options);
  if(!options.sequenceMode)return H.prepare(data,setup,options);
  const sheathe=!!options.sheathe,first=H.prepare(data,setup,actionOptions(options,sheathe)),reason=waiting(first);
  const second=reason?null:H.prepare(data,setup,{...actionOptions(options,!sheathe),startTick:0},first.playbackDuration);
  return assemble(first,second,options,reason);
 }
 function retime(model,options){
+ if(model.returnCapture)return prepare(model.data,model.setup,options);
  if(!model.sequence||!options.sequenceMode)return model.sequence||options.sequenceMode?prepare(model.data,model.setup,options):H.retime(model,options);
  const sheathe=!!options.sheathe;
  if(model.sequence.first.o.sheathe!==sheathe)return prepare(model.data,model.setup,options);
@@ -42,12 +45,14 @@ function edited(model,sheathe){
  return s?{model:first?s.first:s.second,offset:first?0:s.offset}:{model,offset:0};
 }
 function sample(model,t){
+ if(model.returnCapture)return C.sample(H,model,t);
  const part=segment(model,t),f=H.sample(part.model,t-part.offset);
  return model.sequence?{...f,sequenceAction:actionName(part.model)}:f;
 }
-function recordedTime(model,t){const part=segment(model,t);return part.offset+H.recordedTime(part.model,t-part.offset);}
+function recordedTime(model,t){if(model.returnCapture)return t+model.returnCapture.firstTick/60;const part=segment(model,t);return part.offset+H.recordedTime(part.model,t-part.offset);}
 function previewTime(model,insertion,sheathe){const part=edited(model,sheathe);return part.model?part.offset+H.previewTime(part.model,insertion):model.playbackDuration;}
 function previewBody(model,insertion,targets,t,sheathe){
+ if(model.returnCapture)return {...sample(model,t),previewTime:t};
  const part=segment(model,t);
  if(model.sequence&&part.model.o.sheathe!==sheathe)return {...sample(model,t),previewTime:t};
  const f=H.previewBody(part.model,insertion,targets,t-part.offset);

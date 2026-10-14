@@ -1,4 +1,2827 @@
 {
+  "problemEnabled": false,
+  "problemStates": {
+    "problem_0": {
+      "schema": "sword_holster_lab_v1",
+      "parameters": {
+        "noCheat": true,
+        "leewayPhase": false,
+        "holsterRotationStabilization": 0.8,
+        "holsterReturnDuration": 0.25,
+        "holsterPivotPercent": 50,
+        "pelvisRotationCompensation": 0.96,
+        "entryInertia": 1,
+        "entryInertiaDuration": 0.5,
+        "maxElbowPoleAngularSpeed": 180,
+        "swordRelativeSlidePole": true,
+        "bodyTargets": {
+          "clear": {
+            "spine": [
+              -50,
+              -5.125,
+              1.287
+            ],
+            "right": [
+              -27,
+              42.9,
+              5.962
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 76
+          },
+          "seated": {
+            "spine": [
+              -40.7,
+              -5.177,
+              1.942
+            ],
+            "right": [
+              -47.3,
+              0,
+              0.045
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 69.4
+          }
+        },
+        "gazeYaw": 0,
+        "sheatheRotationTolerance": 15,
+        "sheatheTipTolerance": 2,
+        "slideRotationCorrection": 0.45,
+        "motion": "problem_0",
+        "sheathe": false,
+        "startTick": 30,
+        "maxReachSpeed": 260,
+        "maxReachRotationSpeed": 900,
+        "maxAttachedSpeed": 150,
+        "maxAttachedRotationSpeed": 200,
+        "slidingSpeed": 330,
+        "shrinkPercent": 25,
+        "shrinkDuration": 0.25,
+        "unshrinkDuration": 0.5,
+        "holsterX": 0,
+        "holsterY": 0,
+        "holsterZ": 0,
+        "holsterPitch": 0,
+        "holsterYaw": 0,
+        "holsterRoll": 0,
+        "duration": 2.3333333333333335,
+        "spineClavicleAngleLimit": 45,
+        "maxSpineClavicleAngularSpeed": 1000,
+        "drawReturn": {
+          "enabled": true,
+          "startFraction": 0.9,
+          "duration": 0.6,
+          "returnEasing": 0.5,
+          "inertia": 0.5,
+          "inertiaHold": 0,
+          "inertiaDecay": 0.1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": true,
+          "armIKStart": 0.25,
+          "armIKEnd": 1,
+          "swordPointSpeed": 800,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.4,
+          "timingCurve": [
+            [
+              0.19912770595412405,
+              0.2570395962483323
+            ],
+            [
+              0.3840499176275009,
+              0.48518074820020346
+            ],
+            [
+              0.5864170785291621,
+              0.693192325502077
+            ],
+            [
+              0.8166976488988538,
+              0.8810738162180758
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "sheatheReturn": {
+          "enabled": true,
+          "startFraction": 0.7,
+          "duration": 0.9,
+          "returnEasing": 1,
+          "inertia": 1,
+          "inertiaHold": 0,
+          "inertiaDecay": 1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": false,
+          "armIKStart": 0,
+          "armIKEnd": 0.25,
+          "swordPointSpeed": 0,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.5,
+          "timingCurve": [
+            [
+              0.2,
+              0.2
+            ],
+            [
+              0.4,
+              0.4
+            ],
+            [
+              0.6,
+              0.6
+            ],
+            [
+              0.8,
+              0.8
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "headLookAtAlpha": 1,
+        "headMaxDownAngle": 45,
+        "headLookInSpeedAlpha": 0.21,
+        "sheatheHeadTargetAlpha": 0.9,
+        "headLookInExponent": 2,
+        "headLookOutExponent": 2,
+        "maxHeadLookInVelocity": 170,
+        "maxHeadLookOutVelocity": 100,
+        "maxHeadLookInVelocityAtMaxGaze": 300,
+        "maxHeadLookOutVelocityAtMaxGaze": 300,
+        "drawHeadLookOutThreshold": 0.3,
+        "sheatheHeadLookOutThreshold": 0.5,
+        "drawCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheCurve": [
+          [
+            0.14718561356661616,
+            0.05756312182913238
+          ],
+          [
+            0.4221556864684471,
+            0.29617963412380177
+          ],
+          [
+            0.6166466699636005,
+            0.564220086752473
+          ],
+          [
+            0.9519759959614464,
+            0.9672884365700237
+          ]
+        ],
+        "drawSlideCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheSlideCurve": [
+          [
+            0.14047903344255855,
+            0.13958743261164513
+          ],
+          [
+            0.650179602563385,
+            0.7111385494636496
+          ],
+          [
+            0.8849101307618773,
+            0.9562043029634382
+          ],
+          [
+            0.9553293659722167,
+            0.9884497709488423
+          ]
+        ],
+        "bodyReference": {
+          "spine": [
+            0.06951134491665859,
+            -0.002305280170059527,
+            0.041427377878509544,
+            0.9967179294932575
+          ],
+          "right": [
+            -0.7540397505423253,
+            -0.07467474878413254,
+            0.6522214050920083,
+            0.02133014852035828
+          ],
+          "left": [
+            -0.0737091688142581,
+            0.7491268079541248,
+            -0.010674666335401593,
+            0.6582264318118826
+          ]
+        },
+        "wristReference": [
+          0.6162170622330014,
+          0.013270161848469686,
+          -0.039260521841435136,
+          0.7864852487123855
+        ],
+        "drawBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -27,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -40.7,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -47.3,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 69.4
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 260,
+          "maxReachRotationSpeed": 900,
+          "slidingSpeed": 330
+        },
+        "sheatheBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -47,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -55,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -27,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 34.1
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 230,
+          "maxReachRotationSpeed": 600,
+          "slidingSpeed": 170
+        }
+      },
+      "time": 1.4499999999999997,
+      "camera": {
+        "yaw": -12.655999267578126,
+        "pitch": -0.7268001098632819,
+        "zoom": 1.3268220739049315,
+        "panX": 0,
+        "panY": 65
+      },
+      "workspaceTab": "motion",
+      "bodyTargetsPanelOpen": false,
+      "bodyPoseEndpoint": "seated",
+      "fkReturnPanelOpen": true,
+      "controls": {
+        "showPelvisDistance": false,
+        "showLeeway": true,
+        "sequenceMode": false,
+        "bypassCurves": false,
+        "bicolor": true,
+        "upperOnly": true,
+        "skeleton": false,
+        "idleGhost": false,
+        "handGizmos": false,
+        "lowerarmGizmos": false,
+        "upperarmGizmos": false,
+        "gizmoSide": "r",
+        "speed": "1"
+      },
+      "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
+      "revision": "1138f014701f8d5254277808ed9112925ba3f8274882bc7800840c989871cfd7"
+    },
+    "problem_1": {
+      "schema": "sword_holster_lab_v1",
+      "parameters": {
+        "noCheat": true,
+        "leewayPhase": false,
+        "holsterRotationStabilization": 0.8,
+        "holsterReturnDuration": 0.25,
+        "holsterPivotPercent": 50,
+        "pelvisRotationCompensation": 0.96,
+        "entryInertia": 1,
+        "entryInertiaDuration": 0.5,
+        "maxElbowPoleAngularSpeed": 180,
+        "swordRelativeSlidePole": true,
+        "bodyTargets": {
+          "clear": {
+            "spine": [
+              -50,
+              -5.125,
+              1.287
+            ],
+            "right": [
+              -27,
+              42.9,
+              5.962
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 76
+          },
+          "seated": {
+            "spine": [
+              -40.7,
+              -5.177,
+              1.942
+            ],
+            "right": [
+              -47.3,
+              0,
+              0.045
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 69.4
+          }
+        },
+        "gazeYaw": 0,
+        "sheatheRotationTolerance": 15,
+        "sheatheTipTolerance": 2,
+        "slideRotationCorrection": 0.45,
+        "motion": "problem_1",
+        "sheathe": false,
+        "startTick": 30,
+        "maxReachSpeed": 260,
+        "maxReachRotationSpeed": 900,
+        "maxAttachedSpeed": 150,
+        "maxAttachedRotationSpeed": 200,
+        "slidingSpeed": 330,
+        "shrinkPercent": 25,
+        "shrinkDuration": 0.25,
+        "unshrinkDuration": 0.5,
+        "holsterX": 0,
+        "holsterY": 0,
+        "holsterZ": 0,
+        "holsterPitch": 0,
+        "holsterYaw": 0,
+        "holsterRoll": 0,
+        "duration": 2.3333333333333335,
+        "spineClavicleAngleLimit": 45,
+        "maxSpineClavicleAngularSpeed": 1000,
+        "drawReturn": {
+          "enabled": true,
+          "startFraction": 0.9,
+          "duration": 0.6,
+          "returnEasing": 0.5,
+          "inertia": 0.5,
+          "inertiaHold": 0,
+          "inertiaDecay": 0.1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "elbowSoftZone": 15,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": true,
+          "armIKStart": 0.25,
+          "armIKEnd": 1,
+          "swordPointSpeed": 800,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.4,
+          "timingCurve": [
+            [
+              0.19912770595412405,
+              0.2570395962483323
+            ],
+            [
+              0.3840499176275009,
+              0.48518074820020346
+            ],
+            [
+              0.5864170785291621,
+              0.693192325502077
+            ],
+            [
+              0.8166976488988538,
+              0.8810738162180758
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "sheatheReturn": {
+          "enabled": true,
+          "startFraction": 0.7,
+          "duration": 0.9,
+          "returnEasing": 1,
+          "inertia": 1,
+          "inertiaHold": 0,
+          "inertiaDecay": 1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "elbowSoftZone": 15,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": false,
+          "armIKStart": 0,
+          "armIKEnd": 0.25,
+          "swordPointSpeed": 0,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.5,
+          "timingCurve": [
+            [
+              0.2,
+              0.2
+            ],
+            [
+              0.4,
+              0.4
+            ],
+            [
+              0.6,
+              0.6
+            ],
+            [
+              0.8,
+              0.8
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "headLookAtAlpha": 1,
+        "headMaxDownAngle": 45,
+        "headLookInSpeedAlpha": 0.21,
+        "sheatheHeadTargetAlpha": 0.9,
+        "headLookInExponent": 2,
+        "headLookOutExponent": 2,
+        "maxHeadLookInVelocity": 170,
+        "maxHeadLookOutVelocity": 100,
+        "maxHeadLookInVelocityAtMaxGaze": 300,
+        "maxHeadLookOutVelocityAtMaxGaze": 300,
+        "drawHeadLookOutThreshold": 0.3,
+        "sheatheHeadLookOutThreshold": 0.5,
+        "drawCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheCurve": [
+          [
+            0.14718561356661616,
+            0.05756312182913238
+          ],
+          [
+            0.4221556864684471,
+            0.29617963412380177
+          ],
+          [
+            0.6166466699636005,
+            0.564220086752473
+          ],
+          [
+            0.9519759959614464,
+            0.9672884365700237
+          ]
+        ],
+        "drawSlideCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheSlideCurve": [
+          [
+            0.14047903344255855,
+            0.13958743261164513
+          ],
+          [
+            0.650179602563385,
+            0.7111385494636496
+          ],
+          [
+            0.8849101307618773,
+            0.9562043029634382
+          ],
+          [
+            0.9553293659722167,
+            0.9884497709488423
+          ]
+        ],
+        "bodyReference": {
+          "spine": [
+            0.06951134491665859,
+            -0.002305280170059527,
+            0.041427377878509544,
+            0.9967179294932575
+          ],
+          "right": [
+            -0.7540397505423253,
+            -0.07467474878413254,
+            0.6522214050920083,
+            0.02133014852035828
+          ],
+          "left": [
+            -0.0737091688142581,
+            0.7491268079541248,
+            -0.010674666335401593,
+            0.6582264318118826
+          ]
+        },
+        "wristReference": [
+          0.6162170622330014,
+          0.013270161848469686,
+          -0.039260521841435136,
+          0.7864852487123855
+        ],
+        "drawBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -27,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -40.7,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -47.3,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 69.4
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 260,
+          "maxReachRotationSpeed": 900,
+          "slidingSpeed": 330
+        },
+        "sheatheBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -47,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -55,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -27,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 34.1
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 230,
+          "maxReachRotationSpeed": 600,
+          "slidingSpeed": 170
+        }
+      },
+      "time": 0.3333333333333338,
+      "camera": {
+        "yaw": -13.097598632812431,
+        "pitch": -0.986800109863281,
+        "zoom": 1.3268220739049315,
+        "panX": 0,
+        "panY": 65
+      },
+      "workspaceTab": "motion",
+      "bodyTargetsPanelOpen": false,
+      "bodyPoseEndpoint": "seated",
+      "fkReturnPanelOpen": true,
+      "controls": {
+        "showPelvisDistance": false,
+        "showLeeway": true,
+        "sequenceMode": false,
+        "bypassCurves": false,
+        "bicolor": true,
+        "upperOnly": true,
+        "skeleton": false,
+        "idleGhost": false,
+        "handGizmos": false,
+        "lowerarmGizmos": false,
+        "upperarmGizmos": false,
+        "gizmoSide": "r",
+        "speed": "1"
+      },
+      "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
+      "revision": "f2d7022ab1c4e444a4476ffe01341e4317f22cae0144d2666091817b339ed2fb"
+    },
+    "problem_2": {
+      "schema": "sword_holster_lab_v1",
+      "parameters": {
+        "noCheat": true,
+        "leewayPhase": false,
+        "holsterRotationStabilization": 0.8,
+        "holsterReturnDuration": 0.25,
+        "holsterPivotPercent": 50,
+        "pelvisRotationCompensation": 0.96,
+        "entryInertia": 1,
+        "entryInertiaDuration": 0.5,
+        "maxElbowPoleAngularSpeed": 180,
+        "swordRelativeSlidePole": true,
+        "bodyTargets": {
+          "clear": {
+            "spine": [
+              -50,
+              -5.125,
+              1.287
+            ],
+            "right": [
+              -27,
+              42.9,
+              5.962
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 76
+          },
+          "seated": {
+            "spine": [
+              -40.7,
+              -5.177,
+              1.942
+            ],
+            "right": [
+              -47.3,
+              0,
+              0.045
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 69.4
+          }
+        },
+        "gazeYaw": 0,
+        "sheatheRotationTolerance": 15,
+        "sheatheTipTolerance": 2,
+        "slideRotationCorrection": 0.45,
+        "motion": "problem_2",
+        "sheathe": false,
+        "startTick": 30,
+        "maxReachSpeed": 260,
+        "maxReachRotationSpeed": 900,
+        "maxAttachedSpeed": 150,
+        "maxAttachedRotationSpeed": 200,
+        "slidingSpeed": 330,
+        "shrinkPercent": 25,
+        "shrinkDuration": 0.25,
+        "unshrinkDuration": 0.5,
+        "holsterX": 0,
+        "holsterY": 0,
+        "holsterZ": 0,
+        "holsterPitch": 0,
+        "holsterYaw": 0,
+        "holsterRoll": 0,
+        "duration": 2.3333333333333335,
+        "spineClavicleAngleLimit": 45,
+        "maxSpineClavicleAngularSpeed": 1000,
+        "drawReturn": {
+          "enabled": true,
+          "startFraction": 0.9,
+          "duration": 0.6,
+          "returnEasing": 0.5,
+          "inertia": 0.5,
+          "inertiaHold": 0,
+          "inertiaDecay": 0.1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "elbowSoftZone": 15,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": true,
+          "armIKStart": 0.25,
+          "armIKEnd": 1,
+          "swordPointSpeed": 800,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.4,
+          "timingCurve": [
+            [
+              0.19912770595412405,
+              0.2570395962483323
+            ],
+            [
+              0.3840499176275009,
+              0.48518074820020346
+            ],
+            [
+              0.5864170785291621,
+              0.693192325502077
+            ],
+            [
+              0.8166976488988538,
+              0.8810738162180758
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "sheatheReturn": {
+          "enabled": true,
+          "startFraction": 0.7,
+          "duration": 0.9,
+          "returnEasing": 1,
+          "inertia": 1,
+          "inertiaHold": 0,
+          "inertiaDecay": 1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "elbowSoftZone": 15,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": false,
+          "armIKStart": 0,
+          "armIKEnd": 0.25,
+          "swordPointSpeed": 0,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.5,
+          "timingCurve": [
+            [
+              0.2,
+              0.2
+            ],
+            [
+              0.4,
+              0.4
+            ],
+            [
+              0.6,
+              0.6
+            ],
+            [
+              0.8,
+              0.8
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "headLookAtAlpha": 1,
+        "headMaxDownAngle": 45,
+        "headLookInSpeedAlpha": 0.21,
+        "sheatheHeadTargetAlpha": 0.9,
+        "headLookInExponent": 2,
+        "headLookOutExponent": 2,
+        "maxHeadLookInVelocity": 170,
+        "maxHeadLookOutVelocity": 100,
+        "maxHeadLookInVelocityAtMaxGaze": 300,
+        "maxHeadLookOutVelocityAtMaxGaze": 300,
+        "drawHeadLookOutThreshold": 0.3,
+        "sheatheHeadLookOutThreshold": 0.5,
+        "drawCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheCurve": [
+          [
+            0.14718561356661616,
+            0.05756312182913238
+          ],
+          [
+            0.4221556864684471,
+            0.29617963412380177
+          ],
+          [
+            0.6166466699636005,
+            0.564220086752473
+          ],
+          [
+            0.9519759959614464,
+            0.9672884365700237
+          ]
+        ],
+        "drawSlideCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheSlideCurve": [
+          [
+            0.14047903344255855,
+            0.13958743261164513
+          ],
+          [
+            0.650179602563385,
+            0.7111385494636496
+          ],
+          [
+            0.8849101307618773,
+            0.9562043029634382
+          ],
+          [
+            0.9553293659722167,
+            0.9884497709488423
+          ]
+        ],
+        "bodyReference": {
+          "spine": [
+            0.06951134491665859,
+            -0.002305280170059527,
+            0.041427377878509544,
+            0.9967179294932575
+          ],
+          "right": [
+            -0.7540397505423253,
+            -0.07467474878413254,
+            0.6522214050920083,
+            0.02133014852035828
+          ],
+          "left": [
+            -0.0737091688142581,
+            0.7491268079541248,
+            -0.010674666335401593,
+            0.6582264318118826
+          ]
+        },
+        "wristReference": [
+          0.6162170622330014,
+          0.013270161848469686,
+          -0.039260521841435136,
+          0.7864852487123855
+        ],
+        "drawBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -27,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -40.7,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -47.3,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 69.4
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 260,
+          "maxReachRotationSpeed": 900,
+          "slidingSpeed": 330
+        },
+        "sheatheBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -47,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -55,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -27,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 34.1
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 230,
+          "maxReachRotationSpeed": 600,
+          "slidingSpeed": 170
+        }
+      },
+      "time": 1.4499999999999997,
+      "camera": {
+        "yaw": -12.643198486328092,
+        "pitch": -0.5643999633789057,
+        "zoom": 1.3268220739049315,
+        "panX": 0,
+        "panY": 65
+      },
+      "workspaceTab": "motion",
+      "bodyTargetsPanelOpen": false,
+      "bodyPoseEndpoint": "seated",
+      "fkReturnPanelOpen": true,
+      "controls": {
+        "showPelvisDistance": false,
+        "showLeeway": true,
+        "sequenceMode": false,
+        "bypassCurves": false,
+        "bicolor": true,
+        "upperOnly": true,
+        "skeleton": false,
+        "idleGhost": false,
+        "handGizmos": false,
+        "lowerarmGizmos": false,
+        "upperarmGizmos": false,
+        "gizmoSide": "r",
+        "speed": "1"
+      },
+      "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
+      "revision": "f2d7022ab1c4e444a4476ffe01341e4317f22cae0144d2666091817b339ed2fb"
+    },
+    "problem_3": {
+      "schema": "sword_holster_lab_v1",
+      "parameters": {
+        "noCheat": true,
+        "leewayPhase": false,
+        "holsterRotationStabilization": 0.8,
+        "holsterReturnDuration": 0.25,
+        "holsterPivotPercent": 50,
+        "pelvisRotationCompensation": 0.96,
+        "entryInertia": 1,
+        "entryInertiaDuration": 0.5,
+        "maxElbowPoleAngularSpeed": 180,
+        "swordRelativeSlidePole": true,
+        "bodyTargets": {
+          "clear": {
+            "spine": [
+              -50,
+              -5.125,
+              1.287
+            ],
+            "right": [
+              -17,
+              42.9,
+              5.962
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 76
+          },
+          "seated": {
+            "spine": [
+              -40.7,
+              -5.177,
+              1.942
+            ],
+            "right": [
+              -37.3,
+              0,
+              0.045
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 69.4
+          }
+        },
+        "gazeYaw": 0,
+        "sheatheRotationTolerance": 15,
+        "sheatheTipTolerance": 2,
+        "slideRotationCorrection": 0.45,
+        "motion": "problem_3",
+        "sheathe": false,
+        "startTick": 15,
+        "maxReachSpeed": 260,
+        "maxReachRotationSpeed": 900,
+        "maxAttachedSpeed": 150,
+        "maxAttachedRotationSpeed": 200,
+        "slidingSpeed": 330,
+        "shrinkPercent": 25,
+        "shrinkDuration": 0.25,
+        "unshrinkDuration": 0.5,
+        "holsterX": 0,
+        "holsterY": 0,
+        "holsterZ": 0,
+        "holsterPitch": 0,
+        "holsterYaw": 0,
+        "holsterRoll": 0,
+        "duration": 1.05,
+        "spineClavicleAngleLimit": 45,
+        "maxSpineClavicleAngularSpeed": 1000,
+        "drawReturn": {
+          "enabled": true,
+          "startFraction": 0.9,
+          "duration": 0.6,
+          "returnEasing": 0.5,
+          "inertia": 0.5,
+          "inertiaHold": 0,
+          "inertiaDecay": 0.1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": true,
+          "armIKStart": 0.25,
+          "armIKEnd": 1,
+          "swordPointSpeed": 800,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.4,
+          "timingCurve": [
+            [
+              0.19912770595412405,
+              0.2570395962483323
+            ],
+            [
+              0.3840499176275009,
+              0.48518074820020346
+            ],
+            [
+              0.5864170785291621,
+              0.693192325502077
+            ],
+            [
+              0.8166976488988538,
+              0.8810738162180758
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "sheatheReturn": {
+          "enabled": true,
+          "startFraction": 0.7,
+          "duration": 0.9,
+          "returnEasing": 1,
+          "inertia": 1,
+          "inertiaHold": 0,
+          "inertiaDecay": 1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": false,
+          "armIKStart": 0,
+          "armIKEnd": 0.25,
+          "swordPointSpeed": 0,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.5,
+          "timingCurve": [
+            [
+              0.2,
+              0.2
+            ],
+            [
+              0.4,
+              0.4
+            ],
+            [
+              0.6,
+              0.6
+            ],
+            [
+              0.8,
+              0.8
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "headLookAtAlpha": 1,
+        "headMaxDownAngle": 45,
+        "headLookInSpeedAlpha": 0.21,
+        "sheatheHeadTargetAlpha": 0.9,
+        "headLookInExponent": 2,
+        "headLookOutExponent": 2,
+        "maxHeadLookInVelocity": 170,
+        "maxHeadLookOutVelocity": 100,
+        "maxHeadLookInVelocityAtMaxGaze": 300,
+        "maxHeadLookOutVelocityAtMaxGaze": 300,
+        "drawHeadLookOutThreshold": 0.3,
+        "sheatheHeadLookOutThreshold": 0.5,
+        "drawCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheCurve": [
+          [
+            0.14718561356661616,
+            0.05756312182913238
+          ],
+          [
+            0.4221556864684471,
+            0.29617963412380177
+          ],
+          [
+            0.6166466699636005,
+            0.564220086752473
+          ],
+          [
+            0.9519759959614464,
+            0.9672884365700237
+          ]
+        ],
+        "drawSlideCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheSlideCurve": [
+          [
+            0.14047903344255855,
+            0.13958743261164513
+          ],
+          [
+            0.650179602563385,
+            0.7111385494636496
+          ],
+          [
+            0.8849101307618773,
+            0.9562043029634382
+          ],
+          [
+            0.9553293659722167,
+            0.9884497709488423
+          ]
+        ],
+        "bodyReference": {
+          "spine": [
+            0.06951134491665859,
+            -0.002305280170059527,
+            0.041427377878509544,
+            0.9967179294932575
+          ],
+          "right": [
+            -0.7540397505423253,
+            -0.07467474878413254,
+            0.6522214050920083,
+            0.02133014852035828
+          ],
+          "left": [
+            -0.0737091688142581,
+            0.7491268079541248,
+            -0.010674666335401593,
+            0.6582264318118826
+          ]
+        },
+        "wristReference": [
+          0.6162170622330014,
+          0.013270161848469686,
+          -0.039260521841435136,
+          0.7864852487123855
+        ],
+        "drawBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -17,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -40.7,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -37.3,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 69.4
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 260,
+          "maxReachRotationSpeed": 900,
+          "slidingSpeed": 330
+        },
+        "sheatheBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -17,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -40,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -37,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 34.1
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 230,
+          "maxReachRotationSpeed": 600,
+          "slidingSpeed": 170
+        }
+      },
+      "time": 0.7833333333333341,
+      "camera": {
+        "yaw": -12.835199462890627,
+        "pitch": -0.06999999999999953,
+        "zoom": 1.3268220739049315,
+        "panX": 0,
+        "panY": 65
+      },
+      "workspaceTab": "motion",
+      "bodyTargetsPanelOpen": false,
+      "bodyPoseEndpoint": "seated",
+      "fkReturnPanelOpen": true,
+      "controls": {
+        "showPelvisDistance": false,
+        "showLeeway": true,
+        "sequenceMode": false,
+        "bypassCurves": false,
+        "bicolor": true,
+        "upperOnly": true,
+        "skeleton": false,
+        "idleGhost": false,
+        "handGizmos": false,
+        "lowerarmGizmos": false,
+        "upperarmGizmos": false,
+        "gizmoSide": "r",
+        "speed": "1"
+      },
+      "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
+      "revision": "1138f014701f8d5254277808ed9112925ba3f8274882bc7800840c989871cfd7"
+    },
+    "problem_4": {
+      "schema": "sword_holster_lab_v1",
+      "parameters": {
+        "noCheat": true,
+        "leewayPhase": false,
+        "holsterRotationStabilization": 0.8,
+        "holsterReturnDuration": 0.25,
+        "holsterPivotPercent": 50,
+        "pelvisRotationCompensation": 0.96,
+        "entryInertia": 1,
+        "entryInertiaDuration": 0.5,
+        "maxElbowPoleAngularSpeed": 180,
+        "swordRelativeSlidePole": true,
+        "bodyTargets": {
+          "clear": {
+            "spine": [
+              -50,
+              -5.125,
+              1.287
+            ],
+            "right": [
+              -17,
+              42.9,
+              5.962
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 76
+          },
+          "seated": {
+            "spine": [
+              -40,
+              -5.177,
+              1.942
+            ],
+            "right": [
+              -37,
+              0,
+              0.045
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 34.1
+          }
+        },
+        "gazeYaw": 0,
+        "sheatheRotationTolerance": 15,
+        "sheatheTipTolerance": 2,
+        "slideRotationCorrection": 0.45,
+        "motion": "problem_4",
+        "sheathe": true,
+        "startTick": 15,
+        "maxReachSpeed": 230,
+        "maxReachRotationSpeed": 600,
+        "maxAttachedSpeed": 150,
+        "maxAttachedRotationSpeed": 200,
+        "slidingSpeed": 170,
+        "shrinkPercent": 25,
+        "shrinkDuration": 0.25,
+        "unshrinkDuration": 0.5,
+        "holsterX": 0,
+        "holsterY": 0,
+        "holsterZ": 0,
+        "holsterPitch": 0,
+        "holsterYaw": 0,
+        "holsterRoll": 0,
+        "duration": 1.05,
+        "spineClavicleAngleLimit": 45,
+        "maxSpineClavicleAngularSpeed": 1000,
+        "drawReturn": {
+          "enabled": true,
+          "startFraction": 0.9,
+          "duration": 0.6,
+          "returnEasing": 0.5,
+          "inertia": 0.05,
+          "inertiaHold": 0,
+          "inertiaDecay": 0.1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": true,
+          "armIKStart": 0.25,
+          "armIKEnd": 1,
+          "swordPointSpeed": 800,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.4,
+          "timingCurve": [
+            [
+              0.19912770595412405,
+              0.2570395962483323
+            ],
+            [
+              0.3840499176275009,
+              0.48518074820020346
+            ],
+            [
+              0.5864170785291621,
+              0.693192325502077
+            ],
+            [
+              0.8166976488988538,
+              0.8810738162180758
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "sheatheReturn": {
+          "enabled": true,
+          "startFraction": 0.7,
+          "duration": 0.9,
+          "returnEasing": 1,
+          "inertia": 1,
+          "inertiaHold": 0,
+          "inertiaDecay": 1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": false,
+          "armIKStart": 0,
+          "armIKEnd": 0.25,
+          "swordPointSpeed": 0,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.5,
+          "timingCurve": [
+            [
+              0.2,
+              0.2
+            ],
+            [
+              0.4,
+              0.4
+            ],
+            [
+              0.6,
+              0.6
+            ],
+            [
+              0.8,
+              0.8
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "headLookAtAlpha": 1,
+        "headMaxDownAngle": 45,
+        "headLookInSpeedAlpha": 0.21,
+        "sheatheHeadTargetAlpha": 0.9,
+        "headLookInExponent": 2,
+        "headLookOutExponent": 2,
+        "maxHeadLookInVelocity": 170,
+        "maxHeadLookOutVelocity": 100,
+        "maxHeadLookInVelocityAtMaxGaze": 300,
+        "maxHeadLookOutVelocityAtMaxGaze": 300,
+        "drawHeadLookOutThreshold": 0.3,
+        "sheatheHeadLookOutThreshold": 0.5,
+        "drawCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheCurve": [
+          [
+            0.14718561356661616,
+            0.05756312182913238
+          ],
+          [
+            0.4221556864684471,
+            0.29617963412380177
+          ],
+          [
+            0.6166466699636005,
+            0.564220086752473
+          ],
+          [
+            0.9519759959614464,
+            0.9672884365700237
+          ]
+        ],
+        "drawSlideCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheSlideCurve": [
+          [
+            0.14047903344255855,
+            0.13958743261164513
+          ],
+          [
+            0.650179602563385,
+            0.7111385494636496
+          ],
+          [
+            0.8849101307618773,
+            0.9562043029634382
+          ],
+          [
+            0.9553293659722167,
+            0.9884497709488423
+          ]
+        ],
+        "bodyReference": {
+          "spine": [
+            0.06951134491665859,
+            -0.002305280170059527,
+            0.041427377878509544,
+            0.9967179294932575
+          ],
+          "right": [
+            -0.7540397505423253,
+            -0.07467474878413254,
+            0.6522214050920083,
+            0.02133014852035828
+          ],
+          "left": [
+            -0.0737091688142581,
+            0.7491268079541248,
+            -0.010674666335401593,
+            0.6582264318118826
+          ]
+        },
+        "wristReference": [
+          0.6162170622330014,
+          0.013270161848469686,
+          -0.039260521841435136,
+          0.7864852487123855
+        ],
+        "drawBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -17,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -40.7,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -37.3,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 69.4
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 260,
+          "maxReachRotationSpeed": 900,
+          "slidingSpeed": 330
+        },
+        "sheatheBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -17,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -40,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -37,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 34.1
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 230,
+          "maxReachRotationSpeed": 600,
+          "slidingSpeed": 170
+        }
+      },
+      "time": 0.20713333341669168,
+      "camera": {
+        "yaw": 0.02879980468750018,
+        "pitch": -0.19120007324218755,
+        "zoom": 0.8770306530117714,
+        "panX": 0,
+        "panY": 65
+      },
+      "workspaceTab": "motion",
+      "bodyTargetsPanelOpen": false,
+      "bodyPoseEndpoint": "seated",
+      "fkReturnPanelOpen": true,
+      "controls": {
+        "showPelvisDistance": false,
+        "showLeeway": true,
+        "sequenceMode": false,
+        "bypassCurves": false,
+        "bicolor": true,
+        "upperOnly": true,
+        "skeleton": false,
+        "idleGhost": false,
+        "handGizmos": false,
+        "lowerarmGizmos": false,
+        "upperarmGizmos": false,
+        "gizmoSide": "r",
+        "speed": "1"
+      },
+      "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
+      "revision": "1138f014701f8d5254277808ed9112925ba3f8274882bc7800840c989871cfd7"
+    },
+    "problem_5": {
+      "schema": "sword_holster_lab_v1",
+      "parameters": {
+        "noCheat": true,
+        "leewayPhase": false,
+        "holsterRotationStabilization": 0.8,
+        "holsterReturnDuration": 0.25,
+        "holsterPivotPercent": 50,
+        "pelvisRotationCompensation": 0.96,
+        "entryInertia": 1,
+        "entryInertiaDuration": 0.5,
+        "maxElbowPoleAngularSpeed": 180,
+        "swordRelativeSlidePole": true,
+        "bodyTargets": {
+          "clear": {
+            "spine": [
+              -50,
+              -5.125,
+              1.287
+            ],
+            "right": [
+              -17,
+              42.9,
+              5.962
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 76
+          },
+          "seated": {
+            "spine": [
+              -40.7,
+              -5.177,
+              1.942
+            ],
+            "right": [
+              -37.3,
+              0,
+              0.045
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 69.4
+          }
+        },
+        "gazeYaw": 0,
+        "sheatheRotationTolerance": 15,
+        "sheatheTipTolerance": 2,
+        "slideRotationCorrection": 0.45,
+        "motion": "problem_5",
+        "sheathe": false,
+        "startTick": 15,
+        "maxReachSpeed": 260,
+        "maxReachRotationSpeed": 900,
+        "maxAttachedSpeed": 150,
+        "maxAttachedRotationSpeed": 200,
+        "slidingSpeed": 330,
+        "shrinkPercent": 25,
+        "shrinkDuration": 0.25,
+        "unshrinkDuration": 0.5,
+        "holsterX": 0,
+        "holsterY": 0,
+        "holsterZ": 0,
+        "holsterPitch": 0,
+        "holsterYaw": 0,
+        "holsterRoll": 0,
+        "duration": 1.05,
+        "spineClavicleAngleLimit": 45,
+        "maxSpineClavicleAngularSpeed": 1000,
+        "drawReturn": {
+          "enabled": true,
+          "startFraction": 0.9,
+          "duration": 0.6,
+          "returnEasing": 0.5,
+          "inertia": 0.05,
+          "inertiaHold": 0,
+          "inertiaDecay": 0.1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": true,
+          "armIKStart": 0.25,
+          "armIKEnd": 1,
+          "swordPointSpeed": 800,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.4,
+          "timingCurve": [
+            [
+              0.19912770595412405,
+              0.2570395962483323
+            ],
+            [
+              0.3840499176275009,
+              0.48518074820020346
+            ],
+            [
+              0.5864170785291621,
+              0.693192325502077
+            ],
+            [
+              0.8166976488988538,
+              0.8810738162180758
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "sheatheReturn": {
+          "enabled": true,
+          "startFraction": 0.7,
+          "duration": 0.9,
+          "returnEasing": 1,
+          "inertia": 1,
+          "inertiaHold": 0,
+          "inertiaDecay": 1,
+          "worldInertia": false,
+          "springReturn": false,
+          "angleTimeSeconds": 0.29,
+          "upperArmTwistRemoval": 0,
+          "handRotationFKAlpha": 1,
+          "armIKEnabled": false,
+          "armIKStart": 0,
+          "armIKEnd": 0.25,
+          "swordPointSpeed": 0,
+          "swordPointExponent": 1.5,
+          "swordPointCutoff": 0.5,
+          "timingCurve": [
+            [
+              0.2,
+              0.2
+            ],
+            [
+              0.4,
+              0.4
+            ],
+            [
+              0.6,
+              0.6
+            ],
+            [
+              0.8,
+              0.8
+            ]
+          ],
+          "boneInertia": {
+            "spine": 1,
+            "clavicle": 1,
+            "upperarm": 1,
+            "lowerarm": 1,
+            "hand": 1,
+            "neck_01": 1,
+            "neck_02": 1,
+            "head": 1
+          }
+        },
+        "headLookAtAlpha": 1,
+        "headMaxDownAngle": 45,
+        "headLookInSpeedAlpha": 0.21,
+        "sheatheHeadTargetAlpha": 0.9,
+        "headLookInExponent": 2,
+        "headLookOutExponent": 2,
+        "maxHeadLookInVelocity": 170,
+        "maxHeadLookOutVelocity": 100,
+        "maxHeadLookInVelocityAtMaxGaze": 300,
+        "maxHeadLookOutVelocityAtMaxGaze": 300,
+        "drawHeadLookOutThreshold": 0.3,
+        "sheatheHeadLookOutThreshold": 0.5,
+        "drawCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheCurve": [
+          [
+            0.14718561356661616,
+            0.05756312182913238
+          ],
+          [
+            0.4221556864684471,
+            0.29617963412380177
+          ],
+          [
+            0.6166466699636005,
+            0.564220086752473
+          ],
+          [
+            0.9519759959614464,
+            0.9672884365700237
+          ]
+        ],
+        "drawSlideCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "sheatheSlideCurve": [
+          [
+            0.14047903344255855,
+            0.13958743261164513
+          ],
+          [
+            0.650179602563385,
+            0.7111385494636496
+          ],
+          [
+            0.8849101307618773,
+            0.9562043029634382
+          ],
+          [
+            0.9553293659722167,
+            0.9884497709488423
+          ]
+        ],
+        "bodyReference": {
+          "spine": [
+            0.06951134491665859,
+            -0.002305280170059527,
+            0.041427377878509544,
+            0.9967179294932575
+          ],
+          "right": [
+            -0.7540397505423253,
+            -0.07467474878413254,
+            0.6522214050920083,
+            0.02133014852035828
+          ],
+          "left": [
+            -0.0737091688142581,
+            0.7491268079541248,
+            -0.010674666335401593,
+            0.6582264318118826
+          ]
+        },
+        "wristReference": [
+          0.6162170622330014,
+          0.013270161848469686,
+          -0.039260521841435136,
+          0.7864852487123855
+        ],
+        "drawBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -17,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -40.7,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -37.3,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 69.4
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 260,
+          "maxReachRotationSpeed": 900,
+          "slidingSpeed": 330
+        },
+        "sheatheBody": {
+          "bodyTargets": {
+            "clear": {
+              "spine": [
+                -50,
+                -5.125,
+                1.287
+              ],
+              "right": [
+                -17,
+                42.9,
+                5.962
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 76
+            },
+            "seated": {
+              "spine": [
+                -40,
+                -5.177,
+                1.942
+              ],
+              "right": [
+                -37,
+                0,
+                0.045
+              ],
+              "left": [
+                0,
+                0,
+                0
+              ],
+              "pole": 34.1
+            }
+          },
+          "pelvisRotationCompensation": 0.96,
+          "maxSpineClavicleAngularSpeed": 1000,
+          "maxElbowPoleAngularSpeed": 180,
+          "swordRelativeSlidePole": true,
+          "maxReachSpeed": 230,
+          "maxReachRotationSpeed": 600,
+          "slidingSpeed": 170
+        }
+      },
+      "time": 0.5537000000119339,
+      "camera": {
+        "yaw": 0.02879980468750018,
+        "pitch": -0.19120007324218755,
+        "zoom": 0.8770306530117714,
+        "panX": 0,
+        "panY": 65
+      },
+      "workspaceTab": "motion",
+      "bodyTargetsPanelOpen": false,
+      "bodyPoseEndpoint": "seated",
+      "fkReturnPanelOpen": true,
+      "controls": {
+        "showPelvisDistance": false,
+        "showLeeway": true,
+        "sequenceMode": false,
+        "bypassCurves": false,
+        "bicolor": true,
+        "upperOnly": true,
+        "skeleton": false,
+        "idleGhost": false,
+        "handGizmos": false,
+        "lowerarmGizmos": false,
+        "upperarmGizmos": false,
+        "gizmoSide": "r",
+        "speed": "1"
+      },
+      "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
+      "revision": "1138f014701f8d5254277808ed9112925ba3f8274882bc7800840c989871cfd7"
+    }
+  },
+  "normalMotionState": {
+    "schema": "sword_holster_lab_v1",
+    "parameters": {
+      "noCheat": true,
+      "leewayPhase": false,
+      "holsterRotationStabilization": 0.78,
+      "holsterReturnDuration": 0.25,
+      "holsterPivotPercent": 90,
+      "pelvisRotationCompensation": 0.96,
+      "entryInertia": 1,
+      "entryInertiaDuration": 0.5,
+      "maxElbowPoleAngularSpeed": 180,
+      "swordRelativeSlidePole": true,
+      "bodyTargets": {
+        "clear": {
+          "spine": [
+            -50,
+            -5.125,
+            1.287
+          ],
+          "right": [
+            -17,
+            42.9,
+            5.962
+          ],
+          "left": [
+            0,
+            0,
+            0
+          ],
+          "pole": 76
+        },
+        "seated": {
+          "spine": [
+            -40.7,
+            -5.177,
+            1.942
+          ],
+          "right": [
+            -37.3,
+            0,
+            0.045
+          ],
+          "left": [
+            0,
+            0,
+            0
+          ],
+          "pole": 69.4
+        }
+      },
+      "gazeYaw": 0,
+      "sheatheRotationTolerance": 15,
+      "sheatheTipTolerance": 2,
+      "slideRotationCorrection": 0.45,
+      "motion": "idle",
+      "sheathe": false,
+      "startTick": 50,
+      "maxReachSpeed": 260,
+      "maxReachRotationSpeed": 900,
+      "maxAttachedSpeed": 150,
+      "maxAttachedRotationSpeed": 200,
+      "slidingSpeed": 330,
+      "shrinkPercent": 25,
+      "shrinkDuration": 0.25,
+      "unshrinkDuration": 0.5,
+      "holsterX": 0,
+      "holsterY": 0,
+      "holsterZ": 0,
+      "holsterPitch": 0,
+      "holsterYaw": 0,
+      "holsterRoll": 0,
+      "duration": 8,
+      "spineClavicleAngleLimit": 45,
+      "maxSpineClavicleAngularSpeed": 1000,
+      "drawReturn": {
+        "enabled": true,
+        "startFraction": 0.9,
+        "duration": 0.5,
+        "returnEasing": 0.5,
+        "inertia": 0.5,
+        "inertiaHold": 0,
+        "inertiaDecay": 0.1,
+        "worldInertia": false,
+        "springReturn": false,
+        "angleTimeSeconds": 0.29,
+        "upperArmTwistRemoval": 0,
+        "handRotationFKAlpha": 1,
+        "armIKEnabled": true,
+        "armIKStart": 0.25,
+        "armIKEnd": 1,
+        "swordPointSpeed": 800,
+        "swordPointExponent": 1.5,
+        "swordPointCutoff": 0.4,
+        "timingCurve": [
+          [
+            0.19912770595412405,
+            0.2570395962483323
+          ],
+          [
+            0.3840499176275009,
+            0.48518074820020346
+          ],
+          [
+            0.5864170785291621,
+            0.693192325502077
+          ],
+          [
+            0.8166976488988538,
+            0.8810738162180758
+          ]
+        ],
+        "boneInertia": {
+          "spine": 1,
+          "clavicle": 1,
+          "upperarm": 1,
+          "lowerarm": 1,
+          "hand": 1,
+          "neck_01": 1,
+          "neck_02": 1,
+          "head": 1
+        }
+      },
+      "sheatheReturn": {
+        "enabled": true,
+        "startFraction": 0.7,
+        "duration": 0.9,
+        "returnEasing": 1,
+        "inertia": 0.7,
+        "inertiaHold": 0,
+        "inertiaDecay": 1,
+        "worldInertia": false,
+        "springReturn": false,
+        "angleTimeSeconds": 0.29,
+        "upperArmTwistRemoval": 0,
+        "handRotationFKAlpha": 1,
+        "armIKEnabled": false,
+        "armIKStart": 0,
+        "armIKEnd": 0.25,
+        "swordPointSpeed": 0,
+        "swordPointExponent": 1.5,
+        "swordPointCutoff": 0.5,
+        "timingCurve": [
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ]
+        ],
+        "boneInertia": {
+          "spine": 1,
+          "clavicle": 1,
+          "upperarm": 1,
+          "lowerarm": 1,
+          "hand": 1,
+          "neck_01": 1,
+          "neck_02": 1,
+          "head": 1
+        }
+      },
+      "headLookAtAlpha": 1,
+      "headMaxDownAngle": 45,
+      "headLookInSpeedAlpha": 0.21,
+      "sheatheHeadTargetAlpha": 0.9,
+      "headLookInExponent": 2,
+      "headLookOutExponent": 2,
+      "maxHeadLookInVelocity": 170,
+      "maxHeadLookOutVelocity": 100,
+      "maxHeadLookInVelocityAtMaxGaze": 300,
+      "maxHeadLookOutVelocityAtMaxGaze": 300,
+      "drawHeadLookOutThreshold": 0.3,
+      "sheatheHeadLookOutThreshold": 0.5,
+      "drawCurve": [
+        [
+          0.2,
+          0.2
+        ],
+        [
+          0.4,
+          0.4
+        ],
+        [
+          0.6,
+          0.6
+        ],
+        [
+          0.8,
+          0.8
+        ]
+      ],
+      "sheatheCurve": [
+        [
+          0.14718561356661616,
+          0.05756312182913238
+        ],
+        [
+          0.4221556864684471,
+          0.29617963412380177
+        ],
+        [
+          0.6166466699636005,
+          0.564220086752473
+        ],
+        [
+          0.9519759959614464,
+          0.9672884365700237
+        ]
+      ],
+      "drawSlideCurve": [
+        [
+          0.2,
+          0.2
+        ],
+        [
+          0.4,
+          0.4
+        ],
+        [
+          0.6,
+          0.6
+        ],
+        [
+          0.8,
+          0.8
+        ]
+      ],
+      "sheatheSlideCurve": [
+        [
+          0.14047903344255855,
+          0.13958743261164513
+        ],
+        [
+          0.650179602563385,
+          0.7111385494636496
+        ],
+        [
+          0.8849101307618773,
+          0.9562043029634382
+        ],
+        [
+          0.9553293659722167,
+          0.9884497709488423
+        ]
+      ],
+      "drawBody": {
+        "bodyTargets": {
+          "clear": {
+            "spine": [
+              -50,
+              -5.125,
+              1.287
+            ],
+            "right": [
+              -17,
+              42.9,
+              5.962
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 76
+          },
+          "seated": {
+            "spine": [
+              -40.7,
+              -5.177,
+              1.942
+            ],
+            "right": [
+              -37.3,
+              0,
+              0.045
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 69.4
+          }
+        },
+        "pelvisRotationCompensation": 0.96,
+        "maxSpineClavicleAngularSpeed": 1000,
+        "maxElbowPoleAngularSpeed": 180,
+        "swordRelativeSlidePole": true,
+        "maxReachSpeed": 260,
+        "maxReachRotationSpeed": 900,
+        "slidingSpeed": 330
+      },
+      "sheatheBody": {
+        "bodyTargets": {
+          "clear": {
+            "spine": [
+              -50,
+              -5.125,
+              1.287
+            ],
+            "right": [
+              -17,
+              42.9,
+              5.962
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 76
+          },
+          "seated": {
+            "spine": [
+              -40,
+              -5.177,
+              1.942
+            ],
+            "right": [
+              -37,
+              0,
+              0.045
+            ],
+            "left": [
+              0,
+              0,
+              0
+            ],
+            "pole": 34.1
+          }
+        },
+        "pelvisRotationCompensation": 0.96,
+        "maxSpineClavicleAngularSpeed": 1000,
+        "maxElbowPoleAngularSpeed": 180,
+        "swordRelativeSlidePole": true,
+        "maxReachSpeed": 230,
+        "maxReachRotationSpeed": 600,
+        "slidingSpeed": 170
+      }
+    },
+    "time": 1.5361666666666598,
+    "camera": {
+      "yaw": -12.726398437499997,
+      "pitch": -0.5739998168945308,
+      "zoom": 1.3268220739049315,
+      "panX": 0,
+      "panY": 65
+    },
+    "workspaceTab": "motion",
+    "bodyTargetsPanelOpen": false,
+    "bodyPoseEndpoint": "clear",
+    "fkReturnPanelOpen": true,
+    "controls": {
+      "showPelvisDistance": false,
+      "showLeeway": true,
+      "sequenceMode": false,
+      "bypassCurves": false,
+      "bicolor": true,
+      "upperOnly": true,
+      "skeleton": false,
+      "idleGhost": false,
+      "handGizmos": false,
+      "lowerarmGizmos": false,
+      "upperarmGizmos": false,
+      "gizmoSide": "r",
+      "speed": "1"
+    },
+    "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
+    "revision": "1138f014701f8d5254277808ed9112925ba3f8274882bc7800840c989871cfd7"
+  },
   "schema": "sword_holster_lab_v1",
   "parameters": {
     "noCheat": true,
@@ -19,7 +2842,7 @@
           1.287
         ],
         "right": [
-          -27,
+          -17,
           42.9,
           5.962
         ],
@@ -37,7 +2860,7 @@
           1.942
         ],
         "right": [
-          -47.3,
+          -37.3,
           0,
           0.045
         ],
@@ -53,7 +2876,7 @@
     "sheatheRotationTolerance": 15,
     "sheatheTipTolerance": 2,
     "slideRotationCorrection": 0.45,
-    "motion": "walk",
+    "motion": "idle",
     "sheathe": false,
     "startTick": 50,
     "maxReachSpeed": 260,
@@ -126,7 +2949,7 @@
       "startFraction": 0.7,
       "duration": 0.9,
       "returnEasing": 1,
-      "inertia": 1,
+      "inertia": 0.7,
       "inertiaHold": 0,
       "inertiaDecay": 1,
       "worldInertia": false,
@@ -262,7 +3085,7 @@
             1.287
           ],
           "right": [
-            -27,
+            -17,
             42.9,
             5.962
           ],
@@ -280,7 +3103,7 @@
             1.942
           ],
           "right": [
-            -47.3,
+            -37.3,
             0,
             0.045
           ],
@@ -309,7 +3132,7 @@
             1.287
           ],
           "right": [
-            -47,
+            -17,
             42.9,
             5.962
           ],
@@ -322,12 +3145,12 @@
         },
         "seated": {
           "spine": [
-            -55,
+            -40,
             -5.177,
             1.942
           ],
           "right": [
-            -27,
+            -37,
             0,
             0.045
           ],
@@ -348,22 +3171,22 @@
       "slidingSpeed": 170
     }
   },
-  "time": 1.3460999999523737,
+  "time": 0.3775000000358357,
   "camera": {
-    "yaw": -12.527999267578126,
-    "pitch": 0.23119989013671796,
+    "yaw": -6.441596679687491,
+    "pitch": 0.32360040283203123,
     "zoom": 1.3268220739049315,
     "panX": 0,
     "panY": 65
   },
   "workspaceTab": "motion",
   "bodyTargetsPanelOpen": false,
-  "bodyPoseEndpoint": "seated",
+  "bodyPoseEndpoint": "clear",
   "fkReturnPanelOpen": true,
   "controls": {
     "showPelvisDistance": false,
     "showLeeway": true,
-    "sequenceMode": true,
+    "sequenceMode": false,
     "bypassCurves": false,
     "bicolor": true,
     "upperOnly": true,
@@ -376,5 +3199,5 @@
     "speed": "1"
   },
   "sourceHash": "8fdc25f7fae7954cfdeba5b7e7aee7351dc68a34fdba9f77766a38e39b2d1764",
-  "revision": "a42b66717cfd98cdefcfd247fa31de215b237857a6c064591ccef1b664795eb4"
+  "revision": "1138f014701f8d5254277808ed9112925ba3f8274882bc7800840c989871cfd7"
 }

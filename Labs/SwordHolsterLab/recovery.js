@@ -106,21 +106,21 @@ function sampleBase(model,seconds,options={}){
  const duration=returnTiming(model,{...options,spineTurn:0}).duration,elapsed=t-tail,x=clamp(elapsed/duration,0,1),easing=clamp(Number(options.returnEasing??1),0,1),blend=x+(ease(x)-x)*easing,inertia=clamp(Number(options.inertia)||0,0,1);
  if(elapsed>=duration-1e-12)return model.idlePose;
  if(options.springReturn===true&&inertia>0)return sampleSpringReturn(model,elapsed,options,duration,easing,inertia);
- // Compact analytic angular momentum: outgoing velocity at t=0; exact zero
- // position and derivative at duration. Inertia controls decay, not FK length.
+ // Scale carried motion, not its duration. At full strength retain the original
+ // velocity and decay; at zero use the ordinary FK return.
  const hold=clamp(Number(options.inertiaHold)||0,0,.8),decayValue=Number(options.inertiaDecay??1),decay=clamp(Number.isFinite(decayValue)?decayValue:1,0,4);
  // Delay envelope decay, not FK idle return. A squared fade phase joins the
  // optional constant-velocity hold smoothly; zero hold retains the old curve.
  const fade=clamp((x-hold)/(1-hold),0,1),momentumPhase=hold>0?fade*fade:x;
  const momentumBase=elapsed*Math.pow(1-momentumPhase,3);
- const seeds=recoverySeeds(model,options,duration,easing,inertia);
+ const seeds=recoverySeeds(model,options,duration,easing,1);
  const twistRemoval=clamp(Number(options.upperArmTwistRemoval)||0,0,1);
  const last=locals.at(-1),q=last.q.slice(),p=last.p.slice(),worldMode=options.worldInertia===true,momenta=worldMode?[]:null;
  for(let j=0;j<parents.length;j++){if(!model.upper[j])continue;
    q[j]=qslerp(last.q[j],model.idle.q[j],blend);
    p[j]=offsetBlend(last.p[j],model.idleOffsets[j],blend);
    const effective=seeds.effective[j];
-   const momentum=model.inertial[j]&&effective>0?momentumBase*Math.exp(-decay*momentumPhase/(.025+.45*effective)):0;
+   const momentum=model.inertial[j]&&effective>0?inertia*momentumBase*Math.exp(-decay*momentumPhase/(.025+.45*effective)):0;
    if(worldMode)momenta[j]=momentum;
    if(momentum>0){if(!worldMode)q[j]=unit(qm(q[j],qexp(mul(seeds.velocity[j],momentum))));p[j]=rotate(qexp(mul(model.offsetVelocity[j],momentum)),p[j]);}
  }

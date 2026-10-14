@@ -6,11 +6,21 @@ const root=path.resolve(__dirname,'../..'),lab=root+'/Labs/SwordHolsterLab';
 const H=require(lab+'/holster'),saved=require(lab+'/state.json');
 const data=require(lab+'/data/motions.json'),setup=require(lab+'/data/unreal-setup.json');
 const p=structuredClone(saved.parameters);
+const problems=process.argv.includes('--problems')?require(lab+'/diagnostics/problem-motions.json'):[];
+// The historical native fixture initializes its mount in the identity root frame.
+// Express captured clips in their entry root frame on BOTH sides of the oracle;
+// preserve every relative bone transform and subsequent root movement.
+const R=require(lab+'/recovery');
+for(const c of problems){
+ const clip=structuredClone(c.clip),at=clip.frames[Math.min(clip.frames.length-1,Math.round(p.startTick*(clip.fps||data.fps)/60))][0],inv=R.qinv(at.slice(3));
+ clip.frames=clip.frames.map(frame=>frame.map(t=>[...R.rotate(inv,R.sub(t.slice(0,3),at.slice(0,3))),...R.qm(inv,t.slice(3))]));
+ data.motions[c.id]=clip;
+}
 if(saved.controls?.bypassCurves)for(const k of ['drawCurve','drawSlideCurve','sheatheCurve','sheatheSlideCurve'])p[k]=require(lab+'/retime').linear();
 if(saved.controls?.bypassCurves)for(const k of ['drawReturn','sheatheReturn'])p[k].timingCurve=require(lab+'/retime').linear();
 const rows=[];
 const cases=[];
-for(const motion of ['idle','walk','run'])for(const sheathe of [false,true])for(const inertia of [false,true])cases.push({motion,sheathe,inertia});
+for(const motion of ['idle','walk','run',...problems.map(c=>c.id)])for(const sheathe of [false,true])for(const inertia of [false,true])cases.push({motion,sheathe,inertia});
 for(const spring of [false,true])for(const world of [false,true])for(const startFraction of [.9,1])cases.push({motion:'idle',sheathe:false,inertia:true,variant:{spring,world,startFraction,handAlpha:.35}});
 for(const {motion,sheathe,inertia,variant} of cases){
  const options=structuredClone(p);if(variant)Object.assign(options.drawReturn,{springReturn:variant.spring,worldInertia:variant.world,startFraction:variant.startFraction,handRotationFKAlpha:variant.handAlpha});

@@ -2,6 +2,7 @@
 #include "ProphecySwordPhysicsLibrary.h"
 #include "ProphecySwordHolsterLibrary.h"
 #include "ProphecySwordHolster.h"
+#include "ProphecyHolsterMount.h"
 #include "ProphecySwordHolsterPose.h"
 #include "ProphecySwordHolsterSchedule.h"
 #include "ProphecySpecialSolver.h"

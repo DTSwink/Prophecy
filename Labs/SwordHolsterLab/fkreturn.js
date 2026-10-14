@@ -1,15 +1,15 @@
-/* Adapter for the unchanged Attack Recovery Lab FK/inertia engine. */
+/* Adapter for the lab's parent-local FK/inertia engine. */
 (function(root){
 'use strict';
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
 const T=typeof module!=='undefined'?require('./retime.js'):root.Retime;
 const {unit,qm,qinv,qlog,rotate,fromTo,length:len,mul,sub}=R;
 const bones=['spine','clavicle','upperarm','lowerarm','hand','neck_01','neck_02','head'];
-const defaults=()=>({enabled:true,startFraction:.9,duration:1,returnEasing:1,inertia:1,inertiaHold:0,inertiaDecay:1,worldInertia:false,springReturn:false,angleTimeSeconds:.29,upperArmTwistRemoval:0,handRotationFKAlpha:1,armIKEnabled:false,armIKStart:0,armIKEnd:.25,swordPointSpeed:0,swordPointExponent:1.5,swordPointCutoff:.5,timingCurve:T.linear(),boneInertia:Object.fromEntries(bones.map(k=>[k,1]))});
+const defaults=()=>({enabled:true,startFraction:.9,duration:1,returnEasing:1,inertia:1,inertiaHold:0,inertiaDecay:1,worldInertia:false,springReturn:false,angleTimeSeconds:.29,upperArmTwistRemoval:0,elbowSoftZone:15,elbowIKCorrection:true,handRotationFKAlpha:1,armIKEnabled:false,armIKStart:0,armIKEnd:.25,swordPointSpeed:0,swordPointExponent:1.5,swordPointCutoff:.5,timingCurve:T.linear(),boneInertia:Object.fromEntries(bones.map(k=>[k,1]))});
 function sanitize(input={}){
  const o={...defaults(),...input};delete o.handRotationExponent;
- for(const [k,lo,hi] of [['startFraction',0,1],['duration',.1,5],['returnEasing',0,1],['inertia',0,1],['inertiaHold',0,.8],['inertiaDecay',0,4],['angleTimeSeconds',0,4],['upperArmTwistRemoval',0,1],['handRotationFKAlpha',0,1],['armIKStart',0,1],['armIKEnd',0,1],['swordPointSpeed',-3600,3600],['swordPointExponent',1,8],['swordPointCutoff',0,.99]])o[k]=Math.max(lo,Math.min(hi,Number.isFinite(Number(o[k]))?Number(o[k]):defaults()[k]));
- for(const k of ['enabled','worldInertia','springReturn','armIKEnabled'])o[k]=!!o[k];
+ for(const [k,lo,hi] of [['startFraction',0,1],['duration',.1,5],['returnEasing',0,1],['inertia',0,1],['inertiaHold',0,.8],['inertiaDecay',0,4],['angleTimeSeconds',0,4],['upperArmTwistRemoval',0,1],['elbowSoftZone',0,45],['handRotationFKAlpha',0,1],['armIKStart',0,1],['armIKEnd',0,1],['swordPointSpeed',-3600,3600],['swordPointExponent',1,8],['swordPointCutoff',0,.99]])o[k]=Math.max(lo,Math.min(hi,Number.isFinite(Number(o[k]))?Number(o[k]):defaults()[k]));
+ for(const k of ['enabled','worldInertia','springReturn','armIKEnabled','elbowIKCorrection'])o[k]=!!o[k];
  o.armIKEnd=Math.max(o.armIKStart,o.armIKEnd);
  o.timingCurve=T.sanitize(input.timingCurve);
  o.boneInertia=Object.fromEntries(bones.map(k=>[k,Math.max(0,Math.min(1,Number.isFinite(Number(input.boneInertia?.[k]))?Number(input.boneInertia[k]):1))]));return o;
@@ -67,8 +67,75 @@ function sample(returnModel,base,elapsed){
  const fk=R.sample(model,model.attackSeconds+progressTime,options),a=R.localize(fk.points,fk.q,model.parents),b=local(base,model.parents);
  const q=a.q.map((q,j)=>model.upper[j]?unit(qm(qm(b.q[j],qinv(model.idle.q[j])),q)):b.q[j]);
  const p=a.p.map((p,j)=>model.upper[j]?rotate(fromTo(model.idle.p[j],b.p[j]),p):b.p[j]);
+ correctElbows(returnModel,b,q,p,progressTime/timing.duration);
  const result=R.fk({q,p},model.parents);
  return base.map((t,j)=>model.upper[j]?{...t,p:result.points[j],q:result.q[j]}:t);
+}
+// C2 rounded absolute value, exact outside the soft zone. Unlike the old
+// forearm-only barrier, a crossed bend retains its magnitude and wrist reach.
+function softMagnitude(value,knee){
+ const a=Math.abs(value);if(knee<=1e-10||a>=knee)return a;
+ const t=a/knee;return knee*(.375+t*t*(.75-.125*t*t));
+}
+function correctElbowIK(model,q,p,elbow,hand,axis,bend,zone){
+ const shoulder=model.parents[elbow];if(shoulder<0)return;
+ const upper=p[elbow],lower=rotate(q[elbow],p[hand]),l1=len(upper),l2=len(lower);
+ if(l1<1e-8||l2<1e-8)return;
+ const u=unit(upper),v=unit(lower),wrist=R.add(upper,lower),distance=len(wrist),d=distance>1e-8?mul(wrist,1/distance):u;
+ // Work in the shoulder frame. Approach the valid bend plane inside the
+ // soft zone; once crossed, keep that plane instead of chasing the bad pole.
+ const reference=unit(R.cross(d,rotate(fromTo(u,d),axis))),pole=R.sub(upper,mul(d,R.dot(upper,d)));
+ const height=a=>{const reach=Math.sqrt(Math.max(0,l1*l1+l2*l2+2*l1*l2*Math.cos(a)));return reach>1e-8?l1*l2*Math.sin(a)/reach:0;};
+ const knee=Math.min(zone,bend,Math.PI-bend),side=R.dot(pole,reference);
+ const width=height(knee),x=width>1e-10?Math.max(0,Math.min(1,side/width)):Number(side>0),weight=x*x*x*(10+x*(-15+6*x));
+ const correctedPole=R.add(mul(reference,1-weight),mul(unit(pole),weight));
+ const poleDirection=len(correctedPole)>1e-8?unit(correctedPole):reference;
+ const actual=Math.acos(Math.max(-1,Math.min(1,R.dot(u,v))));
+ const limited=Math.PI-softMagnitude(Math.PI-softMagnitude(actual,Math.min(zone,bend)),Math.min(zone,Math.PI-bend));
+ const reach=Math.sqrt(Math.max(0,l1*l1+l2*l2+2*l1*l2*Math.cos(limited)));
+ const along=reach>1e-8?(l1*l1+reach*reach-l2*l2)/(2*reach):0;
+ const targetElbow=R.add(mul(d,along),mul(poleDirection,Math.sqrt(Math.max(0,l1*l1-along*along))));
+ const targetLower=sub(mul(d,reach),targetElbow),a=fromTo(upper,targetElbow),b=fromTo(lower,targetLower),before=q[elbow];
+ q[shoulder]=unit(qm(q[shoulder],a));
+ q[elbow]=unit(qm(qm(qinv(a),b),before));
+ q[hand]=unit(qm(qm(qinv(before),qinv(b)),qm(before,q[hand])));
+}
+function correctElbows(ret,moving,q,p,fraction){
+ const {model,options}=ret,zone=options.elbowSoftZone*Math.PI/180;
+ if(!options.elbowIKCorrection||!zone||fraction<=0||fraction>=1)return;
+ const x=fraction,blend=x+(x*x*x*(10+x*(-15+6*x))-x)*options.returnEasing,last=model.locals.at(-1);
+ for(const side of ['l','r']){
+  const elbow=model.names.indexOf('lowerarm_'+side),hand=model.names.indexOf('hand_'+side);
+  if(elbow<0||hand<0||model.parents[hand]!==elbow)continue;
+  const offset=j=>rotate(fromTo(model.idle.p[j],moving.p[j]),R.offsetBlend(last.p[j],model.idleOffsets[j],blend));
+  const baselineQ=unit(qm(qm(moving.q[elbow],qinv(model.idle.q[elbow])),R.qslerp(last.q[elbow],model.idle.q[elbow],blend)));
+  const u=unit(p[elbow]),bu=unit(offset(elbow)),bv=rotate(baselineQ,unit(offset(hand)));
+  // A nearly straight moving baseline has no reliable bend plane. Capture
+  // the joint's plane at release and carry it with the upper-arm direction.
+  const startU=unit(last.p[elbow]);
+  let axis=R.cross(startU,rotate(last.q[elbow],unit(last.p[hand]))),referenceU=startU;
+  if(len(axis)<1e-8){referenceU=unit(model.idle.p[elbow]);axis=R.cross(referenceU,rotate(model.idle.q[elbow],unit(model.idle.p[hand])));}
+  if(len(axis)<1e-8){const previous=model.locals.at(-2),previousU=unit(previous.p[elbow]);referenceU=startU;axis=rotate(fromTo(previousU,startU),R.cross(previousU,rotate(previous.q[elbow],unit(previous.p[hand]))));}
+  if(len(axis)<1e-8)continue;axis=unit(axis);
+  axis=unit(rotate(fromTo(referenceU,u),axis));
+  if(options.elbowIKCorrection){
+   // The valid bend side must also return to the current animation. Keeping
+   // the release plane forever can reject the resting arm at the final tick.
+   const idleU=unit(moving.p[elbow]),idleV=rotate(moving.q[elbow],unit(moving.p[hand]));
+   let endAxis=R.cross(idleU,idleV);
+   if(len(endAxis)>1e-8){
+    endAxis=unit(rotate(fromTo(idleU,u),endAxis));
+    const seedU=unit(model.idle.p[elbow]),seedV=rotate(model.idle.q[elbow],unit(model.idle.p[hand])),seedAxis=R.cross(seedU,seedV);
+    const startAxis=unit(rotate(fromTo(u,seedU),axis));
+    const seed=len(seedAxis)>1e-8?Math.atan2(R.dot(seedU,R.cross(startAxis,unit(seedAxis))),R.dot(startAxis,unit(seedAxis))):0;
+    const tracks=ret.elbowPlaneAngles||(ret.elbowPlaneAngles={}),keys=tracks[side]||(tracks[side]=[{time:0,goal:seed,blend:0}]);
+    const angle=continueAngle(Math.atan2(R.dot(u,R.cross(axis,endAxis)),R.dot(axis,endAxis)),angleReference(keys,fraction).goal);
+    if(fraction>keys.at(-1).time+1e-10)keys.push({time:fraction,goal:angle,blend:0});
+    axis=rotate(R.qexp(mul(u,angle*blend)),axis);
+   }
+   correctElbowIK(model,q,p,elbow,hand,axis,Math.acos(Math.max(-1,Math.min(1,R.dot(bu,bv)))),zone);continue;
+  }
+ }
 }
 // Blend the released wrist's FK path into a direct root-local return. The
 // original FK pose remains the donor, so torso, left arm and wrist rotation
@@ -77,13 +144,24 @@ function sample(returnModel,base,elapsed){
 // interpolating their angle. Interpolating elbow positions can cross that line
 // and abruptly choose the opposite side of the arm.
 function armPole(pose,arm,root){
- const inv=qinv(pose[root].q),d=unit(rotate(inv,sub(pose[arm[2]].p,pose[arm[0]].p)));
+ const inv=qinv(pose[root].q),line=sub(pose[arm[2]].p,pose[arm[0]].p);
+ const d=unit(rotate(inv,len(line)>1e-8?line:sub(pose[arm[1]].p,pose[arm[0]].p)));
  let p=rotate(inv,sub(pose[arm[1]].p,pose[arm[0]].p));p=sub(p,mul(d,R.dot(p,d)));
  for(const axis of [[0,1,0],[0,0,1]])if(len(p)<1e-7){p=rotate(qm(inv,pose[arm[0]].q),axis);p=sub(p,mul(d,R.dot(p,d)));}
  return {d,p:unit(p)};
 }
 const bendAngle=(a,b,d)=>Math.atan2(R.dot(d,R.cross(a,b)),R.dot(a,b));
 const carryPole=(pole,d)=>rotate(fromTo(pole.d,d),pole.p);
+const continueAngle=(angle,reference)=>angle+2*Math.PI*Math.floor((reference-angle)/(2*Math.PI)+.5);
+// Preparation appends chronological keys. Playback only reads the enclosing
+// keys: backward scrubbing must not change which turn either angle follows.
+function angleReference(keys,time){
+ let lo=0,hi=keys.length-1;
+ if(time>=keys[hi].time)return keys[hi];
+ while(hi-lo>1){const mid=(lo+hi)>>1;if(keys[mid].time<=time)lo=mid;else hi=mid;}
+ const a=keys[lo],b=keys[hi],u=Math.max(0,(time-a.time)/Math.max(1e-12,b.time-a.time));
+ return {goal:a.goal+(b.goal-a.goal)*u,blend:a.blend+(b.blend-a.blend)*u};
+}
 function captureIK(pose,base,arm,root,elapsed){
  const relative=ps=>arm.map(j=>({p:rotate(qinv(ps[root].q),sub(ps[j].p,ps[root].p)),q:unit(qm(qinv(ps[root].q),ps[j].q))}));
  return {elapsed,pose:relative(pose),base:relative(base)};
@@ -93,6 +171,8 @@ function anchorIK(seed,current,start){
  const at=key=>current[key].map((v,j)=>({p:R.add(prior[key][j].p,mul(sub(v.p,prior[key][j].p),u)),q:R.qslerp(prior[key][j].q,v.q,u)}));
  const pose=at('pose'),base=at('base'),root={p:[0,0,0],q:[0,0,0,1]};
  seed.anchor={point:pose[2].p,pole:armPole([...pose,root],[0,1,2],3),basePole:armPole([...base,root],[0,1,2],3)};
+ const {pole,basePole}=seed.anchor;
+ seed.angles=[{time:start,goal:bendAngle(pole.p,carryPole(basePole,pole.d),pole.d),blend:0}];
  seed.previous=null;
 }
 function returnProgress(ret,elapsed){
@@ -121,14 +201,21 @@ function applyArmIK(returnModel,base,elapsed,pose,solve){
  const progress=Math.max(0,Math.min(1,(returnProgress(returnModel,elapsed)-p0)/Math.max(1e-12,1-p0)));
  const toRoot=p=>rotate(qinv(base[root].q),sub(p,base[root].p));
  const path=R.add(base[root].p,rotate(base[root].q,R.add(anchor.point,mul(sub(toRoot(base[arm[2]].p),anchor.point),progress))));
- const target=R.add(pose[arm[2]].p,mul(sub(path,pose[arm[2]].p),weight));
+ let target=R.add(pose[arm[2]].p,mul(sub(path,pose[arm[2]].p),weight));
+ if(len(sub(target,pose[arm[0]].p))<1e-8){
+  const direction=rotate(base[root].q,armPole(pose,arm,root).d);
+  const minimum=Math.abs(len(sub(pose[arm[1]].p,pose[arm[0]].p))-len(sub(pose[arm[2]].p,pose[arm[1]].p)))+.001;
+  target=R.add(pose[arm[0]].p,mul(direction,minimum));
+ }
  const direction=unit(rotate(qinv(base[root].q),sub(target,pose[arm[0]].p)));
  const initial=carryPole(anchor.pole,direction),idle=carryPole(armPole(base,arm,root),direction);
- const reference=bendAngle(initial,carryPole(anchor.basePole,direction),direction);
- const delta=bendAngle(initial,idle,direction),angle=delta+2*Math.PI*Math.round((reference-delta)/(2*Math.PI));
+ const reference=angleReference(seed.angles,elapsed);
+ const angle=continueAngle(bendAngle(initial,idle,direction),reference.goal);
  const wanted=rotate(R.qexp(mul(direction,angle*progress)),initial);
  const existing=carryPole(armPole(pose,arm,root),direction);
- const pole=rotate(base[root].q,rotate(R.qexp(mul(direction,bendAngle(existing,wanted,direction)*weight)),existing));
+ const blend=continueAngle(bendAngle(existing,wanted,direction),reference.blend);
+ if(elapsed>seed.angles.at(-1).time+1e-10)seed.angles.push({time:elapsed,goal:angle,blend});
+ const pole=rotate(base[root].q,rotate(R.qexp(mul(direction,blend*weight)),existing));
  const out=pose.map(p=>({...p}));
  solve(out,arm,{p:target,q:pose[arm[2]].q},pole);
  // Carry any twist/finger children with their edited parent, preserving locals.
@@ -186,5 +273,5 @@ function applySwordPoint(model,frame,time,compose,grip){
  pose[track.hand]={...pose[track.hand],q:unit(qm(qm(qm(rootQ,q),qinv(rootQ)),pose[track.hand].q))};
  return {...frame,pose,sword:compose(grip(model.setup,frame.scale),pose[track.hand])};
 }
-const api={bones,defaults,sanitize,prepare,sample,applyHandRotation,applyArmIK,armIKWeight,prepareSwordPoint,applySwordPoint,swordPointProgress};if(typeof module!=='undefined')module.exports=api;else root.FKReturn=api;
+const api={continueAngle,bones,defaults,sanitize,prepare,sample,applyHandRotation,applyArmIK,armIKWeight,prepareSwordPoint,applySwordPoint,swordPointProgress};if(typeof module!=='undefined')module.exports=api;else root.FKReturn=api;
 })(globalThis);
