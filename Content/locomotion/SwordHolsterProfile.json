@@ -1,6 +1,6 @@
 {
   "schema": "sword_holster_runtime_v2",
-  "sourceHash": "963932334e6ba39e8ff488f6ebd9801ec782f16a8fa2d5c8b1406fe874cb16fd",
+  "sourceHash": "f2a2206e7f37b8c9fb13f9304648a2366a03f5acbf8456e0f884fe046d74ef0a",
   "parameters": {
     "noCheat": true,
     "leewayPhase": false,
@@ -56,7 +56,7 @@
     "maxReachRotationSpeed": 600,
     "maxAttachedSpeed": 150,
     "maxAttachedRotationSpeed": 200,
-    "slidingSpeed": 170,
+    "slidingSpeed": 230,
     "shrinkPercent": 25,
     "shrinkDuration": 0.25,
     "unshrinkDuration": 0.5,
@@ -230,8 +230,8 @@
     ],
     "sheatheSlideCurve": [
       [
-        0.14047903344255855,
-        0.13958743261164513
+        0.15053891961839325,
+        0.0988776276854313
       ],
       [
         0.650179602563385,
@@ -338,7 +338,7 @@
       "swordRelativeSlidePole": true,
       "maxReachSpeed": 230,
       "maxReachRotationSpeed": 600,
-      "slidingSpeed": 170
+      "slidingSpeed": 230
     },
     "bodyReference": {
       "spine": [

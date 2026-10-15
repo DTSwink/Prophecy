@@ -1,8 +1,12 @@
 # Prophecy — current handoff
 
-Updated **October 15, 2026**, at the user-requested D/S Git checkpoint. Read this first after a context reset. Current sections override dated history; history is evidence, not a to-do list.
+Updated **October 15, 2026**, at the temporary final D/S checkpoint. Read this first after a context reset. Current sections override dated history; history is evidence, not a to-do list.
 
 ## Resume here
+
+**D/S status: TEMPORARY FINAL — accepted by the user October15.** Preserve this lab/Unreal motion and tuning as the current baseline; further D/S changes require a new user request. Git milestone: `ds-temporary-final-2026-10-15` on `codex/standalone-sim`. This is an accepted checkpoint, not a claim that every historical limitation has been eliminated.
+
+- **October15 latest lab slide tuning imported.** S sliding speed170->230cm/s and revised first slide-curve point copied from saved lab; D remains330cm/s/linear. Existing big-node S speed override updated to230 and PoseAgent saved; full graph differs only by that literal. Small editor-only `SetSlideSpeeds` option extends existing pin helper, rejects wired pins, no runtime/layout changes; Live Coding130.94s passed, no restart. Owned240tick current-scene check: all3 S slides18ticks (.30s), all3 D slides13ticks, every captured slide fraction agrees with lab curve within4.93e-10. Runtime JSON otherwise semantically unchanged, lab state untouched. TestNN remains dirty/local, normal DLLs stale. Evidence `Saved/Diagnostics/SlideLabSync20261015/`; included in the temporary final checkpoint.
 
 - **October15 checkpoint/save state.** User accepted current motion after the reported Sim slowdown was not reproduced. Matching current-scene captures: all three D returns take38/39/40ticks respectively in both Sim and Kin; after the first two release ticks simulated hand tracking error remains below.119cm. No motion changes made for that report. Evidence `Saved/Diagnostics/DrawReturnSlow20261015/`. Freshly compiled/saved PoseAgent and A_Sword for the requested Git checkpoint; full graph byte-identical, healthy native reflection. TestNN remains dirty/local; separate training/recovery work and bulk/generated files excluded per backup scope. Editor remains open, no restart/build; normal DLLs still need building before cold launch.
 

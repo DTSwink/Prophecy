@@ -3,7 +3,7 @@
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
   "file_count": 5976,
-  "bytes": 530550572,
+  "bytes": 530553523,
   "files": [
     {
       "path": ".gitattributes",
@@ -4447,9 +4447,9 @@
     },
     {
       "path": "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset",
-      "git_blob": "ac6fa7cf22f88b4a776f3c38baa6f66e26e1486c",
+      "git_blob": "5a582e5c0a04a855c5fb0752dd2c06916a3087f6",
       "bytes": 6230237,
-      "sha256": "ba5be622acbffa75b4d331caa5b0fb5390b73165be84f5688a17b97a57edc8f0"
+      "sha256": "98e57b9ad75ecabc1de372715b0e0283b15f7fa832f01e9ef43d2ea568b1b10b"
     },
     {
       "path": "Content/_mygame/locomotion/L_DoubleReachBallTest.umap",
@@ -5089,9 +5089,9 @@
     },
     {
       "path": "Content/locomotion/SwordHolsterProfile.json",
-      "git_blob": "f892b8612df1f12e8db77da1b9cb06a7b89364d6",
-      "bytes": 7450,
-      "sha256": "9e2dbada90f4daaf8b72818cecf996ec6b8cc2e7a245f44aa348fa3d173ea41b"
+      "git_blob": "0d84cd2cf2f453e00dde1fec0bf9e0bd62c2f162",
+      "bytes": 7449,
+      "sha256": "a1653ecbb9603eb1b009a2433fdd5703355902aaf0f0adefadbfa27490df0718"
     },
     {
       "path": "Content/mybasic.umap",
@@ -6793,9 +6793,9 @@
     },
     {
       "path": "Docs/SwordHolster.md",
-      "git_blob": "376f310772b46189c669a5d5bf6d72c69bfb606e",
-      "bytes": 142875,
-      "sha256": "189f7487d1ee5d350b077d1e2b4f2c82df234526eb61646a4af7bd1c52a04041"
+      "git_blob": "2324fd4faa55dbcdd69ca255d67e630c8eab54d7",
+      "bytes": 144182,
+      "sha256": "6a2862f1821ff5cdb6d1429f454fbf9baf447d9f80aeb16828fa60d12853ae04"
     },
     {
       "path": "Docs/SwordHolsterOvernight20261011.md",
@@ -13117,9 +13117,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "6eebeeb53b0ab57d243d8b657bbfd30b80ebb91e",
-      "bytes": 232034,
-      "sha256": "3b8b0b453b287b284b712e0cf626ff3aaf3f398d01c7e1d2dab250c761cd15b8"
+      "git_blob": "8bb152362dc0252da4c559e87f821f18dd01e2f3",
+      "bytes": 233183,
+      "sha256": "40f52a8c9a1a0289442d42556bcb47869a3e72dc4d84c3635b2fd5d32e4bd03c"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -32725,9 +32725,9 @@
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecySwordHolsterSetup.cpp",
-      "git_blob": "a0c5a65fe0644f591aa573ecdabc14ae8f458ff5",
-      "bytes": 21554,
-      "sha256": "8401db35cd512df5ad3ecc7d56e376b40e9ab74d78c7891f7b743e7cf80cd2c5"
+      "git_blob": "ec7b9d5638551df89e407951c0ed8fd2916e4206",
+      "bytes": 22050,
+      "sha256": "f69852cca690bc0a88f489bd3495273932ba9320c57e000135367b42386228c5"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecySwordTrainingMesh.cpp",

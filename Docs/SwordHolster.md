@@ -1,7 +1,13 @@
 # Procedural sword holster
 
+**Status: TEMPORARY FINAL, user accepted October15, 2026.** Lab and Unreal settings at Git milestone `ds-temporary-final-2026-10-15` are the accepted baseline. Do not revise D/S motion or tuning without a new user request. Existing verification limits below remain applicable.
+
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
+
+## October15 saved slide tuning refresh
+
+Imported current saved lab S sliding speed230cm/s (previous170) and first S slide-curve point(.15053891961839325,.0988776276854313); remaining curve points unchanged. D remains330cm/s with a linear slide curve. Updated existing unlinked Sheathe Sliding Speed literal on the big profile node, preserving every other graph field/link, then saved PoseAgent. Editor helper now supports `Prophecy.Editor.RefreshHolsterGripPins SetSlideSpeeds <draw> <sheathe>` for explicit existing-literal updates; wired values are rejected before mutation, normal missing-pin migration unchanged. Editor-only Live Coding130.94s, no restart or runtime/layout changes.240tick live capture across3agents verifies six slides: S18ticks/.30s, D13ticks/.2167s, all recorded curve fractions within4.93e-10 of the lab evaluator. Lab state and unrelated settings untouched. TestNN remains dirty/local; normal DLLs stale; included in the temporary final checkpoint. Evidence `Saved/Diagnostics/SlideLabSync20261015/`.
 
 ## October15 checkpoint and slowdown check
 

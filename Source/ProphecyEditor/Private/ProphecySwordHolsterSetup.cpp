@@ -80,14 +80,17 @@ static void RefreshGripProfilePins(const TArray<FString>& Args)
  if(Args.Num()==1&&Args[0]==TEXT("SwordDebugFrameCap")){RepairSwordDebugFrameCap();return;}
  if(Args.Num()==1&&Args[0]==TEXT("RemoveSwordTab")){RemoveSwordTabShortcut();return;}
  const bool Migrate=Args.Num()==3&&Args[0]==TEXT("ReturnRanges");
- const bool Speeds=Args.Num()==3&&Args[0]==TEXT("SlideSpeeds");
+ const bool UpdateSpeeds=Args.Num()==3&&Args[0]==TEXT("SetSlideSpeeds");
+ const bool Speeds=UpdateSpeeds||(Args.Num()==3&&Args[0]==TEXT("SlideSpeeds"));
  double Ends[2]={1,1};
  if(Migrate||Speeds)for(int I=0;I<2;++I){if(!LexTryParseString(Ends[I],*Args[I+1])||!FMath::IsFinite(Ends[I])||(Speeds?Ends[I]<=0:Ends[I]<.5||Ends[I]>1))return;}
  auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));if(!BP)return;
  TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);TArray<UK2Node_CallFunction*> Nodes;
  for(auto* G:Graphs)for(UEdGraphNode* N:G->Nodes)if(auto* C=Cast<UK2Node_CallFunction>(N))
-  if(C->FunctionReference.GetMemberName()==TEXT("SetSwordHolsterProfile")&&(Speeds?(!C->FindPin(TEXT("DrawSlidingSpeed"))||!C->FindPin(TEXT("SheatheSlidingSpeed"))):(Migrate||!C->FindPin(TEXT("DrawNNBlendRange")))))Nodes.Add(C);
+  if(C->FunctionReference.GetMemberName()==TEXT("SetSwordHolsterProfile")&&(Speeds?(UpdateSpeeds||!C->FindPin(TEXT("DrawSlidingSpeed"))||!C->FindPin(TEXT("SheatheSlidingSpeed"))):(Migrate||!C->FindPin(TEXT("DrawNNBlendRange")))))Nodes.Add(C);
  if(Nodes.IsEmpty())return;
+ if(UpdateSpeeds)for(auto* N:Nodes)for(const TCHAR* Name:{TEXT("DrawSlidingSpeed"),TEXT("SheatheSlidingSpeed")})
+  if(const auto* Pin=N->FindPin(Name))if(!Pin->LinkedTo.IsEmpty()){UE_LOG(LogTemp,Error,TEXT("Slide speed update requires unlinked literals; nothing changed."));return;}
  if(!Speeds)for(auto* N:Nodes)for(const TCHAR* Name:{TEXT("FKReturnCutoff"),TEXT("SheatheFKReturnCutoff"),TEXT("DrawNNBlendRange"),TEXT("SheatheNNBlendRange")})
   if(const auto* Pin=N->FindPin(Name))if(!Pin->LinkedTo.IsEmpty()){UE_LOG(LogTemp,Error,TEXT("Return range migration requires unlinked literals; nothing changed."));return;}
  const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","HolsterProfilePins","Refresh sword holster profile pins"));BP->Modify();
@@ -95,15 +98,15 @@ static void RefreshGripProfilePins(const TArray<FString>& Args)
   const TCHAR* SpeedNames[]={TEXT("DrawSlidingSpeed"),TEXT("SheatheSlidingSpeed")};
   const bool HadSpeed[]={N->FindPin(SpeedNames[0])!=nullptr,N->FindPin(SpeedNames[1])!=nullptr};
   if(!Speeds)for(const TCHAR* Name:{TEXT("FKReturnCutoff"),TEXT("SheatheFKReturnCutoff")})if(auto* Pin=N->FindPin(Name))N->RemovePin(Pin);
-  N->ReconstructNode();
-  if(Speeds)for(int I=0;I<2;++I)if(!HadSpeed[I])if(auto* Pin=N->FindPin(SpeedNames[I]))N->GetSchema()->TrySetDefaultValue(*Pin,FString::SanitizeFloat(Ends[I]));
+  if(!UpdateSpeeds||!HadSpeed[0]||!HadSpeed[1])N->ReconstructNode();
+  if(Speeds)for(int I=0;I<2;++I)if(UpdateSpeeds||!HadSpeed[I])if(auto* Pin=N->FindPin(SpeedNames[I]))N->GetSchema()->TrySetDefaultValue(*Pin,FString::SanitizeFloat(Ends[I]));
   if(Migrate){const TCHAR* Names[]={TEXT("DrawNNBlendRange"),TEXT("SheatheNNBlendRange")};
    for(int I=0;I<2;++I)if(auto* Pin=N->FindPin(Names[I]))N->GetSchema()->TrySetDefaultValue(*Pin,FString::Printf(TEXT("(X=0.500000,Y=%.6f)"),Ends[I]));}
  }
  FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
  UE_LOG(LogTemp,Display,TEXT("Refreshed %d existing holster profile nodes; not saved."),Nodes.Num());
 }
-static FAutoConsoleCommand GripProfilePins(TEXT("Prophecy.Editor.RefreshHolsterGripPins"),TEXT("Refresh profile pins; ReturnRanges <draw-end> <sheathe-end> migrates unlinked cutoffs. SlideSpeeds <draw> <sheathe> initializes only missing speed pins. No save."),FConsoleCommandWithArgsDelegate::CreateStatic(&RefreshGripProfilePins));
+static FAutoConsoleCommand GripProfilePins(TEXT("Prophecy.Editor.RefreshHolsterGripPins"),TEXT("Refresh profile pins; ReturnRanges <draw-end> <sheathe-end> migrates unlinked cutoffs. SlideSpeeds <draw> <sheathe> initializes only missing speed pins; SetSlideSpeeds updates existing unlinked literals. No save."),FConsoleCommandWithArgsDelegate::CreateStatic(&RefreshGripProfilePins));
 // Explicit editor operation for the user's temporary, non-physical pelvis mount.
 // If the obsolete joint still exists, retain its settings but remove its endpoints.
 static void MountRigidHolster()
