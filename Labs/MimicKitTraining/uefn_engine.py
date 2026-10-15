@@ -41,7 +41,7 @@ class UefnNewtonEngine(NewtonEngine):
     def _build_solver(self):
         if self._zero_joint_armature:
             self._sim_model.joint_armature.zero_()
-        super()._build_solver()
+        self._build_base_solver()
         if self._zero_joint_armature:
             assert not np.any(self._solver.mj_model.dof_armature)
             assert not np.any(self._solver.mjw_model.dof_armature.numpy())
@@ -79,6 +79,9 @@ class UefnNewtonEngine(NewtonEngine):
         self._drag_first=wp.array(first,dtype=wp.vec3,device=self._device)
         self._drag_second=wp.array(second,dtype=wp.mat33,device=self._device)
         assert self._solver.mj_model.opt.density==0 and self._solver.mj_model.opt.viscosity==0
+
+    def _build_base_solver(self):
+        super()._build_solver()
 
     def _pre_sim_step(self,raw_state,control):
         self._body_velocity.update(raw_state)

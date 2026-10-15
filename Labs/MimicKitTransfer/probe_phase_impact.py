@@ -14,17 +14,19 @@ sys.path.insert(0,str(ROOT/'Labs/MimicKitUEFN'))
 from runtime import install_limits
 
 
-def main(cases=None):
+def main(cases=None,zero_velocity=False,frequency=240,accurate=False,instantaneous=False):
     out=probe.OUT/'causal_transfer'
     with np.load(out/'body_velocity_engine_cpu_phase0.5625.npz') as z:data={k:z[k] for k in z.files}
     steps=np.arange(8,32);states=data['subin'][steps]
+    if zero_velocity:
+        states=states.copy();states[:,:,7:]=0.
     commands=data['actions'][steps//8,0].clip(-2*np.pi,2*np.pi)
     native_probe.fixture_path=probe.OUT/'point-contact/profile/fixture.exe'
     report=[];traces={}
     wp.init();wp.set_device('cuda:0')
     for case in (cases or ('full','no_contact','no_friction','sequential')):
         m=mujoco.MjModel.from_binary_path(str(out/'sequential_model.mjb'))
-        m.opt.timestep=1/240;m.opt.jacobian=mujoco.mjtJacobian.mjJAC_DENSE
+        m.opt.timestep=1/frequency;m.opt.jacobian=mujoco.mjtJacobian.mjJAC_DENSE
         if case=='no_contact':m.opt.disableflags|=int(mujoco.mjtDisableBit.mjDSBL_CONTACT)
         if case=='no_friction':m.geom_condim[:]=1
         if case=='no_limits':m.opt.disableflags|=int(mujoco.mjtDisableBit.mjDSBL_LIMIT)
@@ -39,17 +41,35 @@ def main(cases=None):
             custom.install()
         q,v=zip(*(encode(m,s) for s in states));ctrl=np.zeros((len(steps),m.nu),np.float32);ctrl[:,motor.ids]=commands
         wd.qpos.assign(np.asarray(q,np.float32));wd.qvel.assign(np.asarray(v,np.float32));wd.ctrl.assign(ctrl)
-        wd.xfrc_applied.assign(data['forces'][steps].astype(np.float32))
+        wd.xfrc_applied.assign(np.zeros_like(data['forces'][steps],dtype=np.float32) if zero_velocity else data['forces'][steps].astype(np.float32))
+        if instantaneous:
+            # Diagnostic only: isolate reduced-coordinate curvature acceleration
+            # from the instantaneous body-velocity impulse solve used by Jolt.
+            # This is NOT an engine fix and must not feed a training policy.
+            extra=[]
+            for qa,va,state in zip(q,v,states):
+                cpu=mujoco.MjData(m);cpu.qpos[:]=qa;cpu.qvel[:]=va;mujoco.mj_forward(m,cpu)
+                dynamic=cpu.qfrc_bias.copy();gyro=np.zeros(m.nv)
+                for body in range(1,m.nbody):
+                    index=next(i for i,name in enumerate(names) if m.body(body).name.endswith(name))
+                    rotation=cpu.ximat[body].reshape(3,3);inertia=rotation@np.diag(m.body_inertia[body])@rotation.T
+                    omega=state[index,10:];torque=np.cross(omega,inertia@omega)
+                    jp=np.zeros((3,m.nv));jr=jp.copy();mujoco.mj_jacBodyCom(m,cpu,jp,jr,body)
+                    gyro+=jr.T@torque
+                cpu.qvel[:]=0;mujoco.mj_forward(m,cpu)
+                extra.append(dynamic-cpu.qfrc_bias-gyro)
+            wd.qfrc_applied.assign(np.array(extra,np.float32))
         mjw.step(wm,wd)
         if custom:np.testing.assert_array_equal(custom.error.numpy(),0)
-        qp=wd.qpos.numpy();qv=wd.qvel.numpy();pred=[]
+        qp=wd.qpos.numpy();qv=wd.qvel.numpy();pred=[];preframe=[]
         for i in range(len(steps)):
             d=mujoco.MjData(m);d.qpos[:]=qp[i];d.qvel[:]=qv[i];pred.append(decode(m,d))
+            d.qpos[:]=q[i];preframe.append(decode(m,d))
         pred=np.array(pred);assert np.isfinite(pred).all()
         for key in list(os.environ):
             if key.startswith('TRANSFER_'):del os.environ[key]
         os.environ.update(TRANSFER_TRAINING_CONTACT='1',TRANSFER_FRICTIONLESS_SELF='1',TRANSFER_SUBSTEPS='1',
-            TRANSFER_RIG_VELOCITY_STEPS='100',TRANSFER_RIG_POSITION_STEPS='20')
+            TRANSFER_RIG_VELOCITY_STEPS='255' if zero_velocity or accurate else '100',TRANSFER_RIG_POSITION_STEPS='20',TRANSFER_DT=str(1/frequency))
         if case=='no_contact':os.environ['TRANSFER_NO_CONTACT']='1'
         if case=='no_friction':os.environ['TRANSFER_FRICTION']='0'
         if case=='no_limits':os.environ['TRANSFER_NO_LIMITS']='1'
@@ -63,14 +83,19 @@ def main(cases=None):
         rows=[dict(step=int(steps[i]),max_angvel_error=float(error[i].max()),worst_body=names[int(error[i].argmax())],
             right_foot_error=float(error[i,names.index('right_foot')]),native_normal_impulse_ns=float(np.sum(impulses[i]))) for i in range(len(steps))]
         entry=dict(case=case,max_angvel_error=float(error.max()),motor_defect_nm=float(motor.stats.numpy()[:,0].max()),rows=rows)
+        entry['incoming_pose_angvel_error']=float(np.linalg.norm(np.array(preframe)[:,:,10:]-native[:,:,10:],axis=-1).max())
         if case=='full':entry['reference_reproduction_max_velocity_error']=float(abs(pred[:,:,7:]-data['subout'][steps,:,7:]).max())
         report.append(entry);traces[case+'_mj']=pred;traces[case+'_jolt']=native
         print(json.dumps(entry),flush=True)
         if custom:custom.restore()
         motor.restore()
     label='phase9_impact'+('_jolt_axes' if cases==('manifolds','jolt_axes') else '_block' if cases==('block',) else '_limits' if cases else '')
+    if zero_velocity:label+='_zero_velocity'
+    if accurate:label+='_accurate'
+    if frequency!=240:label+='_dt'+str(frequency)
+    if instantaneous:label+='_instantaneous'
     (out/(label+'.json')).write_text(json.dumps(report,indent=2))
     np.savez_compressed(out/(label+'.npz'),steps=steps,**traces)
 
 
-if __name__=='__main__':main(('manifolds','jolt_axes') if '--jolt-axes' in sys.argv else ('block',) if '--block' in sys.argv else ('hard_limits','no_limits') if '--limits' in sys.argv else None)
+if __name__=='__main__':main(('manifolds','jolt_axes') if '--jolt-axes' in sys.argv else ('block',) if '--block' in sys.argv else ('hard_limits','no_limits') if '--limits' in sys.argv else None,'--zero-velocity' in sys.argv,480 if '--half-dt' in sys.argv else 240,'--accurate' in sys.argv,'--instantaneous' in sys.argv)

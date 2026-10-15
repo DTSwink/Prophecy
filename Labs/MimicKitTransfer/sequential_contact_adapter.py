@@ -143,12 +143,14 @@ def finish(p: ContactProblem, qvel: wp.array2d(dtype=float), qacc: wp.array2d(dt
 
 
 class SequentialContactAdapter:
-    def __init__(self, model, data, cpu_model, motor, iterations=100, allow_soft_limits=False, relaxation=1., hard_limit_control=False, block_motors=False, manifolds=False, jolt_limit_axes=False):
+    def __init__(self, model, data, cpu_model, motor, iterations=100, allow_soft_limits=False, relaxation=1., hard_limit_control=False, block_motors=False, manifolds=False, jolt_limit_axes=False, seed_iterations=50):
         assert not model.is_sparse, 'Prototype uses existing dense inertia factor'
         flags=int(types.DisableBit.LIMIT)|int(types.DisableBit.EQUALITY)
         assert allow_soft_limits or model.opt.disableflags&flags==flags, 'Limits require explicit diagnostic opt-in'
         assert cpu_model.neq==0 and cpu_model.ntendon==0
         self.model=model; self.data=data; self.motor=motor; self.iterations=iterations
+        assert seed_iterations>=0
+        self.seed_iterations=seed_iterations
         self.allow_soft_limits=allow_soft_limits
         assert not hard_limit_control or allow_soft_limits
         self.hard_limit_control=hard_limit_control
@@ -171,6 +173,7 @@ class SequentialContactAdapter:
         p.limit_diagonal=zero((n,nl));p.limit_target=zero((n,nl));p.limit_compliance=zero((n,nl))
         p.limit_bilateral=zero((n,nl),int);p.limit_impulse=zero((n,nl));self.limitrows=zero((n,nl),int)
         self.p=p; self.capacity=nc; self.error=zero(n,int); self.rowmap=zero((n,nc,3),int)
+        p.solver_error=self.error;p.fallback_count=zero(n,int);p.fallback_steps=zero(n,int)
         self.contactids=zero((n,nc),int)
         if manifolds:
             from contact_manifolds_gpu import allocate
@@ -183,6 +186,7 @@ class SequentialContactAdapter:
         if block_motors:
             from block_contact_gpu import make_block_iteration
             self.block_kernel=make_block_iteration(nv,p.nmotor)
+            self.fallback_kernel=make_tiled_iteration(nv,p.nmotor,fallback=True)
         self.installed=False
 
     def solve(self,m,d):
@@ -216,8 +220,9 @@ class SequentialContactAdapter:
             wp.launch(replace_point_friction,dim=(d.nworld,self.capacity,p.nv),inputs=[p.manifold,p.ncontact,p.friction,p.J,p.diagonal],device=dev)
             wp.launch(prepare_response,dim=(d.nworld,self.capacity,3,p.nv),inputs=[p],device=dev)
         if self.block_motors:
-            wp.launch_tiled(self.iterate_kernel,dim=d.nworld,inputs=[p,50],block_dim=32,device=dev)
+            wp.launch_tiled(self.iterate_kernel,dim=d.nworld,inputs=[p,self.seed_iterations],block_dim=32,device=dev)
             wp.launch_tiled(self.block_kernel,dim=d.nworld,inputs=[p,d.qM,self.identity,self.iterations,self.error],block_dim=32,device=dev)
+            wp.launch_tiled(self.fallback_kernel,dim=d.nworld,inputs=[p,3000],block_dim=32,device=dev)
         else:
             wp.launch_tiled(self.iterate_kernel,dim=d.nworld,inputs=[p,self.iterations],block_dim=32,device=dev)
         wp.launch(finish,dim=(d.nworld,p.nv),inputs=[p,d.qvel,d.qacc,d.qM,d.qfrc_constraint,d.efc.force,self.motor.rows.rowids,self.rowmap,self.limitrows,self.error],device=dev)

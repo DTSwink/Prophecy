@@ -15,6 +15,8 @@ def make_block_iteration(nv,nmotor):
         # A short scalar solve supplies only the active-set estimate. Momentum
         # still comes from the original free velocity, never this estimate.
         v=wp.tile_load(p.velocity,shape=(1,nv),offset=(w,0),storage='shared')
+        guess=wp.tile_zeros(shape=(1,nv),dtype=float,storage='shared')
+        wp.tile_assign(guess,v)
         free_velocity=wp.tile_load(p.free,shape=(1,nv),offset=(w,0))
         M=wp.tile_load(mass[w],shape=(nv,nv),storage='shared')
         momentum=wp.tile_matmul(free_velocity,M)
@@ -26,14 +28,16 @@ def make_block_iteration(nv,nmotor):
         if p.manifold.enabled:
             for g in range(p.manifold.count[w]):p.manifold.impulse[w,g,2]=0.
         converged=bool(False)
-        for outer in range(12):
+        # Usually one or two branches suffice. Near a torque boundary the
+        # damped estimate can need more; retain an explicit bounded failure.
+        for outer in range(60):
             effective=wp.tile_zeros(shape=(nv,nv),dtype=float,storage='shared')
             wp.tile_assign(effective,M)
             rhs=wp.tile_zeros(shape=(1,nv),dtype=float,storage='shared')
             wp.tile_assign(rhs,momentum)
             for a in range(nmotor):
                 dof=p.dofs[a];cap=dt*p.caps[a]
-                request=dt*p.gains[a]*(p.commands[w,a]-wp.tile_extract(v,0,dof))
+                request=dt*p.gains[a]*(p.commands[w,a]-wp.tile_extract(guess,0,dof))
                 status=int(0)
                 if request>cap:status=1
                 elif request< -cap:status=-1
@@ -124,7 +128,12 @@ def make_block_iteration(nv,nmotor):
             if not changed:
                 converged=True
                 break
+            # Dampen only the branch-selection estimate. An undamped Newton
+            # step can alternate between opposite torque caps forever. The
+            # accepted velocity is still the full solution of the original
+            # equations, never an average or a damped physical state.
+            wp.tile_assign(guess,(guess+v)*.5)
         velocity_out=p.velocity
         wp.tile_store(velocity_out,v,offset=(w,0))
-        if not converged:error[w]=5
+        if not converged and error[w]==0:error[w]=5
     return solve

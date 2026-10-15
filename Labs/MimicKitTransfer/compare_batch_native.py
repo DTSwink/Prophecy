@@ -9,7 +9,10 @@ from scipy.spatial.transform import Rotation as R
 from native_probe import Native,actor,observation,keys,offsets
 
 
-def main(label,frictionless_self=False,no_limits=False,high_iterations=False,rig_iterations=None,tag=''):
+def main(label,frictionless_self=False,no_limits=False,high_iterations=False,rig_iterations=None,tag='',checkpoint_path=None):
+    if checkpoint_path:
+        from native_probe import load_actor
+        load_actor(checkpoint_path)
     assert not tag or tag in ('point','baseline')
     folder=probe.OUT/'causal_transfer'
     # NpzFile decompresses an entire member on each lookup. Materialize once;

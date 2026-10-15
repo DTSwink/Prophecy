@@ -38,6 +38,9 @@ class ContactProblem:
     limit_compliance: wp.array2d(dtype=float)
     limit_bilateral: wp.array2d(dtype=int)
     limit_impulse: wp.array2d(dtype=float)
+    solver_error: wp.array(dtype=int)
+    fallback_count: wp.array(dtype=int)
+    fallback_steps: wp.array(dtype=int)
 
 
 @wp.kernel(enable_backward=False)
@@ -156,6 +159,10 @@ def multiply(a: float,b: float): return a*b
 
 
 @wp.func
+def absolute(a:float):return wp.abs(a)
+
+
+@wp.func
 def friction_bound(p:ContactProblem,w:int,c:int):
     normal=p.contact_impulse[w,c,0];spin=float(0.)
     if p.manifold.enabled:
@@ -167,19 +174,39 @@ def friction_bound(p:ContactProblem,w:int,c:int):
     return p.friction[w,c]*wp.vec2(normal,spin)
 
 
-def make_tiled_iteration(nv,nmotor):
+def make_tiled_iteration(nv,nmotor,fallback=False):
     @wp.kernel(module='unique',enable_backward=False)
     def tiled(p: ContactProblem, iterations: int):
-        w=wp.tid(); dt=p.dt[0]
+        w,lane=wp.tid(); dt=p.dt[0]
+        if wp.static(fallback):
+            if p.solver_error[w]!=5:return
+            if lane==0:p.fallback_count[w]+=1
         v=wp.tile_load(p.free,shape=(1,nv),offset=(w,0),storage='shared')
         inverse=wp.tile_load(p.inv[w],shape=(nv,nv),storage='shared')
+        if wp.static(fallback):
+            # Block elimination stores effective responses. Restore the original
+            # physical mass responses for this world's scalar solve only.
+            for c in range(p.ncontact[w]):
+                for a in range(3):
+                    jac=wp.tile_reshape(wp.tile_load(p.J[w,c,a],shape=(nv,)),shape=(1,nv))
+                    wp.tile_store(p.response[w,c,a],wp.tile_reshape(wp.tile_matmul(jac,inverse),shape=(nv,)))
+            for c in range(p.nlimit[w]):
+                jac=wp.tile_reshape(wp.tile_load(p.limit_J[w,c],shape=(nv,)),shape=(1,nv))
+                wp.tile_store(p.limit_response[w,c],wp.tile_reshape(wp.tile_matmul(jac,inverse),shape=(nv,)))
+            if p.manifold.enabled:
+                for g in range(p.manifold.count[w]):
+                    jac=wp.tile_reshape(wp.tile_load(p.manifold.J[w,g,2],shape=(nv,)),shape=(1,nv))
+                    wp.tile_store(p.manifold.response[w,g,2],wp.tile_reshape(wp.tile_matmul(jac,inverse),shape=(nv,)))
         impulses=wp.tile_zeros(shape=(1,nmotor),dtype=float,storage='shared')
+        previous=wp.tile_zeros(shape=(1,nv),dtype=float,storage='shared')
+        converged=bool(False)
         for c in range(p.ncontact[w]):
             for a in range(3): p.contact_impulse[w,c,a]=0.
         for c in range(p.nlimit[w]): p.limit_impulse[w,c]=0.
         if p.manifold.enabled:
             for g in range(p.manifold.count[w]):p.manifold.impulse[w,g,2]=0.
         for it in range(iterations):
+            if wp.static(fallback):wp.tile_assign(previous,v)
             for a in range(p.nmotor):
                 dof=p.dofs[a]; compliance=1./(dt*p.gains[a]); old=wp.tile_extract(impulses,0,a)
                 speed=wp.tile_extract(v,0,dof)
@@ -228,6 +255,18 @@ def make_tiled_iteration(nv,nmotor):
                 normal=old+p.relaxation*(normal-old)
                 rn=wp.tile_reshape(wp.tile_load(p.response[w,c,0],shape=(nv,)),shape=(1,nv)); wp.tile_assign(v,v+rn*(normal-old))
                 p.contact_impulse[w,c,0]=normal
+            if wp.static(fallback):
+                if it%16==15:
+                    change=wp.tile_extract(wp.tile_max(wp.tile_map(absolute,v-previous)),0)
+                    residual=float(0.)
+                    for a in range(nmotor):
+                        speed=wp.tile_extract(v,0,p.dofs[a])
+                        expected=wp.clamp(p.gains[a]*(p.commands[w,a]-speed),-p.caps[a],p.caps[a])
+                        residual=wp.max(residual,wp.abs(wp.tile_extract(impulses,0,a)/dt-expected))
+                    if change<2e-6 and residual<.002:
+                        converged=True
+                        if lane==0:p.fallback_steps[w]+=it+1
+                        break
         velocity_out=p.velocity
         wp.tile_store(velocity_out,v,offset=(w,0))
         motor_out=p.motor_impulse
@@ -238,6 +277,11 @@ def make_tiled_iteration(nv,nmotor):
             expected=wp.clamp(p.gains[a]*(p.commands[w,a]-speed),-p.caps[a],p.caps[a])
             defect=wp.max(defect,wp.abs(p.motor_impulse[w,a]/dt-expected))
         p.stats[w,0]=defect
+        if wp.static(fallback):
+            if converged:p.solver_error[w]=0
+            else:
+                p.solver_error[w]=6
+                if lane==0:p.fallback_steps[w]+=iterations
     return tiled
 
 

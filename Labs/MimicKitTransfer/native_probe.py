@@ -30,6 +30,12 @@ class SpaceOnly:
 model=OmniPPOModel(yaml.safe_load((OUT/'checkpoint/agent_config.yaml').read_text())['model'],SpaceOnly())
 checkpoint=torch.load(OUT/'checkpoint/model.pt',map_location='cpu',weights_only=False)
 model.load_state_dict({k[len('_model.'):]:v for k,v in checkpoint.items() if k.startswith('_model.')});model.eval()
+
+def load_actor(path):
+    global checkpoint
+    checkpoint=torch.load(path,map_location='cpu',weights_only=True)
+    model.load_state_dict({k[len('_model.'):]:v for k,v in checkpoint.items() if k.startswith('_model.')})
+    model.eval()
 def actor(obs):
     obs=torch.as_tensor(obs,dtype=torch.float32).reshape(1,151)
     with torch.no_grad():

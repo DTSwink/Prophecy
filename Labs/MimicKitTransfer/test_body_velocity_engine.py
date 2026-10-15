@@ -8,7 +8,15 @@ import numpy as np, torch, warp as wp, yaml, mujoco
 from probe_sequential_contacts import decode
 
 
-def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, trace_phase=None, hard_project=False, block=False, tiled_project=False, shared_project=False, manifolds=False, jolt_axes=False,debug_solver=False):
+@wp.kernel(enable_backward=False)
+def mark_first_failure(error:wp.array(dtype=int),seen:wp.array(dtype=int),condition:wp.array(dtype=int)):
+    condition[0]=0
+    if seen[0]==0:
+        for w in range(error.shape[0]):
+            if error[w]!=0:condition[0]=1;seen[0]=1
+
+
+def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, trace_phase=None, hard_project=False, block=False, tiled_project=False, shared_project=False, manifolds=False, jolt_axes=False,debug_solver=False,capture_first=False):
     assert worlds>=4
     assert not block or contact_trial
     assert not tiled_project or hard_project
@@ -44,8 +52,29 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, t
                 s=self._solver
                 self._trial_contact=SequentialContactAdapter(s.mjw_model,s.mjw_data,s.mj_model,
                     self._uefn_motors,iterations=100 if block else (1000 if relaxed else 100),allow_soft_limits=True,
-                    relaxation=.5 if relaxed else 1.,hard_limit_control=hard_project,block_motors=block,manifolds=manifolds,jolt_limit_axes=jolt_axes)
+                    relaxation=.5 if relaxed else 1.,hard_limit_control=hard_project,block_motors=block,manifolds=manifolds,jolt_limit_axes=jolt_axes,
+                    seed_iterations=0 if '--zero-seed' in sys.argv else 50)
                 self._trial_contact.install()
+                if capture_first:
+                    custom=self._trial_contact;solve_before_capture=custom.solve
+                    fields=('inv','free','commands','J','diagonal','ncontact','nlimit','limit_J',
+                        'limit_diagonal','limit_target','limit_compliance','limit_bilateral','friction',
+                        'velocity','motor_impulse','contact_impulse','limit_impulse','stats','dofs','gains','caps','dt')
+                    source={name:getattr(custom.p,name) for name in fields}
+                    if custom.p.manifold.enabled:
+                        for name in ('count','group','size','radius','J','diagonal','impulse'):
+                            source['manifold_'+name]=getattr(custom.p.manifold,name)
+                    source.update(qpos=s.mjw_data.qpos,qvel=s.mjw_data.qvel,mass=s.mjw_data.qM,errors=custom.error)
+                    snapshot={name:wp.empty_like(value) for name,value in source.items()}
+                    self._first_solver_snapshot=snapshot
+                    seen=wp.zeros(1,dtype=int,device=device);condition=wp.zeros(1,dtype=int,device=device)
+                    def save_first():
+                        for name,value in source.items():wp.copy(snapshot[name],value)
+                    def captured_solve(m,d):
+                        solve_before_capture(m,d)
+                        wp.launch(mark_first_failure,dim=1,inputs=[custom.error,seen,condition],device=device)
+                        wp.capture_if(condition,on_true=save_first)
+                    custom.solve=captured_solve
                 if debug_solver:
                     custom=self._trial_contact;solve=custom.solve
                     def exact_failure(m,d):
@@ -167,6 +196,9 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, t
         if contact_trial:
             failure=e._trial_contact.error.numpy()
             if np.any(failure):
+                if capture_first:
+                    np.savez_compressed(probe.OUT/'causal_transfer/contact_first_solver_failure_graph.npz',
+                        **{name:value.numpy() for name,value in e._first_solver_snapshot.items()})
                 p=e._trial_contact.p
                 fields=('inv','free','commands','J','diagonal','ncontact','nlimit','limit_J',
                     'limit_target','limit_compliance','velocity','motor_impulse','contact_impulse','stats')
@@ -208,6 +240,7 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, t
     if shared_project:label+='_shared'
     if manifolds:label+='_manifolds'
     if jolt_axes:label+='_jolt_axes'
+    if '--zero-seed' in sys.argv:label+='_zero_seed'
     if worlds!=4:label+='_worlds'+str(worlds)
     if hard_project and ticks!=90:label+='_ticks'+str(ticks)
     if trace_phase is not None:label+='_phase'+str(trace_phase)
@@ -227,4 +260,4 @@ if __name__ == '__main__': main(sys.argv[1] if len(sys.argv)>1 else 'cpu', int(s
                                float(next(s.split('=')[1] for s in sys.argv if s.startswith('--trace-phase=')))
                                if any(s.startswith('--trace-phase=') for s in sys.argv) else None,
                                '--hard-project' in sys.argv,'--block' in sys.argv,'--tiled-project' in sys.argv,
-                               '--shared-project' in sys.argv,'--manifolds' in sys.argv,'--jolt-axes' in sys.argv,'--debug-solver' in sys.argv)
+                               '--shared-project' in sys.argv,'--manifolds' in sys.argv,'--jolt-axes' in sys.argv,'--debug-solver' in sys.argv,'--capture-first-failure' in sys.argv)

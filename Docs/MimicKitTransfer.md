@@ -4,6 +4,69 @@
 
 ### Active goal — October15 overnight
 
+**Current local run:** `2026-10-16_02-00_transfer_finetune_512`,99 updates after
+one validated smoke update, same3913 model/optimizer/normalizer lineage. No cloud.
+The smoke completed at1,850transitions/s,8.85s/update, and its archive hash is
+`24b3ae3a5261b1582d9b3f4806d7d29907ac3ff00525e4dd532f6193a8fff0a4`.
+The99-update continuation is bounded; evaluate the resulting actor in both MJ
+and native Jolt before any further training. Rolling archive/status under
+`Saved/MimicKitLocal/runs`; TensorBoard8035 reads the matching dated run directory.
+No current local replay published yet; do not claim the viewer shows this actor.
+
+The first noisy512-world attempt rejected one active-set cycle before PPO. Its
+equations are retained in the `01-46_transfer_capture_512` run. Fixed damping is
+not universally sufficient: the saved wrist case still alternates opposite90Nm
+caps. The fast solver now explicitly invokes the existing scalar projected
+equations ONLY for worlds whose active-set search fails. It uses physical mass
+responses, bounded3000 iterations, and requires velocity change<2e-6 plus motor
+residual<2e-3Nm; otherwise error6 remains fatal. No forces, caps or physical
+damping changed. Three captured cases agree with independent float64 references
+within3.69e-5, CUDA capture passes; the noisy case converges in176 scalar sweeps.
+Fallback counters are per world (tile-lane0); the initial counter-only32x overcount
+was caught and fixed. Counts/iteration totals are logged per update. The successful
+smoke itself needed zero fallbacks. No silently accepted invalid solver state.
+
+**October16 latest evidence (backup3195ea30 already pushed; newer work local).**
+The remaining finite-step discrepancy has been isolated. Same24 incoming states,
+Jolt255 velocity/20position iterations, manifold friction and exact Jolt limit
+axes: physical angular difference0.219743rad/s at1/240s; halving the step gives
+0.123586rad/s. At the incoming pose, zero incoming velocity reduces solved
+angular difference to6.215e-4rad/s. Removing only reduced-coordinate curvature
+acceleration in an isolation control reduces that difference to5.668e-4rad/s.
+These controls explain a reduced-versus-maximal-coordinate integration difference;
+they are NOT training modifications. Never feed old-frame velocities or the
+diagnostic compensation force to a policy. `phase9_impact_jolt_axes_accurate*`.
+
+The block motor solver had an actual numerical active-set cycle. Damping ONLY
+the branch-selection estimate (not accepted physical velocity), with a bounded
+60-branch search, solves both captured failures and agrees with independent
+float64 scalar equations within3.69e-5 generalized velocity. One case needed14
+branches, so the former12 limit was insufficient. Final accepted state still
+satisfies the original torque equation. Captured CUDA tests pass. Exact Jolt-axis
+motion test now completes16/16 actual animation starts for300ticks, max23.625cm,
+no solver errors, zero reported motor-equation defect; partial reset/velocity
+Jacobian checks pass. Removing the50-sweep initial estimate then failed in5/16
+worlds on the first tick and was rejected; it is not used for training.
+The zero-seed failure was retained separately. The temporary `..._graph.npz`
+scratch capture overwrote the earlier second failure; its independent CPU/GPU
+reports remain, so do not describe that earlier raw capture as still retained.
+
+`contact_engine.py` is an explicit local experiment using those tested equations;
+ordinary UEFN defaults are unchanged. `train_local.py` restores the verified3913
+archive including optimizer/normalizers/counters, uses stock PPO/rewards/noise,
+checks latched solver errors before optimization, and keeps one rolling verified
+local archive. No cloud calls. A bounded512-world one-update smoke is in progress;
+no longer training segment or fresh omni training has been accepted yet.
+The shared engine gained a base-solver factory hook; default calls the same
+upstream builder. No Jolt library or gameplay changes.
+
+Unreal13040 was closed gracefully for local GPU/RAM headroom. Only our comparison
+PIE ended. Dirty PoseAgent was saved with its previous disk bytes preserved in
+`Saved/MimicKitTransfer/headroom-close`; no other dirty packages existed. Receipt
+records both hashes. The visible comparison remains the older failed motion on
+disk; no updated UE visualization claim. Reopening still requires checking the
+current normal-build state and preserving other branches' source changes.
+
 **October16 latest continuation — direct-reset comparison supersedes the easier
 post-first-step starts below.** The manifold/shared-projection MJ trial completed
 16/16 starts for300ticks, max target24.12cm, body-velocity error6.13e-4. Starting
