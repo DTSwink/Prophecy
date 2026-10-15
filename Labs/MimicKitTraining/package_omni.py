@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[2]
 out=ROOT/'Saved/MimicKitOmni';out.mkdir(exist_ok=True)
 package=out/'package';package.mkdir(exist_ok=True)
 asset=package/'assets/uefn';asset.mkdir(parents=True,exist_ok=True)
-for name in ('humanoid_uefn.xml','limits.json','runtime.py','velocity_motors.py','physics.json'):
+for name in ('humanoid_uefn.xml','limits.json','runtime.py','velocity_motors.py','body_velocity.py','physics.json'):
     shutil.copy2(ROOT/'Labs/MimicKitUEFN'/name,asset/name)
 # The adapter imports its established sibling module by path.
 dep=package/'assets/PhysicalRecoveryLab';dep.mkdir(exist_ok=True)

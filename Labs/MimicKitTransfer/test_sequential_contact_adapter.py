@@ -6,8 +6,25 @@ os.environ['MIMICKIT_TRANSFER_OUT']=str(ROOT/'Saved/MimicKitTransfer/no-armature
 import probe
 import numpy as np, mujoco, mujoco_warp as mjw, warp as wp
 from probe_sequential_contacts import encode
-from sequential_contact_adapter import SequentialContactAdapter
+from sequential_contact_adapter import SequentialContactAdapter, contacts
+from mujoco_warp._src import types as mjtypes
 from coupled_velocity_motors import CoupledVelocityMotors
+
+
+def inactive_contact_test(custom,device):
+    # Nearby candidates can carry stale nonnegative equation addresses. Only
+    # the penetrating point inside the active margin may enter the solver.
+    p=custom.p;p.ncontact.zero_();p.J.zero_();custom.error.zero_()
+    arr=lambda x,dtype=float:wp.array(np.asarray(x),dtype=dtype,device=device)
+    zero=lambda shape:wp.zeros(shape,dtype=int,device=device)
+    wp.launch(contacts,dim=4,inputs=[p,custom.capacity,False,arr([4],int),arr([0,0,0,0],int),
+        arr([3,3,3,1],int),arr([int(mjtypes.ContactType.CONSTRAINT)]*4,int),
+        arr([-.001,.001,-.001,-.002]),arr([0,0,-.002,0]),arr([[0,1,2],[0,0,0],[0,0,0],[1,0,0]],int),
+        arr(np.ones((custom.data.nworld,3,p.nv))),zero((1,3)),zero((1,3)),zero((1,1,3)),
+        arr(np.ones((4,5)),mjtypes.vec5),custom.rowmap,custom.error],device=device)
+    np.testing.assert_array_equal(p.ncontact.numpy(),[2]+[0]*(custom.data.nworld-1))
+    np.testing.assert_array_equal(custom.error.numpy(),0)
+    np.testing.assert_array_equal(np.sort(p.friction.numpy()[0,:2]),[0,1])
 
 
 def main():
@@ -33,6 +50,7 @@ def main():
             wm.uefn_compound_limits=types.SimpleNamespace(equalities=lambda m,d:None,limits=lambda m,d:None)
             motors=CoupledVelocityMotors(wm,wd,m); motors.install()
             custom=SequentialContactAdapter(wm,wd,m,motors); custom.install()
+            inactive_contact_test(custom,device)
             initial=[encode(m,data['subin'][step]) for step in steps]
             q=np.array([v[0] for v in initial],dtype='float32'); v=np.array([v[1] for v in initial],dtype='float32')
             f=np.array([data['forces'][step] for step in steps],dtype='float32')

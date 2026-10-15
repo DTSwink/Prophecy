@@ -51,6 +51,9 @@ class UefnNewtonEngine(NewtonEngine):
         spec=importlib.util.spec_from_file_location('uefn_compound_runtime',folder/'runtime.py')
         module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
         self._uefn_limits=module.install_limits(self._solver.mj_model,self._solver.mjw_model)
+        spec=importlib.util.spec_from_file_location('uefn_body_velocity',folder/'body_velocity.py')
+        velocity_module=importlib.util.module_from_spec(spec);spec.loader.exec_module(velocity_module)
+        self._body_velocity=velocity_module.BodyVelocity(self._solver)
         if self._bounded_velocity_motors:
             spec=importlib.util.spec_from_file_location('uefn_velocity_runtime',folder/'velocity_motors.py')
             motor_module=importlib.util.module_from_spec(spec);spec.loader.exec_module(motor_module)
@@ -78,10 +81,17 @@ class UefnNewtonEngine(NewtonEngine):
         assert self._solver.mj_model.opt.density==0 and self._solver.mj_model.opt.viscosity==0
 
     def _pre_sim_step(self,raw_state,control):
+        self._body_velocity.update(raw_state)
         super()._pre_sim_step(raw_state,control)
         wp.launch(compound_forces,dim=self._sim_model.body_count,
                   inputs=[raw_state.body_q,raw_state.body_qd,self._sim_model.body_inertia,
                           self._drag_coeff,self._drag_first,self._drag_second,raw_state.body_f],device=self._device)
+
+    def _simulate(self):
+        super()._simulate()
+        # Included in the same CUDA graph; rewards and telemetry see the actual
+        # final body velocities, including the last physics substep.
+        self._body_velocity.update(self._sim_state.raw_state)
 
     def _build_dof_force_tensors(self):
         if self._bounded_velocity_motors:

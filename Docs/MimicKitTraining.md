@@ -2,6 +2,16 @@
 
 ## Future UEFN training motor contract — October15
 
+Current UEFN source also reconstructs actual body COM velocities from the Newton
+joint state before drag/gyro forces and after each policy step. This fixes the
+MJ-child-frame versus Newton-parent-frame ball-velocity reporting mismatch,
+including partial reset synchronization. Four captured-GPU10s trials and CPU
+substep/Jacobian checks pass. Physics timestep, gains, torque caps, body properties,
+observations and reward definition are unchanged; their body-velocity inputs are
+now correct. Package builders include `assets/uefn/body_velocity.py` and launch
+checks reject missing/stale adapters. Full MJ/Jolt transfer still fails; local
+training on the full dataset plus idle is deferred until it is verified.
+
 All subsequent UEFN velocity training, fresh or resumed, defaults to the bounded
 end-step motor/contact solve. Gains, torque caps and body inertia are unchanged.
 Current source must be repackaged/deployed; cached older source is rejected before

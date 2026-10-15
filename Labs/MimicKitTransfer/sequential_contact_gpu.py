@@ -11,6 +11,7 @@ import warp as wp
 class ContactProblem:
     nv: int
     nmotor: int
+    relaxation: float
     ncontact: wp.array(dtype=int)
     dt: wp.array(dtype=float)
     inv: wp.array3d(dtype=float)
@@ -19,7 +20,7 @@ class ContactProblem:
     gains: wp.array(dtype=float)
     caps: wp.array(dtype=float)
     commands: wp.array2d(dtype=float)
-    friction: wp.array(dtype=float)
+    friction: wp.array2d(dtype=float)
     J: wp.array4d(dtype=float)
     response: wp.array4d(dtype=float)
     diagonal: wp.array3d(dtype=float)
@@ -27,6 +28,14 @@ class ContactProblem:
     motor_impulse: wp.array2d(dtype=float)
     contact_impulse: wp.array3d(dtype=float)
     stats: wp.array2d(dtype=float)
+    nlimit: wp.array(dtype=int)
+    limit_J: wp.array3d(dtype=float)
+    limit_response: wp.array3d(dtype=float)
+    limit_diagonal: wp.array2d(dtype=float)
+    limit_target: wp.array2d(dtype=float)
+    limit_compliance: wp.array2d(dtype=float)
+    limit_bilateral: wp.array2d(dtype=int)
+    limit_impulse: wp.array2d(dtype=float)
 
 
 @wp.kernel(enable_backward=False)
@@ -48,6 +57,24 @@ def prepare_diagonal(p: ContactProblem):
 
 
 @wp.kernel(enable_backward=False)
+def prepare_limit_response(p: ContactProblem):
+    w,c,i=wp.tid()
+    if c>=p.nlimit[w]: return
+    value=float(0.)
+    for j in range(p.nv): value+=p.inv[w,i,j]*p.limit_J[w,c,j]
+    p.limit_response[w,c,i]=value
+
+
+@wp.kernel(enable_backward=False)
+def prepare_limit_diagonal(p: ContactProblem):
+    w,c=wp.tid()
+    if c>=p.nlimit[w]: return
+    value=float(0.)
+    for j in range(p.nv): value+=p.limit_J[w,c,j]*p.limit_response[w,c,j]
+    p.limit_diagonal[w,c]=value
+
+
+@wp.kernel(enable_backward=False)
 def iterate(p: ContactProblem, iterations: int):
     w=wp.tid(); dt=p.dt[0]
     for j in range(p.nv): p.velocity[w,j]=p.free[w,j]
@@ -61,17 +88,18 @@ def iterate(p: ContactProblem, iterations: int):
             for j in range(p.nv): p.velocity[w,j]+=p.inv[w,j,dof]*(impulse-old)
             p.motor_impulse[w,a]=impulse
         for c in range(p.ncontact[w]):
-            v1=float(0.); v2=float(0.)
-            for j in range(p.nv):
-                v1+=p.J[w,c,1,j]*p.velocity[w,j]
-                v2+=p.J[w,c,2,j]*p.velocity[w,j]
-            old1=p.contact_impulse[w,c,1]; old2=p.contact_impulse[w,c,2]
-            t1=old1-v1/p.diagonal[w,c,1]; t2=old2-v2/p.diagonal[w,c,2]
-            length=wp.sqrt(t1*t1+t2*t2); bound=p.friction[w]*p.contact_impulse[w,c,0]
-            scale=wp.min(1.,bound/wp.max(length,1e-30)); t1*=scale; t2*=scale
-            for j in range(p.nv):
-                p.velocity[w,j]+=p.response[w,c,1,j]*(t1-old1)+p.response[w,c,2,j]*(t2-old2)
-            p.contact_impulse[w,c,1]=t1; p.contact_impulse[w,c,2]=t2
+            if p.friction[w,c]>0.:
+                v1=float(0.); v2=float(0.)
+                for j in range(p.nv):
+                    v1+=p.J[w,c,1,j]*p.velocity[w,j]
+                    v2+=p.J[w,c,2,j]*p.velocity[w,j]
+                old1=p.contact_impulse[w,c,1]; old2=p.contact_impulse[w,c,2]
+                t1=old1-v1/p.diagonal[w,c,1]; t2=old2-v2/p.diagonal[w,c,2]
+                length=wp.sqrt(t1*t1+t2*t2); bound=p.friction[w,c]*p.contact_impulse[w,c,0]
+                scale=wp.min(1.,bound/wp.max(length,1e-30)); t1*=scale; t2*=scale
+                for j in range(p.nv):
+                    p.velocity[w,j]+=p.response[w,c,1,j]*(t1-old1)+p.response[w,c,2,j]*(t2-old2)
+                p.contact_impulse[w,c,1]=t1; p.contact_impulse[w,c,2]=t2
             vn=float(0.)
             for j in range(p.nv): vn+=p.J[w,c,0,j]*p.velocity[w,j]
             old=p.contact_impulse[w,c,0]; normal=wp.max(0.,old-vn/p.diagonal[w,c,0])
@@ -87,7 +115,7 @@ def iterate(p: ContactProblem, iterations: int):
 class SequentialContactProblem:
     def __init__(self, snapshots, device):
         import numpy as np
-        n=len(snapshots); p=ContactProblem(); p.nv=len(snapshots[0]['free']); p.nmotor=len(snapshots[0]['dofs'])
+        n=len(snapshots); p=ContactProblem(); p.nv=len(snapshots[0]['free']); p.nmotor=len(snapshots[0]['dofs']); p.relaxation=1.
         nc=max(1,max(len(s['J']) for s in snapshots)); self.nworld=n; self.capacity=nc
         arr=lambda x,dtype=float: wp.array(np.asarray(x),dtype=dtype,device=device)
         p.ncontact=arr([len(s['J']) for s in snapshots],int)
@@ -97,13 +125,17 @@ class SequentialContactProblem:
             np.testing.assert_array_equal(s['dofs'],snapshots[0]['dofs'])
             np.testing.assert_allclose(s['dt'],snapshots[0]['dt'])
         p.inv=arr([s['inv'] for s in snapshots]); p.free=arr([s['free'] for s in snapshots])
-        p.commands=arr([s['command'] for s in snapshots]); p.friction=arr([s['friction'] for s in snapshots])
+        p.commands=arr([s['command'] for s in snapshots]); p.friction=arr([[s['friction']]*nc for s in snapshots])
         jac=np.zeros((n,nc,3,p.nv),dtype=np.float32)
         for w,s in enumerate(snapshots): jac[w,:len(s['J'])]=s['J']
         p.J=arr(jac)
         zero=lambda shape: wp.zeros(shape,dtype=float,device=device)
         p.response=zero(jac.shape); p.diagonal=zero((n,nc,3)); p.velocity=zero((n,p.nv))
         p.motor_impulse=zero((n,p.nmotor)); p.contact_impulse=zero((n,nc,3)); p.stats=zero((n,1))
+        p.nlimit=wp.zeros(n,dtype=int,device=device)
+        p.limit_J=zero((n,1,p.nv));p.limit_response=zero((n,1,p.nv))
+        p.limit_diagonal=zero((n,1));p.limit_target=zero((n,1));p.limit_compliance=zero((n,1))
+        p.limit_bilateral=wp.zeros((n,1),dtype=int,device=device);p.limit_impulse=zero((n,1))
         self.p=p; self.device=device
         self.tiled_kernel=make_tiled_iteration(p.nv,p.nmotor)
 
@@ -130,28 +162,43 @@ def make_tiled_iteration(nv,nmotor):
         impulses=wp.tile_zeros(shape=(1,nmotor),dtype=float,storage='shared')
         for c in range(p.ncontact[w]):
             for a in range(3): p.contact_impulse[w,c,a]=0.
+        for c in range(p.nlimit[w]): p.limit_impulse[w,c]=0.
         for it in range(iterations):
             for a in range(p.nmotor):
                 dof=p.dofs[a]; compliance=1./(dt*p.gains[a]); old=wp.tile_extract(impulses,0,a)
                 speed=wp.tile_extract(v,0,dof)
                 impulse=wp.clamp(old+(p.commands[w,a]-speed-compliance*old)/(p.inv[w,dof,dof]+compliance),-dt*p.caps[a],dt*p.caps[a])
+                impulse=old+p.relaxation*(impulse-old)
                 response=wp.tile_view(inverse,offset=(dof,0),shape=(1,nv))
                 wp.tile_assign(v,v+response*(impulse-old))
                 impulses[0,a]=impulse
+            for c in range(p.nlimit[w]):
+                jac=wp.tile_reshape(wp.tile_load(p.limit_J[w,c],shape=(nv,)),shape=(1,nv))
+                speed=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,jac,v)),0)
+                old=p.limit_impulse[w,c]; compliance=p.limit_compliance[w,c]
+                impulse=old+(p.limit_target[w,c]-speed-compliance*old)/(p.limit_diagonal[w,c]+compliance)
+                if p.limit_bilateral[w,c]==0: impulse=wp.max(0.,impulse)
+                impulse=old+p.relaxation*(impulse-old)
+                response=wp.tile_reshape(wp.tile_load(p.limit_response[w,c],shape=(nv,)),shape=(1,nv))
+                wp.tile_assign(v,v+response*(impulse-old))
+                p.limit_impulse[w,c]=impulse
             for c in range(p.ncontact[w]):
-                j1=wp.tile_reshape(wp.tile_load(p.J[w,c,1],shape=(nv,)),shape=(1,nv)); j2=wp.tile_reshape(wp.tile_load(p.J[w,c,2],shape=(nv,)),shape=(1,nv))
-                v1=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,j1,v)),0)
-                v2=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,j2,v)),0)
-                old1=p.contact_impulse[w,c,1]; old2=p.contact_impulse[w,c,2]
-                t1=old1-v1/p.diagonal[w,c,1]; t2=old2-v2/p.diagonal[w,c,2]
-                length=wp.sqrt(t1*t1+t2*t2); bound=p.friction[w]*p.contact_impulse[w,c,0]
-                scale=wp.min(1.,bound/wp.max(length,1e-30)); t1*=scale; t2*=scale
-                r1=wp.tile_reshape(wp.tile_load(p.response[w,c,1],shape=(nv,)),shape=(1,nv)); r2=wp.tile_reshape(wp.tile_load(p.response[w,c,2],shape=(nv,)),shape=(1,nv))
-                wp.tile_assign(v,v+r1*(t1-old1)+r2*(t2-old2))
-                p.contact_impulse[w,c,1]=t1; p.contact_impulse[w,c,2]=t2
+                if p.friction[w,c]>0.:
+                    j1=wp.tile_reshape(wp.tile_load(p.J[w,c,1],shape=(nv,)),shape=(1,nv)); j2=wp.tile_reshape(wp.tile_load(p.J[w,c,2],shape=(nv,)),shape=(1,nv))
+                    v1=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,j1,v)),0)
+                    v2=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,j2,v)),0)
+                    old1=p.contact_impulse[w,c,1]; old2=p.contact_impulse[w,c,2]
+                    t1=old1-v1/p.diagonal[w,c,1]; t2=old2-v2/p.diagonal[w,c,2]
+                    length=wp.sqrt(t1*t1+t2*t2); bound=p.friction[w,c]*p.contact_impulse[w,c,0]
+                    scale=wp.min(1.,bound/wp.max(length,1e-30)); t1*=scale; t2*=scale
+                    t1=old1+p.relaxation*(t1-old1); t2=old2+p.relaxation*(t2-old2)
+                    r1=wp.tile_reshape(wp.tile_load(p.response[w,c,1],shape=(nv,)),shape=(1,nv)); r2=wp.tile_reshape(wp.tile_load(p.response[w,c,2],shape=(nv,)),shape=(1,nv))
+                    wp.tile_assign(v,v+r1*(t1-old1)+r2*(t2-old2))
+                    p.contact_impulse[w,c,1]=t1; p.contact_impulse[w,c,2]=t2
                 jn=wp.tile_reshape(wp.tile_load(p.J[w,c,0],shape=(nv,)),shape=(1,nv))
                 vn=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,jn,v)),0)
                 old=p.contact_impulse[w,c,0]; normal=wp.max(0.,old-vn/p.diagonal[w,c,0])
+                normal=old+p.relaxation*(normal-old)
                 rn=wp.tile_reshape(wp.tile_load(p.response[w,c,0],shape=(nv,)),shape=(1,nv)); wp.tile_assign(v,v+rn*(normal-old))
                 p.contact_impulse[w,c,0]=normal
         velocity_out=p.velocity

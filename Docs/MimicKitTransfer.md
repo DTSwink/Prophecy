@@ -4,6 +4,127 @@
 
 ### Active goal — October15 overnight
 
+**Latest result: first four-phase native transfer pass, not yet promoted.**
+The current corrected MJ baseline completes all four300-tick trials. Matching
+self-contact material and increasing Jolt solver accuracy to100 velocity/
+20 position iterations also completes all four299 native ticks after the common
+initial MJ tick. Native peak target distances19.65/17.05/18.25/15.40cm; final
+horizontal-aligned MJ body-position deviation9.16/5.25/6.01/4.73cm. Thus this is
+a functional checkpoint-transfer pass, NOT identical trajectories or complete
+physics equivalence. Observation mapping verified within1.82e-5. No policy
+fine-tuning, physics library install, editor change, or training. Evidence:
+`body_velocity_engine_cuda_0_self0_highiter_native.{json,npz}`.
+
+The material error was **self** contact: MJ body shapes use condim1, which is
+frictionless; native Jolt previously applied body friction1. Ground remains
+friction1/rest0 in both. The isolated callback now has an opt-in override only
+when BOTH tagged bodies belong to the SAME rig group. Other contacts are untouched.
+With self friction corrected but original solver accuracy, native fails after
+78/138/28/24ticks. With limits removed as an isolation control it fails25/37/31/25;
+limits were NOT removed from any accepted configuration. High solver accuracy
+without this self-material correction had failed in earlier controls.
+`build_timestep_fixture.py` adds independent body/constraint iteration overrides
+using stock Jolt APIs, separate timing and equation/anchor diagnostics. The
+currently running controls separate100 velocity/default position from default
+velocity/20 position. A16-phase MJ baseline is being captured for broader checks.
+Do not assume100/20 is required or accept its cost without these tests. Installed
+Jolt DLL and active fixture remain unchanged.
+
+**Contact prototype convergence resolved, but prototype remains diagnostic.**
+The captured worst two-contact/two-limit problem alternates between two solutions
+even at3000 full iterations; it is not merely a slow solve. A0.5 iterative
+relaxation factor converges to the SAME equations (not added physical damping):
+float64 motor residual2.8e-6Nm by1000iterations. The resulting captured GPU
+four-phase60-tick replay stays finite, with max residual1.11e-3Nm and max target
+errors24.64/16.28/16.04/20.38cm. This still retains soft MJ limits, lacks Jolt
+position projection/manifold friction and is too costly to promote. Prefer the
+stock Jolt rig-profile route above if broader verification succeeds. Files:
+`probe_contact_convergence.py`, `contact_convergence*.json`,
+`contact_soft_limit_trial_cuda_0_relaxed.{json,npz}`. Production training continues
+to use the existing MJ solver, not this contact experiment.
+
+**Continuation after backup `d2627598`:** the body-velocity reporting correction
+is now in the shared UEFN engine (`Labs/MimicKitUEFN/body_velocity.py`). It reads
+current Newton generalized velocities, whose root is world COM velocity and
+whose ball velocities are MJ child-local, before every drag/gyro calculation and
+after the final substep. Both launches are captured on GPU. It does not read stale
+MJ state on reset, change joint qvel, alter body poses, or replace the solver.
+`test_body_velocity_engine.py` checked104 CPU substeps and partial resets; max
+error versus independent MJ Jacobians5.91e-4 (m/s or rad/s by channel). Captured
+CUDA test passed four300-tick/10s trials: max target errors19.02/21.01/17.83/17.14cm,
+all end by horizon. Partial reset of worlds0/2 leaves worlds1/3 unchanged. CUDA
+velocity error4.22e-4. A separate upstream control-boundary exp-map/quaternion
+roundtrip moves FK positions by up to0.032mm; reported separately, not concealed
+as velocity error. Previous pure-kernel test remains9.36e-6 on exactly matched
+transforms. The reference animation already uses child-local velocity rotation.
+This fixes a real force/reward reporting defect; it does NOT establish Jolt parity.
+
+Both normal and no-armature package builders now include the required velocity
+adapter; start/deploy checks reject a stale package. Refreshed local omni package
+SHA `4a3dca6752dc5828cbb7163837701880ba95dddd67de125bade4a77caa03e7a5`,
+578051bytes. No training, deployment or checkpoint change. Original frozen source
+and installed Jolt DLL remain unchanged. Dedicated evidence:
+`causal_transfer/body_velocity_engine_{cpu,cuda_0}.json`.
+
+**Free-motion integration isolation:** `build_timestep_fixture.py` links only the
+unchanged installed Jolt DLL. `probe_free_integration.py` disables gravity, motors,
+drag, contact and limits, uses actual gyro cancellation in MJ, and compares three
+recorded states, zero velocity and rigid spin at120/240/480/960Hz. Zero-velocity
+states remain stationary (position discrepancy below0.4micrometres). Recorded
+step8 angular velocity error0.684/0.341/0.170/0.0849rad/s respectively; position
+error0.585/0.147/0.0372/0.0101mm. Step160 rigid-spin angular error similarly halves
+0.114/0.0570/0.0285/0.0143rad/s. Thus even free articulated integration differs at
+finite timestep, separate from contact/limit errors. Jolt's maximal-coordinate
+velocity constraints plus later position correction are not identical to MJ's
+continuous articulated acceleration constraints. This is not an export mass/axis
+fit or license to remove physical Coriolis terms. No timestep changed in gameplay
+or training. Evidence `causal_transfer/free_integration.json` and `timestep/build.json`.
+
+An explicit diagnostic-only extension of `sequential_contact_adapter.py` can
+retain MJ soft joint-limit rows while replacing contact friction, to isolate the
+effect in a complete motion. It is NOT the final Jolt limit implementation and
+is NOT a training default. `test_sequential_soft_limits.py` must pass its separate
+CPU-equation/stock-MJ check before that experiment is accepted. It now passes:
+six states on CPU/CUDA, velocity error below7.7e-6 versus both the independent
+float64 equation solve and stock MJ, motor defect below2.3e-5Nm. Initial Warp
+compile rejected a mutable constant bool; corrected to a dynamic bool. Full-motion
+diagnostic's first construction was correctly rejected because Newton defaults
+to sparse inertia; its isolated constructor now explicitly requests dense storage
+(same equations/settings), leaving production source/defaults unchanged. Full
+transfer and fresh full-dataset+idle training remain outstanding.
+
+The first complete contact-control replay is **rejected**, preserved as
+`contact_soft_limit_trial_invalid_v1.{json,npz}`. It produced nonfinite states at
+policy ticks8/4/1/2. The numerical test originally used NumPy's equal-NaN default,
+so matching invalid arrays escaped that assertion; explicit finite checks now
+reject them before accepting/reporting motion. CPU tracing preserves the first
+bad solve in `contact_first_invalid_v1.npz`. Initial interpretation was inactive
+candidates with stale addresses. **Further tracing corrected that diagnosis:**
+`contact_first_invalid_v2.npz` includes distances/margins and shows two extra
+penetrating frictionless contacts (condim1). The prototype only supported condim3,
+but incremented its contact count before rejecting the type; unused slots had
+zero Jacobians and caused division by zero. Its error flag was also cleared each
+substep, allowing a later step to hide the failure. The adapter now explicitly
+supports condim1 and3 with per-contact friction, validates before adding a slot,
+and latches errors. It also requires an active penetrating point because MJ can
+retain stale row addresses outside the active margin; that is a separate valid
+guard, not the cause of this captured failure. No denominator clamp or invented
+force. Added mixed-type/inactive/stale-row regression. Re-running the equation
+suite and motion control before accepting it. Production remains unaffected.
+
+Mixed-type fix now passes the CPU/CUDA contact equation test (velocity error
+1.42e-5), explicit inactive/stale-address and frictionless-contact regression,
+and soft-limit control tests (7.7e-6 versus stock/independent equations). The four
+60-tick CUDA motion controls remain finite and below27cm: maxima24.47/16.30/
+16.08/23.16cm. Partial reset and graph replay checked. **Still not admissible for
+training:** maximum motor-law residual in that full contact solve is12.54Nm at
+100iterations, whereas sampled one-step tests were below3e-5Nm. Convergence in
+the complete contact manifold needs work before promotion. No success claim from
+this short replay. Native comparison uses the captured same phase/reference and
+friction1/rest0 to isolate response rules; results follow in
+`contact_soft_limit_trial_cuda_0_native.json` when complete. Current full-replay
+evidence `contact_soft_limit_trial_cuda_0.{npz,json}` supersedes its invalid v1.
+
 **Latest progress / resume here:** precautionary snapshot committed
 and remote ref verified: `c2f6a742` on `origin/codex/standalone-sim`. It contains
 the physical-training/retargeting/transfer source and dedicated journals. Other

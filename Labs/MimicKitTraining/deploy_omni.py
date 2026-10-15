@@ -17,6 +17,7 @@ def main():
     root=Path(__file__).resolve().parents[2]
     with zipfile.ZipFile(source) as package:
         for entry,local in [('assets/uefn/velocity_motors.py',root/'Labs/MimicKitUEFN/velocity_motors.py'),
+                            ('assets/uefn/body_velocity.py',root/'Labs/MimicKitUEFN/body_velocity.py'),
                             ('pipeline/uefn_engine.py',Path(__file__).with_name('uefn_engine.py')),
                             ('pipeline/train.py',Path(__file__).with_name('train.py')),
                             ('pipeline/omni_config.py',Path(__file__).with_name('omni_config.py'))]:
