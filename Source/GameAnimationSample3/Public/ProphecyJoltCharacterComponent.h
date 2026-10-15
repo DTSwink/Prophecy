@@ -98,6 +98,8 @@ private:
     friend class UProphecyJoltCharacterWorldSubsystem;
     static void PrepareCompletedPoseBatch(TConstArrayView<UProphecyJoltCharacterComponent*> Characters, float DeltaSeconds);
     bool EnablePhysicalAnimationNow(FString& OutError);
+    bool RequestPhysicalMode(bool& bOutDeferred, FString& OutError);
+    void CompleteDeferredPhysicalMode(const FGuid& AdmissionId);
     void CompleteDeferredEnable(const FGuid& AdmissionId);
     void CancelDeferredEnable(const FGuid& AdmissionId);
     void DisablePhysicalAnimationInternal(bool bCancelEnable);

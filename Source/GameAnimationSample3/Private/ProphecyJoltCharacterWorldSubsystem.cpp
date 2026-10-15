@@ -1,5 +1,6 @@
 #include "ProphecyJoltCharacterWorldSubsystem.h"
 #include "ProphecyJoltConstraintRuntime.h"
+#include "ProphecySwordHolster.h"
 
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyJoltSceneCollisionComponent.h"
@@ -391,6 +392,8 @@ bool UProphecyJoltCharacterWorldSubsystem::StepRegisteredClients(float DeltaSeco
     }
     ++ExpectedWorldSteps;
     LastStepEngineFrame = GFrameCounter;
+    if(!ProphecySwordHolster::CompleteAttachedArms(GetWorld(),DeltaSeconds,Error))
+        return StopWithError(OutError,FString::Printf(TEXT("Attached arm publication failed: %s"),*Error));
     TArray<UProphecyJoltCharacterComponent*, TInlineAllocator<128>> PoseCharacters;
     for (const auto& Registration : Clients)
     {

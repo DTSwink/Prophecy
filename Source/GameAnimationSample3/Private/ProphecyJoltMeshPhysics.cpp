@@ -1,5 +1,6 @@
 #include "ProphecyJoltMeshPhysics.h"
 #include "ProphecyAgent.h"
+#include "ProphecySwordComponent.h"
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyJoltWorldSubsystem.h"
@@ -68,8 +69,10 @@ bool Execute(UPrimitiveComponent& Component, const FProphecyJoltPhysicsCommand& 
                 // that controller uses Chaos (including a kinematic holder), ordinary
                 // Blueprint forces must not auto-admit a second Jolt body for its blade.
                 // Dropped swords clear their owner and still use normal prop admission.
-                if (const auto* Holder = Cast<AProphecyAgent>(Owner->GetOwner());
-                    Holder && Holder->GetHeldSword() == Owner) return false;
+                const auto* Holder = Cast<AProphecyAgent>(Owner->GetOwner());
+                const auto* Equipment = Holder ? Holder->FindComponentByClass<UProphecySwordComponent>() : nullptr;
+                // GetHeldSword intentionally excludes holstered equipment.
+                if (Equipment && Equipment->GetSword() == Owner) return false;
                 FString Error;
                 if (!UProphecyJoltStaticMeshLibrary::EnableJoltStaticMeshPhysics(Mesh, Error))
                 { UE_LOG(LogTemp, Error, TEXT("Automatic Jolt body admission: %s"), *Error); return true; }

@@ -639,4 +639,61 @@ bool FProphecyJoltWeldedCollisionTest::RunTest(const FString& Parameters)
     return !HasAnyErrors();
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltKinematicLimbTest,
+    "Prophecy.Jolt.GenericJoint.KinematicLimbHandoff",ProphecyJolt::GenericJointTests::Flags)
+bool FProphecyJoltKinematicLimbTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::GenericJointTests;
+    FScopedWorld Scope;if(!Start(*this,Scope))return false;auto& W=*Scope.Get();
+    auto Snapshot=Rig();auto& J=Snapshot.Joints.AddDefaulted_GetRef();
+    J.SourceConstraintIndex=0;J.JointName=TEXT("shoulder");J.Bone1=Snapshot.Bodies[0].BodyName;J.Bone2=Snapshot.Bodies[1].BodyName;
+    J.Body1Index=0;J.Body2Index=1;J.Frame1.SetTranslation(FVector(30,0,0));J.Frame2.SetTranslation(FVector(-30,0,0));
+    J.CurrentProfile.ConeLimit.Swing1Motion=ACM_Free;J.CurrentProfile.ConeLimit.Swing2Motion=ACM_Free;J.CurrentProfile.TwistLimit.TwistMotion=ACM_Free;
+    FProphecyJoltPreparedRig Prepared;FProphecyJoltRigHandle RigHandle;TArray<FProphecyJoltBodyHandle> Bodies;
+    if(!CreateRig(*this,W,Snapshot,Prepared,RigHandle,Bodies))return false;
+    const FProphecyJoltBodyHandle Limb[]={Bodies[1]};
+    TArray<FProphecyJoltRigVelocityTarget> Targets;
+    for(int I=0;I<2;++I){auto& T=Targets.AddDefaulted_GetRef();T.Handle=Bodies[I];T.TargetPositionCm=Snapshot.Bodies[I].BodyOriginToWorld.GetLocation();T.TargetRotation=FQuat::Identity;T.LinearStrength=T.AngularStrength=1;}
+    if(!Okay(*this,TEXT("Publish before attachment"),W.PublishRigVelocityTargets(RigHandle,Targets,1.f/60))
+        ||!Okay(*this,TEXT("Begin kinematic limb"),W.SetRigKinematicLimb(Limb,true))
+        ||!Okay(*this,TEXT("Idempotent begin"),W.SetRigKinematicLimb(Limb,true)))return false;
+    FProphecyJoltBodyState Before,Parent;
+    W.ReadBody(Bodies[0],Parent);W.ReadBody(Limb[0],Before);
+    TestFalse(TEXT("Limb is physically kinematic"),Before.bDynamic);TestTrue(TEXT("Parent remains simulated"),Parent.bDynamic);
+    const FProphecyJoltBodyHandle Bad[]={Limb[0],{}};
+    TestFalse(TEXT("Invalid group is rejected transactionally"),W.SetRigKinematicLimb(Bad,false).IsSuccess());
+    if(!Okay(*this,TEXT("Exclude still-published limb drive"),W.PublishRigVelocityTargets(RigHandle,Targets,1.f/60))
+        ||!Okay(*this,TEXT("Step attached rig"),W.Step(1.f/60,1)))return false;
+    FProphecyJoltRigServoState Servo;W.ReadRigServoSamples(RigHandle,Servo);
+    TestEqual(TEXT("Only parent receives servo work"),Servo.Samples.Num(),1);
+    const FTransform Poses[]={FTransform(FQuat(FVector::UpVector,FMath::DegreesToRadians(10.)),FVector(32,0,0))};
+    if(!Okay(*this,TEXT("Author actual collider pose"),W.PoseRigKinematicLimb(Limb,Poses,1.f/60)))return false;
+    FProphecyJoltBodyState Release;W.ReadBody(Limb[0],Release);
+    TestTrue(TEXT("Native pose matches authored pose"),Release.PositionCm.Equals(Poses[0].GetLocation(),1.e-4));
+    TestTrue(TEXT("Release translation measured from preceding pose"),Release.CenterOfMassVelocityCmPerSecond.Equals(FVector(120,0,0),1.e-3));
+    TestTrue(TEXT("Release rotation measured from preceding pose"),Release.AngularVelocityRadiansPerSecond.Equals(FVector(0,0,FMath::DegreesToRadians(600.)),1.e-4));
+    W.ReadBody(Bodies[0],Before);TestTrue(TEXT("Kinematic limb does not pull simulated parent"),Before.PositionCm.Equals(Parent.PositionCm,1.e-4));
+    if(!Okay(*this,TEXT("Restore simulation"),W.SetRigKinematicLimb(Limb,false)))return false;
+    FProphecyJoltBodyState After;W.ReadBody(Limb[0],After);
+    TestTrue(TEXT("Physical ownership restored"),After.bDynamic);
+    TestTrue(TEXT("No position seam"),After.PositionCm.Equals(Release.PositionCm,1.e-9));
+    TestTrue(TEXT("No rotation seam"),After.Rotation.Equals(Release.Rotation,1.e-9));
+    TestTrue(TEXT("No linear velocity seam"),After.CenterOfMassVelocityCmPerSecond.Equals(Release.CenterOfMassVelocityCmPerSecond,1.e-9));
+    TestTrue(TEXT("No angular velocity seam"),After.AngularVelocityRadiansPerSecond.Equals(Release.AngularVelocityRadiansPerSecond,1.e-9));
+    if(!Okay(*this,TEXT("Idempotent restore"),W.SetRigKinematicLimb(Limb,false)))return false;
+    W.SetBodyVelocity(Limb[0],{},{},true);W.PublishRigVelocityTargets(RigHandle,{},1.f/60);
+    if(!Steps(*this,W,10))return false;
+    W.ReadBody(Bodies[0],After);TestTrue(TEXT("Original shoulder joint is active again"),FVector::Distance(After.PositionCm,Parent.PositionCm)>.01);
+    if(!Okay(*this,TEXT("Second attachment"),W.SetRigKinematicLimb(Limb,true)))return false;
+    double Best=DBL_MAX,Worst=0;
+    for(int Repeat=0;Repeat<8;++Repeat){const double Start=FPlatformTime::Seconds();
+        for(int I=0;I<1000;++I)if(!W.PoseRigKinematicLimb(Limb,Poses,1.f/60).IsSuccess())return false;
+        const double Us=(FPlatformTime::Seconds()-Start)*1000.;if(Repeat){Best=FMath::Min(Best,Us);Worst=FMath::Max(Worst,Us);}
+    }
+    AddInfo(FString::Printf(TEXT("Native pose-write cost, one body, 7 x 1000 samples: %.3f..%.3f us/call; excludes solve, presentation and physics."),Best,Worst));
+    if(!Okay(*this,TEXT("Rig teardown while attached"),W.DestroyRig(RigHandle)))return false;
+    TestFalse(TEXT("Stale limb cannot affect another rig"),W.SetRigKinematicLimb(Limb,false).IsSuccess());
+    return !HasAnyErrors();
+}
+
 #endif

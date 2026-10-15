@@ -727,6 +727,19 @@ bool FProphecyJoltPreparedRig::GetNativeBodyMassProperties(int32 BodyIndex, JPH:
     OutProperties = Native->Bodies[BodyIndex].Mass;
     return true;
 }
+bool FProphecyJoltPreparedRig::GetBodyMassSummary(int32 BodyIndex, double& OutMassKg,
+    FQuat& OutPrincipalRotation, FVector& OutPrincipalInertiaKgCmSquared) const
+{
+    JPH::MassProperties Mass;
+    JPH::Mat44 Rotation;
+    JPH::Vec3 Diagonal;
+    if (!GetNativeBodyMassProperties(BodyIndex, Mass)
+        || !Mass.DecomposePrincipalMomentsOfInertia(Rotation, Diagonal)) return false;
+    OutMassKg = Mass.mMass;
+    OutPrincipalRotation = ProphecyJolt::Conversions::FromJoltRotation(Rotation.GetQuaternion());
+    OutPrincipalInertiaKgCmSquared = ProphecyJolt::Conversions::FromJoltDirection(Diagonal) * 10000.0;
+    return true;
+}
 bool FProphecyJoltPreparedRig::GetBodyGeometrySummary(int32 BodyIndex, FVector& OutCenterOfMassCm, FBox& OutBoundsInBodyOriginCm, FString& OutError) const
 {
     using namespace ProphecyJolt::Rig;

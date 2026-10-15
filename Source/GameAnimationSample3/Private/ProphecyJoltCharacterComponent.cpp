@@ -1,5 +1,6 @@
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyPhysicalContext.h"
+#include "ProphecyModeTransitions.h"
 #include "ProphecyFixedArmPhysics.h"
 #include "ProphecySwordAttackCollision.h"
 #include "ProphecyPelvisInertia.h"
@@ -360,6 +361,30 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimation(FString& OutError)
     return EnablePhysicalAnimationNow(OutError);
 }
 
+bool UProphecyJoltCharacterComponent::RequestPhysicalMode(bool& bOutDeferred, FString& OutError)
+{
+    // Defer the entire Kin -> Jolt switch, not just native admission. Starting
+    // Chaos first would let an unwanted solver move the rig for one frame.
+    auto* Coordinator=GetWorld()?GetWorld()->GetSubsystem<UProphecyJoltCharacterWorldSubsystem>():nullptr;
+    FGuid Id;
+    if(!Coordinator||!Coordinator->RequestClientAdmission(*this,
+        FProphecyJoltClientAdmissionCallback::CreateUObject(this,&UProphecyJoltCharacterComponent::CompleteDeferredPhysicalMode),
+        FProphecyJoltClientAdmissionCallback::CreateUObject(this,&UProphecyJoltCharacterComponent::CancelDeferredEnable),
+        bOutDeferred,Id,OutError))return false;
+    if(bOutDeferred){PendingAdmissionId=Id;AdmissionCoordinator=Coordinator;}
+    return true;
+}
+
+void UProphecyJoltCharacterComponent::CompleteDeferredPhysicalMode(const FGuid& AdmissionId)
+{
+    if(PendingAdmissionId!=AdmissionId||!AdmissionId.IsValid())return;
+    PendingAdmissionId.Invalidate();AdmissionCoordinator.Reset();
+    auto* Agent=Cast<AProphecyAgent>(GetOwner());
+    if(IsValid(Agent)&&!Agent->IsActorBeingDestroyed()
+        &&!Agent->SetSimulationMode(EProphecyAgentSimulationMode::Physical))
+        UE_LOG(LogProphecyJoltCharacter,Error,TEXT("Queued simulation mode switch failed for %s."),*Agent->GetName());
+}
+
 void UProphecyJoltCharacterComponent::CompleteDeferredEnable(const FGuid& AdmissionId)
 {
     check(IsInGameThread());
@@ -631,6 +656,9 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
         if (bEnableCancelled) { OutError = Error; return false; }
         return Fail(OutError, FString::Printf(TEXT("Jolt creation succeeded but pose handoff failed; restored kinematic presentation: %s"), *Error));
     }
+    // The native rig now owns the captured pose. Retire the old presentation
+    // transition so switching back cannot revive its earlier kinematic pose.
+    ProphecyModeTransitions::FinishBlend(Agent);
     LastError.Reset();
     return true;
 }

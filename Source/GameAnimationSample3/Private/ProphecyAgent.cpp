@@ -1451,6 +1451,14 @@ void AProphecyAgent::BeginPlay()
 {
 	ProphecyAttackControls::StartAttackTickCounter(this);
 	Super::BeginPlay();
+	// Agent overlaps are unused. Include Blueprint primitives and child actors;
+	// keep their blocking collision, traces and physical hit events unchanged.
+	TInlineComponentArray<UPrimitiveComponent*> Primitives;
+	GetComponents(Primitives, true);
+	for (UPrimitiveComponent* Primitive : Primitives)
+	{
+		Primitive->SetGenerateOverlapEvents(false);
+	}
 	ProphecyAttackCamera::RefreshPlayerRig(this);
 	if (bAutoInitializeAgentRuntime)
 	{
@@ -2280,6 +2288,19 @@ void AProphecyAgent::ConfigureRootAndJointTorquePhysics(
 bool AProphecyAgent::SetSimulationMode(EProphecyAgentSimulationMode NewMode)
 {
     if (!IsInGameThread() || IsActorBeingDestroyed()) return false;
+    if(NewMode==EProphecyAgentSimulationMode::Physical && bUseJoltForPhysicalMode
+        && GetSimulationMode()==EProphecyAgentSimulationMode::Kinematic)
+    {
+        if(!JoltCharacter)
+        {
+            JoltCharacter=NewObject<UProphecyJoltCharacterComponent>(this,TEXT("JoltCharacter"));
+            AddInstanceComponent(JoltCharacter);JoltCharacter->RegisterComponent();
+        }
+        bool Deferred=false;FString Error;
+        if(!JoltCharacter->RequestPhysicalMode(Deferred,Error))
+        {UE_LOG(LogProphecyAgentPhysical,Error,TEXT("Simulation mode admission: %s"),*Error);return false;}
+        if(Deferred)return true;
+    }
     // An explicit later mode request wins over an in-flight backend restoration.
     bResumeChaosPhysicalAfterJoltRestore = false;
     // Finish ordinary body/pose restoration before Jolt captures a HalfSim-to-Sim handoff.
@@ -2287,7 +2308,7 @@ bool AProphecyAgent::SetSimulationMode(EProphecyAgentSimulationMode NewMode)
     const bool bWristModeChanged=NewMode!=GetSimulationMode();
     if(bWristModeChanged)ProphecyReach::Remove(this);
     struct FHolsterModeFinish { AProphecyAgent* Agent; ~FHolsterModeFinish(){ProphecySwordHolster::AfterModeChange(Agent);} } HolsterModeFinish{this};
-    if(bWristModeChanged)ProphecySwordHolster::BeforeModeChange(this,NewMode==EProphecyAgentSimulationMode::Kinematic);
+    if(bWristModeChanged && !ProphecySwordHolster::BeforeModeChange(this,NewMode==EProphecyAgentSimulationMode::Kinematic))return false;
     if(bWristModeChanged)ProphecyForearmStretch::BeforeModeChange(this);
     if (!SetSimulationModeInternal(NewMode)) return false;
     if (NewMode == EProphecyAgentSimulationMode::Physical && bUseJoltForPhysicalMode

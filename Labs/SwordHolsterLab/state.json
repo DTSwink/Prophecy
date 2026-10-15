@@ -2855,12 +2855,12 @@
       },
       "seated": {
         "spine": [
-          -40.7,
+          -40,
           -5.177,
           1.942
         ],
         "right": [
-          -37.3,
+          -37,
           0,
           0.045
         ],
@@ -2869,21 +2869,21 @@
           0,
           0
         ],
-        "pole": 69.4
+        "pole": 34.1
       }
     },
     "gazeYaw": 0,
     "sheatheRotationTolerance": 15,
     "sheatheTipTolerance": 2,
     "slideRotationCorrection": 0.45,
-    "motion": "idle",
-    "sheathe": false,
+    "motion": "walk",
+    "sheathe": true,
     "startTick": 50,
-    "maxReachSpeed": 260,
-    "maxReachRotationSpeed": 900,
+    "maxReachSpeed": 230,
+    "maxReachRotationSpeed": 600,
     "maxAttachedSpeed": 150,
     "maxAttachedRotationSpeed": 200,
-    "slidingSpeed": 330,
+    "slidingSpeed": 230,
     "shrinkPercent": 25,
     "shrinkDuration": 0.25,
     "unshrinkDuration": 0.5,
@@ -3060,8 +3060,8 @@
     ],
     "sheatheSlideCurve": [
       [
-        0.14047903344255855,
-        0.13958743261164513
+        0.15053891961839325,
+        0.0988776276854313
       ],
       [
         0.650179602563385,
@@ -3168,13 +3168,13 @@
       "swordRelativeSlidePole": true,
       "maxReachSpeed": 230,
       "maxReachRotationSpeed": 600,
-      "slidingSpeed": 170
+      "slidingSpeed": 230
     }
   },
-  "time": 0.3775000000358357,
+  "time": 1.7787000000030868,
   "camera": {
-    "yaw": -6.441596679687491,
-    "pitch": 0.32360040283203123,
+    "yaw": -6.268797119140597,
+    "pitch": 0.31399963378906265,
     "zoom": 1.3268220739049315,
     "panX": 0,
     "panY": 65
@@ -3186,7 +3186,7 @@
   "controls": {
     "showPelvisDistance": false,
     "showLeeway": true,
-    "sequenceMode": false,
+    "sequenceMode": true,
     "bypassCurves": false,
     "bicolor": true,
     "upperOnly": true,

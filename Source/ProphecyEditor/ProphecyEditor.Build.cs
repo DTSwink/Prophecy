@@ -29,6 +29,7 @@ public class ProphecyEditor : ModuleRules
 			"Engine",
 			"GameAnimationSample3",
 			"ImageCore",
+			"InputCore",
 			"Json",
 			"KismetCompiler",
 			"Kismet",

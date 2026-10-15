@@ -361,11 +361,8 @@ bool UProphecyJoltBodyComponent::PublishCompletedBody(FString& OutError)
     if (ComponentWorld.ContainsNaN() || !ComponentWorld.GetRotation().IsNormalized())
         return Fail(OutError, TEXT("The completed standalone component transform is invalid."));
     UPrimitiveComponent* Source = State->Snapshot.SourceComponent.Get();
-    // A constrained D/S sword presents the completed native body. Passive carried
-    // equipment is instead attachment-owned; its transform updates synchronize
-    // the kinematic body, without feeding last step's pose back into the mount.
-    if(State->bSimpleKinematic && Source->GetAttachParent()
-        && !ProphecySwordHolster::IsPhysicsDriven(Source,State->Handle))ComponentWorld=Source->GetComponentTransform();
+    // Kinematic carried equipment is attachment-owned, including D/S sliding.
+    if(State->bSimpleKinematic && Source->GetAttachParent())ComponentWorld=Source->GetComponentTransform();
     else Source->SetWorldTransform(ComponentWorld, false, nullptr, ETeleportType::TeleportPhysics);
     // SetWorldTransform may dispatch transform/overlap callbacks which remove or replace this body.
     // Never keep a State reference or dereference the old native actor across that boundary.
@@ -412,8 +409,10 @@ bool UProphecyJoltBodyComponent::SynchronizeCollision(FString& OutError)
     if (!State || !State->bActive || !State->WorldOwner.IsValid())
         return Fail(OutError, TEXT("Collision synchronization requires a live Jolt body binding."));
     auto* Source = State->Snapshot.SourceComponent.Get();
-    if (!Source || Source->IsAnySimulatingPhysics())
-        return Fail(OutError, TEXT("Collision synchronization lost its source or Chaos simulation was enabled externally."));
+    if (!Source)
+        return Fail(OutError, TEXT("Collision synchronization lost its source component."));
+    if (Source->IsAnySimulatingPhysics())
+        return Fail(OutError, FString::Printf(TEXT("Chaos simulation was enabled on Jolt-owned source %s."), *Source->GetPathName()));
     // Presets can re-enable the UE physics filter. Retain Jolt simulation ownership
     // and rebuild only the UE query proxy when that preset recreated its actor.
     if (Source->GetCollisionEnabled() == ECollisionEnabled::QueryAndPhysics)
@@ -470,10 +469,6 @@ bool UProphecyJoltBodyComponent::PrepareJoltWorldStep(float DeltaSeconds, bool b
     if (State->bSimpleKinematic)
     {
         FTransform Target = State->Snapshot.SourceComponent->GetComponentTransform(); Target.RemoveScaling();
-        // Sliding equipment and the authored gripping hand must address the
-        // same upcoming step. The rendered component is the completed pose.
-        ProphecySwordHolster::PhysicsTarget(State->Snapshot.SourceComponent.Get(),State->Handle,Target);
-        Target.RemoveScaling();
         const auto Moved = State->WorldOwner->MoveKinematicBody(State->Handle, State->Snapshot.BodyOriginToComponent * Target, DeltaSeconds);
         if (!Moved.IsSuccess()) return Fail(OutError, Moved.Message);
     }

@@ -1,0 +1,301 @@
+{
+  "date": "2026-10-14",
+  "status": "implemented and numerically verified within stated coverage",
+  "implementation": "Actual holster owns attached sword; three native right-arm bodies are temporarily kinematic, then release with unchanged pose and velocity.",
+  "live": {
+    "captures": [
+      {
+        "name": "kine-arm-current",
+        "ticks": 645,
+        "completed_slides": 15,
+        "s": 9,
+        "d": 6,
+        "max_s_path_cm": 2.778256580018951e-05,
+        "render_cm": 4.17e-06,
+        "query_cm": 4.17e-06,
+        "native_bone_cm": 1.582699444773227e-08,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "fully-kin-current",
+        "ticks": 345,
+        "completed_slides": 9,
+        "s": 6,
+        "d": 3,
+        "max_s_path_cm": 2.7782565010084884e-05,
+        "render_cm": 0,
+        "query_cm": 0,
+        "native_bone_cm": 0,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "arm-run-physical",
+        "ticks": 345,
+        "completed_slides": 9,
+        "s": 6,
+        "d": 3,
+        "max_s_path_cm": 2.778256580018951e-05,
+        "render_cm": 4.17e-06,
+        "query_cm": 4.17e-06,
+        "native_bone_cm": 1.582613795276975e-08,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "idle-comp0",
+        "ticks": 395,
+        "completed_slides": 9,
+        "s": 6,
+        "d": 3,
+        "max_s_path_cm": 4.1017629608155505e-05,
+        "render_cm": 4.099e-06,
+        "query_cm": 4.099e-06,
+        "native_bone_cm": 1.58233609539168e-08,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "walk-comp100",
+        "ticks": 445,
+        "completed_slides": 12,
+        "s": 6,
+        "d": 6,
+        "max_s_path_cm": 4.1844751345726854e-05,
+        "render_cm": 4.071e-06,
+        "query_cm": 4.071e-06,
+        "native_bone_cm": 1.5824109353898827e-08,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "turn-comp80",
+        "ticks": 495,
+        "completed_slides": 12,
+        "s": 6,
+        "d": 6,
+        "max_s_path_cm": 4.614509350439414e-05,
+        "render_cm": 3.673e-06,
+        "query_cm": 3.673e-06,
+        "native_bone_cm": 1.582478913909157e-08,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "run-comp0",
+        "ticks": 445,
+        "completed_slides": 12,
+        "s": 6,
+        "d": 6,
+        "max_s_path_cm": 3.9849170589324795e-05,
+        "render_cm": 3.673e-06,
+        "query_cm": 3.673e-06,
+        "native_bone_cm": 1.5825701296038508e-08,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "fps30",
+        "ticks": 415,
+        "completed_slides": 12,
+        "s": 6,
+        "d": 6,
+        "max_s_path_cm": 2.778256580018951e-05,
+        "render_cm": 4.17e-06,
+        "query_cm": 4.17e-06,
+        "native_bone_cm": 1.582613795276975e-08,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "fps0",
+        "ticks": 415,
+        "completed_slides": 12,
+        "s": 6,
+        "d": 6,
+        "max_s_path_cm": 2.778256580018951e-05,
+        "render_cm": 4.17e-06,
+        "query_cm": 4.17e-06,
+        "native_bone_cm": 1.582613795276975e-08,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "fps10",
+        "ticks": 415,
+        "completed_slides": 12,
+        "s": 6,
+        "d": 6,
+        "max_s_path_cm": 2.778256580018951e-05,
+        "render_cm": 4.17e-06,
+        "query_cm": 4.17e-06,
+        "native_bone_cm": 1.582613795276975e-08,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      },
+      {
+        "name": "kin-final",
+        "ticks": 345,
+        "completed_slides": 9,
+        "s": 6,
+        "d": 3,
+        "max_s_path_cm": 2.7782565010084884e-05,
+        "render_cm": 0,
+        "query_cm": 0,
+        "native_bone_cm": 0,
+        "errors": {
+          "missing_ticks": [],
+          "ownership_errors": [],
+          "body_errors": []
+        }
+      }
+    ],
+    "recorded_ticks": 4705,
+    "completed_slides": 123,
+    "max_s_path_cm": 4.614509350439414e-05,
+    "max_render_cm": 4.17e-06,
+    "max_query_cm": 4.17e-06
+  },
+  "lifecycle": {
+    "destroy-2-current": "passed",
+    "destroy-5-current": "passed",
+    "drop-2-current": "passed",
+    "drop-5-current": "passed",
+    "hide-2-current": "passed",
+    "hide-5-current": "passed",
+    "mode-2-current": "passed",
+    "mode-5-current": "passed",
+    "reset-2-current": "passed",
+    "reset-5-current": "passed"
+  },
+  "frame_rate": {
+    "ticks": 415,
+    "max_transform_component_difference": 0,
+    "fields_identical": true,
+    "caps": {
+      "10": 9.998309464581709,
+      "uncapped": 24.692830728851217
+    },
+    "dt": {
+      "10": [
+        0.01666666567325592
+      ],
+      "uncapped": [
+        0.01666666567325592
+      ]
+    }
+  },
+  "native_motion": {
+    "cases": 64,
+    "max_cm": 8.67461386722e-05,
+    "max_deg": 0.000211894166335,
+    "timing_mismatches": 0,
+    "excluded": "problem_3/4/5 are short return captures, not full action controller fixtures; their native return regression is ElbowIKParity"
+  },
+  "performance": {
+    "frames": 644,
+    "active_frames": 117,
+    "total_active_ms": {
+      "samples": 117,
+      "mean": 0.26221367521367517,
+      "median": 0.2495,
+      "p95": 0.3584999999999998,
+      "max": 0.4737
+    },
+    "per_agent_us": {
+      "samples": 117,
+      "mean": 108.00270655270656,
+      "median": 91.43333333333334,
+      "p95": 207.23999999999978,
+      "max": 318.6
+    },
+    "by_count": {
+      "1.0": {
+        "samples": 13,
+        "mean": 0.20567692307692306,
+        "median": 0.1969,
+        "p95": 0.2865599999999999,
+        "max": 0.3186
+      },
+      "2.0": {
+        "samples": 15,
+        "mean": 0.25098,
+        "median": 0.2265,
+        "p95": 0.3859199999999999,
+        "max": 0.4737
+      },
+      "3.0": {
+        "samples": 89,
+        "mean": 0.27236516853932585,
+        "median": 0.2569,
+        "p95": 0.3652999999999999,
+        "max": 0.3924
+      }
+    },
+    "inactive_max_ms": 0.0,
+    "scope": "Completed-parent arm solve, native poses and component/sword publication; excludes normal NN/controller/Jolt step/rendering. Three live agents; no full 100-agent claim."
+  },
+  "native_suite": {
+    "passed": 26,
+    "failed": 2,
+    "failures": [
+      "AcceptedMotion initially used stale oracle; refreshed supported 64 full-motion combinations pass, three short return recordings are not full-action fixtures.",
+      "AuthoredLab retains October12 tuning/phase assumptions; not claimed passing."
+    ]
+  },
+  "preservation": {
+    "blueprint_graph_sha256": "0fad2490a657019b061628ea453a14e0afd13eed2a20353310b1fc19e2a85d46",
+    "lab_state_sha256": "42d7c208b46b1d621110e63669d8b827af1b6c0068416e59cbdf5d9fdd91374a",
+    "profile_sha256": "ceea6300ed0ab66891f2a7f8e7926627ca8666ebf4f64b0b3eb396e603dc5453",
+    "editor": {
+      "play": false,
+      "dirty": [],
+      "fps": 60.0
+    }
+  },
+  "build": {
+    "editor_pid": 19216,
+    "normal": "build-after-profiler-retry.txt succeeded",
+    "latest": "livecoding-destruction.txt succeeded; cold DLL requires normal build before next reopen",
+    "restarts": "One planned retained-layout restart, plus recovery from new CSV category crash during owned test. No unsaved assets or user Play affected."
+  },
+  "limitations": [
+    "D grip admission still permits 2cm/5deg; first frame measured up to1.77cm, unchanged from the existing rule.",
+    "No full 100-agent total-game benchmark; timing is the new attached-arm stage only.",
+    "Simulated parent motion remains real; pure-math lab parity is not a claim of identical physical motion.",
+    "Existing startup MACD admission and teardown contact-restoration messages remain; no new active-play failures in successful captures.",
+    "No lab/settings/Blueprint edits, new motion design or Git push."
+  ],
+  "evidence": "Saved\\Diagnostics\\HolsterAttachmentAudit20261014"
+}

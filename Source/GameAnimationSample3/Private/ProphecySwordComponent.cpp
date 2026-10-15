@@ -29,6 +29,7 @@
 #include "ProphecyJoltWorldSubsystem.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/ScopedMovementUpdate.h"
 #include "Engine/World.h"
 #include "Engine/StaticMesh.h"
 #include "EngineUtils.h"
@@ -36,6 +37,7 @@
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "ProfilingDebugging/CsvProfiler.h"
 #include "UObject/UnrealType.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "PhysicsEngine/PhysicsAsset.h"
@@ -45,6 +47,8 @@
 #include "Chaos/PBDRigidsEvolution.h"
 #include "Chaos/Collision/CollisionConstraintFlags.h"
 #include "ProphecySwordCollisionCooldown.inl"
+
+CSV_DEFINE_CATEGORY(ProphecySword, true);
 
 namespace ProphecySwordNoReaction
 {
@@ -482,6 +486,13 @@ bool UProphecySwordComponent::Equip(bool bSimulated)
 		if (FBoolProperty* Gravity = FindFProperty<FBoolProperty>(Class, TEXT("enable gravity"))) Gravity->SetPropertyValue_InContainer(Sword, true);
 	}
 	Sword->FinishSpawning(SpawnTransform);
+	// Equipment is spawned after the agent's component initialization.
+	TInlineComponentArray<UPrimitiveComponent*> Primitives;
+	Sword->GetComponents(Primitives, true);
+	for (UPrimitiveComponent* Primitive : Primitives)
+	{
+		Primitive->SetGenerateOverlapEvents(false);
+	}
 	TArray<UStaticMeshComponent*> Meshes;
 	Sword->GetComponents(Meshes);
 	for (UStaticMeshComponent* C : Meshes) if (C->GetFName() == TEXT("sword")) Blade = C;
@@ -618,6 +629,7 @@ bool UProphecySwordComponent::FinishJoltGrip(UProphecyJoltCharacterComponent& Ch
 	if (!Character.GetBodyHandle(Bone, Hand) || !JoltBody->GetBodyHandle(SwordBody)
 		|| Hand.WorldLifetime != SwordBody.WorldLifetime || !World->ReadBody(Hand, HandState).IsSuccess()
 		|| !JoltBody->GetBodyOriginToComponent(BodyOriginToComponent)) return false;
+	if (ProphecySwordHolster::States.Contains(A)) return BindHolster(false);
 	if (!bPhysicsHold)
 	{
 		if (!ReleaseJoltGrip()) return false;
@@ -787,6 +799,8 @@ bool UProphecySwordComponent::Bind(bool bSnapToGrip)
 		AddTickPrerequisiteComponent(M);
 	}
 	if (A->IsJoltPhysicalAnimationEnabled()) return BindJolt(bSnapToGrip);
+	if (ProphecySwordHolster::States.Contains(A) && A->GetSimulationMode()==EProphecyAgentSimulationMode::Kinematic)
+		return BindHolster(true);
 	if (bPhysicsHold)
 	{
 		if (!ReleaseJoltBody()) return false;
@@ -940,9 +954,15 @@ void UProphecySwordComponent::RefreshHandConstraint()
 {
 	if (!Sword || bDropPending) return;
 	AProphecyAgent* A = Agent();
+	if (!A || A->IsActorBeingDestroyed() || !GetWorld() || GetWorld()->bIsTearingDown)
+	{ bRefreshPending = false; return; }
+	// Keep the attachment until the selected backend owns the character;
+	// an intermediate Chaos bind would move a holstered sword to the hand.
 	if (bBinding || (JoltBody && JoltBody->IsReceiverRestorePending())
+		|| (A->GetSimulationMode()==EProphecyAgentSimulationMode::Physical
+			&& A->IsJoltPhysicalAnimationSelected() && !A->IsJoltPhysicalAnimationEnabled())
 		|| (A && A->GetJoltCharacterComponent() && A->GetJoltCharacterComponent()->IsKinematicRestorePending()))
-	{ bRefreshPending = true; return; }
+	{ bRefreshPending = true; SetComponentTickEnabled(true); return; }
 	bRefreshPending = false;
 	if (!Bind(false))
 	{
@@ -1108,6 +1128,8 @@ void UProphecySwordComponent::TickComponent(float Dt, ELevelTick Type, FActorCom
 	AProphecyAgent* A = Agent();
 	if (!A) return;
 	if (Type==LEVELTICK_PauseTick || GetWorld()->IsPaused())return;
+	if (bRefreshPending) RefreshHandConstraint();
+	if (!IsValid(Sword) || !IsValid(Blade)) return;
 	if (TickHolster())return;
 	if (!bDropPending && (bRefreshPending || BoundMesh != A->GetPoseReferenceMesh()
 		|| (!PendingJoltBindId.IsValid()

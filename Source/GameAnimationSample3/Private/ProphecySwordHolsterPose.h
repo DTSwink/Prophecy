@@ -67,11 +67,12 @@ bool CaptureEntryPose(AProphecyAgent* Agent,FEntryPose& Out);
 float UnshrinkAlpha(float& ElapsedTicks,float Duration);
 bool LoadProfile(const FString& Path,FProfile& Out,FString& Error);
 void Configure(const AProphecyAgent* Agent,const FProfile& Profile);
-void ConfigureReturnBlend(const AProphecyAgent* Agent,FVector2D DrawRange,FVector2D SheatheRange);
+void ConfigureNodeOverrides(const AProphecyAgent* Agent,FVector2D DrawRange,FVector2D SheatheRange,float DrawSlide,float SheatheSlide);
 bool ActionSpeeds(const AProphecyAgent* Agent,bool Sheathe,float& Reach,float& Rotation,float& Slide);
 bool Begin(AProphecyAgent* Agent,bool Sheathe,double ReachSpeed,double RotationSpeed,double SlideSpeed,
     double SlideLength,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth,const FGeometry& Geometry=FGeometry(),const FEntryPose* Previous=nullptr);
 void Update(AProphecyAgent* Agent,int32 PoseId);
+void Republish(const AProphecyAgent* Agent);
 bool Status(const AProphecyAgent* Agent,FStatus& Out);
 bool SetSliding(const AProphecyAgent* Agent,bool Sliding);
 void UpdateHolsterMount(const AProphecyAgent* Agent);
@@ -80,6 +81,8 @@ void ReleaseHolsterMount(const AProphecyAgent* Agent);
 bool TrySheathe(const AProphecyAgent* Agent,const FTransform& ActualBlade);
 bool SwordTarget(const AProphecyAgent* Agent,FTransform& Hand,double& Scale);
 bool PhysicsSwordTarget(const AProphecyAgent* Agent,FTransform& Blade);
+bool CompleteAttachedArm(const AProphecyAgent* Agent,const FTransform& Pelvis,const FTransform& Clavicle,
+    FTransform (&Arm)[3],FTransform& Holster,FTransform& Sword);
 void SetTargets(const AProphecyAgent* Agent,const FTransform& Clear,const FTransform& Seat,const FVector& Mouth);
 void Apply(int32 PoseId,TConstArrayView<FName> Names,TArrayView<FTransform> Pose,
     const FTransform& SpaceToWorld=FTransform::Identity);

@@ -3,6 +3,216 @@
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
+## October15 checkpoint and slowdown check
+
+User accepted the current motion and requested a checkpoint. Diagnosis-only paired current-scene captures cover295 consecutive ticks per mode across3agents: D release-to-finish38/39/40ticks in both Sim and Kin; physical hand target error after the first two release ticks at most.11861cm. No extra Sim return delay reproduced; tick90 in this current setup is S, first D releases176–179. No source/tuning fix was made for that report. Evidence `Saved/Diagnostics/DrawReturnSlow20261015/`. PoseAgent/A_Sword freshly compiled and saved with byte-identical complete graph; TestNN remains unsaved/local. No restart; normal DLLs remain stale.
+
+## October15 mode continuity correction
+
+Tab now preserves the active D/S motion. The earlier cancellation removed the authored pose and restored sword scale; that was the reported reset, not an acceptable interruption policy. Pending entry samples, action clocks, previous/current poses, shrink, insertion and attachment survive. Before teardown, only old joints, temporary physical-arm ownership and scoped contacts/limits are released. Initial admission and rebind share the same holster binding/grip implementation. A holster already kinematic keeps its ongoing compensation.
+
+Three additional transfer errors were found and corrected:
+
+- Actual input could request Jolt after its admission window, leaving one intervening Chaos simulation frame. The entire Kin->Jolt switch now uses the existing admission queue; the character stays kinematic until native admission is safe. Existing admission identity/cancellation is reused, with no new retained fields, timer or polling layer. A later explicit Kin request cancels it.
+- The intermediate ordinary sword refresh could send a holstered D sword back to the hand (51.24cm in a rapid-switch probe). Refresh now waits for selected Jolt ownership and rebinds the active holster state without changing scale or relative placement.
+- Old presentation state could reappear: the Kin->Physical pose blend outlived Jolt takeover, and the attached arm's post-physics pose was newer than the published kinematic copy. Native admission now retires that completed mode blend; the switch republishes the already-computed current D/S pose. No resampling, new solver or action-time change is introduced.
+
+A trial using the existing whole-pose fade on Sim->Kin was rejected during testing because it held the visible hand behind the advancing action and caused catch-up on return to Sim. It is absent from the final code. The corrected path preserves action continuity directly; it does not promise identical physical and kinematic tracking for every body.
+
+Final evidence: `Saved/Diagnostics/ModeContinuity20261015/` (`verified*.json`, `repaired-smoke.json`, `verified.json`, `receipt.json`). Seven runs, 4065 consecutive world-tick samples across three agents, 111 mode/input requests including three cancelled pending requests. Coverage includes actual Tab idle/walk, S/D reach/sliding/return, fully holstered, rapid/same-tick reversals, pending entry and physical-holster preference. Both actions complete in every run. No action-clock reset, unexpected Chaos frame in key tests, duplicate sword adapter, missing attachment or binding error. The two immediate API suites contain16 attached-arm Sim->Kin transfers: max arm position change6.36e-14cm, rotation below.01deg; sword-local position remains within.001cm. Other bones still remove ordinary physical tracking error on Kin entry, measured up to1.1773cm/7.0571deg. Key-event before/after measurements span one or two moving ticks and must not be interpreted as instantaneous seam sizes.
+
+The no-switch regression compares595ticks x3agents against the first continuity candidate, before the mode-only follow-ups: all physical/visible/future/authored/equipment transforms and native velocities match exactly. This is not a comparison to every historical version. A separate sharp upper-arm roll at D release382 (~148.53deg, then~60deg on following ticks) also occurs in the unchanged baseline. It is recorded as an existing motion issue and has not been altered in this Tab repair.
+
+All six implementation/method-only Live Coding builds and reloads succeeded; Unreal was never closed, and no retained layout or Blueprint control changed. Reload-created archived library defaults were repaired using the existing helper, without saving assets. Final graph byte-identical to the pre-work capture; original dirty PoseAgent/TestNN preserved, A_Sword additionally unsaved after reference repair. Editor19216 outside Play/60FPS/status3, no stale native properties or pins. Normal DLLs still require building before a cold launch. No new steady-state calculation or performance claim; no push.
+
+## October15 Tab input conflict
+
+The character's Tab graph correctly toggles SetSimulationMode between Physical and Kinematic. A_Sword also had a consuming Tab event wired to SetGamePaused, intercepting the key before the character. Actual input reproduced a pause at tick71 with all three agents still Physical/Jolt. The earlier API-driven mode tests did not exercise this input path.
+
+Removed only the sword Tab event and its outgoing execution link; the old pause function nodes remain unconnected, all other wiring/tuning retained. Character Tab and Caps Lock are unchanged. Eight key-driven round trips (first press20/45/70/105/140/155/168/190, second10ticks later) pass over2,040 consecutive captured ticks:16 real player-controller Tab events, expected Physical->Kinematic->Physical, no pause or physics binding errors. Saved A_Sword; repaired existing archived Live Coding library defaults and saved PoseAgent with identical gameplay graph. Key-pin empty/None serialization is equivalent. Existing A_Sword unconnected `get depth of location` compiler warning predates event removal and was left alone.
+
+Editor helper uses the existing migration command's RemoveSwordTab option; InputCore is now an explicit editor-module dependency. Final Live Coding build119.81s/reload passed after one compile/two link errors; no runtime physics changes or restart. Evidence `Saved/Diagnostics/TabMode20261015/`. Owned tests ended; the user started a fresh Play session before final inspection, left untouched at60FPS with dirty TestNN unsaved. Normal DLLs require a build before cold launch.
+
+## October15 sword binding across Sim / Kinematic
+
+The mode-switch failure noted in the overlap audit below was reproduced and traced to equipment ownership, not overlap generation. At Sim -> Kinematic tick70, scene discovery treated a holstered sword as an ordinary loose prop because it checked `GetHeldSword()`. That getter deliberately returns null while the sword is in its holster. Scene discovery created a second Jolt adapter; the equipment controller only knew its original adapter and subsequently enabled Chaos on the same source. The shared Jolt world correctly stopped on that ownership violation at tick73. This preceded hide/re-equip100. Temporary tracing distinguished scene discovery from the generic force/admission path; both contained the same incorrect ownership predicate.
+
+Both admission paths now check `UProphecySwordComponent::GetSword()`, which includes holstered equipment. Dropped swords remain ordinary props. The source guard now distinguishes a missing source from Chaos having been enabled on a live Jolt-owned component; no guard was weakened.
+
+Fixing that exposed stale D/S state on the reverse switch: an action started kinematically could retain its old mode and write scale through the wrong backend after Sim resumed. The initial repair cancelled pending/active D/S before tearing down its bodies. That policy caused the user-reported pose reset and was rejected. The continuity correction above supersedes it; the original lifecycle evidence below does not establish pose continuity.
+
+A fully sheathed sword is preserved instead: rebind updates its backend state and keeps its existing holster-relative transform rather than sending it through ordinary hand binding. Deferred rebinds wake the component and run before the holstered early return. Once settled, the component sleeps. A regression check caught the new sleep branch also disabling a queued draw; it now remains awake whenever a draw request is pending. The corrected no-switch capture matches the previous overlap-disabled version exactly for425ticks x3agents, including all previously captured poses, native velocities and D/S timing (zero differing fields).
+
+Validation evidence and scripts: `Saved/Diagnostics/SwordModeSwitch20261015/`. The12-case matrix covers held, S/D reach/slide/return, fully holstered, one-agent switches, same-tick/rapid reversals and physical-holster preference. Additional cases repeat the original switch/hide/re-equip sequence and switching with a rigidly held sword. Tests require finite consecutive samples, successful switches, no duplicate adapters, consistent backend flags and preserved holstered parent. Original failing captures and the intermediate stale-state failures remain recorded; `comparison-before-pending-fix.json` records the caught timing regression. Final loaded-version verification is summarized in the current journal.
+
+Final loaded-version results: all12 matrix cases plus original lifecycle and rigid-sword cases pass,136 individual mode-switch calls /6,125 consecutive finite captured ticks across3agents. No duplicate adapters, runtime physics errors, wrong holstered parents or stale mode flags. Through four fully holstered switches, maximum local position drift4.80e-14cm and quaternion-component difference2.22e-16. Final `unchanged-comparison.json` has zero differences over425ticks x3agents. These are numerical lifecycle/regression tests, not a new general performance or visual-perfection claim.
+
+Four implementation-only Live Coding builds/reloads (130.07/144.16/341.29/129.71s), no retained layout or reflected pin changes, editor restart, Blueprint/asset/lab/tuning edits or push. Final editor19216 open TestNN, outside Play, clean,60FPS. Normal DLLs remain stale: normal build before a cold launch. No new per-tick ownership scan, extra solver, timer, interpolation or weakened physics checks.
+
+## October15 agent overlap policy
+
+User explicitly requested disabling all agent overlaps in both simulated and kinematic modes. `AProphecyAgent::BeginPlay` now enumerates primitive components, including Blueprint components and child actors, and sets GenerateOverlapEvents false. Sword Equip applies the same policy to its newly spawned equipment and children. Existing capsule/main-mesh initialization already disabled their overlaps. This is initialization/spawn work only: no new tick, retained state or policy manager. It does not change collision enabled modes, responses, physical hit events, Jolt contacts or traces. Arbitrary future gameplay code that creates new primitives or explicitly re-enables overlaps must respect this policy; there is deliberately no perpetual scanner. Viewport asset defaults are unchanged; runtime initialization applies the policy.
+
+Layout-safe Live Coding build171.80s and reload succeeded without restarting or changing reflected layouts. Live checks inspect all33 current primitives every15ticks: zero enabled overlaps through425tick Sim and425tick Kin D/S runs. Sim capture matches the previous loaded version exactly for425ticks across3agents: all captured poses, native velocities and D/S fields/timing. Both modes traverse reach, slide, return and completed states.
+
+Three650tick performance captures compared with the immediately preceding batching version,267 samples per group with all3arms attached:
+
+| Attached-arm stage | Before | Overlaps disabled |
+| --- | ---: | ---: |
+| Mean | .257129ms | .184076ms |
+| Median | .2349ms | .1747ms |
+|95th percentile | .4073ms | .2679ms |
+| Maximum | .5202ms | .4237ms |
+
+These are sequential editor runs on the same machine, not an isolated or alternating-build benchmark. No whole-game/crowd speedup claim.
+
+**Timeline correction from the detailed log:** the first shared-world failure occurs around tick73, just after Sim->Kin at70 and BEFORE hide/re-equip at100. The attempt to return to Sim at130 only reports that the shared world is already stopped. The earlier summary incorrectly associated the initial failure with re-equipping. The guard combines two cases (source component missing OR Chaos simulation enabled); the recorded generic message does not distinguish them or identify the writer. No repair has been attempted.
+
+An additional compound lifecycle test failed: Sim->Kin at70, hide/re-equip(false) at100, return to Sim at130. The shared native world rejected enabling because an A_Sword binding had lost its source or Chaos simulation was enabled externally. Repeating with overlaps explicitly enabled reproduces the same error; all124 preceding actor samples are identical. Thus this failure persists independently of the overlap policy and is left reported, not marked passed or patched under this task. All inspected components stay overlap-disabled through the successful Kin/re-equip portion. The temporary comparison override is confined to the owned test, never production or assets. Initial Python getter/setter wrapper errors were corrected in the diagnostics.
+
+Evidence `Saved/Diagnostics/AgentOverlaps20261015/`: source snapshots, capture/inspection scripts, Sim/Kin recordings, exact motion comparison, both failed lifecycle recordings, performance receipt and final status. Raw timing CSVs `Saved/Profiling/CSV/no-agent-overlaps-{0,1,2}.csv`. Editor19216 open TestNN, outside Play, no dirty packages,60FPS, native status3/no stale pins. Normal DLLs still require a build before cold launch. No lab/BP/tuning changes or Git push.
+
+## October15 lossless attached-sword batching
+
+User resumed the paused performance task after the RMB timestep fix. This pass produces a small optimization; it does **not** establish a large reduction in D/S cost.
+
+The only production change is a standard `FScopedMovementUpdate` on the attached sword surrounding the holster's existing rotation update and the sword's existing local transform update. Previously the parent move published the child before the child's own move. Deferred child publication combines those updates, including the engine's ordinary overlap handling. The callback ownership checks remain. Kinematic-only agents do not enter this path. No motion calculation, physics write, collision setting, release history, asset, lab setting, recurring cache, scheduling policy or user control changed.
+
+The first instrumented run attributed about.241ms to holster movement,.060ms to sword movement,.017ms to the arm solve and.015ms to native arm writes. Those absolute figures varied with machine load. Engine traces showed component transform propagation, query-collider updates, navigation updates and overlap work; repeated native sword writes were only a few microseconds, not the dominant cost. Traces are archived in the evidence directory to avoid leaving large temporary exports.
+
+A trial scoped both parent and child. Its initial apparent32% improvement was **not accepted as an optimization result**, because unchanged math also ran faster. Six alternating650tick runs in one loaded build then compared the original path with that trial,351active frames per variant: median.2411→.2235ms, mean.253037→.244566ms. The redundant parent scope was removed for the final implementation. The temporary selector and all six additional timing subdivisions were removed; only the original `AttachedArm` scope/counter remains.
+
+Final three650tick runs, compared with the original-path runs above:
+
+| Frames where all three arms are attached | Original | Final |
+| --- | ---: | ---: |
+| Samples |267|267|
+| Mean |.265363ms|.257129ms|
+| Median |.2476ms|.2349ms|
+|95th percentile |.3956ms|.4073ms|
+| Maximum |.5273ms|.5202ms|
+
+These are wall-time stage measurements on the user's editor/machine, not a hardware-isolated benchmark. Final versus original averages are not an alternating same-binary comparison: final has one scope and no temporary subdivisions. The small mean/median reduction is consistent with the controlled trial, but the tail did not improve. All-active-frame final average is.247386ms across351samples (some frames have fewer than3attached agents). Do not claim a major speedup,10×, or improved whole-game/crowd performance. The remaining engine component/query/overlap work was not removed by disabling functionality or weakening publication checks.
+
+Verification:
+
+- Original versus two-scope trial:425ticks ×3agents, all captured values exactly equal.
+- Original versus final one-scope version:425ticks ×3agents, exactly equal again, including actual RMB press20/release150 (held cap5, fixed game step1/60), full poses, native linear/angular velocities, equipment and D/S report fields/timing.
+- Both trial and final pass all10hide/drop/reset/Sim→Kinematic/direct-sword-destruction cases, each in alignment and sliding. Ownership, limits and holster return restore.
+- Final layout-safe Live Coding build87.93s and reload succeeded; no object changes/restart. Four total implementation builds in this pass. Final editor19216 outside Play, clean,60FPS, native status3/no stale pins. Normal DLLs remain stale and must be built before a cold launch.
+- No lab, Blueprint, tuning or asset edits; no Git push. Prior unrelated working-tree changes preserved.
+
+Evidence: `Saved/Diagnostics/AttachedArmOptimize20261015/`: original source snapshot, original/final captures, exact comparisons, lifecycle results, six A/B CSV summaries, final performance receipt and archived engine traces. Raw CSVs are in `Saved/Profiling/CSV/`. This pass leaves the larger component-publication cost explicitly unresolved rather than disguising it as a large gain.
+
+## October15 right-click debug freeze
+
+The actual RMB input was intercepted by A_Sword's debug binding. Its configured
+slow-fps5 called SetFixedFrameRateRuntime, making each physics tick.2s instead
+of1/60s. The character's separate RMB binding already used `t.maxfps10`, but
+the sword consumed the key. Actual injected input reproduced the fault: after
+tick36 all three physical agents froze through240. The first shared-world error
+reported magic Cube publication differing by.000244140625cm; no D/S correction
+or relaxed publication guard was added to hide that failure.
+
+Only the sword RMB Pressed/Released execution links now point to its existing
+FPS-cap nodes (slow-fps5 / release60). Fixed-clock initialization and all tuning
+remain unchanged. The previous audit tested the cap directly and therefore
+missed the sword's timestep-changing input binding.
+
+Actual held-input test spans first S and D at4.996 measured FPS with fixed1/60
+delta. Matched fresh control/repeat:235ticks across3agents, every recorded actor
+value identical, including native velocities and motion timings. An earlier
+post-reload capture differed slightly for one NPC from startup, before the key
+press; retained separately rather than presented as exact parity. The repeat
+comparison passes without tolerance or exclusions.
+
+Saved A_Sword; complete graph comparison permits only six reciprocal pin-link
+lists belonging to the two rewired connections. Editor-only repair helper
+loaded without restart; no D/S/physics runtime or lab change. Editor clean,
+outside Play,60FPS; normal DLLs remain stale from prior Live Coding. Performance
+optimization remains paused. Evidence `Saved/Diagnostics/RightClickDS20261015/`.
+
+## October14 slide speed inputs on the big node
+
+Set Sword Holster Profile now exposes **Draw Sliding Speed** and **Sheathe
+Sliding Speed**, in cm/s. The existing Blueprint node uses330/170, preserving
+the accepted imported values. Call it after Set Sword Holster Lab Profile;
+positive inputs override the next action and0 leaves the configured speed
+unchanged. No change to curves, active actions or the lab. Existing per-action
+fields hold the override; no retained-layout change or added tick work.
+
+Live Coding built/loaded without restart. Only the two speed pins differ in
+the full Blueprint graph after repairing archived library CDO references.
+PoseAgent and restored A_Sword references saved; reflection healthy. Owned
+Play verifies independent S24/D13 planned slide ticks across all three agents
+at170/330cm/s. Editor19216 remains open, clean, outside Play at60FPS. Normal
+DLLs still require a build before cold launch. Evidence:
+`Saved/Diagnostics/SlideSpeedPins20261014/`. No push.
+
+## October14 simulated attachment fix and full audit
+
+The attached sword now follows the actual holster. During attached alignment
+and sliding, only upperarm_r/lowerarm_r/hand_r are temporarily kinematic native
+bodies; their anatomical joints and servo drives suspend. The completed physical
+clavicle and holster determine their real poses before publication. Release
+restores simulation at unchanged pose/velocity and initializes existing FK
+return from actual current/previous arm poses. Fully kinematic mode bypasses this
+ownership path. Pre-attachment reach, lab/tuning, authored curves and NN handoff
+remain unchanged. Direct equipment destruction now retires this ownership before
+ordinary cleanup rather than faulting the shared world.
+
+11 live captures/4,705 ticks/123 completed slides; ten interruption cases pass.
+Maximum S local path error .00004615cm, native/query/display .00000417cm.
+415 matched ticks at actual10 versus24.7FPS are identical. New attached-arm
+stage .262ms mean/.358ms p95 across the three-agent test; no100-agent total-game
+claim. D's existing2cm/5deg admission tolerance remains. Legacy native fixture
+failures are explicitly retained, not called green.
+
+Read the [full audit](SwordHolsterPhysicsAudit20261014.md) for all implementation
+decisions, rejected trials, tests, performance scope and remaining boundaries.
+[Compact receipt](../Tools/SwordHolster/AttachmentPhysics20261014.json).
+Editor19216 is open, clean/outside Play, original60FPS restored. Final cleanup
+guard is Live Coded; normal build required before next cold launch. No lab,
+Blueprint tuning/wiring change or Git push.
+
+## October14 S sliding hitch — original diagnosis (superseded above)
+
+User observes S sliding hitches, cleaner in kinematic. Four owned Play captures:
+650ticks sim/kin, then350ticks sim/kin retaining attached sword plus native
+pelvis velocities. All3 agents and repeated S examined; no runtime edits.
+
+The slide progress is smooth, but simulated sword/hand movement relative to
+the actual holster is not. First player S ticks77/78 move the physical hand
+4.624 then1.831cm; authored movement4.622 then1.834cm, grip residual
+.005834/.000307cm. Thus the constraint follows the commanded motion closely.
+After rotation/tip correction finishes, the expected sword path is a pure local
+translation along the blade with the saved insertion curve. Across six S:
+- simulated maximum per-slide path errors .499502–1.407471cm;
+  rotation errors .234376–.327186deg;
+- kinematic <=.000028cm and effectively zero angle;
+- simulated grip residual <=.012127cm over these post-correction samples.
+
+`ProphecySwordHolsterPose.cpp:527` RefreshGeometry predicts the physical pelvis
+one tick using native linear/angular velocity and derives a holster pose from
+it. The sword native kinematic body receives that world target in
+ProphecyJoltBodyComponent::PrepareJoltWorldStep. The displayed holster remains
+mounted to the actual completed physical pelvis. PresentSword then correctly
+shows the completed sword body, so prediction errors become real sword/hand
+motion relative to the holster. The first S post-correction sword angular
+error matches20% of the independently measured pelvis prediction angle error
+(to .000146deg in magnitude), consistent with current80% compensation.
+Physical acceleration makes that prediction imperfect; kinematic mode uses
+known authored pelvis transforms instead. This is an existing prediction-based
+attachment inconsistency, not elbow return IK or a grip joint slipping.
+Git blame dates the mounted-pelvis predictor to63c6065d0 (October13).
+
+No implementation/tuning/assets changed. Do not hide it by disconnecting the
+rendered sword from its body or adding grip smoothing. Next fix must make
+holster, sword and gripping hand use a consistent mount for the physics step.
+Editor stays open; owned Play ended;60FPS unchanged; dirty TestNN preserved;
+full BP graph identical. Evidence SheatheHitch20261014: sim/kin.json,
+sim-native/kin-native.json, steps.txt, summary.json and analysis scripts.
+
 ## October14 Unreal elbow port and body-pose refresh
 
 ### Current request: restore IK correction in both implementations

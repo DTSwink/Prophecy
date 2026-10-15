@@ -30,6 +30,7 @@ public:
 	AActor* Drop();
 	void Disappear();
 	void RefreshHandConstraint();
+	bool PrepareForModeChange();
 	bool BreakGripConstraint();
 	bool SetInertiaScale(float Scale);
 	bool SetAttachedInertiaScale(float Scale);
@@ -53,6 +54,8 @@ private:
 	FTransform GripWorld() const;
     FTransform GripLocal() const;
     bool TickHolster();
+    bool BindHolster(bool Kinematic);
+    bool UpdateHolsterGrip();
     void ClearHolster();
 	bool ApplyMass(float MassKg);
 	float BaseMassKg = 1.0f;

@@ -445,6 +445,11 @@ public:
     /** Absolute dynamic mass; scales rotational inertia proportionally, without changing pose or velocity. */
     FProphecyJoltWorldStatus SetBodyMassKg(const FProphecyJoltBodyHandle& Body, float MassKg);
     FProphecyJoltWorldStatus SetBodyKinematic(const FProphecyJoltBodyHandle& Body);
+    // Temporary authored limb. Suspends its anatomical joints, excludes servo
+    // targets, and restores the same bodies/joints with their release velocity.
+    FProphecyJoltWorldStatus SetRigKinematicLimb(TConstArrayView<FProphecyJoltBodyHandle> Bodies, bool Enabled);
+    FProphecyJoltWorldStatus PoseRigKinematicLimb(TConstArrayView<FProphecyJoltBodyHandle> Bodies,
+        TConstArrayView<FTransform> BodyWorld, float DeltaSeconds);
     FProphecyJoltWorldStatus SetBodyDynamic(const FProphecyJoltBodyHandle& Body);
     FProphecyJoltWorldStatus SetBodyPose(const FProphecyJoltBodyHandle& Body, const FTransform& BodyOrigin);
 #if !UE_BUILD_SHIPPING

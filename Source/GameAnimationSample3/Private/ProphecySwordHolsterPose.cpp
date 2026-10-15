@@ -1,4 +1,5 @@
 #include "ProphecySwordHolsterPose.h"
+#include "ProphecySwordHolster.h"
 #include "ProphecyHolsterMount.h"
 #include "ProphecyJoltStandardPhysicsLibrary.h"
 #include "ProphecySwordTipAlignment.h"
@@ -262,6 +263,10 @@ struct FActive : FReturnTrack
  FAuthoredState Authored;FProfile Profile;FStatus Status;int32 PoseId=INDEX_NONE,Pelvis=0,Spine[5],Clav,Arm[3],Neck[3];
  TArray<FName> Names;TArray<int32> Parents,Upper,Groups,GripUpper;
  TArray<FTransform> Base,Pose,Before,Entry,LastBase,LastBody,Work,HeadWork,Future,SlidePose;
+ // Captured only on physical grip release, before the completed arm is known.
+ TArray<FTransform> ReleasePreviousBody,ReleasePreviousBase;
+ FTransform ReleasePreviousRoot;
+ bool DeferredArmReturn=false;
  TArray<FName> ReadNames;FProphecyNNPoseSnapshot Snapshot;
  FTransform Clear,Seat;FVector Mouth,SpineAxis,ClavU,ClavV,Body=FVector::ZeroVector,Desired=FVector::ZeroVector;
  FTransform SourceArm[3],DestinationArm[3],SlideA[3],SlideB[3],HeldArm[3];
@@ -321,11 +326,19 @@ static void EnsureCleanup()
  });
 }
 void Configure(const AProphecyAgent* A,const FProfile& P){Profiles.Add(A,P);EnsureCleanup();}
-void ConfigureReturnBlend(const AProphecyAgent* A,FVector2D DrawRange,FVector2D SheatheRange){auto& P=Profiles.FindOrAdd(A);P.ReturnBlend[0]=DrawRange;P.ReturnBlend[1]=SheatheRange;EnsureCleanup();}
+void ConfigureNodeOverrides(const AProphecyAgent* A,FVector2D DrawRange,FVector2D SheatheRange,float DrawSlide,float SheatheSlide)
+{
+ auto& P=Profiles.FindOrAdd(A);P.ReturnBlend[0]=DrawRange;P.ReturnBlend[1]=SheatheRange;
+ if(DrawSlide>0)P.Body[0].Sliding=DrawSlide;
+ if(SheatheSlide>0)P.Body[1].Sliding=SheatheSlide;
+ EnsureCleanup();
+}
 bool ActionSpeeds(const AProphecyAgent* A,bool Sheathe,float& Reach,float& Rotation,float& Slide)
 {
- const auto* P=Profiles.Find(A);if(!P||!P->Body[Sheathe].HasSpeeds)return false;
- const auto& B=P->Body[Sheathe];Reach=B.Reach;Rotation=B.Rotation;Slide=B.Sliding;return true;
+ const auto* P=Profiles.Find(A);if(!P)return false;
+ const auto& B=P->Body[Sheathe];Slide=B.Sliding;
+ if(!B.HasSpeeds)return false;
+ Reach=B.Reach;Rotation=B.Rotation;return true;
 }
 static void RestoreHolsterMount(FActive& S,bool PreserveSword=false)
 {
@@ -408,6 +421,12 @@ static void Publish(FActive& S)
  if(S.Status.Finished){Outputs.Remove(S.PoseId);AnyOutput.Store(!Outputs.IsEmpty());return;}
  auto& C=Outputs.FindOrAdd(S.PoseId);for(int J:S.Upper)C.Bones.FindOrAdd(S.Names[J])=S.Pose[J];AnyOutput.Store(true);
 }
+void Republish(const AProphecyAgent* A)
+{
+ // The attached-arm completion updates Pose after physics, after the normal
+ // publication. A backend switch must expose that completed pose, not its old copy.
+ if(const auto* S=Active.Find(A))Publish(**S);
+}
 #include "ProphecySwordHolsterAuthored.inl"
 static void BodyPose(const FActive& S,TConstArrayView<FTransform> Base,FVector V,TArray<FTransform>& Out,bool ShoulderOnly=false,const FQuat* Authored=nullptr)
 {
@@ -459,15 +478,17 @@ static void ApplyArm(const FActive& S,TArray<FTransform>& Pose,const FTransform 
   if(K>0)L.SetTranslation(L.GetLocation().GetSafeNormal()*(S.Profile.Body[S.Sheathe].Authored?S.Authored.Local[J].GetLocation().Size():FVector::Distance(S.Base[J].GetLocation(),S.Base[P].GetLocation())));
   Pose[J]=L*Pose[P];if(K==0)Pose[J].SetTranslation(Original);}
 }
-static void Solve(FActive& S,TArray<FTransform>& P,const FTransform& Goal,const FVector* Hint=nullptr)
+static void SolveArm(FTransform& Upper,FTransform& Lower,FTransform& Hand,const FTransform& Goal,const FVector* Hint=nullptr)
 {
- const int A=S.Arm[0],B=S.Arm[1],C=S.Arm[2];const FVector X=P[A].GetLocation(),Y=P[B].GetLocation(),Z=P[C].GetLocation();
+ const FVector X=Upper.GetLocation(),Y=Lower.GetLocation(),Z=Hand.GetLocation();
  const double L1=(Y-X).Size(),L2=(Z-Y).Size();const FVector D=(Goal.GetLocation()-X).GetSafeNormal(SMALL_NUMBER,FVector::ForwardVector);
  const double L=FMath::Clamp((Goal.GetLocation()-X).Size(),FMath::Abs(L1-L2)+.001,L1+L2-.001),Along=(L1*L1+L*L-L2*L2)/(2*L);
  FVector Pole=FVector::VectorPlaneProject(Hint?*Hint:Y-X,D);if(Hint&&Pole.Size()<1.e-7)Pole=FVector::VectorPlaneProject(Y-X,D);Pole=Pole.GetSafeNormal();if(Pole.IsNearlyZero())Pole=FVector::CrossProduct(D,FMath::Abs(D.Z)<.9?FVector::UpVector:FVector::RightVector).GetSafeNormal();
  const FVector E=X+D*Along+Pole*FMath::Sqrt(FMath::Max(0.,L1*L1-Along*Along)),H=X+D*L;
- P[A].SetRotation((FQuat::FindBetweenVectors(Y-X,E-X)*P[A].GetRotation()).GetNormalized());P[B]=FTransform((FQuat::FindBetweenVectors(Z-Y,H-E)*P[B].GetRotation()).GetNormalized(),E);P[C]=FTransform(Goal.GetRotation(),H);
+ Upper.SetRotation((FQuat::FindBetweenVectors(Y-X,E-X)*Upper.GetRotation()).GetNormalized());Lower=FTransform((FQuat::FindBetweenVectors(Z-Y,H-E)*Lower.GetRotation()).GetNormalized(),E);Hand=FTransform(Goal.GetRotation(),H);
 }
+static void Solve(FActive& S,TArray<FTransform>& P,const FTransform& Goal,const FVector* Hint=nullptr)
+{SolveArm(P[S.Arm[0]],P[S.Arm[1]],P[S.Arm[2]],Goal,Hint);}
 static void PreserveArmRoll(FActive& S,const FTransform (&Before)[3])
 {
  // Pole placement determines the elbow, not an extra axial rotation. Near
@@ -532,7 +553,8 @@ static void RefreshGeometry(FActive& S,bool ForPose=true)
   // Author for the upcoming physics step, not the completed one. A simulated
   // holster has its own velocity; transporting it with the NN pelvis erases
   // lag or mispredicts its rotation during a turn. Read its native state once.
-  if(ForPose){bool Predicted=false;
+  const bool AttachedArm=ProphecySwordHolster::HasKinematicArm(Cast<AProphecyAgent>(H->GetOwner()));
+  if(ForPose&&!AttachedArm){bool Predicted=false;
    // Keep the exact local mount. Sim follows its physical parent, predicted one
    // step from native velocity; substituting the NN pelvis displaces equipment
    // from the real holster. Kinematic mode uses the authored pelvis directly.
@@ -562,6 +584,7 @@ static void RefreshGeometry(FActive& S,bool ForPose=true)
    }
    if(!Predicted&&S.LastBase.IsValidIndex(S.Pelvis))Holster=Holster.GetRelativeTransform(S.LastBase[S.Pelvis])*S.Base[S.Pelvis];
   }
+  else if(ForPose)Holster=S.Stabilizing?MountedHolster(S,S.Base[S.Pelvis]):H->GetRelativeTransform()*S.Base[S.Pelvis];
   S.HolsterFrame=Holster;S.Full=S.Geometry.Seated*Holster;
  }
  S.Mouth=S.Full.TransformPosition(S.Geometry.BaseLocal);
@@ -1240,7 +1263,11 @@ static void BlendReturnToNN(FActive& S,double Alpha)
 }
 static void Advance(FActive& S,int Steps)
 {
- for(int Step=0;Step<Steps;++Step){const bool WasAligning=S.Status.Aligning;++S.Status.Tick;S.Before=S.Pose;S.Pose=S.Base;RefreshGeometry(S);
+ for(int Step=0;Step<Steps;++Step){const bool WasAligning=S.Status.Aligning;++S.Status.Tick;
+  const auto* Owner=S.Geometry.Holster.IsValid()?Cast<AProphecyAgent>(S.Geometry.Holster->GetOwner()):nullptr;
+  const bool DeferRelease=Step==Steps-1&&S.Sliding&&S.Status.Tick==S.SlideStart+S.Status.SlideTicks&&ProphecySwordHolster::HasKinematicArm(Owner);
+  if(DeferRelease){S.ReleasePreviousBody=S.LastBody;S.ReleasePreviousBase=S.LastBase;S.ReleasePreviousRoot=S.PreviousRootFrame;}
+  S.Before=S.Pose;S.Pose=S.Base;RefreshGeometry(S);
   const bool Refit=!S.Sliding&&!S.Status.Aligning&&S.Status.Tick%4==0;
   if(Refit&&!S.Profile.Body[S.Sheathe].Authored)S.Desired=Optimize(S);
   const double ReachFraction=S.Profile.Reach[S.Sheathe].Sample(double(S.Status.Tick)/FMath::Max(1,S.Status.ReachTicks));S.Status.Progress=ReachFraction;S.Status.ReachDone=S.Status.Tick>=S.Status.ReachTicks;
@@ -1283,7 +1310,8 @@ static void Advance(FActive& S,int Steps)
   }
   const auto& Profile=S.Profile.Return[S.Sheathe];
   if(S.Sliding&&!S.Status.Returning&&(S.Sheathe?S.Status.Insertion:S.Status.SlideProgress)>=Profile.StartFraction-1.e-8&&(Profile.Enabled||SlideTime>=1)){
-   BeginReturn(S);S.ReturnTick=S.Status.Tick;S.BodyElapsed=0;CaptureArm(S,S.Pose,S.HeldArm);
+   if(DeferRelease)S.DeferredArmReturn=true;else BeginReturn(S);
+   S.ReturnTick=S.Status.Tick;S.BodyElapsed=0;CaptureArm(S,S.Pose,S.HeldArm);
   }
   if(S.Status.Returning&&S.Status.Tick>S.ReturnTick){
    if(Holding&&S.ReturnTick<Release){
@@ -1304,7 +1332,7 @@ static void Advance(FActive& S,int Steps)
    }else{S.BodyElapsed+=1./60.;ReturnStep(S,S.BodyElapsed);}
   }
   if(S.Sliding&&S.Status.Tick==Release&&S.ReturnTick<Release&&Profile.Enabled){
-   S.ArmReturn.OnlyGrip=true;BeginReturn(S,S.ArmReturn);S.ArmReturning=true;
+   S.ArmReturn.OnlyGrip=true;if(DeferRelease)S.DeferredArmReturn=true;else BeginReturn(S,S.ArmReturn);S.ArmReturning=true;
   }
   if(S.ArmReturning&&S.Status.Tick>Release)ReturnStep(S,S.ArmReturn,double(S.Status.Tick-Release)/60);
   if(S.Status.Returning&&S.Sliding&&S.Status.Tick>Release)ApplyArmIKReturn(S,S.ArmReturning?S.ArmReturn:static_cast<FReturnTrack&>(S),S.ArmReturning?double(S.Status.Tick-Release)/60:S.BodyElapsed);
@@ -1320,6 +1348,34 @@ static void Advance(FActive& S,int Steps)
   S.Status.Finished=S.Sliding&&SlideTime>=1&&HolsterWeight(S)<=0&&
    (Window?NNAlpha>=1:S.HeadDone&&(!Profile.Enabled||(S.BodyElapsed>=S.ReturnDuration&&(!S.ArmReturning||double(S.Status.Tick-Release)/60>=S.ArmReturn.ReturnDuration))));
  }
+}
+
+bool CompleteAttachedArm(const AProphecyAgent* A,const FTransform& Pelvis,const FTransform& Clavicle,
+ FTransform (&Arm)[3],FTransform& Holster,FTransform& Sword)
+{
+ auto* Found=Active.Find(A);if(!Found)return false;auto& S=**Found;
+ auto* H=S.Geometry.Holster.Get();if(!H||(!S.Sliding&&!S.Status.Aligning))return false;
+ Holster=S.Stabilizing?MountedHolster(S,Pelvis):H->GetRelativeTransform()*Pelvis;
+ double Scale;const FTransform Goal=SwordHandTarget(S,Scale).GetRelativeTransform(S.HolsterFrame)*Holster;
+ Sword=GripAt(S,Scale)*Goal;
+ // Keep the authored elbow direction/roll, with the shoulder carried by its
+ // actual completed clavicle. This is the same small two-bone solve as the lab.
+ for(int K=0;K<3;++K)Arm[K]=S.Pose[S.Arm[K]].GetRelativeTransform(S.Pose[S.Clav])*Clavicle;
+ SolveArm(Arm[0],Arm[1],Arm[2],Goal);
+ for(int K=0;K<3;++K){S.Pose[S.Arm[K]]=Arm[K];S.LastBody[S.Arm[K]]=Arm[K];}
+ if(S.DeferredArmReturn){
+  // Seed the existing return once, after physics supplies the exact release
+  // pose. Retain the same clock/duration and the preceding actual pose.
+  auto CurrentPose=MoveTemp(S.Pose);auto CurrentBase=MoveTemp(S.LastBase);
+  S.Pose=MoveTemp(S.LastBody);S.LastBody=MoveTemp(S.ReleasePreviousBody);S.LastBase=MoveTemp(S.ReleasePreviousBase);
+  const auto CurrentRoot=S.PreviousRootFrame;S.PreviousRootFrame=S.ReleasePreviousRoot;
+  BeginReturn(S,S.ArmReturning?S.ArmReturn:static_cast<FReturnTrack&>(S));
+  S.PreviousRootFrame=CurrentRoot;S.LastBody=MoveTemp(S.Pose);S.Pose=MoveTemp(CurrentPose);S.LastBase=MoveTemp(CurrentBase);
+  S.DeferredArmReturn=false;
+  HandAxisStep(S,S.SlideStart+S.Status.SlideTicks);
+ }
+ S.ReleasePreviousBody.Reset();S.ReleasePreviousBase.Reset();
+ return true;
 }
 
 void Update(AProphecyAgent* A,int32 Id)

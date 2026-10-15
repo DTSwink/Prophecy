@@ -438,6 +438,8 @@ struct FRigRecord
     TArray<ProphecyJolt::FVelocityServo::FTarget> Targets;
     TArray<FProphecyJoltBodyHandle> PublishedHandles;
     FProphecyJoltRigServoState ServoState;
+    TArray<FProphecyJoltBodyHandle> KinematicLimb;
+    TArray<int32> KinematicLimbJoints;
 };
 
 // Sparse sidecar rather than changing the layout of retained live rig records.
@@ -496,6 +498,7 @@ void RefreshSpeculativeJoint(JPH::PhysicsSystem& Physics, JPH::Ref<JPH::TwoBodyC
     Replacement->SetNumVelocityStepsOverride(Registered->GetNumVelocityStepsOverride());
     Replacement->SetNumPositionStepsOverride(Registered->GetNumPositionStepsOverride());
     Replacement->SetConstraintPriority(Registered->GetConstraintPriority());
+    Replacement->SetEnabled(Registered->GetEnabled());
     // Preserve the registration index as well as the native joint state. Remove/Add
     // changes the solve order and can kick an attachment even with inactive limits.
     Physics.ReplaceConstraint(Registered.GetPtr(), Replacement.GetPtr());
@@ -1245,7 +1248,12 @@ public:
         for (int32 Index = 0; Index < Rigs.Num(); ++Index)
         {
             const auto& Slot = Rigs[Index];
-            if (!Slot.Record || !Slot.Record->bCommitted || Slot.Record->Targets.IsEmpty()) continue;
+            if (!Slot.Record || !Slot.Record->bCommitted) continue;
+            // These collision-suppressed bodies are authored after the solved
+            // parent is known. Do not integrate the previous release velocity.
+            for (const auto& Handle : Slot.Record->KinematicLimb)
+                Physics.GetBodyInterface().SetLinearAndAngularVelocity(Find(Handle)->Body, JPH::Vec3::sZero(), JPH::Vec3::sZero());
+            if (Slot.Record->Targets.IsEmpty()) continue;
             auto& Range = ServoRanges.AddDefaulted_GetRef();
             Range.Rig = { Lifetime, Index, Slot.Generation };
             Range.Begin = FlatTargets.Num();
@@ -2781,6 +2789,7 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::PublishRigVelocityTargets(
                 !Target.ParentStart.GetRotation().IsNormalized() || !Target.ParentTarget.GetRotation().IsNormalized())))
             return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Local servo targets require a different valid parent in the same rig and finite parent frames."));
         UniqueSlots.Add(Target.Handle.Slot);
+        if (Rig->KinematicLimb.ContainsByPredicate([&](const auto& H){return SameBody(H,Target.Handle);})) continue;
         ProphecyJolt::FVelocityServo::FTarget NativeTarget;
         NativeTarget.Body = Slot->Body;
         if(Parent)
@@ -3441,6 +3450,80 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::WeldBodyShape(const FProph
     Native->Physics.SetSimShapeFilter(&Native->ScopedPairFilter);
     Bodies.InvalidateContactCache(ParentSlot->Body);
     RefreshDiagnostics();
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetRigKinematicLimb(
+    TConstArrayView<FProphecyJoltBodyHandle> Handles, bool Enabled)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    if(Handles.IsEmpty())return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("A kinematic limb requires explicit rig bodies."));
+    const auto* First=Native->Find(Handles[0]);auto* Rig=First?Native->FindRig(First->OwnerRig):nullptr;
+    if(!Rig)return Fail(EProphecyJoltWorldResult::InvalidHandle,TEXT("Kinematic limb requires a live rig."));
+    TArray<int32,TInlineAllocator<8>> Indices;
+    for(const auto& H:Handles){
+        const auto* Slot=Native->Find(H);
+        const int32 I=Rig->Handles.IndexOfByPredicate([&](const auto& R){return SameBody(H,R);});
+        if(!Slot||I==INDEX_NONE||Indices.Contains(I)||(Enabled&&!Slot->IncidentJoints.IsEmpty()))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Limb bodies must be distinct members of one rig without external grips."));
+        Indices.Add(I);
+    }
+    if(!Rig->KinematicLimb.IsEmpty()){
+        if(Rig->KinematicLimb.Num()!=Handles.Num())return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("A different kinematic limb already owns this rig."));
+        for(const auto& H:Handles)if(!Rig->KinematicLimb.ContainsByPredicate([&](const auto& R){return SameBody(H,R);}))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("A different kinematic limb already owns this rig."));
+        if(Enabled)return {};
+    }else if(!Enabled)return {};
+    auto& Bodies=Native->Physics.GetBodyInterface();
+    if(Enabled){
+        for(const auto& H:Handles)if(Bodies.GetMotionType(Native->Find(H)->Body)!=JPH::EMotionType::Dynamic)
+            return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Only currently simulated rig bodies can enter a temporary kinematic limb."));
+        for(int32 I=0;I<Rig->Constraints.Num();++I){const auto& J=Rig->JointDescriptions[I];
+            if((Indices.Contains(J.Body1Index)||Indices.Contains(J.Body2Index))&&Rig->Constraints[I]->GetEnabled()){
+                Rig->KinematicLimbJoints.Add(I);Rig->Constraints[I]->SetEnabled(false);
+            }
+        }
+        Rig->KinematicLimb.Append(Handles.GetData(),Handles.Num());
+        for(const auto& H:Handles)Bodies.SetMotionType(Native->Find(H)->Body,JPH::EMotionType::Kinematic,JPH::EActivation::Activate);
+        // A target may already have been published before attachment this tick.
+        for(int32 I=Rig->PublishedHandles.Num()-1;I>=0;--I)
+            if(Rig->KinematicLimb.ContainsByPredicate([&](const auto& H){return SameBody(H,Rig->PublishedHandles[I]);})){
+                Rig->PublishedHandles.RemoveAt(I);Rig->Targets.RemoveAt(I);Rig->ServoState.Samples.RemoveAt(I);
+            }
+    }else{
+        for(const auto& H:Handles)Bodies.SetMotionType(Native->Find(H)->Body,JPH::EMotionType::Dynamic,JPH::EActivation::Activate);
+        for(int32 I:Rig->KinematicLimbJoints){Rig->Constraints[I]->ResetWarmStart();Rig->Constraints[I]->SetEnabled(true);}
+        Rig->KinematicLimb.Reset();Rig->KinematicLimbJoints.Reset();
+    }
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::PoseRigKinematicLimb(
+    TConstArrayView<FProphecyJoltBodyHandle> Handles,TConstArrayView<FTransform> Poses,float DeltaSeconds)
+{
+    using namespace ProphecyJolt::WorldPrivate;using namespace ProphecyJolt::Conversions;
+    const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    if(Handles.IsEmpty()||Handles.Num()!=Poses.Num()||!FMath::IsFinite(DeltaSeconds)||DeltaSeconds<=0)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Kinematic limb needs one rigid pose per body and a positive step."));
+    struct FUpdate {JPH::BodyID Body;FVector Linear,Angular;};
+    TArray<FUpdate,TInlineAllocator<8>> Updates;
+    for(int32 I=0;I<Handles.Num();++I){const auto* Slot=Native->Find(Handles[I]);const auto* Rig=Slot?Native->FindRig(Slot->OwnerRig):nullptr;
+        if(!Rig||!RigidJointFrame(Poses[I])||!Rig->KinematicLimb.ContainsByPredicate([&](const auto& H){return SameBody(H,Handles[I]);}))
+            return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Pose writes require an owned kinematic limb."));
+        const JPH::BodyLockRead Lock(Native->IdleBodyReadLocks(),Slot->Body);
+        if(!Lock.Succeeded()||!Lock.GetBody().IsKinematic())return Fail(EProphecyJoltWorldResult::InvalidHandle,TEXT("Kinematic limb body changed."));
+        const auto& B=Lock.GetBody();const FVector COM=FromJoltPosition(B.GetCenterOfMassPosition());
+        const FVector Next=Poses[I].TransformPosition(FromJoltDirection(B.GetShape()->GetCenterOfMass())*100.);
+        FQuat Q=(Poses[I].GetRotation()*FromJoltRotation(B.GetRotation()).Inverse()).GetNormalized();if(Q.W<0)Q=Q*-1.;
+        FVector Axis;double Angle;Q.ToAxisAndAngle(Axis,Angle);
+        Updates.Add({Slot->Body,(Next-COM)/DeltaSeconds,Axis*(Angle/DeltaSeconds)});
+    }
+    auto& Bodies=Native->Physics.GetBodyInterface();
+    for(int32 I=0;I<Updates.Num();++I){const auto& U=Updates[I];
+        Bodies.SetPositionAndRotation(U.Body,ToJoltPosition(Poses[I].GetLocation()),ToJoltRotation(Poses[I].GetRotation()),JPH::EActivation::Activate);
+        Bodies.SetLinearAndAngularVelocity(U.Body,ToJoltLinearVelocity(U.Linear),ToJoltAngularVelocity(U.Angular));
+    }
     return {};
 }
 

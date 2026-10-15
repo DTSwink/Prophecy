@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 5974,
-  "bytes": 530457274,
+  "file_count": 5976,
+  "bytes": 530550572,
   "files": [
     {
       "path": ".gitattributes",
@@ -4447,9 +4447,9 @@
     },
     {
       "path": "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset",
-      "git_blob": "eb7f2d557d518037d2332b9d69ab8b208299d4b0",
-      "bytes": 6228049,
-      "sha256": "5ab7fff1d46932c8c97600d1b11345b6ba66521cf02033bf30fc2908461c1653"
+      "git_blob": "ac6fa7cf22f88b4a776f3c38baa6f66e26e1486c",
+      "bytes": 6230237,
+      "sha256": "ba5be622acbffa75b4d331caa5b0fb5390b73165be84f5688a17b97a57edc8f0"
     },
     {
       "path": "Content/_mygame/locomotion/L_DoubleReachBallTest.umap",
@@ -4645,9 +4645,9 @@
     },
     {
       "path": "Content/_mygame/sword/A_Sword.uasset",
-      "git_blob": "7aed2473851494e25e43a63e8eebd633246f68e6",
-      "bytes": 2262853,
-      "sha256": "260584f47dc95d0caee2407f417a64cced10aada273dcd99dee0b19685573bb2"
+      "git_blob": "623233212f50acb24f0f117d14bc53ff2ec6bd3d",
+      "bytes": 2259884,
+      "sha256": "a04c86fc1c84e180781198c77be00ac1cf93d02110bf6917a734843e6e59750c"
     },
     {
       "path": "Content/_mygame/sword/ST_Cut.uasset",
@@ -6793,15 +6793,21 @@
     },
     {
       "path": "Docs/SwordHolster.md",
-      "git_blob": "0b47f0ccbad0fa5c0135e89d812307d93658cbd3",
-      "bytes": 118297,
-      "sha256": "1dd596ba79d60dfad7976716d5614380ffe230bd9dce1192911f338a91b28cae"
+      "git_blob": "376f310772b46189c669a5d5bf6d72c69bfb606e",
+      "bytes": 142875,
+      "sha256": "189f7487d1ee5d350b077d1e2b4f2c82df234526eb61646a4af7bd1c52a04041"
     },
     {
       "path": "Docs/SwordHolsterOvernight20261011.md",
       "git_blob": "082c8367a20f01954779454a3b7b3a88908c917a",
       "bytes": 20651,
       "sha256": "d937706f0ed9229af71e9e7d557589a6029fa38585fb696fcf805f6f17a74fd9"
+    },
+    {
+      "path": "Docs/SwordHolsterPhysicsAudit20261014.md",
+      "git_blob": "1d662009aa3772f2f087da57bcaa480b1390fd76",
+      "bytes": 14404,
+      "sha256": "3365d9c07eea9b2892926b8b947726a5e95c75d531f2f5822f538e535e340234"
     },
     {
       "path": "Docs/SwordHolsterPort20261012.md",
@@ -12187,9 +12193,9 @@
     },
     {
       "path": "Labs/SwordHolsterLab/state.json",
-      "git_blob": "9e6942e306d065174515d6bf6f2c58906edc46a0",
-      "bytes": 76166,
-      "sha256": "42d7c208b46b1d621110e63669d8b827af1b6c0068416e59cbdf5d9fdd91374a"
+      "git_blob": "32d6b5e9c66a5ac6ead74e39dcf10cf83e99a6db",
+      "bytes": 76159,
+      "sha256": "9022e39e199f385947bd7810cc1a73884d317b079fcbb4e69a8b0e84ca1eb7ef"
     },
     {
       "path": "Labs/SwordHolsterLab/style.css",
@@ -12817,9 +12823,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltRig.cpp",
-      "git_blob": "788d15ff4fa1568b7e2e05949138c73d8d76124c",
-      "bytes": 46966,
-      "sha256": "a52b8aca3bc4a154bfa0433c022d0b666f047b43e8d9863100074b24d2a79ae0"
+      "git_blob": "6929804d50376fd1613c2222cf866c2d8ef5cabe",
+      "bytes": 47602,
+      "sha256": "e30ae7d81515366ec2e08f7467d10ce5fc859af7644e318a1b7ac29dd6d236f4"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltScopedContacts.inl",
@@ -12859,9 +12865,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltWorldSubsystem.cpp",
-      "git_blob": "d741d600f3a3a6d6013cb90f04394afc89e9b0f7",
-      "bytes": 227856,
-      "sha256": "49174ea8eca8a2cf39da908181079a0ac54003d06ab978693b12f79e5d91a3eb"
+      "git_blob": "4eb6062118a856a0da02cbdd8bdbb42c72b9a3bb",
+      "bytes": 233957,
+      "sha256": "98d051383c7ba1167b99e10a9637726f00dc29cc3d1a2cea829bcf120d1f5499"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltArmMotorTests.inl",
@@ -12901,9 +12907,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltGenericJointTests.cpp",
-      "git_blob": "be798b022f92bd0191ee38fb37405ccd2fbce684",
-      "bytes": 42263,
-      "sha256": "b6de305bbe6ad330d02ba85f43d635b02e9747ce1163fe1d229d7da4959a521d"
+      "git_blob": "8b66ae129daaa794003763fef6e660b4ed6b6fbd",
+      "bytes": 47401,
+      "sha256": "e5aa7977bd9ab42ef50566f8e35f986e3ffbd3cef81a21c67464da4f085f3882"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltJointTests.cpp",
@@ -13033,9 +13039,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltRig.h",
-      "git_blob": "15ce3ecdcdc4f9574c0556d83727af0ddd80cf9e",
-      "bytes": 7863,
-      "sha256": "3f0f3608a846eafa07c52567a18b7f3c7e1df9f2277f0b5a9d51891bebd35ad7"
+      "git_blob": "f02b134400a25ced5e0ada569910a7ee9d6d3676",
+      "bytes": 8101,
+      "sha256": "a20766fc387a2895c3f545dc83b207ac4090ac30ad3ff583be1f056ad23c3a02"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltShapeAsset.h",
@@ -13051,9 +13057,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltWorldSubsystem.h",
-      "git_blob": "327fab85c4cca6c9bed4f17e0dae59c4bddefbf8",
-      "bytes": 28671,
-      "sha256": "a4149bbb6c5b4f68a5719884d78b9a95fdea5139ba27b89f58e3962e5d4b8df7"
+      "git_blob": "b5d1b79bf77685df39112ffc8715d7b2d8466ce0",
+      "bytes": 29111,
+      "sha256": "9d86b2a4ad309ac18e71af40d2b89911980a9c412588fe2dd6cecbc827eb29e4"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJoltEditor/Private/ProphecyJoltComponentAuditCommandlet.cpp",
@@ -13111,9 +13117,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "52f57f67be428417988190726ef18ad8e30c9f80",
-      "bytes": 216809,
-      "sha256": "09e908e208e3091f5ec2dc49fdf458952831ddce577f1c4608dfa6a2d1123449"
+      "git_blob": "6eebeeb53b0ab57d243d8b657bbfd30b80ebb91e",
+      "bytes": 232034,
+      "sha256": "3b8b0b453b287b284b712e0cf626ff3aaf3f398d01c7e1d2dab250c761cd15b8"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -29563,9 +29569,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgent.cpp",
-      "git_blob": "2f4370f730698f22a93abe03015e53a249b6d2c8",
-      "bytes": 150418,
-      "sha256": "18d0d20830295dc5ebacc78c274deafdd833c5cca8187c5256b180a0bce3ce27"
+      "git_blob": "b219e8381e2eb451dd8d506ed96ed43ba104d764",
+      "bytes": 151428,
+      "sha256": "e01b24821016d68168333bcf741710686c14a605dc96ac30e9ffeabc64a9e81d"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyAgentHalfSimulation.cpp",
@@ -30451,9 +30457,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyHolsterMount.cpp",
-      "git_blob": "e9dd6dffed099c2c7c62b2b80f9eaa949edf2ab5",
-      "bytes": 11190,
-      "sha256": "eaf1b3c4ae7617037cfda08019669f263875b111d4ce8c7d32f936ec106573a2"
+      "git_blob": "38ca850f12c677eb2fa82632b37901fc5ee347b5",
+      "bytes": 11203,
+      "sha256": "e4410b5a2aa62a7e61636073d21d302979d1d57f12aa2cd3aa1d1924fd4c2fff"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyHolsterMount.h",
@@ -30565,9 +30571,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltBodyComponent.cpp",
-      "git_blob": "5f0d53b9cddc3fda061bb0d05a71820df5a5f4e8",
-      "bytes": 43184,
-      "sha256": "0be215f2c885b469dab4d005b31e018f5616e7bb869e994b3fc3b1c46dc3bfe7"
+      "git_blob": "996c631c04c243ef168afd0ac7f6b04d5a98af8f",
+      "bytes": 42764,
+      "sha256": "1fea070d457516fbebccc0c00a180096ad7aa18331973372cf5e3fbdb049a4b4"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltBodyComponentTests.cpp",
@@ -30583,9 +30589,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltCharacterComponent.cpp",
-      "git_blob": "1fbebe5f2a2a8823fb534998b987317537af5aed",
-      "bytes": 95207,
-      "sha256": "2e7d54305c3a0a3b291a74ee579ae11b24d75e63e50b054b70c3561f310ad898"
+      "git_blob": "3bfbce37da96f4ab81bb893e736cc0529cabcf5e",
+      "bytes": 96824,
+      "sha256": "8bfe03cc36a533e44b5fda22e044db1b4e132d5f9a4914c54c29826657787427"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltCharacterProfiling.cpp",
@@ -30601,9 +30607,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltCharacterWorldSubsystem.cpp",
-      "git_blob": "c1378f4d5eee40f4f22853834d3cabf030969708",
-      "bytes": 28327,
-      "sha256": "a7c2ed2b32c5d21583d7fb6d597148011cb3352e778fa240b21636200ab0a3f5"
+      "git_blob": "3ed0d04d28b0083f2235a4590699628c3503455b",
+      "bytes": 28552,
+      "sha256": "684ecd1ebf3ebcb85522697b83ab20b491507fc0676623623921e6bfbeb68fb9"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltConstrainedSkeleton.inl",
@@ -30673,9 +30679,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltMeshPhysics.cpp",
-      "git_blob": "ecd844529d91beb9cae060d713176c2bbb5f41c6",
-      "bytes": 8002,
-      "sha256": "b476c2d211a2320e1c35cfa5327d95c29fbe8fb71acd0be5ff1357ccc22ff5b5"
+      "git_blob": "2e55b9f2e528be8dc3547414ecc85fe1e0585289",
+      "bytes": 8228,
+      "sha256": "9d7f0f3ca963fb71a2325f4bc967182fc5f8bb5b94e344b8c7514e3c0ada9b2f"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltMeshPhysics.h",
@@ -30769,9 +30775,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltSceneCollisionComponent.cpp",
-      "git_blob": "4bc320f8f6828e52f5ceef5c52b6445a63ed013c",
-      "bytes": 33966,
-      "sha256": "ed6e8101149133f409f3050a0cb3d59fb78ca81baf6bf2b722adbe81d49f31f3"
+      "git_blob": "98a68753d5a9bf7e08a7e5fce79b269b975f5549",
+      "bytes": 34205,
+      "sha256": "0ce8e9879f0077414341af0dd764ab659e9f13ee060dcad44afaba3a742c3a32"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyJoltSceneCollisionComponentTests.cpp",
@@ -31567,15 +31573,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordComponent.cpp",
-      "git_blob": "d8dc8f0d48cf7ea44f5c144b46f7a60d59e7e4d0",
-      "bytes": 62241,
-      "sha256": "9f1be2748aa3c9d0c8f362c3408c4789ca9dcc5b58bccfad84d845a73b7c3f32"
+      "git_blob": "a6ebd1a12153d3ba20bc230623590d1e6a4a9659",
+      "bytes": 63401,
+      "sha256": "12bca1cd1e025056d0f59d479fefd6200f9a768c1cfb5b59c85d2f36ac2d3753"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolster.h",
-      "git_blob": "cc6210cf6a0fa6f7ad30cee6db6b14b448baf548",
-      "bytes": 608,
-      "sha256": "36548f42c0c781ae20de4e64fed3f5719698bbc182018e24d6f1b5764bf793c5"
+      "git_blob": "b1171e2e1478dc209c39b5e8bc5ecfc70bad5fd9",
+      "bytes": 547,
+      "sha256": "c460acea029a9dc33ba6d5c6df24711096c675fb5e6eb5a665240c8fe423fbb0"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterAuthored.inl",
@@ -31585,21 +31591,21 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterPose.cpp",
-      "git_blob": "84aa0d2c3f18a70ec8c2e0581b4bcfa2e0115c46",
-      "bytes": 120542,
-      "sha256": "397cec0e554d0622ac59a1e542abc37e20ca9166ad9c1a65def376a97ef07ff0"
+      "git_blob": "512eaf91b140dfe58cd1881e8988a852690da8cd",
+      "bytes": 123766,
+      "sha256": "e82693f0d42ec62adf9519daf9ff068575c7410e4a22ae781ef87861d2785d8e"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterPose.h",
-      "git_blob": "e7b556f33e3048de7758836596bcd23f8aba0af1",
-      "bytes": 4321,
-      "sha256": "d0f048c6755effae4341274fcf19f18a7ba4ec1ff0071797ef69d23027b8bad0"
+      "git_blob": "0912247e8c61cd8f8b6a048f515345bb1a216aa9",
+      "bytes": 4574,
+      "sha256": "9ffcc1998466b4668096e1bf66cfd7ce6c43fef8fef97928b844d2a61c17c8a1"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterRuntime.inl",
-      "git_blob": "ae311c38e0838851f073775420670fb77b985709",
-      "bytes": 40338,
-      "sha256": "4558369a3fc09093fb8cca21bff9382ac3ad657aca13a64bbf94c796bcd80827"
+      "git_blob": "8c57792ba662765f896c73743e009aa7099a920a",
+      "bytes": 47410,
+      "sha256": "0c0eabd581425dd735f51d7755179b6576ea60e7532cc03c14cabfb847e0dffe"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterSchedule.h",
@@ -32173,9 +32179,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyJoltCharacterComponent.h",
-      "git_blob": "1c98baa635b9efbfe4334ed8cea9d6586163b31b",
-      "bytes": 7392,
-      "sha256": "133c623397e8bac715f8471f6eee805f4f86c6224970e2c5c178a63bea7b43d1"
+      "git_blob": "1fd5e5a86fb04ca2eca744271cf1aaf448259a9b",
+      "bytes": 7526,
+      "sha256": "8682dd179ff4cffd08c91d5325d862ab24a90d5581d4506b546ed68ad04f91fc"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyJoltCharacterWorldSubsystem.h",
@@ -32455,15 +32461,15 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySwordComponent.h",
-      "git_blob": "48b9ab1e6f4ba7e2c7a65f0bdb7605e4403053ea",
-      "bytes": 2899,
-      "sha256": "283582e93d7bb2b65933ab3842d12c94be13d765510a0cc8c85bd2712a039c01"
+      "git_blob": "ba894d8f24a0ac38426df72238277fe3db9abe66",
+      "bytes": 2997,
+      "sha256": "061f0c91fcdc6bb3204bcaa8e4b14d1832b194652ab2262b6e43ada1d072bda1"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySwordHolsterLibrary.h",
-      "git_blob": "25df9bf1143f1d0295f53d9ec45c57863b450460",
-      "bytes": 5070,
-      "sha256": "40579e83aecf4b24a105c1fd91a37bdbcfe0c620a48abe19351dba8c51b754ee"
+      "git_blob": "2939bd15f9fbe95c74d55b02631cc92cf79a96d6",
+      "bytes": 5301,
+      "sha256": "45134ec50fde40b11c469ed765a014d5319def51853346343e18ccacb5c8f132"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecySwordPhysicsLibrary.h",
@@ -32719,9 +32725,9 @@
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecySwordHolsterSetup.cpp",
-      "git_blob": "96b2b8f2a41b35d073bfec58deff073eee9be745",
-      "bytes": 18028,
-      "sha256": "116ce5ba3f54e18be9500e6bdda71550c4a5e1e149c6fe7e4b93f2c1fcadb366"
+      "git_blob": "a0c5a65fe0644f591aa573ecdabc14ae8f458ff5",
+      "bytes": 21554,
+      "sha256": "8401db35cd512df5ad3ecc7d56e376b40e9ab74d78c7891f7b743e7cf80cd2c5"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecySwordTrainingMesh.cpp",
@@ -32749,9 +32755,9 @@
     },
     {
       "path": "Source/ProphecyEditor/ProphecyEditor.Build.cs",
-      "git_blob": "6e7ce949bbf2b73357faf17907bc6c1fa9aa214e",
-      "bytes": 1129,
-      "sha256": "6e0e51b22409580faba7e63732fed6c9a51f547fc7fb920eb26fd3372e07c69b"
+      "git_blob": "e3413eacd8fa909c654a1ccbb36a5be31f20c61e",
+      "bytes": 1145,
+      "sha256": "0faf8ed015dc05c2d865067bfe68fa62d0a60ead2f352d4390a7bc607834894f"
     },
     {
       "path": "StandaloneSim/CMakeLists.txt",
@@ -35518,6 +35524,12 @@
       "git_blob": "a9313dfd84e94e4487233248d736253317679048",
       "bytes": 1974,
       "sha256": "480290e8dd68a2041c6c42aadc06a312ccb16dc12d5357fd3e6b2f46b06c46a1"
+    },
+    {
+      "path": "Tools/SwordHolster/AttachmentPhysics20261014.json",
+      "git_blob": "a3f6710c5ba58db1705a94fd01bf6959c06dc177",
+      "bytes": 8763,
+      "sha256": "5ada1e68744203c01f4ed33e387e07d9fef7d84d57c7dc0f16e0df534ae51740"
     },
     {
       "path": "Tools/SwordHolster/BenchLiveGeometry.py",

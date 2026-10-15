@@ -202,7 +202,7 @@ void BeforeAgentModeChange(AProphecyAgent* A,bool Kin,float Duration)
 {
     auto* S=Mounts.Find(A);if(!S||!S->Holster.IsValid())return;
     S->Duration=FMath::CeilToInt(Duration*60-1.e-5f);
-    if(Kin){
+    if(Kin&&S->Physical){
         S->BeforeMode=S->Holster->GetComponentTransform();S->Rebase=true;
         Kinematic(A,*S,false,S->Gripped);
     }

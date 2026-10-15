@@ -5,6 +5,7 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_IfThenElse.h"
+#include "K2Node_InputKey.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "HAL/IConsoleManager.h"
@@ -19,6 +20,19 @@
 
 namespace ProphecySwordHolsterSetup
 {
+static void RemoveSwordTabShortcut()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/sword/A_Sword.A_Sword"));if(!BP)return;
+ TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);TArray<UK2Node_InputKey*> Nodes;
+ for(auto* G:Graphs)for(UEdGraphNode* N:G->Nodes)if(auto* Key=Cast<UK2Node_InputKey>(N))if(Key->InputKey.GetFName()==TEXT("Tab"))Nodes.Add(Key);
+ if(Nodes.IsEmpty())return;
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","SwordTabShortcut","Remove conflicting sword Tab shortcut"));BP->Modify();
+ for(auto* N:Nodes){N->Modify();FBlueprintEditorUtils::RemoveNode(BP,N,true);}
+ FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+ FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+ UE_LOG(LogTemp,Display,TEXT("Removed %d conflicting sword Tab events; BP status=%d; not saved."),Nodes.Num(),int32(BP->Status));
+}
 static void RefreshDrawPins()
 {
  if(!GEditor||GEditor->PlayWorld)return;
@@ -37,30 +51,59 @@ static void RefreshDrawPins()
  UE_LOG(LogTemp,Display,TEXT("Refreshed %d Draw Sword nodes; BP status=%d; not saved."),Nodes.Num(),int32(BP->Status));
 }
 static FAutoConsoleCommand DrawPinsCommand(TEXT("Prophecy.Editor.RefreshDrawSwordPins"),TEXT("Remove unlinked obsolete speed pins from existing Draw Sword nodes; preserves other wiring, no save."),FConsoleCommandDelegate::CreateStatic(&RefreshDrawPins));
+static void RepairSwordDebugFrameCap()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/sword/A_Sword.A_Sword"));if(!BP)return;
+ UEdGraph* Graph=nullptr;for(UEdGraph* G:BP->UbergraphPages)if(G->GetFName()==TEXT("EventGraph"))Graph=G;if(!Graph)return;
+ auto Pin=[&](const TCHAR* Node,const TCHAR* Name)->UEdGraphPin*{
+  for(UEdGraphNode* N:Graph->Nodes)if(N->GetFName()==Node)return N->FindPin(Name);return nullptr;
+ };
+ UEdGraphPin* Events[]={Pin(TEXT("K2Node_InputKey_2"),TEXT("Pressed")),Pin(TEXT("K2Node_InputKey_2"),TEXT("Released"))};
+ UEdGraphPin* Old[]={Pin(TEXT("K2Node_CallFunction_161"),TEXT("execute")),Pin(TEXT("K2Node_CallFunction_162"),TEXT("execute"))};
+ UEdGraphPin* Caps[]={Pin(TEXT("K2Node_CallFunction_150"),TEXT("execute")),Pin(TEXT("K2Node_CallFunction_146"),TEXT("execute"))};
+ for(int I=0;I<2;++I)if(!Events[I]||!Old[I]||!Caps[I]||Events[I]->LinkedTo.Num()!=1||Events[I]->LinkedTo[0]!=Old[I]||!Caps[I]->LinkedTo.IsEmpty()){
+  UE_LOG(LogTemp,Warning,TEXT("Sword debug FPS bindings differ from the audited graph; nothing changed."));return;
+ }
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","SwordDebugFrameCap","Keep simulation timestep unchanged during sword slow-FPS debugging"));
+ BP->Modify();Graph->Modify();
+ for(int I=0;I<2;++I){
+  Events[I]->GetOwningNode()->Modify();Old[I]->GetOwningNode()->Modify();Caps[I]->GetOwningNode()->Modify();
+  Events[I]->BreakLinkTo(Old[I]);Events[I]->MakeLinkTo(Caps[I]);
+ }
+ FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+ UE_LOG(LogTemp,Display,TEXT("Sword right-click now uses existing FPS-cap nodes; simulation clock and tuning unchanged; status=%d; not saved."),int32(BP->Status));
+}
 static void RefreshGripProfilePins(const TArray<FString>& Args)
 {
  if(!GEditor||GEditor->PlayWorld)return;
+ if(Args.Num()==1&&Args[0]==TEXT("SwordDebugFrameCap")){RepairSwordDebugFrameCap();return;}
+ if(Args.Num()==1&&Args[0]==TEXT("RemoveSwordTab")){RemoveSwordTabShortcut();return;}
  const bool Migrate=Args.Num()==3&&Args[0]==TEXT("ReturnRanges");
+ const bool Speeds=Args.Num()==3&&Args[0]==TEXT("SlideSpeeds");
  double Ends[2]={1,1};
- if(Migrate)for(int I=0;I<2;++I){if(!LexTryParseString(Ends[I],*Args[I+1])||!FMath::IsFinite(Ends[I])||Ends[I]<.5||Ends[I]>1)return;}
+ if(Migrate||Speeds)for(int I=0;I<2;++I){if(!LexTryParseString(Ends[I],*Args[I+1])||!FMath::IsFinite(Ends[I])||(Speeds?Ends[I]<=0:Ends[I]<.5||Ends[I]>1))return;}
  auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));if(!BP)return;
  TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);TArray<UK2Node_CallFunction*> Nodes;
  for(auto* G:Graphs)for(UEdGraphNode* N:G->Nodes)if(auto* C=Cast<UK2Node_CallFunction>(N))
-  if(C->FunctionReference.GetMemberName()==TEXT("SetSwordHolsterProfile")&&(Migrate||!C->FindPin(TEXT("DrawNNBlendRange"))))Nodes.Add(C);
+  if(C->FunctionReference.GetMemberName()==TEXT("SetSwordHolsterProfile")&&(Speeds?(!C->FindPin(TEXT("DrawSlidingSpeed"))||!C->FindPin(TEXT("SheatheSlidingSpeed"))):(Migrate||!C->FindPin(TEXT("DrawNNBlendRange")))))Nodes.Add(C);
  if(Nodes.IsEmpty())return;
- for(auto* N:Nodes)for(const TCHAR* Name:{TEXT("FKReturnCutoff"),TEXT("SheatheFKReturnCutoff"),TEXT("DrawNNBlendRange"),TEXT("SheatheNNBlendRange")})
+ if(!Speeds)for(auto* N:Nodes)for(const TCHAR* Name:{TEXT("FKReturnCutoff"),TEXT("SheatheFKReturnCutoff"),TEXT("DrawNNBlendRange"),TEXT("SheatheNNBlendRange")})
   if(const auto* Pin=N->FindPin(Name))if(!Pin->LinkedTo.IsEmpty()){UE_LOG(LogTemp,Error,TEXT("Return range migration requires unlinked literals; nothing changed."));return;}
- const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","HolsterReturnRanges","Expose independent sword NN blend ranges"));BP->Modify();
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","HolsterProfilePins","Refresh sword holster profile pins"));BP->Modify();
  for(auto* N:Nodes){N->Modify();
-  for(const TCHAR* Name:{TEXT("FKReturnCutoff"),TEXT("SheatheFKReturnCutoff")})if(auto* Pin=N->FindPin(Name))N->RemovePin(Pin);
+  const TCHAR* SpeedNames[]={TEXT("DrawSlidingSpeed"),TEXT("SheatheSlidingSpeed")};
+  const bool HadSpeed[]={N->FindPin(SpeedNames[0])!=nullptr,N->FindPin(SpeedNames[1])!=nullptr};
+  if(!Speeds)for(const TCHAR* Name:{TEXT("FKReturnCutoff"),TEXT("SheatheFKReturnCutoff")})if(auto* Pin=N->FindPin(Name))N->RemovePin(Pin);
   N->ReconstructNode();
+  if(Speeds)for(int I=0;I<2;++I)if(!HadSpeed[I])if(auto* Pin=N->FindPin(SpeedNames[I]))N->GetSchema()->TrySetDefaultValue(*Pin,FString::SanitizeFloat(Ends[I]));
   if(Migrate){const TCHAR* Names[]={TEXT("DrawNNBlendRange"),TEXT("SheatheNNBlendRange")};
    for(int I=0;I<2;++I)if(auto* Pin=N->FindPin(Names[I]))N->GetSchema()->TrySetDefaultValue(*Pin,FString::Printf(TEXT("(X=0.500000,Y=%.6f)"),Ends[I]));}
  }
  FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
  UE_LOG(LogTemp,Display,TEXT("Refreshed %d existing holster profile nodes; not saved."),Nodes.Num());
 }
-static FAutoConsoleCommand GripProfilePins(TEXT("Prophecy.Editor.RefreshHolsterGripPins"),TEXT("Refresh existing profile pins; ReturnRanges <draw-end> <sheathe-end> explicitly migrates unlinked cutoffs to ranges starting at .5. No save."),FConsoleCommandWithArgsDelegate::CreateStatic(&RefreshGripProfilePins));
+static FAutoConsoleCommand GripProfilePins(TEXT("Prophecy.Editor.RefreshHolsterGripPins"),TEXT("Refresh profile pins; ReturnRanges <draw-end> <sheathe-end> migrates unlinked cutoffs. SlideSpeeds <draw> <sheathe> initializes only missing speed pins. No save."),FConsoleCommandWithArgsDelegate::CreateStatic(&RefreshGripProfilePins));
 // Explicit editor operation for the user's temporary, non-physical pelvis mount.
 // If the obsolete joint still exists, retain its settings but remove its endpoints.
 static void MountRigidHolster()

@@ -7,6 +7,7 @@
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltStaticMeshLibrary.h"
 #include "ProphecyAgent.h"
+#include "ProphecySwordComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -375,8 +376,10 @@ bool UProphecyJoltSceneCollisionComponent::ReconcileSources(FString& OutError)
                     // The equipment controller retains ownership while its holder uses
                     // Chaos/kinematic mode. Scene discovery must not steal that live
                     // blade into an independent Jolt adapter during a backend switch.
-                    if (const auto* Holder = Cast<AProphecyAgent>(SourceActor->GetOwner());
-                        Holder && Holder->GetHeldSword() == SourceActor)
+                    const auto* Holder = Cast<AProphecyAgent>(SourceActor->GetOwner());
+                    const auto* Equipment = Holder ? Holder->FindComponentByClass<UProphecySwordComponent>() : nullptr;
+                    // A holstered sword is still owned by its equipment controller.
+                    if (Equipment && Equipment->GetSword() == SourceActor)
                     {
                         if (!RetireAll(*State, *Entry, OutError)) return false;
                         Entry->bFullRefresh = false;

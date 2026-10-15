@@ -172,6 +172,9 @@ public:
     FGuid GetCaptureId() const;
     static int32 GetLivePreparedRigCount();
     bool GetBodyGeometrySummary(int32 BodyIndex, FVector& OutCenterOfMassCm, FBox& OutBoundsInBodyOriginCm, FString& OutError) const;
+    // Read-only export of the actual prepared inertia, including imported conditioning.
+    bool GetBodyMassSummary(int32 BodyIndex, double& OutMassKg, FQuat& OutPrincipalRotation,
+        FVector& OutPrincipalInertiaKgCmSquared) const;
 
 private:
     friend class UProphecyJoltWorldSubsystem;

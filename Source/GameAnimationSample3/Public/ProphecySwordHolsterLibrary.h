@@ -31,6 +31,8 @@ public:
      * Sheathe Kinematic Fraction (0..1) stops holster physics at this reach progress, or attachment if earlier.
      * Compensation still starts at attachment; release/interruption restores the selected mode after return.
      * Attached speeds independently limit hand translation/rotation in the holster frame.
+     * Draw/Sheathe Sliding Speed overrides cm/s for the next action; 0 keeps the imported profile speed.
+     * Call after Set Sword Holster Lab Profile to override its values.
      * Stabilization rotates around the holster mesh/component origin.
      * Without the leeway phase, S waits for tip-at-entrance within tolerance, then slides.
      * Higher Solver Accuracy uses 10 velocity / 32 position iterations during the next D/S action,
@@ -39,7 +41,7 @@ public:
      * Fractions of elapsed torso return; .5,.8 blends from 50% through 80%. .5 <= X <= Y <= 1.
      * Does not accelerate the motion or release the gripping arm before slide completion. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Sword",meta=(DefaultToSelf="Agent",DisplayName="Set Sword Holster Profile"))
-    static bool SetSwordHolsterProfile(AProphecyAgent* Agent,float ShrinkPercent=10,float UnshrinkDuration=.25f,float GripHolsterStabilizationPercent=0,float HolsterReturnDuration=.25f,float ShrinkDuration=.25f,float MaxAttachedSpeed=100,float MaxAttachedRotationSpeed=180,bool LeewayAttachmentPhase=true,float SheatheTipDistanceThreshold=2,bool HigherSolverAccuracy=false,FVector2D DrawNNBlendRange=FVector2D(0.5,0.8),FVector2D SheatheNNBlendRange=FVector2D(0.5,0.8),float SheatheKinematicFraction=.8f);
+    static bool SetSwordHolsterProfile(AProphecyAgent* Agent,float ShrinkPercent=10,float UnshrinkDuration=.25f,float GripHolsterStabilizationPercent=0,float HolsterReturnDuration=.25f,float ShrinkDuration=.25f,float MaxAttachedSpeed=100,float MaxAttachedRotationSpeed=180,bool LeewayAttachmentPhase=true,float SheatheTipDistanceThreshold=2,bool HigherSolverAccuracy=false,FVector2D DrawNNBlendRange=FVector2D(0.5,0.8),FVector2D SheatheNNBlendRange=FVector2D(0.5,0.8),float SheatheKinematicFraction=.8f,float DrawSlidingSpeed=0,float SheatheSlidingSpeed=0);
     /** Capture the authored SwordRef and base blade marker before BeginPlay deletes them. */
     UFUNCTION(BlueprintCallable,Category="Prophecy|Sword",meta=(DefaultToSelf="Agent",DisplayName="Capture Sword Holster Reference"))
     static bool CaptureSwordHolsterReference(AProphecyAgent* Agent);
