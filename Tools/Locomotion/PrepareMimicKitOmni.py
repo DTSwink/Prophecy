@@ -25,9 +25,11 @@ def matrix(row):
 def serialized(row):
     a=np.eye(4);a[:3,:3]=R.from_quat(row['quaternion']).as_matrix();a[:3,3]=row['position'];return a
 
-def main():
+def main(clips=None, output=None, source_folder=None, write_preview=True):
     torch.set_num_threads(1)
-    folder=ROOT/'Labs/MimicKitUEFN';output=ROOT/'Saved/MimicKitUEFN/omni';output.mkdir(parents=True,exist_ok=True)
+    folder=ROOT/'Labs/MimicKitUEFN'
+    output=Path(output) if output is not None else ROOT/'Saved/MimicKitUEFN/omni';output.mkdir(parents=True,exist_ok=True)
+    source_folder=Path(source_folder) if source_folder is not None else ROOT/'Saved/Diagnostics/OmniRecord20261015'
     meta=json.loads((folder/'limits.json').read_text())
     source=json.loads((ROOT/meta.get('source_rig','Saved/Robotics/rig.json')).read_text())
     ref={b['name']:matrix(b['reference']['position_cm']+b['reference']['rotation_xyzw']) for b in source['bodies']}
@@ -38,10 +40,10 @@ def main():
     # Asset basis itself is unchanged; anchor offsets bridge the two frames.
     motion_basis=np.eye(4);motion_basis[:3,:3]=R.from_euler('z',-90,degrees=True).as_matrix()
     offsets={n:np.linalg.inv(ref[meta['groups'][n]['anchor']])@np.linalg.inv(asset_basis)@serialized(meta['body_frames'][n]) for n in names}
-    data=json.loads((ROOT/'Labs/OmniLocomotionViewer/data.json').read_text())
+    if clips is None:clips=json.loads((ROOT/'Labs/OmniLocomotionViewer/data.json').read_text())['clips']
     manifest=[];files=[];preview=[]
-    for clip in data['clips']:
-        raw=json.loads((ROOT/'Saved/Diagnostics/OmniRecord20261015'/(clip['id']+'.json')).read_text())
+    for clip in clips:
+        raw=json.loads((source_folder/(clip['id']+'.json')).read_text())
         cut=clip['cut'];frames=np.asarray([r['pose'] for r in raw['rows'][cut['start']:cut['end']+1]])
         wanted=np.stack([np.stack([motion_basis@matrix(f[raw['names'].index(meta['groups'][n]['anchor'])])@offsets[n] for n in names]) for f in frames])
         count=len(frames);dof=np.zeros((count,model.get_dof_size()));actual_rot=np.zeros((count,len(names),3,3));actual_rot[:,0]=wanted[:,0,:3,:3]
@@ -75,30 +77,43 @@ def main():
             ids=[names.index(side+'_'+part) for part in ('thigh','shin','foot')]
             np.testing.assert_array_equal(p.numpy()[untouched][:,ids],before_p[untouched][:,ids])
             np.testing.assert_array_equal(q.numpy()[untouched][:,ids],before_q[untouched][:,ids])
+        foot_orientation_roundtrip=0.
         for c in corrections:
             t=c['tick'];fi=names.index(c['side']+'_foot');ki=names.index(c['side']+'_shin')
-            # Captures retain ~10m of travel; allow float32 ULP rounding there.
-            np.testing.assert_allclose(p.numpy()[t,fi],c['target'],atol=5e-7,rtol=2e-7)
-            np.testing.assert_allclose(p.numpy()[t,ki],c['knee'],atol=5e-7,rtol=2e-7)
-            np.testing.assert_allclose(actual_rot[t,fi],R.from_quat(before_q[t,fi]).as_matrix(),atol=1e-6,rtol=0)
+            # Float32 FK over this chain can accumulate ~0.6 micrometres even
+            # without travel; recordings with ~10m travel need relative ULPs.
+            np.testing.assert_allclose(p.numpy()[t,fi],c['target'],atol=1e-6,rtol=2e-7)
+            np.testing.assert_allclose(p.numpy()[t,ki],c['knee'],atol=1e-6,rtol=2e-7)
+            # Float32 exp-map/FK round trips accumulate ~1e-6 rad. Check the
+            # rotation itself, not an individual near-zero matrix entry.
+            angular_error=(R.from_matrix(actual_rot[t,fi]).inv()*R.from_quat(before_q[t,fi])).magnitude()
+            foot_orientation_roundtrip=max(foot_orientation_roundtrip,float(angular_error))
+            assert angular_error<=2e-6,(clip['id'],t,angular_error)
         pos_error=np.linalg.norm(p.numpy()-wanted[:,:,:3,3],axis=-1)
         rot_error=np.degrees(R.from_matrix((np.swapaxes(actual_rot,-1,-2)@wanted[:,:,:3,:3]).reshape(-1,3,3)).magnitude()).reshape(count,-1)
         # Phase zero = left foot's lowest forward-relative speed (stance centre),
         # independently of arbitrary cut boundary or motion travel direction.
         li=names.index('left_foot');foot_rel=p.numpy()[:,li]-p.numpy()[:,0]
-        travel=np.array(raw['velocity_mesh_cm_s']);speed=np.linalg.norm(travel[:2]);command=np.array([travel[1],-travel[0]])/speed
-        world_forward=motion_basis[:3,:3]@(travel/speed)
-        along=foot_rel@world_forward
-        phase_zero=int(np.argmin(np.gradient(along,1/60)[:-1]))
+        travel=np.array(raw['velocity_mesh_cm_s']);speed=np.linalg.norm(travel[:2])
+        if clip['gait']=='idle':
+            assert speed==0
+            command=np.array([1.,0.]);phase_zero=0
+        else:
+            assert speed>0
+            command=np.array([travel[1],-travel[0]])/speed
+            world_forward=motion_basis[:3,:3]@(travel/speed)
+            along=foot_rel@world_forward
+            phase_zero=int(np.argmin(np.gradient(along,1/60)[:-1]))
         phase_offset=(-phase_zero/(count-1))%1.
         saved=np.concatenate([root_p,R.from_quat(root_q).as_rotvec(),dof],axis=1)
         path=output/(clip['id']+'.pkl')
         with path.open('wb') as f:pickle.dump({'loop_mode':1,'fps':60,'frames':saved.astype(np.float32)},f)
-        row=dict(id=clip['id'],gait=int(clip['gait']=='run'),direction=command.tolist(),duration=(count-1)/60,
+        row=dict(id=clip['id'],gait={'idle':-1,'walk':0,'run':1}[clip['gait']],direction=command.tolist(),duration=(count-1)/60,
                  phase_offset=phase_offset,phase_zero_tick=phase_zero,source_cut=cut,
                  position_max_cm=float(pos_error.max()*100),position_rms_cm=float(np.sqrt(np.mean(pos_error**2))*100),
                  rotation_max_deg=float(rot_error.max()),per_body_position_max_cm=dict(zip(names,(pos_error.max(0)*100).tolist())),
-                 foot_lift=dict(corrected_foot_frames=len(corrections),max_cm=max((c['lift_cm'] for c in corrections),default=0.)),
+                 foot_lift=dict(corrected_foot_frames=len(corrections),max_cm=max((c['lift_cm'] for c in corrections),default=0.),
+                                max_orientation_roundtrip_rad=foot_orientation_roundtrip),
                  per_body_rotation_max_deg=dict(zip(names,rot_error.max(0).tolist())))
         manifest.append(row);files.append(dict(file=str(path),weight=1.))
         source_names=list(ref)
@@ -110,6 +125,7 @@ def main():
         print(clip['id'],f"position max {row['position_max_cm']:.2f}cm, rotation max {row['rotation_max_deg']:.2f}deg")
     (output/'motions.yaml').write_text(yaml.safe_dump({'motions':files}))
     (output/'manifest.json').write_text(json.dumps(dict(status='candidate_not_approved_for_training',body_names=names,motions=manifest),indent=2))
+    if not write_preview:return manifest
     overlay=json.loads((folder/'overlay-data.json').read_text())
     def local_geometry(layer,rest):
         result=[]

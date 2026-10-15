@@ -9,8 +9,12 @@ from scipy.spatial.transform import Rotation as R
 from native_probe import Native,actor,observation,keys,offsets
 
 
-def main(label,frictionless_self=False,no_limits=False,high_iterations=False,rig_iterations=None):
-    folder=probe.OUT/'causal_transfer';data=np.load(folder/(label+'.npz'))
+def main(label,frictionless_self=False,no_limits=False,high_iterations=False,rig_iterations=None,tag=''):
+    assert not tag or tag in ('point','baseline')
+    folder=probe.OUT/'causal_transfer'
+    # NpzFile decompresses an entire member on each lookup. Materialize once;
+    # per-frame accesses must not unpack the complete recording repeatedly.
+    with np.load(folder/(label+'.npz')) as saved:data={key:saved[key] for key in saved.files}
     for key in ('states','obs','actions','targets','dist'):
         assert np.isfinite(data[key]).all(), f'Reject invalid source {key}'
     for key in list(os.environ):
@@ -67,6 +71,7 @@ def main(label,frictionless_self=False,no_limits=False,high_iterations=False,rig
         captures['ground_impulses'+str(world)]=loads
     name=label+('_self0' if frictionless_self else '')+('_nolimits' if no_limits else '')+('_highiter' if high_iterations else '')+'_native'
     if rig_iterations:name+='_v'+str(rig_iterations[0])+'p'+str(rig_iterations[1])
+    if tag:name+='_'+tag
     (folder/(name+'.json')).write_text(json.dumps(reports,indent=2),encoding='utf-8')
     np.savez_compressed(folder/(name+'.npz'),**captures)
 

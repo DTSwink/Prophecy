@@ -18,7 +18,7 @@ def soft_limits(p: ContactProblem, nefc: wp.array(dtype=int), kind: wp.array2d(d
                 J: wp.array3d(dtype=float), D: wp.array2d(dtype=float), aref: wp.array2d(dtype=float),
                 sparse: bool, nnz: wp.array2d(dtype=int), adr: wp.array2d(dtype=int), cols: wp.array3d(dtype=int),
                 qvel: wp.array2d(dtype=float), motorrows: wp.array2d(dtype=int), mapping: wp.array2d(dtype=int),
-                error: wp.array(dtype=int)):
+                error: wp.array(dtype=int), hard_control: bool):
     # Diagnostic control: preserve MJ's angular-limit response while replacing
     # contact friction. Rows remain soft; this is not yet the Jolt limit model.
     w=wp.tid()
@@ -46,6 +46,11 @@ def soft_limits(p: ContactProblem, nefc: wp.array(dtype=int), kind: wp.array2d(d
                 speed+=value*qvel[w,j]
         p.limit_target[w,slot]=speed+p.dt[0]*aref[w,row]
         p.limit_compliance[w,slot]=1./D[w,row]
+        if hard_control:
+            # Isolation control only: hard velocity response using the current
+            # MJ PHAT row direction. Position projection is tested separately.
+            p.limit_target[w,slot]=0.
+            p.limit_compliance[w,slot]=0.
         p.limit_bilateral[w,slot]=int(k==int(types.ConstraintType.EQUALITY))
 
 
@@ -134,13 +139,15 @@ def finish(p: ContactProblem, qvel: wp.array2d(dtype=float), qacc: wp.array2d(dt
 
 
 class SequentialContactAdapter:
-    def __init__(self, model, data, cpu_model, motor, iterations=100, allow_soft_limits=False, relaxation=1.):
+    def __init__(self, model, data, cpu_model, motor, iterations=100, allow_soft_limits=False, relaxation=1., hard_limit_control=False, block_motors=False):
         assert not model.is_sparse, 'Prototype uses existing dense inertia factor'
         flags=int(types.DisableBit.LIMIT)|int(types.DisableBit.EQUALITY)
         assert allow_soft_limits or model.opt.disableflags&flags==flags, 'Limits require explicit diagnostic opt-in'
         assert cpu_model.neq==0 and cpu_model.ntendon==0
         self.model=model; self.data=data; self.motor=motor; self.iterations=iterations
         self.allow_soft_limits=allow_soft_limits
+        assert not hard_limit_control or allow_soft_limits
+        self.hard_limit_control=hard_limit_control
         self.original_cone=model.opt.cone; model.opt.cone=int(types.ConeType.ELLIPTIC)
         dev=data.qvel.device; n=data.nworld; nv=cpu_model.nv; nc=4*cpu_model.ngeom
         assert 0.<relaxation<=1.
@@ -157,6 +164,10 @@ class SequentialContactAdapter:
         self.p=p; self.capacity=nc; self.error=zero(n,int); self.rowmap=zero((n,nc,3),int)
         self.identity=wp.array(np.eye(nv,dtype=np.float32),device=dev)
         self.inverse_kernel=make_inverse(nv); self.iterate_kernel=make_tiled_iteration(nv,p.nmotor)
+        self.block_motors=block_motors
+        if block_motors:
+            from block_contact_gpu import make_block_iteration
+            self.block_kernel=make_block_iteration(nv,p.nmotor)
         self.installed=False
 
     def solve(self,m,d):
@@ -170,7 +181,7 @@ class SequentialContactAdapter:
         if self.allow_soft_limits:
             wp.launch(soft_limits,dim=d.nworld,inputs=[p,d.nefc,d.efc.type,d.efc.J,d.efc.D,d.efc.aref,
                       types.SPARSE_CONSTRAINT_JACOBIAN,d.efc.J_rownnz,d.efc.J_rowadr,d.efc.J_colind,d.qvel,
-                      self.motor.rows.rowids,self.limitrows,self.error],device=dev)
+                      self.motor.rows.rowids,self.limitrows,self.error,self.hard_limit_control],device=dev)
             wp.launch(prepare_limit_response,dim=(d.nworld,p.limit_J.shape[1],p.nv),inputs=[p],device=dev)
             wp.launch(prepare_limit_diagonal,dim=(d.nworld,p.limit_J.shape[1]),inputs=[p],device=dev)
         wp.launch(contacts,dim=d.contact.worldid.shape[0],inputs=[p,self.capacity,types.SPARSE_CONSTRAINT_JACOBIAN,d.nacon,
@@ -179,7 +190,11 @@ class SequentialContactAdapter:
         wp.launch(bound_counts,dim=d.nworld,inputs=[p,self.capacity],device=dev)
         wp.launch(prepare_response,dim=(d.nworld,self.capacity,3,p.nv),inputs=[p],device=dev)
         wp.launch(prepare_diagonal,dim=(d.nworld,self.capacity,3),inputs=[p],device=dev)
-        wp.launch_tiled(self.iterate_kernel,dim=d.nworld,inputs=[p,self.iterations],block_dim=32,device=dev)
+        if self.block_motors:
+            wp.launch_tiled(self.iterate_kernel,dim=d.nworld,inputs=[p,50],block_dim=32,device=dev)
+            wp.launch_tiled(self.block_kernel,dim=d.nworld,inputs=[p,d.qM,self.identity,self.iterations,self.error],block_dim=32,device=dev)
+        else:
+            wp.launch_tiled(self.iterate_kernel,dim=d.nworld,inputs=[p,self.iterations],block_dim=32,device=dev)
         wp.launch(finish,dim=(d.nworld,p.nv),inputs=[p,d.qvel,d.qacc,d.qM,d.qfrc_constraint,d.efc.force,self.motor.rows.rowids,self.rowmap,self.limitrows,self.error],device=dev)
 
     def install(self):

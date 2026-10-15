@@ -4,6 +4,99 @@
 
 ### Active goal — October15 overnight
 
+**October16 continuation — the remaining impact causes are now isolated.**
+Combined hard contact, hard-limit velocity and split angular correction passes
+all16 phases for90ticks/3s, max target22.13cm. Previous baseline failed phase0.375
+at15ticks. Partial reset and reported-body-velocity checks pass; captured GPU
+execution stays finite. Motor equation residual peaks0.00571Nm. Ten-second
+extension is running; native Jolt40/8 from those corrected initial states also
+passes16/16 for89native ticks, peak target21.15cm, all ground support throughfeet.
+No transfer acceptance yet: duration/force residual/overhead checks remain.
+`contact_soft_limit_trial_cuda_0_relaxed_hard_project_worlds16.*`.
+
+`phase9_impact.json` starts24 one-substep trials from the exact same incoming
+states/commands/forces. Current MJ reproduces the captured reference velocities
+within1.82e-5. Native vs MJ right-foot angular-velocity difference peaks4.09254rad/s;
+without contacts it is0.10030, without friction2.37257. The experimental hard
+normal/sequential-friction solve reduces it to0.23407. Remaining0.98838rad/s
+head discrepancy disappears when the angular row is changed from soft MJ bias/
+compliance to a hard zero-normal-velocity rule: overall maximum then0.23351rad/s,
+at the foot. Removing limits in BOTH engines gives the same foot result0.23363.
+This separates contact response from soft-limit response; neither is an actor,
+input mapping or missing controller update. Evidence `phase9_impact_limits.*`.
+
+Split angular-position correction was independently tested with no gravity,
+contact, motor or incoming velocity. Mass-weighted generalized correction moves
+root/parents as well as the joint; it does NOT clamp local pose with parents fixed.
+Against Jolt20 position steps, four cases differ by at most0.221mm/0.0574degrees;
+COM drift<5.1e-8m and velocities remain exactly zero. `probe_limit_projection.py`
+is CPU reference only. GPU version passed20 cases against the independent float64
+implementation, max generalized-pose difference5.63e-6, repeatable CUDA graph replay.
+The CPU reference initially re-used other joints' old error within an iteration;
+corrected it to re-evaluate each constraint at its turn, like Jolt and the GPU.
+Its per-substep mass metric is frozen during angular relinearization;
+this approximation is explicit, and not yet accepted for training.
+
+Performance experiment: analytically eliminate unsaturated motors, solve contacts,
+then update saturated motor set. CPU worst saved case converges with two motor
+active sets and100 contact iterations (contact residual6.95e-8Ns), compared with
+1000 full scalar iterations previously. Tangent projection metric MUST remain
+unchanged when eliminating motors: substituting the effective inertia changes
+sliding-friction direction. GPU active-set trial rejected4/24 impact cases with
+an explicit nonconvergence flag. A short scalar-solve seed is being tested;
+the combined motion trial continues using the validated1000-iteration solve.
+Jolt's actual per-body tangent metric and manifold-centred friction still require
+matching; the current reduced-coordinate point-contact prototype is not claimed
+as exact Jolt physics. No training or engine installation during these tests.
+
+Idle retarget preparation now succeeds separately (601frames/10s, mode−1,
+direction[1,0], phase offset0). Existing clips/viewer were not overwritten.
+Float32 FK verification changed from per-matrix-entry1e-6 to angular error2e-6rad,
+and positional absolute tolerance from0.5 to1 micrometre after measured0.566um
+round-trip error; unchanged bones/legs still require exact equality. These only
+change verification, not the retargeted trajectory. Candidate remains unpromoted
+until physics transfer passes. `Saved/MimicKitUEFN/idle/retarget/manifest.json`.
+
+**Resume here after backup `985bfe14` (pushed):** broader testing prevents accepting
+the four-phase result below as the finished match. Current MJ completes15/16
+evenly spaced starting phases over10s; phase0.375 fails at tick15. Native with
+matched self friction and100 velocity/20 position iterations completes14/16;
+phase0.375 fails at22 and phase0.5625 at11. The cheaper40/8 profile likewise
+fails the latter at10. Rig-only8 position steps, with default10 velocity steps,
+already passes the original four phases, so the necessary correction there was
+position solving, not simply more velocity iterations. No limits were removed
+in these passing tests. All measured ground support comes through feet.
+Native40/8 measured roughly4.7–5.5ms per policy tick (eight240Hz steps),100/20
+roughly8ms, on the active laptop with Unreal open; these are diagnostic timings,
+not a shipping/many-agent benchmark. Default10 velocity iterations still leave
+large motor-equation residuals;100 reduces but does not eliminate them. Do not
+claim exact dynamical parity from survival.
+
+The separate per-point contact DLL was combined with the same rig settings using
+a local include-header overlay (`build_point_profile.py`); installed DLL/source
+unchanged. It still fails phase0.5625 at11. Saved trace audit finds<0.5mm position
+and0.054rad/s angular-velocity discrepancy after the first native tick, followed
+by6.49rad/s right-foot discrepancy at the next tick. Incoming state matches to
+serialization precision. `probe_phase_impact.py` completed identical-state/
+command controls over steps8–31; results are above. Shared-engine CPU capture
+`body_velocity_engine_cpu_phase0.5625.npz` passed velocity/reset checks. This
+remaining contact failure is why full-data training has NOT started.
+
+Comparison harness now materializes NPZ arrays once instead of repeatedly
+decompressing the complete recording per frame. Interrupted the owned, redundant
+uncached16-phase diagnostic and reran it; no trainer/editor interruption. Outputs
+are `body_velocity_engine_cuda_0_worlds16*`, `native_point_16phases.log`,
+`divergence_world9_point.json`, and `phase9_impact.*` when complete.
+
+Idle source preparation only: read-only export of the original project breathing
+idle `/Game/Characters/UEFN_Mannequin/Animations/Idle/M_Neutral_Stand_Idle_Loop`,
+601frames/10s, to `Saved/MimicKitUEFN/idle/`. This is the original animation,
+not an NN continuation. No retarget/training promotion yet. Editor13040 remains
+in the owned comparison PIE; editor-world accessor is null during that session,
+game-world path and dirty PoseAgent checked unchanged. Exporter first rejected
+that null accessor, then ambiguous duplicate idle names, before explicitly using
+the same source as the existing breathing exporter. No asset save/UI change.
+
 **Latest result: first four-phase native transfer pass, not yet promoted.**
 The current corrected MJ baseline completes all four300-tick trials. Matching
 self-contact material and increasing Jolt solver accuracy to100 velocity/

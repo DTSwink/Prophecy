@@ -8,7 +8,7 @@ import numpy as np, torch, warp as wp, yaml, mujoco
 from probe_sequential_contacts import decode
 
 
-def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4):
+def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, trace_phase=None, hard_project=False):
     assert worlds>=4
     torch.set_num_threads(1)
     wp.init(); wp.set_device(device)
@@ -36,8 +36,18 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4):
                 s=self._solver
                 self._trial_contact=SequentialContactAdapter(s.mjw_model,s.mjw_data,s.mj_model,
                     self._uefn_motors,iterations=1000 if relaxed else 100,allow_soft_limits=True,
-                    relaxation=.5 if relaxed else 1.)
+                    relaxation=.5 if relaxed else 1.,hard_limit_control=hard_project)
                 self._trial_contact.install()
+                if hard_project:
+                    from limit_projection_gpu import SplitLimitProjection
+                    from probe_limit_projection import joint_metadata
+                    projection=SplitLimitProjection(s.mj_model,s.mjw_data,joint_metadata(s.mj_model),device)
+                    before_projection=s._mujoco_warp_step
+                    def projected_step():
+                        before_projection()
+                        projection.apply(self._trial_contact.p.inv)
+                    s._mujoco_warp_step=projected_step
+                    self._trial_projection=projection
                 if device=='cpu':
                     custom=self._trial_contact;original=custom.solve
                     def traced(m,d):
@@ -99,6 +109,19 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4):
         e._pre_sim_step = checked
     duration = float(env._motion_lib.get_motion_lengths()[0])
     phases = torch.arange(worlds, device=device)/worlds
+    traces={key:[] for key in ('subin','subout','forces')}
+    if trace_phase is not None:
+        assert device=='cpu' and 0<=trace_phase<1
+        phases.fill_(trace_phase)
+        original_step=s._mujoco_warp_step
+        def trace_step():
+            capture=len(traces['subin'])<ticks*8
+            if capture:
+                traces['subin'].append(probe.physical_state(env))
+                traces['forces'].append(s.mjw_data.xfrc_applied.numpy()[0].copy())
+            original_step()
+            if capture:traces['subout'].append(probe.physical_state(env))
+        s._mujoco_warp_step=trace_step
     env._sample_motion_times = lambda n: (torch.zeros(n,dtype=torch.long,device=device), phases[:n]*duration)
     obs, info = env.reset(); first_done = [0]*worlds; distances = []
     states=[];observations=[];actions=[];targets=[];defects=[];worst={};worst_defect=-1.
@@ -140,12 +163,15 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4):
                   cuda_graph=bool(e._graph), seconds=time.perf_counter()-started)
     label=('contact_soft_limit_trial' if contact_trial else 'body_velocity_engine')+'_'+device.replace(':','_')
     if relaxed:label+='_relaxed'
+    if hard_project:label+='_hard_project'
     if worlds!=4:label+='_worlds'+str(worlds)
+    if hard_project and ticks!=90:label+='_ticks'+str(ticks)
+    if trace_phase is not None:label+='_phase'+str(trace_phase)
     if contact_trial:
-        report.update(diagnostic_only=True,changed='hard sequential contact friction, original soft MJ limits retained',
+        report.update(diagnostic_only=True,changed='hard sequential contact friction; '+('hard limit velocity + split position' if hard_project else 'original soft MJ limits retained'),
                       max_motor_defect_nm=float(np.max(defects)),actual_ticks=len(states))
         np.savez_compressed(probe.OUT/('causal_transfer/contact_worst_equations'+('_relaxed' if relaxed else '')+'.npz'),**worst)
-    np.savez_compressed(probe.OUT/f'causal_transfer/{label}.npz',states=states,obs=observations,actions=actions,targets=targets,dist=distances)
+    np.savez_compressed(probe.OUT/f'causal_transfer/{label}.npz',states=states,obs=observations,actions=actions,targets=targets,dist=distances,**traces)
     (probe.OUT/f'causal_transfer/{label}.json').write_text(
         json.dumps(report,indent=2),encoding='utf-8')
     print(json.dumps(report),flush=True)
@@ -153,4 +179,7 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4):
 
 if __name__ == '__main__': main(sys.argv[1] if len(sys.argv)>1 else 'cpu', int(sys.argv[2]) if len(sys.argv)>2 else 12,
                                '--contact-trial' in sys.argv, '--relaxed' in sys.argv,
-                               int(next((s.split('=')[1] for s in sys.argv if s.startswith('--worlds=')),4)))
+                               int(next((s.split('=')[1] for s in sys.argv if s.startswith('--worlds=')),4)),
+                               float(next(s.split('=')[1] for s in sys.argv if s.startswith('--trace-phase=')))
+                               if any(s.startswith('--trace-phase=') for s in sys.argv) else None,
+                               '--hard-project' in sys.argv)
