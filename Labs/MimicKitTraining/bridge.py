@@ -1,0 +1,85 @@
+"""Low-data local bridge: incremental TensorBoard events, small replay, no checkpoints."""
+import json
+import os
+import base64
+import gzip
+from pathlib import Path
+import subprocess
+import time
+import argparse
+import re
+import cloud
+from runtime_deadline import RuntimeDeadline
+from replay import convert
+
+STEPPER=Path(r'C:/Users/singerie/Documents/Cursor/stepper')
+
+def atomic_json(path,data):
+    path.parent.mkdir(parents=True,exist_ok=True)
+    temp=path.with_suffix('.tmp');temp.write_text(json.dumps(data,separators=(',',':')));temp.replace(path)
+
+def main():
+    parser=argparse.ArgumentParser();parser.add_argument('--name',default='humanoid_walk_01')
+    parser.add_argument('--poll-seconds',type=float,default=30);args=parser.parse_args()
+    assert args.poll_seconds>=5
+    assert re.fullmatch(r'[A-Za-z0-9_]+',args.name)
+    run='mimickit_'+args.name
+    local_root=STEPPER/'training/runs'/run
+    s=cloud.state();conn=s['connection']
+    geom=json.loads((cloud.OUT/'geometry.json').read_text())
+    local_root.mkdir(parents=True,exist_ok=True)
+    debug=local_root/'debug';debug.mkdir(exist_ok=True)
+    downloaded=0;seen={};client=None;started=time.time()
+    deadline=RuntimeDeadline(cloud.OUT/'runtime_control.json',s['pod_id'],s['created_unix']+s['max_initial_runtime_seconds'],reserve=-180)
+    while time.time()<deadline.read():
+        try:
+            if client is None:
+                client=subprocess.Popen(cloud.rp.ssh_base(conn)+['python','-u','/workspace/mimickit_trial/pipeline/telemetry.py',args.name],
+                                        stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True)
+            client.stdin.write(json.dumps(seen)+'\n');client.stdin.flush()
+            line=client.stdout.readline()
+            if not line:raise ConnectionError('Telemetry SSH connection closed')
+            downloaded+=len(line)
+            files=json.loads(gzip.decompress(base64.b64decode(line)))
+            for name,item in files.items():
+                local=local_root/name
+                offset=item['offset'];data=base64.b64decode(item['data'])
+                if name.startswith('events.'):
+                    with local.open('ab' if offset else 'wb') as f:f.write(data)
+                else:
+                    temp=local.with_suffix('.tmp');temp.write_bytes(data);temp.replace(local)
+                seen[name]=dict(version=item['version'],size=offset+len(data))
+                if name=='replay.npz':
+                    atomic_json(debug/'last_batch_rollout.json',convert(local,geom,run))
+            finished=(local_root/'finished.json').exists() or (local_root/'failure.json').exists()
+            alerts=[]
+            for alert in ['failure.json','numerical_failure.json','backup_errors.json']:
+                if (local_root/alert).exists():alerts.append(dict(source=alert,detail=json.loads((local_root/alert).read_text())))
+            if alerts:
+                if (debug/'last_batch_rollout.json').exists():
+                    payload=json.loads((debug/'last_batch_rollout.json').read_text())
+                    payload.setdefault('metadata',{})['training_health']=dict(state='ERROR',alerts=alerts)
+                    atomic_json(debug/'last_batch_rollout.json',payload)
+                if not (local_root/'alert_announced.json').exists():
+                    print('TRAINING ALERT '+args.name+': '+json.dumps(alerts),flush=True)
+                    if os.name=='nt':
+                        import winsound
+                        try:winsound.MessageBeep(winsound.MB_ICONHAND)
+                        except (OSError,RuntimeError):pass  # Muted/unavailable audio must not block telemetry.
+                    atomic_json(local_root/'alert_announced.json',alerts)
+            if not finished:
+                atomic_json(debug/'training.active.json',dict(pid=os.getpid(),kind='remote_mimickit'))
+            else:
+                (debug/'training.active.json').unlink(missing_ok=True)
+            atomic_json(cloud.OUT/(args.name+'-bridge-status.json'),dict(downloaded_bytes=downloaded,elapsed_seconds=time.time()-started,
+                        updated_unix=time.time(),finished=finished,checkpoint_downloads=False))
+            if finished:break
+        except Exception as error:
+            (cloud.OUT/(args.name+'-bridge-error.txt')).write_text(f'{type(error).__name__}: {error}')
+            if client:client.terminate()
+            client=None
+        time.sleep(args.poll_seconds)
+    if client:client.terminate()
+    (debug/'training.active.json').unlink(missing_ok=True)
+
+if __name__=='__main__':main()

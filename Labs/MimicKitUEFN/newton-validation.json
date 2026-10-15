@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "device": "cpu",
+  "bodies": 15,
+  "nv": 40,
+  "ball_profiles": 10,
+  "locked_axis_rows": [
+    0
+  ],
+  "collider_count": 23,
+  "max_collider_position_error_m": 6.209016483540436e-07,
+  "versions": {
+    "newton": "1.0.0",
+    "mujoco": "3.5.0",
+    "mujoco-warp": "3.5.0.2",
+    "warp-lang": "1.12.1"
+  }
+}
