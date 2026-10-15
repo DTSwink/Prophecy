@@ -4,6 +4,88 @@
 
 ### Active goal — October15 overnight
 
+**Latest progress / resume here:** precautionary snapshot committed
+and remote ref verified: `c2f6a742` on `origin/codex/standalone-sim`. It contains
+the physical-training/retargeting/transfer source and dedicated journals. Other
+chats' modified Blueprints, PHAT and reach/D/S files were left unstaged/untouched.
+No cloud spend, no training, no editor restart. Goal remains incomplete.
+
+Contact law is now isolated numerically. `probe_sequential_contacts.py` uses the
+same articulated mass matrix and forces as MJ, with Jolt's sequential capped
+motors, friction disc (bounded by the preceding normal impulse), then hard normal
+impulse. In sampled step160 with friction1 and limits off, max angular-velocity
+error falls from hard-MJ-pyramidal5.15rad/s to0.052rad/s; normal impulse0.608 versus
+native0.571N.s. Six states8/24/48/80/112/160, friction0/1,10/100/1000iterations.
+100 and1000iterations agree; no-contact residual0.05–0.12rad/s is separate
+articulation/integration/force work. This is NOT a completed full-trajectory match.
+Files: `causal_transfer/sequential_contacts.json`, per-state `sequential_*.npz`.
+
+`sequential_contact_gpu.py` reproduces this independent CPU reference on CPU and
+CUDA within1.23e-5rad/s; motor equation defect below3.4e-5Nm. CUDA graph replay
+verified. Serial implementation was too slow (~53–87ms for512worlds/100iterations);
+tiled version ~10.8ms with Unreal still running. This only times the prepared
+equation problem, not complete physics or training. Still too costly to promote
+without further work; don't call this optimized. Native Jolt remains unchanged.
+
+`sequential_contact_adapter.py` integrates those equations into the actual MJWarp
+step, model-scoped dispatcher, with GPU inertia inversion/contact Jacobians and
+no per-step CPU readback. `test_sequential_contact_adapter.py`: all six same-state
+inputs match CPU within1.42e-5rad/s, including captured CUDA replay; motor defect
+2.29e-5Nm. It deliberately REQUIRES disabled limits/equalities, uniform friction,
+condim3 and dense articulated inertia. It is an isolated test, NOT a training
+default or full solver. Angular-limit projection, manifold friction (versus
+per-point friction), position projection and residual integration are outstanding.
+No environment/reward/default was changed. Evidence `sequential_adapter.json`.
+
+**Rig-only speculative-point correction candidate:** `build_point_contact.py`
+produces `point-contact/fixture.exe` plus a separate DLL; NEVER installs it in
+Unreal. `rig_point_contact.patch` adds default-true
+`ContactSettings::mEnableSpeculativeContacts`. Tagged-rig listener setsfalse:
+separated points carry zero response even within a penetrating manifold; friction
+center/torsion count only responding points; position solve skips inactive rows.
+Original contact cache/order retained, persisted points reactivate normally.
+Stock/unmarked dynamics are exactly identical across31policyticks/all15bodies.
+Sphere regression passes, unmarked difference0, vs global zero-spec reference
+9.37e-19, solid/persisted contacts confirmed. Step48 frictional same-state error
+falls1.25->0.19rad/s when the separated extra corner is excluded.
+
+The candidate alone does NOT make transfer pass: current checkpoint fails at
+12/5/24/20ticks across four phases, versus original12/8/24/20. Do not promote or
+claim matching because its local contact behavior is correct. Active fixture and
+Unreal preview remain on the original installed DLL; this candidate is explicit.
+Tests: `test_point_contacts.py`, `point-contact/{verification.json,build.json}`,
+`causal_transfer/sequential_point_contacts.json`. The build restores dependency
+source bytes in finally; installed DLL SHA remains
+`69137ccc0b5b7dee38cf05a801254d2b06cfbfb9e105131960453c38a8147449`.
+Intermediate build DLL is the candidate; subsequent ordinary builds recompile the
+restored source. First fixture compilation failed under Windows PowerShell's
+script policy; source restored, rerun with normal pwsh succeeded (no OS policy
+change). GPU tile compiler rejects some1D shared-tile assignments;2D tile version
+passes without modifying Warp/site-packages.
+
+Next: finish remaining dynamics differences, particularly angular-limit response,
+manifold friction and maximal-vs-articulated integration. Also fix/verify the known
+Newton body-velocity reporting bug before fresh training: ball qvel is child-local,
+while Newton FK interprets copied velocities in the parent frame. Old diagnostic
+`audit_force_velocities.py` uses exact Jacobians only for forces; this is not yet
+fixed in the shared engine. Avoid fitting compensating force offsets. Revalidate
+the full saved actor over phases and sustained real support before training the
+full dataset. Idle is still outstanding. Production training defaults and the
+checkpoint remain unchanged.
+
+`actual_body_velocity.py` now independently reconstructs real COM velocities
+from MJ child-local joint velocities and current body transforms. All256 saved
+physics states/all15bodies match the independent MuJoCo Jacobian reference within
+9.36e-6 on CPU and CUDA; graph replay verified, measured0.149ms for256states on
+the local GPU with editor open. No pose/velocity/physics state is changed by this
+test. Before promoting, wire it after solver output (not into generalized qvel),
+and explicitly verify reset synchronization and first-tick behavior: Newton's
+cached body velocities can be stale during reset, while MJ state isn't copied
+until stepping. Current evidence: `causal_transfer/actual_body_velocity.json`.
+Its first attempt imported the environment's other MuJoCo version before probe
+selected pinned dependencies; binary model load correctly rejected it. Import
+order corrected, tests rerun. No library installation changed.
+
 User authorized a precautionary Git push, continued local transfer diagnosis and
 local training after a verified match. Preserve general Jolt gameplay rules; prefer
 rig-scoped Jolt settings where they remove a mismatch without affecting other
