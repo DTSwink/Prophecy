@@ -29,24 +29,27 @@ def limit_envelope(state):
     return sorted(result,key=lambda r:max(r['twist_excess_deg']/10,r['swing_envelope_ratio']-1),reverse=True)
 
 
-def main(world=9,tag='point'):
-    with np.load(OUT/'body_velocity_engine_cuda_0_worlds16.npz') as z:m={k:z[k] for k in z.files}
-    path=OUT/('body_velocity_engine_cuda_0_worlds16_self0_native_v40p8'+('_'+tag if tag else '')+'.npz')
+def main(world=9,tag='point',label='body_velocity_engine_cuda_0_worlds16'):
+    with np.load(OUT/(label+'.npz')) as z:m={k:z[k] for k in z.files}
+    path=OUT/(label+'_self0_native_v40p8'+('_'+tag if tag else '')+'.npz')
     with np.load(path) as z:n=z['world'+str(world)];a=z['actions'+str(world)]
     records=[]
     for tick,state in enumerate(n):
-        ref=m['states'][tick,world].copy();ref[:,:2]+=state[0,:2]-ref[0,:2]
+        index=tick-1 if 'initial' in m else tick
+        ref=(m['initial'][world] if index<0 else m['states'][index,world]).copy()
+        ref[:,:2]+=state[0,:2]-ref[0,:2]
         pe=np.linalg.norm(state[:,:3]-ref[:,:3],axis=1)
         re=np.degrees((R.from_quat(state[:,3:7]).inv()*R.from_quat(ref[:,3:7])).magnitude())
         ve=np.linalg.norm(state[:,10:13]-ref[:,10:13],axis=1)
         row=dict(tick=tick,max_position_m=float(max(pe)),max_rotation_deg=float(max(re)),
             worst_angular_velocity=[dict(body=names[i],error_rad_s=float(ve[i]),position_m=float(pe[i]),rotation_deg=float(re[i])) for i in np.argsort(ve)[-3:][::-1]],
             native_limits=limit_envelope(state)[:2],mj_limits=limit_envelope(ref)[:2])
-        if tick:row['action_max_difference']=float(abs(a[tick-1]-m['actions'][tick,world]).max())
+        if tick:row['action_max_difference']=float(abs(a[tick-1]-m['actions'][index,world]).max())
         records.append(row)
-    result=dict(world=world,phase=world/16,profile=tag,records=records)
-    (OUT/f'divergence_world{world}_{tag or "manifold"}.json').write_text(json.dumps(result,indent=2))
+    result=dict(world=world,phase=world/m['states'].shape[1],profile=tag,source=label,records=records)
+    suffix='' if label=='body_velocity_engine_cuda_0_worlds16' else '_'+label
+    (OUT/f'divergence_world{world}_{tag or "manifold"}{suffix}.json').write_text(json.dumps(result,indent=2))
     print(json.dumps(result,indent=2))
 
 
-if __name__=='__main__':main(int(sys.argv[1]) if len(sys.argv)>1 else 9,sys.argv[2] if len(sys.argv)>2 else 'point')
+if __name__=='__main__':main(int(sys.argv[1]) if len(sys.argv)>1 else 9,sys.argv[2] if len(sys.argv)>2 else 'point',sys.argv[3] if len(sys.argv)>3 else 'body_velocity_engine_cuda_0_worlds16')

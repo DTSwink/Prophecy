@@ -30,17 +30,17 @@ def main():
         if key.startswith('TRANSFER_'):del os.environ[key]
     os.environ.update(TRANSFER_TRAINING_CONTACT='1',TRANSFER_FRICTIONLESS_SELF='1',TRANSFER_NO_LIMITS='1',
         TRANSFER_SUBSTEPS='1',TRANSFER_RIG_VELOCITY_STEPS='100',TRANSFER_RIG_POSITION_STEPS='20')
-    report=[]
+    report=[];velocities={}
     for step in (19,21,31):
         state=data['subin'][step];action=data['actions'][step//8,0].clip(-2*np.pi,2*np.pi)
         n=Native(state)
         try:result=n.request('step '+' '.join(map(str,action)))
         finally:n.close()
         actual=np.array(result['bodies'])
-        for metric in ('articulated','jolt_pair'):
+        for metric in ('articulated','jolt_pair','jolt_manifold'):
             d=mujoco.MjData(m);d.qpos[:],d.qvel[:]=encode(m,state);d.xfrc_applied[:]=data['forces'][step]
             mujoco.mj_forward(m,d);M=np.zeros((m.nv,m.nv));mujoco.mj_fullM(m,M,d.qM);inv=np.linalg.inv(M)
-            v=d.qvel+m.opt.timestep*d.qacc_smooth;motor=np.zeros(34);contacts=[]
+            v=d.qvel+m.opt.timestep*d.qacc_smooth;motor=np.zeros(34);contacts=[];groups={}
             for c in d.contact:
                 if c.dist>=0:continue
                 normal=c.frame[:3];t1=np.array([normal[2],0,-normal[0]]) if abs(normal[0])>abs(normal[1]) else np.array([0,normal[2],-normal[1]])
@@ -53,25 +53,54 @@ def main():
                     for a in range(3):
                         cross=np.cross(c.pos-d.xipos[b],frame[a]);pair[a]+=1/m.body_mass[b]+cross@I@cross
                 response=inv@J.T;diagonal=np.diag(J@response).copy()
-                if metric=='jolt_pair':diagonal[1:]=pair[1:]
+                if metric!='articulated':diagonal[1:]=pair[1:]
                 contacts.append([J,response,diagonal,np.zeros(3),float(c.friction[0]) if c.dim==3 else 0.])
+                groups.setdefault(tuple(c.geom),[]).append((len(contacts)-1,c.pos.copy(),frame))
+            manifolds=[]
+            if metric=='jolt_manifold':
+                for geoms,points in groups.items():
+                    mu=contacts[points[0][0]][4]
+                    if not mu:continue
+                    center=np.mean([p[1] for p in points],axis=0);frame=points[0][2]
+                    tang=np.zeros((2,m.nv));angular=np.zeros(m.nv);diag=np.zeros(3)
+                    for sign,geom in [(-1,geoms[0]),(1,geoms[1])]:
+                        b=m.geom_bodyid[geom];jp=np.zeros((3,m.nv));jr=jp.copy()
+                        mujoco.mj_jac(m,d,jp,jr,center,b);tang+=sign*frame[1:]@jp;angular+=sign*frame[0]@jr
+                        if not b:continue
+                        I=d.ximat[b].reshape(3,3)@np.diag(1/m.body_inertia[b])@d.ximat[b].reshape(3,3).T
+                        for a in range(2):
+                            cross=np.cross(center-d.xipos[b],frame[a+1]);diag[a]+=1/m.body_mass[b]+cross@I@cross
+                        diag[2]+=frame[0]@I@frame[0]
+                    radii=[np.linalg.norm((p[1]-center)-frame[0]*((p[1]-center)@frame[0])) for p in points]
+                    manifolds.append((points,mu,tang,inv@tang.T,angular,inv@angular,diag,radii,np.zeros(3)))
             for it in range(2000):
                 for a,dof in enumerate(dofs):
                     comp=240/gain[a];value=np.clip(motor[a]+(action[a]-v[dof]-comp*motor[a])/(inv[dof,dof]+comp),-caps[a],caps[a])
                     value=(value+motor[a])*.5;v+=inv[:,dof]*(value-motor[a]);motor[a]=value
+                for points,mu,tang,tr,angular,ar,diag,radii,impulse in manifolds:
+                    normal_sum=sum(contacts[p[0]][3][0] for p in points)
+                    tangent=impulse[:2]-(tang@v)/diag[:2];bound=mu*normal_sum;length=np.linalg.norm(tangent)
+                    if length>bound:tangent*=bound/max(length,1e-30)
+                    tangent=(tangent+impulse[:2])*.5;v+=tr@(tangent-impulse[:2]);impulse[:2]=tangent
+                    if len(points)>1:
+                        bound=mu*sum(radius*contacts[p[0]][3][0] for radius,p in zip(radii,points))
+                        value=np.clip(impulse[2]-angular@v/diag[2],-bound,bound);value=(value+impulse[2])*.5
+                        v+=ar*(value-impulse[2]);impulse[2]=value
                 for J,response,diag,impulse,mu in contacts:
-                    if mu:
+                    if mu and metric!='jolt_manifold':
                         tangent=impulse[1:]-(J[1:]@v)/diag[1:];bound=mu*impulse[0];length=np.linalg.norm(tangent)
                         if length>bound:tangent*=bound/max(length,1e-30)
                         tangent=(tangent+impulse[1:])*.5;v+=response[:,1:]@(tangent-impulse[1:]);impulse[1:]=tangent
                     normal=max(0,impulse[0]-J[0]@v/diag[0]);normal=(normal+impulse[0])*.5
                     v+=response[:,0]*(normal-impulse[0]);impulse[0]=normal
             d.qvel[:]=v;mujoco.mj_integratePos(m,d.qpos,v,m.opt.timestep);pred=decode(m,d)
+            velocities[f'step{step}_{metric}']=v.copy()
             row=dict(step=step,metric=metric,contacts=len(contacts),native_manifold_sizes=[len(c['points']) for c in result['contacts']] if result['contacts'] and 'points' in result['contacts'][0] else [],
                      motor_defect_nm=float(abs(motor*240-np.clip(gain*(action-v[dofs]),-caps*240,caps*240)).max()),
                      max_angvel_difference=float(np.linalg.norm(pred[:,10:]-actual[:,10:],axis=-1).max()))
             report.append(row);print(json.dumps(row),flush=True)
     (out/'friction_metric.json').write_text(json.dumps(report,indent=2))
+    np.savez_compressed(out/'friction_metric_velocities.npz',**velocities)
 
 
 if __name__=='__main__':main()

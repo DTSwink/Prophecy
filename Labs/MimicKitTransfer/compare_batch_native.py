@@ -34,10 +34,16 @@ def main(label,frictionless_self=False,no_limits=False,high_iterations=False,rig
             reconstructed=observation(data['states'][tick,world],data['obs'][tick+1,world,-5:])
             mapping_error=max(mapping_error,float(abs(reconstructed-data['obs'][tick+1,world]).max()))
         assert mapping_error<1e-3,('Observation mismatch',mapping_error)
-        n=Native(data['states'][0,world]);current=np.array(n.initial['bodies'])
+        first_tick=0 if 'initial' in data else 1
+        initial=data['initial'][world] if first_tick==0 else data['states'][0,world]
+        if first_tick==0:
+            reconstructed=observation(initial,data['obs'][0,world,-5:])
+            mapping_error=max(mapping_error,float(abs(reconstructed-data['obs'][0,world]).max()))
+            assert mapping_error<1e-3,('Reset observation mismatch',mapping_error)
+        n=Native(initial);current=np.array(n.initial['bodies'])
         distances=[];deviations=[];impulses=[];history=[current.copy()];commands=[];timings=[];defects=[];anchors=[];loads=[]
         try:
-            for tick in range(1,len(data['states'])):
+            for tick in range(first_tick,len(data['states'])):
                 command=actor(observation(current,data['obs'][tick,world,-5:]))
                 response=n.request('step '+' '.join(map(str,command)))
                 if 'physics_update_seconds' in response:timings.append(response['physics_update_seconds'])
@@ -59,6 +65,7 @@ def main(label,frictionless_self=False,no_limits=False,high_iterations=False,rig
                  max_target_distance_m=max(distances),mj_deviation_m=deviations[-1],
                  solved_ground_impulse_ns=sum(impulses),material='ground friction1/rest0; MJ self contact frictionless',
                  native_self_friction=0 if frictionless_self else 1,
+                 initial_state='animation reset before physics' if first_tick==0 else 'after first MJ policy tick',
                  no_limits_diagnostic=no_limits,high_iterations_diagnostic=high_iterations,
                  observation_mapping_max_error=mapping_error)
         if rig_iterations:row['rig_iterations']=rig_iterations

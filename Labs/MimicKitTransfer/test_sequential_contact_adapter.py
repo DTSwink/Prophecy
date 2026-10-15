@@ -21,7 +21,7 @@ def inactive_contact_test(custom,device):
         arr([3,3,3,1],int),arr([int(mjtypes.ContactType.CONSTRAINT)]*4,int),
         arr([-.001,.001,-.001,-.002]),arr([0,0,-.002,0]),arr([[0,1,2],[0,0,0],[0,0,0],[1,0,0]],int),
         arr(np.ones((custom.data.nworld,3,p.nv))),zero((1,3)),zero((1,3)),zero((1,1,3)),
-        arr(np.ones((4,5)),mjtypes.vec5),custom.rowmap,custom.error],device=device)
+        arr(np.ones((4,5)),mjtypes.vec5),custom.rowmap,custom.error,custom.contactids],device=device)
     np.testing.assert_array_equal(p.ncontact.numpy(),[2]+[0]*(custom.data.nworld-1))
     np.testing.assert_array_equal(custom.error.numpy(),0)
     np.testing.assert_array_equal(np.sort(p.friction.numpy()[0,:2]),[0,1])

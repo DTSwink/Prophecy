@@ -19,11 +19,11 @@ def run():
     # Test actual environment observation assembly without physics. Sentinel
     # physical state remains unchanged; exactly five floats are appended.
     env=object.__new__(OmniWalkEnv)
-    env._motion_ids=torch.tensor([0,1,0])
-    env._gaits=torch.tensor([0.,1.])
-    env._directions=torch.tensor([[1.,0.],[0.,-1.]])
-    env._phase_offsets=torch.tensor([.25,.6])
-    times=torch.tensor([.99,.1,.999999]);duration=torch.tensor([1.,.6])
+    env._motion_ids=torch.tensor([0,1,2])
+    env._gaits=torch.tensor([-1.,0.,1.])
+    env._directions=torch.tensor([[1.,0.],[1.,0.],[0.,-1.]])
+    env._phase_offsets=torch.tensor([0.,.25,.6])
+    times=torch.tensor([9.99,.1,.599999]);duration=torch.tensor([10.,1.,.6])
     class Lib:
         def get_motion_length(self,ids):return duration[ids]
     class Engine:
@@ -36,8 +36,8 @@ def run():
     assert obs.shape==(3,147)
     torch.testing.assert_close(obs[:,:142],physical)
     torch.testing.assert_close(subset,obs[[2,0]])
-    torch.testing.assert_close(obs[:,142],torch.tensor([0.,1.,0.]))
-    torch.testing.assert_close(obs[:,143:145],torch.tensor([[1.,0.],[0.,-1.],[1.,0.]]))
+    torch.testing.assert_close(obs[:,142],torch.tensor([-1.,0.,1.]))
+    torch.testing.assert_close(obs[:,143:145],torch.tensor([[1.,0.],[1.,0.],[0.,-1.]]))
     before=times.clone();target=env.next_phase_target()
     torch.testing.assert_close(times,before) # no clock feedback
     torch.testing.assert_close(target,circular_phase((times+1/30)/duration[env._motion_ids]+env._phase_offsets[env._motion_ids]),atol=1e-6,rtol=1e-5)
@@ -62,7 +62,7 @@ def run():
     assert all(p.grad is None for p in model._action_dist.parameters())
     assert all(p.grad is None for p in model._critic_layers.parameters())
     report=dict(passed=True,device='cpu',hidden_widths=[1024,512,512],command_floats=5,
-                motor_outputs=34,phase_outputs=2,wrap_test=True,subset_test=True,
+                motor_outputs=34,phase_outputs=2,wrap_test=True,subset_test=True,idle_mode=-1,idle_direction=[1,0],
                 phase_backprop=True,optimizer_steps=0,physics_test=False,
                 note='142 physical inputs here are a test fixture, not a measured integrated observation count')
     (ROOT/'Saved/MimicKitUEFN/omni-contract-tests.json').write_text(json.dumps(report,indent=2),encoding='utf-8')

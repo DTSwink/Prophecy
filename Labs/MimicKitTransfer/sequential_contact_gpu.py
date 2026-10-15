@@ -5,10 +5,12 @@ previous iteration; normal is solved last. Motors are capped end-step motors.
 No CPU transfers or allocations occur inside solve/captured graph replay.
 """
 import warp as wp
+from contact_manifolds_gpu import ContactManifolds
 
 
 @wp.struct
 class ContactProblem:
+    manifold: ContactManifolds
     nv: int
     nmotor: int
     relaxation: float
@@ -153,6 +155,18 @@ class SequentialContactProblem:
 def multiply(a: float,b: float): return a*b
 
 
+@wp.func
+def friction_bound(p:ContactProblem,w:int,c:int):
+    normal=p.contact_impulse[w,c,0];spin=float(0.)
+    if p.manifold.enabled:
+        group=p.manifold.group[w,c];normal=float(0.)
+        for other in range(p.ncontact[w]):
+            if p.manifold.group[w,other]==group:
+                impulse=p.contact_impulse[w,other,0]
+                normal+=impulse;spin+=p.manifold.radius[w,other]*impulse
+    return p.friction[w,c]*wp.vec2(normal,spin)
+
+
 def make_tiled_iteration(nv,nmotor):
     @wp.kernel(module='unique',enable_backward=False)
     def tiled(p: ContactProblem, iterations: int):
@@ -163,6 +177,8 @@ def make_tiled_iteration(nv,nmotor):
         for c in range(p.ncontact[w]):
             for a in range(3): p.contact_impulse[w,c,a]=0.
         for c in range(p.nlimit[w]): p.limit_impulse[w,c]=0.
+        if p.manifold.enabled:
+            for g in range(p.manifold.count[w]):p.manifold.impulse[w,g,2]=0.
         for it in range(iterations):
             for a in range(p.nmotor):
                 dof=p.dofs[a]; compliance=1./(dt*p.gains[a]); old=wp.tile_extract(impulses,0,a)
@@ -189,12 +205,23 @@ def make_tiled_iteration(nv,nmotor):
                     v2=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,j2,v)),0)
                     old1=p.contact_impulse[w,c,1]; old2=p.contact_impulse[w,c,2]
                     t1=old1-v1/p.diagonal[w,c,1]; t2=old2-v2/p.diagonal[w,c,2]
-                    length=wp.sqrt(t1*t1+t2*t2); bound=p.friction[w,c]*p.contact_impulse[w,c,0]
+                    bounds=friction_bound(p,w,c)
+                    length=wp.sqrt(t1*t1+t2*t2); bound=bounds[0]
                     scale=wp.min(1.,bound/wp.max(length,1e-30)); t1*=scale; t2*=scale
                     t1=old1+p.relaxation*(t1-old1); t2=old2+p.relaxation*(t2-old2)
                     r1=wp.tile_reshape(wp.tile_load(p.response[w,c,1],shape=(nv,)),shape=(1,nv)); r2=wp.tile_reshape(wp.tile_load(p.response[w,c,2],shape=(nv,)),shape=(1,nv))
                     wp.tile_assign(v,v+r1*(t1-old1)+r2*(t2-old2))
                     p.contact_impulse[w,c,1]=t1; p.contact_impulse[w,c,2]=t2
+                    if p.manifold.enabled:
+                        g=p.manifold.group[w,c]
+                        if p.manifold.size[w,g]>1:
+                            sj=wp.tile_reshape(wp.tile_load(p.manifold.J[w,g,2],shape=(nv,)),shape=(1,nv))
+                            sr=wp.tile_reshape(wp.tile_load(p.manifold.response[w,g,2],shape=(nv,)),shape=(1,nv))
+                            speed=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,sj,v)),0)
+                            oldspin=p.manifold.impulse[w,g,2]
+                            spin=wp.clamp(oldspin-speed/p.manifold.diagonal[w,g,2],-bounds[1],bounds[1])
+                            spin=oldspin+p.relaxation*(spin-oldspin)
+                            wp.tile_assign(v,v+sr*(spin-oldspin));p.manifold.impulse[w,g,2]=spin
                 jn=wp.tile_reshape(wp.tile_load(p.J[w,c,0],shape=(nv,)),shape=(1,nv))
                 vn=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,jn,v)),0)
                 old=p.contact_impulse[w,c,0]; normal=wp.max(0.,old-vn/p.diagonal[w,c,0])

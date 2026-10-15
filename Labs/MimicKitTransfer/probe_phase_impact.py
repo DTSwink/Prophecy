@@ -31,9 +31,11 @@ def main(cases=None):
         wm=mjw.put_model(m);wd=mjw.put_data(m,mujoco.MjData(m),nworld=len(steps),nconmax=150,njmax=450)
         install_limits(m,wm);motor=CoupledVelocityMotors(wm,wd,m);motor.install()
         custom=None
-        if case in ('sequential','hard_limits','no_limits','block'):
-            custom=SequentialContactAdapter(wm,wd,m,motor,iterations=100 if case=='block' else 1000,allow_soft_limits=True,relaxation=.5,
-                hard_limit_control=case in ('hard_limits','block'),block_motors=case=='block')
+        if case in ('sequential','hard_limits','no_limits','block','manifolds','jolt_axes'):
+            block=case in ('block','manifolds','jolt_axes')
+            custom=SequentialContactAdapter(wm,wd,m,motor,iterations=100 if block else 1000,allow_soft_limits=True,relaxation=.5,
+                hard_limit_control=case in ('hard_limits','block','manifolds','jolt_axes'),block_motors=block,
+                manifolds=case in ('manifolds','jolt_axes'),jolt_limit_axes=case=='jolt_axes')
             custom.install()
         q,v=zip(*(encode(m,s) for s in states));ctrl=np.zeros((len(steps),m.nu),np.float32);ctrl[:,motor.ids]=commands
         wd.qpos.assign(np.asarray(q,np.float32));wd.qvel.assign(np.asarray(v,np.float32));wd.ctrl.assign(ctrl)
@@ -66,9 +68,9 @@ def main(cases=None):
         print(json.dumps(entry),flush=True)
         if custom:custom.restore()
         motor.restore()
-    label='phase9_impact'+('_block' if cases==('block',) else '_limits' if cases else '')
+    label='phase9_impact'+('_jolt_axes' if cases==('manifolds','jolt_axes') else '_block' if cases==('block',) else '_limits' if cases else '')
     (out/(label+'.json')).write_text(json.dumps(report,indent=2))
     np.savez_compressed(out/(label+'.npz'),steps=steps,**traces)
 
 
-if __name__=='__main__':main(('block',) if '--block' in sys.argv else ('hard_limits','no_limits') if '--limits' in sys.argv else None)
+if __name__=='__main__':main(('manifolds','jolt_axes') if '--jolt-axes' in sys.argv else ('block',) if '--block' in sys.argv else ('hard_limits','no_limits') if '--limits' in sys.argv else None)

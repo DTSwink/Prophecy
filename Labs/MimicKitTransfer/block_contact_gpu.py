@@ -4,7 +4,7 @@ The original tangent projection metric is retained. This module is not installed
 in production and a failed active set is explicit, never silently accepted.
 """
 import warp as wp
-from sequential_contact_gpu import ContactProblem,multiply
+from sequential_contact_gpu import ContactProblem,multiply,friction_bound
 
 
 def make_block_iteration(nv,nmotor):
@@ -23,6 +23,8 @@ def make_block_iteration(nv,nmotor):
         for c in range(p.ncontact[w]):
             for a in range(3):p.contact_impulse[w,c,a]=0.
         for c in range(p.nlimit[w]):p.limit_impulse[w,c]=0.
+        if p.manifold.enabled:
+            for g in range(p.manifold.count[w]):p.manifold.impulse[w,g,2]=0.
         converged=bool(False)
         for outer in range(12):
             effective=wp.tile_zeros(shape=(nv,nv),dtype=float,storage='shared')
@@ -54,6 +56,12 @@ def make_block_iteration(nv,nmotor):
                 response=wp.tile_matmul(jac,inverse)
                 wp.tile_store(p.limit_response[w,c],wp.tile_reshape(response,shape=(nv,)))
                 wp.tile_assign(v,v+response*p.limit_impulse[w,c])
+            if p.manifold.enabled:
+                for g in range(p.manifold.count[w]):
+                    spin_jac=wp.tile_reshape(wp.tile_load(p.manifold.J[w,g,2],shape=(nv,)),shape=(1,nv))
+                    spin_response=wp.tile_matmul(spin_jac,inverse)
+                    wp.tile_store(p.manifold.response[w,g,2],wp.tile_reshape(spin_response,shape=(nv,)))
+                    wp.tile_assign(v,v+spin_response*p.manifold.impulse[w,g,2])
             for it in range(iterations):
                 for c in range(p.nlimit[w]):
                     jac=wp.tile_reshape(wp.tile_load(p.limit_J[w,c],shape=(nv,)),shape=(1,nv))
@@ -73,13 +81,24 @@ def make_block_iteration(nv,nmotor):
                         v2=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,j2,v)),0)
                         old1=p.contact_impulse[w,c,1];old2=p.contact_impulse[w,c,2]
                         t1=old1-v1/p.diagonal[w,c,1];t2=old2-v2/p.diagonal[w,c,2]
-                        length=wp.sqrt(t1*t1+t2*t2);bound=p.friction[w,c]*p.contact_impulse[w,c,0]
+                        bounds=friction_bound(p,w,c)
+                        length=wp.sqrt(t1*t1+t2*t2);bound=bounds[0]
                         scale=wp.min(1.,bound/wp.max(length,1e-30));t1*=scale;t2*=scale
                         t1=old1+p.relaxation*(t1-old1);t2=old2+p.relaxation*(t2-old2)
                         r1=wp.tile_reshape(wp.tile_load(p.response[w,c,1],shape=(nv,)),shape=(1,nv))
                         r2=wp.tile_reshape(wp.tile_load(p.response[w,c,2],shape=(nv,)),shape=(1,nv))
                         wp.tile_assign(v,v+r1*(t1-old1)+r2*(t2-old2))
                         p.contact_impulse[w,c,1]=t1;p.contact_impulse[w,c,2]=t2
+                        if p.manifold.enabled:
+                            g=p.manifold.group[w,c]
+                            if p.manifold.size[w,g]>1:
+                                spin_jac_iter=wp.tile_reshape(wp.tile_load(p.manifold.J[w,g,2],shape=(nv,)),shape=(1,nv))
+                                spin_response_iter=wp.tile_reshape(wp.tile_load(p.manifold.response[w,g,2],shape=(nv,)),shape=(1,nv))
+                                speed=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,spin_jac_iter,v)),0)
+                                oldspin=p.manifold.impulse[w,g,2]
+                                spin=wp.clamp(oldspin-speed/p.manifold.diagonal[w,g,2],-bounds[1],bounds[1])
+                                spin=oldspin+p.relaxation*(spin-oldspin)
+                                wp.tile_assign(v,v+spin_response_iter*(spin-oldspin));p.manifold.impulse[w,g,2]=spin
                     jn=wp.tile_reshape(wp.tile_load(p.J[w,c,0],shape=(nv,)),shape=(1,nv))
                     rn=wp.tile_reshape(wp.tile_load(p.response[w,c,0],shape=(nv,)),shape=(1,nv))
                     vn=wp.tile_extract(wp.tile_sum(wp.tile_map(multiply,jn,v)),0)

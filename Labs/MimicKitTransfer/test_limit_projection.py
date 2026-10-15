@@ -25,17 +25,19 @@ def main():
     q=np.array(q);inv=np.array(inv);expected=np.array(expected)
     wp.init();wp.set_device('cuda:0');d=mjw.put_data(m,mujoco.MjData(m),nworld=len(q),nconmax=150,njmax=450)
     projection=SplitLimitProjection(m,d,joints,'cuda:0');wi=wp.array(inv.astype(np.float32),device='cuda:0')
-    d.qpos.assign(q.astype(np.float32));projection.apply(wi);actual=d.qpos.numpy()
+    tiled='--tiled' in __import__('sys').argv
+    shared='--shared' in __import__('sys').argv
+    d.qpos.assign(q.astype(np.float32));projection.apply(wi,tiled=tiled,shared=shared);actual=d.qpos.numpy()
     assert np.isfinite(actual).all()
     np.testing.assert_allclose(actual,expected,atol=1e-5,rtol=0,equal_nan=False)
     saved=wp.array(q.astype(np.float32),device='cuda:0')
     with wp.ScopedCapture(device='cuda:0') as capture:
-        wp.copy(d.qpos,saved);projection.apply(wi)
+        wp.copy(d.qpos,saved);projection.apply(wi,tiled=tiled,shared=shared)
     for _ in range(3):wp.capture_launch(capture.graph)
     np.testing.assert_array_equal(actual,d.qpos.numpy())
-    report=dict(cases=len(q),max_qpos_error=float(abs(actual-expected).max()),capture_verified=True,
+    report=dict(cases=len(q),tiled=tiled,shared=shared,max_qpos_error=float(abs(actual-expected).max()),capture_verified=True,
                 diagnostic_metric='mass frozen within one projection stage; angular error recomputed per correction')
-    print(json.dumps(report),flush=True);(out/'limit_projection_gpu.json').write_text(json.dumps(report,indent=2))
+    print(json.dumps(report),flush=True);(out/('limit_projection_gpu'+('_shared' if shared else '_tiled' if tiled else '')+'.json')).write_text(json.dumps(report,indent=2))
 
 
 if __name__=='__main__':main()

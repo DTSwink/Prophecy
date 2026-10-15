@@ -4,6 +4,97 @@
 
 ### Active goal — October15 overnight
 
+**October16 latest continuation — direct-reset comparison supersedes the easier
+post-first-step starts below.** The manifold/shared-projection MJ trial completed
+16/16 starts for300ticks, max target24.12cm, body-velocity error6.13e-4. Starting
+native Jolt40/8 from the actual animation reset (before ANY MJ step) completes
+13/16: phases0.375/0.625/0.9375 fail at32/237/224ticks. Initial observation mapping
+max8.01e-4. This is still failed transfer. No training, UE changes or profile
+promotion. The editor continues showing the earlier failed comparison.
+
+The newer comparison NPZ includes `initial`; native history index0 is that reset,
+then index1 equals MJ states index0. The divergence audit now respects this offset.
+At phase0.375 the first tick differs1.08mm; by tick5 the foot differs3.20cm and
+4.55rad/s, with closed-loop actions already diverging. Do not use the earlier
+post-MJ-step15/16 result as acceptance evidence.
+
+Manifold/spin GPU equations pass independent float64 CPU checks on3 impact
+states, max generalized-velocity error6.23e-5 scalar/5.07e-5 block; CUDA capture
+passes. Shared-memory split projection passes20 cases within5.624e-6 and repeats
+bit-exactly.512-world full-substep benchmark34.47ms, separate solve21.65ms and
+projection14.50ms (separately timed laptop kernels; do not add them). Still not
+acceptable final training throughput. `contact_manifolds_gpu.*`,
+`contact_solvers_benchmark_shared_manifolds.json`.
+
+New isolated Jolt hard-limit axes reproduce world-space construction across240
+rotations. Active swing-axis error7.87e-5 (unnormalized cross error8.85e-8);
+normalizing nearly zero boundary crosses amplifies float32 roundoff. The original
+2e-5 unit-axis assertion failed; test now explicitly checks both1e-4 axis and1e-6
+unnormalized error. This is a numerical test tolerance, no physics threshold.
+Same-state24-impact test remains~0.231rad/s at the foot; axes alone do not remove
+the remaining mismatch. Full motion with those axes then hit block active-set
+nonconvergence (error5) after tick30. Trial rejected; exact first-substep failure
+capture is in progress. No silently accepted solver fallback.
+
+Velocity-transport isolation: at one-point impacts19/21, comparing the solved
+velocity before changing the joint coordinate frame reduces foot difference
+0.071/0.100 to0.021/0.022rad/s. At two-point impact31 it remains0.227rad/s.
+This separates finite-step articulation transport from remaining contact response;
+stale velocities are NOT fed to the policy. `velocity_transport.*`.
+Actual primitive collider depth in all4800 saved MJ frames stays above−1.715cm,
+within Jolt's2cm penetration slop, so missing floor position projection is not
+active in that recording. `*_ground_depth.json` (policy-boundary sample, not proof
+about every intermediate physics step).
+
+Local dataset preparation: `prepare_local_omni.py` writes only configs/manifests
+under `Saved/MimicKitLocal/prepared`,27 clips (idle1/walk12/run14), equal clip
+sampling, original four loss weights, idle−1/direction[1,0], fresh weights/counters
+planned. No training launcher invoked; transfer remains prerequisite.
+
+**October16 current continuation, backup `a2e5ce72` pushed.** The block motor
+solve plus parallel split projection completes16/16 evenly spaced starts over
+300ticks/10s with the unchanged3913 actor, max key-point distance24.05cm, no
+invalid solver flags. Final generalized motor-equation residual is zero to
+float32 reporting precision; body-velocity/Jacobian max difference4.22e-4,
+partial resets and captured CUDA execution pass. The previous scalar1000-iteration
+trial completed15/16 (phase0.4375 failed223ticks). Numerical convergence matters;
+do not combine these records or describe either as new training.
+
+Native Jolt40velocity/8position from the new trial's initial states completes
+15/16: phase0.1875 now fails44ticks. Earlier scalar-trial initial states had a
+different late failure. Thus trajectory success is still sensitive and transfer
+is **not accepted**. Native100/20 is being checked separately. All successful
+native support is through feet. Installed DLL, active fixture and editor are
+unchanged; the visible comparison still shows the older failed transfer.
+
+The scalar seed50 plus block active-set solve100 passes all24 saved impact
+equations (max motor defect1.91e-5Nm). Shared-block angular projection matches
+the independent float64 reference over20 cases within5.624e-6 generalized pose
+units; captured replay repeats exactly. Its first attempted tile-map signature
+was rejected at compilation (array arguments unsupported); replaced with explicit
+per-thread joint updates, then verified. No failed result was promoted.
+
+512-world identical-impact benchmark: original scalar/full split correction
+177ms per physics substep; block+parallel projection35.79ms, including collision,
+motors, contacts, integration and split correction, excluding policy. Separate
+component captures: solve14.41ms, projection19.71ms. These are diagnostic laptop
+timings with Unreal open; neither claimed full training throughput nor acceptable
+final optimization. No second GPU workload and no cloud spending.
+
+Jolt tangent metric/manifold CPU isolation now includes joint-level torque caps
+(the earlier uncapped diagnostic numbers are invalid and retained only as failed
+evidence). One-point angular differences .1489→.07073rad/s and .1372→.09939 when
+using Jolt's contacting-body tangent metric. Two-point manifold-centred friction
+plus spin row reduces .2336→.2311rad/s; residual integration/constraint accuracy
+remains. GPU manifold preparation/solve is currently under independent CPU-reference
+test, opt-in diagnostic only. Evidence `friction_metric*.{json,npz,log}` and
+`contact_manifolds_gpu.*` when complete.
+
+Idle command contract now accepts−1, with direction[1,0]; walk0/run1 unchanged.
+Three-mode subset/reset/phase-wrap/next-tick Phase E tests pass. This does not
+launch training or alter the existing approved26 gait clips. Full dataset/idle
+local training still awaits transfer verification.
+
 **October16 continuation — the remaining impact causes are now isolated.**
 Combined hard contact, hard-limit velocity and split angular correction passes
 all16 phases for90ticks/3s, max target22.13cm. Previous baseline failed phase0.375

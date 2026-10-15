@@ -56,7 +56,11 @@ class OmniWalkEnv(AbsoluteWalkEnv):
         expected = torch.tensor([r['duration'] for r in rows], device=self._device)
         torch.testing.assert_close(self._motion_lib.get_motion_lengths(), expected)
         torch.testing.assert_close(self._directions.norm(dim=-1), torch.ones_like(self._gaits))
-        assert torch.all((self._gaits == 0) | (self._gaits == 1))
+        assert torch.all((self._gaits == -1) | (self._gaits == 0) | (self._gaits == 1))
+        idle=self._gaits==-1
+        if torch.any(idle):
+            torch.testing.assert_close(self._directions[idle],
+                torch.tensor([1.,0.],device=self._device).expand(int(idle.sum()),2))
         self.target_radius_m=float(config.get('target_radius_m',.27))
         assert self.target_radius_m>0
         self._target_radius_sq=torch.tensor(self.target_radius_m,device=self._device).square()

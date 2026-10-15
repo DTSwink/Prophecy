@@ -8,8 +8,12 @@ import numpy as np, torch, warp as wp, yaml, mujoco
 from probe_sequential_contacts import decode
 
 
-def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, trace_phase=None, hard_project=False):
+def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, trace_phase=None, hard_project=False, block=False, tiled_project=False, shared_project=False, manifolds=False, jolt_axes=False,debug_solver=False):
     assert worlds>=4
+    assert not block or contact_trial
+    assert not tiled_project or hard_project
+    assert not shared_project or hard_project
+    assert not manifolds or contact_trial
     torch.set_num_threads(1)
     wp.init(); wp.set_device(device)
     probe.mp_util.init(0, 1, device, 6732)
@@ -20,6 +24,10 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, t
         import newton
         from sequential_contact_adapter import SequentialContactAdapter
         class ContactTrialEngine(engine_class):
+            def _build_graphs(self):
+                if debug_solver:self._graph=None
+                else:super()._build_graphs()
+
             def _build_solver(self):
                 # Test-process-only constructor override selects the dense mass
                 # representation required by the prototype; no physics setting
@@ -35,9 +43,25 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, t
                 finally:module.NewtonEngine._build_solver=original_build
                 s=self._solver
                 self._trial_contact=SequentialContactAdapter(s.mjw_model,s.mjw_data,s.mj_model,
-                    self._uefn_motors,iterations=1000 if relaxed else 100,allow_soft_limits=True,
-                    relaxation=.5 if relaxed else 1.,hard_limit_control=hard_project)
+                    self._uefn_motors,iterations=100 if block else (1000 if relaxed else 100),allow_soft_limits=True,
+                    relaxation=.5 if relaxed else 1.,hard_limit_control=hard_project,block_motors=block,manifolds=manifolds,jolt_limit_axes=jolt_axes)
                 self._trial_contact.install()
+                if debug_solver:
+                    custom=self._trial_contact;solve=custom.solve
+                    def exact_failure(m,d):
+                        solve(m,d)
+                        if np.any(custom.error.numpy()):
+                            fields=('inv','free','commands','J','diagonal','ncontact','nlimit','limit_J',
+                                'limit_diagonal','limit_target','limit_compliance','limit_bilateral','friction',
+                                'velocity','motor_impulse','contact_impulse','limit_impulse','stats','dofs','gains','caps','dt')
+                            capture={name:getattr(custom.p,name).numpy() for name in fields}
+                            if custom.p.manifold.enabled:
+                                for name in ('count','group','size','radius','J','diagonal','impulse'):
+                                    capture['manifold_'+name]=getattr(custom.p.manifold,name).numpy()
+                            capture.update(qpos=d.qpos.numpy(),qvel=d.qvel.numpy(),mass=d.qM.numpy(),errors=custom.error.numpy())
+                            np.savez_compressed(probe.OUT/'causal_transfer/contact_first_solver_failure.npz',**capture)
+                            raise RuntimeError('Exact first failed physics equation preserved; no later substep advanced')
+                    custom.solve=exact_failure
                 if hard_project:
                     from limit_projection_gpu import SplitLimitProjection
                     from probe_limit_projection import joint_metadata
@@ -45,7 +69,7 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, t
                     before_projection=s._mujoco_warp_step
                     def projected_step():
                         before_projection()
-                        projection.apply(self._trial_contact.p.inv)
+                        projection.apply(self._trial_contact.p.inv,tiled=tiled_project,shared=shared_project)
                     s._mujoco_warp_step=projected_step
                     self._trial_projection=projection
                 if device=='cpu':
@@ -124,6 +148,12 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, t
         s._mujoco_warp_step=trace_step
     env._sample_motion_times = lambda n: (torch.zeros(n,dtype=torch.long,device=device), phases[:n]*duration)
     obs, info = env.reset(); first_done = [0]*worlds; distances = []
+    # Save the actual reset state too. Native comparisons can now start before
+    # the first MJ tick, without borrowing an MJ-corrected initial pose.
+    e._sim_state.pre_step_update();e._body_velocity.update(e._sim_state.raw_state)
+    check(e._sim_state.raw_state,reset=True)
+    initial=np.concatenate([e._sim_state.raw_state.body_q.numpy().reshape(worlds,15,7),
+                            e._sim_state.raw_state.body_qd.numpy().reshape(worlds,15,6)],-1)
     states=[];observations=[];actions=[];targets=[];defects=[];worst={};worst_defect=-1.
     started = time.perf_counter()
     for tick in range(ticks):
@@ -135,7 +165,16 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, t
                                       e._sim_state.raw_state.body_qd.numpy().reshape(worlds,15,6)],-1))
         targets.append(torch.cat([env.reward_target_pos,env.reward_target_rot],-1).cpu().numpy().copy())
         if contact_trial:
-            np.testing.assert_array_equal(e._trial_contact.error.numpy(),0)
+            failure=e._trial_contact.error.numpy()
+            if np.any(failure):
+                p=e._trial_contact.p
+                fields=('inv','free','commands','J','diagonal','ncontact','nlimit','limit_J',
+                    'limit_target','limit_compliance','velocity','motor_impulse','contact_impulse','stats')
+                capture={name:getattr(p,name).numpy() for name in fields}
+                capture.update(tick=np.array(tick),errors=failure,qpos=s.mjw_data.qpos.numpy(),qvel=s.mjw_data.qvel.numpy(),
+                    configuration=np.array([int(block),int(manifolds),int(jolt_axes)]))
+                np.savez_compressed(probe.OUT/'causal_transfer/contact_rejected_motion.npz',**capture)
+            np.testing.assert_array_equal(failure,0)
             defects.append(e._trial_contact.p.stats.numpy().copy())
             if float(defects[-1].max())>worst_defect:
                 worst_defect=float(defects[-1].max());p=e._trial_contact.p
@@ -164,14 +203,19 @@ def main(device='cpu', ticks=12, contact_trial=False, relaxed=False, worlds=4, t
     label=('contact_soft_limit_trial' if contact_trial else 'body_velocity_engine')+'_'+device.replace(':','_')
     if relaxed:label+='_relaxed'
     if hard_project:label+='_hard_project'
+    if block:label+='_block'
+    if tiled_project:label+='_tiled'
+    if shared_project:label+='_shared'
+    if manifolds:label+='_manifolds'
+    if jolt_axes:label+='_jolt_axes'
     if worlds!=4:label+='_worlds'+str(worlds)
     if hard_project and ticks!=90:label+='_ticks'+str(ticks)
     if trace_phase is not None:label+='_phase'+str(trace_phase)
     if contact_trial:
         report.update(diagnostic_only=True,changed='hard sequential contact friction; '+('hard limit velocity + split position' if hard_project else 'original soft MJ limits retained'),
                       max_motor_defect_nm=float(np.max(defects)),actual_ticks=len(states))
-        np.savez_compressed(probe.OUT/('causal_transfer/contact_worst_equations'+('_relaxed' if relaxed else '')+'.npz'),**worst)
-    np.savez_compressed(probe.OUT/f'causal_transfer/{label}.npz',states=states,obs=observations,actions=actions,targets=targets,dist=distances,**traces)
+        np.savez_compressed(probe.OUT/('causal_transfer/contact_worst_equations'+('_relaxed' if relaxed else '')+('_block' if block else '')+'.npz'),**worst)
+    np.savez_compressed(probe.OUT/f'causal_transfer/{label}.npz',initial=initial,states=states,obs=observations,actions=actions,targets=targets,dist=distances,**traces)
     (probe.OUT/f'causal_transfer/{label}.json').write_text(
         json.dumps(report,indent=2),encoding='utf-8')
     print(json.dumps(report),flush=True)
@@ -182,4 +226,5 @@ if __name__ == '__main__': main(sys.argv[1] if len(sys.argv)>1 else 'cpu', int(s
                                int(next((s.split('=')[1] for s in sys.argv if s.startswith('--worlds=')),4)),
                                float(next(s.split('=')[1] for s in sys.argv if s.startswith('--trace-phase=')))
                                if any(s.startswith('--trace-phase=') for s in sys.argv) else None,
-                               '--hard-project' in sys.argv)
+                               '--hard-project' in sys.argv,'--block' in sys.argv,'--tiled-project' in sys.argv,
+                               '--shared-project' in sys.argv,'--manifolds' in sys.argv,'--jolt-axes' in sys.argv,'--debug-solver' in sys.argv)
