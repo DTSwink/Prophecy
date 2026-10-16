@@ -4,8 +4,8 @@
 
 **October16 current state:** local fine-tuning from3913 to4013 completed100updates.
 Both MJ and native Jolt40/8 pass16/16 true animation starts for10s, max target
-errors16.93/16.86cm under the original27cm threshold. Four60s native controls also
-pass, maximum12.44cm. Initial29s failures were running off the old finite100m test
+errors16.93/16.86cm under the original27cm threshold. All sixteen60s native controls
+also pass; two60s ONNX feedback controls pass. Initial29s failures were running off the old finite100m test
 floor; a separate1000m-floor fixture proves this without changing the rig/DLL.
 Details and remaining limits: `MimicKitTransfer.md`.
 Fresh local all-omni+idle training is now running with512worlds, fresh weights and
@@ -18,6 +18,17 @@ eight modules and launch checks reject stale bundles before spending. Shared PPO
 guard rejects latched physics errors once per rollout before optimizing. CPU
 inventory/factory/guard tests pass; no cloud upload/allocation or current-run
 restart. Below describes the preceding shared motor fix.
+
+Added idle fits every current PHAT limit including5% margin across1,075,214 dense
+joint samples. The target motion and original PHAT were not changed by this audit.
+
+Full-set update300 still has short noiseless episodes (mean5.488ticks); lower
+loss alone is not successful locomotion. Two directional commands each occur in
+two different approved styles; retained unchanged pending per-clip evaluation.
+The future local runner now records failure status before attempting CUDA failure
+capture, preserving the original error/checkpoint if that capture also fails.
+Reporting-only controls pass; active training was not restarted. See transfer
+journal for prepared successful4013 skin recordings and pending UE import.
 
 Current UEFN source also reconstructs actual body COM velocities from the Newton
 joint state before drag/gyro forces and after each policy step. This fixes the

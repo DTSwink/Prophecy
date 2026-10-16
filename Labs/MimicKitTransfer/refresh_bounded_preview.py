@@ -2,8 +2,9 @@
 import unreal,json,math,sys
 from pathlib import Path
 live='--live' in sys.argv
+accepted='--accepted-transfer' in sys.argv
 suffix='LiveMotor' if live else 'Bounded'
-report_stem='live-motor' if live else 'bounded'
+report_stem='accepted' if accepted else ('live-motor' if live else 'bounded')
 out=Path(unreal.Paths.project_dir())/'Saved/MimicKitTransfer/no-armature-3913'
 editor=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 assert editor.get_game_world() is None,'Preserve active Play'
@@ -13,9 +14,17 @@ dirty=lambda:sorted(p.get_path_name() for p in unreal.EditorLoadingAndSavingUtil
 before=dirty()
 mesh=unreal.load_asset('/Game/_mygame/SKM_UEFN_Mannequin')
 actors=unreal.get_editor_subsystem(unreal.EditorActorSubsystem).get_all_level_actors()
-record=json.loads((out/(report_stem+'-map-recording.json')).read_text(encoding='utf-8'))
+if accepted:
+ record=json.loads((out/'accepted-skin-recording.json').read_text(encoding='utf-8'))
+ assert len(record['clips'])==2 and all(c['frames']==301 for c in record['clips'])
+ clips=[('Jolt4013','JOLT |','JOLT | checkpoint 4013 | actual recorded physics'),
+        ('Newton4013','TRAINING SIMULATOR |','TRAINING SIMULATOR | checkpoint 4013 | actual recorded physics')]
+else:
+ record=json.loads((out/(report_stem+'-map-recording.json')).read_text(encoding='utf-8'))
+ clips=[('Jolt'+suffix,'JOLT |',f'JOLT | bounded motors | failure {record["first_failure_tick"]/30:.2f}s'),
+        ('Newton'+suffix,'TRAINING SIMULATOR |','TRAINING SIMULATOR | corrected bounded motors')]
 updates=[]
-for tag,prefix,text in [('Jolt'+suffix,'JOLT |',f'JOLT | bounded motors | failure {record["first_failure_tick"]/30:.2f}s'),('Newton'+suffix,'TRAINING SIMULATOR |','TRAINING SIMULATOR | corrected bounded motors')]:
+for tag,prefix,text in clips:
  data=json.loads((out/f'skin_{tag}.json').read_text(encoding='utf-8'))
  seq=unreal.load_asset(data['asset']);assert seq
  maxpos=maxangle=0.

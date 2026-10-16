@@ -1,5 +1,5 @@
 """Continuous native running with the original motion clock, never episode resets."""
-import os,json,hashlib,shutil,subprocess
+import argparse,os,json,hashlib,shutil,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 os.environ['MIMICKIT_TRANSFER_OUT']=str(ROOT/'Saved/MimicKitTransfer/no-armature-3913')
@@ -37,6 +37,13 @@ def extended_floor_fixture():
 
 
 def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--worlds',type=int,nargs='+',default=[0,4,8,12])
+    parser.add_argument('--label',default='long_run4013_native40_floor1000')
+    parser.add_argument('--reuse-fixture',action='store_true')
+    parser.add_argument('--onnx',type=Path,help='Verify exported inference inside the same physical loop')
+    args=parser.parse_args()
+    assert len(set(args.worlds))==len(args.worlds) and all(0<=w<16 for w in args.worlds)
     directory=ROOT/'Saved/MimicKitLocal/runs/2026-10-16_02-00_transfer_finetune_512'
     out=probe.OUT/'causal_transfer'
     cfg=yaml.safe_load((directory/'env_config.yaml').read_text())
@@ -48,9 +55,20 @@ def main():
     row=next(r for r in manifest['motions'] if r['id']==Path(cfg['motion_file']).stem)
     initial=np.load(out/'local_finetune4013_phases16.npz')['initial']
     native_probe.load_actor(directory/'model.pt')
-    label='long_run4013_native40_floor1000'
+    inference=actor
+    if args.onnx:
+        import onnxruntime as ort
+        metadata=json.loads(args.onnx.with_suffix('.json').read_text())
+        assert metadata['checkpoint_model_sha256']==hashlib.sha256((directory/'model.pt').read_bytes()).hexdigest()
+        assert metadata['onnx_sha256']==hashlib.sha256(args.onnx.read_bytes()).hexdigest()
+        options=ort.SessionOptions();options.intra_op_num_threads=options.inter_op_num_threads=1
+        session=ort.InferenceSession(str(args.onnx),sess_options=options,providers=['CPUExecutionProvider'])
+        inference=lambda obs:session.run(['joint_velocity_rad_s'],{'observations':np.asarray(obs,np.float32)[None]})[0][0]
+    label=args.label
     assert not (out/(label+'.npz')).exists(),'Preserve previous evaluation'
-    native_probe.fixture_path=extended_floor_fixture()
+    native_probe.fixture_path=(probe.OUT/'point-contact/profile/long-floor/fixture.exe'
+        if args.reuse_fixture else extended_floor_fixture())
+    assert native_probe.fixture_path.is_file()
     for key in list(os.environ):
         if key.startswith('TRANSFER_'):del os.environ[key]
     os.environ.update(TRANSFER_TRAINING_CONTACT='1',TRANSFER_FRICTIONLESS_SELF='1',
@@ -58,7 +76,7 @@ def main():
     ticks=1800;clock=np.zeros(ticks+1,np.float32)
     for t in range(ticks):clock[t+1]=clock[t]+np.float32(1/30)
     reports=[];captures={}
-    for world in (0,4,8,12):
+    for world in args.worlds:
         times=torch.from_numpy(clock+np.float32(world/16*duration))
         ids=torch.zeros(ticks+1,dtype=torch.long)
         rp,rq,_,_,jq,_=lib.calc_motion_frame(ids,times)
@@ -69,7 +87,7 @@ def main():
         n=Native(initial[world]);state=np.array(n.initial['bodies']);history=[state];distances=[];ground=[]
         try:
             for tick in range(ticks):
-                action=actor(observation(state,commands[tick]))
+                action=inference(observation(state,commands[tick]))
                 result=n.request('step '+' '.join(map(str,action)))
                 state=np.array(result['bodies']);assert np.isfinite(state).all()
                 assert np.abs(state[:,:2]).max()<999,'Diagnostic floor boundary reached'
@@ -84,7 +102,8 @@ def main():
         report=dict(start_phase=world/16,ticks=len(distances),seconds=len(distances)/30,
             resets=0,target_failure=distances[-1]>.27,max_target_m=max(distances),
             foot_ground_fraction=float(ground[:,keys[-2:]].sum()/ground.sum()),ground_impulse_ns=float(ground.sum()),
-            floor_half_extent_m=1000,root_initial=history[0][0,:3].tolist(),root_final=history[-1][0,:3].tolist())
+            floor_half_extent_m=1000,root_initial=history[0][0,:3].tolist(),root_final=history[-1][0,:3].tolist(),
+            inference='onnxruntime_cpu' if args.onnx else 'pytorch_cpu')
         reports.append(report);captures['world'+str(world)]=history
         print(json.dumps(report),flush=True)
     (out/(label+'.json')).write_text(json.dumps(reports,indent=2))

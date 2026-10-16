@@ -1,11 +1,13 @@
 """Package deterministic Run LR inference for Unreal, without loading the editor."""
-import hashlib,json,time
+import argparse,hashlib,json,time
+from pathlib import Path
 import numpy as np
 import torch
-from native_probe import ROOT,OUT,model,checkpoint,actor,names,parents,nodes
+import native_probe
+from native_probe import ROOT,OUT,names,parents,nodes
 
 class Actor(torch.nn.Module):
-    def __init__(self):
+    def __init__(self,model,checkpoint):
         super().__init__()
         self.layers=model._actor_layers
         self.motor=model._action_dist._mean_net
@@ -20,17 +22,29 @@ class Actor(torch.nn.Module):
         return velocities,self.phase(hidden)
 
 def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--model',type=Path,default=OUT/'checkpoint/model.pt')
+    parser.add_argument('--observations',type=Path)
+    parser.add_argument('--output',type=Path,default=OUT/'runLR_actor.onnx')
+    args=parser.parse_args()
     import onnxruntime as ort
+    native_probe.load_actor(args.model)
+    model,checkpoint=native_probe.model,native_probe.checkpoint
     torch.manual_seed(3913)
-    wrapper=Actor().eval();output=OUT/'runLR_actor.onnx'
+    output=args.output;assert not output.exists(),'Preserve prior inference export'
+    output.parent.mkdir(parents=True,exist_ok=True)
+    wrapper=Actor(model,checkpoint).eval()
     torch.onnx.export(wrapper,torch.zeros(1,151),str(output),dynamo=False,opset_version=17,
         input_names=['observations'],output_names=['joint_velocity_rad_s','phase_estimate'],
         dynamic_axes={n:{0:'batch'} for n in ('observations','joint_velocity_rad_s','phase_estimate')})
     options=ort.SessionOptions();options.intra_op_num_threads=options.inter_op_num_threads=1
     session=ort.InferenceSession(str(output),sess_options=options,providers=['CPUExecutionProvider'])
     samples=[]
-    for path in (ROOT/'Saved/MimicKitTransfer').glob('newton_phase_*.npz'):
-        samples.append(np.load(path)['obs'][:,0])
+    if args.observations:
+        samples.append(np.load(args.observations)['obs'].reshape(-1,151))
+    else:
+        for path in (ROOT/'Saved/MimicKitTransfer').glob('newton_phase_*.npz'):
+            samples.append(np.load(path)['obs'][:,0])
     recorded=np.concatenate(samples);errors=np.zeros(2)
     cases=[recorded]+[np.random.default_rng(3913+b).normal(size=(b,151)).astype('float32')*100 for b in (1,7,64)]
     with torch.inference_mode():
@@ -52,7 +66,7 @@ def main():
     for i,node in enumerate(nodes[1:],1):
         for axis in (range(3) if len(node.findall('joint'))==3 else [2]):
             action_map.append(dict(index=len(action_map),body=names[i],parent=names[parents[i]],child_local_axis=axis))
-    report=dict(passed=True,checkpoint_model_sha256=hashlib.sha256((OUT/'checkpoint/model.pt').read_bytes()).hexdigest(),
+    report=dict(passed=True,checkpoint_model_sha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
         onnx_sha256=hashlib.sha256(output.read_bytes()).hexdigest(),max_output_errors=errors.tolist(),
         recorded_observations=len(recorded),tested_batches=[len(recorded),1,7,64],cpu_timings=batches,
         input_width=151,outputs={'joint_velocity_rad_s':34,'phase_estimate':2},action_map=action_map,
@@ -62,6 +76,6 @@ def main():
                   'physics':'240Hz, eight substeps per policy tick; no action noise',
                   'observations':'Exact compute_char_obs/global_obs/root_height_obs;146 physical + gait1 + world direction2 + phase cos/sin2',
                   'scope':'Inference parity only. Does not certify physical transfer or modify Unreal.'})
-    (OUT/'actor-export.json').write_text(json.dumps(report,indent=2))
+    output.with_suffix('.json').write_text(json.dumps(report,indent=2))
     print(json.dumps({k:v for k,v in report.items() if k not in ('action_map','contract')},indent=2))
 if __name__=='__main__':main()

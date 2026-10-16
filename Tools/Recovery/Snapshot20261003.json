@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 6284,
-  "bytes": 547657887,
+  "file_count": 6285,
+  "bytes": 547675524,
   "files": [
     {
       "path": ".gitattributes",
@@ -6343,15 +6343,15 @@
     },
     {
       "path": "Docs/MimicKitTraining.md",
-      "git_blob": "0f83a0430ac81811582d64bebefcc75789cffdb6",
-      "bytes": 250946,
-      "sha256": "d6ddd7a01de98b5b2b1eee0cc63002bcd98d58c45edf38674165e997aab492ec"
+      "git_blob": "050939a00d3bb53d112d0842c58411dbebda283e",
+      "bytes": 251690,
+      "sha256": "07ffede0ae7f07dbad80f1ca0f2f4515d023a75b12b5c049a26f2b61ba86e182"
     },
     {
       "path": "Docs/MimicKitTransfer.md",
-      "git_blob": "ff19eccbdab892a30f0ca99460c3cb7019794a77",
-      "bytes": 92108,
-      "sha256": "86541d903a910ed870198864d175fe2497c40498ecde73214228779ae38c75f9"
+      "git_blob": "f5d1073e3ba50f34a7ba0b62ee6b42864a76bd7e",
+      "bytes": 95810,
+      "sha256": "1009c483314910d15917b2e3da8437a8cddd632e43608deab9d514dc6bd07da7"
     },
     {
       "path": "Docs/MimicKitUEFNBodyMatching.md",
@@ -12535,9 +12535,9 @@
     },
     {
       "path": "Labs/MimicKitTraining/uefn_package.py",
-      "git_blob": "a2d3b8ce41062fb1287702185e87ecaa66d890aa",
-      "bytes": 1044,
-      "sha256": "592d188745668c74a0e6bc1422e4c2d1feea1625b47e90355701bd4957c52b2a"
+      "git_blob": "7ab00d93f19621f29bad4b9c2208b13101e98d61",
+      "bytes": 1203,
+      "sha256": "02398b97069856fe246247c5b87e8d2ac7558dbcdabd791e995f4760ea107c7f"
     },
     {
       "path": "Labs/MimicKitTraining/upstream_optional_evaluation.patch",
@@ -12667,9 +12667,9 @@
     },
     {
       "path": "Labs/MimicKitTransfer/build_skin_preview.py",
-      "git_blob": "91bc01b7a2acee8685a60fb79202b89ee40cb814",
-      "bytes": 4621,
-      "sha256": "3abca14d7e6f3afbf529ace02d4a0ce2709a039436e968b3ec9342ab24afebe1"
+      "git_blob": "6a32a47f0dd74c0cb0611946fbdb3104dbd23d95",
+      "bytes": 8265,
+      "sha256": "3eabe584da7520950d59ad312e51881c3ce16fe9198313e925829ee03f1434c3"
     },
     {
       "path": "Labs/MimicKitTransfer/build_timestep_fixture.py",
@@ -12756,10 +12756,16 @@
       "sha256": "5161a8022b662afc62ed5d247a0af4b579be2f7ca152e482c33b61f6469e5144"
     },
     {
+      "path": "Labs/MimicKitTransfer/evaluate_omni.py",
+      "git_blob": "e7970274434c3d5aa326c8abbd0ccca5b55d5bb9",
+      "bytes": 4649,
+      "sha256": "fc480d501864ae474bb6314eaeac9c2a62092c903b5c0d8333f00d9776fce36e"
+    },
+    {
       "path": "Labs/MimicKitTransfer/export_actor.py",
-      "git_blob": "4d6f0babdd13437e84b2a593b8e8ba5731d1fd0f",
-      "bytes": 4523,
-      "sha256": "1ef3d28a683eb6db334c38afdd014b48af3fd8c8a689f423e352b245e6a0b952"
+      "git_blob": "5519a70dc13f9e4d4a89af1d2c7bfd1da12938dd",
+      "bytes": 5174,
+      "sha256": "ed884c8771afa6d59789b14cf9e0cdadb5ac3e98e5f46909055bff504fe234b5"
     },
     {
       "path": "Labs/MimicKitTransfer/generate.py",
@@ -12889,9 +12895,9 @@
     },
     {
       "path": "Labs/MimicKitTransfer/refresh_bounded_preview.py",
-      "git_blob": "0cc311a659a2626f17c176fd4ec3d6a6a87f43e3",
-      "bytes": 3252,
-      "sha256": "358208e80da9b51a18443e6c1785f1df130a8f0adcf9e29d6f2a92bec3fb913c"
+      "git_blob": "258c79ce493caa6e44f6681632bfd6e41a658ceb",
+      "bytes": 3729,
+      "sha256": "e5c7e60f83840643ee6aeab488dba45ac5cc067b6f328f99c80c244838aa2901"
     },
     {
       "path": "Labs/MimicKitTransfer/refresh_contact_preview.py",
@@ -12985,9 +12991,9 @@
     },
     {
       "path": "Labs/MimicKitTransfer/test_native_long.py",
-      "git_blob": "51e5714d07cc2debfe13d0b94488a66f3081d1b6",
-      "bytes": 5359,
-      "sha256": "3742cf442c13060f32c973fcddd4894792e7d5f716d6f70306cbc0e1341cb5ac"
+      "git_blob": "c06b7310c42e55640cca09058627510e43a6b4ff",
+      "bytes": 6720,
+      "sha256": "1eaeca7122f830b67c10857565cde56ae7aa7f6070138a21c25537a0b0f3ac8c"
     },
     {
       "path": "Labs/MimicKitTransfer/test_point_contacts.py",
@@ -13021,9 +13027,9 @@
     },
     {
       "path": "Labs/MimicKitTransfer/train_local.py",
-      "git_blob": "a99194e1bf67b57e1a196a036562f6e488606c4c",
-      "bytes": 12271,
-      "sha256": "5cf1ec73471d9fb895e00ad608726db1ba67f8ca42ef7d38d2dcd71f9179eacc"
+      "git_blob": "eaf65957070c6da22c06835d25eaf008ff8a8ec7",
+      "bytes": 13103,
+      "sha256": "e2bf91d7f71bdc7ebc50d19e0e0557c148ebe9e32951e6fdc66ab7858904b930"
     },
     {
       "path": "Labs/MimicKitTransfer/verify_live_native.py",
@@ -13039,9 +13045,9 @@
     },
     {
       "path": "Labs/MimicKitTransfer/verify_transfer.py",
-      "git_blob": "3ca8d6fc847b9e10a0ca97d259b6dc57ea01e3cd",
-      "bytes": 3647,
-      "sha256": "cc30792517bdf571815d6b57f8e217aad32fa5ffcb9c30f28cb1f4c40cdb6357"
+      "git_blob": "1cf8feb9a755320ecfbf699c295c8ddfe27c34f2",
+      "bytes": 3856,
+      "sha256": "b57bd6c12c0cdb60be02f7c1dc293a345049165bb55b08dbf8c0c18bfa41f2cf"
     },
     {
       "path": "Labs/MimicKitUEFN/.gitignore",
@@ -13201,9 +13207,9 @@
     },
     {
       "path": "Labs/MimicKitUEFN/verify_motion_limits.py",
-      "git_blob": "6594998050ab39b882277c808b274b61692422c9",
-      "bytes": 3967,
-      "sha256": "49f5d2a6218f2b8d10ac3b5e7cece54129aaeb4f18759fbbe7f5389f1c058278"
+      "git_blob": "de5c8c33aa898e1d5b76af8b275741fbdff68412",
+      "bytes": 5176,
+      "sha256": "79857f5f3aeefcd44d05f3e63607f6002104ef0259d92c2d865fd2d4c1d87987"
     },
     {
       "path": "Labs/OmniLocomotionViewer/app.js",

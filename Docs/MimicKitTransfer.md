@@ -13,6 +13,31 @@ TensorBoard8035 and noiseless replay8021 use this dated run. Initial setup at
 02-05 failed before PPO because an unrelated `replay.py` shadowed the intended
 adapter; the runner now loads the intended file explicitly. No invalid checkpoint
 was promoted. Running status/rolling verified archive are under Saved/MimicKitLocal.
+At100updates, noiseless mean episode increased5.10→5.50ticks and total weighted
+loss5.923→5.099; this is still very early/poor locomotion, not a trained full-set
+policy. All four loss terms and actual targets reach replay8021; TB tags verified.
+After the1000-update segment, `evaluate_omni.py` is prepared to test all27 clips at
+four starting phases each, retaining first episodes and separate per-clip results.
+It refuses to run while the owned trainer is active. Syntax checked only so far;
+do not treat this future suite as completed. No second GPU workload.
+
+At300updates/4,931,584samples, stock noiseless evaluation has mean5.488ticks and
+return0.865; this has not yet established sustained locomotion. Its reported
+weighted loss2.464 does not by itself demonstrate recovery or good tracking.
+Current PID must be checked alongside status.json. Future runner failure handling
+now writes failed status and the original exception BEFORE downloading diagnostic
+CUDA data, so a failed download cannot hide the original failure. Simulated
+ordinary/CUDA-download failures preserve the checkpoint and pass. The active
+trainer was not reloaded or restarted for this reporting-only change.
+
+**Command audit:**27 clips use25 unique gait/direction pairs. Run BR/Strafe_BR and
+Run FL/Strafe_FL share commands; at the same phase their largest key-body target
+differences are46.77cm and39.45cm, respectively (pelvis XY aligned). These are
+different styles, not duplicate files. The physical observation can distinguish
+their poses, so this is not proof of an impossible task. No clips were removed,
+no style input was added, and training is unchanged. Inspect the per-clip suite
+before blaming poor learning on this. Numerical report:
+`Saved/MimicKitLocal/prepared/repeated-command-audit.json`.
 
 **Transfer acceptance so far:**100 local fine-tune updates from3913 produced4013
 (65,765,376samples). Both MJ and native Jolt40velocity/8position complete16/16 true
@@ -30,10 +55,36 @@ character ran off the finite test floor. This is not evidence of a controller or
 animation-clock failure. Original failed evidence retained as `long_run4013_native40`.
 `test_native_long.py` builds a separate fixture with ONLY floor half-extent changed
 100→1000m, preserving the accepted DLL/rig and enforcing a boundary assertion;
-all four60-second uninterrupted tests pass, maximum target error12.444cm, feet-only
-support, about190m travelled each. `long_run4013_native40_floor1000.json/.npz`.
+All sixteen60-second uninterrupted starts now pass, feet-only support and about190m
+travelled each. First four maximum12.444cm; remaining twelve are recorded separately
+in `long_run4013_native40_floor1000_remaining.json/.npz`. This includes the previously
+failing phase0.375. Updated receipt combines all16 without counting any start twice.
 Acceptance is flat-floor tracking with the original27cm bound, not exact frame
 equality, arbitrary terrain/disturbance robustness or a live Unreal controller.
+
+**Unreal inference prepared, editor still closed:**4013 exported to
+`integration4013/runLR_actor.onnx`. Embedded normalization/action scaling/34-action
+clamp and2 Phase E outputs verified against4,800 recorded observations plus extreme
+random inputs, batch sizes1/7/64. Max differences7.63e-6rad/s and1.19e-6 respectively.
+CPU ORT median0.243ms/single actor,1.519ms/batch32 under concurrent local training;
+not an Unreal/NNE or idle-machine performance result. Two harder phase starts
+0.375/0.625 also run60s in native Jolt using ONNX feedback, max16.546cm. This is
+export/runtime verification only; no live Unreal actor or DLL was installed.
+
+The successful phase0.375 MJ/Jolt10s recordings have also been mapped onto all88
+original weighted bones for the existing comparison map. The15 physical anchors
+and their collider-bone offsets reproduce the captures within7.2e-15m; only
+display-root XY is centered. Prepared `skin_Newton4013.json`/`skin_Jolt4013.json`,
+with source hashes and `accepted-skin-recording.json`. No UE assets imported yet.
+After GPU training/headroom permits: existing `install_skin_preview.py` accepts
+tags Newton4013/Jolt4013, then `refresh_bounded_preview.py --accepted-transfer`
+verifies every imported frame before updating ONLY the dedicated map. Preserve
+active Play/dirty packages; these remain recordings, not live UE inference.
+
+**Idle admissibility:** independent dense128-subdivision check of all14 joint
+profiles (1,075,214 samples) has zero violations, including5% angular margin.
+No PHAT expansion or motion change needed. Reproduce with
+`Labs/MimicKitUEFN/verify_motion_limits.py --idle`; receipt in Saved/MimicKitUEFN/idle.
 
 **Original checkpoint controls:**3913 at40/8 passes13/16;100/20 passes16/16 with
 24.061cm maximum error;255/20 passes16/16 with22.991cm. Solver accuracy contributes
@@ -55,7 +106,8 @@ Fallback counters are per world (tile-lane0); the initial counter-only32x overco
 was caught and fixed. Counts/iteration totals are logged per update. The successful
 smoke itself needed zero fallbacks. No silently accepted invalid solver state.
 
-**October16 latest evidence (backup3195ea30 already pushed; newer work local).**
+**October16 isolated equation evidence.** Backup9de076f6 is pushed and recovery
+manifest verified; subsequent status/test additions may still be local.
 The remaining finite-step discrepancy has been isolated. Same24 incoming states,
 Jolt255 velocity/20position iterations, manifold friction and exact Jolt limit
 axes: physical angular difference0.219743rad/s at1/240s; halving the step gives

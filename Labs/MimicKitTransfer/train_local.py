@@ -29,6 +29,25 @@ def atomic_json(path,value):
     temp=path.with_suffix('.tmp');temp.write_text(json.dumps(value,indent=2));temp.replace(path)
 
 
+def record_failure(directory,error,last_complete,capture):
+    # Record the original error before touching a potentially failed CUDA context.
+    # A failed diagnostic download must not hide the training failure or leave a
+    # dead process advertised as training. Never replace the verified checkpoint.
+    detail=dict(error=repr(error),last_completed_update=last_complete,time=time.time())
+    atomic_json(directory/'failure.json',detail)
+    path=directory/'status.json'
+    status=json.loads(path.read_text()) if path.exists() else {}
+    status.update(state='failed',error=detail['error'],last_completed_update=last_complete)
+    atomic_json(path,status)
+    try:
+        if capture is not None and int(capture.seen.numpy()[0]):
+            capture.save(directory/'first_failed_equations.npz')
+    except BaseException as capture_error:
+        detail['capture_error']=repr(capture_error)
+        atomic_json(directory/'failure.json',detail)
+    print('TRAINING ALERT: '+json.dumps(detail),flush=True)
+
+
 def save_checkpoint(agent,directory,iteration):
     # Called only after a fully validated PPO update.
     model=directory/'model.tmp.pt';agent.save(str(model));model.replace(directory/'model.pt')
@@ -182,9 +201,7 @@ def main():
         state='stopped'
         if last_complete>=0:save_checkpoint(agent,directory,resumed['iteration_offset']+last_complete)
     except BaseException as error:
-        capture=env._engine.failure_capture
-        if int(capture.seen.numpy()[0]):capture.save(directory/'first_failed_equations.npz')
-        atomic_json(directory/'failure.json',dict(error=repr(error),last_completed_update=last_complete,time=time.time()))
+        record_failure(directory,error,last_complete,env._engine.failure_capture)
         raise
     finally:
         writer.close()

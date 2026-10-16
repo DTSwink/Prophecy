@@ -18,8 +18,26 @@ def quaternions(v):
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--backup-name',default='before-omni-limits')
+    parser.add_argument('--idle',action='store_true',help='Verify the added idle against unchanged current limits')
     args=parser.parse_args();assert args.backup_name in ('before-omni-limits','before-wrist-limits')
     out=ROOT/'Saved/MimicKitUEFN';backup=out/args.backup_name
+    if args.idle:
+        source=out/'idle/retarget/M_Neutral_Stand_Idle_Loop.pkl'
+        frames=pickle.loads(source.read_bytes())['frames']
+        meta=json.loads((HERE/'limits.json').read_text())
+        model=MJCFCharModel('cpu');model.load(str(HERE/'humanoid_uefn.xml'))
+        rows=[]
+        for joint in meta['joints']:
+            values,_=sampled_coordinates(model,joint,frames,128)
+            rows.append(dict(body=joint['body'],samples=len(values),outside=int(violation(values,joint).sum()),
+                outside_margin=int(violation(inflate(values,1.05),joint).sum())))
+        report=dict(passed=not any(r['outside'] or r['outside_margin'] for r in rows),
+            motion_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+            limits_sha256=hashlib.sha256((HERE/'limits.json').read_bytes()).hexdigest(),
+            subdivisions=128,margin_factor=1.05,rows=rows)
+        (out/'idle/limits-verification.json').write_text(json.dumps(report,indent=2))
+        print(json.dumps(report));assert report['passed'],'Idle exceeds current PHAT limits'
+        return
     plan=json.loads((out/'omni-limit-plan.json').read_text())
     before=json.loads((backup/'limits.json').read_text());after=json.loads((HERE/'limits.json').read_text())
     for key in ('geometry','groups','body_frames','source_body_frames','source_parents','parents','mass_kg','collision_exclusions'):

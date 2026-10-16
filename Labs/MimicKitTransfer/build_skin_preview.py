@@ -37,6 +37,56 @@ def map_pose(state):
         local.append(np.linalg.inv(parent)@component);world.append(component)
     return np.array(local),np.array(world)
 
+def accepted_transfer(world):
+    """Prepare the verified controller's real trajectories, without opening UE."""
+    receipt=json.loads((OUT/'verified_transfer.json').read_text())
+    assert receipt['accepted'] and receipt['native_successes']==16
+    for name,digest in receipt['sha256'].items():
+        assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest,name
+    assert 0<=world<16
+    folder=OUT/'causal_transfer';stem='local_finetune4013_phases16'
+    mj_path=folder/(stem+'.npz');jolt_path=folder/(stem+'_self0_native_v40p8_point.npz')
+    with np.load(mj_path) as mj,np.load(jolt_path) as jolt:
+        clips=[('Newton4013',np.concatenate([mj['initial'][world][None],mj['states'][:,world]]),mj_path),
+               ('Jolt4013',jolt['world'+str(world)].copy(),jolt_path)]
+    np.testing.assert_allclose(clips[0][1][0],clips[1][1][0],atol=1e-4,rtol=0)
+    reports=[]
+    for tag,states,path in clips:
+        destination=OUT/f'skin_{tag}.json'
+        assert not destination.exists(),'Preserve existing preview payload'
+        assert len(states)==301 and np.isfinite(states).all()
+        poses=[];collider_error=0.
+        for state in states:
+            local,component=map_pose(state);poses.append(local)
+            for k,name in enumerate(names):
+                for bone in meta['groups'][name]['colliders_from']:
+                    offset=np.linalg.inv(frame(meta['body_frames'][name]))@bone_refs[bone]
+                    expected=to_ue@matrix(state[k,:3],state[k,3:7])@offset
+                    collider_error=max(collider_error,float(np.max(np.abs(expected-component[indices[bone]]))))
+        assert collider_error<1e-7,collider_error
+        poses=np.asarray(poses);tracks=[]
+        for i,bone in enumerate(bones):
+            quats=R.from_matrix(poses[:,i,:3,:3]).as_quat()
+            for t in range(1,len(quats)):
+                if quats[t]@quats[t-1]<0:quats[t]*=-1
+            tracks.append(dict(name=bone['name'],positions=(poses[:,i,:3,3]*100).tolist(),rotations=quats.tolist()))
+        # The side-by-side map keeps runners in view. Only display-root XY changes;
+        # every physical bone's height and rotation remains the recorded result.
+        by_name={t['name']:t for t in tracks}
+        by_name['root']['positions']=[[-p[0],-p[1],0] for p in by_name['pelvis']['positions']]
+        payload=dict(schema=1,title=f'{tag} | checkpoint4013 | actual recorded physics; XY centered only',
+            fps=30,frames=len(states),asset=f'/Game/_mygame/Tests/MimicKitTransfer/AS_{tag}',
+            source=str(path.relative_to(OUT)),source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+            phase=world/16,tracks=tracks)
+        destination.write_text(json.dumps(payload,separators=(',',':')),encoding='utf-8')
+        reports.append(dict(tag=tag,frames=len(states),phase=world/16,
+            collider_transform_max_error=collider_error,payload_sha256=hashlib.sha256(destination.read_bytes()).hexdigest()))
+    result=dict(clips=reports,checkpoint=receipt['checkpoint'],body_count=15,original_bone_count=len(bones),
+        purpose='Prepared recorded-physics comparison, not a live Unreal policy',unreal_modified=False)
+    (OUT/'accepted-skin-recording.json').write_text(json.dumps(result,indent=2))
+    print(json.dumps(result,indent=2))
+
+
 def main():
     reference=np.array([np.r_[meta['body_frames'][n]['position'],meta['body_frames'][n]['quaternion']] for n in names])
     _,bind=map_pose(reference)
@@ -72,4 +122,11 @@ def main():
     (OUT/'skin-mapping.json').write_text(json.dumps(result,indent=2))
     print(json.dumps(dict(bind_error=bind_error,clips=reports),indent=2))
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    import argparse
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--accepted-transfer',action='store_true')
+    parser.add_argument('--phase-index',type=int,default=6,help='One of the sixteen verified initial phases')
+    args=parser.parse_args()
+    if args.accepted_transfer:accepted_transfer(args.phase_index)
+    else:main()

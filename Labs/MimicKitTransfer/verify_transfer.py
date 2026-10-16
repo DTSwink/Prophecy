@@ -20,8 +20,10 @@ def main():
     assert all(r['solved_ground_impulse_ns']>7000 and r['foot_ground_impulse_fraction']>.999 for r in native)
     assert max(r['observation_mapping_max_error'] for r in native)<1e-3
     long_path=folder/'long_run4013_native40_floor1000.json'
-    long=json.loads(long_path.read_text())
-    assert len(long)==4 and all(r['ticks']==1800 and r['resets']==0 and not r['target_failure']
+    remaining_path=folder/'long_run4013_native40_floor1000_remaining.json'
+    long=json.loads(long_path.read_text())+json.loads(remaining_path.read_text())
+    assert sorted(r['start_phase'] for r in long)==[i/16 for i in range(16)]
+    assert len(long)==16 and all(r['ticks']==1800 and r['resets']==0 and not r['target_failure']
         and r['max_target_m']<.27 and r['foot_ground_fraction']>.999 for r in long)
     inputs=[folder/(stem+'.json'),folder/(stem+'_self0_native_v40p8_point.json'),checkpoint/'model.pt',
             OUT/'point-contact/profile/fixture.exe',OUT/'point-contact/profile/ProphecyJolt_5_6_Development.dll']
@@ -30,18 +32,18 @@ def main():
     inputs += [ROOT/'Labs/MimicKitUEFN'/name for name in ('humanoid_uefn.xml','limits.json','physics.json',
         'runtime.py','velocity_motors.py','body_velocity.py')]
     inputs.append(ROOT/'Labs/MimicKitTraining/uefn_engine.py')
-    inputs.extend([long_path,OUT/'point-contact/profile/long-floor/fixture.exe',
+    inputs.extend([long_path,remaining_path,OUT/'point-contact/profile/long-floor/fixture.exe',
                    OUT/'point-contact/profile/long-floor/build.json'])
     report=dict(accepted=True,domain='Run LR, flat ground, 16 evenly spaced true animation starts, 10 seconds each',
         native_starts=16,native_successes=16,ticks=300,mj_successes=16,
-        uninterrupted_native_starts=4,uninterrupted_seconds=60,
+        uninterrupted_native_starts=16,uninterrupted_seconds=60,
         uninterrupted_max_target_m=max(r['max_target_m'] for r in long),
         checkpoint=str(checkpoint/'model.pt'),native_iterations=[40,8],
         max_native_target_m=max(r['max_target_distance_m'] for r in native),max_mj_target_m=max(mj['max_distance']),
         mean_native_policy_tick_ms=float(np.mean([r['physics_update_ms_mean'] for r in native])),
         contact_profile='tagged rig only: per-point speculative contacts off; self friction0; ground friction1/rest0',
         limits='original exported PHAT limits, no disabled limits',
-        limitation='Behavioral transfer within original27cm termination bound; native4x60s also pass. Not bit-identical trajectories, untested terrain/disturbances or live Unreal integration.',
+        limitation='Behavioral transfer within original27cm termination bound; native16x60s also pass. Not bit-identical trajectories, untested terrain/disturbances or live Unreal integration.',
         installed_gameplay_jolt_unchanged=True,sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs})
     path=OUT/'verified_transfer.json';path.write_text(json.dumps(report,indent=2));print(json.dumps(report),flush=True)
 
