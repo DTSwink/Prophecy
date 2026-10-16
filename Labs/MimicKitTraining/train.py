@@ -294,6 +294,10 @@ def main():
                     if name=='engine_config.yaml':
                         assert new['uefn_bounded_velocity_motors'] is True
                         old['uefn_bounded_velocity_motors']=True
+                        assert new['uefn_jolt_contact_profile'] is True
+                        old['uefn_jolt_contact_profile']=True
+                        assert new['uefn_zero_joint_armature'] is True
+                        old['uefn_zero_joint_armature']=True
                     if name=='engine_config.yaml' and a.zero_joint_armature:
                         old['uefn_zero_joint_armature']=True
                     assert old==new,f'Run LR resume config mismatch: {name}'

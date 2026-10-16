@@ -11,7 +11,7 @@ from util import torch_util as q
 from envs.base_env import DoneFlags
 from absolute_walk import AbsoluteWalkEnv
 from omni_policy import circular_phase
-from uefn_engine import UefnNewtonEngine
+from uefn_engine import build_uefn_engine
 
 
 def phase_at(times, duration, offset, dt=0.):
@@ -43,7 +43,7 @@ class OmniWalkEnv(AbsoluteWalkEnv):
         super().__init__(config, engine_config, *args, **kwargs)
 
     def _build_engine(self, engine_config, num_envs, device, visualize, record_video=False):
-        return UefnNewtonEngine(engine_config, num_envs, device, visualize, record_video)
+        return build_uefn_engine(engine_config, num_envs, device, visualize, record_video)
 
     def _build_sim_tensors(self, config):
         super()._build_sim_tensors(config)

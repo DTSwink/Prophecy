@@ -1,10 +1,9 @@
-"""Contained MJWarp contact-law experiment, NOT a training default.
+"""MJWarp contact solver used by the verified UEFN transfer profile.
 
-Dense single-articulation models only. Limits are disabled unless the explicit
-soft-MJ-limit control is selected. Existing motor rows supply actuation. Both
-frictionless and three-row frictional contacts are supported. This is a diagnostic
-integration, not a complete Jolt replacement: manifold friction and position
-projection are still outstanding.
+Dense single-articulation models only. The production profile explicitly enables
+Jolt limit axes, hard responses, manifold friction, block motors and split position
+projection. Optional older controls remain for reproducible isolation tests.
+Finite-step reduced/maximal-coordinate articulation is still not identical.
 """
 import numpy as np
 import warp as wp

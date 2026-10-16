@@ -1,4 +1,4 @@
-"""Explicit local transfer experiment; ordinary UEFN engine defaults unchanged.
+"""Verified UEFN transfer profile, also used by future omni training.
 
 Hard contact/manifold friction and Jolt angular limits in generalized coordinates.
 The remaining finite-step articulation difference is measured, not hidden.

@@ -35,7 +35,8 @@ def prepare(output=None):
     assets=ROOT/'Labs/MimicKitUEFN'
     env.update(char_file=(assets/'humanoid_uefn.xml').as_posix(),motion_file=(output/'motions.yaml').as_posix(),
         omni_manifest=(output/'manifest.json').as_posix(),enable_tar_obs=False,tar_obs_steps=[],enable_phase_obs=False)
-    engine.update(uefn_asset_directory=assets.as_posix(),uefn_zero_joint_armature=True,uefn_bounded_velocity_motors=True)
+    engine.update(uefn_asset_directory=assets.as_posix(),uefn_zero_joint_armature=True,
+                  uefn_bounded_velocity_motors=True,uefn_jolt_contact_profile=True)
     assert agent['model']['actor_net']==agent['model']['critic_net']=='fc_1024_512_512'
     assert agent['model']['action_std']==.05 and agent['phase_prediction_weight']==.1
     for name,config in configs.items():(output/(name+'_config.yaml')).write_text(yaml.safe_dump(config,sort_keys=False))

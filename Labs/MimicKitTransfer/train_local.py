@@ -54,45 +54,58 @@ def save_checkpoint(agent,directory,iteration):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--resume',type=Path,required=True)
+    start=parser.add_mutually_exclusive_group(required=True)
+    start.add_argument('--resume',type=Path)
+    start.add_argument('--prepared',type=Path,help='Fresh all-motion training; requires verified native report')
+    parser.add_argument('--transfer-report',type=Path)
     parser.add_argument('--worlds',type=int,default=512)
     parser.add_argument('--updates',type=int,default=100)
     parser.add_argument('--name',required=True)
     args=parser.parse_args()
     assert args.updates>0 and args.worlds>=4
-    archive=args.resume.resolve()
+    archive=args.resume.resolve() if args.resume else None
+    prepared=args.prepared.resolve() if args.prepared else None
+    if prepared:
+        assert args.transfer_report,'Fresh omni training requires completed native verification'
+        verification=json.loads(args.transfer_report.read_text())
+        assert verification['accepted'] and verification['native_successes']==verification['native_starts']
+        assert verification['native_starts']>=16 and verification['ticks']>=300
+        for name,digest in verification['sha256'].items():
+            assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest,('Verification input changed',name)
     directory=ROOT/'Saved/MimicKitLocal/runs'/args.name
     directory.mkdir(parents=True,exist_ok=False)
     torch.set_num_threads(1);torch.set_num_interop_threads(1)
     wp.init();wp.set_device('cuda:0');mp_util.init(0,1,'cuda:0',6732)
     os.chdir(SOURCE/'MimicKit')
-    with zipfile.ZipFile(archive) as z:
-        assert z.testzip() is None
-        configs={name:yaml.safe_load(z.read(name+'_config.yaml').decode().replace(
-            '/workspace/mimickit_trial',SOURCE.as_posix())) for name in ('env','engine','agent')}
+    if archive:
+        with zipfile.ZipFile(archive) as z:
+            assert z.testzip() is None
+            configs={name:yaml.safe_load(z.read(name+'_config.yaml').decode().replace(
+                '/workspace/mimickit_trial',SOURCE.as_posix())) for name in ('env','engine','agent')}
+    else:
+        configs={name:yaml.safe_load((prepared/(name+'_config.yaml')).read_text()) for name in ('env','engine','agent')}
     configs['env']['char_file']=(ROOT/'Labs/MimicKitUEFN/humanoid_uefn.xml').as_posix()
     configs['engine']['uefn_asset_directory']=(ROOT/'Labs/MimicKitUEFN').as_posix()
     configs['engine']['transfer_capture_failures']=True
     # Evaluation is done separately on the exact 16-phase MJ/native matrix.
     # This affects logging only, not PPO, rewards, resets or exploration.
-    configs['agent'].update(test_episodes=0,iters_per_output=25,iters_per_log=1)
+    configs['agent'].update(test_episodes=32 if prepared else 0,iters_per_output=100 if prepared else 25,iters_per_log=1)
     for name,config in configs.items():(directory/(name+'_config.yaml')).write_text(yaml.safe_dump(config,sort_keys=False))
     atomic_json(directory/'owner.json',dict(pid=os.getpid(),worlds=args.worlds,updates=args.updates))
-    atomic_json(directory/'provenance.json',dict(resume=str(archive),resume_sha256=hashlib.sha256(archive.read_bytes()).hexdigest(),
-        task='local Run LR transfer fine-tuning',worlds=args.worlds,updates=args.updates,
+    atomic_json(directory/'provenance.json',dict(resume=str(archive) if archive else None,
+        resume_sha256=hashlib.sha256(archive.read_bytes()).hexdigest() if archive else None,
+        task='local fresh omni plus idle' if prepared else 'local Run LR transfer fine-tuning',worlds=args.worlds,updates=args.updates,
         physics='bounded motors; hard Jolt contact/manifold friction and angular limits; split position projection',
         remaining_difference='reduced versus maximal coordinate finite-step articulation',
-        gpu=torch.cuda.get_device_name(0),fresh_physical_episodes=True))
+        gpu=torch.cuda.get_device_name(0),fresh_physical_episodes=True,
+        started_unix=time.time(),prepared=str(prepared) if prepared else None,
+        transfer_verification=str(args.transfer_report) if args.transfer_report else None))
     env=LocalTransferEnv(configs['env'],configs['engine'],args.worlds,'cuda:0',False)
     agent=OmniPPOAgent(configs['agent'],env,'cuda:0')
-    resumed=restore(agent,archive);atomic_json(directory/'resume.json',resumed)
+    resumed=restore(agent,archive) if archive else dict(prior_samples=0,iteration_offset=0,fresh_weights=True)
+    atomic_json(directory/'resume.json',resumed)
     assert env._engine._graph is not None
-    # Reject latched solver failures before the optimizer can consume the batch.
-    rollout=agent._rollout_train
-    def checked_rollout(n):
-        rollout(n)
-        env._engine.validate_transfer_solver()
-    agent._rollout_train=checked_rollout
+    # Shared guard rejects latched solver failures before PPO, once per rollout.
     def report_failure(detail):
         atomic_json(directory/'numerical_failure.json',dict(detail,iteration=agent._iter,time=time.time()))
         print('TRAINING ALERT: '+json.dumps(detail),flush=True)
@@ -102,6 +115,39 @@ def main():
     tb.mkdir(parents=True,exist_ok=False)
     from torch.utils.tensorboard import SummaryWriter
     writer=SummaryWriter(str(tb))
+    viewer=Path('C:/Users/singerie/Documents/Cursor/stepper/training/runs')/('mimickit_local_'+args.name)/'debug'
+    if prepared:
+        from observe import Recorder
+        # The PHAT adapter also exposes its sibling recovery utilities on
+        # sys.path. Load this viewer adapter explicitly to avoid replay.py
+        # colliding with that unrelated module.
+        import importlib.util
+        spec=importlib.util.spec_from_file_location('local_omni_replay',ROOT/'Labs/MimicKitTraining/replay.py')
+        replay=importlib.util.module_from_spec(spec);spec.loader.exec_module(replay)
+        convert,geometry=replay.convert,replay.geometry
+        recorder=Recorder(env,directory);recorder.phase_agent=agent
+        geom=geometry(Path(configs['env']['char_file']))
+        viewer.mkdir(parents=True,exist_ok=False)
+        atomic_json(viewer/'training.active.json',dict(pid=os.getpid(),kind='local_mimickit'))
+        evaluate=agent._rollout_test
+        def recorded_evaluation(episodes):
+            totals=env._completed_loss_totals.clone();env._completed_loss_totals.zero_()
+            recorder.start()
+            try:result=evaluate(episodes)
+            finally:recorder.enabled=False
+            env._engine.validate_transfer_solver()
+            losses=env.take_completed_losses();env._completed_loss_totals.copy_(totals)
+            recorder.finish(resumed['iteration_offset']+agent._iter,agent._sample_count,
+                dict(training_action_noise_std=float(configs['agent']['model']['action_std']),rollout_action_noise_std=0.,
+                     worlds=args.worlds,control_mode='vel',losses=losses or {}))
+            payload=convert(directory/'replay.npz',geom,'mimickit_local_'+args.name)
+            atomic_json(viewer/'last_batch_rollout.json',payload)
+            atomic_json(directory/'evaluation.json',dict(result,losses=losses,iteration=agent._iter,samples=agent._sample_count))
+            if losses:
+                for name,value in losses.items():writer.add_scalar('test/'+name,value,agent._sample_count)
+            writer.flush()
+            return result
+        agent._rollout_test=recorded_evaluation
     def update():
         nonlocal last_complete
         if (directory/'stop.request').exists():raise InterruptedError('Requested stop before next PPO update')
@@ -140,7 +186,9 @@ def main():
         if int(capture.seen.numpy()[0]):capture.save(directory/'first_failed_equations.npz')
         atomic_json(directory/'failure.json',dict(error=repr(error),last_completed_update=last_complete,time=time.time()))
         raise
-    finally:writer.close()
+    finally:
+        writer.close()
+        if prepared:(viewer/'training.active.json').unlink(missing_ok=True)
     status=json.loads((directory/'status.json').read_text());status['state']=state
     atomic_json(directory/'status.json',status)
 

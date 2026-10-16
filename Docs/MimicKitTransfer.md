@@ -4,14 +4,43 @@
 
 ### Active goal — October15 overnight
 
-**Current local run:** `2026-10-16_02-00_transfer_finetune_512`,99 updates after
-one validated smoke update, same3913 model/optimizer/normalizer lineage. No cloud.
-The smoke completed at1,850transitions/s,8.85s/update, and its archive hash is
-`24b3ae3a5261b1582d9b3f4806d7d29907ac3ff00525e4dd532f6193a8fff0a4`.
-The99-update continuation is bounded; evaluate the resulting actor in both MJ
-and native Jolt before any further training. Rolling archive/status under
-`Saved/MimicKitLocal/runs`; TensorBoard8035 reads the matching dated run directory.
-No current local replay published yet; do not claim the viewer shows this actor.
+**Current local training:** fresh all27 approved clips (12walk,14run,1idle),
+512worlds, run `2026-10-16_02-07-18_omni_idle_fresh_512`, bounded1000updates.
+Fresh weights/optimizers/counters; idle mode−1 and direction[1,0]. Same physical
+observations,1024→512→512 network,34 velocity actions, next-tick Phase E prediction
+only, original four losses/noise.05/PPO/27cm termination. No cloud. One GPU job.
+TensorBoard8035 and noiseless replay8021 use this dated run. Initial setup at
+02-05 failed before PPO because an unrelated `replay.py` shadowed the intended
+adapter; the runner now loads the intended file explicitly. No invalid checkpoint
+was promoted. Running status/rolling verified archive are under Saved/MimicKitLocal.
+
+**Transfer acceptance so far:**100 local fine-tune updates from3913 produced4013
+(65,765,376samples). Both MJ and native Jolt40velocity/8position complete16/16 true
+animation starts for10seconds. Maximum target errors16.933cm/16.860cm respectively,
+below the unchanged27cm bound, actual support from feet, limits enabled. No claim
+of bit-identical trajectories. `verified_transfer.json` hashes the model, code,
+fixture and reports. Native single-thread fixture mean2.426ms/policytick; this is
+not a many-agent Unreal benchmark. Fine-tune99-update continuation took545.93s,
+last10mean5.557s/update (~2949transitions/s),14 explicitly solved fallback worlds.
+Final archive SHA256 `da515fbc1bde4ab324175e0e51c91c48fbb7247f53e68dbfa523d0923946e057`.
+
+**Longer validation passed:** four native starts initially failed around29s,
+when their pelvis reached Y≈−100m: the diagnostic ground box ends at−100m. The
+character ran off the finite test floor. This is not evidence of a controller or
+animation-clock failure. Original failed evidence retained as `long_run4013_native40`.
+`test_native_long.py` builds a separate fixture with ONLY floor half-extent changed
+100→1000m, preserving the accepted DLL/rig and enforcing a boundary assertion;
+all four60-second uninterrupted tests pass, maximum target error12.444cm, feet-only
+support, about190m travelled each. `long_run4013_native40_floor1000.json/.npz`.
+Acceptance is flat-floor tracking with the original27cm bound, not exact frame
+equality, arbitrary terrain/disturbance robustness or a live Unreal controller.
+
+**Original checkpoint controls:**3913 at40/8 passes13/16;100/20 passes16/16 with
+24.061cm maximum error;255/20 passes16/16 with22.991cm. Solver accuracy contributes
+to the original failures, alongside the reduced/maximal-coordinate finite-step
+difference isolated below. Do not attribute everything to one cause. These are
+rig-only overrides; gameplay Jolt remains unchanged. Reports are in
+`Saved/MimicKitTransfer/no-armature-3913/causal_transfer/`.
 
 The first noisy512-world attempt rejected one active-set cycle before PPO. Its
 equations are retained in the `01-46_transfer_capture_512` run. Fixed damping is
@@ -51,14 +80,18 @@ The zero-seed failure was retained separately. The temporary `..._graph.npz`
 scratch capture overwrote the earlier second failure; its independent CPU/GPU
 reports remain, so do not describe that earlier raw capture as still retained.
 
-`contact_engine.py` is an explicit local experiment using those tested equations;
-ordinary UEFN defaults are unchanged. `train_local.py` restores the verified3913
-archive including optimizer/normalizers/counters, uses stock PPO/rewards/noise,
-checks latched solver errors before optimization, and keeps one rolling verified
-local archive. No cloud calls. A bounded512-world one-update smoke is in progress;
-no longer training segment or fresh omni training has been accepted yet.
-The shared engine gained a base-solver factory hook; default calls the same
-upstream builder. No Jolt library or gameplay changes.
+`contact_engine.py` is the explicit local engine used by both successful fine-tune
+and current fresh run. `train_local.py` restores complete archives or starts fresh,
+checks latched solver errors before PPO, and keeps one rolling verified archive.
+No cloud calls. Future omni training now selects this verified profile by default,
+requiring zero added armature; an explicit opt-out only reproduces historical
+diagnostics. Both package builders include the same eight contact modules, and
+cloud launchers reject stale source before allocating/extending. No cached cloud
+bundle was uploaded or deployed. Shared PPO guard checks solver errors once per
+rollout before optimization. CPU source-inventory/default-selection/fatal-guard
+tests pass. The already-running local job uses the identical explicit class and
+was not restarted. Installed gameplay Jolt remains unchanged; native tests use
+the separate point-contact DLL. Original PHAT, user assets and D/S are untouched.
 
 Unreal13040 was closed gracefully for local GPU/RAM headroom. Only our comparison
 PIE ended. Dirty PoseAgent was saved with its previous disk bytes preserved in
@@ -67,7 +100,9 @@ records both hashes. The visible comparison remains the older failed motion on
 disk; no updated UE visualization claim. Reopening still requires checking the
 current normal-build state and preserving other branches' source changes.
 
-**October16 latest continuation — direct-reset comparison supersedes the easier
+### Earlier diagnostic evidence (current results above supersede pass/fail status)
+
+**October16 direct-reset comparison supersedes the easier
 post-first-step starts below.** The manifold/shared-projection MJ trial completed
 16/16 starts for300ticks, max target24.12cm, body-velocity error6.13e-4. Starting
 native Jolt40/8 from the actual animation reset (before ANY MJ step) completes

@@ -12,6 +12,6 @@ def configure(env, engine, agent, root):
                visualize_ref_char=False,enable_tar_obs=False,tar_obs_steps=[],enable_phase_obs=False,
                target_radius_m=.27)
     engine.update(control_mode='vel',uefn_asset_directory=str(asset),sim_freq=240,control_freq=30,
-                  uefn_bounded_velocity_motors=True)
+                  uefn_bounded_velocity_motors=True,uefn_jolt_contact_profile=True,uefn_zero_joint_armature=True)
     agent['model'].update(actor_net='fc_1024_512_512',critic_net='fc_1024_512_512')
     agent['phase_prediction_weight']=PHASE_WEIGHT

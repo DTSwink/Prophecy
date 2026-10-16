@@ -13,6 +13,7 @@ from pathlib import Path
 
 import cloud
 from extend_runtime import extend
+from uefn_package import runtime_files
 
 
 IDLE_CHECK = """from pathlib import Path
@@ -41,12 +42,7 @@ def main():
     preflight = IDLE_CHECK + '\nassert not (r/"runs"/NAME).exists()\n'.replace('NAME', repr(name))
     if '--omni-run-lr' in argv:
         root=Path(__file__).resolve().parents[2]
-        current={entry:hashlib.sha256(path.read_bytes()).hexdigest() for entry,path in (
-            ('assets/uefn/velocity_motors.py',root/'Labs/MimicKitUEFN/velocity_motors.py'),
-            ('assets/uefn/body_velocity.py',root/'Labs/MimicKitUEFN/body_velocity.py'),
-            ('pipeline/uefn_engine.py',Path(__file__).with_name('uefn_engine.py')),
-            ('pipeline/train.py',Path(__file__).with_name('train.py')),
-            ('pipeline/omni_config.py',Path(__file__).with_name('omni_config.py')))}
+        current={entry:hashlib.sha256(path.read_bytes()).hexdigest() for entry,path in runtime_files(root).items()}
         preflight+='\nimport hashlib\nfor entry,digest in '+repr(current)+'.items():\n    assert hashlib.sha256((r/entry).read_bytes()).hexdigest()==digest, "Stale UEFN runtime; deploy current source before training: "+entry\n'
     cloud.ssh('python -c ' + shlex.quote(preflight))
     if not args.keep_deadline:

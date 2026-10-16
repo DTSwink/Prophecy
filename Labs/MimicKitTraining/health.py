@@ -15,6 +15,12 @@ def install_guard(agent, report):
     original = agent._rollout_train
     def rollout(steps):
         original(steps)
+        validator=getattr(agent._env._engine,'validate_transfer_solver',None)
+        if validator:
+            try:validator()
+            except FloatingPointError as error:
+                report(dict(reason='Physics solver rejected rollout BEFORE PPO optimization',error=str(error)))
+                raise
         invalid = invalid_batch(agent._exp_buffer._buffers)
         if invalid:
             report(dict(reason='Invalid rollout rejected BEFORE PPO optimization; last verified checkpoint retained',

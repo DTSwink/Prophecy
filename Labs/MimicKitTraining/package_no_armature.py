@@ -5,17 +5,13 @@ must travel together; copying only the engine would omit required runtime files.
 """
 from pathlib import Path
 import hashlib,json,shutil,zipfile
+from uefn_package import runtime_files,verify_package
 ROOT=Path(__file__).resolve().parents[2]
 out=ROOT/'Saved/MimicKitNoArmature';out.mkdir(exist_ok=True)
 source=ROOT/'Saved/MimicKitOmniRun/resume-source.zip'
 assert hashlib.sha256(source.read_bytes()).hexdigest()=='be1a4ceb5b90f5de3ee05b19d764e1b1a4a4c4d5a8f8dc2bc4e28613a5c74a00'
 changes={}
-replacements={
-    **{'pipeline/'+name:ROOT/'Labs/MimicKitTraining'/name
-       for name in ('train.py','uefn_engine.py','omni_config.py')},
-    **{'assets/uefn/'+name:ROOT/'Labs/MimicKitUEFN'/name
-       for name in ('runtime.py','velocity_motors.py','body_velocity.py')},
-}
+replacements=runtime_files(ROOT)
 with zipfile.ZipFile(source) as old,zipfile.ZipFile(out/'source.zip','w',zipfile.ZIP_DEFLATED) as new:
     for entry in old.infolist():
         body=old.read(entry.filename)
@@ -27,6 +23,7 @@ with zipfile.ZipFile(source) as old,zipfile.ZipFile(out/'source.zip','w',zipfile
         if name not in changes:
             body=path.read_bytes();new.writestr(name,body)
             changes[name]=hashlib.sha256(body).hexdigest()
+with zipfile.ZipFile(out/'source.zip') as check:verify_package(check,ROOT)
 for name in ('omni-calibration.json','geometry.json'):
     shutil.copyfile(ROOT/'Saved/MimicKitOmniRun'/name,out/name)
 receipt=json.loads((ROOT/'Saved/MimicKitOmniRun/download-latest-receipt.json').read_text())

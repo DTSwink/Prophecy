@@ -25,7 +25,7 @@ def main():
     def state():
         raw=engine._sim_state.raw_state
         return np.concatenate([raw.body_q.numpy().reshape(a.worlds,15,7),raw.body_qd.numpy().reshape(a.worlds,15,6)],-1)
-    arrays=dict(initial=state(),states=[],obs=[],actions=[],targets=[],dist=[])
+    arrays=dict(initial=state(),states=[],obs=[],actions=[],targets=[],target_velocities=[],dist=[])
     first_done=[0]*a.worlds;first_flags=[0]*a.worlds;started=time.perf_counter()
     for tick in range(a.ticks):
         with torch.no_grad():action,_=agent._decide_action(obs,info)
@@ -34,6 +34,7 @@ def main():
         engine.validate_transfer_solver()
         arrays['states'].append(state())
         arrays['targets'].append(torch.cat([env.reward_target_pos,env.reward_target_rot],-1).cpu().numpy().copy())
+        arrays['target_velocities'].append(torch.cat([env.reward_target_vel,env.reward_target_ang],-1).cpu().numpy().copy())
         arrays['dist'].append(env.target_distances_sq.sqrt().cpu().numpy().copy())
         for w,flag in enumerate(done.cpu().tolist()):
             if flag and not first_done[w]:first_done[w]=tick+1;first_flags[w]=flag

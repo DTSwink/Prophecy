@@ -2,6 +2,7 @@
 import argparse,hashlib,json,subprocess,tempfile,time,zipfile
 from pathlib import Path
 import cloud
+from uefn_package import verify_package
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--hard-stop',type=float)
@@ -16,12 +17,7 @@ def main():
     source=cloud.OUT/'source.zip'
     root=Path(__file__).resolve().parents[2]
     with zipfile.ZipFile(source) as package:
-        for entry,local in [('assets/uefn/velocity_motors.py',root/'Labs/MimicKitUEFN/velocity_motors.py'),
-                            ('assets/uefn/body_velocity.py',root/'Labs/MimicKitUEFN/body_velocity.py'),
-                            ('pipeline/uefn_engine.py',Path(__file__).with_name('uefn_engine.py')),
-                            ('pipeline/train.py',Path(__file__).with_name('train.py')),
-                            ('pipeline/omni_config.py',Path(__file__).with_name('omni_config.py'))]:
-            assert package.read(entry)==local.read_bytes(), f'Stale UEFN runtime: rebuild source.zip ({entry})'
+        verify_package(package,root)
     name=args.name or 'mimickit-uefn-runLR-20261015'+('-wrists' if args.hard_stop else '')
     cloud.allocate('NVIDIA L4',.59,'SECURE',seconds,name)
     state=cloud.state();hard=args.hard_stop or state['created_unix']+seconds

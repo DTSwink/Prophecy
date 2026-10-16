@@ -7,9 +7,26 @@ from pathlib import Path
 import hashlib
 import importlib.util
 import json
+import sys
 import numpy as np
 import warp as wp
 from engines.newton_engine import NewtonEngine
+
+
+def build_uefn_engine(config,*args,**kwargs):
+    """Current UEFN training uses the verified Jolt contact/limit profile.
+
+    Explicit opt-out exists only to reproduce older diagnostic baselines.
+    Source checkouts and deployment bundles use the same sibling module files.
+    """
+    if not config.get('uefn_jolt_contact_profile',True):
+        return UefnNewtonEngine(config,*args,**kwargs)
+    assert config.get('uefn_zero_joint_armature',False), 'Verified Jolt profile requires zero added joint armature'
+    folder=Path(config['uefn_asset_directory']).resolve().parent/'MimicKitTransfer'
+    assert (folder/'contact_engine.py').is_file(), 'Missing verified UEFN contact runtime'
+    if str(folder) not in sys.path:sys.path.insert(0,str(folder))
+    from contact_engine import ContactTransferEngine
+    return ContactTransferEngine(config,*args,**kwargs)
 
 
 @wp.kernel

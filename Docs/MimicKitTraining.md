@@ -2,6 +2,23 @@
 
 ## Future UEFN training motor contract — October15
 
+**October16 current state:** local fine-tuning from3913 to4013 completed100updates.
+Both MJ and native Jolt40/8 pass16/16 true animation starts for10s, max target
+errors16.93/16.86cm under the original27cm threshold. Four60s native controls also
+pass, maximum12.44cm. Initial29s failures were running off the old finite100m test
+floor; a separate1000m-floor fixture proves this without changing the rig/DLL.
+Details and remaining limits: `MimicKitTransfer.md`.
+Fresh local all-omni+idle training is now running with512worlds, fresh weights and
+counters: `2026-10-16_02-07-18_omni_idle_fresh_512`, bounded1000updates, no cloud.
+27clips, idle−1/[1,0], walk0/run1, original network/observations/Phase E/losses/PPO.
+TensorBoard8035 and noiseless replay8021 are connected; one rolling verified local
+checkpoint. Future omni training selects the same verified contact engine by
+default and requires zero added armature. Source package inventories include its
+eight modules and launch checks reject stale bundles before spending. Shared PPO
+guard rejects latched physics errors once per rollout before optimizing. CPU
+inventory/factory/guard tests pass; no cloud upload/allocation or current-run
+restart. Below describes the preceding shared motor fix.
+
 Current UEFN source also reconstructs actual body COM velocities from the Newton
 joint state before drag/gyro forces and after each policy step. This fixes the
 MJ-child-frame versus Newton-parent-frame ball-velocity reporting mismatch,
@@ -9,8 +26,8 @@ including partial reset synchronization. Four captured-GPU10s trials and CPU
 substep/Jacobian checks pass. Physics timestep, gains, torque caps, body properties,
 observations and reward definition are unchanged; their body-velocity inputs are
 now correct. Package builders include `assets/uefn/body_velocity.py` and launch
-checks reject missing/stale adapters. Full MJ/Jolt transfer still fails; local
-training on the full dataset plus idle is deferred until it is verified.
+checks reject missing/stale adapters. This fix alone did not establish transfer;
+the additional contact/limit work and current acceptance are recorded above.
 
 All subsequent UEFN velocity training, fresh or resumed, defaults to the bounded
 end-step motor/contact solve. Gains, torque caps and body inertia are unchanged.
