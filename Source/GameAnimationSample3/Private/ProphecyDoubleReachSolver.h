@@ -14,5 +14,5 @@ struct FState
 TConstArrayView<FName> BoneNames();
 bool Step(TConstArrayView<FTransform> Base, EProphecyDoubleReachMode Mode,
     const FVector (&Targets)[2], const float (&Speed)[2], FState& State,
-    TArray<FTransform>& Output, double Dt);
+    TArray<FTransform>& Output, double Dt, double ElbowDownBlend=1.0);
 }

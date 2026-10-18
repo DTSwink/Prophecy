@@ -1,4 +1,5 @@
 #include "ProphecyJoltWorldSubsystem.h"
+#include "ProphecyExplosionLibrary.h"
 #include "ProphecyJoltAttackCollisionLibrary.h"
 #include "ProphecyJoltBodyDriveLibrary.h"
 #include "ProphecyJoltFootJointLibrary.h"
@@ -64,6 +65,7 @@ THIRD_PARTY_INCLUDES_END
 #include "ProphecyJoltFootExtension.h"
 #include "ProphecyJoltBodyConversion.h"
 #include "ProphecyJoltFootColliderTrim.h"
+#include "ProphecyExplosionKernel.h"
 #if !UE_BUILD_SHIPPING
 #include "DrawDebugHelpers.h"
 #endif
@@ -1330,6 +1332,7 @@ public:
     // Registered listener must outlive PhysicsSystem, and is removed explicitly before teardown.
     ProphecyJolt::FVelocityServo Servo;
     JPH::PhysicsSystem Physics;
+    ProphecyExplosion::FScheduler Explosions;
     bool bNoLockIdleBodyReads = false;
     TUniquePtr<JPH::JobSystemThreadPool> Jobs;
     TArray<ProphecyJolt::WorldPrivate::FBodySlot> Slots;
@@ -1524,6 +1527,7 @@ bool UProphecyJoltFootJointLibrary::SetWristRange(UObject* WorldContext,FGuid Li
     WristExtensions.Add(Rig,MoveTemp(Pending)); Wake(); Owner->RefreshDiagnostics(); return true;
 }
 
+#include "ProphecyExplosion.inl"
 #include "ProphecyJoltArmMotorSettings.inl"
 #include "Tests/ProphecyJoltArmMotorTests.inl"
 
@@ -4069,6 +4073,9 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::Step(float DeltaSeconds, i
     Diagnostics.LastValidationWallSeconds = FPlatformTime::Seconds() - ValidationStarted;
     ++Diagnostics.CompletedSteps;
     Diagnostics.SimulatedSeconds += static_cast<double>(DeltaSeconds);
+    auto ExplosionEvents = ProphecyExplosion::Advance(*Native, Diagnostics.SimulatedSeconds);
+    bStepInProgress = false; // Explosion handlers may safely change drives or remove bodies after the completed step.
+    ProphecyExplosion::Dispatch(ExplosionEvents);
     return {};
 }
 

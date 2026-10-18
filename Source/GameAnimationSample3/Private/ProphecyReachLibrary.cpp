@@ -1,5 +1,8 @@
 #include "ProphecyReachLibrary.h"
 #include "ProphecyReachRuntime.h"
+#include "ProphecyReachWristLimits.h"
+#include "ProphecyReachArm.h"
+#include "ProphecyReachWristTwist.h"
 #include "ProphecyDoubleReachSolver.h"
 #include "ProphecyAgent.h"
 #include "ProphecySwordHolsterPose.h"
@@ -13,6 +16,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
 #include "PhysicsEngine/PhysicsAsset.h"
+#include "PhysicsEngine/PhysicsConstraintTemplate.h"
 #include "PhysicsEngine/SkeletalBodySetup.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "DrawDebugHelpers.h"
@@ -30,8 +34,17 @@ struct FFingerBone
 };
 struct FHand
 {
+    struct FArmPlan
+    {
+        bool Valid=false,HandFirst=false;
+        FVector Shoulder=FVector::ZeroVector,Wrist=FVector::ZeroVector,LocalLower=FVector::ZeroVector,Bounds=FVector::ZeroVector,Target=FVector::ZeroVector;
+        FQuat Desired=FQuat::Identity,Frame1=FQuat::Identity,Frame2=FQuat::Identity;
+        ProphecyReachArm::FPlan Solution;
+        double Reserve=0,PostureRoll=0;
+    } ArmPlan;
     bool Enabled=false,Grab=false,Gripped=false,Physical=false,Fitted=false,Returning=false;
     FTransform Target=FTransform::Identity;
+    FTransform HoldTarget=FTransform::Identity; // Unused; retain layout for the live rollback.
     float Speed=300,RotationSpeed=360,Close=0,Distance=0;
     TWeakObjectPtr<UPrimitiveComponent> Component;
     TWeakObjectPtr<UBodySetup> Collider;
@@ -64,6 +77,18 @@ static FRWLock Lock;
 static TAtomic<bool> Any(false);
 static thread_local bool Reading=false;
 static FDelegateHandle Cleanup;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FVector2D> GrabAngleTolerances;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FVector2D> MotionTuning;
+static FVector2D ReachTuning(const AProphecyAgent* A)
+{
+    if(const auto* V=MotionTuning.Find(A))return *V;
+    return FVector2D(0,1);
+}
+static FVector2D GrabAngles(const AProphecyAgent* A)
+{
+    if(const auto* V=GrabAngleTolerances.Find(A))return *V;
+    return FVector2D(8,6);
+}
 static bool ValidHand(int Side) { return Side>=0&&Side<2; }
 static int ArmIndex(int Side,int Joint)
 {
@@ -146,6 +171,20 @@ static bool BasePose(AProphecyAgent* A,FState& S)
     for (int I=0;I<Names.Num();++I) S.Ordered[I]=S.Indices[I]<0?FTransform::Identity:S.Base[S.Indices[I]].GetRelativeTransform(Space);
     return true;
 }
+static void EnsureCleanup()
+{
+    if (!Cleanup.IsValid()) Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* W,bool,bool)
+    {
+        TArray<TWeakObjectPtr<const AProphecyAgent>> RemoveKeys;
+        for (const auto& P:States) if (!P.Key.IsValid()||P.Key->GetWorld()==W) RemoveKeys.Add(P.Key);
+        for (auto Key:RemoveKeys) { if (Key.IsValid()) Remove(Key.Get());else { for(auto& H:States[Key]->Hands)Drop(H);FWriteScopeLock Guard(Lock);Outputs.Remove(States[Key]->Id);States.Remove(Key); } }
+        Any.Store(!Outputs.IsEmpty());
+        for(auto It=GrabAngleTolerances.CreateIterator();It;++It)
+            if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
+        for(auto It=MotionTuning.CreateIterator();It;++It)
+            if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
+    });
+}
 static FState* Admit(AProphecyAgent* A)
 {
     if (!IsInGameThread()||!IsValid(A)||!A->HasActorBegunPlay()) return nullptr;
@@ -156,13 +195,7 @@ static FState* Admit(AProphecyAgent* A)
     if (!A->GetNNPoseDataSource(S->Id,Interval,Interpolate)||!BasePose(A,*S)) return nullptr;
     for (int K=0;K<2;++K) S->Hands[K].Rotation=A->GetPoseReferenceMesh()->GetSocketQuaternion(HandName(K));
     auto* Result=S.Get();States.Add(A,MoveTemp(S));
-    if (!Cleanup.IsValid()) Cleanup=FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* W,bool,bool)
-    {
-        TArray<TWeakObjectPtr<const AProphecyAgent>> RemoveKeys;
-        for (const auto& P:States) if (!P.Key.IsValid()||P.Key->GetWorld()==W) RemoveKeys.Add(P.Key);
-        for (auto Key:RemoveKeys) { if (Key.IsValid()) Remove(Key.Get());else { for(auto& H:States[Key]->Hands)Drop(H);FWriteScopeLock Guard(Lock);Outputs.Remove(States[Key]->Id);States.Remove(Key); } }
-        Any.Store(!Outputs.IsEmpty());
-    });
+    EnsureCleanup();
     return Result;
 }
 static FTransform TargetFrame(const FHand& H)
@@ -298,8 +331,70 @@ static void FitFingers(FHand& H)
     }
     H.Fitted=true;
 }
+static const FConstraintInstance* WristConstraint(const AProphecyAgent* A,int Side)
+{
+    const auto* Mesh=A->GetPoseReferenceMesh();const auto* Asset=Mesh?Mesh->GetPhysicsAsset():nullptr;
+    if(!Asset)return nullptr;
+    const FName Hand=HandName(Side),Forearm=Side==0?TEXT("lowerarm_l"):TEXT("lowerarm_r");
+    // Read the loaded PHAT itself, never the runtime Free override or a copied
+    // angle cache. Later asset edits/replacements apply on the next reach update.
+    for(const auto& Template:Asset->ConstraintSetup)if(Template)
+    {
+        const auto& J=Template->DefaultInstance;
+        if((J.ConstraintBone1==Hand&&J.ConstraintBone2==Forearm)||(J.ConstraintBone2==Hand&&J.ConstraintBone1==Forearm))return &J;
+    }
+    return nullptr;
+}
+static void ConstrainWrist(const AProphecyAgent* A,FState& S,int Side)
+{
+    if(const auto* J=WristConstraint(A,Side))
+    {
+        auto& Hand=S.Pose[ArmIndex(Side,3)];
+        Hand.SetRotation(ProphecyReachWristLimits::Constrain(*J,J->ConstraintBone1==HandName(Side),S.Pose[ArmIndex(Side,2)].GetRotation(),Hand.GetRotation()));
+    }
+}
+static FVector ArmFirstTarget(FState& S,int Side,const FTransform (&Previous)[3],const FTransform& Space,const FConstraintInstance& J,double Blend,ProphecyReachArm::FPosture& Posture)
+{
+    auto& H=S.Hands[Side];auto& Cache=H.ArmPlan;
+    const FVector Wrist=Space.InverseTransformPosition(H.Target.GetLocation()),Shoulder=Previous[0].GetLocation();
+    const FQuat Desired=(Space.GetRotation().Inverse()*H.Target.GetRotation()).GetNormalized();
+    const bool First=J.ConstraintBone1==HandName(Side);
+    const FQuat Frame1=J.GetRefFrame(EConstraintFrame::Frame1).GetRotation(),Frame2=J.GetRefFrame(EConstraintFrame::Frame2).GetRotation();
+    const auto& P=J.ProfileInstance;
+    const FVector Bounds(ProphecyReachWristLimits::Bound(P.TwistLimit.TwistMotion,P.TwistLimit.TwistLimitDegrees),
+        ProphecyReachWristLimits::Bound(P.ConeLimit.Swing2Motion,P.ConeLimit.Swing2LimitDegrees),
+        ProphecyReachWristLimits::Bound(P.ConeLimit.Swing1Motion,P.ConeLimit.Swing1LimitDegrees));
+    const auto& BaseShoulder=S.Ordered[ArmIndex(Side,1)];const auto& BaseElbow=S.Ordered[ArmIndex(Side,2)];const auto& BaseHand=S.Ordered[ArmIndex(Side,3)];
+    const FVector LocalLower=BaseElbow.GetRotation().UnrotateVector(BaseHand.GetLocation()-BaseElbow.GetLocation());
+    const double L1=FVector::Distance(BaseShoulder.GetLocation(),BaseElbow.GetLocation()),L2=LocalLower.Length();
+    const bool SameLimits=Cache.Valid&&Cache.HandFirst==First&&
+        Cache.Frame1.Equals(Frame1,1.e-8)&&Cache.Frame2.Equals(Frame2,1.e-8)&&Cache.Bounds.Equals(Bounds,1.e-8)&&Cache.LocalLower.Equals(LocalLower,1.e-8);
+    const bool SameTarget=SameLimits&&Cache.Wrist.Equals(Wrist,1.e-8)&&Cache.Desired.Equals(Desired,1.e-8);
+    if(!SameTarget)
+    {
+        auto Project=[&](FQuat Forearm,FQuat Hand,bool Reverse){return ProphecyReachWristLimits::Constrain(J,Reverse?!First:First,Forearm,Hand);};
+        Cache.Solution=SameLimits?
+            ProphecyReachArm::Track(Shoulder,Wrist,Desired,LocalLower,Cache.Wrist,Cache.Desired,Cache.Solution.Forearm,Project):
+            ProphecyReachArm::PlanStraight(Shoulder,Wrist,Desired,LocalLower,P.TwistLimit.TwistMotion==ACM_Locked&&P.ConeLimit.Swing1Motion==ACM_Locked&&P.ConeLimit.Swing2Motion==ACM_Locked,Project);
+        Cache.Shoulder=Shoulder;Cache.Wrist=Wrist;Cache.Desired=Desired;Cache.Frame1=Frame1;Cache.Frame2=Frame2;Cache.Bounds=Bounds;Cache.HandFirst=First;Cache.LocalLower=LocalLower;
+    }
+    // Extent planning may be straight; elbow posture always has its own pole.
+    Posture=ProphecyReachArm::Posture(Shoulder,Wrist,LocalLower,L1,Side==0?1.:-1.,Blend);
+    const auto Twist=ProphecyReachWristTwist::Fit(J,First,Desired,LocalLower,Posture.Direction,SameLimits?Cache.PostureRoll:0.);
+    Cache.PostureRoll=Twist.Roll;Posture.Forearm=Twist.Forearm;
+    const FVector Elbow=Wrist-Cache.Solution.Forearm.RotateVector(LocalLower);
+    const double PositionShortfall=FMath::Max(0.,FVector::Distance(Wrist,Shoulder)-L1-L2);
+    const double Residual=FVector::Distance(Elbow,Shoulder)-L1-PositionShortfall+(Cache.Solution.Cos<.99999?.35:0.);
+    const FVector PreviousTarget=Cache.Valid?Cache.Target:Wrist;
+    const bool CaughtUp=FVector::Distance(S.Solver.Targets[Side]*100.,PreviousTarget)<2.;
+    const double Change=FMath::Abs(Residual)<.01?0.:Residual*(1-FMath::Exp(-1./12.));
+    Cache.Reserve=FMath::Clamp(Cache.Reserve+((Change<0||CaughtUp)?FMath::Clamp(Change,-.5,.5):0.),0.,L1+L2);
+    Cache.Target=Wrist+(Wrist-BaseShoulder.GetLocation()).GetSafeNormal()*Cache.Reserve;Cache.Valid=true;
+    return Cache.Target;
+}
 static void Publish(AProphecyAgent* A,FState& S,const FTransform& Space)
 {
+    for(int Side=0;Side<2;++Side)if(!S.Hands[Side].Enabled&&S.Hands[Side].Returning)ConstrainWrist(A,S,Side);
     FWriteScopeLock Guard(Lock);auto& P=Outputs.FindOrAdd(S.Id);P.Bones.Reset();P.Fingers.Reset();
     const auto Names=ProphecyNativeReach::BoneNames();
     for (int I=1;I<S.Pose.Num();++I) P.Bones.Add(Names[I],S.Pose[I]*Space);
@@ -348,18 +443,31 @@ void Update(AProphecyAgent* A,int Id)
         }
         Publish(A,S,Space);return;
     }
-    FVector Targets[2];float Speeds[2];bool Enabled[2];
+    FVector Targets[2];float Speeds[2];bool Enabled[2];FTransform Previous[2][3];
+    const FConstraintInstance* WristJoints[2]={nullptr,nullptr};
+    ProphecyReachArm::FPosture Postures[2];
+    const FVector2D Tuning=ReachTuning(A);
     for (int K=0;K<2;++K)
     {
         auto& H=S.Hands[K];
+        for(int J=0;J<3;++J)
+        {
+            const int I=ArmIndex(K,J+1);
+            Previous[K][J]=S.Pose.IsValidIndex(I)?S.Pose[I]:A->GetPoseReferenceMesh()->GetSocketTransform(Names[I]).GetRelativeTransform(Space);
+        }
         if (H.Grab&&(!H.Component.IsValid()||!H.Collider.IsValid()||(H.Physical&&(!H.Physics.IsValid()||!H.Physics->OwnsJoint(H.Joint)))))
         { BeginHandReturn(S,K,.25f);Drop(H);H.Enabled=false;H.Grab=false; }
         if (H.Grab) { PrepareContact(A,K,H);H.Target=GrabTarget(H); }
         Enabled[K]=H.Enabled;Targets[K]=Space.InverseTransformPosition(H.Target.GetLocation());Speeds[K]=H.Speed;
+        if(H.Enabled)
+        {
+            WristJoints[K]=WristConstraint(A,K);
+            if(H.Grab&&WristJoints[K])Targets[K]=ArmFirstTarget(S,K,Previous[K],Space,*WristJoints[K],Tuning.Y,Postures[K]);
+        }
     }
     if (!Enabled[0]&&!Enabled[1]) { UProphecyReachLibrary::StopReaching(A);return; }
     const auto Mode=Enabled[0]?(Enabled[1]?EProphecyDoubleReachMode::Both:EProphecyDoubleReachMode::Left):EProphecyDoubleReachMode::Right;
-    if (!ProphecyNativeReach::Step(S.Ordered,Mode,Targets,Speeds,S.Solver,S.Pose,Dt)) { Remove(A);return; }
+    if (!ProphecyNativeReach::Step(S.Ordered,Mode,Targets,Speeds,S.Solver,S.Pose,Dt,Tuning.Y)) { Remove(A);return; }
     for(int K=0;K<2;++K)
     {
         auto& H=S.Hands[K];if(!H.Returning)continue;
@@ -372,22 +480,49 @@ void Update(AProphecyAgent* A,int Id)
     for (int K=0;K<2;++K) if (Enabled[K])
     {
         auto& H=S.Hands[K];const int Hand=Names.IndexOfByKey(HandName(K));
-        const double Angle=H.Rotation.AngularDistance(H.Target.GetRotation()),Step=FMath::DegreesToRadians(H.RotationSpeed)*Dt;
-        H.Rotation=FQuat::Slerp(H.Rotation,H.Target.GetRotation(),Angle>1.e-9?FMath::Min(1.,Step/Angle):1.).GetNormalized();
+        // Previous commanded pose is mesh-local, so actor turns carry the motion.
+        H.Rotation=(Previous[K][2]*Space).GetRotation();
+        const double Angle=H.Rotation.AngularDistance(H.Target.GetRotation());
+        const double Distance=FVector::Distance((Previous[K][2]*Space).GetLocation(),H.Target.GetLocation());
+        H.Rotation=FQuat::Slerp(H.Rotation,H.Target.GetRotation(),ProphecyReachArm::RotationFraction(Angle,H.RotationSpeed,H.Speed,Distance,Tuning.X)).GetNormalized();
         S.Pose[Hand].SetRotation((Space.GetRotation().Inverse()*H.Rotation).GetNormalized());
+        if(H.Grab&&WristJoints[K])
+        {
+            const auto& J=*WristJoints[K];const bool First=J.ConstraintBone1==HandName(K);
+            ProphecyReachArm::FInput Input;
+            const int Shoulder=ArmIndex(K,1),Elbow=ArmIndex(K,2);
+            Input.Shoulder=S.Pose[Shoulder].GetLocation();Input.RawElbow=S.Pose[Elbow].GetLocation();Input.BaseHand=S.Ordered[Hand].GetLocation();
+            Input.UpperLength=FVector::Distance(S.Ordered[Shoulder].GetLocation(),S.Ordered[Elbow].GetLocation());
+            Input.LowerLength=FVector::Distance(S.Ordered[Elbow].GetLocation(),S.Ordered[Hand].GetLocation());
+            for(int I=0;I<3;++I)Input.Previous[I]=Previous[K][I];
+            Input.Desired=(Space.GetRotation().Inverse()*H.Target.GetRotation()).GetNormalized();Input.Command=S.Pose[Hand].GetRotation();Input.Speed=H.Speed;Input.Palm=H.Palm;
+            Input.HasForearmHint=H.ArmPlan.Valid;Input.ForearmHint=Postures[K].Forearm;Input.PoleHint=Postures[K].Pole;
+            const auto Frame=TargetFrame(H);
+            Input.Anchor=Space.InverseTransformPosition(Frame.TransformPosition(H.Point)+Frame.TransformVectorNoScale(H.Normal).GetSafeNormal()*.35);
+            auto Project=[&](FQuat Forearm,FQuat HandQ,bool Reverse){return ProphecyReachWristLimits::Constrain(J,Reverse?!First:First,Forearm,HandQ);};
+            const auto Solved=ProphecyReachArm::Solve(Input,Project);
+            S.Pose[Shoulder]=Solved.Upper;S.Pose[Elbow]=Solved.Lower;S.Pose[Hand]=Solved.Hand;
+        }
+        else ConstrainWrist(A,S,K);
         const FTransform Wrist=S.Pose[Hand]*Space;
+        H.Rotation=Wrist.GetRotation();
+        const double RemainingAngle=H.Rotation.AngularDistance(H.Target.GetRotation());
         H.Distance=FVector::Distance(Wrist.GetLocation(),H.Target.GetLocation());
         if (H.Grab)
         {
             if (!H.Fitted) FitFingers(H);
-            if (H.Distance<3&&Angle<FMath::DegreesToRadians(8.)) H.Close=FMath::Min(1.f,H.Close+float(Dt/.2));
+            const FVector2D Tolerances=GrabAngles(A);
+            const double ClosureAngle=FMath::DegreesToRadians(Tolerances.X),GripAngle=FMath::DegreesToRadians(Tolerances.Y);
+            if (H.Distance<3&&RemainingAngle<=ClosureAngle) H.Close=FMath::Min(1.f,H.Close+float(Dt/.2));
             const FTransform Actual=A->GetPoseReferenceMesh()->GetSocketTransform(HandName(K));
-            if (!H.Gripped&&H.Close>=1&&H.Distance<1.25&&FVector::Distance(Actual.GetLocation(),H.Target.GetLocation())<2&&Actual.GetRotation().AngularDistance(H.Target.GetRotation())<FMath::DegreesToRadians(6.)) Grip(A,K,H);
+            if (!H.Gripped&&H.Close>=1&&H.Distance<1.25&&RemainingAngle<=GripAngle&&FVector::Distance(Actual.GetLocation(),H.Target.GetLocation())<2&&Actual.GetRotation().AngularDistance(H.Target.GetRotation())<=GripAngle) Grip(A,K,H);
         }
         if (S.Debug)
         {
             DrawDebugCoordinateSystem(A->GetWorld(),Wrist.GetLocation(),Wrist.Rotator(),8,false,0,0,.5);
-            DrawDebugSphere(A->GetWorld(),H.Grab?TargetFrame(H).TransformPosition(H.Point):H.Target.GetLocation(),1.1,8,H.Gripped?FColor::Green:FColor::Cyan,false,0,0,.7);
+            const FVector Contact=H.Grab?TargetFrame(H).TransformPosition(H.Point):H.Target.GetLocation();
+            DrawDebugSphere(A->GetWorld(),Contact,1.1,8,H.Grab?FColor(255,190,40):FColor::Cyan,false,0,0,.7);
+            if(H.Grab)DrawDebugDirectionalArrow(A->GetWorld(),Contact,Contact+TargetFrame(H).TransformVectorNoScale(H.Normal).GetSafeNormal()*6,1.5,FColor(255,190,40),false,0,0,.7);
         }
     }
     if (S.Debug) for (int I=2;I<S.Pose.Num();++I) if (S.Parents[I]>=0) DrawDebugLine(A->GetWorld(),(S.Pose[I]*Space).GetLocation(),(S.Pose[S.Parents[I]]*Space).GetLocation(),FColor::Cyan,false,0,0,.6);
@@ -410,7 +545,7 @@ static bool StartGrab(AProphecyAgent* A,int Side,UPrimitiveComponent* C,FName Bo
     const FTransform Frame=TargetFrame(H);FVector Closest,Normal;
     if (!BuildFingers(A->GetPoseReferenceMesh()->GetSkeletalMeshAsset(),A->ClosedFistAnimation.LoadSynchronous(),Side,H)) return false;
     const FTransform Wrist=A->GetPoseReferenceMesh()->GetSocketTransform(HandName(Side));
-    if (!Explicit) Point=Wrist.TransformPosition(H.Palm);
+    if (!Explicit) Point=A->GetPoseReferenceMesh()->GetSocketLocation(Side==0?TEXT("upperarm_l"):TEXT("upperarm_r"));
     // Query just outside a supplied point so primitive interior conventions do not erase its normal.
     const FVector Probe=Explicit?Point+(Wrist.GetLocation()-Point).GetSafeNormal()*.05:Point;
     const float Distance=Shape->GetClosestPointAndNormal(Probe,Frame,Closest,Normal,true);
@@ -496,8 +631,37 @@ FProphecyGrabStatus UProphecyReachLibrary::GetGrabStatus(AProphecyAgent* A,EProp
     }
     return Out;
 }
+bool UProphecyReachLibrary::SetGrabAngleTolerances(AProphecyAgent* A,float ClosureAngleDegrees,float GripAngleDegrees)
+{
+    if(!IsInGameThread()||!IsValid(A)||!A->GetWorld()||!A->GetWorld()->IsGameWorld()||
+        !FMath::IsFinite(ClosureAngleDegrees)||!FMath::IsFinite(GripAngleDegrees)||
+        ClosureAngleDegrees<0||ClosureAngleDegrees>180||GripAngleDegrees<0||GripAngleDegrees>180)return false;
+    ProphecyReach::EnsureCleanup();
+    for(auto It=ProphecyReach::GrabAngleTolerances.CreateIterator();It;++It)
+        if(!It.Key().IsValid())It.RemoveCurrent();
+    ProphecyReach::GrabAngleTolerances.Add(A,FVector2D(ClosureAngleDegrees,GripAngleDegrees));
+    return true;
+}
+void UProphecyReachLibrary::GetGrabAngleTolerances(AProphecyAgent* A,float& ClosureAngleDegrees,float& GripAngleDegrees)
+{
+    const FVector2D V=ProphecyReach::GrabAngles(A);ClosureAngleDegrees=V.X;GripAngleDegrees=V.Y;
+}
 void UProphecyReachLibrary::SetReachVisualization(AProphecyAgent* A,bool Enabled)
 { if (auto* S=ProphecyReach::States.Find(A)) (*S)->Debug=Enabled; }
+
+bool UProphecyReachLibrary::SetReachMotionTuning(AProphecyAgent* A,float SyncRotation,float ElbowDownBlend)
+{
+    if(!IsInGameThread()||!IsValid(A)||!A->GetWorld()||!A->GetWorld()->IsGameWorld()||
+        !FMath::IsFinite(SyncRotation)||!FMath::IsFinite(ElbowDownBlend)||
+        SyncRotation<0||SyncRotation>1||ElbowDownBlend<0||ElbowDownBlend>1)return false;
+    ProphecyReach::EnsureCleanup();
+    for(auto It=ProphecyReach::MotionTuning.CreateIterator();It;++It)if(!It.Key().IsValid())It.RemoveCurrent();
+    ProphecyReach::MotionTuning.Add(A,FVector2D(SyncRotation,ElbowDownBlend));return true;
+}
+void UProphecyReachLibrary::GetReachMotionTuning(AProphecyAgent* A,float& SyncRotation,float& ElbowDownBlend)
+{
+    const auto V=ProphecyReach::ReachTuning(A);SyncRotation=V.X;ElbowDownBlend=V.Y;
+}
 
 #include "Tests/ProphecyReachTests.inl"
 #include "Tests/ProphecyReachProbe.inl"

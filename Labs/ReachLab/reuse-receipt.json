@@ -1,0 +1,17 @@
+{
+  "source": "Labs/SwordHolsterLab",
+  "adaptedFiles": {
+    "app.js": "workspace.js (snapshot/list/restore/refresh/live identity patterns)",
+    "backend.py": "server.py (numbered snapshots, session ownership, paired live images)",
+    "capture.js": "capture.js (worker URL)",
+    "capture-worker.js": "capture-worker.js (REACH renderer, serialized jobs)",
+    "launch.ps1": "launch.ps1 (desktop session, background capture flags)"
+  },
+  "sourceSha256": {
+    "app.js": "31492a0551e597ea059150f8209771eb76ae9e2d0b1160b7766546be6037f27f",
+    "backend.py": "e30d5558c7cb4d7355984613ab785a1631bd41d5d938366444f60bb1d4d7da8f",
+    "capture.js": "24d0c5cc5bee33e87c20082ffc66cec80e463cdbff0ecdd3d577bb7811effcbe",
+    "capture-worker.js": "84c05a2ae836e66c82cea02988f3b9ab9d23b833b2d3f5e7fd6c936f391d4a96",
+    "launch.ps1": "12c223816d6342d8ead39025cd5b8f07b407576de1ea87dd86f82f1ef1d32be8"
+  }
+}

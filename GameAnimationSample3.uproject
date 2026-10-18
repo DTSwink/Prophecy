@@ -155,6 +155,10 @@
 		{
 			"Name": "ProphecyJolt",
 			"Enabled": true
+		},
+		{
+			"Name": "ZibraVDB",
+			"Enabled": true
 		}
 	],
 	"EpicSampleNameHash": "1673045636"

@@ -7,6 +7,7 @@
 #include "Misc/Paths.h"
 #include "ScopedTransaction.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "ProphecyReachGrabFixture.inl"
 
 namespace ProphecyLiveAgentTypeRepair
 {
@@ -37,6 +38,7 @@ TArray<FString> Wiring(UBlueprint* BP)
 }
 void Run(const TArray<FString>& Args)
 {
+    if (Args.Num()==1 && Args[0]==TEXT("WireReachGrabFixture")) { ProphecyReachGrabFixture::Install();return; }
     if (Args.Num()!=1 || (Args[0]!=TEXT("Inspect") && Args[0]!=TEXT("Repair"))) return;
     const bool Repair=Args[0]==TEXT("Repair");
     if (!GEditor || (Repair && GEditor->PlayWorld)) return;

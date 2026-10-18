@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 6285,
-  "bytes": 547675524,
+  "file_count": 6389,
+  "bytes": 555279572,
   "files": [
     {
       "path": ".gitattributes",
@@ -49,9 +49,9 @@
     },
     {
       "path": "Config/DefaultGame.ini",
-      "git_blob": "a326869b124cab4eff90c623d3e1edfea20eb121",
-      "bytes": 1520,
-      "sha256": "a60c85d43d636603a528a345188656fc6ed8f40404d3d856596b3818faebd867"
+      "git_blob": "8ef0b1a01ef0ef0f2bd664f0fa0acd78035b52a7",
+      "bytes": 1645,
+      "sha256": "0ddffbe12681776d091cd69db8b3739f041fefb493aa318bc33f694d2d90c3f9"
     },
     {
       "path": "Config/DefaultGameplayTags.ini",
@@ -5376,6 +5376,12 @@
       "sha256": "929420e55d354c0fa6297dc30110d848f2be5b169bff307cf532eb597e275442"
     },
     {
+      "path": "Docs/BombFuse.md",
+      "git_blob": "e7322ce43c26fb132d27bb0475b53b1fa9715f77",
+      "bytes": 15161,
+      "sha256": "435d8a869a020a15c5a2f071ae36e89bab0585cb75931feb950af2d70a1c3434"
+    },
+    {
       "path": "Docs/BossSkinTechniques.md",
       "git_blob": "80b58a6119a514268794f4711e705f640de53398",
       "bytes": 17133,
@@ -5548,6 +5554,12 @@
       "git_blob": "d3a73fe752324421093c862bad996df40c9d958a",
       "bytes": 3736,
       "sha256": "e8b0bab439cd38426dcb40789abe2a4bba57fd12d5f85d2a0235743c21eb92e7"
+    },
+    {
+      "path": "Docs/ExplosionImpact.md",
+      "git_blob": "2f5ebd051ffcad7ad11631d25f0dfaf3f164f90b",
+      "bytes": 4597,
+      "sha256": "5ab0f27cda1c5f3fc054264e07c10a8c0ff78cfddfee353051a774488290cd66"
     },
     {
       "path": "Docs/FKReturnSeparateControls.md",
@@ -6078,6 +6090,12 @@
       "sha256": "9de94fe7850c2d3b88aa04d861cff80430233ae8c5f65e696f60137b7ac3efb1"
     },
     {
+      "path": "Docs/Journal/ProjectJournal-history-through-2026-10-15.md",
+      "git_blob": "e8aa4c18c0cea6028642706e0a93b29ab4d1739b",
+      "bytes": 234336,
+      "sha256": "5506f5eb8992546f0f1374c74ce259bed50fb63fe519dd48262dc23400e99a2a"
+    },
+    {
       "path": "Docs/Journal/UpperBodyInertia-history-through-2026-10-01.md",
       "git_blob": "6144c959c8bef0f385ade5dd45e47c1b11a452cd",
       "bytes": 13481,
@@ -6541,9 +6559,9 @@
     },
     {
       "path": "Docs/ReachGrasp20261012.md",
-      "git_blob": "e88c156bda215f8a0f780e47a5e4dc97a82d3137",
-      "bytes": 14098,
-      "sha256": "afefa482123ef9c453546df4f8a61fa988a6b77f0256a7a70e2d861a7142cb8a"
+      "git_blob": "47eaea67fd419cece440b2f36459797ff8f6d796",
+      "bytes": 55484,
+      "sha256": "b873e235fa674534947e1a66b5c3c2d40c09935d96b3c4a352e6d081c9dc5a1d"
     },
     {
       "path": "Docs/RealisticFootEvents.md",
@@ -6553,9 +6571,9 @@
     },
     {
       "path": "Docs/Recovery.md",
-      "git_blob": "47aa4332d9de38e0dc5cedd91a33ce6bf3027dcc",
-      "bytes": 8410,
-      "sha256": "b0f18eb3c4c0a14162f847d2297bbd2ff4394cb95323b683aaa5ea554c79d4c5"
+      "git_blob": "c8d82787261d2abf1aeecec4d2c2342f63430b65",
+      "bytes": 9391,
+      "sha256": "7fc1807a87866d1c6835b914bbce855ce0da0d75fa09df6a90ae61b527fce004"
     },
     {
       "path": "Docs/RegionalSpecialRecovery.md",
@@ -6829,9 +6847,9 @@
     },
     {
       "path": "Docs/SwordHolster.md",
-      "git_blob": "2324fd4faa55dbcdd69ca255d67e630c8eab54d7",
-      "bytes": 144182,
-      "sha256": "6a2862f1821ff5cdb6d1429f454fbf9baf447d9f80aeb16828fa60d12853ae04"
+      "git_blob": "f7b9a9a7b8ace4c586b215d3ae7e6938177ca788",
+      "bytes": 146609,
+      "sha256": "f601a2451e74f0dc019d4846f18f9cbf2326a67c90d30064c0bc912d83d112a0"
     },
     {
       "path": "Docs/SwordHolsterOvernight20261011.md",
@@ -6994,6 +7012,12 @@
       "git_blob": "874d14de7ebf2fad3235101797658df111c21c5e",
       "bytes": 4670,
       "sha256": "d50c7ec87252b26b8eb60b8ee3b9f37e813347df6831e9fc0889e9b6d19bd4b0"
+    },
+    {
+      "path": "Docs/ZibraExplosionFade.md",
+      "git_blob": "75b656f9370cec674ebf742e90d66ee4e510395f",
+      "bytes": 6329,
+      "sha256": "012c7a7755d4705ddbf9836604bbfe2126ee2ed001b7a1d5426d53c86c2a1b38"
     },
     {
       "path": "Exports/Dodge_jabR_tick260_20261005.zip",
@@ -7459,9 +7483,9 @@
     },
     {
       "path": "GameAnimationSample3.uproject",
-      "git_blob": "698ae35b3e55d9d8c36fb8b28538a34e3db981a4",
-      "bytes": 2489,
-      "sha256": "a026b249e628e5ca66b5b1144d818bff0cddcd56383841adbc5e769533f40209"
+      "git_blob": "8b5b4ae65680396a64b009c3a44a47fdfafc98a3",
+      "bytes": 2539,
+      "sha256": "68b6b2ced154b40a494854d7a3eb5a039202081370796933d920c9bd33d9bc37"
     },
     {
       "path": "Labs/AttackRecoveryLab/README.md",
@@ -13626,6 +13650,372 @@
       "sha256": "1623935bb15da2fb603e00e242e5ca0466e87266bf6a2900a2a90c1491f46444"
     },
     {
+      "path": "Labs/ReachLab/.gitignore",
+      "git_blob": "ee2c31089f172e686ad8a8af817075df9a53b708",
+      "bytes": 93,
+      "sha256": "cc8e8ecebe004316219794ef1b048398798d9f192cbc95d3abc657dc31f0cc31"
+    },
+    {
+      "path": "Labs/ReachLab/README.md",
+      "git_blob": "fc3a9824c83c97064e87463998c35384d5b5ed87",
+      "bytes": 35014,
+      "sha256": "2bdc47b8d10969e87f7b40882fc06c40fbeb445faaf6ca0b885fb37804a098c5"
+    },
+    {
+      "path": "Labs/ReachLab/app.js",
+      "git_blob": "399ce7e4a0cb2177c5951281823471fc81e7f6e7",
+      "bytes": 28864,
+      "sha256": "8da6144425d20c291cec49e3c6a931a21c0f96a5f81a75cfd59db979393c11e0"
+    },
+    {
+      "path": "Labs/ReachLab/build.py",
+      "git_blob": "29b3b88fe8d5c174de1cdddf4f49781201609ef2",
+      "bytes": 4836,
+      "sha256": "ee8e278c29ef4730dd199497eb59bdcd056ab240371b03ad4a046034baee2f3a"
+    },
+    {
+      "path": "Labs/ReachLab/capture-worker.js",
+      "git_blob": "0da272d1e911e4aaa18e077292474b6584790a84",
+      "bytes": 2899,
+      "sha256": "dbbaf80295f3b1d6d0d495b7555b89d0719b3af28e0fb0685dcf4c7a83268bb2"
+    },
+    {
+      "path": "Labs/ReachLab/capture.js",
+      "git_blob": "bc8de77e828d223047ddbdef6fd48d54ea096878",
+      "bytes": 1443,
+      "sha256": "cba8d40ebdf0de0c9783cc49fdb6eaa8de50419a9d5d51bfd8c966cd201f31dd"
+    },
+    {
+      "path": "Labs/ReachLab/coupled.js",
+      "git_blob": "f607d8d541c5d092903bd33a5123106f59805103",
+      "bytes": 7300,
+      "sha256": "f7cb1578e53d456b0910e5ff3559a9f940d4fcf9f480346981076250803e9e5c"
+    },
+    {
+      "path": "Labs/ReachLab/data.json",
+      "git_blob": "ed4fdb0ef8650a8f61d7f81fadf5902aa0d14aad",
+      "bytes": 4378,
+      "sha256": "4b7020429dcba9004afb5dc54fc40d6d5520c2e2c0915d77acd9ad4922990f5e"
+    },
+    {
+      "path": "Labs/ReachLab/export_fingers.py",
+      "git_blob": "389d649c1f76921c32c4420bb3be1d340f593269",
+      "bytes": 2596,
+      "sha256": "fd6a3189e68ada410f723a8155fbc3d37dd57178b9677d7516c61df013b6a2ad"
+    },
+    {
+      "path": "Labs/ReachLab/export_phat.py",
+      "git_blob": "f1cfb6643c45e88f7f411a1b4d49fa4749014367",
+      "bytes": 1174,
+      "sha256": "e17e40b2b366cf9b2ac348f788e7b473deea24ed5eacd0ee8ad51d779b232c82"
+    },
+    {
+      "path": "Labs/ReachLab/fingers.json",
+      "git_blob": "4ed47b5b5a72ba38e86caa438f37f415a6b16394",
+      "bytes": 29580,
+      "sha256": "ac3783e072843afb1a5077ac9e47f4db738a73a3d2d8b41ee394605f34c27e28"
+    },
+    {
+      "path": "Labs/ReachLab/fixtures/elbow_blend.json",
+      "git_blob": "fc83508a200dfe2aaa2fecedd8ed01b8e311eab8",
+      "bytes": 13950,
+      "sha256": "6cac89393b59e66db91c1d1d2c73c8b093a2c198ef0aba5d22176611c0475dbd"
+    },
+    {
+      "path": "Labs/ReachLab/grab.js",
+      "git_blob": "66ee3b90b41d6585bc664ee58a46f8f7770b5500",
+      "bytes": 6486,
+      "sha256": "45baabf47dd3718c9562c4cb04c99dbb1a4b320e570dbec36a473eeb65d6553f"
+    },
+    {
+      "path": "Labs/ReachLab/icon.ico",
+      "git_blob": "3c5d1087d7ddc53d519fcaf93e16c917834a6249",
+      "bytes": 18671,
+      "sha256": "0929abec08439adc54eba43aa3a1477b13df39fafefb1de72d08899eb7755e09"
+    },
+    {
+      "path": "Labs/ReachLab/icon.svg",
+      "git_blob": "beffb763a1ffbfc0538d5a3fa0aef921e8f787e7",
+      "bytes": 588,
+      "sha256": "24ed0768e265db48ddabeefa72b17bf8f243a9c28a4e7bd5a758c3da81d6ee27"
+    },
+    {
+      "path": "Labs/ReachLab/import_testnn.cjs",
+      "git_blob": "13f3ab9de7f300a8d5450a57d8c10149831fff4b",
+      "bytes": 9142,
+      "sha256": "910e3662d2f0f30069da7d2027c8b7a7221c1249cffe507558ebddaf4906fbb5"
+    },
+    {
+      "path": "Labs/ReachLab/index.html",
+      "git_blob": "14985b364d1c4f034b54905d859e6995b8893769",
+      "bytes": 5325,
+      "sha256": "0020bff7b37b664ba3331421f9b020b882621f779b66a8951249a13ca4ac6cdb"
+    },
+    {
+      "path": "Labs/ReachLab/install_shortcut.ps1",
+      "git_blob": "28a310b18231d651b575dcaf632957e878e4c0e2",
+      "bytes": 794,
+      "sha256": "4f9ef57e7b1a19390c19d4cd7b3aeadc317b48e15ebbe9d62eacc6f3e6be459e"
+    },
+    {
+      "path": "Labs/ReachLab/launch.ps1",
+      "git_blob": "cb02ac07122142b97dcbb0cd29bcd7384b3688df",
+      "bytes": 3114,
+      "sha256": "a04b7ea6aa6847d09eb6ada2f9cdbe8d1642c4aa35c70d040f6f0d4f2b2e0eaa"
+    },
+    {
+      "path": "Labs/ReachLab/make_icon.py",
+      "git_blob": "3e01170294554f086287fe703b175e925fc6e5de",
+      "bytes": 862,
+      "sha256": "91d74624438d6a1c6ec49316ffe5e2a7799abec1aae0155bda11cc32c204f4f8"
+    },
+    {
+      "path": "Labs/ReachLab/math_compat.h",
+      "git_blob": "f519381d25a5fb9af88c882030c4fc6a3a5959ac",
+      "bytes": 4598,
+      "sha256": "c6a2b8123c530e355a813a29d7bf8c649edb0f8c20ce7a1a882890968df5e17d"
+    },
+    {
+      "path": "Labs/ReachLab/motions/6c66908fc9fb84560367e8b21939ba38d2676846488bb4f40bdc2dcdd1dc7ef4.json",
+      "git_blob": "d3f3e7929bb73d065f8efe11b6fabcb71cb72b55",
+      "bytes": 1314373,
+      "sha256": "6c66908fc9fb84560367e8b21939ba38d2676846488bb4f40bdc2dcdd1dc7ef4"
+    },
+    {
+      "path": "Labs/ReachLab/motions/daf84ef21b460abdeee292a1b7f328cb2060a2a44058d1f6df27de38c6ca0ce2.json",
+      "git_blob": "86d7d412c22320a24e8c6ba810d1f1f6805c5fde",
+      "bytes": 683667,
+      "sha256": "daf84ef21b460abdeee292a1b7f328cb2060a2a44058d1f6df27de38c6ca0ce2"
+    },
+    {
+      "path": "Labs/ReachLab/origin.json",
+      "git_blob": "9dc6186a9df024b81cdc7b575f5f195407e4a911",
+      "bytes": 272,
+      "sha256": "7e7a9dea2c1f7140282f4b0fdcd6c371b80bac96beb2db3b02613a0e30abd846"
+    },
+    {
+      "path": "Labs/ReachLab/phat.json",
+      "git_blob": "2c39fb412dadf5b0bf8bcfe40a2dc1db150dea73",
+      "bytes": 939,
+      "sha256": "283d60a24d588691633c788703d8963fee942ef41d260f61403ea9a18ca35f0d"
+    },
+    {
+      "path": "Labs/ReachLab/reach-renderer.js",
+      "git_blob": "0f6bccc565557c4d08423e742c90cfb6004d3419",
+      "bytes": 2096,
+      "sha256": "29f96e640fdbfe8372aee16725bd01a85d30c8c2d048bd3ae062cf2eee202af1"
+    },
+    {
+      "path": "Labs/ReachLab/reset_defaults.json",
+      "git_blob": "c7daf7ec71b82d358ac55831324d8b59eac74cc8",
+      "bytes": 440,
+      "sha256": "b4e664db4610a4962195fe636c1a6a7501da56bcaaaf38e4adb827fbf683547c"
+    },
+    {
+      "path": "Labs/ReachLab/reuse-receipt.json",
+      "git_blob": "d7546d066af59bd5b0c3880092450fd5da90caaf",
+      "bytes": 896,
+      "sha256": "fbfafc16bb90dbc68f38328d872a17fd713256b337246a378c5768b0a5749bee"
+    },
+    {
+      "path": "Labs/ReachLab/server.py",
+      "git_blob": "27b63a7379cb2d144b4a2154ef11601596063ef4",
+      "bytes": 10633,
+      "sha256": "f5256ed8e5a2d6b270db07fe465b92df89b9c0f9ce5bf6d8cf51224b0868bd99"
+    },
+    {
+      "path": "Labs/ReachLab/snapshots/TestNN_Right_Frozen_Start_31.json",
+      "git_blob": "22c1aafe778ae798f6b87ac2f8bd877c9b95408c",
+      "bytes": 18466,
+      "sha256": "c428824deb2f137c22d459ed679882d9a9bc290622b4d56ed8194e223e92adfd"
+    },
+    {
+      "path": "Labs/ReachLab/snapshots/TestNN_Right_Recorded.json",
+      "git_blob": "a39b5f2997b8f9b7d7ae9c9b31fed0e37262b433",
+      "bytes": 2496104,
+      "sha256": "3a5c6033e2425de9e6dd96abf25a2f1da401c50c82c137b0d839ee9f2389fea9"
+    },
+    {
+      "path": "Labs/ReachLab/snapshots/TestNN_Right_Recorded.png",
+      "git_blob": "dadd8d4377783dc73704f91b483e9c0a18bcea13",
+      "bytes": 386666,
+      "sha256": "4008b18b70c68e44cbd8a6ca69a444a9fc41a4349a194bd6547f7a0b131f97b4"
+    },
+    {
+      "path": "Labs/ReachLab/snapshots/TestNN_Right_Stalled_250.json",
+      "git_blob": "d8d84be01896a3bcab698fe0fb5911c13a9ccf45",
+      "bytes": 18736,
+      "sha256": "231377cee1fa091b38b768d166dba794d57bcc96c48d892474a48d1dc70ca2f9"
+    },
+    {
+      "path": "Labs/ReachLab/snapshots/UE_Elbow_Circling_Recorded.json",
+      "git_blob": "dff5cd7cba3d999925e0e15acc0a748635c86750",
+      "bytes": 696538,
+      "sha256": "987833fe6d577fc0e2aa5489c2abc623dd713fdc3fde844f3eaaf3a9aecc99c4"
+    },
+    {
+      "path": "Labs/ReachLab/snapshots/UE_Grip_Feedback.json",
+      "git_blob": "faf8aed50baa04ee280304eb8cae849c0e0853ce",
+      "bytes": 32193,
+      "sha256": "5ceada3defea5cdcf0371efad164b793d506270cc2ce10df58d0370ccc8c67f1"
+    },
+    {
+      "path": "Labs/ReachLab/snapshots/UE_Grip_Feedback_Before.json",
+      "git_blob": "c8143e5ef8d5343d9a9976419c91f943bac509a2",
+      "bytes": 32195,
+      "sha256": "282006e4fe2c65d039a7acca761831b1f88385638f470b234621041ab0b343c2"
+    },
+    {
+      "path": "Labs/ReachLab/snapshots/snapshot_0002.json",
+      "git_blob": "853c3551d04f57a5574c4c33bcf185124d7c3437",
+      "bytes": 36489,
+      "sha256": "0309c9ce8f957e643cfe86635a91d3fafcd6a1afa127372024038e6106b7530a"
+    },
+    {
+      "path": "Labs/ReachLab/solver.inl",
+      "git_blob": "2efe8f6f96c34be03b6258cffe45f3e21196dc76",
+      "bytes": 42224,
+      "sha256": "a05fad99495701128319c08bca7c85e0198eab9002eeb472d5edcd6569255291"
+    },
+    {
+      "path": "Labs/ReachLab/state.json",
+      "git_blob": "51de4d64fd98048a918e8a1e6eca2adb0e020d64",
+      "bytes": 1299,
+      "sha256": "0bd975861a1baf6f09576eeac89044363f966cb40282cdbc594171ed28bb5229"
+    },
+    {
+      "path": "Labs/ReachLab/style.css",
+      "git_blob": "aeb6dffa740f47c6318a8b8eece0a97e1aa4a95e",
+      "bytes": 8596,
+      "sha256": "309e704210137cbad61bcf1f09873e35402a95ebd1fb2ddc5d55ba6e8b25f722"
+    },
+    {
+      "path": "Labs/ReachLab/test_arm_first.cjs",
+      "git_blob": "0b7e5ad5066bf46cc5497e1de3cbb27a03f9e00b",
+      "bytes": 5487,
+      "sha256": "3180fe5d56f9f452d2605c22102f338f507c89e7e0f6189892f9014aeb876b65"
+    },
+    {
+      "path": "Labs/ReachLab/test_coupled.cjs",
+      "git_blob": "2ea3f1db385c77bbab679a815dfe84090f308207",
+      "bytes": 7571,
+      "sha256": "06189df1659171532a7e11a64410cbcd0823c1abce9e98fe819d3980be278eff"
+    },
+    {
+      "path": "Labs/ReachLab/test_elbow.cjs",
+      "git_blob": "a37142db489f10a43ceb24f5ebe0d0b46b2c3818",
+      "bytes": 6412,
+      "sha256": "088be329d922d9186eedef2883d4b32675bc5aca52a7f6033498be029d8af6cc"
+    },
+    {
+      "path": "Labs/ReachLab/test_elbow_blend.cjs",
+      "git_blob": "cf8cf99cf46943dbbf76c4f6222b0d12bbf44695",
+      "bytes": 3828,
+      "sha256": "0a097a6caf8ce5c7029972176168ac7f501aa7662e72b67001784169e69b0013"
+    },
+    {
+      "path": "Labs/ReachLab/test_escape.cjs",
+      "git_blob": "b894c2e8c2f21ad759ff1cf11e232951e05f6752",
+      "bytes": 6859,
+      "sha256": "8adfc5f2d26e26e0af9b7a2a2ab5f4b2a7776a82f938b39e7a0e41077c942242"
+    },
+    {
+      "path": "Labs/ReachLab/test_feedback_workspace.cjs",
+      "git_blob": "748325e1d48f728e11bf4d2b073835c03a190ce4",
+      "bytes": 3701,
+      "sha256": "e65864b9b0d73660e5a5ac9d854e57319dc74464e8a3e2a1615a27a880fb3d36"
+    },
+    {
+      "path": "Labs/ReachLab/test_grab.cjs",
+      "git_blob": "8625e8e9b7b901ee02524ccc0aa7a2ae97d08b35",
+      "bytes": 9180,
+      "sha256": "eadcd02e75ef1165d828a0f82865e5463c4aca7717d0035b321480338e65e125"
+    },
+    {
+      "path": "Labs/ReachLab/test_grip_attachment.cjs",
+      "git_blob": "dda431f55c9c57b391b0c07d0bad2775330e3365",
+      "bytes": 1973,
+      "sha256": "d226e32156a328581bb8f113f9380c9d505722b7c049c23b18ff65191fd0b9d8"
+    },
+    {
+      "path": "Labs/ReachLab/test_grip_feedback.cjs",
+      "git_blob": "be3949644c5a1f5a294eb9b8a0f3b3ec403a52be",
+      "bytes": 8078,
+      "sha256": "1fd03cef3750c82645aac55992911cc4445ec19cf83c1045b0270f1829a430f0"
+    },
+    {
+      "path": "Labs/ReachLab/test_held.cjs",
+      "git_blob": "92140fe4d35f1899675b83ab9695fe9663ab0860",
+      "bytes": 6046,
+      "sha256": "f58c5b9c6c774258a0a8115c21c617f842adfb73cbbf5570434d9971fcdb4fb2"
+    },
+    {
+      "path": "Labs/ReachLab/test_kernel.py",
+      "git_blob": "059fe83024c09e30819bba05fb1c67c55129b7cd",
+      "bytes": 466,
+      "sha256": "17a26994b72f3d5bd60bb0dbdeb2fa55fb9c1ea2bad63185a63346240b181db6"
+    },
+    {
+      "path": "Labs/ReachLab/test_live_storage.py",
+      "git_blob": "f91218d09474b4ac5a574e533b60127dead48e9b",
+      "bytes": 3013,
+      "sha256": "e5fba50b5b978faebe2da4527189c91841e1f20298a9af6c240e479423815080"
+    },
+    {
+      "path": "Labs/ReachLab/test_plan.cjs",
+      "git_blob": "2bae5c6bf01d0290d7370435ccb490d643383414",
+      "bytes": 6708,
+      "sha256": "11153476d72052b22685d930fccff5560e6dffdc98c48a75b946e2040a984e24"
+    },
+    {
+      "path": "Labs/ReachLab/test_rotation.cjs",
+      "git_blob": "75e39d8009f491d91f5305b3801fc15d4a770be4",
+      "bytes": 5000,
+      "sha256": "5a45f334e4ce665417469f73590b1d59b33028626e2d01f13e0479f3c73afb9f"
+    },
+    {
+      "path": "Labs/ReachLab/test_sync_rotation.cjs",
+      "git_blob": "d076d238e4ba1e8c95107866ac3ab7586b7e3a86",
+      "bytes": 6527,
+      "sha256": "656b143ce527d4a30dd59ac490c84cdbe7b19e7665a3635f8a73e2c8604c453d"
+    },
+    {
+      "path": "Labs/ReachLab/test_ui.cjs",
+      "git_blob": "063029cf3e46694279cb545e2664333150662ae4",
+      "bytes": 4388,
+      "sha256": "56b227a9148e5ff32cad9c87a8f93339eef2a14ec947f49d9e3f30827ee45a58"
+    },
+    {
+      "path": "Labs/ReachLab/test_workspace.cjs",
+      "git_blob": "f5a673795569e7f4b579d3b6351424d8ff94bf69",
+      "bytes": 7883,
+      "sha256": "11741bed9d253452516ebf03297e1d41b921325e9fd577bfa80225fc9481f750"
+    },
+    {
+      "path": "Labs/ReachLab/test_wrist.cjs",
+      "git_blob": "7a2eb8c9d865da6cb07f485929e283d8150e8e86",
+      "bytes": 966,
+      "sha256": "f1232c15a2accdb427648156813c5a706c302bdc3b95e14277b13f859fb32514"
+    },
+    {
+      "path": "Labs/ReachLab/test_wrist_twist.cjs",
+      "git_blob": "3414932fa7018b04e113336ec62f5c304dd7d39c",
+      "bytes": 1457,
+      "sha256": "7aa3e55c50ab47714fe4a62c831fb2555856602c4e95c8325a765888d31573ed"
+    },
+    {
+      "path": "Labs/ReachLab/workspace.js",
+      "git_blob": "562f009fa66f61a5bdea9f9299f89d3134c94622",
+      "bytes": 10754,
+      "sha256": "3a2766006bc575459faeca623dd3703ef47d4382d72ab2ddc0a1bf3949c96bb9"
+    },
+    {
+      "path": "Labs/ReachLab/wrist.js",
+      "git_blob": "1b9949bdd7887c4b5ed3c99c7dae6357c1410546",
+      "bytes": 5651,
+      "sha256": "22311fc7aae43c81cfdfa89fce27accf0e20d26bb50f760bb3fb39f0ec19009c"
+    },
+    {
       "path": "Labs/SwordHolsterLab/.gitignore",
       "git_blob": "e3e4f89f5f1a1f57ddf029cff93fc877d6aee9fe",
       "bytes": 92,
@@ -14502,6 +14892,24 @@
       "sha256": "e0d768a1caa558b713cdb4b7cea4ea6f03060e60e645391e74341cf1cd1a4a66"
     },
     {
+      "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyExplosion.inl",
+      "git_blob": "6c2acadfc938a34d6f92587e769df0896ce982a0",
+      "bytes": 6230,
+      "sha256": "2b897c50ebf2d98baf5e44a5b5d54fde3eaa29a99b0f1a1af5c9cc71e3b6a327"
+    },
+    {
+      "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyExplosionKernel.h",
+      "git_blob": "33b28f84f45c9c8850856560234734ce2f9a6f3f",
+      "bytes": 8807,
+      "sha256": "c69a2b968196dac631cc4f25502a67bd2954be0c696e69eb58edb1ae1a2f86dd"
+    },
+    {
+      "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyExplosionReceiverComponent.cpp",
+      "git_blob": "733b1030062e44b1ef5828fba23dea57fed05684",
+      "bytes": 1827,
+      "sha256": "70ad60211a15d96f3eb7a6a26520887657da7ab2a9258e0650f0e5455552ad35"
+    },
+    {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltArmMotorSettings.inl",
       "git_blob": "a2d009352b25318fe0c8e849537f29bf6dbad272",
       "bytes": 6521,
@@ -14659,9 +15067,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/ProphecyJoltWorldSubsystem.cpp",
-      "git_blob": "4eb6062118a856a0da02cbdd8bdbb42c72b9a3bb",
-      "bytes": 233957,
-      "sha256": "98d051383c7ba1167b99e10a9637726f00dc29cc3d1a2cea829bcf120d1f5499"
+      "git_blob": "b361d8582f6bf96b01674fe3758a05d949513520",
+      "bytes": 234374,
+      "sha256": "8f799f3181c0d22743db39072bb3631b12c400a403018ba17252ff93a8759b2e"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Private/Tests/ProphecyJoltArmMotorTests.inl",
@@ -14778,6 +15186,18 @@
       "sha256": "9749dd5ed6fe0cc85ac35b6c3fdeaedc8e74ef624b4fc1c8663564dad5a0a8e0"
     },
     {
+      "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyExplosionLibrary.h",
+      "git_blob": "03c0100e2af9a582ade88e74d1b0d34727d304af",
+      "bytes": 3346,
+      "sha256": "54daebd0dec6b32c0793181c795e7b6c11e58ece66b86c459b14648f9ba19cc7"
+    },
+    {
+      "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyExplosionReceiverComponent.h",
+      "git_blob": "615623942065072017236cf59204d978a9ac76cf",
+      "bytes": 1953,
+      "sha256": "a2648a6095f8e9da249d99a1454305ee3b700ceacbed877619d2a608c4923e4a"
+    },
+    {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltAttackCollisionLibrary.h",
       "git_blob": "7c863a2b89e542c8957e7349acddcb310a7c14ba",
       "bytes": 544,
@@ -14851,9 +15271,9 @@
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJolt/Public/ProphecyJoltWorldSubsystem.h",
-      "git_blob": "b5d1b79bf77685df39112ffc8715d7b2d8466ce0",
-      "bytes": 29111,
-      "sha256": "9d86b2a4ad309ac18e71af40d2b89911980a9c412588fe2dd6cecbc827eb29e4"
+      "git_blob": "aa40c21586ca71a2a377881e02c871dd02e40568",
+      "bytes": 29155,
+      "sha256": "4f46719d98e4462fcfb16fadc7ce426ffa70a7c440e4e418650dadab7e4f7a31"
     },
     {
       "path": "Plugins/ProphecyJolt/Source/ProphecyJoltEditor/Private/ProphecyJoltComponentAuditCommandlet.cpp",
@@ -14911,9 +15331,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "8bb152362dc0252da4c559e87f821f18dd01e2f3",
-      "bytes": 233183,
-      "sha256": "40f52a8c9a1a0289442d42556bcb47869a3e72dc4d84c3635b2fd5d32e4bd03c"
+      "git_blob": "abd876be06cffe20b26aeb2e46141ea17386cd0f",
+      "bytes": 108355,
+      "sha256": "fb86bda573b74355c6732fc44394812ab76d236e73878140f534b0ae880bc1d8"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -31722,6 +32142,42 @@
       "sha256": "d3ba9df70eaae8d76e7fc46b3fbccf5902af22ff6493d52b2b084123b98c69e8"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyBombBake.cpp",
+      "git_blob": "af905d5b66ff6b922d2901f5f9ae7e341651da7d",
+      "bytes": 4204,
+      "sha256": "3f4762107f5a48f7b9b4a79a95aa2934b66cbfc33c314f55b2d993de9237d137"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyBombComponent.h",
+      "git_blob": "acea5d95bcffd217504efb959b3e9394d316f19d",
+      "bytes": 1700,
+      "sha256": "727099ba29dcbf869fd0d7a5568e1fa3abcc00bb84c2298b930b58cbfe1ea99a"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyBombFragmentFadeComponent.h",
+      "git_blob": "47f388a00d912a35a411a7b3f546314b09f402d9",
+      "bytes": 797,
+      "sha256": "0b7f299838210d30251709dae2dc7f7055004c7b0ed7b5e16355695d62fb45ce"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyBombFuseCurve.h",
+      "git_blob": "2d8193c251860b0bd1305c80434e255a20fa9b96",
+      "bytes": 1844,
+      "sha256": "8848c40220291c298b475e9394454191100658c6bf130d5365902d351a19a61a"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyBombGeometry.h",
+      "git_blob": "25a0336b5e8ae597835f181e19bed01bddc28b8c",
+      "bytes": 1573,
+      "sha256": "3c2a379324c4643c1f12416d08c1699adf26e96faa8c8baeba7c02d8c065e9f8"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyBombLibrary.cpp",
+      "git_blob": "ea84626e6bd93cb7877e0533ec07d4980308e438",
+      "bytes": 27852,
+      "sha256": "100bcc4ee145e2914ba70f4ce37b1815e32c98c95b3634909f294d4f681a6341"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecyBreathing.cpp",
       "git_blob": "e3e238577b0d4e6b433224c12c68327bfcf09832",
       "bytes": 10860,
@@ -32011,9 +32467,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyDoubleReachAnimInstance.cpp",
-      "git_blob": "e90d60a0cf9a18adb52bbff8079970083d6a1b54",
-      "bytes": 55628,
-      "sha256": "3439b6c123df0d519d6b452875fb3246067fd56745d86d0c68436fb40555eee4"
+      "git_blob": "2bd51f7974f9d603694baec5c4372f508b15797f",
+      "bytes": 56445,
+      "sha256": "add771f0660e6b0c2f4cfa383334c343a9c72b30d34cab5583773503f4bfb87e"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyDoubleReachBallTest.cpp",
@@ -32029,9 +32485,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyDoubleReachSolver.h",
-      "git_blob": "d73dd63011c6b5f84642d3166dcd2195812d72ec",
-      "bytes": 542,
-      "sha256": "126a34972acb6853683915f17028e46172a4114bbbbde3a16332eacef7bde3d0"
+      "git_blob": "75fca5a92efba883c36b100375190bc5419f9a58",
+      "bytes": 569,
+      "sha256": "1d053db11b1665d854a07f86dce0e6fc3202716780bc091eb4ccfe70017c8808"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyEditorAttackCache.inl",
@@ -33126,16 +33582,34 @@
       "sha256": "c366d80116860db40d42c651189783ec415f74826057269d1239ead424023957"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyReachArm.h",
+      "git_blob": "6315778eb4882366cb234a98908630ff4dca2cda",
+      "bytes": 8344,
+      "sha256": "74807c197b11e537309dee1982a213e5f983ba889351125cc3ef7f5d55dcbc0e"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecyReachLibrary.cpp",
-      "git_blob": "b3de4ba4da743fd75d5fd44412b72a941ba16803",
-      "bytes": 28356,
-      "sha256": "4c48c81e4184012b5cfc3d0747026c1d2d45fa84dd3578b0c5ff71c99be14f90"
+      "git_blob": "9ec92ecdc36088258c1027850634b3a1a1b1255a",
+      "bytes": 39283,
+      "sha256": "8528a58403b0412e4095ca606f164474025d7ee444875492b1e08483c12c8cd0"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyReachRuntime.h",
       "git_blob": "22360e4aa42132b6067cad98e79ac5e3d373b698",
       "bytes": 442,
       "sha256": "ff7ed4ff5cbdb5bda485360abd185614314a671675dcebdff3b91bcbc3036196"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyReachWristLimits.h",
+      "git_blob": "842414dd245ba4281c24b62e5d5f2f75d6629e62",
+      "bytes": 2225,
+      "sha256": "a36b4e7fad3628c8f91480a2435fd4fb29cd2ae8d3f24e7495146d8280533848"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyReachWristTwist.h",
+      "git_blob": "ae0f4c415b9d823759d9a9178e3806732b2faf30",
+      "bytes": 5817,
+      "sha256": "b35915f4314c950d2ef8b1519323101ceca495289d877db241b4f5b2a066cf0a"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyRealisticMode.cpp",
@@ -33403,9 +33877,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterRuntime.inl",
-      "git_blob": "8c57792ba662765f896c73743e009aa7099a920a",
-      "bytes": 47410,
-      "sha256": "0c0eabd581425dd735f51d7755179b6576ea60e7532cc03c14cabfb847e0dffe"
+      "git_blob": "7874e39e717fe3a94470391c03cd9ede367acf6a",
+      "bytes": 47761,
+      "sha256": "3926ad52d0b18297c437618c1843ade480e01955b97213ec013e72b4a76fab30"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecySwordHolsterSchedule.h",
@@ -33466,6 +33940,24 @@
       "git_blob": "8bc5311275bf8876a1a84fd655a264a12f7e59b4",
       "bytes": 4007,
       "sha256": "e941d380aff9094b3f55bd2e98fbf4ceef352d6ee909ea2b2861a22d39c23718"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyVDBLibrary.cpp",
+      "git_blob": "136d921e11ce137f922004bfafac87fbbeb3127a",
+      "bytes": 7669,
+      "sha256": "aead59c3e6a9726af3aaea6c5adf96ab0e1424c82abf0c24623f53b748ee628a"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyVDBPlaybackComponent.h",
+      "git_blob": "c4802e47ba37c92c9c24347e791df09187ce2753",
+      "bytes": 1000,
+      "sha256": "0603fcf9ec2d005b53f36bf9a608c162c57f47877457f352299fb4c1e251feba"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyVDBTiming.h",
+      "git_blob": "4b7c533f84735401edb2fcee9787b4b1066cc2c1",
+      "bytes": 1066,
+      "sha256": "dd4587ca2fb11b547072709fdf6fd18829b608d159ac5d8f40b546e9d8714362"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyWalkPinning.h",
@@ -33606,16 +34098,34 @@
       "sha256": "69362c85dc13a100a5d8be0cafcffdb317154fa22da553391f0484f64dd920bd"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecyReachCheckpointProbe.inl",
+      "git_blob": "31ba6837de953cb0655f2453cd80686a987bf49b",
+      "bytes": 4501,
+      "sha256": "b4cd856594d6470178ecbd8560f2f953f083c8dec23f6aee9b8d5971359541f2"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecyReachLabPortProbe.inl",
+      "git_blob": "bb1fd96205bc46b76c2cf93ac635b78e081481c5",
+      "bytes": 7299,
+      "sha256": "965244e34401685ef7172c279d179e714e0daa58acd0fd2933b01b9971c417cb"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyReachProbe.inl",
-      "git_blob": "b5ceeaf7b202cbce69595cee19adde7f70d7c326",
-      "bytes": 4625,
-      "sha256": "8133c148f732bdaf646617acef37e98527681e06fa9c71638a16e430b2d67a7c"
+      "git_blob": "40678d36982cf1d24e3e43fa1924d5f30709fe72",
+      "bytes": 5807,
+      "sha256": "313fcf21538d298763962bf4f54bf4a7b3bc122b18e07ec4fd818c240fefbb63"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyReachTests.inl",
       "git_blob": "d10da54ed2ab8cba5bfc2397bfa8f75ee14b5f53",
       "bytes": 6054,
       "sha256": "7d1ba250d80cf3058c96fd299354913d51a1444678f3d5e30052855c4d9a3046"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecyReachWristProbe.inl",
+      "git_blob": "eb5b0f8bdf331013404a899a157c49132303e349",
+      "bytes": 5416,
+      "sha256": "65be51cec19795b8d2ee734bbcac9926bd60d98d70fcf09b3027339ce0236507"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecySlashFastGeometryTests.inl",
@@ -33850,6 +34360,12 @@
       "git_blob": "89417c39148c571e1734d83107d266bb69d84194",
       "bytes": 11775,
       "sha256": "73b4e848b36e3c000369b27afe0568ceaf9f27408ca2eb7e098614855984560b"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Public/ProphecyBombLibrary.h",
+      "git_blob": "165e193505be5aad1918c80db65f1038dedb797f",
+      "bytes": 3020,
+      "sha256": "daf1e591808217ded22b35f2be1607e27408a7a237122cd0da74de55770f6849"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyBreathingLibrary.h",
@@ -34183,9 +34699,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyReachLibrary.h",
-      "git_blob": "07396f0264a02297fe0a44b818b51018c14cdb7b",
-      "bytes": 3274,
-      "sha256": "ad52662b8f4140ba2fadb670c07f866e2e0fc05a44e6fb893b128555cf777937"
+      "git_blob": "8ddf31d632e67b4f1f83e3d02f38247af107963d",
+      "bytes": 4808,
+      "sha256": "2a8a83506e4052cbda8bd71a4bcea8ea979053f8e0b1c13e6261313e1556efe8"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyRetractableSkeletalMeshComponent.h",
@@ -34294,6 +34810,12 @@
       "git_blob": "b3520632bb745ac876a8aaf9f5892fdc4f2c0435",
       "bytes": 981,
       "sha256": "93b3c1134ab9c7e2f2b4402870340bc082df10218440cf5eaa6d658682d704bc"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Public/ProphecyVDBLibrary.h",
+      "git_blob": "e04a8f2282a789163ee4f7e50b8b4f7aaf3b3d91",
+      "bytes": 1553,
+      "sha256": "61a737403e624cff9c34aab6b76998d71aac6f8472c41052b383614179d05cab"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyWalkPinningLibrary.h",
@@ -34441,9 +34963,9 @@
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyLiveAgentTypeRepair.inl",
-      "git_blob": "a508413787fe047a00c5f1221794a0893139fad5",
-      "bytes": 11488,
-      "sha256": "c4e70c28a196e5df5637906e7189bed2755454e7ad39419f461f5ec3a85f22a4"
+      "git_blob": "efff1b50c7dbeebe3b781ab23f219e017376e9f8",
+      "bytes": 11640,
+      "sha256": "52903ff5e853a404eb990d070cc571be232754a78cb2918d3d1b284212b54648"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyNeckRigSetup.cpp",
@@ -34468,6 +34990,12 @@
       "git_blob": "7fff663a2f4141290760a5b067843e4127cd148b",
       "bytes": 581,
       "sha256": "0521e7bf1ad68dcc1ccceb4c07a77cb928b645195bdbe8fce42e1c9067e2f476"
+    },
+    {
+      "path": "Source/ProphecyEditor/Private/ProphecyReachGrabFixture.inl",
+      "git_blob": "a94acadcdca4463043df90e032d9ffe9b2c20da0",
+      "bytes": 13080,
+      "sha256": "b97c6b4dcd9b213317b6f23f56dc8f1667bc61555d87e36dd98b8611d4969e47"
     },
     {
       "path": "Source/ProphecyEditor/Private/ProphecyRestoreHalfAttackBranch.cpp",
@@ -34938,6 +35466,72 @@
       "sha256": "4d50fcba02715e1680791dba707c82ed21894974aa600487f0798ab33981bb13"
     },
     {
+      "path": "Tools/BombFuse/BakeAssets.py",
+      "git_blob": "bc9b98ff1ffe5b24e12ac011fbbe01f241c340e6",
+      "bytes": 999,
+      "sha256": "fadf7b74dfe25285443b015d580c54aa79d8150abfb0b2f6d6b0a3e04a2c2eba"
+    },
+    {
+      "path": "Tools/BombFuse/BuildFlexibleRig.py",
+      "git_blob": "909ced7a8eb33b1b98bcf4b0ed489a9ae09404d6",
+      "bytes": 4206,
+      "sha256": "844e6cd8f1aee52efd3863827970407ecda0b27d4f16532a23373aaee5a15f09"
+    },
+    {
+      "path": "Tools/BombFuse/CreateFragmentFadeMaterial.py",
+      "git_blob": "5aa09317207e529b798c543ac7b6d5747914c1db",
+      "bytes": 3609,
+      "sha256": "6c2fdc0c1bef4b31abb4738c4742e4b31617ce998c03ee3cdcd22e5a92c40e1c"
+    },
+    {
+      "path": "Tools/BombFuse/CreateMaterial.py",
+      "git_blob": "36245c9af7bc5eec16d6d662e09fbcfd6f3d22a7",
+      "bytes": 2684,
+      "sha256": "5ea7176dc760f23c62fb90e175333b335f3703a4a9ad7c2b44908f3cbf449fa2"
+    },
+    {
+      "path": "Tools/BombFuse/ExportSource.py",
+      "git_blob": "b4321cad44dc0179bb6a48a2b2df1e3584b6ee32",
+      "bytes": 764,
+      "sha256": "36f94e07537028a11941af11f1652c7604939d718f3f710401613ab25014ecd6"
+    },
+    {
+      "path": "Tools/BombFuse/Geometry.json",
+      "git_blob": "43ad2db0bf5de27a3ef17bd7f91d579630496f31",
+      "bytes": 1150471,
+      "sha256": "914a1b7fc71f81a823fad90191dd96aa7146516abd2ae4decd7bed1d8a97a2ec"
+    },
+    {
+      "path": "Tools/BombFuse/ImportFlexibleRig.py",
+      "git_blob": "f718cd2a28b2cc4085ea89575e5be67246b58555",
+      "bytes": 2042,
+      "sha256": "61771d04ba6bf78dcdec3f3f0459efaa6711549ee92e51bd4c9399c1f888643b"
+    },
+    {
+      "path": "Tools/BombFuse/PrepareGeometry.py",
+      "git_blob": "7dd0905b3f69ab60fe292d1f1c3c557afd079d0a",
+      "bytes": 3334,
+      "sha256": "9bc7d8d16334adf6698b0bee606075f396e964a7377e91dc7f8496eb1c428fc0"
+    },
+    {
+      "path": "Tools/BombFuse/ProbeFlexible.py",
+      "git_blob": "f404579763f71d26d732009f576ce27490bce414",
+      "bytes": 6771,
+      "sha256": "c3357ee9ff07707fe3771bbc30ddce4b3c31e86f170d751982b46576adada662"
+    },
+    {
+      "path": "Tools/BombFuse/VerifyFragmentFade.py",
+      "git_blob": "c2a25934e4db1e19cc62bda3a4fa52b7735d2be3",
+      "bytes": 4830,
+      "sha256": "c71ef46166781d2620d5ed2a4ead917b832b0dc683a7377b6b909be4f86c48bf"
+    },
+    {
+      "path": "Tools/BombFuse/VerifyMaterial.py",
+      "git_blob": "cb21df72c720a89cb8a299ae5ca8a1462cba49c1",
+      "bytes": 4440,
+      "sha256": "49f903913e64c79edbb267db38b28f6765fa3431fd45469507158e54df043d39"
+    },
+    {
       "path": "Tools/Build/DynamicMemoryScheduler.cs",
       "git_blob": "2723d91c08d9eaee5a80b7e5cb864243f44b49c4",
       "bytes": 3610,
@@ -34972,6 +35566,12 @@
       "git_blob": "ba26ff67ae4e7887428b1ca6f7a8fcb17b41f306",
       "bytes": 3514,
       "sha256": "8d474a2d81ee9d6d5d53ac17d4ca419938ecf9af2e7d0e847d1f937c61cee183"
+    },
+    {
+      "path": "Tools/ExplosionImpact/VerifyLive.py",
+      "git_blob": "39c824e668557e2fbbd6c3f0266fd8917e5beb41",
+      "bytes": 5024,
+      "sha256": "32269685d35b39feb15e9635e29e26a60eedb3cb1ea2e927219aa0536d471c77"
     },
     {
       "path": "Tools/HolsterStrap/AnalyzeBending.py",
@@ -36648,6 +37248,12 @@
       "sha256": "b1731f0b430092e234cae38237d66420ccc987b504c32c850f6b7dc5c13f316f"
     },
     {
+      "path": "Tools/ReachGrasp/CaptureLabScenario.py",
+      "git_blob": "c0e942ab677b278641f8c515d808a1e548675bfd",
+      "bytes": 1726,
+      "sha256": "d1412af671bc331e3aced7dacfd0a8036e41e320debe0476f5480bcdfee65d19"
+    },
+    {
       "path": "Tools/ReachGrasp/DetailBoundaries.py",
       "git_blob": "d10c80a21cbe1e5fc476bed630e8b32cb7ca03e4",
       "bytes": 1270,
@@ -36676,6 +37282,18 @@
       "git_blob": "cf50721debfbeff52086cba087ae6fab270331ce",
       "bytes": 10379,
       "sha256": "2d0019b1a48e4931a5cad84e075ab96a515509bc5fcd21f8a7c94c3afa63ffd5"
+    },
+    {
+      "path": "Tools/ReachGrasp/VerifyLabPort.py",
+      "git_blob": "5599850c8811bb96676ab77c2c6414fb5e54475a",
+      "bytes": 6434,
+      "sha256": "bbfc4f575fa7fdfb2111f49bab15659fd6ef164bcca1be43a5778f0430efbeb0"
+    },
+    {
+      "path": "Tools/ReachGrasp/VerifyWristPHAT.py",
+      "git_blob": "b316fa6572e5d83aa4b934ebe466c5569f535ad1",
+      "bytes": 6898,
+      "sha256": "edde90f6e0d3a3bea04245fde5fdafa2a53fa957d97b9ba7d9583fefff0dfdae"
     },
     {
       "path": "Tools/Recoveries/PrepareRecoveryRetarget.py",
@@ -37666,6 +38284,12 @@
       "git_blob": "ed08e3e4cb21e9528aecc64c76586f9716b3ee1a",
       "bytes": 7890,
       "sha256": "8297aaa48cc8cb22b2660682d4b2b21668dfa604eb13b5d2061400fe2bd5ea87"
+    },
+    {
+      "path": "Tools/SwordHolster/VerifyWristLimits.py",
+      "git_blob": "694f48a35f26b9e6eef088070b5d5a3e65a73b9a",
+      "bytes": 6201,
+      "sha256": "cb42b8a56b14ed22e486de597a85f99bb0d329c0280092fccb7cbbfc0977769d"
     },
     {
       "path": "Tools/SwordHolster/export_accepted.cjs",

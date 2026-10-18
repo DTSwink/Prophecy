@@ -1,0 +1,77 @@
+{
+  "schema": 2,
+  "resetDefaults": {
+    "schema": 1,
+    "coordinateSpace": "Absolute lab XYZ; centimetres and degrees; qZ*qY*qX",
+    "capturedAt": "2026-10-15T14:05:49.728044+00:00",
+    "hands": [
+      {
+        "target": [
+          13,
+          60,
+          125
+        ],
+        "rotation": [
+          180,
+          0,
+          90
+        ]
+      },
+      {
+        "target": [
+          -14,
+          47,
+          125
+        ],
+        "rotation": [
+          0,
+          0,
+          -90
+        ]
+      }
+    ]
+  },
+  "hands": [
+    {
+      "enabled": true,
+      "target": [
+        46.1457857009227,
+        44.50380721911126,
+        41.46815503897271
+      ],
+      "rotation": [
+        180,
+        0,
+        90
+      ],
+      "orientation": "surface",
+      "grab": true,
+      "radius": 3.000000865373165,
+      "speed": 120,
+      "rotationSpeed": 180
+    },
+    {
+      "enabled": true,
+      "target": [
+        -14,
+        47,
+        125
+      ],
+      "rotation": [
+        0,
+        0,
+        -90
+      ],
+      "orientation": "surface",
+      "grab": true,
+      "radius": 2.9999991394378482,
+      "speed": 120,
+      "rotationSpeed": 180
+    }
+  ],
+  "phat": true,
+  "closure": 8,
+  "grip": 6,
+  "syncRotation": 0.8199999928474426,
+  "elbowDownBlend": 0
+}

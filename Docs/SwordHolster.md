@@ -1432,6 +1432,42 @@ The first crowd run exposed a stalled NPC: the hand reached its authored target,
 
 After the correction all three agents complete S and D at saved tuning. Kinematic and Sim both slide for31ticks. Sim sheath entry is at50/51/52 across agents versus51/52/52 in the matching kinematic capture; drawing completion is identical469/470. Body return begins20ticks into S at insertion.705333965 and28ticks into D at.903225806; the hand joint remains until slide end. Maximum authored grip error after slide entry in this setup is.142cm kinematic/.282cm Sim. The same sword actor, axial scale, holster parenting, collision restoration and joint cleanup remain.
 
+### Right wrist limits during D/S (October15 follow-up)
+
+At the user's request, the existing scoped neck/head snapshot now also selects
+the `hand_r`–`lowerarm_r` joint (either connectivity order). All three angular
+motions become Free on physical D/S admission and remain Free through the full
+arm/head return. Completion and the existing interruption cleanup restore the
+exact entry swing/twist motions and angles, including custom or already-Free
+settings. Repeated requests retain the original snapshot. Other joints, linear
+anchors, drives and the saved PHAT are unchanged. Mode transfer restores before
+backend teardown and re-applies on physical rebind while the action is active.
+
+The retained snapshot type/map/inline capacity are unchanged; the fourth joint
+uses the existing array's heap overflow. This is an implementation-only Live
+Coding change. `Tools/SwordHolster/VerifyWristLimits.py` checks full S/D returns,
+repeat requests and hide during either return using owned PIE instances, with
+optional custom wrist settings. It temporarily skips the two-ball fixture only
+on the PIE player; it does not edit/save the user's Blueprint or map.
+
+**Verified:** four owned-PIE checks pass (498 sampled action/completion checks):
+complete D/S with existing and custom entry wrist limits, plus hide during each
+return with custom limits. Complete cycles sample38 D-return ticks and50 S-return
+ticks each; every active wrist is Free and all six entry fields restore exactly.
+Custom entry is Limited17 / Locked11 / Free8, proving restoration does not replace
+the snapshot with PHAT defaults. Repeated requests during return preserve the
+snapshot; every unrelated joint remains unchanged. Existing native batched apply
+mirrors UE profiles only after a successful Jolt update.
+
+The current user graph starts S during initialization, so the probe waits for that
+scene action to finish, then captures the baseline and runs its controlled D/S
+pair. Earlier probe setup/timing failures were corrected without changing runtime
+code or the user graph. Evidence: `Saved/Diagnostics/SwordWristLimits20261015/`.
+Live Coding succeeded in268.36s after memory-related retries; patch18 reload
+reported no object changes. No restart or asset save. Final TestNN/outside Play,
+no dirty packages, full Blueprint graph byte-identical, reflection status3 with
+native_properties0/pin_types0. Normal DLLs remain stale; build before cold launch.
+
 ### Neck/head limits during D/S (October11 follow-up)
 
 EventGraph `SetUseAuthoredAngularLimits(false)` disables all angular limits after `begin_f2`, but the connected `tick debugging` chain later calls `ResetPhysicalJointAngularLimits` on `neck_01`, `neck_02`, and `head` (nodes94,96,82). Reset means restore PHAT defaults; the active neck/head joints are Limited30/20/20 while the right-arm joints are Free. This is not a failure of the global disable node.

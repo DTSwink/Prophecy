@@ -1,0 +1,7 @@
+bin/
+__pycache__/
+*.log
+current_view.json
+current_view.png
+desktop_session.json
+session.json

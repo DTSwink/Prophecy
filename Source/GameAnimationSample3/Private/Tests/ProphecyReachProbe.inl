@@ -2,6 +2,9 @@
 #include "HAL/IConsoleManager.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "ProphecyReachWristProbe.inl"
+#include "ProphecyReachLabPortProbe.inl"
+#include "ProphecyReachCheckpointProbe.inl"
 
 // Explicit, read-only numerical capture. No polling or shipping-runtime instrumentation.
 static FAutoConsoleCommandWithWorldAndArgs ReachInspectCommand(TEXT("Prophecy.Reach.Inspect"),
@@ -10,6 +13,21 @@ static FAutoConsoleCommandWithWorldAndArgs ReachInspectCommand(TEXT("Prophecy.Re
     {
         using namespace ProphecyReach;
         if(!World)return;
+        if(Args.Num()&&Args[0]==TEXT("WristMath")){VerifyReachWristMath();return;}
+        if(Args.Num()&&Args[0]==TEXT("LabPort")){VerifyReachLabPort();return;}
+        if(Args.Num()&&Args[0]==TEXT("Wrists")){InspectReachWrists(World);return;}
+        if(Args.Num()&&Args[0]==TEXT("Checkpoint")){ExportReachCheckpoint(World);return;}
+        if(Args.Num()&&Args[0]==TEXT("WristClone"))
+        {
+            // Explicit diagnostic only: a transient copy avoids Content Browser
+            // duplication dialogs, package writes and undo-buffer clearing.
+            for(const auto& Entry:States)if(auto* A=const_cast<AProphecyAgent*>(Entry.Key.Get());A&&A->GetWorld()==World&&A->IsPlayerControlled()&&A->GetSimulationMode()==EProphecyAgentSimulationMode::Kinematic)
+            {
+                auto* Mesh=A->GetPoseReferenceMesh();auto* Clone=DuplicateObject<UPhysicsAsset>(Mesh->GetPhysicsAsset(),GetTransientPackage());
+                Clone->SetFlags(RF_Transient);Mesh->SetPhysicsAsset(Clone,false);return;
+            }
+            return;
+        }
         FProphecyJoltWorldDiagnostics D;
         if(auto* W=World->GetSubsystem<UProphecyJoltWorldSubsystem>())W->GetDiagnostics(D);
         FString CSV=FString::Printf(TEXT("joints,%u,suppressed_pairs,%u\nagent,side,bone,model_x,model_y,model_z,actual_x,actual_y,actual_z,collider_distance_cm\n"),D.GenericJointCount,D.SuppressedBodyPairCount);

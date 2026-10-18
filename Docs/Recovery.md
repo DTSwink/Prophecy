@@ -1,5 +1,20 @@
 # Restoring Prophecy
 
+## October 18 source-only follow-up
+
+The reach/grab lab and native pipeline, explosion wave/impact event, VDB playback,
+and bomb fuse/fragment/fade source and preparation tools are included in this
+follow-up. It does not capture the current editor's unsaved assets, Niagara tuning,
+maps, PHAT edits, or generated bomb/VDB content. Restore the external ZibraVDB
+plugin and source content before using the documented preparation scripts in
+Tools/BombFuse; inspect Docs/BombFuse.md and Docs/ZibraExplosionFade.md first.
+Build normal Editor DLLs before loading the newer Blueprint APIs; Live Coding
+patches are not a replacement-machine backup. Reach lab code, defaults, exported
+hand data and test-required recorded fixtures are included; other historical
+captures and preview screenshots remain local. Other robotics/training work in progress
+is outside this follow-up. Earlier recovery milestones below describe their own
+saved assets and validation, not the current editor state.
+
 This snapshot, updated through the October 9, 2026 FK-return and collision recovery
 milestone, is a source and authored-setup backup on
 `DTSwink/Prophecy`, branch `codex/standalone-sim`. It does not contain the entire

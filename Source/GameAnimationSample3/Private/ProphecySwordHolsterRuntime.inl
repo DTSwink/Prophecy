@@ -35,7 +35,8 @@ static bool EndAttachedArm(const AProphecyAgent* A,FString& Error);
 struct FRequest { bool Sheathe;float Reach,Rotation,Sliding;ProphecySwordHolsterPose::FEntryPose Before;uint64 SampleTick=0; };
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FRequest> Pending;
 static TMap<TWeakObjectPtr<const UProphecySwordComponent>,FVector> AssetScales;
-// Entry/exit only. Separate new storage keeps the already-live FState layout intact.
+// Entry/exit only. Neck/head and right wrist share the complete D/S lifetime.
+// Preserve this retained storage layout; a fourth joint spills beyond the inline capacity.
 struct FNeckLimit
 {
     FName Joint,Bone1,Bone2;
@@ -54,12 +55,15 @@ static bool ApplyNeckLimits(AProphecyAgent* A,bool Free,FString& Error)
     JointProfiles.Reserve(Mesh->Constraints.Num());
     for(const auto* Joint:Mesh->Constraints)
     {
-        if(!Joint){Error=TEXT("Missing physical joint while changing D/S neck limits");return false;}
+        if(!Joint){Error=TEXT("Missing physical joint while changing D/S angular limits");return false;}
         auto& P=JointProfiles.Add_GetRef(Joint->ProfileInstance);
         if(Free)
         {
             const auto IsNeck=[](FName Bone){return Bone==TEXT("neck_01")||Bone==TEXT("neck_02")||Bone==TEXT("head");};
-            if(!IsNeck(Joint->ConstraintBone1)&&!IsNeck(Joint->ConstraintBone2))continue;
+            const bool IsRightWrist=
+                (Joint->ConstraintBone1==TEXT("hand_r")&&Joint->ConstraintBone2==TEXT("lowerarm_r"))||
+                (Joint->ConstraintBone2==TEXT("hand_r")&&Joint->ConstraintBone1==TEXT("lowerarm_r"));
+            if(!IsRightWrist&&!IsNeck(Joint->ConstraintBone1)&&!IsNeck(Joint->ConstraintBone2))continue;
             Captured.Add({Joint->JointName,Joint->ConstraintBone1,Joint->ConstraintBone2,
                 P.ConeLimit.Swing1Motion.GetValue(),P.ConeLimit.Swing2Motion.GetValue(),P.TwistLimit.TwistMotion.GetValue(),
                 P.ConeLimit.Swing1LimitDegrees,P.ConeLimit.Swing2LimitDegrees,P.TwistLimit.TwistLimitDegrees});
@@ -86,7 +90,7 @@ static bool ApplyNeckLimits(AProphecyAgent* A,bool Free,FString& Error)
 }
 static void RestoreNeckLimits(AProphecyAgent* A)
 {
-    FString Error;if(!ApplyNeckLimits(A,false,Error))UE_LOG(LogTemp,Warning,TEXT("Sword holster neck limits restore: %s"),*Error);
+    FString Error;if(!ApplyNeckLimits(A,false,Error))UE_LOG(LogTemp,Warning,TEXT("Sword holster angular limits restore: %s"),*Error);
 }
 static FDelegateHandle Cleanup;
 static void EnsureCleanup()
@@ -553,7 +557,7 @@ bool UProphecySwordComponent::StartHolster(bool Sheathe,float Reach,float Rotati
     if(!S.Kinematic && !ProphecyLimbCollision::SetHolsterArmSuppressed(A,true,CollisionError))
     {if(Sheathe&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster collision admission: %s"),*CollisionError);return false;}
     if(!S.Kinematic&&!ApplyNeckLimits(A,true,CollisionError))
-    {RestoreActionPhysics(A);if(Sheathe&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster neck limits admission: %s"),*CollisionError);return false;}
+    {RestoreActionPhysics(A);if(Sheathe&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster angular limits admission: %s"),*CollisionError);return false;}
     if(!S.Kinematic&&!SetHeadClavicleSuppressed(A,true,CollisionError))
     {RestoreActionPhysics(A);if(Sheathe&&!S.RestoreSimulation)SetSimulated(false);UE_LOG(LogTemp,Warning,TEXT("Sword holster head collision admission: %s"),*CollisionError);return false;}
     const FTransform Full=S.Reference.Seated*S.Reference.Holster->GetComponentTransform();

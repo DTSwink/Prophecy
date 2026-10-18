@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "coordinateSpace": "Absolute lab XYZ; centimetres and degrees; qZ*qY*qX",
+  "capturedAt": "2026-10-15T14:05:49.728044+00:00",
+  "hands": [
+    {
+      "target": [
+        13,
+        60,
+        125
+      ],
+      "rotation": [
+        180,
+        0,
+        90
+      ]
+    },
+    {
+      "target": [
+        -14,
+        47,
+        125
+      ],
+      "rotation": [
+        0,
+        0,
+        -90
+      ]
+    }
+  ]
+}

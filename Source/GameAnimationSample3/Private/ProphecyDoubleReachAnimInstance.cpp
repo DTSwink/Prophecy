@@ -217,6 +217,7 @@ bool AreBodyParametersNearlyZero(const FBodyParameters& Parameters)
 
 struct FArmSpec
 {
+	double ElbowDownBlend = 1.0;
 	double Sign = 1.0;
 	EJoint Clavicle = EJoint::ClavicleL;
 	EJoint Shoulder = EJoint::UpperArmL;
@@ -368,6 +369,18 @@ FVector PreferredBend(const FArmSpec& Spec, const FVector& Direction)
 				* SmoothStep(0.0, 0.15, MinimumOutward - OutwardAmount);
 			Bend = SafeNormal(Bend * (1.0 - Weight) + Canonical * Weight, Canonical);
 		}
+	}
+	// Favour a lower elbow, retaining some outward preference in front and
+	// the established side/back solution; fade out near vertical reaches where
+	// projecting down becomes ambiguous. X is lateral, Y forward, Z up here.
+	const double Horizontal = FMath::Sqrt(Direction.X * Direction.X + Direction.Y * Direction.Y);
+	const double Relax = (1.0 - 0.3 * SmoothStep(0.0, 0.65, Direction.Y))
+		* SmoothStep(0.25, 0.65, Horizontal) * Spec.ElbowDownBlend;
+	if (Relax > 0.0)
+	{
+		const FVector Down = -FVector::UpVector + Direction * Direction.Z;
+		const FVector Relaxed = SafeNormal(Down + OutwardProjected * 0.2, Bend);
+		Bend = SafeNormal(Bend * (1.0 - Relax) + Relaxed * Relax, Bend);
 	}
 	return Bend;
 }
@@ -1158,7 +1171,7 @@ TConstArrayView<FName> ProphecyNativeReach::BoneNames()
 
 bool ProphecyNativeReach::Step(TConstArrayView<FTransform> Base, EProphecyDoubleReachMode Mode,
     const FVector (&Requested)[2], const float (&Speed)[2], FState& State,
-    TArray<FTransform>& Output, double Dt)
+    TArray<FTransform>& Output, double Dt, double ElbowDownBlend)
 {
     using namespace ProphecyDoubleReach;
     if (Base.Num() != JointCount || Dt <= 0) return false;
@@ -1172,6 +1185,7 @@ bool ProphecyNativeReach::Step(TConstArrayView<FTransform> Base, EProphecyDouble
     for (int K=0; K<2; ++K)
     {
         Source.Arms[K]=MakeArmSpec(Source,K==0);
+        Source.Arms[K].ElbowDownBlend=FMath::Clamp(ElbowDownBlend,0.0,1.0);
         Source.Legs[K]=MakeLegSpec(Source,K==0);
     }
     FVector Targets[2];
