@@ -37,12 +37,17 @@ class Dashboard:
                      '0_Main/Train_Episode_Length':('episode/train_seconds',1/30),
                      '0_Main/Test_Episode_Length':('episode/test_seconds',1/30),
                      'Misc/Actor_Loss':('optimizer/actor',1),
-                     'Misc/Critic_Loss':('optimizer/critic',1),'health/numerical_failure':('health/numerical_failure',1)}
+                     'Misc/Critic_Loss':('optimizer/critic',1),'health/numerical_failure':('health/numerical_failure',1),
+                     'health/solver_roundoff_warnings':('health/solver_roundoff_warnings',1)}
+            for tag in ('solver_convergence_warnings','solver_motor_residual_nm','solver_contact_limit_velocity_residual'):
+                mapping['health/'+tag]=('health/'+tag,1)
+            for tag in ('policy_kl','policy_kl_proposed','actor_steps_accepted','actor_steps_rejected','actor_full_rollback','actor_learning_rate'):
+                mapping['Misc/'+'_'.join(x.capitalize() for x in tag.split('_'))]=('optimizer/'+tag,1)
             if run['objective']=='world_pose_mse':
                 mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','orientation_mse','body_pose_mse','head_height_band','pelvis_height_band','feet_lateral','termination_remaining','total')})
-            if run['objective'] in ('absolute_walk_mse','uefn_omni_absolute_walk'):
-                mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','linear_velocity_mse','rotation_mse','angular_velocity_mse','total')})
-                mapping.update({'Misc/Phase_Prediction_Mse':('phase/prediction_mse',1),'Misc/Phase_Prediction_Weighted':('phase/weighted_loss',1)})
+            if run['objective'] in ('absolute_walk_mse','uefn_omni_absolute_walk','uefn_crawl_idle_mse'):
+                mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','linear_velocity_mse','rotation_mse','angular_velocity_mse','flat_com_velocity','pelvis_velocity_extra','auto_phase','body_total','total')})
+                mapping.update({'Misc/Auto_Phase_Mse':('auto_phase/mse',1),'Misc/Auto_Phase_Weighted':('auto_phase/weighted_loss',1)})
             composite=run['objective']=='timed_best_pose_tail'
             if composite:
                 mapping.pop('0_Main/Train_Return');mapping.pop('0_Main/Test_Return')

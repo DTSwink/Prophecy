@@ -40,11 +40,14 @@ def main():
     name = argv[argv.index('--name') + 1]
     assert name and all(c.isalnum() or c in '_-' for c in name)
     preflight = IDLE_CHECK + '\nassert not (r/"runs"/NAME).exists()\n'.replace('NAME', repr(name))
-    if '--omni-run-lr' in argv:
+    if '--omni-run-lr' in argv or '--equipment-omni' in argv:
         root=Path(__file__).resolve().parents[2]
         current={entry:hashlib.sha256(path.read_bytes()).hexdigest() for entry,path in runtime_files(root).items()}
         preflight+='\nimport hashlib\nfor entry,digest in '+repr(current)+'.items():\n    assert hashlib.sha256((r/entry).read_bytes()).hexdigest()==digest, "Stale UEFN runtime; deploy current source before training: "+entry\n'
     cloud.ssh('python -c ' + shlex.quote(preflight))
+    for helper in ('billing_stop.py','failure_stop.py'):
+        cloud.rp.scp(cloud.state()['connection'],Path(__file__).with_name(helper),
+                     '/workspace/mimickit_trial/pipeline/'+helper,timeout=45)
     if not args.keep_deadline:
         extend(time.time() + args.seconds)
     code = preflight + """
@@ -54,10 +57,19 @@ with open(r/(NAME+'.log'),'ab',buffering=0) as log:
     p=subprocess.Popen(cmd,stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
 receipt=dict(pid=p.pid,name=NAME,launched_unix=time.time(),command=cmd)
 (r/(NAME+'-launch.json')).write_text(json.dumps(receipt,indent=2))
+with open(r/(NAME+'-exit-guard.log'),'ab',buffering=0) as log:
+    guard=subprocess.Popen([str(r/'venv/bin/python'),str(r/'pipeline/failure_stop.py'),NAME],
+        stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+receipt['exit_guard_pid']=guard.pid
+(r/(NAME+'-launch.json')).write_text(json.dumps(receipt,indent=2))
 print(json.dumps(receipt))
 """.replace('ARGV', repr(argv)).replace('NAME', repr(name))
     receipt = json.loads(cloud.ssh('python -c ' + shlex.quote(code)))
     (cloud.OUT / (name + '-launch.json')).write_text(json.dumps(receipt, indent=2))
+    active=cloud.OUT/'active_run.json'
+    temporary=active.with_suffix('.tmp')
+    temporary.write_text(json.dumps(dict(run=name,pod=cloud.state()['pod_id'],**receipt)))
+    temporary.replace(active)
     print(json.dumps(receipt))
 
 

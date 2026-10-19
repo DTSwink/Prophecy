@@ -8,6 +8,7 @@ import subprocess
 import time
 import argparse
 import re
+from datetime import datetime
 import cloud
 from runtime_deadline import RuntimeDeadline
 from replay import convert
@@ -17,6 +18,14 @@ STEPPER=Path(r'C:/Users/singerie/Documents/Cursor/stepper')
 def atomic_json(path,data):
     path.parent.mkdir(parents=True,exist_ok=True)
     temp=path.with_suffix('.tmp');temp.write_text(json.dumps(data,separators=(',',':')));temp.replace(path)
+
+def publish_rollout(debug,payload):
+    """Keep every received capture before replacing the live pointer."""
+    archive=debug/f"rollout_step_{int(payload['step']):08d}.json"
+    if not archive.exists():atomic_json(archive,payload)
+    captured=datetime.fromisoformat(payload['computed_at']).timestamp()
+    os.utime(archive,(captured,captured))
+    atomic_json(debug/'last_batch_rollout.json',payload)
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--name',default='humanoid_walk_01')
@@ -47,11 +56,21 @@ def main():
                 if name.startswith('events.'):
                     with local.open('ab' if offset else 'wb') as f:f.write(data)
                 else:
-                    temp=local.with_suffix('.tmp');temp.write_bytes(data);temp.replace(local)
+                    temp=local.with_suffix('.part')
+                    with temp.open('ab' if offset else 'wb') as file:file.write(data)
+                    if item.get('complete',True):temp.replace(local)
+                if name=='replay.npz' and item.get('complete',True):
+                    publish_rollout(debug,convert(local,geom,run))
+                # Failed conversion must remain retryable on the next request.
                 seen[name]=dict(version=item['version'],size=offset+len(data))
-                if name=='replay.npz':
-                    atomic_json(debug/'last_batch_rollout.json',convert(local,geom,run))
             finished=(local_root/'finished.json').exists() or (local_root/'failure.json').exists()
+            warning=local_root/'solver_warnings.json'
+            if warning.exists() and (debug/'last_batch_rollout.json').exists():
+                detail=json.loads(warning.read_text())
+                payload=json.loads((debug/'last_batch_rollout.json').read_text())
+                if payload.setdefault('metadata',{}).get('solver_warning')!=detail:
+                    payload['metadata']['solver_warning']=detail
+                    atomic_json(debug/'last_batch_rollout.json',payload)
             alerts=[]
             for alert in ['failure.json','numerical_failure.json','backup_errors.json']:
                 if (local_root/alert).exists():alerts.append(dict(source=alert,detail=json.loads((local_root/alert).read_text())))
@@ -73,6 +92,7 @@ def main():
                 (debug/'training.active.json').unlink(missing_ok=True)
             atomic_json(cloud.OUT/(args.name+'-bridge-status.json'),dict(downloaded_bytes=downloaded,elapsed_seconds=time.time()-started,
                         updated_unix=time.time(),finished=finished,checkpoint_downloads=False))
+            (cloud.OUT/(args.name+'-bridge-error.txt')).unlink(missing_ok=True)
             if finished:break
         except Exception as error:
             (cloud.OUT/(args.name+'-bridge-error.txt')).write_text(f'{type(error).__name__}: {error}')

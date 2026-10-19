@@ -74,12 +74,19 @@ class Recorder:
     def start(self):
         self.count=0
         self.enabled=True
+        self.equipment_metadata={}
+        if getattr(self.env,'_equipment_conditioning',False):
+            motion=int(self.env._motion_ids[self.world])
+            self.equipment_metadata=dict(sword_drawn=bool(self.env._equipment[motion]),
+                arm_enabled=self.env._arm_enabled[self.world].cpu().tolist(),
+                idle_row=self.world<self.env._idle_rows,idle_rows=self.env._idle_rows,
+                motion_file=self.env._motion_lib.get_motion_file(motion),auto_phase_feedback=False)
         self.start_side=('back' if bool(self.env._starts_on_back[self.world]) else 'front') if hasattr(self.env,'_starts_on_back') else None
         # Called after the vanilla test reset. Initial reward may be from previous
         # episode; it is replaced with zero in the archive, never used for training.
         self.capture()
 
-    def finish(self, iteration, samples, extra_metadata=None):
+    def finish(self, iteration, samples, extra_metadata=None, _arrays_only=False):
         self.enabled=False
         if self.count<2:
             return None
@@ -108,6 +115,7 @@ class Recorder:
                 metadata['loss_aggregation']='minimum over starting pose and all 45 frames'
         if extra_metadata:
             metadata.update(extra_metadata)
+        metadata.update(getattr(self,'equipment_metadata',{}))
         arrays={}
         if self.phase_values is not None and self.phase_agent is not None:
             metadata['frame_phase']=self.phase_values[:n].cpu().tolist()
@@ -138,6 +146,13 @@ class Recorder:
             totals=terms.sum(axis=0)
             if hasattr(self.env,'replay_loss_metadata'):
                 metadata.update(self.env.replay_loss_metadata())
+                if 'target_radius_m' in metadata and 'target_deviation' in metadata:
+                    radii = metadata.get('target_radii_m', {})
+                    active_bodies = metadata.get('target_termination_bodies')
+                    metadata['target_deviation'] = dict(metadata['target_deviation'], radius_m=metadata['target_radius_m'],
+                        points=[dict(point, radius_m=radii.get(point['body'], metadata['target_radius_m']))
+                                for point in metadata['target_deviation']['points']
+                                if active_bodies is None or point['body'] in active_bodies])
                 metadata['rollout_losses']=dict(zip((*self.env.loss_term_names,'total'),[*map(float,totals),float(totals.sum())]))
             elif hasattr(self.env,'loss_term_names'):
                 names=self.env.loss_term_names
@@ -192,6 +207,19 @@ class Recorder:
                 metadata['loss_weights']=dict(early_pose=1.0,tail_mse=self.env.tail_multiplier,joint_velocity=self.env.tail_multiplier*self.env.tail_velocity_weight)
                 metadata['velocity_includes_pelvis']=self.env.include_pelvis_velocity
                 metadata['neutral_body_positions']=self.env._neutral_positions[0].cpu().tolist()
+        if self.phase_agent is not None and getattr(self.phase_agent._model,'_unit_phase',False):
+            phase=self.phase_values[:n].cpu().numpy()
+            weighted=((phase[:,2:4]-phase[:,4:6])**2).mean(-1)*self.phase_agent._phase_weight
+            weighted[0]=0
+            arrays['loss_terms']=np.column_stack((arrays['loss_terms'],weighted))
+            metadata['loss_term_names'].append('auto_phase')
+            metadata['loss_weights']['auto_phase']=self.phase_agent._phase_weight
+            metadata['rollout_losses']['auto_phase']=float(weighted.sum())
+            metadata['rollout_losses']['total']+=float(weighted.sum())
+            metadata['auto_phase_scope']='Supervised next-tick prediction at displayed state; clock input, no feedback'
+            if metadata.get('auto_phase_feedback'):
+                metadata['auto_phase_scope']='Next-tick phase feedback input; authored get-up target clock, then idle target follows prior-tick prediction'
+        if _arrays_only:return metadata,dict(pose=pose,data=data,**arrays)
         np.savez_compressed(temp,pose=pose,data=data,metadata=json.dumps(metadata),**arrays)
         temp.replace(self.directory/self.filename)
         return metadata

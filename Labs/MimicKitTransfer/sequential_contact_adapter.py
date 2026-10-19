@@ -171,8 +171,12 @@ class SequentialContactAdapter:
         p.nlimit=zero(n,int);p.limit_J=zero((n,nl,nv));p.limit_response=zero((n,nl,nv))
         p.limit_diagonal=zero((n,nl));p.limit_target=zero((n,nl));p.limit_compliance=zero((n,nl))
         p.limit_bilateral=zero((n,nl),int);p.limit_impulse=zero((n,nl));self.limitrows=zero((n,nl),int)
+        p.effective_normal_diagonal=zero((n,nc));p.effective_limit_diagonal=zero((n,nl))
+        p.block_metric=zero((n,nc,3))
         self.p=p; self.capacity=nc; self.error=zero(n,int); self.rowmap=zero((n,nc,3),int)
         p.solver_error=self.error;p.fallback_count=zero(n,int);p.fallback_steps=zero(n,int)
+        p.roundoff_warnings=zero(n,int);p.roundoff_delta=zero(n)
+        p.convergence_warnings=zero(n,int);p.convergence_metrics=zero((n,3))
         self.contactids=zero((n,nc),int)
         if manifolds:
             from contact_manifolds_gpu import allocate
@@ -183,9 +187,15 @@ class SequentialContactAdapter:
         self.inverse_kernel=make_inverse(nv); self.iterate_kernel=make_tiled_iteration(nv,p.nmotor)
         self.block_motors=block_motors
         if block_motors:
+            p.warm_state=zero(n,int);p.warm_status=zero((n,p.nmotor),int)
             from block_contact_gpu import make_block_iteration
-            self.block_kernel=make_block_iteration(nv,p.nmotor)
+            self.iterate_kernel=make_tiled_iteration(nv,p.nmotor,warm_start=True)
+            self.block_kernel=make_block_iteration(nv,p.nmotor,warm_start=True)
+            self.retry_seed_kernel=make_tiled_iteration(nv,p.nmotor,warm_start=True,retry=True)
+            self.retry_block_kernel=make_block_iteration(nv,p.nmotor,warm_start=True,retry=True)
             self.fallback_kernel=make_tiled_iteration(nv,p.nmotor,fallback=True)
+            from coupled_contact_gpu import allocate
+            self.coupled_problem,self.coupled_kernel,self.coupled_slots=allocate(p)
         self.installed=False
 
     def solve(self,m,d):
@@ -216,11 +226,17 @@ class SequentialContactAdapter:
         if p.manifold.enabled:
             from contact_manifolds_gpu import prepare,replace_point_friction
             prepare(p.manifold,p.ncontact,p.friction,m,d,p.inv,self.error,self.body_mass,self.body_inertia)
-            wp.launch(replace_point_friction,dim=(d.nworld,self.capacity,p.nv),inputs=[p.manifold,p.ncontact,p.friction,p.J,p.diagonal],device=dev)
-            wp.launch(prepare_response,dim=(d.nworld,self.capacity,3,p.nv),inputs=[p],device=dev)
+            wp.launch(replace_point_friction,dim=(d.nworld,self.capacity,p.nv),inputs=[p.manifold,p.ncontact,p.friction,p.J,p.diagonal,p.response],device=dev)
         if self.block_motors:
             wp.launch_tiled(self.iterate_kernel,dim=d.nworld,inputs=[p,self.seed_iterations],block_dim=32,device=dev)
             wp.launch_tiled(self.block_kernel,dim=d.nworld,inputs=[p,d.qM,self.identity,self.iterations,self.error],block_dim=32,device=dev)
+            wp.launch_tiled(self.retry_seed_kernel,dim=d.nworld,inputs=[p,self.seed_iterations],block_dim=32,device=dev)
+            wp.launch_tiled(self.retry_block_kernel,dim=d.nworld,inputs=[p,d.qM,self.identity,self.iterations,self.error],block_dim=32,device=dev)
+            # Resolve the simultaneous branch equations before the slow scalar
+            # safeguard. The common block path and physical parameters stay intact.
+            wp.launch_tiled(self.coupled_kernel,dim=self.coupled_slots,
+                            inputs=[p,self.coupled_problem,d.nworld],block_dim=64,device=dev)
+            # A finite budget miss is reported as a warning, not a run failure.
             wp.launch_tiled(self.fallback_kernel,dim=d.nworld,inputs=[p,3000],block_dim=32,device=dev)
         else:
             wp.launch_tiled(self.iterate_kernel,dim=d.nworld,inputs=[p,self.iterations],block_dim=32,device=dev)

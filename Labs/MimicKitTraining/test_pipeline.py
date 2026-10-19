@@ -115,6 +115,22 @@ class PipelineTests(unittest.TestCase):
             from replay import neutral_replay_message
             self.assertIn('training: not recorded',neutral_replay_message({},.25))
 
+    def test_replay_reciprocal_reward_excludes_auxiliary_phase(self):
+        from replay import convert_arrays
+        with tempfile.TemporaryDirectory() as d:
+            env=FakeEnv();r=Recorder(env,d);r.start()
+            env._done_buf[0]=1;env.step(.1);r.finish(0,512)
+            with np.load(Path(d)/'replay.npz') as z:
+                meta=json.loads(str(z['metadata']));pose=z['pose'];data=z['data']
+            meta.update(reward_from_loss='reciprocal_sum',loss_term_names=['position_mse','auto_phase'],auto_phase_scope='auxiliary')
+            terms=np.zeros((len(data),2));terms[1:]=[2.,100.]
+            data[1:,2]=1/3
+            geom=dict(names=['pelvis','head'],bones=[[0,1]],shapes=[])
+            result=convert_arrays(meta,pose,data,terms,geom,'test')
+            self.assertEqual(result['metadata']['evaluation']['frame_losses']['total'][-1],102.)
+            data[-1,2]=.9
+            with self.assertRaises(AssertionError):convert_arrays(meta,pose,data,terms,geom,'test')
+
     def test_training_capture_waits_for_reset_and_adds_no_steps(self):
         class Env(FakeEnv):
             _episode_length=.1

@@ -1,0 +1,20 @@
+{
+  "run": "20261019_101601_uefn_main_mixed_position_leeway_512",
+  "iteration": 47039,
+  "samples": 770703360,
+  "pod_id": "n5esp2rc3dvxc4",
+  "pod_status": "EXITED",
+  "checkpoint": {
+    "key": "mimickit/pipeline_20261014/runs/20261019_101601_uefn_main_mixed_position_leeway_512/checkpoint_0047039_final.zip",
+    "bytes": 49157256,
+    "sha256": "8313a3118a1553fe8df97ebbb008f15bfa43c28d9d1daefd8cc102706dbbe742",
+    "verified_unix": 1792405081.3785064
+  },
+  "training_source": {
+    "file": "training_source.zip",
+    "sha256": "73618ec950279eb97dd4cc1c9c6835d07da86f69d57449f396c3c81cfd00fe62",
+    "s3_key": "mimickit/pipeline_20261014/equipment/mixed-position-leeway/source_73618ec95027.zip"
+  },
+  "upstream_mimickit_commit": "2ed1e6c093bb0829f55d33cb4f7a1731cfe6cb69",
+  "physics_episode_state_saved": false
+}

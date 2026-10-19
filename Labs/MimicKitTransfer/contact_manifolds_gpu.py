@@ -51,7 +51,7 @@ def group_contacts(p:ContactManifolds,ncontact:wp.array(dtype=int),mu:wp.array2d
         for g in range(count):
             other=geom[p.first[w,g]]
             if pair[0]==other[0] and pair[1]==other[1]:
-                if wp.dot(normal,p.frame[w,g][0])<.99999:error[w]=6
+                if wp.dot(normal,p.frame[w,g][0])<.99999:error[w]=9
                 found=g
                 break
         if found<0:
@@ -125,7 +125,7 @@ def prepare_response(p:ContactManifolds,inverse:wp.array3d(dtype=float)):
 
 @wp.kernel(enable_backward=False)
 def replace_point_friction(p:ContactManifolds,ncontact:wp.array(dtype=int),friction:wp.array2d(dtype=float),
-                           jac:wp.array4d(dtype=float),diagonal:wp.array3d(dtype=float)):
+                           jac:wp.array4d(dtype=float),diagonal:wp.array3d(dtype=float),response:wp.array4d(dtype=float)):
     w,c,j=wp.tid()
     if c>=ncontact[w]:return
     g=p.group[w,c]
@@ -135,6 +135,8 @@ def replace_point_friction(p:ContactManifolds,ncontact:wp.array(dtype=int),frict
         return
     for axis in range(2):
         jac[w,c,axis+1,j]=p.J[w,g,axis,j]
+        # Same Jacobian and mass: reuse the response prepared for the manifold.
+        response[w,c,axis+1,j]=p.response[w,g,axis,j]
         if j==0:diagonal[w,c,axis+1]=p.diagonal[w,g,axis]
 
 

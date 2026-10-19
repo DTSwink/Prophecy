@@ -1,4 +1,4 @@
-"""Allocate/deploy only the explicitly approved one-hour <=$0.59 L4 trial."""
+"""Deploy the explicitly approved bounded L4 trial at <=$0.59/hour."""
 import argparse,hashlib,json,subprocess,tempfile,time,zipfile
 from pathlib import Path
 import cloud
@@ -8,13 +8,15 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('--hard-stop',type=float)
     parser.add_argument('--seconds',type=int,default=3600)
     parser.add_argument('--name',default=None)
+    parser.add_argument('--source',type=Path,default=None)
     args=parser.parse_args()
-    assert cloud.OUT.name in ('MimicKitOmni','MimicKitOmniRun','MimicKitNoArmature')
+    assert cloud.OUT.name in ('MimicKitOmni','MimicKitOmniRun','MimicKitNoArmature','MimicKitEquipment')
     seconds=args.seconds if args.hard_stop is None else int(args.hard_stop-time.time())
-    assert 300<seconds<=3600
+    ceiling_seconds=28800 if cloud.OUT.name=='MimicKitEquipment' else 3600
+    assert 300<seconds<=ceiling_seconds
     # Reject stale cached source before spending money. Historical checkpoint
     # archives remain immutable; generate the current package before deploying.
-    source=cloud.OUT/'source.zip'
+    source=args.source or cloud.OUT/'source.zip'
     root=Path(__file__).resolve().parents[2]
     with zipfile.ZipFile(source) as package:
         verify_package(package,root)
@@ -27,7 +29,7 @@ def main():
     (cloud.OUT/'guards.json').write_text(json.dumps(dict(local_guard=guard.pid)))
     cloud.connect();state=cloud.state()
     cloud.ssh('mkdir -p /workspace/mimickit_trial')
-    source=cloud.OUT/'source.zip'
+    source=args.source or cloud.OUT/'source.zip'
     cloud.rp.scp(state['connection'],source,'/workspace/mimickit_trial/source.zip',timeout=60)
     cloud.ssh('cd /workspace/mimickit_trial && python -m zipfile -e source.zip .')
     private=dict(pod_id=state['pod_id'],deadline_unix=hard-120,runpod_api_key=cloud.rp.load_api_key(),s3=cloud.credentials())

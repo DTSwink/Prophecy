@@ -1,6 +1,3581 @@
 # MimicKit humanoid trial
 
+## October19 - stopped at user request; final checkpoint preserved
+
+Owned L4 `n5esp2rc3dvxc4` gracefully saved its final evaluated checkpoint and
+is confirmed **EXITED**; GPU billing stopped. Run
+`20261019_101601_uefn_main_mixed_position_leeway_512` ended at update **47039**,
+**770,703,360 samples**. No new training is authorized by this stop/backup task.
+
+Final `checkpoint_0047039_final.zip` is verified in persistent S3 and downloaded
+to `Exports/MimicKitEquipment/20261019_stopped_47039/`. SHA256:
+`8313a3118a1553fe8df97ebbb008f15bfa43c28d9d1daefd8cc102706dbbe742`.
+That directory also preserves the exact deployed source package, a manifest
+and recovery notes for the requested Git backup. Optimizers, normalizers,
+counters, RNG, final replay/evaluation/configs and TensorBoard events are in
+the checkpoint; live simulator episode state is not. Retained pod disk remains
+intact. Subsequent sections describe the now-stopped experiment and history.
+
+## Current temporary workflow — configured native MJ is the default
+
+October18 user instruction: all subsequent training uses **configured native
+MJWarp** (`uefn_native_profile: native_runlr_soft_contact_20261018`) unless the
+user explicitly changes it. Do not require the user to repeat this. Disable
+custom bounded motors, custom Jolt contacts and floor-aware projection in
+training configs; retain240Hz physics/30Hz policy and existing gains/torque
+caps. Keep the custom solver available for an explicitly requested later
+transfer/fine-tune experiment; do not silently mix solvers. Native limits are
+still the documented spherical approximation, not exact Jolt parity.
+
+## October19 — left-foot bounce diagnosis (read-only; training unchanged)
+
+Follow-up clarification: user specifically asks passive rebound versus active
+lifting AFTER collision. Earlier motor-off-from-frame11 test changed approach
+and could not isolate that. Additional `--post-impact` forks preserve the
+recorded collision approach and exact qpos/qvel at12.0/12.375/12.5/13/13.25.
+At back-get-up12.5 (just after vertical velocity turns positive), normal foot
+rises4.59cm over next0.1s; disable left-leg motors ONLY then:0.138cm; all motors
+off:0.280cm. Removing just left-foot contact at12.375 prevents reversal despite
+normal motors. Thus the upward kick is a motor-driven push against ground,
+not a purely passive floor rebound or a free-space motor lift. By13.0 the kick
+has already happened: normal rise3.70cm versus3.62cm with left leg disabled,
+so subsequent airborne rise is mostly existing upward momentum. Front frame12
+small hop also requires actuation/contact; separate later front frame17 impact
+does rebound with motors off, so do not generalize to every collision.
+Evidence `post-impact.json` and `post-impact-traces.json`; no training changes.
+
+User noticed get-up left-foot bounce near frame12. Captured replay/checkpoint
+43833 /718,176,256 samples from current mixed-allowance run. Downloaded only
+that checkpoint for isolated CPU native-MuJoCo probes; no second cloud workload,
+no live trainer/physics/config changes. Local directory
+`Saved/MimicKitEquipment/left-foot-bounce`; helper `diagnose_left_foot_bounce.py`.
+Checkpoint SHA `c5e6439f54e346ee81c41e6ac586f43b5cc8231bee90269d8a51255b5417749f`.
+
+Reconstructed exact recorded world poses/velocities and policy inputs, including
+recorded feedback phase. CPU phase predictions match within1.8e-7; body mapping
+error below6e-7m. Independent one-tick native CPU predictions reproduce GPU
+left-foot height within4.74e-7m across frames9-20 for front/back.
+
+Forked recorded frame11 with identical recorded policy command sequence through
+frame19,240Hz/30Hz unchanged. Back get-up foot-origin rebound from local minimum:
+normal4.611cm; LEFT LEG motor gains/bias disabled0.420cm; all motors disabled
+0.560cm; contact damping doubled at fixed stiffness3.070cm. Damping probe uses
+solref(.00875,4) versus original(.0175,2), above2dt clamp. Therefore large rebound
+is predominantly driven by left-leg actuation interacting with contact, not
+simple passive restitution. Floor still contributes: normal sole penetration
+about1.2cm during impact and peak foot normal force684N. Left knee commanded
+about7.22rad/s near impact, with about123Nm while contact slows the joint;
+foot leaves floor around frame13.25. This does NOT establish an unstable motor
+implementation or justify changing gains: it is a diagnosed policy/contact
+interaction. No tuning performed. Raw substep traces and variant reports saved.
+
+## October19 — idle allowances plus 3cm locomotion allowance (current)
+
+Latest correction: locomotion also gets leeway, **0.03m isotropic on every
+body**. Idle/get-up keeps leg XY radius0.10m / Z half-height0.05m and all
+other bodies radius0.05m. Use squared excess distance only, original averaging
+and weights. Pelvis XY is still aligned away; only height contributes there.
+Current gait -1 chooses idle allowance; gait0/1 chooses locomotion sphere.
+Start again from preserved final43232 /708,329,472 samples, not either short
+allowance experiment. All other settings remain unchanged, including motion
+assets, configured native MJ, Adam moments/LR/KL, sampling and termination.
+
+Scripted `spherical_position_mse` implements locomotion. CPU tests passed
+axis and diagonal boundaries plus unchanged idle branch. Recorder metadata
+includes `scope: idle`, `locomotion_radius_m: 0.03`, original idle allowances
+and per-row idle membership. Audit recomputes the correct branch per row.
+Helper `restart_mixed_position_leeway.py`; source SHA
+`73618ec950279eb97dd4cc1c9c6835d07da86f69d57449f396c3c81cfd00fe62`
+verified in persistent storage. Brief idle-only run saved/stopped at final43260;
+new run deliberately loads the original final43232 instead (local and S3 SHA
+reverified). Active run `20261019_101601_uefn_main_mixed_position_leeway_512`,
+same owned L4 n5esp2rc3dvxc4, trainer3298/exit guard3299,
+bridge30316/dashboard16300. Fresh4h hard deadline **14:16:05 Warsaw October19**
+(1792412165.9907017),165s save reserve; both billing guards updated.
+New-window GPU ceiling$2.36. Receipts `mixed-position-leeway-*` in
+Saved/MimicKitEquipment. Source diff confirms only allowance code/config changed.
+Live check: restored both Adam states/normalizer and original708,329,472 count.
+First new checkpoint43233 persistently verified, SHA
+`e6d12c5f76d9b20c982ad1447e50d71b4bd2e740e290be7931468471f58917ec`.
+All20 replay rows independently recomputed from actual captured targets:
+10 idle/get-up rows use the larger allowances (max discrepancy2.98e-7);
+10 locomotion rows use the3cm sphere (max discrepancy2.24e-8).
+Evidence `mixed-position-leeway-live-verification.txt`. Intermediate experiments'
+final saves remain backed up, but neither contributes learned state to this run.
+
+## October19 — idle-only position allowances (superseded during handoff)
+
+Latest user correction rejects the all-row allowance run. Restart from the SAME
+preserved final43232 /708,329,472-sample checkpoint (SHA
+`efa5f216b18e2f0edadda0d0a9a102913ae67b39aae5aba31e523ae0b67ddaba`), not
+its newer descendants. Apply the allowances below only to idle command rows
+(gait -1), which includes normal idle and noisy-idle/get-up rows. Walk/run
+(gait 0/1) retain the exact original raw position MSE. Axes, allowances,
+weights, targets, optimizer, sampling and termination remain unchanged.
+
+Prepared config adds `position_mse_leeway.scope: idle`. OmniWalkEnv supplies
+the mask from the current motion's gait; recovery retains its idle motion
+assignment while tracking the separate get-up target. CPU checks cover
+reordered assignments and exact raw-MSE retention for locomotion. Recorder
+metadata includes scope plus per-row idle membership; audit recomputes both
+branches from recorded actual/target coordinates. Handoff helper
+`restart_idle_position_leeway.py`. Persistent source SHA
+`720a940c46508995ba94c63f0f5534ebd103bd94019b1f5f8f43f0a7545e5de9`.
+This intermediate correction launched `20261019_101243_uefn_main_idle_position_leeway_512`
+from the requested checkpoint, then was superseded by the 3cm locomotion
+correction above. Its brief learned continuation is not the new starting point.
+
+## October19 — position MSE allowances (all-row scope superseded)
+
+User requested position leeway and resume from latest. Training coordinates are
+world XY horizontal and Z vertical. Both thighs, shins and feet use distance
+outside a cylinder: horizontal radius 0.10m, vertical half-height 0.05m.
+Every other body, including pelvis, uses distance outside a 0.05m sphere.
+Only excess distance is squared, so loss is zero within the allowance and
+continuous at its boundary. Preserve mean over bodies / 3 components and all
+existing weights; no recalibration. Pelvis XY anchoring remains unchanged.
+Rotation, linear/angular velocity, COM, auto-phase, termination radii, sampling,
+Adam/LR/KL guard and configured native MJ remain unchanged. Applies to all rows.
+
+Implementation: scripted GPU helper `position_leeway_mse` in `absolute_walk.py`;
+explicit `--resume-position-leeway` config migration in `train.py`. Recorder
+receives actual adjusted per-tick losses and includes allowance/body metadata.
+CPU numerical checks passed for vertical axis, horizontal radial allowance,
+upper-body isotropy, boundary continuity, sign/XY-swap invariance and exact old
+MSE with zero allowance. No new physics passes or CPU transfers in training.
+Handoff helper `resume_position_leeway.py`; verified persistent source receipt
+`Saved/MimicKitEquipment/position-leeway-source-verified.json` (SHA
+`c88f629925d912d7bacfede280c6a78b696baa9470a2969d080f0210099fea13`).
+Only absolute_walk.py, train.py and the new env-config allowance differ from
+the prior source package; all other settings and motion assets match exactly.
+
+Resumed latest final43232 / 708,329,472 samples, preserved locally under
+`Saved/MimicKitEquipment/preserved-checkpoints/20261019_093131_uefn_main_front_foot_velocity_restored_512/`
+and S3 volume aj7d2jzwuq key
+`mimickit/pipeline_20261014/equipment/position-leeway/preserved_checkpoint_0043232_final.zip`.
+SHA `efa5f216b18e2f0edadda0d0a9a102913ae67b39aae5aba31e523ae0b67ddaba`;
+full persistent readback/local SHA and ZIP CRC verified. Both Adam states,
+normalizers and counters restored; new physical episodes as usual.
+
+Active run `20261019_095239_uefn_main_position_leeway_512`, owned L4
+n5esp2rc3dvxc4, trainer2854/exit guard2855, bridge15928/dashboard19600.
+Fresh4h hard deadline **13:52:43 Warsaw October19** (1792410763.2287066),
+165s final-save reserve, maximum GPU cost $2.36. Both billing guards updated.
+Training advanced to43243 /708,509,696 samples; last update1.689s (recent
+startup-inclusive mean1.778s). First new checkpoint43233 persistently verified,
+SHA `ccdd819aee4f0255f91714739b7f2811becdd6198aed9eee9ab2f5333d99a733`.
+Independent recomputation of all20 recorded rollout position losses from actual
+target/body world coordinates passed (maximum absolute discrepancy3.58e-7).
+Evidence `position-leeway-live-verification.txt`; dated TensorBoard run visible.
+
+## October19 — edited front get-up loaded; global velocity x2 reverted
+
+User edited getUp_front_quick.fbx right-foot ending and then requested also
+reverting the global x2 linear/angular velocity weights, resuming LATEST.
+This supersedes the weighting section below; keep the higher actor LR and
+KL allowance. Rebuilt front with the SAME deployed preparation scripts:
+anchor projection/conditional foot lift, then fixed-pole hand and foot IK
+for reset poses only. No abandoned arc cleanup or global pelvis shift.
+Staging `Saved/MimicKitEquipment/front-foot-update-20261019` includes source,
+conversion, target/reset banks and verification. Front remains47 frames/30Hz,
+1.533s; first generalized pose exactly unchanged. Final right-foot orientation
+differs19.7202degrees from the former target. Source FBX SHA
+`4d64945bd11df40b7b8b8f6bbce44b519567c48832cee96ca12b2d08ac2fd7f1`.
+Unchanged back rebuilt as a control: all three frame arrays exactly match the
+deployed back banks; package retains their original bytes. All other motion,
+physics, optimizer and curriculum files remain byte-identical. Original source
+FBX is untouched and included in the verified persistent update package.
+
+Linear weight restored6.598591780546371 ->3.2992958902731857; angular restored
+0.5427070962620917 ->0.27135354813104584 for every row. Whole environment config
+matches the pre-x2 config exactly. Existing get-up-only pelvis emphasis2x is
+retained; this instruction reverted only the later global velocity doubling.
+
+Latest final42633 /698,515,456 samples preserved locally at
+`Saved/MimicKitEquipment/preserved-checkpoints/20261019_090626_uefn_main_velocity_mse_x2_512/checkpoint_0042633_final.zip`
+and persistent volume aj7d2jzwuq key
+`mimickit/pipeline_20261014/equipment/front-foot-velocity-restored/preserved_checkpoint_0042633_final.zip`.
+48,151,554bytes; SHA `1f44979d464d918e12b7bd2fcff9faadd962db6c1387c6a3ba33ac1c986e5b8b`.
+Local hash/ZIP CRC and persistent readback verified. Resume uses this latest
+save, NOT the older pre-x2 policy; both Adam states and counters are retained.
+
+Run `20261019_093131_uefn_main_front_foot_velocity_restored_512`, same owned L4
+n5esp2rc3dvxc4, trainer2675/exit guard2676, bridge2812/dashboard28208.
+Fresh4h hard stop **13:31:39 Warsaw October19**, Unix1792409499.3864002;
+165s final-save reserve; both deadline guards updated. New-window ceiling$2.36.
+Source SHA `5157ab4c1164a54032f07cec14264d0bb2d7691a38bb64a34e0ab9eca4f72500`,
+persisted/readback-verified. Receipts `front-foot-velocity-restored-*`; helpers
+`refresh_front_getup.py` and `resume_front_foot.py` in Labs/MimicKitTraining.
+
+Live verification: advanced to iteration 42714 / 699,842,560 samples; recent
+mean 1.722s per update (~9.52e3 transitions/s). Both Adam states restored;
+actor LR 4.5e-6 retained. First new checkpoint 42634 verified in persistent
+storage (SHA `0e180a3f23ed513647c6fe3a0122722f1410382f283494df1830372ca1ce52f0`).
+Local replayer received all 20 rows at step 42634; TensorBoard exposes the new
+09-31-31 dated run and individual loss charts. Deployed front target hash
+matches the rebuilt target. No further restart needed.
+
+## October19 — linear/angular velocity MSE doubled for every row (superseded)
+
+User requested doubling both velocity MSE terms and resuming the latest save.
+Shared calibrated weights changed: linear_velocity_mse3.2992958902731857 ->
+6.598591780546371; angular_velocity_mse0.27135354813104584 ->0.5427070962620917.
+Applies to all512 rows: walking, running, ordinary idle and both get-up start
+cohorts. Recovery pelvis linear-velocity emphasis remains2x relative to other
+bodies; its extra contribution automatically doubles with the base linear
+weight. Position/rotation, flat COM band and auto-phase weights unchanged.
+Reciprocal reward remains1/(1+total); no recalibration or renormalization.
+Weighted loss graphs therefore have a new baseline and are not directly
+comparable to the previous total without accounting for this weight change.
+
+Prior run stopped gracefully; final41923 /686,882,816 samples preserved locally
+at `Saved/MimicKitEquipment/preserved-checkpoints/20261019_082046_uefn_main_adam_lr45_512/checkpoint_0041923_final.zip`
+and volume aj7d2jzwuq key
+`mimickit/pipeline_20261014/equipment/velocity-mse-x2/preserved_checkpoint_0041923_final.zip`.
+48,255,710bytes; SHA256
+`5865adf193fc86b0055ab3d0af9b84efb1a83cab0c990f7c590b60f82f1875a5`.
+Persistent readback, local hash and ZIP CRC verified. Earlier preserved saves
+retained. Resumed weights, Adam moments/counters, normalizers and sample count;
+no actor-LR override, so saved effective LR is retained. KL limit0.18 unchanged.
+
+Run `20261019_090626_uefn_main_velocity_mse_x2_512`, same L4 n5esp2rc3dvxc4,
+trainer2435/exit guard2436, bridge13468/dashboard30500. Fresh4h window ends
+**13:06:31 Warsaw October19**, Unix1792407991.6500585;165s save/upload reserve.
+Both deadline guards updated; new-window GPU ceiling$2.36. Source
+SHA `a64b70c1cbf95dd0713ddda072f9196b9cea4a2ccfe9dd27a56b939041c30d20`
+persisted/readback-verified. Package comparison finds only the two weight edits
+and train.py's explicit resume compatibility option: --resume-velocity-mse-scale2
+permits exactly that ratio for the two velocity weights; unrelated configuration
+still must match. No physics, dataset, row mix, radii, noise or optimizer changes.
+Receipts `velocity-mse-x2-{launch,preserved-checkpoint,source-verified,weights}.json`;
+helper `Labs/MimicKitTraining/double_velocity_mse.py`.
+Live verification: both Adam states restored, effective actor LR4.5e-6 retained,
+counter advanced past687,063,040 samples. Last update1.692s; startup-inclusive
+recent mean1.773s. First checkpoint41924 persisted/readback-verified, SHA
+`a857ed59226e991ddd3fb2544f61c110bfb9fb4058e34cfe5ac77de08a61228a`.
+Recomputed linear/angular errors from actual recorded world velocities across
+all20 replay rows and checked weighted terms against new coefficients, including
+recovery pelvis extras. Maximum discrepancy1.43e-6 (float32 reduction rounding).
+Replay metadata carries the new weights; per-tick values are the actual weighted
+training objective. Evidence `velocity-mse-x2-live.json`.
+
+## October19 — actor LR tripled; wider KL allowance
+
+User requested the same latest-checkpoint preservation/resume procedure, actor
+LR x3, and a guard that does not throttle the intended larger updates. Previous
+30 logged points accepted all40 steps at1.5e-6, no rejections/rollback; mean
+KL0.01096, max0.01749. New actor LR4.5e-6; KL limit0.02->0.18. For fixed
+Gaussian noise, KL scales quadratically with policy-mean displacement; this
+allows roughly3x displacement with similar relative headroom, not a guarantee
+of learning stability. Guard rollback, finite checks and automatic backoff on
+first-step rejection/full rollback remain active. Critic LR1e-4 unchanged.
+
+Preserved final checkpoint40560 /664,551,424 samples,47,966,949bytes, SHA
+`c90e5bf25c6e43d87f7b172c67a94d4a611d4fe63f2f0b402c4d2150c242ebd6`.
+Local: `Saved/MimicKitEquipment/preserved-checkpoints/20261019_080138_uefn_main_adam_lr15_512/checkpoint_0040560_final.zip`.
+Persistent volume aj7d2jzwuq:
+`mimickit/pipeline_20261014/equipment/adam-lr45-4p5e-6/preserved_checkpoint_0040560_final.zip`.
+Readback hash and local hash/ZIP CRC verified; original archive and all earlier
+explicitly preserved checkpoints retained. Adam moments/counters, learned
+weights, normalizers and sample counter continue from this save.
+
+Run `20261019_082046_uefn_main_adam_lr45_512`, same owned L4
+n5esp2rc3dvxc4, trainer2242/exit guard2243; bridge6800/dashboard27396.
+Fresh4h hard stop **12:20:51 Warsaw October19**, Unix1792405251.146087,
+165s save/upload reserve, maximum$2.36 GPU charge for the new window.
+Local/remote reloadable deadlines updated together. Package comparison confirms
+ONLY actor LR and KL limit changed; runtime, physics, animations, rewards,
+sampling, noise, termination and evaluation settings are identical.
+Source SHA `4bf7fa582307c6805d2b1cee82cf1a19bafb93b1557ad92f769202d39c068c2b`,
+persisted/readback-verified. Receipts `adam-lr45-{launch,preserved-checkpoint,source-verified}.json`;
+helper `Labs/MimicKitTraining/raise_actor_lr45.py`.
+Live check: first21 complete PPO updates each accepted all40 actor steps,
+zero rejections/full rollbacks, LR remained4.5e-6. Reported KL0.0142–0.0371
+(mean0.02644), so the old0.02 threshold would have constrained some updates;
+the new0.18 threshold did not. Both Adam states restored, only actor LR
+overridden; counters advanced to664,895,488 samples. Recent update mean1.768s
+(~9,269 transitions/s), last1.705s. First new checkpoint40561 persisted and
+readback-verified, SHA `a0e82205ea18f0244ffcdd839094fae86403309b6205838aba9b6225b6d5f5b7`.
+No failure files. This verifies startup and lack of immediate guard throttling,
+not future learning stability. `adam-lr45-live.json` contains compact evidence.
+
+## October19 — latest checkpoint preserved; actor LR increased by20%
+
+User authorized preserving the latest checkpoint and resuming for a fresh4h
+at actor LR1.5e-6 (previous1.25e-6). Critic LR1e-4 and KL limit0.02 unchanged.
+Prior run stopped gracefully at655,998,976 samples; final checkpoint40038 is
+48,281,369bytes, SHA256
+`c4da6def203cbba16d8edac70403f49dc71c2393860cf1792cf14044f619cef7`.
+Preserved locally at
+`Saved/MimicKitEquipment/preserved-checkpoints/20261019_071932_uefn_main_adam_velocity_512/checkpoint_0040038_final.zip`
+and in volume aj7d2jzwuq at
+`mimickit/pipeline_20261014/equipment/adam-lr-1p5e-6/preserved_checkpoint_0040038_final.zip`.
+Both hashes verified; local archive CRC checked. Original run final and
+latest_verified remain intact. Do not remove this explicitly preserved save.
+
+Run `20261019_080138_uefn_main_adam_lr15_512`, same owned L4
+n5esp2rc3dvxc4 ($0.59/h), trainer2021/exit guard2022. New hard stop
+**12:01:43 Warsaw October19**, Unix1792404103.2930884, with165s reserved for
+final evaluation/upload. Local and remote deadline controls updated together.
+New four-hour GPU ceiling$2.36. Bridge22508/dashboard7376; existing20 replay
+rows and datetime TensorBoard naming retained.
+
+`--actor-lr` now applies after loading optimizer state as well as to the saved
+equipment config. Thus both Adam moments, optimizer step counters, learned
+weights, normalizers and global counters survive; only actor LR changes.
+CPU check confirms exact moment/counter/weight preservation. Ordinary resumes
+without an explicit LR flag still restore the checkpoint LR. No changes to
+physics, rewards, noise, row proportions, termination radii or KL behavior.
+Source persisted/readback-verified, SHA
+`b43196c3fd49cb7c2adc8f65e175955d0b532f3fc5d1032a7a315294aee8e889`.
+Receipts `adam-lr-{launch,preserved-checkpoint,source-verified}.json` and helper
+`Labs/MimicKitTraining/raise_actor_lr.py` record the handoff.
+Live resume receipt confirms actor and critic optimizer states restored and
+only LR overridden1.25e-6->1.5e-6. New checkpoint40039 uploaded/readback-verified,
+SHA `a55757ffe08d10e43af95af34e6824c4940fe551a3495fee11f436e08db23e78`.
+Training advanced past656.3M at1.75s/update (~9,361 transitions/s); observed
+updates accept40 actor steps with no rejection and LR remains1.5e-6.
+TensorBoard HTTP API confirms new dated run and optimizer charts. Evidence
+`adam-lr-{live,progress,observers}.json`; this startup check does not establish
+long-term learning improvement.
+
+## October19 — velocity reporting fixed; Adam with transactional KL guard
+
+User authorized fixing the native velocity bug, switching to Adam with a KL
+guard, and resuming the last saved good checkpoint before the collapse.
+Selected38799 /635,699,200 samples; full archive is locally saved as
+`Saved/MimicKitEquipment/pre-collapse-38799.zip`, CRC verified and model/optimizer
+bytes matched to the independently audited pre-collapse copy. SHA
+`0ef2174013df98c44dc7fb094c68ecea4fcb11d5ecb0866c333038f00baee716`.
+Old run stopped gracefully with final40066 /656,457,728 samples persisted and
+readback-verified, SHA
+`e9dcf4049ad32670a5561fc2ba3a37b1591d010fcce36ab666d7282648a14b2b`.
+We deliberately resume38799, not this later damaged policy.
+
+NativeUefnEngine now reconstructs body COM linear/world angular velocities
+using the existing child-frame BodyVelocity adapter, once at the end of each
+policy tick inside the CUDA graph. Omni reset also refreshes reported body
+velocities after assigning poses/joint velocities, including partial resets.
+No solver iterations, contacts, torque/gains, qpos/qvel integration or physics
+frequency changed. This correction is the native engine default from now on.
+
+Actor and critic use the upstream `Adam` option (implemented as AdamW with
+explicit weight_decay0, equivalent to Adam). Actor initial LR1.25e-6, critic
+LR1e-4, critic cap10 retained; no extra actor gradient cap. Actor and critic
+weights, normalizers, RNG and global counters come from38799; incompatible SGD
+momentum is intentionally discarded and Adam starts with fresh moments. Later
+Adam-to-Adam resumes restore those moments and any saved LR adjustment.
+
+`kl_guard.py` measures analytic KL(old||proposed) across34 motor outputs,
+averaged over states. Limit0.02 per rollout's actor update. Each proposed step
+is checked on2048 sampled rollout states; rejected steps restore actor weights,
+Adam moments and step counters exactly, then finish this batch's actor updates.
+A final complete16384-state check catches probe misses and restores the whole
+actor update if necessary. Critic updates are separate. A rejected first step
+or full rollback halves actor LR down to1e-7; ordinary later-step stopping does
+not reduce LR. Training continues, with accepted/rejected step counts, KL,
+full-rollbacks and LR visible in TensorBoard `optimizer/` charts. Nonfinite
+proposals print a warning and are undone; these do not kill the run. Guard
+bounds mean motor-policy change on collected states, not every possible state
+or auto-phase output. Watch accepted steps/LR for persistent under-updating.
+
+CPU regression verifies successful updates, exact Adam-state rollback, empty
+Adam-state rollback and a full-rollout check catching a probe miss. Real L4
+512-world preflight checks initial/partial reset and stepped velocities against
+CPU MuJoCo Jacobians. Post-step maximum linear error4.09e-6m/s, angular2.78e-5
+rad/s. Reset FK approximations produce up to0.134mm position,1.96e-4m/s linear,
+7.68e-4rad/s angular discrepancies; logged, not treated as production failures.
+Noisy get-up cohort remains146 random +146 frame0,65cm head/hands and35cm feet.
+
+Twelve discarded PPO updates validate guarded Adam. Starting LR1e-5 was too
+large for this checkpoint; guard backoff selected1.25e-6. Accepted updates
+continue at that LR; all parameters finite. Steady mean1.632s/update across
+mixed accepted counts; full40-step updates about1.70s vs prior live1.728s.
+This is a short speed/safety check, not proof of long-term learning stability.
+Production reloads38799 again, discarding preflight learning.
+
+Run `20261019_071932_uefn_main_adam_velocity_512` launched on existing owned
+L4 n5esp2rc3dvxc4, trainer1786/exit guard1787. Original09:11:52 Warsaw hard stop
+and09:09:07 save cutoff retained; no new GPU or extra budget. Bridge16480 and
+dashboard9932. Source persisted/readback-verified, SHA
+`57be32b78827c35d32461285587c777a0f8ac7aa56fa7b934c3badbecf3a598a`.
+Receipts `adam-velocity-launch.json`, `adam-velocity-preflight.json`,
+`adam-velocity-handoff-final.json` in Saved/MimicKitEquipment.
+Live verification:38850 /636,534,784 samples,1.704s/update (~9,613 transitions/s),
+CUDA graph active. TensorBoard HTTP API shows policy KL0.01174; recent updates
+accept40 steps at1.25e-6. First checkpoint38800 persisted/readback-verified,
+SHA `b2f9f1e30b2983c8105c9764b908a052f070cf32d3319d33784ccb0c23fb7181`;
+independent S3 latest_verified and object size confirmed. Local replay has20
+rows, frame0 and random-start cohorts; first front-frame0 capture reaches all46
+ticks. Both8021 and8035 respond; all loss terms and new optimizer guard charts
+are present. Saved compact live evidence in `adam-velocity-live.json`.
+
+## October19 — mixed-start collapse investigation (historical; fixes above)
+
+User reported the sharp regression near637M, including walk/run. Read-only
+cloud inspection and local CPU diagnostics confirm a real policy change,
+not just the episode-average mix. No production settings, physics, weights,
+deadline or GPU allocation changed during this investigation.
+
+**Sequence from per-update stdout, finer than TensorBoard's10-update logs:**
+at636,682,240 samples critic loss0.123, actor loss-0.0388,
+action-bound loss6.13e-6. At636,698,624 samples (local iteration1361), critic
+is still0.105 and advantages have ordinary spread0.340, but actor loss rises
+to0.342, mean PPO probability ratio falls to0.590,74.3% are outside the PPO
+clip interval, and action-bound loss rises to0.0195. At the NEXT update,
+636,715,008 samples, critic loss spikes to161 and advantage spread12.6.
+Therefore the actor change precedes the critic failure; the critic spike must
+not be described as the initiating cause. The first damaging minibatch and its
+gradients were not saved, so PPO/bound/auto-phase contributions to the initial
+step cannot be causally separated from these logs.
+
+Actor uses SGD1e-4 with0.9 momentum,40 minibatch updates per rollout,
+sigma0.05, no actor gradient cap or KL stop/rollback. PPO objective clipping
+does not impose a hard limit on the policy change. Critic alone has cap10.
+This is an exposed path for an excessive actor update to persist and damage
+all motions sharing the actor. Do not silently change optimizer settings
+based solely on this observation; an oversized-update safeguard should also
+save diagnostic evidence, including optimizer/batch state, instead of killing
+the paid run on a minor numerical tolerance.
+
+**Paired checkpoint check:**38799 vs38899,3504 identical reconstructed
+pre-collapse replay observations. Environment/agent/engine/command-bound
+configs and all normalizer tensors are identical. Recomputed next-phase
+outputs match recorded post-reset outputs within7.76e-4; initial reset frames
+are excluded because their velocity conversion takes a different path.
+Front-from-frame0 mean action change is3.32rad/s RMS across joints/states.
+Walking/running commands also change on identical inputs. This spans100
+updates, NOT an exact measurement of the one bad update. The front noiseless
+episode goes from46ticks/full completion to14ticks/failure. Locomotion replay
+clip selection rotates, so aggregate before/after durations are not paired
+same-clip measurements.
+
+**Separate confirmed native velocity bug — NOT FIXED in live training:**
+NativeUefnEngine directly inherits NewtonEngine and omits the BodyVelocity
+correction installed by custom UefnNewtonEngine. Newton's MJ conversion copies
+ball-joint qvel in child axes, but its articulation FK rotates these using the
+parent joint frame. Its body linear-velocity output also disagrees with the
+COM convention consumed by the loss. AbsoluteWalkEnv then compares these
+incorrect velocities with correctly constructed reference-body velocities.
+This affects linear/angular tracking and the flat-COM term; it is not a change
+to MuJoCo's integrated dynamics. Current live/local native engine and Newton
+kernel hashes match exactly; kernel SHA
+`1eb7aab6d194fdbd1513da748cd6d21fdf8a481d1abbceb987ad90d684328a72`.
+
+Independent CPU MuJoCo Jacobians evaluated at recorded states establish this:
+pose reconstruction error <=5.01e-6m; sampled pre-collapse front-from-frame0
+body-velocity discrepancies2.08rad/s angular RMS and0.690m/s linear RMS.
+Across20 rows, maximum row RMS3.37rad/s and1.32m/s. Correct child-frame/body
+origin recursion agrees with MuJoCo within2.46e-6; quaternion finite-difference
+check agrees within1.25e-4. No simulation step, GPU or extra live workload was
+needed. Fix velocity conversion before interpreting further velocity-loss
+tuning. It is an ongoing corrupted learning signal, not proof of the cause
+of the abrupt actor jump. A production fix needs reset/step consistency and
+a bounded performance check; do not add more contact solver iterations.
+
+Evidence: `Saved/MimicKitEquipment/mixed-collapse-audit/` contains
+`per-update.json`, `scalars.json`, `rows.json`, `paired-policy.json`,
+`velocity-coordinates.json`, `reconstructed-observations.pt` and57.4MB
+`models.zip` (38799/38899 model+optimizer/config/replay).
+Reproducers: `Labs/MimicKitTraining/audit_mixed_policy.py` and
+`audit_recorded_velocities.py`. Last live check39619 /649,134,080 samples,
+~1.728s/update,9490 transitions/s; checkpoint39599 S3 readback-verified.
+Original09:11:52 Warsaw stop remains. No optimizer or velocity fix deployed.
+
+## October19 — half of get-up rows use random-frame starts
+
+User requested resuming latest with half of get-ups starting at a random frame.
+`idle_recovery.random_start_fraction: 0.5` assigns146 of292 get-up worlds to a
+fixed random-start cohort, evenly distributed through the existing equipment
+groups. Each reset samples a fresh uniform source frame for these worlds;
+the other146 always start at frame0. Final source frame is excluded so at least
+one authored interval remains. Front/back selection is unchanged. Reset pose,
+velocity, target clock and initial phase correspond to the chosen source frame;
+auto-phase feedback then proceeds as before. No idle tail is appended.
+Ordinary idle15 and205 locomotion worlds (50/50 allocation,103 walk/102 run at
+this restart) and all rewards,65/35cm recovery spheres,
+completion fix, optimizer, configured MJ and09:11:52 Warsaw deadline unchanged.
+Replay prioritizes both start cohorts for front/back and drawn/unarmed, within
+the existing20-row capture. Per-row metadata includes start mode and time.
+CPU production reset regression passes, including phase and partial resets.
+Source `mixed-getup-starts-source.zip`, SHA
+`bb47541dede77a9324531ab7ecaa654b8769ec6a4d647aa304868329e9f8023b`.
+Graceful handoff saved and verified latest37498_final from the65cm run, SHA
+`f2384372e7f06da1b88488e4650bec15628646651052cdfcfdea5d483b4de2f1`.
+Resumed `20261019_055242_uefn_main_mixed_getup_starts_512` on the same L4;
+trainer862/exit guard863, bridge18988/dashboard3256. Source is persisted and
+readback-verified. Receipt `mixed-getup-starts-launch.json`; original billing
+deadline retained. Restored614,383,616 samples with optimizer/normalizer;
+advanced to37509 /614,563,840 samples, ~1.70s/update. Live setup reports exactly
+146 random +146 frame0. First replay confirms both front/back and equipment
+states for each start cohort: fixed rows start0s; random examples start0.433,
+0.600,0.900,1.367s. First new checkpoint37499 readback-verified in persistent
+storage. Evidence `mixed-getup-starts-live.json` and
+`mixed-getup-starts-replay-verification.txt`. The explicit random_start_fraction
+overrides the legacy start_at_frame_zero fallback; that fallback is retained
+for old configurations.
+
+## October19 — terminal fix,65cm head/hands, best saved checkpoint
+
+User authorized fixing the diagnosed completion bug, get-up head/hand spheres
+65cm (feet stay35cm), faithful per-row replayer spheres, and four hours from
+the saved checkpoint with highest train_seconds. Selected36286 at594,526,208
+samples, train_seconds1.57266159. Absolute scalar peak1.69828377 occurs at36296
+between100-update checkpoints and was never saved. Persistent36286 archive
+downloaded locally, ZIP CRC verified, evaluation identity checked; SHA
+`a34ae9b6e99a7a785941120875072bbf8be70e3281c83fa8657b65f3b2448697`.
+Receipt `best-train-seconds-checkpoint.json`; local `best-train-seconds.zip`.
+
+Both recovery done paths now emit SUCC=2 on authored clip completion, TIME=3
+only on time truncation, preserving failure precedence. This zeroes the PPO
+continuation value without adding a reward or penalty. CPU production-method
+regression passes, including ordinary TIME bootstrapping. Sphere tests confirm
+head/hands fail beyond65cm, feet beyond35cm; ordinary rows stay27cm.
+Recorder emits only enabled termination points, each with its actual radius.
+Viewer reads the selected row's settings and never substitutes row0's rule for
+missing metadata. Historic captures retain their original radii. Live browser
+row switching confirmed ordinary idle27cm vs historical get-up30/35cm.
+
+Source `getup-best-native-source.zip` persisted/readback-verified, SHA
+`6ebbe225df6223014f69bdcd4ec039da9f36b4eebbfd452c7878ba9b7594ea5c`.
+Old pod9jhktpikw2jr41 could not restart; retained disk preserved. Replacement
+Secure L4 `n5esp2rc3dvxc4` at$0.59/h allocated within authorized4h/$2.36 ceiling.
+Setup started05:11:52 Warsaw; hard stop09:11:52 October19,
+Unix1792393912.192196. Local guard28360 and remote billing guard protect setup.
+Native MJ, original optimizer settings, reciprocal reward, cohort allocation,
+motion data and physics frequency unchanged. Paid preflight runs one discarded
+PPO update; production restores selected checkpoint again. Production launched
+`20261019_051422_uefn_main_getup65_best_512` and advanced to36347 /595,525,632
+samples. Initial steady updates average1.626s (~10,078 transitions/s), native
+GPU graph active. First new checkpoint36287 is persisted and readback-verified
+on S3; independent latest_verified read confirms SHA
+`6ffb8fae20fdcd1bdff86b6f8e4e1b425bc46341b723ed666b8561df47691265`.
+All20 local replay rows checked: four get-up rows record65cm head/hands and
+35cm feet; other16 record27cm. Browser row switching and rendered spheres
+verified against those values. First back captures complete42 ticks. This is
+launch validation, not evidence that long-term regression is fully resolved.
+TensorBoard has new dated run `2026-10-19_05-14-22_UEFN_Main_getup65_best_512`,
+with advancing episode/train_seconds and loss/total. Bridge21292/dashboard26400.
+Receipts: `getup-best-launch.json`, `getup-best-live-verification.json`.
+Training save cutoff09:09:07; billing hard stop09:11:52 Warsaw October19.
+
+## October19 — repeated get-up regression audit (no training changes)
+
+User reports repeated learning/loss around frame23. Inspected complete837M
+TensorBoard scalars,87 local captured checkpoints (27986–36486, plus43186;
+internet outage leaves gaps), and final persistent replay51086.508 recovery
+rows across those87 captures include repeated identical starting conditions,
+not508 independent random trials. Front reaches3–28 ticks (median24), no
+completed46-tick clips in this recorded subset; back5–42 ticks (median20),
+four complete rows all at checkpoint36286. Final replay: front24, back15.
+
+Real policy regression confirmed: checkpoint28686 front24/back19 ticks;
+28786 front3/back5. Sampled ordinary/locomotion rows simultaneously fall from
+10s mean to1.376s (coverage may differ; aggregate is not a paired all-motion
+benchmark). At36286 both equipment back starts complete42 ticks, then36386
+both fail at19. Front remained around24–28. Aggregate episode/train_seconds
+mixes all cohorts and is episode-weighted, not a get-up completion metric.
+
+Optimizer evidence: at471.32M critic loss155.53 (vs0.057 two logged windows
+earlier), advantage std11.76, PPO clip fraction0.727, coinciding with collapse.
+Further critic spikes71.23 at627.79M,58.14 at736.90M,82.17 at819.31M precede
+or coincide with major drops. Not all drops have such huge spikes. Actor has
+40 SGD steps/update at1e-4 with0.9 momentum, fixed sigma0.05, no gradient cap
+or KL-based step rejection; PPO clipping is an objective, not an enforced
+limit on the parameter update. Auto-phase shares its trunk. Evidence supports
+unstable policy/value updates; original PPO batches/gradients/KL were not saved,
+so no claim to have isolated the initial cause of every collapse. Observation
+normalizer mean/std exactly constant throughout; no ongoing normalization drift.
+
+Definite finite-episode semantic defect: RecoveryOmniEnv._update_done marks
+authored clip completion as TIME=3; vanilla DeepMimic marks motion end SUCC=2.
+PPO zeroes continuation value for SUCC/FAIL but bootstraps TIME. CPU test of
+actual production methods proves a hypothetical final reward0.2 with critic
+next-value10 produces target10.1 instead of0.2. End-reset recovery episodes
+have no continuation/idle tail. This is a real defect to fix before further
+training, but its contribution to the recorded collapses is not yet isolated.
+No production behavior modified in this investigation.
+
+Final front frame23→24: left-hand error0.2286→0.3258m crosses0.30m;
+right-foot0.1826→0.3119m remains below0.35m. Reward0.0767→0.0444;
+reciprocal reward works and is not numerically zero. Always-frame0 starts and
+early sphere resets limit practice beyond the failing stage. This does not
+prove torque sufficiency for the full front motion. Phase error is small in
+many failed captures; not a universal clock-wrap failure at frame23.
+
+Recommended sequence: correct finite clip completion flag; then bounded
+comparison from a preserved good checkpoint with measured policy-change guard
+and critic diagnostics, before another long run. Do not blindly widen all
+spheres, change physics/gains, or declare the sole cause proven. Pod remains
+stopped; no cloud spend. Evidence: Saved/MimicKitEquipment/getup-loop-audit/
+{scalars.json,rows.json,final-replay.npz,terminal-test.json}; CPU reproduction
+Labs/MimicKitTraining/audit_recovery_terminal.py.
+
+## October18 — get-up feet35cm continuation
+
+**October19 final TensorBoard recovery:** user internet outage left local events
+incomplete. Pod confirmed EXITED (03:52:25 Warsaw); no restart or GPU billing.
+Recovered final events from persistent `exit_evidence_cc2c1300ff18.zip`, verified
+archive SHA prefix and exact match of existing local event prefix. Event file
+grew2,994,487 to4,518,045 bytes; republished14,024 missing chart points with
+deduplication. TensorBoard8035 HTTP scalar API confirms final837,009,408 samples.
+Final checkpoint51086_final persistent SHA
+`f555ba00901daafa3d80d00dad7632235fe8057d28a8febc890019fbfb80ec60`.
+Receipt `Saved/MimicKitEquipment/tb-outage-sync-20261019.json`.
+
+**Deadline updated October18 at19:54 Warsaw:** user requested finish eight
+hours from now. Same run continues uninterrupted; new hard stop is
+**October19 03:54:39 Warsaw**, Unix1792374879.565009, superseding00:11 below.
+Local/remote billing controls updated; live trainer confirmed iteration35366
+with new training cutoff1792374714.565009 (165s final-save reserve).
+
+User requested latest-checkpoint continuation for a fresh eight hours, changing
+only get-up FOOT termination spheres to35cm. Head/hands remain30cm;
+ordinary idle/locomotion retain27cm. Added `idle_recovery.target_radii_m`
+per-body overrides, precomputed squared-radius tensor on device; the existing
+batched comparison handles it without extra simulation passes. Replayer stores
+and draws individual radii and labels feet separately.
+
+CPU test executes production radius construction and termination:32cm
+head/hands fail,32cm feet survive,36cm feet fail, clip end resets;
+legacy uniform radii preserved. Package comparison confirms the radius override
+is the only configuration change. Reciprocal reward, configured native MJ,
+gains/caps, motions,512 rows, proportions and learned state unchanged.
+
+Run `20261018_161058_uefn_main_getup_feet35_512` launched16:11 Warsaw
+on owned L4 `9jhktpikw2jr41`, latest final27985 persistently readback-verified:
+SHA `06f8ba16c5b7148b97829f3d660d937056174226fdf5c4190ae72438de239c11`.
+Fresh eight-hour hard cutoff **October19 00:11:05 Warsaw**, Unix1792361465.9210265;
+final-save reserve165s. GPU$0.59/h, eight-hour ceiling$4.72. Local/remote deadline
+controls updated; local guard22404, remote guard214 and exit guard1315 confirmed.
+Trainer1314. Receipt `Saved/MimicKitEquipment/feet35-launch.json`; source SHA
+`f3a878df4379beaf7d80655fa98f9a93d546fcf9ced8e3627b20af6d4c82f73b`.
+Verified advancing update28016 /459,030,528 samples at10,074 transitions/s.
+First new checkpoint27986 uploaded with full readback verification; independent
+S3 `latest_verified.json` matches SHA
+`c3206363957c976cce5cd190a4f6dbfabb865f48d1556ac0ddd546d9f39fa008`.
+All20 recorded replay rows checked: get-up feet35cm/head-hands30cm,
+ordinary rows27cm; reciprocal reward confirmed. Dated TensorBoard run visible;
+bridge8992/dashboard24384 active. Local replayer published step27986,20 rows;
+converted per-point radii confirmed35/30/27cm as applicable.
+
+## October18 — front get-up thigh-limit inspection (read-only)
+
+Current configured native MJ uses80-degree spherical limits on both hips.
+Updated front target peaks left78.239deg /right75.347deg, inside that active
+limit over737 interpolated samples. The stricter original PHAT/Jolt shape is
+violated by the LEFT target from0.5333–0.66875s (66/737 samples; twist peak
+56.174deg vs55.490deg; coupled swing ellipse peak1.436 where boundary is1).
+Right target stays within original PHAT. These are different admissibility
+rules: PHAT violation is not a violation of the current spherical MJ limit.
+
+Latest inspected noiseless replay26371 has three front rows. Left simulated
+hip peaks74.88–76.05deg; RIGHT reaches88.83–89.42deg, crossing the80deg boundary
+from approximately0.533s to0.733–0.767s. Reconstruction uses recorded world
+quaternions, inverse pelvis orientation, XML local rest and the native PHAT
+reference offset; recorded target angles independently match the source.
+Replay is30Hz: no claim about unsaved240Hz intermediate states or measured
+limit impulses. No training or PHAT changes. Evidence:
+`Saved/MimicKitEquipment/front-thigh-limits-20261018.json`.
+
+## October18 — reauthored get-up endings, same preparation
+
+User requested replacing the two get-up motions with the latest source FBXs,
+keeping the live trainer running during preparation and resuming its latest
+checkpoint when ready. Prepared separately under
+`Saved/MimicKitEquipment/recovery-update-20261018`; the old previews are intact.
+The deployed six target/reset PKLs matched `recovery-preview` byte-for-byte
+before preparation. Current rig/XML/limits and the three preparation scripts
+also matched the live package. Reused `prepare_recovery_starts.py` anchor
+projection/conditional foot lift, then `prepare_recovery_hand_ik.py` and
+`prepare_recovery_foot_resets.py` for reset-only fixed-pole IK. No abandoned
+cleaned/pinned/arc preview, global pelvis shift or new smoothing.
+
+Front remains47 frames at30Hz (1.533s), back43 frames (1.4s). Starting generalized
+coordinates differ by at most2.68e-7 /1.07e-6 from the old targets. Reset IK
+checks preserve root transform, unaffected chains and end-effector orientation.
+The existing preparation still does not enforce joint limits after reset IK;
+this update does not claim to resolve that known limitation. Only authored
+motion updates and their identical-method resets are being promoted.
+
+Full package comparison keeps all physics, policy/reward configs, ordinary
+idle and locomotion assets unchanged. New source SHA256
+`4186034f6d5adff1e09d3b473c12dbebd3c4531bf3e928886a4bf34f0d8a26f4`.
+Receipts: `updated-recovery-source.json`; preparation reports beside the new
+motions. Handoff helper `resume_updated_recovery.py` stages first, then obtains
+a final verified checkpoint, checks its persistent pointer and SHA readback,
+and starts the continuation with unchanged19:24:34 Warsaw hard cutoff.
+A separate five-minute handoff watchdog covers the gap between trainer exit
+guards. No second GPU workload. Continuation launched12:53:22 Warsaw on the same L4, run
+`20261018_125315_uefn_main_updated_getups_512`. Old trainer saved final21670,
+355,057,664 samples; persistent pointer and full SHA readback verified
+`04ab37e6f472db4c0cdc8c1c0ffcdc7a62d690ce77d38ab3340c9573a679116b`.
+Restored policy/optimizers/normalizers/counters, first update21671 advancing.
+Both deployed target hashes match the new prepared clips; the new trainer has
+its normal exit guard, and the temporary handoff watchdog is cancelled.
+First new checkpoint21671 is persistently readback-verified (SHA
+`c2d59d5eb198fe6bf492d46feef282d13a299d29cdf3d4db3aad24de70ead27a`).
+Verified update21691 /355,401,728 samples at9.16k transitions/s, no error
+files; new dated TensorBoard and20-row replay21671 published.
+Receipt `updated-recovery-launch.json`. Deadline and all training settings
+unchanged. Local preparation was slow loading Python dependencies; paid
+training continued throughout that stage.
+
+## TensorBoard visibility — October18
+
+User hid the last get-up penalty experiment from the latest-ten comparison.
+Its dated directory `2026-10-18_10-30-31_UEFN_Getup_penalty_MJ_512` now lives
+in `Saved/MimicKit/TensorBoardHidden`, outside the served run directory.
+Logs and checkpoints retained; the earlier run fills the freed slot.
+
+## October18 — main337 resume with approved critic stabilization
+
+**LIVE, verified at 12:20 Warsaw:** run
+`20261018_121738_uefn_main337_native_mj_512`, owned Secure L4
+`9jhktpikw2jr41` at $0.59/hour. Resumed untouched checkpoint20613_final
+(337,739,776 samples) with policy, optimizer momentum, normalizers and counters.
+The only optimizer change is the user-approved stock critic gradient norm
+cap10; actor remains uncapped and both learning rates stay1e-4. Five discarded
+512-world PPO preflight updates passed (9.47s total), then production restored
+the original checkpoint again. No assertion or diagnostic wrapper from the
+preflight is installed in production. Latest observed update20664:
+338,575,360 samples,1.782s/update,9,192 transitions/s; no failure/backup-error
+files. This confirms startup stability, not learned get-up success.
+
+First new checkpoint20614 is uploaded and SHA256 readback-verified:
+`3ed2a640777d7aa3fff5eca9f7d132f891fa8ae8c553f22a827b87bdd9799e7f`.
+Persistent run `latest_verified.json` independently read and matches. Source
+package `ae69b79d9957b8af2635afe9713ae91d1e6a392ec43a395e4a4b2cd3dc0008e4`
+is also persisted/verified. TensorBoard8035 has the dated new run and all loss
+terms including `pelvis_velocity_extra`; replayer8021 has20 noiseless rows,
+30cm spheres on recovery and27cm on ordinary rows. No penalty term.
+
+**Hard cutoff stays19:24:34 Warsaw October18**, preserving the original8h
+window; training/final-save reserve starts19:21:49. No fresh8h timer after
+setup retries. Local/remote deadline and trainer-exit guards active. Prior
+setup source upload timeout and storage user-agent403 were resolved by a
+verified cloud-to-cloud source fetch using the existing runtime-cache request
+headers; affected pod was stopped each time, retained disks preserved.
+Receipts: `main337-launch.json`, `main337-preflight.json`,
+`main337-source-verified.json`, `main337-start.json` under
+`Saved/MimicKitEquipment`. Earlier uncapped critic failure evidence retained
+as `uncapped512-main337-diagnostic.json` / `uncapped512-main337-preflight.log`.
+
+The following paragraphs record preparation and the earlier failed preflights;
+the live state above supersedes their pending/blocked status.
+
+User approved eight hours on the existing L4 rate ceiling$0.59/hour ($4.72
+maximum GPU cost), replacing the stopped get-up-only experiment. Exact rollback:
+`20613_final`,337,739,776samples, from
+`20261017_192404_uefn_equipment_solver_speed_512`. Local archive
+`idle18-resume-latest.zip`, SHA256
+`3b008cfdf37b7550cc6936c5f4513008b6028a7385edc9a7f9bcd3d2be8f3e5e`.
+Restore policy, optimizers, normalizers and counters; reset physical episodes.
+Do not substitute get-up-only checkpoints or the later383.6M main checkpoint.
+
+512 fixed rows: idle/loco60/40 ->307idle/205locomotion. Within idle, ordinary/
+noisy5/95 ->15ordinary/292recovery. Within locomotion, walk/run50/50 ->102walk/
+103run. Equipment remains balanced by existing motion weights. Adaptive
+sampling remains disabled. Get-up starts are frame0, front/back randomly
+split equally in expectation; reset at authored clip end with NO idle tail.
+Noisy idle has all five head/hand/foot spheres at30cm, other failure checks
+disabled. Ordinary idle and locomotion retain their existing27cm sphere,
+contact/pose checks and10s horizon. Target positions for ALL rows follow
+pelvisXY only, preserving authored world height/heading/orientation and
+world velocity targets. No pelvis-rotation alignment or local-joint loss.
+
+Keep reciprocal reward `1/(1+total weighted tracking error)` from the recent
+get-up run. Remove the failed termination-penalty experiment from production;
+no penalty column, no subtraction on failure. Historical captures remain
+readable. Double ONLY the pelvis linear-velocity MSE contribution on recovery
+rows; retain the original all-body normalization and all other body/angular
+weights. A separate `pelvis_velocity_extra` component exposes the added copy
+in per-tick replay/TensorBoard and total. No extra physics solves/readbacks.
+CPU tests verify actual allocation and isolated pelvis weighting; real L4
+preflight checks restored337.74M state, mixed-cohort rewards and five
+discarded PPO updates. Assets/motions remain byte-identical. Agent config
+differs from the checkpoint ONLY by the approved critic gradient cap10.
+Previous host rejected restart for unavailable GPU capacity; retained pod
+`ennp2v39ymd04t` remains stopped. Replacement Secure L4 `6dxhk255i53o9f`
+is allocated at$0.59/hour. Hard stop **19:24:34 Warsaw October18**;
+final save reserve starts19:21:49. Local/remote guards installed before setup.
+Source archive6,614,775bytes SHA18430f5256f0 is S3 readback-verified before
+allocation; rollback checkpoint is also rechecked in persistent storage.
+The replayer sphere display now reads the selected row's own radius, so it
+shows30cm for recovery and27cm for ordinary rows. Launch remains pending. The64-world preflight passed24 physical ticks,
+reward/radius/extra-loss checks, then produced nonfinite parameters in its
+single PPO update. Guard stopped6dxhk255i53o9f immediately. Original checkpoint
+and saved optimizer tensors are all finite. Diagnostic64-world result is
+preserved in `main337-preflight-64world-failure.log`; no production policy was
+saved from it. Next bounded preflight uses the actual512 worlds and identifies
+the first failed optimization stage. Five updates, if finite, are discarded
+before production restores the untouched337.74M checkpoint. Original19:24:34
+hard deadline/budget retained. No gain or learning-rate changes. The later
+approved critic cap is described below.
+Host GPU availability changed after stop; subsequent replacement may use a
+new owned pod recorded in `main337-start.json`.
+Unreal, PHAT, user Blueprints and unrelated work remain untouched.
+
+
+**Before the approved cap:** full512-world preflight also failed. Physical/reward checks
+pass; during the FIRST PPO update, critic optimization diverges BEFORE any
+actor update: recent critic loss1.7e3 ->3.3e4 ->1.5e6 ->1.2e19 ->nonfinite.
+Normalized observation peak is10 (existing clipping), and original model/
+optimizer checkpoint tensors are finite. This identifies critic instability;
+it does not establish whether reward change, state distribution or both are
+the underlying trigger. No production run or contaminated checkpoint saved.
+Latest owned replacement `3x24h0qjtz49iz` is API-confirmed EXITED by guard.
+Original337.74M archive remains intact, both locally and persistently. Evidence:
+`main337-diagnostic.json`, `main337-preflight.log`,
+`main337-setup-failed-stop.json`. Asked user to authorize a **critic-only gradient
+cap10**, test it, then launch with actor/learning rates unchanged. User approved
+this change ("ok"). Use the repository critic_optimizer.grad_clip=10 only;
+restore optimizer momentum/counters and keep actor uncapped, both LR1e-4. Existing
+19:24:34 Warsaw budget deadline remains; do not extend it silently.
+
+## October 18 — get-up termination-penalty experiment stopped by user
+
+User requested immediate stop at approximately10:52 Warsaw. Trainer stopped
+cleanly at **645_final**, saved and S3-readback-verified. Its unsolicited local
+download was removed at the user's request; the previously requested3839_final
+local download remains. Persistent645_final SHA256:
+`548da59857f4f410fdb941191ce40fb7baad3e5fd47d4c6fcccd726124fdc6bd`.
+Owned pod `ennp2v39ymd04t` is API-confirmed **EXITED**; GPU billing stopped.
+Final telemetry/replay/events recovered from the verified exit archive.
+No restart authorized. Receipts: `getup-penalty-stop.json`,
+`getup-penalty-billing-stopped.json`. Launch details below are historical.
+
+User requested stopping the configured native MJ run, downloading its latest
+checkpoint, then one final experiment from fresh weights/counters. Approved
+penalty: subtract remaining animation ticks × maximum per-tick reward (1).
+Approved budget: one hour on L4 at <=$0.59/hour.
+
+Previous run stopped cleanly at `3839_final`; owned pod was API-confirmed
+EXITED before restart. Latest save is locally checksum-verified at
+`Saved/MimicKitEquipment/getup-native-stopped-latest.zip` (30,846,630 bytes),
+SHA256 `4b075eeb7db321978662a6396c65642b84565f342a80ab6feeb865b7106a00f0`.
+Persistent S3 readback matches. Receipt: `getup-native-stop.json`.
+This checkpoint is preserved for study, NOT used to initialize the new run.
+
+New opt-in `idle_recovery.termination_penalty_per_tick: 1.0` subtracts the
+remaining-tick cost AFTER `1/(1+tracking_error)`, on FAIL only. Excludes the
+current tick; clips remaining duration against the episode horizon. Normal
+clip completion costs zero. Example: failure on tick10 of46 subtracts36.
+No action/observation/network/optimizer/controller/physics/motion changes.
+512 worlds, frame0 front/back starts, 30cm head/hand/foot spheres, pelvis-XY
+relative targets, no idle tail; reset at clip completion. Fresh weights,
+optimizers, normalizers and counters. Native configured MJ only, 240/30Hz.
+
+Penalty is a separate `termination_remaining` component in per-tick replay
+and TensorBoard. Displayed total includes weighted tracking, penalty and
+supervised auto-phase; PPO reward uses reciprocal tracking minus penalty,
+while auto-phase remains a separate supervised actor loss. `body_total`
+excludes the termination penalty. Production accounting adds the penalty
+once after done detection; no extra physical solves or CPU synchronization.
+CPU tests pass remaining-tick arithmetic, endpoint rounding, normal-end and
+nonrecovery exclusion, preserved tracking values and loss-accounting totals.
+Source archive is S3 readback-verified; receipt `penalty-source-verified.json`.
+
+Same retained L4 `ennp2v39ymd04t` restarted. Hard billing deadline
+**11:27:28 Warsaw October18**; one hour includes setup/final-save time.
+Local/remote billing guards and trainer-exit stop guard are installed. Final
+save/evaluation reserve begins 11:24:43. Real L4 preflight passed 24 ticks
+in32 worlds, including101 early failures and one finite discarded PPO update.
+Production initialized fresh, not from that update or the preserved checkpoint.
+Run `20261018_103031_uefn_getup_penalty_mj_512` is verified advancing:
+update150 /2,473,984 samples; recent30-update mean1.9714s,8,311 transitions/s
+(excludes periodic capture/save overhead). Initial replay and S3 backup are
+verified; checkpoint0 SHA `3fb955eb6325f2acd1eec06695033958ba3d16819c8d895945a6d3023cf89f9c`
+matches persistent latest_verified. Twenty noiseless replay rows at update100
+are published; per-tick termination penalties and all eight displayed totals/
+components are present. TensorBoard8035 exposes the dated run and
+`loss/termination_remaining` alongside tracking/auto-phase/total.
+
+The local replay converter initially rejected the new reward form. Added its
+explicit reciprocal-minus-penalty verification and restarted only the owned
+bridge (PID26752); GPU training was uninterrupted. Conversion validates all20
+rows, including actual failure ticks costing36/37. Corrected observer source
+is separately S3 readback-verified. Launch/live evidence:
+`penalty-launch.json`, `penalty-preflight.json`, `penalty-live-verification.json`.
+New source/runtime and latest old checkpoint were preserved before renting.
+
+The preceding upper-body CPU diagnostic was interrupted by this new task.
+In one back-get-up pose, raising left-wrist torque cap reduced alternating
+joint velocity; this is not proof of general insufficient lifting strength
+or a validated GPU fix. No gains/torque changes were applied. Evidence stays
+in `Saved/MimicKitEquipment/upperbody-audit`; do not promote its counterfactual
+settings into this experiment. Unreal, PHAT and source motions are untouched.
+
+## October 18 — configured native MJ get-up continuation launched
+
+Latest user instruction replaces mixed native/custom scheduling with **native
+configured MJWarp only**, resuming the latest get-up checkpoint for two hours.
+Run `20261018_084204_uefn_getup_native_mj_512`, owned L4 `ennp2v39ymd04t`,
+$0.59/hour. Launched 08:42:09 Warsaw; hard billing stop **10:34:09 Warsaw**
+October 18 (the two-hour allowance includes setup; final save reserves 165 s).
+Local and remote deadline guards and trainer-exit stop guard are installed.
+The old unavailable pod `v05mjf1bj17lwa` remains stopped with its disk retained.
+One local timestamp error stopped the replacement during setup; corrected to
+the Windows local timezone and restarted within the original deadline.
+
+Resume source is verified `656_final`, 10,764,288 samples, next global update
+657; optimizer and normalizers restored, physical episodes reset. SHA256:
+`d4496271001dd5cfa443ee95ea01ee2305c9b5499ec47d8b762fe46d112dc105`.
+512 worlds, original gains/torque envelope, 240 Hz physics / 30 Hz policy,
+reciprocal reward, frame-0 front/back starts, pelvis-XY-relative targets,
+30 cm termination spheres and reset at clip end without idle tail are retained.
+The exact checkpoint task/agent configs, assets and motions were preserved.
+
+Production adapter `native_uefn_engine.py` selects the native profile below,
+with **no custom motor/contact/limit/projection solver** and no solver mixing.
+Policy/reset/observation joint coordinates stay unchanged; two small GPU
+coordinate-conversion kernels bridge the centered native ball coordinates.
+CPU tests covered 128 randomized poses, inverse/in-place conversion and FK
+(maximum position error 1.2e-7 m). Real L4 smoke covered 24 policy ticks,
+resets, reciprocal reward and one discarded PPO update; maximum native/Newton
+body-position discrepancy 5.6e-7 m, finite states/gradients. Production resumed
+the original checkpoint, not the smoke-test update.
+
+Source archive 6,611,746 bytes is S3 readback-verified at
+`mimickit/pipeline_20261014/equipment/native-getup/source_4c08e356110e.zip`.
+Receipts: `Saved/MimicKitEquipment/native-launch.json`, `native-preflight.json`,
+`native-source-verified.json`, `native-getup-source.json`. Replayer and
+chronological TensorBoard bridge are launched under this run name.
+Live verification reached update **687 / 11,272,192 samples** with finite
+training metrics. Recent 30-update mean **1.726 s/update**, **9,492 transitions/s**
+on the L4, excluding periodic evaluation/checkpoint overhead. The earlier
+custom get-up measurement was 3.920 s/update: this observation is about 2.27x
+faster, not a new paired benchmark or evidence of improved learning.
+Checkpoint657 is S3 readback-verified (29,010,282 bytes, SHA256
+`d295a90116e534ade2a96bb929606d3d52da374b1783129f963364ac466d03a4`);
+the persistent latest_verified pointer matches the local bridge receipt.
+Replayer8021 has its first 20-row deterministic capture at657, and TensorBoard
+8035 exposes the new dated run and all six losses plus total. Initial noiseless
+mean episode length is 15.03 ticks (0.501 s); recovery success is not claimed.
+Receipt: `Saved/MimicKitEquipment/native-live-verification.json`.
+The native limits remain a spherical PHAT approximation; this does not claim
+exact Jolt contact parity or eliminate the penetration measured in the audit.
+Unreal, PHAT, source animations and unrelated processes were not changed.
+
+## October 18 — native MuJoCo audit completed; paid GPU stopped
+
+User authorized a replacement L4 for at most 10 minutes / $0.10 to verify
+native settings. Audit pod `u7yyhwcg8xt179` ran for 236.2 seconds including
+setup, then API-confirmed EXITED. Estimated GPU cost is $0.0387 at $0.59/h,
+not a provider invoice. The previous retained pod `v05mjf1bj17lwa` and its
+checkpoint remain untouched. No training was launched by this audit.
+After local evidence and persistent-S3 SHA256 readback verification, only the
+disposable audit pod was deleted; absence from the pod list was confirmed.
+Archive: `mimickit/diagnostics/native-audit-20261018-65f2607c0753.tar.gz`,
+17,445,619 bytes; receipt `vanilla-calibration/persistent-audit.json`.
+
+Same frozen old Run LR checkpoint 4013, archived rig, 16 distinct starting
+phases, 10-second horizon, original 27 cm tracking criterion, 240 Hz physics
+and 30 Hz policy. All candidates use native MJWarp 3.5.0.2, without the custom
+contact/motor/projection solver. GPU results:
+
+| Native settings | Completed starts | Mean duration | Physics / policy tick, 512 worlds |
+| --- | ---: | ---: | ---: |
+| Original Newton-converted model | 0/16 | 0.990 s | 12.09 ms |
+| PHAT-centered spherical ball bounds + contact profile | 12/16 | 7.600 s | 16.99 ms |
+| Above, motor gains ×0.9 | 13/16 | 8.202 s | 17.51 ms |
+| Above, original gains, contact solref [0.0175, 2] | 13/16 | 8.233 s | 16.81 ms |
+
+Provisional native candidate: the last row, preserving motor gains and torque
+caps. Largest improvement came from restoring native ball-joint bounds:
+Newton's original conversion had left those joints unlimited. Each native
+ball bound is centered on the PHAT reference and uses its largest axis limit.
+This is a spherical approximation, NOT the exact PHAT swing ellipse/twist.
+The reference motion fits these bounds. Coordinate rebasing preserves actual
+body poses, geometry, mass/inertia, reset states and motor axes. Armature is
+zero. The production Newton state/observation adapter now preserves the
+original joint-coordinate convention (see current launch above); do not simply
+edit body_quat and leave resets/observations unchanged.
+
+Other selected native settings: implicitfast integration, Newton solver,
+elliptic friction cone, impratio 10, tolerance 1e-8, max 100 solver iterations
+and 50 line-search iterations, floor priority 1 / condim 3 / friction 1,
+frictionless self contacts (condim 1). No physics-frequency change.
+CPU solver actually averaged about 3.19 iterations on the selected trial;
+100 is a ceiling, not an executed fixed pass count. GPU iteration counts
+were not instrumented in this audit.
+
+Limitations: three starts still fail early. Exact collider geometry measured
+from the saved GPU frames reaches 5.06 cm floor penetration in the selected
+candidate (4.21 cm with reduced gains); substep peaks were not measured.
+This is not exact Jolt contact parity or a fully solved transfer. The benchmark
+measures eight captured physics steps plus a GPU reset, with paired identical
+initial states/commands: selected settings cost 39.1% more than unconfigured
+native physics. It does NOT measure full PPO or establish the speed ratio to
+the earlier custom-solver get-up run, which used different motions/current rig.
+No current-PHAT/get-up validation or training success is claimed.
+
+Evidence: `Saved/MimicKitTransfer/vanilla-calibration/audit-summary.json`,
+`selected-profile.json`, `gpu-results.json`, `gpu-evidence.tar.gz`,
+`replacement-session.json`, CPU `confirm.json` / `finalists.json`.
+Reproducers: `Labs/MimicKitTransfer/calibrate_vanilla.py`,
+`package_vanilla_validation.py`, `validate_vanilla_gpu.py`,
+`run_replacement_vanilla_audit.py`, `summarize_vanilla_audit.py`.
+The prior custom training checkpoint remains verified 656_final, SHA below.
+Unreal, current PHAT, source animations and other work were not changed.
+
+## October18 — custom training stopped; native MuJoCo calibration underway
+
+User replaced the custom-solver approach with native MuJoCo settings calibrated
+against the successful old Run LR Unreal/Jolt test. Run
+20261018_062758_uefn_getup_frame0_reciprocal_512 stopped gracefully at656_final.
+Owned pod v05mjf1bj17lwa is EXITED; no new paid window/allocation.
+Checkpoint29173079bytes, SHAd4496271001dd5cfa443ee95ea01ee2305c9b5499ec47d8b762fe46d112dc105,
+verified locally in Saved/MimicKitEquipment/getup-reciprocal-stopped-latest.zip
+and persistent storage. Receipt: getup-reciprocal-stop.json in that directory.
+
+Read the version-matched MuJoCo3.5.0 modeling, computation, XML and MJWarp
+documentation BEFORE parameter trials; checked installed MJWarp3.5.0.2 source.
+Calibration is CPU-only, isolated archived4013 checkpoint/body; Unreal, current
+PHAT and other GPU work untouched. Do not promote a candidate from reward alone.
+Use recorded successful Jolt states/commands for one-tick response, followed by
+feedback-policy rollouts with identical phases and27cm tracking checks.
+
+Parameter coverage: timestep/integrator; solver/cone/Jacobian/iterations/tolerances;
+contact impedance/reference, friction dimensions/mixing, margins; joint limits,
+passive damping/armature; actuator gains, control bounds, force caps and frames;
+gravity/drag, collision filtering and GPU capacity/graph settings. Keep body
+geometry/mass/inertia and torque caps unchanged during the first comparison.
+No-slip, PGS, full implicit integration and contact override are unavailable in
+installed MJWarp; sparse Jacobians ARE supported despite older documentation.
+Native ball limits cannot exactly express PHAT swing/twist: report that gap.
+Native velocity force-clamp integration also differs from the custom coupled
+solve; smaller timestep is a documented candidate, not assumed equivalent.
+
+Sources: [modeling](https://mujoco.readthedocs.io/en/3.5.0/modeling.html),
+[computation](https://mujoco.readthedocs.io/en/3.5.0/computation/index.html),
+[XML reference](https://mujoco.readthedocs.io/en/3.5.0/XMLreference.html),
+[MJWarp](https://mujoco.readthedocs.io/en/3.5.0/mjwarp/index.html).
+Latest user constraint: keep physics240Hz and policy30Hz. Earlier isolated
+480/960Hz candidates are historical evidence only and EXCLUDED from selection.
+Production frequency was never changed; harness now rejects other frequencies.
+Harness: Labs/MimicKitTransfer/calibrate_vanilla.py. Evidence directory:
+Saved/MimicKitTransfer/vanilla-calibration. No native candidate accepted yet.
+
+## October18 — matched L4 get-up speed audit versus vanilla MJWarp
+
+User asked why the current run is slower and requested a vanilla comparison.
+Measured on the same owned L4 using disposable copies of checkpoint500,
+512 worlds,32 policy ticks/update, same body,240Hz physics, network/PPO,
+command bounds and seed. Production PID388 was suspended for210.4s while
+three diagnostics ran sequentially, then resumed in finally; independent
+resume watchdog also installed. No production weights/configuration/deadline
+changed and no second allocation. Each diagnostic had a180s timeout.
+
+Uninstrumented median of the last3 of5 updates: current frame0 setup3.9198s;
+only changing resets to random source frames3.5900s; vanilla Newton/MJWarp
+backend1.3168s. Current is2.98x vanilla update time. Vanilla retains this
+UEFN asset, zero armature, torque-cap envelope and exact current action bounds,
+but uses upstream motors/contact/limits and omits our Jolt adapters, drag/gyro
+correction and position guard. It is a performance baseline, not physically
+equivalent or a proposed drop-in training replacement. Trajectories differ.
+
+Separate synchronized attribution (nested ranges overlap; instrumentation
+adds overhead): current physics3.2607s vs vanilla0.5645s (5.78x), reset work
+0.3576 vs0.3554s, observation/reward/done0.2347 vs0.2090s, actor+critic updates
+0.1610 vs0.1749s. Dominant cost is the custom coupled contact/limit/motor
+solver, not PPO or replay. Four captured physics ticks attribute88.96ms/tick
+to two block-solve kernels plus a scalar seed/retry kernel; angular position
+projection3.62ms and floor guard1.26ms/tick are much smaller. These are measured
+GPU kernel times, not claimed pass counts. Scalar3000-pass fallback counters
+were ZERO over those4ticks; no evidence that that fallback caused this sample.
+Current sampled contact count8.69/world vs2.63 with random starts. Randomizing
+starts reduced whole-update time8.4%, so frame0 alone does NOT explain the full
+historical1.85s-to-current3.92s difference. Historical timings used different
+policies/termination/reference distributions; do not claim a matched regression
+or blame the reciprocal reward from those before/after numbers.
+
+Evidence: Labs/MimicKitTraining/audit_getup_speed.py;
+Saved/MimicKitEquipment/getup-speed-audit.json (includes raw timing samples,
+per-stage attribution, top kernels, fallback counters and suspend/resume receipt).
+Remote speed-audit-20261018 retains individual results/logs. No checkpoint
+copies or optimizer results saved by the audit. Afterward production reached
+610/10,010,624samples,3.9409s/update; checkpoint600 backup verified, no failure
+files. The08:25:18 Warsaw billing deadline remains unchanged.
+
+## October18 — durable replay history and true capture timestamps
+
+User correctly reported100/200 apparently one minute apart and200 disappearing
+after refresh. Actual pod capture timestamps:100 at06:36:11.494,200 at06:41:29.034,
+300 at06:46:50.570 Warsaw. Gaps317.54s and321.54s. Dropdown used local file mtime;
+100 was converted late during the previous repair, making its displayed time
+misleading. The history bug was real, not merely a missing manual refresh:
+bridge replaced last_batch_rollout.json while viewer archived only every7min.
+A capture could be displayed then overwritten before archival.
+
+bridge.publish_rollout now archives each received step BEFORE publishing latest,
+deduplicates by step, and stamps archive mtime with actual computed_at capture
+time. Conversion failures are not acknowledged in the telemetry cursor and can
+retry. Successful sync clears stale bridge-error.txt. Restored0 and200 by
+extracting only their NPZ members from existing remote checkpoints (~764KB
+combined; no full checkpoint downloads).100/300 also have corrected timestamps.
+Only local bridge restarted (20992); GPU trainer/deadline unchanged. New400
+arrived and was archived automatically during verification. Browser selected200
+successfully with all other captures retained; refresh loads newest from the
+same complete list. test_bridge_history.py passes preservation/dedup/timestamp
+checks. Applies to future local MimicKit captures without extra GPU evaluations.
+
+## October18 — reciprocal rollout display repaired without trainer restart
+
+User reported no rollout in replayer. NPZ capture and telemetry were working,
+but replay.py only recognized exp_negative_sum; reciprocal_sum fell through to
+the legacy negative-loss assertion and prevented last_batch_rollout.json from
+being published. Earlier launch verification checked NPZ metadata and missed
+this conversion failure. Require end-to-end conversion/viewer verification
+when changing reward transforms, not just successful recording.
+
+Converter now validates1/(1+sum physical terms) for reciprocal_sum, preserving
+the auxiliary auto-phase exclusion and existing exponential/negative paths.
+Reconverted current update100 (1,654,784samples),20 rows, and visibly verified
+the selected live run, motion and per-tick losses in the browser. Only local
+bridge23008 restarted as27392; trainer388 and deadline are unchanged. Proof:
+Saved/MimicKitEquipment/reciprocal-replay-fixed.png. Regression test added for
+reciprocal conversion, auxiliary phase exclusion and rejection of bad rewards.
+All3 targeted replay tests passed. Broader pipeline suite had10 passes and an
+unrelated existing resume-fixture error (fake Agent lacks _env); no training
+resume code changed. Current capture was also checked through the actual
+20-row converter and browser, with playback visibly advancing.
+
+## October18 — fresh frame-zero get-up run with reciprocal reward
+
+Latest user direction cancels further animation cleanup. The pinned preview
+was rejected: although its root was restored, torso IK and leg changes inherited
+from the first cleaner still moved the head/feet. Checking only root equality
+was insufficient, and the prior response overstated what was preserved. No
+preview edits are promoted into training. Preserve existing packaged target
+and reset motions exactly; their known incompatibilities remain unresolved.
+
+User explicitly approved fresh weights/counters,512 worlds, all get-up starts
+at authored frame0, and reward=1/(1+total weighted error), for two hours on L4
+at <=$0.59/hour ($1.18 GPU ceiling). Keep pelvis-XY following, existing weights,
+auto-phase input,50/50 front/back sampling,34 velocity controls,30cm all-five
+termination spheres, and reset at clip end with NO idle tail. No new animation,
+PHAT, motor, solver or PPO changes. The reciprocal transform is opt-in through
+tracking_reward_form=reciprocal_sum; default exponential behavior is preserved.
+idle_recovery.start_at_frame_zero=true applies on every reset, not just startup.
+
+Local64-world physics smoke passed3 full resets and8 ticks each: all starts0,
+both clips sampled (98/94), exact reciprocal reward checked on every step and
+finite observations/rewards. Source archive comparison found only train.py
+provenance text, recovery_omni.py, absolute_walk.py and env_config.yaml changed.
+Persistent source readback SHA256:
+9f4967710ef741a09bd4e7758652cfbd483835dbac05e0295aae3305d7589c94.
+Evidence: reciprocal-smoke.json; reciprocal-source.json; launcher
+Saved/MimicKitEquipment/fresh_reciprocal_two_hours.py. Owned v05mjf1bj17lwa
+restarted with local/remote billing guards. Startup time is included in7200s
+cap; launch uses --keep-deadline and no --resume.
+
+Live:20261018_062758_uefn_getup_frame0_reciprocal_512, trainer388/exit guard389,
+local billing guard9180, bridge23008/dashboard19348. Hard stop08:25:18 Warsaw
+(1792304718.265493), with save/upload reserve before it. Verified update10 /
+180,224samples advancing at4.40e3transitions/s; resume.json reports zero prior
+samples and iteration offset. First save checkpoint0000000 (16,384samples)
+persistently readback-verified, SHA256
+9c3a603a2ee8603235164f2f39003006e54837bcbe9cf05d47f72561cd5227bd,
+28,715,083bytes. S3 latest_verified independently checked locally. All20 replay
+rows start at0.0s and record reward_from_loss=reciprocal_sum. TensorBoard has
+reward, episode duration, optimizer and every weighted loss card under the
+2026-10-18_06-28-04_UEFN_Getup_frame0_reciprocal_512. Evidence: reciprocal-live-check.json and per-run
+dashboard/bridge receipts. No preview cleanup was deployed.
+
+## October18 — hand contact correction supersedes the first cleanup preview
+
+User rejected the independently corrected frames because hands jiggle/slide;
+the earlier pelvis lift was also not authorized. Training remains stopped and
+the verified final2222 checkpoint below remains safe. No cloud operations here.
+
+New candidate: Saved/MimicKitEquipment/recovery-pinned-preview/.
+Original pelvis XYZ and orientation are restored exactly at every authored
+frame; intermediate samples follow the original MotionLib root interpolation.
+PHAT and packaged training motions remain untouched. During selected support
+intervals, both hands have fixed world-position anchors, with smooth approach
+and release targets and preferred stable orientation. Torso plus arm IK solves
+those constraints together with the exact PHAT joint limits and hand collider
+floor clearance. Root motion is never an IK variable. Support intervals at
+original30Hz: front right6–18 /left6–12; back right10–16 /left10–12.
+
+30Hz joint interpolation initially caused up to3.27mm hand drift between pinned
+frames. Offline120Hz constrained samples reduce this to0.201mm maximum, measured
+through actual MotionLib interpolation at960Hz (2,818 samples). Both clips have
+zero joint-limit violations and finite velocities. Minimum hand floor clearance
+is1.207mm front /1.304mm back. Hand rotation excursion during support is at most
+1.094 degrees; positions are pinned, orientations are softly preserved rather
+than locked exactly. All authored root samples compare bit-exact to the source.
+Duration unchanged:1.533s front /1.400s back. No runtime IK is added to training.
+
+IMPORTANT: this is a hand-contact preview, not a fully floor-clean training
+dataset. Restoring the original pelvis removes the prior whole-body lift;
+torso/pelvis/lower-body penetration remains, up to44.55mm front /13.13mm back.
+Do not represent the old all-body clearance validation as applying to this
+candidate, or deploy it silently. Do not lift the pelvis to hide other collider
+penetration without explicit user authorization. Keep temporal contact checks
+alongside floor/limit tests: per-frame floor clearance alone is insufficient.
+
+Scripts under Labs/MimicKitTraining: pin_recovery_hands.py,
+refine_pinned_recovery.py, publish_pinned_recovery.py,
+validate_pinned_recovery.py. report.json and validation.json retain numeric
+evidence; original30Hz candidate files remain for comparison.
+Preview: http://127.0.0.1:8843/Saved/MimicKitEquipment/recovery-pinned-preview/
+
+## October18 — user stop and constrained get-up cleanup for visual review
+
+User requested stopping training, cleaning the animations and showing them,
+specifically hand IK AFTER enforcing joint limits. No restart authorized here.
+Owned L4 v05mjf1bj17lwa stopped; Runpod API confirmed EXITED. Final2222 archive
+was read back from persistent storage and downloaded locally with SHA256
+452417cfaafd46f12e50d25f8cf35f22f3a5126059e34e0727aaee705c700dd9.
+Local checkpoint: Saved/MimicKitEquipment/getup-cleaning-latest.zip;
+receipt: getup-cleaning-stop.json. Original animations, package and PHAT remain
+unchanged. Preview candidates are in recovery-cleaned-preview, not deployed.
+
+Cleaner first projects joint rotations into the exact retained twist/swing
+ellipse or hinge interval. Then constrained IK clears the actual PHAT collider
+shapes while retaining those joint constraints throughout the solve. Hand and
+foot targets keep horizontal position and prefer their limit-projected
+orientation; elbow/knee/body deviations are minimized. Root XY, root rotation,
+clip timing and frame counts stay authored. Pelvis Z is raised only where its
+own collider needs clearance (and minimally if the remaining floor constraints
+require it); hand clearance is solved separately through arm IK. This also
+clears other body colliders rather than hiding penetration outside hands/feet.
+No self-collision constraint added. Initial2mm clearance provides interpolation
+margin; local refinements address any remaining dips between authored frames.
+
+Both reset and target will use the same cleaned trajectory on a future approved
+launch. MotionLib derives fresh root/joint velocities from these new frames;
+old reset-only IK files must NOT be paired with the cleaned targets. Current
+reward and training configuration are unchanged. Cleanup scripts:
+clean_recovery_preview.py, refine_clean_recovery.py, validate_clean_recovery.py
+under Labs/MimicKitTraining. Validation uses actual MotionLib interpolation at
+960Hz, checking all colliders, exact joint limits and finite velocities.
+Final verification passed2,818samples: no joint-limit violations, minimum
+collider clearance0.327mm front /0.540mm back. Maximum pelvis-height change
+from the original is4.625cm front /1.513cm back; horizontal root path and
+orientation unchanged. Original duration1.533s/1.400s and47/43frames retained.
+An initial check caught between-frame dips up to7.24mm and a left-ankle
+interpolation violation; local constrained refinements fixed these before
+delivery. This is geometric/interpolation validation, not a guarantee of
+dynamic tracking with the existing checkpoint.
+Browser preview opened and visually checked at hand-support frames, with both
+animations playing and optional original-target overlay:
+http://127.0.0.1:8843/Saved/MimicKitEquipment/recovery-cleaned-preview/
+Preview screenshot, validation.json and refinement.json are in that folder.
+
+## October18 05:30 — why early get-up starts fail: frozen-policy audit
+
+Read-only investigation; live sphere30 run was left unchanged and advancing
+(iteration2132 /34,947,072samples observed). No new cloud allocation or extension.
+Frozen checkpoint1822 /29,868,032samples downloaded and SHA256 verified locally:
+252811ac2a2cd2b3958f174e9560f65d97b63a4c84e553ea38fd4ac7a4faafe4.
+Local package limits and both target motions were SHA-matched to the live pod.
+
+64 deterministic starts: two get-ups,16 evenly spaced source-frame phases,
+both equipment groups. First-quarter starts completed0/16; last-quarter16/16.
+The first-quarter failures occurred after0.133–0.200s. Front first-frame start
+failed on left-foot distance at tick5; back first-frame on head distance at
+tick5. Replacing autoregressive phase input with perfect authored phase in
+the paired local experiment left completions40/64 and early completions0/16.
+This does not support phase prediction as the principal cause here.
+
+Confirmed target/reset incompatibilities with the ACTUAL packaged PHAT:
+- Original targets violate joint limits in18/47 front and27/43 back source
+  frames. No violations in either final quarter. Back right-shoulder twist
+  exceeds its bound by up to38.41degrees; torso/hip/knee/ankle limits also fail.
+- Reward targets still contain floor penetration: back right hand12.58cm,
+  front right hand6.71cm; feet about4.5cm. Earlier IK corrected reset files
+  ONLY, leaving tracking positions/rotations/velocities on the original clips.
+- Reset IK clears hands/feet but not the rest of the body: front torso/pelvis
+  penetrate up to4.48/4.42cm; back torso3.23cm. Corrected resets still violate
+  joint limits in18/47 and27/43 frames. Therefore these are not wholly feasible
+  reset states, and exact reference tracking is physically contradictory.
+
+Reward starvation compounds this: exp(-sum of all weighted errors), with
+scales inherited from RunLR. Front frame0 reward falls from0.0501 at tick1
+to1.585e-8 at tick5. First-quarter mean reward0.0310 vs final-quarter0.951;
+51% of pre-failure first-quarter ticks have reward below1e-4. This is evidence
+of a weak learning signal after early divergence, not proof of zero gradient
+or that reward changes alone would solve it. 30cm termination then prevents
+these attempts from reaching the successfully learned later portion.
+
+Every physics substep in the first0.20s was instrumented locally. For unarmed
+first-frame starts, maximum motor torque/cap was0.678 front,0.403 back, with
+no saturated axis/substep; commanded velocities also stayed inside bounds.
+This rejects torque saturation as the immediate reason THESE policies fail;
+it does not prove the caps can reproduce the full authored trajectory.
+Extra split-position limit projection moved bodies by less than3e-8m on
+these early starts (the floor guard blocks it), so do not blame the newly
+added position-projection correction for their observed30cm divergence.
+Contact and velocity-limit constraints remain active. Zero-velocity-command
+controls still diverge from the moving reference; they are not limp controls.
+
+Recommended next work: make a single feasible recovery trajectory consistent
+with floor and joint limits and use it for both resets and tracking, including
+recomputed velocities. Review any PHAT/animation change before deploying.
+Then reconsider the all-terms exponential scaling and early-start curriculum;
+do not blindly increase torque or assert that these changes guarantee recovery.
+No physics, PHAT, reward, dataset or live-run change made by this audit.
+Evidence: Saved/MimicKitEquipment/getup-start-audit/{report,targets,corrections}.json;
+paired policy_phase/clock_phase traces and substep NPZs. Reproduction helpers:
+Labs/MimicKitTraining/diagnose_getup_starts.py (also --corrections),
+diagnose_getup_corrections.py, audit_getup_targets.py.
+
+## October18 04:27 — resume get-up with all five30cm spheres
+
+User requested latest-checkpoint continuation for two hours with full sphere
+termination at30cm. Prior clip-end-only run stopped gracefully at921_final,
+15,106,048samples; locally downloaded and SHA3e704d44bd14 verified against
+persistent archive (sphere30-resume.json /sphere30-resume-latest.zip).
+New20261018_042646_uefn_getup_sphere30_512 uses --resume, preserving weights,
+optimizer/normalizers/counters;512recovery rows, pelvisXY target and clip-end
+reset/no idle tail remain. Fail when any head/right-hand/left-hand/right-foot
+collider-centre target deviation is strictly greater than0.30m after time0.
+Other failure conditions stay disabled; sphere_only is distinct from the older
+path that also re-enabled pose termination. Clip-end/horizon resets remain;
+sphere failure takes precedence when both happen on the same tick.
+
+CPU boundary tests cover all five points (exactly30cm accepted,30.1cm fails),
+and512-world/eight-tick physics smoke checks actual flags; passed sphere30-smoke.
+Source7936f559e5e2 fully verified persistently. Same L4 v05mjf1bj17lwa,
+trainer880/exit guard881; two-hour hard deadline1792297612.081509 =06:26:52
+Warsaw, <=$1.18 additional GPU ceiling. Bridge27884/dashboard7896 started.
+Replayer sphere geometry already reads radius_m; its formerly hardcoded27cm
+label now also reads recorded radius, preserving accurate historical labels.
+Resume verified: prior_samples15,106,048,iteration_offset922, optimizer and
+normalizers restored. New checkpoint922 (15,122,432samples) persistently
+verified, SHA81f448163591. TensorBoard and20-row replay checked: sphere_only=true,
+radius_m=.3, all five body names, reset_at_getup_end=true. Receipt
+sphere30-live-check.json; helper resume_sphere30_two_hours.py.
+
+## October18 — correction: get-up completion resets; no idle tail
+
+User corrected the fresh-only experiment: do NOT append idle after get-up.
+Disabling failure termination must never implicitly disable authored clip-end
+reset. These are independent controls. reset_at_getup_end=true now remains
+effective with timeout_only=true: no pose/contact/distance failure checks, but
+clip completion (or10s safety horizon) resets immediately. Reference remains
+the get-up clip through the final tick, never switching to idle. Random starts
+exclude the final source frame so every episode has at least one interval.
+PelvisXY following,512recovery rows, remaining settings unchanged. Restart from
+fresh weights/optimizer/normalizers and zero counters; new two-hour window.
+
+The incorrect20261018_032329 run stopped gracefully; final194 /3,194,880samples
+verified persistently, SHA02df9039ebc1, receipt clip-reset-prior-final.json.
+Regression checks distinguish ordinary-row failures, recovery no-failure,
+authored clip-end completion and horizon timeout.512-world/eight-tick physical
+smoke passes with reset_at_getup_end=true and no idle-reference tick
+(fresh-clip-end-smoke.json). Source8ac3411327c6 verified in persistent storage,
+helper fresh_clip_end_two_hours.py. Corrected run
+20261018_033547_uefn_fresh_getup_clip_end_512 launched on the same L4, trainer663,
+exit guard664; fresh two-hour hard deadline1792294551.9579153 =05:35:51 Warsaw.
+No checkpoint loaded; resume.json reports prior_samples=0/iteration_offset=0.
+First checkpoint0 (16,384samples), SHA8cb97e2bd949, is persistently verified.
+TensorBoard and20-row replay verified: every row reset_at_getup_end=true,
+failure checks disabled, phase mode 'get-up authored clock; reset at clip end'.
+Recorded durations0.067–1.167s reflect different random start frames; no idle
+tail. Receipt fresh-clip-end-live-check.json. Pending mixed-motion resume helper
+also preserves clip-end resets; rebuild its source before any future launch.
+
+## October18 — fresh noisy-idle-only side experiment, two hours authorized
+
+User superseded immediate mixed-motion resume with a temporary fresh experiment:
+512worlds,100%idle and100%recovery membership, random front/back get-up source
+frames, pelvisXY-relative target positions, existing world heading/height and
+velocity/angular tracking, existing calibrated weights and auto-phase. Fresh
+weights/optimizer/normalizers and zero counters; no --resume argument. Keep
+the337.74M mixed-motion continuation pending and its checkpoint intact.
+No early termination on these rows;10s horizon remains. Authored get-up target
+clock transitions to the existing autoregressive idle target after clip end.
+Two-hour GPU authorization at <=$0.59/hour (ceiling$1.18), replacing the initial
+one-hour answer. Dedicated helper fresh_idle_two_hours.py/source archive leaves
+the pending mixed-motion config intact. Row allocation now admits exactly100%
+idle, explicitly skips the empty locomotion cohort; previous fractions unchanged.
+Local512-world/eight-tick fresh-policy smoke, cohort assertion and horizon check
+passed (fresh-idle-smoke.json). Source619b45150390 fully verified in persistent
+storage. Original host rejected start for insufficient GPU capacity; its stopped
+disk remains retained (retained-t7kby2z4440esp-pod.json). Replacement Secure L4
+v05mjf1bj17lwa allocated at$0.59/hour; hard stop1792293667.513482 =05:21:07
+Warsaw, including setup time within the$1.18 ceiling. Runtime cache restored and
+verified in37.3s. Launched20261018_032329_uefn_fresh_noisy_idle_512 at03:23:35,
+trainer432 /exit guard433; local billing guard2004, remote billing guard active.
+Fresh command has no checkpoint argument. Bridge14124/dashboard18676 started
+with a separate datetime experiment and20 noiseless replay rows. First checkpoint0
+(16,384samples) is fully uploaded/readback verified, SHA27c3cec0dadf1; S3
+latest_verified independently checked. Learner advanced through update4/81,920
+samples. Initial update3.01s /5,438transitions/s; this is startup timing, not a
+steady-state benchmark. Runtime recovery_setup confirms512recovery/0ordinary
+idle/0walk/0run, absolute_target=false and timeout_only=true. Test return1.17
+is initial evaluation, not proof of learned recovery. TensorBoard experiment is
+visible; first20-row replay loaded and checked: all rows timeout_only=true,
+target_position_mode='pelvis XY following'. At03:28, update50/835,584samples,
+recent mean1.846s/update (8,874transitions/s), no failure receipt. Receipts:
+fresh-idle-live-check.json and fresh-idle-source.json. The source/PHAT and all
+existing checkpoint archives remain preserved; no earlier run resumed.
+
+## October18 03:05 — prepared rollback to337.74M; launch blocked by balance
+
+Latest user request: resume checkpoint20613_final (337,739,776 samples) for
+three hours, remove all early termination from noisy idle/recovery rows, and
+restore pelvis-relative get-up tracking. Use idle18-resume-latest.zip and its
+idle18-resume.json checksum3b008cfdf37b; local and persistent full readback verified.
+Do not substitute the later383.6M checkpoint.
+
+Prepared config keeps18%idle (92rows:74recovery/18ordinary),168walk/252run.
+Recovery timeout_only overrides pose/contact/27cm/clip-end resets; only the
+existing10s horizon resets these rows. After authored get-up ends, they follow
+idle using autoregressive phase as previously implemented. Other rows retain
+all their existing termination checks. Numerical safety checks remain active.
+absolute_target=false makes get-up target positions follow current pelvisXY;
+authored world heading/height and world velocity/angular targets remain intact.
+No local-joint loss or full pelvis-rotation alignment was introduced.
+
+Termination override passed512-world/eight-tick physical smoke and horizon
+check; a dtype mismatch found in that smoke was fixed before cloud startup.
+Subsequent pelvisXY change passed full/subset target translation tests with
+height preserved. The full physical smoke preceded that final config switch.
+Canonical shared-actor optimization from the completed audit is in the prepared
+package (including corrected auto-phase metric reporting). Source is stored at
+equipment/timeout-pelvis-xy-20261018/source.zip under the existing S3 pipeline.
+Helpers: resume_timeout_three_hours.py, timeout-source.json,
+test_recovery_timeout_only.py and timeout-only-smoke.json.
+
+Runpod POST start rejected the existing L4 t7kby2z4440esp for insufficient
+account balance. Stop call completed; readback confirms EXITED. No new trainer
+or observer started. Three-hour authorization remains for the eventual launch;
+regenerate deadline at successful startup, not from the failed attempt.
+
+## October18 — replay / TensorBoard recovery after local internet outage
+
+Owned pod t7kby2z4440esp is confirmed EXITED; no restart or new GPU was used.
+Recovered 11 missing checkpoint replay captures using S3 ZIP byte-range reads
+(66,952,038 bytes transferred, CRC-checked members, no model downloads).
+Local replayer now contains all 29 persistently saved captures, 20 rows each,
+through update23414 /383,631,360 samples; latest points to that capture.
+Original capture timestamps retained and dropdown steps deduplicated.
+Restored 18 genuine TensorBoard points from checkpoint metadata: six test
+episode durations, six test returns and six training total losses. Original
+event files preserved; no curves interpolated. Latest-ten experiment cap stays.
+
+Limitation: persistent storage has no final archive or exit-evidence bundle for
+this run. Full training event log after local update22894 was not uploaded in
+the intermediate checkpoints, so detailed training curves cannot currently be
+recovered from S3. They may remain on the stopped pod's retained disk. Do not
+claim final completion, a clean shutdown or a precise stop time from this data.
+The local billing guard only confirmed EXITED after connectivity returned at
+02:22 Warsaw; this is confirmation time, not evidence of when billing stopped.
+Recovery scripts and receipts: Saved/MimicKitEquipment/offline-telemetry-recovery,
+recover_offline_telemetry.py and restore_recovered_scalars.py.
+
+## October17 20:05 — 18% idle continuation, fresh three-hour authorization
+
+User interrupted the optimization audit to triple idle allocation and remove
+head/hand 27cm termination only from noisy idle/get-up rows. Run
+20261017_200515_uefn_equipment_idle18_512 resumes latest20613_final, SHA3b008cfdf37b,
+verified locally in idle18-resume-latest.zip and by full persistent S3 readback.
+Same owned L4 t7kby2z4440esp, $0.59/hour. Fresh three-hour hard deadline
+1792271122.0458524 =23:05:22 Warsaw;165s reserved for final save/evaluation.
+All deadline readers updated; new trainer-exit guard678 and independent local/
+remote billing guards retained. No GPU release/reallocation during handoff.
+
+512 rows now:92 idle (74 recovery,18 ordinary),168 walk,252 run. Recovery rows
+retain pose-MSE, both feet's27cm deviation, clip-end reset and timeout checks;
+head/hand deviations remain tracked/rewarded but do not independently terminate
+these rows. Ordinary idle/locomotion termination unchanged. Same learned model,
+optimizer, normalizers/counters; new physical episodes and fixed assignments.
+Unit termination checks and512-world/eight-tick physical smoke passed. Source
+0911d5acbdf9 is persistently verified; idle18-source.json, idle18-smoke.json and
+idle18-resume.json record evidence. At20:10 learner reached20684/338,903,040
+samples; all four actual cohort counts match, full optimizer/normalizer resume
+confirmed. First new20614 checkpoint has persistent full readback verification
+(SHAb98d8bd44c6d);20-row replay and TensorBoard update correctly. No fatal error.
+Last30 updates average2.623s /6,246 transitions/s with the larger recovery share;
+this changed workload is not a matched speed comparison against6% idle.
+
+At20:31 live training reached21094/345,620,480 samples. Latest checked persistent
+save21014 SHAe0e59dbbde0b is verified; replay21014/TB respond; no fatal error.
+Last30 updates2.831s /5,787 transitions/s. Learning metrics have fluctuated after
+the new mixture: this confirms advancing training, not improved recovery quality.
+Live run is left uninterrupted until the23:05:22 deadline.
+
+## October17 20:32 — full follow-up optimization audit completed
+
+All five researched directions were tried locally, with no second cloud GPU,
+Unreal interaction, PHAT edit or change to the live learner's physics.
+
+Accepted in canonical code/future source packages: PPO and auto-phase now share
+one actor hidden-layer pass when exploration probability is1. Mixed exploration
+keeps the reference path. Inputs, outputs, rewards, SGD/momentum, minibatch
+sampling, noise and physics remain unchanged. In the paired512-world full-PPO
+benchmark, warmed complete update10.5488 ->10.0946s (**4.31% less time**); the
+non-rollout portion2.2573 ->1.4736s (**34.7% less time**). These are LOCAL4060
+measurements with trajectory/timing variation, not an L4 gain or a large physics
+speedup. Both paired blocks improved; physics still dominates. Evidence:
+optimization-followup/full-shared.json and ppo-v4.json.
+
+Numerical scope: the loss is algebraically unchanged, but combining backward
+paths changes float32 summation. Single-batch gradient checks pass (about1e-7
+with all stochastic actions); repeated clipped/ReLU PPO updates amplify tiny
+rounding changes. A strict2e-6 parameter-equivalence check failed, retained in
+ppo-v3/ppo-v4; do NOT call this bit-identical. ppo-trace.json records the growth.
+The old Unreal Run LR4013 checkpoint and its exact archived body were tested:
+16 distinct phase starts repeated across512 worlds,10s each. Original, one
+reference PPO update and one shared-actor PPO update all passed every start,
+zero solver warnings; peak target distances18.05/18.83/18.45cm respectively,
+below27cm. No new learned checkpoint saved. This is MJ behavioral validation;
+unchanged Jolt native evidence remains historical, not claimed rerun. Report:
+optimization-followup/ppo-shared-runlr.json. Production512-world32-tick PPO
+smoke and phase-metric check pass in production-actor-smoke.json.
+
+Also fixed a reporting bug: phase_prediction and auto_phase metric aliases
+shared storage while upstream accumulated/scaled each key in place, producing
+roughly20x underreporting with40 actor minibatches. Independent metric tensors
+now report the true mean. Actual supervised phase weight/loss was always used
+in backprop and is unchanged. Expect larger displayed phase loss after deploying
+the new source; this alone is not a learning regression.
+
+Rejected (diagnostic only): scratch reuse6.226 ->6.394ms; three-axis batched RHS
+6.561 ->6.473ms and active-row clearing6.400 ->6.383ms were within timing
+variation, not dependable gains. Matched contact impulse reuse preserved the
+short Run LR motion but averaged129.83 ->138.89ms per tick, slower. CUDA capture
+worked after removing retained autograd graphs but added no clear improvement
+over the shared actor calculation at this batch size. No iteration caps,
+convergence tolerances, precision, contacts or constraints were weakened.
+
+Release edeeaf57ed7f is packaged as source.zip/recovery-source.zip and fully
+readback-verified in persistent storage at equipment/shared-actor-20261017.
+audit-complete.json is saved locally and persistently. The ACTIVE L4 still uses
+0911d5acbdf9: no optimization hot patch/restart was imposed on this requested
+three-hour run. Deploy the new canonical package at the next authorized resume.
+All experiments/logs and failed checks are retained under
+Saved/MimicKitEquipment/optimization-followup and followup-*.log.
+
+## October17 19:24 — authorized L4 continuation launched; measuring actual speed
+
+User authorized three hours and explicitly said to leave training running and
+report actual L4 speed. New owned Secure L4 t7kby2z4440esp costs $0.59/hour.
+Run 20261017_192404_uefn_equipment_solver_speed_512 resumes verified19683_final
+at322,502,656 samples, including weights, optimizers, normalizers and counters.
+Source release d61275b88cbc is verified on the pod. Settings/body/data unchanged.
+Hard billing stop1792267893.7239227 =22:11:33 Europe/Warsaw, October17;
+training reserves165s for final evaluation/upload. Budget ceiling$1.77 includes
+setup time. Local guard, remote deadline guard and trainer-exit guard are active.
+Speed alone must NOT stop this run: user explicitly asked to let it run.
+
+The old klyceawn5edw3l host could not resume. Replacement5a5ezh60g5hrwp hit
+a PC-upload timeout, then a bootstrap dependency/authentication issue; setup
+failures stopped its billing. Its GPU was then unavailable. Both earlier pods
+remain EXITED with retained disks. Final replacement uses a SHA256-verified
+direct S3 source download and cached runtime. All attempts share the initial
+22:11 deadline; retries did not extend the budget. Evidence and helper receipts
+are in Saved/MimicKitEquipment.
+
+Actual L4 verification at19:28: last30 complete PPO updates average2.1941s,
+7,467 transitions/s (earlier warmed window2.1658s /7,565 transitions/s).
+Previous L4 full-PPO measurement3.065s /5,345 transitions/s: now28.4% less
+time per update,39.7% more throughput. This is actual resumed training, not a
+physics-only benchmark; it is a before/after run comparison, not a simultaneous
+paired benchmark. Separate periodic evaluation/checkpoint overhead is outside
+that update timer. Latest observed iteration19734,323,338,240 samples; advancing.
+No solver warnings, numerical failure or backup errors at the check.
+First new checkpoint19684 has verified S3 full readback, manifest independently
+confirmed locally. Replay has20 rows atstep19684; TensorBoard serves this dated
+run within its newest10 limit; both local viewers respond. Training remains
+running as requested. Evidence: solver-speed-l4-live-verification.json and
+floor-recovery-optimized-verification.json in Saved/MimicKitEquipment.
+
+## October17 — faster contact solver implementation and local validation
+
+### Further optimization research, October17 — ideas only, live run unchanged
+
+User requested internet research while the current L4 trains. No runtime edit,
+cloud profiling, dependency upgrade, benchmark or second GPU workload was made.
+Cross-checked current code against primary documentation. Priorities:
+
+1. Persistent velocity-contact impulse warm starts. block_contact_gpu.py clears
+   contact/limit/manifold impulses on entry; its existing warm_state/warm_status
+   caches motor branches, not previous-tick contact impulses. Match persistent
+   contacts/manifolds across substeps, transform friction into the new basis,
+   discard invalid matches and episode-reset entries, and solve with unchanged
+   residual criteria. Box2D describes temporal impulse reuse as reducing repeated
+   convergence work, especially resting contacts. This is a candidate, not a
+   proven speedup or bit-identical trajectory: friction/nonunique solutions and
+   finite iteration budgets require validation. Do not warm-start position
+   projection corrections. Source: https://box2d.org/posts/2024/02/solver2d/
+2. Batch small groups of RHS vectors against the same Cholesky factor. Current
+   block solver calls tile_cholesky_solve separately for each contact axis,
+   limit and spin row. Multiple-RHS solves could share factor reads/instructions;
+   modest groups limit extra scratch memory. This differs from rejected reuse
+   of factors across changing motor active sets. Verify support/performance in
+   pinned Warp1.12.1; current docs may describe newer APIs.
+   https://github.com/NVIDIA/warp/blob/main/warp/examples/tile/example_tile_block_cholesky.py
+3. Audit compiled shared-memory footprint/temporary tiles, then explicit scratch
+   reuse or splitting factor preparation from register-only contact iterations.
+   Warp documentation says owning tile allocations accumulate without live-range
+   reuse. We already reuse the main factor tile; remaining temporaries may still
+   restrict concurrent worlds. Splitting adds launches/memory traffic and is only
+   worthwhile if measured whole PPO improves. One-warp blocks also have a50%
+   theoretical warp-occupancy ceiling on Ada (24blocks vs48warps), before memory
+   limits; this is not proof of the bottleneck. Earlier64-thread-per-world trial
+   failed to help; packing independent worlds is a distinct, more invasive idea.
+   https://nvidia.github.io/warp/latest/user_guide/programming_model/tiles.html
+   https://docs.nvidia.com/cuda/ada-tuning-guide/index.html
+4. Avoid work over unused contact capacity. Adapter allocates4*ngeom contact
+   slots and3*njnt limit slots, clears full Jacobian buffers and launches several
+   preparation kernels over capacity. Prefer active-entry work/fusion or proven
+   capacity sizing; never silently drop contacts. MJWarp explicitly documents
+   both memory and computation scaling with contact/constraint capacities.
+   https://mujoco.readthedocs.io/en/stable/mjwarp/index.html#performance-tuning
+5. Lower priority: capture/compile fixed-shape PPO minibatch computations. Physics
+   already uses CUDA graphs; upstream actor/critic updates remain Python loops.
+   Actor boolean selection gives dynamic batch shape, so full capture is not a
+   drop-in toggle. Preserve sampled actions, mask reductions, optimizer steps,
+   normalizer timing and RNG semantics. Local candidate PPO has~2.3s outside
+   rollout of10.6s total, so this cannot eliminate the dominant rollout cost;
+   no corresponding L4 component split has been measured.
+   https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/
+
+Do not present estimated gains as measurements. Do not blindly lower iteration
+caps, increase timestep, enable lower-precision physics, remove floor protection,
+or repeat rejected factor/shared-cache experiments under another name. The
+highest-value first candidate is contact warm starting, with bounded validation
+against the existing captured contacts and current recovery/locomotion states.
+
+The runtime now keeps generalized velocities in GPU registers during contact
+iterations, uses full contact corrections, and preconditions friction using the
+current articulated response. Both tangent denominators receive the SAME
+positive scale: their ratio and the original disk-projection fixed points are
+preserved. Spin uses the corresponding scalar response. Motor branch estimates
+retain their required 0.5 damping. Gains, torque caps, mass, PHAT, friction law,
+constraint order, floor protection, rewards, episode resets and checkpoint are
+unchanged. Converged sweeps stop only after BOTH small velocity change and checks
+of the original contact/limit/friction equations. Float32 precision allowance is
+2e-6 plus eight epsilons of scale, capped at 1e-4. The 100-pass ceiling remains for
+hard cases; it was NOT blindly reduced. Larger (>64-DOF) rigs retain the previous
+tiled kernel. All stepping remains GPU-only inside existing CUDA graphs.
+
+Measured on this local RTX4060, paired baseline/candidate/candidate/baseline,
+512 worlds, latest19683 checkpoint restored between blocks, 12 disposable PPO
+updates /196,608 transitions: mean full update13.6211 ->10.6027s, **22.16% less
+time /1.285x throughput**. Rollout11.5236 ->8.3033s. Both candidate blocks were
+faster than both reference blocks, with finite parameters/buffers and no solver
+warnings. This includes fused FK and cached recovery starts as well as the new
+solver; it is NOT an L4 result or a guaranteed zero-overhead claim. Candidate
+contact passes averaged21.15–21.17 per motor branch solve; max100 still occurs.
+The earlier ~77-pass measurement used a frozen-policy diagnostic, so it is not
+an exactly matched PPO pass-count comparison.
+
+Validation: 24 identical recorded impacts across512 worlds, qpos difference
+<=1.79e-7 and generalized velocity difference<=8.02e-5 versus the old solver.
+Final production kernels match independent float64 difficult-case solutions
+within1.40e-5; CUDA graphs, bad cached motor branches, finite-budget warnings and
+nonfinite rejection pass. The older test incorrectly expected finite-budget
+failure to kill training; its expectation now matches the user's existing
+warning-only policy. No runtime failure policy was weakened. Actual packaged
+floor cases retain peak penetration4.378mm with the guard. Forced-time diagnostic
+resets bypass the spawn cache so the test actually uses its requested poses.
+
+Fused FK preserves hierarchy/quaternion algebra (max tested position1.07e-6m,
+quaternion component5.96e-7); CPU/autograd retain upstream behavior. Recovery
+spawn cache is exact for all90 authored sampled frames. These changes alone
+previously delivered only3.5% with strong drift; they were insufficient.
+Rejected factor-reuse/shared-cache/exact-cycle candidates remain diagnostic-only.
+The additional solver changes above are the implemented improvement.
+
+Evidence: Saved/MimicKitEquipment/floor-recovery/preconditioned-speed-ppo.json,
+preconditioned-vs-current.json, production-register-reference/,
+production-register-floor.json. Final packaged production smoke passes two PPO
+updates (32,768 disposable transitions), finite weights/buffers, no warnings;
+its measured second update is9.906s, which is a smoke result, not a new paired
+speed claim. Only seven intended Python runtime files were updated in the
+frozen package; body/motions/configuration and every other archive entry are
+preserved byte-for-byte. Full runtime inventory verification passes.
+Source ZIP d61275b88cbc (6,605,955bytes) is published to persistent S3 and its
+entire contents independently read back and SHA256 verified. Receipt:
+Saved/MimicKitEquipment/floor-recovery/solver-speed-release.json. The local
+source.zip and recovery-source.zip match this release. No additional checkpoint
+was created. API reconfirms owned pod EXITED at publication.
+
+At optimization completion, pod klyceawn5edw3l was stopped; speed heartbeat remains paused.
+Latest19683_final is still locally/S3 verified (SHA3cb1100da832), with322,502,656
+samples. No cloud training/allocation, Unreal change or extra checkpoint was
+made during that optimization. See the newer live-run handoff above for L4 verification.
+
+## October17 — paid run stopped; isolate and fix the speed regression locally
+
+User rejected continued spending and instructed solving the slowdown. This
+supersedes the three-hour continuation below. Owned pod klyceawn5edw3l is
+confirmed EXITED. Final19683 archive is checksum-verified both locally and in
+persistent storage, SHA3cb1100da832; local file
+Saved/MimicKitEquipment/parallel-floor-stopped-latest.zip. Unique exit evidence
+also downloaded. Receipt parallel-floor-user-stop.json. The speed heartbeat
+is PAUSED. Do not allocate/resume paid training while this investigation runs.
+The earlier variable local ABBA timing did not establish acceptable L4 speed;
+do not use it as launch evidence. New investigation separates same-state floor
+guard time, split-limit projection time, and complete physics/PPO workloads.
+
+Local causal isolation now identifies the reset change, not the floor guard,
+as the dominant workload increase. Same frozen checkpoint,512 worlds,90 policy
+ticks, fixed seeds: reset-at-getup-end OFF took17.50s without guard /16.94s
+with guard; reset ON took32.63s without guard /31.67s with guard. Recovery-row
+cold retries rise223->1897 (guard OFF); locomotion work stays essentially equal.
+GPU graph trace: floor guard2.27ms of111.20ms physics; motor/contact block solves
+dominate. Uncaptured Warp event timings include launch gaps and incorrectly
+inflate CRB cost; use captured CUDA profiler results, not those timings.
+Existing cache survives teleports; invalidating only reset rows reduces recovery
+retries roughly1440->1200 but total time remains32s: insufficient by itself.
+Investigating exact redundant contact-iteration cycles; no tolerance relaxation,
+controller/PHAT changes or paid work launched. Evidence contact-work.json,
+contact-work-invalidate.json, kernel-profile.json. Earlier wording attributing
+the full71% slowdown to the parallel guard was not causally justified.
+
+## October17 — three-hour parallel-floor continuation authorized
+
+User authorized resuming the latest checkpoint for three hours and requested
+notification if actual training slowdown becomes substantial. This supersedes
+the earlier stop/no-restart instructions below. Latest checkpoint19510_final
+contains319,668,224 samples, SHA0b5774d06420; local and persistent copies verified.
+Old L4 b97r8nr7eo4mc1 could not restart because its GPU was unavailable; retained
+disk preserved. Replacement owned L4 klyceawn5edw3l costs$0.59/hour. Its hard
+deadline is Unix1792258567.605572 (19:36:07 Warsaw), including setup time;
+maximum GPU budget$1.77. No further extension authorized. Source3eb712705f4d
+selects the tested parallel guard, keeping existing training settings and
+get-up-end resets. Local/remote billing guards remain mandatory.
+Setup briefly stopped the pod on a helper KeyError reading hard_stop_unix from
+pod metadata; corrected to read runtime_control.json. Same pod restarted with
+the original deadline. No training or checkpoint was lost by this setup error.
+Trainer launched16:41:19 Warsaw as20261017_164113_uefn_equipment_parallel_floor_512
+from the checksum-verified latest archive; restore/progress and L4 speed are
+verified below. TB/replay observers launched, existing
+servers respond on8035/8021. Quiet five-minute heartbeat
+equipment-training-speed-watch alerts sustained update time>2.24s (25% over
+original), new failures or completion, and pauses when done. Compare steady
+full PPO update time with original1.79s and rejected serial guard3.17s;
+the local4060 result below is not evidence of L4 throughput.
+
+Live check16:44 Warsaw: restore confirmed319,668,224 samples, optimizer and
+normalizer restored, iteration19521 advancing. First new19511 checkpoint
+SHA685b6eeacc63 is independently visible via persistent latest_verified;
+no failure file. Crucially, initial post-warmup update2.874s versus original
+1.79s (+60.5%). User notified immediately; longer30-update window pending.
+Do not describe this as no-overhead or assume the laptop benchmark transfers.
+Training remains running under the latest explicit resume-and-report instruction.
+
+Confirmed16:45 Warsaw at19541 /320,176,128 samples: last30 full PPO updates
+average3.065s (5,345 transitions/s), excluding initial update. That is71.2%
+longer per update /41.6% fewer transitions/s than original1.79s. Only3.3%
+faster than rejected serial guard3.17s. Therefore the parallel implementation
+has NOT recovered the original L4 throughput. Different replacement host
+and different checkpoint trajectories prevent attributing the whole difference
+to one kernel without a matched L4 comparison. Do not hide this behind local
+benchmark results. User informed; no unrequested tuning or restart.
+First verified persistent save19511, SHA685b6eeacc63; no failure file.
+20-row local replay and TensorBoard updates confirmed. Recovery-end resets
+visible in replay; both unarmed/drawn locomotion included. Evidence:
+Saved/MimicKitEquipment/floor-recovery-optimized-verification.json.
+Speed watcher should not repeat this already reported3.07s finding unchanged;
+report a meaningful worsening, failure, or completion.
+
+## October17 — parallel floor guard tested locally; cloud remains stopped
+
+User asked to continue fixing the overhead after stopping the paid run. No cloud
+restart/allocation authorized by this investigation. Two local candidates:
+1. Existing-contact mass projection: rejected. The same bad start still reaches
+5.58cm penetration vs5.68cm baseline; active contacts miss newly introduced
+floor intersections. Evidence contact-metric-candidate.json. Diagnostic code
+contact_projection_candidate.py is NOT packaged/selected by training.
+2. Parallel geometric guard: one warp per world and one lane per collider,
+computing each collider's ancestor transforms independently. Same floor bounds,
+search and correction semantics as guarded version; floating-point operation
+order differs.1024 randomized geometry cases pass, new penetration<2e-7m,
+clear states bit-identical, CUDA replay exact. Worst generalized-coordinate
+difference from scalar guard5.1e-5; do not claim bit-identical blocked states.
+Matched saved-policy cases keep peak penetration at4.38mm instead of5.68cm.
+No controller, mass, geometry, gains, limit values or self-collision changes.
+Full512-world paired PPO benchmark now passes:24 disposable updates /393,216
+transitions, original saved weights/optimizer and fixed random seed restored
+between baseline/parallel/parallel/baseline blocks. First2 updates per block
+excluded from timing. Median full rollout+GAE+PPO update15.234s baseline vs
+12.001s parallel (ratio0.788). All recorded tensors/parameters finite and solver
+validation passes. This is on the local4060 laptop, not an L4 measurement or
+a literal zero-additional-instructions claim. No measurable whole-training
+slowdown in this bounded workload; do not extrapolate a guaranteed21% speedup.
+ContactTransferEngine now selects the parallel implementation when the existing
+floor-aware flag is enabled. Scalar guard remains a diagnostic reference.
+Tests/evidence: floor-recovery/guard-parallel-unit.json, parallel-policy.json,
+parallel-ppo-benchmark.json. Tested source package3eb712705f4d (6,601,954bytes)
+is persisted in S3 and independently readback verified. Production constructor
+path and direct ancestor FK tests pass (<6.7e-7m error versus CPU geometry);
+recovery reset/termination regressions pass. Pod b97r8nr7eo4mc1 confirmed EXITED
+after publishing code. Cloud restart remains prohibited pending new instruction.
+Original and final local checkpoint ZIPs remain preserved.
+
+## October17 — user STOP: overhead rejected
+
+User explicitly rejected the floor guard's training overhead and ordered the run
+stopped. Stop requested for20261017_154335_uefn_equipment_floor_recovery_opt_512;
+normal final-checkpoint save and owned exit billing watcher remain active.
+DO NOT resume or allocate GPU without a new user instruction. The measured
+3.1–3.3s/update versus1.8s was unacceptable; resuming despite this measurement
+was a mistake. Any replacement must demonstrate acceptable end-to-end overhead
+before a paid training launch; isolated kernel timings are insufficient.
+The guard remains opt-in in the prepared configuration, so DO NOT launch that
+package accidentally. Keep the locally downloaded study checkpoint intact.
+
+Confirmed stopped15:49:16 Warsaw: pod b97r8nr7eo4mc1 desiredStatus=EXITED,
+GPU compute released, retained disk preserved. Final19510 /319,668,224 samples,
+SHA0b5774d06420, persistent S3 readback verified and downloaded locally as
+Saved/MimicKitEquipment/floor-recovery-stopped-latest.zip. No failure file.
+Receipt floor-recovery-user-stop.json. Original317.7M study zip also retained.
+
+## October17 — floor-aware limit corrections and get-up-end resets
+
+User requested cheap floor clipping repair, reset recovery rows at get-up end,
+and local download of the latest checkpoint before continuation. Gracefully
+stopped run20261017_145946 at19389_final /317,685,760 samples. Persistent S3
+readback and local SHA6289ef4c1d51 verified. Study checkpoint:
+Saved/MimicKitEquipment/floor-recovery-study-checkpoint.zip. Keep this file.
+Old exit watcher suspended only during supervised handoff; billing guards remain.
+
+Opt-in engine flag transfer_floor_aware_projection adds a GPU-only geometric
+check around the existing split angular-limit position correction, which runs
+after the contact velocity solve. If that correction pushes any sphere/capsule/
+box through the horizontal floor, backtrack its generalized-position displacement
+to the last floor-feasible fraction. No root lift, velocity change, new gains,
+torque caps, angular-limit values or self-collision changes. Clear proposals are
+bit-identical. Blocked corrections are deferred: this is a unilateral step guard,
+not a new simultaneous contact/limit position solver and not proof of Jolt parity.
+Only this equipment engine config opts in; unrelated training/Unreal unchanged.
+
+Matched frozen-policy back-get-up start at16/30s: peak foot penetration5.681cm
+before ->0.439cm with guard. Separate initial foot penetrations existed before
+physics (front example2.749cm). Precomputed reset-only leg IK now lifts clipped
+feet while preserving foot XY/orientation, hips, pole, root and upper body/hands.
+Front92/back62 foot-frame corrections, max4.475/4.535cm. Targets remain unchanged.
+Both already-hand-cleaned source banks preserved; new *_reset_floor_ik.pkl used.
+Final matched32-world off/on tests show all four starts clear at reset to3um;
+guarded peak during motion <=4.38mm. This residual contact/integration penetration
+is NOT fixed by the angular correction guard. Early pose failures still occur;
+no recovery-success claim. Exact cases/results: floor-recovery/*.json.
+
+Guard tests:1024 randomized cases across actual compound hinge/free rig and
+ball/free fixture; FK error<3.5e-7m; new floor violation<1.9e-7m; clear poses
+bit-identical; CUDA capture/replay exact.512-world physics/PPO smoke and20-row
+evaluation pass. Matched projection microbenchmark on laptop adds about0.84ms
+per512-world physics substep; not a measured whole-L4-training percentage.
+No CPU copies or allocations on the live substep path. Offline IK has zero
+per-step cost. Full source/evidence package is persisted before continuation.
+
+reset_at_getup_end=true: recovery rows retain the final authored get-up target
+on their last tick and then TIME/reset (or existing FAIL if tracking failed).
+They no longer transition to idle. Ordinary idle rows unchanged. Sampling excludes
+the final source frame to avoid empty episodes;1us endpoint tolerance prevents a
+float32-extra tick. Auto-phase feedback input and authored get-up clock unchanged.
+Consequently aggregate episode seconds will shorten by design; not comparable
+to the previous get-up-plus10s-idle-tail curve. Tests retain old opt-in transition
+behavior and verify new end-reset/termination priority.
+
+Initial continuation run20261017_153656_uefn_equipment_floor_recovery_512
+restored317,685,760 samples, optimizer and normalizer. First new checkpoint19390
+SHAe71abb43c9ce was stream-readback verified in persistent S3.20-row local replay
+and TB8035/replayer8021 verified; three captured recovery rows reach clip-end
+TIME/reset with no idle tail (another still fails tracking early). Backup/live
+verification receipts are floor-recovery-first-backup.json and
+floor-recovery-live-verification.json. Hard billing stop17:37:00 Warsaw;
+165s final-save reserve. New exit watcher replaced the suspended old watcher.
+
+Measured L4 update cost initially3.16s versus prior1.79s: substantial overhead,
+not negligible. Local block-size sweep preserves all geometry/capture checks;
+64-thread launch reduces the randomized actual-rig guard from about2.3ms to1.2ms.
+Only launch block size changes, no altered correction/physics algorithm. A
+supervised latest-checkpoint handoff applies this optimization while retaining
+the17:37 deadline. Explicit64-vs256 launch test produces bit-identical accepted
+qpos on all1024 randomized cases. Subsequent isolated timings vary with laptop
+load (1.2–1.8ms); do not treat these as exact L4 throughput predictions.
+
+Optimized continuation20261017_154335_uefn_equipment_floor_recovery_opt_512
+resumed19455_final /318,767,104 samples (SHA0a5afa0178b0). That intermediate
+handoff is also locally verified as floor-recovery-optimization-checkpoint.zip;
+the originally requested317.7M study checkpoint remains untouched. Source
+591f4a02c831 persisted/readback verified. PID1121, exit watcher1122, bridge6904,
+dashboard15528. Hard stop17:37:05 Warsaw (same minute; five seconds handoff
+overhead), training deadline17:34:20 with final-save reserve. Optimizer and
+normalizer restored; first update succeeds. Final verification receipt:
+floor-recovery-optimized-verification.json.
+
+First optimized checkpoint19456 SHA c0ff47cd08af verified by persistent stream
+readback; confirmed advancing through19466 /318,947,328 samples without failure.
+Early full L4 measurement remains3.26s/update versus prior1.79s (~82% longer,
+~45% fewer transitions/s). The isolated kernel scheduling improvement has NOT
+demonstrated an end-to-end training speed improvement. Floor clipping mitigation
+is verified but the requested cheapness is not achieved; retain this limitation
+prominently rather than describe the guard as negligible overhead.
+
+## October17 — absolute get-up targets and idle-heading alignment
+
+User requested latest-checkpoint continuation for two hours. During the authored
+get-up only, all body targets retain fixed world positions instead of following
+the simulated pelvis. At the exact switch to idle, pelvis-XY target following
+resumes; target height and heading remain authored. Each whole get-up is rotated
+once about world Z to match its final pelvis heading to the first frame of the
+row's assigned idle (drawn/unarmed have slightly different headings). Root
+translation, orientation, linear/angular velocities rotate together; local joint
+coordinates, height, hand-only reset IK, phase rules, losses and termination
+settings remain unchanged. COM velocity bands are computed in the rotated world
+axes too. Replay records the same target tensors used by the loss/27cm check.
+Local tests passed: 512 worlds, 32 physics ticks, one disposable PPO update,
+20-row replay, both idle headings/front-back combinations, fixed get-up targets
+and exact-boundary return to pelvis-XY following. Runtime116.7s. Floor/pose/
+27cm/timeout regression test passed. Test report: recovery-preflight/report.json.
+No change to main ProjectJournal, Unreal assets or other cloud pods.
+
+Latest checkpoint18889_final /309,493,760 samples SHA4fb2d5092cb1 verified
+by persistent readback and downloaded locally as absolute-recovery-resume-latest.zip.
+Previous trainer completed gracefully. Same pod b97r8nr7eo4mc1, source
+2b5c5038a836, new run20261017_145946_uefn_equipment_absolute_recovery_512
+launched14:59:54 Warsaw, PID736, exit watcher737; old watcher retired.
+Fresh two-hour hard stop16:59:52 Warsaw (Unix1792249192.067905), including
+165s final-save reserve. Existing local/remote deadline guards updated.
+Bridge23088 and dashboard2764 verified live; 20-row replay and TB published.
+First new checkpoint18890 SHA884a13363095 verified by S3 readback, then
+independently downloaded/hash-checked locally (absolute-recovery-first-verified.zip).
+Advancement confirmed through local update68 /310,624,256 samples; no failure
+or backup-error files at verification. Actual replay checks confirm absolute
+rotated get-up root targets within1e-5m and exact pelvis-XY following after idle
+transition in all four captured front/back/equipment combinations. Receipts:
+absolute-recovery-first-backup.json and absolute-recovery-replay-verification.json.
+Detailed receipt: Saved/MimicKitEquipment/absolute-recovery-handoff.json.
+
+
+## October17 — user-requested persistent-storage cleanup
+
+Deleted seven explicitly verified disposable cache files,2,163,975,624 bytes
+(2.16GB decimal). Four historical processed-animation caches have their format
+markers verified from bounded object reads; three superseded Warp compilation
+archives are excluded from current runtime manifests. All model checkpoints,
+UE5 exports, source animations, latest equipment/crawl backups and current
+runtime/kernel caches retained. Eighteen distinct checkpoints referenced by
+current installed UE5 contracts/pickers hash-verified locally before cleanup.
+No pods stopped/deleted or training modified. Each deletion confirmed404.
+Exact inventory/plan/receipt and protected-model manifest:
+Saved/MimicKitEquipment/storage-audit-20261017/. Cloud receipt:
+mimickit/storage-cleanup/20261017-safe-cache-cleanup.json (readback verified).
+Inspection was scoped; unclassified older environments/assets were retained.
+
+## October17 — user authorizes verified 284M backup; resume recovery for two hours
+
+Latest user explicitly abandoned waiting for inaccessible latest and authorized
+resuming verified checkpoint17362 /284,475,392 samples on available L4, within
+the existing two-hour <=$0.59/hour budget. Old-host recovery heartbeat PAUSED.
+Preserve stopped old pod/disk; do not automatically retry it. Prepared recovery
+curriculum and hand-only IK unchanged. Verify first new checkpoint in persistent
+storage before further updates; failed backups stop trainer and billing. Each
+save also waits for prior upload, preventing unverified checkpoint accumulation.
+This supersedes all no-fallback/no-new-pod instructions below.
+
+Replacement L4 b97r8nr7eo4mc1 allocated at $0.59/hour; two-hour hard billing
+stop Unix1792245706.0179138 (16:01:46 Warsaw), training reserves165 seconds
+for final evaluation/save. Old o095ir9r3mkpda remains stopped and retained;
+its local control files are preserved in Saved/MimicKitEquipment/retained-old-host.
+Source7d552c52835a5a7452f944138b5bfa8eedc5772ccc1640b2364c855edcf46c6d
+verified in persistent storage. Runtime restored from cache, no reinstall.
+Fallback17362 SHA d4969070cf38a0e8fe5f594836136e69ab8671142e07688b08719332b05f89df
+verified locally, S3 readback and on new host. Launched
+20261017_140400_uefn_equipment_recovery_512 at14:04:41 Warsaw, PID501,
+failure-exit watcher502, local billing guard25624 and remote deadline guard.
+Bridge1404 and dashboard5956 started. Verified advancement through local update34
+(global17397),285,048,832 samples, no failure/backup-error files. Resume receipt
+confirms optimizer and normalizer restored with fresh physical episodes.
+Actual row assignment193 walk/288 run,25 recovery/6 ordinary idle; weighted
+40/60 sampling rounds by motion allocation, adaptive allocation disabled.
+First new checkpoint17363 independently read back from S3 and saved locally as
+recovery-first-verified-checkpoint.zip; SHA
+f7478af3c0ac6f0c393dc1ee449e8b7a736dd6652332a6a2bac56832483f8b5c.
+Receipt recovery-first-verified-receipt.json; training proceeded only after its
+background uploader readback completed. First20-row replay6.14MB transferring
+through existing2MiB/30s telemetry chunks. Transfer and local replay conversion
+now complete (last_batch_rollout.json present); TB comparison publishing.
+Injected upload failure test confirms error recording/propagation; scoped billing
+stop tests pass. Checkpoint cadence/retention unchanged; first upload verified
+synchronously, subsequent uploads background with no queue accumulation past next save.
+
+### Previous latest-only request (superseded)
+
+Latest user correction explicitly says resume training. Recover latest >=19846,
+verify locally and in persistent storage, then launch prepared recovery setup
+for the approved two-hour window at <=$0.59/hour. No older fallback. One-minute
+heartbeat retries host availability and continues through successful launch.
+This supersedes the recovery-only/stay-stopped instructions below. Preserve
+retained disk; no new pod allocation. Use existing scoped runtime guards and
+backup-failure stop handling. Do not leave an accessible paid pod idle on failure.
+
+### Earlier recovery-only instruction (superseded by correction above)
+
+User now explicitly requests retrieving latest and one-minute scheduled retries
+if unavailable. This supersedes the earlier prohibition on retrying host access,
+but does not authorize restarting training or renting a replacement GPU.
+CPU-only podResume retried and rejected for insufficient host memory; exact pod
+o095ir9r3mkpda independently remains EXITED. Retained disk is preserved.
+Heartbeat recover-latest-equipment-checkpoint is ACTIVE every minute in this chat.
+Bounded retrieval/verification/stop instructions are saved in
+Saved/MimicKitEquipment/checkpoint-recovery-instructions.txt. On access, download
+latest >=19846, verify locally and by S3 readback, stop pod, then pause heartbeat.
+No new GPU, no training, no deletion of fallback or retained disk.
+
+### Previous handoff — hand IK passes; latest still on retained disk
+
+User explicitly chose "Keep latest; leave training stopped" after the host
+restart failed. Do not substitute older checkpoint17362, rent a replacement,
+retry launches or create a monitor without a new instruction (now supplied above). Preserve stopped
+pod o095ir9r3mkpda and its retained disk holding the believed latest19846
+(~325M samples). Latest is NOT yet downloaded or verified. The accessible
+backup17362 has284,475,392 samples; retained locally and in persistent storage.
+
+Recovery hand-only reset correction PASSED the512-world physical preflight,
+32-tick rollout, disposable PPO update, phase/reset contract checks and20-row
+noiseless capture. No solver error or invalid tensors. Evidence report.json in
+Saved/MimicKitEquipment/recovery-preflight (88.57s; fallback17362 used only for
+local tests). Test episode average250.014 ticks is aggregate, NOT a claim of
+successful get-up learning. Geometric checks confirm exact unchanged root/
+lower body and preserved hand orientation; IK is precomputed, reset-only.
+Preview refreshed with a checked "Hand IK starting poses" toggle.
+
+Code/config/IK reset libraries persisted and SHA-readback verified:
+mimickit/pipeline_20261014/uefn-equipment/source_33221d7e1da4.zip,
+SHA33221d7e1da4c3ec8c74656f3342dda14c219280679501f8aaaa05f5e28574a6.
+REST start rejected (host GPU unavailable). GraphQL gpuCount0 also rejected;
+explicit computeType CPU rejected for insufficient host memory. Owned pod
+independently confirmed EXITED, retained volume unchanged. No paid replacement
+allocated, no new timer/guard started, no GPU spending this turn.
+
+### Preparation and earlier failed preflight (resolved by hand IK)
+
+User approved the preview, edited front once more, and authorized resuming for
+two hours. Latest front SHA64db68a4ca4d289472f60516dfa8bfbb60a91729b9aefe8304917e2543cbdf17
+is retargeted with the same native projection and independent foot correction.
+Both clips now pass that foot solve; front max added-penetration correction
+0.103cm, back0.909cm. Original authored floor penetration and recorded PHAT
+excursions remain disclosed, not silently clamped. Preview folder is refreshed.
+
+Requested allocation implemented in opt-in recovery_omni.py:31 idle rows,
+25 recovery/6 ordinary;192 walk/289 run; adaptive allocation removed. Recovery
+starts use equal front/back selection and uniform authored-frame sampling.
+Auto-phase feeds the next tick's input; get-up target retains authored clock;
+after get-up, idle reference follows the previous tick's prediction. Recovery
+rows retain pose-error/27cm failure and10s timeout, allowing floor contact.
+No network/input-size, learned-weight, optimizer, noise or loss-weight change.
+Current PHAT assets included in candidate package, not yet deployed.
+
+Local512-world checks passed154 inputs/34 motors, exact row counts, fixed
+membership, phase queue timing, clock independence during get-up and idle
+handoff. Rollout buffers and disposable PPO update remained finite, but the
+physics validator rejected recovery worlds3/8/16 with error7: more than four
+contacts in one shape-pair manifold. Paid launch is HELD pending diagnosis;
+this is not a successful physical preflight. No check suppressed, PHAT or
+physics rule modified. Focused64-world capture reproduced failure on the first
+tick: world35, back clip at0.1s. Saved GPU equation has a five-point manifold;
+state/solved velocities remain finite. CPU collision query at that captured
+pose measures right-hand collider penetration9.184cm, forearm2.692cm and
+right foot2.644cm. Do not mislabel this as nonfinite PPO or merely roundoff.
+Evidence: recovery-preflight/first-contact-failure.{json,npz}; CPU contact
+count is not asserted identical to GPU contact count. Recovery-only termination
+unit test passes: floor contact allowed, pose/27cm/timeout preserved, ordinary
+rows unchanged. Physical preflight remains FAILED, not waived.
+
+User rejected whole-body lifting and explicitly requested hand IK when a hand
+clips. Implemented reset-only arm IK using the existing exact two-bone hinge
+solver: fixed shoulder, preserved elbow pole, hand XY/orientation retained;
+hand collider bottom lifted to floor plus1micrometre for float32 FK tolerance.
+Root and lower-body generalized coordinates are byte-identical. Target PKLs
+remain unchanged. Front34 hand/frame corrections(max6.710cm), back23(max12.578cm).
+Prepared reset libraries are loaded once; no IK solve in training steps.
+Preview now has "Hand IK starting poses" checkbox; unchecked shows actual target.
+All geometric reach/orientation and physical512-world tests pass. See hand-ik-report.json,
+prepare_recovery_hand_ik.py and recovery-preflight/hand-ik-test.log.
+Owned pod o095ir9r3mkpda independently confirmed EXITED; no new GPU spending.
+
+User explicitly authorized deleting all older MimicKit checkpoints except the
+resume source. Deleted1654 cloud checkpoint ZIPs/30,168,827,431 bytes; preserved
+other chat's crawl runs and all code/log/replay data. Receipt and exact inventory:
+Saved/MimicKitEquipment/checkpoint-cleanup-{receipt,inventory}.json. Verified
+cloud fallback17362 is retained locally and remotely. Latest actual19846 is
+believed retained on the stopped owned pod, but NOT yet downloaded/verified;
+old run's volume-full errors prevented uploads after17362. Recover19846 before
+resuming; never silently substitute fallback17362. Prepared resume_recovery.py
+starts only this pod with immediate two-hour guard and preserves latest before
+removing fallback. No start/publish stage has run. Candidate train.py now stops
+on a failed durable backup at the next PPO boundary so the existing exit watcher
+can end billing; checkpoint cadence/retention for the new run is unchanged.
+
+## Earlier October17 — initial get-up preview (superseded above)
+
+Latest user instruction supersedes immediate two-hour resume: retarget and show
+the newly edited getUp_front_quick.fbx / getUp_back_quick.fbx first, then train.
+Owned equipment pod o095ir9r3mkpda confirmed EXITED. No restart/rental or policy,
+training config, normalizer, checkpoint, sampling or observer changes made.
+
+Requested next experiment (NOT implemented/launched): keep6% idle rows;80% of
+those start at a random frame anywhere in either get-up, front/back equally.
+For these rows disable failure termination. During recovery, the target/MSE
+follows the get-up's authored clock; predicted next-tick phase feeds input only.
+At the end switch target to idle, with the predicted phase controlling its
+next-tick reference/MSE as well as input. Preserve the one-tick timing of the
+phase output. Keep episode timeout as stated to user; remaining ordinary idle
+and locomotion rows keep normal behavior. User authorized two hours but now
+requires preview before launch. Do not substitute an idle target during get-up.
+
+Fresh FBX imports: front SHA b441efef21cc1d45d60a97f04981b1d9a57ec2a3ed2583fb2cbd5b852f014f3f,
+47frames/30Hz/1.533s; back SHA96b892aba2b1e98a1b3a6564ec304864bc9c31415717e6db28030f3846b3f8c2,
+43frames/30Hz/1.4s. Autodesk SDK round-trip maximum position error<3e-5cm,
+orientation<7e-12rad. Existing native UEFN anchor projection and handedness
+conversion to current15-body/34-DOF rig. No PHAT edits, limit clamps or scaling.
+Back uses existing independent pole-preserving foot correction (54 foot frames,
+maximum lift0.909cm). Front's frame7 left leg cannot reach the requested lift
+without changing the existing solve; whole front preview is explicitly pure
+projection, no foot correction. Maximum added front penetration1.031mm right,
+0.779mm left. Authored PHAT foot geometry already intersects floor up to4.535cm
+across these clips; this was not erased by the retarget.
+
+Limit audit at16 subdivisions finds excursions: front torso/right upper arm/
+left lower arm/left thigh; back torso/right upper arm/right thigh/right knee/
+both ankles. These are reported, not silently fitted or certified for training.
+Need resolve admissibility and preview review before paid training.
+
+Preview: http://127.0.0.1:8843/Saved/MimicKitEquipment/recovery-preview/
+Orange retarget; optional blue authored PHAT overlay, independent playback and
+scrubbing. Browser render verified. Evidence, imported FBXs/BVHs and candidate
+PKLs in that folder; report.json records caveats/source hashes. Reproducible
+helper Labs/MimicKitTraining/prepare_recovery_starts.py: convert with Stepper
+SDK Python310, prepare with Saved/Robotics/env/Scripts/python.exe.
+
+## October17 — locomotion retarget verified against latest upper-body PHAT
+
+User requested reretargeting while preserving the lower body. Reran all54
+equipment references with the existing sources/cuts/foot-lift method and the
+current exported model. Fresh Unreal export exactly matches canonical source;
+editor state preserved. All54 files are byte-identical to the previous motions,
+including pelvis, legs, upper body and phase metadata. The retarget does not
+clamp to joint limits, so the expansion changes allowed physics motion rather
+than reference poses. Dense current-limit audit passes6,512,884 samples with
+the existing5% margin. Current canonical model/limits already contain the new
+PHAT. No training restart, cloud deployment, sampling or exclusion changes.
+Evidence: Saved/MimicKitUEFN/upperbody-retarget-20261017/verification.json.
+See Docs/MimicKitUEFNBodyMatching.md for exact PHAT provenance and method.
+
+## October 17 — user shortened current run to one hour remaining
+
+At 08:35:30 Warsaw, user requested stopping the current run in one hour.
+Applied reloadable hard deadline Unix1792222530.6748135, **09:35:30 Warsaw**,
+to owned pod o095ir9r3mkpda on both remote and local controls; this supersedes
+the earlier 14:56 deadline. Trainer stops 165 s earlier for final evaluation,
+checkpoint save/upload. Trainer446, remote guard120, exit watcher447 and local
+guard9776 confirmed alive. No restart or training-setting changes.
+
+## October 17 — second regression: forward running lost, walks retained
+
+User flagged another test spike/drop. Saved evaluation 16,562 -> 16,662:
+5.938 -> 0.798 s, but tracking loss only 2.344 -> 2.372. No failure or
+numerical/solver-warning file. Engine/env/agent configs and normalizer tensors
+are byte/value identical across those checkpoints. Do not call this run stable
+just because tensors remain finite or its average loss improves.
+
+Repeated local frozen comparison on the SAME 50 motions × four phases, current
+caps/physics, zero noise/adaptation/updates: 16,562 mean 9.003 s, 163/200 finish
+10 seconds; 16,662 mean 7.889 s, 150/200 finish. Running mean 8.231 -> 5.807 s,
+walking 9.693 -> 9.794 s, idle 10 s throughout. Run F unarmed 9.250 -> 0.342 s;
+Run F drawn 7.425 -> 0.333 s. Forward variants regress most; most other motions
+retain their behavior. The episode-count weighted chart greatly amplifies this
+specific failure because failed forward rows repeatedly restart.
+
+Prospective one-update audit from peak 16,562: same 512-world rollout, saved
+motion assignments and actor/critic momentum, fixed normalizer, identical
+minibatches, standard 32 rollout ticks and 40 actor optimizer steps. Only actor
+LR varied in disposable local copies. At 1e-4: mean old/new Gaussian KL 0.1285,
+p95 0.2587, final minibatch clipping fraction 69.1%, physical action shift RMS
+0.02731 rad/s. At 3e-5: mean KL 0.02571, p95 0.04688, clipping fraction 40.3%,
+RMS 0.01222 rad/s. This measures substantially more conservative updates; it
+does NOT replay the historical collapse or establish long-run retention.
+No actor-LR, checkpoint, sampling, physics, deadline or observer changes were
+made to the paid run. A controlled continuation from 16,562 at smaller actor
+LR is a candidate next test, not an already-proven fix.
+
+Evidence: Saved/MimicKitEquipment/torque-regression/new_16562_16662.json,
+second-remote-summary.json, ppo-update.json; standalone audit helper
+Labs/MimicKitTraining/diagnose_ppo_update.py. Only two additional model snapshots
+and the peak's optimizer state downloaded (~38.7 MB compressed); no second
+cloud workload or local training continuation. Local diagnostic jobs finished.
+
+## October 17 — torque-run regression investigated without changing training
+
+User reported the test-duration drop. The current run's saved tests are
+15,662: 1.17 s; 15,762: 2.76 s; 15,862: 0.45 s; 15,962: 0.53 s;
+16,062: 0.67 s. Actual training tracking losses jump between updates 15,802
+and 15,812, before the large adaptive reallocation at 15,818. No numerical
+failure was recorded. Engine/environment/agent configs and all normalization
+tensors are identical between 15,762 and 15,862; learned weights changed.
+
+Local frozen-policy comparison: 50 admitted motions × four identical phases,
+no noise, learning or adaptive sampling, current physics/caps, 10-second horizon.
+Checkpoint 15,661: mean 6.762 s, 111/200 finish; 15,762: 7.966 s, 147/200;
+15,862: 4.252 s, 69/200. Running-only means fall 5.866 -> 1.494 s;
+walking 9.897 -> 6.531 s; idles remain 10 s. All 131 later failures exceed
+the 27 cm deviation allowance; the furthest point is a foot in 116 cases.
+On identical initial observations, action change RMS is 1.137 rad/s, largest
+at knees and ankle axes. This establishes genuine learned-policy regression.
+
+Torque-only counterfactual keeps current velocity-command bounds and changes
+only caps back to their original values. At two seconds, the good policy has
+144/200 survivors with old caps versus 174 with new; the later policy has
+65 versus 97. Reverting motor caps does not recover the lost capability.
+The current caps improve both policies in this bounded comparison.
+
+Chart caveat: upstream ReturnTracker averages every completed episode, so
+short-failing rows contribute repeatedly while long episodes finish once.
+Adaptive row counts also vary. The raw chart exaggerates this drop relative
+to equal-start testing, and repeats each test value until the next 100-update
+evaluation. No dashboard metric was silently redefined.
+
+Exact intervening gradient/update causality is NOT established: there is no
+per-update model or gradient history. High PPO clip fractions (~50–67%) already
+existed before this restart, so they alone do not prove the cause. Smaller
+updates from 15,762 are a possible next controlled test, not a proven fix.
+No live weights, LR, caps, sampling, deadline, or training processes changed.
+Tests and compact reports: Labs/MimicKitTraining/diagnose_torque_regression.py,
+Saved/MimicKitEquipment/torque-regression/{summary,new_15661_15762_15862,
+old_15762_15862}.json. Only two model snapshots were downloaded (25.8 MB).
+Initial diagnostic setup typo (joint conversion called on the character model
+instead of the motion library) was corrected before any measured rollout.
+The run and its backups remain active; prior stronger checkpoint is preserved.
+
+## October17 — validated leg torque caps; eight-hour resume launched
+
+Current run20261017_065748_uefn_equipment_velocity_512, same Secure L4 pod
+o095ir9r3mkpda at$0.59/hour. Fresh eight-hour allocation window started
+Unix1792212963.3014052; hard stop1792241763.3014052 (14:56:03 Warsaw), with
+165s reserved for final evaluation/backup. Trainer446, exit watcher447,
+remote deadline guard120 and reused local guard9776. Source backup
+mimickit/pipeline_20261014/uefn-equipment/source_ed4eba2a16c7.zip verified
+SHAed4eba2a16c7e53ad4d74606eacc28056a17bac42848c3e4e5e2e38d382637b5,
+6,507,537bytes, including measurement/verification evidence. Restored cached
+runtime; only this owned GPU was restarted. Observers14980/14816 publish the
+chronological06-57-48 TensorBoard run and20-row deterministic replay.
+Verified live at update 15,672 / 256,786,432 samples, about 6,231 transitions/s.
+Trainer and guards are alive; no failure/numerical-failure report. Live gains match
+the original exactly and all torque caps match the validated envelope. First
+checkpoint 15,662 is uploaded and readback-verified: 35,871,116 bytes,
+SHA256 32d117f7b0c6c3bb704bfecc19d3322b3a385ed2d6d94f84a73cb1bd3ea91285.
+TensorBoard has the chronological 06-57-48 run. First converted replay received
+at 07:01 Warsaw: 20 deterministic rows, actual training targets included.
+
+Latest steering: user ended further demand scanning and requested implementation
+plus verification against the latest Unreal wrist PHAT. Preserved1,576 completed
+reference starts spanning all50 clips (the unfinished tail was drawn idle).
+No further command search. Raising only axes whose measured demand exceeds
+their old cap, to measured peak*1.05; adequate caps remain unchanged. This affects
+the14 leg axes only. These are measured demands of found tracking commands,
+not a mathematical minimum or a promise of sustained policy success.
+
+Read-only fresh Unreal export Saved/MimicKitEquipment/current-live-rig.json
+matches the complete current source-rig.json exactly, including saved asset hashes.
+Both wrists already have60/45/90degree twist/swing2/swing1 limits. Training archive,
+local physics files and audit snapshot agree byte-for-byte. No PHAT edit, save,
+rebuild or retarget is needed; user dirty assets and editor session preserved.
+Receipt:current-phat-receipt.json. The initially empty wrist receipt was a report
+filter using numeric child indices as names; corrected using body-name mapping.
+
+Finite-cap check passes15 distinct saved starts including each raised axis's
+peak-demand case and forward/backward controls. Maximum position difference
+versus uncapped commands0.097mm, no numerical errors and no cap saturation.
+Restoring each individual old cap worsens tracking at its supporting case.
+The first right-knee peak331.15Nm was NOT justified by this comparison: clipping
+that particular command improved its error. Sixteen existing high-demand knee
+cases were replayed without another search. Highest supported demand305.862Nm
+gives321.155Nm with5% room, not the initial347.708Nm proposal. Full evidence in
+calibration_all/{axis_probe,envelope,verification}.json. Adequate upper-body caps
+stay unchanged (a margin alone crossing an adequate cap does not raise it).
+The CPU-model validation initially read only actuator caps; hinges instead store
+their cap on the scalar joint. Fixed the independent check to honor both storage
+forms; actual motor and Newton-model caps already agreed. No physics workaround.
+
+512-world checkpoint restore and three disposable PPO updates pass with the new
+caps: every checkpoint tensor equal before updates, optimizer/normalizer/counters
+restored from15661/256,606,208 samples, finite rollout/parameters and solver check.
+Gains unchanged; physical exploration remains0.314159rad/s (normalized sigma.05).
+The existing command-bound formula automatically reserves the new torque/gain
+headroom; action normalization and learned outputs are not rescaled. Local check
+49.96s, updates10.10/6.20/6.37s including first-use setup, not an L4 benchmark.
+The cap overrides are applied once before solver construction, with no new
+physics-step computation. Reports:torque-limit-check/report.json and
+one_tick/calibration_all/envelope.json. These checks preceded the live resume above.
+
+User authorized finishing the torque investigation, increasing only supported
+per-axis caps with 5% margin, then resuming the latest checkpoint for a new
+eight-hour window at the existing $0.59/hour ceiling. Gains stay unchanged.
+Stopped prior locomotion run20261017_060504_uefn_equipment_velocity_512 using
+stop.request. Exit guard completed saving and pod o095ir9r3mkpda was EXITED
+before the new eight-hour allocation above.
+Final15661 verified from persistent storage and downloaded to
+Saved/MimicKitEquipment/torque-resume-checkpoint.zip:36,043,295bytes,
+SHA3943adb561767b8de8c89edc222db20987db49278ba75c224a833d6e6192a6bf.
+S3 key ends runs/20261017_060504_uefn_equipment_velocity_512/checkpoint_0015661_final.zip.
+
+The local reference-state torque scan was stopped at the user's request after
+1,576 starts; its completed measurements are preserved. Named torque-cap support
+and the validated caps are now deployed, as recorded above.
+This work does not touch the other chat's separate crawl pod or its assets.
+
+## October17 — unchanged-motor resume requested; torque calibration deferred
+
+User reports longer running episodes and asks to resume with the CURRENT limits.
+Stop further torque calibration. The interrupted local audit is no longer running;
+partial calibration_all/progress.json is incomplete evidence, not an approved
+motor envelope. Experimental torque helper files remain standalone. Reverted the
+unpublished hooks in train.py/uefn_engine.py and verified their exact bytes and
+all packaged runtime files against the existing source53e01c707017. No torque
+override was put in prepared configs, deployed or trained.
+
+Prior run ended normally at checkpoint15265 final, verified S3 key
+mimickit/pipeline_20261014/runs/20261017_045927_uefn_equipment_velocity_512/checkpoint_0015265_final.zip,
+37,324,662bytes,SHA d599637e5c6276fb9427e5a56cd48fcfeb3bb6ed37dfaaba420f0defca9fad29.
+Pod o095ir9r3mkpda confirmed EXITED. User's resume continues the last eight-hour
+limit; this interpretation and$0.59/hour ceiling were stated in commentary.
+Same pod restart accepted, hard stop1792238602.9531512 (includes setup), local
+guard9776, remote guard108. Cached runtime restored and verified; no second GPU.
+Run20261017_060504_uefn_equipment_velocity_512 launched with keep-deadline,
+trainer366/exit guard367. Resumed15265 final with250,118,144 prior samples;
+optimizer and normalizer restored, no new inputs. First update15266 completed,
+250,134,528 samples; live torque/gain arrays match the original values exactly
+(hips200Nm,knees150Nm,ankles90Nm; gains50/50/40). Physical noise remains
+.3141593rad/s and the previously expanded command bounds remain active.
+No failure or numerical-failure file. Observers29236/10424 publish the06-05-04
+chronological TensorBoard run and20-row deterministic replay. First TB data
+arrived; initial replay still pending at this check. Both UI servers respond.
+Hard stop14:03:22 Warsaw; trainer reserves165s for final evaluation/backup.
+Compiled-kernel cache saving to persistent storage to avoid repeated startup
+compilation on another restart; no additional GPU workload.
+Follow-up: advancing15276/250,298,368 samples,~5431 transitions/s; first resumed
+checkpoint15266 readback-verified,35,982,220bytes,SHA
+95a04b7f0ebe077d72445ddd38775d7f82c3b9b4810fd6562a8539a175c0d982.
+Kernel cache43,293,523bytes saved and readback-verified at
+mimickit/runtime/warp_0c107a856e57c7b0.tar.gz. Remote20-row replay is6,558,751bytes;
+the unchanged bounded2MiB telemetry bridge is delivering it incrementally.
+Final local check:15316/250,953,728 samples advancing, no failure file,
+20-row replay fully converted and available in the8021 replayer; TB events live.
+
+## October17 — per-axis torque envelope calibration (deferred)
+
+User now authorizes increasing ONLY insufficient torque limits to measured need
+plus5%, preserving existing higher limits. Gains remain unchanged. Local
+one_tick_motor_audit.py --torque-calibration lifts caps temporarily in the
+isolated diagnostic, optimizes next-frame commands, and measures actual substep
+torque. Saved/MimicKitMotorAudit/one_tick/calibration retains its evidence.
+These peaks are demands of found commands, not a proven global minimum or a
+certificate of exact reference feasibility. Broader motion coverage and replay
+with the proposed finite envelope are required before promoting any caps.
+No production changes or additional cloud rental/time authorized so far.
+
+## October17 — Run F next-tick motor diagnosis (local only)
+
+User requested reference pose/velocity starts and next-tick feasibility tests,
+without interrupting the improved live run. Added
+Labs/MimicKitTraining/one_tick_motor_audit.py. Evidence is in
+Saved/MimicKitMotorAudit/one_tick/{report,summary,solutions,rollout}.json.
+Downloaded one verified checkpoint,14895/244,056,064 samples,36,235,027 bytes,
+SHA cb41b91c50f503ece0dae96f567834eb91cd06301e97f9d22aaf23b63b169134.
+The immutable original source snapshot supplies identical physics/assets/motions;
+current pipeline code supplies the widened command limits. No cloud diagnostic
+job, learning update, production gain/cap change, PHAT or Unreal edit.
+
+48 distinct reference starts:16 phases each Run F Unarmed/Drawn,8 each Run B/LR
+Unarmed. Initialize pose AND velocity; free pelvis, gravity, contacts and joint
+limits remain active. Optimize a constant34-axis velocity command over one
+1/30s policy tick/eight1/240s physics steps. Four comparisons keep exactly the
+same command limits:current motors,2x gains,2x torque caps,both2x. Twelve bounded
+finite-difference/local-search iterations per case. The objective equals the
+current four tracking errors plus flat COM band; auto-phase excluded because
+it does not affect motor feasibility. Residual reconstruction checked against
+actual env loss terms. Delivered torque/cap saturation measured every substep.
+All192 final cases finite with no physics-error flag;215s local runtime.
+
+Across32 forward starts, optimized mean tracking cost:
+current2.463e-1;gain2x2.484e-1;torque2x2.022e-1;both2x2.084e-1.
+Thus gain alone provides no useful improvement;2x torque reduces this cost17.9%.
+This mostly improves velocity tracking, not a dramatic pose correction:current
+mean maximum-body position error is about2.25cm after a single tick. Some hip
+axes reach200Nm and ankle axes90Nm throughout the tick even after optimizing
+commands. These caps restrict near-reference tracking. This is NOT a proof
+that exact reference tracking is physically possible or that twice the caps
+is the minimum necessary/sufficient setting. Search failures are not an
+impossibility certificate. Repeated equal starts have finite solver variation:
+largest initial across-copy cost spread1.51e-2 in a gain2x case; preserve this
+evidence rather than claiming exact deterministic optimization.
+
+Separate frozen-policy check:4 initial phases per motion, same checkpoint,
+no automatic resets; observe until first task failure or3s.64 trajectories.
+Across8 Run F starts, mean time to failure is0.404s current,0.271s gain2x,
+0.517s torque2x,0.317s both2x. Current maximum0.600s versus0.933s torque2x.
+All8 still fail with doubled torque. Both backward and LR controls finish3s
+from all4 starts with current or torque2x motors;gain2x breaks those controls
+(backward0.867–1.200s,LR0.767–1.033s). No numerical error in captured trajectories.
+The frozen-policy comparison measures immediate effects, not potential learning
+after retraining. It does NOT prove torque is the sole cause or that current
+gains are globally optimal. Conclusion:raising gains is unsupported;torque
+headroom helps but does not by itself repair this policy. Exact required caps
+and sustained Run F feasibility remain unproven. No production tuning applied.
+
+Live training checked advancing at15085/247,169,024 samples,~5742 transitions/s,
+unchanged existing06:00:22 Warsaw billing deadline and05:57:37 trainer stop.
+No extension or new rental authorized by this diagnostic request.
+
+## October17 — wider velocity commands; latest-checkpoint training resumed
+
+User requested command limits at the required values plus5%, then resume.
+Each motor now permits max(previous bound,1.05*(reference peak speed+torque cap/gain)).
+The extra cap/gain permits full motor torque at the animation's peak speed;
+gains, torque caps, PHAT and motions are unchanged. Right/left knee command bounds
+20.5919/19.7145rad/s, previously6.2832. Existing bounds are never reduced.
+Opt-in env_config velocity_command_margin=.05; calculated once from all loaded
+motion frames and actual motors, before constructing the agent. No physics-step work.
+
+Checkpoint action normalization, network and optimizer are preserved. Output1 still
+means6.2832rad/s; Gaussian sigma.05 still means.314159rad/s. This linear Gaussian
+output CAN exceed1. The Omni PPO action-bound penalty now obtains the legal interval
+from physical bounds through the loaded normalizer instead of assuming[-1,1].
+Its coefficient10 and every other learning setting remain unchanged. No output-layer
+rescaling, altered exploration or optimizer migration. New checkpoints include the
+computed velocity_command_bounds.json. Historical checkpoints remain immutable.
+
+Local verification: old limits reproduce the old penalty exactly; legal new commands
+have zero penalty and illegal commands have gradients pointing inward. Full512-world
+restore is tensor-for-tensor equal to checkpoint14194 before updates. Three disposable
+PPO updates passed finite-state/solver checks, without saving a new policy. Evidence
+Saved/MimicKitEquipment/command-limit-check/report.json. These are wiring checks,
+not evidence of newly learned forward running. Paid pod o095ir9r3mkpda restart
+accepted at$0.59/h; retain existing October17 06:00:22 Warsaw deadline
+(Unix1792209622.2040958), guards and durable backups. Run
+20261017_045927_uefn_equipment_velocity_512 launched from14194/232,570,880 samples;
+first completed update14195/232,587,264. Live report confirms the preserved action
+scale6.2831855, physical noise.3141593, right-knee normalized bound3.27730155.
+No failure/numerical-warning files in that initial check. Deadline guard108,
+exit guard388, trainer387; existing local deadline guard remains active.
+Bridge20580/dashboard3620; TensorBoard sees the chronological04-59-27 run.
+
+Source53e01c707017a9f79942113ab38da91253242d4723ff5de6f6e2ba464492f02a
+is readback-verified on persistent storage (command-limit-source-receipt.json).
+Current Saved/MimicKitEquipment/source.zip and packaged env config updated;
+original source moved to Saved/MimicKitMotorAudit/source.zip, whose existing
+snapshot retains the old motions/config for reproducible diagnostics.
+The stopped pod retained its checkpoint and data but lost /opt runtime. Cached
+runtime restored; its existing dangling venv symlink caused the generic restore
+to stop after successful extraction. Verified archive/existing target, reused
+the link, restored kernel cache and verified CUDA imports; no reinstall, source
+physics change or new GPU rental. Initial custom-kernel compilation completed.
+Verified advancing through14215/232,914,944 samples (~3.013s/update), no failure
+or solver-warning files. First new checkpoint0014195.zip readback-verified in
+persistent storage,35,906,505bytes,SHA36ce554e6a6d833801bda8d46ffb0f71bb9da7e5fcbc5ed963b7dc085451355b.
+The local bridge delivered TensorBoard events and the first complete replay;
+debug/last_batch_rollout.json exists for the new run at05:04 Warsaw. Existing
+bounded2MiB telemetry chunks retained;~8.90MB total telemetry downloaded at that check.
+Receipt command-limit-live-verification.json retains exact live values. This
+confirms a healthy resume, not that forward-running capability is solved.
+
+## October17 — local motor authority evidence; paid training remains stopped
+
+Isolated diagnostics in Labs/MimicKitTraining/motor_audit.py,
+motor_dynamics_audit.py and motor_search.py. Inputs are the hash-checked stopped
+run source.zip plus latest-stopped.zip and its exact packaged motions. Snapshot
+Saved/MimicKitMotorAudit/source is immutable. RTX4060 local diagnostics only;
+no pod restart, optimizer update, production gain/cap/config or Unreal change.
+
+The simple joint-velocity-plus-pose follower passed only4/200 six-second
+clip/phase cases (all unarmed idle). It also failed backward running, so its
+failures MUST NOT be called evidence of weak motors. A floating-root inverse-
+dynamics screen includes unilateral foot forces/friction and minimizes required
+motor-cap multiplier. Exact forward AND backward reference acceleration failed
+root-support feasibility in the initial sample; exact kinematic replay is a
+stricter requirement than this task's tracking tolerance. The screen also does
+not enforce contact complementarity/acceleration or limit reactions and is not
+a dynamic proof. A bounded whole-body feedback controller likewise failed the
+backward positive control; not promoted as a strength test.
+
+Actual frozen-policy positive control, original motors and +/-2pi commands:
+all4 phases each of backward and LR run survive6s (8/8); forward phases fail
+at .233/.233/.200/.267s. Widening only the command clamp, preserving actor weights
+and saved action normalizer, gives the same survival results. No claim that
+changing the clamp alone repairs the already-trained actor.
+
+Independent bounded command search (frozen policy + optimized torso/leg velocity
+offsets, real240Hz engine,30Hz commands, free root) finds a forward phase-zero
+ONE-SECOND witness with original gains/caps and expanded command range. Physical
+pelvis travels4.16m over the recorded .967s, height .822..932m. Repeating the
+candidate across256 worlds gives peak target-distance .201..258m, below .27m.
+There is finite solver/history variation between identical starts, recorded
+rather than hidden. This is NOT an all-phase, long-duration, learned-policy or
+Jolt-transfer success. Evidence: policy_stock.json, policy_reference.json,
+search_forward.json/.npz, reference_k15.json under Saved/MimicKitMotorAudit.
+
+Full frozen-policy check,50 clips x4 phases x6 seconds:157/200 pass.37 clips pass
+all4 phases;3 more pass3/4 (Walk F Unarmed, Run LR_offset Drawn, Walk FR Drawn).
+All40 cases belonging to the10 forward-run variants fail. No numerical solver
+errors during any measured first episode. One FR Unarmed world reports an error
+at tick106, long AFTER its first failure at tick6; this excluded post-termination
+tail is explicitly recorded. The first all-world script had rejected the whole
+batch due to such tails; policy_all_checked.json now records first-error timing
+and never counts an affected measured episode as a pass. Production is untouched.
+
+Matched bounded command search (same method, seed,256 candidates,8 iterations
+per .2s extension): original +/-2pi commands fail around.533s,0/256 identical
+candidate repeats survive the attempted.6s. With per-axis range
+max(reference speed)+torque_cap/gain, original gains/caps complete1s in256/256
+repeats, peak collider-target distance .167..210m. Delivered torque never exceeds
+the existing caps (maximum cap ratio1.0 at physics-substep samples). Source files
+search_forward_stock and search_forward_matched. The earlier unconstrained-prefix
+extension did NOT demonstrate2s (0/256 repeats, first failure~1.77s). The separate
+prefix-preserving search_forward_windowed also failed: stopped expanding at1.8s,
+final repeat first fails at1.60s;0/256 pass; recorded row0 has zero solver warnings
+and zero motor/contact residual metrics. All local jobs exited normally. Do not
+imply long-run success from the one-second witness. No stronger motor settings
+were selected, and no all-motion capability certification has been established.
+
+Inverse-screen validation: static gravity force767.677N for78.2545kg; mass matrix
+positive definite; synthesized support/torque equilibrium reconstructs; negative
+ground-normal support rejected. FK mapping maximum spatial error.134mm from the
+deployed float32 hinge conversion. Exact reference support failure is not proof
+of motor weakness: learned backward running passes with tracking deviations.
+
+Proposed command-envelope.json is READ-ONLY evidence, not an applied setting.
+Knee bounds with full torque headroom:19.611/18.776rad/s versus current6.283.
+Before any resumed wider-range training, reconcile the saved action normalizer,
+environment action space and PPO action-bound penalty. Upstream base_agent.py
+hard-codes normalized bounds[-1,1], active weight10. Merely widening the physical
+clamp while retaining old normalization would still penalize useful faster
+commands. Any migration must explicitly preserve/check physical means and noise;
+no such production migration or paid restart has been performed.
+
+Local comparison viewer: http://127.0.0.1:8843/Saved/MimicKitMotorAudit/ (existing
+local server, no added service), generated by motor_audit_viewer.py. Real collider
+geometry and captured actual training targets; orange physical, magenta target.
+No animation or transform is substituted for physics. Raw results and compact
+summary.json retain failed evidence. Current pod o095ir9r3mkpda rechecked EXITED.
+
+## October17 — user stopped training before motor feasibility audit
+
+User requested stopping current training to establish whether torque/gain and
+velocity control can achieve the animations. Root stop.request saved/stopped at
+iteration14194,232,570,880 samples. Final evaluated checkpoint readback-verified
+in persistent volume aj7d2jzwuq and downloaded to Saved/MimicKitEquipment/
+latest-stopped.zip (single reusable latest artifact, not an extra checkpoint set).
+Key mimickit/pipeline_20261014/runs/20261017_025027_uefn_equipment_velocity_512/
+checkpoint_0014194_final.zip;36,861,235 bytes;
+SHA a62bbefc3f4aca001518d0bd73b52769e8f8046aeff70cd5d720a5a65dee6b7f.
+Matches persistent latest_verified.json, local archive CRC passes. Unique exit
+telemetry preserved by exit watcher as exit_evidence_7dba4a09143c.zip. Runpod API
+confirms owned pod o095ir9r3mkpda EXITED: GPU billing stopped. Pod volume retained;
+no delete, rental, restart or spending extension. Local active_run.json marked
+stopped with final samples/key. Receipts motor-audit-stop-request.json and
+motor-audit-stopped.json; latest-stopped.json updated. Training MUST NOT restart
+until the requested control-feasibility issue is resolved and user directs it.
+
+Proposed next diagnostic, not yet implemented/run: an independent reference
+follower using the exact deployed body/contacts/limits/motors, policy commands
+held at30Hz with240Hz physics. Initialize from motion poses/velocities, then
+leave root and joints physical: no root forces, teleporting, contact pinning or
+kinematic enforcement. Test all50 clips/multiple initial phases over full cycles.
+Record per-joint demanded/delivered torque, command clipping, angular-speed error,
+position/orientation drift and contacts. Separate command-range inadequacy from
+insufficient gain and actual torque-cap saturation. A contact-aware inverse-
+dynamics calculation can screen torque feasibility, but must enforce floating-
+root balance, unilateral support and friction; motor-only or unconstrained inverse
+results are not proof of a physically realizable gait. Verify any candidate by
+forward simulation in the actual engine. A failed tracker alone does not prove
+insufficient strength; inspect controller/contact/reference failures separately.
+For the present velocity law, required command at desired end speed is roughly
+qdot_target + torque_required/gain. Thus just covering reference peak speed is
+insufficient: controller torque headroom is also needed. Preserve all actual
+gains/caps/PHAT until a specific supported change is chosen; do not silently
+retune production training to make a diagnostic pass.
+
+
+## October17 — forward-run stall: velocity command range mismatch confirmed
+
+User requested diagnosis without stopping the active run. Read-only live report
+history through60/iteration13970: ten forward run clips still100% early-failure
+(227,323/227,323 completed episodes in reports51..60). Approximate lifetime from
+allocated-world exposure .2311s early, .2374s previous window, .2412s latest;
+these are estimates, with evaluation/assignment caveats above. Exact noiseless
+checkpoint14085 captures: F Unarmed .233s, F Drawn .267s, FR Unarmed .200s,
+FL Unarmed .267s. No meaningful forward recovery. The earlier replay's terminal
+collider-centre errors reconstruct >.27m at a foot, with pelvis falling from
+~.89m to~.73-.75m; initial body pose matches the recorded reference.
+
+Confirmed control limitation inherited from vanilla CharEnv: every velocity
+action is bounded +/-2*pi rad/s, and _apply_action hard-clamps to this range.
+Frozen checkpoint action normalizer also has std=2*pi for all34 motors. This
+was not adapted to the UEFN motion velocities. Forward references have knee
+peaks15.2..16.6rad/s (Unarmed F family), versus command6.283rad/s; ankles also
+reach12..14rad/s. Each forward knee exceeds the command bound for~48..66% of
+sampled cycle states. Motor rule tau=clip(gain*(command-end_speed),+/-cap),
+knee gain50/torque150Nm, means that at reference speed the motor unavoidably
+brakes at full cap for~32..41% of those knee samples, even with the best allowed
+command. This is a COMMAND cap, not a hard physical angular-speed cap: inertia,
+contacts or coupled motion may carry the limb faster, against motor braking.
+Backward/lateral references are also not wholly within range but less demanding:
+backward knees exceed cap~13..18% of cycle, full-brake~0..5%; lateral full-brake0%.
+Forward translation ~5.0m/s, backward~3.0m/s, lateral~3.5m/s, so success on the
+other directions is not proof that forward control authority is sufficient.
+
+CPU-only audit on the pod (CUDA_VISIBLE_DEVICES empty, one Torch thread) checked
+all50 deployed motion clips and frozen actor on256 evenly spaced reference
+states each. Reference world linear/angular velocities match finite-difference
+interpolation derivatives: maximum3.43e-3m/s and2.43e-3rad/s. No normalized input
+clipping in these fixtures. Commands are correct per previous full input audit.
+Reference-state actor knee means sit near the bound for32..43% of forward phases.
+Separate checkpoint14085 archive audit reconstructs actual replay observations
+from saved rigid transforms/velocities and evaluates the matching frozen actor:
+F Unarmed right knee exceeds command cap2/6 interior ticks; F Drawn1/7. Other
+failed samples FR/FL have no knee command clipping. Thus the range restriction
+is a real mismatch/strong contributor candidate, NOT proven sole cause of every
+failure. No widened-range physical A/B or fine-tuning was performed, so do not
+promise that raising it alone fixes forward running. Reconstructed rotations
+agree within1.21e-6 matrix components; phase within1.29e-6. Commands are recomputed
+from matching checkpoint, not directly saved action tensors.
+
+Evidence under Saved/MimicKitEquipment: forward-latest-reports.json,
+forward_reference_audit.py, forward-reference-audit.json,
+forward_recorded_actions.py, forward-recorded-actions.json (checkpoint14085,
+model SHA inside). Small CPU diagnostics copied to owned pod root; no new GPU
+process, training/config/data/model mutation, restart, extra rental or extension.
+Recommended next controlled experiment: expand available joint velocity command
+range to cover motion requirements with controller headroom, keep physical gains,
+torque caps, PHAT and targets unchanged. Treat action normalization/checkpoint
+mapping deliberately: changing scale silently multiplies existing outputs/noise;
+a resume must preserve physical commands and clearly define exploration changes.
+User has not yet authorized this training/control change in this diagnostic turn.
+
+
+## October17 — falling episode chart investigated; no training changes
+
+Read-only inspection of adaptive reports1..40 (12794..13571), local raw TB,
+ReturnTracker and saved deterministic replay captures. Run still healthy at13605,
+222,920,704 samples,2.852s/update; backup13585 readback verified, no failure files.
+Evidence: Saved/MimicKitEquipment/adaptive-inspection.json and
+adaptive-replay-comparison.json. No restart, tuning or extra GPU evaluation.
+
+The chart is a completed-episode mean, not an equal-motion performance score.
+Ten forward Run variants (F,F_L_20,F_R_20,FL,FR, both equipment states) received
+150/512 worlds in the original stratified allocation; adaptive reports increase
+these to210 first report,230 at10,250 at20,255 at40. Report40 has97.12% of its
+completed episodes from these ten clips. They remain100% early failures.
+TB previous final train length19.97194ticks=.666s (preceding20.65ticks=.688s);
+current13.55ticks=.452s. More agents on fast-failing clips explains the dominant
+aggregate decrease. Other clips improving also loses their failure multiplier,
+so the share assigned to the persistently failing clips rises further.
+
+Approximate exposure/completion estimate for those ten clips is.231s over
+reports3..12 versus.237s over31..40: no worsening of their short lifetime.
+This uses previous desired row counts and PPO iteration deltas; delayed
+assignment and forced evaluation resets make it an estimate, not measured
+per-clip episode durations. Do not treat reconstructed fixed-mixture values
+as exact metrics. In the same windows, non-forward-run completed-episode failure
+fraction drops67.9% to20.8%; walk failures3.05% to2.25%, idle0%.
+These group rates still have changing internal mixtures.
+
+Saved noiseless clips at12174..12574 versus13185..13385 agree qualitatively:
+walks/backward runs mostly retain10s, forward runs remain~.17-.35s. Several
+lateral captures improve (Drawn LR1.33s mean to10s, Drawn LR_offset1.93s to10s),
+but Unarmed LR has one worse capture (3.08s prior mean to.23s). Samples are sparse
+and start phases differ; not a controlled same-start policy comparison and not
+proof every motion improves. There is no evidence of a broad collapse from this
+chart. The unresolved training issue is the stalled forward-run family despite
+extra allocation. Recommendation: fixed-mixture or per-motion episode reporting
+for progress comparison; retain actual training-mixture chart separately.
+
+
+## October17 — adaptive fixed-row allocation active
+
+User authorized any early-failed motion to receive up to3x sampling weight,
+keeping fixed motion assignments and rebalancing from one-minute reports.
+New adaptive_rows.py counts completed TRAIN episodes before reset clears flags,
+with per-world training provenance to exclude evaluation and forced resets.
+Every60 wall-clock seconds, at the next PPO update boundary, multiplier is
+1+2*(failed/completed) per clip. No observations keeps its preceding multiplier.
+This is capped1..3 and recalculated, never compounded. Existing run3:walk1 base
+weights stay;31/512 dedicated idle rows stay. Each admitted clip retains at
+least one row. Largest-remainder quotas minimize reassignment; the desired
+assignment only takes effect on the next reset, never midway through a rollout.
+No new physics passes, evaluation passes or per-step GPU readback. Two GPU
+scatter-add counters per nonempty training reset; one tiny CPU report/minute.
+
+Checkpoint state saves allocation, counters, multipliers and remaining report
+interval; evaluation does not affect these. adaptive_rows.json is latest report,
+jsonl retains compact reports; archives preserve both and code. Telemetry syncs
+latest report only. CPU tests cover failures/timeouts, mode transitions, no
+repeated multiplier escalation, no mid-episode mutation, minimum coverage,
+minimal churn, state restore and100 distributions for the actual50-clip pool.
+Resume targets20261017_025027_uefn_equipment_velocity_512 from latest final
+checkpoint. Owned pod and06:00:22 Warsaw deadline unchanged. Source
+ce212b22640f5caa7456279e6239657f61f2a522e5a68497019f716cfe454640
+readback-verified in persistent storage; adaptive-rows-* receipts under
+Saved/MimicKitEquipment. GPU preflight runs only after old trainer exits.
+Preflight passed on L4:512 worlds,31 idle, genuine OmniWalkEnv reset override
+with parent reset mocked verifies counts before done-clear, no double counts,
+evaluation exclusion and no active-motion mutation. Bookkeeping benchmark
+279.66us/full512-row reset,8.95ms/32-step PPO update worst case (~0.3% of
+previous~3s update); not literally zero overhead. Old final12784 verified
+SHA40d4ce8e8db1e12a60bc6a25ebe7fe17920eaa492c6b8a8c92a9f52c4a9e41f8.
+New trainer2030/exit watcher2031; bridge22380/dashboard7032.
+Live verification: first report6937 completed/failures,109 desired row changes;
+second report21495 completed/21112 failures,27 further changes; target allocation
+31 idle/70 walk/411 run. All50 clips retained. State12825 /210,141,184 samples,
+no failure markers, recent update2.8907s. First new checkpoint12785 readback
+verified SHAa09946a30fdcc2537ed72b0c626fa57c6b17a031b4de3e9c514362277c1dc507.
+Replayer12785 fully synced and selected in browser:20 rows,10 Unarmed/10
+Drawn by recorded equipment metadata and clip names; sorted idle/walk/run.
+TensorBoard new dated run publishing; old bridge finished and old dashboard
+processes19332/4088 retired. Evidence adaptive-rows-live*.json. First report may
+cover fewer active training seconds because initialization/evaluation also take
+wall-clock time; only completed training episodes enter the report. Report
+elapsed_seconds records actual wall time; no-data clips retain their multiplier.
+
+
+
+## October17 — replay row menu order
+
+MimicKit row picker sorts idle, walk, then run; within each gait, matching
+motion names are paired Unarmed then Drawn. Recorded row IDs and payload arrays
+remain untouched. Previous/next row buttons follow the visible menu order and
+wrap around. This is local viewer-only; no training or capture selection changes.
+
+## October17 01:56 — transient loss increase inspected, training left running
+
+User noticed loss jump. Read live pod status and local raw TensorBoard events:
+iteration11624 total2.90275,11634 total3.02824 with critic loss7.72496,
+11644 total3.47759; falls to3.07681 by11744. Position/linear/angular/rotation
+terms rose together. Latest noiseless evaluation11674 episode mean17.17916
+policy ticks versus18.62611 previously, so not only a chart artifact.
+This is a real temporary performance regression; critic error spike is correlated,
+not established root cause. No new solver warnings since11158 (four total), no
+failure file, process1363 still advancing, latest11674 backup verified. Observation
+normalizer metrics unchanged. Viewer handedness fix is local rendering only,
+no deployed training mutations. No stop, restart or tuning made for this check.
+
+## October17 — viewer handedness corrected (display only)
+
+Replayer viewer.html now uses a left-handed camera projection for UEFN omni
+captures (task uefn_omni_absolute_walk), shared by solid geometry, magenta
+targets, guides and spheres. Orbit horizontal drag follows the same convention;
+pan uses the corrected camera right vector. Stock MimicKit projection unchanged.
+This converts handedness at projection without changing recorded body transforms,
+collider axes, loss values or live training. Existing saved captures are corrected
+on page reload. Input-comparison/viewer.js reflects each complete posed geometry
+group on Y, retaining regular/Strafe panel placement. No runtime/source bundle,
+training process, physics or dataset mutations. Verified actual served replayer
+loads capture11174 Run BR Drawn at frame83 with original losses and targets.
+
+## October17 — drawn hand appearance: handedness conversion diagnosed
+
+User spotted apparently left-handed sword posture in Run BR Drawn, replay11174
+row11 frame83. Named right hand is correctly the quieter hand at every stage:
+raw UE torso-relative span8.03cm right /35.58cm left; packaged FK7.07/36.89cm;
+exact replay median20-frame spans target7.04/36.75cm, agent9.89/42.10cm.
+Mappings right_hand->hand_r and left_hand->hand_l are intact; no sword input swap.
+
+The spatial layout is mirrored in the right-handed display: exported rest pose
+right-minus-left shoulder is -X, actual foot-to-toe forward is +Y, up +Z.
+Normalized cross(right,forward).up=-1. Asset+90Z, motion-90Z and replay(x,z,-y)
+are all proper rotations and preserve that handedness. Earlier build.py/topic
+statements identifying the source's forward as -Y are inconsistent with the
+actual rest toe geometry. This is a coordinate-convention/display diagnosis,
+NOT evidence that the policy chose the wrong named arm. Do not swap arm labels
+or silently rebuild the dataset/physics to hide it. No training, renderer,
+PHAT or motion changes made during diagnosis. Evidence handedness-audit.json
+in Saved/MimicKitEquipment. A display conversion must handle positions AND
+orientation/geometry consistently; training/UE round-trip implications need to
+remain explicit if changing anything deeper than rendering.
+
+## October17 — final deployed input audit passed
+
+Read-only CPU check on the owned pod, using its actual deployed modules, current
+checkpoint and reference FK physical-state fixtures. No training pause, optimizer
+steps, physics rollout or injection into the live trainer. All512 fixed assignments
+pass FULL DeepMimic->Omni observation assembly (not a stub physical observation),
+including a reordered subset.154 inputs:146 physical, then gait at146,
+direction XY147:149, sword-drawn149, arms150:152, phase cosine/sine152:154.
+50 active clips have50 distinct gait/direction/equipment combinations. Manifest
+equipment/gait agree with filenames; current allocation31 idle/120 walk/361 run,
+255 unarmed/257 drawn. Both arms intentionally enabled; injury behavior untrained.
+
+Actual checkpoint normalizer maps sword0/1 to approximately-0.99586/+1.00416;
+all command values within2.539 standard deviations, below clipping at10. Current
+1024->1024->512 actor responds when only one command is changed while keeping
+the same physical-state fixture: mean absolute normalized motor-output differences
+gait3.514e-2, direction3.334e-2, sword2.402e-2, phase4.897e-2. This establishes
+connected/non-ignored conditioning, NOT successful physical behavior.
+Checked3,756 actual recorded phase frames: next-tick labels agree with current
+phase plus1/30s /each clip's duration, max component discrepancy1.088e-5.
+Deployed omni_walk.py, omni_policy.py, train.py, manifest and weights hashes all
+match saved source.zip. Evidence/script: Saved/MimicKitEquipment/
+final-input-check.json and final_input_check.py. This is reconstruction from
+deployed code/checkpoint plus replay validation, not direct live-process tracing.
+
+## October17 — replay equipment selection corrected
+
+User observed almost exclusively unarmed rows. Confirmed replay10901 had18
+unarmed locomotion rows plus one idle in EACH equipment state; row0 also had a
+misleading generic walk label. Training allocation itself was255 unarmed /
+257 drawn. The recorder walked world indices and took first distinct clips.
+After fixed assignments, worlds were ordered by manifest, unarmed first;
+rotating the starting WORLD by one per capture barely changed that bias.
+
+observe_many.select_replay_worlds now balances equipment explicitly:20 rows
+means10 unarmed/10 drawn, each with one idle and9 distinct locomotion examples.
+Select evenly across each state's clip list and rotate by CLIP each capture;
+rotate the representative world within each clip too. No RNG, environment
+reset, training assignment, loss or extra physics steps. The same20-world
+capture buffers and evaluation steps remain. CPU contracts verify the actual
+ordered512-world fixture, both states,20 distinct clips, two idles, all50 clips
+covered over24 captures, odd row counts, shortages and no duplicate worlds.
+replay.py now gives row0 its actual motion_file name like the remaining rows.
+
+Scoped save/resume targets20261017_011121_uefn_equipment_velocity_512. Current
+source8d5e7ff5eda5ac3bbde05786ebec73cd768d2b0210150d3b882ce878d1478346
+uploaded/readback-verified. Only runtime differences observe_many.py/replay.py.
+The run3:walk1 allocation,50 active clips and06:00:22 Warsaw deadline are
+unchanged. Receipts: Saved/MimicKitEquipment/replay-balance-*.
+Checkpoint10973_final saved/readback-verified SHA
+5d7cfecdb5c37d99a9346d03467050b1fe404b5c758bdacf6db4b2752d02d51c;
+resumed with trainer1363/exit watcher1364 on the same owned pod. Local
+bridge5144/dashboard19332 follow the new dated run. Handoff retains independent
+deadline guards; old exit watcher retired only after replacement launched.
+Live capture10974 verified20 rows:10 Unarmed/10 Drawn, one idle per state,
+with both walks/runs and paired motion names represented. Training advanced
+to10984 /179,978,240 samples without failure markers. First new checkpoint
+readback-verified SHAe5f8939d25cfae01e7091c3b5a5eab2cf73311253ebd335ecd19bfff9b171e27.
+Evidence: Saved/MimicKitEquipment/replay-balance-resume-verified.json.
+Local replayer sync completed: converted10974 capture has exactly10 named
+Unarmed/10 named Drawn rows; row0 correctly names the unarmed idle.
+
+## October17 — temporary run:walk weight3:1
+
+User requested running clips be three times as likely as walking clips, until
+they ask to remove this bias. Set each run clip's motions.yaml weight to3 and
+each walk/idle clip to1. Dedicated6% idle allocation remains unchanged. Actual
+CPU check of row_motion_weights/fixed_motion_rows gives512 worlds:361 run,
+120 walk,31 idle. Resets retain each world's assigned motion; no per-reset
+resampling introduced. Both equipment states receive the same gait weighting.
+All50 clips and reference values retained; Strafe BR/FL stay excluded. This is
+a sampling/allocation change, NOT a loss multiplier. Local prepare_equipment.py
+has temporary RUN_MOTION_WEIGHT=3; restore it to1 plus active motions.yaml when
+the user asks to remove the bias. Do not alter other training settings then.
+
+Prepared source c53a8536de4b3ec209ebd073c6b06076a0f515295b59470a1a025eee0a8833af
+is readback-verified in persistent storage. Runtime diff is only
+prepared/motions.yaml. Scoped latest-checkpoint handoff targets new dated run
+20261017_003615_uefn_equipment_velocity_512, same owned pod and unchanged
+October17 06:00:22 Warsaw deadline. Receipts/allocation evidence:
+Saved/MimicKitEquipment/run-weight-{request,source-receipt,allocation}.json.
+No new GPU allocation, budget or deadline extension.
+Handoff complete: checkpoint10400_final uploaded/readback-verified SHA
+33cb3f02203999bcdeda3deb6d9a20a032bcd42a9c68deeb285b59a19f817801.
+New trainer1215 and exit watcher1216; local bridge17816/dashboard26140.
+Weights, optimizer, normalizer and counters resumed; only fresh physical
+episodes and the user-requested weighted assignments are initialized anew.
+Full receipt: Saved/MimicKitEquipment/run-weight-handoff.json.
+Resume confirmed170,409,984 prior samples and iteration offset10401 with optimizer
+and normalizer restored. First update10401 reached170,426,368 samples, no failure
+markers. Live motions.yaml verified weights idle1/walk1/run3. Old observer bridge
+completed final sync before its dashboard was retired; new observers retained.
+Verified advancing10411 /170,590,208 samples, no failure markers; checkpoint10401
+readback-verified SHA730142f918a7bd62eb156413372c8abf69451242d8a8702302c9fa37c5f120f3.
+All20 local replay rows arrived and TB lists the00-36-15 dated run. Receipt:
+Saved/MimicKitEquipment/run-weight-resume-verified.json.
+
+## October17 00:05 — regular BR/FL only, resumed latest checkpoint
+
+User selected the regular Run BR/FL motions. Removed Strafe BR and Strafe FL
+from active training membership in BOTH equipment states (four clips). Active
+prepared manifest and motions.yaml now contain50 clips:2 idles,48 locomotion.
+All50 gait/direction/equipment command combinations are distinct. Retained
+motion files and phase offsets are unchanged. Local prepare_equipment.py applies
+the same explicit exclusion on future preparations; source recordings retained.
+512 worlds retain fixed per-motion assignments and6% idle allocation (31 worlds);
+remaining481 worlds are apportioned over48 locomotion clips. No architecture,
+input layout, reward, normalizer, controller or physics changes.
+
+Scoped handoff saved checkpoint9854_final and verified its persistent upload:
+SHA75b3a03b33640a0d6cf71decdad2f584e8aedf31e51fd1932e817f459a380364.
+Run20261017_000451_uefn_equipment_velocity_512 resumes that latest checkpoint,
+including optimizer/normalizer/counters. Trainer966, exit watcher967 on the same
+owned pod o095ir9r3mkpda. Existing October17 06:00:22 Warsaw deadline unchanged.
+Only old exit watcher was paused during the bounded handoff then retired;
+independent deadline guards stayed active. Source bundle e19ab7eecd9780c5a1d0abf8fc5e6d4a75acbcfb2d7c0a4881b8bcb4f7ad93d6
+was uploaded/readback-verified before handoff. Active dataset changes are only
+the two membership files (excluded PKLs omitted from new archive, retained in
+historical archives). Historical motions/manifest.json is an inactive earlier
+26-clip provenance file, NOT the active prepared manifest.
+Receipts: Saved/MimicKitEquipment/regular-only-{request,source-receipt,handoff}.json.
+Local bridge26440/dashboard22012 use the new dated run; TB latest10 cap retained.
+Verified resume reports161,464,320 prior samples, iteration offset9855, optimizer
+and normalizer restored, no appended inputs. First resumed checkpoint9855 /
+161,480,704 samples uploaded/readback-verified SHA
+73aef20fbc0756ffc4fe7777bb28189b66a8bd10dbef2fb01d39e573666ea6dc.
+No failure/numerical-failure/backup-error markers. Fresh replay is3.63MB.
+TensorBoard lists the new00-04-51 run within its10-run cap. Old bridge finished
+its final sync before old dashboard was retired. Verification receipt:
+Saved/MimicKitEquipment/regular-only-resume-verified.json.
+Subsequent telemetry confirms9865 /161,644,544 samples advancing. Local replayer
+received and converted all20 rows; new dashboard scalar updates are publishing.
+
+## October16 — live animation-input audit
+
+Read-only audit of run20261016_223354: the actor receives154 floats, comprising
+146 physical-state values and8 commands: gait(-1 idle/0 walk/1 run), fixed-world
+direction XY, sword-drawn0/1, right/left arm-enabled1/1, phase cosine/sine.
+No future target poses or clip identity. Global physical observations and command
+directions use matching world axes. All54 motion files, manifest and omni_walk.py
+hash-match the live deployment. Actual observation assembly passes every manifest
+row and reordered subset indexing; existing phase wrap/next-tick contracts pass.
+The live normalizer preserves varying gait/direction/equipment/phase signals
+(none reaches its10-sigma clip); both arm flags normalize to0 because all arms
+are intentionally enabled. This run has not learned injury conditioning.
+Largest difference between commanded direction and recorded net horizontal
+travel is1.46deg. Phase zero is the preparation heuristic of minimum left-foot
+velocity along travel relative to pelvis; next-tick labels include each clip's
+duration/offset and do not feed back into the clock.
+
+Found four command-colliding pairs: regular versus Strafe Run BR and Run FL,
+each unarmed/drawn. At the same normalized phase, with only pelvis XY aligned,
+120-point CPU FK comparison gives mean/max body-position differences:
+BR unarmed16.06/42.22cm; FL unarmed10.29/33.78cm; BR drawn15.40/42.24cm;
+FL drawn0.10/0.47cm (this last pair is effectively redundant positionally).
+Thus three pairs have materially different targets without an explicit command
+selecting them. Physical observations differ and may identify an ongoing style;
+the complete observation is NOT necessarily identical. This audit establishes
+ambiguous target selection, not that it causes the observed learning failures.
+No clips removed, input dimensions changed, or training interrupted pending user
+choice about retaining these variants. Evidence: Saved/MimicKitEquipment/
+input_audit.py, input-audit.json and input-audit-live.json. CPU checks only;
+live checkpoint read on CPU, no extra training workload.
+
+User-facing comparison: http://127.0.0.1:8843/Saved/MimicKitEquipment/input-comparison/
+shows regular BR versus Strafe BR, with FL and equipment selectors, overlay,
+pause/scrub/speed. Exported directly from packaged training PKLs through the
+same MotionLib/FK and packaged XML collider geometry; both cycles synchronized
+by the supplied phase offsets, pelvis XY removed only for in-place display.
+No target/training data changed. Build/source/data/server PID receipt live in
+Saved/MimicKitEquipment/input-comparison/. Verified visible in browser.
+
+**TensorBoard display rule (restored October16):** port8035 must load only the
+10 newest dated experiment directories, not the entire TensorBoardRuns root.
+Launch Labs/MimicKitTraining/serve_tensorboard.py; it supplies an exact logdir_spec
+and refreshes the server's selection when a new dated run appears. Older event
+files remain intact. Current supervisor receipt is
+Saved/MimicKitEquipment/tensorboard-process.json (limit10). This local display
+change does not restart training, alter checkpoints or change dashboard writers.
+
+## October16 22:33 — fixed motion assignments deployed and resumed
+
+User explicitly requested agents reset on the same motion, with the existing
+proportions. Equipment worlds now receive a fixed, weighted allocation at
+construction: 31 idle rows and 481 locomotion rows for 512 agents. Existing
+equal clip weights give 15/16 rows to the two idles and 9/10 to each of 52
+locomotion clips. Assignment is deterministic for a fixed manifest/weights/world
+count, including checkpoint resumes. Random phase sampling remains on each
+reset. Failed agents, timed-out agents, full evaluation resets and asynchronous
+subset resets all retain their clip. Arms, controller, physics, rewards, network,
+normalization and optimizer are unchanged. No motion-switch curriculum added.
+
+Only production runtime change: pipeline/omni_walk.py. Source bundle
+7e3d148e1b3c22aa23375e13423f5ca19d6fc98d69c55033104b37a3d86cecac is uploaded
+and SHA readback-verified on existing S3 storage. CPU contracts exercise actual
+reset code with reordered/subset/repeated resets, immutable motion assignments,
+random phases and disabled phase randomization. Isolated 512-world frozen-policy
+physics smoke: 51,200 transitions, 3,908 reset events, fixed assignments after
+every tick, unchanged policy/normalizer and valid physics. Evidence:
+Saved/MimicKitEquipment/evaluation_audit/noise0.05_seed6741_fixed.json and
+fixed-motion-allocation.json. Repeated short failures explain the large reset
+count: hard clips can no longer be exchanged for easier clips. Completed-episode
+mean can drop under this new sampling mix without a weight reset.
+
+Same owned L4 o095ir9r3mkpda and unchanged October17 06:00:22 Warsaw hard stop.
+Scoped handoff saved and verified checkpoint8319 final /136,314,880 samples,
+SHA0941d2a5db2d50b2f7a1981be22d3fa39d3d700339d3517929bf66ee5d9489ee.
+Run20261016_223354_uefn_equipment_velocity_512 launched with trainer596 and new
+exit watcher597. Optimizer/normalizer restored; fresh physical episodes only.
+Old exit watcher421 was paused for the transaction then retired; independent
+deadline guards remained active. New checkpoint8320/136,331,264 samples is
+readback-verified on S3, SHA
+ff731c51debb77600a79c90ca75a6bc57509cbad95075c77ec4cce5d2e38c05c.
+No failure/backup-error files; 20 replay rows exported (2.60MB). Local bridge27220
+and dashboard22112 watch the new chronological run. Previous bridge completed its
+final sync, and its dashboard was flushed before stopping, avoiding a historical
+chart gap. Current-run/active-run receipts updated. Source and checkpoint receipt:
+Saved/MimicKitEquipment/fixed-motion-handoff.json; live verification:
+fixed-motion-resume-verified.json. No new GPU allocation or deadline extension.
+Subsequent local telemetry confirms8330/136,495,104 samples advancing; the first
+20-row replay has arrived and converted for the replayer, and TensorBoard is
+publishing the new run. The initial post-startup rate was about4,844 transitions/s;
+this short warmup sample is not a controlled performance comparison.
+
+### Noiseless-versus-training investigation
+
+The apparently worse evaluation mean was substantially a measurement effect.
+Frozen checkpoint7714, exact archived physics, 512 identical initial physical
+states/motions/phases: one completed attempt per world averaged 4.4460s without
+noise versus 4.3847s with sigma0.05; 219 versus216 reached the10s timeout.
+Stock short-window counting, which includes extra attempts from fast-failing
+worlds, reported2.5607s/937episodes versus2.5582s/931episodes respectively.
+With the same noiseless weights, extending observation from10s to30s increased
+the all-completed mean to3.6114s; no learning or normalizer change occurred.
+Thus the earlier4.27s training/2.61s evaluation figures were not an equal-window,
+equal-attempt noise comparison. This test does not prove noise never matters.
+Training previously also spent disproportionate frames on easy clips because
+failed rows sampled new clips; the user-requested fixed assignments correct that
+sampling issue. Evaluation metric definitions were NOT changed in this request.
+Local audit used RTX4060/Torch2.11/Warp1.12.1, no cloud GPU competition or gameplay
+changes. Both audited initial state arrays are byte-identical. The noisy report's
+source hash was corrected to the validated archived source10ac15f04305: its final
+report originally rehashed source.zip after the fixed-motion package was built,
+but the process used the unchanged, separately extracted original runtime.
+
+## October16 22:02 — user-authorized eight-hour continuation verified running
+
+User requested resuming the same run for8h. Prior run ended with verified
+checkpoint **7714 final**, SHA
+707138897f23a91e7c4a1c98f7ae498bed2bbce3f5d0d1005a3cb1136b2897c0,
+35,915,088bytes; downloaded and SHA-checked as latest-stopped.zip. Local observer
+had stale6643 telemetry, but persistent latest_verified correctly held7714 final.
+Prior pod nsvb0bg53dnc32 is EXITED; restart rejected because GPU was reassigned.
+Replacement owned pod **o095ir9r3mkpda**, Secure L4 **$0.59/h**, allocated
+22:00:22 Warsaw. Hard stop **October17 06:00:22 Warsaw**,
+Unix1792209622.2040958. Eight-hour GPU ceiling$4.72 includes setup; do not extend
+the deadline at launch. No new goal or scheduled automation. Existing independent
+deadline/failure guards are required. Equipment deploy bound now admits the
+explicitly approved28800s; other task deployment bounds unchanged.
+Source10ac15f04305 matches current runtime exactly; no settings/physics/reward/
+architecture change. Restoring the verified environment and compiled kernel cache.
+Run **20261016_220202_uefn_equipment_velocity_512**, trainer420/exit guard421,
+launched22:02 from7714 with --keep-deadline (no budget extension for setup).
+Local deadline guard17020; observers bridge24508/dashboard10604. Replayer8021
+responds. TensorBoard8035 was not running; restarted its local server, retaining
+all chronological historical runs. Confirmed7725/126,582,784 samples advancing,
+recent2.717s/update (~6,031 transitions/s). Optimizer/normalizer and126,402,560 prior
+samples restored. First7715 checkpoint is readback-verified on persistent S3,
+SHA17f190a12f4d7dcd657d10575dad2645c9f1b5293344e6d909a65331653058d2.
+No failure, numerical-failure or backup-error file at verification. TB comparison
+points are publishing;20-row7715 replay is present locally. Subsequent status7745/
+126,910,464 samples confirms continued progress (~6,543 transitions/s).
+Verified runtime/kernel cache restored; common GPU kernels load from
+cache, but several custom solver modules are regenerated on this host. TensorBoard
+HTTP200 confirmed after restart (server11392).
+
+TensorBoard episode-length investigation after resume: the initial 0.2422s
+point includes only the 554 episodes already completed during the first 32-tick
+rollout (1.0667s); longer survivors are not counted until they finish. Fresh
+physical episodes and a cleared ReturnTracker explain this startup sampling
+bias, not reset weights. Subsequent points rise to 4.2236s. Upstream also clears
+the tracker and resets environments after each 100-update output/evaluation,
+which explains the repeated dips in the previous curve. No metric or training
+semantics changed.
+
+The historical x-axis gap was stale local telemetry: previous source events
+ended at 108,855,296 samples although its verified final checkpoint reached
+126,402,560. Restored the exact archived event file from SHA-verified
+latest-stopped.zip after checking the local bytes were an identical prefix
+(803,464 to 1,002,280 bytes). Historical dashboard deduplication appended 1,819
+missing scalar points; its final episode point is now 126,386,176 samples,
+4.2271s, immediately preceding the resumed run's 126,418,944 first point at the
+normal logging cadence. Receipt:
+Saved/MimicKitEquipment/restored-145703-tensorboard-history.json.
+Live trainer and observers were left running unchanged.
+
+## October16 14:57 — corrected solver continuation verified running
+
+Owned Secure L4 **nsvb0bg53dnc32**, $0.59/hour, run
+**20261016_145703_uefn_equipment_velocity_512**. Trainer447, exit guard448;
+local deadline guard2532 plus remote deadline guard. Hard stop
+**18:57:08 Warsaw**, Unix1792169828.1608927, fresh authorized4h. Live deadline
+reserves165s for final evaluation/upload/shutdown. No scheduler created.
+Observers bridge11628/dashboard24228;20 rows, existing8021 replayer/8035 TB.
+
+Resume from **2322 final**, SHA
+d59ad0cc917fbf895749bc722918d8c7f81af51081e2caddb6c1987139e909b3,
+31,785,956bytes. Verified on persistent S3, downloaded to latest-stopped.zip and
+independently verified on the replacement pod. Old fnl4fg2hm3tgsq is EXITED;
+its restart failed because Runpod reassigned the GPU, so replacement was required.
+No other paid workload started. Source **10ac15f04305** is SHA readback-verified
+on S3 and exact runtime inventory verified before launch. Package differs only
+in sequential_contact_adapter.py, new coupled_contact_gpu.py and uefn_package.py.
+Network, optimizer, rewards, data, PHAT, targets and observer settings unchanged.
+Verified advancing through **2363 /38,731,776 samples**, recent2.426s/update
+(~6,753 transitions/s), finite losses and CUDA graph active. This is an observed
+L4 rate, not a controlled speedup claim. Initial2323 checkpoint is readback-verified
+on S3, SHA c78eb45828a7a132b7cfe52c52ef7ed31000e274747473102e06f6f358e4a6f9.
+Resume receipt confirms optimizer/normalizer restored,38,060,032 prior samples;
+only physical episodes restart. No failure/numerical-failure or solver-warning
+file at verification.20 deterministic replay rows arrive locally;8021/8035 both
+respond. New Warp cache3e20d7669df00954 (41.8MB) uploaded/readback-verified directly
+from pod to persistent storage for subsequent restarts; no laptop payload.
+Validation evidence bundle402951a7fa66 is also persisted. All required goal work
+is now handled: hard captured solver cases fixed/tested without the rejected
+cycle detector, tiny idle drift left as explicitly allowed, Unreal recordings
+preserved, and corrected latest-checkpoint continuation actually advancing.
+The remaining scalar safeguard is retained for unseen cases; no global
+convergence guarantee is claimed. Billing/backup/failure guards remain active.
+
+## October16 14:08 — user-requested resume; target-following unchanged
+
+**Solver correction, verified locally; checkpoint handoff requested:** the 512-world noisy test
+completed262,144 transitions/15,145 resets.31 hard solves used206 Newton steps
+and656 scalar seed sweeps in total, with zero legacy fallback/warning. Captured
+equation tests now pass all51 states, CUDA graph replay, preservation of unrelated
+error codes and explicit NaN rejection. The NaN test caught a projection masking
+invalid input; this was fixed before deployment. Production source is prepared
+locally; stop.request now requests the unchanged trainer's final verified
+checkpoint before the authorized fresh4h continuation.
+
+Rejected the optional branch-cycle detector: it doubled physics time in the
+paired PPO benchmark (2.320->4.699s/update). Removing it retained ordinary block
+behavior and resolved all13 hard calls with zero scalar fallbacks; reference had
+11 scalar fallbacks. Physics medians2.334->2.325s/update, whole update4.751->4.631s
+are effectively neutral within laptop/Unreal variation, not a claimed speedup.
+Final consolidated source also passes six disposable PPO updates per variant:
+reference15 legacy fallbacks; corrected15 coupled solves/170 Newton steps/448
+seed sweeps, zero legacy fallback. Median whole update4.931->4.871s, physics
+2.319->2.365s; mixed paired round results and16–19% timing ranges show ordinary
+variation, not evidence of a material speedup or regression. Package/default
+engine/stale-source/invalid-PPO guards pass. Source10ac15f04305 is uploaded and
+SHA readback-verified on persistent storage. Only the rare
+failed block solves receive the new simultaneous solve; ordinary100-iteration
+contact approximation is unchanged. No claim that every ordinary contact is
+converged to an exact root, nor evidence linking its tiny residual to idle drift.
+The original finite-warning scalar fallback remains a final safeguard; current
+tests do not need it. Physics equations, PHAT, dataset and live-pelvis XY targets
+are unchanged. No cycle-detection code is retained in the runtime.
+
+User stopped training to inspect target foot sliding, then explicitly cancelled
+further dataset/PHAT checks and requested immediate resume plus the ongoing solver
+goal. Exact screenshot replay1301/row6/tick19->20 matches the training target to
+7.15e-5cm: source right-foot motion0.171cm plus live-pelvis XY target shift2.116cm.
+That large visible shift follows the previously requested live-pelvis target
+anchoring. No reference-anchoring, dataset, PHAT, contact or reward change was made.
+
+Previous run stopped safely at1456. Final archive SHA
+4ae06ddf3338a40c913cd3eda2643426f5d14c1a356176add1bb393a989293d8,
+29,795,319bytes, verified in S3 and Saved/MimicKitEquipment/latest-stopped.zip.
+Old pod8dazc6h0elfeww is EXITED; its GPU was reassigned, confirmed by restart error.
+Replacement **fnl4fg2hm3tgsq**, Secure L4 at$0.59/hour, runs
+**20261016_140757_uefn_equipment_velocity_512**, trainer474/exitguard475, from1456.
+Current deadline remains **17:40:30 Warsaw** (Unix1792165230.319209); the goal's
+fresh four-hour continuation begins only after verified solver correction.
+Runtime cache and unchanged sourceab70891e0b03 restored; remote source and resume
+archive SHA verified. Local/remote billing guards installed. Initial deployment's
+redundant source-backup request hit a transient connection reset AFTER setup;
+existing identical S3 source was independently verified before launch.
+Observers bridge28532/dashboard7348,20rows, same architecture/settings/counters.
+Actual PPO confirmed beyond1847/30,277,632samples at~6.1k transitions/s; no second
+cloud workload. Resume metadata restores optimizer/normalizer and prior23,871,488
+samples, offset1457. This confirms progress, not just a launched process.
+
+Independent solver experiments remain diagnostic-only in solver_idle_audit/.
+Simultaneous Newton solves captured1274 from50 seed sweeps in5 iterations, matching
+the long float64 reference within5.17e-6 velocity, but perturbation tests exposed
+a stalled case; it has NOT been deployed. Branch cycling and incomplete contact
+convergence checking remain the production issues under investigation. Idle
+foot-origin net drift was roughly0.1–2mm over10s; user explicitly allows ignoring
+that absent a clear bug. Original Unreal comparison assets remain present; current
+user TestNN map and Play/work state were not changed.
+
+**14:35 isolated solver progress (not deployed):** a safeguarded simultaneous
+Newton solve retains the unchanged capped-motor, contact, friction and limit
+equations. Failed Newton attempts are discarded; its independent scalar seed
+continues advancing rather than accepting a stalled residual.206 CPU cases pass
+(six saved failures plus200 perturbations); at most64 seed sweeps/36 Newton steps.
+201 batched GPU perturbations match CPU impulses within1.16e-12; CUDA graph passes.
+All51 physical states present in six saved captures pass fully device-side
+assembly/solve, including active limits and repeated graph execution. Captured
+1274 takes16 seed sweeps+9 Newton steps, final motor residual7.63e-6Nm and velocity
+difference5.11e-6 from the long scalar reference. Isolated wall timings are noisy
+with Unreal open; warm full candidate roughly11–49ms versus original290ms fallback.
+Do not call the earlier4–6ms kernel-only measurement full cost or whole-PPO speedup.
+
+Real64-world noisy rollout:8192 transitions/473 resets,13.29s measured simulation,
+two candidate calls/eight Newton steps/32 seed sweeps, zero legacy fallback or
+warning, no PPO or checkpoint writes.512-world longer test is in progress.
+All code remains under ignored solver_idle_audit/, loaded only by its local test
+process. Production, Jolt, user physics assets and cloud source unchanged.
+
+Further acceptance audit: current block path tests motor branches, not complete
+contact convergence.27/50 saved states accepted by that rule still change by
+>2e-6 in an independent contact sweep. Four checked examples differ from the full
+root by2.08e-4..1.29e-3 generalized velocity; supported-foot normal residuals about
+1e-6..1.1e-5m/s. This is an incomplete convergence check, NOT proof that it causes
+the user's tiny idle drift or a claim of large physical errors. Its handling and
+performance must be assessed before promoting any solver correction.
+
+## October16 13:40 — checkpoint1200 continuation and solver/idle audit
+
+Current owned L4 **8dazc6h0elfeww**, $0.59/hour, is running
+**20261016_134023_uefn_equipment_velocity_512** from verified checkpoint1200
+(SHA bcdc88ccb7c80c379fbd63436ea59a65e0c7f4130197d4c32595f0c109bca07f).
+User explicitly authorized this continuation for four hours while the slow
+solver and apparent idle foot drift are diagnosed separately, then a corrected
+continuation from the latest checkpoint for another four hours once verified.
+Current deadline Unix1792165230.319209, **17:40:30 Warsaw**. Trainer465 and exit
+guard466 are alive; actual PPO updates have advanced beyond the resumed checkpoint.
+Original failed run and its red failure evidence remain intact. Source archive
+ab70891e0b03, original 3,000 fallback budget with visible nonfatal finite-convergence
+warnings; no physics/reward/optimizer change in this initial continuation.
+Observers bridge24968/dashboard21996; requested20 rows. No extra GPU rented.
+
+Audit evidence lives in `Saved/MimicKitEquipment/solver_idle_audit/`. Initial CPU
+replay shows the main motor-branch solve cycles at the captured update1274 case,
+even with400 inner contact sweeps; three ankle motor branches recur. Separately,
+acceptance checks only motor-branch stability, which is not proof that contacts
+have converged. These are diagnoses in progress, not fixes or a parity claim.
+Production is left unchanged while independent equation/contact tests are built.
+Unreal comparison recordings must be preserved; user work is not to be disturbed.
+
+## October16 requested larger-network restart — failed; GPU stopped
+
+**Current status:** stopped at12:23:46 Warsaw, update1274, before PPO: solver
+error6 in world267. Runpod API independently confirms owned pod y2jz4d7bnx16w9
+EXITED; GPU billing stopped. Latest verified checkpoint1200, SHA
+bcdc88ccb7c80c379fbd63436ea59a65e0c7f4130197d4c32595f0c109bca07f.
+Automatic exit guard preserved S3 exit_evidence_667ed618e37d.zip; downloaded and
+SHA-checked in Saved/MimicKitEquipment/failure1274/. Exact equations retained.
+Cause diagnosed below: insufficient iteration budget. Same residual thresholds
+retained. Resume attempts failed for GPU capacity; no running allocation. Earlier rounding warning
+at629/world276 was accepted and training continued as intended.
+
+**User correction — finite convergence flags are nonfatal:** the user explicitly
+rejected aborting the entire run on these numeric flags. Prior rounding-only
+exception was too narrow. The proposed10,000 cap is REVERTED before deployment;
+original3,000 cap and strict early-exit checks remain. If the budget expires with
+finite velocities, impulses and residuals, retain that computed approximation,
+count/report a convergence warning and continue. No agent reset, sample removal,
+reward/optimizer change or claim that an unconverged solution is exact. NaN/Inf,
+unsupported constraints, contact-buffer overflow and invalid PPO batches remain
+fatal and trigger the existing GPU-stop guards. New GPU counters retain warning
+counts and maximum iteration/motor/contact-limit residuals; logs, TensorBoard
+health charts and an amber replayer line expose them. No per-step CPU copies.
+Saved failure now warns with unchanged finite output within1e-6 absolute
+comparison; tests at1/16/512/3000 sweeps all report their actual residuals without
+abort. CUDA graph warning path passes; injected NaN and unsupported-contact9
+remain errors. CPU validator emits each new warning count once; fatal flags still
+raise. All four historical equation regressions also pass, max float64 difference8.02e-6.
+Compile checks pass. Updated sourceab70891e0b03 is SHA-verified on S3; another
+bounded L4 capacity request is in progress, still original14:01 deadline.
+
+Measured original fallback on the local RTX4060 laptop, isolated saved problem:
+100-pass cap median8.56ms;512 cap52.17ms;3,000 cap290.30ms;3,152 actual convergence
+295.82ms. Five synchronized wall-clock measurements, excluding compile; variable
+laptop/Unreal load, NOT L4 timing or whole-training overhead. This is expensive for
+one difficult physics step. Ordinary block solve unchanged; this cost is not paid
+by every agent or every step. Evidence failure1274/fallback-cost.json.
+
+**Update1274 diagnosis/fix:** six active contacts, no joint-limit rows. The
+captured problem remains slowly convergent even in float64; this is NOT the prior
+rounding-floor case. At3000 sweeps, motor residual2.533e-3Nm exceeds existing2e-3.
+The unchanged GPU solver exits normally at3152 sweeps with1.887e-3Nm. Increasing
+its allowed cap to3200/4000/10000 produces exactly the same3152-sweep result.
+Superseded candidate: rare fallback maximum3000→10000 only. Normal block path, early
+exit, all error thresholds, physics and PPO unchanged. No residual is suppressed.
+This removes the demonstrated insufficient iteration budget; it is not a guarantee
+that arbitrary contact problems always converge. Saved-case/CUDA-graph and all four historical regressions pass. Continuation
+being prepared from verified1200, preserving current1024→1024→512 architecture
+and original14:01 deadline. Old stopped L4 capacity was reassigned; restart failed
+with explicit insufficient-GPU error. Replacement within original budget rejected: no instances available. Earlier
+stopped pod kdoqhqti1z2n0i also rejects restart for unavailable GPU. API reconciliation
+confirms both owned pods EXITED and no replacement allocated. NO paid workload
+running. Fix is ready to resume verified1200 when authorized capacity is available;
+original14:01 deadline remains, no automatic restart/retry schedule installed.
+Evidence: failure1274/{diagnosis,iteration-budget,reference-converged}.json.
+
+User changed the continuation request to a fresh restart: **actor and critic
+1024 → 1024 → 512**, fresh weights/optimizers/normalizers and zero counters.
+Equipment conditioning, all six losses/scales, 512 worlds, 31 idle rows, live arms,
+clock-driven phase, noise, physics and existing14:01:11 Warsaw deadline unchanged.
+Historical1024→512→512 checkpoints remain loadable; no weight migration is attempted.
+
+Old pod kdoqhqti1z2n0i is EXITED. After the verified shutdown test its GPU was
+reassigned and restart explicitly failed for capacity. Replacement owned pod
+**y2jz4d7bnx16w9**, Secure L4 at$0.59/hour, is inside the original four-hour budget
+and original Unix1792152071.7139745 stop deadline. Runtime restored from cache;
+confirmed-stop deadline guards deployed. Launch source97c9e917f29b is SHA-verified
+in S3; current code/telemetry/journal backup key is in source-receipt.json.
+Fresh production **20261016_112012_uefn_equipment_velocity_512**, trainer547,
+exit guard548, launched11:20:21 Warsaw with NO resume argument. Observers bridge17268,
+dashboard6536; datetime TB convention retained. Verified update50/835584samples,
+~5986transitions/s, no failure/warning file at that check. Initial checkpoint0000000
+SHAf05c298b4098c15e5dfb36ae8fc6fe5ac463a62044093aa5076848a9b673727f
+verified on persistent volume. resume.json confirms prior_samples=0/iteration_offset=0.
+Actual saved actor_net/critic_net both fc_1024_1024_512. Local replayer has20rows,
+20actual target skeletons and all six per-tick losses. TB datetime11-20-12 exposes
+all losses, episode durations, optimizer and throughput charts.
+The20-row metadata made status repeat~455KB of per-frame/target details. Telemetry
+now sends compact evaluation summaries, retaining full details once in replay.npz;
+only the named SSH telemetry child was reconnected, trainer547 uninterrupted.
+Verified live status size fell455240→1300bytes; iteration60 arrived correctly.
+Chunk/replacement and unchanged-summary transfer tests pass.
+Actual512-world/20-row preflight PASSED, including a disposable PPO update;
+154inputs/34motors/2auto-phase outputs. Evaluation2.391s including capture,
+20-row archive346969bytes, serialization0.0671s. These are total times, not an
+isolated baseline overhead comparison. The recordings use the same batched test
+rollout, no20extra simulations. This fresh preflight is not proof of long-run learning.
+Latest final-sweep warning classification regression passed the captured failure
+and all three historical fixtures; max difference from independent float64=8.02e-6.
+Graph replay passes; unsupported-contact error9 still rejected.
+Injected failure-receipt write error also verified to reach the billing-stop
+finally block; early startup failures cannot bypass stopping due to missing run folder.
+
+## October16 new equipment experiment — stopped; solver and billing guard correction
+
+**Current override:** production failed on update132/world225 before PPO. Exact
+first equations now preserved at `Saved/MimicKitEquipment/failure132/solver_failure.npz`
+and S3 `failure_evidence_7dffcbdd376d.zip`. Checkpoint100 remains the latest verified.
+The remote exit guard uploaded evidence but did NOT stop billing: its urllib
+request is rejected with HTTP403/code1010, reproduced safely against the already
+stopped pod. Local manual requests-based stop confirmed EXITED at10:37:57 Warsaw.
+This describes the failed run; the replacement/restart authorization and current
+status are above. Original14:01 deadline unchanged.
+User explicitly requires no relaunch on an unexplained failure, confirmed stop on
+failure, and warnings rather than whole-run aborts for harmless numerical misses.
+Shared requests-based stop helper now retries until GET confirms the owned pod
+EXITED; real idempotent API verification passes. Remote deadline/exit guards use
+it, and local deadline guard also watches mirrored failures with30s evidence-save
+grace. Future launch automatically installs an exit guard. Updates are now deployed on the replacement pod. The bounded rounding-warning
+classification is documented below; physical parameters are unchanged.
+
+Captured world225 is finite, two contacts, no active limits, motor residual1.07e-4
+Nm. Independent float64 solve differs by4.35e-6 in generalized velocity. Local GPU
+replay reproduces a3.09944e-6 iteration-change floor at512/3000/10000 sweeps;
+strict2e-6 caused the abort. Contact normal speed error is below5.69e-7m/s.
+
+New policy: keep strict convergence and the3000-sweep cap. If exhausted, accept
+ONLY finite results whose final sweep change and contact/limit velocity residuals
+fit `min(1e-4,max(2e-6,8*float32_epsilon*max(1,max_abs_velocity)))`, with original
+motor residual<.002Nm still required. Count/report these as rounding warnings,
+never silently clear them. Other failures remain fatal; manifold normal mismatch
+now has separate error9 (previously ambiguously6). No motor/contact parameters,
+NN optimizer/loss weights or Jolt code changed. Captured failure and three earlier
+equation fixtures match independent float64 within8.02e-6; CUDA graph replay passes.
+Insufficient1/16 sweeps and unsupported-contact error9 remain rejected.
+Evidence: failure132/{gpu-diagnosis,gpu-warning-validation,warning-regressions}.json.
+
+Real shutdown test also passed: intentionally failed owned subprocess automatically
+caused RUNNING→EXITED, confirmed through independent API at11:04:51 Warsaw. Runtime
+venv symlink needs cache restore after stopping (its /opt target is ephemeral).
+Both requests-based deadline/exit guards now retry and verify; API403, still-running
+responses and wrong identities tested. Archive/dependency/receipt-write failures
+cannot bypass stop. A local failure fallback is installed too.
+
+20-row batched evaluation recorder prepared (2 idle,18 diverse locomotion examples;
+display selection only). No additional simulation rollouts or training RNG calls.
+Each row retains its own terminal, target skeleton and six per-tick loss terms.
+Synthetic20-row export/target validation passes; 3MiB replay chunking/replacement
+test passes. Actual GPU overhead measurement and production continuation pending.
+
+Authorized one L4 up to$0.59/hour for4hours (GPU ceiling$2.36). After the
+collision-only diagnosis, user explicitly deferred the native Jolt bug and
+authorized MJ training. Allocated owned Secure L4 **kdoqhqti1z2n0i**, rate$0.59/h,
+Unix1792137671.7139745; hard stop1792152071.7139745 (**14:01:11 Warsaw October16**).
+Local and remote deadline guards active. State is `Saved/MimicKitEquipment`;
+never operate other pods. Runtime restored from verified cache; source is
+checksum-verified on persistent volume aj7d2jzwuq; current archive/hash is recorded
+in `Saved/MimicKitEquipment/source-receipt.json`.
+Full512 remote preflight passed, including a disposable PPO update. Production
+`20261016_100610_uefn_equipment_velocity_512` completed update0/16,384 samples,
+then rejected world147 during update1 before PPO optimization. Process exited;
+the last status.json saying training is stale. Initial checkpoint0000000 is
+SHA-verified on persistent storage (86c25ba83f23f6e5453b8c4f1a317c2fd172dcc88b2dfae2245b9552330b9468).
+This is an MJ-side transfer-solver rejection, separate from the deferred native
+floor collision bug. No tolerance or physical parameter changed. Same-seed
+diagnostics completed3 and20 updates without rejection; GPU trajectories are not
+bit-identical across runs. The initial failure is NOT explained or declared fixed.
+Training now saves the already-enabled first failed GPU equation on exception;
+the former wrapper lost that in-memory capture on exit. Failure status is also
+explicitly written; synthetic checks verify capture failures preserve the original
+exception. Preserve all failed evidence.
+
+Historical failed production: **20261016_101733_uefn_equipment_velocity_512**, PID982,
+same original14:01:11 deadline. Last launch verification: iteration110/1,818,624
+samples, ~5,129 transitions/s, no rejection. Checkpoint0000100 verified on
+persistent storage, SHA748658f04a1e45bf1e94564788c0ac935a07709a73d64918a1fb85d38c7106b8.
+`failure_stop.py` PID1074 watches ONLY this trainer: after a failed process exits,
+it archives small unique diagnostic evidence with SHA readback and stops this pod.
+It neither changes physics nor restarts training; stop preserves the pod volume
+even if diagnostic upload fails. Existing local/remote deadline guards remain.
+Viewer8021/TensorBoard8035 are live; observer identities in
+`Saved/MimicKitEquipment/observers.json`, current name in current-run.txt.
+TB datetime label2026-10-16_10-17-33_UEFN_Equipment_velocity_512 includes all six
+loss terms. Replayer conversion fixed: supervised auto-phase is displayed but
+excluded from the environment-reward consistency assertion. Recorded physics
+reward agrees within5.96e-8; deliberately corrupt reward still rejected. Only the
+local bridge restarted; production training was uninterrupted.
+
+**Added horizontal COM velocity band loss (October16):** each clip has
+independent fixed-world X/Y minimum/maximum reference COM velocities, sampled once
+at240Hz using the same interpolation/velocity rules as tracking. Mass-weighted
+pelvis/torso/head/thighs/shins/feet only; both whole arms including hands excluded.
+Reference origin velocities are converted to COM velocities with angular velocity
+and COM offsets; actual physics already reports COM velocities. Bounds expand by
+10% of that axis's range at EACH end (20% wider overall), including signed/backward
+speeds. Constant axes remain constant. Loss is zero inside; outside it is the mean
+squared X/Y excess, multiplied by0.6771039952. Initial scale:0.5m/s excess on both
+axes costs10% of4013's measured four-term tracking loss. This is a tunable modest
+reference scale, not a claim about the new run's realized loss share. Existing
+auto-phase coefficient remains calibrated against the original four tracking terms.
+Enabled only for this prepared experiment; no new inputs or physics changes.
+Bounds/mass weights are precomputed at startup; per-tick math stays on GPU.
+TB `loss/flat_com_velocity` and weighted per-tick replay term included in totals.
+CPU tests cover signed bounds, exact zero, gradients, mass weighting and excluded
+arms/Z.16-world GPU preflight passes63.86s including disposable PPO update and
+noiseless six-term replay; new term averaged0.04670 versus original terms6.51699
+in this short fresh-policy smoke, not a learning result. Evidence:
+`Saved/MimicKitEquipment/flat-com-preflight.log` and prepared/preflight/replay.npz.
+
+Prepared54 motions, fresh weights/counters, unchanged1024→512→512 trunks,
+154 observations (previous151 plus sword_drawn/right-arm-enabled/left-arm-enabled).
+Sword0=unarmed/sheathed,1=drawn; both arm flags stay1. User deferred all injuries;
+future disabled arms should use uniform gain sampling, exclude disabled-arm
+tracking losses and corresponding hand termination, but none is active now.
+31 of512 permanent rows are idle-only (nearest6%),481 locomotion-only; resets
+retain row membership. Gait−1/0/1=idle/walk/run; equipment sampled within each pool.
+
+Use the name **auto-phase** going forward (formerly Phase E). Two outputs predict
+next inference cos/sin; reference clock still supplies training input, no feedback.
+New experiment normalizes the prediction onto the circle; legacy checkpoint heads
+remain unchanged. Maximum component-mean squared circular error2. Calibration from
+4013's latest4,800 recorded samples: four-term mean1.6927599881, auto-phase weight
+0.1493611754 makes its maximum0.2987223508 exactly15% of combined1.9914823389.
+It remains a supervised actor auxiliary loss, not a guarantee of gradient share.
+Prepared files/calibration/source.zip are in `Saved/MimicKitEquipment/`.
+CPU contracts pass;16-world GPU smoke with asynchronous resets, disposable PPO
+update and noiseless replay passes (61.04s, no saved learner). Remote512 preflight
+passed165.5s including initial compilation. Full deployment/observers completed as
+above. TB/replay code includes auto-phase; local edits remain uncommitted.
+
+Updated-PHAT native fixture: `Saved/MimicKitEquipment/native/fixture.exe`, generated
+header from current canonical exports, linked to the same isolated comparison DLL.
+16/16 Run LR starts complete300ticks, but phase0.25 has a genuine right-ankle
+anchor separation0.2023299m at tick87/substep4 (zero-based), recovering to5.66mm by
+the policy boundary. Saved-body recomputation and repeated single-substep replay
+confirm it; not just the scalar diagnostic. Prior native receipt did not show it.
+Original reports preserved; new report is
+`causal_transfer/solver_warm4013_self0_native_v40p8_point.json`.
+`native/anchor-audit.json` and the identical-prefix interventions contain evidence.
+Follow-up: freeing all angular limits still jumps21.04cm. At the identical
+pre-fault state, disabling only contact positional correction via diagnostic
+max-penetration-distance0 reduces separation to0.03627cm; disabling all position
+correction gives0.14418cm. The culprit floor/right-foot manifold reports a
+downward normal(z≈−1) and points19–29cm above the floor. This identifies contact
+generation/correction as the next investigation, not a motor/limit workaround.
+Diagnostic-only controls are confined to the isolated executable; no production
+settings changed. Evidence: native/anchor-contact-position.json.
+Narrowphase-only reproduction now matches the bad normal/depth exactly, without
+advancing physics: dynamic foot first against floor half-width100m returns
+normal z=−1/depth0.0011059679091m. Same foot pose at half-width25/50/75/125/200m
+returns z=+1; reversing query order also returns +1. Instrumented local copy of
+the existing convex collision code reproduces the sign reversal inside EPA after
+GJK returns Indeterminate. It does not require motors, joint limits, contact-cache
+reuse, or position solving. The wrong normal then selects the top foot face and
+position correction pushes it downward. No floor-size workaround, collision
+algorithm patch or gameplay change retained. Numerical internals/fix remain open;
+do not conflate this narrowed collision-detection fault with a resolved transfer.
+Receipts: native/anchor-query-dynamic-first.json, anchor-query-floor-first.json,
+anchor-query-instrumented.json and stderr.log under Saved/MimicKitEquipment.
+User subsequently authorized MJ training with this bug deferred. Do not issue a
+new native transfer acceptance; this authorization does not make Jolt parity pass.
+
+## October16 equipment dataset preflight — no launch
+
+User requested checking the new PHAT and drawn/sheathed dataset before training.
+Re-ran `verify_motion_limits.py --equipment --backup-name before-equipment-limits`:
+54 clips,6,512,884 dense joint samples,103,264 exact-Jolt reference/margin tests,
+zero violations including5% margin. Saved PHAT/mesh hashes match current exports.
+Additional file audit confirms54 unique readable finite40-coordinate motions
+(root xyz/rotation vector plus34 joints),60Hz, correct durations, normalized
+directions and circular phase offsets, YAML order, and byte-identical unarmed
+copies of the accepted originals. No loop-screening warnings. Receipt:
+`Saved/MimicKitUEFN/equipment/current-dataset-audit.json`.
+
+Each equipment set has14run/12walk/1idle. Both idles last10s. Unarmed idle is
+the authored `/Game/Characters/UEFN_Mannequin/Animations/Idle/M_Neutral_Stand_Idle_Loop`;
+drawn idle is the NN continuation captured with sword drawn. Drawn viewer's clip
+selector includes Idle; the default unarmed preview currently contains only26
+gaits, although its idle exists in the training files. No viewer change made.
+
+Not ready to launch both sets: `prepare_local_omni.py` still selects the old27
+clips, and `OmniWalkEnv` does not consume `sword_drawn`. Explicit equipment input
+is needed before mixing the variants. Updated-limit native dynamic transfer
+validation is also outstanding as described below; static limit admissibility
+does not replace it. No training, Unreal or dataset modifications in this audit.
+
 ## Future UEFN training motor contract — October15
+
+**Latest October16 solver pass verified; production still stopped.**
+Current runtime reuses previous motor torque-limit branches only after solving
+and checking them against current inputs; failed guesses run the unchanged full
+seed/solve. Prepared manifold responses are reused. No physical rules, tolerances,
+motor law or iteration ceilings changed. Cache70KiB/512 worlds, net one added GPU
+launch, no extra CPU readbacks. Exact-stop seed experiment rejected as unhelpful.
+Repeated-input physics5.680->3.853ms (32.2% less), but real training physics saves
+only5–8%. Two full-PPO comparisons give2.6% median saving over10 matched rounds,
+9/10 faster; no large whole-training speedup claim. Final4 crash controls, wrong
+cache recovery,131,072 transitions/10,801 resets and4013's16x10s walking checks
+pass; max16.940cm, zero walking fallbacks. Saved weights/body exports untouched.
+Details and all rejected experiments: `MimicKitTransfer.md`,
+`Saved/MimicKitLocal/solver_followup/result.json`.
+
+**Current transfer receipt is stale:** the separate06:57 PHAT expansion predates
+this optimization; native evidence uses the archived older body. Current MJ
+walking tests pass, but native transfer must be revalidated with those new limits
+before fresh all-motion training. The verifier now rejects differing native/MJ
+body exports instead of certifying new assets using old reports. The earlier
+receipt was restored; its freshness check fails as intended. Preserve the user's
+new limits. See `MimicKitTransfer.md` for the audit and rejected receipt.
+
+**Earlier coefficient/matrix optimization baseline:** cache motor coefficients during the50 seed sweeps; reuse/factor the effective
+matrix in place and solve only needed constraint RHS vectors. No changed physical
+settings, sweep counts, tolerances, failure checks or added CPU transfers/kernels.
+Paired512-world physics8.588->5.640ms (34.3% less), contact/motor solve
+7.463->4.439ms (40.5% less). Full disposable PPO medians6.389->5.251s/update
+(17.8% less); all five measured pairs improve. Vanilla control3.231s. Unreal was
+active, so these are paired observed timings, not guaranteed idle-GPU rates.
+All saved crashes/manifold controls,131,072 noisy transitions and4013's16x10s
+walking starts pass (max16.945cm,27cm bound unchanged).19 rare checked fallbacks
+in the noisy test, none in the walking evaluation. Saved checkpoints are unchanged;
+old native evidence remains historical. Future packages use these current
+sources; old packages still fail the source freshness check. No production resume.
+Full decisions/rejected experiments: `MimicKitTransfer.md` and
+`Saved/MimicKitLocal/solver_optimization/`.
+
+**Earlier October16 projection optimization:** matching-profile physics substep reduced
+12.599->7.526ms on the controlled512-world fixture (40.3% less time,1.67x throughput).
+Joint projection4.878->0.437ms; cached/reused calculations and a smaller GPU kernel,
+with unchanged physical settings, iteration counts and tolerances. Four historical
+failure regressions,131,072 noisy transitions, source/guard checks and4013's16x10s
+tracking test pass (max17.890cm, original27cm threshold). Future packaging selects
+these current sources; transfer receipt refreshed with the new MJ check and
+unchanged native evidence. Production training remains stopped; checkpoints intact.
+
+That earlier pass's full PPO speedup was **not established**: Unreal reopened during that measurement;
+even alternating reference/current runs had large unrelated timing fluctuations.
+Do not compare those wall times to the older idle-editor benchmark or claim the
+old2.80x PPO penalty is eliminated. Evidence and accepted/rejected choices are in
+`MimicKitTransfer.md`, `Saved/MimicKitLocal/optimization/`.
+
+**Pre-optimization October16 speed audit:** the Jolt-matching profile cost7.68x vanilla MJ
+physics time on identical recorded512-world inputs (12.599ms vs1.641ms/substep).
+Complete disposable512-world PPO updates:6.581s vs2.350s,2.80x slower. Main costs
+are the replacement contact/motor solver and split angular position projection;
+zero rare fallback solves in the paired physics benchmark. The prior implementation
+was not adequately benchmarked against vanilla before being made the default.
+Details/caveats/evidence in `MimicKitTransfer.md`. Training remains stopped;
+benchmark weights were discarded, original checkpoints preserved.
 
 **October16 current state:** local fine-tuning from3913 to4013 completed100updates.
 Both MJ and native Jolt40/8 pass16/16 true animation starts for10s, max target
@@ -8,7 +3583,13 @@ errors16.93/16.86cm under the original27cm threshold. All sixteen60s native cont
 also pass; two60s ONNX feedback controls pass. Initial29s failures were running off the old finite100m test
 floor; a separate1000m-floor fixture proves this without changing the rig/DLL.
 Details and remaining limits: `MimicKitTransfer.md`.
-Fresh local all-omni+idle training is now running with512worlds, fresh weights and
+Fresh local all-omni+idle training stopped at03:49 October16 after753updates:
+float32 accumulation made the rare contact-solver fallback fail convergence in
+world218. Exact capture reproduced; compensated summation now fixes it without
+changing physics, training settings or tolerances. Saved-case/CUDA-graph tests and
+131,072 noisy transitions pass. Status corrected to failed; checkpoint700 remains
+safe. Training has NOT been resumed. Full diagnosis: `MimicKitTransfer.md`.
+The stopped run used512worlds, fresh weights and
 counters: `2026-10-16_02-07-18_omni_idle_fresh_512`, bounded1000updates, no cloud.
 27clips, idle−1/[1,0], walk0/run1, original network/observations/Phase E/losses/PPO.
 TensorBoard8035 and noiseless replay8021 are connected; one rolling verified local
@@ -1065,3 +4646,8 @@ CPU validation: all five observer/geometry/backup tests pass (.414s). Incomplete
 
 L4 provisioning confirmed NVIDIA L4 with23GB usable VRAM. Dependency installation is in progress on the pod; downloads stay cloud-side. Plan:32 actual stock PPO updates each at1024 and4096 worlds, then matched capture off/on microbenchmarks. Final checkpoint bundles include runtime package freeze and source/task provenance. Replay and TensorBoard hooks still require live validation. No completed training or performance claim.
 
+
+
+## October17 — side-chat replay storage cleanup
+
+User explicitly requested deleting replayer rollouts older than24hours. Removed 6817 persistent-storage replay recordings/old replay pointers; 14622648001 bytes freed. Every deletion independently returned404 afterward. No checkpoints, source animations, code, trainer/pod state or recent replay files changed. Replay files embedded inside checkpoint archives were retained. Two large non-replay dataset directories excluded from the final listing; no dataset deletion. Exact file manifests, cutoff timestamps and receipts: Saved/MimicKitEquipment/rollout-cleanup-20261017{,-extra,-focused}/; aggregate summary.json in rollout-cleanup-20261017. This was a one-time cleanup, not a retention-policy change.

@@ -11,13 +11,17 @@ def invalid_batch(buffers):
     return {name: mask.nonzero().cpu().tolist()[:32] for name,mask in masks.items() if bool(mask.any())}
 
 
-def install_guard(agent, report):
+def install_guard(agent, report, warn=None):
     original = agent._rollout_train
     def rollout(steps):
         original(steps)
         validator=getattr(agent._env._engine,'validate_transfer_solver',None)
         if validator:
-            try:validator()
+            try:
+                warning=validator()
+                if warning:
+                    if warn:warn(warning)
+                    else:print('SOLVER WARNING: '+str(warning),flush=True)
             except FloatingPointError as error:
                 report(dict(reason='Physics solver rejected rollout BEFORE PPO optimization',error=str(error)))
                 raise

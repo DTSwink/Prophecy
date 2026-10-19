@@ -1,16 +1,36 @@
 """Explicit acceptance receipt for the measured flat-floor transfer domain."""
-import hashlib,json
+import argparse,hashlib,json
 from pathlib import Path
 import numpy as np
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'Saved/MimicKitTransfer/no-armature-3913'
 
 
+def require_matching_body(native_assets,mj_assets):
+    # These fixed native reports used the archived body, not today's PHAT export.
+    # Hashing today's export after reading old reports cannot certify that export.
+    paths=[];changed=[]
+    for name in ('humanoid_uefn.xml','limits.json','physics.json'):
+        native_path=native_assets/name;mj_path=mj_assets/name
+        if native_path.read_bytes()!=mj_path.read_bytes():changed.append(name)
+        paths.append(native_path)
+    if changed:
+        raise RuntimeError('Native transfer evidence uses a different body: '+', '.join(changed)+
+            '. Revalidate the updated body in native Jolt before issuing a transfer receipt.')
+    return paths
+
+
 def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--mj-label',default='local_finetune4013_phases16',help='Fresh MJ regression; native rig/checkpoint remain unchanged')
+    args=parser.parse_args()
+    native_body_paths=require_matching_body(OUT/'source/assets/uefn',ROOT/'Labs/MimicKitUEFN')
     folder=OUT/'causal_transfer';stem='local_finetune4013_phases16'
-    mj=json.loads((folder/(stem+'.json')).read_text())
+    mj_path=folder/(args.mj_label+'.json')
+    mj=json.loads(mj_path.read_text())
     native=json.loads((folder/(stem+'_self0_native_v40p8_point.json')).read_text())
     checkpoint=ROOT/'Saved/MimicKitLocal/runs/2026-10-16_02-00_transfer_finetune_512'
+    assert Path(mj['checkpoint']).resolve()==(checkpoint/'model.pt').resolve()
     assert mj['worlds']==len(native)==16 and mj['ticks']==300
     assert mj['first_flags']==[3]*16 and mj['first_done']==[300]*16
     assert max(mj['max_distance'])<.27
@@ -25,7 +45,7 @@ def main():
     assert sorted(r['start_phase'] for r in long)==[i/16 for i in range(16)]
     assert len(long)==16 and all(r['ticks']==1800 and r['resets']==0 and not r['target_failure']
         and r['max_target_m']<.27 and r['foot_ground_fraction']>.999 for r in long)
-    inputs=[folder/(stem+'.json'),folder/(stem+'_self0_native_v40p8_point.json'),checkpoint/'model.pt',
+    inputs=[mj_path,folder/(stem+'_self0_native_v40p8_point.json'),checkpoint/'model.pt',
             OUT/'point-contact/profile/fixture.exe',OUT/'point-contact/profile/ProphecyJolt_5_6_Development.dll']
     inputs += [ROOT/'Labs/MimicKitTransfer'/name for name in ('contact_engine.py','sequential_contact_adapter.py',
         'sequential_contact_gpu.py','block_contact_gpu.py','contact_manifolds_gpu.py','jolt_limit_directions.py','limit_projection_gpu.py')]
@@ -34,7 +54,9 @@ def main():
     inputs.append(ROOT/'Labs/MimicKitTraining/uefn_engine.py')
     inputs.extend([long_path,remaining_path,OUT/'point-contact/profile/long-floor/fixture.exe',
                    OUT/'point-contact/profile/long-floor/build.json'])
+    inputs.extend(native_body_paths)
     report=dict(accepted=True,domain='Run LR, flat ground, 16 evenly spaced true animation starts, 10 seconds each',
+        mj_report=str(mj_path.relative_to(ROOT)),
         native_starts=16,native_successes=16,ticks=300,mj_successes=16,
         uninterrupted_native_starts=16,uninterrupted_seconds=60,
         uninterrupted_max_target_m=max(r['max_target_m'] for r in long),

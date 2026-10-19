@@ -136,12 +136,22 @@ def convert(recording, geom, run):
     if meta.get('replay_rows'):
         with np.load(recording,allow_pickle=False) as z:
             result['rows'][0]['evaluation']=result['metadata']['evaluation']
+            if meta['replay_rows'][0].get('motion_file'):
+                result['rows'][0]['clip_name']=Path(meta['replay_rows'][0]['motion_file']).stem
             for i,row_meta in enumerate(meta['replay_rows'][1:],1):
                 item=convert_arrays(row_meta,z[f'pose_{i}'],z[f'data_{i}'],z[f'loss_terms_{i}'],geom,run)
                 for key in ('positions','basis','controller_root_pos','controller_root_rot','frozen_root_pos','frozen_root_rot','source_frame','source_clip_name'):
                     result[key].extend(item[key])
                 entry=item['rows'][0];entry['row']=i;entry['evaluation']=item['metadata']['evaluation']
+                if row_meta.get('motion_file'):entry['clip_name']=Path(row_meta['motion_file']).stem
                 result['rows'].append(entry)
+                target_key=f'reference_pose_{i}'
+                if target_key in z:
+                    target=z[target_key]
+                    assert target.shape==z[f'pose_{i}'].shape and np.isfinite(target).all()
+                    result['mse_target_positions'].append((target[:,:,:3]@WORLD_TO_VIEW.T).tolist())
+                    axes=Rotation.from_quat(target[:,:,3:].reshape(-1,4)).as_matrix().reshape(*target.shape[:2],3,3).swapaxes(-1,-2)@WORLD_TO_VIEW.T
+                    result['mse_target_basis'].append(axes.tolist())
     return result
 
 
@@ -165,8 +175,19 @@ def convert_arrays(meta,pose,data,frame_terms,geom,run):
         # Legacy captures list their columns in rollout_losses insertion order.
         names=meta.get('loss_term_names') or [key for key in meta['rollout_losses'] if key != 'total']
         assert frame_terms.shape == (n,len(names)) and np.isfinite(frame_terms).all()
-        if meta.get('reward_from_loss')=='exp_negative_sum':
-            assert np.allclose(np.exp(-frame_terms[1:].sum(axis=1)),data[1:,2],atol=1e-6)
+        if meta.get('reward_from_loss') in ('exp_negative_sum','reciprocal_sum','reciprocal_tracking_minus_termination_remaining'):
+            # Auto-phase supervises the prediction head; it is displayed in the
+            # total loss but is not part of the environment's physical reward.
+            remaining_penalty=meta['reward_from_loss']=='reciprocal_tracking_minus_termination_remaining'
+            reward_columns=[i for i,key in enumerate(names)
+                            if not (key=='auto_phase' and meta.get('auto_phase_scope'))
+                            and not (remaining_penalty and key=='termination_remaining')]
+            total=frame_terms[1:,reward_columns].sum(axis=1)
+            expected=(1./(1.+total) if meta['reward_from_loss']!='exp_negative_sum'
+                      else np.exp(-total))
+            if remaining_penalty:
+                expected-=frame_terms[1:,names.index('termination_remaining')]
+            assert np.allclose(expected,data[1:,2],atol=1e-6), 'Recorded reward does not match '+meta['reward_from_loss']
         else:
             assert np.allclose(-frame_terms.sum(axis=1),data[:,2],atol=1e-6)
         meta['frame_losses']={key:frame_terms[:,i].tolist() for i,key in enumerate(names)}

@@ -30,6 +30,23 @@ def aligned_positions(actual: torch.Tensor, reference: torch.Tensor):
 
 
 @torch.jit.script
+def position_leeway_mse(delta: torch.Tensor, legs: torch.Tensor,
+                        flat: float, vertical: float, upper: float):
+    # World XY is horizontal; Z is vertical. Distance to a cylinder for legs,
+    # distance to a sphere for other bodies. Preserve the old 3-component mean.
+    horizontal = torch.linalg.vector_norm(delta[..., :2], dim=-1)
+    leg_error = torch.clamp(horizontal-flat, min=0.).square()
+    leg_error = leg_error + torch.clamp(delta[..., 2].abs()-vertical, min=0.).square()
+    other_error = torch.clamp(torch.linalg.vector_norm(delta, dim=-1)-upper, min=0.).square()
+    return torch.where(legs, leg_error, other_error).mean(-1) / 3.
+
+
+@torch.jit.script
+def spherical_position_mse(delta: torch.Tensor, radius: float):
+    return torch.clamp(torch.linalg.vector_norm(delta, dim=-1)-radius, min=0.).square().mean(-1) / 3.
+
+
+@torch.jit.script
 def errors(pos: torch.Tensor, rot: torch.Tensor, vel: torch.Tensor, ang: torch.Tensor,
            target_pos: torch.Tensor, target_rot: torch.Tensor,
            target_vel: torch.Tensor, target_ang: torch.Tensor):
@@ -48,12 +65,35 @@ class AbsoluteWalkEnv(DeepMimicEnv):
 
     def _build_sim_tensors(self, config):
         super()._build_sim_tensors(config)
+        self._reward_form = config.get('tracking_reward_form', 'exp_negative_sum')
+        if self._reward_form not in ('exp_negative_sum', 'reciprocal_sum'):
+            raise ValueError('Unknown tracking reward form: '+self._reward_form)
         self.loss_weights = dict(config.get('absolute_loss_calibration', {}).get('weights', self.loss_weights))
         assert set(self.loss_weights) == set(self.loss_term_names)
         assert all(math.isfinite(v) and v > 0 for v in self.loss_weights.values())
         self._loss_weights = torch.tensor([self.loss_weights[k] for k in self.loss_term_names], device=self._device)
         model = self._kin_char_model
         n = model.get_num_joints()
+        self._position_leeway = config.get('position_mse_leeway')
+        if self._position_leeway:
+            leeway = self._position_leeway
+            self._position_leeway_scope = leeway.get('scope', 'all')
+            if self._position_leeway_scope not in ('all', 'idle'):
+                raise ValueError('Position leeway scope must be all or idle')
+            if leeway.get('axes') != 'world_xy_horizontal_z_vertical':
+                raise ValueError('Position leeway requires world XY horizontal and Z vertical')
+            self._position_leg_names = [side+'_'+part for side in ('left','right')
+                                        for part in ('thigh','shin','foot')]
+            names = model.get_body_names()
+            if not set(self._position_leg_names).issubset(names):
+                raise ValueError('Position leeway leg bodies missing from skeleton')
+            self._position_legs = torch.tensor([name in self._position_leg_names for name in names], device=self._device)
+            self._position_flat = float(leeway['leg_horizontal_radius_m'])
+            self._position_vertical = float(leeway['leg_vertical_half_height_m'])
+            self._position_upper = float(leeway['other_radius_m'])
+            self._position_locomotion = float(leeway.get('locomotion_radius_m', 0.))
+            if not all(math.isfinite(x) and x >= 0 for x in (self._position_flat,self._position_vertical,self._position_upper,self._position_locomotion)):
+                raise ValueError('Position allowances must be finite and nonnegative')
         assert model.get_body_name(0) == 'pelvis'
         self._velocity_parents = [int(x) for x in model._parent_indices]
         mapping = torch.zeros((model.get_dof_size(), (n-1)*3), device=self._device)
@@ -101,32 +141,54 @@ class AbsoluteWalkEnv(DeepMimicEnv):
         vel = self._engine.get_body_vel(char) - torch.cross(ang, q.quat_rotate(rot, self._body_com), dim=-1)
         target_vel, target_ang = self._world_reference_velocities(self._ref_body_pos, self._ref_body_rot,
             self._ref_root_vel, self._ref_root_ang_vel, self._ref_dof_vel, self._motion_ids, self._get_motion_times())
-        self.reward_target_pos.copy_(aligned_positions(pos, self._ref_body_pos))
+        self.reward_target_pos.copy_(self._target_positions(pos, self._ref_body_pos))
         self.reward_target_vel.copy_(target_vel)
         self.reward_target_ang.copy_(target_ang)
-        self.loss_terms.copy_(errors(pos, rot, vel, ang, self.reward_target_pos,
-            self.reward_target_rot, target_vel, target_ang) * self._loss_weights)
-        self._reward_buf.copy_(torch.exp(-self.loss_terms.sum(-1)))
-        self._completed_loss_totals[:4].add_(self.loss_terms.sum(0))
-        self._completed_loss_totals[4].add_(self.get_num_envs())
+        self.loss_terms.copy_(self._tracking_losses(pos, rot, vel, ang, target_vel, target_ang))
+        total = self.loss_terms.sum(-1)
+        self._reward_buf.copy_(torch.reciprocal(1. + total) if self._reward_form == 'reciprocal_sum' else torch.exp(-total))
+        self._completed_loss_totals[:-1].add_(self.loss_terms.sum(0))
+        self._completed_loss_totals[-1].add_(self.get_num_envs())
+
+    def _tracking_losses(self, pos, rot, vel, ang, target_vel, target_ang):
+        terms = errors(pos, rot, vel, ang, self.reward_target_pos,
+            self.reward_target_rot, target_vel, target_ang)
+        if self._position_leeway:
+            allowed = position_leeway_mse(pos-self.reward_target_pos, self._position_legs,
+                self._position_flat, self._position_vertical, self._position_upper)
+            locomotion = terms[:, 0]
+            if self._position_leeway_scope == 'idle' and self._position_locomotion > 0:
+                locomotion = spherical_position_mse(pos-self.reward_target_pos, self._position_locomotion)
+            terms[:, 0] = (torch.where(self._position_leeway_rows(), allowed, locomotion)
+                if self._position_leeway_scope == 'idle' else allowed)
+        return terms * self._loss_weights
+
+    def _position_leeway_rows(self):
+        raise NotImplementedError('Idle allowance requires an environment with idle membership')
+
+    def _target_positions(self, actual, reference, env_ids=None):
+        return aligned_positions(actual, reference)
 
     def _reset_envs(self, ids):
         super()._reset_envs(ids)
         self.loss_terms[ids] = 0
         pos = self._engine.get_body_pos(self._get_char_id())
-        self.reward_target_pos[ids] = aligned_positions(pos[ids], self._ref_body_pos[ids])
+        self.reward_target_pos[ids] = self._target_positions(pos[ids], self._ref_body_pos[ids], ids)
 
     def take_completed_losses(self):
         values = self._completed_loss_totals.cpu().tolist()
         self._completed_loss_totals.zero_()
         if not values[-1]:
             return None
-        terms = [x/values[-1] for x in values[:4]]
+        terms = [x/values[-1] for x in values[:-1]]
         return dict(zip((*self.loss_term_names, 'total'), [*terms, sum(terms)]))
 
     def replay_loss_metadata(self):
         return dict(task=self.task_name, loss_term_names=list(self.loss_term_names),
-            loss_weights=self.loss_weights, reward_from_loss='exp_negative_sum',
+            position_mse_leeway=(dict(self._position_leeway, leg_bodies=self._position_leg_names,
+                residual='Squared distance outside leg XY cylinder / other-body sphere for selected rows; optional locomotion sphere for other rows; mean over bodies divided by 3')
+                if self._position_leeway else None),
+            loss_weights=dict(self.loss_weights), reward_from_loss=self._reward_form,
             objective='Four world-body MSEs with fixed recorded scales; target position follows pelvis XY only; original animation heading and height',
             velocity_reference='Original animation world velocities at body origins, not derivative of XY re-anchoring',
             loss_aggregation='Mean per body/component per tick; rotation matrix MSE; SI units',

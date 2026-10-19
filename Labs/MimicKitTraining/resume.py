@@ -4,9 +4,21 @@ import random
 import zipfile
 import json
 import hashlib
+import math
 from pathlib import Path
 import numpy as np
 import torch
+
+def override_actor_learning_rate(agent, value):
+    """Explicit resume override: retain Adam moments, counters and all weights."""
+    value = float(value)
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError('Actor learning rate must be finite and positive')
+    groups = agent._actor_optimizer._optimizer.param_groups
+    previous = [float(group['lr']) for group in groups]
+    for group in groups:
+        group['lr'] = value
+    return dict(previous=previous, requested=value, optimizer_state_preserved=True)
 
 def append_height_records(model, state):
     """142 -> 144 inputs, preserving every old activation and momentum column.
@@ -42,10 +54,23 @@ def restore(agent,archive,add_height_records=False):
     if add_height_records:
         append_height_records(model,state)
     agent.load_state_dict(model)
-    agent._actor_optimizer._optimizer.load_state_dict(state['actor_optimizer'])
-    agent._critic_optimizer._optimizer.load_state_dict(state['critic_optimizer'])
-    agent._actor_optimizer._steps=state['actor_steps']
-    agent._critic_optimizer._steps=state['critic_steps']
+    adaptive = getattr(agent._env, '_adaptive_rows', None)
+    if adaptive is not None and 'adaptive_rows' in state:
+        adaptive.restore(state['adaptive_rows'], agent._env._fixed_motion_ids)
+    restored = {}
+    for part in ('actor', 'critic'):
+        wrapper = getattr(agent, '_'+part+'_optimizer')
+        current = wrapper._optimizer.param_groups[0]
+        saved = state[part+'_optimizer']['param_groups'][0]
+        same_kind = ('betas' in current) == ('betas' in saved)
+        if same_kind:
+            wrapper._optimizer.load_state_dict(state[part+'_optimizer'])
+            wrapper._steps = state[part+'_steps']
+        else:
+            # Explicit SGD -> Adam migration: retain learned weights/counters,
+            # initialize fresh moments rather than loading incompatible state.
+            wrapper._steps = 0
+        restored[part] = same_kind
     if hasattr(agent,'_disc_optimizer'):
         agent._disc_optimizer._optimizer.load_state_dict(state['disc_optimizer'])
         agent._disc_optimizer._steps=state['disc_steps']
@@ -67,7 +92,8 @@ def restore(agent,archive,add_height_records=False):
     # Keep upstream's per-run iteration zero and first evaluation. Its loop's
     # test_info is initialized at that first output; global numbering is metadata.
     return dict(prior_samples=prior_samples,iteration_offset=int(state['completed_iteration'])+1,
-                optimizer_restored=True,normalizer_restored=True,fresh_physical_episodes=True,
+                optimizer_restored=all(restored.values()),optimizer_restored_by_part=restored,
+                normalizer_restored=True,fresh_physical_episodes=True,
                 discriminator_optimizer_restored=hasattr(agent,'_disc_optimizer'),
                 discriminator_replay_buffer_fresh=hasattr(agent,'_disc_optimizer'),
                 appended_zero_weight_height_inputs=2 if add_height_records else 0)

@@ -1,7 +1,8 @@
 """Opt-in Newton engine: existing UEFN limits, gyro cancellation and body drag.
 
 Velocity motors use bounded end-step velocity in the shared constraint solve.
-Ground, solver settings, gains, caps, body mass and inertia remain inherited.
+Ground, solver settings, gains, body mass and inertia remain inherited.
+Named torque-cap increases are optional and applied once before solver creation.
 """
 from pathlib import Path
 import hashlib
@@ -19,6 +20,11 @@ def build_uefn_engine(config,*args,**kwargs):
     Explicit opt-out exists only to reproduce older diagnostic baselines.
     Source checkouts and deployment bundles use the same sibling module files.
     """
+    if config.get('uefn_native_profile'):
+        if config['uefn_native_profile'] != 'native_runlr_soft_contact_20261018':
+            raise ValueError('Unknown native UEFN profile')
+        from native_uefn_engine import NativeUefnEngine
+        return NativeUefnEngine(config,*args,**kwargs)
     if not config.get('uefn_jolt_contact_profile',True):
         return UefnNewtonEngine(config,*args,**kwargs)
     assert config.get('uefn_zero_joint_armature',False), 'Verified Jolt profile requires zero added joint armature'
@@ -51,11 +57,15 @@ class UefnNewtonEngine(NewtonEngine):
         self._uefn_directory=Path(config['uefn_asset_directory']).resolve()
         self._zero_joint_armature=bool(config.get('uefn_zero_joint_armature',False))
         self._bounded_velocity_motors=bool(config.get('uefn_bounded_velocity_motors',True))
+        self._motor_torque_caps=config.get('uefn_motor_torque_caps_nm')
         assert config['control_mode']=='vel'
         assert config['sim_freq']==240 and config['control_freq']==30
         super().__init__(config,*args,**kwargs)
 
     def _build_solver(self):
+        if self._motor_torque_caps is not None:
+            from torque_envelope import apply_torque_envelope
+            self.torque_envelope_report=apply_torque_envelope(self._sim_model,self._motor_torque_caps)
         if self._zero_joint_armature:
             self._sim_model.joint_armature.zero_()
         self._build_base_solver()

@@ -14,6 +14,7 @@ from limit_projection_gpu import SplitLimitProjection
 class ContactTransferEngine(UefnNewtonEngine):
     def __init__(self,config,*args,**kwargs):
         self._capture_failures=bool(config.get('transfer_capture_failures',False))
+        self._floor_aware_projection=bool(config.get('transfer_floor_aware_projection',False))
         super().__init__(config,*args,**kwargs)
 
     def _build_base_solver(self):
@@ -39,14 +40,33 @@ class ContactTransferEngine(UefnNewtonEngine):
             assert len(matches)==1,(row['body'],matches)
             metadata.append((s.mj_model.body_jntadr[matches[0]],row))
         self.transfer_projection=SplitLimitProjection(s.mj_model,s.mjw_data,metadata,self._device)
+        self.transfer_floor_guard=None
+        if self._floor_aware_projection:
+            from floor_projection_guard import FloorProjectionGuard
+            self.transfer_floor_guard=FloorProjectionGuard(s.mj_model,s.mjw_data,self._device,parallel=True)
         advance=s._mujoco_warp_step
         def step():
             advance()
+            if self.transfer_floor_guard is not None:self.transfer_floor_guard.save_before()
             self.transfer_projection.apply(self.transfer_contact.p.inv,shared=True)
+            if self.transfer_floor_guard is not None:self.transfer_floor_guard.apply()
         s._mujoco_warp_step=step
 
     def validate_transfer_solver(self):
         # Invoked at rollout boundaries before PPO. No CPU copies per substep.
         failure=self.transfer_contact.error.numpy()
         if np.any(failure):
-            raise FloatingPointError('Transfer solver rejected rollout: '+str(np.flatnonzero(failure).tolist()))
+            worlds=np.flatnonzero(failure)
+            raise FloatingPointError('Transfer solver rejected rollout: '+str(dict(zip(worlds.tolist(),failure[worlds].tolist()))))
+        counts=self.transfer_contact.p.roundoff_warnings.numpy()
+        convergence=self.transfer_contact.p.convergence_warnings.numpy()
+        total=int(counts.sum()+convergence.sum())
+        if total>getattr(self,'_reported_solver_warnings',0):
+            previous=getattr(self,'_reported_solver_warnings',0)
+            self._reported_solver_warnings=total
+            metrics=self.transfer_contact.p.convergence_metrics.numpy().max(axis=0)
+            return dict(reason='Finite solver approximation; training continues, no reset or sample removal',
+                total=total,new=total-previous,roundoff_total=int(counts.sum()),convergence_total=int(convergence.sum()),
+                worlds=np.flatnonzero(counts+convergence).tolist(),
+                maximum_iteration_delta=max(float(self.transfer_contact.p.roundoff_delta.numpy().max()),float(metrics[0])),
+                maximum_motor_residual_nm=float(metrics[1]),maximum_contact_limit_velocity_residual=float(metrics[2]))

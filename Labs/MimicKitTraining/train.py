@@ -66,12 +66,24 @@ def main():
     parser.add_argument('--floor-impact-limit-n',type=float,help='Terminate above this normal floor-contact peak on any non-foot body, measured at physics substeps')
     parser.add_argument('--floor-impact-arms-head',action='store_true',help='Restrict floor impact detection to head and both upper arms, forearms and hands')
     parser.add_argument('--resume',type=Path)
+    parser.add_argument('--resume-velocity-mse-scale',type=float,
+        help='Allow prepared linear/angular velocity weights to differ from the checkpoint by this explicit factor')
+    parser.add_argument('--resume-position-leeway',action='store_true',
+        help='Explicitly adopt prepared position MSE allowances while retaining learned state')
     parser.add_argument('--task', choices=['walk', 'amp', 'amp_standing', 'head_height','neutral_pose','recovery_pose','world_pose'], default='walk')
     parser.add_argument('--absolute-walk',action='store_true',help='Four world-body motion errors; targets follow pelvis XY only')
     parser.add_argument('--absolute-loss-calibration',type=Path,help='Fixed initial four-term balance for absolute walking')
     parser.add_argument('--omni-run-lr',action='store_true',help='UEFN Run LR, 151 observations, 34 motors plus Phase E, 27cm termination')
     parser.add_argument('--zero-joint-armature',action='store_true',help='Explicit Run LR continuation with no added joint armature')
+    parser.add_argument('--equipment-omni',type=Path,help='Prepared fresh 54-motion equipment experiment')
+    parser.add_argument('--replay-rows',type=int,default=20,help='Equipment evaluation rows recorded without additional physics steps')
     a=parser.parse_args()
+    if a.resume_velocity_mse_scale is not None:
+        if not (a.resume and a.equipment_omni and math.isfinite(a.resume_velocity_mse_scale) and a.resume_velocity_mse_scale>0):
+            parser.error('Velocity MSE rescale requires a resumed equipment run and a positive finite factor')
+    if a.equipment_omni:
+        a.omni_run_lr=True
+        if not 1<=a.replay_rows<=a.worlds:parser.error('Replay rows must be between 1 and worlds')
     assert not a.omni_run_lr or (a.absolute_walk and a.control_mode=='vel' and a.worlds==512 and a.evaluate)
     assert not a.zero_joint_armature or (a.omni_run_lr and a.resume)
     assert not a.absolute_loss_calibration or a.absolute_walk
@@ -231,6 +243,17 @@ def main():
             engine_config['track_ground_contact_peaks']=True
         engine_file=str(directory/'selected_engine.yaml')
         Path(engine_file).write_text(yaml.safe_dump(engine_config,sort_keys=False))
+    if a.equipment_omni:
+        config=yaml.safe_load((a.equipment_omni/'env_config.yaml').read_text())
+        engine_config=yaml.safe_load((a.equipment_omni/'engine_config.yaml').read_text())
+        agent_config=yaml.safe_load((a.equipment_omni/'agent_config.yaml').read_text())
+        if a.actor_lr is not None:agent_config['actor_optimizer']['learning_rate']=a.actor_lr
+        agent_config.update(iters_per_output=a.output_interval,iters_per_log=min(10,a.output_interval))
+        assert config['equipment_conditioning'] and not config['arm_injuries_enabled']
+        assert 0 < config['idle_row_fraction'] <= 1 and agent_config['model']['auto_phase_unit_output']
+        config_file.write_text(yaml.safe_dump(config,sort_keys=False))
+        Path(engine_file).write_text(yaml.safe_dump(engine_config,sort_keys=False))
+        Path(agent_file).write_text(yaml.safe_dump(agent_config,sort_keys=False))
     args=upstream.load_args(['train', '--env_config',str(config_file),
         '--engine_config',engine_file,
         '--agent_config',agent_file,
@@ -240,6 +263,8 @@ def main():
     upstream.set_np_formatting()
     if a.omni_run_lr:
         from omni_walk import OmniWalkEnv
+        if config.get('idle_recovery'):
+            from recovery_omni import RecoveryOmniEnv as OmniWalkEnv
         env=OmniWalkEnv(config,yaml.safe_load(Path(engine_file).read_text()),a.worlds,'cuda:0',False)
     elif a.absolute_walk:
         from absolute_walk import AbsoluteWalkEnv
@@ -288,14 +313,65 @@ def main():
                 old=yaml.safe_load(bundle.read(name))
                 new=yaml.safe_load((directory/name).read_text())
                 if a.omni_run_lr:
+                    if name=='env_config.yaml' and a.resume_position_leeway:
+                        assert a.equipment_omni and new.get('position_mse_leeway')
+                        old['position_mse_leeway']=new['position_mse_leeway']
+                    if name=='env_config.yaml' and a.resume_velocity_mse_scale is not None:
+                        # Explicit objective-only continuation. Other weights and
+                        # calibration evidence must still match the saved run.
+                        weights=old['absolute_loss_calibration']['weights']
+                        for term in ('linear_velocity_mse','angular_velocity_mse'):
+                            weights[term] *= a.resume_velocity_mse_scale
+                    if name=='agent_config.yaml' and new.get('actor_kl_limit',0)>0:
+                        # October19 approved Adam migration and transactional KL guard.
+                        for key in ('actor_optimizer','critic_optimizer','actor_kl_limit','actor_kl_probe_size','actor_min_learning_rate'):
+                            old[key]=new[key]
+                    if (name=='agent_config.yaml' and a.equipment_omni
+                            and config.get('idle_recovery',{}).get('pelvis_linear_velocity_multiplier')==2.
+                            and new.get('critic_optimizer',{}).get('grad_clip')==10.):
+                        # Authorized main337 critic stabilization; retain actor,
+                        # learning rates, optimizer state and every other setting.
+                        old['critic_optimizer']['grad_clip']=10.
+                    if name=='engine_config.yaml' and new.get('transfer_floor_aware_projection'):
+                        # User-authorized floor-feasible position projection.
+                        old['transfer_floor_aware_projection']=True
+                    if name=='env_config.yaml' and new.get('idle_recovery'):
+                        # Explicit recovery curriculum resume; learned tensors,
+                        # optimizer and all remaining settings stay unchanged.
+                        old['idle_recovery']=new['idle_recovery']
+                        if new['idle_recovery'].get('sphere_only') and new.get('target_radius_m')==.30:
+                            # User-requested recovery sphere radius change on resume.
+                            old['target_radius_m']=new['target_radius_m']
+                        # Explicitly authorized idle cohort change; preserve all
+                        # learned state while constructing new physical episodes.
+                        old['idle_row_fraction']=new['idle_row_fraction']
+                        if new.get('tracking_reward_form')=='reciprocal_sum':
+                            old['tracking_reward_form']='reciprocal_sum'
+                        assert 'adaptive_motion_rows' not in new
+                        old.pop('adaptive_motion_rows',None)
+                    if name=='engine_config.yaml' and 'uefn_motor_torque_caps_nm' in new:
+                        # Explicit motor-only resume; the engine validates named increases.
+                        old['uefn_motor_torque_caps_nm']=new['uefn_motor_torque_caps_nm']
+                    if name=='env_config.yaml' and 'velocity_command_margin' in new:
+                        # User-approved command envelope; keep every other setting.
+                        assert new['velocity_command_margin']==.05
+                        old.setdefault('velocity_command_margin', .05)
+                    if name=='env_config.yaml' and a.equipment_omni and 'adaptive_motion_rows' in new:
+                        # Authorized minute-based row allocation; all other config must match.
+                        old.setdefault('adaptive_motion_rows', new['adaptive_motion_rows'])
                     # The user-approved end-step bounded motor solve applies
                     # to resumed checkpoints too. Save it explicitly in the new
                     # config; never rewrite the historical checkpoint archive.
                     if name=='engine_config.yaml':
-                        assert new['uefn_bounded_velocity_motors'] is True
-                        old['uefn_bounded_velocity_motors']=True
-                        assert new['uefn_jolt_contact_profile'] is True
-                        old['uefn_jolt_contact_profile']=True
+                        if new.get('uefn_native_profile'):
+                            assert new['uefn_native_profile']=='native_runlr_soft_contact_20261018'
+                            for key in ('uefn_native_profile','uefn_bounded_velocity_motors','uefn_jolt_contact_profile','transfer_floor_aware_projection'):
+                                old[key]=new[key]
+                        else:
+                            assert new['uefn_bounded_velocity_motors'] is True
+                            old['uefn_bounded_velocity_motors']=True
+                            assert new['uefn_jolt_contact_profile'] is True
+                            old['uefn_jolt_contact_profile']=True
                         assert new['uefn_zero_joint_armature'] is True
                         old['uefn_zero_joint_armature']=True
                     if name=='engine_config.yaml' and a.zero_joint_armature:
@@ -335,9 +411,40 @@ def main():
                 if name=='agent_config.yaml':old['test_episodes']=new['test_episodes']
                 assert old==new,f'Resume config mismatch: {name}'
     resumed=restore(agent,a.resume,add_height_records=add_height_records) if a.resume else dict(prior_samples=0,iteration_offset=0)
+    if a.resume_position_leeway:
+        resumed['position_mse_leeway']=dict(config['position_mse_leeway'])
+    if a.resume_velocity_mse_scale is not None:
+        resumed['velocity_mse_rescale']=dict(factor=a.resume_velocity_mse_scale,
+            terms=['linear_velocity_mse','angular_velocity_mse'],rows='all',
+            weights=dict(config['absolute_loss_calibration']['weights']))
+    if a.resume and a.actor_lr is not None:
+        # load_state_dict restores the saved LR too; apply an explicit user
+        # override afterwards without clearing the optimizer's accumulated state.
+        from resume import override_actor_learning_rate
+        resumed['actor_learning_rate_override']=override_actor_learning_rate(agent,a.actor_lr)
     iteration_offset=resumed['iteration_offset']
     if a.zero_joint_armature:resumed['joint_armature_removed']=True
+    if hasattr(env,'velocity_command_report'):
+        command_report=dict(env.velocity_command_report,
+            action_scale=agent._a_norm.get_std().detach().cpu().tolist(),
+            action_offset=agent._a_norm.get_mean().detach().cpu().tolist(),
+            normalized_penalty_bound=agent._a_norm.normalize(env._action_bound_high).detach().cpu().tolist(),
+            physical_noise_std=(agent._a_norm.get_std()*agent_config['model']['action_std']).detach().cpu().tolist())
+        atomic_json(directory/'velocity_command_bounds.json',command_report)
     atomic_json(directory/'resume.json',resumed)
+    if getattr(env,'_recovery_ready',False):
+        assigned=env._gaits[env._fixed_motion_ids]
+        atomic_json(directory/'recovery_setup.json',dict(
+            worlds=a.worlds,recovery_rows=len(env._recovery_ids),
+            recovery_random_start_rows=int(env._recovery_random_start_rows.sum()),
+            recovery_frame_zero_rows=int((env._recovery_rows & ~env._recovery_random_start_rows).sum()),
+            ordinary_idle_rows=env._idle_rows-len(env._recovery_ids),
+            walking_rows=int((assigned==0).sum()),running_rows=int((assigned==1).sum()),
+            adaptive_sampling=False,configuration=config['idle_recovery']))
+    if hasattr(env._engine,'torque_envelope_report'):
+        atomic_json(directory/'torque_envelope.json',env._engine.torque_envelope_report)
+    if hasattr(env._engine,'native_profile_report'):
+        atomic_json(directory/'native_physics.json',env._engine.native_profile_report)
     if a.valid_reset_pose_pool:
         atomic_json(directory/'reset_pose_pool.json',env.reset_pose_pool_report)
     noise_metadata=dict(training_action_noise_std=float(agent_config['model']['action_std']))
@@ -353,12 +460,15 @@ def main():
         task=(config['absolute_world_body_objective'] if a.absolute_walk else (('AMP static standing target; 100% noisy floor; heading-aligned world body discriminator' if a.amp_world_bodies else 'AMP static standing target; fixed 20% upright / 80% noisy floor cohorts') if a.task=='amp_standing' else 'stock AMP humanoid spinkick' if a.task=='amp' else 'stock DeepMimic humanoid walking' if a.task=='walk' else config['objective'])),worlds=a.worlds,seed=20261014,
         **noise_metadata,evaluation_enabled=a.evaluate,
         wrapper_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        training_config_changed=(['four world-body errors; XY-only target position alignment; exp(-sum error) reward'] if a.absolute_walk else ['PPO without discriminator; same actor/critic optimizer settings','1024x1024 actor/critic; 140 inputs with world body orientations','100% noisy floor starts, 2-second timeout, fixed-heading world pose MSE throughout episode'] if a.task=='world_pose' else ['actor/critic 1024x1024; discriminator hidden layers unchanged',f'{a.worlds} worlds; static standing reference; three-frame discriminator',('100% noisy floor reset; actual reset history; heading-aligned all-body world states, 675 discriminator inputs' if a.amp_world_bodies else 'fixed upright cohort; upright-only early termination; noisy floor reset; actual reset history'),'two-second horizon; stock AMP rewards/optimizers/controller/physics'] if a.task=='amp_standing' else ['512 worlds; stock Newton backend; logging/checkpoint wrapper'] if a.task=='amp' else ['motion_file only'] if a.task=='walk' else ['reference-free CharEnv',('random 50/50 back/front joint-noisy floor reset' if a.task=='recovery_pose' else 'supine reset'),('50-step finite horizon:45 reach+5 tail' if a.timed_best_tail else '45-step finite horizon'),config['objective'],'action_bound_weight=0']),gpu=torch.cuda.get_device_name(0)))
+        training_config_changed=(['world-body tracking; target alignment from config; reward='+config.get('tracking_reward_form','exp_negative_sum')] if a.absolute_walk else ['PPO without discriminator; same actor/critic optimizer settings','1024x1024 actor/critic; 140 inputs with world body orientations','100% noisy floor starts, 2-second timeout, fixed-heading world pose MSE throughout episode'] if a.task=='world_pose' else ['actor/critic 1024x1024; discriminator hidden layers unchanged',f'{a.worlds} worlds; static standing reference; three-frame discriminator',('100% noisy floor reset; actual reset history; heading-aligned all-body world states, 675 discriminator inputs' if a.amp_world_bodies else 'fixed upright cohort; upright-only early termination; noisy floor reset; actual reset history'),'two-second horizon; stock AMP rewards/optimizers/controller/physics'] if a.task=='amp_standing' else ['512 worlds; stock Newton backend; logging/checkpoint wrapper'] if a.task=='amp' else ['motion_file only'] if a.task=='walk' else ['reference-free CharEnv',('random 50/50 back/front joint-noisy floor reset' if a.task=='recovery_pose' else 'supine reset'),('50-step finite horizon:45 reach+5 tail' if a.timed_best_tail else '45-step finite horizon'),config['objective'],'action_bound_weight=0']),gpu=torch.cuda.get_device_name(0)))
     assert env._engine._graph is not None,'Expected vanilla Newton CUDA physics graph'
     record_training=not a.evaluate
     if a.task=='amp_standing':
         from observe import AMPTestCohortRecorder
         recorder=AMPTestCohortRecorder(env,directory,agent,lambda:agent._iter+iteration_offset)
+    elif a.equipment_omni and a.replay_rows>1:
+        from observe_many import MultiRecorder
+        recorder=MultiRecorder(env,directory,a.replay_rows)
     else:
         recorder=Recorder(env,directory) if a.evaluate else TrainingRecorder(env,directory,lambda:agent._iter+iteration_offset)
     if a.omni_run_lr:recorder.phase_agent=agent
@@ -382,6 +492,9 @@ def main():
         iteration+=iteration_offset
         if iteration==last_snapshot and not final:
             return
+        # Never accumulate unverified checkpoints behind a failed/slow upload.
+        # Normal background uploads finish well before the next save interval.
+        backups.wait()
         begun=time.perf_counter()
         model=directory/'model.tmp.pt'
         original_save(str(model));model.replace(directory/'model.pt')
@@ -398,6 +511,8 @@ def main():
             state['disc_optimizer']=agent._disc_optimizer._optimizer.state_dict()
             state['disc_steps']=agent._disc_optimizer._steps
             state['disc_replay_buffer_saved']=False
+        if getattr(env,'_adaptive_rows',None) is not None:
+            state['adaptive_rows']=env._adaptive_rows.state(env._fixed_motion_ids)
         torch.save(state,directory/'resume_state.pt')
         archive=directory/f"checkpoint_{iteration:07d}{'_final' if final else ''}.zip"
         with zipfile.ZipFile(archive.with_suffix('.tmp'),'w',compression=zipfile.ZIP_STORED) as z:
@@ -407,8 +522,12 @@ def main():
             for name in ['model.pt','resume_state.pt','engine_config.yaml','env_config.yaml','agent_config.yaml','provenance.json']:
                 z.write(directory/name,name)
             z.write(ROOT/'runtime-freeze.txt','runtime-freeze.txt')
-            for name in ['evaluation.json','replay.npz','resume.json']:
+            for name in ['evaluation.json','replay.npz','resume.json','velocity_command_bounds.json','torque_envelope.json']:
                 if (directory/name).exists():z.write(directory/name,name)
+            if getattr(env,'_adaptive_rows',None) is not None:
+                z.write(Path(__file__).with_name('adaptive_rows.py'),'adaptive_rows.py')
+                for name in ('adaptive_rows.json','adaptive_rows.jsonl'):
+                    if (directory/name).exists():z.write(directory/name,name)
             if a.task not in ('walk','amp'):
                 z.write(Path(__file__).with_name(a.task+'.py'),a.task+'.py')
             if a.task in ('amp_standing','world_pose'):
@@ -425,6 +544,9 @@ def main():
                         z.write(path,path.name)
         archive.with_suffix('.tmp').replace(archive)
         backups.submit(archive)
+        if last_snapshot < 0:
+            # Prove durable storage works before continuing a new paid run.
+            backups.wait()
         if hasattr(agent,'_logger') and agent._logger._writer:agent._logger._writer.flush()
         atomic_json(directory/'checkpoint_status.json',dict(iteration=iteration,path=archive.name,
             samples=agent._sample_count,bytes=archive.stat().st_size,local_save_seconds=time.perf_counter()-begun))
@@ -432,6 +554,10 @@ def main():
 
     def iteration():
         nonlocal latest_train, latest_losses, deadline
+        if backups.errors:
+            # Failed durable saves must not leave a paid trainer running for
+            # hours. The exit watcher preserves local evidence and stops billing.
+            raise RuntimeError('Checkpoint backup failed; stopping GPU. See backup_errors.json')
         deadline=live_deadline.read()
         if (ROOT/'stop.request').exists() or (directory/'stop.request').exists() or time.time()>=deadline:
             snapshot(agent._iter-1,'stop before next PPO update')
@@ -451,9 +577,23 @@ def main():
                 reason='nonfinite training return; previous verified checkpoints retained'))
             raise FloatingPointError('Nonfinite training return; stopped before further updates')
         latest_train=dict(result)
+        if getattr(env,'_adaptive_rows',None) is not None:
+            allocation=env._adaptive_rows.report(env._fixed_motion_ids)
+            if allocation is not None:
+                allocation.update(iteration=iteration_offset+agent._iter,updated_unix=time.time(),
+                    motions=[Path(env._motion_lib.get_motion_file(i)).stem for i in range(env._motion_lib.get_num_motions())])
+                atomic_json(directory/'adaptive_rows.json',allocation)
+                with (directory/'adaptive_rows.jsonl').open('a') as out:
+                    out.write(json.dumps(allocation,separators=(',',':'))+'\n')
+                agent._logger._writer.add_scalar('sampling/reassigned_rows',allocation['reassigned'],
+                    agent._sample_count+a.worlds*agent._steps_per_iter)
         if (a.timed_best_tail or a.task=='world_pose' or a.absolute_walk) and agent._iter % 10 == 0:
             latest_losses=env.take_completed_losses()
             if latest_losses is not None:
+                if a.equipment_omni:
+                    latest_losses['body_total']=latest_losses['total']
+                    latest_losses['auto_phase']=float(result['auto_phase_weighted'])
+                    latest_losses['total']+=latest_losses['auto_phase']
                 for key,value in latest_losses.items():
                     agent._logger._writer.add_scalar('loss/'+key,value,agent._sample_count+a.worlds*agent._steps_per_iter)
                 agent._logger._writer.flush()
@@ -498,6 +638,8 @@ def main():
         if a.task=='world_pose' or a.absolute_walk:
             train_totals=env._completed_loss_totals.clone()
             env._completed_loss_totals.zero_()
+        if a.equipment_omni:
+            recorder.world=0 if (agent._iter//a.output_interval)%2==0 else env._idle_rows
         recorder.start()
         try:
             result=original_rollout_test(num_episodes)
@@ -551,7 +693,17 @@ def main():
             agent._logger._writer.add_scalar('health/numerical_failure',1,agent._sample_count)
             agent._logger._writer.flush()
     from health import install_guard
-    install_guard(agent,report_failure)
+    def report_solver_warning(detail):
+        detail.update(iteration=agent._iter+iteration_offset,time=time.time(),run=a.name)
+        atomic_json(directory/'solver_warnings.json',detail)
+        print('SOLVER WARNING: '+json.dumps(detail),flush=True)
+        if hasattr(agent,'_logger') and agent._logger._writer:
+            for tag,key in [('solver_roundoff_warnings','roundoff_total'),('solver_convergence_warnings','convergence_total'),
+                            ('solver_motor_residual_nm','maximum_motor_residual_nm'),
+                            ('solver_contact_limit_velocity_residual','maximum_contact_limit_velocity_residual')]:
+                agent._logger._writer.add_scalar('health/'+tag,detail[key],agent._sample_count)
+            agent._logger._writer.flush()
+    install_guard(agent,report_failure,report_solver_warning)
     agent._train_iter=iteration
     agent._rollout_test=evaluate
     agent._output_train_model=lambda it,*unused:snapshot(it,'upstream output interval')
@@ -563,7 +715,17 @@ def main():
         final_state='stopped'
     except BaseException as error:
         # Preserve completed checkpoints; do not label an interrupted update as valid.
-        atomic_json(directory/'failure.json',dict(time=time.time(),iteration=iteration_offset+agent._iter,reason=f'{type(error).__name__}: {error}'))
+        failure=dict(time=time.time(),iteration=iteration_offset+agent._iter,reason=f'{type(error).__name__}: {error}')
+        atomic_json(directory/'failure.json',failure)
+        status_path=directory/'status.json'
+        status=json.loads(status_path.read_text()) if status_path.exists() else {}
+        atomic_json(status_path,dict(status,state='failed',failure=failure))
+        capture=getattr(env._engine,'failure_capture',None)
+        try:
+            if capture is not None and int(capture.seen.numpy()[0]):
+                capture.save(directory/'solver_failure.npz')
+        except Exception as capture_error:
+            atomic_json(directory/'failure_capture_error.json',dict(reason=str(capture_error)))
         raise
     finally:
         if hasattr(agent,'_logger') and agent._logger._writer:
