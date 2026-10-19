@@ -1,4 +1,4 @@
-# Stopped equipment policy — October 19, 2026
+# Stopped equipment policy â€” October 19, 2026
 
 Final evaluated checkpoint: **47039 / 770,703,360 samples**. The owned L4 pod
 `n5esp2rc3dvxc4` is stopped (`EXITED`). Local checkpoint SHA256 matches the

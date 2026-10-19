@@ -3,7 +3,7 @@
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
   "file_count": 6518,
-  "bytes": 612340605,
+  "bytes": 612340607,
   "files": [
     {
       "path": ".gitattributes",
@@ -7237,9 +7237,9 @@
     },
     {
       "path": "Exports/MimicKitEquipment/20261019_stopped_47039/README.md",
-      "git_blob": "c60dac8fb350001eb7ee6b162640908a40840ba4",
-      "bytes": 1535,
-      "sha256": "70e38ed93cf83c8c088f60b6758302bf29f07ae12f789aba60b157ae08c3483d"
+      "git_blob": "7bf156e125496b1c6435fc62fc3221ab735bbf17",
+      "bytes": 1537,
+      "sha256": "4520e80322695c0300028081884bf048b6bbdef9269871cf4e2e7b9e24900b8b"
     },
     {
       "path": "Exports/MimicKitEquipment/20261019_stopped_47039/checkpoint_0047039_final.zip",
