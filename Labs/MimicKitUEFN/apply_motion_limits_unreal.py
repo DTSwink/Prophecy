@@ -13,9 +13,10 @@ import unreal
 
 root=Path(unreal.Paths.project_dir()).resolve()
 parser=argparse.ArgumentParser();parser.add_argument('--backup-name',default='before-omni-limits')
-args=parser.parse_args();assert args.backup_name in ('before-omni-limits','before-wrist-limits')
+parser.add_argument('--equipment',action='store_true')
+args=parser.parse_args();assert args.backup_name in ('before-omni-limits','before-wrist-limits','before-equipment-limits')
 out=root/'Saved/MimicKitUEFN'
-plan=json.loads((out/'omni-limit-plan.json').read_text(encoding='utf-8'))
+plan=json.loads((out/('equipment/limit-plan.json' if args.equipment else 'omni-limit-plan.json')).read_text(encoding='utf-8'))
 sub=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 assert sub.get_game_world() is None, 'User Play is active; leave it untouched'
 pa=unreal.load_asset('/Game/Characters/UEFN_Mannequin/Rigs/PA_UEFN_Mannequin')
@@ -31,6 +32,8 @@ shutil.copy2(assetfile,backup/assetfile.name)
 for name in ('limits.json','humanoid_uefn.xml','humanoid_uefn_physics.xml','physics.json'):
     shutil.copy2(root/'Labs/MimicKitUEFN'/name,backup/name)
 shutil.copy2(root/'Saved/Robotics/rig.json',backup/'historical-rig.json')
+shutil.copy2(out/'source-rig.json',backup/'source-rig.json')
+shutil.copy2(root/'Labs/MimicKitUEFN/overlay-data.json',backup/'overlay-data.json')
 
 def export(name):
     unreal.SystemLibrary.execute_console_command(sub.get_editor_world(),'Prophecy.Robotics.ExportRig '+name)
@@ -38,7 +41,10 @@ def export(name):
     assert data['success'],data.get('error')
     return data
 
-before=export('omni-before-limits.json')
+prefix='equipment' if args.equipment else 'omni'
+before=export(prefix+'-before-limits.json')
+expected=json.loads((out/'source-rig.json').read_text())
+assert before=={k:v for k,v in expected.items() if k!='source_files'},'Live PHAT differs from fitted source'
 (backup/'live-rig.json').write_text(json.dumps(before,indent=2),encoding='utf-8')
 byname={j['name']:j for j in before['joints']}
 modes={0:unreal.AngularConstraintMotion.ACM_FREE,1:unreal.AngularConstraintMotion.ACM_LIMITED,2:unreal.AngularConstraintMotion.ACM_LOCKED}
@@ -62,7 +68,7 @@ def stripped(j):
 applied=[]
 try:
     for row in changes:set_row(row,'new');applied.append(row)
-    after=export('omni-after-limits.json')
+    after=export(prefix+'-after-limits.json')
     assert {k:v for k,v in before.items() if k!='joints'}=={k:v for k,v in after.items() if k!='joints'},'Non-joint export data changed'
     changed_names={j['source_joint'] for j in changes}
     for a,b in zip(before['joints'],after['joints']):
@@ -84,5 +90,5 @@ after['source_files']=sources
 (out/'source-rig.json').write_text(json.dumps(after,indent=2),encoding='utf-8')
 receipt=dict(saved_asset=pa.get_path_name(),changed_constraints=len(changes),source_files=sources,
              dirty_packages_preserved=before_dirty,non_limit_export_fields_unchanged=True,backup=str(backup))
-(out/'applied-omni-limits.json').write_text(json.dumps(receipt,indent=2),encoding='utf-8')
+(out/('equipment/applied-limits.json' if args.equipment else 'applied-omni-limits.json')).write_text(json.dumps(receipt,indent=2),encoding='utf-8')
 print(json.dumps(receipt,indent=2))

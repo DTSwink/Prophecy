@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crawls · Lafan viewer</title>
+<style>
+:root{color-scheme:dark;font:14px system-ui;background:#0b131b;color:#edf4f8}*{box-sizing:border-box}body{margin:0}header{padding:24px 28px 18px;display:flex;align-items:center;justify-content:space-between;gap:20px}h1{font-size:25px;margin:3px 0 6px;font-weight:650}small,.muted{color:#96aebc}button,select{font:inherit;border:1px solid #3a5264;background:#1e3140;color:#edf4f8;padding:8px 13px;border-radius:7px;cursor:pointer}button:hover{background:#2e485b}button.accent{background:#db9251;color:#13212d;border:0;font-weight:650}label{display:inline-flex;align-items:center;gap:7px}input{accent-color:#efab65}nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:0 24px 22px}.card{background:#14222e;border:1px solid #2b4151;border-radius:12px;overflow:hidden;min-width:0}.title{padding:17px 17px 12px}.title h2{font-size:16px;margin:6px 0 8px;font-weight:600}.badge{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#6be3d2}.viewport{height:clamp(320px,56vh,640px);position:relative;background:#101c27}.viewport canvas{width:100%;height:100%;display:block}.hint{position:absolute;bottom:12px;left:14px;pointer-events:none;color:#7894a8;font-size:11px}.controls{padding:15px 16px}.controls input[type=range]{width:100%;margin:15px 0 12px}.row{display:flex;align-items:center;justify-content:space-between;gap:8px}.time{font-variant-numeric:tabular-nums;font-size:12px;color:#adc1ce}.source{margin-top:13px;color:#7895a8;font-size:11px;overflow-wrap:anywhere}footer{padding:0 28px 24px;color:#91a8b8;font-size:12px}.error{color:#ffa88d;padding:24px}.card:fullscreen{width:100vw;height:100vh;background:#14222e}.card:fullscreen .viewport{height:calc(100vh - 260px)}@media(max-width:1000px){main{grid-template-columns:1fr}.viewport{height:430px}header{align-items:flex-start;flex-direction:column}}
+</style><script type="importmap">{"imports":{"three":"/vendor/three.module.js"}}</script></head>
+<body><header><div><small>LAFAN CUTTER / DATASET REVIEW</small><h1 id="heading">Crawls</h1><span id="summary" class="muted">Loading saved animations…</span></div><nav><button id="playAll" class="accent">Pause all</button><button id="restartAll">Restart all</button><select id="speed" aria-label="Playback speed"><option value="0.25">0.25× speed</option><option value="0.5">0.5× speed</option><option value="1" selected>1× speed</option><option value="2">2× speed</option></select><label><input id="follow" type="checkbox" checked>Follow pelvis</label><label><input id="helpers" type="checkbox">Rig helpers</label><label><input id="sourceOverlay" type="checkbox">LAFAN source overlay</label></nav></header><nav style="padding:0 28px 20px"><input id="search" aria-label="Filter animations" placeholder="Filter animations" style="padding:9px;background:#14222e;color:#edf4f8;border:1px solid #3a5264;border-radius:6px"><button id="prevPage">Previous</button><select id="page" aria-label="Animation page"></select><button id="nextPage">Next</button><span id="pageStatus" class="muted"></span></nav><main id="cards"></main><footer>Original timing · drag to orbit, scroll to zoom. Retargeted clips use the current UEFN locomotion rig, including wrists. Blue overlay shows LAFAN uniformly scaled to the target leg length. These are review candidates; hand contacts and joint limits are not automatically fitted.</footer>
+<script type="module">
+import * as T from 'three';
+import {OrbitControls} from '/vendor/OrbitControls.js';
+const views=[], up=new T.Vector3(0,1,0), $=s=>document.querySelector(s);
+window.galleryState={ready:false,views:[]};
+let speed=1;
+const make=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e};
+function build(clip,index,data,originalData){
+  const card=make('article','card'),title=make('div','title'),viewport=make('div','viewport'),ctrl=make('div','controls');
+  title.append(make('div','badge',`${String(index+1).padStart(2,'0')} / ${clip.retarget_model?'UEFN · LOCO RETARGET':clip.source.toLowerCase().endsWith('.fbx')?'RECOVERY FBX · UNCHANGED':'LAFAN RE-SOLVED'}`),make('h2','',clip.label),make('small','',`${clip.frames.toLocaleString()} frames · ${clip.fps.toFixed(2).replace('.00','')} fps · ${((clip.frames-1)*clip.dt).toFixed(2)} s`));
+  const row=make('div','row'),buttons=make('nav'),play=make('button','','Pause'),restart=make('button','','↺'),expand=make('button','','Expand'),time=make('span','time');
+  restart.title='Restart this clip';buttons.append(play,restart,expand);row.append(buttons,time);
+  const slider=make('input');slider.type='range';slider.min=0;slider.max=clip.frames-1;slider.step=1;slider.value=0;slider.setAttribute('aria-label',clip.label+' frame');
+  ctrl.append(row,slider,make('div','source',clip.source));viewport.append(make('div','hint','DRAG TO ORBIT · SCROLL TO ZOOM'));card.append(title,viewport,ctrl);$('#cards').append(card);
+  const renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));viewport.prepend(renderer.domElement);
+  const scene=new T.Scene();scene.background=new T.Color('#101c27');scene.add(new T.HemisphereLight(0xe8f6ff,0x526576,3));
+  const grid=new T.GridHelper(200,400,0x3d6278,0x1e3547);scene.add(grid);
+  const camera=new T.PerspectiveCamera(43,1,.01,250),orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;
+  const bodyMat=new T.MeshStandardMaterial({color:!clip.retarget_model&&clip.source.toLowerCase().endsWith('.fbx')?0x66daca:0xf4ae70,roughness:.65}),jointMat=new T.MeshStandardMaterial({color:0x83d9db}),helperMat=new T.MeshStandardMaterial({color:0x677a89});
+  const sphere=new T.SphereGeometry(.014,8,6),cylinder=new T.CylinderGeometry(.01,.01,1,7);
+  const helper=n=>/^(root|attach|ik_|weapon|locator)|twist/i.test(n)||n.endsWith('_End');
+  const dots=clip.names.map((n,j)=>{const mesh=new T.Mesh(sphere,helper(n)?helperMat:jointMat);scene.add(mesh);return {mesh,helper:helper(n)};});
+  const links=[];clip.parents.forEach((p,j)=>{if(p>=0){const isHelper=helper(clip.names[j])||helper(clip.names[p]);const mesh=new T.Mesh(cylinder,isHelper?helperMat:bodyMat);scene.add(mesh);links.push({mesh,p,j,helper:isHelper});}});
+  let originalLines,originalEdges=[];
+  if(originalData){clip.overlay.parents.forEach((p,j)=>{if(p>=0&&!clip.overlay.names[j].endsWith('_End'))originalEdges.push([p,j]);});const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.BufferAttribute(new Float32Array(originalEdges.length*6),3));originalLines=new T.LineSegments(geometry,new T.LineBasicMaterial({color:0x539cf6,transparent:true,opacity:.65,depthTest:false}));originalLines.frustumCulled=false;scene.add(originalLines);}
+  const count=clip.names.length,position=(frame,j,target)=>target.fromArray(data,(frame*count+j)*3),pelvis=new T.Vector3();position(0,clip.pelvis,pelvis);
+  orbit.target.set(pelvis.x,.65,pelvis.z);camera.position.copy(orbit.target).add(new T.Vector3(2.5,1.35,3.4));
+  const view={clip,frame:0,time:0,playing:true,onScreen:true,play,slider,prev:pelvis.clone(),renderedFrame:-1};views.push(view);window.galleryState.views.push(view);
+  const visibility=new IntersectionObserver(entries=>{view.onScreen=entries[0].isIntersecting},{rootMargin:'120px'});visibility.observe(card);
+  const a=new T.Vector3(),b=new T.Vector3(),delta=new T.Vector3();
+  view.draw=()=>{
+    const frame=Math.max(0,Math.min(clip.frames-1,Math.floor(view.time/clip.dt)));view.frame=frame;
+    dots.forEach((d,j)=>{position(frame,j,d.mesh.position);d.mesh.visible=!d.helper||$('#helpers').checked;});
+    links.forEach(l=>{position(frame,l.j,a);position(frame,l.p,b);delta.subVectors(a,b);const length=delta.length();l.mesh.visible=length>1e-6&&(!l.helper||$('#helpers').checked);l.mesh.position.copy(a).add(b).multiplyScalar(.5);l.mesh.scale.y=length;if(length>1e-6)l.mesh.quaternion.setFromUnitVectors(up,delta.divideScalar(length));});
+    if(originalLines){originalLines.visible=$('#sourceOverlay').checked;if(originalLines.visible){const attr=originalLines.geometry.attributes.position;originalEdges.forEach(([p,j],i)=>{for(let k=0;k<3;k++){attr.array[i*6+k]=originalData[(frame*clip.overlay.names.length+p)*3+k];attr.array[i*6+3+k]=originalData[(frame*clip.overlay.names.length+j)*3+k];}});attr.needsUpdate=true;}}
+    position(frame,clip.pelvis,pelvis);if($('#follow').checked){delta.subVectors(pelvis,view.prev);delta.y=0;camera.position.add(delta);orbit.target.add(delta);}view.prev.copy(pelvis);
+    slider.value=frame;time.textContent=`${(frame*clip.dt).toFixed(2)} s · ${frame} / ${clip.frames-1}`;orbit.update();renderer.render(scene,camera);view.renderedFrame=frame;
+  };
+  view.setPlaying=p=>{view.playing=p;play.textContent=p?'Pause':'Play'};
+  play.onclick=()=>view.setPlaying(!view.playing);restart.onclick=()=>{view.time=0;view.draw()};
+  slider.oninput=()=>{view.setPlaying(false);view.time=+slider.value*clip.dt+1e-9;view.draw()};
+  expand.onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else card.requestFullscreen().catch(()=>{});};
+  const resize=new ResizeObserver(()=>{if(!viewport.isConnected)return;camera.aspect=viewport.clientWidth/viewport.clientHeight;camera.updateProjectionMatrix();renderer.setSize(viewport.clientWidth,viewport.clientHeight,false);view.draw()});resize.observe(viewport);
+  view.dispose=()=>{visibility.disconnect();resize.disconnect();orbit.dispose();const geometries=new Set(),materials=new Set();scene.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m))});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());renderer.dispose();renderer.forceContextLoss();card.remove()};
+  view.draw();return view;
+}
+$('#playAll').onclick=()=>{const play=!views.some(v=>v.playing);views.forEach(v=>v.setPlaying(play));$('#playAll').textContent=play?'Pause all':'Play all'};
+$('#restartAll').onclick=()=>views.forEach(v=>{v.time=0;v.draw()});$('#speed').onchange=e=>speed=+e.target.value;
+window.addEventListener('keydown',e=>{if(e.code==='Space'&&!['INPUT','SELECT','BUTTON'].includes(e.target.tagName)){e.preventDefault();$('#playAll').click()}});
+try{
+  const res=await fetch('/gallery.json');if(!res.ok)throw new Error(`Manifest ${res.status}`);const doc=await res.json();
+  $('#heading').textContent=doc.name;document.title=doc.name+' · Lafan viewer';
+  let filtered=doc.clips.map((clip,index)=>({clip,index})),page=0,revision=0;
+  async function showPage(){
+    const token=++revision;window.galleryState.ready=false;
+    views.forEach(v=>v.dispose());views.length=0;window.galleryState.views.length=0;
+    const pages=Math.max(1,Math.ceil(filtered.length/6));page=Math.max(0,Math.min(page,pages-1));
+    $('#page').replaceChildren(...Array.from({length:pages},(_,i)=>{const o=make('option','',`Page ${i+1} / ${pages}`);o.value=i;return o}));$('#page').value=page;
+    $('#prevPage').disabled=page===0;$('#nextPage').disabled=page===pages-1;
+    $('#pageStatus').textContent=`${filtered.length} matching animations`;$('#playAll').textContent='Pause all';
+    for(const {clip,index} of filtered.slice(page*6,page*6+6)){
+      const response=await fetch('/'+clip.positions);if(!response.ok)throw new Error(`Clip ${response.status}`);
+      const data=new Float32Array(await response.arrayBuffer());if(token!==revision)return;
+      if(data.length!==clip.frames*clip.names.length*3)throw new Error('Incomplete motion data');
+      let original=null;if(clip.overlay){const r=await fetch('/'+clip.overlay.positions);if(!r.ok)throw new Error('Source overlay missing');original=new Float32Array(await r.arrayBuffer());if(token!==revision)return;if(original.length!==clip.frames*clip.overlay.names.length*3)throw new Error('Incomplete source overlay')}
+      build(clip,index,data,original);
+    }
+    $('#summary').textContent=`${doc.clips.length} animations · six per page`;window.galleryState.ready=true;
+  }
+  const refresh=()=>showPage().catch(error=>{$('#cards').append(make('p','error',error.message));window.galleryState.error=error.message});
+  $('#prevPage').onclick=()=>{page--;refresh()};$('#nextPage').onclick=()=>{page++;refresh()};$('#page').onchange=e=>{page=+e.target.value;refresh()};
+  let searchTimer;$('#search').oninput=e=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{const q=$('#search').value.toLowerCase();filtered=doc.clips.map((clip,index)=>({clip,index})).filter(x=>x.clip.label.toLowerCase().includes(q));page=0;refresh()},250)};
+  await showPage();
+  let last=null;function loop(now){const dt=last===null?0:Math.max(0,Math.min((now-last)/1000,.1));last=now;for(const v of views){if(v.playing)v.time=(v.time+dt*speed)%(v.clip.frames*v.clip.dt);if(v.onScreen)v.draw()}requestAnimationFrame(loop)}requestAnimationFrame(loop);
+}catch(error){$('#cards').append(make('p','error',error.message));window.galleryState.error=error.message;}
+</script></body></html>

@@ -35,6 +35,7 @@ class Recorder:
         self.capture_seconds=0.0
         self.phase_agent=None
         self.phase_values=torch.empty((self.capacity,6),device=env._device) if hasattr(env,'next_phase_target') else None
+        self.prior_values=torch.empty((self.capacity,3),device=env._device) if getattr(env,'_perturb_ready',False) else None
         original_step=env.step
         def step(action):
             result=original_step(action)
@@ -49,7 +50,7 @@ class Recorder:
         self.pose[i,:,3:].copy_(self.engine.get_body_rot(self.char)[self.world])
         if self.reference_pose is not None:
             self.reference_pose[i,:,:3].copy_((self.env.reward_target_pos if hasattr(self.env,'reward_target_pos') else self.env._ref_body_pos)[self.world])
-            self.reference_pose[i,:,3:].copy_(self.env._ref_body_rot[self.world])
+            self.reference_pose[i,:,3:].copy_(getattr(self.env, 'reward_target_rot', self.env._ref_body_rot)[self.world])
         if self.absolute_velocities is not None:
             from util import torch_util as q
             ang=self.engine.get_body_ang_vel(self.char)[self.world]
@@ -58,6 +59,8 @@ class Recorder:
         self.data[i,0].copy_(self.env._done_buf[self.world])
         self.data[i,1].copy_(self.env._time_buf[self.world])
         self.data[i,2].copy_(self.env._reward_buf[self.world])
+        if self.prior_values is not None:
+            self.prior_values[i].copy_(torch.stack((self.env._prior_raw[self.world],self.env._tracking_mix[self.world],self.env._reset_reason[self.world].float())))
         if self.components is not None:self.components[i].copy_(self.env.loss_terms[self.world])
         if self.phase_values is not None and self.phase_agent is not None:
             ids=torch.tensor([self.world],device=self.env._device)
@@ -117,6 +120,21 @@ class Recorder:
             metadata.update(extra_metadata)
         metadata.update(getattr(self,'equipment_metadata',{}))
         arrays={}
+        if self.prior_values is not None:
+            prior=self.prior_values[:n].cpu().numpy()
+            metadata.update(frame_ae_raw=prior[:,0].tolist(),frame_tracking_mix=prior[:,1].tolist(),
+                frame_reset_reason=prior[:,2].astype(int).tolist(),
+                reset_reason_codes={'0':'none or normal-cohort rules','1':'failure','2':'head-height reset','3':'time reset (bootstrap)'})
+        if getattr(self.env, '_additive_head_reward', False):
+            # Reconstruct the exact independent term from recorded world-Z and tick;
+            # this also avoids any extra per-physics-step recorder copy.
+            target = float(self.env._idle_head_height[self.env._motion_ids[self.world]])
+            active = bool(self.env._perturbed_getup[self.world]) & (np.rint(data[:,1]*self.fps) > 60)
+            height_reward = np.clip(pose[:,self.env._head_id,2]/target, 0., 1.)*active
+            height_reward[0] = 0.
+            metadata['frame_head_height_reward'] = height_reward.tolist()
+            metadata['frame_rewards'] = data[:,2].tolist()
+            metadata['episode_return'] = float(data[1:,2].sum())
         if self.phase_values is not None and self.phase_agent is not None:
             metadata['frame_phase']=self.phase_values[:n].cpu().tolist()
             metadata['phase_columns']=['current_cos','current_sin','predicted_next_cos','predicted_next_sin','target_next_cos','target_next_sin']
@@ -146,6 +164,14 @@ class Recorder:
             totals=terms.sum(axis=0)
             if hasattr(self.env,'replay_loss_metadata'):
                 metadata.update(self.env.replay_loss_metadata())
+                # Per-row reward overrides must survive the shared cohort metadata.
+                row_info = getattr(self, 'equipment_metadata', {})
+                metadata['normal_getup_failure_penalty'] = row_info.get('normal_getup_failure_penalty', 0.)
+                if row_info.get('getup_position_reward_form') == 'linear_cost':
+                    metadata.update(reward_from_loss='linear_cost',
+                                    getup_failure_penalty=row_info.get('getup_failure_penalty',0.),
+                                    getup_success_bonus=row_info.get('getup_success_bonus',0.),
+                                    reward_definition='1 - weighted position MSE - terminal failure penalty + head-reset success bonus')
                 if 'target_radius_m' in metadata and 'target_deviation' in metadata:
                     radii = metadata.get('target_radii_m', {})
                     active_bodies = metadata.get('target_termination_bodies')
@@ -211,14 +237,21 @@ class Recorder:
             phase=self.phase_values[:n].cpu().numpy()
             weighted=((phase[:,2:4]-phase[:,4:6])**2).mean(-1)*self.phase_agent._phase_weight
             weighted[0]=0
+            supervised = metadata.get('auto_phase_supervised', True)
+            if not supervised:
+                weighted[:] = 0
             arrays['loss_terms']=np.column_stack((arrays['loss_terms'],weighted))
             metadata['loss_term_names'].append('auto_phase')
-            metadata['loss_weights']['auto_phase']=self.phase_agent._phase_weight
+            metadata['loss_weights']['auto_phase']=self.phase_agent._phase_weight if supervised else 0.
             metadata['rollout_losses']['auto_phase']=float(weighted.sum())
             metadata['rollout_losses']['total']+=float(weighted.sum())
             metadata['auto_phase_scope']='Supervised next-tick prediction at displayed state; clock input, no feedback'
             if metadata.get('auto_phase_feedback'):
                 metadata['auto_phase_scope']='Next-tick phase feedback input; authored get-up target clock, then idle target follows prior-tick prediction'
+            if metadata.get('perturbed_row'):
+                metadata['auto_phase_scope']='Previous prediction supplies current input and current MSE target; next prediction supervises one nominal phase step forward'
+            if not supervised:
+                metadata['auto_phase_scope']='Autoregressive phase input; phase supervision disabled, loss exactly zero'
         if _arrays_only:return metadata,dict(pose=pose,data=data,**arrays)
         np.savez_compressed(temp,pose=pose,data=data,metadata=json.dumps(metadata),**arrays)
         temp.replace(self.directory/self.filename)

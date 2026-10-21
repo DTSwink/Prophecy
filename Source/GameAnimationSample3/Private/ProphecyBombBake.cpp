@@ -26,6 +26,46 @@ TArray<UStaticMesh*> UProphecyBombLibrary::PrepareBombMeshes(const FString& Geom
         auto* Package=CreatePackage(*Path);
         auto* Mesh=Existing?Existing:NewObject<UStaticMesh>(Package,*Name,RF_Public|RF_Standalone);
         Mesh->GetStaticMaterials()=Source->GetStaticMaterials();
+        if(Name==TEXT("SM_BombShell") || Name==TEXT("SM_BombFuse"))
+        {
+            // Copy every source vertex attribute (all UV channels, tangent frame,
+            // colors), removing only the known fuse polygons. No FBX round trip.
+            const auto* SourceDescription=Source->GetMeshDescription(0);if(!SourceDescription)return {};
+            FMeshDescription Shell=*SourceDescription;FStaticMeshAttributes A(Shell);
+            const bool bFuseOnly=Name==TEXT("SM_BombFuse");
+            const auto P=A.GetVertexPositions();TArray<FVector3f> FusePoints;TArray<float> FuseCoordinates;
+            for(const auto& Value:Data->GetArrayField(TEXT("fuse_positions")))
+            {const auto& V=Value->AsArray();FusePoints.Emplace(V[0]->AsNumber(),V[1]->AsNumber(),V[2]->AsNumber());if(bFuseOnly)FuseCoordinates.Add(V[3]->AsNumber());}
+            TArray<FPolygonID> Remove;
+            for(const auto Polygon:Shell.Polygons().GetElementIDs())
+            {
+                bool bFuse=true;
+                for(const auto Vertex:Shell.GetPolygonVertices(Polygon))
+                    if(!FusePoints.ContainsByPredicate([&](const FVector3f& V){return V.Equals(P[Vertex],.0001f);})) {bFuse=false;break;}
+                if(bFuse!=bFuseOnly)Remove.Add(Polygon);
+            }
+            if(Remove.IsEmpty() || Remove.Num()==Shell.Polygons().Num())return {};
+            Shell.DeletePolygons(Remove);FElementIDRemappings Remap;Shell.Compact(Remap);
+            if(bFuseOnly)
+            {
+                FStaticMeshAttributes FuseAttributes(Shell);
+                auto UV=FuseAttributes.GetVertexInstanceUVs();
+                UV.SetNumChannels(FMath::Max(2,UV.GetNumChannels()));
+                const auto Positions=FuseAttributes.GetVertexPositions();
+                for(auto Instance:Shell.VertexInstances().GetElementIDs())
+                {
+                    const FVector3f Position=Positions[Shell.GetVertexInstanceVertex(Instance)];
+                    const int32 Index=FusePoints.IndexOfByPredicate([&](const FVector3f& V){return V.Equals(Position,.0001f);});
+                    if(Index==INDEX_NONE)return {};
+                    UV.Set(Instance,1,FVector2f(FuseCoordinates[Index],0));
+                }
+            }
+            if(Mesh->GetNumSourceModels()==0)Mesh->AddSourceModel();
+            auto& Settings=Mesh->GetSourceModel(0).BuildSettings;Settings=Source->GetSourceModel(0).BuildSettings;
+            Settings.bRecomputeNormals=false;Settings.bRecomputeTangents=false;Settings.bGenerateLightmapUVs=false;
+            Mesh->CreateMeshDescription(0,MoveTemp(Shell));Mesh->CommitMeshDescription(0);
+            Mesh->Build(false);Mesh->MarkPackageDirty();Result.Add(Mesh);continue;
+        }
         FMeshDescription Description;FStaticMeshAttributes Attributes(Description);Attributes.Register();
         auto Positions=Attributes.GetVertexPositions();auto Normals=Attributes.GetVertexInstanceNormals();
         auto UVs=Attributes.GetVertexInstanceUVs();UVs.SetNumChannels(2);

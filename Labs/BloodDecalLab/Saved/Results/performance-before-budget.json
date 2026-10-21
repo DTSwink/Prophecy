@@ -1,0 +1,35 @@
+{
+  "scope": "NullRHI native ProcessChanges timing; no GPU or render-thread cost",
+  "cold_checker_512_components": {
+    "median_ms": 5.651750087738037,
+    "p95_ms": 8.365900039672852,
+    "max_ms": 8.57859992980957,
+    "decals_min": 512,
+    "decals_max": 512,
+    "trials": 12
+  },
+  "cold_full_region_1_component": {
+    "median_ms": 0.0707000121474266,
+    "p95_ms": 0.09369990229606628,
+    "max_ms": 0.09450002014636993,
+    "decals_min": 1,
+    "decals_max": 1,
+    "trials": 12
+  },
+  "collapse_512_components_to_1": {
+    "median_ms": 0.039950013160705566,
+    "p95_ms": 0.05179993063211441,
+    "max_ms": 0.053900063037872314,
+    "decals_min": 1,
+    "decals_max": 1,
+    "trials": 12
+  },
+  "idle_no_changes": {
+    "median_ms": 0.000100000761449337,
+    "p95_ms": 0.000200001522898674,
+    "max_ms": 0.0002998858690261841,
+    "decals_min": 0,
+    "decals_max": 0,
+    "trials": 12
+  }
+}

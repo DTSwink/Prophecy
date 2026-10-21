@@ -27,6 +27,20 @@ def publish_rollout(debug,payload):
     os.utime(archive,(captured,captured))
     atomic_json(debug/'last_batch_rollout.json',payload)
 
+def receive_file(local,item,validate=None):
+    """Validate chunk continuity and the completed replay before publishing it."""
+    offset=item['offset'];data=base64.b64decode(item['data'])
+    target=local if local.name.startswith('events.') else local.with_suffix('.part')
+    if offset and (not target.exists() or target.stat().st_size!=offset):
+        raise ValueError(f'{local.name}: missing or mismatched partial download at {offset}')
+    with target.open('ab' if offset else 'wb') as stream:
+        stream.write(data)
+    payload=None
+    if item.get('complete',True):
+        if validate is not None:payload=validate(target)
+        if target!=local:target.replace(local)
+    return payload
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--name',default='humanoid_walk_01')
     parser.add_argument('--poll-seconds',type=float,default=30);args=parser.parse_args()
@@ -50,19 +64,18 @@ def main():
             if not line:raise ConnectionError('Telemetry SSH connection closed')
             downloaded+=len(line)
             files=json.loads(gzip.decompress(base64.b64decode(line)))
+            errors=[]
             for name,item in files.items():
                 local=local_root/name
-                offset=item['offset'];data=base64.b64decode(item['data'])
-                if name.startswith('events.'):
-                    with local.open('ab' if offset else 'wb') as f:f.write(data)
-                else:
-                    temp=local.with_suffix('.part')
-                    with temp.open('ab' if offset else 'wb') as file:file.write(data)
-                    if item.get('complete',True):temp.replace(local)
-                if name=='replay.npz' and item.get('complete',True):
-                    publish_rollout(debug,convert(local,geom,run))
-                # Failed conversion must remain retryable on the next request.
-                seen[name]=dict(version=item['version'],size=offset+len(data))
+                try:
+                    payload=receive_file(local,item,
+                        (lambda path:convert(path,geom,run)) if name=='replay.npz' else None)
+                    if payload is not None:publish_rollout(debug,payload)
+                    seen[name]=dict(version=item['version'],size=item['offset']+len(base64.b64decode(item['data'])))
+                except Exception as error:
+                    # Retry the WHOLE file, not its final chunk. Keep other telemetry flowing.
+                    seen.pop(name,None)
+                    errors.append(f'{name}: {type(error).__name__}: {error}')
             finished=(local_root/'finished.json').exists() or (local_root/'failure.json').exists()
             warning=local_root/'solver_warnings.json'
             if warning.exists() and (debug/'last_batch_rollout.json').exists():
@@ -92,7 +105,9 @@ def main():
                 (debug/'training.active.json').unlink(missing_ok=True)
             atomic_json(cloud.OUT/(args.name+'-bridge-status.json'),dict(downloaded_bytes=downloaded,elapsed_seconds=time.time()-started,
                         updated_unix=time.time(),finished=finished,checkpoint_downloads=False))
-            (cloud.OUT/(args.name+'-bridge-error.txt')).unlink(missing_ok=True)
+            error_path=cloud.OUT/(args.name+'-bridge-error.txt')
+            if errors:error_path.write_text('\n'.join(errors))
+            else:error_path.unlink(missing_ok=True)
             if finished:break
         except Exception as error:
             (cloud.OUT/(args.name+'-bridge-error.txt')).write_text(f'{type(error).__name__}: {error}')

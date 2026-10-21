@@ -1,9 +1,11 @@
 #include "ProphecyJoltConstraintRuntime.h"
 #include "ProphecyAgent.h"
 #include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyJoltSkeletalPropComponent.h"
 #include "ProphecyJoltSceneCollisionComponent.h"
 #include "ProphecyJoltWorldSubsystem.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "Engine/World.h"
 #include "UObject/UObjectArray.h"
@@ -17,12 +19,15 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Serialization/JsonSerializer.h"
+#include "UObject/StructOnScope.h"
+#include "UObject/UnrealType.h"
 #include "ProphecyJoltConstrainedSkeleton.inl"
 
 namespace ProphecyJolt::Constraints
 {
 namespace
 {
+#include "ProphecyOptimisedSwordCut.inl"
 struct FBinding
 {
     FProphecyJoltJointHandle Joint;
@@ -32,6 +37,7 @@ struct FBinding
     float Scale = 1.f;
     bool bCaptured = false;
     FString Error;
+    TOptional<SwordCuts::FState> SwordCut;
 };
 struct FWorldBindings
 {
@@ -60,6 +66,20 @@ public:
 bool SameBody(const FProphecyJoltBodyHandle& A, const FProphecyJoltBodyHandle& B)
 { return A.WorldLifetime == B.WorldLifetime && A.Slot == B.Slot && A.Generation == B.Generation; }
 
+FName PikeWoundTag()
+{
+    static const FName Tag(TEXT("Prophecy.PikeWoundCorrection"));
+    return Tag;
+}
+
+bool IsPikeSlider(const FConstraintProfileProperties& Profile)
+{
+    return Profile.LinearLimit.XMotion == LCM_Locked && Profile.LinearLimit.YMotion == LCM_Locked
+        && Profile.LinearLimit.ZMotion != LCM_Locked && !Profile.LinearLimit.bSoftConstraint
+        && Profile.TwistLimit.TwistMotion == ACM_Locked
+        && Profile.ConeLimit.Swing1Motion == ACM_Locked && Profile.ConeLimit.Swing2Motion == ACM_Locked;
+}
+
 void Retire(UProphecyJoltWorldSubsystem& Native, FBinding& Binding)
 {
     if (Native.OwnsJoint(Binding.Joint)) Native.DestroyJoint(Binding.Joint);
@@ -76,6 +96,15 @@ bool BodyFor(UPrimitiveComponent* Mesh, FName Bone, UWorld& World, FProphecyJolt
     if (auto* Skeleton=Cast<USkeletalMeshComponent>(Mesh))
     {
         if (Cast<AProphecyAgent>(Mesh->GetOwner())) return false;
+        // A placed mannequin already owns its articulation. Its Unreal bodies
+        // are deliberately query-only and must never be captured as a new rig.
+        if (auto* Prop = UProphecyJoltSkeletalPropComponent::Find(Skeleton))
+        {
+            if (Prop->GetBodyHandle(Bone, Body)) return true;
+            if (Prop->IsJoltStepClientActive())
+                Error = FString::Printf(TEXT("Bone %s has no Jolt body on %s."), *Bone.ToString(), *Skeleton->GetPathName());
+            return false; // Pending/failed admission is not permission to create a second owner.
+        }
         return ConstrainedSkeleton::BodyFor(*Skeleton,Bone,Body,Error);
     }
     auto* Scene = UProphecyJoltSceneCollisionComponent::FindForWorld(&World);
@@ -140,7 +169,16 @@ void Reconcile(UPhysicsConstraintComponent& Component, FBinding& Binding,
     const bool SameEndpoints = Binding.bCaptured && SameBody(Bodies[1], Binding.Settings.BodyA) && SameBody(Bodies[0], Binding.Settings.BodyB);
     const bool SameFrames = SameEndpoints && Frames[0].Equals(Binding.SourceFrames[0], 0) && Frames[1].Equals(Binding.SourceFrames[1], 0) && Scale == Binding.Scale;
     if (SameFrames && Native.OwnsJoint(Binding.Joint)
-        && FConstraintProfileProperties::StaticStruct()->CompareScriptStruct(&Profile, &Binding.Profile, 0)) return;
+        && FConstraintProfileProperties::StaticStruct()->CompareScriptStruct(&Profile, &Binding.Profile, 0))
+    {
+        if (Binding.SwordCut)
+        {
+            auto Settings = Binding.Settings;
+            if (SwordCuts::DirectionalFriction(*Binding.SwordCut, BodyStates[1], BodyStates[0], Settings)
+                && Native.UpdateJoint(Binding.Joint, Settings).IsSuccess()) Binding.Settings = Settings;
+        }
+        return;
+    }
 
     FProphecyJoltJointSettings Settings;
     Settings.Type = EProphecyJoltJointType::HardSixDOF;
@@ -186,6 +224,11 @@ void Reconcile(UPhysicsConstraintComponent& Component, FBinding& Binding,
     Settings.VelocityTargetCmPerSecond = Profile.LinearDrive.VelocityTarget;
     Settings.OrientationTarget = AngularDrive.OrientationTarget.Quaternion();
     Settings.AngularVelocityTargetRadians = AngularDrive.AngularVelocityTarget * (2. * UE_PI);
+    if (Binding.SwordCut)
+    {
+        SwordCuts::Limits(*Binding.SwordCut, Settings);
+        SwordCuts::DirectionalFriction(*Binding.SwordCut, BodyStates[1], BodyStates[0], Settings);
+    }
     Settings.bSoftTranslation = Profile.LinearLimit.bSoftConstraint;
     Settings.TranslationStiffness = Profile.LinearLimit.Stiffness;
     Settings.TranslationDamping = Profile.LinearLimit.Damping;
@@ -265,9 +308,17 @@ void Prepare(UWorld* World)
         auto* Component = It.Key().Get();
         if (!Component || Component->IsBeingDestroyed() || !IsValid(Component->GetOwner()) || Component->GetOwner()->IsActorBeingDestroyed()
             || Component->ComponentHasTag(TEXT("Prophecy.ManagedConstraint")))
-        { Retire(*Native, It.Value()); It.RemoveCurrent(); continue; }
+        {
+            Retire(*Native, It.Value());
+            if (!It.Value().SwordCut) It.RemoveCurrent(); // Active cuts publish cleanup at Finish, outside this iterator.
+            continue;
+        }
         if (!Component->IsRegistered()) { Retire(*Native, It.Value()); continue; }
         Reconcile(*Component, It.Value(), *World, *Registry, *Native);
+        if (It.Value().bCaptured && Native->OwnsJoint(It.Value().Joint))
+            Native->SetJointPikeWoundCorrection(It.Value().Joint,
+                (Component->ComponentHasTag(PikeWoundTag()) && IsPikeSlider(It.Value().Profile))
+                || (It.Value().SwordCut && It.Value().SwordCut->Type != 0));
     }
 }
 
@@ -276,6 +327,19 @@ void SetSuspended(UPhysicsConstraintComponent* Component,bool Value)
     if(!IsValid(Component))return;
     if(Value){Suspended.Add(Component);Component->TermComponentConstraint();}
     else Suspended.Remove(Component);
+}
+
+bool SetPikeWoundCorrection(UPhysicsConstraintComponent* Component, bool Enabled)
+{
+    if (!IsValid(Component)) return false;
+    if (!Enabled) { Component->ComponentTags.Remove(PikeWoundTag()); return true; }
+    UPrimitiveComponent* Wound = nullptr; UPrimitiveComponent* Sword = nullptr; FName WoundBone, SwordBone;
+    Component->GetConstrainedComponents(Wound, WoundBone, Sword, SwordBone);
+    if (!IsValid(Wound) || !IsValid(Sword) || !Cast<UStaticMeshComponent>(Sword)
+        || !SwordBone.IsNone() || Component->IsBroken() || !IsPikeSlider(Component->ConstraintInstance.ProfileInstance))
+        return false;
+    Component->ComponentTags.AddUnique(PikeWoundTag());
+    return true;
 }
 
 bool GetJoint(UPhysicsConstraintComponent* Component, FProphecyJoltJointHandle& Joint, FString& Error)
@@ -289,6 +353,96 @@ bool GetJoint(UPhysicsConstraintComponent* Component, FProphecyJoltJointHandle& 
     return Native && Native->OwnsJoint(Joint);
 }
 
+bool StartOptimisedSwordCut(AActor* Owner, UPhysicsConstraintComponent* Component)
+{
+    if (!IsValid(Owner) || !IsValid(Component) || Owner->GetWorld() != Component->GetWorld()) return false;
+    auto* Registry = Worlds.Find(Owner->GetWorld());
+    SwordCuts::FRecords Records(Owner);
+    if (!Registry || !Records.Valid()) return false;
+    FScriptArrayHelper Values(Records.Array, Records.Array->ContainerPtrToValuePtr<void>(Owner));
+    const int32 Index = Records.Find(Values, Component);
+    if (Index == INDEX_NONE) return false;
+    UPrimitiveComponent* Victim = nullptr; UPrimitiveComponent* Sword = nullptr; FName Bone, SwordBone;
+    Component->GetConstrainedComponents(Victim, Bone, Sword, SwordBone);
+    if (!IsValid(Victim) || !IsValid(Sword) || !SwordBone.IsNone()) return false;
+    SwordCuts::FState Cut;
+    Cut.Owner = Owner;
+    Cut.Length = SwordCuts::Number(SwordCuts::Field(Owner->GetClass(), TEXT("blade length")), Owner);
+    Cut.HalfWidth = SwordCuts::Number(SwordCuts::Field(Owner->GetClass(), TEXT("blade half width")), Owner);
+    const double Hilt = SwordCuts::Number(SwordCuts::Field(Owner->GetClass(), TEXT("hilt half length")), Owner);
+    const auto* Value = Values.GetRawPtr(Index);
+    Cut.Type = int32(SwordCuts::Number(SwordCuts::Field(Records.Struct, TEXT("typecut")), Value));
+    Cut.Matter = int32(SwordCuts::Number(SwordCuts::Field(Records.Struct, TEXT("typematter")), Value));
+    Cut.Id = int32(SwordCuts::Number(SwordCuts::Field(Records.Struct, TEXT("id")), Value, -1));
+    auto* DampingProperty = FindFProperty<FStructProperty>(Owner->GetClass(), TEXT("velocity cut dampings"));
+    if (!(Cut.Length > 0 && Cut.HalfWidth > 0) || !DampingProperty || DampingProperty->Struct != TBaseStructure<FVector>::Get()) return false;
+    const FVector Dampings = *DampingProperty->ContainerPtrToValuePtr<FVector>(Owner);
+    const FVector Wound = Component->GetComponentLocation();
+    const FQuat Rotation = Sword->GetComponentQuat();
+    FVector HiltPosition = Sword->GetComponentLocation() + Sword->GetUpVector() * Hilt;
+    // A_Sword classifies slash directions as -1/+1. The post-solve wound point
+    // can already lie beyond the far edge at high speed, so it cannot identify
+    // which edge entered. Preserve the accepted hit's signed classification.
+    Cut.Side = Cut.Type < 0 ? -1 : 1;
+    Cut.SideStop = -Cut.HalfWidth;
+    Cut.StepsToCap = Cut.Matter == 0 ? 5 : 0;
+    Cut.LastFrame = GFrameCounter;
+    auto& Binding = Registry->Bindings.FindOrAdd(Component);
+    if (Binding.SwordCut) return true; // Already adopted, never restart its deadline.
+    // The accepted hit is dispatched after integration. At high speed a slash
+    // can already cross the whole blade width before its joint exists. Correct
+    // only that initial far-edge overshoot, once, retaining incoming velocity.
+    // All subsequent motion/limits are solved physically; no per-step pose write.
+    if (Cut.Type != 0)
+    {
+        const FVector WidthAxis = Sword->GetRightVector();
+        const double SignedTravel = Cut.Side * FVector::DotProduct(Wound - HiltPosition, WidthAxis);
+        if (SignedTravel < -Cut.HalfWidth)
+        {
+            const FVector Correction = WidthAxis * (Cut.Side * (SignedTravel + Cut.HalfWidth));
+            Sword->SetWorldLocation(Sword->GetComponentLocation() + Correction, false, nullptr, ETeleportType::TeleportPhysics);
+            HiltPosition += Correction;
+        }
+    }
+    // Keep a pike's accepted contact line. Hit callbacks run after integration
+    // and contact cancellation, so the reported wound need not lie on the
+    // current blade centreline. Recentring it introduces a transverse position
+    // error at admission and the solver kicks the sword sideways to remove it.
+    // Shift only across the blade: the axial origin stays at the hilt, retaining
+    // the same penetration limit and tip-relative release distance.
+    if (Cut.Type == 0)
+    {
+        const FVector BladeAxis = Sword->GetUpVector();
+        const FVector ContactOffset = Wound - HiltPosition;
+        HiltPosition += ContactOffset - BladeAxis * FVector::DotProduct(ContactOffset, BladeAxis);
+    }
+    // Author the wound in the victim and the blade frame at the hilt plane.
+    const double Scale = FMath::Max(Component->GetComponentScale().GetAbsMin(), .01);
+    for (int32 I = 0; I < 2; ++I)
+    {
+        const auto Frame = I == 0 ? EConstraintFrame::Frame1 : EConstraintFrame::Frame2;
+        FTransform Body = Component->GetBodyTransform(Frame); Body.RemoveScaling();
+        FTransform Local = FTransform(Rotation, I == 0 ? Wound : HiltPosition).GetRelativeTransform(Body);
+        Local.ScaleTranslation(1. / Scale); Local.RemoveScaling();
+        Component->SetConstraintReferenceFrame(Frame, Local);
+    }
+    Component->SetLinearXLimit(LCM_Locked, 0);
+    Component->SetLinearYLimit(Cut.Type == 0 ? LCM_Locked : LCM_Free, 0);
+    Component->SetLinearZLimit(LCM_Free, 0);
+    Component->SetAngularSwing1Limit(ACM_Locked, 0);
+    Component->SetAngularSwing2Limit(ACM_Locked, 0);
+    Component->SetAngularTwistLimit(Cut.Type == 0 ? ACM_Locked : ACM_Free, 0);
+    Component->SetLinearPositionDrive(false, false, false);
+    Component->SetLinearVelocityDrive(false, Cut.Type != 0, true);
+    Component->SetLinearVelocityTarget(FVector::ZeroVector);
+    Component->SetLinearDriveParams(0, FMath::Max(0., Dampings[FMath::Clamp(Cut.Matter, 0, 2)]), 0);
+    Binding.SwordCut = Cut;
+    Binding.bCaptured = false;
+    UE_LOG(LogTemp, Log, TEXT("Optimised sword cut admitted: %s type=%d matter=%d length=%.3f width=%.3f capFrames=%d"),
+        *Component->GetName(), Cut.Type, Cut.Matter, Cut.Length, Cut.HalfWidth * 2, Cut.StepsToCap);
+    return true;
+}
+
 void Finish(UWorld* World)
 {
     ConstrainedSkeleton::Finish(World);
@@ -297,15 +451,71 @@ void Finish(UWorld* World)
     auto* Native = World->GetSubsystem<UProphecyJoltWorldSubsystem>();
     if (!Native) return;
     TArray<TWeakObjectPtr<UPhysicsConstraintComponent>, TInlineAllocator<4>> Broken;
+    struct FNotification { TWeakObjectPtr<UPhysicsConstraintComponent> Joint; TWeakObjectPtr<AActor> Owner; double Depth; bool Release; int32 Id = -1; };
+    TArray<FNotification, TInlineAllocator<4>> Notifications;
     for (auto& Pair : Registry->Bindings)
     {
         auto& Binding = Pair.Value;
+        if (Binding.SwordCut)
+        {
+            auto& Cut = *Binding.SwordCut;
+            FProphecyJoltBodyState A, B;
+            if (Binding.bCaptured && Native->ReadBody(Binding.Settings.BodyA, A).IsSuccess()
+                && Native->ReadBody(Binding.Settings.BodyB, B).IsSuccess())
+            {
+                Cut.WasCaptured = true;
+                const FTransform FA = Binding.Settings.FrameA * FTransform(A.Rotation, A.PositionCm);
+                const FTransform FB = Binding.Settings.FrameB * FTransform(B.Rotation, B.PositionCm);
+                const FVector Travel = FA.InverseTransformPosition(FB.GetLocation());
+                // Only two projections and comparisons per active cut, after the
+                // normal shared solve. No traces, Blueprint calls or pose writes.
+                const bool Out = Travel.Z > Cut.Length + .05
+                    || (Cut.Type != 0 && Cut.Side * Travel.Y > Cut.HalfWidth + .05);
+                const double Depth = FMath::Clamp(1. - Travel.Z / Cut.Length, 0., 1.);
+                if (Cut.Type == 0 && Cut.Matter == 2 && (Depth >= 1. && Cut.LastStain < 1. || Depth > Cut.LastStain + 1. / 1024.))
+                {
+                    Cut.LastStain = Depth;
+                    Notifications.Add({Pair.Key, Cut.Owner, Depth, false});
+                }
+                if (!Out && Cut.StepsToCap > 0 && Cut.LastFrame != GFrameCounter)
+                {
+                    Cut.LastFrame = GFrameCounter;
+                    if (--Cut.StepsToCap == 0)
+                    {
+                        if (Cut.Type == 0) Cut.MinimumZ = FMath::Clamp(Travel.Z, 0., Cut.Length);
+                        else Cut.SideStop = FMath::Clamp(Cut.Side * Travel.Y, -Cut.HalfWidth, Cut.HalfWidth);
+                        SwordCuts::Limits(Cut, Binding.Settings);
+                        const auto Status = Native->UpdateJoint(Binding.Joint, Binding.Settings);
+                        if (!Status.IsSuccess()) UE_LOG(LogTemp, Error, TEXT("Optimised cut cap failed: %s"), *Status.Message);
+                    }
+                }
+                if (Out)
+                {
+                    Notifications.Add({Pair.Key, Cut.Owner, 0, true, Cut.Id});
+                    Binding.SwordCut.Reset();
+                    Retire(*Native, Binding); Broken.Add(Pair.Key);
+                    continue;
+                }
+            }
+            else if (auto* C = Pair.Key.Get(); !C || C->IsBeingDestroyed() || C->IsBroken() || Cut.WasCaptured)
+            {
+                Notifications.Add({Pair.Key, Cut.Owner, 0, true, Cut.Id});
+                Binding.SwordCut.Reset();
+            }
+        }
         if (!Binding.bCaptured || (!Binding.Profile.bLinearBreakable && !Binding.Profile.bAngularBreakable)) continue;
         FVector Force, Torque;
         if (!Native->ReadJointReaction(Binding.Joint, Force, Torque).IsSuccess()) continue;
         if ((Binding.Profile.bLinearBreakable && Force.Size() > Binding.Profile.LinearBreakThreshold)
             || (Binding.Profile.bAngularBreakable && Torque.Size() > Binding.Profile.AngularBreakThreshold))
-        { Retire(*Native, Binding); Broken.Add(Pair.Key); }
+        {
+            if (Binding.SwordCut)
+            {
+                Notifications.Add({Pair.Key, Binding.SwordCut->Owner, 0, true, Binding.SwordCut->Id});
+                Binding.SwordCut.Reset();
+            }
+            Retire(*Native, Binding); Broken.Add(Pair.Key);
+        }
     }
     // Blueprint callbacks may remove other components or end the world. Never
     // retain registry references across them, and publish only after native step.
@@ -313,6 +523,11 @@ void Finish(UWorld* World)
     {
         Component->BreakConstraint();
         Component->OnConstraintBroken.Broadcast(Component->ConstraintInstance.ConstraintIndex);
+    }
+    for (const auto& N : Notifications) if (IsValid(World) && !World->bIsTearingDown)
+    {
+        if (N.Release) SwordCuts::Release(N.Owner.Get(), N.Joint.Get(), N.Id);
+        else SwordCuts::Stain(N.Owner.Get(), N.Depth);
     }
 }
 
@@ -340,3 +555,5 @@ bool ReadRotation(UPhysicsConstraintComponent* Component, FQuat& Relative)
     return true;
 }
 }
+
+

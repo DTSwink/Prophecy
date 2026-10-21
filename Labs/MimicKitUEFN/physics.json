@@ -1,6 +1,6 @@
 {
-  "source_sha256": "0302a841e9d749a4bc7bf4f93960c869f7da8ea038de8ee45b11ba2bfdcffb3c",
-  "asset_sha256": "6db2b49df9adf282cae1307c35797b9f3b8b7a8fd2427dff83c9b136c6dc5f0d",
+  "source_sha256": "d72570896f0e9d2d2f39bdee6d0ae725b774691f0c3901a5ebafb2d0dfc20a14",
+  "asset_sha256": "a05181efa98b0a62fa36af2a22efffa65b6a7b21550edd01dd6063289d0c1e15",
   "cancel_gyroscopic": true,
   "bodies": {
     "pelvis": {

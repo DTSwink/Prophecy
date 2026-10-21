@@ -7,6 +7,27 @@ import time
 from pathlib import Path
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ReadTimeoutError, ResponseStreamingError, IncompleteReadError, ConnectionClosedError
+
+def verified_readback(client, bucket, key, sha, attempts=3):
+    """Retry interrupted streams from byte zero; never accept a partial backup."""
+    for attempt in range(attempts):
+        stream = None
+        try:
+            stream = client.get_object(Bucket=bucket, Key=key)['Body']
+            digest = hashlib.sha256()
+            for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+                digest.update(chunk)
+            if digest.hexdigest() != sha:
+                raise RuntimeError('Remote checksum mismatch')
+            return
+        except (ReadTimeoutError, ResponseStreamingError, IncompleteReadError, ConnectionClosedError):
+            if attempt + 1 == attempts:
+                raise
+        finally:
+            if stream is not None:
+                stream.close()
+        time.sleep(2 * (attempt + 1))
 
 class Backups:
     def __init__(self, root, credentials, prefix):
@@ -32,12 +53,7 @@ class Backups:
                 key=self.prefix+path.name
                 self.s3.put_object(Bucket=self.bucket,Key=key,Body=data,Metadata={'sha256':sha})
                 # Stream readback hashes avoid claiming integrity from upload metadata alone.
-                stream=self.s3.get_object(Bucket=self.bucket,Key=key)['Body']
-                digest=hashlib.sha256()
-                for chunk in iter(lambda:stream.read(1024*1024),b''):
-                    digest.update(chunk)
-                stream.close()
-                assert digest.hexdigest()==sha,'Remote checksum mismatch'
+                verified_readback(self.s3,self.bucket,key,sha)
                 receipt=dict(key=key,bytes=len(data),sha256=sha,verified_unix=time.time())
                 self.s3.put_object(Bucket=self.bucket,Key=self.prefix+'latest_verified.json',
                                     Body=json.dumps(receipt).encode())

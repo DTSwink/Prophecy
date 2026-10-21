@@ -38,7 +38,7 @@ def main():
         raw=engine._sim_state.raw_state
         return np.concatenate([raw.body_q.numpy().reshape(worlds,15,7),raw.body_qd.numpy().reshape(worlds,15,6)],-1)
     initial=state();ended=np.zeros(worlds,dtype=bool)
-    histories=[dict(states=[initial[w]],obs=[],actions=[],targets=[],distance=[]) for w in range(worlds)]
+    histories=[dict(states=[initial[w]],obs=[],actions=[],targets=[],target_velocities=[],distance=[],ground_forces=[]) for w in range(worlds)]
     flags=np.zeros(worlds,dtype=int);started=time.perf_counter()
     horizon=round(float(configs['env']['episode_length'])*30)
     for tick in range(horizon+1):
@@ -46,11 +46,14 @@ def main():
         before=obs.cpu().numpy().copy();actions=action.cpu().numpy()
         obs,_,done,info=env.step(action);engine.validate_transfer_solver()
         physical=state();target=torch.cat([env.reward_target_pos,env.reward_target_rot],-1).cpu().numpy()
+        target_vel=torch.cat([env.reward_target_vel,env.reward_target_ang],-1).cpu().numpy()
+        ground=engine.get_ground_contact_forces(env._get_char_id()).cpu().numpy()
         distances=env.target_distances_sq.sqrt().cpu().numpy();done_cpu=done.cpu().numpy()
         for w in np.flatnonzero(~ended):
             record=histories[w]
             for name,value in (('states',physical[w]),('obs',before[w]),('actions',actions[w]),
-                               ('targets',target[w]),('distance',distances[w])):record[name].append(value.copy())
+                               ('targets',target[w]),('target_velocities',target_vel[w]),
+                               ('distance',distances[w]),('ground_forces',ground[w])):record[name].append(value.copy())
             if done_cpu[w]:ended[w]=True;flags[w]=done_cpu[w]
         if ended.all():break
         reset_ids=done.nonzero(as_tuple=False).flatten()
@@ -58,9 +61,18 @@ def main():
     rows=[];captures={}
     for w,record in enumerate(histories):
         count=len(record['actions']);clip=w//a.phases
+        ground=np.asarray(record['ground_forces']);feet=env._contact_body_ids.cpu().numpy()
+        nonfeet=np.ones(15,dtype=bool);nonfeet[feet]=False
+        distance_failed=bool(np.max(record['distance'][-1])>env.target_radius_m)
+        contact_failed=bool(np.any(np.abs(ground[-1,nonfeet])>.1))
+        causes=[]
+        if distance_failed:causes.append('27cm target deviation')
+        if contact_failed:causes.append('non-foot ground contact')
+        if flags[w]==1 and not causes:causes.append('stock pose termination')
         rows.append(dict(clip=Path(motion_files[clip]).stem,phase=(w%a.phases)/a.phases,
             ticks=count,terminal=int(flags[w]),completed_horizon=bool(flags[w]==3),
-            max_target_m=float(np.max(record['distance'])),reset_after_first_episode=True))
+            max_target_m=float(np.max(record['distance'])),reset_after_first_episode=True,
+            failure_causes=causes,ground_force_sampling='Last physics substep at each policy tick; not integrated impulses'))
         for name,value in record.items():
             array=np.asarray(value);assert np.isfinite(array).all(),(w,name)
             captures[f'{w}_{name}']=array

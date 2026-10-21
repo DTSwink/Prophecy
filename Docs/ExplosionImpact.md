@@ -63,9 +63,10 @@ notifications are stack-local, world public header is byte-equivalent. Therefore
 Live Coding is appropriate; the older isolated note requiring restart applied to
 installing the entire base scheduler, not this extension. No Agent header edit.
 
-Main evidence: Saved/Diagnostics/ExplosionImpact, including reviewed installed.patch,
-before-source copies, source-manifest.json, preload.json and remote scripts.
-Isolated tests and detailed explosion research/performance records remain at
-C:/Users/singerie/.codex/worktrees/explosion-lab/Prophecy/Docs/Explosion.md and
-Saved/ExplosionLab there. Existing performance measurements predate event delivery;
+Main evidence: Saved/Diagnostics/ExplosionImpact retains installed.patch,
+source-manifest.json, preload.json, final/test receipts and remote scripts.
+October19 cleanup moved redundant before-source copies and build logs to Recycle Bin.
+The isolated checkout is removed; detailed explosion research/performance records
+and test summaries remain in C:/Users/singerie/.codex/artifacts/prophecy-explosion-2026-10-18.
+Existing performance measurements predate event delivery;
 no new event-overhead benchmark claim is made.

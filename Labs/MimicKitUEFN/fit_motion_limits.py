@@ -4,6 +4,7 @@ Read-only: produces a reviewed change plan, never writes assets or motions.
 Swing uses the coupled Jolt ellipse, not independent Euler maxima.
 """
 import hashlib
+import argparse
 import json
 import pickle
 import sys
@@ -86,15 +87,19 @@ def fit(joint, v, margin=1.05):
 
 
 def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--equipment',action='store_true',help='Fit both unarmed and drawn datasets, including idle')
+    args=parser.parse_args()
     meta=json.loads((HERE/'limits.json').read_text())
-    manifest=json.loads((ROOT/'Saved/MimicKitUEFN/omni/manifest.json').read_text())
+    folder=ROOT/'Saved/MimicKitUEFN'/('equipment' if args.equipment else 'omni')
+    manifest=json.loads((folder/('dataset.json' if args.equipment else 'manifest.json')).read_text())
     model=MJCFCharModel('cpu');model.load(str(HERE/'humanoid_uefn.xml'))
     clips=[];fingerprints={}
     for item in manifest['motions']:
-        path=ROOT/'Saved/MimicKitUEFN/omni'/f"{item['id']}.pkl"
+        path=Path(item['file']) if args.equipment else folder/f"{item['id']}.pkl"
         content=path.read_bytes();clips.append(pickle.loads(content)['frames'])
-        fingerprints[path.name]=hashlib.sha256(content).hexdigest()
-    assert len(clips)==26
+        fingerprints[str(path) if args.equipment else path.name]=hashlib.sha256(content).hexdigest()
+    assert len(clips)==(54 if args.equipment else 26)
     rows=[]
     for j in meta['joints']:
         v=np.concatenate([sampled_coordinates(model,j,f,16)[0] for f in clips])
@@ -107,7 +112,7 @@ def main():
     report=dict(margin_factor=1.05,clips=len(clips),motion_sha256=fingerprints,
                 source_files=meta['source_files'],limits_sha256=hashlib.sha256((HERE/'limits.json').read_bytes()).hexdigest(),
                 method='Minimum-area coupled swing ellipse containing 1.05x angular excursions; never shrink existing limits; round outward to 0.01 degree.',joints=rows)
-    path=ROOT/'Saved/MimicKitUEFN/omni-limit-plan.json'
+    path=ROOT/'Saved/MimicKitUEFN'/('equipment/limit-plan.json' if args.equipment else 'omni-limit-plan.json')
     path.write_text(json.dumps(report,indent=2),encoding='utf-8')
     for row in rows:
         if row['changed']:print(row['body'],row['old_degrees'],'->',row['new_degrees'],row['old_modes'],'->',row['new_modes'])

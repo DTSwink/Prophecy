@@ -41,7 +41,7 @@ def tick(_):
    m.set_mobility(unreal.ComponentMobility.MOVABLE)
    m.set_static_mesh(unreal.load_asset('/Game/Fab/CC0_-_Bomb/cc0_bomb/StaticMeshes/cc0_bomb'))
    source=unreal.load_asset('/Game/Fab/CC0_-_Bomb/cc0_bomb/Materials/PressureBomb');m.set_material(0,source)
-   args=(m,0.,0.,1.,1.,2.,0.,unreal.ProphecyVDBEffect.SHOCKWAVE_EXPLOSION,.001,30.,0.,0.,0.,unreal.Rotator(),4.,None,unreal.Rotator(),True,True,2.)
+   args=(m,0.,0.,1.,1.,2.,0.,unreal.ProphecyVDBEffect.SHOCKWAVE_EXPLOSION,.001,30.,0.,0.,0.,unreal.Rotator(),4.,None,True,True,2.)
    assert api.call_method('LightBombFuse',args)
    pieces=[x for x in unreal.GameplayStatics.get_all_actors_of_class(w,unreal.StaticMeshActor) if x.static_mesh_component.static_mesh and x.static_mesh_component.static_mesh.get_name().startswith('SM_BombFragment_') and (x.get_actor_location()-centre).length()<100]
    assert len(pieces)==20,len(pieces)

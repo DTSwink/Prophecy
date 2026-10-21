@@ -1,5 +1,7 @@
 #include "ProphecyVDBLibrary.h"
 #include "ProphecyVDBPlaybackComponent.h"
+#include "ProphecyVDBOptimisedComponent.h"
+#include "ProphecyVDBColorComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
@@ -7,6 +9,68 @@
 #include "UObject/UnrealType.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogProphecyVDB,Log,All);
+
+namespace
+{
+bool ConfigureVDBColors(UActorComponent* Material,const FLinearColor& Temperature,const FLinearColor& Scattering)
+{
+    auto* TemperatureProperty=FindFProperty<FStructProperty>(Material->GetClass(),TEXT("TemperatureColor"));
+    auto* ScatteringProperty=FindFProperty<FStructProperty>(Material->GetClass(),TEXT("ScatteringColor"));
+    if(!TemperatureProperty || !ScatteringProperty
+        || TemperatureProperty->Struct!=TBaseStructure<FLinearColor>::Get()
+        || ScatteringProperty->Struct!=TBaseStructure<FLinearColor>::Get())return false;
+    // Both native defaults use SolidColor. Set before asset assignment/registration so
+    // the plugin's existing texture preparation sees the chosen colors from frame zero.
+    *TemperatureProperty->ContainerPtrToValuePtr<FLinearColor>(Material)=Temperature;
+    *ScatteringProperty->ContainerPtrToValuePtr<FLinearColor>(Material)=Scattering;
+    return true;
+}
+
+void ConfigureGameplayVDBQuality(UActorComponent* Material)
+{
+    // Keep the original source clip/timing. These are render resolutions, not animation rates.
+    // Gameplay prioritizes cost: retain trilinear 3D smoke/shadows with quarter-resolution
+    // render blocks, eighth-resolution illumination and a four-voxel ray step.
+    auto* VolumeResolution=FindFProperty<FEnumProperty>(Material->GetClass(),TEXT("VolumeResolution"));
+    auto* IlluminationResolution=FindFProperty<FEnumProperty>(Material->GetClass(),TEXT("IlluminationResolution"));
+    const int64 Quarter=VolumeResolution?VolumeResolution->GetEnum()->GetValueByNameString(TEXT("Quarter")):INDEX_NONE;
+    const int64 Eighth=IlluminationResolution?IlluminationResolution->GetEnum()->GetValueByNameString(TEXT("Eighth")):INDEX_NONE;
+    auto* MainStep=FindFProperty<FFloatProperty>(Material->GetClass(),TEXT("RayMarchingMainStepSize"));
+    if(Quarter==INDEX_NONE || Eighth==INDEX_NONE || !MainStep)
+    {
+        UE_LOG(LogProphecyVDB,Warning,TEXT("Spawn VDB Effect: quality properties unavailable; keeping plugin defaults."));
+        return;
+    }
+    VolumeResolution->GetUnderlyingProperty()->SetIntPropertyValue(
+        VolumeResolution->ContainerPtrToValuePtr<void>(Material),Quarter);
+    IlluminationResolution->GetUnderlyingProperty()->SetIntPropertyValue(
+        IlluminationResolution->ContainerPtrToValuePtr<void>(Material),Eighth);
+    MainStep->SetPropertyValue_InContainer(Material,4.f);
+}
+
+bool CanReuseVDBLighting(const ProphecyVDB::FTimeline& Timeline,uint64 Tick)
+{
+    return Timeline.TargetDensity==1.f
+        || Tick<Timeline.FadeStart || Tick>Timeline.FadeStart+Timeline.FadeDuration;
+}
+
+void SetVDBLightingReuse(UActorComponent* Material,bool Reuse)
+{
+    // Only called at initialization and fade boundaries, never a per-frame property search.
+    // Zibra invalidates this cache when the source frame changes. During density fading,
+    // lighting must update even if the source clip has already reached its last frame.
+    if(auto* StaticLighting=FindFProperty<FBoolProperty>(Material->GetClass(),TEXT("bUseStaticIllumination")))
+        StaticLighting->SetPropertyValue_InContainer(Material,Reuse);
+}
+
+void HideFinishedVDB(AActor* Actor,UActorComponent* Playback)
+{
+    Actor->SetActorHiddenInGame(true);
+    // Also stop projected-shadow submission, whose plugin guard uses playback visibility.
+    if(auto* Visible=FindFProperty<FBoolProperty>(Playback->GetClass(),TEXT("Visible")))
+        Visible->SetPropertyValue_InContainer(Playback,false);
+}
+}
 
 UProphecyVDBPlaybackComponent::UProphecyVDBPlaybackComponent()
 {
@@ -33,6 +97,8 @@ bool UProphecyVDBPlaybackComponent::Initialize(UActorComponent* InPlayback,UActo
     Rate->SetPropertyValue_InContainer(Playback,FPS);
     FrameProperty->SetPropertyValue_InContainer(Playback,0.f);
     DensityProperty->SetPropertyValue_InContainer(Material,Timeline.Density(0));
+    SetVDBLightingReuse(Material,CanReuseVDBLighting(Timeline,0));
+    if(Timeline.Density(0)==0.f)HideFinishedVDB(GetOwner(),Playback);
     // Publish the selected frame/density before Zibra updates its renderer this tick.
     Playback->AddTickPrerequisiteComponent(this);
     Material->AddTickPrerequisiteComponent(this);
@@ -50,18 +116,28 @@ void UProphecyVDBPlaybackComponent::TickComponent(float DeltaSeconds,ELevelTick 
     ++ElapsedTicks;
     if(ElapsedTicks>=Timeline.Finish)
     { GetOwner()->Destroy();return; }
+    const uint64 FadeEnd=Timeline.FadeStart+Timeline.FadeDuration;
+    if(ElapsedTicks==Timeline.FadeStart || ElapsedTicks==FadeEnd || ElapsedTicks==FadeEnd+1)
+    {
+        SetVDBLightingReuse(Material,CanReuseVDBLighting(Timeline,ElapsedTicks));
+        // Both supported clips have no independent flames channel. Zero density means
+        // zero scattering/temperature emission: keep lifetime semantics, skip GPU work.
+        if(Timeline.Density(ElapsedTicks)==0.f)HideFinishedVDB(GetOwner(),Playback);
+    }
     FrameProperty->SetPropertyValue_InContainer(Playback,Timeline.Frame(ElapsedTicks));
     DensityProperty->SetPropertyValue_InContainer(Material,Timeline.Density(ElapsedTicks));
 }
 
 AActor* UProphecyVDBLibrary::SpawnVDBEffect(const UObject* Context,EProphecyVDBEffect Effect,FVector Location,
-    float Scale,float Framerate,float DensityFadeStart,float TargetDensity,float DensityFadeDuration,FRotator Rotation)
+    float Scale,float Framerate,float DensityFadeStart,float TargetDensity,float DensityFadeDuration,FRotator Rotation,bool bOptimised,
+    FLinearColor TemperatureColor,FLinearColor ScatteringColor)
 {
     if(!IsInGameThread() || !IsValid(Context) || Location.ContainsNaN() || Rotation.ContainsNaN()
         || !FMath::IsFinite(Scale) || Scale<=0 || !FMath::IsFinite(Framerate) || Framerate<=0
         || !FMath::IsFinite(DensityFadeStart) || DensityFadeStart<0 || DensityFadeStart>1.e6f
         || !FMath::IsFinite(DensityFadeDuration) || DensityFadeDuration<0 || DensityFadeDuration>1.e6f
-        || !FMath::IsFinite(TargetDensity) || TargetDensity<0)return nullptr;
+        || !FMath::IsFinite(TargetDensity) || TargetDensity<0
+        || !ProphecyVDB::IsValidColor(TemperatureColor) || !ProphecyVDB::IsValidColor(ScatteringColor))return nullptr;
     auto* World=GEngine?GEngine->GetWorldFromContextObject(Context,EGetWorldErrorMode::ReturnNull):nullptr;
     if(!World || !World->IsGameWorld())return nullptr;
     const TCHAR* Path=nullptr;
@@ -87,6 +163,10 @@ AActor* UProphecyVDBLibrary::SpawnVDBEffect(const UObject* Context,EProphecyVDBE
     auto* VolumeArgument=SetVolume?FindFProperty<FObjectPropertyBase>(SetVolume,TEXT("InZibraVDBVolume")):nullptr;
     if(!VolumeArgument || !Volume->IsA(VolumeArgument->PropertyClass) || !Playback || !Material)
     { Actor->Destroy();UE_LOG(LogProphecyVDB,Warning,TEXT("Spawn VDB Effect: incompatible Zibra component API."));return nullptr; }
+    // Configure before assigning the asset so its first render allocations use the cheap sizes.
+    ConfigureGameplayVDBQuality(Material);
+    if(!ConfigureVDBColors(Material,TemperatureColor,ScatteringColor))
+    {Actor->Destroy();UE_LOG(LogProphecyVDB,Warning,TEXT("Spawn VDB Effect: incompatible color properties."));return nullptr;}
     FStructOnScope Args(SetVolume);
     VolumeArgument->SetObjectPropertyValue_InContainer(Args.GetStructMemory(),Volume);
     Asset->ProcessEvent(SetVolume,Args.GetStructMemory());
@@ -96,6 +176,12 @@ AActor* UProphecyVDBLibrary::SpawnVDBEffect(const UObject* Context,EProphecyVDBE
     { Actor->Destroy();UE_LOG(LogProphecyVDB,Warning,TEXT("Spawn VDB Effect: incompatible playback/material properties."));return nullptr; }
     Actor->FinishSpawning(Transform);
     Controller->RegisterComponent();
+    if(bOptimised)
+    {
+        auto* Cache=NewObject<UProphecyVDBOptimisedComponent>(Actor);Actor->AddInstanceComponent(Cache);Cache->RegisterComponent();
+        if(!Cache->Initialize(Playback,Material,Controller,Frames))
+        {Cache->DestroyComponent();UE_LOG(LogProphecyVDB,Warning,TEXT("Optimised VDB renderer unavailable; retaining live rendering."));}
+    }
     return Actor;
 }
 
@@ -122,6 +208,19 @@ bool FProphecyVDBTimingTest::RunTest(const FString&)
     TestEqual(TEXT("Zero-duration immediate density"),T.Density(0),.4f);
     TestEqual(TEXT("Early fade still plays clip once"),T.Finish,uint64(240));
     TestEqual(TEXT("Decimal seconds have no floating tick tail"),ProphecyVDB::DurationTicks(.1),uint64(6));
+    T.Init(180,120,3,1,0);
+    TestTrue(TEXT("Reuse lighting while final frame is held"),CanReuseVDBLighting(T,150));
+    TestFalse(TEXT("Refresh lighting at fade start"),CanReuseVDBLighting(T,180));
+    TestFalse(TEXT("Refresh lighting throughout fade"),CanReuseVDBLighting(T,239));
+    TestFalse(TEXT("Refresh exact fade endpoint"),CanReuseVDBLighting(T,240));
+    TestTrue(TEXT("Reuse lighting after endpoint refresh"),CanReuseVDBLighting(T,241));
+    T.Init(180,30,0,1,.2f);
+    TestFalse(TEXT("Immediate fade needs live lighting"),CanReuseVDBLighting(T,0));
+    T.Init(180,30,0,1,1.f);
+    TestTrue(TEXT("Constant density needs no fade invalidation"),CanReuseVDBLighting(T,30));
+    T.Init(180,30,1,0,.2f);
+    TestFalse(TEXT("Density snap invalidates lighting once"),CanReuseVDBLighting(T,60));
+    TestTrue(TEXT("Reuse lighting after density snap"),CanReuseVDBLighting(T,61));
     return !HasAnyErrors();
 }
 #endif

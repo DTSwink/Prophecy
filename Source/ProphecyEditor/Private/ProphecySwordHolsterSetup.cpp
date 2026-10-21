@@ -17,6 +17,8 @@
 #include "EngineUtils.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
+#include "Kismet/KismetStringLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 namespace ProphecySwordHolsterSetup
 {
@@ -74,10 +76,165 @@ static void RepairSwordDebugFrameCap()
  FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
  UE_LOG(LogTemp,Display,TEXT("Sword right-click now uses existing FPS-cap nodes; simulation clock and tuning unchanged; status=%d; not saved."),int32(BP->Status));
 }
+static void RepairSwordSlowStartFrameCap()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/sword/A_Sword.A_Sword"));if(!BP)return;
+ UEdGraph* Start=nullptr;UEdGraph* Events=nullptr;
+ for(UEdGraph* G:BP->FunctionGraphs)if(G->GetFName()==TEXT("begin play f"))Start=G;
+ for(UEdGraph* G:BP->UbergraphPages)if(G->GetFName()==TEXT("EventGraph"))Events=G;
+ if(!Start||!Events)return;
+ auto Node=[](UEdGraph* G,const TCHAR* Name)->UK2Node_CallFunction*{
+  for(UEdGraphNode* N:G->Nodes)if(N->GetFName()==Name)return Cast<UK2Node_CallFunction>(N);return nullptr;
+ };
+ if(Node(Start,TEXT("ProphecySlowStartCap"))){UE_LOG(LogTemp,Display,TEXT("Sword Slow Start cap already installed."));return;}
+ auto* Slow=Node(Start,TEXT("K2Node_CallFunction_2"));
+ auto* Normal=Node(Start,TEXT("K2Node_CallFunction_159"));
+ auto* End=Node(Events,TEXT("K2Node_CallFunction_159"));
+ for(auto* N:{Slow,Normal,End})if(!N||N->FunctionReference.GetMemberName()!=TEXT("SetFixedFrameRateRuntime"))return;
+ auto* FPS=Slow->FindPin(TEXT("FPS"));
+ if(!FPS||FPS->LinkedTo.Num()!=1||Slow->GetThenPin()->LinkedTo.Num()!=1||
+    Normal->GetThenPin()->LinkedTo.Num()!=1||!End->GetThenPin()->LinkedTo.IsEmpty())return;
+ auto* SlowSource=FPS->LinkedTo[0];
+ auto* SlowNext=Slow->GetThenPin()->LinkedTo[0];
+ auto* NormalNext=Normal->GetThenPin()->LinkedTo[0];
+ if(!UKismetStringLibrary::StaticClass()->FindFunctionByName(TEXT("BuildString_Double"))||
+    !UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("ExecuteConsoleCommand")))return;
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","SwordSlowStartFrameCap","Keep sword Slow Start on the 60-tick physics clock"));
+ BP->Modify();Start->Modify();Events->Modify();
+ for(auto* N:{Slow,Normal,End})N->Modify();
+ SlowSource->GetOwningNode()->Modify();SlowNext->GetOwningNode()->Modify();NormalNext->GetOwningNode()->Modify();
+ auto Call=[](UEdGraph* G,UClass* Owner,const TCHAR* Function,const TCHAR* Name,int X,int Y){
+  FGraphNodeCreator<UK2Node_CallFunction> Creator(*G);auto* N=Creator.CreateNode();
+  N->SetFromFunction(Owner->FindFunctionByName(Function));N->Rename(Name,G);
+  N->NodePosX=X;N->NodePosY=Y;Creator.Finalize();return N;
+ };
+ auto* Text=Call(Start,UKismetStringLibrary::StaticClass(),TEXT("BuildString_Double"),TEXT("ProphecySlowStartText"),-2200,650);
+ auto* SlowCap=Call(Start,UKismetSystemLibrary::StaticClass(),TEXT("ExecuteConsoleCommand"),TEXT("ProphecySlowStartCap"),-1800,112);
+ auto* NormalCap=Call(Start,UKismetSystemLibrary::StaticClass(),TEXT("ExecuteConsoleCommand"),TEXT("ProphecyNormalStartCap"),-1800,400);
+ auto* EndCap=Call(Events,UKismetSystemLibrary::StaticClass(),TEXT("ExecuteConsoleCommand"),TEXT("ProphecyEndPlayCap"),-2800,1264);
+ const auto* Schema=GetDefault<UEdGraphSchema_K2>();
+ auto Link=[Schema](UEdGraphPin* A,UEdGraphPin* B){return A&&B&&Schema->TryCreateConnection(A,B);};
+ auto Default=[Schema](UEdGraphPin* P,const TCHAR* Value){if(!P)return false;Schema->TrySetDefaultValue(*P,Value);return true;};
+ bool OK=Default(Text->FindPin(TEXT("Prefix")),TEXT("t.MaxFPS "))&&
+     Default(NormalCap->FindPin(TEXT("Command")),TEXT("t.MaxFPS 60"))&&
+     Default(EndCap->FindPin(TEXT("Command")),TEXT("t.MaxFPS 60"))&&
+     Link(SlowSource,Text->FindPin(TEXT("InDouble")))&&Link(Text->GetReturnValuePin(),SlowCap->FindPin(TEXT("Command")));
+ if(OK){
+  Slow->GetThenPin()->BreakLinkTo(SlowNext);Normal->GetThenPin()->BreakLinkTo(NormalNext);
+  OK=Link(Slow->GetThenPin(),SlowCap->GetExecPin())&&Link(SlowCap->GetThenPin(),SlowNext)&&
+     Link(Normal->GetThenPin(),NormalCap->GetExecPin())&&Link(NormalCap->GetThenPin(),NormalNext)&&
+     Link(End->GetThenPin(),EndCap->GetExecPin());
+ }
+ if(OK){FPS->BreakLinkTo(SlowSource);Schema->TrySetDefaultValue(*FPS,TEXT("60.000000"));}
+ else{
+  for(auto* N:{Text,SlowCap,NormalCap,EndCap})FBlueprintEditorUtils::RemoveNode(BP,N,true);
+  Link(Slow->GetThenPin(),SlowNext);Link(Normal->GetThenPin(),NormalNext);
+ }
+ FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
+ FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+ UE_LOG(LogTemp,Display,TEXT("Sword Slow Start cap: %s; status=%d; not saved."),OK?TEXT("connected"):TEXT("FAILED"),int32(BP->Status));
+}
+static void InstallCleanPike()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/sword/A_Sword.A_Sword"));
+ auto* Lib=FindObject<UClass>(nullptr,TEXT("/Script/ProphecyJolt.ProphecyJoltHitImpactLibrary"));
+ if(!BP||!Lib)return;
+ auto* EnableFunction=Lib->FindFunctionByName(TEXT("EnableCleanHitContinuation"));
+ auto* AcceptFunction=Lib->FindFunctionByName(TEXT("AcceptPikeHit"));
+ if(!EnableFunction||!AcceptFunction)return;
+ UEdGraph* G=nullptr;for(UEdGraph* Graph:BP->UbergraphPages)if(Graph->GetFName()==TEXT("EventGraph"))G=Graph;
+ if(!G)return;
+ auto Find=[G](const TCHAR* Name)->UEdGraphNode*{for(UEdGraphNode* N:G->Nodes)if(N->GetFName()==Name)return N;return nullptr;};
+ if(Find(TEXT("ProphecyAcceptPike"))){UE_LOG(LogTemp,Display,TEXT("Clean pike already installed."));return;}
+ auto Pin=[&](const TCHAR* N,const TCHAR* P)->UEdGraphPin*{auto* Node=Find(N);return Node?Node->FindPin(P):nullptr;};
+ auto* Begin=Pin(TEXT("K2Node_Event_0"),TEXT("then"));
+ auto* Pike=Pin(TEXT("K2Node_IfThenElse_5"),TEXT("then"));
+ auto* AfterPose=Pin(TEXT("K2Node_VariableSet_5"),TEXT("execute"));
+ auto* Velocity=Pin(TEXT("K2Node_CallFunction_105"),TEXT("execute"));
+ auto* AfterVelocity=Pin(TEXT("K2Node_Knot_26"),TEXT("InputPin"));
+ auto* Sword=Pin(TEXT("K2Node_VariableGet_44"),TEXT("sword"));
+ auto* IsPike=Pin(TEXT("K2Node_VariableGet_22"),TEXT("temp pike"));
+ if(!Begin||!Pike||!AfterPose||!Velocity||!AfterVelocity||!Sword||!IsPike
+    ||Begin->LinkedTo.Num()!=1||Pike->LinkedTo.Num()!=1||Velocity->LinkedTo.Num()!=1
+    ||Pike->LinkedTo[0]!=Pin(TEXT("K2Node_Knot_6"),TEXT("InputPin")))
+ {UE_LOG(LogTemp,Error,TEXT("Clean pike preflight failed; current graph differs, nothing edited."));return;}
+ auto* BeginNext=Begin->LinkedTo[0];auto* PikeNext=Pike->LinkedTo[0];auto* BeforeVelocity=Velocity->LinkedTo[0];
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","CleanPike","Continue accepted pikes without changing Blueprint conditions"));
+ BP->Modify();G->Modify();for(UEdGraphNode* N:G->Nodes)N->Modify();
+ auto Call=[&](UFunction* F,const TCHAR* Name,int X,int Y){FGraphNodeCreator<UK2Node_CallFunction> C(*G);auto* N=C.CreateNode();
+  N->SetFromFunction(F);N->Rename(Name,G);N->NodePosX=X;N->NodePosY=Y;C.Finalize();return N;};
+ auto Branch=[&](const TCHAR* Name,int X,int Y){FGraphNodeCreator<UK2Node_IfThenElse> C(*G);auto* N=C.CreateNode();
+  N->Rename(Name,G);N->NodePosX=X;N->NodePosY=Y;C.Finalize();return N;};
+ auto* Enable=Call(EnableFunction,TEXT("ProphecyEnableCleanPike"),Begin->GetOwningNode()->NodePosX+250,Begin->GetOwningNode()->NodePosY-200);
+ auto* Accept=Call(AcceptFunction,TEXT("ProphecyAcceptPike"),Pike->GetOwningNode()->NodePosX+250,Pike->GetOwningNode()->NodePosY-200);
+ auto* Accepted=Branch(TEXT("ProphecyPikeAccepted"),Accept->NodePosX+320,Accept->NodePosY);
+ auto* SkipRestore=Branch(TEXT("ProphecyPikeSkipRestore"),Velocity->GetOwningNode()->NodePosX-250,Velocity->GetOwningNode()->NodePosY-200);
+ const auto* Schema=GetDefault<UEdGraphSchema_K2>();
+ auto Link=[Schema](UEdGraphPin* A,UEdGraphPin* B){return A&&B&&Schema->TryCreateConnection(A,B);};
+ bool OK=Link(Sword,Enable->FindPin(TEXT("Component")))&&Link(Sword,Accept->FindPin(TEXT("HitReceiver")))
+  &&Link(Accept->GetReturnValuePin(),Accepted->GetConditionPin())&&Link(IsPike,SkipRestore->GetConditionPin());
+ if(OK){
+  Begin->BreakLinkTo(BeginNext);Pike->BreakLinkTo(PikeNext);BeforeVelocity->BreakLinkTo(Velocity);
+  OK=Link(Begin,Enable->GetExecPin())&&Link(Enable->GetThenPin(),BeginNext)
+   &&Link(Pike,Accept->GetExecPin())&&Link(Accept->GetThenPin(),Accepted->GetExecPin())
+   &&Link(Accepted->GetThenPin(),AfterPose)&&Link(BeforeVelocity,SkipRestore->GetExecPin())
+   &&Link(SkipRestore->GetThenPin(),AfterVelocity)&&Link(SkipRestore->GetElsePin(),Velocity);
+ }
+ if(!OK){
+  const TArray<UEdGraphNode*> Added={Enable,Accept,Accepted,SkipRestore};
+  for(UEdGraphNode* N:Added)FBlueprintEditorUtils::RemoveNode(BP,N,true);
+  Link(Begin,BeginNext);Link(Pike,PikeNext);Link(BeforeVelocity,Velocity);
+ }
+ FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+ FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+ UE_LOG(LogTemp,Display,TEXT("Clean pike connections=%d status=%d saved=0"),OK,int32(BP->Status));
+}
+static void InstallPikeWoundCorrection()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/sword/A_Sword.A_Sword"));
+ auto* Lib=FindObject<UClass>(nullptr,TEXT("/Script/GameAnimationSample3.ProphecyPhysicsConstraintBlueprintLibrary"));
+ auto* Function=Lib?Lib->FindFunctionByName(TEXT("SetPikeWoundCorrection")):nullptr;
+ if(!BP||!Function)return;
+ UEdGraph* G=nullptr;for(UEdGraph* Graph:BP->UbergraphPages)if(Graph->GetFName()==TEXT("EventGraph"))G=Graph;
+ if(!G)return;
+ auto Find=[G](const TCHAR* Name)->UEdGraphNode*{for(UEdGraphNode* N:G->Nodes)if(N->GetFName()==Name)return N;return nullptr;};
+ if(Find(TEXT("ProphecyPikeWoundCorrection")))return;
+ auto Pin=[&](const TCHAR* N,const TCHAR* P)->UEdGraphPin*{auto* Node=Find(N);return Node?Node->FindPin(P):nullptr;};
+ auto* Before=Pin(TEXT("K2Node_CallFunction_50"),TEXT("then"));
+ auto* After=Pin(TEXT("K2Node_IfThenElse_1"),TEXT("execute"));
+ auto* Constraint=Pin(TEXT("K2Node_AddComponent_0"),TEXT("ReturnValue"));
+ auto* IsPike=Pin(TEXT("K2Node_VariableGet_22"),TEXT("temp pike"));
+ if(!Before||!After||!Constraint||!IsPike||Before->LinkedTo.Num()!=1||Before->LinkedTo[0]!=After)
+ {UE_LOG(LogTemp,Error,TEXT("Pike wound preflight: graph differs; no edits."));return;}
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","PikeWoundCorrection","Opt accepted pike constraints into wound correction"));
+ BP->Modify();G->Modify();for(UEdGraphNode* N:G->Nodes)N->Modify();
+ FGraphNodeCreator<UK2Node_IfThenElse> GateCreator(*G);auto* Gate=GateCreator.CreateNode();
+ Gate->Rename(TEXT("ProphecyPikeCorrectionGate"),G);
+ Gate->NodePosX=Before->GetOwningNode()->NodePosX+300;Gate->NodePosY=Before->GetOwningNode()->NodePosY-200;GateCreator.Finalize();
+ FGraphNodeCreator<UK2Node_CallFunction> Creator(*G);auto* Node=Creator.CreateNode();
+ Node->SetFromFunction(Function);Node->Rename(TEXT("ProphecyPikeWoundCorrection"),G);
+ Node->NodePosX=Gate->NodePosX+300;Node->NodePosY=Gate->NodePosY;Creator.Finalize();
+ const auto* Schema=GetDefault<UEdGraphSchema_K2>();
+ auto Link=[Schema](UEdGraphPin* A,UEdGraphPin* B){return A&&B&&Schema->TryCreateConnection(A,B);};
+ Schema->TrySetDefaultValue(*Node->FindPin(TEXT("Enabled")),TEXT("true"));
+ bool OK=Link(Constraint,Node->FindPin(TEXT("Constraint")))&&Link(IsPike,Gate->GetConditionPin());
+ if(OK){Before->BreakLinkTo(After);OK=Link(Before,Gate->GetExecPin())&&Link(Gate->GetThenPin(),Node->GetExecPin())
+  &&Link(Gate->GetElsePin(),After)&&Link(Node->GetThenPin(),After);}
+ if(!OK){FBlueprintEditorUtils::RemoveNode(BP,Node,true);FBlueprintEditorUtils::RemoveNode(BP,Gate,true);Link(Before,After);}
+ FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
+ FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+ UE_LOG(LogTemp,Display,TEXT("Pike wound correction installed=%d status=%d saved=0"),OK,int32(BP->Status));
+}
 static void RefreshGripProfilePins(const TArray<FString>& Args)
 {
  if(!GEditor||GEditor->PlayWorld)return;
+ if(Args.Num()==1&&Args[0]==TEXT("PikeWoundCorrection")){InstallPikeWoundCorrection();return;}
  if(Args.Num()==1&&Args[0]==TEXT("SwordDebugFrameCap")){RepairSwordDebugFrameCap();return;}
+ if(Args.Num()==1&&Args[0]==TEXT("SwordSlowStartFrameCap")){RepairSwordSlowStartFrameCap();return;}
+ if(Args.Num()==1&&Args[0]==TEXT("CleanPike")){InstallCleanPike();return;}
  if(Args.Num()==1&&Args[0]==TEXT("RemoveSwordTab")){RemoveSwordTabShortcut();return;}
  const bool Migrate=Args.Num()==3&&Args[0]==TEXT("ReturnRanges");
  const bool UpdateSpeeds=Args.Num()==3&&Args[0]==TEXT("SetSlideSpeeds");

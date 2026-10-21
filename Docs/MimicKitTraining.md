@@ -1,5 +1,2369 @@
 # MimicKit humanoid trial
 
+## October21 - recovery resumed with 1,024 agents
+
+User requested latest get-up resume with batch1,024 (parallel environments).
+Resumed verified99984_final /1,638,154,240samples; original local/persistent
+checkpoint retained. Run20261021_171139_uefn_getup_ae10_1024, L4upszb03gy35fzj at$0.59/hour,
+until stopped; trainer468/exitguard469, bridge25964/dashboard13884.
+Confirmed99985→99995,1,638,514,688samples,early throughput15.15k transitions/s.
+New99985 checkpoint verified by persistent readback:
+SHA49dd1ae752a7bc2b39b22599c1eb93e16df20af362443faa405e5d3b95b406ac.
+Actor/critic optimizer and normalizer restored. Same30/70normal/perturbed,
+50/50front/back, normal half frame0/half random; uniform whole-pose limp blend,
+floor clearance,AE weight.2752568,noise.075,GAE.98,LR1.125e-6,losses/physics
+and termination settings unchanged. Recorder has first new replay; dashboard
+published27 points. Explicit world count is now read from the prepared plan.
+
+Original L4w9aq90rzkg1d0g unavailable. First replacement90v1fafvq5uudn exited
+before any training because the legacy RunLR assertion forced512 even for
+prepared equipment runs; guard confirmed GPU stop. Removed that restriction
+for equipment runs while retaining the512-world standalone RunLR fixture.
+Corrected source changes only pipeline/train.py versus the pinned AE package;
+512/1024 argument checks passed; source archive hashcf6d3b06e3f3b707dc6463291bacdd1b3f3dd6e0d1ff430f1fe151b10e65e35a.
+That replacement then could not restart, so current L4 was allocated. No old
+pod/disk deleted and locomotion untouched. Setup watchdog released only after
+advancement and verified backup. Receipt getup1024-verification.json; failed
+launch evidence getup1024-initial-exit-evidence.zip. Supersedes stopped status.
+
+
+## October21 - locomotion resumed with 1,024 agents (verified)
+
+User selected1,024 agents; resumed latest production91895_final at
+1,505,624,064samples, not a sweep checkpoint. Run
+20261021_171453_uefn_locomotion_ae30_mse30_yaw180_1024 on replacement A40
+wjxv6qigq3dy9o at$0.59/hour, until stopped (existing indefinite authorization).
+Original L4, sweep A40 and replacement L4 had no capacity. Recovery untouched.
+
+All task/physics/optimizer settings retained:7%idle/93%loco, each30%normal/
+70%perturbed, no recovery rows, yaw180,120tick perturbed episodes,AE30 then
+30tick blend to MSE, same priors/losses/termination/penalties. Actor LR1.125e-6,
+critic1e-4, noise.075, GAE.98,32tick rollout. Batch now32,768 transitions;
+actor minibatch4,096, critic2,048 via unchanged batch factors4/2.
+Both optimizer states and normalization restored; normalization changed0channels.
+Verified advancing91896->91906,1,505,984,512samples, early13,626transitions/s.
+This is startup throughput, not a guaranteed long-run average.
+
+Pinned archive had an obsolete512-only startup assertion. First attempted run
+20261021_170742 exited before training; automatic failure guard stopped billing.
+Only pipeline/train.py gate changed in copied source to permit1024 equipment
+worlds; original source/checkpoint remain preserved. Gate CPU checks passed,
+all other archive entries byte-identical. Shared train.py already has a broader
+world-count check; it was left untouched. deploy_locomotion_branch.launch now
+reads plan.worlds (defaults512). Fresh-host runtime restore encountered a retained
+venv symlink after pod restart; verified archive/extraction reused and restore
+completed without changing packages. Cold physics kernels compiled normally.
+
+First new checkpoint91896, SHA
+cde4a94842006472082c7a6176103eb1088d733d1b3416a3694d928a129164f1,
+verified by persistent readback. Live receipt worlds1024-live-verification.json;
+source-change receipt worlds1024-source-change.json; first failed launch evidence
+worlds1024-first-start-evidence.zip. Prepared plan points to91895 and corrected
+locomotion-ae30-mse30-1024-source.zip. No rollback or sweep weights promoted.
+Trainer575, failure guard576; local bridge9524/dashboard15612.
+Setup watchdog released after advancing steps and verified backup. Training/backup
+failure stop remains active. Runtime control until_stopped=true. TB filter17-14-53.
+
+## October21 - isolated locomotion learning-speed sweeps finished
+
+User requested wrapping up, superseding the earlier unlimited-time exploration.
+Separate A40pod a9y7igarhig19j at$0.59/hour confirmed EXITED. Estimated allocation
+GPU cost$1.14; storage/provider rounding excluded. Main locomotion and recovery
+remain stopped. All seven protected production checkpoint/source/control files
+were rehashed unchanged, including91895_final at1,505,624,064samples. No candidate
+has been applied to production. Resume must use the preserved91895_final, not
+the older78988 reference in getup-success-prepared.json.
+
+Ten configurations including baseline completed4.194M transitions each:
+actorLRx2/x4, criticLRx3, actorbatch8+LRx2, rollout64+LRx2, adaptiveKL,
+critic reward context, TF32, and1,024worlds. Eight fixed held-out seeds give
+2,664perturbed locomotion first episodes per candidate. Training used one seed;
+normal full300tick screening used two seeds for candidates, eight for baseline.
+Censored normal rows were excluded. Differences are exploratory and evaluation
+confidence intervals do not measure variation across training seeds.
+
+Baseline27.665% failures in473.24training seconds; best valid screen rollout64+
+LRx2 reached27.402% in460.6seconds. Difference-0.263percentage points, paired
+95%evaluation interval[-1.69,+1.01]: no reliable improvement. Larger actor batch
+was14% quicker but worse at28.94%. TF32 was4% slower and28.08%. No benefit from
+higher actor/critic LR or reward context. Baseline guard rejected no steps.
+Baseline profiling~68%rollout/27%actor/5%critic. Heading/50motion input audit passed.
+
+1,024worlds took281.84seconds:1.68x transition throughput. Its separate512world
+evaluator matched poses/targets/yaw/assignments but failed byte-equality checks
+on velocities/observations. Physical magnitude not measured; derivative
+preprocessing is only a hypothesis. Exclude its failure score from learning
+comparisons. Investigation stopped at user's wrap-up request; do not claim a
+validated learning speedup. Fresh-seed longer baseline/rollout64 confirmation
+was cancelled before a completed comparison; no confirmation result exists.
+FastSAC/FastTD3 researched but not implemented or experimentally ruled out.
+
+State/evidence Saved/MimicKitLocomotionSweeps/20261021: result_*.json,
+sweep_comparison.json, final-billing-stop.json, final-main-integrity.json,
+preserved-screen-states.json, loco-screen2/artifact_backups.json, and
+loco-confirm-a/user-wrap-cancellation.json. Baseline/rollout64 and both runtime
+full training states have S3 SHA256 readback-verified backups; results local.
+Final report Saved/MimicKitLocomotion/research-20261021/results.md; literature.md,
+audit.md, audit-followup.md retain sources and hypotheses. Isolated helper code
+and path/controller tests retained; no main trainer configuration changed.
+
+## October21 - recovery stopped at user request; latest downloaded
+
+Recovery run20261021_091317_uefn_getup_ae10_512 stopped cleanly using its
+stop.request; existing exit guard stopped L4w9aq90rzkg1d0g, API EXITED confirmed.
+Latest99984_final,1,638,154,240samples,47,879,209bytes is retained in persistent
+storage and downloaded to Saved/MimicKitEquipment/preserved-latest/
+20261021_091317_uefn_getup_ae10_512/checkpoint_0099984_final.zip.
+SHA256 cd51ee57a63cd8926ce08ec383d3ca7a1aecb43454bbbef53bc11dd941214674
+matches the persistent verified manifest; local ZIP integrity passed.
+Receipt stopped-latest-20261021.json; prepared recovery plan points to this save.
+Final event log/replay restored locally from the checkpoint; recovery bridge
+stopped and active replay marker cleared. No training settings changed.
+Locomotion was not modified; its pod also reported EXITED independently.
+This supersedes recovery-running status below; do not restart without request.
+
+
+## October21 - locomotion stopped at user request; latest downloaded
+
+User requests latest checkpoint download and stop. Graceful stop produced
+91895_final, retained in persistent storage and downloaded locally:
+Saved/MimicKitLocomotion/preserved-latest/20261021_091005_uefn_locomotion_ae30_mse30_yaw180_512/checkpoint_0091895_final.zip.
+53,780,635bytes; SHA256
+fb259aa89e2c42306ef7d98dee7471fdf7be04b1b21ec9e979f92896f0df37d1.
+Local SHA matches persistent verified receipt, ZIP CRC/model.pt/resume_state.pt
+verified. Owned locomotion pod rjsan0uitu03qd confirmed EXITED; GPU billing
+stopped. Retained pod disk and persistent/local checkpoint preserved. Local
+locomotion bridge/dashboard stopped, active marker cleared; local until-stopped
+control superseded by explicit user stop. Recovery branch untouched.
+Receipts Saved/MimicKitLocomotion/user-stop-checkpoint.json,user-stop-billing.json.
+Latest training setup remains AE30→MSE30 on perturbed rows for any future resume;
+no restart authorized by this stop request.
+
+## October21 - additive AE regularizer restored on perturbed get-ups only
+
+User explicitly chooses perturbed get-ups only; normal recoveries unchanged.
+Stopped cleanly and preserved latest88363_final,1,447,755,776samples locally
+and in persistent storage, SHA886c29496275c07286c94711dfecb7c7816061989acb5ac1dfd58aab5bc1ff73.
+Added getup_ae_regularizer=true to the pinned recovery package; only
+perturbed_omni.py and prepared configuration/calibration changed. The shared
+workspace has the same opt-in logic; default false preserves other branches.
+The frozen existing AE sees generated physical body origins/world rotations,
+three consecutive30Hz poses, with reset-isolated history and no score until valid.
+Position MSE stays full strength; additive weighted AE is included in both
+displayed total and actual linear RL reward:1-position_cost-weighted_AE.
+Success bonus99, failure penalty100, initialization, phase and termination unchanged.
+
+Fixed weight0.2752567992958057 calibrated on the final checkpoint's actual
+deterministic perturbed get-up replay windows: mean position cost1.966992551,
+mean AE raw0.794003013; weighted AE0.218554728 is10% of combined pose+AE cost.
+Terminal bonuses/penalties excluded from this loss calibration. This is a fixed
+weight from recorded evaluation, not a guarantee of10% at every tick or later
+in training. Scorer/encoder extracted from the deployed source archive itself.
+Receipt getup-ae-calibration.json; preserved save getup-ae-preserved.json.
+
+Resumed20261021_091317_uefn_getup_ae10_512 on same L4w9aq90rzkg1d0g at$.59/hour,
+until stopped. Trainer696/exitguard697; bridge13512/dashboard1724. Verified
+88364→88384 (~9.29k transitions/s), new88364 checkpoint persistent readback
+SHAb5a11c90d9132559e7ee1c06a67ff072afe1e8cc984dd22d42f49675f431b348.
+No trainer/backup errors. Actual20-row replay:18perturbed rows have AE cost,
+2normal rows zero; first two stored frames zero, then valid three-pose costs.
+Verified weighted AE equals recorded raw times configured weight. Production
+reward-method checks prove AE affects reward and normals/default behavior remain
+unchanged; real scorer test confirms history clears only the reset agent.
+Ten-minute handoff watchdog released only after progress/backup verification.
+Helpers restart_getup_ae.py,getup_ae_regularizer.py,test_getup_ae_regularizer.py;
+getup-ae-live-verification.json and getup-ae-replay-verification.json record results.
+
+## October21 - locomotion AE to MSE restored, 30/30 (verified running)
+
+User requests latest resume with full AE first30 policy ticks, linear handoff
+through next30, full MSE from60 onward on PERTURBED idle/loco rows only.
+Normal MSE unchanged. Restore exact prior assets and previous weight
+6.942658260262293 from pre-split noise-gae source. No extra division/scaling.
+Three consecutive real poses required by existing AE history contract; the first
+transition has no valid three-pose window. Existing autoregressive phase retained.
+120tick perturbed horizon,yaw±180,7/93idle/loco,30/70normal/perturbed,
+50/50walk/run,noise.075,GAE.98,Adam/KL and all termination/penalties unchanged.
+Only existing package file changed is prepared/env_config.yaml; prior assets
+restored. No new physics/AE architecture/normal-row changes. Recovery untouched.
+
+Stopped prior run cleanly;78988_final at1,294,155,776samples saved locally and
+persistent-readback verified, SHA27708b597263b9240e9eb3f7ddf31e63830732728400b2eb39a9d59221336168.
+Preserved under Saved/MimicKitLocomotion/preserved-latest/20261021_074500_uefn_locomotion_mse_yaw180_512/.
+New run20261021_091005_uefn_locomotion_ae30_mse30_yaw180_512, same L4
+rjsan0uitu03qd/$0.59hour/until-stopped. Trainer701/exitguard702;
+bridge11512/dashboard8380. Actual advancement78989→79009,~11.65k transitions/s.
+First new checkpoint78989 persistent readback verified,
+SHA6b1736294d8f6ab8e59b59127745ece708aa8957acc7a220110fc25791979ee3.
+Live replay MSE mix0 at ticks0/29/30,.5at45,1at60/120;AE loaded=true.
+Ten-minute handoff billing watchdog605 released after progress/backup verified.
+Helper restart_locomotion_ae.py; ae30-switch/launch/verification receipts in
+Saved/MimicKitLocomotion. Current source55dee57664d7; prepared plan updated.
+Generic locomotion launcher now accepts either AE asset state from its pinned
+source, and validates exact source-package hash before restart.
+
+## October21 - recovery resumed after storage cleanup (verified running)
+
+Resumed RECOVERY only in this chat; locomotion is managed separately.
+Old recovery new5546ihvxeax could not start (GPU reassigned). Replacement SECURE
+L4w9aq90rzkg1d0g at$0.59/hour; old retained disk preserved. Until-stopped
+authorization retained. Source e72cfe88cf75 and checkpoint85149 (1,395,097,600
+samples) restored with SHA verification. Optimizer, normalizer and settings kept.
+512 recoveries:30%normal/70%perturbed,front/back50/50,normal starts half frame0/
+half random; uniform whole-pose limp blends and reset-only floor correction.
+Noise.075,GAE.98,actorLR1.125e-6; same MSE leeway, objectives and physics.
+
+Live20261021_074429_uefn_limp_floor_512,trainer479/exitguard480. Verified
+85150→85170,1,395,441,664samples,~10.63k transitions/s. No failure/backup errors.
+New checkpoint85150 persistent upload/readback verified, SHA
+804329267a307c4293e505fc9e78f04824164055fe21b9a8b1002ac5097020ad.
+Bridge18464/dashboard7392 running; TB8035 new run present and20-row replay85150
+published locally. Receipt Saved/MimicKitEquipment/resume-after-storage-verification.json.
+
+Launcher optionally checks remote runtime against an explicitly SHA-pinned source
+archive, retaining current-workspace checks by default. Used here to preserve
+the exact tested recovery source: shared workspace code has since changed for
+the separate locomotion branch. No training code changes deployed to recovery.
+
+## October21 - locomotion resumed after storage cleanup
+
+User requested resume from latest. Verified local ZIP/SHA and persistent readback
+of75533 (1,237,549,056 samples), SHA
+a07d385731dec8a3ca2aa80e4790848ca5293770d0cad1ed63bd0848d9f6f450.
+Fresh checkpoint-sized S3 upload/readback succeeded; diagnostic probe removed.
+Existing L4cb2i8leh2qpjdf could not restart (machine lacks resources); retained
+stopped disk untouched. Replacement SECURE L4rjsan0uitu03qd at$0.59/hour.
+Live run20261021_074500_uefn_locomotion_mse_yaw180_512, trainer481/exitguard482,
+remote deadline guard314; until-stopped authorization retained. No training
+settings changed:7%idle/93%loco,each30/70normal/perturbed,no get-ups/AE,
+yaw180,120perturbed ticks, existing losses/termination/optimizer settings.
+Resume reports75534offset, actor/critic optimizer and normalizer restored.
+First new checkpoint75534 persistent readback verified, SHA
+35197d2fef48fea413aa52d7531fbc2c29958d5f63ff0b19dc11b0f88ca0b686.
+Verified advancement75534→75564, ~12.8k training transitions/s. Setup watchdog
+released after progress and backup verification. TensorBoard new run visible.
+Bridge4900/dashboard22724; stale old locomotion observers stopped. Recovery
+branch not operated. Receipt Saved/MimicKitLocomotion/resume-20261021.json.
+
+## October21 - authorized physical locomotion/recovery history cleanup
+
+User explicitly requests downloading latest BOTH branches, then deleting older
+physical locomotion/get-up checkpoints and replay recordings except those saves.
+Downloaded full archives, verified SHA256 against persistent latest_verified,
+ZIP CRC integrity, model.pt and resume_state.pt BEFORE deleting anything.
+Preserve locally AND in S3:
+- Recovery85149,1,395,097,600samples, SHA
+  033c917f44f57bd3a0eb755ebe12ecd0a5dd3921af33998db1a0e1e360bf3f17.
+  Saved/MimicKitEquipment/preserved-latest/20261020_193455_uefn_limp_floor_512/checkpoint_0085149.zip.
+- Locomotion75533,1,237,549,056samples, SHA
+  a07d385731dec8a3ca2aa80e4790848ca5293770d0cad1ed63bd0848d9f6f450.
+  Saved/MimicKitLocomotion/preserved-latest/20261020_211208_uefn_locomotion_mse_yaw180_512/checkpoint_0075533.zip.
+
+Deleted1135 historical checkpoint/replay objects under physical UEFN non-crawl
+runs and equipment preserved-checkpoint copies:46,578,114,944bytes. Relisting
+confirmed all selected objects absent and both protected archives present.
+Deleted302 corresponding local checkpoint/replay files (4,716,801,953bytes),
+plus68 obsolete last_batch_rollout.json/replay.part files (541,138,980bytes).
+Historical latest_verified pointers/source receipts may now reference explicitly
+deleted archives; use only the two preserved saves above for these branches.
+Datasets, source packages, TensorBoard history, crawl and other Unreal model
+families untouched. No pod start/resume. This is a one-time authorized cleanup,
+not a new automatic retention policy. Full manifests/receipts live under
+Saved/MimicKitEquipment/cleanup-20261021. Final46,135,077-byte upload and
+SHA256 readback SUCCEEDED after cleanup; temporary probe removed.
+completed.json records success; checkpoint backups have usable capacity again.
+
+## October21 - both pods found stopped; recovery display caught up
+
+Follow-up storage check: a fresh18-byte S3 PutObject to a unique diagnostic
+key fails with Runpod QuotaExceeded / storage quota exceeded. Shared persistent
+volume aj7d2jzwuq is200GB; MimicKit run archives alone total45,978,576,317bytes
+across1285objects. Local C: still has about10GB free. Persistent backup quota
+is therefore CONFIRMED exhausted now. train.py raises on backups.errors and
+the exit watcher stops the owned GPU, making failed backups the strong common
+explanation for both stops. Exact terminal logs remain inaccessible, so the
+historical trigger is not directly verified. No user files/checkpoints deleted;
+diagnostic key cleanup only. Do not restart paid training until backup capacity
+is restored and a checkpoint-sized write/readback succeeds.
+
+Read-only Runpod checks show locomotion cb2i8leh2qpjdf stopped October20
+20:01:00 UTC and recovery new5546ihvxeax stopped 20:01:37 UTC (22:01 Warsaw).
+Both report `Exited by user`; this label does not identify whether the request
+came from a human or an API guard. The initiating actor/reason is UNRESOLVED.
+Recovery runtime_control still says until_stopped with no practical deadline.
+No matching local stop receipt, final checkpoint, or persistent exit-evidence
+archive was found. The account currently has $14.82 and underBalance=false;
+this is not a historical balance record. Neither pod was restarted by this audit.
+
+Recovered eight missing recovery replay captures (84449 through85149) and their
+saved evaluation aggregates from persistent checkpoint archives. TensorBoard HTTP
+verification confirms episode/test_seconds and reward/test through1,395,097,600
+samples; replay latest85149. Training curves still end at1,382,973,440 samples:
+ordinary checkpoint archives do not contain the missing training event files.
+No synthetic training/failure-rate data was inserted. Stopped the stale recovery
+local bridge/dashboard and removed its training.active marker; TB remains up.
+Helper refresh_stopped_recovery.py; receipt
+Saved/MimicKitEquipment/refresh-stopped-recovery-report.json.
+
+## October20 - independent locomotion MSE branch (running, verified)
+
+User forked locomotion from the checkpoint immediately before recovery-only
+training. Immutable73832_final from mixed141039,1,209,679,872samples,
+SHA221ed14975999aab1846e53758113bb228418827acd4edbf8403ca1b05ba3699.
+Original receipt recovery-split-loco-fork-checkpoint.json preserved.
+New state/control directory Saved/MimicKitLocomotion; NEVER use
+Saved/MimicKitEquipment pod/control files to operate this branch.
+New dedicated SECURE L4cb2i8leh2qpjdf,0.59/hour. User superseded the initial
+8-hour answer with "ad vitam": run until explicitly stopped, no8-hour cutoff.
+Recovery L4new5546ihvxeax and its live source/control remain untouched.
+
+512agents:7%ordinary idle/93%locomotion; within each30%normal/70%perturbed.
+Verified36idle(11normal/25perturbed),476locomotion(143normal/333perturbed);
+existing50/50walk/run and equipment distribution retained. Zero recovery rows.
+Retain split-checkpoint noise.075,GAE.98,Adam/KL,actorLR1.125e-6,normalization,
+physics/torque/command bounds and MSE leeways. No AE weights in source package;
+mse_only skips model loading, contract loading, history/scoring and blend ramp.
+Full tracking MSE starts at tick0. Predicted phase controls perturbed input and
+reference; normal uses authored clock. Existing normal flat-COM band remains;
+perturbed flat-COM loss remains excluded, matching previous branch semantics.
+
+Perturbed idle/loco timeout120policy ticks(4s), normal300ticks(10s).
+Yaw uniform[-180,+180]deg around worldZ, keeping initial trunkCOM2 world
+velocity intact. Existing perturbed locomotion termination: after8-tick grace,
+direction>45deg from target, speed<70% or>170% target; failure penalty-100.
+Perturbed idle has timeout only. Normal existing27cm tracking spheres and
+other checks retained. Existing ordinary auto-phase supervision retained.
+
+Production loss/done regression verifies full MSE at ticks0/79/80/119,
+AE never called,120vs300horizons,8-tick grace and unchanged failure penalty.
+Zero-recovery reference/velocity paths now return before empty ambiguous
+reshapes. These changes are gated/default-preserving for the recovery branch.
+Actual production resume compatibility checks passed against73832 before
+allocating. Checkpoint/source persistent readbacks verified.
+Helper deploy_locomotion_branch.py; local setup watchdog13408 and remote
+deadline guard300 protect setup, in addition to training failure guard.
+
+Verified live20261020_211208_uefn_locomotion_mse_yaw180_512, trainer435/exitguard436.
+Startup reports zero recovery rows,238walk/238run, AE model not loaded,
+mse_only=true,120perturbed ticks,yaw180. Resume restores actor/critic Adam
+states and normalizer from73832_final. Progress73833→73913 observed; warm
+training throughput11.4–11.6k transitions/s (~1.42s/update). Initial checkpoint
+73833 backed up with persistent readback SHA
+6b13225bf645f671b8d2be0f99f3096ff33cc434c585373ee974b6469568ac91.
+Receipt Saved/MimicKitLocomotion/launch-verification.json. Local setup marker
+written only after verified progress/backup; live deadline remains until-stopped.
+Bridge25868/dashboard27124 populate local replay and TensorBoard;20rows
+verified, no get-ups, AE disabled, perturbed horizons<=120,normal<=300.
+Recovery pod/control file hashes match the prelaunch snapshot.
+
+
+## October20 - limp blended starts floor clearance correction
+
+User authorizes correction and resume from LATEST, not initial79023.
+For perturbed limp starts only, after blending root/joints, run batched FK and
+compute exact Z=0 support of all model colliders: eight corners per box,
+two endpoints plus radius per capsule, centre plus radius per sphere.
+Translate pelvis upward by penetration depth plus2micrometres float32 allowance
+only if penetrating. Never lower already clear poses. Joint angles, root
+orientation/XY and all authored starting velocities remain unchanged.
+No per-step projection, contact/solver setting changes or corpus rewrite.
+Support points load once from the packaged model, reset math stays on GPU.
+Replay records reset_floor_lift_m and reset_floor_clearance_corrected.
+
+test_limp_floor_clearance.py checks1,000limp endpoints x21strengths x2vanilla
+starts plus20recorded starts against independent double-precision collider
+support (42,020cases). Minimum resulting clearance0.825micrometres, all clear;
+reported screenshot receives44.5368cm vertical shift. Endpoint blending/
+partial-reset/velocity-preservation tests also pass. Deployment helper
+deploy_limp_floor.py performs guarded latest-final save, local and persistent
+checkpoint verification, then resume on same pod.
+
+Verified launch20261020_193455_uefn_limp_floor_512 on sameL4new5546ihvxeax,
+trainer849/exitguard850;bridge12596/dashboard22876,existing until-stopped budget.
+Prior run gracefully saved79848_final (1,308,246,016samples), downloaded locally
+and verified against persistent S3 readback, SHA256
+e9b8574175e1e6f9a00792f28f3c73b974581e2f2992f27396006f727172ead5.
+Resumed latest weights/optimizer/counters; all settings except floor placement
+unchanged. Live77normal frame0/77normal random/358perturbed, prior_rows0.
+First new79849 checkpoint persistently verified SHA256
+93746b519f496dc2f9c95178cc5916a597caddb01277002bce871d6eb3e80955.
+At79869/1,308,590,080samples progressing, recent mean1.533s/update,
+10,685transitions/s versus prior recent1.573s/10,413transitions/s.
+Short live comparison shows no slowdown, not a controlled isolated benchmark.
+Guard completion marker released after verified progress and backup.
+First actual replay79849: all18perturbed frame0 collider supports above floor,
+minimum1.985micrometres, correction metadata present. Independent computation
+from recorded world poses; not merely testing helper output. Receipts
+limp-floor-preserved/verified/live-replay-verified.json.
+
+## October20 - confirmed floor penetration introduced by whole-pose blending
+
+User screenshot step79324 frame0 traced to replay row11, drawn front get-up,
+limp corpus index31, alpha0.7908768058. Corpus SHA matches deployed artifact.
+Read-only audit_limp_blend_clipping.py reconstructs the exact production blend
+from vanilla frame0 (adjusting unarmed/drawn idle heading) and limp endpoint:
+maximum body-position discrepancy1.42micrometres.
+Limp endpoint deepest collider is0.897cm below floor; vanilla front pelvis3.600cm.
+Blended start right hand44.537cm below floor and head25.793cm below floor.
+16/18 perturbed starts in this replay exceed5cm floor penetration.
+This is a reset placement defect, not replay display or a physics-tick effect:
+interpolating root height while rotating/articulating does not preserve support.
+Prior endpoint/interpolation tests missed floor clearance of intermediate poses.
+Proposed correction: recompute minimum floor-clearing pelvis Z after blending,
+at reset only, preserving blended joint pose and orientation. Not implemented
+or deployed in this diagnostic turn; running training unchanged.
+Evidence Saved/MimicKitEquipment/limp-blend-clipping-audit.json.
+
+## October20 19:09 - limp whole-pose curriculum restart (verified running)
+
+User marks183047 stale and explicitly restarts from its initial79023_final,
+not its later checkpoints. Restore action noise.075, GAE lambda.98 and original
+position-MSE leeway from79023 (normal recovery legs10cmXY/5cmZ, upper5cm).
+100% recovery rows, front/back50/50;154normal/358perturbed among512.
+Normal starts77frame0/77random; perturbations always vanilla frame0 blended
+uniformly with one of1,000 saved limp poses, no strength skew.
+User explicitly chose whole-pose blending: linear local DOFs and pelvis position,
+shortest-arc quaternion interpolation for pelvis rotation. Keep authored
+starting velocities, do not substitute stored limp velocities. Corpus SHA256
+683193642d2350eedaef7cade16811f4f5161055b0296955bc5f539f18aca163.
+No floor repositioning, new projection or physics change.
+Low-head failure moves from tick60 to80, still below/equal50% idle head height.
+Other reward/reset rules unchanged: perturbed get-ups use only idle-frame0
+body-position linear cost, no leeway/AE, failure-100,90%head success value99;
+normal recovery tracking,65cmhead/hands35cmfeet, failure-100 retained.
+
+Code: perturbed_omni loads and validates corpus once into GPU tensors; all
+blend operations occur only at reset. Cohorts stratified within each motion,
+largest-remainder rounding preserves total77random normal starts.
+test_limp_blend.py exercises production reset endpoints/midpoint, quaternion
+signs, untouched rows, unchanged velocities and empty reset batches.
+deploy_limp_blend.py validates production resume compatibility and persistent
+readbacks before guarded handoff; preserves stale final separately and stages
+only the initial79023 checkpoint.
+
+Stale183047 saved80379_final to persistent storage but was NOT used to resume.
+New20261020_190959_uefn_limp_blend_balanced_512 launched on same
+L4new5546ihvxeax at.59/hour under existing until-stopped authorization,
+trainer600/exitguard601. Loaded checkpoint SHA4f8a2a...70baa (79023),
+optimizer and normalization restored, first update79024.
+Live cohorts77normal frame0/77normal random/358perturbed frame0; prior_rows0.
+Front normal38frame0/39random; back39frame0/38random;179perturbed each.
+Config verified noise.075,lambda.98,restored leeway, uniform strength, tick80.
+79024 backup verified SHA7e4821fef80a5fcd94adf36bd34d70b9242d3e137d138c363d85cca1fa688c58.
+At final verification79044/1,295,073,280samples advancing, recent throughput
+10,505transitions/s. Bounded handoff watchdog released only after progress and
+backup verification. Bridge11944/dashboard21884 started; dashboard publishing.
+Receipts limp-blend-prepared/staged/live/verification/verified.json in Saved.
+
+## October20 18:21 - original noise/GAE, balanced recoveries, no position leeway
+
+User requested resume latest with action noise.05, GAE lambda.95,
+no position-MSE leeway and front/back50/50. Half frame0/half random starts
+remain. Removed position_mse_leeway config entirely (raw position objective);
+flat-COM velocity band, pelvis velocity multiplier, termination radii,
+rewards, Adam learning rate and physics unchanged.
+
+Fixed correlated cohort selectors exposed by equal fractions: both motion
+assignment and random-start assignment previously chose the same evenly spaced
+rows at.5. Random starts are now stratified within each fixed motion in both
+RecoveryOmniEnv and the PerturbedOmniEnv normal-row override. Setup-only work,
+no per-tick overhead. Regression tests exercise source-frame reset/phase,
+partial resets, fraction extremes and128rows in each front/back x frame0/random
+group. New recovery_start_by_motion.json records the live cross-tab.
+
+Previous77391+ run stopped gracefully; latest79023_final downloaded locally
+and verified against persistent S3 readback and ZIP CRC. SHA256
+4f8a2a285cdc74de1a1f499960924a5eaf9c56561cc646290439856b58a70baa.
+Receipt normal-balanced-no-leeway-preserved.json; config/source helper
+Labs/MimicKitTraining/deploy_normal_balanced.py. Exact source diff is only
+two configuration files and train/recovery_omni/perturbed_omni.py for the
+cohort correction/reporting. No initialization-corpus deployment.
+First182101 launch rejected removal of position_mse_leeway in the checkpoint
+compatibility check; no updates ran. Exit guard stopped old pod billing.
+Extended explicit --resume-position-leeway to permit key removal, and passed
+the actual production compatibility-check AST against79023 locally before retry.
+Resume helper now passes this flag through the prepared plan. Checkpoint unchanged.
+Old L4 could not restart (GPU reassigned); EU-RO-1 mounted replacement unavailable.
+Allocated replacement SECURE L4new5546ihvxeax at.59/hour, retained old pod/disk,
+restored hash-verified source/checkpoint and cached runtime on container disk.
+Second182635 launch passed compatibility but hit a KeyError in resume metadata
+serialization, which also assumed the leeway field existed. No updates; billing
+stopped. Changed that metadata to null for disabled leeway; executed actual
+production branch for both enabled/removed cases locally. All occurrences audited.
+Same replacement L4 restarted successfully; source/checkpoint/runtime restoring
+under600-second setup watchdog. Latest79023 remains the preserved restart source.
+
+Verified final launch20261020_183047_uefn_normal_balanced_no_leeway_512 on
+L4new5546ihvxeax (.59/hour until stopped),trainer422/exitguard423,
+bridge17828/dashboard15268. Live front/back each128frame0+128random-frame.
+Noiseactual.05,GAE.95,position_leeway absent/null;Adam/normalizer restored.
+At verification79034/1,294,909,440samples advancing; first79024 backup verified
+SHAa4954e44b6321eb07eac00dcb58ba10289b1ac733dbd8308831f01f21cd77a45.
+Local setup completion marker written only after those checks. Receipt
+normal-balanced-no-leeway-verified.json. Old failed run outputs are diagnostic
+only; current-run and active_run point at183047.
+
+## October20 17:14 - normal get-ups half frame0, half random frames
+
+User requests half the current run from frame0 and half in medias res.
+Only prepared/env_config.yaml changed in the exact existing source package:
+idle_recovery.start_at_frame_zero=false,random_start_fraction=.5;
+perturbed_motion.normal_getup_random_start_fraction=.5. All runtime files and
+other configuration preserved; no stiff/limp init dataset deployed.
+Idle/recovery fractions1,perturbed fraction0,back_row_fraction.8 unchanged.
+Random cohort uses existing uniform source-frame sampling on reset, excluding
+the final frame. Live counters verify256normal frame0/256normal random,
+0perturbed/prior,410back/102front.
+
+Stopped prior155034 trainer gracefully under600-second handoff billing guard.
+Final77390 saved locally and verified by persistent S3 readback/ZIP integrity:
+1,267,974,144samples,SHA2da774988faf9f0c74a12ab8bc708b3f68b7a612d274bf31ada16faa12eb6b15.
+Receipt normal-back80-half-random-preserved.json. Helper
+Labs/MimicKitTraining/deploy_normal_half_random.py, new source
+Saved/MimicKitEquipment/normal-back80-half-random-source.zip.
+Resumed20261020_171428_uefn_normal_back80_half_random_512 on same
+L4rovwuwstkm0s7r at.59/hour until stopped;trainer729/exitguard730.
+Actor/critic Adam and normalization restored. Noise.075,GAE.98,
+actorLR1.125e-6 and all losses/rewards unchanged.
+Verified77521/1,270,120,448samples advancing;77491 checkpoint SHA
+126f9ac9920dc86a2b6e4d8746f6a587242642f909d758b4970b2951771fbfd5 backed up.
+Handoff complete marker written only after cohort, progression, backup and
+guard checks. Bridge448/dashboard8920 publishing new run.
+Live verification receipt normal-back80-half-random-verified.json.
+
+## October20 - stiff and limp initialization datasets
+
+User names the1,000 rotated/grounded poses "stiff inits"; existing corpus path
+random-phat-poses-grounded/corpus.npz and bytes unchanged, preview/report named.
+Limp inits generated from each stiff pose independently, zero starting velocity,
+10policy frames at30Hz =80physics steps at240Hz =1/3second.
+Script: Labs/MimicKitTraining/limp_random_phat_poses.py.
+Dataset: Saved/MimicKitEquipment/limp-inits/corpus.npz.
+SHA256:683193642d2350eedaef7cade16811f4f5161055b0296955bc5f539f18aca163.
+
+Uses local CPU MuJoCo through existing CpuEngine model construction and
+configure_native_model; current PHAT fingerprints verified, live normal-back80
+engine configuration read. Same native spherical joint-limit approximation,
+contact/friction/gravity/self-collision settings as training; no custom solver.
+All actuators disabled via mjDSBL_ACTUATION, confirmed zero actuator force.
+No passive stiffness/damping; zero velocity command alone was NOT used.
+No policy inference, resets, projection or post-simulation floor lift.
+
+1,000 final states finite, exact elapsed time verified, no MuJoCo warnings.
+Initial body placement discrepancy <0.85micrometre; saved DOFs reconstruct
+final positions within0.94micrometre and rotations within1e-6rad.
+Native soft contacts leave floor penetration: median0.942cm,p95=1.963cm,
+maximum3.136cm;958poses exceed1mm. This is explicitly retained, not hidden
+or cosmetically corrected. Frame10 is a snapshot, not guaranteed settled rest.
+NPZ stores local DOFs/root/world-body poses, actual final joint/root/body
+velocities, native qpos/qvel, source_pose_index (zero based) and floor clearance.
+Native settling-model.mjb saved for reproducibility. Prior14,000PHAT joint
+checks describe stiff source only; no claim of exact PHAT-cone compliance
+after native spherical-limit dynamics. Training unchanged; not deployed.
+Preview http://127.0.0.1:8843/Saved/MimicKitEquipment/limp-inits/.
+
+## October20 - random whole-body orientations and minimal floor height
+
+User requested whole-body rotation for the retained1,000 poses, then the lowest
+pelvis height at which no collider intersects the floor. Baked separately with
+Labs/MimicKitTraining/ground_random_phat_poses.py into
+Saved/MimicKitEquipment/random-phat-poses-grounded/corpus.npz.
+Uniform SO(3) orientations, seed20261021; same local DOFs and zero velocities.
+Root XY stays zero. Entire articulated body follows root through production FK.
+Upright source and its14,000 passing Jolt joint-limit cases remain unchanged;
+no joint limit changes or additional pose filtering.
+
+Floor is world Z=0. Exact box/capsule/sphere support determines root height,
+then baked float32 FK is rechecked and raised only enough for numerical roundoff.
+Independent box-corner/capsule-endpoint verification:0/1,000 floor penetrations;
+all1,000 would penetrate if lowered1micrometre. Maximum final gap0.139micrometres.
+Pelvis heights0.130680–1.051713m. Maximum rigid transform/FK discrepancy
+0.690micrometres. Self-overlap unchanged. Source current-PHAT fingerprints checked.
+Corpus SHA256:6e313f73933fb7e53e1fdf003f756d7b1f6d1a403d84061b58c950eb7411b2b6.
+Dataset includes root quaternion/position,34local DOFs,15world body transforms,
+zero velocities, clearance per pose; report/data.json and browseable preview.
+Preview: http://127.0.0.1:8843/Saved/MimicKitEquipment/random-phat-poses-grounded/.
+Prepared only; training process/configuration and Unreal assets untouched.
+
+## October20 - random PHAT pose corpus, preview before use
+
+User now requests1,000 totally random local poses within PHAT, pelvis upright;
+show first10 for approval before using them. Generated locally with
+Labs/MimicKitTraining/random_phat_poses.py, seed20261020. No training process,
+configuration, GPU allocation, Unreal asset or Play state touched.
+Original1,500 corpus trimmed to its exact first1,000 without resampling.
+Last500 poses and their validation evidence archived into Windows Recycle Bin.
+Generator preserves the original1,500-sample RNG stream, retaining only its
+first1,000 poses so regeneration does not change the reviewed samples.
+Canonical current_source verification passes saved PHAT and mesh hashes;
+PHAT asset SHA49994f0bb1257a1e9bdb5dd2aa229455544426a1b6a17d468cc6170df5e9640d.
+
+Each retained joint sampled independently: uniform allowed twist/hinge angle,
+uniform area within coupled swing ellipse. Existing reference quaternion
+convention applied, actual float32 DOFs validated. Hinge connector locked-axis
+export residue is normalized exactly as existing test_model.test_jolt does
+(sub0.001degree), not an additional articulated freedom. No blending against
+known poses, rejection/curation, floor cleanup or self-overlap filtering.
+Pelvis quaternion XYZW[0,0,0,1], position[0,0,0.93119133]metres for every pose.
+All root/joint velocities zero. Body positions follow FK; no independent limb
+translation.14joints*1,000poses=14,000retained cases pass the project Jolt --limits probe.
+
+Saved/MimicKitEquipment/random-phat-poses/corpus.npz contains34DOFs, roots,
+15body poses, zero velocities and floor clearance; SHA
+f4ad69d9ec140cf64e38a2724abf56c0f2954ca865c8f4ca19e99b3be840cd6c.
+report.json records hashes/method/checks.133poses intersect the floor at the
+fixed pelvis height; intentionally retained as raw joint-admissible poses.
+HTML/data.json show first10 uncurated samples, orbit/zoom each, browse later
+groups of10. All10 visually verified; first-ten.png saved.
+Preview http://127.0.0.1:8843/Saved/MimicKitEquipment/random-phat-poses/.
+Corpus not yet used for training; await user review. Whole-body rotation deferred.
+
+## October20 15:45 - temporary normal get-up fine-tune, 80% back, frame0 only
+
+User asks for100% normal get-ups,100% frame0 and80% back. Preserved latest
+74681_final from151434 recovery run locally and verified S3 readback/ZIP CRC:
+SHA39aab53d359374a0ee0b7f112433eff56bdeb11dbbfe9a4577aecd404a96f2f0.
+Receipt normal-back80-preserved.json; previous recovery50/50 preparation saved
+normal-back80-previous-plan.json. Shared mixed73832 locomotion fork checkpoint
+and receipt remain untouched.
+
+New config:idle/recovery fractions1,perturbed fraction0,normal random fraction0,
+idle_recovery.random_start_fraction0,start_at_frame_zero true,back_row_fraction.8.
+Back clip identified by its filename, not assumed index. Fixed stratified
+assignment yields410back/102front rows (80.078%/19.922% nearest whole rows).
+Rows keep this assignment at reset, avoiding episode-length-induced allocation
+drift. Production allocation CPU test verifies410/102,allframe0; all-normal
+replay path preserves array width when no perturbed replacement rows exist.
+No losses/bonus/physics/optimizer changes. Normal failure−100 remains; proposed
+normal-success bonus was only discussed and is NOT implemented.
+
+First154538 startup failed before training: new assignment code shadowed the
+existing sphere body-name list with clip names. Failure guard stopped billing.
+Renamed clip_names and extended the allocation test to verify body names remain
+unchanged. Same L4 restarted; cached runtime/kernel archives restored and CUDA
+imports verified. Retained dangling venv symlink required finishing runtime
+restore after extraction; no checkpoint/data loss.
+
+Restarting20261020_155034_uefn_normal_back80_frame0_512 on L4rovwuwstkm0s7r,
+.59/hour until stopped, trainer483/exitguard484,bridge29460/dashboard30576.
+Noise.075,GAE.98,Adam actorLR1.125e-6 retained. No automatic duration or switch-back
+invented; this temporarily supersedes50/50normal/perturbed recovery training.
+Live setup verified512normal frame0,0random/perturbed/prior rows,410back/102front.
+Resumed1,223,589,888samples; first74682 backup readback verified
+SHAa6e9c97933539138d190049399ba402d28df11e4272e6f0ca849bd9513020b3f.
+Setup guard released only after this verification. Local replayer20normal rows
+converted without error; normal failure card plotting in15-50-34 view.
+Helper deploy_normal_back80.py and normal-back80-* receipts.
+
+## October20 15:14 - split policies; recovery-only launch
+
+User decided to split locomotion/recovery checkpoints. Stopped mixed141039 run
+at73832_final and downloaded the final ZIP to
+Saved/MimicKitEquipment/preserved-checkpoints/20261020_141039_uefn_getup_success_value_512/checkpoint_0073832_final.zip.
+SHA221ed14975999aab1846e53758113bb228418827acd4edbf8403ca1b05ba3699,
+matching verified persistent readback; ZIP integrity checked. Do not delete this
+shared starting point. Fork handoff receipt recovery-split-loco-fork-checkpoint.json
+contains exact local path/S3 key; recovery-split-parent-run.json retains mixed
+run source/control provenance. Locomotion fork requires its own state directory
+and run controls, not this recovery pod/state.
+
+Prepared source sets idle_row_fraction=1, idle_recovery.fraction=1,
+perturbed_motion.fraction=.5, normal_getup_random_start_fraction=.5.
+Normal random-frame mask is assigned *after* normal/perturbed membership so
+evenly spaced masks cannot alias and make all normal rows random-frame.
+512-row CPU allocation check:128 normal frame0,128 normal random,256 perturbed
+frame0,0 perturbed random. Recovery source clips remain front/back; locomotion
+clips remain loaded solely as the established perturbation pose pool.
+Perturbation blend skew unchanged:probability2/3 above50% strength,1/3 below.
+No normal idle or locomotion training rows. No loss/physics changes; noise.075,
+GAE.98, Adam state/LR,−100 failures and head-success credit retained.
+
+Starting20261020_151434_uefn_recoveries_only_512, trainer2478/exitguard2479,
+bridge8240/dashboard1688, existing L4rovwuwstkm0s7r at.59/hour until stopped.
+Live recovery_cohorts.json verifies128/128/256,0 perturbed random-frame rows,
+0 prior-scored rows. recovery_setup.json verifies512 recoveries,0 ordinary idle,
+0 walking,0 running. Restored sample count1,209,679,872. First73833 checkpoint
+readback verified SHA261522f943bbb44623c8f80ec1b2a5c29968cb367e11a3f7a0b75c217771ed3f.
+At73843,1,209,860,096 samples,~7,982transitions/s; no failure. Handoff guard
+completed. Local replayer20rows all get-ups (2 normal,18 perturbed, retaining
+the requested display policy); both normal/perturbed get-up cards plotting.
+TensorBoard view switched to15-14-34 with Get-up failure filter.
+Helper deploy_recovery_split.py, receipts recovery-split-*.json.
+
+## October20 14:10 - adopted noise0.075/GAE0.98; full normal-get-up card
+
+User approved adopting the completed comparison's alternative and adding a
+proper normal-get-up failure card. Active run
+20261020_141039_uefn_getup_success_value_512 on existing L4rovwuwstkm0s7r,
+$0.59/hour until stopped. Trainer2154/exit guard2155, bridge25552/dashboard21856.
+Resumed latest72108_final/1,181,433,856 samples. Local ZIP CRC and SHA match
+persistent readback: f8048f15a97ba26dc70dda9c8d4f658c4fcdcd79225e97e82cb91ff94abf93f8.
+First new72109 backup verified;72119/1,181,614,080 samples~7,889transitions/s,
+no failure, bounded handoff watchdog completed.
+
+Actor action noise0.075 and td_lambda0.98 persisted in prepared agent config.
+Explicit CLI overrides apply after checkpoint restoration as well: checkpoint
+load otherwise restores the saved fixed logstd tensor. resume.json confirms all
+34 noise values0.075000003 and GAE0.98. Learned weights/Adam state, actorLR1.125e-6,
+KL guard, native MJ physics, motion data, distribution and reward fixes retained.
+Normal get-up, perturbed get-up and perturbed loco failure penalties remain100;
+perturbed head-success value100/discount0.99 remains active. No additional sweep.
+
+Reused per-world outcome buffers now count all training row completions; masks
+preserve the existing perturbed summaries and add normal recovery rows excluding
+perturbed rows. New normal_termination/Get-up failure percent equals100*FAIL/
+completed episodes, including frame-0 and random starts. SUCC/TIME count in the
+denominator only. Empty windows skipped; no fabricated historical zeros.
+Same10update cadence and existing batched CPU reduction as perturbed cards;
+no extra evaluation or replay simulation. Dashboard accepts upstream's
+space-to-underscore tag sanitization and displays one normal-get-up card.
+Visible filter now ^(perturbed|normal)_termination/ for14-10-39.
+First full10update window:65.0122% normal failures, published locally.
+Final UI check:7 card points all match raw failure/episode counters; latest
+1397/2155=64.826%. Replayer converted20 rows successfully. Trainer72169/
+1,182,433,280 samples~8,472transitions/s. noise-gae-ui-verified.json.
+
+Production-method CPU test covers normal FAIL/SUCC/TIME, normal locomotion,
+perturbed groups, counter clear and evaluation exclusion; actual noise override
+test passes. Receipts noise-gae-{source,handoff,preserved,live}.json. Source and
+handoff helper deploy_noise_gae.py; launch overrides stored in
+getup-success-prepared.json. Earlier opening's “no alternative applied” is
+superseded by this deployment.
+
+## October20 13:55 - focused comparison complete, modest earlier improvement
+
+Both branches trained128updates/2,097,152transitions from70639 with known-success
+value100, actorLR1.125e-6 and identical restored Adam state/training seed13579.
+Only noise/GAE differ: current.05/.95 versus alternative.075/.98.
+Held-out928 perturbed get-ups at64updates: current892success/36failure,
+alternative898/30. At128: current896/32,alternative905/23. All0timeouts.
+Baseline894/34. Corresponding failure percentages: at64,3.879%vs3.233%;
+at128,3.448%vs2.478%. Training408.39vs410.72seconds, excluding setup/evaluation
+and paused wall time. This supports modest earlier/better learning in this window,
+not a claimed2x long-run speedup. Single training seed.
+
+Every checkpoint/seed's initial positions, velocities, alpha, side, and cohort
+matched exactly. Final paired outcomes: alternative succeeds where current fails
+10times, reverse1time (paired binomial p.0117, conditional on this training seed).
+Hardestalpha>.75 cohort:215/245vs223/245successes. Final perturbed-loco failures
+182vs180/432; normal-loco0vs0/184; normal-get-up293vs286/432.
+No candidate applied; no further sweep queued. Results focused-success-results.json,
+focused-success-summary.json, focused-success-analysis.json.
+
+Scope: both comparisons use frozen130053 objective, including perturbed-success
+fix and excluding newly added normal-get-up penalty. The live133905 run includes
+normal-get-up−100 and keeps originalnoise.05/GAE.95. At final check71741/
+1,175,420,928samples,~8,329transitions/s after comparison exited, backup71641,
+no failure. Comparison process1224 gone; focused-success-final-health.json.
+
+## October20 13:39 - normal get-up failures now cost100; live resumed
+
+User asked to briefly pause comparison and add termination penalty to normal
+get-ups too. Added optional normal_getup_failure_penalty=100 to current config.
+Production done logic subtracts100 once for recovery_rows AND NOT perturbed_rows
+AND final DoneFlags.FAIL. Uses existing parent normal-get-up failure conditions;
+no new termination condition, no penalty on normal SUCC/TIME, no normal-loco
+penalty. Perturbed get-up/loco costs and known head-reset success value unchanged.
+Reward subtraction happens before PPO buffer capture; critic receives the cost.
+Per-row replay metadata and reward verification include the new penalty.
+Production-method CPU test covers normal failure/completion/timeout/loco plus
+perturbed failure/success and confirms no double penalty; existing PPO test passes.
+
+Brief guarded handoff saved71440_final/1,170,489,344 samples; downloaded locally
+and matched S3-verified SHAdae6462634e22e0a6918a590ff3dc5c2176136d4bbe26c2f03d5cdeacff21278.
+Source normal-getup-penalty-source.zip SHA
+bf855d7a009a0d963800446072f87d4a9cecf6220c34422f069657430c1e95ac
+uploaded/readback verified before stopping main. Active
+20261020_133905_uefn_getup_success_value_512, trainer1587/exitguard1588,
+bridge20904/dashboard12316 on same L4rovwuwstkm0s7r, until stopped.
+New71441 S3 readback verified SHA231fe6a1c12e2bc3f34b879a791971ce6731ac6b26877f163709e2119e206f35;
+handoff guard completed. ActorLR/optimizer/settings retained.
+Receipts normal-getup-penalty-{source,preserved,handoff,live,resumed}.json.
+
+Comparison1224 SIGSTOPped during changes and SIGCONT after new backup verified.
+Both comparison copies continue to use old130053 config (normal penalty0,
+perturbed success value100), not new live133905 config; this scope was stated to
+user. No mixed-reward comparison or discarded/restarted sweep. Controller uses
+its frozen launch directory even though live run changed. Pending results.
+
+## October20 - newly requested focused learning-curve comparison
+
+User explicitly authorizes retrying the specific earlier alternative on the
+current corrected-reward run, to see whether failure falls earlier. This
+supersedes the stop on comparisons only for this bounded two-way test.
+focused_success_comparison.py launched queue1224, directory
+/workspace/mimickit_trial/focused-success-20261020_130053_uefn_getup_success_value_512.
+Both start70639; currentnoise.05/GAE.95 vs alternative.075/.98,128updates each,
+same seed13579, actorLR1.125e-6, existing trained Adam moments. Success value100
+and discount.99 are checked explicitly. Model/normalizer state captured at64/128
+without interrupting training trajectories; evaluation afterward on identical
+four seeds (928perturbed get-up starts per checkpoint). Training outcomes retained
+per update. Maximum1200seconds per variant; no automatic expansion/deployment.
+Main130053 unchanged and continues while this one helper shares the L4.
+Results pending; do not mistake old incomplete sweep results for this test.
+
+## October20 13:15 - stop repeated sweeps; main continues
+
+User challenged the repeated comparisons and time spent. Stopped isolated queue551
+and its process group, cancel.request written. Confirmed process gone; main
+130053 still training at70890/1,161,478,144 samples without failure. No candidate
+applied; no further automatic sweeps. Receipt success-sweeps-user-stop.json.
+Main shared-GPU speed last measured~5.1k before sweep removal; earlier main-only
+speed~8.1k. Do not present shared-GPU slowdown as a learning algorithm cost.
+
+Latest completed70639 comparison: baseline894/928 get-up successes,0timeouts,
+182 perturbed-loco failures; current settings after64updates/1,048,576transitions:
+895/928,0timeouts,177 perturbed-loco failures,203.63training seconds,0 KL rejects.
+Normal loco failures0; normal get-up failures290 baseline vs294 aftertraining.
+All four seeds' starting positions/velocities/perturbations matched exactly.
+Higher GAE.98 completed training but only1/4 evaluation seeds before cancellation;
+not a completed comparison. Earlier full old-reward sweeps found noise.075/GAE.98
+modestly better (confirmation835vs828 successes), not a substantial speedup.
+Evidence does not establish a dramatically faster setup; further repeated short
+sweeps are not justified without a specific new hypothesis/user request.
+
+## October20 13:01 - corrected resume from70639; sweeps restarted
+
+User explicitly approved resume from the selected checkpoint with success fix,
+and continuing sweeps. Same L4rovwuwstkm0s7r successfully restarted at.59/hour,
+until-stopped authorization retained. Runtime/source/kernel archives verified.
+Active20261020_130053_uefn_getup_success_value_512; trainer444/exit guard445,
+bridge21024/dashboard29160. Resumed70639/1,157,365,760 samples, source success
+value100 (99 once on successful head reset, zero bootstrap) unchanged.
+Fresh persistent readback of70639 matched70347318ed7b9bb6dca2f35f0f3a5414d1eb59f23a2ba8474870c65bc1d400af.
+First new70640 checkpoint S3 readback verified, SHA
+bb86fe2f22c4c2ee2bd9093ed4464d9177aa5ed585ace050eaef5a3c65df01b6.
+Setup guard marked complete only after this verified backup.
+
+Isolated sweep queue551 at
+/workspace/mimickit_trial/success-sweeps-20261020_130053_uefn_getup_success_value_512.
+Baseline and noise.05/.075 ×lambda.95/.98,64updates each, all frozen70639 and
+current actor LR1.125e-6. No candidate autoapplied. Evaluation records normal
+versus perturbed/recovery/gait labels to check collateral changes. Previous
+67931 sweep cancelled/superseded; do not mix its results. Results pending.
+
+## October20 12:55 - user stops overly early rollback
+
+User explicitly stopped the67931 rollback and identified the circled low failure
+region just before the rise. Training stop.request saved68077/1,115,389,952
+samples; verified S3 SHA0928645c376eef81af256d326fb23e095897a9f218f78382eabf9094e4c6e313
+matches downloaded local checkpoint. Sweep queue577 process group terminated,
+cancel.request written. L4rovwuwstkm0s7r confirmed EXITED; receipt
+user-correct-rollback-stop.json. Training and sweeps remain stopped.
+
+Original094614 TensorBoard exact scalar minimum is5.619% at1,158,512,640,
+followed by7.914% at1,158,676,480 and later rise. Available checkpoints are every
+100updates.70639/1,157,365,760 (6.200% at its step) is the final saved checkpoint
+before this trough/rise;70739/1,159,004,160 is already after it.70639 downloaded
+from persistent storage and full ZIP CRC checked, SHA
+70347318ed7b9bb6dca2f35f0f3a5414d1eb59f23a2ba8474870c65bc1d400af.
+Both local paths/keys/hashes in corrected-rollback-preserved.json.
+This supersedes the earlier67931 choice. Do not treat its incomplete corrected
+success sweeps as the requested comparison from the user's intended checkpoint.
+
+## October20 12:46 - resumed after access recovery
+
+Active20261020_124643_uefn_getup_success_value_512 on owned L4rovwuwstkm0s7r,
+.59/hour, until-stopped authorization retained. Trainer484/exit guard485;
+local bridge26148/dashboard28928. Restored source/checkpoint/runtime/kernel
+archives all SHA verified. Resume67931_final/1,112,997,888samples; success
+value100 correction enabled, actor LR1.125e-6 and all other prepared settings kept.
+First new67932/1,113,014,272 checkpoint47MB S3 upload+readback verified,
+SHAb96749543fea989700e53df54b97c3096f0a892f831934525038d3eb00fd5d56.
+Status subsequently67952/1,113,341,952samples;~8,124transitions/s before sweep
+load. No failure/backup error seen. Evidence getup-success-launch.json,
+current-run.txt and local mirrored run telemetry.
+Follow-up success_learning_sweeps queuePID577 started after verified backup,
+baseline plus noise.05/.075 ×lambda.95/.98,64updates each from frozen67931,
+current actor LR, matched928get-up starts. No candidate deployed; pending results.
+All temporary CPU helpers stopped. No extra.06/hour relay needed or deployed;
+earlier relay approval question is obsolete. Cleanup and access evidence below.
+
+## October20 12:46 - replay cleanup and storage access recovered
+
+Deleted69 obsolete local rollout_step JSONs (1,965,414,157bytes) from Stepper's
+mimickit run debug directories, keeping latest per run and latest3 in094614.
+Checkpoints/TB untouched; exact manifest obsolete-local-rollouts-plan.json and
+receipt obsolete-local-rollouts-deleted.json. Persistent mimickit tree1307files
+and stepper/training/runs476files contain no standalone replay data eligible for
+this cleanup; matching names there are source code. No persistent objects deleted.
+Persistent MimicKit usage39.48GB; total volume scan incomplete, do not claim total.
+New1MB mounted write/fsync/read succeeded; S3 readback SHA matched in1.15seconds;
+temporary probe deleted. EU-RO CPU S3 request4.42seconds; independent US-MO-2 CPU
+(same DC as failed L4) request1.14seconds. Both CPU helpers confirmed stopped.
+Current evidence supports transient access failure, not full-volume failure;
+local deletion did not free persistent space and cannot explain remote recovery.
+Exact provider-side cause remains unknown; no permanent CPU relay deployed.
+Latest replacement L4 rovwuwstkm0s7r at.59/hour, bounded10minute setup guard.
+AWS managed downloader has verified source/resume/runtime/kernel archives; restore
+finishing. Not yet trainer launch at this entry. Prior pod states retained.
+
+## October20 12:31 - storage investigation, cause still unproven
+
+No trainer running. Latest owned L4 9r63p3vlvogqz5 confirmed EXITED
+(sdk-storage-block-stop.json); temporary CPU helper t9qpwmxvnezq55 also EXITED
+(storage-cpu-stop.json). Prior owned GPUs remain stopped.
+AWS managed multipart download retrieved and SHA-verified the full409,880,235-byte
+runtime locally in107.42seconds. The same SDK on the replacement L4 still timed
+out reading source; tiny metadata GET also timed out. Disabling optional SDK
+checksums and forcing path addressing did not fix the short metadata probe.
+This local-versus-pod difference narrows the fault but does not establish why
+it began, nor prove a regional outage. Runpod status reports fleet maintenance;
+the EU-RO storage incident shown in history is October10, not current.
+Direct EU-RO L4 allocation rejected for no capacity despite catalog Low stock.
+CPU direct mount could list the runtime archive and manifest. Full mounted-file
+read/hash and a working relay have NOT been tested; do not call the relay proven.
+Proposed CPU relay adds.06/hour to L4.59/hour. Approval question pending;
+user instead asked whether the cause is understood. Do not launch that paid relay
+without resolving approval. Current pod.json is9r63p3vlvogqz5; older state retained.
+Helpers sdk_success_restore.py and mounted_success_resume.py are prepared,
+not a verified successful resume. Local runtime cache is retained for fallback.
+
+## October20 - approved rollback and success credit; replacement setup
+
+**Current outcome12:09:** restart is blocked by Runpod storage, NOT running.
+Replacement iiprikebnm51jl confirmed EXITED at Unix1792490950.61 (~9.2minutes
+setup, within10minute guard). Receipt getup-success-storage-block-stop.json.
+Runtime-cache download ultimately returned HTTP524 (origin timeout); source/
+checkpoint GETs also repeatedly timed out from the replacement. Local metadata
+and checkpoint/source reads had succeeded slowly before allocation. This is not
+evidence of disk-full; do not delete unrelated data as a timeout workaround.
+No new checkpoint/trainer/learning sweeps started. Both old and replacement GPUs
+are stopped, retained disks untouched. Current canonical pod.json refers to
+iiprikebnm51jl; old state retained under retained-pods/ka68jrougesuit.
+Next action: restore verified runtime/source/resume on an available owned L4 once
+storage responds, launch via resume_getup_success.py, verify advancing steps and
+first backup/replayer before success_learning_sweeps.py start. The start/replace
+helpers originally target ka68jrougesuit; reconcile current stopped replacement
+before using them, never allocate duplicates. Do not invoke stale curriculum
+heartbeat or older rollback scripts.
+Follow-up sweeps prepared: frozen67931, corrected success accounting, current
+LR1.125e-6; noise.05/.075 ×lambda.95/.98,32tick rollouts,1,048,576transitions each,
+plus unchanged baseline and928 matched get-up evaluation starts. No candidates
+automatically applied. Previous completed sweeps used old reward, so this rerun
+is necessary before treating their winner as applicable.
+
+Latest user supersedes the hold: resume from before stalling with a safety buffer,
+then continue isolated sweeps. Selected67931_final/1,112,997,888 samples, earlier
+than69138 which had0timeouts among928 held-out get-ups.67931's seven recorded
+perturbed get-ups all hit the head reset. This is evidence of absence in sampled
+rollouts, not proof every possible starting pose is unpolluted.
+Selected SHA5e79866e8a4704214b7d43ce964ff83902c56107a412cc53dae4418809037436.
+Local integrity and fresh S3 readback verified; source getup-success-source.zip
+SHA4c06482b094ff6af80f6b7bda7d51604117d694a061ee0935d0cb08298ebc41c
+also uploaded/readback verified. Receipts getup-success-prepared.json and
+success-checkpoint-manual-readback.json.
+
+Implemented optional perturbed-get-up success value100 at gamma.99 by paying99
+once on the head-reset transition and using SUCC with zero continuation. This
+is exactly r+.99*100, without double counting. Ordinary clip completions retain
+zero continuation and receive no bonus. TIME timeouts and−100 failures unchanged.
+Config/agent startup checks gamma and zero ordinary-success continuation.
+Replayer includes the per-row bonus in reward validation. CPU production-method
+test confirms success target99.8, normal completion.8, failure−99.2 and timeout
+−28.9 with deliberately bad critic−30. Critic gradient correct. Seven archived
+success rollouts also pass updated replay conversion. Tests receipt success-value-tests.json.
+Backup readback now retries interrupted streams from byte0 up to3times, closes
+every stream and still rejects permanent errors/checksum mismatches; CPU tested.
+
+Old ka68jrougesuit cannot restart (GPU reassigned), remains EXITED. Replacement
+L4 iiprikebnm51jl allocated at.59/hour under existing replacement/rate authorization.
+Setup guard19168 stops at Unix1792490997.93 unless launch changes authorized clock.
+No trainer yet at this entry. Source SSH upload timed out at~9MB; continuing via
+cloud downloads with existing runtime-cache User-Agent (default urllib UA got403).
+Storage is slow: even tiny metadata reads take~39seconds;47MB checkpoint readback
+took54seconds. No disk-full error; network volume allocation200GB, local C:~9GB
+free, old pod workspace~8GB of20GB. No unrelated files/checkpoints deleted.
+Current LR1.125e-6 and harder sampling2/3 retained, other settings unchanged.
+
+## October20 11:38 - training held; head-reset incentive audit
+
+User requested holding restart to investigate perturbed front get-ups settling
+below the90% head reset. Owned L4 `ka68jrougesuit` confirmed EXITED, billing stop
+receipt `Saved/MimicKitEquipment/head-reset-investigation-stop.json`.
+Do not automatically resume while this investigation/change is pending.
+
+Latest retained checkpoint70939 (1,162,280,960samples) is downloaded locally:
+`Saved/MimicKitEquipment/preserved-checkpoints/20261020_094614_uefn_getup_skew_linear_512/checkpoint_0070939.zip`,
+SHA256 `b9f910c28ac9ad37457b4b43ce3b6a6cf6cda3422a90b0650a8487d8be99fb1a`,
+matched to retained disk. The run failed at71039 waiting for70939 S3 readback
+(ReadTimeoutError);71039 was NOT saved. Last verified S3 receipt70839;70939 upload
+exists but persistent readback still needs verification before resuming.
+GPU briefly restarted for recovery, then stopped on user's hold. Runtime restore
+may need repeating. No new allocation. Local readback-stream retry change in
+backup.py is NOT deployed or yet tested; do not claim it protects production.
+No disk-full evidence: pod workspace used8GB, local C: had~10GB free.
+User authorizes removing redundant old replayer data if storage is full, preserving
+required checkpoints/UE assets. No deletion performed during this audit.
+
+Offline evidence from70939's saved deterministic replay:
+- Front row2 settles at85.9% head height, moves within85.89–86.00% over its last
+  60ticks, earns0.8449/tick out of maximum1, and times out at180ticks.
+- Four recorded back rows also time out at85.6–87.4%. Three other front rows
+  successfully cross90% at21,21,36ticks. This is not universal inability to rise.
+- Current reward is1−10*mean(body-origin XYZ error²). Low-head penalty−100 only
+  applies from tick60 at<=50%. Between50% and90%, no deadline failure applies.
+- Both90% head resets and180tick timeouts are TIME. PPO retains V(final_obs)
+  and breaks the trajectory recursion; it does NOT use the next spawned pose.
+  Thus no success payout exists. Final states are bootstrap targets but are not
+  stepped from after reset, so their values rely on generalization.
+- CPU reconstruction of recorded154inputs reproduces phase outputs within
+  0.000378, allowing approximate critic inspection: stalled front final value
+  ~84.89; three successful front final values~4.70,11.48,−30.39. Corresponding
+  last-transition training targets~84.89 versus5.44,12.12,−29.38.
+  These are different trajectories, not matched action counterfactuals; the
+  evidence supports a strong incentive defect, not a proven sole causal factor.
+- Stable0.845 rewards with gamma.99 imply continuing value~84.5, matching the
+  stalled critic. Successful final estimates are poorly anchored. Current
+  accounting therefore makes hovering attractive and fails to reliably credit
+  completion. Earlier69138 held-out baseline had no timeout get-ups among928;
+  latest replay establishes that stalling appeared subsequently (samples differ).
+
+Script `Labs/MimicKitTraining/audit_head_reset_offline.py`, receipt
+`Saved/MimicKitEquipment/head-reset-offline-audit.json`. CPU only; no billed
+physics experiments. Actual saved rewards/poses/outcomes are exact; reconstructed
+critic values are approximate, cross-checked against recorded phase outputs.
+Proposed correction, NOT applied: preserve immediate90% reset but explicitly
+credit successful completion with known absorbing-success value100
+(maximum per-tick reward1/(1−.99)), instead of guessed continuation. Scope only
+perturbed get-up success; ordinary animation SUCC semantics must remain unchanged.
+Do not merely change TIME to zero-value SUCC: that would remove remaining value
+and can increase the incentive to delay success. No reward/termination edits made.
+
+## October20 - learning ablation screening and confirmation complete
+
+All twelve combinations completed, plus the old-sampling control and a frozen
+baseline. Each trained configuration used 1,048,576 transitions from the same
+verified checkpoint, seed13579. All accepted2,560 actor steps; no KL rejects or
+LR reductions. Training took202.8–206.0seconds per candidate on the shared L4.
+The main trainer8547 continued throughout.
+
+Noiseless success counts on the same928 get-up starts:
+
+| Noise | Rollout ticks | GAE lambda | Get-up successes | Loco failures /432 | Other failures /688 |
+|---|---:|---:|---:|---:|---:|
+| .05 | 32 | .95 | 824 | 181 | 165 |
+| .05 | 32 | .98 | 825 | 185 | 156 |
+| .05 | 64 | .95 | 818 | 183 | 157 |
+| .05 | 64 | .98 | 824 | 182 | 149 |
+| .075 | 32 | .95 | 828 | 187 | 154 |
+| .075 | 32 | .98 | 828 | 181 | 152 |
+| .075 | 64 | .95 | 824 | 186 | 157 |
+| .075 | 64 | .98 | 826 | 183 | 150 |
+| .10 | 32 | .95 | 822 | 180 | 151 |
+| .10 | 32 | .98 | 826 | 180 | 149 |
+| .10 | 64 | .95 | 820 | 186 | 150 |
+| .10 | 64 | .98 | 823 | 184 | 150 |
+
+Frozen baseline819/928; old uniform-sampling control824/928. Sampling alone did
+not improve the overall count in this short trial. Candidate.075/32/.98 recovered
+11 baseline failures and lost2 baseline successes; net9 hard-front recoveries.
+Its apparent advantage over current settings is only4 cases, not evidence for
+a large learning-speed multiplier. No alternative hyperparameters deployed.
+
+Confirmation queue15026 completed current.05/32/.95 against.075/32/.98 from the SAME
+frozen checkpoint, new training seed24680, 2,097,152transitions each (128updates).
+Four identical held-out evaluation seeds retained. Current:828/928 get-up successes,
+182/432 perturbed locomotion failures,215/432 normal get-up failures.
+Candidate:835/928,181/432,158/432 respectively. Normal walking/running and plain
+idle had zero failures in both. Training402.37 versus403.06seconds; no KL rejects.
+Modest repeated improvement plus better normal-get-up retention, not evidence of
+2x learning speed. All helpers exited; no candidate hyperparameters deployed.
+Results in learning-ablations-{results,summary,comparison}.json.
+
+Cross-check with prior LR audit: all four get-up observation and velocity hashes
+match exactly. The frozen checkpoint's819 successes versus earlier794 represent
+real progress between checkpoints, not different evaluation starts.
+
+## October20 09:46 - harder get-up sampling deployed; learning ablations running
+
+User requested twice as many perturbed get-up starts above50% strength as below.
+New config `perturbed_motion.getup_upper_half_probability=2/3`; inverse-CDF
+sampling remains uniform inside each half. Default.5 preserves the old RNG/output
+exactly. Applies only to perturbed get-up local-pose blend, not normal get-ups,
+locomotion yaw, cohort proportions, rewards, physics or termination.
+Deterministic300,000-point sampling check:100,000lower/200,000upper,
+conditional means.25/.75; receipt getup-skew-sampling-test.json.
+
+Resumed from69138_final/1,132,773,376samples, local and S3 readback verified SHA
+c70de5b48ccd80dfe26dec926b0a7664facdb993f340e3f6954236f88d7e4875.
+Active20261020_094614_uefn_getup_skew_linear_512, existing L4ka68jrougesuit,
+trainer8547/guard8548, until-stopped authorization retained. Adam state and
+actual actorLR1.125e-6 retained. Bridge28848/dashboard10416.
+Source getup-skew-source.zip SHA
+ce20b72ec1f308bd7381f7813295d56106eb795241371c579e3b8b4c2e4b08a7.
+Receipts getup-skew-{launch,preserved-checkpoint,source-verified}.json.
+
+Bounded sequential diagnostic queue8626 uses the same preserved checkpoint,
+never live weights: noise.05/.075/.10 × rollout32/64 × GAE lambda.95/.98;
+plus old uniform sampling control and unchanged-policy baseline.
+Each trained variant gets1,048,576transitions (64×32 or32×64×512), full PPO
+including critic. Explicit noise override AFTER checkpoint restore. Existing
+KL guard and inherited LR remain active; guard reductions are measured.
+Four held-out evaluation seeds, uniform0..1 strength for EVERY variant, noiseless
+actions and first episode per row. Also measures locomotion/other-row failures.
+Same existing GPU, one helper at a time,700s timeout each. No new allocation.
+Scripts audit_learning_ablations.py/run_learning_ablations.py and receipts
+learning-ablations-{plan,results,summary}.json. Results pending; no candidate
+settings selected for production.
+
+Evaluation audit: an initial whole-batch bitwise hash check was too strict.
+Repeated reset before/after32frozen steps gives EXACT get-up inputs/velocities;
+other rows differ by at most1.1921e-7 in observations and4.7684e-7m/s in body
+velocity. Numerical variation, not a changed sampled pose. Diagnostic
+learning-ablations-reset-audit.txt. Evaluation now checks get-up hashes exactly,
+positions/assignments/blends exactly, other observation/velocity arrays with
+1e-6 absolute/relative tolerance. Baseline includes untrained warmup for compiled
+math. Queue restarted as9381; obsolete partial candidate excluded. Uniform-control
+first result predates array recording and is explicitly a preliminary control.
+
+## October20 - 10-update LR comparison completed; production remains2x
+
+User requested2x(current),4x,8x for10updates. audit_lr_ten_updates.py runs disposable
+learners with deployed code/settings on existing L4; live7410 never paused or
+modified. Frozen verified checkpoint68632 SHA
+0a6011133040b2a63988756f7d9f826176bf884b49930a94073761f1f86f76b8.
+Each candidate starts with identical checkpoint/Adam state and reset RNG, runs
+10 FULL PPO iterations (32ticks*512worlds each;163,840fresh transitions, actor AND
+critic learning), then deterministic evaluation on4held-out seeds/928getup starts.
+Initial training observation hashes and every evaluation position/velocity/
+observation hash, blend, side and row ID match exactly across candidates.
+Baseline is the unchanged checkpoint, evaluated on those same starts.
+
+Baseline794/928success(85.56%). Fixed2x1.125e-6:792/928(85.34%);
+fixed4x2.25e-6:792/928(85.34%); fixed8x4.5e-6:787/928(84.81%).
+2x/4x accept400actor minibatch steps each with zero rejects; maxKL.027/.066.
+Fixed8x hits guard8of10iterations, accepts177steps total, maxKL.171,
+no full-rollout rollback. Relative baseline2x gains1/loses3 cases,4x gains2/loses4,
+fixed8x gains2/loses9. Training time33.25/32.72/30.82s respectively on shared GPU;
+~68-70s per complete candidate including construction/evaluation.
+No evidence from this short single-training-seed test to raise production above2x.
+Small success differences are not a reliable long-run ranking.
+
+Initial8x production-style trial automatically reduced LR to4x at iteration3
+after a full rollback; it ended795/928, but is NOT a pure8x result. Retained as
+additional evidence. Corrected fixed8x comparison reasserts requested LR before
+each disposable iteration while retaining all KL rejection/weight rollback.
+This fixed-rate option is test-only, never enabled in production.
+Raw results lr-ten-update-results.json, lr-ten-update-fixed8.json; comparison
+lr-ten-update-summary.json; receipt lr-ten-update-launch.json. Remote diagnostic
+folder lr-ten-update-20261020; all probe processes exit after completion.
+
+## October20 08:57 - doubled actual actor LR and observation optimization deployed
+
+User authorized both changes and resume from latest. Helper resume_lr2_graphed.py
+cleanly stopped080052, preserving checkpoint67931_final at1,112,997,888samples:
+SHA5e79866e8a4704214b7d43ce964ff83902c56107a412cc53dae4418809037436.
+Verified local archive/CRC and persistent S3 readback before launch. Extracted
+actual saved Adam LR5.625e-7 and passed explicit post-restore override1.125e-6;
+Adam moments/counters, critic and KLguard.18 preserved. No implicit YAML-rate use.
+
+Run20261020_085731_uefn_lr2_graphed_linear_512 on existing L4ka68jrougesuit,
+trainer7410, exit guard7411, until-stopped control retained. Local bridge13968,
+dashboard18236. Source lr2-graphed-source.zip SHA
+b15a77a15d608891b82733d6173ff6f44be88d3d5adb10b3299d553ee88a5687.
+Deploys previously validated device quaternion and graphed physical observations,
+plus the replay penalty-validation/download-retry fixes. Actual new env/engine
+configs match previous run. No solver/contact/physics-frequency changes.
+New TB run has its own training outcomes; no historical curves spliced in.
+
+Resume receipt confirms prior samples1,112,997,888, both optimizers restored,
+LRoverride5.625e-7→1.125e-6. First update67932 advances to1,113,014,272samples.
+First checkpoint67932 S3verified SHA
+63bced7ce8495b2f07fd29c5f083f0c3b6c0f802eaa637d864cd47829668b84c.
+Startup actor updates accepted40, rejected0, KL.0152. First-step timing includes
+warmup; use subsequent live timings for speed. Receipts lr2-graphed-{launch,
+preserved-checkpoint,source-verified,live-verification}.json.
+Live follow-through:67982/1,113,833,472samples, recent update2.0129s /
+8,139transitions/s (about7% above prior~7,585/s; early live observation, not
+the isolated14% benchmark claim). LR1.125e-6 and zero rejected actor steps
+confirmed in synced events. Replayer HTTP serves67932 with20rows; both training
+failure cards published in the new own-run dashboard.
+
+## October20 - perturbed get-up progress/calibration audit; live run unchanged
+
+User reported slower learning. Read the actual trainer events, using episode-count
+weighted rates rather than the small noiseless replay sample. Previous072057 run's
+four equal sample windows: getup failure24.93,22.46,20.42,19.83%. Current080052:
+18.34,18.63,18.00,17.78% (through~1.106B samples). No180-tick timeouts in those
+logged getup outcomes; other endings were successful90%-head resets. Throughput
+~7.6ktransitions/s before probe. Critic loss rose from~9-12 to~19-25 after the
+new loco failure cost; this is an observed adjustment, not proof of a learning bug.
+
+Actual restored Adam actor LR is5.625e-7, not YAML4.5e-6. It was already at that
+value before today's00:52 run: no recent LR reduction explains the new slowdown.
+kl_guard.py halves LR on first-step rejection/full rollback and never restores it;
+resume preserves optimizer param groups. Current logged updates accept40/40,
+zero rejects/rollbacks, KL~.010 versus limit.18. It is conservative but not frozen.
+
+Isolated audit_getup_calibration.py used deployed modules and verified checkpoint
+67483 SHA e6658c52b791fbf7fdb92a8aef0c447e62ec8884e41036ba5df660ce401c9100;
+512worlds including232perturbed getups,108perturbed loco. Six frozen-policy32-tick
+buffers, then matched actor-only updates from identical weights, Adam moments,
+batch order and RNG. Total39.77s; helper exited; no live checkpoint/config change.
+Completed episodes by blend strength (known pose0/random local pose1):
+front0-.5:254/254 successes; .5-.75:80/117; .75-1:3/129.
+Back0-.5:224/226; .5-.75:112/117; .75-1:99/107.
+These are sampled completed episodes, not an exhaustive validation suite.
+Failed hard-front heads averaged~14% of standing height, far below the50% cutoff;
+this is not simply narrowly missing that threshold. Remaining difficulty is
+concentrated in heavily perturbed front starts.
+
+Matched single-rollout actor test: current/2x/4x/8x LR give getup clipped-PPO
+surrogate improvement .03962/.04687/.04857/-.01319. KL .00969/.01803/.03222/.15712.
+First three accept40steps;8x accepts10 then rejects1. Thus2x is a reasonable next
+trial, not a claim of18% faster real learning;4x adds little on this batch and8x
+worsens it. Recommendation only, no LR/reward/proportion/termination change made.
+No justification found to increase getup penalty or loosen head threshold.
+Counterfactual removing loco penalty with unchanged critic was diagnostic only;
+its advantage variance is not a causal estimate of long-run cross-task dilution.
+Receipts: getup-progress-calibration-audit.json, getup-calibration-sidecar.json.
+
+## October20 - empty replayer: penalty validation and retry repair
+
+Current080052 trainer4368 remains running unchanged. The original replay
+conversion failure was a missing `loco_failure_penalty` subtraction in replay.py's
+reward validation: valid reciprocal rewards with the new terminal -100 cost
+were rejected. That exposed a second bug in bridge.py: it promoted the completed
+download before conversion, then retried only its last chunk after conversion
+failed. The resulting local replay was missing exactly the first2,097,152bytes.
+Remote replay passed ZIP CRC validation; training was not corrupted.
+
+Replay validation now includes the recorded loco penalty only on FAIL. Bridge
+validates partial-file offsets, converts before promotion, resets failed file
+transfer state to byte0, and continues syncing other telemetry after a per-file
+failure. Existing valid rollout/archive remains available while retrying.
+Regression tests cover failed conversion, whole-file retry, missing/duplicated
+chunks, changed file versions, terminal penalty and timeout without penalty.
+Only local bridge restarted; no trainer/physics/reward changes and no deployment
+of the pending performance package. Receipt: replay-sync-repair-verification.json.
+Verified step67383 with20rows through the actual replayer HTTP endpoints;
+local archive SHA604bfd12ee94 matches remote, ZIP CRC passes, bridge error cleared.
+Six regression tests pass. New local bridge parent2140; trainer still4368,
+step67433 at1,104,838,656samples and~7,575transitions/s during repair.
+
+## October20 - further rollout optimization prepared; live run uninterrupted
+
+User requested continued performance work aiming at2-3x. Existing live trainer4368
+on ka68jrougesuit remains untouched. Isolated bounded probes share its GPU, so
+reported A/B measurements are relative, NOT a claim of new live throughput.
+Found hidden cudaStreamSynchronize/CPU-to-GPU temporary in upstream TorchScript
+exp_map_to_quat and calc_heading; this also prohibits CUDA graph capture. Replaced
+only the observation/joint-conversion formulas with device_quaternion.py using
+the same operation order, thresholds, normalization and handedness. Full512-body
+physical observations now replay one PyTorch CUDA graph; current engine arrays
+are copied each call, commands/phase assembled through the original methods,
+output storage cloned to protect terminal/reset observations. Empty subset uses
+upstream shape behavior. CPU/other observation layouts preserve their prior path.
+
+Alternating original/optimized/optimized/original whole PPO updates:3.3804,
+2.9637,2.9547,3.3581 seconds:1.139x throughput /12.2% less time. Observation50-call
+measurements .1524/.1943 original vs .02386/.02523 optimized (~7.06x). Actual reset
+poses, arbitrary subsets,changed joint state,old-output lifetime checks passed;
+observations exactly equal on those states. Random quaternion/observation probes
+showed <=9.54e-7 rounding difference; forward/inverse tests0/1/7/512 rows passed.
+No contact/motor/frequency/optimizer/reward/configuration changes. Helpers default
+on in LOCAL source for subsequent PerturbedOmni runs, NOT retroactively in live PID.
+Prepared graphed-observations-source.zip SHA
+b759748782a747942b13b28fb9a35a2b8e16bf1b37072bb3dda49337835e7d80,
+verified runtime inventory. Receipts perf-observations-{result,profile_1}.json,
+graphed-observations-prepared.json; earlier current profile perf-current-*.
+Physics now largest measured phase:~1.21s of instrumented2.94s (concurrent GPU),
+actor/critic~.53s, reset~.60s. Instrumented nested ranges overlap. No2-3x claim.
+
+Read official MJWarp performance guidance before matrix-layout experiment:
+https://mujoco.readthedocs.io/en/stable/mjwarp/index.html#performance-tuning .
+No contact capacity reduction or solver-iteration/tolerance/frequency change.
+Native dense-vs-existing Jacobian layout probe completed; NOT selected.
+After full mjw.reset_data plus qacc/state restoration,32 physics substeps on512
+worlds: existing .1105/.1150s vs dense .1066/.1102s (~4%, within shared-GPU
+variability). Original-repeat itself varies up to1.70mm at one body; dense
+1.69mm, rms26.7micrometres, qvel maximum .082 vs original-repeat .043. Initial
+partial-reset comparison invalidated and retained only for audit, not a speed
+claim. No solver layout/settings/capacity changes promoted. Receipts
+perf-layout-reset-result.json and device-quaternion-verification.json.
+All isolated helpers completed; only validated observation/conversion change
+prepared for next authorized restart. Existing trainer never paused/restarted.
+
+## October20 - perturbed locomotion failure penalty handoff
+
+User requested the same get-up termination cost for perturbed locomotion and
+resume from latest. Added explicit perturbed_motion.loco_failure_penalty=100;
+subtract once on COM2 FAIL after the existing 8-tick grace, before PPO copies
+the transition reward. Normal locomotion, ordinary idle, timeouts, successful
+head resets and get-up rewards unchanged. Two package changes only: env_config
+and perturbed_omni.py. CPU test verifies cohort/grace/timeout masks and no reward
+carryover. Existing critic FAIL semantics already zero bootstrap and preserve
+full terminal cost. Optimizations and full-training outcome cards retained.
+Guarded helper resume_loco_failure_penalty.py preserved latest66582_final,
+1,090,895,872 samples, locally and S3 readback verified SHA
+21cd0cb0c49b474527079d35d279f04d84e1d983b1691118bf1098187de37ed3.
+Launched 20261020_080052_uefn_loco_failure_penalty_linear_512 on existing
+L4 ka68jrougesuit, trainer4368, until-stopped limit and failure guards retained.
+Live verified step66593 /1,091,076,096 samples; first checkpoint66583 S3 readback verified. Six perturbed loco replay rows:3 FAILs each exactlyone -100 cost (max float error2.81e-6),3 TIME endings no cost. Example terminal reward .558182->-99.441818. Steady startup throughput~7,009 transitions/s. Receipt loco-failure-penalty-live-verification.json.
+
+## October20 07:20 - optimized continuation and training outcome cards launched
+
+User authorized resume from latest with speed fixes and full-training outcomes;
+then asked to skip further investigation of the noisy sampled graph and launch.
+Run20261020_072057_uefn_fast_training_outcomes_linear_512, existing L4ka68jrougesuit,
+trainer4112, until stopped, latest65624_final at1,075,200,000 samples. Checkpoint
+SHA80ee9ea2947a10aaa4e0b6945621ecbe409997690d0e69e2f293ebf6d5dfa2e3
+verified locally/S3. Env/agent configs byte-identical to previous package.
+Batched joint conversion and prior exclusion now deployed. New GPU per-world
+failure/end/head-reset counters accumulate TRAIN only, exclude evaluation and
+reset only when logged every10updates. Two failure cards count all completed
+perturbed loco/getup episodes in each interval; no temporal smoothing, no false0
+when denominator0. Raw denominator/headreset counts retained in trainer events
+for audits, not extra dashboard cards. Dashboard training_outcomes=True disables
+sample-derived outcomes for this run. History NOT stitched. Old sampled records
+remain in their own old runs, excluded from new-run view.
+
+Graph investigation: step65394 zero failures had7starts alpha.07-.698, all head
+resets. Step65494 3/7failures were alpha.813,.854,.943; four easier starts succeeded.
+Different difficulty, not matched-policy comparison; cannot infer regression.
+Receipt failure-jump-sampling-audit.json. Counter unit test checks fail/reset
+separation, no evaluation contribution, clearing between intervals, separate
+cohorts. Launch/backup receipts fast-training-outcomes-*; helper
+resume_fast_training_outcomes.py. Live verification: step65655,1,075,707,904 samples; first new checkpoint65625 S3 verified. Recent update2.175s /7,532 transitions per second (~25% higher throughput than previous ~6,046/s). Every10updates:1953 getup episodes,518 failures=26.5233%;199 loco episodes,93 failures=46.7337%. Successful head resets counted only in denominator. Two own-run cards published; source writer sanitizes spaces to underscores, dashboard accepts that form and keeps readable display labels. Local publisher restarted21716; trainer uninterrupted. Receipt fast-training-outcomes-live-verification.json.
+
+## October20 - performance audit and optimizations READY, not live
+
+User requested profiling/AE removal WITHOUT stopping live trainer3279.
+Live ptrace sampling rejected by container SYS_PTRACE policy; no intrusive
+workaround. Two isolated CPU/GPU profiling helpers, each bounded180s, shared
+L4 briefly; trainer kept running. Helpers completed. Source fixes are NOT in
+live process; apply on next authorized checkpoint resume, do not claim live speedup.
+
+Profile: rollout/collection3.54s out of instrumented4.13s; actor.477s,
+critic.096s. Nested times overlap; current host shared, not production throughput.
+Joint conversions alone were major CPU-dispatch cost:101 forward calls expanded
+into1,414 individual joint calls. Repeated observations and resets dominate.
+New batched_joint_conversion.py groups hinge/spherical joints using SAME torch
+quaternion functions. Tested empty/1/7/512 rows, large random angles/zero angles:
+forward and inverse output differences exactly0. Alternating isolated benchmark:
+100 conversions .802/.781s original vs .116/.135s batched (~6.3x faster).
+Full PPO alternating updates4.062/4.063s original vs2.924/2.982s batched (~27%
+less time). Concurrent GPU workload means no claim of actual live speed yet.
+
+perturbed_omni now excludes232 idle-position getups from prior buffer/scorer;
+358->126 AE rows. Retained score equivalence passed; getup rewards/losses exact.
+AE-only timing ~.025s/30calls both sizes, so exclusion is correctness/efficiency
+cleanup, not major measured speedup. _prior_raw excluded rows remain0; AE raw
+diagnostics now concern only scored rows. Ordinary perturbed idle/loco retained.
+Batched conversions installed for PerturbedOmniEnv and included in source inventory.
+Prepared package fast-perturbed-source.zip; receipt fast-perturbed-prepared.json.
+Evidence perf-audit-{profile_0.json,python_calls.txt,ae_compare.json},
+perf-batched-result.json. Test/profile scripts profile_perturbed_sidecar.py,
+verify_batched_sidecar.py. No physics, optimizer, learning objective or proportions
+changed. Cannot quantitatively attribute all historical slowdown to host vs code
+without matched old-workload test; current conversion bottleneck is directly tested.
+
+## October20 - TensorBoard experiment boundaries corrected
+
+User rejected previous-run history repeated under new experiment names. Outcome
+publisher now reads only each run's own private cache, ignoring historical-source
+lists. Removed derived outcome summaries and rebuilt under original run names;
+no cross-run stitching, averaging or step renumbering. Raw training curves and
+private outcome caches preserved. Prior event files recoverable under
+Saved/MimicKitEquipment/retired-cross-run-events. Local publishers/TB restarted;
+remote training untouched. Only current publisher needs to remain live, earlier
+experiments are static. Receipt outcome-run-boundaries-fixed.json. This supersedes
+all earlier instructions describing combined continuation history in one run.
+
+## October20 06:52 - replay selection resumed from latest
+
+User authorized brief resume. Run20261020_065209_uefn_replay_getup_selection_linear_512
+resumes65093_final at1,066,500,096 samples, preserved locally/S3 with SHA
+4516efe97a3506a65fe24058053eabb5630db2025078654479f4b585bae00bc6.
+Package comparison proves only pipeline/observe_many.py changed; training config
+byte-identical. One normal get-up per motion, extra slots perturbed get-ups;
+20 total replay rows. Existing until-stopped L4 and guards retained.
+Proportion audit:358idle/getup (340getups+18idle),154loco(78walk+76run),
+70/30 as requested; adaptive sampling off. Outcome graph is selected evaluation
+episodes, not512-world statistics: preceding point2/3failures=66.7%; changing
+pose difficulty and tiny sample make it jagged. Historical zeros predate low-head
+failure rule, not evidence of successful recovery. Receipts replay-getup-selection-*.
+
+## October20 - replay selection change prepared, NOT live
+
+User requests one normal front/back get-up, replacing extra normal get-ups with
+perturbed ones without stopping training. observe_many.py now prepares that
+selection, preserving existing non-get-up rows and recording count. Synthetic
+selection checked across12 rotations: one normal per motion, replacements
+perturbed, no duplicate world IDs. This is NOT deployed to the live trainer:
+MultiRecorder.start has no live reload/config hook. User's no-stop constraint
+preserved. Apply on next authorized restart; do not claim live row changes.
+
+## October20 - perturbed get-up terminal reward penalty
+
+Live run20261020_064321_uefn_getup_failure_cost_linear_512 resumed from
+64965_final at1,064,402,944 samples. First64966 checkpoint S3 verified.
+Live NPZ confirms failures receive exactly100 subtraction on one tick each
+(-1.223922 -> -101.223923); successful head reset receives zero subtraction.
+Receipts getup-failure-cost-live{,-reward-test}.json.
+
+User approved subtracting100 reward once for perturbed get-up FAIL, and asked
+for critic-path verification. Config getup_failure_penalty=100. Reward applied
+in _update_done AFTER SimEnv _update_reward, before collection. Normal rows,
+head-height TIME resets and timeout TIME resets receive no penalty. Existing
+linear pose reward remains; failure continuation value remains0 (DeepMimic
+get_reward_fail), NOT -100/(1-gamma). PPO _build_train_data reads this reward,
+computes TD-lambda returns and stores tar_val; critic MSE fits unclipped tar_val.
+Actual deployed method CPU test: terminal reward1 becomes-99, terminal target
+drops exactly100, preceding tick target drops94.05 with gamma.99/lambda.95;
+next episode and reset column unchanged. Critic gradient points toward lower
+value. Test script test_getup_failure_cost.py; receipt getup-failure-cost-critic-test.json.
+No critic architecture/LR/normalization modifications. Replay metadata and
+reward validation include the terminal subtraction. Guarded resume helper:
+resume_getup_failure_cost.py; latest verified checkpoint retained locally/S3.
+References checked: Gymnasium handling_time_limits (terminal targets retain
+reward, no bootstrap), OpenAI Spinning Up PPOBuffer.finish_path (terminal reward
+included in returns; critic fits targets). Sources:
+https://gymnasium.farama.org/tutorials/gymnasium_basics/handling_time_limits/
+https://spinningup.openai.com/en/latest/_modules/spinup/algos/tf1/ppo/ppo.html
+Magnitude100 is user-approved tuning, not a literature-guaranteed optimum.
+
+## October 20 - noisy get-up graph now shows failures
+
+User requested replacing head-reset percentage with termination percentage.
+Two cards: Locomotion failure percent and Get-up failure percent, perturbed
+recorded evaluation rows only. Get-up numerator is terminal flag1; head-height
+and timeout resets are not failures. Historical caches derive failure percentage
+as100-head_reset-timeout from known outcomes. Removed139 obsolete head-reset
+summary values (recoverable retired-head-reset-events). Local dashboard/TB
+restarted only; GPU training uninterrupted. Publisher16504, TB supervisor17856.
+No averaging or extra cards.
+
+## October 20, 06:01 Warsaw - low-head termination
+
+User clarified termination only, no added reward penalty. Resumed latest
+64158_final (1,051,181,056 samples) as 20261020_060120_uefn_getup_low_head_linear_512
+on existing L4 ka68jrougesuit, until stopped. From policy tick60 onward,
+perturbed get-ups fail (flag1, reason1) if head world Z <= 50% of assigned
+idle-frame0 head Z. Existing90% head bootstrap reset and180-tick timeout remain.
+Normal rows unchanged. Reward remains1-10*positionMSE with no failure subtraction.
+Actual done-method checks passed: tick59/60, equality, normal rows,90% reset.
+Latest checkpoint verified locally and by persistent S3 readback; receipts
+getup-low-head-*.json. Guarded handoff: resume_getup_low_head.py. Two-card raw
+outcome history preserved; head-reset percentage counts failures in denominator.
+Optimizers, normalizer, physics, other losses and sampling unchanged.
+
+## October 20 — final requested two-card outcome view
+
+User clarified get-ups must show HEAD-HEIGHT RESET percentage, not failure
+termination. Final visible tags are perturbed_termination/Locomotion failure
+percent and perturbed_termination/Get-up head reset percent. Two raw unsmoothed
+curves, perturbed evaluation rows only, previous/current history sample-sorted.
+Removed all seven perturbed_eval_sample cards and the obsolete Get-up failure
+card from dashboard event files (11 files,574 summary values); original affected
+files are recoverably archived under Saved/MimicKitEquipment/retired-outcome-card-events.
+Unrelated summary values verified identical. Raw trainer event files untouched.
+
+Historical diagnostic values now live outside TensorBoard in
+Saved/MimicKit/PerturbedOutcomeCache; dashboard stores new replay outcomes there
+and publishes only the two requested cards. Do not rerun the old
+backfill_perturbed_outcomes.py event-writing path, which would reintroduce old
+cards; backfill the private cache instead. Local publisher PID29720; local TB
+supervisor PID7132. GPU training never stopped. TensorBoard briefly restarted to
+clear obsolete tag caches, then browser reloaded/verified. Both curves retain
+65+ points; get-up head reset is no longer flat0. Evidence
+outcome-cards-final-verification.json and retired-outcome-cards.json. First filter
+attempt encountered Windows path-length limit before replacing any event file;
+retry used a short staging path and completed. Existing latest10 run cap retained.
+
+## October 20 — simplified termination view; no smoothing
+
+User rejected averaging and overlapping/multiple outcome graphs. Active
+TensorBoard tab now filters only `perturbed_termination/`: exactly two raw
+curves, Locomotion failure percent and Get-up failure percent, perturbed rows
+only. One trace each combines the explicitly selected previous/current run
+history, sorted by sample counter with no duplicates (65 points verified at
+setup). Published in current dashboard run as derived continuation history;
+its historical section precedes that run's launch. No averaging or smoothing.
+All failures counted separately from bootstrap resets. Get-up failures are0%
+because current perturbed get-up rules only reset on head height or timeout;
+that flat line does NOT mean every get-up succeeded. Earlier success/reset
+metrics remain available in raw tags but hidden in this focused view.
+Local dashboard publisher PID4848; training and GPU untouched. Captured
+perturbed-termination-clean-view.png and verified exactly two tags via HTTP.
+Current manifest's perturbed_termination_history_sources defines the two source
+runs; raw sampled evaluation limitations still apply. Other UI groups collapsed.
+
+## October 20 — historical perturbed outcome graphs recovered
+
+Backfilled52 captures for previous run20261020_005208, plus the missing first
+capture of current20261020_044014. Read only replay metadata from61 existing
+remote checkpoint archives; one duplicate capture removed. No model download,
+GPU simulation, training interruption or new allocation. Also restored the
+single surviving local replay endpoint for each of seven October19 perturbed
+runs (150048,151703,153401,161437,170826,182229,184549). Each point retains its
+original sample counter, capture time and TensorBoard run. No interpolated or
+invented points; these remain selected noiseless evaluation-row outcomes.
+Kept existing TensorBoard run cap. Current publisher owns new captures;
+backfill only adds missing older samples. HTTP confirms52 previous-run points
+and no duplicate sample steps. Sources and receipts: perturbed-outcomes-
+historical-{remote,local}.json, perturbed-outcomes-backfill.json and
+perturbed-outcomes-backfill-http.json under Saved/MimicKitEquipment.
+
+## October 20 — perturbed outcome graphs added without interrupting training
+
+Local dashboard now derives `perturbed_eval_sample/*` from existing archived
+noiseless replayer captures, backfilled for the current run and updated as new
+captures arrive. No trainer restart, GPU simulation, remote logging changes or
+additional download. Only local dashboard publisher restarted (PID2144).
+Each captured episode counts once, regardless of duration. Flag1=failure;
+flag3=reset, never a failure. Separate locomotion_no_failure_percent and
+all_no_failure_percent; getup_head_reset_percent uses final reason2 and
+getup_timeout_percent uses reason3. Sample counts are published beside rates.
+Incomplete, nonperturbed and unknown-terminal rows excluded; missing get-up
+reset reasons do not become successes. These are SELECTED EVALUATION ROWS,
+not full-batch training statistics; rotating motion selection can change rates.
+Get-ups/ordinary idle have no failure termination, so use the locomotion graph
+for failure avoidance and head-reset graph for get-up achievement, not the
+combined rate alone. Head-height reset does not prove stable standing.
+
+Verified six historical capture points via TensorBoard HTTP. Latest sampled
+capture63118: locomotion3/5 nonfailure(60%), get-ups4/5 head-height resets(80%)
+and1/5 timeouts(20%); combined10/12 nonfailure(83.33%). Unit checks distinguish
+failures/resets and exclude incomplete/normal/missing-reason records. Receipts
+Saved/MimicKitEquipment/perturbed-outcomes-{dashboard,verification}.json.
+
+## October 20, 04:40 Warsaw — idle-heavy blend continuation running
+
+User requested idle/locomotion70/30, stronger punishment for perturbed get-ups,
+and uniform0–100% interpolation from the known get-up pose toward a sampled
+locomotion pose, matching the earlier local-DOF experiment. Prepared config:
+358 idle rows (340 get-ups,18 ordinary idle),154 locomotion; normal/perturbed
+allocation rule stays30/70 and walk/run stays50/50. Perturbed get-ups remain
+frame0, pelvis/root and initial velocities unchanged. A single alpha~U[0,1] is
+sampled per episode and shared across its child DOFs. No floor IK, root shifting,
+PHAT edits or motor changes added; stronger blends can still intersect the floor.
+
+Perturbed get-up reward now1 -10*raw body-position MSE, replacing1/(1+MSE).
+Target remains assigned idleframe0, follows pelvisXY, standingworldZ andheading.
+Only this cohort changes reward; position loss recorded is weightedMSE x10;
+all other terms remain0 includingAE. Example rawMSE .22 now reward-1.2 versus
+previous .8197; matching target gives1. Linear reward has no large-error
+saturation. 90% head-height bootstrap reset and180-tick timeout unchanged;
+no termination penalty. Both optimizers, LR, normalizer and counters preserved.
+
+Isolated512-world validation from checkpoint62415: sampledalpha .00121–.98928,
+mean .4829; interpolation matches the known-pose DOF cache exactly.32 simulation
+ticks independently verify target/loss/reward, other rewards unchanged, get-up
+nonposition terms0 and head reset flag3. One PPO update accepted40/rejected0,
+KL .0307, finite weights. No diagnostic optimizer updates enter resumed model.
+Replayer supports per-row linear reward and validates recorded rewards; four
+historical captures converted with synthetic new reward successfully.
+Evidence Saved/MimicKitEquipment/getup-blend-validation.json.
+
+Resumed run **20261020_044014_uefn_getup_blend_linear_512** on existing L4
+ka68jrougesuit ($0.59/hour), until user stops it. Latest checkpoint62517_final
+at1,024,294,912 samples preserved locally and persistent-S3-readback verified,
+SHA4fe9cb1fac809e3dff7a68075c5062c708cc48291dabec8ed857d4e9121bd2c0.
+Both Adam states and normalizer restored. Verified live1,024,475,136 samples,
+iteration62528, recent throughput~5.95k transitions/s during startup. First
+live updates accept40/reject0. First new checkpoint62518 persistent verified,
+SHA01979394cf2e863a361b8aa501940f01788aac625f577448525dd69b2b7cfa5e.
+TensorBoard has the new dated run; replayer has20 rows. Its four perturbed
+get-up records have blends .5913/.9128/.5274/.0388, weight10, linear reward
+matching recorded terms exactly, all other terms0. Journal and paused old
+curriculum plan updated to prevent a stale relaunch. Exit/backup guards active.
+Receipts: getup-blend-{launch,launch-verification,preserved-checkpoint,
+replay-verification}.json under Saved/MimicKitEquipment.
+
+## October 20 — perturbed get-up failure investigated; live settings unchanged
+
+Read-only history audit:185 recorded perturbed get-ups,0 above90% idle head height;
+170 normal recovery recordings all reached it. First/last five captures: perturbed
+mean position loss .2480 -> .2217 while mean peak head .340 -> .261m. Reciprocal
+reward rose .8016 -> .8186 despite remaining down. Independent target/MSE/reward
+recomputation matched within1.2e-7. AE/other loss terms remain0 for this cohort.
+
+Isolated frozen-policy probes on verified checkpoint62015 (1,016,070,144samples),
+128 worlds, two reset seeds9211/9212,50 perturbed starts (27front/23back):
+full random locomotion local pose0/50 head-height resets; training sigma.05 also
+0/50; authored clock instead of feedback0/50. Restore original local get-up pose,
+keeping perturbed objective/phase/reset/motors:50/50 (original poses are repeated
+controls, not50 distinct authored animations). Interpolate local DOFs from authored
+pose toward each sampled locomotion pose:10% gives50/50,25% gives13/50 (front13/27,
+back0/23),50% gives0/50,100% gives0/50. This is immediate recoverability, NOT proof
+that a future curriculum will learn the full distribution. Production unmodified.
+
+Reset validity issue: random local pose overwrites the floor-cleaned get-up DOFs
+without a floor check. Four captured perturbed starts had collider bottoms17–45cm
+underground; raw body origins alone reached8–33cm belowfloor. Native collider/FK
+pool check over2334 locomotion frames per start side also shows pervasive additional
+penetration. Keep pelvis fixed in any future remedy. Smaller perturbations improve
+both pose familiarity and penetration; the two causes were not isolated, so do not
+claim penetration alone explains all failures or that pose repair guarantees learning.
+
+Optimizer is active: all logged actor updates accept40 minibatches, reject0;
+effective LR5.625e-7 and KL .0046–.0169. Current perturbed physical inputs clipped
+at most2.13e-5 of measured values in probes; transient extremes remain, unlike the
+old persistent height clipping. Frozen PPO rollout probe confirms nonzero get-up
+advantages/gradients; no loss disconnect. No torque insufficiency established by
+these probes. Original pose and10% perturbations succeed with unchanged motors.
+
+Primary next proposal: gradual, floor-valid local-pose perturbations from known
+recoverable starts, preserving pelvis. Reward scale is also weak: typical failed
+floor pose receives~.81 of maximum1; plain MSE is a PPO score, not a direct joint
+gradient. Change neither objective nor initialization without user direction.
+Evidence Saved/MimicKitEquipment/getup-idle-audit-20261020/{history,probe,followup,
+summary}.json and getup-idle-current-contact-audit.json. Isolated successful probes
+took177.5s+78.8s; an earlier follow-up stopped on a prefixed collider-name mismatch,
+then was corrected. No diagnostic optimizer steps, extra pod or persistent model
+copies. Main run continued and returned to~6.5k transitions/s.
+
+## October 20 — clarify unused AE diagnostic in replayer
+
+Checked deployed perturbed_omni.py hash against local source and live recorded
+get-up rows: objective idle_frame0_body_positions; motion_prior loss is exactly0
+on every recorded tick. AE still evaluates these rows in its shared batch and
+records frame_ae_raw (observed peaks1.12–1.32), but tracking mix1 multiplies its
+reward contribution by0. Raw diagnostic must not be described as an active loss.
+Viewer now explicitly displays `AE disabled` for position-only get-ups; other
+perturbed rows label the diagnostic `AE raw (unweighted)`. Asset version6-ae-status
+served at8021; checked formatter against four actual get-up rows. Reload page to
+replace already loaded JS. No training/physics changes or restart.
+
+## October 20 — internet-gap data recovered
+
+Current perturbed run continues uninterrupted on ka68jrougesuit. Recovered13
+missing replay captures60415 through61615 from existing remote checkpoint ZIP
+members,20 rows each, preserving original capture times and the bridge's latest
+pointer. No model weights downloaded; temporary NPZ files removed. Local history
+has no missing saved captures through61815. Live bridge remains active.
+TensorBoard caught up automatically: all434 checked episode/train_seconds,
+episode/test_seconds and loss/total points match raw events through1,013,284,864
+samples; scalar HTTP endpoint confirms them. Local raw event file1071531 bytes
+SHA matches the full remote file at verification. No interpolated points.
+Receipt Saved/MimicKitEquipment/live-gap-recovery-20261020.json.
+
+## October 20, 00:55 Warsaw — perturbed training restored on replacement L4
+
+Replacement Secure L4 **ka68jrougesuit**, $0.59/hour, is running
+**20261020_005208_uefn_curriculum_perturbed_512** until the user stops it.
+The allocation succeeded on the 00:49 scheduled retry. Old pod/disk retained.
+Verified checkpoint57514 resumed at942,325,760 samples; both Adam states and
+normalizer restored, physical normalization migration changed0 channels.
+Live verification:943,161,344 samples, iteration57565, about6.6k transitions/s.
+No fresh weights, counter reset, checkpoint rewind or new physics changes.
+
+Restored prepared30% normal/70% perturbed and30% idle/70% locomotion setup.
+512 worlds:146 get-ups (21 normal random starts,21 normal frame0,104 perturbed
+frame0),8 ordinary idle,180 walk,178 run. Perturbed get-ups use body-position
+MSE to idle frame0 and head-above90% bootstrap reset, as already prepared.
+Configured native MJ and existing motor/optimizer settings remain unchanged.
+
+First new checkpoint57515 is persistent-readback verified, SHA
+31412e59844415d109f44c0fca79920ee44218234b621b22183175b38adf1f7a.
+Original selected942.3M checkpoint remains preserved locally and in S3.
+TensorBoard lists the new dated run; local replayer has20 rows at57515,
+including11 perturbed rows. Canonical local/remote controls both until_stopped;
+trainer exit/backup guards active. Setup-only600-second deadline superseded.
+Evidence: curriculum-replacement-ready.json, getup-curriculum-launch.json,
+getup-curriculum-launch-verification.json, and guard-control-sync.json under
+Saved/MimicKitEquipment. Availability heartbeat is PAUSED after this verified launch; curriculum is
+finished, do not start another replacement.
+
+## October 19, 21:49 Warsaw — immediate perturbed switch awaiting replacement L4
+
+User explicitly waived the rest of settling: switch NOW from latest, then run
+perturbed indefinitely. During handoff, SSH was refused: old L4 f44oylb1xk3y5o
+had stopped at21:42:40. **Cause confirmed:** local guard created during L4
+migration read Saved/MimicKitEquipment/l4-migration/runtime_control.json,
+which still had Unix1792438960.398735. Canonical and remote controls were
+until_stopped, but this second local copy was not updated. Exact stop receipt:
+l4-migration/local_guard_stopped.json, reason bounded trial deadline, confirmed
+EXITED at1792438960.4226. Earlier claims that all guards shared the new deadline
+were incorrect. Trainer telemetry still showed the year9999 deadline at exit.
+
+Fix: extend_runtime.sync_guard_controls now atomically updates all existing
+runtime_control.json copies for the SAME pod beneath the canonical state dir;
+unrelated pod controls are preserved. Isolated test confirms canonical/migration
+copies both update and other pod does not. Replacement provisioning uses only
+canonical Saved/MimicKitEquipment for its local guard, with a600-second setup
+deadline and remote guard, then until_stopped at launch. No physics changes.
+
+Old host restart rejected: GPU reassigned. User explicitly approved replacement
+L4 <=$0.59/hour. Default Secure, eight alternate Secure regions and Community
+allocation requests returned no available instances; subsequent default retry
+also rejected. No replacement allocated, no GPU billing. Old disk retained.
+Current source is prepared; TRAINING IS NOT RUNNING. Do not claim switched yet.
+
+Latest persistent checkpoint57514 safely recovered locally and SHA verified:
+5e36f63f83e6e293d2a6573215a439080be2d264de51fec364ed8d6625cb86cd,
+47,764,520 bytes. Path preserved-checkpoints/
+20261019_202430_uefn_curriculum_mixed_512/checkpoint_0057514.zip.
+Receipt getup-curriculum-preserved-checkpoint.json. This is the latest verified
+save before the abrupt stop; uncheckpointed final minute was not recovered.
+Perturbed source SHA2b01cb4aaf5733f4743fad957315b4d19d87b74f8a39f0253f6594508a9c5c25.
+
+Plan stage **awaiting_l4**, pending/next perturbed. Existing half-hour heartbeat
+advance-get-up-curriculum now retries authorized replacement using
+replace_curriculum_pod.py; after success run getup_curriculum.py launch directly.
+Do NOT run capture (old trainer inaccessible) or rewind to earlier checkpoint.
+Helpers read replacement pod from plan and update dashboard pod identity.
+Preserve pending allocation receipts and inspect before retry to avoid duplicate
+GPUs. Report actual launch/failure; stay quiet on unchanged capacity. Pause the
+heartbeat only after verified perturbed launch or user cancellation.
+
+## October 19, 20:52 Warsaw — mixed stage passed; one-hour settling
+
+Scheduled check advanced plan from mixed to **settle**, without restarting or
+changing training. Same active run20261019_202430_uefn_curriculum_mixed_512.
+Noiseless frame0 front46/back42 ticks both complete (terminal2), drawn/unarmed,
+evaluation55914 at916,111,360 samples. Live training at916,930,560 samples,
+about9.6k transitions/s. Evidence getup-curriculum-last-check.json and checks.jsonl.
+Keep146 frame0/146 random get-up worlds and all other settings unchanged.
+The extra hour ends about **21:52:48 Warsaw**, Unix1792439567.8127; plan's
+settle_until_unix is authoritative. Keep half-hour heartbeat active. At/after
+that time capture/verify the latest checkpoint, restore the prepared perturbed
+configuration, verify launch/backup/observers, then pause the heartbeat and leave
+training running until stopped. No snapshot rewind and no early switch now.
+
+## October 19, 20:24 Warsaw — curriculum advanced to mixed get-up starts
+
+The20:22 scheduled check passed the frame0 stage: noiseless front completed46
+ticks and back42 ticks, both drawn/unarmed, terminal2. Evidence iteration54991,
+900,988,928 samples in getup-curriculum-checks.jsonl. Previous19:52 check had
+front failure24/back completion42 and correctly left training unchanged.
+
+Saved the actual latest final55113 at **902,987,776 samples**, SHA
+09597c9ee2b447f1f99dc7a0ab563bbfb84bf6c6616d6dd5f3c55be463039174,
+verified local archive and persistent S3 readback. New active run
+**20261019_202430_uefn_curriculum_mixed_512**, same owned L4 f44oylb1xk3y5o,
+trainer3374/exit guard3375. Source diff against stage1 is ONLY
+idle_recovery.random_start_fraction:0 -> .5. No perturbation, rewind, optimizer
+reset or reward change. Expected292 get-up worlds split146 frame0/146 random.
+Source SHA f8170ec0c432cf86a034a1bca9608b4e39fbdce6db93107e61e6eb1ee7375e9e.
+
+Keep `advance-get-up-curriculum` active. Next check approximately20:52 Warsaw;
+the fixed half-hour cadence now remains eligible across short checkpoint handoffs.
+Do not skip directly to settling based on stage1's successful rollouts: require
+both motions/equipment variants to complete from frame0 in the mixed-stage
+checks first, then leave this setup another hour, then restore perturbed training.
+Until-stopped authorization and all failure/backup guards remain unchanged.
+
+Live mixed-stage verification confirms146 frame0/146 random get-up worlds,
+15 ordinary idle/103 walk/102 run. Both Adam states and normalizer restored from
+902,987,776 samples; counter advanced to903,331,840 at about9.4k transitions/s.
+First new checkpoint55114 persistent readback verified, SHA
+23f77ba63435d4ef58e0769cee4e9aacb45a3f84937357176ed086627fead10a.
+20-row evaluation captured and new datetime run listed by TensorBoard.
+
+## October 19, 19:22 Warsaw — staged return to get-up-heavy training
+
+User superseded the 90-minute restoration with performance-gated stages. New
+run **20261019_192214_uefn_curriculum_frame0_512**, same owned Secure L4
+f44oylb1xk3y5o ($0.59/hour), resumes the CURRENT final53190 checkpoint at
+**871,481,344 samples**. SHA
+2ea58c9eb617e91ebdf29aae980e7c43e49950101d8257a3c593b94e2f06d855.
+Local preserved-checkpoints/20261019_184549_uefn_getup_normal_512 and persistent
+equipment/getup-curriculum copy verified before launch. No weight/counter reset
+and no rewind. Saved normalization and both Adam states are retained.
+
+**Training setup:** reuse mixed-position-leeway-source.zip from the earlier
+get-up-heavy main run: idle/loco60/40, ordinary/recovery idle5/95,
+walk/run50/50. 512 worlds allocate 292 get-ups, 15 ordinary idle, 205 locomotion.
+No perturbed environment or AE in these stages. First stage sets recovery
+random_start_fraction=0; second sets .5. Everything else in the original env,
+agent and engine configs matches exactly. Dataset/assets and original recovery,
+reward, motor/physics code compared byte-identical. Current wrappers retain
+backup/replay fixes and allow explicit --resume-recovery-curriculum to remove
+perturbed configuration while restoring all learned tensors. No normalization
+reset or additional migration is applied in ordinary RecoveryOmniEnv.
+Native configured MJ, reciprocal reward, head/hands65cm and feet35cm spheres,
+pelvis velocity x2, authored targets, get-up phase feedback, no idle tail and no
+termination penalty remain as in that older main run.
+
+**Automatic progression:** heartbeat `advance-get-up-curriculum` every30 minutes;
+plan Saved/MimicKitEquipment/getup-curriculum-switch.json is authoritative.
+Use getup_curriculum.py check. It reads existing noiseless evaluation captures,
+not aggregate train_seconds and not random-start completions. Require frame-0
+front/back coverage in both equipment states. A failure tick does not count as
+a survived tick. Frame0 -> mixed when every covered example survives25 ticks.
+Mixed -> settle when every example completes its authored clip (terminal2).
+Keep the mixed setup running one additional hour, then restore the latest
+perturbed setup from getup-idle-position-source.zip: idle/loco30/70, normal/
+perturbed30/70, perturbed get-ups at frame0 with random local locomotion pose,
+idle-frame0 body-position-only loss and90% head-height bootstrapped reset.
+Always capture and verify the LATEST checkpoint at each transition, never rewind.
+Existing recorder prioritizes frame0 and random examples for both front/back
+and equipment states; no extra evaluation workload is added by this monitor.
+
+User explicitly authorizes ongoing training through these stages and the final
+perturbed run **until stopped**. Prior21:42 deadline is superseded; live control
+and both deadline guards now carry until_stopped=true (finite year9999 sentinel).
+Failure/backup safeguards and a600-second handoff billing watchdog remain.
+Do not allocate another pod. Pause heartbeat on superseding user request,
+training failure/end, or after verified final perturbed launch; leave final
+training running. Report stage changes/failures, stay quiet on unchanged checks.
+Old `restore-perturbed-get-ups` schedule is PAUSED and its plan marked superseded.
+
+Source SHA7a526e5216c960960992416d60a7c9df3ad561bb9fc7b00172927b4e4bae65f2,
+persistent readback verified. Helpers getup_curriculum.py and
+getup_curriculum_metrics.py; receipts getup-curriculum-*.json. Synthetic stage
+gate checks cover missing motions, random starts, failure ticks and completion.
+
+Live verification: recovery_setup confirms292 frame0/0 random,15 ordinary idle,
+103 walk/102 run. Both optimizers and normalizer restored; samples advance from
+871,481,344 to871,661,568, recent throughput9.9k transitions/s. Actor40 accepted/
+0 rejected, saved effective LR5.63e-7 retained. First checkpoint53191 persistent
+SHA25ca88bf6e96ef7c7529b94c0e476ec465151d21962e48ac4473947ef35502e7.
+TB new datetime run and20-row replay published locally. Baseline frame0 front/
+back, drawn/unarmed all fail at tick3 (2 survived); no advancement claimed.
+First scheduled progression check approximately19:52 Warsaw; checks.jsonl keeps
+the evidence and last-check.json gives the latest decision.
+
+## October 19, 18:45 Warsaw — rewind and normal get-up rehearsal
+
+Current run **20261019_184549_uefn_getup_normal_512**, owned L4
+f44oylb1xk3y5o. User rejected the prior continuation as stale: this run rewinds
+to its original checkpoint **52179_final, 854,917,120 samples**, SHA
+e508a49aae43a61fb33e5e5d69ca711bba504d7799fd7a3709c453cccca0fa3e.
+This is not fresh weights or a resume of the stale run's latest checkpoint.
+The stale final52778 (864,731,136 samples) remains preserved locally and in S3.
+
+Temporarily all **146 get-up worlds are normal**, with authored tracking:
+73 frame-0 starts and 73 random-frame starts. Other cohorts are unchanged.
+The new `perturbed_motion.getup_normal_only` flag changes only recovery rows.
+CPU allocation validation confirmed this split and identical other-cohort masks.
+Configured native MJ, physical normalization migration and existing KL guard remain.
+At 855,670,784 samples, recent updates accepted 40 actor steps and rejected 0;
+effective actor LR was 5.63e-7 after guard adaptation. Throughput about 9.7k
+transitions/s. First checkpoint52180 persistent backup verified, SHA
+0b97c4592510a539ff02183df34c0c493f51ceee02c21b205d39fa00be30ae15.
+TB8035 lists the new datetime run; replayer8021 has its 20-row noiseless capture.
+
+**Scheduled restoration at 20:16 Warsaw today:** heartbeat
+`restore-perturbed-get-ups` follows
+`Saved/MimicKitEquipment/getup-rehearsal-switch.json`. Resume from the latest
+rehearsal checkpoint then, not the rewind checkpoint again. Restore the original
+nominal 30/70 normal/perturbed allocation (42/104 among these get-up worlds),
+perturbed frame-0 starts and the idle-frame-0 position-only objective below.
+Use `Labs/MimicKitTraining/getup_rehearsal.py` prepare --phase mixed, stop,
+capture, launch; capture verifies local SHA and persistent S3 readback first.
+Respect superseding user instructions and require the expected active run.
+Pause the heartbeat after completion, cancellation or training ending.
+**Hard deadline remains 21:42:40 Warsaw, Unix1792438960.398735; no extension.**
+
+## October19 18:22 Warsaw — idle-frame0 position get-ups and physical normalization
+
+Current continuation **20261019_182229_uefn_getup_idlepos_512**, same Secure L4
+f44oylb1xk3y5o, hard deadline21:42:40 Warsaw (1792438960.398735), unchanged.
+User explicitly selected BODY POSITIONS ONLY for perturbed get-ups; ordinary
+get-ups retain authored tracking. Latest old run final52179 at854,917,120samples
+was downloaded locally and persistent S3 readback verified BEFORE resuming:
+SHA e508a49aae43a61fb33e5e5d69ca711bba504d7799fd7a3709c453cccca0fa3e.
+Local Saved/MimicKitEquipment/preserved-checkpoints/20261019_170826_uefn_perturbed_headadd_512/checkpoint_0052179_final.zip.
+
+**Perturbed get-up objective:** from tick1, plain mean squared XYZ body-origin
+position error over all15 bodies against the assigned D/S idle motion frame0.
+Target follows live pelvis XY only; original standing Z and heading remain fixed.
+Pelvis therefore contributes height only. Weight1 (not old position calibration
+814.227, which remains unchanged on other rows). No position deadbands on these
+rows. No AE, rotation, velocity, COM-band, extra pelvis velocity, auto-phase
+supervision or head-height contribution. Reward remains1/(1+MSE). Existing
+frame0 recovery pelvis/random local locomotion pose initialization, autoregressive
+phase input,180-tick maximum, proportions and other cohorts remain unchanged.
+Head ABOVE90% assigned idle-frame0 head height yields DoneFlags.TIME=3,
+bootstrapping the observed final state; no failure, success terminal or penalty.
+No new duration/budget was granted or inferred.
+
+**Normalization migration physical_scales_v1:** keep saved means/command scales;
+raise physical standard deviations to at least pelvisheight.25m, root/joint
+orientation components.25, root linear velocity1m/s, root/DOF angular velocity
+2rad/s, key-body positions.25m. +/-10 normalized safety clipping remains; this
+widens the physical range, rather than removing all numerical safeguards.
+136 channels changed in the actual resumed checkpoint. Actor/critic first-layer
+columns multiply by new_std/old_std; their Adam first/second gradient moments divide
+by ratio/ratio squared. Biases, other layers, optimizer counters and saved LR
+initially retained. Normalizer second moments adjusted consistently; learned count
+remains >100M, so statistics stay frozen. Migration is idempotent on subsequent
+resumes and saved model/optimizer tensors contain it. Phase uses the shared actor
+trunk; command channels146..153 unchanged. Previously UNCLIPPED affine responses
+preserved within floating-point tolerance; previously clipped responses necessarily
+change. This is distinct from the earlier soft-tail A/B, not a proven learning cure.
+
+**Validation:** isolated128-world test on latest available verified checkpoint:
+206 clipped perturbed-getup physical inputs before migration,0 afterward (largest
+normalized absolute value5.661). Pelvis heights.20/.50m encode-2.7148/-1.5148,
+instead of the same-10. Synthetic old-unclipped actor/critic hidden max errors
+1.8e-7/7.6e-6; second migration changes0channels.64 physical ticks finite, position
+loss and target exactly match independent recomputation; other get-up terms zero.
+Forced head crossing returns3. Two consecutive accepted PPO updates after initial
+KL rejections; final real deployment verified separately below.
+
+**Actual live optimizer behavior:** migration initially triggered KL rejections.
+Existing guard reduced actual actor LR2.25e-6 to1e-7 (its existing minimum),
+not a manual LR override. At update52240 (855,916,544samples), last four logged
+updates each accepted40 actor steps and rejected0. Throughput~8.9..10k transitions/s.
+Do not report unchanged effective LR or claim long-term get-up success yet.
+First new checkpoint52180 verified persistent SHA
+9b935736c30a39a8518b5874a2c055861678380949c1d448163f2bcd6b2290f0.
+
+**Replayer/TB:**20 noiseless rows published; both position and orientation of the
+shown target now come from the actual reward target (orientation for display only
+on position-only rows). Four recorded perturbed get-ups independently checked:
+standing target Z constant, position MSE recomputation max error5.96e-8, all other
+weighted terms zero, reward matches reciprocal. These captures timed out at180;
+that is NOT evidence of success. UI honors row active_loss_terms and hides unused
+AE/blend diagnostics on static-idle-position get-ups. Other rows keep full terms.
+Global historical position scale814.227 remains in shared metadata; these get-up
+rows explicitly override it with getup_position_mse_weight=1 and their objective.
+
+Source Saved/MimicKitEquipment/getup-idle-position-source.zip, SHA
+faf017745f17b7a7c3b97824603b1a2089b5f28203fda0a97c1bdd603d77a42a.
+Runtime changes limited to perturbed_omni, resume, train, observe, observe_many;
+configuration changes confined to perturbed_motion. Helper resume_getup_idle_position.py;
+test verify_getup_idle_position.py. Evidence Saved/MimicKitEquipment/
+getup-idle-position-{launch,preserved-checkpoint,preflight,replay-validation,live-validation}.json.
+Unreal/PHAT/assets/ProjectJournal untouched.
+
+## October19 — clipping A/B test completed; no live change
+
+User asked to test whether observation clipping causes perturbed get-ups to stay down.
+Isolated checkpoint51279 (840,171,520 samples), SHA
+6b91dc9a08f9fc6bada0be13f0af43b2291d42705ec67f4822c3add0a2c4fc85,
+was copied after matching the verified persistent receipt. Both arms restored the
+same weights, Adam state and frozen normalization. Control hard-clipped normalized
+observations at +/-10. Intervention kept the same means/std and values inside that
+range, but gave values outside it a slope of0.1 instead of discarding their variation.
+This changes actor, critic and phase-head inputs; it is not a retrained normalizer.
+
+Two training seeds6411/6412,128 worlds,80 PPO updates each arm (327,680 transitions
+per copy), actual restored actor LR2.25e-6. Reward, reset, physics and action noise
+unchanged. Total probe881.6s on existing L4; no new GPU or deadline extension.
+Training initial raw observations match byte-for-byte within each paired seed.
+Post-training evaluations also match initial raw observations byte-for-byte across
+all four copies: reset seeds9851/9852,50 perturbed starts (27front/23back) and22
+ordinary get-up starts,12 of those frame0. Evaluation actions deterministic.
+First ever pre-training evaluation had a different full-observation hash from later
+resets; all reported final comparisons use matching hashes.
+
+Results after80updates, seed6411 / seed6412:
+- Hard clip: perturbed successes0/50 and0/50; mean peak head front0.18465/0.18955m,
+  back0.43617/0.45026m.
+- Compressed tail: perturbed successes0/50 and0/50; front0.18222/0.18280m,
+  back0.36671/0.34664m.
+- Ordinary get-ups22/22 succeeded in every copy, including12/12 frame0 starts.
+- Before training the changed inputs already reduced back peak from~0.436m to
+  ~0.353m. Seed6411 recovered slightly; seed6412 did not. Do not present this as
+  proof that clipping is harmless: short learning budget and changed input
+  distribution limit inference. It does reject this intervention as a demonstrated
+  immediate fix. Clipping removes information, but causal responsibility for the
+  get-up failure remains unproven. No normalization change recommended as a proven fix.
+
+Evidence Saved/MimicKitEquipment/clipping-ab/result.json and cleanup.json;
+script Labs/MimicKitTraining/test_getup_clipping_ab.py. Disposable48,529,661-byte
+remote checkpoint removed after completion; original checkpoint untouched.
+Probe and its replacement timeout guard stopped. Live run remained unchanged and
+advancing: iteration51679,846,725,120samples; throughput temporarily~5.4k during
+concurrent work versus~9.4k before, latest post-probe status~7.4k transitions/s
+(still includes overlap). Main deadline unchanged21:42:40 Warsaw.
+
+## October19 — deeper frozen-checkpoint get-up audit; live run unchanged
+
+User asked to investigate why additive-reward perturbed get-ups remain down.
+Two isolated probes on the existing L4 used verified checkpoint50979,
+835,256,320 samples (SHA9082fe1cbe5aba28e3a0d91460efb30fc970fb6053b0b08a36d8dca714014403).
+They did not update weights, write trainer state, alter live settings, stop the
+trainer or extend billing. 128 probe worlds, same reset seed, 25 perturbed get-up
+starts (11 front/14 back); four180-tick trials plus192 frozen on-policy ticks.
+First probe74.2s; second observation probe23.5s; bounded240s/90s processes ended.
+Disposable remote48MB checkpoint copy removed after collecting compact evidence.
+
+**Confirmed observation clipping:** restored normalization is frozen after100M
+samples and reflects upright motion. Normalizer clips normalized inputs at+-10.
+Pelvis height mean0.878708/std0.030915 => EVERY height below0.569554m maps to-10.
+Head Z relative to pelvis mean0.489887/std0.003723 => EVERY value below0.452661m
+maps to-10. Pelvis orientation component6 lower unclipped bound0.913776, so most
+non-upright orientations saturate that component too. These are input-information
+losses for BOTH actor and critic, not an absent reward gradient. Other joint and
+velocity inputs still distinguish some poses; policy is not wholly blind.
+5.30% of perturbed get-up features clipped initially,4.88% after96ticks versus
+0.61% of other rows; max raw normalized magnitude160. No normalization change made.
+
+**Confirmed hidden time:** keeping physical state and feedback phase fixed and
+changing elapsed time30->90 ticks yields EXACTLY identical raw actor/critic
+observations and critic values, but height bonus changes0->mean0.225. No elapsed
+time/cohort flag is supplied; feedback phase is not the authored clock. This
+prevents the critic from representing those two reward regimes independently.
+
+**Reset/reward interaction:** the authored front/back trajectories cross90% idle
+head height at ticks29/28, respectively. Under perturbed rules those successful
+fast trajectories reset BEFORE head reward begins at61. Actual trajectories do
+not receive a success bonus; TIME bootstraps critic value, so this does NOT prove
+every early success is disfavored (continuation estimate matters). It does prove
+no head bonus is collected on such fast successful paths. Do not equate finite
+recorded return with the bootstrapped PPO objective.
+
+**Exploration:** deterministic mean peak head front/back0.173/0.412m; normal
+sigma0.05 (physical per-axis command std0.314rad/s)0.176/0.451m; sigma0.2 gives
+0.208/0.527m, highest individual0.608m. Holding sigma0.2 noise8ticks gives
+0.208/0.433m. Zero successes in each25-start trial. Larger noise is not a verified
+solution. Different stochastic paths alter later RNG/reset events; starting
+seed/initial poses are matched, not entire trajectories.
+
+**AE and PPO:** back-start late prior cost~0.27 and total reward~1.10 while head
+~0.44m: a low resting pose already earns substantial reward. Clean authored get-up
+AE costs are0.002..0.300 weighted, so AE does not categorically reject standing
+or the authored get-up. PPO gradients are nonzero. One batch actor-trunk get-up
+gradient norm9.83 vs20.45 for other rows, cosine-0.049 (little directional conflict
+in that batch); get-up fraction19.53%. Across192 frozen stochastic ticks, late
+head movement >2mm/tick occurs5.2% of samples. Mean normalized advantage on those
+rising transitions-0.042 vs+0.063 on falling transitions. This is descriptive,
+not causal proof that upward movement itself is penalized; values/AE/action/state
+also differ. Live ordinary front frame0 get-up at replay51079 completed46ticks,
+head1.403m: rules out a blanket inability of this rig/policy to get up, not all
+possible physical obstacles from randomized child poses.
+
+Evidence `Saved/MimicKitEquipment/head-learning-audit/{probe-result,
+observation-audit,normalization-bounds}.json`; executable isolated scripts
+`Labs/MimicKitTraining/audit_getup_learning.py` and `audit_getup_observations.py`.
+Earlier proposed next change was a deliberate normalizer migration covering recovery
+poses; the subsequent A/B above did not validate it as a fix. Such a migration would
+need to preserve old affine responses where previously unclipped, with explicit
+validation; previously clipped states cannot have both identical old responses
+and restored information. Also resolve delayed-height-reward versus early-success
+reset and hidden elapsed time. No objective/input/normalizer changes authorized
+or applied by this investigation.
+
+## October19 17:08 Warsaw — additive get-up height reward; two ordinary idle replays
+
+User approved replacing the x20 squared head penalty with a separate additive
+height reward. Current continuation `20261019_170826_uefn_perturbed_headadd_512`
+uses same L4 f44oylb1xk3y5o, deadline21:42:40 Warsaw unchanged. Latest final50178
+at822,132,736 samples was saved locally and S3 readback verified before resume,
+SHA256 `b82bd66d58bceabe41210feaae9adf7f3fe4f0dddcc67f302ba31d82da89df7a`.
+Weights, Adam state, normalizers, counters, physics, motor limits, motion data,
+cohort proportions, phase behavior and all reset conditions remain unchanged.
+
+Perturbed get-up reward now equals `1/(1+AE_cost) + clamp(headZ/idle_headZ,0,1)`
+with the second term active ONLY after tick60. First active tick61; head origin
+world Z in metres, assigned idle frame0 target. No squared head term remains
+inside loss total or reciprocal denominator. Height reset at90% remains; the
+height reward's mathematical upper bound1 is normally preempted by that reset.
+Normal/other perturbed rows retain their existing rewards. No extra physics pass.
+TB `reward/getup_head_height` averages over perturbed get-up transitions including
+inactive first60 ticks; `reward/total` averages actual rewards over all worlds.
+Per-frame replayer shows Head height reward and Total reward separately from
+losses. Training loss totals exclude this positive reward by design.
+
+Replay selection retains at most2 ordinary idle rows, preserves get-up coverage,
+and replaces excess ordinary-idle slots with diverse perturbed locomotion worlds.
+Still20 noiseless recordings; does not change training allocation or reset sampling.
+CPU tests cover tick60/61 boundary, clipping, cohort mask, actual reward override
+without loss mixing, unique selection and idle replacements. Live first update
+50179 reached822,149,120 samples and checkpoint50179 S3 readback verified SHA256
+`fd92f0d091f37e4c0758c9e82bc32ac76aa53e6c1f93be2b238116c53868da27`.
+Live replay confirms20 rows, exactly2 ordinary idle examples, extra perturbed
+locomotion, and no old head penalty column. All20 recorded reward sequences
+match reciprocal tracking cost plus the independent head contribution within
+1.2e-7. Head contribution is positive only for perturbed get-ups after60 ticks.
+Receipt `Saved/MimicKitEquipment/head-height-additive-replay-validation.json`.
+Live update50189 reached822,312,960 samples at8,964 transitions/s. Both new reward
+charts are visible in local TensorBoard. Local replay converter was extended to
+validate the additive reward form (it initially rejected the unfamiliar formula);
+all20 rows converted and published successfully, bridge restarted with that fix.
+This was a local display delay, not a training failure or interruption.
+
+Current package `Saved/MimicKitEquipment/head-height-additive-source.zip`, SHA256
+`d04cc15a4e0d78153f75c63f35c0a957ea777de0ea2d57da689ef56f6f13be3d`.
+Only changed runtime entries: perturbed_motion, perturbed_omni, observe,
+observe_many, train; only config changes are inside perturbed_motion. Local TB
+mapping and stepper replayer loss overlay updated. Resume helper
+`Labs/MimicKitTraining/resume_additive_head_reward.py`; receipts
+`Saved/MimicKitEquipment/head-height-additive-*.json`. Older x20 package is historical.
+
+## October19 17:02 Warsaw — head-loss investigation, no training changes
+
+User reports perturbed get-ups remaining on ground. Read-only live/source/replay
+audit confirms this behavior, not an omitted head term. In 13 archived evaluation
+captures48633..49833, all displayed perturbed recoveries reached180 ticks without
+the head-height reset; highest head origin was about0.35m versus idle target1.40m.
+These are varying random initial poses, not matched-seed comparisons or exhaustive
+training-world statistics. Latest four recorded rows ended at0.155..0.222m.
+
+Recorded head loss agrees with20*max(idle_headZ-current_headZ,0)^2 to5.1e-6;
+zero through tick60, active from61, correct world vertical and idle target.
+Remote replay49933 actual reward matches1/(1+sum(weighted losses)) exactly.
+Example tick60 reward0.4311 drops to0.03119 at61 as head cost29.742 activates.
+No failure or success reset caused the stalled replays; all ended at time limit.
+
+Confirmed objective sensitivity issue: on replay49833 back row0, holding AE
+cost fixed and algebraically raising head10cm improves reward only0.00568 at
+weight20, versus0.01179 at weight1. This is a reward-form counterfactual, NOT a
+physically simulated improvement. Head loss27.25 and prior2.12 dominate its late
+cost. Large loss inside reciprocal compresses improvements far from standing;
+it does not mean raising head is intrinsically punished. First60 ticks offer no
+head-height incentive. AE reconstructs three poses, with no authored get-up
+progress target on these rows. Elapsed time/head-loss-active flag is absent from
+actor AND critic inputs (phase is autoregressive, not an elapsed clock), so the
+tick61 change is not explicitly observable; causal importance remains unmeasured.
+No claim that motor strength, exploration or shared-policy interference is ruled out.
+
+PPO continues updating: recent logs40 accepted actor minibatches/update, no
+rejections in sampled log entries, KL about0.014..0.018 versus0.18 guard.
+Actual restored optimizer LR2.25e-6 (prepared config says4.5e-6); do not confuse
+the configuration default with checkpoint optimizer state. No LR change made.
+Evidence Saved/MimicKitEquipment/head-loss-audit/latest-replay-summary.json.
+Training and deadline remain unchanged. Recommendation is to give height a
+separate reward contribution outside reciprocal AE cost rather than increasing
+its coefficient inside the denominator; requires user choice before objective change.
+
+## October19 16:16 Warsaw — perturbed get-up head loss multiplied by20
+
+Current run is `20261019_161437_uefn_perturbed_headx20_512` on owned Secure L4
+`f44oylb1xk3y5o` ($0.59/hour). User requested head loss x20. The ONLY package
+change is `perturbed_motion.getup_head_height_weight: 1.0 -> 20.0`.
+Squared head-height shortfall remains restricted to perturbed get-ups after
+tick60 (first active tick61); existing90% head-height reset and all other
+settings remain unchanged. Hard stop remains October19 21:42:40 Warsaw.
+
+Resumed latest final48632 at796,803,072 samples, retaining weights, Adam,
+normalizers and counters. Checkpoint SHA256
+`9a1cbba377792ae77fea175c9c6022bb6fcf00a9228716df27e8162b3fe7c227`
+is locally preserved and S3 readback verified. Receipt:
+`Saved/MimicKitEquipment/head-height-x20-preserved-checkpoint.json`.
+Current source is `Saved/MimicKitEquipment/head-height-x20-source.zip`, SHA256
+`cc205aef3ebe70f4e7d40928364e74b51f924427afd54d6e1d7555fa6c027088`;
+do not reuse the older weight1 package for subsequent continuations.
+Handoff helper: `Labs/MimicKitTraining/raise_perturbed_head_weight.py`.
+Launch receipt: `Saved/MimicKitEquipment/head-height-x20-launch.json`.
+
+Verified advancing iteration48653 /797,147,136 samples at9,050 transitions/s.
+Weighted head-height loss is live (3.575 in this batch). First continuation
+checkpoint48633 is persistently readback verified, SHA256
+`7619ec1f0017a9c6bd6d95926db30e5296675da43126ee391b4812c172ed3940`.
+Local bridge and dated TensorBoard observers started for this continuation.
+A40 remains stopped; L4 availability heartbeat remains paused.
+
+## October19 15:37 Warsaw — L4 running; A40 confirmed stopped
+
+User explicitly authorized booking L4 and then said DO NOT stop A40 until L4 is
+running. Community allocation returned no instances despite advertised$0.44.
+Secure L4 f44oylb1xk3y5o booked at$0.59/hour, isolated control state in
+Saved/MimicKitEquipment/l4-migration. Boot/SSH/GPU and runtime cache restore passed.
+First signed source request returned403; small verified source transferred viaSSH;
+runtime and checkpoint read directly from persistent S3 successfully. Two brief
+setup stops/restarts occurred; final SSH port changed to17271. A40 stayed training.
+L4 trainer20261019_153401_uefn_perturbed_ae_L4_512 launched15:34:04 from latest
+verified A40 checkpoint47507, SHA81236a5769ac09de9ad34b30931c4749aafb029e4840e0a9b3f4f70362014e4a.
+Same corrected source/settings; hard deadline21:42:40 remains. Both local and
+remote L4 guards updated to that deadline. Verify advancing L4 updates and first
+readback-verified checkpoint BEFORE gracefully stopping A40 y2l8exly57bqu0.
+Do not allocate another pod while this migration is active. Pause L4 heartbeat
+after successful migration; its revised prompt is19 words.
+
+L4 live update47528 reached778,715,136 samples at9,229 transitions/s versus
+A40 ~6.4k. First checkpoint47508 readback verified SHA256
+c4d5af0af5e0c3562dc7dff75ca2819aa3785221e3a52e7f5f1ea1200773bc5f;
+manifest independently checked from PC. Only AFTER these confirmations, requested
+A40 graceful stop. Main pod/control/active-run now point to L4; old identities
+preserved under retained-pods/y2l8exly57bqu0/l4-migration-*.json. Local bridge and
+dated TensorBoard for L4 started. L4 heartbeat PAUSED after success. Migration
+receipts Saved/MimicKitEquipment/l4-migration/{migration-proof,promoted}.json.
+The A40 continued independently during L4 preparation as explicitly requested;
+its additional overlap updates will be preserved in its final checkpoint, not
+merged into the L4 policy resumed from47507. Both use unchanged corrected settings.
+A40 confirmed EXITED after its final47610 checkpoint was persistently verified,
+SHAe4d827bd962a5dffead314eea1f2891dc2e6290bfd7425ae6d57130388ba4fa0.
+Receipt l4-migration/a40-final-state.json. Only the L4 remains running for this task.
+
+## October19 — explicit objective corrections and frame-zero perturbed getups
+
+User rejected nominal-speed auto-phase supervision on autoregressive rows.
+It is removed on ALL phase-feedback rows, including normal recovery rows:
+rollout buffer records a phase-supervision mask, both actor-loss paths apply it,
+and replay reports zero weighted phase loss/weight there. Remaining clock rows
+retain the original batch denominator and weight. No output/input dimensions,
+optimizer, physics, motor, or dataset changes. Phase feedback still operates.
+Important limitation disclosed to user: phase outputs are not PPO actions, so
+AE reward does not directly train the phase head; no new algorithm was added.
+
+Audit found an unrequested flat-COM-band loss on perturbed rows. Removed it;
+normal rows keep their original COM loss. User additionally requested motion
+prior divided by10: coefficient69.42658260262293 ->6.942658260262293.
+Every perturbed getup now starts from recovery frame0 (pelvis and local velocity
+from that frame), retaining the requested random locomotion child-joint pose.
+Normal getup start mix is unchanged. User approved head-height squared shortfall
+with weight1: max(assigned idle frame0 headZ - actual headZ,0)^2, only on perturbed
+getups strictly after tick60. Tick60 itself is zero. New loss/getup_head_height
+chart and generic per-tick replayer term. Existing90% head-height reset remains.
+
+Latest original run stopped gracefully for this correction: final47206,
+773,439,488 samples; local and S3 readback verified SHA256
+b0d594b796e770f150a2d14b845d6dec928ec3d01c1cf66c7da8cea589487274.
+Saved/MimicKitEquipment/perturbed-correction-preserved-checkpoint.json records it.
+Correction resumed15:17:10 Warsaw as20261019_151703_uefn_perturbed_ae_corrected_512
+on same A40; deadline unchanged21:42:40 Warsaw. CPU gradient-mask and head
+tick-boundary tests pass. GPU one discarded PPO update passed frame0/phase-mask/
+COM-zero/AE-weight contracts, restoring773,439,488 samples with Adam and normalizers.
+Source e58d426c81f3e7b0fb47a8e8b73a6b5f892026108082f431a2146de722edcf7c;
+current package Saved/MimicKitEquipment/perturbed-correction-source.zip and
+launch/validation receipts `perturbed-correction-*.json`. Earlier perturbation
+preparation source is historical and must not replace this corrected package.
+First live update47207 advanced773,455,872 samples; initial checkpoint0047207
+passed persistent readback, SHA256c19b981a4861f6518e693e4db6edc0c27b66cd47b971259a8089aaf6b60969bc.
+Aggregate auto_phase stays nonzero because clock-input normal locomotion/idle
+rows remain supervised; feedback rows contribute exactly zero. Initial head
+loss is zero because the first batch has not reached tick61.
+Engine/agent YAML match original47039 exactly; only idle fraction/perturbation
+configuration differs in environment YAML. New source changes scoped by package
+comparison. No new spending window or second GPU authorized by this correction.
+
+## October19 14:58 Warsaw — A40 launch explicitly authorized
+
+User now accepts the slower A40 at $0.59/hour and requests L4 availability checks
+every three minutes. Heartbeat `check-l4-availability` created with a 17-word prompt;
+checks must leave A40 training uninterrupted, notify on availability, and stop when
+training ends. Do not rent a second training GPU merely to check availability.
+Original hard stop remains October19 21:42:40 Warsaw (1792438960.398735).
+Latest checkpoint remains final47039, 770,703,360 samples, verified locally and S3.
+
+A40 preflight passed 512 worlds/180 ticks/five discarded PPO updates. New workload
+measured 5.8k–6.55k transitions/s; exact old-workload baseline 5.50k versus recorded
+L4 ~9.5k. User explicitly accepts this difference; launcher flag
+`--accept-slower-a40` skips the repeated old-workload speed gate. It does not change
+training, physics, or checkpoint state. Direct persistent S3 works on CA-MTL-1
+hosts; Swedish-host S3 timeout is not a general provider outage. No PC relay used.
+Replacement owned pod y2l8exly57bqu0 booted with SSH/GPU healthy in ~29 seconds.
+Production launched at 15:00:56 Warsaw: `20261019_150048_uefn_perturbed_ae_512`,
+512 worlds, restored weights/Adam/normalizers/counters. First live update47040
+advanced to770,719,744 samples. Preflight on this host measured6,661 transitions/s.
+Local bridge/dashboard started; receipt Saved/MimicKitEquipment/perturbed-launch.json.
+Independent local/remote deadline and trainer-exit guards remain installed.
+Live update47060 reached771,047,424 samples at6,273 transitions/s (recent PPO
+mean). First persistent checkpoint0047040 is readback-verified, SHA256
+ee2f63467721ca8686ae189634b52dafce153ae900ba2f622a81c637d9e2749a;
+S3 latest_verified.json independently retrieved locally. Remote evaluation and
+20-row replay are present. Replayer API confirms the new run is running with one
+local capture containing20 rows; TensorBoard8035 exposes the dated15-00-48 run.
+
+## October19 14:37 Warsaw — prolonged setup stopped; no training launched
+
+User questioned prolonged startup. Owned A40 h1cq7jhsxtsv4q confirmed EXITED
+at Unix1792413435; no train.py or preflight process was running. No further
+allocation/restart dispatched. Its retained disk now has the complete409880235-byte
+verified-runtime archive and49157256-byte final47039 checkpoint (checkpoint remote
+SHA verified). Local runtime cache and original local/S3 checkpoint remain safe.
+The A40 full-PPO throughput comparison is STILL UNMEASURED; do not claim parity
+or start production merely because CUDA boots.
+
+Confirmed failures were distinct: unavailable/non-booting L4 allocations;
+first A40 preflight omitted initial observations before PPO (fixed locally);
+subsequent A40 hosts time out reading EU-RO S3 with BOTH urllib and actual boto3,
+while the identical signed request works from the PC. Alternative resolved IPv4
+also timed out; virtual-hosted S3 addressing was not usable. No provider-internal
+cause/global outage has been proven. A temporary loopback SSH relay through the
+PC passed a small S3 write/readback/delete test in4seconds, but was only a test:
+it was closed after stopping the pod. Production must not silently depend on
+the user's PC connection. The slow ~410MB SSH upload was a poor fallback for
+paid setup and contributed most of the delay. Do not repeat it blindly.
+
+Failed new allocations93oue2ikkiudr1, kskfq6e0140qqi and vunesen56iilua were
+stopped/deleted after preserving diagnostics; none held new training checkpoints.
+Original retained L4/checkpoints untouched. Original authorized hard deadline
+remains21:42:40 Warsaw if work is resumed, not a fresh eight hours.
+
+## October19 - A40 fallback validation after L4 capacity failures
+
+14:10 Warsaw: L4 start requests on three retained hosts explicitly report no
+free GPU; fresh L4 requests now report no instances available. The identical
+container image started on A40 kskfq6e0140qqi at $0.59/h in29seconds, with SSH
+and CUDA healthy. This isolates the practical blockage to L4 availability/startup;
+the earlier accepted-but-never-started L4 allocations have no host events, so
+their internal provider failure is not proven. No general Runpod outage claimed.
+Evidence: Saved/MimicKitEquipment/startup-diagnosis.
+
+User permits A40 production only if throughput is comparable. Its first
+512-row physical validation passed180ticks, but the standalone PPO benchmark
+omitted the initial observation reset. Fixed preflight to call _reset_envs()
+before _train_iter(); no training checkpoint changed. Failure guard stopped
+the A40 immediately. Retrying the same pod with a full-PPO speed gate of
+8192transitions/s (2s/update versus recent L4 ~1.72s/update), including AE.
+Original21:42:40 Warsaw deadline remains; no production launch claimed yet.
+Updated prepared source SHA fbf44f57de160714efebfa2e629dd44a6c5cafcb344cbaf9e079232c687ba817.
+
+### Earlier L4 startup attempts
+
+13:55 Warsaw: no trainer launched. Original retained pod n5esp2rc3dvxc4
+could not resume. Replacement93adwv87jcwf3z never exposed a container/SSH
+after bounded45/180-second attempts; other seven selected regions reported
+no L4 capacity. Replacementj6g4aultpym8qj on a different RO host also failed
+to start within300seconds. Both had zero container uptime and no Docker ID,
+were confirmed EXITED, then deleted because no files were ever uploaded to
+either disk. Original n5 retained disk/checkpoint remains intact and EXITED.
+At that point no GPU was left running and no GPU preflight/PPO success was claimed.
+
+Source dd1f287d2dfd7e8cfe9fe2d824f2294a4700454a1ca5090616b364b21e5288e5
+is persistently readback-verified under equipment/perturbed-motion in the
+existing mimickit/pipeline_20261014 prefix; final47039 readback also passed.
+Local launch helper `launch_perturbed.py`, status `perturbed-launch-status.json`,
+cleanup `perturbed-empty-pods-cleanup.json` in Saved/MimicKitEquipment.
+Original attempted8h window ends21:42:40 Warsaw October19; --continue-window
+preserves it on another attempt. Setup has a separate ten-minute cutoff;
+production extends only to the original hard deadline after GPU preflight.
+
+User authorizes continuation from final47039 for eight hours on the existing
+L4 rate ceiling, with 30% normal / 70% perturbed rows, each 30% idle / 70%
+locomotion. Keep 50/50 walk/run and 5/95 ordinary/recovery idle ratios.
+Perturbed locomotion and ordinary idle receive world-Z yaw in [-90,+90], keeping
+local joint velocities and original world XY trunk-COM velocity. This needs
+a uniform translation-velocity correction after yaw, not simply retaining
+pelvis linear velocity. User explicitly selected eight initial grace ticks,
+removal of old failure conditions for perturbed rows, and COM2 direction/speed
+termination only for perturbed locomotion: strict speed below70% or above170%
+of the mean target, or direction more than45degrees away, after eight ticks.
+The user's latest correction explicitly selects70%, not30%, as the lower cutoff.
+Normal rows retain prior behavior.
+COM2 is mass-weighted pelvis/torso/head only, excluding all limbs.
+
+Implemented `perturbed_motion.py` and opt-in `perturbed_omni.py`: velocity-preserving yaw, strict
+COM2 gates, 80-tick AE / 60-tick linear transition helper, frozen portable
+three-pose AE scorer with isolated reset history. Wired through `train.py` and
+explicit `--resume-perturbed-motion` migration. CPU numerical checks pass COM2 preservation, local relative
+velocity preservation, speed/direction boundaries, blend endpoints and exact
+AE score parity/history resets. The AE is an RL reward input; no pathwise
+simulator gradients are claimed. Bundle: Saved/MotionRegularizer-2x512.
+
+`prepare_perturbed_com2.py` precomputed all50 loaded motion averages from the
+exact stopped deployment. Saved/MimicKitEquipment/perturbed-preparation/
+com2_targets.json records source and motion hashes, masses and world XY target
+vectors. Trunk masses16.4535866/23.9462585/4.0400376kg;48 locomotion target speeds
+range1.46290-5.04159m/s. Sampling uses full-clip midpoint quadrature at240Hz;
+idle entries are computed but never used for speed termination.
+
+Perturbed get-ups receive NO yaw. Preserve original pelvis pose and sample
+child-joint positions from a uniform random frame across all48 locomotion clips.
+Existing local velocities remain unchanged. AE-only tracking cost, maximum180
+ticks, with a reset when head worldZ exceeds90% of assigned idle frame0 headZ.
+Both head reset and horizon use TIME3 (bootstrap final state, no failure penalty),
+not FAIL1 or SUCC2. Old failure checks are disabled for every perturbed row.
+Normal get-ups retain the old mixed frame0/random-frame starts and sphere checks.
+
+Perturbed phase input feeds back the previous prediction; for locomotion and
+ordinary idle it also chooses the current MSE reference. AE weight remains full
+through tick80, then blends linearly to full MSE at140. Get-ups stay AE-only.
+Keep the old flat-COM band term on non-getup rows; normal losses are unchanged.
+Supervised auto-phase remains a separate optimizer loss. Frozen AE coefficient
+69.4265826 matches prior body tracking cost on3574 saved three-pose windows:
+raw AE mean5.90005e-3, weighted body mean4.09621e-1. No weight/physics tuning.
+Each reset clears AE history; scoring begins after three valid physical poses.
+512-row allocation:154normal/358perturbed,154idle/358loco,108perturbed idle.
+
+Latest checkpoint47039/770703360 restored in CPU smoke; phase feedback, AE history,
+get-up zero tracking cost and TIME reset passed24 physical ticks. All50 COM2
+targets are prepared; locomotion reference instantaneous speeds fall within
+0.846-1.263 of their full-motion means. GPU validation checks all512 rows and
+five discarded PPO updates before production reloads the untouched checkpoint.
+Replay records per-tick AE cost/blend/reset reason and labels normal/perturbed;
+old termination spheres are hidden on perturbed rows. No Unreal/PHAT changes.
+Preparation/evidence: Saved/MimicKitEquipment/perturbed-preparation.
+
 ## October19 - stopped at user request; final checkpoint preserved
 
 Owned L4 `n5esp2rc3dvxc4` gracefully saved its final evaluated checkpoint and

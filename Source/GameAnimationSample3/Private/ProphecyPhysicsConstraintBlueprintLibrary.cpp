@@ -1,4 +1,5 @@
 #include "ProphecyPhysicsConstraintBlueprintLibrary.h"
+#include "ProphecyJoltConstraintRuntime.h"
 
 #include "ProphecyRetractableSkeletalMeshComponent.h"
 
@@ -16,6 +17,16 @@
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "ReferenceSkeleton.h"
 #include "TimerManager.h"
+
+bool UProphecyPhysicsConstraintBlueprintLibrary::StartOptimisedSwordCut(AActor* SwordActor, UPhysicsConstraintComponent* Constraint)
+{
+	return ProphecyJolt::Constraints::StartOptimisedSwordCut(SwordActor, Constraint);
+}
+
+bool UProphecyPhysicsConstraintBlueprintLibrary::SetPikeWoundCorrection(UPhysicsConstraintComponent* Constraint, bool Enabled)
+{
+	return ProphecyJolt::Constraints::SetPikeWoundCorrection(Constraint, Enabled);
+}
 
 namespace
 {

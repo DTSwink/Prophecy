@@ -9,6 +9,7 @@ import json
 import shlex
 import time
 import hashlib
+import zipfile
 from pathlib import Path
 
 import cloud
@@ -31,6 +32,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--keep-deadline', action='store_true')
     parser.add_argument('--seconds', type=int, default=3600, help='User-authorized runtime from launch')
+    parser.add_argument('--source-package', type=Path, help='Resume the exact previously verified source archive')
+    parser.add_argument('--source-sha256', help='Required expected digest for source-package')
     parser.add_argument('training_args', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     assert args.seconds > 180
@@ -43,6 +46,10 @@ def main():
     if '--omni-run-lr' in argv or '--equipment-omni' in argv:
         root=Path(__file__).resolve().parents[2]
         current={entry:hashlib.sha256(path.read_bytes()).hexdigest() for entry,path in runtime_files(root).items()}
+        if args.source_package:
+            assert args.source_sha256 and hashlib.sha256(args.source_package.read_bytes()).hexdigest()==args.source_sha256
+            with zipfile.ZipFile(args.source_package) as package:
+                current={entry:hashlib.sha256(package.read(entry)).hexdigest() for entry in current}
         preflight+='\nimport hashlib\nfor entry,digest in '+repr(current)+'.items():\n    assert hashlib.sha256((r/entry).read_bytes()).hexdigest()==digest, "Stale UEFN runtime; deploy current source before training: "+entry\n'
     cloud.ssh('python -c ' + shlex.quote(preflight))
     for helper in ('billing_stop.py','failure_stop.py'):

@@ -452,6 +452,16 @@ void AProphecyBloodTexturePaintManager::ClearRuntimePaintState(bool bRestoreOrig
 			const FProphecyBloodPaintState& State = StatePair.Value;
 			if (State.Component && OriginalMaterialsByKey.Contains(StatePair.Key))
 			{
+				// Reused blade MIDs are also the original material: detach our paint
+				// texture on restore while retaining their independent depth layer.
+				if (State.BloodMID && OriginalMaterialsByKey[StatePair.Key] == State.BloodMID)
+				{
+					UTexture* DefaultMask = nullptr;
+					if (State.BloodMID->GetMaterial()->GetTextureParameterValue(FHashedMaterialParameterInfo(BloodMaskTextureParameter), DefaultMask))
+					{
+						State.BloodMID->SetTextureParameterValue(BloodMaskTextureParameter, DefaultMask);
+					}
+				}
 				State.Component->SetMaterial(State.MaterialSlot, OriginalMaterialsByKey[StatePair.Key]);
 			}
 		}
@@ -949,6 +959,15 @@ FString AProphecyBloodTexturePaintManager::MakeSkinnedPaintMeshCacheKey(const US
 
 UMaterialInterface* AProphecyBloodTexturePaintManager::ResolveBloodMaterialTemplate(UMaterialInterface* CurrentMaterial) const
 {
+	// A blade-depth material already includes this paint layer. Reuse its MID so
+	// a later collision stamp keeps the accumulated depth and the same RT owner.
+	float BladeDepth = 0.0f;
+	UTexture* ExistingMask = nullptr;
+	if (CurrentMaterial && CurrentMaterial->GetScalarParameterValue(FHashedMaterialParameterInfo(TEXT("BladeBloodDepth")), BladeDepth)
+		&& CurrentMaterial->GetTextureParameterValue(FHashedMaterialParameterInfo(BloodMaskTextureParameter), ExistingMask))
+	{
+		return CurrentMaterial;
+	}
 	for (const FProphecyBloodMaterialPair& Pair : BloodEnabledMaterialPairs)
 	{
 		if (Pair.CleanMaterial == CurrentMaterial && Pair.BloodMaterial)

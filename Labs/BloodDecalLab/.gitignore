@@ -1,0 +1,8 @@
+/Binaries/
+/Intermediate/
+/DerivedDataCache/
+/Saved/*
+!/Saved/Results/
+/Saved/Results/*
+!/Saved/Results/*.json
+!/Saved/Results/*.png

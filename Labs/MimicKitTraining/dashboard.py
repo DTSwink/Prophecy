@@ -9,6 +9,7 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 from tensorboard.summary.writer.event_file_writer import EventFileWriter
 from tensorboard.compat.proto.event_pb2 import Event
 from tensorboard.compat.proto.summary_pb2 import Summary
+from perturbed_eval_metrics import outcome_scalars
 
 
 def scalars(path):
@@ -22,6 +23,9 @@ class Dashboard:
         self.manifest=manifest
         self.writers={}
         self.seen={}
+        self.replay_seen=set()
+        self.outcome_cache=Path(manifest["output"]).parent/"PerturbedOutcomeCache"
+        self.outcome_cache.mkdir(exist_ok=True)
         for run in manifest['runs']:
             target=Path(manifest['output'])/run['name']
             target.mkdir(parents=True,exist_ok=True)
@@ -43,10 +47,21 @@ class Dashboard:
                 mapping['health/'+tag]=('health/'+tag,1)
             for tag in ('policy_kl','policy_kl_proposed','actor_steps_accepted','actor_steps_rejected','actor_full_rollback','actor_learning_rate'):
                 mapping['Misc/'+'_'.join(x.capitalize() for x in tag.split('_'))]=('optimizer/'+tag,1)
+            if run.get('training_outcomes'):
+                mapping['normal_termination/Get-up failure percent']=('normal_termination/Get-up failure percent',1)
+                mapping['normal_termination/Get-up_failure_percent']=('normal_termination/Get-up failure percent',1)
+                for label in ('Locomotion','Get-up'):
+                    tag='perturbed_termination/'+label+' failure percent'
+                    mapping[tag]=(tag,1)
+                    mapping[tag.replace(' ', '_')]=(tag,1)
             if run['objective']=='world_pose_mse':
                 mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','orientation_mse','body_pose_mse','head_height_band','pelvis_height_band','feet_lateral','termination_remaining','total')})
             if run['objective'] in ('absolute_walk_mse','uefn_omni_absolute_walk','uefn_crawl_idle_mse'):
-                mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','linear_velocity_mse','rotation_mse','angular_velocity_mse','flat_com_velocity','pelvis_velocity_extra','auto_phase','body_total','total')})
+                mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','linear_velocity_mse','rotation_mse','angular_velocity_mse','flat_com_velocity','pelvis_velocity_extra','motion_prior','auto_phase','body_total','total')})
+                mapping['motion_prior/raw_cost']=('motion_prior/raw_cost',1)
+                mapping['loss/getup_head_height']=('loss/getup_head_height',1)
+                mapping['reward/getup_head_height']=('reward/getup_head_height',1)
+                mapping['reward/total']=('reward/total',1)
                 mapping.update({'Misc/Auto_Phase_Mse':('auto_phase/mse',1),'Misc/Auto_Phase_Weighted':('auto_phase/weighted_loss',1)})
             composite=run['objective']=='timed_best_pose_tail'
             if composite:
@@ -55,6 +70,9 @@ class Dashboard:
                 if run.get('velocity_includes_pelvis'):
                     mapping['loss/joint_velocity']=('loss/velocity',1)
             name=run['name']
+            cache_path=self.outcome_cache/(name+'.json')
+            cached=json.loads(cache_path.read_text()) if cache_path.exists() else {}
+            cache_changed=False
             amp=run['objective'] in ('amp_spinkick','amp_standing')
             if amp:
                 # AMP's environment return is zero: its imitation reward is
@@ -67,6 +85,22 @@ class Dashboard:
                                 'Misc/Disc_Demo_Acc':('discriminator/reference_accuracy',1)})
             for source in run['sources']:
                 if not Path(source).exists():continue
+                # Local replay history is already downloaded by the bridge.
+                # Read each capture once; no added simulation or remote traffic.
+                for capture in sorted((Path(source)/'debug').glob('rollout_step_*.json')):
+                    capture_key=(name,str(capture))
+                    if capture_key in self.replay_seen:continue
+                    payload=json.loads(capture.read_text())
+                    rows=[r.get('evaluation',{}) for r in payload.get('rows',[])]
+                    ref=payload.get('metadata',{}).get('evaluation',{})
+                    sample=ref.get('samples')
+                    wall=ref.get('generated_unix')
+                    if sample is not None and wall is not None:
+                        values=outcome_scalars(rows)
+                        if values:
+                            cached[str(sample)]=dict(wall_time=wall,values=values)
+                            cache_changed=True
+                    self.replay_seen.add(capture_key)
                 data=scalars(source)
                 episode_counts={e.step:e.value for e in data.get('1_Info/Train_Episodes',[])}
                 for old,(tag,scale) in mapping.items():
@@ -111,6 +145,32 @@ class Dashboard:
                         self.writers[name].add_event(Event(wall_time=replay['generated_unix'],step=samples,
                             summary=Summary(value=[Summary.Value(tag=key[0],simple_value=result['mean_return']*(-1 if mse else 1))])))
                         self.seen[name].add(key);count+=1
+            self.writers[name].flush()
+            if cache_changed:
+                temporary=cache_path.with_suffix('.tmp')
+                temporary.write_text(json.dumps(cached))
+                temporary.replace(cache_path)
+            # Private count cache keeps diagnostic cards out of TensorBoard.
+            # Each experiment owns only its own captures, never prior runs.
+            history = {}
+            prefix='perturbed_eval_sample/'
+            for source in ([] if run.get('training_outcomes') else [name]):
+                path=self.outcome_cache/(Path(source).name+'.json')
+                source_cache=json.loads(path.read_text()) if path.exists() else {}
+                for step, record in source_cache.items():
+                    values=record['values'];wall=record['wall_time'];step=int(step)
+                    if prefix+'locomotion_no_failure_percent' in values:
+                        history[('perturbed_termination/Locomotion failure percent',step)]=(wall,100-values[prefix+'locomotion_no_failure_percent'])
+                    if prefix+'getup_failure_percent' in values:
+                        history[('perturbed_termination/Get-up failure percent',step)]=(wall,values[prefix+'getup_failure_percent'])
+                    elif prefix+'getup_head_reset_percent' in values and prefix+'getup_timeout_percent' in values:
+                        history[('perturbed_termination/Get-up failure percent',step)]=(wall,max(0.,100-values[prefix+'getup_head_reset_percent']-values[prefix+'getup_timeout_percent']))
+            for (tag, step), (wall, value) in sorted(history.items(), key=lambda item: item[0][1]):
+                if (tag, step) in self.seen[name]:
+                    continue
+                self.writers[name].add_event(Event(wall_time=wall,step=step,
+                    summary=Summary(value=[Summary.Value(tag=tag,simple_value=value)])))
+                self.seen[name].add((tag,step));count+=1
             self.writers[name].flush()
         return count
 

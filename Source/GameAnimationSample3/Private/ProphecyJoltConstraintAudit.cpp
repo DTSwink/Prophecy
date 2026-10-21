@@ -37,6 +37,22 @@ void ConstraintAudit(const TArray<FString>& Args, UWorld* World)
             const FTransform FrameA = Settings.FrameA * FTransform(A.Rotation,A.PositionCm);
             const FTransform FrameB = Settings.FrameB * FTransform(B.Rotation,B.PositionCm);
             Row->SetNumberField(TEXT("anchor_gap_cm"), FVector::Distance(FrameA.GetLocation(),FrameB.GetLocation()));
+            const FVector Travel = FrameA.InverseTransformPosition(FrameB.GetLocation());
+            Row->SetStringField(TEXT("travel_cm"), Travel.ToString());
+            TArray<TSharedPtr<FJsonValue>> Limits, Rotation;
+            for (int32 Axis = 0; Axis < 3; ++Axis)
+            {
+                auto Limit = MakeShared<FJsonObject>();
+                Limit->SetNumberField(TEXT("motion"), int32(Settings.Translation[Axis].Motion));
+                Limit->SetNumberField(TEXT("min"), Settings.Translation[Axis].Minimum);
+                Limit->SetNumberField(TEXT("max"), Settings.Translation[Axis].Maximum);
+                Limit->SetNumberField(TEXT("damping"), Settings.Drives[Axis].Damping);
+                Limit->SetBoolField(TEXT("velocity_drive"), Settings.Drives[Axis].bVelocity);
+                Limits.Add(MakeShared<FJsonValueObject>(Limit));
+                Rotation.Add(MakeShared<FJsonValueNumber>(int32(Settings.Rotation[Axis].Motion)));
+            }
+            Row->SetArrayField(TEXT("translation"), Limits);
+            Row->SetArrayField(TEXT("rotation_motion"), Rotation);
             FVector Force,Torque; Native->ReadJointReaction(Joint,Force,Torque);
             Row->SetNumberField(TEXT("force"),Force.Size()); Row->SetNumberField(TEXT("torque"),Torque.Size());
         }

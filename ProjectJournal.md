@@ -1,8 +1,972 @@
 # Prophecy — current handoff
 
-Updated **October 18, 2026**, after the bomb fuse and detonation verification. This file and the current sections of linked topics take precedence over dated archives.
+Updated **October 19, 2026**, after static-fuse verification. This file and the current sections of linked topics take precedence over dated archives.
 
 ## Resume here
+
+**October21 current head-pike entry fixed before requested backup:** Optimised
+was recentering the accepted contact6.221cm onto the blade centreline, causing
+an upward solver kick. It now retains the pike's transverse contact offset at
+the hilt plane. Ten exact-prefix samples; first post-contact deviation from
+legacy4.751deg ->0.019deg. Stain reaches1; withdrawal removes joint/cut/NS at
+0.35s. Current fixture transient hilt overshoot4.945mm (earlier0.432mm belonged
+to a different approach). No BP/scene tuning edits. One implementation compile
+119.98s, Live Coding loaded17:09:35UTC, no restart; normal DLLs remain stale.
+Owned Play ended; latest user A_Sword/map edits saved for the requested backup.
+Curated snapshot targets codex/standalone-sim: scripts/source/docs/config plus
+all346 Blueprint/Niagara/ControlRig assets and lightweight supporting assets.
+No new LFS pointers or files over25MiB; bulk meshes/textures/animation libraries,
+VDB volumes, training checkpoints and generated diagnostics excluded. Remote
+push receipt lives in Saved/Diagnostics/Backup20261021 after verification. See
+[current correction and evidence](Docs/OptimisedSwordCuts.md).
+
+**October21 Optimised sword cuts — saved, loaded and tested:** A_Sword has
+instance-editable Optimised=true (select before Play); false retains old BP path.
+User-confirmed velocity cut dampings, easier withdrawal, matter0-only frame5
+depth cap, and one-time accepted-slash width overshoot correction implemented.
+Native travel releases cuts/NS; flesh pikes publish progressive blade stain.
+Slash plane/swing3x3 solve leaves twist free; hard blade limits solved in existing
+iterations. Wall width2.779678cm held; cube cap frame5/natural ejection0.68333s;
+head pike NS/stain1.0/withdrawal cleanup pass, hilt residual0.432mm.3976 original
+pins compared/nine expected changes. Only A_Sword saved, map hash unchanged.
+Editor21708 explosionVFX stopped/no dirty packages. Normal layout build/restart
+completed earlier; final implementation-only plugin patch33.21s loaded16:52:35UTC.
+Normal DLLs stale: incremental build before next cold launch. Standalone100-cut
+world~0.45–0.73ms physics CPU, not an Unreal FPS comparison. Shared opted-in pike
+hard-stop correction also tightened; ordinary joints unchanged. See
+[implementation, measurements and exclusions](Docs/OptimisedSwordCuts.md).
+
+**October21 locomotion RUNNING with1,024 agents:** user-selected resume from
+preserved production91895_final (1.506B samples), not sweep weights. New A40
+wjxv6qigq3dy9o at$0.59/hour until stopped; L4 unavailable. Run
+20261021_171453_uefn_locomotion_ae30_mse30_yaw180_1024. Settings unchanged except
+agent count; pinned512-only startup gate corrected. First attempt failed before
+training and stopped billing automatically; corrected run advances91896->91906,
+early13.6k transitions/s. First checkpoint persistent-readback verified. Both
+optimizer states/normalization restored. Recovery stays stopped. TB17-14-53;
+Saved/MimicKitLocomotion/worlds1024-live-verification.json; topic opening has
+source/backup/setup details. Supersedes stopped-production statements below.
+
+**October21 recovery resumed with1,024 agents:** latest99984_final retained;
+new20261021_171139_uefn_getup_ae10_1024 on L4upszb03gy35fzj/$0.59hour,
+until stopped. Optimizer/normalizer restored; other training settings unchanged.
+Verified99985→99995 (~15.15k transitions/s early), persistent backup and replay.
+Removed obsolete equipment512-agent launch restriction after first attempt
+stopped automatically before training. Original/replacement retained pods
+unavailable; both stopped. Locomotion untouched. See MimicKitTraining opening
+and Saved/MimicKitEquipment/getup1024-verification.json.
+
+
+**October 21 isolated locomotion sweeps — finished; GPU stopped:** ten
+configurations screened from protected checkpoint91895_final. No verified
+learning-speed winner: rollout64+LRx2 gave27.40% failures versus baseline27.67%,
+within evaluation uncertainty. 1,024 worlds processed transitions1.68x faster,
+but evaluation velocity/observation hashes differed; learning result excluded.
+User requested wrapping up; longer confirmation cancelled without a completed
+comparison. Separate A40a9y7igarhig19j confirmed EXITED, estimated GPU cost$1.14.
+All seven production checkpoint/source/control files rehashed unchanged. Both
+production branches stay stopped; no settings promoted. Evidence and stop/
+backup receipts: Saved/MimicKitLocomotionSweeps/20261021. Final research/report:
+Saved/MimicKitLocomotion/research-20261021/results.md. See topic opening.
+
+**October21 first wound ray — fixed, saved and tested in current head-pike scene:**
+NS_bloodwound Fountain001 now uses wound-only synchronous CPU collision copies;
+trace multiplier1 instead of5. Local space, speed, lifetime and other emitters
+unchanged. Stock asynchronous hits were stale by the paint callback: original
+1cm retrace missed100/100 sampled first-emitter exports; fixed100/100 hit head.
+First stamp at0.283333s, three game ticks after head pike at0.233333s; first-only
+normal callback and full two-emitter test agree. Visible head stain verified
+against same-view BloodIntensity0 capture. Temporary wider retrace removed;
+A_DecalManager keeps +/-1cm, scalar pin repaired/compiled/saved. Only wound NS,
+two companion modules and manager saved; A_Sword user edits remain dirty.
+Owned tests ended, explosionVFX open, no restart. Editor helper Live Coding
+loaded (API/link repair retries; final installer guard build109.16s); normal editor DLL stale before
+future cold launch. Runtime uses saved Niagara assets, no native tick hook.
+See Docs/BloodExperiments opening and compact Saved/Diagnostics/WoundRay evidence.
+
+**October21 recovery stopped / latest preserved:** user requested download then
+stop. Final99984 at1,638,154,240samples verified locally and in persistent storage;
+L4w9aq90rzkg1d0g confirmed EXITED. Prepared recovery resume pointer updated.
+Final TB/replay synced; recovery bridge stopped. Locomotion untouched (its pod
+independently reported EXITED). See Docs/MimicKitTraining opening and
+Saved/MimicKitEquipment/stopped-latest-20261021.json. Supersedes running entry.
+
+
+**October21 locomotion STOPPED by user:** final91895 checkpoint downloaded
+and SHA/ZIP verified locally, preserved in persistent storage. L4rjsan0uitu03qd
+confirmed EXITED; GPU billing stopped, local observers/active marker cleared.
+Saved/MimicKitLocomotion/preserved-latest/20261021_091005_uefn_locomotion_ae30_mse30_yaw180_512/checkpoint_0091895_final.zip.
+Recovery branch untouched. See MimicKitTraining opening and user-stop receipts.
+
+**October21 original arm-pike scene placement restored/saved:** user requested
+the problematic arm-hit setup again. Only A_Sword1 actor placement restored in
+explosionVFX: position(2007.955873660,172.688569383,171.148856237)cm, original
+rotation/actor scale retained. Mannequin already matches CleanPike saved-map
+reference exactly. Reconstructed launch using old map start plus constant offset
+between CleanPike and PikeSlide recordings; all15 precontact samples agree within
+2.274e-13cm. Saved map only; current BPs, correction toggle and tuning untouched.
+No Play started. Small reference-map copy loaded without opening/replacing current
+scene, then unloaded/deleted. Receipt Saved/Diagnostics/PikeSlide/restored-scene.json;
+Tools/SwordHolster/RestoreArmPikeScene.py. Historical arm hit was upperarm_l,t0.266667.
+
+**October21 coupled pike solver — built, loaded, measured:** replaces unswept
+post-Step sword teleport with a per-joint five-row physical solve of transverse
+motion and rotation, inside Jolt's normal iterations before contacts. Existing
+Set Pike Wound Correction node/tag retained; only marked hard X/Y+angular locks
+with Z free/limited qualify. Stock axial motor/limit and reaction/break reporting
+retained. No iteration override, new scans, mass overwrite or collision-filter
+change. Native case rejects unsupported constrained body axes/singular mass matrix
+while retaining original joint. Old broad Python preview absent after restart.
+**Saved A_Sword node Enabled is FALSE (user setting), preserved.** User must tick
+it to try the new solve; no BP/map/tuning saves or wiring edits in this task.
+Exact restored arm comparison: same15-frame precontact prefix/upperarm_l hit at
+0.266667s;74 joint samples. Off peak lateral5.223108cm/RMS2.339469cm/rotation44.3044deg;
+on peak.0751295cm (0.7513mm)/RMS.0119437cm/rotation.684620deg. Both owned captures
+ended; no user Play stopped. Independent blade/wall and spin fixtures retain wall
+blocking; strongest tested contact leaves~3mm transient joint error, so no claim
+of universally exact alignment or collision-proof arbitrary configurations.
+Isolated UE automation Prophecy.Jolt.Constraints.PikeWoundCorrection passed;
+node/Blueprint reflection status3/native_properties0/pin_types0 verified. Saved
+map/sword hashes match pre-restart; editor2612 open /Game/explosionVFX, stopped,
+no dirty packages at final check. User authorized restart for RAM. Clean Slate
+shutdown; cancelled own in-flight LC UBT to release shutdown wait. Normal build
+30actions found one PI namespace error;5-action retry passed18.32s. Normal DLLs
+current. Source + small standalone fixture Tools/Jolt/PikeJointLab; procedures,
+measurements and caveats in Docs/JoltSkeletalProps and Saved/Diagnostics/CoupledPike
+(~1.1MB). No video/user Play demo started beyond the two diagnostic captures.
+
+**October21 Play-camera ZQSD — loaded and bindings verified:** user requested
+ZQSD instead of WASD. DefaultInput FlyCam mappings changed; native DefaultPawn
+requires the existing editor helper's new3-key remap (Q descent moved to A).
+Only ProphecyDebugCameraInput.inl/config/tools changed; no maps/BPs/Play touched.
+After the shared Live Coding build succeeded, Tools/SetPlayCameraZQSD.py installed
+the helper at09:06UTC. Log verified changed=3 ZQSD=1 QDescends=0; loaded FlyCam
+axes verified Z/S and Q/D. No Play started/stopped, no asset saves or restart.
+Normal DLLs remain stale: normal build needed before future cold launch.
+See Docs/DebugCameraInput.md. User retains motion testing.
+
+**October21 wound correction left enabled — supersedes one-shot demo:** user
+explicitly requested keeping it in. ShowPikeWoundProjection.py --keep-enabled
+now stays registered across Stop/Play in this editor, with no demo timeout or
+automatic Play control. Attached to existing user Play without stopping it.
+Same lateral-only Python prototype, no native build/BP edits/saves; normal
+iteration budget. Clears world references between Play sessions, rebinds next
+Play. Editor restart still needs reinstalling this helper; not packaged runtime
+code. Dirty A_Sword preserved. Do not revert to one-shot behavior unless asked.
+
+**October21 wound demo rearmed — user controls start:** previous demo was stopped
+by user; callback retired. User missed the motion while assistant launched it.
+ShowPikeWoundProjection.py --arm now waits for their next Play press (up to10min),
+then applies the same temporary correction through that Play only. Do not launch
+Play for them. No save/build/wiring changes; dirty A_Sword preserved. Stop Play
+retires the callback. Receipt show-wound-anchor.json records armed/active/retired.
+
+**October21 wound-line visual demo — Play left running for user:** user asked to
+judge the temporary post-solve sword translation. ShowPikeWoundProjection.py now
+runs it in the current scene; first cut t0.266667, 74 corrections over1.2s,
+maximum shift0.807332cm, same as prior prototype. Normal iteration budget;
+no rotation/velocity edits, native build, asset save or BP changes. Callback
+retires on Stop Play/world replacement/error or10minute safety timeout. Do not
+stop this user inspection session. Initial owned attempt hit a Python validity
+API error before any correction; ended only that failed owned Play and reran
+with SystemLibrary.is_valid. Receipt Saved/Diagnostics/PikeSlide/show-wound-anchor.json.
+
+**October21 wound-pivot follow-up — transient prototype only:** user rejected
+higher iterations and suggested rotation should preserve wound contact. No Play
+was active when removal checked, so overrides were already discarded. Current
+joint stores arm wound anchor, not an explicit hilt hinge; native SixDOF linear
+Jacobian uses wound lever arm, but finite solver leaves lateral residual. Tested
+post-step lateral-only wound-to-blade-line projection at normal budgets, same
+first-contact prefix. Maximum residual0.000003915cm (by construction), maximum
+per-frame correction0.8073cm; max rotation error21.768deg vs44.304deg baseline.
+Keeps orientation, axial travel and velocities from native solve. Existing physical
+adapter forwards the translated sword pose. Owned Play ended; no production
+code/wiring/asset change or build. This is a Python prototype, not a deployed fix
+or a conservation/performance claim. See JoltSkeletalProps/PikeSlide receipts.
+
+**October21 user visual iteration trial — Play left running:** user asked to see
+the higher-iteration effect. ShowPikeIterations.py started Play and applied
+transient10velocity/32position to victim mannequin at first cut,t0.266667;
+native log verified10/32. Callback unregistered after application. This Play is
+now for user inspection: do not stop it. No saved tuning, BP or camera changes;
+dirty A_Sword present before starting. Stopping Play discards iteration overrides.
+Receipt Saved/Diagnostics/PikeSlide/show-iterations.json.
+
+**October21 sword depth stain — additive, installed/saved:** A_Sword
+**Stain Blade(Depth, Seed)** keeps Max(previous,Clamp(input,0,1));0 adds nothing,
+.5tip-to-half,1tip-to-hilt. Seed(int0 default) chooses a repeatable±20deg/slightly
+wavy edge, locked on first positive stain; shape translates unchanged with depth.
+Blade-local Y and scaleY/Z compensate nonuniform scale. Seed upgrade compiled
+status3/saved,1editor compile173.52s/no restart; existing caller Depth links intact.
+Existing paint MID/RT retained; generated sword blood
+material unions painted mask with depth using shared blood shading. Later paint
+recognizes/reuses depth MID. No tick/traces or event rewiring;24other graphs
+verbatim, BP status3/saved. Original M_Sword untouched; first companion superseded.
+Live Coding runtime/editor2actions and editor repair1action passed/no restart.
+NORMAL DLLS STALE: next normal build must include paint-manager resolver/reset
+changes before cold launch. No visual Play test. See BloodExperiments opening
+and Saved/Diagnostics/SwordBloodDepth; user scene unchanged.
+
+**October21 arm pike lateral drift — investigated, no production change:** current
+upperarm_l cut starts aligned; X/Y and all rotation axes Locked, blade Z Limited.
+Both frames stay fixed but native/visible error reaches5.223cm/44.304deg.
+Same-prefix transient10velocity/32position comparison reduces to0.550cm/14.006deg;
+confirms convergence sensitivity, not an approved high-cost fix. Unreal projection
+is enabled in profile but not implemented by Jolt adapter (linear alpha1;
+angular alpha0). No build/restart/assets saved; owned Play ended, transient solver
+settings retired. Dirty NS_bloodwound/map preserved. See JoltSkeletalProps opening
+and Saved/Diagnostics/PikeSlide. Next fix should be scoped to cut/slider behavior.
+
+**October21 recovery AE regularizer running:** user restores frozen AE on
+perturbed get-ups only, additive to full position MSE. Fixed weight.2752568
+calibrated for10% combined pose+AE cost on latest88363_final's evaluation.
+Latest saved locally/S3 before resume; normal rows/settings unchanged. Live
+20261021_091317_uefn_getup_ae10_512 on L4w9aq90rzkg1d0g until stopped, $.59/hr;
+trainer696/guard697,bridge13512/dashboard1724. Verified88384 at~9.29ktransitions/s,
+new checkpoint readback and actual18perturbed AE/2normal zero-AE replay rows.
+See MimicKitTraining opening and getup-ae calibration/verification receipts.
+
+**October21 locomotion AE30/MSE30 — running/verified:** latest78988_final
+(1.294B) preserved locally/persistently, resumed sameL4rjsan0uitu03qd until-stopped.
+Perturbed only:AE through30ticks,linear blend toMSE at60;originalAEweight6.94265826.
+Normal rows/settings unchanged. Live20261021_091005_uefn_locomotion_ae30_mse30_yaw180_512,
+trainer701/guard702;78989→79009 verified,~11.65k transitions/s,newbackup verified.
+Replay confirms0/.5/1tracking weights at30/45/60. Recovery branch untouched.
+See MimicKitTraining opening and Saved/MimicKitLocomotion/ae30-verification.json.
+
+**October21 node rename — live, no restart/build:** Accept Pike Hit now displays
+**Cancel Hit Reaction**. Updated native UFunction DisplayName metadata through
+remote Python and the narrow header's DisplayName for future builds; underlying
+AcceptPikeHit function, pins and behavior unchanged. Native graph audit confirms
+new title; full live A_Sword exports SHA-identical before/after. User's dirty
+A_Sword preserved unsaved. No Play/compile/save/restart. Metadata-only source
+change is not yet in normal DLLs: next normal build incorporates it; until then
+`Tools/SwordHolster/RenameHitReaction.py --apply` reapplies after a cold launch.
+Receipt Saved/Diagnostics/CleanPike/rename.json.
+
+**October21 clean pike entry — installed/verified:** Blueprint acceptance stays
+editable; joint settings untouched. New Enable Clean Hit Continuation at sword
+BeginPlay and Accept Pike Hit after existing pike gates replace pose/velocity
+together before rendering. Accepted pikes bypass old teleport/additive velocity
+correction; slash path preserved.24graphs/3,937 original pins/defaults retained,
+four added nodes/ten link changes. Scope: free dynamic sword, one collision
+substep, no existing joint/weld or second solved pair; refusal exposes Reason.
+Normal build11actions/200.87s passed; CleanPike and existing HitEvents tests pass.
+Actual unchanged scene accepted at0.266667s: velocity exactly incoming
+(997.336864,0,-260.963416)cm/s, forward continuation. A_Sword saved; map hash
+preserved. Editor15456 open explosionVFX/A_Sword, owned Play ended/no dirty assets,
+reflection status3/native_properties0/pin_types0. Normal DLLs current.
+See Docs/JoltSkeletalProps.md and Saved/Diagnostics/CleanPike.
+
+**October21 blood mesh shadows — user verified:** active Fountain001 mesh renderer
+in NS_bloodsplat2 uses new M_Blood_ShadowOnly, masked ShadowPassSwitch(0 visible,
+1 shadow); original sprites/material and mesh geometry/scale retained. Only
+material and NS saved; user confirmed shadows work. See Docs/BloodExperiments.md.
+
+**October21 recovery resumed:** verified85149(1.395B) after storage cleanup,
+same settings, replacement L4w9aq90rzkg1d0g at$0.59/hour until-stopped.
+Old recovery GPU unavailable; retained disk preserved. Locomotion managed in
+separate chat. Run20261021_074429_uefn_limp_floor_512,trainer479/exitguard480;
+verified85150→85170 at~10.63k transitions/s and new85150 persistent readback.
+Bridge18464/dashboard7392; TB and20-row replay available. Exact saved recovery
+source retained via SHA-pinned launcher verification. See MimicKitTraining.
+
+**October21 locomotion resumed:** latest75533 (1.238B samples), unchanged
+settings and until-stopped authorization. Old L4 could not restart; replacement
+L4rjsan0uitu03qd at$0.59/hour, live20261021_074500_uefn_locomotion_mse_yaw180_512.
+Trainer481/exitguard482,bridge4900/dashboard22724. First75534 checkpoint
+backup verified after fresh checkpoint-sized storage write/readback. Recovery
+branch untouched. See MimicKitTraining opening and locomotion resume receipt.
+
+**October21 authorized checkpoint cleanup:** latest recovery85149(1.395B) and
+locomotion75533(1.238B) downloaded, SHA256/ZIP verified, preserved locally in
+each branch's preserved-latest folder and in persistent storage. User-authorized
+older physical loco/get-up checkpoints/replays removed:46.58GB persistent,
+5.26GB local. Datasets, code, TB history, crawl/other Unreal models untouched.
+No training restart. See MimicKitTraining opening and cleanup-20261021 receipts.
+
+**October21 training status correction:** both Runpod pods are now EXITED.
+Follow-up confirms shared persistent storage quota exhausted: even18-byte
+PutObject fails QuotaExceeded. Failed-backup shutdown is the strong common
+explanation; exact exit logs still unavailable. Free safe storage and verify
+checkpoint-sized backup before any paid restart; no user files deleted here.
+Locomotion stopped October20 22:01:00 Warsaw; recovery stopped22:01:37.
+Runpod labels both `Exited by user`, but the caller/cause remains unidentified;
+do not infer a user instruction or a training crash from that label. Recovery
+control still says until-stopped. No restart performed. Recovery replay and
+saved evaluation metrics recovered through85149 (1.395B samples); missing raw
+training events remain unavailable. See MimicKitTraining opening for evidence.
+
+**Independent locomotion branch — October20, running and verified:**
+User resumes preserved pre-split73832_final(1.210B samples) on a NEW L4,
+cb2i8leh2qpjdf at.59/hour until user stops it ("ad vitam" supersedes8hours).
+All controls in Saved/MimicKitLocomotion, separate from recovery
+Saved/MimicKitEquipment/new5546ihvxeax; recovery training untouched.
+7%idle/93%loco, each30%normal/70%perturbed; no get-ups or AE.
+Pure tracking MSE fromtick0; perturbation yaw[-180,+180],initialCOM2 velocity
+preserved;120tick perturbed horizon,300normal. Existing termination rules/
+penalties,50/50walk/run and split-checkpoint optimizer settings retained.
+Live run 20261020_211208_uefn_locomotion_mse_yaw180_512, trainer435/exitguard436.
+Verified advancing73833→73913, persistent checkpoint73833 readback, actual AE
+not loaded, correct row allocation and120tick replay horizon; ~11.4–11.6k
+training transitions/s. Bridge25868/dashboard27124; setup watchdog released
+only after progress/backup verification. Recovery pod/control hashes unchanged.
+See MimicKitTraining opening and deploy_locomotion_branch.py.
+
+**Sword Slow Start clock — October20 fixed/verified:** user's true/5 startup
+still called SetFixedFrameRateRuntime(5), yielding0.2s physics steps while
+authored clocks spent1/60. Startup now retains fixed60 and uses t.MaxFPS with
+existing slow value; normal startup and End Play restore cap60. Four added BP
+nodes, six existing pin changes only;24graphs/3911live original pins preserved.
+Actual Play true/5: all deltas1/60, cap5, measured4.636FPS;0.2simulation seconds
+over2.588wall seconds. End Play cap60 verified. A_Sword saved; no map/tuning
+or runtime-physics changes. Helper's first application crashed on obsolete
+BuildString_Float lookup before save; corrected to Double with safe preflight,
+normal one-unit build65.34s passed, isolated graph/compile validation completed,
+then live edit/test/save passed. Prior saved sword hash preserved through crash.
+Normal DLLs current. Editor29136 reopened explosionVFX, outside Play, cap60,
+no dirty assets; reflection status3/native_properties0/pin_types0.
+See Docs/SwordHolster.md October20 and Saved/Diagnostics/SceneClock.
+
+**Separate skeletal blood brush — October20 installed/verified:** placed
+**the decal manager** now exposes Blood Paint > Skeletal Brush Radius (3cm).
+Ordinary/floor brush radius remains user's2cm. Pure component cast/select on
+ordinary paint path; four added nodes,490 existing authored pins retained,
+only three data-pin link changes, execution wiring unchanged. Actual wound
+Play127 accepted hits: skeletal3cm/static2cm; owned Play ended.
+After repeated Live Coding memory exhaustion user authorized save/restart.
+Saved dirty A_Sword and NS_bloodsplat2 with backups; A_DecalManager already
+preserved/saved. Their hashes remain intact. Shutdown exposed duplicate blood
+callback listener removal; existing atomic guard now unregisters once and skips
+dead-object delegate cleanup. Normal builds54.93s/75.79s/64.29s passed, each one
+compile unit; isolated startup/shutdown exited0. Normal DLLs current.
+Editor14720 reopened explosionVFX, new BP control saved/opened, no dirty assets
+or Play; reflection status3/native_properties0/pin_types0.
+See Docs/BloodExperiments.md and Saved/Diagnostics/SkeletalBloodBrush.
+
+**Limp blend floor correction — October20 19:34, verified running:**
+Resumed latest79848_final, preserved locally and persistent readback verified,
+as20261020_193455_uefn_limp_floor_512. Perturbed starts now receive minimum
+upward root shift to clear every collider AFTER blending; joints/orientation/
+XY/velocities unchanged. GPU batched FK/support only at reset, no physics-step
+projection.42,020offline cases and18actual new replay starts clear floor.
+Same L4new5546ihvxeax,trainer849/exitguard850;bridge12596/dashboard22876.
+Verified79869advancing/79849backup; handoff watchdog released.
+Early throughput10.69k transitions/s versus10.41k before: no observed slowdown
+in this short comparison. All other curriculum/reward settings unchanged.
+See MimicKitTraining opening and limp-floor verification receipts.
+
+**Limp blend floor defect — October20, diagnosis preceding correction:**
+Exact screenshot step79324 row11 reconstructed within1.42micrometres.
+79.1% whole-pose blend to limp index31 places right hand44.5cm underground,
+head25.8cm; saved limp endpoint only0.9cm penetration. Intermediate blended
+pelvis height fails to clear the rotated/articulated body.16/18 replay starts
+exceed5cm. Needs floor support recomputation after blending, at reset only.
+Diagnostic turn did not modify or stop training; subsequently corrected above.
+
+**Recovery limp curriculum — October20 19:09, verified running:**
+User marks183047 stale; restart its initial79023_final, restore noise.075/
+GAE.98/previous MSE leeway, retain50/50front/back.154normal/358perturbed,
+normal77frame0/77random. Perturbed poses uniformly blend vanilla frame0 to
+saved limp whole pose INCLUDING pelvis position/rotation; velocities unchanged.
+Failure low-head check tick80 instead60. No AE or new physics changes.
+Current20261020_190959_uefn_limp_blend_balanced_512 on same L4new5546ihvxeax,
+trainer600/exitguard601,until stopped. Verified79044 advancing at~10.5k
+transitions/s and79024 persistent backup. Handoff watchdog released.
+Bridge11944/dashboard21884. See MimicKitTraining opening for details.
+
+**Recovery settings restored — October20 18:30, verified running:**
+Current20261020_183047_uefn_normal_balanced_no_leeway_512 resumes latest
+79023_final preserved locally and in S3. Noise.05,GAE lambda.95,no position-MSE
+leeway;front/back50/50,each128frame0+128random-frame. Fixed correlated motion/
+start selectors by stratifying starts within each motion. No stiff/limp deployment.
+Two startup-only errors on removed leeway compatibility/metadata fixed;
+failure guards stopped billing, no checkpoint updates/loss in failed starts.
+Old L4 unavailable after stop; replacement L4new5546ihvxeax at.59/hour,
+trainer422/exitguard423,until stopped. Verified79034 advancing and79024 backup;
+setup watchdog released. Bridge17828/dashboard15268. See topic opening.
+
+**Recovery start split — October20 17:14, verified running:**
+Current run20261020_171428_uefn_normal_back80_half_random_512 resumes latest
+77390_final (1,267,974,144 samples), preserved locally and persistent readback
+verified. User changed only start distribution:256normal frame0 +256normal
+random-frame rows;410back/102front retained. No stiff/limp/perturbed rows.
+Same L4rovwuwstkm0s7r,trainer729/exitguard730,until-stopped authorization.
+Verified iteration77521 advancing; checkpoint77491 backup verified.
+Bridge448/dashboard8920 publishing; handoff watchdog released after verification.
+See MimicKitTraining opening; supersedes frame0-only setup below.
+
+**Stiff / limp initialization datasets — October20, prepared only:**
+User names the rotated/grounded1,000 poses "stiff inits". Derived "limp inits"
+by simulating each independently for10policy frames (80physics steps,1/3second)
+with all actuators disabled, gravity and training contacts active. Native
+configured MuJoCo CPU, same model construction/profile as training.
+Saved/MimicKitEquipment/limp-inits/corpus.npz includes actual final poses and
+velocities, with source index mapping. No warnings. Soft contacts leave median
+0.94cm / maximum3.14cm floor penetration; retained exact snapshots, no correction.
+Preview http://127.0.0.1:8843/Saved/MimicKitEquipment/limp-inits/.
+Training untouched. See MimicKitTraining opening.
+
+**Grid3D fuse visibility — October20 config change, untested by request:**
+DefaultEngine.ini [ConsoleVariables] now forces r.HeterogeneousVolumes=1 above
+scalability priority, preserving other quality settings. Installed UE5.7 source
+confirms this config section also loads in Shipping. Applies next startup/future
+packages; no live command, build, restart or runtime test. See Docs/BombFuse.md.
+
+**Random recovery poses — October20, whole-body rotations baked:**
+The1,000 retained poses now also have a separate rotated/grounded dataset at
+Saved/MimicKitEquipment/random-phat-poses-grounded/corpus.npz. Uniform SO(3)
+root orientations, exact same local DOFs, zero velocities; minimal root height
+against Z=0 using every collider. All1,000 nonpenetrating; lowering any pose
+1micrometre causes penetration. Preview opened at
+http://127.0.0.1:8843/Saved/MimicKitEquipment/random-phat-poses-grounded/.
+Upright source preserved. Not deployed to training. See MimicKitTraining opening.
+
+**Random recovery initialization corpus — October20, awaiting visual approval:**
+Retained the exact first1,000 independent PHAT-admissible poses, pelvis fixed upright at
+Z0.931191m, zero velocities. First10 shown in
+http://127.0.0.1:8843/Saved/MimicKitEquipment/random-phat-poses/.
+All14,000 retained joint cases accepted by the project Jolt limit probe; current saved
+PHAT fingerprint verified. No floor/self-collision filtering (133 floor overlaps).
+Poses1,001–1,500 archived into Windows Recycle Bin at user's request; preview
+and generator now retain1,000, preserving the original sampled prefix.
+Not deployed to training; current normal-back80 run left untouched. User must
+vet before initialization changes. See MimicKitTraining opening.
+
+**Automatic blood Niagara callback — October20 installed/verified:** placed and
+spawned systems exposing User.decal_callback now bind the existing level's unique
+callback manager automatically during Play. Valid explicit callbacks retained;
+wrong Blueprint-asset references corrected. Creation/activation and level events,
+cached manager lookup, no per-frame scan or timer. Ten owned-Play checks passed,
+including attached effects and actual pool reuse. Normal incremental build365.77s
+plus one-unit loading guard59.82s passed; normal DLLs include earlier sword and
+decal-depth fixes. Editor26512 reopened explosionVFX, outside Play, no dirty
+packages; reflection status3/native_properties0/pin_types0. User dirty map and
+NS_bloodsplat saved with prior-byte backups before restart; all four saved
+map/NS/manager/sword hashes preserved through testing. Floor-paint issue below
+was subsequently repaired. See Docs/BloodExperiments.md automatic-callback
+section and Saved/Diagnostics/BloodAutoCallbacks.
+
+**MimicKit temporary normal/back focus — October20 15:50, verified running:** user
+requested100% normal get-ups,100% frame0,80% back. Latest recovery74681_final
+downloaded and S3 SHA verified. First154538 startup caught a body-name variable
+shadowing error; guard stopped billing. Fixed/tested, runtime restored on same
+L4. New155034_uefn_normal_back80_frame0_512,trainer483/guard484 until stopped. Fixed410back/
+102front rows;0perturbed/random-frame. No reward change: suggested normal
+completion bonus has not been authorized/applied. Prior recovery50/50 plan
+saved normal-back80-previous-plan.json; no automatic switch-back scheduled.
+Live batch verified512normal frame0,410back/102front,0perturbed/random/prior.
+First74682 backup verified; replayer20normal rows and failure card working.
+Mixed73832 checkpoint remains preserved for loco.
+
+**Actual injury floor painting — October20 repaired/verified:** user fixed the
+floor execution wire; remaining failures were tiled floor UV0 sending stamps
+outside the RT and mapping MI_ProcGrid to generated parent M instead of preserving
+MI. Asset-only repair uses an18KB project mesh copy with normalized UV0 and correct
+generated material instance with original overrides. Same floor geometry,
+transform, world-position grid appearance and1024RT; no native code/build/restart
+or extra runtime work. Actual wound Play, foliage decals hidden: visible surface
+stain,16 painted mask pixels vs0 before. Zero-intensity vs original material
+capture pixel-identical; painted changes3,843pixels. User wiring preserved/saved.
+Map, mesh, MI and generated parent saved (force-save parent needed as loaded
+package had no file); editor26512 explosionVFX outside Play, no dirty packages.
+See Docs/BloodExperiments.md opening and Saved/Diagnostics/FloorPaintFix.
+
+**Separate decal rendering — October20 fixed/loaded, not the requested paint:** injury callback and
+floor occupancy already worked; debug rectangles hid a rendering regression in
+the rectangle adapter. Projectors barely overlapped the floor, reducing material
+opacity to~13% through UE's depth fade. Centre now follows receiver+bounded surface
+offset, keeping full opacity; no new recurring work/layout change. One-action
+Live Coding134.49s passed/reloaded13:16:19UTC, rectangle regression passed
+13:16:41UTC. Final actual injury capture visibly stains floor (19 decals).
+No assets, materials, emitters, tuning or Blueprint wiring changed/saved.
+At verification editor29912 was outside Play, sword graph identical.
+**Build state superseded:** automatic-callback normal build above incorporates
+this fix; editor26512 is open on explosionVFX outside Play.
+See [blood rendering repair](Docs/BloodExperiments.md#injury-fountain-invisible-floor-stains--october20)
+and compact evidence Saved/Diagnostics/InjuryBlood.
+
+**MimicKit recovery/locomotion split — October20 15:14, verified running:** user now
+wants separate policies. Latest mixed checkpoint73832_final downloaded locally
+and verified against S3 SHA221ed14975999aab1846e53758113bb228418827acd4edbf8403ca1b05ba3699.
+Preserve it for the user's locomotion fork; receipt
+Saved/MimicKitEquipment/recovery-split-loco-fork-checkpoint.json. This chat owns
+recovery-only run20261020_151434_uefn_recoveries_only_512 on existing L4
+rovwuwstkm0s7r, trainer2478/guard2479. Requested512 rows:128 normal frame0,
+128 normal random frames,256 perturbed with existing2:1 upper-half skew.
+Live cohorts verified exactly; first73833 backup verified,73843 advancing at
+~8ktransitions/s. Mixed starting checkpoint has1,209,679,872samples; preserve it.
+Replayer20 get-up rows and both failure cards verified. **Locomotion fork must use separate run/control
+state and must not stop or repurpose this recovery pod.** See topic opening.
+
+**Sword/skeleton penetration — October20 repaired/loaded:** external constraints
+now reuse passive skeletal props' existing Jolt bone handles. Scene collision
+changes forward to the same rig, preserving QueryOnly trace bodies and native
+simulation. No retained layout changes. Live Coding: three compile actions
+188.76s, then one test-fixture correction121.44s; both loaded. PlacedMannequin
+test passed12:59:04UTC, including joint reuse/no duplicate rig, channel-only and
+response updates, restoration and teardown. Current explosionVFX owned Play
+confirms nonzero native cut-joint forces and depth minimum0.606992 (~39% blade
+penetration), then existing physics/Blueprint lets it come back out. No permanent
+sticking claim. Sword graph identical; no wiring/tuning/assets changed or saved.
+At verification editor29912 was outside Play. **Build state superseded: the
+automatic-callback normal build above incorporates this fix.** First
+reload logged RigVM access-detector ensures; subsequent Play/test passed.
+See [skeletal props repair](Docs/JoltSkeletalProps.md#sword-penetration-repair--october20-installed).
+
+**MimicKit settings adopted — October20 14:10:** user approved noise0.075 and
+GAE lambda0.98 from the completed comparison. Active
+20261020_141039_uefn_getup_success_value_512 resumes latest72108_final/
+1,181,433,856 samples, preserved locally and verified in S3. Same L4, until
+stopped; trainer2154/guard2155, bridge25552/dashboard21856. Actual post-restore
+noise verified0.075 and GAE0.98. Normal get-up failure card now counts all
+completed normal get-up episodes every10updates, same cadence as perturbed
+cards. Normal/perturbed−100 failure costs and success fix retained. First72109
+backup verified;72119 advancing at~7.9ktransitions/s. See topic opening.
+
+**Focused comparison complete — October20 13:55:** noise.075/GAE.98 modestly
+better than current.05/.95 with success fix: failures30vs36 at64updates,
+23vs32 at128,928 identical get-up starts; training411vs408seconds. No normal
+loco regression. One training seed, short horizon; both test configs predate
+normal-get-up−100 change. No alternative applied. Queue1224 exited.
+Main133905 continues with normal-get-up−100,71741/1.175B,~8.3ktransitions/s,
+backup71641 verified. See MimicKitTraining opening.
+
+**MimicKit normal-get-up penalty — October20 13:39:** user requested same−100
+failure penalty for normal get-ups. Active133905_uefn_getup_success_value_512
+resumes latest71440_final/1,170,489,344, locally/S3 verified. Trainer1587/guard1588,
+same L4 and until-stopped budget. First71441 backup verified. Normal completion/
+timeout unchanged, perturbed success fix retained. Focused comparison1224 was
+paused during handoff and is resumed; both copies retain the frozen pre-change
+objective for a fair comparison. Details in MimicKitTraining opening.
+
+**MimicKit focused comparison requested — October20:** user now explicitly asks
+to retry noise.075/GAE.98 against current.05/.95 with success fix. Bounded two-way
+comparison queue1224,128updates each from70639, held-out evaluation at64/128.
+No broader sweep or automatic live setting change. Main130053 continues unchanged.
+See focused-success-launch.json and MimicKitTraining opening.
+
+**MimicKit sweeps stopped — October20 13:15:** user objects to repeated sweeps.
+Queue551 and its process group stopped, cancel.request set; do not restart
+comparisons automatically. Main130053 remains training,70890/1.161B samples,
+no failure. Earlier completed sweeps showed only modest improvement; no major
+learning-speed gain established. Latest70639 baseline894/928 successes versus
+current settings895/928 after64updates; other latest variants incomplete.
+Keep live settings unchanged. See MimicKitTraining opening.
+
+**MimicKit corrected resume — October20 13:01:** active
+20261020_130053_uefn_getup_success_value_512, from70639/1,157,365,760 samples,
+with known success value100. Same L4rovwuwstkm0s7r,.59/hour until stopped;
+trainer444/exit guard445, bridge21024/dashboard29160. First70640 S3 readback
+verified. Isolated corrected-success sweeps queue551 now starts from70639 too,
+not the superseded67931. Results pending. See MimicKitTraining opening.
+
+**MimicKit stopped by user — October20 12:55:** rollback67931 was too early.
+Trainer saved68077; local download matches verified S3 SHA. Sweeps cancelled;
+owned L4rovwuwstkm0s7r confirmed EXITED, billing stopped. User points to the
+failure-curve trough immediately before its rise around1.159B. Selected retained
+70639/1,157,365,760 samples (6.20% reported failure), last saved checkpoint before
+the trough/rise; downloaded and ZIP checked. Do not reuse67931 or resume sweeps
+from it. Training remains stopped. See latest MimicKitTraining opening.
+
+**MimicKit resumed — October20 12:46:** active
+20261020_124643_uefn_getup_success_value_512 on L4 rovwuwstkm0s7r,
+.59/hour until stopped, trainer484/exit guard485. Rolled back to verified67931;
+head success value100 enabled. First new67932 checkpoint S3 readback verified;
+steps advanced to67952/1.11334B, ~8.1k transitions/s before sweep load.
+Deleted69 old local replay JSONs,1.97GB; checkpoints/TB retained. No eligible
+standalone old rollouts on persistent volume, no persistent deletion.
+Storage API access recovered across datacenters without persistent cleanup;
+underlying provider cause unknown. All temporary CPU helpers stopped, no relay.
+Corrected-success learning sweeps resumed (queue577), results pending.
+See opening of Docs/MimicKitTraining.md.
+
+**MimicKit storage investigation — October20 12:31:** no trainer running;
+latest L4 9r63p3vlvogqz5 and temporary CPU helper both confirmed stopped.
+Full runtime SHA-verified locally with AWS downloader; pod S3 requests still
+time out. Sudden underlying cause unproven. CPU direct mount listed files,
+but full reads/relay not yet verified. Additional.06/hour relay approval pending;
+user asks for root cause instead. See opening of Docs/MimicKitTraining.md.
+
+**Directly placed mannequins — October20 installed/verified:** user requires
+Jolt for skeletal mannequins dropped into scenes, including future placements.
+Scene discovery now binds standalone SkeletalMeshActors with physical PHAT
+collision to a passive shared-world Jolt articulation. Existing agents unchanged;
+no NN/controller added. Visible pose and retained QueryOnly blood receivers follow
+Jolt; standard velocity/force/impulse dispatch supports the new binding. Failed
+admission freezes/reports instead of silently simulating Chaos. Six-action normal
+build103.66s passed; PlacedMannequin test passed10:12:11UTC, zero errors/warnings
+(floor contact, pose/query alignment, standard velocity, late spawn, scaled mesh,
+cleanup). Saved dirty user Sword/map with backups before necessary restart.
+Editor13868 reopened explosionVFX normally; owned live Play confirmed one Jolt
+binding, dynamic pelvis and Chaos simulation=false across three frames. Ended
+owned Play; no dirty packages. Original saved hashes verified. New native layouts
+are in current normal DLLs. See [skeletal props](Docs/JoltSkeletalProps.md);
+evidence Saved/Diagnostics/PlacedMannequin20261020.
+
+**MimicKit rollback authorized — October20:** user now requests resume before
+stalling, then continue sweeps.67931_final/1.113B selected with buffer before
+known-good69138, local+fresh S3 verified. Explicit head-reset success value100
+implemented/tested (99 bonus once, zero bootstrap, perturbed get-ups only).
+Old L4 unavailable; replacement iiprikebnm51jl setup blocked by persistent-storage
+timeouts, finally HTTP524. Replacement confirmed stopped12:09 before10minute
+cutoff; both GPUs off. No trainer or new sweeps started. Code/checkpoint prepared
+and tested, locally and S3 verified before allocation; no disk-full evidence or
+deletion. Resume remains pending storage access. See
+[MimicKitTraining](Docs/MimicKitTraining.md).
+
+**MimicKit held — October20 11:38:** user asked to investigate head-reset avoidance
+before restarting. Owned L4 ka68jrougesuit confirmed stopped. Latest70939/1.162B
+checkpoint downloaded locally, SHA matched retained disk; S3 readback timeout
+stopped previous trainer at71039 (not saved).70939 persistent verification pending.
+Offline replay confirms get-ups hovering85–87% and timing out while earning~.85/tick.
+Success has no explicit credit; TIME reset bootstraps poorly anchored final-state
+critic estimates. Proposed known success value, no reward changes deployed.
+All learning ablations/confirmation finished; candidate noise.075/lambda.98 offers
+modest gain and better normal-get-up retention; not deployed. Details and resume
+constraints in [MimicKitTraining](Docs/MimicKitTraining.md).
+
+**MimicKit harder get-up sampling — October20 09:46:** resumed verified latest
+69138_final with2/3 of perturbed get-up starts above50% strength,1/3 below.
+Active094614_uefn_getup_skew_linear_512, trainer8547/guard8548 on existing L4,
+until stopped; other training settings retained. Sequential disposable learning
+ablations running; no candidate deployed. See [MimicKitTraining](Docs/MimicKitTraining.md).
+
+**Special attacks / grab independence - October20 refined, isolated/verified:**
+Managed checkout `C:/Users/singerie/.codex/worktrees/grab-special-attacks/Prophecy`.
+Start Special Attack now has Release Grab0..1,default.8, relative to retained clip;
+0 immediate,1 at completion. User-confirmed Cut Early convention changed:0 full,
+positive value is clip endpoint (.8=80%,1=full). Pelvis frame-zero heading matched
+once at entry; authored subsequent turns retained. Fresh editor clips finish their
+pending compression before sampling (validity alone returned temporary ref poses).
+Final4-action normal build46.55s passed.12 cases passed: four physical two-hand
+projections, immediate/end/trimmed release, four world headings and Cut Early1.
+Accepted entry-pose heading error<.000004deg; both regional and ordinary end events
+once. Current video `Saved/SpecialAttacks/projection-refined.mp4` replays measured
+UE/Jolt transforms. Main editor/source/assets untouched; **not installed live**.
+Exact24-file baseline manifest/patch retained. See
+[current work](Docs/SpecialAttacksAndGrabIndependence.md).
+
+**MimicKit LR comparison — October20:** isolated10-full-update2x/4x/8x tests
+finished. On928matched get-up starts: baseline794successes,2x792,4x792,fixed8x787.
+8x hits guard8of10updates; no demonstrated gain over current2x. Live7410 unchanged.
+Single training seed/short horizon; do not claim a long-run winner.
+Details: [MimicKitTraining](Docs/MimicKitTraining.md).
+
+**MimicKit continuation — October20 08:57:** user authorized double actual actor
+LR and the verified observation optimization. Latest67931_final/1.113B samples
+preserved locally and S3 before resume. Active085731_uefn_lr2_graphed_linear_512,
+L4ka68jrougesuit, trainer7410/guard7411, until stopped. LR5.625e-7→1.125e-6;
+Adam state/KLguard retained. Observation graph/device quaternion optimization and
+replay fixes deployed; reward/physics/distribution unchanged. First new backup
+verified; details in [MimicKitTraining](Docs/MimicKitTraining.md).
+
+**MimicKit get-up learning audit — October20:** live run unchanged. Failure rate
+still improves slowly (~18.3→17.8%); remaining failures concentrate in strongly
+perturbed front starts. Actual restored actor LR is5.625e-7 (1/8 YAML), inherited
+from earlier guard reductions, not a new slowdown. Isolated matched update favors
+a2x LR trial;8x worsened getup surrogate. No tuning deployed. See
+[MimicKitTraining](Docs/MimicKitTraining.md) for measured counts and limitations.
+
+**MimicKit replayer repair — October20:** valid recordings from the new locomotion
+failure-penalty run were rejected because the replay reward check omitted that
+penalty. A second downloader retry bug then replaced the archive with its last
+chunk. Both repaired locally; cloud trainer4368 unchanged and still advancing.
+Failed downloads now restart from byte0 and preserve existing valid rollouts.
+Details and verification: [MimicKitTraining](Docs/MimicKitTraining.md).
+
+**Sword pre-impact first-collision follow-up — October20:** update-current-values
+is correctly called inside ReceiveHit. Live log rejects placed A_Sword1 from Jolt
+because MACD=true; Chaos events therefore return invalid/zeros. Switched only
+that placed sword to supported ordinary CCD (MACD=false/CCD=true), verified after
+component reconstruction. Map dirty/unsaved; no Play/build/restart. Class/child
+defaults unchanged, still MACD=true. See Docs/HitImpactSpeed.md.
+
+**Sword pre-impact node — October20 rewind installed/verified:** user rejects
+per-sword tick storage and requests backward extrapolation from incoming motion.
+Removed the proposed history map and both per-tick capture passes. Same node/pins
+now rewind one full current physics-step duration from the contact sample using
+constant incoming COM/angular velocity, including welded component lever arms.
+Estimated earlier pose, not an exact previous-tick boundary; impact speed remains
+measured contact-time. Current user Tip Distance=Blade+HiltHalfLength; don't restore
+older double-hilt guidance. Dirty Sword preserved/saved before required shutdown,
+sha5b33859a...; editor29952 exited cleanly. Superseded history build passed but was
+not reopened. Replacement8-action normal build124.62s and focused hit test passed
+11:17:24UTC with zero test errors/warnings (first hit, rotation, moving target,
+kinematic, welded COM offsets/both orders, CCD substeps and changed velocity).
+Editor9572 reopened explosionVFX normally; Sword saved SHA unchanged. Owned Play
+first sword depth1.054566, versus earlier recorded0.911003, incomingZ-732.189798.
+Ended owned Play. No promise every contact depth>=1; no depth clamp or BP edits.
+See [HitImpactSpeed](Docs/HitImpactSpeed.md),
+Saved/Diagnostics/SwordPreviousTick20261020 preservation and
+Saved/Diagnostics/SwordRewind20261020 current evidence.
+
+**Shared blood manager — October20:** user requested consolidation for sword
+compatibility. Repaired original A_DecalManager floor/ordinary-mesh routes and
+removed per-hit print, matching the experiment copy. explosionVFX now has one
+BloodDecalManager of the original class; sword lookup verified one match.
+Preserved nine variable values,22 floor-grid settings and paint/floor references.
+No placed Niagara components remained; no callbacks to redirect. Original BP
+compiled/saved; map was left dirty, then saved with the user's edits for the
+subsequent pre-impact-node restart above. Old experimental BP preserved. No Play
+started for consolidation. One-action Live Coding136.38s succeeded,
+reload04:57:53UTC; normal DLLs stale. Existing WireExperiment command now repairs
+the original BP. Subsequent normal build above covers this helper.
+See Docs/BloodExperiments.md and
+Saved/Diagnostics/BloodManagerConsolidation/receipt.json.
+
+**Blood rectangle merger — October20 installed/verified:** user explicitly requested
+production integration. Existing FoliageDecalGrid component/library now use the
+lab's greedy rectangle kernel; Blueprint graphs and settings retained. Hit receiver/
+instance and plane separate surfaces; sloped planar floors supported. Corrected
+half-extents, actual width×height debug bounds. Dirty regions only, pooled hidden
+preparation, max16 allocations/pass, no idle timer/tick. Existing interval/budget/
+limits retained; 32×32 maximum region, smaller MaxMergeLevel respected. Capacity
+retains pending occupancy instead of evicting old stains; Process/Start after cap
+increase resumes. Source/build details and compatibility notes in
+[BloodExperiments](Docs/BloodExperiments.md#rectangle-integration--october20).
+Private retained layout required normal restart. Preserved dirty user A_Sword and
+explosionVFX with backups/hashes. Six-action minimal normal build111.80s passed;
+RectangleIntegration passed10:40:53UTC, zero errors/warnings (coverage, hole,
+negative cells, reuse, receivers/heights/slope, capacity, allocation cap, cleanup).
+Editor29952 reopened explosionVFX normally. Actual placed original manager in brief
+owned Play:16cells→one102×25.5cm projector, including existing1.02padding. Owned Play
+ended; map/sword/manager saved hashes preserved. No fountain recreated. Normal DLLs
+current; no production GPU/FPS claim. Evidence Saved/Diagnostics/BloodRectangleInstall.
+Independent lab/tests remain in Labs/BloodDecalLab. Historical isolated CPU results:
+filled43→1,hole43→4,splash52→24,strip8→1; kernel7.17us/region, streamed p95.203ms,
+cold capped max.749ms. These are lab NullRHI measurements, not production timings.
+
+**Blood callback follow-up — October20:** new NS_bloodsplat pointed its callback
+to the Blueprint asset. Replaced with placed BloodExperimentManager actor; both
+Niagara override stores verified. Tuning unchanged; no Play/test/restart. Map left
+unsaved in the user's editing session. See Docs/BloodExperiments.md.
+
+
+**Blood experiment — October20 ready:** explosionVFX now has BloodFountain,
+BloodExperimentManager, BloodPaintManager, BloodFluidRendering and three receiver
+blocks in the Blood Experiment folder. Reuses NS_bloodarc with sustained 86400-game-
+second emission and a 45deg/s rotation component. Current shared decal Blueprint
+had disconnected ordinary-mesh painting and floor routing; corrected only a new
+BP_BloodExperimentManager copy. Original blood assets/wiring preserved. One-action
+editor-helper Live Coding passed213.59s/reloaded03:29:00UTC; copied BP status3.
+Map and new BP saved. Final actual-Niagara check: rotating/emitting, two mesh paint
+states, zero unsupported hits, floor cells created. Owned PIE ended/callback retired.
+No performance claim: continuous spray can accumulate many floor-grid cells.
+No restart; normal DLL predates new editor helper, minimal build before cold launch.
+Temporary text dumps removed (~7.25MB); compact scripts/counters/map backup retained.
+Full setup/controls and limitations: [BloodExperiments](Docs/BloodExperiments.md).
+
+
+**VFX reopen — October20:** requested explosionVFX for blood work. Minimal normal
+build succeeded (16 actions,312.35s); base DLLs now include preceding Live Coding
+changes. Editor22852 launched normally on /Game/explosionVFX. Startup dialog dismissed;
+map and remote connection verified before blood setup.
+No assets changed or saved. Read-only probe: Saved/Diagnostics/VerifyVFXOpen20261020.py.
+
+
+**Explosion lab checkout removed — October19:** user requested detachment/removal
+to recover disk space. Temporarily unpinned this UE5 chat, used managed archive,
+then restored its original pinned position. The isolated explosion-lab/Prophecy
+folder is gone; only main Prophecy remains in git worktree list. Removed7,036 files,
+3,566,537,400 logical bytes (~3.6GB). The app's Git source-recovery record adds
+102,773 compressed bytes, with no full checkout/build archive. Existing compact
+explosion recovery/media bundle remains at .codex/artifacts/prophecy-explosion-2026-10-18.
+Main runtime/editor left untouched. Receipt Saved/Diagnostics/ExplosionWorktreeRemoval20261019.json.
+Follow-up:96 redundant explosion/bomb diagnostic files (21,581,016bytes) moved
+to Windows Recycle Bin, including retired fuse-physics folders, old asset backups,
+graph dumps/logs and non-performance screenshots. Performance evidence, compact
+verification records, scripts and final demo videos retained. Bin was not emptied.
+Exact paths: Saved/Diagnostics/ExplosionClutterCleanup20261019.json.
+
+**Motion AE size comparison — October 19 complete:** fresh 2x512/latent128 trial
+on the identical corrected 64-motion features, splits, normalization, sampling and
+12,000-update protocol. Best validation checkpoint: step 12,000. Train/validation/
+test MSE .001244/.014059/.012319 versus 3x1024 .000997/.030460/.029142.
+Smaller model improves validation 53.84%, test 57.73%; validation/train ratio drops
+30.56x to 11.30x, so a gap remains. Single-seed comparison, not independent-motion
+validation. Recommended smaller portable bundle: Saved/MotionRegularizer-2x512;
+prior larger bundle remains Saved/MotionRegularizer. No controller changes.
+Evidence: Saved/RoboticMotionAE/20261019_mse_fullbody/architecture-comparison.json
+and run_2x512. Full topic: Labs/RoboticMotionAE/README.md.
+
+**Motion AE correction — October 19 complete:** replaced the rejected 474-clip
+model with a fresh AE on 64 motions: 12 existing trimmed retargets and the exact
+full-body Physical Loco (2) MSE targets (48 omni, 2 idle, 2 front/back get-ups).
+Drawn/unarmed variants included. All 52 MSE PKLs are byte-identical to the stopped
+47039 deployment; no added projection, foot displacement or upper-body freezing.
+Verified both arms articulate in every omni. Fresh 3x1024/latent128 trained 12,000
+updates; selected step 12,000, train/validation/test MSE .000997/.030460/.029142.
+The train/holdout gap remains a documented limitation. Portable export, standalone
+loading, input gradients and heading invariance passed. Active bundle and neutral
+integration instructions: Saved/MotionRegularizer. Rejected bundle archived under
+Saved/RoboticMotionAE/20261019_loco/rejected-bundle. Viewer 8875 shows 64 motions.
+Evidence: Saved/RoboticMotionAE/20261019_mse_fullbody. Policy remains stopped;
+no Unreal/PHAT changes. Full topic: Labs/RoboticMotionAE/README.md.
+
+**VDB node colors — October19 installed and verified:** Temperature Color and
+Scattering Color added to Spawn VDB Effect/Light Bomb Fuse, matching existing
+orange/white defaults. Set once before rendering; custom bomb colors stored in a
+new non-ticking component, defaults allocate none. No new recurring update/pass.
+Initial5-action build failed on validation API; corrected3-action retry113.50s
+passed/reloaded12:00:22UTC, no restart or retained-layout changes. A_Bomb preserved,
+compiled/saved;57 existing authored pins unchanged plus2 colors. Five isolated
+integration cases passed12:03:48UTC including delayed/instant/default and cached
+tail colors, invalid input rejection. Owned Play ended; callback retired. User
+started a new Play before12:04:46UTC; left it and new dirty A_Bomb/NS/map untouched. Normal
+DLLs stale: minimal normal build before cold launch. No user map/Niagara changes.
+Evidence Saved/Diagnostics/VDBColors20261019; details Docs/ZibraExplosionFade.md.
+
+**Optimised checkbox — October19 installed and verified:** user requested
+an A/B checkbox. Added visible Optimised(defaultfalse) to Spawn VDB Effect and
+Light Bomb Fuse; forwarding uses optional new non-ticking bomb marker. Optional new
+VDB cache component/M_ProphecyVDBOptimisedTail reuse prepared final3D textures,
+freeze lighting and disable projected shadows; off retains prior rendering.
+Existing native layouts unchanged; minimal Live Coding6 compile actions passed
+201.05s, reload09:54:56UTC. No restart. A_Bomb preserved/reconstructed/compiled/saved,
+56 existing authored pins/defaults/links unchanged and one false bOptimised pin.
+Generated ReceiveBeginPlay compiler graph excluded from authored-pin comparison.
+Normal DLLs stale; build minimally before any cold launch. Timing test passed.
+Zibra's internal1.5 density multiplier is preserved from the source MID; correcting
+that required one body-only compile action66.03s/reload10:07:26UTC, no object changes.
+Five owned runtime cases passed10:09:50UTC: off expires240; explosion/ring cache at
+92/62 and expire240; overlapping fade stays live/expires120; early zero skips
+cache/hides and expires60. Collision remains disabled, density/colour ratio and
+lifetime checked, full/half-fade images inspected. Actual profiles: off held/fading
+prep4.712/7.118ms plus translucency1.378/1.169; on no prep, translucency2.331/.820.
+Pass costs only, no gameplay FPS promise; on also disables projected shadows.
+Instant-bomb forwarding off/on passed10:12:10UTC, no fragments/emitter and one
+short-lived effect at a time. Owned Play ended, editor26816 remains explosionVFX;
+node is unchecked for the user's A/B test. `op`/`bf` done, callbacks retired.
+Evidence Saved/Diagnostics/VDBOptimised20261019. Do not run the full bomb suite.
+
+**VDB prototype findings — before checkbox:** user accepts a modest hitch only at effect startup, not
+periodic refresh hitches. Do not implement a low-cadence refresh as the solution.
+Cached final-volume/fade prototype succeeded, retaining real3D. At half/.0833/.01
+density, current-style preparation7.5–8.2ms plus translucency1.2–1.3ms became no
+preparation and translucency1.0–1.4ms. Native-setter repeat plus90degree camera move
+confirmed3D/fade and eliminated preparation again. Fixed self/received lighting;
+projected shadows disabled in ALL comparison cases. Tail only: animated phase,
+startup/handoff spike, production ownership/cleanup and both assets not validated.
+No full sequence cache or production change. Existing textures~19.97MiB for one
+frame; extrapolated whole-clip memory is not a measured cache size.
+Owned Play ended09:34:39UTC. Temporary duplicate material
+`/Game/__ProphecyVDBPerfProbe/M_CachedTail_20261019` deleted/absence verified
+09:36:04UTC. Original shader restored, user assets/BP untouched; editor26816 open
+explosionVFX/outside Play, profile CVars/throttle restored. `vd` is done/no callback.
+Native SetDensityScale avoids the lighting invalidation caused by editor property
+notifications in the diagnostic; production uses direct property writes. Full
+findings/control catalogue and prototype limitations in Docs/ZibraExplosionFade.md.
+
+**VDB deeper investigation — October19, no new production change:** user requested
+all performance knobs and explanation of costly near-invisible tails. Five owned
+comparison runs completed (one VDB at a time); editor26816 left explosionVFX/outside
+Play, profile CVars/throttle restored. Our fade handling disables lighting reuse at
+tick180 after source ends at90; unchanged shape suddenly regains downsample/lighting
+passes. At density.01, repeated GPU scopes: density downsample2.521ms, lighting1.193,
+colour4.465 (prep8.181), translucency1.336. These are pass costs, not30ms effect cost.
+Render downscaling still evaluates all source voxels; eighth not automatically faster.
+Temporary eight-colour-sample shader trial cut quarter colour4.4–4.5→.9–1.0ms,
+but added fire grain; motion/other views not validated. Original engine shader restored
+byte-identical and recompiled before repeat; no experimental shader installed.
+No native build/restart, user-asset or BP edits/saves. Prior adapter and stale normal DLL
+status unchanged. Full native control catalogue, test receipts and prioritized next
+work in Docs/ZibraExplosionFade.md. First proposed exact improvement: independently
+cache unscaled density grid across held-frame density fades (no DensityScale input).
+Final-volume caching tested as above; production caching and optional sampled
+quality/cutoff remain proposals, not installed nodes. No recurring refresh cadence.
+Evidence Saved/Diagnostics/VDBPerformance20261019.
+
+**Sword death/drop repair — October19 installed, user accepted:** inspected current `die revive`.
+Its `get sword` -> GetHeldSword returns null during D/S insertion, so the guard
+skips material AND DropSword; shortened equipment remains attached to the dying
+agent. Direct native drop restores full scale (1.311941 Z) from both reach and
+attached slide. Static mesh receiver also lacked SetPhysMaterialOverride forwarding
+to Jolt; now implemented without retained layout changes/polling. Five-action
+Live Coding passed553.73s, reload07:42:37UTC; native MaterialOverrideDrop test passed
+07:44:51UTC for independent/welded held, dropped and None reset material values.
+Unreal26816 remains open explosionVFX. Normal base DLLs are now stale: minimal
+normal build before any cold launch. Blueprint saved/preserved before reload.
+First editor graph migration refused without edits because the existing cast
+is pure. Corrected one-action helper build passed135.42s/reloaded07:49:24UTC.
+Migration applied07:50:21UTC: drop first, use returned actor for guard and material
+target, preserving material literal and other wiring. BP compiled status3. User
+confirmed it works and pivoted to VDB performance. Agent's final graph-save/repeat
+death probe was deferred during user Play; do not claim an agent post-migration save.
+Evidence/scripts: Saved/Diagnostics/SwordDrop20261019. Current map/unrelated
+assets unchanged; original auto-bomb scene baseline timed out at dead tick68;
+subsequent owned D/S probes removed only PIE bombs before ignition and ended.
+
+**VDB performance — October19 installed/verified, full 3D:** node-spawned effects
+(including bombs) use quarter render-volume resolution, eighth lighting resolution
+and main ray step4, configured before asset assignment to avoid full-resolution
+startup allocations. Lighting is reused on unchanged source frames at stable
+density, refreshed through fade/endpoints/snaps; zero-density tails disable plugin
+visibility while preserving actor lifetime. No entire-clip cache or plugin edit.
+Fine smoke detail is softer; moving-light/occluder lighting can stay frozen during
+a constant-density held frame. Source animation timing and all node controls remain.
+Controlled matching GPU captures: moving47.74→33.96ms, held41.41→22.25ms,
+fading40.09→28.84ms. CSV means show smaller moving improvement; these are fixed
+capture GPU costs, not gameplay FPS promises. Resident scene+effect GPU memory
+3514.7→2939.9MiB. Invalid early pilots discarded. See Docs/ZibraExplosionFade.md.
+Only ProphecyVDBLibrary.cpp changed. Two one-action layout-safe LC builds passed
+61.15s/83.47s, final reload08:33:08UTC/no object changes. No restart or content save.
+Timing automation passed08:33:59UTC; four actual-asset runtime cases and rendered
+fade captures passed08:35:22UTC. Editor26816 open explosionVFX/outside owned Play.
+Normal DLLs stale: minimal normal build required before any cold launch.
+Evidence: Saved/Diagnostics/VDBPerformance20261019 and VDBCacheBenchmark.csv.
+
+**Static fuse / upright Niagara — October19 installed and verified:** user rejected
+and explicitly requested removal of the whole bomb fuse-physics experiment.
+Static original-shape fuse replaces skeletal/AnimDynamics visual; remove stiffness
+node/setup component and generated skeletal assets/tools. Shared holster unaffected.
+Niagara follows the shrinking tip with world identity rotation/absolute scale,
+keeping gridZ up. Current A_Bomb emitter pin uses NewNiagaraSystem1; null still
+means none. Existing cap/hide/force/VDB/fragments controls preserved; offset pin removed.
+Flame debug-box inspection11:03UTC: User.DrawBounds still true; automatic toggle
+blocked by unavailable asset API/desktop helper. Asset export unchanged, dirty
+A_Bomb preserved. Manual control/evidence recorded in Docs/BombFuse.md.
+Retained layout changes: assets preserved, editor17636 closed cleanly. Initial
+11-action normal build compiled runtime but failed on editor helper pointer type;
+corrected4-action retry passed59.17s. Base DLLs current. Editor26816 reopened
+explosionVFX; A_Bomb compiled/saved,63->56 pins with only requested changes.
+Original470 fuse triangles and shading verified. Old skeletal fuse/skeleton and
+six physics tools deleted. Isolated StaticFuse passed05:41:54UTC:180 moving/rotating
+samples, world-up emitter, progressive clipping, material inheritance and hide.
+No effects test in user editor. Niagara saved bytes unchanged; agent reflection
+healthy. The two retired diagnostic directories (BombFuseFlexible and
+BombFuseRigidity20261019) were moved to Recycle Bin in the user's October19 cleanup.
+See Docs/BombFuse.md and Saved/Diagnostics/BombStaticFuse20261019.
+
+**Recovery/test constraints:** previous full FuseAndDetonation test spawned eight
+VDBs and crashed editor12676 with D3D12 E_OUTOFMEMORY. Never run it in the user's
+interactive editor. Focused tests run isolated -nullrhi; disable Fab for that
+process to avoid its restored browser tab asserting with -nocef. Niagara recovery
+snapshot Saved/Diagnostics/NiagaraPulse.txt and compact recovery receipt remain;
+recovered NewNiagaraSystem1 is saved. Never overwrite it with that old snapshot.
+
+**Fuse Cap installed October19:** Light Bomb Fuse adds remaining-fuse fraction
+0–1, default0;0 burns fully,.5 burns halfway,1 instant (zero speed allowed).
+Burn/spark speed unchanged. New optional non-ticking cap component preserves all
+existing retained layouts. Minimal Live Coding3 actions passed237.58s, reload
+03:54:40UTC; no restart. Current A_Bomb preserved/refreshed/compiled/saved with
+54 existing authored pins intact and one new cap pin0; stale library CDO repaired.
+Native21-argument API and agent reflection healthy. FuseAndDetonation passes
+03:56:48UTC including0/.25/.5/1 caps and VDB/force; EOS heartbeat warnings only.
+This gameplay change is now incorporated into normal DLLs by the crash/reopen
+build above. See Docs/BombFuse.md and
+Saved/Diagnostics/BombFuseCap20261019 for preservation/verification evidence.
+
+**Niagara clipping checked October19:** NewNiagaraSystem1 RenderScale0.2 and
+LocalPivotZ0.12 make the red debug box misleading: its center differs from the
+scaled simulation center. Flame reaches the real grid top. Temporary
+WorldSpaceSizeZ300->600 recovered the missing tip; all diagnostic settings
+restored, no content save/build/restart. See Docs/BombFuse.md Niagara clipping
+section and Saved/Diagnostics/NiagaraClip20261019.txt. No permanent tuning change.
+
+**A_Bomb shell material:** retain source-matched static shell and runtime material
+inheritance. Former startup flexible fuse setup is superseded by the static-fuse
+cleanup above; do not restore startup physics. See Docs/BombFuse.md.
 
 **Fragment transparency fade — October18 installed/verified, no restart:** Light
 Bomb Fuse adds Fragment Fade Duration (default1s,0off), over the final part of
@@ -53,30 +1017,6 @@ clean package and compiled successfully15:25:12UTC. Same editor PID6904, no rest
 no manual wiring edits. Map/PressureBomb retain their pre-existing dirty state.
 **Base DLL predates this checkbox: minimal normal build before next cold launch.**
 Evidence/scripts: Saved/Diagnostics/BombFragmentsToggle.
-
-**Flexible bomb fuse / Niagara / hide / instant — October18 installed/verified:**
-User requested the scabbard-style cosmetic dynamics, stiffness node, optional
-Niagara at the moving burn tip/tangent, permanent hide node and instant detonation.
-New skeletal asset prepared from original mesh (five AnimDynamics joints, fixed
-shell), reusing existing holster native solver. Set Bomb Fuse Stiffness enables
-or tunes it; Light Bomb Fuse has optional Fuse Sparks, Spark Rotation Offset and
-Instant Explosion. +X follows the outward tangent at the deformed burn cut.
-Empty Niagara means none. Hide Bomb Fuse permanently hides it per runtime instance,
-stops dynamics/sparks and retains any running timer. Instant works immediately,
-even on a hidden/already-burning bomb; zero burn speed accepted for instant only.
-Body material now follows current original-component material during burning too.
-Editor6804 exited after preserving current A_Bomb, PressureBomb
-and new generated skeleton; it again hit a Slate shutdown error after saving.
-No force kill. Minimal normal build6 actions passed139.46s; **base DLLs current**,
-including all preceding bomb patches. Editor6904 open on explosionVFX/outside Play,
-no dirty packages. Saved user assets match preservation hashes; graph untouched.
-323 owned Play samples pass,179 spark-tip samples error<4.72e-7cm and tangent
-dot>.999999. Hide, instant, null Niagara and material behavior checked. Combined
-native test passes after Play initialization; first cold isolated invocation had
-velocity failures, documented honestly in topic. Separate actual Play check of
-all20 fragment velocities passes. No extra restart to investigate test harness.
-See [BombFuse](Docs/BombFuse.md). Evidence Saved/Diagnostics/BombFuseFlexible;
-reproducible tools Tools/BombFuse. Explosion impact-event extension stays PAUSED.
 
 **Light Bomb Fuse — October18, installed and verified:** node in Prophecy/VFX
 accepts the original bomb mesh component, progressively clips its curved fuse,
@@ -1148,3 +2088,5 @@ Read current source/topic docs and actual BP pins for enabled settings. Defaults
 - [Full pre-cleanup history through October9](Docs/Journal/ProjectJournal-history-through-2026-10-09.md) preserves earlier investigations/domain references. Historical prose is preserved; Markdown links were adjusted for the archive location. Older archives remain under `Docs/Journal/`. Historical pending builds/PIDs/scene settings aren't current instructions.
 - [Full October10–15 handoff history](Docs/Journal/ProjectJournal-history-through-2026-10-15.md) preserves every superseded opening entry and previous build/save/test claim. Read current summaries first.
 - **Update current sections instead of prepending endless logs.** Keep build coverage, saved assets, defaults versus actual BP, evidence and limits explicit. Detailed experiments belong in linked topic docs/receipts. Archive superseded behavior, preserve user corrections, and never revive an old investigation as unsolicited work.
+
+

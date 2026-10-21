@@ -19,10 +19,16 @@
 #include "PhysicsEngine/BodyInstance.h"
 #include "Chaos/ShapeInstance.h"
 #include "ProphecyJoltStandardPhysicsLibrary.h"
+#include "ProphecyPhysicsConstraintBlueprintLibrary.h"
 #include "ProphecyJoltStaticMeshLibrary.h"
 #include "ProphecyJoltConstraintRuntime.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "ProphecyHitEventTestSink.h"
+#include "ProphecyJoltSkeletalPropComponent.h"
+#include "Animation/SkeletalMeshActor.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "PhysicsEngine/PhysicsAsset.h"
 
 namespace ProphecyJolt::SceneCollisionTests
 {
@@ -77,6 +83,142 @@ UStaticMeshComponent* AddMesh(FWorldFixture& Fixture, UStaticMesh& Asset, const 
     if (bDynamic) Mesh->SetSimulatePhysics(true);
     return Mesh;
 }
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltPlacedMannequinTest,
+    "Prophecy.Jolt.SceneCollision.PlacedMannequin",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyJoltPlacedMannequinTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::SceneCollisionTests;
+    FWorldFixture Fixture;
+    Fixture.World->InitializeActorsForPlay(FURL());
+    FString Error;
+    if (!UProphecyJoltBlueprintLibrary::InitializeJoltWorld(Fixture.World, Error, 256, 0))
+    { AddError(Error); return false; }
+    auto* Asset = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/_mygame/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin"));
+    if (!TestNotNull(TEXT("Actual placed mannequin asset"), Asset)) return false;
+    auto AddMannequin = [&](FVector Position, float Scale)
+    {
+        auto* Actor = Fixture.World->SpawnActor<ASkeletalMeshActor>();
+        auto* Mesh = Actor->GetSkeletalMeshComponent();
+        Mesh->SetSkeletalMesh(Asset);
+        Mesh->SetWorldTransform(FTransform(FQuat::Identity, Position, FVector(Scale)));
+        Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+        Mesh->SetCollisionObjectType(ECC_PhysicsBody);
+        Mesh->SetCollisionResponseToAllChannels(ECR_Block);
+        Mesh->SetSimulatePhysics(true);
+        Mesh->SetAllBodiesNotifyRigidBodyCollision(true);
+        Mesh->RefreshBoneTransforms();
+        return Mesh;
+    };
+    auto* Mesh = AddMannequin(FVector(0,0,250), 1);
+    const auto Initial = Mesh->GetSocketLocation(TEXT("pelvis"));
+    auto* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+    AddMesh(Fixture, *Cube, FTransform(FQuat::Identity,FVector(0,0,-50),FVector(20,20,1)), false);
+    auto* SceneActor = Fixture.SpawnActor();
+    auto* Scene = NewObject<UProphecyJoltSceneCollisionComponent>(SceneActor);
+    SceneActor->AddInstanceComponent(Scene); Scene->RegisterComponent();
+    Scene->bAutomaticScenePhysics = false;
+    if (!Scene->EnableSceneCollision(Error)) { AddError(Error); return false; }
+    auto* Prop = UProphecyJoltSkeletalPropComponent::Find(Mesh);
+    if (!TestNotNull(TEXT("Placed mannequin automatically bound"), Prop)
+        || !TestTrue(TEXT("Owns Jolt rig"), Prop->IsJoltStepClientActive())) return false;
+    Prop->bAutomaticStep = false;
+    TestFalse(TEXT("Chaos simulation is disabled"), Mesh->IsAnySimulatingPhysics());
+    TestEqual(TEXT("Blood query receiver retained"), Mesh->GetCollisionEnabled(), ECollisionEnabled::QueryOnly);
+    auto* Owner = Fixture.World->GetSubsystem<UProphecyJoltWorldSubsystem>();
+    FProphecyJoltBodyHandle Pelvis;
+    if (!TestTrue(TEXT("Pelvis handle"), Prop->GetBodyHandle(TEXT("pelvis"), Pelvis))) return false;
+    for (int32 Frame=0;Frame<120;++Frame)
+        if (!Prop->StepAndPublish(1.f/60, Error)) { AddError(Error); return false; }
+    FProphecyJoltBodyState Body;
+    Owner->ReadBody(Pelvis, Body);
+    TestTrue(TEXT("Mannequin falls and collides with ground"), Body.PositionCm.Z < Initial.Z-100 && Body.PositionCm.Z > 0);
+    TestTrue(TEXT("Rendered pelvis follows completed Jolt"), Mesh->GetSocketLocation(TEXT("pelvis")).Equals(Body.PositionCm, .1));
+    const auto* QueryBody = Mesh->GetBodyInstance(TEXT("pelvis"));
+    TestTrue(TEXT("Query pelvis follows Jolt for blood traces"),
+        QueryBody && QueryBody->GetUnrealWorldTransform().GetLocation().Equals(Body.PositionCm, .1));
+    UProphecyJoltStandardPhysicsLibrary::SetPhysicsLinearVelocity(Mesh, FVector(0,200,0), false, TEXT("pelvis"));
+    TestTrue(TEXT("Standard velocity node reaches Jolt"),
+        UProphecyJoltStandardPhysicsLibrary::GetPhysicsLinearVelocity(Mesh,TEXT("pelvis")).Equals(FVector(0,200,0),.01));
+    // A cut into an already-admitted mannequin must use that rig's actual bone,
+    // not attempt a second capture from its intentionally QueryOnly UE bodies.
+    FProphecyJoltBodyHandle Spine;
+    if (!TestTrue(TEXT("Cut target spine"), Prop->GetBodyHandle(TEXT("spine_03"), Spine))) return false;
+    const FVector CutPoint = Mesh->GetSocketLocation(TEXT("spine_03"));
+    auto* Blade = AddMesh(Fixture, *Cube, FTransform(FQuat::Identity, CutPoint + FVector(0,0,20), FVector(.05)), true);
+    if (!Scene->PrepareJoltWorldStep(1.f/60, false, Error)) { AddError(Error); return false; }
+    auto* BladeAdapter = Blade->GetOwner()->FindComponentByClass<UProphecyJoltBodyComponent>();
+    if (!TestNotNull(TEXT("Native test blade admitted"), BladeAdapter)) return false;
+    BladeAdapter->bAutomaticStep = false;
+    FProphecyJoltWorldDiagnostics BeforeCut;
+    Owner->GetDiagnostics(BeforeCut);
+    auto* Cut = NewObject<UPhysicsConstraintComponent>(Blade->GetOwner(), NAME_None, RF_Transient);
+    Blade->GetOwner()->AddInstanceComponent(Cut);
+    Cut->SetWorldLocation(CutPoint); Cut->RegisterComponent();
+    Cut->SetDisableCollision(true);
+    Cut->SetLinearXLimit(LCM_Locked,0); Cut->SetLinearYLimit(LCM_Locked,0); Cut->SetLinearZLimit(LCM_Locked,0);
+    Cut->SetAngularTwistLimit(ACM_Locked,0); Cut->SetAngularSwing1Limit(ACM_Locked,0); Cut->SetAngularSwing2Limit(ACM_Locked,0);
+    Cut->SetConstrainedComponents(Blade, NAME_None, Mesh, TEXT("spine_03"));
+    if (!Prop->StepAndPublish(1.f/60, Error)) { AddError(Error); return false; }
+    FProphecyJoltJointHandle CutJoint;
+    if (!TestTrue(TEXT("Cut has a real native joint"), ProphecyJolt::Constraints::GetJoint(Cut, CutJoint, Error)))
+    { AddError(Error); return false; }
+    FProphecyJoltJointSettings CutSettings;
+    TestTrue(TEXT("Read cut joint"), Owner->ReadJoint(CutJoint, CutSettings).IsSuccess());
+    TestTrue(TEXT("Cut endpoint is original spine body"), SameBody(CutSettings.BodyA, Spine));
+    FProphecyJoltWorldDiagnostics AfterCut;
+    Owner->GetDiagnostics(AfterCut);
+    TestEqual(TEXT("Cut creates no duplicate skeleton bodies"), AfterCut.BodyCount, BeforeCut.BodyCount);
+    TestFalse(TEXT("Cut leaves Chaos simulation disabled"), Mesh->IsAnySimulatingPhysics());
+
+    // Channel-only changes have no UE settings-changed delegate; exercise that
+    // path separately from response changes, and check native rather than trace state.
+    Mesh->SetCollisionObjectType(ECC_GameTraceChannel2);
+    if (!Scene->PrepareJoltWorldStep(1.f/60, false, Error)) { AddError(Error); return false; }
+    FProphecyJoltCollisionUpdate Collision;
+    Owner->ReadBodyCollision(Spine, Collision);
+    TestEqual(TEXT("Native skeleton channel follows Blueprint setter"), Collision.ObjectChannel, ECC_GameTraceChannel2);
+    Mesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
+    if (!Scene->PrepareJoltWorldStep(1.f/60, false, Error)) { AddError(Error); return false; }
+    for (const auto& Handle : {Spine, Pelvis})
+    {
+        Owner->ReadBodyCollision(Handle, Collision);
+        TestEqual(TEXT("Native bones ignore penetrating sword channel"), Collision.Responses.GetResponse(ECC_GameTraceChannel3), ECR_Ignore);
+        TestEqual(TEXT("Floor collision remains blocking"), Collision.Responses.GetResponse(ECC_WorldStatic), ECR_Block);
+    }
+    Mesh->SetCollisionObjectType(ECC_PhysicsBody);
+    Mesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Block);
+    if (!Scene->PrepareJoltWorldStep(1.f/60, false, Error)) { AddError(Error); return false; }
+    Owner->ReadBodyCollision(Spine, Collision);
+    TestEqual(TEXT("Native channel restores"), Collision.ObjectChannel, ECC_PhysicsBody);
+    TestEqual(TEXT("Native sword collision restores"), Collision.Responses.GetResponse(ECC_GameTraceChannel3), ECR_Block);
+    TestEqual(TEXT("Trace-only representation retained"), Mesh->GetCollisionEnabled(), ECollisionEnabled::QueryOnly);
+    Cut->BreakConstraint();
+    if (!Prop->StepAndPublish(1.f/60, Error)) { AddError(Error); return false; }
+    TestFalse(TEXT("Cut release retires native joint"), ProphecyJolt::Constraints::GetJoint(Cut, CutJoint, Error));
+    Blade->GetOwner()->Destroy();
+    // Late placement and a scaled mannequin must use the same discovery route.
+    auto* Late = AddMannequin(FVector(400,0,250), .75f);
+    if (!Scene->PrepareJoltWorldStep(1.f/60, false, Error)) { AddError(Error); return false; }
+    auto* LateProp = UProphecyJoltSkeletalPropComponent::Find(Late);
+    if (!TestNotNull(TEXT("Late mannequin discovered"), LateProp)
+        || !TestTrue(TEXT("Scaled mannequin admitted"), LateProp->IsJoltStepClientActive())) return false;
+    LateProp->bAutomaticStep=false;
+    for (int32 Frame=0;Frame<20;++Frame)
+        if (!Prop->StepAndPublish(1.f/60, Error)) { AddError(Error); return false; }
+    FProphecyJoltBodyHandle LatePelvis;
+    LateProp->GetBodyHandle(TEXT("pelvis"),LatePelvis);Owner->ReadBody(LatePelvis,Body);
+    TestTrue(TEXT("Scaled visible pelvis follows Jolt"),Late->GetSocketLocation(TEXT("pelvis")).Equals(Body.PositionCm,.1));
+    Late->GetOwner()->Destroy();
+    TestFalse(TEXT("Destroy removes native articulation"),Owner->OwnsBody(LatePelvis));
+    Mesh->GetOwner()->Destroy();
+    TestFalse(TEXT("Original articulation removed"),Owner->OwnsBody(Pelvis));
+    Scene->DisableSceneCollision();
+    FProphecyJoltWorldDiagnostics D; Owner->GetDiagnostics(D);
+    TestEqual(TEXT("No leaked native bodies"),D.BodyCount,uint32(0));
+    return !HasAnyErrors();
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltSceneQueryGeometryTest,
@@ -572,4 +714,5 @@ bool FProphecyJoltStandardConstraintsTest::RunTest(const FString&)
     Scene->DisableSceneCollision(); Adapter->DisableBody();
     return !HasAnyErrors();
 }
+#include "Tests/ProphecyPikeWoundCorrectionTests.inl"
 #endif

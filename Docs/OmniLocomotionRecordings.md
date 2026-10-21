@@ -1,5 +1,37 @@
 # Omni locomotion recordings
 
+## Equipment variants — October 16
+
+Separate candidate dataset: `Saved/MimicKitUEFN/equipment/dataset.json` and
+`motions.yaml`: **54 clips**, 27 unarmed and 27 drawn. Each set has 14 run,
+12 walk and one idle. The unarmed copies are byte-identical to the accepted
+references. The drawn set was recorded from the Unreal NN with an actually
+equipped sword, matching locomotion checkpoints and zero gaze, after two
+seconds of settling. Moving captures are three seconds; idle is ten seconds.
+Existing original idle is authored; drawn idle is an NN continuation with
+zero movement input. Its small measured root motion was retained, not frozen.
+
+Drawn retarget review: **http://127.0.0.1:8842/omni.html?set=drawn**.
+The existing default viewer and original references are unchanged. The drawn
+set uses the same best-loop selection, 15-body/34-DoF retarget and independent
+foot-lift correction. No seam blending or joint-limit clamping was added.
+All moving cuts pass the existing loop screening. Capture evidence and helper
+scripts are in `Saved/Diagnostics/OmniDrawn20261016/`.
+
+Reproduction: `Tools/Locomotion/RecordOmni.py` supports `--drawn`,
+`--include-idle`, `--accepted-only` and a separate `--output`; then
+`Tools/Locomotion/PrepareDrawnOmni.py` prepares the duplicate dataset and preview.
+Recording requires its own temporary Play sessions; preserve the user's session
+and restore the original map. No Unreal assets were saved during capture.
+
+The user's later saved wrist limits were imported without regenerating motion.
+The user subsequently authorized fitting all54 clips plus5% angular room:
+current audit is `equipment/limit-verification.json`; exact changes and backup
+are documented in `Docs/MimicKitUEFNBodyMatching.md`. Dataset entries contain
+`sword_drawn`, but no policy
+equipment input or active training configuration was silently changed. These
+variants must not be mixed into training without explicit equipment conditioning.
+
 
 
 Local viewer: **http://127.0.0.1:8841/**. Current gallery: **26 clips (12 walk / 14 run)**. Launch with the project Python:

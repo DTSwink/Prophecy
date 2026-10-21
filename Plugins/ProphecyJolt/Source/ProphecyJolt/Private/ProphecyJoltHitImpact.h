@@ -15,11 +15,20 @@ inline FKey Key(JPH::BodyID A,JPH::SubShapeID SA,JPH::BodyID B,JPH::SubShapeID S
     if (A.GetIndexAndSequenceNumber()>B.GetIndexAndSequenceNumber()) { Swap(A,B);Swap(SA,SB); }
     return {A.GetIndexAndSequenceNumber(),SA.GetValue(),B.GetIndexAndSequenceNumber(),SB.GetValue()};
 }
+struct FComponentMotion
+{
+    FVector Location=FVector::ZeroVector;
+    FQuat Rotation=FQuat::Identity;
+    FVector Velocity=FVector::ZeroVector;
+    FVector AngularVelocityRad=FVector::ZeroVector;
+    bool Valid=false;
+};
 struct FSample
 {
     FVector RelativeVelocity=FVector::ZeroVector;
     double Speed=0.;
     bool Valid=false;
+    FComponentMotion Body1Motion,Body2Motion;
 };
 inline FSample Sample(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& Manifold)
 {
@@ -45,6 +54,8 @@ struct FDispatch
     UPrimitiveComponent* Other=nullptr;
     FName MyBone, OtherBone;
     FSample Sample;
+    // Stack-only dispatch action. Never retained in the native contact arrays.
+    TFunction<bool(FString&)> Continue;
 };
 // Synchronous GT event scope only; no last-hit cache or retained UObject references.
 inline const FDispatch* Current=nullptr;

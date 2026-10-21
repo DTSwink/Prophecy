@@ -5,6 +5,44 @@
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
+## October20 Slow Start physics clock correction
+
+User's `A_Sword` **start slow fps=true**, **slow fps=5** exposed the same mistake
+in `begin play f` that October15 fixed only for RMB. Original startup called
+SetFixedFrameRateRuntime(5): actual world delta0.2s, about4.988FPS,2.4simulation
+seconds in2.406wall seconds. NN authored clocks still advanced1/60 per tick,
+so the physics and authored motion clocks disagreed. An earlier generic cap-only
+probe did not exercise this branch and was insufficient evidence for Slow Start.
+
+Saved correction: the true startup path keeps SetFixedFrameRateRuntime(60), then
+executes `t.MaxFPS <existing slow fps>`. False startup and End Play set cap60.
+Existing bool/value and all unrelated wiring/tuning remain unchanged. Four added
+nodes, exactly six changed existing pins (including the slow branch FPS literal).
+Full authored graph comparison:24graphs,3911live existing pins preserved.
+Separate commandlet graph comparison covered3981pins under its load context.
+No runtime C++/solver change, no new per-frame feature work.
+
+Owned Play with user's exact true/5 setup: all sampled deltas0.016666666,
+cap5, measured4.636FPS;12intervals advance0.2simulation seconds over2.588wall
+seconds. Sword's own End Play cap60 observed before diagnostic restoration.
+Saved only A_Sword; editor29136 reopened explosionVFX, outside Play, cap60,
+no dirty packages, reflection status3/native_properties0/pin_types0.
+
+Build/recovery provenance: initial editor-only Live Coding compile failed on
+TObjectPtr iteration, corrected build75.13s loaded. Applying the first helper
+crashed on a checked missing pin because UE5.7 has BuildString_Double, not
+BuildString_Float. No asset was saved; original sword hash matched the backup.
+Corrected helper prevalidates functions and handles missing pins without asserts;
+normal one-unit build65.34s passed. Separate commandlet edit compiled status3 and
+passed the graph check; its attempted Python status read was protected and failed
+before save. Removed that unsupported read; applied the validated edit after
+reopening, checked live graph, tested, and saved. Normal DLLs are current.
+Evidence: Saved/Diagnostics/SceneClock, including slow-before/after/summary,
+slow-graph-check and slow-final receipts plus prior sword bytes.
+Tools/SwordHolster: InspectSlowStart.py, ProbeSlowStart.py,
+InstallSlowStartCap.py, InstallSlowStartOffline.py, CheckSlowStartGraph.py,
+SaveSlowStartCap.py. Installer is idempotent and preserves preflight requirements.
+
 ## October15 saved slide tuning refresh
 
 Imported current saved lab S sliding speed230cm/s (previous170) and first S slide-curve point(.15053891961839325,.0988776276854313); remaining curve points unchanged. D remains330cm/s with a linear slide curve. Updated existing unlinked Sheathe Sliding Speed literal on the big profile node, preserving every other graph field/link, then saved PoseAgent. Editor helper now supports `Prophecy.Editor.RefreshHolsterGripPins SetSlideSpeeds <draw> <sheathe>` for explicit existing-literal updates; wired values are rejected before mutation, normal missing-pin migration unchanged. Editor-only Live Coding130.94s, no restart or runtime/layout changes.240tick live capture across3agents verifies six slides: S18ticks/.30s, D13ticks/.2167s, all recorded curve fractions within4.93e-10 of the lab evaluator. Lab state and unrelated settings untouched. TestNN remains dirty/local; normal DLLs stale; included in the temporary final checkpoint. Evidence `Saved/Diagnostics/SlideLabSync20261015/`.

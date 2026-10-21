@@ -75,7 +75,7 @@
         <joint name="right_hip_y" type="hinge" axis="0 1 0" actuatorfrcrange="-200 200" stiffness="500" damping="50" armature=".02" limited="false" />
         <joint name="right_hip_z" type="hinge" axis="0 0 1" actuatorfrcrange="-200 200" stiffness="500" damping="50" armature=".02" limited="false" />
         <body name="right_shin" pos="0.390486564636231 -2.38724089402648e-08 1.20758250066189e-08" quat="0.999107820876637 -0.000640371466834374 0.0160646467025502 0.0390522638760441">
-          <joint name="right_knee" type="hinge" axis="0 0 1" range="-0.131967157381356 2.3114937954107" actuatorfrcrange="-150 150" stiffness="500" damping="50" armature=".02" />
+          <joint name="right_knee" type="hinge" axis="0 0 1" range="-0.144533549301004 2.32406018733035" actuatorfrcrange="-150 150" stiffness="500" damping="50" armature=".02" />
           <body name="right_foot" pos="0.425611648391465 -0.00120656924406762 -0.00480711387257002" quat="0.997500889773479 -0.0417849655370083 0.0455050328543174 -0.0342824086247851">
             <joint name="right_ankle_x" type="hinge" axis="1 0 0" actuatorfrcrange="-90 90" stiffness="400" damping="40" armature=".01" limited="false" />
             <joint name="right_ankle_y" type="hinge" axis="0 1 0" actuatorfrcrange="-90 90" stiffness="400" damping="40" armature=".01" limited="false" />

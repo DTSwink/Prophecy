@@ -43,7 +43,7 @@ def save(value):
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT/'pod.json').write_text(json.dumps(value, indent=2))
 
-def allocate(gpu, ceiling, cloud_type='COMMUNITY', seconds=7200, name='mimickit-walk-20261014'):
+def allocate(gpu, ceiling, cloud_type='COMMUNITY', seconds=7200, name='mimickit-walk-20261014', data_center_ids=None):
     assert not (OUT/'pod.json').exists(), 'Reconcile existing allocation before retry'
     existing = [p for p in rp.request_json('GET','/pods') if p.get('name') == name]
     assert not existing, 'Named pod already exists; reconcile instead of creating duplicate'
@@ -55,6 +55,8 @@ def allocate(gpu, ceiling, cloud_type='COMMUNITY', seconds=7200, name='mimickit-
                    minVCPUPerGPU=4,minRAMPerGPU=16,ports=['22/tcp'],supportPublicIp=True,
                    interruptible=False,env={'PUBLIC_KEY':public,'SSH_PUBLIC_KEY':public},
                    dockerEntrypoint=[],dockerStartCmd=[])
+    if data_center_ids:
+        payload.update(dataCenterIds=list(data_center_ids),dataCenterPriority='custom')
     p = rp.request_json('POST','/pods',payload)
     info = dict(pod_id=p['id'],name=name,gpu=gpu,cost_per_hour=p.get('costPerHr'),
                 created_unix=time.time(),max_initial_runtime_seconds=seconds,cloud_type=cloud_type)

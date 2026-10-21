@@ -4,6 +4,10 @@ Current priority: fighter movement, physical animation, weapons and scene collis
 
 Standard force/impulse/torque and velocity setter nodes now dispatch to the active backend on the saved fighter's **PhysicalMesh** and sword's **sword** component. Existing wiring is preserved. For bone selection, radial/local calls and component requirements for new props, see [JoltForceNodes.md](JoltForceNodes.md).
 
+Directly placed skeletal mannequins also use the automatic scene-discovery path;
+see [skeletal props](JoltSkeletalProps.md) for admission, passive-pose and query
+receiver behavior. They do not need to be converted into Prophecy agents.
+
 Jolt fighter admission also applies each body's existing **Inertia Conditioning** setting using the current engine policy. This prevents excessive wrist correction from feeding unwanted hand motion back into the NN with small feedback tolerances. See [JoltFeedbackHandDrift.md](JoltFeedbackHandDrift.md) for measurements and admission-time scope.
 
 ## Press Play

@@ -5,6 +5,22 @@ import math
 import time
 import cloud
 
+def sync_guard_controls(directory, control):
+    """Keep migration guard copies for this pod on the same authorized clock."""
+    changed=[]
+    for path in directory.rglob('runtime_control.json'):
+        try:
+            previous=json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if previous.get('pod_id')!=control['pod_id']:
+            continue
+        temporary=path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(control));temporary.replace(path)
+        changed.append(str(path))
+    return changed
+
+
 def extend(hard_stop=None, *, until_stopped=False):
     # Finite sentinel keeps already-running deadline readers compatible: they
     # deliberately reject Infinity. Explicit metadata records the authorization.
@@ -30,6 +46,8 @@ print(json.dumps(value))
     remote=json.loads(cloud.ssh("python - <<'PY'\n"+code+'\nPY'))
     assert remote==control
     path=cloud.OUT/'runtime_control.json';tmp=path.with_suffix('.tmp');tmp.write_text(payload);tmp.replace(path)
+    mirrors=sync_guard_controls(cloud.OUT,control)
+    (cloud.OUT/'guard-control-sync.json').write_text(json.dumps(dict(pod=state['pod_id'],paths=mirrors,updated_unix=time.time()),indent=2))
     state['hard_stop_unix']=hard_stop
     state['until_stopped']=until_stopped
     state['max_initial_runtime_seconds']=hard_stop-state['created_unix']

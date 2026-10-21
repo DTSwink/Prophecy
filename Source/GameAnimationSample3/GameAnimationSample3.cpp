@@ -1,6 +1,7 @@
 #include "GameAnimationSample3.h"
 #include "Modules/ModuleManager.h"
 #include "Private/ProphecyDebugCameraInput.inl"
+#include "Private/ProphecyBloodNiagaraCallbacks.h"
 
 namespace ProphecyJolt::DefaultPhysics { void Startup(); void Shutdown(); }
 
@@ -20,9 +21,11 @@ class FProphecyGameModule : public FDefaultGameModuleImpl
 #endif
         ProphecyJolt::FightValidation::RegisterCommandLine();
         ProphecyJolt::DefaultPhysics::Startup();
+        UProphecyBloodNiagaraCallbacks::Startup();
     }
     virtual void ShutdownModule() override
     {
+        UProphecyBloodNiagaraCallbacks::Shutdown();
 #if WITH_EDITOR
         ProphecyDebugCameraInput::Shutdown();
 #endif

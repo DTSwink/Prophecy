@@ -164,48 +164,14 @@ public:
 	TArray<TObjectPtr<UDecalComponent>> ActiveDecalComponents;
 
 private:
-	FIntVector MakeKeyForWorldLocation(const FVector& WorldLocation, int32 Level) const;
-	FVector MakeTileCenterLocation(const FIntVector& Key, float FloorZ) const;
-	FVector MakeDecalLocation(const FVector& CenterLocation, const FVector& ProjectionNormal) const;
-	FRotator MakeDecalRotation(const FVector& ProjectionNormal) const;
-	float GetTileSizeCm(int32 Level) const;
-	int32 GetTileSizeCells(int32 Level) const;
-	bool IsKeyInsideGridBounds(const FIntVector& Key) const;
-	FIntVector GetChildKey(const FIntVector& ParentKey, int32 ChildOffsetX, int32 ChildOffsetY) const;
-	bool TryAddTile(const FIntVector& Key, FVector CenterLocation, FVector ProjectionNormal);
-	void ScanActiveStainedTilesForMergeCandidates(double StartSeconds, double BudgetSeconds);
-	void AdvanceScanCursor();
-	void TrackActiveTileKey(const FIntVector& Key);
-	void UntrackActiveTileKey(const FIntVector& Key);
+	friend struct FProphecyDecalRectState;
+	int32 AddRectangleStain(FVector Position, FVector Normal, float Radius, class UPrimitiveComponent* Receiver, int32 Item);
 	void RefreshMergeTimer();
-	bool TryEnqueueParentMerge(const FIntVector& ChildKey);
-	bool CanMergeParent(const FIntVector& ParentKey, TArray<FIntVector>& OutChildKeys) const;
-	bool MergeParent(const FIntVector& ParentKey, const TArray<FIntVector>& ChildKeys);
-	UDecalComponent* SpawnTileDecal(const FProphecyFoliageDecalGridTile& Tile);
-	void UpdateTileDecal(FProphecyFoliageDecalGridTile& Tile) const;
-	void DestroyTileDecal(FProphecyFoliageDecalGridTile& Tile);
-	void RemoveOccupiedLeavesForTile(const FProphecyFoliageDecalGridTile& Tile);
-	void RegisterActiveDecal(UDecalComponent* Decal);
-	void UnregisterActiveDecal(UDecalComponent* Decal);
-	void CompactActiveDecalList();
-	void PruneOldestTileIfNeeded();
 	void RefreshStats();
-
+	TSharedPtr<struct FProphecyDecalRectState> RectangleState;
 	UPROPERTY(Transient)
-	TMap<FIntVector, FProphecyFoliageDecalGridTile> ActiveTiles;
-
-	UPROPERTY(Transient)
-	TArray<FIntVector> MergeQueue;
-
-	UPROPERTY(Transient)
-	TArray<FIntVector> ActiveScanKeys;
-
-	TSet<FIntVector> QueuedMergeKeys;
-	TSet<FIntVector> ActiveScanKeySet;
-	TSet<FIntPoint> OccupiedLeafKeys;
+	TArray<TObjectPtr<UDecalComponent>> OwnedRectangleDecals;
 	FTimerHandle MergeTimerHandle;
-	int32 ActiveScanCursor = 0;
-	bool bScanForward = true;
 };
 
 UCLASS()

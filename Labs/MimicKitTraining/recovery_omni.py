@@ -1,5 +1,6 @@
 """Opt-in get-up starts within fixed idle rows; next-tick phase feedback."""
 import math
+from pathlib import Path
 import torch
 from anim.motion_lib import MotionLib
 from envs.base_env import DoneFlags
@@ -35,11 +36,25 @@ def build_reset_dof_cache(lib):
     return lib.joint_rot_to_dof(joints).reshape(len(counts),width,-1)
 
 
-def random_start_rows(indices, num_envs, fraction):
+def random_start_rows(indices, num_envs, fraction, fixed_motion=None):
     """Fixed, evenly distributed cohort; short episodes cannot change its share."""
     if not math.isfinite(fraction) or not 0. <= fraction <= 1.:
         raise ValueError('Recovery random start fraction must be in [0, 1]')
     mask = torch.zeros(num_envs, device=indices.device, dtype=torch.bool)
+    if fixed_motion is not None:
+        # Stratify within each motion so equal motion/start fractions do not
+        # select the same rows (all back random, all front frame zero).
+        groups = [indices[fixed_motion[indices] == motion] for motion in torch.unique(fixed_motion[indices])]
+        counts = [math.floor(len(group)*fraction) for group in groups]
+        remainder = round(len(indices)*fraction)-sum(counts)
+        order = sorted(range(len(groups)), key=lambda i: len(groups[i])*fraction-counts[i], reverse=True)
+        for i in order[:remainder]:
+            counts[i] += 1
+        for group, count in zip(groups, counts):
+            if count:
+                selected = torch.floor((torch.arange(count, device=indices.device)+.5)*len(group)/count).long()
+                mask[group[selected]] = True
+        return mask
     count = round(len(indices) * fraction)
     if count:
         selected = torch.floor((torch.arange(count, device=indices.device) + .5) * len(indices) / count).long()
@@ -84,6 +99,23 @@ class RecoveryOmniEnv(OmniWalkEnv):
         self._recovery_random_start_fraction = float(cfg.get('random_start_fraction', 0. if self._recovery_frame_zero else 1.))
         self._recovery_random_start_rows = random_start_rows(indices, n, self._recovery_random_start_fraction)
         self._recovery_motion = torch.zeros(n,device=self._device,dtype=torch.long)
+        self._recovery_fixed_motion = None
+        if 'back_row_fraction' in cfg:
+            fraction = float(cfg['back_row_fraction'])
+            if not math.isfinite(fraction) or not 0 <= fraction <= 1:
+                raise ValueError('Back recovery row fraction must be in [0, 1]')
+            clip_names = [Path(self._recovery_lib.get_motion_file(i)).stem.lower() for i in range(2)]
+            back = [i for i, name in enumerate(clip_names) if 'back' in name]
+            if len(back) != 1:
+                raise ValueError('Expected exactly one named back get-up clip')
+            self._recovery_fixed_motion = torch.full((n,), 1-back[0], device=self._device, dtype=torch.long)
+            back_mask = random_start_rows(indices, n, fraction)
+            self._recovery_fixed_motion[back_mask] = back[0]
+            self._recovery_assignment_report = dict(
+                back_rows=int(back_mask.sum()), front_rows=count-int(back_mask.sum()),
+                motion_files=clip_names, back_motion_index=back[0])
+            self._recovery_random_start_rows = random_start_rows(
+                indices, n, self._recovery_random_start_fraction, self._recovery_fixed_motion)
         self._recovery_start = torch.zeros(n,device=self._device)
         self._recovery_start_frame = torch.zeros(n,device=self._device,dtype=torch.long)
         self._feedback_phase = torch.zeros((n,2),device=self._device)
@@ -187,7 +219,8 @@ class RecoveryOmniEnv(OmniWalkEnv):
         ids=env_ids[self._recovery_rows[env_ids]]
         if not len(ids):return
         lib=self._recovery_lib
-        motions=torch.randint(2,(len(ids),),device=self._device)
+        motions=(self._recovery_fixed_motion[ids] if self._recovery_fixed_motion is not None
+                 else torch.randint(2,(len(ids),),device=self._device))
         self._recovery_motion[ids]=motions
         # Uniform source-frame sampling. End-reset episodes exclude the final
         # frame so every start has at least one authored interval to complete.
@@ -231,6 +264,7 @@ class RecoveryOmniEnv(OmniWalkEnv):
 
     def _replace_recovery_reference(self):
         ids=self._recovery_ids
+        if not len(ids):return
         active=self.recovery_reference_active()[ids]
         values=self._recovery_lib.calc_motion_frame(self._recovery_motion[ids],self._time_buf[ids]+self._recovery_start[ids])
         values=rotate_frame(values,self._recovery_rotation[self._motion_ids[ids],self._recovery_motion[ids]])
@@ -248,7 +282,7 @@ class RecoveryOmniEnv(OmniWalkEnv):
 
     def _world_reference_velocities(self,pos,rot,velocity,angular,dof,ids,times):
         v,w=super()._world_reference_velocities(pos,rot,velocity,angular,dof,ids,times)
-        if not self._recovery_ready:return v,w
+        if not self._recovery_ready or not len(self._recovery_ids):return v,w
         rows=self._recovery_ids
         rv,rw=self._recovery_velocities(pos[rows],rot[rows],velocity[rows],angular[rows],dof[rows],self._recovery_motion[rows],self._time_buf[rows]+self._recovery_start[rows])
         mask=self.recovery_reference_active()[rows,None,None]
@@ -257,7 +291,7 @@ class RecoveryOmniEnv(OmniWalkEnv):
 
     def _tracking_losses(self,pos,rot,vel,ang,target_vel,target_ang):
         terms=super()._tracking_losses(pos,rot,vel,ang,target_vel,target_ang)
-        if self._flat_com_config and self._recovery_ready:
+        if self._flat_com_config and self._recovery_ready and len(self._recovery_ids):
             velocity=flat_com_velocity(self._engine.get_body_vel(self._get_char_id())[:,self._flat_com_ids],self._flat_com_masses)
             extra=band_loss(velocity,self._recovery_com_bands[self._motion_ids,self._recovery_motion])*self._flat_com_weight
             terms[:,-1]=torch.where(self.recovery_reference_active(),extra,terms[:,-1])
@@ -290,6 +324,7 @@ class RecoveryOmniEnv(OmniWalkEnv):
         super()._update_done()
         if not self._recovery_ready:return
         ids=self._recovery_ids;char=self._get_char_id()
+        if not len(ids):return
         if self._recovery_timeout_only or self._recovery_sphere_only:
             # Failure checks and authored clip completion are independent.
             ended=self._time_buf[ids]>=self._episode_length

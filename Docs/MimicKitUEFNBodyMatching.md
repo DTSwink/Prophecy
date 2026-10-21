@@ -1,5 +1,154 @@
 # MimicKit body matching to UEFN PHAT
 
+## Locomotion retarget rechecked against expanded upper-body limits — October17
+
+Reran the existing retargeter on all54 equipment references (27 unarmed,
+27 drawn, including both idles), using the original recordings, exact accepted
+cuts, anchor transfer and independent foot lift with preserved knee pole.
+Fresh read-only Unreal export matches canonical source-rig.json exactly and
+saved PHAT SHA49994f0bb1257a1e9bdb5dd2aa229455544426a1b6a17d468cc6170df5e9640d.
+Editor dirty packages and Play state preserved.
+
+All54 regenerated pickle files are byte-identical to the existing dataset:
+3,688 frames, with exact pelvis and lower-body equality, and unchanged phase,
+duration and command metadata. Retargeting never clamps to PHAT angular limits;
+widening those limits permits more simulated movement but does not alter the
+recorded target motion. All six leg profiles remain unchanged. Current limits
+accept all6,512,884 interpolated joint samples, including the existing5% margin.
+Canonical model/limits already include the expansion, so no duplicate motion
+replacement or viewer refresh is needed. No training or deployment change.
+
+Evidence and reproducible rerun: Saved/MimicKitUEFN/upperbody-retarget-20261017/
+{export-receipt.json,verification.json,verify_retarget.py}; staged outputs retained
+there. Existing training exclusions (Strafe BR/FL) remain unchanged.
+
+## Crawl upper-body limits — October17, current
+
+User authorized changing the single PHAT in Unreal, excluding ankles, using
+the existing5% rule. Saved PA_UEFN_Mannequin only. All six leg profiles are
+unchanged, along with geometry, frames, mass/inertia, collision filters,
+drives, damping and other profile fields. Five pre-existing dirty animation/BP
+packages remain unsaved. No Play, editor restart or training restart.
+
+Fit covers current crawl.fbx (SHA2e849ce9c900) and crawl_idle.fbx (SHAc2c11c9bd05e),
+authored upper-body constraints and pure robot projections separately, plus
+the existing contact-corrected idle. Excludes old cleaned crawl and LAFAN.
+Existing wider bounds retained;1.05x twist/swing-angle excursions, minimum-area
+coupled swing ellipse, changed angles rounded outward to0.01degree. Fit16 and
+independently verify128 subdivisions per interval. Only sub-0.001degree export
+residue on locked elbow axes is removed, following the existing hinge audit
+convention. Both clavicle twists require LIMITED motion instead of LOCKED.
+
+Changed profiles, degrees **twist / swing2 / swing1**:
+
+| PHAT child | Previous | Saved |
+|---|---|---|
+| spine_03 |17.92 /16.59 /15.71|17.92 /19.53 /39.62|
+| spine_05 |5 /5 /5|5 /5 /8.97|
+| clavicle_l |0 locked /20 /15|10.66 /20 /26|
+| clavicle_r |0 locked /20 /15|9.68 /31.27 /32.43|
+| upperarm_l |33.46 /68.35 /84.60|63.53 /68.35 /84.60|
+| upperarm_r |38.75 /87.27 /70|63.79 /87.27 /70.52|
+| hand_l |60 /45 /90|62.76 /88.73 /93.54|
+| hand_r |60 /45 /90|68.48 /74.48 /90|
+| head |20 /20 /30|20 /20 /36.29|
+
+Saved-value checks pass358,456 dense upper-body samples and89,712 exact project
+Jolt reference/margin cases. This verifies angular admissibility, not dynamic
+floor contact. Canonical model/source/physics metadata and local crawl package
+and source.zip synchronized; both model XMLs remain byte-identical. Motion files
+and running loco deployments unchanged. Crawl training preflight remains stale.
+The older cleaned crawl policy reference is not certified by this fit.
+
+Backup and evidence: Saved/MimicKitCrawl/upperbody-limits-20261017/{before,
+limit-plan.json,applied-limits.json,limit-verification.json}. Saved asset SHA256
+49994f0bb1257a1e9bdb5dd2aa229455544426a1b6a17d468cc6170df5e9640d.
+Scripts: Labs/CrawlTraining/fit_upperbody_limits.py and
+apply_upperbody_limits_unreal.py. The initial apply guard rejected Unreal's
+omission of a default zero twist field; changes were fully rolled back and
+verified before normalizing only authorized angular fields and retrying.
+Final before/after export checks preserve every non-angular field exactly.
+Current-source viewer and checkbox refreshed to these saved limits; old
+pre-expansion viewer data is retained in the backup. Earlier current-limit
+sections below are historical for upper-body profiles.
+
+Historical October17 recheck before the upper-body expansion, for the locomotion torque resume: a fresh read-only Unreal
+export matches Saved/MimicKitUEFN/source-rig.json in full, including the saved
+asset fingerprints. Both wrists remain60/45/90degrees (twist/swing2/swing1).
+Deployed limits, physics metadata and XML match the current local files and
+the diagnostic model. No asset save, rebuild or retarget was required.
+Evidence: Saved/MimicKitEquipment/current-phat-receipt.json and current-live-rig.json.
+
+## Drawn + unarmed limits — October 16, current
+
+User authorized expanding PHAT to contain all54 references (27 drawn and27
+unarmed, including both idles) with the existing5% angular-room criterion.
+Saved only `PA_UEFN_Mannequin`; seven retained profiles changed. Both wrists
+remain at the user's60/45/90degrees. Existing wider bounds were preserved.
+
+Degrees are **twist / swing2 / swing1**, not Euler axes:
+
+| PHAT child | Previous | Current |
+|---|---|---|
+| upperarm_r |35.56 /65.67 /70|38.75 /87.27 /70|
+| upperarm_l |31.19 /65.57 /84.60|33.46 /68.35 /84.60|
+| thigh_r |38.65 /31.36 /80|38.78 /31.36 /80|
+| calf_r |45 /45 /70|45 /45 /70.72|
+| foot_r |31.15 /23.78 /47.5|31.27 /23.83 /47.5|
+| thigh_l |55.07 /33.29 /80|55.49 /33.29 /80|
+| foot_l |26.62 /20.55 /60.17|26.62 /20.57 /60.17|
+
+Angular modes and constraint frames are unchanged (calf twist/swing2 remain
+locked). Live before/after exports confirm no other rig changes: geometry,
+mass/inertia, collisions, damping, drives and all other profiles are preserved.
+No animation was clamped or regenerated. Updated exported limits, XML knee
+range, physics provenance and overlay metadata; no training was restarted.
+
+Backup: `Saved/MimicKitUEFN/before-equipment-limits/`, including the user's
+saved wrist-edit asset. Current plan and save receipt:
+`Saved/MimicKitUEFN/equipment/limit-plan.json` and `applied-limits.json`.
+Reproduction: `fit_motion_limits.py --equipment`, then
+`apply_motion_limits_unreal.py --equipment --backup-name before-equipment-limits`
+through remote Python (refuses existing backup, stale inputs, dirty PHAT or
+active Play), rebuild metadata, and
+`verify_motion_limits.py --equipment --backup-name before-equipment-limits`.
+The earlier proposal and saved-wrist audit below are historical evidence.
+
+Verification passed:6,512,884 densely interpolated joint samples across54 clips
+fit including5% room;103,264 reference/margin cases were independently accepted
+by the exact project Jolt DLL, with zero rejections. All81 original/duplicated
+motion files remain byte-identical. XML comparison permits only the right-knee
+range update; all other XML content and physical body properties are unchanged.
+Receipt: `equipment/limit-verification.json`. The optional Newton import test
+could not run in the available Windows robotics environment (`newton` is not
+installed); no packages or running environments were changed to work around it.
+This is a saved-limit/admissibility verification, not a new dynamic transfer test.
+
+## Saved user wrist limits — October 16, before equipment expansion
+
+Imported the user's saved PHAT edit: both wrists are LIMITED at
+**60 / 45 / 90 degrees (twist / swing2 / swing1)**. This supersedes the
+October 15 wrist values below. Fresh live export differed only in those two
+angular limit profiles; frames, shapes, mass/inertia and all other limits are
+unchanged. No Unreal asset was edited or saved by this import.
+
+Refreshed `Saved/MimicKitUEFN/source-rig.json` and generated limits, physics
+provenance and overlay metadata. Both model XML files remain byte-identical.
+All 27 original motion files and the 54 equipment-variant files remain
+byte-identical: changing limits alone does not require recapture or retargeting.
+No running trainer, checkpoint or training configuration was changed.
+
+Receipts: `Saved/MimicKitUEFN/equipment/saved-wrist-refresh.json` and
+`saved-wrist-audit.json`; previous metadata is in
+`before-user-wrists-20261016/`. The earlier `limit-proposal.json` is historical,
+unapplied and based on the previous wrist limits; do not apply it as-is.
+Dense recheck of all54 clips (6,512,884 joint samples) passes both wrists,
+including5% angular room. Five drawn clips still exceed shoulder limits:
+RunBR, RunF_R_20, WalkFL, WalkLR and WalkLR_offset. Some shoulder/leg profiles
+also lack the requested5% room. These nonwrist limits were left unchanged;
+the wrist edit is not permission to expand them. The full dataset remains a
+candidate for review, not a claim that every reference fits the current PHAT.
+
 ## Wrist correction — October 15, current model
 
 User explicitly requested restoring the wrists and regenerating the retarget.

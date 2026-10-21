@@ -6,6 +6,9 @@
 #include "ProphecyJoltWorldSubsystem.h"
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltStaticMeshLibrary.h"
+#include "ProphecyJoltSkeletalPropComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/SkeletalMeshActor.h"
 #include "ProphecyAgent.h"
 #include "ProphecySwordComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -216,7 +219,8 @@ bool UProphecyJoltSceneCollisionComponent::EnableNow(FString& OutError)
 void UProphecyJoltSceneCollisionComponent::ObserveSource(UPrimitiveComponent& Source)
 {
     if (!State || Source.GetWorld() != GetWorld()
-        || (Source.GetMobility() != EComponentMobility::Static && !Source.IsA<UStaticMeshComponent>())) return;
+        || (Source.GetMobility() != EComponentMobility::Static && !Source.IsA<UStaticMeshComponent>()
+            && !(Source.IsA<USkeletalMeshComponent>() && Source.GetOwner()->IsA<ASkeletalMeshActor>()))) return;
     const TWeakObjectPtr<UPrimitiveComponent> Key(&Source);
     if (State->Sources.Contains(Key)) return;
     auto& Entry = State->Sources.Add(Key);
@@ -359,6 +363,48 @@ bool UProphecyJoltSceneCollisionComponent::ReconcileSources(FString& OutError)
             const bool bGone = !Source || !Source->IsRegistered() || Source->GetWorld() != GetWorld()
                 || !bLiveOwner
                 || State->bAllLevelsRemoved || State->RemovedLevels.Contains(Entry->Level);
+            if (auto* Skeletal = Cast<USkeletalMeshComponent>(Source))
+            {
+                auto* Binding = UProphecyJoltSkeletalPropComponent::Find(Skeletal);
+                if (bGone)
+                {
+                    if (Binding) Binding->DestroyComponent();
+                    State->Sources.Remove(Key);
+                    continue;
+                }
+                if (!Binding && !Entry->bDynamicAdmissionFailed && Skeletal->GetPhysicsAsset()
+                    && Skeletal->GetCollisionEnabled() != ECollisionEnabled::NoCollision
+                    && Skeletal->GetCollisionEnabled() != ECollisionEnabled::QueryOnly)
+                {
+                    FString Error;
+                    if (!UProphecyJoltSkeletalPropComponent::Admit(*Skeletal, Error))
+                    {
+                        // Admission changes receiver settings and can grow Sources.
+                        if (auto* Current = State->Sources.Find(Key)) Current->bDynamicAdmissionFailed = true;
+                        UE_LOG(LogProphecyJoltSceneCollision, Error, TEXT("Jolt mannequin admission failed; Chaos disabled: %s: %s"),
+                            *Skeletal->GetPathName(), *Error);
+                    }
+                }
+                // These sources use their existing articulation, not Entry->Bodies.
+                // Route the same dirty notifications/channel check used by props
+                // to that articulation, only when collision settings change.
+                Binding = UProphecyJoltSkeletalPropComponent::Find(Skeletal);
+                if (auto* Current = State->Sources.Find(Key))
+                {
+                    if (Binding && Current->bCollisionDirty)
+                    {
+                        if (Binding->IsJoltStepClientActive())
+                        {
+                            if (!Binding->RefreshCollisionPolicy(OutError)) return false;
+                            Current->bCollisionDirty = false;
+                        }
+                        // Deferred admission synchronizes the latest policy in
+                        // Complete. Do not poll failed or pending rigs every frame.
+                    }
+                    Current->bFullRefresh = false;
+                }
+                continue;
+            }
             if (!bGone && Source->GetMobility() != EComponentMobility::Static)
             {
                 auto* Mesh = Cast<UStaticMeshComponent>(Source);
@@ -605,6 +651,8 @@ void UProphecyJoltSceneCollisionComponent::DisableSceneCollision()
     {
         if (auto* Source = Pair.Key.Get())
         {
+            if (auto* SkeletalBinding = UProphecyJoltSkeletalPropComponent::Find(Source))
+                SkeletalBinding->DestroyComponent();
             if (Pair.Value.bAutoDynamic)
                 UProphecyJoltStaticMeshLibrary::DisableJoltStaticMeshPhysics(Cast<UStaticMeshComponent>(Source));
             Source->TransformUpdated.Remove(Pair.Value.TransformChanged);

@@ -9,6 +9,7 @@ class UPhysicsConstraintComponent;
 class UPrimitiveComponent;
 class USkeletalMeshComponent;
 class UStaticMeshComponent;
+class AActor;
 
 UCLASS()
 class GAMEANIMATIONSAMPLE3_API UProphecyPhysicsConstraintBlueprintLibrary : public UBlueprintFunctionLibrary
@@ -16,6 +17,19 @@ class GAMEANIMATIONSAMPLE3_API UProphecyPhysicsConstraintBlueprintLibrary : publ
 	GENERATED_BODY()
 
 public:
+	/** Adopts the accepted A_Sword cut into the physics-driven lifecycle. Call once after
+	 * adding its cut record and spawning the wound effect. Does not accept/classify hits. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Physics|Sword")
+	static bool StartOptimisedSwordCut(AActor* SwordActor, UPhysicsConstraintComponent* Constraint);
+
+	/** Opts only this joint into a coupled physical blade slider. Component 1 is the wound,
+	 * Component 2 is the simulated sword; joint-local Z is the sliding blade axis.
+	 * Requires hard locked X/Y and all angular axes, with free/limited Z. Contacts remain active.
+	 * Call after configuring the pike constraint; false disables it on the same joint. */
+	UFUNCTION(BlueprintCallable, Category = "Prophecy|Physics|Pike",
+		meta = (DisplayName = "Set Pike Wound Correction", ReturnDisplayName = "Succeeded"))
+	static bool SetPikeWoundCorrection(UPhysicsConstraintComponent* Constraint, bool Enabled = true);
+
 	UFUNCTION(BlueprintCallable, Category = "Physics|Components|PhysicsConstraint", meta = (DisplayName = "Get Linear ZLimit", Keywords = "constraint physics linear z limit motion free limited locked"))
 	static void GetLinearZLimit(
 		UPhysicsConstraintComponent* Target,

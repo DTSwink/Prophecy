@@ -2713,4 +2713,60 @@ bool FProphecyJoltLocomotionDampingBelowTest::RunTest(const FString&)
     return !HasAnyErrors();
 }
 
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecySwordMaterialDropTest,
+    "Prophecy.Jolt.Sword.MaterialOverrideDrop",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecySwordMaterialDropTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::SwordFixture;
+    FWorldFixture Fixture;
+    const auto Values=UWorld::InitializationValues().AllowAudioPlayback(false).RequiresHitProxies(false)
+        .CreatePhysicsScene(true).CreateNavigation(false).CreateAISystem(false).ShouldSimulatePhysics(true)
+        .EnableTraceCollision(true).CreateFXSystem(false).SetTransactional(false);
+    Fixture.World=UWorld::CreateWorld(EWorldType::Game,false,NAME_None,nullptr,true,ERHIFeatureLevel::Num,&Values);
+    if(!Fixture.World || !GEngine)return false;
+    GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(Fixture.World);
+    Fixture.World->InitializeActorsForPlay(FURL());Fixture.World->GetWorldSettings()->NotifyBeginPlay();
+    auto* World=Fixture.World->GetSubsystem<UProphecyJoltWorldSubsystem>();
+    FProphecyJoltWorldSettings Settings;Settings.GravityCmPerSecondSquared=FVector::ZeroVector;Settings.WorkerThreads=0;
+    if(!World || !World->InitializeSimulation(Settings).IsSuccess())return false;
+    AProphecyAgent* Agent=nullptr;FString Error;
+    if(!PrepareAgent(Fixture,Agent,Error)){AddError(Error);return false;}
+    for(bool Simulated:{true,false})
+    {
+        if(!TestTrue(TEXT("Equip"),Agent->EquipSword(Simulated)))return false;
+        auto* Sword=Agent->GetHeldSword();
+        auto* Blade=Cast<UStaticMeshComponent>(Sword->GetRootComponent());
+        auto* Body=Sword->FindComponentByClass<UProphecyJoltBodyComponent>();
+        FProphecyJoltBodyHandle Handle;
+        if(!Body || !Body->GetBodyHandle(Handle))return false;
+        auto Check=[&](UPhysicalMaterial* PM)
+        {
+            FProphecyJoltBodyMaterial M;
+            return World->ReadBodyMaterial(Handle,M).IsSuccess() && M.Friction==PM->Friction && M.Restitution==PM->Restitution
+                && M.FrictionCombineMode==uint8(PM->bOverrideFrictionCombineMode ? PM->FrictionCombineMode.GetValue() : UPhysicsSettings::Get()->FrictionCombineMode.GetValue());
+        };
+        auto* PM=NewObject<UPhysicalMaterial>(Sword);PM->Friction=.91f;PM->Restitution=.13f;
+        PM->bOverrideFrictionCombineMode=true;PM->FrictionCombineMode=EFrictionCombineMode::Max;
+        struct FParams{UPhysicalMaterial* NewPhysMaterial;};FParams Params{PM};
+        Blade->ProcessEvent(Blade->FindFunctionChecked(TEXT("SetPhysMaterialOverride")),&Params);
+        TestTrue(TEXT("Blueprint setter updates actual held Jolt material"),Check(PM));
+        Blade->SetPhysMaterialOverride(nullptr);
+        TestTrue(TEXT("None resolves current UE fallback material"),Check(Blade->BodyInstance.GetSimplePhysicalMaterial()));
+        Blade->SetPhysMaterialOverride(PM);
+        const FVector Scale=Blade->GetComponentScale();
+        if(!TestTrue(TEXT("Drop succeeds"),Agent->DropSword()==Sword))return false;
+        Body=Sword->FindComponentByClass<UProphecyJoltBodyComponent>();
+        if(!Body || !Body->GetBodyHandle(Handle))return false;
+        TestTrue(TEXT("Dropped independent body retains replacement material"),Check(PM));
+        TestTrue(TEXT("Drop preserves full sword scale"),Blade->GetComponentScale().Equals(Scale,1.e-6));
+        PM->Friction=.43f;Params.NewPhysMaterial=PM;
+        Blade->ProcessEvent(Blade->FindFunctionChecked(TEXT("SetPhysMaterialOverride")),&Params);
+        TestTrue(TEXT("Blueprint setter updates already dropped body"),Check(PM));
+        Sword->Destroy();
+    }
+    return !HasAnyErrors();
+}
+
 #endif

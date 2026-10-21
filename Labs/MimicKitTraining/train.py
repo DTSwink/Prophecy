@@ -44,6 +44,7 @@ def main():
     parser.add_argument('--profile',action='store_true',help='Profile three updates after warmup, then remove instrumentation')
     parser.add_argument('--output-interval',type=int,default=100,help='PPO updates between evaluation, TensorBoard points and checkpoints')
     parser.add_argument('--action-noise',type=float,help='Fixed Gaussian standard deviation in normalized action units')
+    parser.add_argument('--gae-lambda',type=float,help='Explicit GAE lambda override, including resumed training')
     parser.add_argument('--per-agent-noise',action='store_true',help='Sample a fixed sigma per world uniformly from zero to action-noise')
     parser.add_argument('--actor-lr',type=float,help='Override actor SGD learning rate; critic unchanged')
     parser.add_argument('--actor-grad-clip',type=float,help='Enable the upstream actor gradient norm cap')
@@ -70,6 +71,10 @@ def main():
         help='Allow prepared linear/angular velocity weights to differ from the checkpoint by this explicit factor')
     parser.add_argument('--resume-position-leeway',action='store_true',
         help='Explicitly adopt prepared position MSE allowances while retaining learned state')
+    parser.add_argument('--resume-recovery-curriculum', action='store_true',
+                        help='Explicitly return from perturbed training to the ordinary recovery curriculum')
+    parser.add_argument('--resume-perturbed-motion', action='store_true',
+        help='Adopt the explicitly prepared AE perturbation curriculum without resetting learned state')
     parser.add_argument('--task', choices=['walk', 'amp', 'amp_standing', 'head_height','neutral_pose','recovery_pose','world_pose'], default='walk')
     parser.add_argument('--absolute-walk',action='store_true',help='Four world-body motion errors; targets follow pelvis XY only')
     parser.add_argument('--absolute-loss-calibration',type=Path,help='Fixed initial four-term balance for absolute walking')
@@ -84,7 +89,11 @@ def main():
     if a.equipment_omni:
         a.omni_run_lr=True
         if not 1<=a.replay_rows<=a.worlds:parser.error('Replay rows must be between 1 and worlds')
-    assert not a.omni_run_lr or (a.absolute_walk and a.control_mode=='vel' and a.worlds==512 and a.evaluate)
+    if a.worlds < 2:
+        parser.error('Training requires at least two parallel agents')
+    if a.omni_run_lr and not (a.absolute_walk and a.control_mode=='vel' and a.evaluate
+                             and (a.equipment_omni or a.worlds==512)):
+        parser.error('Omni training requires absolute velocity control and evaluation; the Run LR fixture uses 512 agents')
     assert not a.zero_joint_armature or (a.omni_run_lr and a.resume)
     assert not a.absolute_loss_calibration or a.absolute_walk
     assert not a.absolute_walk or a.task=='walk'
@@ -109,6 +118,7 @@ def main():
     assert a.timed_best_tail or (a.tail_multiplier == 1.0 and not a.include_pelvis_velocity)
     assert a.output_interval > 0
     assert a.action_noise is None or (math.isfinite(a.action_noise) and a.action_noise > 0)
+    assert a.gae_lambda is None or (math.isfinite(a.gae_lambda) and 0 <= a.gae_lambda <= 1)
     assert a.actor_lr is None or (math.isfinite(a.actor_lr) and a.actor_lr > 0)
     assert a.actor_grad_clip is None or (math.isfinite(a.actor_grad_clip) and a.actor_grad_clip > 0)
     torch.set_num_threads(1)
@@ -222,6 +232,7 @@ def main():
             saved_agent_config=yaml.safe_load(bundle.read('agent_config.yaml'))
         agent_config['iters_per_log']=saved_agent_config.get('iters_per_log',saved_agent_config['iters_per_output'])
     if a.actor_lr is not None:agent_config['actor_optimizer']['learning_rate']=a.actor_lr
+    if a.gae_lambda is not None:agent_config['td_lambda']=a.gae_lambda
     if a.actor_grad_clip is not None:agent_config['actor_optimizer']['grad_clip']=a.actor_grad_clip
     if not a.evaluate:agent_config['test_episodes']=0
     if a.action_noise is not None:
@@ -247,6 +258,10 @@ def main():
         config=yaml.safe_load((a.equipment_omni/'env_config.yaml').read_text())
         engine_config=yaml.safe_load((a.equipment_omni/'engine_config.yaml').read_text())
         agent_config=yaml.safe_load((a.equipment_omni/'agent_config.yaml').read_text())
+        if a.action_noise is not None:
+            assert agent_config['model']['actor_std_type']=='FIXED'
+            agent_config['model']['action_std']=a.action_noise
+        if a.gae_lambda is not None:agent_config['td_lambda']=a.gae_lambda
         if a.actor_lr is not None:agent_config['actor_optimizer']['learning_rate']=a.actor_lr
         agent_config.update(iters_per_output=a.output_interval,iters_per_log=min(10,a.output_interval))
         assert config['equipment_conditioning'] and not config['arm_injuries_enabled']
@@ -265,6 +280,8 @@ def main():
         from omni_walk import OmniWalkEnv
         if config.get('idle_recovery'):
             from recovery_omni import RecoveryOmniEnv as OmniWalkEnv
+        if config.get('perturbed_motion'):
+            from perturbed_omni import PerturbedOmniEnv as OmniWalkEnv
         env=OmniWalkEnv(config,yaml.safe_load(Path(engine_file).read_text()),a.worlds,'cuda:0',False)
     elif a.absolute_walk:
         from absolute_walk import AbsoluteWalkEnv
@@ -312,10 +329,22 @@ def main():
             for name in ['engine_config.yaml','env_config.yaml','agent_config.yaml']:
                 old=yaml.safe_load(bundle.read(name))
                 new=yaml.safe_load((directory/name).read_text())
+                if name=='agent_config.yaml':
+                    if a.action_noise is not None:old['model']['action_std']=new['model']['action_std']
+                    if a.gae_lambda is not None:old['td_lambda']=new['td_lambda']
                 if a.omni_run_lr:
+                    if name=='env_config.yaml' and a.resume_recovery_curriculum:
+                        assert a.equipment_omni and new.get('idle_recovery') and not new.get('perturbed_motion')
+                        old.pop('perturbed_motion', None)
+                    if name=='env_config.yaml' and a.resume_perturbed_motion:
+                        assert a.equipment_omni and new.get('perturbed_motion')
+                        old['perturbed_motion']=new['perturbed_motion']
                     if name=='env_config.yaml' and a.resume_position_leeway:
-                        assert a.equipment_omni and new.get('position_mse_leeway')
-                        old['position_mse_leeway']=new['position_mse_leeway']
+                        assert a.equipment_omni
+                        if 'position_mse_leeway' in new:
+                            old['position_mse_leeway']=new['position_mse_leeway']
+                        else:
+                            old.pop('position_mse_leeway', None)
                     if name=='env_config.yaml' and a.resume_velocity_mse_scale is not None:
                         # Explicit objective-only continuation. Other weights and
                         # calibration evidence must still match the saved run.
@@ -411,8 +440,18 @@ def main():
                 if name=='agent_config.yaml':old['test_episodes']=new['test_episodes']
                 assert old==new,f'Resume config mismatch: {name}'
     resumed=restore(agent,a.resume,add_height_records=add_height_records) if a.resume else dict(prior_samples=0,iteration_offset=0)
+    if a.action_noise is not None and not a.per_agent_noise:
+        from resume import override_fixed_action_noise
+        resumed['action_noise_override']=override_fixed_action_noise(agent,a.action_noise)
+    if a.gae_lambda is not None:
+        agent._td_lambda=a.gae_lambda
+        resumed['gae_lambda_override']=a.gae_lambda
+    if config.get('perturbed_motion', {}).get('observation_normalization') == 'physical_scales_v1':
+        from resume import migrate_physical_observation_scales
+        resumed['observation_normalization_migration'] = migrate_physical_observation_scales(agent)
     if a.resume_position_leeway:
-        resumed['position_mse_leeway']=dict(config['position_mse_leeway'])
+        resumed['position_mse_leeway']=(dict(config['position_mse_leeway'])
+                                        if config.get('position_mse_leeway') else None)
     if a.resume_velocity_mse_scale is not None:
         resumed['velocity_mse_rescale']=dict(factor=a.resume_velocity_mse_scale,
             terms=['linear_velocity_mse','angular_velocity_mse'],rows='all',
@@ -433,6 +472,8 @@ def main():
         atomic_json(directory/'velocity_command_bounds.json',command_report)
     atomic_json(directory/'resume.json',resumed)
     if getattr(env,'_recovery_ready',False):
+        if hasattr(env, '_recovery_assignment_report'):
+            atomic_json(directory/'recovery_assignment.json',env._recovery_assignment_report)
         assigned=env._gaits[env._fixed_motion_ids]
         atomic_json(directory/'recovery_setup.json',dict(
             worlds=a.worlds,recovery_rows=len(env._recovery_ids),
@@ -441,6 +482,31 @@ def main():
             ordinary_idle_rows=env._idle_rows-len(env._recovery_ids),
             walking_rows=int((assigned==0).sum()),running_rows=int((assigned==1).sum()),
             adaptive_sampling=False,configuration=config['idle_recovery']))
+        if hasattr(env, '_perturbed_getup'):
+            atomic_json(directory/'perturbed_setup.json',dict(
+                normal_idle=int(((assigned==-1) & ~env._perturbed_rows & ~env._recovery_rows).sum()),
+                perturbed_idle=int(((assigned==-1) & env._perturbed_rows & ~env._recovery_rows).sum()),
+                normal_locomotion=int(((assigned!=-1) & ~env._perturbed_rows).sum()),
+                perturbed_locomotion=int(((assigned!=-1) & env._perturbed_rows).sum()),
+                ae_model_loaded=env._prior is not None,
+                mse_only=getattr(env,'_mse_only',False),
+                perturbed_episode_ticks=env._perturb_cfg.get('episode_ticks',env._episode_length*30),
+                yaw_degrees=env._perturb_cfg['yaw_degrees']))
+            normal_getups = env._recovery_rows & ~env._perturbed_rows
+            if env._recovery_fixed_motion is not None:
+                atomic_json(directory/'recovery_start_by_motion.json', [
+                    dict(motion=env._recovery_lib.get_motion_file(i),
+                         frame_zero=int((normal_getups & (env._recovery_fixed_motion == i)
+                                         & ~env._recovery_random_start_rows).sum()),
+                         random_frame=int((normal_getups & (env._recovery_fixed_motion == i)
+                                           & env._recovery_random_start_rows).sum()))
+                    for i in range(env._recovery_lib.get_num_motions())])
+            atomic_json(directory/'recovery_cohorts.json',dict(
+                normal_frame_zero=int((normal_getups & ~env._recovery_random_start_rows).sum()),
+                normal_random_frame=int((normal_getups & env._recovery_random_start_rows).sum()),
+                perturbed_getups=int(env._perturbed_getup.sum()),
+                perturbed_random_frame=int((env._perturbed_getup & env._recovery_random_start_rows).sum()),
+                prior_rows=len(env._prior_ids)))
     if hasattr(env._engine,'torque_envelope_report'):
         atomic_json(directory/'torque_envelope.json',env._engine.torque_envelope_report)
     if hasattr(env._engine,'native_profile_report'):
@@ -596,7 +662,27 @@ def main():
                     latest_losses['total']+=latest_losses['auto_phase']
                 for key,value in latest_losses.items():
                     agent._logger._writer.add_scalar('loss/'+key,value,agent._sample_count+a.worlds*agent._steps_per_iter)
+                if hasattr(env, 'take_prior_diagnostics'):
+                    for key, value in env.take_prior_diagnostics().items():
+                        agent._logger._writer.add_scalar('motion_prior/'+key,value,agent._sample_count+a.worlds*agent._steps_per_iter)
+                if hasattr(env, 'take_reward_diagnostics'):
+                    for key, value in env.take_reward_diagnostics().items():
+                        agent._logger._writer.add_scalar('reward/'+key,value,agent._sample_count+a.worlds*agent._steps_per_iter)
                 agent._logger._writer.flush()
+        if agent._iter % 10 == 0 and hasattr(env, 'take_training_outcomes'):
+            outcomes = env.take_training_outcomes()
+            step = agent._sample_count+a.worlds*agent._steps_per_iter
+            for group, label in [('loco','Locomotion'),('getup','Get-up')]:
+                denominator = outcomes[group+'_episodes']
+                if denominator:
+                    agent._logger._writer.add_scalar('perturbed_termination/'+label+' failure percent',
+                        100*outcomes[group+'_failures']/denominator,step)
+            for key, value in outcomes.items():
+                agent._logger._writer.add_scalar('perturbed_outcome_counts/'+key,value,step)
+            if outcomes.get('normal_getup_episodes',0):
+                agent._logger._writer.add_scalar('normal_termination/Get-up failure percent',
+                    100*outcomes['normal_getup_failures']/outcomes['normal_getup_episodes'],step)
+            agent._logger._writer.flush()
         if record_training and recorder.ready:
             recorder.finish(agent._iter+iteration_offset,agent._sample_count+a.worlds*agent._steps_per_iter,
                 extra_metadata=dict(**noise_metadata,

@@ -2,6 +2,8 @@
 
 #include <Jolt/Physics/Constraints/SixDOFConstraint.h>
 #include <Jolt/Physics/Constraints/ConstraintPart/AxisConstraintPart.h>
+#include "ProphecyJoltPikeJoint.h"
+#include "ProphecyJoltSlashJoint.h"
 
 namespace ProphecyJolt
 {
@@ -91,6 +93,10 @@ private:
 };
 inline JPH::SixDOFConstraint& GenericSixDOF(JPH::TwoBodyConstraint& Constraint)
 {
+    if (Constraint.GetSubType() == JPH::EConstraintSubType::User4)
+        return static_cast<FSlashJoint&>(Constraint).GetNative();
+    if (Constraint.GetSubType() == JPH::EConstraintSubType::User3)
+        return static_cast<FPikeJoint&>(Constraint).GetNative();
     return Constraint.GetSubType() == JPH::EConstraintSubType::User2
         ? static_cast<FRadialJoint&>(Constraint).GetNative() : static_cast<JPH::SixDOFConstraint&>(Constraint);
 }

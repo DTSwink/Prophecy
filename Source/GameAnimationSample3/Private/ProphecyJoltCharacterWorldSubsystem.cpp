@@ -562,3 +562,4 @@ void UProphecyJoltCharacterWorldSubsystem::Deinitialize()
     StopForWorldTeardown();
     Super::Deinitialize();
 }
+

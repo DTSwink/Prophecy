@@ -1,5 +1,21 @@
 # UEFN compound humanoid
 
+**Current limits (October17):** saved nine upper-body PHAT profiles in place
+for updated native crawl/idle with5% angular room. Both clavicle twists now
+LIMITED; all leg/ankle profiles unchanged. Canonical metadata regenerated,
+both XMLs byte-identical; local crawl package synced, running training untouched.
+358,456 dense and89,712 Jolt reference/margin samples pass. See current crawl
+section of Docs/MimicKitUEFNBodyMatching.md; prior upper-body values below
+are historical. Original asset and audit evidence retained under
+Saved/MimicKitCrawl/upperbody-limits-20261017.
+
+**Current limits (October16):** both saved user wrist profiles are60/45/90degrees
+(twist/swing2/swing1). Subsequently expanded seven other PHAT profiles to fit
+the54 drawn/unarmed references including idle with5% angular room. See the
+current section of `Docs/MimicKitUEFNBodyMatching.md` for values and verification.
+Use `--equipment` with the limit fit/apply/verify tools for this full dataset;
+the default26-clip mode remains available for historical workflows.
+
 **Current wrist correction:** wrists are now articulated with their PHAT frames
 and limits.15 bodies/23 colliders remain; actions34, coupled ball profiles10.
 User approved the stock neck motor settings for added wrist axes: velocity

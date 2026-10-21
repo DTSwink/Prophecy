@@ -1,0 +1,14 @@
+// Local Y spans the blade width. The seed-derived variation never depends on
+// depth, so increasing depth translates the same edge and cannot remove blood.
+float d = saturate(Depth);
+float length = max(abs(BladeLength), 0.0001);
+float z = LocalPosition.z - BaseZ;
+float variation = saturate(Variation);
+float angle = (40.0 * variation - 20.0) * 0.01745329252;
+float phase = frac(variation * 17.123) * 6.28318530718;
+float y = LocalPosition.y;
+float wave = 0.22 * sin(1.1 * y + phase)
+           + 0.08 * sin(2.8 * y + phase * 1.731);
+// Scale Y/Z compensates for the sword's nonuniform component scale.
+float edge = (1.0 - d) * length + abs(LateralScale) * (tan(angle) * y + wave);
+return (d > 0.0 && z >= 0.0 && (d >= 1.0 || z >= edge)) ? 1.0 : 0.0;

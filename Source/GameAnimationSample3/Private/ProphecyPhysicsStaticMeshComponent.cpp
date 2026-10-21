@@ -1,7 +1,50 @@
 #include "ProphecyPhysicsStaticMeshComponent.h"
 #include "ProphecyJoltMeshPhysics.h"
+#include "ProphecyJoltBodyComponent.h"
+#include "ProphecyJoltWorldSubsystem.h"
+#include "PhysicsEngine/BodyInstance.h"
+#include "PhysicsEngine/PhysicsSettings.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 
 using namespace ProphecyJolt::MeshPhysics;
+
+void UProphecyPhysicsStaticMeshComponent::SetPhysMaterialOverride(UPhysicalMaterial* NewPhysMaterial)
+{
+    Super::SetPhysMaterialOverride(NewPhysMaterial);
+    if (!GetOwner()) return;
+    TInlineComponentArray<UProphecyJoltBodyComponent*> Bodies(GetOwner());
+    for (auto* Body : Bodies)
+    {
+        if (Body->GetSourceComponent() != this) continue;
+        if (Body->IsEnablePending())
+        {
+            // Admission has captured its material already. Resolve the latest
+            // receiver value once ownership completes, without polling.
+            Body->OnDeferredEnableCompleted.AddWeakLambda(this, [this](bool Success, const FString&)
+            {
+                if (Success) SetPhysMaterialOverride(BodyInstance.GetPhysMaterialOverride());
+            });
+            return;
+        }
+        FProphecyJoltBodyHandle Handle;
+        auto* World = Body->GetWorldOwner();
+        if (!World || !Body->GetBodyHandle(Handle)) return;
+        const auto* Material = BodyInstance.GetSimplePhysicalMaterial();
+        if (!Material) return;
+        FProphecyJoltBodyMaterial Value;
+        Value.Friction = Material->Friction;
+        Value.Restitution = Material->Restitution;
+        Value.FrictionCombineMode = uint8(Material->bOverrideFrictionCombineMode
+            ? Material->FrictionCombineMode.GetValue() : UPhysicsSettings::Get()->FrictionCombineMode.GetValue());
+        Value.RestitutionCombineMode = uint8(Material->bOverrideRestitutionCombineMode
+            ? Material->RestitutionCombineMode.GetValue() : UPhysicsSettings::Get()->RestitutionCombineMode.GetValue());
+        const FProphecyJoltMaterialUpdate Update{Handle, Value};
+        const auto Result = World->UpdateBodyMaterials(MakeArrayView(&Update, 1));
+        if (!Result.IsSuccess()) UE_LOG(LogTemp, Warning, TEXT("Physical material override could not update Jolt on %s: %s"),
+            *GetPathName(), *Result.Message);
+        return;
+    }
+}
 
 void UProphecyPhysicsStaticMeshComponent::AddForce(FVector Force, FName BoneName, bool bAccelChange)
 {

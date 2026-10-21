@@ -1,22 +1,28 @@
 #include "ProphecyBombLibrary.h"
 #include "ProphecyBombComponent.h"
 #include "ProphecyBombFragmentFadeComponent.h"
+#include "ProphecyBombFuseCapComponent.h"
+#include "ProphecyVDBOptimisedComponent.h"
+#include "ProphecyVDBColorComponent.h"
 #include "ProphecyBombGeometry.h"
 #include "ProphecyBombFuseCurve.h"
-#include "ProphecyHolsterStrapComponent.h"
 #include "ProphecyVDBTiming.h"
 #include "ProphecyExplosionLibrary.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/World.h"
-#include "Engine/SkeletalMesh.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/Material.h"
 #include "PhysicsEngine/BodyInstance.h"
 
+UProphecyBombFuseCapComponent::UProphecyBombFuseCapComponent()
+{
+    PrimaryComponentTick.bCanEverTick=false;
+    PrimaryComponentTick.bStartWithTickEnabled=false;
+}
 UProphecyBombComponent::UProphecyBombComponent()
 {
     PrimaryComponentTick.bCanEverTick=true;
@@ -30,20 +36,13 @@ void UProphecyBombComponent::EndPlay(const EEndPlayReason::Type Reason)
 }
 bool UProphecyBombComponent::GetBurnTip(FVector& Position,FVector& Tangent) const
 {
-    if(!IsValid(Visual) || FuseReferenceTransforms.Num()!=7)return false;
+    if(!IsValid(Bomb))return false;
     const double Length=BombFuseArc[UE_ARRAY_COUNT(BombFuseArc)-1];
-    const double Distance=Length*(1.-FMath::Clamp(double(Elapsed)/BurnTicks,0.,1.));
+    const double Distance=Length*(1.-FMath::Clamp(double(Elapsed)/FMath::Max(uint64(1),BurnTicks),0.,1.));
     int32 Ring=0;while(Ring+2<UE_ARRAY_COUNT(BombFuseArc) && BombFuseArc[Ring+1]<Distance)++Ring;
-    // Only the two rings straddling the cut are evaluated, not the entire skin.
-    const auto SkinCenter=[&](int32 I)
-    {
-        const double U=BombFuseArc[I]/Length*5.;const int32 J=FMath::Min(4,int32(U));const double T=U-J;
-        const FVector P=BombFuseCenters[I];
-        const FVector A=Visual->GetBoneTransform(J).TransformPosition(FuseReferenceTransforms[J].InverseTransformPosition(P));
-        const FVector B=Visual->GetBoneTransform(J+1).TransformPosition(FuseReferenceTransforms[J+1].InverseTransformPosition(P));
-        return FMath::Lerp(A,B,T);
-    };
-    const FVector A=SkinCenter(Ring),B=SkinCenter(Ring+1);
+    const FTransform Transform=Bomb->GetComponentTransform();
+    const FVector A=Transform.TransformPosition(BombFuseCenters[Ring]);
+    const FVector B=Transform.TransformPosition(BombFuseCenters[Ring+1]);
     Position=FMath::Lerp(A,B,(Distance-BombFuseArc[Ring])/(BombFuseArc[Ring+1]-BombFuseArc[Ring]));
     Tangent=(B-A).GetSafeNormal();return !Position.ContainsNaN() && !Tangent.IsNearlyZero();
 }
@@ -79,14 +78,16 @@ void UProphecyBombComponent::TickComponent(float DeltaSeconds,ELevelTick Type,FA
     }
     if(!IsValid(Bomb) || !IsValid(Material) || !IsValid(Visual))
     {if(IsValid(Sparks))Sparks->Deactivate();if(IsValid(Visual))Visual->DestroyComponent();DestroyComponent();return;}
-    if(Visual->GetMaterial(0)!=Bomb->GetMaterial(0))Visual->SetMaterial(0,Bomb->GetMaterial(0));
+    if(IsValid(ShellVisual) && ShellVisual->GetMaterial(0)!=Bomb->GetMaterial(0))ShellVisual->SetMaterial(0,Bomb->GetMaterial(0));
     if(!bBurning){Elapsed=0;return;}
+    if(const auto* Cap=GetOwner()->FindComponentByClass<UProphecyBombFuseCapComponent>();Cap && Elapsed>=Cap->DetonationTicks)
+    {Detonate();return;}
     if(Elapsed>=BurnTicks){Detonate();return;}
     if(!bFuseHidden)Material->SetScalarParameterValue(TEXT("FuseRemaining"),1.f-float(double(Elapsed)/BurnTicks)*.99f);
     if(IsValid(Sparks))
     {
         FVector Position,Tangent;
-        if(GetBurnTip(Position,Tangent))Sparks->SetWorldLocationAndRotation(Position,Tangent.ToOrientationQuat()*SparkRotationOffset.Quaternion());
+        if(GetBurnTip(Position,Tangent))Sparks->SetWorldLocationAndRotation(Position,FQuat::Identity);
     }
 }
 void UProphecyBombComponent::Detonate()
@@ -103,7 +104,10 @@ void UProphecyBombComponent::Detonate()
     // Consume the intact collider before applying the blast; fragments have their own explicit kick.
     Bomb->SetSimulatePhysics(false);Bomb->SetCollisionEnabled(ECollisionEnabled::NoCollision);Bomb->SetVisibility(false,true);
     UProphecyExplosionLibrary::StartExplosion(this,Centre,Intensity,Radius,FalloffExponent,ExplosionVelocity);
-    UProphecyVDBLibrary::SpawnVDBEffect(this,Effect,Centre,Scale,Framerate,FadeStart,TargetDensity,FadeDuration,Rotation);
+    const bool bOptimised=GetOwner()->FindComponentByClass<UProphecyBombVDBOptimisedComponent>()!=nullptr;
+    const auto* Colors=GetOwner()->FindComponentByClass<UProphecyBombVDBColorComponent>();
+    UProphecyVDBLibrary::SpawnVDBEffect(this,Effect,Centre,Scale,Framerate,FadeStart,TargetDensity,FadeDuration,Rotation,bOptimised,
+        Colors?Colors->TemperatureColor:ProphecyVDB::DefaultTemperatureColor(),Colors?Colors->ScatteringColor:FLinearColor::White);
     if(Fragments.IsEmpty()){GetOwner()->Destroy();return;}
     auto* CleanupActor=GetWorld()->SpawnActor<AActor>();
     auto* Cleanup=NewObject<UProphecyBombComponent>(CleanupActor);
@@ -145,39 +149,39 @@ void UProphecyBombComponent::Detonate()
     Cleanup->RegisterComponent();
     GetOwner()->Destroy();
 }
-static UProphecyBombComponent* PrepareFlexibleBomb(UStaticMeshComponent* Bomb)
+static UProphecyBombComponent* PrepareStaticBomb(UStaticMeshComponent* Bomb)
 {
     if(!IsInGameThread() || !IsValid(Bomb) || !Bomb->GetWorld() || !Bomb->GetWorld()->IsGameWorld() || !Bomb->GetOwner())return nullptr;
     UStaticMesh* Original=Bomb->GetStaticMesh();
     if(!Original || Original->GetPathName()!=TEXT("/Game/Fab/CC0_-_Bomb/cc0_bomb/StaticMeshes/cc0_bomb.cc0_bomb"))return nullptr;
     if(auto* Existing=Bomb->GetOwner()->FindComponentByClass<UProphecyBombComponent>())return Existing->Bomb==Bomb?Existing:nullptr;
-    auto* Mesh=LoadObject<USkeletalMesh>(nullptr,TEXT("/Game/_mygame/BombGenerated/SK_BombFuse.SK_BombFuse"));
+    auto* Mesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/_mygame/BombGenerated/SM_BombFuse.SM_BombFuse"));
     auto* BurnMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/_mygame/BombGenerated/MI_BombBurn.MI_BombBurn"));
-    if(!Mesh || !BurnMaterial || Mesh->GetRefSkeleton().GetNum()!=7)return nullptr;
+    auto* ShellMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/_mygame/BombGenerated/SM_BombShell.SM_BombShell"));
+    if(!Mesh || !BurnMaterial || !ShellMesh)return nullptr;
     auto* Controller=NewObject<UProphecyBombComponent>(Bomb->GetOwner());Bomb->GetOwner()->AddInstanceComponent(Controller);Controller->Bomb=Bomb;
-    const auto& Ref=Mesh->GetRefSkeleton();Controller->FuseReferenceTransforms=Ref.GetRefBonePose();
-    for(int32 I=1;I<7;++I)Controller->FuseReferenceTransforms[I]*=Controller->FuseReferenceTransforms[Ref.GetParentIndex(I)];
-    auto* Visual=NewObject<UProphecyHolsterStrapComponent>(Bomb->GetOwner());Bomb->GetOwner()->AddInstanceComponent(Visual);Controller->Visual=Visual;
-    Visual->SetSkeletalMesh(Mesh);Visual->SetAnimInstanceClass(UProphecyHolsterStrapAnimInstance::StaticClass());
-    Visual->SetMobility(EComponentMobility::Movable);Visual->SetupAttachment(Bomb);Visual->SetBoundsScale(2.f);
+    const auto MakeVisual=[&](UStaticMesh* Asset,UMaterialInterface* Material)
+    {
+        auto* C=NewObject<UStaticMeshComponent>(Bomb->GetOwner());Bomb->GetOwner()->AddInstanceComponent(C);
+        C->SetStaticMesh(Asset);C->SetMobility(EComponentMobility::Movable);C->SetupAttachment(Bomb);
+        C->SetCollisionEnabled(ECollisionEnabled::NoCollision);C->SetGenerateOverlapEvents(false);
+        C->SetCanEverAffectNavigation(false);C->SetComponentTickEnabled(false);
+        C->SetMaterial(0,Material);C->SetCastShadow(Bomb->CastShadow);
+        C->SetCustomDepthStencilValue(Bomb->CustomDepthStencilValue);C->SetRenderCustomDepth(Bomb->bRenderCustomDepth);
+        C->RegisterComponent();return C;
+    };
     Controller->Material=UMaterialInstanceDynamic::Create(BurnMaterial,Controller);
     Controller->Material->SetScalarParameterValue(TEXT("FuseRemaining"),1.f);
-    Visual->SetMaterial(0,Bomb->GetMaterial(0));Visual->SetMaterial(1,Controller->Material);
-    Visual->RegisterComponent();Visual->SetStrapEnabled(true);Visual->AddTickPrerequisiteComponent(Bomb);
-    Controller->AddTickPrerequisiteComponent(Visual);Controller->LastFrame=GFrameCounter;
+    Controller->Visual=MakeVisual(Mesh,Controller->Material);
+    Controller->ShellVisual=MakeVisual(ShellMesh,Bomb->GetMaterial(0));
+    Controller->AddTickPrerequisiteComponent(Bomb);Controller->LastFrame=GFrameCounter;
     Bomb->SetVisibility(false,false);Controller->RegisterComponent();return Controller;
-}
-bool UProphecyBombLibrary::SetBombFuseStiffness(UStaticMeshComponent* Bomb,float Stiffness)
-{
-    if(!FMath::IsFinite(Stiffness) || Stiffness<0)return false;
-    auto* Controller=PrepareFlexibleBomb(Bomb);if(!Controller || !Controller->Visual || Controller->bFuseHidden)return false;
-    Controller->Visual->Stiffness=FMath::Min(Stiffness,10000.f);return true;
 }
 bool UProphecyBombLibrary::HideBombFuse(UStaticMeshComponent* Bomb)
 {
-    auto* Controller=PrepareFlexibleBomb(Bomb);if(!Controller || !Controller->Visual)return false;
+    auto* Controller=PrepareStaticBomb(Bomb);if(!Controller || !Controller->Visual)return false;
     Controller->bFuseHidden=true;Controller->Material->SetScalarParameterValue(TEXT("FuseRemaining"),-1.f);
-    Controller->Visual->SetStrapEnabled(false);
+    Controller->Visual->SetVisibility(false);
     if(IsValid(Controller->Sparks)){Controller->Sparks->DestroyComponent();Controller->Sparks=nullptr;}
     if(!Controller->bBurning)Controller->SetComponentTickEnabled(false);
     return true;
@@ -185,10 +189,14 @@ bool UProphecyBombLibrary::HideBombFuse(UStaticMeshComponent* Bomb)
 bool UProphecyBombLibrary::LightBombFuse(UStaticMeshComponent* Bomb,float FuseBurnSpeed,float FragmentVelocity,
     float Intensity,float Radius,float FalloffExponent,float ExplosionVelocity,EProphecyVDBEffect Effect,float Scale,
     float Framerate,float DensityFadeStart,float TargetDensity,float DensityFadeDuration,FRotator Rotation,float FragmentLifetime,
-    UNiagaraSystem* FuseSparks,FRotator SparkRotationOffset,bool bInstantExplosion,bool bSpawnFragments,float FragmentFadeDuration)
+    UNiagaraSystem* FuseSparks,bool bInstantExplosion,bool bSpawnFragments,float FragmentFadeDuration,float FuseCap,bool bOptimised,
+    FLinearColor TemperatureColor,FLinearColor ScatteringColor)
 {
     if(!IsInGameThread() || !IsValid(Bomb) || !Bomb->GetWorld() || !Bomb->GetWorld()->IsGameWorld() || !Bomb->GetOwner()
-       || Rotation.ContainsNaN() || SparkRotationOffset.ContainsNaN())return false;
+       || Rotation.ContainsNaN() || !ProphecyVDB::IsValidColor(TemperatureColor) || !ProphecyVDB::IsValidColor(ScatteringColor))return false;
+    if(!FMath::IsFinite(FuseCap))return false;
+    FuseCap=FMath::Clamp(FuseCap,0.f,1.f);
+    bInstantExplosion=bInstantExplosion || FuseCap>=1.f;
     auto* Existing=Bomb->GetOwner()->FindComponentByClass<UProphecyBombComponent>();
     if(Existing && ((!bInstantExplosion && Existing->bBurning) || Existing->Bomb!=Bomb))return false;
     for(float X:{FuseBurnSpeed,FragmentVelocity,Intensity,Radius,FalloffExponent,ExplosionVelocity,Scale,Framerate,DensityFadeStart,TargetDensity,DensityFadeDuration,FragmentLifetime,FragmentFadeDuration})
@@ -219,7 +227,7 @@ bool UProphecyBombLibrary::LightBombFuse(UStaticMeshComponent* Bomb,float FuseBu
     auto* Controller=Existing;
     if(!Controller && bInstantExplosion)
     {Controller=NewObject<UProphecyBombComponent>(Bomb->GetOwner());Bomb->GetOwner()->AddInstanceComponent(Controller);}
-    if(!Controller)Controller=PrepareFlexibleBomb(Bomb);if(!Controller)return false;
+    if(!Controller)Controller=PrepareStaticBomb(Bomb);if(!Controller)return false;
     Controller->Bomb=Bomb;Controller->Fragments=MoveTemp(Meshes);
     Controller->EffectAsset=EffectAsset;
     Controller->FragmentVelocity=FragmentVelocity;Controller->Intensity=Intensity;Controller->Radius=Radius;
@@ -228,7 +236,7 @@ bool UProphecyBombLibrary::LightBombFuse(UStaticMeshComponent* Bomb,float FuseBu
     Controller->TargetDensity=TargetDensity;Controller->FadeDuration=DensityFadeDuration;Controller->Rotation=Rotation;
     Controller->BurnTicks=bInstantExplosion?0:FMath::Max(uint64(1),ProphecyVDB::DurationTicks(Length/FuseBurnSpeed));
     Controller->DebrisTicks=FMath::Max(uint64(1),ProphecyVDB::DurationTicks(FragmentLifetime));Controller->LastFrame=GFrameCounter;
-    Controller->Elapsed=0;Controller->bBurning=true;Controller->SparkRotationOffset=SparkRotationOffset;
+    Controller->Elapsed=0;Controller->bBurning=true;
     auto* Fade=Bomb->GetOwner()->FindComponentByClass<UProphecyBombFragmentFadeComponent>();
     if(FadeTemplate)
     {
@@ -236,16 +244,38 @@ bool UProphecyBombLibrary::LightBombFuse(UStaticMeshComponent* Bomb,float FuseBu
         Fade->FadeTicks=ProphecyVDB::DurationTicks(FragmentFadeDuration);Fade->Template=FadeTemplate;
     }
     else if(Fade)Fade->DestroyComponent();
+    auto* VDBOptions=Bomb->GetOwner()->FindComponentByClass<UProphecyBombVDBOptimisedComponent>();
+    if(bOptimised && !VDBOptions)
+    {VDBOptions=NewObject<UProphecyBombVDBOptimisedComponent>(Bomb->GetOwner());Bomb->GetOwner()->AddInstanceComponent(VDBOptions);VDBOptions->RegisterComponent();}
+    else if(!bOptimised && VDBOptions)VDBOptions->DestroyComponent();
+    auto* Colors=Bomb->GetOwner()->FindComponentByClass<UProphecyBombVDBColorComponent>();
+    if(TemperatureColor!=ProphecyVDB::DefaultTemperatureColor() || ScatteringColor!=FLinearColor::White)
+    {
+        if(!Colors){Colors=NewObject<UProphecyBombVDBColorComponent>(Bomb->GetOwner());Bomb->GetOwner()->AddInstanceComponent(Colors);Colors->RegisterComponent();}
+        Colors->TemperatureColor=TemperatureColor;Colors->ScatteringColor=ScatteringColor;
+    }
+    else if(Colors)Colors->DestroyComponent();
     if(bInstantExplosion){Controller->Detonate();return true;}
+    if(FuseCap>0.f)
+    {
+        auto* Cap=NewObject<UProphecyBombFuseCapComponent>(Bomb->GetOwner());Bomb->GetOwner()->AddInstanceComponent(Cap);
+        Cap->DetonationTicks=FMath::Max(uint64(1),ProphecyVDB::DurationTicks(Length*(1.-FuseCap)/FuseBurnSpeed));
+        Cap->RegisterComponent();
+    }
     Controller->SetComponentTickEnabled(true);
     if(FuseSparks && !Controller->bFuseHidden)
     {
         FVector Position,Tangent;
         if(Controller->GetBurnTip(Position,Tangent))
         {
-            const FRotator Orientation=(Tangent.ToOrientationQuat()*SparkRotationOffset.Quaternion()).Rotator();
+            const FRotator Orientation=FRotator::ZeroRotator;
             Controller->Sparks=UNiagaraFunctionLibrary::SpawnSystemAtLocation(Bomb,FuseSparks,Position,Orientation,FVector(1),true,true,ENCPoolMethod::None,false);
-            if(Controller->Sparks)Controller->Sparks->AddTickPrerequisiteComponent(Controller);
+            if(Controller->Sparks)
+            {
+                Controller->Sparks->AttachToComponent(Bomb,FAttachmentTransformRules::KeepWorldTransform);
+                Controller->Sparks->SetAbsolute(false,true,true);
+                Controller->Sparks->AddTickPrerequisiteComponent(Controller);
+            }
         }
     }
     return true;
@@ -281,22 +311,18 @@ bool FProphecyBombContract::RunTest(const FString&)
     Mesh->SetMobility(EComponentMobility::Movable);Actor->SetActorLocation(FVector(0,0,100));
     Mesh->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Fab/CC0_-_Bomb/cc0_bomb/StaticMeshes/cc0_bomb.cc0_bomb")));
     TestFalse(TEXT("Reject zero burn speed"),UProphecyBombLibrary::LightBombFuse(Mesh,0));
-    TestFalse(TEXT("Reject negative stiffness"),UProphecyBombLibrary::SetBombFuseStiffness(Mesh,-1));
-    TestTrue(TEXT("Flexible fuse before ignition"),UProphecyBombLibrary::SetBombFuseStiffness(Mesh,5));
-    auto* Prepared=Actor->FindComponentByClass<UProphecyBombComponent>();
-    if(!TestNotNull(TEXT("Prepared flexible controller"),Prepared))return false;
-    TestFalse(TEXT("Stiffness does not ignite"),Prepared->bBurning);
-    TestEqual(TEXT("Spring applied"),Prepared->Visual->Stiffness,5.f);
+    auto* Prepared=PrepareStaticBomb(Mesh);
+    if(!TestNotNull(TEXT("Prepared static controller"),Prepared))return false;
+    TestFalse(TEXT("Preparation does not ignite"),Prepared->bBurning);
+    TestFalse(TEXT("Static fuse has no animation tick"),Prepared->Visual->IsComponentTickEnabled());
     TestEqual(TEXT("Cosmetic fuse has no collision"),Prepared->Visual->GetCollisionEnabled(),ECollisionEnabled::NoCollision);
     FVector Tip,Tangent;TestTrue(TEXT("Initial tip available"),Prepared->GetBurnTip(Tip,Tangent));
     TestTrue(TEXT("Initial tip matches original curved geometry"),Tip.Equals(Mesh->GetComponentTransform().TransformPosition(BombFuseCenters[28]),.001));
     if(!TestTrue(TEXT("Ignite prepared original"),UProphecyBombLibrary::LightBombFuse(Mesh,10,700)))return false;
     TestFalse(TEXT("Cannot ignite twice"),UProphecyBombLibrary::LightBombFuse(Mesh));
     auto* Fuse=Actor->FindComponentByClass<UProphecyBombComponent>();
-    TestTrue(TEXT("Ignition reuses flexible pose"),Fuse==Prepared);
+    TestTrue(TEXT("Ignition reuses static visual"),Fuse==Prepared);
     TestNull(TEXT("Empty Niagara input creates no emitter"),Fuse->Sparks.Get());
-    TestTrue(TEXT("Stiffness adjustable while burning"),UProphecyBombLibrary::SetBombFuseStiffness(Mesh,40));
-    TestEqual(TEXT("Live spring applied"),Fuse->Visual->Stiffness,40.f);
     TestEqual(TEXT("Curved length timing"),Fuse->BurnTicks,uint64(60));
     Fuse->LastFrame=GFrameCounter-1;Fuse->TickComponent(1.f/60,LEVELTICK_All,nullptr);
     TestTrue(TEXT("Burn scalar advances"),Fuse->Material->K2_GetScalarParameterValue(TEXT("FuseRemaining"))<1);
@@ -305,7 +331,7 @@ bool FProphecyBombContract::RunTest(const FString&)
     auto* ShellOverride=UMaterialInstanceDynamic::Create(Mesh->GetMaterial(0),Actor);
     Mesh->SetMaterial(0,ShellOverride);
     Fuse->LastFrame=GFrameCounter-1;Fuse->TickComponent(1.f/60,LEVELTICK_All,nullptr);
-    TestTrue(TEXT("Burning body inherits current material"),Fuse->Visual->GetMaterial(0)==ShellOverride);
+    TestTrue(TEXT("Burning static body inherits current material"),Fuse->ShellVisual && Fuse->ShellVisual->GetMaterial(0)==ShellOverride);
     Fuse->Elapsed=Fuse->BurnTicks-1;Fuse->LastFrame=GFrameCounter-1;Fuse->TickComponent(1.f/60,LEVELTICK_All,nullptr);
     TestTrue(TEXT("Bomb consumed exactly at endpoint"),Actor->IsActorBeingDestroyed());
     FProphecyJoltBodyState State;Physics->ReadBody(Handle,State);
@@ -352,12 +378,11 @@ bool FProphecyBombContract::RunTest(const FString&)
     if(!TestNotNull(TEXT("Hidden controller"),Hidden))return false;
     TestFalse(TEXT("Hidden unlit controller does not tick"),Hidden->IsComponentTickEnabled());
     TestFalse(TEXT("Hidden fuse dynamics does not tick"),Hidden->Visual->IsComponentTickEnabled());
-    TestFalse(TEXT("Stiffness cannot reveal permanently hidden fuse"),UProphecyBombLibrary::SetBombFuseStiffness(HiddenMesh,20));
     TestTrue(TEXT("Hidden fuse can still start a timer"),UProphecyBombLibrary::LightBombFuse(HiddenMesh));
     Hidden->LastFrame=GFrameCounter-1;Hidden->TickComponent(1.f/60,LEVELTICK_All,nullptr);
     TestEqual(TEXT("Burn timer does not unhide fuse"),Hidden->Material->K2_GetScalarParameterValue(TEXT("FuseRemaining")),-1.f);
     TestTrue(TEXT("Instant detonation overrides active timer and ignores zero burn speed"),
-        UProphecyBombLibrary::LightBombFuse(HiddenMesh,0,700,1000,500,2,0,EProphecyVDBEffect::ShockwaveExplosion,1,30,3,0,1,FRotator::ZeroRotator,8,nullptr,FRotator::ZeroRotator,true));
+        UProphecyBombLibrary::LightBombFuse(HiddenMesh,0,700,1000,500,2,0,EProphecyVDBEffect::ShockwaveExplosion,1,30,3,0,1,FRotator::ZeroRotator,8,nullptr,true));
     TestTrue(TEXT("Instant destroys bomb synchronously"),HiddenActor->IsActorBeingDestroyed());
     const auto CountLive=[&](bool bEffects)
     {
@@ -377,7 +402,7 @@ bool FProphecyBombContract::RunTest(const FString&)
         NoDebrisMesh->SetMobility(EComponentMobility::Movable);NoDebrisMesh->SetStaticMesh(Mesh->GetStaticMesh());
         const int32 PreviousPieces=CountLive(false),PreviousEffects=CountLive(true);
         Physics->SetBodyVelocity(Handle,FVector::ZeroVector,FVector::ZeroVector,true);
-        TestTrue(TEXT("Start without fragments"),UProphecyBombLibrary::LightBombFuse(NoDebrisMesh,10,700,1000,500,2,0,EProphecyVDBEffect::ShockwaveExplosion,1,30,3,0,1,FRotator::ZeroRotator,8,nullptr,FRotator::ZeroRotator,bInstant,false));
+        TestTrue(TEXT("Start without fragments"),UProphecyBombLibrary::LightBombFuse(NoDebrisMesh,10,700,1000,500,2,0,EProphecyVDBEffect::ShockwaveExplosion,1,30,3,0,1,FRotator::ZeroRotator,8,nullptr,bInstant,false));
         if(!bInstant)
         {
             auto* NoDebris=NoDebrisActor->FindComponentByClass<UProphecyBombComponent>();
@@ -389,6 +414,38 @@ bool FProphecyBombContract::RunTest(const FString&)
         TestEqual(TEXT("VDB still spawned without fragments"),CountLive(true),PreviousEffects+1);
         Physics->ReadBody(Handle,State);TestTrue(TEXT("Physical force still applies without fragments"),State.CenterOfMassVelocityCmPerSecond.X>0);
     }
+    for(float CapValue:{0.f,.25f,.5f,1.f})
+    {
+        auto* CapActor=W->SpawnActor<AStaticMeshActor>();auto* CapMesh=CapActor->GetStaticMeshComponent();
+        CapMesh->SetMobility(EComponentMobility::Movable);CapMesh->SetStaticMesh(Mesh->GetStaticMesh());
+        const int32 PreviousEffects=CountLive(true);
+        Physics->SetBodyVelocity(Handle,FVector::ZeroVector,FVector::ZeroVector,true);
+        TestTrue(TEXT("Start capped fuse"),UProphecyBombLibrary::LightBombFuse(CapMesh,CapValue==1.f?0.f:10.f,700,1000,500,2,0,
+            EProphecyVDBEffect::ShockwaveExplosion,1,30,3,0,1,FRotator::ZeroRotator,8,nullptr,false,false,1,CapValue));
+        if(CapValue<1.f)
+        {
+            auto* Controller=CapActor->FindComponentByClass<UProphecyBombComponent>();
+            if(!TestNotNull(TEXT("Capped burn controller"),Controller))return false;
+            TestEqual(TEXT("Cap preserves full-length burn speed"),Controller->BurnTicks,uint64(60));
+            const uint64 Deadline=uint64(60*(1-CapValue));
+            auto* Cap=CapActor->FindComponentByClass<UProphecyBombFuseCapComponent>();
+            if(CapValue>0)
+            {
+                if(!TestNotNull(TEXT("Optional cap deadline"),Cap))return false;
+                TestEqual(TEXT("Cap deadline follows remaining fraction"),Cap->DetonationTicks,Deadline);
+                TestFalse(TEXT("Cap has no separate tick"),Cap->IsComponentTickEnabled());
+            }
+            else TestNull(TEXT("Default cap needs no extra component"),Cap);
+            Controller->Elapsed=Deadline-2;Controller->LastFrame=GFrameCounter-1;Controller->TickComponent(1.f/60,LEVELTICK_All,nullptr);
+            TestFalse(TEXT("Capped fuse survives until deadline"),CapActor->IsActorBeingDestroyed());
+            TestEqual(TEXT("Visible burn is not sped up by cap"),Controller->Material->K2_GetScalarParameterValue(TEXT("FuseRemaining")),1.f-float(double(Deadline-1)/60)*.99f);
+            TestNull(TEXT("Cap does not create optional sparks"),Controller->Sparks.Get());
+            Controller->LastFrame=GFrameCounter-1;Controller->TickComponent(1.f/60,LEVELTICK_All,nullptr);
+        }
+        TestTrue(TEXT("Cap consumes bomb at deadline (1 is synchronous)"),CapActor->IsActorBeingDestroyed());
+        TestEqual(TEXT("Cap triggers exactly one VDB"),CountLive(true),PreviousEffects+1);
+        Physics->ReadBody(Handle,State);TestTrue(TEXT("Cap also applies physical blast"),State.CenterOfMassVelocityCmPerSecond.X>0);
+    }
     // Verify travelling force remains delayed and uses the original propagation contract.
     Physics->SetBodyVelocity(Handle,FVector::ZeroVector,FVector::ZeroVector,true);
     TestEqual(TEXT("Travelling blast scheduled"),UProphecyExplosionLibrary::StartExplosion(W,FVector(0,0,100),1000,500,2,100),1);
@@ -396,5 +453,47 @@ bool FProphecyBombContract::RunTest(const FString&)
     for(int I=0;I<61;++I)Physics->Step(1.f/60,1);
     Physics->ReadBody(Handle,State);TestTrue(TEXT("Impact after wave arrival"),State.CenterOfMassVelocityCmPerSecond.X>0);
     return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyStaticFuse,"Prophecy.Bomb.StaticFuse",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyStaticFuse::RunTest(const FString&)
+{
+    auto Init=UWorld::InitializationValues().AllowAudioPlayback(false).RequiresHitProxies(false)
+        .CreatePhysicsScene(true).CreateNavigation(false).CreateAISystem(false).CreateFXSystem(false).SetTransactional(false);
+    auto* W=UWorld::CreateWorld(EWorldType::Game,false,NAME_None,nullptr,true,ERHIFeatureLevel::Num,&Init);
+    GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(W);
+    auto* A=W->SpawnActor<AStaticMeshActor>();auto* M=A->GetStaticMeshComponent();
+    M->SetMobility(EComponentMobility::Movable);
+    M->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Fab/CC0_-_Bomb/cc0_bomb/StaticMeshes/cc0_bomb.cc0_bomb")));
+    auto* C=PrepareStaticBomb(M);
+    if(!C){AddError(TEXT("Static fuse assets missing"));W->DestroyWorld(false);GEngine->DestroyWorldContext(W);return false;}
+    TestFalse(TEXT("Fuse has no recurring animation work"),C->Visual->IsComponentTickEnabled());
+    TestFalse(TEXT("Fuse has no physics"),C->Visual->IsSimulatingPhysics());
+    TestEqual(TEXT("Fuse is original-shape static mesh"),C->Visual->GetStaticMesh()->GetFName(),FName(TEXT("SM_BombFuse")));
+    TestTrue(TEXT("Shell retains bomb material"),C->ShellVisual->GetMaterial(0)==M->GetMaterial(0));
+    // No explosions or particle simulations: exercise the actual attachment update
+    // with a non-activating Niagara component, suitable for isolated -nullrhi.
+    auto* FX=NewObject<UNiagaraComponent>(A);A->AddInstanceComponent(FX);
+    FX->SetAutoActivate(false);FX->SetupAttachment(M);FX->SetAbsolute(false,true,true);FX->RegisterComponent();C->Sparks=FX;
+    C->BurnTicks=1200;C->bBurning=true;
+    for(int32 I=0;I<180;++I)
+    {
+        A->SetActorLocationAndRotation(FVector(I*.3,2,100),FRotator(I*3,I*5,I*7));
+        C->LastFrame=GFrameCounter-1;C->TickComponent(1.f/60,LEVELTICK_All,nullptr);
+        FVector Tip,Tangent;TestTrue(TEXT("Static burn tip"),C->GetBurnTip(Tip,Tangent));
+        TestTrue(TEXT("Emitter follows cut"),FX->GetComponentLocation().Equals(Tip,.0001));
+        TestTrue(TEXT("Emitter always world upright"),FX->GetComponentQuat().Equals(FQuat::Identity,.0001));
+        TestTrue(TEXT("Fuse keeps original local shape"),C->Visual->GetRelativeTransform().Equals(FTransform::Identity));
+        TestFalse(TEXT("No fuse animation tick while burning"),C->Visual->IsComponentTickEnabled());
+    }
+    TestTrue(TEXT("Fuse clips progressively"),C->Material->K2_GetScalarParameterValue(TEXT("FuseRemaining"))<1.f);
+    auto* Override=UMaterialInstanceDynamic::Create(M->GetMaterial(0),A);M->SetMaterial(0,Override);
+    C->LastFrame=GFrameCounter-1;C->TickComponent(1.f/60,LEVELTICK_All,nullptr);
+    TestTrue(TEXT("Shell inherits live bomb material"),C->ShellVisual->GetMaterial(0)==Override);
+    TestTrue(TEXT("Permanent hide"),UProphecyBombLibrary::HideBombFuse(M));
+    TestFalse(TEXT("Hidden static fuse invisible"),C->Visual->IsVisible());TestNull(TEXT("Hide removes sparks"),C->Sparks.Get());
+    C->LastFrame=GFrameCounter-1;C->TickComponent(1.f/60,LEVELTICK_All,nullptr);
+    TestEqual(TEXT("Burn cannot reveal hidden fuse"),C->Material->K2_GetScalarParameterValue(TEXT("FuseRemaining")),-1.f);
+    AddInfo(TEXT("180 moving/rotating-bomb samples: static fuse, upright emitter, progressive clipping, material propagation and permanent hide."));
+    W->DestroyWorld(false);GEngine->DestroyWorldContext(W);W->MarkAsGarbage();return !HasAnyErrors();
 }
 #endif

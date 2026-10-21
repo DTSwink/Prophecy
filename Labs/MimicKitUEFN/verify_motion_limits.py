@@ -19,7 +19,8 @@ def quaternions(v):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--backup-name',default='before-omni-limits')
     parser.add_argument('--idle',action='store_true',help='Verify the added idle against unchanged current limits')
-    args=parser.parse_args();assert args.backup_name in ('before-omni-limits','before-wrist-limits')
+    parser.add_argument('--equipment',action='store_true')
+    args=parser.parse_args();assert args.backup_name in ('before-omni-limits','before-wrist-limits','before-equipment-limits')
     out=ROOT/'Saved/MimicKitUEFN';backup=out/args.backup_name
     if args.idle:
         source=out/'idle/retarget/M_Neutral_Stand_Idle_Loop.pkl'
@@ -38,13 +39,22 @@ def main():
         (out/'idle/limits-verification.json').write_text(json.dumps(report,indent=2))
         print(json.dumps(report));assert report['passed'],'Idle exceeds current PHAT limits'
         return
-    plan=json.loads((out/'omni-limit-plan.json').read_text())
+    plan=json.loads((out/('equipment/limit-plan.json' if args.equipment else 'omni-limit-plan.json')).read_text())
     before=json.loads((backup/'limits.json').read_text());after=json.loads((HERE/'limits.json').read_text())
     for key in ('geometry','groups','body_frames','source_body_frames','source_parents','parents','mass_kg','collision_exclusions'):
         assert before[key]==after[key],key
     oldxml=(backup/'humanoid_uefn.xml').read_bytes()
-    # All hinges already fit; ball limits are external metadata. No XML edits needed.
-    assert oldxml==(HERE/'humanoid_uefn.xml').read_bytes()
+    # Equipment references can require hinge expansion. Only their range
+    # attributes may change in either generated model.
+    import xml.etree.ElementTree as ET
+    for filename in ('humanoid_uefn.xml','humanoid_uefn_physics.xml'):
+        a=ET.fromstring((backup/filename).read_bytes());b=ET.fromstring((HERE/filename).read_bytes())
+        for j,p in zip(after['joints'],plan['joints']):
+            if j['kind']=='hinge' and p['changed']:
+                x=a.find(f".//joint[@name='{j['name']}']");y=b.find(f".//joint[@name='{j['name']}']")
+                np.testing.assert_allclose([float(v) for v in y.attrib['range'].split()],j['range_rad'],atol=1e-8)
+                x.set('range',y.attrib['range'])
+        assert ET.tostring(a)==ET.tostring(b),filename
     assert (backup/'physics.json').read_bytes()!=(HERE/'physics.json').read_bytes() # New source fingerprint.
     oldphysics=json.loads((backup/'physics.json').read_text());newphysics=json.loads((HERE/'physics.json').read_text())
     assert oldphysics['bodies']==newphysics['bodies'] and oldphysics['cancel_gyroscopic']==newphysics['cancel_gyroscopic']
@@ -53,7 +63,7 @@ def main():
     model=MJCFCharModel('cpu');model.load(str(HERE/'humanoid_uefn.xml'))
     clips=[]
     for name,digest in plan['motion_sha256'].items():
-        content=(out/'omni'/name).read_bytes();assert hashlib.sha256(content).hexdigest()==digest,name
+        content=(Path(name) if args.equipment else out/'omni'/name).read_bytes();assert hashlib.sha256(content).hexdigest()==digest,name
         clips.append(pickle.loads(content)['frames'])
     rows=[];count=0
     for j,p in zip(after['joints'],plan['joints']):
@@ -65,7 +75,8 @@ def main():
         v=np.concatenate([sampled_coordinates(model,j,f,1)[0] for f in clips])
         for q in quaternions(np.concatenate((v,inflate(v,1.05)))):
             rows.append([len(rows),*j['modes'],*j['limits_rad'],*q])
-    src=out/'omni-limits-jolt-input.csv';dst=out/'omni-limits-jolt-output.csv'
+    prefix=out/'equipment' if args.equipment else out
+    src=prefix/'omni-limits-jolt-input.csv';dst=prefix/'omni-limits-jolt-output.csv'
     np.savetxt(src,rows,delimiter=',',fmt=['%d']*4+['%.12g']*7,header='index,m0,m1,m2,a,b,c,w,x,y,z',comments='')
     env=dict(os.environ);env['PATH']=str(ROOT/'Intermediate/JoltMigration/Install/Development/bin')+os.pathsep+env['PATH']
     subprocess.run([str(ROOT/'Saved/Robotics/jolt_probe.exe'),'--limits',str(src),str(dst)],env=env,check=True,capture_output=True)
@@ -75,7 +86,7 @@ def main():
                 dense_joint_samples=count,jolt_reference_and_margin_samples=len(rows),outside_limits=0,angular_margin=1.05,
                 geometry_mass_inertia_damping_unchanged=True,motion_files_bit_identical=True,historical_export_preserved=True,
                 source_files=after['source_files'])
-    (out/'omni-limit-verification.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+    (out/('equipment/limit-verification.json' if args.equipment else 'omni-limit-verification.json')).write_text(json.dumps(report,indent=2),encoding='utf-8')
     print(json.dumps(report,indent=2))
 
 

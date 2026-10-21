@@ -439,6 +439,7 @@ public:
     // Endpoints/type and suppression ownership remain fixed. Replaces frames/limits after complete
     // preflight, intentionally resets warm-start state, and wakes endpoints once. Failure preserves old joint.
     FProphecyJoltWorldStatus UpdateJoint(const FProphecyJoltJointHandle& Joint, const FProphecyJoltJointSettings& Settings);
+    FProphecyJoltWorldStatus SetJointPikeWoundCorrection(const FProphecyJoltJointHandle& Joint, bool Enabled);
     /** Replace only this joint's pair exclusions, preserving its native constraint and warm start. */
     FProphecyJoltWorldStatus UpdateJointSuppressedPairs(const FProphecyJoltJointHandle& Joint,
         TConstArrayView<FProphecyJoltBodyPair> SuppressedPairs);

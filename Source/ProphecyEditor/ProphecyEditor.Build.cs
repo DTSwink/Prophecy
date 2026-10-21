@@ -39,6 +39,8 @@ public class ProphecyEditor : ModuleRules
 			"MetaHumanCharacterPalette",
 			"MetaHumanDefaultEditorPipeline",
 			"MetaHumanSDKRuntime",
+			"Niagara",
+			"NiagaraEditor",
 			"Projects",
 			"PhysicsCore",
 			"SkeletalMeshEditor",

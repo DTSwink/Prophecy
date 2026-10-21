@@ -6,6 +6,7 @@
 #include "ProphecyJoltSceneCollisionComponent.h"
 #include "ProphecyJoltStaticMeshLibrary.h"
 #include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyJoltSkeletalPropComponent.h"
 #include "ProphecyJoltWorldSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -66,6 +67,10 @@ bool Read(UPrimitiveComponent* Component, FName BoneName, FProphecyJoltBodyState
         }
         if (!Agent->GetJoltCharacterComponent()->GetBodyHandle(BoneName, Handle)) return false;
     }
+    else if (auto* Prop = UProphecyJoltSkeletalPropComponent::Find(Component))
+    {
+        if (!Prop->GetBodyHandle(BoneName, Handle)) return false;
+    }
     else if (auto* Adapter = AdapterFor(Component)) return Adapter->GetBodyState(State);
     else
     {
@@ -81,6 +86,8 @@ void Report(const FString& Error)
 void UProphecyJoltStandardPhysicsLibrary::SetSimulatePhysics(UPrimitiveComponent* Component, bool bSimulate)
 {
     if (!IsValid(Component)) return;
+    if (auto* Prop = UProphecyJoltSkeletalPropComponent::Find(Component))
+    { FString Error; Prop->SetSimulationEnabled(bSimulate, Error); Report(Error); return; }
     if (auto* Adapter = AdapterFor(Component))
     {
         if (Adapter->IsJoltBody()) { FString Error; Adapter->SetSimulationEnabled(bSimulate, Error); Report(Error); return; }

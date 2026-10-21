@@ -25,7 +25,7 @@ def matrix(row):
 def serialized(row):
     a=np.eye(4);a[:3,:3]=R.from_quat(row['quaternion']).as_matrix();a[:3,3]=row['position'];return a
 
-def main(clips=None, output=None, source_folder=None, write_preview=True):
+def main(clips=None, output=None, source_folder=None, write_preview=True, preview_path=None):
     torch.set_num_threads(1)
     folder=ROOT/'Labs/MimicKitUEFN'
     output=Path(output) if output is not None else ROOT/'Saved/MimicKitUEFN/omni';output.mkdir(parents=True,exist_ok=True)
@@ -137,7 +137,8 @@ def main(clips=None, output=None, source_folder=None, write_preview=True):
     viewer=dict(fps=60,names=names,source_names=source_names,clips=preview,
                 geometry=local_geometry('new',meta['body_frames']),
                 source_geometry=local_geometry('phat',overlay['meta']['source_body_frames']))
-    (folder/'omni-preview.json').write_text(json.dumps(viewer,separators=(',',':')),encoding='utf-8')
+    destination=Path(preview_path) if preview_path else folder/'omni-preview.json'
+    destination.write_text(json.dumps(viewer,separators=(',',':')),encoding='utf-8')
 
 if __name__=='__main__':main()
 

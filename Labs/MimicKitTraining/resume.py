@@ -9,6 +9,50 @@ from pathlib import Path
 import numpy as np
 import torch
 
+def migrate_physical_observation_scales(agent):
+    """Broaden physical scales; preserve the previously unclipped affine map.
+
+    Adam moments transform as gradients under W_new = W_old * new_std / old_std.
+    Saved tensors make subsequent resumes idempotent; command scales stay fixed.
+    """
+    norm = agent._obs_norm
+    if norm._std.shape != (154,):
+        raise ValueError('Physical-scale migration requires the audited 154-input layout')
+    old = norm._std.detach().clone()
+    floor = torch.zeros_like(old)
+    floor[0] = .25                 # pelvis world height, metres
+    floor[1:7] = .25               # root orientation tan/normal
+    floor[7:10] = 1.               # root linear velocity, m/s
+    floor[10:13] = 2.              # root angular velocity, rad/s
+    floor[13:97] = .25             # 14 joint orientation tan/normal pairs
+    floor[97:131] = 2.             # 34 local DOF velocities, rad/s
+    floor[131:146] = .25           # 5 key-body positions relative to pelvis, m
+    new = torch.maximum(old, floor)
+    ratio = new / old
+    changed = new > old
+    with torch.no_grad():
+        for name in ('actor', 'critic'):
+            layer = getattr(agent._model, '_'+name+'_layers')[0]
+            layer.weight.mul_(ratio[None])
+            optimizer = getattr(agent, '_'+name+'_optimizer')._optimizer
+            state = optimizer.state.get(layer.weight, {})
+            if 'exp_avg' in state:
+                state['exp_avg'].div_(ratio[None])
+                state['exp_avg_sq'].div_(ratio[None].square())
+                if 'max_exp_avg_sq' in state:
+                    state['max_exp_avg_sq'].div_(ratio[None].square())
+            elif 'momentum_buffer' in state:
+                state['momentum_buffer'].div_(ratio[None])
+        norm._std.copy_(new)
+        dtype = norm._mean_sq.dtype if norm._mean_sq is not None else norm._mean.dtype
+        norm._mean_sq = norm._mean.to(dtype).square()+new.to(dtype).square()
+    return dict(version='physical_scales_v1', changed_channels=int(changed.sum()),
+        old_std=old.cpu().tolist(), new_std=new.cpu().tolist(),
+        mean_unchanged=True, commands_unchanged=True, first_layers_compensated=True,
+        optimizer_moments='First-layer gradient moments divided by scale ratio; counters/LR and other parameters unchanged',
+        limitation='Previously clipped states change; affine responses preserved where old inputs were unclipped')
+
+
 def override_actor_learning_rate(agent, value):
     """Explicit resume override: retain Adam moments, counters and all weights."""
     value = float(value)
@@ -19,6 +63,16 @@ def override_actor_learning_rate(agent, value):
     for group in groups:
         group['lr'] = value
     return dict(previous=previous, requested=value, optimizer_state_preserved=True)
+
+def override_fixed_action_noise(agent, value):
+    """Apply explicit exploration change after checkpoint tensors are restored."""
+    value=float(value)
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError('Action noise must be finite and positive')
+    logstd=agent._model._action_dist._logstd_net
+    previous=logstd.detach().exp().cpu().tolist()
+    with torch.no_grad():logstd.fill_(math.log(value))
+    return dict(previous=previous,requested=value,actual=logstd.detach().exp().cpu().tolist())
 
 def append_height_records(model, state):
     """142 -> 144 inputs, preserving every old activation and momentum column.

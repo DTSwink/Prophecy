@@ -152,6 +152,10 @@ def convert(recording, geom, run):
                     result['mse_target_positions'].append((target[:,:,:3]@WORLD_TO_VIEW.T).tolist())
                     axes=Rotation.from_quat(target[:,:,3:].reshape(-1,4)).as_matrix().reshape(*target.shape[:2],3,3).swapaxes(-1,-2)@WORLD_TO_VIEW.T
                     result['mse_target_basis'].append(axes.tolist())
+    for row in result['rows']:
+        metrics=row.get('evaluation',{})
+        if 'perturbed_row' in metrics:
+            row['clip_name'] += ' | '+('perturbed' if metrics['perturbed_row'] else 'normal')
     return result
 
 
@@ -175,7 +179,7 @@ def convert_arrays(meta,pose,data,frame_terms,geom,run):
         # Legacy captures list their columns in rollout_losses insertion order.
         names=meta.get('loss_term_names') or [key for key in meta['rollout_losses'] if key != 'total']
         assert frame_terms.shape == (n,len(names)) and np.isfinite(frame_terms).all()
-        if meta.get('reward_from_loss') in ('exp_negative_sum','reciprocal_sum','reciprocal_tracking_minus_termination_remaining'):
+        if meta.get('reward_from_loss') in ('exp_negative_sum','reciprocal_sum','reciprocal_tracking_minus_termination_remaining','reciprocal_sum_plus_getup_head_height','linear_cost'):
             # Auto-phase supervises the prediction head; it is displayed in the
             # total loss but is not part of the environment's physical reward.
             remaining_penalty=meta['reward_from_loss']=='reciprocal_tracking_minus_termination_remaining'
@@ -185,8 +189,16 @@ def convert_arrays(meta,pose,data,frame_terms,geom,run):
             total=frame_terms[1:,reward_columns].sum(axis=1)
             expected=(1./(1.+total) if meta['reward_from_loss']!='exp_negative_sum'
                       else np.exp(-total))
+            if meta['reward_from_loss']=='linear_cost':
+                expected=1.-total
+                expected-=float(meta.get('getup_failure_penalty',0.))*(data[1:,0]==1)
+                expected+=float(meta.get('getup_success_bonus',0.))*(data[1:,0]==2)
             if remaining_penalty:
                 expected-=frame_terms[1:,names.index('termination_remaining')]
+            if meta['reward_from_loss']=='reciprocal_sum_plus_getup_head_height':
+                expected = expected + np.asarray(meta['frame_head_height_reward'])[1:]
+            expected-=float(meta.get('loco_failure_penalty',0.))*(data[1:,0]==1)
+            expected-=float(meta.get('normal_getup_failure_penalty',0.))*(data[1:,0]==1)
             assert np.allclose(expected,data[1:,2],atol=1e-6), 'Recorded reward does not match '+meta['reward_from_loss']
         else:
             assert np.allclose(-frame_terms.sum(axis=1),data[:,2],atol=1e-6)

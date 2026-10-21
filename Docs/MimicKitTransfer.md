@@ -1,10 +1,455 @@
 # Isolated Run LR checkpoint transfer assessment
 
+## October 18 — native profile integrated for get-up training
+
+User chose pure configured native MJWarp, cancelling proposed solver mixing.
+The production adapter preserves the checkpoint's original joint-coordinate
+convention around PHAT-centered native ball bounds; CPU randomized FK and
+L4 real-engine/reset/PPO smoke pass (GPU body mapping error 5.6e-7 m).
+Get-up continuation `20261018_084204_uefn_getup_native_mj_512` launched from
+verified 656_final on L4 `ennp2v39ymd04t`; hard stop 10:34:09 Warsaw October18.
+Original gains, torque envelope, zero armature, geometry and 240/30 Hz remain.
+No custom motor/contact/projection passes execute in this backend. The native
+profile still approximates PHAT limits and does not establish exact Jolt parity.
+Current operational details/evidence are in the opening of MimicKitTraining.md.
+
+## October 18 — native MuJoCo replacement audit
+
+Latest state: training stopped, checkpoint 656_final locally/persistently
+verified; the dedicated ten-minute L4 audit completed in 236.2 seconds and
+its pod `u7yyhwcg8xt179` is confirmed EXITED. The older running entries below
+are historical. See the opening of MimicKitTraining.md for full current status.
+The disposable audit pod was subsequently deleted after local and persistent
+S3 readback verification of its source/results/traces; retained training pods
+were not deleted. Receipt: vanilla-calibration/persistent-audit.json.
+
+The original archived Run LR 4013 policy passes 13/16 distinct ten-second
+starts in native MJWarp using PHAT-centered spherical ball bounds, elliptic
+friction, frictionless self contacts and contact solref [0.0175, 2]. It passes
+0/16 with the unconfigured Newton-converted native model. Native ball joints
+were previously unlimited. Original gains, torque caps, geometry, mass/inertia,
+zero armature and 240 Hz / 30 Hz frequencies remain unchanged in the selected
+candidate. Recorded Jolt reference passes 16/16; native transfer is incomplete.
+
+On the replacement L4, selected physics takes 16.81 ms per policy tick for
+512 worlds, versus 12.09 ms for unconfigured native physics. This is paired
+physics timing, not full PPO. Three initial phases still fail; floor penetration
+reaches 5.06 cm in recorded frames. Native spherical bounds do not reproduce
+the exact PHAT swing ellipse/twist. Production training integration is pending:
+native ball quaternion = reference * original quaternion, body rest transform
+= original rest * inverse(reference); resets and policy observations must be
+mapped consistently. Do not change only the model rest transform.
+
+Saved settings, numerical traces, source and billing receipt are under
+Saved/MimicKitTransfer/vanilla-calibration. The old successful Unreal/Jolt fixture
+was used as recorded evidence; the user's editor/session/assets were untouched.
+
 ## Current handoff — no-armature checkpoint3913 and original-skin preview
+
+**October17 20:32 latest: follow-up audit completed; current L4 remains running.**
+Current run20261017_200515_uefn_equipment_idle18_512, same owned L4t7kby2z4440esp,
+fresh three-hour deadline23:05:22 Warsaw.92 idle rows (74 recovery/18 ordinary),
+168walk/252run; recovery-only head/hand27cm termination removed, feet/pose/clip-end
+checks retained. Checkpoint20613_final resumed with full state, latest checked
+21014 persistently verified; live21094/345.62M samples. Detailed guards/receipts
+and current status are in MimicKitTraining.md, not the main journal.
+
+Four new physics candidates were screened and rejected for no reliable gain:
+contact impulse reuse, multiple-RHS factor solves, shared-memory scratch reuse,
+active-only Jacobian clearing. No Jolt/MJ physical rule changed in this audit.
+Shared PPO/auto-phase actor computation is accepted in canonical future packages,
+local full-update10.549 ->10.095s (4.31%). CUDA capture adds no clear further gain.
+Algebraic objective preserved; floating-point backward summation is NOT bitwise
+equivalent. Exact old4013/archived body passed16 distinct10s phase starts before
+and after a disposable update with either implementation; peak18.05/18.83/18.45cm,
+no failures/warnings. Does not revalidate the newer PHAT or claim a native rerun.
+Auto-phase metric aliasing was corrected; actual loss weight unchanged.
+Source edeeaf57ed7f and complete audit are locally/persistently verified; live
+L4 remains on0911d5acbdf9 without an extra interruption. See
+Saved/MimicKitEquipment/optimization-followup/audit-complete.json.
+
+**October17 19:24 latest: optimized MJ runtime resumed on L4.**
+User authorized three hours, actual L4 speed measurement, and leaving it running.
+Owned t7kby2z4440esp, run20261017_192404_uefn_equipment_solver_speed_512,
+verified19683_final resume, $0.59/hour; hard stop22:11:33 Warsaw. See current
+MimicKitTraining opening for guards, checkpoint, setup receipts and measured speed.
+Unreal/Jolt remain unchanged. Actual warmed L4 full PPO last30 updates average
+2.1941s /7,467 transitions/s versus previous3.065s /5,345:28.4% less update time.
+Advancing at323.34M samples; first backup verified,20 replay rows/TB available,
+no warnings/failures observed. Training is left running as requested.
+
+**October17 implementation completed before this launch:**
+Register-resident contact iteration, common-scale tangent preconditioning and
+original-equation convergence checks now replace the wasteful inner loop.
+The physical fixed point, torque law and required motor-branch damping remain
+unchanged. 100 is still the difficult-case ceiling; average in the full PPO
+trial is21.15–21.17 passes. Combined with fused FK/exact spawn caching, paired
+local512-world full PPO takes13.621 ->10.603s/update (22.16% less time). This is
+local4060 evidence, not an L4 throughput claim. Final production difficult cases
+agree with independent float64 solutions within1.4e-5 generalized velocity;
+packaged floor penetration remains4.378mm. GPU graphs, finite warnings and
+nonfinite rejection pass. See current MimicKitTraining handoff and evidence.
+No Jolt physical-rule change is needed: the numerical solve targets the same
+existing equations. Owned klyceawn5edw3l remains EXITED, final19683 locally/S3
+verified, speed heartbeat paused. Released source d61275b88cbc is locally and
+persistent-S3 readback verified; final packaged PPO smoke passes. Earlier running
+paragraphs are historical.
+
+**October17 L4 follow-up:** user authorized three-hour continuation. Parallel
+guard is running on replacement L4 klyceawn5edw3l with verified backups.
+Measured last30 full PPO updates3.065s versus original1.79s,71% slower;
+local4060 improvement did not transfer. User notified. No zero-overhead claim.
+Training journal contains deadline, monitoring and receipts; Unreal unchanged.
+
+**October17 follow-up: cheaper parallel floor guard, locally verified.** The
+equipment-only opt-in now selects one warp per world/one lane per collider,
+with ancestor-chain FK instead of serial whole-rig scans. Same geometric bound
+and backtracking; no controller/mass/limits/velocities changed.1024 randomized
+geometry tests and captured replay pass. Blocked corrections differ slightly
+in float32 operation order (max generalized-coordinate delta5.1e-5), so not a
+bit-identical replacement; clear proposals remain exact. Matched get-up peak
+remains4.38mm vs5.68cm without guard. Paired512-world full PPO benchmark:
+24 updates,393,216 transitions; local4060 median15.234s baseline vs12.001s
+parallel, no detected slowdown or numerical failure. Not an L4 benchmark or
+guaranteed21% speedup. Paid equipment pod remains EXITED at user request.
+Existing-contact-only projection was also tested and rejected (5.58cm persists).
+Source/evidence details are in Docs/MimicKitTraining.md.
+
+**October17 equipment-only floor-aware projection:** optional engine setting
+`transfer_floor_aware_projection` guards the post-contact angular split correction
+against the static horizontal floor using exact sphere/capsule/box FK on GPU.
+It backtracks blocked generalized-position corrections; no velocity edits or
+angular-limit value changes. Clear proposals are bit-identical. This prioritizes
+floor feasibility over completing that split correction immediately; it is not
+a simultaneous position solve or a new Jolt-parity claim. Default remains off
+for other engine configs; the current equipment recovery package explicitly
+enables it. Unreal/Jolt unchanged. Same-policy get-up case improves5.68cm floor
+penetration to4.39mm. Reset-only fixed-hip/pole foot IK clears separately detected
+initial penetration. Remaining motion/contact penetration up to4.38mm is measured,
+not hidden. Unit geometry/capture tests,512-world PPO smoke and matched32-world
+policy tests pass. See dedicated training journal and
+Saved/MimicKitEquipment/floor-recovery/ for scope, overhead and evidence.
+The previous serial guard's L4 training cost was material: about3.2s/update versus1.8s before.
+64-thread scheduling is bit-identical and improves an isolated local test,
+but has not demonstrated lower whole-training cost. Do not call this free or
+negligible overhead. The parallel replacement above supersedes that implementation;
+it has local full-PPO validation, but no new paid L4 measurement.
+
+**October16 equipment solver correction (deployed and training verified):**
+the main block solver can cycle between motor torque-limit branches; the old
+scalar fallback needed3,152 sweeps on the captured1274 case. A GPU simultaneous
+solve now resolves the same capped-motor/contact/limit/friction equations before
+that safeguard. Partial-pivot Newton with residual line search uses independent
+16-sweep scalar seeds; stalled attempts never commit. Common block/100-contact
+iteration path stays unchanged. No cycle detector (rejected after a2x physics
+regression), controller/physics parameter change, limit/geometry change or CPU
+readback. Sixteen reusable scratch slots add about40MB and one captured launch.
+The finite-warning policy and final3,000-sweep safeguard remain for unseen cases;
+do not claim global convergence or exact ordinary-contact convergence.
+
+All51 captured states, CUDA graph replay, preserved invalid error codes and NaN
+rejection pass. Captured1274 now uses16 seeds+9 Newton steps, with5.11e-6 maximum
+velocity difference from the long float64 reference.262,144 noisy transitions
+needed31 coupled calls and no old fallback/warnings. Final consolidated paired
+PPO test has15 coupled solves/zero scalar fallback versus15 baseline fallbacks;
+whole-update4.931/4.871s and physics2.319/2.365s are within observed variation.
+Dedicated training journal records source hashes and cloud deployment state.
+Run20261016_145703_uefn_equipment_velocity_512 resumes2322 on L4nsvb0bg53dnc32,
+verified beyond2363 with S3 checkpoint/20 replay rows; fresh4h ends18:57 Warsaw.
+Tiny observed idle foot-origin motion0.1–2mm/10s is explicitly accepted by the
+user absent a clear bug. No demonstrated connection to the small residual in
+ordinary finite-iteration contacts; those equations/iteration counts unchanged.
+Original Unreal recordings are preserved and current user TestNN work untouched.
+
+**October16 expanded-PHAT validation: Jolt bug deferred, MJ launch authorized.** All16 Run LR
+starts finish10s, but phase0.25 tick87/substep4 has a20.23cm right-ankle separation
+hidden by policy-boundary sampling. Exact-prefix interventions and a no-simulation
+collision query isolate an incorrect floor-contact normal: the small foot against
+the fixture's200m-wide thin floor box produces downward z=−1 instead of upward.
+The query matches the full simulation's erroneous depth/normal exactly. Reversing
+query order, or testing other box sizes at the same foot pose, returns upward.
+An instrumented copy of the existing narrowphase code reproduces it inside EPA;
+it does not need motors/limits/contact-cache reuse. Disabling contact POSITION
+correction only at that identical step reduces the anchor error to0.03627cm,
+confirming how the bad contact causes the jump. This is diagnostic evidence, NOT
+a retained workaround: floor shape, physics settings, DLLs and gameplay unchanged.
+Algorithm repair/general regression pending; no current-rig transfer acceptance.
+After diagnosis the user explicitly authorized proceeding with MJ training while
+deferring this native collision bug. No workaround was retained.
+MJ equipment subsequently failed update132/world225. Captured GPU replay isolates
+a finite3.10e-6 rounding floor against the strict2e-6 convergence gate; float64
+reference difference4.35e-6. This is distinct from the deferred native floor bug.
+The exhausted fallback now classifies bounded float32 rounding as a reported
+warning only after motor and contact/limit checks; materially invalid results
+remain rejected before PPO. No Jolt physics or motor/contact settings changed.
+See the current training handoff for exact thresholds, regressions and billing
+guard repair. The original world147 failure had no saved equation, so its precise
+cause cannot be retroactively proved from the later capture.
+**Latest user-directed policy:** iteration exhaustion with finite output is a
+reported warning, not a fatal assertion. The10,000-sweep candidate below was
+reverted before deployment; budget stays3,000. Continue with the finite computed
+approximation and report residuals; NaN/Inf and invalid constraints still fail.
+Warning counters/metrics stay on GPU until existing rollout-boundary validation.
+See current training journal for tests and local fallback cost. No Jolt changes.
+Subsequent equipment update1274/world267 exposed insufficient fallback budget,
+not a rounding floor: six contacts, no limits;3,000 sweeps leave motor defect
+2.533e-3Nm. Identical solve finishes under existing checks at3,152 sweeps with
+1.887e-3Nm. Superseded candidate changed only cap3,000→10,000; early exit, normal block path, physics,
+thresholds and GPU graph execution unchanged. Same3,152 result with caps3,200,
+4,000 and10,000, CUDA graph regression passes. All four historical captures still
+pass; unsupported-contact errors still reject. Difference from a fully converged
+10k float64 reference is3.47e-4 generalized velocity, versus4.63e-4 at old cutoff;
+this is iteration truncation under the EXISTING convergence criterion, not exact
+arithmetic parity. No Jolt changes. Evidence Saved/MimicKitEquipment/failure1274/.
+Evidence and training additions: opening of `MimicKitTraining.md` and
+`Saved/MimicKitEquipment/native/anchor-*.json`, `stderr.log`.
+
+**October16 Unreal display updated at user request:** the dedicated comparison map
+was clean and outside Play, still using the old bounded-motor failure recording.
+Imported `AS_Newton4013` and `AS_Jolt4013`, verified source/payload hashes and all
+301 frames of all88 bone tracks (maximum import error0.000322cm/0.000257deg),
+then saved ONLY the comparison map and those two new animations. Camera piloted;
+both recordings play synchronously at0.25x in an owned Simulate session.
+Receipts: `accepted-preview-refreshed.json` and `accepted-preview-playback.json`
+under `Saved/MimicKitTransfer/no-armature-3913`. This is successful recorded physics
+from checkpoint4013, not live policy inference in Unreal. These captures retain
+the archived transfer rig's limits; they do not establish native parity for the
+subsequently expanded canonical PHAT. No Blueprint, PHAT, mesh or training change.
 
 ### Active goal — October15 overnight
 
-**Current local training:** fresh all27 approved clips (12walk,14run,1idle),
+**Latest October16 solver pass verified; training stays stopped.**
+Retained two changes: try the previous motor torque-limit branches before the50
+preliminary sweeps, and copy already prepared manifold responses instead of
+recomputing them. The cached branches are only a hint: momentum, contacts, limits
+and forces are solved from current inputs. If any motor branch disagrees with
+the resulting velocity, reject the guess and run the original full50-sweep seed
+and final solve. Restore physical-mass responses before that retry because the
+failed block attempt overwrote them with effective responses. The checked scalar
+fallback and original thresholds/counts remain unchanged. This also handles stale
+hints after resets without transferring old contact impulses into new contacts.
+
+Four runtime files changed. Cache cost for512 worlds:71,680bytes; two retry-kernel
+launches added, one redundant preparation launch removed (net one extra GPU
+launch), no new CPU readbacks or user knobs. All stays in captured GPU graphs.
+The instrumented candidate accepted984,480 of1,048,049 previous-branch guesses
+(93.9%) during its noisy test. Those diagnostic counters were not retained.
+Exact unchanged-impulse exit in the seed showed only0.2% difference, within noise;
+discarded. Its code and all other variants remain only in ignored diagnostics.
+
+Paired512-world/24-input physics comparison:5.680->3.853ms (**32.2% less**), maximum
+coordinate/velocity differences1.20e-7/1.44e-5. This repeated-input test is unusually
+favorable to caching; do not present it as a32% training improvement.
+Two alternating full-PPO comparisons (six disposable updates/variant, first
+excluded) show a **2.6% median time saving across10 matched rounds**,9/10 faster.
+First medians: reference5.104s, combined5.079s, vanilla2.939s; real physics
+2.955->2.719s/update. Second three-way medians: reference5.239s, response-reuse-only
+5.118s, combined4.951s; physics2.905->2.747s/update. Combined beats reuse-only in
+all5 matched rounds. Thus real training physics saved about5–8%; whole-training
+gain is modest. Current/vanilla observed ratio1.73x in the first comparison versus
+its own reference1.74x; do not compare directly to the earlier1.63x ratio under
+different machine load or claim the frozen-input gain applies to PPO. Unreal
+remained open and untouched throughout; no saved benchmark optimizer/weights.
+
+Final code passes all4 saved crashes against independent float64 equations,
+CUDA graph replay, deliberately wrong cached branches and insufficient-solve
+rejection. Three manifold controls pass on scalar and block paths. Final noisy
+test:131,072 transitions,10,801 resets, zero failures,17 scalar fallbacks/3,520
+sweeps (preceding pass19/3,808). Checkpoint4013 passes all16 starts for10s, max
+16.940cm under27cm, zero fallbacks. Package/default-engine/failure guards and
+Python compile checks pass. Both policy hashes and all current body hashes are
+unchanged. Native receipt was left untouched/stale; this is not a new PHAT/Jolt
+transfer certification. No cloud, production training, Unreal/lab changes or new
+checkpoint copies. Initial disposable runner import/reference-source-line errors
+were corrected and logs preserved; they did not run production training.
+Evidence, frozen sources, rejected variants and final hash audit:
+`Saved/MimicKitLocal/solver_followup/result.json`, `combined_physics.json`,
+`ppo_final.json`, `ppo_isolation.json`, `noisy_final.json`, `regressions_final/`;
+walking report `causal_transfer/solver_warm4013.json`.
+
+**Earlier October16 coefficient/matrix optimization — verified baseline.**
+**Transfer receipt is stale for the current body.** The final audit found that
+the user's separate PHAT expansion changed the canonical XML/limits/physics at
+06:57, before this optimization began. Native fixtures and their saved16x60s
+results use the earlier archived body. The new MJ walking test uses the current
+body and passes; it does not validate that body's dynamics in Jolt. Preserve the
+new PHAT limits. They need updated native fixtures/tests before a new transfer
+certificate or fresh all-motion training. `verify_transfer.py` now rejects this
+asset mismatch before writing a receipt. Its identical-body/changed-XML,
+changed-limits and changed-physics controls pass. The previous receipt was
+restored byte-for-byte so its existing freshness checks reject the newer sources.
+The briefly written, invalid refreshed receipt is preserved as
+`solver_optimization/rejected_transfer_receipt.json`; it must not authorize a run.
+
+The current source caches unchanged motor coefficients across the50 seed sweeps
+and reuses one effective matrix for its factor, directly solving only the RHS
+vectors needed by the contacts/limits. It no longer forms that full effective
+inverse. Two runtime files changed: `sequential_contact_gpu.py` and
+`block_contact_gpu.py`. GPU-only, no extra launches/readbacks, no new runtime knobs.
+Keep seed50/final100/fallback3000/position20; this optimization changes no physical parameters, torque law,
+friction, constraint order, rejection checks and accuracy thresholds are unchanged.
+No custom native CUDA snippets were retained.
+
+The final alternating512-world/24-input comparison measured full substep
+**8.588->5.640ms (34.3% less time,1.52x throughput)**. Contact/motor solve measured
+separately **7.463->4.439ms (40.5% less)**; seed3.345->2.122ms, final block
+3.191->1.337ms. These separately timed stages are not strictly additive.
+Final block shared memory36,448->10,848bytes; seed8,544->9,088bytes. Earlier quieter
+paired measurement7.845->5.102ms gave the same approximately35% improvement.
+Unreal was reopened externally during testing (PID16368); left untouched.
+Do not compare the new absolute times directly to historical idle-GPU measurements.
+
+**Full PPO comparison now exists:** vanilla, pre-this-pass and current engines,
+same700 checkpoint/settings,512worlds,32steps/update, six disposable updates each,
+first discarded, alternating order and independent RNG states. Medians:
+vanilla3.231s, previous6.389s, current5.251s/update (**17.8% less time /1.22x
+throughput**). Current was faster in all five measured pairs (1.21–1.37x).
+Physics portion4.129->2.906s/update. Absolute timings varied with the active editor:
+max/min ratios1.63/1.39/1.26 respectively. Current/vanilla observed ratio1.63x;
+this is the present whole-loop comparison, not a claim of equivalent vanilla
+physics or a guaranteed idle-GPU speed. No weights/optimizer states saved.
+
+All four historical failure captures, independent float64 manifold controls,
+CUDA graph replay and deliberate insufficient-solve rejection pass. Final frozen
+coordinate/velocity differences1.20e-7/3.06e-5.131,072 noisy transitions: zero
+failures,19 checked fallback solves/3,808 sweeps (previous16/3,616);10,768 resets.
+4013 completes16/16 true starts for10s with zero fallbacks and max16.945cm target
+error, below the original27cm threshold. Equivalent equations are not bit-identical
+trajectories. Original native16x60s evidence is retained only for its older body;
+it was not rerun or certified against the newer PHAT limits. The paired performance
+comparisons use identical inputs/body settings on both sides. Historical impact
+captures test the old recorded equations; the noisy and walking tests exercise
+the current MJ body. Both saved policy hashes remain unchanged.
+CPU packaging/stale-source/default-engine/PPO rejection checks also pass.
+
+Rejected experiments: register/shuffle broadcasts (small benefit or slower and
+more complexity), fully register-held motor impulses, streaming inverse rows,
+and reciprocal multiplication in the seed (no sufficiently clear extra benefit
+to justify changing its rounding). These exist only in ignored diagnostic files.
+The retained seed cache preserves the original divisions and operation order.
+An interrupted compilation was rerun; diagnostic import/path errors and
+experimental compiler restrictions were corrected without affecting production.
+Evidence, old source/receipt and rejected variants are under
+`Saved/MimicKitLocal/solver_optimization/`; final reports are `physics_final.json`,
+`ppo_final.json`, `noisy_final.json`, `regressions/` and `result.json`.
+No production/cloud training resumed; Unreal, assets and user labs untouched.
+
+**Earlier October16 projection optimization — historical baseline for this pass.**
+User authorized maximizing performance without changing the matched physics.
+Frozen, hash-checked pre-optimization kernels are under
+`Saved/MimicKitLocal/optimization/reference/`; diagnostics and rejected experiments
+remain in the parent directory. No cloud, Unreal changes or saved policy updates.
+Current retained changes: exact zero correction for already-admissible joints;
+precomputed bound parameters and per-substep inverse joint blocks; one complete
+joint quaternion per GPU lane; compact joint-loop code generation; cached
+effective constraint diagonals; skip remaining block sweeps only at an exact
+unchanged-impulse fixed point. Seed50, final100, fallback3000, position20 and all
+tolerances/torque caps/physical properties remain unchanged.
+
+On alternating identical-input comparisons before the editor reopened, full
+substep12.599ms ->7.526ms: **40.3% less GPU time /1.67x throughput**. Joint
+projection4.878ms ->0.437ms (~11.2x); contact/motor solve7.473ms ->6.861ms.
+The contact/motor solve remains the main cost; full physics is still about4.59x
+vanilla on that fixture. Frozen pose-coordinate differences below3e-7 and velocity
+differences below3e-5 on24 distinct impact inputs repeated across512worlds.
+Independent20-case float64 projection control passes within5.63e-6, including
+CUDA graph replay. No relaxed bounds, iteration counts, tolerance or motor laws.
+
+Rejected: zero/eight preliminary sweeps, incoming-velocity/MJ/interior guesses,
+short preliminary contact branches, extra shared impulse caching, conditional
+zero-update branches,64-thread block solves and compact block-loop generation.
+They worsened retries/cost or had no benefit. Seed25 looked faster on the impact
+microbenchmark but caused224 fallback solves in131,072 noisy transitions versus
+16 with retained seed50; keep50. Both noisy controls passed, no PPO updates.
+Their roughly95s wall times include startup and active-editor contention and are
+NOT a valid speed comparison against the earlier51.64s check.
+
+**Earlier projection-pass PPO timing was inconclusive.** Unreal reopened at06:20 outside this
+optimization job. It was left untouched. A later alternating, separate-RNG,
+same-checkpoint paired benchmark completed6 disposable updates per version,
+discarding the first. Reference26.73–35.81s/update; optimized9.56–42.38s/update.
+Sample medians27.79/36.07s are preserved, not represented as a causal speedup or
+slowdown. Even unchanged policy/optimizer times varied sharply. A separate
+optimized-only measurement was likewise unstable. No idle-GPU whole-PPO speedup
+is established by these data; do not turn the40.3% physics saving into a claimed
+PPO improvement or claim the historical2.80x penalty versus vanilla is gone.
+Reports: `optimization/update_profile.json`, `update_paired_editor.json`.
+
+**Final correctness checks:** all four historical failure captures pass against
+independent float64 equations (max3.69e-5), with CUDA graphs and deliberate
+one-sweep rejection. Manifold/friction controls pass3 cases on both scalar and
+block paths (max6.23e-5). Retained solver passes131,072 noisy transitions with
+zero failures,16 explicit fallback solves/3,616 sweeps, no PPO updates. Accepted
+checkpoint4013 completes16/16 true phase starts for10s again, max17.890cm under
+the unchanged27cm threshold, zero fallbacks. This is a tracking acceptance check,
+not bit-identical trajectories; previous max was16.957cm. Native rig/DLL and
+checkpoint are unchanged, so native16x60s evidence is retained rather than rerun.
+`verified_transfer.json` refreshed from `optimized_final4013.json` and the retained
+native reports; previous receipt preserved in `optimization/reference/`.
+Both4013 model and stopped700 archive hashes remain unchanged. CPU source-
+inventory/stale-package/default-engine/PPO-rejection tests pass. Diagnostic PPO
+weights were discarded; no production run, cloud spending, or Unreal changes.
+Rejected candidate code was removed from runtime; evidence remains under Saved.
+
+**Pre-optimization October16 performance audit — material overhead confirmed.** A proper paired
+vanilla/current-profile benchmark was missing before the full-set launch. On the
+local4060Laptop,512 worlds,1/240s substep,24 identical recorded impact inputs,
+CUDA graphs, alternating order, warm compilation excluded: vanilla MJ1.641ms,
+MJ+PHAT limits1.663ms, MJ+bounded motors1.745ms, full Jolt profile12.599ms per
+substep (**7.68x** vanilla). Separate components: contact/motor solve7.473ms,
+angular position projection4.878ms. Zero scalar fallbacks occurred: the recent
+roundoff fix is not the source of this major overhead. These are different
+physical equations, not evidence that vanilla can replace the transfer profile.
+
+Complete disposable PPO-update checks (same checkpoint700/body/network/noise,
+512worlds*32steps, six updates per engine, first excluded) measured medians
+**6.581s profile versus2.350s vanilla (2.80x)**. Physics GPU time4.805s versus
+0.694s/update; actor+critic optimization approximately0.355s versus0.370s, policy
+inference0.059s versus0.056s. End-to-end trajectories/contacts/resets differ under
+the two physics engines; the frozen-input comparison above is the controlled
+physics comparison. No evaluation/checkpoint/replay IO in these update timings.
+No weights were saved, no production training resumed, no physics settings changed.
+Reports/scripts: `Saved/MimicKitLocal/performance_vanilla/{physics,update_profile,
+update_vanilla}.json`, `benchmark_vanilla_transfer.py`, `benchmark_training_cost.py`.
+The transfer implementation is working on tested RunLR cases but is NOT cheap.
+Do not describe GPU residency alone as evidence of vanilla-like throughput.
+
+**October16 crash diagnosis — training remains stopped.** The all27 run stopped
+at03:49 after753 completed updates/12,337,152 samples. Its older running exception
+handler left `status.json` saying training; process exit/failure.json are authoritative.
+Status is now corrected to failed, preserving the old status in the diagnostic
+receipt. Latest verified checkpoint remains iteration700/11,485,184 samples;
+no rejected rollout was optimized or used to overwrite that checkpoint.
+
+The exact first failure (world218, error6) is retained as
+`first_failed_equations.npz`. It has two contacts, no active joint limits and finite
+state. GPU replay reproduces a float32 velocity-update cycle: successive fallback
+sweeps differ by5.364418e-6 indefinitely, above the unchanged2e-6 threshold, despite
+motor residual1.373291e-4Nm (limit2e-3). This is accumulated rounding in incremental
+velocity additions, not a changed reward, invalid network output or insufficient
+GPU memory. Independent float64 equations reach the same solution within1.3e-5.
+
+Fixed only the rare scalar fallback using compensated velocity summation (Kahan).
+The original case now converges in256 sweeps rather than exhausting3000; residual
+5.416870e-4Nm, maximum reference velocity difference1.260378e-5. Seed/fast block
+solver, tolerances, iteration bounds, physics parameters and training configuration
+are unchanged; still GPU-only and CUDA-graph compatible. Earlier saved equation
+regressions pass, including deliberately insufficient solves remaining rejected.
+A bounded512-world noisy rollout from the latest safe checkpoint passed131,072
+transitions/256ticks in51.64s,14 fallback solves, zero solver errors and zero PPO
+updates. This tests the fix, not learned locomotion or guaranteed indefinite stability.
+Evidence: `Saved/MimicKitLocal/solver753/`. Main training has NOT been resumed.
+The accepted Run LR4013 checkpoint also passes16/16 ten-second starts again,
+max16.957cm, zero fallbacks. This is a fresh tracking check, not a bit-identical
+trajectory claim or a repeat of the native60s suite. Report
+`causal_transfer/solver753_compensated_4013.json`; consolidated source/capture hashes,
+baseline diagnosis and checkpoint checksum are in `solver753/diagnosis.json`.
+Reproduce the captured regression with `test_block_cycle.py --capture <npz>
+--report-dir <directory>`; `test_solver_rollout.py <run> --out <report>` exercises
+512 noisy worlds without PPO or weight writes. Existing pre-fix transfer receipt
+hashes remain historical; do not bypass the stale-source check for a fresh launch.
+
+**Stopped local training configuration:** fresh all27 approved clips (12walk,14run,1idle),
 512worlds, run `2026-10-16_02-07-18_omni_idle_fresh_512`, bounded1000updates.
 Fresh weights/optimizers/counters; idle mode−1 and direction[1,0]. Same physical
 observations,1024→512→512 network,34 velocity actions, next-tick Phase E prediction
@@ -12,7 +457,7 @@ only, original four losses/noise.05/PPO/27cm termination. No cloud. One GPU job.
 TensorBoard8035 and noiseless replay8021 use this dated run. Initial setup at
 02-05 failed before PPO because an unrelated `replay.py` shadowed the intended
 adapter; the runner now loads the intended file explicitly. No invalid checkpoint
-was promoted. Running status/rolling verified archive are under Saved/MimicKitLocal.
+was promoted. Status/rolling verified archive are under Saved/MimicKitLocal.
 At100updates, noiseless mean episode increased5.10→5.50ticks and total weighted
 loss5.923→5.099; this is still very early/poor locomotion, not a trained full-set
 policy. All four loss terms and actual targets reach replay8021; TB tags verified.
@@ -75,8 +520,8 @@ The successful phase0.375 MJ/Jolt10s recordings have also been mapped onto all88
 original weighted bones for the existing comparison map. The15 physical anchors
 and their collider-bone offsets reproduce the captures within7.2e-15m; only
 display-root XY is centered. Prepared `skin_Newton4013.json`/`skin_Jolt4013.json`,
-with source hashes and `accepted-skin-recording.json`. No UE assets imported yet.
-After GPU training/headroom permits: existing `install_skin_preview.py` accepts
+with source hashes and `accepted-skin-recording.json`. UE assets now imported and
+displayed, as recorded in the current handoff above. `install_skin_preview.py` accepts
 tags Newton4013/Jolt4013, then `refresh_bounded_preview.py --accepted-transfer`
 verifies every imported frame before updating ONLY the dedicated map. Preserve
 active Play/dirty packages; these remain recordings, not live UE inference.
@@ -131,6 +576,29 @@ worlds on the first tick and was rejected; it is not used for training.
 The zero-seed failure was retained separately. The temporary `..._graph.npz`
 scratch capture overwrote the earlier second failure; its independent CPU/GPU
 reports remain, so do not describe that earlier raw capture as still retained.
+
+**Lower Jolt iteration control, checkpoint4013:** default10velocity/2position
+passes0/16 ten-second starts;20/4 passes13/16 (failures at129,31,22ticks). Same
+checkpoint, physical resets, materials, limits and tagged contact profile as40/8.
+Thus40/8 remains the accepted rig-only override; do not advertise transfer at the
+global gameplay defaults. Full reports `local_finetune4013_phases16_self0_native_point`
+and `..._native_v20p4_point`. Timings here overlapped other local work and are not
+a valid clean performance comparison. No gameplay settings or training changed.
+
+`compare_batch_native.py` now also accepts per-motion first-episode captures from
+`evaluate_omni.py`. A300tick accepted phase0.375 control through this adapter is
+bit-identical to the prior Jolt state/action arrays. It labels a short MJ episode
+as a short comparison, never full-horizon success. The pending GPU evaluator
+also records ground forces and failure causes; these forces sample the last
+substep, while the native report integrates all substep ground impulses.
+
+A CPU-only early all-motion reset reconstruction was investigated and rejected:
+it differed from captured GPU resets by about0.103mm position,0.000131 quaternion
+component and0.000602rad/s angular velocity, despite identical source motion
+hashes. Adding the actual joint-DOF round trip did not eliminate it. No tolerance
+was relaxed and no policy trial used those approximate resets. The temporary
+reconstruction code was removed; failure logs remain in Saved/MimicKitLocal.
+Final per-motion transfer checks will use actual GPU-captured initial states.
 
 `contact_engine.py` is the explicit local engine used by both successful fine-tune
 and current fresh run. `train_local.py` restores complete archives or starts fresh,

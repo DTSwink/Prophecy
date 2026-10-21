@@ -1,6 +1,152 @@
 # Bomb fuse and prepared fragmentation
 
-October18 installed and verified in the interactive editor, on explosionVFX.
+October19 startup correction installed in the interactive editor, on explosionVFX.
+
+## Grid3D rendering override — October20
+
+User wants existing scalability settings preserved while keeping the fuse visible.
+`Config/DefaultEngine.ini` now sets `r.HeterogeneousVolumes=1` in
+`[ConsoleVariables]`. UE5.7 loads this section in Shipping too, at
+SetBySystemSettingsIni priority, above SetByScalability. Only this switch is
+overridden; other scalability values are unchanged.
+Applies on the next editor/game startup and future packages. No live console
+change, build, restart or runtime/Shipping test performed, per user request.
+
+## Optimised VDB checkbox — October19
+
+**VDB colors added October19:** Light Bomb Fuse and Spawn VDB Effect expose
+Temperature Color(default .99,.13,.011) and Scattering Color(default white).
+Values apply once to the spawned VDB; fuse Niagara is unaffected. Custom colors
+are stored until detonation in one non-ticking component, with no extra component
+for default colors. No added per-frame color update or render pass. HDR RGB allowed;
+negative/nonfinite values rejected. Three-action corrected Live Coding build
+passed113.50s/reloaded12:00:22UTC without restart; existing retained layouts unchanged.
+A_Bomb compiled/saved:57 existing pins preserved plus2 color pins. Direct/custom/
+default/delayed/instant/Optimised forwarding verified12:03:48UTC. Normal DLLs stale.
+See Saved/Diagnostics/VDBColors20261019 and Docs/ZibraExplosionFade.md.
+
+Light Bomb Fuse exposes **Optimised** (defaultfalse), forwarded to Spawn VDB Effect.
+On disables projected VDB shadows and reuses the completed3D volume for a cheap tail
+with fixed lighting; off preserves the previous rendering. This is a VDB choice,
+independent of physical force, fragments and fuse sparks. See
+[VDB performance and controls](ZibraExplosionFade.md) for the cache conditions.
+The existing A_Bomb node was preserved/refreshed/compiled/saved with56 authored pins
+unchanged and one unchecked checkbox. Added optional components preserve existing
+retained layouts; loaded through minimal Live Coding, no restart. Normal DLLs are
+stale until the next required normal build. Evidence Saved/Diagnostics/VDBOptimised20261019.
+Both direct VDB assets passed cache/fade/lifetime checks; instant-bomb forwarding
+off/on passed10:12:10UTC with no fragments/emitter and one isolated effect at a time.
+
+## Static fuse and upright Niagara — October19 installed and verified
+
+The flame's red debug box is **User Parameters > Draw Bounds** (`User.DrawBounds`)
+in NewNiagaraSystem1. October19 11:03UTC inspection confirmed it remains enabled.
+Automatic toggle was not applied: the parameter store is protected in Python,
+editor SET is disabled, and the desktop helper failed to initialize twice.
+Full exported asset remained identical; only our no-change dirty marker was saved,
+leaving the user's dirty A_Bomb untouched. No build/restart. Compact receipt:
+`Saved/Diagnostics/NiagaraDebugGrid20261019/receipt.json`.
+
+User retired the entire fuse-physics experiment. Runtime now uses only original
+static geometry: the intact bomb remains visible until ignition/hide, then a
+matching static shell plus the470 original fuse triangles preserve its shape.
+UV1 burn distance still clips the fuse progressively. No bones, AnimDynamics,
+rigidity/stiffness control, startup component or animation ticking remain on bombs.
+The shared holster strap implementation is restored and remains supported.
+
+Light Bomb Fuse retains its existing burn/cap/explosion/fragment controls and
+optional Fuse Sparks. Spark Rotation Offset is removed: the emitter tracks the
+burn cut with identity world rotation and absolute rotation/scale, keeping grid
+Z upright as the bomb rotates. Null Fuse Sparks still means no emitter. Current
+A_Bomb now uses /Game/_mygame/bomb/NewNiagaraSystem1; its stiffness
+node is bypassed without changing the remaining authored exec path or tuning.
+
+This changes retained component layout and removes a reflected class/function;
+normal build/restart was required. Assets backed up, editor closed cleanly.
+Initial11-action build compiled runtime but failed on editor helper pointer type;
+corrected4-action retry passed59.17s. Editor26816 reopened explosionVFX, base DLLs
+current. No interactive explosion/VDB regression:
+focused StaticFuse test uses a non-activating Niagara component in isolated
+-nullrhi, checking180 rotating/moving samples, clipping, material and hide.
+StaticFuse passed05:41:54UTC; test process exited. A_Bomb compiled/saved,63->56 pins
+with only requested changes. Orphaned transaction-buffer node subobjects in text
+exports were excluded using active graph membership. All470 fuse triangles match
+original positions/normals/tangents/UV0; UV1 burn coordinates are protected from
+lightmap generation. Skeletal mesh/skeleton deleted after referencer checks and
+six obsolete tools removed. Niagara saved bytes unchanged; agent reflection healthy.
+The two retired physics diagnostic directories were moved to Windows Recycle Bin
+in the user's October19 cleanup, along with superseded asset backups, graph dumps
+and logs. Compact verification receipts/scripts remain in
+Saved/Diagnostics/BombStaticFuse20261019. Exact recycled paths are recorded in
+Saved/Diagnostics/ExplosionClutterCleanup20261019.json.
+
+The retired rigidity trial's251-sample check passed after correcting its test
+oracle to normalized quaternion interpolation, but user rejected its behavior.
+Do not restore it. The earlier interactive full explosion test caused GPU-memory
+exhaustion; do not repeat that test in the user's editor.
+
+## Crash/reopen and Niagara recovery — October19
+
+Normal15-action build84.41s after GPUMessage::FSystem::PollMessages crash brought
+all prior bomb features into base DLLs. Editor12676 opened explosionVFX normally;
+user dismissed recovery dialog. FuseCap/setup/native agent checks passed.
+NewNiagaraSystem1 had no saved package/autosave. Recovered the full October18
+19:23 text snapshot (Saved/Diagnostics/NiagaraPulse.txt) using editor-only
+Prophecy.Editor.RecoverNiagaraText, remapping session type indices from current
+Grid3D_MovingGridFire template. Native valid=1/ready=1/emitters=1, saved6,167,842
+bytes at /Game/_mygame/bomb/NewNiagaraSystem1 and opened it; user confirmed.
+Later RenderScale/pivot/visual tuning was not reapplied; user is recovering it.
+Keep original text snapshot and Saved/Diagnostics/NiagaraRecovery20261019 receipt
+and type map. Recovery helper required one-action Live Coding110s; normal base
+DLLs predate this helper. No unrelated asset save during recovery.
+
+## Fuse Cap — October19 installed and verified
+
+Light Bomb Fuse now has Fuse Cap (default0, clamped0–1). It is the fraction of
+fuse remaining at detonation:0 burns to the end,.25 burns75%,.5 burns half,
+1 detonates synchronously even with zero burn speed. Instant Explosion still
+overrides the cap. Burn speed, visible clipping and spark tracking retain their
+full-length clock; only the detonation deadline is shortened, rounded up to an
+authored60Hz tick. Existing calls/defaults retain their previous behavior.
+
+An optional non-ticking UProphecyBombFuseCapComponent stores the deadline for
+partial caps. Existing retained component layouts are unchanged; cap0 adds no
+component and cap1 uses the existing instant path. Minimal Live Coding3 actions
+passed237.58s, reload complete03:54:40UTC. Editor6904 remained open; no restart.
+Normal base DLLs still require minimal build before any cold launch.
+
+Current A_Bomb was preserved, refreshed, compiled and saved;54 authored existing
+pins/defaults/links preserved, one FuseCap pin added at0. The old archived Bomb
+Library CDO reference was repaired by package refresh. Initial strict comparison
+flagged only that expected CDO change; verified with its exact normalization
+before saving. Other assets/maps were not saved. Native21-argument reflection
+and existing agent reflection are healthy. FuseAndDetonation passes03:56:48UTC,
+covering0/.25/.5/1 deadlines, unchanged visible burn speed, immediate cap1 with
+zero speed, optional sparks, VDB and physical force. EOS heartbeat warnings only;
+no test errors. Evidence Saved/Diagnostics/BombFuseCap20261019.
+
+## Niagara scaled flame clipping — October19 diagnosis
+
+NewNiagaraSystem1 uses Render Scale0.2, WorldSpaceSize50,50,300 and Local Pivot
+Z0.12. The red debug box and scaled simulation have different center offsets
+(36 versus7.2cm); actual volume top is37.2cm above the actor. Flame was reaching
+that finite simulation boundary. Temporary component bounds enlargement did not
+recover it. Doubling only WorldSpaceSizeZ to600 recovered the missing flame top;
+restored300 afterward because this was an inspection of the user's tuning.
+No asset/map save, build or restart. Fixed bounds, BoundsScale, cube visibility
+and diagnostic camera changes also restored. Keep Render Scale0.2 and increase
+WorldSpaceSizeZ for headroom; fixed ResolutionMaxAxis means coarser cells in a
+taller domain. Evidence: Saved/Diagnostics/NiagaraClip20261019.txt and two PNGs.
+
+## Static shell material preservation
+
+SM_BombShell copies original mesh-description vertex attributes and original
+MikkTSpace build settings, excluding only the470 fuse triangles. It preserves
+2152 shell triangles and original rendered normals/tangents/UV0. Its effective
+material follows the original bomb component while burning. This static shell is
+retained by the static-fuse implementation above; the old skeletal/startup setup
+is removed. Reproduce shell with Tools/BombFuse/PrepareStaticShell.py, fuse with
+Tools/BombFuse/PrepareStaticFuse.py. Original imported mesh/collider untouched.
 
 ## Fragment fade — installed and verified, no restart
 
@@ -68,148 +214,9 @@ required before next cold launch because base DLL predates this checkbox.
 Evidence: Saved/Diagnostics/BombFragmentsToggle (preservation, native-reflection,
 build-summary, verification-log and final-status). Editor6904 remains open.
 
-## Flexible fuse extension — installed and verified
+## Retired fuse simulation
 
-Current extension reuses UProphecyHolsterStrapComponent's native five-body
-AnimDynamics solver, collision-free and separate from the bomb's original collider.
-New SK_BombFuse preserves original triangles/UV0, fixes the shell to the root,
-and skins only the fuse. UV1 still controls progressive clipping. The separate
-body slot takes the original component's current material; its pointer is checked
-while active, so body material changes now follow during the burn too.
-
-- Set Bomb Fuse Stiffness prepares flexibility before ignition or changes the
-  spring while burning. Default20, zero floppy, higher stiffer (cap10000).
-- Light Bomb Fuse adds optional Fuse Sparks, advanced Spark Rotation Offset,
-  and Instant Explosion. Null sparks means no Niagara allocation or fallback.
-  +X points outward along the current deformed fuse at the burn cut. Tracking
-  happens after skeletal evaluation; only two ring centers/four skin transforms
-  are evaluated per active spark update. It uses the same weights as the mesh.
-- Hide Bomb Fuse permanently clips all fuse geometry for that runtime instance,
-  stops dynamics and destroys its spark component. It does not cancel a timer.
-  Calling stiffness or ignition again cannot reveal it. Hidden/unlit components
-  stop ticking; a later timer call resumes only the timer/controller.
-- Instant Explosion is synchronous, ignores burn speed (zero accepted), and can
-  override an ongoing timer. A fresh instant explosion skips flexible mesh and
-  Niagara creation. It still uses all VDB/force/fragment settings.
-
-Dynamics inherits the strap's distance/global gates and teleport reset. The tiny
-cosmetic chain retains its full length internally while rendering is clipped;
-this is secondary animation, not a contact-capable rope simulation. On normal
-detonation the spark system is deactivated and its existing particles may finish;
-permanent hide destroys it immediately. Use finite particle lifetimes in effects.
-
-Build: saved user's current A_Bomb and PressureBomb plus generated skeleton,
-then native-layout restart. Repeated Slate shutdown error occurred after saves;
-editor exited itself. Six-action normal build succeeded in139.46s, incorporating
-all earlier bomb Live Coding patches. Editor6904 open on explosionVFX normally.
-User dismissed the startup low-drive-space dialog; no further restart or patch.
-Receipt/build/rig/probe evidence: Saved/Diagnostics/BombFuseFlexible. Reproducible
-asset tools: BuildFlexibleRig.py (background Blender), ImportFlexibleRig.py.
-Verification:323 owned Play samples,179 spark alignment samples; maximum tip
-error4.72e-7cm, minimum outward tangent dot0.9999999999999987. Soft/stiff samples
-show different motion; fixed root exact, all poses finite. Permanent hide stops
-skeletal ticking, removes Niagara and remains hidden through stiffness/ignition
-calls; timer can be overridden by synchronous instant detonation. Empty Niagara
-creates no emitter. Body material follows the user's PressureBomb override.
-Rendered flexible-burning.png and hidden-fuse.png reviewed. The white particles
-are the temporary engine Fountain template used only in the owned test, not an
-effect assigned to the user's Blueprint or a default fallback.
-
-Combined native test passes15:07:42UTC, including physical force, full20-fragment
-material/velocity checks, cleanup, timing and the new controls. Caveat: the first
-isolated test immediately after cold startup failed its20 fragment-velocity
-assertions. The unchanged binary passed after Play initialization; a separate
-actual Play fixture checked all20 velocities directly (max error3.11e-5cm/s).
-Cold isolated-world initialization is suspected, not proven; retain both outcomes
-in automation-results.txt. The first visual probe sampled a moved actor on a
-paused screenshot frame; the probe now samples advancing game time, without
-changing runtime tracking, and the full run passes. These are not runtime fixes.
-User A_Bomb/PressureBomb saved bytes match the pre-build preservation receipt;
-no graph wiring or tuning edits. Agent reflection status3/native_properties0/
-pin_types0/wiring_preserved1. All owned Play sessions ended; no dirty packages.
-Earlier implementation notes below are historical where superseded here.
-
-Requested node: Light Bomb Fuse, accepting the original CC0 bomb StaticMeshComponent,
-fuse burn speed (world cm per60 unpaused ticks), fragment radial launch velocity
-(cm/s), all Start Explosion controls and all Spawn VDB Effect controls. Detonation
-follows the moving bomb's current shell centre; no stale ignition location. The
-original actor is consumed, with20 closed shell fragments and one VDB spawned.
-Fragments inherit the original body's linear/angular point velocity and receive
-the selected radial velocity. Advanced Fragment Lifetime defaults8 authored seconds.
-
-Material inheritance follow-up: fragment spawning reads the original component's
-effective material slot0 at detonation and assigns that same material to all20
-pieces. This respects mesh defaults, component overrides, and dynamic instances,
-including replacements made after ignition. No per-frame polling, copying or new
-material instances. Each fragment keeps the material referenced after the original
-actor is destroyed. The burning visual still uses the prepared fuse material;
-arbitrary body-material replacement is not mirrored onto that masked visual.
-Loaded through implementation-only Live Coding patch_1 (one compile action,
-198s), reload14:36:40UTC/no object changes. Combined test passes14:37:05UTC
-with a dynamic instance replaced after ignition and identity checked on all20
-fragments. Editor remains explosionVFX/outside Play/no dirty packages. No restart
-or assets/wiring edits. Minimal normal build required before the next cold launch
-to incorporate both this runtime correction and the earlier baker correction.
-
-The original imported mesh/material and user A_Bomb graph remain unmodified.
-Ignition attaches a visual-only derived mesh while retaining the original collider;
-GPU masking follows baked curved-fuse distance in UV1. Vertex colors stay white
-to preserve glTF shading; opacity-mask cutoff is .333 (the source used zero).
-No emissive burn front or emitter: user explicitly deferred Niagara until later.
-At original scale its exposed length is9.83355cm, default burn speed2cm/s.
-Uniform/nonuniform scale is accounted for at ignition; subsequent scaling does
-not change that already selected burn duration. Repeat ignition is rejected.
-
-Twenty shell pieces are prepared offline from the actual outer triangles, with
-.22cm inner thickness and closed boundary walls, original UVs/material, and cooked
-convex collision. No runtime fracture/mesh cooking or per-tick geometry changes.
-Debris uses UE rigid bodies/CCD and ignores PhysicsBody collisions to prevent
-adjacent pieces exploding against each other; world/Pawn collision remains enabled.
-The physical blast uses the existing Jolt Start Explosion contract on already
-admitted bodies, including PhysicalMesh; it does not create or drive a Jolt world.
-Blast fires before fragments are created so their launch speed is not double-hit.
-Travelling blast arrival continues to use the original simulation clock.
-
-New generated assets: /Game/_mygame/BombGenerated, explicitly cooked.
-Tools/BombFuse/PrepareGeometry.py consumes the read-only exported LOD0 mesh and
-writes compact Geometry.json plus ProphecyBombGeometry.h. BakeAssets.py invokes
-the editor-only native asset builder; CreateMaterial.py copies the entire glTF
-material override chain and adds the mask without altering imported assets.
-VerifyMaterial.py finalizes UV1 masking, disables emission and saves derived materials.
-Runtime loads/pins required assets at ignition, with no disk load at detonation.
-Controller retires on consumption; one debris cleanup controller retires at expiry.
-
-Physical blast port: the five-file production.patch from the retained October18
-explosion bundle was applied cleanly to main. The separate impact-event extension
-remains PAUSED and was not copied. This wrapper includes VDB AND physical force,
-as explicitly clarified by the user.
-
-Build/save status: current A_Bomb and explosionVFX edits saved before the required
-normal native-layout restart. Backup/receipt in Saved/Diagnostics/BombFuse. Editor
-hit a shutdown window-destruction error after successful saves and exited; no
-force-kill used. Normal minimal build passed (33 dependency actions,538.92s,
-including installing the physical explosion library and shared Jolt state).
-The final editor-only mesh-baker correction (UV1 instead of vertex-color progress)
-loaded with layout-safe Live Coding patch_0:1 compile action,208.32s. Patch/reload
-completed, no object changes detected. Live Coding emitted .voltbl linker diagnostics
-but reported success; subsequent actual bake and tests passed. Base runtime DLL
-includes all runtime behavior, but predates this baker correction: perform the
-minimal normal build before the next cold launch. No further restart needed now.
-
-Verification after final rebake:
-- Prophecy.Bomb.FuseAndDetonation passes at14:24:59UTC: invalid/repeated ignition,
-  authored-tick fuse endpoint, actual native Jolt blast,20 simulated fragments
-  with selected radial velocity, one VDB, fragment cleanup, delayed wave arrival.
-- All20 prepared shell meshes have closed manifold edges.
-- Owned rendered Play captures show original appearance, progressively shortened
-  fuse with no glow, and outward fragments/VDB. Visual test completed and ended.
-- Editor6804 remains on /Game/explosionVFX, outside Play, no dirty maps/content.
-- Original mesh/material and preserved A_Bomb/map hashes unchanged. Agent BP
-  reflection native_properties0/pin_types0/status3/wiring_preserved1.
-
-Evidence in Saved/Diagnostics/BombFuse: verification-log.txt, visual-result.json,
-fuse-start.png, fuse-half.png, detonation.png, geometry-verification.json,
-final-status.json and preservation-verification.json. Source preparation is
-reproducible with Tools/BombFuse; no packaged-build validation claimed.
-No user Blueprint wiring added: connect the original StaticMeshComponent to Bomb
-and call once. Defaults are documented in ProphecyBombLibrary.h.
+The October18–19 five-body cosmetic fuse and normalized rigidity experiment were
+removed at user request, including build/import/probe scripts and skeletal assets.
+Burn timing, permanent hide, instant explosion, optional Niagara,
+material inheritance, physical blast and fragment behavior remain supported.

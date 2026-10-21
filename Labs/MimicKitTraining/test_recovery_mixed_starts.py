@@ -23,6 +23,7 @@ e._recovery_random_start_fraction=.5
 e._recovery_random_start_rows=scope['random_start_rows'](ids,n,.5)
 e._recovery_rows=torch.zeros(n,dtype=torch.bool); e._recovery_rows[ids]=True
 e._recovery_motion=torch.zeros(n,dtype=torch.long)
+e._recovery_fixed_motion=None
 e._recovery_start=torch.zeros(n); e._recovery_start_frame=torch.full((n,),-1,dtype=torch.long)
 e._feedback_phase=torch.zeros(n,2); e._pending_phase=torch.zeros(n,2)
 e._ref_dof_pos=torch.zeros(n,1); e._ref_joint_rot=torch.zeros(n,1)
@@ -52,3 +53,10 @@ assert torch.equal(before[untouched],e._recovery_start_frame[untouched])
 assert not scope['random_start_rows'](ids,n,0.).any()
 assert torch.equal(scope['random_start_rows'](ids,n,1.),e._recovery_rows)
 print('PASS: 146 fixed frame-0 + 146 random-frame get-up rows; valid frames, matching phase, partial resets and legacy extremes.')
+all_ids=torch.arange(512)
+motions=scope['random_start_rows'](all_ids,512,.5).long()
+balanced=scope['random_start_rows'](all_ids,512,.5,motions)
+for motion in (0,1):
+    assert ((motions==motion)&balanced).sum()==128
+    assert ((motions==motion)&~balanced).sum()==128
+print('PASS: front/back x frame0/random has exactly 128 rows in each group.')

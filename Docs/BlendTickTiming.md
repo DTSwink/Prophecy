@@ -15,6 +15,16 @@ At5FPS it takes12 real seconds. A .26-unit return requires16 ticks, approximatel
 Apply this convention to newly added authored blend/fade durations too, including
 camera fades. Do not use DeltaSeconds or elapsed wall time for those durations.
 
+October20 actual scene correction: A_Sword's **start slow fps** still changed
+the engine's fixed frame rate to5, supplying0.2s physics steps while authored
+clocks spent1/60. Its saved startup wiring now retains fixed60 and applies the
+slow value through `t.MaxFPS`; normal startup/End Play restore cap60.
+Verified true/5 in explosionVFX:1/60world delta throughout, lower FPS slows
+simulation time. Jolt's automatic coordinator forwards this world delta to its
+shared step. Do not use SetFixedFrameRateRuntime(slow FPS) as a slowdown control.
+This fixes that Blueprint route, not a blanket change to the timestep API.
+See Docs/SwordHolster.md October20 section and Saved/Diagnostics/SceneClock.
+
 Covered features:
 - Attack FK return, its angular inertia decay, easing, and NN takeover coefficient:
   all sample one shared tick phase. Repeated publications/catch-up NN steps do not

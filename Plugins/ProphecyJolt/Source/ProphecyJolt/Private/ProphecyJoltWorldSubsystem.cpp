@@ -406,6 +406,9 @@ struct FBodySlot
     TArray<FSuppressionKey> OwnedSuppression;
     TUniquePtr<FWeldRecord> Weld;
     FProphecyJoltBodyHandle WeldParent;
+    // Immutable native metadata while the solver runs; workers never read UObjects.
+    FTransform ComponentToBodyOrigin = FTransform::Identity;
+    bool bHitComponentPose = true;
 };
 
 bool SameRig(const FProphecyJoltRigHandle& A, const FProphecyJoltRigHandle& B)
@@ -595,6 +598,9 @@ public:
     FCriticalSection HitMutex;
     TArray<FProphecyJoltPendingHit> PendingHits;
     TMap<ProphecyJolt::HitImpact::FKey,ProphecyJolt::HitImpact::FSample> IncomingHits;
+    // One world-wide interval, not a per-body pose history. Written before Update;
+    // contact workers use it to extrapolate one tick back from their incoming sample.
+    double HitRewindSeconds = 0.;
     uint64 DeliveredHits = 0;
     bool bDispatchingHits = false;
 
@@ -630,10 +636,50 @@ public:
         Handle.Generation = Slot->Generation;
         return Handle;
     }
+    ProphecyJolt::HitImpact::FComponentMotion CaptureComponentMotion(
+        const JPH::Body& Body,const JPH::SubShapeID& Shape) const
+    {
+        using namespace ProphecyJolt::Conversions;
+        ProphecyJolt::HitImpact::FComponentMotion Result;
+        const auto* Carrier = HitSlot(Body);
+        const auto* Logical = Find(HitHandle(Body,Shape));
+        if (!Carrier || !Logical || !Logical->bHitEvents || !Logical->bHitComponentPose) return Result;
+        // The contact callback already owns the native body access. No UObject
+        // reads or extra body locks on solver workers.
+        FTransform Pose(FromJoltRotation(Body.GetRotation()),FromJoltPosition(Body.GetPosition()));
+        if (Logical != Carrier)
+        {
+            if (!Carrier->Weld) return Result;
+            Pose = Carrier->Weld->SourceToParent * Pose;
+        }
+        Pose = Logical->ComponentToBodyOrigin * Pose;
+        Result.AngularVelocityRad = FromJoltAngularVelocity(Body.GetAngularVelocity());
+        const double AngularSpeed = Result.AngularVelocityRad.Size();
+        const FQuat BackRotation = AngularSpeed > UE_SMALL_NUMBER
+            ? FQuat(Result.AngularVelocityRad / AngularSpeed,-AngularSpeed * HitRewindSeconds)
+            : FQuat::Identity;
+        const FVector Center = FromJoltPosition(Body.GetCenterOfMassPosition());
+        const FVector CenterVelocity = FromJoltLinearVelocity(Body.GetLinearVelocity());
+        // Rotate the origin's COM lever arm too: a welded sword or off-centre
+        // mesh rotates around its carrier COM, not around its own component pivot.
+        const FVector EarlierOffset = BackRotation.RotateVector(Pose.GetLocation() - Center);
+        Result.Location = Center - CenterVelocity * HitRewindSeconds + EarlierOffset;
+        Result.Rotation = (BackRotation * Pose.GetRotation()).GetNormalized();
+        Result.Velocity = CenterVelocity + FVector::CrossProduct(Result.AngularVelocityRad,EarlierOffset);
+        Result.Valid = true;
+        return Result;
+    }
     void CaptureIncoming(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& Manifold)
     {
         if (!WantsContactImpulse(A,B)) return;
-        const auto Sample=ProphecyJolt::HitImpact::Sample(A,B,Manifold);
+        auto Sample=ProphecyJolt::HitImpact::Sample(A,B,Manifold);
+        if (Sample.Valid)
+        {
+            Sample.Body1Motion=CaptureComponentMotion(A,Manifold.mSubShapeID1);
+            Sample.Body2Motion=CaptureComponentMotion(B,Manifold.mSubShapeID2);
+            if (A.GetID().GetIndexAndSequenceNumber()>B.GetID().GetIndexAndSequenceNumber())
+                Swap(Sample.Body1Motion,Sample.Body2Motion);
+        }
         FScopeLock Lock(&HitMutex);
         IncomingHits.Add(ProphecyJolt::HitImpact::Key(A.GetID(),Manifold.mSubShapeID1,B.GetID(),Manifold.mSubShapeID2),Sample);
     }
@@ -663,7 +709,11 @@ public:
         Hit.Impulse = Hit.Normal * (Impulse * MetersToCentimeters);
         FScopeLock Lock(&HitMutex);
         IncomingHits.RemoveAndCopyValue(ProphecyJolt::HitImpact::Key(A.GetID(),ShapeA,B.GetID(),ShapeB),Hit.Incoming);
-        if (A.GetID().GetIndexAndSequenceNumber()>B.GetID().GetIndexAndSequenceNumber()) Hit.Incoming.RelativeVelocity*=-1.;
+        if (A.GetID().GetIndexAndSequenceNumber()>B.GetID().GetIndexAndSequenceNumber())
+        {
+            Hit.Incoming.RelativeVelocity*=-1.;
+            Swap(Hit.Incoming.Body1Motion,Hit.Incoming.Body2Motion);
+        }
         PendingHits.Add(Hit);
     }
     void SetHitEnabled(ProphecyJolt::WorldPrivate::FBodySlot& Slot, bool bEnabled)
@@ -1129,6 +1179,8 @@ public:
         NativeBodySlots[Body.GetIndex()] = SlotIndex;
         Slot.AssociatedObject = Association;
         Slot.OwnerRig = OwnerRig;
+        Slot.ComponentToBodyOrigin = FTransform::Identity;
+        Slot.bHitComponentPose = !OwnerRig.IsSet();
         OutHandle.WorldLifetime = Lifetime;
         OutHandle.Slot = SlotIndex;
         OutHandle.Generation = Slot.Generation;
@@ -1350,6 +1402,7 @@ public:
 };
 
 #include "ProphecyJoltScopedContacts.inl"
+#include "ProphecyJoltHitContinuation.inl"
 void FProphecyJoltWorldStateDeleter::operator()(FProphecyJoltWorldState* State) const { delete State; }
 
 bool UProphecyJoltAttackCollisionLibrary::SetSuppressed(UObject* WorldContext, FGuid Lifetime,
@@ -1880,6 +1933,7 @@ void UProphecyJoltWorldSubsystem::StopForWorldTeardown()
     check(IsInGameThread());
     bWorldEnding = true;
     ProphecyJolt::PHATSweeps::ForgetWorld(GetWorld());
+    ProphecyJolt::HitContinuation::Worlds.Remove(GetWorld());
     ProphecyJolt::ContactSettings::SlopOverridesCm.Remove(this);
     ProphecyJolt::ContactSettings::SpeculativeOverridesCm.Remove(this);
     ProphecyJolt::ArmMotorSettings::ForgetWorld(GetWorld());
@@ -1961,6 +2015,7 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ShutdownSimulation()
     using namespace ProphecyJolt::WorldPrivate;
     if (!IsInGameThread()) return Fail(EProphecyJoltWorldResult::WrongThread, TEXT("Shutdown requires the game thread."));
     if (bStepInProgress) return Fail(EProphecyJoltWorldResult::Busy, TEXT("Cannot shut down from within a step."));
+    ProphecyJolt::HitContinuation::Worlds.Remove(GetWorld());
     if (Native)
     {
         RefreshDiagnostics();
@@ -2113,6 +2168,7 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateBody(const FProphecy
         Snapshot.SourceComponent.Get(), {}, OutHandle);
     RefreshDiagnostics();
     if (!Created.IsSuccess()) return Created;
+    Native->Slots[OutHandle.Slot].ComponentToBodyOrigin = Snapshot.BodyOriginToComponent.Inverse();
     OutCoverageNotes = Snapshot.CoverageNotes;
     OutCoverageNotes.AddUnique(TEXT("Standalone creation applies the prepared native geometry and full captured mass tensor, body-origin pose, COM V/W, gravity, damping, speed caps, awake state, friction/restitution and effective bilateral Block filters. Original component identity is retained as a weak association only."));
     OutCoverageNotes.AddUnique(Body.bCCD
@@ -2169,6 +2225,10 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::CreateStaticBody(const FPr
     const auto Created = Native->AddNative(Settings, JPH::EActivation::DontActivate, Snapshot.SourceComponent.Get(), {}, OutHandle);
     RefreshDiagnostics();
     if (!Created.IsSuccess()) return Created;
+    auto& HitSlot = Native->Slots[OutHandle.Slot];
+    const FTransform ComponentRigid(Snapshot.ComponentToWorld.GetRotation(),Snapshot.ComponentToWorld.GetLocation());
+    HitSlot.ComponentToBodyOrigin = ComponentRigid.GetRelativeTransform(Snapshot.BodyOriginToWorld);
+    HitSlot.bHitComponentPose = Snapshot.InstanceIndex == INDEX_NONE;
     OutCoverageNotes = Snapshot.CoverageNotes;
     OutCoverageNotes.AddUnique(TEXT("Static creation applies exact prepared geometry, captured body-origin pose, body-level friction/restitution and bilateral Block filters in the existing world. No mass/velocity override or extra simulation is created. Source component association is weak; instance index and later source lifecycle remain the caller's responsibility."));
     return {};
@@ -3213,6 +3273,69 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::UpdateJoint(const FProphec
     return {};
 }
 
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetJointPikeWoundCorrection(
+    const FProphecyJoltJointHandle& Handle, bool Enabled)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready = ValidateReady();
+    if (!Ready.IsSuccess()) return Ready;
+    const auto* Found = Native->FindJoint(Handle);
+    if (!Found) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Pike joint is no longer live."));
+    const bool Wrapped = Found->Constraint->GetSubType() == JPH::EConstraintSubType::User3
+        || Found->Constraint->GetSubType() == JPH::EConstraintSubType::User4;
+    if (Wrapped == Enabled) return {};
+    const auto& Settings = Found->Settings;
+    const bool Slash = Settings.Translation[1].Motion == EProphecyJoltAxisMotion::Limited
+        && Settings.Rotation[0].Motion == EProphecyJoltAxisMotion::Free;
+    if (Enabled)
+    {
+        bool Valid = Settings.Type == EProphecyJoltJointType::HardSixDOF
+            && !Settings.bRadialTranslation && !Settings.bSoftTranslation
+            && Settings.Translation[0].Motion == EProphecyJoltAxisMotion::Locked
+            && (Slash || Settings.Translation[1].Motion == EProphecyJoltAxisMotion::Locked)
+            && Settings.Translation[2].Motion != EProphecyJoltAxisMotion::Locked;
+        for (int32 I = Slash ? 1 : 0; I < 3; ++I) Valid &= Settings.Rotation[I].Motion == EProphecyJoltAxisMotion::Locked;
+        if (!Valid) return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Wound solve requires a hard pike slider or slash plane with locked swings."));
+    }
+    JPH::Ref<JPH::TwoBodyConstraint> Replacement;
+    auto Result = Native->BuildJoint(Settings, Replacement);
+    if (!Result.IsSuccess()) return Result;
+    if (Enabled)
+    {
+        auto& Six = static_cast<JPH::SixDOFConstraint&>(*Replacement);
+        if (!Six.GetBody1()->IsDynamic())
+            return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Pike sword must be simulated."));
+        for (const JPH::Body* Body : { Six.GetBody1(), Six.GetBody2() })
+            if (Body->IsDynamic() && Body->GetMotionPropertiesUnchecked()->GetAllowedDOFs() != JPH::EAllowedDOFs::All)
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Pike block solve requires unrestricted dynamic body axes."));
+        auto Stored = Six.GetConstraintSettings();
+        const auto& SixSettings = static_cast<const JPH::SixDOFConstraintSettings&>(*Stored);
+        Six.SetTranslationLimits(JPH::Vec3(-FLT_MAX,Slash ? SixSettings.mLimitMin[1] : -FLT_MAX,SixSettings.mLimitMin[2]),
+            JPH::Vec3(FLT_MAX,Slash ? SixSettings.mLimitMax[1] : FLT_MAX,SixSettings.mLimitMax[2]));
+        Six.SetRotationLimits(JPH::Vec3::sReplicate(-JPH::JPH_PI), JPH::Vec3::sReplicate(JPH::JPH_PI));
+        if (Slash)
+        {
+            JPH::Ref<ProphecyJolt::FSlashJoint> Cut = new ProphecyJolt::FSlashJoint(Six, SixSettings);
+            if (!Cut->HasSolvableMassMatrix())
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Slash mass matrix is singular; original joint retained."));
+            Replacement = Cut;
+        }
+        else
+        {
+            JPH::Ref<ProphecyJolt::FPikeJoint> Pike = new ProphecyJolt::FPikeJoint(Six, SixSettings);
+            if (!Pike->HasSolvableMassMatrix())
+                return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Pike mass matrix is singular; original joint retained."));
+            Replacement = Pike;
+        }
+    }
+    auto& Record = *Native->Joints[Handle.Slot].Record;
+    Native->Physics.RemoveConstraint(Record.Constraint);
+    Native->Physics.AddConstraint(Replacement);
+    Record.Constraint = MoveTemp(Replacement);
+    Native->Wake(Settings.BodyA); Native->Wake(Settings.BodyB);
+    return {};
+}
+
 FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::UpdateJointSuppressedPairs(
     const FProphecyJoltJointHandle& Handle, TConstArrayView<FProphecyJoltBodyPair> SuppressedPairs)
 {
@@ -3690,7 +3813,17 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadJointReaction(const FP
     JPH::Vec3 Linear, Angular;
     if (Record->Settings.Type == EProphecyJoltJointType::HardSixDOF)
     {
-        if (Record->Settings.bRadialTranslation)
+        if (Record->Constraint->GetSubType() == JPH::EConstraintSubType::User3)
+        {
+            const auto* Pike = static_cast<const ProphecyJolt::FPikeJoint*>(Record->Constraint.GetPtr());
+            Linear = Pike->GetLinearImpulse(); Angular = Pike->GetAngularImpulse();
+        }
+        else if (Record->Constraint->GetSubType() == JPH::EConstraintSubType::User4)
+        {
+            const auto* Slash = static_cast<const ProphecyJolt::FSlashJoint*>(Record->Constraint.GetPtr());
+            Linear = Slash->GetLinearImpulse(); Angular = Slash->GetAngularImpulse();
+        }
+        else if (Record->Settings.bRadialTranslation)
         {
             const auto* Radial = static_cast<const ProphecyJolt::FRadialJoint*>(Record->Constraint.GetPtr());
             Linear = Radial->GetLinearImpulse(); Angular = Radial->GetAngularImpulse();
@@ -3853,6 +3986,7 @@ void UProphecyJoltWorldSubsystem::DispatchPendingHitEvents()
             Swap(Hit.Body1, Hit.Body2); Swap(Hit.Point1, Hit.Point2);
             Hit.Normal = -Hit.Normal; Hit.Impulse = -Hit.Impulse;
             Hit.Incoming.RelativeVelocity*=-1.;
+            Swap(Hit.Incoming.Body1Motion,Hit.Incoming.Body2Motion);
         }
     Hits.Sort([](const auto& A, const auto& B) {
         if (A.Body1.Slot != B.Body1.Slot) return A.Body1.Slot < B.Body1.Slot;
@@ -3895,7 +4029,19 @@ void UProphecyJoltWorldSubsystem::DispatchPendingHitEvents()
                 OtherBody ? OtherBody->GetSimplePhysicalMaterial() : nullptr);
             ++Native->DeliveredHits;
             ProphecyJolt::HitImpact::FDispatch Incoming{MyComp,OtherComp,Mine->HitBone,Other->HitBone,Hit.Incoming};
-            if (Side) Incoming.Sample.RelativeVelocity*=-1.;
+            if (Side)
+            {
+                Incoming.Sample.RelativeVelocity*=-1.;
+                Swap(Incoming.Sample.Body1Motion,Incoming.Sample.Body2Motion);
+            }
+            if (!ProphecyJolt::HitContinuation::Worlds.IsEmpty())
+            Incoming.Continue = [&, MyComp, MyHandle = Side ? Hit.Body2 : Hit.Body1,
+                OtherHandle = Side ? Hit.Body1 : Hit.Body2, Motion = Incoming.Sample.Body1Motion](FString& Reason)
+            {
+                if (!Native || !IsValid(MyComp)) { Reason = TEXT("Hit body was removed."); return false; }
+                return ProphecyJolt::HitContinuation::Accept(*this, *Native, *MyComp,
+                    MyHandle, OtherHandle, Motion, Hits, Reason);
+            };
             TGuardValue<const ProphecyJolt::HitImpact::FDispatch*> Scope(ProphecyJolt::HitImpact::Current,&Incoming);
             Actor->DispatchPhysicsCollisionHit(MyInfo, OtherInfo, Impact);
         }
@@ -3918,6 +4064,25 @@ bool UProphecyJoltHitImpactLibrary::GetHitImpactSpeed(const UObject* HitReceiver
         || (HitReceiver!=Current->Mine && HitReceiver!=Current->Mine->GetOwner())) return false;
     ImpactSpeed=Current->Sample.Speed;
     RelativeVelocity=Current->Sample.RelativeVelocity;
+    return true;
+}
+
+bool UProphecyJoltHitImpactLibrary::GetHitPreImpactState(const UObject* HitReceiver,double TipDistance,
+    FVector& Velocity,FVector& TipVelocity,FVector& AngularVelocityRad,FVector& Location,FRotator& Rotation)
+{
+    Velocity=TipVelocity=AngularVelocityRad=Location=FVector::ZeroVector;
+    Rotation=FRotator::ZeroRotator;
+    if (!IsInGameThread() || !FMath::IsFinite(TipDistance)) return false;
+    const auto* Current=ProphecyJolt::HitImpact::Current;
+    if (!Current || !Current->Sample.Valid || !Current->Sample.Body1Motion.Valid
+        || !IsValid(HitReceiver) || !IsValid(Current->Mine) || !IsValid(Current->Other)
+        || (HitReceiver!=Current->Mine && HitReceiver!=Current->Mine->GetOwner())) return false;
+    const auto& Motion=Current->Sample.Body1Motion;
+    const FVector Tip=Motion.Velocity+FVector::CrossProduct(
+        Motion.AngularVelocityRad,Motion.Rotation.GetAxisZ()*TipDistance);
+    if (Tip.ContainsNaN()) return false;
+    Velocity=Motion.Velocity;TipVelocity=Tip;AngularVelocityRad=Motion.AngularVelocityRad;
+    Location=Motion.Location;Rotation=Motion.Rotation.Rotator();
     return true;
 }
 
@@ -3951,6 +4116,8 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::Step(float DeltaSeconds, i
     if (Native->bDispatchingHits)
         return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Cannot recursively step from a hit callback."));
     Native->PendingHits.Reset();
+    Native->HitRewindSeconds = DeltaSeconds;
+    ProphecyJolt::HitContinuation::Prepare(*this, *Native, DeltaSeconds, CollisionSteps, Diagnostics.CompletedSteps + 1);
     TGuardValue<bool> Guard(bStepInProgress, true);
     Diagnostics.LastRequestedDeltaSeconds = DeltaSeconds;
     Diagnostics.LastCollisionSteps = CollisionSteps;

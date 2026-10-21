@@ -3,6 +3,7 @@
 #include "ProphecySwordComponent.h"
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyJoltSkeletalPropComponent.h"
 #include "ProphecyJoltWorldSubsystem.h"
 #include "ProphecyJoltStaticMeshLibrary.h"
 #include "ProphecyJoltSceneCollisionComponent.h"
@@ -55,8 +56,9 @@ bool Execute(UPrimitiveComponent& Component, const FProphecyJoltPhysicsCommand& 
     UProphecyJoltCharacterComponent* Character = Agent && Agent->GetPoseReferenceMesh() == &Component
         ? Agent->GetJoltCharacterComponent() : nullptr;
     if (Character && !Character->IsJoltPhysical()) Character = nullptr;
+    auto* SkeletalProp = UProphecyJoltSkeletalPropComponent::Find(&Component);
     UProphecyJoltBodyComponent* Standalone = nullptr;
-    if (!Character)
+    if (!Character && !SkeletalProp)
     {
         TInlineComponentArray<UProphecyJoltBodyComponent*> Adapters(Owner);
         for (auto* Candidate : Adapters)
@@ -95,7 +97,7 @@ bool Execute(UPrimitiveComponent& Component, const FProphecyJoltPhysicsCommand& 
     struct FSelected { FProphecyJoltBodyHandle Handle; double Mass = 0; };
     TArray<FSelected, TInlineAllocator<32>> Bodies;
     double TotalMass = 0;
-    if (Character)
+    if (Character || SkeletalProp)
     {
         const auto& Mesh = *CastChecked<USkeletalMeshComponent>(&Component);
         const UPhysicsAsset* Asset = Mesh.GetPhysicsAsset();
@@ -115,7 +117,8 @@ bool Execute(UPrimitiveComponent& Component, const FProphecyJoltPhysicsCommand& 
         {
             if (!Setup) continue;
             const FName Name = Setup->BoneName;
-            const double Mass = Selection.Type == ESelection::Radial ? Character->GetCapturedBodyMassKg(Name) : 0;
+            const double Mass = Selection.Type == ESelection::Radial
+                ? (Character ? Character->GetCapturedBodyMassKg(Name) : SkeletalProp->GetCapturedBodyMassKg(Name)) : 0;
             TotalMass += Mass;
             if (Selection.Type == ESelection::Bone && Name != Bone) continue;
             if (Selection.Type == ESelection::Below && !Bone.IsNone())
@@ -124,7 +127,8 @@ bool Execute(UPrimitiveComponent& Component, const FProphecyJoltPhysicsCommand& 
                 if (Index == Root ? !Selection.bIncludeSelf : !Ref.BoneIsChildOf(Index, Root)) continue;
             }
             FProphecyJoltBodyHandle Handle;
-            if (Character->GetBodyHandle(Name, Handle)) Bodies.Add({Handle, Mass});
+            if (Character ? Character->GetBodyHandle(Name, Handle) : SkeletalProp->GetBodyHandle(Name, Handle))
+                Bodies.Add({Handle, Mass});
         }
     }
     else
@@ -144,7 +148,7 @@ bool Execute(UPrimitiveComponent& Component, const FProphecyJoltPhysicsCommand& 
             const double Distance = Delta.Size();
             if (Distance > Selection.Radius) continue;
             double Strength = Selection.Strength;
-            if (Character && !Command.bMassIndependent) Strength *= Selected.Mass / FMath::Max(TotalMass, double(UE_KINDA_SMALL_NUMBER));
+            if ((Character || SkeletalProp) && !Command.bMassIndependent) Strength *= Selected.Mass / FMath::Max(TotalMass, double(UE_KINDA_SMALL_NUMBER));
             if (Selection.Falloff == RIF_Linear) Strength *= 1.0 - Distance / Selection.Radius;
             Applied.Value = Delta.GetSafeNormal() * Strength;
         }

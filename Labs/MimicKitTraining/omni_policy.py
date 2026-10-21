@@ -31,6 +31,14 @@ def circular_phase(phase):
     return torch.stack((torch.cos(angle), torch.sin(angle)), -1)
 
 
+def phase_supervision_mse(prediction, batch):
+    error = (prediction-batch['next_phase']).square().mean(dim=-1)
+    # Keep the original batch denominator: removing autoregressive supervision
+    # must not increase the weight of the remaining clock-supervised rows.
+    mask = batch.get('phase_supervision')
+    return error.mean() if mask is None else (error*mask).mean()
+
+
 class OmniPPOModel(PPOModel):
     def __init__(self, config, env):
         register_network()
@@ -66,12 +74,18 @@ class OmniPPOAgent(PPOAgent):
         return super()._update_actor(batch_size, num_steps)
 
     def _build_model(self, config):
+        success = getattr(self._env, '_perturb_cfg', {})
+        if success.get('getup_success_value', 0.):
+            if not math.isclose(float(success['getup_success_discount']), float(config['discount'])):
+                raise ValueError('Get-up success accounting must use the PPO discount')
+            if self._env.get_reward_succ() != 0:
+                raise ValueError('Get-up success bonus requires zero terminal bootstrap')
         self._model = OmniPPOModel(config['model'], self._env)
 
     def _decide_action(self, obs, info):
         action, action_info = super()._decide_action(obs, info)
         if getattr(self._env, '_recovery_ready', False):
-            ids = self._env._recovery_ids
+            ids = getattr(self._env, '_phase_feedback_ids', self._env._recovery_ids)
             with torch.no_grad():
                 prediction = self._model.eval_phase(self._obs_norm.normalize(obs[ids]))
             self._env.queue_phase_prediction(prediction)
@@ -92,6 +106,8 @@ class OmniPPOAgent(PPOAgent):
         # Record BEFORE stepping/resetting, so terminal labels never use a
         # different episode's phase. Uses this world's own motion duration.
         self._exp_buffer.record('next_phase', self._env.next_phase_target())
+        if hasattr(self._env, '_phase_supervision_mask'):
+            self._exp_buffer.record('phase_supervision', self._env._phase_supervision_mask)
 
     def _compute_actor_loss(self, batch):
         # All training actions are stochastic in the current configuration.
@@ -104,7 +120,7 @@ class OmniPPOAgent(PPOAgent):
     def _compute_actor_loss_reference(self, batch):
         info = super()._compute_actor_loss(batch)
         pred = self._model.eval_phase(self._obs_norm.normalize(batch['obs']))
-        mse = (pred-batch['next_phase']).square().mean()
+        mse = phase_supervision_mse(pred, batch)
         weighted = self._phase_weight*mse
         info['actor_loss'] = info['actor_loss'] + weighted
         info['phase_prediction_mse'] = mse.detach()
@@ -145,7 +161,7 @@ def shared_actor_loss(agent, batch):
     phase = agent._model._phase_out(hidden)
     if agent._model._unit_phase:
         phase = torch.nn.functional.normalize(phase, dim=-1, eps=1e-6)
-    mse = (phase-batch['next_phase']).square().mean()
+    mse = phase_supervision_mse(phase, batch)
     weighted = agent._phase_weight * mse
     info.update(actor_loss=loss+weighted, phase_prediction_mse=mse.detach(),
         phase_prediction_weighted=weighted.detach(), auto_phase_mse=mse.detach().clone(),

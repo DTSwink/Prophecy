@@ -33,12 +33,57 @@ def select_replay_worlds(motions, idle_rows, equipment, rows, selection_round):
     return selected[:min(rows,len(motions))]
 
 
+def limit_idle_replays(selected, motions, idle_rows, recovery, perturbed, selection_round):
+    """Keep two ordinary idle examples; replace excess with diverse perturbed loco."""
+    ordinary = [w for w in selected if w < idle_rows and not recovery[w]]
+    keep = set(ordinary[selection_round % 2::2][:2])
+    keep.update(w for w in ordinary if len(keep) < 2)
+    result = [w for w in selected if w not in ordinary or w in keep]
+    candidates = [w for w in range(idle_rows, len(motions)) if perturbed[w] and w not in result]
+    if candidates:
+        shift = selection_round % len(candidates)
+        candidates = candidates[shift:] + candidates[:shift]
+    seen = {motions[w] for w in result if perturbed[w] and w >= idle_rows}
+    while len(result) < len(selected) and candidates:
+        w = next((w for w in candidates if motions[w] not in seen), candidates[0])
+        result.append(w); seen.add(motions[w]); candidates.remove(w)
+    return result
+
+
+def limit_normal_getup_replays(selected, recovery, recovery_motion, perturbed, selection_round):
+    """One normal example per recovery motion; freed slots become perturbed get-ups."""
+    if not any(r and p for r, p in zip(recovery, perturbed)):
+        return selected
+    groups = {}
+    for w in range(len(recovery)):
+        if recovery[w] and not perturbed[w]:
+            groups.setdefault(recovery_motion[w], []).append(w)
+    keep = {worlds[selection_round % len(worlds)] for worlds in groups.values()}
+    result = [w for w in selected if not (recovery[w] and not perturbed[w])]
+    result = list(sorted(keep)) + result
+    candidates = [w for w in range(len(recovery))
+                  if recovery[w] and perturbed[w] and w not in result]
+    if candidates:
+        offset = selection_round % len(candidates)
+        candidates = candidates[offset:] + candidates[:offset]
+    counts = {}
+    for w in result:
+        if recovery[w] and perturbed[w]:
+            counts[recovery_motion[w]] = counts.get(recovery_motion[w], 0) + 1
+    while len(result) < len(selected) and candidates:
+        w = min(candidates, key=lambda w: counts.get(recovery_motion[w], 0))
+        result.append(w)
+        counts[recovery_motion[w]] = counts.get(recovery_motion[w], 0) + 1
+        candidates.remove(w)
+    return result[:len(selected)]
+
+
 class MultiRecorder(Recorder):
     def __init__(self,env,directory,rows=20):
         super().__init__(env,directory)
         self.row_count=min(rows,env._motion_ids.numel())
         self.selection_round=0
-        for name in ('pose','reference_pose','absolute_velocities','data','components','impacts','phase_values'):
+        for name in ('pose','reference_pose','absolute_velocities','data','components','impacts','phase_values','prior_values'):
             value=getattr(self,name)
             if value is not None:
                 setattr(self,name,torch.empty((self.capacity,self.row_count,*value.shape[1:]),device=value.device,dtype=value.dtype))
@@ -59,6 +104,20 @@ class MultiRecorder(Recorder):
                 examples.setdefault(key,w)
             priority=list(examples.values())
             selected=(priority+[w for w in selected if w not in priority])[:self.row_count]
+        if getattr(self.env, '_perturb_ready', False):
+            perturbed=self.env._perturbed_rows.cpu().tolist()
+            # Cover both cohorts, equipment states and gait families instead
+            # of spending all replay slots on recovery subcategories.
+            groups={}
+            gaits=self.env._gaits.cpu().tolist()
+            for w,m in enumerate(motions):
+                family=('getup' if membership[w] else 'idle') if w<idle else ('walk' if gaits[m]==0 else 'run')
+                key=(perturbed[w],bool(equipment[m]),family)
+                groups.setdefault(key,[]).append(w)
+            priority=[v[self.selection_round%len(v)] for v in groups.values()]
+            selected=(priority+[w for w in selected if w not in priority])[:self.row_count]
+            selected=limit_idle_replays(selected,motions,idle,membership,perturbed,self.selection_round)
+            selected=limit_normal_getup_replays(selected,membership,recovery_motion,perturbed,self.selection_round)
         self.selection_round+=1
         self.ids=torch.tensor(selected,device=self.env._device,dtype=torch.long)
         self.row_metadata=[]
@@ -79,7 +138,7 @@ class MultiRecorder(Recorder):
         self.pose[i,:,:,:3].copy_(self.engine.get_body_pos(self.char)[ids])
         self.pose[i,:,:,3:].copy_(self.engine.get_body_rot(self.char)[ids])
         self.reference_pose[i,:,:,:3].copy_(self.env.reward_target_pos[ids])
-        self.reference_pose[i,:,:,3:].copy_(self.env._ref_body_rot[ids])
+        self.reference_pose[i,:,:,3:].copy_(self.env.reward_target_rot[ids])
         from util import torch_util as q
         angular=self.engine.get_body_ang_vel(self.char)[ids]
         velocity=self.engine.get_body_vel(self.char)[ids]-torch.cross(angular,q.quat_rotate(self.pose[i,:,:,3:],self.env._body_com[ids]),dim=-1)
@@ -88,6 +147,8 @@ class MultiRecorder(Recorder):
         self.data[i,:,1].copy_(self.env._time_buf[ids])
         self.data[i,:,2].copy_(self.env._reward_buf[ids])
         self.components[i].copy_(self.env.loss_terms[ids])
+        if self.prior_values is not None:
+            self.prior_values[i].copy_(torch.stack((self.env._prior_raw[ids],self.env._tracking_mix[ids],self.env._reset_reason[ids].float()),-1))
         if self.phase_agent is not None:
             obs=self.env._compute_obs(ids)
             with torch.no_grad():prediction=self.phase_agent._model.eval_phase(self.phase_agent._obs_norm.normalize(obs))
@@ -98,7 +159,7 @@ class MultiRecorder(Recorder):
         self.enabled=False;started=time.perf_counter();arrays={};metas=[]
         for i,w in enumerate(self.ids.cpu().tolist()):
             row=copy.copy(self);row.world=w;row.equipment_metadata=self.row_metadata[i]
-            for name in ('pose','reference_pose','absolute_velocities','data','components','impacts','phase_values'):
+            for name in ('pose','reference_pose','absolute_velocities','data','components','impacts','phase_values','prior_values'):
                 value=getattr(self,name)
                 if value is not None:setattr(row,name,value[:,i])
             meta,values=Recorder.finish(row,iteration,samples,extra_metadata,_arrays_only=True)
