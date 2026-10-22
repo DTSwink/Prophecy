@@ -440,6 +440,10 @@ public:
     // preflight, intentionally resets warm-start state, and wakes endpoints once. Failure preserves old joint.
     FProphecyJoltWorldStatus UpdateJoint(const FProphecyJoltJointHandle& Joint, const FProphecyJoltJointSettings& Settings);
     FProphecyJoltWorldStatus SetJointPikeWoundCorrection(const FProphecyJoltJointHandle& Joint, bool Enabled);
+    /** Grab-only fixed joint: A is hand, B is target. Scales only this joint's hand
+     * reaction (0=normal,1=none), and only while the target is dynamic. */
+    FProphecyJoltWorldStatus SetJointGrabIndependence(const FProphecyJoltJointHandle& Joint, float Independence);
+    FProphecyJoltWorldStatus GetJointGrabIndependence(const FProphecyJoltJointHandle& Joint, float& Independence) const;
     /** Replace only this joint's pair exclusions, preserving its native constraint and warm start. */
     FProphecyJoltWorldStatus UpdateJointSuppressedPairs(const FProphecyJoltJointHandle& Joint,
         TConstArrayView<FProphecyJoltBodyPair> SuppressedPairs);

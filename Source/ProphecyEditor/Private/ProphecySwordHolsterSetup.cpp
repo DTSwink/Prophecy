@@ -228,9 +228,33 @@ static void InstallPikeWoundCorrection()
  FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
  UE_LOG(LogTemp,Display,TEXT("Pike wound correction installed=%d status=%d saved=0"),OK,int32(BP->Status));
 }
+static void RemoveSwordEndPlayFPS()
+{
+ if(!GEditor||GEditor->PlayWorld)return;
+ auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/sword/A_Sword.A_Sword"));if(!BP)return;
+ UEdGraph* Graph=nullptr;for(UEdGraph* G:BP->UbergraphPages)if(G->GetFName()==TEXT("EventGraph"))Graph=G;
+ if(!Graph)return;
+ auto Find=[&](const TCHAR* Name)->UK2Node_CallFunction*{for(UEdGraphNode* N:Graph->Nodes)if(N->GetFName()==Name)return Cast<UK2Node_CallFunction>(N);return nullptr;};
+ auto* Fixed=Find(TEXT("K2Node_CallFunction_159"));auto* Cap=Find(TEXT("ProphecyEndPlayCap"));
+ if(!Fixed&&!Cap){UE_LOG(LogTemp,Display,TEXT("Sword End Play FPS reset already absent."));return;}
+ if(!Fixed||!Cap||Fixed->FunctionReference.GetMemberName()!=TEXT("SetFixedFrameRateRuntime"))return;
+ if(Cap->FunctionReference.GetMemberName()!=TEXT("ExecuteConsoleCommand"))return;
+ auto* Command=Cap->FindPin(TEXT("Command"));
+ if(!Command||!Command->LinkedTo.IsEmpty()||!Command->DefaultValue.Equals(TEXT("t.MaxFPS 60"),ESearchCase::IgnoreCase))return;
+ if(Fixed->GetExecPin()->LinkedTo.Num()!=1||Fixed->GetExecPin()->LinkedTo[0]->GetOwningNode()->GetFName()!=TEXT("K2Node_Event_4")
+    ||Fixed->GetThenPin()->LinkedTo.Num()!=1||Fixed->GetThenPin()->LinkedTo[0]!=Cap->GetExecPin()
+    ||Cap->GetExecPin()->LinkedTo.Num()!=1||!Cap->GetThenPin()->LinkedTo.IsEmpty())return;
+ const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","RemoveSwordEndPlayFPS","Remove global FPS resets from sword End Play"));
+ BP->Modify();Graph->Modify();Fixed->GetExecPin()->LinkedTo[0]->GetOwningNode()->Modify();
+ FBlueprintEditorUtils::RemoveNode(BP,Cap,true);FBlueprintEditorUtils::RemoveNode(BP,Fixed,true);
+ FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
+ FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);
+ UE_LOG(LogTemp,Display,TEXT("Removed sword End Play FPS/timestep reset; status=%d; not saved."),int32(BP->Status));
+}
 static void RefreshGripProfilePins(const TArray<FString>& Args)
 {
  if(!GEditor||GEditor->PlayWorld)return;
+ if(Args.Num()==1&&Args[0]==TEXT("RemoveSwordEndPlayFPS")){RemoveSwordEndPlayFPS();return;}
  if(Args.Num()==1&&Args[0]==TEXT("PikeWoundCorrection")){InstallPikeWoundCorrection();return;}
  if(Args.Num()==1&&Args[0]==TEXT("SwordDebugFrameCap")){RepairSwordDebugFrameCap();return;}
  if(Args.Num()==1&&Args[0]==TEXT("SwordSlowStartFrameCap")){RepairSwordSlowStartFrameCap();return;}

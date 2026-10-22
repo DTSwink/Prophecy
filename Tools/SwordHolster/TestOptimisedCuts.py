@@ -8,11 +8,13 @@ out.mkdir(parents=True, exist_ok=True)
 mode = 'flesh' if '--flesh' in sys.argv else ('pike' if '--pike' in sys.argv else 'slash')
 suffix = sys.argv[sys.argv.index('--tag') + 1] if '--tag' in sys.argv else mode
 physics = unreal.get_default_object(unreal.load_class(None, '/Script/GameAnimationSample3.ProphecyJoltStandardPhysicsLibrary'))
-original = {}
-for actor in unreal.GameplayStatics.get_all_actors_of_class(ed.get_editor_world(), unreal.Actor):
-    if actor.get_class().get_name() == 'A_Sword_C':
-        mesh = actor.get_editor_property('sword')
-        original[actor.get_name()] = mesh.get_world_transform()
+def original_poses():
+    poses = {}
+    for actor in unreal.GameplayStatics.get_all_actors_of_class(ed.get_editor_world(), unreal.Actor):
+        if actor.get_class().get_name() == 'A_Sword_C':
+            poses[actor.get_name()] = actor.get_editor_property('sword').get_world_transform()
+    return poses
+original = original_poses()
 s = dict(start=time.monotonic(), world=None, last=None, samples=[], first=None, handle=None, initialized=set())
 
 def v(x): return [x.x, x.y, x.z]
@@ -29,6 +31,8 @@ def prop(c, name):
 def finish(error=None):
     unreal.unregister_slate_post_tick_callback(s['handle'])
     if s['world'] and ed.get_game_world() == s['world']: le.editor_request_end_play()
+    s['world'] = None
+    s['handle'] = None
     (out / (suffix + '.json')).write_text(json.dumps(dict(error=error, mode=mode,
         first=s['first'], samples=s['samples']), indent=2), encoding='utf-8')
 

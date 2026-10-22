@@ -5,6 +5,19 @@
 Original implementation saved October10 through Live Coding; the current lab port below was subsequently rebuilt normally and verified in Play.
 This supersedes the animation-driven proposal in SwordDrawingResearch.md.
 
+## October22 sword End Play clock reset removed
+
+User rejected global clock changes when hiding/destroying a sword. Removed exactly
+the two A_Sword EventGraph nodes K2Node_CallFunction_159 (fixed60) and
+ProphecyEndPlayCap (t.MaxFPS60); Event End Play now has no outgoing connection.
+All other graph nodes/pins/defaults/links verified identical by
+Tools/SwordHolster/RemoveEndPlayFPS.py. Saved A_Sword only; existing dirty TestNN
+left unsaved. Current cap unchanged60. No owned Play or restart. Editor-only
+Live Coding1action80.60s, reload October22 09:50:55UTC; normal DLLs remain stale.
+Receipt Saved/Diagnostics/SwordEndPlayFPS/verification.json. This supersedes the
+End Play portion below; existing Slow Start/startup and RMB controls are unchanged.
+Do not reintroduce End Play clock cleanup from the historical installer.
+
 ## October20 Slow Start physics clock correction
 
 User's `A_Sword` **start slow fps=true**, **slow fps=5** exposed the same mistake

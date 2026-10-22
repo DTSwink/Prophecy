@@ -2,6 +2,11 @@
 
 October 20, 2026. Built and tested in isolation; **not installed in the user's editor**.
 
+October22 update: the grab-only constraint solver has now been ported to main,
+with per-arm runtime Set/Get Grab Joint Independance and pins on Grab Object/Bone.
+See ReachGrasp20261012.md opening for the current API and verified installation.
+Special-attack playback and Follow/Root Local remain isolated as described below.
+
 ## October20 release and heading refinement
 
 Current isolated API adds **Release Grab**,0..1,default.8. Zero releases both held

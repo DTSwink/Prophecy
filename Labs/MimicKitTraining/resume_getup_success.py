@@ -72,7 +72,7 @@ print(p.pid)
 """),flush=True)
 def replace():
     plan=json.loads((OUT/'getup-success-prepared.json').read_text())
-    old=cloud.state();assert old['pod_id'] in {'ka68jrougesuit','iiprikebnm51jl','9r63p3vlvogqz5','rovwuwstkm0s7r','new5546ihvxeax','w9aq90rzkg1d0g','90v1fafvq5uudn'}
+    old=cloud.state();assert old['pod_id'] in {'ka68jrougesuit','iiprikebnm51jl','9r63p3vlvogqz5','rovwuwstkm0s7r','new5546ihvxeax','w9aq90rzkg1d0g','90v1fafvq5uudn','upszb03gy35fzj'}
     assert cloud.rp.request_json('GET','/pods/'+old['pod_id'])['desiredStatus']=='EXITED'
     retained=OUT/'retained-pods'/old['pod_id'];retained.mkdir(parents=True,exist_ok=True)
     moved=[]

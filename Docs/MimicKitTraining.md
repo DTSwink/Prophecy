@@ -1,5 +1,583 @@
 # MimicKit humanoid trial
 
+## October22 13:11 - shared maximum pelvis speed correction
+
+User correction: front can roll into back. ALL perturbed and perturbed+ get-ups
+now use the maximum of both reference peaks:1.4951565265655518m/s (149.516cm/s).
+This supersedes the preceding per-motion thresholds. Runtime validates both
+reference peaks then broadcasts their maximum to both motion IDs. World XY
+horizontal/Z vertical and pelvis-origin velocity unchanged. Future package
+preparation corrected too; config limit_mode=shared_maximum_over_both_getups.
+
+RUNNING20261022_131128_uefn_getup_pelvismax7_1024 on existing L4
+0to3wg3r3n926h,$0.59/hour,1,024agents until stopped. Resumed latest130296_final
+(2,631,417,856samples), locally preserved under
+Saved/MimicKitEquipment/preserved-latest/20261022_124925_uefn_getup_pelvis7_1024/.
+Local/S3 checkpoint SHA2203f55ee65f3fc8edba811d792485abd7a4de2cf29a5fadba872efd3d5aa05d
+verified before restart. Optimizer/normalizer restored; all other settings,
+including existing foot/AE weights, unchanged. Locomotion branch untouched.
+
+Fixed weight recalibrated to0.30317221303099545 for7% of combined physical loss
+at calibration, excluding terminal rewards. Same256world/192tick frozen-policy
+procedure: existing loss mean1.820573091507,raw excess mean0.451995193958.
+Verified shared threshold for both motions in calibration and all18perturbed
+replay rows; normal masks/actual rewards correct. New130297persistent backup
+SHA12fea0921cbd5b397de0e261fdb91234706947e02daef6c64d56d1edf861c679 verified;
+training advanced130297->130307 at15,152transitions/s. Watchdog released after
+verification. Bridge19052/dashboard22240; old recovery observers8240/5428 stopped.
+Replayer and TB retain pelvis_horizontal_speed_excess label.
+
+Receipts getup-pelvis-max-{preserved,calibration,verification}.json; source
+getup-pelvis-max-source.zip SHA 703b2f574be6198e0cc6cd0d505cec0a3a28af9b01515b0c6f77085249cd5bc1. Helpers restart_getup_pelvis_max.py
+and calibrate_getup_pelvis_max.py; getup-success-prepared.json updated.
+
+## October22 - local live idle impulse viewer
+
+Ready, initially PAUSED: http://127.0.0.1:8850/ . Implementation and restart
+command are in Labs/MimicKitIdleLive/README.md and start.ps1. Frozen locomotion
+checkpoint0122776 from20261022_104557_uefn_locomotion_pelvis_velocity5_1024,
+SHA256 4d1c2ae0a2cb7dde540fd2859c43de2c164f997a99cf83dce786c8155f23d591,
+preserved under Saved/MimicKitIdleLive with pinned source, config and assets.
+No training, cloud pod, recovery branch or Unreal state was changed.
+
+Single local CPU native MuJoCo agent, configured240Hz physics/30Hz policy,
+saved normalization/action scaling/torque caps. Real idle command with selectable
+unarmed/drawn stance, deterministic actor and autoregressive phase feedback.
+No AE, reward or learning work, and no automatic failure reset or pose pinning.
+CPU trajectories need not be bit-identical to GPU training.
+
+Choose/click any body, select world direction and strength0.1-10m/s, apply
+impulse. Strength means directional body-COM velocity change; effective mass
+from the articulated mass matrix/Jacobian makes it independent of limb mass.
+Verified1m/s for hand0.812kg, foot2.161kg and pelvis16.454kg; UI2m/s kick and
+both idle stances checked. Subsequent contacts/motors react normally.
+Pause cancels stepping and continuous rendering; hiding/leaving tab pauses too.
+Backend is request-driven without a physics worker; model remains resident.
+Verified unchanged tick count while paused and live30.18policy ticks/s over a
+3second wall-clock sample. Receipts: Saved/MimicKitIdleLive/verification.json.
+
+## October22 12:49 - recovery pelvis horizontal excess-speed loss
+
+RUNNING `20261022_124925_uefn_getup_pelvis7_1024` on L4
+`0to3wg3r3n926h`, $0.59/hour until stopped,1,024agents. Resumed latest129835_final
+(2,616,311,808 samples), optimizer/normalizer restored. Prior final checkpoint
+saved locally under preserved-latest/20261022_122519_uefn_getup_feet7_1024/ and
+S3-readback/ZIP/SHA verified before restart. SHA256
+2b4198a7259278d4da8a9d7a5b9e137147789cc1fa7dd26abdf66f390cea506b.
+
+User requested a loss above reference peak pelvis horizontal velocity, calibrated
+to7% of total loss, and explicitly requested axis verification. Scope continues
+the previous regularizers: ordinary perturbed and perturbed+ get-ups only.
+Normal get-ups and the separate locomotion run unchanged.
+
+Verified physical axes: world X/Y horizontal, Z vertical; live gravity
+[0,0,-9.81]. Replayer WORLD_TO_VIEW converts physics Z-up into display Y-up.
+Use pelvis BODY ORIGIN velocity from absolute_walk, already corrected from
+engine world COM velocity by subtracting omega cross rotated COM offset. Do
+not substitute raw engine get_root_vel/get_body_vel without this correction.
+Reference uses root-position forward difference times30FPS, exactly MotionLib;
+final velocity duplicated. Whole-clip yaw alignment preserves horizontal norm.
+Front peak0.47284913063049316m/s at sourceframe24; back peak1.4951565265655518m/s
+at frame17. Reference asset checksums saved in getup-pelvis-reference.json and
+config. Startup validates peaks against the actual recovery motion library and
+gravity; recompute the reference table if either authored motion changes.
+
+New `pelvis_horizontal_speed_excess` =
+0.11446152133224635 * max(sqrt(vx^2+vy^2)-assigned_motion_peak,0)^2.
+No velocity cost below threshold, no vertical component, no new termination.
+Fixed weight calibrated with latest frozen policy/current exploration,256worlds,
+192ticks,34,368perturbed samples. Existing loss mean1.79974889755 (including AE
+and both foot costs), raw excess mean1.18349790573; weight=(.07/.93)*base/raw.
+New term contributes7% of combined physical loss at calibration, excluding
+terminal bonuses/penalties. Existing foot/AE weights unchanged; fractions may
+change during learning. Both current perturbed cohorts included, no new grace.
+
+Verified pure-Z and changed-Z invariance, X/Y equivalence, zero at/below limit,
+correct body-origin calculation, masks, actual reward including all new/old
+costs and terminal adjustments. New training advanced129836->129846 at
+15,091transitions/s. New checkpoint129836 passed persistent SHA256 readback.
+All18perturbed replay rows contain the new active loss and correct per-motion
+limit; normal rows zero. Replayer label Pelvis horizontal speed excess and live
+TensorBoard loss/pelvis_horizontal_speed_excess verified. New local bridge21084,
+dashboard8240; old recovery observers23984/3092 stopped. Setup watchdog released
+only after training progress, new verified backup, and replay reward checks.
+
+Receipts getup-pelvis-{reference,preserved,calibration,verification}.json in
+Saved/MimicKitEquipment. Source getup-pelvis-source.zip SHA256 7d431be36ae057395887d3bd6a4a6b9aac0bd27f95bcd6d1720c04d369cfebbc.
+Helpers Labs/MimicKitTraining/{getup_pelvis_speed,calibrate_getup_pelvis,restart_getup_pelvis}.py.
+Runtime package changes only prepared/env_config.yaml and pipeline/perturbed_omni.py,
+plus calibration receipt. Foot reward indexing now uses names so appending the
+new term cannot double-count/drop existing costs. Physics, proportions, LR,
+noise, GAE, success/failure and other loss settings unchanged.
+
+## October22 12:25 - recovery foot regularizers, resumed and verified
+
+RUNNING `20261022_122519_uefn_getup_feet7_1024` on existing L4
+`0to3wg3r3n926h`, $0.59/hour until stopped, 1,024 agents. Latest prior
+checkpoint129347_final (2,600,321,024 samples) preserved locally and persistent
+S3 SHA256 verified before restart. Optimizer and observation normalizer restored.
+Local checkpoint: Saved/MimicKitEquipment/preserved-latest/20261022_104951_uefn_getup_perturbed_plus_1024/checkpoint_0129347_final.zip.
+SHA256 33e97b6d5480fc58b3e6c5cf2477d70ce6b2d769108b146502de4f30366795e3.
+
+User-confirmed 7% EACH: two new losses apply only to ordinary perturbed and
+perturbed+ get-ups. `feet_target_velocity` is the mean squared actual clamped
+ankle motor target angular velocity across six DOFs, rad^2/s^2. Its weight is
+0.006859699331106141. `feet_idle_local_rotation` is the mean squared shortest
+rotation angle of each foot relative to its calf, compared with assigned idle
+frame0, rad^2. Its weight is 0.11904574395704297. Quaternions are sign-invariant;
+whole-body rotation does not affect the local rotation term. Both costs subtract
+from the actual perturbed reward, including the linear-reward override.
+
+Weights are FIXED, calibrated on the latest frozen policy with existing noise:
+256 worlds,192 ticks,34,368 perturbed samples, both perturbed cohorts. Existing
+pose+AE mean1.56536317, raw velocity18.57417870, raw rotation1.07028842. Each weight
+is (0.07/0.86)*existing_mean/raw_mean, giving 7% each of combined physical loss
+at calibration, excluding terminal bonuses/penalties. Fractions may change as
+learning improves; there is no dynamic renormalization that cancels improvement.
+Normal rows receive exactly zero new costs. Locomotion branch untouched.
+Physics, AE weight, success/failure rules, distributions, LR/noise/GAE unchanged.
+
+Verified geometry/sign invariance, physical command indexing/clamping, normal
+masking, and exact recorded reward including new terms and terminal adjustments.
+New training advanced129348->129358,15,184 transitions/s; new checkpoint129348
+passed persistent SHA256 readback. First20-row replay and live TB contain both
+new terms. Replayer labels: Foot target velocity / Foot local rotation. Also
+corrected stale AE-disabled label when the active loss list includes motion_prior.
+Local observers bridge24408/dashboard23984; superseded recovery dashboard stopped.
+Ten-minute handoff watchdog extended by a bounded three-minute startup grace;
+released only after advancing training, verified new backup, and replay checks.
+
+Receipts: getup-foot-{preserved,calibration,verification}.json in
+Saved/MimicKitEquipment. Source archive getup-foot-source.zip, SHA256 a06ce8482714e6265bbb2444525d2e684afb2252e27c90b3f5961ba69cd5e3dc.
+Helpers Labs/MimicKitTraining/{getup_foot_regularizers,calibrate_getup_feet,restart_getup_feet,test_getup_foot_regularizers}.py.
+Only pipeline/perturbed_omni.py, pipeline/observe.py and prepared/env_config.yaml
+changed from the exact previous recovery source, plus the calibration receipt.
+Current plan getup-success-prepared.json points at this source and checkpoint.
+
+## October22 10:53 - recovery resumed after funds outage
+
+Latest recovery checkpoint127054 (2,525,184,000 prior samples) downloaded from
+persistent storage and locally ZIP/SHA256 verified before restart. Preserved at
+Saved/MimicKitEquipment/preserved-latest/20261022_013025_uefn_getup_perturbed_plus_1024/.
+SHA32557599472f4477445da687dbc1b09a00f5e248eb09ba40bbc0b73cca90dea0.
+Old L4upszb03gy35fzj could not restart because its GPU was reassigned; retained
+pod/disk left intact. Replacement L4 0to3wg3r3n926h at $0.59/hour, until stopped.
+New run20261022_104951_uefn_getup_perturbed_plus_1024 resumes exact source
+0428e568eaff and checkpoint, optimizer/normalizer, 1024 agents and all existing
+settings. No learning-setting changes. Ten-minute setup watchdog released only
+after training advanced127055->127065 and first checkpoint127055 passed persistent
+SHA256 readback. Throughput15,489 transitions/s. First replay127055 and live TB
+cards verified. New bridge21960/dashboard18340; stopped superseded recovery
+observers only. Locomotion was concurrently restarted by its own chat on
+leuh8va7hfcevy as20261022_104557_uefn_locomotion_pelvis_velocity5_1024; its live TB
+points verified, no changes to that restart. Both prior latest checkpoints also
+preserved locally. Receipts funds-resume-prepared/launch/verification.json in
+Saved/MimicKitEquipment. Helper resume_after_funds.py preserves exact prior args.
+
+## October22 - locomotion resumed after account funds shutdown
+
+Runpod stopped q764mqd40pabiq at08:00UTC when funds ran out. User requested
+resume unchanged. Latest persistent119475 checkpoint (07:58UTC),
+2,409,365,504samples, downloaded locally and ZIP/SHA256 verified:
+b08240a5064bedea9be4af53f8903adfb47c4d8714551a39ff70145216df5665.
+Saved under Saved/MimicKitLocomotion/preserved-latest/20261021_231729_uefn_locomotion_pelvis_velocity5_1024/.
+Old host refused restart for insufficient GPUs; retained pod/disk preserved.
+Replacement L4leuh8va7hfcevy at$0.59/hour, SSH157.157.221.29:29875.
+
+RUNNING20261022_104557_uefn_locomotion_pelvis_velocity5_1024,1,024agents until
+stopped. Exact previous source archive534659c4cd91e3ed7de4d7b8707ba711f34725e5aaec2c05e611d41e02b3f846
+restored; no loss,physics,sampling or optimizer-setting changes. Pelvis velocity
+MSE x5 and soft extremity-speed loss retained. Optimizer/normalizer restored.
+Verified119476->119486, early15,822transitions/s after startup. New119476backup
+readback verified SHA dc647d3975d28d122c0bdc78bb00ed915469d6f02ef8bc62e7a434ed0d528b0f.
+Setup guard released after advancing/backup; trainer498/exitguard499,
+bridge18400/dashboard13308. Old local observers stopped; recovery untouched.
+TB10-45-57, events publishing. Receipts Saved/MimicKitLocomotion/funds-resume-*;
+helper resume_loco_after_funds.py. Old pod state archived in retained-pods/q764mqd40pabiq.
+
+## October22 09:20 - both current TensorBoard experiments refreshed
+
+Both telemetry SSH streams had stalled for roughly half an hour. Restarted only
+local bridges (recovery18196,locomotion13148), preserving30second polling, and
+locomotion dashboard6520. TensorBoard8035 cap10 unchanged. Verified visible
+get-up failure points through2,489,794,560samples and locomotion failure points
+through2,369,716,224samples,51/57seconds old. Both remote runs remained training;
+no trainer/GPU restart or settings changes. Receipts tb-refresh-both-20261022.json
+in each branch's Saved directory. Opened filter for both current experiments.
+
+## October22 morning - locomotion TensorBoard caught up
+
+Locomotion bridge/dashboard had stopped locally while the L4 kept training.
+Restarted only those observers and backfilled original event history. Verified
+live TensorBoard8035 speed-excess and locomotion-failure cards through
+2,324,168,704samples,17seconds old. Opened current23-17-29 run; previous browser
+filter22-48-04 referred to the superseded run. Training and recovery untouched.
+Restored usual30second bridge polling after catch-up; latest10run TB cap retained.
+Dashboard now skips replay-history scans for training_outcomes runs, whose cards
+already use full-batch event counters. This avoids needless startup parsing and
+does not change card values. Observer PIDs/receipt:
+Saved/MimicKitLocomotion/tb-refresh-20261022.json.
+
+## October22 morning - TensorBoard refresh after local observers stopped
+
+Restarted recovery telemetry bridge/dashboard and capped TensorBoard8035 server
+(latest10runs). Backfilled missing event history and verified both normal and
+perturbed get-up failure cards through2,445,230,080samples, about25seconds old.
+Remote training remained running, no restart or configuration change. Returned
+bridge to its usual30second polling after catch-up. Current observer PIDs and
+verification receipt: Saved/MimicKitEquipment/tb-refresh-20261022.json.
+
+## October22 - scheduled perturbed+ recovery switch completed and verified
+
+Resumed current recovery from checkpoint0113353_final, 2,076,229,632 samples.
+Saved under Saved/MimicKitEquipment/preserved-latest/20261021_200623_uefn_getup_pelvis_ceiling_1024/;
+local ZIP/checksum verified against persistent backup SHA
+21f08946ee8f0c7a3b20ae45f3ad63b988c110b958e214df30c882a18610981d.
+New run20261022_013025_uefn_getup_perturbed_plus_1024 uses same L4upszb03gy35fzj,
+$0.59/hour,1,024agents until stopped. Locomotion branch untouched.
+
+Fixed cohorts:307 normal,359 ordinary perturbed,358 perturbed+ (179 front/179
+back). Normal front154/back153; ordinary front179/back180. All prior pose/reset
+settings retained. Every plus reset samples pelvis-origin world linear velocity
+from locomotion frame A and local joint DOF velocities from a separately sampled
+different frame B. Whole-body angular velocity uses an independent uniform sphere
+axis and magnitude uniform0–700deg/s, converted to radians/s. Root linear engine
+velocity includes omega cross rotated pelvis COM offset, so the body-origin speed
+matches the dataset even with the independently sampled spin. Actual Newton FK
+and native engine reset validated this conversion, all sampled joint velocities,
+different frame indices and spin bounds on the L4 before launching training.
+Only plus rows delay the existing head<=50% failure from tick80 to100. Pelvis
+ceiling still starts after tick5; success gates,180tick maximum,AE,losses,penalties,
+optimizer,normalizer and normal get-ups unchanged. No added physics pass; random
+sampling and velocity assignment run only at reset. Source archive differs only
+in perturbed_omni.py and three env-config keys; other config compared identical.
+
+20,000 sample CPU check and actual reset/done methods passed, including80/100
+boundary flags and terminal100penalty. Full1,024world GPU preflight passed.
+Training advanced113354->113364 at early14,959transitions/s versus preceding
+15,532; this is an early measurement with harder starting states, not an isolated
+overhead benchmark. First113354checkpoint persistent readback verified SHA
+d95d2cc16914318cae2453028a688e68c9c00ff84f8f8e15566f9a4420fb3106.
+Recorded first20rows include9plus starts whose actual velocities match metadata
+and sampled source frames. All plus/ordinary head-check metadata verified100/80.
+Replayer labels now distinguish perturbed+. TB and replay bridges publish.
+Trainer1556/exitguard1557,bridge19832/dashboard30744. Handoff watchdog released
+only after advancing training and verified backup. Initial SSH source upload
+timed out; direct persistent download succeeded and source checksum was verified.
+Source SHA0428e568eaffb26baf24800d9361ca8288cfb4a57068c96474e39b1b7dec8793.
+
+One-time heartbeat switch-half-of-perturbed-get-ups-to-perturbed is PAUSED after
+completion. Plan perturbed-plus-switch.json marked complete. Receipts:
+plus-preserved.json,getup-plus-method-tests.json,getup-plus-verification.json;
+helpers getup_perturbed_plus.py,restart_getup_plus.py,preflight_getup_plus.py,
+test_getup_plus.py,verify_getup_plus.py. Restart helper is scoped to this handoff.
+
+## October21 - pelvis velocity MSE x5 on every locomotion-branch row
+
+User explicitly selected the existing 3D pelvis linear-velocity MSE, not a new
+direction-only loss. Multiply body0's contribution by5 while retaining the
+15-body/3-component mean, original linear weight3.2992958902731857 and existing
+early-MSE/handoff coefficient. Normal/perturbed idle/loco all receive it; other
+bodies and losses unchanged. Config all_rows_pelvis_velocity_mse_multiplier=5
+under perturbed_motion; default1 preserves other branches. Recorded in the
+existing linear_velocity_mse term and replay metadata. No additional physics or
+AE pass. Actual-method tests pass54 axis/body/tick combinations across all four
+row cohorts. Exact prior source archive patched; unrelated shared recovery
+changes were not deployed.
+
+Latest99574_final /1,757,249,536samples preserved locally and verified by
+persistent SHA256 readback: a312af658a9c4e6f5713c203f0785a552b1b4f44509d7d380cfa3fced89a6440.
+Launched20261021_231729_uefn_locomotion_pelvis_velocity5_1024 on same
+L4q764mqd40pabiq,1,024agents,$0.59/hour until stopped. Verified99575->99585
+at18,565transitions/s; optimizer/normalizer restored. New99575backup verified
+SHA1dfe640df3e49953510ed2fe23e42a90451f4565e3f1e640c61faf9794bad23d.
+All20replay rows reconstruct the weighted linear MSE within6.18e-7, including
+normal/perturbed idle/loco and early/handoff/full-MSE frames. Handoff watchdog
+released after progress and backup verification. TB23-17-29.
+Trainer1252/exitguard1253,bridge7452/dashboard24816. Source SHA
+534659c4cd91e3ed7de4d7b8707ba711f34725e5aaec2c05e611d41e02b3f846.
+Receipts Saved/MimicKitLocomotion/pelvis5-*. Helpers restart_loco_pelvis5.py
+and verify_loco_pelvis5.py. Recovery unchanged.
+
+## October21 - recovery perturbed+ change scheduled, not yet deployed
+
+User requested a switch in two hours: half of perturbed recovery rows become
+perturbed+, preserving 30% normal and dividing the remaining70% equally between
+ordinary perturbed and perturbed+. Root linear velocity uses random loco frame A;
+joint velocities use a different independently sampled loco frame B (explicit
+user correction). Whole-body angular velocity uses an independent uniform random
+3D axis and uniform magnitude0–700deg/s. Resample at episode resets; keep existing
+limp pose blend and floor correction. Only perturbed+ delays the low-head failure
+check from tick80 to100; existing head threshold50%, success gates, pelvis ceiling,
+AE, rewards, penalties, episode duration and other settings remain unchanged.
+Scheduled for October22 ~01:16 Europe/Warsaw, latest checkpoint at switch time.
+Read Saved/MimicKitEquipment/perturbed-plus-switch.json for execution/verification;
+automation switch-half-of-perturbed-get-ups-to-perturbed. Current run untouched.
+
+## October21 - speed-loss TensorBoard card repaired without trainer restart
+
+The trainer already logged loss/extremity_speed_excess, but dashboard.py's
+explicit metric mapping omitted it. Added that single mapping; restarted only
+the current locomotion local dashboard (PID2912). Backfilled31existing points,
+steps1,729,724,416..1,739,554,816, exactly matching original event values. Future
+points publish at the same cadence as other losses. The card shows weighted
+speed loss averaged over the training batch, including zero-cost frames/normal
+rows; it is not a violation percentage or the conditional15% calibration ratio.
+No GPU/trainer restart, settings or original events changed. Receipt:
+Saved/MimicKitLocomotion/speed-loss-tb-card-fix.json. Opened TB22-48-04 filtered
+to loss/extremity_speed_excess. Shared dashboard mapping also covers future runs.
+
+## October21 - hard speed-limit tries stale; soft loss from pre-change checkpoint
+
+User rejected both hard extremity-speed termination runs (220225 and221827).
+Both marked stale; no continuation from their policy/optimizer states. Restored
+protected98733_final from205453:1,729,691,648samples, SHA
+777a1b823d593a63498e9f377feede526144c47185f905f4cf1d1387eae9f5cb.
+Local SHA and persistent readback reverified before restart. Stale99982_final
+was cleanly saved for evidence but is not the resumed state.
+
+Keep150% limits for both feet/hands, per motion/limb; ordinary idle uses matching
+walk backward. New cost =3.2039947906657353 * mean_over_four_limbs(max(speed-limit,0)^2).
+Same body-origin velocity relative to translating AND rotating pelvis; reuses
+existing reward velocities. Perturbed ordinary idle/loco only, across all ticks,
+no AE/handoff fade. Normal/recovery rows unchanged. No speed termination or
+terminal speed penalty; existing COM2 conditions and loco100failure penalty remain.
+Adds named extremity_speed_excess term before the existing reciprocal reward,
+so critic/PPO receive its effect. No new physics/AE pass or per-tick CPU sync.
+
+Fixed weight calibrated on the protected checkpoint's recorded replay98733:
+1,483perturbed frames excluding reset frames;44exceeded limits. On these44frames,
+existing loss mean2.16874146, raw speed cost0.10153301, weighted cost0.32531124
+=15% of existing loss. Calibration is conditional on violations, not diluted by
+zero-cost frames; communicated to user. Across all calibration frames mean cost
+0.00965185 versus existing3.06182051. Future frames need not maintain exact15%.
+
+Only deployed perturbed_omni.py and two perturbed config keys changed:
+extremity_speed_termination=false; extremity_speed_loss_weight=3.2039947906657353.
+Threshold table unchanged. Default-off shared code preserves other branch work.
+Actual-method CPU tests cover squared excess, zero below threshold, rigid pelvis
+motion removal, unchanged other terms, normal/recovery exclusion and disabled
+speed-failure call. Real replay98734 reconstructs cost and scalar reward within
+6.01e-7:15overspeed frames continue without reset; one coincides with existing
+COM2 failure. This confirms speed no longer forces termination.
+
+RUNNING20261021_224804_uefn_locomotion_speed_loss_1024, sameL4q764mqd40pabiq,
+$0.59/hour,1,024agents until stopped. Optimizer/normalizer restored from98733.
+Advancing98734->98754 at18,535transitions/s; first98734backup persistent verified
+SHA98e256716527fa3661df2a1c4172bb473d8b6817c7ff82384bf97694ec35266c.
+Trainer956/exitguard957,bridge27688/dashboard3360; TB22-48-04. Old observers
+stopped; handoff watchdog released after progression and backup. Recovery untouched.
+Helpers loco_speed_loss.py, restart_loco_speed_loss.py, verify_loco_speed_loss.py.
+Receipts Saved/MimicKitLocomotion/speed-loss-* and stale-speed-termination-runs.json.
+Source SHAfc50a217442cf2f134b6cc2ec5e0de62fc1bfe3b51392960b24101d6d69cf425.
+
+## October21 - locomotion feet and hands both150%, resumed latest
+
+User changed feet from135% to150%; hands remain150%. Only the deployed
+prepared/extremity_speed_reference.json changed: foot limits recomputed from
+stored per-motion maxima, all hand values and idle walk-backward mappings
+preserved exactly. No physics, code, reward, optimizer or sampling changes.
+50motion tables verified, including the deployed copy. Same moving-pelvis
+measurement, perturbed-only scope and tick1 activation.
+
+Latest99151_final /1,743,388,672samples locally saved and persistent readback
+verified SHA1112d5179325a3d9824adf043d25a31b418b94ab8e8337253332bce82f4d7839.
+Resumed20261021_221827_uefn_locomotion_extremity150_1024 on same
+L4q764mqd40pabiq,$0.59/hour,1,024agents until stopped. Optimizers/normalizer
+restored. Advancing99152->99172 at18,471transitions/s. First99152 backup verified
+SHAe982a003a4342929cbbde9c8790a832621285f5eaf8549553d3ea3544bc13c64.
+Handoff watchdog released after progression/backup; normal failure guards active.
+Trainer735/exitguard736,bridge10584/dashboard24684; TB22-18-27. Previous
+observers stopped. Recovery unchanged. Receipts Saved/MimicKitLocomotion/speed150-*;
+source locomotion-extremity-speed150-source.zip, SHA861724e04dd31f261385735927d6769c17df90ba4ee2581a77504e0960a31152.
+
+## October21 - approved persistent replay/checkpoint cleanup completed
+
+No standalone recent replay objects were found: these replays were embedded in
+checkpoint ZIPs. User approved the proposed 468 intermediate physical UEFN
+checkpoint deletions while retaining each run's latest and final saves. Executed
+only those exact approved keys, after refreshing inventory and latest_verified
+manifests and checking original size/modified time. Individual S3 deletes with
+8 workers completed without errors. Re-list verified all 468 absent and all 14
+protected latest/final saves still present. Freed 21,375,033,969 bytes (21.38 GB).
+Newly written archives outside the approved list were not deleted. Neither
+training branch was interrupted; no local files, datasets, source packages,
+TensorBoard logs or unrelated Unreal checkpoints were touched. No automatic
+retention policy changed. Plan, per-key receipts and verification are saved in
+Saved/MimicKitEquipment/replay-cleanup-20261021/; completed.json is the result.
+
+## October21 - perturbed extremity-speed failure, resumed and verified
+
+Requested feet >135% and hands >150% of reference maximum speed. Each
+individual limb uses its own animation maximum; user explicitly selected
+matching Drawn/Unarmed Walk_Loop_B as the reference for ordinary idle.
+50 exact deployed motion files sampled offline at480Hz. Body-origin speed
+in translating AND rotating pelvis frame is norm(v-v_p-omega_p cross(p-p_p)).
+Live engine COM velocities are converted to origins before comparison.
+Perturbed ordinary idle/loco only; strict exceeds, active from first simulated
+tick, no added grace. Failure overrides timeout, resets the row and zeroes
+bootstrap; existing loco100 failure cost applies once, no new idle penalty.
+Normals/recovery unchanged; no extra physics/AE pass or per-tick CPU readback.
+
+Latest98733_final /1,729,691,648samples saved locally and persistent verified,
+SHA777a1b823d593a63498e9f377feede526144c47185f905f4cf1d1387eae9f5cb.
+Initial restart215646 failed before training: new initializer shadowed the
+existing COM table variable, causing KeyError masses_kg. Corrected to a separate
+speed_table; actual initializer and terminal-path CPU tests now pass, including
+COM-table preservation. Failure evidence retained; guard stopped A40wjxv6qigq3dy9o.
+Runpod then could not restart it (GPU reassigned). Replacement L4q764mqd40pabiq
+allocated at$0.59/hour with10minute setup guard. Corrected run
+20261021_220225_uefn_locomotion_extremity_speed_1024 is advancing98734->98754,
+1,024agents until stopped; measured18.44k transitions/s after warmup. This is a
+hardware change from A40, so not an isolated overhead comparison. Optimizers
+and normalizer restored. First98734 backup persistent readback verified,
+SHA08310a85498b8d5b6cdc460741ed90735002a9ec941f6ef89c36be39e9241337.
+Setup guard released only after progression and verified backup. Trainer467,
+exitguard468, localbridge17272/dashboard12104. TB22-02-25. Replay98734 checked
+all11perturbed captured rows:5speed crossings, all fail on the first crossing
+(including one at tick1),6never cross. Idle uses matching walk-backward limits
+and lasts120ticks in this capture. No new grace; no lost checkpoint progress.
+Recovery pod untouched. Old failed-run observers stopped. Detailed evidence
+extremity-speed-terminal-tests, remote-replay-verification, live-verification.
+Corrected source SHAe0c91ebe0b1c4aae9371ecf700ab1ef777860ef5bcbce8e85543507911772051. Helpers loco_extremity_speed.py, restart_loco_extremity_speed.py,
+verify_loco_extremity_speed.py. Receipts Saved/MimicKitLocomotion/extremity-speed-*.
+
+## October21 - perturbed idle position/rotation MSE x5, resumed latest
+
+User requested x5 position and rotation MSE for perturbed ordinary idle rows,
+including early MSE and handoff. Applies across all ticks, after the existing
+mix+k*(1-mix) coefficient. k remains0.010628431805636024; no recalibration that
+would cancel the requested increase. Linear/angular velocity, AE, COM terms,
+normal idle, locomotion and all recoveries unchanged. Scope explicitly excludes
+recovery rows and requires perturbed plus idle gait. Default multiplier1 keeps
+other branches unchanged; shared recovery edits preserved. No new model/physics
+passes, only batched selection and scaling of two existing loss columns.
+
+Source package changes only pipeline/perturbed_omni.py and one env config key:
+perturbed_motion.idle_pose_mse_multiplier=5. Actual patched-method tests compare
+before/after at ticks0,2,29,30,45,59,60,120, including default1, normal idle,
+locomotion and perturbed/normal get-ups; only intended two columns differ.
+Helper Labs/MimicKitTraining/loco_idle_pose_scale.py.
+
+Latest97272_final /1,681,817,600samples preserved locally and persistent,
+SHA699bae31434db8fcb25a1b882ce9b5e1d1d7c39c50523287efbcb7e99ca8b45e.
+Resumed20261021_205453_uefn_locomotion_perturbed_idle_pose5_1024 on same A40
+wjxv6qigq3dy9o,$0.59/hour,1,024agents until stopped. Optimizer states and
+normalizer restored. Advancing97273->97283,early13,976transitions/s. New97273
+backup persistent-readback verified SHA
+7a7045d4effdfb586b675e26821b23536aac401b173283cdc1130cf8bbf928ef.
+Trainer1088/failureguard1089,bridge15836/dashboard700; TBfilter20-54-53.
+Replay97273 verified20rows/4,020frames: affected perturbed idle spans120ticks;
+position/rotation match x5 through early/handoff/late stages, all other terms
+retain previous coefficients. Max reconstruction error2.65e-6, accepted within
+normal numerical tolerance. Converted replayer rollout exists locally.
+Handoff watchdog released after progression and verified backup. Recovery
+pod/run untouched. Receipts under Saved/MimicKitLocomotion/idle-pose5-:
+source-verification, preserved-checkpoint, live-verification, replay-verification,
+before-plan, switch. Source locomotion-perturbed-idle-pose5-source.zip.
+
+## October21 - perturbed get-up pelvis ceiling, first five ticks exempt
+
+User requested a failure at the pelvis height shown in rollout104398,row17/
+world18,tick30 of20261021_194738_uefn_getup_success_gates_1024, then clarified
+it must activate after the fifth frame for high initial poses. Screenshot HUD
+root[-.750,.935,.575] matches stored frame30 exactly (slider30.4; do not use
+interpolated30.4 height). Ceiling is pelvis body-origin worldZ0.9345778227m.
+Perturbed get-ups fail when ticks>5 AND pelvisZ>=ceiling, starting at tick6.
+Ticks0..5 exempt. Normal recoveries untouched. Existing FAIL path wins over
+simultaneous success, blocks success bonus, charges existing100 penalty once
+and zero-bootstraps. Success feet/head-speed gates remain unchanged. No extra
+simulation, CPU sync or new reward term; one vector height comparison.
+
+Checkpoint104663_final /1,791,475,712samples downloaded and persistent verified:
+SHAd0ab18f748661bb89fa21b43c4178958a2a64ea183d596a16b5eb97833dc1c26.
+Resumed20261021_200623_uefn_getup_pelvis_ceiling_1024 on same L4upszb03gy35fzj,
+$0.59/hour until stopped,1,024agents. Trainer1051/exitguard1052;
+bridge23596/dashboard15408. Verified104664→104674 at~15.31k transitions/s.
+New104664 backup readback SHAd16f3962325ce2348fd280a8ac94469804d34233d94d627681a6cb21ca7dade6.
+All18perturbed replay rows checked:11 high-pelvis crossings terminate at first
+eligible crossing with FAIL and terminal reward<=-99 (base reward minus100).
+Boundary tests cover ticks0/5/6,exact ceiling,below ceiling and normal exclusion;
+actual production terminal tail confirms failure overrides success and penalty.
+No trainer/backup errors. Restart watchdog released after advancing save/replay.
+Source50586a1f9a9a,only perturbed_omni.py and two env config keys changed.
+Calibration getup-pelvis-ceiling-calibration.json,checkpoint receipt
+pelvis-ceiling-preserved.json,live receipt pelvis-ceiling-verification.json.
+Helpers getup_pelvis_ceiling.py/restart_getup_pelvis_ceiling.py. Locomotion untouched.
+
+
+## October21 - early MSE added alongside locomotion AE, resumed latest
+
+User requested MSE alongside the early prior, fading that extra MSE with AE,
+scaled to roughly equal its cost. Perturbed idle/loco body cost now:
+(1-mix)*weighted_AE + (mix + k*(1-mix))*weighted_body_MSE.
+mix=0 through tick30, linear30..60, then1. k=0.010628431805636024.
+Four existing position/linear-velocity/rotation/angular-velocity MSE terms retain
+current leeways and autoregressive targets. Existing full-strength late MSE,
+AE weight, COM2 conditions/penalty, normals and all other settings unchanged.
+No extra AE/physics pass: reuse already-computed MSE with a batched multiplier.
+
+Fixed calibration from actual previous-run replay95896:13perturbed rows,
+353valid early frames(ticks2..29), excluding reset/invalid AE-history ticks.
+Mean existing weighted AE0.2992596011; unblended weighted MSE28.1565151430.
+Weight makes their means equal on this sample, not a guarantee on future states.
+Offline reconstruction matched3,558recorded frame losses with max error9.65e-7.
+CPU tests execute actual patched loss method at ticks0,2,29,30,45,59,60,120;
+normal rows, get-up override, defaultzero and full late MSE remain unchanged.
+Shared perturbed_omni.py change is default-off; recovery edits preserved.
+Pinned source differs only perturbed_omni.py, new env_config key ae_mse_weight,
+and calibration metadata. Source/source SHA recorded in prepared plan.
+
+Saved latest96009_final locally/persistently,1,640,431,616samples,
+SHA837b98a83ec5e86219bfbb2a1fd100054f6889c865f4f2e61b8dcddae4042542.
+Resumed20261021_200213_uefn_locomotion_ae_earlymse_yaw180_1024 on same A40
+wjxv6qigq3dy9o,$0.59/hour,1,024agents,until stopped. Optimizers and normalizer
+restored. Advancing96010->96020, early14,288transitions/s. First96010 backup
+persistent-readback verified SHA9f79fffe7ba2b3636c4e52dc98e1d520e0b82d5a6dbd4a590df38a2c30db65b8.
+Trainer895/failureguard896; bridge6884/dashboard1080; TBfilter20-02-13.
+Live replay96010 verified20rows/3,727frames: new MSE multiplier matches
+recorded terms (max reconstruction error2.76e-7); AE schedule unchanged.
+Early perturbed mean costs0.277MSE and0.348AE on the new replay, roughly matched.
+Converted replayer rollout and new TB event stream are present locally.
+Ten-minute handoff watchdog released after verified progress and backup.
+Receipt prefix Saved/MimicKitLocomotion/early-mse-: calibration, preserved-checkpoint,
+live-verification, replay-verification, switch, before-plan. Implementation helper
+Labs/MimicKitTraining/loco_early_mse.py. Recovery pod/run untouched.
+
+## October21 - stricter perturbed get-up success, resumed latest
+
+User calibrated gates from displayed rollout103985,row9/world4,tick19 in
+20261021_171139_uefn_getup_ae10_1024. Exact saved physics: left-foot body-origin
+worldZ0.260697901m, head-origin vertical velocity+4.206905365m/s. Screenshot
+pelvis matches exactly. Use half values: BOTH feet worldZ<0.1303489506m and
+absolute head-origin vertical speed<2.1034526825m/s, in addition to prior
+head>90%idle-frame0 rule. Absolute speed excludes fast descent too, as stated
+to user. Engine COM velocity converted to head-origin velocity with omega x
+rotated local COM offset, matching recorder; physical verticalZ, viewerY.
+Scope perturbed recoveries only. Rejected success stays in the episode under
+existing failure/timeout rules; success bonus and all other rewards unchanged.
+No extra simulation/CPU synchronization; small batched checks in existing done
+calculation. Replay metadata records thresholds and reset code2 is labelled
+standing success reset (head height,feet height,head speed).
+
+Latest104197_final (1,776,205,824samples) preserved locally and persistent:
+SHA0a8ea0b14fcea8bfeffe093f9d5729dd8e5765d149911f00cc2a09d35f586f68.
+Resume20261021_194738_uefn_getup_success_gates_1024 on sameupszb03gy35fzj L4,
+$0.59/hour until stopped,1,024agents;trainer808/guard809,bridge10932/dashboard28696.
+New104198 backup persistent-readback verified SHA
+892308b70a0f4ff45041d6f2d0f4d79fdc406704c2fb159644d59b68588c8e01.
+Advancing104198→104208 at~15.85k transitions/s; no trainer/backup errors.
+18perturbed replay rows checked; all6successful rows meet both new bounds.
+Threshold tests reject screenshot, either high foot, fast ascent/descent and
+boundary equality; low feet/slow head passes and normal eligibility unaffected.
+Source package differs only perturbed_omni.py,observe.py and two env config
+keys; source349842cd0600. All other config unchanged, including AE/proportions.
+Ten-minute restart watchdog released after advancement/backup/replay checks.
+Receipts getup-success-gates-calibration.json,success-gates-preserved.json,
+success-gates-verification.json in Saved/MimicKitEquipment. Helpers
+getup_success_gates.py,restart_getup_success_gates.py. Locomotion untouched.
+
+
 ## October21 - recovery resumed with 1,024 agents
 
 User requested latest get-up resume with batch1,024 (parallel environments).

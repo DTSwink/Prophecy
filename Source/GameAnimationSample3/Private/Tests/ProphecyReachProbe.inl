@@ -5,6 +5,7 @@
 #include "ProphecyReachWristProbe.inl"
 #include "ProphecyReachLabPortProbe.inl"
 #include "ProphecyReachCheckpointProbe.inl"
+#include "ProphecyGrabIndependenceProbe.inl"
 
 // Explicit, read-only numerical capture. No polling or shipping-runtime instrumentation.
 static FAutoConsoleCommandWithWorldAndArgs ReachInspectCommand(TEXT("Prophecy.Reach.Inspect"),
@@ -13,6 +14,31 @@ static FAutoConsoleCommandWithWorldAndArgs ReachInspectCommand(TEXT("Prophecy.Re
     {
         using namespace ProphecyReach;
         if(!World)return;
+        if(Args.Num()==1&&Args[0]==TEXT("IndependenceMath")){VerifyGrabIndependence();return;}
+        if(Args.Num()==2&&Args[0]==TEXT("Independence"))
+        {
+            FString Report;
+            for(const auto& Entry:States)if(const auto* A=Entry.Key.Get();A&&A->GetWorld()==World&&A->GetName()==Args[1])
+                for(int Side=0;Side<2;++Side)
+                {
+                    const auto& H=Entry.Value->Hands[Side];float Actual=-1;
+                    const bool Read=H.Physics.IsValid()&&H.Physics->GetJointGrabIndependence(H.Joint,Actual).IsSuccess();
+                    Report+=FString::Printf(TEXT("side=%d active=%d gripped=%d physical=%d configured=%g native=%g read=%d slot=%d generation=%llu\n"),Side,H.Enabled,H.Gripped,H.Physical,GrabIndependence(A,Side),Actual,Read,H.Joint.Slot,H.Joint.Generation);
+                }
+            FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/GrabIndependence/live.txt")));return;
+        }
+        if(Args.Num()==3&&Args[0]==TEXT("Admission"))
+        {
+            for(TActorIterator<AProphecyAgent> It(World);It;++It)if(It->GetName()==Args[1])
+            {
+                auto* A=*It;auto* Target=UProphecyReachLibrary::GetClosestAgent(A);FString Why;
+                const bool OK=Target&&StartGrab(A,0,Target->GetPoseReferenceMesh(),FName(*Args[2]),FVector::ZeroVector,false,300,360,&Why);
+                const FString Report=FString::Printf(TEXT("agent=%s target=%s bone=%s accepted=%d reason=%s\n"),*A->GetName(),*GetNameSafe(Target),*Args[2],OK,*Why);
+                FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Diagnostics/GrabDefaultsSelf/admission.txt")));
+                UE_LOG(LogTemp,Display,TEXT("Grab admission: %s"),*Report);return;
+            }
+            return;
+        }
         if(Args.Num()&&Args[0]==TEXT("WristMath")){VerifyReachWristMath();return;}
         if(Args.Num()&&Args[0]==TEXT("LabPort")){VerifyReachLabPort();return;}
         if(Args.Num()&&Args[0]==TEXT("Wrists")){InspectReachWrists(World);return;}

@@ -125,6 +125,8 @@ class Recorder:
             metadata.update(frame_ae_raw=prior[:,0].tolist(),frame_tracking_mix=prior[:,1].tolist(),
                 frame_reset_reason=prior[:,2].astype(int).tolist(),
                 reset_reason_codes={'0':'none or normal-cohort rules','1':'failure','2':'head-height reset','3':'time reset (bootstrap)'})
+        if self.prior_values is not None and getattr(self.env, '_success_feet_limit', None) is not None:
+            metadata['reset_reason_codes']['2'] = 'standing success reset (head height, feet height, head speed)'
         if getattr(self.env, '_additive_head_reward', False):
             # Reconstruct the exact independent term from recorded world-Z and tick;
             # this also avoids any extra per-physics-step recorder copy.
@@ -171,7 +173,7 @@ class Recorder:
                     metadata.update(reward_from_loss='linear_cost',
                                     getup_failure_penalty=row_info.get('getup_failure_penalty',0.),
                                     getup_success_bonus=row_info.get('getup_success_bonus',0.),
-                                    reward_definition='1 - weighted position MSE - terminal failure penalty + head-reset success bonus')
+                                    reward_definition='1 - sum of recorded weighted physical loss terms - terminal failure penalty + standing success bonus')
                 if 'target_radius_m' in metadata and 'target_deviation' in metadata:
                     radii = metadata.get('target_radii_m', {})
                     active_bodies = metadata.get('target_termination_bodies')

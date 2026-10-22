@@ -1,5 +1,18 @@
 # Restoring Prophecy
 
+## October 22 grab and tools checkpoint
+
+Includes per-arm live grab joint independence, closest-agent/physical-mesh helpers,
+grab defaults and surface-point controls, the root-relative pelvis floor, sword
+FPS-reset removal, and the saved PoseAgent and A_Sword Blueprints. Normal Editor
+build and focused grab verification passed; see the current reach/grab journal.
+Also captures current MimicKit training scripts and the Sound Studio/idle viewer
+source. Their local environments, audio, frozen viewer checkpoint and source
+bundle under Saved are external; the viewer source alone is not a complete
+runtime backup. TestNN's current local modification, generated defense exports,
+full captures, diagnostics and unrelated PDF remain excluded under the curated
+backup rule. This checkpoint does not save or change the running editor.
+
 ## October 18 source-only follow-up
 
 The reach/grab lab and native pipeline, explosion wave/impact event, VDB playback,

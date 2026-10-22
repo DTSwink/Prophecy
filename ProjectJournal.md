@@ -4,6 +4,297 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**October22 curated checkpoint prepared:** user requested pushing current work
+before switching to UI. Includes current source/tests/tools/docs, saved PoseAgent
+and A_Sword, required physical-mesh Python label helper, and current lightweight
+MimicKit/Sound Studio source. TestNN's local modification, generated models,
+environments, full captures/diagnostics and unrelated PDF remain local. No editor
+mutation or new build for this checkpoint. Recovery inventory regenerated from
+the staged tree; Git history/remote identify the final checkpoint. See Recovery
+opening for external dependencies and scope.
+
+**October22 Sound Studio — INSTALLED/VERIFIED:** independent native Windows WAV
+editor at `Labs/SoundStudio`, desktop **Prophecy Sound Studio**. Default source
+`Documents/Sounds`, target `Documents/Sounds Mixed`; editable export name, unique
+numbered files, source/target lists, double-click remix with all controls reset.
+Waveform trim/fades, independent offline R3 pitch/speed, five-band EQ, reverb tails,
+optional local polish/denoise; dithered48kHz/16-bit default,24/float options and
+estimated true-peak protection. Dedicated `Saved/SoundStudio/env`; matching shortcut
+and process AppUserModelID plus native icon handles verified.26 signal/UI checks
+passed, including short-transient latency compensation and preview/export equality.
+No Unreal/assets/training changes. [Workflow, research and limits](Labs/SoundStudio/README.md);
+receipts `Saved/Diagnostics/SoundStudio20261022/`.
+
+**October22 shared pelvis speed threshold corrected — RUNNING:** user requires
+max of both get-up peaks for all perturbed rows, since front can roll into back.
+Shared149.516cm/s replaces per-motion limits. Resumed latest130296 as
+20261022_131128_uefn_getup_pelvismax7_1024, same L4/1,024agents until stopped.
+Fixed loss weight recalibrated7%; all18perturbed replay rows share threshold.
+New backup/reward/progress verified130307,~15.15k transitions/s. See training
+journal opening and getup-pelvis-max receipts. Other settings/loco unchanged.
+
+**October22 local idle push viewer — ready/paused:** http://127.0.0.1:8850/ .
+Frozen latest-at-capture locomotion checkpoint0122776, one local CPU agent with
+real idle inputs, native240Hz physics/30Hz policy. Limb selection, directional
+mass-independent velocity kicks, strength control, reset and pause. Pause/hide
+stops simulation and continuous drawing. Verified30.18updates/s and equal1m/s
+kicks across hand/foot/pelvis. No cloud/training/Unreal changes. Restart with
+Labs/MimicKitIdleLive/start.ps1; see its README and MimicKitTraining opening.
+
+
+**October22 per-arm grab independence — INSTALLED/VERIFIED:** Joint
+Independance0..1 on Grab Object/Bone plus per-hand live Set/Get nodes. Reuses only
+the isolated projection experiment's constraint solver; other special-attack
+features remain isolated. Live Coding new cross-module imports failed; authorized
+normal incremental build30actions269.60s passed, all normal DLLs current. Isolated
+headless TestNN:174native checks pass; held clavicle alpha0/.25/.5/1/0 preserves
+physical joint identity, right setting.75 unchanged. Three existing grab nodes
+refreshed/saved, other wires/tuning identical; reflection/status healthy. Editor8096
+closed cleanly, current M_JoltTransferFailure already saved. Test process exited;
+interactive6904 verified on that map, Play off/dirty[], all4API signatures loaded.
+See ReachGrasp opening and GrabIndependence
+receipts; Tools/ReachGrasp/GrabIndependence.py / TestGrabIndependence.py.
+
+**October22 recovery horizontal pelvis speed cost — RUNNING:** resumed latest
+129835 on same L4,1,024agents until stopped. Run20261022_124925_uefn_getup_pelvis7_1024.
+Perturbed/perturbed+ only: squared excess above front0.473/back1.495m/s reference
+peaks, fixed weight calibrated7%. Verified XY horizontal/Z vertical and pelvis
+origin vs COM; pure vertical speed contributes zero. New backup/replay/TB and
+129846progress verified (~15.1k transitions/s). Existing foot/AE weights and
+normal/loco/physics unchanged. See MimicKitTraining opening and pelvis receipts.
+
+**October22 recovery foot penalties — RUNNING:** resumed latest129347 on existing
+L4 0to3wg3r3n926h,1,024 agents until stopped. New run
+20261022_122519_uefn_getup_feet7_1024 adds ankle target-velocity and idle-relative
+foot rotation costs to perturbed/perturbed+ only, fixed weights calibrated to
+7% EACH. Normal/loco/physics unchanged. Latest checkpoint locally/S3 preserved;
+new backup, advancing129358 and replay/TB terms verified (~15.2k transitions/s).
+See MimicKitTraining opening and getup-foot calibration/verification receipts.
+
+**October22 clavicle grab fixed — loaded/verified:** correct Self/closest-agent
+wiring was rejected by StartGrab's fixed4cm open-finger clearance cap. Replaced
+that cap with a collider/hand geometry bound, one-time admission work only.
+Live Coding1action161.75s, reload10:46:44UTC. Exact current TestNN owned PIE:
+BP starts at absolute30, reaches by60, grips by90 and holds through180. No tuning,
+wiring, save or restart; dirty agent BP/TestNN preserved, owned Play ended.
+Slow startup is existing sword Start Slow FPS=true/Slow FPS=5; removal of its
+EndPlay reset now preserves that cap. Startup values unchanged. Normal DLLs
+remain stale. See ReachGrasp opening and GrabDefaultsSelf diagnostic receipts.
+
+**October22 all grab nodes default Self — loaded/saved:** added DefaultToSelf Agent
+to Grab Object/Bone, Release Grab, Get Grab Status, Set/Get Grab Angle Tolerances.
+Explicit overrides remain supported. Runtime/editor Live Coding4actions314.31s,
+reload10:25:37UTC. All6metadata entries verified;4existing nodes refreshed and
+agent BP saved. User had already removed GrabBone304's incorrect Agent link;
+it now defaults Self, target Mesh and automatic surface selection preserved.
+Graph unchanged except object/Object FName casing; BP types/status healthy.
+No Play/restart or retained layout changes. Tools/ReachGrasp/GrabDefaultsToSelf.py
+and GrabDefaultsSelf receipts. Normal DLLs remain stale; see ReachGrasp opening.
+
+**October22 sword End Play FPS reset removed/saved:** deleted fixed60 and
+t.MaxFPS60 reset nodes from A_Sword End Play, so HideSword/destruction no longer
+changes global clock. Exact graph comparison confirms only those two nodes and
+their exec links removed. Existing startup/RMB debug controls unchanged. Saved
+A_Sword only; TestNN remains dirty, no Play/restart. Editor helper1action80.60s,
+reload09:50:55UTC. Normal DLLs remain stale. Tools/SwordHolster/RemoveEndPlayFPS.py,
+Saved/Diagnostics/SwordEndPlayFPS/verification.json; see SwordHolster opening.
+
+**October22 Grab Bone optional surface point — loaded:** new visible Use
+Surface Point bool, default true for compatibility. False ignores supplied point
+and uses Grab Object's automatic collider selection toward the upper arm.
+No retained layout change. Runtime3actions162.05s; editor refresh helper1action
+119.54s (after compile correction), reload09:39:31UTC. Current node refreshed,
+all existing graph wiring/defaults verified unchanged, agent BP saved. No Play
+or restart. Tools/ReachGrasp/UpgradeGrabBone.py and GrabBoneSurface receipts.
+Normal DLLs remain stale. No FPS behavior changes: diagnosed HideSword destroys sword and
+A_Sword EndPlay unconditionally restores60FPS; current Grab Bone also had the
+victim wired as grabber (self-grab rejection). See ReachGrasp topic opening.
+
+**October22 physical mesh getter renamed:** Blueprint display name is now Get
+Physical Mesh for all instances of native GetPoseReferenceMesh. Serialized
+identity/wiring unchanged. Existing editor Python startup reapplies the label;
+Tools/ReachGrasp/RenamePhysicalMesh.py reapplies after any future Agent reflection
+replacement. Verified all3TestNN agents return PhysicalMesh. No build/restart,
+graph edits or saves; user dirty agent BP/TestNN preserved. Normal DLLs remain
+stale from preceding tasks. See ReachGrasp topic opening.
+
+**October22 closest-agent node — loaded:** added pure Get Closest Agent
+in existing Reach library, Prophecy|Agent category. Same-world3D actor-position
+distance, excludes self/destroying agents, returns None when unavailable. No
+retained state or background work. Dirty BP_ProphecyManualPoseAgent preserved to
+disk before reload; previous saved bytes in Saved/Diagnostics/ClosestAgent.
+Live Coding3actions178.65s, reload09:18:36UTC. Verified correct nearest-other
+references for all3TestNN agents and None input; Blueprint types healthy after
+compiling the dirty agent BP. TestNN consequently dirty, left unsaved. No Play,
+restart or wiring edits. Tools/ReachGrasp/VerifyClosestAgent.py and diagnostic
+verification.json retain the check. Normal DLLs remain stale. See ReachGrasp topic.
+
+**October22 recovery resumed after funds outage:** latest127054 locally verified;
+replacement L4 0to3wg3r3n926h, $0.59/hour until stopped, exact existing1024-agent
+settings. Run20261022_104951_uefn_getup_perturbed_plus_1024 advanced127055->127065,
+15.49k transitions/s; new persistent backup/replay/TB verified. Old retained pod
+upszb03gy35fzj remains stopped. Locomotion independently resumed by its own chat;
+both current TB streams verified. See MimicKitTraining opening and recovery
+funds-resume-verification.json. Supersedes prior recovery running-pod status.
+
+**October22 locomotion resumed after funds shutdown — RUNNING:** latest119475
+(2,409,365,504samples) locally/persistently verified, optimizer/normalizer restored.
+Old L4q764mqd40pabiq unavailable after Runpod shutdown; retained disk preserved.
+Replacement L4leuh8va7hfcevy,$0.59/hour,1,024agents until stopped, exact previous
+settings/source. Run20261022_104557_uefn_locomotion_pelvis_velocity5_1024,
+verified119476->119486 and first backup. TB10-45-57, bridge/dashboard publishing.
+Recovery unchanged. See MimicKitTraining opening and funds-resume-* receipts.
+Supersedes locomotion status below.
+
+**October22 reach/grab pelvis floor — loaded:** minimum commanded pelvis height
+is now40cm vertically above the root, replacing the animation-relative72cm drop
+cap. New Set/Get Reach Minimum Pelvis Height Blueprint nodes allow per-agent
+live overrides for both hands. Candidate body solve applies the floor before
+arms/legs; no extra solver iterations or retained-state layout changes.
+Isolated kernel21cases/2520frames passed. Live Coding4compile actions338.41s;
+reload08:11:45UTC, nodes/default and Blueprint types verified. Editor8096 remains
+TestNN/outside Play, dirty[], no asset/wiring edits. **Normal DLLs stale: normal
+incremental build before next cold launch.** Lab untouched. See ReachGrasp topic
+opening and Saved/Diagnostics/ReachPelvisHeight/ receipts.
+
+**October22 TestNN reopened:** editor8096 verified on /Game/testNN.testNN,
+outside Play, no dirty packages. Existing normal DLLs current; no build or
+asset edits. Startup rebuilt missing engine-material shaders before opening.
+
+**October22 locomotion TB refreshed:** local observers restarted; missing event
+history restored through2.324B samples, live cards verified17seconds old. Current
+run23-17-29 selected. L4 training remained uninterrupted at~19.25ktransitions/s.
+Dashboard skips unnecessary replay scans when full-batch counters are available;
+bridge polling30seconds,TB cap10unchanged. See MimicKitTraining opening and
+Saved/MimicKitLocomotion/tb-refresh-20261022.json.
+
+**October22 scheduled perturbed+ switch — RUNNING:** resumed latest recovery
+113353_final (2,076,229,632 samples), locally SHA256-verified and persistent,
+as 20261022_013025_uefn_getup_perturbed_plus_1024 on same L4 upszb03gy35fzj,
+$0.59/hour until stopped. 307 normal /359 ordinary perturbed /358 perturbed+;
+plus179 front and179 back. Root linear and local joint velocities use two
+different random locomotion frames; independent isotropic spin magnitude uniform
+0–700deg/s. Plus head50% failure begins tick100; ordinary stays80. Other settings
+unchanged. GPU reset checks passed, advancing113354->113364 at early14.96k
+transitions/s; first backup readback verified. Replayer20rows includes9 correctly
+labelled perturbed+; TB/bridge publishing. Schedule paused after completion.
+See Docs/MimicKitTraining.md and getup-plus-verification.json. Supersedes scheduled
+entry below. Locomotion branch untouched.
+
+**October21 pelvis velocity MSE x5 — RUNNING:** pelvis-only 3D linear velocity
+contribution multiplied by5 on every locomotion-branch row (normal/perturbed,
+idle/loco), retaining body mean and AE/MSE handoff. Latest99574_final
+(1,757,249,536samples) locally/persistently verified and resumed as
+20261021_231729_uefn_locomotion_pelvis_velocity5_1024, sameL4q764mqd40pabiq,
+1,024agents,$0.59/hour until stopped. Verified99575->99585 at18.56ktransitions/s,
+first backup verified, actual20row replay confirms new weighting. Other losses
+and recovery branch unchanged. TB23-17-29; see MimicKitTraining opening and
+Saved/MimicKitLocomotion/pelvis5-* receipts. Supersedes loco status below.
+
+**October21 recovery perturbed+ switch scheduled:** in two hours, approximately
+October22 01:16 Europe/Warsaw, resume latest with half the perturbed rows assigned
+new initial velocities. Root linear velocity and local joint velocities come
+from two different random locomotion frames; independent random 3D spin has
+uniform magnitude 0–700 deg/s. Only these rows delay the 50% head-height failure
+check from tick80 to100. Other settings unchanged. Implementation is scheduled,
+not yet deployed. Plan Saved/MimicKitEquipment/perturbed-plus-switch.json;
+heartbeat switch-half-of-perturbed-get-ups-to-perturbed. Preserve loco branch.
+
+**October21 speed-loss TB card fixed:** dashboard whitelist omitted the already
+logged loss/extremity_speed_excess. Added mapping, backfilled31points exactly,
+restarted local dashboard only(PID2912), ongoing updates enabled. Trainer/GPU
+uninterrupted. TB22-48-04 filtered to new card; see MimicKitTraining opening.
+
+**October21 locomotion soft speed loss — RUNNING:** both hard speed-limit tries
+stale. Restored pre-change98733_final(1,729,691,648samples), optimizer/normalizer
+included. Keep150%foot/hand thresholds; idle uses walk backward. Speed no longer
+terminates: squared excess cost with fixed3.20399479weight, calibrated to15%of
+existing loss on violating frames. COM2 conditions unchanged. New run
+20261021_224804_uefn_locomotion_speed_loss_1024 on sameL4q764mqd40pabiq,
+1,024agents,$0.59/hour until stopped. Verified98734->98754,18.53ktransitions/s,
+new backup verified; replay15overspeed frames continue and reward matches cost.
+TB22-48-04. Recovery untouched. See MimicKitTraining opening and speed-loss receipts.
+Supersedes hard speed termination entries below.
+
+**October21 locomotion speed limits both150% — RUNNING:** feet raised135->150%,
+hands unchanged150%, idle still uses matching walk backward. Latest99151_final
+(1.743B) locally/persistently preserved, resumed20261021_221827_uefn_locomotion_extremity150_1024
+on same L4q764mqd40pabiq,1,024agents,$0.59/hour until stopped. Verified99152->99172
+at18.47ktransitions/s, first backup verified. TB22-18-27. Only speed-reference
+artifact changed; recovery unchanged. See MimicKitTraining opening and speed150 receipts.
+Supersedes earlier locomotion135%foot limit below.
+
+**October21 persistent replay/checkpoint cleanup completed:** user approved deleting
+the 468 intermediate physical UEFN checkpoint archives containing old replays.
+Deleted exactly that list: 21,375,033,969 bytes (21.38 GB). Verified every deleted
+key absent and all 14 protected latest/final saves present, including newer saves
+found during execution. Training was not interrupted; local files, datasets,
+source packages and TensorBoard logs untouched. Receipt:
+Saved/MimicKitEquipment/replay-cleanup-20261021/completed.json.
+This was a one-time cleanup, not a change to automatic retention.
+
+**October21 locomotion extremity-speed limits — RUNNING:** perturbed rows fail
+above135%foot/150%hand reference maximum in moving pelvis frame; idle uses
+matching walk backward. Latest98733_final locally/persistently preserved;
+resumed20261021_220225_uefn_locomotion_extremity_speed_1024 on replacement
+L4q764mqd40pabiq,$0.59/hour,1,024agents until stopped. Verified98734->98754,
+18.44k transitions/s, first backup readback verified. Replay5speed crossings
+all terminate at first eligible tick. TB22-02-25. Initial startup table-shadowing
+bug fixed/tested; old A40 stopped and unavailable. Recovery unchanged.
+See MimicKitTraining opening. Supersedes loco status below.
+
+**October21 locomotion perturbed idle pose MSE x5 — RUNNING:** position and
+rotation only, perturbed ordinary idle only, across early MSE/handoff/full MSE.
+Existing early coefficient0.01062843 retained; AE/velocities/normals/loco and
+recovery untouched. Resumed preserved97272_final (1.682B samples) as
+20261021_205453_uefn_locomotion_perturbed_idle_pose5_1024, same A40,$0.59/hour,
+1,024agents until stopped. Advancing97273->97283,early14.0k transitions/s;
+new backup persistent-verified. TB20-54-53. Scope tests and receipt details in
+MimicKitTraining opening; Saved/MimicKitLocomotion/idle-pose5-*.
+Supersedes earlier locomotion status below.
+
+**October21 perturbed get-up jump termination — running:** pelvis worldZ
+>=93.457782cm fails from tick6; first5ticks exempt, normals untouched. Existing
+100failure cost/no success bonus. Latest104663_final locally/persistently
+preserved, resumed20261021_200623_uefn_getup_pelvis_ceiling_1024 on sameL4,
+1,024agents/until stopped. Verified104674 at~15.31ktransitions/s,backup and
+11actual replay jumps terminated on first eligible crossing with penalty.
+Previous success gates/all other settings retained; locomotion untouched.
+See MimicKitTraining opening and pelvis-ceiling-verification.json.
+
+
+**October21 locomotion early MSE+AE RUNNING:** user-requested added MSE
+shares the AE fade: (1-mix)*AE + [mix+0.01062843*(1-mix)]*bodyMSE,
+30ticks early/30ticks handoff. Calibration matches mean early costs~0.299 each;
+late MSE, normals, physics/optimizers unchanged. Resumed preserved96009_final
+(1.640B samples) on same A40wjxv6qigq3dy9o,$0.59/hour until stopped,1,024agents.
+Run20261021_200213_uefn_locomotion_ae_earlymse_yaw180_1024, TB20-02-13.
+Advancing96010->96020,early14.3k transitions/s,new backup persistent-verified.
+Recovery untouched. See MimicKitTraining opening and early-mse verification
+receipts in Saved/MimicKitLocomotion. Supersedes earlier locomotion status.
+
+**October21 optimisation cleanup / TestNN reopen:** recycled disposable
+Intermediate/PikeJointLab (3,985,596bytes); source and benchmark receipts kept.
+Optimised diagnostics only11.318MiB, no large dumps from this arc. Map switch
+hit Unreal's old-world GC fatal: Python retained /Game/explosionVFX Package.
+All assets saved/no Play before switch. Inspection scripts now use function
+scope; cut capture releases world references on finish. Never keep editor
+actors/packages in remote Python globals across map loads. Incremental normal
+build succeeded (10actions,251.60s); normal DLLs now current. Recycled today's
+27 obsolete Live Coding patch files (479.34MiB) after build/before launch.
+Editor27876 verified on /Game/testNN.testNN, outside Play, no dirty packages.
+Total recycled483.14MiB; retained small diagnostics, benchmarks and source.
+
+**October21 perturbed recovery success tightened / running:** exact screenshot
+rollout103985 gives feet threshold13.034895cm and |head vertical speed|<2.103453m/s,
+in addition to head>90%idle height. Both feet must pass; body-origin worldZ.
+Latest104197_final saved locally/persistently before same-L4 restart as
+20261021_194738_uefn_getup_success_gates_1024,1,024agents,until stopped.
+Verified104208 at~15.85ktransitions/s, new persistent backup, all6recorded
+successes satisfy new gates. Other settings unchanged; locomotion untouched.
+See MimicKitTraining opening and success-gates-verification.json.
+
+
 **October21 current head-pike entry fixed before requested backup:** Optimised
 was recentering the accepted contact6.221cm onto the blade centreline, causing
 an upward solver kick. It now retains the pike's transverse contact offset at

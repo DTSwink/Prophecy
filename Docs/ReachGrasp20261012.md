@@ -1,5 +1,203 @@
 # Reach and grasp work — October 12
 
+## Per-arm joint independence — October22 (installed and verified)
+
+Grab Object and Grab Bone gain Joint Independance,0..1,default0. New Set/Get Grab
+Joint Independance nodes take Agent (defaults Self) and Hand (Left/Right). The
+setter updates an acquired physical joint immediately, or stores the value for
+an in-progress acquisition. Each subsequent Grab call explicitly supplies its own
+value, including repeated calls for the same target. Invalid/out-of-range values
+fail without changing the current grip or settings. Release/return do not affect
+the other arm; world cleanup removes configured values.
+
+0 is ordinary reciprocal response;1 removes hand response from this grip joint.
+Intermediate values scale the hand's inverse mass/inertia only inside this joint's
+solver. Target motion type is checked during existing constraint setup: static
+and kinematic targets always retain ordinary hand reaction. Actual body masses,
+collision response and other joints are unchanged. No extra per-frame Blueprint
+checks, timers or pose work. Setter does work only on request; identical native
+values are no-ops. Joint identity and pair suppression remain stable when changed.
+
+Ports only the tested grab solver from the isolated special-attack checkout.
+Projection playback and Follow/Root Local features remain in that checkout.
+Uses a new standalone wrapper allocation and separate per-agent two-hand values;
+existing FHand/FState, subsystem and generic-joint-settings layouts unchanged.
+The first nonzero request wraps the stock fixed constraint; subsequent values
+update that wrapper in place. Ordinary grabs at0 retain the stock implementation.
+User3 identifies this wrapper only when generic type is Fixed (pike uses User3
+with HardSixDOF); API guards keep these distinct. Joint reframe preserves alpha.
+
+Tools/ReachGrasp/GrabIndependence.py preserves/refreshed-pin checks and explicit
+transient-world physics probe; TestGrabIndependence.py exercises runtime updates
+on the existing TestNN clavicle grab. Receipts Saved/Diagnostics/GrabIndependence.
+Live Coding23actions943.71s compiled successfully;11:17:52UTC overall reload
+message was misleading. Plugin/editor patches loaded, but game patch failed
+LNK2019 on new Set/GetJointGrabIndependence imports. Readback confirms old grab
+signatures, absent setters and diagnostic; no successful installation claim.
+User authorized the necessary normal build/restart. Editor8096 closed cleanly
+12:20UTC, no dirty packages; reopen /Game/_mygame/Tests/MimicKitTransfer/M_JoltTransferFailure
+after isolated TestNN verification. Restart receipt records the exact map.
+Normal incremental build30actions269.60s passed (includes linking/metadata),
+all normal DLLs current. Headless isolated TestNN verification12:26–12:27UTC:
+174 native checks passed (linear/angular reaction across0/.25/.5/.75/1, runtime
+changes, invalid values, reframe, kinematic-target fallback, positional correction,
+unchanged body mass and unrelated-joint response). Three existing grab nodes
+refreshed/saved with exact prior wiring/tuning preserved and new pin0; reflection
+and Blueprint types/status healthy. Runtime clavicle grip acquired by67; alpha
+0/.25/.5/1/0 at67/82/97/112/127 retained the same physical joint slot8/generation2.
+Native readback matched each alpha; right-arm setting.75 unchanged. Repeated
+Grab Bone at.5 also preserved the grip. Right arm was configured but not gripping
+in this scene test. Owned headless process exited cleanly; interactive editor6904
+verified on the saved M_JoltTransferFailure map, Play off, dirty[], all4API
+signatures loaded (reopened.json). No user map/tuning edits.
+
+## Clavicle grab admission fixed — October22 current
+
+Current TestNN GrabBone304 correctly defaults Agent to Self, targets the closest
+agent's PhysicalMesh/clavicle_r and uses UseSurfacePoint=false. Runtime admission
+still failed because open fingers intersected the capsule after the old fixed
+4cm outward-clearance cap. StartGrab now preserves the 0/4cm fast paths, then
+derives a finite separating-plane bound from the collider AABB and all open
+finger joints/tips if needed. Existing eight-step binary search finds clearance;
+surface point is unchanged. This is one-time admission work, no new ticking or
+retained state. Optional diagnostic rejection reasons and the explicit editor
+command `Prophecy.Reach.Inspect Admission <agent-name> <bone>` identify failures;
+that command actively attempts a left-hand grab, so use only in owned probes.
+
+Implementation-only Live Coding1action161.75s passed, reload10:46:44UTC. Exact
+current-scene owned PIE: existing BP activates at absolute tick30, distance55.36cm
+at31, zero by60, gripped at90/120/150/180 with2contact fingers. Explicit repeat at35
+also returned true without restarting the motion. No scene wiring/tuning edits,
+asset saves or restart. User dirty agent BP/TestNN preserved; owned Play ended,
+pre-probe editor cap60 restored. Normal DLLs remain stale before cold launch.
+Small receipts/scripts: Saved/Diagnostics/GrabDefaultsSelf/ProbeCurrent.py,
+current-runtime.json, admission.txt, current-PHAT.txt, InspectCurrent.py.
+
+Slow startup diagnosis: all3scene swords retain authored Start Slow FPS=true and
+Slow FPS=5. Their Begin Play applies t.MaxFPS5 with fixed60 simulation timing.
+The requested removal of A_Sword End Play's clock reset means sword destruction
+no longer returns the cap to60. No new hardcoded slowdown; startup tuning left
+unchanged. Agent slow-start debug tick=-100 is not the source of startup5.
+
+## Grab Agent defaults — October22
+
+All six Prophecy|Grab nodes now declare DefaultToSelf="Agent": Grab Object,
+Grab Bone, Release Grab, Get Grab Status, Set/Get Grab Angle Tolerances.
+This is Blueprint default binding, not a C++ null-agent fallback; explicit
+Agent connections still override it. No runtime storage/layout changes.
+Live Coding4actions314.31s passed; reload October22 10:25:37UTC. All six loaded
+metadata entries verified; refreshed4existing grab nodes and saved agent BP.
+The user had already disconnected the diagnosed victim-as-grabber wire before
+the build snapshot, so the helper removed0links. Current Grab Bone Agent is
+unconnected and now defaults to Self; target mesh and UseSurfacePoint=false
+preserved. Full graph comparison found only legacy object->Object pin-name
+casing normalization (FName-equivalent); links/tuning unchanged. Blueprint
+types/status healthy. No Play or restart; normal DLLs remain stale.
+Tools/ReachGrasp/GrabDefaultsToSelf.py preserves
+the current agent BP, checks all six metadata entries, then refreshes grab nodes
+and removes only the diagnosed tick debugging GrabBone304 Agent link from
+ClosestAgent305. Its victim Physical Mesh connection is retained. Full graph
+comparison permits only that connection removal before saving.
+
+## Optional Grab Bone surface point — October22
+
+Grab Bone now has a visible Use Surface Point bool. True preserves its original
+explicit world-space point behavior; false ignores that input and uses the same
+StartGrab automatic collider point selection as Grab Object, toward the grabbing
+upper arm. The new parameter is appended/default true so existing C++ callers
+and Blueprint nodes preserve behavior. No retained layouts or extra per-tick work.
+Live Coding runtime3actions162.05s passed; existing nodes required explicit
+ReconstructNode to receive the new pin. Existing LiveAgentTypes command gained
+RefreshGrabBone, targeting only missing-pin GrabBone nodes (no new registrations).
+Editor helper1action119.54s passed after correcting a TObjectPtr loop compile
+error; reload09:39:31UTC. Tools/ReachGrasp/UpgradeGrabBone.py verified the current
+node has UseSurfacePoint=true, full graph identical after removing that added
+pin, Blueprint types/status healthy; refreshed/saved only the agent BP. No Play
+or restart. Normal DLLs remain stale before next cold launch.
+
+Current setup diagnosis (read-only): HideSword immediately preceding Grab Bone
+destroys the sword. A_Sword Event End Play unconditionally restores fixed60 and
+t.MaxFPS60, so destruction during gameplay cancels slow motion. Grab Bone Agent
+and Mesh were both fed by Get Closest Agent, making a self-grab rejected in
+StartGrab; Agent should be Self. SurfacePoint was world0; the new bool permits
+automatic selection instead. The chain is also gated on Left Grab Ball validity.
+This task adds the option only; no automatic rewiring or FPS cleanup change.
+
+## Physical mesh node naming — October22
+
+The base-agent getter is displayed as **Get Physical Mesh**, including all
+existing call-node instances and Blueprint subclasses. The native/serialized
+identity remains GetPoseReferenceMesh to preserve existing links and callers.
+No other reflected node names contain Pose Reference Mesh. Get Agent Mesh still
+means the distinct inherited mesh; it was not relabelled as the physical mesh.
+
+Editor metadata is applied by Content/Python/prophecy_node_labels.py, called from
+the existing init_unreal.py at each editor start. This avoids rebuilding the
+widely included Agent header for a display-only change. If a future Live Coding
+patch replaces the Agent UFunction metadata, rerun
+Tools/ReachGrasp/RenamePhysicalMesh.py afterward. No game/shipping behavior depends
+on this editor-only label. Current metadata verified and all3TestNN agents return
+their PhysicalMesh component. No build, restart, Blueprint reconstruction or
+save; existing dirty agent BP/map remain dirty.
+
+## Closest agent query — October22
+
+`Get Closest Agent` is a pure Blueprint node under Prophecy|Agent, implemented
+in the existing narrow Reach library. Agent defaults to Self; return is an
+AProphecyAgent reference (Blueprint subclasses included). It searches only the
+input agent's world by full3D actor-location distance, excluding self and actors
+being destroyed. Invalid input or no other agent returns None. There are no
+team/alive/visibility/radius filters. It performs one agent iteration with squared
+distances per evaluation; no recurring tick, timer, or retained state. Cache its
+return in a Blueprint variable when reusing the same result across multiple nodes.
+
+Live Coding passed3compile actions178.65seconds; reload October22 09:18:36UTC.
+Verified all3TestNN agents return the true nearest other agent; null input returns
+None. Blueprint types healthy (native_properties0,pin_types0,status3). Agent BP
+needed compilation after reload (status1); compiled without changing wiring.
+TestNN was consequently marked dirty and left unsaved. No Play or restart.
+Normal DLLs remain stale; incremental normal build required before cold launch.
+`Tools/ReachGrasp/VerifyClosestAgent.py` checks
+native reflection, null input, nearest selection for existing scene agents, and
+Blueprint types without moving/spawning actors or starting Play. Its --build
+branch preserves the dirty agent Blueprint to disk (previous bytes backed up in
+Saved/Diagnostics/ClosestAgent) before requesting Live Coding.
+
+## Root-relative pelvis floor — October22 current
+
+Reach/grab now constrains the commanded pelvis to at least **40 cm vertically
+above the current root bone**, replacing the old 72 cm maximum drop relative to
+the input animation pelvis. `Set Reach Minimum Pelvis Height` takes Agent and
+Height Above Root Cm (default40); `Get Reach Minimum Pelvis Height` reads it.
+Finite nonnegative heights are accepted in a game world. The per-agent setting
+applies immediately to both hands and survives subsequent reach/grab requests;
+world cleanup discards it. Call the setter in Blueprint to persist user tuning
+across Play sessions. Without a setter call, the default is40.
+
+The floor constrains each existing body candidate before solving spine/arms/legs;
+there are no additional solver iterations. The metric accounts for mesh rotation
+and scale so the limit is world-vertical relative to the root, not component-Z or
+distance from the animated pelvis. The root is not moved. This limits the target
+pose, not the actual physical pelvis under external forces. Ordinary inactive
+animation/return behavior is unchanged. Active standalone lab files and settings
+were not changed.
+
+No retained native state layout changed: added height/metric fields are in the
+stack-only FSourcePose; per-agent overrides use a separate weak-key map. Existing
+FState and animation proxy layouts remain unchanged. Live Coding passed:4 compile
+actions,338.41seconds; reload completed October22 08:11:45UTC. Loaded setter/getter
+and40cm default verified; LiveAgentTypes reports status3, no stale native
+properties/pin types. Editor8096 remains TestNN/outside Play with dirty[]. No
+asset saves or graph edits. **Normal DLLs require an incremental normal build
+before the next cold launch.**
+
+`Tools/ReachGrasp/TestPelvisHeight.py` extracts the production numerical kernel
+into ignored `Saved/Diagnostics/ReachPelvisHeight/`. It passes21 cases/2520frames:
+left/right/both,20/40/70cm, live raises, translated roots, scaled/tilted metrics.
+All commanded pelvis heights satisfy the floor; standard cases preserve limb
+lengths within1e-6cm. These are isolated numerical checks, not an Unreal FPS test.
+`VerifyPelvisHeight.py` checks loaded native nodes/default and Blueprint types.
+
 
 ## Explicit elbow posture and PHAT twist — October16 current
 

@@ -155,7 +155,7 @@ def convert(recording, geom, run):
     for row in result['rows']:
         metrics=row.get('evaluation',{})
         if 'perturbed_row' in metrics:
-            row['clip_name'] += ' | '+('perturbed' if metrics['perturbed_row'] else 'normal')
+            row['clip_name'] += ' | '+('perturbed+' if metrics.get('perturbed_plus_row') else 'perturbed' if metrics['perturbed_row'] else 'normal')
     return result
 
 

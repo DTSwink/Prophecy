@@ -143,7 +143,7 @@ void SetParameter(FBodyParameters& Parameters, const int32 Index, const double V
 }
 
 constexpr double ParameterMinimum[ParameterCount] = { 0.0, -0.18, -0.18, -0.95, -1.55, -0.95 };
-constexpr double ParameterMaximum[ParameterCount] = { 0.72, 0.18, 0.18, 0.95, 1.55, 0.95 };
+constexpr double ParameterMaximum[ParameterCount] = { DBL_MAX, 0.18, 0.18, 0.95, 1.55, 0.95 };
 constexpr double EfficiencyScale[ParameterCount] = { 0.12, 0.10, 0.10, 0.30, 0.30, 0.30 };
 constexpr double EfficiencyTrust[ParameterCount] = { 1.15, 1.0, 1.0, 1.15, 1.15, 1.15 };
 
@@ -269,6 +269,9 @@ struct FSupportMetrics
 
 struct FSourcePose
 {
+    // Stack-local solve input, never retained by a running animation proxy.
+    double MinimumPelvisHeight = .40;
+    FVector WorldHeightMetric = FVector::UpVector;
 	FJointPositions Positions;
 	FJointTransforms ComponentTransforms;
 	FArmSpec Arms[2];
@@ -519,10 +522,24 @@ FBodyPose BuildBodyPose(const FSourcePose& Source, FBodyParameters Parameters)
 {
 	FBodyPose Result;
 	Parameters = ClampParameters(Parameters);
+    FVector Pelvis = At(Source.Positions, EJoint::Pelvis)
+        + FVector(Parameters.ShiftX, Parameters.ShiftY, -Parameters.Drop);
+    const FVector& Metric = Source.WorldHeightMetric;
+    const double Height = FVector::DotProduct(Pelvis - At(Source.Positions, EJoint::Root), Metric);
+    if (Height < Source.MinimumPelvisHeight)
+    {
+        // Constrain every candidate before solving the spine, arms and legs.
+        // The metric includes mesh rotation/scale, so this is world vertical
+        // relative to the root bone, not distance from the animation's pelvis.
+        const FVector Correction = Metric * ((Source.MinimumPelvisHeight - Height) / Metric.SizeSquared());
+        Parameters.ShiftX += Correction.X;
+        Parameters.ShiftY += Correction.Y;
+        Parameters.Drop -= Correction.Z;
+        Pelvis += Correction;
+    }
 	Result.Parameters = Parameters;
 	Result.Positions = Source.Positions;
-	At(Result.Positions, EJoint::Pelvis) = At(Source.Positions, EJoint::Pelvis)
-		+ FVector(Parameters.ShiftX, Parameters.ShiftY, -Parameters.Drop);
+	At(Result.Positions, EJoint::Pelvis) = Pelvis;
 
 	const FQuat PelvisOrientation = BodyRotation(Parameters.Yaw * 0.15, 0.0, 0.0);
 	const EJoint Spine[] = { EJoint::Spine01, EJoint::Spine02, EJoint::Spine03, EJoint::Spine04, EJoint::Spine05 };
@@ -1171,11 +1188,16 @@ TConstArrayView<FName> ProphecyNativeReach::BoneNames()
 
 bool ProphecyNativeReach::Step(TConstArrayView<FTransform> Base, EProphecyDoubleReachMode Mode,
     const FVector (&Requested)[2], const float (&Speed)[2], FState& State,
-    TArray<FTransform>& Output, double Dt, double ElbowDownBlend)
+    TArray<FTransform>& Output, double Dt, double ElbowDownBlend,
+    double MinimumPelvisHeightCm, FVector WorldHeightMetric)
 {
     using namespace ProphecyDoubleReach;
     if (Base.Num() != JointCount || Dt <= 0) return false;
+    if (!FMath::IsFinite(MinimumPelvisHeightCm) || MinimumPelvisHeightCm < 0
+        || WorldHeightMetric.ContainsNaN() || WorldHeightMetric.SizeSquared() < 1.e-12) return false;
     FSourcePose Source;
+    Source.MinimumPelvisHeight = MinimumPelvisHeightCm * .01;
+    Source.WorldHeightMetric = WorldHeightMetric;
     for (int I=0; I<JointCount; ++I)
     {
         if (Base[I].ContainsNaN()) return false;
@@ -1202,8 +1224,8 @@ bool ProphecyNativeReach::Step(TConstArrayView<FTransform> Base, EProphecyDouble
     FBodyParameters Current;
     for (int I=0; I<6; ++I) SetParameter(Current,I,State.Body[I]);
     Current=LimitBodyParameterMotion(Current,Desired.Parameters,Dt,.075,1.8,FMath::DegreesToRadians(240.));
-    for (int I=0; I<6; ++I) State.Body[I]=GetParameter(Current,I);
     const auto Solved=SolveModeWithBodyParameters(Source,Targets,Mode,Current);
+    for (int I=0; I<6; ++I) State.Body[I]=GetParameter(Solved.Parameters,I);
     FJointTransforms Pose;
     BuildEndpointTransforms(Source,Solved,Mode,Pose);
     for (int K=0; K<2; ++K) if (State.Active[K])

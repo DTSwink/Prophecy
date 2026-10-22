@@ -57,7 +57,7 @@ class Dashboard:
             if run['objective']=='world_pose_mse':
                 mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','orientation_mse','body_pose_mse','head_height_band','pelvis_height_band','feet_lateral','termination_remaining','total')})
             if run['objective'] in ('absolute_walk_mse','uefn_omni_absolute_walk','uefn_crawl_idle_mse'):
-                mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','linear_velocity_mse','rotation_mse','angular_velocity_mse','flat_com_velocity','pelvis_velocity_extra','motion_prior','auto_phase','body_total','total')})
+                mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','linear_velocity_mse','rotation_mse','angular_velocity_mse','flat_com_velocity','pelvis_velocity_extra','motion_prior','extremity_speed_excess','feet_target_velocity','feet_idle_local_rotation','pelvis_horizontal_speed_excess','auto_phase','body_total','total')})
                 mapping['motion_prior/raw_cost']=('motion_prior/raw_cost',1)
                 mapping['loss/getup_head_height']=('loss/getup_head_height',1)
                 mapping['reward/getup_head_height']=('reward/getup_head_height',1)
@@ -87,7 +87,9 @@ class Dashboard:
                 if not Path(source).exists():continue
                 # Local replay history is already downloaded by the bridge.
                 # Read each capture once; no added simulation or remote traffic.
-                for capture in sorted((Path(source)/'debug').glob('rollout_step_*.json')):
+                # Full-batch counters already supply these runs' outcome cards.
+                for capture in ([] if run.get('training_outcomes') else
+                                sorted((Path(source)/'debug').glob('rollout_step_*.json'))):
                     capture_key=(name,str(capture))
                     if capture_key in self.replay_seen:continue
                     payload=json.loads(capture.read_text())

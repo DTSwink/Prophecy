@@ -61,6 +61,7 @@ THIRD_PARTY_INCLUDES_END
 #include "ProphecyJoltHitImpact.h"
 #include "ProphecyJoltSpeculativeJoint.h"
 #include "ProphecyJoltRadialJoint.h"
+#include "ProphecyJoltGrabJoint.h"
 #include "ProphecyJoltJointDamping.h"
 #include "ProphecyJoltFootExtension.h"
 #include "ProphecyJoltBodyConversion.h"
@@ -3262,6 +3263,13 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::UpdateJoint(const FProphec
     JPH::Ref<JPH::TwoBodyConstraint> Replacement;
     const FProphecyJoltWorldStatus Built = Native->BuildJoint(Settings, Replacement);
     if (!Built.IsSuccess()) return Built;
+    if(Old->Settings.Type==EProphecyJoltJointType::Fixed&&Old->Constraint->GetSubType()==JPH::EConstraintSubType::User3)
+    {
+        const float Amount=static_cast<const ProphecyJolt::FGrabJoint*>(Old->Constraint.GetPtr())->GetIndependence();
+        auto& Fixed=static_cast<JPH::FixedConstraint&>(*Replacement);
+        const auto Stored=Fixed.GetConstraintSettings();
+        Replacement=new ProphecyJolt::FGrabJoint(Fixed,static_cast<const JPH::FixedConstraintSettings&>(*Stored),Amount);
+    }
     FJointRecord& Record = *Native->Joints[Handle.Slot].Record;
     Native->Physics.RemoveConstraint(Record.Constraint.GetPtr());
     Native->Physics.AddConstraint(Replacement.GetPtr());
@@ -3273,6 +3281,53 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::UpdateJoint(const FProphec
     return {};
 }
 
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetJointGrabIndependence(
+    const FProphecyJoltJointHandle& Handle, float Independence)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    if(!FMath::IsFinite(Independence)||Independence<0||Independence>1)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Grab independence must be finite and in [0,1]."));
+    auto* Found=Native->FindJoint(Handle);
+    if(!Found)return Fail(EProphecyJoltWorldResult::InvalidHandle,TEXT("Grab joint is no longer live."));
+    if(Found->Settings.Type!=EProphecyJoltJointType::Fixed)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Grab independence requires a fixed joint."));
+    if(Found->Constraint->GetSubType()==JPH::EConstraintSubType::User3)
+    {
+        auto* Grab=static_cast<ProphecyJolt::FGrabJoint*>(Found->Constraint.GetPtr());
+        if(Grab->GetIndependence()==Independence)return {};
+        Grab->SetIndependence(Independence);
+    }
+    else
+    {
+        if(Independence==0)return {};
+        auto& Fixed=static_cast<JPH::FixedConstraint&>(*Found->Constraint);
+        const auto Stored=Fixed.GetConstraintSettings();
+        JPH::Ref<JPH::TwoBodyConstraint> Replacement=new ProphecyJolt::FGrabJoint(
+            Fixed,static_cast<const JPH::FixedConstraintSettings&>(*Stored),Independence);
+        auto& Record=*Native->Joints[Handle.Slot].Record;
+        Native->Physics.RemoveConstraint(Record.Constraint);
+        Native->Physics.AddConstraint(Replacement);
+        Record.Constraint=MoveTemp(Replacement);
+    }
+    Native->Wake(Found->Settings.BodyA);Native->Wake(Found->Settings.BodyB);
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::GetJointGrabIndependence(
+    const FProphecyJoltJointHandle& Handle,float& Independence) const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    Independence=0;const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    const auto* Found=Native->FindJoint(Handle);
+    if(!Found)return Fail(EProphecyJoltWorldResult::InvalidHandle,TEXT("Grab joint is no longer live."));
+    if(Found->Settings.Type!=EProphecyJoltJointType::Fixed)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Grab independence requires a fixed joint."));
+    if(Found->Constraint->GetSubType()==JPH::EConstraintSubType::User3)
+        Independence=static_cast<const ProphecyJolt::FGrabJoint*>(Found->Constraint.GetPtr())->GetIndependence();
+    return {};
+}
+
 FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetJointPikeWoundCorrection(
     const FProphecyJoltJointHandle& Handle, bool Enabled)
 {
@@ -3281,6 +3336,8 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetJointPikeWoundCorrectio
     if (!Ready.IsSuccess()) return Ready;
     const auto* Found = Native->FindJoint(Handle);
     if (!Found) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Pike joint is no longer live."));
+    if(Found->Settings.Type!=EProphecyJoltJointType::HardSixDOF)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Pike correction requires a six-axis joint."));
     const bool Wrapped = Found->Constraint->GetSubType() == JPH::EConstraintSubType::User3
         || Found->Constraint->GetSubType() == JPH::EConstraintSubType::User4;
     if (Wrapped == Enabled) return {};
@@ -3836,8 +3893,16 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadJointReaction(const FP
     }
     else
     {
-        const auto* Fixed = static_cast<const JPH::FixedConstraint*>(Record->Constraint.GetPtr());
-        Linear = Fixed->GetTotalLambdaPosition(); Angular = Fixed->GetTotalLambdaRotation();
+        if(Record->Constraint->GetSubType()==JPH::EConstraintSubType::User3)
+        {
+            const auto* Grab=static_cast<const ProphecyJolt::FGrabJoint*>(Record->Constraint.GetPtr());
+            Linear=Grab->GetLinearImpulse();Angular=Grab->GetAngularImpulse();
+        }
+        else
+        {
+            const auto* Fixed = static_cast<const JPH::FixedConstraint*>(Record->Constraint.GetPtr());
+            Linear = Fixed->GetTotalLambdaPosition(); Angular = Fixed->GetTotalLambdaRotation();
+        }
     }
     Force = FromJoltDirection(Linear) * (100. / Seconds);
     Torque = FromJoltDirection(Angular) * (10000. / Seconds);

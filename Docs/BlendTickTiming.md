@@ -15,6 +15,10 @@ At5FPS it takes12 real seconds. A .26-unit return requires16 ticks, approximatel
 Apply this convention to newly added authored blend/fade durations too, including
 camera fades. Do not use DeltaSeconds or elapsed wall time for those durations.
 
+October22: removed A_Sword's End Play fixed60/t.MaxFPS60 reset, because HideSword
+destroys the sword and fired that cleanup during gameplay. Destroying/hiding a
+sword now leaves the clock unchanged. Startup and explicit debug controls remain.
+
 October20 actual scene correction: A_Sword's **start slow fps** still changed
 the engine's fixed frame rate to5, supplying0.2s physics steps while authored
 clocks spent1/60. Its saved startup wiring now retains fixed60 and applies the

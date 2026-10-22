@@ -38,6 +38,72 @@ TArray<FString> Wiring(UBlueprint* BP)
 }
 void Run(const TArray<FString>& Args)
 {
+    if(Args.Num()==1&&Args[0]==TEXT("RefreshGrabIndependence"))
+    {
+        if(!GEditor||GEditor->PlayWorld)return;
+        auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+        if(!BP)return;
+        const FScopedTransaction Tx(NSLOCTEXT("Prophecy","GrabIndependence","Add per-hand grab joint independence"));
+        TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);int32 Count=0;
+        for(auto* Graph:Graphs)for(UEdGraphNode* Node:Graph->Nodes)
+            if(auto* Call=Cast<UK2Node_CallFunction>(Node))
+            {
+                const auto Name=Call->FunctionReference.GetMemberName();
+                if((Name==TEXT("GrabBone")||Name==TEXT("GrabObject"))&&!Call->FindPin(TEXT("JointIndependance")))
+                {BP->Modify();Graph->Modify();Call->Modify();Call->ReconstructNode();++Count;}
+            }
+        if(Count){FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);}
+        UE_LOG(LogTemp,Display,TEXT("Refreshed %d grab independence pins; saved=0 status=%d"),Count,int32(BP->Status));
+        return;
+    }
+    if (Args.Num()==1 && Args[0]==TEXT("GrabDefaultsToSelf"))
+    {
+        if (!GEditor || GEditor->PlayWorld) return;
+        auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+        if (!BP) return;
+        const FScopedTransaction Tx(NSLOCTEXT("Prophecy","GrabDefaultsToSelf","Default grab nodes to Self"));
+        TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+        int32 Count=0,Disconnected=0;
+        for (auto* Graph:Graphs) for (UEdGraphNode* Node:Graph->Nodes)
+            if (auto* Call=Cast<UK2Node_CallFunction>(Node))
+            {
+                const auto* Function=Call->GetTargetFunction();
+                if (!Function || Function->GetOuter()->GetPathName()!=TEXT("/Script/GameAnimationSample3.ProphecyReachLibrary")
+                    || Function->GetMetaData(TEXT("Category"))!=TEXT("Prophecy|Grab")) continue;
+                BP->Modify();Graph->Modify();Call->Modify();
+                // Only the diagnosed test node's accidental victim-as-grabber wire.
+                // Other explicit Agent overrides stay intact.
+                if (Graph->GetFName()==TEXT("tick debugging") && Call->GetFName()==TEXT("K2Node_CallFunction_304"))
+                    if (auto* Agent=Call->FindPin(TEXT("Agent")); Agent && Agent->LinkedTo.Num()==1)
+                        if (auto* Source=Cast<UK2Node_CallFunction>(Agent->LinkedTo[0]->GetOwningNode()))
+                            if (Source->FunctionReference.GetMemberName()==TEXT("GetClosestAgent"))
+                            {
+                                Source->Modify();Agent->BreakLinkTo(Agent->LinkedTo[0]);++Disconnected;
+                            }
+                Call->ReconstructNode();++Count;
+            }
+        if (Count) {FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection);}
+        UE_LOG(LogTemp,Display,TEXT("Grab defaults: refreshed=%d accidental_agent_links_removed=%d status=%d saved=0"),Count,Disconnected,int32(BP->Status));
+        return;
+    }
+    if (Args.Num()==1 && Args[0]==TEXT("RefreshGrabBone"))
+    {
+        if (!GEditor || GEditor->PlayWorld) return;
+        auto* BP=LoadObject<UBlueprint>(nullptr,TEXT("/Game/_mygame/locomotion/BP_ProphecyManualPoseAgent.BP_ProphecyManualPoseAgent"));
+        if (!BP) return;
+        const FScopedTransaction Transaction(NSLOCTEXT("Prophecy","RefreshGrabBone","Refresh Grab Bone optional surface point"));
+        TArray<UEdGraph*> Graphs;BP->GetAllGraphs(Graphs);
+        int32 Count=0;
+        for (auto* Graph:Graphs) for (UEdGraphNode* Node:Graph->Nodes)
+            if (auto* Call=Cast<UK2Node_CallFunction>(Node))
+                if (Call->FunctionReference.GetMemberName()==TEXT("GrabBone") && !Call->FindPin(TEXT("UseSurfacePoint")))
+                {
+                    BP->Modify();Graph->Modify();Call->Modify();Call->ReconstructNode();++Count;
+                }
+        if (Count) { FBlueprintEditorUtils::MarkBlueprintAsModified(BP);FKismetEditorUtilities::CompileBlueprint(BP,EBlueprintCompileOptions::SkipGarbageCollection); }
+        UE_LOG(LogTemp,Display,TEXT("Refreshed %d Grab Bone nodes; not saved."),Count);
+        return;
+    }
     if (Args.Num()==1 && Args[0]==TEXT("WireReachGrabFixture")) { ProphecyReachGrabFixture::Install();return; }
     if (Args.Num()!=1 || (Args[0]!=TEXT("Inspect") && Args[0]!=TEXT("Repair"))) return;
     const bool Repair=Args[0]==TEXT("Repair");

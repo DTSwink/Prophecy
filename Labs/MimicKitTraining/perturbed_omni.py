@@ -17,6 +17,45 @@ from perturbed_motion import MotionPrior, COM2_BODIES, com2_velocity, yaw_matrix
 from perturbed_motion import getup_head_height_loss, getup_head_height_reward
 
 
+@torch.jit.script
+def getup_pelvis_horizontal_cost(velocity: torch.Tensor, limit: torch.Tensor):
+    # Physics is Z-up. velocity is world-space BODY ORIGIN velocity, not COM.
+    return (velocity[..., :2].norm(p=2, dim=-1)-limit).clamp_min(0.).square()
+
+
+@torch.jit.script
+def getup_foot_costs(command: torch.Tensor, foot_rot: torch.Tensor,
+                    calf_rot: torch.Tensor, idle_local: torch.Tensor):
+    # Physical commanded ankle angular velocity, after the environment clamp.
+    speed = command.square().mean(-1)
+    local = q.quat_mul(q.quat_conjugate(calf_rot), foot_rot)
+    delta = q.quat_mul(q.quat_conjugate(idle_local), local)
+    # Shortest rotation angle; q and -q are the same orientation.
+    angle = 2. * torch.atan2(delta[..., :3].norm(p=2, dim=-1), delta[..., 3].abs())
+    return torch.stack((speed, angle.square().mean(-1)), -1)
+
+
+def sample_getup_plus_velocities(root_pool, dof_pool, count, max_spin):
+    """Separate source frames, isotropic axis, uniform angular speed in radians/s."""
+    size = len(root_pool)
+    a = torch.randint(size, (count,), device=root_pool.device)
+    b = torch.randint(size-1, (count,), device=root_pool.device)
+    b = b + (b >= a).long()
+    axis = torch.randn((count, 3), device=root_pool.device)
+    axis = axis / axis.norm(dim=-1, keepdim=True).clamp_min(1e-12)
+    spin = axis * (torch.rand((count, 1), device=root_pool.device) * max_spin)
+    return root_pool[a], dof_pool[b], spin, a, b
+
+
+def getup_pelvis_failure(perturbed_getup, ticks, pelvis_height, ceiling, grace_ticks):
+    return perturbed_getup & (ticks > grace_ticks) & (pelvis_height >= ceiling)
+
+
+def getup_success_stability(feet_height, head_vertical_velocity, feet_limit, speed_limit):
+    """World-Z body-origin measurements, strict bounds; no extra physics steps."""
+    return (feet_height < feet_limit).all(dim=-1) & (head_vertical_velocity.abs() < speed_limit)
+
+
 def blend_root_pose(position, rotation, target_position, target_rotation, alpha):
     """Linear root translation and shortest-arc quaternion interpolation."""
     a = alpha[:, None]
@@ -169,6 +208,17 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         targets = [entries[Path(self._motion_lib.get_motion_file(i)).stem]['average_xy_m_s']
                    for i in range(self._motion_lib.get_num_motions())]
         self._com2_targets = torch.tensor(targets, device=self._device)
+        self._extremity_speed_enabled = bool(cfg.get('extremity_speed_reference'))
+        if self._extremity_speed_enabled:
+            speed_table = json.loads(Path(cfg['extremity_speed_reference']).read_text())
+            speed_names = speed_table['bodies']
+            self._extremity_speed_ids = torch.tensor([names.index('pelvis')] + [names.index(n) for n in speed_names], device=self._device)
+            entries_speed = {r['id']: r for r in speed_table['motions']}
+            limits = [entries_speed[Path(self._motion_lib.get_motion_file(i)).stem]['limits_m_s'] for i in range(self._motion_lib.get_num_motions())]
+            self._extremity_speed_limits = torch.tensor(limits, device=self._device)
+            if not torch.isfinite(self._extremity_speed_limits).all() or (self._extremity_speed_limits < 0).any():
+                raise ValueError('Invalid extremity speed reference limits')
+            self._extremity_speed_limits_sq = self._extremity_speed_limits.square()
         torch.testing.assert_close(masses, torch.tensor(table['masses_kg'], device=self._device))
         if not torch.isfinite(self._com2_targets).all():
             raise ValueError('Invalid precomputed COM2 target')
@@ -177,11 +227,68 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         pos, body_rot = self._kin_char_model.forward_kinematics(root, rot, joints)
         self._idle_frame0_pos = pos.clone()
         self._idle_frame0_rot = body_rot.clone()
+        pelvis_cfg = cfg.get('getup_pelvis_horizontal_regularizer')
+        self._pelvis_horizontal_enabled = pelvis_cfg is not None
+        if self._pelvis_horizontal_enabled:
+            if names[0] != 'pelvis' or not self._idle_position_getup:
+                raise ValueError('Pelvis speed cost requires pelvis-first idle-position get-ups')
+            gravity = torch.as_tensor(self._engine.get_gravity(), device=self._device)
+            torch.testing.assert_close(gravity[:2], torch.zeros(2, device=self._device))
+            if not gravity[2] < 0:
+                raise ValueError('Expected world Z-up physics')
+            lib = self._recovery_lib
+            limits = []
+            for motion in range(lib.get_num_motions()):
+                entry = pelvis_cfg['motions'][Path(lib.get_motion_file(motion)).stem]
+                start = int(lib._motion_start_idx[motion])
+                count = int(lib._motion_num_frames[motion])
+                peak = lib._frame_root_vel[start:start+count, :2].norm(p=2, dim=-1).max()
+                limit = float(entry['peak_horizontal_m_s'])
+                torch.testing.assert_close(peak, torch.tensor(limit, device=self._device), atol=1e-6, rtol=1e-6)
+                limits.append(limit)
+            # Either get-up can roll into the other: one common peak for all rows.
+            self._pelvis_horizontal_limits = torch.full((len(limits),), max(limits), device=self._device)
+            self._pelvis_horizontal_weight = float(pelvis_cfg['weight'])
+            if not math.isfinite(self._pelvis_horizontal_weight) or self._pelvis_horizontal_weight <= 0:
+                raise ValueError('Pelvis horizontal weight must be finite and positive')
+        foot_cfg = cfg.get('getup_foot_regularizers')
+        self._foot_regularizers_enabled = foot_cfg is not None
+        if self._foot_regularizers_enabled:
+            if not self._idle_position_getup:
+                raise ValueError('Foot regularizers require the idle-frame0 get-up objective')
+            self._foot_cost_ids = [names.index('left_foot'), names.index('right_foot')]
+            self._foot_calf_ids = [int(self._kin_char_model.get_parent_id(i)) for i in self._foot_cost_ids]
+            if [names[i] for i in self._foot_calf_ids] != ['left_shin', 'right_shin']:
+                raise ValueError('Expected each foot parent to be its calf')
+            indices = []
+            for i in self._foot_cost_ids:
+                start = self._kin_char_model.get_joint_dof_idx(i)
+                if self._kin_char_model.get_joint_dof_dim(i) != 3:
+                    raise ValueError('Expected three velocity commands per ankle')
+                indices.extend(range(start, start+3))
+            self._foot_command_ids = indices
+            self._foot_idle_local = q.quat_mul(q.quat_conjugate(body_rot[:, self._foot_calf_ids]), body_rot[:, self._foot_cost_ids])
+            weights = [float(foot_cfg[k]) for k in ('velocity_weight', 'rotation_weight')]
+            if not all(math.isfinite(w) and w > 0 for w in weights):
+                raise ValueError('Foot loss weights must be finite and positive')
+            self._foot_cost_weights = torch.tensor(weights, device=self._device)
         # Keep reward/display orientations separate from the spawn reference.
         self.reward_target_rot = self._ref_body_rot.clone()
         self._head_id = names.index('head')
+        self._pelvis_ceiling_id = names.index('pelvis')
+        self._pelvis_ceiling = cfg.get('getup_failure_pelvis_height_m')
+        if self._pelvis_ceiling is not None and not (math.isfinite(float(self._pelvis_ceiling)) and self._pelvis_ceiling > 0):
+            raise ValueError('Pelvis failure height must be finite and positive')
         self._idle_head_height = pos[:, self._head_id, 2]
         self._head_reset_height = self._idle_head_height * float(cfg['getup_head_reset_fraction'])
+        self._success_feet_ids = [names.index('left_foot'), names.index('right_foot')]
+        self._success_feet_limit = cfg.get('getup_success_max_feet_height_m')
+        self._success_speed_limit = cfg.get('getup_success_max_head_vertical_speed_m_s')
+        if (self._success_feet_limit is None) != (self._success_speed_limit is None):
+            raise ValueError('Get-up success feet and head-speed limits must be configured together')
+        if self._success_feet_limit is not None:
+            if not all(math.isfinite(float(v)) and float(v) > 0 for v in (self._success_feet_limit, self._success_speed_limit)):
+                raise ValueError('Get-up success limits must be finite and positive')
         # Uniform frames over every locomotion clip, including both D/S variants.
         starts = self._motion_lib._motion_start_idx
         eligible = []
@@ -189,6 +296,23 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             eligible.append(torch.arange(int(starts[i]), int(starts[i]+self._motion_lib._motion_num_frames[i]), device=self._device))
         self._loco_frame_pool = torch.cat(eligible)
         self._loco_reset_dofs = self._motion_lib.joint_rot_to_dof(self._motion_lib._frame_joint_rot[self._loco_frame_pool])
+        plus_fraction = float(cfg.get('getup_plus_fraction', 0.))
+        self._perturbed_plus = random_start_rows(torch.where(self._perturbed_getup)[0],
+            n, plus_fraction, self._recovery_fixed_motion)
+        self._getup_low_head_ticks = torch.where(self._perturbed_plus,
+            int(cfg.get('getup_plus_low_head_failure_tick', cfg['getup_low_head_failure_tick'])),
+            int(cfg['getup_low_head_failure_tick']))
+        self._plus_max_spin = math.radians(float(cfg.get('getup_plus_max_spin_degrees_s', 700.)))
+        if not math.isfinite(self._plus_max_spin) or self._plus_max_spin < 0:
+            raise ValueError('Invalid perturbed+ spin bound')
+        self._plus_root_pool = self._motion_lib._frame_root_vel[self._loco_frame_pool]
+        self._plus_dof_pool = self._motion_lib._frame_dof_vel[self._loco_frame_pool]
+        if len(self._plus_root_pool) < 2 or not torch.isfinite(self._plus_root_pool).all() or not torch.isfinite(self._plus_dof_pool).all():
+            raise ValueError('Invalid locomotion velocity pool')
+        self._plus_linear_frame = torch.full((n,), -1, dtype=torch.long, device=self._device)
+        self._plus_joint_frame = torch.full_like(self._plus_linear_frame, -1)
+        self._plus_root_velocity = torch.zeros((n, 3), device=self._device)
+        self._plus_spin = torch.zeros_like(self._plus_root_velocity)
         self._yaw_degrees = torch.zeros(n, device=self._device)
         self._initial_com2 = torch.zeros((n, 2), device=self._device)
         self._initial_com2_error = torch.zeros(n, device=self._device)
@@ -201,6 +325,15 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             raise ValueError('AE weight must be finite and positive')
         self._prior_raw = torch.zeros(n, device=self._device)
         self._tracking_mix = torch.ones(n, device=self._device)
+        pelvis_scale = float(cfg.get('all_rows_pelvis_velocity_mse_multiplier', 1.))
+        if not math.isfinite(pelvis_scale) or pelvis_scale <= 0:
+            raise ValueError('Pelvis velocity MSE multiplier must be finite and positive')
+        idle_scale = float(cfg.get('idle_pose_mse_multiplier', 1.))
+        if not math.isfinite(idle_scale) or idle_scale <= 0:
+            raise ValueError('Perturbed idle pose MSE multiplier must be finite and positive')
+        early_weight = float(cfg.get('ae_mse_weight', 0.))
+        if not math.isfinite(early_weight) or early_weight < 0:
+            raise ValueError('Early AE-associated MSE weight must be finite and nonnegative')
         self._reset_reason = torch.zeros(n, device=self._device, dtype=torch.long)
         self._outcome_ends = torch.zeros(n, device=self._device, dtype=torch.long)
         self._outcome_failures = torch.zeros_like(self._outcome_ends)
@@ -214,6 +347,21 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         if not self._additive_head_reward and not self._idle_position_getup:
             self.loss_term_names = (*self.loss_term_names, 'getup_head_height')
             self.loss_weights['getup_head_height'] = float(cfg['getup_head_height_weight'])
+        speed_weight = float(cfg.get('extremity_speed_loss_weight', 0.))
+        if not math.isfinite(speed_weight) or speed_weight < 0:
+            raise ValueError('Extremity speed loss weight must be finite and nonnegative')
+        if speed_weight:
+            if not self._extremity_speed_enabled:
+                raise ValueError('Extremity speed loss requires reference limits')
+            self.loss_term_names = (*self.loss_term_names, 'extremity_speed_excess')
+            self.loss_weights['extremity_speed_excess'] = speed_weight
+        if self._foot_regularizers_enabled:
+            self.loss_term_names = (*self.loss_term_names, 'feet_target_velocity', 'feet_idle_local_rotation')
+            self.loss_weights['feet_target_velocity'] = weights[0]
+            self.loss_weights['feet_idle_local_rotation'] = weights[1]
+        if self._pelvis_horizontal_enabled:
+            self.loss_term_names = (*self.loss_term_names, 'pelvis_horizontal_speed_excess')
+            self.loss_weights['pelvis_horizontal_speed_excess'] = self._pelvis_horizontal_weight
         self.loss_terms = torch.zeros((n, len(self.loss_term_names)), device=self._device)
         self._completed_loss_totals = torch.zeros(len(self.loss_term_names)+1, device=self._device)
         self._perturb_ready = True
@@ -286,6 +434,20 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             self._random_pose_frame[getup] = sample
         else:
             self._random_pose_frame[getup] = self._loco_frame_pool[sample]
+        plus = env_ids[self._perturbed_plus[env_ids]]
+        if len(plus):
+            linear, dof, spin, a, b = sample_getup_plus_velocities(
+                self._plus_root_pool, self._plus_dof_pool, len(plus), self._plus_max_spin)
+            # Animation translation is at the pelvis origin. Newton free-root
+            # linear velocity is at its COM; account for the new independent spin.
+            offset = q.quat_rotate(e.get_root_rot(char)[plus], self._body_com[plus, 0])
+            e.set_root_vel(plus, char, linear + torch.cross(spin, offset, dim=-1))
+            e.set_root_ang_vel(plus, char, spin)
+            e.set_dof_vel(plus, char, dof)
+            self._plus_linear_frame[plus] = self._loco_frame_pool[a]
+            self._plus_joint_frame[plus] = self._loco_frame_pool[b]
+            self._plus_root_velocity[plus] = linear
+            self._plus_spin[plus] = spin
         self._yaw_degrees[env_ids] = 0.
         ids = env_ids[self._perturbed_rows[env_ids] & ~self._recovery_rows[env_ids]]
         if not len(ids):
@@ -370,7 +532,40 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         # these labels out entirely, including normal recovery feedback rows.
         return torch.where((self._phase_supervision_mask == 0)[:, None], self._feedback_phase, target)
 
+    def _append_extremity_speed_loss(self, terms, pos, vel, ang):
+        weight = float(self._perturb_cfg.get('extremity_speed_loss_weight', 0.))
+        if not weight:
+            return terms
+        ids = self._extremity_speed_ids[1:]
+        # Reward already supplies body-origin world velocities, not COM velocities.
+        relative = vel[:, ids] - vel[:, :1] - torch.cross(
+            ang[:, :1].expand(-1, 4, -1), pos[:, ids] - pos[:, :1], dim=-1)
+        excess = (relative.norm(dim=-1) - self._extremity_speed_limits[self._motion_ids]).clamp_min(0.)
+        cost = excess.square().mean(-1) * weight
+        cost = torch.where(self._perturbed_rows & ~self._recovery_rows, cost, 0.)
+        return torch.cat((terms, cost[:, None]), -1)
+
+    def _foot_regularizer_raw(self, rot):
+        command = self._engine._controls.target_vel[self._get_char_id()][:, self._foot_command_ids]
+        return getup_foot_costs(command, rot[:, self._foot_cost_ids], rot[:, self._foot_calf_ids],
+                               self._foot_idle_local[self._motion_ids])
+
     def _tracking_losses(self, pos, rot, vel, ang, target_vel, target_ang):
+        terms = self._base_perturbed_tracking_losses(pos, rot, vel, ang, target_vel, target_ang)
+        if not self._perturb_ready:
+            return terms
+        if self._foot_regularizers_enabled:
+            costs = self._foot_regularizer_raw(rot) * self._foot_cost_weights
+            costs = torch.where(self._perturbed_getup[:, None], costs, 0.)
+            terms = torch.cat((terms, costs), -1)
+        if self._pelvis_horizontal_enabled:
+            # absolute_walk already subtracts omega x COM-offset from engine COM velocity.
+            raw = getup_pelvis_horizontal_cost(vel[:, 0], self._pelvis_horizontal_limits[self._recovery_motion])
+            cost = torch.where(self._perturbed_getup, raw*self._pelvis_horizontal_weight, 0.)
+            terms = torch.cat((terms, cost[:, None]), -1)
+        return terms
+
+    def _base_perturbed_tracking_losses(self, pos, rot, vel, ang, target_vel, target_ang):
         if self._perturb_ready:
             self._refresh_reward_rotations()
         terms = super()._tracking_losses(pos, rot, vel, ang, target_vel, target_ang)
@@ -386,10 +581,25 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
                tracking_blend(torch.round(self._time_buf*30), self._perturb_cfg['ae_ticks'], self._perturb_cfg['blend_ticks']))
         mix = torch.where(self._perturbed_getup, float(self._idle_position_getup), mix)
         self._tracking_mix.copy_(torch.where(self._perturbed_rows, mix, 1.))
-        # Perturbed rows use AE then body MSE, without an extra COM-band loss.
-        terms[:, :4] *= self._tracking_mix[:, None]
+        # Extra early MSE shares AE's fade; the ordinary MSE handoff is unchanged.
+        mse_mix = self._tracking_mix
+        early_weight = float(self._perturb_cfg.get('ae_mse_weight', 0.))
+        if early_weight:
+            mse_mix = mse_mix + early_weight * (1 - self._tracking_mix)
+        pelvis_scale = float(self._perturb_cfg.get('all_rows_pelvis_velocity_mse_multiplier', 1.))
+        if pelvis_scale != 1.:
+            # Keep the existing body/component mean and handoff weighting.
+            pelvis_error = (vel[:, 0] - target_vel[:, 0]).square().mean(-1)
+            terms[:, 1] += (pelvis_scale - 1.) * self._loss_weights[1] * pelvis_error / vel.shape[1]
+        terms[:, :4] *= mse_mix[:, None]
+        idle_pose_scale = float(self._perturb_cfg.get('idle_pose_mse_multiplier', 1.))
+        if idle_pose_scale != 1.:
+            idle_rows = self._perturbed_rows & ~self._recovery_rows & (self._gaits[self._motion_ids] == -1)
+            scale = torch.where(idle_rows, idle_pose_scale, 1.)
+            terms[:, 0] *= scale
+            terms[:, 2] *= scale
         if 'pelvis_velocity_extra' in self.loss_term_names:
-            terms[:, self.loss_term_names.index('pelvis_velocity_extra')] *= self._tracking_mix
+            terms[:, self.loss_term_names.index('pelvis_velocity_extra')] *= mse_mix
         if 'flat_com_velocity' in self.loss_term_names:
             terms[ids, self.loss_term_names.index('flat_com_velocity')] = 0.
         terms[self._perturbed_getup] = 0.
@@ -405,11 +615,11 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             self._ae_diagnostics[0].add_(raw.sum())
             self._ae_diagnostics[1].add_(len(prior_ids))
         if self._additive_head_reward or self._idle_position_getup:
-            return torch.cat((terms, ae[:, None]), -1)
+            return self._append_extremity_speed_loss(torch.cat((terms, ae[:, None]), -1), pos, vel, ang)
         head_loss = getup_head_height_loss(pos[:, self._head_id, 2], self._idle_head_height[self._motion_ids],
             torch.round(self._time_buf*30), self._perturbed_getup)
         head_loss *= self.loss_weights['getup_head_height']
-        return torch.cat((terms, ae[:, None], head_loss[:, None]), -1)
+        return self._append_extremity_speed_loss(torch.cat((terms, ae[:, None], head_loss[:, None]), -1), pos, vel, ang)
 
     def _update_reward(self):
         super()._update_reward()
@@ -418,6 +628,11 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             self._reward_buf[rows] = 1. - self.loss_terms[rows, 0]
             if self._perturb_cfg.get('getup_ae_regularizer', False):
                 self._reward_buf[rows] -= self.loss_terms[rows, self.loss_term_names.index('motion_prior')]
+            if self._foot_regularizers_enabled:
+                for term in ('feet_target_velocity', 'feet_idle_local_rotation'):
+                    self._reward_buf[rows] -= self.loss_terms[rows, self.loss_term_names.index(term)]
+            if self._pelvis_horizontal_enabled:
+                self._reward_buf[rows] -= self.loss_terms[rows, self.loss_term_names.index('pelvis_horizontal_speed_excess')]
         if not self._perturb_ready or not self._additive_head_reward:
             return
         self._head_height_reward.copy_(getup_head_height_reward(
@@ -435,6 +650,20 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         self._reward_diagnostics.zero_()
         return dict(getup_head_height=head/count, total=total/all_count) if count and all_count else {}
 
+    def _extremity_speed_failure(self):
+        char = self._get_char_id()
+        ids = self._extremity_speed_ids
+        pos = self._engine.get_body_pos(char)[:, ids]
+        rot = self._engine.get_body_rot(char)[:, ids]
+        ang = self._engine.get_body_ang_vel(char)[:, ids]
+        vel = self._engine.get_body_vel(char)[:, ids] - torch.cross(
+            ang, q.quat_rotate(rot, self._body_com[:, ids]), dim=-1)
+        relative = vel[:, 1:] - vel[:, :1] - torch.cross(
+            ang[:, :1].expand(-1, 4, -1), pos[:, 1:] - pos[:, :1], dim=-1)
+        # Squared norms avoid a square root; rotation does not change length.
+        too_fast = (relative.square().sum(-1) > self._extremity_speed_limits_sq[self._motion_ids]).any(-1)
+        return too_fast & self._perturbed_rows & ~self._recovery_rows & (self._time_buf > 0)
+
     def _update_done(self):
         super()._update_done()
         if not self._perturb_ready:
@@ -447,15 +676,30 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         flags = torch.where(ended, DoneFlags.TIME.value, DoneFlags.NULL.value)
         head_up = self._engine.get_body_pos(self._get_char_id())[:, self._head_id, 2] > self._head_reset_height[self._motion_ids]
         head_reset = self._perturbed_getup & head_up & (ticks > 0)
+        if self._success_feet_limit is not None:
+            char = self._get_char_id()
+            head_rot = self._engine.get_body_rot(char)[:, self._head_id]
+            head_ang = self._engine.get_body_ang_vel(char)[:, self._head_id]
+            # Engine velocity is at COM; the recorded head height/velocity use its body origin.
+            head_offset = q.quat_rotate(head_rot, self._body_com[:, self._head_id])
+            head_vel = self._engine.get_body_vel(char)[:, self._head_id] - torch.cross(head_ang, head_offset, dim=-1)
+            feet_height = self._engine.get_body_pos(char)[:, self._success_feet_ids, 2]
+            head_reset &= getup_success_stability(feet_height, head_vel[:, 2], self._success_feet_limit, self._success_speed_limit)
         success_value = float(self._perturb_cfg.get('getup_success_value', 0.))
         flags = torch.where(head_reset, DoneFlags.SUCC.value if success_value else DoneFlags.TIME.value, flags)
         velocity = com2_velocity(self._engine.get_body_vel(self._get_char_id())[:, self._com2_ids], self._com2_masses)
         failed = com2_failure(velocity, self._com2_targets[self._motion_ids], self._perturb_cfg['min_speed_ratio'])
         failed &= (self._gaits[self._motion_ids] != -1) & (ticks > self._perturb_cfg['grace_ticks'])
+        if self._extremity_speed_enabled and self._perturb_cfg.get('extremity_speed_termination', True):
+            failed |= self._extremity_speed_failure()
         if self._perturb_cfg.get('getup_low_head_failure_fraction', 0.) > 0:
-            failed |= self._perturbed_getup & (ticks >= self._perturb_cfg['getup_low_head_failure_tick']) & (
+            failed |= self._perturbed_getup & (ticks >= self._getup_low_head_ticks) & (
                 self._engine.get_body_pos(self._get_char_id())[:, self._head_id, 2]
                 <= self._idle_head_height[self._motion_ids] * self._perturb_cfg['getup_low_head_failure_fraction'])
+        if self._pelvis_ceiling is not None:
+            failed |= getup_pelvis_failure(self._perturbed_getup, ticks,
+                self._engine.get_body_pos(self._get_char_id())[:, self._pelvis_ceiling_id, 2],
+                self._pelvis_ceiling, self._perturb_cfg['getup_failure_pelvis_after_tick'])
         flags = torch.where(failed, DoneFlags.FAIL.value, flags)
         self._done_buf.copy_(torch.where(self._perturbed_rows, flags, self._done_buf).to(self._done_buf.dtype))
         self._reset_reason.copy_(torch.where(self._perturbed_rows,
@@ -528,9 +772,28 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             head_height_reward_after_tick=60 if getup and self._additive_head_reward else None,
             head_height_loss_target_m=float(self._idle_head_height[self._motion_ids[world]]) if getup else None,
             getup_max_ticks=self._perturb_cfg['getup_ticks'] if getup else None,
+            getup_failure_pelvis_height_m=self._pelvis_ceiling if getup else None,
+            getup_failure_pelvis_after_tick=self._perturb_cfg.get('getup_failure_pelvis_after_tick') if getup else None,
             head_reset_height_m=float(self._head_reset_height[self._motion_ids[world]]) if getup else None,
+            success_max_feet_height_m=self._success_feet_limit if getup else None,
+            success_max_head_vertical_speed_m_s=self._success_speed_limit if getup else None,
+            success_measurement='world Z at body origins; absolute head vertical speed' if getup and self._success_feet_limit is not None else None,
             com2_termination=loco, com2_target_xy_m_s=self._com2_targets[self._motion_ids[world]].cpu().tolist(),
             com2_grace_ticks=self._perturb_cfg['grace_ticks'], com2_speed_ratios=[self._perturb_cfg['min_speed_ratio'], 1.7])
+        if self._extremity_speed_enabled and not getup:
+            result.update(timeout_only=not loco and not self._perturb_cfg.get('extremity_speed_termination', True), extremity_speed_bodies=['right_foot','left_foot','right_hand','left_hand'],
+                extremity_speed_limits_m_s=self._extremity_speed_limits[self._motion_ids[world]].cpu().tolist(),
+                extremity_speed_frame='body origins relative to translating and rotating pelvis', extremity_speed_first_tick=1)
+        result['perturbed_plus_row'] = bool(self._perturbed_plus[world])
+        if getup:
+            result['getup_low_head_failure_tick'] = int(self._getup_low_head_ticks[world])
+        if bool(self._perturbed_plus[world]):
+            result.update(perturbation='whole-pose vanilla-to-limp blend; independent locomotion linear/joint velocities and random 3D spin',
+                initial_linear_velocity_frame=int(self._plus_linear_frame[world]),
+                initial_joint_velocity_frame=int(self._plus_joint_frame[world]),
+                initial_pelvis_origin_velocity_m_s=self._plus_root_velocity[world].cpu().tolist(),
+                initial_root_angular_velocity_rad_s=self._plus_spin[world].cpu().tolist(),
+                initial_joint_velocity=self._motion_lib._frame_dof_vel[self._plus_joint_frame[world]].cpu().tolist())
         if loco:
             result['loco_failure_penalty'] = float(self._perturb_cfg.get('loco_failure_penalty', 0.))
         if self._mse_only:
@@ -559,15 +822,40 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
                 result.update(active_loss_terms=['position_mse', 'motion_prior'], ae_disabled=False,
                     getup_ae_regularizer=True, getup_ae_weight=self._ae_weight,
                     reward_definition='1 - weighted position MSE - weighted AE cost')
+            if self._foot_regularizers_enabled:
+                result['active_loss_terms'] += ['feet_target_velocity', 'feet_idle_local_rotation']
+                result['foot_regularizers'] = dict(self._perturb_cfg['getup_foot_regularizers'])
+                result['reward_definition'] += ' - weighted ankle target-velocity cost - weighted ankle idle-local rotation cost'
+            if self._pelvis_horizontal_enabled:
+                result['active_loss_terms'] += ['pelvis_horizontal_speed_excess']
+                result['pelvis_horizontal_speed_limit_m_s'] = float(self._pelvis_horizontal_limits[self._recovery_motion[world]])
+                result['reward_definition'] += ' - weighted squared pelvis horizontal speed excess'
         return result
 
     def replay_loss_metadata(self):
         result = super().replay_loss_metadata()
         result['perturbed_curriculum'] = dict(self._perturb_cfg)
+        if self._pelvis_horizontal_enabled:
+            result['pelvis_horizontal_regularizer'] = dict(self._perturb_cfg['getup_pelvis_horizontal_regularizer'])
+            result['pelvis_horizontal_speed_excess_definition'] = 'weight * max(sqrt(vx^2+vy^2)-max_reference_clip_peak,0)^2; world Z-up pelvis BODY ORIGIN velocity in m/s; perturbed get-ups including plus only'
+        if self._foot_regularizers_enabled:
+            result['foot_regularizers'] = dict(self._perturb_cfg['getup_foot_regularizers'])
+            result['feet_target_velocity_definition'] = 'weight * mean of six squared clamped ankle motor target velocities, rad^2/s^2; perturbed get-ups including plus only'
+            result['feet_idle_local_rotation_definition'] = 'weight * mean of two squared shortest foot-relative-calf rotation errors against assigned idle frame0, rad^2; perturbed get-ups including plus only'
+        result['all_rows_pelvis_velocity_mse_multiplier'] = float(self._perturb_cfg.get('all_rows_pelvis_velocity_mse_multiplier', 1.))
+        result['extremity_speed_termination'] = bool(self._extremity_speed_enabled and self._perturb_cfg.get('extremity_speed_termination', True))
+        result['extremity_speed_loss_weight'] = float(self._perturb_cfg.get('extremity_speed_loss_weight', 0.))
+        result['extremity_speed_loss_definition'] = 'weight * mean(max(pelvis-relative limb speed - limit, 0)^2); perturbed idle/loco only, no fade'
+        result['perturbed_idle_pose_mse_multiplier'] = float(self._perturb_cfg.get('idle_pose_mse_multiplier', 1.))
+        result['perturbed_idle_pose_mse_scope'] = 'position and rotation, ordinary perturbed idle only, all episode ticks; applied after early/handoff weighting'
+        if self._perturb_cfg.get('ae_mse_weight', 0.):
+            result['ae_mse_weight'] = float(self._perturb_cfg['ae_mse_weight'])
+            result['tracking_mse_multiplier'] = 'mix + ae_mse_weight * (1 - mix); AE multiplier remains 1 - mix'
+            result['objective'] += '; calibrated early MSE alongside AE, fading with AE during the existing handoff'
         if self._mse_only:
             result['objective'] += '; perturbed locomotion/idle: full tracking MSE from tick0, autoregressive phase, AE not loaded'
         if self._idle_position_getup:
-            result['objective'] += '; perturbed get-ups: pure body-position MSE to assigned idle frame0, pelvis XY following, no deadbands or other losses'
+            result['objective'] += '; perturbed get-ups: body-position MSE to assigned idle frame0, pelvis XY following, no position deadbands'
             result['perturbed_getup_reward_from_loss'] = self._getup_reward_form
             if self._perturb_cfg.get('getup_ae_regularizer', False):
                 result['objective'] += '; additionally frozen three-pose AE regularizer on perturbed get-ups only'
@@ -586,7 +874,7 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             result['terminal_meaning'] += f'; normal get-up failure uses 1 (terminal reward subtraction {normal_penalty:g}); normal completion and timeout unchanged'
         if self._perturb_cfg.get('getup_low_head_failure_fraction', 0.) > 0:
             result['getup_low_head_failure_fraction'] = self._perturb_cfg['getup_low_head_failure_fraction']
-            result['getup_low_head_failure_tick'] = self._perturb_cfg['getup_low_head_failure_tick']
+            result['getup_default_low_head_failure_tick'] = self._perturb_cfg['getup_low_head_failure_tick']
             penalty = float(self._perturb_cfg.get('getup_failure_penalty', 0.))
             tick = self._perturb_cfg['getup_low_head_failure_tick']
             result['terminal_meaning'] += f'; perturbed get-up low head from tick{tick} uses 1 (failure, terminal reward subtraction {penalty:g})'

@@ -15,6 +15,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "PhysicsEngine/PhysicsConstraintTemplate.h"
 #include "PhysicsEngine/SkeletalBodySetup.h"
@@ -79,6 +80,18 @@ static thread_local bool Reading=false;
 static FDelegateHandle Cleanup;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FVector2D> GrabAngleTolerances;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,FVector2D> MotionTuning;
+static TMap<TWeakObjectPtr<const AProphecyAgent>,float> MinimumPelvisHeights;
+// Separate storage preserves existing live FHand/FState allocation layouts.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FVector2D> JointIndependence;
+static float GrabIndependence(const AProphecyAgent* A,int Side)
+{
+    const auto* Values=JointIndependence.Find(A);return Values?float((*Values)[Side]):0.f;
+}
+static float MinimumPelvisHeight(const AProphecyAgent* A)
+{
+    if (const auto* V=MinimumPelvisHeights.Find(A)) return *V;
+    return 40.f;
+}
 static FVector2D ReachTuning(const AProphecyAgent* A)
 {
     if(const auto* V=MotionTuning.Find(A))return *V;
@@ -183,6 +196,10 @@ static void EnsureCleanup()
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
         for(auto It=MotionTuning.CreateIterator();It;++It)
             if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
+        for(auto It=MinimumPelvisHeights.CreateIterator();It;++It)
+            if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
+        for(auto It=JointIndependence.CreateIterator();It;++It)
+            if(!It.Key().IsValid()||It.Key()->GetWorld()==W)It.RemoveCurrent();
     });
 }
 static FState* Admit(AProphecyAgent* A)
@@ -273,6 +290,9 @@ static bool Grip(AProphecyAgent* A,int Side,FHand& H)
     Joint.FrameB=Anchor.GetRelativeTransform(FTransform(TB.Rotation,TB.PositionCm));
     const FProphecyJoltBodyPair Pair{Hand,Target};
     if (!W->CreateJoint(Joint,MakeArrayView(&Pair,1),H.Joint).IsSuccess()) return false;
+    const float Independence=GrabIndependence(A,Side);
+    if(Independence>0&&!W->SetJointGrabIndependence(H.Joint,Independence).IsSuccess())
+    { W->DestroyJoint(H.Joint);H.Joint={};return false; }
     H.Physics=W;H.Gripped=H.Physical=true;return true;
 }
 static void PrepareContact(AProphecyAgent* A,int Side,FHand& H)
@@ -467,7 +487,9 @@ void Update(AProphecyAgent* A,int Id)
     }
     if (!Enabled[0]&&!Enabled[1]) { UProphecyReachLibrary::StopReaching(A);return; }
     const auto Mode=Enabled[0]?(Enabled[1]?EProphecyDoubleReachMode::Both:EProphecyDoubleReachMode::Left):EProphecyDoubleReachMode::Right;
-    if (!ProphecyNativeReach::Step(S.Ordered,Mode,Targets,Speeds,S.Solver,S.Pose,Dt,Tuning.Y)) { Remove(A);return; }
+    const FVector HeightMetric=Space.GetRotation().UnrotateVector(FVector::UpVector)*Space.GetScale3D();
+    if (!ProphecyNativeReach::Step(S.Ordered,Mode,Targets,Speeds,S.Solver,S.Pose,Dt,Tuning.Y,
+        MinimumPelvisHeight(A),HeightMetric)) { Remove(A);return; }
     for(int K=0;K<2;++K)
     {
         auto& H=S.Hands[K];if(!H.Returning)continue;
@@ -528,28 +550,33 @@ void Update(AProphecyAgent* A,int Id)
     if (S.Debug) for (int I=2;I<S.Pose.Num();++I) if (S.Parents[I]>=0) DrawDebugLine(A->GetWorld(),(S.Pose[I]*Space).GetLocation(),(S.Pose[S.Parents[I]]*Space).GetLocation(),FColor::Cyan,false,0,0,.6);
     Publish(A,S,Space);
 }
-static bool StartGrab(AProphecyAgent* A,int Side,UPrimitiveComponent* C,FName Bone,FVector Point,bool Explicit,float Speed,float RotationSpeed)
+static bool StartGrab(AProphecyAgent* A,int Side,UPrimitiveComponent* C,FName Bone,FVector Point,bool Explicit,float Speed,float RotationSpeed,FString* Failure=nullptr,float Independence=0)
 {
-    if (!ValidHand(Side)||!IsValid(C)||!IsValid(A)||!A->GetPoseReferenceMesh()||C->GetWorld()!=A->GetWorld()||C->GetOwner()==A||Point.ContainsNaN()||!FMath::IsFinite(Speed)||Speed<=0||!FMath::IsFinite(RotationSpeed)||RotationSpeed<=0) return false;
-    UBodySetup* Shape=Collider(C,Bone);if (!Shape||Shape->AggGeom.SphereElems.Num()+Shape->AggGeom.SphylElems.Num()+Shape->AggGeom.BoxElems.Num()+Shape->AggGeom.ConvexElems.Num()==0) return false;
+    auto Reject=[Failure](const TCHAR* Why){if(Failure)*Failure=Why;return false;};
+    if(!FMath::IsFinite(Independence)||Independence<0||Independence>1)return Reject(TEXT("joint independence must be in [0,1]"));
+    if (!ValidHand(Side)||!IsValid(C)||!IsValid(A)||!A->GetPoseReferenceMesh()||C->GetWorld()!=A->GetWorld()||C->GetOwner()==A||Point.ContainsNaN()||!FMath::IsFinite(Speed)||Speed<=0||!FMath::IsFinite(RotationSpeed)||RotationSpeed<=0) return Reject(TEXT("invalid input, self-grab or mismatched world"));
+    UBodySetup* Shape=Collider(C,Bone);if (!Shape||Shape->AggGeom.SphereElems.Num()+Shape->AggGeom.SphylElems.Num()+Shape->AggGeom.BoxElems.Num()+Shape->AggGeom.ConvexElems.Num()==0) return Reject(TEXT("bone has no supported collider"));
     if(A->GetSimulationMode()!=EProphecyAgentSimulationMode::Kinematic)
-    { FProphecyJoltBodyHandle Target;if(!BodyHandle(C,Bone,Target))return false; }
+    { FProphecyJoltBodyHandle Target;if(!BodyHandle(C,Bone,Target))return Reject(TEXT("target has no Jolt body")); }
     // Repeated Blueprint calls must not rebuild the finger references or restart closure.
     if(auto* ExistingState=States.Find(A))
     {
         auto& Existing=(*ExistingState)->Hands[Side];
         if(Existing.Enabled&&Existing.Grab&&Existing.Component==C&&Existing.Bone==Bone&&(!Explicit||TargetFrame(Existing).InverseTransformPosition(Point).Equals(Existing.Point,.01)))
-        { Existing.Speed=Speed;Existing.RotationSpeed=RotationSpeed;return true; }
+        {
+            if(!UProphecyReachLibrary::SetGrabJointIndependence(A,EProphecyReachHand(Side),Independence))return Reject(TEXT("unable to update grab joint independence"));
+            Existing.Speed=Speed;Existing.RotationSpeed=RotationSpeed;return true;
+        }
     }
     FHand H;H.Component=C;H.Bone=Bone;H.Collider=Shape;H.Speed=Speed;H.RotationSpeed=RotationSpeed;H.Enabled=H.Grab=true;
     const FTransform Frame=TargetFrame(H);FVector Closest,Normal;
-    if (!BuildFingers(A->GetPoseReferenceMesh()->GetSkeletalMeshAsset(),A->ClosedFistAnimation.LoadSynchronous(),Side,H)) return false;
+    if (!BuildFingers(A->GetPoseReferenceMesh()->GetSkeletalMeshAsset(),A->ClosedFistAnimation.LoadSynchronous(),Side,H)) return Reject(TEXT("finger pose construction failed"));
     const FTransform Wrist=A->GetPoseReferenceMesh()->GetSocketTransform(HandName(Side));
     if (!Explicit) Point=A->GetPoseReferenceMesh()->GetSocketLocation(Side==0?TEXT("upperarm_l"):TEXT("upperarm_r"));
     // Query just outside a supplied point so primitive interior conventions do not erase its normal.
     const FVector Probe=Explicit?Point+(Wrist.GetLocation()-Point).GetSafeNormal()*.05:Point;
     const float Distance=Shape->GetClosestPointAndNormal(Probe,Frame,Closest,Normal,true);
-    if (!FMath::IsFinite(Distance)||Distance==FLT_MAX||Normal.IsNearlyZero()) return false;
+    if (!FMath::IsFinite(Distance)||Distance==FLT_MAX||Normal.IsNearlyZero()) return Reject(TEXT("collider returned no valid surface normal"));
     if (!Explicit) Point=Closest;
     H.Point=Frame.InverseTransformPosition(Point);H.Normal=Frame.InverseTransformVectorNoScale(Normal).GetSafeNormal();
     const FVector LocalForward=H.Fingers[6].Open.GetLocation().GetSafeNormal(),LocalNormal=Side==0?-FVector::RightVector:FVector::RightVector;
@@ -568,13 +595,36 @@ static bool StartGrab(AProphecyAgent* A,int Side,UPrimitiveComponent* C,FName Bo
     };
     if(!ClearAt(0))
     {
-        float Lo=0,Hi=4;if(!ClearAt(Hi))return false;
+        float Lo=0,Hi=4;
+        if(!ClearAt(Hi))
+        {
+            // Bound the search by a separating plane of the actual collider and
+            // open fingers. A fixed 4cm cap silently rejected larger body parts.
+            const FBox Bounds=Shape->AggGeom.CalcAABB(Frame);
+            if(!Bounds.IsValid)return Reject(TEXT("invalid collider clearance bounds"));
+            FingerFK(H,H.Target,1);
+            double MinFinger=DBL_MAX;
+            for(int F=0;F<5;++F)for(int J=0;J<3;++J)
+            {
+                const auto& B=H.Fingers[F*3+J];
+                MinFinger=FMath::Min(MinFinger,FVector::DotProduct(B.World.GetLocation(),Normal));
+                if(J==2)
+                {
+                    const FVector Tip=B.World.GetLocation()+B.World.GetRotation().RotateVector(B.Open.GetLocation().GetSafeNormal()*2.0);
+                    MinFinger=FMath::Min(MinFinger,FVector::DotProduct(Tip,Normal));
+                }
+            }
+            const double MaxCollider=FVector::DotProduct(Bounds.GetCenter(),Normal)+FVector::DotProduct(Bounds.GetExtent(),Normal.GetAbs());
+            Lo=Hi;Hi+=float(FMath::Max(0.0,MaxCollider-MinFinger)+.75);
+            if(!FMath::IsFinite(Hi)||!ClearAt(Hi))return Reject(TEXT("unable to clear open fingers from collider bounds"));
+        }
         for(int I=0;I<8;++I){const float Mid=(Lo+Hi)*.5f;if(ClearAt(Mid))Hi=Mid;else Lo=Mid;}
         ClearAt(Hi);
     }
-    auto* S=Admit(A);if (!S) return false;
+    auto* S=Admit(A);if (!S) return Reject(TEXT("pose admission failed: active D/S or missing NN pose"));
     auto& Existing=S->Hands[Side];
-    SeedHand(A,*S,Side);Drop(Existing);Existing=MoveTemp(H);return true;
+    SeedHand(A,*S,Side);Drop(Existing);Existing=MoveTemp(H);
+    JointIndependence.FindOrAdd(A,FVector2D::ZeroVector)[Side]=Independence;return true;
 }
 }
 
@@ -597,10 +647,28 @@ bool UProphecyReachLibrary::DoubleReach(AProphecyAgent* A,EProphecyDoubleReachMo
     if (!Right) ReleaseGrab(A,EProphecyReachHand::Right);
     return (!Left||ReachTarget(A,EProphecyReachHand::Left,L,Speed,RotationSpeed))&&(!Right||ReachTarget(A,EProphecyReachHand::Right,R,Speed,RotationSpeed));
 }
-bool UProphecyReachLibrary::GrabObject(AProphecyAgent* A,EProphecyReachHand H,UPrimitiveComponent* C,float S,bool Explicit,FVector Point,float R)
-{ return ProphecyReach::StartGrab(A,int(H),C,NAME_None,Point,Explicit,S,R); }
-bool UProphecyReachLibrary::GrabBone(AProphecyAgent* A,EProphecyReachHand H,USkeletalMeshComponent* M,FName Bone,FVector Point,float S,float R)
-{ return !Bone.IsNone()&&M&&M->GetBoneIndex(Bone)>=0&&ProphecyReach::StartGrab(A,int(H),M,Bone,Point,true,S,R); }
+bool UProphecyReachLibrary::GrabObject(AProphecyAgent* A,EProphecyReachHand H,UPrimitiveComponent* C,float S,bool Explicit,FVector Point,float R,float Independence)
+{ return ProphecyReach::StartGrab(A,int(H),C,NAME_None,Point,Explicit,S,R,nullptr,Independence); }
+bool UProphecyReachLibrary::GrabBone(AProphecyAgent* A,EProphecyReachHand H,USkeletalMeshComponent* M,FName Bone,FVector Point,float S,float R,bool UseSurfacePoint,float Independence)
+{ return !Bone.IsNone()&&M&&M->GetBoneIndex(Bone)>=0&&ProphecyReach::StartGrab(A,int(H),M,Bone,UseSurfacePoint?Point:FVector::ZeroVector,UseSurfacePoint,S,R,nullptr,Independence); }
+bool UProphecyReachLibrary::SetGrabJointIndependence(AProphecyAgent* A,EProphecyReachHand Hand,float Independence)
+{
+    using namespace ProphecyReach;const int Side=int(Hand);
+    if(!IsInGameThread()||!IsValid(A)||!A->GetWorld()||!A->GetWorld()->IsGameWorld()||!ValidHand(Side)||!FMath::IsFinite(Independence)||Independence<0||Independence>1)return false;
+    if(const auto* S=States.Find(A))
+    {
+        auto& H=(*S)->Hands[Side];
+        if(H.Physical&&H.Gripped)
+        {
+            auto* W=H.Physics.Get();
+            if(!W||!W->SetJointGrabIndependence(H.Joint,Independence).IsSuccess())return false;
+        }
+    }
+    EnsureCleanup();JointIndependence.FindOrAdd(A,FVector2D::ZeroVector)[Side]=Independence;
+    return true;
+}
+float UProphecyReachLibrary::GetGrabJointIndependence(AProphecyAgent* A,EProphecyReachHand Hand)
+{ return IsValid(A)&&ProphecyReach::ValidHand(int(Hand))?ProphecyReach::GrabIndependence(A,int(Hand)):0.f; }
 void UProphecyReachLibrary::ReleaseGrab(AProphecyAgent* A,EProphecyReachHand Hand,float Seconds)
 {
     if(!ProphecyReach::ValidHand(int(Hand)))return;
@@ -661,6 +729,40 @@ bool UProphecyReachLibrary::SetReachMotionTuning(AProphecyAgent* A,float SyncRot
 void UProphecyReachLibrary::GetReachMotionTuning(AProphecyAgent* A,float& SyncRotation,float& ElbowDownBlend)
 {
     const auto V=ProphecyReach::ReachTuning(A);SyncRotation=V.X;ElbowDownBlend=V.Y;
+}
+
+bool UProphecyReachLibrary::SetReachMinimumPelvisHeight(AProphecyAgent* A,float HeightAboveRootCm)
+{
+    if(!IsInGameThread()||!IsValid(A)||!A->GetWorld()||!A->GetWorld()->IsGameWorld()
+        ||!FMath::IsFinite(HeightAboveRootCm)||HeightAboveRootCm<0)return false;
+    ProphecyReach::EnsureCleanup();
+    for(auto It=ProphecyReach::MinimumPelvisHeights.CreateIterator();It;++It)if(!It.Key().IsValid())It.RemoveCurrent();
+    ProphecyReach::MinimumPelvisHeights.Add(A,HeightAboveRootCm);
+    return true;
+}
+float UProphecyReachLibrary::GetReachMinimumPelvisHeight(AProphecyAgent* A)
+{
+    return ProphecyReach::MinimumPelvisHeight(A);
+}
+
+AProphecyAgent* UProphecyReachLibrary::GetClosestAgent(AProphecyAgent* Agent)
+{
+    if (!IsInGameThread() || !IsValid(Agent) || Agent->IsActorBeingDestroyed() || !Agent->GetWorld()) return nullptr;
+    const FVector Origin=Agent->GetActorLocation();
+    AProphecyAgent* Closest=nullptr;
+    double BestDistanceSquared=TNumericLimits<double>::Max();
+    for (TActorIterator<AProphecyAgent> It(Agent->GetWorld()); It; ++It)
+    {
+        AProphecyAgent* Candidate=*It;
+        if (Candidate==Agent || !IsValid(Candidate) || Candidate->IsActorBeingDestroyed()) continue;
+        const double DistanceSquared=FVector::DistSquared(Origin,Candidate->GetActorLocation());
+        if (DistanceSquared<BestDistanceSquared)
+        {
+            BestDistanceSquared=DistanceSquared;
+            Closest=Candidate;
+        }
+    }
+    return Closest;
 }
 
 #include "Tests/ProphecyReachTests.inl"

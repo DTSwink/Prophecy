@@ -1,5 +1,16 @@
 # Optimised sword cuts — installed and tested, October21
 
+October21 cleanup: checked optimisation diagnostics/build residue after the
+verified df6d025e push. No large disposable dumps from this arc; SwordOptimised
+is11.318MiB. Recycled Intermediate/PikeJointLab (3,985,596bytes); its source and
+benchmark results remain. Map switching exposed a Python-held old map package
+and crashed the saved/stopped editor. Inspection variables now use function
+scope; capture finish releases world references. Normal incremental build
+succeeded (10actions,251.60s), so DLLs are current. Recycled today's now-obsolete
+27 Live Coding patch files (479.34MiB) before reopening TestNN; normal build
+inputs retained. Receipts: SwordOptimised/cleanup-receipt.json and
+recycled-patches.json. This supersedes the stale-DLL state recorded below.
+
 ## Current head-entry correction — October21, 17:09 UTC
 
 The user's current head-pike placement exposed an admission error absent from
