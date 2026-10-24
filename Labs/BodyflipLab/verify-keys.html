@@ -1,0 +1,30 @@
+<!doctype html><title>Frame keys and root lead checks</title><button id="run">Check keys and lead</button><pre id="result">Ready</pre><iframe id="lab" src="/" style="width:1100px;height:720px"></iframe><script>
+document.getElementById('run').onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],receipt={passed:false,checks};
+ const check=(name,ok)=>{if(!ok)throw Error(name);checks.push(name);},frame=()=>new Promise(r=>w.requestAnimationFrame(()=>w.requestAnimationFrame(r)));
+ const key=(el,code,type='keydown',repeat=false)=>{el.focus();const e=new w.KeyboardEvent(type,{code,bubbles:true,cancelable:true,repeat});el.dispatchEvent(e);return e;};
+ const edit=async(id,value)=>{const el=d.getElementById(id);el.value=value;el.dispatchEvent(new w.Event('change',{bubbles:true}));await frame();};
+ try{
+  a.setPlaying(false);await a.seek(.5);
+  for(const id of ['play','step','playbackSpeed','flipSpeedRange','jumpFoot','airFlip','trimIn','trimOut','scrub','viewport']){
+   const el=d.getElementById(id),value=el.value,settings=JSON.stringify(a.state.settings),before=a.state.simTime;let delivered=0;const count=()=>delivered++;el.addEventListener('keydown',count);
+   const left=key(el,'ArrowLeft');await frame();check(id+' left rewinds one frame',Math.abs(a.state.simTime-(before-1/60))<1e-9&&left.defaultPrevented);
+   const right=key(el,'ArrowRight');await frame();check(id+' right advances one frame',Math.abs(a.state.simTime-before)<1e-9&&right.defaultPrevented);
+   const up=key(el,'ArrowUp'),down=key(el,'ArrowDown'),release=key(el,'ArrowRight','keyup');await frame();
+   check(id+' arrows do not reach or change widget',delivered===0&&up.defaultPrevented&&down.defaultPrevented&&release.defaultPrevented&&JSON.stringify(a.state.settings)===settings&&(id==='scrub'||el.value===value));el.removeEventListener('keydown',count);
+  }
+  const number=d.getElementById('supportAlpha'),before=a.state.simTime;
+  check('Focused writable number keeps arrow keys',!key(number,'ArrowLeft').defaultPrevented&&!key(number,'ArrowUp').defaultPrevented);await frame();check('Number editing leaves playback alone',a.state.simTime===before);
+  for(const type of ['input','textarea','div']){const el=d.createElement(type);if(type==='div')el.contentEditable='true';d.body.append(el);check(type+' editor retains arrows',!key(el,'ArrowRight').defaultPrevented);el.remove();}
+  number.readOnly=true;check('Readonly field does not consume arrows',key(number,'ArrowLeft').defaultPrevented);await frame();number.readOnly=false;
+  await a.seek(.5);const button=d.getElementById('step');for(let i=0;i<12;i++)key(button,'ArrowRight','keydown',i>0);await frame();check('Rapid repeated keys accumulate exact frames',Math.abs(a.state.simTime-.7)<1e-9);
+  await a.seek(0);key(button,'ArrowLeft');await frame();check('Rewind clamps at frame zero',a.state.simTime===0);
+  await a.seek(.5);a.setPlaying(true);key(button,'ArrowLeft');await frame();check('Frame key pauses playback',!a.state.playing&&Math.abs(a.state.simTime-(.5-1/60))<1e-9);
+  await edit('supportAlpha',4);const first=a.state.flight.supportScores.map(s=>s.shift);
+  check('Alpha 4 at root 5 m/s gives ten cm for both feet',first.every(s=>Math.abs(s[2]-.1)<1e-6&&Math.abs(s[0])<1e-9));
+  await edit('supportSpeed',100);check('Approach speed does not change lead',JSON.stringify(a.state.flight.supportScores.map(s=>s.shift))===JSON.stringify(first));
+  await edit('supportAlpha',6);check('Alpha scales root-local lead linearly',a.state.flight.supportScores.every(s=>Math.abs(s.shift[2]-.15)<1e-6));
+  check('No runtime errors',a.state.errors.length===0);receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}finally{a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);}
+};
+</script>

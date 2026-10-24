@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "clips": [
+    {
+      "asset": "/Game/Characters/UEFN_Mannequin/Animations/Jump/M_Relaxed_Jump_F_Start_Run_Lfoot",
+      "sha256": "df2efa0d9d9c1ea83844407537305a86ca04680bf85217b97f8befe96e39e1e9",
+      "frames": 159,
+      "apexRootM": 1.032761001586914
+    },
+    {
+      "asset": "/Game/Characters/UEFN_Mannequin/Animations/Jump/M_Relaxed_Jump_F_Start_Run_Rfoot",
+      "sha256": "abd3342349412c4d8131939cc7a777b7a2872f8a03955fda1484937649b83162",
+      "frames": 153,
+      "apexRootM": 1.032761001586914
+    },
+    {
+      "asset": "/Game/Characters/UEFN_Mannequin/Animations/Jump/M_Relaxed_Jump_Loop_Fall",
+      "sha256": "eda74ca18b46c896ab579b44b6401f5c8cf05ade20e7c8fd4c80f03cd4b983c6",
+      "frames": 201,
+      "apexRootM": 0.0
+    }
+  ]
+}

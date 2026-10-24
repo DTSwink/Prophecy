@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "checks": [
+    "run-phases exact default output",
+    "run-phases 100 percent wraps to zero",
+    "run-phases every phase covers five seconds at correct speed",
+    "run-phases short duration slices without inference",
+    "run-drawn-phases exact default output",
+    "run-drawn-phases 100 percent wraps to zero",
+    "run-drawn-phases every phase covers five seconds at correct speed",
+    "run-drawn-phases short duration slices without inference",
+    "walk-phases exact default output",
+    "walk-phases 100 percent wraps to zero",
+    "walk-phases every phase covers five seconds at correct speed",
+    "walk-phases short duration slices without inference",
+    "walk-drawn-phases exact default output",
+    "walk-drawn-phases 100 percent wraps to zero",
+    "walk-drawn-phases every phase covers five seconds at correct speed",
+    "walk-drawn-phases short duration slices without inference",
+    "Exact recorded Run phase 0.44",
+    "Exact recorded Run phase 0.67"
+  ],
+  "maxReadMs": 7.702300004893914,
+  "meanReadMs": 4.2545880016405135,
+  "rollouts": 100
+}

@@ -1,0 +1,45 @@
+<!doctype html><title>Support checks</title><button id="run">Check support</button><pre id="result">Ready</pre><iframe id="lab" src="/" style="width:1100px;height:720px"></iframe><script>
+document.getElementById('run').onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],receipt={passed:false,checks};
+ const check=(n,v)=>{if(!v)throw Error(n);checks.push(n);},frame=()=>new Promise(r=>w.requestAnimationFrame(()=>w.requestAnimationFrame(r)));
+ const field=async(id,value)=>{d.getElementById(id).value=value;d.getElementById(id).dispatchEvent(new w.Event('change',{bubbles:true}));await frame();};
+ try{
+  a.setPlaying(false);check('Kinematic retained',a.state.settings.motion==='kinematic');
+  check('Compact support controls visible',['supportReach','supportTrigger','supportAlpha','supportSpeed'].every(id=>d.getElementById(id).getBoundingClientRect().height>0));
+  check('Centimetre speed and gate are explicit',d.getElementById('supportSpeed').parentElement.textContent.includes('cm/s')&&d.getElementById('supportTrigger').parentElement.textContent.includes('cm'));
+  await field('jumpEarly',0);await field('supportReach',.99);await field('supportTrigger',5);await field('supportAlpha',1);await field('supportSpeed',800);
+  check('Centimetres stored as metres',a.state.settings.supportTrigger===.05);
+  for(const foot of ['L','R','Auto']){
+   await field('jumpFoot',foot);const f=a.state.flight;
+   check(foot+' support selection',foot==='Auto'?f.supportFoot===f.supportScores.reduce((a,b)=>a.distance<=b.distance?a:b).foot:f.supportFoot===foot);
+   const t=Math.round((f.jumpStart+.04)*60)/60;await a.seek(t);const initial=JSON.stringify(a.state.pose.points);
+   check(foot+' procedural plant visible',a.state.flight.phase==='PUSH'&&a.state.flight.supportState==='PIN'&&a.state.flight.supportTarget[1]===0);
+   check(foot+' kinematic pose matches target',a.state.diagnostics.dynamicBodies===0&&JSON.stringify(a.state.pose.points)===JSON.stringify(a.targetPose().points));
+   await a.seek(5);await a.seek(t);check(foot+' replay deterministic',JSON.stringify(a.state.pose.points)===initial);
+  }
+  await field('jumpEarly',.1);await field('supportSpeed',100);check('Slower foot delays takeoff',a.state.flight.jumpStart>a.state.flight.supportStart+.02);
+  d.getElementById('scrub').value=.9166666667;d.getElementById('scrub').dispatchEvent(new w.Event('input',{bubbles:true}));await frame();
+  check('Scrub previews support approach before release',a.state.flight.phase==='SUPPORT'&&!a.state.playing);
+  await field('supportReach',.5);await a.seek(5);check('Unreachable target aborts without jumping',a.state.flight.phase==='ABORT - FALL'&&!Number.isFinite(a.state.flight.jumpStart));
+  await field('supportReach',.99);await field('jumpEarly',.1);await field('supportSpeed',10);
+  await a.seek(.9);const approachRoot=a.state.flight.root[2];await a.seek(.95);
+  check('Root advances during slow approach',a.state.flight.phase==='SUPPORT'&&a.state.flight.root[2]>approachRoot+.24);
+  const history=a.state.flight.supportHistory,abort=a.state.flight.abortTime;
+  check('Every support tick has a distance record',history.length>2&&history.every((v,i)=>!i||Math.abs(v.time-history[i-1].time-1/240)<1e-8));
+  check('Failure follows first increasing gap',history.at(-1).distance>history.at(-2).distance&&Number.isFinite(abort));
+  await a.seek(abort+.1);const failed=a.state;
+  check('Late plant visibly aborts and falls',failed.flight.phase==='ABORT - FALL'&&failed.flight.failureReason==='Distance growing'&&failed.flight.supportState==='FAILED');
+  await a.seek(0);await a.seek(abort+.1);check('Abort replay deterministic',JSON.stringify(a.state.pose.points)===JSON.stringify(failed.pose.points));
+  const cameraBefore=backup.camera;
+  const canvas=d.getElementById('viewport'),capture=canvas.setPointerCapture;
+  canvas.setPointerCapture=()=>{};
+  try{canvas.dispatchEvent(new w.PointerEvent('pointerdown',{button:0,pointerId:101,clientX:300,clientY:200}));canvas.dispatchEvent(new w.PointerEvent('pointermove',{button:0,pointerId:101,clientX:320,clientY:250}));canvas.dispatchEvent(new w.PointerEvent('pointerup',{button:0,pointerId:101}));}finally{canvas.setPointerCapture=capture;}
+  await new Promise(r=>setTimeout(r,400));const cameraAfter=(await fetch('/state').then(r=>r.json())).camera;
+  check('Left drag down decreases pitch',Math.abs(cameraAfter.pitch-Math.max(-1.15,Math.min(1.75,cameraBefore.pitch-.3)))<1e-8);
+  check('Horizontal orbit direction retained',Math.abs(cameraAfter.yaw-cameraBefore.yaw-.16)<1e-8);
+  check('No runtime errors',a.state.errors.length===0);receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}finally{
+  a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);
+ }
+};
+</script>

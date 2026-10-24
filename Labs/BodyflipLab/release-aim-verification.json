@@ -1,0 +1,91 @@
+{
+  "passed": true,
+  "checks": [
+    "run/L/0 exercising release blend",
+    "run/L/0 live target alignment",
+    "run/L/0 rejects frozen pose regression",
+    "run/L/0 no leg stretching",
+    "run/L/40 exercising release blend",
+    "run/L/40 live target alignment",
+    "run/L/40 no leg stretching",
+    "run/R/0 exercising release blend",
+    "run/R/0 live target alignment",
+    "run/R/0 rejects frozen pose regression",
+    "run/R/0 no leg stretching",
+    "run/R/40 exercising release blend",
+    "run/R/40 live target alignment",
+    "run/R/40 no leg stretching",
+    "walk/L/0 exercising release blend",
+    "walk/L/0 live target alignment",
+    "walk/L/0 rejects frozen pose regression",
+    "walk/L/0 no leg stretching",
+    "walk/L/40 exercising release blend",
+    "walk/L/40 live target alignment",
+    "walk/L/40 no leg stretching",
+    "walk/R/0 exercising release blend",
+    "walk/R/0 live target alignment",
+    "walk/R/0 rejects frozen pose regression",
+    "walk/R/0 no leg stretching",
+    "walk/R/40 exercising release blend",
+    "walk/R/40 live target alignment",
+    "walk/R/40 no leg stretching"
+  ],
+  "measurements": [
+    {
+      "gait": "run",
+      "foot": "L",
+      "flip": 0,
+      "error": 0.15961242105296786,
+      "frozenError": 10.347613803482663
+    },
+    {
+      "gait": "run",
+      "foot": "L",
+      "flip": 40,
+      "error": 0.4476283296402003,
+      "frozenError": 10.970524747905126
+    },
+    {
+      "gait": "run",
+      "foot": "R",
+      "flip": 0,
+      "error": 0.1786976053523401,
+      "frozenError": 12.53960839372822
+    },
+    {
+      "gait": "run",
+      "foot": "R",
+      "flip": 40,
+      "error": 0.473578589539338,
+      "frozenError": 13.287031486897579
+    },
+    {
+      "gait": "walk",
+      "foot": "L",
+      "flip": 0,
+      "error": 0.07420149766933654,
+      "frozenError": 5.05454703281003
+    },
+    {
+      "gait": "walk",
+      "foot": "L",
+      "flip": 40,
+      "error": 0.36839485164772545,
+      "frozenError": 5.6613243945652805
+    },
+    {
+      "gait": "walk",
+      "foot": "R",
+      "flip": 0,
+      "error": 0.0803142543722884,
+      "frozenError": 3.8179705093993697
+    },
+    {
+      "gait": "walk",
+      "foot": "R",
+      "flip": 40,
+      "error": 0.36908901130615507,
+      "frozenError": 5.03481543942926
+    }
+  ]
+}

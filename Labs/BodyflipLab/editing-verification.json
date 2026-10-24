@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "checks": [
+    "Baseline edit stays at scrubbed time",
+    "Typing retains focus until commit",
+    "Click away commits and clears numeric focus",
+    "Commit preserves paused position",
+    "Alpha 0 to 20 moves final support target forward",
+    "Alpha changes the planted foot at the same time",
+    "Alpha uses restored fixed ledge",
+    "Actual lead limiting is shown",
+    "Enter commits and clears focus",
+    "supportAlpha edit retains frame",
+    "supportTrigger edit retains frame",
+    "supportSpeed edit retains frame",
+    "supportReach edit retains frame",
+    "Support-foot selection retains frame",
+    "Blend slider retains frame",
+    "Editing while playing preserves time and playback state",
+    "Early edit retains playback time",
+    "Early uses the same fixed ledge",
+    "Early changes support timing",
+    "No runtime errors"
+  ],
+  "targetDeltaCm": 50.512748570759754
+}

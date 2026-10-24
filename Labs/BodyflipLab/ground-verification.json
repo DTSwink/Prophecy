@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "checks": [
+    "run-default.json exact source heights",
+    "run-default.json rendered stance reaches ground",
+    "run-default.json gait airborne phases retained",
+    "run-default-drawn.json exact source heights",
+    "run-default-drawn.json rendered stance reaches ground",
+    "run-default-drawn.json gait airborne phases retained"
+  ],
+  "results": [
+    {
+      "file": "run-default.json",
+      "stanceSamples": 49,
+      "airborneSamples": 42,
+      "maxStanceGapCm": 0.3045477761945754,
+      "minSoleCm": -0.9381956741294488,
+      "jumpStart": 0.9625
+    },
+    {
+      "file": "run-default-drawn.json",
+      "stanceSamples": 49,
+      "airborneSamples": 42,
+      "maxStanceGapCm": 0.3045477742328745,
+      "minSoleCm": -0.9381956707631218,
+      "jumpStart": 0.9625
+    }
+  ]
+}

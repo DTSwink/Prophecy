@@ -1,0 +1,30 @@
+{
+  "run": {
+    "source": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Tools\\Recovery\\Checkpoints\\lower_body-0f2565ac72c5.pt",
+    "sha256": "0f2565ac72c5209153cbd910135209487f9ef8a0e234ed0c6d99df2ff30a299e"
+  },
+  "upper": {
+    "source": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Tools\\Recovery\\Checkpoints\\upper_body-02e73800b8e6.pt",
+    "sha256": "02e73800b8e63dc1b79e3e9c67c0a5f269eb830d3a330fe81c2d11480ac6f5b4"
+  },
+  "run-seed": {
+    "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\run_omni\\M_Neutral_Run_Loop_F.npz",
+    "sha256": "c3bdb0da5999b55bed1fa78fd9bf78e71905a1ec0c2c2413fad519772d439e33"
+  },
+  "run-drawn": {
+    "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\run_omni\\M_Neutral_Run_Loop_F.npz",
+    "sha256": "52446c09e5176e1f5836df6d8cd0355beb2722b2d789335f6b37107d6c349443"
+  },
+  "walk": {
+    "source": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Tools\\Recovery\\Checkpoints\\lower_body_walk_july5-8bae21c5b315.pt",
+    "sha256": "8bae21c5b3159d69726cd98867c85000b51d566012708eed36374b2b5a9d4c79"
+  },
+  "walk-seed": {
+    "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\walk_omni\\M_Neutral_Walk_Loop_F.npz",
+    "sha256": "4c0a57d572b30e9bdbcb911e5adbdbd24dd1e97567002ea9bf37384c31509023"
+  },
+  "walk-drawn": {
+    "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\walk_omni\\M_Neutral_Walk_Loop_F.npz",
+    "sha256": "003c6c215c7180b9095c82d59fe36b003058a1e59970fccb186dd9df98fbfc90"
+  }
+}

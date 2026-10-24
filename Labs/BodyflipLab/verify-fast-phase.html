@@ -1,0 +1,28 @@
+<!doctype html><title>Phase latency and contact</title>
+<button id="check">Check phase latency</button><pre id="result" style="max-height:100px;overflow:auto">Ready</pre>
+<iframe id="lab" src="/" style="width:1100px;height:720px"></iframe>
+<script>
+check.onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],times=[],receipt={passed:false,checks,times};
+ const verify=(name,ok)=>{if(!ok)throw Error(name);checks.push(name);};
+ try{
+  a.setPlaying(false);await a.seek(.5);
+  for(const phase of [.17,.44,.67,.43]){
+   const start=performance.now(),el=d.getElementById('runPhase');el.value=phase;
+   el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}));
+   while(a.state.loadingRun&&performance.now()-start<10000)await new Promise(r=>setTimeout(r,10));
+   const elapsed=performance.now()-start;times.push({phase,ms:elapsed});
+   verify('Phase '+phase+' applies in under 1 second',!a.state.loadingRun&&elapsed<1000&&a.state.settings.runPhase===phase);
+   verify('Phase '+phase+' preserves playback time',Math.abs(a.state.simTime-.5)<1e-8);
+  }
+  const el=d.getElementById('runPhase');el.value=backup.settings.runPhase;el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}));
+  while(a.state.loadingRun)await new Promise(r=>setTimeout(r,10));
+  if(Number.isFinite(a.state.flight.jumpStart)){
+   await a.seek(a.state.flight.jumpStart+a.state.flight.release/2);
+   verify('Saved setup reaches a pinned contact',a.state.flight.supportState==='PIN');
+  }
+  verify('No runtime errors',a.state.errors.length===0);receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}
+ finally{a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);}
+};
+</script>

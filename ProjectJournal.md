@@ -4,6 +4,444 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+## October 24 - Bodyflip curated Git checkpoint
+
+User requested pushing the lab. Checkpoint includes Bodyflip code, Jolt runtime,
+attack/jump recordings, exact phase banks, verification scripts/receipts and
+saved-profile.json (tuning/camera snapshot). Live state, local model copies,
+temporary exports and full captures remain local. Only Bodyflip journal sections
+are staged; concurrent Unreal/training/other-lab work stays outside this commit.
+Restore instructions: [Bodyflip README](Labs/BodyflipLab/README.md) and
+[Recovery](Docs/Recovery.md). Existing split-blend33 +browser6 checks passed;
+no new build, inference, editor action or process restart for the checkpoint.
+
+## October 24 - Bodyflip separate Body / Leg blend durations
+
+Sequence now exposes Body (existing jumpBlend) and Leg (new legBlend), seconds
+0-1. Body starts at PUSH; Leg starts at contact release. Pelvis stays procedural,
+pin timing unchanged. Body blend excludes support chain with Match foot on/off.
+Old saved Leg inherits Body (.2s currently); zero supported. Edits retain time.
+33 numerical +6 browser checks pass; settings/camera preserved. Lab only, no
+NN inference, Unreal changes or server restart. [Details](Labs/BodyflipLab/README.md).
+
+## October 24 - Bodyflip SUPPORT upper-body freeze investigation
+
+Current saved Phase.67/Foot500/Lead6/Roll400: SUPPORT .900-.945833s.
+Compared 21 samples against unmodified NN locomotion: all joints outside the
+support leg match within numerical precision (position <5e-16m, angle <7e-14deg).
+Arms move4.41/5.46deg during approach. No SUPPORT freeze in this setup; no motion
+change warranted. PUSH starts the existing .2s smoothstep blend from a held
+takeoff pose, so upper-body angular motion eases in there (left upper-arm local
+change .00276deg at1ms, .272deg at10ms). This can read as a pause at PUSH.
+Verification is specific to this saved setup, not a claim about every tuning.
+Receipt: Labs/BodyflipLab/support-locomotion-verification.json. State untouched;
+no NN inference, Unreal work, or process restart.
+
+## October 24 - Bodyflip forward foot approach / configurable heel roll
+
+Support foot turns root-forward toward Plant10 degrees heel-up while approaching.
+More options: Plant(-25..35), Toe-off35 degrees(0..60), Roll720 degrees/s(0..3600).
+Zero Roll holds landing angle. Rotation adjusts for ground clearance; ankle speed
+is unchanged. Actual sole contact must fit on platform, so ankle clamps back at
+edge. Push rolls around sole contact (ankle moves); marker follows contact.
+Release obeys reach/ground, then live blend/frame matching uses final rolled pose.
+Saved phase.67/Foot500/Lead6:10 to35 degrees over53ms pin. Slower roll may release
+before35. Some forced late plants now correctly abort; comparison tests useEarly.3,
+userEarly.1 preserved. 294 roll +80 matching +10 browser checks pass. Speed edits
+keep frame and take21ms; saved camera/tuning retained. NoNN/UE/server restart.
+[Details](Labs/BodyflipLab/README.md).
+
+
+## October 24 - Bodyflip phase stalls / planted sole contact
+
+Phase was applying correctly but uncached requests took 4.55s because /run
+started fresh NN inference. Phase/duration playback now reads exact precomputed
+binary NN rollouts (all Run/Walk phases, both equipment states, through5s).
+Server API4 removes runtime worker launches; export is one-shot single-thread CPU.
+Original phase seeds/warmups preserved; three recorded Run phases match exactly.
+Support no longer freezes at the distance gate while hovering: also requires
+actual sole contact, retaining approach speed/reach/root advance/abort. Current
+phase.67, Foot500: 4.84cm gap fixed, jump12.5ms later. Nine renderer-contact cases,
+80 matching and162 support checks pass. Browser edits11-30ms; API10-63ms.
+All100 cached rollouts validated; ten browser checks pass. Export exited; only
+Bodyflip server restarted toAPI4. Current user tuning/camera retained. [Details](Labs/BodyflipLab/README.md).
+
+
+## October 24 - Bodyflip gait phase clarification / verification
+
+Phase selects the gait starting pose; user confirms the rest is working.
+Verified 0 versus .44 through the UI handlers at time zero: displayed poses
+differ by up to .67964m root-local, four checks pass. Also verified at .5s.
+No runtime changes warranted. Phase applies on slider release and preserves
+current playback time; it does not scrub the jump animation. Saved state restored.
+Receipt: Labs/BodyflipLab/phase-verification.json.
+
+
+## October 24 - Bodyflip playback timeline focus fix
+
+Removed the focus guard that froze the timeline thumb after scrubbing and
+resuming with Space. Timeline now follows displayed time even while focused,
+including paused frame stepping. All 21 timeline browser checks pass. Motion
+and saved tuning unchanged.
+[Lab details](Labs/BodyflipLab/README.md).
+
+
+## October 24 - Bodyflip closest-foot frame matching replaces endpoint blend
+
+Removed fixed End pose experiment. More options now has Match foot (defaulton):
+at release search trimmed jump frames for closest support ankle in pelvis-local
+space, using actual hip socket. Play that leg from matched frame at rate
+(end-match)/(end-release), synchronizing at existing fall transition. Other joints
+and procedural pelvis retain clocks. Existing short Blend prevents snap from
+imperfect match; off restores previous ordinary timing. Ghost shows retimed pose.
+Current saved RunR matches .100s vsrelease.034095s, rate.965601x, gap12.76cm.
+UI displays matched time/rate and tooltip gap. Standing cutoff remains. Old endLeg
+setting removed; user tuning/camera retained. 80 numerical/7 browser checks pass,
+plus28 legacy live-aim checks. Cached lab only, no NN/Unreal/server restart.
+[Details](Labs/BodyflipLab/README.md); match-leg-preview.png.
+
+
+## October 24 - Bodyflip velocity jump choice / endpoint support-leg experiment
+
+More options (collapsed) now contains Stand / Walk ratio default.5 (WalkF2m/s,
+cutoff1m/s) and End pose (enabled). Standing clip selected from measured horizontal
+root velocity at support contact; existing Walk2/Run5 remain Run-start at default.
+Exported actual Stand L/R read-only via one headless nullRHI commandlet, exited
+successfully; no interactive editor running, no asset saves/builds. Separate
+jumps-standing.json preserves old exports. Both retain automatic source trim.
+End pose moves released support joints directly to last jump-only pose at the
+fall-loop transition, arriving with other joints (~1.95/2.05s after jump starts).
+Not extra pin time. Purple Anim leg shows that fixed destination. Off restores
+live-target Blend behavior. User trimOut1.8 ends before arrival: extend bracket
+for full experiment. Other tuning/camera preserved; option edits keep time.
+69 numerical/7 browser checks pass, plus184 pelvis/28 aim legacy-mode checks.
+[Details](Labs/BodyflipLab/README.md); jump-options-preview.png. No NN/server restart.
+
+
+## October 24 - Bodyflip animation-target support-leg ghost
+
+Added **Anim leg** viewport checkbox: purple x-ray hip/knee/ankle/toe for the
+jump animation's supporting leg, anchored to current pelvis. User clarified this
+means animation target, not procedural reach. No initial/support blends or IK;
+includes later fall-loop transition. Default off, saved; no reset/replan on toggle
+and no sampling while off. Hidden before jump/abort/Space. Existing Ghost unchanged.
+16 numerical and3 browser checks pass. User tuning preserved, contained lab only.
+[Details](Labs/BodyflipLab/README.md); anim-leg-preview.png.
+
+
+## October 24 - Bodyflip released leg keeps aiming at ground
+
+Fixed RISE/BLEND using a frozen release-local pose that translated with pelvis.
+Blend source now recomputes IK from current hip toward planted ankle every sample,
+within Reach, after air rotation. Existing release time and blend duration remain;
+FREE returns to animation. No leg stretch or false contact after reach is exceeded.
+28 live-aim checks pass across Run/Walk/L/R/flip plus184 pelvis and162 support
+checks. User settings preserved, contained lab/cached motion only.
+[Details](Labs/BodyflipLab/README.md); release-aim-verification.json.
+
+
+## October 24 - Bodyflip procedural pelvis / masked jump blend
+
+Pelvis now retains its takeoff root-local position/orientation throughout jump
+and prolonged fall; root supplies height/forward trajectory. Animation cannot
+lower it. Initial pose blend excludes pelvis and planted support leg. Support
+hip socket remains fixed; existing IK pin/reach determines release, then Blend
+hands the leg back to local animation. Other joints blend normally; air flip
+still works around the procedural pelvis. Locomotion and abort paths unchanged.
+184 pelvis checks (both gaits/equipment/feet, Blend0/.08/.2/1) show zero hip drop;
+162 support and15 walk checks pass. Current user Blend.08/tuning/camera preserved.
+Contained lab, cached files only; no NN/Unreal processes or server restart.
+[Current behavior](Labs/BodyflipLab/README.md); pelvis-verification.json.
+
+
+## October 24 - Bodyflip Walk + jump / measured push timing
+
+Added Walk + jump to the existing selector. Frozen Walk July5 latest lower NN
+plus Upper82500 at2m/s, equipment variants and cached defaults; Run stays5m/s.
+Duration/phase, support, trim, arrows and COM follow shared. Server API3; only
+Bodyflip server restarted. Transient single-thread CPU inference, no GPU/Unreal.
+Saved tuning/camera preserved. Walk Auto with saved Foot300 misses and aborts;
+FootR succeeds at300, Auto succeeds at800. No silent contact-rule changes.
+Run investigation: saved blend.2/playback.3 gives approach.0125s, pin.10886s,
+then leg blend.2s (~1.03s wall-time pin+blend). Jump root rises immediately, but
+pose blending lowers support hip ~18cm in first.1s, so pinned leg flexes then
+extends. Source lead-in.333s already trimmed. Explained without changing timing.
+15 motion/7 browser checks and duration/phase API checks pass. Details and
+jump-timing.json in [Bodyflip Lab](Labs/BodyflipLab/README.md).
+
+
+## October 24 - Bodyflip alpha sensitivity / keep intended target behavior
+
+User clarified that alpha was working: 0.1 and 0.5 both requested points beyond
+available ground and therefore shared the same edge-clamped contact. Do not
+redesign working behavior to agree with a reported bug; explain the constraint.
+Only sensitivity changes: local forward lead = root speed * alpha / 200.
+At 5 m/s: alpha 0.1 = 2.5 mm, 0.5 = 1.25 cm, 1 = 2.5 cm. Saved numbers preserved.
+Reverted interrupted current-pelvis anchor and extra ideal-marker work; retain
+prepared root-local targets, half-hip spacing, moving gait, clamp and abort.
+162 cached-run support checks pass. Tooltip/docs updated. Contained lab only;
+no Unreal/NN processes launched. This supersedes the unscaled formula below.
+
+
+## October 24 — Bodyflip root-speed alpha / global frame arrows
+
+Lead is now root-local forward speed times alpha (seconds), with no COM velocity,
+foot lateral-distance factor or division by approach speed. Alpha.02 at5m/s
+requests10cm for either foot. Root heading carries the offset; actual contact
+still projects to valid ground. Saved alpha/tuning preserved; numeric step.01.
+Left/Right now pause and scrub exactly one authored1/60s frame globally, even
+with sliders, selectors, buttons or trim brackets focused. Capture keydown AND
+keyup; Up/Down are reserved rather than changing those controls. Focused writable
+text/number/contenteditable fields keep normal arrows; readonly fields do not.
+Manual frame scrubbing can inspect outside trim; Play/Step retain bracket bounds.
+Repeated keys accumulate without lost frames; backward scrub clamps at zero.
+152 motion/lead,6 grounding,43 browser key/lead and17 timeline checks pass.
+Real keyboard verified on focused speed slider and foot selector: timeline moves,
+speed.3 and FootAuto unchanged. Saved alpha2 retained.
+Contained lab only, cached runs; no NN or Unreal processes launched.
+[Current lab details](Labs/BodyflipLab/README.md); keys-verification.json.
+
+## October 24 — Bodyflip run levitation fixed
+
+Removed the lab's extra +5.5cm world-Y translation from the NN run in flight.js.
+The cached NN gait is already ground-referenced; the extra lift raised stance
+feet roughly5cm. Run bone heights now match the source exactly, retaining its
+normal airborne gait phases. No per-frame root snapping or animation edits.
+Measured actual renderer foot/toe boxes across both cached runs: stance gaps
+within3.1mm; existing interpolation dips up to9.4mm below ground are unchanged.
+Six grounding checks plus144 support/abort checks pass. Visual stance verified.
+Current Foot300/alpha1/Early.10 now launches at.9125s after6.25cm forward approach.
+Only contained lab/docs; settings preserved, no NN/Unreal processes started.
+[Details](Labs/BodyflipLab/README.md); ground-verification.json in the lab.
+
+## October 24 — Bodyflip root-local support / no freeze / missed-edge abort
+
+Ideal support contact is stored root-local before finite-ground projection;
+every authored240Hz step transforms it with the root and queries valid ground.
+Foot approach is root-relative at Foot cm/s, carrying root momentum. Lead is
+fixed from the preparation pose instead of feeding moving-foot displacement back
+into the target. Removed the body hold; cached gait continues while approaching.
+After the cached endpoint, carry its last pose forward without another NN call.
+Actual foot-to-valid-target distance recorded every substep; first increase
+over0.01mm aborts. Gate/reach still required for takeoff. Failed attempts release
+IK with Blend, run to the ledge if still on ground, then fall with the speed cap;
+HUD ABORT - RUN/FALL, no jump ascent and no frozen WAIT SUPPORT state.
+History: BodyflipLab.state.flight.supportHistory. Replay/seek is deterministic.
+Current user Foot300 / alpha1 / Early.10 retained: jump.9167s, root advances8.33cm
+during approach. Foot10 miss abort1.0083s as gap grows8.28→8.73cm.
+144 numerical and27 browser checks pass. Contained lab only; no NN/Unreal processes.
+[Current lab behavior](Labs/BodyflipLab/README.md).
+
+## October 24 — Bodyflip pelvis / cm/s / inverted vertical orbit
+
+Pelvis render box now centers on the two thigh sockets, removing the hard-coded
+7 cm downward bone offset. Skeleton, IK and physics bodies unchanged.
+**Foot cm/s** uses the intended 800 cm/s = 8 m/s. Both approach and COM lead
+prediction convert to metres per second. Current Foot set to 800; other tuning
+and camera retained. Earlier claims that 800 m/s was intentional were wrong.
+Default approach spans several 240 Hz steps, at most 3.33 cm each; root ascent
+still waits for the gate. Saved alpha20.1 at Early.10 now requests an unreachable
+target: WAIT SUPPORT is expected; user informed, alpha preserved. Alpha1/default
+configuration verified to jump. Left-drag vertical orbit inverted; horizontal
+orbit, middle pan and right-target drag unchanged.
+122 numerical, 22 browser support/orbit and 20 editing checks passed, cached runs only.
+No NN/Unreal processes. Preview: Labs/BodyflipLab/pelvis-units-preview.jpg.
+[Current lab details](Labs/BodyflipLab/README.md).
+
+## October 24 — Bodyflip earlier jump option / alpha ledge workaround reverted
+
+User correctly noted alpha was functioning; reverted the automatic platform-edge
+expansion introduced last turn. Edge is again speed × Run − .12 m, independent
+of alpha. Existing alpha formula, uncapped values and lead readout remain.
+Added **Early s** beside Run, default **.10 s**; 0 restores old timing. Support
+preparation uses the cached gait at Run − Early, then still waits for the foot
+gate. Default cached takeoff .904 s instead of 1.004 s, same fixed ledge.
+Early leaves at least one authored frame of running; unreachable support still
+waits. Click-away/Enter commits and edit-in-place playback fixes are retained.
+120 numerical and 20 browser editing checks pass. Direct keyboard edits at
+0.95 s show RUN with Early 0 and PUSH with Early .10, preserving playback time.
+Only contained lab/docs; no NN or Unreal processes.
+[Current behavior](Labs/BodyflipLab/README.md).
+
+## October 24 — Bodyflip commit edits / retain playback time / alpha feedback
+
+Number fields now blur/commit on outside pointer-down, including canvas clicks
+whose default focus change is prevented. Enter also commits/unfocuses. Sequence
+parameter edits rebuild at the current time; paused remains paused and playing
+support edits resume there. Reset remains explicit. Cached support edits use no NN.
+Measured alpha 1→20: previous final contact shifted only 8 mm and hit the old
+ledge; at Foot 800 m/s the requested lead itself is only ~1 cm. The finite ledge
+now allows a 12 cm margin after predicted contacts, capped by leg forward reach.
+Lead readout reports actual cm and marks edge limiting; formula is unchanged.
+Verified 104 support checks plus 17 editing checks (`editing-verification.json`),
+and real canvas-click / Enter commits at 1.05 s without a time reset. Alpha 1→20
+moves the planted foot forward 0.912 cm at that same time. Original alpha 20.1
+and other saved tuning restored. No NN/Unreal processes launched.
+Details: [Bodyflip README](Labs/BodyflipLab/README.md). Contained lab only.
+
+## October 24 — Bodyflip support alpha uncapped
+
+Removed the upper bound of 10 from **Lead alpha**, both UI and settings sanitizer.
+Any finite nonnegative value, including values above 1 and 10, is accepted/saved.
+Default remains 1. At Foot 800 m/s, alpha 10 yields only about 5 mm of forward
+lead for the cached gait. Actual contact remains clamped to the finite platform;
+its edge is unchanged. Only contained lab controls/docs changed; refresh the lab.
+
+## October 24 — Bodyflip playback speed
+
+Shortened the timeline on the right for a compact **Speed 0.1×–2.0×** slider,
+default 1.0× and saved. Changes playback speed live without restarting; authored
+timeline/trim/Step and fixed simulation step sizes remain unchanged. Bounded
+frame work is retained. Only Bodyflip lab UI/clock and current docs changed.
+Refresh the desktop lab. [Details](Labs/BodyflipLab/README.md).
+
+## October 24 — Bodyflip procedural support plant
+
+Replaced authored support preparation / jump-pose distance selection with a
+procedural ground contact in **Kinematic**. Pelvis projects to the finite platform;
+ideal L/R contacts sit half a hip width along its tangent. Auto selects the nearer
+corresponding foot; L/R overrides remain. Prediction is COM tangent velocity ×
+alpha × lateral foot distance **divided by foot speed**, as clarified by user.
+Controls: **Reach .99**, **Gate 5 cm**, **Lead alpha 1**, **Foot 800 m/s**.
+Speed-limited approach gates root ascent; plant the reached position without a
+final snap, hold in world space with fixed-length two-bone IK, release at reach
+limit, then blend that leg into its matching jump clip using Blend. Other limbs
+blend at takeoff; Air flip starts after foot release. Green ring shows contact.
+Unreachable contact waits; slow-foot approach can hold the body at the ledge.
+Read [Bodyflip README](Labs/BodyflipLab/README.md) for contact-gap and geometry
+details. **104 numerical / 20 browser / 17 bracket checks passed** using cached
+runs only. Preview: `Labs/BodyflipLab/support-preview.jpg`.
+No NN worker, Unreal, native build, shared assets or other sessions changed.
+Existing bracket settings preserved; refresh the desktop lab to load this change.
+
+## October 24 — Bodyflip playback stays inside brackets
+
+Fixed replay ignoring the visible range when Loop was off. In/Out now always
+bound Run + jump playback: Loop repeats; without Loop playback pauses at Out.
+Moving either bracket enables Loop automatically; Step also respects Out.
+Kinematic remains active. `timeline-verification.json` passes **17 checks**,
+including actual animation-frame playback, repeat wrapping, Loop-off stopping,
+Step bounds and live drag previews. Only the contained lab and this handoff
+changed; no NN or Unreal processes started. Refresh the desktop lab to load it.
+
+## October 24 — Bodyflip inline trim brackets / live scrubbing
+
+User rejected the extra trim row. Replaced it with draggable **[ / ] brackets on
+the playback timeline**, highlighted range and compact Loop beside transport.
+Footer restored to **56 px**; separate sliders/numeric fields removed. Hover/focus
+shows endpoint time; arrows move one frame (Shift ten); saved ranges preserved.
+Kinematic playhead and bracket dragging now update the scene **before release**,
+coalescing pointer inputs once per animation frame without NN/replay work.
+Current details: [Bodyflip README](Labs/BodyflipLab/README.md).
+`verify-timeline.html` checks input-only live preview, latest-position wins, bracket
+adjustments, compact layout, loop wrapping and kinematic membership; receipt
+`timeline-verification.json`. Old loop test routes to the replacement fixture.
+Only contained lab files changed. Refresh the existing desktop app.
+
+## October 24 — Bodyflip playback In/Out loop
+
+Run + jump playback bar now has **In / Out** sliders plus seconds fields and a
+separate **Loop** checkbox. Edit boundaries, enable Loop, Play/Space to repeat.
+Edits pause/preview that endpoint; bounds snap to 60 Hz frames and cannot cross.
+Defaults 0–3 s, Loop off; values persist. Numeric fields extend range up to 600 s.
+Kinematic remains selected. Seeking/wrapping directly samples the prepared sequence
+and flip/twist phase without NN work or simulation replay; transient attack/hit
+state clears per pass. Sim uses the existing yielding reconstruction if selected.
+Attack Loop remains independent. [Bodyflip README](Labs/BodyflipLab/README.md).
+`loop-verification.json`: 11 checks passed, including three wraps, exact restart,
+boundary guards, pause and Loop-off behavior. Only lab files changed; no heavy
+processes started. Refresh the existing desktop app.
+
+## October 24 — Bodyflip kinematic takeoff trimmed / support-foot Auto
+
+Current work remains **Kinematic**, now also the fresh-settings default. Both
+authored Lfoot/Rfoot jump variants already existed. Each now skips **20 frames /
+0.333 s** before meaningful root ascent; root height is rebased at the cut. Run
+ends directly in ascent, with no preparation delay or root-position discontinuity.
+Blend still interpolates the body without delaying the root. Apex is 0.467 s (L)
+or 0.533 s (R) after Run; edge/fall-loop/air-flip timing use the trimmed timeline.
+**Foot Auto** chooses the smaller root-relative 3D supporting-ankle distance:
+final-run left foot versus trimmed L support, right foot versus trimmed R support.
+Removed the old whole-leg score at the untrimmed first frame. L/R remain explicit
+overrides; status shows the chosen support. These are two authored opposite-foot
+variants, not a claim of exact mathematical mirror symmetry.
+Read [Bodyflip Lab](Labs/BodyflipLab/README.md). Focused sampling checks cover
+immediate ascent, continuity, source pose fidelity, both overrides, exact support
+matches and both choices across gait positions: `takeoff-verification.json`.
+Browser results: `takeoff-browser-verification.json` (**20/20**). Also fixed timeline
+pointer input losing its requested value during the pause redraw; real clicking
+now seeks to 1.17 s and visibly shows RISE. No NN worker, Unreal process,
+asset edits or physics tuning. Refresh the existing desktop lab.
+
+## October 24 — Bodyflip tracking correction / kinematic comparison / hitching
+
+User found button-focus Space conflicts, hitching and poor simulated gait. Changes
+remain in `Labs/BodyflipLab`; [current details](Labs/BodyflipLab/README.md).
+**Motion → Sim / Kinematic** compares identical decoded NN targets and restarts the
+sequence. Kinematic has no solve/contact response; Sim has 25 dynamic bodies.
+Space now captures keydown/keyup and suppresses repeats, including with a
+button/slider/checkbox/selector focused. Text editing keeps normal keys.
+
+Diagnosis confirmed: initial Run + jump used spring joint motors, NOT the native
+velocity tracking functions. Corrected to `ProphecyJoltVelocityServo.cpp`'s angular
+error/substep command and parent-first predicted endpoints, with world position
+tracking on pelvis only, gravity compensation and origin-to-COM velocity correction.
+Joint motors are off in this mode; real constraints/contact remain. Original Space
+motors remain. One-second frozen NN comparison: upper-spine mean angular error
+28.10°→1.60°, left-hand 54.20°→6.17°. Hinge/contact errors remain; lab rig/tuning is
+not native-rig parity. Source NN is unchanged. Kinematic exposes its exact poses.
+
+Optimization: cached sword geometry/normals, unique vertex transforms, reused GPU
+buffers, cached local pose sampling, scalar root-height derivatives, 10 Hz HUD,
+bounded catch-up. Decoded NN cache makes reset/blend/foot/cap edits reuse a segment;
+timeline reconstructs on release in short yielding batches. Measured same local
+1000×700 fixture: mean frame work 22.40→9.38 ms; p95 25.30→12.80 ms. Cached Reset
+3.5 ms. These include test diagnostics/render submission, not GPU-present FPS.
+
+Validation: **27/27** focused comparison checks, real focused-button Space toggle,
+tracking regression, and 12 simulated seconds. Max anchor 4.111 mm, pelvis position
+1.172 cm, pelvis angle 19.05°; fall cap respected. Receipts in lab:
+`comparison-verification.json`, `tracking-before/after.json`,
+`performance-before/after.json`, updated `flight-verification.json`.
+Prior 16/39 UI receipts below are historical; sequence fixture adapted to async seek.
+Only the small existing server remains resident; no NN/Unreal/build/training process
+started for these fixes. Existing desktop icon; refresh the lab to load changes.
+
+## October 24 — Bodyflip Lab simulated run → jump → void complete
+
+Contained in `Labs/BodyflipLab`; desktop **Bodyflip Lab**, loopback **8876**.
+Current details: [Bodyflip Lab README](Labs/BodyflipLab/README.md).
+Default **Run + jump** uses frozen installed Run **181751** + Upper **82500** NN
+weights through the original Stepper encoder/decoder (CPU, read-only dependency).
+Run duration defaults to **1 s**, gait phase and jump blend have sliders. Real
+GASP L/R running jump starts supply the root rise; the prolonged fall uses
+`M_Relaxed_Jump_Loop_Fall`. Platform ends at lift-off; below it is an infinite void.
+Downward speed defaults to **20 m/s**, with a configurable cap on actual body COM.
+Camera follows mass-weighted simulated COM. All **25 bodies are dynamic**;
+mode **0** principle means parent-relative limb angular motors and world-space
+pelvis attraction only. This is the lab's Jolt implementation/tuning, not exact
+native Unreal adapter parity. NN recurrence prepares a segment without physics
+feedback. Original Space mode, attacks, draggable target, flip/twist remain.
+Air flip is off by default and, when enabled, starts at lift-off.
+
+Laptop containment: single-CPU inference workers exit after preparation; default
+unarmed/drawn segments and four recent requests are cached. Idle server measured
+**18.5 MB**, no resident Torch/NN; cached repeat **12 ms** (uncached **16.9 s** under
+current load). Paused/hidden lab does no continuous rendering or simulation.
+Export-only headless processes have exited and their Content junction was removed.
+No gameplay C++ build, asset saves, training/model-pointer changes, or changes to
+other labs/sessions. Export had unrelated dependency/config diagnostics; all three
+source asset hashes and exported transforms independently verified.
+
+Validation: final **16/16** sequence browser checks, original **39/39** UI checks,
+320 attack clips and 12 axes verified. Twelve simulated seconds: maximum joint
+anchor error **4.147 mm**, pelvis target error **8.779 cm**, pelvis angle error
+**12.6°**; terminal COM speed respects the 12 m/s test cap to float precision.
+Receipts: `flight-verification.json`, `sequence-browser-verification.json`,
+`nn-verification.json`, `jump-export-verification.json` in the lab. No NN worker
+is intentionally kept running after verification. Existing desktop shortcut remains.
+
+
 ## October 24 - approved isolated UI checkpoint
 
 User approved and saved the pause menu and requested this UI work pushed.

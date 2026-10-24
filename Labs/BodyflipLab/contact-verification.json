@@ -1,0 +1,86 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "file": "contact-check.json",
+      "foot": "R",
+      "jumpStart": 0.9458333333333333,
+      "pinSeconds": 0.05302613576253257,
+      "maxGap": 9.926394564513386e-7,
+      "maxDrift": 0.08994844427062657,
+      "maxSpeed": 5.000000000000059
+    },
+    {
+      "file": "run-default.json",
+      "foot": "L",
+      "jumpStart": 0.7625,
+      "pinSeconds": 0.036451800664265954,
+      "maxGap": 9.822628727687577e-7,
+      "maxDrift": 0.08994847758481989,
+      "maxSpeed": 8.000000000000046
+    },
+    {
+      "file": "run-default.json",
+      "foot": "R",
+      "jumpStart": 0.725,
+      "pinSeconds": 0.0516970952351888,
+      "maxGap": 9.999802513468992e-7,
+      "maxDrift": 0.08994847415750185,
+      "maxSpeed": 8.000000000000096
+    },
+    {
+      "file": "run-default-drawn.json",
+      "foot": "L",
+      "jumpStart": 0.7625,
+      "pinSeconds": 0.036451800664265954,
+      "maxGap": 9.822628727965133e-7,
+      "maxDrift": 0.08994847758481943,
+      "maxSpeed": 8.000000000000153
+    },
+    {
+      "file": "run-default-drawn.json",
+      "foot": "R",
+      "jumpStart": 0.725,
+      "pinSeconds": 0.0516970952351888,
+      "maxGap": 9.999802508195432e-7,
+      "maxDrift": 0.08994847415750173,
+      "maxSpeed": 8.000000000000117
+    },
+    {
+      "file": "walk-default.json",
+      "foot": "L",
+      "jumpStart": 0.7083333333333333,
+      "pinSeconds": 0.03335075378417969,
+      "maxGap": 9.791866040012587e-7,
+      "maxDrift": 0.08994837070021212,
+      "maxSpeed": 8.000000000000044
+    },
+    {
+      "file": "walk-default.json",
+      "foot": "R",
+      "jumpStart": 0.7166666666666667,
+      "pinSeconds": 0.04642281532287597,
+      "maxGap": 9.774545209825791e-7,
+      "maxDrift": 0.08994841212449464,
+      "maxSpeed": 8.000000000000046
+    },
+    {
+      "file": "walk-default-drawn.json",
+      "foot": "L",
+      "jumpStart": 0.7083333333333333,
+      "pinSeconds": 0.03335075378417969,
+      "maxGap": 9.7918660424412e-7,
+      "maxDrift": 0.0899483707002124,
+      "maxSpeed": 8.000000000000012
+    },
+    {
+      "file": "walk-default-drawn.json",
+      "foot": "R",
+      "jumpStart": 0.7166666666666667,
+      "pinSeconds": 0.04642281532287597,
+      "maxGap": 9.7745452053849e-7,
+      "maxDrift": 0.08994841212449473,
+      "maxSpeed": 7.9999999999999964
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "checks": [
+    "Kinematic remains selected",
+    "L trim is one third second",
+    "L starts at run boundary",
+    "L immediately rises",
+    "L remains exact kinematic",
+    "L support shown in UI",
+    "L override honored",
+    "R trim is one third second",
+    "R starts at run boundary",
+    "R immediately rises",
+    "R remains exact kinematic",
+    "R support shown in UI",
+    "R override honored",
+    "Auto trim is one third second",
+    "Auto starts at run boundary",
+    "Auto immediately rises",
+    "Auto remains exact kinematic",
+    "Auto support shown in UI",
+    "Auto chooses closest support",
+    "No runtime errors"
+  ]
+}

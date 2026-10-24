@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "checks": [
+    "Walk selected and exact frame retained",
+    "Walking NN at two metres per second",
+    "Walking phase and label",
+    "Walk timeline enabled",
+    "Walk root advances at walking speed",
+    "Run restored at five metres per second",
+    "No runtime errors"
+  ]
+}

@@ -1,0 +1,17 @@
+<!doctype html><title>Walk mode checks</title><button id="run">Check walk</button><pre id="result">Ready</pre><iframe id="lab" src="/" style="width:1200px;height:760px"></iframe><script>
+run.onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],receipt={passed:false,checks};
+ const check=(name,ok)=>{if(!ok)throw Error(name);checks.push(name);},frame=()=>new Promise(r=>w.requestAnimationFrame(()=>w.requestAnimationFrame(r)));
+ const mode=async value=>{d.getElementById('mode').value=value;d.getElementById('mode').dispatchEvent(new w.Event('change',{bubbles:true}));for(let i=0;i<300&&a.state.loadingRun;i++)await frame();if(a.state.loadingRun)throw Error('Mode load timed out');};
+ try{
+  a.setPlaying(false);await mode('walk');await a.seek(.5);
+  check('Walk selected and exact frame retained',a.state.settings.mode==='walk'&&a.state.simTime===.5);
+  check('Walking NN at two metres per second',d.getElementById('runInfo').textContent.includes('Walk NN - 2.0 m/s'));
+  check('Walking phase and label',a.state.flight.phase==='WALK'&&d.getElementById('gaitLabel').textContent==='Walk');
+  check('Walk timeline enabled',!d.getElementById('trimControls').hidden);
+  check('Walk root advances at walking speed',Math.abs(a.state.flight.root[2]-1)<.001);
+  await mode('jump');check('Run restored at five metres per second',d.getElementById('runInfo').textContent.includes('Run NN - 5.0 m/s'));
+  await mode('walk');await a.seek(.5);check('No runtime errors',a.state.errors.length===0);receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}finally{a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);}
+};
+</script>

@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "beforeUncachedRunMs": 4552.8176,
+  "results": [
+    {
+      "gait": "run",
+      "phase": 0.43,
+      "duration": 1,
+      "requestMs": 10.160000005271286
+    },
+    {
+      "gait": "run",
+      "phase": 0.27,
+      "duration": 1,
+      "requestMs": 32.689499988919124
+    },
+    {
+      "gait": "walk",
+      "phase": 0.73,
+      "duration": 1,
+      "requestMs": 26.56350002507679
+    },
+    {
+      "gait": "walk",
+      "phase": 0.99,
+      "duration": 5,
+      "requestMs": 62.92660001781769
+    }
+  ]
+}

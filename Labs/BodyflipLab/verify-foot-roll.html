@@ -1,0 +1,29 @@
+<!doctype html><title>Foot roll controls</title>
+<button id="check">Check foot roll</button><pre id="result" style="max-height:75px;overflow:auto">Ready</pre>
+<iframe id="lab" src="/" style="width:1200px;height:760px"></iframe>
+<script>
+check.onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],receipt={passed:false,checks};
+ const verify=(n,v)=>{if(!v)throw Error(n);checks.push(n);};
+ const field=async(id,value)=>{const e=d.getElementById(id);e.value=value;e.dispatchEvent(new w.Event('change',{bubbles:true}));while(a.state.loadingRun)await new Promise(r=>setTimeout(r,10));};
+ try{
+  a.setPlaying(false);await a.seek(.5);
+  verify('Small controls remain collapsed by default',!d.querySelector('details.minor-options').open);
+  d.querySelector('details.minor-options summary').click();
+  for(const id of ['plantPitch','toeOffPitch','footRollSpeed'])verify(id+' inside More options',!!d.getElementById(id).closest('details.minor-options'));
+  await field('plantPitch',10);await field('toeOffPitch',35);await field('footRollSpeed',720);
+  verify('Angle and speed edits preserve time',Math.abs(a.state.simTime-.5)<1e-8);
+  verify('Roll speed applied',a.state.settings.footRollSpeed===720);
+  const t=a.state.flight.jumpStart+1/60;await a.seek(t);const fast=JSON.stringify(a.state.pose.q),time=a.state.simTime;
+  const begin=performance.now();await field('footRollSpeed',180);receipt.editMs=performance.now()-begin;
+  verify('Speed edit keeps current frame',a.state.simTime===time);
+  verify('Speed changes displayed push pose',JSON.stringify(a.state.pose.q)!==fast);
+  await field('footRollSpeed',0);verify('Zero roll is accepted',a.state.settings.footRollSpeed===0);
+  await field('footRollSpeed',backup.settings.footRollSpeed??720);
+  await field('plantPitch',backup.settings.plantPitch??10);await field('toeOffPitch',backup.settings.toeOffPitch??35);
+  d.getElementById('cameraSide').click();await a.seek(a.state.flight.jumpStart+a.state.flight.release*.5);
+  verify('No runtime errors',a.state.errors.length===0);receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}
+ finally{a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);}
+};
+</script>

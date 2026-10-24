@@ -1,0 +1,10 @@
+state.json
+models/*.pt
+models/*.npz
+.export-project/
+state.tmp
+snapshots/
+__pycache__/
+*.log
+vendor/package.tgz
+vendor/package-metadata.json

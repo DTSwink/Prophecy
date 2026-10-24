@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "checks": [
+    "Walk mode persists",
+    "Actual walking NN false",
+    "Walk phase and moving root false",
+    "Auto reaches takeoff at default foot speed false",
+    "Finite capped fall false",
+    "Manual right support at 300 cm/s false",
+    "Missed contact still aborts false",
+    "Arbitrary replay is deterministic false",
+    "Actual walking NN true",
+    "Walk phase and moving root true",
+    "Auto reaches takeoff at default foot speed true",
+    "Finite capped fall true",
+    "Manual right support at 300 cm/s true",
+    "Missed contact still aborts true",
+    "Arbitrary replay is deterministic true"
+  ]
+}

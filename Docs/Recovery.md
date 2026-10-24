@@ -1,5 +1,19 @@
 # Restoring Prophecy
 
+## October 24 Bodyflip Lab checkpoint
+
+`Labs/BodyflipLab` includes the standalone app, Jolt runtime/license, desktop
+shortcut scripts, recorded attacks/jumps, exact Run/Walk phase banks, focused
+verification scripts/receipts and `saved-profile.json` with current tuning and
+camera. Copy that profile to live `state.json` only on a fresh restore. Playback
+needs Python 3 and Edge/Chrome, without Unreal or neural-network inference.
+The current shortcut launcher names a laptop-specific Python path; the lab
+README gives the portable server command and documents regeneration-only
+external models/seeds. Temporary exports, logs, browser profiles and full
+captures are omitted. Parallel Unreal, training and other lab changes are
+outside this checkpoint; only Bodyflip handoff sections are staged from the
+shared journal.
+
 ## October 22 grab and tools checkpoint
 
 Includes per-arm live grab joint independence, closest-agent/physical-mesh helpers,

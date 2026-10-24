@@ -1,0 +1,17 @@
+<!doctype html><title>Jump options checks</title><button id="run">Check options</button><pre id="result">Ready</pre><iframe id="lab" src="/" style="width:1200px;height:760px"></iframe><script>
+run.onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],receipt={passed:false,checks};
+ const check=(n,ok)=>{if(!ok)throw Error(n);checks.push(n);},frame=()=>new Promise(r=>w.requestAnimationFrame(()=>w.requestAnimationFrame(r)));
+ const change=async(id,value)=>{const el=d.getElementById(id);if(el.type==='checkbox')el.checked=value;else el.value=value;el.dispatchEvent(new w.Event('change',{bubbles:true}));for(let i=0;i<300&&a.state.loadingRun;i++)await frame();if(a.state.loadingRun)throw Error('Load timeout');};
+ try{
+  a.setPlaying(false);await a.seek(1.2);const time=a.state.simTime;
+  check('Small options collapsed initially',!d.querySelector('.minor-options').open);d.querySelector('.minor-options').open=true;
+  await change('standRatio',3);check('Threshold selects standing jump',a.state.flight.jumpStyle==='Stand'&&a.state.flight.standingThreshold===6);
+  check('Threshold edit preserves time',a.state.simTime===time);
+  await change('standRatio',.5);check('Default cutoff restores run jump',a.state.flight.jumpStyle==='Run'&&a.state.flight.standingThreshold===1);
+  await change('matchLeg',false);check('Legacy toggle works',!a.state.settings.matchLeg&&a.state.simTime===time);
+  await change('matchLeg',true);check('Matched-leg animation enabled at same time',a.state.settings.matchLeg&&a.state.flight.supportState==='MATCH'&&a.state.simTime===time);
+  await change('animLeg',true);check('Ghost enabled without errors',a.state.settings.animLeg&&a.state.errors.length===0);receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}finally{a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);}
+};
+</script>

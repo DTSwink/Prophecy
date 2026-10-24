@@ -1,0 +1,247 @@
+{
+  "engine": "Jolt WASM 1.1.1",
+  "clips": 320,
+  "axes": [
+    {
+      "axis": 0,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 1,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 2,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 3,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 4,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 5,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 6,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 7,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 8,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 9,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 10,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    },
+    {
+      "axis": 11,
+      "flip": 120,
+      "twist": 60,
+      "passed": true
+    }
+  ],
+  "attacks": [
+    {
+      "attack": "headbutt",
+      "maxAnchorError": 0.000731664635832769,
+      "passed": true
+    },
+    {
+      "attack": "hookL",
+      "maxAnchorError": 0.00046316487117507653,
+      "passed": true
+    },
+    {
+      "attack": "hookR",
+      "maxAnchorError": 0.0002528098666281376,
+      "passed": true
+    },
+    {
+      "attack": "jabL",
+      "maxAnchorError": 0.0004097840308903819,
+      "passed": true
+    },
+    {
+      "attack": "jabR",
+      "maxAnchorError": 0.00043265032944135595,
+      "passed": true
+    },
+    {
+      "attack": "KickL",
+      "maxAnchorError": 0.0008340333429425774,
+      "passed": true
+    },
+    {
+      "attack": "KickR",
+      "maxAnchorError": 0.0005957282917900341,
+      "passed": true
+    },
+    {
+      "attack": "overL",
+      "maxAnchorError": 0.000287753284647146,
+      "passed": true
+    },
+    {
+      "attack": "overR",
+      "maxAnchorError": 0.0004198756017490257,
+      "passed": true
+    },
+    {
+      "attack": "pike",
+      "maxAnchorError": 0.0010581922617337414,
+      "passed": true
+    },
+    {
+      "attack": "slashL",
+      "maxAnchorError": 0.000955290912756532,
+      "passed": true
+    },
+    {
+      "attack": "slashLD",
+      "maxAnchorError": 0.00042085181334028436,
+      "passed": true
+    },
+    {
+      "attack": "slashLU",
+      "maxAnchorError": 0.0010226854500085458,
+      "passed": true
+    },
+    {
+      "attack": "slashR",
+      "maxAnchorError": 0.0015359921739289812,
+      "passed": true
+    },
+    {
+      "attack": "slashRD",
+      "maxAnchorError": 0.0012785954396465169,
+      "passed": true
+    },
+    {
+      "attack": "slashRU",
+      "maxAnchorError": 0.0008224128002965604,
+      "passed": true
+    }
+  ],
+  "aim": [
+    {
+      "attack": "headbutt",
+      "before": 0.14142135623730953,
+      "after": 0.10007465364317895
+    },
+    {
+      "attack": "hookL",
+      "before": 0.14142135623730953,
+      "after": 0.001771300215557645
+    },
+    {
+      "attack": "hookR",
+      "before": 0.14142135623730953,
+      "after": 0.05734598443250581
+    },
+    {
+      "attack": "jabL",
+      "before": 0.14142135623730953,
+      "after": 0.013589179226716474
+    },
+    {
+      "attack": "jabR",
+      "before": 0.14142135623730953,
+      "after": 0.01736931109177003
+    },
+    {
+      "attack": "KickL",
+      "before": 0.14142135623730953,
+      "after": 0.05711909655035369
+    },
+    {
+      "attack": "KickR",
+      "before": 0.14142135623730953,
+      "after": 0.10493895643370665
+    },
+    {
+      "attack": "overL",
+      "before": 0.14142135623730953,
+      "after": 0.07716476883254325
+    },
+    {
+      "attack": "overR",
+      "before": 0.14142135623730956,
+      "after": 0.009154133508312776
+    },
+    {
+      "attack": "pike",
+      "before": 0.14142135623730942,
+      "after": 0.09025897583922184
+    },
+    {
+      "attack": "slashL",
+      "before": 0.14142135623730956,
+      "after": 0.009684648200422193
+    },
+    {
+      "attack": "slashLD",
+      "before": 0.14142135623730953,
+      "after": 0.11350075405659159
+    },
+    {
+      "attack": "slashLU",
+      "before": 0.14142135623730956,
+      "after": 0.12547432021337285
+    },
+    {
+      "attack": "slashR",
+      "before": 0.14142135623730953,
+      "after": 0.03876344507076247
+    },
+    {
+      "attack": "slashRD",
+      "before": 0.14142135623730961,
+      "after": 0.025543597539365605
+    },
+    {
+      "attack": "slashRU",
+      "before": 0.14142135623730956,
+      "after": 0.0607062474478672
+    }
+  ],
+  "maxAnchorError": 0.0015359921739289812,
+  "maxHingeExcess": 0.0009164137782544657,
+  "neutralMaxAngularErrorDeg": 4.36387442435685,
+  "elapsedMs": 7504.6186,
+  "passed": true
+}

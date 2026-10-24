@@ -1,0 +1,76 @@
+{
+  "checks": [
+    "60 ticks: flip 120 deg",
+    "Independent twist 60 deg",
+    "24 actual Jolt joints",
+    "Knees and elbows are hinges",
+    "Axis Back",
+    "Axis B-R 30",
+    "Axis B-R 60",
+    "Axis Right",
+    "Axis F-R 60",
+    "Axis F-R 30",
+    "Axis Front",
+    "Axis F-L 30",
+    "Axis F-L 60",
+    "Axis Left",
+    "Axis B-L 60",
+    "Axis B-L 30",
+    "Zero twist independent",
+    "Right-drag target",
+    "Shift-right depth",
+    "Orbit preserves target",
+    "Headbutt playback",
+    "Hook L playback",
+    "Hook R playback",
+    "Jab L playback",
+    "Jab R playback",
+    "Kick L playback",
+    "Kick R playback",
+    "Over L playback",
+    "Over R playback",
+    "Pike playback",
+    "Slash L playback",
+    "Slash LD playback",
+    "Slash LU playback",
+    "Slash R playback",
+    "Slash RD playback",
+    "Slash RU playback",
+    "Scrub pauses",
+    "Cancel returns idle",
+    "No runtime errors"
+  ],
+  "passed": true,
+  "finalDiagnostics": {
+    "bodies": 25,
+    "joints": 24,
+    "hinges": [
+      {
+        "name": "lowerarm_l",
+        "angle": -6.349856107590313e-8,
+        "min": -0.4652502326393471,
+        "max": 2.2400101079518637
+      },
+      {
+        "name": "lowerarm_r",
+        "angle": 1.977984709355951e-7,
+        "min": -0.5072079973278552,
+        "max": 2.1980523432633556
+      },
+      {
+        "name": "calf_l",
+        "angle": 6.48312038720178e-7,
+        "min": -0.33971073685778125,
+        "max": 2.278283141133713
+      },
+      {
+        "name": "calf_r",
+        "angle": 0.0000036560738863045117,
+        "min": -0.2835647710673706,
+        "max": 2.334429106924124
+      }
+    ],
+    "anchorError": 0.0000017954653267470314,
+    "finite": true
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "checks": [
+    "Kinematic retained",
+    "Compact support controls visible",
+    "Centimetre speed and gate are explicit",
+    "Centimetres stored as metres",
+    "L support selection",
+    "L procedural plant visible",
+    "L kinematic pose matches target",
+    "L replay deterministic",
+    "R support selection",
+    "R procedural plant visible",
+    "R kinematic pose matches target",
+    "R replay deterministic",
+    "Auto support selection",
+    "Auto procedural plant visible",
+    "Auto kinematic pose matches target",
+    "Auto replay deterministic",
+    "Slower foot delays takeoff",
+    "Scrub previews support approach before release",
+    "Unreachable target aborts without jumping",
+    "Root advances during slow approach",
+    "Every support tick has a distance record",
+    "Failure follows first increasing gap",
+    "Late plant visibly aborts and falls",
+    "Abort replay deterministic",
+    "Left drag down decreases pitch",
+    "Horizontal orbit direction retained",
+    "No runtime errors"
+  ]
+}

@@ -1,0 +1,13 @@
+<!doctype html><title>Animation leg overlay check</title><button id="run">Check overlay</button><pre id="result">Ready</pre><iframe id="lab" src="/" style="width:1200px;height:760px"></iframe><script>
+run.onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],receipt={passed:false,checks};
+ const check=(n,ok)=>{if(!ok)throw Error(n);checks.push(n);};
+ try{
+  a.setPlaying(false);await a.seek(.95);const before=JSON.stringify(a.state.pose),time=a.state.simTime;
+  const box=d.getElementById('animLeg');box.checked=false;box.dispatchEvent(new w.Event('change'));box.click();
+  check('Checkbox enables animation leg',box.checked&&a.state.settings.animLeg);
+  check('Toggle preserves pose and timeline',JSON.stringify(a.state.pose)===before&&a.state.simTime===time);
+  check('No runtime errors',a.state.errors.length===0);receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}finally{a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);}
+};
+</script>

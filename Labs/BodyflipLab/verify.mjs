@@ -1,0 +1,21 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import crypto from 'node:crypto';import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),R=require('./recovery.js'),C=require('./core.js');globalThis.Recovery=R;
+const read=name=>fs.readFileSync(new URL(name,import.meta.url)),m=JSON.parse(read('./data/manifest.json')),sword=JSON.parse(read('./data/sword.json')),idle=C.poseFromShared(m),f=R.rotate(idle.q[1],[0,-1,0]),base=R.qm(R.fromTo(R.unit([f[0],0,f[2]]),[0,0,1]),idle.q[1]);
+const {createPhysics}=await import('./physics.mjs'),p=await createPhysics(m,C.centerPose(idle,base)),start=performance.now(),receipt={engine:p.engine,clips:0,axes:[],attacks:[],aim:[],maxAnchorError:0,maxHingeExcess:0};
+function inspect(){const d=p.diagnostics();assert(d.finite);assert.equal(d.bodies,25);assert.equal(d.joints,24);assert.equal(d.hinges.length,4);receipt.maxAnchorError=Math.max(receipt.maxAnchorError,d.anchorError);for(const h of d.hinges)receipt.maxHingeExcess=Math.max(receipt.maxHingeExcess,h.min-h.angle,h.angle-h.max);assert(d.anchorError<.015,`anchor ${d.anchorError}`);return d;}
+assert.equal(new Set(Array.from({length:12},(_,i)=>C.flipAxis(i).map(x=>x.toFixed(6)).join(','))).size,12);
+for(let axis=0;axis<12;axis++){p.reset(C.centerPose(idle,base));for(let i=1;i<=240;i++){const q=C.orientation(i*.5,i*.25,axis,base);p.step(C.centerPose(idle,q),1/240);if(i%30===0)inspect();}const actual=p.read().q[1],expect=C.orientation(120,60,axis,base);assert(R.length(R.qlog(R.qm(actual,R.qinv(expect))))<1e-5);receipt.axes.push({axis,flip:120,twist:60,passed:true});}
+for(const family of m.clips){let clip;for(const meta of family.variants){const bytes=read('./'+meta.file);assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),meta.sha256);const decoded=C.decode(meta,bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),m.names,m.parents);receipt.clips++;if(meta.id===1)clip=decoded;}
+ p.reset(C.centerPose(idle,base));let maxError=0;for(let i=0;i<Math.ceil((clip.duration+.6)*240);i++){const t=i/240,q=C.orientation(t*120,t*35,2,base),raw=C.sample(clip,t,idle,m.parents),desired=C.aimPose(C.centerPose(raw,q),[.4,1.55,.8],family.name,m.names,m.parents,sword,.6);p.step(desired,1/240);if(i%24===0)maxError=Math.max(maxError,inspect().anchorError);}receipt.attacks.push({attack:family.name,maxAnchorError:maxError,passed:true});
+ const source=C.centerPose(clip.poses[Math.floor(clip.poses.length*.65)],base),point=C.contactPoint(source,family.name,m.names,sword),target=R.add(point,[.10,.08,.06]),aimed=C.aimPose(source,target,family.name,m.names,m.parents,sword,1),before=R.length(R.sub(point,target)),after=R.length(R.sub(C.contactPoint(aimed,family.name,m.names,sword),target));receipt.aim.push({attack:family.name,before,after});assert(after<=before+.002,`Aim worsened ${family.name}: ${before} -> ${after}`);
+ const fullReturn=C.sample(clip,clip.duration+1,idle,m.parents);assert(R.length(R.sub(fullReturn.points[24],idle.points[24]))<1e-6);
+}
+assert(receipt.maxHingeExcess<.07,`hinge violation ${receipt.maxHingeExcess}`);assert.equal(receipt.clips,320);
+// The neutral body follows constant rotation instead of folding behind its pelvis.
+p.reset(C.centerPose(idle,base));let target;
+for(let i=1;i<=1440;i++){target=C.centerPose(idle,C.orientation(i*.5,i*.25,0,base));p.step(target,1/240);}
+const actual=p.read();receipt.neutralMaxAngularErrorDeg=Math.max(...actual.q.slice(1).map((q,i)=>R.length(R.qlog(R.qm(R.qinv(target.q[i+1]),q)))*180/Math.PI));
+assert(receipt.neutralMaxAngularErrorDeg<10);inspect();
+// Each twist leaves the flipped pelvis vertical unchanged, including upside down.
+for(const angle of [0,60,150,270]){const a=R.rotate(C.orientation(117,0,4,base),[1,0,0]),b=R.rotate(C.orientation(117,angle,4,base),[1,0,0]);assert(R.length(R.sub(a,b))<1e-10);}
+receipt.elapsedMs=performance.now()-start;receipt.passed=true;p.dispose();fs.writeFileSync(new URL('./verification.json',import.meta.url),JSON.stringify(receipt,null,2));console.log(JSON.stringify({passed:true,clips:receipt.clips,axes:receipt.axes.length,attacks:receipt.attacks.length,maxAnchorError:receipt.maxAnchorError,maxHingeExcess:receipt.maxHingeExcess,elapsedMs:receipt.elapsedMs}));

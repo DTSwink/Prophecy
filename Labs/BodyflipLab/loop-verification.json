@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "checks": [
+    "Kinematic retained",
+    "Repeated playback wraps inside In/Out",
+    "Restart target is deterministic",
+    "Loop leaves physics disabled",
+    "In cannot cross Out",
+    "Out cannot cross In",
+    "Play outside trim starts at In",
+    "Pause freezes the loop",
+    "Loop off plays past Out",
+    "Numeric Out expands slider range",
+    "No runtime errors"
+  ],
+  "wraps": 3
+}

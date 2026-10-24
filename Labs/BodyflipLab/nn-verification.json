@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "duration": 5.0,
+      "phase": 0.99,
+      "fps": 30.0,
+      "upperInferences": 170,
+      "seconds": 2.6984907000150997,
+      "periodSeconds": 0.6333333333333333,
+      "source": "Run 181751 + Upper 82500"
+    },
+    {
+      "duration": 0.1,
+      "phase": 1.0,
+      "fps": 30.0,
+      "upperInferences": 23,
+      "seconds": 0.261604899977101,
+      "periodSeconds": 0.6333333333333333,
+      "source": "Run 181751 + Upper 82500"
+    }
+  ]
+}

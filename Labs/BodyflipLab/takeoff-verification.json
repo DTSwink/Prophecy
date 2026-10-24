@@ -1,0 +1,119 @@
+{
+  "passed": true,
+  "checks": [
+    "Fresh default stays kinematic",
+    "L trim removes 20 preparation frames",
+    "L jump begins at run end",
+    "L root immediately rises",
+    "L no positional discontinuity at blend start",
+    "L samples trimmed source pose",
+    "L still reaches fall loop",
+    "L matching support selects correct variant",
+    "R trim removes 20 preparation frames",
+    "R jump begins at run end",
+    "R root immediately rises",
+    "R no positional discontinuity at blend start",
+    "R samples trimmed source pose",
+    "R still reaches fall loop",
+    "R matching support selects correct variant",
+    "Auto support nearest at tick 6",
+    "Auto support nearest at tick 7",
+    "Auto support nearest at tick 8",
+    "Auto support nearest at tick 9",
+    "Auto support nearest at tick 10",
+    "Auto support nearest at tick 11",
+    "Auto support nearest at tick 12",
+    "Auto support nearest at tick 13",
+    "Auto support nearest at tick 14",
+    "Auto support nearest at tick 15",
+    "Auto support nearest at tick 16",
+    "Auto support nearest at tick 17",
+    "Auto support nearest at tick 18",
+    "Auto support nearest at tick 19",
+    "Auto support nearest at tick 20",
+    "Auto support nearest at tick 21",
+    "Auto support nearest at tick 22",
+    "Auto support nearest at tick 23",
+    "Auto support nearest at tick 24",
+    "Auto support nearest at tick 25",
+    "Auto support nearest at tick 26",
+    "Auto support nearest at tick 27",
+    "Auto support nearest at tick 28",
+    "Auto support nearest at tick 29",
+    "Auto support nearest at tick 30",
+    "Auto support nearest at tick 31",
+    "Auto support nearest at tick 32",
+    "Auto support nearest at tick 33",
+    "Auto support nearest at tick 34",
+    "Auto support nearest at tick 35",
+    "Auto support nearest at tick 36",
+    "Auto support nearest at tick 37",
+    "Auto support nearest at tick 38",
+    "Auto support nearest at tick 39",
+    "Auto support nearest at tick 40",
+    "Auto support nearest at tick 41",
+    "Auto support nearest at tick 42",
+    "Auto support nearest at tick 43",
+    "Auto support nearest at tick 44",
+    "Auto support nearest at tick 45",
+    "Auto support nearest at tick 46",
+    "Auto support nearest at tick 47",
+    "Auto support nearest at tick 48",
+    "Auto support nearest at tick 49",
+    "Auto support nearest at tick 50",
+    "Auto support nearest at tick 51",
+    "Auto support nearest at tick 52",
+    "Auto support nearest at tick 53",
+    "Auto support nearest at tick 54",
+    "Auto support nearest at tick 55",
+    "Auto support nearest at tick 56",
+    "Auto support nearest at tick 57",
+    "Auto support nearest at tick 58",
+    "Auto support nearest at tick 59",
+    "Auto support nearest at tick 60",
+    "Gait positions exercise both takeoff feet"
+  ],
+  "variants": [
+    {
+      "foot": "L",
+      "trimSeconds": 0.3333333333333333,
+      "apexAfterRun": 0.4666666666666667,
+      "scores": [
+        {
+          "foot": "L",
+          "distance": 3.47291466591465e-16
+        },
+        {
+          "foot": "R",
+          "distance": 0.7316823985923256
+        }
+      ]
+    },
+    {
+      "foot": "R",
+      "trimSeconds": 0.3333333333333333,
+      "apexAfterRun": 0.5333333333333333,
+      "scores": [
+        {
+          "foot": "L",
+          "distance": 0.6556451996645044
+        },
+        {
+          "foot": "R",
+          "distance": 2.578618454327226e-16
+        }
+      ]
+    }
+  ],
+  "defaultSelection": "L",
+  "defaultScores": [
+    {
+      "foot": "L",
+      "distance": 0.44309305430223456
+    },
+    {
+      "foot": "R",
+      "distance": 0.7829585574296077
+    }
+  ]
+}

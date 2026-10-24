@@ -1,0 +1,55 @@
+{
+  "checks": [
+    "Default run is one second",
+    "Reset starts sequence at zero",
+    "Run lasts 60 ticks",
+    "Authored jump rises",
+    "Extended GASP fall loop",
+    "Terminal COM speed",
+    "Camera follows simulated COM",
+    "Pause stops sequence",
+    "Phase changes initial gait",
+    "Run duration slider controls transition",
+    "Low fall cap enforced",
+    "Sequence scrub replays physics",
+    "Air flip begins after lift-off",
+    "Target reset near current body",
+    "Attack works while falling",
+    "No runtime errors"
+  ],
+  "passed": true,
+  "finalDiagnostics": {
+    "bodies": 25,
+    "dynamicBodies": 25,
+    "pelvisDynamic": true,
+    "joints": 24,
+    "hinges": [
+      {
+        "name": "lowerarm_l",
+        "angle": 0.40623876452445984,
+        "min": -0.4652502326393471,
+        "max": 2.2400101079518637
+      },
+      {
+        "name": "lowerarm_r",
+        "angle": 0.15960927307605743,
+        "min": -0.5072079973278552,
+        "max": 2.1980523432633556
+      },
+      {
+        "name": "calf_l",
+        "angle": 0.4068681001663208,
+        "min": -0.33971073685778125,
+        "max": 2.278283141133713
+      },
+      {
+        "name": "calf_r",
+        "angle": 0.35286208987236023,
+        "min": -0.2835647710673706,
+        "max": 2.334429106924124
+      }
+    ],
+    "anchorError": 0.00026442777775429784,
+    "finite": true
+  }
+}

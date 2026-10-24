@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8"><title>Bodyflip sequence checks</title>
+<style>body{background:#17202f;color:#eee;font:14px monospace}button{padding:10px}iframe{width:1280px;height:720px;border:0}pre{white-space:pre-wrap}</style>
+<button id="run">Run sequence checks</button><pre id="result">Ready</pre><iframe id="lab" src="/"></iframe>
+<script>
+document.getElementById('run').onclick=async()=>{
+ const out=document.getElementById('result'),w=document.getElementById('lab').contentWindow,d=w.document,backup=await fetch('/state').then(r=>r.json()),report={checks:[],passed:false};out.textContent='Running';
+ const check=(name,value)=>{if(!value)throw Error(name);report.checks.push(name);},field=(id,value)=>{const e=d.getElementById(id);e.value=value;e.dispatchEvent(new w.Event('input',{bubbles:true}));},click=id=>d.getElementById(id).click();
+ try{
+  for(let n=0;n<200&&!w.BodyflipLab;n++)await new Promise(r=>setTimeout(r,100));
+  const a=w.BodyflipLab;if(!a)throw Error('Lab did not initialize');a.setPlaying(false);
+  d.getElementById('mode').value='jump';d.getElementById('mode').dispatchEvent(new w.Event('change'));
+  d.getElementById('motion').value='sim';d.getElementById('motion').dispatchEvent(new w.Event('change'));field('flipAngle',0);field('runSeconds',1);field('runPhase',0);field('jumpBlend',.2);field('fallCap',12);await a.prepareRun();
+  check('Default run is one second',a.state.settings.runSeconds===1);check('Reset starts sequence at zero',a.state.simTime===0);
+  const first=a.state.pose.points.map(p=>p.slice());a.step(60);check('Run lasts 60 ticks',Math.abs(a.state.simTime-1)<1e-8);
+  a.step(Math.round(a.state.flight.apex*60));check('Authored jump rises',a.state.pose.points[1][1]>1.4);
+  a.step(240);check('Extended GASP fall loop',a.state.flight.phase==='FALL LOOP');check('Terminal COM speed',a.state.velocity[1]>=-12.0001&&a.state.velocity[1]<-11);
+  check('Camera follows simulated COM',Math.hypot(...a.state.cameraCenter.map((v,i)=>v-a.state.com[i]))<1e-7);
+  const paused=a.state.simTime;await new Promise(r=>setTimeout(r,150));check('Pause stops sequence',a.state.simTime===paused);
+  field('runPhase',.5);await a.prepareRun();check('Phase changes initial gait',Math.hypot(...a.state.pose.points[19].map((v,i)=>v-first[19][i]))>.05);
+  field('runSeconds',.2);await a.prepareRun();a.step(13);check('Run duration slider controls transition',['SUPPORT','PUSH','RISE'].includes(a.state.flight.phase));
+  field('runSeconds',1);field('fallCap',2);await a.prepareRun();a.step(360);check('Low fall cap enforced',a.state.velocity[1]>=-2.0001);
+  const peakTime=Math.round((a.state.flight.jumpStart+a.state.flight.apex)*60)/60;await a.seek(peakTime);check('Sequence scrub replays physics',Math.abs(a.state.simTime-peakTime)<1e-8&&a.state.pose.points[1][1]>1.4&&!a.state.playing);
+  if(!a.state.settings.airFlip)click('airFlip');field('fallCap',12);await a.prepareRun();a.step(180);check('Air flip begins after lift-off',Math.abs(a.state.flip-120*(3-a.state.flight.airStart))<1.1);
+  click('resetTarget');check('Target reset near current body',Math.hypot(...a.state.settings.target.map((v,i)=>v-a.state.pose.points[1][i]))<1.5);
+  click('strike');a.setPlaying(false);a.step(20);check('Attack works while falling',a.state.attackTime>0&&a.state.diagnostics.finite);check('No runtime errors',a.state.errors.length===0);
+  report.passed=true;report.finalDiagnostics=a.state.diagnostics;
+ }catch(e){report.error=e.stack||e.message;}finally{w.BodyflipLab?.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});out.textContent=JSON.stringify(report,null,2);}
+};
+</script>

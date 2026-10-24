@@ -1,0 +1,23 @@
+<!doctype html><title>Split blend verification</title>
+<button id="check">Check blends</button><pre id="result">Ready</pre>
+<iframe id="lab" src="/" style="width:1200px;height:760px"></iframe>
+<script>
+check.onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],receipt={passed:false,checks};
+ const verify=(n,v)=>{if(!v)throw Error(n);checks.push(n);};
+ const field=async(id,value)=>{const e=d.getElementById(id);e.value=value;e.dispatchEvent(new w.Event('input',{bubbles:true}));e.dispatchEvent(new w.Event('change',{bubbles:true}));while(a.state.loadingRun)await new Promise(r=>setTimeout(r,10));};
+ try{
+  a.setPlaying(false);await a.seek(1.1);const time=a.state.simTime;
+  await field('jumpBlend',.6);await field('legBlend',.08);
+  verify('Independent body and leg values',a.state.settings.jumpBlend===.6&&a.state.settings.legBlend===.08);
+  verify('Edits keep playhead',a.state.simTime===time);
+  verify('Readouts follow values',d.getElementById('jumpBlendRead').textContent==='0.60'&&d.getElementById('legBlendRead').textContent==='0.08');
+  await new Promise(r=>setTimeout(r,400));const saved=await fetch('/state').then(r=>r.json());
+  verify('Both values saved',saved.settings.jumpBlend===.6&&saved.settings.legBlend===.08);
+  await field('legBlend',0);verify('Zero leg blend accepted',a.state.settings.legBlend===0);
+  await field('jumpBlend',backup.settings.jumpBlend);await field('legBlend',backup.settings.legBlend??backup.settings.jumpBlend);
+  verify('No runtime errors',a.state.errors.length===0);receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}
+ finally{a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);}
+};
+</script>

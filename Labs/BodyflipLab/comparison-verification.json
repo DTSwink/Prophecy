@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "checks": [
+    "Kinematic has zero dynamic bodies",
+    "Kinematic displays exact target",
+    "Kinematic camera follows COM",
+    "Space owns resetTarget",
+    "Space release cancelled resetTarget",
+    "Held Space does not retrigger resetTarget",
+    "Space owns motion",
+    "Space release cancelled motion",
+    "Held Space does not retrigger motion",
+    "Space owns runSeconds",
+    "Space release cancelled runSeconds",
+    "Held Space does not retrigger runSeconds",
+    "Space owns loop",
+    "Space release cancelled loop",
+    "Held Space does not retrigger loop",
+    "Space owns snapshot",
+    "Space release cancelled snapshot",
+    "Held Space does not retrigger snapshot",
+    "Sim restores 25 dynamic bodies",
+    "Modes share same sequence time",
+    "Physics remains distinct",
+    "Reset reuses decoded NN",
+    "Asynchronous seek lands at requested time",
+    "Kinematic fall remains finite",
+    "Kinematic Space works",
+    "Space restores dynamic limbs",
+    "No runtime errors"
+  ],
+  "cachedResetMs": 3.5
+}

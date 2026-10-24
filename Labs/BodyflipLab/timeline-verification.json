@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "checks": [
+    "Footer is one compact row",
+    "Trim handles are on the playback rail",
+    "Separate trim sliders and numbers removed",
+    "Input alone updates scene before release",
+    "Live scrubbing remains paused",
+    "Latest drag position wins",
+    "Bracket previews during adjustment",
+    "Out bracket previews endpoint",
+    "Bracket positions mark range",
+    "Bracket range loops repeatedly",
+    "Editing brackets enables Loop",
+    "Loop off still respects brackets",
+    "Step cannot escape Out",
+    "Play below In starts within range even with Loop off",
+    "Real animation playback stays within brackets and repeats",
+    "Kinematic stays active",
+    "No runtime errors"
+  ]
+}

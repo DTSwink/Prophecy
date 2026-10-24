@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "checks": [
+    "Small controls remain collapsed by default",
+    "plantPitch inside More options",
+    "toeOffPitch inside More options",
+    "footRollSpeed inside More options",
+    "Angle and speed edits preserve time",
+    "Roll speed applied",
+    "Speed edit keeps current frame",
+    "Speed changes displayed push pose",
+    "Zero roll is accepted",
+    "No runtime errors"
+  ],
+  "editMs": 21.400000005960464
+}

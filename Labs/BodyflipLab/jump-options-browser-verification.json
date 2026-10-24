@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "checks": [
+    "Small options collapsed initially",
+    "Threshold selects standing jump",
+    "Threshold edit preserves time",
+    "Default cutoff restores run jump",
+    "Legacy toggle works",
+    "End-pose experiment enabled at same time",
+    "Ghost enabled without errors"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "checks": [
+    "Independent body and leg values",
+    "Edits keep playhead",
+    "Readouts follow values",
+    "Both values saved",
+    "Zero leg blend accepted",
+    "No runtime errors"
+  ]
+}

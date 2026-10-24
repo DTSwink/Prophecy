@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "checks": [
+    "Phase 0.17 applies in under 1 second",
+    "Phase 0.17 preserves playback time",
+    "Phase 0.44 applies in under 1 second",
+    "Phase 0.44 preserves playback time",
+    "Phase 0.67 applies in under 1 second",
+    "Phase 0.67 preserves playback time",
+    "Phase 0.43 applies in under 1 second",
+    "Phase 0.43 preserves playback time",
+    "Saved setup reaches a pinned contact",
+    "No runtime errors"
+  ],
+  "times": [
+    {
+      "phase": 0.17,
+      "ms": 30.19999998807907
+    },
+    {
+      "phase": 0.44,
+      "ms": 21
+    },
+    {
+      "phase": 0.67,
+      "ms": 11.300000011920929
+    },
+    {
+      "phase": 0.43,
+      "ms": 21.799999982118607
+    }
+  ]
+}

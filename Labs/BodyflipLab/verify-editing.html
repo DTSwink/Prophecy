@@ -1,0 +1,37 @@
+<!doctype html><title>Editing checks</title><button id="run">Check editing</button><pre id="result">Ready</pre><iframe id="lab" src="/" style="width:1100px;height:720px"></iframe><script>
+document.getElementById('run').onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],receipt={passed:false,checks};
+ const check=(n,v)=>{if(!v)throw Error(n);checks.push(n);},frame=()=>new Promise(r=>w.requestAnimationFrame(()=>w.requestAnimationFrame(r)));
+ const edit=(id,value)=>{const el=d.getElementById(id);el.focus();el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));return el;};
+ const away=()=>{const active=d.activeElement;d.querySelector('header .brand').dispatchEvent(new w.PointerEvent('pointerdown',{bubbles:true,pointerId:1}));active.dispatchEvent(new w.Event('change',{bubbles:true}));};
+ try{
+  a.setPlaying(false);await a.seek(1.05);
+  edit('supportSpeed',800);away();await frame();edit('jumpEarly',.1);away();await frame();edit('supportAlpha',0);away();await frame();
+  const before=a.state,foot=w.BodyflipCore.effector(before.flight.supportFoot==='L'?'KickL':'KickR'),index=foot==='foot_l'?20:24;
+  check('Baseline edit stays at scrubbed time',Math.abs(before.simTime-1.05)<1e-8);
+  const alpha=edit('supportAlpha',20);check('Typing retains focus until commit',d.activeElement===alpha);
+  away();await frame();const after=a.state;
+  check('Click away commits and clears numeric focus',d.activeElement!==alpha&&after.settings.supportAlpha===20);
+  check('Commit preserves paused position',Math.abs(after.simTime-1.05)<1e-8&&!after.playing);
+  const targetDelta=after.flight.supportTarget[2]-before.flight.supportTarget[2];
+  check('Alpha 0 to 20 moves final support target forward',targetDelta>.007);
+  check('Alpha changes the planted foot at the same time',after.pose.points[index][2]-before.pose.points[index][2]>.007);
+  check('Alpha uses restored fixed ledge',after.flight.supportLimited&&after.flight.edge===before.flight.edge);
+  check('Actual lead limiting is shown',d.getElementById('runInfo').textContent.includes('edge'));
+  edit('supportAlpha',100);alpha.dispatchEvent(new w.KeyboardEvent('keydown',{code:'Enter',bubbles:true,cancelable:true}));alpha.dispatchEvent(new w.Event('change',{bubbles:true}));await frame();
+  check('Enter commits and clears focus',d.activeElement!==alpha&&a.state.settings.supportAlpha===100&&Math.abs(a.state.simTime-1.05)<1e-8);
+  for(const [id,value] of [['supportAlpha',20],['supportTrigger',4],['supportSpeed',700],['supportReach',.98]]){
+   edit(id,value);away();await frame();check(id+' edit retains frame',Math.abs(a.state.simTime-1.05)<1e-8);
+  }
+  d.getElementById('jumpFoot').value='R';d.getElementById('jumpFoot').dispatchEvent(new w.Event('change'));await frame();
+  check('Support-foot selection retains frame',Math.abs(a.state.simTime-1.05)<1e-8&&a.state.flight.supportFoot==='R');
+  const blend=d.getElementById('jumpBlend');blend.value=.4;blend.dispatchEvent(new w.Event('input'));blend.dispatchEvent(new w.Event('change'));await frame();
+  check('Blend slider retains frame',Math.abs(a.state.simTime-1.05)<1e-8&&a.state.settings.jumpBlend===.4);
+  a.setPlaying(true);const playingTime=a.state.simTime;edit('supportAlpha',21);away();
+  check('Editing while playing preserves time and playback state',a.state.playing&&Math.abs(a.state.simTime-playingTime)<1e-8);
+  a.setPlaying(false);const oldTime=a.state.simTime,oldEdge=a.state.flight.edge;edit('jumpEarly',.05);away();await frame();check('Early edit retains playback time',Math.abs(a.state.simTime-oldTime)<1e-8);check('Early uses the same fixed ledge',a.state.flight.edge===oldEdge);check('Early changes support timing',Math.abs(a.state.flight.supportStart-.95)<1e-8);check('No runtime errors',a.state.errors.length===0);receipt.targetDeltaCm=targetDelta*100;receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}finally{
+  a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);
+ }
+};
+</script>
