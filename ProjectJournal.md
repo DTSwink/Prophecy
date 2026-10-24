@@ -4,6 +4,19 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+## October 24 - approved isolated UI checkpoint
+
+User approved and saved the pause menu and requested this UI work pushed.
+Includes Labs/PauseMenuLab, Labs/WeaponWheelLab, saved presets, fonts/artwork,
+font study and pause concept galleries. See Docs/WeaponWheelUI.md and lab
+READMEs for build/open instructions. Tuning controls are chronological, with
+new controls appended at bottom. Pause saved unselected opacity0.8032181263,
+selected whiteness0, right extension200. Fixed underline retained. Final
+pause build12.31s and351/351 native input checks passed. No gameplay hookup.
+Generated builds/caches/captures and unrelated concurrent work are excluded.
+User cancelled the separate disaster-recovery audit; no audit claim is made.
+
+
 **October22 curated checkpoint prepared:** user requested pushing current work
 before switching to UI. Includes current source/tests/tools/docs, saved PoseAgent
 and A_Sword, required physical-mesh Python label helper, and current lightweight

@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 8200,
-  "bytes": 949484537,
+  "file_count": 8316,
+  "bytes": 1024664207,
   "files": [
     {
       "path": ".gitattributes",
@@ -15744,6 +15744,12 @@
       "sha256": "f37494aac6b2a51e376df555cfa8b96b5c46ef2f9a234eb0f3104c544f1ad730"
     },
     {
+      "path": "Docs/WeaponWheelUI.md",
+      "git_blob": "c9c1aac52e90994d0f53def5c30896f7b0ad8c8a",
+      "bytes": 14277,
+      "sha256": "c6034e3a83afb1fd5aff8e892409bd2a9ee583df0b65d891f5d4920433780401"
+    },
+    {
       "path": "Docs/Wrist230AndClampTransitions.md",
       "git_blob": "874d14de7ebf2fad3235101797658df111c21c5e",
       "bytes": 4670,
@@ -23988,6 +23994,546 @@
       "sha256": "35860d9e0ba3cdb8c768ab8d7ff895c1478d4f45bbc8ebf540ed648b75804f8d"
     },
     {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/01-astral-column.png",
+      "git_blob": "579388b18fb56ba34e924b3ca7f2b4095bd58127",
+      "bytes": 2067604,
+      "sha256": "632ed35a4accc4bdcf3276e098efabe5e186c0e24e1ed14030f587fab51bf38b"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/02-orbital-pause.png",
+      "git_blob": "d4b1340591b2747e33f4f43246c7a7fa2466fe53",
+      "bytes": 2279643,
+      "sha256": "95f90ec91c6a58ec71f31f844975d7d6e3dc940a4c4b88e6831f6733a266b3e2"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/03-moon-gate.png",
+      "git_blob": "0d6e1d4ca65d1af1b385b9fff503a64699ce94b0",
+      "bytes": 2174424,
+      "sha256": "1ce51c4d8ccc7ca29691041a326cda4706e0f40e15c5bf973401554206751894"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/04-floating-folio.png",
+      "git_blob": "a5c943b1d83a042128b34d9581dddfcdb6cbfba9",
+      "bytes": 2309609,
+      "sha256": "04ae774083e8766511b655a18e9341daa818047f073025a80312be134e8e03ec"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/05-horizon.png",
+      "git_blob": "3489175a83befd5e199270e1cfebe2d0550ce54e",
+      "bytes": 1991986,
+      "sha256": "74d1d819a3043fc727d237b6f687b8f573c37de4f9d69cc70548f28c069497dd"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/06-constellation-map.png",
+      "git_blob": "1ac31b7d7766857189d42bd431498f748ed480d7",
+      "bytes": 2051985,
+      "sha256": "a7c09459fd848840e51601eb8b893009b01144bc69793817896aedf79fd6490c"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/07-obsidian-prism.png",
+      "git_blob": "14cd96a1c03d4b08f57a7d23d4c93acd2ce5c9e4",
+      "bytes": 2375867,
+      "sha256": "3aa412b32c062b461c613515bda533b317c767e2fb23243d2252cb8c3486ba6d"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/08-the-rosette.png",
+      "git_blob": "f9f66a497aad51032142915aeb0e865ca87db0f0",
+      "bytes": 2412422,
+      "sha256": "094b66c42ca6707934f6c7a8399d324b3f30b17ce8d0bbe5347c01f3e3a963e3"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/09-luminous-ribbons.png",
+      "git_blob": "9fbcda6dd759edf714093866762481e15314838d",
+      "bytes": 2191552,
+      "sha256": "661f6b819cf88e4940dbfba5a551f0d315126ddacb21b59aa697d94c12a2773c"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/10-silent-type.png",
+      "git_blob": "be58dce5906371cd634697748d28490704551c0b",
+      "bytes": 1986324,
+      "sha256": "852a8247f7fe2a8eb14dd64c6843cb140926c8859242b3768b27cb60806d18d4"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/11-astrolabe.png",
+      "git_blob": "1cba03b46cda3677b14527dea3a09e92edd37e61",
+      "bytes": 2368759,
+      "sha256": "eb103fb3e96328dddd5b79b4042479131886095755091f4c47fd7fa25b28f785"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/12-glass-gallery.png",
+      "git_blob": "ab44ca203290504fc87d403e53bdad138549ff27",
+      "bytes": 2133859,
+      "sha256": "dee782a8c3eac989bca885834732388b14f2ec8e64e0749029cd8748a03d7628"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/13-night-canopy.png",
+      "git_blob": "e9ca00a672d588bfb3afb96b16eaf1a0d9b0f75a",
+      "bytes": 2040407,
+      "sha256": "b50af3b509a94e4180507414b626ab90aa56cacc9b6d7c73eed9c10b8157bbc1"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/14-split-eclipse.png",
+      "git_blob": "94d48fd5a5271f6851c8f4b55026838bd80bf885",
+      "bytes": 2069791,
+      "sha256": "b2c6a2c3528e1c629773c8bd6a39281606b8c7b90d3704a995d0e34f61717158"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/15-etched-frame.png",
+      "git_blob": "43baa68c0d6846145fdb91d6527a92fe50b6bfa3",
+      "bytes": 2160232,
+      "sha256": "b22a84e8b0da865bf783b5fdba2866f3131da296547e2a770f3765193986f630"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/16-comet-path.png",
+      "git_blob": "6b08a95de039ef9b7b359b552e236809ca94bdb9",
+      "bytes": 2077152,
+      "sha256": "16a71c2f35f8604940c017bca1bc8d01e7c46c58cf1e814eafb26efef7299f83"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/17-twin-pillars.png",
+      "git_blob": "c405996804754fb1caa8f6f52b8c23f3e05b2e8b",
+      "bytes": 2159385,
+      "sha256": "b7f55903a4e81b1fc9d6b9db3f40790cd1e3745c6cabf9789ae799f5ea68bd41"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/18-celestial-terrace.png",
+      "git_blob": "84dfe7217cd4281d73c13786419cdddb27545890",
+      "bytes": 2229248,
+      "sha256": "7e92be7c7929420607a3478b63d2240a878f8d5480c7697338b275dd29ceb7c1"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/19-blooming-compass.png",
+      "git_blob": "6fe98b8518e2abf4d35fada338727cef6bd8e829",
+      "bytes": 2066220,
+      "sha256": "1e018239abb46c5c1fb4f43ff36214bb28845019ef69639e5cec1304bed276ab"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/20-starfield-mosaic.png",
+      "git_blob": "31735556b8ba5f346a3682fd1920a53858363017",
+      "bytes": 2509322,
+      "sha256": "705eaadd91a4a568523372371eb2000a26039ecddd5713be4355130d873056c4"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/index.html",
+      "git_blob": "5ccbacc94e63893a3bb672f1817653c54c760f50",
+      "bytes": 5191,
+      "sha256": "e551da0d28077ca8ce5d746970c61bc66d846a21caf05e2f3aaef97d9857a2d6"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/manifest.json",
+      "git_blob": "f94aacfac40da36b179a8c30b320db0ba5937443",
+      "bytes": 41553,
+      "sha256": "ce0ae5f3e8b02fd8df7e71d51a8016bc68f332f7c2a0493fd28b86ff54b90821"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/01-pure-editorial.png",
+      "git_blob": "9f2523922e197bc21aeac05937ddd9460c3c52a4",
+      "bytes": 1975058,
+      "sha256": "858baaf66a0f281b98e0bbc7c0267d31580df6c8e3da31308e4566169ca79ed8"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/02-fine-underline.png",
+      "git_blob": "5b2cab61671025da0c2aec00dc2a9bac1aa4874d",
+      "bytes": 1989499,
+      "sha256": "1a24b32d5f4973107c44082bb629e940f10cb962ef0bbbf9bcb692a99549e734"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/03-stellar-spine.png",
+      "git_blob": "4f8bd5860569ad07ec9f91935422f153a2071397",
+      "bytes": 1973048,
+      "sha256": "aa257c551530540d5a7fc60338f9b910f279684f11583d4eb838792ec6002f2c"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/04-quiet-italic.png",
+      "git_blob": "5e6af3483778f08e0bc345647ff3708f8870be74",
+      "bytes": 2020007,
+      "sha256": "9ed6337555851aae044cc53cab22cd1735c5156adbe177842ef5ce2b18ea072c"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/05-soft-focus.png",
+      "git_blob": "aeef7c12857328d1f47fba0035026befecb914a8",
+      "bytes": 1937042,
+      "sha256": "d77499a153d2b4650ac29a4b69bc3beb04e134562d7dc72d344dd3325624cd02"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/06-open-tracking.png",
+      "git_blob": "4ef289a315a8b65da1f2b9f42f8c48806c6991e8",
+      "bytes": 1960282,
+      "sha256": "41d585104d217989f47758a0503fe5950064f72e99303ad014832d643250d6cf"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/07-double-hairline.png",
+      "git_blob": "7917bd838f3a030d9da6c14edc209c7582b50fac",
+      "bytes": 1980063,
+      "sha256": "9e4c0b24bac5ed2a0eb5ded6c9a812b01cc87057725aac15bfbd53c85129c187"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/08-crescent-accent.png",
+      "git_blob": "a2823a8a5bd22ac1c0ba1b6d098ab7003d603a30",
+      "bytes": 1981763,
+      "sha256": "476fb2059110fbb534fed8bc578cbc588c949f95cf1461b7f2a6a9b5b216ef5e"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/09-weight-and-silence.png",
+      "git_blob": "91dc25c56f11388a1734a28ef875b8210bca1b13",
+      "bytes": 2027146,
+      "sha256": "3aa97381a67144e287820a5f85cf80a0286127a3f946017bb0834ab6a3b34c62"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/10-framed-by-air.png",
+      "git_blob": "9b60866d847484df0c0e94c0058afb23f0b7625a",
+      "bytes": 1966331,
+      "sha256": "980d2f550b10121185a636094a25ab1c86ab41697f74bde01f1d37062e8e68b6"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/index.html",
+      "git_blob": "c801e4def04a0513899a4c9d047762f9a48af852",
+      "bytes": 4560,
+      "sha256": "2140597d639233ca5435ab5f00c019e2695eeff435526098379996ce8b8f3f9b"
+    },
+    {
+      "path": "Labs/PauseMenuConcepts/2026-10-23/silent-type-variations/manifest.json",
+      "git_blob": "278e6824b1dbe11e9afe190865647c887fdbbf37",
+      "bytes": 16108,
+      "sha256": "57e12eccc28fbc317f7bd5b0c1b0ca1b1b6133cee95f671faa45a36bdaff69ab"
+    },
+    {
+      "path": "Labs/PauseMenuLab/.gitignore",
+      "git_blob": "5d96440a5e520f1f00906a44164258da2f6ebc1a",
+      "bytes": 60,
+      "sha256": "304c6395fd4873baf497b32844c9758fb45f558c4f7e1278e84919b0d4584b5c"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Build.ps1",
+      "git_blob": "d8836c37edb8a1832d63b3a188cc4f7aa0c25d95",
+      "bytes": 251,
+      "sha256": "9938505d002d0d3636ff90bc21c4f61c06d01782bc5414d55728b09079308696"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Config/DefaultEngine.ini",
+      "git_blob": "c1f4ccdf93e2ca40f88447855378542abc39c531",
+      "bytes": 629,
+      "sha256": "7fa0397a89aec83b15ebca5c32ee929b9364148c870cfb8e80848b5980835bb7"
+    },
+    {
+      "path": "Labs/PauseMenuLab/FontStudies/Hairlines/OFL.txt",
+      "git_blob": "973cec73f0874f3b7821a44ff43e4a4c88e44844",
+      "bytes": 4400,
+      "sha256": "931dfe2e0cd3c9443295f5c1d754b8a8403bf060df50c1d5900267ade83d0046"
+    },
+    {
+      "path": "Labs/PauseMenuLab/FontStudies/Hairlines/build.py",
+      "git_blob": "f2470b0e7cc76d162fab61fcf7dfe43caec94687",
+      "bytes": 2801,
+      "sha256": "77357d34868d678c12c469ac786f43fba972bc502fe14b6da2bd3afeeeb16327"
+    },
+    {
+      "path": "Labs/PauseMenuLab/FontStudies/Hairlines/comparison.png",
+      "git_blob": "5720518b5265f16ca8ea5c9ad260577354b0d808",
+      "bytes": 105124,
+      "sha256": "37280d96524949868d2dbf472bcaeea481f049fcfaa05861be5e4f56a60a8be0"
+    },
+    {
+      "path": "Labs/PauseMenuLab/FontStudies/Hairlines/index.html",
+      "git_blob": "3f945d86dea30b60c6ea8ed06cf3e438573fc6c0",
+      "bytes": 5765,
+      "sha256": "e44ab29bc97e002d6f99770441dccc3a7e369c57d0a56c46a3bfd95f9a1c17c4"
+    },
+    {
+      "path": "Labs/PauseMenuLab/FontStudies/Hairlines/metrics.json",
+      "git_blob": "b2653cdb3edece788b2772a5de037809aed1aefa",
+      "bytes": 691,
+      "sha256": "870a02268b7c74a6e268685908b75fbc848a66529844389878782b3c938a541e"
+    },
+    {
+      "path": "Labs/PauseMenuLab/FontStudies/Hairlines/optical-10.ttf",
+      "git_blob": "cd3a37ecdc7a9f66addd57343f41e1582ce1426d",
+      "bytes": 58712,
+      "sha256": "9da7cca48a3124d0e343de63258bff702378bea11141eccc3741092df03aa6c8"
+    },
+    {
+      "path": "Labs/PauseMenuLab/FontStudies/Hairlines/optical-16.ttf",
+      "git_blob": "983f886f58cf266b4c722e509adef3d6aa93a8ab",
+      "bytes": 58804,
+      "sha256": "00e2d0e96cb479ec83d7326e8d118a72ddc04db7b88281c9d0ce3c81683a6376"
+    },
+    {
+      "path": "Labs/PauseMenuLab/FontStudies/Hairlines/optical-24.ttf",
+      "git_blob": "fc2eff5e983531063ba5a28cb9de185552786a99",
+      "bytes": 58772,
+      "sha256": "19fbf0cda987594fdd8c6637af3ad885a2e96e1a77c45ce1455b61881ed02f9f"
+    },
+    {
+      "path": "Labs/PauseMenuLab/FontStudies/Hairlines/optical-6.ttf",
+      "git_blob": "aeb8327b2cb7bb29209270b267f6d26fc38015a1",
+      "bytes": 58532,
+      "sha256": "fdd5ac5dfe81272128bc8e9885db2c0aed89e0a7d9193847d76efd552e4b344e"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Open.ps1",
+      "git_blob": "db50f9d3749e60072464118a78c6ae75b835a41e",
+      "bytes": 612,
+      "sha256": "be1f38cd809f655a257ae993a460acba4db1199fad6e67fb2ae5c45956d81f0f"
+    },
+    {
+      "path": "Labs/PauseMenuLab/PauseMenuLab.uproject",
+      "git_blob": "cb8bbcdc8884c8ad759769430b8b594d81532d1b",
+      "bytes": 323,
+      "sha256": "982eb61da8c4241976df96628de17e7ca2fb76d2d8290a24e4fcefc4d3c2c864"
+    },
+    {
+      "path": "Labs/PauseMenuLab/README.md",
+      "git_blob": "b6bb9a1be26de17d00fa5055268ea5ec069f6929",
+      "bytes": 6078,
+      "sha256": "1fddebd86d95fa65c91e0391a73cbe382f7f4270028937ad42da9e7d97804038"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/AnticDidone-OFL.txt",
+      "git_blob": "25a6725c67e03ebb6169083707e53dda03aea939",
+      "bytes": 4397,
+      "sha256": "60ddc0ee6e443b78940b5f92bcbab76c98ec6965e0da9fbdaf267383ab72bba8"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/AnticDidone-Regular.ttf",
+      "git_blob": "48ed2130e9cef67374c980e034f69f8d0019e441",
+      "bytes": 39668,
+      "sha256": "63a560792f0cb5342c0da7759c9df2e1ce0324a8af46ae976d9458fbcccbb440"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Display.ttf",
+      "git_blob": "8111cc35552ab3eff61e39de7a4ad40a9d5eb411",
+      "bytes": 58704,
+      "sha256": "aefe6dbbddba66ac34ea74d26637c3c11520751234f65803f4d4cb4785df7f3d"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-10.ttf",
+      "git_blob": "78278af43df133d302aa49e7aa2065639c55fe82",
+      "bytes": 58712,
+      "sha256": "61824da005bc3719d823b9ca3063fd2370428599988cd508b6db7a57d3e3d9da"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-11.ttf",
+      "git_blob": "8c57702eeb051c372e91e45ae6cc22dc82a9c9bc",
+      "bytes": 58756,
+      "sha256": "b299ff857704018b887305871ddb8d0e38630c6eb7dcf22a0c095e4dde342631"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-12.ttf",
+      "git_blob": "882a8cdb81c94042fb4e7af39ad085872360d62a",
+      "bytes": 58728,
+      "sha256": "5d11b7b84d47448e1bd97762ede4ea39256649ec64e6915811c1513188e71688"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-13.ttf",
+      "git_blob": "d3571312dcfe364bd8d120c773a302fa2e0f5a66",
+      "bytes": 58720,
+      "sha256": "d9b3b3f68f870abed6c61615583cb92e34692f292e7c33802e13f58c465383e2"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-14.ttf",
+      "git_blob": "1be170c1046a618e6df5d4e4fffedeb3495659e3",
+      "bytes": 58732,
+      "sha256": "446fc29ae73138183e3bc33c48b7d60c1167ffbd7732391a1ab8a1bc932d0e16"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-15.ttf",
+      "git_blob": "d6c2e4246f7fe4e9e638003522934cbe0ec63762",
+      "bytes": 58748,
+      "sha256": "348b68b5ddaf6a0d924c1773bf84d64198a333c397ef6873dd50c4135aa728aa"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-16.ttf",
+      "git_blob": "8299fae7466119c5c9c6dd50546200771800b629",
+      "bytes": 58804,
+      "sha256": "e124825c28d7276e7b13576c6e36a8d850084096c3455c6dcaef3a107efba4bf"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-17.ttf",
+      "git_blob": "e9a62137d5511a8f2044d84c7022770a0d17b923",
+      "bytes": 58728,
+      "sha256": "9ab11ed7a774de8df996c9baafc020bf65a1ad77cf4b01b537a71872614fc4aa"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-18.ttf",
+      "git_blob": "70d0ce9a9a8c93c44fdf3598cabbe5d943d210b0",
+      "bytes": 58752,
+      "sha256": "5ba6e5fd82f6a7821f0311b322cbfe606c82a9a4c1405025091dc54d643fe0c8"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-19.ttf",
+      "git_blob": "72f0780fea05eff7327b0b888c4913cb01620471",
+      "bytes": 58756,
+      "sha256": "e127819e3d093866e910bb9e52f66387869e6fe46ebe7f5d85daef6403d3f63c"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-20.ttf",
+      "git_blob": "b0c046fdbcb19b1b76ab0b06ffdb531c164f381e",
+      "bytes": 58764,
+      "sha256": "2c6c6a65d2b26eef4875f957c267349fe06af577a8515e2290f542839db2ba22"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-21.ttf",
+      "git_blob": "7d74e7dd2577a8fe7dff800955d2441ad3ca4c8c",
+      "bytes": 58724,
+      "sha256": "052eb31decb05d1816b48130b4e08689f6243ef0561518d25b201402419ca179"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-22.ttf",
+      "git_blob": "46b36162d790d1398e600fb22737e7a06d1057ea",
+      "bytes": 58732,
+      "sha256": "b134aa1aa36d2404b2d71838e598b544fb0a29ca4073ccb18a3919eba6b8b799"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-23.ttf",
+      "git_blob": "073638bb4c52cf952b0bdfbd7fe5d5702b1e2be3",
+      "bytes": 58752,
+      "sha256": "c3a4273d735f398da0fdb4136daa8995fb73f8b71d9ddc6300618ad4c8a31715"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-24.ttf",
+      "git_blob": "27d4b24d561cee13f5ce2b4e1f4ecf4a9d1ab809",
+      "bytes": 58772,
+      "sha256": "041564e5fdba47499e25b1189614b98e35c4b49e37a4452d84632edd07210e72"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-6.ttf",
+      "git_blob": "0383b410ce0c61a9ce9a1b009c5e24b97751d3b3",
+      "bytes": 58532,
+      "sha256": "d8c538cc2639c2d9a2ec8beec305f0790e7fca67551385dca10e08c56dff7edd"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-7.ttf",
+      "git_blob": "9269a32d8d0d3086f2fb2470edf11e2e5cf8bcfe",
+      "bytes": 58648,
+      "sha256": "c9692d773b9a2e773df4eeffefa73a8274e15e237f1bbd196b211c44ce28e021"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-8.ttf",
+      "git_blob": "dae6b309bfcc4d5a681a655870147c67823caee6",
+      "bytes": 58676,
+      "sha256": "42487ea0040ade661c31a4c8456b132182e802cfaa0a73977aedeec865be9cfc"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Optical-9.ttf",
+      "git_blob": "e05411c2c22cbf6de579489db2e835b78b99d8f8",
+      "bytes": 58688,
+      "sha256": "30e6e3361a2514c1f20e139b7fcbcc83bbb04602de5e112fd013e0f8bbe89378"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-Text.ttf",
+      "git_blob": "67aff91697e0484980020d14089e8259ddcb4c13",
+      "bytes": 58772,
+      "sha256": "57259d0d82b32e954448c0227b36441b391b3d9892fde7f585d9bfba9ad2981a"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/BodoniModa-variable.ttf",
+      "git_blob": "c5d582f8003ae692761dd8e9ce69de23cb9fea53",
+      "bytes": 162104,
+      "sha256": "550f5e34ee0a828d7941b1fe9bc58b34e5260d3f33a61532e6d0a0114e79a5cf"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/Italiana-OFL.txt",
+      "git_blob": "76add94cb29756ef6529cbd393d7685ecb404da9",
+      "bytes": 4393,
+      "sha256": "486c4d5b9baf0d0ba5546ef3c43fcfe22c062299ab6948045a43efffe4b0f74b"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/Italiana-Regular.ttf",
+      "git_blob": "e0534928587569dd8a2bfb53ab13dea669655cee",
+      "bytes": 31828,
+      "sha256": "0ad271d9cd42a57cd5c5fa483ae2406a8138b95acb2a43eb73a8d37b7291fee9"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/OFL.txt",
+      "git_blob": "973cec73f0874f3b7821a44ff43e4a4c88e44844",
+      "bytes": 4400,
+      "sha256": "931dfe2e0cd3c9443295f5c1d754b8a8403bf060df50c1d5900267ade83d0046"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/Fonts/build_optical.py",
+      "git_blob": "f1c032a8b5ae42fa5d9785fdccf0f58d29625cc2",
+      "bytes": 478,
+      "sha256": "1508aa65aadc6a1630f26010f3bd3d8a5c5f944b1a6e2417b05e0d3b09d30e47"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/concept-reference.png",
+      "git_blob": "956948c98b274f826dedeffc0f338d689cc9feac",
+      "bytes": 2434804,
+      "sha256": "650dde7529a8f6a5421d4c2d8d41f8b81b0222653fd9839429de537cb9875c1b"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/forest.png",
+      "git_blob": "b29fb21c6b0f9ff7de5a84f8b9890c67949b7af5",
+      "bytes": 3033404,
+      "sha256": "b422439d0f905731a985c3b3aa5aa5837ebb6829456dd7a2a14101aca0829c81"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/pause.json",
+      "git_blob": "2664852b69fd521e0e5da1f21698f78391a732fc",
+      "bytes": 621,
+      "sha256": "edc104d9d5fdae1e8c68aa7e6bf6c6f3c4ebdea5c86762dfe1878e47117dced7"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/pre-optical-user-preset.json",
+      "git_blob": "ca8db4edaae2ee9569e9d4e2c1d273308831ba00",
+      "bytes": 372,
+      "sha256": "424098e88cb1878890737ae1ade27ef6b5851f6a6114fa7cfb28b55ba8044fce"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/pre-stroke-user-preset.json",
+      "git_blob": "79b98d0152c7a1b1d4b2f269a6ffc8dc5213e2ab",
+      "bytes": 331,
+      "sha256": "d075ae7607c6a633865815d5e24ee00da0674cc672950fcee56fb23b8991dccb"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Resources/provenance.json",
+      "git_blob": "de1bbad1f92af0f41ecf51b686417a173b6c1aa3",
+      "bytes": 1124,
+      "sha256": "3ecb93a8f4ad78a553986e2b27fed02252d0e21f52e299eaba922813522ef54a"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Source/PauseMenuLab/PauseMenuLab.Build.cs",
+      "git_blob": "cf8a53ba47558354f13f60749b08d55945d8cbb4",
+      "bytes": 344,
+      "sha256": "5c8cc6a398c304c709b178dad063c33c35c9a624fd52ba26624e795e050bf37c"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Source/PauseMenuLab/Private/PauseMenuLab.cpp",
+      "git_blob": "dbaef278b768abb5b045acd51d5235f713d4a57d",
+      "bytes": 6453,
+      "sha256": "eff053bc6d7f2b05191b4cfc8268e5a3971e1694d8344ab24a5cb27de71b6368"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Source/PauseMenuLab/Private/PauseModel.h",
+      "git_blob": "30072b0e789e7ae968abae6f0a6985d427af6f99",
+      "bytes": 3191,
+      "sha256": "3a658bcf796517ab36b140656a1d01a25c21902842989004536ee2cd72de5804"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Source/PauseMenuLab/Private/PausePainter.h",
+      "git_blob": "ba3fba7c9827c4ab48f8c6101db4e44f11b10f2a",
+      "bytes": 7875,
+      "sha256": "47779c4036bb60789fa92a74dbbfc9e4a3666f4dced67d8d83ef2df5b66eb5d8"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Source/PauseMenuLab/Private/SPauseMenu.h",
+      "git_blob": "d4f2102a5ad2243a900bf5d729bb9c3c39c465ca",
+      "bytes": 10671,
+      "sha256": "c2c1d9b7a76a5e10ab719cfcc9acae2796e2e7222b3d64a9559e7a58e55d92fe"
+    },
+    {
+      "path": "Labs/PauseMenuLab/Source/PauseMenuLabEditor.Target.cs",
+      "git_blob": "92d49c62080d16e2452a89561e84a5182cfe016f",
+      "bytes": 384,
+      "sha256": "12802a2a3e9f1d51cb57c1e432e1734d1ecaa9bb9533f53cf5220aea6966e8dd"
+    },
+    {
+      "path": "Labs/PauseMenuLab/VerifyOptical.py",
+      "git_blob": "86ebdfc4c7d431927d143a9edd23eed1292fc929",
+      "bytes": 1400,
+      "sha256": "b2ee17ed11b06b986604b366d937c1b6b4a8099324d49cf395537ab5f31e279b"
+    },
+    {
       "path": "Labs/PhysicalRecoveryLab/.gitignore",
       "git_blob": "7a60b85e148f80966a550e5ab6a762a907c69ca6",
       "bytes": 19,
@@ -25758,6 +26304,156 @@
       "sha256": "b11e9138533ca2c1684e781556d8a46f28010029b3528af1608b7b6afdc18864"
     },
     {
+      "path": "Labs/WeaponWheelLab/.gitignore",
+      "git_blob": "5d96440a5e520f1f00906a44164258da2f6ebc1a",
+      "bytes": 60,
+      "sha256": "304c6395fd4873baf497b32844c9758fb45f558c4f7e1278e84919b0d4584b5c"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Build.ps1",
+      "git_blob": "291ad0c666187ba3a6dcb265e9d1cf179d829d83",
+      "bytes": 446,
+      "sha256": "81ca64b969c7a5cc9c319bc5c44603a7b1f73ac225222814b0e104ce8ca7c43a"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Config/DefaultEngine.ini",
+      "git_blob": "c1f4ccdf93e2ca40f88447855378542abc39c531",
+      "bytes": 629,
+      "sha256": "7fa0397a89aec83b15ebca5c32ee929b9364148c870cfb8e80848b5980835bb7"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Config/DefaultGame.ini",
+      "git_blob": "e755ea3b4cf9b3633c7f547b29f51763affa3b51",
+      "bytes": 282,
+      "sha256": "013e0ce33d684b8ea42f880c44633cc10159b2354efd3ccdc139ef47bc3f8e8e"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Open.ps1",
+      "git_blob": "f23e0ecacc62d04f5586aacacea2150131df0dfb",
+      "bytes": 831,
+      "sha256": "6e20e13ec5f738c76670468ef2fd54b57471c2f5d4824bb0cba95941f0d74fd2"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/README.md",
+      "git_blob": "6fd2cae24f9ebb3367b4c890fcee281ef08d0a16",
+      "bytes": 8617,
+      "sha256": "da254444ce716ba4679d521c0a82f8218ddf3d833ec9468e7c6e2508c2ef2dd5"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Resources/checkpoint-02-user-preset.json",
+      "git_blob": "4a895867f9d3b1c8117b2af73e7b3010b2c300f8",
+      "bytes": 784,
+      "sha256": "c6fe1079c29ab7585f7f0c9b526b6bd94a41471ae558ee197b7eaf40fdf22e32"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Resources/checkpoint-03-user-preset.json",
+      "git_blob": "2693e7cf48409fac9941ab17da97156a3ea4e258",
+      "bytes": 927,
+      "sha256": "2902cd76785bb286a529b7c7a386b136d4dea7e6fed65022de9a054b136a70b8"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Resources/concept-reference.png",
+      "git_blob": "86caab8b2e95649adc45cda0d49fed0a37381abb",
+      "bytes": 1403012,
+      "sha256": "385bc53b2d468aa7c6aa2eeac9774816c986bb859d816e39620356830888f8ac"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Resources/forest.png",
+      "git_blob": "ef2f7adb6208c1548e426ee20ea485deffab0da0",
+      "bytes": 1627051,
+      "sha256": "f90ed565ab09aa866cb6823b28fd44f55eb323d51847fd930bc992f96fb0c6f7"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Resources/pre-font-size-user-preset.json",
+      "git_blob": "479f0fc2cc96b6bec07b38e93933e3139376f644",
+      "bytes": 1074,
+      "sha256": "1ce1c079fdb1afbfac6b58fa121c2d1e5deffddf47d060e2ec8347813f3dcd32"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Resources/provenance.json",
+      "git_blob": "0097bf021f723362db38be90c1f6f17a392444be",
+      "bytes": 3295,
+      "sha256": "2cd561898d148b6a86554065b1c6e1cdad74f782de81dd2fa391d3268c057a43"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Resources/weapons.png",
+      "git_blob": "530f227a6c0eff8ad66d162ee469b7eeeeaa7578",
+      "bytes": 1180231,
+      "sha256": "bb338cb5cfff10c567f54d7d6d62f20cf78ffe4e790666f07208f39265cd88e2"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Resources/wheel.json",
+      "git_blob": "e6da0509cd6c20049e7c6df36971811ba34bce2a",
+      "bytes": 1147,
+      "sha256": "d8b7000dcd3b1c3e59cde631dbcb3e2001e066763f283f6f65b59c3a6ba083d3"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Source/WeaponWheelLab/Private/SWeaponWheel.h",
+      "git_blob": "bfa199d5f945738b06a080e311a1118f4b00ce47",
+      "bytes": 16051,
+      "sha256": "d2ec8382b80b219a078822fa57362ec8f447b66e26dd0c1c4790464fd8383c82"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Source/WeaponWheelLab/Private/WeaponWheelLab.cpp",
+      "git_blob": "fd0a5172dda65b5a0cd4f824a0940acfc964b864",
+      "bytes": 11123,
+      "sha256": "fdfc98d45116bd148fb1152ed35b4030099b990ab4c11d5ce1a29f8a0a91a5bb"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Source/WeaponWheelLab/Private/WheelMasks.h",
+      "git_blob": "356530a9e31ec0d522edefd7db421996dd05800a",
+      "bytes": 2138,
+      "sha256": "60f0ea4ff62050d7ad54e50a2d5875f08883b77d136b3d31de1153dad5803d61"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Source/WeaponWheelLab/Private/WheelModel.h",
+      "git_blob": "d72834f178b3f638bdead2be1ef4cc61770f1266",
+      "bytes": 6854,
+      "sha256": "898449c19fb1a8b13a79ff60f558cacbdd6c60fb3a76c193aad32dbcaea0b496"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Source/WeaponWheelLab/Private/WheelOrnaments.h",
+      "git_blob": "f94aa60744f1f18bc268cf8797511087190a514d",
+      "bytes": 2399,
+      "sha256": "3c4ddecf03a297bd8b2462765ccdf9a91bd35fc72705ae66d8dc2c43de0dd9c3"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Source/WeaponWheelLab/Private/WheelPainter.h",
+      "git_blob": "09c04a16e7b0285feef7482f7ea902a0af5450db",
+      "bytes": 15049,
+      "sha256": "286c324f2abd1a2603fba70a947947b2b1218135a71b9fc3920bfd162a9d0bc0"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Source/WeaponWheelLab/Private/WheelTextures.h",
+      "git_blob": "f5caf6bd13f6b917c7f758df5aeb5792711a7953",
+      "bytes": 1986,
+      "sha256": "4a44ed0beb2efb8449e72b52b48757a3349e80a7010759b97d7b87f8838e7fca"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Source/WeaponWheelLab/WeaponWheelLab.Build.cs",
+      "git_blob": "79760b015b931fd6ee0351e51db1298d0b874dcb",
+      "bytes": 485,
+      "sha256": "993e3fc8d6c9b54d2c6f8a022b94b5657a95bf716d1848464206be57e56ed5ed"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/Source/WeaponWheelLabEditor.Target.cs",
+      "git_blob": "0d327f6d84cf68ddd06cffb2a20a2bc5b58f9533",
+      "bytes": 456,
+      "sha256": "bbe0d201b281faefe0da6f2d2bcab97509ace457b02b3354f88de9a6f8614783"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/WeaponWheelLab.uproject",
+      "git_blob": "267ebeb61c6a3adb34acc045a6ea9f33eaad9b75",
+      "bytes": 344,
+      "sha256": "865076cd3653ec9e54bc0fdb7a59adc59fb97624db2aa1f088c445582f1e0d77"
+    },
+    {
+      "path": "Labs/WeaponWheelLab/checkpoint.json",
+      "git_blob": "68be39a676025b0074a5829c2c180fca3bd96f38",
+      "bytes": 2948,
+      "sha256": "c3dde97e46b45b767723a9336c0dc7ba4021c4a66bf6dd7005aa58e6869de3c4"
+    },
+    {
       "path": "Plugins/ProphecyJolt/ProphecyJolt.uplugin",
       "git_blob": "3570162d0c3db49e62d9e4e458219de05310bd88",
       "bytes": 780,
@@ -26245,9 +26941,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "0895616778f853a324cdf16544ccbdd8f5ba6f2d",
-      "bytes": 194840,
-      "sha256": "8d2b2e5f25a48bec8e712da6000aebbd396cc866a5b19af4e06e7c4e28daf35f"
+      "git_blob": "6855ea4e3dce4c2f475dce08016ba0f44ae5bbb7",
+      "bytes": 195576,
+      "sha256": "db9e53866e954dd590a53d12755ae31d927a60b4cce4fd86d8258c7235c18bf2"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",

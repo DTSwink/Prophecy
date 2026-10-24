@@ -1,0 +1,23 @@
+{
+	"overall_size": 1,
+	"title_size": 0.9142146110534668,
+	"menu_size": 1,
+	"row_spacing": 72,
+	"menu_hairline_strength": 0.77777779102325439,
+	"selected_text_whiteness": 0,
+	"unselected_text_opacity": 0.80321812629699707,
+	"tracking": 3.705132007598877,
+	"blur": 3,
+	"darkness": 1,
+	"gradient_width": 1000,
+	"glow": 0.76823484897613525,
+	"line_width": 232.01365661621094,
+	"underline_gap": 10.076423645019531,
+	"underline_left_crop": 0,
+	"hover_padding_top": 0,
+	"hover_padding_bottom": 0,
+	"hover_padding_right": 200,
+	"accent_r": 0.64999997615814209,
+	"accent_g": 0.15000000596046448,
+	"accent_b": 0.94999998807907104
+}

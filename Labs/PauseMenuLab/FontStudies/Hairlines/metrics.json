@@ -1,0 +1,34 @@
+[
+  {
+    "label": "Original",
+    "optical_size": 24,
+    "weight": 400,
+    "H_crossbar_units": 18.39,
+    "H_main_stem_units": 191.0,
+    "file": "optical-24.ttf"
+  },
+  {
+    "label": "A \u00b7 Gentle",
+    "optical_size": 16,
+    "weight": 400,
+    "H_crossbar_units": 27.53,
+    "H_main_stem_units": 191.0,
+    "file": "optical-16.ttf"
+  },
+  {
+    "label": "B \u00b7 Medium",
+    "optical_size": 10,
+    "weight": 400,
+    "H_crossbar_units": 46.8,
+    "H_main_stem_units": 190.8,
+    "file": "optical-10.ttf"
+  },
+  {
+    "label": "C \u00b7 Strong",
+    "optical_size": 6,
+    "weight": 400,
+    "H_crossbar_units": 74,
+    "H_main_stem_units": 190,
+    "file": "optical-6.ttf"
+  }
+]

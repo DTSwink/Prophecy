@@ -1,0 +1,8 @@
+{
+  "generator": "Built-in imagegen",
+  "prompt": "Use case: precise-object-edit. Edit target: this forest gameplay pause-menu reference. Produce ONLY the clean underlying forest gameplay background plate, matching the exact 1672x941 landscape framing, mannequin pose size and position, trees, rocks, flowers and lighting. Remove ALL text, ALL UI lines, underline, star, labels, Esc button, and remove the left-side dark UI gradient so the natural forest is visible. Restore the underlying image under those overlays. Preserve the existing natural scene and character. No new objects. No text or UI whatsoever. Keep detail natural; do not add extra blur (the application will blur dynamically).",
+  "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-b026aec2-264e-4a6a-87a5-c6684155382b.png",
+  "font": "Antic Didone Regular for title; Bodoni Moda optical size 24 / weight 400 for text; OFL-1.1 licenses included",
+  "fontSource": "https://github.com/google/fonts/tree/main/ofl/bodonimoda",
+  "titleFontSource": "https://github.com/google/fonts/tree/main/ofl/anticdidone"
+}

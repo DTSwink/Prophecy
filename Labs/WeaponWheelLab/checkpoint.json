@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-22",
+  "checkpoint": 3,
+  "status": "awaiting user rating",
+  "language": "English",
+  "build": "succeeded",
+  "build_actions": 5,
+  "build_seconds": 20.43,
+  "input_handler_checks": "45/45",
+  "input_checked_scales": [
+    1.0,
+    0.65,
+    1.061
+  ],
+  "dpi_aware": true,
+  "display_dpi_scale": 1.25,
+  "atlas_mips": 11,
+  "rendered_layer_changed_pixels": {
+    "weapons": 232644,
+    "arcs": 58926,
+    "label": 55271,
+    "selection_glow": 15221
+  },
+  "color_picker": {
+    "opened": true,
+    "captured": true,
+    "callback_changed_pixels": 12719,
+    "original_color_restored": true,
+    "mouse_drag_automated": false,
+    "cancel_automated": false
+  },
+  "capture": {
+    "width": 1024,
+    "height": 949,
+    "path": "Saved/Captures/checkpoint-03.png"
+  },
+  "additional_captures": [
+    "Saved/Captures/checkpoint-03-small.png",
+    "Saved/Captures/checkpoint-03-settings.png",
+    "Saved/Captures/checkpoint-03-color-picker.png"
+  ],
+  "review_pid": 3248,
+  "config_sha256": "f7529ccc9b26a14ac13b561a2d525dcb0d24fe4d22a089a249fe8b1b3dcf2379",
+  "original_preset": {
+    "path": "Resources/checkpoint-02-user-preset.json",
+    "sha256": "2bebd152e2ad0d40a31c140125e3f08be2cd95a389e167f5e06708680b297681",
+    "all_original_fields_preserved": true,
+    "added_fields": [
+      "overall_size",
+      "selection_glow",
+      "selection_color_linear"
+    ]
+  },
+  "limitations": [
+    "No gameplay equipment hookup yet",
+    "No controller integration test yet",
+    "No production GPU benchmark yet",
+    "Color picker open/render and callback verified; mouse drag and Cancel not separately automated"
+  ],
+  "brightness_refinement": {
+    "date": "2026-10-23",
+    "build": "succeeded",
+    "build_actions": 4,
+    "build_seconds": 27.7,
+    "review_pid": 14092,
+    "capture": "Saved/Captures/brightness-controls.png",
+    "center": 1,
+    "circles": 0.37775498628616333,
+    "connections": 0.37775498628616333,
+    "all_previous_preset_fields_preserved": true,
+    "backup": "Resources/checkpoint-03-user-preset.json",
+    "config_sha256": "c7ae353a82158e745f9a793caf58dfb059902d9fee315cf8374a2ddc3efcb3cc",
+    "verification": "Compiled, cold-loaded in isolated lab, visually inspected; existing earlier checks not rerun"
+  },
+  "center_size_refinement": {
+    "date": "2026-10-23",
+    "build": "succeeded",
+    "build_actions": 4,
+    "build_seconds": 14.14,
+    "review_pid": 4296,
+    "font_size": 22,
+    "font_range": [
+      12,
+      36
+    ],
+    "decoration_size": 1,
+    "decoration_range": [
+      0,
+      1.5
+    ],
+    "font_does_not_change_decoration_layout": true,
+    "all_previous_preset_fields_preserved": true,
+    "backup": "Resources/pre-font-size-user-preset.json",
+    "config_sha256": "ff1e6917b1cd35fbcbee40f7db8c9c9ce868093e65c3bd23b263fb43e5ff6ade",
+    "verification": "Incremental build and source separation checked; isolated lab reopened; no new automated interaction tests"
+  }
+}

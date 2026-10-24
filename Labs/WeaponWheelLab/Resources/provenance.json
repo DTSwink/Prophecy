@@ -1,0 +1,28 @@
+{
+  "created": "2026-10-22",
+  "revised": "2026-10-22 — checkpoint 03",
+  "concept": "User-selected Local shadows; concept-reference.png is unchanged.",
+  "background": "User-provided forest gameplay screenshot, copied unchanged to forest.png",
+  "weapons": {
+    "generator": "OpenAI image_gen built-in tool, transparent background",
+    "source": "exec-91ab2929-8b05-43c3-9c98-a445d1337dbe.png",
+    "prompt": "Use case: precise-object-edit. Image 1 is the weapon icon atlas to REPLACE; image 2 is the approved UI style reference. Produce ONE professional game UI transparent PNG sprite atlas, exactly 4 columns by 2 rows of equal square cells, landscape 2:1. Preserve exact order and recognizable shapes from image 1: TOP bomb with curled fuse, longsword, dagger, spear; BOTTOM double axe, spiked mace, bow with arrow, round wooden shield. Each complete object centered on its cell, maximum 80% cell extent, no overlap. Main correction: match the CLEAN WHITE ENGRAVED DRAWINGS of image 2, not the muddy sepia look of image 1. Pure neutral white ink with restrained neutral charcoal internal engraving, monochrome grayscale only, absolutely NO brown/tan/gold/yellow or colored fringe. Crisp smooth anti-aliased outer contours, elegant deliberate hand-etched hatching with clear spacing, avoid dense tiny speckles that alias when reduced to 150 pixels. Clean alpha edges with no noisy halo, no grain, no chromatic aberration. Fine but strong confident white contours like reference. Inside holes must remain transparent. No opaque backing panels. Sword, dagger, spear, axe, mace diagonally toward upper-right matching original; round bomb and shield, curved bow. No circles, borders, orbit lines, stars, text, shadows, UI, scene or other items. This sheet will be sampled in eight equal 4x2 cells so exact centered equal grid placement is critical. Output at high resolution with genuine transparent background.",
+    "replaces": "exec-3d1d591b-d0c1-41ed-a3b9-45837a2f0968.png (checkpoint 01 warm atlas)",
+    "atlas": {
+      "columns": 4,
+      "rows": 2,
+      "order": [
+        "bomb",
+        "sword",
+        "dagger",
+        "spear",
+        "axe",
+        "mace",
+        "bow",
+        "shield"
+      ]
+    }
+  },
+  "fonts": "Georgia from Windows installation for local preview; font is not copied or redistributed. Shipping font/licensing remains a later integration step.",
+  "rendering": "Native DPI-aware Slate. Neutral white antialiased ornaments with eight distinct authored ellipse profiles, inner sweeps, unequal gaps, and stars/pearls anchored directly on the curves. One-pixel alpha coverage on stars/dots and tapered crescent ribbons. Separate 64x64 weapon disc, 512x512 connecting annulus, 256x128 Gaussian name veil, 256x256 crescent halo and 128x128 Gaussian star masks. Masks are generated once; connecting annulus regenerates on radius change only. Local glow does not enable scene bloom. Whole-wheel scale shares its transform with hit testing. Native Unreal color picker controls the selection and halo. Atlas uploaded to a transient trilinear texture with an alpha-weighted linear-space mip chain generated once; no new image generation at checkpoint 03. Source art unchanged by runtime filtering. No custom per-frame UI tick; invalidated geometry is cached."
+}

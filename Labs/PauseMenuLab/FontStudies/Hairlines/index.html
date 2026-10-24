@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prophecy · Menu hairline study</title>
+<style>
+@font-face{font-family:Original;src:url(optical-24.ttf)}
+@font-face{font-family:Gentle;src:url(optical-16.ttf)}
+@font-face{font-family:Medium;src:url(optical-10.ttf)}
+@font-face{font-family:Strong;src:url(optical-6.ttf)}
+@font-face{font-family:Study;src:url(../../Resources/Fonts/BodoniModa-variable.ttf);font-weight:400 900}
+:root{color-scheme:dark;--sample-size:24px}
+*{box-sizing:border-box}body{margin:0;padding:28px 3vw 50px;background:#101116;color:#f2f0eb;font:15px system-ui}
+h1{font-size:26px;font-weight:500;margin:0 0 10px}p{color:#b3b3c0;max-width:1000px;line-height:1.6}
+.controls{display:flex;gap:26px;align-items:center;flex-wrap:wrap;margin:22px 0}label{display:flex;gap:12px;align-items:center}input{accent-color:#be9bdf}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}article{min-width:0;border:1px solid #37343e;border-radius:8px;padding:24px;background:#08090c}
+h2{font:500 16px system-ui;color:#c6b0e2;margin:0 0 26px}
+.sample{font-weight:400;font-optical-sizing:none;font-synthesis:none;color:#f2f0eb;text-shadow:none;-webkit-text-stroke:0}
+.large{font-size:clamp(45px,5.6vw,94px);line-height:1.2;letter-spacing:7px;margin-bottom:24px}
+.small{font-size:var(--sample-size);letter-spacing:3.705132px;line-height:1.9}
+.muted{font:13px system-ui;color:#8d8b97;margin:14px 0}
+.original{font-family:Original}.gentle{font-family:Gentle}.medium{font-family:Medium}.strong{font-family:Strong}
+.live{margin-top:24px}.pair{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.livefont{font-family:Study;font-variation-settings:"wght" 400,"opsz" 10}
+a{color:#c6b0e2}button{background:#292432;color:#eee;border:1px solid #6a577e;padding:7px 14px;border-radius:4px}
+body.forest article{background:linear-gradient(90deg,#08090cef,#08090cdd),url(../../Resources/forest.png) center/cover}
+@media(max-width:800px){.grid,.pair{grid-template-columns:1fr}.large{font-size:65px}}
+</style>
+<h1>Menu hairlines · font shapes, not effects</h1>
+<p>The same Bodoni Moda font at weight 400. These are the font designer’s optical-size variants: lower optical sizes reinforce fine strokes for small text. Shapes and spacing also receive the designer’s small optical adjustments. “PAUSED” and Unreal remain untouched.</p>
+<div class="controls">
+<label>Menu size <input id="size" type="range" min="18" max="40" step="1" value="24"><output id="sizeval">24 px</output></label>
+<label><input id="forest" type="checkbox">Forest backing</label>
+<a href="comparison.png" target="_blank">Open comparison image</a>
+</div>
+<div class="grid">
+<article><h2>Original · optical size 24</h2><div class="sample original large">RESUME</div><div class="muted">At menu size</div><div class="sample original small">RESUME<br>INVENTORY · JOURNAL<br>SETTINGS · QUIT TO MENU</div><div class="muted">H crossbar 18.39 units · main stem 191 units</div></article>
+<article><h2>A · Gentle · optical size 16</h2><div class="sample gentle large">RESUME</div><div class="muted">At menu size</div><div class="sample gentle small">RESUME<br>INVENTORY · JOURNAL<br>SETTINGS · QUIT TO MENU</div><div class="muted">H crossbar 27.53 units · main stem 191 units</div></article>
+<article><h2>B · Medium · optical size 10</h2><div class="sample medium large">RESUME</div><div class="muted">At menu size</div><div class="sample medium small">RESUME<br>INVENTORY · JOURNAL<br>SETTINGS · QUIT TO MENU</div><div class="muted">H crossbar 46.8 units · main stem 190.8 units</div></article>
+<article><h2>C · Strong · optical size 6</h2><div class="sample strong large">RESUME</div><div class="muted">At menu size</div><div class="sample strong small">RESUME<br>INVENTORY · JOURNAL<br>SETTINGS · QUIT TO MENU</div><div class="muted">H crossbar 74 units · main stem 190 units</div></article>
+</div>
+<article class="live"><h2>Try an intermediate value</h2>
+<div class="controls"><label>Hairline strength <input id="strength" type="range" min="0" max="100" value="78"><output id="value"></output></label><button data-value="0">Original</button><button data-value="44.4444">A</button><button data-value="77.7778">B</button><button data-value="100">C</button></div>
+<div class="pair"><div><div class="muted">Original</div><div class="sample original large">RESUME</div><div class="sample original small">RESUME · INVENTORY</div></div><div><div class="muted">Your value</div><div class="sample livefont large">RESUME</div><div class="sample livefont small">RESUME · INVENTORY</div></div></div>
+</article>
+<p>All text uses one solid color. No outline, shadow, opacity blending or simulated bold. Judge at 100% browser zoom. Measurements above illustrate the H glyph, not a guarantee that every contour is identical. <a href="metrics.json">Measured values</a> · <a href="OFL.txt">Font license</a></p>
+<script>
+const size=document.querySelector('#size'),strength=document.querySelector('#strength');
+size.oninput=()=>{document.documentElement.style.setProperty('--sample-size',size.value+'px');document.querySelector('#sizeval').value=size.value+' px'};
+document.querySelector('#forest').onchange=e=>document.body.classList.toggle('forest',e.target.checked);
+function change(){const optical=24-18*Number(strength.value)/100;document.querySelectorAll('.livefont').forEach(e=>e.style.fontVariationSettings='"wght" 400, "opsz" '+optical);document.querySelector('#value').value=Number(strength.value).toFixed(1)+'% · optical '+optical.toFixed(2);}
+strength.oninput=change;document.querySelectorAll('button[data-value]').forEach(e=>e.onclick=()=>{strength.value=e.dataset.value;change()});change();
+</script></html>

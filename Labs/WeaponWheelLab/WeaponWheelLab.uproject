@@ -1,0 +1,8 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.7",
+  "Category": "Prophecy UI experiments",
+  "Description": "Isolated native Slate weapon-wheel checkpoint. No dependency on the Prophecy game project.",
+  "DisableEnginePluginsByDefault": true,
+  "Modules": [{ "Name": "WeaponWheelLab", "Type": "Runtime", "LoadingPhase": "PostEngineInit" }]
+}

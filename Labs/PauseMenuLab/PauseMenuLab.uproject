@@ -1,0 +1,14 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.7",
+  "Category": "Prophecy UI experiments",
+  "Description": "Isolated native Slate pause-menu workshop",
+  "DisableEnginePluginsByDefault": true,
+  "Modules": [
+    {
+      "Name": "PauseMenuLab",
+      "Type": "Runtime",
+      "LoadingPhase": "PostEngineInit"
+    }
+  ]
+}

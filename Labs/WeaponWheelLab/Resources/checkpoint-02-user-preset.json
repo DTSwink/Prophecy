@@ -1,0 +1,52 @@
+{
+	"blur": 3.4793617725372314,
+	"shadow": 0.72797852754592896,
+	"arc_shadow": 0.24515929818153381,
+	"label_shadow": 0.67694896459579468,
+	"radius": 313.84832763671875,
+	"icon_size": 139.2069091796875,
+	"ornament_opacity": 1,
+	"selected": 2,
+	"items": [
+		{
+			"id": "bomb",
+			"label": "BOMB",
+			"atlas_cell": 0
+		},
+		{
+			"id": "sword",
+			"label": "SWORD",
+			"atlas_cell": 1
+		},
+		{
+			"id": "dagger",
+			"label": "DAGGER",
+			"atlas_cell": 2
+		},
+		{
+			"id": "spear",
+			"label": "SPEAR",
+			"atlas_cell": 3
+		},
+		{
+			"id": "axe",
+			"label": "AXE",
+			"atlas_cell": 4
+		},
+		{
+			"id": "mace",
+			"label": "MACE",
+			"atlas_cell": 5
+		},
+		{
+			"id": "bow",
+			"label": "BOW",
+			"atlas_cell": 6
+		},
+		{
+			"id": "shield",
+			"label": "SHIELD",
+			"atlas_cell": 7
+		}
+	]
+}
