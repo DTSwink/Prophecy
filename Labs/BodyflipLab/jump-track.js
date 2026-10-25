@@ -31,7 +31,7 @@ class JumpTrack {
  sync(){
   const {settings,events:stored,results,time,max}=this.api.get(),events=this.pending||stored,el=this.el;
   this.max=max;
-  el('jumpEditor').hidden=el('jumpHere').hidden=settings.mode==='space';
+  el('jumpEditor').hidden=el('jumpHere').hidden=false;
   if(!events.some(e=>e.id===this.selected))this.selected=null;
   const selected=events.find(e=>e.id===this.selected),index=events.indexOf(selected),result=results.find(e=>e.id===this.selected);
   el('jumpHere').disabled=events.length>=32;el('jumpPopover').hidden=!selected;

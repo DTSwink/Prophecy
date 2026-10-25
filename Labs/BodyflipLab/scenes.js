@@ -12,5 +12,6 @@ function pack(library){const current=library.items.find(s=>s.id===library.active
 function select(library,id){if(!library.items.some(s=>s.id===id))throw Error('Scene unavailable');return {...clone(library),active:id};}
 function rename(library,name){const next=clone(library),clean=String(name).trim().slice(0,64);if(!clean)throw Error('Enter a scene name');next.items.find(s=>s.id===next.active).name=clean;return next;}
 function copy(library,name,id){if(library.items.some(s=>s.id===id))throw Error('Scene already exists');const next=clone(library),state=snapshot(next.items.find(s=>s.id===next.active).state);state.playback.playing=false;next.items.push({id,name:'',state});next.active=id;return rename(next,name);}
-const api={open,capture,pack,select,rename,copy};if(typeof module!=='undefined')module.exports=api;else root.BodyflipScenes=api;
+function create(library,name,id,state){if(library.items.some(s=>s.id===id))throw Error('Scene already exists');const next=clone(library);next.items.push({id,name:'',state:snapshot(state)});next.active=id;return rename(next,name);}
+const api={open,capture,pack,select,rename,copy,create};if(typeof module!=='undefined')module.exports=api;else root.BodyflipScenes=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -1,0 +1,28 @@
+{
+  "passed": 20,
+  "checks": [
+    "Old Space saves migrate to Idle",
+    "Idle preserves the existing frozen animation provenance",
+    "Idle animates rather than holding one frame",
+    "Ten second loop repeats deterministically",
+    "Rendered shoe remains grounded throughout idle loop",
+    "Idle root does not run or fall",
+    "Grounding preserves authored bone lengths",
+    "Idle uses the shared planner and seeds its landing NN without a gait-bank request",
+    "Stationary start selects standing jump automatically",
+    "Idle remains upright before jumping despite saved flip settings",
+    "Idle tick advances the authored loop in place",
+    "Moving a marker changes support start and keeps preceding idle",
+    "Jump leaves floor, falls, then resumes idle after landing",
+    "Repeated idle-start markers use contact and push rules",
+    "No markers leaves agent idling indefinitely",
+    "Phase changes idle starting pose",
+    "Idle jump reverse seek is deterministic",
+    "Idle airborne flip remains available",
+    "Jump, trim and options have no Idle visibility exception",
+    "Menu exposes Idle and removes Space sequence"
+  ],
+  "maxGroundError": 0,
+  "maxRootTravel": 0,
+  "maxBoneError": 2.7755575615628914e-16
+}

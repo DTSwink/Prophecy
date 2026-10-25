@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),K=require('./camera.js'),R=require('./recovery.js');
+const checks=[],check=(name,value)=>{assert(value,name);checks.push(name);},near=(a,b)=>R.length(R.sub(a,b))<1e-9;
+const defaults={yaw:-.55,pitch:-.06,zoom:.95,panX:0,panY:0,free:false,offset:null,freeView:null};
+const center=[3,2,-8];let maxSwitchError=0,maxRecenterError=0;
+for(const pitch of [-5,-.06,1.75])for(const zoom of [.001,.95,3]){
+ const state={...defaults,pitch,zoom,panX:137,panY:-71},before=K.view(state,center,800);
+ K.toggle(state,true,before,center);const free=K.view(state,[50,100,200],800);
+ K.toggle(state,false,free,center);const after=K.view(state,center,800);
+ maxSwitchError=Math.max(maxSwitchError,R.length(R.sub(before.eye,free.eye)),R.length(R.sub(before.target,free.target)));
+ maxRecenterError=Math.max(maxRecenterError,R.length(R.sub(after.target,center)),R.length(R.sub(after.forward,free.forward)),Math.abs(after.targetDepth-free.targetDepth));
+}
+check('Entering free camera preserves eye and target, including panned/top/distant views',maxSwitchError<1e-9);
+check('Leaving free camera centers COM and preserves angle and viewing distance',maxRecenterError<1e-9);
+const state={...defaults},initial=K.view(state,center,800);K.toggle(state,true,initial,center);
+const eye=state.freeView.eye.slice();K.rotate(state,50,20);const turned=K.view(state,center,800);
+check('Free left-drag turns in place',near(turned.eye,eye)&&!near(turned.forward,initial.forward));
+check('Requested inverted vertical drag is retained',turned.forward[1]<initial.forward[1]);
+check('Free camera ignores moving COM',near(K.view(state,[100,20,-80],800).eye,turned.eye));
+const left=structuredClone(state),forward=structuredClone(state),right=structuredClone(state),back=structuredClone(state);
+K.move(left,new Set(['q']),1);K.move(forward,new Set(['z']),1);K.move(right,new Set(['d']),1);K.move(back,new Set(['s']),1);
+check('Q/D strafe camera left/right',near(R.sub(right.freeView.eye,eye),R.mul(turned.right,3))&&near(R.sub(left.freeView.eye,eye),R.mul(turned.right,-3)));
+check('Z/S move along view direction',near(R.sub(forward.freeView.eye,eye),R.mul(turned.forward,3))&&near(R.sub(back.freeView.eye,eye),R.mul(turned.forward,-3)));
+const diagonal=structuredClone(state);K.move(diagonal,new Set(['z','d']),1);check('Diagonal movement does not speed up',Math.abs(R.length(R.sub(diagonal.freeView.eye,eye))-3)<1e-9);
+const target=turned.target.slice(),distance=state.freeView.distance;K.wheel(state,100);
+check('Wheel retains exponential zoom and current focal point',Math.abs(state.freeView.distance-distance*Math.exp(.1))<1e-9&&near(K.view(state,center,800).target,target));
+K.wheel(state,15000);check('Wheel retains unlimited dezoom',state.zoom<1e-5);
+const restored={};K.restore(restored,JSON.parse(JSON.stringify(state)),defaults);
+check('Saved free camera restores the same view',near(K.view(restored,center,800).eye,K.view(state,center,800).eye));
+K.toggle(state,false,K.view(state,center,800),center);const following=K.view(state,center,800);
+check('Follow resumes centered after free movement and zoom',near(following.target,center)&&near(R.sub(K.view(state,R.add(center,[2,0,0]),800).eye,following.eye),[2,0,0]));
+
+const app=fs.readFileSync(new URL('app.js',import.meta.url),'utf8');let queued=0,cancelled=0;
+const ctx={cameraState:{free:true},requestAnimationFrame:()=>++queued,cancelAnimationFrame:()=>cancelled++,save(){},document:{hidden:false},BodyflipCamera:K,playing:false,drawAll(){}};
+vm.createContext(ctx);vm.runInContext(app.slice(app.indexOf('const cameraKeys='),app.indexOf('class BodyflipRenderer')),ctx);
+const event=(key,target={},extra={})=>({key,target,preventDefault(){},stopImmediatePropagation(){},...extra});
+check('QZDS works from a previously clicked checkbox',ctx.cameraKey(event('z',{tagName:'INPUT',type:'checkbox'}),true)&&queued===1);
+ctx.cameraKey(event('z'),false);check('Releasing keys stops the camera RAF',cancelled===1);
+check('Writing and Ctrl+Z keep their normal keys',!ctx.cameraKey(event('z',{tagName:'INPUT',type:'number'}),true)&&!ctx.cameraKey(event('z',{}, {ctrlKey:true}),true));
+ctx.cameraState.free=false;check('QZDS is inactive in follow mode',!ctx.cameraKey(event('q'),true));
+fs.writeFileSync(new URL('camera-verification.json',import.meta.url),JSON.stringify({passed:checks.length,checks,maxSwitchError,maxRecenterError,visualVerified:false},null,2)+'\n');
+console.log(JSON.stringify({passed:checks.length,maxSwitchError,maxRecenterError}));

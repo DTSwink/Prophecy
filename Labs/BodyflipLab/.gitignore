@@ -5,6 +5,7 @@ models/*.npz
 state.tmp
 snapshots/
 __pycache__/
+.resume-cache/
 *.log
 vendor/package.tgz
 vendor/package-metadata.json

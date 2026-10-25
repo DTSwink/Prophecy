@@ -1,0 +1,20 @@
+{
+  "passed": 11,
+  "checks": [
+    "First output preserves every landing point exactly",
+    "First output preserves every landing orientation exactly",
+    "Compiled step agrees with original lower policy and eager upper throughout recovery",
+    "Lower history 0 contains actual pelvis and both ankle positions",
+    "Upper history 0 contains actual wrist positions",
+    "Lower history 1 contains actual pelvis and both ankle positions",
+    "Upper history 1 contains actual wrist positions",
+    "Changing landing foot changes lower recurrent prediction",
+    "Previous pose supplies motion history, not a duplicated current pose",
+    "Repeated preparation uses disk cache and identical output",
+    "Capsule root is returned unchanged"
+  ],
+  "referenceError": 0,
+  "inferenceSeconds": 0.24464999994961545,
+  "cachedMs": 14.096400000000358,
+  "visualVerified": false
+}

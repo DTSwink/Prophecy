@@ -1,0 +1,43 @@
+{
+  "passed": 24,
+  "checks": [
+    "Capsule dimensions match Unreal radius30 half-height86cm",
+    "High speed descent cannot tunnel through finite floor slab",
+    "A real gap beside the platform remains empty",
+    "Thin wall blocks capsule while preserving tangential motion",
+    "Underside stops the capsule head",
+    "45 degree surface resolves the rounded capsule bottom",
+    "Empty corners of capsule AABB do not falsely collide",
+    "Starting overlap resolves upward by minimal depth",
+    "Reported flat Idle jump still pushes",
+    "Descending jump lands and resumes Idle",
+    "Entire standing jump keeps capsule out of floor",
+    "Landing begins at current pose without cached idle snap",
+    "Capsule and landing are deterministic during reverse seek",
+    "Jump marker after landing starts another real push",
+    "Run jump lands on extended platform",
+    "Landing resumes normal NN run and forward root speed",
+    "Resumed NN gait continues animating",
+    "Run continuation is reseeded rather than copying cached gait",
+    "Run handoff is continuous at landing",
+    "Walk jump resumes Walk NN after capsule landing",
+    "Inclined landing returns locomotion on finite ramp",
+    "Walking beyond finite edge starts a real capped fall",
+    "Wall strike never resumes locomotion",
+    "Ceiling hit cancels ascent without falsely landing"
+  ],
+  "planMs": 471.5906,
+  "minGap": 0.0000010000000000287557,
+  "entryGap": 2.4925682314543234e-7,
+  "landings": [
+    {
+      "time": 1.8541666666666665,
+      "root": [
+        -0.0000823395751182024,
+        0.000001000000000048705,
+        -0.00004698617953700474
+      ],
+      "surfaceId": "floor"
+    }
+  ]
+}

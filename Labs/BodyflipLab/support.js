@@ -2,6 +2,7 @@
 (function(root){
 'use strict';
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
+const C=typeof module!=='undefined'?require('./core.js'):root.BodyflipCore;
 const {add,sub,mul,dot,cross,length,unit,rotate,qm,qinv,qslerp,fromTo}=R;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const toward=(a,b,d)=>add(a,mul(sub(b,a),Math.min(1,d/(length(sub(b,a))||1))));
@@ -129,7 +130,9 @@ function ideal(p,legs,surface,rootSpeed,settings){
 function solve(p,l,target,parents,ratio=1,rotation=l){
  const local=R.localize(p.points,p.q,parents),hip=p.points[l.hip],a=l.upper,b=l.lower;
  local.p[l.knee]=l.kneeLocal;local.p[l.foot]=l.ankleLocal;
- const delta=sub(target,hip),d=clamp(length(delta),Math.abs(a-b)+1e-6,(a+b)*ratio-1e-6),axis=length(delta)>1e-8?unit(delta):[0,-1,0];
+ // Use the same reach boundary as planning. Subtracting a second epsilon here
+ // locked the knee just before release, so its displayed and seeded speeds differed.
+ const delta=sub(target,hip),d=clamp(length(delta),Math.abs(a-b)+1e-6,Math.min((a+b)*ratio,a+b-1e-8)),axis=length(delta)>1e-8?unit(delta):[0,-1,0];
  // Transport the actual bend direction with the pelvis and aim of the leg.
  // Projecting hip->knee onto a new aim can invert the pole near alignment.
  const referenceAxis=rotate(p.q[l.pelvis],l.axisLocal),referencePole=rotate(p.q[l.pelvis],l.poleLocal);
@@ -279,7 +282,7 @@ function roll(terminal,l,surface,angle){
 }
 // Continue the captured shoe's orientation without freezing its bank. Integrate
 // contact pivots once at preparation; playback/rewind just samples this table.
-function contactMotion(terminal,l,surface,settings){
+function contactMotion(terminal,l,surface,settings,previousRotation=null){
  const n=surface.normal,dt=1/480,start=terminal.rotation;
  // Retain the pitch already reached on approach: leveling the bank must not
  // rewind heel-to-toe motion back to the initial Plant pitch.
@@ -290,9 +293,11 @@ function contactMotion(terminal,l,surface,settings){
  const angle=(a,b)=>2*Math.acos(clamp(Math.abs(a.reduce((s,v,i)=>s+v*b[i],0)),0,1));
  const alignment=Math.max(angle(start.footQ,goal.footQ),angle(start.toeQ,goal.toeQ));
  const alignDuration=Math.max(.025,alignment/(1080*Math.PI/180));
+ const rotationPose=r=>({points:[[0,0,0],[0,0,0]],q:[r.footQ,r.toeQ]});
+ const alignmentMotion=C.transition(t=>rotationPose(t<0&&previousRotation?previousRotation:start),()=>rotationPose(goal),alignDuration,[-1,-1]);
  const rollAngle=Math.max(0,settings.toeOffPitch-pitch),rate=settings.footRollSpeed;
  let pushStart=Infinity,frames=[];
- const rotationAt=t=>{const x=clamp(t/alignDuration,0,1),base=blendRotation(start,goal,x*x*(3-2*x));
+ const rotationAt=t=>{const pose=alignmentMotion(t),base={footQ:pose.q[0],toeQ:pose.q[1]};
   const a=Math.min(rollAngle,Math.max(0,t-pushStart)*rate)*Math.PI/180,q=R.qexp(mul(goal.right,a));
   return {footQ:qm(q,base.footQ),toeQ:qm(q,base.toeQ)};
  };

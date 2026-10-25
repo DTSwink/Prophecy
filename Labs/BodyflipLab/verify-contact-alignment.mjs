@@ -8,7 +8,8 @@ const m=read('data/manifest.json'),jumps=['data/jumps.json','data/jumps-standing
 const settings=C.sanitize({runPhase:.61,supportCone:60,supportAlpha:6,supportSpeed:400,footRollSpeed:400,jumpEvents:[{id:'first',time:53/60,surface:'floor'},{id:'second',time:115/60,surface:'auto'},{id:'third',time:146/60,surface:'auto'}]});
 const run=F.decodeNN(await(await fetch('http://127.0.0.1:8876/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gait:'run',duration:5,phase:.61,drawn:true})})).json());
 const start=performance.now(),sequence=F.sequence(run,jumps,settings,m.parents),planMs=performance.now()-start;
-check('Changed first-foot choice reports later misses without launch',sequence.events[0].status==='Push'&&sequence.events.slice(1).every(e=>e.status==='Miss'));
+// Whole-body matching and carried transition velocity change later arrival poses.
+check('Moving matched-body fixture makes two pushes then reports the last miss',sequence.events.slice(0,2).every(e=>e.status==='Push')&&sequence.events[2].status==='Miss');
 const fixture=read('data/cone-choice-case.json'),incoming={...fixture.pose,axes:fixture.pose.q.map(R.toAxes)};
 const isolated=F.create(run,jumps,fixture.settings,m.parents,incoming,{time:0,surface:S.platformSurface(fixture.surface),poseAt:t=>({...incoming,points:incoming.points.map(p=>R.add(p,R.mul(fixture.velocity,t)))}),velocityAt:()=>fixture.velocity});
 check('Frozen reported incline pose selects right and pushes',isolated.supportFoot==='R'&&isolated.contactTime===0&&isolated.bounce.didPush);

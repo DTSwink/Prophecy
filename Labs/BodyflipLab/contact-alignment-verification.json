@@ -1,20 +1,32 @@
 {
   "passed": true,
   "checks": [
-    "Changed first-foot choice reports later misses without launch",
+    "Moving matched-body fixture makes two pushes then reports the last miss",
     "Frozen reported incline pose selects right and pushes",
     "Contact begins at the captured ankle floor",
     "Shoe levels while contact lasts floor",
     "Sole stays on surface throughout loading and push floor",
     "Knee segment lengths remain intact floor",
     "Spring and displayed IK use the same moving ankle floor",
-    "Ankle continuous at phase boundary floor/0.8958333333333333",
-    "Foot orientation continuous at phase boundary floor/0.8958333333333333",
-    "Ankle continuous at phase boundary floor/0.9036897766590117",
-    "Foot orientation continuous at phase boundary floor/0.9036897766590117",
+    "Ankle continuous at phase boundary floor/0.8979166666666666",
+    "Foot orientation continuous at phase boundary floor/0.8979166666666666",
+    "Ankle continuous at phase boundary floor/0.9049011973539988",
+    "Foot orientation continuous at phase boundary floor/0.9049011973539988",
     "Reverse seeking does not change contact floor",
     "Both ideal markers report the selection-time comparison floor",
     "Chosen foot is closest among eligible own targets floor",
+    "Contact begins at the captured ankle right",
+    "Shoe levels while contact lasts right",
+    "Sole stays on surface throughout loading and push right",
+    "Knee segment lengths remain intact right",
+    "Spring and displayed IK use the same moving ankle right",
+    "Ankle continuous at phase boundary right/1.9416666666666667",
+    "Foot orientation continuous at phase boundary right/1.9416666666666667",
+    "Ankle continuous at phase boundary right/2.0016666666666665",
+    "Foot orientation continuous at phase boundary right/2.0016666666666665",
+    "Reverse seeking does not change contact right",
+    "Both ideal markers report the selection-time comparison right",
+    "Chosen foot is closest among eligible own targets right",
     "Contact begins at the captured ankle left",
     "Shoe levels while contact lasts left",
     "Sole stays on surface throughout loading and push left",
@@ -38,38 +50,54 @@
     "Heel/toe rotation preserves tangent side 400",
     "Existing roll speed controls forward pitch after loading 400"
   ],
-  "planMs": 35.556899999999985,
+  "planMs": 1444.8395,
   "measurements": [
     {
       "surface": "floor",
       "foot": "L",
       "initialBank": 0.043572802031687174,
-      "releaseBank": 0.0031382924437327597,
-      "maxGap": 1.6653345369377348e-16,
-      "maxBoneError": 1.6653345369377348e-16,
-      "maxTargetError": 5.417672226377439e-16,
-      "load": 0.0125,
-      "push": 0.00785644332567851,
+      "releaseBank": 0.0023557425401768417,
+      "maxGap": 2.7755575615628914e-16,
+      "maxBoneError": 2.220446049250313e-16,
+      "maxTargetError": 6.562667779292166e-16,
+      "load": 0.014583333333333334,
+      "push": 0.006984530687332156,
       "releaseVelocity": [
         0,
-        4.497596553075553,
-        5.000038146972674
+        4.29913815209646,
+        5.000001010515778
+      ]
+    },
+    {
+      "surface": "right",
+      "foot": "L",
+      "initialBank": 0.7788211118332993,
+      "releaseBank": 0,
+      "maxGap": 6.938893903907228e-16,
+      "maxBoneError": 5.551115123125783e-16,
+      "maxTargetError": 9.09180472805593e-16,
+      "load": 0.025,
+      "push": 0.05999999999999999,
+      "releaseVelocity": [
+        -1.7293455327317349,
+        4.17500943915028,
+        4.835741298902668
       ]
     },
     {
       "surface": "left",
       "foot": "R",
       "initialBank": 0.7730520493825781,
-      "releaseBank": 1.6653345369377348e-16,
+      "releaseBank": 2.220446049250313e-16,
       "maxGap": 8.881784197001252e-16,
-      "maxBoneError": 3.885780586188048e-16,
-      "maxTargetError": 7.447602459741819e-16,
+      "maxBoneError": 4.996003610813204e-16,
+      "maxTargetError": 8.005932084973443e-16,
       "load": 0.03333333333333333,
       "push": 0.029999999999999992,
       "releaseVelocity": [
-        1.7746482315224001,
-        4.284379828982808,
-        4.450881459631538
+        1.774648231522402,
+        4.2843798289828126,
+        4.450881459631539
       ]
     }
   ]

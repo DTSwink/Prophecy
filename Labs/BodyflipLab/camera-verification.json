@@ -1,0 +1,24 @@
+{
+  "passed": 16,
+  "checks": [
+    "Entering free camera preserves eye and target, including panned/top/distant views",
+    "Leaving free camera centers COM and preserves angle and viewing distance",
+    "Free left-drag turns in place",
+    "Requested inverted vertical drag is retained",
+    "Free camera ignores moving COM",
+    "Q/D strafe camera left/right",
+    "Z/S move along view direction",
+    "Diagonal movement does not speed up",
+    "Wheel retains exponential zoom and current focal point",
+    "Wheel retains unlimited dezoom",
+    "Saved free camera restores the same view",
+    "Follow resumes centered after free movement and zoom",
+    "QZDS works from a previously clicked checkbox",
+    "Releasing keys stops the camera RAF",
+    "Writing and Ctrl+Z keep their normal keys",
+    "QZDS is inactive in follow mode"
+  ],
+  "maxSwitchError": 1.0247593068766006e-12,
+  "maxRecenterError": 4.440892098500626e-16,
+  "visualVerified": false
+}

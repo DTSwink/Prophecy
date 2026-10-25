@@ -4,6 +4,18 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Bodyflip October25 - approved motion checkpoint:** user accepted the knee fix
+and requested a push. Includes Idle/shared jump controls, flat new scenes, capsule
+collision with actual NN landing continuation, free camera, matched whole-body
+jumps, opaque animation-leg overlays, motion-preserving blends and knee braking.
+Walk frame59 now bends28.67deg normally instead of71.66deg backwards; no straight
+hold or repeated recoil, original blend deadlines/contact/root retained.265
+automated checks pass. User accepted the result; agent visual tools were blocked.
+Source, idle recording and verification files are included; live scenes/settings,
+previews, inference caches and unrelated sessions stay local. Landing requires the
+existing frozen models/seeds and Stepper/Torch runtime; see restore notes.
+[Bodyflip details](Labs/BodyflipLab/README.md), [recovery](Docs/Recovery.md).
+
 **Foot IK October25 - approved checkpoint:** standalone Foot IK Lab preserved
 with frozen Walk/Run NN phase banks, terrain placement, grounded heel/toe pins,
 smooth swing recovery, full-body/ghost rendering, desktop launcher and regression

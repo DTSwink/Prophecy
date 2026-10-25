@@ -3,7 +3,8 @@
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery,C=typeof module!=='undefined'?require('./core.js'):root.BodyflipCore;
 const S=typeof module!=='undefined'?require('./support.js'):root.BodyflipSupport;
 const B=typeof module!=='undefined'?require('./bounce.js'):root.BodyflipBounce;
-const {add,sub,mul,rotate,qm,qinv,qslerp}=R,clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),smooth=t=>t*t*(3-2*t);
+const K=typeof module!=='undefined'?require('./capsule.js'):root.BodyflipCapsule;
+const {add,sub,mul,rotate,qm,qinv,qslerp}=R,clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const finish=(points,q)=>({points,q,axes:q.map(R.toAxes)});
 function translate(p,delta){return finish(p.points.map(v=>add(v,delta)),p.q);}
 function decodeNN(data){return {names:['root',...data.names],fps:data.fps,duration:data.duration,poses:data.poses.map((p,i)=>{const q=[[0,0,0,1],...p.axes.map(R.fromAxes)];return finish([data.roots[i],...p.points],q);}),roots:data.roots,source:data.source};}
@@ -27,10 +28,11 @@ function carryVelocity(incoming,normal,direction){
  return squared>1e-12?mul(line,R.dot(incoming,line)/squared):sub(incoming,mul(normal,R.dot(incoming,normal)));
 }
 function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
+ C.registerRig(run.names,parents,reference);
  settings=C.sanitize(settings);
  const supportStart=context.time??(settings.runSeconds-settings.jumpEarly),runOrigin=run.poses[0].points[0],n=run.poses.length-1;
- const speed=(run.poses[n].points[0][2]-runOrigin[2])/(n/run.fps),runDistance=speed*settings.runSeconds,edge=runDistance-.12;
- const worldRun=context.poseAt||(time=>translate(at(run,time,parents),[-runOrigin[0],0,-runOrigin[2]+Math.max(0,time-run.duration)*speed]));
+ const speed=(run.poses[n].points[0][2]-runOrigin[2])/(n/run.fps),runDistance=speed*settings.runSeconds,edge=settings.mode==='idle'?5:runDistance-.12;
+ const worldRun=context.poseAt||run.sample||(time=>translate(at(run,time,parents),[-runOrigin[0],0,-runOrigin[2]+Math.max(0,time-run.duration)*speed]));
  const last=worldRun(supportStart);
  const surface=context.surface||S.ground(edge);
  const supportVelocity=context.velocityAt?context.velocityAt(supportStart):mul(sub(worldRun(supportStart+1/240).points[0],last.points[0]),240);
@@ -52,15 +54,23 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
  // Keep the pelvis on the launch-root trajectory. The animation owns the other
  // local joints; the planted leg is solved separately until its reach boundary.
  let release=Infinity;
- const loopStart=Math.max(apex+.35,start.duration-.25),loopBlend=.25;
+ const sourceLoopStart=Math.max(apex+.35,start.duration-.25),loopBlend=.25;
+ let animationOffset=0,loopStart=sourceLoopStart,bodyEntry=null,legEntry=null;
+ const loopEntry=C.transition(t=>localRoot(at(start,sourceLoopStart+t,parents)),t=>localRoot(at(loop,t,parents,true)),loopBlend,parents);
+ const animationTime=t=>t+animationOffset;
+ function jumpAnimation(t,unretimed=false){
+  const sourceTime=unretimed?t:animationTime(t);
+  let pose=localRoot(at(start,sourceTime,parents));
+  if(sourceTime>=sourceLoopStart)pose=loopEntry(sourceTime-sourceLoopStart);
+  return pose;
+ }
  const heightAt=t=>{const f=clamp(t*start.fps,0,heights.length-1),i=Math.min(heights.length-2,Math.floor(f));return heights[i]+(heights[i+1]-heights[i])*(f-i);};
  function airPose(t){
-  let pose=localRoot(bounce&&!bounce.didPush?at(loop,t,parents,true):at(start,t,parents));const animationPose=pose;
-  if(t<settings.jumpBlend)pose=C.blend(runEnd,pose,smooth(clamp(t/Math.max(.001,settings.jumpBlend),0,1)),parents);
-  if(t>=loopStart){const airborne=localRoot(at(loop,t-loopStart,parents,true));pose=C.blend(pose,airborne,smooth(clamp((t-loopStart)/loopBlend,0,1)),parents);}
+  let pose=bounce&&!bounce.didPush?localRoot(at(loop,t,parents,true)):jumpAnimation(t);const animationPose=pose;
+  if(t<settings.jumpBlend&&bodyEntry)pose=bodyEntry(t);
   const local=R.localize(pose.points,pose.q,parents);
   for(const i of [0,pelvis]){local.p[i]=launchLocal.p[i];local.q[i]=launchLocal.q[i];}
-  // The body blend must not leak into the independently timed support leg.
+  // Both use the same animation clock, but their entry blends stay independent.
   if(t>release&&t<settings.jumpBlend){const source=R.localize(animationPose.points,animationPose.q,parents);for(const i of supportBones){local.p[i]=source.p[i];local.q[i]=source.q[i];}}
   if(t<=release)for(const i of supportBones){local.p[i]=launchLocal.p[i];local.q[i]=launchLocal.q[i];}
   // The support hip socket must not translate when the leg hands back to animation.
@@ -87,7 +97,8 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
  const footAxes=support.terminal.pose.axes[l.foot],toeDelta=sub(support.terminal.pose.points[l.toe],support.terminal.foot);
  const footForward=R.mul(footAxes[1],R.dot(footAxes[1],toeDelta)<0?-1:1);
  const landingPitch=-Math.asin(clamp(R.dot(footForward,surface.normal),-1,1))*180/Math.PI;
- const contactMotion=S.contactMotion(support.terminal,l,surface,settings);
+ const previousContactPose=support.jumpDelay>=C.motionStep?support.sample(support.jumpDelay-C.motionStep).pose:worldRun(contactTime-C.motionStep);
+ const contactMotion=S.contactMotion(support.terminal,l,surface,settings,Number.isFinite(contactTime)?{footQ:previousContactPose.q[l.foot],toeQ:previousContactPose.q[l.toe]}:null);
  let loadDuration=0;
  if(!(settings.loadMs>0))contactMotion.startPush(0);
  const rollingAt=t=>contactMotion.sample(t+loadDuration);
@@ -119,28 +130,41 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
    const ankle=add(launchLocal.p[l.hip],add(rotate(local.q[l.hip],local.p[l.knee]),rotate(qm(local.q[l.hip],local.q[l.knee]),local.p[l.foot]))),distance=R.length(sub(ankle,wanted));
    if(distance<best-1e-9||(Math.abs(distance-best)<=1e-9&&Math.abs(time-release)<Math.abs(matchTime-release))){best=distance;matchTime=time;}
   }
-  matchDistance=best;legRate=(loopStart-matchTime)/(loopStart-release);
+  matchDistance=best;
+  // Start every animated joint at the matched pose on push. Root motion and
+  // contact timing remain procedural; no limb waits for the others to catch up.
+  animationOffset=matchTime;loopStart=Math.max(0,sourceLoopStart-animationOffset);
  }
- const legTime=t=>settings.matchLeg&&t<loopStart?matchTime+Math.max(0,t-release)*legRate:t;
+ const legTime=animationTime;
+ // Seed from the actual moving pose immediately before each handoff. Body
+ // starts on push; the support chain starts independently when its pin releases.
+ if(Number.isFinite(jumpStart)){
+  const beforePush=t=>localRoot(t===0?runEnd:bounce&&bounce.loadDuration>0?loadingPose(bounce.loadDuration+t):support.sample(Math.max(0,support.jumpDelay+t)).pose);
+  const bodyTarget=t=>bounce&&!bounce.didPush?localRoot(at(loop,t,parents,true)):jumpAnimation(t);
+  bodyEntry=C.transition(beforePush,bodyTarget,settings.jumpBlend,parents);
+  const legTarget=t=>{const p=jumpAnimation(release+t),local=R.localize(p.points,p.q,parents);local.p[l.hip]=launchLocal.p[l.hip];return R.fk(local,parents);};
+  legEntry=C.transition(t=>{const age=release+t,c=contactAt(age);return S.solve(airPose(age).pose,l,c.foot,parents,settings.supportReach,c.rotation);},legTarget,settings.legBlend,parents,supportBones);
+ }
  const abortTime=supportStart+support.abortDelay;
  // A failed plant never borrows jump height. Keep momentum, release IK, then fall off the ledge.
  const edgeTime=edge/speed,fallStart=Math.max(abortTime,edgeTime),fallRoot=Number.isFinite(fallStart)?worldRun(fallStart).points[0]:null;
  // Capture the displayed pelvis at the edge, including an unfinished abort
  // blend. Fall animation may pose the limbs but cannot lift/drop the pelvis.
- const fallPose=Number.isFinite(fallStart)?C.blend(runEnd,localRoot(worldRun(fallStart)),smooth(clamp((fallStart-abortTime)/Math.max(.001,settings.jumpBlend),0,1)),parents):null;
+ const abortRecovery=Number.isFinite(abortTime)?C.transition(t=>localRoot(support.sample(Math.max(0,support.abortDelay+t)).pose),t=>localRoot(worldRun(abortTime+t)),settings.jumpBlend,parents):null;
+ const abortLeg=Number.isFinite(abortTime)&&context.continueAt?C.transition(t=>support.sample(Math.max(0,support.abortDelay+t)).pose,t=>context.continueAt(abortTime+t).pose,settings.legBlend,parents,supportBones):null;
+ const fallPose=Number.isFinite(fallStart)?abortRecovery(fallStart-abortTime):null;
  const fallLocal=fallPose?R.localize(fallPose.points,fallPose.q,parents):null;
+ const abortFall=fallPose?C.transition(t=>abortRecovery(Math.max(0,fallStart-abortTime+t)),t=>localRoot(at(loop,t,parents,true)),settings.jumpBlend,parents):null;
  function aborted(time){
-  if(context.continueAt){const frame=context.continueAt(time),from=R.localize(support.terminal.pose.points,support.terminal.pose.q,parents);const pose=S.blendLeg(frame.pose,from,l,smooth(clamp((time-abortTime)/Math.max(.001,settings.legBlend),0,1)),parents);return {...frame,pose,phase:'MISS · '+frame.phase,supportState:'FAILED',failureReason:support.failureReason,distance:support.terminal.distance};}
+  if(context.continueAt){const frame=context.continueAt(time),pose=abortLeg(time-abortTime);return {...frame,pose,phase:'MISS · '+frame.phase,supportState:'FAILED',failureReason:support.failureReason,distance:support.terminal.distance};}
   const elapsed=time-abortTime,fallTime=Math.max(0,time-fallStart),fall=cappedFall(fallTime,settings.fallCap);
-  let pose=localRoot(worldRun(time));
-  if(time>=fallStart)pose=C.blend(pose,localRoot(at(loop,fallTime,parents,true)),smooth(clamp(fallTime/Math.max(.001,settings.jumpBlend),0,1)),parents);
-  pose=C.blend(runEnd,pose,smooth(clamp(elapsed/Math.max(.001,settings.jumpBlend),0,1)),parents);
+  let pose=time>=fallStart?abortFall(fallTime):abortRecovery(elapsed);
   if(time>=fallStart){const local=R.localize(pose.points,pose.q,parents);for(const i of [0,pelvis]){local.p[i]=fallLocal.p[i];local.q[i]=fallLocal.q[i];}pose=R.fk(local,parents);}
   const root=worldRun(time).points[0].slice();if(time>=fallStart)root[1]=fallRoot[1]+fall.y;
   return {pose:translate(pose,root),root,phase:time>=fallStart?'ABORT - FALL':settings.mode==='walk'?'ABORT - WALK':'ABORT - RUN',supportState:'FAILED',failureReason:support.failureReason,distance:support.terminal.distance,speed,vy:fall.v,airTime:0};
  }
  function sample(time,flip=0,twist=0,axis=settings.axis){
-  if(time<supportStart){const pose=worldRun(time);return {pose,root:pose.points[0],phase:settings.mode==='walk'?'WALK':'RUN',speed,vy:0,airTime:0};}
+  if(time<supportStart){const pose=worldRun(time);return {pose,root:pose.points[0],phase:settings.mode==='idle'?'IDLE':settings.mode==='walk'?'WALK':'RUN',speed,vy:0,airTime:0};}
   if(time>=abortTime)return aborted(time);
   if(bounce&&time>=contactTime&&time<jumpStart){const motion=bounce.sample(time-contactTime);return {pose:loadingPose(time-contactTime),root:motion.p,phase:'LOAD',supportState:'PIN',supportTarget:contactMotion.sample(time-contactTime).contact,speed,vy:motion.v[1],airTime:0};}
   if(time<jumpStart){const frame=support.sample(time-supportStart);return {...frame,root:frame.pose.points[0],phase:'SUPPORT',supportState:'APPROACH',supportTarget:frame.surface,speed,vy:0,airTime:0};}
@@ -150,31 +174,27 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
   let supportState='FREE';
   if(t<=release){const c=contactAt(t);pose=S.solve(pose,l,c.foot,parents,settings.supportReach,c.rotation);supportState='PIN';}
   else {
-   if(settings.matchLeg&&(!bounce||bounce.didPush)&&t<loopStart){
-    const target=at(start,legTime(t),parents),source=R.localize(target.points,target.q,parents),local=R.localize(pose.points,pose.q,parents);
-    for(const i of supportBones){local.q[i]=source.q[i];if(i!==l.hip)local.p[i]=source.p[i];}
-    pose=R.fk(local,parents);supportState='MATCH';
-   }
+   if(matchDistance!==null&&t<loopStart)supportState='MATCH';
    if(t<release+settings.legBlend){
-   // Re-aim from the current hip, including any air rotation. A frozen release
-   // pose would translate with the pelvis instead of continuing to reach back.
-   const reaching=S.solve(pose,l,releaseContact.foot,parents,settings.supportReach,releaseContact.rotation),live=R.localize(reaching.points,reaching.q,parents);
-   pose=S.blendLeg(pose,live,l,smooth((t-release)/Math.max(.001,settings.legBlend)),parents);supportState='BLEND';
+   const carried=legEntry(t-release),source=R.localize(carried.points,carried.q,parents),local=R.localize(pose.points,pose.q,parents);
+   for(const i of supportBones){local.q[i]=source.q[i];if(i!==l.hip)local.p[i]=source.p[i];}
+   pose=R.fk(local,parents);supportState='BLEND';
    }
   }
   return {...frame,pose,phase:bounce&&!bounce.didPush?'MISS · FALL':t<release?'PUSH':t<apex?'RISE':t<loopStart?'FALL':'FALL LOOP',supportState,supportTarget:contactAt(t).contact,speed,airTime};
  }
  // Diagnostic only: raw animation leg, carried by the displayed procedural pelvis.
  // No locomotion crossfade, support IK or release blend enters this target.
- function animationLeg(time,displayed){
+ function animationLeg(time,displayed,unretimed=false,other=false){
   if(!displayed||bounce&&!bounce.didPush||!Number.isFinite(jumpStart)||time<jumpStart)return null;
-  const t=time-jumpStart;let target=localRoot(at(start,legTime(t),parents));
-  if(t>=loopStart)target=C.blend(target,localRoot(at(loop,t-loopStart,parents,true)),smooth(clamp((t-loopStart)/loopBlend,0,1)),parents);
+  const side=other?(l.side==='L'?'R':'L'):l.side;
+  const bones=other?['thigh','calf','foot','ball'].map(name=>run.names.indexOf(name+'_'+side.toLowerCase())):supportBones;
+  const t=time-jumpStart,target=jumpAnimation(t,unretimed);
   const source=R.localize(target.points,target.q,parents),local=R.localize(displayed.points,displayed.q,parents);
-  for(const i of supportBones){local.q[i]=source.q[i];local.p[i]=source.p[i];}
-  local.p[l.hip]=launchLocal.p[l.hip];
+  for(const i of bones){local.q[i]=source.q[i];local.p[i]=source.p[i];}
+  local.p[bones[0]]=launchLocal.p[bones[0]];
   const pose=R.fk(local,parents);
-  return {foot:l.side,points:supportBones.map(i=>pose.points[i])};
+  return {foot:side,pose,points:bones.map(i=>pose.points[i])};
  }
  function coneDebug(time,displayed){
   if(!displayed||time>jumpStart+release||time>abortTime)return null;
@@ -193,23 +213,36 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
   if(bounce&&!bounce.didPush||!Number.isFinite(jumpStart)||jumpStart>=abortTime||age<-1e-7||age>=3-1e-7)return null;
   return {origin:contactAt(0).contact,direction};
  }
- return {sample,animationLeg,coneDebug,idealDebug,pushDebug,contactTime,contactMotion,bounce,surface,direction,carriedVelocity:tangent,incomingVelocity:incoming,landingPitch,legTime,matchTime,matchDistance,legRate,edge,speed,takeoffSpeed,standingThreshold,jumpStyle,lift:release,apex,start:start.name,sourceStart:start.sourceStart,supportFoot:l.side,supportScores:support.scores,loopStart,runSeconds:settings.runSeconds,supportStart,jumpStart,abortTime,failureReason:support.failureReason,airStart:jumpStart+release,support,release};
+ return {sample,animationLeg,coneDebug,idealDebug,pushDebug,contactTime,contactMotion,bounce,surface,direction,carriedVelocity:tangent,incomingVelocity:incoming,landingPitch,animationTime,legTime,matchTime,matchDistance,legRate,edge,speed,takeoffSpeed,standingThreshold,jumpStyle,lift:release,apex,start:start.name,sourceStart:start.sourceStart,supportFoot:l.side,supportScores:support.scores,loopStart,sourceLoopStart,runSeconds:settings.runSeconds,supportStart,jumpStart,abortTime,failureReason:support.failureReason,airStart:jumpStart+release,support,release};
 }
 function fallFrom(t,v,cap){v=Math.max(-cap,v);const tc=Math.max(0,(v+cap)/9.81),a=Math.min(t,tc);return {y:v*a-.5*9.81*a*a-cap*Math.max(0,t-tc),v:Math.max(-cap,v-9.81*t)};}
 function eventsFor(settings){return settings.jumpEvents??[{id:'first',time:Math.round((settings.runSeconds-settings.jumpEarly)*60)/60,surface:'floor'}];}
-function sequence(run,jumps,input,parents,reference=run.poses[0]){
- const settings=C.sanitize(input),origin=run.poses[0].points[0],speed=(run.poses.at(-1).points[0][2]-origin[2])/((run.poses.length-1)/run.fps),edge=speed*settings.runSeconds-.12;
+function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null){
+ C.registerRig(run.names,parents,reference);
+ const settings=C.sanitize(input),origin=run.poses[0].points[0],speed=(run.poses.at(-1).points[0][2]-origin[2])/((run.poses.length-1)/run.fps),edge=settings.mode==='idle'?5:speed*settings.runSeconds-.12;
  const surfaces=S.scene(edge,settings),events=[],segments=[],loop=jumps.find(c=>c.name.endsWith('_Loop_Fall'));
- const gait=t=>translate(at(run,t,parents),[-origin[0],0,-origin[2]+Math.max(0,t-run.duration)*speed]);
- const edgeTime=edge/speed,edgePose=gait(edgeTime),edgeLocal=R.localize(edgePose.points,edgePose.q,parents),pelvis=run.names.indexOf('pelvis');
+ const gait=run.sample||(t=>translate(at(run,t,parents),[-origin[0],0,-origin[2]+Math.max(0,t-run.duration)*speed]));
+ const edgeTime=settings.mode==='idle'?Infinity:edge/speed,edgePose=gait(Number.isFinite(edgeTime)?edgeTime:0),edgeLocal=R.localize(edgePose.points,edgePose.q,parents),pelvis=run.names.indexOf('pelvis');
+ const edgeFall=Number.isFinite(edgeTime)?C.transition(t=>localRoot(gait(edgeTime+t)),t=>localRoot(at(loop,t,parents,true)),settings.jumpBlend,parents):null;
  const baseline=t=>{
-  if(t<=edgeTime){const pose=gait(t);return {pose,root:pose.points[0],phase:settings.mode==='walk'?'WALK':'RUN',speed,vy:0,airTime:0};}
+  if(t<=edgeTime){const pose=gait(t);return {pose,root:pose.points[0],phase:settings.mode==='idle'?'IDLE':settings.mode==='walk'?'WALK':'RUN',speed,vy:0,airTime:0};}
   const elapsed=t-edgeTime,fall=cappedFall(elapsed,settings.fallCap),root=add(edgePose.points[0],[0,fall.y,speed*elapsed]);
-  const p=C.blend(localRoot(edgePose),localRoot(at(loop,elapsed,parents,true)),smooth(clamp(elapsed/Math.max(.001,settings.jumpBlend),0,1)),parents),local=R.localize(p.points,p.q,parents);
+  const p=edgeFall(elapsed),local=R.localize(p.points,p.q,parents);
   for(const i of [0,pelvis]){local.p[i]=i===0?[0,0,0]:edgeLocal.p[i];local.q[i]=edgeLocal.q[i];}
   return {pose:translate(R.fk(local,parents),root),root,phase:'FALL',speed,vy:fall.v,airTime:elapsed};
  };
- let previous=baseline;
+ const phase=settings.mode==='idle'?'IDLE':settings.mode==='walk'?'WALK':'RUN';
+ const fallTransitions=new WeakMap();
+ const fallPose=(from,elapsed,fromPose=gait(from),previousPose=gait(from-C.motionStep))=>{
+  let transition=fallTransitions.get(fromPose);
+  if(!transition){transition=C.transition(t=>localRoot(t<0?previousPose:fromPose),t=>localRoot(at(loop,t,parents,true)),settings.jumpBlend,parents);fallTransitions.set(fromPose,transition);}
+  const rest=localRoot(fromPose),p=transition(elapsed),local=R.localize(p.points,p.q,parents),base=R.localize(rest.points,rest.q,parents);
+  for(const i of [0,pelvis]){local.p[i]=base.p[i];local.q[i]=base.q[i];}return R.fk(local,parents);
+ };
+ const horizon=Math.max(12,settings.trimOut,...eventsFor(settings).map(e=>e.time+5));
+ const carrierOptions={surfaces,speed,gait,fallPose,cap:settings.fallCap,phase,resume,horizon};
+ const baselineCarrier=K.track(baseline,carrierOptions);
+ let previous=t=>baselineCarrier.sample(t);
  for(const event of eventsFor(settings)){
   const prior=previous,frame=prior(event.time),last=segments.at(-1);
   if(last&&event.time<Math.min(last.jumpStart+last.release,last.abortTime)-1e-8){events.push({...event,status:'Busy',reason:'Previous support / push still active'});continue;}
@@ -227,18 +260,45 @@ function sequence(run,jumps,input,parents,reference=run.poses[0]){
   segment.surfaceChoices=ranked.map(r=>({surface:r.surface.id,foot:r.foot,eligible:r.available,contactGap:r.contactGap,pelvisGap:r.gap}));
   segment.event=event;segments.push(segment);
   events.push({...event,surfaceId:surface.id,status:Number.isFinite(segment.jumpStart)&&(!segment.bounce||segment.bounce.didPush)?'Push':'Miss',contactTime:segment.contactTime,pushTime:segment.jumpStart,releaseTime:segment.airStart,reason:segment.bounce&&!segment.bounce.didPush?'Contact ended before push':segment.failureReason});
-  previous=t=>{if(t<event.time)return prior(t);const air=Math.max(0,t-segment.airStart);return segment.sample(t,settings.airFlip?settings.flipAngle+settings.flipSpeed*air:0,settings.airFlip?settings.twistAngle+settings.twistSpeed*air:0,settings.axis);};
+  const raw=t=>{const air=Math.max(0,t-segment.airStart);return segment.sample(t,settings.airFlip?settings.flipAngle+settings.flipSpeed*air:0,settings.airFlip?settings.twistAngle+settings.twistSpeed*air:0,settings.axis);};
+  segment.carrier=K.track(raw,{...carrierOptions,start:event.time,correctPose:(pose,frame)=>{const l=segment.support.leg;return frame.supportState==='PIN'?S.solve(pose,l,frame.pose.points[l.foot],parents,settings.supportReach,{footQ:frame.pose.q[l.foot],toeQ:frame.pose.q[l.toe]}):pose;}});
+  previous=t=>t<event.time?prior(t):segment.carrier.sample(t);
  }
  const activeAt=t=>{for(let i=segments.length-1;i>=0;i--)if(t>=segments[i].supportStart)return segments[i];return segments[0]||null;};
  const sample=(t,flip=0,twist=0,axis=settings.axis)=>{
   let segment=null;for(let i=segments.length-1;i>=0;i--)if(t>=segments[i].supportStart){segment=segments[i];break;}
-  const frame=segment?segment.sample(t,flip,twist,axis):baseline(t);
+  const frame=segment?segment.carrier.sample(t,segment.sample(t,flip,twist,axis)):baselineCarrier.sample(t);
   return {...frame,supportFoot:segment?.supportFoot,surface:segment?.surface};
  };
+ for(let i=0;i<segments.length;i++)segments[i].carrier.prepare(segments[i+1]?.supportStart??horizon);
+ baselineCarrier.prepare(segments[0]?.supportStart??horizon);
  return {...(segments[0]||{}),edge,speed,surfaces,events,segments,activeAt,sample,
-  airStartAt:t=>{const s=activeAt(t);return s&&t>=s.supportStart?s.airStart:Infinity;},
+  capsule:{radius:K.radius,halfHeight:K.halfHeight},get landings(){return [{carrier:baselineCarrier},...segments].flatMap((s,i)=>s.carrier.landings.filter(l=>l.time<(segments[i]?.supportStart??Infinity)).map(l=>({time:l.time,root:l.root,surfaceId:l.surfaceId})));},
+  airStartAt:t=>{const s=activeAt(t);return s&&t>=s.supportStart&&!s.carrier.state(t).landed?s.airStart:Infinity;},
   pushDebug:t=>{for(let i=segments.length-1;i>=0;i--){const push=segments[i].pushDebug(t);if(push)return push;}return null;},
-  animationLeg:(t,p)=>activeAt(t)?.animationLeg(t,p),coneDebug:(t,p)=>activeAt(t)?.coneDebug(t,p),idealDebug:t=>activeAt(t)?.idealDebug(t)};
+  animationLeg:(t,p,unretimed=false,other=false)=>{const s=activeAt(t);return s&&!s.carrier.state(t).landed?s.animationLeg(t,p,unretimed,other):null;},coneDebug:(t,p)=>{const s=activeAt(t);return s&&!s.carrier.state(t).landed?s.coneDebug(t,p):null;},idealDebug:t=>{const s=activeAt(t);return s&&!s.carrier.state(t).landed?s.idealDebug(t):null;}};
 }
-const api={carryVelocity,jumpDirection,decodeNN,decodeJump,at,create,sequence,eventsFor,cappedFall,localRoot,trimStart};if(typeof module!=='undefined')module.exports=api;else root.BodyflipFlight=api;
+const continuationCache=new Map();
+async function prepare(run,jumps,input,parents,reference,generate,cancelled=()=>false){
+ const settings=C.sanitize(input),preparedSeeds=new Map();
+ function resume(data){
+  const request={gait:settings.mode==='jump'?'run':'walk',drawn:settings.attack==='pike'||settings.attack.startsWith('slash'),names:run.names,frames:data.frames,roots:data.roots,seeds:data.seeds.map(p=>({points:p.points,axes:p.axes}))};
+  const key=JSON.stringify(request);let clip=preparedSeeds.get(key)||continuationCache.get(key);
+  if(!clip)throw {landingRequest:request,key};
+  preparedSeeds.set(key,clip);
+  return time=>at(clip,Math.max(0,time-data.time),parents);
+ }
+ for(;;){
+  if(cancelled())return null;
+  try{return sequence(run,jumps,settings,parents,reference,resume);}
+  catch(error){
+   if(!error.landingRequest)throw error;
+   const result=await generate(error.landingRequest);
+   if(cancelled())return null;
+   const clip=decodeNN(result);preparedSeeds.set(error.key,clip);continuationCache.set(error.key,clip);
+   while(continuationCache.size>8)continuationCache.delete(continuationCache.keys().next().value);
+  }
+ }
+}
+const api={carryVelocity,jumpDirection,decodeNN,decodeJump,at,create,sequence,prepare,eventsFor,cappedFall,localRoot,trimStart};if(typeof module!=='undefined')module.exports=api;else root.BodyflipFlight=api;
 })(globalThis);

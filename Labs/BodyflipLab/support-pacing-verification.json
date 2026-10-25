@@ -27,31 +27,31 @@
     "Receding unreachable surface cannot manufacture a jump",
     "Lower speed remains a real maximum"
   ],
-  "planMs": 106.64089999999999,
+  "planMs": 409.791,
   "measurements": [
     {
       "jump": "first",
       "captureFrame": 53,
       "maxTravelCmS": 0,
-      "minGapCm": -3.3306690738754696e-14,
+      "minGapCm": -3.469446951953614e-14,
       "maxReachCm": 0,
       "limitCm": 80.79565813380245
     },
     {
       "jump": "second",
       "captureFrame": 103.49999999999999,
-      "maxTravelCmS": 400.0000000000019,
-      "minGapCm": -1.1102230246251565e-13,
-      "maxReachCm": 79.02781235474222,
-      "limitCm": 80.59444268544851
+      "maxTravelCmS": 400.00000000001756,
+      "minGapCm": -7.771561172376096e-14,
+      "maxReachCm": 79.16205227967862,
+      "limitCm": 80.60254045723667
     },
     {
       "jump": "third",
-      "captureFrame": 137.25,
-      "maxTravelCmS": 400.0000000000198,
-      "minGapCm": -8.881784197001252e-14,
-      "maxReachCm": 79.00556421483587,
-      "limitCm": 80.63126582946421
+      "captureFrame": 136.75,
+      "maxTravelCmS": 400.0000000000328,
+      "minGapCm": -1.5543122344752192e-13,
+      "maxReachCm": 80.34957675631439,
+      "limitCm": 80.6681747951592
     }
   ]
 }

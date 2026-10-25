@@ -1,0 +1,78 @@
+{
+  "passed": 78,
+  "measurements": [
+    {
+      "options": {
+        "mode": "walk"
+      },
+      "minDegrees": 3.851667998546885,
+      "maxDegrees": 115.76648382070861,
+      "minimumAt": 0.9434166666666638,
+      "releaseVelocityError": 0.0619228191500838
+    },
+    {
+      "options": {
+        "mode": "jump"
+      },
+      "minDegrees": 4.09666024628274,
+      "maxDegrees": 128.9603966847636,
+      "minimumAt": 0.9895833333333258,
+      "releaseVelocityError": 0.00886204909456012
+    },
+    {
+      "options": {
+        "mode": "walk",
+        "jumpFoot": "L"
+      },
+      "minDegrees": 4.114645860801531,
+      "maxDegrees": 87.58409915025993,
+      "minimumAt": 0.9949999999999923,
+      "releaseVelocityError": 0.015166785882762213
+    },
+    {
+      "options": {
+        "mode": "walk",
+        "legBlend": 0.05,
+        "jumpBlend": 0.4
+      },
+      "minDegrees": 1.4359300552463006,
+      "maxDegrees": 115.76648382070861,
+      "minimumAt": 0.941416666666664,
+      "releaseVelocityError": 0.059529041585022924
+    },
+    {
+      "options": {
+        "mode": "walk",
+        "legBlend": 0.6,
+        "jumpBlend": 0.05
+      },
+      "minDegrees": 4.0574030168066475,
+      "maxDegrees": 88.17583904132272,
+      "minimumAt": 0.9439166666666637,
+      "releaseVelocityError": 0.06221547382834558
+    },
+    {
+      "options": {
+        "mode": "jump",
+        "runPhase": 0.5,
+        "jumpFoot": "L"
+      },
+      "minDegrees": 3.7769780587324444,
+      "maxDegrees": 124.11693576042511,
+      "minimumAt": 0.9673333333333283,
+      "releaseVelocityError": 0.05035866273983203
+    },
+    {
+      "options": {
+        "mode": "walk",
+        "loadMs": 0
+      },
+      "minDegrees": 2.8621189326542757,
+      "maxDegrees": 115.76648382070874,
+      "minimumAt": 0.9429999999999953,
+      "releaseVelocityError": 0.027118480294689107
+    }
+  ],
+  "attackMinDegrees": 11.716456206506356,
+  "attackMaxDegrees": 109.46071320776201
+}

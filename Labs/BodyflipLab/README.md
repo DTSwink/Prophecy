@@ -11,7 +11,9 @@ Do not reorganize controls by topic when adding a feature. Cone angle is last in
 More options; Cone debug is after Bones in the viewport toggle row. At the user's
 request, More options is now a collapsed dropdown under the view buttons at the
 top right of the viewport. Its internal order is unchanged; expanded contents
-scroll within the viewport. It remains hidden in Space mode.
+scroll within the viewport. The same controls remain available in Idle, Walk and Run.
+Refresh is now beside the brand, just above the viewport's left edge, as requested.
+Its existing save-and-restore playback behavior is unchanged.
 
 Camera drag correction (October25): left-drag horizontal orbit now subtracts
 dx from yaw; the previously requested inverted vertical mapping still subtracts
@@ -19,9 +21,240 @@ dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
 
+## Prevent backwards knees during blends - October 25
+
+Approved checkpoint: the user accepted this result and requested a push. This
+also preserves the Idle/new-scene controls, capsule/NN landing, free camera,
+matched whole-body jump and opaque leg overlays added since the previous push.
+Live scenes/settings remain in ignored `state.json`; restore dependencies below
+now distinguish cached locomotion from actual NN landing continuation.
+
+The Walk fixture at frame59 exposed an invalid inertial transition: the supporting
+right knee kept its roughly67rad/s extension speed for too long and bent71.66deg
+backwards. `core.transition` now checks both knees against the existing0-150deg
+hinge range while preparing its trajectory. If carried velocity would exceed it,
+that velocity decays sooner with a smooth exponential brake. The thigh, calf,
+foot and toe share the decay; the remaining displacement fades over the original
+Body/Leg duration. There is no rendered-angle clamp, straight-leg hold, new control
+or per-playback-frame constraint search. The original animation deadline and
+incoming velocity are retained. The same helper covers jump/body/leg, fall, miss
+and attack transitions. Rig registration uses the existing skeleton/reference.
+
+Frame59 now bends28.67deg normally; the dense Walk trajectory reaches a minimum
+3.85deg, turns once and continues toward the moving target. Push/release times,
+authored root path and the reported pinned contact are unchanged. Also removed
+the redundant1um shortening in the IK solve (below full extension): it caused a
+tiny pre-release knee lock in the zero-loading case that disagreed with the
+velocity used to seed the blend. Full-extension singularity protection remains.
+
+78 new checks cover the reproduced failure, both support legs, Walk/Run, phase,
+short/long independent blends, zero loading, joint range, source bone-length
+ranges, release/end velocities, no straight hold/repeated recoil, deadlines,
+reverse seeks and all16 attack families. Existing38 motion,53 matched-body,
+48 contact,24 pacing and24 capsule/NN-landing checks also pass (265 total).
+Three-jump preparation measured1.38s versus1.36s without knee braking in the same
+process; playback remains cached/stateless. JS syntax passes. Visual inspection
+was attempted but both browser and desktop tools failed to initialize (kernel
+assets path error). Refresh needed. No live-state overwrite, UI changes, server
+restart, Unreal edits or push.
+
+## Preserve movement through transitions - October 25
+
+Body, supporting-leg release, jump-to-fall, ledge-fall and missed-support recovery
+now carry the outgoing local position/angular velocity into the moving animation.
+The shared `core.transition` samples the source just before the handoff, seeds a
+pose/velocity offset against the incoming motion, and removes that offset over
+the existing blend duration. Both offset and offset velocity reach zero at the
+end. FK keeps the skeleton connected; offset directions preserve bone lengths.
+Sampling is deterministic with seeds cached during preparation, so paused scrubs
+and reverse playback need no per-frame history or extra inference.
+
+Body still starts at PUSH; Leg still starts at pin release. Contact and procedural
+root/pelvis constraints retain ownership. Contact alignment also carries the
+incoming shoe rotation rather than restarting at zero angular speed; existing
+heel/toe speed and contact fitting remain. This can change reach-release timing
+and the closest source frame chosen by Match foot. No new eligibility gates.
+Attack entry meets the first clip frame with its authored velocity, return keeps
+the terminal velocity, and the moving locomotion/attack layer has smooth entry
+and exit weights. Original attack lead/tail durations and hit windows remain.
+Actual NN landing feedback is retained without adding a cached-gait crossfade.
+
+Validation:38 motion-transition checks (all16 melee/sword families),53 whole-body
+match checks,48 contact alignment,24 support pacing and24 capsule/NN-landing checks
+pass. Boundary angular-velocity errors: PUSH0.000273, release0.00850rad/s at a1us
+measurement interval; source-keyframe slope changes are accounted for separately.
+Frame59-60 left ankle advances9.32cm in the flat Run fixture, with forward progress
+through the entry. The contact fixture's expected later events were updated to two
+pushes then one miss because the incoming poses changed; geometric/continuity
+assertions remain. JS syntax checked. No visual QA. Refresh needed; landing NN
+preparation may recompute from the new poses using the existing single-thread CPU
+worker. No server restart, live-state overwrite, Unreal edit or new UI controls.
+
+## Whole-body matched jump - October 25
+
+Visualization update: Anim other leg is immediately right of Anim leg, as
+requested, and independently shows the opposite leg on the same matched clock.
+Anim leg, Anim other leg and Raw leg now draw the agent's full-size thigh/calf
+capsules and foot/toe boxes rather than bones. Capsule definitions and foot-box
+construction are shared with the agent renderer. Supporting Anim leg is green,
+Anim other leg is now red, and Raw leg stays red. All are fully opaque and now
+render in the normal scene depth pass, so front surfaces correctly hide back
+surfaces and the agent/platforms occlude them normally. Removed the old X-ray
+pass, which drew rear triangles over front triangles after opacity was removed. No extra
+physics bodies are created. The new toggle defaults off, persists per scene and
+only redraws/saves. 53 focused checks pass, including opposite-side selection and
+clock agreement for left/right support. JS syntax checked; visual QA not performed.
+
+Match foot now chooses the closest supporting-ankle frame as before, then starts
+all animated joints at that frame on PUSH and plays at 1x. The old support-only
+slowdown is removed. The pelvis/root path and foot pinning remain procedural.
+Body now carries movement from the push pose over Body seconds; the supporting leg keeps
+its independent Leg blend starting at release. Loading continues locomotion.
+The whole body reaches the falling loop earlier by the matched source offset;
+this changes animation timing, not jump height, velocity, contact or release.
+Turning Match foot off starts the jump clip normally. Its existing UI position
+and saved setting are retained; the readout now says Body and reports 1.000x.
+
+Green Anim leg previews the shared matched animation before IK/blending. Red
+Raw leg remains on the original elapsed-since-push clock, so the overlays can
+differ from the first push frame. Both follow their own fall-loop transition.
+47 focused checks cover both support sides, standing jumps, zero loading,
+independent blend durations, source rotations, pins, root path and reverse seek.
+Measured root/pin change is zero; local quaternion error is below 4.5e-16.
+No visual QA. Refresh to load; landing NN preparation uses the new landing pose.
+
+Resolved frame59-60 diagnosis (before the transition correction above): supporting side R; left leg uses Body0.2s.
+At PUSH0.9604167s, body blending starts from the captured launch pose with
+smoothstep weight (zero initial slope), losing the incoming gait velocity.
+Weights at59/60 are3.638%/10.201%; left ankle advances only8.47mm relative to the
+pelvis between those frames, after48.09mm/frame at56-57. This created a visible
+near-stop; the movement-preserving transitions above replace that implementation.
+
+## Raw leg overlay - October 25
+
+Raw leg is appended after Free camera, off by default and saved with scene settings.
+It shows the supporting leg in red at the original jump timing (elapsed since
+push, retaining the existing takeoff trim), attached to the displayed pelvis.
+It bypasses the matched-frame offset, support IK and release blending. Anim leg
+is green and shows the matched target; both can be enabled for comparison.
+Both follow their animation clock's fall transition and hide after capsule landing. Toggling
+only redraws/saves; it does not recompute motion. Current Scene 2 samples match
+normal animation to 1.15e-16m and differ from the retimed leg by up to 0.786m.
+JS syntax checked; no visual verification. Refresh to load.
+
+## Free camera - October 25
+
+Free camera is appended after Show jump in the existing viewport checkbox row.
+Enabling captures the rendered eye, direction and viewing distance, including pan;
+it stops following COM without changing the view. Q/Z/D/S are left/forward/right/
+back, using the typed keys (AZERTY supported). Movement is camera-relative at3m/s,
+with normalized diagonals. Left-drag looks around from the eye and retains the
+requested inverted vertical direction. Wheel keeps exponential zoom with unlimited
+dezoom; middle-pan and right-drag target editing remain available. A click still
+selects a platform; dragging cancels selection as before.
+
+Disabling snaps the agent's COM to screen center, retaining the current viewing
+direction and distance and clearing pan/offset, then follows COM movement.
+Camera state is saved per scene, including
+free position; explicit view presets/reset return to follow mode. Text entry,
+Ctrl+Z and platform W/E/R controls retain their keys. Held movement works when
+paused, releases on key-up/focus loss/hide, and schedules no camera frames at rest.
+No motion preparation or NN inference is triggered by camera controls.
+
+16 focused camera checks pass, including unchanged entry and recentered exit for
+panned/top/distant views, in-place rotation, movement, wheel, restore and input
+ownership. Scenes21 and refresh14 passed with the original free-camera change.
+Visual QA unavailable; Refresh loads
+this change. No server restart, saved-state overwrite or Unreal work.
+
+## Capsule root collision and landing - October 25
+
+The upright carrier uses native AProphecyAgent dimensions: 30cm radius, 86cm
+half-height. Root is its lowest point, matching GetRootLowPoint and
+SetManagedRootLowPoint. Native source was inspected; no editor was launched or
+modified, and Blueprint-instance overrides were not queried.
+
+`capsule.js` sweeps finite oriented platform boxes, including sides/undersides,
+slides and resolves initial overlap. The capsule stays upright while the body
+flips. Pinned feet retain their world contact when the resolved root moves.
+Descending supporting contact resumes locomotion; wall/ceiling hits do not land.
+Gaps and edges still fall with the selected speed cap, and later markers can jump.
+
+**Landing handoff correction:** the earlier immediate replacement with a cached
+gait pose was a snap. Now capture the resolved landing pose and the preceding
+1/30-second pose. `resume_locomotion.py` encodes both into the actual lower41 and
+upper90 recurrent states: pelvis, ankle positions/orientations, thigh directions,
+toe hinges, upper local rotations and wrists. It uses the original frozen Run or
+Walk and Upper checkpoints/codecs, matching the channels in Unreal's
+EncodeComponentPoseToNNStates. Capsule-resolved root positions supply the movement
+history and future commands, and decoded predictions stay attached to that root.
+Idle uses Walk with zero root movement after landing; its pre-jump authored idle
+loop remains unchanged. The first output preserves the supplied landing exactly;
+following frames are NN predictions, interpolated at the usual 30Hz policy rate.
+There is no extra fade into a cached gait. Subsequent jumps start from this new
+continuation. Air-flip/twist/axis changes rebuild the landing seed on commit.
+
+`flight.prepare` prepares dependent landings in chronological order; old or
+cancelled preparations cannot overwrite newer controls. `sequence` alone is a
+collision/planning helper: without a resume provider it holds the captured pose.
+The app always uses `prepare`. Initial locomotion still uses the existing phase
+banks. The seeded continuation covers the prepared timeline (at least 12seconds,
+all markers plus5seconds, and Trim Out); seeks/replays reuse it deterministically.
+This is kinematic authored-pose feedback, not live Jolt-body/attack-overlay feedback
+or a complete port of Unreal's mover. Static-slab collision remains lab code.
+
+`/resume` uses one serial CPU worker, one Torch/BLAS thread, no GPU/training. It
+traces the original policy step to avoid repeated Python dispatch and checks the
+compiled output against the eager functions. Decoding is batched. Playback does
+no inference. The worker exits after30 idle seconds; eight client continuations,
+16 compressed disk results and four compiled gait/mode steps bound ordinary cache
+retention in ignored `.resume-cache`. The first uncached setup can take several
+seconds (measured7.4s with compiled weights available); repeated disk requests
+were14ms. One second of new policy motion took0.245s in the focused check. Own
+loopback server8876 restarted for API5; state.json hash unchanged. No new UI,
+Unreal change, other-session restart or push.
+
+Validation: 24 capsule checks, 11 landing-codec/NN checks,20 idle,21 scenes,
+14 refresh and24 support-pacing checks. The compiled step matched the original
+lower step/eager upper through30 recovery predictions with zero measured error.
+Perturbing the current foot or previous wrist changes the next prediction, proving
+both current pose and motion history are consumed. Across landing, maximum joint
+position difference at times separated by0.1microseconds was0.000268mm (continuous
+motion, no cached-pose jump). Flat Idle lands at1.85417s; capsule clearance is1um.
+Run/Walk, repeat jumps, capsule motion and reverse seeking also pass.
+Browser verification is unavailable (CUA kernel-assets error); Refresh is needed.
+
+## Idle sequence - October 25
+
+Idle replaces Space as the stationary starting motion, not a separate feature
+mode. All jump controls, markers, trim brackets, More options, attacks and debug
+views are available in Idle, Walk and Run. The same support/load/push/fall planner
+uses the neutral idle loop before the first marker; with no markers it idles
+indefinitely. Phase sets its initial animation phase. The existing speed threshold
+selects the standing jump automatically, and airborne flip/twist work as usual.
+Default marker timing still comes from duration minus Early, until edited manually.
+
+The frozen M_Neutral_Stand_Idle_Loop has301frames at30Hz (10seconds), stationary
+horizontal root and grounded shoes. The original flat platform remains beneath
+it (five-metre forward edge); zero locomotion speed never triggers an automatic
+ledge fall. Scheduled jumps retain the same finite-surface/contact/failure rules.
+Local animation comes from the matching frozen neutral_idle.npz SHA256;
+`export_idle.py` reproduces it. After a landing, the seeded zero-speed NN described
+above takes over; this supersedes the original no-inference return behavior.
+
+The earlier Idle-only bypass incorrectly hid controls and ignored markers; removed.
+Tests cover standing/repeated/delayed jumps, indefinite idle without markers,
+phase, airborne rotation, reverse seeking and shared control visibility, plus
+original loop/grounding checks. Scene/refresh/run-pacing regressions also checked.
+Visual verification remains unavailable.
+
 ## Named scenes and checkpoint - October 25
 
-The header now ends with a scene picker, **Copy**, and **Rename**, after Refresh.
+The header has a scene picker, **Copy**, and **Rename** after Refresh, with
+**New scene** at the far top right. New scene creates a named, paused setup at
+frame zero with just the original flat platform, default tuning/camera and one
+default jump. It saves the outgoing scene first; it does not copy its layout or
+jump schedule. The platform reset migration preserves this flat-only setup.
 Existing single-scene saves become **Inclines** on first load. Copy asks for a
 name and creates an independent paused copy of the current setup. Edit its
 platforms and jump markers freely, then use the picker to return to the original.
@@ -38,7 +271,7 @@ adding scenes; it is independent of subsequent edits to live state. To restore i
 close the lab page, copy it to `state.json`, then reopen the lab. This replaces the
 live library, so retain a copy of `state.json` first if it contains other scenes.
 
-16 scene checks cover migration, independent edits, camera/playback round trips,
+21 scene checks cover fresh flat scenes, migration, independent edits, camera/playback round trips,
 actual app copy/switch handlers, queued writes, cancellation and save failure.
 Refresh14 and support-pacing24 also pass. Browser verification remains unavailable
 (kernel-assets initialization error); existing controls retain their order.
@@ -531,7 +764,11 @@ the saved tuning and camera at push time. Live `state.json` stays ignored.
 On a fresh restore, copy `saved-profile.json` to `state.json` before opening the
 lab; do not overwrite an existing profile unless you want that saved snapshot.
 
-Playback requires Python 3 and Edge/Chrome; no Torch, live NN inference or Unreal.
+Playback requires Python 3 and Edge/Chrome; Unreal is not required. Initial
+locomotion uses the included phase banks. Since the capsule-landing update,
+preparing a landing also requires the existing Stepper/Torch runtime and frozen
+models/seeds for actual NN continuation; Python alone is no longer sufficient
+for the complete current sequence.
 The desktop launcher currently expects the recorded Stepper Python path. If that
 path is unavailable, run `python Labs/BodyflipLab/server.py --port 8876` from the
 project root and open http://127.0.0.1:8876/ in a browser. Recreate the desktop
@@ -540,7 +777,11 @@ icon with `install_shortcut.ps1` after configuring that launcher path.
 Original model copies and NPZ seeds, temporary Unreal export project, logs,
 browser profile, snapshots and historical preview images are excluded. Model
 provenance records their source paths/hashes; these external inputs and the
-Stepper runtime are required only to regenerate the included phase banks.
+Stepper runtime are required for landing continuation and phase-bank regeneration.
+The three policy checkpoints are already backed up under
+`Tools/Recovery/Checkpoints/`; copy the matching hashes listed in
+`models/provenance.json` into `models/run.pt`, `walk.pt` and `upper.pt` on restore.
+The four NPZ seeds and original Stepper Python modules remain external dependencies.
 Latest split-blend and foot-roll previews are retained as small review images.
 
 ## Cone-constrained sole target - October 25
@@ -699,6 +940,9 @@ pass; receipt `timeline-focus-verification.json`. Saved state restored after
 the check. No motion changes.
 
 ## Closest-foot frame and synchronized leg playback - October 24
+
+Historical support-only timing below is superseded by Whole-body matched jump
+at the top of this document.
 
 Replaced the fixed-endpoint experiment with **Match foot** in More options,
 enabled by default. Old endLeg settings are discarded; standing speed selection

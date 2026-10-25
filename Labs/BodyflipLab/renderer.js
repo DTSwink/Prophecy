@@ -472,6 +472,19 @@ class WebGLMotionRenderer {
     }
   }
 
+  legSegments() {
+    return ['l','r'].flatMap(side=>[[`thigh_${side}`,`calf_${side}`,.083],[`calf_${side}`,`foot_${side}`,.062]]);
+  }
+
+  addLeg(mesh, data, side, color) {
+    const suffix=side.toLowerCase();
+    for(const [a,b,radius] of this.legSegments().filter(([a])=>a.endsWith('_'+suffix))){
+      this.capsule(mesh,posAt(data,nameToIndex.get(a)),posAt(data,nameToIndex.get(b)),radius,color,18,6);
+    }
+    const boxes=this.footBoxes(data,{ankle:nameToIndex.get('foot_'+suffix),toe:nameToIndex.get('ball_'+suffix),side:side==='L'?0:1});
+    this.box(mesh,boxes.foot,color);this.box(mesh,boxes.toe,color);
+  }
+
   addBody(mesh, data) {
     const bodyColor = data.tint || [.91, .49, .25];
     if (data.skeleton) {
@@ -502,8 +515,7 @@ class WebGLMotionRenderer {
       ["neck_02", "head", .100],
       ["clavicle_l", "upperarm_l", .055], ["upperarm_l", "lowerarm_l", .058], ["lowerarm_l", "hand_l", .048],
       ["clavicle_r", "upperarm_r", .055], ["upperarm_r", "lowerarm_r", .058], ["lowerarm_r", "hand_r", .048],
-      ["pelvis", "thigh_l", .095], ["thigh_l", "calf_l", .083], ["calf_l", "foot_l", .062],
-      ["pelvis", "thigh_r", .095], ["thigh_r", "calf_r", .083], ["calf_r", "foot_r", .062],
+      ["pelvis", "thigh_l", .095], ["pelvis", "thigh_r", .095], ...this.legSegments(),
     ].map(([a, b, r]) => ({ a: nameToIndex.get(a), b: nameToIndex.get(b), aName: a, bName: b, r }))
       .filter(item => item.a !== undefined && item.b !== undefined);
     const spineNames = new Set(["pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01"]);
@@ -625,28 +637,12 @@ class WebGLMotionRenderer {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     if (!data) return;
 
-    const distance = 3.55 / cameraState.zoom;
-    const cameraTarget = [sharedRoot[0], sharedRoot[1], sharedRoot[2]];
-    const rawEye = [
-      cameraTarget[0] + Math.sin(cameraState.yaw) * distance,
-      cameraTarget[1] + distance * (.27 - cameraState.pitch * .55),
-      cameraTarget[2] + Math.cos(cameraState.yaw) * distance,
-    ];
-    const forward = normalize(sub(cameraTarget, rawEye));
-    let right = normalize(cross(forward, [0, 1, 0]));
-    if (norm(right) < 1e-6) right = [1, 0, 0];
-    const up = normalize(cross(right, forward));
-    const targetDepth = Math.max(.01, dot(sub(cameraTarget, rawEye), forward));
-    const focalCss = (rect.height * .5) / Math.tan(45 * Math.PI / 360);
-    const pixelsPerMeter = focalCss / targetDepth;
-    const shift = add(mul(right, -cameraState.panX / Math.max(1e-6, pixelsPerMeter)), mul(up, cameraState.panY / Math.max(1e-6, pixelsPerMeter)));
-    const eye = add(rawEye, shift);
-    const target = add(cameraTarget, shift);
+    const {eye,target,forward,right,up,targetDepth,focalCss}=BodyflipCamera.view(cameraState,sharedRoot,rect.height);
     const view = this.lookAt(eye, target, [0, 1, 0]);
     const projection = this.perspective(45 * Math.PI / 180, width / height, Math.max(.02,targetDepth/10000), Math.max(60,targetDepth*4));
     const viewProjection = this.matrixMultiply(projection, view);
     this.viewProjection = viewProjection;
-    this.viewCamera = {eye, target, forward, right, up, focalCss};
+    this.viewCamera = {eye, target, forward, right, up, focalCss, targetDepth};
 
     gl.useProgram(this.program);
     gl.uniformMatrix4fv(this.locations.viewProjection, false, viewProjection);

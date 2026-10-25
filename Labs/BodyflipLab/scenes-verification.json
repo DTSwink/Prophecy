@@ -1,5 +1,5 @@
 {
-  "passed": 16,
+  "passed": 21,
   "checks": [
     "Existing setup migrates intact into Inclines",
     "Copy preserves source and starts separately paused",
@@ -16,6 +16,11 @@
     "Switch saves outgoing edits and restores original time",
     "Failed save keeps current scene and unlocks UI without reload",
     "Cancel leaves scene and disk unchanged",
+    "New handler creates independent named scene at frame zero",
+    "New scene has only the original flat floor after reload migration",
+    "New scene resets edited camera, jumps and tuning to defaults",
+    "New scene keeps existing scene and saves outgoing edits",
+    "New scene is last control at far right of header",
     "Controls appended after existing Refresh"
   ]
 }

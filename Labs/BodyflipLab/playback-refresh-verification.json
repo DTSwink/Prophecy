@@ -10,7 +10,7 @@
     "Running playback restores position and resumes",
     "Paused position outside trim remains exact and paused",
     "Queued seek is saved and cancelled before refresh",
-    "Space mode restores clock attack and orientation",
+    "Idle restores clock and attack state",
     "Hidden lab does not start rendering",
     "Older saves without playback still load",
     "Alpha arrow step is one",

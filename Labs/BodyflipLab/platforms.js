@@ -100,8 +100,8 @@ class Editor {
  render(){
   if(!this.selected){this.hint.hidden=true;if(this.svg.childNodes.length)this.svg.replaceChildren();return;}
   const state=this.api.get(),p=this.records().find(p=>p.id===this.selected);
-  this.hint.hidden=!p||state.settings.mode==='space';this.hint.textContent=this.mode[0].toUpperCase()+this.mode.slice(1)+' · W / E / R';
-  if(!p||!state.camera||state.settings.mode==='space'){if(this.svg.childNodes.length)this.svg.replaceChildren();return;}
+  this.hint.hidden=!p;this.hint.textContent=this.mode[0].toUpperCase()+this.mode.slice(1)+' · W / E / R';
+  if(!p||!state.camera){if(this.svg.childNodes.length)this.svg.replaceChildren();return;}
   const {camera,rect}=state,origin=add(p.position,rotate(p.rotation,this.anchorLocal)),center=project(origin,camera,rect);if(center.z<=.01){this.svg.replaceChildren();return;}
   this.svg.setAttribute('viewBox',`0 0 ${rect.width} ${rect.height}`);
   const size=center.z*80/camera.focalCss,xy=v=>`${v.x.toFixed(2)},${v.y.toFixed(2)}`,parts=[];

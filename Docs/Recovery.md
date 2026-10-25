@@ -1,5 +1,23 @@
 # Restoring Prophecy
 
+## October 25 Bodyflip motion checkpoint
+
+The approved lab includes Idle with shared jump controls, fresh flat scenes,
+capsule collision and actual NN landing continuation, free camera, whole-body
+matched jumps, opaque leg overlays and smooth knee-safe transitions. The idle
+recording and focused verification scripts/receipts are included;265 automated
+checks pass. Live `state.json`, previews, inference caches and other sessions'
+changes are excluded. The existing `saved-profile.json` is the earlier curated
+setup, not the latest live scene library.
+
+The October24 no-inference playback note below is historical: landing preparation
+now needs the existing Stepper/Torch runtime, original encoder/decoder modules
+and four NPZ seeds listed in `Labs/BodyflipLab/models/provenance.json`. These
+runtime/seed dependencies remain external. The three frozen policy weights are
+already tracked in `Tools/Recovery/Checkpoints/`; restore them by matching the
+provenance hashes into `models/run.pt`, `walk.pt` and `upper.pt`. Initial locomotion
+still uses included phase banks. See the [lab restore notes](../Labs/BodyflipLab/README.md).
+
 ## October 24 Bodyflip Lab checkpoint
 
 `Labs/BodyflipLab` includes the standalone app, Jolt runtime/license, desktop

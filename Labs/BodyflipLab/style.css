@@ -47,3 +47,7 @@ footer{height:56px;gap:18px}.timeline{min-width:0;gap:10px}.timeline-track{posit
 
 .scene-tools{display:flex;align-items:center;gap:6px;padding-left:8px;border-left:1px solid var(--line)}#scene{width:132px;text-overflow:ellipsis}
 @media(max-width:850px){.brand small{display:none}.scene-tools{gap:4px;padding-left:5px}#scene{width:100px}.header-actions{gap:4px}}
+
+/* Refresh sits just above the viewport left edge. */
+header{justify-content:flex-start}header>.brand{flex:0 0 266px}header>#refresh{margin-right:16px}.header-actions{margin-left:auto}
+@media(max-width:1000px){header>.brand{flex-basis:236px}}
