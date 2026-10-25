@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 8803,
-  "bytes": 1060251661,
+  "file_count": 8863,
+  "bytes": 1072403248,
   "files": [
     {
       "path": ".gitattributes",
@@ -23874,6 +23874,366 @@
       "sha256": "e54e580360ccd316a47e1f6f965d9855c0ebe792f93c83a53b8287f3771bf3ff"
     },
     {
+      "path": "Labs/FootIKLab/.gitignore",
+      "git_blob": "5fd7b329c129f93de8b8bb41aa56e1e89c54faa3",
+      "bytes": 57,
+      "sha256": "2eb3e34064a9619ce616c0c0163865f452351e28c411d453a2bfc39b1c132f80"
+    },
+    {
+      "path": "Labs/FootIKLab/README.md",
+      "git_blob": "be9178178af872af7eaec41d3dc8d980ff431ce4",
+      "bytes": 40083,
+      "sha256": "4e72308fa34002f6440c071e728d313c16ea611117f65a2d9f4cd980b2192217"
+    },
+    {
+      "path": "Labs/FootIKLab/ankle-verification.json",
+      "git_blob": "0904683b69c699c14ae96e8f9d39a6d010c44e1d",
+      "bytes": 2570,
+      "sha256": "fd94fe6f3d2464e214433ec075ea87064ec00b5fd0f35507aa6ea5c687cf48bb"
+    },
+    {
+      "path": "Labs/FootIKLab/app.js",
+      "git_blob": "b6f4b5e34eb2ec027a1b264889d5c119f670254a",
+      "bytes": 13281,
+      "sha256": "9417fd930d0a81902a05680f8e450baddd7a585426f8cb9186bf99ba042b5b5c"
+    },
+    {
+      "path": "Labs/FootIKLab/assets/footik.ico",
+      "git_blob": "1ee852bd3d9da4e8c8cef1b7a7f95eec36a4a7ad",
+      "bytes": 15014,
+      "sha256": "16771601dd85e2a01368e6ce052e042401a83a96984623709e0d74ebbc6870b0"
+    },
+    {
+      "path": "Labs/FootIKLab/assets/footik.svg",
+      "git_blob": "9b5573fc2efde65fd7369800caed9768e1815110",
+      "bytes": 403,
+      "sha256": "020910b1df086197acab69269bc7485f04d83030bcd959d1aad9aef0ffe9cb12"
+    },
+    {
+      "path": "Labs/FootIKLab/clearance-verification.json",
+      "git_blob": "34e81184f62261b73f950981ed367a0f1df74ac3",
+      "bytes": 717,
+      "sha256": "f93f6d3343ca8bb88ca50212b727c1d678c4557f009f6e3e82719ee26292ec63"
+    },
+    {
+      "path": "Labs/FootIKLab/data/departure-before.json",
+      "git_blob": "4d202ab897dc96946716da8a09060820da509c56",
+      "bytes": 110291,
+      "sha256": "a5291edfeca21cbe0cb23da51e4adc66498d4ef9dada39864dfd50792e9d8c98"
+    },
+    {
+      "path": "Labs/FootIKLab/data/exit-toeoff-before.json",
+      "git_blob": "0a779f71871253ad4497d96cc486a76d96868166",
+      "bytes": 97374,
+      "sha256": "ca525b686dfc8e95f98f64a6ac411e7e4e8e4559d70a1f9e98bbf88e9a609597"
+    },
+    {
+      "path": "Labs/FootIKLab/data/first-riser-before.json",
+      "git_blob": "fefb7ad2956d83d87202b12448a234f11eea3592",
+      "bytes": 2091,
+      "sha256": "f22d197e2b751e1d955fcd9ee88fc34c6be31b35c88114cb07690bb21484aacd"
+    },
+    {
+      "path": "Labs/FootIKLab/data/forward-clearance-before.json",
+      "git_blob": "e0a20cc6a8234b8911edd46879a94b46b12c5770",
+      "bytes": 17530,
+      "sha256": "99b7ced30255ffb072719764a8a025433065009fad02ffcb0b34d9e22329751b"
+    },
+    {
+      "path": "Labs/FootIKLab/data/height-budget-before.json",
+      "git_blob": "36dd7e6af76aac0f017e0fdd83f41913ed586cbf",
+      "bytes": 174225,
+      "sha256": "030d359a7baa98840c384757d936364e782191628d9a30414a4b9cc3edd7dc57"
+    },
+    {
+      "path": "Labs/FootIKLab/data/pelvis-release-before.json",
+      "git_blob": "daf20fcfafea68e29edbd29636c4345e6d456f91",
+      "bytes": 2550,
+      "sha256": "8d146492ebb523a7a06427cf5c9a369befc4223fb2d9e9d9a9936cd41170afa2"
+    },
+    {
+      "path": "Labs/FootIKLab/data/release-before.json",
+      "git_blob": "bcd314a80ad81478e3a55c6354b7469226c40a72",
+      "bytes": 468,
+      "sha256": "9f37ec524c135a750cfc1b15c90a4da4eaf04af3534dda35acd8ae52f28aaa2c"
+    },
+    {
+      "path": "Labs/FootIKLab/data/rig.json",
+      "git_blob": "5db9ff643ccf82963b67f857b61ef6913a925ab2",
+      "bytes": 7104,
+      "sha256": "ca501fe994e8a9420ea43a4ee42026d07d4bfbfd6face6bdc4e8ef3a665b2a38"
+    },
+    {
+      "path": "Labs/FootIKLab/data/run-fixture.json",
+      "git_blob": "b0ceb3d7d2e389d65a2c44828ab15fd87763428a",
+      "bytes": 950211,
+      "sha256": "cb0c7465123d51778371588c2360b064697314d08bd483c87dc4d26010a1137a"
+    },
+    {
+      "path": "Labs/FootIKLab/data/run-phases.bin",
+      "git_blob": "d8d7869bf0523bdb37101b79c1bea48c8d9fb10b",
+      "bytes": 3684480,
+      "sha256": "5ca392d9dfb559ac75075c1f92cc15e9e0c62553c3999109fc830e483e53f7e7"
+    },
+    {
+      "path": "Labs/FootIKLab/data/run-phases.json",
+      "git_blob": "8093c274194356469a586f8443711b4a5fb090ab",
+      "bytes": 2501,
+      "sha256": "681c80a3900476ed23d9a4169c07a12207798678e816ed948397056652a55905"
+    },
+    {
+      "path": "Labs/FootIKLab/data/swing-inertia-before.json",
+      "git_blob": "72941ddf8266b15ef141332f7ee3e61d0f04bc2e",
+      "bytes": 169756,
+      "sha256": "c62f4dc4b2f0ec84320a6f3f41ff9f9350901565363827a86ddb017faa12df38"
+    },
+    {
+      "path": "Labs/FootIKLab/data/velocity-phase49-before.json",
+      "git_blob": "5130ed255b15d5457ff963a49c62e2454c702994",
+      "bytes": 120331,
+      "sha256": "6d545eb43b1cdd3a3b12f2cf3b027dd38f7c16715301425385929144ab9760cd"
+    },
+    {
+      "path": "Labs/FootIKLab/data/walk-fixture.json",
+      "git_blob": "c6675f710ba5c2d0d8bc8c5d61c5420dae86c70e",
+      "bytes": 954866,
+      "sha256": "29b2948260c3c437333e81669de7bae2cf8ff165b994d9d1bb50dbc47aa2937a"
+    },
+    {
+      "path": "Labs/FootIKLab/data/walk-phases.bin",
+      "git_blob": "6740df80ecbad63279186fcbff3216afc9a5e902",
+      "bytes": 5526720,
+      "sha256": "55bb17afeeba04c963e9189b45a596066414242d304d2340db963b7f486d3086"
+    },
+    {
+      "path": "Labs/FootIKLab/data/walk-phases.json",
+      "git_blob": "b41f27cd73d5449fd043da667c9e97a1544b14b8",
+      "bytes": 2503,
+      "sha256": "2609255baaf7d82244f601b83a6373a20e778750b5e9febe01ea1c2df56236aa"
+    },
+    {
+      "path": "Labs/FootIKLab/exit-toeoff-verification.json",
+      "git_blob": "d1245ebcc363f3571d8b8285bf071f5cf049ba65",
+      "bytes": 610,
+      "sha256": "befad6faf3a503a73720233a2f94d31f66fa7608c41909eafb1fcdb503e24a47"
+    },
+    {
+      "path": "Labs/FootIKLab/footik.js",
+      "git_blob": "5afade46fdec049f76990373e18905f683198771",
+      "bytes": 45472,
+      "sha256": "d9cc5db6461ab2d4106900f572424d2748c4da2a9237581edf4db5bb9cf64548"
+    },
+    {
+      "path": "Labs/FootIKLab/grounded-departure-suite-status.json",
+      "git_blob": "6da0ff7910a832225c2ebac8518f930cf0149753",
+      "bytes": 959,
+      "sha256": "deec9631ea2ff68536e2eedcf504f64dbcd7bef20ce8c16ef9caa803959901db"
+    },
+    {
+      "path": "Labs/FootIKLab/height-budget-verification.json",
+      "git_blob": "c36f38c31e07f852398e1db07d155676bb165ec7",
+      "bytes": 787,
+      "sha256": "5a9d8663348ca40e7c7906a82695aa6762b50a1f2fc25e6a37ebea72bef2497f"
+    },
+    {
+      "path": "Labs/FootIKLab/index.html",
+      "git_blob": "6c2d921f1f62889f0b50f3acd70d1b4bb069b2f7",
+      "bytes": 5085,
+      "sha256": "0fdc061866ef052103ab8d4fb100911666f4aa114da9e30b44bbd65bf6ae13e0"
+    },
+    {
+      "path": "Labs/FootIKLab/inertia-verification.json",
+      "git_blob": "2e6b1ef0e460a6bda1eb44070ea521f6780b5e09",
+      "bytes": 16731,
+      "sha256": "e74a318bfa12bf77c26528d5d1d59a9d4cb5b8fab71853b9b718edc139021a44"
+    },
+    {
+      "path": "Labs/FootIKLab/install_shortcut.ps1",
+      "git_blob": "abb3987783863a7f2c7ad862ebc930af1c56822d",
+      "bytes": 889,
+      "sha256": "dd21d71e99eb8ba6bc76482d62eb8ccb90b9254d5456036ebd9748ebbbec882c"
+    },
+    {
+      "path": "Labs/FootIKLab/launch.ps1",
+      "git_blob": "0470476b44bb73730ce154089d2ac18fca3ef021",
+      "bytes": 2176,
+      "sha256": "6c28e4cfbd93514b9702c6c63fde2b63fbea9abe1600ed8b1d15a5351cfc7708"
+    },
+    {
+      "path": "Labs/FootIKLab/pelvis-release-verification.json",
+      "git_blob": "6b3d31f1354b841c04c7343ebec24891db622c0b",
+      "bytes": 4056,
+      "sha256": "34b59fc4ca33054279533fe2fd6316894207c7c464f1f0c3d790a4ee4ed698d2"
+    },
+    {
+      "path": "Labs/FootIKLab/recovery.js",
+      "git_blob": "f5e7d24f1edc105b8d76f0f34c5c30c4628b312b",
+      "bytes": 19433,
+      "sha256": "b0e685a3fe41da51297e00270e20364847d3eacdbb44e3cd98763d2909249847"
+    },
+    {
+      "path": "Labs/FootIKLab/release-verification.json",
+      "git_blob": "8a3f41aff6bb7a33664fbc7404f4e679a79ecdfd",
+      "bytes": 1804,
+      "sha256": "7c36b3da0f98cdd531eb93fe3bd90b90cb2ce6339ae30904ac4c391b10a5ecb4"
+    },
+    {
+      "path": "Labs/FootIKLab/renderer.js",
+      "git_blob": "65702fb8abb1140fbef30fa5d889bfe239cefadc",
+      "bytes": 41828,
+      "sha256": "484dd6e08cd57ea1e2c4a65dd26447a5f0b0aaed0e45b8e3e70659f9ab033382"
+    },
+    {
+      "path": "Labs/FootIKLab/reuse.json",
+      "git_blob": "57181a0328becbb50e639f2c37e68c59baa7ca7f",
+      "bytes": 861,
+      "sha256": "9b2f17dafaea297629a53dd4568c78a968a75d851fa90baf7b41b2282f42a519"
+    },
+    {
+      "path": "Labs/FootIKLab/riser-verification.json",
+      "git_blob": "daf3e756a389085d1b3b96025fabe044c33ce824",
+      "bytes": 929,
+      "sha256": "3c64faec8d56586904cd633eedbb547d68441f5ec924db09d9318e57f2b7ce1d"
+    },
+    {
+      "path": "Labs/FootIKLab/run_bank.py",
+      "git_blob": "b8009529bb173e33ccad0267b44520ed8844db5c",
+      "bytes": 1414,
+      "sha256": "d3ee1492a641cf8d4c632a52ffc70fd99290c3d88bd85eb41bab77ec9b48cebb"
+    },
+    {
+      "path": "Labs/FootIKLab/server.py",
+      "git_blob": "a2aa6b8694b4b9cb8c22a5217c02fa71aab43a43",
+      "bytes": 3839,
+      "sha256": "489309f88f95a4e83b53e261fb10d7663ad90b1f1a81ac9da758ac5dcde00858"
+    },
+    {
+      "path": "Labs/FootIKLab/shadow-verification.json",
+      "git_blob": "b4e705e5ec9310f2e95a2eb738e47603f5244740",
+      "bytes": 535,
+      "sha256": "6dd00a39f9668ea89ea1981bbf9a47f5fc928a126c5abd7e67e9bf2feb46ef05"
+    },
+    {
+      "path": "Labs/FootIKLab/style.css",
+      "git_blob": "b353ebcc004b06a6cb497d419f0eda271ed434d3",
+      "bytes": 13581,
+      "sha256": "2d530f2038ffe2ef1a9ec92e1e6a6850634a0cbbc77494b04c55cce134b18ac2"
+    },
+    {
+      "path": "Labs/FootIKLab/support.js",
+      "git_blob": "030cf5feca6e7a593b0e247515842625d033df44",
+      "bytes": 20863,
+      "sha256": "cf7a03b4bfd863e7d0af59510399eb21007085c50ed9201569cdcecdf358603f"
+    },
+    {
+      "path": "Labs/FootIKLab/terrain.js",
+      "git_blob": "da7f166d3b77328b954f86f93825f4eff1e7e4ee",
+      "bytes": 3901,
+      "sha256": "e51577a9f0e914aed2366c0b086796b58b38a485400ac888287c1996ed181090"
+    },
+    {
+      "path": "Labs/FootIKLab/test-bank.cjs",
+      "git_blob": "93c600b6bda28f1a1912d81b338e22e55d5b8a85",
+      "bytes": 836,
+      "sha256": "6757301d49d6592c60a02d1a5cfeccf8cffaf20f3892d8a95fb6dceac531f4f4"
+    },
+    {
+      "path": "Labs/FootIKLab/toe-release-verification.json",
+      "git_blob": "1bf9cf9bc2acf2c16e7456c90ad69fac31acbb6a",
+      "bytes": 838,
+      "sha256": "824e77cb38679a054dc5e475064dc32478d66196371c20beb36dfa57d0b025f6"
+    },
+    {
+      "path": "Labs/FootIKLab/velocity-verification.json",
+      "git_blob": "dd5bd75ebad40434d799ba5282d9de9132a4eec5",
+      "bytes": 1776,
+      "sha256": "6663062c11830b9c5078bb6d03019aca358e1398cbde998e7b04aa428fe0590c"
+    },
+    {
+      "path": "Labs/FootIKLab/verification.json",
+      "git_blob": "43978233532b9467b60f483c6d9f09efd73a9b7c",
+      "bytes": 18419,
+      "sha256": "5ccd017cbe794f540f6be302e16b4fc99447df73f066eaa0fb58e2ddb998b320"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-ankle.mjs",
+      "git_blob": "f419da6f98a58ca410ae366aeaa16039f38c4999",
+      "bytes": 3071,
+      "sha256": "eb66bc69b6d523bb260bbd92c0765c1beb4f5ad874c24b8bd362412a0c36600f"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-clearance.mjs",
+      "git_blob": "6e5fd656a107c937c4f7a731dbbdb4c6b3c45849",
+      "bytes": 2607,
+      "sha256": "a97aec1d91c5e4ff89f1d3346d811e72cdf8aeb146db0b0db8f5e6c6f656cafa"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-exit-toeoff.mjs",
+      "git_blob": "68ae75ca6e410954ff6aa0c2ab734d0b7bdfb2c0",
+      "bytes": 2383,
+      "sha256": "7176aef367d441b75dd3d9b07c831e423e02facef653c2d5bf7fda05e2bde411"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-height-budget.mjs",
+      "git_blob": "d92da724b8dfd093aa8a8f2b58cf3900ea343a6a",
+      "bytes": 2354,
+      "sha256": "4b58f8439baa2c01e459a61791a14f9d853e2b40694f8bfec7044f0c7785c8cb"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-inertia.mjs",
+      "git_blob": "509b68c5bbad0d00738be7492e4e7383113a6a99",
+      "bytes": 3165,
+      "sha256": "390ca4defedd84bdd250eaae93ac2aaa1f1b40679702a1f5e90dd1cf76f6c052"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-pelvis-release.mjs",
+      "git_blob": "09b53bf7a4479fa1600e6f0a65b987dc4e1438b1",
+      "bytes": 2010,
+      "sha256": "aa0f8da8293ea14dfc4c68010dba4bc205a20296de434ed7ba1a7bd64816dbde"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-release.mjs",
+      "git_blob": "abab6e8562951eeb022f1a13ecd9dafc61ca1950",
+      "bytes": 2695,
+      "sha256": "604d5d54f8ca3fb91c3c36613c56406e5b8748e9af114882b0e8c7daa42cd153"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-riser.mjs",
+      "git_blob": "2cb8900abcb3f83ec583047e18197e67682c03b7",
+      "bytes": 3637,
+      "sha256": "68fcaaa840fa05dd556437da66aea43f6925d5ff6d3c772d8d36041ac6f0f8d6"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-shadows.html",
+      "git_blob": "cce678a594403673b9b8c07a31c7cb6c0b72ca94",
+      "bytes": 639,
+      "sha256": "a11a3b2f031e7b97e0fda667272713241f85b11340af9920a276f1cd91a63a2f"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-shadows.js",
+      "git_blob": "66df851fddb433713b7b7f451900107eb0aad961",
+      "bytes": 3234,
+      "sha256": "08976cfa541fce0338b6c656dd255864cbc0209b8bc6e910f771178dbec285d1"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-toe-release.mjs",
+      "git_blob": "41707bc00acfac7a9524d52b7e4fd696189f0d5d",
+      "bytes": 2700,
+      "sha256": "9ad264ebeb7d0e1a5faeb9f887ec1779ceb2f92dff4dfacb9bac345c46ce4949"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-velocity.mjs",
+      "git_blob": "de7bda9e4fc876ede5e4e34da35157c6e00377ab",
+      "bytes": 3829,
+      "sha256": "e723a7a072b9b3cf498a6a8378d5e769d6e9dad3715e1224f2457cb2faf459c2"
+    },
+    {
+      "path": "Labs/FootIKLab/verify.mjs",
+      "git_blob": "15b7f73e0ab25d77b0e6c099716a35378bfa748e",
+      "bytes": 15964,
+      "sha256": "d818d31c22ba9313c62da72a9a3205aea1a4313372d3b6f8e648905a15564b4e"
+    },
+    {
       "path": "Labs/LafanCutter/README.md",
       "git_blob": "dfe927b67319beb6a19ede445d47d112b0c0a5ba",
       "bytes": 13142,
@@ -29863,9 +30223,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "85d0a848096028709fd4ba9b3996519edbb82162",
-      "bytes": 239470,
-      "sha256": "a03378b1df4f7588e01032e4d843b759fbf23723c7abccd06241fe5b2f02e782"
+      "git_blob": "43d5643db8f2c69fada4cbcb094920db42eff1c5",
+      "bytes": 240021,
+      "sha256": "d0a9dba132c73ec84423970fa8b9692004075d4c10c659ab916834b6eaa7419e"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",

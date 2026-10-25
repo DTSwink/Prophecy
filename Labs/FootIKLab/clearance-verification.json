@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "checks": [
+    "Forward swing mean clearance reduced by at least one third",
+    "Changed support stays within one tread plus the clearance budget",
+    "Reported163 forward sole clears the last tread without exceeding 7cm",
+    "165 forward sole stays within 6cm of tread",
+    "Whole course rendered sole collision is preserved",
+    "Saved phase49 retains whole-course angular motion bound",
+    "Saved phase49 retains whole-course displacement bound"
+  ],
+  "measured": {
+    "samples": 132,
+    "meanGapBeforeCm": 14.074582314297679,
+    "meanGapAfterCm": 4.83549579007559,
+    "frame163GapCm": 2.316646252132326,
+    "maxAngle": 7.00100013142665,
+    "maxStep": 0.049625718246410856
+  }
+}

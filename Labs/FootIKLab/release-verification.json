@@ -1,0 +1,59 @@
+{
+  "passed": true,
+  "checks": [
+    "134.5 released foot advances instead of following NN stance",
+    "134.5 smoothed release does not inflate the old lift beyond the clearance budget",
+    "134.5 recovery never reverses or waits in place",
+    "134.5 forward recovery has no catch-up velocity kick",
+    "134.5 completed recovery matches NN position and speed",
+    "167.5 released foot advances instead of following NN stance",
+    "167.5 smoothed release does not inflate the old lift beyond the clearance budget",
+    "167.5 recovery never reverses or waits in place",
+    "167.5 forward recovery has no catch-up velocity kick",
+    "167.5 completed recovery matches NN position and speed",
+    "Released shoes remain outside the treads",
+    "Recovery remains inside leg reach"
+  ],
+  "windows": [
+    {
+      "start": 134.5,
+      "end": 140,
+      "side": "r",
+      "handoff": 170.5,
+      "displacement": [
+        0.006138196092875331,
+        0.28068366062595107,
+        0.022945687452727626
+      ],
+      "after": [
+        0.009525706998211009,
+        0.22686751771649316,
+        0.21929097853303947
+      ],
+      "maxSpeedChange": 0.2419229356253183,
+      "maxAddedSpeedChange": 0.20851155665887688,
+      "joinSpeed": 1.5249315767059812,
+      "nnSpeed": 0.910742442401471
+    },
+    {
+      "start": 167.5,
+      "end": 171,
+      "side": "l",
+      "handoff": 181.5,
+      "displacement": [
+        0.009102650250207178,
+        0.17842136927710062,
+        0.0454734185145691
+      ],
+      "after": [
+        0.0033568985497258175,
+        0.1385437773866376,
+        0.15747027987402795
+      ],
+      "maxSpeedChange": 0.1512323023666795,
+      "maxAddedSpeedChange": 0.10485732149852822,
+      "joinSpeed": 3.677169082777354,
+      "nnSpeed": 4.3206503821973286
+    }
+  ]
+}

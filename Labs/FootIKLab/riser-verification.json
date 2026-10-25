@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "checks": [
+    "Independent shoe-face sampling reproduces the old frame41 riser clip",
+    "Frame41 left shoe clears the first riser across its faces and edges",
+    "Current phase whole-course corrected shoe faces clear terrain",
+    "Current phase retains the walking angular-motion bound",
+    "Current phase whole-course retains the walking displacement bound",
+    "Current phase first-stair approach retains the walking displacement bound",
+    "Material heel/toe pins remain fixed",
+    "Leg targets remain reachable",
+    "Flat approach and exit retain exact NN poses"
+  ],
+  "phase": 0.21,
+  "prepareMs": 406.235,
+  "oldPenetration": 0.06889095929782053,
+  "newPenetration": 5.551115123125783e-17,
+  "maxPenetration": 2.0633542208159383e-7,
+  "maxAngle": 8.892405996291558,
+  "maxDistance": 0.061207177455645696,
+  "maxEntryDistance": 0.05606327326420919,
+  "maxPinError": 1.4141731344682325e-15
+}

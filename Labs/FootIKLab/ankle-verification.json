@@ -1,0 +1,116 @@
+{
+  "passed": true,
+  "checks": [
+    "Free swing retains NN ankle articulation",
+    "79 improves the ankle bend while preparing contact",
+    "Mean ankle error after toe-off handoff stays below 10 degrees",
+    "Heel/toe material pins remain fixed",
+    "Contact transitions keep existing angular-motion limit",
+    "Rotation does not drive shoe corners through terrain",
+    "Late swing does not reinstate the NN toe-up peak",
+    "Landing retains a shallow heel lead before settling flat",
+    "135-141 approach has no steep toe-up rebound"
+  ],
+  "measured": {
+    "landingPitches": [
+      {
+        "frame": 77,
+        "pitch": 4.8163996889216465
+      },
+      {
+        "frame": 77.5,
+        "pitch": 4.947158656214967
+      },
+      {
+        "frame": 78,
+        "pitch": 4.951025227503423
+      },
+      {
+        "frame": 78.5,
+        "pitch": 4.929316609562599
+      },
+      {
+        "frame": 79,
+        "pitch": 4.892162236686097
+      },
+      {
+        "frame": 79.5,
+        "pitch": 4.840407897425214
+      },
+      {
+        "frame": 80,
+        "pitch": 4.777959197353152
+      },
+      {
+        "frame": 80.5,
+        "pitch": 4.6845711700155155
+      },
+      {
+        "frame": 81,
+        "pitch": 4.562543366820437
+      },
+      {
+        "frame": 81.5,
+        "pitch": 4.439938353203313
+      },
+      {
+        "frame": 82,
+        "pitch": 4.341874033035005
+      },
+      {
+        "frame": 82.5,
+        "pitch": 4.277152887825051
+      },
+      {
+        "frame": 83,
+        "pitch": 4.999999999999998
+      },
+      {
+        "frame": 83.5,
+        "pitch": 4.999999999999986
+      },
+      {
+        "frame": 84,
+        "pitch": 4.9999999999999725
+      },
+      {
+        "frame": 84.5,
+        "pitch": 4.9999999999999725
+      },
+      {
+        "frame": 85,
+        "pitch": 4.9999999999999725
+      },
+      {
+        "frame": 85.5,
+        "pitch": 4.9999999999999725
+      },
+      {
+        "frame": 86,
+        "pitch": 5.0000000000000115
+      },
+      {
+        "frame": 86.5,
+        "pitch": 5.000000000000024
+      },
+      {
+        "frame": 87,
+        "pitch": 4.447933374121139
+      },
+      {
+        "frame": 87.5,
+        "pitch": 2.5440760494868027
+      },
+      {
+        "frame": 88,
+        "pitch": 0.6333164091761179
+      }
+    ],
+    "frame79AnkleErrorDeg": 13.390099501353673,
+    "meanSwingAnkleErrorDeg": 11.864901289552918,
+    "meanFreeSwingAnkleErrorDeg": 8.010473934385756,
+    "swingSamples": 518,
+    "maxPivotError": 1.047382306668854e-15,
+    "maxFootStepDeg": 7.00100013142665
+  }
+}

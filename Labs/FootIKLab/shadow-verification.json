@@ -1,0 +1,24 @@
+{
+  "checks": [
+    "One depth draw per changed pose",
+    "Camera-only redraws reuse the shadow map",
+    "No WebGL errors"
+  ],
+  "shadow": {
+    "resolution": 1024,
+    "depthMiB": 4,
+    "triangles": 7948,
+    "cpuSubmission": {
+      "samples": 32,
+      "medianMs": 0,
+      "p95Ms": 0.10000002384185791
+    },
+    "gpu": {
+      "samples": 32,
+      "medianMs": 0.087656,
+      "p95Ms": 0.144739
+    },
+    "timerAvailable": true
+  },
+  "note": "GPU timer covers the extra shadow pass. It is not total application frame time."
+}

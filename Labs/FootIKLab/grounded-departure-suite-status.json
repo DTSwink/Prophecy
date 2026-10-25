@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "checks": 299,
+  "results": [
+    {
+      "name": "verify.mjs",
+      "passed": true,
+      "checks": 211
+    },
+    {
+      "name": "verify-inertia.mjs",
+      "passed": true,
+      "checks": 12
+    },
+    {
+      "name": "verify-riser.mjs",
+      "passed": true,
+      "checks": 9
+    },
+    {
+      "name": "verify-velocity.mjs",
+      "passed": true,
+      "checks": 18
+    },
+    {
+      "name": "verify-clearance.mjs",
+      "passed": true,
+      "checks": 7
+    },
+    {
+      "name": "verify-ankle.mjs",
+      "passed": true,
+      "checks": 9
+    },
+    {
+      "name": "verify-release.mjs",
+      "passed": true,
+      "checks": 12
+    },
+    {
+      "name": "verify-pelvis-release.mjs",
+      "passed": true,
+      "checks": 4
+    },
+    {
+      "name": "verify-height-budget.mjs",
+      "passed": true,
+      "checks": 8
+    },
+    {
+      "name": "verify-toe-release.mjs",
+      "passed": true,
+      "checks": 9
+    }
+  ]
+}

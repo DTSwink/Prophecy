@@ -4,6 +4,14 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Foot IK October25 - approved checkpoint:** standalone Foot IK Lab preserved
+with frozen Walk/Run NN phase banks, terrain placement, grounded heel/toe pins,
+smooth swing recovery, full-body/ghost rendering, desktop launcher and regression
+fixtures. Includes gentler right155 toe-off (35deg on NN-return departures,
+45deg on retained-contact transfers);307 checks passed. Live playback state,
+screenshots and unrelated session work excluded. Pelvis stair-transfer work
+starts AFTER this checkpoint; see Labs/FootIKLab/README.md for current behavior.
+
 **Bodyflip October25 - named scenes and curated checkpoint:** added scene picker,
 Copy and Rename after existing header controls. Legacy current setup becomes
 Inclines. Copies retain tuning/platforms/jumps/target/camera/playback/brackets and

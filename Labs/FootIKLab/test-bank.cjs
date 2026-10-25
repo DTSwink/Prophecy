@@ -1,0 +1,4 @@
+const fs=require('fs'),K=require('./footik.js'),R=require('./recovery.js'),S=require('./support.js');
+const rig=JSON.parse(fs.readFileSync(__dirname+'/data/rig.json'));
+function load(gait='walk',phase=.49){const meta=JSON.parse(fs.readFileSync(__dirname+'/data/'+gait+'-phases.json')),bytes=fs.readFileSync(__dirname+'/data/'+gait+'-phases.bin'),slot=Math.round(phase*meta.stride),width=3+meta.names.length*12,roots=[],poses=[];for(let f=0;f<meta.framesPerPhase;f++){const start=(slot*meta.framesPerPhase+f)*width*4,v=Array.from({length:width},(_,j)=>bytes.readFloatLE(start+j*4));roots.push(v.slice(0,3));poses.push({points:meta.names.map((_,j)=>v.slice(3+j*12,6+j*12)),axes:meta.names.map((_,j)=>[0,1,2].map(a=>v.slice(6+j*12+a*3,9+j*12+a*3)))});}return K.decode({...meta,duration:5,roots,poses},rig.parents);}
+module.exports={load};

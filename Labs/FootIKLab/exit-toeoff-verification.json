@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "checks": [
+    "Last-stair upward peak falls at least15percent",
+    "Release velocity kick does not increase",
+    "Release stays at155",
+    "Toe roll finishes on ground at35degrees",
+    "Grounded material toe pivot remains fixed",
+    "155-161 keeps travelling forward and upward",
+    "Earlier right89-102 transition remains identical",
+    "Shoes remain clear and legs reachable"
+  ],
+  "before": {
+    "peakUp": 4.029674762085076,
+    "peakKick": 1.6294440476532719
+  },
+  "after": {
+    "peakUp": 3.33232197665569,
+    "peakKick": 1.4464716854857622
+  },
+  "terminalPitch": -35
+}

@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "checks": [
+    "Right foot departs before reported92 instead of waiting for its spike",
+    "Grounded roll completes a pronounced toe-off before early lift",
+    "Every roll sample keeps the actual material contact on the tread",
+    "Toe-off pivot does not slide while heel lifts",
+    "Early swing does not finish a missing downward roll in midair",
+    "88-102 peak upward speed falls at least40percent",
+    "88-102 velocity kick falls at least60percent",
+    "90-100 keeps moving forward and upward after clearance",
+    "Corrected shoes remain clear and reachable"
+  ],
+  "releaseFrame": 89.5,
+  "groundRollDegrees": -45.00000000000001,
+  "before": {
+    "peakUp": 5.537726439861035,
+    "peakKick": 3.105121362080057
+  },
+  "after": {
+    "peakUp": 2.927974885855913,
+    "peakKick": 0.8420139903590379
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "checks": [
+    "161 still reduces unnecessary NN-relative lift",
+    "161 shoe gap remains below 20cm without floor clipping",
+    "Earlier departure reduces the old frame158 lift speed",
+    "159-167 continues forward and upward without a new stall",
+    "Height reduction does not increase the release-window velocity kick",
+    "Whole-course shoes retain collision clearance",
+    "Whole-course leg targets remain reachable",
+    "Flat NN frames stay exact"
+  ],
+  "prepareMs": 394.49339999999995,
+  "frame161": {
+    "gapBeforeCm": 23.216738088096058,
+    "gapAfterCm": 16.285277558259082,
+    "extraBeforeCm": 20.407861903222702,
+    "extraAfterCm": 10.526429361788669
+  },
+  "releaseKickBefore": 6.795381856877675,
+  "releaseKickAfter": 0.26045050239549794
+}

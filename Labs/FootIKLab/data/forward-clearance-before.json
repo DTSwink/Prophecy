@@ -1,0 +1,801 @@
+{
+  "phase": 0.49,
+  "height": 16,
+  "depth": 35,
+  "steps": 12,
+  "clearance": 4,
+  "samples": [
+    {
+      "frame": 43,
+      "side": 1,
+      "gap": 0.2204466633480453,
+      "ankleAfterClearance": 0.3740350087933765
+    },
+    {
+      "frame": 43.5,
+      "side": 1,
+      "gap": 0.23667127701269083,
+      "ankleAfterClearance": 0.37787040153391643
+    },
+    {
+      "frame": 44,
+      "side": 1,
+      "gap": 0.25141785793793836,
+      "ankleAfterClearance": 0.38170480953942937
+    },
+    {
+      "frame": 44.5,
+      "side": 1,
+      "gap": 0.26649122367037914,
+      "ankleAfterClearance": 0.38553960442703256
+    },
+    {
+      "frame": 45,
+      "side": 1,
+      "gap": 0.28244944212084355,
+      "ankleAfterClearance": 0.3893718111160831
+    },
+    {
+      "frame": 45.5,
+      "side": 1,
+      "gap": 0.14882011956800117,
+      "ankleAfterClearance": 0.3931935441281687
+    },
+    {
+      "frame": 46,
+      "side": 1,
+      "gap": 0.14954524425057902,
+      "ankleAfterClearance": 0.39699171811223793
+    },
+    {
+      "frame": 46.5,
+      "side": 1,
+      "gap": 0.16285706913998807,
+      "ankleAfterClearance": 0.4007480288607511
+    },
+    {
+      "frame": 47,
+      "side": 1,
+      "gap": 0.17660211764635642,
+      "ankleAfterClearance": 0.404439200373233
+    },
+    {
+      "frame": 47.5,
+      "side": 1,
+      "gap": 0.15797823865061833,
+      "ankleAfterClearance": 0.40803728851434407
+    },
+    {
+      "frame": 48,
+      "side": 1,
+      "gap": 0.1450809305180658,
+      "ankleAfterClearance": 0.4115101705059621
+    },
+    {
+      "frame": 48.5,
+      "side": 1,
+      "gap": 0.14795300812483086,
+      "ankleAfterClearance": 0.41482221648666767
+    },
+    {
+      "frame": 49,
+      "side": 1,
+      "gap": 0.15097699404866555,
+      "ankleAfterClearance": 0.4179351392524769
+    },
+    {
+      "frame": 49.5,
+      "side": 1,
+      "gap": 0.1274310429306837,
+      "ankleAfterClearance": 0.4208085420896385
+    },
+    {
+      "frame": 50,
+      "side": 1,
+      "gap": 0.1122771590712367,
+      "ankleAfterClearance": 0.4234006241934557
+    },
+    {
+      "frame": 50.5,
+      "side": 1,
+      "gap": 0.09596295063835264,
+      "ankleAfterClearance": 0.4256690415657399
+    },
+    {
+      "frame": 51,
+      "side": 1,
+      "gap": 0.10090911943205882,
+      "ankleAfterClearance": 0.4275719209552424
+    },
+    {
+      "frame": 51.5,
+      "side": 1,
+      "gap": 0.10553170712588777,
+      "ankleAfterClearance": 0.4290681789493175
+    },
+    {
+      "frame": 52,
+      "side": 1,
+      "gap": 0.1097791532007496,
+      "ankleAfterClearance": 0.4301178376247975
+    },
+    {
+      "frame": 52.5,
+      "side": 1,
+      "gap": 0.10584676745841765,
+      "ankleAfterClearance": 0.43068233687679747
+    },
+    {
+      "frame": 53,
+      "side": 1,
+      "gap": 0.028248888764567937,
+      "ankleAfterClearance": 0.43072484335398553
+    },
+    {
+      "frame": 53.5,
+      "side": 1,
+      "gap": 0.026508396719847116,
+      "ankleAfterClearance": 0.43020989992026354
+    },
+    {
+      "frame": 54,
+      "side": 1,
+      "gap": 0.0023257931564187873,
+      "ankleAfterClearance": 0.42910305837382057
+    },
+    {
+      "frame": 76.5,
+      "side": 0,
+      "gap": 0.11471201959001709,
+      "ankleAfterClearance": 0.6988810763085267
+    },
+    {
+      "frame": 77,
+      "side": 0,
+      "gap": 0.1222444033574589,
+      "ankleAfterClearance": 0.7072733945248761
+    },
+    {
+      "frame": 77.5,
+      "side": 0,
+      "gap": 0.12965483534091915,
+      "ankleAfterClearance": 0.7150813540388665
+    },
+    {
+      "frame": 78,
+      "side": 0,
+      "gap": 0.06861771649512938,
+      "ankleAfterClearance": 0.7222456320401907
+    },
+    {
+      "frame": 78.5,
+      "side": 0,
+      "gap": 0.08353048649369277,
+      "ankleAfterClearance": 0.728703630135882
+    },
+    {
+      "frame": 79,
+      "side": 0,
+      "gap": 0.07209549576960506,
+      "ankleAfterClearance": 0.7343902562894299
+    },
+    {
+      "frame": 79.5,
+      "side": 0,
+      "gap": 0.0838045878038235,
+      "ankleAfterClearance": 0.7392384645596981
+    },
+    {
+      "frame": 80,
+      "side": 0,
+      "gap": 0.09466111404412891,
+      "ankleAfterClearance": 0.7431798725682497
+    },
+    {
+      "frame": 80.5,
+      "side": 0,
+      "gap": 0.09736885581256804,
+      "ankleAfterClearance": 0.7461454477378646
+    },
+    {
+      "frame": 81,
+      "side": 0,
+      "gap": 0.09901115212585299,
+      "ankleAfterClearance": 0.7480662541602598
+    },
+    {
+      "frame": 81.5,
+      "side": 0,
+      "gap": 0.09951764685278086,
+      "ankleAfterClearance": 0.7488732683093398
+    },
+    {
+      "frame": 82,
+      "side": 0,
+      "gap": 0.004559656395621725,
+      "ankleAfterClearance": 0.7484974886802729
+    },
+    {
+      "frame": 82.5,
+      "side": 0,
+      "gap": 0.0022835524345108382,
+      "ankleAfterClearance": 0.7468700856911211
+    },
+    {
+      "frame": 100.5,
+      "side": 1,
+      "gap": 0.20562649376724873,
+      "ankleAfterClearance": 1.1743265986495706
+    },
+    {
+      "frame": 101,
+      "side": 1,
+      "gap": 0.22369691754539178,
+      "ankleAfterClearance": 1.1800839334236817
+    },
+    {
+      "frame": 101.5,
+      "side": 1,
+      "gap": 0.24371562104904632,
+      "ankleAfterClearance": 1.1848593533968232
+    },
+    {
+      "frame": 102,
+      "side": 1,
+      "gap": 0.15045611515431423,
+      "ankleAfterClearance": 1.1889569305094272
+    },
+    {
+      "frame": 102.5,
+      "side": 1,
+      "gap": 0.13649353017166654,
+      "ankleAfterClearance": 1.1928400657243925
+    },
+    {
+      "frame": 103,
+      "side": 1,
+      "gap": 0.17159884590294627,
+      "ankleAfterClearance": 1.1965500779495977
+    },
+    {
+      "frame": 103.5,
+      "side": 1,
+      "gap": 0.2125827306297905,
+      "ankleAfterClearance": 1.2006042467269367
+    },
+    {
+      "frame": 104,
+      "side": 1,
+      "gap": 0.25732634748955974,
+      "ankleAfterClearance": 1.2054891417868416
+    },
+    {
+      "frame": 104.5,
+      "side": 1,
+      "gap": 0.2836425933848252,
+      "ankleAfterClearance": 1.2109518365427354
+    },
+    {
+      "frame": 105,
+      "side": 1,
+      "gap": 0.2925673879744768,
+      "ankleAfterClearance": 1.2157822722756513
+    },
+    {
+      "frame": 105.5,
+      "side": 1,
+      "gap": 0.30236115885716197,
+      "ankleAfterClearance": 1.2200060040953233
+    },
+    {
+      "frame": 106,
+      "side": 1,
+      "gap": 0.25094560949927924,
+      "ankleAfterClearance": 1.2236785967064605
+    },
+    {
+      "frame": 106.5,
+      "side": 1,
+      "gap": 0.2475808372499544,
+      "ankleAfterClearance": 1.2268363774132176
+    },
+    {
+      "frame": 107,
+      "side": 1,
+      "gap": 0.24310067916674782,
+      "ankleAfterClearance": 1.229504978354113
+    },
+    {
+      "frame": 107.5,
+      "side": 1,
+      "gap": 0.2534657189686149,
+      "ankleAfterClearance": 1.2317003234668396
+    },
+    {
+      "frame": 108,
+      "side": 1,
+      "gap": 0.2592020423586092,
+      "ankleAfterClearance": 1.2334294598265971
+    },
+    {
+      "frame": 108.5,
+      "side": 1,
+      "gap": 0.25286601202421544,
+      "ankleAfterClearance": 1.2346886661745182
+    },
+    {
+      "frame": 109,
+      "side": 1,
+      "gap": 0.24346246471761668,
+      "ankleAfterClearance": 1.2354616083419727
+    },
+    {
+      "frame": 109.5,
+      "side": 1,
+      "gap": 0.15457701256985024,
+      "ankleAfterClearance": 1.2357184401653025
+    },
+    {
+      "frame": 110,
+      "side": 1,
+      "gap": 0.13950128631340886,
+      "ankleAfterClearance": 1.2354149567841575
+    },
+    {
+      "frame": 110.5,
+      "side": 1,
+      "gap": 0.09552898255640718,
+      "ankleAfterClearance": 1.2345036368018074
+    },
+    {
+      "frame": 111,
+      "side": 1,
+      "gap": 0.07480177933803756,
+      "ankleAfterClearance": 1.2329332100520916
+    },
+    {
+      "frame": 111.5,
+      "side": 1,
+      "gap": 0.05207246864053472,
+      "ankleAfterClearance": 1.2310110769566789
+    },
+    {
+      "frame": 112,
+      "side": 1,
+      "gap": 0.027300674514207923,
+      "ankleAfterClearance": 1.2290446224142126
+    },
+    {
+      "frame": 122,
+      "side": 0,
+      "gap": 0.18662617040677554,
+      "ankleAfterClearance": 1.4783604763614309
+    },
+    {
+      "frame": 122.5,
+      "side": 0,
+      "gap": 0.20294354171709017,
+      "ankleAfterClearance": 1.4883459830878616
+    },
+    {
+      "frame": 123,
+      "side": 0,
+      "gap": 0.21917919387315443,
+      "ankleAfterClearance": 1.4988420554690496
+    },
+    {
+      "frame": 123.5,
+      "side": 0,
+      "gap": 0.10475647948908162,
+      "ankleAfterClearance": 1.5100553436185655
+    },
+    {
+      "frame": 124,
+      "side": 0,
+      "gap": 0.11445077760731137,
+      "ankleAfterClearance": 1.5221383681659735
+    },
+    {
+      "frame": 124.5,
+      "side": 0,
+      "gap": 0.10716175890047697,
+      "ankleAfterClearance": 1.5352176005592453
+    },
+    {
+      "frame": 125,
+      "side": 0,
+      "gap": 0.12283328259111825,
+      "ankleAfterClearance": 1.5493594618067958
+    },
+    {
+      "frame": 125.5,
+      "side": 0,
+      "gap": 0.1383008363967524,
+      "ankleAfterClearance": 1.5645865607883844
+    },
+    {
+      "frame": 126,
+      "side": 0,
+      "gap": 0.15353719483938755,
+      "ankleAfterClearance": 1.5799775990738605
+    },
+    {
+      "frame": 126.5,
+      "side": 0,
+      "gap": 0.16851368598254268,
+      "ankleAfterClearance": 1.5949635603522185
+    },
+    {
+      "frame": 127,
+      "side": 0,
+      "gap": 0.1831997127302849,
+      "ankleAfterClearance": 1.6094667324745706
+    },
+    {
+      "frame": 127.5,
+      "side": 0,
+      "gap": 0.19756232924690176,
+      "ankleAfterClearance": 1.6233989972437417
+    },
+    {
+      "frame": 128,
+      "side": 0,
+      "gap": 0.21156553686752066,
+      "ankleAfterClearance": 1.6366595101937105
+    },
+    {
+      "frame": 128.5,
+      "side": 0,
+      "gap": 0.2251694345513764,
+      "ankleAfterClearance": 1.649132458628284
+    },
+    {
+      "frame": 129,
+      "side": 0,
+      "gap": 0.1077753789759921,
+      "ankleAfterClearance": 1.6606849134814432
+    },
+    {
+      "frame": 129.5,
+      "side": 0,
+      "gap": 0.11413063586924488,
+      "ankleAfterClearance": 1.6711647928506126
+    },
+    {
+      "frame": 130,
+      "side": 0,
+      "gap": 0.10317134470651945,
+      "ankleAfterClearance": 1.6804188561085533
+    },
+    {
+      "frame": 130.5,
+      "side": 0,
+      "gap": 0.11543469909983672,
+      "ankleAfterClearance": 1.688291916607886
+    },
+    {
+      "frame": 131,
+      "side": 0,
+      "gap": 0.1296784361172536,
+      "ankleAfterClearance": 1.6949054776900825
+    },
+    {
+      "frame": 131.5,
+      "side": 0,
+      "gap": 0.14888396746519827,
+      "ankleAfterClearance": 1.700379556414004
+    },
+    {
+      "frame": 132,
+      "side": 0,
+      "gap": 0.1757356136777819,
+      "ankleAfterClearance": 1.7048309709834966
+    },
+    {
+      "frame": 132.5,
+      "side": 0,
+      "gap": 0.20948196983494838,
+      "ankleAfterClearance": 1.7083709128858182
+    },
+    {
+      "frame": 133,
+      "side": 0,
+      "gap": 0.14751225602038498,
+      "ankleAfterClearance": 1.711101356235555
+    },
+    {
+      "frame": 133.5,
+      "side": 0,
+      "gap": 0.1247831669588706,
+      "ankleAfterClearance": 1.7131103755337773
+    },
+    {
+      "frame": 134,
+      "side": 0,
+      "gap": 0.14187970588329146,
+      "ankleAfterClearance": 1.7144819615146787
+    },
+    {
+      "frame": 134.5,
+      "side": 0,
+      "gap": 0.15206722906051162,
+      "ankleAfterClearance": 1.715299706959499
+    },
+    {
+      "frame": 135,
+      "side": 0,
+      "gap": 0.15903037288221622,
+      "ankleAfterClearance": 1.71564420031772
+    },
+    {
+      "frame": 135.5,
+      "side": 0,
+      "gap": 0.1647888399870614,
+      "ankleAfterClearance": 1.7155911563981618
+    },
+    {
+      "frame": 136,
+      "side": 0,
+      "gap": 0.16971795145000224,
+      "ankleAfterClearance": 1.7152096401868953
+    },
+    {
+      "frame": 136.5,
+      "side": 0,
+      "gap": 0.16967452429665708,
+      "ankleAfterClearance": 1.7145603073736133
+    },
+    {
+      "frame": 137,
+      "side": 0,
+      "gap": 0.16867067107579636,
+      "ankleAfterClearance": 1.7136936577211506
+    },
+    {
+      "frame": 137.5,
+      "side": 0,
+      "gap": 0.16664329463379368,
+      "ankleAfterClearance": 1.7126489205975388
+    },
+    {
+      "frame": 138,
+      "side": 0,
+      "gap": 0.16353052522125067,
+      "ankleAfterClearance": 1.711452950547762
+    },
+    {
+      "frame": 138.5,
+      "side": 0,
+      "gap": 0.05684189688531194,
+      "ankleAfterClearance": 1.7101191336315638
+    },
+    {
+      "frame": 139,
+      "side": 0,
+      "gap": 0.04458542960163303,
+      "ankleAfterClearance": 1.708646306957144
+    },
+    {
+      "frame": 139.5,
+      "side": 0,
+      "gap": 0.031130265575381122,
+      "ankleAfterClearance": 1.7071138404204862
+    },
+    {
+      "frame": 140,
+      "side": 0,
+      "gap": 0.01645484867234215,
+      "ankleAfterClearance": 1.7056011000153697
+    },
+    {
+      "frame": 158.5,
+      "side": 1,
+      "gap": 0.1946410161513774,
+      "ankleAfterClearance": 2.0675531269468705
+    },
+    {
+      "frame": 159,
+      "side": 1,
+      "gap": 0.22631589565874655,
+      "ankleAfterClearance": 2.0617093895611887
+    },
+    {
+      "frame": 159.5,
+      "side": 1,
+      "gap": 0.2605265105388199,
+      "ankleAfterClearance": 2.05748460172537
+    },
+    {
+      "frame": 160,
+      "side": 1,
+      "gap": 0.29005182982257605,
+      "ankleAfterClearance": 2.0564077520604034
+    },
+    {
+      "frame": 160.5,
+      "side": 1,
+      "gap": 0.15802000261402638,
+      "ankleAfterClearance": 2.0602287204078236
+    },
+    {
+      "frame": 161,
+      "side": 1,
+      "gap": 0.17440843309086063,
+      "ankleAfterClearance": 2.0669169247460215
+    },
+    {
+      "frame": 161.5,
+      "side": 1,
+      "gap": 0.1919695251200264,
+      "ankleAfterClearance": 2.0720532457526204
+    },
+    {
+      "frame": 162,
+      "side": 1,
+      "gap": 0.21009154196014457,
+      "ankleAfterClearance": 2.07569710139629
+    },
+    {
+      "frame": 162.5,
+      "side": 1,
+      "gap": 0.2115175673347962,
+      "ankleAfterClearance": 2.077995308547908
+    },
+    {
+      "frame": 163,
+      "side": 1,
+      "gap": 0.20166955323283942,
+      "ankleAfterClearance": 2.079087921173537
+    },
+    {
+      "frame": 163.5,
+      "side": 1,
+      "gap": 0.20409315980976173,
+      "ankleAfterClearance": 2.079108503732354
+    },
+    {
+      "frame": 164,
+      "side": 1,
+      "gap": 0.20476556273739854,
+      "ankleAfterClearance": 2.0781860755374195
+    },
+    {
+      "frame": 164.5,
+      "side": 1,
+      "gap": 0.20260786494332494,
+      "ankleAfterClearance": 2.0764450617013432
+    },
+    {
+      "frame": 165,
+      "side": 1,
+      "gap": 0.19683432505923903,
+      "ankleAfterClearance": 2.074005293203653
+    },
+    {
+      "frame": 165.5,
+      "side": 1,
+      "gap": 0.18686995298933473,
+      "ankleAfterClearance": 2.0709820983763843
+    },
+    {
+      "frame": 166,
+      "side": 1,
+      "gap": 0.1754821322245701,
+      "ankleAfterClearance": 2.0674864440188006
+    },
+    {
+      "frame": 166.5,
+      "side": 1,
+      "gap": 0.1622223153500162,
+      "ankleAfterClearance": 2.0636251092049953
+    },
+    {
+      "frame": 167,
+      "side": 1,
+      "gap": 0.14769592455322256,
+      "ankleAfterClearance": 2.059500875700354
+    },
+    {
+      "frame": 167.5,
+      "side": 1,
+      "gap": 0.13187842274938344,
+      "ankleAfterClearance": 2.0552128545681865
+    },
+    {
+      "frame": 168,
+      "side": 1,
+      "gap": 0.1147449941333476,
+      "ankleAfterClearance": 2.050856838062653
+    },
+    {
+      "frame": 168.5,
+      "side": 1,
+      "gap": 0.09526319081089696,
+      "ankleAfterClearance": 2.0465256624868435
+    },
+    {
+      "frame": 169,
+      "side": 1,
+      "gap": 0.07449219511152494,
+      "ankleAfterClearance": 2.042309568249853
+    },
+    {
+      "frame": 169.5,
+      "side": 1,
+      "gap": 0.05241596269649529,
+      "ankleAfterClearance": 2.0382966973919943
+    },
+    {
+      "frame": 170,
+      "side": 1,
+      "gap": 0.02901806199865664,
+      "ankleAfterClearance": 2.034573550450223
+    },
+    {
+      "frame": 170.5,
+      "side": 1,
+      "gap": 0.003843673829618144,
+      "ankleAfterClearance": 2.031225388741072
+    },
+    {
+      "frame": 171,
+      "side": 1,
+      "gap": 0.0009600843056394304,
+      "ankleAfterClearance": 2.0283365684504493
+    },
+    {
+      "frame": 171.5,
+      "side": 1,
+      "gap": -4.440892098500626e-16,
+      "ankleAfterClearance": 2.0268306963236307
+    },
+    {
+      "frame": 172,
+      "side": 1,
+      "gap": 0,
+      "ankleAfterClearance": 2.02570186955028
+    },
+    {
+      "frame": 172.5,
+      "side": 1,
+      "gap": -4.440892098500626e-16,
+      "ankleAfterClearance": 2.024953719136696
+    },
+    {
+      "frame": 173,
+      "side": 1,
+      "gap": 4.440892098500626e-16,
+      "ankleAfterClearance": 2.0239763723967177
+    },
+    {
+      "frame": 173.5,
+      "side": 1,
+      "gap": 0,
+      "ankleAfterClearance": 2.0227674044159674
+    },
+    {
+      "frame": 174,
+      "side": 1,
+      "gap": -4.440892098500626e-16,
+      "ankleAfterClearance": 2.0213248864341966
+    },
+    {
+      "frame": 174.5,
+      "side": 1,
+      "gap": 0,
+      "ankleAfterClearance": 2.0199585542415757
+    },
+    {
+      "frame": 175,
+      "side": 1,
+      "gap": 0,
+      "ankleAfterClearance": 2.0185198725613205
+    },
+    {
+      "frame": 175.5,
+      "side": 1,
+      "gap": -4.440892098500626e-16,
+      "ankleAfterClearance": 2.017012307438715
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "source": "Labs/BodyflipLab",
+  "files": {
+    "recovery.js": "2a98ad2cf3f316c84f63af99ccf95d734de12e63d5a57308b8e73ace17079cad",
+    "support.js": "cf7a03b4bfd863e7d0af59510399eb21007085c50ed9201569cdcecdf358603f",
+    "renderer.js": "2f2445d5eeb2a1263c53621bf89308c9ac4794690455047d5595e49da0026fe0",
+    "run_bank.py": "d3ee1492a641cf8d4c632a52ffc70fd99290c3d88bd85eb41bab77ec9b48cebb",
+    "data/walk-phases.json": "a6a938730ff5e680a1b1309b3769f910b56d5bdc28cfde94d051b93c8a7d2dab",
+    "data/walk-phases.bin": "55bb17afeeba04c963e9189b45a596066414242d304d2340db963b7f486d3086",
+    "data/run-phases.json": "884191acaaaeb2d62df3683703a2fb7670c4c68764110cef3b278d28183baae8",
+    "data/run-phases.bin": "5ca392d9dfb559ac75075c1f92cc15e9e0c62553c3999109fc830e483e53f7e7"
+  },
+  "purpose": "Independent copies. No live imports or writes to Bodyflip Lab."
+}

@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "checks": [
+    "Measured old exit stall is detected from whole foot velocity",
+    "Saved phase49 exit no longer waits for NN motion",
+    "Saved phase49 first riser has no upward velocity spike",
+    "Smoothing does not inflate the first swing clearance dome",
+    "First riser vertical speed changes continuously",
+    "Entry forward movement stays close to NN",
+    "Forward recovery joins NN speed at the completed foot handoff",
+    "Saved phase49 full course soles clear terrain",
+    "Saved phase49 full course targets remain reachable",
+    "World root velocity remains the source 2m/s",
+    "Phase 0 exit has no artificial velocity stall",
+    "Phase 0 clears all soles",
+    "Phase 0.25 exit has no artificial velocity stall",
+    "Phase 0.25 clears all soles",
+    "Phase 0.49 exit has no artificial velocity stall",
+    "Phase 0.49 clears all soles",
+    "Phase 0.75 exit has no artificial velocity stall",
+    "Phase 0.75 clears all soles"
+  ],
+  "measured": {
+    "beforeStallFrames": [
+      177,
+      177.5,
+      178,
+      178.5,
+      179,
+      179.5
+    ],
+    "afterStallFrames": [],
+    "beforePeakUpSpeed": 7.140655376135357,
+    "afterPeakUpSpeed": 0.5410413559191729,
+    "beforePeakHeight": 0.44144706770351694,
+    "afterPeakHeight": 0.42465259960547863,
+    "phaseResults": [
+      {
+        "phase": 0,
+        "stalls": [],
+        "maxPenetration": 1.5166646494257918e-7
+      },
+      {
+        "phase": 0.25,
+        "stalls": [],
+        "maxPenetration": 4.3359795642849974e-7
+      },
+      {
+        "phase": 0.49,
+        "stalls": [],
+        "maxPenetration": 2.2817316458478842e-7
+      },
+      {
+        "phase": 0.75,
+        "stalls": [],
+        "maxPenetration": 4.0156029879057087e-7
+      }
+    ]
+  }
+}

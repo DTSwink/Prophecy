@@ -1,0 +1,28 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),K=require('./footik.js'),R=require('./recovery.js'),S=require('./support.js'),{load}=require('./test-bank.cjs');
+const before=JSON.parse(fs.readFileSync(new URL('data/swing-inertia-before.json',import.meta.url))),run=load(before.settings.gait,before.settings.phase);
+const started=performance.now(),model=K.prepare(run,before.settings),prepareMs=performance.now()-started,j=run.names.indexOf('foot_l'),checks=[];
+const check=(name,ok)=>{assert(ok,name);checks.push(name);};
+const rows=model.frames.map((f,i)=>({frame:i/2,p:f.pose.points[j],state:f.feet[0].state,w:f.influence}));
+function motion(rows){return rows.slice(1).map((r,i)=>({...r,v:R.mul(R.sub(r.p,rows[i].p),120)}));}
+const old=motion(before.rows),now=motion(rows),window=(xs,a,b)=>xs.filter(r=>r.frame>=a&&r.frame<=b);
+const kicks=xs=>xs.slice(1).filter((r,i)=>r.w>0&&xs[i].w>0).map((r)=>{const i=xs.indexOf(r);return R.length(R.sub(r.v,xs[i-1].v));});
+const peakBefore=Math.max(...kicks(old)),peakAfter=Math.max(...kicks(now));
+check('Baseline reproduces the reported frame72 backward snap',window(old,71,73).some(r=>r.v[2]<-4));
+check('Released foot advances through 69-75 without snapping backwards',window(now,69,75).every(r=>r.v[2]>1));
+check('Whole-course terrain-region velocity kicks fall by at least half',peakAfter<peakBefore*.5);
+const f68=model.sample(68/60),leg=S.leg(f68.pose,run.names,'L'),reach=R.length(R.sub(f68.pose.points[j],f68.pose.points[leg.hip]))/leg.reach;
+const pitch=Math.asin(S.footFrame(f68.pose,leg.foot,leg.toe,'L').forward[1])*180/Math.PI;
+check('68 uses real first-tread rolling support',f68.feet[0].state==='ROLL'&&f68.feet[0].contact.surface==='step0');
+check('68 rolls onto the toe with remaining knee bend',pitch<-20&&reach<.98);
+check('68 retains the exact material contact',R.length(R.sub(R.add(f68.pose.points[j],R.rotate(f68.pose.q[j],f68.feet[0].contact.localPoint)),f68.feet[0].contact.point))<1e-6);
+check('175-177 stays supported on the actual last tread',window(now,175,177).every(r=>{const f=model.frames[r.frame*2];return f.feet[0].state==='ROLL'&&f.feet[0].contact.surface==='step11';}));
+check('175-177 has no forced vertical launch and stop',window(now,175,177).every(r=>r.v[1]>0&&r.v[1]<.5));
+check('188-193 release progresses continuously after the last toe contact',window(now,188,193).every(r=>r.v[1]>0&&r.v[2]>1));
+check('All corrected shoes clear the terrain',model.metrics.maxPenetration<1e-5);
+check('All corrected targets remain reachable',model.metrics.maxReachError<1e-5);
+check('Root and source gait are unchanged',model.frames.every(f=>Math.abs(f.root[1]-model.terrain.rootHeight(f.root[2]))<1e-8));
+const result={passed:true,checks,phase:before.settings.phase,prepareMs,peakVelocityChangeBefore:peakBefore,peakVelocityChangeAfter:peakAfter,frame68:{reach,pitch},reported:window(now,68,75).concat(window(now,174,194))};
+fs.writeFileSync(new URL('inertia-verification.json',import.meta.url),JSON.stringify(result,null,2));console.log(JSON.stringify({...result,reported:undefined}));
