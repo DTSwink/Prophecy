@@ -1,0 +1,377 @@
+{
+  "passed": true,
+  "browserVisualVerified": false,
+  "checks": [
+    "Contact succeeds 0.7071067811865475,0.7071067811865475,0/0,-4,3",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,-4,3/0.1",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,-4,3/0.1",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,-4,3/0.3",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,-4,3/0.3",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,-4,3/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,-4,3/0.6833333333333333",
+    "Common tangential momentum retained 0.7071067811865475,0.7071067811865475,0/0,-4,3",
+    "Contact succeeds -0.7071067811865475,0.7071067811865475,0/0,-4,3",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,-4,3/0.1",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,-4,3/0.1",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,-4,3/0.3",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,-4,3/0.3",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,-4,3/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,-4,3/0.6833333333333333",
+    "Common tangential momentum retained -0.7071067811865475,0.7071067811865475,0/0,-4,3",
+    "Contact succeeds 1,0,0/0,-4,3",
+    "100 percent root matches flat after contact cancellation 1,0,0/0,-4,3/0.1",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/0,-4,3/0.1",
+    "100 percent root matches flat after contact cancellation 1,0,0/0,-4,3/0.3",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/0,-4,3/0.3",
+    "100 percent root matches flat after contact cancellation 1,0,0/0,-4,3/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/0,-4,3/0.6833333333333333",
+    "Common tangential momentum retained 1,0,0/0,-4,3",
+    "Contact succeeds 0.7071067811865475,0.7071067811865475,0/0,4,3",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,4,3/0.1",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,4,3/0.1",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,4,3/0.3",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,4,3/0.3",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,4,3/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,4,3/0.6833333333333333",
+    "Common tangential momentum retained 0.7071067811865475,0.7071067811865475,0/0,4,3",
+    "Contact succeeds -0.7071067811865475,0.7071067811865475,0/0,4,3",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,4,3/0.1",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,4,3/0.1",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,4,3/0.3",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,4,3/0.3",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,4,3/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,4,3/0.6833333333333333",
+    "Common tangential momentum retained -0.7071067811865475,0.7071067811865475,0/0,4,3",
+    "Contact succeeds 1,0,0/0,4,3",
+    "100 percent root matches flat after contact cancellation 1,0,0/0,4,3/0.1",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/0,4,3/0.1",
+    "100 percent root matches flat after contact cancellation 1,0,0/0,4,3/0.3",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/0,4,3/0.3",
+    "100 percent root matches flat after contact cancellation 1,0,0/0,4,3/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/0,4,3/0.6833333333333333",
+    "Common tangential momentum retained 1,0,0/0,4,3",
+    "Contact succeeds 0.7071067811865475,0.7071067811865475,0/1,-4,3",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/1,-4,3/0.1",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/1,-4,3/0.1",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/1,-4,3/0.3",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/1,-4,3/0.3",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/1,-4,3/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/1,-4,3/0.6833333333333333",
+    "Common tangential momentum retained 0.7071067811865475,0.7071067811865475,0/1,-4,3",
+    "Contact succeeds -0.7071067811865475,0.7071067811865475,0/1,-4,3",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/1,-4,3/0.1",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/1,-4,3/0.1",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/1,-4,3/0.3",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/1,-4,3/0.3",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/1,-4,3/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/1,-4,3/0.6833333333333333",
+    "Common tangential momentum retained -0.7071067811865475,0.7071067811865475,0/1,-4,3",
+    "Contact succeeds 1,0,0/1,-4,3",
+    "100 percent root matches flat after contact cancellation 1,0,0/1,-4,3/0.1",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/1,-4,3/0.1",
+    "100 percent root matches flat after contact cancellation 1,0,0/1,-4,3/0.3",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/1,-4,3/0.3",
+    "100 percent root matches flat after contact cancellation 1,0,0/1,-4,3/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/1,-4,3/0.6833333333333333",
+    "Common tangential momentum retained 1,0,0/1,-4,3",
+    "Contact succeeds 0.7071067811865475,0.7071067811865475,0/0,0,0",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,0,0/0.1",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,0,0/0.1",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,0,0/0.3",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,0,0/0.3",
+    "100 percent root matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,0,0/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation 0.7071067811865475,0.7071067811865475,0/0,0,0/0.6833333333333333",
+    "Common tangential momentum retained 0.7071067811865475,0.7071067811865475,0/0,0,0",
+    "Contact succeeds -0.7071067811865475,0.7071067811865475,0/0,0,0",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,0,0/0.1",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,0,0/0.1",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,0,0/0.3",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,0,0/0.3",
+    "100 percent root matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,0,0/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation -0.7071067811865475,0.7071067811865475,0/0,0,0/0.6833333333333333",
+    "Common tangential momentum retained -0.7071067811865475,0.7071067811865475,0/0,0,0",
+    "Contact succeeds 1,0,0/0,0,0",
+    "100 percent root matches flat after contact cancellation 1,0,0/0,0,0/0.1",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/0,0,0/0.1",
+    "100 percent root matches flat after contact cancellation 1,0,0/0,0,0/0.3",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/0,0,0/0.3",
+    "100 percent root matches flat after contact cancellation 1,0,0/0,0,0/0.6833333333333333",
+    "100 percent pelvis matches flat after contact cancellation 1,0,0/0,0,0/0.6833333333333333",
+    "Common tangential momentum retained 1,0,0/0,0,0",
+    "No carried surface-normal or push-axis component 0",
+    "Incoming motion uses effective push plane 0",
+    "Debug arrow matches launch axis 0",
+    "No carried surface-normal or push-axis component 0.5",
+    "Incoming motion uses effective push plane 0.5",
+    "Debug arrow matches launch axis 0.5",
+    "No carried surface-normal or push-axis component 1",
+    "Incoming motion uses effective push plane 1",
+    "Debug arrow matches launch axis 1"
+  ],
+  "measurements": [
+    {
+      "normal": [
+        0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "velocity": [
+        0,
+        -4,
+        3
+      ],
+      "rootDeltaAtPointOne": [
+        -1.2508468819716663e-17,
+        0.2661330851912498,
+        0.3000000000000007
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0.3000000000000007
+      ]
+    },
+    {
+      "normal": [
+        -0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "velocity": [
+        0,
+        -4,
+        3
+      ],
+      "rootDeltaAtPointOne": [
+        1.2508468819716663e-17,
+        0.2661330851912498,
+        0.3000000000000007
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0.3000000000000007
+      ]
+    },
+    {
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "velocity": [
+        0,
+        -4,
+        3
+      ],
+      "rootDeltaAtPointOne": [
+        2.5016937639433326e-17,
+        0.2661330851912499,
+        0.3000000000000007
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0.3000000000000007
+      ]
+    },
+    {
+      "normal": [
+        0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "velocity": [
+        0,
+        4,
+        3
+      ],
+      "rootDeltaAtPointOne": [
+        -1.2508468819716663e-17,
+        0.2661330851912498,
+        0.3000000000000007
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0.3000000000000007
+      ]
+    },
+    {
+      "normal": [
+        -0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "velocity": [
+        0,
+        4,
+        3
+      ],
+      "rootDeltaAtPointOne": [
+        1.2508468819716663e-17,
+        0.2661330851912498,
+        0.3000000000000007
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0.3000000000000007
+      ]
+    },
+    {
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "velocity": [
+        0,
+        4,
+        3
+      ],
+      "rootDeltaAtPointOne": [
+        2.5016937639433326e-17,
+        0.2661330851912499,
+        0.3000000000000007
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0.3000000000000007
+      ]
+    },
+    {
+      "normal": [
+        0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "velocity": [
+        1,
+        -4,
+        3
+      ],
+      "rootDeltaAtPointOne": [
+        -1.2508468819716663e-17,
+        0.2661330851912498,
+        0.3000000000000007
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0.3000000000000007
+      ]
+    },
+    {
+      "normal": [
+        -0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "velocity": [
+        1,
+        -4,
+        3
+      ],
+      "rootDeltaAtPointOne": [
+        1.2508468819716663e-17,
+        0.2661330851912498,
+        0.3000000000000007
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0.3000000000000007
+      ]
+    },
+    {
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "velocity": [
+        1,
+        -4,
+        3
+      ],
+      "rootDeltaAtPointOne": [
+        2.5016937639433326e-17,
+        0.2661330851912499,
+        0.3000000000000007
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0.3000000000000007
+      ]
+    },
+    {
+      "normal": [
+        0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "rootDeltaAtPointOne": [
+        -1.2508468819716663e-17,
+        0.2661330851912498,
+        0
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0
+      ]
+    },
+    {
+      "normal": [
+        -0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "rootDeltaAtPointOne": [
+        1.2508468819716663e-17,
+        0.2661330851912498,
+        0
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0
+      ]
+    },
+    {
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "rootDeltaAtPointOne": [
+        2.5016937639433326e-17,
+        0.2661330851912499,
+        0
+      ],
+      "flatDeltaAtPointOne": [
+        0,
+        0.26613308519124984,
+        0
+      ]
+    }
+  ]
+}

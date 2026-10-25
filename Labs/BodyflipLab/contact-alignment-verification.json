@@ -1,0 +1,76 @@
+{
+  "passed": true,
+  "checks": [
+    "Changed first-foot choice reports later misses without launch",
+    "Frozen reported incline pose selects right and pushes",
+    "Contact begins at the captured ankle floor",
+    "Shoe levels while contact lasts floor",
+    "Sole stays on surface throughout loading and push floor",
+    "Knee segment lengths remain intact floor",
+    "Spring and displayed IK use the same moving ankle floor",
+    "Ankle continuous at phase boundary floor/0.8958333333333333",
+    "Foot orientation continuous at phase boundary floor/0.8958333333333333",
+    "Ankle continuous at phase boundary floor/0.9036897766590117",
+    "Foot orientation continuous at phase boundary floor/0.9036897766590117",
+    "Reverse seeking does not change contact floor",
+    "Both ideal markers report the selection-time comparison floor",
+    "Chosen foot is closest among eligible own targets floor",
+    "Contact begins at the captured ankle left",
+    "Shoe levels while contact lasts left",
+    "Sole stays on surface throughout loading and push left",
+    "Knee segment lengths remain intact left",
+    "Spring and displayed IK use the same moving ankle left",
+    "Ankle continuous at phase boundary left/0.03333333333333333",
+    "Foot orientation continuous at phase boundary left/0.03333333333333333",
+    "Ankle continuous at phase boundary left/0.06333333333333332",
+    "Foot orientation continuous at phase boundary left/0.06333333333333332",
+    "Reverse seeking does not change contact left",
+    "Both ideal markers report the selection-time comparison left",
+    "Chosen foot is closest among eligible own targets left",
+    "Corner-contact fixture is heavily banked",
+    "Alignment completes even if heel/toe speed is zero 0",
+    "Heel/toe rotation preserves tangent side 0",
+    "Existing roll speed controls forward pitch after loading 0",
+    "Alignment completes even if heel/toe speed is zero 100",
+    "Heel/toe rotation preserves tangent side 100",
+    "Existing roll speed controls forward pitch after loading 100",
+    "Alignment completes even if heel/toe speed is zero 400",
+    "Heel/toe rotation preserves tangent side 400",
+    "Existing roll speed controls forward pitch after loading 400"
+  ],
+  "planMs": 35.556899999999985,
+  "measurements": [
+    {
+      "surface": "floor",
+      "foot": "L",
+      "initialBank": 0.043572802031687174,
+      "releaseBank": 0.0031382924437327597,
+      "maxGap": 1.6653345369377348e-16,
+      "maxBoneError": 1.6653345369377348e-16,
+      "maxTargetError": 5.417672226377439e-16,
+      "load": 0.0125,
+      "push": 0.00785644332567851,
+      "releaseVelocity": [
+        0,
+        4.497596553075553,
+        5.000038146972674
+      ]
+    },
+    {
+      "surface": "left",
+      "foot": "R",
+      "initialBank": 0.7730520493825781,
+      "releaseBank": 1.6653345369377348e-16,
+      "maxGap": 8.881784197001252e-16,
+      "maxBoneError": 3.885780586188048e-16,
+      "maxTargetError": 7.447602459741819e-16,
+      "load": 0.03333333333333333,
+      "push": 0.029999999999999992,
+      "releaseVelocity": [
+        1.7746482315224001,
+        4.284379828982808,
+        4.450881459631538
+      ]
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "passed": true,
+  "checks": [
+    "run phase 0.3 blend 0 misses without launch",
+    "run phase 0.3 blend 0 pelvis never bounces upward",
+    "run phase 0.3 blend 0 pelvis follows root trajectory",
+    "run phase 0.3 blend 0 pelvis continuous at edge",
+    "run phase 0.3 blend 0 limb animation continues",
+    "run phase 0.3 blend 0 seek deterministic",
+    "run phase 0.3 blend 0.2 misses without launch",
+    "run phase 0.3 blend 0.2 pelvis never bounces upward",
+    "run phase 0.3 blend 0.2 pelvis follows root trajectory",
+    "run phase 0.3 blend 0.2 pelvis continuous at edge",
+    "run phase 0.3 blend 0.2 limb animation continues",
+    "run phase 0.3 blend 0.2 seek deterministic",
+    "run phase 0.3 blend 0.8 misses without launch",
+    "run phase 0.3 blend 0.8 pelvis never bounces upward",
+    "run phase 0.3 blend 0.8 pelvis follows root trajectory",
+    "run phase 0.3 blend 0.8 pelvis continuous at edge",
+    "run phase 0.3 blend 0.8 limb animation continues",
+    "run phase 0.3 blend 0.8 seek deterministic",
+    "walk phase 0.67 blend 0 misses without launch",
+    "walk phase 0.67 blend 0 pelvis never bounces upward",
+    "walk phase 0.67 blend 0 pelvis follows root trajectory",
+    "walk phase 0.67 blend 0 pelvis continuous at edge",
+    "walk phase 0.67 blend 0 limb animation continues",
+    "walk phase 0.67 blend 0 seek deterministic",
+    "walk phase 0.67 blend 0.2 misses without launch",
+    "walk phase 0.67 blend 0.2 pelvis never bounces upward",
+    "walk phase 0.67 blend 0.2 pelvis follows root trajectory",
+    "walk phase 0.67 blend 0.2 pelvis continuous at edge",
+    "walk phase 0.67 blend 0.2 limb animation continues",
+    "walk phase 0.67 blend 0.2 seek deterministic",
+    "walk phase 0.67 blend 0.8 misses without launch",
+    "walk phase 0.67 blend 0.8 pelvis never bounces upward",
+    "walk phase 0.67 blend 0.8 pelvis follows root trajectory",
+    "walk phase 0.67 blend 0.8 pelvis continuous at edge",
+    "walk phase 0.67 blend 0.8 limb animation continues",
+    "walk phase 0.67 blend 0.8 seek deterministic"
+  ],
+  "measurements": [
+    {
+      "gait": "run",
+      "phase": 0.3,
+      "jumpBlend": 0,
+      "abortTime": 0.9041666666666667,
+      "fallStart": 0.9759999970466856,
+      "maxPelvisUpPerTick": 0,
+      "maxRootLocalPelvisError": 9.992007221626409e-16
+    },
+    {
+      "gait": "run",
+      "phase": 0.3,
+      "jumpBlend": 0.2,
+      "abortTime": 0.9041666666666667,
+      "fallStart": 0.9759999970466856,
+      "maxPelvisUpPerTick": 0,
+      "maxRootLocalPelvisError": 9.992007221626409e-16
+    },
+    {
+      "gait": "run",
+      "phase": 0.3,
+      "jumpBlend": 0.8,
+      "abortTime": 0.9041666666666667,
+      "fallStart": 0.9759999970466856,
+      "maxPelvisUpPerTick": 0,
+      "maxRootLocalPelvisError": 1.7763568394002505e-15
+    },
+    {
+      "gait": "walk",
+      "phase": 0.67,
+      "jumpBlend": 0,
+      "abortTime": 0.9,
+      "fallStart": 0.9400005795822761,
+      "maxPelvisUpPerTick": 0,
+      "maxRootLocalPelvisError": 1.6653345369377348e-15
+    },
+    {
+      "gait": "walk",
+      "phase": 0.67,
+      "jumpBlend": 0.2,
+      "abortTime": 0.9,
+      "fallStart": 0.9400005795822761,
+      "maxPelvisUpPerTick": 0,
+      "maxRootLocalPelvisError": 1.6653345369377348e-15
+    },
+    {
+      "gait": "walk",
+      "phase": 0.67,
+      "jumpBlend": 0.8,
+      "abortTime": 0.9,
+      "fallStart": 0.9400005795822761,
+      "maxPelvisUpPerTick": 0,
+      "maxRootLocalPelvisError": 9.155133597044475e-16
+    }
+  ]
+}

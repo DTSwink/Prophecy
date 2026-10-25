@@ -1,0 +1,146 @@
+{
+  "passed": true,
+  "browserVisualVerified": false,
+  "checks": [
+    "Anatomical up rotates continuously L/0",
+    "Foot geometry covariant L/0",
+    "Rendered foot matches queried corners L/0",
+    "Anatomical up rotates continuously L/100",
+    "Foot geometry covariant L/100",
+    "Rendered foot matches queried corners L/100",
+    "Anatomical up rotates continuously L/180",
+    "Foot geometry covariant L/180",
+    "Rendered foot matches queried corners L/180",
+    "Anatomical up rotates continuously L/260",
+    "Foot geometry covariant L/260",
+    "Rendered foot matches queried corners L/260",
+    "Anatomical up rotates continuously R/0",
+    "Foot geometry covariant R/0",
+    "Rendered foot matches queried corners R/0",
+    "Anatomical up rotates continuously R/100",
+    "Foot geometry covariant R/100",
+    "Rendered foot matches queried corners R/100",
+    "Anatomical up rotates continuously R/180",
+    "Foot geometry covariant R/180",
+    "Rendered foot matches queried corners R/180",
+    "Anatomical up rotates continuously R/260",
+    "Foot geometry covariant R/260",
+    "Rendered foot matches queried corners R/260",
+    "Inverted foot can capture nearby ground L",
+    "Capture uses sole-facing orientation L",
+    "Inverted foot can capture nearby ground R",
+    "Capture uses sole-facing orientation R",
+    "Saved setup plant faces surface 0.8833333333333333",
+    "Saved setup cancels incoming surface-normal motion 0.8833333333333333",
+    "Saved setup cancels incoming push-axis motion 0.8833333333333333",
+    "Saved setup plant faces surface 1.9166666666666667",
+    "Saved setup cancels incoming surface-normal motion 1.9166666666666667",
+    "Saved setup cancels incoming push-axis motion 1.9166666666666667",
+    "Saved setup plant faces surface 2.433333333333333",
+    "Saved setup cancels incoming surface-normal motion 2.433333333333333",
+    "Saved setup cancels incoming push-axis motion 2.433333333333333",
+    "Isolated foot fix plants sole first 0.8833333333333333",
+    "Isolated foot fix plants sole first 1.9166666666666667",
+    "Isolated foot fix plants sole first 2.433333333333333"
+  ],
+  "measurements": [
+    {
+      "time": 0.8833333333333333,
+      "push": 0.9833333333333333,
+      "side": "R",
+      "soleUpDot": 0.9721467955177026,
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "incoming": [
+        0,
+        3.1763735522036376e-21,
+        4.99998092651369
+      ],
+      "carried": [
+        0,
+        0,
+        4.99998092651369
+      ]
+    },
+    {
+      "time": 1.9166666666666667,
+      "push": 1.9541666666666668,
+      "side": "R",
+      "soleUpDot": 0.6762017786660117,
+      "normal": [
+        0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "incoming": [
+        0.0005265663710163367,
+        -4.426686858904974,
+        4.999802476297379
+      ],
+      "carried": [
+        0,
+        0,
+        4.999802476297379
+      ]
+    },
+    {
+      "time": 2.433333333333333,
+      "push": 2.6416666666666666,
+      "side": "L",
+      "soleUpDot": 0.9897193363651828,
+      "normal": [
+        -0.7071067811865475,
+        0.7071067811865475,
+        0
+      ],
+      "incoming": [
+        2.147221128624741,
+        -0.07267462986009748,
+        2.2245949818670456
+      ],
+      "carried": [
+        0,
+        0,
+        2.2245949818670456
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "first",
+      "time": 0.8833333333333333,
+      "surface": "floor",
+      "surfaceId": "floor",
+      "status": "Push",
+      "contactTime": 0.9624999999999999,
+      "pushTime": 0.9833333333333333,
+      "releaseTime": 1.0086458333333332,
+      "reason": null
+    },
+    {
+      "id": "mmvnlymnl_0",
+      "time": 1.9166666666666667,
+      "surface": "auto",
+      "surfaceId": "left",
+      "status": "Push",
+      "contactTime": 1.9166666666666667,
+      "pushTime": 1.9541666666666668,
+      "releaseTime": 2.0141666666666667,
+      "reason": null
+    },
+    {
+      "id": "mmvnophoa_0",
+      "time": 2.433333333333333,
+      "surface": "auto",
+      "surfaceId": "right",
+      "status": "Push",
+      "contactTime": 2.55,
+      "pushTime": 2.6416666666666666,
+      "releaseTime": 2.7016666666666667,
+      "reason": null
+    }
+  ]
+}

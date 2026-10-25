@@ -1,0 +1,42 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),R=require('./recovery.js'),C=require('./core.js'),S=require('./support.js');
+const source=fs.readFileSync(new URL('renderer.js',import.meta.url),'utf8'),app=fs.readFileSync(new URL('app.js',import.meta.url),'utf8'),html=fs.readFileSync(new URL('index.html',import.meta.url),'utf8'),checks=[];
+const check=(name,value)=>{assert(value,name);checks.push(name);};
+const Renderer=vm.runInNewContext(source+';WebGLMotionRenderer;', {normalize:R.unit,add:R.add,sub:R.sub,mul:R.mul,dot:R.dot}),renderer=Object.create(Renderer.prototype);
+renderer.triangle=(target,...args)=>{if(Array.isArray(target))target.push(args);else target.length+=27;};
+for(const surface of S.terrain(4)){
+ const n=surface.normal,u=surface.u,v=surface.v,center=surface.box.center;
+ renderer.viewCamera={eye:R.add(center,R.add(R.mul(n,30),R.add(R.mul(u,30),R.mul(v,30)))),forward:R.unit(R.add(R.mul(n,-30),R.add(R.mul(u,-30),R.mul(v,-30))))};
+ let opaque=[],transparent=[];renderer.platformBox(opaque,transparent,surface,[.2,.2,.3],.2);
+ check(surface.id+' keeps only local top opaque',opaque.length===2&&opaque.every(t=>R.dot(t[3],n)>.999));
+ check(surface.id+' queues visible sides for alpha blending',transparent.length===2&&transparent.every(f=>R.dot(f.normal,n)<.999));
+ opaque=[];transparent=[];renderer.platformBox(opaque,transparent,surface,[.2,.2,.3],0);
+ check(surface.id+' 100 percent hides sides but keeps top',opaque.length===2&&transparent.length===0);
+ opaque=[];transparent=[];renderer.platformBox(opaque,transparent,surface,[.2,.2,.3],1);
+ check(surface.id+' zero translucency is solid',opaque.length===6&&transparent.length===0);
+ renderer.viewCamera.eye=R.add(center,R.add(R.mul(n,-30),R.add(R.mul(u,30),R.mul(v,30))));
+ opaque=[];transparent=[];renderer.platformBox(opaque,transparent,surface,[.2,.2,.3],.2);
+ check(surface.id+' underside has no opaque top back face',opaque.length===0&&transparent.length===3);
+}
+const state={blend:false,write:true,opacity:1},calls=[];
+renderer.locations={opacity:'opacity'};renderer.gl={BLEND:1,SRC_ALPHA:2,ONE_MINUS_SRC_ALPHA:3,TRIANGLES:4,enable:v=>{if(v===1)state.blend=true;},disable:v=>{if(v===1)state.blend=false;},blendFunc:(a,b)=>calls.push([a,b]),depthMask:v=>state.write=v,uniform1f:(loc,v)=>state.opacity=v};
+let draws=0;renderer.bindAndDraw=()=>{draws++;check('Transparent pass blends without depth writes',state.blend&&!state.write&&state.opacity===.2);};
+const faces=[2,5,3].map(depth=>({depth,points:[[0,0,0],[1,0,0],[1,1,0],[0,1,0]],normal:[0,0,1],color:[1,1,1]}));
+renderer.drawPlatformSides(faces,.2);
+check('Faces sorted back to front',faces.map(f=>f.depth).join(',')==='5,3,2');
+check('Opaque render state restored',!state.blend&&state.write&&state.opacity===1&&calls[0].join(',')==='2,3');
+renderer.drawPlatformSides(faces,0);renderer.drawPlatformSides([],.2);check('Invisible or empty sides cause no draw',draws===1);
+renderer.bindAndDraw=()=>{throw Error('test draw failure');};try{renderer.drawPlatformSides(faces,.3);}catch{}
+check('Render failure still restores opaque state',!state.blend&&state.write&&state.opacity===1);
+check('Default translucency is 80 percent and clamps',C.sanitize().platformTranslucency===.8&&C.sanitize({platformTranslucency:2}).platformTranslucency===1&&C.sanitize({platformTranslucency:-1}).platformTranslucency===0);
+check('Saved translucency survives sanitation',C.sanitize(JSON.parse(JSON.stringify(C.sanitize({platformTranslucency:.35})))).platformTranslucency===.35);
+check('Control is appended at bottom of More options',html.indexOf('id="platformTranslucency"')>html.indexOf('id="jumpSkew"')&&html.indexOf('id="platformTranslucency"')<html.indexOf('</details>'));
+const field={value:'65'},ctx={settings:C.sanitize(),C,$:()=>field,drawAll(){ctx.draws++;},save(){ctx.saves++;},draws:0,saves:0};
+vm.runInNewContext(app.split('\n').find(line=>line.includes("$('platformTranslucency').onchange=")),ctx);field.onchange();
+check('Control changes only appearance and saves',ctx.settings.platformTranslucency===.65&&ctx.draws===1&&ctx.saves===1);
+check('Shader uses opacity for lit and unlit output',source.includes('vec4(vColor, uOpacity)')&&source.includes('vec4(mix(lit, uFogColor, fog * 0.28), uOpacity)'));
+fs.writeFileSync(new URL('platform-translucency-verification.json',import.meta.url),JSON.stringify({passed:true,browserVisualVerified:false,checks},null,2));
+console.log(JSON.stringify({passed:true,checks:checks.length,browserVisualVerified:false}));

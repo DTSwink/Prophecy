@@ -16,3 +16,34 @@ footer{height:56px;gap:18px}.timeline{min-width:0;gap:10px}.timeline-track{posit
 .sequence #jumpEarly{width:58px;padding:3px 4px;font-size:11px}.sequence label[for=jumpEarly]{font-size:11px;margin-left:auto}
 
 .minor-options{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}.minor-options summary{cursor:pointer;color:var(--muted);font-size:11px}.minor-options .support-grid{grid-template-columns:1fr;margin:8px 0}.minor-options>.check{font-size:11px}
+
+/* Viewport dropdown: keep the view buttons and existing readouts in place. */
+.viewport-options{position:absolute;top:51px;right:20px;z-index:4;margin:0;padding:0;border:0;max-width:calc(100% - 40px);pointer-events:auto}
+.viewport-options[hidden]{display:none}
+.viewport-options summary{padding:3px 9px;border:1px solid var(--line);border-radius:5px;background:#172130;color:var(--ink);font-size:11px;white-space:nowrap}
+.viewport-options[open]{width:250px;padding:10px;border:1px solid var(--line);border-radius:6px;background:#19212ff5;box-shadow:0 8px 22px #0005;max-height:calc(100% - 105px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.viewport-options[open] summary{padding:0 0 7px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+.viewport-options .hint{margin:6px 0;line-height:1.5}
+
+
+/* Jump markers share the existing playback rail and time scale. */
+.jump-editor{position:absolute;inset:0;pointer-events:none;z-index:3}
+.jump-editor[hidden],.jump-popover[hidden],#jumpHere[hidden]{display:none}
+.jump-lane{position:absolute;left:6px;right:6px;top:0;height:32px;pointer-events:none}
+#jumpMarkers{position:absolute;inset:0;pointer-events:none}
+.jump-marker{pointer-events:auto;position:absolute;top:-5px;transform:translateX(-50%);padding:0;min-width:18px;height:15px;border-radius:3px;border:1px solid #7e8fa8;background:#25344b;color:#dbe4f4;font-size:9px;cursor:ew-resize;touch-action:none}
+.jump-marker::after{content:'';position:absolute;left:50%;top:14px;height:5px;border-left:1px solid #7e8fa8}
+.jump-marker[data-status=Miss]{border-color:#d28d69}.jump-marker[data-status=Busy]{border-style:dashed}.jump-marker.selected{z-index:2;background:#b8a0ff;color:#171426;border-color:#ddd0ff}
+.jump-popover{pointer-events:auto;position:absolute;bottom:42px;z-index:6;width:200px;padding:10px;background:#202a3b;border:1px solid #59647b;border-radius:6px;box-shadow:0 4px 18px #0006}
+.jump-edit-row{display:flex;align-items:center;gap:8px;font-size:11px}.jump-edit-row>b{min-width:17px}.jump-edit-row label{display:flex;align-items:center;gap:3px;white-space:nowrap}.jump-edit-row input[type=number]{width:70px;font-size:11px;padding:3px}.jump-edit-row button{margin-left:auto;padding:4px 7px}
+#jumpStatus{display:block;margin-top:7px;color:#91ddbd;font-size:10px;line-height:1.4}#jumpStatus[data-status=Miss],#jumpStatus[data-status=Busy]{color:#e9ad85}
+#jumpHere{flex-shrink:0;padding:7px 12px}
+
+.platform-tools{position:absolute;left:20px;top:51px;z-index:5;display:flex;align-items:center;gap:9px}.platform-tools[hidden],#platformMode[hidden]{display:none}#platformMode{font-size:10px;color:#b7c4d9;background:#172130cf;padding:3px 6px;border-radius:3px}.platform-gizmo{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;overflow:hidden}.platform-gizmo [data-axis]{cursor:grab}.platform-gizmo:active [data-axis]{cursor:grabbing}
+
+.stage-top{z-index:5}
+
+#frameRead{min-width:48px;white-space:nowrap;color:#c7bbec}
+
+.scene-tools{display:flex;align-items:center;gap:6px;padding-left:8px;border-left:1px solid var(--line)}#scene{width:132px;text-overflow:ellipsis}
+@media(max-width:850px){.brand small{display:none}.scene-tools{gap:4px;padding-left:5px}#scene{width:100px}.header-actions{gap:4px}}

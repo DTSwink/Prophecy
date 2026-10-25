@@ -91,8 +91,9 @@ class WebGLMotionRenderer {
       uniform float uFogNear;
       uniform float uFogFar;
       uniform bool uUnlit;
+      uniform float uOpacity;
       void main() {
-        if (uUnlit) { gl_FragColor = vec4(vColor, 1.0); return; }
+        if (uUnlit) { gl_FragColor = vec4(vColor, uOpacity); return; }
         vec3 normal = normalize(vNormal);
         vec3 lightDirection = normalize(uLightDirection);
         vec3 viewDirection = normalize(uCamera - vWorld);
@@ -107,7 +108,7 @@ class WebGLMotionRenderer {
         vec3 lit = vColor * lightLevel + vec3(1.0, 0.78, 0.60) * specular + vColor * rim;
         float distanceToCamera = length(uCamera - vWorld);
         float fog = smoothstep(uFogNear, uFogFar, distanceToCamera);
-        gl_FragColor = vec4(mix(lit, uFogColor, fog * 0.28), 1.0);
+        gl_FragColor = vec4(mix(lit, uFogColor, fog * 0.28), uOpacity);
       }
     `);
     this.program = gl.createProgram();
@@ -128,6 +129,7 @@ class WebGLMotionRenderer {
       fogNear: gl.getUniformLocation(this.program, "uFogNear"),
       fogFar: gl.getUniformLocation(this.program, "uFogFar"),
       unlit: gl.getUniformLocation(this.program, "uUnlit"),
+      opacity: gl.getUniformLocation(this.program, "uOpacity"),
     };
     this.meshBuffer = gl.createBuffer();
     this.lineBuffer = gl.createBuffer();
@@ -292,7 +294,7 @@ class WebGLMotionRenderer {
     this.capsule(target, tip, add(head, mul(side, -.026)), .009, color, 10, 4);
   }
 
-  box(target, box, color, palmColor = null) {
+  box(target, box, color, palmColor = null, faceTarget = null) {
     const hx = box.dims[0] * .5;
     const hy = box.dims[1] * .5;
     const hz = box.dims[2] * .5;
@@ -312,9 +314,34 @@ class WebGLMotionRenderer {
     ];
     for (const [indices, normal, faceColor = color] of faces) {
       const [a, b, c, d] = indices.map(index => corners[index]);
-      this.triangle(target, a, b, c, normal, faceColor);
-      this.triangle(target, a, c, d, normal, faceColor);
+      const output=faceTarget?faceTarget([a,b,c,d],normal,faceColor):target;
+      if(!output)continue;
+      this.triangle(output, a, b, c, normal, faceColor);
+      this.triangle(output, a, c, d, normal, faceColor);
     }
+  }
+
+  platformBox(opaque,transparent,surface,color,opacity){
+    const camera=this.viewCamera;
+    this.box(opaque,surface.box,color,null,(points,normal,faceColor)=>{
+      const center=mul(add(points[0],points[2]),.5);
+      // The walkable top is opaque only from its front. Its back must not
+      // become an invisible opaque lid when looking through the underside.
+      if(dot(normal,sub(camera.eye,center))<=0)return null;
+      if(dot(normal,surface.normal)>.999||opacity>=1)return opaque;
+      if(opacity>0)transparent.push({points,normal,color:faceColor,depth:dot(sub(center,camera.eye),camera.forward)});
+      return null;
+    });
+  }
+
+  drawPlatformSides(faces,opacity){
+    if(!faces.length||opacity<=0)return;
+    faces.sort((a,b)=>b.depth-a.depth);
+    const mesh=this.platformSideMesh||(this.platformSideMesh=new LabVertexStream(4096));mesh.length=0;
+    for(const face of faces){const [a,b,c,d]=face.points;this.triangle(mesh,a,b,c,face.normal,face.color);this.triangle(mesh,a,c,d,face.normal,face.color);}
+    const gl=this.gl;gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.uniform1f(this.locations.opacity,opacity);
+    try{this.bindAndDraw(this.meshBuffer,mesh,gl.TRIANGLES);}
+    finally{gl.uniform1f(this.locations.opacity,1);gl.depthMask(true);gl.disable(gl.BLEND);}
   }
 
   spineBlock(target, data, lowerIndex, upperIndex, lowerWidth, upperWidth, lowerDepth, upperDepth, color, sharedSide = null) {
@@ -397,28 +424,11 @@ class WebGLMotionRenderer {
     const toeDims = [.048, .120, .049];
     const ankle = posAt(data, spec.ankle);
     const toe = posAt(data, spec.toe);
-    const toeVector = sub(toe, ankle);
-    let footForward = axisAt(data, spec.ankle, 1);
-    if (dot(footForward, toeVector) < 0) footForward = mul(footForward, -1);
-    let footUp = axisAt(data, spec.ankle, 0);
-    const footSide = axisAt(data, spec.ankle, 2);
-    if (footUp[1] < 0) footUp = mul(footUp, -1);
-    const heelBack = add(toe, mul(footForward, -footDims[0]));
-    const footCenter = add(add(heelBack, mul(footForward, footDims[0] * .5)), mul(footUp, -.006));
-
-    let toeFootForward = axisAt(data, spec.ankle, 1);
-    if (dot(toeFootForward, toeVector) < 0) toeFootForward = mul(toeFootForward, -1);
-    let toeForward = axisAt(data, spec.toe, 0);
-    if (dot(toeForward, toeFootForward) < 0) toeForward = mul(toeForward, -1);
-    let toeUp = axisAt(data, spec.toe, 1);
-    const referenceSide = axisAt(data, spec.toe, 2);
-    if (toeUp[1] < 0) toeUp = mul(toeUp, -1);
-    let toeSide = normalize(cross(toeForward, toeUp));
-    if (norm(toeSide) < 1e-6) toeSide = referenceSide;
-    if (dot(toeSide, referenceSide) < 0) toeSide = mul(toeSide, -1);
-    toeUp = normalize(cross(toeSide, toeForward));
-    if (toeUp[1] < 0) { toeUp = mul(toeUp, -1); toeSide = mul(toeSide, -1); }
-    const toeCenter = add(add(toe, mul(toeForward, toeDims[0] * .5)), mul(toeUp, -.006));
+    const frame=BodyflipSupport.footFrame(data,spec.ankle,spec.toe,spec.side===0?'L':'R');
+    const footForward=frame.forward,footUp=frame.up,footSide=frame.side;
+    const footCenter=add(add(toe,mul(footForward,-footDims[0]*.5)),mul(footUp,-.006));
+    const toeForward=frame.toeForward,toeUp=frame.toeUp,toeSide=frame.toeSide;
+    const toeCenter=add(add(toe,mul(toeForward,toeDims[0]*.5)),mul(toeUp,-.006));
     return {
       foot: { center: footCenter, forward: footForward, side: footSide, up: footUp, dims: footDims },
       toe: { center: toeCenter, forward: toeForward, side: toeSide, up: toeUp, dims: toeDims },
@@ -633,7 +643,7 @@ class WebGLMotionRenderer {
     const eye = add(rawEye, shift);
     const target = add(cameraTarget, shift);
     const view = this.lookAt(eye, target, [0, 1, 0]);
-    const projection = this.perspective(45 * Math.PI / 180, width / height, .02, 60);
+    const projection = this.perspective(45 * Math.PI / 180, width / height, Math.max(.02,targetDepth/10000), Math.max(60,targetDepth*4));
     const viewProjection = this.matrixMultiply(projection, view);
     this.viewProjection = viewProjection;
     this.viewCamera = {eye, target, forward, right, up, focalCss};
@@ -641,6 +651,7 @@ class WebGLMotionRenderer {
     gl.useProgram(this.program);
     gl.uniformMatrix4fv(this.locations.viewProjection, false, viewProjection);
     gl.uniform3fv(this.locations.camera, eye);
+    gl.uniform1f(this.locations.opacity, 1);
     gl.uniform3fv(this.locations.lightDirection, [-.58, .78, -.24]);
     gl.uniform3fv(this.locations.fogColor, [.078, .096, .128]);
     gl.uniform1f(this.locations.fogNear, Math.max(1.2, targetDepth * .68));

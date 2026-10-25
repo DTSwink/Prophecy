@@ -1,0 +1,30 @@
+<!doctype html><title>Support cone verification</title>
+<button id="check">Check cone</button><pre id="result" style="max-height:64px;overflow:auto">Ready</pre>
+<iframe id="lab" src="/" style="width:1200px;height:760px"></iframe>
+<script>
+check.onclick=async()=>{
+ const w=lab.contentWindow,d=w.document,a=w.BodyflipLab,backup=await fetch('/state').then(r=>r.json()),checks=[],receipt={passed:false,checks};
+ const verify=(n,v)=>{if(!v)throw Error(n);checks.push(n);};
+ const field=async(id,value)=>{const e=d.getElementById(id);e.value=value;e.dispatchEvent(new w.Event('input',{bubbles:true}));e.dispatchEvent(new w.Event('change',{bubbles:true}));while(a.state.loadingRun)await new Promise(r=>setTimeout(r,10));};
+ try{
+  a.setPlaying(false);await a.seek(.9);
+  verify('Cone checkbox beside viewport toggles',!!d.getElementById('showCone').closest('.view-toggles'));
+  verify('Angle inside collapsed small options',!!d.getElementById('supportCone').closest('details.minor-options'));
+  const pose=JSON.stringify(a.state.pose),time=a.state.simTime;
+  d.getElementById('showCone').click();
+  verify('Toggle does not reset or change pose',a.state.simTime===time&&JSON.stringify(a.state.pose)===pose&&!a.state.loadingRun);
+  verify('Debug supplies cone geometry',!!a.state.flight.supportCone);
+  await field('runPhase',.54);verify('Grounded phase jumps immediately',a.state.flight.jumpStart===a.state.flight.supportStart);
+  await field('runPhase',.67);await a.seek(.9);
+  const narrow=a.state.flight.supportCone.radius;await field('supportCone',60);
+  verify('Angle changes cone radius',a.state.flight.supportCone.radius>narrow*2);
+  verify('Angle edit preserves frame',a.state.simTime===.9);
+  await field('supportCone',30);
+  d.querySelector('details.minor-options').open=true;
+  d.getElementById('cameraSide').click();
+  verify('No runtime errors',a.state.errors.length===0);
+  receipt.passed=true;
+ }catch(e){receipt.error=e.stack;}
+ finally{a.setPlaying(false);await new Promise(r=>setTimeout(r,400));await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(backup)});result.textContent=JSON.stringify(receipt,null,2);}
+};
+</script>

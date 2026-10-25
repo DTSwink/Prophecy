@@ -4,6 +4,237 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Bodyflip October25 - named scenes and curated checkpoint:** added scene picker,
+Copy and Rename after existing header controls. Legacy current setup becomes
+Inclines. Copies retain tuning/platforms/jumps/target/camera/playback/brackets and
+start paused; switching saves outgoing work then reloads the selected scene.
+Library stored locally in state.json, current state kept top-level for compatibility.
+Save writes serialize; failure leaves current scene open. Reload isolates undo.
+Current user setup also preserved in tracked saved-profile.json. Scenes16,
+refresh14, pacing24 checks pass; visual QA unavailable (kernel-assets error).
+Refresh required. Bodyflip source, focused tests/receipts, fixture, saved profile
+and Bodyflip-only journal updates prepared for requested push; unrelated Unreal,
+FootIK, training and audio work excluded. No new process, server restart or
+Unreal activity. [Controls and restore](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - anticipate pelvis reach during foot approach:** user
+requested slowing the foot before it spends available extension, retaining
+root-local motion. Foot cm/s is now a maximum. Each prepared step measures
+remaining travel inside the selected reach sphere and estimates time until the
+plant target is reachable using one frame of existing incoming body motion.
+Travel is paced over that interval; no new option, gate or root/pelvis path edit.
+Saved Phase.30/Load50/Foot400/Reach.99 markers F53/F95/F125 all now push; third
+captures F137.25, versus previous Distance-growing abort F136.75. Approach max
+hip-ankle79.01cm <80.63cm limit; no sampled sole penetration or bone-length error.
+Pacing24, selection37, alignment36, bounce140 checks and syntax pass. Cached
+three-jump preparation about120ms, no added playback integration/inference.
+Tooltip and diagnostics explain/report pacing; control layout/settings retained.
+Refresh required; visual QA unverified. No Unreal/training/server work or push.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - compare feet after cone constraint:** selection retains
+ankle-to-planted-ankle metric, now against each foot's cone-constrained contact,
+not its theoretical ideal. Original ideal distance retained for approach rotation
+timing; no new gate, fallback or exception. Phase tooltip labels post-cone scores.
+Frozen reported F146/Load50 pose picks R3.53cm versus L31.53cm (old ideal metric
+picked L47.47cm versus R55.07cm). New rule also changes FIRST jump to grounded L,
+capturing at F53 instead of later. Therefore saved F115/F146 now MISS after the
+different first launch; markers/tuning deliberately unchanged. Do not claim all
+three saved jumps still succeed or silently add an exception to keep old motion.
+Selection37, alignment36, bounce140 and syntax pass. Small frozen incoming-pose
+fixture preserves the reported regression independent of upstream flight changes.
+Refresh required; visual QA unverified. No UI moves, saved-state changes, Unreal,
+training or server work, commit or push. [Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - remove unrequested penetration rejection:** removed the
+hardcoded signed-height cutoff from cone validity; no replacement depth threshold.
+At saved F115 the right foot is34.3cm from its ideal versus left56.5cm, but its
+lowest shoe corner is9.5mm inside the incline. The old5mm cutoff wrongly excluded
+it. Jump2 now selects R/left incline and captures immediately at F115, followed
+by LOAD/PUSH. Existing distance trigger, finite surfaces and reach retained.
+All original three markers succeed. Selection34, bounce148, alignment47 and
+contact40 checks pass; syntax checked. Prior tests that required R rejection
+were validating the bug and have been corrected. Refresh required; no saved
+state/tuning/marker/platform changes, UI additions, Unreal work or push.
+Standing user instruction: implement requested behavior without inventing gates,
+fallbacks or exceptions; ask about ambiguity and explain proposed changes first.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - centered gizmo / continuous contact alignment:** platform
+gizmo and transform pivot now use slab center; orbit clears selection, including
+an older selected slab. Scale axes remain local. Captured shoe bank continues
+leveling through LOAD/PUSH, with moving sole pivots and the same ankle trajectory
+in loading physics and IK. Retains captured pitch; existing heel/toe speed starts
+at PUSH. Both ideal rings now shown (green selected/red other), smaller green
+contact ring; phase tooltip gives selection-time distances/eligibility. Saved
+jump3 selection was correct before edits (L50.1cm/R60.4cm), so selection rule kept.
+Original three markers still push floor/left/right; jump3 bank dot normal goes
+from0.731 to0 before release, no sole gap or bone-length error in sampled contact.
+Alignment47, bounce148, selection23, platform101, contact40, skew105, arrow18
+checks pass. Cached preparation about50-70ms; no new options/processes/inference.
+Visual tools fail with kernel-assets os error3; refresh lab to load. Saved state,
+markers/platforms/tuning untouched; no Unreal/training activity or push.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - jump2 surface/foot mismatch:** surface availability used
+either foot's cone, then planner could choose the invalid other foot. Shared
+candidates now choose an eligible foot by own-ideal distance per surface, then
+rank surfaces by that foot's actual contact gap. Unreachable valid-cone slabs
+excluded; explicit overrides retained. Saved F115 picks L/left incline23.0cm,
+versus R/right29.4cm; all three ORIGINAL markers succeed. Earlier F114 retiming
+advice is superseded. Selection23, bounce148, contact40 pass; syntax checked,
+visual QA unavailable. Refresh required. No saved settings/platform/marker edits,
+Unreal/training work, new process or push. [Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - loading/rebound prototype:** implemented kinematic pelvis
+spring loading with incoming momentum+gravity, pinned foot, then finite-duration
+drive and ballistic release. LOAD precedes PUSH; jump blend, roll and arrow wait
+for extension. Two options appended after Translucency: Load ms100 (0 restores
+old launch), Rebound50%. Geometry/energy/stiffness bounded; root path replaces
+clip height, no double launch.148 focused checks; Load0 platform93/skew105/arrow18
+and refresh14 pass. Cached three-jump preparation about42ms; visual QA unavailable.
+Saved second marker F115 now misses; read-only F114 trial makes all three succeed.
+Markers/settings/layout not overwritten. Refresh required. No Unreal/training,
+new process, server restart or push. [Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - forward foot on inclines:** plant heading now comes from
+anatomical pelvis forward, flattened then projected onto the surface; imported
+jump root +Z was lateral. Pitch/roll retained with corrected roll axis. Saved
+frame151/jump3 capture heading error2.28deg; heading58, target71, contact39,
+schedule136, cone88, skew105 pass. Visual QA unavailable. Refresh required;
+no tuning/marker/platform reset or Unreal/training work. Bounce remains a proposal:
+spring/damper pelvis loading under incoming momentum+gravity, then extension,
+bounded compression/rebound; no bounce implementation yet.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - inclined alpha / knee / frame diagnostics:** alpha uses
+incoming root velocity projected onto the selected surface, scaled by1/200;
+root-local carry and finite bounds retained. Red circle shows the other foot's
+ideal; green remains actual selected contact. Knee bend pole follows pelvis/aim,
+thigh and calf share a hinge plane. F counter beside seconds is zero-based60Hz,
+updated before HUD throttling. Saved frame149 reproduced; corrected jump3 selects
+R60.7cm versus L63.9cm (previous L73.8/R77.6). No marker/tuning reset. Target71,
+contact39, schedule136, skew105, cone88, platform93, arrow18, refresh14 pass.
+Cached data only; live browser visual QA unavailable. Refresh required. No Unreal,
+training or server activity. [Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - platform side translucency:** More options ends with
+Translucency %, default80; sides/undersides blend, local walkable tops stay
+opaque from the front. Top backs/grid omitted when viewed from underneath.
+Sorted transparent pass retains depth testing, disables depth writes, restores
+render state. Appearance-only edit, persists without replan/pause.25 focused
+checks plus platform93 and syntax pass; live GPU visual QA unavailable.
+Refresh to load. No physics/layout/tuning reset or Unreal/training changes.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - Refresh playback / alpha step:** app Refresh saves time,
+playing state, attack time, runtime angles and hit readout before pausing; boot
+restores after flight setup. Authored angles stay separate to prevent double air
+rotation. Queued previews/delayed saves cancelled before reload; trim/speed/camera
+preserved. Alpha native numeric step now1 (fractions still typeable). 14 focused
+checks and syntax pass; visual QA unavailable. First reload loads this feature;
+older running code cannot snapshot its unsaved playhead. No live-state overwrite,
+Unreal/training/server action or push. [Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - sole orientation / second-push momentum:** foot and toe
+frames use anatomical rig signs, replacing world-Y flips. Query geometry and
+rendered boxes agree; inverted nearby capture aligns sole-first. Saved third
+contact foot-only regression changes from inverted up dot normal=-0.959 to
++0.861. Incoming velocity now retains only motion tangent to BOTH physical
+surface and skewed push axis, superseding the earlier push-axis-only rule.
+Jump2's carried surface-normal component is zero. Corrected trajectory makes
+the existing third marker miss (Distance growing); timings preserved. Contact37,
+motion105, schedule136, platform93 and arrow18 checks pass. Cached NN data only,
+visual QA unavailable. Refresh required; no saved-state reset or Unreal/training.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - trim preview return:** bracket drags retain their live
+boundary preview, then restore the pre-drag playhead on release/cancel/lost
+capture. New trim bounds remain; pending preview callbacks cannot override the
+return. Seven handler checks and syntax pass. Refresh lab; no saved-state reset.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - Up skew COM trajectory fix:** retained incoming velocity
+now uses the effective skewed push axis, not the physical surface normal. Old
+slope projection converted downward arrival into sideways drift even at100%.
+100% now matches flat-ground root/pelvis motion for identical incoming velocity
+and clip, retaining horizontal momentum;0% is unchanged. Physical contacts/IK
+still use the actual surface. Measured45-degree-slope drift0.20m over0.1s removed.
+102 trajectory checks, arrow18 and platform93 pass; live visual QA unavailable.
+Refresh required. No tuning/layout reset, inference, Unreal/training or push.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - Show jump:** checkbox appended after Cone, persisted and
+off by default. Large yellow1.4m arrow starts at support contact and follows
+actual authored push direction including Up skew. Visible for3 frames at60Hz
+from push onset, determined by playback time for pause/seek/loop consistency.
+Misses draw nothing. Reused overlay mesh, no timers or replans. 18 focused checks
+and syntax pass; browser visual QA unavailable. Refresh and enable Show jump.
+No Unreal/training/server activity or saved layout reset.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - immediate platform gizmo:** user clarified the complaint
+was elapsed click-to-gizmo time, not drag distance. Gizmo now previews on mouse
+press without waiting for release or pausing playback. A completed click pauses;
+orbit/cancel/lost capture restores the previous selection. Original4 CSS-pixel
+jitter threshold restored, undoing the mistaken4-to1 change. No Alt required;
+gizmo transforms unchanged. 93 focused checks plus syntax pass; live visual QA
+unavailable. Refresh lab. No saved layout/tuning reset, Unreal or training activity.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - distinguish gizmos:** W Move now has large arrowheads
+and a round center; R Scale has outlined square endpoints and a square center.
+Colors/orientation/interaction unchanged. Syntax and82 checks pass; visual QA
+still unavailable. Refresh lab for appearance update. Lab-only, no state reset.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - W gizmo keyboard fix:** platform W/E/R and Ctrl+Z now
+use printed letters, fixing physical W/Z mapping on AZERTY. Viewport/gizmo
+pointerdown transfers focus to canvas, leaving dropdowns and committing numeric
+edits. Writable controls retain editing shortcuts. R gizmo remains local;
+W/E remain world. 82 focused checks pass, including visible Move handle output
+and focus routing; browser visual QA unavailable. Refresh required; no saved
+layout/tuning change, Unreal/training work or push.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - platform reset / Ctrl+Z:** user-requested saved layout
+reset to original floor and both45-degree ramps; all other state preserved by
+/state readback. Backup: Saved/BodyflipLab/platforms-before-reset-20261025.json.
+Startup reset version prevents an older tab's Refresh save from restoring the
+old layout; subsequent edits persist. Ctrl+Z undoes one completed transform,
+up to100 in-session operations; cancels active drag, ignores no-op drags, retains
+text-field undo and playhead. Add/delete are outside transform history. 72 focused
+checks and syntax pass; browser visual QA still unavailable. Refresh lab once.
+Contained lab-only changes; no Unreal/training/server restart or push.
+[Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - platform editor / upward push skew:** + Platform below
+phase at viewport top left; click a slab for gizmo. W move, E rotate, R scale;
+Delete/Backspace remove, Escape cancels/deselects. Text editing retains its keys.
+Gizmo pivots at clicked point to stay accessible on long ramps. Alt-left-drag
+orbits over geometry. Preview during drag, single replan/save at release with
+playhead retained. Layouts persist, including empty scenes. Wheel dezoom cap
+removed and clipping expands with distance. More options ends with Up skew %,
+default50: authored wall push45 degrees toward up; incoming tangent retained.
+50 focused platform/wall/zoom checks plus136 legacy-skew schedule and19 marker
+checks pass. UI runtime still fails initialization, so visual QA unverified.
+No live-state overwrite or Unreal/training activity. [Details](Labs/BodyflipLab/README.md).
+
+**Bodyflip October25 - ramps and manual jump markers:** two finite45-degree
+ramps form a V beyond the ledge. Support cones, sole clearance/roll, rendering
+and Jolt share oriented surfaces. Repeated scheduled pushes continue incoming
+motion; missed contacts add no lift. User confirmed markers start SUPPORT,
+then contact starts PUSH. UI correction: markers are on the EXISTING playback
+bar, with + Jump beside Loop at the START of the timeline (same-sized mouse
+target as transport buttons). User rejected the far-right placement: keep
+related actions near their working area. Select a marker for time/Delete;
+no second timeline, After or Gap controls. Preserve this minimal UI.
+136 geometry/motion and19 control checks pass, including three successive
+pushes; previous cone88/blend33/abort36 checks pass. Browser layout remains
+unverified because both UI runtimes failed at initialization. Tuning/camera
+preserved, no Unreal/training/server action or push. Details/receipts:
+[Labs/BodyflipLab/README.md](Labs/BodyflipLab/README.md).
+
 ## October 24 - Bodyflip curated Git checkpoint
 
 User requested pushing the lab. Checkpoint includes Bodyflip code, Jolt runtime,

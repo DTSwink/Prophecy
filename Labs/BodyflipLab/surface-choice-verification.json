@@ -1,0 +1,90 @@
+{
+  "passed": true,
+  "browserVisualVerified": false,
+  "checks": [
+    "Reported pose has closer theoretical left target",
+    "Cone reverses ranking and selects right foot",
+    "Reported post-cone distances reproduced",
+    "Same ankle metric after cone L",
+    "Both feet eligible in reported case L",
+    "Compared target agrees with planner cone L",
+    "Explicit foot choice retained L",
+    "Same ankle metric after cone R",
+    "Both feet eligible in reported case R",
+    "Compared target agrees with planner cone R",
+    "Explicit foot choice retained R",
+    "Reported right foot captures immediately",
+    "Nearest constrained target wins at cone angle 0",
+    "Nearest constrained target wins at cone angle 30",
+    "Nearest constrained target wins at cone angle 60",
+    "Nearest constrained target wins at cone angle 85",
+    "No penetration cutoff at depth 0.001",
+    "Finite platform still required 0.001",
+    "No penetration cutoff at depth 0.0095",
+    "Finite platform still required 0.0095",
+    "No penetration cutoff at depth 0.05",
+    "Finite platform still required 0.05",
+    "No penetration cutoff at depth 0.5",
+    "Finite platform still required 0.5",
+    "No penetration cutoff at depth 2",
+    "Finite platform still required 2",
+    "Wide cone can intersect far slab",
+    "Unreachable slab remains excluded",
+    "New rule also selects closer constrained first foot",
+    "First grounded foot captures at original marker",
+    "Settings and markers are untouched",
+    "Later markers honestly miss after changed first launch",
+    "Surface ranking and planned foot agree",
+    "Platform order cannot change eligible pair",
+    "Unavailable surface tie cannot alter misses or trajectory",
+    "Unreachable slab cannot steal surface choice",
+    "No platforms cannot manufacture a push"
+  ],
+  "reportedDistances": [
+    {
+      "foot": "L",
+      "ideal": 0.4746767190391773,
+      "afterCone": 0.31527737108102416
+    },
+    {
+      "foot": "R",
+      "ideal": 0.5506611640915487,
+      "afterCone": 0.03531516091860546
+    }
+  ],
+  "events": [
+    {
+      "id": "first",
+      "time": 0.8833333333333333,
+      "surface": "floor",
+      "surfaceId": "floor",
+      "status": "Push",
+      "contactTime": 0.8833333333333333,
+      "pushTime": 0.8958333333333333,
+      "releaseTime": 0.9036862688064574,
+      "reason": null
+    },
+    {
+      "id": "mmvnlymnl_0",
+      "time": 1.9166666666666667,
+      "surface": "auto",
+      "surfaceId": "right",
+      "status": "Miss",
+      "contactTime": null,
+      "pushTime": null,
+      "releaseTime": null,
+      "reason": "No ground in cone"
+    },
+    {
+      "id": "mmvnophoa_0",
+      "time": 2.433333333333333,
+      "surface": "auto",
+      "surfaceId": "left",
+      "status": "Miss",
+      "contactTime": null,
+      "pushTime": null,
+      "releaseTime": null,
+      "reason": "No ground in cone"
+    }
+  ]
+}

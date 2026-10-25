@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "browserVisualVerified": false,
+  "checks": [
+    "Reported three markers all produce a push",
+    "Markers, maximum speed and reach stay unchanged",
+    "Already grounded first foot gets no pacing delay",
+    "Measured root-local foot travel respects maximum first",
+    "Foot stays above the surface through approach/loading/push first",
+    "Approach stays inside chosen leg reach first",
+    "Both leg lengths remain fixed first",
+    "Reverse seeking preserves paced motion first",
+    "Measured root-local foot travel respects maximum second",
+    "Foot stays above the surface through approach/loading/push second",
+    "Approach stays inside chosen leg reach second",
+    "Both leg lengths remain fixed second",
+    "Reverse seeking preserves paced motion second",
+    "Anticipation slows before reaching extension limit second",
+    "Approach can use full configured speed second",
+    "Measured root-local foot travel respects maximum third",
+    "Foot stays above the surface through approach/loading/push third",
+    "Approach stays inside chosen leg reach third",
+    "Both leg lengths remain fixed third",
+    "Reverse seeking preserves paced motion third",
+    "Anticipation slows before reaching extension limit third",
+    "Approach can use full configured speed third",
+    "Receding unreachable surface cannot manufacture a jump",
+    "Lower speed remains a real maximum"
+  ],
+  "planMs": 106.64089999999999,
+  "measurements": [
+    {
+      "jump": "first",
+      "captureFrame": 53,
+      "maxTravelCmS": 0,
+      "minGapCm": -3.3306690738754696e-14,
+      "maxReachCm": 0,
+      "limitCm": 80.79565813380245
+    },
+    {
+      "jump": "second",
+      "captureFrame": 103.49999999999999,
+      "maxTravelCmS": 400.0000000000019,
+      "minGapCm": -1.1102230246251565e-13,
+      "maxReachCm": 79.02781235474222,
+      "limitCm": 80.59444268544851
+    },
+    {
+      "jump": "third",
+      "captureFrame": 137.25,
+      "maxTravelCmS": 400.0000000000198,
+      "minGapCm": -8.881784197001252e-14,
+      "maxReachCm": 79.00556421483587,
+      "limitCm": 80.63126582946421
+    }
+  ]
+}

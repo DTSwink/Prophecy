@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "browserVisualVerified": false,
+  "checks": [
+    "Real wall push succeeds",
+    "No arrow before push",
+    "Visible push frame 0",
+    "Visible push frame 1",
+    "Visible push frame 2",
+    "Hidden on fourth frame",
+    "Exactly three fixed playback ticks",
+    "Uses skewed wall push direction",
+    "Origin is on contact surface",
+    "Backward seek reproduces arrow",
+    "Missed jump produces no arrow",
+    "Checkbox defaults off and persists",
+    "Checkbox appended after Cone",
+    "Draws large solid arrow",
+    "Arrow tip is 1.4m along push",
+    "Arrow stays visible through body and restores depth",
+    "Disabled checkbox draws nothing",
+    "Expired arrow draws nothing"
+  ]
+}

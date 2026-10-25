@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "browserVisualVerified": false,
+  "checks": [
+    "floor keeps only local top opaque",
+    "floor queues visible sides for alpha blending",
+    "floor 100 percent hides sides but keeps top",
+    "floor zero translucency is solid",
+    "floor underside has no opaque top back face",
+    "left keeps only local top opaque",
+    "left queues visible sides for alpha blending",
+    "left 100 percent hides sides but keeps top",
+    "left zero translucency is solid",
+    "left underside has no opaque top back face",
+    "right keeps only local top opaque",
+    "right queues visible sides for alpha blending",
+    "right 100 percent hides sides but keeps top",
+    "right zero translucency is solid",
+    "right underside has no opaque top back face",
+    "Transparent pass blends without depth writes",
+    "Faces sorted back to front",
+    "Opaque render state restored",
+    "Invisible or empty sides cause no draw",
+    "Render failure still restores opaque state",
+    "Default translucency is 80 percent and clamps",
+    "Saved translucency survives sanitation",
+    "Control is appended at bottom of More options",
+    "Control changes only appearance and saves",
+    "Shader uses opacity for lit and unlit output"
+  ]
+}

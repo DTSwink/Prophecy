@@ -1,0 +1,21 @@
+{
+  "passed": 16,
+  "checks": [
+    "Existing setup migrates intact into Inclines",
+    "Copy preserves source and starts separately paused",
+    "Scene edits do not touch original platforms, jumps or tuning",
+    "Scene captures camera and playback independently",
+    "Saved scenes own deep copies",
+    "Library survives disk roundtrip",
+    "Switch restores the entire original setup",
+    "Rename affects only selected scene",
+    "Invalid operations leave library intact",
+    "Switch pauses and prevents edits while saving",
+    "Copy handler saves original current playback before reload",
+    "Copy reload selects the independent paused copy",
+    "Switch saves outgoing edits and restores original time",
+    "Failed save keeps current scene and unlocks UI without reload",
+    "Cancel leaves scene and disk unchanged",
+    "Controls appended after existing Refresh"
+  ]
+}

@@ -1,0 +1,330 @@
+{
+  "passed": true,
+  "browserVisualVerified": false,
+  "checks": [
+    "Only two bounce settings, with proposed defaults",
+    "Settings clamp invalid/extreme values",
+    "Initial velocity preserved 50/0",
+    "Root and velocity continuous into push 50/0",
+    "Release is position/velocity continuous 50/0",
+    "Loading compresses, with bounded leg 50/0",
+    "Compression limit still permits active extension 50/0",
+    "Stored impact energy cannot amplify without bound 50/0",
+    "Fall remains capped and finite 50/0",
+    "Seek history cannot change bounce 50/0",
+    "Initial velocity preserved 50/2",
+    "Root and velocity continuous into push 50/2",
+    "Release is position/velocity continuous 50/2",
+    "Loading compresses, with bounded leg 50/2",
+    "Compression limit still permits active extension 50/2",
+    "Stored impact energy cannot amplify without bound 50/2",
+    "Fall remains capped and finite 50/2",
+    "Seek history cannot change bounce 50/2",
+    "Initial velocity preserved 50/5",
+    "Root and velocity continuous into push 50/5",
+    "Release is position/velocity continuous 50/5",
+    "Loading compresses, with bounded leg 50/5",
+    "Compression limit still permits active extension 50/5",
+    "Stored impact energy cannot amplify without bound 50/5",
+    "Fall remains capped and finite 50/5",
+    "Seek history cannot change bounce 50/5",
+    "Initial velocity preserved 50/15",
+    "Root and velocity continuous into push 50/15",
+    "Release is position/velocity continuous 50/15",
+    "Loading compresses, with bounded leg 50/15",
+    "Compression limit still permits active extension 50/15",
+    "Stored impact energy cannot amplify without bound 50/15",
+    "Fall remains capped and finite 50/15",
+    "Seek history cannot change bounce 50/15",
+    "Initial velocity preserved 100/0",
+    "Root and velocity continuous into push 100/0",
+    "Release is position/velocity continuous 100/0",
+    "Loading compresses, with bounded leg 100/0",
+    "Compression limit still permits active extension 100/0",
+    "Stored impact energy cannot amplify without bound 100/0",
+    "Fall remains capped and finite 100/0",
+    "Seek history cannot change bounce 100/0",
+    "Initial velocity preserved 100/2",
+    "Root and velocity continuous into push 100/2",
+    "Release is position/velocity continuous 100/2",
+    "Loading compresses, with bounded leg 100/2",
+    "Compression limit still permits active extension 100/2",
+    "Stored impact energy cannot amplify without bound 100/2",
+    "Fall remains capped and finite 100/2",
+    "Seek history cannot change bounce 100/2",
+    "Initial velocity preserved 100/5",
+    "Root and velocity continuous into push 100/5",
+    "Release is position/velocity continuous 100/5",
+    "Loading compresses, with bounded leg 100/5",
+    "Compression limit still permits active extension 100/5",
+    "Stored impact energy cannot amplify without bound 100/5",
+    "Fall remains capped and finite 100/5",
+    "Seek history cannot change bounce 100/5",
+    "Initial velocity preserved 100/15",
+    "Root and velocity continuous into push 100/15",
+    "Release is position/velocity continuous 100/15",
+    "Loading compresses, with bounded leg 100/15",
+    "Compression limit still permits active extension 100/15",
+    "Stored impact energy cannot amplify without bound 100/15",
+    "Fall remains capped and finite 100/15",
+    "Seek history cannot change bounce 100/15",
+    "Initial velocity preserved 200/0",
+    "Root and velocity continuous into push 200/0",
+    "Release is position/velocity continuous 200/0",
+    "Loading compresses, with bounded leg 200/0",
+    "Compression limit still permits active extension 200/0",
+    "Stored impact energy cannot amplify without bound 200/0",
+    "Fall remains capped and finite 200/0",
+    "Seek history cannot change bounce 200/0",
+    "Initial velocity preserved 200/2",
+    "Root and velocity continuous into push 200/2",
+    "Release is position/velocity continuous 200/2",
+    "Loading compresses, with bounded leg 200/2",
+    "Compression limit still permits active extension 200/2",
+    "Stored impact energy cannot amplify without bound 200/2",
+    "Fall remains capped and finite 200/2",
+    "Seek history cannot change bounce 200/2",
+    "Initial velocity preserved 200/5",
+    "Root and velocity continuous into push 200/5",
+    "Release is position/velocity continuous 200/5",
+    "Loading compresses, with bounded leg 200/5",
+    "Compression limit still permits active extension 200/5",
+    "Stored impact energy cannot amplify without bound 200/5",
+    "Fall remains capped and finite 200/5",
+    "Seek history cannot change bounce 200/5",
+    "Initial velocity preserved 200/15",
+    "Root and velocity continuous into push 200/15",
+    "Release is position/velocity continuous 200/15",
+    "Loading compresses, with bounded leg 200/15",
+    "Compression limit still permits active extension 200/15",
+    "Stored impact energy cannot amplify without bound 200/15",
+    "Fall remains capped and finite 200/15",
+    "Seek history cannot change bounce 200/15",
+    "Short leg/hard impact stays finite",
+    "Longer loading response visibly compresses more",
+    "Rebound changes returned energy and launch speed",
+    "No rebound still has an active jump",
+    "Inclined/wall contact creates loading 0,1,0",
+    "Loading labels and rolling contact 0,1,0",
+    "Loading starts without root velocity impulse 0,1,0",
+    "No push arrow before extension 0,1,0",
+    "Three-frame arrow anchored to extension 0,1,0",
+    "Animation leg waits for extension 0,1,0",
+    "Air time starts at actual release 0,1,0",
+    "Pinned leg lengths remain intact 0,1,0",
+    "Load zero restores immediate push 0,1,0",
+    "Miss gets no loading or launch 0,1,0",
+    "Inclined/wall contact creates loading 0.7071067811865476,0.7071067811865476,0",
+    "Loading labels and rolling contact 0.7071067811865476,0.7071067811865476,0",
+    "Loading starts without root velocity impulse 0.7071067811865476,0.7071067811865476,0",
+    "No push arrow before extension 0.7071067811865476,0.7071067811865476,0",
+    "Three-frame arrow anchored to extension 0.7071067811865476,0.7071067811865476,0",
+    "Animation leg waits for extension 0.7071067811865476,0.7071067811865476,0",
+    "Air time starts at actual release 0.7071067811865476,0.7071067811865476,0",
+    "Pinned leg lengths remain intact 0.7071067811865476,0.7071067811865476,0",
+    "Load zero restores immediate push 0.7071067811865476,0.7071067811865476,0",
+    "Miss gets no loading or launch 0.7071067811865476,0.7071067811865476,0",
+    "Inclined/wall contact creates loading 1,0,0",
+    "Loading labels and rolling contact 1,0,0",
+    "Loading starts without root velocity impulse 1,0,0",
+    "No push arrow before extension 1,0,0",
+    "Three-frame arrow anchored to extension 1,0,0",
+    "Animation leg waits for extension 1,0,0",
+    "Air time starts at actual release 1,0,0",
+    "Pinned leg lengths remain intact 1,0,0",
+    "Load zero restores immediate push 1,0,0",
+    "Miss gets no loading or launch 1,0,0",
+    "Closer first foot launches earlier; later unavailable contacts miss",
+    "Repeated loading is visible 0.8833333333333333",
+    "Repeated loading follows the sole contact 0.8833333333333333",
+    "Loading root matches sampled path 0.8833333333333333",
+    "Repeated bounce is deterministic 0.8833333333333333",
+    "Original later marker cannot manufacture a push after changed arrival",
+    "Both controls appended after translucency",
+    "Options use existing preserve-playhead edit path"
+  ],
+  "measurements": [
+    {
+      "loadMs": 50,
+      "impact": 0,
+      "loadSeconds": 0.020833333333333332,
+      "compression": 0.001936377158039515,
+      "rebound": 0.0009251659829135697,
+      "releaseVelocity": [
+        0,
+        4.500205587744389,
+        0
+      ]
+    },
+    {
+      "loadMs": 50,
+      "impact": 2,
+      "loadSeconds": 0.052083333333333336,
+      "compression": 0.05935332367581625,
+      "rebound": 0.8692202619251123,
+      "releaseVelocity": [
+        0,
+        4.689183353618221,
+        0
+      ]
+    },
+    {
+      "loadMs": 50,
+      "impact": 5,
+      "loadSeconds": 0.04791666666666666,
+      "compression": 0.1357750409002979,
+      "rebound": 4.54861981196162,
+      "releaseVelocity": [
+        0,
+        5.417309260502232,
+        0
+      ]
+    },
+    {
+      "loadMs": 50,
+      "impact": 15,
+      "loadSeconds": 0.025,
+      "compression": 0.19467822051067996,
+      "rebound": 10.125,
+      "releaseVelocity": [
+        0,
+        6.363961030678928,
+        0
+      ]
+    },
+    {
+      "loadMs": 100,
+      "impact": 0,
+      "loadSeconds": 0.020833333333333332,
+      "compression": 0.0020478773394049243,
+      "rebound": 0.0002586947668843521,
+      "releaseVelocity": [
+        0,
+        4.5000574873587755,
+        0
+      ]
+    },
+    {
+      "loadMs": 100,
+      "impact": 2,
+      "loadSeconds": 0.1125,
+      "compression": 0.13767195651207842,
+      "rebound": 1.1691513393665913,
+      "releaseVelocity": [
+        0,
+        4.752715295358348,
+        0
+      ]
+    },
+    {
+      "loadMs": 100,
+      "impact": 5,
+      "loadSeconds": 0.075,
+      "compression": 0.21113343618575275,
+      "rebound": 4.836949639279873,
+      "releaseVelocity": [
+        0,
+        5.470274150219507,
+        0
+      ]
+    },
+    {
+      "loadMs": 100,
+      "impact": 15,
+      "loadSeconds": 0.025,
+      "compression": 0.19467822051067996,
+      "rebound": 10.125,
+      "releaseVelocity": [
+        0,
+        6.363961030678928,
+        0
+      ]
+    },
+    {
+      "loadMs": 200,
+      "impact": 0,
+      "loadSeconds": 0.020833333333333332,
+      "compression": 0.002092494757376051,
+      "rebound": 0.00006752250233250855,
+      "releaseVelocity": [
+        0,
+        4.500015004975502,
+        0
+      ]
+    },
+    {
+      "loadMs": 200,
+      "impact": 2,
+      "loadSeconds": 0.17291666666666666,
+      "compression": 0.30000000000000004,
+      "rebound": 1.5625000000000002,
+      "releaseVelocity": [
+        0,
+        4.834769901453429,
+        0
+      ]
+    },
+    {
+      "loadMs": 200,
+      "impact": 5,
+      "loadSeconds": 0.075,
+      "compression": 0.21113343618575275,
+      "rebound": 4.836949639279873,
+      "releaseVelocity": [
+        0,
+        5.470274150219506,
+        0
+      ]
+    },
+    {
+      "loadMs": 200,
+      "impact": 15,
+      "loadSeconds": 0.025,
+      "compression": 0.19467822051067996,
+      "rebound": 10.125,
+      "releaseVelocity": [
+        0,
+        6.363961030678927,
+        0
+      ]
+    },
+    {
+      "planMilliseconds": 26.057000000000016,
+      "events": [
+        {
+          "id": "first",
+          "time": 0.8833333333333333,
+          "surface": "floor",
+          "surfaceId": "floor",
+          "status": "Push",
+          "contactTime": 0.8833333333333333,
+          "pushTime": 0.8958333333333333,
+          "releaseTime": 0.9036897766590117,
+          "reason": null
+        },
+        {
+          "id": "second",
+          "time": 1.9,
+          "surface": "auto",
+          "surfaceId": "right",
+          "status": "Miss",
+          "contactTime": null,
+          "pushTime": null,
+          "releaseTime": null,
+          "reason": "No ground in cone"
+        },
+        {
+          "id": "third",
+          "time": 2.433333333333333,
+          "surface": "auto",
+          "surfaceId": "left",
+          "status": "Miss",
+          "contactTime": null,
+          "pushTime": null,
+          "releaseTime": null,
+          "reason": "No ground in cone"
+        }
+      ]
+    }
+  ]
+}

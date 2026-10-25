@@ -5,6 +5,523 @@ Windows desktop, or run `launch.ps1`. The loopback service is
 <http://127.0.0.1:8876/>. It uses its own Edge/Chrome app profile and saved settings.
 Unreal is not required for playback. Jolt and the frozen network weights are local.
 
+UI placement rule: preserve existing controls and their order. Append new options
+at the bottom of the existing section; append horizontal controls on the right.
+Do not reorganize controls by topic when adding a feature. Cone angle is last in
+More options; Cone debug is after Bones in the viewport toggle row. At the user's
+request, More options is now a collapsed dropdown under the view buttons at the
+top right of the viewport. Its internal order is unchanged; expanded contents
+scroll within the viewport. It remains hidden in Space mode.
+
+Camera drag correction (October25): left-drag horizontal orbit now subtracts
+dx from yaw; the previously requested inverted vertical mapping still subtracts
+dy from pitch. Horizontal had retained its original sign, rather than being
+changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
+unchanged. App syntax checked.
+
+## Named scenes and checkpoint - October 25
+
+The header now ends with a scene picker, **Copy**, and **Rename**, after Refresh.
+Existing single-scene saves become **Inclines** on first load. Copy asks for a
+name and creates an independent paused copy of the current setup. Edit its
+platforms and jump markers freely, then use the picker to return to the original.
+Each scene keeps all tuning, platforms, jump markers, target, camera, playback
+position and loop brackets. The existing Save/autosave now saves the library.
+Switching saves outgoing work before loading the selected scene; the lightweight
+page reload clears transform undo and pending animation work between scenes.
+A failed save leaves the current scene open. No new server or inference process.
+
+The library is local in ignored `state.json`, with active scene settings still
+at the top level for compatibility. Back up that file to preserve all scenes.
+`saved-profile.json` is the curated checkpoint of the user's current setup before
+adding scenes; it is independent of subsequent edits to live state. To restore it,
+close the lab page, copy it to `state.json`, then reopen the lab. This replaces the
+live library, so retain a copy of `state.json` first if it contains other scenes.
+
+16 scene checks cover migration, independent edits, camera/playback round trips,
+actual app copy/switch handlers, queued writes, cancellation and save failure.
+Refresh14 and support-pacing24 also pass. Browser verification remains unavailable
+(kernel-assets initialization error); existing controls retain their order.
+
+## Pace the approaching foot for the moving pelvis - October 25
+
+Foot cm/s now sets the maximum root-relative approach speed. If the planting
+target is beyond the selected reach, the planner estimates its closing rate from
+one frame of the existing incoming body motion. It spreads the available foot
+travel inside the reach sphere over that predicted wait. The foot slows before
+exhausting leg extension and can return to full speed as the target comes within
+reach. Each planned advance also fits within remaining reach along its path.
+Root-local carry, target construction, foot selection, capture distance and abort
+rules remain as authored. There is no new option or pelvis/root movement rule.
+
+The reported failure used Phase.30, Load50ms, Foot400cm/s, Reach.99 and markers
+F53/F95/F125. Previously jump3 approached too quickly, reached full extension,
+was carried through the incline and aborted at F136.75. With pacing all three
+jumps succeed; jump3 captures at F137.25. Its maximum approach hip-to-ankle
+distance is79.01cm against the80.63cm limit. This is a different setup from the
+older Phase.61/F115/F146 sequence, whose misses remain valid.
+
+24 pacing checks verify actual root-local travel <= configured speed, slowdown
+before the reach limit, full-speed recovery, no sole penetration, fixed bone
+lengths, reverse-seek determinism, immediate contact without delay and no launch
+from a receding unreachable surface. Selection37, alignment36 and bounce140 also
+pass. Three-jump preparation about120ms using cached NN data; no inference,
+process or per-frame integration added. Existing Foot tooltip explains maximum
+speed; supportHistory diagnostics include approachSpeedCmS, reachWait and
+hipDistance. No control moved, tuning/marker/state changed, or Unreal work.
+Refresh to load; visual QA remains unverified.
+
+## Compare supporting feet after the cone pass - October 25
+
+Per user clarification, both feet first constrain their ideal contact through
+their own cone. Selection then compares current ankle to the planted ankle
+position for that constrained contact, including the same shoe offset as before.
+The metric is unchanged; only its target is corrected. Scores expose distance
+(after cone), idealDistance, constrainedSurface and constrainedTarget. The phase
+tooltip labels the post-cone distances. Ideal debug rings remain ideal rings.
+The original ideal distance still drives approach rotation timing, so this change
+does not independently retime that blend. No new eligibility rule or exception.
+
+The reported F146/Load50 incoming pose is frozen in data/cone-choice-case.json
+(5.5KB): L31.53cm versus R3.53cm after cone, selecting R. Before cone, the same
+pose measured L47.47cm/R55.07cm. The frozen pose also verifies planner/query
+agreement, immediate right-foot contact, bone lengths and continuous rotation.
+
+Applying the rule to the whole saved sequence also chooses L on the FIRST jump:
+post-cone L9.33cm/R37.87cm. It captures at F53 and changes the flight trajectory.
+Consequently existing F115/F146 markers now miss with no ground in their cones.
+The older all-three-success claims below describe the previous selection rule.
+No markers, launch settings or saved state were changed to conceal this effect.
+
+Selection37, contact alignment36 and bounce140 checks pass; JS syntax checked.
+Unavailable equal-distance surfaces may tie as diagnostic miss labels; tests
+verify such ordering cannot create a launch or alter root motion. Visual QA
+unverified; refresh to load. No UI layout/new options, Unreal/training/server work.
+
+## Penetration does not reject a support foot - October 25
+
+Removed the unrequested5mm penetration cutoff from cone validity. There is no
+replacement depth rejection. A foot below the plane uses its projected point;
+finite platform bounds still apply. The existing sole-to-contact distance trigger
+controls capture, independently of eligibility. Reach and closest-own-ideal
+selection are unchanged.
+
+Saved jump2/F115: R34.3cm versus L56.5cm from their ideals. R's lowest shoe corner
+is9.5mm inside the nearby left incline; the old cutoff wrongly rejected it. R now
+wins and captures immediately at F115, then loads/pushes. All three original
+markers succeed. This supersedes the older assertion that L was correct on
+jump2. The previous selection test enforced the bug; corrected tests check the
+closer penetrated foot and absence of any depth cutoff, including beyond5cm.
+
+Selection34, bounce148, alignment47 and contact40 checks pass; syntax checked.
+The corner-contact rotation test now uses an explicitly banked fixture so later
+arrival changes cannot silently remove its coverage. Refresh to load. No saved
+settings/platforms/markers changed, no UI additions or Unreal/training activity.
+User instruction: do not invent gates, fallbacks or exceptions; ask if ambiguous
+and explain any proposed behavior change before implementing it.
+
+## Centered gizmo and continuous contact alignment - October 25
+
+Selecting a platform places the gizmo at the slab center, which is also the
+rotation/scale pivot. Scale handles remain aligned with the rotated local axes.
+A left drag that becomes an orbit clears selection, including a previously
+selected platform. Actual pointer cancellation still restores the prior selection.
+No timer or extra click is added; the existing four-pixel drag threshold remains.
+
+Contact no longer freezes an unfinished shoe bank. A prepared contact trajectory
+continues leveling the shoe's lateral axis to the surface through LOAD and PUSH,
+preserving the pitch reached during approach. Heel-to-toe roll starts at PUSH at
+the existing Foot roll speed. The solver rolls the displayed shoe boxes over their
+supporting vertices, keeps the lowest geometry on the plane, and checks finite
+surface contact. Loading uses that same moving ankle and its relative velocity;
+the displayed IK is not a separate cosmetic adjustment. Rotation, ankle position,
+root motion and leg lengths stay continuous across loading/push/release.
+Alignment is automatic; no new option or UI rearrangement.
+
+Both ideal targets now have equal-size rings: green selected, red other. A smaller
+green ring/line marks actual contact. Hover the phase label for the two original
+selection distances and eligibility. The old display compared green actual contact
+with red ideal, which could look like the wrong choice. Before this edit, saved
+jump3 correctly picked L50.1cm versus R60.4cm at selection time, both eligible.
+The closest-eligible-own-ideal rule is retained; targets move during approach,
+and the chosen foot is not repeatedly switched during that approach.
+
+Verification:47 contact-alignment checks cover the original three markers,
+surface clearance, both bone lengths, IK/physics agreement, phase continuity,
+reverse seeks and existing roll speed including zero. Saved jump3 begins with
+side dot normal0.731 and reaches0 before release. All original markers still
+push floor/left/right. Bounce148, selection23, platform101, contact40, skew105,
+arrow18 checks pass; JS syntax checked. Cached planning about50-70ms, no inference
+or per-frame integration. Browser and desktop visual tools both fail with
+kernel-assets os error3, so visual QA is unverified. Refresh to load; saved
+settings/markers/platforms untouched. No Unreal/training changes or push.
+
+## Joint surface and foot selection - October 25
+
+Auto selection now evaluates the same foot/contact pair for both surface ranking
+and support planning. Previously a platform was considered available when either
+foot had a valid cone, but planning could then choose the other, invalid foot.
+The saved jump2 picked the opposite/right incline on pelvis distance, then picked
+L despite its cone being below that plane. This was a selection bug, not a need
+to retime the marker.
+
+Each finite surface builds both planted-foot ideal candidates with the actual
+incoming velocity. Eligible candidates need a valid foot cone and a surface
+within leg reach plus shoe clearance. Auto keeps the nearest-own-ideal foot among
+eligible feet on that surface; surfaces rank by that foot's actual surface gap.
+Pelvis distance breaks ties and provides the diagnostic fallback if none are
+eligible. Explicit foot/surface choices remain honored. Distant slabs cannot
+steal selection solely because a wide cone intersects them. Selection diagnostics
+are exposed as surfaceChoices; no new UI or option.
+
+Saved F115 now chooses L on the nearby left incline, gap23.0cm versus R/right
+29.4cm. All three original markers succeed; the prior F114 workaround is no
+longer required.23 focused selection checks, bounce148 and contact40 pass;
+syntax checked, live browser visual QA unavailable. Refresh to load. No saved
+marker/tuning/platform edits, new processes, Unreal/training work or push.
+
+## Loading and rebound prototype - October 25
+
+Implemented the proposed kinematic pelvis model in bounce.js. Two inputs are
+appended after Translucency in More options: Load ms (default100, range0-300)
+and Rebound % (default50, range0-100). Load0 preserves the previous authored
+launch for comparison. Other values set spring response, not a mandatory delay:
+little impact means little loading, and remaining leg reach can shorten it.
+Edits use the existing preserve-playhead path; settings persist on refresh.
+
+Contact starts LOAD with the incoming world velocity and gravity. A damped leg
+spring compresses while the shoe stays pinned; the other limbs continue their
+incoming animation. Extension starts PUSH, jump blending, heel-to-toe roll and
+the three-frame direction arrow. Root/pelvis motion uses the loading/drive path
+instead of adding it to the clip's root height. The active jump's energy comes
+from the clip's ascent height; returned impact energy is added once, capped at
+the active jump energy. Rebound0 absorbs impact but retains the active jump.
+
+Preparation integrates loading at480Hz, then stores samples with continuous
+position/velocity interpolation. The drive fits remaining leg travel and releases
+at reach, finite contact loss or drive end; gravity and capped fall continue from
+that exact position/velocity. Compression is bounded by leg geometry and surface
+clearance, stiffness is bounded for numerical stability, and a lost contact cannot
+manufacture a push. No new inference, worker, process or per-frame integration.
+Animation matching/blend, busy marker intervals and air rotation use the delayed
+push/release times. A no-drive release is reported as Miss, with no push arrow.
+
+148 focused checks pass, including momentum continuity, compression/energy bounds,
+flat/slope/wall plants, controls, reverse seeks, release/arrow timing, misses and
+three successive bounces. Platform93, skew105 and arrow18 cover Load0 behavior;
+refresh14 passes. Cached three-jump preparation measured about42ms. Live browser
+visual verification remains unavailable; refresh to load.
+
+Historical before the pair-selection fix above: original jump2 marker F115 missed.
+Read-only trial at F114 (1.900s) makes all three markers succeed, with loading about
+21/38/46ms. The pair-selection fix now makes original F115 work too. User marker
+times, platforms and tuning were NOT overwritten. No
+Unreal/training activity, server restart or push.
+
+## Forward-facing plant on inclines - October 25
+
+Plant orientation now uses the character's anatomical pelvis forward (-Y),
+flattened to heading and then projected onto the contact surface. The former
+root +Z assumption was valid for cached locomotion but became lateral after
+jump sampling put the pelvis basis on the root. Pelvis lean no longer introduces
+sideways yaw through slope projection. Plant pitch and heel-to-toe roll remain;
+the roll axis is built from the corrected forward direction. This is separate
+from alpha, which still follows incoming root velocity along the surface.
+
+Saved frame151 / jump3 reproduced with alpha6, Foot400. Captured shoe heading
+is now within2.28 degrees of intended forward (previously almost sideways).
+58 heading/pitch/root-basis/roll checks pass, plus target71, contact39,
+schedule136, cone88 and skew105. Browser visual QA unavailable. Refresh required;
+saved tuning, platforms and marker times untouched. Actual contact time changes
+as the correctly oriented shoe reaches the surface.
+
+Historical proposal, now implemented above: capture previously removed incoming normal
+velocity and immediately starts authored jump height. Proposed next step is a
+deterministic pelvis spring/damper loading phase under momentum and gravity,
+with the foot pinned, bounded leg compression and recoverable impact energy.
+Jump animation and heel-to-toe push begin on extension, not first contact;
+spring-driven root motion must replace, not add to, the existing launch trajectory.
+Proposed compact controls: loading response time and rebound energy fraction,
+appended at the bottom of More options.
+
+## Inclined lead, alternative target and knee hinge - October 25
+
+Lead alpha now multiplies the incoming world root velocity projected onto the
+selected surface, divided by200. It no longer reconstructs velocity from root
+facing and horizontal speed. Descent onto slopes contributes along the slope;
+the prepared ideal remains root-local during approach and finite-ground clamped.
+This supersedes the root-forward direction described in older entries below.
+Alpha0 removes the lead; there is no foot-distance or foot-speed multiplier.
+
+A red circle shows the other foot's ideal candidate on the active platform.
+The green circle remains the selected foot's actual contact. The red candidate
+uses the same root-local target as selection, follows approach, and freezes at
+capture/abort. Auto still chooses the smaller ankle-to-own-ideal distance at
+support start. Saved jump3 previously chose L:73.8cm versus R:77.6cm. Corrected
+target/IK sequence chooses R:60.7cm versus L:63.9cm; marker timing is unchanged.
+
+The knee uses its actual perpendicular bend direction carried with the pelvis
+and transported with hip-to-target aim, replacing projection of a frozen world
+hip-to-knee vector. Thigh and calf rotations share one hinge plane, preserving
+segment lengths and removing independent twist. A compact F counter beside
+playback seconds is zero-based at60Hz; time/rail/frame update before HUD throttling,
+including immediate scrub previews, frame steps and refresh restoration.
+
+Reproduced the saved frame149.71 focused target/hinge/readout checks, contact39,
+schedule136, skew105, cone88, platform93, arrow18 and refresh14 pass. Test fixtures
+use cached phase-bank data only. Live browser/GPU visual verification remains
+unavailable. Refresh to load; no saved tuning/layout reset or Unreal/training work.
+
+## Platform side translucency - October 25
+
+Translucency % is appended at the bottom of More options, default80. It controls
+platform side and underside faces only:0 is opaque,100 invisible. Walkable top
+faces stay opaque from their front; their back faces and back-facing grid lines
+are omitted so they do not obscure the agent through the underside. The local
+top follows rotated platforms. Picking, collisions, support planning and saved
+platform geometry are unchanged. Changing translucency redraws/saves without
+replanning or moving/pausing playback.
+
+Visible non-top faces render after opaque geometry, sorted far-to-near, with
+alpha blending and depth testing but no depth writes. Opacity/blend/depth-write
+state is restored before overlays. The small face queue and vertex buffer are
+reused.25 focused render-routing/settings checks and93 platform checks pass;
+syntax checked. Browser/GPU visual verification remains unavailable. Refresh
+lab to load, preserving playback through the updated Refresh button.
+
+## Refresh playback state and alpha step - October 25
+
+The app Refresh button snapshots the playhead, playing/paused state, attack time,
+current flip/twist and hit readout before pausing/saving/reloading. Startup restores
+that snapshot after clips and flight are ready. Paused positions outside trim
+remain outside trim; active playback resumes under normal trim rules. Pending
+seek previews and delayed saves are cancelled before refresh. Settings/camera,
+trim and speed persist as before. Runtime angles are saved separately from
+starting angles to avoid adding the air rotation twice. Old saves without a
+playback snapshot still load normally. Hidden tabs do not resume rendering.
+This becomes active after the first reload of the new code; an already-open older
+version cannot save a playhead it did not previously record.
+
+Lead alpha's native numeric step is1, so Up/Down and spinner clicks change it by1;
+fractional values remain directly editable. 14 focused refresh/restore checks and
+syntax pass. Live visual QA unavailable. No live-state overwrite, server restart,
+Unreal/training work or push.
+
+## Anatomical foot plant and incoming velocity - October 25
+
+Foot/toe up directions now use the rig's anatomical left/right axis signs.
+The old world-Y sign choice flipped the foot frame after it crossed vertical,
+so the saved third jump planted on the top (anatomical up dot normal=-0.959).
+Plant alignment, surface queries and rendered boxes now share the same foot
+frame; no world-up sign switch. Queries use all box corners to handle an airborne
+inverted shoe. An inverted nearby contact is aligned sole-first before capture.
+The isolated third-contact regression now has positive up dot normal=0.861.
+
+Incoming velocity is projected onto the directions tangent to BOTH the actual
+platform and the skewed push axis. This removes the normal component requested
+by the user without reintroducing downward-to-sideways carry at100% Up skew.
+This supersedes the earlier push-axis-only projection: tangential sliding within
+the plane containing both normals is removed too; motion along their common
+tangent survives. On flat ground /0% skew the normals coincide and ordinary
+surface-tangent carry survives. Up skew controls the new authored push, while
+physical contact and IK continue using the real platform.
+
+Verified against saved setup: jump2 carries[0,0,5]m/s with zero surface-normal
+component. Its changed flight makes the existing third marker miss (Distance
+growing); marker times were preserved. 37 contact/render/orientation checks,
+105 motion checks,136 schedule checks,93 platform and18 arrow checks pass.
+The contact fixture uses cached phase banks only, no NN inference. Live browser
+visual QA remains unavailable. Refresh required; no saved-state reset,
+Unreal/training activity, server restart or push.
+
+## Trim preview returns to playhead - October 25
+
+Dragging either bracket still previews its boundary immediately. Release restores
+the playhead saved at pointerdown while keeping the new trim range, even if that
+playhead is outside it. Cancel/lost capture also restore the position; pending
+preview frames are cancelled so they cannot overwrite the restored scene.
+Playback remains paused as before. Seven focused handler checks and syntax pass.
+Refresh the lab to load; no state reset or Unreal/training activity.
+
+## Up skew affects takeoff momentum - October 25
+
+Historical intermediate fix; superseded by the dual-normal cancellation above.
+
+Fixed a mismatch: the jump impulse used the skewed direction, but retained
+velocity was still projected onto the physical surface. Downward motion against
+a45-degree slope could therefore add sideways motion even at100% Up skew.
+Incoming velocity is now projected perpendicular to the effective push direction.
+At100%, takeoff root/pelvis displacement matches flat ground for identical incoming
+velocity and jump clip: horizontal momentum remains, vertical arrival velocity
+is replaced by the authored jump. At0%, physical-normal behavior is unchanged.
+Contact selection, foot placement and pinning still use the actual platform.
+
+Reproduction before: incoming[0,-4,3]m/s on45-degree slope at100% yielded
+[0.20,0.0661,0.30]m displacement after0.1s, versus flat[0,0.2661,0.30]m.
+After the fix the slope matches the flat result (numerical noise below1e-8).
+102 focused trajectory checks pass across left/right slopes, wall, rising/falling/
+stationary approaches, retained horizontal momentum and three skew settings.
+Arrow18 and platform93 checks also pass. Browser visual QA remains unavailable.
+No saved settings/layout reset, inference, server restart or Unreal/training work.
+Refresh the lab to use the corrected trajectory.
+
+## Show jump direction - October 25
+
+Show jump is appended after Cone in the viewport checkbox row, defaults off,
+and persists with settings. Each successful push displays a large yellow1.4m
+arrow from the supporting contact along the authored push direction (including
+Up skew, excluding existing tangential motion). It lasts3 simulation frames at
+60Hz /0.05s of playback time. Pause, speed changes, stepping, reverse seek and
+looping therefore retain the same window; missed jumps show nothing. The arrow
+is drawn through the body for readability, using a reused mesh only while visible.
+No timers, extra playback loops, inference or replans are introduced by the toggle.
+18 focused timing/direction/render checks and syntax pass; browser visual QA
+remains unavailable. Refresh the lab and enable Show jump.
+
+## Immediate click feedback without blocking camera drag - October 25
+
+The user clarified that the delay meant elapsed click-to-gizmo time, not drag
+distance. The gizmo now renders on pointer press, without waiting for release,
+a timer, or a full scene redraw. This preview does not pause playback. Release
+commits the click and pauses; dragging, cancellation or lost capture restores
+the previous selection. A drag returning to its starting point is not a click.
+The original4 CSS-pixel jitter allowance is restored; the earlier4-to1 reduction
+addressed the wrong issue. Left-drag orbits over platforms without Alt. Gizmo
+transforms, middle-pan and right-target drag retain their behavior.
+93 focused checks and syntax pass, including immediate SVG output, no pause on
+press, and actual camera handlers. Live visual QA remains unavailable; refresh
+the lab to load. Saved tuning and platform layouts are unchanged.
+
+## Distinct transform gizmos - October 25
+
+Move (W) now uses large pointed arrowheads and a round center handle. Scale (R)
+uses outlined square endpoints and a square center. Axis colors, orientation,
+click targets and transform behavior are retained. This replaces the nearly
+identical small circles/squares. Syntax and82 existing checks pass (Move render
+assertions updated for arrowheads). Live visual QA remains unavailable due to
+UI runtime initialization failure. Refresh the lab to load the new appearance.
+
+## Platform keyboard focus and layout - October 25
+
+W/E/R and Ctrl+Z now use the printed letter (KeyboardEvent.key), not physical
+QWERTY positions. This fixes W being missed on AZERTY (physical KeyZ) and its
+Ctrl+Z equivalent. Clicking the viewport or gizmo explicitly transfers focus to
+the canvas, committing numeric edits and leaving dropdowns so their retained
+focus cannot block transform shortcuts. Active text editing still keeps its keys.
+The R scale gizmo remains local; W move and E rotate remain world-oriented.
+82 focused checks pass, including rendered Move handles for QWERTY/AZERTY W and
+actual focus-handler execution. Browser visual QA remains unavailable. Refresh
+the lab to load this update; no layout reset or saved tuning changes this turn.
+
+## Platform reset and transform undo - October 25
+
+Requested reset restored the saved default floor and two 45-degree ramps. Other
+settings, jump markers and camera were preserved and verified through /state
+readback. The previous state is backed up in
+Saved/BodyflipLab/platforms-before-reset-20261025.json (project-relative).
+A one-time platformResetVersion migration also applies on startup so an old open
+tab saving before Refresh cannot undo this requested reset. Subsequent layout
+edits persist normally. Refresh the lab once to load the reset and new controls.
+
+Ctrl+Z undoes one completed platform move, rotation or scale; up to100 operations
+are kept in memory until reload. No-op/cancelled drags add no history. During a
+drag, Ctrl+Z cancels that drag. Undo restores its gizmo anchor, previews immediately
+and replans/saves once while retaining the playhead. It preserves later additions
+and skips transforms of deleted platforms; add/delete themselves are not undo
+operations. Writable fields and selects retain native editing shortcuts. No new
+UI controls or rearrangement. 72 focused checks pass, including undo, reset
+idempotence and input routing. Syntax checks pass. Browser visual verification
+remains unavailable due to the UI runtime initialization error; no Unreal,
+training, inference or server restart was needed.
+
+## Platform editing, zoom and upward skew - October 25
+
++ Platform is below the phase label at viewport top left. It creates a 2m square
+slab near the character and selects it. Click any existing platform to select it:
+W is world-axis translation, E world-axis rotation, R local-axis scale.
+Delete/Backspace removes the selection; text/number/select widgets retain their
+editing keys. R no longer resets playback in Run/Walk mode. Escape cancels a
+current drag, otherwise deselects. Gizmos anchor at the clicked point so even a
+long ramp with its center behind the camera remains editable. Rotation and scale
+use that point as pivot. The white center moves in the camera plane / scales
+uniformly. Shift during rotation snaps to15 degrees. Left-drag orbits even over
+geometry; the gizmo appears on press and the click commits on release.
+Alt-left-drag also orbits. Existing inverted X/Y mapping is retained.
+
+Dragging previews geometry immediately and pauses playback. Release rebuilds
+support plans/collision slabs once, retaining the playhead, and saves the layout.
+Existing floor and ramps become editable records on the first edit. Their
+position, quaternion and dimensions persist with settings, including deletions
+and an entirely empty scene. Initial locomotion remains on its authored path;
+platform edits do not relocate the character. Scene queries and Jolt use the
+same edited geometry. No platform queries or gizmo geometry run while unselected.
+
+Wheel zoom-out no longer has the0.35 floor. The perspective far plane expands
+with distance (near plane adapts for precision), so distant viewing is not cut
+at60m. The existing close-zoom limit remains. Numerical underflow is rejected.
+
+More options ends with Up skew %, default50. It rotates the authored push
+vector from the surface normal toward world up by this fraction of the angle:
+0 reproduces the previous normal push,50 gives45 degrees upward from a vertical
+wall,100 gives a vertical push. Incoming velocity tangent to both the physical
+platform and skewed push direction is retained (see the current correction above). Contact cones/heel roll use the
+actual surface normal. Vertical-wall planting now handles root-forward being
+parallel to the surface normal without a degenerate foot basis.
+
+50 geometry/editor-event checks pass, including a real authored wall push at
+45 degrees from rest, transform persistence, picking, drag/cancel/delete,
+uncapped wheel zoom and retained camera axis signs. Existing136 schedule checks
+pass with Up skew explicitly0 to retain their original reference trajectories;
+19 marker-editor checks also pass. Receipt: platform-verification.json.
+Browser visual verification remains blocked by the UI runtime's missing
+kernel-assets path error. No live state overwrite, inference, Unreal work,
+server restart or push. Refresh the lab to load these changes.
+
+## Inclined surfaces and timed jumps - October 25
+
+Two finite 45-degree ramps form a V beyond the runway edge. Each ramp is 6m
+along its incline and 18m forward. More options ends with the 45-degree ramps
+checkbox. Rendering, support queries and Jolt use the same oriented rectangles.
+Cone clipping, foot clearance, plant rotation, contact markers and heel roll use
+the selected surface normal. A small 5mm back-face tolerance retains existing
+sub-millimetre gait sole penetration; deeper back-face contacts fail.
+
+Jump markers now sit ON THE EXISTING playback rail. The only permanent new
+control is + Jump, beside Loop at the start of the existing timeline. Its mouse
+target matches the transport buttons. The far-right placement was rejected as
+inconvenient: keep related mouse actions beside their working area. It adds support
+preparation at the current playhead. Drag a numbered marker to move it; click it
+for a small popover with exact seconds and Delete. Click away or Escape closes
+that popover. No second playback bar, After, Gap, or permanent timing form.
+Markers and trim brackets share the same time scale. Edits retain the playhead;
+marker times snap to 1/60s. Up to 32 markers can be saved, including an empty
+schedule. Existing Run/Early seeds the first marker until the schedule is edited;
+Run duration still locates the runway edge.
+
+Each marker begins support preparation along the incoming trajectory. Additional
+jumps choose the nearest finite surface to the pelvis, preferring surfaces with
+a valid foot cone; existing foot selection then applies. Contact still needs the
+sole gate and leg reach. A successful slope push uses the animation ascent along
+the surface normal, preserving incoming tangential velocity; gravity remains
+world-vertical and capped. The character remains upright. A miss blends the leg
+back onto the previous trajectory without adding root/pelvis lift. Overlapping
+support/push markers report Busy and do not restart that push. No automatic
+kinematic landing is added: pushes occur only from scheduled, valid contacts.
+
+One cached 5s NN bank request supplies the gait; no live inference. Plans are
+built on edits, with drag replanning debounced. Numerical checks cover both
+slopes, exact sole contact throughout heel roll, three successful scheduled
+pushes, misses, overlap, empty schedules, deterministic seeks and Jolt slab
+recreation. UI event checks cover add/edit/drag/delete and popover dismissal.
+136 motion/geometry checks and 19 control checks pass; existing cone88,
+independent-blend33 and abort-pelvis36 checks also pass. Two-jump preparation
+measured about19-31ms in Node (not a browser FPS claim). Receipts:
+schedule-verification.json and jump-track-verification.json. Live visual
+verification remains unavailable: both UI runtimes failed with the missing
+kernel-assets path error. User's screenshot informed the simplification.
+Saved tuning/camera were not overwritten; refresh the lab to load the changes.
+No Unreal activity, training changes, server restart or Git push.
+
 ## Git checkpoint and restore - October 24
 
 The curated checkpoint includes app/server source, desktop shortcut scripts,
@@ -25,6 +542,58 @@ browser profile, snapshots and historical preview images are excluded. Model
 provenance records their source paths/hashes; these external inputs and the
 Stepper runtime are required only to regenerate the included phase banks.
 Latest split-blend and foot-roll previews are retained as small review images.
+
+## Cone-constrained sole target - October 25
+
+Abort pelvis correction: saved Run Phase30%, Cone60 aborts at .904167s for
+increasing sole/contact distance; it never receives jump root height. The previous
+abort-to-fall blend nevertheless borrowed the fall clip's pelvis translation,
+causing a7.24cm upward rebound around1.10-1.15s while the root was descending.
+The failed-fall path now captures the displayed root-local pelvis at the ledge
+(including any unfinished abort blend) and carries it along capped gravity.
+Other joints still animate. This changes neither plant acceptance nor fall timing.
+36 checks across Run/Walk failures and Body blend0/.2/.8 verify no upward pelvis
+motion, edge continuity, limb animation and deterministic seeks. Saved settings
+remain untouched. Receipts: miss-investigation.json (before),
+abort-pelvis-verification.json (after).
+
+The selected support foot now projects a cone from its lowest rendered sole
+point toward the ground (opposite the outward surface normal). Where several
+sole vertices share the minimum height, their contact-edge center is used.
+More options / Cone is the half-angle, default30 degrees, range0-85. The contact
+is the closest point to the existing ideal contact inside BOTH the cone and the
+finite platform. No valid intersection means abort, rather than reaching outside
+the cone to manufacture a contact. Foot selection, root-local ideal/Lead and
+continued locomotion retain their existing rules. The cone follows the approaching
+foot and shrinks as it nears the surface. Increasing sole-to-contact distance
+still aborts; this now measures the sole instead of the ankle-to-Plant offset.
+
+Gate now means lowest-sole-to-valid-ground distance, default5cm. It is evaluated
+at support entry and every approach step; entering the gate starts PUSH directly
+without waiting for the ideal ankle position or completed Plant rotation. The
+remaining small gap is captured to the cone contact with IK, so the push is
+grounded rather than pinning in midair. This deliberately permits a contact
+correction within the gate (up to gap/cos(Cone) when the ideal is cone-clipped);
+Foot speed bounds the approach before capture. Gate0 requests exact contact.
+Existing leg reach remains required. Heel roll starts from the actual captured
+foot angle and preserves the configured Roll speed and Toe-off limit.
+
+Viewport Cone checkbox draws the live cone/footprint, pink ideal and green
+chosen point (red for no intersection). It works before/during support and push,
+and disappears after release/abort. Toggle only redraws/saves, without replanning;
+debug queries/geometry are not evaluated when off. The later inclined-surface extension above adds oriented finite rectangles;
+this section records the initial horizontal-platform version.
+
+Reported Run Phase54% now jumps at .900s with no forward replant, versus .950s
+previously. Phase67% remains airborne approach and jumps at .925s. 88 numerical
+checks cover geometry, nearest-point selection, valid ground, zero Gate,
+immediate launch, heel contact, seek determinism and debug origin; the33 independent
+blend checks also pass. Browser fixture verify-cone.html is provided but NOT yet
+executed: CUA failed to initialize twice (missing runtime path). Checkbox/angle
+wiring was inspected statically; visual appearance remains unverified. Saved
+state/camera untouched; no inference, Unreal activity or server restart.
+Receipt: cone-verification.json. Earlier exact-contact/Plant-completion rules
+below describe the previous version and are superseded by this sole gate.
 
 ## Independent body and support-leg blends - October 24
 

@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "browserVisualVerified": false,
+  "checks": [
+    "Refresh saves active time before pausing",
+    "Refresh saves attack and diagnostic state",
+    "Authored angles remain separate from current angles",
+    "Refresh preserves trim speed and camera",
+    "Pending save cleared before one reload",
+    "Running playback restores position and resumes",
+    "Paused position outside trim remains exact and paused",
+    "Queued seek is saved and cancelled before refresh",
+    "Space mode restores clock attack and orientation",
+    "Hidden lab does not start rendering",
+    "Older saves without playback still load",
+    "Alpha arrow step is one",
+    "Refresh button uses state-preserving handler",
+    "Boot restores after preparing flight"
+  ]
+}

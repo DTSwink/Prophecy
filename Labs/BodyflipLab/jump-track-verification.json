@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "browserLayoutVerified": false,
+  "checks": [
+    "Default strip has no expanded editor",
+    "Plus adds at playhead on 60 Hz frame",
+    "Adding does not change playhead",
+    "New marker opens exact time editor",
+    "Time editing sorts while retaining selection",
+    "Dragging changes the selected time by timeline scale",
+    "Dragging keeps playback time",
+    "Clicking away closes editor",
+    "Clicking marker restores editor",
+    "Escape closes editor",
+    "Empty time does not create a zero-time jump",
+    "Delete removes only selected marker",
+    "All markers can be deleted without regenerating first jump",
+    "Plus can add after deleting all jumps",
+    "Schedule hides in Space mode",
+    "No After or Gap controls remain",
+    "Markers use existing playback timeline",
+    "No second playback rail or playhead",
+    "Add button sits beside Loop at the start of the timeline"
+  ]
+}
