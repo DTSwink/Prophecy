@@ -1,0 +1,56 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Bodyflip · Soft legs comparison</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#141923;color:#e5eaf2;font:14px system-ui}header{display:flex;align-items:center;flex-wrap:wrap;gap:14px 24px;padding:16px 22px;border-bottom:1px solid #354158}h1{font-size:20px;margin:0 0 5px}p{margin:0;color:#aebdd2}main{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:#354158}section{position:relative;background:#141923}h2{position:absolute;top:16px;left:22px;font-size:16px;margin:0;z-index:1}h2 small{display:block;font-weight:400;font-size:12px;color:#aebdd2;margin-top:5px}canvas{display:block;width:100%;height:calc(100vh - 160px);min-height:350px}footer{display:flex;gap:14px;align-items:center;padding:15px 22px}button{background:#aa91eb;border:0;border-radius:6px;color:#111827;padding:9px 18px;font:inherit;cursor:pointer}input{flex:1;accent-color:#aa91eb}output{min-width:110px}#status{margin-left:auto;font-size:12px}a{color:#bbabef}header>div{flex:1;min-width:280px}.compensation{display:flex;align-items:center;gap:8px;white-space:nowrap}.compensation input[type=range]{width:135px;flex:0 0 135px}#compensationValue{width:55px;flex:0 0 55px;background:#1b2433;color:#e5eaf2;border:1px solid #354158;border-radius:5px;padding:6px;text-align:right;font:inherit}@media(max-width:700px){.compensation{margin-left:auto}}
+</style></head><body>
+<header><div><h1>Bodyflip · Soft legs</h1><p id="description">Loading the current attack…</p></div><label class="compensation">Compensation <input id="compensation" aria-label="Compensation" type="range" min="0" max="100" step="1" value="80" disabled><input id="compensationValue" aria-label="Compensation percent" type="number" min="0" max="100" step="1" value="80" disabled><span>%</span></label></header>
+<main><section><h2>Before<small>Yaw inertia only</small></h2><canvas id="rigid"></canvas></section><section><h2>After<small>Whole-leg inertia</small></h2><canvas id="soft"></canvas></section></main>
+<footer><button id="play">Play</button><input id="time" aria-label="Comparison frame" type="range" min="0" max="180" step="1" value="0"><output id="frame"></output><span id="status">Drag either view to orbit</span></footer>
+<script src="recovery.js"></script><script src="core.js"></script><script src="torso.js"></script><script src="support.js"></script><script src="idle.js"></script><script src="attack-inertia.js"></script><script src="jump-attack.js"></script><script src="viewer-leg-response.js"></script><script src="camera.js"></script><script src="renderer.js"></script>
+<script>
+const R=Recovery,C=BodyflipCore,A=BodyflipJumpAttack,{add,sub,mul,dot,cross,length:norm,unit:normalize}=R,clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),posAt=(p,j)=>p.points[j],axisAt=(p,j,k)=>p.axes[j][k];
+let names,parents,nameToIndex,swordMesh,tracks,renderers,first=0,last=3,playing=false,stamp=0,nextDraw=0,frame=0,ready=false;
+const cameraState={yaw:-.5,pitch:-.05,zoom:1,panX:0,panY:0},fetchJSON=p=>fetch(p).then(r=>r.json());
+function drawAll(){if(!ready)return;const t=first+frame/60;for(let i=0;i<2;i++)renderers[i].draw({...tracks[i].sample(t).pose,tint:[.91,.49,.25],bicolor:true,voidScene:true,hideSword:!previewAttack.startsWith('slash')&&previewAttack!=='pike'},[0,.94,0]);document.getElementById('time').value=frame;document.getElementById('frame').textContent='F '+Math.round(frame)+' · '+t.toFixed(2)+' s';}
+function setFrame(f){frame=clamp(Math.round(f),0,Math.round((last-first)*60));drawAll();}
+function tick(now){if(!playing||document.hidden){stamp=nextDraw=0;return;}if(!stamp)stamp=now;frame=(frame+Math.min(now-stamp,100)*.06)%((last-first)*60);stamp=now;if(now>=nextDraw){const period=1000/30;nextDraw=now+period-((now-nextDraw)%period);drawAll();}requestAnimationFrame(tick);}
+document.getElementById('play').onclick=()=>{playing=!playing;document.getElementById('play').textContent=playing?'Pause':'Play';stamp=0;if(playing)requestAnimationFrame(tick);savePreview();};document.getElementById('time').oninput=e=>{playing=false;document.getElementById('play').textContent='Play';setFrame(+e.target.value);savePreview();};document.addEventListener('visibilitychange',()=>{if(!document.hidden&&playing)requestAnimationFrame(tick);});
+let previewAttack='slashL',amount=.8,rebuild=null,amountRAF=null,motionConfig=null;
+const storageKey='bodyflip-soft-legs-preview-v1';
+function savedPreview(){try{return JSON.parse(sessionStorage.getItem(storageKey)||'null');}catch{return null;}}
+function savePreview(){if(!ready)return;try{sessionStorage.setItem(storageKey,JSON.stringify({attack:previewAttack,amount,frame,playing,camera:cameraState,...motionConfig}));}catch{}}
+function syncAmount(){document.getElementById('compensation').value=Math.round(amount*100);document.getElementById('compensationValue').value=Math.round(amount*100);document.getElementById('description').textContent=(A.labels[previewAttack]||previewAttack)+' · '+Math.round(amount*100)+'% compensation · same upper-body animation';}
+function setAmount(value){if(!ready||!Number.isFinite(value))return;amount=clamp(value,0,100)/100;syncAmount();if(amountRAF===null)amountRAF=requestAnimationFrame(()=>{amountRAF=null;rebuild();stamp=nextDraw=0;drawAll();savePreview();});}
+document.getElementById('compensation').oninput=e=>setAmount(+e.target.value);
+document.getElementById('compensationValue').onchange=e=>{if(e.target.value.trim())setAmount(+e.target.value);else syncAmount();};
+document.getElementById('compensationValue').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur();}};
+window.addEventListener('pagehide',savePreview);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)savePreview();});
+
+(async()=>{
+ const [m,state,metadata,idleMeta,bytes,sw]=await Promise.all([fetchJSON('data/manifest.json'),fetchJSON('/state'),fetchJSON('data/vanilla.json'),fetchJSON('data/idle.json'),fetch('data/idle.bin').then(r=>r.arrayBuffer()),fetchJSON('data/sword.json')]);
+ names=m.names;parents=m.parents;nameToIndex=new Map(names.map((n,i)=>[n,i]));const reference=C.poseFromShared(m),saved=savedPreview(),runPhase=saved?.runPhase??state.settings?.runPhase??0,idle=BodyflipIdle.create(idleMeta,bytes,m).motion(runPhase);
+ const event=saved?.event||state.settings?.jumpEvents?.find(e=>e.attack&&e.attack!=='none');const requested=new URLSearchParams(location.search).get('attack');previewAttack=metadata.clips.some(c=>c.name===requested)?requested:metadata.clips.some(c=>c.name===saved?.attack)?saved.attack:event?.attack||'slashL';const meta=metadata.clips.find(m=>m.name===previewAttack),clip=C.decode(meta,await fetch(meta.file).then(r=>r.arrayBuffer()),names,parents),catalog=new Map([[previewAttack,clip]]);
+ const decode=(s,T)=>{const raw=atob(s),b=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)b[i]=raw.charCodeAt(i);return new T(b.buffer);};swordMesh={...sw,vertices:decode(sw.vertices_b64,Float32Array),triangles:decode(sw.triangles_b64,Int32Array),bladeMask:decode(sw.blade_mask_b64,Uint8Array)};
+ const base=t=>({pose:idle.sample(t),phase:'SPACE'}),segment={sample:base,airStart:.35,jumpStart:.35,abortTime:Infinity};
+ amount=clamp(saved?.amount??state.settings?.pelvisAttackCompensation??.5,0,1);motionConfig={event,runPhase};
+ rebuild=()=>{
+  const before=A.create({...event,attack:previewAttack,attackDelay:0},segment,catalog,names,parents,{...C.defaults,softAttackLegs:true,pelvisAttackCompensation:amount},reference),sample=before.sample;let cached=null;
+  before.sample=t=>{if(!cached||cached.time!==t)cached={time:t,result:sample(t)};return cached.result;};
+  // Reconstruct the reference target before its yaw response. The experiment
+  // applies one consistent response to the full chain, without stacking filters.
+  const planned=(t,current=before.sample(t))=>{const response=before.inertia;if(!response||t<=before.start)return current;
+   const state=response.stateAt(t),plans=response.plannedStates,f=clamp((t-before.start)*120,0,plans.length-1),i=Math.floor(f),u=f-i,a=plans[i],b=plans[Math.min(i+1,plans.length-1)];
+   const delta={pelvis:a.pelvis+(b.pelvis-a.pelvis)*u-state.pelvis,legs:a.legs.map((v,k)=>v+(b.legs[k]-v)*u-state.legs[k])};
+   return {...current,pose:BodyflipAttackInertia.apply(current.pose,names,parents,delta)};
+  };
+  last=before.end+C.sanitizeJump(event||{}).attackOut+1;document.getElementById('time').max=Math.round(last*60);
+  const response=before.inertia?BodyflipViewerLegResponse.create({source:t=>planned(t).pose,base:t=>base(t).pose,start:before.start,stop:last,names,parents,reference}):null;
+  const after={...before,legResponse:response,sample(t){const current=before.sample(t);return response?{...current,pose:response.sample(t,planned(t,current).pose)}:current;}};
+  tracks=[before,after];
+ };
+ rebuild();syncAmount();
+ if(saved?.camera)Object.assign(cameraState,saved.camera);
+
+ renderers=['rigid','soft'].map(id=>{const c=document.getElementById(id),r=new WebGLMotionRenderer(c,{interactive:false,pixelRatio:1});r.torsoColliders=BodyflipTorso.create(names,parents,reference);let drag=null;c.onpointerdown=e=>{drag=[e.clientX,e.clientY];c.setPointerCapture(e.pointerId);};c.onpointermove=e=>{if(!drag)return;cameraState.yaw-=(e.clientX-drag[0])*.008;cameraState.pitch-=(e.clientY-drag[1])*.006;drag=[e.clientX,e.clientY];drawAll();};c.onpointerup=c.onpointercancel=()=>{drag=null;savePreview();};c.onwheel=e=>{e.preventDefault();cameraState.zoom*=Math.exp(-e.deltaY*.001);drawAll();savePreview();};return r;});
+ window.onresize=()=>{renderers.forEach(r=>r.rect=r.canvas.getBoundingClientRect());drawAll();};ready=true;document.getElementById('compensation').disabled=document.getElementById('compensationValue').disabled=false;setFrame(saved?.frame??52);playing=saved?.playing===true;document.getElementById('play').textContent=playing?'Pause':'Play';if(playing)requestAnimationFrame(tick);savePreview();window.preview={setFrame,get ready(){return ready;},get tracks(){return tracks;}};
+})().catch(e=>{document.getElementById('description').textContent=e.message;console.error(e);});
+</script></body></html>

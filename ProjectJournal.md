@@ -4,6 +4,18 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Bodyflip October27 - approved viewer and dependency checkpoint:**
+User approved the whole-leg inertia viewer and requested a push. Includes
+Bodyflip work since October25: flip/pose marker timing, Space gym/vanilla
+attacks, five spine colliders, pelvis transfer/compensation, reference legs,
+and the new viewer-only whole-leg response. Shared Foot IK surface/contact
+source and API contract are included as required runtime dependencies; other
+Foot IK app/NN work and all Unreal/training work are excluded. Live settings,
+scenes, browser state and caches remain local. Existing API5 server unchanged;
+API6 Foot IK activation still needs its normal restart. Whole-leg response is
+NOT applied to the main lab. Focused0/50/100% leg-response checks pass. Recovery
+inventory regenerated for the curated tree. [Restore/scope](Labs/BodyflipLab/README.md).
+
 **Bodyflip October25 - approved motion checkpoint:** user accepted the knee fix
 and requested a push. Includes Idle/shared jump controls, flat new scenes, capsule
 collision with actual NN landing continuation, free camera, matched whole-body

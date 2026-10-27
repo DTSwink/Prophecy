@@ -532,21 +532,11 @@ class WebGLMotionRenderer {
       if(marked)this.limbLongAxisHalf(mesh,data,volume.a,volume.b,volume.r,1);
     }
 
-    const spineBlocks = [
-      ["pelvis", "spine_02", .205, .215, .115, .120],
-      ["spine_02", "spine_04", .230, .255, .125, .140],
-      ["spine_04", "spine_05", .255, .265, .140, .145],
-    ];
-    const clavicleLeft = nameToIndex.get("clavicle_l");
-    const clavicleRight = nameToIndex.get("clavicle_r");
-    const torsoSide = clavicleLeft !== undefined && clavicleRight !== undefined
-      ? normalize(sub(posAt(data, clavicleRight), posAt(data, clavicleLeft)))
-      : null;
-    for (const [lowerName, upperName, lowerWidth, upperWidth, lowerDepth, upperDepth] of spineBlocks) {
-      const lower = nameToIndex.get(lowerName);
-      const upper = nameToIndex.get(upperName);
-      if (lower === undefined || upper === undefined) continue;
-      this.spineBlock(mesh, data, lower, upper, lowerWidth, upperWidth, lowerDepth, upperDepth, bodyColor, torsoSide);
+    // One immutable shape per spine, transformed by that bone only. Jolt uses
+    // these exact dimensions, offset and local orientation.
+    if (this.torsoColliders) for (const spec of this.torsoColliders) {
+      if (data.upperOnly && !data.upper[spec.bone]) continue;
+      this.box(mesh, BodyflipTorso.world(data, spec), bodyColor);
     }
 
     const headSpec = this.headFrame(data);

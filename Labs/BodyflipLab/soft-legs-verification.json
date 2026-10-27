@@ -1,0 +1,336 @@
+{
+  "samples": 6424,
+  "maxUpper": 2.1722173840913637e-15,
+  "maxKnee": 1.3280892035954341,
+  "maxHingeError": 7.41544926116924e-16,
+  "maxFoot": 1.1184182041231435e-15,
+  "maxPlannedResidual": 0.00045771388059989704,
+  "maxStep": 0.08846386276656015,
+  "maxLag": 0.3122390540066784,
+  "maxJointStep": 0.12080161872579512,
+  "maxKneeStep": 0.1128614864347534,
+  "maxVelocityJump": 0.0014792407409041444,
+  "elapsedMs": 5326.492200000001,
+  "clips": [
+    {
+      "name": "headbutt",
+      "amount": 0.5,
+      "ticks": 174,
+      "maxPlannedResidual": 9.859167627440657e-8,
+      "maxLag": 0.010217248366451425,
+      "maxStep": 0.0018731615071483788,
+      "maxAcceleration": 8.48190625753265,
+      "maxPlannedAcceleration": 109.20774300394874
+    },
+    {
+      "name": "headbutt",
+      "amount": 1,
+      "ticks": 174,
+      "maxPlannedResidual": 4.097524603299818e-8,
+      "maxLag": 0.020415895053088273,
+      "maxStep": 0.003768859730897925,
+      "maxAcceleration": 16.971243164077745,
+      "maxPlannedAcceleration": 218.85524194520846
+    },
+    {
+      "name": "hookL",
+      "amount": 0.5,
+      "ticks": 186,
+      "maxPlannedResidual": 8.814224461417552e-8,
+      "maxLag": 0.1822221896927393,
+      "maxStep": 0.034627693069029575,
+      "maxAcceleration": 103.63757569566367,
+      "maxPlannedAcceleration": 543.0693109197215
+    },
+    {
+      "name": "hookL",
+      "amount": 1,
+      "ticks": 186,
+      "maxPlannedResidual": 6.256677309579572e-8,
+      "maxLag": 0.30041182358170665,
+      "maxStep": 0.05486869449237025,
+      "maxAcceleration": 161.38021144978637,
+      "maxPlannedAcceleration": 1011.120758841157
+    },
+    {
+      "name": "hookR",
+      "amount": 0.5,
+      "ticks": 186,
+      "maxPlannedResidual": 3.843661420255273e-7,
+      "maxLag": 0.3080679665597112,
+      "maxStep": 0.05017743412996756,
+      "maxAcceleration": 121.76158803660016,
+      "maxPlannedAcceleration": 891.6440218133156
+    },
+    {
+      "name": "hookR",
+      "amount": 1,
+      "ticks": 186,
+      "maxPlannedResidual": 7.812699376330556e-7,
+      "maxLag": 0.3103288752526143,
+      "maxStep": 0.08846386276656015,
+      "maxAcceleration": 164.39141704584154,
+      "maxPlannedAcceleration": 1471.4862655574357
+    },
+    {
+      "name": "jabL",
+      "amount": 0.5,
+      "ticks": 174,
+      "maxPlannedResidual": 6.442183421440095e-8,
+      "maxLag": 0.08522438235203966,
+      "maxStep": 0.009881662600634791,
+      "maxAcceleration": 33.10047177131892,
+      "maxPlannedAcceleration": 723.3002542573479
+    },
+    {
+      "name": "jabL",
+      "amount": 1,
+      "ticks": 174,
+      "maxPlannedResidual": 8.852311962972981e-8,
+      "maxLag": 0.17262254915886283,
+      "maxStep": 0.020978121373687403,
+      "maxAcceleration": 59.99981063978668,
+      "maxPlannedAcceleration": 1494.047639454085
+    },
+    {
+      "name": "jabR",
+      "amount": 0.5,
+      "ticks": 178,
+      "maxPlannedResidual": 9.954632070562075e-8,
+      "maxLag": 0.294372617255328,
+      "maxStep": 0.04214766874093501,
+      "maxAcceleration": 126.59105564958551,
+      "maxPlannedAcceleration": 1125.7209059068405
+    },
+    {
+      "name": "jabR",
+      "amount": 1,
+      "ticks": 178,
+      "maxPlannedResidual": 4.593065707769739e-7,
+      "maxLag": 0.3122390540066784,
+      "maxStep": 0.07516486701987135,
+      "maxAcceleration": 201.8888080264521,
+      "maxPlannedAcceleration": 2345.709590615753
+    },
+    {
+      "name": "KickL",
+      "amount": 0.5,
+      "ticks": 191,
+      "maxPlannedResidual": 8.523788721029324e-8,
+      "maxLag": 0.0572720580602525,
+      "maxStep": 0.007228326313891448,
+      "maxAcceleration": 16.636123737053172,
+      "maxPlannedAcceleration": 120.18778322402966
+    },
+    {
+      "name": "KickL",
+      "amount": 1,
+      "ticks": 191,
+      "maxPlannedResidual": 8.281003045611246e-8,
+      "maxLag": 0.11729546235863897,
+      "maxStep": 0.014852025593472817,
+      "maxAcceleration": 34.569861643670585,
+      "maxPlannedAcceleration": 249.2206854105184
+    },
+    {
+      "name": "KickR",
+      "amount": 0.5,
+      "ticks": 191,
+      "maxPlannedResidual": 8.266055973038533e-8,
+      "maxLag": 0.3049769771993413,
+      "maxStep": 0.036176399403007764,
+      "maxAcceleration": 70.64394740486986,
+      "maxPlannedAcceleration": 416.67713990120774
+    },
+    {
+      "name": "KickR",
+      "amount": 1,
+      "ticks": 191,
+      "maxPlannedResidual": 8.68231312877929e-8,
+      "maxLag": 0.3120909856550529,
+      "maxStep": 0.06465754425487402,
+      "maxAcceleration": 112.33009363927427,
+      "maxPlannedAcceleration": 596.0922852175866
+    },
+    {
+      "name": "overL",
+      "amount": 0.5,
+      "ticks": 199,
+      "maxPlannedResidual": 1.2060860221652092e-7,
+      "maxLag": 0.2922112452844986,
+      "maxStep": 0.046968944480393154,
+      "maxAcceleration": 110.85976625519294,
+      "maxPlannedAcceleration": 1107.4649008131203
+    },
+    {
+      "name": "overL",
+      "amount": 1,
+      "ticks": 199,
+      "maxPlannedResidual": 1.0566819064194988e-7,
+      "maxLag": 0.30123519492675266,
+      "maxStep": 0.0562436912636487,
+      "maxAcceleration": 197.84872613406478,
+      "maxPlannedAcceleration": 2440.7309361995517
+    },
+    {
+      "name": "overR",
+      "amount": 0.5,
+      "ticks": 186,
+      "maxPlannedResidual": 8.421107855483001e-7,
+      "maxLag": 0.3100515619194487,
+      "maxStep": 0.050906952639783065,
+      "maxAcceleration": 122.63364948090502,
+      "maxPlannedAcceleration": 1533.7799645357702
+    },
+    {
+      "name": "overR",
+      "amount": 1,
+      "ticks": 186,
+      "maxPlannedResidual": 0.000010396701183967849,
+      "maxLag": 0.3119615155767914,
+      "maxStep": 0.07501865162981813,
+      "maxAcceleration": 189.17950132910954,
+      "maxPlannedAcceleration": 3041.436492691262
+    },
+    {
+      "name": "pike",
+      "amount": 0.5,
+      "ticks": 194,
+      "maxPlannedResidual": 0.000002333658279951578,
+      "maxLag": 0.29103245333807226,
+      "maxStep": 0.04681817427797286,
+      "maxAcceleration": 183.46889944301248,
+      "maxPlannedAcceleration": 1681.9736261458959
+    },
+    {
+      "name": "pike",
+      "amount": 1,
+      "ticks": 194,
+      "maxPlannedResidual": 0.00004561912190581552,
+      "maxLag": 0.3007221573876826,
+      "maxStep": 0.0592313566768658,
+      "maxAcceleration": 268.93297752534806,
+      "maxPlannedAcceleration": 3256.87323538312
+    },
+    {
+      "name": "slashL",
+      "amount": 0.5,
+      "ticks": 218,
+      "maxPlannedResidual": 9.695271963039431e-8,
+      "maxLag": 0.22096069493169357,
+      "maxStep": 0.03582841096276625,
+      "maxAcceleration": 92.39581838024091,
+      "maxPlannedAcceleration": 1282.656209105695
+    },
+    {
+      "name": "slashL",
+      "amount": 1,
+      "ticks": 218,
+      "maxPlannedResidual": 0.000018597446129808848,
+      "maxLag": 0.28975676030044273,
+      "maxStep": 0.04802231108529137,
+      "maxAcceleration": 155.2914662453845,
+      "maxPlannedAcceleration": 2781.7493703041578
+    },
+    {
+      "name": "slashLD",
+      "amount": 0.5,
+      "ticks": 227,
+      "maxPlannedResidual": 9.117873154846495e-8,
+      "maxLag": 0.19350805539772875,
+      "maxStep": 0.021156140974876114,
+      "maxAcceleration": 56.806702611342516,
+      "maxPlannedAcceleration": 492.5696358915021
+    },
+    {
+      "name": "slashLD",
+      "amount": 1,
+      "ticks": 227,
+      "maxPlannedResidual": 9.658011821400692e-7,
+      "maxLag": 0.3068931759769744,
+      "maxStep": 0.0354182352784721,
+      "maxAcceleration": 127.21577307439098,
+      "maxPlannedAcceleration": 1123.9342302256548
+    },
+    {
+      "name": "slashLU",
+      "amount": 0.5,
+      "ticks": 222,
+      "maxPlannedResidual": 8.93429357162745e-8,
+      "maxLag": 0.26547714259081556,
+      "maxStep": 0.04713667500690866,
+      "maxAcceleration": 88.14406697799178,
+      "maxPlannedAcceleration": 1144.2778426316745
+    },
+    {
+      "name": "slashLU",
+      "amount": 1,
+      "ticks": 222,
+      "maxPlannedResidual": 6.498089897277737e-7,
+      "maxLag": 0.30264077767711245,
+      "maxStep": 0.04795690614777365,
+      "maxAcceleration": 143.88695322874193,
+      "maxPlannedAcceleration": 2227.570968045315
+    },
+    {
+      "name": "slashR",
+      "amount": 0.5,
+      "ticks": 230,
+      "maxPlannedResidual": 0.000009938155844935181,
+      "maxLag": 0.27267569417738036,
+      "maxStep": 0.04022367393861681,
+      "maxAcceleration": 256.3889877279428,
+      "maxPlannedAcceleration": 2147.713093275171
+    },
+    {
+      "name": "slashR",
+      "amount": 1,
+      "ticks": 230,
+      "maxPlannedResidual": 0.000009463250556507319,
+      "maxLag": 0.3111138877731835,
+      "maxStep": 0.040253481901643684,
+      "maxAcceleration": 138.84183005399422,
+      "maxPlannedAcceleration": 1747.5051977585147
+    },
+    {
+      "name": "slashRD",
+      "amount": 0.5,
+      "ticks": 222,
+      "maxPlannedResidual": 9.75605551180661e-8,
+      "maxLag": 0.2626554844943917,
+      "maxStep": 0.041639231162580725,
+      "maxAcceleration": 138.57086517445154,
+      "maxPlannedAcceleration": 1143.810886103366
+    },
+    {
+      "name": "slashRD",
+      "amount": 1,
+      "ticks": 222,
+      "maxPlannedResidual": 0.000005056829211369518,
+      "maxLag": 0.3064499489485192,
+      "maxStep": 0.04378607685011188,
+      "maxAcceleration": 216.93046275142615,
+      "maxPlannedAcceleration": 2563.223830293114
+    },
+    {
+      "name": "slashRU",
+      "amount": 0.5,
+      "ticks": 222,
+      "maxPlannedResidual": 2.0842412062904714e-7,
+      "maxLag": 0.2605524791322715,
+      "maxStep": 0.04619771978610204,
+      "maxAcceleration": 225.149762982237,
+      "maxPlannedAcceleration": 1281.3827410329313
+    },
+    {
+      "name": "slashRU",
+      "amount": 1,
+      "ticks": 222,
+      "maxPlannedResidual": 0.00045771388059989704,
+      "maxLag": 0.3011351415244999,
+      "maxStep": 0.05364277589075195,
+      "maxAcceleration": 281.6521426450157,
+      "maxPlannedAcceleration": 3156.841522902772
+    }
+  ]
+}

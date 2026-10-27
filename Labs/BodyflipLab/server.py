@@ -4,6 +4,7 @@ from collections import OrderedDict
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse
+from shared_foot_ik import bundle as foot_ik_bundle
 from run_bank import read_run
 from resume_service import resume
 ROOT=Path(__file__).resolve().parent
@@ -22,7 +23,9 @@ class Handler(SimpleHTTPRequestHandler):
         raw=json.dumps(value,allow_nan=False).encode();self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
     def do_GET(self):
         path=urlparse(self.path).path
-        if path=='/health': return self.reply({'app':'bodyflip-lab','root':str(ROOT),'apiVersion':5})
+        if path=='/health': return self.reply({'app':'bodyflip-lab','root':str(ROOT),'apiVersion':6})
+        if path=='/shared-foot-ik.js':
+            raw=foot_ik_bundle();self.send_response(200);self.send_header('Content-Type','text/javascript; charset=utf-8');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw);return
         if path=='/state':
             with LOCK:
                 p=ROOT/'state.json';return self.reply(json.loads(p.read_text(encoding='utf-8')) if p.exists() else {})

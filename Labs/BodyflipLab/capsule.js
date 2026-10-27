@@ -57,15 +57,15 @@ function move(low,delta,surfaces){
 }
 const top=hit=>hit.normal[1]>1e-5&&dot(hit.normal,hit.surface.normal)>1e-5;
 const locomotion=frame=>['IDLE','WALK','RUN'].includes(frame.phase);
-function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',correctPose=p=>p,resume=null,horizon=12}){
+function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',correctPose=p=>p,resume=null,horizon=12,decorate=null}){
  const fallSeeds=new Map();
  function falling(motion,from,elapsed){
   let starts=fallSeeds.get(motion);if(!starts){starts=new Map();fallSeeds.set(motion,starts);}
-  let seed=starts.get(from);if(!seed){seed=[motion(from),motion(from-C.motionStep)];starts.set(from,seed);}
+  let seed=starts.get(from);if(!seed){seed=adapter&&state(from).normal?[sample(from).pose,sample(Math.max(start,from-C.motionStep)).pose]:[motion(from),motion(from-C.motionStep)];starts.set(from,seed);}
   return fallPose(from,elapsed,...seed);
  }
  const initial=source(start),placement=move(initial.root,[0,0,0],surfaces),initialGround=surfaces.map(s=>query(placement.root,s)).find(h=>h.gap<skin*3&&top(h));
- const frames=[{t:start,root:placement.root,mode:locomotion(initial)?'loco':'source',normal:initialGround?.normal||null,vy:0,velocity:[0,initial.vy||0,speed],bias:[0,0,0],fallStart:start,landed:false}],landings=[];
+ const frames=[{t:start,root:placement.root,mode:locomotion(initial)?'loco':'source',normal:initialGround?.normal||null,surfaceId:initialGround?.surface.id||null,vy:0,velocity:[0,initial.vy||0,speed],bias:[0,0,0],fallStart:start,landed:false}],landings=[];
  function ensure(time){
   while(frames.at(-1).t<time-1e-9){
    const prev=frames.at(-1);
@@ -77,7 +77,7 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
     if(prev.normal)horizontal[1]=-dot(prev.normal,horizontal)/prev.normal[1];
     vy=Math.max(-cap,(prev.normal?0:vy)-9.81*dt);delta=add(horizontal,[0,vy*dt,0]);
    }else {raw=source(t);delta=add(sub(raw.root,source(prev.t).root),mul(prev.bias,dt));}
-   const resolved=move(prev.root,delta,surfaces),up=resolved.contacts.find(top),next={...prev,t,root:resolved.root,normal:null,vy,bias:prev.bias.slice()};
+   const resolved=move(prev.root,delta,surfaces),up=resolved.contacts.find(top),next={...prev,t,root:resolved.root,normal:null,surfaceId:up?.surface.id||null,vy,bias:prev.bias.slice()};
    if(prev.mode==='loco'){
     next.normal=up?.normal||null;if(up)next.vy=0;
     if(prev.normal&&!next.normal)next.fallStart=prev.t;
@@ -100,6 +100,7 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
  function resolvedPose(frame,at){const offset=sub(at,frame.root);return correctPose({...frame.pose,points:frame.pose.points.map(p=>add(p,offset))},frame);}
  function beforeLanding(landing,time){
   if(landing.beforeMode==='source')return resolvedPose(source(time),state(time).root);
+  if(adapter&&time<landing.fallStart)return sample(time).pose;
   const previousGait=landing.prior?continuation(landing.prior):gait;
   const pose=time<landing.fallStart?previousGait(time):falling(previousGait,landing.fallStart,time-landing.fallStart);
   return resolvedPose({pose,root:pose.points[0]},state(time).root);
@@ -118,8 +119,8 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
   }
   return landing.motion;
  }
- function prepare(time){ensure(time);for(const landing of landings)if(landing.time<=time)continuation(landing);}
- function sample(time,rawOverride){
+ function prepare(time){ensure(time);for(const landing of landings)if(landing.time<=time)continuation(landing);adapter?.prepare(time);}
+ function sampleBase(time,rawOverride){
   const s=state(time),raw=rawOverride||source(time);let frame=raw;
   if(s.mode==='loco'){
    const motion=s.landing?continuation(s.landing):gait;
@@ -127,8 +128,10 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
    frame={pose,root:pose.points[0],phase:s.normal?phase:'FALL',speed,vy:s.vy,airTime:s.normal?0:time-s.fallStart};
   }
   const offset=sub(s.root,frame.root),translated={...frame.pose,points:frame.pose.points.map(p=>add(p,offset))},pose=correctPose(translated,frame);
-  return {...frame,pose,root:s.root,velocity:s.velocity,vy:s.velocity[1],capsule:{radius,halfHeight,grounded:!!s.normal,landed:s.landed},returnedToLocomotion:s.mode==='loco'&&s.landed};
+  return {...frame,pose,root:s.root,velocity:s.velocity,vy:s.velocity[1],capsule:{radius,halfHeight,grounded:!!s.normal,landed:s.landed,surfaceId:s.surfaceId,normal:s.normal,landingTime:s.landing?.time??null},returnedToLocomotion:s.mode==='loco'&&s.landed};
  }
+ const adapter=decorate?.(sampleBase,{start,surfaces});
+ function sample(time,rawOverride){return adapter?adapter.sample(time,rawOverride):sampleBase(time,rawOverride);}
  return {sample,ensure,prepare,state,landings};
 }
 const api={radius,halfHeight,query,sweep,move,track};if(typeof module!=='undefined')module.exports=api;else root.BodyflipCapsule=api;

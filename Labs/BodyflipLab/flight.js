@@ -4,6 +4,9 @@ const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery,C=typ
 const S=typeof module!=='undefined'?require('./support.js'):root.BodyflipSupport;
 const B=typeof module!=='undefined'?require('./bounce.js'):root.BodyflipBounce;
 const K=typeof module!=='undefined'?require('./capsule.js'):root.BodyflipCapsule;
+const IK=typeof module!=='undefined'?require('./foot-ik.js'):root.BodyflipFootIK;
+const M=typeof module!=='undefined'?require('./jump-motion.js'):root.BodyflipJumpMotion;
+const A=typeof module!=='undefined'?require('./jump-attack.js'):root.BodyflipJumpAttack,G=typeof module!=='undefined'?require('./space-gym.js'):root.BodyflipSpace;
 const {add,sub,mul,rotate,qm,qinv,qslerp}=R,clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const finish=(points,q)=>({points,q,axes:q.map(R.toAxes)});
 function translate(p,delta){return finish(p.points.map(v=>add(v,delta)),p.q);}
@@ -30,6 +33,7 @@ function carryVelocity(incoming,normal,direction){
 function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
  C.registerRig(run.names,parents,reference);
  settings=C.sanitize(settings);
+ const jumpScale=context.jumpScale??1,jumpTimeScale=Math.sqrt(jumpScale);
  const supportStart=context.time??(settings.runSeconds-settings.jumpEarly),runOrigin=run.poses[0].points[0],n=run.poses.length-1;
  const speed=(run.poses[n].points[0][2]-runOrigin[2])/(n/run.fps),runDistance=speed*settings.runSeconds,edge=settings.mode==='idle'?5:runDistance-.12;
  const worldRun=context.poseAt||run.sample||(time=>translate(at(run,time,parents),[-runOrigin[0],0,-runOrigin[2]+Math.max(0,time-run.duration)*speed]));
@@ -41,11 +45,11 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
  const takeoffSpeed=Math.hypot(velocity[0],velocity[2]),standingThreshold=C.walkForwardSpeed*settings.standRatio,jumpStyle=takeoffSpeed<standingThreshold?'Stand':'Run';
  const candidates=jumps.filter(c=>c.name.includes('_Start_'+jumpStyle+'_')).map(trimStart),start=candidates.find(c=>c.supportFoot===support.leg.side),loop=jumps.find(c=>c.name.endsWith('_Loop_Fall'));
  if(!start)throw Error('Missing '+jumpStyle+' jump for '+support.leg.side+' foot');
- const heights=start.poses.map(p=>p.points[0][1]),apexIndex=heights.indexOf(Math.max(...heights)),clipApex=apexIndex/start.fps;let apex=clipApex;
+ const heights=start.poses.map(p=>p.points[0][1]),apexIndex=heights.indexOf(Math.max(...heights)),clipApex=apexIndex/start.fps;let apex=clipApex*jumpTimeScale;
  const contactTime=supportStart+support.jumpDelay;
  let jumpStart=contactTime,runEnd=localRoot(support.terminal.pose),jumpRoot=support.terminal.pose.points[0],bounce=null;
  const incoming=context.velocityAt&&Number.isFinite(jumpStart)?context.velocityAt(jumpStart):[0,0,speed];
- const launchV=(heights[Math.min(2,heights.length-1)]-heights[0])*start.fps/2;
+ const launchV=(heights[Math.min(2,heights.length-1)]-heights[0])*start.fps/2*jumpTimeScale;
  const direction=jumpDirection(surface.normal,settings.jumpSkew);
  const tangent=context.velocityAt?carryVelocity(incoming,surface.normal,direction):[0,0,speed];
  const horizontal=context.velocityAt?add(tangent,mul(direction,launchV)):[0,0,speed];
@@ -54,7 +58,7 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
  // Keep the pelvis on the launch-root trajectory. The animation owns the other
  // local joints; the planted leg is solved separately until its reach boundary.
  let release=Infinity;
- const sourceLoopStart=Math.max(apex+.35,start.duration-.25),loopBlend=.25;
+ const sourceLoopStart=Math.max(clipApex+.35,start.duration-.25),loopBlend=.25;
  let animationOffset=0,loopStart=sourceLoopStart,bodyEntry=null,legEntry=null;
  const loopEntry=C.transition(t=>localRoot(at(start,sourceLoopStart+t,parents)),t=>localRoot(at(loop,t,parents,true)),loopBlend,parents);
  const animationTime=t=>t+animationOffset;
@@ -78,11 +82,11 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
   pose=R.fk(local,parents);
   if(bounce){const motion=bounce.sample(t+bounce.loadDuration);return {pose:translate(pose,motion.p),root:motion.p,vy:motion.v[1]};}
   let height,vy;
-  if(t<=apex){height=heightAt(t)-heights[0];const h0=heightAt(Math.max(0,t-.002)),h1=heightAt(Math.min(apex,t+.002));vy=(h1-h0)/.004;}
-  else {const f=cappedFall(t-apex,settings.fallCap);height=heights[apexIndex]-heights[0]+f.y;vy=f.v;}
+  if(t<=apex){height=(heightAt(t/jumpTimeScale)-heights[0])*jumpScale;const h0=heightAt(Math.max(0,t-.002)/jumpTimeScale),h1=heightAt(Math.min(apex,t+.002)/jumpTimeScale);vy=(h1-h0)/.004*jumpScale;}
+  else {const f=cappedFall(t-apex,settings.fallCap);height=(heights[apexIndex]-heights[0])*jumpScale+f.y;vy=f.v;}
   if(context.velocityAt){
    if(t<=apex){height=height*direction[1]+tangent[1]*t;vy=vy*direction[1]+tangent[1];}
-   else {const fall=fallFrom(t-apex,tangent[1],settings.fallCap);height=(heights[apexIndex]-heights[0])*direction[1]+tangent[1]*apex+fall.y;vy=fall.v;}
+   else {const fall=fallFrom(t-apex,tangent[1],settings.fallCap);height=(heights[apexIndex]-heights[0])*jumpScale*direction[1]+tangent[1]*apex+fall.y;vy=fall.v;}
   }
   const rootPos=add(jumpRoot,[horizontal[0]*t,height,horizontal[2]*t]);return {pose:translate(pose,rootPos),root:rootPos,vy};
  }
@@ -111,7 +115,7 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
   return S.solve(R.fk(local,parents),l,contact.foot,parents,settings.supportReach,contact.rotation);
  }
  if(settings.loadMs>0&&Number.isFinite(contactTime)){
-  bounce=B.create({root:jumpRoot,hip:support.terminal.pose.points[l.hip],foot:support.terminal.foot,normal:surface.normal,direction,incoming,reach:l.reach,maxReach:support.maxReach,loadMs:settings.loadMs,rebound:settings.rebound,launchSpeed:Math.sqrt(2*9.81*(heights[apexIndex]-heights[0])),cap:settings.fallCap,rolling:rollingAt,carry:carryVelocity,loading:contactMotion.sample,startPush:t=>{loadDuration=t;contactMotion.startPush(t);}});
+  bounce=B.create({root:jumpRoot,hip:support.terminal.pose.points[l.hip],foot:support.terminal.foot,normal:surface.normal,direction,incoming,reach:l.reach,maxReach:support.maxReach,loadMs:settings.loadMs,rebound:settings.rebound,launchSpeed:Math.sqrt(2*9.81*(heights[apexIndex]-heights[0])*jumpScale),cap:settings.fallCap,rolling:rollingAt,carry:carryVelocity,loading:contactMotion.sample,startPush:t=>{loadDuration=t;contactMotion.startPush(t);}});
   runEnd=localRoot(loadingPose(bounce.loadDuration));launchLocal=R.localize(runEnd.points,runEnd.q,parents);
   jumpStart=contactTime+bounce.loadDuration;apex=bounce.apex-bounce.loadDuration;
  }
@@ -156,7 +160,7 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
  const fallLocal=fallPose?R.localize(fallPose.points,fallPose.q,parents):null;
  const abortFall=fallPose?C.transition(t=>abortRecovery(Math.max(0,fallStart-abortTime+t)),t=>localRoot(at(loop,t,parents,true)),settings.jumpBlend,parents):null;
  function aborted(time){
-  if(context.continueAt){const frame=context.continueAt(time),pose=abortLeg(time-abortTime);return {...frame,pose,phase:'MISS · '+frame.phase,supportState:'FAILED',failureReason:support.failureReason,distance:support.terminal.distance};}
+  if(context.continueAt){const frame=context.continueAt(time),pose=abortLeg(time-abortTime);return {...frame,pose,phase:'MISS Â· '+frame.phase,supportState:'FAILED',failureReason:support.failureReason,distance:support.terminal.distance};}
   const elapsed=time-abortTime,fallTime=Math.max(0,time-fallStart),fall=cappedFall(fallTime,settings.fallCap);
   let pose=time>=fallStart?abortFall(fallTime):abortRecovery(elapsed);
   if(time>=fallStart){const local=R.localize(pose.points,pose.q,parents);for(const i of [0,pelvis]){local.p[i]=fallLocal.p[i];local.q[i]=fallLocal.q[i];}pose=R.fk(local,parents);}
@@ -181,7 +185,7 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
    pose=R.fk(local,parents);supportState='BLEND';
    }
   }
-  return {...frame,pose,phase:bounce&&!bounce.didPush?'MISS · FALL':t<release?'PUSH':t<apex?'RISE':t<loopStart?'FALL':'FALL LOOP',supportState,supportTarget:contactAt(t).contact,speed,airTime};
+  return {...frame,pose,phase:bounce&&!bounce.didPush?'MISS Â· FALL':t<release?'PUSH':t<apex?'RISE':t<loopStart?'FALL':'FALL LOOP',supportState,supportTarget:contactAt(t).contact,speed,airTime};
  }
  // Diagnostic only: raw animation leg, carried by the displayed procedural pelvis.
  // No locomotion crossfade, support IK or release blend enters this target.
@@ -217,9 +221,9 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
 }
 function fallFrom(t,v,cap){v=Math.max(-cap,v);const tc=Math.max(0,(v+cap)/9.81),a=Math.min(t,tc);return {y:v*a-.5*9.81*a*a-cap*Math.max(0,t-tc),v:Math.max(-cap,v-9.81*t)};}
 function eventsFor(settings){return settings.jumpEvents??[{id:'first',time:Math.round((settings.runSeconds-settings.jumpEarly)*60)/60,surface:'floor'}];}
-function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null){
+function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,catalog=null){
  C.registerRig(run.names,parents,reference);
- const settings=C.sanitize(input),origin=run.poses[0].points[0],speed=(run.poses.at(-1).points[0][2]-origin[2])/((run.poses.length-1)/run.fps),edge=settings.mode==='idle'?5:speed*settings.runSeconds-.12;
+ const settings=C.sanitize(input);if(settings.mode==='spaceGym')return G.sequence(run,jumps,settings,parents,eventsFor(settings),catalog,reference);const origin=run.poses[0].points[0],speed=(run.poses.at(-1).points[0][2]-origin[2])/((run.poses.length-1)/run.fps),edge=settings.mode==='idle'?5:speed*settings.runSeconds-.12;
  const surfaces=S.scene(edge,settings),events=[],segments=[],loop=jumps.find(c=>c.name.endsWith('_Loop_Fall'));
  const gait=run.sample||(t=>translate(at(run,t,parents),[-origin[0],0,-origin[2]+Math.max(0,t-run.duration)*speed]));
  const edgeTime=settings.mode==='idle'?Infinity:edge/speed,edgePose=gait(Number.isFinite(edgeTime)?edgeTime:0),edgeLocal=R.localize(edgePose.points,edgePose.q,parents),pelvis=run.names.indexOf('pelvis');
@@ -240,13 +244,16 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null){
   for(const i of [0,pelvis]){local.p[i]=base.p[i];local.q[i]=base.q[i];}return R.fk(local,parents);
  };
  const horizon=Math.max(12,settings.trimOut,...eventsFor(settings).map(e=>e.time+5));
- const carrierOptions={surfaces,speed,gait,fallPose,cap:settings.fallCap,phase,resume,horizon};
+ const carrierOptions={surfaces,speed,gait,fallPose,cap:settings.fallCap,phase,resume,horizon,decorate:settings.surfaceIK&&IK.available&&surfaces.some(s=>s.normal[1]>1e-5&&s.normal[1]<.99999)?(source,options)=>IK.track(source,{...options,names:run.names,parents,gait:settings.mode==='jump'?'run':'walk'}):null};
  const baselineCarrier=K.track(baseline,carrierOptions);
  let previous=t=>baselineCarrier.sample(t);
  for(const event of eventsFor(settings)){
   const prior=previous,frame=prior(event.time),last=segments.at(-1);
   if(last&&event.time<Math.min(last.jumpStart+last.release,last.abortTime)-1e-8){events.push({...event,status:'Busy',reason:'Previous support / push still active'});continue;}
   const p=frame.pose;
+  if(C.sanitizeJump(event).jumpPercent===0){
+   const segment=G.action(event,prior);segment.motion=M.create(event,segment,jumps,run.names,parents,settings);if(segment.motion)segment.sample=segment.motion.sample;segment.attack=A.create(event,segment,catalog,run.names,parents,settings,reference);if(segment.attack)segment.sample=segment.attack.sample;segment.carrier={sample:t=>segment.sample(t),prepare:()=>{},state:()=>({landed:false}),landings:[]};segments.push(segment);previous=t=>t<event.time?prior(t):segment.carrier.sample(t);events.push({...event,status:'Action',reason:'0% push',pushTime:event.time});continue;
+  }
   const velocityAt=t=>mul(sub(prior(t+1/240).root,prior(Math.max(event.time,t-1/240)).root),1/(t+1/240-Math.max(event.time,t-1/240)));
   const velocity=velocityAt(event.time);
   const ranked=surfaces.map(surface=>{
@@ -256,9 +263,12 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null){
   }).sort((a,b)=>Number(b.available)-Number(a.available)||(a.available?a.contactGap-b.contactGap:0)||a.gap-b.gap);
   const surface=event.surface==='auto'?ranked[0]?.surface:surfaces.find(s=>s.id===event.surface);
   if(!surface){events.push({...event,status:'Miss',reason:'Surface disabled'});continue;}
-  const segment=create(run,jumps,settings,parents,reference,{time:event.time,surface,poseAt:t=>prior(t).pose,continueAt:prior,velocityAt,speed:Math.hypot(velocity[0],velocity[2])});
+  const segment=create(run,jumps,settings,parents,reference,{time:event.time,jumpScale:C.sanitizeJump(event).jumpPercent/100,surface,poseAt:t=>prior(t).pose,continueAt:prior,velocityAt,speed:Math.hypot(velocity[0],velocity[2])});
   segment.surfaceChoices=ranked.map(r=>({surface:r.surface.id,foot:r.foot,eligible:r.available,contactGap:r.contactGap,pelvisGap:r.gap}));
   segment.event=event;segments.push(segment);
+  segment.motion=M.create(event,segment,jumps,run.names,parents,settings);
+  if(segment.motion)segment.sample=segment.motion.sample;
+  segment.attack=A.create(event,segment,catalog,run.names,parents,settings,reference);if(segment.attack)segment.sample=segment.attack.sample;
   events.push({...event,surfaceId:surface.id,status:Number.isFinite(segment.jumpStart)&&(!segment.bounce||segment.bounce.didPush)?'Push':'Miss',contactTime:segment.contactTime,pushTime:segment.jumpStart,releaseTime:segment.airStart,reason:segment.bounce&&!segment.bounce.didPush?'Contact ended before push':segment.failureReason});
   const raw=t=>{const air=Math.max(0,t-segment.airStart);return segment.sample(t,settings.airFlip?settings.flipAngle+settings.flipSpeed*air:0,settings.airFlip?settings.twistAngle+settings.twistSpeed*air:0,settings.axis);};
   segment.carrier=K.track(raw,{...carrierOptions,start:event.time,correctPose:(pose,frame)=>{const l=segment.support.leg;return frame.supportState==='PIN'?S.solve(pose,l,frame.pose.points[l.foot],parents,settings.supportReach,{footQ:frame.pose.q[l.foot],toeQ:frame.pose.q[l.toe]}):pose;}});
@@ -279,7 +289,7 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null){
   animationLeg:(t,p,unretimed=false,other=false)=>{const s=activeAt(t);return s&&!s.carrier.state(t).landed?s.animationLeg(t,p,unretimed,other):null;},coneDebug:(t,p)=>{const s=activeAt(t);return s&&!s.carrier.state(t).landed?s.coneDebug(t,p):null;},idealDebug:t=>{const s=activeAt(t);return s&&!s.carrier.state(t).landed?s.idealDebug(t):null;}};
 }
 const continuationCache=new Map();
-async function prepare(run,jumps,input,parents,reference,generate,cancelled=()=>false){
+async function prepare(run,jumps,input,parents,reference,generate,cancelled=()=>false,catalog=null){
  const settings=C.sanitize(input),preparedSeeds=new Map();
  function resume(data){
   const request={gait:settings.mode==='jump'?'run':'walk',drawn:settings.attack==='pike'||settings.attack.startsWith('slash'),names:run.names,frames:data.frames,roots:data.roots,seeds:data.seeds.map(p=>({points:p.points,axes:p.axes}))};
@@ -290,7 +300,7 @@ async function prepare(run,jumps,input,parents,reference,generate,cancelled=()=>
  }
  for(;;){
   if(cancelled())return null;
-  try{return sequence(run,jumps,settings,parents,reference,resume);}
+  try{return sequence(run,jumps,settings,parents,reference,resume,catalog);}
   catch(error){
    if(!error.landingRequest)throw error;
    const result=await generate(error.landingRequest);

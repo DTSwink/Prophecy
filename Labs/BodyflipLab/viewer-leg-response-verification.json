@@ -1,0 +1,106 @@
+{
+  "maxUpperError": 1.8632577561896904e-15,
+  "maxSocketError": 1.2219744817843103e-15,
+  "maxKneeOffHinge": 3.9356827671037505e-16,
+  "minKnee": 0.25253321196499007,
+  "maxKnee": 1.3739345880931677,
+  "maxStateRateError": 1.7816432773543056e-9,
+  "results": [
+    {
+      "amount": 0,
+      "legs": [
+        {
+          "side": "left",
+          "before": {
+            "maxSpeed": 0.03889761291797598,
+            "maxAcceleration": 7.681299824790465,
+            "excursion": 0.010078295114781394
+          },
+          "after": {
+            "maxSpeed": 0.03889761291797598,
+            "maxAcceleration": 7.681299824790465,
+            "excursion": 0.010078295114781394
+          }
+        },
+        {
+          "side": "right",
+          "before": {
+            "maxSpeed": 0.053497875784548524,
+            "maxAcceleration": 10.463722757783515,
+            "excursion": 0.00877197548710144
+          },
+          "after": {
+            "maxSpeed": 0.053497875784548524,
+            "maxAcceleration": 10.463722757783515,
+            "excursion": 0.00877197548710144
+          }
+        }
+      ],
+      "elapsedMs": 66.44359999999999
+    },
+    {
+      "amount": 0.5,
+      "legs": [
+        {
+          "side": "left",
+          "before": {
+            "maxSpeed": 4.511217701194667,
+            "maxAcceleration": 132.86887050451463,
+            "excursion": 0.3313770209306796
+          },
+          "after": {
+            "maxSpeed": 3.4085374381555966,
+            "maxAcceleration": 32.732930426266435,
+            "excursion": 0.30152872609998593
+          }
+        },
+        {
+          "side": "right",
+          "before": {
+            "maxSpeed": 1.7281203784330386,
+            "maxAcceleration": 55.053876215006376,
+            "excursion": 0.23275756184051238
+          },
+          "after": {
+            "maxSpeed": 1.2816887393881975,
+            "maxAcceleration": 20.027572417784725,
+            "excursion": 0.19863913825290436
+          }
+        }
+      ],
+      "elapsedMs": 248.24869999999999
+    },
+    {
+      "amount": 1,
+      "legs": [
+        {
+          "side": "left",
+          "before": {
+            "maxSpeed": 9.386532447094252,
+            "maxAcceleration": 275.4475199468381,
+            "excursion": 0.7505162080184113
+          },
+          "after": {
+            "maxSpeed": 7.012706333928709,
+            "maxAcceleration": 67.90811848936703,
+            "excursion": 0.6937556737357059
+          }
+        },
+        {
+          "side": "right",
+          "before": {
+            "maxSpeed": 3.4741884916572854,
+            "maxAcceleration": 110.05482173465312,
+            "excursion": 0.4572324138634272
+          },
+          "after": {
+            "maxSpeed": 2.501344701210112,
+            "maxAcceleration": 41.546438935928975,
+            "excursion": 0.3861636068811122
+          }
+        }
+      ],
+      "elapsedMs": 229.58949999999993
+    }
+  ]
+}

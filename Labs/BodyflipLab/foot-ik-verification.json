@@ -1,0 +1,71 @@
+{
+  "passed": 1529,
+  "cases": [
+    {
+      "gait": "walk",
+      "approach": "toward",
+      "milliseconds": 214.8014,
+      "active": 337,
+      "contacts": 138,
+      "minGap": -1.2442197938611343e-7,
+      "maxChange": 0.32771933001483183,
+      "maxBoneError": 2.3314683517128287e-15,
+      "maxKneeStep": 4.581650821907154
+    },
+    {
+      "gait": "walk",
+      "approach": "parallel",
+      "milliseconds": 170.71879999999993,
+      "active": 337,
+      "contacts": 175,
+      "minGap": -9.892846408038336e-8,
+      "maxChange": 0.22689851798711866,
+      "maxBoneError": 6.106226635438361e-16,
+      "maxKneeStep": 4.36235999505809
+    },
+    {
+      "gait": "run",
+      "approach": "toward",
+      "milliseconds": 170.15699999999993,
+      "active": 337,
+      "contacts": 40,
+      "minGap": -1.0287762997052141e-7,
+      "maxChange": 0.6946375423842033,
+      "maxBoneError": 3.094746681142624e-15,
+      "maxKneeStep": 4.484404127475266
+    },
+    {
+      "gait": "run",
+      "approach": "parallel",
+      "milliseconds": 166.0783,
+      "active": 337,
+      "contacts": 147,
+      "minGap": -2.9651248834462046e-7,
+      "maxChange": 0.457873855751185,
+      "maxBoneError": 9.43689570931383e-16,
+      "maxKneeStep": 6.654074937035647
+    },
+    {
+      "inclinedJump": true,
+      "supportGap": 5.644553247238365e-7,
+      "landingGap": 9.044886868368905e-7,
+      "landing": 2.1875,
+      "nnRequests": 1
+    },
+    {
+      "joinedCourse": true,
+      "maxStep": 0.08093006425149057,
+      "maxAt": {
+        "frame": 420,
+        "phase": "FALL",
+        "prior": "FALL",
+        "joint": "root",
+        "root": [
+          0,
+          -2.6430532437410807,
+          5.952220217119972
+        ]
+      }
+    }
+  ]
+}

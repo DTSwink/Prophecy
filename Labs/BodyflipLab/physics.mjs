@@ -1,5 +1,6 @@
 import initJolt from './vendor/jolt.mjs';
 export async function createPhysics(manifest,idle){
+ const T=globalThis.BodyflipTorso||(await import('./torso.js')).default;
  const J=await initJolt(),R=globalThis.Recovery,{sub,add,mul,length,unit,cross,dot,rotate,qm,qinv,fromTo}=R;
  const vec=a=>new J.Vec3(...a),pos=a=>new J.RVec3(...a),quat=a=>new J.Quat(...a),arr=v=>[v.GetX(),v.GetY(),v.GetZ()],qa=q=>[q.GetX(),q.GetY(),q.GetZ(),q.GetW()];
  const settings=new J.JoltSettings();settings.mMaxWorkerThreads=0;
@@ -8,7 +9,7 @@ export async function createPhysics(manifest,idle){
  settings.mObjectLayerPairFilter=filter;settings.mBroadPhaseLayerInterface=bp;settings.mObjectVsBroadPhaseLayerFilter=new J.ObjectVsBroadPhaseLayerFilterTable(bp,1,filter,1);
  const world=new J.JoltInterface(settings);J.destroy(settings);const system=world.GetPhysicsSystem(),bi=system.GetBodyInterface(),zero=vec([0,0,0]);system.SetGravity(zero);
  const ps=system.GetPhysicsSettings();ps.mNumVelocitySteps=20;ps.mNumPositionSteps=8;system.SetPhysicsSettings(ps);
- const {names,parents}=manifest,bodies=[],joints=[],group=new J.GroupFilterTable(names.length);
+ const {names,parents}=manifest,torso=T.create(names,parents,idle),torsoByBone=new Map(torso.map(s=>[s.bone,s])),bodies=[],joints=[],group=new J.GroupFilterTable(names.length);
  // Adjacent and overlapping torso volumes are excluded; separate limbs collide.
  const core=name=>/^(pelvis|spine|neck|head|clavicle)/.test(name);
  for(let a=1;a<names.length;a++)for(let b=a+1;b<names.length;b++){
@@ -21,14 +22,14 @@ export async function createPhysics(manifest,idle){
  for(let i=1;i<names.length;i++){
   const child=parents.findIndex((p,j)=>p===i&&!names[j].startsWith('clavicle')&&!names[j].startsWith('thigh'));
   const delta=child>0?sub(idle.points[child],idle.points[i]):rotate(idle.q[i],[names[i]==='head'?.12:.045,0,0]),l=length(delta),r=radius(names[i]);
-  const off=vec(rotate(qinv(idle.q[i]),mul(delta,.5))),rot=quat(fromTo([0,1,0],rotate(qinv(idle.q[i]),unit(delta))));
-  const shapeSettings=new J.CapsuleShapeSettings(Math.max(.006,l*.5-r*.6),r),compound=new J.RotatedTranslatedShapeSettings(off,rot,shapeSettings),result=compound.Create(),shape=result.Get();
+  const spine=torsoByBone.get(i),off=vec(spine?spine.offset:rotate(qinv(idle.q[i]),mul(delta,.5))),rot=quat(spine?spine.rotation:fromTo([0,1,0],rotate(qinv(idle.q[i]),unit(delta))));
+  const half=spine?vec(mul(spine.dims,.5)):null,shapeSettings=spine?new J.BoxShapeSettings(half,0):new J.CapsuleShapeSettings(Math.max(.006,l*.5-r*.6),r),compound=new J.RotatedTranslatedShapeSettings(off,rot,shapeSettings),result=compound.Create(),shape=result.Get();
   const p=pos(idle.points[i]),q=quat(idle.q[i]),creation=new J.BodyCreationSettings(shape,p,q,i===1?J.EMotionType_Kinematic:J.EMotionType_Dynamic,0);
   creation.mAllowDynamicOrKinematic=true;creation.mAllowSleeping=false;creation.mLinearDamping=.05;creation.mAngularDamping=.05;creation.mMaxAngularVelocity=60;creation.mMaxLinearVelocity=120;
   creation.mOverrideMassProperties=J.EOverrideMassProperties_CalculateInertia;creation.mMassPropertiesOverride.mMass=names[i]==='pelvis'?8:names[i].startsWith('thigh')?5:names[i].startsWith('spine')?2:1;
   creation.mCollisionGroup.SetGroupFilter(group);creation.mCollisionGroup.SetGroupID(1);creation.mCollisionGroup.SetSubGroupID(i);
   bodies[i]=bi.CreateBody(creation);bi.AddBody(bodies[i].GetID(),J.EActivation_Activate);
-  for(const v of [creation,p,q,compound,result,off,rot])J.destroy(v);
+  for(const v of [creation,p,q,compound,result,off,rot])J.destroy(v);if(half)J.destroy(half);
  }
  function motor(m){m.mSpringSettings.mMode=J.ESpringMode_FrequencyAndDamping;m.mSpringSettings.mFrequency=50;m.mSpringSettings.mDamping=1;m.mMinTorqueLimit=-2000;m.mMaxTorqueLimit=2000;}
  for(let i=2;i<names.length;i++){
@@ -51,16 +52,16 @@ export async function createPhysics(manifest,idle){
  const tmpQ=quat([0,0,0,1]),tmpP=pos([0,0,0]);
  function setQ(q){tmpQ.Set(q[0],q[1],q[2],q[3]);return tmpQ;}
  function setP(p){tmpP.Set(p[0],p[1],p[2]);return tmpP;}
- let simulated=false,previousTarget=null,platforms=[],fallCap=20,kinematic=false,kinematicPose=null,kinematicVelocity=[0,0,0];
+ let simulated=false,previousTarget=null,platforms=[],fallCap=20,kinematic=false,kinematicPose=null,kinematicVelocity=[0,0,0],gravity=9.81;
  const endpoints=new Array(names.length),offsets=bodies.map(b=>b?rotate(qinv(qa(b.GetRotation())),sub(arr(b.GetCenterOfMassPosition()),arr(b.GetPosition()))):null);
  const tempV=vec([0,0,0]),setV=a=>{tempV.Set(...a);return tempV;};
  const masses=names.map(n=>n==='pelvis'?8:n.startsWith('thigh')?5:n.startsWith('spine')?2:1),totalMass=masses.slice(1).reduce((a,b)=>a+b,0);
  function com(velocity=false){if(kinematic&&velocity)return kinematicVelocity;let value=[0,0,0];for(let i=1;i<bodies.length;i++)value=add(value,mul(kinematic&&kinematicPose?add(kinematicPose.points[i],rotate(kinematicPose.q[i],offsets[i])):arr(velocity?bodies[i].GetLinearVelocity():bodies[i].GetCenterOfMassPosition()),masses[i]/totalMass));return value;}
- function configure({dynamic=false,edge=5,surfaces=null,cap=20,kinematic:kin=false}={}){
-  simulated=dynamic&&!kin;kinematic=kin;fallCap=cap;previousTarget=null;
+ function configure({dynamic=false,edge=5,surfaces=null,cap=20,kinematic:kin=false,zeroGravity=false}={}){
+  gravity=zeroGravity?0:9.81;simulated=dynamic&&!kin;kinematic=kin;fallCap=cap;previousTarget=null;
   for(let i=1;i<bodies.length;i++)bi.SetMotionType(bodies[i].GetID(),kin||(!dynamic&&i===1)?J.EMotionType_Kinematic:J.EMotionType_Dynamic,J.EActivation_Activate);
   for(const j of joints){const state=dynamic||kin?J.EMotorState_Off:J.EMotorState_Position;if(j.hinge)j.joint.SetMotorState(state);else {j.joint.SetSwingMotorState(state);j.joint.SetTwistMotorState(state);}}
-  system.SetGravity(setV(dynamic?[0,-9.81,0]:[0,0,0]));
+  system.SetGravity(setV(dynamic?[0,-gravity,0]:[0,0,0]));
   for(const platform of platforms){bi.RemoveBody(platform.GetID());bi.DestroyBody(platform.GetID());}platforms=[];
   if(dynamic)for(const box of surfaces?.map(s=>s.box)||[{center:[0,-.2,(edge-3)/2],dims:[3.6,.4,edge+3],forward:[1,0,0],side:[0,1,0],up:[0,0,1]}]){
    const half=vec(mul(box.dims,.5)),shape=new J.BoxShape(half,.02),p=pos(box.center),q=quat(R.fromAxes([box.forward,box.side,box.up])),cfg=new J.BodyCreationSettings(shape,p,q,J.EMotionType_Static,0);cfg.mFriction=.7;const body=bi.CreateBody(cfg);platforms.push(body);bi.AddBody(body.GetID(),J.EActivation_DontActivate);for(const v of [half,p,q,cfg])J.destroy(v);
@@ -77,7 +78,7 @@ export async function createPhysics(manifest,idle){
     const body=bodies[i],actual=qa(body.GetRotation()),target=i===1?p.q[i]:qm(endpoints[parents[i]],qm(qinv(p.q[parents[i]]),p.q[i]));
     let angular=mul(R.qlog(qm(target,qinv(actual))),1/dt);const speed=length(angular);if(speed>60)angular=mul(angular,60/speed);
     bi.SetAngularVelocity(body.GetID(),setV(angular));endpoints[i]=qm(R.qexp(mul(angular,dt)),actual);
-    if(i===1){const linear=add(add(mul(sub(p.points[i],arr(body.GetPosition())),1/dt),[0,9.81*dt,0]),cross(angular,rotate(actual,offsets[i])));bi.SetLinearVelocity(body.GetID(),setV(linear));}
+    if(i===1){const linear=add(add(mul(sub(p.points[i],arr(body.GetPosition())),1/dt),[0,gravity*dt,0]),cross(angular,rotate(actual,offsets[i])));bi.SetLinearVelocity(body.GetID(),setV(linear));}
    }
   }
   if(!simulated)for(const j of joints)j.joint.SetTargetOrientationBS(setQ(qm(qinv(p.q[j.parent]),p.q[j.i])));
@@ -87,5 +88,6 @@ export async function createPhysics(manifest,idle){
  function reset(p,velocity=[0,0,0]){kinematicPose=p;kinematicVelocity=velocity;previousTarget=p;for(let i=1;i<bodies.length;i++){bi.SetPositionAndRotation(bodies[i].GetID(),setP(p.points[i]),setQ(p.q[i]),J.EActivation_Activate);bi.SetLinearAndAngularVelocity(bodies[i].GetID(),setV(velocity),zero);}}
  function read(){if(kinematic)return kinematicPose;const points=[[0,1.5,0]],q=[[0,0,0,1]];for(let i=1;i<bodies.length;i++){points.push(arr(bodies[i].GetPosition()));q.push(qa(bodies[i].GetRotation()));}return {points,q,axes:q.map(R.toAxes)};}
  function diagnostics(){const p=read();let anchorError=0;for(const c of joints){const a=c.hinge?c.joint.GetLocalSpacePoint1():c.joint.GetLocalSpacePosition1(),b=c.hinge?c.joint.GetLocalSpacePoint2():c.joint.GetLocalSpacePosition2();const pa=add(arr(bodies[c.parent].GetCenterOfMassPosition()),rotate(p.q[c.parent],arr(a))),pb=add(arr(bodies[c.i].GetCenterOfMassPosition()),rotate(p.q[c.i],arr(b)));anchorError=Math.max(anchorError,length(sub(pa,pb)));}return {bodies:bodies.length-1,dynamicBodies:bodies.slice(1).filter(b=>b.IsDynamic()).length,pelvisDynamic:bodies[1].IsDynamic(),joints:joints.length,hinges:joints.filter(j=>j.hinge).map(j=>({name:j.name,angle:j.joint.GetCurrentAngle(),min:j.lo,max:j.hi})),anchorError,finite:p.points.flat().concat(p.q.flat()).every(Number.isFinite)};}
- return {step:drive,reset,read,diagnostics,configure,com,get simulated(){return simulated;},dispose(){for(const platform of platforms){bi.RemoveBody(platform.GetID());bi.DestroyBody(platform.GetID());}for(const j of joints)system.RemoveConstraint(j.joint);for(const b of bodies.slice(1)){bi.RemoveBody(b.GetID());bi.DestroyBody(b.GetID());}J.destroy(tempV);J.destroy(tmpQ);J.destroy(tmpP);J.destroy(zero);J.destroy(world);},engine:'Jolt WASM 1.1.1'};
+ function torsoGeometry(){return torso.map(spec=>{const shape=J.castObject(bodies[spec.bone].GetShape(),J.RotatedTranslatedShape),box=J.castObject(shape.GetInnerShape(),J.BoxShape);return {name:spec.name,box:box.GetSubType()===J.EShapeSubType_Box,dims:mul(arr(box.GetHalfExtent()),2),offset:arr(shape.GetPosition()),rotation:qa(shape.GetRotation())};});}
+ return {step:drive,reset,read,diagnostics,configure,com,torso,torsoGeometry,torsoWorld:()=>torso.map(s=>T.world(read(),s)),get simulated(){return simulated;},dispose(){for(const platform of platforms){bi.RemoveBody(platform.GetID());bi.DestroyBody(platform.GetID());}for(const j of joints)system.RemoveConstraint(j.joint);for(const b of bodies.slice(1)){bi.RemoveBody(b.GetID());bi.DestroyBody(b.GetID());}J.destroy(tempV);J.destroy(tmpQ);J.destroy(tmpP);J.destroy(zero);J.destroy(world);},engine:'Jolt WASM 1.1.1'};
 }

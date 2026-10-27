@@ -1,0 +1,6 @@
+{
+  "samples": 580,
+  "maxUpperErrorRad": 1.6541950504657498e-15,
+  "maxLowerError": 1.4155343563970746e-15,
+  "maxBoundaryStep": 0.00001555244033510094
+}

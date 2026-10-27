@@ -1,0 +1,200 @@
+{
+  "schema": 1,
+  "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\final_harness_standalone\\index.html",
+  "sourceSHA256": "ee5921ba37f6562c00b7acf99026e7fa57dfdff9ed1e77c68ac3f1ae820157b2",
+  "contract": "Original basePayload positions/basis, before target solvers; Armed/Hit from source NPZ.",
+  "clips": [
+    {
+      "name": "headbutt",
+      "file": "data/vanilla/headbutt.bin",
+      "frames": 13,
+      "fps": 30.0,
+      "phases": {
+        "armed": 7.0,
+        "hit": 10.0
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\headbutt.npz",
+      "sha256": "9f17c752785b710c5debbc245fc3721d45b0351d70fb51760caf343767f4165a"
+    },
+    {
+      "name": "hookL",
+      "file": "data/vanilla/hookL.bin",
+      "frames": 15,
+      "fps": 30.0,
+      "phases": {
+        "armed": 5.0,
+        "hit": 8.347000122070312
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\hookL.npz",
+      "sha256": "2974ae363f647c6eeeb3e5eba233879dec89ae03670cbcf837fc5d5a6cf73c02"
+    },
+    {
+      "name": "hookR",
+      "file": "data/vanilla/hookR.bin",
+      "frames": 15,
+      "fps": 30.0,
+      "phases": {
+        "armed": 5.0,
+        "hit": 8.053999900817871
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\hookR.npz",
+      "sha256": "43ad6e072ed3ab01a2f08955976d010a0f28278538c8133ec4eedca0fae3e161"
+    },
+    {
+      "name": "jabL",
+      "file": "data/vanilla/jabL.bin",
+      "frames": 12,
+      "fps": 30.0,
+      "phases": {
+        "armed": 5.0,
+        "hit": 9.0
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\jabL.npz",
+      "sha256": "10d46ef223f3437515447f1890f17601a7e7dd0640a5bd83521358100a0adf11"
+    },
+    {
+      "name": "jabR",
+      "file": "data/vanilla/jabR.bin",
+      "frames": 13,
+      "fps": 30.0,
+      "phases": {
+        "armed": 5.0,
+        "hit": 9.0
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\jabR.npz",
+      "sha256": "20de644b5a558fd4619815b8fc730210b91a48e21506006a45958a2dd64f54e7"
+    },
+    {
+      "name": "KickL",
+      "file": "data/vanilla/KickL.bin",
+      "frames": 17,
+      "fps": 30.0,
+      "phases": {
+        "armed": 9.0,
+        "hit": 13.0
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\KickL.npz",
+      "sha256": "d69eb773df6da767c0e83b5255aaa8f27802fe96c0c906906d8e1d500c88672c"
+    },
+    {
+      "name": "KickR",
+      "file": "data/vanilla/KickR.bin",
+      "frames": 17,
+      "fps": 30.0,
+      "phases": {
+        "armed": 9.0,
+        "hit": 12.0
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\KickR.npz",
+      "sha256": "a69bc32bd81383a03b247b7d6f5d5f57470e3cd0ba6a453b1ab77f9d6b9576ab"
+    },
+    {
+      "name": "overL",
+      "file": "data/vanilla/overL.bin",
+      "frames": 19,
+      "fps": 30.0,
+      "phases": {
+        "armed": 7.0,
+        "hit": 11.416000366210938
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\overL.npz",
+      "sha256": "dfb1f2a20125830a394339246d1ef919108bfc74f38a932df575c94e34b2a377"
+    },
+    {
+      "name": "overR",
+      "file": "data/vanilla/overR.bin",
+      "frames": 15,
+      "fps": 30.0,
+      "phases": {
+        "armed": 5.0,
+        "hit": 9.255999565124512
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\overR.npz",
+      "sha256": "f6319547bbdca92719ef7dae18fd5d158fd8d227a6ac30f2c05c2f107379390f"
+    },
+    {
+      "name": "pike",
+      "file": "data/vanilla/pike.bin",
+      "frames": 18,
+      "fps": 30.0,
+      "phases": {
+        "armed": 9.0,
+        "hit": 16.0
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\pike.npz",
+      "sha256": "5362a1ee1a09d0f69ed461ab3672227ecea78e5b27c37d0d54283eed388f722a"
+    },
+    {
+      "name": "slashL",
+      "file": "data/vanilla/slashL.bin",
+      "frames": 24,
+      "fps": 30.0,
+      "phases": {
+        "armed": 10.0,
+        "hit": 17.757999420166016
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\slashL.npz",
+      "sha256": "5b8d4a6f6e336590af04995f4458a30de975d1058cd4c661c487a2b54959854a"
+    },
+    {
+      "name": "slashLD",
+      "file": "data/vanilla/slashLD.bin",
+      "frames": 26,
+      "fps": 30.0,
+      "phases": {
+        "armed": 13.0,
+        "hit": 20.440000534057617
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\slashLD.npz",
+      "sha256": "9a7fa8f8efde364bdeeb2267d541e1f68992c528ade92185b676e3c9031428ca"
+    },
+    {
+      "name": "slashLU",
+      "file": "data/vanilla/slashLU.bin",
+      "frames": 25,
+      "fps": 30.0,
+      "phases": {
+        "armed": 12.0,
+        "hit": 18.179000854492188
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\slashLU.npz",
+      "sha256": "e262748809838b844abb7824876de5f78df070dce56ad679bb390d667b8cc4f3"
+    },
+    {
+      "name": "slashR",
+      "file": "data/vanilla/slashR.bin",
+      "frames": 27,
+      "fps": 30.0,
+      "phases": {
+        "armed": 16.0,
+        "hit": 20.679000854492188
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\slashR.npz",
+      "sha256": "b176bf331345fe9ed00ab0f558d70bf6e28ca1a38a46e2df1c17251ed31f6cb3"
+    },
+    {
+      "name": "slashRD",
+      "file": "data/vanilla/slashRD.bin",
+      "frames": 25,
+      "fps": 30.0,
+      "phases": {
+        "armed": 15.0,
+        "hit": 18.84600067138672
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\slashRD.npz",
+      "sha256": "10d7d92e1516a55b923fcc64be4808f4b30f6c999d59a8f31f192568fb9ef393"
+    },
+    {
+      "name": "slashRU",
+      "file": "data/vanilla/slashRU.bin",
+      "frames": 25,
+      "fps": 30.0,
+      "phases": {
+        "armed": 14.0,
+        "hit": 17.64900016784668
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\slashRU.npz",
+      "sha256": "ed9a226f5cdeb0b501bfd8559c0f69e354a27ae7acf033f03d42e5f4754c5ee9"
+    }
+  ]
+}

@@ -21,6 +21,383 @@ dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
 
+## Soft legs: human reference revision - October 27
+
+Soft legs now uses separate hip/knee trajectories adapted from the airborne
+jump-throw curves in Wagner et al. (2011), Figure 2 A-D. The old symmetric
+turn-speed knee bend and fixed hip/knee ratio were rejected by the user and
+removed. These are approximate, rounded readings of published mean curves;
+this is an adaptation to the lab attacks, NOT original mocap or a sword capture.
+
+The follow leg extends through the strike while the lead thigh moves forward.
+Attack-added spine turn determines which side follows and scales the gesture;
+small yaw attacks receive proportionally little motion. Existing compensation
+Amount also scales it. Armed maps to late cocking (-160ms), Hit to release.
+A monotone cubic clock and shape-preserving joint curves preserve velocity at
+phase boundaries. Quintic entry/return weights blend with the continuing base
+pose. Strikes with less than160ms from Armed to Hit reduce the excursion in
+proportion to time, rather than rushing through a full throwing gesture.
+
+Hip flexion uses the pelvis sagittal plane, so splayed legs still travel forward.
+Knees flex AND extend about the canonical rig hinge; no knee-position IK,
+new pole, changed segment lengths or coupled45% hip rule. Starting folded legs
+can unfold. The target stays between5 and150 degrees of knee flexion; the
+blend retains the starting pose and its joint velocities. Foot/toe local
+orientations remain authored. Whole-character flips carry the motion correctly.
+Scheduled/manual paths use the real source Armed/Hit metadata; manual sampling
+includes its existing150ms entry. No new controls or saved-state migration.
+
+### Inertial response follow-up
+
+The reference poses were accepted but the lower-body rotation was jittery.
+Measured Slash L at80% reversed pelvis velocity within a tick, with peak
+acceleration2152rad/s^2. The momentum planner imposed a fresh angle each tick;
+its hard18-degree hip-lag projection also introduced abrupt rate changes.
+
+The planner remains a target generator. Displayed pelvis/leg yaw now follows
+it through a critically damped angular spring at32rad/s, integrated exactly
+against the moving target. Position AND angular velocity persist between ticks.
+Sampling uses the same analytic integration between120Hz cache points, so angular
+velocity and acceleration remain continuous. The output is not hard-clamped.
+Identical responses for pelvis and leg yaw retain the relative-lag bound without
+an instantaneous projection. Reference hip/knee curves, knee hinge, upper-body
+world orientations, root and rigid sockets are unchanged. Soft legs off still
+restores the original rigid lower-body turn.
+
+This introduces about63ms low-frequency rotational lag and intentionally relaxes
+instantaneous agreement with the old yaw-momentum budget. The planner's residual
+is now named maxPlannedResidual; it must NOT be reported as a conservation error
+for the displayed body. At80%, the output's peak yaw-momentum difference from
+the old target is3.12 kg m^2/s for Slash L and7.26 for Slash RU in this approximate
+model. Full3D conservation and sword inertia are still outside scope. The final
+planned turn is preserved: after the finite cache the response continues settling
+analytically, without growing history or freezing a nonzero velocity.
+
+Verification:6424 poses across16 attacks at50/100% retain exact upper orientations,
+hinge-only knee rotation, unchanged foot-local orientation/sockets, deterministic
+reverse seeks and tilted-character equivariance. At80%, peak pelvis acceleration
+falls94% for Slash L and80% for Slash RU, retaining85%/82% of peak turn amplitude.
+Maximum total hip step over the16-attack sweep falls16.2->6.9 degrees/120Hz tick;
+the reference knee trajectory is unchanged. Independent finite differences of the
+actual sampler agree with its velocity within3e-9rad/s; acceleration boundary
+discrepancy is<0.017rad/s^2 at1us spacing. Tail continuity, final angle and bounded
+cache pass.94 sequence regressions (including32 overlaps) plus owned browser
+manual/scheduled orientation, UI/refresh checks pass. Browser saves intercepted
+and browser closed. No user-state write, Unreal/server restart, training or push.
+
+Read-only comparison: `soft-legs-preview.html` initially compared immediate
+correction with inertial yaw; the whole-leg experiment below supersedes that
+comparison. It initially loads saved attack/amount; optional
+`?attack=slashRU` selects another vanilla clip without saving. Play now keeps
+fractional time between draws instead of repeatedly rounding the clock to frames.
+Rendering remains capped at30Hz and stops when hidden/paused. Scrubbing still
+selects exact60Hz frames. Current half-speed recording:
+`Saved/BodyflipLab/soft-legs-inertial.gif`. Earlier recordings are historical.
+Receipts: `inertial-response-verification.json`, `soft-legs-verification.json`.
+
+Viewer tuning (October27): Compensation0-100% slider and editable number are
+appended on the right of the existing header. Both views update at the current
+frame; edits keep the camera and play state. Numeric edits apply on blur/Enter.
+A single motion plan drives both canvases to keep dragging lightweight. The
+Before view uses the existing yaw response; After uses the viewer-only whole-leg
+response described below. Amount0 keeps the same timeline length.
+
+This tab keeps its selected motion/event, amount, frame, play state and camera
+in sessionStorage across refreshes. It never POSTs lab settings or requests NN.
+The user wants to tune this particular motion here before returning to the lab;
+keep upcoming experiments scoped to the viewer until asked to carry them back.
+Refreshed existing IAB tab4 rather than opening another. Verified slider0,
+numeric100 on blur, frame52 retained, refresh retaining100/frame52; restored80
+and resumed playback. Screenshot: Saved/BodyflipLab/preview-compensation.jpg.
+
+### Viewer-only whole-leg response - October 27
+
+The user then identified abrupt stopping/jitter in the left hip-to-foot vector.
+At the viewer's current Slash L /100%, peak vector angular acceleration was
+275.45rad/s^2 around frames51-52; removing yaw correction still gave271.83.
+The remaining stop therefore mostly came from the reference hip/knee curves,
+which the earlier yaw-only response did not filter.
+
+`viewer-leg-response.js` gives pelvis, both thighs, both feet and both knee
+bends persistent angular position/velocity. Thigh/foot orientation corrections
+are root-relative, so a pelvis turn cannot drag them around instantaneously.
+Knees remain on their anatomical hinge; there is no positional leg IK or moving
+pole. The pelvis uses32rad/s and legs24rad/s critically damped responses, with
+exact integration against linearly changing targets and continuous sampling.
+Base idle motion continues. The cache is bounded and the tail settles analytically.
+Upper-body world orientations and rigid sockets are preserved. This is a posture
+response experiment, not a full physical angular-momentum conservation solve.
+
+The existing viewer now compares Yaw inertia only (left) with Whole-leg inertia
+(right). No additional controls; compensation remains editable. At100%, left
+hip-to-foot peak acceleration falls275.45->67.91rad/s^2 (75%), retaining92% of
+directional excursion. Right falls110.05->41.55 (62%), retaining84%. Tests at
+0/50/100% also check hinge-only knees, rigid sockets, upper orientations, reverse
+seek determinism, analytic velocity and bounded cache. Zero compensation is
+unchanged. Current knee flexion remains14.5-78.7degrees.
+
+Only this preview imports the new module; lab motion, defaults, saved state and
+Unreal are untouched. Existing IAB tab4 refreshed, frames52/58 inspected, then
+restored to the user's paused frame25 at100% with its camera retained. Receipt:
+`viewer-leg-response-verification.json`; run `node verify-viewer-leg-response.mjs`.
+Screenshot: `Saved/BodyflipLab/whole-leg-inertia.jpg`. Keep this experiment in
+the viewer until the user asks to carry it back to the lab.
+
+
+Sources:
+- Wagner et al.,2011, [Performance and Kinematics of Various Throwing Techniques in Team-Handball](https://pmc.ncbi.nlm.nih.gov/articles/PMC3737895/), [Figure 2](https://www.jssm.org/mobile/ShowFigure.php?FigureId=fig002&jid=jssm-10-73.xml). The numeric hip/knee curve reference used here.
+- Liu et al.,2025, [Volleyball jump-serve aerial kinetics](https://pmc.ncbi.nlm.nih.gov/articles/PMC12751981/). Supports phase-dependent flexion/extension; its curves are NOT implemented as a separate overhead profile yet.
+- Zordan et al.,2014, [Control of Rotational Dynamics for Ground and Aerial Behavior](https://pubmed.ncbi.nlm.nih.gov/26357383/). Background for the reduced inertia model, not a reproduction.
+
+## Pelvis attack compensation - October 26
+
+Appended Pelvis attack compensation at the bottom of More options:0-100%,
+default50%. Measures attack-added spine_01 forward-heading change around the
+underlying pelvis's local up axis, after entry/return blending. Rotates the
+pelvis by the negative of that yaw times the amount, then inversely corrects
+spine_01 so every upper-body world orientation stays unchanged.50% is half,
+100% equal/opposite;0 preserves the previous fixed-pelvis behavior. This is an
+artistic angular counter-motion, not an inertia-weighted conservation solver.
+
+The pelvis retains its position; legs inherit its turn with their local joint
+rotations intact. Joint socket offsets stay rigid, so the first spine socket
+moves with the pelvis. Whole-body flips are not counted as attack yaw. Scheduled
+and manual attacks both use the correction; manual aiming runs before it.
+Edits preserve playback position; settings save/restore per scene. No extra
+controls, data migration, Unreal changes or server restart.
+
+1676 sampled poses across16 attacks verify0/50/100%, exact proportional counter
+yaw, upper orientation preservation, unchanged local leg rotations/sockets and
+continuous entry/Armed/return. An explicit60-degree source yaw gives-30/-60 on
+a tilted pelvis.580 source-transfer checks,94 sequence and30 torso/Jolt checks
+pass. Owned browser verifies control placement/default/edit, frame66 retention,
+refresh persistence, and manual slash/kick upper orientation; no app errors.
+Browser closed; saves intercepted, live scene untouched. Refresh to activate.
+
+## Attack pelvis rotation carried by spine_01 - October 26
+
+Upper-only attacks now transfer the source pelvis rotation relative to its first
+frame into spine_01. In quaternion order: inverse(initial pelvis local rotation)
+* current pelvis local rotation * current spine_01 local rotation. This carries
+all three rotation axes, not just yaw, and preserves the authored upper-body
+orientation relative to the initial pelvis. Root facing/translation is not added;
+the actual pelvis and legs remain controlled by the underlying motion.
+
+Scheduled closest-frame matching, entry and authored playback all use this
+corrected target. Existing return blending removes it smoothly. Manual Strike
+uses the same transfer before its upper-body blend; aim does not add it twice.
+Raw clips and joint offsets are unchanged. No extra UI or settings migration.
+
+Verification:580 source/interpolated poses across all16 attacks match the
+independent world-orientation reference within1.7e-15rad, including tilted and
+moving destination pelvises. Root/pelvis/legs unchanged within1.5e-15;
+entry/Armed/return boundaries continuous.94 sequence regressions and30 actual
+Jolt/torso checks pass. Owned headless browser checked frames48/60/66 and manual
+slash/kick lower-body invariance with no app errors; fixture intercepted saves
+and closed. No Unreal/server restart, live-state overwrite or push. Refresh.
+
+## Five faithful spine boxes - October 26
+
+User chose to retain the box-shaped torso and match five physical colliders.
+The old display merged pelvis->spine_02 and spine_02->spine_04 into larger
+blocks, omitted a separate spine_05 volume, and reconstructed each block from
+joint endpoints. This concealed individual spine rotations, especially the first.
+The scheduled attack already included spine_01 and all its descendants.
+
+`torso.js` now defines one rigid box for each spine_01..05 in that bone's local
+frame. Rendering and Jolt consume the same dimensions, offset and orientation.
+The renderer uses the bone transform directly; dimensions do not stretch and
+neighbouring joints cannot supply its rotation. Jolt's former five spine capsules
+are now matching zero-bevel boxes. Five spine constraints, masses and COM offsets
+retain their previous ownership. Only torso collider geometry/inertia changes;
+other lab bodies/contact planning and Unreal are unchanged. This is torso parity,
+not a claim that the remaining stylized limb/hand/head display equals Jolt shapes.
+Kinematic mode still displays exact target poses without running a Jolt solve.
+
+Manual Strike now uses the same spine_01 upper-body mask as scheduled attacks,
+including its optional aim result; neither can overwrite pelvis or leg motion.
+No UI changes. Refresh retains scene/playback state.
+
+30 focused checks verify all five actual Jolt box types, dimensions (<1.3e-8m),
+offsets (<1.4e-9m), orientations (<6.2e-8rad), bone-local rotation ownership,
+spine_01 authored attack motion, fixed pelvis, exact kinematic poses and a small
+simulated attack (maximum joint-anchor error0.594mm). Owned headless browser
+reviewed front frames36/48/60/66, five visible articulated boxes, manual slash
+and kick upper-only behavior (lower-body position error<1.2e-15m), and no app
+errors.94 scheduled-motion regressions pass. Preview saves intercepted/browser
+closed. No server/Unreal restart, user-state overwrite or push.
+
+## Space gym, jump strength and scheduled attacks - October 26
+
+Sequence now appends **Space gym**: zero gravity, no contact requirement, and the
+same jump markers, flips, poses and playback. Root starts stationary in free
+space. Positive jump values add world-up impulse and retain constant drift;
+0% adds no impulse but still plays choreography. Platforms remain saved in the
+scene and reappear when returning to Idle/Walk/Run. No locomotion or landing NN
+requests are made in Space gym. Sim mode also disables Jolt gravity and its
+pelvis gravity compensation. The existing continuous Air flip remains available.
+
+The marker popup appends **Jump %**, **Attack**, and its **Delay s**, in that order.
+Jump defaults to100;0 disables push,400 is the current upper bound. Percentage
+scales active jump energy (sqrt scaling for launch speed), so on level ground
+without loading25% gives one-quarter height. Existing loading/rebound still adds
+returned impact energy.100 preserves the previous root trajectory. Ground0%
+keeps the current motion instead of planting a foot for an artificial jump.
+
+Attack defaults toNone. All16 original melee/sword clips are available, with
+only the spine, neck/head, clavicles, arms and hands overridden. Kicks therefore
+play their upper-body portion only. Root, pelvis, leg transforms and lengths
+stay with the underlying motion. These are vanilla clips, without target aiming.
+Delay is measured from foot release, or the marker itself in Space/0% actions.
+Two per-marker **Attack blend In/Out** fields append at the bottom of More options.
+In is a minimum entry duration; a longer remaining authored wind-up keeps its
+normal duration. Out returns to the continuing underlying pose.
+
+`export_vanilla_attacks.py` extracts original basePayload positions/basis from
+Final Harness, before any target solver, and source Armed/Hit metadata.16 clips,
+306 frames,381888 bytes; provenance/hash receipt in `data/vanilla.json`. Source
+harness and NPZs remain unchanged. `jump-attack.js` adapts the harness functions
+`standaloneIndependentStartPoseAt`, `standalonePlannedEasyEntry` and
+`standaloneBlendPoseLocalAxes`: continuing outgoing motion joins moving pre-Armed
+animation through hierarchy-local rotations, then Armed->End uses native fps.
+The added closest-frame search compares upper local rotations from frame0 through
+Armed at attack onset, ignoring pelvis/world orientation. A smooth blend weight
+preserves motion at entry; existing velocity-aware transition handles return.
+This is a contained adaptation, not a live dependency on the Final Harness UI.
+
+Scheduled attacks are inside the flight sampler, before capsule landing seeds.
+The NN therefore resumes from the actual attacked pose; landing ends choreography.
+Space attack overlaps use the displayed outgoing pose and a bounded tiny cache.
+Clips load lazily; completed layers do no attack pose calculations.
+
+Validation:97 focused checks pass, including all16 vanilla clips, upper-only
+invariance, native Armed playback, delays, overlap, reverse seeking,0/25/100/200%
+height,32 overlapping markers and an actual seeded NN landing during attack.
+52 marker edits,84 existing motion and38 blend checks pass. Owned headless app
+verified1280x900/1000x700 layouts, edits retaining frame48, playback advancement,
+refresh restoring time/settings, and return to the preserved ground scene.
+All preview saves intercepted; browser closed. No Unreal or server restart,
+no live scene overwrite and no push. Refresh the existing Bodyflip window.
+
+## Shared Foot IK on inclined platforms - October 26
+
+Bodyflip now consumes Foot IK's canonical surface/contact solver directly.
+`FootIKLab/surface.js` exposes `createFeet()` and its own `prepare()` calls the
+same routine. `shared_foot_ik.py` serves the current five Foot IK modules at
+`/shared-foot-ik.js` on every Refresh, isolated from Bodyflip's globals. No copy,
+watcher, second Foot IK server or shared saved settings is required. Source
+changes propagate on Refresh; changing sliders in Foot IK does not copy tuning.
+See [the shared API contract](../FootIKLab/SHARED_API.md) before changing exports.
+
+`foot-ik.js` adapts Bodyflip's edited finite platforms and NN poses. The upright
+capsule still owns collision/root motion. Mesh pelvis clearance compensation and
+Foot IK's body alignment let both feet reach inclined surfaces; contact,
+heel/toe roll, reach, ankle and knee rules come from the shared solver. Grounded
+Idle/Walk/Run use it; authored support/push/flight retain the existing jump solver.
+Corrected pose history feeds ledge falls and actual seeded NN landings. A brief
+crest landing resets the correction history so the old tilt is not applied twice.
+Corrections are prepared at120Hz, cached for playback/reverse seeking, and ease
+out when returning to flat ground. Foot IK is a single checkbox appended at the
+bottom of More options. Its edits preserve the playhead.
+
+**Desktop activation pending:** current8876/PID27312 is still API5. Automatic
+approval review rejected the verified Bodyflip-only restart with "blocked by
+policy". No alternate restart was attempted. The old server remains usable;
+Foot IK is disabled with "server restart needed" until the server is restarted
+normally. Current source is API6. The isolated API6 test server8891/PID12412 and
+owned test browser were closed after verification. No Unreal or Foot IK service
+restart, live-state writes or push.
+
+Validation:1529 integration checks covering Walk/Run toward/across45deg surfaces,
+material contacts, shoe clearance, lengths, knee steps, a real inclined jump and
+NN landing, reverse seeking, slope/flat transitions and an edge fall. Largest
+steady shoe penetration0.00030mm. Support/landing boundary changes at1e-7s are
+0.00056/0.00090mm.84 authored-motion,78 knee-blend and24 capsule checks pass.
+Six full Foot IK reference clips (Walk/Run,45deg toward/parallel,90deg parallel)
+retain byte-identical poses/metrics/events after the extraction. Isolated browser
+verified six rendered frames, source hash, comparison toggle/time preservation,
+and the old-server fallback; all state writes were intercepted. Receipts:
+`foot-ik-verification.json`, `Saved/BodyflipLab/shared-foot-ik-browser-verification.json`.
+Tests use8876 by default; `BODYFLIP_TEST_URL` can select an isolated API6 server.
+
+
+## Flip and pose timing in More options - October 26
+
+Detailed jump timing now appends after Rebound at the bottom of the existing
+viewport **More options** panel. The marker popup retains angles, axis, delay
+and pose selection. Select a marker to edit its **J1/J2... Flip / pose** controls:
+Turn seconds, Flip blend In/Out seconds, and Pose blend In/Hold/Out seconds.
+The selected marker stays selected when its popup closes, so clicking More
+options does not lose the editing target. No selected marker means disabled
+timing fields and a selection hint. Escape only claims the popup while it is open.
+
+Flip In/Out now control the acceleration/deceleration periods for both angles.
+Short blends leave constant angular speed in between; zero disables that ramp.
+If In+Out exceeds Turn, both fit proportionally within Turn. Existing settings
+without these fields migrate to half-duration each, exactly preserving the prior
+quintic curve at every turn duration. No pose blend or takeoff rule changed.
+
+47 editor checks and84 motion checks pass, including independent jump editing,
+legacy curve identity, zero/asymmetric/overlong ramps and smooth speed joins.
+The isolated browser fixture verifies both popup sizes, the bottom-of-panel
+layout, retained selection, native number editing and unchanged playback time.
+Actual screenshots checked at1000x700; all new fields fit. Test writes intercepted;
+browser closed. No live-state overwrite, Unreal/server changes or push. Refresh.
+
+## Per-jump flips and poses - October 25
+
+Click an existing timeline marker. Its time/Delete/status row stays in place;
+the following controls are appended underneath:
+
+- **Flip / Twist degrees:** total signed rotation, including multiple revolutions
+  (up to ten each). Both default to zero. Nonzero per-jump angles replace the
+  old continuous Air flip for that jump; no Air flip checkbox is required.
+- **Axis:** one of the twelve existing directions, or **Lab axis** (default)
+  to follow the sidebar grid. The axis follows root heading at release, without
+  pelvis gait sway; twist remains around the pelvis vertical axis.
+- **Delay seconds:** defaults to zero, measured from foot release. Turn duration
+  (default0.8s) and its ease-in/out are now in **More options**, as described above.
+  Signed scalar angles stay unwrapped through full turns. Readouts and the axis
+  guide show the active jump's rotation.
+- **Pose:** No pose by default, plus Pose1-4 marked **temp**. **More options** now
+  contains In/Hold/Out (defaults0.2/0.3/0.25s). Pose entry starts at foot release,
+  independently of rotation delay, and exit blends back to the moving animation.
+
+The four placeholders are snapshots from existing standing/run/fall clips,
+not final authored poses. Their stable IDs and temporary source mapping live in
+`jump-motion.js::placeholders`; replace those four local-rotation targets when
+the user provides poses. Pose blending changes local rotations only: root,
+pelvis position, bone lengths and hip sockets retain their existing ownership.
+Do not move the pose slots or timing into a new timeline or rearrange other UI.
+
+`core.sanitizeJump` preserves and validates the new per-marker fields through
+save, refresh, scene copy and selection. Existing markers with no choreography
+keep their previous motion; inactive/missed jumps do not allocate a motion layer.
+The shared sampler feeds both rendering and capsule/landing preparation, so the
+NN receives the actual rotated/posed current and preceding frames. A landing
+ends any unfinished turn/pose and continues from that pose through the existing
+NN handoff. This is kinematic choreography, not an angular-momentum simulation.
+Root collision, contact timing, support selection and pin/release rules are unchanged.
+
+Edits retain playback time. Click-away commits a typed value. Escape now closes
+the jump popup before the platform editor can consume the key. Popup placement
+uses its actual width, with bounded height/scrolling on smaller windows.
+
+Verification:75 motion checks,40 marker/edit/persistence checks and12 actual
+NN landing checks pass. Existing78 knee,38 blend,53 matched-body,21 scene and14
+refresh checks also pass (331 total). Across Run and Idle, all four placeholders
+stay within0-150deg knees; maximum tested angle130.593deg. Root/pinned-frame error
+is zero, and landing position discontinuity is below0.000001m. Reverse sampling,
+independent jump settings, full turns, delay and blend boundary velocities checked.
+`verify-jump-motion-browser.cjs` renders the actual app in an isolated headless
+browser with live-state writes blocked:1280x900/1000x700 popup layouts, ten samples
+through a flip/twist, Escape, click-away and unchanged playhead verified. The
+original browser/native tools failed to initialize; the isolated render succeeded.
+Receipts: `jump-motion-verification.json`, `jump-motion-landing-verification.json`,
+`jump-track-verification.json`; browser receipt/screenshots under
+`Saved/BodyflipLab/jump-motion-*`. No Unreal/other-lab edits, server restart,
+live-state overwrite, persistent test process or push. **Refresh the desktop lab**.
+
 ## Prevent backwards knees during blends - October 25
 
 Approved checkpoint: the user accepted this result and requested a push. This
@@ -755,6 +1132,24 @@ kernel-assets path error. User's screenshot informed the simplification.
 Saved tuning/camera were not overwritten; refresh the lab to load the changes.
 No Unreal activity, training changes, server restart or Git push.
 
+## October 27 approved checkpoint
+
+The user approved the whole-leg viewer response and requested a push. This
+checkpoint includes the Bodyflip work since October25: marker flip/pose timing,
+Space gym and vanilla attacks, five matching spine colliders, attack pelvis
+transfer/compensation, reference leg motion and the isolated whole-leg viewer.
+The shared Foot IK surface/contact source and contract are included as runtime
+dependencies. Other Foot IK UI/NN work, Unreal, training, live scenes, browser
+state, screenshots and inference/model caches stay outside the checkpoint.
+
+The whole-leg response remains viewer-only; the main lab retains the earlier
+yaw response. Open `/soft-legs-preview.html` on the Bodyflip service to review
+it. All sixteen small vanilla recordings and the idle recording are included;
+the comparison needs no NN inference. The existing `saved-profile.json` is an
+older curated scene, not a copy of today's live scene library. The current
+desktop server remains API5; the source's API6/shared Foot IK activation still
+needs a normal restart as documented above. No process was restarted for push.
+
 ## Git checkpoint and restore - October 24
 
 The curated checkpoint includes app/server source, desktop shortcut scripts,
@@ -1107,10 +1502,10 @@ The interrupted pelvis-anchor/extra-blue-marker changes were reverted: both
 larger offsets had correctly saturated at the ledge; no target redesign was needed.
 162 cached-run support checks pass, including alpha 0, 0.1, 0.5, 1 and 20.
 
-## Root-speed lead and global frame keys — October 24
+## Root-speed lead and global frame keys â€” October 24
 
-**Lead α** controls scaled root-speed lead: `local forward offset = root
-speed × alpha / 200`. At 5 m/s, alpha **4** gives **10 cm**. COM velocity, foot
+**Lead Î±** controls scaled root-speed lead: `local forward offset = root
+speed Ã— alpha / 200`. At 5 m/s, alpha **4** gives **10 cm**. COM velocity, foot
 distance and approach speed no longer influence the offset. Both feet get the
 same forward shift; root heading carries it, and valid-ground projection still
 limits the final target. Saved alpha values are preserved; input step is .01.
@@ -1129,7 +1524,7 @@ The 17 timeline checks also pass with bracket dragging, loop bounds and live scr
 Receipts: `support-verification.json`, `ground-verification.json`,
 `keys-verification.json`.
 
-## Run height correction — October 24
+## Run height correction â€” October 24
 
 Removed the erroneous **+5.5 cm root lift** applied to the entire run. The NN
 gait is already ground-referenced. Run bone heights now match the source exactly;
@@ -1140,7 +1535,7 @@ for source heights, stance contact and retained airborne phases across both
 cached runs. Stance gaps are within 3.1 mm; pre-existing interpolation dips up to
 9.4 mm remain. The 144 support/abort checks also pass.
 
-## Root-relative support approach and missed-edge abort — October 24
+## Root-relative support approach and missed-edge abort â€” October 24
 
 The ideal contact is now stored in the root frame at support preparation, before
 the finite-ground clamp. Each authored substep carries it with the current root
@@ -1168,7 +1563,7 @@ values use the new root-speed formula above. The fixed ledge and plant rules rem
 144 numerical and 27 browser support checks pass, including no hold, target projection,
 per-tick distance history, first-increase abort, continuity and deterministic replay.
 
-## Pelvis placement, foot speed units and orbit — October 24
+## Pelvis placement, foot speed units and orbit â€” October 24
 
 The rendered pelvis box is centered between the two thigh sockets instead of
 using the erroneous 7 cm downward offset from the pelvis bone. Its orientation
@@ -1185,10 +1580,10 @@ Left-button orbit now inverts vertical dragging. Horizontal orbit, middle-button
 pan and right-button target dragging retain their controls. Verification:
 122 numerical support, 22 browser support/orbit and 20 editing checks passed.
 
-## Earlier jump, fixed ledge restored — October 24
+## Earlier jump, fixed ledge restored â€” October 24
 
 The automatic ledge movement introduced during alpha troubleshooting is reverted.
-The original edge is again `run speed × Run seconds − 0.12 m`, independent of alpha.
+The original edge is again `run speed Ã— Run seconds âˆ’ 0.12 m`, independent of alpha.
 Alpha's agreed formula, acceptance of values above 1, and lead readout remain.
 The previous tiny response came from the erroneous m/s interpretation, now corrected.
 
@@ -1202,7 +1597,7 @@ reach or contact requirements; infeasible gait poses still wait for support.
 Changing Early retains the playback time and reuses the prepared run without NN
 inference. Click-away and Enter commits remain fixed.
 
-## Editing at the current playback time — October 24
+## Editing at the current playback time â€” October 24
 
 Clicking outside a number field, including on the 3D canvas, commits the edit and
 removes its focus. Enter does the same. The canvas previously prevented the
@@ -1212,7 +1607,7 @@ timeline time instead of frame zero. Paused edits stay paused; support-number
 edits made during playback resume from the same time. Cached support edits do
 not request NN inference. Reset still explicitly returns to frame zero.
 
-Alpha comparisons now show **Lead … cm** beside the selected support foot, with
+Alpha comparisons now show **Lead â€¦ cm** beside the selected support foot, with
 requested/applied distances on hover and an **edge** suffix if limited. Actual contact clamps
 to the restored fixed ledge. The agreed formula and leg-length limits are unchanged.
 
@@ -1220,7 +1615,7 @@ to the restored fixed ledge. The agreed formula and leg-length limits are unchan
 `support-verification.json` now has 144 checks including early timing, unchanged
 ledge, root ascent, foot gate and the earlier support-motion checks.
 
-## Procedural support foot — October 24
+## Procedural support foot â€” October 24
 
 Kinematic remains selected. At Run minus Early, project the pelvis onto the
 closest point of the finite platform. Project the left/right hip direction onto
@@ -1228,7 +1623,7 @@ that surface and place two ideal contacts at half the hip-to-hip distance on
 either side. Auto picks the foot closest to its corresponding target; Foot L/R
 overrides the choice and selects the matching trimmed jump clip.
 
-Each target receives a root-local forward offset: `root speed × Lead α / 200`.
+Each target receives a root-local forward offset: `root speed Ã— Lead Î± / 200`.
 Alpha / 200 is the lead time in seconds; foot distance, COM velocity and foot approach
 speed do not enter that calculation. Targets are clamped back onto the actual
 platform, including its edge. The ground query exposes a surface normal for a
@@ -1238,7 +1633,7 @@ later wall extension; this version supports the horizontal platform only.
 | --- | --- | --- |
 | Reach | 0.99 | Maximum pinned hip-to-ankle distance as a fraction of thigh + calf length. |
 | Gate cm | 5 | Maximum remaining foot-to-target distance before jump and plant. |
-| Lead α | 1 | Scaled lead time (alpha / 200 seconds); no upper cap. At 5 m/s, 4 gives 10 cm. |
+| Lead Î± | 1 | Scaled lead time (alpha / 200 seconds); no upper cap. At 5 m/s, 4 gives 10 cm. |
 | Foot cm/s | 800 | Procedural approach speed, in centimetres per second (8 m/s). |
 
 The former alpha cap of 10 is removed in both the number field and settings
@@ -1268,10 +1663,10 @@ slow approach, abort/fall, distance history, exact kinematic poses and live scru
 Run `node Labs/BodyflipLab/verify-support.mjs`, or open `verify-support.html`.
 The old takeoff check entry points route to these replacement checks.
 
-## Playback trim loop — October 24
+## Playback trim loop â€” October 24
 
-The timeline leaves room on its right for **Speed**, a 0.1×–2.0× slider (default
-1.0×, saved). It changes the whole playback clock immediately without restarting
+The timeline leaves room on its right for **Speed**, a 0.1Ã—â€“2.0Ã— slider (default
+1.0Ã—, saved). It changes the whole playback clock immediately without restarting
 the sequence or preparing another NN run. Scrub times, trim brackets and Step
 remain in authored seconds/frames. Fixed simulation steps and bounded frame work
 remain; changing speed clears accumulated wall time to avoid a catch-up hitch.
@@ -1299,7 +1694,7 @@ input without a change/release event, newest-position wins, bracket adjustment,
 range looping and kinematic membership. The old `verify-loop.html` entry redirects
 to this replacement fixture; its old receipt is historical.
 
-## Trimmed takeoff — earlier October 24 behavior
+## Trimmed takeoff â€” earlier October 24 behavior
 
 Kinematic remains selected and is now the fresh-settings default. Both authored
 opposite-foot jump assets were already exported: **Lfoot** and **Rfoot**. They are
@@ -1324,9 +1719,9 @@ exact source rotations, both overrides, synthetic exact support matches and both
 choices across real gait positions. Browser receipt: `takeoff-browser-verification.json`.
 No NN inference, Unreal process, asset changes or simulation tuning needed.
 
-## Tracking, kinematic comparison and responsiveness — October 24 correction
+## Tracking, kinematic comparison and responsiveness â€” October 24 correction
 
-**Motion → Sim / Kinematic** restarts the same sequence with the same decoded NN
+**Motion â†’ Sim / Kinematic** restarts the same sequence with the same decoded NN
 segment. Kinematic presents the exact target transforms, without a physics solve
 or collision response, and follows that pose's mass-weighted COM. Sim retains
 physical joints/contact. Both work in Run + jump and Space. Ghost can also expose
@@ -1340,13 +1735,13 @@ Sim now follows `ProphecyJoltVelocityServo.cpp`'s `CalculateRewrite` and
 `PredictCommandFrame`: parent-first predicted angular endpoints, shortest-arc
 rotation error divided by the substep, strength 1, and no extra stale target
 feed-forward. Only the pelvis gets a positional velocity correction, gravity
-compensation and body-origin → COM velocity conversion. Dynamic-mode joint motors
+compensation and body-origin â†’ COM velocity conversion. Dynamic-mode joint motors
 are off; the constraints still enforce hinge/other limits and attachment. Original
 Space-mode motors remain. Lab shapes/limits still differ from the native rig.
 
-The same frozen one-second unarmed NN run, before → after mean angular errors:
-upper spine **28.10° → 1.60°**, left hand **54.20° → 6.17°**. Hinge/contact-limited
-errors remain (left forearm mean **17.47°**); this is not perfect pose matching.
+The same frozen one-second unarmed NN run, before â†’ after mean angular errors:
+upper spine **28.10Â° â†’ 1.60Â°**, left hand **54.20Â° â†’ 6.17Â°**. Hinge/contact-limited
+errors remain (left forearm mean **17.47Â°**); this is not perfect pose matching.
 `inspect-tracking.mjs` and `tracking-before/after.json` retain the evidence.
 
 The sword now caches its fixed geometry/normals and transforms each unique vertex
@@ -1358,9 +1753,9 @@ so blend/foot/cap/reset changes reuse the existing segment. Equipment changes
 prepare the matching unarmed/drawn segment. Timeline dragging previews the time;
 release reconstructs simulation in short yielding batches so the UI stays usable.
 
-Measured with `profile.html`, 60 frames after 10 warm-up frames at the same 1000×700
-viewport and sword selection: mean **22.40 → 9.38 ms**, p95 **25.30 → 12.80 ms**,
-maximum **42.50 → 14.90 ms**. This includes physics, rendering submission and test
+Measured with `profile.html`, 60 frames after 10 warm-up frames at the same 1000Ã—700
+viewport and sword selection: mean **22.40 â†’ 9.38 ms**, p95 **25.30 â†’ 12.80 ms**,
+maximum **42.50 â†’ 14.90 ms**. This includes physics, rendering submission and test
 diagnostics; it is a local measurement, not a GPU-present FPS guarantee. Cached
 Reset measured **3.5 ms**. Paused/hidden behavior and transient NN workers remain.
 
@@ -1368,11 +1763,11 @@ Reset measured **3.5 ms**. Paused/hidden behavior and transient NN workers remai
 Space ownership/repeat/release, dynamic membership, cached reset, yielding seek,
 fall, Space mode and runtime errors). Real browser Space presses from a focused
 Step button also toggled Play/Pause correctly. Updated twelve-second physics test:
-max anchor **4.111 mm**, pelvis position **1.172 cm**, pelvis angle **19.05°**;
+max anchor **4.111 mm**, pelvis position **1.172 cm**, pelvis angle **19.05Â°**;
 12 m/s cap respected. Previous 16/39 check receipts below describe the earlier
 version; the sequence fixture now awaits asynchronous scrubbing.
 
-## Run / jump / void — base October 24 implementation
+## Run / jump / void â€” base October 24 implementation
 
 The default **Run + jump** mode runs forward for **1 s**, blends into an actual
 GASP running-jump start, follows its root's upward arc, and falls indefinitely
@@ -1381,15 +1776,15 @@ body COM**, including vertical motion. No ground exists below the platform.
 
 | Control | Behavior |
 | --- | --- |
-| Run | 0.1–5 authored seconds; default 1. Releasing a sequence slider rebuilds the run at the current playback time. |
-| Phase | 0–100% of a full forward-running stride (38 game ticks / 19 policy frames); 100% wraps to 0. |
-| Blend | Run-to-jump pose interpolation, 0–1 s; default 0.2 s. Root rise remains authored. |
-| Fall cap | Downward speed limit, 2–50 m/s; default 20. Also clamps actual mass-weighted body COM downward velocity. |
+| Run | 0.1â€“5 authored seconds; default 1. Releasing a sequence slider rebuilds the run at the current playback time. |
+| Phase | 0â€“100% of a full forward-running stride (38 game ticks / 19 policy frames); 100% wraps to 0. |
+| Blend | Run-to-jump pose interpolation, 0â€“1 s; default 0.2 s. Root rise remains authored. |
+| Fall cap | Downward speed limit, 2â€“50 m/s; default 20. Also clamps actual mass-weighted body COM downward velocity. |
 | Foot | Auto chooses the nearest procedural ground contact; L/R overrides. See support controls above. |
 | Air flip | Off by default for reviewing the jump. When enabled, existing flip/twist clocks begin at physical lift-off. |
 | Space | Select the original stationary, zero-gravity experiment. |
 | Timeline | In Run + jump, pause and deterministically replay physics from the start to the requested time. |
-| Target Reset | In Run + jump, bring the draggable target near the current pelvis. XYZ accepts positions beyond the original ±5 m area. |
+| Target Reset | In Run + jump, bring the draggable target near the current pelvis. XYZ accepts positions beyond the original Â±5 m area. |
 
 **Networks:** immutable copies of installed **Run 181751** and **Upper 82500**
 PyTorch checkpoints, verified against their installation hashes. `locomotion.py`
@@ -1420,7 +1815,7 @@ mode 1 is world-relative. This lab implements that requested arrangement using
 **25 dynamic Jolt bodies**, parent-relative angular velocity tracking, 24 physical joints, and one
 world-space pelvis velocity servo. It reuses the native mode-0 control principle;
 it does not load or claim exact tuning parity with the native Unreal adapter.
-There are no independent limb position magnets. Gravity is 9.81 m/s²; joint
+There are no independent limb position magnets. Gravity is 9.81 m/sÂ²; joint
 limits, mass profile and motor strengths are the existing lab profile. Only reset
 or explicit scrub reconstruction teleports the body. Ordinary play stays dynamic.
 The descent cap applies a uniform linear velocity correction to all bodies,
@@ -1456,7 +1851,7 @@ gameplay-project build failures or claims that the entire content project valida
 
 `verify-flight.mjs`: 12 simulated seconds, root rise, indefinite descent, terminal
 cap, finite poses, joints, and switching back to Space. Latest maximum anchor
-error **4.111 mm**, pelvis target error **1.172 cm**, pelvis angular error **19.05°**,
+error **4.111 mm**, pelvis target error **1.172 cm**, pelvis angular error **19.05Â°**,
 12 m/s test cap respected to
 float precision. `verify-sequence.html`: **16/16** browser integration checks,
 including phase, duration, blend/scrub, COM camera, low cap, flips and airborne
@@ -1471,7 +1866,7 @@ Test fixtures restore saved settings and must not run while the user edits the l
 | Flip grid | 12 directed horizontal axes, at 30-degree intervals. Back, Front, Left, Right and eight intermediate directions. Selection starts that flip at zero angle. |
 | Flip Speed / Angle | Signed degrees per second; direct angle adjustment. Zero speed holds the flip. |
 | Pelvis twist | Separate angle and signed speed around the pelvis's own vertical axis. This axis follows the flip. Zero clears only twist. |
-| Attack / 01–20 | All 16 existing melee/sword families, with 20 variants each. |
+| Attack / 01â€“20 | All 16 existing melee/sword families, with 20 variants each. |
 | Attack / A | Start the selected attack and playback. Does not restart the flip. |
 | Cancel / Loop / Rate | Return to idle, repeat attacks, or change attack playback rate independently of rotation. |
 | Aim | Optional bounded joint aim correction toward the target. Slider controls its strength. |
@@ -1534,8 +1929,8 @@ The capsule geometry, masses, motor strengths, collision exclusions and angular
 bounds form a **dedicated lab profile** around the shared idle pose. This is not
 an exact import of the current game PHAT or its native Jolt DLL. Overlapping torso,
 shoulder and adjacent-chain shapes are filtered; separate limbs still collide.
-Knee bounds represent approximately 0–150 degrees of anatomical bend, relative
-to the slightly bent idle reference. Elbows similarly allow 0–155 degrees.
+Knee bounds represent approximately 0â€“150 degrees of anatomical bend, relative
+to the slightly bent idle reference. Elbows similarly allow 0â€“155 degrees.
 
 Source clips drive local motor targets across the whole body, with the authored
 pelvis rotation removed so it cannot change the chosen flip clock. Aim uses three

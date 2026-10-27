@@ -1,0 +1,24 @@
+{
+  "maxRateError": 2.974676505118623e-9,
+  "maxAccelerationJump": 0.01624643886088961,
+  "results": [
+    {
+      "name": "slashL",
+      "peakAccelerationBefore": 2151.6249691106163,
+      "peakAccelerationAfter": 136.5864117697364,
+      "accelerationReduction": 0.9365194149860628,
+      "peakTurnRetained": 0.8479935962450013,
+      "maxMomentumDifference": 3.1196265204227944,
+      "cacheSize": 219
+    },
+    {
+      "name": "slashRU",
+      "peakAccelerationBefore": 1416.085629458258,
+      "peakAccelerationAfter": 277.2005874628072,
+      "accelerationReduction": 0.8042487108856164,
+      "peakTurnRetained": 0.8152141765266279,
+      "maxMomentumDifference": 7.261973593864699,
+      "cacheSize": 223
+    }
+  ]
+}

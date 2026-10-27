@@ -1,0 +1,73 @@
+{
+  "passed": 84,
+  "rootError": 0,
+  "pinError": 0,
+  "measurements": [
+    {
+      "mode": "jump",
+      "pose": "pose1",
+      "minKnee": 7.494594963882529,
+      "maxKnee": 130.3844015772324,
+      "boneError": 1.7208456881689926e-15,
+      "max240HzStep": 0.08680339316846727
+    },
+    {
+      "mode": "jump",
+      "pose": "pose2",
+      "minKnee": 5.42344854471863,
+      "maxKnee": 128.92573361727727,
+      "boneError": 1.942890293094024e-15,
+      "max240HzStep": 0.09552478974501151
+    },
+    {
+      "mode": "jump",
+      "pose": "pose3",
+      "minKnee": 6.40597408720022,
+      "maxKnee": 128.92573361727727,
+      "boneError": 1.7763568394002505e-15,
+      "max240HzStep": 0.08205210901756028
+    },
+    {
+      "mode": "jump",
+      "pose": "pose4",
+      "minKnee": 6.292807103497823,
+      "maxKnee": 128.92573361727727,
+      "boneError": 1.6653345369377348e-15,
+      "max240HzStep": 0.0861521157228515
+    },
+    {
+      "mode": "idle",
+      "pose": "pose1",
+      "minKnee": 3.6618636210964763,
+      "maxKnee": 130.5929692947137,
+      "boneError": 0,
+      "max240HzStep": 0.07350497330697399
+    },
+    {
+      "mode": "idle",
+      "pose": "pose2",
+      "minKnee": 3.364554000671115,
+      "maxKnee": 102.56748089966948,
+      "boneError": 0,
+      "max240HzStep": 0.09587647248370011
+    },
+    {
+      "mode": "idle",
+      "pose": "pose3",
+      "minKnee": 3.33684259103885,
+      "maxKnee": 102.56748089966948,
+      "boneError": 0,
+      "max240HzStep": 0.08744895488869764
+    },
+    {
+      "mode": "idle",
+      "pose": "pose4",
+      "minKnee": 3.3729154483606503,
+      "maxKnee": 102.56748089966948,
+      "boneError": 0,
+      "max240HzStep": 0.08074705591206598
+    }
+  ],
+  "elapsedMs": 3460.9238,
+  "visualVerified": false
+}

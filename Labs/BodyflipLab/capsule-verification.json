@@ -26,7 +26,7 @@
     "Wall strike never resumes locomotion",
     "Ceiling hit cancels ascent without falsely landing"
   ],
-  "planMs": 471.5906,
+  "planMs": 619.4297,
   "minGap": 0.0000010000000000287557,
   "entryGap": 2.4925682314543234e-7,
   "landings": [
