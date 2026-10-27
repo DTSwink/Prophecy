@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 9003,
-  "bytes": 1083755005,
+  "file_count": 9004,
+  "bytes": 1083829824,
   "files": [
     {
       "path": ".gitattributes",
@@ -30156,6 +30156,12 @@
       "sha256": "b11e9138533ca2c1684e781556d8a46f28010029b3528af1608b7b6afdc18864"
     },
     {
+      "path": "Labs/ThrowLab/.gitattributes",
+      "git_blob": "765de9ecff30fc2bc6bd9cd0e7592363717a1f67",
+      "bytes": 102,
+      "sha256": "a7f476a1bfdca8128233fce5819edb52a56452b60e244a88937444c473dfc95e"
+    },
+    {
       "path": "Labs/ThrowLab/.gitignore",
       "git_blob": "a283e4a1b0be82e05449173628454095f0f317b3",
       "bytes": 70,
@@ -30187,9 +30193,9 @@
     },
     {
       "path": "Labs/ThrowLab/approved/2026-10-27/saved-profile.json",
-      "git_blob": "65b629f79d2bb6049a23348613abe2a726192dcd",
-      "bytes": 2156738,
-      "sha256": "fa2fd21d8aa9fbb6d40064da88c7b531ce1e66c3d55ab993b8db85c20d1604ee"
+      "git_blob": "b6894220341d169f01e2fbac74237295ab09ab06",
+      "bytes": 2231455,
+      "sha256": "ec0d6bf4807b41199564363e50d3631fa8f46440465255ca1a3534cb165dd04a"
     },
     {
       "path": "Labs/ThrowLab/approved/2026-10-27/small throw.fbx",

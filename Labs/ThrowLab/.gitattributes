@@ -1,0 +1,2 @@
+# Preserve exact approved snapshot bytes across platforms, including JSON newlines.
+approved/** -text
