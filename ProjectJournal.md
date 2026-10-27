@@ -4,6 +4,18 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Throw Lab October27 - approved throw checkpoint:** standalone lab and exact
+user-approved scene library saved in `Labs/ThrowLab/approved/2026-10-27/`.
+Includes both source FBXs (cache hashes verified), runtime animation/object
+caches, Jolt, tools, desktop launcher and complete saved tuning/undo history.
+Current big throw uses Imperial Spear with Throw F34. Whole-frame rotation
+editing, quaternion interpolation, Ctrl precision, inline axis readout, fixed
+world target, free/orbit camera and1x playback cap included. Source and focused
+mouse/physics checks pass. Snapshot inventory verifies the selected commit.
+Aerodynamic investigation is separate; approved projectile behavior unchanged.
+See [lab handoff and restore steps](Labs/ThrowLab/README.md).
+
+
 **Bodyflip October27 - approved kick and attack-entry checkpoint:**
 User approved full-body airborne kicks, pelvis-only post-Hit recovery and
 Direct to Armed for all16 attacks. Viewer, timeline and manual paths share the

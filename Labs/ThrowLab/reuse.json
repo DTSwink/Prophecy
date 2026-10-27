@@ -1,0 +1,14 @@
+{
+  "source": "../BodyflipLab",
+  "date": "2026-10-26",
+  "sha256": {
+    "recovery.js": "2a98ad2cf3f316c84f63af99ccf95d734de12e63d5a57308b8e73ace17079cad",
+    "camera.js": "ec81b6107b3396bfd5496ba32fcdeaabc93887b74866966ea927ad43a68e230e",
+    "renderer.js": "64cab28021fa88dcec19d93a653a1df36b5a6a3bac72edac5d28a037fc93597a",
+    "style.css": "77337c43e45a772e326002aee92ad33672c0fa4b7d4323a7edd14f63202108d1",
+    "scenes.js": "5d418dd18093b4f4073abc37b2cedf369340cca162a3be2a4aad6af5fed18c28",
+    "launch.ps1": "230f4100464c15cfafe09f264fb5df2f87b164689d0e768c41135e6dde430a83",
+    "install_shortcut.ps1": "7d702d102828adf2a6928d80dc33d2d48e19c517eab071a3b5312536cf3b681e"
+  },
+  "note": "Independent copies; no shared state or runtime services."
+}

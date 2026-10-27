@@ -1,0 +1,18 @@
+#clip{width:100%;margin-bottom:14px}.hint{line-height:1.6;margin:10px 0 0}.brand{gap:18px}.brand #refresh{letter-spacing:normal;font-size:12px}.header-actions select{max-width:160px}.stage-bottom{flex-wrap:wrap}.timeline #frameRead{min-width:44px}footer .playback-speed{min-width:145px}#trimIn,#trimOut{font-size:25px}aside section:last-child{border:0}@media(max-width:1050px){.brand small{display:none}.header-actions{gap:4px}footer{gap:8px}.transport{gap:4px}.transport button{padding:6px 8px}footer .playback-speed{min-width:115px;width:135px}}
+
+.lab-tabs{padding:12px 16px 0}.lab-tabs button{width:100%;text-align:left}#handKeys{width:100%;margin-top:9px}.button-row{flex-wrap:wrap}#frameRead{min-width:70px!important}#autoTwist{margin-left:0}.hint{overflow-wrap:anywhere}
+
+#gizmoOverlay{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;overflow:hidden;touch-action:none}.stage-top,.stage-bottom{z-index:3}.gizmo-ring,.gizmo-hit,.gizmo-arrow{fill:none;stroke-linecap:round;stroke-linejoin:round}.gizmo-ring{stroke-width:2;opacity:.85}.gizmo-hit{stroke:transparent;stroke-width:13;pointer-events:stroke;cursor:grab;touch-action:none}.gizmo-hit:hover{stroke:#ffffff38}.gizmo-ring.dragging{stroke:#fff;stroke-width:3}.dragging .gizmo-hit{cursor:grabbing}.gizmo-label{font:600 10px 'Segoe UI',sans-serif;fill:#f1f5ff;paint-order:stroke;stroke:#111722;stroke-width:3px;letter-spacing:1px}.gizmo-arrow{stroke:#ffe183;stroke-width:3}.view-toggles{flex-wrap:wrap}.vanilla-gizmo-toggle[hidden]{display:none}
+
+.lab-tabs .history-actions button{width:auto}.history-actions span{font-size:10px;color:var(--muted)}.history-actions button:disabled{cursor:default}
+
+.gizmo-ring.hovered{stroke-width:4;opacity:1}
+
+.gizmo-scale{cursor:ew-resize;fill:#18202e;stroke-width:2;pointer-events:all}
+
+/* Refresh centered below the four scene action buttons. */
+header{height:96px}.header-actions{align-items:flex-start}.scene-action-buttons{display:grid;grid-template-columns:repeat(4,auto);gap:7px 8px}.scene-action-buttons #refresh{grid-column:1/-1;justify-self:center;min-width:104px;padding:5px 16px;background:#25834c;border-color:#43ad6e;color:#fff;font-weight:600}.scene-action-buttons #refresh:hover{background:#2d995a;border-color:#6bd291}.scene-action-buttons #refresh:focus-visible{outline-color:#8de6ad}
+
+#resetRotation{position:absolute;top:51px;left:20px;z-index:4;background:#192536;border-color:#44556c;color:#d6e2ef}#resetRotation[hidden]{display:none}#resetRotation:hover:enabled{background:#2c4058}#resetRotation:disabled{cursor:default;opacity:.45}
+
+#wholeFrame{flex-shrink:0;padding:4px 7px;font-size:10px}

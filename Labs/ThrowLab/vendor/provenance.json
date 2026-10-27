@@ -1,0 +1,8 @@
+{
+  "package": "jolt-physics",
+  "version": "1.1.1",
+  "source": "git+https://github.com/jrouwe/JoltPhysics.js.git",
+  "license": "MIT",
+  "npm_integrity": "sha512-kMCQu/b4wbHwy7EgZWaSbUyDthIKZUvAGGqta4pBF4Pdq+ljWaNvQoa5hPr/PkVCUVsqcoLwXITUm6975mQhiQ==",
+  "module_sha256": "34b3660f914ea23d196ae0b7e0014bab08e2a241f4a6bb9c3701a3a8bed11635"
+}

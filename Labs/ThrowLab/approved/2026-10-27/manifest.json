@@ -1,0 +1,22 @@
+{
+  "captured_utc": "2026-10-27T18:49:18.550117+00:00",
+  "note": "Exact saved scene library and undo history approved by user before aerodynamics investigation. Runtime remains unchanged.",
+  "active_scene": "original",
+  "files": [
+    {
+      "path": "big throw.fbx",
+      "bytes": 1289936,
+      "sha256": "12309248b7e634528fc8bdd63d473f7a470eee5413fe321232a840f1e3fb4acf"
+    },
+    {
+      "path": "small throw.fbx",
+      "bytes": 988624,
+      "sha256": "34c3fd086685a4c2d527d06767818fbe3767743c85efec3435cafd530b6d4a71"
+    },
+    {
+      "path": "saved-profile.json",
+      "bytes": 2231455,
+      "sha256": "ec0d6bf4807b41199564363e50d3631fa8f46440465255ca1a3534cb165dd04a"
+    }
+  ]
+}

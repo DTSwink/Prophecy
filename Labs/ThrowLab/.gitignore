@@ -1,0 +1,6 @@
+state.json
+state.tmp
+state-repairs.json
+snapshots/
+__pycache__/
+*.log

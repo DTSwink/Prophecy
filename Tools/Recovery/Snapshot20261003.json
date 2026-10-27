@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 8958,
-  "bytes": 1073713440,
+  "file_count": 9003,
+  "bytes": 1083755005,
   "files": [
     {
       "path": ".gitattributes",
@@ -30156,6 +30156,276 @@
       "sha256": "b11e9138533ca2c1684e781556d8a46f28010029b3528af1608b7b6afdc18864"
     },
     {
+      "path": "Labs/ThrowLab/.gitignore",
+      "git_blob": "a283e4a1b0be82e05449173628454095f0f317b3",
+      "bytes": 70,
+      "sha256": "1741a107793716eace77292efead997b5e94f5bd97906b7cf48a03dcc29174b3"
+    },
+    {
+      "path": "Labs/ThrowLab/README.md",
+      "git_blob": "c58aa9c9a4b8fdc62ac42bc177e2e07ada9df0ed",
+      "bytes": 33203,
+      "sha256": "6ae9eb187c0c22cdf3a7439eab2e5f541f3b1da95f604e3ef0db22f616343813"
+    },
+    {
+      "path": "Labs/ThrowLab/app.js",
+      "git_blob": "5cbb26eba6335f5650c7c5d20e8a71ce8e90d1ef",
+      "bytes": 27395,
+      "sha256": "d344dce903bdd2bbb238bb6e43e5549a4c7f5e7422192ca903f937756a6cc32e"
+    },
+    {
+      "path": "Labs/ThrowLab/approved/2026-10-27/big throw.fbx",
+      "git_blob": "fd6055b0c04ce9b7cfccab24ed56a078001b3e09",
+      "bytes": 1289936,
+      "sha256": "12309248b7e634528fc8bdd63d473f7a470eee5413fe321232a840f1e3fb4acf"
+    },
+    {
+      "path": "Labs/ThrowLab/approved/2026-10-27/manifest.json",
+      "git_blob": "f585aa74cc5421a6b2a79d5e478928aa729e284d",
+      "bytes": 698,
+      "sha256": "c848f6995c5123d0edd6f3e353201e2ff20bc31c7b8e2ea24ff0117d260db612"
+    },
+    {
+      "path": "Labs/ThrowLab/approved/2026-10-27/saved-profile.json",
+      "git_blob": "65b629f79d2bb6049a23348613abe2a726192dcd",
+      "bytes": 2156738,
+      "sha256": "fa2fd21d8aa9fbb6d40064da88c7b531ce1e66c3d55ab993b8db85c20d1604ee"
+    },
+    {
+      "path": "Labs/ThrowLab/approved/2026-10-27/small throw.fbx",
+      "git_blob": "f4ca85e8aee991a68312b80b6b0b4d824b23b269",
+      "bytes": 988624,
+      "sha256": "34c3fd086685a4c2d527d06767818fbe3767743c85efec3435cafd530b6d4a71"
+    },
+    {
+      "path": "Labs/ThrowLab/assets/throw-target.ico",
+      "git_blob": "d069a0dae904f472cde3168655994dc01d6e94ae",
+      "bytes": 47203,
+      "sha256": "e43d478cafc6454c8468c1d2c99974dab9088b21b22a45a2a63949e34f0bc951"
+    },
+    {
+      "path": "Labs/ThrowLab/assets/throw-target.png",
+      "git_blob": "a14e7d4b0a462e55a08ef41dd715c11b54ba43ae",
+      "bytes": 23234,
+      "sha256": "a540906b1bdc87a2a076c100aa15f778562120d15bcfc6d5a55300313f179f6c"
+    },
+    {
+      "path": "Labs/ThrowLab/assets/throw.ico",
+      "git_blob": "d069a0dae904f472cde3168655994dc01d6e94ae",
+      "bytes": 47203,
+      "sha256": "e43d478cafc6454c8468c1d2c99974dab9088b21b22a45a2a63949e34f0bc951"
+    },
+    {
+      "path": "Labs/ThrowLab/boot.js",
+      "git_blob": "e8345a9d92528daa747dd54abdb5973c5d3a3914",
+      "bytes": 745,
+      "sha256": "a4a95f4202280642d8fdde9f5154dc1f296625781d6d07b2fd2f87adc6ba5242"
+    },
+    {
+      "path": "Labs/ThrowLab/camera.js",
+      "git_blob": "0f442dc5a10d097f5351b22d25964df5060769e3",
+      "bytes": 4039,
+      "sha256": "0121eb75ee77c1d4d1ca415d27c3840dbd6907ada09f19f6fe6f1f28b192940b"
+    },
+    {
+      "path": "Labs/ThrowLab/core.js",
+      "git_blob": "a71c5087053d0ae9724fe731f0ea8a870c11f521",
+      "bytes": 3379,
+      "sha256": "03e33bc80d1e21dd9ad9ad2777b184f2907aec9cb5bd44fb54752299043db616"
+    },
+    {
+      "path": "Labs/ThrowLab/create_icon.py",
+      "git_blob": "c53c44b9639fe7670964d9a906a3ea0d3a3b0bc2",
+      "bytes": 1225,
+      "sha256": "9fe1f97ede4af3e006dd50aba1f1e65f2b6d82f00a057d3ec39e9e6fa0fd0452"
+    },
+    {
+      "path": "Labs/ThrowLab/data/clips.json",
+      "git_blob": "64287342f98b52803b452bf08a302aa6fb9d0447",
+      "bytes": 370071,
+      "sha256": "a150262c337e33a0858579c5a484cd92d9db048cbc1d998a4fe74ba40063004a"
+    },
+    {
+      "path": "Labs/ThrowLab/data/objects.json",
+      "git_blob": "0a7fd368c13d9c3a32b43d30db6e8a23560cf644",
+      "bytes": 1603289,
+      "sha256": "2b7f37ebfe1378fe271dbf31118add33d9d198ba5f1083ae296c5ec95d211ae6"
+    },
+    {
+      "path": "Labs/ThrowLab/export_clips.py",
+      "git_blob": "ba2fa43ed3d50e485dc6653119f30edd6ee654c7",
+      "bytes": 2506,
+      "sha256": "aaf6ab000853ecf1b8b8e755938ec4796e8a4fc85db79283595c9cfc7ef3a936"
+    },
+    {
+      "path": "Labs/ThrowLab/fixtures/whole-frame-forearm-keys.json",
+      "git_blob": "f299e663742b2acf4316763580bd258542d41188",
+      "bytes": 3539,
+      "sha256": "ed20654726a363c294a53e3ecc12827f4deb6c611416770a2acb685874aab6f1"
+    },
+    {
+      "path": "Labs/ThrowLab/geometry.js",
+      "git_blob": "7169ec77c2f564b95ae2d68f55a6e075bc4c2771",
+      "bytes": 524,
+      "sha256": "05c83759acfa4452337394be93a6790950a07534d0e2e5b67065c159dd878108"
+    },
+    {
+      "path": "Labs/ThrowLab/gizmos.js",
+      "git_blob": "50692740ada296197ab9283e751429f6baafe4d8",
+      "bytes": 13119,
+      "sha256": "f3c6182458be5cc3b8a8287b7131fa0dfb98b1c5e4686046ca2d06bed760ab49"
+    },
+    {
+      "path": "Labs/ThrowLab/history.js",
+      "git_blob": "39843719a6de7bab62617cfb2329ac28816f0de2",
+      "bytes": 3013,
+      "sha256": "d5003da54766302dc26343c63abfffc1542c1ab035ae5157d899a50ee82cae04"
+    },
+    {
+      "path": "Labs/ThrowLab/index.html",
+      "git_blob": "d210edb58cd4f1b51c9707b25350f026e9443332",
+      "bytes": 303,
+      "sha256": "85931611375da848cf4a3dd30e763b85211e8e0ed6d73dc6fbd500b2dcfe96bd"
+    },
+    {
+      "path": "Labs/ThrowLab/install_shortcut.ps1",
+      "git_blob": "d5b16587cb07052d2c3febe79ad484e7617b9929",
+      "bytes": 856,
+      "sha256": "7437ecb27ea78d47e7502c1d8d215e3f5eb9b2da86ac2596b522f400a68d0093"
+    },
+    {
+      "path": "Labs/ThrowLab/launch.ps1",
+      "git_blob": "839c3e7dfdce938fecd382aa24bed59eeea25714",
+      "bytes": 2321,
+      "sha256": "5a7a642ad2c468d5685981ea00cbf017dbb71bcfd04b0df9d903ff18970ce1bc"
+    },
+    {
+      "path": "Labs/ThrowLab/prepare_objects.py",
+      "git_blob": "d5d86604dcfa90434f79d959cd92f3e822dad86f",
+      "bytes": 3358,
+      "sha256": "b528aa4c1d2db4cc8c74aa36a1352855ca04d7b5f555fa4c45e3b1cb7957077d"
+    },
+    {
+      "path": "Labs/ThrowLab/prepare_spear.py",
+      "git_blob": "4ec3d9c19dbb37949b5f280b0c9be87a4b7aaf49",
+      "bytes": 4180,
+      "sha256": "80510e29bea9ea9e3d7e71ebe829162a5503ce19e009f521320edcaf68256233"
+    },
+    {
+      "path": "Labs/ThrowLab/projectile.js",
+      "git_blob": "32a1abce3290ff7dced470415876688f9c373165",
+      "bytes": 7484,
+      "sha256": "ce4ee3ba24e0fe01ae867b7f84a09195721a9f6053455789d6c5603c6e54d89f"
+    },
+    {
+      "path": "Labs/ThrowLab/recovery.js",
+      "git_blob": "f5e7d24f1edc105b8d76f0f34c5c30c4628b312b",
+      "bytes": 19433,
+      "sha256": "b0e685a3fe41da51297e00270e20364847d3eacdbb44e3cd98763d2909249847"
+    },
+    {
+      "path": "Labs/ThrowLab/renderer.js",
+      "git_blob": "946a2ba7b4771de1ae53e9d11b723104878d2cf9",
+      "bytes": 35217,
+      "sha256": "c965c4c1b07552aad9b18b706c4d7e9955acf85a8228413dafacf460b0a44431"
+    },
+    {
+      "path": "Labs/ThrowLab/reuse.json",
+      "git_blob": "1b8a088a91ba641921a9dbdcf887640020882bbf",
+      "bytes": 755,
+      "sha256": "9ae3453bd33b86ec3343edd984581c7c55865cf9ca25d02e7369e3ce28a81b0d"
+    },
+    {
+      "path": "Labs/ThrowLab/scenes.js",
+      "git_blob": "d2449b74549f065854570930e6026e1b0479839e",
+      "bytes": 1940,
+      "sha256": "9a4050abb09e3d60ee2875237863c004604dc3fa1a03db44484e84dfba9b5efc"
+    },
+    {
+      "path": "Labs/ThrowLab/server.py",
+      "git_blob": "0f09b26b40a9ef7735c2e3c2ad0602d130256b62",
+      "bytes": 2856,
+      "sha256": "8a352b49b0b8d9d50e62150cfd6d477aec7185762451d4efdf6d360921900d82"
+    },
+    {
+      "path": "Labs/ThrowLab/style.css",
+      "git_blob": "6b5d89a15e66c138174ee8d5eceeeacaefc650ea",
+      "bytes": 14494,
+      "sha256": "f71b812ae068e60613eccaf1ee709e17bdb801bb49d223ef0f3cdf7f654f7988"
+    },
+    {
+      "path": "Labs/ThrowLab/throw-lab.html",
+      "git_blob": "f5cfbe07aee1d50211907f045f10ec6fa4058426",
+      "bytes": 8907,
+      "sha256": "72c12b7f861aae56731ac21eb96ce46087e535f92c6ee47b6a78ddb3f8e4d45d"
+    },
+    {
+      "path": "Labs/ThrowLab/throw.css",
+      "git_blob": "5abd8c5e0209750bab82c5d2c6032a4150cad757",
+      "bytes": 2638,
+      "sha256": "6082103d1d819fdb10998791413b12c70da5aaea491d4a9610c452ed9f74b416"
+    },
+    {
+      "path": "Labs/ThrowLab/vanilla.js",
+      "git_blob": "b32bdbc6fe5a14c24f7c13dbc0348311b5724c90",
+      "bytes": 5131,
+      "sha256": "77865e193a24c38d811f659eb7a21c897fbf48bc50ff039e8aa8b788fb626b56"
+    },
+    {
+      "path": "Labs/ThrowLab/vendor/LICENSE",
+      "git_blob": "fc2eded1031a0c0686573b6cfd6146b6a3c8e82a",
+      "bytes": 1074,
+      "sha256": "9907e3cd4976e88e7b4d8aee1a035ffa7d3ebe84993d00b6b273f716c74b794c"
+    },
+    {
+      "path": "Labs/ThrowLab/vendor/jolt.js",
+      "git_blob": "3164764ae66d031415482662defd67fadd2e9823",
+      "bytes": 3231626,
+      "sha256": "34b3660f914ea23d196ae0b7e0014bab08e2a241f4a6bb9c3701a3a8bed11635"
+    },
+    {
+      "path": "Labs/ThrowLab/vendor/provenance.json",
+      "git_blob": "d105b6f1166058a53801ee366712b2f1f964bfda",
+      "bytes": 342,
+      "sha256": "c3de7b76e66a220ac3c40ad0fa7370885fe6de22175ed9b6a491f9ad14146307"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-grip.mjs",
+      "git_blob": "0acfee42a893c9c0fca70580338fbf3a93b80d1d",
+      "bytes": 5613,
+      "sha256": "7ae823b91c189860426b749537cc0353ffa05d675979d25c2fa45d6f83678f94"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-history.cjs",
+      "git_blob": "56a05401ca9d99afd2d6c98cec1b9591669b1846",
+      "bytes": 3665,
+      "sha256": "b01e24bea814bbae9db47d2b1416c9b1ecdd34edc575e8e42dbca85377439d7e"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-projectiles.mjs",
+      "git_blob": "05d166d32d11b6b19f4840ec77df70ab71c3b853",
+      "bytes": 5345,
+      "sha256": "a303e17dff10ca0dd7e62858e40346da07075437fb0a5c46f214ec35ee520bf6"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-vanilla.mjs",
+      "git_blob": "b61827355c3e61808d02a34a55d1abbb645ddc55",
+      "bytes": 8042,
+      "sha256": "09e313b83f6348e4132fe24a39536e7d1ddecefdbbe212067e067547c64704f6"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-whole-frames.cjs",
+      "git_blob": "ecb3bcf36348193511d5edd064d7e8750580d70c",
+      "bytes": 10906,
+      "sha256": "398bcc2b36a295383f6181d41c81767816e7af568cb24fdf3d20b50c0bcea0af"
+    },
+    {
+      "path": "Labs/ThrowLab/verify.cjs",
+      "git_blob": "e2d4703f7b65ca5c97b80d54edf4747bca01f16b",
+      "bytes": 44567,
+      "sha256": "15ba9142fc55c8a7acf75c9a26a61dbad07ba02a95a031b7933131762c347151"
+    },
+    {
       "path": "Labs/WeaponWheelLab/.gitignore",
       "git_blob": "5d96440a5e520f1f00906a44164258da2f6ebc1a",
       "bytes": 60,
@@ -30793,9 +31063,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "8df1c5c894c59edd9218b83f54633cddc799d95a",
-      "bytes": 242102,
-      "sha256": "76467657372184690363502408ca8da06f05d58123c11c99487bd0d97584029d"
+      "git_blob": "686bb706825f8e64981b4fe7bdeb12257c073b0e",
+      "bytes": 242861,
+      "sha256": "f7cdfb9bd244b2f461eda855cfadd7594534f03309dbbc928d9ec1d52eba6815"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
