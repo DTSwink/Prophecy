@@ -1,14 +1,14 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-const require=createRequire(import.meta.url),R=require('./recovery.js'),C=require('./core.js'),A=require('./jump-attack.js'),I=require('./idle.js'),H=require('./attack-inertia.js'),V=require('./viewer-leg-response.js');
+const require=createRequire(import.meta.url),R=require('./recovery.js'),C=require('./core.js'),A=require('./jump-attack.js'),I=require('./idle.js'),H=require('./attack-inertia.js'),V=require('./leg-response.js');
 const read=p=>JSON.parse(fs.readFileSync(new URL(p,import.meta.url),'utf8')),buf=p=>{const b=fs.readFileSync(new URL(p,import.meta.url));return b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);};
 const m=read('data/manifest.json'),meta=read('data/vanilla.json').clips.find(c=>c.name==='slashL'),clip=C.decode(meta,buf(meta.file),m.names,m.parents),ref=C.poseFromShared(m),idle=I.create(read('data/idle.json'),buf('data/idle.bin'),m).motion(),base=t=>({pose:idle.sample(t)}),upper=A.bones(m.names,m.parents),hinges=H.legHinges(m.names,ref),results=[];
 const qerror=(a,b)=>R.length(R.qlog(R.qm(a,R.qinv(b))));
 let maxUpperError=0,maxSocketError=0,maxKneeOffHinge=0,minKnee=Infinity,maxKnee=0,maxStateRateError=0;
 for(const amount of [0,.5,1]){
- const before=A.create({attack:'slashL'},{sample:base,airStart:.35,jumpStart:.35,abortTime:Infinity},new Map([['slashL',clip]]),m.names,m.parents,{...C.defaults,pelvisAttackCompensation:amount},ref),stop=before.end+.25+1;
- const response=amount?V.create({source:t=>before.inertia.samplePlanned(t),base:t=>base(t).pose,start:before.start,stop,names:m.names,parents:m.parents,reference:ref}):null;
+ const before=A.create({attack:'slashL'},{sample:base,airStart:.35,jumpStart:.35,abortTime:Infinity},new Map([['slashL',clip]]),m.names,m.parents,{...C.defaults,pelvisAttackCompensation:amount},ref,{wholeLeg:false}),stop=before.end+.25+1;
+ const response=amount?V.create({source:t=>before.inertia.samplePlanned(t),base:t=>base(t).pose,start:before.start,stop,names:m.names,parents:m.parents,reference:ref,hinges}):null;
  const traces=[[],[]],started=performance.now();
  for(let frame=0;frame<Math.ceil(stop*120);frame++){
   const t=frame/120,a=before.sample(t).pose,b=response?response.sample(t):a,la=R.localize(a.points,a.q,m.parents),lb=R.localize(b.points,b.q,m.parents),basePose=base(t).pose,baseLocal=R.localize(basePose.points,basePose.q,m.parents);

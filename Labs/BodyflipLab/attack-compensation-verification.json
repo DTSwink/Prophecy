@@ -1,7 +1,7 @@
 {
   "samples": 1676,
-  "maxUpperError": 1.4518049907399379e-15,
-  "maxLegLocalError": 6.83824935793954e-16,
-  "maxRatioError": 1.2095136735120483e-15,
-  "maxBoundaryStep": 0.00001556733485133057
+  "maxUpperError": 1.5700924586837752e-16,
+  "maxLegLocalError": 8.489427317703094e-16,
+  "maxRatioError": 2.0621477437872914e-15,
+  "maxBoundaryStep": 0.000015567334849922965
 }

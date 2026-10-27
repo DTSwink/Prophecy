@@ -6,7 +6,7 @@ const read=p=>JSON.parse(fs.readFileSync(new URL(p,import.meta.url),'utf8')),buf
 const m=read('data/manifest.json'),ref=C.poseFromShared(m),idle=I.create(read('data/idle.json'),buf('data/idle.bin'),m).motion(),base=t=>({pose:idle.sample(t)}),results=[];
 let maxRateError=0,maxAccelerationJump=0;
 for(const name of ['slashL','slashRU']){
- const meta=read('data/vanilla.json').clips.find(c=>c.name===name),clip=C.decode(meta,buf(meta.file),m.names,m.parents),track=A.create({attack:name},G.action({time:.5},base),new Map([[name,clip]]),m.names,m.parents,{...C.defaults,pelvisAttackCompensation:.8},ref),response=track.inertia;
+ const meta=read('data/vanilla.json').clips.find(c=>c.name===name),clip=C.decode(meta,buf(meta.file),m.names,m.parents),track=A.create({attack:name},G.action({time:.5},base),new Map([[name,clip]]),m.names,m.parents,{...C.defaults,pelvisAttackCompensation:.8},ref,{wholeLeg:false}),response=track.inertia;
  track.sample(response.stop+1);
  const diagnostics=response.diagnostics,planned=response.plannedStates,states=response.states,ratio=diagnostics.maxAcceleration/diagnostics.maxPlannedAcceleration;
  assert(ratio<.25,'Remove the measured tick-to-tick acceleration spikes');

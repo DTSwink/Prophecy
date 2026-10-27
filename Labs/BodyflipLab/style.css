@@ -59,8 +59,11 @@ footer{height:56px;gap:18px}.timeline{min-width:0;gap:10px}.timeline-track{posit
 .scene-tools{display:flex;align-items:center;gap:6px;padding-left:8px;border-left:1px solid var(--line)}#scene{width:132px;text-overflow:ellipsis}
 @media(max-width:850px){.brand small{display:none}.scene-tools{gap:4px;padding-left:5px}#scene{width:100px}.header-actions{gap:4px}}
 
-/* Refresh sits just above the viewport left edge. */
-header{justify-content:flex-start}header>.brand{flex:0 0 266px}header>#refresh{margin-right:16px}.header-actions{margin-left:auto}
+/* Match Throw Lab: green Refresh centered beneath the scene action buttons. */
+header{height:96px;justify-content:flex-start}header>.brand{flex:0 0 266px}.header-actions{margin-left:auto;align-items:flex-start}.scene-tools{align-items:flex-start}
+.scene-action-buttons{display:grid;grid-template-columns:repeat(3,auto);gap:7px 8px}
+.scene-action-buttons #refresh{grid-column:1/-1;justify-self:center;min-width:104px;padding:5px 16px;background:#25834c;border-color:#43ad6e;color:#fff;font-weight:600}
+.scene-action-buttons #refresh:hover{background:#2d995a;border-color:#6bd291}.scene-action-buttons #refresh:focus-visible{outline-color:#8de6ad}
 @media(max-width:1000px){header>.brand{flex-basis:236px}}
 
 #jumpMotionOptions{font-size:11px}#jumpOptionsLabel{font-size:11px;font-weight:600;color:#c3b4ef}.jump-timing-title,#jumpMotionOptions .jump-pose-timing p{margin:0;color:#9faec5;font-size:10px}#jumpMotionOptions .jump-field-pair input{width:62px}#jumpMotionOptions .jump-pose-timing{display:grid;gap:6px}

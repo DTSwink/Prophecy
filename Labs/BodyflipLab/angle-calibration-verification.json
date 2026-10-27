@@ -1,0 +1,22 @@
+{
+  "angleCases": 21,
+  "scheduledSamples": 7192,
+  "manualAndGaitSamples": 2379,
+  "rigidSamples": 1676,
+  "sequenceBehaviorChecks": 93,
+  "overlapTiming": {
+    "events": 32,
+    "limitMs": 3000,
+    "observedMs": [
+      3790,
+      3598
+    ],
+    "passed": false
+  },
+  "motionTestsPassed": true,
+  "sourceSha256": {
+    "attack-inertia.js": "3c616ca2db5fe96e328023fb45916a30aeade3dd67e51fd4157335ed49582c12",
+    "jump-attack.js": "e32fca8fcdf0828e12846837d95b35bc50113c56f4d9f40f7ce1a5209ccfd1da",
+    "leg-response.js": "1ba3a3982429c51b5f7746d97f9de49ef2536e0b5eb9dc3761370de2a2039155"
+  }
+}

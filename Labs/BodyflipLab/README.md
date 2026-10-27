@@ -12,7 +12,8 @@ More options; Cone debug is after Bones in the viewport toggle row. At the user'
 request, More options is now a collapsed dropdown under the view buttons at the
 top right of the viewport. Its internal order is unchanged; expanded contents
 scroll within the viewport. The same controls remain available in Idle, Walk and Run.
-Refresh is now beside the brand, just above the viewport's left edge, as requested.
+Refresh now matches Throw Lab: a green button centered below the top-right
+scene action buttons, in a96px header. Existing controls retain their order.
 Its existing save-and-restore playback behavior is unchanged.
 
 Camera drag correction (October25): left-drag horizontal orbit now subtracts
@@ -20,6 +21,93 @@ dx from yaw; the previously requested inverted vertical mapping still subtracts
 dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
+
+## Current: opposite-angle percentage on all three axes - October 27
+
+Amount has its original meaning again: it scales the attack-added spine
+rotation in the opposite direction.50% targets half the opposite rotation;
+100% targets the complete opposite rotation. This uses a quaternion rotation
+vector in the underlying pelvis frame, covering yaw, pitch and roll with the
+same rule. It excludes baseline gait/facing/flip rotation. The upper body is
+counter-corrected at spine_01 to retain its authored world orientations.
+
+Both manual attacks and timeline attacks pass the same rigid angle target to
+the shared soft-leg planner. As in the original yaw planner, the solver uses
+the momentum of that target pose to distribute the response across pelvis and
+hips. It no longer treats Amount as a fraction of angular momentum to cancel.
+A missing target now fails explicitly instead of silently selecting another
+meaning. The existing leg reference, damped response,60 ms lookahead,60 Hz
+cache, knee hinges and smoothly bounded18-degree hip corrections are retained.
+There is no attack-name branch or separate headbutt calibration.
+
+The percentage specifies the target pose. Leg articulation and smoothing mean
+the displayed pelvis need not rotate by that exact fraction at every frame, nor
+reproduce the previous yaw-only solver exactly. Controlled Slash L at95% now
+peaks at22.82 degrees pelvis yaw, versus124.85 in the superseded momentum-fraction
+version (and40.62 before the three-axis upgrade). Headbutt uses this same rule.
+Default50%, saved scene tuning, UI order and refresh/save behavior are unchanged.
+
+Leg coordination still blends continuously by the actual upper-body
+Armed-to-Hit rotation. Twist-heavy motion uses the jump-throw reference;
+forward/backward and lateral rotation use the bilateral opposing swing.
+Sources remain [Kristensen2002](https://ojs.ub.uni-konstanz.de/cpa/article/view/726/648),
+[Kristensen et al.2004](https://www.tandfonline.com/doi/abs/10.1080/14763140408522840)
+and [Zordan et al.2014](https://www2.cs.sfu.ca/~kkyin/papers/rotation.pdf).
+The additional leg-angle curves are authored qualitative coordination, not
+measured mocap. This is a smooth kinematic response, not exact physical angular
+momentum conservation. The earlier44.9% cancellation result is superseded.
+
+Validation:21 signed-axis/mixed-axis cases at0/50/100%; exact opposite-angle
+targets; independent planner-to-target momentum checks; target contract cannot
+be overridden by changing amount metadata; attack-selector/clip renaming
+leaves both Slash L and headbutt motion identical.7192 scheduled samples across
+all16 attacks at50/100%,2379 manual/continuing-gait samples and1676 rigid-angle
+samples pass. Upper orientations, rigid sockets, knee range/hinges, global
+rotation invariance and deterministic seeking pass. The93 sequence behavior
+checks pass, but the32-overlap stress timing is3598-3790 ms against its3000 ms
+limit on the current laptop run; that performance check remains unresolved.
+No further motion changes were made to chase this stress case.
+
+Receipts: `spatial-compensation-verification.json`,
+`soft-legs-verification.json`, `leg-response-integration-verification.json`,
+`attack-compensation-verification.json`, `angle-calibration-verification.json`.
+The prior `space-attacks-verification.json` passing timing is historical.
+Both main app and comparison viewer use this current system. No browser/desktop
+control, scene/state writes, NN requests or restart; user Refresh loads it.
+The user approved this state for the October27 three-axis checkpoint before kick work.
+Earlier dated compensation sections below are history.
+
+## Previous integration checkpoint - October 27
+
+The user approved bringing the viewer motion into the complete app. The shared
+`leg-response.js` now runs through `attack-inertia.js` for all sixteen scheduled
+attacks and the manual Attack button. No separate copy or new UI controls:
+existing Soft legs enables it; compensation controls its amount. Off retains
+the rigid comparison. Upper-body attack orientations and rigid sockets remain
+unchanged. Both the app and the right-hand viewer now use this same response;
+the viewer's left side explicitly requests the older yaw-only response.
+
+The moving-gait check found that filtering a knee angle offset could preserve
+extension after the baseline knee had already straightened, bending it backward.
+Knee response now filters separate fractions of available extension and flexion.
+The critically damped fractions remain between0 and1, so the output respects
+the current knee's range without clipping the rendered pose or its velocity.
+The approved Slash L /100% idle comparison changes at most0.099degrees/0.735mm;
+left hip-to-foot peak acceleration reduction remains75%. This is still an
+angular posture response, not full physical angular-momentum conservation.
+
+Verified7192 scheduled samples across16 attacks at50/100%,2379 samples through
+the actual manual functions and continuing Run gait, root-rotation equivariance,
+hinges, sockets, exact shared-viewer parity and deterministic seeking.94 sequence
+checks including32 overlapping markers pass. Moving-gait/manual knees remain
+9.79-120.52degrees. Receipts: `leg-response-integration-verification.json`,
+`approved-response-parity.json`, `soft-legs-verification.json` and the existing
+viewer/sequence receipts. No workers, inference or server restart added.
+
+**Refresh required:** the user stopped Computer Use and explicitly forbids
+desktop/browser control. Complete background code/checks only; leave Refresh
+to the user. The live app was not refreshed and live scenes/settings were not
+written. This integration is local, after pushed checkpoint681c75b5.
 
 ## Soft legs: human reference revision - October 27
 
@@ -104,8 +192,8 @@ response described below. Amount0 keeps the same timeline length.
 
 This tab keeps its selected motion/event, amount, frame, play state and camera
 in sessionStorage across refreshes. It never POSTs lab settings or requests NN.
-The user wants to tune this particular motion here before returning to the lab;
-keep upcoming experiments scoped to the viewer until asked to carry them back.
+The user initially requested tuning here before returning to the lab; the
+deployment section above records their subsequent authorization to integrate it.
 Refreshed existing IAB tab4 rather than opening another. Verified slider0,
 numeric100 on blur, frame52 retained, refresh retaining100/frame52; restored80
 and resumed playback. Screenshot: Saved/BodyflipLab/preview-compensation.jpg.
@@ -118,7 +206,7 @@ At the viewer's current Slash L /100%, peak vector angular acceleration was
 The remaining stop therefore mostly came from the reference hip/knee curves,
 which the earlier yaw-only response did not filter.
 
-`viewer-leg-response.js` gives pelvis, both thighs, both feet and both knee
+The response module (now `leg-response.js`) gives pelvis, both thighs, both feet and both knee
 bends persistent angular position/velocity. Thigh/foot orientation corrections
 are root-relative, so a pelvis turn cannot drag them around instantaneously.
 Knees remain on their anatomical hinge; there is no positional leg IK or moving
@@ -136,12 +224,12 @@ directional excursion. Right falls110.05->41.55 (62%), retaining84%. Tests at
 seek determinism, analytic velocity and bounded cache. Zero compensation is
 unchanged. Current knee flexion remains14.5-78.7degrees.
 
-Only this preview imports the new module; lab motion, defaults, saved state and
-Unreal are untouched. Existing IAB tab4 refreshed, frames52/58 inspected, then
+At that checkpoint only the preview imported the new module; lab motion,
+defaults, saved state and Unreal were untouched. Existing IAB tab4 refreshed, frames52/58 inspected, then
 restored to the user's paused frame25 at100% with its camera retained. Receipt:
 `viewer-leg-response-verification.json`; run `node verify-viewer-leg-response.mjs`.
-Screenshot: `Saved/BodyflipLab/whole-leg-inertia.jpg`. Keep this experiment in
-the viewer until the user asks to carry it back to the lab.
+Screenshot: `Saved/BodyflipLab/whole-leg-inertia.jpg`. The main-app integration
+above supersedes this earlier viewer-only scope.
 
 
 Sources:

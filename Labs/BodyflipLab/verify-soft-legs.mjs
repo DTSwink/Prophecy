@@ -17,13 +17,13 @@ for(const meta of read('data/vanilla.json').clips){
  const clip=C.decode(meta,buf(meta.file),m.names,m.parents),catalog=new Map([[meta.name,clip]]),event={attack:meta.name},segment=G.action({time:.5},base);
  for(const amount of [.5,1]){
   const rigid=A.create(event,segment,catalog,m.names,m.parents,{...C.defaults,pelvisAttackCompensation:amount,softAttackLegs:false},ref);
-  const soft=A.create(event,segment,catalog,m.names,m.parents,{...C.defaults,pelvisAttackCompensation:amount,softAttackLegs:true},ref),start=performance.now();
+  const soft=A.create(event,segment,catalog,m.names,m.parents,{...C.defaults,pelvisAttackCompensation:amount,softAttackLegs:true},ref),start=performance.now();assert(soft.inertia.legResponse,'Whole-leg response enabled for every attack');
   let previous=null;
   for(let t=.5;t<soft.inertia.stop;t+=1/120){
    const a=rigid.sample(t).pose,b=soft.sample(t).pose,la=R.localize(a.points,a.q,m.parents),lb=R.localize(b.points,b.q,m.parents);
    for(const i of upper)maxUpper=Math.max(maxUpper,angle(a.q[i],b.q[i]));
    for(const h of hinges){const delta=R.qlog(R.qm(R.qinv(la.q[h.knee]),lb.q[h.knee]));maxKnee=Math.max(maxKnee,R.length(delta));maxHingeError=Math.max(maxHingeError,R.length(R.cross(delta,h.kneeAxis)));}
-   for(const side of ['l','r'])for(const bone of ['foot','ball']){const i=m.names.indexOf(bone+'_'+side);maxFoot=Math.max(maxFoot,angle(la.q[i],lb.q[i]));}
+   for(const side of ['l','r'])for(const bone of ['ball']){const i=m.names.indexOf(bone+'_'+side);maxFoot=Math.max(maxFoot,angle(la.q[i],lb.q[i]));}
    if(previous)for(const h of hinges)for(const i of [h.hip,h.knee]){const step=angle(lb.q[i],previous.q[i]);if(i===h.knee)maxKneeStep=Math.max(maxKneeStep,step);if(step>maxJointStep){maxJointStep=step;worstStep={name:meta.name,amount,t,bone:m.names[i],step};}}previous=lb;
    for(let i=0;i<m.names.length;i++)assert(R.length(R.sub(la.p[i],lb.p[i]))<1e-9,'Keep rigid joint sockets');
    assert(b.points.flat().every(Number.isFinite));samples++;

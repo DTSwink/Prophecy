@@ -4,17 +4,20 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
-**Bodyflip October27 - approved viewer and dependency checkpoint:**
-User approved the whole-leg inertia viewer and requested a push. Includes
-Bodyflip work since October25: flip/pose marker timing, Space gym/vanilla
-attacks, five spine colliders, pelvis transfer/compensation, reference legs,
-and the new viewer-only whole-leg response. Shared Foot IK surface/contact
-source and API contract are included as required runtime dependencies; other
-Foot IK app/NN work and all Unreal/training work are excluded. Live settings,
-scenes, browser state and caches remain local. Existing API5 server unchanged;
-API6 Foot IK activation still needs its normal restart. Whole-leg response is
-NOT applied to the main lab. Focused0/50/100% leg-response checks pass. Recovery
-inventory regenerated for the curated tree. [Restore/scope](Labs/BodyflipLab/README.md).
+**Bodyflip October27 - approved three-axis response checkpoint:**
+User approved the main-app inertial response and opposite-angle percentage,
+then requested a push before kick work. All16 manual and timeline attacks use
+the shared pelvis/thigh/knee/foot response.50% targets half the opposite spine
+rotation and100% the full opposite rotation on yaw/pitch/roll; no headbutt case.
+Reference leg coordination and60 ms lookahead retained; upper orientations,
+rigid sockets and knee hinges preserved. Refresh now matches Throw Lab (green,
+under top-right scene controls).21 target-contract cases,7192 scheduled,
+2379 manual/gait and1676 rigid samples pass.93 sequence behavior checks pass;
+32-overlap timing3598-3790ms exceeds the3000ms bound and is a known limitation.
+Only Bodyflip source/tests/receipts/docs and this scoped handoff are included.
+Unrelated Unreal/FootIK/training work, live scenes, screenshots and caches stay
+local. No desktop/browser control; user Refresh loads the code. Recovery
+inventory regenerated for this checkpoint. [Details](Labs/BodyflipLab/README.md).
 
 **Bodyflip October25 - approved motion checkpoint:** user accepted the knee fix
 and requested a push. Includes Idle/shared jump controls, flat new scenes, capsule

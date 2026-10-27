@@ -29,20 +29,18 @@ function overlay(pose,target,indices,parents,amount=1){
  for(const i of indices)local.q[i]=R.qslerp(local.q[i],target.q[i],amount);
  return R.fk(local,parents);
 }
-// Attack-added heading around the pelvis's own up axis (+X on this rig).
-// Measure before compensation; never feed the corrected spine back into yaw.
+// Full attack-added spine rotation in the underlying pelvis frame. Upper
+// world orientation is restored after applying the opposite pelvis rotation.
 function compensate(pose,baseline,names,parents,amount){
  if(!(amount>0))return pose;
  const spine=names.indexOf('spine_01'),pelvis=parents[spine],local=R.localize(pose.points,pose.q,parents);
  const base=R.qm(R.qinv(baseline.q[pelvis]),baseline.q[spine]);
- const a=R.rotate(base,[0,-1,0]),b=R.rotate(local.q[spine],[0,-1,0]);
- const yaw=Math.hypot(a[1],a[2])*Math.hypot(b[1],b[2])>1e-10?Math.atan2(a[1]*b[2]-a[2]*b[1],a[1]*b[1]+a[2]*b[2]):0;
- const counter=R.qexp([-yaw*clamp(amount),0,0]);
+ const delta=R.qm(local.q[spine],R.qinv(base)),counter=R.qexp(R.mul(R.qlog(delta),-clamp(amount)));
  local.q[pelvis]=R.qm(local.q[pelvis],counter);
  local.q[spine]=R.qm(R.qinv(counter),local.q[spine]);
  return R.fk(local,parents);
 }
-function create(event,segment,catalog,names,parents,settings,reference=null){
+function create(event,segment,catalog,names,parents,settings,reference=null,{wholeLeg=true}={}){
  const e=C.sanitizeJump(event),clip=catalog?.get(e.attack);
  if(e.attack==='none'||!Number.isFinite(segment.airStart)||segment.jumpStart>=segment.abortTime||segment.bounce&&!segment.bounce.didPush)return null;
  if(!clip)throw Error('Missing vanilla attack: '+e.attack);
@@ -68,7 +66,7 @@ function create(event,segment,catalog,names,parents,settings,reference=null){
  }
  const amount=settings.pelvisAttackCompensation??C.defaults.pelvisAttackCompensation;
  const choreography=settings.softAttackLegs&&amount>0?H.referenceMotion({clip,names,parents,reference:reference||clip.poses[0],start,armedTime:start+duration,hitTime:start+duration+(clip.meta.phases.hit-armed)/fps,end,returnEnd:end+e.attackOut,amount}):null;
- const inertia=settings.softAttackLegs&&amount>0?H.create({choreography,source:uncorrected,base:t=>base(t).pose,target:(t,raw,baseline)=>compensate(raw||uncorrected(t),baseline||base(t).pose,names,parents,amount),start,end:end+e.attackOut,names,parents,reference:reference||clip.poses[0]}):null;
+ const inertia=settings.softAttackLegs&&amount>0?H.create({amount,wholeLeg,choreography,source:uncorrected,base:t=>base(t).pose,target:(t,raw,baseline)=>compensate(raw||uncorrected(t),baseline||base(t).pose,names,parents,amount),start,end:end+e.attackOut,names,parents,reference:reference||clip.poses[0]}):null;
  function sample(time,...args){
   const frame=base(time,...args);
   if(time<start)return frame;

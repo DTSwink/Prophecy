@@ -14,8 +14,9 @@ function sequence(run,jumps,settings,parents,events,catalog,reference=run.poses[
   segment.attack=A.create(event,segment,catalog,run.names,parents,settings,reference);if(segment.attack)segment.sample=segment.attack.sample;
   segment.pushDebug=t=>e.jumpPercent>0&&t>=event.time&&t<event.time+3/60?{origin:segment.sample(event.time).pose.points[1],direction:[0,1,0]}:null;
   // Planning and overlapping return blends often ask for the same source frame.
-  // Bound this tiny per-layer cache; never build a full recording for zero gravity.
-  const sample=segment.sample,cache=new Map();segment.sample=t=>{if(cache.has(t))return cache.get(t);const frame=sample(t);cache.set(t,frame);if(cache.size>16)cache.delete(cache.keys().next().value);return frame;};
+  // Keep a bounded window large enough for overlapping 60 ms lookahead.
+  // Nanosecond keys merge floating-point representations of the same tick.
+  const sample=segment.sample,cache=new Map();segment.sample=t=>{const key=Math.round(t*1e9);if(cache.has(key))return cache.get(key);const frame=sample(t);cache.set(key,frame);if(cache.size>256)cache.delete(cache.keys().next().value);return frame;};
   segments.push(segment);previous=segment.sample;
   results.push({...event,status:'Space',reason:e.jumpPercent+'% push',pushTime:event.time,releaseTime:event.time});
  }

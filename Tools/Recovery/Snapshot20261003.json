@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 8937,
-  "bytes": 1073559074,
+  "file_count": 8943,
+  "bytes": 1073585378,
   "files": [
     {
       "path": ".gitattributes",
@@ -20785,9 +20785,9 @@
     },
     {
       "path": "Labs/BodyflipLab/README.md",
-      "git_blob": "e8d004ad7f44331d6427246e9e710d548089bd14",
-      "bytes": 128497,
-      "sha256": "57110bab585659396b068718be827cd2d371735cfa77cff908ff850e3cdb6428"
+      "git_blob": "17d309e6acf2c79e7579a228c850bd4fba17f2ab",
+      "bytes": 134300,
+      "sha256": "70479fff2c43118d3df5ae83a248f56619e91193cb963cfe7098b446ae33b3b9"
     },
     {
       "path": "Labs/BodyflipLab/abort-pelvis-verification.json",
@@ -20796,10 +20796,22 @@
       "sha256": "09f042709a8a85fe56c20209f15bfb799dfbe10b89a543e665ecbdea67988472"
     },
     {
+      "path": "Labs/BodyflipLab/angle-calibration-verification.json",
+      "git_blob": "09067db4adac78b3bd6b0fc02f81ae8efa065cb3",
+      "bytes": 600,
+      "sha256": "7870cfabd0371b0b47cd3a1131e81ddc088a6213b558600d1d4fc147ece58007"
+    },
+    {
       "path": "Labs/BodyflipLab/app.js",
-      "git_blob": "9b6e7039eedde5bea469d324ca5b8eaa026d1968",
-      "bytes": 50029,
-      "sha256": "f9dcb2dad16082c05354e4895239f9313e78a193e351a5a120ae83669d1889e7"
+      "git_blob": "4a69156f1cdb9f943f601c5c5e04bf5174434656",
+      "bytes": 50068,
+      "sha256": "019e20a04d2db8bbe05a837f76bd97e154ea024cd96512c11530042fa4afb882"
+    },
+    {
+      "path": "Labs/BodyflipLab/approved-response-parity.json",
+      "git_blob": "9ca3ceff8c155a25921b25bf6f5a5916110300dd",
+      "bytes": 115,
+      "sha256": "43520136ee764efafe06d19324b683e9ecf33f7a1eb6e14f07dcbe8f4d2667be"
     },
     {
       "path": "Labs/BodyflipLab/assets/bodyflip.ico",
@@ -20821,15 +20833,15 @@
     },
     {
       "path": "Labs/BodyflipLab/attack-compensation-verification.json",
-      "git_blob": "36baf5b14181a7cc9b8785917582746ebaeaf6de",
-      "bytes": 196,
-      "sha256": "f8b1ff1ef69849fccedb2a4f2d0c8d3180de8e3c5bcdbb7f656ff6b915d77846"
+      "git_blob": "b8ae80810ed671d022c704c0fda558d4f170b667",
+      "bytes": 198,
+      "sha256": "fd186e00359b5c33e2a342827dac770c449acfc04c58060aba96df1f63df9fa2"
     },
     {
       "path": "Labs/BodyflipLab/attack-inertia.js",
-      "git_blob": "ae9e10958ce813deafe731bb53a380eb1a3395bd",
-      "bytes": 12733,
-      "sha256": "c22927a6e60b0cb35741c1b15da3d832947e3c2476b26680e776bf18b4827915"
+      "git_blob": "c7598518f6cf5ea8910dad31078e2b4d8918e6a5",
+      "bytes": 20797,
+      "sha256": "07018a856d50d68ef415727a9561bd6a53a2b1b43a84d99c2976f278a25825e3"
     },
     {
       "path": "Labs/BodyflipLab/bounce-verification.json",
@@ -23179,9 +23191,9 @@
     },
     {
       "path": "Labs/BodyflipLab/index.html",
-      "git_blob": "ff15b589d165418b25e02ba23de6596d3a0698f3",
-      "bytes": 19990,
-      "sha256": "36d2312fb4b270b50b7ed4593e8d2ef0966a9f926d1099e2477da75598392512"
+      "git_blob": "42908d9282f36ada725a8cba23d77a58e5e5cdb7",
+      "bytes": 20147,
+      "sha256": "52358717a4df50c697512ccd5209ecc528a9356f520aece9b75d56e199e80334"
     },
     {
       "path": "Labs/BodyflipLab/inertial-response-verification.json",
@@ -23215,9 +23227,9 @@
     },
     {
       "path": "Labs/BodyflipLab/jump-attack.js",
-      "git_blob": "0e32e1971a03e029ce1c8186d7aca0acd88cd6f2",
-      "bytes": 6387,
-      "sha256": "49139825a82f605babb1afc21217ee03fa395ee36c2b487d8bb7b0cb539c9b66"
+      "git_blob": "be7c2eac70262be0f83050172248068e8065cae5",
+      "bytes": 6287,
+      "sha256": "debe9334f678cd8b94bad4644c25a013207d5b6fd02a5e5a680582c6374dc136"
     },
     {
       "path": "Labs/BodyflipLab/jump-export-verification.json",
@@ -23290,6 +23302,18 @@
       "git_blob": "35cb0e2759416a2e78c7208616a20aef3c0412d9",
       "bytes": 2244,
       "sha256": "230f4100464c15cfafe09f264fb5df2f87b164689d0e768c41135e6dde430a83"
+    },
+    {
+      "path": "Labs/BodyflipLab/leg-response-integration-verification.json",
+      "git_blob": "8d434723bcd6908a34bd60ac21f0261db1f5fb39",
+      "bytes": 246,
+      "sha256": "8d942773445648441913e676206f6e72506fe01beda027c4016fa0dda4d08f78"
+    },
+    {
+      "path": "Labs/BodyflipLab/leg-response.js",
+      "git_blob": "dd291d07effadf1dee9ca6cfc7db859a72e450c4",
+      "bytes": 4537,
+      "sha256": "bd8bc5b1de436cc754f5432d4093572a8c3f8e303a839fdea174aeb5546cebd6"
     },
     {
       "path": "Labs/BodyflipLab/locomotion.py",
@@ -23509,15 +23533,15 @@
     },
     {
       "path": "Labs/BodyflipLab/soft-legs-preview.html",
-      "git_blob": "8e2045ca13da3d3ebe1c56fec66adae3b1643c27",
-      "bytes": 10119,
-      "sha256": "783944612ca4f78e40a00e501bf8761461c54634439f25d3b12088ae131ea021"
+      "git_blob": "961d009a80c7645c58fce25e190e946bc9822dbd",
+      "bytes": 9089,
+      "sha256": "acbb06cc950afe39f8f67275f5147b12222307341076a8afb936a3d388a09679"
     },
     {
       "path": "Labs/BodyflipLab/soft-legs-verification.json",
-      "git_blob": "b0eb262f425b8f9865fa46493ee3cc5d78053eb6",
-      "bytes": 9964,
-      "sha256": "49cab97d449034148987550aa5ad2dc47cd718796ef9d38acba1a46222a404ce"
+      "git_blob": "091445227295c445510fd04f4b6e0675efc58621",
+      "bytes": 10351,
+      "sha256": "25a303d49e2c9d34ed3222731724f1953032c4e146e21622886624c66d0f58ba"
     },
     {
       "path": "Labs/BodyflipLab/space-attacks-verification.json",
@@ -23527,9 +23551,15 @@
     },
     {
       "path": "Labs/BodyflipLab/space-gym.js",
-      "git_blob": "6305d830504c29b0938843740d2788520d966f49",
-      "bytes": 3682,
-      "sha256": "063e6d31c3fa50c25e38636d5e5baabc53567f941c2d59a7cb19a454b23a2d02"
+      "git_blob": "3f5f281d1f7a83f57b780d4e73b72d9fef950168",
+      "bytes": 3781,
+      "sha256": "0fe1e7efdedaf6c121367b7efa83d2a057a1a3ede4fe75ac9e90e0743c5ac241"
+    },
+    {
+      "path": "Labs/BodyflipLab/spatial-compensation-verification.json",
+      "git_blob": "d1d8661abfc7a41b2e51da3ab0640373d50168e4",
+      "bytes": 543,
+      "sha256": "390e7e9bc9021f942af9211111713d283923817cf9a343baa14acf4970a6ba64"
     },
     {
       "path": "Labs/BodyflipLab/split-blend-browser-verification.json",
@@ -23551,9 +23581,9 @@
     },
     {
       "path": "Labs/BodyflipLab/style.css",
-      "git_blob": "6b5d89a15e66c138174ee8d5eceeeacaefc650ea",
-      "bytes": 14494,
-      "sha256": "f71b812ae068e60613eccaf1ee709e17bdb801bb49d223ef0f3cdf7f654f7988"
+      "git_blob": "d8610669aedbae5dbfb74c5d34d3b4c40d837f2d",
+      "bytes": 14956,
+      "sha256": "21b47c65a2b9cc6ce969cc7de48ce6f525cb6e06be17fee0df87d0e119b9df5b"
     },
     {
       "path": "Labs/BodyflipLab/support-browser-verification.json",
@@ -23809,9 +23839,9 @@
     },
     {
       "path": "Labs/BodyflipLab/verify-inertial-response.mjs",
-      "git_blob": "74f9f54183e3603fcfd0af11d6edd392e114ecf5",
-      "bytes": 3970,
-      "sha256": "1511291411a0d6dddd33e98a81a22252b1b5e32edab6b5c461a5af77e1977cec"
+      "git_blob": "1eda259947dfac0bb686db3499407d8298f33b88",
+      "bytes": 3987,
+      "sha256": "9e35b90c9fdbb0729a840a2bfcebcc034a9767a7c3914cf7a3bae78d794efd6a"
     },
     {
       "path": "Labs/BodyflipLab/verify-jump-arrow.mjs",
@@ -23866,6 +23896,12 @@
       "git_blob": "9759d441a9afdbe6a6b9430a504de5837f337970",
       "bytes": 3994,
       "sha256": "750843b2189d5678a654bb85be1c26a940ec3d2c3fc39a2063332cfec31aa1d9"
+    },
+    {
+      "path": "Labs/BodyflipLab/verify-leg-response-integration.mjs",
+      "git_blob": "f2c5b34199e47eeb5d94ca25c2801a5e834455ff",
+      "bytes": 5102,
+      "sha256": "a6a1016147015b4ea6826b8fd8be21bb537efe0a58e18824f08c157a850f5cbf"
     },
     {
       "path": "Labs/BodyflipLab/verify-loop.html",
@@ -23971,21 +24007,27 @@
     },
     {
       "path": "Labs/BodyflipLab/verify-soft-legs.mjs",
-      "git_blob": "29838d6be436d70fb2773bdd05f513acee6b626e",
-      "bytes": 6220,
-      "sha256": "7c9a83e943da679a3993f8f1e0b838bc3980d36369e35d237280f0694ee6457d"
+      "git_blob": "0402c168d3b4b519bf6554f17fe379de96b0f7f7",
+      "bytes": 6292,
+      "sha256": "87bf91cdc9442b6e2bc8969b801e507b197525d0f7aac391c63bcc6dc9dfad4a"
     },
     {
       "path": "Labs/BodyflipLab/verify-space-attacks.mjs",
-      "git_blob": "bd88c256c4312f25a35b3810faa7bcf7933e74ec",
-      "bytes": 7372,
-      "sha256": "555b6f595708275cd27a6b2a9b3cab400a829fcfa4ef73d5884beb2b81dd9ea2"
+      "git_blob": "5d09f8bb8297f4af9a4e2dc8881afe000736c8c4",
+      "bytes": 7435,
+      "sha256": "da09d3c4b14d1c31d2541773cb053eea4d9ff3d276dedc6b8ab240bb175982e6"
     },
     {
       "path": "Labs/BodyflipLab/verify-space-browser.cjs",
       "git_blob": "6803f6309071a8a7fcad60b83ff841b067559132",
       "bytes": 8272,
       "sha256": "39a41ed1f9e001f645773fec734aab9dbf2e4639a9ad5909ae4ac397a8d196a3"
+    },
+    {
+      "path": "Labs/BodyflipLab/verify-spatial-compensation.mjs",
+      "git_blob": "4f45f8901eb8f9ca2674b116f564cdee296c008b",
+      "bytes": 4618,
+      "sha256": "fbe6777d4c91a7ba7216c6ba171100342544e87ca55c5d754b9e3b8bf154c8a4"
     },
     {
       "path": "Labs/BodyflipLab/verify-split-blend.html",
@@ -24067,9 +24109,9 @@
     },
     {
       "path": "Labs/BodyflipLab/verify-viewer-leg-response.mjs",
-      "git_blob": "f00c072df308ce0270819df6d19b0af3d52dfdac",
-      "bytes": 4607,
-      "sha256": "269fe145f164c3b838aae34e67ab903cd0939f8a08f9e54f937ffca085a3b9e5"
+      "git_blob": "697d14ad17a8f1ddad3b8d8a092fce67afc8125e",
+      "bytes": 4624,
+      "sha256": "e78065bf28860f909afd792e7fea651ce6792a3f00694d78095a450d015d7f02"
     },
     {
       "path": "Labs/BodyflipLab/verify-walk.html",
@@ -24103,15 +24145,9 @@
     },
     {
       "path": "Labs/BodyflipLab/viewer-leg-response-verification.json",
-      "git_blob": "1d2362e3d14a73066172bfb5e404f78e2bda9e50",
-      "bytes": 2917,
-      "sha256": "7e3e6ab449fb93c75188a02ac0a440eaec92d9603975f73dd9fee826a7c066b4"
-    },
-    {
-      "path": "Labs/BodyflipLab/viewer-leg-response.js",
-      "git_blob": "313eeb3ea8cde61a0394355122e83cdcfc90cb1c",
-      "bytes": 3721,
-      "sha256": "91070907c5fd124b9618b872d287d6d11e518f750ff9798f47ff126d78b19c61"
+      "git_blob": "87394e6d59dde301e0ddcbe8d81abee8b84126a2",
+      "bytes": 2899,
+      "sha256": "c51b90faf10cf624027fe12d8ae463b3423c176afce24dda597753bf583cc38c"
     },
     {
       "path": "Labs/BodyflipLab/walk-browser-verification.json",
@@ -30667,9 +30703,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "b79f510a4a0c9a820eac3fbbcb1b26a4e05b15e6",
-      "bytes": 241754,
-      "sha256": "825c446834b4d1063f3a31fd03f3560e68f1374b6a4bcc8176e8581b41a0e899"
+      "git_blob": "c0978778b923ddabbeed61c364e27e11983195a5",
+      "bytes": 241984,
+      "sha256": "58c5aeac829b72bb402ac360960c4693c72cd34bcfba74cf1b83f39b0950cd73"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",

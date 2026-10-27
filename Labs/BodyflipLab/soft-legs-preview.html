@@ -2,9 +2,9 @@
 <style>*{box-sizing:border-box}body{margin:0;background:#141923;color:#e5eaf2;font:14px system-ui}header{display:flex;align-items:center;flex-wrap:wrap;gap:14px 24px;padding:16px 22px;border-bottom:1px solid #354158}h1{font-size:20px;margin:0 0 5px}p{margin:0;color:#aebdd2}main{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:#354158}section{position:relative;background:#141923}h2{position:absolute;top:16px;left:22px;font-size:16px;margin:0;z-index:1}h2 small{display:block;font-weight:400;font-size:12px;color:#aebdd2;margin-top:5px}canvas{display:block;width:100%;height:calc(100vh - 160px);min-height:350px}footer{display:flex;gap:14px;align-items:center;padding:15px 22px}button{background:#aa91eb;border:0;border-radius:6px;color:#111827;padding:9px 18px;font:inherit;cursor:pointer}input{flex:1;accent-color:#aa91eb}output{min-width:110px}#status{margin-left:auto;font-size:12px}a{color:#bbabef}header>div{flex:1;min-width:280px}.compensation{display:flex;align-items:center;gap:8px;white-space:nowrap}.compensation input[type=range]{width:135px;flex:0 0 135px}#compensationValue{width:55px;flex:0 0 55px;background:#1b2433;color:#e5eaf2;border:1px solid #354158;border-radius:5px;padding:6px;text-align:right;font:inherit}@media(max-width:700px){.compensation{margin-left:auto}}
 </style></head><body>
 <header><div><h1>Bodyflip · Soft legs</h1><p id="description">Loading the current attack…</p></div><label class="compensation">Compensation <input id="compensation" aria-label="Compensation" type="range" min="0" max="100" step="1" value="80" disabled><input id="compensationValue" aria-label="Compensation percent" type="number" min="0" max="100" step="1" value="80" disabled><span>%</span></label></header>
-<main><section><h2>Before<small>Yaw inertia only</small></h2><canvas id="rigid"></canvas></section><section><h2>After<small>Whole-leg inertia</small></h2><canvas id="soft"></canvas></section></main>
+<main><section><h2>Before<small>Rigid compensation</small></h2><canvas id="rigid"></canvas></section><section><h2>After<small>3D inertial compensation</small></h2><canvas id="soft"></canvas></section></main>
 <footer><button id="play">Play</button><input id="time" aria-label="Comparison frame" type="range" min="0" max="180" step="1" value="0"><output id="frame"></output><span id="status">Drag either view to orbit</span></footer>
-<script src="recovery.js"></script><script src="core.js"></script><script src="torso.js"></script><script src="support.js"></script><script src="idle.js"></script><script src="attack-inertia.js"></script><script src="jump-attack.js"></script><script src="viewer-leg-response.js"></script><script src="camera.js"></script><script src="renderer.js"></script>
+<script src="recovery.js"></script><script src="core.js"></script><script src="torso.js"></script><script src="support.js"></script><script src="idle.js"></script><script src="leg-response.js"></script><script src="attack-inertia.js"></script><script src="jump-attack.js"></script><script src="camera.js"></script><script src="renderer.js"></script>
 <script>
 const R=Recovery,C=BodyflipCore,A=BodyflipJumpAttack,{add,sub,mul,dot,cross,length:norm,unit:normalize}=R,clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),posAt=(p,j)=>p.points[j],axisAt=(p,j,k)=>p.axes[j][k];
 let names,parents,nameToIndex,swordMesh,tracks,renderers,first=0,last=3,playing=false,stamp=0,nextDraw=0,frame=0,ready=false;
@@ -33,18 +33,10 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)savePreview
  const base=t=>({pose:idle.sample(t),phase:'SPACE'}),segment={sample:base,airStart:.35,jumpStart:.35,abortTime:Infinity};
  amount=clamp(saved?.amount??state.settings?.pelvisAttackCompensation??.5,0,1);motionConfig={event,runPhase};
  rebuild=()=>{
-  const before=A.create({...event,attack:previewAttack,attackDelay:0},segment,catalog,names,parents,{...C.defaults,softAttackLegs:true,pelvisAttackCompensation:amount},reference),sample=before.sample;let cached=null;
-  before.sample=t=>{if(!cached||cached.time!==t)cached={time:t,result:sample(t)};return cached.result;};
-  // Reconstruct the reference target before its yaw response. The experiment
-  // applies one consistent response to the full chain, without stacking filters.
-  const planned=(t,current=before.sample(t))=>{const response=before.inertia;if(!response||t<=before.start)return current;
-   const state=response.stateAt(t),plans=response.plannedStates,f=clamp((t-before.start)*120,0,plans.length-1),i=Math.floor(f),u=f-i,a=plans[i],b=plans[Math.min(i+1,plans.length-1)];
-   const delta={pelvis:a.pelvis+(b.pelvis-a.pelvis)*u-state.pelvis,legs:a.legs.map((v,k)=>v+(b.legs[k]-v)*u-state.legs[k])};
-   return {...current,pose:BodyflipAttackInertia.apply(current.pose,names,parents,delta)};
-  };
-  last=before.end+C.sanitizeJump(event||{}).attackOut+1;document.getElementById('time').max=Math.round(last*60);
-  const response=before.inertia?BodyflipViewerLegResponse.create({source:t=>planned(t).pose,base:t=>base(t).pose,start:before.start,stop:last,names,parents,reference}):null;
-  const after={...before,legResponse:response,sample(t){const current=before.sample(t);return response?{...current,pose:response.sample(t,planned(t,current).pose)}:current;}};
+  const settings={...C.defaults,softAttackLegs:true,pelvisAttackCompensation:amount},action={...event,attack:previewAttack,attackDelay:0};
+  const before=A.create(action,segment,catalog,names,parents,{...settings,softAttackLegs:false},reference);
+  const after=A.create(action,segment,catalog,names,parents,settings,reference);
+  last=after.end+C.sanitizeJump(event||{}).attackOut+1;document.getElementById('time').max=Math.round(last*60);
   tracks=[before,after];
  };
  rebuild();syncAmount();

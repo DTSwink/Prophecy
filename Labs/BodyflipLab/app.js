@@ -82,7 +82,7 @@ function manualSoft(pose,basePose){
   const base=t=>{const time=begun+t/config.attackRate,air=config.airFlip?Math.max(0,time-(track.airStartAt?.(time)??Infinity)):0;return track.sample(time,config.flipAngle+config.flipSpeed*air,config.twistAngle+config.twistSpeed*air,config.axis).pose;};
   const ph=sourceClip.meta.phases||{},vanilla=vanillaManifest?.clips.find(c=>c.name===config.attack),phases=vanilla?.phases||ph,fps=sourceClip.meta.fps;
   const choreography=BodyflipAttackInertia.referenceMotion({clip:{...sourceClip,meta:{...sourceClip.meta,phases}},names,parents,reference:idle,start:0,armedTime:.15+(phases.armed??sourceClip.poses.length*.4)/fps,hitTime:.15+(phases.hit??sourceClip.poses.length*.7)/fps,end:.15+sourceClip.duration,returnEnd:sourceClip.duration+.6,amount:config.pelvisAttackCompensation});
-  const source=t=>manualPose(t,base(t),sourceClip,config),response=BodyflipAttackInertia.create({choreography,source,base,target:(t,raw,baseline)=>BodyflipJumpAttack.compensate(raw||source(t),baseline||base(t),names,parents,config.pelvisAttackCompensation),start:0,end:sourceClip.duration+.6,names,parents,reference:idle});
+  const source=t=>manualPose(t,base(t),sourceClip,config),response=BodyflipAttackInertia.create({amount:config.pelvisAttackCompensation,choreography,source,base,target:(t,raw,baseline)=>BodyflipJumpAttack.compensate(raw||source(t),baseline||base(t),names,parents,config.pelvisAttackCompensation),start:0,end:sourceClip.duration+.6,names,parents,reference:idle});
   manualResponse={begun,rate:config.attackRate,response,last:0};
  }
  manualResponse.last=attackTime;return manualResponse.response.sample(attackTime,pose);

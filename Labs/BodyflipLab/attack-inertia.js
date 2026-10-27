@@ -1,7 +1,7 @@
-/* Reduced airborne yaw response. Deterministic 120 Hz cache; no Jolt/NN worker. */
+/* Three-axis airborne attack response. Deterministic bounded cache; no Jolt/NN worker. */
 (function(root){
 'use strict';
-const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,T=node?require('./torso.js'):root.BodyflipTorso;
+const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,T=node?require('./torso.js'):root.BodyflipTorso,L=node?require('./leg-response.js'):root.BodyflipLegResponse;
 const {add,sub,mul,dot,cross,length,unit,rotate,qm,qinv,qexp,qlog}=R;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function model(names,parents,reference){
@@ -20,19 +20,29 @@ function model(names,parents,reference){
  });
 }
 function bodies(pose,rig){return rig.map(b=>({center:add(pose.points[b.i],rotate(pose.q[b.i],b.offset)),q:pose.q[b.i]}));}
-function momentum(a,b,rig,dt){
- const total=rig.reduce((v,b)=>v+b.mass,0),ca=rig.reduce((v,r,i)=>add(v,mul(a[i].center,r.mass/total)),[0,0,0]),cb=rig.reduce((v,r,i)=>add(v,mul(b[i].center,r.mass/total)),[0,0,0]);
- const com=mul(add(ca,cb),.5),velocity=mul(sub(cb,ca),1/dt);let h=[0,0,0];
- for(let i=0;i<rig.length;i++){
-  const r=rig[i],q=R.qslerp(a[i].q,b[i].q,.5),omega=mul(qlog(qm(b[i].q,qinv(a[i].q))),1/dt);
-  const v=sub(mul(sub(b[i].center,a[i].center),1/dt),velocity),arm=sub(mul(add(a[i].center,b[i].center),.5),com);
-  let spin;
-  if(r.inertia){const frame=qm(q,r.rotation),w=rotate(qinv(frame),omega);spin=rotate(frame,w.map((v,j)=>v*r.inertia[j]));}
-  else {const axis=rotate(q,r.axis);spin=add(mul(omega,r.transverse),mul(axis,(r.axial-r.transverse)*dot(omega,axis)));}
-  h=add(h,add(spin,mul(cross(arm,v),r.mass)));
+function momentumFrom(a,rig,dt,fixedPose=null,fixedBones=null){
+ const total=rig.reduce((v,b)=>v+b.mass,0),ca=rig.reduce((v,r,i)=>add(v,mul(a[i].center,r.mass/total)),[0,0,0]),inverse=a.map(b=>qinv(b.q));
+ function spinAt(i,b){
+  const r=rig[i],q=R.qslerp(a[i].q,b.q,.5),omega=mul(qlog(qm(b.q,inverse[i])),1/dt);
+  if(r.inertia){const frame=qm(q,r.rotation),w=rotate(qinv(frame),omega);return rotate(frame,w.map((v,j)=>v*r.inertia[j]));}
+  const axis=rotate(q,r.axis);return add(mul(omega,r.transverse),mul(axis,(r.axial-r.transverse)*dot(omega,axis)));
  }
- return h;
+ // Counter-rotating spine_01 preserves all upper-body orientations. Their
+ // spin terms are identical during every trial; only orbital terms change.
+ const spins=rig.map((r,i)=>fixedBones?.[r.i]?spinAt(i,fixedPose[i]):null);
+ return b=>{
+  const cb=rig.reduce((v,r,i)=>add(v,mul(b[i].center,r.mass/total)),[0,0,0]);
+  const com=mul(add(ca,cb),.5),velocity=mul(sub(cb,ca),1/dt);let h=[0,0,0];
+  for(let i=0;i<rig.length;i++){
+   const r=rig[i],spin=spins[i]||spinAt(i,b[i]);
+   const v=sub(mul(sub(b[i].center,a[i].center),1/dt),velocity),arm=sub(mul(add(a[i].center,b[i].center),.5),com);
+   h=add(h,add(spin,mul(cross(arm,v),r.mass)));
+  }
+  return h;
+ };
 }
+function momentum(a,b,rig,dt){return momentumFrom(a,rig,dt)(b);}
+
 function legHinges(names,reference){
  return ['l','r'].map(side=>{
   const hip=names.indexOf('thigh_'+side),knee=names.indexOf('calf_'+side),foot=names.indexOf('foot_'+side);
@@ -65,13 +75,16 @@ function referenceMotion({clip,names,parents,reference,start,armedTime,hitTime,e
  const hinges=legHinges(names,reference),p=names.indexOf('pelvis'),spine=names.indexOf('spine_01');
  const at=f=>clip.poses[clamp(Math.round(f),0,clip.poses.length-1)],ph=clip.meta.phases||{};
  const a=at(ph.armed??clip.poses.length*.4),b=at(ph.hit??clip.poses.length*.7);
- const up=rotate(a.q[p],[1,0,0]),turn=dot(qlog(qm(b.q[spine],qinv(a.q[spine]))),up);
- // Mirror the reference with the attack's actual turn, not the attack's name.
- // Small/no yaw attacks get proportionally little/no rotational leg gesture.
- // Compressing the human 160ms acceleration phase scales the excursion too,
- // so a very short strike does not demand an entire throwing gesture at speed.
+ // Blend coordination by measured upper-body rotation, never by attack ID.
+ const upper=names.map((_,i)=>i).filter(i=>{for(let j=i;j>0;j=parents[j])if(j===spine)return true;return false;});
+ let total=0,turn=[0,0,0];for(const i of upper){const mass=names[i].startsWith('spine')?2:1;total+=mass;turn=add(turn,mul(rotate(qinv(a.q[p]),qlog(qm(b.q[i],qinv(a.q[i])))),mass));}turn=mul(turn,1/total);
+ const magnitude=length(turn),swing=Math.hypot(turn[1],turn[2]),twistShare=turn[0]**2/Math.max(1e-12,magnitude*magnitude),swingShare=1-twistShare;
  const tempoScale=clamp(Math.min((armedTime-start)/.14,(hitTime-armedTime)/.16),0,1);
- const follow=turn>=0?1:0,strength=clamp(amount,0,1)*clamp(Math.abs(turn)/(Math.PI/3),0,1)*tempoScale;
+ const follow=turn[0]>=0?1:0,strength=clamp(amount,0,1)*clamp(magnitude/(Math.PI/3),0,1)*tempoScale;
+ // Qualitative heading reference (Kristensen 2002/2004): folded backswing,
+ // opposing forward leg swing and near extension at impact. These angles are
+ // authored coordination targets, not digitized experimental measurements.
+ const swingCurve=[[-.30,0,35],[-.16,-20,85],[0,30,25],[.075,35,30]];
  const ease=x=>{x=clamp(x,0,1);return x*x*x*(10+x*(-15+6*x));};
  const clock=[[start,-.30],[armedTime,-.16],[hitTime,0],[hitTime+(hitTime-armedTime)*.075/.16,.075]];
  function sample(t,pose){
@@ -80,19 +93,21 @@ function referenceMotion({clip,names,parents,reference,start,armedTime,hitTime,e
   // Armed = late cocking (-160ms); Hit = release. A monotone cubic clock
   // carries velocity through those boundaries and eases into follow-through.
   const phase=curveAt(clock,t,1);
-  const values=humanAngles(phase),local=R.localize(pose.points,pose.q,parents),up=rotate(pose.q[p],[1,0,0]),forward=rotate(pose.q[p],[0,-1,0]);
+  const values=humanAngles(phase),swingHip=curveAt(swingCurve,phase,1)*Math.PI/180,swingKnee=curveAt(swingCurve,phase,2)*Math.PI/180,local=R.localize(pose.points,pose.q,parents),up=rotate(pose.q[p],[1,0,0]),forward=rotate(pose.q[p],[0,-1,0]);
   for(let k=0;k<2;k++){
    const h=hinges[k],v=unit(sub(pose.points[h.knee],pose.points[h.hip])),w=unit(sub(pose.points[h.foot],pose.points[h.knee]));
    const hip=Math.atan2(dot(v,forward),-dot(v,up)),knee=Math.acos(clamp(dot(v,w),-1,1)),j=k===follow?0:2;
-   const hipDelta=(values[j]-hip)*weight,kneeDelta=(clamp(values[j+1],5*Math.PI/180,150*Math.PI/180)-knee)*weight;
+   const pitch=swing>1e-8?-turn[2]/swing:0,side=swing>1e-8?-turn[1]/swing:0;
+   const hipTarget=twistShare*values[j]+swingShare*pitch*swingHip,kneeTarget=twistShare*values[j+1]+swingShare*swingKnee;
+   const hipDelta=(hipTarget-hip)*weight,kneeDelta=(clamp(kneeTarget,5*Math.PI/180,150*Math.PI/180)-knee)*weight;
    // Flex in the pelvis sagittal plane; using the thigh's existing bend axis
    // here would turn a splayed leg sideways instead of bringing it forward.
-   local.q[h.hip]=qm(qexp([0,0,hipDelta]),local.q[h.hip]);
+   local.q[h.hip]=qm(qexp([0,swingShare*side*swingHip*weight,hipDelta]),local.q[h.hip]);
    local.q[h.knee]=qm(local.q[h.knee],qexp(mul(h.kneeAxis,kneeDelta)));
   }
   return R.fk(local,parents);
  }
- return {sample,follow,strength,tempoScale,armedTime,hitTime,source:'Wagner 2011 Fig.2 jump throw (approximate readings)'};
+ return {sample,follow,strength,tempoScale,armedTime,hitTime,rotation:turn,twistShare,swingShare,source:'Wagner 2011 jump throw; Kristensen 2002/2004 heading coordination'};
 }
 function apply(pose,names,parents,state,hinges){
  const local=R.localize(pose.points,pose.q,parents),p=names.indexOf('pelvis'),s=names.indexOf('spine_01'),counter=qexp([state.pelvis,0,0]);
@@ -118,7 +133,7 @@ function respond(state,from,to,dt,frequency=32){
  const pelvis=joint(state.pelvis,state.pelvisRate,from.pelvis,to.pelvis),legs=state.legs.map((x,k)=>joint(x,state.rates[k],from.legs[k],to.legs[k]));
  return {pelvis:pelvis[0],pelvisRate:pelvis[1],legs:legs.map(v=>v[0]),rates:legs.map(v=>v[1])};
 }
-function create({source,base,target,start,end,names,parents,reference,choreography=null}){
+function createYaw({source,base,target,start,end,names,parents,reference,choreography=null,wholeLeg=false}){
  const rig=model(names,parents,reference),hinges=legHinges(names,reference),dt=1/120,stop=end+.8,count=Math.ceil((stop-start)/dt),p=names.indexOf('pelvis');
  const states=[{pelvis:0,pelvisRate:0,legs:[0,0],rates:[0,0]}],plans=[states[0]],initial=source(start),first={bodies:bodies(initial,rig),target:bodies(target(start,initial,base(start)),rig)};let history=first;
  const diagnostics={ticks:0,maxPlannedResidual:0,maxLag:0,maxStep:0,maxAcceleration:0,maxPlannedAcceleration:0};
@@ -168,7 +183,83 @@ function create({source,base,target,start,end,names,parents,reference,choreograp
   const frame=clamp((t-start)/dt,0,count),i=Math.floor(frame),u=frame-i,a=plans[i],b=plans[Math.min(count,i+1)],state={pelvis:a.pelvis+(b.pelvis-a.pelvis)*u,legs:a.legs.map((v,k)=>v+(b.legs[k]-v)*u)};
   return apply(choreography?choreography.sample(t,pose):pose,names,parents,state,hinges);
  }
- return {sample,samplePlanned,stateAt,diagnostics,states,plannedStates:plans,rig,stop,choreography};
+ const legResponse=wholeLeg?L.create({source:samplePlanned,base,start,stop:end+1,names,parents,reference,hinges}):null;
+ return {sample:legResponse?(t,pose)=>legResponse.sample(t,pose===undefined?source(t):pose):sample,samplePlanned,stateAt,diagnostics,states,plannedStates:plans,rig,stop:legResponse?.stop??stop,choreography,legResponse};
 }
-const api={model,bodies,momentum,legHinges,humanAngles,referenceMotion,apply,respond,create};if(node)module.exports=api;else root.BodyflipAttackInertia=api;
+function solve3(columns,b){
+ const a=[0,1,2].map(i=>[...columns.map(c=>c[i]),b[i]]);
+ for(let i=0;i<3;i++){
+  let pivot=i;for(let j=i+1;j<3;j++)if(Math.abs(a[j][i])>Math.abs(a[pivot][i]))pivot=j;
+  if(Math.abs(a[pivot][i])<1e-9)return [0,0,0];[a[i],a[pivot]]=[a[pivot],a[i]];
+  const scale=a[i][i];for(let k=i;k<4;k++)a[i][k]/=scale;
+  for(let j=0;j<3;j++)if(j!==i){const v=a[j][i];for(let k=i;k<4;k++)a[j][k]-=v*a[i][k];}
+ }
+ return a.map(r=>r[3]);
+}
+function applySpatial(pose,names,parents,state){
+ const local=R.localize(pose.points,pose.q,parents),p=names.indexOf('pelvis'),s=names.indexOf('spine_01'),counter=qexp(state.pelvis);
+ local.q[p]=qm(local.q[p],counter);local.q[s]=qm(qinv(counter),local.q[s]);
+ for(let k=0;k<2;k++){const hip=names.indexOf('thigh_'+['l','r'][k]);local.q[hip]=qm(qm(qinv(counter),qexp(state.legs[k])),local.q[hip]);}
+ return R.fk(local,parents);
+}
+function createSpatial({source,base,target,start,end,names,parents,reference,choreography=null,amount=1,anticipation=.06}){
+ if(typeof target!=='function')throw Error('Attack compensation requires an opposite-angle target');
+ const rig=model(names,parents,reference),hinges=legHinges(names,reference),dt=1/60,stop=end+.8,count=Math.ceil((stop-start)/dt),p=names.indexOf('pelvis'),spine=names.indexOf('spine_01'),hips=hinges.map(h=>h.hip);
+ const fixedBones=names.map((_,i)=>{for(let j=i;j>=0;j=parents[j])if(j===spine)return true;return false;});
+ const zero=()=>[0,0,0],plans=[{pelvis:zero(),pelvisRate:zero(),legs:[zero(),zero()],rates:[zero(),zero()],x:Array(9).fill(0),xrates:Array(9).fill(0)}],initial=source(start),rest=base(start);
+ let history={bodies:bodies(initial,rig),target:bodies(target(start,initial,rest),rig)},jacobian=null;
+ const diagnostics={axes:3,targetMode:'opposite-angle',ticks:0,maxPlannedResidual:0,maxLag:0,maxStep:0,maxPlannedAcceleration:0,amount:clamp(amount,0,1)};
+ function advance(){
+  const n=plans.length,t=start+n*dt,prev=plans[n-1],plain=source(t),raw=choreography?choreography.sample(t,plain):plain,baseline=base(t),targetBodies=bodies(target(t,plain,baseline),rig),rawLocal=R.localize(raw.points,raw.q,parents),measure=momentumFrom(history.bodies,rig,dt,bodies(raw,rig),fixedBones);
+  // Preserve the original Amount meaning: the target pose counter-rotates
+  // the pelvis by that fraction of the attack-added spine rotation. Match its
+  // three-axis momentum while distributing motion over the soft lower body;
+  // Amount is not a fraction of angular momentum to cancel.
+  const targetH=momentum(history.target,targetBodies,rig,dt);
+  // The three momentum equations leave posture freedom. Prefer a damped
+  // return toward the base pose, then distribute the required correction over
+  // pelvis and both hips with a local inertia-weighted least-squares solve.
+  const previous=prev.x,rates=prev.xrates,w=24;
+  const desired=previous.map((v,i)=>v+(rates[i]+(-w*w*v-2*w*rates[i])*dt)*dt);
+  function candidate(x){
+   const pelvis=x.slice(0,3),legs=[x.slice(3,6),x.slice(6,9)].map(v=>add(pelvis,mul(v,1/Math.sqrt(1+dot(v,v)/(Math.PI/10)**2)))),counter=qexp(pelvis),inverse=qinv(counter),q=rawLocal.q.slice();
+   q[p]=qm(rawLocal.q[p],counter);q[spine]=qm(inverse,rawLocal.q[spine]);
+   for(let k=0;k<2;k++)q[hips[k]]=qm(qm(inverse,qexp(legs[k])),rawLocal.q[hips[k]]);
+   const points=[],world=[];for(let i=0;i<parents.length;i++){const parent=parents[i];world[i]=parent<0?q[i]:unit(qm(world[parent],q[i]));points[i]=parent<0?rawLocal.p[i]:add(points[parent],rotate(world[parent],rawLocal.p[i]));}
+   const bs=bodies({points,q:world},rig);return {x,pelvis,legs,bs,h:measure(bs)};
+  }
+  // Reuse the local Jacobian for nearby ticks; refresh if iteration needs it.
+  let next=candidate(desired),columns=jacobian?.columns,inverseMass=jacobian?.inverseMass,gram=jacobian?.gram;
+  for(let pass=0;pass<6;pass++){
+   const error=sub(targetH,next.h);if(length(error)<1e-5)break;
+   if(!columns||(pass===0&&n%4===0)||pass===4){
+    columns=next.x.map((_,a)=>{const v=next.x.slice();v[a]+=1e-4;return mul(sub(candidate(v).h,next.h),1e4);});
+    inverseMass=columns.map(v=>1/Math.max(.001,length(v)*dt));
+    gram=[0,1,2].map(a=>columns.reduce((sum,v,i)=>add(sum,mul(v,v[a]*inverseMass[i])),[0,0,0]));
+    jacobian={columns,inverseMass,gram};
+   }
+   const multiplier=solve3(gram,error),delta=columns.map((v,i)=>dot(v,multiplier)*inverseMass[i]),norm=Math.hypot(...delta),scale=Math.min(1,.3/Math.max(1e-9,norm));
+   let trial=candidate(next.x.map((v,i)=>v+delta[i]*scale));
+   if(length(sub(targetH,trial.h))>length(error))trial=candidate(next.x.map((v,i)=>v+delta[i]*scale*.5));
+   next=trial;
+  }
+  const plan={x:next.x,xrates:next.x.map((v,i)=>(v-prev.x[i])/dt),pelvis:next.pelvis,pelvisRate:mul(sub(next.pelvis,prev.pelvis),1/dt),legs:next.legs,rates:next.legs.map((v,k)=>mul(sub(v,prev.legs[k]),1/dt))};
+  plans.push(plan);history={bodies:next.bs,target:targetBodies};diagnostics.ticks++;
+  diagnostics.maxPlannedResidual=Math.max(diagnostics.maxPlannedResidual,length(sub(next.h,targetH)));diagnostics.maxLag=Math.max(diagnostics.maxLag,...next.legs.map(v=>length(sub(v,next.pelvis))));
+  diagnostics.maxStep=Math.max(diagnostics.maxStep,length(sub(plan.pelvis,prev.pelvis)));diagnostics.maxPlannedAcceleration=Math.max(diagnostics.maxPlannedAcceleration,length(sub(plan.pelvisRate,prev.pelvisRate))/dt);
+ }
+ function stateAt(t){
+  const frame=clamp((t-start)/dt,0,count),i=Math.floor(frame),u=frame-i;while(plans.length<=Math.min(count,i+1))advance();
+  const a=plans[i],b=plans[Math.min(count,i+1)],mix=(v,w)=>add(v,mul(sub(w,v),u));
+  return {pelvis:mix(a.pelvis,b.pelvis),legs:a.legs.map((v,k)=>mix(v,b.legs[k]))};
+ }
+ function samplePlanned(t,pose=source(t)){if(t<=start)return pose;return applySpatial(choreography?choreography.sample(t,pose):pose,names,parents,stateAt(t));}
+ // The clip is known in advance. Lead the damped response by 60 ms so its
+ // opposing swing occurs during impact rather than after it; state/velocity
+ // still start continuously at the marker. This is not an instantaneous solve.
+ const legResponse=L.create({source:samplePlanned,base,start,stop:end+1,names,parents,reference,hinges,anticipation,sampleRate:60});
+ return {sample:(t,pose)=>legResponse.sample(t,pose===undefined?source(t):pose),samplePlanned,stateAt,diagnostics,states:plans,plannedStates:plans,rig,stop:legResponse.stop,choreography,legResponse};
+}
+function create(options){return options.wholeLeg===false?createYaw(options):createSpatial(options);}
+const api={model,bodies,momentum,legHinges,humanAngles,referenceMotion,apply,applySpatial,respond,create};if(node)module.exports=api;else root.BodyflipAttackInertia=api;
 })(globalThis);

@@ -40,7 +40,8 @@ check('Ground jump height scales, with zero producing no lift',Math.abs(heights[
 check('Scene round-trip retains marker fields',JSON.stringify(C.sanitize(JSON.parse(JSON.stringify(C.sanitize({mode:'spaceGym',jumpEvents:[event]})))) .jumpEvents[0])===JSON.stringify(C.sanitize({mode:'spaceGym',jumpEvents:[event]}).jumpEvents[0]));
 const busyEvents=Array.from({length:32},(_,i)=>({...event,id:'b'+i,time:.5+i/60,attackDelay:0})),busyStart=performance.now();
 const busy=F.sequence(run,jumps,{mode:'spaceGym',jumpEvents:busyEvents},parents,reference,null,catalog);busy.sample(1.05);busy.sample(1.1);
-check('32 overlapping markers remain bounded',performance.now()-busyStart<3000);
+const busyMs=performance.now()-busyStart;
+check('32 overlapping markers remain bounded ('+Math.round(busyMs)+' ms)',busyMs<3000);
 if(process.argv.includes('--landing')){
  const e={id:'land',time:.5,surface:'floor'},settings={mode:'idle',surfaceIK:false,platforms:[floor],ramps:false,jumpEvents:[e]};
  const base=F.sequence(run,jumps,settings,parents,reference),land=base.landings[0].time;
@@ -52,4 +53,4 @@ if(process.argv.includes('--landing')){
  check('NN landing takes the displayed attacked upper pose',poseError(frame.pose,{...source.pose,points:source.pose.points.map(p=>R.add(p,shift))})<1e-5);
  check('Attack-to-NN landing has no pose snap',poseError(prepared.sample(time-1e-7).pose,frame.pose)<1e-5);
 }
-const receipt={checks:checks.length,elapsedMs:performance.now()-started,heights,checksPassed:checks};fs.writeFileSync(new URL('space-attacks-verification.json',import.meta.url),JSON.stringify(receipt,null,2));console.log(JSON.stringify({checks:checks.length,elapsedMs:receipt.elapsedMs,heights}));
+const receipt={checks:checks.length,elapsedMs:performance.now()-started,busyMs,heights,checksPassed:checks};fs.writeFileSync(new URL('space-attacks-verification.json',import.meta.url),JSON.stringify(receipt,null,2));console.log(JSON.stringify({checks:checks.length,elapsedMs:receipt.elapsedMs,busyMs,heights}));

@@ -1,9 +1,9 @@
 {
   "maxUpperError": 1.8632577561896904e-15,
   "maxSocketError": 1.2219744817843103e-15,
-  "maxKneeOffHinge": 3.9356827671037505e-16,
+  "maxKneeOffHinge": 3.915609177729226e-16,
   "minKnee": 0.25253321196499007,
-  "maxKnee": 1.3739345880931677,
+  "maxKnee": 1.37521269729914,
   "maxStateRateError": 1.7816432773543056e-9,
   "results": [
     {
@@ -36,7 +36,7 @@
           }
         }
       ],
-      "elapsedMs": 66.44359999999999
+      "elapsedMs": 55.9221
     },
     {
       "amount": 0.5,
@@ -49,9 +49,9 @@
             "excursion": 0.3313770209306796
           },
           "after": {
-            "maxSpeed": 3.4085374381555966,
-            "maxAcceleration": 32.732930426266435,
-            "excursion": 0.30152872609998593
+            "maxSpeed": 3.4081353947725757,
+            "maxAcceleration": 32.722236658140424,
+            "excursion": 0.3015586219776932
           }
         },
         {
@@ -62,13 +62,13 @@
             "excursion": 0.23275756184051238
           },
           "after": {
-            "maxSpeed": 1.2816887393881975,
-            "maxAcceleration": 20.027572417784725,
-            "excursion": 0.19863913825290436
+            "maxSpeed": 1.281896547035377,
+            "maxAcceleration": 20.038839790897594,
+            "excursion": 0.1987124196695936
           }
         }
       ],
-      "elapsedMs": 248.24869999999999
+      "elapsedMs": 255.68300000000002
     },
     {
       "amount": 1,
@@ -81,9 +81,9 @@
             "excursion": 0.7505162080184113
           },
           "after": {
-            "maxSpeed": 7.012706333928709,
-            "maxAcceleration": 67.90811848936703,
-            "excursion": 0.6937556737357059
+            "maxSpeed": 7.01219736900182,
+            "maxAcceleration": 67.88719153001018,
+            "excursion": 0.6938138692369916
           }
         },
         {
@@ -94,13 +94,13 @@
             "excursion": 0.4572324138634272
           },
           "after": {
-            "maxSpeed": 2.501344701210112,
-            "maxAcceleration": 41.546438935928975,
-            "excursion": 0.3861636068811122
+            "maxSpeed": 2.5016654269272536,
+            "maxAcceleration": 41.56498590398841,
+            "excursion": 0.386289558305876
           }
         }
       ],
-      "elapsedMs": 229.58949999999993
+      "elapsedMs": 228.08209999999997
     }
   ]
 }

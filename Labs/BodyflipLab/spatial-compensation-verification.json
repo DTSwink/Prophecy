@@ -1,0 +1,20 @@
+{
+  "cases": 21,
+  "maxAngleError": 8.08254562088053e-16,
+  "maxPlannerTargetError": 0.000009985165402248122,
+  "attacks": [
+    {
+      "name": "slashL",
+      "amount": 0.95,
+      "peakYaw": 22.824782678195433,
+      "peakAngle": 26.200115421911594
+    },
+    {
+      "name": "headbutt",
+      "amount": 0.95,
+      "peakYaw": 3.9501922777200607,
+      "peakAngle": 7.681905001463034
+    }
+  ],
+  "note": "Amount scales opposite spine rotation, not cancelled momentum. Soft-leg distribution and damping modify the displayed pelvis angle."
+}
