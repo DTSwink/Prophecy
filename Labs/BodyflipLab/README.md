@@ -22,7 +22,248 @@ dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
 
-## Current: opposite-angle percentage on all three axes - October 27
+## Approved attack checkpoint - October 27
+
+User approved the integrated kicks, pelvis-only return and Direct to Armed for
+all16 attacks. This checkpoint includes scoped lab source, both viewers, tests,
+verification receipts and documentation on `codex/standalone-sim`. Live scenes,
+preview images, NN caches and parallel Unreal/Foot IK changes remain local.
+The recovery inventory covers the selected committed tree. The following
+local/unpushed notes describe development before this approved checkpoint.
+
+## Direct-to-Armed entry for every attack - October 27
+
+`Direct to Armed` now controls all16 attacks, from both timeline markers and the
+manual Attack button. The main checkbox remains immediately after Raw leg in the
+viewport row; its kick-only label is removed. The soft-leg comparison viewer now
+also has this checkbox on the right, alongside the kick viewer's existing one.
+Default off; the legacy saved key `kickToArmed` is retained so enabled scenes
+keep their choice. Toggling retains the playhead and existing control positions.
+
+Upper-body attacks interpolate their affected local joints directly from the
+current pose to the transferred Armed pose (authored pelvis rotation included
+at spine_01). The interpolator carries initial local velocity/acceleration and
+meets the forward Armed derivatives, then resumes the complete native recording.
+The upper14 keep their existing compensation, leg response and pelvis-only
+return. Kicks retain their approved full-body solver. Manual aiming, variants,
+rate and original off-mode entry behavior remain supported. Manual direct entry
+uses the same planner as timeline entry, with its existing0.15/0.45 In/Out.
+
+2596 direct-mode samples cover all16 timeline/manual attacks, variants, moving
+gait, rates, exact Armed timing, native upper follow-through, entry/endpoints,
+manual parity and reverse seek. Mutating pre-Armed keys does not alter entry.
+Upper source error<1.1e-14, manual parity<1.6e-16, Armed angular-velocity join
+error<2e-5rad/s.84 off-mode cases/5100 samples still preserve original strikes
+and follow-through. Aimed jab/slash manual paths, viewer syntax, current checkbox
+label and HTTP byte/no-store checks pass. Receipt:
+`all-armed-entry-verification.json`. No browser control or saved-scene writes.
+
+On: skip the recorded frame-zero/pre-Armed path and interpolate the current
+pose directly to Armed. Off: retain the previously approved complete recording.
+The Final Harness's native Armed lower bound and post-Armed clock are reused:
+entry = max(Attack In, authored Armed/fps), then Armed->Hit->End at native speed.
+For both current kicks Armed is at0.30s; Hit L0.4333s/R0.40s. Out timing remains
+unchanged. Manual loop duration follows the shorter entry instead of adding an
+idle gap. Hierarchy-local quaternion interpolation retains sockets/knee hinges;
+endpoint velocity/acceleration match the recorded motion so Armed is not a stop.
+The existing full-body balance and pelvis-only recovery still operate afterward.
+No pre-Armed recording frames are sampled as part of the direct entry path.
+
+Source inspected: final_harness_standalone/index.html, standaloneBlendPoseLocalAxes,
+standaloneIndependentStartPoseAt, standalonePlannedEasyEntry, and the Armed/Hit
+clock around lines24018-24094. Ground-foot travel anchors do not apply to the
+airborne entry. The lab uses fixed-length FK and velocity-matched quintic local
+rotation interpolation rather than importing the harness's world-point blend.
+
+1182 direct-mode samples pass for both kicks, selected manual variants/rates,
+current moving gait, carried rotation/translation, COM, hinges, exact Armed
+endpoint, native post-Armed source, endpoint velocity, recovery and seek. Viewer/
+app parity <5.2e-14; knees3.23-146.46deg. The off-mode1314 samples retain prior
+results. Longer In timing, cache separation, checkbox persistence/placement,
+manual loop duration, embedded script syntax and HTTP no-store/byte parity pass.
+Receipts: `kick-armed-verification.json`, `kick-integration-verification.json`.
+No scene writes, browser control, inference or restart. Local/unpushed; Refresh
+loads the checkbox, then the user enables it for comparison.
+
+## Current kick integration - October 27
+
+The full-body kick viewer is now connected to the app. Previously timeline and
+manual attacks selected only spine_01 descendants, silently dropping both kick
+legs. `kick-attack.js` now shares the exact `airborne-motion.js` recording,
+balanced solve and pelvis-only recovery between the viewer, timeline markers
+and Attack button. Other 14 attacks retain the existing upper-body path.
+
+With direct-to-Armed off, kicks play from frame zero, preserving the chamber,
+strike and follow-through. Timeline In/Out set entry/recovery durations; manual
+retains 0.15/0.45 s and its selected variant/rate. They do not match/skip to an
+upper-body Armed frame. Kicks use the approved full-body balance independently
+of the upper-body Amount/Soft legs controls; tooltips now state that scope.
+The direct-entry checkbox above is the only added control. The active kick is not
+redirected by the manual upper-body Aim overlay.
+
+The ongoing pose fades out/in at entry/recovery; root/pelvis facing carries the
+kick with the character. COM follows the underlying scene motion. Full-body
+plan caches are shared per clip/reference/timing, bounded to eight timings per
+clip; repeated markers do not repeat the numerical solve. Browser dependencies
+are loaded in the main app and both viewers. The user refreshes; no UI control,
+scene writes, inference, workers or server/Unreal restart were performed.
+
+Validation: 1314 kick samples cover both legs, timeline, actual manual functions,
+selected variants, rates 0.5/1/2, moving/rotating baseline, run entry/exit, COM,
+sockets, hinged knees and reverse seek. Viewer parity error <5.4e-15; knees
+3.04-146.46 degrees, COM error <8.9e-15. 32 cached kicks sampled in 5.7 ms.
+84 upper-attack cases / 5100 samples retain original strike/follow-through;
+2121 manual integration samples pass. 90 sequence checks pass (32 overlapping
+upper attacks: 2764 ms). Read-only replay of the current saved Space gym Kick L
+reaches source Hit frame13 at1.5667 s with the full leg motion. HTTP serves exact
+current files with no-store; embedded viewer script syntax passes.
+Receipts: `kick-integration-verification.json`,
+`all-attack-hit-return-verification.json`, `leg-response-integration-verification.json`,
+`space-attacks-verification.json`. Local/unpushed.
+
+## Current attack recovery - October 27
+
+The post-Hit upright correction now applies only to the pelvis. The user rejected
+the full-body Hit-to-base blend because it removed Slash R's follow-through.
+That full-body return is removed. `Recovery.pelvisReturn` continuously samples
+the original source motion, while the pelvis's Hit-relative rotation decays to
+the ongoing baseline over the same existing time window.
+
+Each direct pelvis child (spine and hips) is counter-rotated so all non-pelvis
+bones keep their live source world orientations. The arms, torso, legs, knees
+and weapon therefore continue their authored follow-through; no Hit-pose freeze
+or direct blend is imposed on them. Sockets and pelvis position are retained;
+child anchor positions naturally follow the rotated pelvis. This is orientation
+preservation, not a claim that every world-space point is identical.
+
+The shared helper serves all 16 timeline and manual attacks, rigid/soft/zero
+compensation modes, the soft-leg viewer and both full-body kick previews. In the
+kick preview the normal source/compensation recovery is retained for the other
+segments, and the COM is recentered after the pelvis correction. Its left side
+remains the original recording. No attack-name exception or new UI controls.
+
+Every strike through Hit and original finish time remain unchanged. Timeline
+return ends at source end + attackOut; manual at clip.duration + 0.6. The kicks
+still finish at 1.1633 s. Gait, root facing, jumps and flips continue. Timeline
+attack phase/source-frame metadata again follows the full source animation,
+including post-Hit follow-through. Amount retains its opposite-angle meaning.
+Pelvis recovery is authored, not torque-free angular-momentum conservation.
+
+Validation: 96 cases / 5784 samples compare all 16 manual/timeline attacks in
+soft, rigid and zero-compensation modes with saved pre-change source samplers.
+Every non-pelvis world orientation matches through the entire follow-through
+(maximum error 1.57e-15), including Slash R. Strike error is below 1.4e-15;
+pelvis return is monotone; original end times, baseline endpoints, reverse seek,
+sockets, knee hinges and ranges pass. Manual rates 0.5/1/2x and moving gait are
+covered. The hit boundary remains pose-continuous; incoming pelvis velocity is
+not asserted continuous across the authored turnaround.
+
+Other checks pass: 1390 return samples (including unchanged kick non-pelvis
+orientations), 2379 integration samples, 1676 compensation samples, 7192 soft-leg
+samples, and all 94 sequence checks. 32 overlapping markers took 2202 ms on this
+run. Sequence checks again require the complete authored post-Hit source motion.
+
+Receipts: `all-attack-hit-return-verification.json`, `attack-return-verification.json`,
+`leg-response-integration-verification.json`, `attack-compensation-verification.json`,
+`soft-legs-verification.json`, `space-attacks-verification.json`. Twelve actual
+collider/weapon frames comparing original Slash R with pelvis-only recovery were
+reviewed offline in `Saved/BodyflipLab/PelvisOnlyReturn/slashR-follow-through.png`.
+Local/unpushed; no desktop/browser control, scene writes, inference or restart.
+Read-only HTTP confirms current scripts; user refreshes the lab/viewers.
+
+## Full-body kick solver - October 27
+
+The approved three-axis lab was pushed and remote-verified as
+`6a3c2f7c513c3313c9b0ad7e8e7ca7b7c17a403a` on `codex/standalone-sim` before
+starting this work. Recovery inventory: 8943 files, 1,073,585,378 bytes, no LFS
+pointers. The main lab retains that approved strike behavior and percentage
+meaning, with the shared pose return above added afterward. The full-body kick
+solver is now integrated as documented above, local/unpushed.
+
+`kick-preview.html` on the existing 8876 service compares the complete recorded
+Kick L/R articulation with an airborne conversion. Existing Left/Right selector,
+one playback bar, frame stepping and 0.25/0.5/1x speed are retained. It uses the
+main renderer's actual collider meshes. No app/scene writes, browser control,
+workers, NN requests or server restart. User refreshes the existing viewer.
+
+The former main attack layer selected only spine_01 descendants and discarded
+the kicks' leg animation; that mask is now bypassed for full-body kicks. These 17-frame, 30 Hz clips contain knee
+chamber then extension: Armed 9; Hit 13 for L and 12 for R. The preview retains
+the native keys and strike timing instead of reusing the throw/heading leg curves.
+The R source includes shin twist: the retargeter reconstructs the recorded leg
+plane at the hip, retains a hinged knee and preserves ankle orientation. Fixed
+lab lengths move knee/foot positions by at most 3.35 mm relative to the source.
+
+Latest correction addresses the knee snap, excessive pelvis turn and sideways
+free-leg response. Source local rotations and knee angles now use C2 splines:
+velocity and acceleration are continuous across source keys. Entry and return
+match both source velocity and acceleration. The return decays smoothly rather
+than carrying the source's sideways leg velocity into a wide recovery pose.
+Dense checks found no knee inversion or overflexion from the interpolation.
+
+`airborne-motion.js:createBalanced` distributes the response over common body
+rotation, spine_01, both shoulders and the non-striking hip/knee. Pelvis turn
+and sideways free-hip motion are penalized more strongly than torso, arm and
+forward/backward leg motion. The free knee remains a hinge with a smooth
+0-150 degree range. As the kick releases, the relative joints return toward
+their resting pose while common body rotation carries the remaining response;
+the free leg is no longer held out to counter the recovery turn.
+
+The striking thigh, shin and foot retain their recorded world orientations
+through chamber, strike and retraction, using an inverse correction at the hip.
+Their hip-to-foot vector, knee bend, ankle motion and native timing are retained
+after hinge retargeting. This protection releases smoothly during return.
+It preserves direction relative to the moving hip, not an absolute world foot
+position: COM recentering and pelvis motion can translate that hip.
+
+The articulated planner solves three-axis angular momentum at 120 Hz using the
+shared segment mass/inertia model. A critically damped response with 60 ms
+lookahead smooths the balancing joints; it does not filter the striking leg.
+A second momentum solve adjusts common body rotation after that smoothing.
+The final displayed body-turn curve is C2, with bounded deterministic caches.
+The skeleton is recentered on the requested COM path. Incoming spin and a
+ballistic COM path are supported; this viewer starts at zero spin with fixed
+COM. Remaining body orientation after recovery is retained, not reset by an
+external torque. The solver has no Kick L/R-specific response branch.
+
+This is momentum-constrained kinematic retargeting with approximate segment
+inertias, not measured muscle dynamics or a contact simulation. Balancing joints
+are deliberately changed; the striking chain's direction/timing is protected.
+The upper-body attacks' opposite-angle percentage is not reused with a new meaning.
+
+References: [Kim et al. 2011](https://www.jssm.org/researchjssm-10-31.xml.xml)
+measured different hip/knee coordination across kick types, supporting retention
+of each recording's coordination. [Preuschl et al. 2016](https://jssm.org/jssm-15-92.xml-Fulltext)
+studied 22 athletes' airborne axe kicks and did not find a universal
+proximal-to-distal sequence. These support preserving source timing, not copying
+an axe-kick pose onto these clips. The response here is a mechanics-based
+adaptation, not a measured airborne version of the source animation.
+
+Validation: `node Labs/BodyflipLab/verify-airborne-kicks.mjs` passes 1136 dense
+pose samples across both complete motions, including entry and recovery.
+Checks cover native keys/timing, active-chain orientations and hip-to-foot
+direction, hinges, sockets, COM, joint/body velocity continuity, knee acceleration
+continuity, reverse seeking, bounded caches, incoming spin and ballistic COM.
+Displayed momentum residual at solve ticks is below 1e-8 kg m^2/s; inter-tick
+240 Hz momentum RMS is 0.15-0.18% of raw motion (peak residual below 0.09).
+Interpolation is not claimed to conserve exactly between solve ticks.
+
+Maximum pelvis correction over the full motion is 20.79 degrees L / 62.46 R,
+versus 50.41 / 98.32 with the previous rigid solver on the same source curves.
+The R maximum occurs during recovery; remaining whole-body reorientation is
+intentional. Added sideways free-hip response is at most 4.24 degrees. Peak
+added knee acceleration during the source clip is 25.73 / 34.30 m/s^2, down
+from 55.67 / 79.14 in the user-rejected snapshot. Source kick acceleration itself
+is retained. Preparation takes approximately 0.6-0.7 s once per clip; subsequent
+playback and seeking sample the bounded cache.
+
+Receipt: `airborne-kicks-verification.json`. Offline actual-collider sheets for
+source / previous / current motion were reviewed through recovery:
+`Saved/BodyflipLab/AirborneKicks/MotionReview/KickL-review.png` and
+`KickR-review.png`. No browser/desktop interaction was performed. Preview and
+module serving were checked with read-only HTTP; the user must refresh.
+
+## Approved lab: opposite-angle percentage on all three axes - October 27
 
 Amount has its original meaning again: it scales the attack-added spine
 rotation in the opposite direction.50% targets half the opposite rotation;
@@ -74,7 +315,7 @@ Receipts: `spatial-compensation-verification.json`,
 The prior `space-attacks-verification.json` passing timing is historical.
 Both main app and comparison viewer use this current system. No browser/desktop
 control, scene/state writes, NN requests or restart; user Refresh loads it.
-The user approved this state for the October27 three-axis checkpoint before kick work.
+Pushed and verified as `6a3c2f7c` before the isolated kick experiment above.
 Earlier dated compensation sections below are history.
 
 ## Previous integration checkpoint - October 27

@@ -252,7 +252,37 @@ function sample(model,seconds,options={}){
  if(seconds<=model.attackSeconds)return turnSpines(model,sampleBase(model,seconds,options),degrees);
  return sampleBase(turnedRecovery(model,degrees),seconds,options);
 }
+// Fade an attack-added correction, leaving the ongoing base motion intact.
+// Zero first/second derivatives at both ends preserve the incoming motion and
+// reach the base pose without an abrupt stop. Recovery is authored, not a
+// torque-free momentum solve.
+function returnWeight(time,start,end){
+ if(time<=start)return 1;if(time>=end)return 0;
+ const x=clamp((time-start)/(end-start),0,1);
+ return 1-x*x*x*(10+x*(-15+6*x));
+}
+// Only the pelvis follows a direct post-Hit return. Continue sampling the
+// complete source motion, and counter-rotate each pelvis child so the torso
+// and legs retain their live world orientations and authored follow-through.
+function pelvisReturn({source,base,parents,start,end,pelvis}){
+ if(!(Number.isFinite(start)&&Number.isFinite(end)&&end>start&&pelvis>=0))throw Error('Pelvis return needs Hit, original end time and pelvis index');
+ const children=parents.map((p,i)=>p===pelvis?i:-1).filter(i=>i>=0);let seed=null;
+ function capture(){
+  if(seed)return seed;
+  const a=source(start),b=base(start),la=localize(a.points,a.q,parents),lb=localize(b.points,b.q,parents);
+  return seed=qlog(qm(la.q[pelvis],qinv(lb.q[pelvis])));
+ }
+ function sample(time,...args){
+  const pose=source(time,...args);if(time<=start)return pose;
+  const rest=base(time),local=localize(pose.points,pose.q,parents),baseLocal=localize(rest.points,rest.q,parents),weight=returnWeight(time,start,end);
+  local.q[pelvis]=qm(qexp(mul(capture(),weight)),baseLocal.q[pelvis]);
+  const parent=parents[pelvis],world=parent<0?local.q[pelvis]:qm(pose.q[parent],local.q[pelvis]);
+  for(const i of children)local.q[i]=qm(qinv(world),pose.q[i]);
+  return fk(local,parents);
+ }
+ return {sample,start,end,pelvis,capture};
+}
 function anchor(model,pose,target){const shift=sub(model.poses[0].points[model.spine],pose.points[model.spine]);return {...pose,points:pose.points.map(p=>add(p,shift)),target:add(target,shift)};}
-const api={removeAxialInertia,prepare,sample,returnTiming,anchor,fk,localize,fromAxes,toAxes,qm,qinv,qlog,qexp,rotate,qslerp,fromTo,offsetBlend,add,sub,mul,dot,cross,length,unit};
+const api={removeAxialInertia,prepare,sample,returnTiming,returnWeight,pelvisReturn,anchor,fk,localize,fromAxes,toAxes,qm,qinv,qlog,qexp,rotate,qslerp,fromTo,offsetBlend,add,sub,mul,dot,cross,length,unit};
 if(typeof module!=='undefined')module.exports=api;else root.Recovery=api;
 })(globalThis);

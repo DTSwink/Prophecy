@@ -202,7 +202,7 @@ function applySpatial(pose,names,parents,state){
  for(let k=0;k<2;k++){const hip=names.indexOf('thigh_'+['l','r'][k]);local.q[hip]=qm(qm(qinv(counter),qexp(state.legs[k])),local.q[hip]);}
  return R.fk(local,parents);
 }
-function createSpatial({source,base,target,start,end,names,parents,reference,choreography=null,amount=1,anticipation=.06}){
+function createSpatial({source,base,target,start,end,names,parents,reference,choreography=null,amount=1,anticipation=.06,recoveryStart=Infinity,recoveryEnd=end}){
  if(typeof target!=='function')throw Error('Attack compensation requires an opposite-angle target');
  const rig=model(names,parents,reference),hinges=legHinges(names,reference),dt=1/60,stop=end+.8,count=Math.ceil((stop-start)/dt),p=names.indexOf('pelvis'),spine=names.indexOf('spine_01'),hips=hinges.map(h=>h.hip);
  const fixedBones=names.map((_,i)=>{for(let j=i;j>=0;j=parents[j])if(j===spine)return true;return false;});
@@ -257,7 +257,7 @@ function createSpatial({source,base,target,start,end,names,parents,reference,cho
  // The clip is known in advance. Lead the damped response by 60 ms so its
  // opposing swing occurs during impact rather than after it; state/velocity
  // still start continuously at the marker. This is not an instantaneous solve.
- const legResponse=L.create({source:samplePlanned,base,start,stop:end+1,names,parents,reference,hinges,anticipation,sampleRate:60});
+ const legResponse=L.create({source:samplePlanned,base,start,stop:end+1,names,parents,reference,hinges,anticipation,sampleRate:60,recoveryStart,recoveryEnd});
  return {sample:(t,pose)=>legResponse.sample(t,pose===undefined?source(t):pose),samplePlanned,stateAt,diagnostics,states:plans,plannedStates:plans,rig,stop:legResponse.stop,choreography,legResponse};
 }
 function create(options){return options.wholeLeg===false?createYaw(options):createSpatial(options);}

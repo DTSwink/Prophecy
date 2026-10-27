@@ -1,0 +1,14 @@
+{
+  "directArmed": true,
+  "samples": 1182,
+  "maxViewerError": 5.1184521709554336e-14,
+  "maxEquivarianceError": 3.580361673049448e-15,
+  "maxCOMError": 8.882478188980493e-15,
+  "maxEndpointError": 1.1102230246251565e-16,
+  "kneeDegrees": [
+    3.2262054651301826,
+    146.45499643440093
+  ],
+  "repeatedMs": 4.460800000000745,
+  "elapsedMs": 7687.2841
+}

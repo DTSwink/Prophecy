@@ -18,7 +18,7 @@ function continuousLog(q,previous){
  const axis=mul(v,1/n),turns=Math.round(dot(sub(previous,v),axis)/(2*Math.PI));
  return add(v,mul(axis,turns*2*Math.PI));
 }
-function create({source,base,start,stop,names,parents,reference,hinges,frequency=24,anticipation=0,sampleRate=120}){
+function create({source,base,start,stop,names,parents,reference,hinges,frequency=24,anticipation=0,sampleRate=120,recoveryStart=Infinity,recoveryEnd=stop}){
  const pelvis=names.indexOf('pelvis'),spine=names.indexOf('spine_01'),dt=1/sampleRate,count=Math.ceil((stop-start)/dt);
  const bones=[pelvis,...hinges.map(h=>h.hip),...hinges.map(h=>h.foot)],frequencies=[...Array(3).fill(32),...Array(16).fill(frequency)];
  const targets=[],states=[];
@@ -56,7 +56,7 @@ function create({source,base,start,stop,names,parents,reference,hinges,frequency
  }
  function sample(t,pose=source(t)){
   if(t<=start)return pose;
-  const state=stateAt(t),rest=base(t),local=R.localize(pose.points,pose.q,parents),restLocal=R.localize(rest.points,rest.q,parents);
+  const weight=R.returnWeight(t,recoveryStart,recoveryEnd),state={x:stateAt(t).x.map(v=>v*weight)},rest=base(t),local=R.localize(pose.points,pose.q,parents),restLocal=R.localize(rest.points,rest.q,parents);
   const world=bones.map((bone,j)=>qm(qm(qm(rest.q[0],qexp(state.x.slice(j*3,j*3+3))),qinv(rest.q[0])),rest.q[bone]));
   local.q[pelvis]=qm(qinv(pose.q[parents[pelvis]]),world[0]);
   // Keep the authored attack's complete upper-body world orientation.
@@ -71,7 +71,7 @@ function create({source,base,start,stop,names,parents,reference,hinges,frequency
   }
   return R.fk(local,parents);
  }
- return {sample,stateAt,states,targets,stop,start,frequencies};
+ return {sample,stateAt,states,targets,stop,start,frequencies,recoveryStart,recoveryEnd};
 }
 const api={create};if(node)module.exports=api;else root.BodyflipLegResponse=api;
 })(globalThis);

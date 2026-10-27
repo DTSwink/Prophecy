@@ -15,21 +15,22 @@ const base=t=>{const pose=C.centerPose(reference,R.qm(R.qexp([1.1,.3+t*.2,-.4]),
 const initial=base(0).pose,local=R.localize(initial.points,initial.q,parents);
 local.q[s]=R.qm(R.qexp([Math.PI/3,0,0]),local.q[s]);const posed=R.fk(local,parents);
 for(const amount of [.5,1]){const actual=A.compensate(posed,initial,names,parents,amount),counter=R.qm(R.qinv(initial.q[p]),actual.q[p]);assert(angle(counter,R.qexp([-amount*Math.PI/3,0,0]))<1e-9);assert(angle(actual.q[s],posed.q[s])<1e-9);}
-for(const meta of read('data/vanilla.json').clips){
+// Full-body kicks have separate viewer/app parity coverage in verify-kick-integration.mjs.
+for(const meta of read('data/vanilla.json').clips.filter(c=>!C.effector(c.name).startsWith('foot_'))){
  const bytes=fs.readFileSync(new URL(meta.file,import.meta.url)),clip=C.decode(meta,bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),names,parents),catalog=new Map([[meta.name,clip]]);
  const attacks=[0,.5,1].map(amount=>A.create({attack:meta.name},G.action({time:.5},base),catalog,names,parents,{...C.defaults,softAttackLegs:false,pelvisAttackCompensation:amount})),zero=attacks[0];
  for(let t=zero.start;t<zero.end+.25;t+=1/120){
   const a=attacks.map(x=>x.sample(t).pose),la=a.map(x=>R.localize(x.points,x.q,parents));
   for(let k=1;k<3;k++){
    for(const i of upper)maxUpperError=Math.max(maxUpperError,angle(a[k].q[i],a[0].q[i]));
-   for(let i=0;i<names.length;i++)if(i!==p&&i!==s)maxLegLocalError=Math.max(maxLegLocalError,angle(la[k].q[i],la[0].q[i]));
+   if(t<=zero.hitTime)for(let i=0;i<names.length;i++)if(i!==p&&i!==s)maxLegLocalError=Math.max(maxLegLocalError,angle(la[k].q[i],la[0].q[i]));
    assert(dist(a[k].points[p],a[0].points[p])<1e-9,'Pelvis position stays on its existing trajectory');
    for(let i=0;i<names.length;i++)assert(dist(la[k].p[i],la[0].p[i])<1e-9,'Keep physical joint sockets');
   }
   const half=R.qlog(R.qm(R.qinv(a[0].q[p]),a[1].q[p])),full=R.qlog(R.qm(R.qinv(a[0].q[p]),a[2].q[p]));
   maxRatioError=Math.max(maxRatioError,dist(R.mul(half,2),full));samples++;
  }
- for(const t of [zero.start,zero.start+zero.duration,zero.end,zero.end+.25]){
+ for(const t of [zero.start,zero.start+zero.duration,zero.hitTime,zero.end,zero.end+.25]){
   const before=attacks[2].sample(t-1e-7).pose,after=attacks[2].sample(t+1e-7).pose;
   maxBoundaryStep=Math.max(maxBoundaryStep,...before.q.map((q,i)=>angle(q,after.q[i])));
  }

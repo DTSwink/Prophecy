@@ -1,0 +1,562 @@
+{
+  "cases": 84,
+  "samples": 5100,
+  "maxFollowthroughError": 1.5634545997298035e-15,
+  "strikeComparedWithSnapshot": true,
+  "maxStrikeError": 1.3682823169722073e-15,
+  "maxHitJoinError": 0.000008186442278853334,
+  "maxEndpointError": 2.1013738783212888e-15,
+  "maxBacktrack": 1.1102230246251565e-16,
+  "kneeRangeDegrees": [
+    13.421907014631623,
+    128.16933372051983
+  ],
+  "checked": [
+    {
+      "path": "timeline",
+      "attack": "headbutt",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "headbutt",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "headbutt",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "hookL",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "hookL",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "hookL",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "hookR",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "hookR",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "hookR",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "jabL",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "jabL",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "jabL",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "jabR",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "jabR",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "jabR",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "overL",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "overL",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "overL",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "overR",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "overR",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "overR",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "pike",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "pike",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "pike",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "slashL",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashL",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashL",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "slashLD",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashLD",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashLD",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "slashLU",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashLU",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashLU",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "slashR",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashR",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashR",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "slashRD",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashRD",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashRD",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "timeline",
+      "attack": "slashRU",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashRU",
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "timeline",
+      "attack": "slashRU",
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "headbutt",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "headbutt",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "headbutt",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "hookL",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "hookL",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "hookL",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "hookR",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "hookR",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "hookR",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "jabL",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "jabL",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "jabL",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "jabR",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "jabR",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "jabR",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "overL",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "overL",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "overL",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "overR",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "overR",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "overR",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "pike",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "pike",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "pike",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "slashL",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashL",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashL",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "slashLD",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashLD",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashLD",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "slashLU",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashLU",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashLU",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "slashR",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashR",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashR",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "slashRD",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashRD",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashRD",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    },
+    {
+      "path": "manual",
+      "attack": "slashRU",
+      "rate": 0.5,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashRU",
+      "rate": 1,
+      "softAttackLegs": false,
+      "pelvisAttackCompensation": 1
+    },
+    {
+      "path": "manual",
+      "attack": "slashRU",
+      "rate": 2,
+      "softAttackLegs": true,
+      "pelvisAttackCompensation": 0
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "attacks": 16,
+  "samples": 2596,
+  "maxNativeError": 1.0081045149458743e-14,
+  "maxEndpointError": 3.885780586188048e-16,
+  "maxEntryStep": 4.333751914749704e-13,
+  "maxArmedVelocityJump": 0.00001951857170502353,
+  "maxManualParity": 1.5700924586837752e-16,
+  "checked": [
+    "headbutt",
+    "hookL",
+    "hookR",
+    "jabL",
+    "jabR",
+    "KickL",
+    "KickR",
+    "overL",
+    "overR",
+    "pike",
+    "slashL",
+    "slashLD",
+    "slashLU",
+    "slashR",
+    "slashRD",
+    "slashRU"
+  ]
+}

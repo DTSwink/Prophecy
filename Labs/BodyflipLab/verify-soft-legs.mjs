@@ -13,7 +13,8 @@ const bend=(pose,h)=>{const a=R.unit(R.sub(pose.points[h.knee],pose.points[h.hip
 const armedAngles=H.humanAngles(-.16),hitAngles=H.humanAngles(0);
 assert(hitAngles[0]<armedAngles[0]);assert(hitAngles[1]<armedAngles[1]);assert(hitAngles[2]>armedAngles[2]+40*Math.PI/180);
 const clips=[];let worstStep=null;
-for(const meta of read('data/vanilla.json').clips){
+// Full-body kicks have separate viewer/app parity coverage in verify-kick-integration.mjs.
+for(const meta of read('data/vanilla.json').clips.filter(c=>!C.effector(c.name).startsWith('foot_'))){
  const clip=C.decode(meta,buf(meta.file),m.names,m.parents),catalog=new Map([[meta.name,clip]]),event={attack:meta.name},segment=G.action({time:.5},base);
  for(const amount of [.5,1]){
   const rigid=A.create(event,segment,catalog,m.names,m.parents,{...C.defaults,pelvisAttackCompensation:amount,softAttackLegs:false},ref);

@@ -1,0 +1,143 @@
+{
+  "samples": 1390,
+  "maxStrikeDifference": 7.165737647045935e-15,
+  "maxHitPoseError": 0.0000013223235686408937,
+  "maxFollowthroughError": 1.2863743655007717e-15,
+  "maxReturnBacktrack": 0,
+  "maxEndpointError": 9.566618574882216e-16,
+  "maxCOMError": 5.556858423570246e-16,
+  "maxVelocityJump": 0.00031163429789127846,
+  "kneeRangeDegrees": [
+    3.2407810920412796,
+    128.0485482041823
+  ],
+  "recovery": "Pelvis-only Hit return; all other source motion continues; original end times unchanged.",
+  "results": [
+    {
+      "name": "KickL",
+      "path": "full-body kick / pelvis return",
+      "returnStart": 0.6133333333333333,
+      "returnEnd": 1.1633333333333333,
+      "endpointError": 9.566618574882216e-16
+    },
+    {
+      "name": "KickR",
+      "path": "full-body kick / pelvis return",
+      "returnStart": 0.5800000000000001,
+      "returnEnd": 1.1633333333333333,
+      "endpointError": 9.566618574882216e-16
+    },
+    {
+      "name": "headbutt",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.65,
+      "returnEnd": 0.9666666666666667,
+      "endpointError": 1.2412670766236366e-16
+    },
+    {
+      "name": "hookL",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.6615666707356771,
+      "returnEnd": 1.1,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "hookR",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.6517999966939291,
+      "returnEnd": 1.1,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "jabL",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.6833333333333333,
+      "returnEnd": 1,
+      "endpointError": 1.1443916996305594e-16
+    },
+    {
+      "name": "jabR",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.6833333333333333,
+      "returnEnd": 1.0333333333333334,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "KickL",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.7833333333333332,
+      "returnEnd": 1.1333333333333333,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "KickR",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.7166666666666667,
+      "returnEnd": 1.1,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "overL",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.7305333455403645,
+      "returnEnd": 1.2,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "overR",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.6918666521708171,
+      "returnEnd": 1.1,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "pike",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.8166666666666667,
+      "returnEnd": 1.0999999999999999,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "slashL",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.8752666473388673,
+      "returnEnd": 1.3,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "slashLD",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.9646666844685872,
+      "returnEnd": 1.3666666666666667,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "slashLU",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.8559666951497396,
+      "returnEnd": 1.2999999999999998,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "slashR",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.9726333618164062,
+      "returnEnd": 1.4,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "slashRD",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.8448666890462239,
+      "returnEnd": 1.2666666666666666,
+      "endpointError": 1.1102230246251565e-16
+    },
+    {
+      "name": "slashRU",
+      "path": "scheduled / moving gait",
+      "returnStart": 0.904966672261556,
+      "returnEnd": 1.3666666666666667,
+      "endpointError": 1.1102230246251565e-16
+    }
+  ]
+}

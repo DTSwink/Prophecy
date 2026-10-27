@@ -4,20 +4,22 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
-**Bodyflip October27 - approved three-axis response checkpoint:**
-User approved the main-app inertial response and opposite-angle percentage,
-then requested a push before kick work. All16 manual and timeline attacks use
-the shared pelvis/thigh/knee/foot response.50% targets half the opposite spine
-rotation and100% the full opposite rotation on yaw/pitch/roll; no headbutt case.
-Reference leg coordination and60 ms lookahead retained; upper orientations,
-rigid sockets and knee hinges preserved. Refresh now matches Throw Lab (green,
-under top-right scene controls).21 target-contract cases,7192 scheduled,
-2379 manual/gait and1676 rigid samples pass.93 sequence behavior checks pass;
-32-overlap timing3598-3790ms exceeds the3000ms bound and is a known limitation.
-Only Bodyflip source/tests/receipts/docs and this scoped handoff are included.
-Unrelated Unreal/FootIK/training work, live scenes, screenshots and caches stay
-local. No desktop/browser control; user Refresh loads the code. Recovery
-inventory regenerated for this checkpoint. [Details](Labs/BodyflipLab/README.md).
+**Bodyflip October27 - approved kick and attack-entry checkpoint:**
+User approved full-body airborne kicks, pelvis-only post-Hit recovery and
+Direct to Armed for all16 attacks. Viewer, timeline and manual paths share the
+same motion. The existing viewport checkbox (after Raw leg) skips pre-Armed
+motion, reaches Armed no earlier than authored timing, then retains the native
+strike/follow-through. Upper14 retain opposite-angle compensation and inertial
+legs; kicks retain recorded striking-leg dynamics and articulated balance.
+2596 all-attack direct-entry samples,1182 direct-kick samples,1314 original-kick
+samples and84 off-mode cases/5100 samples pass. Manual variants/rates/aim,
+moving baseline, COM/hinges, native upper motion, Armed continuity and seek
+checked.90 sequence checks pass;32 overlaps2764ms. Scoped source/tests/receipts,
+viewers and docs only; live scenes, screenshots, unrelated work remain local.
+No desktop/browser control or Unreal/NN/server restart. User Refresh loads it.
+Recovery inventory regenerated for the approved checkpoint on codex/standalone-sim.
+[Current details](Labs/BodyflipLab/README.md),
+[prior notes](Docs/Journal/Bodyflip-2026-10-27-pre-checkpoint.md).
 
 **Bodyflip October25 - approved motion checkpoint:** user accepted the knee fix
 and requested a push. Includes Idle/shared jump controls, flat new scenes, capsule

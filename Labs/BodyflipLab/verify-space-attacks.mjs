@@ -19,12 +19,19 @@ const baseline=t=>{const pose=run.sample(t);return {pose,root:pose.points[0],pha
 const upper=A.bones(names,parents),lower=names.map((_,i)=>i).filter(i=>!upper.includes(i));
 for(const [name,clip] of catalog){
  const segment=G.action({time:.5},baseline),e={attack:name,attackDelay:.1},attack=A.create(e,segment,catalog,names,parents,{...C.defaults,pelvisAttackCompensation:0});
+ if(attack.fullBodyKick){
+  const active=names.indexOf(C.effector(name)),hit=attack.sample(attack.hitTime).pose;
+  check(name+' uses full-body viewer motion',attack.fullBodyKick&&distance(hit.points[active],baseline(attack.hitTime).pose.points[active])>.1);
+  check(name+' enters and exits without snapping',poseError(attack.sample(attack.start).pose,baseline(attack.start).pose)<1e-9&&poseError(attack.sample(attack.returnEnd).pose,baseline(attack.returnEnd).pose)<1e-9);
+  check(name+' retains native source timing',Math.abs(attack.sourceFrame(attack.duration+1/60)-clip.meta.phases.armed-clip.meta.fps/60)<1e-9);
+  continue;
+ }
  check(name+' selects a pre-Armed frame',attack.match>=0&&attack.match<=clip.meta.phases.armed);
  check(name+' delay and entry are continuous',poseError(attack.sample(attack.start).pose,baseline(attack.start).pose)<1e-9&&poseError(attack.sample(attack.start+1e-7).pose,baseline(attack.start+1e-7).pose)<1e-8);
  let lowerError=0,vanillaError=0;
  for(let t=attack.start;t<=attack.end+.25;t+=1/120){const a=attack.sample(t).pose,b=baseline(t).pose;for(const i of lower)lowerError=Math.max(lowerError,distance(a.points[i],b.points[i]),qe(a.q[i],b.q[i]));if(t>=attack.start+attack.duration&&t<attack.end){const local=R.localize(a.points,a.q,parents),target=A.attackAt(clip,attack.sourceFrame(t-attack.start),names,parents);for(const i of upper)vanillaError=Math.max(vanillaError,qe(local.q[i],target.q[i]));}}
  check(name+' leaves root pelvis and both legs unchanged',lowerError<1e-9);
- check(name+' plays vanilla at native speed after Armed',vanillaError<1e-9&&Math.abs(attack.sourceFrame(attack.duration+1/60)-clip.meta.phases.armed-clip.meta.fps/60)<1e-9);
+ check(name+' plays vanilla at native speed through full follow-through',vanillaError<1e-9&&Math.abs(attack.sourceFrame(attack.duration+1/60)-clip.meta.phases.armed-clip.meta.fps/60)<1e-9);
  check(name+' returns to continuing base pose',poseError(attack.sample(attack.end+.25).pose,baseline(attack.end+.25).pose)<1e-10);
 }
 const paired=F.sequence(run,jumps,{mode:'spaceGym',jumpEvents:[event,{...event,id:'b',time:.8,attack:'jabL',attackDelay:0}]},parents,reference,null,catalog);

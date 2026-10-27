@@ -1,9 +1,10 @@
 {
-  "manualAttacks": 16,
-  "samples": 2379,
-  "maxUpperError": 1.5445080049538882e-15,
-  "maxParityError": 2.292986861754152e-15,
+  "manualAttacks": 14,
+  "samples": 2121,
+  "maxUpperError": 2.26310085968544e-15,
+  "maxParityError": 2.8513028731164004e-15,
+  "maxReturnError": 2.3894391225005003e-15,
   "maxEquivarianceError": 4.9599323020720576e-11,
-  "minKnee": 0.2525337387199305,
+  "minKnee": 0.25253321196499035,
   "maxKnee": 1.9897384273431664
 }
