@@ -12,9 +12,9 @@
   "measured": {
     "samples": 132,
     "meanGapBeforeCm": 14.074582314297679,
-    "meanGapAfterCm": 4.83549579007559,
-    "frame163GapCm": 2.316646252132326,
-    "maxAngle": 7.00100013142665,
-    "maxStep": 0.049625718246410856
+    "meanGapAfterCm": 4.8313075459352675,
+    "frame163GapCm": 2.31689913343911,
+    "maxAngle": 7.005363724696439,
+    "maxStep": 0.049625718246411286
   }
 }

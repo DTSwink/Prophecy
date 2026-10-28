@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "checks": [
+    "85-101 shoe stays upright instead of rolling sideways/upside-down",
+    "99 landing has no rotation snap",
+    "turn recovery spread across swing instead of last landing frames",
+    "material pins remain exact",
+    "complete shoe clearance and leg reach retained",
+    "raw NN source unchanged"
+  ],
+  "minUp": 0.8174602386175248,
+  "maxStep": 14.413731287861172,
+  "contactStep": 0.8992661607168372,
+  "maxMaterialError": 1.6243534171511178e-15,
+  "metrics": {
+    "maxPenetration": 1.1895237672643333e-7,
+    "maxReachError": 1.2567637595793301e-15,
+    "maxPelvis": 0.03307084807827322,
+    "maxFlatDeviation": 0,
+    "pins": [
+      124,
+      54
+    ]
+  }
+}

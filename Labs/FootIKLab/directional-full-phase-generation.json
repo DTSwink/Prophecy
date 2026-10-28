@@ -1,0 +1,59 @@
+{
+  "endpoint": "http://127.0.0.1:8890",
+  "cases": [
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "phase": 0.49,
+      "duration": 5,
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-phase-walk-backward.json",
+      "seconds": 5.855313400039449,
+      "cache": "inferred"
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "phase": 0.73,
+      "duration": 5,
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-phase-run-backward.json",
+      "seconds": 3.9067211999790743,
+      "cache": "inferred"
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "phase": 0,
+      "duration": 5,
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-phase-walk-left.json",
+      "seconds": 4.036369899986312,
+      "cache": "inferred"
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "phase": 0,
+      "duration": 5,
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-phase-walk-right.json",
+      "seconds": 3.8377375000272878,
+      "cache": "inferred"
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "phase": 0.49,
+      "duration": 5,
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-phase-run-left.json",
+      "seconds": 3.69297319999896,
+      "cache": "inferred"
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "phase": 0.73,
+      "duration": 5,
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-phase-run-right.json",
+      "seconds": 3.7368519000010565,
+      "cache": "inferred"
+    }
+  ]
+}

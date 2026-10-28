@@ -12,13 +12,13 @@
     "Corrected shoes remain clear and reachable"
   ],
   "releaseFrame": 89.5,
-  "groundRollDegrees": -45.00000000000001,
+  "groundRollDegrees": -41.1424913215335,
   "before": {
     "peakUp": 5.537726439861035,
     "peakKick": 3.105121362080057
   },
   "after": {
-    "peakUp": 2.927974885855913,
-    "peakKick": 0.8420139903590379
+    "peakUp": 2.577990165866675,
+    "peakKick": 1.0695309962290007
   }
 }

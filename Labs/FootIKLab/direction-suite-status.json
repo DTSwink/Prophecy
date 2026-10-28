@@ -1,0 +1,64 @@
+{
+  "passed": true,
+  "generatedAt": "2026-10-25T23:04:17.709Z",
+  "coreSha256": "88abc20955df97a52dd2db492e3cd8e1dbc7f69e46c18e6d86ee3dd4339d32e2",
+  "directional": {
+    "groups": [
+      {
+        "checks": 375,
+        "cases": 24,
+        "scope": "Original genuine NN phase0.21,24 gait/direction/terrain combinations",
+        "receipt": "direction-verification.json"
+      },
+      {
+        "checks": 318,
+        "cases": 24,
+        "scope": "Six additional genuine NN phases across24 gait/direction/terrain combinations",
+        "receipt": "direction-phase-verification.json"
+      },
+      {
+        "checks": 10,
+        "scope": "Focused lateral uneven release regression; includes two complete forward sequence identity checks",
+        "receipt": "direction-release-verification.json"
+      }
+    ],
+    "checks": 703
+  },
+  "forward": {
+    "currentIdentity": {
+      "scope": "Complete forward Walk and Run phase0.21 frame sequences byte-identical to the core immediately before the release/corridor fix",
+      "checks": 2,
+      "includedIn": "direction-release-verification.json (already counted in its10 checks)"
+    },
+    "priorBaseline": {
+      "checks": 263,
+      "scope": "Unchanged baseline passed before the final release/corridor fix; not rerun or added to the current directional total",
+      "suites": [
+        "verify.mjs",
+        "verify-run-travel.mjs",
+        "verify-exit-toeoff.mjs",
+        "verify-ankle.mjs",
+        "verify-level-exit.mjs",
+        "verify-run-ankle.mjs",
+        "verify-clearance.mjs"
+      ]
+    },
+    "currentTargeted": {
+      "checks": 20,
+      "scope": "20 targeted forward passes after final fix; overlap with prior263 baseline and are not added as distinct coverage",
+      "receipts": [
+        "run-travel-verification.json",
+        "exit-toeoff-verification.json"
+      ]
+    }
+  },
+  "reports": [
+    "snapshots/direction-audit-walk-backward.html",
+    "snapshots/direction-audit-walk-left.html",
+    "snapshots/direction-audit-walk-right.html",
+    "snapshots/direction-audit-run-backward.html",
+    "snapshots/direction-audit-run-left.html",
+    "snapshots/direction-audit-run-right.html"
+  ],
+  "scope": "Reports regenerated against current source. Current703 grouped directional checks, with explicitly overlapping forward evidence; no inference, server, browser or Unreal changes."
+}

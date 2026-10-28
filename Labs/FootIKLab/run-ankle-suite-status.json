@@ -1,0 +1,47 @@
+[
+  {
+    "file": "verify-run-ankle.mjs",
+    "passed": true,
+    "checks": 8
+  },
+  {
+    "file": "verify-ankle.mjs",
+    "passed": true,
+    "checks": 9
+  },
+  {
+    "file": "verify-toe-release.mjs",
+    "passed": true,
+    "checks": 9
+  },
+  {
+    "file": "verify-pelvis-transfer.mjs",
+    "passed": true,
+    "checks": 11
+  },
+  {
+    "file": "verify-exit-toeoff.mjs",
+    "passed": true,
+    "checks": 8
+  },
+  {
+    "file": "verify-level-exit.mjs",
+    "passed": true,
+    "checks": 8
+  },
+  {
+    "file": "verify-release.mjs",
+    "passed": true,
+    "checks": 12
+  },
+  {
+    "file": "verify-inertia.mjs",
+    "passed": true,
+    "checks": 12
+  },
+  {
+    "file": "verify.mjs",
+    "passed": true,
+    "checks": 211
+  }
+]

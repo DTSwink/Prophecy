@@ -217,7 +217,7 @@
     {
       "gait": "walk",
       "terrain": "flat",
-      "prepareMs": 119.32740000000001,
+      "prepareMs": 172.7726,
       "maxPenetration": 0,
       "maxReachError": 0,
       "maxPelvis": 0,
@@ -244,28 +244,28 @@
     {
       "gait": "walk",
       "terrain": "stairs",
-      "prepareMs": 337.66409999999996,
+      "prepareMs": 519.1277,
       "maxPenetration": 1.5166646494257918e-7,
-      "maxReachError": 1.080775883923609e-15,
-      "maxPelvis": 0.05042644941066432,
+      "maxReachError": 1.1309332765762812e-15,
+      "maxPelvis": 0.06119910195129006,
       "maxFlatDeviation": 0,
       "pins": [
         99,
         107
       ],
-      "maxBoneError": 8.881784197001252e-16,
+      "maxBoneError": 7.216449660063518e-16,
       "maxPinDrift": 2.0937636404822944e-10,
-      "maxMaterialError": 1.478098416517953e-15,
-      "maxFrameAngle": 10.578360363316662,
-      "maxFrameDistance": 0.06616131383618405,
+      "maxMaterialError": 1.1957467920563633e-15,
+      "maxFrameAngle": 8.965393327526051,
+      "maxFrameDistance": 0.06618389038303006,
       "flatFrames": 243,
       "pinPairs": 194,
       "pivotTransfers": 8,
-      "maxFootCorrection": 57.24238303444059,
+      "maxFootCorrection": 50.822073714168546,
       "maxExtraRoll": 26.766309398930403,
-      "maxContactDownPitch": 44.99999999999999,
-      "maxToeLocalError": 2.220446049250313e-16,
-      "maxToeLengthError": 6.661338147750939e-16,
+      "maxContactDownPitch": 45.00000000000001,
+      "maxToeLocalError": 4.440892098500626e-16,
+      "maxToeLengthError": 5.828670879282072e-16,
       "rollFrames": 206,
       "frame80": {
         "leftRollDeg": 24.88450046524037,
@@ -279,7 +279,7 @@
           "angles": [
             38.36253442022243,
             38.101376879943615,
-            37.91860450192177
+            37.92877007033234
           ],
           "maxChange": 0.2611575402788162
         },
@@ -287,120 +287,120 @@
           "frame": 96,
           "side": "R",
           "angles": [
-            82.64016568299634,
-            78.80910005676397,
-            75.18626567479136
+            86.60539788238795,
+            82.16273231193534,
+            77.86593087161009
           ],
-          "maxChange": 3.8310656262323732
+          "maxChange": 4.442665570452604
         },
         {
           "frame": 104,
           "side": "R",
           "angles": [
-            57.46673376206589,
-            56.425763282710065,
+            57.60486844833182,
+            56.44227410216304,
             55.582474700192094,
-            56.10545874488658,
-            56.63630168487985
+            56.1482174843246,
+            56.84778577250995
           ],
           "steps": [
-            -1.0409704793558276,
-            -0.843288582517971,
-            0.5229840446944891,
-            0.5308429399932635
+            -1.162594346168781,
+            -0.8597994019709461,
+            0.5657427841325031,
+            0.699568288185354
           ]
         }
       ],
       "ascent84to92": {
-        "minHalfFrameLift": 0.015462953282900815,
-        "maxHalfFrameLift": 0.022935349615026857,
-        "riserFrame": 90.5,
-        "riserClearance": 0.09088751452909083
+        "minHalfFrameLift": 0.015462953282900926,
+        "maxHalfFrameLift": 0.02293534961502741,
+        "riserFrame": 91,
+        "riserClearance": 0.06713416333322275
       },
       "diagonal108": {
         "forwardCm": 5.879986256179981,
-        "upCm": 3.510230997414876
+        "upCm": 3.5102309974149204
       },
       "exitSwing171to176": {
-        "minLift": 0.0076856452879976445,
-        "maxLift": 0.01626026805835057,
-        "minForward": 0.024143961304321948
+        "minLift": 0.00768570999420648,
+        "maxLift": 0.016260241430316125,
+        "minForward": 0.024143976106115517
       },
-      "maxPoleStep": 0.8528195424030218,
-      "maxPoleAcceleration": 0.1907469213495557,
+      "maxPoleStep": 0.8587037688211102,
+      "maxPoleAcceleration": 0.18968526715470746,
       "pole79to80": [
-        0.385969669318988,
-        0.288258740833335,
-        0.1565304371812337,
-        0.3210372978747986
+        0.3844416582245376,
+        0.28618169286404194,
+        0.1537589967565297,
+        0.322423263604867
       ],
       "trailing101": {
-        "pitch": -7.13385740241234,
+        "pitch": -7.133857402412379,
         "extraRoll": 0.32570746763502
       },
       "trailing107": {
-        "pitch": -27.86525338045485
+        "pitch": -27.86525338045483
       },
       "exactNNExitFrame": 205.5
     },
     {
       "gait": "walk",
       "terrain": "down",
-      "prepareMs": 268.0203,
-      "maxPenetration": 3.7902932503719455e-7,
-      "maxReachError": 9.522225673746189e-16,
+      "prepareMs": 442.4125999999999,
+      "maxPenetration": 3.7902932514821686e-7,
+      "maxReachError": 1.139331726283876e-15,
       "maxPelvis": 0.3,
       "maxFlatDeviation": 0,
       "pins": [
         115,
         115
       ],
-      "maxBoneError": 8.881784197001252e-16,
+      "maxBoneError": 9.43689570931383e-16,
       "maxPinDrift": 2.6608861562316576e-10,
-      "maxMaterialError": 9.742167503148516e-16,
-      "maxFrameAngle": 12.381463541991726,
-      "maxFrameDistance": 0.0636543548312606,
+      "maxMaterialError": 1.3486468179176138e-15,
+      "maxFrameAngle": 12.381355973103098,
+      "maxFrameDistance": 0.0627319730937563,
       "flatFrames": 273,
       "pinPairs": 226,
       "pivotTransfers": 0,
-      "maxFootCorrection": 52.93017460958373,
+      "maxFootCorrection": 53.919350377502596,
       "maxExtraRoll": 50.29037371620255,
-      "maxContactDownPitch": 51.608493372378256,
-      "maxToeLocalError": 5.551115123125783e-16,
-      "maxToeLengthError": 4.718447854656915e-16,
+      "maxContactDownPitch": 51.608493372378234,
+      "maxToeLocalError": 4.440892098500626e-16,
+      "maxToeLengthError": 6.38378239159465e-16,
       "rollFrames": 230
     },
     {
       "gait": "walk",
       "terrain": "uneven",
-      "prepareMs": 272.7514,
-      "maxPenetration": 1.1865637888908154e-7,
-      "maxReachError": 1.0885883954835574e-15,
-      "maxPelvis": 0.027323502605574257,
+      "prepareMs": 477.81730000000016,
+      "maxPenetration": 1.0046108450678659e-7,
+      "maxReachError": 1.215713222484137e-15,
+      "maxPelvis": 0.017142578012116827,
       "maxFlatDeviation": 0,
       "pins": [
-        122,
+        120,
         122
       ],
-      "maxBoneError": 8.881784197001252e-16,
+      "maxBoneError": 8.326672684688674e-16,
       "maxPinDrift": 2.0937623755965065e-10,
       "maxMaterialError": 1.1270951119217139e-15,
-      "maxFrameAngle": 10.261773019823563,
-      "maxFrameDistance": 0.05930066530431192,
+      "maxFrameAngle": 8.707232637197523,
+      "maxFrameDistance": 0.05935413820978621,
       "flatFrames": 273,
       "pinPairs": 230,
-      "pivotTransfers": 10,
-      "maxFootCorrection": 52.41577217916183,
-      "maxExtraRoll": 13.5,
+      "pivotTransfers": 8,
+      "maxFootCorrection": 51.830799931876804,
+      "maxExtraRoll": 0.6905618573989827,
       "maxContactDownPitch": 43.58438150032977,
       "maxToeLocalError": 3.3306690738754696e-16,
       "maxToeLengthError": 7.771561172376096e-16,
-      "rollFrames": 244
+      "rollFrames": 242
     },
     {
       "gait": "run",
       "terrain": "flat",
-      "prepareMs": 93.5659999999998,
+      "prepareMs": 103.08070000000043,
       "maxPenetration": 0,
       "maxReachError": 0,
       "maxPelvis": 0,
@@ -427,37 +427,37 @@
     {
       "gait": "run",
       "terrain": "stairs",
-      "prepareMs": 214.16879999999946,
+      "prepareMs": 274.6368999999995,
       "maxPenetration": 2.910839054237613e-7,
-      "maxReachError": 1.0068810866857322e-15,
-      "maxPelvis": 0.031485409895845584,
+      "maxReachError": 1.3148059621411757e-15,
+      "maxPelvis": 0.04243583680974986,
       "maxFlatDeviation": 0,
       "pins": [
         36,
         15
       ],
-      "maxBoneError": 9.43689570931383e-16,
+      "maxBoneError": 1.1657341758564144e-15,
       "maxPinDrift": 4.440892098500626e-16,
-      "maxMaterialError": 9.122468574731976e-16,
+      "maxMaterialError": 1.0163999321966297e-15,
       "maxFrameAngle": 12.727138019251946,
-      "maxFrameDistance": 0.10754531412247882,
-      "flatFrames": 439,
+      "maxFrameDistance": 0.1075453141224788,
+      "flatFrames": 416,
       "pinPairs": 42,
       "pivotTransfers": 6,
-      "maxFootCorrection": 99.35688959916062,
+      "maxFootCorrection": 98.34369919603384,
       "maxExtraRoll": 20.919610382084613,
       "maxContactDownPitch": 67.80968995074156,
       "maxToeLocalError": 6.661338147750939e-16,
-      "maxToeLengthError": 5.828670879282072e-16,
+      "maxToeLengthError": 5.273559366969494e-16,
       "rollFrames": 49,
-      "exactNNExitFrame": 87
+      "exactNNExitFrame": 98.5
     },
     {
       "gait": "run",
       "terrain": "down",
-      "prepareMs": 180.04149999999936,
+      "prepareMs": 236.78180000000066,
       "maxPenetration": 2.9108390511844995e-7,
-      "maxReachError": 1.0496782941377504e-15,
+      "maxReachError": 1.0909742002592507e-15,
       "maxPelvis": 0.22557038259895812,
       "maxFlatDeviation": 0,
       "pins": [
@@ -466,13 +466,13 @@
       ],
       "maxBoneError": 8.326672684688674e-16,
       "maxPinDrift": 1.3877787807814457e-17,
-      "maxMaterialError": 9.226380847435024e-16,
-      "maxFrameAngle": 13.630708594501616,
+      "maxMaterialError": 1.1270951119217139e-15,
+      "maxFrameAngle": 13.63533295811554,
       "maxFrameDistance": 0.12513955881961653,
       "flatFrames": 469,
       "pinPairs": 63,
       "pivotTransfers": 0,
-      "maxFootCorrection": 63.21161817340487,
+      "maxFootCorrection": 65.38415681648158,
       "maxExtraRoll": 26.999999999999996,
       "maxContactDownPitch": 67.80968995074156,
       "maxToeLocalError": 3.3306690738754696e-16,
@@ -482,7 +482,7 @@
     {
       "gait": "run",
       "terrain": "uneven",
-      "prepareMs": 172.2515999999996,
+      "prepareMs": 243.1140000000005,
       "maxPenetration": 2.4903362938477613e-7,
       "maxReachError": 1.11722656473849e-15,
       "maxPelvis": 0.020576850896935284,
@@ -494,16 +494,16 @@
       "maxBoneError": 8.326672684688674e-16,
       "maxPinDrift": 2.7755575615628914e-17,
       "maxMaterialError": 9.630824789273724e-16,
-      "maxFrameAngle": 14.155889815508376,
-      "maxFrameDistance": 0.10765911316305934,
+      "maxFrameAngle": 14.157577175203876,
+      "maxFrameDistance": 0.10522671736034352,
       "flatFrames": 469,
       "pinPairs": 61,
       "pivotTransfers": 4,
-      "maxFootCorrection": 58.8202390408725,
+      "maxFootCorrection": 63.450741200410285,
       "maxExtraRoll": 12.05567849938177,
       "maxContactDownPitch": 68.11834557698299,
       "maxToeLocalError": 2.220446049250313e-16,
-      "maxToeLengthError": 4.718447854656915e-16,
+      "maxToeLengthError": 5.551115123125783e-16,
       "rollFrames": 67
     }
   ]

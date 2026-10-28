@@ -1,0 +1,54 @@
+{
+  "passed": false,
+  "focused": [
+    {
+      "file": "verify-velocity.mjs",
+      "passed": true,
+      "checks": 18
+    },
+    {
+      "file": "verify-clearance.mjs",
+      "passed": true,
+      "checks": 7
+    },
+    {
+      "file": "verify-ankle.mjs",
+      "passed": true,
+      "checks": 9
+    },
+    {
+      "file": "verify-release.mjs",
+      "passed": true,
+      "checks": 12
+    },
+    {
+      "file": "verify-pelvis-release.mjs",
+      "passed": true,
+      "checks": 4
+    },
+    {
+      "file": "verify-riser.mjs",
+      "passed": true,
+      "checks": 9
+    },
+    {
+      "file": "verify-inertia.mjs",
+      "passed": true,
+      "checks": 12
+    },
+    {
+      "file": "verify-toe-release.mjs",
+      "passed": true,
+      "checks": 8
+    }
+  ],
+  "broader": {
+    "file": "verify.mjs",
+    "passed": 210,
+    "total": 211,
+    "failures": [
+      "84-92 left swing avoids the late riser lift spike"
+    ],
+    "note": "Read-only diagnostic ran all checks without replacing the previous verification receipt. Removing the 50ms release restores a lift-acceleration regression in the default fixture; bounds were not weakened."
+  }
+}

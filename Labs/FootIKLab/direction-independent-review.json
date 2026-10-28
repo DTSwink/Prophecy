@@ -1,0 +1,850 @@
+{
+  "phaseCases": [
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "phase": 0,
+      "terrain": "flat",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 0,
+        "maxReachError": 0,
+        "maxPelvis": 0,
+        "maxFlatDeviation": 0,
+        "pins": [
+          0,
+          0
+        ]
+      },
+      "maxKneePole": 2.032134,
+      "maxFootStep": 3.723431,
+      "peakFrames": [
+        4,
+        30.5
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "phase": 0,
+      "terrain": "stairs",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 4.470555092783712e-9,
+        "maxReachError": 7.731808680624463e-16,
+        "maxPelvis": 0.00796777600891585,
+        "maxFlatDeviation": 0,
+        "pins": [
+          53,
+          0
+        ]
+      },
+      "maxKneePole": 3.085822,
+      "maxFootStep": 4.046878,
+      "peakFrames": [
+        58.5,
+        82
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "phase": 0,
+      "terrain": "down",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 9.438198933509057e-8,
+        "maxReachError": 7.438546047598635e-16,
+        "maxPelvis": 0.11507923003678211,
+        "maxFlatDeviation": 0,
+        "pins": [
+          50,
+          0
+        ]
+      },
+      "maxKneePole": 2.233273,
+      "maxFootStep": 4.204204,
+      "peakFrames": [
+        68.5,
+        30.5
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "phase": 0,
+      "terrain": "uneven",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 4.470554898494683e-9,
+        "maxReachError": 7.708108638592624e-16,
+        "maxPelvis": 1.1102230246251565e-16,
+        "maxFlatDeviation": 0,
+        "pins": [
+          53,
+          0
+        ]
+      },
+      "maxKneePole": 2.391981,
+      "maxFootStep": 3.723431,
+      "peakFrames": [
+        4,
+        30.5
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "phase": 0.49,
+      "terrain": "flat",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 0,
+        "maxReachError": 0,
+        "maxPelvis": 0,
+        "maxFlatDeviation": 0,
+        "pins": [
+          0,
+          0
+        ]
+      },
+      "maxKneePole": 2.333662,
+      "maxFootStep": 6.448005,
+      "peakFrames": [
+        84.5,
+        58
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "phase": 0.49,
+      "terrain": "stairs",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 6.68617905486002e-8,
+        "maxReachError": 1.1270951119217139e-15,
+        "maxPelvis": 0.039453897592883924,
+        "maxFlatDeviation": 0,
+        "pins": [
+          34,
+          17
+        ]
+      },
+      "maxKneePole": 2.683282,
+      "maxFootStep": 10.916784,
+      "peakFrames": [
+        87.5,
+        48.5
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "phase": 0.49,
+      "terrain": "down",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 8.118971950299425e-8,
+        "maxReachError": 1.0920452852123027e-15,
+        "maxPelvis": 0.11181202919240076,
+        "maxFlatDeviation": 0,
+        "pins": [
+          58,
+          28
+        ]
+      },
+      "maxKneePole": 3.317877,
+      "maxFootStep": 29.250391,
+      "peakFrames": [
+        89.5,
+        34
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "phase": 0.49,
+      "terrain": "uneven",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 9.015232382836302e-8,
+        "maxReachError": 1.0299525296675035e-15,
+        "maxPelvis": 0.03198653866930867,
+        "maxFlatDeviation": 0,
+        "pins": [
+          55,
+          28
+        ]
+      },
+      "maxKneePole": 3.21806,
+      "maxFootStep": 23.78276,
+      "peakFrames": [
+        89.5,
+        73
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "phase": 0.73,
+      "terrain": "flat",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 0,
+        "maxReachError": 0,
+        "maxPelvis": 0,
+        "maxFlatDeviation": 0,
+        "pins": [
+          0,
+          0
+        ]
+      },
+      "maxKneePole": 2.116821,
+      "maxFootStep": 4.449016,
+      "peakFrames": [
+        26.5,
+        66.5
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "phase": 0.73,
+      "terrain": "stairs",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 1.3431717094114504e-7,
+        "maxReachError": 9.155133597044475e-16,
+        "maxPelvis": 0.03928937361970165,
+        "maxFlatDeviation": 0,
+        "pins": [
+          33,
+          16
+        ]
+      },
+      "maxKneePole": 2.335336,
+      "maxFootStep": 6.8733,
+      "peakFrames": [
+        82.5,
+        48.5
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "phase": 0.73,
+      "terrain": "down",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 3.1974401726309054e-7,
+        "maxReachError": 1.0026641665932502e-15,
+        "maxPelvis": 0.1024675397975976,
+        "maxFlatDeviation": 0,
+        "pins": [
+          56,
+          28
+        ]
+      },
+      "maxKneePole": 3.913093,
+      "maxFootStep": 23.221829,
+      "peakFrames": [
+        89.5,
+        32
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "phase": 0.73,
+      "terrain": "uneven",
+      "duration": 1.5,
+      "metrics": {
+        "maxPenetration": 3.0095702752142017e-7,
+        "maxReachError": 9.209666375651935e-16,
+        "maxPelvis": 0.040382774573832436,
+        "maxFlatDeviation": 0,
+        "pins": [
+          56,
+          29
+        ]
+      },
+      "maxKneePole": 2.821296,
+      "maxFootStep": 23.074428,
+      "peakFrames": [
+        89.5,
+        48.5
+      ],
+      "pinError": 0,
+      "source": "matching omni seed + autoregressive lower/upper NN"
+    }
+  ],
+  "surfaceCases": [
+    {
+      "gait": "walk",
+      "direction": "forward",
+      "slopeAngle": 45,
+      "approach": "toward",
+      "prepAndAuditMs": 269.79369999999994,
+      "maxFullPen": 2.3180090069629955e-7,
+      "at": {
+        "frame": 260,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 2.3180090069629955e-7,
+      "maxAnkleStep": 5.000000000000053,
+      "maxKneeStep": 5.00626106187656,
+      "wallContacts": 276
+    },
+    {
+      "gait": "walk",
+      "direction": "forward",
+      "slopeAngle": 45,
+      "approach": "parallel",
+      "prepAndAuditMs": 237.04279999999972,
+      "maxFullPen": 1.6587135864831737e-7,
+      "at": {
+        "frame": 217.5,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 1.6587135864831737e-7,
+      "maxAnkleStep": 5.000000000000042,
+      "maxKneeStep": 5.197580683424055,
+      "wallContacts": 473
+    },
+    {
+      "gait": "walk",
+      "direction": "forward",
+      "slopeAngle": 90,
+      "approach": "toward",
+      "prepAndAuditMs": 282.01089999999976,
+      "maxFullPen": 2.789331486063862e-7,
+      "at": {
+        "frame": 188,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 2.789331484676083e-7,
+      "maxAnkleStep": 11.246567674718985,
+      "maxKneeStep": 8.307982254030927,
+      "wallContacts": 69
+    },
+    {
+      "gait": "walk",
+      "direction": "forward",
+      "slopeAngle": 90,
+      "approach": "parallel",
+      "prepAndAuditMs": 239.41740000000027,
+      "maxFullPen": 9.482921128783334e-8,
+      "at": {
+        "frame": 42,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 9.48292114543668e-8,
+      "maxAnkleStep": 6.295684931698596,
+      "maxKneeStep": 5.892428377270624,
+      "wallContacts": 72
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "slopeAngle": 45,
+      "approach": "toward",
+      "prepAndAuditMs": 274.4418999999998,
+      "maxFullPen": 6.617854823864899e-8,
+      "at": {
+        "frame": 83.5,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 6.617854816926005e-8,
+      "maxAnkleStep": 5.000000000000053,
+      "maxKneeStep": 5.07491701328938,
+      "wallContacts": 315
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "slopeAngle": 45,
+      "approach": "parallel",
+      "prepAndAuditMs": 226.83809999999994,
+      "maxFullPen": 6.494887514613135e-8,
+      "at": {
+        "frame": 294,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 6.494887514613135e-8,
+      "maxAnkleStep": 5.000000000000032,
+      "maxKneeStep": 4.916974946204787,
+      "wallContacts": 450
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "slopeAngle": 90,
+      "approach": "toward",
+      "prepAndAuditMs": 261.1666,
+      "maxFullPen": 6.079354477427141e-8,
+      "at": {
+        "frame": 100,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 6.079354477427141e-8,
+      "maxAnkleStep": 5.000000000000053,
+      "maxKneeStep": 8.116986282903438,
+      "wallContacts": 66
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "slopeAngle": 90,
+      "approach": "parallel",
+      "prepAndAuditMs": 225.92309999999998,
+      "maxFullPen": 9.214367787356611e-9,
+      "at": {
+        "frame": 28,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 9.214367787356611e-9,
+      "maxAnkleStep": 5.000000000000026,
+      "maxKneeStep": 4.633504004253041,
+      "wallContacts": 66
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "slopeAngle": 45,
+      "approach": "toward",
+      "prepAndAuditMs": 252.65940000000046,
+      "maxFullPen": 1.6860444729260848e-7,
+      "at": {
+        "frame": 284,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 1.6860444729260848e-7,
+      "maxAnkleStep": 5.000000000000047,
+      "maxKneeStep": 4.3635767313158285,
+      "wallContacts": 283
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "slopeAngle": 45,
+      "approach": "parallel",
+      "prepAndAuditMs": 218.63770000000022,
+      "maxFullPen": 1.686044484167093e-7,
+      "at": {
+        "frame": 284,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 1.686044484236482e-7,
+      "maxAnkleStep": 5.000000000000039,
+      "maxKneeStep": 5.728170174507911,
+      "wallContacts": 362
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "slopeAngle": 90,
+      "approach": "toward",
+      "prepAndAuditMs": 253.66330000000016,
+      "maxFullPen": 0.00006626256768460215,
+      "at": {
+        "frame": 255.5,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 0.00006626256768460215,
+      "maxAnkleStep": 7.909622998726608,
+      "maxKneeStep": 6.373161037591498,
+      "wallContacts": 70
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "slopeAngle": 90,
+      "approach": "parallel",
+      "prepAndAuditMs": 225.00910000000022,
+      "maxFullPen": 7.395075311107604e-8,
+      "at": {
+        "frame": 22,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 7.395075311107604e-8,
+      "maxAnkleStep": 8.016530507454155,
+      "maxKneeStep": 5.521921607459478,
+      "wallContacts": 67
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "slopeAngle": 45,
+      "approach": "toward",
+      "prepAndAuditMs": 250.96230000000014,
+      "maxFullPen": 2.4641431339844644e-7,
+      "at": {
+        "frame": 273.5,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 2.4641431295435723e-7,
+      "maxAnkleStep": 5.0000000000000515,
+      "maxKneeStep": 4.483136077566434,
+      "wallContacts": 272
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "slopeAngle": 45,
+      "approach": "parallel",
+      "prepAndAuditMs": 226.6344999999992,
+      "maxFullPen": 3.042065246372516e-7,
+      "at": {
+        "frame": 286,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 3.042065245401071e-7,
+      "maxAnkleStep": 6.064633906124253,
+      "maxKneeStep": 5.998165290777394,
+      "wallContacts": 355
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "slopeAngle": 90,
+      "approach": "toward",
+      "prepAndAuditMs": 248.8777,
+      "maxFullPen": 3.840861115252107e-7,
+      "at": {
+        "frame": 294,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 3.840861115252107e-7,
+      "maxAnkleStep": 8.64685643415424,
+      "maxKneeStep": 6.694440923424502,
+      "wallContacts": 77
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "slopeAngle": 90,
+      "approach": "parallel",
+      "prepAndAuditMs": 225.63619999999992,
+      "maxFullPen": 9.014421561602715e-8,
+      "at": {
+        "frame": 32,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 9.014421553276042e-8,
+      "maxAnkleStep": 5.000000000000031,
+      "maxKneeStep": 4.526395546439748,
+      "wallContacts": 69
+    },
+    {
+      "gait": "run",
+      "direction": "forward",
+      "slopeAngle": 45,
+      "approach": "toward",
+      "prepAndAuditMs": 281.22180000000026,
+      "maxFullPen": 2.6991592072533876e-7,
+      "at": {
+        "frame": 196.5,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 2.6991592072533876e-7,
+      "maxAnkleStep": 8.757976077927792,
+      "maxKneeStep": 6.4272491208002185,
+      "wallContacts": 165
+    },
+    {
+      "gait": "run",
+      "direction": "forward",
+      "slopeAngle": 45,
+      "approach": "parallel",
+      "prepAndAuditMs": 237.04880000000048,
+      "maxFullPen": 4.687968628708239e-7,
+      "at": {
+        "frame": 221.5,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 4.6879686305123514e-7,
+      "maxAnkleStep": 5.000000000000058,
+      "maxKneeStep": 7.3535440659233124,
+      "wallContacts": 318
+    },
+    {
+      "gait": "run",
+      "direction": "forward",
+      "slopeAngle": 90,
+      "approach": "toward",
+      "prepAndAuditMs": 248.0000999999993,
+      "maxFullPen": 0.0000016639628461212475,
+      "at": {
+        "frame": 298,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 0.0000016639628460934919,
+      "maxAnkleStep": 7.038138164541706,
+      "maxKneeStep": 11.854450802720898,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "forward",
+      "slopeAngle": 90,
+      "approach": "parallel",
+      "prepAndAuditMs": 218.89059999999972,
+      "maxFullPen": 1.9457507682820456e-7,
+      "at": {
+        "frame": 32,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 1.9457507651569485e-7,
+      "maxAnkleStep": 8.555903298528328,
+      "maxKneeStep": 10.531012279720064,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "slopeAngle": 45,
+      "approach": "toward",
+      "prepAndAuditMs": 235.7390000000005,
+      "maxFullPen": 7.526223466669535e-8,
+      "at": {
+        "frame": 152,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 7.526223466669535e-8,
+      "maxAnkleStep": 5.000000000000032,
+      "maxKneeStep": 8.920762982073049,
+      "wallContacts": 216
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "slopeAngle": 45,
+      "approach": "parallel",
+      "prepAndAuditMs": 216.68059999999969,
+      "maxFullPen": 6.024078226529728e-8,
+      "at": {
+        "frame": 210,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 6.024078226529728e-8,
+      "maxAnkleStep": 5.00000000000007,
+      "maxKneeStep": 7.738650616611922,
+      "wallContacts": 292
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "slopeAngle": 90,
+      "approach": "toward",
+      "prepAndAuditMs": 239.9922999999999,
+      "maxFullPen": 2.2545430987492533e-7,
+      "at": {
+        "frame": 32,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 2.2545431009696993e-7,
+      "maxAnkleStep": 9.113209591454714,
+      "maxKneeStep": 8.708756641858574,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "slopeAngle": 90,
+      "approach": "parallel",
+      "prepAndAuditMs": 238.29299999999967,
+      "maxFullPen": 1.4457323326833802e-8,
+      "at": {
+        "frame": 119,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 1.445732302152247e-8,
+      "maxAnkleStep": 5.000000000000041,
+      "maxKneeStep": 6.512694648310685,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "slopeAngle": 45,
+      "approach": "toward",
+      "prepAndAuditMs": 247.7551000000003,
+      "maxFullPen": 3.853063959280423e-7,
+      "at": {
+        "frame": 27.5,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 3.8530639584477555e-7,
+      "maxAnkleStep": 6.333880497008846,
+      "maxKneeStep": 5.829158661444755,
+      "wallContacts": 234
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "slopeAngle": 45,
+      "approach": "parallel",
+      "prepAndAuditMs": 218.4976999999999,
+      "maxFullPen": 3.427733575138425e-7,
+      "at": {
+        "frame": 26.5,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 3.427733575138425e-7,
+      "maxAnkleStep": 5.968846324903559,
+      "maxKneeStep": 6.6127509856636175,
+      "wallContacts": 319
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "slopeAngle": 90,
+      "approach": "toward",
+      "prepAndAuditMs": 234.21590000000106,
+      "maxFullPen": 4.4828090053905534e-7,
+      "at": {
+        "frame": 274,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 4.4828090020598843e-7,
+      "maxAnkleStep": 7.413125932207284,
+      "maxKneeStep": 10.059634202356657,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "slopeAngle": 90,
+      "approach": "parallel",
+      "prepAndAuditMs": 213.64550000000054,
+      "maxFullPen": 5.994463666489952e-8,
+      "at": {
+        "frame": 22,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 5.99446368036774e-8,
+      "maxAnkleStep": 8.573397913684307,
+      "maxKneeStep": 8.567186881244627,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "slopeAngle": 45,
+      "approach": "toward",
+      "prepAndAuditMs": 255.58770000000004,
+      "maxFullPen": 8.462205203230155e-7,
+      "at": {
+        "frame": 276,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "cornerPen": 8.462205203230155e-7,
+      "maxAnkleStep": 5.66539447724794,
+      "maxKneeStep": 7.867916079876001,
+      "wallContacts": 227
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "slopeAngle": 45,
+      "approach": "parallel",
+      "prepAndAuditMs": 229.01010000000133,
+      "maxFullPen": 4.602296746194709e-7,
+      "at": {
+        "frame": 158,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 4.602296746194709e-7,
+      "maxAnkleStep": 5.000000000000063,
+      "maxKneeStep": 5.8700936732247735,
+      "wallContacts": 371
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "slopeAngle": 90,
+      "approach": "toward",
+      "prepAndAuditMs": 245.79219999999987,
+      "maxFullPen": 5.249055172740213e-7,
+      "at": {
+        "frame": 268,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 5.249055172740213e-7,
+      "maxAnkleStep": 6.358035249162065,
+      "maxKneeStep": 7.436017831909373,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "slopeAngle": 90,
+      "approach": "parallel",
+      "prepAndAuditMs": 222.69530000000123,
+      "maxFullPen": 9.762386191242659e-8,
+      "at": {
+        "frame": 46,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "cornerPen": 9.762386191242659e-8,
+      "maxAnkleStep": 5.981871142711918,
+      "maxKneeStep": 5.4140352328141805,
+      "wallContacts": 103
+    }
+  ]
+}

@@ -1,0 +1,4767 @@
+{
+  "passed": true,
+  "scope": "Six genuine directional NN fixtures, four terrain modes; procedural core before eventual NN handoff. Numeric checks do not replace rendered inspection.",
+  "sourceSha256": "88abc20955df97a52dd2db492e3cd8e1dbc7f69e46c18e6d86ee3dd4339d32e2",
+  "beforeSourceSha256": "7a9416bf49b25c9e483ff31ecedd2147157425f75f6965990c240c0c356543ab",
+  "checks": [
+    {
+      "name": "walk/backward preserves genuine directional NN provenance",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "referenceError": 0
+      }
+    },
+    {
+      "name": "walk/backward decodes command heading and direction rather than rotating a forward bank",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/flat finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/flat uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "walk/backward/flat current-source bone lengths retained",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/flat commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 5.293955920339377e-23
+    },
+    {
+      "name": "walk/backward/flat corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/flat corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/flat bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/flat material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/flat retained material pivot does not slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/flat contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/flat knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.032134
+    },
+    {
+      "name": "walk/backward/flat no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 4.077391233365665,
+        "footStep": 3.8758233805950564,
+        "sourceStep": 4.077391233365665,
+        "stepLocation": {
+          "frame": 196.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 4.077391233365665
+        }
+      }
+    },
+    {
+      "name": "walk/backward/flat no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.04126680548416604,
+        "positionLocation": {
+          "frame": 244,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04126680548416604
+        }
+      }
+    },
+    {
+      "name": "walk/backward/flat terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 0,
+        "pinPairs": 0,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "walk/backward/flat reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/stairs finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/stairs uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 149
+      }
+    },
+    {
+      "name": "walk/backward/stairs current-source bone lengths retained",
+      "passed": true,
+      "measured": 9.43689570931383e-16
+    },
+    {
+      "name": "walk/backward/stairs commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/stairs corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 1.2139029981206306e-7
+    },
+    {
+      "name": "walk/backward/stairs corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.0778315928076987e-15
+    },
+    {
+      "name": "walk/backward/stairs bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.044844800536700764
+    },
+    {
+      "name": "walk/backward/stairs material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.066334393690002e-15
+    },
+    {
+      "name": "walk/backward/stairs retained material pivot does not slide",
+      "passed": true,
+      "measured": 8.882055243408597e-16
+    },
+    {
+      "name": "walk/backward/stairs contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000029575586669421963
+    },
+    {
+      "name": "walk/backward/stairs knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.668973
+    },
+    {
+      "name": "walk/backward/stairs no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 5.037823216891601,
+        "footStep": 3.8494514700078706,
+        "sourceStep": 4.077391233365665,
+        "stepLocation": {
+          "frame": 74.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 1.8624369832813878
+        }
+      }
+    },
+    {
+      "name": "walk/backward/stairs no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.04124474423463635,
+        "positionLocation": {
+          "frame": 4.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04124474423463635
+        }
+      }
+    },
+    {
+      "name": "walk/backward/stairs terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 262,
+        "pinPairs": 248,
+        "nnFrames": 149
+      }
+    },
+    {
+      "name": "walk/backward/stairs reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/down finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/down uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 149
+      }
+    },
+    {
+      "name": "walk/backward/down current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.1102230246251565e-15
+    },
+    {
+      "name": "walk/backward/down commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 5.293955920339377e-23
+    },
+    {
+      "name": "walk/backward/down corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 5.437776120498228e-7
+    },
+    {
+      "name": "walk/backward/down corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.1136870674410203e-15
+    },
+    {
+      "name": "walk/backward/down bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.3
+    },
+    {
+      "name": "walk/backward/down material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.0532500405730103e-15
+    },
+    {
+      "name": "walk/backward/down retained material pivot does not slide",
+      "passed": true,
+      "measured": 8.95090418262362e-16
+    },
+    {
+      "name": "walk/backward/down contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "walk/backward/down knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 4.854118
+    },
+    {
+      "name": "walk/backward/down no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 5.688924779502584,
+        "footStep": 4.61172631482455,
+        "sourceStep": 4.077391233365665,
+        "stepLocation": {
+          "frame": 173.5,
+          "bone": "thigh_l",
+          "state": "ROLL",
+          "previousState": "ROLL",
+          "sourceAngle": 0.7142094712594599
+        }
+      }
+    },
+    {
+      "name": "walk/backward/down no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.04769258695271743,
+        "positionLocation": {
+          "frame": 123.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.04137304427076882
+        }
+      }
+    },
+    {
+      "name": "walk/backward/down terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 315,
+        "pinPairs": 300,
+        "nnFrames": 149
+      }
+    },
+    {
+      "name": "walk/backward/down reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/uneven finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/uneven uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 149
+      }
+    },
+    {
+      "name": "walk/backward/uneven current-source bone lengths retained",
+      "passed": true,
+      "measured": 7.771561172376096e-16
+    },
+    {
+      "name": "walk/backward/uneven commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 5.293955920339377e-23
+    },
+    {
+      "name": "walk/backward/uneven corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 3.0588777433226966e-7
+    },
+    {
+      "name": "walk/backward/uneven corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.3746717649798282e-15
+    },
+    {
+      "name": "walk/backward/uneven bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.000013631197378849436
+    },
+    {
+      "name": "walk/backward/uneven material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.3497887713973342e-15
+    },
+    {
+      "name": "walk/backward/uneven retained material pivot does not slide",
+      "passed": true,
+      "measured": 8.886119947416683e-16
+    },
+    {
+      "name": "walk/backward/uneven contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "walk/backward/uneven knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 3.065156
+    },
+    {
+      "name": "walk/backward/uneven no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 4.991227888240198,
+        "footStep": 4.903059901261883,
+        "sourceStep": 4.077391233365665,
+        "stepLocation": {
+          "frame": 107.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 2.4822506575654937
+        }
+      }
+    },
+    {
+      "name": "walk/backward/uneven no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.041715110290710816,
+        "positionLocation": {
+          "frame": 126,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.040828789579602225
+        }
+      }
+    },
+    {
+      "name": "walk/backward/uneven terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 314,
+        "pinPairs": 299,
+        "nnFrames": 149
+      }
+    },
+    {
+      "name": "walk/backward/uneven reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/left preserves genuine directional NN provenance",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "referenceError": 0
+      }
+    },
+    {
+      "name": "walk/left decodes command heading and direction rather than rotating a forward bank",
+      "passed": true
+    },
+    {
+      "name": "walk/left/flat finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/left/flat uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "walk/left/flat current-source bone lengths retained",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/flat commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/flat corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/flat corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/flat bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/flat material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/flat retained material pivot does not slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/flat contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/flat knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.063924
+    },
+    {
+      "name": "walk/left/flat no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 8.118623391429619,
+        "footStep": 7.158563316343889,
+        "sourceStep": 8.118623391429619,
+        "stepLocation": {
+          "frame": 20.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 8.118623391429619
+        }
+      }
+    },
+    {
+      "name": "walk/left/flat no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.04801598901724269,
+        "positionLocation": {
+          "frame": 92,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04801598901724269
+        }
+      }
+    },
+    {
+      "name": "walk/left/flat terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 0,
+        "pinPairs": 0,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "walk/left/flat reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/left/stairs finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/left/stairs uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 175
+      }
+    },
+    {
+      "name": "walk/left/stairs current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.0547118733938987e-15
+    },
+    {
+      "name": "walk/left/stairs commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/stairs corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 8.75151823787057e-8
+    },
+    {
+      "name": "walk/left/stairs corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.8841109504205303e-15
+    },
+    {
+      "name": "walk/left/stairs bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.041178047550152176
+    },
+    {
+      "name": "walk/left/stairs material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.398905792572134e-15
+    },
+    {
+      "name": "walk/left/stairs retained material pivot does not slide",
+      "passed": true,
+      "measured": 7.669383178403057e-11
+    },
+    {
+      "name": "walk/left/stairs contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "walk/left/stairs knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.173378
+    },
+    {
+      "name": "walk/left/stairs no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 8.408033994293183,
+        "footStep": 7.438756646164489,
+        "sourceStep": 8.118623391429619,
+        "stepLocation": {
+          "frame": 22,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 8.101432597970593
+        }
+      }
+    },
+    {
+      "name": "walk/left/stairs no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.04929049800212671,
+        "positionLocation": {
+          "frame": 32,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.04757302830654868
+        }
+      }
+    },
+    {
+      "name": "walk/left/stairs terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 248,
+        "pinPairs": 233,
+        "nnFrames": 175
+      }
+    },
+    {
+      "name": "walk/left/stairs reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/left/down finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/left/down uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 212
+      }
+    },
+    {
+      "name": "walk/left/down current-source bone lengths retained",
+      "passed": true,
+      "measured": 9.992007221626409e-16
+    },
+    {
+      "name": "walk/left/down commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/down corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 1.2333076360171447e-7
+    },
+    {
+      "name": "walk/left/down corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.6262493657593083e-15
+    },
+    {
+      "name": "walk/left/down bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.3
+    },
+    {
+      "name": "walk/left/down material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.817725340251035e-15
+    },
+    {
+      "name": "walk/left/down retained material pivot does not slide",
+      "passed": true,
+      "measured": 7.669387365397964e-11
+    },
+    {
+      "name": "walk/left/down contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "walk/left/down knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.800828
+    },
+    {
+      "name": "walk/left/down no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 8.567295595451267,
+        "footStep": 8.507472107724546,
+        "sourceStep": 8.118623391429619,
+        "stepLocation": {
+          "frame": 200,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 7.98308723194268
+        }
+      }
+    },
+    {
+      "name": "walk/left/down no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.05345854995556784,
+        "positionLocation": {
+          "frame": 116,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.038807786221217784
+        }
+      }
+    },
+    {
+      "name": "walk/left/down terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 287,
+        "pinPairs": 282,
+        "nnFrames": 212
+      }
+    },
+    {
+      "name": "walk/left/down reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/left/uneven finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/left/uneven uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 212
+      }
+    },
+    {
+      "name": "walk/left/uneven current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.1102230246251565e-15
+    },
+    {
+      "name": "walk/left/uneven commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/uneven corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 1.0435144709441957e-7
+    },
+    {
+      "name": "walk/left/uneven corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.732279263383867e-15
+    },
+    {
+      "name": "walk/left/uneven bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.008844017293353712
+    },
+    {
+      "name": "walk/left/uneven material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.4288057044435642e-15
+    },
+    {
+      "name": "walk/left/uneven retained material pivot does not slide",
+      "passed": true,
+      "measured": 7.669409507711619e-11
+    },
+    {
+      "name": "walk/left/uneven contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.000003818191820832845
+    },
+    {
+      "name": "walk/left/uneven knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.069251
+    },
+    {
+      "name": "walk/left/uneven no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 8.2248536634438,
+        "footStep": 8.178531839571558,
+        "sourceStep": 8.118623391429619,
+        "stepLocation": {
+          "frame": 200,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 7.98308723194268
+        }
+      }
+    },
+    {
+      "name": "walk/left/uneven no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.05099486907861258,
+        "positionLocation": {
+          "frame": 119,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.043266270183150476
+        }
+      }
+    },
+    {
+      "name": "walk/left/uneven terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 290,
+        "pinPairs": 275,
+        "nnFrames": 212
+      }
+    },
+    {
+      "name": "walk/left/uneven reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/right preserves genuine directional NN provenance",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "referenceError": 0
+      }
+    },
+    {
+      "name": "walk/right decodes command heading and direction rather than rotating a forward bank",
+      "passed": true
+    },
+    {
+      "name": "walk/right/flat finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/right/flat uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "walk/right/flat current-source bone lengths retained",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/flat commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/flat corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/flat corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/flat bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/flat material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/flat retained material pivot does not slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/flat contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/flat knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.811996
+    },
+    {
+      "name": "walk/right/flat no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.035097518041647,
+        "footStep": 6.240484215978673,
+        "sourceStep": 7.035097518041647,
+        "stepLocation": {
+          "frame": 204.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 7.035097518041647
+        }
+      }
+    },
+    {
+      "name": "walk/right/flat no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.04921131215604888,
+        "positionLocation": {
+          "frame": 96,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04921131215604888
+        }
+      }
+    },
+    {
+      "name": "walk/right/flat terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 0,
+        "pinPairs": 0,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "walk/right/flat reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/right/stairs finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/right/stairs uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 212
+      }
+    },
+    {
+      "name": "walk/right/stairs current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.7208456881689926e-15
+    },
+    {
+      "name": "walk/right/stairs commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/stairs corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 1.3898730633066236e-7
+    },
+    {
+      "name": "walk/right/stairs corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.6148402845793503e-15
+    },
+    {
+      "name": "walk/right/stairs bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.03414711193385503
+    },
+    {
+      "name": "walk/right/stairs material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.1116099371267112e-15
+    },
+    {
+      "name": "walk/right/stairs retained material pivot does not slide",
+      "passed": true,
+      "measured": 1.5551202332136522e-10
+    },
+    {
+      "name": "walk/right/stairs contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "walk/right/stairs knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.811996
+    },
+    {
+      "name": "walk/right/stairs no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.995957193697103,
+        "footStep": 7.714273031011845,
+        "sourceStep": 7.035097518041647,
+        "stepLocation": {
+          "frame": 176,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 5.956491553440771
+        }
+      }
+    },
+    {
+      "name": "walk/right/stairs no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.04879731245259073,
+        "positionLocation": {
+          "frame": 278,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04879731245259073
+        }
+      }
+    },
+    {
+      "name": "walk/right/stairs terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 209,
+        "pinPairs": 194,
+        "nnFrames": 212
+      }
+    },
+    {
+      "name": "walk/right/stairs reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/right/down finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/right/down uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 246
+      }
+    },
+    {
+      "name": "walk/right/down current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.1102230246251565e-15
+    },
+    {
+      "name": "walk/right/down commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/down corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 3.283336201809206e-7
+    },
+    {
+      "name": "walk/right/down corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.5612973869865165e-15
+    },
+    {
+      "name": "walk/right/down bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.19960296825185878
+    },
+    {
+      "name": "walk/right/down material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.1430445635548515e-15
+    },
+    {
+      "name": "walk/right/down retained material pivot does not slide",
+      "passed": true,
+      "measured": 4.440892098500626e-16
+    },
+    {
+      "name": "walk/right/down contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.000003818191820832845
+    },
+    {
+      "name": "walk/right/down knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.811996
+    },
+    {
+      "name": "walk/right/down no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 8.751377595056175,
+        "footStep": 8.751377595056175,
+        "sourceStep": 7.035097518041647,
+        "stepLocation": {
+          "frame": 211,
+          "bone": "foot_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.4623870546079365
+        }
+      }
+    },
+    {
+      "name": "walk/right/down no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.06079084990470763,
+        "positionLocation": {
+          "frame": 211.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.039132703259356534
+        }
+      }
+    },
+    {
+      "name": "walk/right/down terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 305,
+        "pinPairs": 298,
+        "nnFrames": 246
+      }
+    },
+    {
+      "name": "walk/right/down reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "walk/right/uneven finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "walk/right/uneven uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 246
+      }
+    },
+    {
+      "name": "walk/right/uneven current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.0547118733938987e-15
+    },
+    {
+      "name": "walk/right/uneven commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/uneven corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 1.818730408498226e-7
+    },
+    {
+      "name": "walk/right/uneven corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.2526961797206534e-15
+    },
+    {
+      "name": "walk/right/uneven bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.042004849821737966
+    },
+    {
+      "name": "walk/right/uneven material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.2539255187600815e-15
+    },
+    {
+      "name": "walk/right/uneven retained material pivot does not slide",
+      "passed": true,
+      "measured": 1.5551188146768506e-10
+    },
+    {
+      "name": "walk/right/uneven contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "walk/right/uneven knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.811996
+    },
+    {
+      "name": "walk/right/uneven no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 8.462434728931179,
+        "footStep": 8.426883335558436,
+        "sourceStep": 7.035097518041647,
+        "stepLocation": {
+          "frame": 146,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 6.919345559193275
+        }
+      }
+    },
+    {
+      "name": "walk/right/uneven no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.05279376810783179,
+        "positionLocation": {
+          "frame": 126.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.04242641192384524
+        }
+      }
+    },
+    {
+      "name": "walk/right/uneven terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 290,
+        "pinPairs": 275,
+        "nnFrames": 246
+      }
+    },
+    {
+      "name": "walk/right/uneven reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/backward preserves genuine directional NN provenance",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "referenceError": 0
+      }
+    },
+    {
+      "name": "run/backward decodes command heading and direction rather than rotating a forward bank",
+      "passed": true
+    },
+    {
+      "name": "run/backward/flat finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/backward/flat uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "run/backward/flat current-source bone lengths retained",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/flat commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 1.0587911840678754e-22
+    },
+    {
+      "name": "run/backward/flat corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/flat corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/flat bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/flat material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/flat retained material pivot does not slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/flat contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/flat knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.862224
+    },
+    {
+      "name": "run/backward/flat no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.374776935519314,
+        "footStep": 4.956338653369562,
+        "sourceStep": 7.374776935519314,
+        "stepLocation": {
+          "frame": 298.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 7.374776935519314
+        }
+      }
+    },
+    {
+      "name": "run/backward/flat no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.05912532427468381,
+        "positionLocation": {
+          "frame": 282.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.05912532427468381
+        }
+      }
+    },
+    {
+      "name": "run/backward/flat terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 0,
+        "pinPairs": 0,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "run/backward/flat reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/backward/stairs finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/backward/stairs uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 386
+      }
+    },
+    {
+      "name": "run/backward/stairs current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.0547118733938987e-15
+    },
+    {
+      "name": "run/backward/stairs commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 5.293955920339377e-23
+    },
+    {
+      "name": "run/backward/stairs corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 1.4437419504353954e-7
+    },
+    {
+      "name": "run/backward/stairs corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.4980298966309074e-15
+    },
+    {
+      "name": "run/backward/stairs bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.06028129961114799
+    },
+    {
+      "name": "run/backward/stairs material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.481482286301019e-15
+    },
+    {
+      "name": "run/backward/stairs retained material pivot does not slide",
+      "passed": true,
+      "measured": 4.440892098500626e-16
+    },
+    {
+      "name": "run/backward/stairs contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000024148365394514667
+    },
+    {
+      "name": "run/backward/stairs knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 3.247576
+    },
+    {
+      "name": "run/backward/stairs no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.810845683524413,
+        "footStep": 7.030609331822539,
+        "sourceStep": 7.374776935519314,
+        "stepLocation": {
+          "frame": 30,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 7.300475279591457
+        }
+      }
+    },
+    {
+      "name": "run/backward/stairs no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.05927022356283858,
+        "positionLocation": {
+          "frame": 34.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.05548770764884982
+        }
+      }
+    },
+    {
+      "name": "run/backward/stairs terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 52,
+        "pinPairs": 43,
+        "nnFrames": 386
+      }
+    },
+    {
+      "name": "run/backward/stairs reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/backward/down finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/backward/down uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 386
+      }
+    },
+    {
+      "name": "run/backward/down current-source bone lengths retained",
+      "passed": true,
+      "measured": 8.326672684688674e-16
+    },
+    {
+      "name": "run/backward/down commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 1.0587911840678754e-22
+    },
+    {
+      "name": "run/backward/down corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 1.7596989931867313e-7
+    },
+    {
+      "name": "run/backward/down corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.033149806866369e-15
+    },
+    {
+      "name": "run/backward/down bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.3
+    },
+    {
+      "name": "run/backward/down material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 9.023764073195415e-16
+    },
+    {
+      "name": "run/backward/down retained material pivot does not slide",
+      "passed": true,
+      "measured": 8.881784197001252e-16
+    },
+    {
+      "name": "run/backward/down contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "run/backward/down knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 5.338142
+    },
+    {
+      "name": "run/backward/down no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 9.012747284121746,
+        "footStep": 9.012747284121746,
+        "sourceStep": 7.374776935519314,
+        "stepLocation": {
+          "frame": 114,
+          "bone": "foot_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.019113611894191
+        }
+      }
+    },
+    {
+      "name": "run/backward/down no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.07488748517766908,
+        "positionLocation": {
+          "frame": 93,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.055769642618776906
+        }
+      }
+    },
+    {
+      "name": "run/backward/down terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 76,
+        "pinPairs": 67,
+        "nnFrames": 386
+      }
+    },
+    {
+      "name": "run/backward/down reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/backward/uneven finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/backward/uneven uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 386
+      }
+    },
+    {
+      "name": "run/backward/uneven current-source bone lengths retained",
+      "passed": true,
+      "measured": 7.771561172376096e-16
+    },
+    {
+      "name": "run/backward/uneven commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 1.0587911840678754e-22
+    },
+    {
+      "name": "run/backward/uneven corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 9.990093230438646e-8
+    },
+    {
+      "name": "run/backward/uneven corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.1444758429856697e-15
+    },
+    {
+      "name": "run/backward/uneven bounded pelvis adjustment",
+      "passed": true,
+      "measured": 1.1102230246251565e-16
+    },
+    {
+      "name": "run/backward/uneven material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 7.485005149111434e-16
+    },
+    {
+      "name": "run/backward/uneven retained material pivot does not slide",
+      "passed": true,
+      "measured": 5.928593550334434e-17
+    },
+    {
+      "name": "run/backward/uneven contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000029575586669421963
+    },
+    {
+      "name": "run/backward/uneven knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 3.227504
+    },
+    {
+      "name": "run/backward/uneven no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 11.945254122510914,
+        "footStep": 7.415578742713008,
+        "sourceStep": 7.374776935519314,
+        "stepLocation": {
+          "frame": 128,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.3309506772869337
+        }
+      }
+    },
+    {
+      "name": "run/backward/uneven no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.06695473243603407,
+        "positionLocation": {
+          "frame": 128.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.05910806023034909
+        }
+      }
+    },
+    {
+      "name": "run/backward/uneven terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 70,
+        "pinPairs": 61,
+        "nnFrames": 386
+      }
+    },
+    {
+      "name": "run/backward/uneven reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/left preserves genuine directional NN provenance",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "referenceError": 0
+      }
+    },
+    {
+      "name": "run/left decodes command heading and direction rather than rotating a forward bank",
+      "passed": true
+    },
+    {
+      "name": "run/left/flat finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/left/flat uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "run/left/flat current-source bone lengths retained",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/flat commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/flat corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/flat corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/flat bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/flat material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/flat retained material pivot does not slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/flat contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/flat knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.350772
+    },
+    {
+      "name": "run/left/flat no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.17505879957241,
+        "footStep": 6.499585518430098,
+        "sourceStep": 7.17505879957241,
+        "stepLocation": {
+          "frame": 94.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 7.17505879957241
+        }
+      }
+    },
+    {
+      "name": "run/left/flat no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.06910367736291091,
+        "positionLocation": {
+          "frame": 198,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.06910367736291091
+        }
+      }
+    },
+    {
+      "name": "run/left/flat terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 0,
+        "pinPairs": 0,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "run/left/flat reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/left/stairs finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/left/stairs uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 385
+      }
+    },
+    {
+      "name": "run/left/stairs current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.1102230246251565e-15
+    },
+    {
+      "name": "run/left/stairs commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/stairs corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 6.087423332079567e-8
+    },
+    {
+      "name": "run/left/stairs corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.1700217965792123e-15
+    },
+    {
+      "name": "run/left/stairs bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.022460261929638407
+    },
+    {
+      "name": "run/left/stairs material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.1188630228279524e-15
+    },
+    {
+      "name": "run/left/stairs retained material pivot does not slide",
+      "passed": true,
+      "measured": 1.1188630228279524e-16
+    },
+    {
+      "name": "run/left/stairs contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "run/left/stairs knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.64898
+    },
+    {
+      "name": "run/left/stairs no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.799875944132403,
+        "footStep": 7.799875944132403,
+        "sourceStep": 7.17505879957241,
+        "stepLocation": {
+          "frame": 41.5,
+          "bone": "foot_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 4.900305325789543
+        }
+      }
+    },
+    {
+      "name": "run/left/stairs no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.07269839300013627,
+        "positionLocation": {
+          "frame": 40.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.06472283772025204
+        }
+      }
+    },
+    {
+      "name": "run/left/stairs terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 62,
+        "pinPairs": 58,
+        "nnFrames": 385
+      }
+    },
+    {
+      "name": "run/left/stairs reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/left/down finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/left/down uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 411
+      }
+    },
+    {
+      "name": "run/left/down current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.6653345369377348e-15
+    },
+    {
+      "name": "run/left/down commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/down corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 9.270244349934842e-8
+    },
+    {
+      "name": "run/left/down corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 2.047949618494577e-15
+    },
+    {
+      "name": "run/left/down bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.19003313604701957
+    },
+    {
+      "name": "run/left/down material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 2.034362518700571e-15
+    },
+    {
+      "name": "run/left/down retained material pivot does not slide",
+      "passed": true,
+      "measured": 2.2247786310271853e-16
+    },
+    {
+      "name": "run/left/down contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "run/left/down knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 3.549641
+    },
+    {
+      "name": "run/left/down no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.426647562364857,
+        "footStep": 6.6349047210554195,
+        "sourceStep": 7.17505879957241,
+        "stepLocation": {
+          "frame": 26,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 7.033384898137409
+        }
+      }
+    },
+    {
+      "name": "run/left/down no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.07615202597536029,
+        "positionLocation": {
+          "frame": 76,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.06986945288888016
+        }
+      }
+    },
+    {
+      "name": "run/left/down terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 113,
+        "pinPairs": 109,
+        "nnFrames": 411
+      }
+    },
+    {
+      "name": "run/left/down reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/left/uneven finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/left/uneven uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 411
+      }
+    },
+    {
+      "name": "run/left/uneven current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.5543122344752192e-15
+    },
+    {
+      "name": "run/left/uneven commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/uneven corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 9.0519701956282e-8
+    },
+    {
+      "name": "run/left/uneven corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.9747950638964323e-15
+    },
+    {
+      "name": "run/left/uneven bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.0017124390624398966
+    },
+    {
+      "name": "run/left/uneven material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.9747950638964323e-15
+    },
+    {
+      "name": "run/left/uneven retained material pivot does not slide",
+      "passed": true,
+      "measured": 8.441528768080323e-17
+    },
+    {
+      "name": "run/left/uneven contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "run/left/uneven knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.904985
+    },
+    {
+      "name": "run/left/uneven no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.954565429041076,
+        "footStep": 7.9387651702048645,
+        "sourceStep": 7.17505879957241,
+        "stepLocation": {
+          "frame": 44.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.6745788954488647
+        }
+      }
+    },
+    {
+      "name": "run/left/uneven no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.07366221431223609,
+        "positionLocation": {
+          "frame": 54.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.06589406811609905
+        }
+      }
+    },
+    {
+      "name": "run/left/uneven terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 95,
+        "pinPairs": 91,
+        "nnFrames": 411
+      }
+    },
+    {
+      "name": "run/left/uneven reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/right preserves genuine directional NN provenance",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "referenceError": 0
+      }
+    },
+    {
+      "name": "run/right decodes command heading and direction rather than rotating a forward bank",
+      "passed": true
+    },
+    {
+      "name": "run/right/flat finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/right/flat uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "run/right/flat current-source bone lengths retained",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/flat commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/flat corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/flat corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/flat bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/flat material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/flat retained material pivot does not slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/flat contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/flat knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.141809
+    },
+    {
+      "name": "run/right/flat no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 5.464622994851219,
+        "footStep": 4.45236208345023,
+        "sourceStep": 5.464622994851219,
+        "stepLocation": {
+          "frame": 84.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 5.464622994851219
+        }
+      }
+    },
+    {
+      "name": "run/right/flat no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.06603590984140989,
+        "positionLocation": {
+          "frame": 191.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.06603590984140989
+        }
+      }
+    },
+    {
+      "name": "run/right/flat terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 0,
+        "pinPairs": 0,
+        "nnFrames": 601
+      }
+    },
+    {
+      "name": "run/right/flat reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/right/stairs finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/right/stairs uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 403
+      }
+    },
+    {
+      "name": "run/right/stairs current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.0547118733938987e-15
+    },
+    {
+      "name": "run/right/stairs commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/stairs corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 1.2344229949334817e-7
+    },
+    {
+      "name": "run/right/stairs corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.332339907734402e-15
+    },
+    {
+      "name": "run/right/stairs bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.03044434335438919
+    },
+    {
+      "name": "run/right/stairs material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 9.43689570931383e-16
+    },
+    {
+      "name": "run/right/stairs retained material pivot does not slide",
+      "passed": true,
+      "measured": 8.881784197001252e-16
+    },
+    {
+      "name": "run/right/stairs contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "run/right/stairs knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.45972
+    },
+    {
+      "name": "run/right/stairs no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.46607007310424,
+        "footStep": 7.46607007310424,
+        "sourceStep": 5.464622994851219,
+        "stepLocation": {
+          "frame": 93,
+          "bone": "foot_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.011613017521497
+        }
+      }
+    },
+    {
+      "name": "run/right/stairs no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.06841820846271496,
+        "positionLocation": {
+          "frame": 45.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.06743625689711442
+        }
+      }
+    },
+    {
+      "name": "run/right/stairs terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 60,
+        "pinPairs": 56,
+        "nnFrames": 403
+      }
+    },
+    {
+      "name": "run/right/stairs reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/right/down finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/right/down uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 422
+      }
+    },
+    {
+      "name": "run/right/down current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.27675647831893e-15
+    },
+    {
+      "name": "run/right/down commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/down corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 3.197449850445011e-7
+    },
+    {
+      "name": "run/right/down corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.2994827337208943e-15
+    },
+    {
+      "name": "run/right/down bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.129298450450257
+    },
+    {
+      "name": "run/right/down material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.0677783136387644e-15
+    },
+    {
+      "name": "run/right/down retained material pivot does not slide",
+      "passed": true,
+      "measured": 6.938893903907228e-17
+    },
+    {
+      "name": "run/right/down contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.000004182619578303746
+    },
+    {
+      "name": "run/right/down knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 3.982764
+    },
+    {
+      "name": "run/right/down no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 8.185568436882063,
+        "footStep": 8.012390597478548,
+        "sourceStep": 5.464622994851219,
+        "stepLocation": {
+          "frame": 32,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 4.44623586748405
+        }
+      }
+    },
+    {
+      "name": "run/right/down no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.08322419213293275,
+        "positionLocation": {
+          "frame": 76.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.058513352265344924
+        }
+      }
+    },
+    {
+      "name": "run/right/down terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 114,
+        "pinPairs": 110,
+        "nnFrames": 422
+      }
+    },
+    {
+      "name": "run/right/down reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "run/right/uneven finite pose and source remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run/right/uneven uncorrected approach/exit samples remain exact NN",
+      "passed": true,
+      "measured": {
+        "nnExact": true,
+        "nnFrames": 422
+      }
+    },
+    {
+      "name": "run/right/uneven current-source bone lengths retained",
+      "passed": true,
+      "measured": 1.1102230246251565e-15
+    },
+    {
+      "name": "run/right/uneven commanded root remains on terrain ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/uneven corrected whole-shoe geometry clears finite treads",
+      "passed": true,
+      "measured": 1.55990950212459e-7
+    },
+    {
+      "name": "run/right/uneven corrected ankle targets remain reachable",
+      "passed": true,
+      "measured": 1.2806724564228628e-15
+    },
+    {
+      "name": "run/right/uneven bounded pelvis adjustment",
+      "passed": true,
+      "measured": 0.0246396259069388
+    },
+    {
+      "name": "run/right/uneven material heel/toe pivot is on its intended surface",
+      "passed": true,
+      "measured": 1.1091817021906584e-15
+    },
+    {
+      "name": "run/right/uneven retained material pivot does not slide",
+      "passed": true,
+      "measured": 8.881784197001252e-16
+    },
+    {
+      "name": "run/right/uneven contact shoe retains local toe articulation",
+      "passed": true,
+      "measured": 0.0000034150945850063755
+    },
+    {
+      "name": "run/right/uneven knee bend plane has no reversal away from extension",
+      "passed": true,
+      "measured": 2.557499
+    },
+    {
+      "name": "run/right/uneven no leg or ankle orientation flip",
+      "passed": true,
+      "measured": {
+        "allLegStep": 7.2897295522583825,
+        "footStep": 7.2897295522583825,
+        "sourceStep": 5.464622994851219,
+        "stepLocation": {
+          "frame": 94,
+          "bone": "foot_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.0670719596418494
+        }
+      }
+    },
+    {
+      "name": "run/right/uneven no limb teleport at120Hz",
+      "passed": true,
+      "measured": {
+        "positionStep": 0.0785405678005441,
+        "positionLocation": {
+          "frame": 112.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.053517951199966385
+        }
+      }
+    },
+    {
+      "name": "run/right/uneven terrain contacts exist or flat clip is exact NN",
+      "passed": true,
+      "measured": {
+        "pins": 102,
+        "pinPairs": 98,
+        "nnFrames": 422
+      }
+    },
+    {
+      "name": "run/right/uneven reverse seek preserves deterministic poses",
+      "passed": true
+    },
+    {
+      "name": "Backward Walk132.5 reduces excessive toe-down by at least10degrees",
+      "passed": true,
+      "measured": {
+        "beforePitch": -41.130345653738324,
+        "afterPitch": -19.258000270392074
+      }
+    },
+    {
+      "name": "Backward Walk132.5 still rolls on a real material contact",
+      "passed": true
+    },
+    {
+      "name": "Backward roll correction preserves root trajectory",
+      "passed": true
+    }
+  ],
+  "failures": [],
+  "cases": [
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "terrain": "flat",
+      "sourceSha256": "ee270d0c5c258bd93fc7e1d95c6fefdba8067601fd3e1e73049849dbfa4a26cb",
+      "measurements": {
+        "bone": 0,
+        "pin": 0,
+        "pinSlide": 0,
+        "pinPairs": 0,
+        "pins": 0,
+        "footStep": 3.8758233805950564,
+        "allLegStep": 4.077391233365665,
+        "positionStep": 0.04126680548416604,
+        "toeLocal": 0,
+        "penetration": 0,
+        "reachError": 0,
+        "rootError": 5.293955920339377e-23,
+        "nnFrames": 601,
+        "knee": 2.032134,
+        "stepLocation": {
+          "frame": 196.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 4.077391233365665
+        },
+        "positionLocation": {
+          "frame": 244,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04126680548416604
+        },
+        "penetrationLocation": null
+      },
+      "worstIntervals": []
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "terrain": "stairs",
+      "sourceSha256": "ee270d0c5c258bd93fc7e1d95c6fefdba8067601fd3e1e73049849dbfa4a26cb",
+      "measurements": {
+        "bone": 9.43689570931383e-16,
+        "pin": 1.066334393690002e-15,
+        "pinSlide": 8.882055243408597e-16,
+        "pinPairs": 248,
+        "pins": 262,
+        "footStep": 3.8494514700078706,
+        "allLegStep": 5.037823216891601,
+        "positionStep": 0.04124474423463635,
+        "toeLocal": 0.0000029575586669421963,
+        "penetration": 1.2139029981206306e-7,
+        "reachError": 1.0778315928076987e-15,
+        "rootError": 0,
+        "nnFrames": 149,
+        "knee": 2.668973,
+        "stepLocation": {
+          "frame": 74.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 1.8624369832813878
+        },
+        "positionLocation": {
+          "frame": 4.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04124474423463635
+        },
+        "penetrationLocation": {
+          "frame": 212,
+          "side": "R",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 44.5,
+          "end": 56,
+          "duration": 0.2,
+          "peakFrame": 48.5,
+          "peak": -1.988241,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 230,
+          "end": 234,
+          "duration": 0.075,
+          "peakFrame": 230,
+          "peak": -1.979344,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 118.5,
+          "end": 118.5,
+          "duration": 0.008333,
+          "peakFrame": 118.5,
+          "peak": 151.675196,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 58.5,
+          "end": 58.5,
+          "duration": 0.008333,
+          "peakFrame": 58.5,
+          "peak": 137.889991,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 238.5,
+          "end": 238.5,
+          "duration": 0.008333,
+          "peakFrame": 238.5,
+          "peak": 135.403593,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 178.5,
+          "end": 178.5,
+          "duration": 0.008333,
+          "peakFrame": 178.5,
+          "peak": 134.970405,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "terrain": "down",
+      "sourceSha256": "ee270d0c5c258bd93fc7e1d95c6fefdba8067601fd3e1e73049849dbfa4a26cb",
+      "measurements": {
+        "bone": 1.1102230246251565e-15,
+        "pin": 1.0532500405730103e-15,
+        "pinSlide": 8.95090418262362e-16,
+        "pinPairs": 300,
+        "pins": 315,
+        "footStep": 4.61172631482455,
+        "allLegStep": 5.688924779502584,
+        "positionStep": 0.04769258695271743,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 5.437776120498228e-7,
+        "reachError": 1.1136870674410203e-15,
+        "rootError": 5.293955920339377e-23,
+        "nnFrames": 149,
+        "knee": 4.854118,
+        "stepLocation": {
+          "frame": 173.5,
+          "bone": "thigh_l",
+          "state": "ROLL",
+          "previousState": "ROLL",
+          "sourceAngle": 0.7142094712594599
+        },
+        "positionLocation": {
+          "frame": 123.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.04137304427076882
+        },
+        "penetrationLocation": {
+          "frame": 178,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 86,
+          "end": 86,
+          "duration": 0.008333,
+          "peakFrame": 86,
+          "peak": 325.170224,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 157.5,
+          "end": 157.5,
+          "duration": 0.008333,
+          "peakFrame": 157.5,
+          "peak": 241.302724,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 179.5,
+          "end": 179.5,
+          "duration": 0.008333,
+          "peakFrame": 179.5,
+          "peak": 240.553406,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 213,
+          "end": 213,
+          "duration": 0.008333,
+          "peakFrame": 213,
+          "peak": 240.037741,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 186.5,
+          "end": 186.5,
+          "duration": 0.008333,
+          "peakFrame": 186.5,
+          "peak": 238.139335,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 82.5,
+          "end": 83,
+          "duration": 0.016667,
+          "peakFrame": 83,
+          "peak": 228.151658,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "terrain": "uneven",
+      "sourceSha256": "ee270d0c5c258bd93fc7e1d95c6fefdba8067601fd3e1e73049849dbfa4a26cb",
+      "measurements": {
+        "bone": 7.771561172376096e-16,
+        "pin": 1.3497887713973342e-15,
+        "pinSlide": 8.886119947416683e-16,
+        "pinPairs": 299,
+        "pins": 314,
+        "footStep": 4.903059901261883,
+        "allLegStep": 4.991227888240198,
+        "positionStep": 0.041715110290710816,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 3.0588777433226966e-7,
+        "reachError": 1.3746717649798282e-15,
+        "rootError": 5.293955920339377e-23,
+        "nnFrames": 149,
+        "knee": 3.065156,
+        "stepLocation": {
+          "frame": 107.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 2.4822506575654937
+        },
+        "positionLocation": {
+          "frame": 126,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.040828789579602225
+        },
+        "penetrationLocation": {
+          "frame": 234,
+          "side": "R",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 44.5,
+          "end": 55.5,
+          "duration": 0.191667,
+          "peakFrame": 48.5,
+          "peak": -1.989744,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 141,
+          "end": 141.5,
+          "duration": 0.016667,
+          "peakFrame": 141,
+          "peak": 157.729211,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 48.5,
+          "end": 85,
+          "duration": 0.616667,
+          "peakFrame": 78.5,
+          "peak": -1.842036,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 58.5,
+          "end": 58.5,
+          "duration": 0.008333,
+          "peakFrame": 58.5,
+          "peak": 137.124684,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 118.5,
+          "end": 118.5,
+          "duration": 0.008333,
+          "peakFrame": 118.5,
+          "peak": 136.582133,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 178.5,
+          "end": 178.5,
+          "duration": 0.008333,
+          "peakFrame": 178.5,
+          "peak": 125.635458,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "terrain": "flat",
+      "sourceSha256": "7cbf37d70bd841fbab455f7f69349aad4e0f3962de6715f9043140d73d343fcf",
+      "measurements": {
+        "bone": 0,
+        "pin": 0,
+        "pinSlide": 0,
+        "pinPairs": 0,
+        "pins": 0,
+        "footStep": 7.158563316343889,
+        "allLegStep": 8.118623391429619,
+        "positionStep": 0.04801598901724269,
+        "toeLocal": 0,
+        "penetration": 0,
+        "reachError": 0,
+        "rootError": 0,
+        "nnFrames": 601,
+        "knee": 2.063924,
+        "stepLocation": {
+          "frame": 20.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 8.118623391429619
+        },
+        "positionLocation": {
+          "frame": 92,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04801598901724269
+        },
+        "penetrationLocation": null
+      },
+      "worstIntervals": []
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "terrain": "stairs",
+      "sourceSha256": "7cbf37d70bd841fbab455f7f69349aad4e0f3962de6715f9043140d73d343fcf",
+      "measurements": {
+        "bone": 1.0547118733938987e-15,
+        "pin": 1.398905792572134e-15,
+        "pinSlide": 7.669383178403057e-11,
+        "pinPairs": 233,
+        "pins": 248,
+        "footStep": 7.438756646164489,
+        "allLegStep": 8.408033994293183,
+        "positionStep": 0.04929049800212671,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 8.75151823787057e-8,
+        "reachError": 1.8841109504205303e-15,
+        "rootError": 0,
+        "nnFrames": 175,
+        "knee": 2.173378,
+        "stepLocation": {
+          "frame": 22,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 8.101432597970593
+        },
+        "positionLocation": {
+          "frame": 32,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.04757302830654868
+        },
+        "penetrationLocation": {
+          "frame": 49.5,
+          "side": "R",
+          "state": "SWING"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 193.5,
+          "end": 193.5,
+          "duration": 0.008333,
+          "peakFrame": 193.5,
+          "peak": 158.918983,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 18.5,
+          "end": 52,
+          "duration": 0.566667,
+          "peakFrame": 44.5,
+          "peak": -1.974975,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 99,
+          "end": 99,
+          "duration": 0.008333,
+          "peakFrame": 99,
+          "peak": 153.018033,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 103.5,
+          "end": 107.5,
+          "duration": 0.075,
+          "peakFrame": 107.5,
+          "peak": -1.780935,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 110.5,
+          "end": 110.5,
+          "duration": 0.008333,
+          "peakFrame": 110.5,
+          "peak": 131.077968,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 20.5,
+          "end": 20.5,
+          "duration": 0.008333,
+          "peakFrame": 20.5,
+          "peak": 128.80497,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "terrain": "down",
+      "sourceSha256": "7cbf37d70bd841fbab455f7f69349aad4e0f3962de6715f9043140d73d343fcf",
+      "measurements": {
+        "bone": 9.992007221626409e-16,
+        "pin": 1.817725340251035e-15,
+        "pinSlide": 7.669387365397964e-11,
+        "pinPairs": 282,
+        "pins": 287,
+        "footStep": 8.507472107724546,
+        "allLegStep": 8.567295595451267,
+        "positionStep": 0.05345854995556784,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 1.2333076360171447e-7,
+        "reachError": 1.6262493657593083e-15,
+        "rootError": 0,
+        "nnFrames": 212,
+        "knee": 2.800828,
+        "stepLocation": {
+          "frame": 200,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 7.98308723194268
+        },
+        "positionLocation": {
+          "frame": 116,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.038807786221217784
+        },
+        "penetrationLocation": {
+          "frame": 80,
+          "side": "R",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 114.5,
+          "end": 114.5,
+          "duration": 0.008333,
+          "peakFrame": 114.5,
+          "peak": 257.400505,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 173.5,
+          "end": 173.5,
+          "duration": 0.008333,
+          "peakFrame": 173.5,
+          "peak": 249.969898,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 58,
+          "end": 58,
+          "duration": 0.008333,
+          "peakFrame": 58,
+          "peak": 249.610588,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 140,
+          "end": 140.5,
+          "duration": 0.016667,
+          "peakFrame": 140.5,
+          "peak": 248.271195,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 115.5,
+          "end": 115.5,
+          "duration": 0.008333,
+          "peakFrame": 115.5,
+          "peak": 247.237748,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 174.5,
+          "end": 174.5,
+          "duration": 0.008333,
+          "peakFrame": 174.5,
+          "peak": 243.604864,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "terrain": "uneven",
+      "sourceSha256": "7cbf37d70bd841fbab455f7f69349aad4e0f3962de6715f9043140d73d343fcf",
+      "measurements": {
+        "bone": 1.1102230246251565e-15,
+        "pin": 1.4288057044435642e-15,
+        "pinSlide": 7.669409507711619e-11,
+        "pinPairs": 275,
+        "pins": 290,
+        "footStep": 8.178531839571558,
+        "allLegStep": 8.2248536634438,
+        "positionStep": 0.05099486907861258,
+        "toeLocal": 0.000003818191820832845,
+        "penetration": 1.0435144709441957e-7,
+        "reachError": 1.732279263383867e-15,
+        "rootError": 0,
+        "nnFrames": 212,
+        "knee": 2.069251,
+        "stepLocation": {
+          "frame": 200,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 7.98308723194268
+        },
+        "positionLocation": {
+          "frame": 119,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.043266270183150476
+        },
+        "penetrationLocation": {
+          "frame": 108,
+          "side": "R",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 108.5,
+          "end": 108.5,
+          "duration": 0.008333,
+          "peakFrame": 108.5,
+          "peak": 174.663128,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 37,
+          "end": 52,
+          "duration": 0.258333,
+          "peakFrame": 44.5,
+          "peak": -1.937967,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 103,
+          "end": 107.5,
+          "duration": 0.083333,
+          "peakFrame": 107.5,
+          "peak": -1.933168,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 164,
+          "end": 169,
+          "duration": 0.091667,
+          "peakFrame": 164,
+          "peak": -1.82365,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 160.5,
+          "end": 160.5,
+          "duration": 0.008333,
+          "peakFrame": 160.5,
+          "peak": 121.235956,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 110.5,
+          "end": 110.5,
+          "duration": 0.008333,
+          "peakFrame": 110.5,
+          "peak": 120.135671,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "terrain": "flat",
+      "sourceSha256": "f72289c15d4208c5486faa7304f2a6bc282ff65289cec5970ec5ef4f23f76653",
+      "measurements": {
+        "bone": 0,
+        "pin": 0,
+        "pinSlide": 0,
+        "pinPairs": 0,
+        "pins": 0,
+        "footStep": 6.240484215978673,
+        "allLegStep": 7.035097518041647,
+        "positionStep": 0.04921131215604888,
+        "toeLocal": 0,
+        "penetration": 0,
+        "reachError": 0,
+        "rootError": 0,
+        "nnFrames": 601,
+        "knee": 2.811996,
+        "stepLocation": {
+          "frame": 204.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 7.035097518041647
+        },
+        "positionLocation": {
+          "frame": 96,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04921131215604888
+        },
+        "penetrationLocation": null
+      },
+      "worstIntervals": []
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "terrain": "stairs",
+      "sourceSha256": "f72289c15d4208c5486faa7304f2a6bc282ff65289cec5970ec5ef4f23f76653",
+      "measurements": {
+        "bone": 1.7208456881689926e-15,
+        "pin": 1.1116099371267112e-15,
+        "pinSlide": 1.5551202332136522e-10,
+        "pinPairs": 194,
+        "pins": 209,
+        "footStep": 7.714273031011845,
+        "allLegStep": 7.995957193697103,
+        "positionStep": 0.04879731245259073,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 1.3898730633066236e-7,
+        "reachError": 1.6148402845793503e-15,
+        "rootError": 0,
+        "nnFrames": 212,
+        "knee": 2.811996,
+        "stepLocation": {
+          "frame": 176,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 5.956491553440771
+        },
+        "positionLocation": {
+          "frame": 278,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.04879731245259073
+        },
+        "penetrationLocation": {
+          "frame": 150,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 195.5,
+          "end": 196,
+          "duration": 0.016667,
+          "peakFrame": 195.5,
+          "peak": 187.092472,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 176.5,
+          "end": 176.5,
+          "duration": 0.008333,
+          "peakFrame": 176.5,
+          "peak": 163.238253,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 97.5,
+          "end": 97.5,
+          "duration": 0.008333,
+          "peakFrame": 97.5,
+          "peak": 155.545781,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 116.5,
+          "end": 116.5,
+          "duration": 0.008333,
+          "peakFrame": 116.5,
+          "peak": 151.196205,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 167,
+          "end": 171.5,
+          "duration": 0.083333,
+          "peakFrame": 171.5,
+          "peak": -1.87155,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 22,
+          "end": 56,
+          "duration": 0.575,
+          "peakFrame": 33.5,
+          "peak": -1.820218,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        }
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "terrain": "down",
+      "sourceSha256": "f72289c15d4208c5486faa7304f2a6bc282ff65289cec5970ec5ef4f23f76653",
+      "measurements": {
+        "bone": 1.1102230246251565e-15,
+        "pin": 1.1430445635548515e-15,
+        "pinSlide": 4.440892098500626e-16,
+        "pinPairs": 298,
+        "pins": 305,
+        "footStep": 8.751377595056175,
+        "allLegStep": 8.751377595056175,
+        "positionStep": 0.06079084990470763,
+        "toeLocal": 0.000003818191820832845,
+        "penetration": 3.283336201809206e-7,
+        "reachError": 1.5612973869865165e-15,
+        "rootError": 0,
+        "nnFrames": 246,
+        "knee": 2.811996,
+        "stepLocation": {
+          "frame": 211,
+          "bone": "foot_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.4623870546079365
+        },
+        "positionLocation": {
+          "frame": 211.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.039132703259356534
+        },
+        "penetrationLocation": {
+          "frame": 174,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 57,
+          "end": 57.5,
+          "duration": 0.016667,
+          "peakFrame": 57.5,
+          "peak": 491.435054,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 176,
+          "end": 176,
+          "duration": 0.008333,
+          "peakFrame": 176,
+          "peak": 431.946567,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 145.5,
+          "end": 145.5,
+          "duration": 0.008333,
+          "peakFrame": 145.5,
+          "peak": 419.108713,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 117,
+          "end": 117.5,
+          "duration": 0.016667,
+          "peakFrame": 117.5,
+          "peak": 368.546082,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 82,
+          "end": 82.5,
+          "duration": 0.016667,
+          "peakFrame": 82.5,
+          "peak": 313.879958,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 86,
+          "end": 86.5,
+          "duration": 0.016667,
+          "peakFrame": 86.5,
+          "peak": 292.146412,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "terrain": "uneven",
+      "sourceSha256": "f72289c15d4208c5486faa7304f2a6bc282ff65289cec5970ec5ef4f23f76653",
+      "measurements": {
+        "bone": 1.0547118733938987e-15,
+        "pin": 1.2539255187600815e-15,
+        "pinSlide": 1.5551188146768506e-10,
+        "pinPairs": 275,
+        "pins": 290,
+        "footStep": 8.426883335558436,
+        "allLegStep": 8.462434728931179,
+        "positionStep": 0.05279376810783179,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 1.818730408498226e-7,
+        "reachError": 1.2526961797206534e-15,
+        "rootError": 0,
+        "nnFrames": 246,
+        "knee": 2.811996,
+        "stepLocation": {
+          "frame": 146,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 6.919345559193275
+        },
+        "positionLocation": {
+          "frame": 126.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.04242641192384524
+        },
+        "penetrationLocation": {
+          "frame": 166,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 172.5,
+          "end": 173,
+          "duration": 0.016667,
+          "peakFrame": 173,
+          "peak": 404.056478,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 176.5,
+          "end": 176.5,
+          "duration": 0.008333,
+          "peakFrame": 176.5,
+          "peak": 141.351775,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 116.5,
+          "end": 116.5,
+          "duration": 0.008333,
+          "peakFrame": 116.5,
+          "peak": 138.251913,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 54.5,
+          "end": 54.5,
+          "duration": 0.008333,
+          "peakFrame": 54.5,
+          "peak": 138.01578,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 39,
+          "end": 56,
+          "duration": 0.291667,
+          "peakFrame": 46.5,
+          "peak": -1.718259,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 109.5,
+          "end": 109.5,
+          "duration": 0.008333,
+          "peakFrame": 109.5,
+          "peak": 135.696765,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "terrain": "flat",
+      "sourceSha256": "64fab1ecaae69056806284e0fcee0d7e612dd8a8b07ad94f09a89cd2b2c9720c",
+      "measurements": {
+        "bone": 0,
+        "pin": 0,
+        "pinSlide": 0,
+        "pinPairs": 0,
+        "pins": 0,
+        "footStep": 4.956338653369562,
+        "allLegStep": 7.374776935519314,
+        "positionStep": 0.05912532427468381,
+        "toeLocal": 0,
+        "penetration": 0,
+        "reachError": 0,
+        "rootError": 1.0587911840678754e-22,
+        "nnFrames": 601,
+        "knee": 2.862224,
+        "stepLocation": {
+          "frame": 298.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 7.374776935519314
+        },
+        "positionLocation": {
+          "frame": 282.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.05912532427468381
+        },
+        "penetrationLocation": null
+      },
+      "worstIntervals": []
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "terrain": "stairs",
+      "sourceSha256": "64fab1ecaae69056806284e0fcee0d7e612dd8a8b07ad94f09a89cd2b2c9720c",
+      "measurements": {
+        "bone": 1.0547118733938987e-15,
+        "pin": 1.481482286301019e-15,
+        "pinSlide": 4.440892098500626e-16,
+        "pinPairs": 43,
+        "pins": 52,
+        "footStep": 7.030609331822539,
+        "allLegStep": 7.810845683524413,
+        "positionStep": 0.05927022356283858,
+        "toeLocal": 0.0000024148365394514667,
+        "penetration": 1.4437419504353954e-7,
+        "reachError": 1.4980298966309074e-15,
+        "rootError": 5.293955920339377e-23,
+        "nnFrames": 386,
+        "knee": 3.247576,
+        "stepLocation": {
+          "frame": 30,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 7.300475279591457
+        },
+        "positionLocation": {
+          "frame": 34.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.05548770764884982
+        },
+        "penetrationLocation": {
+          "frame": 72,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 103,
+          "end": 122.5,
+          "duration": 0.333333,
+          "peakFrame": 118.5,
+          "peak": -3.594154,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 22,
+          "end": 26,
+          "duration": 0.075,
+          "peakFrame": 22,
+          "peak": -3.478215,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 102.5,
+          "end": 102.5,
+          "duration": 0.008333,
+          "peakFrame": 102.5,
+          "peak": 250.542724,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 64.5,
+          "end": 64.5,
+          "duration": 0.008333,
+          "peakFrame": 64.5,
+          "peak": 230.338425,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 23.5,
+          "end": 45.5,
+          "duration": 0.375,
+          "peakFrame": 40.5,
+          "peak": -2.844339,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 24.5,
+          "end": 24.5,
+          "duration": 0.008333,
+          "peakFrame": 24.5,
+          "peak": 224.892431,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "terrain": "down",
+      "sourceSha256": "64fab1ecaae69056806284e0fcee0d7e612dd8a8b07ad94f09a89cd2b2c9720c",
+      "measurements": {
+        "bone": 8.326672684688674e-16,
+        "pin": 9.023764073195415e-16,
+        "pinSlide": 8.881784197001252e-16,
+        "pinPairs": 67,
+        "pins": 76,
+        "footStep": 9.012747284121746,
+        "allLegStep": 9.012747284121746,
+        "positionStep": 0.07488748517766908,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 1.7596989931867313e-7,
+        "reachError": 1.033149806866369e-15,
+        "rootError": 1.0587911840678754e-22,
+        "nnFrames": 386,
+        "knee": 5.338142,
+        "stepLocation": {
+          "frame": 114,
+          "bone": "foot_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.019113611894191
+        },
+        "positionLocation": {
+          "frame": 93,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.055769642618776906
+        },
+        "penetrationLocation": {
+          "frame": 72,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 72,
+          "end": 72,
+          "duration": 0.008333,
+          "peakFrame": 72,
+          "peak": 414.548225,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 92.5,
+          "end": 93,
+          "duration": 0.016667,
+          "peakFrame": 92.5,
+          "peak": 328.233981,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 52,
+          "end": 52.5,
+          "duration": 0.016667,
+          "peakFrame": 52.5,
+          "peak": 298.971218,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 106,
+          "end": 122.5,
+          "duration": 0.283333,
+          "peakFrame": 118.5,
+          "peak": -3.553634,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 23.5,
+          "end": 45.5,
+          "duration": 0.375,
+          "peakFrame": 40.5,
+          "peak": -2.992861,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 50,
+          "end": 51,
+          "duration": 0.025,
+          "peakFrame": 51,
+          "peak": 233.197916,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "terrain": "uneven",
+      "sourceSha256": "64fab1ecaae69056806284e0fcee0d7e612dd8a8b07ad94f09a89cd2b2c9720c",
+      "measurements": {
+        "bone": 7.771561172376096e-16,
+        "pin": 7.485005149111434e-16,
+        "pinSlide": 5.928593550334434e-17,
+        "pinPairs": 61,
+        "pins": 70,
+        "footStep": 7.415578742713008,
+        "allLegStep": 11.945254122510914,
+        "positionStep": 0.06695473243603407,
+        "toeLocal": 0.0000029575586669421963,
+        "penetration": 9.990093230438646e-8,
+        "reachError": 1.1444758429856697e-15,
+        "rootError": 1.0587911840678754e-22,
+        "nnFrames": 386,
+        "knee": 3.227504,
+        "stepLocation": {
+          "frame": 128,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.3309506772869337
+        },
+        "positionLocation": {
+          "frame": 128.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.05910806023034909
+        },
+        "penetrationLocation": {
+          "frame": 129,
+          "side": "R",
+          "state": "SWING"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 103,
+          "end": 122.5,
+          "duration": 0.333333,
+          "peakFrame": 118.5,
+          "peak": -3.505387,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 22,
+          "end": 26,
+          "duration": 0.075,
+          "peakFrame": 22,
+          "peak": -3.477999,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 23.5,
+          "end": 45,
+          "duration": 0.366667,
+          "peakFrame": 40.5,
+          "peak": -3.26076,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 102.5,
+          "end": 102.5,
+          "duration": 0.008333,
+          "peakFrame": 102.5,
+          "peak": 242.406071,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 64.5,
+          "end": 64.5,
+          "duration": 0.008333,
+          "peakFrame": 64.5,
+          "peak": 232.379696,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 24.5,
+          "end": 24.5,
+          "duration": 0.008333,
+          "peakFrame": 24.5,
+          "peak": 224.545758,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "terrain": "flat",
+      "sourceSha256": "69d1428372739f330e84c7fd3161ccd296a0b07763fd043c69457860d3a23bd7",
+      "measurements": {
+        "bone": 0,
+        "pin": 0,
+        "pinSlide": 0,
+        "pinPairs": 0,
+        "pins": 0,
+        "footStep": 6.499585518430098,
+        "allLegStep": 7.17505879957241,
+        "positionStep": 0.06910367736291091,
+        "toeLocal": 0,
+        "penetration": 0,
+        "reachError": 0,
+        "rootError": 0,
+        "nnFrames": 601,
+        "knee": 2.350772,
+        "stepLocation": {
+          "frame": 94.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 7.17505879957241
+        },
+        "positionLocation": {
+          "frame": 198,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.06910367736291091
+        },
+        "penetrationLocation": null
+      },
+      "worstIntervals": []
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "terrain": "stairs",
+      "sourceSha256": "69d1428372739f330e84c7fd3161ccd296a0b07763fd043c69457860d3a23bd7",
+      "measurements": {
+        "bone": 1.1102230246251565e-15,
+        "pin": 1.1188630228279524e-15,
+        "pinSlide": 1.1188630228279524e-16,
+        "pinPairs": 58,
+        "pins": 62,
+        "footStep": 7.799875944132403,
+        "allLegStep": 7.799875944132403,
+        "positionStep": 0.07269839300013627,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 6.087423332079567e-8,
+        "reachError": 1.1700217965792123e-15,
+        "rootError": 0,
+        "nnFrames": 385,
+        "knee": 2.64898,
+        "stepLocation": {
+          "frame": 41.5,
+          "bone": "foot_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 4.900305325789543
+        },
+        "positionLocation": {
+          "frame": 40.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.06472283772025204
+        },
+        "penetrationLocation": {
+          "frame": 52,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 12,
+          "end": 30,
+          "duration": 0.308333,
+          "peakFrame": 16,
+          "peak": -3.979412,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "R",
+          "start": 38,
+          "end": 42,
+          "duration": 0.075,
+          "peakFrame": 38.5,
+          "peak": -3.293112,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 73.5,
+          "end": 74,
+          "duration": 0.016667,
+          "peakFrame": 73.5,
+          "peak": 257.648096,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 91,
+          "end": 92.5,
+          "duration": 0.033333,
+          "peakFrame": 91,
+          "peak": 247.137489,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 82.5,
+          "end": 82.5,
+          "duration": 0.008333,
+          "peakFrame": 82.5,
+          "peak": 213.211159,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 46.5,
+          "end": 46.5,
+          "duration": 0.008333,
+          "peakFrame": 46.5,
+          "peak": 210.460912,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "terrain": "down",
+      "sourceSha256": "69d1428372739f330e84c7fd3161ccd296a0b07763fd043c69457860d3a23bd7",
+      "measurements": {
+        "bone": 1.6653345369377348e-15,
+        "pin": 2.034362518700571e-15,
+        "pinSlide": 2.2247786310271853e-16,
+        "pinPairs": 109,
+        "pins": 113,
+        "footStep": 6.6349047210554195,
+        "allLegStep": 7.426647562364857,
+        "positionStep": 0.07615202597536029,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 9.270244349934842e-8,
+        "reachError": 2.047949618494577e-15,
+        "rootError": 0,
+        "nnFrames": 411,
+        "knee": 3.549641,
+        "stepLocation": {
+          "frame": 26,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 7.033384898137409
+        },
+        "positionLocation": {
+          "frame": 76,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.06986945288888016
+        },
+        "penetrationLocation": {
+          "frame": 62,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 86,
+          "end": 86,
+          "duration": 0.008333,
+          "peakFrame": 86,
+          "peak": 503.082414,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 30.5,
+          "end": 33,
+          "duration": 0.05,
+          "peakFrame": 33,
+          "peak": 497.804227,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 50.5,
+          "end": 50.5,
+          "duration": 0.008333,
+          "peakFrame": 50.5,
+          "peak": 442.138048,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 68.5,
+          "end": 68.5,
+          "duration": 0.008333,
+          "peakFrame": 68.5,
+          "peak": 437.14242,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 82.5,
+          "end": 83.5,
+          "duration": 0.025,
+          "peakFrame": 83.5,
+          "peak": 391.86434,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 48,
+          "end": 49,
+          "duration": 0.025,
+          "peakFrame": 48.5,
+          "peak": 279.883522,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "terrain": "uneven",
+      "sourceSha256": "69d1428372739f330e84c7fd3161ccd296a0b07763fd043c69457860d3a23bd7",
+      "measurements": {
+        "bone": 1.5543122344752192e-15,
+        "pin": 1.9747950638964323e-15,
+        "pinSlide": 8.441528768080323e-17,
+        "pinPairs": 91,
+        "pins": 95,
+        "footStep": 7.9387651702048645,
+        "allLegStep": 7.954565429041076,
+        "positionStep": 0.07366221431223609,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 9.0519701956282e-8,
+        "reachError": 1.9747950638964323e-15,
+        "rootError": 0,
+        "nnFrames": 411,
+        "knee": 2.904985,
+        "stepLocation": {
+          "frame": 44.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.6745788954488647
+        },
+        "positionLocation": {
+          "frame": 54.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.06589406811609905
+        },
+        "penetrationLocation": {
+          "frame": 62,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 62.5,
+          "end": 62.5,
+          "duration": 0.008333,
+          "peakFrame": 62.5,
+          "peak": 282.642825,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 46.5,
+          "end": 46.5,
+          "duration": 0.008333,
+          "peakFrame": 46.5,
+          "peak": 208.708311,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 80.5,
+          "end": 80.5,
+          "duration": 0.008333,
+          "peakFrame": 80.5,
+          "peak": 167.547031,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 84.5,
+          "end": 84.5,
+          "duration": 0.008333,
+          "peakFrame": 84.5,
+          "peak": 162.718536,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 98.5,
+          "end": 98.5,
+          "duration": 0.008333,
+          "peakFrame": 98.5,
+          "peak": 159.680229,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 81.5,
+          "end": 83,
+          "duration": 0.033333,
+          "peakFrame": 82.5,
+          "peak": 154.046989,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "terrain": "flat",
+      "sourceSha256": "61a62eb9cad51e1c716b7875a1c4551855ec5658b962ba7d6b3bfb5fcb0271dc",
+      "measurements": {
+        "bone": 0,
+        "pin": 0,
+        "pinSlide": 0,
+        "pinPairs": 0,
+        "pins": 0,
+        "footStep": 4.45236208345023,
+        "allLegStep": 5.464622994851219,
+        "positionStep": 0.06603590984140989,
+        "toeLocal": 0,
+        "penetration": 0,
+        "reachError": 0,
+        "rootError": 0,
+        "nnFrames": 601,
+        "knee": 2.141809,
+        "stepLocation": {
+          "frame": 84.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceAngle": 5.464622994851219
+        },
+        "positionLocation": {
+          "frame": 191.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "previousState": "NN",
+          "sourceMove": 0.06603590984140989
+        },
+        "penetrationLocation": null
+      },
+      "worstIntervals": []
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "terrain": "stairs",
+      "sourceSha256": "61a62eb9cad51e1c716b7875a1c4551855ec5658b962ba7d6b3bfb5fcb0271dc",
+      "measurements": {
+        "bone": 1.0547118733938987e-15,
+        "pin": 9.43689570931383e-16,
+        "pinSlide": 8.881784197001252e-16,
+        "pinPairs": 56,
+        "pins": 60,
+        "footStep": 7.46607007310424,
+        "allLegStep": 7.46607007310424,
+        "positionStep": 0.06841820846271496,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 1.2344229949334817e-7,
+        "reachError": 1.332339907734402e-15,
+        "rootError": 0,
+        "nnFrames": 403,
+        "knee": 2.45972,
+        "stepLocation": {
+          "frame": 93,
+          "bone": "foot_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.011613017521497
+        },
+        "positionLocation": {
+          "frame": 45.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.06743625689711442
+        },
+        "penetrationLocation": {
+          "frame": 60,
+          "side": "L",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 81.5,
+          "end": 82,
+          "duration": 0.016667,
+          "peakFrame": 81.5,
+          "peak": 289.772674,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 63.5,
+          "end": 67.5,
+          "duration": 0.075,
+          "peakFrame": 63.5,
+          "peak": -3.41154,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 16,
+          "end": 34.5,
+          "duration": 0.316667,
+          "peakFrame": 26.5,
+          "peak": -3.379968,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 99.5,
+          "end": 104.5,
+          "duration": 0.091667,
+          "peakFrame": 99.5,
+          "peak": -3.339774,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 87,
+          "end": 91.5,
+          "duration": 0.083333,
+          "peakFrame": 91.5,
+          "peak": -3.030181,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 63.5,
+          "end": 63.5,
+          "duration": 0.008333,
+          "peakFrame": 63.5,
+          "peak": 233.929669,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "terrain": "down",
+      "sourceSha256": "61a62eb9cad51e1c716b7875a1c4551855ec5658b962ba7d6b3bfb5fcb0271dc",
+      "measurements": {
+        "bone": 1.27675647831893e-15,
+        "pin": 1.0677783136387644e-15,
+        "pinSlide": 6.938893903907228e-17,
+        "pinPairs": 110,
+        "pins": 114,
+        "footStep": 8.012390597478548,
+        "allLegStep": 8.185568436882063,
+        "positionStep": 0.08322419213293275,
+        "toeLocal": 0.000004182619578303746,
+        "penetration": 3.197449850445011e-7,
+        "reachError": 1.2994827337208943e-15,
+        "rootError": 0,
+        "nnFrames": 422,
+        "knee": 3.982764,
+        "stepLocation": {
+          "frame": 32,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 4.44623586748405
+        },
+        "positionLocation": {
+          "frame": 76.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.058513352265344924
+        },
+        "penetrationLocation": {
+          "frame": 88,
+          "side": "R",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 74,
+          "end": 75.5,
+          "duration": 0.033333,
+          "peakFrame": 75.5,
+          "peak": 499.190645,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 94,
+          "end": 94.5,
+          "duration": 0.016667,
+          "peakFrame": 94,
+          "peak": 491.87957,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "L",
+          "start": 56,
+          "end": 58.5,
+          "duration": 0.05,
+          "peakFrame": 58,
+          "peak": 379.748762,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 38.5,
+          "end": 39,
+          "duration": 0.016667,
+          "peakFrame": 39,
+          "peak": 334.23087,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 36.5,
+          "end": 37.5,
+          "duration": 0.025,
+          "peakFrame": 37.5,
+          "peak": 320.679664,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 25.5,
+          "end": 34,
+          "duration": 0.15,
+          "peakFrame": 26.5,
+          "peak": -3.435354,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        }
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "terrain": "uneven",
+      "sourceSha256": "61a62eb9cad51e1c716b7875a1c4551855ec5658b962ba7d6b3bfb5fcb0271dc",
+      "measurements": {
+        "bone": 1.1102230246251565e-15,
+        "pin": 1.1091817021906584e-15,
+        "pinSlide": 8.881784197001252e-16,
+        "pinPairs": 98,
+        "pins": 102,
+        "footStep": 7.2897295522583825,
+        "allLegStep": 7.2897295522583825,
+        "positionStep": 0.0785405678005441,
+        "toeLocal": 0.0000034150945850063755,
+        "penetration": 1.55990950212459e-7,
+        "reachError": 1.2806724564228628e-15,
+        "rootError": 0,
+        "nnFrames": 422,
+        "knee": 2.557499,
+        "stepLocation": {
+          "frame": 94,
+          "bone": "foot_r",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceAngle": 3.0670719596418494
+        },
+        "positionLocation": {
+          "frame": 112.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "previousState": "SWING",
+          "sourceMove": 0.053517951199966385
+        },
+        "penetrationLocation": {
+          "frame": 46,
+          "side": "R",
+          "state": "ROLL"
+        }
+      },
+      "worstIntervals": [
+        {
+          "metric": "pelvisProgress",
+          "side": "L",
+          "start": 25.5,
+          "end": 34,
+          "duration": 0.15,
+          "peakFrame": 26.5,
+          "peak": -3.424479,
+          "kind": "possible-swing-stall",
+          "note": "Can be valid rear-leg folding; compare NN trace and subsequent travel."
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 52,
+          "end": 52.5,
+          "duration": 0.016667,
+          "peakFrame": 52,
+          "peak": 262.737531,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 38.5,
+          "end": 38.5,
+          "duration": 0.008333,
+          "peakFrame": 38.5,
+          "peak": 159.898327,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 92.5,
+          "end": 92.5,
+          "duration": 0.008333,
+          "peakFrame": 92.5,
+          "peak": 136.277951,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 84,
+          "end": 84,
+          "duration": 0.008333,
+          "peakFrame": 84,
+          "peak": 136.271975,
+          "threshold": 80,
+          "kind": "review"
+        },
+        {
+          "metric": "accelerationExtra",
+          "side": "R",
+          "start": 56.5,
+          "end": 56.5,
+          "duration": 0.008333,
+          "peakFrame": 56.5,
+          "peak": 134.258557,
+          "threshold": 80,
+          "kind": "review"
+        }
+      ]
+    }
+  ],
+  "backward132_5": {
+    "beforePitch": -41.130345653738324,
+    "afterPitch": -19.258000270392074,
+    "rotationChange": 21.872345383346172
+  },
+  "visualFrames": [
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "frames": [
+        112,
+        124,
+        128,
+        132.5,
+        133,
+        137,
+        141,
+        196
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "frames": [
+        50,
+        55,
+        57,
+        61,
+        65,
+        77,
+        84
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "frames": [
+        74,
+        78,
+        82,
+        86,
+        196,
+        200
+      ]
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "frames": [
+        97,
+        172,
+        190,
+        195,
+        198
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "frames": [
+        55,
+        73.5,
+        92,
+        98
+      ]
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "frames": [
+        45,
+        63,
+        81,
+        95,
+        100
+      ]
+    }
+  ]
+}

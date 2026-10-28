@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "checks": [
+    "Root ramp is unchanged",
+    "Both accepted ankle paths and velocities are retained",
+    "All toe-off and landing states retain their timing",
+    "Planted foot and toe orientation stay unchanged",
+    "Body rhythm never extends either leg farther",
+    "Current stairs have a visible but bounded loading accent",
+    "Pelvis transfer remains smooth in speed and acceleration",
+    "Both middle steps slow through loading then rise faster during pull-up",
+    "Foot geometry stays clear and reachable",
+    "Flat approach and exit are still exact NN",
+    "Body trajectory is deterministic while seeking"
+  ],
+  "prepareMs": 379.42199999999997,
+  "ankleError": 1.5059797815742442e-15,
+  "rootError": 0,
+  "pinAngle": 5.960464477539063e-8,
+  "extraExtension": 5.075816389421561e-8,
+  "peakLoadingCm": 3.365704010455893,
+  "maxSpeed": 0.2401168751812347,
+  "maxAcceleration": 3.54558601512337
+}

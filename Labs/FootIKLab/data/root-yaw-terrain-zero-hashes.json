@@ -1,0 +1,42 @@
+[
+  {
+    "gait": "walk",
+    "terrain": "flat",
+    "hash": "2f9e8c2137713d8f49bf84731566d5d6b4787bfe48494f585279ea1f07a807b9"
+  },
+  {
+    "gait": "walk",
+    "terrain": "stairs",
+    "hash": "1204b0a4ea1055f0686afaf6d9e32d9bbdaee0e0edc644b419cc3c0a5b06ff33"
+  },
+  {
+    "gait": "walk",
+    "terrain": "down",
+    "hash": "2d192d49d4a568d8073e4f8f288237d75c1f7cfc5c9ae7964931d1b1fa0043f7"
+  },
+  {
+    "gait": "walk",
+    "terrain": "uneven",
+    "hash": "e91211193b23e76a5d53e8d498f2df500b3cb5acf8ed1d4e32754d0dd162c38e"
+  },
+  {
+    "gait": "run",
+    "terrain": "flat",
+    "hash": "5e2501b924676c6b799fa6304ff343857ab15e18a8edac8ded0857c7ac4df959"
+  },
+  {
+    "gait": "run",
+    "terrain": "stairs",
+    "hash": "5ed9cd53d46ed26c80362ed014e1e478f3478a8d2578b6a99091c515175d89f7"
+  },
+  {
+    "gait": "run",
+    "terrain": "down",
+    "hash": "e13a4a05fecdb985eba5e490ed0140f36661d018b118d23049670605615a4a29"
+  },
+  {
+    "gait": "run",
+    "terrain": "uneven",
+    "hash": "e201f6ceb6572076319f3b150fcf362dc7ec86d1a9533f4a99b5b1258976ae7c"
+  }
+]

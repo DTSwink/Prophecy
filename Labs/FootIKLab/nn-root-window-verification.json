@@ -1,0 +1,134 @@
+{
+  "passed": true,
+  "checks": [
+    "walk-forward-0 Run checkpoint",
+    "walk-forward-0 original controller parity",
+    "walk-forward-0 original training root encoder parity",
+    "walk-forward-0 continuous learned pin projection active",
+    "walk-forward-0 correct command speed",
+    "walk-forward-0 travel does not steer",
+    "walk-forward-0 root yaw command",
+    "walk-forward-0 all eight future rotations",
+    "walk-forward-0 finite articulated output",
+    "walk-forward-0 bounded pelvis",
+    "walk-forward-30 Run checkpoint",
+    "walk-forward-30 original controller parity",
+    "walk-forward-30 original training root encoder parity",
+    "walk-forward-30 continuous learned pin projection active",
+    "walk-forward-30 correct command speed",
+    "walk-forward-30 travel does not steer",
+    "walk-forward-30 root yaw command",
+    "walk-forward-30 all eight future rotations",
+    "walk-forward-30 finite articulated output",
+    "walk-forward-30 bounded pelvis",
+    "run-left-300 Run checkpoint",
+    "run-left-300 original controller parity",
+    "run-left-300 original training root encoder parity",
+    "run-left-300 continuous learned pin projection active",
+    "run-left-300 correct command speed",
+    "run-left-300 travel does not steer",
+    "run-left-300 root yaw command",
+    "run-left-300 all eight future rotations",
+    "run-left-300 finite articulated output",
+    "run-left-300 bounded pelvis",
+    "run-backward--45 Run checkpoint",
+    "run-backward--45 original controller parity",
+    "run-backward--45 original training root encoder parity",
+    "run-backward--45 continuous learned pin projection active",
+    "run-backward--45 correct command speed",
+    "run-backward--45 travel does not steer",
+    "run-backward--45 root yaw command",
+    "run-backward--45 all eight future rotations",
+    "run-backward--45 finite articulated output",
+    "run-backward--45 bounded pelvis",
+    "walk-right--30 Run checkpoint",
+    "walk-right--30 original controller parity",
+    "walk-right--30 original training root encoder parity",
+    "walk-right--30 continuous learned pin projection active",
+    "walk-right--30 correct command speed",
+    "walk-right--30 travel does not steer",
+    "walk-right--30 root yaw command",
+    "walk-right--30 all eight future rotations",
+    "walk-right--30 finite articulated output",
+    "walk-right--30 bounded pelvis",
+    "future yaw changes the time-zero inferred pose"
+  ],
+  "cases": [
+    {
+      "case": "walk-forward-0",
+      "seconds": 25.517640799982473,
+      "cache": "inferred",
+      "pin": {
+        "mode": "continuous_sigmoid",
+        "maximum": 0.9999843835830688,
+        "projectionChange": 0.03965265303850174
+      },
+      "pelvisHeight": [
+        0.8431372046470642,
+        0.93777996301651
+      ],
+      "windowError": 5.960464477539063e-08
+    },
+    {
+      "case": "walk-forward-30",
+      "seconds": 22.349055200000294,
+      "cache": "inferred",
+      "pin": {
+        "mode": "continuous_sigmoid",
+        "maximum": 0.9999985694885254,
+        "projectionChange": 0.06182006001472473
+      },
+      "pelvisHeight": [
+        0.8303428292274475,
+        0.9380151033401489
+      ],
+      "windowError": 5.960464477539063e-08
+    },
+    {
+      "case": "run-left-300",
+      "seconds": 32.128797799989115,
+      "cache": "inferred",
+      "pin": {
+        "mode": "continuous_sigmoid",
+        "maximum": 0.993594229221344,
+        "projectionChange": 0.08500884473323822
+      },
+      "pelvisHeight": [
+        0.7556664943695068,
+        0.9104281663894653
+      ],
+      "windowError": 1.1920928955078125e-07
+    },
+    {
+      "case": "run-backward--45",
+      "seconds": 31.807556800020393,
+      "cache": "inferred",
+      "pin": {
+        "mode": "continuous_sigmoid",
+        "maximum": 0.9671719074249268,
+        "projectionChange": 0.0730201005935669
+      },
+      "pelvisHeight": [
+        0.8347269892692566,
+        0.9324962496757507
+      ],
+      "windowError": 5.960464477539063e-08
+    },
+    {
+      "case": "walk-right--30",
+      "seconds": 33.652675900026225,
+      "cache": "inferred",
+      "pin": {
+        "mode": "continuous_sigmoid",
+        "maximum": 0.9999929666519165,
+        "projectionChange": 0.06151089817285538
+      },
+      "pelvisHeight": [
+        0.834976077079773,
+        0.935752809047699
+      ],
+      "windowError": 5.960464477539063e-08
+    }
+  ],
+  "anticipationMetres": 0.007790088653564453
+}

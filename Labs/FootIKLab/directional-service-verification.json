@@ -1,0 +1,21 @@
+{
+  "checks": [
+    "service starts one real worker",
+    "direction route produces backward data",
+    "generated original lower reference exact",
+    "generation and resume share one worker",
+    "resumed both controller references exact",
+    "history pose unchanged through basis roundtrip",
+    "backward direction survives resume",
+    "resume roots retain course direction",
+    "same request cached without inference",
+    "owned worker retired at end"
+  ],
+  "pid": 2548,
+  "seconds": 7.258877500018571,
+  "cache": "inferred",
+  "workerMiB": 588.65234375,
+  "peakMiB": 588.70703125,
+  "count": 10,
+  "workerExitCode": 1
+}

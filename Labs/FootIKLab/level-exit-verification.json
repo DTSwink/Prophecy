@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "checks": [
+    "191 resumes NN foot rotation instead of retaining the release angle",
+    "Every accepted ankle target remains unchanged",
+    "Pelvis rhythm and all left contact times remain unchanged",
+    "Earlier stair transfers and final material pin retain their rotations",
+    "Exit rotation carries into gait without a release snap",
+    "Fade to NN does not pull the foot back to the held angle",
+    "Rotated shoes still clear all stair faces",
+    "Leg reach stays valid"
+  ],
+  "frame191": {
+    "beforeErrorDeg": 38.54885318573747,
+    "afterErrorDeg": 4.5510430965360005,
+    "pitchDeg": -79.78167017438113,
+    "nnPitchDeg": -79.34962744887099,
+    "soleGapCm": 2.650458459782623
+  },
+  "maxHalfFrameFootAngle": 6.305536983741948
+}

@@ -1,0 +1,12 @@
+{
+  "passed": false,
+  "focusedChecksPassed": 87,
+  "broader": {
+    "passed": 210,
+    "total": 211,
+    "failures": [
+      "84-92 left swing avoids the late riser lift spike"
+    ]
+  },
+  "note": "Same known failure as before this height change; no new failures or relaxed assertions."
+}

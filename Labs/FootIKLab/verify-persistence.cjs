@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict'),{create}=require('./persistence.js');
+(async()=>{
+ let state={settings:{slopeAngle:45,phase:.21},camera:{yaw:1},playback:{time:2,playing:false}},requests=[];
+ const saver=create(state,()=>state,data=>new Promise((resolve,reject)=>requests.push({data,resolve,reject})));
+ await saver.flush();assert.equal(requests.length,0,'opening/hiding an unchanged tab must not save');
+ state.settings.slopeAngle=90;const a=saver.flush();
+ assert.deepEqual(requests[0].data.changes,{settings:{slopeAngle:90}},'only changed fields');
+ state.settings.phase=.69;const b=saver.flush();
+ assert.deepEqual(requests[1].data.changes,{settings:{slopeAngle:90,phase:.69}},'new request includes unacknowledged edits');
+ requests[1].resolve();await b;requests[0].resolve();await a;
+ await saver.flush();assert.equal(requests.length,2,'out-of-order replies leave no duplicate save');
+ state.camera.yaw=2;const c=saver.flush();requests[2].reject(Error('offline'));await assert.rejects(c);
+ const d=saver.flush();assert.deepEqual(requests[3].data.changes,{camera:{yaw:2}},'failed edits retained for retry');requests[3].resolve();await d;
+ state.playback.time=202/60;saver.save(e=>{throw e;});const e=saver.flush();
+ assert.deepEqual(requests[4].data.changes,{playback:{time:202/60}},'close flushes debounce immediately');requests[4].resolve();await e;
+ state.settings.slopeAngle=30;saver.accept(state);await saver.flush();
+ assert.equal(requests.length,5,'adopting refreshed server state does not write it back');
+ state.settings.phase=.4;const f=saver.flush();
+ assert.deepEqual(requests[5].data.changes,{settings:{phase:.4}},'new edits after Refresh still save independently');requests[5].resolve();await f;
+ console.log('Client persistence: 9 checks passed.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

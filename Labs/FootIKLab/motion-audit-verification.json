@@ -1,0 +1,224 @@
+{
+  "passed": true,
+  "checks": [
+    "Report retains native120Hz with user60Hz frame numbering",
+    "Same NN source has exact zero joint/articulation differences",
+    "Native NN acceleration and angular boundaries are not invented corrections",
+    "Constant commanded root speed does not gain a startup acceleration spike",
+    "Legitimate heel-toe pivot rotation is not measured as pin slip",
+    "Material contact follows moving-platform destination without false slip",
+    "Actual3mm-per-sample material drift is detected",
+    "Full face clipping detects penetration when no box corner lies over tread",
+    "Whole-shoe clearance is surface-normal aware at45degrees",
+    "Whole-shoe clearance is surface-normal aware at90degrees",
+    "Missing terrain is disclosed as unverified instead of asserted safe",
+    "Injected knee-pole90degree flip is distinguished from unchanged NN",
+    "Sustained pelvis-relative backward swing is surfaced without calling NN invalid",
+    "Standalone SVG report contains material shoe geometry and both source traces",
+    "Exported report script parses independently of the generator"
+  ],
+  "measurements": {
+    "flatNN": {
+      "L": {
+        "pinError": null,
+        "pinSlip": null,
+        "penetration": {
+          "value": 0.002869,
+          "frame": 45,
+          "time": 0.75
+        },
+        "penetrationExtra": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "speed": {
+          "value": 5.629408,
+          "frame": 264,
+          "time": 4.4
+        },
+        "speedExtra": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "acceleration": {
+          "value": 207.383659,
+          "frame": 270.5,
+          "time": 4.508333
+        },
+        "accelerationExtra": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "kneePoleStep": {
+          "value": 3.258523,
+          "frame": 270,
+          "time": 4.5
+        },
+        "kneePoleExtra": {
+          "value": 0,
+          "frame": 0.5,
+          "time": 0.008333
+        },
+        "ankleNNError": {
+          "value": 0.000005,
+          "frame": 16,
+          "time": 0.266667
+        },
+        "footStep": {
+          "value": 5.942561,
+          "frame": 246.5,
+          "time": 4.108333
+        },
+        "footStepExtra": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "footNNDistance": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "targetError": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "reach": {
+          "value": 0.998606,
+          "frame": 40,
+          "time": 0.666667
+        }
+      },
+      "R": {
+        "pinError": null,
+        "pinSlip": null,
+        "penetration": {
+          "value": 0.005548,
+          "frame": 45,
+          "time": 0.75
+        },
+        "penetrationExtra": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "speed": {
+          "value": 5.763873,
+          "frame": 60,
+          "time": 1
+        },
+        "speedExtra": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "acceleration": {
+          "value": 187.699269,
+          "frame": 10.5,
+          "time": 0.175
+        },
+        "accelerationExtra": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "kneePoleStep": {
+          "value": 3.211409,
+          "frame": 14,
+          "time": 0.233333
+        },
+        "kneePoleExtra": {
+          "value": 0,
+          "frame": 0.5,
+          "time": 0.008333
+        },
+        "ankleNNError": {
+          "value": 0.000005,
+          "frame": 40,
+          "time": 0.666667
+        },
+        "footStep": {
+          "value": 5.607791,
+          "frame": 276.5,
+          "time": 4.608333
+        },
+        "footStepExtra": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "footNNDistance": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "targetError": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "reach": {
+          "value": 1,
+          "frame": 128,
+          "time": 2.133333
+        }
+      },
+      "root": {
+        "rootSpeed": {
+          "value": 2.000055,
+          "frame": 253,
+          "time": 4.216667
+        },
+        "rootVerticalSpeed": {
+          "value": 0,
+          "frame": 110.5,
+          "time": 1.841667
+        },
+        "rootAcceleration": {
+          "value": 0.0103,
+          "frame": 254.5,
+          "time": 4.241667
+        },
+        "rootNNError": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "pelvisNNError": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "boneLengthError": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        },
+        "nonfinite": {
+          "value": 0,
+          "frame": 0,
+          "time": 0
+        }
+      }
+    },
+    "materialDrift": {
+      "value": 0.021,
+      "frame": 3.5,
+      "time": 0.058333
+    },
+    "rotatingPin": {
+      "value": 0,
+      "frame": 1.5,
+      "time": 0.025
+    },
+    "kneeFlip": {
+      "value": 90,
+      "frame": 2,
+      "time": 0.033333
+    }
+  }
+}

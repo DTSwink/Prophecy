@@ -1,0 +1,1473 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "Obstacle preparation departs at least2 user frames earlier after actual rolling contact",
+      "passed": true,
+      "measured": {
+        "before": 50.5,
+        "after": 47.5
+      }
+    },
+    {
+      "name": "Terrain-added velocity peak is less than half the old release spike",
+      "passed": true,
+      "measured": {
+        "before": 11.98661454867115,
+        "after": 2.564473139640163
+      }
+    },
+    {
+      "name": "Terrain-added acceleration peak is less than half the old release spike",
+      "passed": true,
+      "measured": {
+        "before": 1574.2949646471338,
+        "after": 212.35368391254636
+      }
+    },
+    {
+      "name": "No neighbouring half-frame vertical jump above3cm in the full release window",
+      "passed": true,
+      "measured": {
+        "before": 0.101631659086512,
+        "after": 0.01739119956752183
+      }
+    },
+    {
+      "name": "The release knee no longer snaps",
+      "passed": true,
+      "measured": {
+        "before": 16.73173344320664,
+        "after": 3.5044198472658685
+      }
+    },
+    {
+      "name": "Complete shoe clearance remains valid through departure and landing",
+      "passed": true,
+      "measured": 9.015232382836302e-8
+    },
+    {
+      "name": "Rolling material contacts remain exact and do not slide",
+      "passed": true,
+      "measured": {
+        "maxPinError": 1.3326289812695317e-15,
+        "maxSlide": 4.526797389797801e-16
+      }
+    },
+    {
+      "name": "Root and NN source are unmodified",
+      "passed": true
+    },
+    {
+      "name": "Accepted forward walk sequence is byte-identical",
+      "passed": true
+    },
+    {
+      "name": "Accepted forward run sequence is byte-identical",
+      "passed": true
+    }
+  ],
+  "settings": {
+    "gait": "run",
+    "direction": "left",
+    "phase": 0.49,
+    "terrain": "uneven",
+    "clearance": 1,
+    "height": 16,
+    "depth": 35,
+    "steps": 12
+  },
+  "before": {
+    "release": 50.5,
+    "maxSpeed": 12.593486580017496,
+    "maxCorrectionSpeed": 11.98661454867115,
+    "maxCorrectionAcceleration": 1574.2949646471338,
+    "maxVerticalStep": 0.101631659086512,
+    "maxKneeStep": 16.73173344320664,
+    "rows": [
+      {
+        "frame": 40,
+        "state": "ROLL",
+        "point": [
+          0.1647439418545955,
+          0.1899499594852102,
+          2.2602386246499258
+        ],
+        "speed": 0.04349255350883136,
+        "sourceSpeed": 0.8531586676152388,
+        "correctionSpeed": 0.8526741287881466,
+        "correctionAcceleration": 0,
+        "kneeStep": 2.3099847878458584
+      },
+      {
+        "frame": 40.5,
+        "state": "ROLL",
+        "point": [
+          0.16539964164891094,
+          0.1888524545408039,
+          2.2594461781609056
+        ],
+        "speed": 0.18049654556693012,
+        "sourceSpeed": 0.9078329629367508,
+        "correctionSpeed": 0.8122858538705283,
+        "correctionAcceleration": 52.82642476214772,
+        "kneeStep": 2.303531078340072
+      },
+      {
+        "frame": 41,
+        "state": "ROLL",
+        "point": [
+          0.16614383712042383,
+          0.18758812903492794,
+          2.258546780153377
+        ],
+        "speed": 0.2064998361071639,
+        "sourceSpeed": 0.7945080639657226,
+        "correctionSpeed": 0.698269104266724,
+        "correctionAcceleration": 17.02658269029841,
+        "kneeStep": 2.2141459161709744
+      },
+      {
+        "frame": 41.5,
+        "state": "ROLL",
+        "point": [
+          0.16697039658927568,
+          0.1861599651875035,
+          2.25754784107373
+        ],
+        "speed": 0.23147038286351326,
+        "sourceSpeed": 0.6863343783512379,
+        "correctionSpeed": 0.6004492266252337,
+        "correctionAcceleration": 16.87080745191321,
+        "kneeStep": 2.122529408806967
+      },
+      {
+        "frame": 42,
+        "state": "ROLL",
+        "point": [
+          0.16787248801349114,
+          0.18457172213968104,
+          2.256457617791534
+        ],
+        "speed": 0.25526095038535807,
+        "sourceSpeed": 0.5857875873854969,
+        "correctionSpeed": 0.5270089749249547,
+        "correctionAcceleration": 16.688263532491067,
+        "kneeStep": 2.030852057136996
+      },
+      {
+        "frame": 42.5,
+        "state": "ROLL",
+        "point": [
+          0.16756738637902435,
+          0.18511240493378756,
+          2.2568263486057316
+        ],
+        "speed": 0.08664858443919927,
+        "sourceSpeed": 0.2991349719317337,
+        "correctionSpeed": 0.36970426739115725,
+        "correctionAcceleration": 55.11431378241555,
+        "kneeStep": 1.977674304897287
+      },
+      {
+        "frame": 43,
+        "state": "ROLL",
+        "point": [
+          0.16729453627100427,
+          0.185592879353577,
+          2.257156101812921
+        ],
+        "speed": 0.07721513058495003,
+        "sourceSpeed": 0.1551053432971546,
+        "correctionSpeed": 0.2148746621487493,
+        "correctionAcceleration": 18.692944580012426,
+        "kneeStep": 1.9195887869069959
+      },
+      {
+        "frame": 43.5,
+        "state": "ROLL",
+        "point": [
+          0.1670548921725997,
+          0.186012524740085,
+          2.257445723871737
+        ],
+        "speed": 0.06760724613748181,
+        "sourceSpeed": 0.05320511086309141,
+        "correctionSpeed": 0.06597134393439376,
+        "correctionAcceleration": 18.674588295618477,
+        "kneeStep": 1.8697038536858759
+      },
+      {
+        "frame": 44,
+        "state": "ROLL",
+        "point": [
+          0.1668492926618287,
+          0.1863708138469628,
+          2.257694201318073
+        ],
+        "speed": 0.05784737931445676,
+        "sourceSpeed": 0.15935895315333634,
+        "correctionSpeed": 0.10552866632225683,
+        "correctionAcceleration": 18.65069393255236,
+        "kneeStep": 1.8344582773792817
+      },
+      {
+        "frame": 44.5,
+        "state": "ROLL",
+        "point": [
+          0.16455044339872194,
+          0.19027093941667594,
+          2.26047247735709
+        ],
+        "speed": 0.6374079337904988,
+        "sourceSpeed": 0.2603311404921341,
+        "correctionSpeed": 0.47470959466223234,
+        "correctionAcceleration": 69.4535400739617,
+        "kneeStep": 1.734153310086839
+      },
+      {
+        "frame": 45,
+        "state": "ROLL",
+        "point": [
+          0.16220299071838304,
+          0.194063428205355,
+          2.263309493093258
+        ],
+        "speed": 0.6343241723580242,
+        "sourceSpeed": 0.36791308022335006,
+        "correctionSpeed": 0.3755078556133023,
+        "correctionAcceleration": 17.94812207777776,
+        "kneeStep": 1.7429683412944157
+      },
+      {
+        "frame": 45.5,
+        "state": "ROLL",
+        "point": [
+          0.15978285953824953,
+          0.19778687174084414,
+          2.26623434448606
+        ],
+        "speed": 0.63810018178849,
+        "sourceSpeed": 0.4939439301657883,
+        "correctionSpeed": 0.31802103188192166,
+        "correctionAcceleration": 17.27594250937584,
+        "kneeStep": 1.77638045798734
+      },
+      {
+        "frame": 46,
+        "state": "ROLL",
+        "point": [
+          0.15664438795915667,
+          0.20235474032392564,
+          2.2700273467186394
+        ],
+        "speed": 0.8058988905641798,
+        "sourceSpeed": 0.6273377821151862,
+        "correctionSpeed": 0.39828868437494014,
+        "correctionAcceleration": 10.987362139861354,
+        "kneeStep": 1.737409509292177
+      },
+      {
+        "frame": 46.5,
+        "state": "ROLL",
+        "point": [
+          0.1496222272050876,
+          0.21162039894927037,
+          2.278513984480519
+        ],
+        "speed": 1.7272756478426876,
+        "sourceSpeed": 1.235319130516432,
+        "correctionSpeed": 0.7712374808112775,
+        "correctionAcceleration": 63.6596692676418,
+        "kneeStep": 1.564737224022602
+      },
+      {
+        "frame": 47,
+        "state": "ROLL",
+        "point": [
+          0.14151345346650052,
+          0.22089269291774227,
+          2.288313849197737
+        ],
+        "speed": 1.88886630934609,
+        "sourceSpeed": 1.3234533310686096,
+        "correctionSpeed": 0.908612473253226,
+        "correctionAcceleration": 22.94165109247994,
+        "kneeStep": 1.565640900846054
+      },
+      {
+        "frame": 47.5,
+        "state": "ROLL",
+        "point": [
+          0.13205353283820082,
+          0.23006099661076013,
+          2.299746643524184
+        ],
+        "speed": 2.0931545927074775,
+        "sourceSpeed": 1.4134044220712882,
+        "correctionSpeed": 1.108208551734781,
+        "correctionAcceleration": 28.671052442069524,
+        "kneeStep": 1.561461659321107
+      },
+      {
+        "frame": 48,
+        "state": "ROLL",
+        "point": [
+          0.12092366730501818,
+          0.238888918367701,
+          2.3131976510454537
+        ],
+        "speed": 2.347635887964182,
+        "sourceSpeed": 1.504669799367959,
+        "correctionSpeed": 1.3794909646166569,
+        "correctionAcceleration": 36.30000969065039,
+        "kneeStep": 1.5511736672375815
+      },
+      {
+        "frame": 48.5,
+        "state": "ROLL",
+        "point": [
+          0.10545649945660635,
+          0.2481110194559491,
+          2.3318905086043764
+        ],
+        "speed": 3.114695537238621,
+        "sourceSpeed": 2.0316842290046138,
+        "correctionSpeed": 1.750690335664946,
+        "correctionAcceleration": 88.13693794181339,
+        "kneeStep": 1.5410688687332845
+      },
+      {
+        "frame": 49,
+        "state": "ROLL",
+        "point": [
+          0.08711291821600697,
+          0.2550057528196945,
+          2.3540596577732233
+        ],
+        "speed": 3.550652776450843,
+        "sourceSpeed": 2.0682261573281737,
+        "correctionSpeed": 2.199125283138408,
+        "correctionAcceleration": 73.97006069068027,
+        "kneeStep": 1.5936357054019963
+      },
+      {
+        "frame": 49.5,
+        "state": "ROLL",
+        "point": [
+          0.06719921975691803,
+          0.2579698777987844,
+          2.3781263733099856
+        ],
+        "speed": 3.7653013647138636,
+        "sourceSpeed": 2.105861245995101,
+        "correctionSpeed": 2.534690363745331,
+        "correctionAcceleration": 70.07587596196717,
+        "kneeStep": 1.773897503193732
+      },
+      {
+        "frame": 50,
+        "state": "ROLL",
+        "point": [
+          0.048360507963871854,
+          0.25661105411058416,
+          2.400893912887515
+        ],
+        "speed": 3.549859467700187,
+        "sourceSpeed": 2.144438018952912,
+        "correctionSpeed": 2.561774121916737,
+        "correctionAcceleration": 72.13265590447934,
+        "kneeStep": 1.9476653255093164
+      },
+      {
+        "frame": 50.5,
+        "state": "SWING",
+        "point": [
+          0.03668088877769564,
+          0.35824271319709616,
+          2.4243075163729904
+        ],
+        "speed": 12.593486580017496,
+        "sourceSpeed": 2.595490775181073,
+        "correctionSpeed": 11.98661454867115,
+        "correctionAcceleration": 1574.2949646471338,
+        "kneeStep": 16.73173344320664
+      },
+      {
+        "frame": 51,
+        "state": "SWING",
+        "point": [
+          0.030988702459798192,
+          0.4374172541477166,
+          2.4485121535700314
+        ],
+        "speed": 9.958462566877328,
+        "sourceSpeed": 2.6108564310348545,
+        "correctionSpeed": 9.195578713505046,
+        "correctionAcceleration": 338.984046979747,
+        "kneeStep": 9.789475959734654
+      },
+      {
+        "frame": 51.5,
+        "state": "SWING",
+        "point": [
+          0.030117242723632143,
+          0.4966536162163857,
+          2.4736515681782967
+        ],
+        "speed": 7.722721364952781,
+        "sourceSpeed": 2.627644933183489,
+        "correctionSpeed": 6.741212635098023,
+        "correctionAcceleration": 299.7743954524631,
+        "kneeStep": 6.673239083305944
+      },
+      {
+        "frame": 52,
+        "state": "SWING",
+        "point": [
+          0.032907182689649386,
+          0.5384208720867713,
+          2.4998632253621382
+        ],
+        "speed": 5.926759060736681,
+        "sourceSpeed": 2.6458123822671675,
+        "correctionSpeed": 4.625565134476935,
+        "correctionAcceleration": 261.53472196689955,
+        "kneeStep": 4.442892377756735
+      },
+      {
+        "frame": 52.5,
+        "state": "SWING",
+        "point": [
+          0.03820814517986407,
+          0.5651193715144256,
+          2.527282847013404
+        ],
+        "speed": 4.636328122743188,
+        "sourceSpeed": 3.3185198287090003,
+        "correctionSpeed": 2.2425367246431978,
+        "correctionAcceleration": 286.51435344845055,
+        "kneeStep": 2.9704941903172246
+      },
+      {
+        "frame": 53,
+        "state": "SWING",
+        "point": [
+          0.044878631781053266,
+          0.5790676812775061,
+          2.5560435747012327
+        ],
+        "speed": 3.9183816546921277,
+        "sourceSpeed": 3.3548179334697963,
+        "correctionSpeed": 0.7675726915816672,
+        "correctionAcceleration": 188.88860187538535,
+        "kneeStep": 1.6099011171960493
+      },
+      {
+        "frame": 53.5,
+        "state": "SWING",
+        "point": [
+          0.052219475965368384,
+          0.582494850958563,
+          2.586275707548398
+        ],
+        "speed": 3.755856882608457,
+        "sourceSpeed": 3.3913241196926625,
+        "correctionSpeed": 0.8138620166719328,
+        "correctionAcceleration": 156.27715041608678,
+        "kneeStep": 0.9042395233696954
+      },
+      {
+        "frame": 54,
+        "state": "SWING",
+        "point": [
+          0.06009161765278166,
+          0.5775369589955908,
+          2.618106179427629
+        ],
+        "speed": 3.979461717902932,
+        "sourceSpeed": 3.4279970113521796,
+        "correctionSpeed": 1.794439753667699,
+        "correctionAcceleration": 125.87355689593788,
+        "kneeStep": 1.2498683515200664
+      },
+      {
+        "frame": 54.5,
+        "state": "SWING",
+        "point": [
+          0.06836512458225519,
+          0.5662370501140265,
+          2.651657755446988
+        ],
+        "speed": 4.3628658469842945,
+        "sourceSpeed": 4.229203557226343,
+        "correctionSpeed": 2.4811094846064816,
+        "correctionAcceleration": 122.38971970703321,
+        "kneeStep": 1.5517203957162273
+      },
+      {
+        "frame": 55,
+        "state": "SWING",
+        "point": [
+          0.07691887523410662,
+          0.5505486148567328,
+          2.687047623550609
+        ],
+        "speed": 4.757415725177277,
+        "sourceSpeed": 4.310234976293423,
+        "correctionSpeed": 3.126901836718935,
+        "correctionAcceleration": 79.23955646987501,
+        "kneeStep": 1.6851445084686838
+      },
+      {
+        "frame": 55.5,
+        "state": "SWING",
+        "point": [
+          0.08564066631363693,
+          0.5323411408574208,
+          2.724386968565718
+        ],
+        "speed": 5.0937256961169455,
+        "sourceSpeed": 4.39186569980254,
+        "correctionSpeed": 3.55287986396897,
+        "correctionAcceleration": 53.904920464336996,
+        "kneeStep": 1.9474990033259976
+      },
+      {
+        "frame": 56,
+        "state": "SWING",
+        "point": [
+          0.0944271410602217,
+          0.513407814852142,
+          2.763779949410397
+        ],
+        "speed": 5.349739314368749,
+        "sourceSpeed": 4.473933569158887,
+        "correctionSpeed": 3.7697972651059772,
+        "correctionAcceleration": 32.79853889666355,
+        "kneeStep": 2.0430821291786976
+      },
+      {
+        "frame": 56.5,
+        "state": "SWING",
+        "point": [
+          0.10318355471793482,
+          0.4948362345239534,
+          2.805322578177985
+        ],
+        "speed": 5.5607647572724055,
+        "sourceSpeed": 5.430699633601075,
+        "correctionSpeed": 3.028611537301031,
+        "correctionAcceleration": 137.64056114222532,
+        "kneeStep": 1.8258468307055364
+      },
+      {
+        "frame": 57,
+        "state": "SWING",
+        "point": [
+          0.1118233758502662,
+          0.4776582651194081,
+          2.8489151699590454
+        ],
+        "speed": 5.7173964427555575,
+        "sourceSpeed": 5.484615957822921,
+        "correctionSpeed": 2.9796001891431714,
+        "correctionAcceleration": 25.61149748129224,
+        "kneeStep": 1.7471623883967888
+      },
+      {
+        "frame": 57.5,
+        "state": "SWING",
+        "point": [
+          0.12026807091068764,
+          0.4626043085105256,
+          2.894450384644899
+        ],
+        "speed": 5.843630699706019,
+        "sourceSpeed": 5.534403714256022,
+        "correctionSpeed": 2.857121501531194,
+        "correctionAcceleration": 28.82307169908234,
+        "kneeStep": 1.6410683419412029
+      },
+      {
+        "frame": 58,
+        "state": "SWING",
+        "point": [
+          0.12844678681571625,
+          0.44955565321319657,
+          2.9418142684143995
+        ],
+        "speed": 5.97654971526414,
+        "sourceSpeed": 5.580068849457527,
+        "correctionSpeed": 2.7611105809280425,
+        "correctionAcceleration": 27.25620730260394,
+        "kneeStep": 1.5868173184177983
+      },
+      {
+        "frame": 58.5,
+        "state": "SWING",
+        "point": [
+          0.13629594393724437,
+          0.4383643329546436,
+          2.990886703948846
+        ],
+        "speed": 6.112888628250717,
+        "sourceSpeed": 6.101439962506323,
+        "correctionSpeed": 1.6681783592359254,
+        "correctionAcceleration": 143.4001418356958,
+        "kneeStep": 1.667683868297865
+      },
+      {
+        "frame": 59,
+        "state": "SWING",
+        "point": [
+          0.14375875019415918,
+          0.4288615311769612,
+          3.0415412866760994
+        ],
+        "speed": 6.249089691292566,
+        "sourceSpeed": 6.087455534984447,
+        "correctionSpeed": 1.5907550490001339,
+        "correctionAcceleration": 27.032097271430352,
+        "kneeStep": 1.7073241121798133
+      },
+      {
+        "frame": 59.5,
+        "state": "SWING",
+        "point": [
+          0.1507849555235805,
+          0.42086261759782895,
+          3.0936465388651775
+        ],
+        "speed": 6.381820100151419,
+        "sourceSpeed": 6.067640605524185,
+        "correctionSpeed": 1.5588045536582995,
+        "correctionAcceleration": 25.279370866957404,
+        "kneeStep": 1.766392639397506
+      },
+      {
+        "frame": 60,
+        "state": "SWING",
+        "point": [
+          0.15733050310008495,
+          0.4141719924867908,
+          3.1470665059892573
+        ],
+        "speed": 6.508052108570065,
+        "sourceSpeed": 6.042098960071688,
+        "correctionSpeed": 1.5702617878262926,
+        "correctionAcceleration": 23.64572585305957,
+        "kneeStep": 1.8370462752330683
+      },
+      {
+        "frame": 60.5,
+        "state": "SWING",
+        "point": [
+          0.16335709452481575,
+          0.4085877280539991,
+          3.2016607522516503
+        ],
+        "speed": 6.625082018599691,
+        "sourceSpeed": 6.6505591705971,
+        "correctionSpeed": 0.45525721525745,
+        "correctionAcceleration": 148.28250991385812,
+        "kneeStep": 2.521804936740988
+      },
+      {
+        "frame": 61,
+        "state": "SWING",
+        "point": [
+          0.1688316854090814,
+          0.403906078655619,
+          3.2572837743354945
+        ],
+        "speed": 6.730502049578577,
+        "sourceSpeed": 6.607731172771602,
+        "correctionSpeed": 0.509060035835478,
+        "correctionAcceleration": 19.89948206014379,
+        "kneeStep": 2.616812904927006
+      },
+      {
+        "frame": 61.5,
+        "state": "SWING",
+        "point": [
+          0.1737268364509464,
+          0.39992318559071366,
+          3.3137858971696774
+        ],
+        "speed": 6.822415106798952,
+        "sourceSpeed": 6.559418664106616,
+        "correctionSpeed": 0.6078453502754653,
+        "correctionAcceleration": 19.1038669760479,
+        "kneeStep": 2.7277202195603203
+      },
+      {
+        "frame": 62,
+        "state": "SWING",
+        "point": [
+          0.17802089005431465,
+          0.39643671643936995,
+          3.3710136945115177
+        ],
+        "speed": 6.899337518204539,
+        "sourceSpeed": 6.505802959515399,
+        "correctionSpeed": 0.7298324284311819,
+        "correctionAcceleration": 18.603282541735407,
+        "kneeStep": 2.853507094640305
+      },
+      {
+        "frame": 62.5,
+        "state": "SWING",
+        "point": [
+          0.18169798773019707,
+          0.39324765668543654,
+          3.428809956166246
+        ],
+        "speed": 6.960102424102172,
+        "sourceSpeed": 6.629985980467698,
+        "correctionSpeed": 0.8702025341142731,
+        "correctionAcceleration": 131.40628342463555,
+        "kneeStep": 2.1710552004046684
+      },
+      {
+        "frame": 63,
+        "state": "SWING",
+        "point": [
+          0.18474794278377998,
+          0.39016232693789227,
+          3.487013226506571
+        ],
+        "speed": 7.0037680685871075,
+        "sourceSpeed": 6.678774345789294,
+        "correctionSpeed": 0.7742356730284037,
+        "correctionAcceleration": 12.954361042556316,
+        "kneeStep": 2.310601879360538
+      },
+      {
+        "frame": 63.5,
+        "state": "SWING",
+        "point": [
+          0.18716667228511522,
+          0.38699112218197673,
+          3.5454572326402483
+        ],
+        "speed": 7.029592056968418,
+        "sourceSpeed": 6.722996958405617,
+        "correctionSpeed": 0.658134480439953,
+        "correctionAcceleration": 16.262301665876794,
+        "kneeStep": 2.4583981545510816
+      },
+      {
+        "frame": 64,
+        "state": "SWING",
+        "point": [
+          0.18895663856750317,
+          0.38354766107355054,
+          3.6039703675537407
+        ],
+        "speed": 7.037003367902226,
+        "sourceSpeed": 6.7625944895281265,
+        "correctionSpeed": 0.5306256545233082,
+        "correctionAcceleration": 19.540808399749867,
+        "kneeStep": 2.607861163501858
+      }
+    ]
+  },
+  "after": {
+    "release": 47.5,
+    "maxSpeed": 7.179135163654703,
+    "maxCorrectionSpeed": 2.564473139640163,
+    "maxCorrectionAcceleration": 212.35368391254636,
+    "maxVerticalStep": 0.01739119956752183,
+    "maxKneeStep": 3.5044198472658685,
+    "rows": [
+      {
+        "frame": 40,
+        "state": "ROLL",
+        "point": [
+          0.16429277627548072,
+          0.19069634009836095,
+          2.2607838811563874
+        ],
+        "speed": 0.17655267389188467,
+        "sourceSpeed": 0.8531586676152388,
+        "correctionSpeed": 0.8645969199414432,
+        "correctionAcceleration": 0,
+        "kneeStep": 2.345753594599245
+      },
+      {
+        "frame": 40.5,
+        "state": "ROLL",
+        "point": [
+          0.16348287285148141,
+          0.19201862093827593,
+          2.2617626905602606
+        ],
+        "speed": 0.22004342198503923,
+        "sourceSpeed": 0.9078329629367508,
+        "correctionSpeed": 1.0538497908126387,
+        "correctionAcceleration": 80.87329270719343,
+        "kneeStep": 2.4182671423715973
+      },
+      {
+        "frame": 41,
+        "state": "ROLL",
+        "point": [
+          0.16251516751753162,
+          0.19356964107241903,
+          2.2629322115833603
+        ],
+        "speed": 0.26042755135384615,
+        "sourceSpeed": 0.7945080639657226,
+        "correctionSpeed": 0.9638057531886941,
+        "correctionAcceleration": 10.960635846622402,
+        "kneeStep": 2.3657111150517
+      },
+      {
+        "frame": 41.5,
+        "state": "ROLL",
+        "point": [
+          0.16139689708998253,
+          0.19532397825863118,
+          2.2642836981657384
+        ],
+        "speed": 0.29770507083259234,
+        "sourceSpeed": 0.6863343783512379,
+        "correctionSpeed": 0.87301101368421,
+        "correctionAcceleration": 10.996416167393361,
+        "kneeStep": 2.312830187019751
+      },
+      {
+        "frame": 42,
+        "state": "ROLL",
+        "point": [
+          0.16013529188965187,
+          0.19725590148026212,
+          2.2658084120976305
+        ],
+        "speed": 0.33187599686378727,
+        "sourceSpeed": 0.5857875873854969,
+        "correctionSpeed": 0.7815961541739995,
+        "correctionAcceleration": 11.069069465663054,
+        "kneeStep": 2.2592016607135346
+      },
+      {
+        "frame": 42.5,
+        "state": "ROLL",
+        "point": [
+          0.15873775387417427,
+          0.19933959992123407,
+          2.2674974077374603
+        ],
+        "speed": 0.36294035150873666,
+        "sourceSpeed": 0.2991349719317337,
+        "correctionSpeed": 0.6176308026460593,
+        "correctionAcceleration": 40.56432928739535,
+        "kneeStep": 2.109398660729801
+      },
+      {
+        "frame": 43,
+        "state": "ROLL",
+        "point": [
+          0.15721201382876893,
+          0.20154940307842878,
+          2.269341342038829
+        ],
+        "speed": 0.3908981606243538,
+        "sourceSpeed": 0.1551053432971546,
+        "correctionSpeed": 0.5034408365342635,
+        "correctionAcceleration": 15.282767551613082,
+        "kneeStep": 2.0621149826742133
+      },
+      {
+        "frame": 43.5,
+        "state": "ROLL",
+        "point": [
+          0.15556626666076842,
+          0.20385999274622224,
+          2.271330311040197
+        ],
+        "speed": 0.4157494522054021,
+        "sourceSpeed": 0.05320511086309141,
+        "correctionSpeed": 0.391458469365018,
+        "correctionAcceleration": 15.459176114671582,
+        "kneeStep": 2.015016660410578
+      },
+      {
+        "frame": 44,
+        "state": "ROLL",
+        "point": [
+          0.1538092842300581,
+          0.20624660673227252,
+          2.2734537135035753
+        ],
+        "speed": 0.43749425489338395,
+        "sourceSpeed": 0.15935895315333634,
+        "correctionSpeed": 0.28681710967251917,
+        "correctionAcceleration": 15.6586049293036,
+        "kneeStep": 1.9685614686913953
+      },
+      {
+        "frame": 44.5,
+        "state": "ROLL",
+        "point": [
+          0.15195050552443362,
+          0.2086852334039167,
+          2.2757001419330285
+        ],
+        "speed": 0.45613259664994354,
+        "sourceSpeed": 0.2603311404921341,
+        "correctionSpeed": 0.3386280914633694,
+        "correctionAcceleration": 26.880878868600995,
+        "kneeStep": 1.7712117238532605
+      },
+      {
+        "frame": 45,
+        "state": "ROLL",
+        "point": [
+          0.15000010435808855,
+          0.21115279552887356,
+          2.278057300757614
+        ],
+        "speed": 0.4716645035967064,
+        "sourceSpeed": 0.36791308022335006,
+        "correctionSpeed": 0.2935667067277186,
+        "correctionAcceleration": 15.954507061245163,
+        "kneeStep": 1.7629967022241384
+      },
+      {
+        "frame": 45.5,
+        "state": "ROLL",
+        "point": [
+          0.1479690351319443,
+          0.21362732136721818,
+          2.280511951027704
+        ],
+        "speed": 0.4840899990213438,
+        "sourceSpeed": 0.4939439301657883,
+        "correctionSpeed": 0.30118353050994345,
+        "correctionAcceleration": 16.25112404283726,
+        "kneeStep": 1.7826936146548644
+      },
+      {
+        "frame": 46,
+        "state": "ROLL",
+        "point": [
+          0.14586905754254323,
+          0.21608810059531797,
+          2.283049880553026
+        ],
+        "speed": 0.4934091025482682,
+        "sourceSpeed": 0.6273377821151862,
+        "correctionSpeed": 0.360837062312665,
+        "correctionAcceleration": 16.55743256084468,
+        "kneeStep": 1.8466853884154109
+      },
+      {
+        "frame": 46.5,
+        "state": "ROLL",
+        "point": [
+          0.14371274145590218,
+          0.21851582239500955,
+          2.2856558980123713
+        ],
+        "speed": 0.4996218294759346,
+        "sourceSpeed": 1.235319130516432,
+        "correctionSpeed": 0.8187992396732043,
+        "correctionAcceleration": 87.37212329211025,
+        "kneeStep": 2.0209680779771624
+      },
+      {
+        "frame": 47,
+        "state": "ROLL",
+        "point": [
+          0.14151345346650052,
+          0.22089269291774227,
+          2.288313849197737
+        ],
+        "speed": 0.5027281902794668,
+        "sourceSpeed": 1.3234533310686096,
+        "correctionSpeed": 0.9057698563470378,
+        "correctionAcceleration": 11.856041564067194,
+        "kneeStep": 1.8074515035053376
+      },
+      {
+        "frame": 47.5,
+        "state": "SWING",
+        "point": [
+          0.1392284226247274,
+          0.2382838924852641,
+          2.2948725134303505
+        ],
+        "speed": 2.2472103181509278,
+        "sourceSpeed": 1.4134044220712882,
+        "correctionSpeed": 0.9482942916289936,
+        "correctionAcceleration": 212.35368391254636,
+        "kneeStep": 1.455955141749811
+      },
+      {
+        "frame": 48,
+        "state": "SWING",
+        "point": [
+          0.13771033824539475,
+          0.25408322901668073,
+          2.305219096801561
+        ],
+        "speed": 2.2735975447763948,
+        "sourceSpeed": 1.504669799367959,
+        "correctionSpeed": 0.7769211945346912,
+        "correctionAcceleration": 62.293842729153006,
+        "kneeStep": 1.1995715207907804
+      },
+      {
+        "frame": 48.5,
+        "state": "SWING",
+        "point": [
+          0.13692111325635403,
+          0.26837291516415535,
+          2.3192404756626166
+        ],
+        "speed": 2.4042474558088793,
+        "sourceSpeed": 2.0316842290046138,
+        "correctionSpeed": 0.8027211318349324,
+        "correctionAcceleration": 64.21893577050088,
+        "kneeStep": 1.0630676122369507
+      },
+      {
+        "frame": 49,
+        "state": "SWING",
+        "point": [
+          0.13682263341966244,
+          0.2812353378915887,
+          2.336822654924658
+        ],
+        "speed": 2.6141956464503044,
+        "sourceSpeed": 2.0682261573281737,
+        "correctionSpeed": 0.6652298153156901,
+        "correctionAcceleration": 56.23738717685996,
+        "kneeStep": 0.9231915161048883
+      },
+      {
+        "frame": 49.5,
+        "state": "SWING",
+        "point": [
+          0.1373764942710701,
+          0.2927532962120429,
+          2.3578505087693054
+        ],
+        "speed": 2.877851105873743,
+        "sourceSpeed": 2.105861245995101,
+        "correctionSpeed": 0.8154380180998638,
+        "correctionAcceleration": 53.95163977280609,
+        "kneeStep": 0.8525442324583506
+      },
+      {
+        "frame": 50,
+        "state": "SWING",
+        "point": [
+          0.13854352828536282,
+          0.30301012952471557,
+          2.382207374888817
+        ],
+        "speed": 3.174496804578533,
+        "sourceSpeed": 2.144438018952912,
+        "correctionSpeed": 1.1224649340141764,
+        "correctionAcceleration": 51.64667480156844,
+        "kneeStep": 0.9077835220533514
+      },
+      {
+        "frame": 50.5,
+        "state": "SWING",
+        "point": [
+          0.14028313378534213,
+          0.3120897059572518,
+          2.4097744178585985
+        ],
+        "speed": 3.489105591360261,
+        "sourceSpeed": 2.595490775181073,
+        "correctionSpeed": 1.070644484571714,
+        "correctionAcceleration": 87.48442771704448,
+        "kneeStep": 1.3278231955913182
+      },
+      {
+        "frame": 51,
+        "state": "SWING",
+        "point": [
+          0.14255241890299758,
+          0.32007622267282687,
+          2.440429679892916
+        ],
+        "speed": 3.8111652289082336,
+        "sourceSpeed": 2.6108564310348545,
+        "correctionSpeed": 1.258656850934124,
+        "correctionAcceleration": 48.1968598102474,
+        "kneeStep": 1.4613899417592746
+      },
+      {
+        "frame": 51.5,
+        "state": "SWING",
+        "point": [
+          0.14530621378440736,
+          0.32705359921841054,
+          2.4740465848853814
+        ],
+        "speed": 4.133235292372617,
+        "sourceSpeed": 2.627644933183489,
+        "correctionSpeed": 1.5183102803205943,
+        "correctionAcceleration": 45.83666712127366,
+        "kneeStep": 1.5601600655216117
+      },
+      {
+        "frame": 52,
+        "state": "SWING",
+        "point": [
+          0.14849690586403863,
+          0.3331050960529054,
+          2.5104927103348977
+        ],
+        "speed": 4.449915183281807,
+        "sourceSpeed": 2.6458123822671675,
+        "correctionSpeed": 1.8060442260852128,
+        "correctionAcceleration": 43.403222749811796,
+        "kneeStep": 1.6165703679242003
+      },
+      {
+        "frame": 52.5,
+        "state": "SWING",
+        "point": [
+          0.1520740436134344,
+          0.338313384531242,
+          2.549629822787868
+        ],
+        "speed": 4.757263379813816,
+        "sourceSpeed": 3.3185198287090003,
+        "correctionSpeed": 1.6283747411559921,
+        "correctionAcceleration": 94.03120376352123,
+        "kneeStep": 2.0665220909776485
+      },
+      {
+        "frame": 53,
+        "state": "SWING",
+        "point": [
+          0.15598377516433798,
+          0.3427601773548854,
+          2.591314006708655
+        ],
+        "speed": 5.052315177377894,
+        "sourceSpeed": 3.3548179334697963,
+        "correctionSpeed": 1.9184123997636882,
+        "correctionAcceleration": 36.46316095275168,
+        "kneeStep": 1.9804458595530237
+      },
+      {
+        "frame": 53.5,
+        "state": "SWING",
+        "point": [
+          0.1601696016927134,
+          0.3465256708814528,
+          2.6353958687491095
+        ],
+        "speed": 5.332796011939903,
+        "sourceSpeed": 3.3913241196926625,
+        "correctionSpeed": 2.1919975162273966,
+        "correctionAcceleration": 33.870414044234806,
+        "kneeStep": 1.8926739933307688
+      },
+      {
+        "frame": 54,
+        "state": "SWING",
+        "point": [
+          0.1645730271518373,
+          0.3496879457764698,
+          2.6817208015023812
+        ],
+        "speed": 5.596928557118133,
+        "sourceSpeed": 3.4279970113521796,
+        "correctionSpeed": 2.4466780270147823,
+        "correctionAcceleration": 31.225325490225302,
+        "kneeStep": 1.8080893426219422
+      },
+      {
+        "frame": 54.5,
+        "state": "SWING",
+        "point": [
+          0.16913412314830747,
+          0.35232240858183234,
+          2.7301292928645684
+        ],
+        "speed": 5.843305125330799,
+        "sourceSpeed": 4.229203557226343,
+        "correctionSpeed": 1.9784252396352677,
+        "correctionAcceleration": 69.99874664711265,
+        "kneeStep": 2.016147347427392
+      },
+      {
+        "frame": 55,
+        "state": "SWING",
+        "point": [
+          0.1737920277882923,
+          0.35450131749508035,
+          2.78045726906792
+        ],
+        "speed": 6.070800958781376,
+        "sourceSpeed": 4.310234976293423,
+        "correctionSpeed": 2.1910351425187566,
+        "correctionAcceleration": 29.12629883566473,
+        "kneeStep": 1.9099194707370801
+      },
+      {
+        "frame": 55.5,
+        "state": "SWING",
+        "point": [
+          0.17848604417720512,
+          0.3562934113881987,
+          2.832536461274431
+        ],
+        "speed": 6.2785206998304135,
+        "sourceSpeed": 4.39186569980254,
+        "correctionSpeed": 2.387094531460767,
+        "correctionAcceleration": 26.509149364632577,
+        "kneeStep": 1.8253853800447806
+      },
+      {
+        "frame": 56,
+        "state": "SWING",
+        "point": [
+          0.18315657659241752,
+          0.3577636461144176,
+          2.8861947873160987
+        ],
+        "speed": 6.4657525781391865,
+        "sourceSpeed": 4.473933569158887,
+        "correctionSpeed": 2.564473139640163,
+        "correctionAcceleration": 23.891275562843624,
+        "kneeStep": 1.7667024595990055
+      },
+      {
+        "frame": 56.5,
+        "state": "SWING",
+        "point": [
+          0.18774587756182864,
+          0.35897303298810174,
+          2.9412567417290916
+        ],
+        "speed": 6.631933427167587,
+        "sourceSpeed": 5.430699633601075,
+        "correctionSpeed": 1.3985618368641533,
+        "correctionAcceleration": 140.952640019845,
+        "kneeStep": 1.769423827351768
+      },
+      {
+        "frame": 57,
+        "state": "SWING",
+        "point": [
+          0.19219855211966957,
+          0.35997856884450263,
+          2.997543788648115
+        ],
+        "speed": 6.776621172881739,
+        "sourceSpeed": 5.484615957822921,
+        "correctionSpeed": 1.5596880499328278,
+        "correctionAcceleration": 22.832765797082494,
+        "kneeStep": 1.7427957796261933
+      },
+      {
+        "frame": 57.5,
+        "state": "SWING",
+        "point": [
+          0.1964620834213664,
+          0.3608332439617786,
+          3.0548747534010525
+        ],
+        "speed": 6.8994758286667235,
+        "sourceSpeed": 5.534403714256022,
+        "correctionSpeed": 1.7105680239147645,
+        "correctionAcceleration": 21.12323878109687,
+        "kneeStep": 1.7529447338877235
+      },
+      {
+        "frame": 58,
+        "state": "SWING",
+        "point": [
+          0.2004871945785871,
+          0.3615281550320347,
+          3.113066209771624
+        ],
+        "speed": 7.000156585878919,
+        "sourceSpeed": 5.580068849457527,
+        "correctionSpeed": 1.8533738862214248,
+        "correctionAcceleration": 20.16301092169353,
+        "kneeStep": 1.799234794454147
+      },
+      {
+        "frame": 58.5,
+        "state": "SWING",
+        "point": [
+          0.20422807593229725,
+          0.3620505796471321,
+          3.171932860879705
+        ],
+        "speed": 7.07852499902669,
+        "sourceSpeed": 6.101439962506323,
+        "correctionSpeed": 0.996574208113637,
+        "correctionAcceleration": 123.82203088126319,
+        "kneeStep": 1.9692856541607477
+      },
+      {
+        "frame": 59,
+        "state": "SWING",
+        "point": [
+          0.2076424850486031,
+          0.36238414540842334,
+          3.23128791246679
+        ],
+        "speed": 7.134493612497033,
+        "sourceSpeed": 6.087455534984447,
+        "correctionSpeed": 1.1012177031398018,
+        "correctionAcceleration": 19.862440920154793,
+        "kneeStep": 2.095152201759167
+      },
+      {
+        "frame": 59.5,
+        "state": "SWING",
+        "point": [
+          0.21069203673876374,
+          0.3625090570402959,
+          3.290943438070178
+        ],
+        "speed": 7.168026108321723,
+        "sourceSpeed": 6.067640605524185,
+        "correctionSpeed": 1.2075175850436988,
+        "correctionAcceleration": 19.227581945312316,
+        "kneeStep": 2.242553819595885
+      },
+      {
+        "frame": 60,
+        "state": "SWING",
+        "point": [
+          0.2133423386911577,
+          0.36240238796518126,
+          3.3507107361266035
+        ],
+        "speed": 7.179135163654703,
+        "sourceSpeed": 6.042098960071688,
+        "correctionSpeed": 1.3130899829060745,
+        "correctionAcceleration": 18.71704084982957,
+        "kneeStep": 2.4011496890289212
+      },
+      {
+        "frame": 60.5,
+        "state": "SWING",
+        "point": [
+          0.21556299015548494,
+          0.3620384434499918,
+          3.410400679467407
+        ],
+        "speed": 7.167881445568723,
+        "sourceSpeed": 6.6505591705971,
+        "correctionSpeed": 0.6467225467565932,
+        "correctionAcceleration": 139.4781321498147,
+        "kneeStep": 3.224742121038575
+      },
+      {
+        "frame": 61,
+        "state": "SWING",
+        "point": [
+          0.2173274611410142,
+          0.3613892030831295,
+          3.4698240579557065
+        ],
+        "speed": 7.134373697741155,
+        "sourceSpeed": 6.607731172771602,
+        "correctionSpeed": 0.5687686490152918,
+        "correctionAcceleration": 20.375118469470713,
+        "kneeStep": 3.3496214201576686
+      },
+      {
+        "frame": 61.5,
+        "state": "SWING",
+        "point": [
+          0.21861377892203154,
+          0.3604248509042846,
+          3.5287919151744083
+        ],
+        "speed": 7.078772205597718,
+        "sourceSpeed": 6.559418664106616,
+        "correctionSpeed": 0.5221974285324025,
+        "correctionAcceleration": 20.21088798342039,
+        "kneeStep": 3.4451133475099747
+      },
+      {
+        "frame": 62,
+        "state": "SWING",
+        "point": [
+          0.21940499410933717,
+          0.3591144019076713,
+          3.587115880104814
+        ],
+        "speed": 7.001286013210671,
+        "sourceSpeed": 6.505802959515399,
+        "correctionSpeed": 0.5143995932176957,
+        "correctionAcceleration": 20.172742279468995,
+        "kneeStep": 3.5044198472658685
+      },
+      {
+        "frame": 62.5,
+        "state": "SWING",
+        "point": [
+          0.21968944412681637,
+          0.3574264337914701,
+          3.6446084946411026
+        ],
+        "speed": 6.9021710056506675,
+        "sourceSpeed": 6.629985980467698,
+        "correctionSpeed": 0.9565013573343097,
+        "correctionAcceleration": 122.54834338654398,
+        "kneeStep": 2.7568467514280166
+      },
+      {
+        "frame": 63,
+        "state": "SWING",
+        "point": [
+          0.2194608314780932,
+          0.3553299326399099,
+          3.7010835375681843
+        ],
+        "speed": 6.781728686986686,
+        "sourceSpeed": 6.678774345789294,
+        "correctionSpeed": 0.7387840055623205,
+        "correctionAcceleration": 30.45873507412818,
+        "kneeStep": 2.767616473551011
+      },
+      {
+        "frame": 63.5,
+        "state": "SWING",
+        "point": [
+          0.21871882387326955,
+          0.3527951079366785,
+          3.75635634529071
+        ],
+        "speed": 6.640305133451295,
+        "sourceSpeed": 6.722996958405617,
+        "correctionSpeed": 0.5468035370081019,
+        "correctionAcceleration": 32.31892218671539,
+        "kneeStep": 2.747424051719702
+      },
+      {
+        "frame": 64,
+        "state": "SWING",
+        "point": [
+          0.2174696296459956,
+          0.34979395566504146,
+          3.8102441291407394
+        ],
+        "speed": 6.478289384704257,
+        "sourceSpeed": 6.7625944895281265,
+        "correctionSpeed": 0.44691019948549016,
+        "correctionAcceleration": 34.10721896938844,
+        "kneeStep": 2.7007921391387297
+      }
+    ]
+  },
+  "scope": "Measured full 40–64 user-frame release window against the same genuine RunLeft phase.49 NN; all-shoe clearance, exact material pins, and unchanged full forward sequences."
+}

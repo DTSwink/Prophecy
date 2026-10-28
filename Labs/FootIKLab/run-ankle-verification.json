@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "checks": [
+    "Run81 releases the obsolete toe-off angle into NN ankle articulation",
+    "Run75-85 angular peak is below 12 degrees per 120Hz sample and less than half the old snap",
+    "Run81-85 stays aligned instead of snapping back through a held pose",
+    "Right path and pelvis rhythm remain unchanged",
+    "All support and release times remain unchanged",
+    "Every material plant keeps its authored rotation",
+    "Whole shoes stay clear and legs stay within reach",
+    "Reverse seeking preserves the corrected pose"
+  ],
+  "frame81": {
+    "beforeAnkleErrorDeg": 104.48577580547305,
+    "afterAnkleErrorDeg": 0.1372312628442934
+  },
+  "peakHalfFrameRotation": {
+    "before": 33.8540953596265,
+    "after": 8.354511990745596
+  },
+  "metrics": {
+    "maxPenetration": 1.345579003775299e-7,
+    "maxReachError": 1.1116099371267112e-15,
+    "maxPelvis": 0.04218856756141029,
+    "maxFlatDeviation": 0,
+    "pins": [
+      25,
+      15
+    ]
+  }
+}

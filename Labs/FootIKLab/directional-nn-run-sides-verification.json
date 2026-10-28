@@ -1,0 +1,103 @@
+{
+  "checks": [
+    "run/left bounded finite actual NN poses",
+    "run/left original lower-controller equivalence",
+    "run/left both policies ran autoregressively after correct source seed",
+    "run/left course travels +Z without lateral drift",
+    "run/left native commanded speed retained",
+    "run/left matches native LR/RL 350cm/s command",
+    "run/left body heading remains independent from travel",
+    "run/left proper rigid orientation",
+    "run/right bounded finite actual NN poses",
+    "run/right original lower-controller equivalence",
+    "run/right both policies ran autoregressively after correct source seed",
+    "run/right course travels +Z without lateral drift",
+    "run/right native commanded speed retained",
+    "run/right matches native LR/RL 350cm/s command",
+    "run/right body heading remains independent from travel",
+    "run/right proper rigid orientation",
+    "reject {'direction': 'reverse-file'}",
+    "reject {'duration': 30}",
+    "reject {'phase': nan}"
+  ],
+  "count": 19,
+  "cases": [
+    {
+      "gait": "run",
+      "direction": "left",
+      "command": {
+        "direction": "left",
+        "sourceSpeed": 3.5000009536743164,
+        "commandSpeed": 3.5000009536743164,
+        "sourceToCourseAxes": [
+          [
+            6.123234262925839e-17,
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            -1.0,
+            0.0,
+            6.123234262925839e-17
+          ]
+        ],
+        "facingDegrees": -90.0,
+        "policyGait": "run",
+        "relative": "run_omni/M_Neutral_Run_Loop_LR.npz",
+        "sourceSha256": "6e73aa7004ca74a3883a7e7c638a3892e4a1e58c3455169a9b4aad5e7e9f1ba5",
+        "drawnSha256": "8a378f35ae489cd273ad23222f20491eae58c9da9fa1a475cd9cb88ad15be5de"
+      },
+      "speed": 3.4999996463194587,
+      "seconds": 5.930604199995287,
+      "referenceError": 0.0,
+      "fixture": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-run-left.json",
+      "frames": 152,
+      "maxRotationMatrixError": 1.6689300537109375e-06
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "command": {
+        "direction": "right",
+        "sourceSpeed": 3.499976873397827,
+        "commandSpeed": 3.499976873397827,
+        "sourceToCourseAxes": [
+          [
+            6.123234262925839e-17,
+            0.0,
+            -1.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            6.123234262925839e-17
+          ]
+        ],
+        "facingDegrees": 90.0,
+        "policyGait": "run",
+        "relative": "run_omni/M_Neutral_Run_Loop_RL.npz",
+        "sourceSha256": "f1accf24cf6699cf51516802a06f5719556f42181432b03d1c34d106d17dfc12",
+        "drawnSha256": "44d8c7e21730eee067d3bdb90c5d23f213554f8e835f140776a30efbb90fb711"
+      },
+      "speed": 3.49997690971324,
+      "seconds": 9.471610800013877,
+      "referenceError": 0.0,
+      "fixture": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-run-right.json",
+      "frames": 152,
+      "maxRotationMatrixError": 1.5497207641601562e-06
+    }
+  ],
+  "seconds": 16.037001400021836,
+  "threads": 1,
+  "cudaUsed": false
+}

@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),K=require('./footik.js'),R=require('./recovery.js'),S=require('./support.js');
+const read=p=>JSON.parse(fs.readFileSync(new URL(p,import.meta.url),'utf8'));
+const run=K.decode(read('snapshots/flat-knee-phase60-source.json'),read('data/rig.json').parents);
+const settings={gait:'walk',phase:.6,terrain:'stairs',height:16,depth:35,steps:12,enabled:true,clearance:1,pelvis:30,direction:'forward',rootYawSpeed:300,rootYawStart:1.2,rootYawStop:6,footYawLimit:45};
+const model=K.prepare(run,settings),flat=K.prepare(run,{...settings,terrain:'flat'}),deg=180/Math.PI;
+const dist=(a,b)=>R.length(R.sub(a,b)),angle=(a,b)=>2*Math.acos(Math.min(1,Math.abs(R.dot(a,b))))*deg;
+const flex=(p,l)=>Math.acos(Math.max(-1,Math.min(1,R.dot(R.unit(R.sub(p.points[l.knee],p.points[l.hip])),R.unit(R.sub(p.points[l.foot],p.points[l.knee]))))))*deg;
+const rows=model.frames.map((f,i)=>({frame:i/2,influence:f.influence,root:f.root,feet:['L','R'].map(side=>{const l=S.leg(f.raw,run.names,side),p=model.frames[Math.max(0,i-1)];return {side,state:f.feet[side==='L'?0:1].state,kneeDelta:dist(f.pose.points[l.knee],f.raw.points[l.knee]),ankleDelta:dist(f.pose.points[l.foot],f.raw.points[l.foot]),flex:flex(f.pose,l),rawFlex:flex(f.raw,l),kneeStep:angle(f.pose.q[l.knee],p.pose.q[l.knee]),rawKneeStep:angle(f.raw.q[l.knee],p.raw.q[l.knee]),hipStep:angle(f.pose.q[l.hip],p.pose.q[l.hip]),rawHipStep:angle(f.raw.q[l.hip],p.raw.q[l.hip])};})}));
+const result={settings,flatExact:flat.frames.every(f=>JSON.stringify(f.pose)===JSON.stringify(f.raw)),firstInfluence:rows.find(r=>r.influence>0)?.frame,frame49:rows[98],largestApproachChanges:rows.filter(r=>r.frame<=54).flatMap(r=>r.feet.map(f=>({frame:r.frame,influence:r.influence,...f}))).sort((a,b)=>(b.kneeStep-b.rawKneeStep)-(a.kneeStep-a.rawKneeStep)).slice(0,12),rows};
+fs.writeFileSync(new URL('snapshots/flat-knee-audit.json',import.meta.url),JSON.stringify(result,null,2));
+console.log(JSON.stringify({...result,rows:undefined},null,2));

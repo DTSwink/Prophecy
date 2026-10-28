@@ -1,0 +1,52 @@
+{
+  "schema": "foot-ik-lab-v1",
+  "settings": {
+    "gait": "run",
+    "phase": 0.36,
+    "terrain": "incline",
+    "height": 16,
+    "depth": 35,
+    "steps": 12,
+    "enabled": true,
+    "clearance": 1,
+    "pelvis": 30,
+    "ghost": false,
+    "targets": true,
+    "ramp": true,
+    "bicolor": true,
+    "bones": false,
+    "translucency": 10,
+    "ghostTranslucency": 2,
+    "loop": true,
+    "trimIn": 0,
+    "trimOut": 3.466666666666667,
+    "speed": 1,
+    "direction": "left",
+    "slopeAngle": 90,
+    "approach": "toward",
+    "upright": 0.55,
+    "rootYawSpeed": 200,
+    "rootYawStart": 1.2,
+    "rootYawStop": 6,
+    "footYawLimit": 45,
+    "stepAccent": 400,
+    "showRoot": true,
+    "inclineGravity": true,
+    "minGravityIncline": 80,
+    "fullGravity": 70,
+    "energyConservation": 100,
+    "deleteFloorFrame": 55,
+    "pinReleaseSpeed": 1
+  },
+  "camera": {
+    "yaw": 42.25968643299631,
+    "pitch": 0.07679809570312418,
+    "zoom": 0.6892552919191681,
+    "panX": 0,
+    "panY": 0
+  },
+  "playback": {
+    "time": 1.2666666666666666,
+    "playing": false
+  }
+}

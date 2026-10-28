@@ -1,0 +1,519 @@
+{
+  "passed": true,
+  "surfaceSha256": "209c1782ecb1b21934b59263f23cf935826b917b72da73c07cb127f6f18869e2",
+  "scope": "Independent complete shoe-face clipping against finite surface rectangles, all32 directional45/90toward/parallel cases after endpoint root clearance and folded free-leg knee stability fixes.",
+  "cases": [
+    {
+      "gait": "walk",
+      "direction": "forward",
+      "approach": "toward",
+      "slopeAngle": 45,
+      "penetration": 5.634754196570668e-7,
+      "worst": {
+        "frame": 212,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "pinError": 1.5545600323619233e-15,
+      "kneeStep": 4.51432492988321,
+      "ankleStep": 5.000000000000055,
+      "wallContacts": 448
+    },
+    {
+      "gait": "walk",
+      "direction": "forward",
+      "approach": "toward",
+      "slopeAngle": 90,
+      "penetration": 0.00004439515949749818,
+      "worst": {
+        "frame": 144.5,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "pinError": 1.5743186607011727e-15,
+      "kneeStep": 8.260691106813137,
+      "ankleStep": 11.246753157383537,
+      "wallContacts": 69
+    },
+    {
+      "gait": "walk",
+      "direction": "forward",
+      "approach": "parallel",
+      "slopeAngle": 45,
+      "penetration": 3.198807814147435e-7,
+      "worst": {
+        "frame": 174,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.993299180634828e-15,
+      "kneeStep": 4.6914725001130435,
+      "ankleStep": 5.000000000000037,
+      "wallContacts": 542
+    },
+    {
+      "gait": "walk",
+      "direction": "forward",
+      "approach": "parallel",
+      "slopeAngle": 90,
+      "penetration": 9.482921128783334e-8,
+      "worst": {
+        "frame": 42,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.2601306436823429e-15,
+      "kneeStep": 5.892428377270624,
+      "ankleStep": 6.295684931698596,
+      "wallContacts": 72
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "approach": "toward",
+      "slopeAngle": 45,
+      "penetration": 3.4334568055349735e-7,
+      "worst": {
+        "frame": 192,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.1900961646448462e-15,
+      "kneeStep": 5.906203137123271,
+      "ankleStep": 5.000000000000053,
+      "wallContacts": 327
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "approach": "toward",
+      "slopeAngle": 90,
+      "penetration": 3.5645800430805785e-7,
+      "worst": {
+        "frame": 184,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.4217791915866692e-15,
+      "kneeStep": 8.151393783697388,
+      "ankleStep": 7.135567655280097,
+      "wallContacts": 73
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "approach": "parallel",
+      "slopeAngle": 45,
+      "penetration": 3.160139028582365e-7,
+      "worst": {
+        "frame": 262,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.1319545891955332e-15,
+      "kneeStep": 5.256995676047536,
+      "ankleStep": 5.000000000000042,
+      "wallContacts": 467
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "approach": "parallel",
+      "slopeAngle": 90,
+      "penetration": 9.214367787356611e-9,
+      "worst": {
+        "frame": 28,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "pinError": 1.4947479146945255e-15,
+      "kneeStep": 4.633504004253041,
+      "ankleStep": 5.000000000000026,
+      "wallContacts": 66
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "approach": "toward",
+      "slopeAngle": 45,
+      "penetration": 2.2694467394224205e-7,
+      "worst": {
+        "frame": 130,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.4770556661825108e-15,
+      "kneeStep": 4.209897216752351,
+      "ankleStep": 5.000000000000047,
+      "wallContacts": 377
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "approach": "toward",
+      "slopeAngle": 90,
+      "penetration": 0.00007671053545776607,
+      "worst": {
+        "frame": 292.5,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.4895204919483639e-15,
+      "kneeStep": 6.407247512377604,
+      "ankleStep": 7.447883071156903,
+      "wallContacts": 70
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "approach": "parallel",
+      "slopeAngle": 45,
+      "penetration": 1.8275272067880266e-7,
+      "worst": {
+        "frame": 118,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 2.0329893410087047e-15,
+      "kneeStep": 4.984518827355121,
+      "ankleStep": 5.000000000000044,
+      "wallContacts": 352
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "approach": "parallel",
+      "slopeAngle": 90,
+      "penetration": 7.395075311107604e-8,
+      "worst": {
+        "frame": 22,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "pinError": 1.5710734600032811e-15,
+      "kneeStep": 5.521921607459478,
+      "ankleStep": 8.016530507454155,
+      "wallContacts": 67
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "approach": "toward",
+      "slopeAngle": 45,
+      "penetration": 3.723273591660359e-7,
+      "worst": {
+        "frame": 217,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.4417545522651017e-15,
+      "kneeStep": 4.178463549992577,
+      "ankleStep": 5.000000000000066,
+      "wallContacts": 355
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "approach": "toward",
+      "slopeAngle": 90,
+      "penetration": 3.840861115252107e-7,
+      "worst": {
+        "frame": 294,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.7503626354362157e-15,
+      "kneeStep": 6.694440923424593,
+      "ankleStep": 8.646856434154007,
+      "wallContacts": 77
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "approach": "parallel",
+      "slopeAngle": 45,
+      "penetration": 3.173701404735052e-7,
+      "worst": {
+        "frame": 226,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.503483945949307e-15,
+      "kneeStep": 4.508562005100261,
+      "ankleStep": 5.000000000000055,
+      "wallContacts": 319
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "approach": "parallel",
+      "slopeAngle": 90,
+      "penetration": 9.014421561602715e-8,
+      "worst": {
+        "frame": 32,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.1957467920563635e-15,
+      "kneeStep": 4.526395546439748,
+      "ankleStep": 5.000000000000031,
+      "wallContacts": 69
+    },
+    {
+      "gait": "run",
+      "direction": "forward",
+      "approach": "toward",
+      "slopeAngle": 45,
+      "penetration": 2.67137618692459e-7,
+      "worst": {
+        "frame": 196.5,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "pinError": 1.8706240009738252e-15,
+      "kneeStep": 6.508536690616735,
+      "ankleStep": 8.757976078561997,
+      "wallContacts": 171
+    },
+    {
+      "gait": "run",
+      "direction": "forward",
+      "approach": "toward",
+      "slopeAngle": 90,
+      "penetration": 0.0000016639628459269584,
+      "worst": {
+        "frame": 298,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.798981011169465e-15,
+      "kneeStep": 13.460299143714161,
+      "ankleStep": 7.038144364302582,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "forward",
+      "approach": "parallel",
+      "slopeAngle": 45,
+      "penetration": 1.9069684873557202e-7,
+      "worst": {
+        "frame": 289,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.669550361178616e-15,
+      "kneeStep": 7.5280514136603545,
+      "ankleStep": 5.000000000000057,
+      "wallContacts": 297
+    },
+    {
+      "gait": "run",
+      "direction": "forward",
+      "approach": "parallel",
+      "slopeAngle": 90,
+      "penetration": 1.94575075523695e-7,
+      "worst": {
+        "frame": 32,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.225338722412823e-15,
+      "kneeStep": 10.21251236979991,
+      "ankleStep": 8.555508515552905,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "approach": "toward",
+      "slopeAngle": 45,
+      "penetration": 7.526223599896298e-8,
+      "worst": {
+        "frame": 152,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.803591922891276e-15,
+      "kneeStep": 8.278476890822764,
+      "ankleStep": 5.000000000000044,
+      "wallContacts": 216
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "approach": "toward",
+      "slopeAngle": 90,
+      "penetration": 2.2545431054114184e-7,
+      "worst": {
+        "frame": 32,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.3386851060844455e-15,
+      "kneeStep": 8.489384351587862,
+      "ankleStep": 9.113209824501853,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "approach": "parallel",
+      "slopeAngle": 45,
+      "penetration": 1.1856811375082765e-7,
+      "worst": {
+        "frame": 101.5,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "pinError": 1.5154773039150993e-15,
+      "kneeStep": 7.963392371510645,
+      "ankleStep": 5.000000000000038,
+      "wallContacts": 300
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "approach": "parallel",
+      "slopeAngle": 90,
+      "penetration": 1.4457323326833802e-8,
+      "worst": {
+        "frame": 119,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.7019962483368879e-15,
+      "kneeStep": 6.512694648310685,
+      "ankleStep": 5.000000000000041,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "approach": "toward",
+      "slopeAngle": 45,
+      "penetration": 4.101706174985953e-7,
+      "worst": {
+        "frame": 27,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.961830370053296e-15,
+      "kneeStep": 5.880472356790338,
+      "ankleStep": 6.532674704390603,
+      "wallContacts": 235
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "approach": "toward",
+      "slopeAngle": 90,
+      "penetration": 4.834593368974183e-7,
+      "worst": {
+        "frame": 28,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.6401643046719713e-15,
+      "kneeStep": 6.0080930462138555,
+      "ankleStep": 7.408894011882659,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "approach": "parallel",
+      "slopeAngle": 45,
+      "penetration": 3.427733575138425e-7,
+      "worst": {
+        "frame": 26.5,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.7715799268939122e-15,
+      "kneeStep": 5.143287420046037,
+      "ankleStep": 5.826392660475363,
+      "wallContacts": 320
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "approach": "parallel",
+      "slopeAngle": 90,
+      "penetration": 5.994463713674428e-8,
+      "worst": {
+        "frame": 22,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.4835608313937561e-15,
+      "kneeStep": 8.08065388890283,
+      "ankleStep": 8.573379416895236,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "approach": "toward",
+      "slopeAngle": 45,
+      "penetration": 8.46220521211194e-7,
+      "worst": {
+        "frame": 276,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "pinError": 1.790180836524724e-15,
+      "kneeStep": 5.415899634973449,
+      "ankleStep": 5.557665864660343,
+      "wallContacts": 237
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "approach": "toward",
+      "slopeAngle": 90,
+      "penetration": 5.249055172740213e-7,
+      "worst": {
+        "frame": 268,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "pinError": 1.5393713663616246e-15,
+      "kneeStep": 7.436018126349147,
+      "ankleStep": 6.358035249162065,
+      "wallContacts": 103
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "approach": "parallel",
+      "slopeAngle": 45,
+      "penetration": 5.115879541869872e-7,
+      "worst": {
+        "frame": 158,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "pinError": 1.526808961424549e-15,
+      "kneeStep": 5.536086277579294,
+      "ankleStep": 5.000000000000065,
+      "wallContacts": 362
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "approach": "parallel",
+      "slopeAngle": 90,
+      "penetration": 9.762386191242659e-8,
+      "worst": {
+        "frame": 46,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "pinError": 1.2994827337208943e-15,
+      "kneeStep": 5.4140352328141805,
+      "ankleStep": 5.981871142711918,
+      "wallContacts": 103
+    }
+  ]
+}

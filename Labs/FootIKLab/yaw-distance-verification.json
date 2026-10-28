@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "checks": [
+    "walk unchanged root speed",
+    "walk starts at 3m and stops at 8m",
+    "walk original NN and root-window parity",
+    "walk keeps original continuous pin projection",
+    "walk eight future samples anticipate both distance boundaries",
+    "walk heading holds after stop",
+    "run unchanged root speed",
+    "run starts at 3m and stops at 8m",
+    "run original NN and root-window parity",
+    "run keeps original continuous pin projection",
+    "run eight future samples anticipate both distance boundaries",
+    "run heading holds after stop"
+  ]
+}

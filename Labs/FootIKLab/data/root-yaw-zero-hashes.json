@@ -1,0 +1,74 @@
+[
+  {
+    "gait": "walk",
+    "approach": "toward",
+    "slopeAngle": 0,
+    "hash": "6da41ef022aa299508483e0d58e158ff4075b2a7e823e41685859b21ccb2d1ef"
+  },
+  {
+    "gait": "walk",
+    "approach": "toward",
+    "slopeAngle": 45,
+    "hash": "c4ba382bd9ced89f0e00648c8ca925aab18ddf420b6d2fb60e0cfa7cfd0e0e21"
+  },
+  {
+    "gait": "walk",
+    "approach": "toward",
+    "slopeAngle": 90,
+    "hash": "9ab11ece2d644114a1bb756be44b68ff4800c499456899f2057bd89131cc6c84"
+  },
+  {
+    "gait": "walk",
+    "approach": "parallel",
+    "slopeAngle": 0,
+    "hash": "9b21c0be0f946d6b2fb4c30147e1b1a75602cbc79c2c3528a247e45cb494b56b"
+  },
+  {
+    "gait": "walk",
+    "approach": "parallel",
+    "slopeAngle": 45,
+    "hash": "b48deb7693d041e3fcef3bbff6979ecfed02396dd66f7321871aaa8bc70b9c62"
+  },
+  {
+    "gait": "walk",
+    "approach": "parallel",
+    "slopeAngle": 90,
+    "hash": "ec7cc56f98139344b27c8c3e5024c52290c5bf9398c146dcc9a529b48f3eb2e5"
+  },
+  {
+    "gait": "run",
+    "approach": "toward",
+    "slopeAngle": 0,
+    "hash": "34a90715c61571586e18cceb3de36269ca0786d9ff2e887c124d3958a539d7c3"
+  },
+  {
+    "gait": "run",
+    "approach": "toward",
+    "slopeAngle": 45,
+    "hash": "f04bdcfdeb640ea5803bccabcdb0ea95baa0816d8696ab1b1b0ad46c99663a1c"
+  },
+  {
+    "gait": "run",
+    "approach": "toward",
+    "slopeAngle": 90,
+    "hash": "d260b93869eb576ec8a3bfbccbde6b54ef2fab9b2dec9f63cf057e940f7e18a7"
+  },
+  {
+    "gait": "run",
+    "approach": "parallel",
+    "slopeAngle": 0,
+    "hash": "d98d59ebce915814980efc37388535ea008b6a57d438ffbc920de6066f6951b2"
+  },
+  {
+    "gait": "run",
+    "approach": "parallel",
+    "slopeAngle": 45,
+    "hash": "38f2be5ce2e6541def1129ede4e2ab64e6f809fb361bb5fc46c5f4815aeeeb6d"
+  },
+  {
+    "gait": "run",
+    "approach": "parallel",
+    "slopeAngle": 90,
+    "hash": "c1579244ee3daa732473d851760887a9f7f99d8d9de8218dcaea3ebf164525d4"
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "count": 6,
+  "checks": [
+    "valid immutable source reaches cached result without worker",
+    "changed source rejected before an existing cache hit",
+    "stale retirement cannot stop current worker",
+    "matching retirement owns cleanup",
+    "manual cleanup cancels pending idle timer",
+    "no worker was started or terminated during guard audit"
+  ],
+  "scope": "Current source tested with cache reads and process-stop function mocked; no running server restart."
+}

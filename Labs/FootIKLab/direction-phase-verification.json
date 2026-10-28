@@ -1,0 +1,2866 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "walk/backward/0.49 actual5s directional source",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "sourceSha": "fe9b95e2c06eebe700d856e2a5a1b2070468fb650fa94145000bf496568960df"
+      }
+    },
+    {
+      "name": "walk/backward/0.49/flat finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/0.49/flat exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/0.49/flat source bone lengths",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/0.49/flat root ramp",
+      "passed": true,
+      "measured": 5.293955920339377e-23
+    },
+    {
+      "name": "walk/backward/0.49/flat whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 0,
+        "penAt": null
+      }
+    },
+    {
+      "name": "walk/backward/0.49/flat reachable targets",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/0.49/flat real material contact",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/0.49/flat no material slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/0.49/flat knee pole continuity",
+      "passed": true,
+      "measured": 2.02832
+    },
+    {
+      "name": "walk/backward/0.49/flat leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 4.077391233365665,
+        "stepAt": {
+          "frame": 178.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "source": 4.077391233365665
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/flat no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.04126680548416604,
+        "moveAt": {
+          "frame": 226,
+          "bone": "ball_r",
+          "state": "NN",
+          "source": 0.04126680548416604
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/flat contact or pure NN on flat",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/0.49/flat bounded pelvis",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/0.49/stairs finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/0.49/stairs exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/0.49/stairs source bone lengths",
+      "passed": true,
+      "measured": 8.326672684688674e-16
+    },
+    {
+      "name": "walk/backward/0.49/stairs root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/backward/0.49/stairs whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.457184002351397e-7,
+        "penAt": {
+          "frame": 212,
+          "side": "R",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/stairs reachable targets",
+      "passed": true,
+      "measured": 1.0565363201361521e-15
+    },
+    {
+      "name": "walk/backward/0.49/stairs real material contact",
+      "passed": true,
+      "measured": 1.0767589454103068e-15
+    },
+    {
+      "name": "walk/backward/0.49/stairs no material slide",
+      "passed": true,
+      "measured": 2.6394171633010964e-10
+    },
+    {
+      "name": "walk/backward/0.49/stairs knee pole continuity",
+      "passed": true,
+      "measured": 2.739477
+    },
+    {
+      "name": "walk/backward/0.49/stairs leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 4.8742638079098874,
+        "stepAt": {
+          "frame": 58.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 4.011385869328107
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/stairs no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.04189329257932562,
+        "moveAt": {
+          "frame": 48.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 0.039790743347079854
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/stairs contact or pure NN on flat",
+      "passed": true,
+      "measured": 318
+    },
+    {
+      "name": "walk/backward/0.49/stairs bounded pelvis",
+      "passed": true,
+      "measured": 0.02721626888998784
+    },
+    {
+      "name": "walk/backward/0.49/down finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/0.49/down exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/0.49/down source bone lengths",
+      "passed": true,
+      "measured": 7.771561172376096e-16
+    },
+    {
+      "name": "walk/backward/0.49/down root ramp",
+      "passed": true,
+      "measured": 5.293955920339377e-23
+    },
+    {
+      "name": "walk/backward/0.49/down whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 4.4633427515039514e-7,
+        "penAt": {
+          "frame": 226,
+          "side": "L",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/down reachable targets",
+      "passed": true,
+      "measured": 1.155445644523892e-15
+    },
+    {
+      "name": "walk/backward/0.49/down real material contact",
+      "passed": true,
+      "measured": 1.2615817476650541e-15
+    },
+    {
+      "name": "walk/backward/0.49/down no material slide",
+      "passed": true,
+      "measured": 2.639404879962031e-10
+    },
+    {
+      "name": "walk/backward/0.49/down knee pole continuity",
+      "passed": true,
+      "measured": 4.929424
+    },
+    {
+      "name": "walk/backward/0.49/down leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 5.8214328542579,
+        "stepAt": {
+          "frame": 59,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 4.009860972812966
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/down no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.048131856703274224,
+        "moveAt": {
+          "frame": 165.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 0.04154172865056481
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/down contact or pure NN on flat",
+      "passed": true,
+      "measured": 379
+    },
+    {
+      "name": "walk/backward/0.49/down bounded pelvis",
+      "passed": true,
+      "measured": 0.3
+    },
+    {
+      "name": "walk/backward/0.49/uneven finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/0.49/uneven exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/backward/0.49/uneven source bone lengths",
+      "passed": true,
+      "measured": 1.1657341758564144e-15
+    },
+    {
+      "name": "walk/backward/0.49/uneven root ramp",
+      "passed": true,
+      "measured": 5.293955920339377e-23
+    },
+    {
+      "name": "walk/backward/0.49/uneven whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.457184005959622e-7,
+        "penAt": {
+          "frame": 212,
+          "side": "R",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/uneven reachable targets",
+      "passed": true,
+      "measured": 1.0388893785358512e-15
+    },
+    {
+      "name": "walk/backward/0.49/uneven real material contact",
+      "passed": true,
+      "measured": 1.779173531894756e-15
+    },
+    {
+      "name": "walk/backward/0.49/uneven no material slide",
+      "passed": true,
+      "measured": 2.6394149235832526e-10
+    },
+    {
+      "name": "walk/backward/0.49/uneven knee pole continuity",
+      "passed": true,
+      "measured": 2.991223
+    },
+    {
+      "name": "walk/backward/0.49/uneven leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 6.302004285880217,
+        "stepAt": {
+          "frame": 88.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "source": 2.4809909652549047
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/uneven no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.041265915878401775,
+        "moveAt": {
+          "frame": 285.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "source": 0.041265915878401775
+        }
+      }
+    },
+    {
+      "name": "walk/backward/0.49/uneven contact or pure NN on flat",
+      "passed": true,
+      "measured": 375
+    },
+    {
+      "name": "walk/backward/0.49/uneven bounded pelvis",
+      "passed": true,
+      "measured": 0.00028306627312035815
+    },
+    {
+      "name": "walk/left/0 actual5s directional source",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "sourceSha": "280e5b123fb2d97461bf340a1a9eb4a5cabfad0c67144742ec62b40a5794df28"
+      }
+    },
+    {
+      "name": "walk/left/0/flat finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/left/0/flat exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/left/0/flat source bone lengths",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/flat root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/flat whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 0,
+        "penAt": null
+      }
+    },
+    {
+      "name": "walk/left/0/flat reachable targets",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/flat real material contact",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/flat no material slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/flat knee pole continuity",
+      "passed": true,
+      "measured": 2.063924
+    },
+    {
+      "name": "walk/left/0/flat leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 8.118623391429619,
+        "stepAt": {
+          "frame": 32.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "source": 8.118623391429619
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/flat no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.04801598901724269,
+        "moveAt": {
+          "frame": 104,
+          "bone": "ball_l",
+          "state": "NN",
+          "source": 0.04801598901724269
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/flat contact or pure NN on flat",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/flat bounded pelvis",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/stairs finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/left/0/stairs exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/left/0/stairs source bone lengths",
+      "passed": true,
+      "measured": 1.3877787807814457e-15
+    },
+    {
+      "name": "walk/left/0/stairs root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/stairs whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 7.408663171837304e-8,
+        "penAt": {
+          "frame": 96,
+          "side": "R",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/stairs reachable targets",
+      "passed": true,
+      "measured": 1.117915891698869e-15
+    },
+    {
+      "name": "walk/left/0/stairs real material contact",
+      "passed": true,
+      "measured": 1.6262493657593083e-15
+    },
+    {
+      "name": "walk/left/0/stairs no material slide",
+      "passed": true,
+      "measured": 1.2115576966516926e-10
+    },
+    {
+      "name": "walk/left/0/stairs knee pole continuity",
+      "passed": true,
+      "measured": 2.182664
+    },
+    {
+      "name": "walk/left/0/stairs leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 12.007494309433898,
+        "stepAt": {
+          "frame": 210.5,
+          "bone": "foot_l",
+          "state": "SWING",
+          "source": 6.966761528167973
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/stairs no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.05112004810962947,
+        "moveAt": {
+          "frame": 76.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 0.04544369182472281
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/stairs contact or pure NN on flat",
+      "passed": true,
+      "measured": 252
+    },
+    {
+      "name": "walk/left/0/stairs bounded pelvis",
+      "passed": true,
+      "measured": 0.03505068387568606
+    },
+    {
+      "name": "walk/left/0/down finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/left/0/down exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/left/0/down source bone lengths",
+      "passed": true,
+      "measured": 1.1657341758564144e-15
+    },
+    {
+      "name": "walk/left/0/down root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/down whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.2333076337966986e-7,
+        "penAt": {
+          "frame": 92,
+          "side": "R",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/down reachable targets",
+      "passed": true,
+      "measured": 1.2959208739370123e-15
+    },
+    {
+      "name": "walk/left/0/down real material contact",
+      "passed": true,
+      "measured": 1.4166223921890757e-15
+    },
+    {
+      "name": "walk/left/0/down no material slide",
+      "passed": true,
+      "measured": 1.211555217845372e-10
+    },
+    {
+      "name": "walk/left/0/down knee pole continuity",
+      "passed": true,
+      "measured": 2.781977
+    },
+    {
+      "name": "walk/left/0/down leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 11.1856191619011,
+        "stepAt": {
+          "frame": 211.5,
+          "bone": "foot_l",
+          "state": "SWING",
+          "source": 6.9523335621581035
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/down no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.05669116185638579,
+        "moveAt": {
+          "frame": 127.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 0.038669438350819055
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/down contact or pure NN on flat",
+      "passed": true,
+      "measured": 288
+    },
+    {
+      "name": "walk/left/0/down bounded pelvis",
+      "passed": true,
+      "measured": 0.3
+    },
+    {
+      "name": "walk/left/0/uneven finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/left/0/uneven exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/left/0/uneven source bone lengths",
+      "passed": true,
+      "measured": 1.3877787807814457e-15
+    },
+    {
+      "name": "walk/left/0/uneven root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/left/0/uneven whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 9.962694372256387e-8,
+        "penAt": {
+          "frame": 112,
+          "side": "R",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/uneven reachable targets",
+      "passed": true,
+      "measured": 1.1604353567155542e-15
+    },
+    {
+      "name": "walk/left/0/uneven real material contact",
+      "passed": true,
+      "measured": 2.1118418435615682e-15
+    },
+    {
+      "name": "walk/left/0/uneven no material slide",
+      "passed": true,
+      "measured": 1.2115524705616872e-10
+    },
+    {
+      "name": "walk/left/0/uneven knee pole continuity",
+      "passed": true,
+      "measured": 2.042258
+    },
+    {
+      "name": "walk/left/0/uneven leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 8.118623391429619,
+        "stepAt": {
+          "frame": 32.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "source": 8.118623391429619
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/uneven no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.05396599513011553,
+        "moveAt": {
+          "frame": 191.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 0.04378035746754701
+        }
+      }
+    },
+    {
+      "name": "walk/left/0/uneven contact or pure NN on flat",
+      "passed": true,
+      "measured": 283
+    },
+    {
+      "name": "walk/left/0/uneven bounded pelvis",
+      "passed": true,
+      "measured": 0.0016399467493868336
+    },
+    {
+      "name": "walk/right/0 actual5s directional source",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "sourceSha": "74bbf7bfd4894f8b373ba843fcdcf926dd5d875319378d01317c8b2aa3773d42"
+      }
+    },
+    {
+      "name": "walk/right/0/flat finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/right/0/flat exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/right/0/flat source bone lengths",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/flat root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/flat whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 0,
+        "penAt": null
+      }
+    },
+    {
+      "name": "walk/right/0/flat reachable targets",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/flat real material contact",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/flat no material slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/flat knee pole continuity",
+      "passed": true,
+      "measured": 2.811996
+    },
+    {
+      "name": "walk/right/0/flat leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 7.035097518041647,
+        "stepAt": {
+          "frame": 216.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "source": 7.035097518041647
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/flat no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.04921131215604888,
+        "moveAt": {
+          "frame": 108,
+          "bone": "ball_r",
+          "state": "NN",
+          "source": 0.04921131215604888
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/flat contact or pure NN on flat",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/flat bounded pelvis",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/stairs finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/right/0/stairs exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/right/0/stairs source bone lengths",
+      "passed": true,
+      "measured": 1.1657341758564144e-15
+    },
+    {
+      "name": "walk/right/0/stairs root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/stairs whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.3745607629900292e-7,
+        "penAt": {
+          "frame": 162,
+          "side": "L",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/stairs reachable targets",
+      "passed": true,
+      "measured": 1.1335697856308468e-15
+    },
+    {
+      "name": "walk/right/0/stairs real material contact",
+      "passed": true,
+      "measured": 1.0778315928076987e-15
+    },
+    {
+      "name": "walk/right/0/stairs no material slide",
+      "passed": true,
+      "measured": 2.717584864660528e-10
+    },
+    {
+      "name": "walk/right/0/stairs knee pole continuity",
+      "passed": true,
+      "measured": 2.811996
+    },
+    {
+      "name": "walk/right/0/stairs leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 8.332568380854264,
+        "stepAt": {
+          "frame": 216.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 7.035097518041647
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/stairs no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.04879754206954409,
+        "moveAt": {
+          "frame": 290,
+          "bone": "ball_r",
+          "state": "NN",
+          "source": 0.04879754206954409
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/stairs contact or pure NN on flat",
+      "passed": true,
+      "measured": 219
+    },
+    {
+      "name": "walk/right/0/stairs bounded pelvis",
+      "passed": true,
+      "measured": 0.035146912338261234
+    },
+    {
+      "name": "walk/right/0/down finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/right/0/down exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/right/0/down source bone lengths",
+      "passed": true,
+      "measured": 1.27675647831893e-15
+    },
+    {
+      "name": "walk/right/0/down root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/down whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 3.196070869071477e-7,
+        "penAt": {
+          "frame": 186,
+          "side": "L",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/down reachable targets",
+      "passed": true,
+      "measured": 1.2008898127460164e-15
+    },
+    {
+      "name": "walk/right/0/down real material contact",
+      "passed": true,
+      "measured": 1.4217791915866692e-15
+    },
+    {
+      "name": "walk/right/0/down no material slide",
+      "passed": true,
+      "measured": 9.080146525206385e-16
+    },
+    {
+      "name": "walk/right/0/down knee pole continuity",
+      "passed": true,
+      "measured": 2.811996
+    },
+    {
+      "name": "walk/right/0/down leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 8.495152895127351,
+        "stepAt": {
+          "frame": 218,
+          "bone": "foot_r",
+          "state": "SWING",
+          "source": 6.202610211358185
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/down no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.06071698741266066,
+        "moveAt": {
+          "frame": 198,
+          "bone": "ball_l",
+          "state": "SWING",
+          "source": 0.04315390216026404
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/down contact or pure NN on flat",
+      "passed": true,
+      "measured": 306
+    },
+    {
+      "name": "walk/right/0/down bounded pelvis",
+      "passed": true,
+      "measured": 0.2584243761636873
+    },
+    {
+      "name": "walk/right/0/uneven finite poses",
+      "passed": true
+    },
+    {
+      "name": "walk/right/0/uneven exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "walk/right/0/uneven source bone lengths",
+      "passed": true,
+      "measured": 1.1102230246251565e-15
+    },
+    {
+      "name": "walk/right/0/uneven root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "walk/right/0/uneven whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.434246253428917e-7,
+        "penAt": {
+          "frame": 178,
+          "side": "L",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/uneven reachable targets",
+      "passed": true,
+      "measured": 1.355199909595506e-15
+    },
+    {
+      "name": "walk/right/0/uneven real material contact",
+      "passed": true,
+      "measured": 1.398010624982574e-15
+    },
+    {
+      "name": "walk/right/0/uneven no material slide",
+      "passed": true,
+      "measured": 1.5551188146768506e-10
+    },
+    {
+      "name": "walk/right/0/uneven knee pole continuity",
+      "passed": true,
+      "measured": 2.811996
+    },
+    {
+      "name": "walk/right/0/uneven leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 9.140031943793261,
+        "stepAt": {
+          "frame": 221,
+          "bone": "foot_r",
+          "state": "SWING",
+          "source": 1.7327788955503065
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/uneven no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.05121324783290936,
+        "moveAt": {
+          "frame": 194,
+          "bone": "ball_l",
+          "state": "SWING",
+          "source": 0.038557595176443825
+        }
+      }
+    },
+    {
+      "name": "walk/right/0/uneven contact or pure NN on flat",
+      "passed": true,
+      "measured": 294
+    },
+    {
+      "name": "walk/right/0/uneven bounded pelvis",
+      "passed": true,
+      "measured": 0.03763670695830856
+    },
+    {
+      "name": "run/backward/0.73 actual5s directional source",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "sourceSha": "575d6760f0759ca0c762f3ff2bedb680418fea1bdf94547609fd05f7fac63031"
+      }
+    },
+    {
+      "name": "run/backward/0.73/flat finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/backward/0.73/flat exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/backward/0.73/flat source bone lengths",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/0.73/flat root ramp",
+      "passed": true,
+      "measured": 1.0587911840678754e-22
+    },
+    {
+      "name": "run/backward/0.73/flat whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 0,
+        "penAt": null
+      }
+    },
+    {
+      "name": "run/backward/0.73/flat reachable targets",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/0.73/flat real material contact",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/0.73/flat no material slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/0.73/flat knee pole continuity",
+      "passed": true,
+      "measured": 2.862224
+    },
+    {
+      "name": "run/backward/0.73/flat leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 7.374776935519314,
+        "stepAt": {
+          "frame": 278.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "source": 7.374776935519314
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/flat no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.05912532427468381,
+        "moveAt": {
+          "frame": 262.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "source": 0.05912532427468381
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/flat contact or pure NN on flat",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/0.73/flat bounded pelvis",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/backward/0.73/stairs finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/backward/0.73/stairs exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/backward/0.73/stairs source bone lengths",
+      "passed": true,
+      "measured": 1.1657341758564144e-15
+    },
+    {
+      "name": "run/backward/0.73/stairs root ramp",
+      "passed": true,
+      "measured": 5.293955920339377e-23
+    },
+    {
+      "name": "run/backward/0.73/stairs whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.3801105536170866e-7,
+        "penAt": {
+          "frame": 52,
+          "side": "L",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/stairs reachable targets",
+      "passed": true,
+      "measured": 1.1133411481696098e-15
+    },
+    {
+      "name": "run/backward/0.73/stairs real material contact",
+      "passed": true,
+      "measured": 1.259308883656849e-15
+    },
+    {
+      "name": "run/backward/0.73/stairs no material slide",
+      "passed": true,
+      "measured": 4.440892098500626e-16
+    },
+    {
+      "name": "run/backward/0.73/stairs knee pole continuity",
+      "passed": true,
+      "measured": 3.458484
+    },
+    {
+      "name": "run/backward/0.73/stairs leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 7.374776935519314,
+        "stepAt": {
+          "frame": 278.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "source": 7.374776935519314
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/stairs no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.06110269080114992,
+        "moveAt": {
+          "frame": 129,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 0.05780896663457204
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/stairs contact or pure NN on flat",
+      "passed": true,
+      "measured": 70
+    },
+    {
+      "name": "run/backward/0.73/stairs bounded pelvis",
+      "passed": true,
+      "measured": 0.017195607227591482
+    },
+    {
+      "name": "run/backward/0.73/down finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/backward/0.73/down exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/backward/0.73/down source bone lengths",
+      "passed": true,
+      "measured": 7.771561172376096e-16
+    },
+    {
+      "name": "run/backward/0.73/down root ramp",
+      "passed": true,
+      "measured": 1.0587911840678754e-22
+    },
+    {
+      "name": "run/backward/0.73/down whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.2885497580050753e-7,
+        "penAt": {
+          "frame": 51.5,
+          "side": "L",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/down reachable targets",
+      "passed": true,
+      "measured": 9.931106305546747e-16
+    },
+    {
+      "name": "run/backward/0.73/down real material contact",
+      "passed": true,
+      "measured": 1.1831170202396054e-15
+    },
+    {
+      "name": "run/backward/0.73/down no material slide",
+      "passed": true,
+      "measured": 2.220446049250313e-16
+    },
+    {
+      "name": "run/backward/0.73/down knee pole continuity",
+      "passed": true,
+      "measured": 4.435256
+    },
+    {
+      "name": "run/backward/0.73/down leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 13.381587913079732,
+        "stepAt": {
+          "frame": 128.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 3.6405889016350037
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/down no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.07373720838606321,
+        "moveAt": {
+          "frame": 128.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 0.05818496661193725
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/down contact or pure NN on flat",
+      "passed": true,
+      "measured": 104
+    },
+    {
+      "name": "run/backward/0.73/down bounded pelvis",
+      "passed": true,
+      "measured": 0.2225718518638921
+    },
+    {
+      "name": "run/backward/0.73/uneven finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/backward/0.73/uneven exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/backward/0.73/uneven source bone lengths",
+      "passed": true,
+      "measured": 6.661338147750939e-16
+    },
+    {
+      "name": "run/backward/0.73/uneven root ramp",
+      "passed": true,
+      "measured": 1.0587911840678754e-22
+    },
+    {
+      "name": "run/backward/0.73/uneven whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.6104899536184547e-7,
+        "penAt": {
+          "frame": 52,
+          "side": "L",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/uneven reachable targets",
+      "passed": true,
+      "measured": 1.1379786002407855e-15
+    },
+    {
+      "name": "run/backward/0.73/uneven real material contact",
+      "passed": true,
+      "measured": 1.2477667117865589e-15
+    },
+    {
+      "name": "run/backward/0.73/uneven no material slide",
+      "passed": true,
+      "measured": 4.443059973708341e-16
+    },
+    {
+      "name": "run/backward/0.73/uneven knee pole continuity",
+      "passed": true,
+      "measured": 3.158378
+    },
+    {
+      "name": "run/backward/0.73/uneven leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 13.376698861058937,
+        "stepAt": {
+          "frame": 128.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 3.6405889016350037
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/uneven no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.07345468729176165,
+        "moveAt": {
+          "frame": 128.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 0.05818496661193725
+        }
+      }
+    },
+    {
+      "name": "run/backward/0.73/uneven contact or pure NN on flat",
+      "passed": true,
+      "measured": 99
+    },
+    {
+      "name": "run/backward/0.73/uneven bounded pelvis",
+      "passed": true,
+      "measured": 1.1102230246251565e-16
+    },
+    {
+      "name": "run/left/0.49 actual5s directional source",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "sourceSha": "6e73aa7004ca74a3883a7e7c638a3892e4a1e58c3455169a9b4aad5e7e9f1ba5"
+      }
+    },
+    {
+      "name": "run/left/0.49/flat finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/left/0.49/flat exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/left/0.49/flat source bone lengths",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/flat root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/flat whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 0,
+        "penAt": null
+      }
+    },
+    {
+      "name": "run/left/0.49/flat reachable targets",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/flat real material contact",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/flat no material slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/flat knee pole continuity",
+      "passed": true,
+      "measured": 2.350772
+    },
+    {
+      "name": "run/left/0.49/flat leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 7.17505879957241,
+        "stepAt": {
+          "frame": 84.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "source": 7.17505879957241
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/flat no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.06910367736291091,
+        "moveAt": {
+          "frame": 188,
+          "bone": "ball_r",
+          "state": "NN",
+          "source": 0.06910367736291091
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/flat contact or pure NN on flat",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/flat bounded pelvis",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/stairs finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/left/0.49/stairs exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/left/0.49/stairs source bone lengths",
+      "passed": true,
+      "measured": 1.27675647831893e-15
+    },
+    {
+      "name": "run/left/0.49/stairs root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/stairs whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 8.474466040020445e-8,
+        "penAt": {
+          "frame": 99,
+          "side": "R",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/stairs reachable targets",
+      "passed": true,
+      "measured": 1.1778964011900897e-15
+    },
+    {
+      "name": "run/left/0.49/stairs real material contact",
+      "passed": true,
+      "measured": 1.247457973265988e-15
+    },
+    {
+      "name": "run/left/0.49/stairs no material slide",
+      "passed": true,
+      "measured": 4.585973723508303e-16
+    },
+    {
+      "name": "run/left/0.49/stairs knee pole continuity",
+      "passed": true,
+      "measured": 2.683282
+    },
+    {
+      "name": "run/left/0.49/stairs leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 8.716255823405069,
+        "stepAt": {
+          "frame": 31.5,
+          "bone": "foot_l",
+          "state": "SWING",
+          "source": 4.900305325788352
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/stairs no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.0696038345092449,
+        "moveAt": {
+          "frame": 48,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 0.07002839971963878
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/stairs contact or pure NN on flat",
+      "passed": true,
+      "measured": 60
+    },
+    {
+      "name": "run/left/0.49/stairs bounded pelvis",
+      "passed": true,
+      "measured": 0.029476570316281658
+    },
+    {
+      "name": "run/left/0.49/down finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/left/0.49/down exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/left/0.49/down source bone lengths",
+      "passed": true,
+      "measured": 9.43689570931383e-16
+    },
+    {
+      "name": "run/left/0.49/down root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/down whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.8271825186211288e-7,
+        "penAt": {
+          "frame": 100,
+          "side": "R",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/down reachable targets",
+      "passed": true,
+      "measured": 1.0920452852123027e-15
+    },
+    {
+      "name": "run/left/0.49/down real material contact",
+      "passed": true,
+      "measured": 1.1906624341363273e-15
+    },
+    {
+      "name": "run/left/0.49/down no material slide",
+      "passed": true,
+      "measured": 1.1775693440128314e-16
+    },
+    {
+      "name": "run/left/0.49/down knee pole continuity",
+      "passed": true,
+      "measured": 3.319135
+    },
+    {
+      "name": "run/left/0.49/down leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 7.657008164773853,
+        "stepAt": {
+          "frame": 34,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 5.932151693601311
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/down no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.07891353339030313,
+        "moveAt": {
+          "frame": 99.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "source": 0.07057844156613119
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/down contact or pure NN on flat",
+      "passed": true,
+      "measured": 113
+    },
+    {
+      "name": "run/left/0.49/down bounded pelvis",
+      "passed": true,
+      "measured": 0.11692015693955768
+    },
+    {
+      "name": "run/left/0.49/uneven finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/left/0.49/uneven exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/left/0.49/uneven source bone lengths",
+      "passed": true,
+      "measured": 1.1102230246251565e-15
+    },
+    {
+      "name": "run/left/0.49/uneven root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/left/0.49/uneven whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 9.015232382836302e-8,
+        "penAt": {
+          "frame": 42.5,
+          "side": "R",
+          "state": "SWING"
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/uneven reachable targets",
+      "passed": true,
+      "measured": 1.0299525296675035e-15
+    },
+    {
+      "name": "run/left/0.49/uneven real material contact",
+      "passed": true,
+      "measured": 1.3326289812695317e-15
+    },
+    {
+      "name": "run/left/0.49/uneven no material slide",
+      "passed": true,
+      "measured": 4.526797389797801e-16
+    },
+    {
+      "name": "run/left/0.49/uneven knee pole continuity",
+      "passed": true,
+      "measured": 2.681476
+    },
+    {
+      "name": "run/left/0.49/uneven leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 10.044041063553701,
+        "stepAt": {
+          "frame": 112.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 2.645978682752323
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/uneven no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.07565309969095071,
+        "moveAt": {
+          "frame": 100,
+          "bone": "ball_l",
+          "state": "SWING",
+          "source": 0.06827722719210545
+        }
+      }
+    },
+    {
+      "name": "run/left/0.49/uneven contact or pure NN on flat",
+      "passed": true,
+      "measured": 77
+    },
+    {
+      "name": "run/left/0.49/uneven bounded pelvis",
+      "passed": true,
+      "measured": 0.03198653866930867
+    },
+    {
+      "name": "run/right/0.73 actual5s directional source",
+      "passed": true,
+      "measured": {
+        "source": "matching omni seed + autoregressive lower/upper NN",
+        "sourceSha": "f1accf24cf6699cf51516802a06f5719556f42181432b03d1c34d106d17dfc12"
+      }
+    },
+    {
+      "name": "run/right/0.73/flat finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/right/0.73/flat exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/right/0.73/flat source bone lengths",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/flat root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/flat whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 0,
+        "penAt": null
+      }
+    },
+    {
+      "name": "run/right/0.73/flat reachable targets",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/flat real material contact",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/flat no material slide",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/flat knee pole continuity",
+      "passed": true,
+      "measured": 2.14484
+    },
+    {
+      "name": "run/right/0.73/flat leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 5.464622994851219,
+        "stepAt": {
+          "frame": 66.5,
+          "bone": "ball_r",
+          "state": "NN",
+          "source": 5.464622994851219
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/flat no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.06603590984140989,
+        "moveAt": {
+          "frame": 173.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "source": 0.06603590984140989
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/flat contact or pure NN on flat",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/flat bounded pelvis",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/stairs finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/right/0.73/stairs exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/right/0.73/stairs source bone lengths",
+      "passed": true,
+      "measured": 1.2212453270876722e-15
+    },
+    {
+      "name": "run/right/0.73/stairs root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/stairs whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 1.2344049765689036e-7,
+        "penAt": {
+          "frame": 42,
+          "side": "L",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/stairs reachable targets",
+      "passed": true,
+      "measured": 8.473409486550037e-16
+    },
+    {
+      "name": "run/right/0.73/stairs real material contact",
+      "passed": true,
+      "measured": 9.582710459383785e-16
+    },
+    {
+      "name": "run/right/0.73/stairs no material slide",
+      "passed": true,
+      "measured": 9.155133597044475e-16
+    },
+    {
+      "name": "run/right/0.73/stairs knee pole continuity",
+      "passed": true,
+      "measured": 2.453381
+    },
+    {
+      "name": "run/right/0.73/stairs leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 6.8099611195887055,
+        "stepAt": {
+          "frame": 103.5,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 5.223203139372531
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/stairs no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.06603590984140989,
+        "moveAt": {
+          "frame": 173.5,
+          "bone": "ball_l",
+          "state": "NN",
+          "source": 0.06603590984140989
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/stairs contact or pure NN on flat",
+      "passed": true,
+      "measured": 60
+    },
+    {
+      "name": "run/right/0.73/stairs bounded pelvis",
+      "passed": true,
+      "measured": 0.029660804634627967
+    },
+    {
+      "name": "run/right/0.73/down finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/right/0.73/down exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/right/0.73/down source bone lengths",
+      "passed": true,
+      "measured": 1.27675647831893e-15
+    },
+    {
+      "name": "run/right/0.73/down root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/down whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 3.1974401748513515e-7,
+        "penAt": {
+          "frame": 70,
+          "side": "R",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/down reachable targets",
+      "passed": true,
+      "measured": 9.829745943304315e-16
+    },
+    {
+      "name": "run/right/0.73/down real material contact",
+      "passed": true,
+      "measured": 1.217454592664719e-15
+    },
+    {
+      "name": "run/right/0.73/down no material slide",
+      "passed": true,
+      "measured": 2.3263411494723067e-16
+    },
+    {
+      "name": "run/right/0.73/down knee pole continuity",
+      "passed": true,
+      "measured": 3.552314
+    },
+    {
+      "name": "run/right/0.73/down leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 8.254220490920707,
+        "stepAt": {
+          "frame": 32,
+          "bone": "ball_r",
+          "state": "SWING",
+          "source": 5.266144327089093
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/down no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.08325017708705412,
+        "moveAt": {
+          "frame": 58.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "source": 0.05851335226534457
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/down contact or pure NN on flat",
+      "passed": true,
+      "measured": 111
+    },
+    {
+      "name": "run/right/0.73/down bounded pelvis",
+      "passed": true,
+      "measured": 0.10930036033325884
+    },
+    {
+      "name": "run/right/0.73/uneven finite poses",
+      "passed": true
+    },
+    {
+      "name": "run/right/0.73/uneven exact NN before and after corrections",
+      "passed": true
+    },
+    {
+      "name": "run/right/0.73/uneven source bone lengths",
+      "passed": true,
+      "measured": 1.0547118733938987e-15
+    },
+    {
+      "name": "run/right/0.73/uneven root ramp",
+      "passed": true,
+      "measured": 0
+    },
+    {
+      "name": "run/right/0.73/uneven whole-shoe clearance",
+      "passed": true,
+      "measured": {
+        "penetration": 3.0095702752142017e-7,
+        "penAt": {
+          "frame": 70,
+          "side": "R",
+          "state": "ROLL"
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/uneven reachable targets",
+      "passed": true,
+      "measured": 9.566618574882216e-16
+    },
+    {
+      "name": "run/right/0.73/uneven real material contact",
+      "passed": true,
+      "measured": 1.1921980955184335e-15
+    },
+    {
+      "name": "run/right/0.73/uneven no material slide",
+      "passed": true,
+      "measured": 8.881784197001252e-16
+    },
+    {
+      "name": "run/right/0.73/uneven knee pole continuity",
+      "passed": true,
+      "measured": 2.915719
+    },
+    {
+      "name": "run/right/0.73/uneven leg and ankle angular continuity",
+      "passed": true,
+      "measured": {
+        "step": 10.261980847708335,
+        "stepAt": {
+          "frame": 112,
+          "bone": "foot_r",
+          "state": "SWING",
+          "source": 3.086318033128882
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/uneven no limb teleport",
+      "passed": true,
+      "measured": {
+        "move": 0.07481429695047523,
+        "moveAt": {
+          "frame": 61.5,
+          "bone": "ball_l",
+          "state": "SWING",
+          "source": 0.062315912200207886
+        }
+      }
+    },
+    {
+      "name": "run/right/0.73/uneven contact or pure NN on flat",
+      "passed": true,
+      "measured": 97
+    },
+    {
+      "name": "run/right/0.73/uneven bounded pelvis",
+      "passed": true,
+      "measured": 0.040382774573832436
+    }
+  ],
+  "failures": [],
+  "cases": [
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "phase": 0.49,
+      "terrain": "flat",
+      "pin": 0,
+      "pinSlide": 0,
+      "pins": 0,
+      "penetration": 0,
+      "penAt": null,
+      "bone": 0,
+      "knee": 2.02832,
+      "step": 4.077391233365665,
+      "stepAt": {
+        "frame": 178.5,
+        "bone": "ball_r",
+        "state": "NN",
+        "source": 4.077391233365665
+      },
+      "move": 0.04126680548416604,
+      "moveAt": {
+        "frame": 226,
+        "bone": "ball_r",
+        "state": "NN",
+        "source": 0.04126680548416604
+      },
+      "rootError": 5.293955920339377e-23,
+      "sourceSha256": "fe9b95e2c06eebe700d856e2a5a1b2070468fb650fa94145000bf496568960df"
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "phase": 0.49,
+      "terrain": "stairs",
+      "pin": 1.0767589454103068e-15,
+      "pinSlide": 2.6394171633010964e-10,
+      "pins": 318,
+      "penetration": 1.457184002351397e-7,
+      "penAt": {
+        "frame": 212,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "bone": 8.326672684688674e-16,
+      "knee": 2.739477,
+      "step": 4.8742638079098874,
+      "stepAt": {
+        "frame": 58.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 4.011385869328107
+      },
+      "move": 0.04189329257932562,
+      "moveAt": {
+        "frame": 48.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 0.039790743347079854
+      },
+      "rootError": 0,
+      "sourceSha256": "fe9b95e2c06eebe700d856e2a5a1b2070468fb650fa94145000bf496568960df"
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "phase": 0.49,
+      "terrain": "down",
+      "pin": 1.2615817476650541e-15,
+      "pinSlide": 2.639404879962031e-10,
+      "pins": 379,
+      "penetration": 4.4633427515039514e-7,
+      "penAt": {
+        "frame": 226,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "bone": 7.771561172376096e-16,
+      "knee": 4.929424,
+      "step": 5.8214328542579,
+      "stepAt": {
+        "frame": 59,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 4.009860972812966
+      },
+      "move": 0.048131856703274224,
+      "moveAt": {
+        "frame": 165.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 0.04154172865056481
+      },
+      "rootError": 5.293955920339377e-23,
+      "sourceSha256": "fe9b95e2c06eebe700d856e2a5a1b2070468fb650fa94145000bf496568960df"
+    },
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "phase": 0.49,
+      "terrain": "uneven",
+      "pin": 1.779173531894756e-15,
+      "pinSlide": 2.6394149235832526e-10,
+      "pins": 375,
+      "penetration": 1.457184005959622e-7,
+      "penAt": {
+        "frame": 212,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "bone": 1.1657341758564144e-15,
+      "knee": 2.991223,
+      "step": 6.302004285880217,
+      "stepAt": {
+        "frame": 88.5,
+        "bone": "ball_l",
+        "state": "SWING",
+        "source": 2.4809909652549047
+      },
+      "move": 0.041265915878401775,
+      "moveAt": {
+        "frame": 285.5,
+        "bone": "ball_r",
+        "state": "NN",
+        "source": 0.041265915878401775
+      },
+      "rootError": 5.293955920339377e-23,
+      "sourceSha256": "fe9b95e2c06eebe700d856e2a5a1b2070468fb650fa94145000bf496568960df"
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "phase": 0,
+      "terrain": "flat",
+      "pin": 0,
+      "pinSlide": 0,
+      "pins": 0,
+      "penetration": 0,
+      "penAt": null,
+      "bone": 0,
+      "knee": 2.063924,
+      "step": 8.118623391429619,
+      "stepAt": {
+        "frame": 32.5,
+        "bone": "ball_l",
+        "state": "NN",
+        "source": 8.118623391429619
+      },
+      "move": 0.04801598901724269,
+      "moveAt": {
+        "frame": 104,
+        "bone": "ball_l",
+        "state": "NN",
+        "source": 0.04801598901724269
+      },
+      "rootError": 0,
+      "sourceSha256": "280e5b123fb2d97461bf340a1a9eb4a5cabfad0c67144742ec62b40a5794df28"
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "phase": 0,
+      "terrain": "stairs",
+      "pin": 1.6262493657593083e-15,
+      "pinSlide": 1.2115576966516926e-10,
+      "pins": 252,
+      "penetration": 7.408663171837304e-8,
+      "penAt": {
+        "frame": 96,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "bone": 1.3877787807814457e-15,
+      "knee": 2.182664,
+      "step": 12.007494309433898,
+      "stepAt": {
+        "frame": 210.5,
+        "bone": "foot_l",
+        "state": "SWING",
+        "source": 6.966761528167973
+      },
+      "move": 0.05112004810962947,
+      "moveAt": {
+        "frame": 76.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 0.04544369182472281
+      },
+      "rootError": 0,
+      "sourceSha256": "280e5b123fb2d97461bf340a1a9eb4a5cabfad0c67144742ec62b40a5794df28"
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "phase": 0,
+      "terrain": "down",
+      "pin": 1.4166223921890757e-15,
+      "pinSlide": 1.211555217845372e-10,
+      "pins": 288,
+      "penetration": 1.2333076337966986e-7,
+      "penAt": {
+        "frame": 92,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "bone": 1.1657341758564144e-15,
+      "knee": 2.781977,
+      "step": 11.1856191619011,
+      "stepAt": {
+        "frame": 211.5,
+        "bone": "foot_l",
+        "state": "SWING",
+        "source": 6.9523335621581035
+      },
+      "move": 0.05669116185638579,
+      "moveAt": {
+        "frame": 127.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 0.038669438350819055
+      },
+      "rootError": 0,
+      "sourceSha256": "280e5b123fb2d97461bf340a1a9eb4a5cabfad0c67144742ec62b40a5794df28"
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "phase": 0,
+      "terrain": "uneven",
+      "pin": 2.1118418435615682e-15,
+      "pinSlide": 1.2115524705616872e-10,
+      "pins": 283,
+      "penetration": 9.962694372256387e-8,
+      "penAt": {
+        "frame": 112,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "bone": 1.3877787807814457e-15,
+      "knee": 2.042258,
+      "step": 8.118623391429619,
+      "stepAt": {
+        "frame": 32.5,
+        "bone": "ball_l",
+        "state": "NN",
+        "source": 8.118623391429619
+      },
+      "move": 0.05396599513011553,
+      "moveAt": {
+        "frame": 191.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 0.04378035746754701
+      },
+      "rootError": 0,
+      "sourceSha256": "280e5b123fb2d97461bf340a1a9eb4a5cabfad0c67144742ec62b40a5794df28"
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "phase": 0,
+      "terrain": "flat",
+      "pin": 0,
+      "pinSlide": 0,
+      "pins": 0,
+      "penetration": 0,
+      "penAt": null,
+      "bone": 0,
+      "knee": 2.811996,
+      "step": 7.035097518041647,
+      "stepAt": {
+        "frame": 216.5,
+        "bone": "ball_r",
+        "state": "NN",
+        "source": 7.035097518041647
+      },
+      "move": 0.04921131215604888,
+      "moveAt": {
+        "frame": 108,
+        "bone": "ball_r",
+        "state": "NN",
+        "source": 0.04921131215604888
+      },
+      "rootError": 0,
+      "sourceSha256": "74bbf7bfd4894f8b373ba843fcdcf926dd5d875319378d01317c8b2aa3773d42"
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "phase": 0,
+      "terrain": "stairs",
+      "pin": 1.0778315928076987e-15,
+      "pinSlide": 2.717584864660528e-10,
+      "pins": 219,
+      "penetration": 1.3745607629900292e-7,
+      "penAt": {
+        "frame": 162,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "bone": 1.1657341758564144e-15,
+      "knee": 2.811996,
+      "step": 8.332568380854264,
+      "stepAt": {
+        "frame": 216.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 7.035097518041647
+      },
+      "move": 0.04879754206954409,
+      "moveAt": {
+        "frame": 290,
+        "bone": "ball_r",
+        "state": "NN",
+        "source": 0.04879754206954409
+      },
+      "rootError": 0,
+      "sourceSha256": "74bbf7bfd4894f8b373ba843fcdcf926dd5d875319378d01317c8b2aa3773d42"
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "phase": 0,
+      "terrain": "down",
+      "pin": 1.4217791915866692e-15,
+      "pinSlide": 9.080146525206385e-16,
+      "pins": 306,
+      "penetration": 3.196070869071477e-7,
+      "penAt": {
+        "frame": 186,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "bone": 1.27675647831893e-15,
+      "knee": 2.811996,
+      "step": 8.495152895127351,
+      "stepAt": {
+        "frame": 218,
+        "bone": "foot_r",
+        "state": "SWING",
+        "source": 6.202610211358185
+      },
+      "move": 0.06071698741266066,
+      "moveAt": {
+        "frame": 198,
+        "bone": "ball_l",
+        "state": "SWING",
+        "source": 0.04315390216026404
+      },
+      "rootError": 0,
+      "sourceSha256": "74bbf7bfd4894f8b373ba843fcdcf926dd5d875319378d01317c8b2aa3773d42"
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "phase": 0,
+      "terrain": "uneven",
+      "pin": 1.398010624982574e-15,
+      "pinSlide": 1.5551188146768506e-10,
+      "pins": 294,
+      "penetration": 1.434246253428917e-7,
+      "penAt": {
+        "frame": 178,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "bone": 1.1102230246251565e-15,
+      "knee": 2.811996,
+      "step": 9.140031943793261,
+      "stepAt": {
+        "frame": 221,
+        "bone": "foot_r",
+        "state": "SWING",
+        "source": 1.7327788955503065
+      },
+      "move": 0.05121324783290936,
+      "moveAt": {
+        "frame": 194,
+        "bone": "ball_l",
+        "state": "SWING",
+        "source": 0.038557595176443825
+      },
+      "rootError": 0,
+      "sourceSha256": "74bbf7bfd4894f8b373ba843fcdcf926dd5d875319378d01317c8b2aa3773d42"
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "phase": 0.73,
+      "terrain": "flat",
+      "pin": 0,
+      "pinSlide": 0,
+      "pins": 0,
+      "penetration": 0,
+      "penAt": null,
+      "bone": 0,
+      "knee": 2.862224,
+      "step": 7.374776935519314,
+      "stepAt": {
+        "frame": 278.5,
+        "bone": "ball_l",
+        "state": "NN",
+        "source": 7.374776935519314
+      },
+      "move": 0.05912532427468381,
+      "moveAt": {
+        "frame": 262.5,
+        "bone": "ball_l",
+        "state": "NN",
+        "source": 0.05912532427468381
+      },
+      "rootError": 1.0587911840678754e-22,
+      "sourceSha256": "575d6760f0759ca0c762f3ff2bedb680418fea1bdf94547609fd05f7fac63031"
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "phase": 0.73,
+      "terrain": "stairs",
+      "pin": 1.259308883656849e-15,
+      "pinSlide": 4.440892098500626e-16,
+      "pins": 70,
+      "penetration": 1.3801105536170866e-7,
+      "penAt": {
+        "frame": 52,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "bone": 1.1657341758564144e-15,
+      "knee": 3.458484,
+      "step": 7.374776935519314,
+      "stepAt": {
+        "frame": 278.5,
+        "bone": "ball_l",
+        "state": "NN",
+        "source": 7.374776935519314
+      },
+      "move": 0.06110269080114992,
+      "moveAt": {
+        "frame": 129,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 0.05780896663457204
+      },
+      "rootError": 5.293955920339377e-23,
+      "sourceSha256": "575d6760f0759ca0c762f3ff2bedb680418fea1bdf94547609fd05f7fac63031"
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "phase": 0.73,
+      "terrain": "down",
+      "pin": 1.1831170202396054e-15,
+      "pinSlide": 2.220446049250313e-16,
+      "pins": 104,
+      "penetration": 1.2885497580050753e-7,
+      "penAt": {
+        "frame": 51.5,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "bone": 7.771561172376096e-16,
+      "knee": 4.435256,
+      "step": 13.381587913079732,
+      "stepAt": {
+        "frame": 128.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 3.6405889016350037
+      },
+      "move": 0.07373720838606321,
+      "moveAt": {
+        "frame": 128.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 0.05818496661193725
+      },
+      "rootError": 1.0587911840678754e-22,
+      "sourceSha256": "575d6760f0759ca0c762f3ff2bedb680418fea1bdf94547609fd05f7fac63031"
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "phase": 0.73,
+      "terrain": "uneven",
+      "pin": 1.2477667117865589e-15,
+      "pinSlide": 4.443059973708341e-16,
+      "pins": 99,
+      "penetration": 1.6104899536184547e-7,
+      "penAt": {
+        "frame": 52,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "bone": 6.661338147750939e-16,
+      "knee": 3.158378,
+      "step": 13.376698861058937,
+      "stepAt": {
+        "frame": 128.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 3.6405889016350037
+      },
+      "move": 0.07345468729176165,
+      "moveAt": {
+        "frame": 128.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 0.05818496661193725
+      },
+      "rootError": 1.0587911840678754e-22,
+      "sourceSha256": "575d6760f0759ca0c762f3ff2bedb680418fea1bdf94547609fd05f7fac63031"
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "phase": 0.49,
+      "terrain": "flat",
+      "pin": 0,
+      "pinSlide": 0,
+      "pins": 0,
+      "penetration": 0,
+      "penAt": null,
+      "bone": 0,
+      "knee": 2.350772,
+      "step": 7.17505879957241,
+      "stepAt": {
+        "frame": 84.5,
+        "bone": "ball_l",
+        "state": "NN",
+        "source": 7.17505879957241
+      },
+      "move": 0.06910367736291091,
+      "moveAt": {
+        "frame": 188,
+        "bone": "ball_r",
+        "state": "NN",
+        "source": 0.06910367736291091
+      },
+      "rootError": 0,
+      "sourceSha256": "6e73aa7004ca74a3883a7e7c638a3892e4a1e58c3455169a9b4aad5e7e9f1ba5"
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "phase": 0.49,
+      "terrain": "stairs",
+      "pin": 1.247457973265988e-15,
+      "pinSlide": 4.585973723508303e-16,
+      "pins": 60,
+      "penetration": 8.474466040020445e-8,
+      "penAt": {
+        "frame": 99,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "bone": 1.27675647831893e-15,
+      "knee": 2.683282,
+      "step": 8.716255823405069,
+      "stepAt": {
+        "frame": 31.5,
+        "bone": "foot_l",
+        "state": "SWING",
+        "source": 4.900305325788352
+      },
+      "move": 0.0696038345092449,
+      "moveAt": {
+        "frame": 48,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 0.07002839971963878
+      },
+      "rootError": 0,
+      "sourceSha256": "6e73aa7004ca74a3883a7e7c638a3892e4a1e58c3455169a9b4aad5e7e9f1ba5"
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "phase": 0.49,
+      "terrain": "down",
+      "pin": 1.1906624341363273e-15,
+      "pinSlide": 1.1775693440128314e-16,
+      "pins": 113,
+      "penetration": 1.8271825186211288e-7,
+      "penAt": {
+        "frame": 100,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "bone": 9.43689570931383e-16,
+      "knee": 3.319135,
+      "step": 7.657008164773853,
+      "stepAt": {
+        "frame": 34,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 5.932151693601311
+      },
+      "move": 0.07891353339030313,
+      "moveAt": {
+        "frame": 99.5,
+        "bone": "ball_l",
+        "state": "SWING",
+        "source": 0.07057844156613119
+      },
+      "rootError": 0,
+      "sourceSha256": "6e73aa7004ca74a3883a7e7c638a3892e4a1e58c3455169a9b4aad5e7e9f1ba5"
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "phase": 0.49,
+      "terrain": "uneven",
+      "pin": 1.3326289812695317e-15,
+      "pinSlide": 4.526797389797801e-16,
+      "pins": 77,
+      "penetration": 9.015232382836302e-8,
+      "penAt": {
+        "frame": 42.5,
+        "side": "R",
+        "state": "SWING"
+      },
+      "bone": 1.1102230246251565e-15,
+      "knee": 2.681476,
+      "step": 10.044041063553701,
+      "stepAt": {
+        "frame": 112.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 2.645978682752323
+      },
+      "move": 0.07565309969095071,
+      "moveAt": {
+        "frame": 100,
+        "bone": "ball_l",
+        "state": "SWING",
+        "source": 0.06827722719210545
+      },
+      "rootError": 0,
+      "sourceSha256": "6e73aa7004ca74a3883a7e7c638a3892e4a1e58c3455169a9b4aad5e7e9f1ba5"
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "phase": 0.73,
+      "terrain": "flat",
+      "pin": 0,
+      "pinSlide": 0,
+      "pins": 0,
+      "penetration": 0,
+      "penAt": null,
+      "bone": 0,
+      "knee": 2.14484,
+      "step": 5.464622994851219,
+      "stepAt": {
+        "frame": 66.5,
+        "bone": "ball_r",
+        "state": "NN",
+        "source": 5.464622994851219
+      },
+      "move": 0.06603590984140989,
+      "moveAt": {
+        "frame": 173.5,
+        "bone": "ball_l",
+        "state": "NN",
+        "source": 0.06603590984140989
+      },
+      "rootError": 0,
+      "sourceSha256": "f1accf24cf6699cf51516802a06f5719556f42181432b03d1c34d106d17dfc12"
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "phase": 0.73,
+      "terrain": "stairs",
+      "pin": 9.582710459383785e-16,
+      "pinSlide": 9.155133597044475e-16,
+      "pins": 60,
+      "penetration": 1.2344049765689036e-7,
+      "penAt": {
+        "frame": 42,
+        "side": "L",
+        "state": "ROLL"
+      },
+      "bone": 1.2212453270876722e-15,
+      "knee": 2.453381,
+      "step": 6.8099611195887055,
+      "stepAt": {
+        "frame": 103.5,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 5.223203139372531
+      },
+      "move": 0.06603590984140989,
+      "moveAt": {
+        "frame": 173.5,
+        "bone": "ball_l",
+        "state": "NN",
+        "source": 0.06603590984140989
+      },
+      "rootError": 0,
+      "sourceSha256": "f1accf24cf6699cf51516802a06f5719556f42181432b03d1c34d106d17dfc12"
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "phase": 0.73,
+      "terrain": "down",
+      "pin": 1.217454592664719e-15,
+      "pinSlide": 2.3263411494723067e-16,
+      "pins": 111,
+      "penetration": 3.1974401748513515e-7,
+      "penAt": {
+        "frame": 70,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "bone": 1.27675647831893e-15,
+      "knee": 3.552314,
+      "step": 8.254220490920707,
+      "stepAt": {
+        "frame": 32,
+        "bone": "ball_r",
+        "state": "SWING",
+        "source": 5.266144327089093
+      },
+      "move": 0.08325017708705412,
+      "moveAt": {
+        "frame": 58.5,
+        "bone": "ball_l",
+        "state": "SWING",
+        "source": 0.05851335226534457
+      },
+      "rootError": 0,
+      "sourceSha256": "f1accf24cf6699cf51516802a06f5719556f42181432b03d1c34d106d17dfc12"
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "phase": 0.73,
+      "terrain": "uneven",
+      "pin": 1.1921980955184335e-15,
+      "pinSlide": 8.881784197001252e-16,
+      "pins": 97,
+      "penetration": 3.0095702752142017e-7,
+      "penAt": {
+        "frame": 70,
+        "side": "R",
+        "state": "ROLL"
+      },
+      "bone": 1.0547118733938987e-15,
+      "knee": 2.915719,
+      "step": 10.261980847708335,
+      "stepAt": {
+        "frame": 112,
+        "bone": "foot_r",
+        "state": "SWING",
+        "source": 3.086318033128882
+      },
+      "move": 0.07481429695047523,
+      "moveAt": {
+        "frame": 61.5,
+        "bone": "ball_l",
+        "state": "SWING",
+        "source": 0.062315912200207886
+      },
+      "rootError": 0,
+      "sourceSha256": "f1accf24cf6699cf51516802a06f5719556f42181432b03d1c34d106d17dfc12"
+    }
+  ],
+  "scope": "24 full5s procedural clips from six additional genuine NN phase fixtures; no terminal1.5s truncation, no server or inference work.",
+  "coreSha256": "88abc20955df97a52dd2db492e3cd8e1dbc7f69e46c18e6d86ee3dd4339d32e2"
+}

@@ -1,0 +1,24 @@
+{
+  "count": 7,
+  "checks": [
+    "run/right exact corrected incoming pose",
+    "run/right both original controllers match compiled reference",
+    "run/right root direction and speed preserved",
+    "run/right full finite proper poses",
+    "run/right no full rotation loop or transition snap",
+    "run/right keeps backward/lateral body facing",
+    "run/right uses previous corrected state as recurrent history"
+  ],
+  "cases": [
+    {
+      "gait": "run",
+      "direction": "right",
+      "seconds": 1.8836034000269137,
+      "maxPolicyAngularStepDegrees": 21.91520495202493,
+      "previousHistorySensitivity": 0.003683611750602722,
+      "referenceError": 0.0
+    }
+  ],
+  "threads": 1,
+  "cudaUsed": false
+}

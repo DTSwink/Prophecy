@@ -1,0 +1,281 @@
+{
+  "checks": [
+    "walk/backward bounded finite actual NN poses",
+    "walk/backward original lower-controller equivalence",
+    "walk/backward both policies ran autoregressively after correct source seed",
+    "walk/backward course travels +Z without lateral drift",
+    "walk/backward native commanded speed retained",
+    "walk/backward body heading remains independent from travel",
+    "walk/backward proper rigid orientation",
+    "walk/backward phase advances same lower NN gait",
+    "walk/left bounded finite actual NN poses",
+    "walk/left original lower-controller equivalence",
+    "walk/left both policies ran autoregressively after correct source seed",
+    "walk/left course travels +Z without lateral drift",
+    "walk/left native commanded speed retained",
+    "walk/left body heading remains independent from travel",
+    "walk/left proper rigid orientation",
+    "walk/right bounded finite actual NN poses",
+    "walk/right original lower-controller equivalence",
+    "walk/right both policies ran autoregressively after correct source seed",
+    "walk/right course travels +Z without lateral drift",
+    "walk/right native commanded speed retained",
+    "walk/right body heading remains independent from travel",
+    "walk/right proper rigid orientation",
+    "run/backward bounded finite actual NN poses",
+    "run/backward original lower-controller equivalence",
+    "run/backward both policies ran autoregressively after correct source seed",
+    "run/backward course travels +Z without lateral drift",
+    "run/backward native commanded speed retained",
+    "run/backward body heading remains independent from travel",
+    "run/backward proper rigid orientation",
+    "run/backward phase advances same lower NN gait",
+    "run/left bounded finite actual NN poses",
+    "run/left original lower-controller equivalence",
+    "run/left both policies ran autoregressively after correct source seed",
+    "run/left course travels +Z without lateral drift",
+    "run/left native commanded speed retained",
+    "run/left native lateral 345cm/s cap",
+    "run/left body heading remains independent from travel",
+    "run/left proper rigid orientation",
+    "run/right bounded finite actual NN poses",
+    "run/right original lower-controller equivalence",
+    "run/right both policies ran autoregressively after correct source seed",
+    "run/right course travels +Z without lateral drift",
+    "run/right native commanded speed retained",
+    "run/right native lateral 345cm/s cap",
+    "run/right body heading remains independent from travel",
+    "run/right proper rigid orientation",
+    "reject {'direction': 'reverse-file'}",
+    "reject {'duration': 30}",
+    "reject {'phase': nan}"
+  ],
+  "count": 49,
+  "cases": [
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "command": {
+        "direction": "backward",
+        "sourceSpeed": 1.500003457069397,
+        "commandSpeed": 1.500003457069397,
+        "sourceToCourseAxes": [
+          [
+            -1.0,
+            0.0,
+            1.2246468525851679e-16
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            -1.2246468525851679e-16,
+            0.0,
+            -1.0
+          ]
+        ],
+        "facingDegrees": -180.0,
+        "policyGait": "walk",
+        "relative": "walk_omni/M_Neutral_Walk_Loop_B.npz",
+        "sourceSha256": "fe9b95e2c06eebe700d856e2a5a1b2070468fb650fa94145000bf496568960df",
+        "drawnSha256": "431dc50216ba81e1a54bd4f84e8f5df456232a5a942936a705177d892be33a3f"
+      },
+      "speed": 1.500003637856995,
+      "seconds": 3.5732743000262417,
+      "referenceError": 0.0,
+      "fixture": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-walk-backward.json",
+      "frames": 152,
+      "maxRotationMatrixError": 1.5497207641601562e-06
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "command": {
+        "direction": "left",
+        "sourceSpeed": 1.8000191450119019,
+        "commandSpeed": 1.8000191450119019,
+        "sourceToCourseAxes": [
+          [
+            6.123234262925839e-17,
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            -1.0,
+            0.0,
+            6.123234262925839e-17
+          ]
+        ],
+        "facingDegrees": -90.0,
+        "policyGait": "walk",
+        "relative": "walk_omni/M_Neutral_Walk_Loop_LR.npz",
+        "sourceSha256": "280e5b123fb2d97461bf340a1a9eb4a5cabfad0c67144742ec62b40a5794df28",
+        "drawnSha256": "be43ad7335eb774fbeb8e646314adc7f2d0fe02c42316669e36dce6c0c6c6c86"
+      },
+      "speed": 1.8000190305394053,
+      "seconds": 7.278743500006385,
+      "referenceError": 0.0,
+      "fixture": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-walk-left.json",
+      "frames": 152,
+      "maxRotationMatrixError": 1.430511474609375e-06
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "command": {
+        "direction": "right",
+        "sourceSpeed": 1.8000191450119019,
+        "commandSpeed": 1.8000191450119019,
+        "sourceToCourseAxes": [
+          [
+            6.123234262925839e-17,
+            0.0,
+            -1.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            6.123234262925839e-17
+          ]
+        ],
+        "facingDegrees": 90.0,
+        "policyGait": "walk",
+        "relative": "walk_omni/M_Neutral_Walk_Loop_RL.npz",
+        "sourceSha256": "74bbf7bfd4894f8b373ba843fcdcf926dd5d875319378d01317c8b2aa3773d42",
+        "drawnSha256": "99f8e7944e319383ec5d5e92c8a56091d04653098ddbb67069aa9e6cbb17be9d"
+      },
+      "speed": 1.8000190305394053,
+      "seconds": 9.275203400000464,
+      "referenceError": 0.0,
+      "fixture": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-walk-right.json",
+      "frames": 152,
+      "maxRotationMatrixError": 1.5497207641601562e-06
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "command": {
+        "direction": "backward",
+        "sourceSpeed": 2.999999761581421,
+        "commandSpeed": 2.999999761581421,
+        "sourceToCourseAxes": [
+          [
+            -1.0,
+            0.0,
+            1.2246468525851679e-16
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            -1.2246468525851679e-16,
+            0.0,
+            -1.0
+          ]
+        ],
+        "facingDegrees": -180.0,
+        "policyGait": "run",
+        "relative": "run_omni/M_Neutral_Run_Loop_B.npz",
+        "sourceSha256": "575d6760f0759ca0c762f3ff2bedb680418fea1bdf94547609fd05f7fac63031",
+        "drawnSha256": "d2aa4f6085b6386459c5ba05bfec5fede553cab79d9b6e10033b8eb7a3228ccd"
+      },
+      "speed": 3.0000000757886873,
+      "seconds": 9.00701579998713,
+      "referenceError": 0.0,
+      "fixture": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-run-backward.json",
+      "frames": 152,
+      "maxRotationMatrixError": 1.430511474609375e-06
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "command": {
+        "direction": "left",
+        "sourceSpeed": 3.5000009536743164,
+        "commandSpeed": 3.45,
+        "sourceToCourseAxes": [
+          [
+            6.123234262925839e-17,
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            -1.0,
+            0.0,
+            6.123234262925839e-17
+          ]
+        ],
+        "facingDegrees": -90.0,
+        "policyGait": "run",
+        "relative": "run_omni/M_Neutral_Run_Loop_LR.npz",
+        "sourceSha256": "6e73aa7004ca74a3883a7e7c638a3892e4a1e58c3455169a9b4aad5e7e9f1ba5",
+        "drawnSha256": "8a378f35ae489cd273ad23222f20491eae58c9da9fa1a475cd9cb88ad15be5de"
+      },
+      "speed": 3.4499988176964766,
+      "seconds": 9.148287899966817,
+      "referenceError": 0.0,
+      "fixture": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-run-left.json",
+      "frames": 152,
+      "maxRotationMatrixError": 1.6689300537109375e-06
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "command": {
+        "direction": "right",
+        "sourceSpeed": 3.499976873397827,
+        "commandSpeed": 3.45,
+        "sourceToCourseAxes": [
+          [
+            6.123234262925839e-17,
+            0.0,
+            -1.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            6.123234262925839e-17
+          ]
+        ],
+        "facingDegrees": 90.0,
+        "policyGait": "run",
+        "relative": "run_omni/M_Neutral_Run_Loop_RL.npz",
+        "sourceSha256": "f1accf24cf6699cf51516802a06f5719556f42181432b03d1c34d106d17dfc12",
+        "drawnSha256": "44d8c7e21730eee067d3bdb90c5d23f213554f8e835f140776a30efbb90fb711"
+      },
+      "speed": 3.4500003334702245,
+      "seconds": 9.598028699983843,
+      "referenceError": 0.0,
+      "fixture": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Labs\\FootIKLab\\.nn-cache\\directional-run-right.json",
+      "frames": 152,
+      "maxRotationMatrixError": 1.5497207641601562e-06
+    }
+  ],
+  "seconds": 50.2616348999436,
+  "threads": 1,
+  "cudaUsed": false
+}

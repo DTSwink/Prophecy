@@ -1,0 +1,56 @@
+[
+  {
+    "gait": "walk",
+    "direction": "backward",
+    "nativeToeFacingCosineMean": {
+      "l": 0.9932044503173498,
+      "r": 0.9025133354231196
+    },
+    "nativeCommandSpeed": 1.5000033021167298
+  },
+  {
+    "gait": "walk",
+    "direction": "left",
+    "nativeToeFacingCosineMean": {
+      "l": 0.6550712755999951,
+      "r": 0.7582221526531838
+    },
+    "nativeCommandSpeed": 1.8000191933766596
+  },
+  {
+    "gait": "walk",
+    "direction": "right",
+    "nativeToeFacingCosineMean": {
+      "l": 0.8389561733216517,
+      "r": 0.6829096066237155
+    },
+    "nativeCommandSpeed": 1.8000191933766596
+  },
+  {
+    "gait": "run",
+    "direction": "backward",
+    "nativeToeFacingCosineMean": {
+      "l": 0.6048807831901367,
+      "r": 0.8711192632029755
+    },
+    "nativeCommandSpeed": 2.9999999256877157
+  },
+  {
+    "gait": "run",
+    "direction": "left",
+    "nativeToeFacingCosineMean": {
+      "l": 0.3320763305899604,
+      "r": 0.7250726323651463
+    },
+    "nativeCommandSpeed": 3.4999997850874776
+  },
+  {
+    "gait": "run",
+    "direction": "right",
+    "nativeToeFacingCosineMean": {
+      "l": 0.8542835087202478,
+      "r": 0.7654543277236391
+    },
+    "nativeCommandSpeed": 3.4999767552897953
+  }
+]

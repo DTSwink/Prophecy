@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "description": "Immutable matched omni source paths and SHA256 for lightweight service validation before cache hits; frozen weights remain in Bodyflip models/provenance.json.",
+  "sources": {
+    "walk": {
+      "forward": {
+        "relative": "walk_omni/M_Neutral_Walk_Loop_F.npz",
+        "source": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\walk_omni\\M_Neutral_Walk_Loop_F.npz",
+          "sha256": "4c0a57d572b30e9bdbcb911e5adbdbd24dd1e97567002ea9bf37384c31509023"
+        },
+        "drawn": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\walk_omni\\M_Neutral_Walk_Loop_F.npz",
+          "sha256": "003c6c215c7180b9095c82d59fe36b003058a1e59970fccb186dd9df98fbfc90"
+        }
+      },
+      "backward": {
+        "relative": "walk_omni/M_Neutral_Walk_Loop_B.npz",
+        "source": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\walk_omni\\M_Neutral_Walk_Loop_B.npz",
+          "sha256": "fe9b95e2c06eebe700d856e2a5a1b2070468fb650fa94145000bf496568960df"
+        },
+        "drawn": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\walk_omni\\M_Neutral_Walk_Loop_B.npz",
+          "sha256": "431dc50216ba81e1a54bd4f84e8f5df456232a5a942936a705177d892be33a3f"
+        }
+      },
+      "left": {
+        "relative": "walk_omni/M_Neutral_Walk_Loop_LR.npz",
+        "source": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\walk_omni\\M_Neutral_Walk_Loop_LR.npz",
+          "sha256": "280e5b123fb2d97461bf340a1a9eb4a5cabfad0c67144742ec62b40a5794df28"
+        },
+        "drawn": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\walk_omni\\M_Neutral_Walk_Loop_LR.npz",
+          "sha256": "be43ad7335eb774fbeb8e646314adc7f2d0fe02c42316669e36dce6c0c6c6c86"
+        }
+      },
+      "right": {
+        "relative": "walk_omni/M_Neutral_Walk_Loop_RL.npz",
+        "source": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\walk_omni\\M_Neutral_Walk_Loop_RL.npz",
+          "sha256": "74bbf7bfd4894f8b373ba843fcdcf926dd5d875319378d01317c8b2aa3773d42"
+        },
+        "drawn": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\walk_omni\\M_Neutral_Walk_Loop_RL.npz",
+          "sha256": "99f8e7944e319383ec5d5e92c8a56091d04653098ddbb67069aa9e6cbb17be9d"
+        }
+      }
+    },
+    "run": {
+      "forward": {
+        "relative": "run_omni/M_Neutral_Run_Loop_F.npz",
+        "source": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\run_omni\\M_Neutral_Run_Loop_F.npz",
+          "sha256": "c3bdb0da5999b55bed1fa78fd9bf78e71905a1ec0c2c2413fad519772d439e33"
+        },
+        "drawn": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\run_omni\\M_Neutral_Run_Loop_F.npz",
+          "sha256": "52446c09e5176e1f5836df6d8cd0355beb2722b2d789335f6b37107d6c349443"
+        }
+      },
+      "backward": {
+        "relative": "run_omni/M_Neutral_Run_Loop_B.npz",
+        "source": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\run_omni\\M_Neutral_Run_Loop_B.npz",
+          "sha256": "575d6760f0759ca0c762f3ff2bedb680418fea1bdf94547609fd05f7fac63031"
+        },
+        "drawn": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\run_omni\\M_Neutral_Run_Loop_B.npz",
+          "sha256": "d2aa4f6085b6386459c5ba05bfec5fede553cab79d9b6e10033b8eb7a3228ccd"
+        }
+      },
+      "left": {
+        "relative": "run_omni/M_Neutral_Run_Loop_LR.npz",
+        "source": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\run_omni\\M_Neutral_Run_Loop_LR.npz",
+          "sha256": "6e73aa7004ca74a3883a7e7c638a3892e4a1e58c3455169a9b4aad5e7e9f1ba5"
+        },
+        "drawn": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\run_omni\\M_Neutral_Run_Loop_LR.npz",
+          "sha256": "8a378f35ae489cd273ad23222f20491eae58c9da9fa1a475cd9cb88ad15be5de"
+        }
+      },
+      "right": {
+        "relative": "run_omni/M_Neutral_Run_Loop_RL.npz",
+        "source": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\run_omni\\M_Neutral_Run_Loop_RL.npz",
+          "sha256": "f1accf24cf6699cf51516802a06f5719556f42181432b03d1c34d106d17dfc12"
+        },
+        "drawn": {
+          "path": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\run_omni\\M_Neutral_Run_Loop_RL.npz",
+          "sha256": "44d8c7e21730eee067d3bdb90c5d23f213554f8e835f140776a30efbb90fb711"
+        }
+      }
+    }
+  },
+  "weights": {
+    "run": {
+      "source": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Tools\\Recovery\\Checkpoints\\lower_body-0f2565ac72c5.pt",
+      "sha256": "0f2565ac72c5209153cbd910135209487f9ef8a0e234ed0c6d99df2ff30a299e"
+    },
+    "upper": {
+      "source": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Tools\\Recovery\\Checkpoints\\upper_body-02e73800b8e6.pt",
+      "sha256": "02e73800b8e63dc1b79e3e9c67c0a5f269eb830d3a330fe81c2d11480ac6f5b4"
+    },
+    "run-seed": {
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\run_omni\\M_Neutral_Run_Loop_F.npz",
+      "sha256": "c3bdb0da5999b55bed1fa78fd9bf78e71905a1ec0c2c2413fad519772d439e33"
+    },
+    "run-drawn": {
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\run_omni\\M_Neutral_Run_Loop_F.npz",
+      "sha256": "52446c09e5176e1f5836df6d8cd0355beb2722b2d789335f6b37107d6c349443"
+    },
+    "walk": {
+      "source": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Tools\\Recovery\\Checkpoints\\lower_body_walk_july5-8bae21c5b315.pt",
+      "sha256": "8bae21c5b3159d69726cd98867c85000b51d566012708eed36374b2b5a9d4c79"
+    },
+    "walk-seed": {
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\authored_pruned_npz\\walk_omni\\M_Neutral_Walk_Loop_F.npz",
+      "sha256": "4c0a57d572b30e9bdbcb911e5adbdbd24dd1e97567002ea9bf37384c31509023"
+    },
+    "walk-drawn": {
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\walk_run_sword_prep\\holding_sword_npz\\walk_omni\\M_Neutral_Walk_Loop_F.npz",
+      "sha256": "003c6c215c7180b9095c82d59fe36b003058a1e59970fccb186dd9df98fbfc90"
+    }
+  }
+}

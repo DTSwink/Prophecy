@@ -4,6 +4,18 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Foot IK October28 - accepted wall-gait checkpoint:**
+User approved the corrected wall ground frame, pelvis height and signed NN knee
+hinges. Includes prior terrain, yaw/distance, root gravity, platform editing,
+persistence and actual-root recurrent NN work, with focused sources/fixtures.
+Walk uses the Run checkpoint at walking velocity.15 frame/hinge,17 coupling,
+697 surface,101 endpoint and1368 shared-adapter checks passed. Profile captured
+in Labs/FootIKLab/approved/2026-10-28/profile.json; live state is excluded.
+NN weights/runtime dependencies remain as documented in the lab README.
+Late unbounded-speed falling is outside a trained locomotion gait.
+[Current lab handoff](Labs/FootIKLab/README.md).
+
+
 **Throw Lab October27 - approved throw checkpoint:** standalone lab and exact
 user-approved scene library saved in `Labs/ThrowLab/approved/2026-10-27/`.
 Includes both source FBXs (cache hashes verified), runtime animation/object

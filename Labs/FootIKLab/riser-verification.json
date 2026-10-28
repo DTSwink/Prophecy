@@ -12,12 +12,12 @@
     "Flat approach and exit retain exact NN poses"
   ],
   "phase": 0.21,
-  "prepareMs": 406.235,
+  "prepareMs": 355.9969,
   "oldPenetration": 0.06889095929782053,
   "newPenetration": 5.551115123125783e-17,
-  "maxPenetration": 2.0633542208159383e-7,
-  "maxAngle": 8.892405996291558,
-  "maxDistance": 0.061207177455645696,
+  "maxPenetration": 2.0633542252568304e-7,
+  "maxAngle": 8.892405996291394,
+  "maxDistance": 0.06158528605704393,
   "maxEntryDistance": 0.05606327326420919,
   "maxPinError": 1.4141731344682325e-15
 }

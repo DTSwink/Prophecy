@@ -1,0 +1,151 @@
+{
+  "count": 24,
+  "checks": [
+    "walk/backward flat output is exact NN position/orientation",
+    "walk/backward rendered head faces commanded body heading",
+    "walk/backward head, pelvis and toes agree with accepted native NN heading statistics",
+    "walk/backward actual native directional root speed",
+    "walk/left flat output is exact NN position/orientation",
+    "walk/left rendered head faces commanded body heading",
+    "walk/left head, pelvis and toes agree with accepted native NN heading statistics",
+    "walk/left actual native directional root speed",
+    "walk/right flat output is exact NN position/orientation",
+    "walk/right rendered head faces commanded body heading",
+    "walk/right head, pelvis and toes agree with accepted native NN heading statistics",
+    "walk/right actual native directional root speed",
+    "run/backward flat output is exact NN position/orientation",
+    "run/backward rendered head faces commanded body heading",
+    "run/backward head, pelvis and toes agree with accepted native NN heading statistics",
+    "run/backward actual native directional root speed",
+    "run/left flat output is exact NN position/orientation",
+    "run/left rendered head faces commanded body heading",
+    "run/left head, pelvis and toes agree with accepted native NN heading statistics",
+    "run/left actual native directional root speed",
+    "run/right flat output is exact NN position/orientation",
+    "run/right rendered head faces commanded body heading",
+    "run/right head, pelvis and toes agree with accepted native NN heading statistics",
+    "run/right actual native directional root speed"
+  ],
+  "cases": [
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "maxFlatDeviation": 0,
+      "maxFlatRotationError": 6.661338147750939e-16,
+      "headingCosineMean": {
+        "head": 0.999652808629027,
+        "pelvis": 0.9918296696698489,
+        "leftToe": 0.9930192634882472,
+        "rightToe": 0.9095799475091879
+      },
+      "nativeHeadingCosineMean": {
+        "head": 0.9997791862714309,
+        "pelvis": 0.9914066147226042,
+        "leftToe": 0.9932044503173498,
+        "rightToe": 0.9025133354231195
+      },
+      "speed": 1.500003637856995,
+      "nativeSpeed": 1.5000033021167298
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "maxFlatDeviation": 0,
+      "maxFlatRotationError": 6.661338147750939e-16,
+      "headingCosineMean": {
+        "head": 0.9998880779688207,
+        "pelvis": 0.8232841848616104,
+        "leftToe": 0.6528791767480325,
+        "rightToe": 0.7584073190794149
+      },
+      "nativeHeadingCosineMean": {
+        "head": 0.9988046040450134,
+        "pelvis": 0.8226671429509425,
+        "leftToe": 0.6550712755999951,
+        "rightToe": 0.7582221526531838
+      },
+      "speed": 1.8000190305394053,
+      "nativeSpeed": 1.8000191933766596
+    },
+    {
+      "gait": "walk",
+      "direction": "right",
+      "maxFlatDeviation": 0,
+      "maxFlatRotationError": 6.661338147750939e-16,
+      "headingCosineMean": {
+        "head": 0.9970956850155047,
+        "pelvis": 0.79153619644976,
+        "leftToe": 0.8391147762046204,
+        "rightToe": 0.6823515508089979
+      },
+      "nativeHeadingCosineMean": {
+        "head": 0.9982007177782206,
+        "pelvis": 0.79233448082708,
+        "leftToe": 0.8389561733216517,
+        "rightToe": 0.6829096066237155
+      },
+      "speed": 1.8000190305394053,
+      "nativeSpeed": 1.8000191933766596
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "maxFlatDeviation": 0,
+      "maxFlatRotationError": 6.661338147750939e-16,
+      "headingCosineMean": {
+        "head": 0.9995887236217292,
+        "pelvis": 0.9964469991952714,
+        "leftToe": 0.6078092961129059,
+        "rightToe": 0.8633379389826179
+      },
+      "nativeHeadingCosineMean": {
+        "head": 0.9998387802147165,
+        "pelvis": 0.996369346776354,
+        "leftToe": 0.6048807831901368,
+        "rightToe": 0.8711192632029755
+      },
+      "speed": 3.0000000757886873,
+      "nativeSpeed": 2.9999999256877157
+    },
+    {
+      "gait": "run",
+      "direction": "left",
+      "maxFlatDeviation": 0,
+      "maxFlatRotationError": 6.661338147750939e-16,
+      "headingCosineMean": {
+        "head": 0.9990776861894357,
+        "pelvis": 0.8436130423095592,
+        "leftToe": 0.32184216834371004,
+        "rightToe": 0.7269756068526332
+      },
+      "nativeHeadingCosineMean": {
+        "head": 0.9974634118345888,
+        "pelvis": 0.8470581245382391,
+        "leftToe": 0.33207633058996033,
+        "rightToe": 0.7250726323651463
+      },
+      "speed": 3.4999996463194587,
+      "nativeSpeed": 3.4999997850874776
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "maxFlatDeviation": 0,
+      "maxFlatRotationError": 6.661338147750939e-16,
+      "headingCosineMean": {
+        "head": 0.9963980101441925,
+        "pelvis": 0.8761185045423491,
+        "leftToe": 0.8514232126889216,
+        "rightToe": 0.7680258841888087
+      },
+      "nativeHeadingCosineMean": {
+        "head": 0.9986561450317886,
+        "pelvis": 0.8758875169717522,
+        "leftToe": 0.8542835087202476,
+        "rightToe": 0.7654543277236391
+      },
+      "speed": 3.49997690971324,
+      "nativeSpeed": 3.4999767552897953
+    }
+  ]
+}

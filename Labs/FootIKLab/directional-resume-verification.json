@@ -1,0 +1,69 @@
+{
+  "count": 28,
+  "checks": [
+    "walk/backward exact corrected incoming pose",
+    "walk/backward both original controllers match compiled reference",
+    "walk/backward root direction and speed preserved",
+    "walk/backward full finite proper poses",
+    "walk/backward no full rotation loop or transition snap",
+    "walk/backward keeps backward/lateral body facing",
+    "walk/backward uses previous corrected state as recurrent history",
+    "run/backward exact corrected incoming pose",
+    "run/backward both original controllers match compiled reference",
+    "run/backward root direction and speed preserved",
+    "run/backward full finite proper poses",
+    "run/backward no full rotation loop or transition snap",
+    "run/backward keeps backward/lateral body facing",
+    "run/backward uses previous corrected state as recurrent history",
+    "walk/left exact corrected incoming pose",
+    "walk/left both original controllers match compiled reference",
+    "walk/left root direction and speed preserved",
+    "walk/left full finite proper poses",
+    "walk/left no full rotation loop or transition snap",
+    "walk/left keeps backward/lateral body facing",
+    "walk/left uses previous corrected state as recurrent history",
+    "run/right exact corrected incoming pose",
+    "run/right both original controllers match compiled reference",
+    "run/right root direction and speed preserved",
+    "run/right full finite proper poses",
+    "run/right no full rotation loop or transition snap",
+    "run/right keeps backward/lateral body facing",
+    "run/right uses previous corrected state as recurrent history"
+  ],
+  "cases": [
+    {
+      "gait": "walk",
+      "direction": "backward",
+      "seconds": 2.3536638999939896,
+      "maxPolicyAngularStepDegrees": 12.936525990844952,
+      "previousHistorySensitivity": 0.003661632537841797,
+      "referenceError": 0.0
+    },
+    {
+      "gait": "run",
+      "direction": "backward",
+      "seconds": 3.2553707999759354,
+      "maxPolicyAngularStepDegrees": 27.68364292310649,
+      "previousHistorySensitivity": 0.0041457414627075195,
+      "referenceError": 0.0
+    },
+    {
+      "gait": "walk",
+      "direction": "left",
+      "seconds": 3.6995730999624357,
+      "maxPolicyAngularStepDegrees": 25.743450849736206,
+      "previousHistorySensitivity": 0.004246234893798828,
+      "referenceError": 0.0
+    },
+    {
+      "gait": "run",
+      "direction": "right",
+      "seconds": 4.02802279999014,
+      "maxPolicyAngularStepDegrees": 20.45941160213924,
+      "previousHistorySensitivity": 0.003697723150253296,
+      "referenceError": 0.0
+    }
+  ],
+  "threads": 1,
+  "cudaUsed": false
+}

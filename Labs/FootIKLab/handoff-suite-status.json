@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "checks": 346,
+  "results": [
+    {
+      "file": "verify.mjs",
+      "exit": 0,
+      "checks": 211,
+      "passed": true
+    },
+    {
+      "file": "verify-ankle.mjs",
+      "exit": 0,
+      "checks": 9,
+      "passed": true
+    },
+    {
+      "file": "verify-clearance.mjs",
+      "exit": 0,
+      "checks": 7,
+      "passed": true
+    },
+    {
+      "file": "verify-exit-toeoff.mjs",
+      "exit": 0,
+      "checks": 8,
+      "passed": true
+    },
+    {
+      "file": "verify-height-budget.mjs",
+      "exit": 0,
+      "checks": 8,
+      "passed": true
+    },
+    {
+      "file": "verify-inertia.mjs",
+      "exit": 0,
+      "checks": 12,
+      "passed": true
+    },
+    {
+      "file": "verify-level-exit.mjs",
+      "exit": 0,
+      "checks": 8,
+      "passed": true
+    },
+    {
+      "file": "verify-pelvis-release.mjs",
+      "exit": 0,
+      "checks": 4,
+      "passed": true
+    },
+    {
+      "file": "verify-pelvis-transfer.mjs",
+      "exit": 0,
+      "checks": 11,
+      "passed": true
+    },
+    {
+      "file": "verify-release.mjs",
+      "exit": 0,
+      "checks": 12,
+      "passed": true
+    },
+    {
+      "file": "verify-riser.mjs",
+      "exit": 0,
+      "checks": 9,
+      "passed": true
+    },
+    {
+      "file": "verify-run-ankle.mjs",
+      "exit": 0,
+      "checks": 8,
+      "passed": true
+    },
+    {
+      "file": "verify-run-travel.mjs",
+      "exit": 0,
+      "checks": 12,
+      "passed": true
+    },
+    {
+      "file": "verify-toe-release.mjs",
+      "exit": 0,
+      "checks": 9,
+      "passed": true
+    },
+    {
+      "file": "verify-velocity.mjs",
+      "exit": 0,
+      "checks": 18,
+      "passed": true
+    }
+  ]
+}

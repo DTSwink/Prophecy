@@ -1,0 +1,54 @@
+const fs=require('fs'),path=require('path'),assert=require('assert/strict'),z=require('zlib'),crypto=require('crypto');
+const K=require('./footik.js'),F=require('./surface.js'),S=require('./support.js'),R=require('./recovery.js');
+const read=p=>JSON.parse(fs.readFileSync(path.join(__dirname,p),'utf8').replace(/^\uFEFF/,''));
+const fixture=JSON.parse(z.gunzipSync(fs.readFileSync(path.join(__dirname,'data/platforms-speed-fixture.json.gz')))),saved=fixture.saved,source=fixture.data,run=K.decode(source,read('data/rig.json').parents),checks=[],check=(name,value)=>{assert(value,name);checks.push(name);};
+const hash=m=>crypto.createHash('sha256').update(JSON.stringify(m.frames.map(f=>[f.pose,f.root,f.feet,f.surface.velocity]))).digest('hex');
+const normal=a=>[0,Math.cos(a*Math.PI/180),-Math.sin(a*Math.PI/180)],s=K.sanitize(saved.settings);
+check('threshold defaults to .2m/s',K.sanitize().pinReleaseSpeed===.2);
+check('uses total speed, including lateral travel',F.pinsAllowed(normal(90),[.21,0,0],s));
+check('slow steep root cancels pins',!F.pinsAllowed(normal(90),[.1,.1,0],s));
+check('fast downward root may pin',F.pinsAllowed(normal(90),[0,-.21,0],s));
+check('threshold is strictly below and inclination strictly above',F.pinsAllowed(normal(90),[.2,0,0],s)&&F.pinsAllowed(normal(80),[0,0,0],s));
+check('flat slow root remains eligible',F.pinsAllowed(normal(0),[0,0,0],s));
+check('zero disables low-speed release',F.pinsAllowed(normal(90),[0,0,0],{...s,pinReleaseSpeed:0}));
+const off=F.prepare(run,{...s,pinReleaseSpeed:0});
+check('disabled rule preserves original poses, roots and feet',fixture.hashes.current===hash(off));
+const released=F.prepare(run,{...s,pinReleaseSpeed:100});
+const suppressed=released.frames.filter(f=>!f.surface.pinsAllowed);
+check('real wall simulation enters suppressed interval',suppressed.length>30);
+check('both legs remain unpinned while below threshold',suppressed.every(f=>f.feet.every(p=>p.contact===null&&p.state==='SWING')));
+check('blocked frames cannot plant',released.events.filter(e=>e.type==='plant').every(e=>released.frames[Math.round(e.frame*2)].surface.pinsAllowed));
+check('natural root forces/gravity still integrate after release',released.frames.every(f=>f.surface.velocity.every(Number.isFinite)));
+const current=F.prepare(run,s);
+const half=F.prepare(run,{...s,pinReleaseSpeed:.5});
+check('existing wall pin actually releases at speed threshold',half.events.some(e=>e.type==='release'&&e.reason==='root-speed'&&e.surface==='incline'));
+const far=current.terrain.allSurfaces.map(S.platformRecord);far.push({id:'far',position:[100,0,0],rotation:[0,0,0,1],size:[2,.2,2]});
+const isolated=F.prepare(run,{...s,platformLayouts:{incline:far}});
+check('adding a distant platform does not change the existing course',current.frames.every((f,i)=>f.pose.points.every((p,j)=>R.length(R.sub(p,isolated.frames[i].pose.points[j]))<1e-10)));
+const catchLayout=current.terrain.allSurfaces.map(S.platformRecord);catchLayout.push({id:'catch',position:[0,-5,1],rotation:[0,0,0,1],size:[6,.2,6]});
+const catchModel=F.prepare(run,{...s,platformLayouts:{incline:catchLayout}});
+check('added platform supplies real foot contacts after the fall',catchModel.events.some(e=>e.type==='plant'&&e.surface==='catch'));
+check('added platform participates in root landing',catchModel.events.some(e=>e.type==='root-transfer'&&e.to==='catch'));
+const cases=[];
+for(const terrain of ['flat','stairs','down','uneven','incline']){
+ const opts={...s,terrain,platformLayouts:{[terrain]:[]}},base=F.createTerrain(opts);
+ opts.platformLayouts[terrain]=base.original.map(S.platformRecord);
+ const world=F.createTerrain(opts),ids=world.surfaces.map(p=>p.id);
+ check(terrain+' material surface IDs retained',ids.join()===base.original.map(p=>p.id).join());
+ if(terrain==='stairs'||terrain==='down')check(terrain+' root sees ramp and feet see treads',world.rootSurfaces().some(p=>Math.abs(p.normal[1]-1)>.01)&&world.surfaces.every(p=>p.normal[1]>.999));
+ opts.platformLayouts[terrain].push({id:'probe',position:[8,1,3],rotation:R.qexp([0,0,.7]),size:[2,.2,3]});
+ const model=F.prepare(run,opts),probe=model.terrain.allSurfaces.find(p=>p.id==='probe');
+ check(terrain+' added transformed surface is used by queries',model.terrain.pick(probe.origin).surface.id==='probe'&&model.terrain.rootSurfaces().some(p=>p.id==='probe'));
+ check(terrain+' full rollout finite and within leg reach',model.frames.every(f=>f.pose.points.flat().every(Number.isFinite))&&model.metrics.maxReachError<1e-6);
+ cases.push({terrain,metrics:model.metrics,lastRoot:model.frames.at(-1).root});
+}
+const empty=F.prepare(run,{...s,platformLayouts:{incline:[]}});
+check('deleting every platform permits free fall without ghost pins',empty.frames.every(f=>f.feet.every(p=>!p.contact)&&f.surface.contacts===0)&&empty.frames.at(-1).surface.velocity[1]<-40);
+const {load}=require('./test-bank.cjs');
+for(const gait of ['walk','run'])for(const slopeAngle of [0,45,90]){
+ const bank=load(gait,.21),opts={gait,slopeAngle,pinReleaseSpeed:0},b=F.prepare(bank,opts);
+ check(gait+' '+slopeAngle+' default surface motion unchanged',fixture.hashes[gait+'-'+slopeAngle]===hash(b));
+}
+check('layouts sanitize nonfinite transforms and duplicate IDs',K.sanitize({platformLayouts:{flat:[{id:'x',position:[0,0,0],rotation:[0,0,0,1],size:[2,.2,2]},{id:'x',position:[0,0,0],rotation:[0,0,0,1],size:[2,.2,2]},{id:'bad',position:[NaN,0,0],rotation:[0,0,0,1],size:[2,.2,2]}]}}).platformLayouts.flat.length===1);
+const result={passed:true,checks,current:{blockedFrames:current.frames.filter(f=>!f.surface.pinsAllowed).length,releases:current.events.filter(e=>e.reason==='root-speed'),metrics:current.metrics},forcedBlockedFrames:suppressed.length,cases};
+fs.writeFileSync(path.join(__dirname,'snapshots/platforms-speed-verification.json'),JSON.stringify(result,null,2));console.log(JSON.stringify({passed:true,checks:checks.length,current:result.current,forcedBlockedFrames:suppressed.length}));

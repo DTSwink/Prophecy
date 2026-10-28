@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "checks": [
+    "Fixture detects backward pelvis-local recovery through78",
+    "70-80 now advances in the moving pelvis frame",
+    "70-80 forward progress exceeds15cm instead of retreating",
+    "Foot begins travelling at departure without a world-space hold",
+    "Grounded heel-toe and prior left path remain exact",
+    "Right leg and pelvis are unaffected",
+    "All material contacts and release times are retained",
+    "Recovery finishes within the same source swing rather than snapping at terrain exit",
+    "NN return matches position and velocity",
+    "Continuous recovery avoids velocity or ankle snaps",
+    "Whole shoe clearance and leg reach remain valid",
+    "Reverse seek returns identical recovery poses"
+  ],
+  "progress70to80Cm": {
+    "before": -21.733678708286146,
+    "after": 20.47988397297819
+  },
+  "joinFrame": 94,
+  "joinVelocityError": 0.3612494259539131,
+  "maxAddedKick": 0.6071089844646718,
+  "maxFootStep": 8.354511990745596,
+  "metrics": {
+    "maxPenetration": 1.345579003775299e-7,
+    "maxReachError": 1.1116099371267112e-15,
+    "maxPelvis": 0.04218856756141029,
+    "maxFlatDeviation": 0,
+    "pins": [
+      25,
+      15
+    ]
+  }
+}

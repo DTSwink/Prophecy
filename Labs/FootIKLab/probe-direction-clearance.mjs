@@ -1,0 +1,7 @@
+import fs from 'node:fs';import vm from 'node:vm';import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),source=fs.readFileSync(new URL('footik.js',import.meta.url),'utf8'),rig=JSON.parse(fs.readFileSync(new URL('data/rig.json',import.meta.url))),results=[];
+const anchor='pose=solve(pose,l,target,parents,rotation);';
+const hooked=source.replace(anchor,`${anchor}
+   if(i>=243&&i<=247&&side===0){const solved=pose.points[l.foot];globalThis.capture({frame:i/2,target,solved,rotation,original:plan.rotations[i],floorOriginal:terrain.floorFor(target,plan.offsets[i]),floorCurrent:terrain.floorFor(target,geometry(base[i],l,rotation)),floorSolved:terrain.floorFor(solved,S.footPoints(pose,l.foot,l.toe,l.side)),reach:planned[i].reaches[side],hip:pose.points[l.hip],planted:planted[side],weight:footWeight(i,side)});}`);
+if(hooked===source)throw Error('anchor missing');const sandbox={require,module:{exports:{}},capture:r=>results.push(r)};vm.runInNewContext(hooked,sandbox);const K=sandbox.module.exports,run=K.decode(JSON.parse(fs.readFileSync(new URL('.nn-cache/directional-walk-right.json',import.meta.url))),rig.parents);K.prepare(run,{gait:'walk',direction:'right',phase:.21,terrain:'down',height:16,depth:35,steps:12,clearance:1});
+console.log(JSON.stringify(results));fs.writeFileSync(new URL('snapshots/direction-clearance-probe.json',import.meta.url),JSON.stringify(results,null,2));
