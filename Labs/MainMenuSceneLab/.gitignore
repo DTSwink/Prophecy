@@ -1,0 +1,11 @@
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+.vs/
+*.sln
+
+# Local recovery and save checkpoints; Resources/scene.json is the curated look.
+Resources/*.previous
+Resources/*.recovery
+Resources/*.pending

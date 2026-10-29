@@ -4,6 +4,27 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Main-menu scene October29 — real horizontal smoke width and checkpoint:**
+Air Horizontal width replaces the ineffective Spread slider with0.25–8x actual
+source scaling on world Y. Native Grid3D_Gas_SphereSource Non Uniform Scale is
+linked to User.SmokeSourceScale=(1,width,1); vertical/depth radius and source
+velocity stay unchanged. New smoke_horizontal_width defaults1, preserving saved
+source shape; legacy haze_spread remains as compatibility baseline. Grid grows
+only to fit the widened source plus450cm each end; resolution tracks previous
+cell size with512-axis cap. Resizes debounce300ms; source-only changes keep the
+field, domain changes reset gas once and need seconds to reform.
+Normal build and Niagara CPU/GPU preparation pass. Native source/grid bounds,
+unchanged vertical/depth dimensions, save/reload and existing controls pass.
+1x/4x/8x captures visually verify widening; at8x source radius227.87cm unchanged,
+grid Y4545.916cm versus2884.702cm at1x. Curated receipts in the lab's Verification/.
+SaveLive preserved user rain_amount4, smoke shift7.4628cm and current water tuning
+before closing28136. Resources/scene.json matches Saved/SmokeWidth20261029/live-saved.json.
+Review20344 reopened on Air; current ready status in UI handoff. User requested
+push: curate this isolated scene, its required content, settings and handoff only;
+exclude all other workstreams and generated caches/recovery files.
+[Current UI handoff](Docs/WeaponWheelUI.md).
+
+
 **Foot IK October28 - accepted wall-gait checkpoint:**
 User approved the corrected wall ground frame, pelvis height and signed NN knee
 hinges. Includes prior terrain, yaw/distance, root gravity, platform editing,

@@ -1,0 +1,71 @@
+// UV-anchored, analytic surface relief for a wet coating. No screen projection.
+struct SceneWetSurface
+{
+ float hash(int2 p, uint salt)
+ {
+  uint h=uint(p.x)*374761393u+uint(p.y)*668265263u+salt*1442695041u;
+  h=(h^(h>>13))*1274126177u;h^=h>>16;
+  return float(h&0x00ffffffu)/16777216.0;
+ }
+ void keep(inout float4 result,float2 gradient,float height,float coverage)
+ {
+  // A smooth union lets adjacent beads join rather than stack their relief.
+  float k=.025;
+  float blend=saturate(.5+.5*(height-result.z)/k);
+  result.xy=lerp(result.xy,gradient,blend);
+  result.z=lerp(result.z,height,blend)+k*blend*(1-blend);
+  result.w=max(result.w,coverage);
+ }
+ float4 evaluate(float2 uv,float2 gravity,float density,float size,float time,float speed,float trails,float2 pixelWidth)
+ {
+  float2 p=uv*(78/max(.25,size));
+  float footprint=max(pixelWidth.x,pixelWidth.y)*(78/max(.25,size));
+  int2 cell=int2(floor(p));float4 result=0;
+  float slide=saturate(length(gravity));
+  float2 down=gravity/max(length(gravity),.001);
+  float2 across=float2(-down.y,down.x);
+  [unroll] for(int y=-1;y<=1;y++) [unroll] for(int x=-1;x<=1;x++)
+  {
+   int2 c=cell+int2(x,y);
+   if(hash(c,11)>saturate(density))continue;
+   float2 anchor=float2(c)+.18+.64*float2(hash(c,12),hash(c,13));
+   float r=lerp(.10,.30,pow(hash(c,14),1.6));
+   float2 radii=r*float2(1,lerp(.8,1.35,hash(c,15)));
+   float2 delta=p-anchor;
+   float2 e=delta/radii;float q=dot(e,e);
+   float aa=clamp(footprint/max(r,.05),.02,.8);
+   float coverage=1-smoothstep(1-aa,1+aa,q);
+   float dome=saturate(1-q);
+   float resolved=saturate(r/max(.04,footprint*.8));
+   float height=.19*dome*dome*coverage*resolved;
+   float2 gradient=-.76*dome*delta/(radii*radii)*coverage*resolved;
+   keep(result,gradient,height,coverage*resolved);
+
+   // Sparse larger drops run down the surface and leave a thinner wet tail.
+   if(trails>.0001 && slide>.05 && hash(c,16)<trails*.65)
+   {
+    float phase=frac(time*speed*.24+hash(c,17));
+    float fade=smoothstep(0,.08,phase)*(1-smoothstep(.88,1,phase));
+    float head=(phase-.5)*.9*slide;
+    float along=dot(delta,down)-head;
+    float side=dot(delta,across);
+    float bend=.025*sin((along+head)*9+hash(c,18)*6.283185);
+    side-=bend;
+    float2 re=float2(side/(r*.82),along/(r*1.5));
+    float rq=dot(re,re);float rd=saturate(1-rq);
+    float rc=(1-smoothstep(1-aa,1+aa,rq))*fade;
+    float2 rg=-1.12*rd*(across*side/(r*r*.82*.82)+down*along/(r*r*2.25))*rc;
+    keep(result,rg,.28*rd*rd*rc,rc);
+    float behind=-along;
+    float tailWindow=smoothstep(0,.04,behind)*(1-smoothstep(.45,.8,behind));
+    float width=lerp(.022,.055,saturate(1-behind/.8));
+    float crossSection=saturate(1-side*side/(width*width));
+    float tailFade=tailWindow*fade*trails*resolved;
+    float tailHeight=.065*crossSection*crossSection*tailFade;
+    float2 tailGrad=-.26*crossSection*side/(width*width)*across*tailFade;
+    keep(result,tailGrad,tailHeight,crossSection*tailFade);
+   }
+  }
+  return result;
+ }
+};

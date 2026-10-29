@@ -1,0 +1,892 @@
+{
+  "files": [
+    {
+      "path": "Audio/Foley/AC_FoleyEvents.uasset",
+      "bytes": 125250,
+      "source_sha256": "65dd45dbe10b5658656c73e40cdafdee75769ceefef4044ca79c4bf47f4b0c96",
+      "copied_sha256": "65dd45dbe10b5658656c73e40cdafdee75769ceefef4044ca79c4bf47f4b0c96"
+    },
+    {
+      "path": "Audio/Foley/DABP_FoleyAudioBank.uasset",
+      "bytes": 36148,
+      "source_sha256": "0e15500249bbf2d761299b9ad6385ec7ec23ca2b95d968cd4f0ce604aa61df42",
+      "copied_sha256": "0e15500249bbf2d761299b9ad6385ec7ec23ca2b95d968cd4f0ce604aa61df42"
+    },
+    {
+      "path": "Audio/Foley/DefaultFoleyEventAudioBank.uasset",
+      "bytes": 5371,
+      "source_sha256": "a97e4bc71043026ab9b569e9d695a17152241c1597e4d9ebce74f1850e903161",
+      "copied_sha256": "a97e4bc71043026ab9b569e9d695a17152241c1597e4d9ebce74f1850e903161"
+    },
+    {
+      "path": "Audio/Foley/I_FoleyAudioBankInterface.uasset",
+      "bytes": 12037,
+      "source_sha256": "3693f106017f43d4912a857f56b49c9fa03c8e567b91c132cfcdc498c24c73d8",
+      "copied_sha256": "3693f106017f43d4912a857f56b49c9fa03c8e567b91c132cfcdc498c24c73d8"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Parents/MSS_FoleySound.uasset",
+      "bytes": 185784,
+      "source_sha256": "f83aa9f466f8a88924abf7f0a2438b38e4aa80a2229cf4d10bdb1e5bab3d7613",
+      "copied_sha256": "f83aa9f466f8a88924abf7f0a2438b38e4aa80a2229cf4d10bdb1e5bab3d7613"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Parents/MSS_FoleySound_Looping.uasset",
+      "bytes": 205731,
+      "source_sha256": "cfdfc71445a2b7fa1ba21d279747d0e38b47b9c38a66893ad81dd997cfed539a",
+      "copied_sha256": "cfdfc71445a2b7fa1ba21d279747d0e38b47b9c38a66893ad81dd997cfed539a"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Handplant.uasset",
+      "bytes": 91020,
+      "source_sha256": "c9501dd110d280eccced237ff865d356f9c83f0e35f348177bc7d23c6c293987",
+      "copied_sha256": "c9501dd110d280eccced237ff865d356f9c83f0e35f348177bc7d23c6c293987"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Jump.uasset",
+      "bytes": 91763,
+      "source_sha256": "cadb35bf2dfa186298c3171695e82b3c44c2d78d2863fb2e77627af31cc87c3b",
+      "copied_sha256": "cadb35bf2dfa186298c3171695e82b3c44c2d78d2863fb2e77627af31cc87c3b"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Land.uasset",
+      "bytes": 91732,
+      "source_sha256": "c8412edee041ee81437f14b7b62690329de52234cebc96cfa77272a19514f29c",
+      "copied_sha256": "c8412edee041ee81437f14b7b62690329de52234cebc96cfa77272a19514f29c"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Looping_Slide.uasset",
+      "bytes": 150442,
+      "source_sha256": "77da5a45cc420a6b0df90aaa82bf1abf0865912429a0d4c3411c931b2f1749e3",
+      "copied_sha256": "77da5a45cc420a6b0df90aaa82bf1abf0865912429a0d4c3411c931b2f1749e3"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_RunBackwards.uasset",
+      "bytes": 93021,
+      "source_sha256": "dbbf6e165890f8a2005a76493f9b4c0e3225905cdc3a5e935706e2e47271cf08",
+      "copied_sha256": "dbbf6e165890f8a2005a76493f9b4c0e3225905cdc3a5e935706e2e47271cf08"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_RunStrafe.uasset",
+      "bytes": 92926,
+      "source_sha256": "1fa2729466c72f6ad1a9c77576952dfbb92cc0f5801835fc9a30e94c28965dd0",
+      "copied_sha256": "1fa2729466c72f6ad1a9c77576952dfbb92cc0f5801835fc9a30e94c28965dd0"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Run_Soft.uasset",
+      "bytes": 94678,
+      "source_sha256": "785264794a43c880f725f7889ee15b0e41448f8ba474413002b7981bb63b4539",
+      "copied_sha256": "785264794a43c880f725f7889ee15b0e41448f8ba474413002b7981bb63b4539"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Scuff.uasset",
+      "bytes": 92132,
+      "source_sha256": "5df64200b0f515e0e2d2981d2e77088901ad581677ddcab609beb6f4858439e4",
+      "copied_sha256": "5df64200b0f515e0e2d2981d2e77088901ad581677ddcab609beb6f4858439e4"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_ScuffPivot.uasset",
+      "bytes": 91257,
+      "source_sha256": "36a2766517f8869367086d12a1231d50ce800d0f99a447eef6c02fc37ce92b6a",
+      "copied_sha256": "36a2766517f8869367086d12a1231d50ce800d0f99a447eef6c02fc37ce92b6a"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_ScuffWall.uasset",
+      "bytes": 92611,
+      "source_sha256": "0fd7812952f56b14d466651f61b4100e03349529c0e0b959725bbaa0da612237",
+      "copied_sha256": "0fd7812952f56b14d466651f61b4100e03349529c0e0b959725bbaa0da612237"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Tumble.uasset",
+      "bytes": 90107,
+      "source_sha256": "87af5e7e8696c013c7101f357d5a95f9cafd7ced592fd2323ef6bda2400166ee",
+      "copied_sha256": "87af5e7e8696c013c7101f357d5a95f9cafd7ced592fd2323ef6bda2400166ee"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Walk.uasset",
+      "bytes": 92986,
+      "source_sha256": "7792afca5fd33f3d305b39a4148db339b353c58872c605c51ee5c9ab996cf61a",
+      "copied_sha256": "7792afca5fd33f3d305b39a4148db339b353c58872c605c51ee5c9ab996cf61a"
+    },
+    {
+      "path": "Audio/Foley/MetaSounds/Presets/MSS_FoleySound_WalkBackwards.uasset",
+      "bytes": 92921,
+      "source_sha256": "c737508449f10f8367215fb240cbee223a8117425558b09343e7f8eb7fd0bddb",
+      "copied_sha256": "c737508449f10f8367215fb240cbee223a8117425558b09343e7f8eb7fd0bddb"
+    },
+    {
+      "path": "Audio/Foley/S_FoleyEventParams.uasset",
+      "bytes": 6207,
+      "source_sha256": "c679a140949cd3bd56d31de49f60b330d0573514e6f9fe71779bf66641a20ec9",
+      "copied_sha256": "c679a140949cd3bd56d31de49f60b330d0573514e6f9fe71779bf66641a20ec9"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_01.uasset",
+      "bytes": 58094,
+      "source_sha256": "47c67315e68640524586fe15051ae19e02551394d7f61217bf7d99cc10611627",
+      "copied_sha256": "47c67315e68640524586fe15051ae19e02551394d7f61217bf7d99cc10611627"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_02.uasset",
+      "bytes": 50926,
+      "source_sha256": "fe1292c06fd2ffb7e0df2721f17c72dbc333c1da47eddccf1d597219ddb7994b",
+      "copied_sha256": "fe1292c06fd2ffb7e0df2721f17c72dbc333c1da47eddccf1d597219ddb7994b"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_03.uasset",
+      "bytes": 46482,
+      "source_sha256": "af0e03e9572bffc78026f4aa6bd2a6fce713370910172352bb9bc84b5baf0718",
+      "copied_sha256": "af0e03e9572bffc78026f4aa6bd2a6fce713370910172352bb9bc84b5baf0718"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_04.uasset",
+      "bytes": 36787,
+      "source_sha256": "224a2011dee9a6b18a48f97832edecde26e399eb6a4e8c095a0e620641642725",
+      "copied_sha256": "224a2011dee9a6b18a48f97832edecde26e399eb6a4e8c095a0e620641642725"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_05.uasset",
+      "bytes": 53318,
+      "source_sha256": "6b973b6c4fad331d7b6e00af1592ab521d831fb34c40145b07a3f081a198228e",
+      "copied_sha256": "6b973b6c4fad331d7b6e00af1592ab521d831fb34c40145b07a3f081a198228e"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_06.uasset",
+      "bytes": 42374,
+      "source_sha256": "e3ae9a9bd956ab4c06d62f82c26ee055279a7b4c975791dfadb4a3e234b5c4de",
+      "copied_sha256": "e3ae9a9bd956ab4c06d62f82c26ee055279a7b4c975791dfadb4a3e234b5c4de"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_07.uasset",
+      "bytes": 48617,
+      "source_sha256": "fdd806bfcf40eff343620f8f33805069e9438dfe9e1cd43ed260230aa21c90b6",
+      "copied_sha256": "fdd806bfcf40eff343620f8f33805069e9438dfe9e1cd43ed260230aa21c90b6"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_08.uasset",
+      "bytes": 55470,
+      "source_sha256": "4140b0e1af648ce3db848fc8b28a9e33aae3dbb36836da62d6ae5143a09b07b5",
+      "copied_sha256": "4140b0e1af648ce3db848fc8b28a9e33aae3dbb36836da62d6ae5143a09b07b5"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_09.uasset",
+      "bytes": 51119,
+      "source_sha256": "948d6b32dfc9cd1f714f8e1d28d7cbaeb65431112e41b7075acbf513f5d62682",
+      "copied_sha256": "948d6b32dfc9cd1f714f8e1d28d7cbaeb65431112e41b7075acbf513f5d62682"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_01.uasset",
+      "bytes": 28038,
+      "source_sha256": "240435e8b890d96d72d27a6f2031006790f946229289b04da7b787d2c10842d6",
+      "copied_sha256": "240435e8b890d96d72d27a6f2031006790f946229289b04da7b787d2c10842d6"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_02.uasset",
+      "bytes": 31565,
+      "source_sha256": "ea52c0497de2708f9189be1f0fe8dfc6c876bb0c03f47c3a440efa20af03a00d",
+      "copied_sha256": "ea52c0497de2708f9189be1f0fe8dfc6c876bb0c03f47c3a440efa20af03a00d"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_03.uasset",
+      "bytes": 28986,
+      "source_sha256": "54bf64aa743a588247373b7bfa434702aaf3c9844ab41de7ce97c96417799b0b",
+      "copied_sha256": "54bf64aa743a588247373b7bfa434702aaf3c9844ab41de7ce97c96417799b0b"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_04.uasset",
+      "bytes": 19967,
+      "source_sha256": "e48b55e4b88ef660cd1ea4ccb9eaa59fb1a5ae0a2a6e8bdc4ef9369690db2d22",
+      "copied_sha256": "e48b55e4b88ef660cd1ea4ccb9eaa59fb1a5ae0a2a6e8bdc4ef9369690db2d22"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_05.uasset",
+      "bytes": 29492,
+      "source_sha256": "0703a0586ad61444fc282fe4abe686af8a2b036af93095c24870aa7466cebdc7",
+      "copied_sha256": "0703a0586ad61444fc282fe4abe686af8a2b036af93095c24870aa7466cebdc7"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_06.uasset",
+      "bytes": 22686,
+      "source_sha256": "602ba5959029ecad3201bba1cd09c1376eaae4353af5943d27f4f1ccc466dfe2",
+      "copied_sha256": "602ba5959029ecad3201bba1cd09c1376eaae4353af5943d27f4f1ccc466dfe2"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_07.uasset",
+      "bytes": 33467,
+      "source_sha256": "9b1ac8aecebac75f382ea6647315c1ffc40ac235e666e48a28d1fb1762654eef",
+      "copied_sha256": "9b1ac8aecebac75f382ea6647315c1ffc40ac235e666e48a28d1fb1762654eef"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_08.uasset",
+      "bytes": 31882,
+      "source_sha256": "98050dd966247c534f37c8a3952e1bd41023f4899c64020514189fdc2d3d5d80",
+      "copied_sha256": "98050dd966247c534f37c8a3952e1bd41023f4899c64020514189fdc2d3d5d80"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_09.uasset",
+      "bytes": 24405,
+      "source_sha256": "a44b461ecbb4d0984b111ba2c0316ff6e0e1ff53ba131799d2d231c509838b2f",
+      "copied_sha256": "a44b461ecbb4d0984b111ba2c0316ff6e0e1ff53ba131799d2d231c509838b2f"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_01.uasset",
+      "bytes": 44770,
+      "source_sha256": "1e30edba207a4f3f1df1c4874cf111c0a18e56bc10f4dfbeeea09f832901b79b",
+      "copied_sha256": "1e30edba207a4f3f1df1c4874cf111c0a18e56bc10f4dfbeeea09f832901b79b"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_02.uasset",
+      "bytes": 43916,
+      "source_sha256": "c929260fa9346073e61aa9b5a997e22e9ce947b5f8e8e51c9d1e8f6dedec7f21",
+      "copied_sha256": "c929260fa9346073e61aa9b5a997e22e9ce947b5f8e8e51c9d1e8f6dedec7f21"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_03.uasset",
+      "bytes": 38713,
+      "source_sha256": "c3704c4430cb03d97a42a7583772af037fce8b2ddb17d061eb21630a51e4f4ab",
+      "copied_sha256": "c3704c4430cb03d97a42a7583772af037fce8b2ddb17d061eb21630a51e4f4ab"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_04.uasset",
+      "bytes": 41941,
+      "source_sha256": "1ca7e63a885dfdf0f2301d8a724bf329ffb208b32feae88f76e6c54d753ffcfa",
+      "copied_sha256": "1ca7e63a885dfdf0f2301d8a724bf329ffb208b32feae88f76e6c54d753ffcfa"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_05.uasset",
+      "bytes": 32340,
+      "source_sha256": "e5ac48d659f3d49f169787e7b5546cb555141c2a01d9a0083f182ad8a113bc38",
+      "copied_sha256": "e5ac48d659f3d49f169787e7b5546cb555141c2a01d9a0083f182ad8a113bc38"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_06.uasset",
+      "bytes": 42169,
+      "source_sha256": "18f608e4511a1ac935691c3a658a02bda6ce7154cb3cf858ba9b4d930f52a04c",
+      "copied_sha256": "18f608e4511a1ac935691c3a658a02bda6ce7154cb3cf858ba9b4d930f52a04c"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_07.uasset",
+      "bytes": 37881,
+      "source_sha256": "b7bfd81469321a733e88f7abd0ece768627c7661f399300136c0da0ecafd912e",
+      "copied_sha256": "b7bfd81469321a733e88f7abd0ece768627c7661f399300136c0da0ecafd912e"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_08.uasset",
+      "bytes": 48987,
+      "source_sha256": "8c967791613cef5e4192d30867acbc3b10b0555757bd794e71a86cff1e9000c2",
+      "copied_sha256": "8c967791613cef5e4192d30867acbc3b10b0555757bd794e71a86cff1e9000c2"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_09.uasset",
+      "bytes": 37583,
+      "source_sha256": "59a61fd25bca00bdd22b452bee145b3bd0ab0be7b5e56082a733ed211ae01b1c",
+      "copied_sha256": "59a61fd25bca00bdd22b452bee145b3bd0ab0be7b5e56082a733ed211ae01b1c"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_01.uasset",
+      "bytes": 43489,
+      "source_sha256": "06b49ea19ec0c51fbfc666c6c934538d241ae14e62da7cbadc9dd1240978791b",
+      "copied_sha256": "06b49ea19ec0c51fbfc666c6c934538d241ae14e62da7cbadc9dd1240978791b"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_02.uasset",
+      "bytes": 50575,
+      "source_sha256": "f6e8bd30c4c0f9ccae90566c5fa8e42e9f5e0a2ff417af5361f42bb2301fa941",
+      "copied_sha256": "f6e8bd30c4c0f9ccae90566c5fa8e42e9f5e0a2ff417af5361f42bb2301fa941"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_03.uasset",
+      "bytes": 38080,
+      "source_sha256": "6b9aec40554006c8a048f0f36f93df891f5a1c032bff5e6e8cce7f05ee1cf626",
+      "copied_sha256": "6b9aec40554006c8a048f0f36f93df891f5a1c032bff5e6e8cce7f05ee1cf626"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_04.uasset",
+      "bytes": 40209,
+      "source_sha256": "8feeb375dcb8ccbcaf86773f8bc8391236ff538bc4400fd931cdc947400eebf3",
+      "copied_sha256": "8feeb375dcb8ccbcaf86773f8bc8391236ff538bc4400fd931cdc947400eebf3"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_05.uasset",
+      "bytes": 35439,
+      "source_sha256": "6204a46a0bd4ced7a63d5b093b6f09c2b5648d377cb49f25678bd3742ddfc182",
+      "copied_sha256": "6204a46a0bd4ced7a63d5b093b6f09c2b5648d377cb49f25678bd3742ddfc182"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_06.uasset",
+      "bytes": 50670,
+      "source_sha256": "6210f4f947b76a68ee9b768c1bdce932d38f8a91ad098ecb147e35a1ec4cbe6b",
+      "copied_sha256": "6210f4f947b76a68ee9b768c1bdce932d38f8a91ad098ecb147e35a1ec4cbe6b"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_07.uasset",
+      "bytes": 39454,
+      "source_sha256": "9ac7dc1596f31e1069b8112db486536bd0ced9b84675550ef71679c391861400",
+      "copied_sha256": "9ac7dc1596f31e1069b8112db486536bd0ced9b84675550ef71679c391861400"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_08.uasset",
+      "bytes": 35669,
+      "source_sha256": "aa3879bda80bc99e5f31c899726ce41f9bcd8002c5998235cc82e612e9874154",
+      "copied_sha256": "aa3879bda80bc99e5f31c899726ce41f9bcd8002c5998235cc82e612e9874154"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_09.uasset",
+      "bytes": 40768,
+      "source_sha256": "46e6504fb3ff6679ce513905924611642d91e05479c307e30f851c26d3d26ff9",
+      "copied_sha256": "46e6504fb3ff6679ce513905924611642d91e05479c307e30f851c26d3d26ff9"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_01.uasset",
+      "bytes": 22428,
+      "source_sha256": "830ad8144aa1032dad9a93a55f01b245208803879f8208806161f83cb9af0aee",
+      "copied_sha256": "830ad8144aa1032dad9a93a55f01b245208803879f8208806161f83cb9af0aee"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_02.uasset",
+      "bytes": 22010,
+      "source_sha256": "b000ca58e4155c08a108af66bddd96f10d58fe90092809701d55b136f3a1a42a",
+      "copied_sha256": "b000ca58e4155c08a108af66bddd96f10d58fe90092809701d55b136f3a1a42a"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_03.uasset",
+      "bytes": 21915,
+      "source_sha256": "f7991b5af2a47d4504b9ee839edcaff49038598074db35617edc3868eb8d4156",
+      "copied_sha256": "f7991b5af2a47d4504b9ee839edcaff49038598074db35617edc3868eb8d4156"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_04.uasset",
+      "bytes": 21000,
+      "source_sha256": "609438eff82045f175b27561ca244e06a10e275ac419a620d7d0ee55e0fa2b55",
+      "copied_sha256": "609438eff82045f175b27561ca244e06a10e275ac419a620d7d0ee55e0fa2b55"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_05.uasset",
+      "bytes": 21187,
+      "source_sha256": "631274642d114e0662b5ec36ef8e89118439d561a4a8681b2f276ff6a0c05dc6",
+      "copied_sha256": "631274642d114e0662b5ec36ef8e89118439d561a4a8681b2f276ff6a0c05dc6"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_06.uasset",
+      "bytes": 20748,
+      "source_sha256": "aae0ed85e0ef286de75dcf0eebe5958853b87240f01d916c894edf4fb23a4fa7",
+      "copied_sha256": "aae0ed85e0ef286de75dcf0eebe5958853b87240f01d916c894edf4fb23a4fa7"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_07.uasset",
+      "bytes": 21776,
+      "source_sha256": "d75762547ff22524988e512701e8b6f371b8de6e3bec56690cb9d17baeef91a7",
+      "copied_sha256": "d75762547ff22524988e512701e8b6f371b8de6e3bec56690cb9d17baeef91a7"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_08.uasset",
+      "bytes": 18743,
+      "source_sha256": "258f8d6c4550628df3c13ed7c659c8817fecfdc8c5d3dbe059b52e33b96ec25e",
+      "copied_sha256": "258f8d6c4550628df3c13ed7c659c8817fecfdc8c5d3dbe059b52e33b96ec25e"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_09.uasset",
+      "bytes": 19682,
+      "source_sha256": "bcc63f810ea677bd338bdf62a1a16fe0c33831be44b4d6315aa3ef3a3c51b37b",
+      "copied_sha256": "bcc63f810ea677bd338bdf62a1a16fe0c33831be44b4d6315aa3ef3a3c51b37b"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_01.uasset",
+      "bytes": 37221,
+      "source_sha256": "44301991f407c027aa06cf582f3c7083880ceb31d44118771bf91cc7c2c33a44",
+      "copied_sha256": "44301991f407c027aa06cf582f3c7083880ceb31d44118771bf91cc7c2c33a44"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_02.uasset",
+      "bytes": 33826,
+      "source_sha256": "4a57dab29b0d8c145d5d9c496a10fab4ec0bb0ff83b0ed54f1130540ba6fac87",
+      "copied_sha256": "4a57dab29b0d8c145d5d9c496a10fab4ec0bb0ff83b0ed54f1130540ba6fac87"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_03.uasset",
+      "bytes": 31072,
+      "source_sha256": "757e73d4c8b9e3d62d0a7f04968ed54b3899a278517e95937bd5a22a11649a24",
+      "copied_sha256": "757e73d4c8b9e3d62d0a7f04968ed54b3899a278517e95937bd5a22a11649a24"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_04.uasset",
+      "bytes": 28990,
+      "source_sha256": "af3a77ee9e8d98ddd717530daa91bb13c5f31c98912126cbf357c60d1d8306b7",
+      "copied_sha256": "af3a77ee9e8d98ddd717530daa91bb13c5f31c98912126cbf357c60d1d8306b7"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_05.uasset",
+      "bytes": 33639,
+      "source_sha256": "40d8b58b8f2e922e8b7ee76efb97b9ebde337d93958291d77e7fdc9c9c995b37",
+      "copied_sha256": "40d8b58b8f2e922e8b7ee76efb97b9ebde337d93958291d77e7fdc9c9c995b37"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_06.uasset",
+      "bytes": 27717,
+      "source_sha256": "2c3e164f45f6af3dc32c7023155005ecf04ec8de830dfa1620b179e8bd28abf5",
+      "copied_sha256": "2c3e164f45f6af3dc32c7023155005ecf04ec8de830dfa1620b179e8bd28abf5"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_07.uasset",
+      "bytes": 29273,
+      "source_sha256": "3100ccfb1a2820802b3ba43bf6f1801ca79896fa2c177db0f2da1746f6114be3",
+      "copied_sha256": "3100ccfb1a2820802b3ba43bf6f1801ca79896fa2c177db0f2da1746f6114be3"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_08.uasset",
+      "bytes": 29156,
+      "source_sha256": "e13d2016750a63eafe3ff7850d3ece96aa0acc967fce185a16631d856202d43c",
+      "copied_sha256": "e13d2016750a63eafe3ff7850d3ece96aa0acc967fce185a16631d856202d43c"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_09.uasset",
+      "bytes": 35851,
+      "source_sha256": "5a7f8fda01364623da3f6a8f9045e2659157d00ca0549ab5c07222ec5d104332",
+      "copied_sha256": "5a7f8fda01364623da3f6a8f9045e2659157d00ca0549ab5c07222ec5d104332"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_01.uasset",
+      "bytes": 29186,
+      "source_sha256": "ced549a5341768f7b795b149c685e252958acd73a0fb0370d8e6f23c42397088",
+      "copied_sha256": "ced549a5341768f7b795b149c685e252958acd73a0fb0370d8e6f23c42397088"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_02.uasset",
+      "bytes": 31198,
+      "source_sha256": "5993c77858a5aa489a2a423ab94c8c814fc7c2e96f825496fccb09aeb9566ddf",
+      "copied_sha256": "5993c77858a5aa489a2a423ab94c8c814fc7c2e96f825496fccb09aeb9566ddf"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_03.uasset",
+      "bytes": 37334,
+      "source_sha256": "0e155b4fad7fe0fe35cdd585e977a1ddbb1ae03c17a67b100084aad832366dd8",
+      "copied_sha256": "0e155b4fad7fe0fe35cdd585e977a1ddbb1ae03c17a67b100084aad832366dd8"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_04.uasset",
+      "bytes": 38379,
+      "source_sha256": "954add9ae2ff4d3974e2b4d005d0a7251f00d6fb316be4298925a8e5ec38c7c5",
+      "copied_sha256": "954add9ae2ff4d3974e2b4d005d0a7251f00d6fb316be4298925a8e5ec38c7c5"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_05.uasset",
+      "bytes": 44866,
+      "source_sha256": "6d27cc57c24e1582e92b858ed3c1f84e927e8192759a4ef27d337e4f9861e4c5",
+      "copied_sha256": "6d27cc57c24e1582e92b858ed3c1f84e927e8192759a4ef27d337e4f9861e4c5"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_06.uasset",
+      "bytes": 33800,
+      "source_sha256": "d2d63ca1b15504471857c24627b7ba6a383ee6971f5b6df7d0733ab938a4f3c3",
+      "copied_sha256": "d2d63ca1b15504471857c24627b7ba6a383ee6971f5b6df7d0733ab938a4f3c3"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_07.uasset",
+      "bytes": 29543,
+      "source_sha256": "f129212b56284782f44f3fb2c196cb350929d24ac62054e81518ea48150e35de",
+      "copied_sha256": "f129212b56284782f44f3fb2c196cb350929d24ac62054e81518ea48150e35de"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_08.uasset",
+      "bytes": 29772,
+      "source_sha256": "873a5b2e9260ffe461832947ada3ecd731d9d760449d48391c1049c3ee44a95f",
+      "copied_sha256": "873a5b2e9260ffe461832947ada3ecd731d9d760449d48391c1049c3ee44a95f"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_09.uasset",
+      "bytes": 38786,
+      "source_sha256": "5bf5fcde2916bd3959b3cf7b63e5b290e7635494997e0b19a6bff12a3dccdbae",
+      "copied_sha256": "5bf5fcde2916bd3959b3cf7b63e5b290e7635494997e0b19a6bff12a3dccdbae"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_01.uasset",
+      "bytes": 39144,
+      "source_sha256": "770388e1465982f86ef26dc4a1e67c7415acbd372a584d20adcb71727d6be9dd",
+      "copied_sha256": "770388e1465982f86ef26dc4a1e67c7415acbd372a584d20adcb71727d6be9dd"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_02.uasset",
+      "bytes": 46697,
+      "source_sha256": "5658dc3c4415bd2dd2ca76c0383e04a583994d5cc40642c48f20ca92e341d6ea",
+      "copied_sha256": "5658dc3c4415bd2dd2ca76c0383e04a583994d5cc40642c48f20ca92e341d6ea"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_03.uasset",
+      "bytes": 38532,
+      "source_sha256": "53c9dca89cd2dee94c2081c76082095daf551673369b62a6cb5410eea4113803",
+      "copied_sha256": "53c9dca89cd2dee94c2081c76082095daf551673369b62a6cb5410eea4113803"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_04.uasset",
+      "bytes": 42255,
+      "source_sha256": "51d15b1af2c843e9958fcd15c2e09821410fcb26791d969b6266894205ae57fa",
+      "copied_sha256": "51d15b1af2c843e9958fcd15c2e09821410fcb26791d969b6266894205ae57fa"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_05.uasset",
+      "bytes": 50853,
+      "source_sha256": "059228ed0436ebaab83476d01c548e885dbcecc9027825a2d7d69ef753910d17",
+      "copied_sha256": "059228ed0436ebaab83476d01c548e885dbcecc9027825a2d7d69ef753910d17"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_06.uasset",
+      "bytes": 41203,
+      "source_sha256": "cc301626e278a876f5e77cbced34612650d0678906ad7885f35cb00ebf5a9c2f",
+      "copied_sha256": "cc301626e278a876f5e77cbced34612650d0678906ad7885f35cb00ebf5a9c2f"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_07.uasset",
+      "bytes": 55175,
+      "source_sha256": "b0a987d1ba23c8681746f3280a5e4488449ea233a4fd57fb70a6e044940956b3",
+      "copied_sha256": "b0a987d1ba23c8681746f3280a5e4488449ea233a4fd57fb70a6e044940956b3"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_08.uasset",
+      "bytes": 56128,
+      "source_sha256": "aed8e4f7238ce9caaec72c0c7881eacc04fe627df09f88c4b8764a0efd8843f6",
+      "copied_sha256": "aed8e4f7238ce9caaec72c0c7881eacc04fe627df09f88c4b8764a0efd8843f6"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_09.uasset",
+      "bytes": 54768,
+      "source_sha256": "ea600e4d36fc9b0e1c6c545bcf372c28f57f06676a4a5fbb37ba62689a778f03",
+      "copied_sha256": "ea600e4d36fc9b0e1c6c545bcf372c28f57f06676a4a5fbb37ba62689a778f03"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideLong_01.uasset",
+      "bytes": 456347,
+      "source_sha256": "fa8b68f1e42706c0acc8070339a1bd0e9eac01e75fc342f80c69f567ca5178cc",
+      "copied_sha256": "fa8b68f1e42706c0acc8070339a1bd0e9eac01e75fc342f80c69f567ca5178cc"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideLong_02.uasset",
+      "bytes": 683708,
+      "source_sha256": "3bc51f89f0a78de74fde1097c21c67a149105dfe7f9eca26a1db77796985ef7c",
+      "copied_sha256": "3bc51f89f0a78de74fde1097c21c67a149105dfe7f9eca26a1db77796985ef7c"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideLong_03.uasset",
+      "bytes": 560400,
+      "source_sha256": "ef6aae74a9645ab738f0c95a4501eb0e24b4b19c79298f3a358890c1ae1eb62a",
+      "copied_sha256": "ef6aae74a9645ab738f0c95a4501eb0e24b4b19c79298f3a358890c1ae1eb62a"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideShort_01.uasset",
+      "bytes": 30746,
+      "source_sha256": "1afeaf3ffd1c3a421be64343d0d64b67ceadac3bbb923f24cd0b2939a0e40f56",
+      "copied_sha256": "1afeaf3ffd1c3a421be64343d0d64b67ceadac3bbb923f24cd0b2939a0e40f56"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideShort_02.uasset",
+      "bytes": 36763,
+      "source_sha256": "6743c0c083ceeb60b502e00fb89f81521b383deb128f70300508a6e4a8d424a9",
+      "copied_sha256": "6743c0c083ceeb60b502e00fb89f81521b383deb128f70300508a6e4a8d424a9"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideShort_03.uasset",
+      "bytes": 34553,
+      "source_sha256": "f66aeb64e00e7196aa48e1b296a090d69c160cf1ab65d740c45f6b3fc9d7d810",
+      "copied_sha256": "f66aeb64e00e7196aa48e1b296a090d69c160cf1ab65d740c45f6b3fc9d7d810"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideShort_04.uasset",
+      "bytes": 33488,
+      "source_sha256": "9123d938caab3a315f3e5dd55707d411a0e205f78eefe405c04cb1116d8e4d9d",
+      "copied_sha256": "9123d938caab3a315f3e5dd55707d411a0e205f78eefe405c04cb1116d8e4d9d"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_01.uasset",
+      "bytes": 18000,
+      "source_sha256": "4af960b657637fd0acf7b0fcab8f6d13742ef5b66ea11590c2e698d245171c82",
+      "copied_sha256": "4af960b657637fd0acf7b0fcab8f6d13742ef5b66ea11590c2e698d245171c82"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_02.uasset",
+      "bytes": 20286,
+      "source_sha256": "4445353d18dad0cab6ca5e77ee9a50592a5b6067c74b03c67f13bda58de55b30",
+      "copied_sha256": "4445353d18dad0cab6ca5e77ee9a50592a5b6067c74b03c67f13bda58de55b30"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_03.uasset",
+      "bytes": 17408,
+      "source_sha256": "2249d12c82f70451d2c18b8d4aa8ce04e216bf050e505907b1ec7e2519009c09",
+      "copied_sha256": "2249d12c82f70451d2c18b8d4aa8ce04e216bf050e505907b1ec7e2519009c09"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_04.uasset",
+      "bytes": 21752,
+      "source_sha256": "759f62a53fe66b17ebf0f60f59b4ada673166071277f342d20cd16058de2a067",
+      "copied_sha256": "759f62a53fe66b17ebf0f60f59b4ada673166071277f342d20cd16058de2a067"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_05.uasset",
+      "bytes": 20019,
+      "source_sha256": "65cd66acee0163b52742ec09b202c24b8e78f8d72e643df4490eadc11258b78d",
+      "copied_sha256": "65cd66acee0163b52742ec09b202c24b8e78f8d72e643df4490eadc11258b78d"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_06.uasset",
+      "bytes": 22652,
+      "source_sha256": "730bd9fe4c054ce0be4a4f8460bdc9ce1ff9f077f56e64f9f75c23c251763516",
+      "copied_sha256": "730bd9fe4c054ce0be4a4f8460bdc9ce1ff9f077f56e64f9f75c23c251763516"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_07.uasset",
+      "bytes": 24157,
+      "source_sha256": "f3003373de490f0037b2296af744f49e75524d2358c50c30fe9c2fe4502148b3",
+      "copied_sha256": "f3003373de490f0037b2296af744f49e75524d2358c50c30fe9c2fe4502148b3"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_08.uasset",
+      "bytes": 18754,
+      "source_sha256": "a70f7b0839c887c0d0b4d49ea3470f359be446d8d8c74114e396af23815f82c6",
+      "copied_sha256": "a70f7b0839c887c0d0b4d49ea3470f359be446d8d8c74114e396af23815f82c6"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_09.uasset",
+      "bytes": 33846,
+      "source_sha256": "8870f16300b1396b4be387702ba68539260b127ea1a9cac5310bec13f9ed28ed",
+      "copied_sha256": "8870f16300b1396b4be387702ba68539260b127ea1a9cac5310bec13f9ed28ed"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_01.uasset",
+      "bytes": 25928,
+      "source_sha256": "cff66accc5431bbd92bad2f9ec136263739bea86fb21c9d0cf6f9b4f679d6ad8",
+      "copied_sha256": "cff66accc5431bbd92bad2f9ec136263739bea86fb21c9d0cf6f9b4f679d6ad8"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_02.uasset",
+      "bytes": 32260,
+      "source_sha256": "1349711de680ab02f52e7bc810ae043a93d7530d5a3bc9b3d763ccec13fad5c3",
+      "copied_sha256": "1349711de680ab02f52e7bc810ae043a93d7530d5a3bc9b3d763ccec13fad5c3"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_03.uasset",
+      "bytes": 21559,
+      "source_sha256": "2d5566d49888bc3dd5df133b614ba3bc3fdcb3ccb1e521c52f72a9f994b99462",
+      "copied_sha256": "2d5566d49888bc3dd5df133b614ba3bc3fdcb3ccb1e521c52f72a9f994b99462"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_04.uasset",
+      "bytes": 22635,
+      "source_sha256": "e8fb6df185dee76add343b71216d0be34378f8db8f653cdf2701536e6d28a95d",
+      "copied_sha256": "e8fb6df185dee76add343b71216d0be34378f8db8f653cdf2701536e6d28a95d"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_05.uasset",
+      "bytes": 35695,
+      "source_sha256": "fb43002bb8aa982a6e659ae4153fec70672f757370adaba1cb1767e14abebb7b",
+      "copied_sha256": "fb43002bb8aa982a6e659ae4153fec70672f757370adaba1cb1767e14abebb7b"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_06.uasset",
+      "bytes": 18409,
+      "source_sha256": "6d276413921152ad49a28b93fb166430a91caa9ce95e54cc007beedcc728b036",
+      "copied_sha256": "6d276413921152ad49a28b93fb166430a91caa9ce95e54cc007beedcc728b036"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_07.uasset",
+      "bytes": 16818,
+      "source_sha256": "f2cdf11007ab85de34eb0824e4cfaafb708d9c262431e43614828bdb1deddd1c",
+      "copied_sha256": "f2cdf11007ab85de34eb0824e4cfaafb708d9c262431e43614828bdb1deddd1c"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_08.uasset",
+      "bytes": 17023,
+      "source_sha256": "66708371ac3c1765b2ffd69f084c7be51689b35d1c2f8c6cc78b5215f3cb42df",
+      "copied_sha256": "66708371ac3c1765b2ffd69f084c7be51689b35d1c2f8c6cc78b5215f3cb42df"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_09.uasset",
+      "bytes": 19731,
+      "source_sha256": "ce608e401691f59cf501f53597a95247f26c2b674f6f0fe9fe71b361674387c6",
+      "copied_sha256": "ce608e401691f59cf501f53597a95247f26c2b674f6f0fe9fe71b361674387c6"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_01.uasset",
+      "bytes": 36356,
+      "source_sha256": "3b93c4e36e0f6375e59e7676b6dc59c2f983b4d889397860ecd2731700430c74",
+      "copied_sha256": "3b93c4e36e0f6375e59e7676b6dc59c2f983b4d889397860ecd2731700430c74"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_02.uasset",
+      "bytes": 36492,
+      "source_sha256": "d0068f9e6f63d7e4f9dcae10b49d113e24e358d89a6a0daaadde9cce9d1505c3",
+      "copied_sha256": "d0068f9e6f63d7e4f9dcae10b49d113e24e358d89a6a0daaadde9cce9d1505c3"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_03.uasset",
+      "bytes": 34586,
+      "source_sha256": "350e8bb1f051a627810e73cab00402d044036aedc9927e78ef4c92522ad5e0cb",
+      "copied_sha256": "350e8bb1f051a627810e73cab00402d044036aedc9927e78ef4c92522ad5e0cb"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_04.uasset",
+      "bytes": 32398,
+      "source_sha256": "8d3b686b474633a80e527ce83227b73dad914e5f5e00ad5858ba571c419818c1",
+      "copied_sha256": "8d3b686b474633a80e527ce83227b73dad914e5f5e00ad5858ba571c419818c1"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_05.uasset",
+      "bytes": 30720,
+      "source_sha256": "51deb924dab8a0b13f18f454837b534e6b7d25d1829c407bada059edf315fc9a",
+      "copied_sha256": "51deb924dab8a0b13f18f454837b534e6b7d25d1829c407bada059edf315fc9a"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_06.uasset",
+      "bytes": 36346,
+      "source_sha256": "fdcc59c9291dd73c03df7ecd5e45f663ae0dfe6057a226558cb18fa45fb0fb6e",
+      "copied_sha256": "fdcc59c9291dd73c03df7ecd5e45f663ae0dfe6057a226558cb18fa45fb0fb6e"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_07.uasset",
+      "bytes": 38133,
+      "source_sha256": "43f6402b0c640898dba7ca692b895c12a7bea439fa8720fb5f1f1cd78fc21200",
+      "copied_sha256": "43f6402b0c640898dba7ca692b895c12a7bea439fa8720fb5f1f1cd78fc21200"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_08.uasset",
+      "bytes": 35054,
+      "source_sha256": "459fe326221fcd195393b6360168bb0218368ed109f85dc3a404a4f8a631f0f3",
+      "copied_sha256": "459fe326221fcd195393b6360168bb0218368ed109f85dc3a404a4f8a631f0f3"
+    },
+    {
+      "path": "Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_09.uasset",
+      "bytes": 39111,
+      "source_sha256": "7a6109bd819e714e748b26157fc7044542316699987974e1de2bfb8101e5aba0",
+      "copied_sha256": "7a6109bd819e714e748b26157fc7044542316699987974e1de2bfb8101e5aba0"
+    },
+    {
+      "path": "Audio/Mix/Effects/SMFX_Reverb_Default.uasset",
+      "bytes": 2043,
+      "source_sha256": "a982cab546c2f18c492a662f9e60c4d7421abf6e540e246ada142bd5f5b8ac2b",
+      "copied_sha256": "a982cab546c2f18c492a662f9e60c4d7421abf6e540e246ada142bd5f5b8ac2b"
+    },
+    {
+      "path": "Audio/Mix/SM_Ambient.uasset",
+      "bytes": 1473,
+      "source_sha256": "9b33467cfa1c9bc53ccf25d89e346e8ef470984b9d5021a96852388b14faf97f",
+      "copied_sha256": "9b33467cfa1c9bc53ccf25d89e346e8ef470984b9d5021a96852388b14faf97f"
+    },
+    {
+      "path": "Audio/Mix/SM_Final.uasset",
+      "bytes": 1776,
+      "source_sha256": "010dd24618e1e1d467cecfe742f710c2660727492e249663fe2c00e94a3dd1f0",
+      "copied_sha256": "010dd24618e1e1d467cecfe742f710c2660727492e249663fe2c00e94a3dd1f0"
+    },
+    {
+      "path": "Audio/Mix/SM_Foley.uasset",
+      "bytes": 1682,
+      "source_sha256": "f0f7a8ab7927547c36fc367cc9ba4aea4d5beb6e1d92a8835afbd7c66e8feb46",
+      "copied_sha256": "f0f7a8ab7927547c36fc367cc9ba4aea4d5beb6e1d92a8835afbd7c66e8feb46"
+    },
+    {
+      "path": "Audio/Mix/SM_Reverb.uasset",
+      "bytes": 1781,
+      "source_sha256": "cfcc17f75f12d97ba5da27cf35411706d73afeec6494c521bb0adad461e588f7",
+      "copied_sha256": "cfcc17f75f12d97ba5da27cf35411706d73afeec6494c521bb0adad461e588f7"
+    },
+    {
+      "path": "Blueprints/AnimNotifies/BP_AnimNotify_FoleyEvent.uasset",
+      "bytes": 102948,
+      "source_sha256": "a4c4cfac7362d8c7cec959eda9d855b76700115ef4da09100f6933b34c05cd48",
+      "copied_sha256": "a4c4cfac7362d8c7cec959eda9d855b76700115ef4da09100f6933b34c05cd48"
+    },
+    {
+      "path": "Blueprints/AnimNotifies/BP_AnimNotify_FoleyEvent_Walk_L.uasset",
+      "bytes": 5294,
+      "source_sha256": "eed30464eab7bf30a54fa7157b148929542218d89c49ec67fc0aee696074adea",
+      "copied_sha256": "eed30464eab7bf30a54fa7157b148929542218d89c49ec67fc0aee696074adea"
+    },
+    {
+      "path": "Blueprints/AnimNotifies/BP_AnimNotify_FoleyEvent_Walk_R.uasset",
+      "bytes": 5294,
+      "source_sha256": "7130d8a52817b8a790b9c6a07c696d72ac5943059685d3b3acc9811d27b86fd7",
+      "copied_sha256": "7130d8a52817b8a790b9c6a07c696d72ac5943059685d3b3acc9811d27b86fd7"
+    },
+    {
+      "path": "Blueprints/AnimNotifies/E_FoleyEventSide.uasset",
+      "bytes": 2743,
+      "source_sha256": "26617b49c514f22241568835815aa2272ade0fcc03ef200189967f550853506e",
+      "copied_sha256": "26617b49c514f22241568835815aa2272ade0fcc03ef200189967f550853506e"
+    },
+    {
+      "path": "Characters/UEFN_Mannequin/Animations/Avoidance/M_Neutral_avoid_idle_move_1_0m_RR_Rfoot.uasset",
+      "bytes": 1748047,
+      "source_sha256": "8a24727cd91f35168c85614b4d6a364d0d6058a0bd59419d4e77eb12fd3fdba6",
+      "copied_sha256": "8a24727cd91f35168c85614b4d6a364d0d6058a0bd59419d4e77eb12fd3fdba6"
+    },
+    {
+      "path": "Characters/UEFN_Mannequin/Animations/Idle/M_Neutral_Stand_Idle_Loop.uasset",
+      "bytes": 2574739,
+      "source_sha256": "bb033ea62038266fa2169c4af7a20f6d925a1efa3c5d9645656ea3bc014d9fa5",
+      "copied_sha256": "bb033ea62038266fa2169c4af7a20f6d925a1efa3c5d9645656ea3bc014d9fa5"
+    },
+    {
+      "path": "Characters/UEFN_Mannequin/Animations/Walk/M_Neutral_Walk_Loop_F.uasset",
+      "bytes": 1134008,
+      "source_sha256": "e218176c1b40b13a4b1da91d4f6c643520c7927dbcd95f98d6298aa0c4bef360",
+      "copied_sha256": "e218176c1b40b13a4b1da91d4f6c643520c7927dbcd95f98d6298aa0c4bef360"
+    },
+    {
+      "path": "Characters/UEFN_Mannequin/Materials/M_UEFN_Mannequin.uasset",
+      "bytes": 15918,
+      "source_sha256": "a8d6bc020bd3f5eb97055391a4dae3f3f8b9b98c49234692e8e57bb260c40d59",
+      "copied_sha256": "a8d6bc020bd3f5eb97055391a4dae3f3f8b9b98c49234692e8e57bb260c40d59"
+    },
+    {
+      "path": "Characters/UEFN_Mannequin/Meshes/Character_LodSettings.uasset",
+      "bytes": 8424,
+      "source_sha256": "1a50b94ebc1fc71568694ea70204e8819d96324a767a564c17b506afe4be69ed",
+      "copied_sha256": "1a50b94ebc1fc71568694ea70204e8819d96324a767a564c17b506afe4be69ed"
+    },
+    {
+      "path": "Characters/UEFN_Mannequin/Rigs/ABP_UEFN_Mannequin_PostProcess.uasset",
+      "bytes": 120865,
+      "source_sha256": "24bcd6fdbee8322d8b859e38475adb014d3fc24b9e002f984345446e1d55d533",
+      "copied_sha256": "24bcd6fdbee8322d8b859e38475adb014d3fc24b9e002f984345446e1d55d533"
+    },
+    {
+      "path": "Characters/UEFN_Mannequin/Rigs/PA_UEFN_Mannequin.uasset",
+      "bytes": 133874,
+      "source_sha256": "49994f0bb1257a1e9bdb5dd2aa229455544426a1b6a17d468cc6170df5e9640d",
+      "copied_sha256": "49994f0bb1257a1e9bdb5dd2aa229455544426a1b6a17d468cc6170df5e9640d"
+    },
+    {
+      "path": "Characters/UEFN_Mannequin/Textures/T_UEFN_Mannequin_D.uasset",
+      "bytes": 2165808,
+      "source_sha256": "9fc2f66ba1cce01a7b0f278697e81d1d7ee588126c9f0889c25c71be7878822e",
+      "copied_sha256": "9fc2f66ba1cce01a7b0f278697e81d1d7ee588126c9f0889c25c71be7878822e"
+    },
+    {
+      "path": "Characters/UEFN_Mannequin/Textures/T_UEFN_Mannequin_N.uasset",
+      "bytes": 2465524,
+      "source_sha256": "3e61904f2106d7f7529f0a70d3a5560793c22b7d5970e70360267548f8fe899c",
+      "copied_sha256": "3e61904f2106d7f7529f0a70d3a5560793c22b7d5970e70360267548f8fe899c"
+    },
+    {
+      "path": "Misc/SandboxAnimCurveCompressionSettings.uasset",
+      "bytes": 1763,
+      "source_sha256": "a78a6957190eaad8e1868a20c03e925e3b3b8158f641ec486931f82d0aba69c6",
+      "copied_sha256": "a78a6957190eaad8e1868a20c03e925e3b3b8158f641ec486931f82d0aba69c6"
+    },
+    {
+      "path": "_mygame/SKM_UEFN_Mannequin.uasset",
+      "bytes": 2410624,
+      "source_sha256": "e71b92d88800a91410fa15054cf624dec00be8fd62b36ed3392353a7b1398d05",
+      "copied_sha256": "e71b92d88800a91410fa15054cf624dec00be8fd62b36ed3392353a7b1398d05"
+    },
+    {
+      "path": "_mygame/SK_UEFN_Mannequin.uasset",
+      "bytes": 103562,
+      "source_sha256": "4664c9c010b1c56d3284a8f8bc0a5c78212363948a11e6ec04ea91cd39aa519a",
+      "copied_sha256": "4664c9c010b1c56d3284a8f8bc0a5c78212363948a11e6ec04ea91cd39aa519a"
+    }
+  ],
+  "total_bytes": 20054628,
+  "skipped_soft_editor_databases": [
+    "Characters/UEFN_Mannequin/Animations/ExperimentalStateMachineData/PSD_SM_CMC_Idles",
+    "Characters/UEFN_Mannequin/Animations/ExperimentalStateMachineData/PSD_SM_CMC_Loops"
+  ],
+  "reference_sha256": "c335e64bfd3d068b877c3e524f2bbcbc5df71e14026cb9ac6a6a8df73fb44db3"
+}

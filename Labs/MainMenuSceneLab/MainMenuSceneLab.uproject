@@ -1,0 +1,21 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.7",
+  "Description": "Isolated live crimson-water main-menu scene",
+  "DisableEnginePluginsByDefault": true,
+  "Modules": [{"Name":"MainMenuSceneLab","Type":"Runtime","LoadingPhase":"PostEngineInit"}],
+  "Plugins": [
+    {"Name":"PythonScriptPlugin","Enabled":true},
+    {"Name":"EditorScriptingUtilities","Enabled":true},
+    {"Name":"ProceduralMeshComponent","Enabled":true},
+    {"Name":"ControlRig","Enabled":true},
+    {"Name":"AnimationWarping","Enabled":true},
+    {"Name":"PoseSearch","Enabled":true},
+    {"Name":"ACLPlugin","Enabled":true},
+    {"Name":"AnimationData","Enabled":true},
+    {"Name":"WaterAdvanced","Enabled":true},
+    {"Name":"Niagara","Enabled":true},
+    {"Name":"NiagaraFluids","Enabled":true},
+    {"Name":"ChaosNiagara","Enabled":true}
+  ]
+}

@@ -1,0 +1,1 @@
+{"passed":true,"body_pick":true,"xyz_drags":true,"escape_restore":true,"feet_above_water":true,"save_reload":true,"reset_position":true,"empty_click":true,"method":"Native shared pick/drag callbacks with actual camera projection and mannequin collision queries; no desktop input"}

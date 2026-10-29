@@ -1,0 +1,8 @@
+struct SceneRain {
+ uint bits(int2 p,uint salt){uint h=uint(p.x)*374761393u+uint(p.y)*668265263u+salt*1442695041u;h=(h^(h>>13))*1274126177u;return h^(h>>16);}
+ float hash(int2 p,uint salt){return float(bits(p,salt)&0x00ffffffu)/16777216.0;}
+ // Layer zero exactly retains the original rain. Extra layers have independent
+ // centers, phases and activation keys, paired with the native streak seeds.
+ float2 center(int2 p,uint layer){return (float2(p)+.1+.8*float2(hash(p,1+97*layer),hash(p,2+97*layer)))*22;}
+ float age(int2 p,float t,uint layer){return frac(t/1.6+hash(p,3+97*layer))*1.6;}
+};
