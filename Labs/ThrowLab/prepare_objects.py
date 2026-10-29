@@ -1,11 +1,15 @@
 """Reuse cached sword and original CC0 bomb geometry without touching Unreal."""
-import base64, hashlib, json
+import argparse, base64, hashlib, json
 from pathlib import Path
 import numpy as np
 from scipy.spatial import ConvexHull
 from scipy.spatial.transform import Rotation
+from inspect_bomb_scale import inspect as inspect_bomb_scale
 ROOT=Path(__file__).resolve().parent
 PROJECT=ROOT.parents[1]
+parser=argparse.ArgumentParser()
+parser.add_argument('--bomb-only',action='store_true')
+args=parser.parse_args()
 
 def mesh(name,points,triangles,colors,collision,mass,source):
     hull=ConvexHull(collision)
@@ -40,15 +44,22 @@ sword['longAxis']=[0,0,1]
 bomb_path=PROJECT/'Tools/BombFuse/Geometry.json'
 b=json.loads(bomb_path.read_text(encoding='utf-8'));whole=b['meshes'][0]
 raw=np.array(whole['vertices']);t=np.array(whole['triangles']).reshape(-1,3)
-# Original mesh centre from PrepareGeometry.py, cm to metres; Y-up display.
+# Apply the saved UE5 component scale around the shell centre; keep the hand
+# attachment position fixed. Render and collision use the same transformed data.
+bomb_component=inspect_bomb_scale()
+component_scale=np.array(bomb_component['relativeScale3D'])
 center=np.array([-1.0239047,0,-1.2153458])
-v=(raw[:,:3]-center)[:,[0,2,1]]*.01+np.array([.073,.078,0])
+v=((raw[:,:3]-center)*component_scale)[:,[0,2,1]]*.01+np.array([.073,.078,0])
 t=t[:,[0,2,1]] # Y/Z conversion reverses handedness.
 colors=np.array([[.67,.43,.19] if (raw[tri,12]>0).any() else [.15,.18,.23] for tri in t])
 bomb=mesh('Bomb',v,t,colors,v[raw[:,12]==0],.6,
-    dict(file=str(bomb_path),asset=b['source'],sha256=hashlib.sha256(bomb_path.read_bytes()).hexdigest(),hand='hand_l',collision='Convex shell; decorative static fuse'))
+    dict(file=str(bomb_path),asset=b['source'],sha256=hashlib.sha256(bomb_path.read_bytes()).hexdigest(),hand='hand_l',collision='Convex shell; decorative static fuse',component=bomb_component))
 cache=ROOT/'data/objects.json'
 objects=json.loads(cache.read_text(encoding='utf-8')) if cache.exists() else {}
-objects.update(sword=sword,bomb=bomb)
-cache.write_text(json.dumps(objects,separators=(',',':')),encoding='utf-8')
-print(json.dumps({key:dict(vertices=len(x['vertices']),triangles=len(x['triangles'])//3,hullPoints=len(x['collision'])) for key,x in dict(sword=sword,bomb=bomb).items()},indent=2))
+updated=dict(bomb=bomb) if args.bomb_only else dict(sword=sword,bomb=bomb)
+objects.update(updated)
+assert hashlib.sha256(Path(bomb_component['file']).read_bytes()).hexdigest()==bomb_component['sha256'],'Bomb Blueprint changed during import'
+temporary=cache.with_suffix('.tmp')
+temporary.write_text(json.dumps(objects,separators=(',',':'),allow_nan=False),encoding='utf-8')
+temporary.replace(cache)
+print(json.dumps({key:dict(vertices=len(x['vertices']),triangles=len(x['triangles'])//3,hullPoints=len(x['collision']),componentScale=x['source'].get('component',{}).get('relativeScale3D')) for key,x in updated.items()},indent=2))

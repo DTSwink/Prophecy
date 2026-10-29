@@ -15,7 +15,8 @@ function wholeFrameKeys(input,end=Infinity){
  return [...keys.values()].sort((a,b)=>a.frame-b.frame).map(({frame,rotation})=>({frame,rotation}));
 }
 function config(value={},end=Infinity,release=end){
- return {armed:clamp(Math.round(finite(value.armed)),0,Math.floor(release)),keys:wholeFrameKeys(value.keys,end),forearmKeys:wholeFrameKeys(value.forearmKeys,end),velocityRotation:triple(value.velocityRotation),speedScale:Math.max(0,finite(value.speedScale,1)),twist:Number.isFinite(value.twist)?value.twist:null};
+ const aero=value.aero||{};
+ return {throwPercent:clamp(finite(value.throwPercent,100),0,100),slowdownBlend:clamp(finite(value.slowdownBlend),0,1),halfAttack:value.halfAttack===true,aimAtTarget:value.aimAtTarget===true,armed:clamp(Math.round(finite(value.armed)),0,Math.floor(release)),keys:wholeFrameKeys(value.keys,end),forearmKeys:wholeFrameKeys(value.forearmKeys,end),velocityRotation:triple(value.velocityRotation),speedScale:Math.max(0,finite(value.speedScale,1)),twist:Number.isFinite(value.twist)?value.twist:null,aero:{enabled:aero.enabled!==false,strength:clamp(finite(aero.strength,1),0,10),pressure:clamp(finite(aero.pressure,.27),0,.5),damping:clamp(finite(aero.damping,1),0,10)}};
 }
 function anglesAt(keys,frame){
  if(!keys.length)return [0,0,0];
@@ -69,5 +70,11 @@ function launch(velocity,omega,handQ,rootQ,longAxis,controls){
  const axis=R.unit(R.rotate(handQ,longAxis)),authoredTwist=R.dot(omega,axis)/(60*Math.PI/180),twist=controls.twist??authoredTwist;
  return {velocity:R.mul(R.rotate(direction,velocity),controls.speedScale),omega:R.mul(axis,twist*60*Math.PI/180),axis,authoredTwist,twist};
 }
-const api={config,wholeFrameKeys,anglesAt,rotation,anglesFromRotation,rotateWorld,rotateAxis,axisOffsetDegrees,pose,launch};if(typeof module!=='undefined')module.exports=api;else root.ThrowVanilla=api;
+function alignVelocity(authoredVelocity,rootQ,axis,angles){
+ if(R.length(authoredVelocity)<1e-8||R.length(axis)<1e-8)return null;
+ const old=rotation(angles),direction=R.rotate(R.qm(R.qm(rootQ,old),R.qinv(rootQ)),authoredVelocity);
+ const turn=R.fromTo(direction,axis),next=R.qm(R.qm(R.qm(R.qinv(rootQ),turn),rootQ),old);
+ return anglesFromRotation(next,angles);
+}
+const api={config,wholeFrameKeys,anglesAt,rotation,anglesFromRotation,rotateWorld,rotateAxis,axisOffsetDegrees,pose,launch,alignVelocity};if(typeof module!=='undefined')module.exports=api;else root.ThrowVanilla=api;
 })(globalThis);

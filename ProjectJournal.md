@@ -4,6 +4,13 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Throw Lab October29 - approved checkpoint and Unreal port requested:**
+User approved/pushes current lab plus saved setup. Exact scene snapshot and
+runtime hash manifest: Labs/ThrowLab/approved/2026-10-29/. Port boundary:
+Blueprint nodes control throws and physical settings; nonphysical settings
+mirror the current lab. Preserve existing Blueprint wiring and active Play.
+[Lab details](Labs/ThrowLab/README.md).
+
 **Main-menu scene October29 — real horizontal smoke width and checkpoint:**
 Air Horizontal width replaces the ineffective Spread slider with0.25–8x actual
 source scaling on world Y. Native Grid3D_Gas_SphereSource Non Uniform Scale is

@@ -92,6 +92,7 @@ class WebGLMotionRenderer {
       uniform float uFogFar;
       uniform bool uUnlit;
       uniform float uOpacity;
+      uniform float uRoomBrightness;
       void main() {
         if (uUnlit) { gl_FragColor = vec4(vColor, uOpacity); return; }
         vec3 normal = normalize(vNormal);
@@ -101,7 +102,7 @@ class WebGLMotionRenderer {
         vec3 fillDirection = normalize(vec3(0.55, 0.34, 0.76));
         float fill = max(dot(normal, fillDirection), 0.0);
         float skyFill = normal.y * 0.5 + 0.5;
-        float lightLevel = 0.44 + diffuse * 0.68 + fill * 0.15 + skyFill * 0.06;
+        float lightLevel = 0.44 + uRoomBrightness * 0.55 + diffuse * 0.68 + fill * 0.15 + skyFill * 0.06;
         vec3 halfDirection = normalize(lightDirection + viewDirection);
         float specular = pow(max(dot(normal, halfDirection), 0.0), 42.0) * 0.34;
         float rim = pow(1.0 - max(dot(normal, viewDirection), 0.0), 3.0) * 0.13;
@@ -130,6 +131,7 @@ class WebGLMotionRenderer {
       fogFar: gl.getUniformLocation(this.program, "uFogFar"),
       unlit: gl.getUniformLocation(this.program, "uUnlit"),
       opacity: gl.getUniformLocation(this.program, "uOpacity"),
+      roomBrightness: gl.getUniformLocation(this.program, "uRoomBrightness"),
     };
     this.meshBuffer = gl.createBuffer();
     this.lineBuffer = gl.createBuffer();
@@ -632,7 +634,9 @@ class WebGLMotionRenderer {
     gl.depthMask(true);
     gl.disable(gl.BLEND);
     gl.disable(gl.CULL_FACE);
-    gl.clearColor(.078, .096, .128, 1);
+    const brightness=Math.max(0,Math.min(1,(data?.roomBrightness ?? 40)/100));
+    const roomColor=[.078,.096,.128].map(v=>v+(0.65-v)*brightness);
+    gl.clearColor(...roomColor, 1);
     gl.clearDepth(1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     if (!data) return;
@@ -649,7 +653,8 @@ class WebGLMotionRenderer {
     gl.uniform3fv(this.locations.camera, eye);
     gl.uniform1f(this.locations.opacity, 1);
     gl.uniform3fv(this.locations.lightDirection, [-.58, .78, -.24]);
-    gl.uniform3fv(this.locations.fogColor, [.078, .096, .128]);
+    gl.uniform3fv(this.locations.fogColor, roomColor);
+    gl.uniform1f(this.locations.roomBrightness, brightness);
     gl.uniform1f(this.locations.fogNear, Math.max(1.2, targetDepth * .68));
     gl.uniform1f(this.locations.fogFar, targetDepth * 1.55 + 3.5);
 
@@ -659,7 +664,7 @@ class WebGLMotionRenderer {
     if (!data.voidScene) {
     const floorRadius = 6.5;
     const floorY = -.006;
-    const floorColor = [.050, .102, .174];
+    const floorColor = [.050, .102, .174].map(v=>v+(0.32-v)*brightness);
     const floorA = [sharedRoot[0] - floorRadius, floorY, sharedRoot[2] - floorRadius];
     const floorB = [sharedRoot[0] + floorRadius, floorY, sharedRoot[2] - floorRadius];
     const floorC = [sharedRoot[0] + floorRadius, floorY, sharedRoot[2] + floorRadius];

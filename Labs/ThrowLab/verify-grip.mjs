@@ -5,7 +5,7 @@ import {createProjectileSystem} from './projectile.js';
 const require=createRequire(import.meta.url),R=require('./recovery.js'),C=require('./core.js'),V=require('./vanilla.js');
 const data=JSON.parse(fs.readFileSync(new URL('./data/clips.json',import.meta.url))),assets=JSON.parse(fs.readFileSync(new URL('./data/objects.json',import.meta.url)));
 const near=(a,b,tolerance=1e-6)=>assert(R.length(R.sub(a,b))<tolerance,JSON.stringify({a,b}));
-assert.equal(assets.spear.hulls.length,9);assert.equal(assets.spear.triangles.length/3,21112);
+assert.equal(assets.spear.hulls.length,assets.spear.source.hullCount);assert.equal(assets.spear.triangles.length/3,assets.spear.source.triangleCount);
 // Reframing the sword must preserve the original visible attachment exactly.
 const original=JSON.parse(fs.readFileSync(new URL('../BodyflipLab/data/sword.json',import.meta.url))),bytes=Buffer.from(original.vertices_b64,'base64'),matrix=original.local_to_hand;
 let defaultSwordError=0;
@@ -14,7 +14,7 @@ for(let i=0;i<assets.sword.vertices.length;i++){
  const actual=R.add(assets.sword.bind.position,R.rotate(assets.sword.bind.rotation,assets.sword.vertices[i]));defaultSwordError=Math.max(defaultSwordError,R.length(R.sub(actual,expected)));
 }
 assert(defaultSwordError<1e-8,'Sword default geometry changed');
-const zs=assets.spear.vertices.map(v=>v[2]);assert(Math.abs(Math.max(...zs)-Math.min(...zs)-2.2)<1e-6);
+const zs=assets.spear.vertices.map(v=>v[2]);assert(Math.abs(Math.max(...zs)-Math.min(...zs)-assets.spear.source.lengthMetres)<1e-6);
 const sim=await createProjectileSystem(assets,R,V),cases=[],hand=data.names.indexOf('hand_l');
 try{
  for(const raw of data.clips)for(const kind of ['sword','spear']){
@@ -51,6 +51,6 @@ try{
   const start=sim.at(o.release,o);near(start.p,seed.p);const end=sim.at(5,o);assert([...end.p,...end.q].every(Number.isFinite));
   const lowest=Math.min(...assets.spear.collision.map(v=>R.add(end.p,R.rotate(end.q,v.map((n,i)=>n*sizes[i])))[1]));assert(lowest>-.02&&lowest<.025,'Scaled collision must rest at visible floor: '+lowest);sim.at(0,o);assert.deepEqual(sim.at(5,o),end);
  }
- const receipt={success:true,defaultSwordError,cases,checks:['Full 2.2m FBX mesh, nine UCX hulls','Weapon-local sword basis preserves its original default mesh pose','Constant local attachment on both throws and both weapons','Grip-aware release continuity, COM velocity, cache invalidation and exact replay','Spear shaft-only twist, compound target/floor contacts and finite simulation','Scalar migration, uniform and independent XYZ scaled COM, continuous release, collision floor alignment and replay']};
+ const receipt={success:true,defaultSwordError,cases,checks:['Current source-length FBX mesh and all authored UCX hulls','Weapon-local sword basis preserves its original default mesh pose','Constant local attachment on both throws and both weapons','Grip-aware release continuity, COM velocity, cache invalidation and exact replay','Spear shaft-only twist, compound target/floor contacts and finite simulation','Scalar migration, uniform and independent XYZ scaled COM, continuous release, collision floor alignment and replay']};
  fs.writeFileSync(new URL('../../Saved/ThrowLab/grip-verification.json',import.meta.url),JSON.stringify(receipt,null,2));console.log(JSON.stringify(receipt,null,2));
 }finally{sim.dispose();}

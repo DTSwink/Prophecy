@@ -1,0 +1,353 @@
+{
+  "capturedUtc": "2026-10-29T22:01:45.533862+00:00",
+  "profile": {
+    "path": "saved-profile.json",
+    "bytes": 2827347,
+    "sha256": "553837a70c5c867df5b4fc308f9343fb17183b8b81c05645e7a881ce4be41937"
+  },
+  "runtimeFiles": [
+    {
+      "path": "Labs/ThrowLab/aerodynamics.js",
+      "bytes": 2062,
+      "sha256": "16d1349cc8e65d16c9caeeb32b8aeed68369dc6382667c04ef73d3b21132aea5",
+      "gitBlobSha256": "16d1349cc8e65d16c9caeeb32b8aeed68369dc6382667c04ef73d3b21132aea5"
+    },
+    {
+      "path": "Labs/ThrowLab/attack.js",
+      "bytes": 14221,
+      "sha256": "8c8e098d2c71354c0853c1d63a3d62b3ccfb342af7b4f47a669e8702c7d61250",
+      "gitBlobSha256": "4fc0f5592a5e4fff2bfb2bb493edf8531769dcf3a838c5cda7e0a6d708db78b6"
+    },
+    {
+      "path": "Labs/ThrowLab/fixtures/attack-presets.json",
+      "bytes": 10309,
+      "sha256": "517aa5e4240e239edd5ec2b92ea30ea1eff5d1e2bee417512becadd56744023c",
+      "gitBlobSha256": "d8a95f5049c9967b9fe4cdd9230dd9d7ae92c0351c3ac4e5efa6cf104bf226a0"
+    },
+    {
+      "path": "Labs/ThrowLab/fixtures/flat-spear-flight.json",
+      "bytes": 9978,
+      "sha256": "75d9aacc677d23e0454a43336d1d8c0dd98703aa4b74693aaa1b09da1a08ed98",
+      "gitBlobSha256": "ffd6f50a3b6b636fb67310b12d4d3e7ff1dd2e99012f4fb81995741d82115d53"
+    },
+    {
+      "path": "Labs/ThrowLab/fixtures/stronger-spear-flight.json",
+      "bytes": 10013,
+      "sha256": "604593dc08ae7d4ac992860e21bd58ff24178a5460eec65b8836f27e16658ca3",
+      "gitBlobSha256": "4deec7d2c27b8f45a37f674866c7ff9b708dd17461277d52fc4b4b51a238a0f1"
+    },
+    {
+      "path": "Labs/ThrowLab/inspect_bomb_scale.py",
+      "bytes": 3112,
+      "sha256": "3f018c52ac140de4fda48ffbef70a2a23f0fb81306d1c4b438d404eff18e164a",
+      "gitBlobSha256": "3f018c52ac140de4fda48ffbef70a2a23f0fb81306d1c4b438d404eff18e164a"
+    },
+    {
+      "path": "Labs/ThrowLab/motion-audit.js",
+      "bytes": 1970,
+      "sha256": "e88761b123f046b86eea76f11f2844003ed3eaf294dfb7d4d1712279c8d98e41",
+      "gitBlobSha256": "e88761b123f046b86eea76f11f2844003ed3eaf294dfb7d4d1712279c8d98e41"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-aero-ui.cjs",
+      "bytes": 10237,
+      "sha256": "58e29c83f4c3306fc05d75794c0c92f925173c14fc750b42ce1caa2ff5590a63",
+      "gitBlobSha256": "463e3f3029c10cec5569088d9aff6f33fc9ca621f8052124f62bfc36c0f08ca6"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-aerodynamics.mjs",
+      "bytes": 7786,
+      "sha256": "4c97caaa32579f9bc66a76232ce609f69ec4441a543c3610fe9994294dd42f2f",
+      "gitBlobSha256": "917137bd621bf7044eeb6b6b649e410ade7607a84501ea4dd18cda17d702671b"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-attack-ui.cjs",
+      "bytes": 28632,
+      "sha256": "b7a4540e09d039f4188034f99c6cfea88fd581f96e479266e636f0952fbda4df",
+      "gitBlobSha256": "1409ac244c4644199b769e1dae81eb62b26b68440b7e803fe0432fb327a59dfa"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-attack.mjs",
+      "bytes": 8197,
+      "sha256": "14e144646af025b24028c18076a7cc86af8ecaa56cbb4491a236361c0238a261",
+      "gitBlobSha256": "14e144646af025b24028c18076a7cc86af8ecaa56cbb4491a236361c0238a261"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-flat-flight.cjs",
+      "bytes": 5014,
+      "sha256": "6cdcbc42f6a24dd4bfab3b15ac4a814b3db1c19140ad805035e93992ed9f3de6",
+      "gitBlobSha256": "7373c063c20f56493e5b6de419179f37e28d474a3bd9e35315069b4757c80ca3"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-motion-current.cjs",
+      "bytes": 269,
+      "sha256": "d7e2a981628ff23ca34d520e09371d6dee10ab128687f604036be51929161582",
+      "gitBlobSha256": "d7e2a981628ff23ca34d520e09371d6dee10ab128687f604036be51929161582"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-strength.mjs",
+      "bytes": 25430,
+      "sha256": "3492205af6ac821080f26244bf501e318a797abd6a2856868d533f88e3ba8c92",
+      "gitBlobSha256": "3492205af6ac821080f26244bf501e318a797abd6a2856868d533f88e3ba8c92"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-weapons.cjs",
+      "bytes": 3579,
+      "sha256": "0d71520c5a064554fa142d4e0cc956d680d4b00beb59b249d23ece45235b521e",
+      "gitBlobSha256": "0d71520c5a064554fa142d4e0cc956d680d4b00beb59b249d23ece45235b521e"
+    },
+    {
+      "path": "Labs/ThrowLab/.gitattributes",
+      "bytes": 102,
+      "sha256": "a7f476a1bfdca8128233fce5819edb52a56452b60e244a88937444c473dfc95e",
+      "gitBlobSha256": "a7f476a1bfdca8128233fce5819edb52a56452b60e244a88937444c473dfc95e"
+    },
+    {
+      "path": "Labs/ThrowLab/.gitignore",
+      "bytes": 76,
+      "sha256": "1bcdf9c20baf9f24d6151212650b67d2636c8d1ea1179fa80ad32d89cf4d8234",
+      "gitBlobSha256": "1741a107793716eace77292efead997b5e94f5bd97906b7cf48a03dcc29174b3"
+    },
+    {
+      "path": "Labs/ThrowLab/README.md",
+      "bytes": 64217,
+      "sha256": "2f5031c968e2024fbbe1cd72f8358ea0d471f80bbbfc5905db10af6bb60c3c7d",
+      "gitBlobSha256": "52800d3f5ea69dc589178eb849f0d7c53ba68c5de92c8da45284c874bdd03c9e"
+    },
+    {
+      "path": "Labs/ThrowLab/app.js",
+      "bytes": 38787,
+      "sha256": "ada6d3c48015ca7d944e773e244f84db2f3682831b57f3c2cc1511931470e301",
+      "gitBlobSha256": "98524fb705cd8dae9b93f68dc7461a958dc695dc4a364e5fff442d15481d4e91"
+    },
+    {
+      "path": "Labs/ThrowLab/assets/throw-target.ico",
+      "bytes": 47203,
+      "sha256": "e43d478cafc6454c8468c1d2c99974dab9088b21b22a45a2a63949e34f0bc951",
+      "gitBlobSha256": "e43d478cafc6454c8468c1d2c99974dab9088b21b22a45a2a63949e34f0bc951"
+    },
+    {
+      "path": "Labs/ThrowLab/assets/throw-target.png",
+      "bytes": 23234,
+      "sha256": "a540906b1bdc87a2a076c100aa15f778562120d15bcfc6d5a55300313f179f6c",
+      "gitBlobSha256": "a540906b1bdc87a2a076c100aa15f778562120d15bcfc6d5a55300313f179f6c"
+    },
+    {
+      "path": "Labs/ThrowLab/assets/throw.ico",
+      "bytes": 47203,
+      "sha256": "e43d478cafc6454c8468c1d2c99974dab9088b21b22a45a2a63949e34f0bc951",
+      "gitBlobSha256": "e43d478cafc6454c8468c1d2c99974dab9088b21b22a45a2a63949e34f0bc951"
+    },
+    {
+      "path": "Labs/ThrowLab/boot.js",
+      "bytes": 757,
+      "sha256": "9ed0c6e23c1099bf478ff83a9d0e88cf6a26062c2f1b9cbd6019a4a798daee6c",
+      "gitBlobSha256": "9ed0c6e23c1099bf478ff83a9d0e88cf6a26062c2f1b9cbd6019a4a798daee6c"
+    },
+    {
+      "path": "Labs/ThrowLab/camera.js",
+      "bytes": 4039,
+      "sha256": "0121eb75ee77c1d4d1ca415d27c3840dbd6907ada09f19f6fe6f1f28b192940b",
+      "gitBlobSha256": "0121eb75ee77c1d4d1ca415d27c3840dbd6907ada09f19f6fe6f1f28b192940b"
+    },
+    {
+      "path": "Labs/ThrowLab/core.js",
+      "bytes": 4445,
+      "sha256": "8f7845b9b227004f07112130353c571af07e1f57945436a91f9901e1c69e22f9",
+      "gitBlobSha256": "30694b2a402951c3a93c52260bd5b24f884fc3f8b01c4d0dc13306debcc3c2fd"
+    },
+    {
+      "path": "Labs/ThrowLab/create_icon.py",
+      "bytes": 1225,
+      "sha256": "9fe1f97ede4af3e006dd50aba1f1e65f2b6d82f00a057d3ec39e9e6fa0fd0452",
+      "gitBlobSha256": "9fe1f97ede4af3e006dd50aba1f1e65f2b6d82f00a057d3ec39e9e6fa0fd0452"
+    },
+    {
+      "path": "Labs/ThrowLab/data/clips.json",
+      "bytes": 370071,
+      "sha256": "a150262c337e33a0858579c5a484cd92d9db048cbc1d998a4fe74ba40063004a",
+      "gitBlobSha256": "a150262c337e33a0858579c5a484cd92d9db048cbc1d998a4fe74ba40063004a"
+    },
+    {
+      "path": "Labs/ThrowLab/data/objects.json",
+      "bytes": 3030432,
+      "sha256": "f060c593764b08c2002235cd0c9f7ae7702ff63a1147451181712a695654546c",
+      "gitBlobSha256": "f060c593764b08c2002235cd0c9f7ae7702ff63a1147451181712a695654546c"
+    },
+    {
+      "path": "Labs/ThrowLab/export_clips.py",
+      "bytes": 2550,
+      "sha256": "28d2c86aa300f544fbf0188a07c3dafff2b4c2862065726f27ff3efeec87f766",
+      "gitBlobSha256": "aaf6ab000853ecf1b8b8e755938ec4796e8a4fc85db79283595c9cfc7ef3a936"
+    },
+    {
+      "path": "Labs/ThrowLab/fixtures/whole-frame-forearm-keys.json",
+      "bytes": 3741,
+      "sha256": "afded13cf4732ddd989b9853b40ea0f2ed66c0b49338c6eab2618c34433f8404",
+      "gitBlobSha256": "ed20654726a363c294a53e3ecc12827f4deb6c611416770a2acb685874aab6f1"
+    },
+    {
+      "path": "Labs/ThrowLab/geometry.js",
+      "bytes": 533,
+      "sha256": "76278156641596ae6bb4f2d87dc34f2d8e5d4a6e872f1fe2d2b6994e964074f3",
+      "gitBlobSha256": "05c83759acfa4452337394be93a6790950a07534d0e2e5b67065c159dd878108"
+    },
+    {
+      "path": "Labs/ThrowLab/gizmos.js",
+      "bytes": 13240,
+      "sha256": "35256566e76448e12f2663e75b3662aa7312705190cfe4992dc888c6769906c9",
+      "gitBlobSha256": "f3c6182458be5cc3b8a8287b7131fa0dfb98b1c5e4686046ca2d06bed760ab49"
+    },
+    {
+      "path": "Labs/ThrowLab/history.js",
+      "bytes": 3013,
+      "sha256": "d5003da54766302dc26343c63abfffc1542c1ab035ae5157d899a50ee82cae04",
+      "gitBlobSha256": "d5003da54766302dc26343c63abfffc1542c1ab035ae5157d899a50ee82cae04"
+    },
+    {
+      "path": "Labs/ThrowLab/index.html",
+      "bytes": 303,
+      "sha256": "85931611375da848cf4a3dd30e763b85211e8e0ed6d73dc6fbd500b2dcfe96bd",
+      "gitBlobSha256": "85931611375da848cf4a3dd30e763b85211e8e0ed6d73dc6fbd500b2dcfe96bd"
+    },
+    {
+      "path": "Labs/ThrowLab/install_shortcut.ps1",
+      "bytes": 856,
+      "sha256": "7437ecb27ea78d47e7502c1d8d215e3f5eb9b2da86ac2596b522f400a68d0093",
+      "gitBlobSha256": "7437ecb27ea78d47e7502c1d8d215e3f5eb9b2da86ac2596b522f400a68d0093"
+    },
+    {
+      "path": "Labs/ThrowLab/launch.ps1",
+      "bytes": 2321,
+      "sha256": "5a7a642ad2c468d5685981ea00cbf017dbb71bcfd04b0df9d903ff18970ce1bc",
+      "gitBlobSha256": "5a7a642ad2c468d5685981ea00cbf017dbb71bcfd04b0df9d903ff18970ce1bc"
+    },
+    {
+      "path": "Labs/ThrowLab/prepare_objects.py",
+      "bytes": 4162,
+      "sha256": "c4b7a8e203e2df7905afe6c9a8c98a6f4829afb7e45f828c752a89ee5cecc5dd",
+      "gitBlobSha256": "d4c685ee6fa52c2c23022157cb7b4f651a6502f1b31df0b9e0d97eedf887a697"
+    },
+    {
+      "path": "Labs/ThrowLab/prepare_spear.py",
+      "bytes": 5392,
+      "sha256": "d65a5f2bcb81f87b0b234c649ec7325d02bd13e3c7ecea4e7d18305bd39f7eb5",
+      "gitBlobSha256": "6200bdcdec7a5578af5e5977c57f49d8b70268444def9748cdfdcf586380cc11"
+    },
+    {
+      "path": "Labs/ThrowLab/projectile.js",
+      "bytes": 9629,
+      "sha256": "93b90e42aff2fb8e959214ac31b82d0c0839179c01256b94145b68e705891be8",
+      "gitBlobSha256": "93b90e42aff2fb8e959214ac31b82d0c0839179c01256b94145b68e705891be8"
+    },
+    {
+      "path": "Labs/ThrowLab/recovery.js",
+      "bytes": 19433,
+      "sha256": "b0e685a3fe41da51297e00270e20364847d3eacdbb44e3cd98763d2909249847",
+      "gitBlobSha256": "b0e685a3fe41da51297e00270e20364847d3eacdbb44e3cd98763d2909249847"
+    },
+    {
+      "path": "Labs/ThrowLab/renderer.js",
+      "bytes": 35582,
+      "sha256": "d4e355628492f9c933afb3ea4995be321fdd870aaf9ecc02c83c9cbf4da59e25",
+      "gitBlobSha256": "d4e355628492f9c933afb3ea4995be321fdd870aaf9ecc02c83c9cbf4da59e25"
+    },
+    {
+      "path": "Labs/ThrowLab/reuse.json",
+      "bytes": 768,
+      "sha256": "b50251d8809315b57d035a581865c635251c467cb76092a8474232e16ba6d21f",
+      "gitBlobSha256": "9ae3453bd33b86ec3343edd984581c7c55865cf9ca25d02e7369e3ce28a81b0d"
+    },
+    {
+      "path": "Labs/ThrowLab/scenes.js",
+      "bytes": 1940,
+      "sha256": "9a4050abb09e3d60ee2875237863c004604dc3fa1a03db44484e84dfba9b5efc",
+      "gitBlobSha256": "9a4050abb09e3d60ee2875237863c004604dc3fa1a03db44484e84dfba9b5efc"
+    },
+    {
+      "path": "Labs/ThrowLab/server.py",
+      "bytes": 2856,
+      "sha256": "8a352b49b0b8d9d50e62150cfd6d477aec7185762451d4efdf6d360921900d82",
+      "gitBlobSha256": "8a352b49b0b8d9d50e62150cfd6d477aec7185762451d4efdf6d360921900d82"
+    },
+    {
+      "path": "Labs/ThrowLab/style.css",
+      "bytes": 14494,
+      "sha256": "f71b812ae068e60613eccaf1ee709e17bdb801bb49d223ef0f3cdf7f654f7988",
+      "gitBlobSha256": "f71b812ae068e60613eccaf1ee709e17bdb801bb49d223ef0f3cdf7f654f7988"
+    },
+    {
+      "path": "Labs/ThrowLab/throw-lab.html",
+      "bytes": 12109,
+      "sha256": "f9f0e393f2522a9d96330c7074766da2402acde20c1dc59692c239842d33a6cc",
+      "gitBlobSha256": "555448792806baeb5342298bc0c02851e5dd8302855404fe23c016b248cea331"
+    },
+    {
+      "path": "Labs/ThrowLab/throw.css",
+      "bytes": 2656,
+      "sha256": "87b61927feade037bf51ab22d87412d71c72b6b05185aa6ce8350589ba366427",
+      "gitBlobSha256": "6082103d1d819fdb10998791413b12c70da5aaea491d4a9610c452ed9f74b416"
+    },
+    {
+      "path": "Labs/ThrowLab/vanilla.js",
+      "bytes": 5971,
+      "sha256": "c0fd30d74e82a1779666c2bffeb34fed7680bb17d16a083a27cc1f55c316ebb1",
+      "gitBlobSha256": "4cded325e7154ff834dfab683d8d76eaa45d983dfca5d1e90809b87adaf45958"
+    },
+    {
+      "path": "Labs/ThrowLab/vendor/LICENSE",
+      "bytes": 1074,
+      "sha256": "9907e3cd4976e88e7b4d8aee1a035ffa7d3ebe84993d00b6b273f716c74b794c",
+      "gitBlobSha256": "9907e3cd4976e88e7b4d8aee1a035ffa7d3ebe84993d00b6b273f716c74b794c"
+    },
+    {
+      "path": "Labs/ThrowLab/vendor/jolt.js",
+      "bytes": 3231626,
+      "sha256": "34b3660f914ea23d196ae0b7e0014bab08e2a241f4a6bb9c3701a3a8bed11635",
+      "gitBlobSha256": "34b3660f914ea23d196ae0b7e0014bab08e2a241f4a6bb9c3701a3a8bed11635"
+    },
+    {
+      "path": "Labs/ThrowLab/vendor/provenance.json",
+      "bytes": 349,
+      "sha256": "8cc40465d6511c480766579990ae2857758ed4747a78ac05023cb8b255840e29",
+      "gitBlobSha256": "c3de7b76e66a220ac3c40ad0fa7370885fe6de22175ed9b6a491f9ad14146307"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-grip.mjs",
+      "bytes": 5721,
+      "sha256": "e79da7326e9d9740b55bc80fe6efdab214f2aa231e230852c16faed5ab4fcfe1",
+      "gitBlobSha256": "e79da7326e9d9740b55bc80fe6efdab214f2aa231e230852c16faed5ab4fcfe1"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-history.cjs",
+      "bytes": 3681,
+      "sha256": "de44520822509b7cd002641dde5897fcfa584faaee473334ae1cffbf221186d8",
+      "gitBlobSha256": "b01e24bea814bbae9db47d2b1416c9b1ecdd34edc575e8e42dbca85377439d7e"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-projectiles.mjs",
+      "bytes": 5389,
+      "sha256": "caf9ef8861cee5851a9b6518c16ecfddbfd4914753e43577d24036dc918b0518",
+      "gitBlobSha256": "a303e17dff10ca0dd7e62858e40346da07075437fb0a5c46f214ec35ee520bf6"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-vanilla.mjs",
+      "bytes": 8117,
+      "sha256": "527c7b9a6550bc1a51f8579fba85f9b3432f06c6a531bdd359bd487eef3ac881",
+      "gitBlobSha256": "09e313b83f6348e4132fe24a39536e7d1ddecefdbbe212067e067547c64704f6"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-whole-frames.cjs",
+      "bytes": 10984,
+      "sha256": "b4225d0dc4861af39c64cc1a04b7d4e4f64290abb376fbe87b317157c0debb30",
+      "gitBlobSha256": "398bcc2b36a295383f6181d41c81767816e7af568cb24fdf3d20b50c0bcea0af"
+    },
+    {
+      "path": "Labs/ThrowLab/verify.cjs",
+      "bytes": 44788,
+      "sha256": "4d5e1437ef479d472d11dc1812637c8be435829258f02badc9413229b4f9ba54",
+      "gitBlobSha256": "15ba9142fc55c8a7acf75c9a26a61dbad07ba02a95a031b7933131762c347151"
+    }
+  ],
+  "notes": "Approved current Throw Lab. Original clips retained from October27; current render/collision caches included. Live state was copied without modification."
+}

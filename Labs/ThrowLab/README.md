@@ -22,7 +22,22 @@ No service restart or extra resident helper was needed.
 
 ## Current scope and workflow
 
+## Approved throw checkpoint - October29
+
+User approved the current lab and requested an Unreal port with throw-control
+nodes; nonphysical animation/pose/grip settings mirror this checkpoint.
+`approved/2026-10-29/saved-profile.json` preserves the exact current scene library
+and presets; its manifest records hashes. It supersedes October27 for current
+behavior. Use the same deliberate backup/restore procedure below.
+
 ## Approved throw checkpoint - October27
+
+Approved lab commit `a0ce0db2af8c84208dc2b8fe54e2eae15baa822f`, followed by
+exact-byte recovery fix `6c5f94dddd88e185617f70568d4e089f711ab814`, on
+`codex/standalone-sim`. Recovery inventory verifies9004 files/1,083,829,824bytes,
+with no unresolved LFS pointers. Approved snapshots disable text normalization;
+all three files' hashes match their exact Git blobs. This checkpoint precedes
+the local aero study below.
 
 `approved/2026-10-27/saved-profile.json` is the exact user-approved saved scene
 library, including both throws' settings, hand/forearm keys, weapon grip/scale,
@@ -35,13 +50,360 @@ To restore intentionally: close Throw Lab, back up any newer `state.json`, copy
 this saved profile to `Labs/ThrowLab/state.json`, then launch the lab. The live
 state remains ignored and is not overwritten automatically. Source re-export
 tools still depend on the documented external FBX SDK/Stepper paths; launching
-needs Python and Chromium as specified in `launch.ps1`. The included spear cache
-is the version used by the approved throw, independent of ongoing asset work.
+needs Python and Chromium as specified in `launch.ps1`. That Git checkpoint's
+spear cache is the approved throw version; the current lab cache was explicitly
+refreshed from the supplied FBX on October28 as documented below.
 
 ### Current editing behavior
 
-Hold **Left Ctrl** while dragging any rotation ring (hand, forearm, weapon grip
-or velocity) for30% angular movement. Pressing/releasing it during a drag changes
+**Hand continuity and whole-timeline detector (October29):** Partial Throw no
+longer drops throwing-arm velocity at trigger entry or at the shortened stroke
+end. Cached FK angular/offset velocity corrections carry through both joins.
+The entry correction ends at the existing entry-blend endpoint; the return
+correction fades over at most8frames and then exactly rejoins the existing FK
+return. Corrections have zero value/velocity/acceleration at their endpoint.
+This adds finite follow-through: current37%/.06 peak arc after release is about
+36.28 degrees versus32.37 before. The charge endpoint and physical release stay
+unchanged, as do launch velocity/twist, whole-frame user keys, head/body motion,
+clavicle behavior,100% and Big Throw. No global smoothing/filter or worker.
+
+`motion-audit.js` scans every bone over the full timeline at quarter frames,
+adaptively refines velocity/angular-velocity discontinuities and distinguishes
+smooth acceleration from jumps using shrinking probes. Source and retimed source
+key changes remain reported separately. `verify-strength.mjs` runs18 charge/speed
+cases and fails on unexplained procedural jumps; negative controls require the
+old entry/return failures to be detected. Incoming hand velocity is also checked
+at both joins. Original30fps source interpolation still has velocity changes;
+the detector is a kinematic regression check, not a guarantee of visual quality.
+
+Run `node Labs/ThrowLab/verify-motion-current.cjs` with the8893 service available
+to scan a copy of the latest saved scene in an isolated headless viewer. It writes
+Saved/ThrowLab/motion-audit-current.json and reports baseline/current/source
+motion. It never writes live scene state or runs continuously during playback.
+At37% it identified added jumps aroundF6.66 andF24.8796 (about2.27 and0.98m/s
+respectively); both disappear after the fix. Full-cycle before/after captures:
+Saved/ThrowLab/hand37-before/, hand37-after/, hand-return-comparison.png.
+992 prefix/992 pose/12 launch,18 detector cases and isolated UI/Aim/Half/undo/
+Refresh/velocity checks pass. Live presets preserved; Refresh loads the change.
+
+**Clavicle correction (October29, clarified by user):** The user meant the
+clavicles in the screenshot, not the spine. The preceding whole-torso early
+unwind was reverted. Only clavicle_l and clavicle_r now release their retained
+wind-up offset smoothly from trigger to the authored full-release marker.
+The rest of the quadratic body layer, head and pelvis retain their preceding
+behavior. Shoulder world-orientation compensation preserves the throwing
+arm/elbow/wrist source motion while the clavicles relax underneath it.
+Current37%,F20 left/right clavicle deviations from neutral:20.93/8.76 to
+12.39/5.00 degrees;F26:19.13/8.20 to4.31/1.80. Full-cycle comparison to the
+pre-misread version confirms head/spine/pelvis/legs restored within5.6e-16.
+992 prefix/992 pose/12 launch and isolated UI/Aim/Half/undo/Refresh/velocity
+checks pass. Head still has one forward/return. Receipt:
+Saved/ThrowLab/clavicle-correction.json. Live presets untouched; Refresh loads.
+
+**Quadratic body effort (October29):** Small Throw now scales remaining body
+motion by charge squared:25% ->6.25%,50% ->25%,75% ->56.25%,100% ->100%.
+This uses the existing coherent root/pelvis/spine/head/support-arm layer.
+The causal wind-up, reached pose and incoming velocity remain preserved; their
+residual uses1-charge-squared so the change does not pull the head backward.
+Throwing-arm arc, release timing and launch-velocity multiplier are unchanged.
+Numeric and isolated browser regressions pass, including the full43% head path,
+100% identity, Aim/Half, native palm, physics, undo and Refresh. At43%, peak
+head travel falls13.904 ->11.278cm and chest5.779 ->4.154cm;5% head0.841cm,
+chest0.296cm. The earlier linear-body metrics below are historical. Live scene
+state preserved; Refresh loads it.
+
+**Small Throw velocity slider (October29):** Left panel Throw velocity slider
+under Remove slowdown multiplies launch velocity at every Small Throw charge,
+including100%. Range0-5x, step0.05, default1x. It shares the existing per-throw
+speedScale/Amplitude value, so presets, copy, undo/redo, reset and Refresh use
+one value. Numeric amplitudes above5 remain supported and expand the slider.
+Only velocity magnitude changes; arm/body motion, release timing, direction
+and twist remain.0% still drops at zero velocity. Big Throw is independent.
+Isolated browser verifies slider input, single-gesture undo, redo/Refresh,
+exact3x velocity at0/5/43/100%, unchanged pose/release/twist and changed Jolt
+flight/replay. UI inspected in Saved/ThrowLab/small-throw-velocity-slider.png.
+Live state preserved; Refresh loads the slider.
+
+**Remove slowdown (October29):** Small Throw adds a0–1 slider directly under
+Throw %. Default0 preserves the current slow stroke;1 plays the same shortened
+source segment at1x source-animation speed. Intermediate values linearly blend
+the rate: rate = baseRate + (1−baseRate)×slowdownBlend. The current resulting
+rate is displayed. `slowdownBlend` is clamped0–1, defaults0 on old scenes, and
+persists per throw/scene through copy, grouped undo/redo and Refresh. The control
+is hidden with the Small Throw section when Big Throw is selected.
+
+The forward stroke, arm-entry blend and physical release are synchronized with
+the new rate. Trigger time and normal-speed wind-up remain unchanged. The source
+segment, throw arc, body motion and configured launch speed/twist are
+unchanged; this is an animation-speed control, not a global playback multiplier
+or a launch-power slider. Actual release/Go to throw follows the earlier event;
+authored full-strength markers and current-frame hand/forearm keys are retained.
+No extra slowdown applies at100% throw. Zero-charge/degenerate strokes avoid a
+division by zero and retain the existing drop behavior.
+
+For33% with A18/R34, slider0/0.5/1 gives source rates0.19208/0.59604/1.0 and
+release frames21.94/11.0961/9.0133. Numeric tests cover25 charge/blend rate cases,
+source-speed and release-phase equality, unchanged prefixes and12 Jolt release/
+replay cases. Isolated browser verifies actual slider input, linear midpoint,
+unchanged strength, undo/redo/Refresh, held-to-release handoff and fast Aim/Half
+with bomb/spear. Default behavior regressions pass. UI screenshot:
+Saved/ThrowLab/slowdown-blend.png. No live-state edits or push; Refresh loads it.
+
+**Small Throw charge (October29, source-pose rebuild):** Throw % controls the
+forward arc, upper-body effort and launch speed.0–100/default100, saved per
+throw/scene, undoable and retained on Refresh. Wind-up runs at normal speed,
+exactly matching100% until trigger T=percentage×Armed, including Aim/Half.
+No weaker pose is anticipated before trigger release.
+
+**Armed-stall correction:** Partial throws select a start and end frame on the
+original forward animation, then advance continuously through that segment.
+The start matches the pose angle reached at trigger release; the end is Throw %
+of the full forward arc measured from the actual frame0 shoulder-to-hand neutral
+pose. The former per-frame angular remapping squeezed early movement into an
+almost stationary pose near neutral. It has been removed. The angular lookup
+now selects the segment endpoints only; source time progresses uniformly across
+the stroke. Actual source elbow, wrist and palm roll remain together, with the
+existing short FK entry blend. No synthetic arm-direction or wrist correction.
+
+The saved33% setup (A18/R34) was reproduced in an isolated viewer from a copy of
+state.json. Full-cycle images every two frames and quarter-frame traces were
+captured before and after. Between playback F10–16, the old source advanced only
+0.182 frames / arm angle1.945°; the corrected path advances1.152 frames /11.773°.
+The forward clock now covers45.45% of its selected segment in the first10 of22
+forward frames instead of lingering at armed. Regression checks cover the full
+stroke at5/18/25/33/50/76/99%, not just boundary continuity. The neutral reference
+is the actual held-arm pose;50% is about42.91° beyond neutral (approximately45°).
+
+**Head/body reversal correction (October29):** The old time-based amplitude
+fade is removed. In the user's saved43% throw, slowdownBlend0.06, A18/R34,
+it pulled the already-reached head/body lean backward around F10.75-14.25,
+then forward again. Zero derivatives at the blend endpoints did not prevent
+this interior reversal; checking the joins alone was insufficient.
+
+The normal-speed wind-up stays exactly original through trigger T=percentage
+x Armed. After trigger, body rotations/translations retain the reached pose
+and scale only the remaining authored movement by charge squared. A cached local-space residual
+also preserves the incoming velocity, settling that residual velocity over
+four frames. The body offset remains through the authored full-release marker, then fades
+during recovery. Only the clavicle offsets unwind earlier as described above.
+Body pose sampling stays on one original timeline. The same operation applies
+to root, pelvis, spines, head, legs and supporting arm; there is no head-only
+filter or per-render history. Low-charge body effort is reduced without pulling
+completed wind-up movement backward. Consequently the total excursion is not
+exactly Throw % of the full excursion: the causal prefix has already happened.
+
+The throwing arm retains its existing cropped native source sequence and world
+orientation compensation; source elbow/wrist/palm stay together. Its recovery
+uses the body pose at the arm peak as its anchor. User hand/forearm keys still
+apply afterwards at the current whole frame.0% holds neutral;100% and Big Throw
+bypass the partial path exactly. Half retains its fixed lower body. The slowdown
+slider still changes the arm clock/release together, not the body's clock.
+
+At the default slowdown blend0, release is T+(Throw−Armed), with full-reference launch speed
+multiplied once by charge. The source lookup slows the smaller swing while the
+wind-up stays normal speed. At the reduced arm peak, that arm blends directly to the
+ending while the body continues its original timeline. A18/R34.25 at50%: trigger F9, release F25.25, peak F31, about42.91° from
+neutral.25/75% peaks are about21.46°/64.37°. The lookup is cached, quarter-frame
+sampled and interpolated; no per-render search, extra loop or worker.0% holds
+the reached upper pose and drops at zero speed.100% and Big Throw use the exact
+original pipeline. Aim uses the existing partial-release solve after trigger;
+manual twist, speed/direction tuning and editor workflow remain.
+
+Verification checks992 causal-prefix and992 FK poses across Half/Aim and
+0/5/18/25/50/75/99/100%, native whole-arm quaternions, neutral-to-full arc,
+source progression,25 slowdown-rate cases and12 Jolt release/replay cases.
+The43% regression traces the entire head path on both world-Z and the original
+F8-to24 travel direction: no backward step during F8-24 and exactly one forward
+to return transition over the whole cycle. Old world-Z reversals were at
+F10.75/14.25/24; the corrected path has only its forward peak atF26.
+
+Independent world head/chest/pelvis excursion and pelvis-rotation peaks increase
+with5/25/43/50/75/100% charge and stay within the full throw's peaks.5% head
+travel is1.679cm, chest0.705cm, pelvis0.207cm and pelvis rotation0.575 degrees.
+The residual can briefly carry an individual supporting-arm joint beyond its
+source angle (75% right forearm about0.72 degrees); no per-joint clamp is used,
+and world body movement remains smaller. Original30fps key slope changes are
+retained. New joins preserve velocity; this is not a blanket source smoother.
+
+The exact saved43%/.06 setup was copied into an isolated headless viewer for
+before/after full-cycle captures every2frames and quarter-frame head position,
+head rotation and pelvis traces. Evidence: Saved/ThrowLab/head43-before/,
+head43-after/, head43-before-after.gif and head43-comparison.png. Current
+strength-verification.json and attack-browser-verification.json pass, including
+Aim/Half, native palm, low-charge bounds, source clock, slider, undo/Refresh and
+held-to-physical handoff. Existing818-pose/84-launch checks also pass. Isolated
+sampling measured about0.24ms per pose. No extra worker or animation loop,
+no live-state/Unreal edits and no push. Refresh loads the correction.
+
+**Small Throw bomb default / current spear (October28):** Object choice is now
+stored independently for Big Throw and Small Throw in `throwObjects`. Small
+Throw defaults to Bomb, including migration from the old global selector;
+Big Throw defaults to the sword/spear slot and retains an active legacy choice.
+Explicit choices made after this update survive clip switches, scenes, copy,
+undo and Refresh. Existing motion, launch, grip and scale settings are retained.
+The existing bomb cache already is the exact UE5 bomb-feature mesh:
+`/Game/Fab/CC0_-_Bomb/cc0_bomb/StaticMeshes/cc0_bomb.cc0_bomb`, from
+`Tools/BombFuse/Geometry.json`. All1,799 vertices/2,622 triangles, including the
+static curved fuse, match after coordinate conversion (rounding error<5.1nm).
+Follow-up size correction: the saved UE5 `A_Bomb` mesh component has explicit
+`RelativeScale3D=(2,2,2)`. The initial lab cache omitted this and showed an11.2cm
+body instead of22.4cm. `prepare_objects.py --bomb-only` now bakes the component
+scale around the shell centre into render and collision vertices, keeping the
+hand offset and user's additional per-throw scale unchanged. The fuse scales
+with it. `inspect_bomb_scale.py` reads and validates the saved UE5.7 tagged
+component export without launching Unreal; unsupported layouts fail explicitly.
+Source Blueprint hash/scale/provenance are stored with the bomb cache.
+Backup: `Saved/ThrowLab/BombScale-20261028-223534/`. Geometry/size, projectile
+attachment/release/collision/replay, attack and isolated browser checks pass.
+Other weapons, live state and UE5 asset bytes remain unchanged.
+Lab triangle colors remain simplified; this does not add the UE5 fuse/explosion
+effects. The sword placeholder remains available with Imperial Spear unchecked.
+
+Imperial Spear now loads the optimized supplied FBX, SHA256
+`e1dbb2b1414c32d180d75d5c3214f0c667abe695647f250c1bf0962449ef6814`:
+22,559 vertices/43,494 triangles,2.25223124m,17 authored UCX hulls. Importer supports
+both direct and indexed per-corner UVs. Same atlas, bind and collision hulls;
+sword/bomb caches and live saved state are byte-for-byte preserved. Backup:
+`Saved/ThrowLab/WeaponRefresh-20261028-222819/`. `verify-weapons.cjs`, grip/contact
+and818-pose/84-launch checks pass. Isolated browser on existing8893 verifies
+Small Throw default, override/undo/Refresh, independent throws and current asset
+hashes; all state writes intercepted. No Unreal/source asset edits or extra service.
+
+**Attack mode (October28):** Half attack and Aim at target appear on the left
+below the animation selector. Both default off, are independent per throw and
+save with scenes/Refresh/copy. Each toggle is one undo step. With both off,
+the previous pose and launch are restored exactly; existing presets are retained.
+
+Half attack freezes root/pelvis/legs at the clip's frame0 pose. Spine_01
+counter-rotates against the fixed pelvis so the upper body retains the normal
+attack's world orientations, including the head and held weapon. Native upper
+motion and current whole-frame hand/forearm keys remain active. Half mode alone
+keeps the original configured launch vector/speed and axial twist, despite the
+changed hand translation. Weapon grip/scale and release timing are unchanged.
+
+Aim at target now uses the held sword/spear's forward shaft axis and actual
+weapon origin at the exact Throw frame, including the current grip and
+hand/forearm keys. The agent turns until the forward shaft ray passes through
+the target; launch velocity no longer determines that orientation. Bombs retain
+the original configured velocity compared with spine_05-to-target. Full mode
+adds world-up yaw to the whole body around its starting root, with pitch spread
+equally across spine_01 through spine_05; pelvis gets no added pitch/roll. Half
+mode spreads the combined yaw/pitch across all five spines and keeps the lower
+body fixed. A bounded cached two-angle fit accounts for the weapon origin moving
+during articulation. No target solve while off and no new worker or animation loop.
+
+With aiming on, frame0-to-Armed uses direct local-joint quaternion FK
+interpolation into the aimed Armed pose, with a smooth quintic blend. Full mode
+interpolates the full body; half mode retains the fixed lower body. After Armed,
+authored motion continues with the full aiming correction. Armed0 applies it
+immediately. Hand/forearm keys apply after this layer so they remain editable at
+every whole frame. The release uses the actual corrected held pose and rotates
+the original launch vector by the same complete chest correction, preserving
+speed/twist and all stored edits. The preset angle between velocity and shaft is
+retained; use Align velocity to spear to make them parallel. It does not add
+ballistic elevation or home toward the target after release; gravity and existing
+Jolt aerodynamics apply. Spear aiming works even at zero speed. A target coincident
+with the held weapon leaves it inactive; bombs still require nonzero speed and
+a target away from the chest.
+
+`attack.js` owns FK/compensation/aiming; projectile reference measurement is
+cached separately from the displayed pose. Snap-to-spear operates back in the
+original preset frame and remains compatible with both modes. Numeric checks
+cover818 poses/84 launch cases, both clips/all weapons, lower-body invariance,
+world head/hand orientation, five-spine distribution, no added pelvis tilt,
+fractional release/Armed continuity and cached Jolt replay. Actual isolated
+browser clicks verify target updates, presets, snap, independent throws,
+undo/Refresh and exact off restore. Tests: `verify-attack.mjs`,
+`verify-attack-ui.cjs`; regression presets: `fixtures/attack-presets.json`.
+Evidence is under `Saved/ThrowLab/attack-*`; live state and desktop untouched.
+October28 shaft-reference update passes all818 pose/84 launch cases, including
+forward ray intersection, zero/reversed-speed independence, fractional release,
+preserved speed/twist and both full/half modes. Browser harness now asserts the
+shaft direction and accepts an isolated test URL. The initial browser attempt
+was blocked while8893 was down; the subsequent weapon refresh verified all of
+these checks in an isolated browser against the available existing8893 service.
+
+**Room brightness** is at the top of the left sidebar. The0-100% slider changes
+the background/fog, floor and ambient light immediately; default40% gives a
+lighter room, while0% restores the previous dark lighting. Saved per scene,
+included in copy/Refresh and undo; one pointer drag is one undo step. It changes
+rendering only and adds no loop or physics work. Isolated WebGL pixel/uniform,
+undo/redo and Refresh checks pass without writing the live state file.
+
+**Align velocity to spear** sits below the Launch velocity controls. It uses the
+held weapon orientation at the exact Throw frame (including hand/forearm keys,
+grip rotation and fractional release sampling), regardless of the current
+playhead. It applies a shortest-arc correction to the existing root-relative
+velocity angles, preserving speed/amplitude, twist, weapon pose, keys, timing,
+camera and playhead. One Ctrl+Z step; pressing it again while aligned is a no-op.
+This is a one-shot snap, not a persistent direction lock. It also works for the
+sword placeholder, and is disabled for Bomb or zero animation-derived speed.
+
+**Launch spin** is a separate section below Launch velocity. **Twist velocity**
+sets signed degrees per60fps frame around the sword/spear's long axis at release.
+Typing immediately switches off Use animation twist and updates the launch,
+without needing Enter or blur. Zero gives no launch spin; negative reverses it.
+Empty/incomplete input leaves the previous value intact. One focused editing
+session is one undo step; per-throw values survive Refresh. Existing saved rates
+and automatic mode are preserved until edited. Tests cover actual typed input,
+grouped undo and ten signed/zero Jolt release cases across both weapons.
+
+**Spear aerodynamics** is on by default for both throws and has a visible On
+checkbox plus collapsed Tuning controls below Launch velocity. Air strength0-10x
+(default1), pressure point0-50% of weapon length behind COM (default27%), and
+additional sideways rotation damping0-10x (default1) are independent per throw,
+undoable and saved through Refresh/copy. Turning off exactly restores the prior
+flight. Bomb ignores these controls; held objects receive no aerodynamic load.
+The pushed approved checkpoint and its saved profile remain untouched; these
+implementation changes are local until another requested push.
+
+`aerodynamics.js` supplies relative-airflow drag at an aft pressure point and
+additional pitch/yaw damping. `projectile.js` applies force/torque before each
+existing120Hz Jolt step, with no orientation overwrite or target seeking.
+Point velocity includes `omega cross r`; longitudinal spin receives no direct
+aerodynamic torque. Jolt retains gyro coupling, all rotational axes, CCD and
+normal collision response. Air continues through active impacts and stops with
+sleep, rather than forcing the spear to face its post-impact velocity.
+
+Defaults use rho1.225kg/m3, effective lateral coefficient-area0.96m2 and axial CdA0.001m2;
+areas and pressure distance scale with the current weapon geometry/XYZ scale.
+These remain a reduced, uncalibrated model, not measured Imperial Spear data.
+The initial lateral model was too weak: it used transverse speed squared,
+giving only0.74degrees nose-down at F54 in the user's saved scene. Lateral
+force now uses full point airflow speed times its transverse velocity, giving
+a linear near-alignment response, with a coefficient tuned for short throws.
+The first correction reached10.80degrees nose-down at F54. The user still found
+alignment too weak on the subsequent saved throw, so the lateral response was
+increased another4x (0.24 to0.96m2). With unchanged1x strength/27% pressure/1x
+damping, the latest F62 case improves velocity-axis error11.54 to4.73degrees,
+with14.29degrees nose-down. The original F54 regression now reaches16.96degrees
+nose-down and4.59degrees error. Both saved cases are retained as test fixtures.
+Air-off remains0.26degrees nose-up. No direct orientation lock or launch edit.
+This is deliberate game tuning, not a claim of measured real-spear aerodynamics.
+Effective mass/inertia bound drag impulses with an implicit response for small
+weapons, high speeds and stronger tuning. All forces dissipate instantaneous
+mechanical power; pure shaft spin is left free. Two reused WASM vectors and a
+cached inverse-inertia matrix avoid per-step WASM allocations for these loads.
+No worker, new animation loop or collision-hull rebuild. Cached seeks do not
+apply forces again; changing aero parameters invalidates the flight cache.
+
+Validation:16 rotated-root/antiparallel velocity alignment cases,81 dissipative
+force/torque cases, both throws with spear/sword/bomb, exact aero-off and cached
+replay, release continuity, maximum-control/small-scale finite contact cases,
+and the existing grip/XYZ-scale/floor/target suite pass. Actual isolated browser
+clicks verify snap scope, no-op, all tuning controls, bomb disabling, per-throw
+settings, undo/redo and Refresh. Screenshot:
+`Saved/ThrowLab/spear-aerodynamics-controls.png`. Tests:
+`verify-aerodynamics.mjs` and `verify-aero-ui.cjs`; live state is not overwritten.
+`fixtures/flat-spear-flight.json` and `verify-flat-flight.cjs` retain the actual
+reported F54 regression and verify corrected rendered pose, exact settings,
+camera,40 air substeps and Refresh replay. All force/contact/scale checks pass.
+`fixtures/stronger-spear-flight.json` adds the subsequent F62 regression;
+maximum-strength, small-scale and floor/target contact checks still pass.
+
+Hold **Left Ctrl** while rotating the camera (orbit or free mode) or dragging any
+rotation ring (hand, forearm, weapon grip or velocity) for30% angular movement.
+Pressing/releasing it during a drag changes
 only subsequent deltas, without a jump. Right Ctrl retains normal sensitivity;
 translation and scale are unchanged. Physical-key tracking runs before the
 active-drag shortcut guard and clears on blur/hidden window. No saved setting
@@ -199,13 +561,35 @@ saved with scenes and survive Refresh. Release simulation includes the complete
 grip transform in its pose and COM finite-difference velocity. Twist remains
 along the weapon's length; collisions can subsequently rotate it freely.
 
-`prepare_spear.py` reads the requested FBX with the existing FBX SDK, preserving
-all21,112 triangles, the grip pivot and2.2m scale. The nine authored convex UCX
+October28 spear refresh and grip correction: `prepare_spear.py` reads the
+requested FBX with the existing FBX SDK, preserving all59,460 triangles/30,542
+vertices, the grip pivot and2.252231m source length. The17 authored convex UCX
 hulls form one Jolt compound body; decorative tassel geometry is excluded from
 collision. Render colors sample the BaseColor atlas per triangle under existing
 lab lighting; this renderer does not reproduce the full PBR material. Mass is
 1.2kg, matching the placeholder. No source asset is modified. Refresh loads the
-cache; importing is explicit, with no watcher or extra background process:
+cache; importing is explicit, with no watcher or extra background process.
+Current source SHA256:
+`adebec94c106705a6db9b6628a54e8403734f145b507cfc521b12dc25e533668`.
+The first import correctly matched the supplied FBX, but that file predated the
+saved Blender grip movement and blade transform. A read-only source audit found
+the leather/two keepers moved17.637cm away from the blade. Main FBX now reflects
+those saved transforms, centred at the new grip; shaft/grip/blade hulls, sockets
+and blade normals follow. UVs/colors/topology and protected geometry stay intact.
+The lab matches the saved source to0.0001404mm, with saved settings/bind unchanged.
+Audit/backups: `Saved/ThrowLab/SpearGripSync20261028/`; targeted preparation tool:
+`Tools/SpearAsset/sync_grip_translation.py`. GLB/LODs remain outside this update.
+Importer now measures length/counts instead of requiring the old nine-hull
+geometry, preserves the existing spear bind, checks source/atlas stability and
+replaces the cache atomically. Atlas stays uint8 during sampling to reduce peak
+memory. Sword/bomb data, spear mass/axis/bind and saved state are unchanged.
+Grip/scale/contact tests, aero regressions and both attack-mode suites pass.
+New geometry exposed a near180-degree half-aim quaternion-log discontinuity;
+spine yaw/pitch now distribute continuously, preserving equal angular shares.
+Backup and receipts: `Saved/ThrowLab/SpearRefresh20261028/`. This refresh does
+not certify or modify the separate Unreal/LOD export package.
+
+To refresh from a later source:
 
 ```powershell
 & 'C:/Users/singerie/Documents/Cursor/stepper/.tools/python310/python.exe' Labs/ThrowLab/prepare_spear.py
@@ -483,4 +867,51 @@ loads the current changes; no Unreal interaction was needed.
 
 Initial service PID21604 on8893; desktop shortcut installed. Treat the PID as
 historical and check `/health` for current service identity. The launcher starts
-the service when needed; it does not restart other labs or Unreal. No push.
+the service when needed; it does not restart other labs or Unreal. The initial
+service setup was local; the approved October27 checkpoint above is now pushed.
+
+## Spear aerodynamic investigation - October27 (pre-implementation evidence)
+
+The approved checkpoint's Jolt integration has gravity, collision/friction/restitution, inertia,
+gyroscopic coupling and angular damping, but no aerodynamic force. Damping
+cannot steer the nose toward velocity by itself. The approved Imperial Spear
+releases at F34, at0.1692m/frame, with17.10degrees between its nose and travel
+direction. COM-to-target distance is2.61m; scaled length1.676m, mass1.2kg,
+longitudinal spin7.528degrees/frame. Geometry and release were read from the
+approved profile/cache, not the independently evolving Unreal spear asset.
+
+Recommended mechanism: forces from relative airflow at one or several pressure
+points aft of COM. At each existing120Hz Jolt step, use local point velocity
+`u = vCOM - wind + omega cross r`, split into axial and lateral components, and
+apply opposing drag. An aft application point gives `torque = r cross force`;
+using point velocity also damps sideways rotation. Keep roll/twist free, preserve
+gyroscopic coupling and contacts, and stop work when sleeping. No target seeking
+or orientation overwrite. Reuse WASM vectors; no worker or mesh recook needed.
+Both `Body.AddForce` and `Body.AddTorque` exist in the actual bundled module.
+
+This is a reduced aerodynamic model needing asset-specific area, drag and
+pressure-point calibration. NASA describes the restoring effect of pressure
+behind the center of gravity in [Rocket Stability](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/rocket-stability/),
+and the distributed pressure basis in [Center of Pressure](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/generalized-center-of-pressure/).
+Real javelin moments are more nuanced: the [2023 magnetic-balance study](https://www.nature.com/articles/s41598-023-27534-2)
+reports nose-up moments below12degrees for its tested design. Thus a decorative
+spear cannot be assumed to align perfectly from geometry alone. The [Jolt API](https://jrouwe.github.io/JoltPhysicsDocs/5.1.0/class_body_interface.html)
+provides the required force/torque integration.
+
+An isolated, workerless feasibility probe used the approved launch with target
+moved away and floor lowered, so results describe free flight, not impact accuracy.
+Assumed rho1.225kg/m3, lateral CdA0.04m2, axial CdA0.001m2, pressure point0.45m
+behind COM. Lateral force used `-0.5*rho*CdA*|uSide|*uSide`. These parameters are
+uncalibrated assumptions, not measurements of this spear. At12 flight frames,
+axis/velocity error was24.15degrees with no air versus23.32degrees with aft air;
+at30frames35.72 versus29.91; at60frames50.38 versus20.84. Moving the point forward
+instead destabilized it (101.55degrees at60frames). Multiplying lateral CdA by6
+improved alignment sooner, but is stronger gameplay tuning, not validated realism.
+Natural alignment takes time and can lag a curved trajectory; this short throw
+may show only a small correction. Added air also changes trajectory, so replay
+both approved throws and check contacts before enabling it in the app.
+
+Evidence: `Saved/ThrowLab/approved-launch-analysis.json` and
+`Saved/ThrowLab/AerodynamicsStudy/{run.mjs,probe-projectile.mjs,results.json}`.
+Study files remain local. The subsequent authorized implementation is described
+under Current editing behavior above; approved checkpoint physics remains intact.

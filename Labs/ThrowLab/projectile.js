@@ -1,4 +1,5 @@
 import initJolt from './vendor/jolt.js';
+import {airShape,airForces} from './aerodynamics.js';
 
 // Only one released object. Fixed 120 Hz simulation, cached for deterministic
 // seeking/loops; no stepping while held, paused, or after the body has slept.
@@ -34,9 +35,10 @@ export async function createProjectileSystem(assets,R=globalThis.Recovery,V=glob
   let axis=R.unit([1,.4,.8]);for(let n=0;n<64;n++)axis=R.unit(axis.map((v,i)=>trace*v-cols.reduce((sum,col,j)=>sum+col[i]*axis[j],0)));
   const tip=asset.collision.reduce((a,b)=>R.dot(a,a)>R.dot(b,b)?a:b);if(R.dot(axis,tip)<0)axis=mul(axis,-1);longAxes[key]=asset.longAxis?R.unit(asset.longAxis):axis;J.destroy(mass);
  }
- const bodies=[];let body=null,signature=null,frames=[],release=0,steps=0,seed=null,previewKey=null,previewSeed=null;
+ const bodies=[];let body=null,signature=null,frames=[],release=0,steps=0,seed=null,previewKey=null,previewSeed=null,referenceKey=null,referenceSeed=null,air=null,airSteps=0;
+ const airForce=vec([0,0,0]),airTorque=vec([0,0,0]);
  const dt=1/120;
- function removeAll(){for(const b of bodies){bi.RemoveBody(b.GetID());bi.DestroyBody(b.GetID());}bodies.length=0;body=null;}
+ function removeAll(){for(const b of bodies){bi.RemoveBody(b.GetID());bi.DestroyBody(b.GetID());}bodies.length=0;body=null;air=null;airSteps=0;}
  function make(shape,p,q,dynamic,mass=1){
   const vp=pos(p),vq=quat(q),s=new J.BodyCreationSettings(shape,vp,vq,dynamic?J.EMotionType_Dynamic:J.EMotionType_Static,dynamic?1:0);
   s.mFriction=.55;s.mRestitution=.25;s.mLinearDamping=0;s.mAngularDamping=.03;s.mAllowSleeping=true;
@@ -52,15 +54,27 @@ export async function createProjectileSystem(assets,R=globalThis.Recovery,V=glob
  }
  function read(){return {p:arr(body.GetPosition()),q:R.unit(qa(body.GetRotation())),v:arr(body.GetLinearVelocity()),omega:arr(body.GetAngularVelocity()),active:body.IsActive()};}
  const scaleOf=o=>[0,1,2].map(i=>{const v=Array.isArray(o.scale)?o.scale[i]:o.scale;return Number.isFinite(v)?Math.max(.1,Math.min(2,v)):1;});
- const keyOf=o=>JSON.stringify([o.key,o.kind,o.release,o.target,o.radius,o.controls,o.grip,scaleOf(o)]);
- function preview(o){
-  const key=keyOf(o);if(key===previewKey)return previewSeed;
+ const launchScale=o=>Number.isFinite(o.launchScale)?Math.max(0,Math.min(1,o.launchScale)):1;
+ const keyOf=o=>JSON.stringify([o.key,o.kind,o.release,o.referenceRelease,o.target,o.radius,o.controls,o.grip,scaleOf(o),!!o.preserveLaunch,o.launchRotation,launchScale(o)]);
+ function reference(o){
+  const referenceRelease=Number.isFinite(o.referenceRelease)?o.referenceRelease:o.release;
+  const key=keyOf({...o,release:referenceRelease,preserveLaunch:false,launchRotation:undefined,launchScale:1});if(key===referenceKey)return referenceSeed;
+  o={...o,release:referenceRelease,sample:o.baseSample||o.sample};
   const pose=o.sample(o.release),a=held(pose,o.hand,o),com=arr(shapes[o.kind].GetCenterOfMass()).map((v,i)=>v*scaleOf(o)[i]);
   const h=1/120,t0=Math.max(0,o.release-h),t1=o.release>0?o.release:Math.min(o.duration,h),p0=held(o.sample(t0),o.hand,o),p1=held(o.sample(t1),o.hand,o),delta=t1-t0;
   const authoredVelocity=delta>0?mul(sub(add(p1.p,rotate(p1.q,com)),add(p0.p,rotate(p0.q,com))),1/delta):[0,0,0];
   const authoredOmega=delta>0?mul(qlog(qm(p1.q,qinv(p0.q))),1/delta):[0,0,0];
   const adjusted=o.controls?V.launch(authoredVelocity,authoredOmega,a.q,pose.q[0],longAxes[o.kind],o.controls):{velocity:authoredVelocity,omega:authoredOmega};
-  previewKey=key;return previewSeed={p:a.p,q:a.q,v:adjusted.velocity,omega:adjusted.omega,comOffset:com,axis:adjusted.axis,twist:adjusted.twist,authoredTwist:adjusted.authoredTwist,authoredVelocity};
+  referenceKey=key;return referenceSeed={p:a.p,q:a.q,v:adjusted.velocity,omega:adjusted.omega,comOffset:com,axis:adjusted.axis,twist:adjusted.twist,authoredTwist:adjusted.authoredTwist,authoredVelocity};
+ }
+ function preview(o){
+  const key=keyOf(o);if(key===previewKey)return previewSeed;
+  const original=reference(o);previewKey=key;
+  if(!o.preserveLaunch)return previewSeed=original;
+  const pose=o.sample(o.release),a=held(pose,o.hand,o),turn=o.launchRotation||[0,0,0,1];
+  const axis=R.unit(rotate(a.q,longAxes[o.kind]));
+  const velocity=rotate(turn,original.v),amount=launchScale(o);
+  return previewSeed={...original,p:a.p,q:a.q,v:amount===1?velocity:mul(velocity,amount),axis,omega:mul(axis,original.twist*60*Math.PI/180)};
  }
  function start(o,key){
   removeAll();signature=key;frames=[];steps=0;release=o.release;
@@ -72,8 +86,19 @@ export async function createProjectileSystem(assets,R=globalThis.Recovery,V=glob
   let shape=shapes[o.kind];const scale=scaleOf(o);
   if(scale.some(v=>v!==1)){const v=vec(scale);shape=new J.ScaledShape(shape,v);J.destroy(v);}
   body=make(shape,seed.p,seed.q,true,assets[o.kind].mass);
+  if((o.kind==='sword'||o.kind==='spear')&&o.controls?.aero?.enabled&&o.controls.aero.strength>0){
+   const matrix=body.GetInverseInertia(),columns=[arr(matrix.GetAxisX()),arr(matrix.GetAxisY()),arr(matrix.GetAxisZ())];J.destroy(matrix);
+   air={shape:airShape(R,assets[o.kind],scale,longAxes[o.kind]),settings:{...o.controls.aero},columns,initialInverse:qinv(seed.q)};
+  }
   const v=vec(velocity),w=vec(omega);bi.SetLinearAndAngularVelocity(body.GetID(),v,w);J.destroy(v);J.destroy(w);
   Object.assign(seed,{gyroscopic:body.GetApplyGyroscopicForce(),allowedDOFs:body.GetMotionProperties().GetAllowedDOFs()});frames.push(read());
+ }
+ function applyAir(){
+  if(!air)return;
+  const q=qa(body.GetRotation()),delta=qm(q,air.initialInverse),inverseDelta=qinv(delta);
+  const inverseInertia=v=>{const local=rotate(inverseDelta,v);return rotate(delta,local.map((_,i)=>air.columns.reduce((sum,col,j)=>sum+col[i]*local[j],0)));};
+  const load=airForces(R,air.shape,air.settings,q,arr(body.GetLinearVelocity()),arr(body.GetAngularVelocity()),inverseInertia,dt);
+  airForce.Set(...load.force);airTorque.Set(...load.torque);body.AddForce(airForce);body.AddTorque(airTorque);airSteps++;
  }
  function at(t,o){
   const key=keyOf(o);
@@ -81,9 +106,9 @@ export async function createProjectileSystem(assets,R=globalThis.Recovery,V=glob
   if(t<o.release)return held(o.pose||o.sample(t),o.hand,o);
   if(!body)start(o,key);
   const f=Math.max(0,(t-release)/dt),i=Math.floor(f+1e-9),fraction=Math.max(0,Math.min(1,f-i)),u=fraction<1e-9?0:fraction,needed=i+(u>0?1:0);
-  while(frames.length<=needed){if(body.IsActive()){world.Step(dt,1);steps++;frames.push(read());}else frames.push(frames.at(-1));}
+  while(frames.length<=needed){if(body.IsActive()){applyAir();world.Step(dt,1);steps++;frames.push(read());}else frames.push(frames.at(-1));}
   const a=frames[i],b=frames[Math.min(i+1,frames.length-1)];
   return {p:add(a.p,mul(sub(b.p,a.p),u)),q:u===0?a.q.slice():qslerp(a.q,b.q,u),v:a.v,omega:a.omega,phase:a.active?'released':'resting'};
  }
- return {at,preview,held:o=>held(o.pose||o.sample(o.release),o.hand,o),get diagnostics(){return {engine:'Jolt WASM 1.1.1',steps,cachedFrames:frames.length,bodies:bodies.length,seed};},dispose(){removeAll();for(const value of owned.reverse())J.destroy(value);J.destroy(world);}};
+ return {at,preview,reference,held:o=>held(o.pose||o.sample(o.release),o.hand,o),get diagnostics(){return {engine:'Jolt WASM 1.1.1',steps,airSteps,aerodynamics:!!air,cachedFrames:frames.length,bodies:bodies.length,seed};},dispose(){removeAll();J.destroy(airForce);J.destroy(airTorque);for(const value of owned.reverse())J.destroy(value);J.destroy(world);}};
 }
