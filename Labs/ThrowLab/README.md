@@ -30,6 +30,14 @@ nodes; nonphysical animation/pose/grip settings mirror this checkpoint.
 and presets; its manifest records hashes. It supersedes October27 for current
 behavior. Use the same deliberate backup/restore procedure below.
 
+Pushed as `a193d263` on `codex/standalone-sim` (remote hash verified).
+The first native control/motion port now builds and passes all four native
+checks, including1392 poses against the lab. Projectile attachment/Jolt flight
+remain pending; see
+[Throw controls](../../Docs/ThrowControls.md) for its node surface, mirrored
+data, physical integration boundary and validation state. The live lab remains
+the authoring source; native work does not modify this saved scene.
+
 ## Approved throw checkpoint - October27
 
 Approved lab commit `a0ce0db2af8c84208dc2b8fe54e2eae15baa822f`, followed by

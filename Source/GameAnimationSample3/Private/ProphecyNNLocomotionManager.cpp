@@ -3,6 +3,8 @@
 #include "ProphecyBreathingLibrary.h"
 #include "ProphecySwordHolsterPose.h"
 #include "ProphecyReachRuntime.h"
+#include "ProphecyThrowRuntime.h"
+#include "ProphecyThrowMath.h"
 #include "Misc/ScopeExit.h"
 #include "ProphecySwordHolster.h"
 #include "ProphecyForearmConvention.h"
@@ -1783,6 +1785,7 @@ namespace
 #include "Tests/ProphecyNNPhysicalFeedbackBatchTests.inl"
 #include "Tests/ProphecyFKReturnFeedbackTests.inl"
 #include "Tests/ProphecyBreathingHistoryTests.inl"
+#include "Tests/ProphecyThrowFeedbackTests.inl"
 #endif
 
 	void BlendStateVector(float* State, const float* Target, int32 Offset, float Weight)
@@ -2334,6 +2337,10 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 		if (bWarmed) Impl->Stats.StoreSeconds += FPlatformTime::Seconds() - Start;
 	}
 	}
+	// Throws author at 60 game frames, including odd-frame hand/forearm keys.
+	// Keep the policy clock intact while publishing each active authored frame.
+	if(TickBudget>0&&ProphecyThrow::AnyActive())for(int32 I=0;I<AgentActors.Num();++I)if(ProphecyThrow::Active(AgentActors[I]))
+		PublishAgentPose(I,Impl->Agents[I].PublishedPoseTimeSeconds);
 	UpdateVisualRoots();
     if(ProphecyWalkPinning::AnyTickPinning()) UpdateWalkTickPinning(TickBudget);
 	ProphecyRootPelvisBounds::Apply(*this);
@@ -5276,10 +5283,13 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		? Controls->LocomotionInput.WorldMoveInput.IsZero() : Agent.MoverIntent.speed_amplitude==0.;
 	const bool bOrdinaryLocomotion=bNoMovement && Controls->bNNInferenceEnabled && !Agent.Slash.bActive && !bDefensePose && !bManualArmed
 		&& !bFKReturn && !ProphecyUpperBodyInertia::HasDodgeReturn(Controls) && !ProphecyGetUp::IsActive(Controls)
-		&& !ProphecyReach::Active(Controls) && !Agent.AnimationLayer.IsActive();
+		&& !ProphecyReach::Active(Controls) && !ProphecyThrow::Active(Controls) && !Agent.AnimationLayer.IsActive();
 	const auto BreathingMode=ProphecyBreathing::Apply(Controls,Impl->GameTick,bOrdinaryLocomotion,
 		Impl->PublishedBoneNames,Impl->Parents,ComponentTransforms,LocalTransforms);
 	if(BreathingMode!=EProphecyBreathingMode::None)CommitBreathingPose(*Impl,AgentIndex,ComponentTransforms,BreathingMode);
+	const bool bThrowPose=ProphecyThrow::Apply(AgentActors[AgentIndex],Impl->PublishedBoneNames,Impl->Parents,
+		PreviousComponentTransforms,ComponentTransforms,LocalTransforms,ComponentWorldTransform,SourceTimeSeconds);
+	if(bThrowPose)CommitBreathingPose(*Impl,AgentIndex,ComponentTransforms,EProphecyBreathingMode::UpperAndPelvis);
 	FProphecyNNPoseStore::SetAgentLocalPose(
 		PoseStoreAgentBase + AgentIndex,
 		Impl->PublishedBoneNames,
@@ -5289,13 +5299,14 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		PreviousComponentWorldTransform,
 		ComponentWorldTransform,
 		SourceTimeSeconds,
-		bHolsterPose || bGetUpPose || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose),
-		!bGetUpPose && (bDefensePose ? (DefenseClamps && DefenseClamps->Calf.bOverride && DefenseClamps->Calf.bEnabled) : (bCalfOverride ? ClampActor->bAttackCalfClamp : (bFullAttack ? bClampCalf && CalfClampLengthMultiplier > 0.f : C.bClampCalf && C.CalfClampLengthMultiplier > 0.f))),
+		bThrowPose || bHolsterPose || bGetUpPose || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose),
+		!bThrowPose && !bGetUpPose && (bDefensePose ? (DefenseClamps && DefenseClamps->Calf.bOverride && DefenseClamps->Calf.bEnabled) : (bCalfOverride ? ClampActor->bAttackCalfClamp : (bFullAttack ? bClampCalf && CalfClampLengthMultiplier > 0.f : C.bClampCalf && C.CalfClampLengthMultiplier > 0.f))),
 		FMath::Max(0.f,Effective.CalfLeeway*100.f),
 		bFullAttack ? Agent.Slash.CalfClampLengths : FVector2D(
 			Impl->LocalOffsets[Impl->Limbs[0].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier),
 			Impl->LocalOffsets[Impl->Limbs[1].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier)),
-		FixedArms,Agent.Slash.bActive && Agent.Slash.bHalf,C.bFixedArms && !bFKReturn && !bGetUpPose && !bHolsterPose);
+		FixedArms,Agent.Slash.bActive && Agent.Slash.bHalf,C.bFixedArms && !bThrowPose && !bFKReturn && !bGetUpPose && !bHolsterPose);
+	if(bThrowPose)ProphecyNNPresentation::Publish(PoseStoreAgentBase+AgentIndex,SourceTimeSeconds,1.f);
     if(auto* T=ProphecyWalkPinning::FindTickPinning(Controls))
     {
         if(!bGetUpPose && (!Agent.Slash.bActive || Agent.Slash.bHalf) && !Agent.DefensePose && T->Current.Valid && ProphecyWalkPinning::FindSmoothing(Controls))
@@ -5321,7 +5332,8 @@ void AProphecyNNLocomotionManager::UpdateVisualRoots()
         ON_SCOPE_EXIT { ProphecySwordHolsterPose::Update(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex);ProphecyReach::Update(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex); };
 		const float Alpha = ProphecyAgentTime::Alpha(this,AgentIndex,Impl->VisualPoseAlpha);
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
-		ProphecyNNPresentation::Publish(PoseStoreAgentBase + AgentIndex, Agent.PublishedPoseTimeSeconds, Alpha);
+		ProphecyNNPresentation::Publish(PoseStoreAgentBase + AgentIndex, Agent.PublishedPoseTimeSeconds,
+			ProphecyThrow::Active(AgentActors[AgentIndex])?1.f:Alpha);
 		const FVector3f Root = FMath::Lerp(Agent.PreviousPublishedRoot, Agent.PublishedRoot, Alpha);
 		const float Yaw = Agent.PreviousPublishedYaw + WrapAngle(Agent.PublishedYaw - Agent.PreviousPublishedYaw) * Alpha;
 		const FVector3f PreviousAppliedRoot = UnrealToTraining(AgentActors[AgentIndex]->GetRootLowPoint());

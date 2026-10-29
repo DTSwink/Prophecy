@@ -6,6 +6,7 @@ public class GameAnimationSample3 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/SwordHolsterProfile.json", StagedFileType.UFS);
+        RuntimeDependencies.Add("$(ProjectDir)/Content/ThrowLab/Profile.json", StagedFileType.UFS);
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/prophecy_slash_half_gt.json", StagedFileType.UFS);
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/defense/prophecy_parry_upper.onnx", StagedFileType.UFS);
 		foreach (string Kind in new[] { "parry", "dodge" })

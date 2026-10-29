@@ -4,12 +4,21 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
-**Throw Lab October29 - approved checkpoint and Unreal port requested:**
-User approved/pushes current lab plus saved setup. Exact scene snapshot and
-runtime hash manifest: Labs/ThrowLab/approved/2026-10-29/. Port boundary:
-Blueprint nodes control throws and physical settings; nonphysical settings
-mirror the current lab. Preserve existing Blueprint wiring and active Play.
-[Lab details](Labs/ThrowLab/README.md).
+**Throw Lab October29 - checkpoint pushed; first native control/motion port built:**
+Approved lab plus exact saved setup pushed as a193d263; remote hash verified.
+Snapshot/hash manifest: Labs/ThrowLab/approved/2026-10-29/. Native Begin/Play,
+Release/Cancel/State nodes and pose evaluator added; physical velocity/twist
+controls only, with nonphysical settings mirrored from that snapshot. Runtime
+profile: Content/ThrowLab/Profile.json. Normal Editor DLLs current;4/4 native
+checks pass,1392 poses, max position1.92e-11m and launch error2.10e-14. Every
+game frame publishes authored motion (including odd-frame keys); accepted pose
+feeds NN recurrence. Reflection status3/properties0/pins0/wiring preserved;
+PoseAgent/TestNN hashes unchanged. No interactive main editor or user Play.
+Headless Fab startup crashed before tests; retry with process-only DisablePlugins=Fab
+passed. Evidence Saved/Diagnostics/ThrowPort20261029/. Projectile attachment/Jolt
+flight/aerodynamics and actual Play verification remain pending; this is not a
+completed physical throw pipeline. [Native scope and procedure](Docs/ThrowControls.md),
+[lab details](Labs/ThrowLab/README.md).
 
 **Main-menu scene October29 — real horizontal smoke width and checkpoint:**
 Air Horizontal width replaces the ineffective Spread slider with0.25–8x actual
