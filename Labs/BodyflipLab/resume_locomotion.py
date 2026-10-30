@@ -116,7 +116,10 @@ class ResumeLocomotion(Locomotion):
         if not all(torch.isfinite(x).all() for x in (roots, positions, rotations)):
             raise ValueError('Non-finite landing state')
         # Shift large world coordinates together, never the body relative to root.
-        origin = roots[1].clone()
+        continuation = request.get('continuation')
+        origin = torch.tensor(continuation['origin'], dtype=torch.float32) if continuation else roots[1].clone()
+        if origin.shape != (3,) or not torch.isfinite(origin).all():
+            raise ValueError('Invalid continuation origin')
         roots = roots-origin
         positions = positions-origin
         ids = torch.zeros(1, dtype=torch.long)
@@ -156,6 +159,20 @@ class ResumeLocomotion(Locomotion):
             cur_pelvis = runtime_data.pelvis_heading_features(current, basis, heading)
             rest = runtime.rest_offsets_by_mode[mode][0:1]
             base = runtime_data.base_upper_from_lower(current, roots[1:2], basis, heading, full, rest)
+            if continuation:
+                # Preserve the recurrent policy state when extending a trimmed
+                # preview. Re-encoding decoded bones loses internal history.
+                for key in ('previous', 'current', 'prev_upper', 'cur_upper', 'prev_pelvis', 'cur_pelvis', 'base'):
+                    if key not in continuation:
+                        raise ValueError('Incomplete continuation state')
+                expected = (previous, current, prev_upper, cur_upper, prev_pelvis, cur_pelvis, base)
+                restored = [torch.tensor(continuation[key], dtype=torch.float32)
+                    for key in ('previous', 'current', 'prev_upper', 'cur_upper', 'prev_pelvis', 'cur_pelvis', 'base')]
+                if any(value.shape != template.shape for value, template in zip(restored, expected)):
+                    raise ValueError('Invalid continuation state shape')
+                previous, current, prev_upper, cur_upper, prev_pelvis, cur_pelvis, base = restored
+                if not all(torch.isfinite(value).all() for value in (previous, current, prev_upper, cur_upper, prev_pelvis, cur_pelvis, base)):
+                    raise ValueError('Non-finite continuation state')
             # First visible frame is EXACTLY the supplied landing pose. Subsequent
             # frames are recurrent inference, not a fade into an unrelated gait.
             rows = [dict(points=poses[1]['points'][1:], axes=poses[1]['axes'][1:])]
@@ -197,6 +214,9 @@ class ResumeLocomotion(Locomotion):
             return dict(names=list(full.body_names), fps=30, duration=(count-1)/30, poses=rows,
                         roots=(roots[1:count+1]+origin).tolist(), source='landing-seeded lower + upper NN',
                         seedLower=lower.tolist(), seedUpper=upper.tolist(), inferences=count-1,
+                        continuation=dict(origin=origin.tolist(), previous=previous.tolist(), current=current.tolist(),
+                            prev_upper=prev_upper.tolist(), cur_upper=cur_upper.tolist(),
+                            prev_pelvis=prev_pelvis.tolist(), cur_pelvis=cur_pelvis.tolist(), base=base.tolist()),
                         referenceError=reference_error if reference_step is not None else None, seconds=time.perf_counter()-started)
         finally:
             store.root_state, store.get_input_root_features = old_root, old_features

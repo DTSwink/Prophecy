@@ -22,7 +22,7 @@ const chosen=S.plan(pose,fixture.names,fixture.parents,settings,surface,0,null,f
 check('Reported right foot captures immediately',chosen.leg.side==='R'&&chosen.jumpDelay===0);
 for(const angle of [0,30,60,85]){
  const candidate=S.candidates(pose,fixture.names,{...settings,supportCone:angle},surface,fixture.velocity),eligible=candidate.scores.filter(s=>s.eligible);
- check('Nearest constrained target wins at cone angle '+angle,candidate.scores[candidate.selected].distance===Math.min(...eligible.map(s=>s.distance)));
+ check('Lowest composite score wins at cone angle '+angle,candidate.scores[candidate.selected].cost<=Math.min(...eligible.map(s=>s.cost))+.001);
 }
 for(const depth of [.001,.0095,.05,.5,2]){
  const ground=S.ground(2),cone=S.coneTarget([0,-depth,0],[0,0,0],ground,60);

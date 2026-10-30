@@ -15,6 +15,16 @@ for(const pitch of [-5,-.06,1.75])for(const zoom of [.001,.95,3]){
 }
 check('Entering free camera preserves eye and target, including panned/top/distant views',maxSwitchError<1e-9);
 check('Leaving free camera centers COM and preserves angle and viewing distance',maxRecenterError<1e-9);
+const orbit={...defaults,panX:20,panY:10},orbitBefore=K.view(orbit,center,800);
+K.rotate(orbit,50,1000);const overhead=K.view(orbit,center,800);
+check('Orbit can look down almost vertically',overhead.forward[1]<-.99999);
+check('Orbit holds distance and focal point',Math.abs(overhead.targetDepth-orbitBefore.targetDepth)<1e-9);
+check('Horizontal orbit retains requested direction',Math.abs(orbit.yaw-defaults.yaw+50*.008)<1e-10);
+const radius=overhead.targetDepth;K.wheel(orbit,-100);
+check('Wheel can still zoom in from overhead',K.view(orbit,center,800).targetDepth<radius);
+K.rotate(orbit,0,-2000);check('Orbit can also look upward almost vertically',K.view(orbit,center,800).forward[1]>.99999);
+const savedOrbit={};K.restore(savedOrbit,JSON.parse(JSON.stringify(orbit)),defaults);
+check('Extended orbit survives saved camera restore',near(K.view(savedOrbit,center,800).eye,K.view(orbit,center,800).eye));
 const state={...defaults},initial=K.view(state,center,800);K.toggle(state,true,initial,center);
 const eye=state.freeView.eye.slice();K.rotate(state,50,20);const turned=K.view(state,center,800);
 check('Free left-drag turns in place',near(turned.eye,eye)&&!near(turned.forward,initial.forward));

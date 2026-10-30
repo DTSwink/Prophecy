@@ -25,7 +25,7 @@ try{
  check('spine_01 attack is visibly moving',angle(idle.q[spine],sample.q[spine])>.01);
  check('Attack keeps pelvis fixed',distance(sample.points[1],idle.points[1])<1e-12&&angle(sample.q[1],idle.q[1])<1e-12);
  physics.configure({dynamic:true,kinematic:true,surfaces:[],zeroGravity:true});physics.reset(idle);physics.step(sample,1/60);
- check('Kinematic body preserves exact attack pose',physics.read()===sample);
+ check('Kinematic body uses the same constrained attack target',physics.read().points.every((p,i)=>distance(p,physics.target(sample).points[i])<1e-10));
  physics.configure({dynamic:true,kinematic:false,surfaces:[],zeroGravity:true});physics.reset(idle);for(let i=0;i<120;i++)physics.step(attack.sample(i/240).pose,1/240);
  const diagnostic=physics.diagnostics();check('Simulated torso keeps the five constrained bodies finite',diagnostic.finite&&diagnostic.bodies===25&&diagnostic.joints===24&&diagnostic.anchorError<.02);
  const receipt={passed:checks.length,maxDimensionError,maxOffsetError,maxRotationError,simAnchorError:diagnostic.anchorError,checks};fs.writeFileSync(new URL('torso-verification.json',import.meta.url),JSON.stringify(receipt,null,2));console.log(JSON.stringify(receipt));

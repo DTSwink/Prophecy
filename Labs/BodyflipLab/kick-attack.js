@@ -10,8 +10,14 @@ function preview({clip,names,parents,reference,lead=.18,tail=.45,directArmed=fal
  const track=K.recording({clip,names,parents,reference,lead,tail,directArmed}),pelvis=names.indexOf('pelvis');
  let limb=names.indexOf(C.effector(clip.meta.name));while(limb>=0&&parents[limb]!==pelvis)limb=parents[limb];
  if(limb<0)throw Error('Kick needs a striking leg');
- const conserved=K.createBalanced({source:track.sample,names,parents,reference,duration:track.stop+1.2,strikeRoot:limb,strikeWeight:track.strikeWeight,recoveryStart:track.end,recoveryEnd:track.stop});
- const hitTime=track.lead+(clip.meta.phases.hit-track.sourceStart)/clip.meta.fps,response=K.returnFromHit(conserved,{start:hitTime,end:track.stop,parents,pelvis});
+ const turn=K.bodyTurn(track,names,reference);
+ const hitTime=track.lead+(clip.meta.phases.hit-track.sourceStart)/clip.meta.fps;
+ // Recover only the added balance, while the complete source follow-through
+ // keeps playing. Returning the pelvis's absolute Hit orientation erased
+ // the rest of a turn and bent the torso against the recovering pelvis.
+ const balanceEnd=Math.max(track.end,hitTime+tail);
+ const conserved=K.createBalanced({source:turn.remove,names,parents,reference,duration:track.stop+1.2,strikeRoot:limb,strikeWeight:track.strikeWeight,recoveryStart:hitTime,recoveryEnd:balanceEnd});
+ const response=turn.restore(conserved);
  const result={track,response,hitTime,reference,lead,tail,directArmed};entries.push(result);if(entries.length>8)entries.shift();return result;
 }
 function create({clip,names,parents,reference,base,start=0,lead=.18,tail=.45,directArmed=false}){

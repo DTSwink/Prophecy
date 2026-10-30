@@ -22,7 +22,13 @@ function toggle(state,enabled,current,center){
  }
 }
 function rotate(state,dx,dy){
- if(!state.free){state.yaw-=dx*.008;state.pitch=Math.max(Math.min(-1.15,state.pitch),Math.min(Math.max(1.75,state.pitch),state.pitch-dy*.006));return;}
+ if(!state.free){
+  // Saved pitch is a slope. Orbit in angle space, preserving viewing distance.
+  const slope=.27-state.pitch*.55,radius=3.55/state.zoom*Math.hypot(1,slope);
+  const elevation=Math.max(-Math.PI/2+.001,Math.min(Math.PI/2-.001,Math.atan(slope)+dy*.0033));
+  state.yaw-=dx*.008;state.pitch=(.27-Math.tan(elevation))/.55;
+  state.zoom=3.55/(radius*Math.cos(elevation));return;
+ }
  const v=state.freeView,f=v.forward,yaw=Math.atan2(-f[0],-f[2])-dx*.008;
  const pitch=Math.max(-Math.PI/2+.001,Math.min(Math.PI/2-.001,Math.asin(Math.max(-1,Math.min(1,f[1])))-dy*.006)),c=Math.cos(pitch);
  v.forward=[-Math.sin(yaw)*c,Math.sin(pitch),-Math.cos(yaw)*c];
@@ -33,7 +39,8 @@ function pan(state,current,dx,dy){
  state.freeView.eye=add(state.freeView.eye,shift);
 }
 function wheel(state,delta){
- const zoom=Math.min(Math.max(3,state.zoom),state.zoom*Math.exp(-delta*.001));
+ const limit=state.free?state.zoom*state.freeView.distance/(3.55/3):3*Math.hypot(1,.27-state.pitch*.55);
+ const zoom=Math.min(Math.max(limit,state.zoom),state.zoom*Math.exp(-delta*.001));
  if(!(zoom>0&&Number.isFinite(3.55/zoom)))return;
  if(state.free){const v=state.freeView,distance=v.distance*state.zoom/zoom;if(!Number.isFinite(distance))return;v.eye=add(v.eye,mul(v.forward,v.distance-distance));v.distance=distance;}
  state.zoom=zoom;

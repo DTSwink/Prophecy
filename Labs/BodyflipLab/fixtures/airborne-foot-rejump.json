@@ -1,0 +1,131 @@
+{
+  "mode": "jump",
+  "motion": "kinematic",
+  "attack": "slashLD",
+  "runSeconds": 1,
+  "runPhase": 0,
+  "jumpEarly": 0.1,
+  "jumpBlend": 0.4,
+  "legBlend": 0.2,
+  "fallCap": 20,
+  "jumpFoot": "Auto",
+  "supportCone": 40,
+  "supportReach": 0.99,
+  "supportTrigger": 0.05,
+  "supportAlpha": 1,
+  "supportSpeed": 800,
+  "loadMs": 100,
+  "loadYMs": 200,
+  "loadFullMs": 300,
+  "buildDepth": 0.15,
+  "jumpSkew": 0.5,
+  "spinInertia": 1,
+  "ramps": false,
+  "platforms": [
+    {
+      "id": "floor",
+      "position": [
+        0,
+        -0.2,
+        -0.5599910537770252
+      ],
+      "size": [
+        3.6,
+        0.4,
+        66.20677485127891
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "left",
+      "position": [
+        -2.163746750430836,
+        2.07889393668845,
+        10.880017892445949
+      ],
+      "size": [
+        6,
+        0.12,
+        18
+      ],
+      "rotation": [
+        0,
+        0,
+        -0.3826834323650897,
+        0.9238795325112867
+      ]
+    },
+    {
+      "id": "right",
+      "position": [
+        2.163746750430836,
+        2.07889393668845,
+        10.880017892445949
+      ],
+      "size": [
+        6,
+        0.12,
+        18
+      ],
+      "rotation": [
+        0,
+        0,
+        0.3826834323650897,
+        0.9238795325112867
+      ]
+    }
+  ],
+  "jumpEvents": [
+    {
+      "id": "first",
+      "time": 0.9333333333333333,
+      "surface": "floor",
+      "spinVersion": 2,
+      "pushWith": "foot",
+      "jumpPercent": 100,
+      "attack": "none",
+      "attackDelay": 0,
+      "attackIn": 0.2,
+      "attackOut": 0.25,
+      "flip": 350,
+      "twist": null,
+      "turnDelay": 0,
+      "turnDuration": 0.8,
+      "turnIn": 0.4,
+      "turnOut": 0.4,
+      "turnAxis": null,
+      "pose": "none",
+      "poseIn": 0.2,
+      "poseHold": 0.3,
+      "poseOut": 0.25
+    },
+    {
+      "id": "mmvtvon3w_0",
+      "time": 1.9166666666666667,
+      "surface": "auto",
+      "spinVersion": 2,
+      "pushWith": "foot",
+      "jumpPercent": 100,
+      "attack": "none",
+      "attackDelay": 0,
+      "attackIn": 0.2,
+      "attackOut": 0.25,
+      "flip": null,
+      "twist": null,
+      "turnDelay": 0,
+      "turnDuration": 0.8,
+      "turnIn": 0.4,
+      "turnOut": 0.4,
+      "turnAxis": null,
+      "pose": "none",
+      "poseIn": 0.2,
+      "poseHold": 0.3,
+      "poseOut": 0.25
+    }
+  ]
+}

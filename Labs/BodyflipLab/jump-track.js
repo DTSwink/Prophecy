@@ -4,10 +4,12 @@ class JumpTrack {
  constructor(api){
   this.api=api;this.selected=null;this.open=false;this.drag=null;this.timer=null;this.pending=null;this.serial=0;
   const el=id=>document.getElementById(id);this.el=el;
-  this.fields={jumpPercent:'jumpPercent',jumpAttack:'attack',jumpAttackDelay:'attackDelay',jumpAttackIn:'attackIn',jumpAttackOut:'attackOut',jumpFlip:'flip',jumpTwist:'twist',jumpDelay:'turnDelay',jumpDuration:'turnDuration',jumpTurnIn:'turnIn',jumpTurnOut:'turnOut',jumpPoseIn:'poseIn',jumpPoseHold:'poseHold',jumpPoseOut:'poseOut',jumpAxis:'turnAxis',jumpPose:'pose'};
+  this.fields={jumpInstantSpin:'instantSpin',jumpPushWith:'pushWith',jumpPercent:'jumpPercent',jumpAttack:'attack',jumpAttackDelay:'attackDelay',jumpAttackIn:'attackIn',jumpAttackOut:'attackOut',jumpFlip:'flip',jumpTwist:'twist',jumpDelay:'turnDelay',jumpDuration:'turnDuration',jumpTurnIn:'turnIn',jumpTurnOut:'turnOut',jumpPoseIn:'poseIn',jumpPoseHold:'poseHold',jumpPoseOut:'poseOut',jumpAxis:'turnAxis',jumpPose:'pose'};
   for(const [id,key] of Object.entries(this.fields))el(id).onchange=()=>{
    const value=el(id).value;
-   if(key==='pose'||key==='attack')this.change({[key]:value});
+   if(key==='instantSpin')this.change({instantSpin:el(id).checked});
+   else if(key==='pose'||key==='attack'||key==='pushWith')this.change({[key]:value});
+   else if(key==='flip'||key==='twist')this.change({[key]:value.trim()&&Number.isFinite(+value)?+value:null,spinVersion:2});
    else if(key==='turnAxis')this.change({[key]:value===''?null:+value});
    else if(value.trim()&&Number.isFinite(+value))this.change({[key]:+value});
    this.sync();
@@ -52,12 +54,13 @@ class JumpTrack {
   const motion=BodyflipCore.sanitizeJump(selected);
   for(const [id,key] of Object.entries(this.fields)){
    el(id).disabled=!selected||(key.startsWith('attack')&&key!=='attack'&&motion.attack==='none')||(key.startsWith('pose')&&key!=='pose'&&motion.pose==='none');
-   if(document.activeElement!==el(id))el(id).value=motion[key]===null?'':String(motion[key]);
+   if(key==='instantSpin')el(id).checked=motion.instantSpin;
+   else if(document.activeElement!==el(id))el(id).value=motion[key]===null?'':String(motion[key]);
   }
   el('jumpPoseTiming').setAttribute('aria-disabled',String(motion.pose==='none'));
   el('jumpOptionsLabel').textContent=selected?'J'+(index+1)+' · Flip / pose':'Flip / pose · Select a jump marker';
   el('jumpLabel').textContent=selected?'J'+(index+1):'—';
-  el('jumpStatus').textContent=result?(result.status==='Push'?'Push '+result.pushTime.toFixed(3)+' s · '+result.surfaceId:result.status+' · '+result.reason):events.length?'Preparing…':'No jumps · run off ledge';
+  el('jumpStatus').textContent=result?(result.status==='Push'?'Push '+result.pushTime.toFixed(3)+' s · '+result.surfaceId+(result.supportKind==='hand'?' \u00b7 '+(result.supportSide==='Both'?'Both hands':result.supportSide+' hand'):''):result.status+' · '+result.reason):events.length?'Preparing…':'No jumps · run off ledge';
   el('jumpStatus').dataset.status=result?.status||'';
   const lane=el('jumpMarkers'),existing=new Map([...lane.children].map(x=>[x.dataset.id,x]));
   events.forEach((event,i)=>{

@@ -22,6 +22,1006 @@ dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
 
+## Starting yaw - October 30 (current, local)
+
+Start yaw, appended at the bottom of More options, controls frame-zero facing
+only (-180 to180deg, default0). It does not rotate the root path, velocity,
+platforms or target.180deg starts backward locomotion along the same world path.
+For Walk/Run, the selected gait-phase history is rotated about each root and
+feeds the existing NN in the new facing frame with unchanged world root commands.
+This is a new seeded rollout, not a rotated forward-gait loop. Generation stops
+at the trim and extends recurrently when untrimmed. Idle/Space use rotated poses.
+Jump source orientation follows the starting yaw; rig rest geometry is unchanged.
+The existing numeric apply/preserve-time/save behavior is reused.
+
+3132 facing/path/settings/trim-extension checks pass for all four modes at
+-180/-90/45/90/180deg. Actual backward Run NN checked F0-60: facing stays backward,
+root continues +Z at5m/s.809 backward-landing checks still pass. Scene unchanged,
+no GUI/server restart; Refresh loads. Evidence: Saved/BodyflipLab/StartYaw/.
+
+## Landing heading and continuity - October 30 (current, local)
+
+Landing root yaw now follows the pelvis horizontal facing. Both history poses
+and the full root command path are transformed into that heading for the
+unchanged locomotion NN; predictions are transformed back to world space.
+The same yaw reference is used on both sides of the body blend, avoiding a
+new reference-frame orbit. World root trajectory/momentum are unchanged.
+No forced RunF facing after backward landings; no policy/server restart needed.
+Current saved twist300 case lands facing179deg and stays facing backwards
+through F228.808 original-scene and809 backward-scene checks pass, including
+physical landing continuity, fixed heading, seeking and no thigh loop. Current
+backward recovery minimum forward COM speed4.05m/s, maximum right thigh
+1.20deg per240Hz tick.1126 earlier jump checks still pass. Fixtures contain the
+actual seeded NN responses; source scene state untouched. Evidence in
+Saved/BodyflipLab/LandingHeading/. Refresh loads; not pushed.
+
+The following describes the preceding continuity fix:
+
+Fixed the saved F195 locomotion handoff in capsule.js. Airborne spin rotates
+its virtual root; NN decoding uses an identity root. Landing now changes that
+reference frame while preserving every physical bone in world space, before
+blending. Previously the two reference frames blended and orbited the pelvis:
+root forward speed stayed5m/s but displayed COM briefly moved backwards.
+The body now transitions into the actual seeded NN rollout, rather than
+back-extrapolating its future endpoint over the full Body blend. That extrapolated
+pose caused the right thigh loop. Existing Body timing and NN weights remain.
+No frame gates, scene changes, new controls or root-speed tuning.
+
+Frozen current scene lands atF185.25. F194->195 right thigh135.3deg becomes3.1deg;
+F185.25-220 dense240Hz recovery has max right hip2.26deg/tick and minimum forward
+COM speed4.51m/s.667 current-scene/physical-seed/continuity/seek checks pass using
+the captured actual NN rollout; the previous code fails the new orbit detector.
+1126 earlier jump checks still pass. Collider sheets inspected throughF217.
+The older body-landing suite still fails its historical F131 scene expectation;
+the identical failure was reproduced with the pre-change capsule.js. The old
+trim-generation suite also fails its incremental-NN-request assertion both
+before and after this change; no regression fix is claimed for that test.
+Evidence: Saved/BodyflipLab/LandingContinuity/. Live scene/playback not written,
+no GUI takeover or Unreal changes. Refresh loads; not pushed.
+
+## Leg continuity / Follow cam - October 29 (current jump behavior, local)
+
+The existing viewport camera checkbox now reads **Follow cam**: checked follows
+the agent; unchecked enters free camera from the current view. Rechecking centres
+the agent while retaining viewing angle and distance. No duplicate camera widget.
+
+The saved F61/F80 and second-push defects had several distinct sources:
+
+- The root-first push compressed its requested velocity change into about8ms
+  when loading left little reach. Hard ankle pinning then drove the knee nearly
+  straight, and the extra two-frame follow entry overshot/rebounded.
+- Per-frame shortest-arc interpolation during leg return changed branches,
+  creating a123deg thigh turn atF80.
+- An airborne foot marker could still inherit the preceding jump's future
+  locomotion landing, unlike an owned hand marker.
+
+Foot pushes now use a finite-speed knee-extension curve seeded with incoming
+bend/velocity. The root moves along the requested change of velocity while
+retaining the remaining incoming motion. Loading ends at the latest feasible
+candidate; actuation ends when the requested launch speed is reached, contact
+reaction becomes tensile, or existing contact geometry runs out. Actual outgoing
+velocity continues into flight. The driver does not compress time to manufacture
+the requested impulse, and retains the intended removal of incoming normal
+velocity on skewed surfaces. Existing Load/rebound/Jump% controls remain; no new
+eligibility gates or UI options. Hand pushes retain their existing driver.
+
+Contact planning predicts the continuing inherited turn about COM for its hip,
+anchor and posed collision geometry. New airborne markers own both articulation
+and a position/velocity-matched root continuation; the old carrier's hypothetical
+future landing cannot replace them. This is a planning prediction of inherited
+rotation; the main spin solver still integrates the current pose's inertia.
+
+Released feet now have one world-space continuation and one inertial return.
+The fixed departure point and projected pose seed extension; the two-frame entry
+has been removed. The return captures its rotational offset once, so it cannot
+switch shortest-arc branches halfway through. Joint limits apply to the continued
+reach before it seeds recovery. Leg follow remains0.20s by default and Leg still
+sets the return duration. Zero follow keeps immediate animation recovery.
+
+The carrier completes the contact side of release before constructing free-flight
+ticks; the departure seed uses that actual collision result. Contact boundaries
+replace the nearest regular240Hz tick, avoiding microscopic collision intervals.
+Subframes retain the exact source root curve. Final foot-clearance IK now restores
+the intended COM between passes instead of adding a small display-only COM shift.
+
+Frozen current-scene results: F60/F61 support knee41.84/36.17deg (previously
+41.68/2.60); F79->80 thigh9.39deg (previously122.9). Both markers push, atF56.625
+andF117.75; releasesF57.487/F118.101. Requested markers stayF56/F116; push/release
+timing follows the new extension.1126 checks cover both full leg chains at240Hz,
+release continuity, lengths, seeking, momentum and nearly aligned collision
+boundaries.300 world-follow and120 zero-follow regression checks pass;96 original
+paired-bounce checks retain hand behavior.693 additional flat/inclined/wall-skew
+checks cover continuous root velocity, launch budget, forward momentum and reach.
+Nine hand-recovery cases and six
+25/50/100%/positive/negative/zero-spin cases were also checked. Zero-spin edge
+cases retain a sub-degree (~0.22deg) projected hip difference at release; there is
+no visible lock/rebound in the sampled collider views. No claim of exact physical
+contact-force simulation is made by this kinematic target authoring model.
+
+Evidence and actual-collider sheets: Saved/BodyflipLab/LegContinuity/. Current
+scene generation plus369 projected samples takes about3-5s on this machine;
+playback samples cached motion. No live scene/settings edits, desktop operation,
+Unreal launch, server restart or push. Refresh loads the changes.
+
+## Initial world-space leg follow-through - October 29 (superseded above)
+
+Foot pushes now retain their last world-space ankle/contact orientation after
+release, like hand follow-through. **Leg follow s** is appended at the bottom of
+More options, default0.20s, range0-1s. Zero restores immediate animation recovery.
+The existing **Leg** slider controls return duration after this follow interval.
+There is no new ground pin or push force: the hip can leave the point and the
+leg cannot stretch. Whole-body rotation continues while the leg aims back toward
+the fixed point, within the normal joint limits.
+
+The shared spin-contact follow solver now supports legs as well as arms. Feet
+retain the actual departure pose from the carrier; later root collisions cannot
+rewrite it. Knee extension carries its release speed into a critically damped
+approach to the reach limit, with response duration based on Leg follow. This
+avoids an abrupt maximum-reach lock while the pelvis moves away. COM correction
+remains shared; returning blends use the untouched moving animation. Hand
+behavior/settings remain independent. Follow also works when spin is disabled.
+
+Saved second jump at F120 stays aimed within about3deg through the entry and
+below0.03deg after entry in whole-frame samples, then returns over the existing
+Leg time. Both pushes retain timing.300 focused checks cover world aim, subframe
+extension, fixed bone lengths, COM, pin release, seek stability, zero-spin use,
+settings and control placement;122 zero-follow knee-release checks pass.
+Evidence: Saved/BodyflipLab/FootFollow/. Live state unchanged; no desktop,
+Unreal, server restart or push. Refresh loads the new control and behavior.
+
+## Airborne foot release knee pop - October 29 (local)
+
+The saved second jump at F116 exposed two errors. Its carrier still used the
+standing capsule during SUPPORT/LOAD/PUSH, despite the bounce planner already
+using posed-body collision. This lifted the airborne root15.25cm. After release,
+a further collision offset was also applied to the *past* planted pose when
+rebuilding the leg recovery, changing the departure knee angle. Displayed right
+knee went46.8deg to6.8deg bent from F119 to F120.
+
+Airborne foot support now uses body colliders through the carrier as well.
+Recovery seeds once from the departing contact, with its actual root offset
+and velocity estimated from the last two completed240Hz carrier ticks. Later
+collision displacement cannot rewrite that earlier joint pose. This avoids
+recursive sampling of a collision tick still being integrated. The existing
+Leg blend duration, target animation, spin, contact and anatomical limits remain.
+Current frozen scene now goes89.1deg to81.5deg bent at F119/F120; both pushes keep
+their timing.122 focused checks cover subframe extension, fixed leg lengths,
+root displacement independence and seek stability;67 early-crouch checks pass.
+Evidence: Saved/BodyflipLab/Knee120/. No live-state, UI, desktop or Unreal edits;
+no push. Refresh loads the fix.
+
+## Earlier foot-jump crouch - October 29 (local)
+
+Larger foot jumps now lower the pelvis during preparation, instead of starting
+the entire crouch only after contact. For grounded jumps, the extra time over
+the X tier starts before the marker: defaults give Y100ms and full200ms of
+anticipation. The marker still starts foot capture. The same smooth depth curve
+continues through approach/contact; elapsed preparation counts toward the chosen
+buildup duration. Airborne foot jumps start lowering at their marker. Small
+jumps, hand buildup, existing controls and saved tuning retain their behavior.
+Preparation cannot start before scene0, the previous support releases, or the
+latest landing. Zero depth disables the new preparation.
+
+The root keeps its existing trajectory and momentum. Grounded knees bend under
+the lowered pelvis while the gait feet keep their world trajectories; the upper
+body keeps its source rotations. On contact, the chosen foot uses the existing
+world pin and heel-to-toe roll. Reach can still end loading early. Crouch depth
+stops growing on push and returns through the existing body blend after release.
+A failed foot approach blends the crouched body back as well as the support leg.
+
+Frozen current run: preparation F44, contact F56, push F60, release F60.48.
+Displayed pelvis is9.65cm below the original gait at contact; authored depth
+reaches12.10cm on push (formerly about1mm). Forward root speed remains5m/s.
+Second marker still pushes at1.95208s.67 early-crouch checks and335 momentum/
+continuing-animation checks pass, including tier controls, unchanged gait foot
+paths, trim extension equivalence and sub-mm push/release boundaries. Airborne
+capsule regression now explicitly lowers only the nonphysical root reference,
+keeping body/contact geometry fixed; its ballistic first step and push pass.
+The older aggregate jump-build test still fails its handBoth25 pin assertion
+with both the pre-change source and this source; it is not a new regression.
+Evidence: Saved/BodyflipLab/EarlyCrouch/. No UI changes, live state writes,
+desktop control, Unreal work or push. Refresh loads the update.
+
+## Instant spin and limb recoil - October 29 (local)
+
+**Instant spin** is per jump, appended at the bottom of the jump marker popup
+(user placement/scope correction). **Spin lag %** remains in More options.
+Instant spin overrides marker Accel/Brake without overwriting them: the new
+flip/twist command takes effect at actual release plus Delay. Keep still carries
+the previous command; explicit zero stops it. Orientation stays continuous.
+Integration splits at command boundaries, including fractional240Hz ticks, so
+there is no motion before the delay expires. Inertia scaling remains active.
+Instant spin persists on each marker; new markers default off. Legacy global
+values migrate once onto existing markers, respecting explicit marker values;
+the global key is removed. Spin lag remains per scene, default0. For the
+experiment, enable Instant spin on the chosen jump and set Spin lag to60%.
+Editor checks cover independent toggles, marker switching and saved roundtrips;
+mixed instant/smooth command checks pass. No live-state edits.
+
+spin-response.js adds damped limb recoil driven by changes in the spin command.
+Each shoulder/hip has three rotational coordinates and its elbow/knee one hinge.
+The lab's collider masses, centres and rotational inertia determine the joint
+velocity impulse. Critical damping returns the offsets to the moving animation;
+smooth bounded offsets and existing Jolt limits prevent overextension. No
+oscillatory noise or extra COM force. The response preserves COM and bone lengths;
+spin's inertia multiplier includes the resulting pose. Contact/follow-through
+solves run afterward. Keep markers carry the existing response without replaying
+its impulse. Zero strength bypasses the response. This is a small animation
+response to a prescribed turn, not a complete muscle/free-flight dynamics model.
+
+Reference basis: [Haering et al.,2017](https://pmc.ncbi.nlm.nih.gov/articles/PMC5396868/)
+separate release momentum, changing inertia and segmental momentum transfer in
+acrobatic rotation. [Willett et al.,2017](https://gfx.cs.princeton.edu/pubs/Willett_2017_SMF/index.php)
+use physically inspired rigs to propagate primary motion into secondary response.
+These motivate the design; the damping and response strength are artistic tuning,
+not measured human constants or a reproduction of either paper's solver.
+
+The instant turn also exposed an existing simulated-substep interpolation defect:
+the nonphysical root reference changed basis at release, and interpolation of
+root-local pelvis position pulled an intermediate target down26cm. Physics now
+uses one root basis for both endpoints, preserving the pelvis world path and
+local limb interpolation. Collision remains enabled; no solver limits relaxed.
+The failing foot fixture's2.29cm anchor separation becomes0.0344cm.
+
+Verification:3164 focused checks (timing, axes, reversal/stop, bounds, COM, inertia,
+Keep and deterministic seeking);161 prior spin checks; six paired-hand/release
+cases;1296 real Jolt ticks over foot, one-hand and two-hand jumps. Simulated
+maximum joint separation1.09mm, maximum bone-position tracking error1.54cm.
+Actual saved Run scene retains both successful pushes with the experiment on.
+Inspected collider frames57-80, covering the impulse and recovery. Cached motion
+sampling p95~3.3ms, excluding rendering; warm preparation~2.4s. Served browser
+module/controls checks pass. No desktop control, live-state write, Unreal work
+or push. Evidence: Saved/BodyflipLab/InstantSpin/. Refresh loads it.
+
+Current LOAD observation (October29, unchanged): saved first marker F56,
+Run5m/s,100% jump,300ms buildup,15% depth. Actual loading ends after29.17ms
+at the reach reserve (2.5cm left for extension), while root advances14.58cm.
+The300ms quintic depth curve has reached only0.097cm of its12.24cm target;
+displayed pelvis drops0.105cm. This is the mismatch between available stance
+time and the authored lowering clock, not the Instant spin option. A deeper
+buildup needs earlier preparation/available stance travel; compressing the full
+depth into29ms would introduce a snap. No loading or support tuning changed.
+Frozen scene and per-tick evidence: Saved/BodyflipLab/LoadDepth/.
+
+## Airborne foot rejump - October 29 (local)
+
+Saved Run scene,350deg/s first flip and second foot marker atF115: contact
+was valid at1.94167s, hip-foot distance73.51cm within80.75cm reach. The longer
+buildup resolver still used a standing capsule for airborne foot support; with
+root at-19.14cm, its first tick lifted root20.18cm and produced91.18cm reach,
+rejecting the push. Airborne foot loading now resolves the posed body, excluding
+the pinned foot/ball, matching hand loading. Grounded locomotion retains the
+standing capsule. No reach-limit relaxation or fabricated impulse. Actual saved
+replay now pushes; first jump timing unchanged. Zero push duration no longer
+misreports spin release unless the spin contact planner actually released early.
+
+verify-airborne-foot-rejump.mjs uses a committed small settings fixture and
+frozen Run phase bank, checking real upward release, absence of root lift, finite
+replay and unchanged first jump.335 buildup/momentum checks pass. The broader
+body-landing test has an existing F136 hand assertion failure, reproduced using
+the pre-fix flight.js with the same current dependencies; not introduced here.
+Evidence/backups: Saved/BodyflipLab/SecondPushMiss/. No live-state edits or push.
+
+## Independent hand return - October 29 (local)
+
+Hand return slider is directly below Body and Leg in the left panel (user
+placement correction),0-1s, default0.4s.
+Hand animation entry/abort, continued-reach recovery and pose cache duration use
+this clock; foot recovery retains legBlend (renamed Leg in the left panel).
+Hand follow remains the delay before returning. Existing scenes lacking the new
+field receive0.4s, without changing saved leg timing or writing live scene state.
+
+## Hand return at F146 - October 29 (local)
+
+Saved scene used Hand follow0.1s and Limb0.2s. Carrier correction blended the
+already blended arm again, and final aim projection pulled it back toward the
+contact during recovery. This delayed visible return into F146-150. Each
+contact/COM correction now uses the untouched animation as its target; final
+projection follows the blended arm direction during recovery. Full world-point
+aim remains during follow. User timings, root, commands and scene state retained.
+Saved F140-160 trace: shoulder peak15.98 to13.31 degrees/frame, with motion spread
+earlier through the existing12-frame return. Limb remains the return duration;
+Hand follow delays its start. Evidence: Saved/BodyflipLab/HandReturn146/.
+
+## Separate hand cone angle - October 29 (local)
+
+Hand cone degrees is appended at the bottom of More options, range0-85.
+The existing Cone degrees now applies to feet only. Hand surface ranking and
+approach planning both use handCone. Existing scenes inherit their previous
+shared angle once; saved hand/foot angles then remain independent. Direct
+15/60 and60/15 degree candidate checks, migration, bounds and syntax pass.
+The 45-degree ramps toggle includes/excludes the original left/right platforms
+from scene geometry and collision; their saved transforms remain. No state edits.
+
+## Hand cone debug - October 29 (local)
+
+Hand cones appended to the viewport toggles; existing Cone remains for foot
+support. Shows both prepared hand query cones, retained after capture so the
+actual decision can be inspected. Hand target circles are the pre-cone ideals;
+yellow crosses now mark the chosen surface contacts, connected to their ideals.
+Released hands are red even if originally planned as a pair. Saved F132 verifies
+left contact about22cm from its ideal; right was released at the marker by the
+spin/contact compatibility check. This is a debug-only change, not a contact
+solver change. Both cones/contacts, active/released labels, preference and syntax
+checked. Evidence: Saved/BodyflipLab/HandCones/.
+
+## Support target visibility - October 29 (local)
+
+Foot targets and Hand targets are appended to the right of the viewport
+toggles. Both default on, preserving the previous display; each independently
+controls the active support type's ideal circles and contact guide. The circles
+were already shared by foot and hand support, not permanently foot markers.
+Paired hand plans now mark both selected hand candidates green. Preferences
+use normal scene saving; toggling redraws without regenerating motion. Syntax,
+default/persistence, placement and rendering-gate checks pass. No live state edits.
+
+## Hand follow-through and playback cost - October 29 (local, unpushed)
+
+Hand follow s is appended at the bottom of More options (default 0.25 s).
+A hand that actually pushed keeps reaching toward its captured world-space
+release point, then returns over Limb seconds. The aim is recomputed from the
+moving shoulder; it is not a frozen spine-relative rotation. The common target
+projector reapplies that world aim after anatomical projection, within the same
+Jolt shoulder limits. Wrist limits, COM trajectory and support release times
+remain; a hand released before the push does not gain a new contact. A two-frame
+velocity-preserving entry prevents a release seam. The body continues its motion.
+
+Playback reuses prepared source/contact poses for foot as well as hand segments.
+Timestamp keys merge numerical clock drift; caches stay bounded and trim-limited
+generation remains. Kinematic playback samples at 60 Hz; simulated mode retains
+240 Hz. Saved-scene offline motion cost fell from 25.9 ms p95 to 1.92 ms p95
+per displayed frame (rendering excluded). Preparation measured 2.32 s in the
+final saved-scene replay. These are workload timings, not measured browser FPS.
+
+Left/right frame stepping and Step wrap between the trim brackets, including
+when Loop is off. Text editing retains its arrow keys. Seven boundary/pending
+preview cases pass; six rotating/paired/single-release contact cases pass,
+maximum release seam 0.077 mm. Browser-global load and served-file checks pass;
+the user resumed editing during verification, so the older frozen state is no
+longer expected to match live state. No live-state write, desktop control, Unreal
+change or push. Evidence: Saved/BodyflipLab/HandFollowThrough/.
+
+## Continuous COM spin and simulated playback - October 29 (local, unpushed)
+
+Flip and twist now command **degrees/second**, rather than a finite angle. A
+marker's blank value (**Keep**) inherits the preceding command and its unfinished
+ramp; explicit **0** brakes to rest. Delay starts after that marker's physical
+release (at the marker in Space gym / a 0% action). Accel and Brake in More
+options control rate changes. There is no automatic rotation deadline in flight.
+Foot/hand support retains the incoming orientation and rate command. A genuine
+landing hands control to the seeded locomotion recovery. Global Air flip also
+works when walking off the edge without a marker.
+
+`mass.js` shares the actual lab Jolt masses, shape centres and inertia with the
+planner: 25 bodies, 45 kg, including the five torso boxes. Rotations preserve
+this weighted COM while leaving the root reference separate. **Inertia %**, at
+the bottom of More options, defaults to100: each commanded axis is multiplied
+by `I_reference / I_current`. At0 it is a plain angular-velocity command; between
+these values the multiplier interpolates. A tested tucked pose spins1.60x faster.
+This is an axis-based authored speed multiplier, not a claim of a fully passive
+Euler rigid-body simulation. Existing attack compensation tuning is retained.
+
+Legacy nonzero angle totals migrate in memory to their former mean speed
+(angle / old duration); legacy zero means Keep. Version2 stores explicit rates.
+The duration/absolute-angle widgets are hidden; controls retain their locations.
+Saved scene files were not edited. Refresh loads the implementation and preserves
+normal app save/playback behavior.
+
+Under a continuing turn, paired hand support checks reach and shoulder/elbow
+limits. It releases the conflicting hand with the existing Limb blend; if both
+contacts are lost, it ends the drive and falls instead of inventing a push. The
+release blend uses the actual collision-corrected pose. Contact fitting preserves
+COM, and hand approach/release still carries incoming momentum and gravity.
+Zero-strength markers now use body collision too. Their collision clearance can
+move the body slightly without applying any launch impulse.
+
+Kinematic and simulated playback now use one legal joint target. Knees/elbows
+use the same hinge frames as Jolt; other joints use its swing/twist limits. The
+conversion retains authored socket twist near straight limbs and limits local
+joint changes to30rad/s, preventing a joint-limit branch change from teleporting
+the sweep-kick leg. Ground clearance includes both physical shapes and visible
+shoe/body geometry. The preexisting non-spine Jolt capsules have not been
+replaced with display boxes; this does not claim a new PHAT/Unreal asset match.
+
+Sim remains25 actual dynamic Jolt bodies with only pelvis absolute positioning.
+Parent/child attachment velocities are now compatible with the angular servo,
+instead of making constraints fight the commanded turn. Fast turns subdivide
+only when needed (over0.06rad in a240Hz step); ordinary motion retains its normal
+cost. Landing recovery uses the existing Body blend to meet the seeded NN with
+continuous pose/velocity, avoiding the first unstable inverted-pose predictions.
+
+Verification: all12 axes/signs, mixed twist, delayed/inherited/zero commands,
+reverse seeks, trim extension, four poses,17 attacks, paired contact retention,
+one-hand release, loss of both hands, slopes and a wall. Real Jolt sweep:
+33 cases /12,490 steps, plus updated nine contact cases /3,024 steps. The largest
+attack/contact deviation is8.2cm transient during self contact; it is not a
+constraint explosion.3600deg/s plus twist stays within1.3cm of the target. In the
+unchanged saved scene through3.4s, final maximum target error is1.53cm at foot
+release, pelvis5.3mm, joint attachment7.8mm; the former baseline exceeded1m.
+Visible target volumes stay above the floor.310 hand-COM checks retain ballistic
+motion; released support is still not counted as a fresh landing.
+
+Full collider frame sheets reviewed for the saved motion in both modes, paired
+release/failure and the sweep kick. Evidence, source backups, exact NN replay,
+regression logs and the completed plan are in `Saved/BodyflipLab/AngularMotion/`
+and `ANGULAR_MOTION_PLAN.md`. Offline saved-motion audit took7.3s total, including
+2.1s for3.4s of Jolt playback. Worst-case32 overlapping actions took5.5s isolated
+and10.8s after the full attack corpus; it remains a costly stress case, not a
+per-frame workload. All work was single-thread/bounded, without desktop control,
+Unreal edits, live-scene writes, a service restart or a push. The older finite-angle
+scene timings below are historical and are superseded by this section.
+
+
+## Full hand-push and landing replay - October 29 (local, unpushed)
+
+The previous contact-only correction was incomplete. Replaying the entire
+current F128 hand-push sequence through the actual landing NN showed loading
+used nearly all available arm compression. The drive then hit its travel limit
+after only 3.26 ms, releasing with COM vertical velocity -2.22 m/s. A real elbow
+contact at F139.75 started locomotion; the NN rapidly raised the body afterwards.
+
+For a longer authored buildup whose drive is cut short while still moving into
+the surface, `bounce.js` now tries at most eight earlier loading endpoints.
+It retains the longest complete feasible drive, keeping the latest buildup on
+ties. Each candidate uses only compression/energy accumulated by that endpoint.
+The root keeps its incoming momentum and gravity during loading; limb lengths,
+contact rules and successful existing drives are unchanged. This is shared by
+foot and hand pushes, not a special timing gate for this scene.
+
+Unchanged current scene: contact F134, loading 4.17 ms, complete drive 33.75 ms,
+release 2.27125 s with COM vertical velocity +2.36 m/s. It remains airborne
+through the saved 2.55 s trim. Extending offline to 3.4 s shows real pelvis
+landing at F172 (2.86667 s), followed by the seeded walking NN. During this
+recovery the NN could place a knee about 9.5 cm through the floor despite its
+supported root capsule. `capsule.js` now resolves the posed body against the
+platform during that recovery, preserving the root reference, joint rotations
+and limb lengths. The exact initial landing pose remains continuous.
+
+Validation includes actual NN continuation (17 output frames) and offline
+rendering using the lab's collider geometry through F204. The saved state,
+camera, markers and settings were not modified. Numeric suites pass: 106 body
+landing checks; 127 travel checks across 36 single/paired, impact/launch/slope
+cases; 96 paired/legacy checks (legacy outputs identical); 335 buildup momentum;
+310 hand COM; 9 recovery; 30 trim; 18 release-contact, plus strength-tier cases.
+Dense current push sampling has sub-nanometre pin/reach error and no penetration.
+Extending the trim retains the already-generated prefix. One bounded, existing
+single-thread CPU NN worker was used; no desktop control or Unreal work.
+
+Evidence/backups: `Saved/BodyflipLab/FullHandMotion/`, including before/after
+whole-motion collider renders and `after-full.json`. No restart or push.
+Refresh loads these scripts. This supersedes the F136/F139.75 outcome reported
+below; the released-support contact identity rule itself remains in place.
+
+## Released support contact is not a new landing - October 29 (local, unpushed)
+
+Follow-up saved setup moved the hand marker to F128 (2.13333 s). The right-hand
+fallback releases at2.25534 s, but its continuing palm contact was counted as a
+new landing at2.25833 s, about3 ms later. That incorrectly showed WALK atF136.
+
+The carrier now remembers the contacting body-part/surface pair when that part
+leaves the support solver. Its continuing contact still resolves collision and
+normal velocity, but cannot itself start locomotion. Once the shape separates
+beyond the existing collision tolerance (4 micrometres), a subsequent contact
+can land normally. Other body parts and other surfaces remain eligible. This
+has no timer and does not change push/plant/release timing. The same rule covers
+hands and feet. Extra contact queries run at release and while contact persists,
+not throughout support preparation.
+
+Read-only replay of the unchanged current scene: F136 now remains FALL, with
+1.75 cm minimum body clearance. Later actual upper-arm contact lands at2.32917 s.
+18 release-contact tests cover both hands/a foot, collision retention, lift and
+recontact, other-body landing and reverse seeking. The expanded body-landing
+suite passes100 checks;310 COM,9 recovery and30 trim-generation checks also pass.
+No live NN/desktop/Unreal work, saved-state edit, restart or push. Refresh loads.
+Evidence and source backups: `Saved/BodyflipLab/HandLanding/`.
+
+## Airborne body contact and landing - October 29 (local, unpushed)
+
+The standing capsule previously touched down while a folded/rotated body was
+still well above the platform. Jump flight and hand support now query the posed
+body volumes in `body-contact.js`: renderer-matched pelvis/spine/hand/foot boxes
+and limb/head capsules. The five spine boxes share the physical torso definitions.
+This is the kinematic lab's swept collision geometry, not a new Unreal mover or
+an assertion that all legacy Jolt limb shapes match these display dimensions.
+Finite platforms, slopes, sides and thin-platform sweeps use the same shapes.
+Locomotion retains the 30 cm / 86 cm standing capsule.
+
+Descending contact with an upward supporting surface starts locomotion. Wall
+contacts remove inward velocity without counting as a landing. The intended
+supporting hand(s), or planted feet during their contact phase, retain their
+existing support solver rather than triggering an ordinary landing themselves.
+Other body parts can land and interrupt a pending push. Hand COM fitting and
+loading also use posed geometry, so an invisible standing capsule cannot hold
+them up before body contact. Existing foot buildup remains unchanged.
+
+At landing, restoring the standing root reference does not move the visible
+body. Both current and previous NN seed poses retain their world coordinates;
+only the root reference/history is rebased. Interpolation approaches the contact
+root, not the restored standing root. Hand takeover also stops inheriting the
+previous jump's hypothetical future landing, which otherwise caused a 6.5 mm
+right-foot discontinuity. Pending pushes interrupted by body contact report Miss
+with the contacting body part and do not draw a push arrow.
+
+Read-only saved-scene replay: at F131, body clearance is 57.55 cm and the body
+remains airborne. The unchanged F136 hand marker starts before landing, but the
+right upper arm contacts the floor at 2.29583 s before the palms finish planting.
+That is the new real landing, not an early capsule landing. An offline variant
+with the marker at 1.95 s completes a paired-hand release at 2.23926 s. User
+markers, playback, scene files and tuning were not written.
+
+Validation: 95 geometry/sweep/landing checks, including renderer parity, rotated
+saved-scene handoff, slopes, side contact, finite gaps, thin platforms and reverse
+seeking. The saved-scene join has 1.24 micrometre maximum joint displacement over
+0.1 microseconds; its deterministic policy stand-in receives the exact visible
+contact pose. Also pass: 310 hand COM checks, nine independent Body/Limb recovery
+cases, 335 buildup momentum checks, six tier/contact cases and 30 trim-generation
+checks. Hand regression fixtures now explicitly use L for the first support and
+a feasible 1.95 s hand marker, avoiding dependency on changing Auto scores or the
+removed invisible capsule support; COM/recovery assertions remain intact.
+No live NN inference or visual desktop QA this turn. Existing service serves the
+new scripts; Refresh loads them. Evidence/backups: `Saved/BodyflipLab/PoseLanding/`.
+No Unreal work, service restart or push.
+
+## Supporting-foot composite score - October 29 (local, unpushed)
+
+Auto foot selection still runs after each foot's cone/finite-surface query.
+It now compares actual lowest-shoe-point travel to that contact, minus a bounded
+preference for being ahead of the pelvis in the surface-tangent travel direction.
+Previously it ranked ankle travel into the final Plant orientation, even though
+capture can use the current shoe orientation. In the reported saved pose both
+soles are about 1.8 mm from the floor, but that old metric said 20.8/12.6 cm.
+
+Score units are metres: contactDistance - forwardBonus. Each 10 cm of lead is
+worth 2.5 cm of contact travel, bounded to half a limb's reach on either side.
+The preference is multiplied by speed^2/(speed^2 + 0.25^2), using tangent speed
+in m/s. It vanishes for rest/normal-only motion; a raised leading foot can lose
+to a ready rear foot. Scores within 1 mm tie deterministically L-first. Selection
+has no playback history. Manual L/R, existing eligibility, penetration handling,
+cone geometry, target carry, approach speed and hand selection are unchanged.
+The phase tooltip now shows actual contact distance and composite score; no
+controls were added or moved. Existing distance remains ankle travel for the
+planner; diagnostics also expose contactDistance, forwardLead, forwardBonus, cost.
+
+`verify-support-score.mjs` passes 338 offline checks: reversed/sideways motion,
+rest/noise, height sweeps, rotated slopes/walls/ceiling, platform edges, manual
+choices, far surfaces, the earlier inclined-cone fixture, and 96 real walk/run
+poses (24 grounded front/rear comparisons). Momentum335 and the tier/contact/
+trim suite also pass. Dense replay of the saved scene selects L, loads 210.4 ms
+instead of R's 22.9 ms, and keeps 2.00002 m/s tangent speed with sub-nanometre
+pin error and no reach excess. Push/release joins are continuous; initial capture
+has the existing ~5 mm maximum joint adjustment from resolving sole contact.
+The later hand event still pushes, now with the existing R-hand fallback because
+its arrival pose changed. Marker times and user state were not edited.
+Evidence: `Saved/BodyflipLab/SupportScore/`. No desktop control, live NN,
+Unreal/service restart or push. Refresh loads the correction.
+
+## Jump strength buildup - October 29 (local, unpushed)
+
+Jump % selects three loading tiers for foot, single-hand and two-hand pushes:
+through X (default 35%) uses the existing Load ms response unchanged; above X
+through Y (70%) uses Y ms (200 ms); above Y uses 100% ms (300 ms), including
+strengths above 100%. X is kept below Y. Medium/full times cannot be shorter
+than the preceding tier. Old scenes with a tuned Load value initialize the new
+times at twice/three times that value, capped at 1500 ms. Settings live at the
+bottom of More options: X %, Y %, Y ms, 100% ms and Bend %. Existing controls
+stay in place. Setting all times equal restores the original loading path.
+
+Corrected after the user's momentum report: longer buildup authors pelvis
+translation toward the surface, not a spring pulling the root toward the plant.
+Bend % (15% default, 0-25%) is lowering relative to limb reach. Root velocity
+continues with gravity; only actual capsule collision removes inward normal
+velocity. No reach correction brakes or pulls the root backwards during loading.
+The captured pelvis height lowers smoothly while the supporting limb bends
+against its contact. All other local joint rotations keep following the current
+NN or already-running jump animation at its continuing clock. The rejected
+free-leg clearance IK and separate crouching-root carrier were removed.
+
+Available reach/compression can end loading before the requested tier time;
+we do not slow the character to keep a trailing limb planted. The existing push
+duration and Jump % strength rules remain. The lowered pelvis returns using
+Body blending after release. Hand wrist fitting uses the lowered body for both
+palms, with cached targets invalidated when the loading depth is committed.
+Hand COM correction remains. Space gym/0% actions stay contact-free.
+
+`verify-build-momentum.mjs` passes 335 checks: ballistic airborne root motion,
+grounded tangent momentum and real frozen NN/fall-animation sources. Their
+pelvis drops are about 12 cm; unaffected local rotations agree with the advancing
+source within 8e-16 radians. `verify-jump-build.mjs` checks thresholds/settings,
+six foot/two-hand tiers, contact/reach, hand COM, release continuity, finite
+floor/slope/wall constraints, deterministic seeking, save/reload, trim extension
+and appended UI fields. The 96 legacy bounce checks, 310 COM checks, nine
+arm-recovery cases and 12 wrist cases also pass. Historical fixtures use equal
+tier times to retain their previous timing.
+
+Before the composite foot selection above, offline replay kept the first root at 2.00002 m/s
+through loading and the push. Its trailing foot reaches the extension margin
+at 22.9 ms rather than holding the requested 300 ms by braking. The later paired
+hand push completes its 200 ms buildup and retains its incoming tangent speed.
+The composite-selection section above records the newer arrival pose and hand fallback.
+Evidence and rejected-implementation backup: `Saved/BodyflipLab/BuildMomentum/`;
+initial tier-work backups: `Saved/BodyflipLab/JumpBuild/`. No desktop control, live NN, Unreal,
+live state write, service restart or push. Refresh loads the correction.
+
+## Hand recovery clocks - October 29 (local, unpushed)
+
+Fixed the saved scene's F142 arm snap with Body 0.4 s / Limb 0.2 s.
+At release + 0.2 s (F141.225), the arm override ended and exposed the arm
+rotations still recovering inside the 0.4 s body blend. The hands jumped
+45-51 cm at that boundary. Hand recovery now excludes the supporting clavicle,
+upper arm, forearm and hand from the Body blend; those joints use only their
+Limb recovery and then follow the target animation. The torso and free arm
+retain Body timing. Both blends still start from the displayed release pose.
+Foot-jump blending, contact timing, wrist limits and COM correction are unchanged.
+
+`node Labs/BodyflipLab/verify-hand-recovery.mjs` checks nine saved-scene variants:
+Body shorter/longer/equal to Limb, either duration zero, and single/both hands.
+It checks joint continuity at nonzero blend endpoints and repeat/seek consistency.
+The saved scene's former discontinuity is below 1 micrometre across the sampled
+boundary. Existing 310 COM checks and 12 wrist cases also pass. Before/after
+F139-144 traces: `Saved/BodyflipLab/HandPerformance/frame142-*.json`.
+Saved tuning/playhead and UI remain untouched; Refresh loads the fix.
+
+## Hand playback performance - October 29 (local, unpushed)
+
+The saved Both hands scene exposed repeated contact/COM solves during playback.
+Each displayed frame requests four 240 Hz samples; the raw pose override and
+capsule source could evaluate the same hand motion three times per tick. Tiny
+differences between accumulated playback time and the fixed capsule grid also
+missed the source cache. Its 128 entries did not retain the hand interval across
+loops. Slow frames could then request three catch-up steps before rendering.
+
+Hand segments now share their solved raw poses across capsule integration,
+playback, preceding-segment articulation and debug reads. Only timestamps within
+1e-10 seconds of a 240 Hz tick are canonicalized; arbitrary subframe queries and
+different flip/twist/axis values remain separate. The expensive approach/push/
+blend interval is retained across loops, capped at 2400 poses per segment;
+free-fall/scrub and angle-override caches each retain at most 256 entries.
+Caches belong to one generated sequence, so settings edits rebuild them.
+Preparation still ends at the trim bracket and extends the existing prefix.
+
+The hand capsule also reuses its contact-corrected pose for the same source
+frame and exact resolved root. It still performs the original solve on the first
+query, including zero-offset cases. Public pose arrays are copied so a caller
+cannot modify a stored result. Landing/velocity metadata remains fresh; foot,
+locomotion, wrist limits, COM fitting and the 240 Hz simulation rate are unchanged.
+
+The same cached scene's four ticks plus enabled debug reads averaged about
+18.9 ms per displayed hand-approach frame before the fix, 0.56 ms afterwards.
+Playback no longer performs the COM fitting iterations already done during
+preparation. These are offline motion costs, excluding Jolt and rendering;
+no claim of measured browser FPS. Evidence and the pre-change source snapshot:
+`Saved/BodyflipLab/HandPerformance/`. The strict before/after audit passes
+32 checks and 818 frame comparisons, including altered settings/angles, off-grid
+seeks, caller mutation and trim extension. Maximum numerical difference is
+1.57e-10 (4.27e-13 in the saved scene). Existing 310 COM checks, 9 paired-hand
+cases, 12 wrist cases and 30 trim checks pass; 13 focused capsule-cache checks
+also pass. No UI/state edits, live NN, Unreal or service
+restart. Refresh loads the changes.
+
+## Two-hand push and hand COM - October 28 (local, unpushed)
+
+The existing marker's **Push with** selector now ends with **Both hands**.
+It tries two contacts on the selected platform, with one shared torso fold and
+one push. The first palm stays planted while the second approaches. Both actual
+arm reaches, legal wrist rotations, finite contact bounds and the root capsule
+must remain compatible. Otherwise the request falls back to ordinary Hand
+(auto); the status reports the hand actually used. No controls were moved or
+new timing sliders added. Existing scenes retain their selected support mode.
+
+The shared drive uses the mean shoulder and wrist positions, with separate
+reach constraints for both arms. It does not double Jump %. The first arm to
+exhaust its usable travel ends the common push. Loading resolves both reach
+constraints with the capsule, including tangent corrections when the floor
+blocks a radial correction. Velocity constraints are solved together so two
+parallel arms cannot remove the same velocity twice. The debug push arrow starts
+between the two contacts. Body and Limb recovery still use their existing times.
+
+Palm aiming also accounts for the displayed forearm's rounded wrist end. When
+flattening the hand would put that capsule through the platform, backward wrist
+pitch stops earlier. Twist, sideways deviation and the Jolt bounds are unchanged;
+the palm remains inclined with actual surface contact.
+
+The COM audit reproduced the saved 90-degree flip followed by the 50% left-hand
+push, using the physical rig's 45 kg mass distribution and collider centres.
+Previously, unfolding after release added about 2.17 m/s upward COM velocity;
+by 2.547 s the COM was 28.6 cm above the gravity-only prediction. The airborne
+reach also introduced up to 11.28 m/s² of extra COM acceleration. These were
+articulation moving mass around a ballistic root.
+
+Airborne hand preparation now fits root translation and wrist targets together
+against the incoming COM trajectory. It carries the solved root between planner
+ticks and preserves the existing reach pacing, cone and retreat checks. Both
+approaching hands are fitted together. Real capsule support or the first palm
+contact permits external forces; a standing floor-to-wall reach is not treated
+as free fall. The floor state comes from the actual carrier/capsule, not from the
+normal of the platform being reached for.
+
+After release, COM position and velocity are taken from the actual pinned pose.
+The completed body/limb/flip/attack pose and its root are translated together so
+internal animation cannot move the COM away from its ballistic path. The capsule
+receives that same corrected root. Its source curve is retained between collision
+ticks to avoid a pin-release interpolation hitch. Hand RISE/FALL timing uses COM
+vertical velocity; paused/reloaded flight readouts use COM velocity too. The
+existing fall cap remains, without an impulse if inherited release speed already
+exceeds it. Contact loading remains the lab's authored spring/push model.
+
+Validation: 310 inertia checks, 57 saved-scene regressions, 12 strict wrist cases,
+96 paired-drive checks, 9 paired-contact cases, 62 UI/persistence checks and
+30 trim-generation checks. Free approach
+COM error is below 2 nm for the saved single and paired setups; post-release error
+is below 4e-15 m. Exact single-support bounce traces and the preceding foot-jump
+prefix remain unchanged. A cached current-scene preparation measured about
+0.5 s, with 60 support samples taking about 0.11 s total on this laptop. These are
+bounded offline measurements, not a general frame-rate guarantee.
+
+The audit separately found existing COM drift during the preceding foot flip;
+this hand change preserves the accepted foot path. Its true incoming COM velocity
+is retained at the hand marker. Actual capsule-floor collision before palm contact
+also changes momentum and is retained. No claim of a full rigid-body force or
+angular-momentum solve is made for this kinematic lab.
+
+Offline actual-collider sheets: `Saved/BodyflipLab/HandReview/both-*.png`.
+No saved scene edits, desktop/browser control, Unreal/NN launch, service restart
+or push. Refresh loads the changes.
+
+## Trim-limited preparation - October 28 (local, unpushed)
+
+Edits prepare playback only through the end bracket. Later markers wait until
+that part of the timeline is exposed. Dragging the bracket outward or explicitly
+seeking farther calls `flight.extend(end)` and retains the existing sequence,
+segments, capsule history and Foot IK caches. It does not shorten the timeline.
+Releasing a bracket still restores the original playhead. A subsequent settings
+edit clamps a playhead outside the new generated range to the end bracket.
+
+Landing NN requests cover only the required output, with at most one 30 Hz
+interpolation frame. Extension resumes the exact recurrent lower/upper/pelvis
+state and origin instead of re-encoding an already decoded pose. Root-command
+lookahead (eight policy frames), the small precomputed gait source, and source
+curves needed to plan a visible action are still available; they are not extra
+generated playback. Zero-percent actions pass preparation and root-state queries
+to their underlying carrier. Previously prepared poses remain readable while an
+extension is pending. Refresh cancels obsolete client preparation after capturing
+its playback snapshot. An already submitted inference request finishes normally
+and its obsolete client result is discarded.
+
+`verify-trim-generation.mjs`: 30 offline checks, including incremental/full
+equivalence, unchanged prefix, deferred markers, landing continuation, rapid
+bracket release, overlapping seeks/edits, cancelled stale seeks/bracket previews,
+and zero-percent-action handovers.
+The policy is mocked in this test; Python state shape/finite checks and syntax
+were checked without loading the trained network or restarting the service.
+
+## Wrist contact limits - October 28 (local, unpushed)
+
+Hand support now authors a forearm-relative wrist bend. It no longer points the
+palm at the surface with an unconstrained world rotation. `wrist.js` shares the
+unchanged Jolt wrist limits with `physics.mjs`: normal swing 45 degrees, plane
+swing 40 degrees, axial twist plus/minus 55 degrees. The reference is the shared
+rig pose, not the pose at the jump marker. This matters in Kinematic mode, where
+Jolt itself does not enforce constraints on the displayed pose.
+
+The palm attempt changes only backward flexion/extension. Existing allowed
+axial twist and sideways deviation are retained; the support target adds neither.
+A fully flat palm is not forced when the allowed pitch cannot reach it. The hand
+stays inclined. The quaternion swing ellipse and rest frames match the shipped
+Jolt implementation, including the mirrored hand convention. Illegal input is
+projected into the existing bounds; no joint limit was widened.
+
+Approach reconstructs the wrist from the actually solved forearm at subframes.
+Capture couples arm IK, allowed pitch and the real rendered hand-box offset.
+During contact the same solve receives the bounce/capsule root, so final capsule
+interpolation cannot reintroduce hand twist or move the wrist off its contact.
+The captured material pivot is retained tangentially and lifted when a different
+box corner becomes lower. This is continuous contact, not a no-slip rolling model.
+The retreat check uses one wrist-clearance offset for both compared frames while
+retaining their actual cone/finite-edge contacts: rotating the hand alone cannot
+cause a false miss, and moving past the platform can still fail.
+
+`verify-wrist.mjs` has 3,408 checks, including comparison with the actual Jolt WASM
+constraint clamp (maximum angular difference below 5e-7 rad). Twelve strict
+integration cases sample ordinary and half-ticks of the saved inverted push,
+both hands from Idle/Walk/Run, slopes, walls and a missed finite edge. No added
+wrist twist exceeds 4.2e-7 rad; pin error stays below 1.8e-15 m and the wall capture
+seams below 2.6 micrometres. Grounded geometry and the 57-check exact-scene regression
+also pass. These are bounded fixtures; they do not assert that every contact is
+reachable under the newly enforced wrist limits. The updated legacy hand suite
+passes 405 checks across 6,193 samples, including zero-load contact and 18 unchanged
+foot-path comparisons (maximum error1.57e-16). Its slope fixtures now start outside
+the surface; unreachable rotated-floor cases verify legal wrists and no active
+impulse instead of requiring the old unrestricted palm to succeed.
+Actual-collider sheets: `Saved/BodyflipLab/HandReview/wrist-*.png`.
+No controls moved, saved scenes edited, browser/desktop control or service restart.
+Refresh loads the change.
+
+## Hand jumps - October 28 (local, unpushed)
+
+The existing marker popup ends with **Push with**: Foot (default), Hand (auto),
+Left hand, Right hand or Both hands. **Hand bend s**, default 0.35, remains last in More
+options. `Limb s` controls support-limb recovery; `Speed cm/s` retains the stored
+`supportSpeed` value. Reach, Gate, Speed, Lead, Cone, Load, Rebound, Up skew and
+Jump % also apply to hands. Foot heel/toe roll and Match foot stay foot-specific.
+Old scenes still use feet. No controls have moved in this correction.
+
+The hand adapter reuses finite-platform cone selection, root-local ideals,
+reach-aware travel, proximity capture and distance-growing misses. It preserves
+world bone transforms while separating the carrier root frame from an earlier
+body flip. Torso bending uses the actual incoming orientation; an inverted
+handstand remains inverted. Once the hand marker takes over, its articulation
+comes from the previous raw motion, not that previous jump's hypothetical future
+landing and locomotion NN. The displayed pose and velocity seed the handover.
+
+Loading and push planning now include the root capsule. The wrist pin, shoulder
+reach calculation, rendered body and release blend use the same constrained
+trajectory. Capsule and taut-arm constraints are resolved together; a ground
+correction cannot silently put the arm out of reach. Shoulder surface clearance
+is measured from the actual plane, independently of the rolling wrist offset.
+A contact with no usable extension releases without an active jump impulse.
+
+Grounded preparation uses a forward hip hinge with the hips moving back and
+feet trailing them. It blends captured joint rotations into one prepared stance;
+recomputing that stance from each gait frame had caused a sudden thigh twist.
+The supporting elbow turns outward around the shoulder-to-wrist axis, keeping
+the wrist pinned and the forearm clear of the knee. Incoming joint velocity is
+carried into the fold instead of being discarded on the first frame.
+
+After release, Body and Limb independently recover the procedural torso and arm
+changes. Airborne launches continue their incoming articulation. Grounded launches
+enter the existing fall loop, aligned to the incoming pelvis, instead of walking
+in midair. The ordinary foot-jump animation is no longer substituted beneath an
+inverted pelvis. Elbow recovery uses the
+same bounded hinge-momentum treatment as knees, enabled only for this hand path.
+The wrist-limited contact above supersedes the earlier forced palm flattening
+and fixed heel-lift target. Free-hand surface correction does not switch off at a
+blend deadline while the hand is still below the plane.
+
+The original 423 checks did not exercise the user's two-marker setup (180-degree
+foot flip followed by a left-hand push) or the full capsule correction at release.
+That setup exposed a 5.75 cm wrist teleport and a thigh passing through the torso.
+`verify-hand-current.mjs` now reads the committed phase bank and recreates that
+scene without live inference. It checks full-sequence pinning, release continuity,
+actual torso/limb geometry, return to incoming articulation, both hands and turns,
+ordinary walking, deterministic seeking, and absence of obsolete NN requests.
+The saved case has pin error below 4e-15 m and positive torso/limb terrain clearance
+through the inspected interval. Its preceding foot motion remains unchanged.
+
+Final offline verification: 57 exact-scene checks; 423 isolated hand/foot checks
+covering 6,350 poses; 30 trim checks; and 56 marker checks. The six Idle/Walk/Run
+left/right cases in `verify-hand-grounded.mjs` sample at 240 Hz, including release
+into the fall loop. Wrist pin error stays below 8e-16 m; worst joint-position
+seam is 0.83 mm. There is no gross torso/leg/arm intersection: the measured shell
+overlaps and plane discrepancy stay below 1 mm. Maximum hip-relative knee speed
+is 5.50 m/s. These are bounded fixture results, not universal self-collision.
+Actual-collider Walk/Run sheets were inspected after the final recovery change.
+The saved 2.55-second scene prepares in about 0.7 s using decoded cached gait data,
+with no obsolete landing-NN call; this is an offline preparation measurement,
+not a browser load-time measurement.
+
+`verify-hand-jump.mjs` covers isolated floor/slopes/wall contacts, timing and speed
+options, misses, cached gaits, mixed markers and numerical comparison with the
+retained pre-hand foot implementation. Running contacts with no extension room
+now verify a clean miss rather than requiring the old below-floor success.
+`verify-jump-track.mjs` covers marker controls and persistence. Actual-collider
+sheets and diagnostics are in `Saved/BodyflipLab/HandReview/`; older HandJump
+previews are historical, not verification of this correction.
+
+The lab still authors kinematic support motion with the root capsule; it is not
+an articulated torque controller or a finger-grip/self-collision simulator.
+It uses existing platform top faces (rotate one to provide a wall).
+No live scene writes, desktop/browser control, Unreal build or service restart.
+Refresh the existing lab to load the changes. No push was requested this turn.
+
+## Sweep kick - October 28 (local, unpushed)
+
+`Sweep kick` (`sweepKick`) is appended to the main Attack selector, marker attack
+selector and kick comparison viewer. Source is the user's
+`C:/Users/singerie/Documents/Cursor/stepper/ue5/slashes/recoveries/sweepKick.fbx`:
+36 original frames (0-35),30 Hz, Armed8 and Hit17. It strikes with the right foot
+and uses the shared full-body kick path and native post-Armed motion.
+It is circular: aim finishes at **Hit**, unlike Kick L/R at Armed.
+
+`export_sweepkick.py` reads the FBX without modifying it, normalizes through the
+existing FBX converter and writes one44,928-byte clip plus manifest entries.
+The main selector has one authored variant. All16 original dataset families and
+binary clips remain unchanged. The general vanilla exporter retains supplements.
+No target annotation exists in this FBX; the ideal hit point is derived from the
+existing foot contact offset on foot_r at frame17, with that provenance in metadata.
+
+Direct to Armed exposed a backward-knee overshoot during entry. The shared kick
+entry uses a bounded scalar hinge coordinate for entry curves that leave the
+0-to-180-degree interval, preserving endpoint velocity/acceleration. Valid old
+entries and every recorded key after Armed remain unchanged; no sweep-specific
+blend branch or new setting.232 original Kick L/R entry samples match the previous
+implementation below1.3e-16.2,118 direct/2,316 normal kick-integration samples pass,
+including viewer/manual/timeline parity, moving baseline, COM, sockets and knees.
+All17 attack-entry checks pass (2,700 samples). Circular Hit deadline and source
+FBX hash verified. No UI control, saved-state writes, Unreal/NN/server restart.
+Refresh loads the new attack.
+
+### Full-turn correction - October 28
+
+The first import was broken despite passing app/viewer parity checks: both paths
+shared the same error. The zero-spin balance solver opposed the authored body
+turn, then the absolute pelvis return from Hit erased the rest of that turn.
+This left the pelvis facing one way while the legs and torso continued another.
+
+All full-body kicks now separate the recorded, continuously unwrapped pelvis
+heading from articulation. Balance runs in that turning frame; the complete
+heading trajectory is restored afterwards about COM. The root remains the
+locomotion anchor throughout, including the main app's local-pose composition.
+The recovery now removes only **added balance rotations**, preserving the
+ongoing source pelvis tilt and all authored follow-through. It starts at Hit
+and finishes at max(native End, Hit + existing Out), inside the original end
+time. Short clips therefore retain a smooth correction interval. No duration
+was added, no sweep-name exception or new UI option was introduced, and the
+upper-body attack compensation path is unchanged.
+
+This is a kinematic, motion-preserving turn: the authored heading is prescribed.
+The balance solve is relative to it, not a claim of zero total world angular
+momentum during a 360-degree attack. Its correction is deliberately released
+during recovery. Source turn/strike fidelity takes priority over forcing an
+authored spinning action into a zero-spin initial condition.
+
+`verify-body-turn.mjs` checks 1,858 samples across all three kicks/both entry
+modes. Sweep pelvis finishes at -359.25 degrees (direct mode), matching its
+source. Every striking-leg orientation and hip-relative segment position is
+preserved through native End (<2.1e-15 error), with fixed COM, root axes,
+deterministic seeks, exact final pose and continuous entry/Hit/recovery velocity
+(join discrepancy <0.0044 rad/s at a 1-microsecond finite difference).
+Existing integration:2,118 direct/2,316 normal samples; all-attack entry:2,700;
+aiming:9,500 samples/all17 attacks and34 Undo rotation cases, all pass.
+
+Offline review used the actual `renderer.js` collider mesh builder, with50 sweep
+frames including the recovery, recorded/before/after/aimed comparisons, and both
+existing kicks. The distorted backward-folding recovery is gone. Artifacts:
+`Saved/BodyflipLab/SweepTurn/comparison.png`, `frames-2.png`, `frames-3.png` and
+`sweep-comparison.gif` (half-speed). `audit-sweep-turn.mjs` uses the before-source
+snapshots retained in that folder; `render-sweep-audit.py` produces the sheets.
+No browser/desktop control, saved-scene writes, Unreal/NN/server restart or push.
+Refresh in the existing app/viewer loads the shared fix; live feel awaits user review.
+
+## Static target aiming - October 27 (local, unpushed)
+
+Aim now adds **yaw only to the pelvis**, preserving its existing world-up tilt.
+The remaining bend is distributed in equal increments along the five spine
+joints for hand, sword and head contacts. Foot contacts use their hip because
+spine articulation cannot move the foot. Other local joint rotations (including
+elbows and knees), bone sockets and the root trajectory are preserved. A common
+translation maintains physical COM after articulation. Authored motion and
+attack compensation remain active; their existing pelvis tilt is not removed.
+
+Original `attack_target_world_m` metadata is attached to the vanilla Hit effector,
+including the authored blade contact. A cached three-parameter solve (pelvis
+yaw, contact-chain bend about world X/Z) fits the processed Hit direction after
+articulation. This accounts for the changed contact position and COM. It runs
+only when the target changes, not per frame, with no NN work. There is no target
+rejection or added pelvis pitch/roll fallback. Alignment controls direction;
+changing the spine shape changes radial reach, so distance is not forced.
+
+Kicks/jabs/pike reach the aim correction at Armed; others at Hit. Quintic timing,
+manual/timeline application and immediate target updates remain. Aim amount
+scales yaw and chain bend (100% full alignment); it is no longer a fraction of
+one rigid-body shortest rotation. `Undo rotation`, at the right of the viewport
+checkbox row, defaults on. Off retains the complete correction after End/Out;
+later timeline attacks interpolate from that retained yaw and chain deformation,
+including when the contact changes from a hand to a foot. The toggle controls
+aiming return only, not the existing pelvis compensation recovery. Scene save
+and paused toggling are unchanged. Static aiming only; no bodyflip coordination.
+
+Verification: 8,580 samples across all16 attacks with both entry modes; target
+directions, native contact calibration, Armed/Hit deadlines, 32 Undo rotation
+cases, manual/timeline routes, COM/root, fixed sockets, unchanged non-chain
+rotations and uniform chain increments. Added pelvis pitch/roll was below
+6e-16 radians; direction error below9e-9. Saved Slash L target at full alignment:
+156.71 degrees pelvis yaw,6.08 degrees total spine bend,zero added pelvis tilt.
+At the saved80%, residual direction error is29.74 degrees. At100%, the contact
+is17.52cm past the target center: direction aligns, reach is not warped.
+No browser/desktop control, scene writes, Unreal changes or server restart.
+User Refresh loads the source changes; visual feel awaits user review.
+
+Camera orbit now permits almost vertical downward/upward views (89.94 degrees).
+It rotates at constant viewing distance, retains both drag signs, saved cameras,
+free-camera behavior and unlimited zoom out; zoom in also works near the poles.
+
 ## Approved attack checkpoint - October 27
 
 User approved the integrated kicks, pelvis-only return and Direct to Armed for
@@ -874,6 +1874,10 @@ Visual QA unavailable; Refresh loads
 this change. No server restart, saved-state overwrite or Unreal work.
 
 ## Capsule root collision and landing - October 25
+
+Historical implementation: the October 29 airborne-body-contact section above
+supersedes standing-capsule landing during jump flight and hand support.
+The later trimmed-generation section supersedes the original 12-second horizon.
 
 The upright carrier uses native AProphecyAgent dimensions: 30cm radius, 86cm
 half-height. Root is its lowest point, matching GetRootLowPoint and

@@ -30,7 +30,11 @@ def main():
             (folder / (clip['name'] + '.bin')).write_bytes(raw)
             clips.append(dict(name=clip['name'], file='data/vanilla/' + clip['name'] + '.bin',
                               frames=clip['frame_count'], fps=clip['fps'], phases=phases,
+                              hitTarget=data['attack_target_world_m'].astype(float).tolist(),
                               source=str(source), sha256=hashlib.sha256(raw).hexdigest()))
+    existing = json.loads((ROOT / 'data/vanilla.json').read_text()) if (ROOT / 'data/vanilla.json').exists() else {'clips': []}
+    original_names = {c['name'] for c in clips}
+    clips.extend(c for c in existing['clips'] if c['name'] not in original_names)
     receipt = dict(schema=1, source=str(SOURCE), sourceSHA256=hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
                    contract='Original basePayload positions/basis, before target solvers; Armed/Hit from source NPZ.',
                    clips=clips)

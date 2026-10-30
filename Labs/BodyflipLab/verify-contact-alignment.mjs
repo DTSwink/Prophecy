@@ -40,7 +40,7 @@ for(const f of cases){
  check('Reverse seeking does not change contact '+label,JSON.stringify(f.contactMotion.sample(t-f.contactTime))===a);
  const ideals=f.idealDebug(f.supportStart).targets,eligible=f.supportScores.filter(s=>s.eligible);
  check('Both ideal markers report the selection-time comparison '+label,ideals.length===2&&ideals.every(i=>i.distance===f.supportScores.find(s=>s.foot===i.foot).distance));
- check('Chosen foot is closest among eligible own targets '+label,f.supportScores.find(s=>s.foot===f.supportFoot).distance===Math.min(...eligible.map(s=>s.distance)));
+ check('Chosen foot has lowest composite score '+label,f.supportScores.find(s=>s.foot===f.supportFoot).cost<=Math.min(...eligible.map(s=>s.cost))+.001);
  measurements.push({surface:label,foot:l.side,initialBank:bank(captured),releaseBank:bank(released),maxGap,maxBoneError,maxTargetError,load:f.bounce.loadDuration,push:f.release,releaseVelocity:f.bounce.released.v});
 }
 const third=isolated,l=third.support.leg,n=third.surface.normal;

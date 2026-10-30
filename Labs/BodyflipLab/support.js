@@ -20,16 +20,7 @@ function terrain(edge,ramps=true){const k=Math.SQRT1_2;return [ground(edge),...(
 function platformRecord(surface){const b=surface.box;return {id:surface.id,position:b.center.slice(),rotation:R.fromAxes([b.forward,b.side,b.up]),size:b.dims.slice()};}
 function platformSurface(p){const u=rotate(p.rotation,[1,0,0]),v=rotate(p.rotation,[0,0,1]),normal=rotate(p.rotation,[0,1,0]);return rectangle(p.id,add(p.position,mul(normal,p.size[1]/2)),u,v,[-p.size[0]/2,p.size[0]/2,-p.size[2]/2,p.size[2]/2],p.size[1]);}
 function scene(edge,settings){return settings.platforms===null||settings.platforms===undefined?terrain(edge,settings.ramps):settings.platforms.filter(p=>settings.ramps||!['left','right'].includes(p.id)).map(platformSurface);}
-function com(p,names,parents,reference){
- let sum=[0,0,0],total=0;
- for(let i=1;i<names.length;i++){
-  const child=parents.findIndex((v,j)=>v===i&&!names[j].startsWith('clavicle')&&!names[j].startsWith('thigh'));
-  const delta=child>0?sub(reference.points[child],reference.points[i]):rotate(reference.q[i],[names[i]==='head'?.12:.045,0,0]);
-  const offset=rotate(qinv(reference.q[i]),mul(delta,.5)),mass=names[i]==='pelvis'?8:names[i].startsWith('thigh')?5:names[i].startsWith('spine')?2:1;
-  sum=add(sum,mul(add(p.points[i],rotate(p.q[i],offset)),mass));total+=mass;
- }
- return mul(sum,1/total);
-}
+function com(p,names,parents,reference){const M=typeof module!=='undefined'?require('./mass.js'):root.BodyflipMass;return M.center(p,M.model(names,parents,reference));}
 // Ankle clearance from the displayed foot/toe boxes. The contact marker is on
 // the surface, rather than putting the ankle origin through the ground.
 // Anatomical signs belong to the rig, not world height. They must not flip
@@ -146,7 +137,8 @@ function solve(p,l,target,parents,ratio=1,rotation=l){
  const align=(before,after,q)=>qm(qm(frame(unit(after),normal),qinv(frame(before,l.normal))),q);
  const hq=align(l.upperAxis,sub(knee,hip),l.hipQ),kq=align(l.lowerAxis,sub(foot,knee),l.kneeQ);
  local.q[l.hip]=qm(qinv(p.q[parents[l.hip]]),hq);local.q[l.knee]=qm(qinv(hq),kq);
- local.q[l.foot]=qm(qinv(kq),rotation.footQ);local.q[l.toe]=qm(qinv(rotation.footQ),rotation.toeQ);local.p[l.toe]=l.toeLocal;
+ local.q[l.foot]=qm(qinv(kq),rotation.footQ);
+ if(l.toe>=0){local.q[l.toe]=qm(qinv(rotation.footQ),rotation.toeQ);local.p[l.toe]=l.toeLocal;}
  return R.fk(local,parents);
 }
 function blendLeg(p,release,l,amount,parents){
@@ -158,6 +150,10 @@ function blendLeg(p,release,l,amount,parents){
 // Surface ranking and the actual planner must agree on the same foot/contact.
 function candidates(p,names,settings,surface,velocity){
  const legs=['L','R'].map(s=>{const l=leg(p,names,s);l.plant=plantRotation(p,l,surface.normal,-(settings.plantPitch??10));l.clearance=clearance(orientedFoot(l,l.plant),l.foot,l.toe,surface.normal,l.side);return l;}),scores=ideal(p,legs,surface,velocity,settings);
+ const v=Array.isArray(velocity)?velocity:rotate(p.q[0],[0,0,velocity]),tangent=sub(v,mul(surface.normal,dot(v,surface.normal))),speed=length(tangent),direction=speed>1e-10?mul(tangent,1/speed):[0,0,0];
+ // No heading bias while stationary or moving only into the surface. Fade it
+ // smoothly below 0.25 m/s so tiny velocity errors cannot choose a new side.
+ const moving=speed*speed/(speed*speed+.25*.25);
  for(let i=0;i<legs.length;i++){
   const l=legs[i],score=scores[i];
   score.cone=coneTarget(add(p.points[l.foot],lowestOffset(p,l,surface.normal)),score.surface,surface,settings.supportCone??30);
@@ -167,40 +163,68 @@ function candidates(p,names,settings,surface,velocity){
   score.constrainedSurface=score.cone.contact||surface.closest(score.cone.apex);
   score.constrainedTarget=sub(score.constrainedSurface,lowestOffset(orientedFoot(l,l.plant),l,surface.normal));
   score.distance=length(sub(p.points[l.foot],score.constrainedTarget));
+  // Capture can use the current shoe orientation. Its real contact travel is
+  // the lowest shoe point to the cone-constrained point, not ankle travel into
+  // the eventual Plant pose (which wrongly penalizes an already grounded heel).
+  score.contactDistance=length(sub(score.cone.apex,score.constrainedSurface));
+  score.forwardLead=dot(sub(p.points[l.foot],p.points[l.pelvis]),direction);
+  // A 10 cm lead is worth 2.5 cm of contact travel. Bound the preference to
+  // half a leg's reach on either side, so a high front foot can still lose.
+  score.forwardBonus=.25*moving*clamp(score.forwardLead,-.5*l.reach,.5*l.reach);
+  score.cost=score.contactDistance-score.forwardBonus;
   // A cone can intersect a distant slab which the leg can never reach.
   score.inRange=length(sub(surface.closest(p.points[l.hip]),p.points[l.hip]))<=l.reach+Math.max(0,l.clearance)+1e-6;
   score.eligible=score.cone.valid&&score.inRange;
  }
  const allowed=[0,1].filter(i=>settings.jumpFoot==='Auto'||legs[i].side===settings.jumpFoot),valid=allowed.filter(i=>scores[i].eligible);
- const selected=(valid.length?valid:allowed).reduce((a,b)=>scores[a].distance<=scores[b].distance?a:b);
+ // Stable L-first tie within 1 mm of score; no history dependence on scrubbing.
+ const selected=(valid.length?valid:allowed).reduce((a,b)=>scores[b].cost<scores[a].cost-.001?b:a);
  return {legs,scores,selected};
 }
-function plan(end,names,parents,settings,surface,forwardSpeed,poseAt=null,velocity=null){
- const {legs,scores,selected}=candidates(end,names,settings,surface,velocity??forwardSpeed);
+function plan(end,names,parents,settings,surface,forwardSpeed,poseAt=null,velocity=null,adapter=null){
+ const choose=adapter?.candidates||candidates,fit=adapter?.landingTarget||landingTarget,low=adapter?.lowestOffset||lowestOffset,oriented=adapter?.orientedFoot||orientedFoot,ik=adapter?.solve||solve;
+ const {legs,scores,selected}=choose(end,names,settings,surface,velocity??forwardSpeed);
  const l=legs[selected],maxReach=l.reach*settings.supportReach,dt=1/240,frames=[],footSpeed=settings.supportSpeed/100;
+ const rotationAt=(p,point,u)=>adapter?.rotationAt?adapter.rotationAt(p,l,point,u):blendRotation(l,l.plant,u);
  const body=poseAt||(t=>({...end,points:end.points.map(p=>add(p,[0,0,forwardSpeed*t]))}));
  const toLocal=(p,v)=>rotate(qinv(p.q[0]),sub(v,p.points[0])),toWorld=(p,v)=>add(p.points[0],rotate(p.q[0],v));
  // Carry the prepared ideal and its base in the root frame, before ground clamping.
  const idealLocal=toLocal(end,scores[selected].requested),rawLocal=toLocal(end,scores[selected].raw);
  const idealsLocal=scores.map(s=>toLocal(end,s.requested));
- const idealTargets=p=>legs.map((leg,i)=>({foot:leg.side,selected:i===selected,distance:scores[i].distance,eligible:scores[i].eligible,point:landingTarget(toWorld(p,idealsLocal[i]),leg,surface).surface}));
- let localFoot=toLocal(end,end.points[l.foot]),jumpDelay=Infinity,abortDelay=Infinity,failureReason=null,rotationProgress=0,approachSpeed=0,reachWait=0;
+ const idealTargets=p=>legs.map((leg,i)=>({foot:leg.side,selected:i===selected,distance:scores[i].distance,eligible:scores[i].eligible,point:fit(toWorld(p,idealsLocal[i]),leg,surface).surface}));
+ let localFoot=toLocal(end,end.points[l.foot]),jumpDelay=Infinity,abortDelay=Infinity,failureReason=null,rotationProgress=0,approachSpeed=0,reachWait=0,travelled=0,rootCarry=[0,0,0];
  const query=(p,ankle,rotation)=>{
-  const raw=toWorld(p,rawLocal),requested=toWorld(p,idealLocal),idealHit=landingTarget(requested,l,surface),base=landingTarget(raw,l,surface);
-  const offset=lowestOffset(orientedFoot(l,rotation),l,surface.normal),apex=add(ankle,offset),cone=coneTarget(apex,idealHit.surface,surface,settings.supportCone??30);
-  const contact=cone.contact||surface.closest(apex),plantOffset=lowestOffset(orientedFoot(l,l.plant),l,surface.normal),target=sub(contact,plantOffset);
+  const raw=toWorld(p,rawLocal),requested=toWorld(p,idealLocal),idealHit=fit(requested,l,surface),base=fit(raw,l,surface);
+  const offset=low(oriented(l,rotation),l,surface.normal),apex=add(ankle,offset),cone=coneTarget(apex,idealHit.surface,surface,settings.supportCone??30);
+  const contact=cone.contact||surface.closest(apex),plantOffset=low(oriented(l,rotationAt(p,ankle,1)),l,surface.normal),target=sub(contact,plantOffset);
   return {target,surface:contact,cone,edgeLimited:idealHit.limited,coneLimited:length(sub(contact,idealHit.surface))>1e-6,shift:sub(requested,raw),appliedShift:sub(contact,base.surface),limited:idealHit.limited||length(sub(contact,idealHit.surface))>1e-6};
  };
- const record=(t,p,foot,target,rotation)=>frames.push({t,rotation,approachSpeed,reachWait,hipDistance:length(sub(foot,p.points[l.hip])),cone:target.cone,edgeLimited:target.edgeLimited,coneLimited:target.coneLimited,root:p.points[0].slice(),advance:p.points[0][2]-end.points[0][2],foot,localFoot:toLocal(p,foot),target:target.target,surface:target.surface,distance:length(sub(add(foot,lowestOffset(orientedFoot(l,rotation),l,surface.normal)),target.surface)),reachable:length(sub(target.target,p.points[l.hip]))<=maxReach,shift:target.shift,appliedShift:target.appliedShift,limited:target.limited});
+ const record=(t,p,foot,target,rotation)=>frames.push({t,rotation,rotationProgress,approachSpeed,reachWait,hipDistance:length(sub(foot,p.points[l.hip])),cone:target.cone,edgeLimited:target.edgeLimited,coneLimited:target.coneLimited,root:p.points[0].slice(),advance:p.points[0][2]-end.points[0][2],foot,localFoot:toLocal(p,foot),target:target.target,surface:target.surface,distance:length(sub(add(foot,low(oriented(l,rotation),l,surface.normal)),target.surface)),reachable:length(sub(target.target,p.points[l.hip]))<=maxReach,shift:target.shift,appliedShift:target.appliedShift,limited:target.limited});
  // Gate is sole-to-ground proximity, including at t=0. Capture that nearby
  // cone-valid contact immediately; do not wait for the ideal or Plant rotation.
  function capture(t,p,ankle,rotation,hit){
   if(!hit.cone.valid||hit.cone.gap>settings.supportTrigger+1e-7)return false;
-  if(dot(footFrame(orientedFoot(l,rotation),l.foot,l.toe,l.side).up,surface.normal)<=0)rotation=l.plant;
-  const offset=lowestOffset(orientedFoot(l,rotation),l,surface.normal),foot=sub(hit.surface,offset);
+  if(adapter?.captureRotation)rotation=adapter.captureRotation(rotation);
+  else if(dot(footFrame(oriented(l,rotation),l.foot,l.toe,l.side).up,surface.normal)<=0)rotation=l.plant;
+  let offset=low(oriented(l,rotation),l,surface.normal),foot=sub(hit.surface,offset);
+  if(adapter?.rotationAt)for(let i=0;i<48;i++){
+   rotation=rotationAt(p,foot,rotationProgress);offset=low(oriented(l,rotation),l,surface.normal);
+   const next=sub(hit.surface,offset),error=length(sub(next,foot));if(error<1e-9||i===47){foot=next;break;}foot=add(foot,mul(sub(next,foot),.5));
+  }
   if(length(sub(foot,p.points[l.hip]))>maxReach)return false;
-  const pose=solve(p,l,foot,parents,settings.supportReach,rotation);
+  let pose=ik(p,l,foot,parents,settings.supportReach,rotation,t,rotationProgress);
+  if(adapter?.movesRoot)for(let pass=0;pass<48;pass++){
+   // A COM-preserving root correction changes the solved forearm. Refit its
+   // legal wrist pitch and palm offset to the same surface contact together.
+   p=pose;rotation={footQ:pose.q[l.foot],toeQ:pose.q[l.foot]};
+   const actual=add(pose.points[l.foot],low(oriented(l,rotation),l,surface.normal)),gap=dot(sub(actual,hit.surface),surface.normal);
+   if(Math.abs(gap)<1e-8){foot=pose.points[l.foot];break;}
+   // Lowest corners can swap abruptly as the legal wrist pitches. Preserve
+   // tangential wrist travel; only remove the continuous normal-height error.
+   foot=sub(pose.points[l.foot],mul(surface.normal,gap*.7));pose=ik(p,l,foot,parents,settings.supportReach,rotation,t,rotationProgress);
+  }
   if(length(sub(pose.points[l.foot],foot))>2e-5)return false;
+  if(adapter?.movesRoot){p=pose;rotation={footQ:pose.q[l.foot],toeQ:pose.q[l.foot]};const actual=add(foot,low(oriented(l,rotation),l,surface.normal));if(length(sub(actual,surface.closest(actual)))>2e-5)return false;hit={...hit,surface:actual};}
   if(frames.at(-1)?.t===t)frames.pop();
   record(t,p,foot,{...hit,target:foot},rotation);jumpDelay=t;return true;
  }
@@ -211,7 +235,7 @@ function plan(end,names,parents,settings,surface,forwardSpeed,poseAt=null,veloci
  // Fixed authored substeps; no body hold and no dependency on playback history.
  const limit=Math.min(30,2+scores[selected].idealDistance/footSpeed*2);
  for(let step=1;!Number.isFinite(jumpDelay)&&!Number.isFinite(abortDelay)&&step<=Math.ceil(limit/dt);step++){
-  const t=step*dt,p=body(t),target=query(p,toWorld(p,localFoot),blendRotation(l,l.plant,rotationProgress));
+  const t=step*dt,base=body(t);let p=adapter?.movesRoot?{...base,points:base.points.map(v=>add(v,rootCarry))}:base;const target=query(p,toWorld(p,localFoot),rotationAt(p,toWorld(p,localFoot),rotationProgress));
   if(!target.cone.valid){abortDelay=t;failureReason='No ground in cone';break;}
   // Spend the available extension over the predicted wait for the pelvis,
   // rather than arriving too early and letting IK clip the remaining travel.
@@ -220,38 +244,42 @@ function plan(end,names,parents,settings,surface,forwardSpeed,poseAt=null,veloci
   const travelRoom=disc>=0?Math.max(0,-along+Math.sqrt(disc)):0;
   let advance=Math.min(distance,footSpeed*dt,travelRoom);reachWait=0;
   const extension=length(sub(target.target,p.points[l.hip]))-maxReach;
-  if(extension>0&&advance>0){
+  if(extension>0&&(advance>0||adapter?.rotationAt)){
    // One playback frame of the existing incoming motion supplies the closing
    // rate. It does not change the root path or introduce a new motion option.
-   const horizon=1/60,next=body(t+horizon),nextTarget=query(next,toWorld(next,localFoot),blendRotation(l,l.plant,rotationProgress));
+   const horizon=1/60,future=body(t+horizon),next=adapter?.movesRoot?{...future,points:future.points.map(v=>add(v,rootCarry))}:future,nextTarget=query(next,toWorld(next,localFoot),rotationAt(next,toWorld(next,localFoot),rotationProgress));
    const nextExtension=length(sub(nextTarget.target,next.points[l.hip]))-maxReach,closing=(extension-nextExtension)/horizon;
    if(closing>1e-6){reachWait=extension/closing;advance=Math.min(advance,travelRoom*dt/Math.max(dt,reachWait));}
   }
   approachSpeed=advance/dt;
   localFoot=toward(localFoot,toLocal(p,target.target),advance);
-  const candidate=toWorld(p,localFoot),progress=clamp(1-length(sub(candidate,target.target))/Math.max(1e-8,scores[selected].idealDistance),0,1);
+  travelled+=advance;
+  const candidate=toWorld(p,localFoot),progress=adapter?.rotationByTravel?clamp(travelled/Math.max(1e-8,scores[selected].distance),0,1):clamp(1-length(sub(candidate,target.target))/Math.max(1e-8,scores[selected].idealDistance),0,1);
   let u=Math.max(rotationProgress,progress*progress*(3-2*progress));
-  const room=dot(sub(candidate,target.surface),surface.normal),height=u=>clearance(orientedFoot(l,blendRotation(l,l.plant,u)),l.foot,l.toe,surface.normal,l.side);
+  const room=dot(sub(candidate,target.surface),surface.normal),height=u=>(adapter?.clearance||clearance)(oriented(l,rotationAt(p,candidate,u)),l.foot,l.toe,surface.normal,l.side);
   // Keep ankle travel speed unchanged. If interpolating the shoe would sweep
   // through the floor, advance its flattening (or delay its raising) just enough.
   if(height(u)>room+1e-8){
    if(height(1)<=room+1e-8){let lo=u,hi=1;for(let i=0;i<20;i++){const mid=(lo+hi)/2;if(height(mid)>room)lo=mid;else hi=mid;}u=hi;}
    else {let lo=rotationProgress,hi=u;for(let i=0;i<20;i++){const mid=(lo+hi)/2;if(height(mid)<=room+1e-8)lo=mid;else hi=mid;}u=lo;}
   }
-  rotationProgress=u;const rotation=blendRotation(l,l.plant,u);
-  const solved=solve(p,l,toWorld(p,localFoot),parents,1,rotation),foot=solved.points[l.foot];
+  rotationProgress=u;let rotation=rotationAt(p,candidate,u);
+  const solved=ik(p,l,toWorld(p,localFoot),parents,1,rotation,t,u),foot=solved.points[l.foot];
+  if(adapter?.movesRoot){p=solved;rootCarry=sub(p.points[0],base.points[0]);}
+  if(adapter?.rotationAt)rotation={footQ:solved.q[l.foot],toeQ:solved.q[l.foot]};
   localFoot=toLocal(p,foot);const actual=query(p,foot,rotation);record(t,p,foot,actual,rotation);
   if(capture(t,p,foot,rotation,actual))break;
   const current=frames.at(-1),previous=frames.at(-2);
   // Compare actual sole-to-contact distance; 0.01 mm ignores float noise.
-  if(current.distance>previous.distance+1e-5){abortDelay=t;failureReason='Distance growing';break;}
+  const receding=adapter?.receding?adapter.receding(current,previous):current.distance>previous.distance+1e-5;
+  if(receding){abortDelay=t;failureReason='Distance growing';break;}
 
  }
  if(!Number.isFinite(jumpDelay)&&!Number.isFinite(abortDelay)){abortDelay=frames.at(-1).t;failureReason='No reachable contact';}
  function sample(t){
   const f=clamp(t/dt,0,frames.length-1),i=Math.min(frames.length-1,Math.floor(f)),a=frames[i],b=frames[Math.min(i+1,frames.length-1)],u=f-i;
-  const lerp=(a,b)=>add(a,mul(sub(b,a),u)),p=body(a.t+(b.t-a.t)*u),rotation=blendRotation(a.rotation,b.rotation,u),pose=solve(p,l,lerp(a.foot,b.foot),parents,1,rotation),foot=pose.points[l.foot],target=lerp(a.target,b.target);
-  return {pose,foot,rotation,target,cone:u<.5?a.cone:b.cone,surface:lerp(a.surface,b.surface),distance:length(sub(add(foot,lowestOffset(pose,l,surface.normal)),lerp(a.surface,b.surface))),advance:a.advance+(b.advance-a.advance)*u,shift:lerp(a.shift,b.shift),appliedShift:lerp(a.appliedShift,b.appliedShift),limited:b.limited,edgeLimited:b.edgeLimited,coneLimited:b.coneLimited};
+  const lerp=(a,b)=>add(a,mul(sub(b,a),u)),time=a.t+(b.t-a.t)*u,p=body(time),point=lerp(a.foot,b.foot),progress=a.rotationProgress+(b.rotationProgress-a.rotationProgress)*u,rotation=adapter?.rotationAt?rotationAt(p,point,progress):blendRotation(a.rotation,b.rotation,u),pose=ik(p,l,point,parents,1,rotation,time,progress),foot=pose.points[l.foot],target=lerp(a.target,b.target);
+  return {pose,foot,rotationProgress:progress,rotation:adapter?.movesRoot?{footQ:pose.q[l.foot],toeQ:pose.q[l.foot]}:rotation,target,cone:u<.5?a.cone:b.cone,surface:lerp(a.surface,b.surface),distance:length(sub(add(foot,low(pose,l,surface.normal)),lerp(a.surface,b.surface))),advance:a.advance+(b.advance-a.advance)*u,shift:lerp(a.shift,b.shift),appliedShift:lerp(a.appliedShift,b.appliedShift),limited:b.limited,edgeLimited:b.edgeLimited,coneLimited:b.coneLimited};
  }
  const coneForPose=p=>query(p,p.points[l.foot],{footQ:p.q[l.foot],toeQ:p.q[l.toe]}).cone;
  return {leg:l,scores,jumpDelay,abortDelay,failureReason,idealLocal,idealTargets,frames,sample,coneForPose,terminal:sample(frames.at(-1).t),maxReach,rootSpeed:forwardSpeed};

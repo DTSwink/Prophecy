@@ -66,7 +66,28 @@ function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=f
  // sockets. Match the target's velocity/acceleration to avoid stopping at Armed.
  const startLocal=R.localize(at(sourceStart).points,at(sourceStart).q,parents),nextLocal=R.localize(at(sourceStart+h*clip.meta.fps).points,at(sourceStart+h*clip.meta.fps).q,parents),prevLocal=R.localize(at(sourceStart-h*clip.meta.fps).points,at(sourceStart-h*clip.meta.fps).q,parents);
  const startErrors=startLocal.q.map((q,i)=>qlog(qm(q,qinv(rest.q[i])))),startNext=nextLocal.q.map((q,i)=>qlog(qm(q,qinv(rest.q[i])))),startPrev=prevLocal.q.map((q,i)=>qlog(qm(q,qinv(rest.q[i]))));
- const entry=t=>{const u=clamp(t/lead,0,1);return R.fk({p:rest.p,q:rest.q.map((q,i)=>{const e=startErrors[i],v=mul(sub(startNext[i],startPrev[i]),lead/(2*h)),a=mul(add(sub(startNext[i],mul(e,2)),startPrev[i]),lead*lead/(h*h)),x=add(add(mul(e,10*u**3-15*u**4+6*u**5),mul(v,-4*u**3+7*u**4-3*u**5)),mul(a,.5*u**3-u**4+.5*u**5));return qm(qexp(x),q);})},parents);};
+ const rawEntry=t=>{const u=clamp(t/lead,0,1);return R.fk({p:rest.p,q:rest.q.map((q,i)=>{const e=startErrors[i],v=mul(sub(startNext[i],startPrev[i]),lead/(2*h)),a=mul(add(sub(startNext[i],mul(e,2)),startPrev[i]),lead*lead/(h*h)),x=add(add(mul(e,10*u**3-15*u**4+6*u**5),mul(v,-4*u**3+7*u**4-3*u**5)),mul(a,.5*u**3-u**4+.5*u**5));return qm(qexp(x),q);})},parents);};
+ // A C2 quaternion entry can overshoot straight knees when Armed has a high
+ // incoming velocity. Use a bounded scalar hinge coordinate only for those
+ // entry curves; existing valid entries and all recorded keys remain unchanged.
+ const bounded=[],entryStep=h;
+ for(const {h,restBend} of kneeCurves){
+  const i=h.knee,bend=q=>restBend+dot(qlog(qm(qinv(rest.q[i]),q)),h.kneeAxis);
+  let unsafe=false;
+  for(let n=0;n<=64;n++){const p=rawEntry(lead*n/64),angle=bend(qm(qinv(p.q[parents[i]]),p.q[i]));if(angle<0||angle>Math.PI){unsafe=true;break;}}
+  if(!unsafe)continue;
+  const b=clamp(bend(startLocal.q[i]),1e-10,Math.PI-1e-10),v=(bend(nextLocal.q[i])-bend(prevLocal.q[i]))/(2*entryStep),a=(bend(nextLocal.q[i])-2*b+bend(prevLocal.q[i]))/(entryStep*entryStep);
+  const logit=x=>Math.log(x/(Math.PI-x)),d=Math.PI/(b*(Math.PI-b)),dd=-Math.PI*(Math.PI-2*b)/(b*b*(Math.PI-b)*(Math.PI-b));
+  bounded.push({h,restBend,from:logit(restBend),to:logit(b),v:d*v*lead,a:(d*a+dd*v*v)*lead*lead});
+ }
+ function entry(t){
+  const pose=rawEntry(t);if(!bounded.length)return pose;
+  const local=R.localize(pose.points,pose.q,parents),u=clamp(t/lead,0,1);
+  for(const b of bounded){const z=b.from+(b.to-b.from)*(10*u**3-15*u**4+6*u**5)+b.v*(-4*u**3+7*u**4-3*u**5)+b.a*(.5*u**3-u**4+.5*u**5),angle=Math.PI/(1+Math.exp(-z));
+   local.q[b.h.knee]=qm(rest.q[b.h.knee],qexp(mul(b.h.kneeAxis,angle-b.restBend)));
+  }
+  return R.fk(local,parents);
+ }
  // Brake the terminal motion without carrying its sideways velocity through
  // most of the return. Critical decay preserves the initial derivative; a C2
  // end window reaches the reference pose without a hard stop or knee spread.
@@ -76,6 +97,34 @@ function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=f
  function sample(t){if(t<=0)return reference;if(t<lead)return entry(t);if(t<=end)return at(sourceStart+(t-lead)*clip.meta.fps);if(t<stop)return exit(t-end);return reference;}
  const strikeWeight=t=>{const x=clamp((t-end)/tail,0,1);return 1-x*x*x*(10+x*(-15+6*x));};
  return {sample,at,lead,end,stop,clip,hinges,strikeWeight,directArmed,sourceStart,armedTime:lead+(clip.meta.phases.armed-sourceStart)/clip.meta.fps,sourceFrame:t=>sourceStart+Math.max(0,t-lead)*clip.meta.fps};
+}
+// Treat the authored heading as a prescribed body turn, independent of the
+// zero-spin balance solve for articulation. Sampling/unwrapping a scalar yaw
+// preserves revolutions which a single shortest quaternion cannot represent.
+function bodyTurn(track,names,reference){
+ const pelvis=names.indexOf('pelvis'),forward=rotate(qinv(reference.q[pelvis]),[0,0,1]);
+ const count=Math.ceil(track.stop*120),dt=track.stop/count,angles=[];
+ for(let i=0;i<=count;i++){
+  const p=track.sample(i*dt),f=rotate(p.q[pelvis],forward),previous=i?angles[i-1][0]:0;
+  const angle=Math.hypot(f[0],f[2])<1e-7?previous:Math.atan2(f[0],f[2]);
+  angles.push([previous+Math.atan2(Math.sin(angle-previous),Math.cos(angle-previous))]);
+ }
+ angles.startDerivative=[0];angles.endDerivative=[0];
+ const angleAt=t=>curve(angles,clamp(t/dt,0,count))[0],rotationAt=t=>qexp([0,angleAt(t),0]);
+ const origin=reference.points[pelvis];
+ function rotateBody(pose,q,pivot){
+  const result=transform(pose,q,pivot,pivot);
+  // Root is the locomotion anchor, not a physical body. Changing its axes
+  // would put the removed turn back into pelvis-local recovery and lose it
+  // again when the main app restores the root trajectory.
+  result.points[0]=pose.points[0].slice();result.q[0]=pose.q[0].slice();result.axes[0]=pose.axes[0];return result;
+ }
+ const remove=t=>rotateBody(track.sample(t),qinv(rotationAt(t)),origin);
+ function restore(plan){
+  const carry=(pose,t)=>rotateBody(pose,rotationAt(t),plan.center);
+  return {...plan,sample:t=>carry(plan.sample(t),t),uncorrected:t=>carry(plan.uncorrected(t),t),samplePlanned:t=>carry(plan.samplePlanned(t),t),authoredTurn:{rotationAt,angleAt}};
+ }
+ return {rotationAt,remove,restore};
 }
 function create({source,names,parents,reference,duration,sampleRate=120,angularMomentum=[0,0,0],trajectory=null,preserve=[]}){
  const rig=H.model(names,parents,reference),dt=1/sampleRate,count=Math.ceil(duration/dt),first=source(0),origin=center(H.bodies(first,rig),rig),comAt=trajectory||(()=>origin),states=[{q:[0,0,0,1],rate:[0,0,0]}];
@@ -230,5 +279,5 @@ function returnFromHit(plan,{start,end,parents,pelvis}){
  }
  return {...plan,sample,returnStart:start,recoveryStart:start,recoveryEnd:end,returnMode:'pelvis-from-hit'};
 }
-const api={create,createBalanced,returnFromHit,recording,center,transform};if(node)module.exports=api;else root.BodyflipAirborneMotion=api;
+const api={create,createBalanced,returnFromHit,recording,bodyTurn,center,transform};if(node)module.exports=api;else root.BodyflipAirborneMotion=api;
 })(globalThis);

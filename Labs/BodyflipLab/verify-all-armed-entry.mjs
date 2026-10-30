@@ -35,5 +35,5 @@ for(const metadata of meta.clips){
  for(let t=0;t<planned.returnEnd+.1;t+=1/60){maxManualParity=Math.max(maxManualParity,error(manualAt(t),planned.sample(t).pose));samples++;}
  assert(Math.abs(ctx.manualResponse.response.returnEnd-planned.returnEnd)<1e-10);const before=JSON.stringify(track.sample(armedAt+.03));track.sample(100);track.sample(0);assert.equal(JSON.stringify(track.sample(armedAt+.03)),before,'Reverse seek deterministic');checked.push(metadata.name);
 }
-assert.equal(checked.length,16);assert(maxNativeError<1e-8,'All authored upper-body follow-through retained');assert(maxEndpointError<1e-8);assert(maxEntryStep<1e-5);assert(maxArmedVelocityJump<.03);assert(maxManualParity<1e-8);
+assert.equal(checked.length,meta.clips.length);assert(maxNativeError<1e-8,'All authored upper-body follow-through retained');assert(maxEndpointError<1e-8);assert(maxEntryStep<1e-5);assert(maxArmedVelocityJump<.03);assert(maxManualParity<1e-8);
 const result={attacks:checked.length,samples,maxNativeError,maxEndpointError,maxEntryStep,maxArmedVelocityJump,maxManualParity,checked};fs.writeFileSync(new URL('all-armed-entry-verification.json',import.meta.url),JSON.stringify(result,null,2)+'\n');console.log(result);

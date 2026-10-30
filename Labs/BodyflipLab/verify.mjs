@@ -10,7 +10,7 @@ for(const family of m.clips){let clip;for(const meta of family.variants){const b
  const source=C.centerPose(clip.poses[Math.floor(clip.poses.length*.65)],base),point=C.contactPoint(source,family.name,m.names,sword),target=R.add(point,[.10,.08,.06]),aimed=C.aimPose(source,target,family.name,m.names,m.parents,sword,1),before=R.length(R.sub(point,target)),after=R.length(R.sub(C.contactPoint(aimed,family.name,m.names,sword),target));receipt.aim.push({attack:family.name,before,after});assert(after<=before+.002,`Aim worsened ${family.name}: ${before} -> ${after}`);
  const fullReturn=C.sample(clip,clip.duration+1,idle,m.parents);assert(R.length(R.sub(fullReturn.points[24],idle.points[24]))<1e-6);
 }
-assert(receipt.maxHingeExcess<.07,`hinge violation ${receipt.maxHingeExcess}`);assert.equal(receipt.clips,320);
+assert(receipt.maxHingeExcess<.07,`hinge violation ${receipt.maxHingeExcess}`);assert.equal(receipt.clips,m.clips.reduce((n,c)=>n+c.variants.length,0));
 // The neutral body follows constant rotation instead of folding behind its pelvis.
 p.reset(C.centerPose(idle,base));let target;
 for(let i=1;i<=1440;i++){target=C.centerPose(idle,C.orientation(i*.5,i*.25,0,base));p.step(target,1/240);}

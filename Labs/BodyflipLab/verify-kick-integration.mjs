@@ -18,7 +18,7 @@ function inspect(p,base){
  samples++;
 }
 const directArmed=process.argv.includes('--armed'),started=performance.now(),clips=new Map();
-for(const name of ['KickL','KickR']){
+for(const name of ['KickL','KickR','sweepKick']){
  const meta=metadata.clips.find(c=>c.name===name),clip=C.decode(meta,bytes(meta.file),names,parents);clips.set(name,clip);
  const start=.4,lead=.18,tail=.45,segment={sample:()=>({pose:reference}),airStart:start,jumpStart:start,abortTime:Infinity},e={attack:name,attackIn:lead,attackOut:tail};
  const timeline=A.create(e,segment,clips,names,parents,{...C.defaults,kickToArmed:directArmed},reference),viewer=K.preview({clip,names,parents,reference,directArmed}),moving=K.create({clip,names,parents,reference,base:t=>transform(reference,t),start,lead,tail,directArmed});
