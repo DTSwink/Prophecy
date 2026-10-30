@@ -322,6 +322,15 @@ def generate_command(owner, request):
         drawn=request.get('drawn', False), names=['root', *seed['names']], seeds=seeds,
         roots=roots, rootYawDegrees=yaws, frames=total,
         verifyReference=request.get('verifyReference', False)), max_frames=300)
+    # Surface playback needs initial policy history, not a second five-second
+    # rollout. Freeze capsule height from already-generated settled history so
+    # extending the visible horizon cannot change the initial root trajectory.
+    reference_height = None
+    if request.get('seedOnly'):
+        pelvis = result['names'].index('pelvis')
+        history_start = max(0, start-math.ceil(stride))
+        reference_height = sum(result['poses'][i]['points'][pelvis][1]-result['roots'][i][1]
+                               for i in range(history_start, start))/(start-history_start)
     origin = torch.tensor(result['roots'][start]); origin[1] = 0
     result['poses'] = result['poses'][start:]
     result['pins'] = result['pins'][start:]
@@ -332,6 +341,9 @@ def generate_command(owner, request):
     if result.get('rootFeatures') is not None:
         result['rootFeatures'] = result['rootFeatures'][start:]
     info = dict(owner.direction_info, commandSpeed=speed, policyGait='run', commandGait=gait)
+    if reference_height is not None:
+        info.update(referenceHeight=reference_height, totalDuration=float(request.get('totalDuration', 5)),
+                    referenceHeightSource='mean pelvis-root height over final warmup gait period')
     result.update(gait=gait, duration=duration, phase=phase, directionMeta=info, command=info,
         periodSeconds=stride/30, rootYawSpeed=omega, nnRootWindow=True,
         rootYawStart=yaw_start, rootYawStop=yaw_stop,

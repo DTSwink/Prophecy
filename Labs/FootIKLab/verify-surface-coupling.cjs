@@ -2,6 +2,7 @@ const fs=require('fs'),path=require('path'),z=require('zlib'),assert=require('as
 const K=require('./footik.js'),F=require('./surface.js'),C=require('./surface-coupling.js'),R=require('./recovery.js');
 const fixture=JSON.parse(z.gunzipSync(fs.readFileSync(path.join(__dirname,'data/wall-frame-run-fixture.json.gz'))));
 (async()=>{
+ fixture.request.settings={...fixture.request.settings,pelvisCloser:0};
  const {request,response}=fixture,parents=JSON.parse(fs.readFileSync(path.join(__dirname,'data/rig.json'))).parents;
  const run=K.decode(request.source,parents),checks=[],check=(name,value)=>{assert(value,name);checks.push(name);};
  const {model,steps}=await C.compute(run,request.settings,async(_,i)=>response.steps[i]);
@@ -33,8 +34,12 @@ const fixture=JSON.parse(z.gunzipSync(fs.readFileSync(path.join(__dirname,'data/
  check('low-speed steep pins still cancel',model.frames.filter(f=>!f.surface.pinsAllowed).every(f=>f.feet.every(x=>!x.contact)));
  check('initial authored phase is retained',R.length(R.sub(model.frames[0].raw.points[1],run.poses[0].points[1]))<1e-8);
  // Prediction must use copies: generating extra futures cannot change physics.
- const plain=F.prepare(run,request.settings),g=F.simulate(run,request.settings,{interactive:true});let next=g.next();while(!next.done){next.value.forecast(40);next=g.next();}
- check('forecasting cannot mutate actual root/foot history',JSON.stringify(plain.frames)===JSON.stringify(next.value.frames));
+ // Interactive simulation requires its actual pose/contact replies. Wrap the
+ // ordinary coupled replay so only the number of extra forecasts differs.
+ const originalSimulate=F.simulate;let forecastReplay;
+ F.simulate=function*(...args){const g=originalSimulate(...args);let next=g.next();while(!next.done){if(!next.value.checkpoint){next.value.forecast(40);next.value.forecast(7);}const reply=yield next.value;next=g.next(reply);}return next.value;};
+ try{forecastReplay=await C.compute(run,request.settings,async(_,i)=>response.steps[i]);}finally{F.simulate=originalSimulate;}
+ check('forecasting cannot mutate actual root/foot history',JSON.stringify(model.frames)===JSON.stringify(forecastReplay.model.frames));
  const report={passed:true,checks,historyError,replayError,frame143:{velocity:f.surface.velocity,nnSpeed:w.delta.map(v=>v*30),heading},metrics:model.metrics,workerSeconds:response.seconds,policySeconds:response.policySeconds};
  fs.writeFileSync(path.join(__dirname,'snapshots/surface-coupling-verification.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 })().catch(e=>{console.error(e);process.exitCode=1});

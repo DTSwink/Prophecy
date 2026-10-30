@@ -11,6 +11,7 @@ import time
 import hashlib
 import inspect
 import warnings
+import atexit
 from contextlib import contextmanager
 from pathlib import Path
 # Reuse the frozen codec/model loader read-only; worker/cache ownership stays here.
@@ -284,13 +285,21 @@ class ResumeLocomotion(Locomotion):
 if __name__ == '__main__':
     # Parent owns lifetime and serializes requests. Retain only the last gait.
     from directional_nn import configure_direction, generate, generate_command, resume_in_course
-    model, model_key = None, None
+    model, model_key, surface_sessions = None, None, None
     for line in sys.stdin:
         try:
             request = json.loads(line)
+            if request.get('kind') == 'shutdown':
+                if surface_sessions is not None:
+                    surface_sessions.close()
+                break
             gait = 'run' if request.get('policy') == 'run' else request['gait']
             direction = request.get('direction', 'forward')
             key = (gait, direction)
+            if surface_sessions is not None and request.get('kind') == 'surface':
+                retained = surface_sessions.owner_for(request)
+                if retained is not None:
+                    model, model_key = retained, key
             if model_key != key:
                 model = ResumeLocomotion(gait)
                 if direction != 'forward' or request.get('kind') in ('direction', 'surface'):
@@ -305,7 +314,13 @@ if __name__ == '__main__':
                     configure_direction(model, gait, direction)
                 import importlib
                 import surface_nn
-                result = importlib.reload(surface_nn).run_surface(model, request)
+                if 'endTime' in request:
+                    if surface_sessions is None:
+                        surface_sessions = surface_nn.SurfaceSessions()
+                        atexit.register(surface_sessions.close)
+                    result = surface_sessions.process(model, request)
+                else:
+                    result = (surface_nn if surface_sessions is not None else importlib.reload(surface_nn)).run_surface(model, request)
             else:
                 result = resume_in_course(model, request) if hasattr(model, 'course_axes') else model.resume(request)
             print(json.dumps(result, separators=(',', ':'), allow_nan=False), flush=True)

@@ -9,13 +9,15 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url),F=require('./surface.js'),K=require('./footik.js'),R=require('./recovery.js'),S=require('./support.js'),{load}=require('./test-bank.cjs');
 const rig=JSON.parse(fs.readFileSync(new URL('data/rig.json',import.meta.url)));
+// Historical baseline suite; the new closer control is covered separately.
+const prepareBaseline=(run,input,experiment)=>F.prepare(run,{pelvisCloser:0,...input},experiment);
 const checks=[],cases=[],models=new Map(),check=(name,ok)=>{assert(ok,name);checks.push(name);};
 const distance=(a,b)=>R.length(R.sub(a,b)),rad=q=>R.length(R.qlog(q));
 const finite=p=>p.points.flat().every(Number.isFinite)&&p.q.flat().every(Number.isFinite);
 for(const gait of ['walk','run'])for(const direction of ['forward','backward','left','right']){
  const source=direction==='forward'?null:JSON.parse(fs.readFileSync(new URL(`.nn-cache/directional-${gait}-${direction}.json`,import.meta.url))),run=source?K.decode(source,rig.parents):load(gait,.21);
  for(const approach of ['toward','parallel'])for(const slopeAngle of direction==='forward'?[0,30,45,60,75,90]:[0,45,90]){
-  const label=`${gait}${direction==='forward'?'':' '+direction} ${approach} ${slopeAngle}deg`,start=performance.now(),model=F.prepare(run,{gait,direction,approach,slopeAngle}),milliseconds=performance.now()-start;
+  const label=`${gait}${direction==='forward'?'':' '+direction} ${approach} ${slopeAngle}deg`,start=performance.now(),model=prepareBaseline(run,{gait,direction,approach,slopeAngle}),milliseconds=performance.now()-start;
   models.set(label,model);
   let maxBoneError=0,maxRootVelocityResidual=0,maxRootPositionResidual=0,maxPinSlip=0,maxUprightError=0,upperError=0,ballistic=0,minHeadingDot=1,minRootPlaneGap=Infinity;
   const activePins=new Map();
@@ -57,13 +59,13 @@ for(const gait of ['walk','run'])for(const direction of ['forward','backward','l
   cases.push({gait,direction,approach,slopeAngle,milliseconds,metrics:model.metrics,maxBoneError,maxPinSlip,minHeadingDot,minRootPlaneGap,maxRootVelocityResidual,maxRootPositionResidual,maxUprightError,upperError,ballisticFrames:ballistic,wallRelease:model.events.find(e=>e.type==='wall-release')?.frame??null});
  }
 }
-const walk=load('walk',.21),normal=models.get('walk parallel 90deg'),noGravity=F.prepare(walk,{gait:'walk',approach:'parallel',slopeAngle:90},{gravity:0}),noSupport=F.prepare(walk,{gait:'walk',approach:'parallel',slopeAngle:90},{support:false});
-const noSupportNoGravity=F.prepare(walk,{gait:'walk',approach:'parallel',slopeAngle:90},{support:false,gravity:0});
+const walk=load('walk',.21),normal=models.get('walk parallel 90deg'),noGravity=prepareBaseline(walk,{gait:'walk',approach:'parallel',slopeAngle:90},{gravity:0}),noSupport=prepareBaseline(walk,{gait:'walk',approach:'parallel',slopeAngle:90},{support:false});
+const noSupportNoGravity=prepareBaseline(walk,{gait:'walk',approach:'parallel',slopeAngle:90},{support:false,gravity:0});
 check('Removing gravity changes an unsupported trajectory',distance(noSupport.frames.at(-1).surface.mass,noSupportNoGravity.frames.at(-1).surface.mass)>10);
 check('Supported gravity is balanced by actual traction, not disabled',normal.frames.some(f=>f.surface.contacts>0&&distance(f.surface.gravity,[0,-9.81,0])<1e-10&&R.length(f.surface.drive)>9));
 check('Disabling support gives zero active force and no pins',noSupport.frames.every(f=>f.feet.every(x=>!x.contact)&&R.length(f.surface.supportForce)===0&&R.length(f.surface.drive)===0));
 check('Contact traction changes the trajectory compared with gravity alone',distance(normal.frames[120].surface.mass,noSupport.frames[120].surface.mass)>.3);
-const replay=F.prepare(walk,{gait:'walk',approach:'toward',slopeAngle:45}),original=models.get('walk toward 45deg');
+const replay=prepareBaseline(walk,{gait:'walk',approach:'toward',slopeAngle:45}),original=models.get('walk toward 45deg');
 check('Full replay and reverse seeking are reproducible',replay.frames.every((f,i)=>distance(f.surface.mass,original.frames[i].surface.mass)<1e-12&&distance(replay.sample((600-i)/120).pose.points[1],original.frames[600-i].pose.points[1])<1e-12));
 check('Input bounds keep the prototype finite',F.settings({slopeAngle:Infinity,upright:NaN}).slopeAngle===45&&F.settings({slopeAngle:120,upright:-1}).slopeAngle===90&&F.settings({upright:-1}).upright===0);
 // Contact acquisition now retains the incoming shoe rotation, so the capture

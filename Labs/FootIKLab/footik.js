@@ -7,9 +7,19 @@ const T=typeof module!=='undefined'?require('./terrain.js'):root.FootTerrain;
 const {add,sub,mul,dot,cross,length,unit,rotate,qm,qinv,qslerp}=R;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const smooth=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
-const defaults={gait:'walk',phase:0,terrain:'stairs',height:16,depth:35,steps:12,enabled:true,clearance:4,pelvis:30,ghost:false,targets:true,ramp:false,bicolor:true,bones:false,translucency:70,ghostTranslucency:70,loop:true,trimIn:0,trimOut:5,speed:1,direction:'forward',slopeAngle:45,approach:'toward',upright:.55,rootYawSpeed:0,rootYawStart:0,rootYawStop:null,footYawLimit:45,stepAccent:100,showRoot:false,inclineGravity:false,minGravityIncline:45,fullGravity:100,energyConservation:100,deleteFloorFrame:-1};
+const defaults={gait:'walk',phase:0,terrain:'stairs',height:16,depth:35,steps:12,enabled:true,clearance:4,pelvis:30,ghost:false,targets:true,ramp:false,bicolor:true,bones:false,translucency:70,ghostTranslucency:70,loop:true,trimIn:0,trimOut:5,speed:1,direction:'forward',slopeAngle:45,approach:'toward',upright:.55,rootYawSpeed:0,rootYawStart:0,rootYawStop:null,footYawLimit:45,stepAccent:100,showRoot:false,inclineGravity:false,minGravityIncline:45,fullGravity:100,energyConservation:100,deleteFloorFrame:-1,pelvisCloser:20};
 function sanitize(input={}){
  const s={...defaults,...input};delete s.oldAnkle;delete s.walkHandoff;
+ s.slideEnabled=!!s.slideEnabled;
+ s.slideSpeed=s.slideSpeed==null||s.slideSpeed===''||!Number.isFinite(+s.slideSpeed)?2:+s.slideSpeed;
+ s.slideBlend=s.slideBlend==null||s.slideBlend===''||!Number.isFinite(+s.slideBlend)?.25:clamp(+s.slideBlend,.05,1);
+ s.slideLegBlend=s.slideLegBlend==null||s.slideLegBlend===''||!Number.isFinite(+s.slideLegBlend)?s.slideBlend*2:clamp(+s.slideLegBlend,.05,3);
+ s.slidePelvisBlend=s.slidePelvisBlend==null||s.slidePelvisBlend===''||!Number.isFinite(+s.slidePelvisBlend)?s.slideBlend*2:clamp(+s.slidePelvisBlend,.05,3);
+ s.slideCloser=s.slideCloser==null||s.slideCloser===''||!Number.isFinite(+s.slideCloser)?0:clamp(+s.slideCloser,0,15);
+ for(const [key,minimum,maximum] of [['slideFriction',0,300],['slideRecovery',10,200]])s[key]=s[key]==null||s[key]===''||!Number.isFinite(+s[key])?100:clamp(+s[key],minimum,maximum);
+ for(const [key,value,minimum,maximum] of [['slideShift',20,0,50],['slideShiftSpeed',10,.1,100],['slideHeadSpeed',30,.1,100]])s[key]=s[key]==null||s[key]===''||!Number.isFinite(+s[key])?value:clamp(+s[key],minimum,maximum);
+ // Migrate the old shared tuning once; explicit hand values remain independent.
+ for(const [key,source,minimum,maximum] of [['slideHandShift','slideShift',0,50],['slideHandShiftSpeed','slideShiftSpeed',.1,100]])s[key]=s[key]==null||s[key]===''||!Number.isFinite(+s[key])?s[source]:clamp(+s[key],minimum,maximum);
  s.pinReleaseSpeed=Math.max(0,Number.isFinite(+s.pinReleaseSpeed)?+s.pinReleaseSpeed:.2);
  // Per-preset edits leave the procedural presets and the other lab's scenes alone.
  s.platformLayouts={};
@@ -17,8 +27,12 @@ function sanitize(input={}){
   const list=input.platformLayouts?.[key];if(!Array.isArray(list))continue;
   const ids=new Set();s.platformLayouts[key]=list.slice(0,128).filter(p=>p&&typeof p.id==='string'&&p.id.length<=100&&!ids.has(p.id)&&['position','rotation','size'].every(k=>Array.isArray(p[k])&&p[k].length===(k==='rotation'?4:3)&&p[k].every(Number.isFinite))&&Math.hypot(...p.rotation)>1e-8&&(ids.add(p.id),true)).map(p=>({id:p.id,position:p.position.map(v=>clamp(v,-10000,10000)),rotation:p.rotation.map(v=>v/Math.hypot(...p.rotation)),size:p.size.map(v=>clamp(v,.02,1000))}));
  }
- for(const [k,a,b] of [['minGravityIncline',0,90],['fullGravity',0,100],['energyConservation',0,100],['stepAccent',0,400],['footYawLimit',5,90],['phase',0,1],['height',0,30],['depth',28,100],['steps',2,24],['clearance',0,20],['pelvis',0,60],['translucency',0,100],['ghostTranslucency',0,100],['trimIn',0,5-1/60],['trimOut',1/60,5],['speed',.1,2],['slopeAngle',0,90],['upright',0,1]])s[k]=clamp(Number.isFinite(+s[k])?+s[k]:defaults[k],a,b);
+ for(const [k,a,b] of [['pelvisCloser',0,50],['minGravityIncline',0,90],['fullGravity',0,100],['energyConservation',0,100],['stepAccent',0,400],['footYawLimit',5,90],['phase',0,1],['height',0,30],['depth',28,100],['steps',2,24],['clearance',0,20],['pelvis',0,60],['translucency',0,100],['ghostTranslucency',0,100],['trimIn',0,5-1/60],['trimOut',1/60,5],['speed',.1,2],['slopeAngle',0,90],['upright',0,1]])s[k]=clamp(Number.isFinite(+s[k])?+s[k]:defaults[k],a,b);
  s.deleteFloorFrame=s.deleteFloorFrame===''||s.deleteFloorFrame===null||!Number.isFinite(+s.deleteFloorFrame)?-1:Math.max(-1,Math.round(+s.deleteFloorFrame));
+ // Old saves retain their tuned posture until the new maximum is edited.
+ s.pelvisCloserMax=s.pelvisCloserMax==null||s.pelvisCloserMax===''||!Number.isFinite(+s.pelvisCloserMax)?s.pelvisCloser:clamp(+s.pelvisCloserMax,0,50);
+ s.pelvisSpeedMin=s.pelvisSpeedMin==null||s.pelvisSpeedMin===''||!Number.isFinite(+s.pelvisSpeedMin)?0:Math.max(0,+s.pelvisSpeedMin);
+ s.pelvisSpeedMax=s.pelvisSpeedMax==null||s.pelvisSpeedMax===''||!Number.isFinite(+s.pelvisSpeedMax)?Math.max(s.pelvisSpeedMin,3.5):Math.max(s.pelvisSpeedMin,+s.pelvisSpeedMax);
  s.steps=Math.round(s.steps);s.trimOut=Math.max(s.trimIn+1/60,s.trimOut);
  s.rootYawSpeed=clamp(Number.isFinite(+s.rootYawSpeed)?+s.rootYawSpeed:0,-360,360);
  s.rootYawStart=Math.max(0,Number.isFinite(+s.rootYawStart)?+s.rootYawStart:0);
@@ -37,7 +51,7 @@ function commandYaw(settings,time,speed){
 // The synthetic root bone is identity; its axes cannot supply this heading.
 function rootHeading(run,time,settings={},speed=run.directionMeta?.commandSpeed||0){
  const angles=run.rootYawDegrees;let yaw;
- if(angles?.length){const f=clamp(time*run.fps,0,angles.length-1),i=Math.floor(f);yaw=angles[i]+((angles[i+1]??angles[i])-angles[i])*(f-i);}
+ if(angles?.length&&!(run.directionMeta?.totalDuration>run.duration&&time>run.duration)){const f=clamp(time*run.fps,0,angles.length-1),i=Math.floor(f);yaw=angles[i]+((angles[i+1]??angles[i])-angles[i])*(f-i);}
  else yaw=commandYaw(settings,time,speed);
  const facing=run.directionMeta?.facingDegrees??({forward:0,left:-90,backward:180,right:90}[run.direction]||0),a=(facing+yaw)*Math.PI/180;
  return [Math.sin(a),0,Math.cos(a)];
@@ -48,6 +62,7 @@ function decode(data,parents){
  return {names:['root',...data.names],travel,fps:data.fps,duration:data.duration,periodSeconds:data.periodSeconds,nnRootWindow:!!data.nnRootWindow,rootYawSpeed:data.rootYawSpeed||0,rootYawDegrees:data.rootYawDegrees,direction:data.direction||data.command?.direction||'forward',directionMeta:data.directionMeta||data.command,poses,locals:poses.map(p=>R.localize(p.points,p.q,parents)),source:data.source,parents};
 }
 function travelAt(run,t){
+ if(run.directionMeta?.totalDuration>run.duration)return Math.max(0,t)*run.directionMeta.commandSpeed;
  const f=clamp(t*run.fps,0,run.travel.length-1),i=Math.min(run.travel.length-2,Math.floor(f)),u=f-i;
  return run.travel[i]+(run.travel[i+1]-run.travel[i])*u;
 }
@@ -110,7 +125,7 @@ function stableLeg(p,names,side){
  const pole=unit(add(mul(anatomical,1-w),mul(rawPole,w)));
  return {...l,normal:unit(cross(axis,pole)),axisLocal:rotate(qinv(p.q[l.pelvis]),axis),poleLocal:rotate(qinv(p.q[l.pelvis]),pole)};
 }
-function solve(p,l,target,parents,rotation=l){
+function solve(p,l,target,parents,rotation=l,limbOnly=false){
  const hip=p.points[l.hip],delta=sub(target,hip),a=l.upper,b=l.lower;
  const d=clamp(length(delta),Math.abs(a-b)+1e-6,a+b-1e-7),axis=unit(delta);
  const originalAxis=rotate(p.q[l.pelvis],l.axisLocal),originalPole=rotate(p.q[l.pelvis],l.poleLocal);
@@ -120,6 +135,15 @@ function solve(p,l,target,parents,rotation=l){
  const basis=(direction,n)=>{direction=unit(direction);n=unit(sub(n,mul(direction,dot(n,direction))));return R.fromAxes([direction,n,cross(direction,n)]);};
  const align=(before,after,q)=>qm(qm(basis(after,normal),qinv(basis(before,l.normal))),q);
  const hq=align(l.upperAxis,sub(knee,hip),l.hipQ),kq=align(l.lowerAxis,sub(foot,knee),l.kneeQ);
+ // Slide contact fitting can solve this isolated chain hundreds of times per
+ // frame. Its other bones are already in world space and must not be rebuilt.
+ if(limbOnly){
+  const points=p.points.slice(),q=p.q.slice(),axes=p.axes.slice();
+  q[l.hip]=R.unit(hq);q[l.knee]=R.unit(kq);q[l.foot]=R.unit(rotation.footQ);q[l.toe]=R.unit(rotation.toeQ);
+  points[l.knee]=add(hip,rotate(q[l.hip],l.kneeLocal));points[l.foot]=add(points[l.knee],rotate(q[l.knee],l.ankleLocal));points[l.toe]=add(points[l.foot],rotate(q[l.foot],l.toeLocal));
+  for(const j of [l.hip,l.knee,l.foot,l.toe])axes[j]=R.toAxes(q[j]);
+  return {points,q,axes};
+ }
  const local=R.localize(p.points,p.q,parents);
  local.p[l.knee]=l.kneeLocal;local.p[l.foot]=l.ankleLocal;local.p[l.toe]=l.toeLocal;
  local.q[l.hip]=qm(qinv(p.q[parents[l.hip]]),hq);local.q[l.knee]=qm(qinv(hq),kq);

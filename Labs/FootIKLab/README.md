@@ -3,6 +3,877 @@
 Independent kinematic terrain-placement prototype, created October 25, 2026
 from the Bodyflip Lab renderer, cached NN gait banks and leg solver.
 
+## Restore accepted slide movement/contact — October29
+
+### October30 lossless solve optimization
+
+The user approved the clearance-entry/contact-travel result below. The final
+optimization preserves it exactly: `slide-entry.js` retains computed hip, knee
+and foot chain values while their input coordinates are unchanged during the
+corridor search. `slide-joints.js` avoids full hinge diagnostics when only the
+hinge angle is needed, a duplicate quaternion product, and small polynomial
+array callback allocations. Search order, iteration counts and arithmetic
+order are unchanged. Shared surface/Foot IK solvers and arm motion were not
+modified by this pass.
+
+Strict deep equality passed for 20,121 complete frames: the accepted current
+replay, 16 independently generated walk/run slide cases (all directions, yaw,
+inclines and floor deletion), and 20 cached-input terrain/disabled cases.
+An additional 10,400 randomized joint projection, diagnostic and blend
+comparisons passed exactly. The 16 slide pairs took 121.80s before and 90.56s
+after in sequential Node runs (1.345x overall; 1.08-1.63x per case). These are
+solve timings, not a claim of improved render FPS or native Unreal speed.
+Evidence and original source bytes: `Saved/FootIKLossless20261030/`.
+No live settings, server or viewer state was changed. Native packaging and
+cross-engine verification are separate work still in progress.
+
+### October30 clearance entry and contact travel
+
+F81.5 was the first elbow-clearance correction, with no earlier displayed-arm
+history. F123-130 used an axis-selecting wall correction that suppressed the
+hand's upward motion, then switched to the gradient method at .7rad and kicked
+sideways at130.5. The wall solve now attempts the continuous shoulder gradient
+at every correction size; individual axes remain only a numerical fallback.
+History is retained while clear of the wall. Initial clearance acceleration is
+bounded, then the entry limiter fades as contact weight rises from.85 to.95,
+or retires after four settled ticks. This avoids carrying lag through a brace.
+No frame/side cases, added torso guard, root changes, or new UI/tuning.
+
+Checked user's current yaw-stop10m setup with recorded NN prefix (policy is
+already paused in slide before either changed yaw horizon is reached). Over
+80-83, left hand root-translation-relative peak acceleration266.31->26.67m/s2.
+Over123-132, right peak211.78->11.99m/s2, upward relative velocity0.394-1.503m/s,
+contact19/19 ticks. Root positions exact. All317 slide ticks pass joint/length/
+wall checks; minimum collider clearance0.313mm, maximum arm step6.205degrees.
+Yaw-stop12m regression also passes, retains contact144.5-150 and peak18.29m/s2.
+Evidence Saved/FootIKArmSmooth20261029/continuous-wall-summary.json,
+continuous-entry-fade.model.json.gz and continuous-regression12.model.json.gz.
+Full viewer reload pending; user is doing visual review. Earlier self-crossing
+limitations remain; these receipts do not claim every other hitch is resolved.
+
+### October30 F145 root-turn boundary correction
+
+The F144.5 hand kick coincides with the distance-based yaw command stopping:
+measured turn speed drops from3.486rad/s to approximately0 while still braced.
+The new release-only angular limiter did not cover it. Added a bounded world
+hand-velocity transition for an already-contacting arm when heading acceleration
+exceeds60rad/s2. It uses the existing constrained arm IK and wall-clearance pass;
+normal bracing/free motion and root/yaw timing remain unchanged. Tracking exits
+once velocity catches up for four solver ticks. No frame/side special cases.
+
+Recorded replay through202: right world/root-translation-relative hand acceleration
+peak over144.5-150 falls88.77 to19.37m/s2; contact retained throughout144-150.
+All pose positions through144 and every root position are exact. Joint, length
+and wall checks pass over317 slide ticks; minimum wall clearance0.300mm.
+Saved/FootIKArmSmooth20261029/yaw-hand-summary.json and yaw-hand-ease.model.json.gz.
+Earlier target-inertia/all-contact-filter experiments were not retained.
+Full viewer reload pending; user is doing visual review. Torso crossing unresolved.
+
+### October30 release velocity smoothing
+
+Added angular acceleration limiting (45rad/s2) only while a brace releases,
+after the wall solve. Wall safety repairs from that smoothed prediction toward
+the safe pose, rather than discarding its velocity and restarting the blend.
+No torso guard or extra target-pose filter. Current recorded replay passes wall,
+joint and length checks over317 slide ticks; minimum wall gap0.300mm.
+Left136-140 peak hand acceleration falls72.86 to44.02m/s2; hand path length
+retains100.8% left/101.8% right. Right-hand F138 correction remains.
+Evidence: Saved/FootIKArmSmooth20261029/release-final.model.json.gz and
+release-final-targeted.json. Visual review deferred to user as requested;
+full browser reload required to activate. Torso crossing remains unresolved.
+
+### October30 torso guard removal
+
+At user request, removed the finite-torso guard, front-route preference and
+minimum-change cost. Its 1.2cm clearance margin caused the F105.5 velocity hitch.
+The original left-arm torso crossing is therefore unresolved again.
+
+Retained only the independent continuous shoulder-gradient wall correction for
+the F138 right-hand kick. Replay through202 passes wall/joint checks over317
+slide ticks, with minimum wall clearance0.300mm. Right-hand peak acceleration
+over136-140 is11.73m/s2 versus312.69 before the fix. Evidence:
+Saved/FootIKArmSmooth20261029/guard-removed.model.json.gz and
+ guard-removed-targeted.json. No shared surface/NN/leg/settings changes.
+Earlier final-optimized receipts describe the now-removed torso guard.
+
+October30 activation correction: Copy-Item preserved backup LastWriteTime, so
+the timestamp-only in-app Refresh incorrectly kept the rejected in-memory
+scene. Previous live-revert claims were not reliable. Force a full browser
+reload after restoring backups, and touch restored source timestamps so other
+open tabs detect the rollback. Source hashes alone prove disk/HTTP contents,
+not which simulation is already displayed.
+
+User rejected the slide continuity change: it made the character spin with
+little limb movement and the bracing hand stayed down. Restored the exact
+accepted wall-clearance sources from before both inward-guard experiments:
+slide-arms.js SHA256 E9725E63BB1C416205ACAC0CDA6E3E3F9DBEB43E44A3CCA84DCC3B8EB319C957,
+surface.js FCE87DF5EA00A10041F150E992ED0BA78F81FD79006693CD7C7BEA90D8ACB283.
+The mouse-scrubbing Play/Pause fix in app.js is retained.
+
+The previous checks were insufficient: reduced acceleration and nonzero speed
+hid a79–83% loss of hand travel. Accepted settled wrist paths are2.292/2.535m
+versus0.487/0.435m in the rejected version; actual full-slide hand contacts were
+190 versus117. Full317-tick recorded replay now matches the accepted motion,
+including wall clearance>=0.30mm and no joint/leg/root checks failing.
+
+Both broad arm/leg filtering and the final inward-stop pass are removed. A
+free-target-only guard retained contact but did not fix mixed-contact torso
+crossing; a post-release guard snapped, so neither is active. The original
+release-arm torso crossing and existing wall-correction hitches remain unresolved.
+Do not claim those fixed or reinstall broad smoothing from numerical jerk metrics.
+Rejected sources/receipts: `Saved/FootIKRestore20261029/`; full motion comparison
+in `Saved/FootIKArmSmooth20261029/accepted-envelope.json` and
+`accepted-restored.model.json.gz`.
+Exact replay comparison:10,530 bone positions match the accepted clip with
+zero difference;190 full-slide hand contacts restored. Live8890 refreshed,
+wall brace visually checked at201, original paused22/camera/tuning retained.
+Screenshot: `Saved/FootIKRestore20261029/restored-wall-brace.png`.
+
+## Rejected slide limb continuity and playback scrubbing — October29
+
+Historical description of the rejected implementation below. The previous
+free-only inward stop missed bracing transitions and snapped the
+shoulder at F44. It is superseded by a side-clearance term in the existing arm
+wall solve, active throughout the contact blend. Incoming NN arm velocity carries
+through entry; displayed arm pursuit retains angular velocity, including when
+the arm is already clear. A brace that would fold through the chest releases
+smoothly. Small impending overlaps receive a minimum local correction before
+the existing wall safety fallback. The balancing trajectory/clock remains.
+
+The hand clearance reserve is2mm, within the4mm contact tolerance. A candidate
+using25mm was rejected: smoother motion alone hid the loss of wall contact.
+Leg goals now retain angular velocity too, with3.5cm extra knee approach room
+before the existing wall capsule limit. Root/pelvis paths and pre-slide NN poses
+remain exact; no general self-collision module was restored.
+
+Recorded current Run58/yaw200/Fall-2 through202 covers317 slide ticks. The F44
+left shoulder step falls5.47->0.78deg; F81.5 wrist acceleration245->0.52m/s².
+Whole-arm maximum step is2.15deg at120Hz, and forearms/hands stay outside the
+torso across every contact weight. The attached proximal shoulder seam is
+excluded from torso-intersection claims. Settled leg peak angular acceleration
+falls678->305rad/s². Some wall safety acceleration remains; do not claim a
+uniformly acceleration-capped motion. Audits and matching collider renders:
+`Saved/FootIKArmSmooth20261029/` (`projected` is the final candidate), with leg
+receipts under `Saved/FootIKLegSmooth20261029/`.
+
+Mouse playback scrubbing now preserves Play/Pause and resets its elapsed-time
+accumulator. It still displays the sought pose immediately; trim-bracket
+preview/restore behavior is unchanged.
+
+Live8890 regenerated through202 after a cold-load retry. Mouse rewind while
+playing visibly continued advancing; paused scrubbing and exact frame82 were
+checked. Original paused201,0-202 brackets,0.3x speed, camera and tuning restored.
+Temporary test viewport restored; screenshot `viewer-verified.png` in the audit
+folder. Shared isolation2722 checks and transition/reentry/split continuation
+pass. Final right-hand contact117/136 requested samples; an existing unreachable
+left brace interval remains. Residual F142 wrist correction is3.2mm/tick.
+
+## Superseded dangling-arm inward limit — October29
+
+The free arm now has a small, smooth shoulder-abduction stop. It eases elbow
+and wrist outward when they approach the body's side, while preserving the
+elbow bend, wrist-relative rotation, balancing clock and existing smoothing.
+It fades out as wall bracing takes over. This is a single analytic rotation
+after wall clearance, with Jolt shoulder limits; no collision search, pin,
+accumulated correction or changes to legs/root. Current recorded turning clip:
+worst free elbow goes from3.97cm inside the shoulder plane to2.81cm outside;
+hand-box inner edge stays3.35cm outside. Root and non-arm positions are exact,
+joint limits pass, and existing wall clearance remains at least0.30mm.
+Receipts/backup: `Saved/FootIKFreeArm20261029/`. Live8890 regenerated through202;
+90/102 visually checked, original paused0/camera/settings restored. First cold
+generation timed out; retry succeeded, console clean. No server restart.
+
+## Self-clearance experiment reverted — October29
+
+User rejected the arm/body and opposing-leg clearance because the motion visibly
+stuck. Restored the exact pre-experiment slide-arms.js and surface.js, preserving
+the accepted arm-versus-wall fix. Removed self-clearance dependencies/tests from
+the active lab; rejected sources and diagnostics remain in
+`Saved/FootIKSelf20261029/`. Do not restore this approach based only on collision
+metrics: those passed while the movement quality regressed.
+
+## Slide arm wall clearance — October29 (local, activated)
+
+The displayed upper arm, forearm and hand now receive a final wall-clearance
+solve after entry/contact blending. Palm target fitting alone allowed elbows,
+wrists and hand boxes through the wall during turns. The solve uses the actual
+renderer capsule radii and oriented hand box, preserves lengths, and projects
+candidate local rotations through the existing Jolt limits. A small elbow/wrist
+reserve allows a shared temporal rate bound without interpolating into the wall;
+corrections relax gradually back toward the existing arm motion. Contact receipts
+now use the nearest hand-box surface, allowing honest tilted/edge contact.
+This can release a palm when contact conflicts with arm clearance.
+
+Captured Run58%, yaw200deg/s, Fall speed-2, throughF202:317 slide ticks; worst
+whole-arm overlap30.6cm becomes minimum clearance0.30mm. No added joint-limit
+violations; root positions are exact. Peak arm rotation step6.66degrees versus
+5.96before at120Hz. Consecutive-frame side views cover63–67,94–98 and134–142.
+`verify-slide-arm-clearance.cjs` also passes recorded forward and negative-turn
+cases. Shared isolation2722 checks, slide transitions/split continuation and
+signed Fall speed checks pass. Receipts and before/after poses are in
+`Saved/FootIKArmWall20261029/`. No UI options or shared foot-placement changes.
+Live8890 regenerated through202 and restored paused96, camera and tuning.
+The first cold generation timed out; retry succeeded and the subsequent cached
+reload initialized normally. Playback advancement and clean console verified.
+
+## Signed Fall speed — October29
+
+Fall speed m/s now accepts negative values. -1 means enter freefall while
+upward root velocity slows to+1m/s; positive2 still waits for-2m/s and zero
+still waits for downward movement. Initial upward inertia survives entry:
+thrust stops and full gravity acts through the apex without cancelling Slide.
+After the root has fallen, a new upward motion exits as before. Before the
+apex, accelerating above the early-entry threshold also exits. Increasing
+upward velocity cannot immediately retrigger early Slide. Current tuning is
+preserved; no default change. `verify-slide-negative-threshold.cjs` covers
+thresholds, gravity, saved-state continuation and reversal/re-entry.
+
+## Slide hand continuity — October 29 (local, activated)
+
+Fixed hard lateral hand chatter in the heading-aware arm solver. Reach fitting
+previously accepted a palm anywhere on the wall, even when it missed its intended
+contact point sideways. It now measures the full palm-to-target error, uses a
+damped constrained solve and finer reach search. The accepted elbow bend is
+transported to the next reach axis; trial fits do not alter that history.
+All three arm joints share one response and rate bound; independent angular
+caps had distorted the chain and produced alternating wrist/elbow motion.
+Response increases continuously with commanded heading speed and arm reach,
+using2mm intended contact lag. A fixed local low-pass was rejected because it
+made turning hands trail behind the wall. Friction, balancing and continuous
+front/side/back contact weights remain active.
+
+`verify-slide-hand-continuity.cjs` replays the recorded current Run58% scene
+without inference. Over F134–202, peak lateral wrist acceleration falls from
+423.75 to3.31m/s², palm rotation step from6.07 to0.36degrees at120Hz, and rapid
+sideways reversals from23 to0. Both palms retain274/274 contact samples with
+maximum gap1.77mm; anatomical limits pass and root positions are bit-identical.
+The inner fitting loop now rebuilds only the three arm joints; comparison with
+full-skeleton FK differs by less than3.2e-12m. Receipts:
+`Saved/FootIKSlideAudit20261029/hand-continuity-check.json` and
+`hand-arm-fk-parity.json`. No new settings or shared foot-solver changes.
+Final fitting uses0.3mm convergence and nine reach subdivisions, avoiding
+unnecessary precision. Recorded native solve is about3.5–3.8s for the current
+scene; this is preparation cost, not playback cost.
+Close-up collider strips cover F137–141 and175–180 before/after the fix.
+Slide exit/re-entry and exact split generation pass; shared Bodyflip isolation
+passes2722 checks. Live8890 Refresh generated through202 and retained paused173,
+camera and tuning; browser console is clean.
+Final seven-case native audit covers the current scene, four directions and
+full positive/negative turns. All pass with zero rapid lateral reversals.
+Full-turn maximum arm steps are4.89/5.27degrees; contact samples improve to
+376/442 and293/452 from the original252/442 and283/452. Contacts can still
+release during arm repositioning. Root paths remain exact and leg differences
+are below0.16mm from hand-contact feedback. A slower30deg/s captured-input
+replay retains93.9% contact samples without illegal joints. The six-second
+full-turn preparations remain heavier at25–26s; this change does not solve that
+remaining cost. Final receipts: `hand-final-regression/report.json` and
+`visuals/hand-final-front.png` in the same audit directory.
+
+## Heading-aware wall slide — October 29 (local, activated)
+
+Slide now retains the controller's facing direction. Forward faces the wall,
+sideways remains sideways, and backward retains the outward-facing pose.
+The target follows live root yaw continuously, including complete turns in
+either direction; it no longer rotates every approach into one reference pose.
+Pelvis position retains the existing Slide closer offset and independent
+Pelvis blend clock. Its orientation uses a decaying local entry residual so
+crossing 180 degrees during entry cannot switch the interpolation branch.
+
+Leg targets and anatomical knee poles follow facing continuously. The entry
+corridor forecasts the same future heading and independent pelvis schedule.
+Ankles retain their relaxed calf-relative rotation; contact may use a shoe's
+heel, toe or edge rather than forcing a flush sole by twisting the ankle.
+
+Contact targets now account for knee capsule clearance as well as the sole,
+joint limits and the previous knee-pole branch. The nearest feasible tangent
+target is selected, preferring a lower target for wall clearance but allowing
+an upward fallback at a floor corner. Speed/friction shifts use the same
+feasibility checks. A retained offset and bounded tangent travel prevent sudden
+target changes when a higher position becomes reachable. Settled clearance
+starts from the previous legal joint pose; it no longer accumulates a correction
+in normalized coordinates while the body turns underneath it. Both clear and
+planned entry paths check knees before a shoe collision forces a late correction.
+
+`slide-arms.js` owns the host-only arm posing. Forward-facing poses use both
+hands when reachable; side/back poses blend toward the near hand and leave
+the other arm balancing. Each arm has its own continuous contact weight and
+anatomical elbow/wrist constraints. Unreachable hand contacts release rather
+than forcing an invalid shoulder. The reported primary hand is only a label;
+it does not select which arm receives friction or controls the other arm.
+
+The accepted irregular torso motion, free-arm balance circle and speed-based
+downward gaze remain active in every heading. Gaze still reaches 70% toward
+absolute down at Head max at m/s (default30), with the same entry ease and
+neck/head joint limits. A four-heading transform audit verifies this directly.
+No extra UI settings, altered root forces, gait-policy changes or shared-foot
+API changes are part of this update.
+
+Verification: `verify-slide-heading.cjs` covers16 Walk/Run configurations,
+cardinal approaches,82/85/90-degree inclines, retained/deleted floors and three
+extended yaw sweeps(+535,-523,+679 degrees). All joint/geometry/heading checks
+pass; maximum settled heading error0.923degrees and joint increment7.59degrees
+at120Hz. Actual gaps are reported for every foot, not only contacts claimed by
+the solver. In the current Run58%, forward90-degree scene both feet touch for
+all286 settled samples; maximum gap0.0122mm, no motion-review flags. Some fast
+turns briefly release a contact during repositioning. In82/85-degree floor
+interaction cases the root takes hips beyond leg reach; contact releases
+without changing root inertia or inventing a pelvis pull.
+
+Exact native pre-Slide pose/root parity, four-heading gaze checks,2722 shared
+Bodyflip isolation checks and Slide exit/re-entry with exact split generation
+also pass. Full-motion collider sheets, complete turns and focused fast-entry
+intervals were inspected from multiple views. The latest matrix supersedes the
+earlier fixed-heading20-case audit below. Receipts and source hashes:
+`Saved/FootIKSlideAudit20261029/heading/final-report.json`, `live.json`,
+`acceleration-context.json`, reach analyses and `visuals-final/`.
+Live8890 Refresh generated through202 and kept paused140, camera, trim and
+tuning. Console clean. The unavailable8890 service was restored with its existing
+overnight-state.json. Validation uses bounded sequential recorded-policy replays,
+without per-case inference workers. No push.
+
+Remaining visual limitation: Run-left's folded entry around80–92 still makes
+a broad high leg sweep. The incoming foot is23.3cm above the pelvis; the corridor
+raises it to61cm. This is a planner-authored detour, not a demonstrated NN
+necessity. It stays continuous and within joint/scene constraints. Moderate,
+hip-first and projected lower-path experiments either failed clearance or
+introduced correction snaps, so none were applied. Receipts: `entry-*.json`
+in the audit folder. The naturalness of this one entry remains below the
+current forward scene and the settled/full-turn poses.
+
+## Slide entry and wall-motion audit — October 29 (local, activated)
+
+Pelvis timing follow-up: Pelvis blend s is appended below Leg blend s. It controls
+pelvis position/orientation independently (legacy default twice body Blend s,
+current1s). Slide closer uses this pelvis clock too. The leg corridor forecasts
+the independent pelvis schedule. Current saved replay passes joint/contact and
+pelvis-path checks; entry62.5 to pelvis-ready122.5, max joint step3.94deg/120Hz.
+Receipt: Saved/FootIKSlideAudit20261029/pelvis-blend-check.json. Root/NN unchanged.
+
+Slide follow-up: entry cancels only outward wall-normal rebound from locomotion;
+tangential inertia/gravity remain with no ongoing attraction/thrust. Current
+replay drift54.3cm becomes zero; exit/re-entry and exact split continuation pass.
+Added Leg blend s at the bottom of More options, separate from body Blend s.
+Legacy default is twice Blend s (current1s vs body0.5s). The leg corridor predicts
+the longer duration with the independent body schedule. Contact takeover waits
+for leg completion. Current entry62.5, body ready92.5, legs ready122.5; joint,
+contact and pelvis checks pass, max joint increment4.21deg/120Hz. Host-only;
+no Unreal/Bodyflip changes or push. Receipt: leg-blend-check.json in the audit folder.
+
+Follow-up: **Slide closer cm** is appended at the bottom of More options.
+The base slide previously inherited the pelvis-to-plane distance at entry.
+This explicit extra inward offset blends in over Blend s and remains throughout
+Slide; root freefall/inertia is unchanged. Legacy default0 retains the prior
+pose; current scene is set to10cm closer, about39–41cm from the wall after
+entry. Range0–15cm, with a minimum15cm pelvis clearance. Larger experimental
+offsets cramped the legs and were not exposed. Current0/10/15cm replays verify
+joint/contact limits, exact root parity and the requested settled displacement.
+The earlier no-pelvis-detour assertion now subtracts this intentional offset.
+
+The previous clearance envelope below is superseded: it moved the displayed
+pelvis away from the wall and then back. The current transition keeps the
+configured pelvis distance and plans the leg path in hip/knee/ankle joint
+coordinates. `slide-entry.js` is a Foot IK host helper; it is not a shared
+Bodyflip foot-placement dependency. The old hidden inward hand-reach pull is
+also removed. Physical root inertia can still legitimately change wall distance.
+
+Slide starts from the preceding displayed pose carried with the root, avoiding
+an unpinned-foot jump on its first frame. The bracing arm uses soft reach near
+full extension and releases smoothly if inertia takes its palm out of reach.
+Dangerous-incline pelvis closeness eases its withdrawal when the supporting
+surface changes, instead of dropping its full correction in one tick.
+
+The corridor uses bounded hip swing/twist, a knee hinge and calf-relative ankle
+coordinates. A shorter body-turn schedule is considered only when the ordinary
+route is obstructed. Cubic path offsets and an angular-distance clock avoid
+compressing a large joint turn into a few ticks. Actual geometry is checked
+against the current surface set, including floor deletion during entry and
+finite-platform undersides. Incoming NN joint residuals may fade; they cannot
+grow during that fade. No pelvis-clearance fallback remains.
+
+Twenty configurations pass: Run/Walk forward, backward and sideways approaches,
+both turn directions, 82/85/90-degree surfaces, travel parallel to the wall and
+retained/deleted floors (including deletion during entry). Exact recorded policy
+replays were supplemented with fresh NN output for affected feedback cases.
+Across the19 cases reaching Slide: no added hip-limit error, all settled joints
+legal, fixed limb lengths, max shoe penetration0.00235mm, max joint increment
+6.93degrees/120Hz and no solver-added pelvis displacement. Retained-floor Walk
+Backward correctly does not enter Slide: the floor catches the root before its
+descending speed reaches the2m/s trigger. Remaining fast folded-leg motion
+follows the NN's foot velocity and collision constraints; no extra knee lag is
+applied. Whole-motion/focused collider sheets were inspected from several views.
+
+Current scene F85–115 stays48.4–49.2cm from the wall; that0.8cm change is root
+inertia. The previous path reached~70cm then ended at31.2cm. The accepted0.5s
+blend remains. Ordinary active-leg planning is~0.4s here; difficult folded
+sideways routes can still need several seconds for additional planning.
+
+`verify-slide-directions.cjs` with the audit's `validated-cases.json` passes all20.
+Joint math16,311, shared Bodyflip isolation2,722, coupling17 and bounded-session
+2,906 checks pass. Slide exit/re-entry and exact split-generation checks also
+pass after the final source freeze. Receipts and before/after collider sheets:
+`Saved/FootIKSlideAudit20261029/`. Live8890 Refresh generated through F202 and
+retained paused F108; persisted state is byte-equivalent as parsed JSON. No
+Unreal, Bodyflip, UI layout or tuning changes; no push.
+
+## Earlier slide entry hip correction — October 29 (superseded clearance)
+
+Current saved scene uses **Blend s = 0.5**, doubled from 0.25 at the user's
+request for a slower whole-body slide transition. Changed through the existing
+option; target poses and root behavior are unchanged. Frame147 retained.
+
+The reported Run/phase36%/Full gravity70% setup enters Slide at85. The old
+wall-avoidance ankle arc deliberately took the long way around the hip while
+hip limits were disabled until blend completion. At92, right hip twist reached
+-165.48 degrees against its65-degree limit; it crossed the excluded cone.
+
+Entry now interpolates hip swing inside Jolt's quaternion-space ellipse and
+twist inside its bounded interval. Knees use their hinge coordinate; foot/toe
+rotation stays relative to the calf and segment lengths stay fixed. Existing
+incoming NN joint residuals fade away rather than snapping on the entry frame.
+Wall contact cannot override this free-leg path during the blend.
+
+The earlier version assumed the body needed room for that legal path: a one-time31-sample shoe sweep planned
+a smooth outward clearance envelope, zero at both ends of the existing Blend
+time. In this folded entry it briefly moves the displayed body about30cm away
+from the wall. It changes neither the ballistic root nor the settled pelvis
+distance. This replaces the long arc, not a new permanent pelvis offset.
+
+`verify-slide-entry.cjs` replays the reported setup plus full-gravity and later
+fall recordings. Both hips stay legal throughout the reported blend, max thigh
+increment6.52 degrees/120Hz, shoe penetration below0.002mm, fixed bone lengths.
+The pre-slide serialized frames and physical root are identical to before.
+All three settled leg-limit checks pass; native incoming violations in other
+cases are not silently claimed absent. Slide exit/re-entry and split-generation
+tests also pass. No new worker, inference, UI option, Unreal or Bodyflip change.
+Receipts/source backups: Saved/FootIKSlideHip20261029/. Viewer93/97/101 inspected,
+frame93 restored; saved camera, trim and tuning retained.
+
+## Slide head gaze and irregular upper-body motion — October 29 (local)
+
+The head gradually turns70% toward absolute down as root speed rises from its
+slide-entry speed to Head max at m/s (default30), independently of the feet shift speed. The angle was
+reduced from100% at the user's request. A0.65s entry ease
+prevents snapping if that limit is already reached. The turn is distributed
+across both neck joints and the head, with the existing Jolt angular limits.
+Head max at m/s is appended at the bottom of More options, saved independently,
+and accepts0.1–100m/s. The head speed endpoint no longer follows Feet max at m/s.
+
+The five spine joints now share small irregular bend/twist targets, driven by
+smooth deterministic noise and a damped spring. This is procedural articulation,
+not added root forces. The bracing hand keeps its pre-gesture wall target and its
+arm is solved again from the moved shoulder; the accepted free-arm circle and
+speed bursts remain. Current601-frame root, pelvis and legs are exactly unchanged.
+This intentionally supersedes the earlier free-arm-only scope described below.
+
+`verify-slide-head-torso.cjs` checks two full recorded clips and the current
+five-second scene, including a custom20m/s endpoint and the default30m/s endpoint.
+Gaze reaches70% toward world down at the selected speed; at the default, maximum
+adjacent head rotation is0.41° at120Hz, chest rotation0.18°, with5.8–7.4° chest
+variation across each clip. All settled joint limits pass, hand contact error
+is below0.000001mm and sole error below0.30mm. `verify-slide-motion.cjs` and the
+updated `verify-slide-balance.cjs` also pass; the latter now preserves the exact
+lower body/root and pre-slide prefix rather than requiring an unchanged chest.
+Sources, poses and receipts: `Saved/FootIKHeadTorso20261029/`. Live8890 Refresh
+loaded all300 display frames, retained paused frame203 and the saved camera,
+and reported no browser errors. No extra NN calls/processes or Unreal changes.
+
+## Free slide arm: neutral roll and balance circles — October 29 (local)
+
+Current timing: the extra corrective reach offsets were removed at the user's
+request. The original ellipse and elbow flexion use an integrated orbit clock
+with irregular2.2–3.4× peaks, accelerating over0.10–0.17s and returning to1×
+over0.40–0.64s. Quiet gaps run at exactly1×. Extra phase accumulates permanently,
+so slowing down cannot rewind or jump the hand. The initial0.7s amplitude entry
+keeps its original timing; contact-driven sway remains on the real physics clock.
+Only traversal speed changes, not the authored circle or reach trajectory.
+`verify-slide-orbit-speed.cjs` checks continuous monotonic time, repeatability,
+quiet1× gaps and speed bounds over20s. Three full pose clips retain neutral roll,
+legal arm joints and identical root/non-free-arm bones; peaks0.92m/s,12.61m/s²,
+1.11°/120Hz supersede the original slow-orbit figures below.
+Current receipt: Saved/FootIKOrbitSpeed20261029/; the old corrective-gesture
+receipts in Saved/FootIKCorrections20261029/ are historical and rejected.
+
+The dangling arm now carries the idle reference elbow plane with its clavicle,
+then transports that plane to the hand target by shortest swing. The old fixed
+wall-relative elbow pole was legal within the broad shoulder cone but twisted
+the free arm102.9° from its transported neutral plane at the user's frame184.
+The wrist retains its neutral forearm-relative orientation and true hinge elbow.
+
+The downward-biased neutral arm makes a gentle7×10cm elliptical balance circle,
+roughly0.55Hz with slow phase variation. It fades in with zero initial velocity
+and acceleration; existing contact-driven inertial sway remains. A smooth reach
+envelope replaces the hard extension cap, avoiding a radial-velocity hitch.
+No extra controls, root forces, NN calls or processes. This is authored balancing
+motion with inertial sway, not a dynamically simulated shoulder.
+
+`verify-slide-balance.cjs` checks both free-arm sides through full recorded clips
+plus the user's417-frame scene. Neutral elbow-plane deviation stays below0.000004°,
+settled free-arm rotation steps below0.63° at120Hz, shoulder-relative hand speed
+below0.47m/s and acceleration below3.42m/s². Shoulder/elbow/wrist limits pass;
+the current root and every non-free-arm bone remain exactly unchanged.
+`verify-slide-motion.cjs` also passes the full joint/contact/length/entry checks.
+Current-scene before/after poses and viewer captures: `Saved/FootIKBalance20261029/`.
+Shared API1 and other labs are unchanged. Refresh activates the source update.
+
+## Slide solve performance — October 29 (local)
+
+Surface preparation now publishes the poses already solved by its existing CPU
+peer, in lossless `gzip-json-v1` batches. The viewer decodes/appends them instead
+of repeating the entire root/contact simulation on the UI thread. This is still
+120 Hz, stops at the end trim, and retains completed frame objects when extending.
+Only appended poses cross the Node/Python pipe; cumulative batches accompany the
+existing HTTP prefix response. No extra worker is started. The two-session limit
+remains; evicting a same-version session resets and reuses its idle Node process,
+preserving compiled code but clearing all simulation state. Source-version changes
+still retire the old peer. Old offline responses without batches retain replay.
+
+Within slide contact fitting, IK updates only the affected four-bone chain,
+shoe corners/plane projections are reused while rotation is fixed, unused joint
+diagnostics are skipped, and polynomial bisection stops when doubles cannot
+subdivide further. Vector arithmetic avoids callback allocations. Other terrains
+retain the existing leg solve; shared API1 is unchanged. Numerical comparison of
+all417 current-scene frames gives identical roots, max13.4 micrometres positional
+change and0.0018° rotation difference. Default full clips retain legal joints,
+wall contacts and bone lengths; the prior extreme-tuning caveat below still applies.
+
+Verification:5800 session/batch/trim checks,30 Python checkpoint/peer-reset checks,
+18 shift checks,25 UI checks and both full slide-motion clips pass. The paired
+standalone benchmark measured3.56× median raw-solver improvement under varying
+laptop load. Browser before:23.70s terrain solve /24.22s ready, despite a cached
+19ms server response. After pose delivery:0.30s preparation /0.44–0.46s ready
+on Refresh. An initial fresh setting edit took6.30s before peer reuse. Final
+uncached edits measured8.97/6.83/5.84s; the first cold-worker request was22.21s
+(including NN import/model startup). These are distinct from cached Refresh;
+10× fresh-solve performance has NOT been achieved. No priority boost, extra
+workers, lower solve rate or looser contact/joint limits were used to chase it.
+Receipts and pre-change sources: `Saved/FootIKPerf20261029/` from project root;
+`verify-slide-performance.cjs` replays that local captured prefix. The app logs
+`[Foot IK solve]` for actual edits, including backend duration/cache status.
+
+A final reload also exposed seed eviction in the old mixed16-response cache:
+it regenerated the gait seed for2.93s despite an unchanged scene. Surface pose
+responses now have a separate16-item budget; small seed responses keep their
+own16-item budget, cache hits refresh recency, and old surface filenames migrate
+on use. Bounded-pose cache compression uses level1. `verify_response_cache.py`
+confirms17 surface edits retain the seed, bounds/migration and compiled-graph
+preservation. Only Foot IK's8890 service was restarted to activate this change;
+saved scene bytes were identical. Unreal and other lab services were untouched.
+Final post-restart browser check:1.43s to ready (seed57ms, pose response188ms),
+frame43, trim0–208, hand40cm/20m/s and camera retained. Earlier cached loads were
+0.44–0.46s; timing varies with the laptop's concurrent load.
+
+## Speed-based slide target shift — October 28 (local)
+
+Separate pairs follow Recovery speed in More options: **Feet shift cm** /
+**Feet max at m/s**, then **Hand shift cm** / **Hand max at m/s**.
+Shift defaults to 20 cm (range 0–50); speed defaults to 10 m/s (range 0.1–100).
+Old shared values initialize both pairs and are explicitly persisted, so later
+feet edits do not silently alter the hand after Refresh. Either pair can be
+disabled with zero shift. Both feet share the feet pair; only the bracing hand
+uses the hand pair. Each has its own damped offset and carrier velocity.
+The feet and bracing hand request an upward shift along their slide surface:
+`maxShift × clamp(totalRootSpeed / maxShiftSpeed, 0, 1)`. World up is projected
+onto the plane and normalized; a horizontal plane has no uphill direction.
+Zero shift restores the prior target path. The root/free arm are not shifted.
+The neutral offset follows that request with a critically damped response
+(10 rad/s), preventing a low speed threshold from creating a one-frame reversal
+at the ballistic apex. Thus the requested offset is linear in speed; the
+displayed limb motion has a short response time and can be reach-limited.
+
+Joint reach can reduce the requested shift per limb. The solver follows the
+connected feasible interval from the original target, eases near its boundary,
+and transports the neutral knee/elbow bend planes to their shifted targets.
+A small arm-extension margin keeps the elbow plane defined. Friction includes
+the shifting neutral target's velocity; the first offset uses the existing
+entry blend instead of generating an impulse. No new force reaches the root.
+Settings save with the scene, retain playback/camera, and generate through trim.
+
+Verification: `verify-slide-shift.cjs` passes 18 mapping/root/contact checks.
+Both full default clips pass `verify-slide-motion.cjs`: legal settled joints,
+fixed bone lengths, wall contacts, and maximum successive rotation 7.6°/12.2°
+at 120 Hz. The deliberately extreme 50 cm / 0.1 m/s test remains legal and in
+contact but still has a 32.2° calf step near the apex. Its relaxed no-inversion
+criterion is a stress bound, not a claim of good motion quality at that tuning.
+25 UI/trim and 15 friction/recovery tests also pass. Receipts are in snapshots.
+Live Refresh and a 15→20 cm control edit preserve frame103, camera and trim0–208;
+Enter commits and blurs. The later independent-pair split passes migration,
+delta-save/reload, independent threshold/amount and zero-shift checks. All601
+recorded frames exactly match the previous shared-setting motion when both
+pairs match. Live Refresh retained frame126/camera/trim0–208 and saved the new
+hand values. Receipt: `snapshots/slide-separate-shifts-verification.json`;
+controls: `snapshots/slide-separate-shifts-controls.jpg`.25 UI/trim checks pass.
+
+## Slide tuning controls — October 28 (local)
+
+Appended beneath Blend s at the bottom of More options:
+**Friction strength %** (0–300, default 100) and **Recovery speed %**
+(10–200, default 100). Both save with the scene, regenerate only through the
+end trim, and preserve the playhead/camera. Zero friction removes the feet/palm
+catches. Lower Recovery adds damping; higher is quicker with more rebound.
+The restoring pull already grows with distance, including the existing
+progressive stretch guard. It is not a constant-speed return or a strictly
+linear Hooke spring over its entire range.
+
+Recovery changes damping inversely, leaving the distance-dependent spring and
+friction force independent. Softening the spring instead was rejected because
+it allowed larger catches and could paradoxically increase return speed.
+Small adaptive integration substeps stabilize the low-speed/high-damping range.
+At 100/100 the prior particle motion is bit-identical in the tested sequences.
+15 focused checks cover defaults/bounds, distance response, zero friction,
+independent force scaling, monotonic recovery and the full strength/speed grid.
+Matched 15 cm release to 80%: 25% takes 1.408 s, 100% 0.300 s, 200% 0.167 s.
+Actual rough-patch inward peaks at strength 100: 0.150/0.423/0.817 m/s for those
+three speeds. Tests: `verify-slide-tuning.cjs`; receipt:
+`snapshots/slide-tuning-verification.json`. No new server process or root forces.
+Live UI: changed Recovery to 25%, Enter applied/deselected, motion regenerated
+through frame 208 while retaining frame 149, then restored 100% from the ready
+scene cache. Both controls remain visible at the bottom of the options panel.
+
+## Slide recovery and relaxed feet — October 28 (local)
+
+Contact catches now recover with a 9 rad/s spring and damping ratio 1.05,
+scaled by the square root of the progressive stiffness. The previous 12 rad/s,
+0.52-damped spring became increasingly underdamped on larger catches. Rough
+patches and friction forcing are unchanged. Matched 15 cm release: 80% return
+0.117→0.300 seconds, peak 1.256→0.616 m/s. Across both recorded slide clips,
+actual recovery average speeds fall 26–44%, rendered peak speeds 26–42%, with
+6.8–8.2 cm median half-second contact excursions remaining.
+
+The preferred foot orientation is now calf-relative neutral, biased only 20%
+toward the wall-aligned request, then projected into the existing ankle/toe
+limits. The contact fit adjusts normal clearance only; it does not pull the
+ankle sideways to flatten the shoe. Heel/toe/edge contact is permitted. Median
+sole tilt is 26–35° versus 0–8° before; ankle deviation from neutral falls from
+40–46° to 23–24°. The independent hip-cone knee swivel remains: that correction
+enforces the hip, not the ankle. Knee hinge, arm constraints and bone lengths
+remain valid. Contact fitting can still move the ankle along the surface normal
+to avoid penetration; this is not an invariant-leg-position guarantee.
+
+`verify-slide-compliance.cjs` compares the immutable
+`snapshots/slide-compliance-before-surface.js` to current code, using recorded
+NN responses and instrumenting contact particles only inside the test process.
+15 checks pass, including matched release, actual recovery speeds, retained
+motion, contacts/joints and exact root/pre-slide equality. Existing 26 friction
+checks, full joint-motion checks and 5,796 resumable-session checks also pass.
+No new settings, root forces, shared `createFeet` changes or server restart.
+Viewer refreshed at the saved frame 201; original trim/camera retained.
+
+## Bounded surface generation and Refresh — October 28 (local)
+
+Incline/wall and edited-platform scenes generate only through the end trim.
+Moving it forward extends the retained 120 Hz physics/contact/slide state and
+30 Hz recurrent NN state. Moving it back retains the existing prefix and does
+no new work. Required future root commands remain available to the NN; an
+interpolated interval may require its next 30 Hz endpoint, but no unused future
+limb simulation is run. Trim preview still returns to the prior playhead on
+release; the frame display cannot advance beyond prepared motion.
+
+The initial surface source now contains 0.1 seconds plus course metadata,
+instead of an unused five-second rollout before the real root-coupled rollout.
+Reference pelvis height comes from the already-evaluated warmup gait period.
+For the saved Run/Left/36% fixture this differs from the former five-second mean
+by 5.005 mm; root difference stays below 5.950 mm through frame 208. First source
+poses match within 6.6e-16 m. The legacy stair planner still uses its full course:
+its anticipation is noncausal, and truncating it changed earlier foot placements.
+That planner was not changed by this surface-loading fix.
+
+API 7 / generation protocol 1 owns at most two retained surface sessions in one
+single-thread CPU policy worker. Checkpoints persist the recurrent tensors and
+recorded prefix; restoration replays physics without repeating prefix inference.
+Idle workers retire after five minutes. UI preparation serializes edits and
+coalesces intermediate requests. HTTP deadlines cover response bodies as well
+as headers; queue waits are bounded to 12 seconds, worker work to 45 seconds.
+Failures show a retryable error rather than leaving a permanent loading screen.
+
+Verification: 5,796 split/full generator checks, 25 app/trim checks, five network
+timeout checks, 17 backend protocol checks and seven genuine-NN restore checks.
+Split, restored and uninterrupted runs have identical prefix poses/root windows.
+The user's saved trim was valid (0–208); the apparently collapsed brackets were
+the blank page's initial HTML. Server 8890 was restarted alone with the existing
+`snapshots/overnight-state.json`, hidden/below-normal PID 27988. No Unreal or
+other-lab restart, new UI controls, or push.
+
+Live viewer verified: saved frame 195 loaded through 208; Refresh took 127.6 ms
+without rebuilding. Dragging 208→244 appended the same session (0.868 s backend,
+zero extra NN calls because slide was already active); shrinking back to 208
+did no generation. Playback advanced and looped, then frame 195 was restored.
+The first cold load was still 18.8 seconds: policy startup and mirrored
+server/browser physics remain real costs, not claimed eliminated here.
+
+## Dangerous-incline slide prototype — October28 (local)
+
+Appended at the bottom of More options: **Slide** (opt-in), **Fall speed m/s**
+(default 2), **Blend s** (default 0.25, range 0.05–1). A nearby active surface
+must be steeper than Minimum gravity incline. October29 correction: entry is
+world Vy <= -Fall speed (2 means -2 m/s). Negative thresholds now allow early
+entry during slowing ascent; see Signed Fall speed above. A zero threshold
+still requires downward movement. Slide exits as soon as world Vy becomes
+positive after descending, and can enter again on a later fall. Zero velocity alone holds Slide.
+
+Exit resumes normal root control and NN inference. The last native gait pose
+and its30Hz history are retained during Slide, rebased to the new root/heading,
+and supplied once to reset the recurrent NN with its actual future root window.
+The procedural slide pose is not fed into the gait network. The displayed pose
+blends back after leg IK using the existing Blend time; old pins are cleared and
+new pins acquire after that transition. Re-entry creates fresh slide contacts.
+
+The current run scene with Full gravity10% keeps climbing through F300; the
+same live inference request at100% peaks at F43 and enters Slide at F56 with
+Vy=-2.048m/s. This supersedes the old ascent-trigger diagnosis below. Tests
+verify an injected upward reversal, fresh NN history/current roots, later slide
+re-entry, exact split-generation replay and native NN reset parity. Receipts:
+Saved/FootIKSlideTransitions20261029/. Tests: verify-slide-transitions.cjs and
+verify_slide_resume.py. The reversal impulse exists only in the test harness.
+
+At entry retain actual root velocity, stop both mover drive and the support
+spring immediately, and integrate full gravity without a speed cap. Full gravity
+%, energy-conservation redirects, material pins, and contact grace cannot add
+thrust during slide. Capsule collisions remain unilateral and frictionless:
+they remove inward normal velocity, but never convert it into uphill velocity.
+Thus freeflight is ballistic; an obstacle can still interrupt it. Freeze the
+root-to-mesh frame on entry so changing incline alignment cannot move the drawn
+root independently of the physical trajectory. Forecast copies carry the mode.
+
+The procedural reference is mirrored for the nearer hand, chosen once from the
+entry pose. Body faces partly out from the wall, feet are staggered, the near
+palm braces and the free arm hangs below its shoulder with a relaxed elbow and
+neutral wrist. The first tiny-sway version was rejected as too static. Each
+sole and the palm now has its own compliant particle in the wall tangent plane:
+Coulomb drag opposes absolute sliding velocity, while a damped elastic tether
+returns it toward the nominal pose. Independent deterministic rough patches
+have smooth leading edges and release intervals; spatial sampling is bounded
+at high fall speeds to avoid jitter. State advances once per120Hz tick, outside
+geometric contact iterations. Friction cannot reverse slip on its own. If a
+contact is lost, drag stops and the tether recovers. Uneven contact tension
+rocks the torso and drives secondary free-arm swing. No root force is added.
+This is pose-only friction/compliance, not a simulated ragdoll. Contacts slide
+along the plane and provide no root support or permanent tangential pin.
+
+`slide-joints.js` uses Bodyflip Jolt's exact sharedIdle joint frames and limits:
+ankles40/28 degrees with twist±25, toes35/8/±8, wrists45/40/±55, elbow hinge0–155.
+It projects swing onto Jolt's quaternion-space ellipse. Both arm segments share
+the hinge frame; shoulder feasibility swivels the elbow around the hand target
+instead of twisting the elbow or moving the palm off the wall. Knees use the
+neutral hinge reference with actual incoming bone lengths. The same feasible
+swivel calculation now accommodates the hip cone around the hip-to-ankle axis,
+retaining the ankle target and signed knee hinge during catches. Entry now uses
+the constrained joint path described above. Foot contact fitting
+alternates leg reach and ankle projection, allowing heel/toe contact instead of
+forcing every sole flat. The embedded neutral reference has a provenance/hash
+check against data/rig.json. This helper is loaded only by the Foot IK slide host;
+Bodyflip's shared foot-placement bundle gains no dependency.
+
+Blend uses the actual entry pose. Incoming NN joints can already be outside the
+strict reference limits; ankle/wrist/elbow residuals decay over the existing
+Blend time rather than snapping on the first frame. The old exterior ankle arc
+is replaced by the constrained joint path and temporary body clearance above.
+Feet follow calf-relative rotation during this free swing, avoiding an opposite
+twist-limit snap. Knee bend planes are transported continuously. Locomotion
+inference stops while Slide is active; the NN ghost carries the last policy pose.
+Root debug arrow follows slide heading; Targets includes the sliding palm.
+
+Historical October28 receipts (the ascent trigger/latch are superseded above):
+32 focused checks cover the dangerous-angle gate, ascent/descent triggers,
+latched state, zero thrust, exact velocity/position integration including collision
+receipts, no energy redirect, limb lengths, sliding contact and recurrent replay.
+Live fixtures: threshold2 enters at22 with +3.51m/s; threshold5 enters at109 with
+-5.01m/s. NN calls remain10/54, with physical/recurrent replay error zero. Every
+settled joint passes the reference limits in these two wall fixtures; heel/toe
+gap≤0.011mm, palm gap<0.00001mm, fixed bone lengths. Maximum post-entry joint
+increment7.1/12.5deg per120Hz tick; knees4.6/10.9deg. Incoming NN sharpness is not
+claimed fixed. The free hand stays>43cm below its shoulder and continues moving
+after the pose blend. 37 prior pelvis-speed checks retain exact Slide-off
+Walk/Run motion. Tests: verify-slide-joints.cjs (projection/hinge/shoulder),
+verify-slide-motion.cjs (full sequences), verify-slide.cjs (root/contact).
+Owned browser checked the real8890 inference route and captured both entries,
+current130, later motion and other viewpoints; playback advances and real saved
+state remains unchanged. Evidence: snapshots/slide-joints-*.
+
+Contact-motion comparison: `node verify-slide-friction.cjs --compare` replays
+both recorded policy streams, compares immutable before-v2 to the current
+solver and writes120Hz series. It tracks fixed ankle/palm material points;
+lowest shoe-corner switches are excluded from motion/derivative measurements.
+26 checks pass: exact root and pre-slide poses, deterministic replay, bone/joint
+and contact constraints, settled joint steps<3deg, and at least2 cm median/p10
+travel in half-second windows. Actual median ranges10.3–12.1 cm (before0.07–0.43
+cm); minimum window7.1 cm. Knee ranges16–23deg, torso rotation6.6–8.7deg. This
+detects static limbs; it is not a numerical certificate of perceived realism.
+The free elbow remains at a relaxed bend, and spine articulation relative to
+pelvis remains fixed; their motion comes from the torso/shoulder response.
+`node render-slide-friction.cjs` regenerates snapshots/slide-friction-stable-points.svg.
+Updated live viewer inspected at195/207/219 and restored to195 with camera/tuning.
+No new UI, background process, server restart, Unreal change or push.
+
+Limits: this is not a whole-body Jolt simulation. The transition can temporarily
+exceed hip limits when recovering a strongly folded incoming pose; the85-degree
+cached-gait probe also found a thigh limit exceedance. Ankle/wrist/elbow limits
+and actual contact are the enforced slide requirements. Do not claim universal
+full-body constraint compliance from the two settled wall fixtures.
+
+Port8890 was found stopped again on the user's unloaded-viewer report. Started
+only Foot IK with snapshots/overnight-state.json, hidden/below-normal (PID448).
+Health checked after launch; the in-app viewer visibly loaded the saved wall
+slide at frame130 and remains open, with scene/camera preserved. The source has
+no HTTP-host idle shutdown; the300s timeout retires only the NN child. The prior
+host's exit cause is unknown. No Unreal/other-lab changes or push.
+
+## Dangerous-incline pelvis closeness and speed blend — October28 (local)
+
+Accepted prior state pushed and remote-verified as16d1fe0a93b469f4ab3fd0a87d337cee8e229f88
+on codex/standalone-sim. Scoped Foot IK sources/tests/fixtures, approved profile
+and recovery inventory included:9136 files,1,096,116,002bytes, no LFS pointers.
+The new option below is subsequent local work, ready for user Refresh.
+
+The controls remain after Unpin below at the bottom of More options. The previous
+Pelvis closer amount is now Pelvis min cm (`pelvisCloser`). A compact Min / Max
+Speed m/s pair (`pelvisSpeedMin`, `pelvisSpeedMax`) and Pelvis max cm
+(`pelvisCloserMax`) follow it. Both amounts allow 0–50 cm. Use the magnitude of
+the actual simulated root velocity, including vertical/lateral motion, rather
+than the requested gait speed or playback multiplier. Linearly blend the two
+amounts between the speed thresholds, clamping outside them. Either endpoint
+can be larger. Max speed is clamped to at least Min; equal thresholds select the
+low amount at/below that speed and the high amount above it.
+
+New speed defaults are 0 / 3.5 m/s. An old save's maximum amount inherits its
+existing minimum amount, preserving the tuned motion exactly until edited.
+The user's current 10 cm setting is retained. A dangerous incline is steeper
+than Minimum gravity incline, independently of the Incline gravity checkbox.
+Multiply the speed-selected amount by a linear angle ramp from 0 at the minimum
+to 1 at 90°. For minimum 80° and selected 20 cm: 80°→0, 85°→10 cm, 90°→20 cm.
+Minimum 90° disables the ramp.
+The existing smoothed surface frame carries the displacement toward the surface,
+so entering a wall does not apply an instantaneous20cm translation.
+
+The mesh root/controller and NN foot targets remain separate from this posture
+shift. Translate hip anchors/torso before leg IK, then solve to the original
+foot targets and material pins with the accepted signed NN hinge. The NN ghost
+remains the uncorrected reference. Pelvis readout reports the inward offset.
+Bodyflip has no change unless its host supplies the new optional pelvisShift.
+Both amounts zero and all surfaces at/below the minimum reproduce the approved
+motion exactly.
+
+Speed extension: 37 checks cover speed/angle endpoints, reverse/falling speed,
+both blend directions, migration, exact pre-change Walk/Run frame hashes,
+bone lengths, signed knees, material pins and sole clearance. The owned browser
+verified the compact pair has no horizontal overflow, Enter commits/blurs,
+playhead and values survive reload, and real server state remains unchanged.
+One live 10→30 cm recurrent rollout took 4.04 s; replay error was zero, material
+pin drift below 2e-15 m and shoe penetration below 4e-8 m. Reviewed saved frame
+137 plus 76/95/143/180. Evidence: verify-pelvis-speed.cjs,
+verify-pelvis-speed-browser.cjs and snapshots/pelvis-speed-*.
+
+81 focused checks cover Walk/Run,0/80/85/90°,zero/default/max offsets, bone lengths,
+normal displacement, upper rotations, signed hinges, sole clearance and pins.
+13 accepted-frame and17 causal-coupling checks pass with closer explicitly0.
+Actual saved scene20cm full recurrent rollout: minimum hinge dot0.884, root replay
+error0, pin drift<2e-15m and shoe penetration<4e-8m. Saved76 shows19.55cm inward
+because the ground frame is still settling. Visual comparisons at0/20 and76,
+95,143,180 checked. Owned browser verifies bottom placement, Enter blur/commit,
+frame retention and persisted refresh. Real user state was byte-equivalent
+before/after; one CPU inference request took3.24s. No restart or new background
+worker. Tests/evidence: verify-pelvis-closer.cjs,
+verify-pelvis-closer-browser.cjs and snapshots/pelvis-closer-*.
+
 ## Wall gait frame and anatomical knees corrected — October27
 
 The previous "wall leg folding corrected" receipt failed visual acceptance.

@@ -3,13 +3,127 @@
 Bodyflip consumes this lab's source directly. Keep foot-placement changes in
 `surface.js` / `footik.js`, not a second implementation in Bodyflip.
 
+October30 F82/F123-131: host slide-arms.js now uses a continuous wall-gradient
+search at all correction sizes and retains history before clearance entry.
+Entry acceleration limiting fades as contact settles. Shared API unchanged.
+
+October30 F145 yaw-stop hand-velocity easing is also host-only in slide-arms.js;
+existing constrained arm solve and wall clearance retain contact. No root or
+shared solver/API change.
+
+October30 release smoothing is host-only in slide-arms.js; bounded angular
+acceleration during release and minimal wall-safe repair. Shared API unchanged.
+
+October30: torso avoidance/front routing was removed at user request after a
+F105.5 velocity hitch. Only the independent continuous shoulder-gradient fix
+for the F138 wall-bracing hand kick remains in host slide-arms.js. Torso crossing
+is unresolved again. Shared surface.js/API1/dependencies remain unchanged.
+
+October29 slide continuity and inward guards are REVERTED after visible loss of
+limb motion and wall bracing. Exact accepted wall-clearance arms and prior host
+surface restored; shared createFeet/API1/dependencies unchanged. No broad
+self-clearance, extra joint inertia or side-plane restriction is active.
+app.js mouse scrubbing still preserves Play/Pause; trim behavior is unchanged.
+Release-arm torso crossing remains an unresolved issue, not a completed fix.
+
+October29 self-clearance experiment is reverted at user request: motion visibly
+stuck. The two new helper dependencies are removed from the active host/hashes.
+Exact previous wall-only arm correction remains; shared API1 is unchanged.
+
+October29 arm wall clearance remains host-only: final slide arm capsules and
+hand boxes are constrained against the active wall after pose blending, with
+joint limits and temporal continuity. Contact receipts use the actual nearest
+hand-box surface. Shared createFeet, dependencies and API1 are unchanged.
+
+October29 signed Fall speed: sanitizer retains negative slideSpeed and the
+standalone root host can enter before the apex. Initial ascent is retained
+until descending or accelerating above the entry threshold; later ascent
+exits normally. Snapshot includes previous vertical velocity and the slide's
+descending latch. Shared createFeet and API1 are unchanged.
+
+October29 hand-continuity fix is confined to host-only `slide-arms.js`: full
+palm-target residual, accepted elbow-pole continuation, damped reach fitting
+and a shared three-joint response/rate bound replace wall-distance-only
+acceptance and independent joint caps. Heading speed continuously increases
+response to avoid turning-contact lag. Inner arm FK
+retains the same constraint arithmetic. No shared input, dependency or API change.
+
+October29 heading-aware Slide remains host-only. The slide host receives the
+controller's current/future heading and adapts pelvis orientation, legs and
+hand contacts continuously. `slide-arms.js` is loaded only by `createSlidePose`
+and included in Foot IK's browser/worker fingerprints. It is not a Bodyflip
+dependency. Speed-based downward gaze applies to all slide headings. The
+shared `createFeet`, dependency bundle and API1 remain unchanged.
+
+October29 follow-up remains host-only: Slide entry removes outward normal
+rebound once. `slideLegBlend` supplies independent leg timing, default twice
+`slideBlend`; the corridor predicts the longer duration and body schedule.
+`slidePelvisBlend` independently times pelvis position/orientation, with its
+schedule included in leg planning. Shared foot placement and API1 are unchanged.
+
+October29 slide entry audit is host-only. `slide-joints.js` supplies the bounded
+swing/twist and hinge blend; `slide-entry.js` plans the leg corridor while
+preserving pelvis placement. It supersedes the large temporary body-clearance
+envelope. Both helpers are included in Foot IK's browser/worker fingerprints.
+Soft bracing-arm reach/release and host pelvis-withdrawal easing also stay in
+`simulate`/`createSlidePose`. `createFeet`, Bodyflip, shared bundles and API1 are
+unchanged. Only the Foot IK slide host loads these helpers.
+
+October29 preparation performance is host-only. The Foot IK worker returns
+lossless gzip-JSON pose batches (`frameEncoding`, `frameBatches`) alongside the
+existing policy replies. Its viewer appends these directly instead of solving
+twice. Bounded generation/session restore and API1 are unchanged. The worker
+reuses an evicted same-version Node peer after resetting its entire simulation.
+Slide-only chain FK and reused shoe geometry do not change shared `createFeet`.
+Generic vector arithmetic retains operation order and typed-array behavior.
+
+October 28 bounded generation is host-only. Foot IK's `simulate()` can yield
+completed-frame checkpoints and `surface-coupling.js` retains its generator for
+trim extensions. `createFeet().step()` and shared API 1 are unchanged. Short
+surface seed metadata provides total duration/reference height; root heading
+and travel helpers continue analytically beyond that seed. Bodyflip requires
+no protocol change. The Foot IK server uses API 7/generation protocol 1.
+
+October28 slide prototype is Foot IK host-only: `simulate()` owns the
+ballistic root during Slide and a separate procedural slide pose. October29
+entry is descending-only; upward velocity exits Slide and resumes native NN
+inference with rebased current/history seeds. `createFeet().step()` and
+Bodyflip behavior are unchanged. Settings are opt-in (`slideEnabled`, `slideSpeed`,
+`slideBlend`); defaults do not activate slide in either host. Sliding soles/palm
+are visual contacts, not root supports or material pins. The Foot IK coupling
+adapter stops policy calls while Slide is active. Its host-only slide-joints.js
+helper supplies Jolt-frame arm/ankle limits; it is resolved lazily inside slide
+creation and is not part of Bodyflip's shared bundle. Shared dependencies and
+API version remain unchanged. Foot IK's browser/worker fingerprints include it.
+
+Slide contact compliance remains host-only: three tangent particles add bounded
+friction/recovery to the feet/palm pose, with no reaction force on the ballistic
+root. The joint helper now exposes feasibleSwivel for the hip as well as the
+shoulder. No change to createFeet, host inputs, shared bundles or settings.
+Latest slide tuning slows spring recovery with stiffness-matched damping and
+prefers calf-relative relaxed feet with heel/toe/edge wall contact. The shared
+locomotion foot-placement solver is unaffected.
+Host-only `slideFriction` and `slideRecovery` percentages default to100; the
+slide-pose contact particles consume them. They do not change shared feet or
+apply forces to either host's root.
+Host-only `slideShift` (cm, default20) and `slideShiftSpeed` (m/s, default10)
+control both feet; `slideHandShift` / `slideHandShiftSpeed` independently control
+the bracing hand. Old shared values initialize both pairs, then persist apart.
+They move targets along projected world up, proportional to total root speed
+and capped by both the requested shift and each limb's joint reach. Each pair
+owns its damped offset and carrier velocity; zero disables only that pair.
+Shared `createFeet` and API1 are unchanged; `slideTargetShift` is a pure
+host-side diagnostic helper, not a required Bodyflip input.
+
 `surface.js` exports API version 1:
 
 - `createFeet({names, parents, terrain, settings, metrics?})` returns
-  `{step, metrics, events}`. Call `step` in chronological order at 120 Hz.
+  `{step, metrics, events, reset}`. Call `step` in chronological order at 120 Hz.
+  Optional `reset()` clears contact/transition history for a host mode change;
+  Foot IK uses it on Slide entry/exit. Existing callers need no change.
 - `step({baseline, terrainPose, source, sourceLegs, stance, untilPlant, time,
   frame?, normal, surfaceQ, height, velocity, terrainWeight?, enabled?,
-  wallExpired?, steep?, allowPins?})` returns `{pose, feet, supports}`. Poses use world
+  wallExpired?, steep?, allowPins?, pelvisShift?})` returns `{pose, feet, supports}`. Poses use world
   metres and `{points, q, axes}`. `untilPlant` is seconds for each foot.
 - `terrain.surfaces` contains finite rectangles with `normal`, `bounds`,
   `local`, `world`, `closest` and `project`; `terrain.pick(point)` returns
@@ -26,6 +140,16 @@ clearance through the mesh pelvis, applies the shared body alignment, caches
 corrections at 120 Hz and relinquishes feet to the jump planner during support,
 push and flight. Landing starts from the current pose and resumes the actual NN.
 This shares inclined locomotion, not the prototype's wall traction/root physics.
+
+October28 optional pelvisShift is a world-space translation of the hip anchors
+and upper body before leg IK. Baseline/terrainPose still supply the original
+feet, so held contacts are not translated. Omission preserves the host's old
+behavior. Foot IK blends Pelvis min/max cm using actual total root speed and
+the configured Min/Max m/s pair, then ramps the result from zero at Minimum
+gravity incline to full at90°. Its smoothed surface normal gives the direction.
+Old saves inherit the existing amount at both speed endpoints; Bodyflip does
+not opt in.
+API1 and dependency lists are unchanged.
 
 October27 root/NN coupling: Foot IK's app now uses a separate host adapter in
 `surface-coupling.js`, with `surface.js:simulate` yielding120Hz root contexts.

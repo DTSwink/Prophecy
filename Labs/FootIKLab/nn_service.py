@@ -9,6 +9,8 @@ from pathlib import Path
 import subprocess
 import sys
 import threading
+import math
+from contextlib import contextmanager
 
 ROOT = Path(__file__).resolve().parent
 MODEL_ROOT = ROOT.parent/'BodyflipLab'
@@ -24,7 +26,14 @@ IDLE_SECONDS = 300
 def _stop():
     global worker
     if worker is not None:
-        worker.terminate()
+        # Let retained physics peers consume EOF and retire with the worker.
+        # A genuinely stuck request still has the bounded termination fallback.
+        try:
+            worker.stdin.write('{"kind":"shutdown"}\n')
+            worker.stdin.flush()
+            worker.wait(timeout=1)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            worker.terminate()
         try:
             worker.wait(timeout=3)
         except subprocess.TimeoutExpired:
@@ -66,6 +75,18 @@ def _schedule_retirement():
 atexit.register(stop_worker)
 
 
+@contextmanager
+def request_lock():
+    # A superseded browser request must not wait indefinitely behind another
+    # cold model load. Only one CPU policy request executes at a time.
+    if not LOCK.acquire(timeout=12):
+        raise RuntimeError('Foot IK policy is busy. Retry preparation.')
+    try:
+        yield
+    finally:
+        LOCK.release()
+
+
 def resume(request):
     global worker, timer
     if request.get('gait') not in ('run', 'walk') or request.get('direction','forward') not in ('forward','backward','left','right'):
@@ -73,8 +94,15 @@ def resume(request):
     if request.get('kind') == 'direction':
         if not .1 <= float(request.get('duration',5)) <= 5 or not 0 <= float(request.get('phase',0)) <= 1:
             raise ValueError('Invalid directional gait controls')
+        if request.get('seedOnly') and float(request.get('duration', 5)) > .1:
+            raise ValueError('Surface seed generation is limited to .1 seconds')
     elif not 2 <= int(request.get('frames',0)) <= 152 or len(request.get('roots', [])) > 200 or len(request.get('seeds', [])) != 2:
         raise ValueError('Two history poses and a bounded root path required')
+    bounded_surface = request.get('kind') == 'surface' and 'endTime' in request
+    if bounded_surface:
+        end, total = float(request['endTime']), float(request.get('totalDuration', 5))
+        if not math.isfinite(end) or not math.isfinite(total) or not 0 <= end <= total <= 5:
+            raise ValueError('Invalid bounded surface horizon')
     encoded = json.dumps(request, separators=(',', ':'), sort_keys=True, allow_nan=False)
     fingerprint = b''.join(p.read_bytes() for p in [ROOT/'nn_worker.py', ROOT/'directional_nn.py', MODEL_ROOT/'locomotion.py', MODEL_ROOT/'models/provenance.json'])
     if request.get('direction', 'forward') != 'forward' or request.get('kind') == 'direction':
@@ -87,11 +115,18 @@ def resume(request):
         fingerprint += manifest
     key = hashlib.sha256(fingerprint+encoded.encode()).hexdigest()
     CACHE.mkdir(exist_ok=True)
-    path = CACHE/(key+'.json.gz')
-    with LOCK:
+    path = CACHE/(('surface-' if bounded_surface else '')+key+'.json.gz')
+    with request_lock():
+        legacy = CACHE/(key+'.json.gz')
+        if bounded_surface and not path.exists() and legacy.exists():
+            legacy.replace(path)
         if path.exists():
+            path.touch()
             result = json.loads(gzip.decompress(path.read_bytes()))
-            result['cache'] = 'identical-seed'
+            result['cache'] = 'identical-prefix' if bounded_surface else 'identical-seed'
+            if bounded_surface:
+                result['appendedInferences'] = 0
+                result['stepStart'] = len(result['steps'])
             if worker is not None and worker.poll() is None:
                 _schedule_retirement()
             return result
@@ -104,7 +139,7 @@ def resume(request):
                 worker = subprocess.Popen([executable, '-u', str(ROOT/'nn_worker.py')], cwd=ROOT,
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                     text=True, encoding='utf-8', env=env,
-                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+                    creationflags=(subprocess.CREATE_NO_WINDOW | subprocess.BELOW_NORMAL_PRIORITY_CLASS) if os.name == 'nt' else 0)
             worker.stdin.write(encoded+'\n')
             worker.stdin.flush()
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as reader:
@@ -120,10 +155,14 @@ def resume(request):
             result = json.loads(line)
             if 'error' in result:
                 raise ValueError(result['error'])
-            result['cache'] = 'inferred'
-            path.write_bytes(gzip.compress(json.dumps(result, separators=(',', ':'), allow_nan=False).encode()))
-            # Only this service's recomputable responses; compiled graphs retained.
-            for old in sorted(CACHE.glob('*.json.gz'), key=lambda p:p.stat().st_mtime, reverse=True)[16:]:
+            result['cache'] = ('session-restored' if result.get('restored') else
+                               'session-extended' if result.get('appendedInferences') else
+                               'session-reused') if bounded_surface else 'inferred'
+            path.write_bytes(gzip.compress(json.dumps(result, separators=(',', ':'), allow_nan=False).encode(), compresslevel=1 if bounded_surface else 9))
+            # Separate bounded pose results from small NN seeds. Repeated slide
+            # edits must not evict the starting gait and force fresh inference.
+            candidates = (p for p in CACHE.glob('*.json.gz') if p.name.startswith('surface-') == bounded_surface)
+            for old in sorted(candidates, key=lambda p:p.stat().st_mtime, reverse=True)[16:]:
                 old.unlink()
             return result
         finally:

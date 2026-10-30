@@ -43,7 +43,7 @@ class Handler(SimpleHTTPRequestHandler):
         raw=json.dumps(value,allow_nan=False).encode();self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
     def do_GET(self):
         path=urlparse(self.path).path
-        if path=='/health': return self.reply({'app':'foot-ik-lab','root':str(ROOT),'apiVersion':6,'stateProtocol':2,'stateFile':str(STATE_FILE)})
+        if path=='/health': return self.reply({'app':'foot-ik-lab','root':str(ROOT),'apiVersion':7,'stateProtocol':2,'generationProtocol':1,'stateFile':str(STATE_FILE)})
         if path=='/state':
             with LOCK:
                 p=STATE_FILE;return self.reply(json.loads(p.read_text(encoding='utf-8')) if p.exists() else {})

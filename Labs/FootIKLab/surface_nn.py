@@ -9,6 +9,10 @@ import subprocess
 import time
 import inspect
 import warnings
+import gzip
+import uuid
+import tempfile
+from collections import OrderedDict
 
 from locomotion import torch, runtime_data, upper_data, tl
 from directional_nn import decode_policy_rows
@@ -16,7 +20,7 @@ from nn_worker import encode_lower, compiled_step, inference_execution, policy_g
 
 ROOT = Path(__file__).resolve().parent
 FILES = ('surface.js', 'surface-coupling.js', 'surface_driver.cjs', 'surface_nn.py',
-         'footik.js', 'support.js', 'recovery.js')
+         'footik.js', 'support.js', 'recovery.js', 'slide-joints.js', 'slide-entry.js','slide-arms.js')
 
 
 class DecodeStep(torch.nn.Module):
@@ -65,6 +69,21 @@ class Stream:
         self.verify = verify
         self.max_feature_error = 0.0
 
+    def checkpoint(self):
+        names = ('previous', 'current', 'prev_upper', 'cur_upper', 'prev_pelvis', 'cur_pelvis', 'base')
+        return dict(initialized=self.initialized, policySeconds=self.policy_seconds,
+                    tensors={name: getattr(self, name).tolist() for name in names} if self.initialized else {})
+
+    def restore(self, state):
+        self.initialized = bool(state['initialized'])
+        self.policy_seconds = float(state.get('policySeconds', 0))
+        if self.initialized:
+            for name in ('previous', 'current', 'prev_upper', 'cur_upper', 'prev_pelvis', 'cur_pelvis', 'base'):
+                value = torch.tensor(state['tensors'][name], dtype=torch.float32, device=self.owner.device)
+                if value.ndim != 2 or value.shape[0] != 1 or not torch.isfinite(value).all():
+                    raise ValueError('Invalid surface recurrent checkpoint')
+                setattr(self, name, value)
+
     @inference_execution()
     def step(self, request):
         started = time.perf_counter()
@@ -111,7 +130,7 @@ class Stream:
         next_root = roots[1:2]+torch.stack((window[0, 0]*store.cfg.max_speed_scale_final,
                                           roots[2, 1]-roots[1, 1],
                                           window[0, 1]*store.cfg.max_speed_scale_final))[None] @ headings[1].T
-        if not self.initialized:
+        if not self.initialized or request.get('reset'):
             if request['names'] != ['root', *self.full.body_names]:
                 raise ValueError('Surface seed bone order differs')
             positions = torch.tensor([p['points'][1:] for p in request['seeds']], dtype=torch.float32) @ inverse
@@ -201,3 +220,199 @@ def run_surface(owner, request):
         for pipe in (child.stdin, child.stdout, child.stderr):
             if not pipe.closed:
                 pipe.close()
+
+
+def source_version():
+    return hashlib.sha256(b''.join((ROOT/name).read_bytes() for name in FILES)).hexdigest()
+
+
+def session_identity(request):
+    return hashlib.sha256(json.dumps({k: v for k, v in request.items() if k not in ('sessionId', 'endTime')},
+                                    sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
+
+
+class SurfaceSession:
+    """Retain the causal JS generator and exact NN state between trim extensions."""
+    def __init__(self, owner, request, token=None, saved=None, peer=None):
+        self.owner, self.request = owner, dict(request)
+        self.token = token or uuid.uuid4().hex
+        self.identity = session_identity(request)
+        self.version = source_version()
+        self.steps = list(saved['steps']) if saved else []
+        self.stream = Stream(owner, request.get('verifyReference', False))
+        self.generated = -1.0
+        self.diagnostics = {}
+        self.frame_batches = []
+        self.read_index = 0
+        node = shutil.which('node')
+        if node is None:
+            raise ValueError('Node.js is required for the shared surface simulation')
+        if peer is not None:
+            self.child, self.errors = peer.child, peer.errors
+            peer.child, peer.errors = None, None
+        else:
+            self.errors = tempfile.TemporaryFile(mode='w+', encoding='utf-8')
+            flags = (subprocess.CREATE_NO_WINDOW | subprocess.BELOW_NORMAL_PRIORITY_CLASS) if os.name == 'nt' else 0
+            self.child = subprocess.Popen([node, str(ROOT/'surface_driver.cjs')], cwd=ROOT,
+                                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.errors,
+                                          text=True, encoding='utf-8', creationflags=flags)
+        try:
+            end = saved['generatedThrough'] if saved else request['endTime']
+            initial = dict(source=request['source'], settings=request['settings'], endTime=end,
+                           totalDuration=request.get('totalDuration', 5))
+            self.send(dict(reset=initial) if peer is not None else initial)
+            self.collect(replay=bool(saved))
+            if saved:
+                if self.read_index != len(self.steps):
+                    raise ValueError('Saved surface prefix no longer reproduces its policy cadence')
+                self.stream.restore(saved['state'])
+        except Exception:
+            self.close()
+            raise
+
+    def send(self, message):
+        self.child.stdin.write(json.dumps(message, separators=(',', ':'), allow_nan=False)+'\n')
+        self.child.stdin.flush()
+
+    def collect(self, replay=False):
+        for line in self.child.stdout:
+            message = json.loads(line)
+            if 'error' in message:
+                raise ValueError(message['error'])
+            if message.get('done'):
+                batch = message.get('frameBatch')
+                if not isinstance(batch, dict) or batch.get('start') != sum(b['count'] for b in self.frame_batches):
+                    raise ValueError('Invalid surface pose prefix')
+                self.frame_batches.append(batch)
+                self.generated = float(message['generatedThrough'])
+                self.diagnostics = message['diagnostics']
+                return
+            if 'step' not in message:
+                raise ValueError('Unexpected surface session peer message')
+            if self.read_index < len(self.steps):
+                result = self.steps[self.read_index]
+            elif replay:
+                raise ValueError('Saved surface prefix requested an unrecorded policy step')
+            else:
+                result = self.stream.step(message['step'])
+                self.steps.append(result)
+            self.read_index += 1
+            self.send(result)
+        self.errors.seek(0)
+        raise ValueError('Surface session peer stopped: '+self.errors.read()[-1000:])
+
+    def extend(self, end_time):
+        if end_time > self.generated+1e-9:
+            self.send(dict(extend=end_time))
+            self.collect()
+
+    def saved(self):
+        return dict(schema=1, version=self.version, identity=self.identity, request=self.request,
+                    generatedThrough=self.generated, steps=self.steps, state=self.stream.checkpoint())
+
+    def close(self):
+        child = getattr(self, 'child', None)
+        if child is not None:
+            if not child.stdin.closed:
+                child.stdin.close()
+            try:
+                child.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                child.terminate()
+                try:
+                    child.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                    child.wait()
+            if not child.stdout.closed:
+                child.stdout.close()
+            self.child = None
+        if getattr(self, 'errors', None) is not None and not self.errors.closed:
+            self.errors.close()
+
+
+class SurfaceSessions:
+    """Two resident sessions; bounded disk receipts survive worker retirement."""
+    def __init__(self):
+        self.active = OrderedDict()
+        self.folder = ROOT/'.nn-cache'
+        self.folder.mkdir(exist_ok=True)
+
+    def owner_for(self, request):
+        item = self.active.get(request.get('sessionId'))
+        return item.owner if item else None
+
+    def close(self):
+        for item in self.active.values():
+            item.close()
+        self.active.clear()
+
+    def process(self, owner, request):
+        started = time.perf_counter()
+        version = source_version()
+        if request.get('sourceVersion') != version:
+            raise ValueError('Surface solver changed during loading. Refresh Foot IK.')
+        end = float(request['endTime'])
+        total = float(request.get('totalDuration', 5))
+        if not math.isfinite(end) or not 0 <= end <= total <= 5:
+            raise ValueError('Invalid bounded surface horizon')
+        token = request.get('sessionId')
+        if token is not None and (len(token) != 32 or any(c not in '0123456789abcdef' for c in token)):
+            raise ValueError('Invalid surface session key')
+        identity = session_identity(request)
+        session = self.active.get(token)
+        if session and (session.identity != identity or session.version != version):
+            self.active.pop(token).close()
+            session = None
+            token = None
+        old_count = len(session.steps) if session else 0
+        restored = False
+        saved = None
+        if session is None and token:
+            filename = self.folder/('surface-session-'+token+'.state.gz')
+            if filename.exists():
+                try:
+                    candidate = json.loads(gzip.decompress(filename.read_bytes()))
+                    if candidate.get('version') == version and candidate.get('identity') == identity:
+                        saved = candidate
+                        old_count = len(saved['steps'])
+                        restored = True
+                except (ValueError, OSError, KeyError):
+                    pass
+        if session is None:
+            # Evict before allocating another physics peer or retained pose bank.
+            peer = None
+            while len(self.active) >= 2:
+                _, expired = self.active.popitem(last=False)
+                # Reset an idle same-version peer, retaining compiled JS only.
+                # All pose/spring/NN state belongs to the new session or receipt.
+                if expired.version == version and expired.child.poll() is None:
+                    if peer is not None:
+                        peer.close()
+                    peer = expired
+                else:
+                    expired.close()
+            session = SurfaceSession(owner, request, token=token, saved=saved, peer=peer)
+            self.active[session.token] = session
+        self.active.move_to_end(session.token)
+        try:
+            session.extend(end)
+            record = session.saved()
+            filename = self.folder/('surface-session-'+session.token+'.state.gz')
+            temporary = filename.with_suffix('.tmp')
+            temporary.write_bytes(gzip.compress(json.dumps(record, separators=(',', ':'), allow_nan=False).encode()))
+            temporary.replace(filename)
+            # Only our recomputable session records. Compiled graphs and ordinary
+            # seed-response caches have separate ownership and remain untouched.
+            for old in sorted(self.folder.glob('surface-session-*.state.gz'), key=lambda p: p.stat().st_mtime, reverse=True)[16:]:
+                old.unlink()
+            return dict(kind='surface', sessionId=session.token, generatedThrough=session.generated,
+                        frameBatches=session.frame_batches, frameEncoding='gzip-json-v1',
+                        stepStart=old_count, steps=session.steps, diagnostics=session.diagnostics,
+                        appendedInferences=len(session.steps)-old_count, restored=restored,
+                        seconds=time.perf_counter()-started, policySeconds=session.stream.policy_seconds,
+                        referenceError=None, featureError=session.stream.max_feature_error)
+        except Exception:
+            self.active.pop(session.token, None)
+            session.close()
+            raise

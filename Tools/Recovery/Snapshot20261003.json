@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 9427,
-  "bytes": 1141424278,
+  "file_count": 9469,
+  "bytes": 1141832971,
   "files": [
     {
       "path": ".gitattributes",
@@ -24793,15 +24793,15 @@
     },
     {
       "path": "Labs/FootIKLab/README.md",
-      "git_blob": "cb341d8a291b6f6d21342297f448f6223a196b41",
-      "bytes": 110838,
-      "sha256": "847e77268e34f3061c7e6472e2a3ddbdb043095227d1f4f4819ab03b8e81e840"
+      "git_blob": "b1ebce12137441b677446c86a25a12cfeadb5dcf",
+      "bytes": 168573,
+      "sha256": "0a10a854e10146d9370b9ef4fdb7ab06baf40a3e45af69cb6a4a76f1b11b6c67"
     },
     {
       "path": "Labs/FootIKLab/SHARED_API.md",
-      "git_blob": "13179f27b11e92fc5044714b59200a94d06008de",
-      "bytes": 5324,
-      "sha256": "e0ad35ebebf4843c0c2ee786b59c91b46373dc124b8ea490d6caeb20409b9bca"
+      "git_blob": "c7ecc6283357492069b6e3ad56f28964a1ef8924",
+      "bytes": 13327,
+      "sha256": "ead86189394258902a6601e9255078a8a5fdf79a6161b7e8d8d32ef8d495d44e"
     },
     {
       "path": "Labs/FootIKLab/ankle-verification.json",
@@ -24811,15 +24811,27 @@
     },
     {
       "path": "Labs/FootIKLab/app.js",
-      "git_blob": "3b49a51977bab5173f7f06cf0064e7c4c5ec0669",
-      "bytes": 24093,
-      "sha256": "a0ae78c1506ad293f58b3cfb63b08a939233697e0f234690a1d4da89b925b1d6"
+      "git_blob": "8f8e36b898dfe507b10a4681deaadd7d1d0ede0b",
+      "bytes": 27702,
+      "sha256": "239ad223265d52d8abd0d02a039fe11147761f60370833fd314150dcdb5fbe4c"
     },
     {
       "path": "Labs/FootIKLab/approved/2026-10-28/profile.json",
       "git_blob": "645f143e61cadeae96b57607d54e31e02aff6509",
       "bytes": 1083,
       "sha256": "fc6e73930bd544fa4025dc55bf3f48571a5abbee9382c033564db676cc5e5012"
+    },
+    {
+      "path": "Labs/FootIKLab/approved/2026-10-30/manifest.json",
+      "git_blob": "f1a0bbbe5ed6ecb2238a31aae6c308585864cf87",
+      "bytes": 34019,
+      "sha256": "8555ed2a465da3824f15c1cfcbfa405f89127ec1e875275bbcfd752e4a678d22"
+    },
+    {
+      "path": "Labs/FootIKLab/approved/2026-10-30/state.json",
+      "git_blob": "c33cd3519a2b0b84df8754dff76c409c8a4e1b59",
+      "bytes": 1411,
+      "sha256": "61e4677f2c7d2cd9d2c63aa5979699e87c88f98314315b0a10b8b5f71337a7c5"
     },
     {
       "path": "Labs/FootIKLab/assets/footik.ico",
@@ -24850,6 +24862,12 @@
       "git_blob": "981292100906169e27bf7bad07e54b153795c29b",
       "bytes": 3189,
       "sha256": "2f0709aa4a4159affa4496bcdfad7e83b0c2b484527e0d957f7599e477993d7a"
+    },
+    {
+      "path": "Labs/FootIKLab/bench-slide.cjs",
+      "git_blob": "7eb6bd70cc3cf16dfebb47db277aca4a418c562c",
+      "bytes": 1327,
+      "sha256": "fcf9bea23352ae5f4acefd699bb9b1bc9ae4e09b643eeef002f333024be66162"
     },
     {
       "path": "Labs/FootIKLab/clearance-verification.json",
@@ -25147,9 +25165,9 @@
     },
     {
       "path": "Labs/FootIKLab/directional_nn.py",
-      "git_blob": "0bb4c77590069856e512506b3529accd5c38d626",
-      "bytes": 19979,
-      "sha256": "29544137b6372e453c552be3b189396a2148b184752bedbd6bc824ee305081fb"
+      "git_blob": "35e0ddb8b12564229f0eb1e5f070b1dab278e7ef",
+      "bytes": 20808,
+      "sha256": "09c61dda5793243aee64633301557198cfe5e79e1dd67e218d6f24448ee8d263"
     },
     {
       "path": "Labs/FootIKLab/exit-toeoff-verification.json",
@@ -25159,9 +25177,9 @@
     },
     {
       "path": "Labs/FootIKLab/footik.js",
-      "git_blob": "bcea7a99420283dcddffe3993194eafb377de86c",
-      "bytes": 72049,
-      "sha256": "e38a2407c5d28685a64c3e0dd98652b67d940467af8eda0b9d524241cdd20680"
+      "git_blob": "24c26f66707478ddb180b012398a9c3fbbc79e88",
+      "bytes": 74836,
+      "sha256": "4176928238ceeb142419c943d39bb263c397a4208a07f0d4d39a87486b748a04"
     },
     {
       "path": "Labs/FootIKLab/generate-direction-phases.py",
@@ -25207,9 +25225,9 @@
     },
     {
       "path": "Labs/FootIKLab/index.html",
-      "git_blob": "e80b42fac230e81d5fb43ea0f6a6f8d50f5c76ef",
-      "bytes": 9804,
-      "sha256": "d3cd8fed14ef0a15a7a8f4143c5d20204838dca3279313c54bc943463b72aa60"
+      "git_blob": "08e76cd9cb274efe037dfbdb7fbe0fa050f7a1ce",
+      "bytes": 14510,
+      "sha256": "9733ce77e337211102b00d1389013af6082eabff054e5f81418529ee03d92ccf"
     },
     {
       "path": "Labs/FootIKLab/inertia-verification.json",
@@ -25225,9 +25243,9 @@
     },
     {
       "path": "Labs/FootIKLab/launch.ps1",
-      "git_blob": "094ba0a5f2269346f9094b7e1c820a1d5cd51bd6",
+      "git_blob": "9ddf964b455be65ef3807e8ad00089050e603d94",
       "bytes": 2897,
-      "sha256": "411231bd18290e33cccb406e199c4809424b636a1bb65c968a72916e6ba23d48"
+      "sha256": "240b936d04a94cf116a488026276ee86b238aa9b58983f8164d976281059cab6"
     },
     {
       "path": "Labs/FootIKLab/level-exit-suite-status.json",
@@ -25260,6 +25278,12 @@
       "sha256": "163bd0588adeb27c0a7e3bd35e9f13ad0aee80ef9ac2bb0b55c09a83b9b1574b"
     },
     {
+      "path": "Labs/FootIKLab/network.js",
+      "git_blob": "9747990f5b709265d69b0654d4c0b76af7cd4f61",
+      "bytes": 1359,
+      "sha256": "7300b95a9544ac761ca5229c16cfe35f291fe8af602402ae2c8e2790289d29e3"
+    },
+    {
       "path": "Labs/FootIKLab/nn-root-window-integration.json",
       "git_blob": "ed43d38a4bc330d5540843e8e517fa73d2c5bc49",
       "bytes": 5992,
@@ -25273,15 +25297,15 @@
     },
     {
       "path": "Labs/FootIKLab/nn_service.py",
-      "git_blob": "5cd40087ba8e1d63d74f73c92b393b77ac0b69c6",
-      "bytes": 5196,
-      "sha256": "59f53e847f25d76d1c20ec2c633fd730d61c5bd330cd929eccf1576d241777bc"
+      "git_blob": "7808e3c2341df3e1d61df20e0ba08ac931883427",
+      "bytes": 7351,
+      "sha256": "677877bef38cef0f347211b73384e310e2f8844330198d8ca412624190bb7070"
     },
     {
       "path": "Labs/FootIKLab/nn_worker.py",
-      "git_blob": "8f2836dfbbc15503aaac20003d30b5de016c7287",
-      "bytes": 19632,
-      "sha256": "02a5531277dc6b042c7caa9721ad63f052784bcae3564cbd5346b29d7e70b343"
+      "git_blob": "6610a3e9ef6b1271b39f00bbe19b37674f38feee",
+      "bytes": 20447,
+      "sha256": "86c4999e02ec093d918731dc2868e7e48df806ed9d770db119a3922f473ec5f1"
     },
     {
       "path": "Labs/FootIKLab/pelvis-release-verification.json",
@@ -25333,9 +25357,9 @@
     },
     {
       "path": "Labs/FootIKLab/recovery.js",
-      "git_blob": "f5e7d24f1edc105b8d76f0f34c5c30c4628b312b",
-      "bytes": 19433,
-      "sha256": "b0e685a3fe41da51297e00270e20364847d3eacdbb44e3cd98763d2909249847"
+      "git_blob": "bab6bc65ed98003c42e80451e138bd0128d331d0",
+      "bytes": 19944,
+      "sha256": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e"
     },
     {
       "path": "Labs/FootIKLab/refresh.js",
@@ -25348,6 +25372,12 @@
       "git_blob": "7e8e6287e9ac78dd2ae507a2a288293d5a90c3ff",
       "bytes": 1804,
       "sha256": "32b3f937426f6fffd157fe42443c77dcedc7327a8fc8b98cc666d4157367aa12"
+    },
+    {
+      "path": "Labs/FootIKLab/render-slide-friction.cjs",
+      "git_blob": "e41b437f4c57350e6ee42a93026ccaf5d92fab1d",
+      "bytes": 4686,
+      "sha256": "0ca2d33668f51a7e3264a3d2bff469a96c0cb2f12d401378c94a3ad758639a42"
     },
     {
       "path": "Labs/FootIKLab/renderer.js",
@@ -25411,9 +25441,9 @@
     },
     {
       "path": "Labs/FootIKLab/server.py",
-      "git_blob": "1d4019b9ebda555768343cfa72fc9c3ac44d69f7",
-      "bytes": 5733,
-      "sha256": "7add50dd556677d8e0d268609b3544743b1071871ef43c50890e8cd166981ff2"
+      "git_blob": "f8b24831f74926ac98fe7e3d747fe6ad1df43178",
+      "bytes": 5756,
+      "sha256": "a92f7f0c6303ac96b964b788b4e3887f360637b529125cd2b8b8bc6ba4430a69"
     },
     {
       "path": "Labs/FootIKLab/shadow-verification.json",
@@ -25422,10 +25452,28 @@
       "sha256": "6dd00a39f9668ea89ea1981bbf9a47f5fc928a126c5abd7e67e9bf2feb46ef05"
     },
     {
+      "path": "Labs/FootIKLab/slide-arms.js",
+      "git_blob": "bf06a565f04f697dbd76aa28cb49b53ef1898b17",
+      "bytes": 18101,
+      "sha256": "01f977a1d32fb81266fa19990805444f0092a8c99c12cf4b2acb0c2982b77f0c"
+    },
+    {
+      "path": "Labs/FootIKLab/slide-entry.js",
+      "git_blob": "95f83f5e8ca170da80648d778fe1974ae9cce38a",
+      "bytes": 13776,
+      "sha256": "de603a279901d7ed134e4dadcbb790150043baee1d73a48525003ee89ddec2e8"
+    },
+    {
+      "path": "Labs/FootIKLab/slide-joints.js",
+      "git_blob": "4d80173e4795e950369ab3dd46fbed9dbe2c8cda",
+      "bytes": 18914,
+      "sha256": "6ba33535798843976636d19f05bc10920ea88098faf9f3590189e0816993a26f"
+    },
+    {
       "path": "Labs/FootIKLab/style.css",
-      "git_blob": "0ec086e7ef93e9997f32da4aba150f9df6bdd217",
-      "bytes": 14390,
-      "sha256": "7236fe9224dc4fbe8a194e7e801fc74b67787fa523d0310f02197900c66285bc"
+      "git_blob": "5a5bb2a2f207c1cd486f756b4854b00ab4922609",
+      "bytes": 14569,
+      "sha256": "02875ba462720fe84710e13a8efcc58646c51de0d58a7bd70b0d15ed5d0ed4de"
     },
     {
       "path": "Labs/FootIKLab/support.js",
@@ -25435,9 +25483,9 @@
     },
     {
       "path": "Labs/FootIKLab/surface-coupling.js",
-      "git_blob": "2483c3c3eee2e7974737d85a47bf6c7b9b017bcc",
-      "bytes": 6191,
-      "sha256": "64665dc9b7eeb6f2091e1e34ca8ed2274f7080d05ded1cee821d591f928ccf6f"
+      "git_blob": "3917e59e3d2702cc2919dcce67275257e986f197",
+      "bytes": 11975,
+      "sha256": "464a9d3857e13dd30d3ab6a4b6a4c3279835e8d94618a9f2f136594d960d1901"
     },
     {
       "path": "Labs/FootIKLab/surface-endpoint-verification.json",
@@ -25459,21 +25507,21 @@
     },
     {
       "path": "Labs/FootIKLab/surface.js",
-      "git_blob": "b1165c4ad019d046215c570cbfda16aa3f39630d",
-      "bytes": 39489,
-      "sha256": "28ae66afa7051d73824cb9662798caef0762822f5b908af5a71e09342db5da5c"
+      "git_blob": "56f3eedb49731c5779667c7c01c7559531c9f4b2",
+      "bytes": 79422,
+      "sha256": "4bef927e87d6f2187005afcb8c5a2a1c9d7519a6cc28a8782499a8890b41a97d"
     },
     {
       "path": "Labs/FootIKLab/surface_driver.cjs",
-      "git_blob": "951f587824593c8311c93157c32551862703f912",
-      "bytes": 1003,
-      "sha256": "96e42653ad09353bbfe30704573677df580a68e5e7bb16c138c0fc466f3cd940"
+      "git_blob": "e7aa97df4e293a71619382d7c438febf5fcb2c61",
+      "bytes": 2405,
+      "sha256": "954cc2f48a87ecd27622551e650e8e8ec3a10a459b732c0a8539afeb1b0a2103"
     },
     {
       "path": "Labs/FootIKLab/surface_nn.py",
-      "git_blob": "515608ce7d5759ec872bdac0c02e360fbbbe61fa",
-      "bytes": 11227,
-      "sha256": "85926b87eb0dc9c075a5f78b59ccd1e32e3df167c4e57585461b87e0244f1113"
+      "git_blob": "252bba2962345b9c67b6371ca96681c949fccd83",
+      "bytes": 21691,
+      "sha256": "967e703cd0e381480bdf59f377762f5ace1c7bbb5b2865e3dbd4326edd7da456"
     },
     {
       "path": "Labs/FootIKLab/terrain.js",
@@ -25686,16 +25734,46 @@
       "sha256": "1d0a359695d4d76af5eafe85099fb62da0cc1347239d37c09ecbe0858a0c7544"
     },
     {
+      "path": "Labs/FootIKLab/verify-network.cjs",
+      "git_blob": "ac3f9b1ddd99ff035e4326c43b9180a74df01586",
+      "bytes": 1007,
+      "sha256": "afc5e3d7ab02e91248c7b5850800c3f25a16192de1017b97d0a51cbecad4b0f4"
+    },
+    {
       "path": "Labs/FootIKLab/verify-nn-root-window.mjs",
       "git_blob": "77abbf4b3c2b1667e5afd02f94bd871f29c6ec46",
       "bytes": 5147,
       "sha256": "8a22fd4c486b2cddcd5d533d5093ad2db6a39b19e43b03ed4ba38916dff76c7e"
     },
     {
+      "path": "Labs/FootIKLab/verify-pelvis-closer-browser.cjs",
+      "git_blob": "e7d942c53c90def5536321b5fa43881afcc78b7a",
+      "bytes": 3903,
+      "sha256": "8d706e3c9cfbb1f7b0f72832c3cd7c37b75ddc254ce2ff5deb19470df6abf3d2"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-pelvis-closer.cjs",
+      "git_blob": "2bde5ed007e4fc3561a31d676f7bf519eb1ce56c",
+      "bytes": 3629,
+      "sha256": "7841e6df8ffb1832e241f551b6f426907211a07f2e390b1b6c1c16f399950ec9"
+    },
+    {
       "path": "Labs/FootIKLab/verify-pelvis-release.mjs",
       "git_blob": "09b53bf7a4479fa1600e6f0a65b987dc4e1438b1",
       "bytes": 2010,
       "sha256": "aa0f8da8293ea14dfc4c68010dba4bc205a20296de434ed7ba1a7bd64816dbde"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-pelvis-speed-browser.cjs",
+      "git_blob": "1333433682ea844686eb8cb03cb0c9877633ae1b",
+      "bytes": 4806,
+      "sha256": "2147b66b7f03284a0c19b8ff49c945ef2649f73593fe544bfe2a14d1bb5297a1"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-pelvis-speed.cjs",
+      "git_blob": "a8471508d8d50ff7333099e021fbebcf1db30755",
+      "bytes": 3994,
+      "sha256": "09b76f736c174839f91ea1c866597214f2abf899c2950f080dd1780b00fdecdb"
     },
     {
       "path": "Labs/FootIKLab/verify-pelvis-transfer.mjs",
@@ -25842,6 +25920,138 @@
       "sha256": "08976cfa541fce0338b6c656dd255864cbc0209b8bc6e910f771178dbec285d1"
     },
     {
+      "path": "Labs/FootIKLab/verify-shared-slide-isolation.cjs",
+      "git_blob": "579935af3550dcb95e41158f8e8d7d04d8744d90",
+      "bytes": 3521,
+      "sha256": "bd7a41003bf16c61d0809d4ab5c3c4ea0816201fb012fd55d467a09e11293cc1"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-arm-clearance.cjs",
+      "git_blob": "8d7a132b42f4f5aacd31d9a2beea2a7de697e9f5",
+      "bytes": 2252,
+      "sha256": "addc81161330e7ff7fa3739f5fea83b30957239ba426fefaba5d9327cd5384bb"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-balance.cjs",
+      "git_blob": "19958537f4c28c003d19512b54f3883fba3fbd7c",
+      "bytes": 4984,
+      "sha256": "78bbf1adc0de7593e05368abfb06ade25f68f4843d97e4e4b1fba523b6da0f89"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-browser.cjs",
+      "git_blob": "ce681bafe20508be5e7da2c8e0f9e895ff64d857",
+      "bytes": 4186,
+      "sha256": "7f250dbbeb905206f4e9ee5396593c4c18f15b3beec24fecd5fdc63b428bc394"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-compliance.cjs",
+      "git_blob": "4c31aaf150a3c36e68dc32435e51f091dfb77304",
+      "bytes": 11531,
+      "sha256": "695edcedd7e34f1fd8578fff9454996fea562b277c4664591e2eb0ed104e2cdf"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-directions.cjs",
+      "git_blob": "2309372f0a2dbc8d0ed3f755fdf429a8af94375e",
+      "bytes": 11168,
+      "sha256": "44488061e8cb2de008c2171dab88dce538bc199728517051b90c12d77194b026"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-entry.cjs",
+      "git_blob": "11aa28f7694fe23c91a868d7fdf33b614d263cd4",
+      "bytes": 3250,
+      "sha256": "c5b64b656b105d3a46750dcbff9496bca3cc1973cb451bd4bee52482645889a1"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-friction.cjs",
+      "git_blob": "2c295878923ef4953ac47823fe8a148c312f5939",
+      "bytes": 17366,
+      "sha256": "2efa20df1243add07045fb59f2ad2a51643387f2c3be907de4a1f58cd8e8677f"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-hand-continuity.cjs",
+      "git_blob": "4bf1d306464fe9e80d69369bcd225b6ee4e5915e",
+      "bytes": 4078,
+      "sha256": "56b3ad8dd285c42728746f83a85ebd145f8cd97e646d4c29f7085c73af003867"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-head-torso.cjs",
+      "git_blob": "2c48c1571adb0683db427d05b80d841a40f2b825",
+      "bytes": 4237,
+      "sha256": "668862f48d7211c826400f1206da6244584d77994888819e4d50fa6bffca4b9f"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-heading.cjs",
+      "git_blob": "d475981448566dbb9bd5b7ec756dae4cb304ddea",
+      "bytes": 7084,
+      "sha256": "d02d303463a6c9059ecb4e80b1695bd1ba13be7371020d9db144aefb0c8c228c"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-joints-browser.cjs",
+      "git_blob": "d3fd6b5689152f3ed6e0e73552426a5fd6a4307f",
+      "bytes": 3334,
+      "sha256": "475566b7c7bd85b3fc1d29af15f349b9bf208ae1cb20f44e3d69c0593756f83b"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-joints.cjs",
+      "git_blob": "0a1bc53e5972373142822a09dee162150593791b",
+      "bytes": 11060,
+      "sha256": "35fbb407b8101b79b2c5816253028799cafb04800e56e2bd8e5c00679e77b741"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-motion.cjs",
+      "git_blob": "c033939666930c8c7b739c2f14841d358a7c0c03",
+      "bytes": 3938,
+      "sha256": "d845cbf9bb7d548126c3693ff7313586c3ca93bd2f8602d4835aa39e5f797ff0"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-negative-threshold.cjs",
+      "git_blob": "942cc5483f322d4f73807dc8dacfc576d87c2245",
+      "bytes": 2393,
+      "sha256": "6b4782370c230fe39b03424dbeb3c237979330a45b00e6d2bb1cf6b8aaf98f51"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-orbit-speed.cjs",
+      "git_blob": "a80bd66764112629fe71e3c38ae5f2647f9eca60",
+      "bytes": 1416,
+      "sha256": "073aadc9712bdf80c691a39cbe6147cb860ca88f6aa0e0e812f942359f7b9730"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-performance.cjs",
+      "git_blob": "549f68faf3f90ca1c09184fece233b940e5fefa2",
+      "bytes": 2758,
+      "sha256": "1d529a6e6b8ab28ea68027f312278afe98bdf950b67065e1561657c1e2de563a"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-root-drift.cjs",
+      "git_blob": "47805a8ab12e51d9965ee7e1287423925fca4dfa",
+      "bytes": 2471,
+      "sha256": "b401991c6f5a0e0a8956cc7811092af53940cf778a6e7b89a223ff43937ee74c"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-shift.cjs",
+      "git_blob": "825beddfbc9ec014627d77c23c65859169403c5b",
+      "bytes": 4239,
+      "sha256": "10049519504b0fe45dbfe74c24df3d2cf55093918cb402a7f829a0079da093ac"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-transitions.cjs",
+      "git_blob": "35164465c0b2eff8745f8e85d869b7e4fba25689",
+      "bytes": 4243,
+      "sha256": "2eb600791a71af3e90990bf8d55e35a7641638f2bd860e01a13c6817ed67da04"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide-tuning.cjs",
+      "git_blob": "4556870806357151fcd8b5ca669fc72d20fb1dee",
+      "bytes": 6279,
+      "sha256": "4b177c6ae7cf9b57f645c6e23f0d9bbe4cde06d450cc208e691cc71ece59ecda"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-slide.cjs",
+      "git_blob": "3f89c7330b85296aa3d1537aff51fcdb384f2391",
+      "bytes": 5566,
+      "sha256": "e7759143d125018da97a6f82fc3b4327d70e347d557dabcde9798a1ca203b79a"
+    },
+    {
       "path": "Labs/FootIKLab/verify-step-accent.cjs",
       "git_blob": "dec2e8504b3e167e6ada2e1df240a94b5e8dcb2a",
       "bytes": 3082,
@@ -25849,27 +26059,45 @@
     },
     {
       "path": "Labs/FootIKLab/verify-surface-coupling.cjs",
-      "git_blob": "78f6ce2785dd5ab9d4a9345eccf52fb72dfd1136",
-      "bytes": 4049,
-      "sha256": "82c7a1a7b710e35dd5dffdeab810e68fb16403f7444c548bf62dcc25288f9576"
+      "git_blob": "3169b3ab5437265914a38600765f9a6ba4b0913a",
+      "bytes": 4537,
+      "sha256": "ed212e7eca8a9318f633e3dd9de3d1100d94c9d5bb88b141844c9f6ef5d29113"
     },
     {
       "path": "Labs/FootIKLab/verify-surface-endpoints.mjs",
-      "git_blob": "bb0d0c648f032d03c566826f4ab8c8713bd91ae7",
-      "bytes": 5448,
-      "sha256": "7e96496033e1154e6f66051ec882bacc8b131345dc3986b7b295a8f77844cb91"
+      "git_blob": "c6dc071c8ccb2ca638f89816eda171b920075d2a",
+      "bytes": 5629,
+      "sha256": "d67b018822a49d8588d609f7516be1e8b03637a785bdf2b29ce731970bb9b825"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-surface-session.cjs",
+      "git_blob": "8a836779341b88178e82dee2445b33533ee2512d",
+      "bytes": 9062,
+      "sha256": "d8a2177c23b9f19cf4c70da952c92d64c1574a43700a2638fbf8285e6874d76d"
     },
     {
       "path": "Labs/FootIKLab/verify-surface.mjs",
-      "git_blob": "60cb56a609a1e7e427146763fc6968709ac106b7",
-      "bytes": 10318,
-      "sha256": "1f865d34eed5860d7b4e07937130867188320dd7ea2fe4a81574c7e71a923532"
+      "git_blob": "b9c244b86b4bc6f3dfae9a2be3e4fa1633600395",
+      "bytes": 10523,
+      "sha256": "aed1eba69cbd626a6cc976f27c27a496a3ab12ded365ef5ab55f82dd60c76216"
     },
     {
       "path": "Labs/FootIKLab/verify-toe-release.mjs",
       "git_blob": "41707bc00acfac7a9524d52b7e4fd696189f0d5d",
       "bytes": 2700,
       "sha256": "9ad264ebeb7d0e1a5faeb9f887ec1779ceb2f92dff4dfacb9bac345c46ce4949"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-trim-planner-boundary.cjs",
+      "git_blob": "10a34774c587d1f8ac575ee4f90c7c8791c87a42",
+      "bytes": 3181,
+      "sha256": "405d318dedaae07a844a3db623d270d78bddba85e0dcb5b53b522bb6806c15f3"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-trim-ui.cjs",
+      "git_blob": "6c1cd24c751d9c44fc1b27573db23813085f124b",
+      "bytes": 10485,
+      "sha256": "34ee185800259360db78c94e5f52bffb0ec5ee7a5688286df0f60569aa53406d"
     },
     {
       "path": "Labs/FootIKLab/verify-turning-ankle.mjs",
@@ -25891,9 +26119,9 @@
     },
     {
       "path": "Labs/FootIKLab/verify-wall-contact-browser.cjs",
-      "git_blob": "89d2e18138401038236189877e78f331851f5d4b",
-      "bytes": 2482,
-      "sha256": "466e7b7edca72986f90230180010f04ec5cdc1bcdd0b13a268ea96f06bd3571f"
+      "git_blob": "30dcf3149cca902b46ee03ed7e5a8c1862bc2c31",
+      "bytes": 2497,
+      "sha256": "f754b559b573b618d7600710bb45af0a247d2ea86018b4fd43d5be06412d4797"
     },
     {
       "path": "Labs/FootIKLab/verify-wall-contact.cjs",
@@ -25903,15 +26131,15 @@
     },
     {
       "path": "Labs/FootIKLab/verify-wall-frame-browser.cjs",
-      "git_blob": "88b0c7112d97fcc43761368ee1ef997848a517cf",
-      "bytes": 3550,
-      "sha256": "ac41ea373f5ddfbf371f84a353180260d5ed8bc46b56dbe8975750bb15e33051"
+      "git_blob": "a1450f39876cf269af401d39b1785abcbc51095b",
+      "bytes": 3565,
+      "sha256": "d4e2b028ec8d763a94360d944c2cf6a6a8ec51a88abe353a98741a1f3b10b33e"
     },
     {
       "path": "Labs/FootIKLab/verify-wall-frame.cjs",
-      "git_blob": "874674baaa70efa06641a13b6760e0828f8c4c80",
-      "bytes": 3582,
-      "sha256": "10818349744a6f5efe10d46437929eb5db345fdf4f4372fd3b6e6d3ee1b9005d"
+      "git_blob": "e8259bbdbc5ca45a5451fbef1bac7b7126c0140f",
+      "bytes": 3596,
+      "sha256": "aaca4683970a709ba9f3dfc4153b75b49dcd9db6ead2fb6117b42cc8d131a6e0"
     },
     {
       "path": "Labs/FootIKLab/verify.mjs",
@@ -25930,6 +26158,30 @@
       "git_blob": "92afdbeb3c968c59cb668f5f5d5c4bdedb6bcbdc",
       "bytes": 2294,
       "sha256": "aa2f0dbe076de349ce2f191a5c1e80255aa4cba79e5269ed30171a2c86201eec"
+    },
+    {
+      "path": "Labs/FootIKLab/verify_response_cache.py",
+      "git_blob": "315cd20e6a24719f4d61d287f6ab917ee13e3916",
+      "bytes": 1906,
+      "sha256": "353106ad82f9d0f07e7bc6b32e43dd738aaf436c62b452ac2ee68a989291960d"
+    },
+    {
+      "path": "Labs/FootIKLab/verify_slide_resume.py",
+      "git_blob": "4b34f94fa2ec8551e1ac5f6e4194d089092a6348",
+      "bytes": 1405,
+      "sha256": "b5873f9c14ed612b34132177a73ca8bd8aa6fa6b189995437d65192fb82d89b8"
+    },
+    {
+      "path": "Labs/FootIKLab/verify_surface_sessions.py",
+      "git_blob": "31559697efc9383f5f6e44cc75447f51e11e1729",
+      "bytes": 7150,
+      "sha256": "ab7eb6b1662dcb266311fa4be60e26e021b087534f5c59c61b11e08f20fe6d13"
+    },
+    {
+      "path": "Labs/FootIKLab/verify_surface_sessions_live.py",
+      "git_blob": "490197db346734cd8a70a0a464b5bacb28834b0e",
+      "bytes": 3365,
+      "sha256": "b475992b9bd35159a16cf1be66b2120285ea49b7da43c3e6aa4a7d8853e1155b"
     },
     {
       "path": "Labs/FootIKLab/verify_yaw_distance.py",

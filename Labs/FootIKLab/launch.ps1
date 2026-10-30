@@ -7,7 +7,7 @@ try {
     $footikHealth = $null
     try { $footikHealth = Invoke-RestMethod -Uri ($footikUrl + 'health') -TimeoutSec 2 } catch {}
     if ($footikHealth -and ($footikHealth.app -ne 'foot-ik-lab' -or $footikHealth.root -ne $footikRoot)) { throw "Port $footikPort belongs to another app." }
-    if ($footikHealth -and ($footikHealth.apiVersion -lt 6 -or $footikHealth.stateProtocol -ne 2)) { throw 'Foot IK server is outdated. No process was stopped.' }
+    if ($footikHealth -and ($footikHealth.apiVersion -lt 7 -or $footikHealth.stateProtocol -ne 2)) { throw 'Foot IK server is outdated. No process was stopped.' }
     if (-not $footikHealth) {
         $footikPython = 'C:/Users/singerie/Documents/Cursor/stepper/.tools/python310/pythonw.exe'
         if (-not (Test-Path -LiteralPath $footikPython)) { throw 'The lab Python runtime is missing.' }
@@ -21,7 +21,7 @@ try {
             Start-Sleep -Milliseconds 250
             try { $footikHealth = Invoke-RestMethod -Uri ($footikUrl + 'health') -TimeoutSec 1; break } catch {}
         }
-        if (-not $footikHealth -or $footikHealth.app -ne 'foot-ik-lab' -or $footikHealth.root -ne $footikRoot -or ($footikHealth.apiVersion -lt 6 -or $footikHealth.stateProtocol -ne 2)) { throw 'Foot IK Lab could not start.' }
+        if (-not $footikHealth -or $footikHealth.app -ne 'foot-ik-lab' -or $footikHealth.root -ne $footikRoot -or ($footikHealth.apiVersion -lt 7 -or $footikHealth.stateProtocol -ne 2)) { throw 'Foot IK Lab could not start.' }
     }
     $footikCandidates = @((Join-Path ${env:ProgramFiles(x86)} 'Microsoft/Edge/Application/msedge.exe'), (Join-Path $env:ProgramFiles 'Microsoft/Edge/Application/msedge.exe'), (Join-Path $env:ProgramFiles 'Google/Chrome/Application/chrome.exe'))
     $footikBrowser = $footikCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
