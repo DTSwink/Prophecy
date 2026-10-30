@@ -1,5 +1,93 @@
 # Weapon wheel UI — isolated workstream
 
+## Main-menu scene — October30: approved finite-card reflection checkpoint
+
+User approved this iteration and requested a push. SaveLive captured the current
+look without closing review44168: rain_amount0.58208954 (14.55% on the density
+slider), impact1, ripple size2, card depth80m and width1x. This saved look
+supersedes the heavy-rain diagnostic settings described below.
+
+The user rejected the distant procedural wave LOD as a visible wavy/flat/wavy
+transition and explicitly requested no such workaround. That layer is removed,
+as is footprint broadening/attenuation of the original analytic impact normals.
+`rain_surface.ush` shares the exact seeded ring field between water shading and
+reflection samples; its neighborhood covers the full38*size support, including
+large Ripple size settings. `rain_far_detail` is obsolete and has no effect.
+
+The remaining projection error was separate: UE's planar reflection used the
+saved NormalDistortionStrength200 as a 200cm virtual intersection sphere while
+the emitters are80m away. `reflection_cards.ush` now intersects reflected view
+rays with the seven finite cards at their actual X plane, Y positions, Z0–3000cm
+and current widths. It uses the original UV profile, mask and emitted radiance,
+with UE's EnvBRDFApprox at F0=.0204 and saved roughness. Native card actors retain
+their transforms for controls but are hidden from planar capture to avoid double
+counting. Native planar reflection remains for the mannequin.
+
+Fixed2x2 pixel-area quadrature evaluates the same rain impacts and source rays
+at every depth, then averages alpha-weighted radiance. It does not average normals
+or invent coarse waves. Unreal TSR remains enabled. This costs more shader work;
+no frame-rate guarantee is made. Known-emitter tracing does not test mannequin
+occlusion of a source or convolve a full GGX lobe. Because the original sources
+meet the water, calm-water endpoint geometry remains pointed. Maximum rain still
+has fine far-highlight shimmer; this is a corrected geometric prototype, not a
+claim of a completed reference match or fully converged antialiasing.
+
+Ground → Reflection lights contains synchronized numeric entries and sliders:
+Card depth(m), -200…200, default80; Card width(x), .1…4, default1. Both update the
+actual actor transforms and shader uniforms immediately and use Save/Revert,
+SaveLive and recovery. Width scales the original180/220/260cm source widths;
+height, relative sizes and emitted radiance are retained. Editable-text focus
+suppresses scene hotkeys, allowing normal typing and Ctrl+A.
+
+SaveLive preserved review29884 before graceful close. Normal build and focused
+M_Water/M_Softbox preparation passed. Native checks verify negative/zero/positive
+depth, narrow/wide widths, shader uniforms, all seven transforms, save/reload and
+existing weather controls. UI capture inspected. Flat-water calibration measured
+mean source-pixel RGB .65226 versus .65219 for the original capture, with mean
+absolute difference .00512; source locations agree. Two16-frame final sequences
+check moving rain(t3.0167–6.55) and paused rain(t3.0167). They remove the broad
+wavy/flat/wavy band but expose remaining sampling noise: paused far-highlight
+mean RGB frame difference .0804 on a0–1 scale. A separate-translucency-off probe
+did not materially improve this and was not retained. The200% screen-percentage
+comparison was diagnostic only. Do not describe still-image agreement as proof
+of temporal convergence.
+
+Evidence is local under `Saved/RainFilter20261029/`: final-review.json, build-final.log,
+prepare-quadrature.log and quad-moving/paused/controls logs. Captures are
+`Saved/Captures/rain-filter-quad-*`; control receipts are in Saved/Validation.
+At implementation completion, scene.json matched the heavy-rain live-saved.json
+(rain4, impact1, ripple size2, card depth80, width1). The approved save above is
+now current. Review44168 remains open on Ground. No desktop input or main-project/
+engine changes. Scene checkpoint prepared for the authorized push. Earlier distant
+wave captures and the prior overhead/fade experiments remain rejected history.
+`-SceneLegacyCardProjection` is only a diagnostic comparison switch.
+
+## Main-menu scene — October29: lighting reverted / explanatory schematic
+
+Both lighting revisions were rejected. Restore is complete: original seven
+upright emissive reflection cards, original UV profile, mask threshold.025 and
+constant water specular.255. No distance fade or fuzzy overhead strips remain.
+Native MainMenuSceneLab.cpp matches pushed HEAD. Water normals, roughness,
+opacity, camera and all user tuning are preserved. Former reflection_light_*
+and reflection_fade_* options have no effect.
+
+Cards: centers X8000/Z1500cm, Y[-3870,-3055,-1070,142,886,2935,3869]cm;
+height3000cm, widths180/220/260cm repeated. Reflection-only emissive geometry,
+not the rect lights illuminating the mannequin. Mannequin base(0,140,0)cm.
+Actual rect light positions: crown(80,270,380), left(-120,-70,200),
+front(-310,160,280), red bounce(70,80,30), low silver(-120,310,75),
+smoke backlight(500,-650,1000). Directional fill rotation(-72,20,0), no
+meaningful source distance. Camera(-465,35,64), pitch1.3, horizontal FOV51.
+
+SaveLive preserved the current look before closing38648. Normal build and
+focused M_Water/M_Softbox preparation pass; no errors. Review19976 reopened on
+Ground, responding, scene/smoke ready05:17:33 Warsaw. Resources/scene.json hash
+matches Saved/ReflectionRevert20261029/live-saved.json. No desktop input or push.
+Prior overhead and distance-fade captures/receipts are rejected history.
+The requested separate rotatable schematic uses these positions/dimensions,
+with an approximate mannequin silhouette, native orbit/zoom/pan and selectors.
+It does not control the Unreal scene. Verified in an isolated headless browser.
+
 ## Main-menu scene — October29: horizontal smoke width
 
 Air → Horizontal width now scales the actual native smoke source0.25–8x along
@@ -23,8 +111,9 @@ SaveLive before closing28136: rain4, smoke shift7.4628cm, existing water setting
 preserved byte-for-byte against Saved/SmokeWidth20261029/live-saved.json.
 User authorizes push of this scene checkpoint. Generated outputs and unrelated
 workstreams are excluded. The lab README documents rebuilding from checkout.
-Current review PID20344 is open on Air, responding; scene and smoke ready
-03:57:58 Warsaw. Horizontal width starts at1x to preserve the current look.
+Previous review PID20344 opened on Air, responding; scene and smoke ready
+03:57:58 Warsaw. It was later saved and closed for the lighting update above.
+Horizontal width starts at1x to preserve the current look.
 
 ## Main-menu scene — October29: water collision controls
 

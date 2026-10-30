@@ -9,6 +9,7 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SSlider.h"
+#include "Widgets/Input/SNumericEntryBox.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -81,6 +82,45 @@ public:
 
   AddSlider(Rows, TEXT("wind_strength"), TEXT("Background ripple"), 0.f, 1.f, .16f, EValueFormat::Percent,
    TEXT("Ambient water movement. Zero removes it; rain and mannequin contact remain independent."));
+
+  AddSection(Rows,TEXT("REFLECTION LIGHTS"),TEXT("Move all seven cards"));
+  Rows->AddSlot().AutoHeight().Padding(0,3,4,5)
+  [SNew(SHorizontalBox)
+   + SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)
+   [SNew(STextBlock).Text(FText::FromString(TEXT("Card depth (m)"))).Font(FCoreStyle::GetDefaultFontStyle("Regular",10)).ColorAndOpacity(Ivory)]
+   + SHorizontalBox::Slot().AutoWidth()
+   [SNew(SBox).WidthOverride(90)
+    [SNew(SNumericEntryBox<float>).AllowSpin(false).MinValue(-200.f).MaxValue(200.f)
+     .MinFractionalDigits(0).MaxFractionalDigits(2)
+     .Value_Lambda([this]()->TOptional<float>{return Read(TEXT("reflection_card_depth"),80);})
+     .OnValueCommitted_Lambda([this](float V,ETextCommit::Type Why){if(Callbacks.Set)Callbacks.Set(TEXT("reflection_card_depth"),V);if(Why==ETextCommit::OnEnter)RestoreViewportFocus();})
+     .ToolTipText(FText::FromString(TEXT("Depth in metres: 80 is the original position. Negative values move the reflection cards toward and past the camera. Enter or leave the field to apply.")))]]];
+  Rows->AddSlot().AutoHeight().Padding(0,0,4,5)
+  [SNew(SSlider).Style(&SliderStyle).IsFocusable(false).IndentHandle(false)
+   .SliderBarColor(FLinearColor(.18f,.115f,.12f,1)).SliderHandleColor(FLinearColor(.8f,.69f,.56f,1))
+   .Value_Lambda([this](){return (FMath::Clamp(Read(TEXT("reflection_card_depth"),80),-200.f,200.f)+200.f)/400.f;})
+   .OnValueChanged_Lambda([this](float V){if(Callbacks.Set)Callbacks.Set(TEXT("reflection_card_depth"),FMath::Lerp(-200.f,200.f,V));})
+   .OnMouseCaptureEnd_Lambda([](){RestoreViewportFocus();})];
+  Rows->AddSlot().AutoHeight()
+  [SNew(STextBlock).Text(FText::FromString(TEXT("-200 to 200 m. Positive: behind mannequin.\nNegative: toward camera. Original: 80 m."))).Font(FCoreStyle::GetDefaultFontStyle("Regular",9)).ColorAndOpacity(Muted)];
+
+  Rows->AddSlot().AutoHeight().Padding(0,9,4,5)
+  [SNew(SHorizontalBox)
+   + SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)
+   [SNew(STextBlock).Text(FText::FromString(TEXT("Card width (x)"))).Font(FCoreStyle::GetDefaultFontStyle("Regular",10)).ColorAndOpacity(Ivory)]
+   + SHorizontalBox::Slot().AutoWidth()
+   [SNew(SBox).WidthOverride(90)
+    [SNew(SNumericEntryBox<float>).AllowSpin(false).MinValue(.1f).MaxValue(4.f)
+     .MinFractionalDigits(1).MaxFractionalDigits(2)
+     .Value_Lambda([this]()->TOptional<float>{return Read(TEXT("reflection_card_width"),1);})
+     .OnValueCommitted_Lambda([this](float V,ETextCommit::Type Why){if(Callbacks.Set)Callbacks.Set(TEXT("reflection_card_width"),V);if(Why==ETextCommit::OnEnter)RestoreViewportFocus();})
+     .ToolTipText(FText::FromString(TEXT("Width multiplier for all seven reflection cards. 1x preserves their original 1.8, 2.2 and 2.6 metre widths; height and brightness stay unchanged. Enter or leave the field to apply.")))]]];
+  Rows->AddSlot().AutoHeight().Padding(0,0,4,5)
+  [SNew(SSlider).Style(&SliderStyle).IsFocusable(false).IndentHandle(false)
+   .SliderBarColor(FLinearColor(.18f,.115f,.12f,1)).SliderHandleColor(FLinearColor(.8f,.69f,.56f,1))
+   .Value_Lambda([this](){return (FMath::Clamp(Read(TEXT("reflection_card_width"),1),.1f,4.f)-.1f)/3.9f;})
+   .OnValueChanged_Lambda([this](float V){if(Callbacks.Set)Callbacks.Set(TEXT("reflection_card_width"),FMath::Lerp(.1f,4.f,V));})
+   .OnMouseCaptureEnd_Lambda([](){RestoreViewportFocus();})];
 
   Rows=Rain;
   AddSection(Rows, TEXT("RAIN"), TEXT("Fine drops, gusts and surface impacts"));

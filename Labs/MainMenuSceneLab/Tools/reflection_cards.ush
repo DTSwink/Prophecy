@@ -1,0 +1,55 @@
+// Exact reflected-ray intersection with this lab's seven known emissive cards.
+// P is absolute world position in cm; N is the existing water shading normal;
+// V points from the surface toward the camera. This adds no waves or depth gain.
+// The caller must exclude these cards from native planar reflection to avoid
+// counting them twice, and retain its normal water opacity/compositing.
+// Limitations: known-card visibility only (no mannequin/other-object occlusion),
+// and a single reflected direction, not a GGX convolution of the finite source.
+struct SceneReflectionCards
+{
+ float3 eval(float3 P, float3 N, float3 V, float depth_m, float width_x, float roughness)
+ {
+  N=normalize(N);
+  V=normalize(V);
+  float3 R=reflect(-V,N);
+  // A parallel ray cannot intersect a finite card; reject intersections behind
+  // the ray origin. Negative card depth is otherwise handled without a special case.
+  if(abs(R.x)<1.e-6)return float3(0,0,0);
+  float cardX=clamp(depth_m,-200.0,200.0)*100.0;
+  float travel=(cardX-P.x)/R.x;
+  if(travel<=0)return float3(0,0,0);
+  float3 hit=P+travel*R;
+  if(hit.z<0 || hit.z>3000)return float3(0,0,0);
+
+  // At Pitch=90, local plane X points up world Z. The source's UV.x=0
+  // end is its lower/narrow end (the upper tip in its flat-water reflection).
+  float u=hit.z/3000.0;
+  float end=pow(smoothstep(0,.065,u),1.5)*smoothstep(0,.04,1-u);
+  float profileWidth=lerp(.055,.46,smoothstep(0,.3,u));
+  float centers[7]={-3870,-3055,-1070,142,886,2935,3869};
+  float source=0;
+  [unroll] for(int i=0;i<7;++i)
+  {
+   float fullWidth=(180.0+40.0*(i%3))*clamp(width_x,.1,4.0);
+   float v=(hit.y-centers[i])/fullWidth+.5;
+   if(v>=0 && v<=1)
+   {
+    float edge=1-smoothstep(.05,1,abs(v-.5)/profileWidth);
+    float profile=end*edge;
+    // Match M_Softbox's original masked silhouette and emitted radiance.
+    // These visible profiles do not overlap within the supported width range.
+    if(profile>=.025)source+=profile;
+   }
+  }
+
+  // UE5.7 BRDF.ush EnvBRDFApprox / Lazarov fit, with the unchanged nonmetal
+  // water F0 = .08 * Specular(.255) = .0204. Radiance has no inverse-square
+  // distance attenuation. Roughness here weights the BRDF; it does not blur it.
+  float NoV=saturate(dot(N,V));
+  float4 r=saturate(roughness)*float4(-1,-.0275,-.572,.022)+float4(1,.0425,1.04,-.04);
+  float a004=min(r.x*r.x,exp2(-9.28*NoV))*r.x+r.y;
+  float2 AB=float2(-1.04,1.04)*a004+r.zw;
+  float response=.0204*AB.x+saturate(50*.0204)*AB.y;
+  return float3(2.2,2.05,1.9)*source*response;
+ }
+};

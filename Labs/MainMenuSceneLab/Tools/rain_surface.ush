@@ -1,0 +1,45 @@
+// Analytic rain-impact slopes shared by the water normal and reflection samples.
+// SceneRain from rain_common.ush must be declared before this struct.
+// All inputs are the original impact inputs; P is world XY in centimeters.
+struct SceneRainSurface
+{
+ float2 slope(float2 P, float RainTime, float RainAmount, float RainStrength, float RainSize)
+ {
+  float2 rainSlope=0;
+  [branch] if(RainAmount>.0001 && RainStrength>.0001)
+  {
+   SceneRain rain;
+   int2 cell=int2(floor(P/22));
+   // Full support: maximum ring radius plus three Gaussian widths is <38*size.
+   int reach=max(1,(int)ceil(38*RainSize/22));
+   [loop] for(uint layer=0;layer<(uint)min(4,ceil(RainAmount));++layer)
+   {
+    [loop] for(int y=-reach;y<=reach;y++) [loop] for(int x=-reach;x<=reach;x++)
+    {
+     int2 c=cell+int2(x,y);
+     if(layer+rain.hash(c,5+97*layer)<RainAmount)
+     {
+      // Keep each impact paired with the corresponding falling streak's clock.
+      float age=rain.age(c,RainTime-1.0,layer);
+      if(age<1.05)
+      {
+       float2 delta=P-rain.center(c,layer);
+       float radius=length(delta);
+       float front=(.7+28*age)*RainSize;
+       float width=(1.25+1.1*age)*RainSize;
+       float2 radial=delta/max(radius,.1);
+       float d=radius-front;
+       if(abs(d)<width*3)
+       {
+        float packet=(d/width)*exp(-d*d/(width*width));
+        float fade=exp(-2.2*age)*smoothstep(0,.035,age)*(1-smoothstep(.8,1.05,age));
+        rainSlope+=radial*packet*fade*.38*RainStrength;
+       }
+      }
+     }
+    }
+   }
+  }
+  return rainSlope;
+ }
+};

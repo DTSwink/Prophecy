@@ -55,7 +55,8 @@ native layout changes require a normal build, not Live Coding.
 
 ## Controls
 
-There are 34 sliders across five tabs, plus actions and the resting-contact switch.
+There are 36 sliders across five tabs, plus the card-depth and width numeric fields, actions
+and the resting-contact switch.
 
 | Ground | Water | Rain | Air | Body |
 | --- | --- | --- | --- | --- |
@@ -64,6 +65,8 @@ There are 34 sliders across five tabs, plus actions and the resting-contact swit
 | Dark areas | Contact softness | Streak length | Lower edge | Bead size |
 | Contrast | Damping | Brightness | Edge softness | Bead relief |
 | Background ripple | Wave relief | Turbulence | Horizontal width | Trails |
+| Card depth (m) | | | | |
+| Card width (x) | | | | |
 | | | Fall speed | Drift speed | Runoff speed |
 | | | Slant | Rolling motion | |
 | | | Surface impact | Left / right | |
@@ -106,6 +109,45 @@ water, including its displayed field while paused; position and settings remain.
 Clear old waves when comparing settings because raising a threshold cannot
 instantly remove an existing wake.
 
+## Reflected lighting
+
+Seven finite studio cards provide the white water highlights. The fuzzy overhead
+strips, distance fade and additional distant wave bands were rejected and removed.
+The water now intersects its reflected view ray with the actual card plane and
+evaluates the original finite source profiles. This replaces the planar renderer's
+2 m virtual intersection sphere for these sources. Source radiance, water specular
+.255, opacity and saved roughness are retained. Native planar reflection still
+renders the mannequin; the card actors are hidden from that capture to avoid
+counting their light twice.
+
+The card shader integrates four subpixel samples of the same rain field, averaging
+reflected radiance after shading rather than averaging normals. The sample count
+is fixed across depth; there are no distance waves, amplitude gains or fades.
+This costs additional material work. It is a known-emitter reflection, not a full
+scene ray tracer: it does not trace mannequin occlusion of a card or convolve the
+finite source with a full GGX lobe. The original cards span Z=0–3000 cm, so their
+lower ends still meet the water. Calm water consequently retains pointed sources.
+
+Ground → Reflection lights exposes **Card depth (m)** as a synced numeric field
+and slider, from -200 to +200 m. Enter or leave the field to apply typed values;
+dragging updates live. All seven cards move along world X. Positive is behind
+the starting mannequin; negative moves toward and past the camera. Original is
+80 m. The `reflection_card_depth` setting uses metres and participates in Save
+look, Revert and automatic recovery. Typing in the field suppresses scene hotkeys.
+
+**Card width (x)** adds a numeric field and synced slider from 0.1–4x. It changes
+all seven source widths while retaining their relative sizes, height, depth and
+emission brightness. Default 1x preserves the original widths. It persists as
+`reflection_card_width` through the same save/recovery system.
+
+Cards are initially vertical at X=8000 cm, centered at Z=1500 cm, with height 3000 cm and
+widths 180–260 cm. Their Y positions are -3870, -3055, -1070, 142, 886, 2935 and
+3869 cm. The mannequin starts at (0,140,0). These are emissive reflection cards,
+separate from the rect lights illuminating the mannequin. The former
+`reflection_light_*` and `reflection_fade_*` settings have no effect.
+`Tools/prepare_reflections.py` rebuilds only `M_Water` and `M_Softbox` through
+Unreal Python; full preparation uses the same definitions. No engine edits.
+
 ## Rain and wet mannequin
 
 Rain uses 98,532 instanced streak seeds in four independent jittered layers.
@@ -116,9 +158,17 @@ minimum screen-width clamp is used. Brightness and length help subpixel drops re
 
 Each seed has a paired analytical surface impact using the same position/clock.
 At speed 1, the 1.6 s clock has a 1 s fall; impacts last 1.05 s and expand at
-28 cm/s. Surface impact and Ripple size are independent. Directional antialiasing
-and shallow refraction keep the rings visible in reflected light and the bed.
+28 cm/s. Surface impact and Ripple size are independent. Shallow refraction
+keeps the rings visible in the bed as well as reflected light.
 These are inexpensive material rings, separate from the real collision solver.
+
+`Tools/rain_surface.ush` evaluates the original impact slope without widening or
+attenuating rings by pixel footprint. The neighborhood covers the full physical
+support, including large Ripple size values. Card reflection uses fixed pixel-area
+samples plus Unreal TSR to filter shaded light. The ordinary water normal and
+collision field remain independent. Both rain density and Surface impact zero
+disable the analytic rain slope. The rejected `rain_far_detail` option has no
+effect; no coarse wave layer replaces distant impacts.
 
 Try fine storm applies a dense narrow-drop preset. Density zero disables the
 rain renderer and clock. Presets live in `Resources/presets/`.
@@ -164,6 +214,11 @@ renders an isolated capture without desktop input. `-ValidateControls` and
 `-ValidateGizmo` run shared native callbacks only with a settings file under Saved.
 `-MoveTest` exercises translation; `-FreezeBody` isolates a stationary pose.
 Never point diagnostic settings at the user's live look.
+
+Direct launches can append `-SceneSequenceFrames=16` to capture a frame sequence
+every four rendered frames, and `-SceneSequenceFreeze` to keep the simulation
+clock fixed. `-SceneLegacyCardProjection` is a comparison-only launch flag that
+restores native card capture and disables the analytic contribution.
 
 Local receipts include `Saved/Validation/weather-controls.json`,
 `collision-controls.json`, `collision-response.json`, `mannequin-gizmo.json`, and

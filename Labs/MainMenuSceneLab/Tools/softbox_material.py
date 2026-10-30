@@ -1,0 +1,11 @@
+"""Original crisp studio-card profile, shared by full and focused preparation."""
+m=material('M_Softbox');m.set_editor_property('shading_model',unreal.MaterialShadingModel.MSM_UNLIT);m.set_editor_property('two_sided',True)
+m.set_editor_property('blend_mode',unreal.BlendMode.BLEND_MASKED)
+m.set_editor_property('opacity_mask_clip_value',.025)
+LIB.set_material_usage(m,unreal.MaterialUsage.MATUSAGE_SKELETAL_MESH)
+uv=node(m,unreal.MaterialExpressionTextureCoordinate)
+glow=custom(m,'float end=pow(smoothstep(0,.065,UV.x),1.5)*smoothstep(0,.04,1-UV.x);float width=lerp(.055,.46,smoothstep(0,.3,UV.x));float edge=1-smoothstep(.05,1,abs(UV.y-.5)/width);return float3(2.2,2.05,1.9)*end*edge;',{'UV':uv})
+prop(glow,unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+mask=custom(m,'return C.r/2.2;',{'C':glow},unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+prop(mask,unreal.MaterialProperty.MP_OPACITY_MASK);save(m)
+print('CRISP_SOFTBOX_MATERIAL_READY')

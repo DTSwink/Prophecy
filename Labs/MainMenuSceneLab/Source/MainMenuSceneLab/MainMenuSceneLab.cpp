@@ -67,6 +67,8 @@ public:
  TSet<FKey> Held;
  virtual void Tick(const float,FSlateApplication&,TSharedRef<ICursor>)override{}
  virtual bool HandleKeyDownEvent(FSlateApplication&,const FKeyEvent& E)override{
+  const auto Focused=FSlateApplication::Get().GetKeyboardFocusedWidget();
+  if(Focused&&Focused->GetTypeAsString().Contains(TEXT("EditableText"))){Held.Reset();return false;}
   Held.Add(E.GetKey());if(!E.IsRepeat()&&Press)Press(E.GetKey());return E.GetKey()==EKeys::Tab||E.GetKey()==EKeys::SpaceBar||E.GetKey()==EKeys::P||E.GetKey()==EKeys::R||E.GetKey()==EKeys::F12||E.GetKey()==EKeys::W||E.GetKey()==EKeys::A||E.GetKey()==EKeys::S||E.GetKey()==EKeys::D;
  }
  virtual bool HandleKeyUpEvent(FSlateApplication&,const FKeyEvent& E)override{Held.Remove(E.GetKey());return false;}
@@ -79,6 +81,7 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
  UMaterialInstanceDynamic* WaterMID=nullptr;ACameraActor* Camera=nullptr;
  UMaterialInstanceDynamic* BedMID=nullptr;UMaterialInstanceDynamic* RainMID=nullptr;UMaterialInstanceDynamic* BodyMID=nullptr;
  UInstancedStaticMeshComponent* RainMesh=nullptr;
+ TArray<AStaticMeshActor*> ReflectionCards;
  FSceneVolume SceneVolume;
  FSceneGasSmoke Smoke;
  TSharedPtr<SSceneGizmo> Gizmo;bool bValidateGizmo=false,bGizmoValidated=false;
@@ -97,6 +100,7 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
  float Accumulator=0,Time=0,AnimTime=0,Alive=0,ShadersStable=0;
  bool bDemo=false,bPaused=false,bBuilt=false,bCaptureRequested=false,bBodyCloseup=false;
  FString CapturePath;int32 CapturePhase=0;double ExitAt=0;
+ FString CaptureSequenceBase;int32 CaptureSequenceFrames=0,CaptureSequenceIndex=0;uint64 NextSequenceFrame=0;
  TSharedPtr<FJsonObject> Settings;
  float PoseTime=-1,MoveSpeed=90;
 
@@ -111,6 +115,8 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
   }
   if(!Settings)Settings=MakeShared<FJsonObject>();
   const TPair<const TCHAR*,float> Defaults[]={
+   {TEXT("reflection_card_depth"),80},
+   {TEXT("reflection_card_width"),1},
    {TEXT("collision_strength"),1},{TEXT("collision_min_speed"),1},{TEXT("collision_softness"),4},{TEXT("water_damping"),0},{TEXT("water_resting_contact"),0},
    {TEXT("body_offset_x"),0},{TEXT("body_offset_y"),0},{TEXT("body_offset_z"),0},
    {TEXT("wind_strength"),.16f},{TEXT("ground_scale"),1},{TEXT("ground_shape"),1},{TEXT("ground_darkness"),1},{TEXT("ground_contrast"),1},
@@ -159,12 +165,44 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
  }
  void SetStudioParameter(FName Key,float Value){
   if(!FMath::IsFinite(Value))return;
+  if(Key==TEXT("reflection_card_depth"))Value=FMath::Clamp(Value,-200.f,200.f);
+  if(Key==TEXT("reflection_card_width"))Value=FMath::Clamp(Value,.1f,4.f);
   Settings->SetNumberField(Key.ToString(),Value);RecoveryDelay=.25f;ApplyWeatherSettings();SceneStatus=TEXT("Unsaved changes - live preview.");
  }
  void ValidateControls(){
   bControlsValidated=true;
   if(!FPaths::IsUnderDirectory(FPaths::ConvertRelativePathToFull(SettingsPath),FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir())))return;
   FString Original;FJsonSerializer::Serialize(Settings.ToSharedRef(),TJsonWriterFactory<>::Create(&Original));
+  const float OriginalDepth=Setting(TEXT("reflection_card_depth"),80);
+  TArray<FTransform> OriginalCards;for(auto Card:ReflectionCards)OriginalCards.Add(Card->GetActorTransform());
+  auto CardsAt=[&](float Metres){
+   if(ReflectionCards.Num()!=7)return false;
+   float ShaderDepth=0;if(!WaterMID->GetScalarParameterValue(TEXT("CardDepth"),ShaderDepth)||!FMath::IsNearlyEqual(ShaderDepth,Metres,.001f))return false;
+   for(int32 I=0;I<ReflectionCards.Num();++I){auto Card=ReflectionCards[I];const FVector P=Card->GetActorLocation(),Old=OriginalCards[I].GetLocation();
+    if(!FMath::IsNearlyEqual(P.X,double(Metres)*100,.01)||!FMath::IsNearlyEqual(P.Y,Old.Y,.001)||!FMath::IsNearlyEqual(P.Z,Old.Z,.001)||!Card->GetActorQuat().Equals(OriginalCards[I].GetRotation(),.0001)||!Card->GetActorScale3D().Equals(OriginalCards[I].GetScale3D(),.001))return false;
+   }return true;
+  };
+  SetStudioParameter(TEXT("reflection_card_depth"),-25.5f);const bool NegativeDepth=CardsAt(-25.5f);SaveSettings();
+  SetStudioParameter(TEXT("reflection_card_depth"),0);const bool ZeroDepth=CardsAt(0);
+  LoadSettings();ApplyWeatherSettings();const bool SavedDepth=CardsAt(-25.5f)&&FMath::IsNearlyEqual(Setting(TEXT("reflection_card_depth"),0),-25.5f);
+  SetStudioParameter(TEXT("reflection_card_depth"),80);const bool PositiveDepth=CardsAt(80);
+  const FString DepthResult=FString::Printf(TEXT("{\"passed\":%s,\"negative_m\":-25.5,\"zero_and_positive\":%s,\"save_revert\":%s,\"seven_actor_transforms_checked\":true}"),NegativeDepth&&ZeroDepth&&PositiveDepth&&SavedDepth?TEXT("true"):TEXT("false"),ZeroDepth&&PositiveDepth?TEXT("true"):TEXT("false"),SavedDepth?TEXT("true"):TEXT("false"));
+  FFileHelper::SaveStringToFile(DepthResult,*(FPaths::ProjectSavedDir()/TEXT("Validation/reflection-depth-controls.json")));
+  UE_LOG(LogTemp,Display,TEXT("REFLECTION_DEPTH_CONTROLS %s"),*DepthResult);
+  SetStudioParameter(TEXT("reflection_card_depth"),OriginalDepth);
+  const float OriginalWidth=Setting(TEXT("reflection_card_width"),1);
+  auto CardsWidth=[&](float Width){if(ReflectionCards.Num()!=7)return false;
+   float ShaderWidth=0;if(!WaterMID->GetScalarParameterValue(TEXT("CardWidth"),ShaderWidth)||!FMath::IsNearlyEqual(ShaderWidth,Width,.001f))return false;
+   for(int32 I=0;I<ReflectionCards.Num();++I){const auto Card=ReflectionCards[I];const FVector Scale=Card->GetActorScale3D();
+    if(!FMath::IsNearlyEqual(Scale.Y,double((1.8f+I%3*.4f)*Width),.001)||!FMath::IsNearlyEqual(Scale.X,30.,.001)||!Card->GetActorLocation().Equals(OriginalCards[I].GetLocation(),.01)||!Card->GetActorQuat().Equals(OriginalCards[I].GetRotation(),.0001))return false;
+   }return true;};
+  SetStudioParameter(TEXT("reflection_card_width"),.35f);const bool NarrowWidth=CardsWidth(.35f);
+  SetStudioParameter(TEXT("reflection_card_width"),2.5f);const bool WideWidth=CardsWidth(2.5f);SaveSettings();
+  SetStudioParameter(TEXT("reflection_card_width"),1);LoadSettings();ApplyWeatherSettings();const bool SavedWidth=CardsWidth(2.5f)&&FMath::IsNearlyEqual(Setting(TEXT("reflection_card_width"),0),2.5f);
+  const FString WidthControlResult=FString::Printf(TEXT("{\"passed\":%s,\"narrow_and_wide\":%s,\"save_revert\":%s}"),NarrowWidth&&WideWidth&&SavedWidth?TEXT("true"):TEXT("false"),NarrowWidth&&WideWidth?TEXT("true"):TEXT("false"),SavedWidth?TEXT("true"):TEXT("false"));
+  FFileHelper::SaveStringToFile(WidthControlResult,*(FPaths::ProjectSavedDir()/TEXT("Validation/reflection-width-controls.json")));
+  UE_LOG(LogTemp,Display,TEXT("REFLECTION_WIDTH_CONTROLS %s"),*WidthControlResult);
+  SetStudioParameter(TEXT("reflection_card_width"),OriginalWidth);
   SetStudioParameter(TEXT("rain_amount"),0);SetStudioParameter(TEXT("haze_amount"),0);
   float RainUniform=-1;WaterMID->GetScalarParameterValue(TEXT("RainAmount"),RainUniform);
   SetStudioParameter(TEXT("wind_strength"),0);float AmbientUniform=-1;WaterMID->GetScalarParameterValue(TEXT("WindStrength"),AmbientUniform);
@@ -302,8 +340,19 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
  void ClearWaterWaves(){if(NormalRT)NormalRT->UpdateResourceImmediate(true);if(WaterSim){WaterSim->ReinitializeSystem();ApplyWaterSettings();WaterSim->SetPaused(bPaused);}SceneStatus=TEXT("Waves cleared. Position and settings retained.");}
  void ApplyWeatherSettings(){
   ApplyWaterSettings();
+  for(int32 I=0;I<ReflectionCards.Num();++I)if(auto Card=ReflectionCards[I];IsValid(Card)){
+   FVector P=Card->GetActorLocation();P.X=FMath::Clamp(Setting(TEXT("reflection_card_depth"),80),-200.f,200.f)*100.f;
+   if(!Card->GetActorLocation().Equals(P,.001))Card->SetActorLocation(P);
+   const FVector Scale(30.f,(1.8f+I%3*.4f)*FMath::Clamp(Setting(TEXT("reflection_card_width"),1),.1f,4.f),1);
+   if(!Card->GetActorScale3D().Equals(Scale,.001))Card->SetActorScale3D(Scale);
+  }
   if(Body)Body->SetWorldLocation(FVector(0,140,0)+ManualOffset);
   if(WaterMID)WaterMID->SetScalarParameterValue(TEXT("WindStrength"),Setting(TEXT("wind_strength"),.16f));
+  if(WaterMID){
+   WaterMID->SetScalarParameterValue(TEXT("CardDepth"),FMath::Clamp(Setting(TEXT("reflection_card_depth"),80),-200.f,200.f));
+   WaterMID->SetScalarParameterValue(TEXT("CardWidth"),FMath::Clamp(Setting(TEXT("reflection_card_width"),1),.1f,4.f));
+   WaterMID->SetScalarParameterValue(TEXT("CardReflectionEnabled"),FParse::Param(FCommandLine::Get(),TEXT("SceneLegacyCardProjection"))?0.f:1.f);
+  }
   if(BedMID){
    BedMID->SetScalarParameterValue(TEXT("GroundScale"),Setting(TEXT("ground_scale"),1));
    BedMID->SetScalarParameterValue(TEXT("GroundShape"),Setting(TEXT("ground_shape"),1));
@@ -510,9 +559,13 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
   // Visible only in the reflection: actual emissive studio strips above the frame.
   const float Ys[]={-3870,-3055,-1070,142,886,2935,3869};
   for(int I=0;I<7;++I){
-   auto Card=Static(FString::Printf(TEXT("Reflected softbox %d"),I+1),FVector(8000,Ys[I],1500),FVector(30.f,1.8f+I%3*.4f,1),Mat(TEXT("M_Softbox")));
+   auto Card=Static(FString::Printf(TEXT("Reflected softbox %d"),I+1),FVector(FMath::Clamp(Setting(TEXT("reflection_card_depth"),80),-200.f,200.f)*100.f,Ys[I],1500),FVector(30.f,(1.8f+I%3*.4f)*FMath::Clamp(Setting(TEXT("reflection_card_width"),1),.1f,4.f),1),Mat(TEXT("M_Softbox")));
+   ReflectionCards.Add(Card);
    Card->SetActorRotation(FRotator(90,0,0));
    Card->GetStaticMeshComponent()->SetVisibleInSceneCaptureOnly(true);
+   // These finite emitters are intersected by the water's reflected ray. Keep
+   // the actor transforms for controls; exclude the old sphere-proxy copy.
+   Card->SetActorHiddenInGame(!FParse::Param(FCommandLine::Get(),TEXT("SceneLegacyCardProjection")));
   }
   auto Fill=World->SpawnActor<ADirectionalLight>(FVector(0,0,800),FRotator(-72,20,0));Fill->GetLightComponent()->SetIntensity(.025f);Fill->GetLightComponent()->SetLightColor(FLinearColor(1,.7f,.6f));Fill->GetLightComponent()->SetCastShadows(false);
   MakeWeather();MakeControls();UpdateCamera();
@@ -602,8 +655,15 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
   UpdateWaterContact(Delta);
   if(WaterSim)WaterSim->SetPaused(bPaused);
   Smoke.Tick(Delta);Smoke.SetPaused(bPaused);
-  if(!CapturePath.IsEmpty()&&!bCaptureRequested&&Alive>12&&ShadersStable>3&&(PoseTime<0||Time>=PoseTime)){Capture();bCaptureRequested=true;ExitAt=FPlatformTime::Seconds()+2;}
-  if(bCaptureRequested&&FPlatformTime::Seconds()>ExitAt&&FParse::Param(FCommandLine::Get(),TEXT("SceneExitAfterCapture")))FPlatformMisc::RequestExit(false);
+  if(!CapturePath.IsEmpty()&&!bCaptureRequested&&Alive>12&&ShadersStable>3&&(PoseTime<0||Time>=PoseTime)){
+   if(CaptureSequenceFrames>0){CaptureSequenceBase=FPaths::ChangeExtension(CapturePath,TEXT(""));CapturePath=FString::Printf(TEXT("%s-%03d.png"),*CaptureSequenceBase,CaptureSequenceIndex++);}
+   Capture();bCaptureRequested=true;ExitAt=FPlatformTime::Seconds()+2;NextSequenceFrame=GFrameCounter+4;
+   if(CaptureSequenceFrames>0&&!FParse::Param(FCommandLine::Get(),TEXT("SceneSequenceFreeze"))){PoseTime=-1;bPaused=false;}
+  }
+  if(bCaptureRequested&&CaptureSequenceIndex<CaptureSequenceFrames&&GFrameCounter>=NextSequenceFrame){
+   CapturePath=FString::Printf(TEXT("%s-%03d.png"),*CaptureSequenceBase,CaptureSequenceIndex++);Capture();NextSequenceFrame=GFrameCounter+4;ExitAt=FPlatformTime::Seconds()+2;
+  }
+  if(bCaptureRequested&&CaptureSequenceIndex>=CaptureSequenceFrames&&FPlatformTime::Seconds()>ExitAt&&FParse::Param(FCommandLine::Get(),TEXT("SceneExitAfterCapture")))FPlatformMisc::RequestExit(false);
   return true;
  }
 public:
@@ -626,6 +686,7 @@ public:
   bValidateGizmo=FParse::Param(FCommandLine::Get(),TEXT("SceneValidateGizmo"));
   bValidateControls=FParse::Param(FCommandLine::Get(),TEXT("SceneValidateControls"));
   FParse::Value(FCommandLine::Get(),TEXT("SceneCapture="),CapturePath);bDemo=FParse::Param(FCommandLine::Get(),TEXT("SceneDemo"));
+  FParse::Value(FCommandLine::Get(),TEXT("SceneSequenceFrames="),CaptureSequenceFrames);CaptureSequenceFrames=FMath::Clamp(CaptureSequenceFrames,0,60);
   FParse::Value(FCommandLine::Get(),TEXT("ScenePoseTime="),PoseTime);
   FParse::Value(FCommandLine::Get(),TEXT("SceneMoveSpeed="),MoveSpeed);
   bMoveTest=FParse::Param(FCommandLine::Get(),TEXT("SceneMoveTest"));bNoCollision=FParse::Param(FCommandLine::Get(),TEXT("SceneNoCollision"));

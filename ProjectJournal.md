@@ -4,6 +4,26 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Main-menu scene October30 — approved finite-card reflection checkpoint:**
+User rejected wavy/flat/wavy distance bands. Removed that extra wave layer and
+ring-normal broadening. The original seeded impacts now cover their full support.
+Seven cards are reflected by ray intersection with their actual common X plane,
+finite bounds and original emission profile, replacing the native planar 200cm
+sphere approximation for those sources. Native planar mannequin remains; cards
+are excluded from its capture. Fixed2x2 subpixel radiance integration, same rain
+field at every depth; no distance amplitude, fade or source blur. Original source
+radiance and tuning retained. User approved the result and requested a push;
+SaveLive captured the latest rain0.58208954 (14.55%), ripple size2/depth80/width1.
+Ground has depth(-200…200m) and width(.1…4x) entries/sliders; live shader uniforms,
+seven transforms, save/revert and weather checks pass. Normal build and focused
+water/softbox prepare current;32 moving/paused captures reviewed. Flat-water
+source mean .65226 vs old .65219. Far highlight shimmer remains at maximum rain;
+not a finished reference match or a full scene ray tracer. No card-occlusion trace
+or full GGX source convolution. No extra history CVars retained. Evidence:
+Saved/RainFilter20261029, rain-filter-quad-* captures. Current look saved through live44168, which remains open on Ground. Scene-only
+checkpoint prepared for the authorized push; no desktop input or engine edits.
+[Current UI handoff](Docs/WeaponWheelUI.md), [lab details](Labs/MainMenuSceneLab/README.md).
+
 **Throw Lab October29 - checkpoint pushed; first native control/motion port built:**
 Approved lab plus exact saved setup pushed as a193d263; remote hash verified.
 Snapshot/hash manifest: Labs/ThrowLab/approved/2026-10-29/. Native Begin/Play,

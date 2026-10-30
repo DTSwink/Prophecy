@@ -113,7 +113,8 @@ a=node(m,unreal.MaterialExpressionTextureSample,texture=normal_texture,sampler_t
 b=node(m,unreal.MaterialExpressionTextureSample,texture=normal_texture,sampler_type=unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR)
 LIB.connect_material_expressions(uv_a,'',a,'Coordinates');LIB.connect_material_expressions(uv_b,'',b,'Coordinates')
 rain_common=(pathlib.Path(__file__).parent/'rain_common.ush').read_text()
-water_code=rain_common+'''
+rain_surface=(pathlib.Path(__file__).parent/'rain_surface.ush').read_text()
+water_code=rain_common+rain_surface+'''
 float2 uv=(P.xy-Origin.xy)/1000+.5;
 float edge=saturate(min(min(uv.x,uv.y),min(1-uv.x,1-uv.y))*30);
 // Epic's normal stage outputs signed world XYZ and foam in alpha (not height).
@@ -123,55 +124,51 @@ float2 bn=B.xy*2-1;
 float2 fine=float2(.6*bn.x-.8*bn.y,.8*bn.x+.6*bn.y);
 // Almost flat between events; slow broad ocean normals hid the actual impacts.
 float2 slope=live+((A.xy*2-1)*.55+fine*.3)*Wind*.02;
-// Deterministic visual rain layer. The live Niagara collision field stays independent.
-[branch] if(RainAmount>.0001 && RainStrength>.0001){
- SceneRain rain;int2 cell=int2(floor(P.xy/22));
- int reach=min(3,max(1,(int)ceil(32*RainSize/22)));
- float2 pixelDX=ddx(P.xy),pixelDY=ddy(P.xy);
- // Only visit occupied layers: legacy saved amounts <=1 retain their cost/look.
- [loop] for(uint layer=0;layer<(uint)min(4,ceil(RainAmount));++layer){
- [loop] for(int y=-reach;y<=reach;y++) [loop] for(int x=-reach;x<=reach;x++){
-  int2 c=cell+int2(x,y);
-  if(layer+rain.hash(c,5+97*layer)<RainAmount){
-   // Continue the previous impact while the next drop falls. Shared seed/time
-   // still puts age0 exactly at the corresponding streak's ground contact.
-   float age=rain.age(c,RainTime-1.0,layer);
-   if(age<1.05){
-    float2 delta=P.xy-rain.center(c,layer);float radius=length(delta);
-    float front=(.7+28*age)*RainSize;
-    float intrinsicWidth=(1.25+1.1*age)*RainSize;
-    // Filter along the ring gradient: grazing depth must not erase its
-    // well-resolved left/right arcs.
-    float2 radial=delta/max(radius,.1);
-    float footprint=abs(dot(radial,pixelDX))+abs(dot(radial,pixelDY));
-    float width=sqrt(intrinsicWidth*intrinsicWidth+.32*footprint*footprint);
-    float d=radius-front;
-    if(abs(d)<width*3){
-     float packet=(d/width)*exp(-d*d/(width*width));
-     float fade=exp(-2.2*age)*smoothstep(0,.035,age)*(1-smoothstep(.8,1.05,age));
-     float energy=intrinsicWidth/max(width,.1);
-     slope+=radial*packet*fade*energy*.38*RainStrength;
-    }
-   }
-  }
- }
- }
-}
+float2 baseSlope=slope;
+SceneRainSurface rainSurface;
+slope+=rainSurface.slope(P.xy,RainTime,RainAmount,RainStrength,RainSize);
+
 '''
 water_inputs={'P':p,'T':t,'Origin':origin,'Field':texture,'A':a,'B':b,'Wind':scalar(m,1,'WindStrength'),'Interaction':scalar(m,1,'InteractionStrength'),'RainAmount':scalar(m,.35,'RainAmount'),'RainTime':scalar(m,0,'RainTime'),'RainStrength':scalar(m,.35,'RainStrength'),'RainSize':scalar(m,1,'RainSize')}
-n=custom(m,water_code+'return normalize(float3(slope,1));',water_inputs)
+water_field=custom(m,water_code+'return float4(slope,baseSlope);',water_inputs,unreal.CustomMaterialOutputType.CMOT_FLOAT4)
+n=custom(m,'return normalize(float3(Field.xy,1));',{'Field':water_field})
 prop(n,unreal.MaterialProperty.MP_NORMAL)
 depth=node(m,unreal.MaterialExpressionSceneDepth)
 pixel_depth=node(m,unreal.MaterialExpressionPixelDepth)
 refract=custom(m,'return float2(N.y,N.x)*.03*saturate((D-PD)/20)*saturate(650/max(PD,1));',{'N':n,'D':depth,'PD':pixel_depth},unreal.CustomMaterialOutputType.CMOT_FLOAT2)
 prop(refract,unreal.MaterialProperty.MP_REFRACTION)
 prop(vector(m,(.016,.0003,.00065)),unreal.MaterialProperty.MP_BASE_COLOR)
-prop(scalar(m,.115,'WaterRoughness'),unreal.MaterialProperty.MP_ROUGHNESS)
+roughness=scalar(m,.115,'WaterRoughness')
+prop(roughness,unreal.MaterialProperty.MP_ROUGHNESS)
 prop(scalar(m,.255),unreal.MaterialProperty.MP_SPECULAR)
 prop(scalar(m,0),unreal.MaterialProperty.MP_METALLIC)
 f=node(m,unreal.MaterialExpressionFresnel,exponent=5,base_reflect_fraction=.0204)
 alpha=custom(m,'return .07 + .86*F;',{'F':f},unreal.CustomMaterialOutputType.CMOT_FLOAT1)
 prop(alpha,unreal.MaterialProperty.MP_OPACITY)
+card_code=(pathlib.Path(__file__).parent/'reflection_cards.ush').read_text()
+camera=node(m,unreal.MaterialExpressionCameraPositionWS)
+card_integral=rain_common+rain_surface+card_code+'''
+if(Enabled<.5)return float3(0,0,0);
+SceneRainSurface impacts;SceneReflectionCards cards;
+float3 dx=ddx(P),dy=ddy(P);
+float3 radiance=0;
+// Fixed 2x2 pixel-area quadrature at every distance. Shade each rain normal
+// before averaging; averaging normals would erase unresolved reflected glints.
+[unroll] for(int sampleIndex=0;sampleIndex<4;++sampleIndex){
+ float2 offset=float2((sampleIndex&1)? .25:-.25,(sampleIndex&2)? .25:-.25);
+ float3 sampleP=P+dx*offset.x+dy*offset.y;
+ float2 sampleSlope=Field.zw+impacts.slope(sampleP.xy,RainTime,RainAmount,RainStrength,RainSize);
+ float3 sampleN=normalize(float3(sampleSlope,1));
+ float3 sampleV=normalize(Camera-sampleP);
+ float sampleAlpha=.07+.86*(.0204+.9796*pow(1-saturate(dot(sampleN,sampleV)),5));
+ radiance+=cards.eval(sampleP,sampleN,sampleV,Depth,Width,Roughness)*sampleAlpha;
+}
+// DefaultLit translucent compositing multiplies emissive by the center alpha.
+// Undo only that final factor so we integrate alpha*radiance, not mean normals.
+return radiance*(.25/max(Alpha,.001));
+'''
+card_radiance=custom(m,card_integral,{'P':p,'Field':water_field,'Camera':camera,'Alpha':alpha,'Depth':scalar(m,80,'CardDepth'),'Width':scalar(m,1,'CardWidth'),'Roughness':roughness,'Enabled':scalar(m,1,'CardReflectionEnabled'),'RainTime':water_inputs['RainTime'],'RainAmount':water_inputs['RainAmount'],'RainStrength':water_inputs['RainStrength'],'RainSize':water_inputs['RainSize']})
+prop(card_radiance,unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 save(m)
 
 m=material('M_Mannequin')
@@ -184,15 +181,7 @@ prop(scalar(m,.3,'BodyRoughness'),unreal.MaterialProperty.MP_ROUGHNESS)
 prop(scalar(m,.5),unreal.MaterialProperty.MP_SPECULAR)
 save(m)
 
-m=material('M_Softbox');m.set_editor_property('shading_model',unreal.MaterialShadingModel.MSM_UNLIT);m.set_editor_property('two_sided',True)
-m.set_editor_property('blend_mode',unreal.BlendMode.BLEND_MASKED)
-m.set_editor_property('opacity_mask_clip_value',.025)
-LIB.set_material_usage(m,unreal.MaterialUsage.MATUSAGE_SKELETAL_MESH)
-uv=node(m,unreal.MaterialExpressionTextureCoordinate)
-glow=custom(m,'float end=pow(smoothstep(0,.065,UV.x),1.5)*smoothstep(0,.04,1-UV.x);float width=lerp(.055,.46,smoothstep(0,.3,UV.x));float edge=1-smoothstep(.05,1,abs(UV.y-.5)/width);return float3(2.2,2.05,1.9)*end*edge;',{'UV':uv})
-prop(glow,unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-mask=custom(m,'return C.r/2.2;',{'C':glow},unreal.CustomMaterialOutputType.CMOT_FLOAT1)
-prop(mask,unreal.MaterialProperty.MP_OPACITY_MASK);save(m)
+exec((pathlib.Path(__file__).parent/'softbox_material.py').read_text(encoding='utf-8'),globals())
 exec((pathlib.Path(__file__).parent/'weather_materials.py').read_text(),globals())
 exec((pathlib.Path(__file__).parent/'wet_material.py').read_text(),globals())
 exec((pathlib.Path(__file__).parent/'smoke_material.py').read_text(),globals())

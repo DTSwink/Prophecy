@@ -18,11 +18,11 @@
 	"ground_shape": 1,
 	"ground_darkness": 1,
 	"ground_contrast": 1,
-	"rain_amount": 4,
+	"rain_amount": 0.58208954334259033,
 	"rain_speed": 1,
 	"rain_slant": 0.080000000000000002,
-	"rain_ripple_strength": 0.11940298229455948,
-	"rain_ripple_size": 0.97910451889038086,
+	"rain_ripple_strength": 1,
+	"rain_ripple_size": 2,
 	"haze_amount": 0.65000000000000002,
 	"haze_height": 394.02984619140625,
 	"haze_spread": 1.6026120185852051,
@@ -50,5 +50,8 @@
 	"collision_min_speed": 1.5671641826629639,
 	"collision_softness": 4,
 	"water_damping": 0.7238805890083313,
-	"water_resting_contact": 0
+	"water_resting_contact": 0,
+	"smoke_horizontal_width": 1,
+	"reflection_card_depth": 80,
+	"reflection_card_width": 1
 }

@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 9136,
-  "bytes": 1096116002,
+  "file_count": 9370,
+  "bytes": 1140571191,
   "files": [
     {
       "path": ".gitattributes",
@@ -11022,6 +11022,12 @@
       "sha256": "5d80ad82dd15d521958ad673644415ca4dafec3171cde2edfdf875281dcd9127"
     },
     {
+      "path": "Content/ThrowLab/Profile.json",
+      "git_blob": "39c43ade85d6e333aa0c78cacceb0b8b13abb136",
+      "bytes": 430364,
+      "sha256": "cfe81c06b61b4013e5d23b61416a5ee3222c4e987baa51d2b1009b5a9552587c"
+    },
+    {
       "path": "Content/Untitled.umap",
       "git_blob": "8e2266dc9fda8528dcf190875ad8a0e67f603bae",
       "bytes": 61578,
@@ -15636,6 +15642,12 @@
       "sha256": "724e7e646ba0c59210ce0862c137c470a467ab67bb2cef1b2b68d89067a4d065"
     },
     {
+      "path": "Docs/ThrowControls.md",
+      "git_blob": "fea1f2794dad57ab9daa2b88979c6175dca450c3",
+      "bytes": 5365,
+      "sha256": "23c783755800a30d76151a3e4fe9cc572d0ba1fa7a95f458df564b566abdfcb0"
+    },
+    {
       "path": "Docs/TurnInPlaceViewerParity.md",
       "git_blob": "74b1a6092c086275e85df10e3a8e6f5c63422680",
       "bytes": 8827,
@@ -15751,9 +15763,9 @@
     },
     {
       "path": "Docs/WeaponWheelUI.md",
-      "git_blob": "c9c1aac52e90994d0f53def5c30896f7b0ad8c8a",
-      "bytes": 14277,
-      "sha256": "c6034e3a83afb1fd5aff8e892409bd2a9ee583df0b65d891f5d4920433780401"
+      "git_blob": "8d0464529c1169f1262499b5ff808b71a2115086",
+      "bytes": 40401,
+      "sha256": "3a65e53bcf0689acaf7057d1a0eff130b5bde03a20b77b07ed2befce270349c5"
     },
     {
       "path": "Docs/Wrist230AndClampTransitions.md",
@@ -25680,6 +25692,1236 @@
       "sha256": "0c73d5484e22078f9a618c9312906e3bafdf7e1fa08313411998b57809c5f03d"
     },
     {
+      "path": "Labs/MainMenuSceneLab/.gitignore",
+      "git_blob": "adaaa224921250999655eaa74dc2b21cb3ae80fe",
+      "bytes": 204,
+      "sha256": "86d9883257c56c5bd457ad7bdd19cb5ad8f37cf77f21a773a02b09c971c72f1c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Build.ps1",
+      "git_blob": "3b435c5874329bc65ccdd0f723a7b90b5e1da7db",
+      "bytes": 258,
+      "sha256": "1819176309bc503c5340fa62cf3b51fe466ed50024aaa266b57423a901cc8983"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Config/DefaultEngine.ini",
+      "git_blob": "cde48a5cad073c68162750327063789c4bd9c635",
+      "bytes": 1976,
+      "sha256": "b19faee0ccc31ada28c83f7032525d1f2b8e3000870a7b7c80a6868ef70a5a8e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/AC_FoleyEvents.uasset",
+      "git_blob": "3d61f10908822956bcbe2b5027745b0d496c607c",
+      "bytes": 125250,
+      "sha256": "65dd45dbe10b5658656c73e40cdafdee75769ceefef4044ca79c4bf47f4b0c96"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/DABP_FoleyAudioBank.uasset",
+      "git_blob": "711fd562503164c05c8d440af9c5a33af3ce864d",
+      "bytes": 36148,
+      "sha256": "0e15500249bbf2d761299b9ad6385ec7ec23ca2b95d968cd4f0ce604aa61df42"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/DefaultFoleyEventAudioBank.uasset",
+      "git_blob": "c2ca212aceca49f36630b6b9c4472682376763b1",
+      "bytes": 5371,
+      "sha256": "a97e4bc71043026ab9b569e9d695a17152241c1597e4d9ebce74f1850e903161"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/I_FoleyAudioBankInterface.uasset",
+      "git_blob": "b2a0305167fa2ee92cdf65e849964bebe357435c",
+      "bytes": 12037,
+      "sha256": "3693f106017f43d4912a857f56b49c9fa03c8e567b91c132cfcdc498c24c73d8"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Parents/MSS_FoleySound.uasset",
+      "git_blob": "b765611ccea2071bd249d30d51e9b0c5934c8397",
+      "bytes": 185784,
+      "sha256": "f83aa9f466f8a88924abf7f0a2438b38e4aa80a2229cf4d10bdb1e5bab3d7613"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Parents/MSS_FoleySound_Looping.uasset",
+      "git_blob": "5e8a1114efad57ac64183ab4b6b8ed76a9a3c081",
+      "bytes": 205731,
+      "sha256": "cfdfc71445a2b7fa1ba21d279747d0e38b47b9c38a66893ad81dd997cfed539a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Handplant.uasset",
+      "git_blob": "e46140ca1d2510043d986baada96771ad55558e0",
+      "bytes": 91020,
+      "sha256": "c9501dd110d280eccced237ff865d356f9c83f0e35f348177bc7d23c6c293987"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Jump.uasset",
+      "git_blob": "850981bd2b1351a4f65c81881318e1ff47ef5b4a",
+      "bytes": 91763,
+      "sha256": "cadb35bf2dfa186298c3171695e82b3c44c2d78d2863fb2e77627af31cc87c3b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Land.uasset",
+      "git_blob": "c7eb9d3f9d0afe2887160c83b173415e64ab1304",
+      "bytes": 91732,
+      "sha256": "c8412edee041ee81437f14b7b62690329de52234cebc96cfa77272a19514f29c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Looping_Slide.uasset",
+      "git_blob": "da1d236d2be173a33b7a32161f60ebacc5e96566",
+      "bytes": 150442,
+      "sha256": "77da5a45cc420a6b0df90aaa82bf1abf0865912429a0d4c3411c931b2f1749e3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_RunBackwards.uasset",
+      "git_blob": "4ed6f5f3472265626f840c0003b9b972af4c188b",
+      "bytes": 93021,
+      "sha256": "dbbf6e165890f8a2005a76493f9b4c0e3225905cdc3a5e935706e2e47271cf08"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_RunStrafe.uasset",
+      "git_blob": "d9a21f58ad3bcb01b7037b913f50d09e68f43ce8",
+      "bytes": 92926,
+      "sha256": "1fa2729466c72f6ad1a9c77576952dfbb92cc0f5801835fc9a30e94c28965dd0"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Run_Soft.uasset",
+      "git_blob": "1a3c3945a827c0fc12a11d38a06edbca5b437009",
+      "bytes": 94678,
+      "sha256": "785264794a43c880f725f7889ee15b0e41448f8ba474413002b7981bb63b4539"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Scuff.uasset",
+      "git_blob": "41ec113e7b411c03cf5ae75e994da08b4326cc08",
+      "bytes": 92132,
+      "sha256": "5df64200b0f515e0e2d2981d2e77088901ad581677ddcab609beb6f4858439e4"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_ScuffPivot.uasset",
+      "git_blob": "a277f077c397d9e9438358bfe219b28c60c33252",
+      "bytes": 91257,
+      "sha256": "36a2766517f8869367086d12a1231d50ce800d0f99a447eef6c02fc37ce92b6a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_ScuffWall.uasset",
+      "git_blob": "75adce3925b967b3323f16fb1868b63a984e8a93",
+      "bytes": 92611,
+      "sha256": "0fd7812952f56b14d466651f61b4100e03349529c0e0b959725bbaa0da612237"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Tumble.uasset",
+      "git_blob": "4cc6df573baf06418e728003474459d8eebc5d09",
+      "bytes": 90107,
+      "sha256": "87af5e7e8696c013c7101f357d5a95f9cafd7ced592fd2323ef6bda2400166ee"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_Walk.uasset",
+      "git_blob": "3eeeac5e483356c04f673935df547ebb03bc9c63",
+      "bytes": 92986,
+      "sha256": "7792afca5fd33f3d305b39a4148db339b353c58872c605c51ee5c9ab996cf61a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/MetaSounds/Presets/MSS_FoleySound_WalkBackwards.uasset",
+      "git_blob": "67c4452a9a1a47f3ad6ececaa0f245c22378dd0d",
+      "bytes": 92921,
+      "sha256": "c737508449f10f8367215fb240cbee223a8117425558b09343e7f8eb7fd0bddb"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/S_FoleyEventParams.uasset",
+      "git_blob": "3d17ef36df9dfeffcaa1e1497a6568a981ffe2e2",
+      "bytes": 6207,
+      "sha256": "c679a140949cd3bd56d31de49f60b330d0573514e6f9fe71779bf66641a20ec9"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_01.uasset",
+      "git_blob": "e77d0eafd98a4cd709fe1dc375ccc59e2831437f",
+      "bytes": 58094,
+      "sha256": "47c67315e68640524586fe15051ae19e02551394d7f61217bf7d99cc10611627"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_02.uasset",
+      "git_blob": "0572571a5a3a47e26848119ca22545bae4cbbc7c",
+      "bytes": 50926,
+      "sha256": "fe1292c06fd2ffb7e0df2721f17c72dbc333c1da47eddccf1d597219ddb7994b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_03.uasset",
+      "git_blob": "04b40f4c0ae804baa4ab06067a7e9bf145389153",
+      "bytes": 46482,
+      "sha256": "af0e03e9572bffc78026f4aa6bd2a6fce713370910172352bb9bc84b5baf0718"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_04.uasset",
+      "git_blob": "8dca3f7b85545727b72e311f3f00f1a0a291b3a6",
+      "bytes": 36787,
+      "sha256": "224a2011dee9a6b18a48f97832edecde26e399eb6a4e8c095a0e620641642725"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_05.uasset",
+      "git_blob": "ea432bd4e1ee18f333d529128ca6b58984ea21ec",
+      "bytes": 53318,
+      "sha256": "6b973b6c4fad331d7b6e00af1592ab521d831fb34c40145b07a3f081a198228e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_06.uasset",
+      "git_blob": "0055abfc254fa8d71c89de80c4bf888e4390600b",
+      "bytes": 42374,
+      "sha256": "e3ae9a9bd956ab4c06d62f82c26ee055279a7b4c975791dfadb4a3e234b5c4de"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_07.uasset",
+      "git_blob": "8fdb6deb70a509de281ce5fccb5962053ce6ca16",
+      "bytes": 48617,
+      "sha256": "fdd806bfcf40eff343620f8f33805069e9438dfe9e1cd43ed260230aa21c90b6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_08.uasset",
+      "git_blob": "efbd7884d0c85c4556b12a2211648456d0a2f0ff",
+      "bytes": 55470,
+      "sha256": "4140b0e1af648ce3db848fc8b28a9e33aae3dbb36836da62d6ae5143a09b07b5"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Body/Foley_bs_1p_body_concrete_tumble_09.uasset",
+      "git_blob": "ab4c819d4a88488ba49b01dd25f132af4cb361e4",
+      "bytes": 51119,
+      "sha256": "948d6b32dfc9cd1f714f8e1d28d7cbaeb65431112e41b7075acbf513f5d62682"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_01.uasset",
+      "git_blob": "63dd69a19338907297254e14935095e9801e2c1b",
+      "bytes": 28038,
+      "sha256": "240435e8b890d96d72d27a6f2031006790f946229289b04da7b787d2c10842d6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_02.uasset",
+      "git_blob": "d4db5b1e04256c465ab59e7c46c2a491048514dc",
+      "bytes": 31565,
+      "sha256": "ea52c0497de2708f9189be1f0fe8dfc6c876bb0c03f47c3a440efa20af03a00d"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_03.uasset",
+      "git_blob": "4022bab54c01d855e4627c2206bde9d5bb456d90",
+      "bytes": 28986,
+      "sha256": "54bf64aa743a588247373b7bfa434702aaf3c9844ab41de7ce97c96417799b0b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_04.uasset",
+      "git_blob": "c4b2843b04f1cda38ddefc0a953be83aa3462035",
+      "bytes": 19967,
+      "sha256": "e48b55e4b88ef660cd1ea4ccb9eaa59fb1a5ae0a2a6e8bdc4ef9369690db2d22"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_05.uasset",
+      "git_blob": "66e2edfde429870bdfd6874bc923f87ca20dd600",
+      "bytes": 29492,
+      "sha256": "0703a0586ad61444fc282fe4abe686af8a2b036af93095c24870aa7466cebdc7"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_06.uasset",
+      "git_blob": "dd0195093e59a557cc23cf6da3ee317c3258c75b",
+      "bytes": 22686,
+      "sha256": "602ba5959029ecad3201bba1cd09c1376eaae4353af5943d27f4f1ccc466dfe2"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_07.uasset",
+      "git_blob": "79bfb2dacb6adb1ae0a8268a20edc5e186be95c0",
+      "bytes": 33467,
+      "sha256": "9b1ac8aecebac75f382ea6647315c1ffc40ac235e666e48a28d1fb1762654eef"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_08.uasset",
+      "git_blob": "bcd5c24057b21bfd17728dc18fd07537e1d1cbc8",
+      "bytes": 31882,
+      "sha256": "98050dd966247c534f37c8a3952e1bd41023f4899c64020514189fdc2d3d5d80"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Hand/Concrete/Foley_hs_1p_barehand_concrete_plant_09.uasset",
+      "git_blob": "865503f7cd47bedcf1f4a72b6c0cb0388ca09a58",
+      "bytes": 24405,
+      "sha256": "a44b461ecbb4d0984b111ba2c0316ff6e0e1ff53ba131799d2d231c509838b2f"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_01.uasset",
+      "git_blob": "a6f9909f2a279900b470c8ce1299adea54eeac20",
+      "bytes": 44770,
+      "sha256": "1e30edba207a4f3f1df1c4874cf111c0a18e56bc10f4dfbeeea09f832901b79b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_02.uasset",
+      "git_blob": "76ba497cf8298a9898b9116fd366881c21811028",
+      "bytes": 43916,
+      "sha256": "c929260fa9346073e61aa9b5a997e22e9ce947b5f8e8e51c9d1e8f6dedec7f21"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_03.uasset",
+      "git_blob": "f2c580e6e8eaf27a60413b0505de51d412e72363",
+      "bytes": 38713,
+      "sha256": "c3704c4430cb03d97a42a7583772af037fce8b2ddb17d061eb21630a51e4f4ab"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_04.uasset",
+      "git_blob": "00fae46d2009bdfbc0841a3d33e45bcdefcfd34a",
+      "bytes": 41941,
+      "sha256": "1ca7e63a885dfdf0f2301d8a724bf329ffb208b32feae88f76e6c54d753ffcfa"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_05.uasset",
+      "git_blob": "493ca5ade2d12467aeccc21b420e12f567ed1311",
+      "bytes": 32340,
+      "sha256": "e5ac48d659f3d49f169787e7b5546cb555141c2a01d9a0083f182ad8a113bc38"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_06.uasset",
+      "git_blob": "b2bba1fd29ab95972dc0569015e8f5e3ea1385b3",
+      "bytes": 42169,
+      "sha256": "18f608e4511a1ac935691c3a658a02bda6ce7154cb3cf858ba9b4d930f52a04c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_07.uasset",
+      "git_blob": "a28a2df53f0084073082ff492f9c02f9b1aa5f19",
+      "bytes": 37881,
+      "sha256": "b7bfd81469321a733e88f7abd0ece768627c7661f399300136c0da0ecafd912e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_08.uasset",
+      "git_blob": "8c38d85c0015a354c89d83b76ab5a66df6bab39b",
+      "bytes": 48987,
+      "sha256": "8c967791613cef5e4192d30867acbc3b10b0555757bd794e71a86cff1e9000c2"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_jump_09.uasset",
+      "git_blob": "93cc5c8b18cbbeaa10f65033f190b9472fa99e95",
+      "bytes": 37583,
+      "sha256": "59a61fd25bca00bdd22b452bee145b3bd0ab0be7b5e56082a733ed211ae01b1c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_01.uasset",
+      "git_blob": "7b1ca93a8b783cc78489e82d2c28d5d9ee998a9c",
+      "bytes": 43489,
+      "sha256": "06b49ea19ec0c51fbfc666c6c934538d241ae14e62da7cbadc9dd1240978791b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_02.uasset",
+      "git_blob": "c8acc3121e8518576b43d3a63223ab9231021d0f",
+      "bytes": 50575,
+      "sha256": "f6e8bd30c4c0f9ccae90566c5fa8e42e9f5e0a2ff417af5361f42bb2301fa941"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_03.uasset",
+      "git_blob": "8025bf6b37152c7adf79d00f198a433672c606b0",
+      "bytes": 38080,
+      "sha256": "6b9aec40554006c8a048f0f36f93df891f5a1c032bff5e6e8cce7f05ee1cf626"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_04.uasset",
+      "git_blob": "8f1c7327d9c2e469b0682b66ef4b8510f8bcabce",
+      "bytes": 40209,
+      "sha256": "8feeb375dcb8ccbcaf86773f8bc8391236ff538bc4400fd931cdc947400eebf3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_05.uasset",
+      "git_blob": "0af60155105382d56b3decda66808b1b78f7f578",
+      "bytes": 35439,
+      "sha256": "6204a46a0bd4ced7a63d5b093b6f09c2b5648d377cb49f25678bd3742ddfc182"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_06.uasset",
+      "git_blob": "66b330d34b21df10d251b0394ff204cd2cdaa269",
+      "bytes": 50670,
+      "sha256": "6210f4f947b76a68ee9b768c1bdce932d38f8a91ad098ecb147e35a1ec4cbe6b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_07.uasset",
+      "git_blob": "65b595f26827b2c9cdab5cda4dba13f242ebd680",
+      "bytes": 39454,
+      "sha256": "9ac7dc1596f31e1069b8112db486536bd0ced9b84675550ef71679c391861400"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_08.uasset",
+      "git_blob": "db5d5df5a5e49fdffb07e8b328050366dcc7fc55",
+      "bytes": 35669,
+      "sha256": "aa3879bda80bc99e5f31c899726ce41f9bcd8002c5998235cc82e612e9874154"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_land_09.uasset",
+      "git_blob": "4382740263c25a7b9fb3316c7c9e5ba986a77e3b",
+      "bytes": 40768,
+      "sha256": "46e6504fb3ff6679ce513905924611642d91e05479c307e30f851c26d3d26ff9"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_01.uasset",
+      "git_blob": "b191ad4a85297f07186cae91c4be1b5b39891733",
+      "bytes": 22428,
+      "sha256": "830ad8144aa1032dad9a93a55f01b245208803879f8208806161f83cb9af0aee"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_02.uasset",
+      "git_blob": "26f6bbf67e9f093c21cc85ecf3feb6eac9a14d56",
+      "bytes": 22010,
+      "sha256": "b000ca58e4155c08a108af66bddd96f10d58fe90092809701d55b136f3a1a42a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_03.uasset",
+      "git_blob": "34ce44cecb6a846b85ca0aa1af8cc1970fb9ae2b",
+      "bytes": 21915,
+      "sha256": "f7991b5af2a47d4504b9ee839edcaff49038598074db35617edc3868eb8d4156"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_04.uasset",
+      "git_blob": "ea565b52c7cefdc73ac04424e5ccab4cb13a4a91",
+      "bytes": 21000,
+      "sha256": "609438eff82045f175b27561ca244e06a10e275ac419a620d7d0ee55e0fa2b55"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_05.uasset",
+      "git_blob": "1f4c4964eaa5ebfc1b552c2b5a18a700a6245601",
+      "bytes": 21187,
+      "sha256": "631274642d114e0662b5ec36ef8e89118439d561a4a8681b2f276ff6a0c05dc6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_06.uasset",
+      "git_blob": "b56a1990914d0105ddbc9784fc13841d9fcf87c7",
+      "bytes": 20748,
+      "sha256": "aae0ed85e0ef286de75dcf0eebe5958853b87240f01d916c894edf4fb23a4fa7"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_07.uasset",
+      "git_blob": "eba89545835aa25fce95bf108bd8c5d0c68ad441",
+      "bytes": 21776,
+      "sha256": "d75762547ff22524988e512701e8b6f371b8de6e3bec56690cb9d17baeef91a7"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_08.uasset",
+      "git_blob": "f58edea3fe58789bb07c2279e7f7731c330e6174",
+      "bytes": 18743,
+      "sha256": "258f8d6c4550628df3c13ed7c659c8817fecfdc8c5d3dbe059b52e33b96ec25e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_runBackwds_09.uasset",
+      "git_blob": "01875fd2fb284bcec5ecdf54972ae5049793309b",
+      "bytes": 19682,
+      "sha256": "bcc63f810ea677bd338bdf62a1a16fe0c33831be44b4d6315aa3ef3a3c51b37b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_01.uasset",
+      "git_blob": "9e962868b9b9388cba11becda368809e5d61c358",
+      "bytes": 37221,
+      "sha256": "44301991f407c027aa06cf582f3c7083880ceb31d44118771bf91cc7c2c33a44"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_02.uasset",
+      "git_blob": "e40b0ffe669a77d41cfe26c1b962d5fdd0d9cfc7",
+      "bytes": 33826,
+      "sha256": "4a57dab29b0d8c145d5d9c496a10fab4ec0bb0ff83b0ed54f1130540ba6fac87"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_03.uasset",
+      "git_blob": "fbeaa45e5698c95d4a0496ba75a9b1eacb9ed45e",
+      "bytes": 31072,
+      "sha256": "757e73d4c8b9e3d62d0a7f04968ed54b3899a278517e95937bd5a22a11649a24"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_04.uasset",
+      "git_blob": "dbab5ede0caabd15c1f1c7a295d6c9bf46585533",
+      "bytes": 28990,
+      "sha256": "af3a77ee9e8d98ddd717530daa91bb13c5f31c98912126cbf357c60d1d8306b7"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_05.uasset",
+      "git_blob": "6dfe47043983bb9f15b9c6896c7e9fc2f9b102d3",
+      "bytes": 33639,
+      "sha256": "40d8b58b8f2e922e8b7ee76efb97b9ebde337d93958291d77e7fdc9c9c995b37"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_06.uasset",
+      "git_blob": "4d0b9c0e3c6050aa599968c529ba129d771db57b",
+      "bytes": 27717,
+      "sha256": "2c3e164f45f6af3dc32c7023155005ecf04ec8de830dfa1620b179e8bd28abf5"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_07.uasset",
+      "git_blob": "9318053a753f733139bbcb12059347b5191b1102",
+      "bytes": 29273,
+      "sha256": "3100ccfb1a2820802b3ba43bf6f1801ca79896fa2c177db0f2da1746f6114be3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_08.uasset",
+      "git_blob": "44e4faf32ac0701d484dc6cac4a407f14dee9564",
+      "bytes": 29156,
+      "sha256": "e13d2016750a63eafe3ff7850d3ece96aa0acc967fce185a16631d856202d43c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffPivot_09.uasset",
+      "git_blob": "8df6732d5ff6969f7e5c8509daf15fd1b5f1ba8a",
+      "bytes": 35851,
+      "sha256": "5a7f8fda01364623da3f6a8f9045e2659157d00ca0549ab5c07222ec5d104332"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_01.uasset",
+      "git_blob": "1b94a289c7529b07fdc6c28585d53d18812a4f4d",
+      "bytes": 29186,
+      "sha256": "ced549a5341768f7b795b149c685e252958acd73a0fb0370d8e6f23c42397088"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_02.uasset",
+      "git_blob": "fb62d1aab334d0608fb5c14091f1c692afa56ff4",
+      "bytes": 31198,
+      "sha256": "5993c77858a5aa489a2a423ab94c8c814fc7c2e96f825496fccb09aeb9566ddf"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_03.uasset",
+      "git_blob": "b3f9fc57f969f8446ab8f06515dbd084bc4baa8a",
+      "bytes": 37334,
+      "sha256": "0e155b4fad7fe0fe35cdd585e977a1ddbb1ae03c17a67b100084aad832366dd8"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_04.uasset",
+      "git_blob": "8d4bd7584b407a69dcc846b28769fd1440dcebc2",
+      "bytes": 38379,
+      "sha256": "954add9ae2ff4d3974e2b4d005d0a7251f00d6fb316be4298925a8e5ec38c7c5"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_05.uasset",
+      "git_blob": "f809f13a198c18a59a5ef69b7fac2ffb3920090f",
+      "bytes": 44866,
+      "sha256": "6d27cc57c24e1582e92b858ed3c1f84e927e8192759a4ef27d337e4f9861e4c5"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_06.uasset",
+      "git_blob": "33c2bd04f47b1f0b2542829a9ee422f8ef295aac",
+      "bytes": 33800,
+      "sha256": "d2d63ca1b15504471857c24627b7ba6a383ee6971f5b6df7d0733ab938a4f3c3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_07.uasset",
+      "git_blob": "c05d61e053926b492e092db4703e0624740f2a53",
+      "bytes": 29543,
+      "sha256": "f129212b56284782f44f3fb2c196cb350929d24ac62054e81518ea48150e35de"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_08.uasset",
+      "git_blob": "8df3d8681850794751e3589924e76be76874805c",
+      "bytes": 29772,
+      "sha256": "873a5b2e9260ffe461832947ada3ecd731d9d760449d48391c1049c3ee44a95f"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuffWall_09.uasset",
+      "git_blob": "ccb84b00d44098c53e60934f44292d493cd9a79e",
+      "bytes": 38786,
+      "sha256": "5bf5fcde2916bd3959b3cf7b63e5b290e7635494997e0b19a6bff12a3dccdbae"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_01.uasset",
+      "git_blob": "61ff3fa479802916ba0b2df80b83df6cd46fe45c",
+      "bytes": 39144,
+      "sha256": "770388e1465982f86ef26dc4a1e67c7415acbd372a584d20adcb71727d6be9dd"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_02.uasset",
+      "git_blob": "67bd85ea7a4c40fadb304e808cd04f97ea1ee3a7",
+      "bytes": 46697,
+      "sha256": "5658dc3c4415bd2dd2ca76c0383e04a583994d5cc40642c48f20ca92e341d6ea"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_03.uasset",
+      "git_blob": "8c27b8f6b2c2ca643ec12a016c902b39566f4c88",
+      "bytes": 38532,
+      "sha256": "53c9dca89cd2dee94c2081c76082095daf551673369b62a6cb5410eea4113803"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_04.uasset",
+      "git_blob": "7062efdab7a61218f6073c9bac57c698b42b0824",
+      "bytes": 42255,
+      "sha256": "51d15b1af2c843e9958fcd15c2e09821410fcb26791d969b6266894205ae57fa"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_05.uasset",
+      "git_blob": "a712d6dfd8aef8df64dae0e5590f763e1b060f78",
+      "bytes": 50853,
+      "sha256": "059228ed0436ebaab83476d01c548e885dbcecc9027825a2d7d69ef753910d17"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_06.uasset",
+      "git_blob": "8afdfc0fe651c2d8531f6f799bb735796e0090d0",
+      "bytes": 41203,
+      "sha256": "cc301626e278a876f5e77cbced34612650d0678906ad7885f35cb00ebf5a9c2f"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_07.uasset",
+      "git_blob": "11a07465006536e18d2059e3f10f75be4dfe1042",
+      "bytes": 55175,
+      "sha256": "b0a987d1ba23c8681746f3280a5e4488449ea233a4fd57fb70a6e044940956b3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_08.uasset",
+      "git_blob": "3ac211e0a6b4bfcdb4dbebb06a467cd09382cf9c",
+      "bytes": 56128,
+      "sha256": "aed8e4f7238ce9caaec72c0c7881eacc04fe627df09f88c4b8764a0efd8843f6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_scuff_09.uasset",
+      "git_blob": "7f8cb6cb4ef0ffc1b68ef9dace271647f0e57753",
+      "bytes": 54768,
+      "sha256": "ea600e4d36fc9b0e1c6c545bcf372c28f57f06676a4a5fbb37ba62689a778f03"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideLong_01.uasset",
+      "git_blob": "95c2bee56c314920a32718ec461096be02655fa8",
+      "bytes": 456347,
+      "sha256": "fa8b68f1e42706c0acc8070339a1bd0e9eac01e75fc342f80c69f567ca5178cc"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideLong_02.uasset",
+      "git_blob": "472970599bfade3be8d88763affba014deb756b4",
+      "bytes": 683708,
+      "sha256": "3bc51f89f0a78de74fde1097c21c67a149105dfe7f9eca26a1db77796985ef7c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideLong_03.uasset",
+      "git_blob": "03642b6340afa11f548626e77ff0174d1fdb0cca",
+      "bytes": 560400,
+      "sha256": "ef6aae74a9645ab738f0c95a4501eb0e24b4b19c79298f3a358890c1ae1eb62a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideShort_01.uasset",
+      "git_blob": "d52617a0125196b8f0b5f761b4c37d40668be513",
+      "bytes": 30746,
+      "sha256": "1afeaf3ffd1c3a421be64343d0d64b67ceadac3bbb923f24cd0b2939a0e40f56"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideShort_02.uasset",
+      "git_blob": "8bcd5fa5bcab8a07629e3e064e4f99895dcc91db",
+      "bytes": 36763,
+      "sha256": "6743c0c083ceeb60b502e00fb89f81521b383deb128f70300508a6e4a8d424a9"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideShort_03.uasset",
+      "git_blob": "d5570b3cadc1ea2104062eeb1019f95b34388b5e",
+      "bytes": 34553,
+      "sha256": "f66aeb64e00e7196aa48e1b296a090d69c160cf1ab65d740c45f6b3fc9d7d810"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_slideShort_04.uasset",
+      "git_blob": "875f17da7e609e3ae0e0833475c8e90f98cfd418",
+      "bytes": 33488,
+      "sha256": "9123d938caab3a315f3e5dd55707d411a0e205f78eefe405c04cb1116d8e4d9d"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_01.uasset",
+      "git_blob": "cb508949e2ae0a479a06cadc80c2848dcdc6d1d3",
+      "bytes": 18000,
+      "sha256": "4af960b657637fd0acf7b0fcab8f6d13742ef5b66ea11590c2e698d245171c82"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_02.uasset",
+      "git_blob": "66e2d595f3285b4ec52db9e12b630580b014bbd6",
+      "bytes": 20286,
+      "sha256": "4445353d18dad0cab6ca5e77ee9a50592a5b6067c74b03c67f13bda58de55b30"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_03.uasset",
+      "git_blob": "793ec8dee09eb76f8d502fbdbe0e5ae5993b58cc",
+      "bytes": 17408,
+      "sha256": "2249d12c82f70451d2c18b8d4aa8ce04e216bf050e505907b1ec7e2519009c09"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_04.uasset",
+      "git_blob": "c8270a7c198f1b1060198dc6fa7c57e3e0d09462",
+      "bytes": 21752,
+      "sha256": "759f62a53fe66b17ebf0f60f59b4ada673166071277f342d20cd16058de2a067"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_05.uasset",
+      "git_blob": "c423edf1e48995283121eeeb5f1b30243fc33449",
+      "bytes": 20019,
+      "sha256": "65cd66acee0163b52742ec09b202c24b8e78f8d72e643df4490eadc11258b78d"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_06.uasset",
+      "git_blob": "88af6dcd28397706ad1ef666a662b440076008c0",
+      "bytes": 22652,
+      "sha256": "730bd9fe4c054ce0be4a4f8460bdc9ce1ff9f077f56e64f9f75c23c251763516"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_07.uasset",
+      "git_blob": "a4de7ffc757764e0eaf4aea7da5ed0a810bd591a",
+      "bytes": 24157,
+      "sha256": "f3003373de490f0037b2296af744f49e75524d2358c50c30fe9c2fe4502148b3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_08.uasset",
+      "git_blob": "6fc2e7f95884bb5396e9539c0a9c6cb6f6d91879",
+      "bytes": 18754,
+      "sha256": "a70f7b0839c887c0d0b4d49ea3470f359be446d8d8c74114e396af23815f82c6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_strafe_09.uasset",
+      "git_blob": "6ee32353fb2cbc5a2dec57d709a71fc43e2c4db7",
+      "bytes": 33846,
+      "sha256": "8870f16300b1396b4be387702ba68539260b127ea1a9cac5310bec13f9ed28ed"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_01.uasset",
+      "git_blob": "c371f7869a25bb98bb7c2af4cdc8c04fcdd8f35c",
+      "bytes": 25928,
+      "sha256": "cff66accc5431bbd92bad2f9ec136263739bea86fb21c9d0cf6f9b4f679d6ad8"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_02.uasset",
+      "git_blob": "b8b9100791e880e3ff3700f9b77e7f177f7b0260",
+      "bytes": 32260,
+      "sha256": "1349711de680ab02f52e7bc810ae043a93d7530d5a3bc9b3d763ccec13fad5c3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_03.uasset",
+      "git_blob": "8544451c031098379bba88da830a5ba96895af78",
+      "bytes": 21559,
+      "sha256": "2d5566d49888bc3dd5df133b614ba3bc3fdcb3ccb1e521c52f72a9f994b99462"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_04.uasset",
+      "git_blob": "109279778d2fde20fc92fd3caa766192f209aec7",
+      "bytes": 22635,
+      "sha256": "e8fb6df185dee76add343b71216d0be34378f8db8f653cdf2701536e6d28a95d"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_05.uasset",
+      "git_blob": "25ffca17a57b66d7153225362f6938d6d7ed6ca1",
+      "bytes": 35695,
+      "sha256": "fb43002bb8aa982a6e659ae4153fec70672f757370adaba1cb1767e14abebb7b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_06.uasset",
+      "git_blob": "cdc03ce4e5051f95b1cd12a69ccb7c8dfac23169",
+      "bytes": 18409,
+      "sha256": "6d276413921152ad49a28b93fb166430a91caa9ce95e54cc007beedcc728b036"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_07.uasset",
+      "git_blob": "1f133ad5294b1b934dcb25f5bb8051d72a0ea740",
+      "bytes": 16818,
+      "sha256": "f2cdf11007ab85de34eb0824e4cfaafb708d9c262431e43614828bdb1deddd1c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_08.uasset",
+      "git_blob": "b650565c2156008ad02c9dfd6b9460cd37295b53",
+      "bytes": 17023,
+      "sha256": "66708371ac3c1765b2ffd69f084c7be51689b35d1c2f8c6cc78b5215f3cb42df"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walkBackwds_09.uasset",
+      "git_blob": "57c12d9c327b227c35c7faf5b6ca4325b3171e48",
+      "bytes": 19731,
+      "sha256": "ce608e401691f59cf501f53597a95247f26c2b674f6f0fe9fe71b361674387c6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_01.uasset",
+      "git_blob": "8c166675ad3bfa7eb67aa902e3bb4ddf84a3779d",
+      "bytes": 36356,
+      "sha256": "3b93c4e36e0f6375e59e7676b6dc59c2f983b4d889397860ecd2731700430c74"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_02.uasset",
+      "git_blob": "01c520cc9669d922f0b096e1d2e2f2066f646672",
+      "bytes": 36492,
+      "sha256": "d0068f9e6f63d7e4f9dcae10b49d113e24e358d89a6a0daaadde9cce9d1505c3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_03.uasset",
+      "git_blob": "eb26c71a26fcc951b60b92f87778754a74f011d6",
+      "bytes": 34586,
+      "sha256": "350e8bb1f051a627810e73cab00402d044036aedc9927e78ef4c92522ad5e0cb"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_04.uasset",
+      "git_blob": "f91433d22e3a3ef518d21149654bd0c433308f4a",
+      "bytes": 32398,
+      "sha256": "8d3b686b474633a80e527ce83227b73dad914e5f5e00ad5858ba571c419818c1"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_05.uasset",
+      "git_blob": "a933488952e16080a5f95d82ceaa3fc4f25433b8",
+      "bytes": 30720,
+      "sha256": "51deb924dab8a0b13f18f454837b534e6b7d25d1829c407bada059edf315fc9a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_06.uasset",
+      "git_blob": "b110bbad8e8ef166a07d754d0d7160bffcb8c994",
+      "bytes": 36346,
+      "sha256": "fdcc59c9291dd73c03df7ecd5e45f663ae0dfe6057a226558cb18fa45fb0fb6e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_07.uasset",
+      "git_blob": "e6cfe9ca7bbead13dd2bbb0ab704416e538e9611",
+      "bytes": 38133,
+      "sha256": "43f6402b0c640898dba7ca692b895c12a7bea439fa8720fb5f1f1cd78fc21200"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_08.uasset",
+      "git_blob": "ae7bdfd8e457ebec86cc6403a8fa9789b3f59bb9",
+      "bytes": 35054,
+      "sha256": "459fe326221fcd195393b6360168bb0218368ed109f85dc3a404a4f8a631f0f3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Foley/SoundWaves/Sneaker/Concrete/Foley_fs_1p_sneaker_concrete_walk_09.uasset",
+      "git_blob": "d13d33dd743e7b24e4e62ea1460d21bb504477f7",
+      "bytes": 39111,
+      "sha256": "7a6109bd819e714e748b26157fc7044542316699987974e1de2bfb8101e5aba0"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Mix/Effects/SMFX_Reverb_Default.uasset",
+      "git_blob": "320f4f871442381e6531760a2dee7e204a554cc8",
+      "bytes": 2043,
+      "sha256": "a982cab546c2f18c492a662f9e60c4d7421abf6e540e246ada142bd5f5b8ac2b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Mix/SM_Ambient.uasset",
+      "git_blob": "89d22d21a4a4937cc1fec052db162add6432cde3",
+      "bytes": 1473,
+      "sha256": "9b33467cfa1c9bc53ccf25d89e346e8ef470984b9d5021a96852388b14faf97f"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Mix/SM_Final.uasset",
+      "git_blob": "1eca66bf9226e894731ada50ae058ff954e63684",
+      "bytes": 1776,
+      "sha256": "010dd24618e1e1d467cecfe742f710c2660727492e249663fe2c00e94a3dd1f0"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Mix/SM_Foley.uasset",
+      "git_blob": "728ade3c9e863612b3f956e3068aa912910794ff",
+      "bytes": 1682,
+      "sha256": "f0f7a8ab7927547c36fc367cc9ba4aea4d5beb6e1d92a8835afbd7c66e8feb46"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Audio/Mix/SM_Reverb.uasset",
+      "git_blob": "516ec354ac6570f5b7b779fcb5876cc0e3cfd879",
+      "bytes": 1781,
+      "sha256": "cfcc17f75f12d97ba5da27cf35411706d73afeec6494c521bb0adad461e588f7"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Blueprints/AnimNotifies/BP_AnimNotify_FoleyEvent.uasset",
+      "git_blob": "239d868ca3d78d32a0a3df25ddaaabfdbc3a8413",
+      "bytes": 102948,
+      "sha256": "a4c4cfac7362d8c7cec959eda9d855b76700115ef4da09100f6933b34c05cd48"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Blueprints/AnimNotifies/BP_AnimNotify_FoleyEvent_Walk_L.uasset",
+      "git_blob": "1c9af7bfb575a29ef47fd13f2209f67e80aac383",
+      "bytes": 5294,
+      "sha256": "eed30464eab7bf30a54fa7157b148929542218d89c49ec67fc0aee696074adea"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Blueprints/AnimNotifies/BP_AnimNotify_FoleyEvent_Walk_R.uasset",
+      "git_blob": "d88d5b363b24cd277e075d1151c854d7969ece45",
+      "bytes": 5294,
+      "sha256": "7130d8a52817b8a790b9c6a07c696d72ac5943059685d3b3acc9811d27b86fd7"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Blueprints/AnimNotifies/E_FoleyEventSide.uasset",
+      "git_blob": "a9897a05021f5851b93869fdd5e5cd5ead1e2f20",
+      "bytes": 2743,
+      "sha256": "26617b49c514f22241568835815aa2272ade0fcc03ef200189967f550853506e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Characters/UEFN_Mannequin/Animations/Avoidance/M_Neutral_avoid_idle_move_1_0m_RR_Rfoot.uasset",
+      "git_blob": "a8329d1815746253e3ebf79f8744f6851ac851d9",
+      "bytes": 1748047,
+      "sha256": "8a24727cd91f35168c85614b4d6a364d0d6058a0bd59419d4e77eb12fd3fdba6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Characters/UEFN_Mannequin/Animations/Idle/M_Neutral_Stand_Idle_Loop.uasset",
+      "git_blob": "ff8cdaaa04dcec602ed8aebe40ece5a1941bcb6a",
+      "bytes": 2574739,
+      "sha256": "bb033ea62038266fa2169c4af7a20f6d925a1efa3c5d9645656ea3bc014d9fa5"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Characters/UEFN_Mannequin/Animations/Walk/M_Neutral_Walk_Loop_F.uasset",
+      "git_blob": "3fe99998f0ec467a91d9f6f7a69aead1944b1ab9",
+      "bytes": 1134008,
+      "sha256": "e218176c1b40b13a4b1da91d4f6c643520c7927dbcd95f98d6298aa0c4bef360"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Characters/UEFN_Mannequin/Materials/M_UEFN_Mannequin.uasset",
+      "git_blob": "138508cc056d66873837331d804bb60fc898e0f1",
+      "bytes": 15918,
+      "sha256": "a8d6bc020bd3f5eb97055391a4dae3f3f8b9b98c49234692e8e57bb260c40d59"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Characters/UEFN_Mannequin/Meshes/Character_LodSettings.uasset",
+      "git_blob": "db34a84a5825e1e59e74e43ab9364de20e9aba91",
+      "bytes": 8424,
+      "sha256": "1a50b94ebc1fc71568694ea70204e8819d96324a767a564c17b506afe4be69ed"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Characters/UEFN_Mannequin/Rigs/ABP_UEFN_Mannequin_PostProcess.uasset",
+      "git_blob": "09693557a12cb91ed02131120c577a3a1ae33ab9",
+      "bytes": 120865,
+      "sha256": "24bcd6fdbee8322d8b859e38475adb014d3fc24b9e002f984345446e1d55d533"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Characters/UEFN_Mannequin/Rigs/PA_UEFN_Mannequin.uasset",
+      "git_blob": "8ab9cde93a0591618968200ca069ea243fd3e633",
+      "bytes": 133874,
+      "sha256": "49994f0bb1257a1e9bdb5dd2aa229455544426a1b6a17d468cc6170df5e9640d"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Characters/UEFN_Mannequin/Textures/T_UEFN_Mannequin_D.uasset",
+      "git_blob": "6ad6cb9a37eac25723223d683ea2d11e213c5603",
+      "bytes": 2165808,
+      "sha256": "9fc2f66ba1cce01a7b0f278697e81d1d7ee588126c9f0889c25c71be7878822e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Characters/UEFN_Mannequin/Textures/T_UEFN_Mannequin_N.uasset",
+      "git_blob": "0048d1447a8d45164c3d033fcc10b01025553fb1",
+      "bytes": 2465524,
+      "sha256": "3e61904f2106d7f7529f0a70d3a5560793c22b7d5970e70360267548f8fe899c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/M_GasSmoke.uasset",
+      "git_blob": "99cbdadf6243e7819e88f242a03881cc001c07f8",
+      "bytes": 65334,
+      "sha256": "beb584c4a3ac90e5e0d8cf7dfc6bf81648ae7317ab10de587ec078f858ec6bc5"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/M_Ground.uasset",
+      "git_blob": "a7c14a0d24becf48bb95697c84413f6ccb180051",
+      "bytes": 20292,
+      "sha256": "f094018c11ae0133d3615455fcb2cdca4e81269ac06e5ee3867444897e1afa4a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/M_Mannequin.uasset",
+      "git_blob": "85ad0f545d279265eaaf954edf9ca72865b9c72a",
+      "bytes": 21799,
+      "sha256": "691864bca867c720327bb129e79c4fbf428d34fc00610cb91285fe4fe3760309"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/M_RainStreak.uasset",
+      "git_blob": "39564de5fe84bb713a6af5d1d4008bee49967b51",
+      "bytes": 29326,
+      "sha256": "88217a369b5a2a1cbd684c582facf7760764a4a42dcdce002b2a2d9e680ec06a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/M_Softbox.uasset",
+      "git_blob": "ac263512bd4c2a9da1c83ecad6565355e6b38aba",
+      "bytes": 8066,
+      "sha256": "d69e6e13737c8b00cc5c4fd17f01be1cbd9713fe2480244178139e59a98be0f0"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/M_UpperHaze.uasset",
+      "git_blob": "83dfa1e751d0317c296aa308fb7f25b563cbfdf2",
+      "bytes": 50897,
+      "sha256": "a5b90c2b2171c4fc0a4bd5b7256d62c094a06df1477145efb373572a8a2c6902"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/M_VolumetricSmoke.uasset",
+      "git_blob": "c40c52ba1a182136f69f65e89466f29736c3b1af",
+      "bytes": 14440,
+      "sha256": "60080bd36a9c917f24c9754d3470a1ab905bd2ec4f0d82677afcf7b18748068c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/M_Water.uasset",
+      "git_blob": "7799eda38bf6a832a6c4864ac0d2934a4eb0d9d5",
+      "bytes": 43812,
+      "sha256": "26c8a0867a1090a5445112c95a59f62e19d1d9d0443e52f77bbd7d2aa1aab187"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/NS_CrimsonShallowWater.uasset",
+      "git_blob": "fa8bba97b8d7a776dfb617cf63a9a1461f626b97",
+      "bytes": 5666385,
+      "sha256": "cebd865131e96045bd493d89137b09382ac97198ebef20980ec8ca68bcfd3f25"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/MenuScene/NS_UpperGasSmoke.uasset",
+      "git_blob": "0f9d6ced37c7c350755fd2e9d496d052f5ed4bd2",
+      "bytes": 8006868,
+      "sha256": "c128b439096237d1a64b39ba658c96d17cc1dca3e413067d2c7b5cb3cb516ccd"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/Misc/SandboxAnimCurveCompressionSettings.uasset",
+      "git_blob": "87e0e37d480e3a9fb3eb1a9840ba83ac9af2d0ed",
+      "bytes": 1763,
+      "sha256": "a78a6957190eaad8e1868a20c03e925e3b3b8158f641ec486931f82d0aba69c6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/_mygame/SKM_UEFN_Mannequin.uasset",
+      "git_blob": "bdb4d7e49cc4b330bbf59e9986f8b18ed3458142",
+      "bytes": 2410624,
+      "sha256": "e71b92d88800a91410fa15054cf624dec00be8fd62b36ed3392353a7b1398d05"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Content/_mygame/SK_UEFN_Mannequin.uasset",
+      "git_blob": "5647cf1c322553c9edf627b758a807f22fd2d44e",
+      "bytes": 103562,
+      "sha256": "4664c9c010b1c56d3284a8f8bc0a5c78212363948a11e6ec04ea91cd39aa519a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/MainMenuSceneLab.uproject",
+      "git_blob": "22c8a2a151f6d0035bb7503ca6e8b7fd9065b89c",
+      "bytes": 822,
+      "sha256": "33c77cfa5c5fefa24aaf6c5506b9e4276d1f797b4225389950cd7d6e795acecf"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Open.ps1",
+      "git_blob": "8eef14dee6177d0e44e20406a6f6850fae9008ba",
+      "bytes": 2171,
+      "sha256": "4151668717db41e723b85b9b1c44b7ea1d3c1bc20dc57dbeb48e0eda8384cc0e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Prepare.ps1",
+      "git_blob": "34219afe46264198a713ef7b093c2bde021864e7",
+      "bytes": 713,
+      "sha256": "4bbaff95e6f9068dc7e3ee85efadc05dcd54b085df3771749175882fe59faec7"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/README.md",
+      "git_blob": "1738d41d7f91b9577317103efcb00a0caa46eea0",
+      "bytes": 13300,
+      "sha256": "a0ac71a2aaaa59b32b1a96501936754e0ccc66bd636ce486803808218cb3ffc4"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/asset-provenance.json",
+      "git_blob": "59b881670c28544e4c154b9ecdc7ddf43f58bf76",
+      "bytes": 45909,
+      "sha256": "5548f2841826173826c9564f796d3c8632f12eec0e216bb111ebce1ade9309c2"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/presets/cold-smoke.json",
+      "git_blob": "405af16da137637a5e15480fe036de486d7c0e55",
+      "bytes": 1011,
+      "sha256": "655865356b8e086cafdeb161401af3d7cb788646c1ee28734dfb31c64190d442"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/presets/dark-water-first-pass.json",
+      "git_blob": "f1345647be6a870566b242326aeabccb84eedaee",
+      "bytes": 489,
+      "sha256": "287002a0cd313c58aa840c36960d5aedf2cd7551c91c7511600f7a631df8a299"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/presets/fine-storm.json",
+      "git_blob": "955a2f61702b0cff5fe0dd9eb584e5ad5e4a1fd6",
+      "bytes": 933,
+      "sha256": "03c877c8a1cd5bd46dbc20857391c29a1f8808192ced3a66a306441919397c59"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/reference-pearling.png",
+      "git_blob": "6d661799836f13ed1b0f2949463a2f46098fb040",
+      "bytes": 412859,
+      "sha256": "5c4389fae36d225ddff6f68f2952c95cb45466ed536b4a848193fabc45c69c7a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/reference-rain-haze.png",
+      "git_blob": "91b04cd989486e3166c5229e6d259facea9d1bf1",
+      "bytes": 2127764,
+      "sha256": "96e6aa8f1f9a57e50beee879fa2365f2d6e82a21d9335eec17ffab499d9ab337"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/reference-storm.png",
+      "git_blob": "77da27892405289769fc86e247578e993b22999a",
+      "bytes": 126280,
+      "sha256": "2656528d8f354a5f943d160d992bff67862c46a8e79275f722d1b42c8e7d7ab3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/reference-undulations.png",
+      "git_blob": "772347dd4f3dd0feb6b489f71956edc59a216a40",
+      "bytes": 1289024,
+      "sha256": "c335e64bfd3d068b877c3e524f2bbcbc5df71e14026cb9ac6a6a8df73fb44db3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/reference.png",
+      "git_blob": "772347dd4f3dd0feb6b489f71956edc59a216a40",
+      "bytes": 1289024,
+      "sha256": "c335e64bfd3d068b877c3e524f2bbcbc5df71e14026cb9ac6a6a8df73fb44db3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Resources/scene.json",
+      "git_blob": "8910b886c6dc9dbd3630b669e47beabf28fe9e33",
+      "bytes": 1705,
+      "sha256": "734b2c5f91a7f498a8b214b56868a8723fec5905d46ce3fe585492dc8f61ef8f"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/SaveLive.ps1",
+      "git_blob": "700790078c0ff7e69dd59604f8ce856dcbf48e0f",
+      "bytes": 1409,
+      "sha256": "00f4c3bbe09a55e78cbbb17183683a98020ba78e2d3b48ccadef5710a819dc55"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLab/MainMenuSceneLab.Build.cs",
+      "git_blob": "e4f424808fddc8442cf69e5670a0a5ae084f4dc5",
+      "bytes": 505,
+      "sha256": "bf6c221e0b35e2091c12eea7480f7097cb46e66cb44c8656194a372a9a9e59cb"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLab/MainMenuSceneLab.cpp",
+      "git_blob": "464bcc7b7a34270757ffbdc4ae586513dd737bca",
+      "bytes": 62337,
+      "sha256": "87b9f4d7a5a67d9c611382ad41774747b5bdc882b2826e4011202d74c2615db3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLab/PrepareSmoke.h",
+      "git_blob": "a04a8ed095c7680fb4042d75c5caa4c963153b75",
+      "bytes": 14959,
+      "sha256": "b59ff685eb0ad8e78a5595efd0158e7de6b8f8a293a8ea05d3fc0a50ae02ee4c"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLab/PrepareWater.h",
+      "git_blob": "713511c30b8ddd83926b44fe6cdecd3324ac4e38",
+      "bytes": 8115,
+      "sha256": "ca0100bf2c66fac3b35e703a6446e8e35877e3b59667c2763a85e892040c9d6e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLab/PrepareWetMaterial.h",
+      "git_blob": "c3cd8ed1621ed791cc6b7657bfb34529d111daf1",
+      "bytes": 2123,
+      "sha256": "a1e4650a000dcbbce8d40fb8c44486631d710efec20143dabd3a4e7dfc7cb460"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLab/SceneControls.h",
+      "git_blob": "6e9cbbc447bc06b76b8b20b5fcd4aeb87ceb056e",
+      "bytes": 26262,
+      "sha256": "6b59c6ab38c32535c643486d3377d1dd8447a8cc229e115886b81199e213eef1"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLab/SceneGasSmoke.h",
+      "git_blob": "153e05aaa5f3d66f6e20308c5f8ddf59fe5725cb",
+      "bytes": 7892,
+      "sha256": "ca43ebe51e89898af7a233362f94c81df198d7af015b25204043560bd8badb56"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLab/SceneGizmo.h",
+      "git_blob": "b3c8106a450e473ce098411cdc21d1e914d5c7ae",
+      "bytes": 7909,
+      "sha256": "f400cb8ad83f4b04a1029d977fbaaa91f8e1a3a6088e05c0e0fdc0547d496ef5"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLab/SceneVolume.h",
+      "git_blob": "90050fc7468e81f4729542d8d9429dd6cbf0137d",
+      "bytes": 4361,
+      "sha256": "9e20c13cadba1ae2a4b8b1d91e64e07bbad71b23621d38e8d0ae46bfd2562d80"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Source/MainMenuSceneLabEditor.Target.cs",
+      "git_blob": "0d6a9f1f7aaaabfcf47dad8e160e1bcd3ce6b2d9",
+      "bytes": 400,
+      "sha256": "459f360c6948520eb5090af440bb7e6bfee00127279261b45c537a14e054b7d3"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/copy_assets.py",
+      "git_blob": "cb956d7a80dac0518a5c01af03977d17c2b87a73",
+      "bytes": 1960,
+      "sha256": "2ffb7bba9d63399515ab6b08e08dc2e42bffe1560c9e8bca48d18311cc988e7a"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/noop.py",
+      "git_blob": "56457ae944f3033abdab4ce58c864a5d4317b83e",
+      "bytes": 37,
+      "sha256": "c7388e132cc985432e2c86614391633e8b7f8014c3b1f9551a23104a1ae071cb"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/prepare_materials.py",
+      "git_blob": "d416a276f4a4d0158464b2881f95a4e814e3857a",
+      "bytes": 12044,
+      "sha256": "b52a7d4068e3d60472cdf1d6cce43276b16abe0293bab84652db9062399058f0"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/prepare_reflections.py",
+      "git_blob": "787f2cc2e1c8bdabd811e534787a760d273f6b5c",
+      "bytes": 587,
+      "sha256": "facf45230d2990f198109d9b635c4ba7936ef58243c4194ab05e8c3858991f49"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/rain_common.ush",
+      "git_blob": "adc2586c675d93536e24f4bc657131b1db46850a",
+      "bytes": 594,
+      "sha256": "a0f33ffdb5ba677a9980ef13b99ac314f977bbd94fc05486acd08cb76054c42b"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/rain_surface.ush",
+      "git_blob": "7a25c0e42952af1aa834cffca1e28597338eda7c",
+      "bytes": 1546,
+      "sha256": "17be552e05887a0d70100c929a35ee3c9fbfbc3578e7c985232fb8f606187c5f"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/reflection_cards.ush",
+      "git_blob": "a6fce373958a4a45292ac515b4bb12609a5f23e8",
+      "bytes": 2519,
+      "sha256": "18b7077f8ff8ad678e2856799c652ead50ceca43d2749f622557b53a9d8389b1"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/smoke_material.py",
+      "git_blob": "e64e3a1079c0ed3e443834879d89f45bdc19245b",
+      "bytes": 2009,
+      "sha256": "dfc1d66d9110dcfdc06b79b5c45a87a903b70bd55a53fb2dd8727ca9ee86b104"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/softbox_material.py",
+      "git_blob": "1c95cc7216ff7e38c17c0292c3c4f98618ccbdcb",
+      "bytes": 937,
+      "sha256": "aba44a36f6c87a3fe60ee847db282c9aab5034c55b9ded50e2b24511d104ce1e"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/verify_captures.py",
+      "git_blob": "68b57eeaa7f315a67dbed8996132423ac6340189",
+      "bytes": 1523,
+      "sha256": "f40bdc2bd7ec139d22c5717bb0e42ec6714b50b23683b0534d80086ff53c28c6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/verify_dense_rain.py",
+      "git_blob": "a719b332e3f46cad5a607eb65052f6a079e59e14",
+      "bytes": 1834,
+      "sha256": "200d309bb5036671885d6c2039a7f0477acae29f236e58633f5a7bc187772681"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/volume_material.py",
+      "git_blob": "60fe02409872eea83584339ba0f1ae6b6aeaf30c",
+      "bytes": 5116,
+      "sha256": "423d68983ffe14b953180d40dbfa65a9429b08ecc71268892426ab0aee58c9ba"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/weather_materials.py",
+      "git_blob": "72d45a32dff86f43374af1a629d9ed4aa474f703",
+      "bytes": 3185,
+      "sha256": "6f8268ecc1953e0d3735df5c2bafe0805593935fd5043f07f2a59a49c87b914f"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/wet_common.ush",
+      "git_blob": "60f005760c5a231391074e747e6cd5e940459f20",
+      "bytes": 2976,
+      "sha256": "0bfbc3f29d0879593c9c07d2e2d9d51d6ae3924e4ba3a692693c3f0f371aa26f"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Tools/wet_material.py",
+      "git_blob": "f4e5c9bc9747f4ee75d6ab77ec737612be18ea21",
+      "bytes": 3221,
+      "sha256": "784654f8eb517c907e25a384ebbc68bc36bd65f5932142d63e1f0c0117ef9525"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Verification/collision-controls.json",
+      "git_blob": "b01661cc52bb7cf0696a93a9cc4059fb7e732f53",
+      "bytes": 117,
+      "sha256": "8d5066783b1ce75133a3e42d0cc418cde64ff0e198363056073305e2e02db319"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Verification/collision-response.json",
+      "git_blob": "d77f154f5e09afb8fce6713c5f1bcb2df7767fae",
+      "bytes": 928,
+      "sha256": "21817f3974b475e6c35d91b691d69b2ee0c8ae147d8f811b9b3abdc3674b3275"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Verification/mannequin-gizmo.json",
+      "git_blob": "f66cbe3c2810b6ddc1a0bb6ed02a280c20e1faaa",
+      "bytes": 280,
+      "sha256": "4a1b24df3fb32848208e8f7893d326b9db70b1e3c40eb1af03f8738699aeaed6"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Verification/smoke-width.json",
+      "git_blob": "7f95cae223307c58b25eea5fcc30ec2fdd7d7e34",
+      "bytes": 130,
+      "sha256": "6787e9e14b4af63a4f7780aff215b4e507aa7ab031c9b599e0792cc7ed86a328"
+    },
+    {
+      "path": "Labs/MainMenuSceneLab/Verification/weather-controls.json",
+      "git_blob": "823ae184482be93cc75038d0908bc3511bbeb133",
+      "bytes": 214,
+      "sha256": "8f186d02cc81851c6910a272105a4001e558466ce94c7de61e2dfebd545a1f4a"
+    },
+    {
       "path": "Labs/MimicKitIdleLive/README.md",
       "git_blob": "76fff995ff1417e153465b98019a8be3486237e5",
       "bytes": 2302,
@@ -30961,15 +32203,21 @@
     },
     {
       "path": "Labs/ThrowLab/README.md",
-      "git_blob": "c58aa9c9a4b8fdc62ac42bc177e2e07ada9df0ed",
-      "bytes": 33203,
-      "sha256": "6ae9eb187c0c22cdf3a7439eab2e5f541f3b1da95f604e3ef0db22f616343813"
+      "git_blob": "25b701aaae913c078b37c9b4a2dbb9b2da995d99",
+      "bytes": 63770,
+      "sha256": "1518b37636d48d8a622b6731ec9c30d69fa7448d01344d10164c211a36b8d455"
+    },
+    {
+      "path": "Labs/ThrowLab/aerodynamics.js",
+      "git_blob": "6c1b46ad20a754831c179f973ff7a9f34c283fb2",
+      "bytes": 2062,
+      "sha256": "16d1349cc8e65d16c9caeeb32b8aeed68369dc6382667c04ef73d3b21132aea5"
     },
     {
       "path": "Labs/ThrowLab/app.js",
-      "git_blob": "5cbb26eba6335f5650c7c5d20e8a71ce8e90d1ef",
-      "bytes": 27395,
-      "sha256": "d344dce903bdd2bbb238bb6e43e5549a4c7f5e7422192ca903f937756a6cc32e"
+      "git_blob": "4ba6ff41ec8e105bc4bebf01ccbeff1d1a94426f",
+      "bytes": 38499,
+      "sha256": "98524fb705cd8dae9b93f68dc7461a958dc695dc4a364e5fff442d15481d4e91"
     },
     {
       "path": "Labs/ThrowLab/approved/2026-10-27/big throw.fbx",
@@ -30996,6 +32244,18 @@
       "sha256": "34c3fd086685a4c2d527d06767818fbe3767743c85efec3435cafd530b6d4a71"
     },
     {
+      "path": "Labs/ThrowLab/approved/2026-10-29/manifest.json",
+      "git_blob": "4dd6b61c1fdfe99b71a5220a911a7d47f3ce3a2d",
+      "bytes": 15005,
+      "sha256": "224bf29cd5c7e6062b3643598aedf4e9ebb27175161d6ae6fc54a801338cd21b"
+    },
+    {
+      "path": "Labs/ThrowLab/approved/2026-10-29/saved-profile.json",
+      "git_blob": "61e066d08409a97317bda3ecdda3aa480de5cf27",
+      "bytes": 2827347,
+      "sha256": "553837a70c5c867df5b4fc308f9343fb17183b8b81c05645e7a881ce4be41937"
+    },
+    {
       "path": "Labs/ThrowLab/assets/throw-target.ico",
       "git_blob": "d069a0dae904f472cde3168655994dc01d6e94ae",
       "bytes": 47203,
@@ -31014,10 +32274,16 @@
       "sha256": "e43d478cafc6454c8468c1d2c99974dab9088b21b22a45a2a63949e34f0bc951"
     },
     {
+      "path": "Labs/ThrowLab/attack.js",
+      "git_blob": "b658b68fa619f0c23b6c8a83cd0b55b344a244b2",
+      "bytes": 13998,
+      "sha256": "4fc0f5592a5e4fff2bfb2bb493edf8531769dcf3a838c5cda7e0a6d708db78b6"
+    },
+    {
       "path": "Labs/ThrowLab/boot.js",
-      "git_blob": "e8345a9d92528daa747dd54abdb5973c5d3a3914",
-      "bytes": 745,
-      "sha256": "a4a95f4202280642d8fdde9f5154dc1f296625781d6d07b2fd2f87adc6ba5242"
+      "git_blob": "bc408cb623068e3be4a11785a93840b7d3d576a9",
+      "bytes": 757,
+      "sha256": "9ed0c6e23c1099bf478ff83a9d0e88cf6a26062c2f1b9cbd6019a4a798daee6c"
     },
     {
       "path": "Labs/ThrowLab/camera.js",
@@ -31027,9 +32293,9 @@
     },
     {
       "path": "Labs/ThrowLab/core.js",
-      "git_blob": "a71c5087053d0ae9724fe731f0ea8a870c11f521",
-      "bytes": 3379,
-      "sha256": "03e33bc80d1e21dd9ad9ad2777b184f2907aec9cb5bd44fb54752299043db616"
+      "git_blob": "82a742b683072ecf84e01a1e02f8dd93864405f0",
+      "bytes": 4404,
+      "sha256": "30694b2a402951c3a93c52260bd5b24f884fc3f8b01c4d0dc13306debcc3c2fd"
     },
     {
       "path": "Labs/ThrowLab/create_icon.py",
@@ -31045,15 +32311,33 @@
     },
     {
       "path": "Labs/ThrowLab/data/objects.json",
-      "git_blob": "0a7fd368c13d9c3a32b43d30db6e8a23560cf644",
-      "bytes": 1603289,
-      "sha256": "2b7f37ebfe1378fe271dbf31118add33d9d198ba5f1083ae296c5ec95d211ae6"
+      "git_blob": "f4ced2121a6f25e5a6a3e7a99a0e9ac74c6fb1f2",
+      "bytes": 3030432,
+      "sha256": "f060c593764b08c2002235cd0c9f7ae7702ff63a1147451181712a695654546c"
     },
     {
       "path": "Labs/ThrowLab/export_clips.py",
       "git_blob": "ba2fa43ed3d50e485dc6653119f30edd6ee654c7",
       "bytes": 2506,
       "sha256": "aaf6ab000853ecf1b8b8e755938ec4796e8a4fc85db79283595c9cfc7ef3a936"
+    },
+    {
+      "path": "Labs/ThrowLab/fixtures/attack-presets.json",
+      "git_blob": "3005e5e1cfa5545c5697bb6965f688503a4c63c9",
+      "bytes": 9854,
+      "sha256": "d8a95f5049c9967b9fe4cdd9230dd9d7ae92c0351c3ac4e5efa6cf104bf226a0"
+    },
+    {
+      "path": "Labs/ThrowLab/fixtures/flat-spear-flight.json",
+      "git_blob": "17c2676b49b8dea9cdbbdd894899c18844bf252a",
+      "bytes": 9531,
+      "sha256": "ffd6f50a3b6b636fb67310b12d4d3e7ff1dd2e99012f4fb81995741d82115d53"
+    },
+    {
+      "path": "Labs/ThrowLab/fixtures/stronger-spear-flight.json",
+      "git_blob": "587e41b9341ad50e1d4c9a6668aebfd63d70b67c",
+      "bytes": 9566,
+      "sha256": "4deec7d2c27b8f45a37f674866c7ff9b708dd17461277d52fc4b4b51a238a0f1"
     },
     {
       "path": "Labs/ThrowLab/fixtures/whole-frame-forearm-keys.json",
@@ -31086,6 +32370,12 @@
       "sha256": "85931611375da848cf4a3dd30e763b85211e8e0ed6d73dc6fbd500b2dcfe96bd"
     },
     {
+      "path": "Labs/ThrowLab/inspect_bomb_scale.py",
+      "git_blob": "f9d63ec9b938dc6735c8f492cb43ea23b2b6ead9",
+      "bytes": 3112,
+      "sha256": "3f018c52ac140de4fda48ffbef70a2a23f0fb81306d1c4b438d404eff18e164a"
+    },
+    {
       "path": "Labs/ThrowLab/install_shortcut.ps1",
       "git_blob": "d5b16587cb07052d2c3febe79ad484e7617b9929",
       "bytes": 856,
@@ -31098,22 +32388,28 @@
       "sha256": "5a7a642ad2c468d5685981ea00cbf017dbb71bcfd04b0df9d903ff18970ce1bc"
     },
     {
+      "path": "Labs/ThrowLab/motion-audit.js",
+      "git_blob": "c5e2e35eddf87dc8d4d0ac8f277dd4b56a515462",
+      "bytes": 1970,
+      "sha256": "e88761b123f046b86eea76f11f2844003ed3eaf294dfb7d4d1712279c8d98e41"
+    },
+    {
       "path": "Labs/ThrowLab/prepare_objects.py",
-      "git_blob": "d5d86604dcfa90434f79d959cd92f3e822dad86f",
-      "bytes": 3358,
-      "sha256": "b528aa4c1d2db4cc8c74aa36a1352855ca04d7b5f555fa4c45e3b1cb7957077d"
+      "git_blob": "287071de0dce52cbbb6f9f70081bb35dc55210bb",
+      "bytes": 4097,
+      "sha256": "d4c685ee6fa52c2c23022157cb7b4f651a6502f1b31df0b9e0d97eedf887a697"
     },
     {
       "path": "Labs/ThrowLab/prepare_spear.py",
-      "git_blob": "4ec3d9c19dbb37949b5f280b0c9be87a4b7aaf49",
-      "bytes": 4180,
-      "sha256": "80510e29bea9ea9e3d7e71ebe829162a5503ce19e009f521320edcaf68256233"
+      "git_blob": "266eef751d5883d28eb49f300a5d8c22e6e5ce80",
+      "bytes": 5308,
+      "sha256": "6200bdcdec7a5578af5e5977c57f49d8b70268444def9748cdfdcf586380cc11"
     },
     {
       "path": "Labs/ThrowLab/projectile.js",
-      "git_blob": "32a1abce3290ff7dced470415876688f9c373165",
-      "bytes": 7484,
-      "sha256": "ce4ee3ba24e0fe01ae867b7f84a09195721a9f6053455789d6c5603c6e54d89f"
+      "git_blob": "234f37f4c7857ad4e1725e5310b241f74e454085",
+      "bytes": 9629,
+      "sha256": "93b90e42aff2fb8e959214ac31b82d0c0839179c01256b94145b68e705891be8"
     },
     {
       "path": "Labs/ThrowLab/recovery.js",
@@ -31123,9 +32419,9 @@
     },
     {
       "path": "Labs/ThrowLab/renderer.js",
-      "git_blob": "946a2ba7b4771de1ae53e9d11b723104878d2cf9",
-      "bytes": 35217,
-      "sha256": "c965c4c1b07552aad9b18b706c4d7e9955acf85a8228413dafacf460b0a44431"
+      "git_blob": "a3bca10ebc4c8492c9ba98f112a790d95e427243",
+      "bytes": 35582,
+      "sha256": "d4e355628492f9c933afb3ea4995be321fdd870aaf9ecc02c83c9cbf4da59e25"
     },
     {
       "path": "Labs/ThrowLab/reuse.json",
@@ -31153,9 +32449,9 @@
     },
     {
       "path": "Labs/ThrowLab/throw-lab.html",
-      "git_blob": "f5cfbe07aee1d50211907f045f10ec6fa4058426",
-      "bytes": 8907,
-      "sha256": "72c12b7f861aae56731ac21eb96ce46087e535f92c6ee47b6a78ddb3f8e4d45d"
+      "git_blob": "9cf3a77ab735d2f20b8da3df71a9a8d1aaa5b194",
+      "bytes": 12071,
+      "sha256": "555448792806baeb5342298bc0c02851e5dd8302855404fe23c016b248cea331"
     },
     {
       "path": "Labs/ThrowLab/throw.css",
@@ -31165,9 +32461,9 @@
     },
     {
       "path": "Labs/ThrowLab/vanilla.js",
-      "git_blob": "b32bdbc6fe5a14c24f7c13dbc0348311b5724c90",
-      "bytes": 5131,
-      "sha256": "77865e193a24c38d811f659eb7a21c897fbf48bc50ff039e8aa8b788fb626b56"
+      "git_blob": "b6f47af53f0948e5650ca3a144c18ca0a151bc68",
+      "bytes": 5891,
+      "sha256": "4cded325e7154ff834dfab683d8d76eaa45d983dfca5d1e90809b87adaf45958"
     },
     {
       "path": "Labs/ThrowLab/vendor/LICENSE",
@@ -31188,10 +32484,40 @@
       "sha256": "c3de7b76e66a220ac3c40ad0fa7370885fe6de22175ed9b6a491f9ad14146307"
     },
     {
+      "path": "Labs/ThrowLab/verify-aero-ui.cjs",
+      "git_blob": "fda67c4b827c551962f8948c8502e0a1c2396c84",
+      "bytes": 10183,
+      "sha256": "463e3f3029c10cec5569088d9aff6f33fc9ca621f8052124f62bfc36c0f08ca6"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-aerodynamics.mjs",
+      "git_blob": "aabfd217d084292cc2645ba0ac5e6272763d1879",
+      "bytes": 7716,
+      "sha256": "917137bd621bf7044eeb6b6b649e410ade7607a84501ea4dd18cda17d702671b"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-attack-ui.cjs",
+      "git_blob": "98d9676aa12f0538a12086860e69480637596aff",
+      "bytes": 28489,
+      "sha256": "1409ac244c4644199b769e1dae81eb62b26b68440b7e803fe0432fb327a59dfa"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-attack.mjs",
+      "git_blob": "69038602e21c8a8a045e526bd952eeb0acbef860",
+      "bytes": 8197,
+      "sha256": "14e144646af025b24028c18076a7cc86af8ecaa56cbb4491a236361c0238a261"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-flat-flight.cjs",
+      "git_blob": "66cdde08c357ce84e6288299a9630a37bbd23500",
+      "bytes": 4984,
+      "sha256": "7373c063c20f56493e5b6de419179f37e28d474a3bd9e35315069b4757c80ca3"
+    },
+    {
       "path": "Labs/ThrowLab/verify-grip.mjs",
-      "git_blob": "0acfee42a893c9c0fca70580338fbf3a93b80d1d",
-      "bytes": 5613,
-      "sha256": "7ae823b91c189860426b749537cc0353ffa05d675979d25c2fa45d6f83678f94"
+      "git_blob": "734291759ffcc6f5f4525807a8fecc7188a73e9f",
+      "bytes": 5721,
+      "sha256": "e79da7326e9d9740b55bc80fe6efdab214f2aa231e230852c16faed5ab4fcfe1"
     },
     {
       "path": "Labs/ThrowLab/verify-history.cjs",
@@ -31200,16 +32526,34 @@
       "sha256": "b01e24bea814bbae9db47d2b1416c9b1ecdd34edc575e8e42dbca85377439d7e"
     },
     {
+      "path": "Labs/ThrowLab/verify-motion-current.cjs",
+      "git_blob": "f41158114bbc8519856990d6e3eb5c8c5e4fc289",
+      "bytes": 269,
+      "sha256": "d7e2a981628ff23ca34d520e09371d6dee10ab128687f604036be51929161582"
+    },
+    {
       "path": "Labs/ThrowLab/verify-projectiles.mjs",
       "git_blob": "05d166d32d11b6b19f4840ec77df70ab71c3b853",
       "bytes": 5345,
       "sha256": "a303e17dff10ca0dd7e62858e40346da07075437fb0a5c46f214ec35ee520bf6"
     },
     {
+      "path": "Labs/ThrowLab/verify-strength.mjs",
+      "git_blob": "aa0136480b25940394eafa9bfb8d2b9d2c67999f",
+      "bytes": 25430,
+      "sha256": "3492205af6ac821080f26244bf501e318a797abd6a2856868d533f88e3ba8c92"
+    },
+    {
       "path": "Labs/ThrowLab/verify-vanilla.mjs",
       "git_blob": "b61827355c3e61808d02a34a55d1abbb645ddc55",
       "bytes": 8042,
       "sha256": "09e313b83f6348e4132fe24a39536e7d1ddecefdbbe212067e067547c64704f6"
+    },
+    {
+      "path": "Labs/ThrowLab/verify-weapons.cjs",
+      "git_blob": "af930b815c0cd6375d95e89650796c379e883a5e",
+      "bytes": 3579,
+      "sha256": "0d71520c5a064554fa142d4e0cc956d680d4b00beb59b249d23ece45235b521e"
     },
     {
       "path": "Labs/ThrowLab/verify-whole-frames.cjs",
@@ -31861,9 +33205,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "a5f318b68fee79ed3c2d22c56407b85cb57cae7c",
-      "bytes": 243575,
-      "sha256": "da80a0321d2f6ca0345370e3de60aa01764a3eee433dbd8094a72968e6675bfd"
+      "git_blob": "c410d7dbf8a4bbfc9c3f8b27d317f3da1f49c7ba",
+      "bytes": 247798,
+      "sha256": "5bb15254ffc0d3352f83d7dca870cf48d55a2935c7ae4c24543baf271c8f42c3"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -47563,9 +48907,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/GameAnimationSample3.Build.cs",
-      "git_blob": "d91aed96b45029a542708bd25e8e5f7d59bc5beb",
-      "bytes": 4223,
-      "sha256": "5da0a26b17d469f523ecd2e35fc06251e458e70745d7be2ad1d0393835827397"
+      "git_blob": "0219397de638e2e12c685ad3a2fde8d410e82037",
+      "bytes": 4323,
+      "sha256": "e18ca48bd698d1fd40591371e4064cac51b46f54edacd5805314df219161824f"
     },
     {
       "path": "Source/GameAnimationSample3/GameAnimationSample3.cpp",
@@ -49111,9 +50455,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNLocomotionManager.cpp",
-      "git_blob": "b9394794b1c93c23f7cb41c338abccde3184b8ab",
-      "bytes": 284570,
-      "sha256": "8ead9409fad5e4bb45cfc07b5775e2f7cbe295cf41a190d2def74006e958e4a4"
+      "git_blob": "18bf4b750996308733df24b951fea5f36c9d692f",
+      "bytes": 285592,
+      "sha256": "fe6f3b27930c8f7e98c6afe78a05c4265bbd64c2ab5bbf16a67c075c11845dcf"
     },
     {
       "path": "Source/GameAnimationSample3/Private/ProphecyNNLowerFeedbackAlignment.inl",
@@ -49758,6 +51102,30 @@
       "sha256": "9ba880b699fc8c66b3898b6ec1372886123562d9106b9c3237a861afeb78b666"
     },
     {
+      "path": "Source/GameAnimationSample3/Private/ProphecyThrowLibrary.cpp",
+      "git_blob": "308813243736e6877c9d7fd62181eb9d62235289",
+      "bytes": 13055,
+      "sha256": "08909c54c2bc055192e3e1a16ed26b8f2c888a13d1b820708510dc18b68606e0"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyThrowMath.cpp",
+      "git_blob": "bbf038276839d7658d2b6183f9737f128ea62acd",
+      "bytes": 18470,
+      "sha256": "8f7daea9aa1cdbda8231ad115ee6580e356e835c415915c978ca55b046e7e768"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyThrowMath.h",
+      "git_blob": "e49a0082b44e184b66872c8df88ac70c7286d2f4",
+      "bytes": 1900,
+      "sha256": "9ac1f9ee623bb2306d9294c91d5498acb754d9dc4a057ba5172653148cc98bab"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/ProphecyThrowRuntime.h",
+      "git_blob": "368318fbd1efd6228ca88e50bbae6ea40ee4f9e1",
+      "bytes": 396,
+      "sha256": "0b13f8d6b74bf8ca5420f230352b1e5348829062c26040018fcfb021a3792e94"
+    },
+    {
       "path": "Source/GameAnimationSample3/Private/ProphecyUpperBodyInertia.h",
       "git_blob": "a2c2491d44912f053ac4eac6433757c61d774507",
       "bytes": 2393,
@@ -50104,6 +51472,18 @@
       "git_blob": "5fadbba517ef09185f7642bceb3e1020d1a71ee2",
       "bytes": 5284,
       "sha256": "4c4a3c21d126b4d18cfdc0f3a91c71a423c23280dd26fc2ba034fc12c457db5c"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecyThrowFeedbackTests.inl",
+      "git_blob": "b3fb1719ab1533f0669d1c6c2cc73520863a86fe",
+      "bytes": 2478,
+      "sha256": "038107f54abfcbe1ae8e0ab1c8b72c9ea5e81a1f9151cf32a8391ca910b6dcba"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Private/Tests/ProphecyThrowTests.cpp",
+      "git_blob": "727143516656e92b1e9326a5ab3e5c40301fa424",
+      "bytes": 3547,
+      "sha256": "b77da050b1b2fb40cabb20d3ceb4074e65b345f93f6a722738900395329c0369"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyWalkPinningSpaceTests.inl",
@@ -50692,6 +52072,12 @@
       "git_blob": "8a56fe421eb833b684507320b1aae0b9a564e438",
       "bytes": 4323,
       "sha256": "2bb614f6cf2286093ebdfa68ff14c81772d9441f3367d3db6811e250ce25766d"
+    },
+    {
+      "path": "Source/GameAnimationSample3/Public/ProphecyThrowLibrary.h",
+      "git_blob": "af2411cb257867d810de6aed0688edca12aa95c1",
+      "bytes": 4883,
+      "sha256": "f607a60d0eb27348f4b9d1dc42fa972bc5c15aea3c9c85b8c97aff43c6cdd442"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyUpperBodyInertiaLibrary.h",
@@ -54814,6 +56200,24 @@
       "git_blob": "966755066c8b1d01d3f2254778f40579429c9047",
       "bytes": 4936,
       "sha256": "c2057eae6d853cef99d9d2ccbf7d0151959be802996d3fb9e783f9a0a94cb1c4"
+    },
+    {
+      "path": "Tools/Throws/export.mjs",
+      "git_blob": "479f4e55320c61ca84299958876cd53461efa865",
+      "bytes": 2139,
+      "sha256": "bf9581af373c4d4eebeb759cd47412976f38f7d1284ffe48259b8c24b2b11062"
+    },
+    {
+      "path": "Tools/Throws/lab-reference.mjs",
+      "git_blob": "8efb652484d56d0d1cc52464b05fb6786e34fb04",
+      "bytes": 4564,
+      "sha256": "4ab146e6c6f211e44334b8e06ece94c262e04664718826d7be910f50f941a36d"
+    },
+    {
+      "path": "Tools/Throws/verify_axes.py",
+      "git_blob": "14222c1898a80a84b36065b4ed25df7202395300",
+      "bytes": 2689,
+      "sha256": "ff9e014b015242dbd6320578dff270d7c654a7fd60768a6261d662a189ae6271"
     },
     {
       "path": "Tools/VDB/CreateOptimisedTailMaterial.py",
