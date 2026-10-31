@@ -30,14 +30,16 @@ function create({root:origin,hip,foot,normal,direction,incoming,reach,maxReach,l
  }
  function pairValid(p,t,tolerance=1e-8){const rows=pairRows(p,t);return rows.length>0&&rows.every(c=>{const a=bounds(c);return a.valid&&a.error<=tolerance;});}
  function projectPair(from,proposed,t){
-  let p=proposed.slice(),reason=null;const normals=[];
-  const move=delta=>{if(resolveRoot){const hit=resolveRoot(p,delta,t);p=hit.root;normals.push(...hit.contacts.map(c=>c.normal));}else p=add(p,delta);};
+  let p=proposed.slice(),reason=null,rows=null;const normals=[];
+  const move=delta=>{if(resolveRoot){const hit=resolveRoot(p,delta,t);p=hit.root;normals.push(...hit.contacts.map(c=>c.normal));}else p=add(p,delta);rows=null;};
   if(resolveRoot){const hit=resolveRoot(from,sub(p,from),t);p=hit.root;normals.push(...hit.contacts.map(c=>c.normal));}
   for(let pass=0;pass<32;pass++){
-   const rows=pairRows(p,t,true);if(rows.length<2)return {p,valid:false,reason:'Contact lost',normals};
+   // Every correction invalidates the rows. Between corrections the root,
+   // time and contact pose are identical, including before the first row.
+   if(!rows)rows=pairRows(p,t,true);const count=rows.length;if(count<2)return {p,valid:false,reason:'Contact lost',normals};
    let error=0;
-   for(let i=0;i<rows.length;i++){
-    const c=pairRows(p,t,true)[i],a=bounds(c);if(!a.valid)return {p,valid:false,reason:'Contact lost',normals};error=Math.max(error,a.error);
+   for(let i=0;i<count;i++){
+    if(!rows)rows=pairRows(p,t,true);const c=rows[i],a=bounds(c);if(!a.valid)return {p,valid:false,reason:'Contact lost',normals};error=Math.max(error,a.error);
     if(a.height<c.minHeight-1e-9){move(mul(c.normal,c.minHeight-a.height));reason='Surface clearance';}
     else if(a.d>c.maxReach+1e-9){
      // If the capsule blocks part of an inward reach correction, solve the

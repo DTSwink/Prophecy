@@ -22,7 +22,437 @@ dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
 
-## Starting yaw - October 30 (current, local)
+## F145 foot-release snap - October 31 (current)
+
+The saved left-foot snap came from the release handoff. Contact history was
+translated back into the internal trajectory's coordinates, then foot follow
+projected it against the unchanged world floor. That invented penetration and
+moved the captured foot forward. Projecting only its joints was insufficient:
+the displayed knee includes floor clearance, so it must be captured as well.
+
+Release samplers now accept the existing pose projector and execute it in world
+space before rebasing. The physical flight integrator initializes its pose from
+that captured release articulation; contact-side momentum, COM velocity and
+Jump% impulse still supply its motion state. This prevents the pose correction
+from being interpreted as an instantaneous limb movement requiring rigid recoil.
+No new blend, gate, tuning control or solver iteration was introduced. The fixed
+departure target, knee extension, one inertial return and separate hand timing
+remain in place.
+
+Frozen actual-app/Jolt/NN replay: F144->145 left-thigh change53.74->3.94deg;
+the release boundary itself is0.121mm at the ankle and0.085deg at the knee.
+Both markers still push at1.208333/2.4s; J2 releases at2.4079266s (4microseconds
+different).364 origin-invariance/release checks,1126 earlier leg-continuity
+checks,566 physical-flight checks,14 strength cases and five hand cases pass.
+The approved flipless Space gym remains byte-exact across19attacks/684samples.
+Native V8 parity passes48frames/10583numeric comparisons with zero difference.
+Receipts: Saved/Diagnostics/BodyflipPort20261030/foot145-{input,before,final,
+verification}.json; reproduction: probe-foot145.mjs. Live state and editor were
+not changed. Refresh loads the fix.
+
+Scope note: verify-foot-follow.mjs's old <3deg absolute world-aim assertion
+already fails under final physical balance (39.91deg before this change,
+40.91deg after). The subsequent rigid momentum correction turns that aimed
+leg along with the body. This turn fixes the release discontinuity; it does
+not claim that older absolute-aim contract passes. The current contact buildup
+also retains its fast pre-release extension; it was not replaced by a new filter.
+
+## Planted push landing ownership - October 31
+
+SUPPORT means approach, before accepted contact. LOAD means planted buildup.
+Saved axis-only J2 reached contact at2.3375s, but the other toe (ball_r) touched
+at2.35833s and incorrectly handed control to locomotion before the2.4s push.
+While PIN is active, additional hand/foot/toe contacts now join the existing
+support-contact set. Collision response is retained; those contacts stop being
+owned once lifted clear. Torso/head hits and contacts during approach/free fall
+still cause normal landing. Current scene now pushes/releases at2.4/2.40792s.
+RISE/FALL also uses the resolved COM velocity including collision carry, rather
+than the source velocity before that carry.24 focused ownership/phase checks
+and five paired-hand regressions pass. Actual app VM replay confirmed both
+markers push, without desktop control or saved-state edits. Runtime repackaged.
+
+## Jump strength - October 31
+
+Jump % now commands COM takeoff energy directly for every successful foot/hand
+push, whether spinning or not. The previous knee-extension trajectory only used
+requested energy as a stopping threshold: a reaction/reach release could deliver
+much less, independently of a larger percentage. The saved second200% push asked
+for6.485m/s but delivered3.223m/s COM speed. The contact animation is no longer
+the authority on jump strength.
+
+One shared reference height (trimmed Run L,1.032640m) defines100%. At release the
+surface supplies a gameplay impulse: outgoing COM velocity is retained tangent
+velocity plus the skewed push direction times sqrt(2*g*referenceHeight*Jump%/100
++ 2*returnedReboundEnergy). Rebound remains its existing explicit option. With
+Rebound0 on flat ground, height is exactly proportional to Jump %:70%=.722848m,
+100%=1.032640m,200%=2.065280m,400%=4.130560m. Feet/hands, left/right animation
+choice, pose recovery and spin do not silently reduce this command. Carrier
+collision velocity is included once; actual later collisions can still alter
+flight. Zero% and a support lost before pushing receive no new launch impulse.
+
+This deliberately uses a contact impulse at release, not a claim that the visual
+extension supplied that velocity through a finite physical force. Position is
+continuous and the existing load/pin/follow animation remains in place. Only
+translation is corrected for non-spinning surface jumps; no angular reaction is
+introduced there. Active spins retain their momentum solve. Flipless Space gym
+attacks keep their exact approved motion. RISE/FALL now follows actual flight
+velocity, rather than the old extension trajectory's earlier apex.
+
+Current saved scene (J1=150%, Rebound50%) compared with identical inputs except
+J2 percentage:70% leaves at4.03647m/s (~.83m rise),200% at6.51348m/s (~2.16m).
+14 strength cases cover0..400%, both hands/foot, no spin/spin, zero Load, reverse
+seek, exact ballistic height and projected release continuity. Five paired-hand
+release/miss cases and566 core flight checks pass. Receipts in the diagnostics
+directory: `jump-percent-before.json`, `jump-percent-after.json`,
+`jump-percent-after70.json`, `jump-strength.json`. Fresh native V8 parity passes
+48frames/10583numeric comparisons exactly;19attack/684sample flipless Space gym
+preservation remains exact. Saved state and editor untouched.
+
+## Momentum balance during flips - October 31
+
+Release-velocity correction: the initial balance implementation averaged COM
+velocity over the final1/240s of contact. A short push was still accelerating
+strongly during that interval, so this discarded the last part of the impulse.
+In the saved first100% jump, upward release speed was3.074m/s instead of4.366m/s,
+giving only.482m ballistic COM rise instead of.972m. Translation now uses a
+second-order contact-side derivative at.1ms spacing, extrapolated to release.
+The contact trajectory, Jump%, angular balance and saved settings are unchanged.
+Two extra source samples are evaluated once per release, not per playback tick.
+Analytic short/oblique push and falling-release regressions pass (562checks in
+the flight suite); five hand-contact cases and19attack/684sample exact no-spin
+preservation pass again. Current-scene launch receipts: `jump-height-before.json`
+and `jump-height-after.json` in the diagnostics directory below. The original
+scene timings/aim metrics below predate this correction; J2 contact timing changes
+because J1 now stays airborne longer. Native runtime is repackaged with the fix.
+
+Before the explicit launch contract above, the remaining height difference was:
+the saved first jump's original source
+COM rises about1.226m, versus.972m with ballistic COM (about21% less). The source
+root leaves at4.629m/s while the actual COM leaves at4.366m/s, and the old pose's
+COM rises another.138m relative to root by the old apex. Fixing the derivative
+therefore did not restore the old height. Preserving that height with ballistic
+COM would require a larger contact impulse. That root-versus-COM ambiguity is
+now superseded by the explicit launch contract above, separate from angular
+momentum balance.
+
+Active bodyflips/twists now pass through one final rigid-body reaction solve.
+It measures all25 bodies' spin and orbital momentum about COM after attack,
+aim and released-limb articulation, then applies a COM-centred correction using
+the shared physical inertia tensor. At most3 small3x3 solves per240Hz tick;
+no per-limb optimizer was added. Existing attack joint poses, arming and soft
+leg choreography remain the articulation source. Contact owns the motion until
+the last support releases; the measured release momentum and explicit command
+changes drive free flight. COM follows the release velocity plus gravity/cap.
+Collision/landing runs after balancing and seeds the normal NN continuation.
+
+User requirement: flipless microgravity attacks must remain EXACTLY unchanged.
+When no spin has been activated, the original motion and external aim path run
+without creating a physical track.19attacks/684samples match the preceding
+global and aimed poses exactly in both checkbox modes, including reverse seek.
+This preserves the approved animation; it does not claim that old no-spin
+animation now conserves momentum. Preview attack generators were not rewritten.
+
+New `3D momentum` checkbox is appended at the bottom of More options, default on.
+On balances the full world momentum vector; off allows rigid reaction only
+about the commanded axis and conserves that component. Transverse momentum
+remains authored in the axis mode. Explicit spin-command changes are controlled
+momentum inputs. Inertia100% preserves reference-command momentum;0% retains
+constant commanded speed despite compaction while still reacting to articulation.
+Stopped commands retain the previous axis in axis mode. Angular-velocity debug
+metadata now measures the corrected carrier, with old velocity in commandedOmega.
+
+Aiming predicts the balanced motion using a bounded endpoint solve: at most
+two small Jacobians,60Hz prediction, final240Hz playback. Full3D uses spine bend
+variables because a whole-body yaw would be canceled by the reaction. Fixed-axis
+mode also has yaw freedom. This is approximate and does NOT guarantee all target
+directions: saved scene residual is.08537 (~4.89deg) toward its partial-aim goal
+in3D and.39614 (~22.85deg) in axis mode. It no longer searches wrapped multi-turn
+solutions to force a hit. No-spin aiming is unchanged. Moving the target in a
+spinning lab updates the marker during drag and regenerates on release; numeric
+target/aim edits regenerate immediately, preserving playback time.
+
+Saved-scene current checks: full-vector momentum error <.00043kg m^2/s during
+the measured free-flight ticks, anatomical violations <3e-15rad. The earlier
+F140->150 reversal is absent: J2 total momentum is approximately
+(40.11,.21,-14.22)kg m^2/s across those frames. Axis-only error <4.2e-6 on J2's
+selected component. Five paired-hand cases cover retention, single release,
+lost supports/no phantom push, mirrored spin and seek order. Fixed the carrier
+offset being counted twice at release; maximum positional seam1.64e-6m.
+
+Performance: isolated full balance at240Hz costs roughly.7-1.0ms per60Hz frame
+on this laptop, excluding source animation, collisions and rendering. Target
+planning is cached, not performed per playback frame; warm standalone planning
+~134ms. Saved whole-scene preparation measured8.77s including source/NN/contact
+work. These are separate measurements; this is not a claim of8.77s realtime
+execution or a measured render framerate. Immutable aim-cache optimization is
+bit-identical. Core tests96+553 checks; exact no-spin preservation and actual
+app/native adapter parity pass (6frames,0position error,5.96e-8rad max rotation).
+Native V8 parity also passes48frames/10583numeric comparisons exactly across
+slash, kick, both throws, foot and hands. Runtime package updated; no C++/
+Blueprint/editor rebuild or saved-state edits.
+
+Receipts under `Saved/Diagnostics/BodyflipPort20261030`:
+`physical-scene-result.json`, `physical-scene-axis-result.json`,
+`physical-contact.json`, `no-spin-preservation.json`, `physical-app-parity.json`.
+Regression scripts: `verify-centroidal.mjs`, `verify-centroidal-flight.mjs`,
+`verify-physical-contact.mjs`, `verify-no-spin-preservation.mjs`.
+
+## Physical audit of the saved slash - October 31 (before the balance)
+
+The earlier constraint-order fix is valid but does NOT make the complete motion
+physically consistent. No production behavior or saved scene changed in this
+audit. Actual app initialization and offline sampling of the current saved J2
+slash use one Jolt world, real NN responses, no desktop control or state writes.
+Sampled F134-194, with backward differences at240Hz and480Hz. Receipts and chart:
+`Saved/Diagnostics/BodyflipPort20261030/physical-audit*`.
+
+Measured all25 rigid bodies using the shared45kg mass model: sum each body's
+spin angular momentum plus orbital momentum about the whole-body COM. At F140,
+F150 and F160, final momentum along the fixed world flip axis is approximately
+35.45,-2.00,35.00kg m^2/s (480Hz;240Hz gives35.50,-1.70,34.93). All physical
+colliders are clear of the ground over F138-164, minimum8.78cm. The scalar
+controller reports a constant23.798 axial budget, but this excludes the moving
+limbs. These are not external-contact impulses or floating-point noise.
+
+Findings, in pipeline order:
+- The compensation target is the momentum of an authored opposite-angle pose,
+  NOT conserved airborne angular momentum. Its low solver residual only means
+  it follows that target. At F144 compensation drops pelvis rotation from the
+  applied251deg/s flip component to about94deg/s before aiming.
+- The result passes through independent pelvis/hip/knee/foot springs with60ms
+  lookahead. Their final velocities are not fed back to the momentum solve.
+- Spin preserves I_axis * omega for its input pose but omits articulated limb
+  momentum. It deliberately retains a fixed commanded axis; it is not a full
+  torque-free rigid-body/articulated dynamics solve.
+- World-space support-leg follow is applied AFTER that inertia calculation.
+  It preserves COM position but does not supply an equal-and-opposite angular
+  response. At F150 it changes axial momentum from15.71 to0.71kg m^2/s (240Hz)
+  while leaving pelvis speed unchanged. This is a major independent error.
+- Aiming is later still and also changes momentum without compensating it.
+  At F150 it changes that axial value from0.71 to-1.70kg m^2/s. It is not the
+  principal cause of the early pelvis slowdown, which already exists upstream.
+- Pelvis return starts at Hit (F164.463), overwriting its current evolution with
+  the captured hit offset times a scalar fade. No velocity matching or momentum
+  balance is enforced at this handoff. It cannot explain F138-150.
+- COM itself follows pose-dependent motion: at F144 measured horizontal COM
+  acceleration is approximately(6.4,-6.4)m/s^2 in world X/Z with no contact.
+  The attack and compensation stages already contain it; later COM-preserving
+  projection/rotation retain it. This is separate from rotational conservation.
+
+The old attack-inertia capsule approximation differs from the shared physical
+mass model by at most0.118kg m^2/s here; worth unifying, not the main fault.
+The shared constraint/aim tests and native parity checks do not test whole-body
+momentum conservation. Existing spin-momentum test explicitly tests controlled
+axial inertia, not the articulated result. Simulation is also driven by direct
+per-body velocity commands; merely selecting Sim does not establish conservation.
+
+Recommended next implementation: one final whole-body momentum balance including
+attack, aim, support follow, recovery and smoothing, plus a separately integrated
+ballistic COM. Use compensation percentage as a posture preference, not a
+physical conservation percentage. Re-check final displayed motion, not just the
+intermediate controller. Retain the user's fixed-axis preference explicitly:
+arbitrary prescribed joint paths, fixed rotation axis and exact vector momentum
+cannot all be independently imposed; use remaining articulation freedom or
+report the conflict rather than silently restoring the rejected free-tumble mode.
+Physical reference: MIT Underactuated Robotics, centroidal dynamics,
+https://underactuated.csail.mit.edu/humanoids.html .
+
+## Constrained attack compensation - October 31
+
+Compensation now evaluates the existing anatomical joint limits inside its
+momentum solve. Source, baseline, opposite-angle target and each trial pose
+are projected before their momentum is measured. The inertial response and
+pelvis recovery also return legal poses; projection preserves whole-body COM.
+Rigid compensation uses the same ordering. No new gates, tuning or UI changes.
+The requested percentage still defines the opposite-angle target; limits can
+restrict that target. This remains an authored response with inertial smoothing,
+not an exact conservation law for the entire final aimed animation.
+
+The saved J2 slash previously lost60.8deg of spine01 rotation during later
+projection at F148-150 while retaining its pelvis response. That late rejection
+is now numerical zero. Actual app replay F134-205: final pelvis rotation along
+the flip axis at F144 rises from40 to93deg/s; F156 falls from406 to313deg/s.
+The remaining speed variation includes the intended attack counterrotation.
+Saved scene, compensation100%, arming times and fixed-world spin are unchanged.
+
+Verification:56cases/2750samples across14 upper-body attacks, both rig profiles
+and soft/rigid compensation; maximum late correction4.04e-15rad. A source change
+entirely discarded by joint limits produces zero change in pelvis response.
+COM preservation and reverse seeking pass;17attack/2571entry samples and60native
+aim cases pass. Runtime-only package refreshed; no C++/editor rebuild.
+Receipts: `constrained-compensation-verification.json`,
+`all-armed-entry-verification.json` and saved slash traces under
+`Saved/Diagnostics/BodyflipPort20261030`.
+
+## Live Harness angular arming - October 31
+
+Direct to Armed now uses the live Final Harness distance rule for all17 melee/
+sword/kick clips and both throws. Sum shortest joint-local angular distances
+from the current pose to Armed; divide by GT's accumulated frame-to-frame
+angular travel from frame0 through Armed; multiply by GT's windup seconds.
+Like the live implementation, compare clocks including/excluding forearms and
+keep the shorter one. Default far-distance exponent and speed coefficient are1.
+The fixed authored windup floor is removed. Existing Attack In remains the
+explicit minimum, plus one60Hz frame for a nonzero interpolation interval.
+
+The clock measures the active attack joints in the carrier frame: upper-body
+attacks include the pelvis rotation transferred to spine01; kicks also include
+pelvis and striking leg. Bodyflip/world travel is not counted as arming travel.
+The separate aiming correction remains separate from this articulation clock.
+Retain Bodyflip's existing C2 interpolation and Armed->Hit/Release->End source
+speed. This ports the live angular-distance rule, not its ground stepping,
+head/pelvis world-speed constraints or GT-LUT interpolation shape. Off retains
+the original entry path. No controls were moved or added.
+
+Throws now honor Direct to Armed too. They use the charge-specific Armed pose
+and retain charged post-Armed timing, release impulse and existing recovery.
+Kick viewer, timeline and manual attack paths share the same duration rule.
+
+Current saved J2 slashL: arming.333333->.230350s (20->13.82frames at60Hz);
+Armed2.4824531973, Hit2.7410531780, return end3.1657865306. Source Armed->Hit
+stays.2585999807s. Actual app F130-205 replay completed without live writes.
+
+Verification:1141 checks/19attacks, including executing the live harness's
+actual angular-distance/LUT functions (maximum distance discrepancy6.37e-8rad),
+shorter/longer/zero travel, cumulative GT reversal and0/10/100% throw charge.
+17attacks/2571entry/manual samples;56arm cases/11221samples;2004kick samples
+with COM, hinge, carry and viewer parity;60native aim cases;6native throw aim/
+constraint cases. Throw app initialization/release uses one real Jolt world,
+no rasterization or desktop control. Native JS package updated:48frames/
+10595numeric values exact across kick/slash/throws/foot/hands V8 parity.
+No C++/Blueprint/editor/state changes. Receipts: angular-arming-verification.json,
+Saved/Diagnostics/BodyflipPort20261030/slash-trace-distance.json and v8-parity.
+
+## Slash arm entry correction - October 31
+
+Removed the rejected Modified rotations experiment, including its UI, settings
+and solver branch. Old saved fields are discarded during sanitization; scene
+files were not edited. Fixed combined world-axis spin remains the sole mode.
+
+The saved slashL entry was blending an authored forearm twist into a hinge
+elbow. Near F148/F155 its quaternion crossed the hinge projection singularity,
+making the shoulder/elbow change abruptly. Arm animation keys are now fitted
+to the existing joint rig before interpolation. The same arm track feeds
+pose matching, Direct to Armed and normal authored playback. Spine/pelvis/leg
+source rotations, attack clocks, joint limits and tracking speed caps are unchanged.
+
+Actual app replay, F130-205, with saved J2 slashL:
+- F148 left shoulder/elbow/wrist local steps:13.79/13.11/15.00 ->4.25/.60/3.46deg.
+- F155:28.12/28.10/28.57 ->7.23/4.40/2.64deg.
+- Armed2.5854366064s, Hit2.8440365871s and return end3.2687699397s unchanged.
+- No live state writes, editor changes or desktop interaction.
+
+Checks:17 attacks/2700 entry/manual/return samples;56 arm cases/11520 samples
+across both rig profiles and entry modes;60 native-profile aim cases;4381
+fixed-axis spin checks. The arm check verifies hinge-axis interpolation, not a
+claim that every unconstrained polynomial stays within its angle interval:
+raw blends can exceed that interval and final joint projection still applies.
+No universal visual-cleanliness claim for every attack/pose follows from these tests.
+
+Full native JS package regenerated; native-slash V8/Node parity8frames/1729
+numeric values exact. No C++ build needed. Receipts in
+Saved/Diagnostics/BodyflipPort20261030/slash-*.json and v8-parity/v8-receipt.json.
+Older modified-*.json receipts describe the removed experiment.
+
+## Commanded spin axis - October 30 (default mode)
+
+User rejected the unwanted twist produced by unrestricted full-tensor momentum
+conservation during a pure front flip. The spin controller now captures flip
+and pelvis-up twist command vectors in world space at command onset. Their sum
+defines one axis; the pose's moment of inertia changes speed along that axis.
+Combined spin no longer reorients its twist axis every tick, and zero twist
+cannot acquire a new axis from asymmetric limbs or off-diagonal inertia.
+This is controlled rotation with axial inertia scaling, not conservation of
+the articulated body's complete angular momentum vector. Authored pose movement,
+contact correction and recoil remain separate from the global spin rotation.
+Keep markers preserve the captured vectors/reference tensor; explicit changes
+ramp them. Explicit zero stops the global rotation.
+
+`verify-spin-momentum.mjs` now verifies this controlled-axis contract:4381 checks,
+maximum measured rotation-axis error0.0000015deg, axial balance error0.000751%,
+including moving poses/recoil/delayed launch/Keep/mixed axes/reversal/zero.
+The saved260-frame replay retains the front-flip plane through jump1; at F93
+the pelvis right vector is[-.9948,.0373,.0946], replacing the near90-degree turn.
+Saved settings/markers are untouched. Native runtime is repackaged; see the
+latest axis-native-parity receipt for parity results. The full-tensor experiment
+and its historical conservation results below are superseded.
+Current native kick/foot/hands parity:24frames, zero numeric differences.
+Both saved jumps report Push at1.2354167s and2.2666667s without retiming markers.
+
+## Superseded full-tensor spin experiment - October 30
+
+Flip and twist commands now establish world angular momentum once at command
+onset. Smooth commands ramp that momentum; blank markers retain it. Each tick
+uses the full collider inertia tensor and subtracts the angular momentum of
+articulating limbs to obtain the global rotation rate. The former sum of a
+world-fixed flip velocity and a pelvis-following twist velocity steered combined
+spin continuously. This correction supersedes scalar flip/twist multiplier tests.
+At Inertia100% the experiment used the physical tensor; lower values blended toward the
+reference-pose tensor and reduce articulation compensation. Secondary recoil
+remains on and participates in the same balance. Angular velocity can precess;
+angular momentum is the conserved quantity during free flight.
+
+`verify-spin-momentum.mjs` passes4365 checks: fixed/moving poses, three axes,
+flip/twist/combined spin, recoil, delay/ramp/reversal, Keep and explicit zero.
+Independent collider-trajectory measurement gives maximum0.131deg direction
+error and0.539% vector error. Keep-marker displacement is below2e-14m.
+Native V8 parity passes24frames/5228values exactly; runtime is repackaged.
+Historical verify-spin/verify-instant-spin assertions demanding scalar inertia
+ratios and identical recoil/no-recoil angular speed are superseded, not passes.
+
+The saved260-frame scene was replayed without modifying state. Jump1 still
+pushes at1.2354167s; the new physical rotation changes jump2's approach: upperarm_l
+contacts the floor at2.2791667s before its planned2.31875s push, so it reports
+Miss. No contact rule or marker timing was relaxed to retain the old outcome.
+Free-flight spin samples of both segments have measured momentum vector error
+below0.179%; contacts and locomotion handoffs are external interventions.
+Receipts/recording: Saved/Diagnostics/BodyflipPort20261030/momentum-*.
+
+## Throws and rotating attack aim - October 30 (current)
+
+Approved jump/landing/starting-yaw checkpoint67516390 is pushed; its exact saved
+scene is under approved/2026-10-30. Subsequent integration remains local.
+Big/Small throws now share the attack markers and the existing Jolt world, using
+the approved Throw Lab evaluator. Charge and throw speed appear at the bottom of
+the marker controls. See [throws](THROWS.md) for source fidelity and release data.
+
+Attack aiming evaluates the complete future pose, including bodyflip, twist,
+secondary motion, contact and anatomical projection. Direct attacks reach their
+correction at Armed; circular attacks at Hit; throws aim total projectile COM
+velocity at release. Spine joints absorb the bend first; pelvis tilt supplies
+only the residual required when their limits are insufficient. A legal local
+joint-coordinate path avoids the old quaternion branch snaps. Recoil now defaults
+to60% for all spin changes; explicit saved zero remains zero. Idle/Space root
+heading now uses a stable horizontal reference instead of roundoff in a vertical
+axis. User scenes/settings were not rewritten.
+
+Final audit:714 melee target cases and51 whole paths sampled at240Hz pass;
+72 throw directions with stationary/spinning carriers pass. Actual collider
+contact sheets inspected. Lossless hot-path changes pass878 exact comparisons;
+192-pose projection median163.9ms ->148.1ms, full spin timing unchanged.
+[Predictive aim evidence](../../Docs/BodyflipPredictiveAimAudit20261030.md),
+[performance evidence](../../Docs/BodyflipPerformance20261030.md).
+A slow throw cannot counter arbitrarily large incoming COM velocity without
+changing its strength; no silent speed override is applied.
+
+The contained live Unreal port is built and validated. It embeds the same solver
+and frozen NN graphs, uses one background planner and the shared native Jolt
+world, and reads the agent's actual PHAT constraints, masses and colliders.
+All five final physical cases pass: kinematic/sim, both throws, one-hand and
+two-hand pushes. Final Node/V8 parity is exact across24frames/5,216 values.
+Use `StartBodyflip` explicitly; existing Blueprint wiring and the user's editor
+session were preserved. Scene preparation can still be slow (62.737s for the
+saved260-frame NN scene); this is not a gameplay frame-time measurement.
+[Native API, evidence and limits](../../Docs/BodyflipNative.md).
+
+Native Blueprint controls now have typed options: **Start Bodyflip** takes a
+Settings struct; **Queue Bodyflip Jump** exposes At Time, Jump Percent, Push With
+and Spin/Pose/Attack structs. Right-click an option pin and choose **Split Struct
+Pin**, or connect its Make Struct node. Attacks and directions are enums; distances
+are centimetres and durations are seconds. Legacy JSON nodes remain deprecated
+for existing wiring; the typed nodes need no JSON input.
+
+## Starting yaw - October 30 (approved checkpoint)
 
 Start yaw, appended at the bottom of More options, controls frame-zero facing
 only (-180 to180deg, default0). It does not rotate the root path, velocity,
@@ -39,7 +469,7 @@ The existing numeric apply/preserve-time/save behavior is reused.
 root continues +Z at5m/s.809 backward-landing checks still pass. Scene unchanged,
 no GUI/server restart; Refresh loads. Evidence: Saved/BodyflipLab/StartYaw/.
 
-## Landing heading and continuity - October 30 (current, local)
+## Landing heading and continuity - October 30 (approved checkpoint)
 
 Landing root yaw now follows the pelvis horizontal facing. Both history poses
 and the full root command path are transformed into that heading for the
@@ -53,7 +483,7 @@ physical landing continuity, fixed heading, seeking and no thigh loop. Current
 backward recovery minimum forward COM speed4.05m/s, maximum right thigh
 1.20deg per240Hz tick.1126 earlier jump checks still pass. Fixtures contain the
 actual seeded NN responses; source scene state untouched. Evidence in
-Saved/BodyflipLab/LandingHeading/. Refresh loads; not pushed.
+Saved/BodyflipLab/LandingHeading/. Included in checkpoint67516390.
 
 The following describes the preceding continuity fix:
 
@@ -1060,7 +1490,7 @@ label and HTTP byte/no-store checks pass. Receipt:
 
 On: skip the recorded frame-zero/pre-Armed path and interpolate the current
 pose directly to Armed. Off: retain the previously approved complete recording.
-The Final Harness's native Armed lower bound and post-Armed clock are reused:
+Historical static-harness timing (superseded by live angular arming above):
 entry = max(Attack In, authored Armed/fps), then Armed->Hit->End at native speed.
 For both current kicks Armed is at0.30s; Hit L0.4333s/R0.40s. Out timing remains
 unchanged. Manual loop duration follows the shorter entry instead of adding an

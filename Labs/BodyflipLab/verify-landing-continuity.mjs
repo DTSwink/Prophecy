@@ -27,7 +27,15 @@ const time=seq.landings[0].time,a=seq.sample(time-1e-7).pose,b=seq.sample(time).
 for(let i=1;i<names.length;i++){check(R.length(R.sub(a.points[i],b.points[i]))<1e-5,'Physical landing position continuous '+names[i]);check(qa(a.q[i],b.q[i])<.01,'Physical landing rotation continuous '+names[i]);}
 const pelvis=names.indexOf('pelvis'),turn=R.qm(b.q[pelvis],R.qinv(reference.q[pelvis])),forward=R.rotate(turn,[0,0,1]),heading=R.qexp([0,Math.atan2(forward[0],forward[2]),0]);
 check(qa(b.q[0],heading)<1e-6,'Root heading equals landing pelvis heading');
+check(qa(R.qexp([0,seq.sample(time).capsule.yaw,0]),heading)<1e-6,'Explicit carrier heading equals actual landing heading');
+check(seq.sample(0).capsule.yaw===settings.startYaw*Math.PI/180,'Initial carrier heading comes from Start yaw');
 for(const r of rows.filter(r=>r.f/60>=time))check(qa(r.pose.q[0],heading)<1e-6,'Recovery retains landing heading '+r.f);
 if(process.argv.includes('--backward')){const last=seq.sample(3.8).pose,face=R.rotate(R.qm(last.q[pelvis],R.qinv(reference.q[pelvis])),[0,0,1]);check(face[2]<-.8,'Backward landing stays backward instead of snapping to RunF');}
 const saved=JSON.stringify(seq.sample(195/60));seq.sample(3.8);seq.sample(1);check(saved===JSON.stringify(seq.sample(195/60)),'Seek-stable recovery');check(requests===1,'One bounded seeded rollout');
+if(process.argv.includes('--backward')){
+ const recorded=F.decodeNN(fixture.result),replay=request=>t=>F.at(recorded,Math.max(0,t-request.time),parents);
+ const continued=F.sequence(run,jumps,{...settings,jumpEvents:[...settings.jumpEvents,{id:'heading-after-landing',time:3.5,jumpPercent:0,flip:0,twist:0,attack:'none',spinVersion:2}],trimOut:3.7},parents,reference,replay,null,{horizon:3.7});
+ const expected=seq.sample(3.5).capsule.yaw;
+ for(const t of [3.5,3.6,3.1,3.55,0,3.7]){const f=continued.sample(t);check(Math.abs(f.capsule.yaw-(t>=time?expected:settings.startYaw*Math.PI/180))<1e-12,'Next marker inherits the actual landing heading, including reverse seeks');}
+}
 console.log(JSON.stringify({passed:true,checks,maxRightDegreesPer240Hz:maxRight,minForwardCOMSpeed:minForward,maxSideCOMSpeed:maxSide,landingFrame:time*60}));

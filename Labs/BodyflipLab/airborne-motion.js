@@ -3,6 +3,7 @@
 (function(root){
 'use strict';
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,C=node?require('./core.js'):root.BodyflipCore,H=node?require('./attack-inertia.js'):root.BodyflipAttackInertia;
+const Entry=node?require('./attack-entry.js'):root.BodyflipAttackEntry;
 const {add,sub,mul,dot,length,unit,rotate,qm,qinv,qlog,qexp}=R,clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function center(bs,rig){const mass=rig.reduce((s,b)=>s+b.mass,0);return rig.reduce((p,b,i)=>add(p,mul(bs[i].center,b.mass/mass)),[0,0,0]);}
 function transform(pose,rotation,origin,destination){return {points:pose.points.map(p=>add(destination,rotate(rotation,sub(p,origin)))),q:pose.q.map(q=>unit(qm(rotation,q))),axes:pose.q.map(q=>R.toAxes(qm(rotation,q)))};}
@@ -31,11 +32,11 @@ function curve(values,f){
   const a=1-u;return a*values[i][axis]+u*values[i+1][axis]+((a*a*a-a)*d[i]+(u*u*u-u)*d[i+1])/6;
  });
 }
-function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=false}){
- // Final Harness: Armed is no earlier than its authored time; thereafter
- // source time advances at 1x. Direct mode replaces only the pre-Armed path.
+function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=false,timingPose=reference}){
+ // Direct mode times the current-to-Armed angular travel against GT.
+ // Post-Armed source time still advances at 1x.
  const sourceStart=directArmed?clip.meta.phases.armed:0;
- if(directArmed)lead=Math.max(lead,sourceStart/clip.meta.fps,1/60);
+
  const locals=clip.poses.map(p=>R.localize(p.points,p.q,parents)),rest=R.localize(reference.points,reference.q,parents),pelvis=names.indexOf('pelvis');
  const hinges=H.legHinges(names,reference),kneeCurves=[];
  // The exported clip contains shin twist (especially Kick R's chamber).
@@ -59,6 +60,15 @@ function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=f
   for(const {h,bends,restBend} of kneeCurves)q[h.knee]=qm(rest.q[h.knee],qexp(mul(h.kneeAxis,curve(bends,frame)[0]-restBend)));
   q[0]=rest.q[0];q[pelvis]=qm(qm(rest.q[pelvis],qinv(locals[0].q[pelvis])),q[pelvis]);
   return R.fk({p:rest.p,q},parents);
+ }
+ let arming=null;
+ if(directArmed){
+  const from=R.localize(timingPose.points,timingPose.q,parents),spine=names.indexOf('spine_01');
+  // Carrier facing is not an attack turn; retain the authored pelvis delta.
+  from.q[0]=rest.q[0];from.q[pelvis]=rest.q[pelvis];
+  let strike=names.indexOf(C.effector(clip.meta.name));while(parents[strike]!==pelvis)strike=parents[strike];
+  const indices=names.map((_,i)=>i).filter(i=>{if(i===pelvis)return true;for(let j=i;j>=0;j=parents[j])if(j===spine||j===strike)return true;return false;});
+  arming=Entry.plan({from,targetAt:f=>{const p=at(f);return R.localize(p.points,p.q,parents);},armed:sourceStart,fps:clip.meta.fps,indices,names,minimum:lead});lead=arming.duration;
  }
  const duration=(clip.poses.length-1)/clip.meta.fps,end=lead+duration-sourceStart/clip.meta.fps,stop=end+tail;
  const h=1e-4;
@@ -96,7 +106,7 @@ function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=f
  const exit=t=>{const x=clamp(t/tail,0,1),window=1-x*x*x*(10+x*(-15+6*x)),w=8/tail,decay=Math.exp(-w*t);return R.fk({p:rest.p,q:rest.q.map((q,i)=>{const a=errors[i],b=add(rates[i],mul(a,w)),c=mul(add(add(accelerations[i],mul(rates[i],2*w)),mul(a,w*w)),.5);return qm(qexp(mul(add(add(a,mul(b,t)),mul(c,t*t)),decay*window)),q);})},parents);};
  function sample(t){if(t<=0)return reference;if(t<lead)return entry(t);if(t<=end)return at(sourceStart+(t-lead)*clip.meta.fps);if(t<stop)return exit(t-end);return reference;}
  const strikeWeight=t=>{const x=clamp((t-end)/tail,0,1);return 1-x*x*x*(10+x*(-15+6*x));};
- return {sample,at,lead,end,stop,clip,hinges,strikeWeight,directArmed,sourceStart,armedTime:lead+(clip.meta.phases.armed-sourceStart)/clip.meta.fps,sourceFrame:t=>sourceStart+Math.max(0,t-lead)*clip.meta.fps};
+ return {sample,at,lead,end,stop,clip,hinges,arming,strikeWeight,directArmed,sourceStart,armedTime:lead+(clip.meta.phases.armed-sourceStart)/clip.meta.fps,sourceFrame:t=>sourceStart+Math.max(0,t-lead)*clip.meta.fps};
 }
 // Treat the authored heading as a prescribed body turn, independent of the
 // zero-spin balance solve for articulation. Sampling/unwrapping a scalar yaw

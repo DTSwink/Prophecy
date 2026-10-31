@@ -1,14 +1,14 @@
 {
   "directArmed": true,
-  "samples": 1182,
-  "maxViewerError": 5.1184521709554336e-14,
-  "maxEquivarianceError": 3.580361673049448e-15,
-  "maxCOMError": 8.882478188980493e-15,
-  "maxEndpointError": 1.1102230246251565e-16,
+  "samples": 2004,
+  "maxViewerError": 1.2132584061999907e-14,
+  "maxEquivarianceError": 4.741575244451873e-15,
+  "maxCOMError": 7.113281801311825e-15,
+  "maxEndpointError": 1.1443916996305594e-16,
   "kneeDegrees": [
-    3.2262054651301826,
-    146.45499643440093
+    3.0369497762710402,
+    146.45499643440087
   ],
-  "repeatedMs": 4.460800000000745,
-  "elapsedMs": 7687.2841
+  "repeatedMs": 7.112300000000687,
+  "elapsedMs": 11749.7292
 }

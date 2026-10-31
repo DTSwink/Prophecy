@@ -23,7 +23,7 @@ for(const name of ['KickL','KickR','sweepKick']){
  const start=.4,lead=.18,tail=.45,segment={sample:()=>({pose:reference}),airStart:start,jumpStart:start,abortTime:Infinity},e={attack:name,attackIn:lead,attackOut:tail};
  const timeline=A.create(e,segment,clips,names,parents,{...C.defaults,kickToArmed:directArmed},reference),viewer=K.preview({clip,names,parents,reference,directArmed}),moving=K.create({clip,names,parents,reference,base:t=>transform(reference,t),start,lead,tail,directArmed});
  if(directArmed){
-  const tr=viewer.track;assert.equal(tr.lead,Math.max(lead,meta.phases.armed/meta.fps));
+  const tr=viewer.track;assert.equal(tr.lead,Math.max(lead,tr.arming.seconds,1/60));
   assert.equal(tr.sourceStart,meta.phases.armed);
   assert(Math.abs(timeline.hitTime-timeline.armedTime-(meta.phases.hit-meta.phases.armed)/meta.fps)<1e-10,'Native Armed to Hit timing');
   assert(error(tr.sample(tr.lead),tr.at(meta.phases.armed))<1e-9,'Direct endpoint is the actual Armed pose');

@@ -33,6 +33,22 @@ function inspectConstraint(q){
  return {...d,ellipse,within:ellipse<=1+1e-9&&d.angle>=limits.twistMin-1e-9&&d.angle<=limits.twistMax+1e-9};
 }
 function create(reference,parent,hand,side='L'){
+ const profile=(typeof module!=='undefined'?require('./rig-profile.js'):root.BodyflipRigProfile)?.current();
+ if(profile){
+  const J=typeof module!=='undefined'?require('./joint-rig.js'):root.BodyflipJointRig,joints=J.create(profile.names,profile.parents,reference),c=joints.joints.find(c=>c.i===hand);
+  if(!c||c.hinge)throw Error('Native palm needs a swing/twist wrist');
+  const frame=q=>qm(q,c.parentBasis),toConstraint=(p,q)=>qm(qm(qinv(frame(p)),q),c.basis),fromConstraint=(p,q)=>qm(qm(frame(p),q),qinv(c.basis));
+  const clamp=(p,q)=>qm(p,joints.clampLocal(qm(qinv(p),q),c)),clampDelta=q=>toConstraint([0,0,0,1],clamp([0,0,0,1],fromConstraint([0,0,0,1],q)));
+  function aim(p,q,n,weight=1){
+   const initial=joints.coordinates(qm(qinv(p),q),c),axis=rotate(c.basis,[0,0,1]),k=Math.abs(axis[1])>Math.abs(axis[2])?0:1;
+   const cap=Math.sin((k===0?c.limits.plane:c.limits.normal)/2),other=initial[1-k],otherCap=Math.sin((k===0?c.limits.normal:c.limits.plane)/2),bound=cap*Math.sqrt(Math.max(0,1-(otherCap?other/otherCap:0)**2));
+   const sweep=joints.swingSweep(initial,c,k),palm=[0,side==='R'?-1:1,0],opposite=mul(n,-1),at=x=>qm(p,sweep(x)),score=x=>dot(rotate(at(x),palm),opposite);
+   let lo=-bound,hi=bound,best=initial[k],value=score(best);const offer=x=>{const s=score(x);if(s>value){value=s;best=x;}};offer(lo);offer(hi);
+   for(let i=0;i<28;i++){const a=lo+(hi-lo)/3,b=hi-(hi-lo)/3;if(score(a)<score(b))lo=a;else hi=b;}offer((lo+hi)/2);
+   return at(initial[k]+(best-initial[k])*clip(weight,0,1));
+  }
+  return {native:true,parent,hand,side,limits:c.limits,toConstraint,fromConstraint,clamp,aim,clampConstraint:clampDelta,inspect:(p,q)=>({within:length(R.qlog(qm(clamp(p,q),qinv(q))))<1e-8})};
+ }
  const rest=qm(qinv(reference.q[parent]),reference.q[hand]),constraintToParent=qm(rest,basis),palmSign=side==='R'?-1:1;
  const frame=parentQ=>qm(parentQ,constraintToParent);
  const toConstraint=(parentQ,handQ)=>normalized(qm(qinv(frame(parentQ)),qm(handQ,basis)));

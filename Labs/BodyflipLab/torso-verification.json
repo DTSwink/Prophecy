@@ -3,7 +3,7 @@
   "maxDimensionError": 1.2334124100763592e-8,
   "maxOffsetError": 1.3044696396519867e-9,
   "maxRotationError": 6.129127101500416e-8,
-  "simAnchorError": 0.0003371366897600805,
+  "simAnchorError": 0.00009201107135900864,
   "checks": [
     "One separate collider for each spine",
     "Attack starts at spine_01 and excludes pelvis",
@@ -33,7 +33,7 @@
     "spine_01 reaches the authored attack rotation",
     "spine_01 attack is visibly moving",
     "Attack keeps pelvis fixed",
-    "Kinematic body preserves exact attack pose",
+    "Kinematic body uses the same constrained attack target",
     "Simulated torso keeps the five constrained bodies finite"
   ]
 }

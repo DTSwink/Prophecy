@@ -1,0 +1,12 @@
+import fs from 'node:fs';import {spawnSync} from 'node:child_process';import assert from 'node:assert/strict';
+const dir='Saved/Diagnostics/BodyflipPort20261030',file=dir+'/memory-budget-probe.js';
+fs.writeFileSync(file,`globalThis.__bodyflipAttack=id=>readFile('Content/BodyflipLab/Attacks/'+id+'.json');
+globalThis.__bodyflipNN=json=>{const r=JSON.parse(json),last=r.seeds.at(-1),origin=last.points[0];return JSON.stringify({names:r.names.slice(1),fps:30,duration:(r.frames-1)/30,roots:r.roots.slice(0,r.frames),poses:Array.from({length:r.frames},(_,i)=>({points:last.points.slice(1).map(p=>p.map((v,k)=>v-origin[k]+r.roots[i][k])),axes:last.axes.slice(1)}))});};
+const B=BodyflipNative.raw;B({op:'assets',value:JSON.parse(readFile('Content/BodyflipLab/Assets.json'))});
+B({op:'start',horizon:1/60,settings:{mode:'idle',trimOut:3,ramps:false,aim:false,spinLag:.6,platforms:[{id:'floor',position:[0,-.2,0],size:[20,.4,20],rotation:[0,0,0,1]}],jumpEvents:[{id:'push',time:.1,jumpPercent:35,flip:120,twist:30,spinVersion:2,attack:'KickL'}]}});
+B({op:'prepare',time:3});for(let i=0;i<=180;i++)B({op:'sample',time:i/60});print(JSON.stringify({completed:true,heap:Number(heap())}));`);
+const probe=(watermark,limit)=>spawnSync(dir+'/chakra-build/Release/bodyflip_chakra_probe.exe',['Content/BodyflipLab/Runtime.js',file],{encoding:'utf8',timeout:120000,env:{...process.env,BODYFLIP_PROBE_WATERMARK_MB:String(watermark),BODYFLIP_PROBE_LIMIT_MB:String(limit)}});
+const normal=probe(384,512);assert.equal(normal.status,0,normal.stderr);const completed=JSON.parse(normal.stdout.trim());assert(completed.completed&&completed.heap<384*1024*1024);
+const bounded=probe(96,256);assert.notEqual(bounded.status,0);assert(bounded.stderr.includes('handled 30003')&&bounded.stderr.includes('disposed cleanly'),bounded.stderr);assert(!bounded.stdout.includes('completed'));
+const result={completedFrames:181,heapBytes:completed.heap,interruptMiB:384,hardLimitMiB:512,forced96MiBInterruption:'JSRT script terminated; runtime disposed cleanly'};
+fs.writeFileSync(dir+'/memory-budget.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));

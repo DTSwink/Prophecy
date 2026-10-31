@@ -35,6 +35,7 @@ function clearance(p,ankle,toe,normal=[0,1,0],side){
  return -Math.min(...footPoints(p,ankle,toe,side).map(v=>dot(v,normal)));
 }
 function footPoints(p,ankle,toe,side){
+ const profile=(typeof module!=='undefined'?require('./rig-profile.js'):root.BodyflipRigProfile);if(profile?.current())return profile.points(p,ankle,'foot_'+side.toLowerCase());
  const f=footFrame(p,ankle,toe,side),delta=sub(p.points[toe],p.points[ankle]);
  // Query the actual box including its top when airborne/upside down. Capture
  // below aligns an inverted foot onto its sole before beginning the push.
@@ -118,8 +119,11 @@ function ideal(p,legs,surface,rootSpeed,settings){
   return {requested,raw,foot:l.side,distance:length(sub(p.points[l.foot],hit.target)),...hit,shift,appliedShift:sub(hit.ground,base.ground)};
  });
 }
-function solve(p,l,target,parents,ratio=1,rotation=l){
- const local=R.localize(p.points,p.q,parents),hip=p.points[l.hip],a=l.upper,b=l.lower;
+function solve(p,l,target,parents,ratio=1,rotation=l,_time=null,_progress=null,preparedLocal=null){
+ // Repeated contact trials may share one unchanged base pose. Copy the two
+ // arrays before replacing IK entries; their source vectors are read-only.
+ // The approach adapter already passes time/progress in slots seven/eight.
+ const local=preparedLocal?{q:preparedLocal.q.slice(),p:preparedLocal.p.slice()}:R.localize(p.points,p.q,parents),hip=p.points[l.hip],a=l.upper,b=l.lower;
  local.p[l.knee]=l.kneeLocal;local.p[l.foot]=l.ankleLocal;
  // Use the same reach boundary as planning. Subtracting a second epsilon here
  // locked the knee just before release, so its displayed and seeded speeds differed.
@@ -135,7 +139,30 @@ function solve(p,l,target,parents,ratio=1,rotation=l){
  // different twists on the thigh and calf, producing a broken-looking knee.
  const frame=(direction,n)=>R.fromAxes([direction,n,cross(direction,n)]);
  const align=(before,after,q)=>qm(qm(frame(unit(after),normal),qinv(frame(before,l.normal))),q);
- const hq=align(l.upperAxis,sub(knee,hip),l.hipQ),kq=align(l.lowerAxis,sub(foot,knee),l.kneeQ);
+ let hq=align(l.upperAxis,sub(knee,hip),l.hipQ),kq=align(l.lowerAxis,sub(foot,knee),l.kneeQ);
+ const profile=(typeof module!=='undefined'?require('./rig-profile.js'):root.BodyflipRigProfile)?.current(),joint=profile?.jointByIndex.get(l.knee),endJoint=profile?.jointByIndex.get(l.foot);
+ if(joint&&endJoint&&joint.angles[0]===0&&joint.angles[1]===0){
+  // The native hinge axis need not be perpendicular to the imported bone
+  // offsets. Solve its actual connector geometry, rather than making a planar
+  // elbow first and breaking the planted hand when the native clamp runs.
+  const u=joint.parentFrame.p,v=sub(endJoint.parentFrame.p,joint.childFrame.p),hingeAxis=rotate(joint.parentFrame.q,[0,0,1]),bind=qm(joint.parentFrame.q,qinv(joint.childFrame.q)),w=rotate(bind,v);
+  const anchor=add(target,rotate(rotation.footQ,endJoint.childFrame.p)),wanted=sub(anchor,hip),aim=length(wanted)>1e-8?unit(wanted):axis;
+  const parallel=mul(hingeAxis,dot(hingeAxis,w)),radial=sub(w,parallel),ca=dot(u,radial),sa=dot(u,cross(hingeAxis,w)),radius=Math.hypot(ca,sa),fixed=dot(u,u)+dot(w,w)+2*dot(u,parallel);
+  const requested=clamp(length(wanted),Math.abs(length(u)-length(v))+1e-6,(length(u)+length(v))*ratio),limit=joint.angles[2],relative=qm(local.q[l.knee],qinv(bind)),sign=relative[3]<0?-1:1,current=2*Math.atan2(dot(relative.slice(0,3),hingeAxis)*sign,relative[3]*sign);
+  const phase=Math.atan2(sa,ca),offset=Math.acos(clamp((requested*requested-fixed)/(2*radius||1),-1,1)),choices=[-limit,limit];
+  for(const direction of [-1,1])for(let turn=-1;turn<=1;turn++)choices.push(clamp(phase+direction*offset+turn*2*Math.PI,-limit,limit));
+  const error=t=>Math.abs(Math.sqrt(Math.max(0,fixed+2*(ca*Math.cos(t)+sa*Math.sin(t))))-requested);
+  choices.sort((a,b)=>Math.abs(error(a)-error(b))>1e-10?error(a)-error(b):Math.abs(a-current)-Math.abs(b-current));
+  const theta=choices[0],relativeQ=qm(R.qexp(mul(hingeAxis,theta)),bind),lower=rotate(relativeQ,v),reach=add(u,lower);
+  // A straight native elbow has no geometric bend-plane normal. Use its
+  // physical hinge axis, with the captured limb's bend sign, so reaching full
+  // extension cannot flip the shoulder by 180 degrees on numerical noise.
+  const capturedLower=rotate(qm(qinv(l.hipQ),l.kneeQ),v),bendSign=dot(cross(capturedLower,u),hingeAxis)<0?-1:1,geometricNormal=cross(lower,u);
+  const nativeNormal=length(geometricNormal)>1e-4*length(lower)*length(u)?unit(geometricNormal):mul(unit(sub(hingeAxis,mul(unit(reach),dot(hingeAxis,unit(reach))))),bendSign);
+  hq=qm(frame(aim,normal),qinv(frame(unit(reach),nativeNormal)));kq=qm(hq,relativeQ);
+  local.p[l.knee]=sub(joint.parentFrame.p,rotate(relativeQ,joint.childFrame.p));
+  local.p[l.foot]=sub(endJoint.parentFrame.p,rotate(qm(qinv(kq),rotation.footQ),endJoint.childFrame.p));
+ }
  local.q[l.hip]=qm(qinv(p.q[parents[l.hip]]),hq);local.q[l.knee]=qm(qinv(hq),kq);
  local.q[l.foot]=qm(qinv(kq),rotation.footQ);
  if(l.toe>=0){local.q[l.toe]=qm(qinv(rotation.footQ),rotation.toeQ);local.p[l.toe]=l.toeLocal;}

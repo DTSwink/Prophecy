@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.20)
+project(BodyflipRuntimeProbe LANGUAGES CXX)
+add_executable(bodyflip_chakra_probe chakra-probe.cpp)
+target_compile_features(bodyflip_chakra_probe PRIVATE cxx_std_17)
+target_link_options(bodyflip_chakra_probe PRIVATE /STACK:8388608)

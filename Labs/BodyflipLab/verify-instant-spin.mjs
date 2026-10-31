@@ -45,7 +45,7 @@ for(const t of [.04,.08,.15,.4]){
  check('Inertia uses the recoil pose '+t,Math.abs(f.spin.flipScale-neutral/actual)<1e-9);
 }
 check('New settings sanitize and persist',C.sanitize({spinLag:2}).spinLag===1&&C.sanitizeJump(C.sanitizeJump({instantSpin:true})).instantSpin);
-check('Old settings retain their behavior',C.sanitizeJump({}).instantSpin===false&&C.sanitize({}).spinLag===0);
+check('Secondary motion defaults on without enabling instant spin',C.sanitizeJump({}).instantSpin===false&&C.sanitize({}).spinLag===.6&&C.sanitize({spinLag:0}).spinLag===0);
 const mixed=G.sequence({names,poses:[reference]},jumps,settings,parents,[{...first,flip:120,twist:0},{...first,id:'smooth',time:1,flip:240,twist:0,turnIn:1,instantSpin:false}],null,reference);
 check('Instant first marker reaches its speed',mixed.sample(.01).spin.target.flip===120);
 check('Next unchecked marker ramps independently',mixed.sample(1).spin.target.flip===120&&mixed.sample(1.2).spin.target.flip>120&&mixed.sample(1.2).spin.target.flip<240);

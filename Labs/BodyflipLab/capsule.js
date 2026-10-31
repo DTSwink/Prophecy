@@ -63,7 +63,7 @@ const copyPose=pose=>({...pose,points:pose.points.map(v=>Array.from(v)),q:pose.q
 // Per-hand planner payloads contain their own pose and contact arrays. Keep
 // those private too, while retaining the shared rig/surface-query objects.
 const copyHand=hand=>Object.fromEntries(Object.entries(hand).map(([key,value])=>[key,key==='pose'&&value?copyPose(value):key==='rotation'&&value?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,Array.isArray(v)?v.slice():v])):Array.isArray(value)?value.slice():value]));
-function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',correctPose=p=>p,resume=null,horizon=12,decorate=null,exactSource=false,cacheResolvedPose=false,body=null,landingBlend=0,parents=null,bodyDuringSupport=false,supportAirborne=false,forceSource=false,excludeBody=()=>[],breakTimes=[],headingAt=()=>[0,0,0,1]}){
+function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',correctPose=p=>p,resume=null,horizon=12,decorate=null,exactSource=false,cacheResolvedPose=false,body=null,landingBlend=0,parents=null,bodyDuringSupport=false,supportAirborne=false,forceSource=false,excludeBody=()=>[],breakTimes=[],initialYaw=0,headingAt=()=>[0,0,0,1],rootMotion=null}){
  // Retain the source curve between collision ticks. Interpolating its absolute
  // root instead can move a pinned wrist just before its release handoff.
  breakTimes=breakTimes.filter(t=>Number.isFinite(t)&&t>start).sort((a,b)=>a-b);
@@ -92,7 +92,7 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
    const merge=breakTimes.length?dt/2:0,tick=start+(breakTimes.length?Math.floor((prev.t-start+merge)/dt+1e-8)+1:frames.length)*dt;
    const t=breakTimes.find(v=>v>prev.t+1e-9&&v<=tick+merge)??tick,h=t-prev.t;let raw,delta,vy=prev.vy;
    if(prev.mode==='loco'){
-    const horizontal=[0,0,speed*h];
+    const horizontal=rootMotion&&!prev.landing?sub(rootMotion(t),rootMotion(prev.t)):[0,0,speed*h];horizontal[1]=0;
     if(prev.normal)horizontal[1]=-dot(prev.normal,horizontal)/prev.normal[1];
     vy=Math.max(-cap,(prev.normal?0:vy)-9.81*h);delta=add(horizontal,[0,vy*h,0]);
    }else {raw=sampleSource(t);delta=add(sub(raw.root,sampleSource(prev.t).root),mul(prev.bias,h));}
@@ -104,6 +104,10 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
    }
    let resolved=posed?body.move(previousPose,translatedPose(raw,proposed),surfaces,excluded):move(prev.root,delta,surfaces);
    if(posed&&body.resolve)for(let pass=0;pass<4;pass++){const contactPose=translatedPose(raw,resolved.root),fix=body.resolve(contactPose,surfaces,excluded),shift=sub(fix.root,contactPose.points[0]);if(length(shift)<skin)break;resolved={root:add(resolved.root,shift),contacts:[...resolved.contacts,...fix.contacts]};}
+   // Once a push has planted, another hand/foot touching down is additional
+   // support, not a new fall landing that cancels the pending push. Keep the
+   // collision response and retain ownership until that contact lifts clear.
+   if(posed&&raw.supportState==='PIN')for(const c of resolved.contacts)if(top(c)&&/^(foot|ball|hand)_[lr]$/.test(c.bone||''))supportContacts.set(contactKey(c),c);
    const up=resolved.contacts.find(c=>top(c)&&!supportContacts.has(contactKey(c))),next={...prev,t,root:resolved.root,normal:null,surfaceId:up?.surface.id||null,vy,bias:prev.bias.slice()};
    if(posed&&body.contacts&&supportContacts.size){
     const names=[...new Set([...supportContacts.values()].map(c=>c.bone))];
@@ -180,7 +184,9 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
    // Run the unchanged policy in the landing pelvis's horizontal frame. Transform
    // the complete history and root commands together, then return world poses.
    const localPrediction=resume({time:landing.time,frames:count,seeds:[previous,current].map(p=>transform(p,inverse,origin)),roots:roots.map(p=>add(origin,R.rotate(inverse,sub(p,origin))))});
-   const predicted=time=>transform(localPrediction(time),heading,origin);
+   // Retain the pushing limb's release clock in the incoming trajectory. Do
+   // this before the handoff blend so its first pose/velocity stays continuous.
+   const predicted=time=>correctPose(transform(localPrediction(time),heading,origin),{returnedToLocomotion:true,time});
    // Follow the actual seeded rollout. Back-extrapolating a future policy pose
    // across the whole blend invents rotations/translations the NN never made.
    if(landingBlend>0&&parents){
@@ -212,7 +218,12 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
    if(length(shift)>0)pose={...pose,points:pose.points.map((p,i)=>i===0?p:add(p,shift))};
   }
   const handInertia=frame.handInertia?{...frame.handInertia,com:add(frame.handInertia.com,offset),velocity:add(frame.handInertia.velocity,s.bias)}:null;
-  return {...frame,...(cacheResolvedPose&&frame.hands?{hands:frame.hands.map(copyHand)}:{}),...(handInertia?{handInertia}:{}),pose,root:s.root,velocity:s.velocity,vy:s.velocity[1],capsule:{radius,halfHeight,poseContact:s.mode==='source'&&!!useBody(raw),grounded:!!s.normal,landed:s.landed,surfaceId:s.surfaceId,normal:s.normal,landingTime:s.landing?.time??null,landingBone:s.landing?.bone||null},returnedToLocomotion:s.mode==='loco'&&s.landed};
+  const physical=frame.physical?{...frame.physical,com:add(frame.physical.com,offset),velocity:add(frame.physical.velocity,s.bias)}:null;
+  if(physical&&['RISE','FALL','FALL LOOP'].includes(frame.phase))frame={...frame,phase:physical.velocity[1]>0?'RISE':frame.phase==='RISE'?'FALL':frame.phase};
+  // Carrier yaw is independent of the authored FBX root and airborne spin.
+  // Only an actual landing adopts the heading used to seed locomotion.
+  const forward=s.landing?.heading?R.rotate(s.landing.heading,[0,0,1]):null,yaw=forward?Math.atan2(forward[0],forward[2]):initialYaw;
+  return {...frame,...(cacheResolvedPose&&frame.hands?{hands:frame.hands.map(copyHand)}:{}),...(handInertia?{handInertia}:{}),...(physical?{physical}:{}),pose,root:s.root,velocity:s.velocity,vy:s.velocity[1],capsule:{radius,halfHeight,yaw,poseContact:s.mode==='source'&&!!useBody(raw),grounded:!!s.normal,landed:s.landed,surfaceId:s.surfaceId,normal:s.normal,landingTime:s.landing?.time??null,landingBone:s.landing?.bone||null},returnedToLocomotion:s.mode==='loco'&&s.landed};
  }
  const adapter=decorate?.(sampleBase,{start,surfaces});
  function sample(time,rawOverride){return adapter?adapter.sample(time,rawOverride):sampleBase(time,rawOverride);}

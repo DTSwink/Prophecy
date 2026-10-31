@@ -4,7 +4,7 @@ class JumpTrack {
  constructor(api){
   this.api=api;this.selected=null;this.open=false;this.drag=null;this.timer=null;this.pending=null;this.serial=0;
   const el=id=>document.getElementById(id);this.el=el;
-  this.fields={jumpInstantSpin:'instantSpin',jumpPushWith:'pushWith',jumpPercent:'jumpPercent',jumpAttack:'attack',jumpAttackDelay:'attackDelay',jumpAttackIn:'attackIn',jumpAttackOut:'attackOut',jumpFlip:'flip',jumpTwist:'twist',jumpDelay:'turnDelay',jumpDuration:'turnDuration',jumpTurnIn:'turnIn',jumpTurnOut:'turnOut',jumpPoseIn:'poseIn',jumpPoseHold:'poseHold',jumpPoseOut:'poseOut',jumpAxis:'turnAxis',jumpPose:'pose'};
+  this.fields={jumpThrowCharge:'throwCharge',jumpThrowSpeed:'throwSpeed',jumpInstantSpin:'instantSpin',jumpPushWith:'pushWith',jumpPercent:'jumpPercent',jumpAttack:'attack',jumpAttackDelay:'attackDelay',jumpAttackIn:'attackIn',jumpAttackOut:'attackOut',jumpFlip:'flip',jumpTwist:'twist',jumpDelay:'turnDelay',jumpDuration:'turnDuration',jumpTurnIn:'turnIn',jumpTurnOut:'turnOut',jumpPoseIn:'poseIn',jumpPoseHold:'poseHold',jumpPoseOut:'poseOut',jumpAxis:'turnAxis',jumpPose:'pose'};
   for(const [id,key] of Object.entries(this.fields))el(id).onchange=()=>{
    const value=el(id).value;
    if(key==='instantSpin')this.change({instantSpin:el(id).checked});
@@ -57,6 +57,7 @@ class JumpTrack {
    if(key==='instantSpin')el(id).checked=motion.instantSpin;
    else if(document.activeElement!==el(id))el(id).value=motion[key]===null?'':String(motion[key]);
   }
+  el('jumpThrowFields').hidden=!BodyflipThrowAttack.accepts(motion.attack);el('jumpThrowCharge').disabled=motion.attack!=='small-throw';
   el('jumpPoseTiming').setAttribute('aria-disabled',String(motion.pose==='none'));
   el('jumpOptionsLabel').textContent=selected?'J'+(index+1)+' · Flip / pose':'Flip / pose · Select a jump marker';
   el('jumpLabel').textContent=selected?'J'+(index+1):'—';

@@ -3,8 +3,10 @@
 'use strict';
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,T=node?require('./torso.js'):root.BodyflipTorso,L=node?require('./leg-response.js'):root.BodyflipLegResponse;
 const {add,sub,mul,dot,cross,length,unit,rotate,qm,qinv,qexp,qlog}=R;
+const J=node?require('./joint-rig.js'):root.BodyflipJointRig,M=node?require('./mass.js'):root.BodyflipMass;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function model(names,parents,reference){
+ const profile=(node?require('./rig-profile.js'):root.BodyflipRigProfile)?.current();if(profile)return profile.bodies;
  const torso=new Map(T.create(names,parents,reference).map(s=>[s.bone,s]));
  return names.slice(1).map((name,j)=>{
   const i=j+1,mass=name==='pelvis'?8:name.startsWith('thigh')?5:name.startsWith('spine')?2:1;
@@ -145,7 +147,7 @@ function createYaw({source,base,target,start,end,names,parents,reference,choreog
   const desired=prev.legs.map((angle,k)=>{
    const hip=names.indexOf('thigh_'+['l','r'][k]),origin=raw.points[hip];let inertia=0;
    for(let j=0;j<rig.length;j++){let bone=rig[j].i;while(bone>0&&bone!==hip)bone=parents[bone];if(bone!==hip)continue;
-    const arm=sub(rawBodies[j].center,origin);inertia+=rig[j].mass*Math.max(0,dot(arm,arm)-dot(arm,axis)**2)+(rig[j].transverse||.001);
+    const arm=sub(rawBodies[j].center,origin),b=rig[j],spin=b.native?R.toAxes(qm(raw.q[b.i],b.rotation)).reduce((v,a,k)=>v+dot(a,axis)**2*b.inertia[k],0):(b.transverse||.001);inertia+=b.mass*Math.max(0,dot(arm,arm)-dot(arm,axis)**2)+spin;
    }
    const frequency=clamp(24*Math.sqrt(.09/Math.max(.015,inertia)),18,32),acceleration=frequency*frequency*(prev.pelvis-angle)-2*frequency*prev.rates[k];
    return angle+(prev.rates[k]+acceleration*dt)*dt;
@@ -202,15 +204,27 @@ function applySpatial(pose,names,parents,state){
  for(let k=0;k<2;k++){const hip=names.indexOf('thigh_'+['l','r'][k]);local.q[hip]=qm(qm(qinv(counter),qexp(state.legs[k])),local.q[hip]);}
  return R.fk(local,parents);
 }
+// Plan against the same anatomical pose used for display, preserving its COM.
+// In particular, a discarded spine rotation must not drive a pelvis response.
+function createProjection(names,parents,reference){
+ const joints=J.create(names,parents,reference),massRig=M.model(names,parents,reference),cache=new WeakMap();
+ return pose=>{
+  if(cache.has(pose))return cache.get(pose);
+  const center=M.center(pose,massRig),p=joints.project(pose),shift=sub(center,M.center(p,massRig));
+  const result={...pose,...p,points:p.points.map((v,i)=>i?add(v,shift):pose.points[0])};
+  cache.set(pose,result);cache.set(result,result);return result;
+ };
+}
 function createSpatial({source,base,target,start,end,names,parents,reference,choreography=null,amount=1,anticipation=.06,recoveryStart=Infinity,recoveryEnd=end}){
  if(typeof target!=='function')throw Error('Attack compensation requires an opposite-angle target');
  const rig=model(names,parents,reference),hinges=legHinges(names,reference),dt=1/60,stop=end+.8,count=Math.ceil((stop-start)/dt),p=names.indexOf('pelvis'),spine=names.indexOf('spine_01'),hips=hinges.map(h=>h.hip);
- const fixedBones=names.map((_,i)=>{for(let j=i;j>=0;j=parents[j])if(j===spine)return true;return false;});
+ const legal=createProjection(names,parents,reference);
+ const rawSource=source,rawBase=base;source=t=>legal(rawSource(t));base=t=>legal(rawBase(t));
  const zero=()=>[0,0,0],plans=[{pelvis:zero(),pelvisRate:zero(),legs:[zero(),zero()],rates:[zero(),zero()],x:Array(9).fill(0),xrates:Array(9).fill(0)}],initial=source(start),rest=base(start);
- let history={bodies:bodies(initial,rig),target:bodies(target(start,initial,rest),rig)},jacobian=null;
- const diagnostics={axes:3,targetMode:'opposite-angle',ticks:0,maxPlannedResidual:0,maxLag:0,maxStep:0,maxPlannedAcceleration:0,amount:clamp(amount,0,1)};
+ let history={bodies:bodies(initial,rig),target:bodies(legal(target(start,initial,rest)),rig)},jacobian=null;
+ const diagnostics={axes:3,targetMode:'opposite-angle',jointConstrained:true,ticks:0,maxPlannedResidual:0,maxLag:0,maxStep:0,maxPlannedAcceleration:0,amount:clamp(amount,0,1)};
  function advance(){
-  const n=plans.length,t=start+n*dt,prev=plans[n-1],plain=source(t),raw=choreography?choreography.sample(t,plain):plain,baseline=base(t),targetBodies=bodies(target(t,plain,baseline),rig),rawLocal=R.localize(raw.points,raw.q,parents),measure=momentumFrom(history.bodies,rig,dt,bodies(raw,rig),fixedBones);
+  const n=plans.length,t=start+n*dt,prev=plans[n-1],plain=source(t),raw=legal(choreography?choreography.sample(t,plain):plain),baseline=base(t),targetBodies=bodies(legal(target(t,plain,baseline)),rig),rawLocal=R.localize(raw.points,raw.q,parents),measure=momentumFrom(history.bodies,rig,dt);
   // Preserve the original Amount meaning: the target pose counter-rotates
   // the pelvis by that fraction of the attack-added spine rotation. Match its
   // three-axis momentum while distributing motion over the soft lower body;
@@ -226,7 +240,7 @@ function createSpatial({source,base,target,start,end,names,parents,reference,cho
    q[p]=qm(rawLocal.q[p],counter);q[spine]=qm(inverse,rawLocal.q[spine]);
    for(let k=0;k<2;k++)q[hips[k]]=qm(qm(inverse,qexp(legs[k])),rawLocal.q[hips[k]]);
    const points=[],world=[];for(let i=0;i<parents.length;i++){const parent=parents[i];world[i]=parent<0?q[i]:unit(qm(world[parent],q[i]));points[i]=parent<0?rawLocal.p[i]:add(points[parent],rotate(world[parent],rawLocal.p[i]));}
-   const bs=bodies({points,q:world},rig);return {x,pelvis,legs,bs,h:measure(bs)};
+   const bs=bodies(legal({points,q:world}),rig);return {x,pelvis,legs,bs,h:measure(bs)};
   }
   // Reuse the local Jacobian for nearby ticks; refresh if iteration needs it.
   let next=candidate(desired),columns=jacobian?.columns,inverseMass=jacobian?.inverseMass,gram=jacobian?.gram;
@@ -253,13 +267,13 @@ function createSpatial({source,base,target,start,end,names,parents,reference,cho
   const a=plans[i],b=plans[Math.min(count,i+1)],mix=(v,w)=>add(v,mul(sub(w,v),u));
   return {pelvis:mix(a.pelvis,b.pelvis),legs:a.legs.map((v,k)=>mix(v,b.legs[k]))};
  }
- function samplePlanned(t,pose=source(t)){if(t<=start)return pose;return applySpatial(choreography?choreography.sample(t,pose):pose,names,parents,stateAt(t));}
+ function samplePlanned(t,pose=source(t)){if(t<=start)return pose;return legal(applySpatial(legal(choreography?choreography.sample(t,legal(pose)):legal(pose)),names,parents,stateAt(t)));}
  // The clip is known in advance. Lead the damped response by 60 ms so its
  // opposing swing occurs during impact rather than after it; state/velocity
  // still start continuously at the marker. This is not an instantaneous solve.
  const legResponse=L.create({source:samplePlanned,base,start,stop:end+1,names,parents,reference,hinges,anticipation,sampleRate:60,recoveryStart,recoveryEnd});
- return {sample:(t,pose)=>legResponse.sample(t,pose===undefined?source(t):pose),samplePlanned,stateAt,diagnostics,states:plans,plannedStates:plans,rig,stop:legResponse.stop,choreography,legResponse};
+ return {sample:(t,pose)=>legal(legResponse.sample(t,pose===undefined?source(t):legal(pose))),samplePlanned,stateAt,diagnostics,states:plans,plannedStates:plans,rig,stop:legResponse.stop,choreography,legResponse};
 }
 function create(options){return options.wholeLeg===false?createYaw(options):createSpatial(options);}
-const api={model,bodies,momentum,legHinges,humanAngles,referenceMotion,apply,applySpatial,respond,create};if(node)module.exports=api;else root.BodyflipAttackInertia=api;
+const api={createProjection,model,bodies,momentum,legHinges,humanAngles,referenceMotion,apply,applySpatial,respond,create};if(node)module.exports=api;else root.BodyflipAttackInertia=api;
 })(globalThis);

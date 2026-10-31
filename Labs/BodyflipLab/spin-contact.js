@@ -53,7 +53,10 @@ function create(segment,settings,names,parents,reference){
   const release=releases.get(l),duration=followDuration(l),age=time-release,key=(releaseSource?'carrier,':'foot,')+l.side;
   let target=followTargets.get(key);
   if(!target){
-   const source=t=>{const f=pure(t),p=releaseSource?releaseSource(t).pose:apply(f.pose,t,f);return targets.project(p,segment.surfaces||[segment.surface]);};
+   // Capture the displayed, constrained leg. The release sampler resolves
+   // this projection in world space before any source-coordinate rebase.
+   const project=p=>targets.project(p,segment.surfaces||[segment.surface]);
+   const source=t=>{if(releaseSource)return releaseSource(t,project).pose;const f=pure(t);return project(apply(f.pose,t,f));};
    const at=release-1e-7,last=source(at),previous=source(at-C.motionStep),limb=Feet.leg(last,names,l.side);
    const bend=p=>Math.acos(Math.max(-1,Math.min(1,(length(sub(p.points[l.foot],p.points[l.hip]))**2-limb.upper**2-limb.lower**2)/(2*limb.upper*limb.lower))));
    target={foot:last.points[l.foot].slice(),limb,rotation:{footQ:last.q[l.foot],toeQ:last.q[l.toe]},axis:R.unit(sub(last.points[l.foot],last.points[l.hip])),pole:limb.pole,bend:bend(last),bendSpeed:(bend(last)-bend(previous))/C.motionStep};
@@ -117,14 +120,14 @@ function create(segment,settings,names,parents,reference){
   }
   return out;
  }
- function apply(pose,time,frame,spinState=null,releaseSource=null){
+ function apply(pose,time,frame,spinState=null,releaseSource=null,animationOverride=null){
   plan();
   if(!segment.spin.active&&!limbs.some(l=>followDuration(l)>0&&time>=releases.get(l)&&time<releases.get(l)+followDuration(l)+returnBlend))return pose;
   if(limbs.every(l=>time>=releases.get(l)+followDuration(l)+returnBlend))return pose;
   let out=pose;
   // Carrier correction can call this on an already followed pose. Always
   // blend against the untouched animation, never against the previous blend.
-  const animation=pure(time).pose;
+  const animation=animationOverride||pure(time).pose;
   const offset=sub(pose.points[0],pure(time).pose.points[0]),shifted=t=>{const f=pure(t);return {...f,root:add(f.root,offset),pose:{...f.pose,points:f.pose.points.map(p=>add(p,offset))}};};
   const active=limbs.filter(l=>time<releases.get(l)-1e-9);
   if(['APPROACH','PIN'].includes(frame.supportState))out=fit(out,time,frame,active);
@@ -154,7 +157,7 @@ function create(segment,settings,names,parents,reference){
   }
   const aims=limbs.filter(l=>hand&&followDuration(l)>0&&time>=releases.get(l)&&time<releases.get(l)+followDuration(l)+returnBlend).map(l=>{
    const age=time-releases.get(l),u=Math.max(0,Math.min(1,(age-followDuration(l))/Math.max(1/240,returnBlend))),v=Math.max(0,Math.min(1,age*30)),ease=x=>x*x*x*(10+x*(-15+6*x));
-   return {shoulder:l.hip,wrist:l.foot,target:followTargets.get(l).foot,returning:u>0,weight:ease(v)*(1-ease(u))};
+   return {shoulder:l.hip,wrist:l.foot,target:followTargets.get(releaseSource?'carrier,'+l.side:l).foot,returning:u>0,weight:ease(v)*(1-ease(u))};
   });
   return aims.length?{...out,handFollow:aims}:out;
  }

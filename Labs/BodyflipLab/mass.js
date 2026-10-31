@@ -2,9 +2,10 @@
 (function(root){
 'use strict';
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,T=node?require('./torso.js'):root.BodyflipTorso;
-const {add,sub,mul,dot,length,unit,rotate,qm,qinv}=R,cache=new WeakMap();
+const {add,sub,mul,dot,length,unit,rotate,qm,qinv}=R,cache=new WeakMap(),profiles=new WeakMap(),P=node?require('./rig-profile.js'):root.BodyflipRigProfile;
 function model(names,parents,reference){
- let rig=cache.get(reference);if(rig)return rig;
+ const profile=P?.current()||null;let rig=cache.get(reference);if(rig&&profiles.get(reference)===profile)return rig;
+ profiles.set(reference,profile);if(profile){rig=profile.bodies;cache.set(reference,rig);return rig;}
  const torso=new Map(T.create(names,parents,reference).map(s=>[s.bone,s]));
  rig=names.slice(1).map((name,j)=>{
   const i=j+1,mass=name==='pelvis'?8:name.startsWith('thigh')?5:name.startsWith('spine')?2:1,box=torso.get(i);
@@ -22,9 +23,11 @@ function model(names,parents,reference){
 function bodies(pose,rig){return rig.map(b=>({center:add(pose.points[b.i],rotate(pose.q[b.i],b.offset)),q:qm(pose.q[b.i],b.rotation)}));}
 function center(pose,rig){let x=0,y=0,z=0;for(const b of rig){const p=pose.points[b.i],d=rotate(pose.q[b.i],b.offset),w=b.mass/rig.mass;x+=(p[0]+d[0])*w;y+=(p[1]+d[1])*w;z+=(p[2]+d[2])*w;}return [x,y,z];}
 function tensor(pose,rig){
- const c=center(pose,rig),I=Array.from({length:3},()=>[0,0,0]);
- for(const b of rig){
-  const p=add(pose.points[b.i],rotate(pose.q[b.i],b.offset)),r=sub(p,c),axes=R.toAxes(qm(pose.q[b.i],b.rotation)),rr=dot(r,r);
+ // Compute each body centre once, retaining the original summation order.
+ const centers=rig.map(b=>add(pose.points[b.i],rotate(pose.q[b.i],b.offset))),c=[0,0,0],I=Array.from({length:3},()=>[0,0,0]);
+ for(let k=0;k<rig.length;k++){const p=centers[k],w=rig[k].mass/rig.mass;c[0]+=p[0]*w;c[1]+=p[1]*w;c[2]+=p[2]*w;}
+ for(let k=0;k<rig.length;k++){
+  const b=rig[k],p=centers[k],r=sub(p,c),axes=R.toAxes(qm(pose.q[b.i],b.rotation)),rr=dot(r,r);
   for(let i=0;i<3;i++)for(let j=0;j<3;j++)I[i][j]+=axes.reduce((s,a,k)=>s+a[i]*a[j]*b.inertia[k],0)+b.mass*((i===j?rr:0)-r[i]*r[j]);
  }
  return I;

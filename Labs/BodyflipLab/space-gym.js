@@ -2,6 +2,7 @@
 (function(root){
 'use strict';
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,C=node?require('./core.js'):root.BodyflipCore,M=node?require('./jump-motion.js'):root.BodyflipJumpMotion,A=node?require('./jump-attack.js'):root.BodyflipJumpAttack,O=node?require('./spin.js'):root.BodyflipSpin,D=node?require('./mass.js'):root.BodyflipMass;
+const Physical=typeof module!=='undefined'?require('./physical-flight.js'):root.BodyflipPhysicalFlight,PhysicalAim=typeof module!=='undefined'?require('./physical-aim.js'):root.BodyflipPhysicalAim;
 function action(event,sample){return {event,sample,supportStart:event.time,jumpStart:event.time,airStart:event.time,abortTime:Infinity,release:0,matchDistance:null,supportScores:[],support:{frames:[],terminal:{}},animationLeg:()=>null,coneDebug:()=>null,idealDebug:()=>null,pushDebug:()=>null};}
 function sequence(run,jumps,settings,parents,events,catalog,reference=run.poses[0]){
  const segments=[],results=[],rig=D.model(run.names,parents,reference);
@@ -14,13 +15,14 @@ function sequence(run,jumps,settings,parents,events,catalog,reference=run.poses[
   const segment=action(event,t=>{const f=prior.atOrientation&&t>=event.time?prior.atOrientation(t,origin):O.rebase(prior(t),origin,rig);if(t<event.time)return f;const age=t-event.time,delta=R.mul(impulse,age),velocity=R.add(f.velocity||[0,0,0],impulse),root=R.add(f.root,delta);return {...f,pose:{...f.pose,points:f.pose.points.map(p=>R.add(p,delta))},root,velocity,vy:velocity[1],airTime:age};});
   segment.motion=M.create(event,segment,jumps,run.names,parents,settings);if(segment.motion)segment.sample=segment.motion.sample;
   segment.attack=A.create(event,segment,catalog,run.names,parents,settings,reference);if(segment.attack)segment.sample=segment.attack.sample;
-  segment.spin=O.create(segment.sample,{start:event.time,commandTime:event.time,event,settings,names:run.names,parents,reference,inherited});segment.sample=segment.spin.sample;
+  segment.spin=O.create(segment.sample,{start:event.time,commandTime:event.time,event,settings,names:run.names,parents,reference,inherited});const raw=segment.spin.sample,config={start:event.time,settings,names:run.names,parents,reference,gravity:0,seedSource:prior,velocityImpulse:impulse};
+  let physical=null;segment.sample=t=>{if(!segment.spin.active)return raw(t);if(t<event.time)return prior(t);physical ||= settings.aim&&segment.attack?PhysicalAim.create(raw,config,{track:segment.attack,clip:catalog.get(event.attack),settings}):Physical.create(raw,config);return {...physical.sample(t),physicalAim:true};};segment.physical={get track(){return physical;}};
   segment.pushDebug=t=>e.jumpPercent>0&&t>=event.time&&t<event.time+3/60?{origin:segment.sample(event.time).pose.points[1],direction:[0,1,0]}:null;
   // Planning and overlapping return blends often ask for the same source frame.
   // Keep a bounded window large enough for overlapping 60 ms lookahead.
   // Nanosecond keys merge floating-point representations of the same tick.
   const sample=segment.sample,cache=new Map();segment.sample=t=>{const key=Math.round(t*1e9);if(cache.has(key))return cache.get(key);const frame=sample(t);cache.set(key,frame);if(cache.size>256)cache.delete(cache.keys().next().value);return frame;};
-  segment.sample.atOrientation=segment.spin.atOrientation;segments.push(segment);previous=segment.sample;
+  segment.sample.atOrientation=segment.spin.active?(t,rotation)=>O.rebase(segment.sample(t),rotation,rig):segment.spin.atOrientation;segments.push(segment);previous=segment.sample;
   results.push({...event,status:'Space',reason:e.jumpPercent+'% push',pushTime:event.time,releaseTime:event.time});
  }
  const activeAt=t=>segments.findLast(s=>t>=s.supportStart)||null;

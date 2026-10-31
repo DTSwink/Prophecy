@@ -1,4 +1,5 @@
 import initJolt from './vendor/jolt.mjs';
+import {createProjectileWorld} from './projectile-world.mjs';
 export async function createPhysics(manifest,idle,{selfCollision=true}={}){
  const C=globalThis.BodyflipCore||(await import('./core.js')).default;
  const T=globalThis.BodyflipTorso||(await import('./torso.js')).default;
@@ -13,6 +14,7 @@ export async function createPhysics(manifest,idle,{selfCollision=true}={}){
  settings.mObjectLayerPairFilter=filter;settings.mBroadPhaseLayerInterface=bp;settings.mObjectVsBroadPhaseLayerFilter=new J.ObjectVsBroadPhaseLayerFilterTable(bp,1,filter,1);
  const world=new J.JoltInterface(settings);J.destroy(settings);const system=world.GetPhysicsSystem(),bi=system.GetBodyInterface(),zero=vec([0,0,0]);system.SetGravity(zero);
  const ps=system.GetPhysicsSettings();ps.mNumVelocitySteps=20;ps.mNumPositionSteps=8;system.SetPhysicsSettings(ps);
+ const projectiles=createProjectileWorld(J,world,system,bi,R);
  const {names,parents}=manifest,targetRig=Target.create(names,parents,idle),torso=T.create(names,parents,idle),rig=M.model(names,parents,idle),rigByBone=new Map(rig.map(s=>[s.i,s])),torsoByBone=new Map(torso.map(s=>[s.bone,s])),bodies=[],joints=[],group=new J.GroupFilterTable(names.length);
  // Adjacent and overlapping torso volumes are excluded; separate limbs collide.
  const core=name=>/^(pelvis|spine|neck|head|clavicle)/.test(name);
@@ -60,6 +62,7 @@ export async function createPhysics(manifest,idle,{selfCollision=true}={}){
  const masses=[0,...rig.map(b=>b.mass)],totalMass=rig.mass;
  function com(velocity=false){if(kinematic&&velocity)return kinematicVelocity;let value=[0,0,0];for(let i=1;i<bodies.length;i++)value=add(value,mul(kinematic&&kinematicPose?add(kinematicPose.points[i],rotate(kinematicPose.q[i],offsets[i])):arr(velocity?bodies[i].GetLinearVelocity():bodies[i].GetCenterOfMassPosition()),masses[i]/totalMass));return value;}
  function configure({dynamic=false,edge=5,surfaces=null,cap=20,kinematic:kin=false,zeroGravity=false}={}){
+  projectiles.reset();
   gravity=zeroGravity?0:9.81;targetSurfaces=surfaces||[];simulated=dynamic&&!kin;kinematic=kin;fallCap=cap;previousTarget=null;
   for(let i=1;i<bodies.length;i++)bi.SetMotionType(bodies[i].GetID(),kin||(!dynamic&&i===1)?J.EMotionType_Kinematic:J.EMotionType_Dynamic,J.EActivation_Activate);
   for(const j of joints){const state=dynamic||kin?J.EMotorState_Off:J.EMotorState_Position;if(j.hinge)j.joint.SetMotorState(state);else {j.joint.SetSwingMotorState(state);j.joint.SetTwistMotorState(state);}}
@@ -87,13 +90,14 @@ export async function createPhysics(manifest,idle,{selfCollision=true}={}){
    }
   }
   if(!simulated)for(const j of joints)j.joint.SetTargetOrientationBS(setQ(qm(qinv(p.q[j.parent]),p.q[j.i])));
-  world.Step(dt,1);previousTarget=p;
+  if(projectiles.plans.length){projectiles.spawn(projectiles.clock);projectiles.forces(dt);world.Step(dt,1);projectiles.record(projectiles.clock+dt);}else{world.Step(dt,1);projectiles.clock+=dt;}previousTarget=p;
   if(simulated){const excess=-fallCap-com(true)[1];if(excess>0)for(let i=1;i<bodies.length;i++)bi.SetLinearVelocity(bodies[i].GetID(),setV(add(arr(bodies[i].GetLinearVelocity()),[0,excess,0])));}
  }
  // Resolve fast turns with smaller steps; ordinary 240 Hz playback pays no
  // extra simulation cost. The old 60 rad/s cap silently discarded fast/tucked
  // commands. Intermediate targets interpolate local joints, not world points.
- function drive(p,dt){
+ function drive(p,dt,absoluteTime=null){
+  if(!kinematic&&Number.isFinite(absoluteTime))dt=Math.max(1e-9,absoluteTime-projectiles.clock);
   p=targetRig.project(p,targetSurfaces);
   const from=previousTarget;
   const angle=simulated&&from?Math.max(...p.q.slice(1).map((q,i)=>length(R.qlog(qm(q,qinv(from.q[i+1])))))):0;
@@ -102,13 +106,29 @@ export async function createPhysics(manifest,idle,{selfCollision=true}={}){
   // Use one basis for both endpoints so interpolation preserves the pelvis's
   // world path; local limb interpolation and real platform contacts remain.
   const aligned=count>1?{...from,q:[p.q[0],...from.q.slice(1)]}:from;
-  for(let i=1;i<=count;i++)advance(i===count?p:C.blend(aligned,p,i/count,manifest.parents),dt/count);
+  if(!projectiles.plans.length){for(let i=1;i<=count;i++)advance(i===count?p:C.blend(aligned,p,i/count,manifest.parents),dt/count);return;}
+  const start=projectiles.clock,cuts=Array.from({length:count},(_,i)=>dt*(i+1)/count);
+  if(!kinematic)for(const launch of projectiles.plans){const offset=launch.releaseTime-start;if(offset>1e-10&&offset<dt-1e-10)cuts.push(offset);}
+  cuts.sort((a,b)=>a-b);let previous=0;
+  for(const offset of cuts){if(offset<=previous+1e-10)continue;advance(offset===dt?p:from?C.blend(aligned||from,p,offset/dt,manifest.parents):p,offset-previous);previous=offset;}
+  if(!kinematic)projectiles.spawn(projectiles.clock);
  }
- function reset(p,velocity=[0,0,0]){p=targetRig.project(p,targetSurfaces);kinematicPose=p;kinematicVelocity=velocity;previousTarget=p;for(let i=1;i<bodies.length;i++){bi.SetPositionAndRotation(bodies[i].GetID(),setP(p.points[i]),setQ(p.q[i]),J.EActivation_Activate);bi.SetLinearAndAngularVelocity(bodies[i].GetID(),setV(velocity),zero);}}
+ function reset(p,velocity=[0,0,0]){if(!kinematic)projectiles.reset();p=targetRig.project(p,targetSurfaces);kinematicPose=p;kinematicVelocity=velocity;previousTarget=p;for(let i=1;i<bodies.length;i++){bi.SetPositionAndRotation(bodies[i].GetID(),setP(p.points[i]),setQ(p.q[i]),J.EActivation_Activate);bi.SetLinearAndAngularVelocity(bodies[i].GetID(),setV(velocity),zero);}}
+ function projectilesAt(time,poseAt){
+  if(!kinematic||!projectiles.plans.length)return projectiles.states(time);
+  const target=Math.ceil(Math.max(0,time)*120-1e-9)/120;
+  if(projectiles.clock<target-1e-9){
+   if(!projectiles.active){const first=projectiles.plans[0].releaseTime;projectiles.clock=Math.min(target,Math.max(projectiles.clock,first));}
+   const place=(p,dt=0)=>{for(let i=1;i<bodies.length;i++){if(dt>0)bi.MoveKinematic(bodies[i].GetID(),setP(p.points[i]),setQ(p.q[i]),dt);else bi.SetPositionAndRotation(bodies[i].GetID(),setP(p.points[i]),setQ(p.q[i]),J.EActivation_DontActivate);}};
+   place(poseAt(projectiles.clock));projectiles.spawn(projectiles.clock);
+   while(projectiles.clock<target-1e-9){const end=projectiles.nextRelease(projectiles.clock,Math.min(target,projectiles.clock+1/120))??Math.min(target,projectiles.clock+1/120),dt=end-projectiles.clock;place(poseAt(end),dt);projectiles.forces(dt);world.Step(dt,1);projectiles.record(end);projectiles.spawn(end);}
+  }else projectiles.spawn(projectiles.clock);
+  return projectiles.states(time);
+ }
  function read(){if(kinematic)return kinematicPose;const points=[previousTarget?.points[0]||[0,0,0]],q=[previousTarget?.q[0]||[0,0,0,1]];for(let i=1;i<bodies.length;i++){points.push(arr(bodies[i].GetPosition()));q.push(qa(bodies[i].GetRotation()));}return {points,q,axes:q.map(R.toAxes)};}
  function diagnostics(){const p=read();let anchorError=0;for(const c of joints){const a=c.hinge?c.joint.GetLocalSpacePoint1():c.joint.GetLocalSpacePosition1(),b=c.hinge?c.joint.GetLocalSpacePoint2():c.joint.GetLocalSpacePosition2();const pa=add(arr(bodies[c.parent].GetCenterOfMassPosition()),rotate(p.q[c.parent],arr(a))),pb=add(arr(bodies[c.i].GetCenterOfMassPosition()),rotate(p.q[c.i],arr(b)));anchorError=Math.max(anchorError,length(sub(pa,pb)));}return {bodies:bodies.length-1,dynamicBodies:bodies.slice(1).filter(b=>b.IsDynamic()).length,pelvisDynamic:bodies[1].IsDynamic(),joints:joints.length,hinges:joints.filter(j=>j.hinge).map(j=>({name:j.name,angle:j.joint.GetCurrentAngle(),min:j.lo,max:j.hi})),anchorError,finite:p.points.flat().concat(p.q.flat()).every(Number.isFinite)};}
  function targetDiagnostics(p){return joints.map(c=>{const rest=qm(qinv(idle.q[c.parent]),idle.q[c.i]),local=qm(qinv(p.q[c.parent]),p.q[c.i]),delta=qm(local,qinv(rest)),v=R.qlog(delta),angle=c.hinge?dot(v,c.axis):null,off=c.hinge?length(sub(v,mul(c.axis,angle))):0,anchor=add(p.points[c.parent],rotate(p.q[c.parent],rotate(qinv(idle.q[c.parent]),sub(idle.points[c.i],idle.points[c.parent]))));return {name:c.name,hinge:c.hinge,angle,off,rotation:length(v),anchor:length(sub(anchor,p.points[c.i]))};});}
  function torsoGeometry(){return torso.map(spec=>{const shape=J.castObject(bodies[spec.bone].GetShape(),J.RotatedTranslatedShape),box=J.castObject(shape.GetInnerShape(),J.BoxShape);return {name:spec.name,box:box.GetSubType()===J.EShapeSubType_Box,dims:mul(arr(box.GetHalfExtent()),2),offset:arr(shape.GetPosition()),rotation:qa(shape.GetRotation())};});}
  function massProperties(){return rig.map(s=>{const mp=bodies[s.i].GetShape().GetMassProperties();mp.ScaleToMass(s.mass);const m=mp.mInertia;return {name:s.name,mass:s.mass,offset:offsets[s.i],inertia:[arr(m.GetAxisX()),arr(m.GetAxisY()),arr(m.GetAxisZ())]};});}
- return {step:drive,reset,target:p=>targetRig.project(p,targetSurfaces),targetRig,read,diagnostics,targetDiagnostics,configure,com,rig,massProperties,torso,torsoGeometry,torsoWorld:()=>torso.map(s=>T.world(read(),s)),get simulated(){return simulated;},dispose(){for(const platform of platforms){bi.RemoveBody(platform.GetID());bi.DestroyBody(platform.GetID());}for(const j of joints)system.RemoveConstraint(j.joint);for(const b of bodies.slice(1)){bi.RemoveBody(b.GetID());bi.DestroyBody(b.GetID());}J.destroy(tempV);J.destroy(tmpQ);J.destroy(tmpP);J.destroy(zero);J.destroy(world);},engine:'Jolt WASM 1.1.1'};
+ return {step:drive,reset,setProjectiles:(assets,plans)=>projectiles.set(assets,plans),projectilesAt,projectileStates:t=>projectiles.states(t),projectileDiagnostics:()=>projectiles.diagnostics,target:p=>targetRig.project(p,targetSurfaces),targetRig,read,diagnostics,targetDiagnostics,configure,com,rig,massProperties,torso,torsoGeometry,torsoWorld:()=>torso.map(s=>T.world(read(),s)),get simulated(){return simulated;},dispose(){projectiles.dispose();for(const platform of platforms){bi.RemoveBody(platform.GetID());bi.DestroyBody(platform.GetID());}for(const j of joints)system.RemoveConstraint(j.joint);for(const b of bodies.slice(1)){bi.RemoveBody(b.GetID());bi.DestroyBody(b.GetID());}J.destroy(tempV);J.destroy(tmpQ);J.destroy(tmpP);J.destroy(zero);J.destroy(world);},engine:'Jolt WASM 1.1.1'};
 }

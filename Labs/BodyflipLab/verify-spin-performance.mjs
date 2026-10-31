@@ -1,0 +1,22 @@
+import fs from 'node:fs';import {execFileSync} from 'node:child_process';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),base=process.cwd()+'/Labs/BodyflipLab/',dir=process.cwd()+'/Saved/BodyflipLab/SpinPerformance/',cache=new Map();
+function legacy(name){if(cache.has(name))return cache.get(name);if(!['spin-response.js','spin.js','mass.js','body-contact.js','target-rig.js','joint-rig.js'].includes(name))return require(base+name);const source=execFileSync('git',['show','67516390:Labs/BodyflipLab/'+name],{encoding:'utf8',maxBuffer:2e6});const m={exports:{}};cache.set(name,m.exports);new Function('module','require',source)(m,n=>legacy(n.replace(/^\.\//,'')));cache.set(name,m.exports);return m.exports;}
+const R=require(base+'recovery.js'),C=require(base+'core.js'),S=require(base+'support.js'),P=require(base+'body-contact.js'),T=require(base+'target-rig.js'),Response=require(base+'spin-response.js'),Spin=require(base+'spin.js'),oldP=legacy('body-contact.js'),oldT=legacy('target-rig.js'),oldResponse=legacy('spin-response.js'),oldSpin=legacy('spin.js');
+const manifest=JSON.parse(fs.readFileSync(base+'data/manifest.json')),names=manifest.names,parents=manifest.parents,reference=C.poseFromShared(manifest),poses=[];
+const jump=JSON.parse(fs.readFileSync(base+'data/jumps.json')).clips[0],F=require(base+'flight.js'),clip=F.decodeJump(jump);
+for(let k=0;k<24;k++){const p=F.at(clip,clip.duration*k/23,parents),q=R.qexp([k*.17,k*.37,k*.11]),origin=p.points[0],points=p.points.map(v=>R.add(R.rotate(q,R.sub(v,origin)),[0,Math.sin(k)*.4,k*.05])),rot=p.q.map(v=>R.qm(q,v));poses.push({points,q:rot,axes:rot.map(R.toAxes)});}
+const floor=S.rectangle('floor',[0,0,0],[1,0,0],[0,0,1],[-5,5,-5,5],.02),k=Math.SQRT1_2,ramp=S.rectangle('ramp',[0,0,0],[k,k,0],[0,0,1],[-5,5,-5,5],.02),sets=[[],[floor],[ramp]];
+let checks=0;const equal=(a,b,label)=>{assert.equal(JSON.stringify(a),JSON.stringify(b),label);checks++;};
+const p=P.create(names,parents,reference),op=oldP.create(names,parents,reference),t=T.create(names,parents,reference),ot=oldT.create(names,parents,reference);
+for(const pose of poses){equal(p.shapes(pose),op.shapes(pose),'body shapes');for(const side of ['l','r'])equal(p.footShapes(pose,side),op.shapes(pose).filter(s=>s.name==='foot_'+side||s.name==='ball_'+side),'selected foot shapes');for(const surfaces of sets){equal(t.project(pose,surfaces),ot.project(pose,surfaces),'target projection');equal(p.resolve(pose,surfaces),op.resolve(pose,surfaces),'body correction');}}
+const response=Response.create(names,parents,reference,.6),old=oldResponse.create(names,parents,reference,.6);let a=response.zero(),b=old.zero();
+for(let k=0;k<100;k++){const pose=poses[k%poses.length],delta=[Math.sin(k)*.02,Math.cos(k)*.03,.015];a=response.impulse(a,pose,delta);b=old.impulse(b,pose,delta);equal(a,b,'impulse');a=response.drift(a,1/240);b=old.drift(b,1/240);equal(a,b,'drift');equal(response.apply(pose,a),old.apply(pose,b),'articulated pose');}
+const settings=C.sanitize({spinLag:.6,spinInertia:1}),source=()=>({pose:reference,root:reference.points[0],phase:'SPACE'}),reports=[];
+for(const instantSpin of [false,true]){const event={instantSpin,spinVersion:2,flip:350,twist:-120,turnAxis:2,turnIn:.35,turnDelay:.0713},opts={settings,event,names,parents,reference};const a=Spin.create(source,opts),b=oldSpin.create(source,opts);for(let f=0;f<=180;f++)equal(a.sample(f/120),b.sample(f/120),'full spin '+instantSpin+'/'+f);}
+function timed(fn){const begin=performance.now();fn();return performance.now()-begin;}
+for(let repeat=0;repeat<(process.argv.includes('--benchmark')?4:0);repeat++){
+const projection=fn=>()=>{for(let k=0;k<8;k++)for(const pose of poses)fn.project(pose,[floor]);};
+const spin=impl=>()=>{const motion=impl.create(source,{event:{spinVersion:2,flip:350,twist:120,turnIn:.4},settings,names,parents,reference});for(let f=0;f<=180;f++)motion.sample(f/60);};
+const pair=repeat%2?[['new',t,Spin],['old',ot,oldSpin]]:[['old',ot,oldSpin],['new',t,Spin]],row={repeat};for(const [label,target,impl] of pair){row[label+'ProjectionMs']=timed(projection(target));row[label+'SpinMs']=timed(spin(impl));}reports.push(row);
+}
+const report={passed:true,exactChecks:checks,reports};fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(dir+'parity-performance.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));

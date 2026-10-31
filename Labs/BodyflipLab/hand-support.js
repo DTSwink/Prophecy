@@ -25,6 +25,7 @@ function arm(p,names,side){
 }
 // Exact dimensions/offset/signs of renderer.handBox. Palm is the yellow face.
 function corners(p,hand,side){
+ const profile=(node?require('./rig-profile.js'):root.BodyflipRigProfile);if(profile?.current())return profile.points(p,hand,'hand_'+side.toLowerCase());
  const a=p.axes[hand],f=mul(a[0],side==='L'?1:-1),n=a[1],s=a[2],center=add(mul(f,.0725),mul(n,-.0025));
  return [-1,1].flatMap(x=>[-1,1].flatMap(y=>[-1,1].map(z=>add(center,add(mul(f,x*.0725),add(mul(s,y*.045),mul(n,z*.0225)))))));
 }
@@ -32,10 +33,12 @@ function oriented(l,r){const axes=[],points=[];axes[l.foot]=R.toAxes(r.footQ);po
 function lowestOffset(p,l,n){const points=corners(p,l.foot,l.side),h=Math.min(...points.map(v=>dot(v,n))),low=points.filter(v=>dot(v,n)<h+1e-8);return mul(low.reduce((a,b)=>add(a,b),[0,0,0]),1/low.length);}
 const clearance=(p,hand,toe,n,side)=>-Math.min(...corners(p,hand,side).map(v=>dot(v,n)));
 function palmClearance(q,n,side){
+ const profile=(node?require('./rig-profile.js'):root.BodyflipRigProfile);if(profile?.current()){const name='hand_'+side.toLowerCase(),i=profile.current().byName.get(name).i,p={q:[],points:[]};p.q[i]=q;p.points[i]=[0,0,0];return -Math.min(...profile.points(p,i,name).map(v=>dot(v,n)));}
  const v=rotate(qinv(q),n),sign=side==='R'?-1:1;
  return .0725*(Math.abs(v[0])-sign*v[0])+.0025*v[1]+.0225*Math.abs(v[1])+.045*Math.abs(v[2]);
 }
 function clearPalmPitch(l,parent,q,n){
+ if(l.wrist.native)return l.wrist.clamp(parent,q);
  // The palm box is narrower than the forearm's rounded wrist end. Flattening
  // until the palm touches can otherwise place that 4.8 cm capsule in the floor.
  // Keep the closest allowed wrist pitch that leaves room for the real capsule.
@@ -49,6 +52,7 @@ function clearPalmPitch(l,parent,q,n){
  return at(valid);
 }
 function aimedPalm(l,parent,source,n,weight=1,contact=false){
+ if(l.wrist.native){const initial=l.wrist.fromConstraint(parent,source),goal=l.wrist.aim(parent,initial,n);return l.wrist.clamp(parent,qslerp(initial,goal,clamp(weight,0,1)));}
  const input=l.wrist.fromConstraint(parent,source),goal=clearPalmPitch(l,parent,l.wrist.aim(parent,input,n),n);
  const a=W.decompose(W.clampConstraint(source)),b=W.decompose(l.wrist.toConstraint(parent,goal)),y=a.swing[1]+(b.swing[1]-a.swing[1])*clamp(weight,0,1),z=a.swing[2];
  const q=l.wrist.fromConstraint(parent,W.compose([0,y,z,Math.sqrt(Math.max(0,1-y*y-z*z))],a.twist));
@@ -146,15 +150,16 @@ function posture(p,names,parents,l,target,surface,settings,pairedTargets=null){
  let lo=Math.max(0,(best-1)/40),hi=Math.min(1,(best+1)/40);
  for(let i=0;i<18;i++){const a=lo+(hi-lo)/3,b=hi-(hi-lo)/3,score=u=>reachError(apply(p,u,false))+u*.002;if(score(a)<score(b))hi=b;else lo=a;}
  const amount=(lo+hi)/2,goal=apply(p,amount),duration=Math.max(1/60,settings.handBend??.35);
- function solve(pose,limb,point,tree,reach,rotation){
-  if(!canCrouch)return limitWrist(S.solve(pose,limb,point,tree,reach,rotation),limb);
+ function solve(pose,limb,point,tree,reach,rotation,_time=null,_progress=null,preparedLocal=null){
+  if(!canCrouch)return limitWrist(S.solve(pose,limb,point,tree,reach,rotation,null,null,preparedLocal),limb);
   // Move the elbow around the shoulder-to-wrist axis as the torso folds. This
   // retains the exact pin and hinge lengths while keeping the arm off the knee.
-  const now=R.localize(pose.points,pose.q,parents),weight=clamp((rest.p[pelvis][1]-now.p[pelvis][1])/Math.max(1e-8,drop*amount),0,1),other=names.indexOf('upperarm_'+(limb.side==='L'?'r':'l'));
+  const parent=parents[pelvis],pelvisLocal=preparedLocal?preparedLocal.p[pelvis]:parent<0?pose.points[pelvis]:rotate(qinv(pose.q[parent]),sub(pose.points[pelvis],pose.points[parent]));
+  const weight=clamp((rest.p[pelvis][1]-pelvisLocal[1])/Math.max(1e-8,drop*amount),0,1),other=names.indexOf('upperarm_'+(limb.side==='L'?'r':'l'));
   const axis=unit(sub(point,pose.points[limb.hip])),outward=unit(sub(pose.points[limb.hip],pose.points[other]));
   const desired=unit(sub(outward,mul(axis,dot(outward,axis)))),original=rotate(R.fromTo(rotate(pose.q[limb.pelvis],limb.axisLocal),axis),rotate(pose.q[limb.pelvis],limb.poleLocal)),pole=rotate(qslerp([0,0,0,1],R.fromTo(original,desired),weight),original);
   const fixed={...limb,pelvis:0,axisLocal:rotate(qinv(pose.q[0]),axis),poleLocal:rotate(qinv(pose.q[0]),pole)};
-  return limitWrist(S.solve(pose,fixed,point,tree,reach,rotation),limb);
+  return limitWrist(S.solve(pose,fixed,point,tree,reach,rotation,null,null,preparedLocal),limb);
  }
  return {amount,duration,canCrouch,freeArm:pairedTargets?null:freeArm,goal,solve,reachable:pairedTargets?pairedTargets.every(c=>length(sub(goal.points[c.leg.hip],c.target))<=c.leg.reach*settings.supportReach+1e-6):length(sub(goal.points[l.hip],target))<=l.reach*settings.supportReach+1e-6,seed(previous,dt){
   const old=R.localize(previous.points,previous.q,parents),speed=length(sub(sub(p.points[l.hip],p.points[0]),sub(previous.points[l.hip],previous.points[0])))/dt,room=Math.max(.001,l.reach-length(sub(p.points[l.foot],p.points[l.hip])));
@@ -285,10 +290,10 @@ function contactMotion(terminal,l,surface,settings,previous=null,shoulderAt=null
   const t=Math.max(0,time),body=bodyOverride||(context?.bodyAt?context.bodyAt(t):startPose),root=rootOverride||rootAt?.(t)||body.points[0];
   const key=[bodyOverride?1:0,t,...root,...(bodyOverride?body.q[l.knee]:[]),...(bodyOverride?body.points[l.hip]:[])].map(v=>Math.round(v*1e9)).join(':');if(cache.has(key))return cache.get(key);
   const delta=sub(root,body.points[0]),p={...body,points:body.points.map(v=>add(v,delta))},u=smooth(t/alignDuration);
-  const solve=context?.solve||((p,l,foot,parents,reach,r)=>S.solve(p,l,foot,parents,reach,r)),parents=context?.parents;
+  const solve=context?.solve||S.solve,parents=context?.parents,preparedLocal=R.localize(p.points,p.q,parents);
   let frame={foot:terminal.foot,rotation:start},residual=Infinity;
   for(let i=0;i<40;i++){
-   const posed=solve(p,l,frame.foot,parents,1,frame.rotation),forearm=posed.q[l.knee],incoming=l.wrist.fromConstraint(forearm,startCS);
+   const posed=solve(p,l,frame.foot,parents,1,frame.rotation,null,null,preparedLocal),forearm=posed.q[l.knee],incoming=l.wrist.fromConstraint(forearm,startCS);
    const q=aimedPalm(l,forearm,startCS,n,u,true),next=fit(q);residual=length(sub(next.foot,frame.foot));if(residual<1e-8||i===39){frame=next;break;}frame={...next,foot:add(frame.foot,mul(sub(next.foot,frame.foot),.5))};
   }
   frame.residual=residual;cache.set(key,frame);if(cache.size>512)cache.delete(cache.keys().next().value);return frame;

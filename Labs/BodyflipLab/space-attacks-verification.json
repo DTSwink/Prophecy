@@ -1,9 +1,9 @@
 {
-  "checks": 90,
-  "elapsedMs": 6490.1977,
-  "busyMs": 2764.0462,
+  "checks": 93,
+  "elapsedMs": 22020.6275,
+  "busyMs": 10779.996500000001,
   "heights": [
-    0,
+    0.05429142981653043,
     0.2582494926452637,
     1.0329979705810548,
     2.065547666294132
@@ -90,14 +90,17 @@
     "slashRU leaves root pelvis and both legs unchanged",
     "slashRU plays vanilla at native speed through full follow-through",
     "slashRU returns to continuing base pose",
+    "sweepKick uses full-body viewer motion",
+    "sweepKick enters and exits without snapping",
+    "sweepKick retains native source timing",
     "Overlapping attacks enter from the displayed upper pose",
     "Reverse seek is deterministic",
     "Ground 0 percent plays its attack",
     "Ground 25 percent plays its attack",
     "Ground 100 percent plays its attack",
     "Ground 200 percent plays its attack",
-    "Ground jump height scales, with zero producing no lift",
+    "Ground jump height scales; zero has only body-clearance correction",
     "Scene round-trip retains marker fields",
-    "32 overlapping markers remain bounded (2764 ms)"
+    "32 overlapping markers remain bounded (10780 ms)"
   ]
 }

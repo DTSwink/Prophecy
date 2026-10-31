@@ -4,9 +4,19 @@
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,S=node?require('./support.js'):root.BodyflipSupport,T=node?require('./torso.js'):root.BodyflipTorso;
 const {add,sub,mul,dot,cross,length,unit,rotate,qm,qinv,qslerp}=R,skin=1e-6,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function create(names,parents,reference){
+ const profile=(node?require('./rig-profile.js'):root.BodyflipRigProfile),native=profile?.current();
  const id=Object.fromEntries(names.map((n,i)=>[n,i])),spines=T.create(names,parents,reference);
  const links=['l','r'].flatMap(s=>[[`clavicle_${s}`,`upperarm_${s}`,.055],[`upperarm_${s}`,`lowerarm_${s}`,.058],[`lowerarm_${s}`,`hand_${s}`,.048],[`thigh_${s}`,`calf_${s}`,.083],[`calf_${s}`,`foot_${s}`,.062]]);
+ function footShapes(p,side){
+  if(native)return profile.shapes(p,['foot_'+side]);
+  const out=[],box=(name,center,axes,dims)=>out.push({name,center,axes,half:mul(dims,.5)});
+  const ankle=id['foot_'+side],toe=id['ball_'+side],s=S.footFrame(p,ankle,toe,side.toUpperCase());
+   box('foot_'+side,add(add(p.points[toe],mul(s.forward,-.0875)),mul(s.up,-.006)),[s.forward,s.side,s.up],[.175,.120,.051]);
+   box('ball_'+side,add(add(p.points[toe],mul(s.toeForward,.024)),mul(s.toeUp,-.006)),[s.toeForward,s.toeSide,s.toeUp],[.048,.120,.049]);
+  return out;
+ }
  function shapes(p,excluded=[]){
+  if(native)return profile.shapes(p).filter(s=>!excluded.includes(s.name));
   const out=[],axis=(i,k)=>p.axes?.[i]?.[k]||R.toAxes(p.q[i])[k],box=(name,center,axes,dims)=>out.push({name,center,axes,half:mul(dims,.5)}),capsule=(name,a,b,radius)=>out.push({name,a,b,radius});
   box('pelvis',mul(add(p.points[id.thigh_l],p.points[id.thigh_r]),.5),[axis(id.pelvis,1),axis(id.pelvis,2),axis(id.pelvis,0)],[.170,.280,.130]);
   for(const s of spines){const w=T.world(p,s);box(s.name,w.center,[w.forward,w.side,w.up],w.dims);}
@@ -17,14 +27,12 @@ function create(names,parents,reference){
   for(const side of ['l','r']){
    const h=id['hand_'+side],f=mul(axis(h,0),side==='l'?1:-1),n=axis(h,1);
    box('hand_'+side,add(add(p.points[h],mul(f,.0725)),mul(n,-.0025)),[f,axis(h,2),n],[.145,.090,.045]);
-   const ankle=id['foot_'+side],toe=id['ball_'+side],s=S.footFrame(p,ankle,toe,side.toUpperCase());
-   box('foot_'+side,add(add(p.points[toe],mul(s.forward,-.0875)),mul(s.up,-.006)),[s.forward,s.side,s.up],[.175,.120,.051]);
-   box('ball_'+side,add(add(p.points[toe],mul(s.toeForward,.024)),mul(s.toeUp,-.006)),[s.toeForward,s.toeSide,s.toeUp],[.048,.120,.049]);
+   out.push(...footShapes(p,side));
   }
   return excluded.length?out.filter(s=>!excluded.includes(s.name)):out;
  }
  const contacts=(pose,surfaces,bones)=>shapes(pose).filter(s=>bones.includes(s.name)).flatMap(s=>surfaces.map(surface=>query(s,surface)));
- return {shapes,contacts,move:(a,b,surfaces,excluded=[])=>move(shapes(a,excluded),shapes(b,excluded),b.points[0],surfaces),resolve:(p,surfaces,excluded=[])=>move(shapes(p,excluded),shapes(p,excluded),p.points[0],surfaces)};
+ return {shapes,footShapes,contacts,move:(a,b,surfaces,excluded=[])=>move(shapes(a,excluded),shapes(b,excluded),b.points[0],surfaces),resolve:(p,surfaces,excluded=[])=>{const geometry=shapes(p,excluded);return move(geometry,geometry,p.points[0],surfaces);}};
 }
 const translated=(s,d)=>s.radius?{...s,a:add(s.a,d),b:add(s.b,d)}:{...s,center:add(s.center,d)};
 function query(s,surface){
@@ -54,12 +62,13 @@ function interpolate(a,b,t){
 function motionBound(a,b){if(a.radius)return Math.max(length(sub(a.a,b.a)),length(sub(a.b,b.b)));const qa=R.fromAxes([a.axes[0],a.axes[1],cross(a.axes[0],a.axes[1])]),qb=R.fromAxes([b.axes[0],b.axes[1],cross(b.axes[0],b.axes[1])]);return length(sub(a.center,b.center))+length(a.half)*length(R.qlog(qm(qb,qinv(qa))));}
 function bounds(s){const center=s.radius?mul(add(s.a,s.b),.5):s.center,extent=s.radius?add(mul(sub(s.b,s.a).map(Math.abs),.5),[s.radius,s.radius,s.radius]):[0,1,2].map(k=>s.axes.reduce((v,a,i)=>v+Math.abs(a[k])*s.half[i],0));return {center,extent};}
 const supportMin=(s,n)=>s.radius?Math.min(dot(s.a,n),dot(s.b,n))-s.radius:dot(s.center,n)-s.axes.reduce((v,a,i)=>v+Math.abs(dot(a,n))*s.half[i],0);
-function nearby(a,b,surface,bound){const box=surface.box,axes=[box.forward,box.side,box.up],extent=[0,1,2].map(k=>axes.reduce((v,n,i)=>v+Math.abs(n[k])*box.dims[i]/2,0)),x=bounds(a),y=bounds(b);return [0,1,2].every(k=>Math.max(x.center[k]+x.extent[k],y.center[k]+y.extent[k])+bound+skin>=box.center[k]-extent[k]&&Math.min(x.center[k]-x.extent[k],y.center[k]-y.extent[k])-bound-skin<=box.center[k]+extent[k]);}
+function surfaceExtent(surface){const box=surface.box,axes=[box.forward,box.side,box.up];return [0,1,2].map(k=>axes.reduce((v,n,i)=>v+Math.abs(n[k])*box.dims[i]/2,0));}
+function nearby(a,b,surface,bound,extent=surfaceExtent(surface)){const box=surface.box,x=bounds(a),y=bounds(b);return [0,1,2].every(k=>Math.max(x.center[k]+x.extent[k],y.center[k]+y.extent[k])+bound+skin>=box.center[k]-extent[k]&&Math.min(x.center[k]-x.extent[k],y.center[k]-y.extent[k])-bound-skin<=box.center[k]+extent[k]);}
 function move(before,after,root,surfaces){
- let correction=[0,0,0];const contacts=[];
+ let correction=[0,0,0];const contacts=[],extents=new Map(surfaces.map(s=>[s,surfaceExtent(s)]));
  for(let j=0;j<after.length;j++){
   const a=before[j],b=after[j],bound=motionBound(a,b);if(bound<1e-12)continue;
-  for(const surface of surfaces){if(!nearby(a,b,surface,bound))continue;let t=0;
+  for(const surface of surfaces){if(!nearby(a,b,surface,bound,extents.get(surface)))continue;let t=0;
    for(let i=0;i<48&&t<=1;i++){
     const q=query(interpolate(a,b,t),surface);
     if(q.gap<=skin*2){const next=query(interpolate(a,b,Math.min(1,t+1e-4)),surface);if(next.gap<q.gap-1e-9||q.gap<-skin){contacts.push({...q,fraction:t});
@@ -73,7 +82,7 @@ function move(before,after,root,surfaces){
   }
  }
  for(let pass=0;pass<8;pass++){
-  let deepest=null;for(const shape of after)for(const surface of surfaces){const s=translated(shape,correction);if(!nearby(s,s,surface,0))continue;const q=query(s,surface);if(q.gap<-skin&&(!deepest||q.gap<deepest.gap))deepest=q;}
+  let deepest=null;for(const shape of after)for(const surface of surfaces){const s=translated(shape,correction);if(!nearby(s,s,surface,0,extents.get(surface)))continue;const q=query(s,surface);if(q.gap<-skin&&(!deepest||q.gap<deepest.gap))deepest=q;}
   if(!deepest)break;correction=add(correction,mul(deepest.normal,-deepest.gap+skin));contacts.push({...deepest,fraction:1});
  }
  return {root:add(root,correction),contacts};

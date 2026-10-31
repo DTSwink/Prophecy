@@ -1,8 +1,14 @@
 {
-  "passed": 16,
+  "passed": 22,
   "checks": [
     "Entering free camera preserves eye and target, including panned/top/distant views",
     "Leaving free camera centers COM and preserves angle and viewing distance",
+    "Orbit can look down almost vertically",
+    "Orbit holds distance and focal point",
+    "Horizontal orbit retains requested direction",
+    "Wheel can still zoom in from overhead",
+    "Orbit can also look upward almost vertically",
+    "Extended orbit survives saved camera restore",
     "Free left-drag turns in place",
     "Requested inverted vertical drag is retained",
     "Free camera ignores moving COM",

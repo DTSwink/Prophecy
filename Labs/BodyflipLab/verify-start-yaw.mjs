@@ -20,6 +20,7 @@ for(const mode of ['idle','walk','jump','spaceGym']){
  for(const yaw of [-180,-90,45,90,180]){
   const seq=F.sequence(run,jumps,{...input,mode,startYaw:yaw},parents,reference,null,null,{horizon:.5}),q=R.qexp([0,yaw*Math.PI/180,0]);
   for(const t of [0,.2,.4]){const a=baseline.sample(t),b=seq.sample(t);
+   if(b.capsule)check(Math.abs(b.capsule.yaw-yaw*Math.PI/180)<1e-12,'Carrier yaw '+mode+'/'+yaw+'/'+t);
    for(let i=0;i<names.length;i++){check(distance(b.pose.points[i],R.add(a.root,R.rotate(q,R.sub(a.pose.points[i],a.root))))<1e-6,'Yawed position '+mode+'/'+yaw+'/'+t+'/'+i);check(angle(b.pose.q[i],R.qm(q,a.pose.q[i]))<1e-6,'Yawed orientation '+mode+'/'+yaw+'/'+t+'/'+i);}
   }
  }
@@ -29,6 +30,6 @@ check(C.sanitize({}).startYaw===0,'Old scenes default to zero');check(C.sanitize
 const requests=[],policy=async q=>{requests.push(q);const pose=q.seeds[1],origin=q.roots[1];return {names:q.names.slice(1),fps:30,duration:(q.frames-1)/30,roots:q.roots.slice(1,q.frames+1),poses:Array.from({length:q.frames},(_,i)=>({points:pose.points.slice(1).map(p=>R.add(p,R.sub(q.roots[i+1],origin))),axes:pose.axes.slice(1)})),continuation:{}};};
 const seq=await F.prepare(run,jumps,{...input,mode:'jump',startYaw:180,trimOut:.5},parents,reference,policy),q=requests[0];
 check(q.roots[2][2]<q.roots[1][2],'NN commands backward velocity in facing frame');
-for(const time of [0,.2,.5]){const f=seq.sample(time);check(Math.abs(f.root[0])<1e-8&&Math.abs(f.root[2]-seq.speed*time)<1e-7,'World travel direction unchanged');check(R.rotate(f.pose.q[0],[0,0,1])[2]<-.99,'Root faces backwards');}
+for(const time of [0,.2,.5]){const f=seq.sample(time);check(Math.abs(f.root[0])<1e-8&&Math.abs(f.root[2]-seq.speed*time)<1e-7,'World travel direction unchanged');check(R.rotate(f.pose.q[0],[0,0,1])[2]<-.99,'Root faces backwards');check(Math.abs(f.capsule.yaw-Math.PI)<1e-12,'Backward NN carrier retains commanded yaw');}
 check(q.frames<=17,'Initial NN generation bounded by trim');const prefix=JSON.stringify(seq.sample(.2));await seq.extend(.8);check(prefix===JSON.stringify(seq.sample(.2)),'Yawed NN prefix retained on trim extension');check(requests.at(-1).continuation,'NN extension retains recurrence');
 console.log(JSON.stringify({passed:true,checks:checks.length}));

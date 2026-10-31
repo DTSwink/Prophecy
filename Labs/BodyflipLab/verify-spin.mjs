@@ -1,7 +1,7 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url),R=require('./recovery.js'),C=require('./core.js'),M=require('./mass.js'),O=require('./spin.js'),F=require('./flight.js'),G=require('./space-gym.js');
 const manifest=JSON.parse(fs.readFileSync(new URL('data/manifest.json',import.meta.url))),{names,parents}=manifest,reference=C.poseFromShared(manifest),rig=M.model(names,parents,reference),jumps=['jumps.json','jumps-standing.json'].flatMap(file=>JSON.parse(fs.readFileSync(new URL('data/'+file,import.meta.url))).clips).map(F.decodeJump);
-const settings=C.sanitize({...C.defaults,spinInertia:0}),source=()=>({pose:reference,root:reference.points[0],phase:'SPACE'}),checks=[],check=(name,value)=>{assert(value,name);checks.push(name);},distance=(a,b)=>R.length(R.sub(a,b));
+const settings=C.sanitize({...C.defaults,spinInertia:0,spinLag:0}),source=()=>({pose:reference,root:reference.points[0],phase:'SPACE'}),checks=[],check=(name,value)=>{assert(value,name);checks.push(name);},distance=(a,b)=>R.length(R.sub(a,b));
 for(let axis=0;axis<12;axis++)for(const sign of [-1,1]){
  const s=O.create(source,{event:{spinVersion:2,flip:sign*180,twist:0,turnIn:0,turnOut:0,turnAxis:axis},settings,names,parents,reference});
  const a=s.sample(3),b=s.sample(3+1e-5),omega=R.mul(R.qlog(R.qm(b.pose.q[1],R.qinv(a.pose.q[1]))),1e5);

@@ -15,10 +15,10 @@ class Element {
  closest(){return this.className==='jump-marker'?this:null;}
  contains(e){return this===e||this.children.some(c=>c.contains(e));}
 }
-const ids=['jumpInstantSpin','jumpPushWith','jumpPercent','jumpAttack','jumpAttackDelay','jumpAttackIn','jumpAttackOut','jumpEditor','jumpHere','jumpRemove','jumpTime','jumpLane','jumpPopover','jumpLabel','jumpStatus','jumpMarkers','jumpFlip','jumpTwist','jumpDelay','jumpDuration','jumpTurnIn','jumpTurnOut','jumpAxis','jumpPose','jumpPoseIn','jumpPoseHold','jumpPoseOut','jumpPoseTiming','minorOptions','jumpOptionsLabel'],elements=Object.fromEntries(ids.map(id=>[id,new Element()])),listeners={};
+const ids=['jumpThrowFields','jumpThrowCharge','jumpThrowSpeed','jumpInstantSpin','jumpPushWith','jumpPercent','jumpAttack','jumpAttackDelay','jumpAttackIn','jumpAttackOut','jumpEditor','jumpHere','jumpRemove','jumpTime','jumpLane','jumpPopover','jumpLabel','jumpStatus','jumpMarkers','jumpFlip','jumpTwist','jumpDelay','jumpDuration','jumpTurnIn','jumpTurnOut','jumpAxis','jumpPose','jumpPoseIn','jumpPoseHold','jumpPoseOut','jumpPoseTiming','minorOptions','jumpOptionsLabel'],elements=Object.fromEntries(ids.map(id=>[id,new Element()])),listeners={};
 const document={getElementById:id=>elements[id],createElement:()=>new Element(),addEventListener:(name,fn)=>listeners[name]=fn,activeElement:null};
 let settings=C.sanitize(),time=1.37,edits=0,seeks=[],results=[];
-const context=vm.createContext({document,setTimeout,clearTimeout,Date,BodyflipCore:C,BodyflipJumpAttack:require('./jump-attack.js')});
+const context=vm.createContext({document,setTimeout,clearTimeout,Date,BodyflipCore:C,BodyflipJumpAttack:require('./jump-attack.js'),BodyflipThrowAttack:require('./throw-attack.js')});
 vm.runInContext(fs.readFileSync(new URL('jump-track.js',import.meta.url),'utf8')+'\nglobalThis.Editor=JumpTrack;',context);
 const editor=new context.Editor({get:()=>({settings,events:F.eventsFor(settings),results,time,max:12}),edit:events=>{edits++;settings=C.sanitize({...settings,jumpEvents:events});},seek:t=>seeks.push(t)}),checks=[];
 const check=(name,condition)=>{assert(condition,name);checks.push(name);};
@@ -72,6 +72,9 @@ elements.jumpInstantSpin.checked=true;elements.jumpInstantSpin.onchange();
 check('Instant spin edits only the selected jump',settings.jumpEvents[0].instantSpin===true&&settings.jumpEvents[1].instantSpin===false);
 elements.jumpMarkers.children[1].onclick();check('Unchecked marker shows its own spin mode',elements.jumpInstantSpin.checked===false);
 elements.jumpMarkers.children[0].onclick();check('Checked marker restores its spin mode',elements.jumpInstantSpin.checked===true);
+elements.jumpAttack.value='small-throw';elements.jumpAttack.onchange();check('Small throw shows charge and speed',!elements.jumpThrowFields.hidden&&!elements.jumpThrowCharge.disabled);
+elements.jumpThrowCharge.value='37';elements.jumpThrowCharge.onchange();elements.jumpThrowSpeed.value='1.5';elements.jumpThrowSpeed.onchange();check('Throw tuning persists per marker',settings.jumpEvents[0].throwCharge===37&&settings.jumpEvents[0].throwSpeed===1.5);
+elements.jumpAttack.value='big-throw';elements.jumpAttack.onchange();check('Big throw disables charge but retains speed',!elements.jumpThrowFields.hidden&&elements.jumpThrowCharge.disabled);
 const clone=JSON.parse(JSON.stringify(settings));check('Settings survive save and reload',JSON.stringify(C.sanitize(clone).jumpEvents)===JSON.stringify(settings.jumpEvents));
 check('All choreography edits leave the playhead alone',time===1.37&&seeks.length===0);
 const selected=editor.selected;listeners.pointerdown({target:elements.minorOptions});

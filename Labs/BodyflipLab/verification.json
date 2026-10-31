@@ -1,6 +1,6 @@
 {
   "engine": "Jolt WASM 1.1.1",
-  "clips": 320,
+  "clips": 321,
   "axes": [
     {
       "axis": 0,
@@ -78,82 +78,87 @@
   "attacks": [
     {
       "attack": "headbutt",
-      "maxAnchorError": 0.000731664635832769,
+      "maxAnchorError": 0.0009737052285306553,
       "passed": true
     },
     {
       "attack": "hookL",
-      "maxAnchorError": 0.00046316487117507653,
+      "maxAnchorError": 0.003098914491289775,
       "passed": true
     },
     {
       "attack": "hookR",
-      "maxAnchorError": 0.0002528098666281376,
+      "maxAnchorError": 0.003257524957558233,
       "passed": true
     },
     {
       "attack": "jabL",
-      "maxAnchorError": 0.0004097840308903819,
+      "maxAnchorError": 0.0015006671169948823,
       "passed": true
     },
     {
       "attack": "jabR",
-      "maxAnchorError": 0.00043265032944135595,
+      "maxAnchorError": 0.00043735269980808134,
       "passed": true
     },
     {
       "attack": "KickL",
-      "maxAnchorError": 0.0008340333429425774,
+      "maxAnchorError": 0.0012374900952025535,
       "passed": true
     },
     {
       "attack": "KickR",
-      "maxAnchorError": 0.0005957282917900341,
+      "maxAnchorError": 0.0007419287241996966,
       "passed": true
     },
     {
       "attack": "overL",
-      "maxAnchorError": 0.000287753284647146,
+      "maxAnchorError": 0.002630227271870867,
       "passed": true
     },
     {
       "attack": "overR",
-      "maxAnchorError": 0.0004198756017490257,
+      "maxAnchorError": 0.0027517037545205817,
       "passed": true
     },
     {
       "attack": "pike",
-      "maxAnchorError": 0.0010581922617337414,
+      "maxAnchorError": 0.0009256166016099248,
       "passed": true
     },
     {
       "attack": "slashL",
-      "maxAnchorError": 0.000955290912756532,
+      "maxAnchorError": 0.001053801204127177,
       "passed": true
     },
     {
       "attack": "slashLD",
-      "maxAnchorError": 0.00042085181334028436,
+      "maxAnchorError": 0.0006865155710218915,
       "passed": true
     },
     {
       "attack": "slashLU",
-      "maxAnchorError": 0.0010226854500085458,
+      "maxAnchorError": 0.0015857123707057868,
       "passed": true
     },
     {
       "attack": "slashR",
-      "maxAnchorError": 0.0015359921739289812,
+      "maxAnchorError": 0.0015320571762215919,
       "passed": true
     },
     {
       "attack": "slashRD",
-      "maxAnchorError": 0.0012785954396465169,
+      "maxAnchorError": 0.0016346316978811746,
       "passed": true
     },
     {
       "attack": "slashRU",
-      "maxAnchorError": 0.0008224128002965604,
+      "maxAnchorError": 0.0016493683635469558,
+      "passed": true
+    },
+    {
+      "attack": "sweepKick",
+      "maxAnchorError": 0.0011054744016602213,
       "passed": true
     }
   ],
@@ -237,11 +242,16 @@
       "attack": "slashRU",
       "before": 0.14142135623730956,
       "after": 0.0607062474478672
+    },
+    {
+      "attack": "sweepKick",
+      "before": 0.1414213562373095,
+      "after": 0.09844866383820154
     }
   ],
-  "maxAnchorError": 0.0015359921739289812,
-  "maxHingeExcess": 0.0009164137782544657,
-  "neutralMaxAngularErrorDeg": 4.36387442435685,
-  "elapsedMs": 7504.6186,
+  "maxAnchorError": 0.003257524957558233,
+  "maxHingeExcess": 0.00196003150362678,
+  "neutralMaxAngularErrorDeg": 2.662019441532454,
+  "elapsedMs": 15418.386400000001,
   "passed": true
 }

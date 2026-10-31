@@ -29,8 +29,8 @@ function create(names,parents,reference,strength){
     const center=add(pose.points[body.i],rotate(pose.q[body.i],body.offset)),basis=R.toAxes(qm(pose.q[body.i],body.rotation));
     const inertia=v=>basis.reduce((r,u,j)=>add(r,mul(u,dot(u,v)*body.inertia[j])),[0,0,0]);
     const angular=a.map((u,j)=>j===3&&body.i===chain.i?[0,0,0]:u),linear=angular.map((u,j)=>cross(u,sub(center,pose.points[j===3?chain.h.i:chain.i])));
-    const velocity=cross(delta,sub(center,c)),momentum=inertia(delta);
-    for(let i=0;i<4;i++){b[i]+=body.mass*dot(linear[i],velocity)+dot(angular[i],momentum);for(let j=0;j<4;j++)A[i][j]+=body.mass*dot(linear[i],linear[j])+dot(angular[i],inertia(angular[j]));}
+    const velocity=cross(delta,sub(center,c)),momentum=inertia(delta),angularInertia=angular.map(inertia);
+    for(let i=0;i<4;i++){b[i]+=body.mass*dot(linear[i],velocity)+dot(angular[i],momentum);for(let j=0;j<4;j++)A[i][j]+=body.mass*dot(linear[i],linear[j])+dot(angular[i],angularInertia[j]);}
    }
    // A little joint impedance keeps nearly straight chains well conditioned.
    for(let j=0;j<4;j++)A[j][j]+=.002;

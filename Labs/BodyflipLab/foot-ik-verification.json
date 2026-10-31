@@ -4,51 +4,51 @@
     {
       "gait": "walk",
       "approach": "toward",
-      "milliseconds": 214.8014,
+      "milliseconds": 318.5552,
       "active": 337,
-      "contacts": 138,
-      "minGap": -1.2442197938611343e-7,
-      "maxChange": 0.32771933001483183,
-      "maxBoneError": 2.3314683517128287e-15,
-      "maxKneeStep": 4.581650821907154
+      "contacts": 129,
+      "minGap": -1.2680862981895302e-7,
+      "maxChange": 0.3309772102301382,
+      "maxBoneError": 1.609823385706477e-15,
+      "maxKneeStep": 4.350144036792219
     },
     {
       "gait": "walk",
       "approach": "parallel",
-      "milliseconds": 170.71879999999993,
+      "milliseconds": 263.72900000000004,
       "active": 337,
-      "contacts": 175,
-      "minGap": -9.892846408038336e-8,
-      "maxChange": 0.22689851798711866,
-      "maxBoneError": 6.106226635438361e-16,
-      "maxKneeStep": 4.36235999505809
+      "contacts": 334,
+      "minGap": -1.8429037008937943e-7,
+      "maxChange": 0.21428630569602194,
+      "maxBoneError": 7.216449660063518e-16,
+      "maxKneeStep": 5.259815094187639
     },
     {
       "gait": "run",
       "approach": "toward",
-      "milliseconds": 170.15699999999993,
+      "milliseconds": 274.8198000000001,
       "active": 337,
-      "contacts": 40,
-      "minGap": -1.0287762997052141e-7,
-      "maxChange": 0.6946375423842033,
+      "contacts": 22,
+      "minGap": -2.801280958308894e-7,
+      "maxChange": 0.6562410910545065,
       "maxBoneError": 3.094746681142624e-15,
-      "maxKneeStep": 4.484404127475266
+      "maxKneeStep": 6.375548391012524
     },
     {
       "gait": "run",
       "approach": "parallel",
-      "milliseconds": 166.0783,
+      "milliseconds": 217.19229999999993,
       "active": 337,
-      "contacts": 147,
-      "minGap": -2.9651248834462046e-7,
-      "maxChange": 0.457873855751185,
+      "contacts": 143,
+      "minGap": -2.2898257918610443e-7,
+      "maxChange": 0.4420801222877711,
       "maxBoneError": 9.43689570931383e-16,
-      "maxKneeStep": 6.654074937035647
+      "maxKneeStep": 7.524148995795876
     },
     {
       "inclinedJump": true,
-      "supportGap": 5.644553247238365e-7,
-      "landingGap": 9.044886868368905e-7,
+      "supportGap": 6.045983390186163e-7,
+      "landingGap": 8.734525395168598e-7,
       "landing": 2.1875,
       "nnRequests": 1
     },

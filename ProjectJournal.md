@@ -4,6 +4,262 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Bodyflip October31 intermediate source checkpoint:** Lab/runtime tooling and
+authored throw data checkpointed before the new aim-miss investigation. Native
+shared C++ integration, generated packages and model exports remain local.
+
+**Bodyflip October31 - F145 foot-release snap fixed:**
+Release history was rebased before floor projection, causing a false penetration
+correction and capturing the wrong departing leg. Projection now runs in world
+coordinates before rebasing; physical flight starts with that captured constrained
+articulation while retaining contact momentum/COM velocity and the Jump% impulse.
+No new blend/gate/control. Saved F144->145 thigh change53.74->3.94deg; release
+seam0.121mm ankle/0.085deg knee. Both current markers still push at the same times.
+364 focused,1126 prior leg-continuity,566 physical checks,14 strength/five hand
+cases pass;19attack/684sample flipless Space gym remains exact. Runtime refreshed;
+no editor/live state edits or push. Older absolute world-follow assertion remains
+a documented pre-existing failure under the final rigid momentum correction.
+[Details and receipts](Labs/BodyflipLab/README.md).
+
+
+**Bodyflip October31 - predictable Jump % restored:**
+Follow-up: fixed axis-only saved J2 canceling during LOAD when the other toe
+touched ground atF141.5. Additional extremity contacts during an accepted PIN
+now remain support contacts, with collision response intact, until lifted clear.
+Head/torso and approach/free-fall landings unchanged. J2 now pushes2.4s and
+releases2.40792s. RISE/FALL uses resolved COM velocity including carrier bias.
+24 ownership/phase checks plus five hand cases pass; app replay confirmed.
+No saved-state/editor changes; runtime repackaged. See current lab README.
+Successful surface pushes now set COM takeoff energy directly from Jump%, plus
+the existing Rebound option. Previously percentage was only a stopping threshold
+for knee extension; early reaction release silently under-delivered regardless
+of requested strength. Shared100% height1.032640m; with rebound0,200%=2.065280m.
+Contact impulse at release, same load/pin/recovery and tangent carry; no new
+impulse on zero% or a miss before pushing. Applies to feet/hands with/without
+spin. Angular solve unchanged; non-spinning surface jumps correct translation
+only, approved flipless Space gym unchanged. Saved J2 comparison70%~.83m versus
+200%~2.16m with existing rebound.14 strength cases, five hand cases,566 flight
+checks pass. No live scene/Blueprint/editor mutation. Lab/runtime updated.
+[Current behavior and receipts](Labs/BodyflipLab/README.md).
+
+
+**Bodyflip October31 - active-spin physical balance, no-spin art preserved:**
+Follow-up: fixed lost jump height from averaging the last4.17ms of an accelerating
+push. The release seed now uses a second-order instantaneous COM derivative from
+contact-side samples. Saved J1 upward speed3.074->4.366m/s, ballistic rise.482->.972m;
+contact drive/Jump% unchanged.562 flight checks, five hand cases and exact19attack
+no-spin preservation pass. Lab/runtime updated; no live scene or editor changes.
+Before the explicit Jump% contract above: old J1 COM rise1.226m versus ballistic.972m
+(~21% lower). Old root speed4.629m/s exceeds COM4.366m/s, and animated recovery
+adds.138m relative COM lift after release. Derivative fix alone does not restore
+old height. The subsequent launch contract above supersedes this ambiguity.
+The scene timings and aim measurements below predate this velocity correction.
+One shared-mass3x3 COM reaction solve now balances final attack/aim/released-limb
+motion, with ballistic COM before collision/landing. `3D momentum` appended at
+bottom of More options (on=fullvector, off=commandedaxis component). No-spin
+microgravity art deliberately remains exact:19attacks/684samples pass globally
+and after aiming, both modes. No physicaltrack is created for inactive spin.
+Saved J2 fullmomentum error<.00043kg m^2/s; prior F140-150 reversal removed.
+Five hand/contact cases pass; double carrieroffset atrelease fixed (seam1.64um).
+Core≈.7-1ms per60Hzframe at240Hz; separate cached targetplanning≈134ms and full
+saved-scene preparation8.77s. Aim is bounded/approximate: saved3D residual≈4.9deg
+toward partialaim goal, axis≈22.9deg; no promise of arbitraryphysical hitdirections.
+Actualapp/nativeadapter6frames agree; nativeJS package updated. No C++/Blueprint/
+editor rebuild, scene mutation or preview-art rewrite. Detailed receipts/scope:
+[Current Bodyflip handoff](Labs/BodyflipLab/README.md).
+
+
+**Bodyflip October31 - physical audit before balance:**
+Current saved slash sampled F134-194 through all stages,240/480Hz differences.
+All25body momentum about COM along flip axis35.45 atF140 ->-2.00 atF150 ->35.00
+atF160 kg m^2/s, despite no contact (minimum collider clearance8.78cm F138-164).
+Opposite-angle compensation is an authored momentum target, not a conservation
+target; smoothing changes it afterward. Fixed-axis spin ignores moving-limb
+momentum, then support-leg follow and aim change it again without reaction.
+Post-Hit pelvis return overwrites angular evolution; COM is also not ballistic.
+Last joint-order fix removed a real bug but did not resolve these wider issues.
+No production/state/editor changes in audit. Detailed findings, recommendation
+and physical-audit receipts/chart are linked in the current lab README.
+[Physical audit](Labs/BodyflipLab/README.md).
+
+
+**Bodyflip October31 - compensation now includes joint limits:**
+Fixed saved slash's pelvis slowdown caused by computing compensation from torso
+rotation that was later discarded. Source, target and solver trials now obey
+the existing joints; smoothed output and recovery do too, preserving COM.
+F148-150 late spine01 rejection60.8deg -> numerical zero. Saved F144 pelvis
+speed along flip axis40->93deg/s; F156406->313deg/s. Intended counterrotation
+still changes visible pelvis speed. No percentage, timing, spin or scene edits.
+56cases/2750samples across14attacks and both rig profiles pass, including zero
+pelvis response to discarded motion, COM and deterministic seeking;17attack
+entry and60aim cases pass. Native JS package refreshed; no C++/editor changes.
+[Current details and receipts](Labs/BodyflipLab/README.md).
+
+
+**Bodyflip October31 - live angular-distance arming, all19attacks:**
+Direct to Armed now scales GT windup seconds by current->Armed joint angular
+distance / accumulated GT windup angular distance. Includes the live harness's
+with/without-forearms clock comparison. Removes fixed GT duration floor; keeps
+the explicit Attack In minimum and existing smooth interpolation. Kicks share
+the clock with viewer/manual paths; both throws now honor Direct to Armed,
+retaining charge-specific post-Armed motion and release. Carrier spin and the
+separate aiming correction are not part of articulation timing.
+Current J2 slash arms in.230350s vs.333333s, hits at2.741053178vs2.844036587.
+1141checks across19attacks, actual live-harness distance oracle,2571entry samples,
+11221hinge-axis samples,2004kick samples,60aim and6native throw cases pass.
+Runtime-only native package updated;48frames/10595values exact V8 parity.
+No saved-state/desktop/editor/C++ changes. Lab README records scope and receipts.
+
+
+**Bodyflip October31 - slash arm snaps fixed; Modified rotations removed:**
+Removed the rejected experimental checkbox, setting and solver branch; fixed
+combined world-axis spin remains. No saved scene/tuning/playback edits.
+Saved slashL had an off-hinge forearm blend, then abrupt joint projection at
+F148/F155. Arm keys now fit the existing rig before matching/interpolation;
+source spine/legs and attack timings remain. Actual app F130-205 replay:
+F148 shoulder/elbow/wrist13.79/13.11/15.00 ->4.25/.60/3.46deg per frame;
+F155 28.12/28.10/28.57 ->7.23/4.40/2.64deg.17attacks/2700entry samples,
+56arm cases/11520samples (lab/native, both entry modes),60native aim cases and
+4381fixed-axis spin checks pass. Tests establish hinge-axis continuity; raw
+polynomial angle overshoot still uses existing final joint projection.
+Full native JS package rebuilt, native-slash V8 parity8frames/1729values exact.
+No editor/desktop use or C++ change. Saved slash receipts under
+Saved/Diagnostics/BodyflipPort20261030; current lab README has scope/details.
+
+
+**Bodyflip October30 - commanded spin axis restored (default mode):**
+User rejected the full-tensor experiment's unwanted twist on jump1. Spin now
+captures flip/twist vectors in world space and applies inertia scaling along
+their combined axis, so a front flip cannot gain an unrequested global twist.
+Mixed-spin direction remains fixed between commands rather than following pelvis.
+This supersedes full articulated momentum conservation; it is axis-controlled
+animation with axial inertia scaling. Recoil/contacts/authored poses remain.
+4381 regressions pass including delayed launch, moving poses, all tested axes,
+Keep/reversal/zero; measured axis error below0.0000015deg, axial error0.000751%.
+Saved260-frame rollout re-recorded, first flip stays in plane, no saved tuning
+or markers changed. Runtime-only packaging updated; native parity receipt is
+Saved/Diagnostics/BodyflipPort20261030/axis-native-parity.json. No editor use.
+Both saved jumps now report Push (1.2354167s /2.2666667s). Native kick/foot/hands
+parity passes all24frames with zero numeric differences. Served lab source verified.
+[Current lab handoff](Labs/BodyflipLab/README.md).
+
+
+**Bodyflip October30 - full-tensor conservation experiment (superseded above):**
+spin.js now transports world angular momentum between authored commands and
+solves full collider inertia plus orbital/intrinsic articulation momentum.
+It no longer adds world-fixed flip velocity to a pelvis-following twist velocity.
+4365 focused checks pass, including recoil/moving poses/Keep/delay/ramp/zero;
+independent collider trajectories give max0.131deg direction error /0.539%
+vector error, versus the old frozen-pose combined-spin ~80deg drift.
+Runtime-only package rebuilt; native V8 parity24frames/5228values exact. No C++
+build/editor or saved setup change. Old scalar-speed spin assertions are
+superseded, not reported as passing. Current260-frame replay completes, but its
+corrected rotation makes upperarm_l contact at2.2791667s before jump2's planned
+push2.31875s, so jump2 now reports Miss. No timing/contact rules were changed.
+Jump1's push remains1.2354167s. Free-flight segment vector error below0.179%.
+Updated in-chat recording; receipts Saved/Diagnostics/BodyflipPort20261030/
+momentum-*. See [lab handoff](Labs/BodyflipLab/README.md).
+User accepted the changed pure-flip trajectory and will retime jumps themselves;
+keep the full momentum correction and do not adjust their saved markers.
+
+
+**Bodyflip October30 - typed Blueprint options built and verified:**
+User requested normal Blueprint pins instead of JSON. Added typed Settings and
+Spin/Pose/Attack structs, attack/push/pose/axis/sequence enums, and normal
+Start Bodyflip / Queue Bodyflip Jump nodes. Jump %, Push With and At Time are
+direct pins; option structs split into writable pins or Make Struct nodes.
+All20 attack choices include None, Sweep Kick and Big/Small Throw. Native pins
+use centimetres/seconds/degrees; inheritance distinguishes unchanged spin from
+explicit zero. No motion solver changes. Legacy JSON nodes remain deprecated
+to preserve prior wiring. UHT and normal build-blueprint-options-retry.log passed.
+Unity regrouping exposed a missing UObject/Package.h include in BombBake; only
+that include was added, no bomb behavior changed. Source-to-lab mapping checks48
+settings/20 attacks. Native Controls.BlueprintOptions passes with zero errors or
+warnings: callable reflection, writable/splittable option fields, all attack IDs,
+inheritance versus explicit zero, defaults and cm/seconds conversions. Report:
+Saved/Diagnostics/BodyflipPort20261030/Reports/blueprint-options. Reused host exited;
+no user editor or Play restarted. Updated DLLs load on the next project launch.
+
+
+**Bodyflip October30 - throws/predictive aim and native port validated:**
+Approved jump/landing/starting-yaw checkpoint67516390 pushed and remote verified;
+exact saved scene in Labs/BodyflipLab/approved/2026-10-30. New local integration:
+Big/Small approved throws share marker UI and Jolt world; actual projectile COM
+exit velocity includes body translation/spin. Future complete-body aim honors
+Armed/Hit/Release deadlines, joint limits, spine-first bend and necessary residual
+pelvis tilt. Legal local-coordinate path removes intermediate rotation snaps.
+714 melee target cases,51 dense240Hz paths,72throw cases pass; actual collider
+sheets inspected. Default Spin lag60% now covers every spin change; saved0 retained.
+878 exact parity checks for lossless optimization; projection median~9.7% faster,
+full spin unchanged. Current scenes untouched. Native solver/NN/Jolt port passes
+all five final actual physical cases: kinematic/sim, Big Throw, Small Throw,
+one-hand push and two-hand push (Reports/release-final). Native entry plans from
+the held current pose; hand follow/return continues through landing. Base errors
+are5.45cm maximum/.231cm RMS,19.35deg maximum rotation. Both palms register solved
+floor impulses inside the push interval. The one-hand segment discrepancy is
+2.954cm against the unchanged3cm limit: a narrow pass, not zero physical error.
+Actual PHAT hinge/connector IK passes7,224 checks. The physical hinge supplies
+the bend plane at near-straight elbows; separate hand departure boundaries avoid
+recursive spin-history reads.248 checks/73frames cover release and reverse seek.
+All five actual collider sheets and dense hand contact/release frames inspected.
+Native profile supplies23 bodies/78.25kg, actual inertia, constraints and shapes;
+saved PHAT/tuning and ordinary lab defaults remain unchanged. No motor or test
+threshold was relaxed. Normal build-entry-return.log succeeded; the isolated
+DLL-copy host is reused, sharing assets and excluding PDB copies.
+Private single-thread ORT continuation matches64poses/4profiles within9.65e-6;
+V8/ownership/trim/cancellation/budget/finite-parent checks pass. Saved260frame
+scene prepares with real NN in62.737s. These are preparation costs, not gameplay
+FPS. Earlier lossless wrist/contact replay matched8complete frames/1,740values.
+Release cache now matches52 commands against current uncached code, reducing
+launch computations54 to10; the latest paging-affected timing shows no speedup.
+Final packagecaf24be9 matches Node/V8 exactly on24frames/5,216 numeric values;
+the ordinary lab profile retains20 byte-identical complete outputs.
+Native CarrierHeading passes. The entry test has105 checks and common blend
+checks39; three obsolete F59 knee expectations fail identically with and without
+the transition fix, with all other76 checks/metrics unchanged.
+Storage follow-up: after explicit user authorization to use the Recycle Bin,
+eight disposable cache/obsolete-engine/archive paths (181,474,003bytes,173MiB)
+were recycled, with no permanent deletion. Earlier rejected cleanup did nothing.
+Receipt: Saved/Diagnostics/BodyflipPort20261030/recycled-files.json. Working host
+binaries, packaging dependencies and verification evidence retained. Bin contents
+still occupy disk space until emptied. User editor/Play, wiring/tuning, scenes and parallel
+Foot IK work remain untouched. Native use is opt-in through StartBodyflip; the
+new integration is local, not part of the previously pushed checkpoint67516390.
+[Native rig contract](Docs/BodyflipNativeRig20261030.md), [Lab](Labs/BodyflipLab/README.md),
+[aim audit](Docs/BodyflipPredictiveAimAudit20261030.md),
+[native status](Docs/BodyflipNative.md).
+
+
+**Bodyflip October30 - starting yaw (approved checkpoint67516390):**
+Start yaw appended to bottom of More options, default0deg. Facing only; world
+root velocity/path unchanged.180deg uses rotated gait-phase history and the
+existing seeded NN for backward locomotion, with trim-bounded recurrence.
+Idle/Space rotate pose only; jump sources follow initial heading.3132 checks and
+actual F0-60 backward NN pass;809 landing checks retained. Scene untouched,
+Checkpoint pushed; Refresh loads. [Details](Labs/BodyflipLab/README.md).
+
+
+**Bodyflip October30 - landing pelvis heading / continuity (approved checkpoint67516390):**
+Landing root yaw follows pelvis facing; both history poses and root commands
+enter the unchanged NN in that frame, then predictions return to world space.
+Root momentum/path unchanged. Current twist300 landing179deg stays backward
+through F228;808 previous-scene +809 backward-scene checks pass,1126 earlier
+jump checks pass. No scene writes or server restart; included in checkpoint67516390.
+[Current details](Labs/BodyflipLab/README.md).
+
+Preceding continuity fix:
+F195 traced to two landing blend errors: rotating virtual-root reference back
+to NN identity orbited the physical pelvis, and backward extrapolation of a
+future NN endpoint invented the right thigh loop. Rebase only the virtual root,
+retain physical world pose, then transition to the actual seeded rollout.
+Current F194->195 thigh135.3deg ->3.1deg; dense recovery COM forward>=4.51m/s,
+root remains5m/s.667 landing checks and1126 prior jump checks pass; old code
+fails new detector. Historical body-landing F131 assertion fails identically
+before/after; old trim-generation incremental-request assertion also fails on
+both versions. Offline collider frames inspected; scene untouched, Refresh loads,
+not pushed. [Details/evidence](Labs/BodyflipLab/README.md).
+
+
 **Main-menu scene October30 — approved finite-card reflection checkpoint:**
 User rejected wavy/flat/wavy distance bands. Removed that extra wave layer and
 ring-normal broadening. The original seeded impacts now cover their full support.

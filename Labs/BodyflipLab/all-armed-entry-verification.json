@@ -1,9 +1,9 @@
 {
-  "attacks": 16,
-  "samples": 2596,
-  "maxNativeError": 1.0081045149458743e-14,
-  "maxEndpointError": 3.885780586188048e-16,
-  "maxEntryStep": 4.333751914749704e-13,
+  "attacks": 17,
+  "samples": 2571,
+  "maxNativeError": 5.977703055202978e-15,
+  "maxEndpointError": 4.8517557956400854e-15,
+  "maxEntryStep": 5.335968287495136e-13,
   "maxArmedVelocityJump": 0.00001951857170502353,
   "maxManualParity": 1.5700924586837752e-16,
   "checked": [
@@ -22,6 +22,7 @@
     "slashLU",
     "slashR",
     "slashRD",
-    "slashRU"
+    "slashRU",
+    "sweepKick"
   ]
 }

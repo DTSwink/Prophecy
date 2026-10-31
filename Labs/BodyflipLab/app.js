@@ -1,7 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id),R=Recovery,C=BodyflipCore,{add,sub,mul,dot,cross,length:norm,unit:normalize}=R;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),posAt=(data,j)=>data.points[j],axisAt=(data,j,a)=>data.axes[j][a];
-let names=[],parents=[],nameToIndex=new Map(),swordMesh=null,manifest=null,idle=null,basePelvis=null,physics=null,renderer=null,clip=null;
+let names=[],parents=[],nameToIndex=new Map(),swordMesh=null,manifest=null,idle=null,basePelvis=null,physics=null,throwController=null,renderer=null,clip=null;
 let settings=C.sanitize(),flip=0,twist=0,attackTime=-1,playing=false,raf=null,lastStamp=0,accumulator=0,saveTimer=null,currentPose=null,desiredPose=null,previousContact=null,hit=false,bestMiss=Infinity,simTime=0,loadRevision=0;
 const F=BodyflipFlight;let flight=null,jumps=[],run=null,flightFrame=null,runRevision=0,loadingRun=false;const runCache=new Map();let seekRevision=0,seeking=false,lastHUD=0;
 const pivot=[0,1.5,0],cameraDefault={yaw:-.55,pitch:-.06,zoom:.95,panX:0,panY:0,free:false,offset:null,freeView:null},cameraState={...cameraDefault},cache=new Map(),errors=[];
@@ -71,7 +71,7 @@ function save(){clearTimeout(saveTimer);if(!sceneReady||sceneChanging)return;sav
 function wrap(x){return ((x+180)%360+360)%360-180;}
 function rotation(){return C.orientation(flip,twist,settings.axis,basePelvis);}
 const vanillaAttacks=new Map();let vanillaManifest=null;
-async function loadVanilla(){const needed=[...new Set([settings.attack,...F.eventsFor(settings).map(e=>C.sanitizeJump(e).attack)])].filter(n=>n!=='none'&&!vanillaAttacks.has(n));if(!needed.length)return;vanillaManifest ||= await fetch('data/vanilla.json').then(r=>r.json());for(const name of needed){const meta=vanillaManifest.clips.find(c=>c.name===name);if(!meta)throw Error('Missing vanilla attack '+name);const bytes=await fetch(meta.file).then(r=>r.arrayBuffer());vanillaAttacks.set(name,C.decode(meta,bytes,names,parents));}}
+async function loadVanilla(){if(F.eventsFor(settings).some(e=>BodyflipThrowAttack.accepts(e.attack))&&!BodyflipThrowAttack.data)BodyflipThrowAttack.load(await fetch('data/throws.json').then(r=>r.json()));const needed=[...new Set([settings.attack,...F.eventsFor(settings).map(e=>C.sanitizeJump(e).attack)])].filter(n=>n!=='none'&&!BodyflipThrowAttack.accepts(n)&&!vanillaAttacks.has(n));if(!needed.length)return;vanillaManifest ||= await fetch('data/vanilla.json').then(r=>r.json());for(const name of needed){const meta=vanillaManifest.clips.find(c=>c.name===name);if(!meta)throw Error('Missing vanilla attack '+name);const bytes=await fetch(meta.file).then(r=>r.arrayBuffer());vanillaAttacks.set(name,C.decode(meta,bytes,names,parents));}}
 function manualPose(time,basePose,sourceClip=clip,config=settings){
  if(config.kickToArmed||BodyflipKickAttack.accepts(config.attack))return basePose;
  const raw=C.sample(sourceClip,time,idle,parents),target=BodyflipJumpAttack.carryPelvis(R.localize(raw.points,raw.q,parents),R.localize(sourceClip.poses[0].points,sourceClip.poses[0].q,parents),names.indexOf('spine_01'),parents),upper=BodyflipJumpAttack.bones(names,parents);
@@ -98,21 +98,42 @@ function manualSoft(pose,basePose){
   }
   const hitTime=.15+(phases.hit??sourceClip.poses.length*.7)/fps,returnEnd=sourceClip.duration+.6,soft=config.softAttackLegs&&config.pelvisAttackCompensation>0;
   const choreography=soft?BodyflipAttackInertia.referenceMotion({clip:{...sourceClip,meta:{...sourceClip.meta,phases}},names,parents,reference:idle,start:0,armedTime:.15+(phases.armed??sourceClip.poses.length*.4)/fps,hitTime,end:.15+sourceClip.duration,returnEnd,amount:config.pelvisAttackCompensation}):null;
-  const source=t=>manualPose(t,base(t),sourceClip,config),inertia=soft?BodyflipAttackInertia.create({amount:config.pelvisAttackCompensation,choreography,source,base,target:(t,raw,baseline)=>BodyflipJumpAttack.compensate(raw||source(t),baseline||base(t),names,parents,config.pelvisAttackCompensation),start:0,end:returnEnd,recoveryStart:sourceClip.duration+.15,recoveryEnd:returnEnd,names,parents,reference:idle}):null;
-  const displayed=(t,raw=source(t))=>inertia?inertia.sample(t,raw):BodyflipJumpAttack.compensate(raw,base(t),names,parents,config.pelvisAttackCompensation);
-  const recovery=R.pelvisReturn({source:displayed,base,parents,start:hitTime,end:returnEnd,pelvis:names.indexOf('pelvis')}),response={...inertia,start:0,armedTime:.15+(phases.armed??sourceClip.poses.length*.4)/fps,end:.15+sourceClip.duration,hitTime,returnEnd,recovery,sample:(t,raw)=>t<=hitTime?displayed(t,raw):recovery.sample(t)};
+  const legal=BodyflipAttackInertia.createProjection(names,parents,idle),source=t=>manualPose(t,base(t),sourceClip,config),inertia=soft?BodyflipAttackInertia.create({amount:config.pelvisAttackCompensation,choreography,source,base,target:(t,raw,baseline)=>BodyflipJumpAttack.compensate(raw||source(t),baseline||base(t),names,parents,config.pelvisAttackCompensation),start:0,end:returnEnd,recoveryStart:sourceClip.duration+.15,recoveryEnd:returnEnd,names,parents,reference:idle}):null;
+  const displayed=(t,raw=source(t))=>inertia?inertia.sample(t,raw):config.pelvisAttackCompensation>0?legal(BodyflipJumpAttack.compensate(legal(raw),legal(base(t)),names,parents,config.pelvisAttackCompensation)):raw;
+  const recovery=R.pelvisReturn({source:displayed,base,parents,start:hitTime,end:returnEnd,pelvis:names.indexOf('pelvis')}),response={...inertia,start:0,armedTime:.15+(phases.armed??sourceClip.poses.length*.4)/fps,end:.15+sourceClip.duration,hitTime,returnEnd,recovery,sample:(t,raw)=>t<=hitTime?displayed(t,raw):config.pelvisAttackCompensation>0?legal(recovery.sample(t)):recovery.sample(t)};
   manualResponse={begun,name:config.attack,rate:config.attackRate,response,last:0};
  }
  manualResponse.last=attackTime;return manualResponse.response.sample(attackTime,pose);
 }
 const aimPlans=new WeakMap();let displayedAim=null;
+function makeAimPlan(track,source,sampleHit){
+ const project=p=>typeof physics!=='undefined'&&physics?physics.target(p):p;
+ const launchAt=track.launchAt?(pose,transform=p=>p)=>track.launchAt(pose,track.transportVelocity(t=>transform(sampleHit(t),t))):null;
+ return BodyflipAttackAim.create({clip:source,track,names,parents,reference:idle,sampleHit,launchAt,project});
+}
+function aimTimelinePoseAt(time,rawPose=null,display=false){
+ const pose=rawPose||flight.sample(time).pose;
+ if(flight.sample(time).physicalAim)return pose;
+ if(!settings.aim)return pose;
+ const entries=(flight.segments||[]).filter(s=>s.attack&&time>=s.attack.start).map(s=>({track:s.attack,name:s.event.attack}));
+ let rotation=[0,0,0,1],last=null;
+ for(let i=0;i<entries.length;i++){
+  const {track,name}=entries[i];if(settings.undoRotation&&time>=track.returnEnd)continue;
+  const source=vanillaAttacks.get(name);if(!source&&!track.launchAt)continue;
+  let plan=aimPlans.get(track);if(!plan){plan=makeAimPlan(track,source,t=>flight.sample(t).pose);aimPlans.set(track,plan);}
+  if(settings.undoRotation){if(display)displayedAim=plan;return plan.apply(pose,time,settings.target,settings.aimWeight);}
+  rotation=plan.rotation(Math.min(time,entries[i+1]?.track.start??time),settings.target,settings.aimWeight,false,rotation);last=plan;
+ }
+ if(display)displayedAim=last;return last?last.applyRotation(pose,rotation):pose;
+}
+function configureThrows(){if(throwController&&flight)throwController.configure(flight,t=>physics.target(aimTimelinePoseAt(t)),[settings.target.join(','),settings.aim,settings.aimWeight,settings.undoRotation].join('|'));}
 function heldAim(pose){
- const entries=(flight.segments||[]).filter(s=>s.attack&&simTime>=s.attack.start).map(s=>({track:s.attack,name:s.event.attack,start:s.attack.start,rate:1,time:simTime,sample:t=>s.attack.sample(t).pose}));
+ const entries=(flight.segments||[]).filter(s=>s.attack&&simTime>=s.attack.start).map(s=>({track:s.attack,name:s.event.attack,start:s.attack.start,rate:1,time:simTime,sample:t=>flight.sample(t).pose}));
  if(manualResponse&&simTime>=manualResponse.begun)entries.push({track:manualResponse.response,name:manualResponse.name||settings.attack,start:manualResponse.begun,rate:manualResponse.rate,time:Math.max(0,(simTime-manualResponse.begun)*manualResponse.rate),sample:t=>manualResponse.response.sample(t)});
  entries.sort((a,b)=>a.start-b.start);let rotation=[0,0,0,1],last=null;
  for(let i=0;i<entries.length;i++){
-  const e=entries[i],source=vanillaAttacks.get(e.name);if(!source)continue;
-  let plan=aimPlans.get(e.track);if(!plan){plan=BodyflipAttackAim.create({clip:source,track:e.track,names,parents,reference:idle,sampleHit:e.sample});aimPlans.set(e.track,plan);}
+  const e=entries[i],source=vanillaAttacks.get(e.name);if(!source&&!e.track.launchAt)continue;
+  let plan=aimPlans.get(e.track);if(!plan){plan=makeAimPlan(e.track,source,e.sample);aimPlans.set(e.track,plan);}
   // The next attack starts from the orientation reached by its predecessor.
   const time=i+1<entries.length?e.time-(simTime-entries[i+1].start)*e.rate:e.time;
   rotation=plan.rotation(time,settings.target,settings.aimWeight,false,rotation);last=plan;
@@ -120,17 +141,22 @@ function heldAim(pose){
  displayedAim=last;return settings.aim&&last?last.applyRotation(pose,rotation):pose;
 }
 function aimAttack(pose){
- displayedAim=null;if(!flight)return pose;if(settings.undoRotation===false)return heldAim(pose);
+ displayedAim=null;if(!flight)return pose;if(flightFrame?.physicalAim&&!manualResponse){displayedAim=flight.activeAt(simTime)?.physical?.track?.plan||null;return pose;}if(!manualResponse)return aimTimelinePoseAt(simTime,pose,true);if(settings.undoRotation===false)return heldAim(pose);
  let track,time,name,hitSample;
  if(manualResponse){track=manualResponse.response;time=attackTime>=0?attackTime:Math.max(0,(simTime-manualResponse.begun)*manualResponse.rate);name=settings.attack;hitSample=t=>track.sample(t);}
- if(!track||time>=track.returnEnd){const segment=flight.activeAt(simTime);track=segment?.attack;time=simTime;name=segment?.event?.attack;hitSample=t=>track.sample(t).pose;}
+ if(!track||time>=track.returnEnd){const segment=flight.activeAt(simTime);track=segment?.attack;time=simTime;name=segment?.event?.attack;hitSample=t=>flight.sample(t).pose;}
  if(!track||time<(track.start??0)||time>=track.returnEnd)return pose;
- const source=vanillaAttacks.get(name);if(!source)return pose;
- let plan=aimPlans.get(track);if(!plan){plan=BodyflipAttackAim.create({clip:source,track,names,parents,reference:idle,sampleHit:hitSample});aimPlans.set(track,plan);}
+ const source=vanillaAttacks.get(name);if(!source&&!track.launchAt)return pose;
+ let plan=aimPlans.get(track);if(!plan){plan=makeAimPlan(track,source,hitSample);aimPlans.set(track,plan);}
  displayedAim=plan;
  return settings.aim?plan.apply(pose,time,settings.target,settings.aimWeight):pose;
 }
-function refreshAim(){
+function refreshAim({preview=false}={}){
+ if(flight?.segments?.some(s=>s.spin?.active)){
+  if(preview){drawAll();return;}
+  prepareRun({preserveTime:true}).catch(fail);return;
+ }
+ configureThrows();
  if(physics&&settings.motion==='kinematic'){desiredPose=targetPose();physics.reset(desiredPose,flightFrame?.handInertia?.velocity||flightFrame?.velocity||[0,0,0]);currentPose=physics.read();previousContact=null;hit=false;bestMiss=Infinity;}
  drawAll();
 }
@@ -141,7 +167,7 @@ function targetPose(){if(!flight&&settings.mode==='idle'&&idleLoop){flip=twist=0
   else if(manualResponse)pose=manualResponse.response.sample(Math.max(0,(simTime-manualResponse.begun)*manualResponse.rate),pose);
  }else pose=C.centerPose(raw,rotation(),pivot);
  return aimAttack(pose);}
-function resetPhysics(){if(!physics)return;const dynamic=!!flight;physics.configure({dynamic,kinematic:settings.motion==='kinematic',edge:flight?.edge||5,surfaces:flight?.surfaces,cap:settings.fallCap,zeroGravity:settings.mode==='spaceGym'});desiredPose=targetPose();if(dynamic||settings.motion==='kinematic')physics.reset(desiredPose,flightFrame?.handInertia?.velocity||flightFrame?.velocity||[0,flightFrame?.vy||0,flight?.speed||0]);else {const rest=settings.mode==='idle'?desiredPose:C.centerPose(idle,rotation(),pivot);physics.reset(rest);for(let i=0;i<60;i++)physics.step(desiredPose,dt);}currentPose=physics.read();previousContact=null;drawAll();}
+function resetPhysics(){if(!physics)return;const dynamic=!!flight;physics.configure({dynamic,kinematic:settings.motion==='kinematic',edge:flight?.edge||5,surfaces:flight?.surfaces,cap:settings.fallCap,zeroGravity:settings.mode==='spaceGym'});configureThrows();desiredPose=targetPose();if(dynamic||settings.motion==='kinematic')physics.reset(desiredPose,flightFrame?.handInertia?.velocity||flightFrame?.velocity||[0,flightFrame?.vy||0,flight?.speed||0]);else {const rest=settings.mode==='idle'?desiredPose:C.centerPose(idle,rotation(),pivot);physics.reset(rest);for(let i=0;i<60;i++)physics.step(desiredPose,dt);}currentPose=physics.read();previousContact=null;drawAll();}
 async function prepareRun({preserveTime=false}={}){manualResponse=null;
  const savedTime=preserveTime?simTime:0,savedAttack=preserveTime?attackTime:-1,resume=preserveTime&&playing;
  const rev=++runRevision,editSeek=++seekRevision;const ready={};ready.promise=new Promise(resolve=>{ready.resolve=resolve;});preparingRun=ready;seeking=false;setPlaying(false);const pausedRevision=playRevision;
@@ -175,6 +201,21 @@ function cancelAttack(){manualResponse=null;attackTime=-1;previousContact=null;h
 let contactAttackKey=null;
 function displayedAttack(){return attackTime>=0?settings.attack:flightFrame?.attack?.name||settings.attack;}
 function measureAttackContact(){
+ if(attackTime<0){
+  const latest=(flight?.segments||[]).map(s=>s.attack).filter(a=>a&&a.start<=simTime).at(-1);
+  if(latest?.isThrow){
+   if(simTime<latest.releaseTime){previousContact=null;return;}
+   configureThrows();
+   const plan=throwController?.plans.find(p=>Math.abs(p.releaseTime-latest.releaseTime)<1e-8);
+   const body=plan&&throwController.sample(simTime,currentPose).find(p=>p.id===plan.id);
+   if(!body){previousContact=null;return;}
+   const key='projectile:'+plan.id;
+   if(key!==contactAttackKey){contactAttackKey=key;previousContact=null;hit=false;bestMiss=Infinity;}
+   const point=BodyflipAttackAim.launchCenter(body);let d=norm(sub(point,settings.target));
+   if(previousContact)d=Math.min(d,C.segmentDistance(settings.target,previousContact,point));
+   bestMiss=Math.min(bestMiss,Math.max(0,d-settings.radius));hit||=d<=settings.radius+.025;previousContact=point;return;
+  }
+ }
  const scheduled=attackTime<0?flightFrame?.attack:null,name=displayedAttack();
  const active=scheduled?scheduled.phase==='ATTACK':attackTime>=.15&&attackTime<=.15+clip.duration;
  if(!active){previousContact=null;return;}
@@ -189,7 +230,7 @@ function tick(endTime=Infinity){const count=settings.motion==='kinematic'?1:4,dt
  simTime+=dt;
  if(flight&&settings.airFlip){const air=Math.max(0,simTime-flight.airStartAt(simTime));flip=settings.flipAngle+settings.flipSpeed*air;twist=settings.twistAngle+settings.twistSpeed*air;}
  if(attackTime>=0){attackTime+=settings.attackRate*dt;if(attackTime>total()){if(settings.loop){attackTime=0;hit=false;bestMiss=Infinity;previousContact=null;}else attackTime=-1;}}
- desiredPose=targetPose();physics.step(desiredPose,1/240);currentPose=physics.read();
+ desiredPose=targetPose();physics.step(desiredPose,1/240,simTime);currentPose=physics.read();
  measureAttackContact();
  }}
 async function ensurePrepared(time,cancelled=()=>false){
@@ -219,7 +260,7 @@ function setPlaying(value){++playRevision;if(value&&physics&&!loadingRun&&!seeki
 const cameraKeys=new Set();let cameraRAF=null,cameraStamp=0;
 function syncCameraUI(){
  $('followCamera').checked=!cameraState.free;
- const hint=cameraState.free?'QZDS: move � Drag: look � Wheel: zoom � Middle: pan':'Click: select � Drag: orbit � Wheel: zoom � Middle: pan';if($('cameraHint').textContent!==hint)$('cameraHint').textContent=hint;
+ const hint=cameraState.free?'QZDS: move � Drag: look � Wheel: zoom � Middle: pan':'Click: select � Drag: orbit � Wheel: zoom � Middle: pan';if($('cameraHint').textContent!==hint)$('cameraHint').textContent=hint;
  const note=document.querySelector('.footer-note'),text=note.textContent.replace(/COM follow|Free camera/,cameraState.free?'Free camera':'COM follow');if(note.textContent!==text)note.textContent=text;
 }
 function stopCameraMovement(){cameraKeys.clear();if(cameraRAF!==null)cancelAnimationFrame(cameraRAF);cameraRAF=null;cameraStamp=0;save();}
@@ -244,10 +285,10 @@ class BodyflipRenderer extends WebGLMotionRenderer{
   const c=this.canvas;c.addEventListener('contextmenu',e=>e.preventDefault());
   c.addEventListener('pointerdown',e=>{e.preventDefault();c.setPointerCapture(e.pointerId);this.drag={x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,button:e.button,select:e.button===0&&!e.altKey,moved:false};if(this.drag.select)this.drag.selection=platformEditor?.previewSelection(e.clientX,e.clientY);});
   c.addEventListener('pointermove',e=>{if(!this.drag)return;if(this.drag.select&&!this.drag.moved){if(Math.hypot(e.clientX-this.drag.startX,e.clientY-this.drag.startY)<4)return;this.drag.moved=true;if(this.drag.selection){platformEditor?.finishSelection(this.drag.selection,true,true);this.drag.selection=null;}}const dx=e.clientX-this.drag.x,dy=e.clientY-this.drag.y;this.drag.x=e.clientX;this.drag.y=e.clientY;
-   if(this.drag.button===2&&this.viewCamera){const v=this.viewCamera,depth=Math.max(.3,dot(sub(settings.target,v.eye),v.forward)),scale=depth/v.focalCss;settings.target=add(settings.target,e.shiftKey?mul(v.forward,-dy*scale):add(mul(v.right,dx*scale),mul(v.up,-dy*scale)));syncTarget();refreshAim();}
+   if(this.drag.button===2&&this.viewCamera){const v=this.viewCamera,depth=Math.max(.3,dot(sub(settings.target,v.eye),v.forward)),scale=depth/v.focalCss;settings.target=add(settings.target,e.shiftKey?mul(v.forward,-dy*scale):add(mul(v.right,dx*scale),mul(v.up,-dy*scale)));syncTarget();refreshAim({preview:true});}
    else if(this.drag.button===1){BodyflipCamera.pan(cameraState,this.viewCamera,dx,dy);}else{if(e.altKey&&platformEditor?.selected){platformEditor.selected=null;platformEditor.render();}BodyflipCamera.rotate(cameraState,dx,dy);}drawAll();});
   // Show the gizmo on press; only a completed click pauses playback. Orbit cancels the preview.
-  const end=e=>{const d=this.drag;if(!d)return;this.drag=null;const orbit=d.moved||Math.hypot(e.clientX-d.startX,e.clientY-d.startY)>=4;if(d.selection)platformEditor?.finishSelection(d.selection,e.type!=='pointerup'||orbit,orbit);save();};c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);c.addEventListener('lostpointercapture',end);
+  const end=e=>{const d=this.drag;if(!d)return;this.drag=null;if(d.button===2)refreshAim();const orbit=d.moved||Math.hypot(e.clientX-d.startX,e.clientY-d.startY)>=4;if(d.selection)platformEditor?.finishSelection(d.selection,e.type!=='pointerup'||orbit,orbit);save();};c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);c.addEventListener('lostpointercapture',end);
   c.addEventListener('wheel',e=>{e.preventDefault();BodyflipCamera.wheel(cameraState,e.deltaY);drawAll();save();},{passive:false});c.addEventListener('dblclick',resetCamera);
  }
  draw(data,root){super.draw(data,root);if(!data)return;const gl=this.gl,mesh=this.extras||(this.extras=new LabVertexStream(40000)),lines=this.extraLines||(this.extraLines=new LabVertexStream(10000));mesh.length=0;lines.length=0;
@@ -283,6 +324,7 @@ class BodyflipRenderer extends WebGLMotionRenderer{
    const col=unretimed||other?[1,.15,.15]:[.15,1,.3];
    this.addLeg(mesh,ghost.pose,ghost.foot,col);
   }}
+  this.addProjectiles(mesh,data.projectiles);
   this.bindAndDraw(this.meshBuffer,mesh,gl.TRIANGLES);this.bindAndDraw(this.lineBuffer,lines,gl.LINES);
   this.drawPlatformSides(translucent,sideOpacity);
   const coneList=flightFrame?.supportKind==='hand'?(settings.showHandCones?flight.idealDebug(simTime)?.targets.map(t=>t.cone).filter(Boolean)||[]:[]):settings.showCone?[flight?.coneDebug(simTime,data)].filter(Boolean):[];
@@ -318,10 +360,10 @@ function supportHint(){
  const scores=active.supportScores.map(s=>s.foot+' '+((s.contactDistance??s.distance)*100).toFixed(1)+' cm'+(Number.isFinite(s.cost)?', score '+(s.cost*100).toFixed(1):'')+(s.eligible?'':' (unavailable)')).join(' / ');
  return (reason?reason+' · ':'')+'Selected '+active.supportFoot+(active.supportKind==='hand'?' hand':' foot')+' · At selection, after cone: '+scores+(active.supportKind==='hand'?'':'. Score = contact distance minus forward preference; lower wins')+'. Ideal rings: green selected, red other; small green ring: contact.';
 }
-function drawAll(){if(!renderer||!currentPose)return;syncCameraUI();const data={...currentPose,bicolor:settings.bicolor,skeleton:settings.skeleton,upperOnly:false,hideSword:!(displayedAttack()==='pike'||displayedAttack().startsWith('slash')),tint:[.91,.49,.25],voidScene:true};renderer.draw(data,physics.com());platformEditor?.render();syncPlaybackReadout(simTime);const now=performance.now();if(playing&&now-lastHUD<100)return;lastHUD=now;$('fallRead').textContent=Math.max(0,-physics.com(true)[1]).toFixed(1);$('flipRead').textContent=(flightFrame?.spin?.flipRate??0).toFixed(0)+'°';$('twistRead').textContent=(flightFrame?.spin?.twistRate??0).toFixed(0)+'°';$('missRead').textContent=Number.isFinite(bestMiss)?(bestMiss*100).toFixed(1)+' cm':'—';$('hitRead').textContent=hit?'HIT':(attackTime>=0||flightFrame?.attack)?'…':'—';$('hitRead').style.color=hit?'#68e1ad':'';$('phase').textContent=(playing?'':'PAUSED · ')+(flightFrame?.phase||(settings.mode==='idle'?'IDLE':'RUN'));$('phase').title=supportHint();$('scrub').max=timelineMax();syncTrim();$('scrub').setAttribute('aria-label','Sequence timeline');}
+function drawAll(){if(!renderer||!currentPose)return;configureThrows();syncCameraUI();const data={...currentPose,projectiles:throwController?.sample(simTime,currentPose)||[],bicolor:settings.bicolor,skeleton:settings.skeleton,upperOnly:false,hideSword:!(displayedAttack()==='pike'||displayedAttack().startsWith('slash')),tint:[.91,.49,.25],voidScene:true};renderer.draw(data,physics.com());platformEditor?.render();syncPlaybackReadout(simTime);const now=performance.now();if(playing&&now-lastHUD<100)return;lastHUD=now;$('fallRead').textContent=Math.max(0,-physics.com(true)[1]).toFixed(1);$('flipRead').textContent=(flightFrame?.spin?.flipRate??0).toFixed(0)+'°';$('twistRead').textContent=(flightFrame?.spin?.twistRate??0).toFixed(0)+'°';$('missRead').textContent=Number.isFinite(bestMiss)?(bestMiss*100).toFixed(1)+' cm':'—';$('hitRead').textContent=hit?'HIT':(attackTime>=0||flightFrame?.attack)?'…':'—';$('hitRead').style.color=hit?'#68e1ad':'';$('phase').textContent=(playing?'':'PAUSED · ')+(flightFrame?.phase||(settings.mode==='idle'?'IDLE':'RUN'));$('phase').title=supportHint();$('scrub').max=timelineMax();syncTrim();$('scrub').setAttribute('aria-label','Sequence timeline');}
 function syncTarget(){['X','Y','Z'].forEach((k,i)=>$('target'+k).value=settings.target[i].toFixed(2));}
 function syncPlaybackSpeed(){$('playbackSpeed').value=settings.playbackSpeed;$('playbackSpeedRead').value=settings.playbackSpeed.toFixed(1)+'×';$('playbackSpeed').setAttribute('aria-valuetext',settings.playbackSpeed.toFixed(1)+' times');}
-function syncControls(){$('kickToArmed').checked=settings.kickToArmed;$('softAttackLegs').checked=settings.softAttackLegs;$('platformTranslucency').value=Math.round(settings.platformTranslucency*100);$('platformTools').hidden=false;jumpTrack?.sync();$('ramps').checked=settings.ramps;syncTrim();syncPlaybackSpeed();for(const k of ['startYaw','legFollow','spinLag','handCone','handFollow','spinInertia','handBend','pelvisAttackCompensation','loadMs','rebound','jumpSkew','supportCone','supportReach','supportTrigger','supportAlpha','supportSpeed','jumpEarly','standRatio','plantPitch','toeOffPitch','footRollSpeed','jumpBuildX','jumpBuildY','loadYMs','loadFullMs','buildDepth'])$(k).value=['spinLag','spinInertia','pelvisAttackCompensation','supportTrigger','jumpSkew','rebound','buildDepth'].includes(k)?+(settings[k]*100).toFixed(4):settings[k]; $('mode').value=settings.mode;$('gaitLabel').textContent=settings.mode==='spaceGym'?'Start':settings.mode==='idle'?'Idle':settings.mode==='walk'?'Walk':'Run';$('runSeconds').setAttribute('aria-label',settings.mode==='idle'?'Idle duration':settings.mode==='walk'?'Walk duration':'Run duration');$('motion').value=settings.motion;$('engine').textContent=settings.motion==='kinematic'?(settings.mode==='idle'?'Kinematic \u00b7 Idle':'Kinematic \u00b7 NN target'):'Jolt · 25 bodies';document.querySelector('.footer-note').textContent=settings.motion==='kinematic'?'Kinematic · COM follow':settings.mode!=='idle'?'Sim · Local 0 · COM follow':'Idle \u00b7 COM follow';$('runControls').hidden=$('minorOptions').hidden=false;$('airFlip').checked=settings.airFlip;$('matchLeg').checked=settings.matchLeg;$('surfaceIK').checked=settings.surfaceIK;$('surfaceIK').disabled=!BodyflipFootIK.available;$('footIKStatus').textContent=BodyflipFootIK.available?'':' (server restart needed)';$('jumpFoot').value=settings.jumpFoot;for(const k of ['runSeconds','runPhase','jumpBlend','legBlend','handReturn','fallCap']){$(k).value=settings[k];$(k+'Read').textContent=k==='runPhase'?Math.round(settings[k]*100)+'%':settings[k].toFixed(k==='fallCap'?0:2);}for(const k of ['flipSpeed','flipAngle','twistAngle','twistSpeed','attackRate','aimWeight','radius']){if($(k))$(k).value=settings[k];if($(k+'Range'))$(k+'Range').value=settings[k];}for(const k of ['showHandCones','footTargets','handTargets','undoRotation','aim','loop','ghost','animLeg','animOtherLeg','rawLeg','showCone','showJump','bicolor','skeleton'])$(k).checked=settings[k];$('aimAmount').value=Math.round(settings.aimWeight*100)+'%';$('axisLabel').textContent=C.dirs[settings.axis];for(const b of document.querySelectorAll('#axisGrid [data-axis]')){b.classList.toggle('active',+b.dataset.axis===settings.axis);b.setAttribute('aria-pressed',String(+b.dataset.axis===settings.axis));}syncTarget();}
+function syncControls(){$('momentum3D').checked=settings.momentum3D;$('kickToArmed').checked=settings.kickToArmed;$('softAttackLegs').checked=settings.softAttackLegs;$('platformTranslucency').value=Math.round(settings.platformTranslucency*100);$('platformTools').hidden=false;jumpTrack?.sync();$('ramps').checked=settings.ramps;syncTrim();syncPlaybackSpeed();for(const k of ['startYaw','legFollow','spinLag','handCone','handFollow','spinInertia','handBend','pelvisAttackCompensation','loadMs','rebound','jumpSkew','supportCone','supportReach','supportTrigger','supportAlpha','supportSpeed','jumpEarly','standRatio','plantPitch','toeOffPitch','footRollSpeed','jumpBuildX','jumpBuildY','loadYMs','loadFullMs','buildDepth'])$(k).value=['spinLag','spinInertia','pelvisAttackCompensation','supportTrigger','jumpSkew','rebound','buildDepth'].includes(k)?+(settings[k]*100).toFixed(4):settings[k]; $('mode').value=settings.mode;$('gaitLabel').textContent=settings.mode==='spaceGym'?'Start':settings.mode==='idle'?'Idle':settings.mode==='walk'?'Walk':'Run';$('runSeconds').setAttribute('aria-label',settings.mode==='idle'?'Idle duration':settings.mode==='walk'?'Walk duration':'Run duration');$('motion').value=settings.motion;$('engine').textContent=settings.motion==='kinematic'?(settings.mode==='idle'?'Kinematic \u00b7 Idle':'Kinematic \u00b7 NN target'):'Jolt · 25 bodies';document.querySelector('.footer-note').textContent=settings.motion==='kinematic'?'Kinematic · COM follow':settings.mode!=='idle'?'Sim · Local 0 · COM follow':'Idle \u00b7 COM follow';$('runControls').hidden=$('minorOptions').hidden=false;$('airFlip').checked=settings.airFlip;$('matchLeg').checked=settings.matchLeg;$('surfaceIK').checked=settings.surfaceIK;$('surfaceIK').disabled=!BodyflipFootIK.available;$('footIKStatus').textContent=BodyflipFootIK.available?'':' (server restart needed)';$('jumpFoot').value=settings.jumpFoot;for(const k of ['runSeconds','runPhase','jumpBlend','legBlend','handReturn','fallCap']){$(k).value=settings[k];$(k+'Read').textContent=k==='runPhase'?Math.round(settings[k]*100)+'%':settings[k].toFixed(k==='fallCap'?0:2);}for(const k of ['flipSpeed','flipAngle','twistAngle','twistSpeed','attackRate','aimWeight','radius']){if($(k))$(k).value=settings[k];if($(k+'Range'))$(k+'Range').value=settings[k];}for(const k of ['showHandCones','footTargets','handTargets','undoRotation','aim','loop','ghost','animLeg','animOtherLeg','rawLeg','showCone','showJump','bicolor','skeleton'])$(k).checked=settings[k];$('aimAmount').value=Math.round(settings.aimWeight*100)+'%';$('axisLabel').textContent=C.dirs[settings.axis];for(const b of document.querySelectorAll('#axisGrid [data-axis]')){b.classList.toggle('active',+b.dataset.axis===settings.axis);b.setAttribute('aria-pressed',String(+b.dataset.axis===settings.axis));}syncTarget();}
 async function loadAttack(name,id){const rev=++loadRevision;vanillaManifest ||= await fetch('data/vanilla.json').then(r=>r.json());const wasPlaying=playing,wasDrawn=settings.attack==='pike'||settings.attack.startsWith('slash');setPlaying(false);$('strike').disabled=true;const family=manifest.clips.find(c=>c.name===name)||manifest.clips[0],meta=family.variants.find(v=>v.id===+id)||family.variants[0];let decoded=cache.get(meta.file);if(!decoded){const r=await fetch(meta.file);if(!r.ok)throw Error('Attack unavailable');decoded=C.decode(meta,await r.arrayBuffer(),names,parents);cache.set(meta.file,decoded);}if(rev!==loadRevision)return;settings.attack=family.name;settings.variant=meta.id;clip=decoded;await loadVanilla();if(rev!==loadRevision)return;$('attack').value=family.name;$('variant').replaceChildren(...family.variants.map(v=>new Option(String(v.id).padStart(2,'0'),v.id)));$('variant').value=meta.id;$('scrub').max=total();attackTime=-1;manualResponse=null;hit=false;bestMiss=Infinity;if(flight&&wasDrawn!==(settings.attack==='pike'||settings.attack.startsWith('slash')))await prepareRun({preserveTime:true});else resetPhysics();$('strike').disabled=false;if(wasPlaying)setPlaying(true);save();}
 let jumpTrack=null;
 function buildUI(){
@@ -350,6 +392,7 @@ function buildUI(){
  for(const k of ['runSeconds','runPhase','jumpBlend','legBlend','handReturn','fallCap']){$(k).oninput=()=>{settings=C.sanitize({...settings,[k]:+$(k).value});setPlaying(false);syncControls();};$(k).onchange=()=>prepareRun({preserveTime:true}).catch(fail);}
  $('kickToArmed').onchange=()=>{settings.kickToArmed=$('kickToArmed').checked;prepareRun({preserveTime:true}).catch(fail);};
  $('softAttackLegs').onchange=()=>{settings.softAttackLegs=$('softAttackLegs').checked;prepareRun({preserveTime:true}).catch(fail);};
+ $('momentum3D').onchange=()=>{settings.momentum3D=$('momentum3D').checked;prepareRun({preserveTime:true}).catch(fail);};
 
  $('surfaceIK').onchange=()=>{settings.surfaceIK=$('surfaceIK').checked;prepareRun({preserveTime:true}).catch(fail);};
  $('matchLeg').onchange=()=>{settings.matchLeg=$('matchLeg').checked;prepareRun({preserveTime:true}).catch(fail);};
@@ -385,7 +428,7 @@ function decodeB64(raw,Type){const b=Uint8Array.from(atob(raw),c=>c.charCodeAt(0
 async function init(){const [m,s,sw,jumpData,standingData,idleMeta,idleBytes]=await Promise.all([fetch('data/manifest.json').then(r=>r.json()),fetch('/state').then(r=>r.json()),fetch('data/sword.json').then(r=>r.json()),fetch('data/jumps.json').then(r=>r.json()),fetch('data/jumps-standing.json').then(r=>r.json()),fetch('data/idle.json').then(r=>r.json()),fetch('data/idle.bin').then(r=>r.arrayBuffer())]);sceneLibrary=BodyflipScenes.open(s);jumps=[...jumpData.clips,...standingData.clips].map(F.decodeJump);manifest=m;names=m.names;parents=m.parents;nameToIndex=new Map(names.map((n,i)=>[n,i]));settings=C.sanitize(BodyflipPlatforms.restoreDefaultsOnce(s.settings));flip=settings.flipAngle;twist=settings.twistAngle;BodyflipCamera.restore(cameraState,s.camera,cameraDefault);
  swordMesh={...sw,vertices:decodeB64(sw.vertices_b64,Float32Array),triangles:decodeB64(sw.triangles_b64,Int32Array),bladeMask:decodeB64(sw.blade_mask_b64,Uint8Array)};idle=C.poseFromShared(m);idleLoop=BodyflipIdle.create(idleMeta,idleBytes,m);const f=R.rotate(idle.q[1],[0,-1,0]);basePelvis=R.qm(R.fromTo(normalize([f[0],0,f[2]]),[0,0,1]),idle.q[1]);
  buildUI();syncControls();renderer=new BodyflipRenderer($('viewport'),{pixelRatio:Math.min(devicePixelRatio,1.5)});
- const {createPhysics}=await import('./physics.mjs');physics=await createPhysics(manifest,C.centerPose(idle,rotation(),pivot));renderer.torsoColliders=physics.torso;$('engine').textContent='Jolt · 25 bodies';await loadAttack(settings.attack,settings.variant);await prepareRun();await restorePlayback(s.playback);syncControls();sceneReady=true;syncScenes();save();
+ const {createPhysics}=await import('./physics.mjs');physics=await createPhysics(manifest,C.centerPose(idle,rotation(),pivot));renderer.torsoColliders=physics.torso;throwController=BodyflipThrows.create({physics,renderer});$('engine').textContent='Jolt · 25 bodies';await loadAttack(settings.attack,settings.variant);await prepareRun();await restorePlayback(s.playback);syncControls();sceneReady=true;syncScenes();save();
  window.BodyflipLab={get state(){const active=flight?.activeAt(simTime);return {settings:{...settings},flip,twist,attackTime,simTime,frame:Math.round(simTime*60),playing,hit,bestMiss,errors:[...errors],pose:currentPose,diagnostics:physics.diagnostics(),torso:physics.torsoWorld(),torsoGeometry:physics.torsoGeometry(),flight:flight?{preparedThrough:flight.preparedThrough,footIK:flightFrame?.footIK||null,footIKSource:window.SharedFootIK?.sourceHash,footIKAvailable:BodyflipFootIK.available,capsule:flight.capsule,landings:flight.landings,edge:flight.edge,phase:flightFrame?.phase,spin:flightFrame?.spin||null,jumpMotion:flightFrame?.jumpMotion||null,attack:flightFrame?.attack||null,root:flightFrame?.root,events:flight.events,surfaces:flight.surfaces.map(s=>({id:s.id,normal:s.normal,bounds:s.bounds})),...(active?{airStart:active.airStart,apex:active.apex,sourceStart:active.sourceStart,jumpStyle:active.jumpStyle,takeoffSpeed:active.takeoffSpeed,standingThreshold:active.standingThreshold,matchLeg:settings.matchLeg,legMatchTime:active.matchTime,legRate:active.legRate,legMatchDistance:active.matchDistance,legArrival:active.jumpStart+active.loopStart,jumpStart:active.jumpStart,contactTime:active.contactTime,loadDuration:active.bounce?.loadDuration,compression:active.bounce?.compression,returnedEnergy:active.bounce?.returnedEnergy,supportStart:active.supportStart,abortTime:active.abortTime,failureReason:flightFrame?.failureReason||null,supportDistance:flightFrame?.distance,supportHistory:(active.support?.frames||[]).map(f=>({time:active.supportStart+f.t,distance:f.distance,reachable:f.reachable,approachSpeedCmS:f.approachSpeed*100,reachWait:f.reachWait,hipDistance:f.hipDistance})),supportIdealRoot:active.support?.idealLocal,release:active.release,supportState:flightFrame?.supportState,supportTarget:flightFrame?.supportTarget,supportCone:settings.showCone?flight.coneDebug(simTime,currentPose):null,supportFoot:active.supportFoot,supportKind:active.supportKind,supportBone:active.supportBone,supportScores:active.supportScores,surfaceChoices:active.surfaceChoices,supportIdeals:flight.idealDebug(simTime),supportLead:active.support?.terminal?.appliedShift,supportLimited:active.support?.terminal?.limited}:{})}:null,com:physics.com(),velocity:physics.com(true),cameraCenter:renderer.viewCamera?.target,loadingRun};},prepareRun,seek,playbackStep,step(count=1){setPlaying(false);for(let i=0;i<count;i++)tick();drawAll();return this.state;},strike,loadAttack,setPlaying,reset:()=> $('reset').click(),targetPose,project(p){const m=renderer.viewProjection,r=$('viewport').getBoundingClientRect(),w=m[3]*p[0]+m[7]*p[1]+m[11]*p[2]+m[15];return {x:r.left+(1+(m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12])/w)*r.width/2,y:r.top+(1-(m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13])/w)*r.height/2};}};
  $('play').disabled=false;$('step').disabled=false;$('engine').title='25 rigid bodies · 24 joints · knee/elbow hinges · local lab profile';
 }

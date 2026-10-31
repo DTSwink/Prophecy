@@ -472,6 +472,16 @@ class WebGLMotionRenderer {
     }
   }
 
+  addProjectiles(mesh, items) {
+    if(!items?.length||!this.throwAssets)return;
+    this.throwMeshCache ||= new Map();
+    for(const item of items){const asset=this.throwAssets[item.kind];if(!asset)continue;const key=item.kind+':'+item.scale.join(',');let cached=this.throwMeshCache.get(key);
+      if(!cached){const local=asset.vertices.map(p=>p.map((v,i)=>v*item.scale[i])),normals=[];for(let t=0;t<asset.triangles.length;t+=3){const [a,b,c]=asset.triangles.slice(t,t+3).map(i=>local[i]);normals.push(normalize(cross(sub(b,a),sub(c,a))));}cached={local,normals};this.throwMeshCache.set(key,cached);}
+      const axes=Recovery.toAxes(item.q),transform=p=>add(item.p,add(add(mul(axes[0],p[0]),mul(axes[1],p[1])),mul(axes[2],p[2]))),world=cached.local.map(transform);
+      for(let t=0;t<asset.triangles.length;t+=3){const n=cached.normals[t/3],normal=add(add(mul(axes[0],n[0]),mul(axes[1],n[1])),mul(axes[2],n[2]));for(let k=0;k<3;k++){const i=asset.triangles[t+k],p=world[i],color=asset.colors[i]||[.7,.7,.7];mesh.push(...p,...normal,...color);}}
+    }
+  }
+
   legSegments() {
     return ['l','r'].flatMap(side=>[[`thigh_${side}`,`calf_${side}`,.083],[`calf_${side}`,`foot_${side}`,.062]]);
   }
@@ -667,6 +677,7 @@ class WebGLMotionRenderer {
     }
     if (data.ghost) this.addBody(mesh, data.ghost);
     this.addBody(mesh, data);
+
     // Same final displayed XYZ basis, arrow geometry and depth as Final Harness.
     for (const [enabled, joints, length] of [
       [data.handGizmos, ['hand_l', 'hand_r'], .18],
