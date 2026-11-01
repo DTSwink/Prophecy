@@ -2,9 +2,9 @@
 'use strict';
 class JumpTrack {
  constructor(api){
-  this.api=api;this.selected=null;this.open=false;this.drag=null;this.timer=null;this.pending=null;this.serial=0;
+  this.api=api;this.selected=null;this.open=false;this.drag=null;this.pending=null;this.serial=0;
   const el=id=>document.getElementById(id);this.el=el;
-  this.fields={jumpThrowCharge:'throwCharge',jumpThrowSpeed:'throwSpeed',jumpInstantSpin:'instantSpin',jumpPushWith:'pushWith',jumpPercent:'jumpPercent',jumpAttack:'attack',jumpAttackDelay:'attackDelay',jumpAttackIn:'attackIn',jumpAttackOut:'attackOut',jumpFlip:'flip',jumpTwist:'twist',jumpDelay:'turnDelay',jumpDuration:'turnDuration',jumpTurnIn:'turnIn',jumpTurnOut:'turnOut',jumpPoseIn:'poseIn',jumpPoseHold:'poseHold',jumpPoseOut:'poseOut',jumpAxis:'turnAxis',jumpPose:'pose'};
+  this.fields={jumpThrowCharge:'throwCharge',jumpThrowSpeed:'throwSpeed',jumpInstantSpin:'instantSpin',jumpPushWith:'pushWith',jumpPercent:'jumpPercent',jumpAttack:'attack',jumpAttackDelay:'attackDelay',jumpAttackIn:'attackIn',jumpFlip:'flip',jumpTwist:'twist',jumpDelay:'turnDelay',jumpDuration:'turnDuration',jumpTurnIn:'turnIn',jumpTurnOut:'turnOut',jumpPoseIn:'poseIn',jumpPoseHold:'poseHold',jumpPoseOut:'poseOut',jumpAxis:'turnAxis',jumpPose:'pose'};
   for(const [id,key] of Object.entries(this.fields))el(id).onchange=()=>{
    const value=el(id).value;
    if(key==='instantSpin')this.change({instantSpin:el(id).checked});
@@ -25,21 +25,27 @@ class JumpTrack {
    if(e.button!==0)return;const marker=e.target.closest('.jump-marker');
    if(!marker)return;
    e.preventDefault();this.commitFocused();this.selected=marker.dataset.id;this.open=true;
-   this.drag={id:this.selected,startX:e.clientX,startTime:api.get().events.find(x=>x.id===this.selected).time,max:api.get().max,width:el('jumpLane').getBoundingClientRect().width};
+   this.drag={id:this.selected,startX:e.clientX,moved:false,startTime:api.get().events.find(x=>x.id===this.selected).time,max:api.get().max,width:el('jumpLane').getBoundingClientRect().width};
    el('jumpLane').setPointerCapture(e.pointerId);this.sync();
   };
   el('jumpLane').onpointermove=e=>{
-   if(!this.drag)return;const d=this.drag,time=Math.round(Math.max(0,Math.min(600,d.startTime+(e.clientX-d.startX)*d.max/d.width))*60)/60;
+   if(!this.drag)return;const d=this.drag;if(!d.moved&&Math.abs(e.clientX-d.startX)<4)return;d.moved=true;
+   const time=Math.round(Math.max(0,Math.min(600,d.startTime+(e.clientX-d.startX)*d.max/d.width))*60)/60;
    this.pending=api.get().events.map(x=>x.id===d.id?{...x,time}:x).sort((a,b)=>a.time-b.time);
-   this.sync();clearTimeout(this.timer);this.timer=setTimeout(()=>this.flush(),100);
+   // Preview marker position while dragging; solve the completed edit once.
+   this.sync();
   };
   const end=()=>{if(!this.drag)return;this.drag=null;this.flush();};
   el('jumpLane').onpointerup=end;el('jumpLane').onpointercancel=end;el('jumpLane').onlostpointercapture=end;
  }
  commitFocused(){const focused=document.activeElement;if(focused===this.el('jumpTime')||Object.keys(this.fields).some(id=>focused===this.el(id))){focused.onchange?.();focused.blur?.();}}
  close(){this.commitFocused();this.open=false;this.sync();}
- flush(){clearTimeout(this.timer);this.timer=null;if(this.pending){const events=this.pending;this.pending=null;this.commit(events);}}
- commit(events){this.api.edit(events);this.sync();}
+ flush(){if(this.pending){const events=this.pending;this.pending=null;this.commit(events);}}
+ commit(events){
+  const before=BodyflipCore.sanitize({jumpEvents:this.api.get().events}).jumpEvents,after=BodyflipCore.sanitize({jumpEvents:events}).jumpEvents;
+  if(JSON.stringify(before)!==JSON.stringify(after))this.api.edit(after);
+  this.sync();
+ }
  add(time){this.commitFocused();const events=this.api.get().events;if(events.length>=32)return;time=Math.round(Math.max(0,Math.min(600,time))*60)/60;this.selected='m'+Date.now().toString(36)+'_'+this.serial++;this.open=true;this.commit([...events,{id:this.selected,time,surface:'auto'}].sort((a,b)=>a.time-b.time));}
  change(update){const events=this.api.get().events,selected=events.find(e=>e.id===this.selected);if(!selected)return;const values={...BodyflipCore.jumpDefaults,...selected};if(Object.entries(update).every(([key,value])=>values[key]===value))return;this.commit(events.map(e=>e.id===this.selected?{...e,...update}:e));}
  sync(){

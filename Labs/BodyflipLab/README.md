@@ -16,13 +16,654 @@ Refresh now matches Throw Lab: a green button centered below the top-right
 scene action buttons, in a96px header. Existing controls retain their order.
 Its existing save-and-restore playback behavior is unchanged.
 
+Option playback behavior (November1): option edits temporarily suspend rendering
+while keeping a separate Play intent. Slider release/latest successful rebuild
+resumes when playback was running, including rapid replacements and same-key
+coalesced preparation. A no-op edit also releases its temporary pause. Paused
+playback stays paused. Explicit Pause/seek, hidden window or failure cancels resume.
+Mode selection restores its saved time with the current Play intent; motion,
+loop and attack selectors also preserve it. The Play/Pause label follows intent.
+Internal physics replay uses a temporary seek; ordinary user seeks still pause.
+Preparation promises now resolve on completion, rather than before reset/replay.
+Actual-app deferred-build tests cover running/paused/no-op edits, superseded and
+coalesced edits, explicit pause cancellation, and motion/loop/attack selectors.
+Generation invalidation,16 refresh/mode-intent and30 trim/seek checks pass.
+Only offline CLI/DOM checks; no GUI or live saved-state writes. Reload lab.
+
 Camera drag correction (October25): left-drag horizontal orbit now subtracts
 dx from yaw; the previously requested inverted vertical mapping still subtracts
 dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
 
-## F145 foot-release snap - October 31 (current)
+## Spear launch and Throw Lab reference - November 1 (current, local)
+
+Current correction: root is treated as a coordinate frame. Source world pelvis
+orientation is converted into the initial root frame before interpolation and
+five-spine transfer. Authored attacks and their angular return can exceed resting
+joint limits; arm preparation and downstream target tracking preserve the pose.
+AtF39 the final head/launch angle is14.81deg versus source14.71deg (previously
+60.92deg); relative head/hand/chest orientations match the source. No gaze edit.
+Actual-app offline audit and return/source checks pass; reload to load changes.
+See [matched-frame evidence](THROWS.md#upper-body-pose-audit---november-1-current).
+
+Current return controls below Fall cap: **Attack return (seconds)** is an
+always-enabled GLOBAL slider directly above **Return distance weight**. Removed
+its binding to marker selection (the cause of the greyed-out control). Editing
+sets attackReturnDuration for timeline throws/melee/kicks and manual attacks.
+Until edited, null preserves saved per-event attackOut and the manual0.45s tail;
+the UI displays the existing event/default duration. Readout updates during drag;
+release rebuilds playback using the existing global-control handler. No live saved
+state was overwritten. Actual-app no-selection slider, throw and manual duration
+checks pass;157 focused return checks pass. Distance weight remains0..1/default0.
+Inactive lerp/snap/exponent sliders remain beneath them.
+At return start, measure the largest shortest-arc bone orientation difference
+from the ongoing base pose (excluding root, including attack aim). Choose once:
+duration = baseReturnSeconds * (1-weight + weight*angle/90deg), minimum1/60s. Weight0
+returns the unchanged existing track; weight1 is linear distance scaling.
+The existing C.transition runs over that fixed duration, retaining incoming
+velocity and the moving base. Body and aim share the selected duration. Source
+entry/strike/follow-through before End are unchanged. Without a global duration override, manual attacks use0.45s and scheduled
+attacks retain saved Attack Out. Big/Small markers
+remain16/34 source frames. Target/aim edits rebuild plans when weight>0.
+Measurement is from the attack track's aimed End pose, before later physical
+spin/contact processing; it is not a live physics feedback controller.
+153 duration/continuity/seek/source checks,16918 FinalNoAim/shared checks,75
+editor checks and actual-app weight1 playback/retarget checks pass. Tests use an
+offline DOM/GL sink, no raster inspection. No live state writes or native build.
+Reload lab. Details: Labs/BodyflipLab/THROWS.md.
+
+Earlier angular-return descriptions below are superseded.
+
+Original return controls (placement superseded above): left panel has **Return lerp %**
+and **Return snap degrees**, shared by every attack including kicks and manual
+Attack. Default10% closes one tenth of the remaining angular error per60Hz tick;
+1% keeps99% per tick. Below0.5deg by default, each joint snaps exactly to the
+ongoing base animation. Exponent adjusted by elapsed time, so rendering/physics
+step size and seeking do not change it. No user-defined return duration; old
+Attack out field removed. Larger angular errors produce larger movements.
+
+More options ends with **Big +frames / Small +frames**: base-animation frames
+after Release before return starts (defaults16/34). These respect playback rate;
+Big default still means sourceF50. Manual and timeline body/aim recovery use the
+same angular policy. Internal returnEnd is a conservative settling bound derived
+from lerp/snap, while smaller offsets reach the threshold earlier.
+
+316 focused checks cover10 attack/entry combinations, moving bases, frame-rate
+equivalence, snap, seek order, settings and field placement. App script checks
+exercise actual slider/marker regeneration and manual controls at2x attack speed.
+16,918 final-source/shared-path checks,75 timeline,33 scene and4 physical aim
+checks pass. No GUI/raster or live settings write; reload source. Older fixed
+return-duration descriptions below are historical.
+
+Latest: Big throw uses source EndF50, preserving fast Armed entry. End time is
+Release + (50-releaseFrame)/playbackFPS, then shared Attack out; no scene-frame
+50 hardcoding. Captured-scene full return is now1.1167s instead of2.45s. Full
+FinalNoAim/reference clips, Small endpoint and live loop settings unchanged.
+16,918 source/return/timing checks, app checks and76 jump-track checks pass.
+
+Latest return correction: removed the throw-only Release-to-End fade below.
+Throws and slashes share clip End -> Attack out -> returnEnd.16,882 checks
+include pose and return-envelope parity with the shared slash path. Preserved
+throw-scene app replay returns fully at2.45s; current loop Out2.0833s cuts off
+before its return begins at2.20s. User trim/live settings unchanged. See THROWS.md.
+
+Latest: explicitly switched full-charge throws to Exports/Throws/FinalNoAim
+clips/manifest. No repeated pose edits or1.8x animation timing;60fps and exported
+physical launch restored. Added aim rotation fades during authored post-release
+recovery; actual app pose has zero residual aim rotation at clip End.10,416
+source/timing/launch/return checks and app checks pass. Current saved replay:
+shaft error0deg, travel2.13deg (source packet2.08deg). Earlier hand-derived
+launch and source-parity descriptions below are superseded. See THROWS.md.
+
+Latest rear-target correction supersedes shortest-arc steering below: heading
+then elevation, with additive spine steering preserved through standalone target
+projection. Actual saved-scene shaft error0deg, upward release+2.549m/s; previous
+44.15deg/downward-16.969m/s. Offline pose comparison inspected. Full throw is
+still unresolved: travel remains42.94deg off the goal (unaimed adapted hand/
+shaft mismatch47.64deg). See THROWS.md and Saved/BodyflipLab/ThrowSceneAudit.
+
+Latest steering correction: throws now blend one direction-to-direction rotation
+across spine_01-05 throughout the stroke, preserving relative arms. They no
+longer replay release-pose joint-coordinate offsets on other animation frames.
+Spear uses shortest-arc direction rotation; Small remains yaw-only.951 direction/
+intermediate-arm checks, six motion cases and app checks pass. Final legal
+projection and existing compensation remain; no visual acceptance claimed.
+Reload. Details: [Throws](THROWS.md#continuous-spine-steering---november-1-latest).
+
+The prior hand-derivative change removed the imported profile's1.8x speed and
+axial spear spin. The runtime now applies speedScale to animation timing so
+linear exit velocity still follows the final hand, and restores configured
+shaft-axis spin. Fixed-base replay using current settings:9.83 ->17.66m/s,
+versus18.34m/s in Throw Lab; initial transverse spin13.18 ->0rad/s. First25ms
+shaft turn falls16.30 ->1.73deg. Aerodynamic turning remains because hand
+travel and shaft differ24.75deg; full velocity/shaft alignment is not solved.
+
+The existing Vanilla attack only checkbox supports both throws, labelled
+**THROW LAB REFERENCE**: same imported full-body FBX with approved grip/key
+edits,100% charge, and recorded Throw Lab projectile flight/target/floor.
+It is not raw unedited FBX. Reference playback uses cached frames, adds no
+physics world, and preserves the live simulation/tuning on toggle.49,864
+source/reference checks and actual-app script integration pass; no GUI/raster,
+live scene write, Unreal build or native package update. Reload to load.
+Details and remaining limits: [Throws](THROWS.md).
+
+## Authored throw direction - November 1 (current, local)
+
+**Bodyflip authored throw direction, November 1 (current, local):** user
+clarified spine-only steering with unchanged relative arms, then replaced the
+moving-point aim objective with an authored absolute world direction. Optional
+per-event `throwDirection: [x,y,z]` is normalized and persisted. Without it,
+the lab uses target minus pelvis position at `segment.jumpStart` (jump frame 0).
+The frozen origin is captured from world poses, before physical aim prediction;
+spine corrections and subsequent body drift/spin cannot change the goal. Spear
+uses the vector; Small throw its horizontal bearing, preserving the arc.
+Target edits reauthor the default ray from that same frame-zero origin; explicit
+vectors ignore target edits. Viewport guide displays the frozen world ray.
+130 direction/relative-arm checks, six motion cases, app target-edit/release
+checks, 33 scene checks and four shared physical cases pass. Source-only change;
+reload lab. No GUI, saved-state overwrite, Unreal/native package or arm edits.
+Earlier pending wrist/forearm question is superseded, not an outstanding choice.
+Details: Labs/BodyflipLab/THROWS.md; Saved/BodyflipLab/ThrowDirection/results.json.
+
+## Throw motion correction - November 1 (historical)
+
+**Bodyflip throw motion, November 1 (local; alignment decision pending):**
+User rejected the saved-impulse approach. Throws now use the shared upper-body
+attack path: optional equal transfer over spine_01-05, legal arm entry, motion
+compensation, soft legs/amount and recovery. Imported Throw Lab target aiming
+is disabled. Bodyflip throw aim uses upper-chain heading/elevation only (bomb
+heading only), with no free roll or pelvis/whole-body tilt fallback. Release
+linear/angular velocity comes from the final held object's pre-release motion;
+no saved impulse/spin is added. Throw speed changes animation rate; zero disables
+that throw. No live state edits, GUI use, Unreal work or native repackaging.
+Checks: six compensation/aim cases, 2,000 spine shares, 60 drift/rate checks,
+app release-velocity checks, source parity and shared melee physics pass.
+Remaining: adapted spear shaft is ~48deg off hand-driven travel; original source
+is already ~17deg, increased by retargeting/arm projection. Asked whether to
+adjust forearm/wrist motion or preserve source pose; superseded by the newer
+spine-only, authored-direction instruction above.
+Do not restore the saved impulse or claim complete throw acceptance. Evidence:
+Saved/BodyflipLab/ThrowMotion/results.json; Labs/BodyflipLab/THROWS.md.
+
+## Throw release aiming - October 31 (rejected/superseded)
+
+Big throw aims the spear's shaft at the target at Release. Small throw uses
+world yaw only: its launch velocity lies in the vertical plane through the
+target while retaining its authored upward arc. Raising the target cannot
+flatten that arc. Both supersede the old full-velocity-to-target objective.
+
+The previous hand-derivative subtraction mistook differences between projected,
+retargeted motion and the original full-body clip for extra carrier velocity.
+Transport now uses body COM translation and pelvis angular velocity about COM;
+the imported throw impulse stays intact. No charge/speed, aero or gravity change.
+The reproduced stationary spear has 1.34cm lateral deviation at its nominal
+target flight time; the shaft points at the target to numerical tolerance.
+Incoming body motion and source launch direction can still cause physical misses.
+
+Verification: 20 release cases, 12 known carrier cases, 72 aim/spin cases,
+54 drift checks, app target-edit harness, 49,314 source parity checks and 4
+shared physical melee cases pass. No GUI or live saved-state writes. Native
+package not rebuilt. Reload the lab. Details: [Throws](THROWS.md).
+
+## Target-move crash - October 31 (current, local)
+
+Fixed released-projectile collider ownership: moving the target rebuilt the
+spear body, freeing its scaled collision shape while the cache still referenced
+it. Reusing that pointer crashed WASM. The cache now retains the shape until
+disposal. Offline verification: 36 projectile rebuilds, 6 coordinate inputs and
+6 drag-path edits through the app scripts, plus 10 existing projectile checks.
+Reload the lab to load the fix and clear the failed physics instance. No live
+state writes, desktop control, Unreal changes or native repackaging.
+See [Throws](THROWS.md) for the regression commands and ownership details.
+
+## Full-strength aiming - October 31 (current, local)
+
+User requested removal of the percentage control. Aim slider/output are removed;
+enabled aiming now always uses100% for timeline/manual/held aim and physical aim.
+The Aim on/off checkbox remains. Legacy saved aimWeight is normalized to1 on
+load, scene change and sanitization, so old80% scenes cannot silently retain partial
+aim. The fixed compatibility field remains in serialized settings. No live saved
+scene overwrite or desktop control; Refresh loads the change and migrates in memory.
+The saved KickL80% fixture now automatically uses100% and contacts3.2304cm from the
+12cm target centre. Legacy-value normalization and33scene checks pass; JS syntax
+checked. Evidence: Saved/Diagnostics/BodyflipKickAim/full-aim.json. Native runtime
+has not been repackaged. Earlier descriptions of adjustable partial aim are historical.
+
+## Authored pelvis / distributed transfer - October 31 (current, local)
+
+Current KickL aiming audit after user accepted distributed transfer: saved Space
+marker has Aim80%, no spin. Reproduced actual reported surface miss26.7526cm:
+HitF95 contact is38.7526cm from the12cm-radius target centre. Same inputs at
+Aim100% give3.2304cm centre distance (inside target), direction residual2.95e-10.
+The large miss in this setup is partial aim, not the new spine transfer (kick
+uses its separate path). No saved tuning or solver change made. Evidence:
+Saved/Diagnostics/BodyflipKickAim/{input,before}.json and probe-kick-aim.cjs.
+
+The former unconditional transfer into spine_01 is removed. Scheduled and manual
+upper-body attacks now retain authored pelvis and spine local rotations by default.
+The pelvis joins attack entry/return; root translation remains with the base motion.
+Post-Hit pelvis recovery now removes optional compensation relative to the authored
+attack, rather than replacing its pelvis follow-through with the base pose.
+With compensation off there is no separate post-Hit pelvis return. Kicks and throws
+retain their separate existing paths. Native runtime has not been repackaged.
+
+New **Spread pelvis turn across spine** checkbox is appended at the bottom of More
+options, after Motion compensation. Default off; saved per scene. On keeps the
+base pelvis and distributes the source pelvis delta equally over spine_01–spine_05.
+Each joint gets20% of the added rotation expressed in its own parent frame;
+cumulative correction reaches100% at spine_05 without changing local arm motion.
+The endpoint orientation matches the original pelvis-plus-spine orientation before
+anatomical projection. Existing limits and aim still apply. Motion compensation
+remains a separate control; this change does not claim to repair or validate its
+angular momentum conservation. The user's reported compensation problem remains
+open. No new smoothing, optimizer or relaxed joint limit was added.
+
+The toggle regenerates with the existing preserve-time path, including manual
+entry. Vanilla attack only stays an independent raw-source display. User settings
+and active playback were not changed by external writes. Refresh loads the option.
+
+Verification:1046 distribution samples check equal shares, full-chain orientation,
+source immutability and no branch flips; scheduled direct/legacy entry boundaries
+and fixed base pelvis pass.1068 authored-mode samples +24 manual checks verify
+pelvis/spine source fidelity through Hit and follow-through. Current uncompensated
+slash no longer loses spine_01 rotation to projection (error<7e-16rad).
+Arm entry56cases/11373samples, angular arming1141checks, torso/Jolt30checks and
+scene33checks pass; syntax checked. Arming oracle updated to handle a selected
+pelvis with unselected leg children. Old verify-pelvis-transfer now invokes the
+new authored-pelvis contract. Evidence: Saved/Diagnostics/BodyflipAuthoredPelvis/
+{verification,distribution}.json; verify-authored-pelvis.mjs and
+verify-distributed-pelvis.mjs. No desktop control, Unreal build, push or native port.
+
+## Motion compensation switch - October 31 (current, local)
+
+Added **Motion compensation** at the end of More options, after Vanilla attack
+only. Default on preserves older saves. Off uses effective pelvis compensation0
+for scheduled and manual upper-body attacks, including both direct-Armed and
+legacy entry. Amount % and Soft legs remain stored unchanged; rechecking restores
+their effect. Both rigid compensation and soft lower-body reaction are bypassed
+when off. This controls the existing pelvis compensation feature, not attack
+aiming, pelvis-to-spine transfer, joint limits or the separate flip balance.
+Kicks/throws retain their existing separate paths.
+
+The toggle uses existing preserve-time preparation and scene persistence.
+608 pose comparisons verify off equals Amount0 and on preserves legacy output;
+manual entry paths, retained tuning, scene copying and motion invalidation checked.
+33 existing scene checks and JS syntax pass. Saved state untouched; no desktop
+control, native package/build or push. Refresh to load the new checkbox.
+
+## Vanilla attack inspection - October 31 (current, local)
+
+More options includes **Vanilla attack only**, default off, saved per scene.
+It draws the original full-body recorded attack directly, bypassing aim, pelvis
+transfer/compensation, joint projection and simulated pose output. Original root
+travel remains; a constant translation centers the source for inspection. The
+source Armed frame aligns with the scheduled attack's Armed time, then runs at
+native fps; pre-Armed source motion is also shown. First/last frames are held
+outside the clip. Current F100 corresponds to slashL source F13.9364.
+Manual attacks use their source clip/time. Sources absent from the vanilla
+catalog (throws) show an explicit unavailable message.
+
+This is display-only: toggling redraws immediately, retains playback/time/tuning
+and does not regenerate the sequence. Normal output returns when unchecked.
+Scene, target, ghost, contact and projectile overlays are hidden; invisible
+target/platform editing is disabled. Existing camera/transport controls remain.
+The simulation/sequence underneath is retained, not replaced by this preview.
+267 focused source-pose/timing/default/motion-key checks and33 existing scene
+checks pass; JS syntax checked. No desktop/browser control or visual QA claimed.
+Evidence: Saved/Diagnostics/BodyflipUpper95/vanilla-view-check.json and
+verify-vanilla-view.cjs. Saved scene untouched; no native package/build/push.
+Refresh the lab to load the checkbox.
+
+## Upper-body burst F95–F100 - October 31 (current investigation)
+
+User confirmed the snap is absent in Vanilla attack only. The later stage audit
+supersedes the incomplete single-clamp explanation: the lab redistributes the
+original pelvis turn into spine_01, then applies incompatible opposite-pelvis
+compensation and repeated joint projection. The source has a fast slash, but
+its brief stop/turn/stop shape in the lab is introduced by those transformations.
+
+Current saved Scene 2: flipless kinematic Space, slashL marker F15, delay1s,
+Aim.8, compensation1, soft legs on; paused F95. Target has changed since the first
+investigation, now [.3933166824,2.5659589520,1.6174617873]. New aim-speed metrics
+must not be substituted for the previous target. Attack starts F75, Armed92.1272,
+Hit107.6432. The airborne flip balance is inactive; the separate attack-inertia
+lower-body solver STILL runs with zero flip/twist because softAttackLegs and
+pelvisAttackCompensation are enabled.
+
+Code intent and measured stages:
+- jump-attack carries original pelvis rotation into the first spine joint so
+  the attack upper body can run on an independently controlled jump/gait pelvis.
+  Vanilla spine_01 local twist is about0deg at F95–100. After this transfer the
+  requested joint twist is -28.52,-24.14,-13.63,-2.23,+9.19,+20.62deg.
+- attack-inertia first projects that pose to anatomical limits (+/-22deg at
+  spine_01). It hides part of the lead-in. The requested twist re-enters the legal
+  interval at F96.2657; the rapid source turn becomes visible there.
+- With current compensation100%, a separate three-axis momentum planner targets
+  an opposite pelvis turn, adds authored lower-body choreography, and filters
+  pelvis/legs with60ms lookahead. These operations counter-rotate spine_01 to
+  preserve upper-body world orientation BEFORE the next constraint projection.
+- That counterrotation needs more joint travel. At F99/F100 it asks for
+  +22.89/+36.34deg. The final attack projection stops it at+22 from F98.9361,
+  breaking the upper-body orientation preservation. Thus the exposed fast turn
+  lasts only about2.67frames (~45ms); the compensation causes the earlier stop.
+- Aim changes the whole-body heading and torso bend afterward. It modifies the
+  apparent speed but is not the originating defect. Target-rig speed limiting
+  and final kinematic physics projection add no spine orientation change in
+  this measured interval. This is not a dynamic Jolt contact impulse.
+
+Fixed-input causal check: keep upstream history/poses identical and restore only
+spine_01's pre-final-projection local rotation. At F100 the chest speed is
+941.14deg/s before the clamp,384.38 after,941.14 with only that clamp bypassed.
+This is diagnostic evidence, NOT a proposed fix by removing limits. First source
+projection still truncates later continuation. Vanilla chest at F101 remains
+about1004deg/s, showing its stroke continues after the lab's early stop.
+
+Evidence: Saved/Diagnostics/BodyflipUpper95Followup/{input,stages,
+fixed-input-clamp-isolation}.json; reproduction Saved/Diagnostics/probe-upper95-followup.cjs.
+Instrumentation is confined to an offline Node process; production source,
+settings, live state and editor unchanged. Earlier evidence remains under
+BodyflipUpper95. Cleanup should resolve ownership of the original pelvis turn
+and feasible torso compensation before adding smoothing or weakening limits.
+The user withdrew the earlier under1s generation requirement.
+
+## Context refresh handoff - October 31
+
+This section supersedes earlier solver/performance claims below. The latest user
+request was to tidy the handoff before a context refresh, not to start more motion
+experiments. Changes are local and uncommitted; no push or Unreal work was done.
+
+**Accepted constraints:** preserve the approved flipless Space attack motion and
+existing jump/hand workflows. Keep the system simple and suitable for a60Hz game;
+the earlier **under1s** generation requirement was withdrawn in the later
+F95–F100 investigation above. Keep the
+laptop workload light and serial. Do not control the desktop/browser. File/CLI
+inspection is allowed. Do not reset user tuning, rearrange UI, or clean/stage the
+shared dirty checkout broadly. Other agents are working in parallel.
+
+**Completed latest task:** separate per-mode playback is in `scenes.js` and
+`app.js`, with33 checks in `verify-scenes.mjs`. See the next section for exact
+scope, first reload and saved-state migration. Scene copying pauses all copied
+modes. Pending mode restoration survives rapid switches; obsolete preparation
+cannot restore the outgoing mode's playhead. No solver was changed for that task.
+
+**Unfinished airborne-slash experiment:** `physical-aim.js` predicts the body's
+rotation at Hit, fits pelvis yaw and distributed spine rotation with optional
+pelvis tilt, then simulates the result to correct that prediction. At most six
+trajectory attempts, each with an18-iteration pose fit. The fit has six parameters
+(pelvis yaw, spine pitch/roll/yaw, pelvis pitch/roll). Independent shoulder aiming
+was removed from this physical path to preserve the authored arm stroke.
+Arming still uses the accepted Final Harness angular-distance timing; Armed onward
+keeps authored playback timing. Static/no-spin attacks retain their accepted path.
+Pelvis aim returns from Hit over Attack out when Undo rotation is on.
+
+The new objective is **attack direction**, not exact blade contact. Current saved
+Run slash direction residual is0.0112086 (unit-vector distance, about0.64deg) at
+saved Aim0.8. This is not a contact-distance measurement or proof of a hit.
+`verify-physical-aim.mjs` now checks direction plus nearby contact within6cm,
+and unchanged local arm rotations. Its previous exact-contact contract was relaxed;
+do not describe that as preserving exact targeting. Four cases passed, including
+axis-only and3D balance and carrier-translation invariance. Latest throw prediction
+uses exit velocity and carrier derivative, but that change has **not been tested**.
+The overall aim system has not received user acceptance; target misses and natural
+appearance still need evaluation. Do not silently discard the approved flipless art.
+
+**Performance work in progress:** `preparation.js` adds cooperative checkpoints
+with a12ms target budget. Work resumes after cached frames/candidates are committed;
+some operations remain atomic, so12ms is not a maximum stall guarantee. `app.js`
+requests this path. `flight.js`/`bounce.js` retain candidate-generator progress;
+Space preparation retains event progress and extends the trimmed horizon lazily.
+`capsule.js`, `target-rig.js`, `physical-flight.js` and `spin.js` yield after commits.
+No-op UI edits still skip generation. Body contact is no longer recomputed for
+raw geometric derivative samples in bounce planning; exact-time source/socket
+caches reduce repeated work. Spin source/state caches are bounded at4096 entries,
+orientation at1024. `recovery.js` specializes vector math and uses sqrt(dot) for
+normal-range lengths, with hypot fallback. These arithmetic edits can change last
+bits; do not claim global bitwise losslessness or unchanged cold NN cache keys.
+
+Latest direct Node benchmark (`bench-rollout.mjs`, three serial trials) measured
+**5.989s cold**, including3.197s landing NN, then **3.013s and2.741s warm**.
+Sampling the prepared rollout took59–73ms total. The under1s goal is **not met**.
+Receipt: `Saved/Diagnostics/BodyflipPort20261030/rollout-benchmark.json`.
+The older fake-DOM app harness measured14.9s and a230ms longest block; that is
+headless VM evidence from an earlier revision, not live UI or current render FPS.
+
+**Verification limits and remaining work:** cooperative/synchronous comparison
+passed67 samples, with cancellation and Space extension checks
+(`verify-preparation.mjs`).27 pelvis-return checks passed; the earlier
+19-attack/684-sample flipless preservation check passed. No full final regression
+or native parity was run after all latest optimizations. `verify-bounce.mjs`
+reported “Loading starts without root velocity impulse0,1,0”; cause and whether
+it predates these edits are not established. Investigate before accepting the
+bounce optimization. The separate landing-to-NN wrist discontinuity nearF199
+also remains unresolved. Do not hide either behind the passing focused checks.
+
+**Native/build boundary:** `Content/BodyflipLab` remains the previous42-module,
+891446-byte runtime, SHA256
+`5ed93ac7db5248d4c727e244e6304bbcfc0c34d874984c20ddf51b6d840c402f`.
+It does not contain these latest solver experiments. Decoder source changes in
+flight/recovery mean `package-runtime.mjs --runtime-only` refuses the old asset
+fingerprints; do not bypass that check. No package/build/restart is needed for
+per-mode UI persistence. See `Docs/BodyflipNative.md` before an authorized port.
+
+**Resume evidence:** the original Run fixture is
+`Saved/Diagnostics/BodyflipPort20261030/slash-performance-input.json` (Aim0.8,
+Leg follow0.10, J1 at68/60, J2 slashL at133/60). It is a diagnostic input, not
+permission to overwrite the current save. `rollout-native-frames.json` contains
+the latest direct benchmark frames. Offline `slash-pelvis-frames.png` compares
+source/revised strokes; it does not prove live app quality. The owned scratch
+profilers `.probe-aim.mjs` and `.profile-rollout.mjs` remain in this lab; do not
+mistake unrelated previews/untracked files for disposable output. Do not rerun
+heavy captures unless needed. Next motion work should first establish the bounce
+failure baseline, then simplify/profile aiming against the same fixture and
+check the full stroke and contact, not only the Hit direction.
+
+## Separate mode timelines - October 31 (current, local)
+
+Run, Walk, Idle and Space gym now save their own jump markers, trim brackets,
+loop settings, playback speed and playhead inside each scene. Gait duration,
+phase, early timing and starting yaw also belong to that mode. Platforms,
+target, camera and other tuning stay shared within the scene. Unvisited modes
+start with an empty track. Switching away during generation retains the intended
+playhead; an older pending generation cannot restore a different mode's playback.
+Scene copy, switching and refresh retain all mode tracks. Legacy saves retain
+their active track without copying it into the other modes.
+
+The current saved Space track exactly matched the earlier Run capture. Its two
+markers were moved into Run's saved track; Space now starts empty. The prior save
+is retained at Saved/Diagnostics/BodyflipPort20261030/mode-playbacks-before.json.
+Use a normal reload (Ctrl+R) for this first update: the old Refresh button saves
+its pre-update state before reloading.33 scene/mode persistence checks pass,
+including rapid switching; no-op generation guard checks also pass.
+UI only; no motion solver changes or native package in this step.
+
+## Unnecessary rebuilds and pelvis aim return - October 31 (earlier package)
+
+The no-op guards remain. Solver metrics and native parity here describe the
+earlier package, not the newer lab experiment documented above.
+
+Opening a marker could submit a motion edit from subpixel pointer movement.
+Committing a displayed time such as2.217 also differed from the stored133/60
+before sanitization. Both restarted the complete physical aim preparation.
+Marker edits now compare canonical60Hz events, use a4px drag threshold, preview
+while dragging and commit once on release. Dragging back to the original frame
+does nothing. A separate motion-input key skips unchanged regeneration requests,
+excludes display-only settings, and coalesces identical pending requests.
+76editor checks and the preparation-entry guard test pass with zero no-op rebuilds.
+Actual motion edits still perform the expensive solve; this is not a claim that
+all real regeneration is now fast or runs off the UI thread.
+
+Current J2's spin command remains on world X with zero requested twist. Its aim
+correction banks the pelvis toward that axis, so world-axis flipping includes
+rotation around the torso; inertia scaling increases the visible effect. That
+bank was held until the clip ended, even after Hit. Airborne pelvis aim now
+returns from Hit over the existing Attack out duration. Spine/shoulder aim
+offsets keep their original follow-through and return timing. Undo rotation off
+still retains the correction. This removes the prolonged post-hit hold, not all
+temporary body rotation while aiming. Static/no-spin behavior stays exact.
+
+Actual saved-scene replay (Aim0.8, Leg follow0.10 retained): HitF174.4405 is
+unchanged; pelvis aim is gone atF189.4405 rather thanF199.9245. Its additional
+upright-axis component is zero after return (within2.3e-16). Existing solved
+parameters were reused for this causal before/after audit; endpoint error stays
+0.00005426 normalized.27return checks, four physical aiming cases, and19attacks/
+684flipless samples pass. Native slash V8 parity:8frames/1723numbers exact.
+Runtime42modules/891446bytes; SHA256
+5ed93ac7db5248d4c727e244e6304bbcfc0c34d874984c20ddf51b6d840c402f.
+Saved scene/tuning unchanged; no desktop/editor control or push. Refresh to load.
+Evidence: Saved/Diagnostics/BodyflipPort20261030/freeze-twist-input.json,
+twist-before.json, twist-no-aim.json and twist-return-corrected.json.
+The separate landing-to-NN discontinuity noted below is still unresolved;
+changing the post-hit pose can also change when body contact occurs.
+
+## Pelvis inspection view - October 31 (current, local)
+
+`Pelvis view` is appended after `Hand cones` in the viewport checkbox row.
+It captures the current viewpoint, then follows the displayed pelvis position
+and full orientation, including roll and inversion. Only the actual character
+colliders and held weapon remain visible; platforms, target, ghosts, contact
+markers, cones, projectiles and other world overlays are hidden. Hidden targets
+and platforms cannot be picked or dragged. Orbit, pan, zoom and playback still
+work. Front/Side/Top/View use the pelvis reference while this mode is active.
+Turning it off restores the previous follow/free camera. It persists per scene
+and across refresh; switching it does not regenerate motion or change tuning.
+Camera checks:36 passed, rigid-frame invariance error below9e-15m; syntax checked.
+No desktop/browser control or visual claim. Refresh once to load the checkbox.
+The user is inspecting the slash; no further attack-solver changes in this step.
+
+## Airborne slash contact solve - October 31 (superseded in lab)
+
+The current saved J2 slash is solved at100% Aim with the user's0.10s Leg follow
+retained. The previous full-aim replay missed by56.86cm: the solve optimized only
+COM-to-contact direction and could stall on its limited torso/arm parameters.
+Prediction also used60Hz while playback integrated240Hz; that difference alone
+left an8.10cm error after a new coarse fit had converged.
+
+Balanced-flight aiming now fits the original vanilla contact point in space.
+Partial Aim interpolates both direction and contact radius; throws still fit
+projectile exit-velocity direction. Pelvis yaw follows its own upright through
+flips. Five-spine bend and the attacking shoulder are independent; elbow/wrist
+articulation and authored attack timing stay intact. A weighted least-change
+step prefers chain steering over pelvis pitch/roll. One bounded coarse solve is
+refined with the actual playback integrator; playback/seek never repeats it.
+The approved static/flipless path is unchanged.
+
+Current actual-app/Jolt/real-NN replay: original hit point misses by0.0077mm at
+F174.4405; the actual visible blade passes3.26cm from the target centre (radius
+12cm), and4.998cm at integerF174. The original hit marker is3.26cm away from the
+blade centreline even in vanilla, so marker error and blade distance are distinct.
+The full solve took43.7s in this offline app replay,173trajectory probes; this is
+preparation time, not render FPS. Collider frames were inspected offline.
+Four physical hit-position/carrier tests pass (both spin signs, axis/full balance);
+19flipless attacks/684samples remain exact. Native V8 parity: six cases,
+48frames/10577numbers, zero difference. Runtime42modules/890981bytes, SHA256
+f15a76259e321254c5fabd66752eae0d417add02b944fdb05e4a3d4e219c44d3.
+No desktop/editor control, C++ build, Blueprint edits or push.
+
+Known separate issue found by extending the audit: hand_l lands atF194; the
+landing-to-NN return then produces a~110.7deg right-wrist step aroundF198.76.
+This is outside the airborne aim interval. Trial endpoint/keyframe projections
+moved the spike rather than solving it; those landing changes were removed.
+Do not claim a clean full landing rollout. Evidence: slash-weighted.json (full
+optimizer), slash-air-verified.json (dense airborne verification),
+slash-landing-audit.json (unresolved landing), under
+Saved/Diagnostics/BodyflipPort20261030. The active saved Aim was restored from
+stale80% to the previously requested100%; all other saved data, including0.10s
+Leg follow, is unchanged. F5 reloads it; old-page Refresh first saves old tuning.
+
+## Foot push and follow-through - October 31 (current, local)
+
+The accepted foot push now releases its contact when the gameplay COM impulse
+is applied. The previous extra reach-to-99% stroke lasted only about8ms in the
+reported scene. It drove the hip/ankle beyond their limits; final projection
+then pulled the ankle forward aroundF145. Extension now belongs to the existing
+finite-speed released-leg trajectory, rather than that compressed contact stroke.
+Loading, Jump% energy, incoming carry, missed-push behavior and hands are retained.
+Zero Leg follow goes straight into the existing inertial Leg return.
+
+Released feet aim at the captured world push location inside the final physical
+balance, including the collision carrier's displacement/drift. Previously the
+subsequent rigid balance rotated this direction away. The momentum solve measures
+the constrained articulation's response during world follow; the local recovery
+offset is applied once afterward, so no repeated IK/Jacobian is needed for return.
+Each prediction owns its recovery state. Knee planes can follow the hip while
+the hip-to-ankle direction stays aimed; freezing both overconstrained hip twist.
+
+Toe-off in contact still uses Toe-off degrees. After release, the toes extend
+toward the continuing shin direction at the existing Roll degrees/second, within
+the anatomical ankle limits. They no longer stop at a fixed ground-relative35deg.
+The user's drawing clarified this after the first attempted ground-angle fix.
+
+More options > Leg follow s remains in its existing position. Default is0.08s (about5frames), down from0.20s. The active scene was
+initially migrated to0.08s; the user has since set it to0.10s, which is retained. Leg s still independently
+controls the return. Other scenes, camera and playback were preserved exactly.
+Use F5 once to load the externally updated saved value; the old page's Refresh
+button writes its old in-memory tuning first. No desktop/editor control or push.
+
+Focused verification covers both legs, flat/45deg ground, positive/negative/no
+spin, full/axis momentum, zero/short follow, toe extension, COM, reverse seek and
+return deadlines (5564checks). Earlier leg-continuity1126, release/origin364,
+physical-flight566, Jump%14cases and five hand-contact cases pass. The historical
+verify-foot-follow.mjs absolute3deg assertion for a long inverted follow still
+fails when the hip reaches its anatomical limits; it is not a promise to bypass
+joint limits. The new feasible-geometry world-follow test is separate and exact.
+Saved actual-app/Jolt/NN evidence is in
+Saved/Diagnostics/BodyflipPort20261030/follow-current-candidate.json,
+follow-setting.json and probe-follow-current.mjs. Native options defaults are
+source-only until a normal editor build; generated runtime is repackaged below.
+
+## Physical aim miss - October 31 (after checkpoint)
+
+Default follow-up: Aim is now100% in core defaults, the initial UI and the native
+settings source. The80% value originated in the lab's original hard-coded defaults,
+not a user request or physical requirement. The active saved scene (top-level and
+active scene entry) was updated to100% via the local state API, preserving everything
+else. Explicit partial values in other saved scenes remain untouched. Use F5 once
+to reload this external saved-state edit; the old page's Refresh button saves its
+in-memory settings first. Native Blueprint default source is updated but not rebuilt
+or applied to the running editor in this lab-only turn.
+
+Intermediate source checkpoint `09476308` was pushed before this investigation.
+The saved J2 slash missed by 2.3295 m at Hit (151.65 degrees). Its physical aim
+prediction omitted the collision carrier's accumulated displacement and velocity;
+the actual and internal roots differed by 3.27 m vertically at Hit. The bounded
+solver also started from a static correction and stopped after two Jacobians,
+even with a large residual. Finally, spine-only bending could run out of range
+after its momentum reaction; the attacking shoulder was absent from that path.
+
+Prediction now includes the existing carrier offset and drift, captured once at
+release, without changing the actual flight. Physical aim starts from the neutral
+motion and uses bounded damped updates with backtracking. Its contact path includes
+the attacking shoulder, with the same anatomical limits and smooth attack timing.
+Yaw and chain bend are tried first; the existing pelvis-tilt parameterization is
+available only if that solve leaves error. Each stage allows at most16 Jacobians
+and stops early on convergence/no improvement. The result is cached, not optimized
+again during playback. No new UI controls, hit gates or clip-specific rules.
+
+Frozen actual-app/Jolt/NN result: at full Aim the original hit point is 10.046 cm
+from the centre of the saved 12 cm-radius target, with 0.941-degree direction
+error. It hits. At the user's saved80% Aim the residual is intentionally partial:
+30.754 cm /17.04degrees remain. The saved setting was not changed. This control
+preserves20% of the neutral angular error; set100% when evaluating full contact.
+No radial stretching/teleport or altered Jump% was used to make contact.
+
+The upper-body path was sampled at240Hz through attack completion; largest local
+joint step5.71degrees, right shoulder atF183.5. Four focused cases cover both spin
+directions, full/axis momentum, carrier translation/velocity invariance and reverse
+seek; cached playback does not run another solve. All19 flipless Space gym attacks
+remain byte-exact (684 samples). Current full scene preparation measured16.55s,
+including real NN and all motion generation;113 aim evaluations for full Aim,
+31 for saved80%. This is preparation cost, not a new per-playback-frame cost.
+Prediction extrapolates the release carrier motion; later intervening collisions
+can still invalidate a future hit. Other difficult/unreachable targets remain
+bounded best effort, not a claim of universal exact contact.
+Native V8 parity also passes six cases/48frames/10583numeric comparisons exactly.
+
+Evidence: Saved/Diagnostics/BodyflipPort20261030/aim-current-{input,before,
+final80,verified}.json and probe-aim-current.mjs. No live state/desktop/editor
+operation. The new aim fix is local after the intermediate checkpoint.
+
+## F145 foot-release snap - October 31
 
 The saved left-foot snap came from the release handoff. Contact history was
 translated back into the internal trajectory's coordinates, then foot follow

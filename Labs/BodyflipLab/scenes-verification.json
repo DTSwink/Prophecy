@@ -1,5 +1,5 @@
 {
-  "passed": 21,
+  "passed": 33,
   "checks": [
     "Existing setup migrates intact into Inclines",
     "Copy preserves source and starts separately paused",
@@ -10,6 +10,15 @@
     "Switch restores the entire original setup",
     "Rename affects only selected scene",
     "Invalid operations leave library intact",
+    "First visit to Space starts empty at frame zero",
+    "Run restores markers, trim, speed, gait and playhead",
+    "Shared tuning, target and camera stay shared",
+    "Both tracks survive scene serialization and refresh",
+    "Mode copies cannot mutate the source state",
+    "walk begins with an independent empty track",
+    "idle begins with an independent empty track",
+    "Scene copies preserve all mode tracks, paused",
+    "Legacy active timeline is preserved without assigning it to other modes",
     "Switch pauses and prevents edits while saving",
     "Copy handler saves original current playback before reload",
     "Copy reload selects the independent paused copy",
@@ -20,7 +29,10 @@
     "New scene has only the original flat floor after reload migration",
     "New scene resets edited camera, jumps and tuning to defaults",
     "New scene keeps existing scene and saves outgoing edits",
-    "New scene is last control at far right of header",
-    "Controls appended after existing Refresh"
+    "Scene action order remains Copy, Rename, New scene",
+    "Mode handler switches markers before preparing",
+    "Stale preparation cannot restore the previous mode",
+    "Latest mode restores its playhead after generation",
+    "Rapid switch preserves the unprepared mode playhead"
   ]
 }

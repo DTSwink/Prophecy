@@ -4,6 +4,301 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+## November 1 accepted Bodyflip throw checkpoint
+
+Accepted standalone motion before target-point aiming experiments: FinalNoAim
+throw sources, shared spine transfer/return, distance-weighted return duration,
+attack joint-limit exemption and playback intent preservation. Includes current
+saved-profile.json (snapshot of live state; live state itself is not changed),
+final source exports/import tools and focused checks. 16,918 final-source,
+157 return checks and the actual-app playback/retarget harness pass.
+Unreal, native packaging and other tasks are outside this checkpoint.
+
+**Bodyflip current status, November 1:** option edits now retain playback intent.
+Temporary slider/loading pauses no longer cancel Play. The latest successful
+rebuild resumes if it was running; paused stays paused; explicit Pause, seek,
+failure or hiding the lab cancels resume. Rapid/same-key edits, motion/loop/attack
+selection and mode restoration are covered. Actual app race checks, generation
+invalidation,16 refresh checks and30 trim/seek checks pass. No GUI or live writes.
+Details: Labs/BodyflipLab/README.md.
+
+Current throw behavior: corrected throw coordinate conversion
+and removed resting-limit projection during authored attacks/return. User clarified
+that root is only a coordinate frame and attacks may exceed limits. Normalize
+source pelvis into the initial root frame BEFORE interpolation, then distribute
+through spine01-05. Preserve authored arms/head; shared target tracker does not
+re-clamp or speed-limit attack poses. Duration-based return restores
+the base pose before normal projection resumes. Saved Big throw finalF34 head/
+launch3.98deg (source3.98), F39 14.81deg (source14.71), previously60.92deg.
+Matched-frame final head/hand and head/chest errors below1e-6deg; arbitrary root
+reframing including subframes changes articulation by<3e-14deg. Source clips,
+live state, Unreal and native package unchanged. Reload lab. Offline actual-app
+checks only; no GUI/raster verification. See Labs/BodyflipLab/THROWS.md.
+
+Current return controls below Fall cap: **Attack return (seconds)** is an
+always-enabled GLOBAL slider directly above **Return distance weight**. Removed
+its binding to marker selection (the cause of the greyed-out control). Editing
+sets attackReturnDuration for timeline throws/melee/kicks and manual attacks.
+Until edited, null preserves saved per-event attackOut and the manual0.45s tail;
+the UI displays the existing event/default duration. Readout updates during drag;
+release rebuilds playback using the existing global-control handler. No live saved
+state was overwritten. Actual-app no-selection slider, throw and manual duration
+checks pass;157 focused return checks pass. Distance weight remains0..1/default0.
+Inactive lerp/snap/exponent sliders remain beneath them.
+At return start, measure the largest shortest-arc bone orientation difference
+from the ongoing base pose (excluding root, including attack aim). Choose once:
+duration = baseReturnSeconds * (1-weight + weight*angle/90deg), minimum1/60s. Weight0
+returns the unchanged existing track; weight1 is linear distance scaling.
+The existing C.transition runs over that fixed duration, retaining incoming
+velocity and the moving base. Body and aim share the selected duration. Source
+entry/strike/follow-through before End are unchanged. Without a global duration override, manual attacks use0.45s and scheduled
+attacks retain saved Attack Out. Big/Small markers
+remain16/34 source frames. Target/aim edits rebuild plans when weight>0.
+Measurement is from the attack track's aimed End pose, before later physical
+spin/contact processing; it is not a live physics feedback controller.
+153 duration/continuity/seek/source checks,16918 FinalNoAim/shared checks,75
+editor checks and actual-app weight1 playback/retarget checks pass. Tests use an
+offline DOM/GL sink, no raster inspection. No live state writes or native build.
+Reload lab. Details: Labs/BodyflipLab/THROWS.md.
+
+**Bodyflip Big throw source end F50, November 1 (latest):** user identified the
+long comeback in the base clip. Big throw now supplies source phases.end50 to
+the shared jump-attack path, retaining its fast direct-to-Armed entry. Shared
+end time is hit/release time + (sourceEnd-sourceHit)/playbackFPS, not sceneF50.
+At default60fps, F34 Release ->F50 End is16/60s, followed by normal Attack out.
+Small and slash endpoints are unchanged; original full FinalNoAim/reference
+clips remain intact. Captured throw app replay: Release0.60s, End0.8667s,
+returnEnd1.1167s with zero residual aim twist; release packet unchanged.
+16,918 final-source/shared-return/timing checks include varying entry duration,
+delay and0.5/1/2x speeds; actual-app checks and76 jump-track checks pass. No
+live settings/loop edits, GUI or native build. Reload. Details THROWS.md.
+
+**Bodyflip shared slash/throw return restored, November 1 (latest):** user
+rejected throw-specific recovery. Removed the initialLaunch return timing branch
+from attack-aim.js; both now hold aim through clip End and fade over the existing
+Attack out to returnEnd. Throw body/compensation already delegates to jump-attack;
+no second body-return implementation added. FinalNoAim source/timing/launch kept.
+16,882 checks include both throws versus the shared slash path over61 samples,
+pose/quaternion equality and identical aim envelope;27 shared pelvis-return
+checks and actual-app retarget/reference checks pass. Captured throw-scene app
+replay: aim1 at2.20s,0.5 at2.325s,0 at2.45s; residual pose angle1.1e-16rad.
+Loop cut is important: current trimOut2.0833s is before that return starts.
+Do not claim playback inside that loop shows the return. User currently switched
+live saved attack to slashL; replay used the preserved throw input snapshot.
+No live state/trim edits, GUI or native build. Reload source. THROWS.md has details.
+
+**Bodyflip FinalNoAim import and return, November 1 (latest):** user explicitly
+identified Exports/Throws/FinalNoAim/HANDOFF.md. Previous Bodyflip source was NOT
+that bake. Full-charge Big/Small now sample its clips.json directly, no repeated
+hand/forearm/source shaping or source aim. Original60fps preserved; removed1.8x
+animation retiming. Manifest launch velocity/spin transported by held orientation
+with carrier translation; explicit handoff supersedes previous hand-derivative
+launch contract. Geometry/binds match ThrowLab objects.json. Partial Small retains
+legacy procedural source (the supplied bake is100% only). New importer records
+SHA256 for clips/manifest;10,416 exact-frame/timing/launch/return checks pass.
+Aim turn now fades from Release to authored clip End, instead of staying full
+through source recovery. Actual app replay has zero remaining aim pose rotation
+at End (<5e-16rad), shaft error0deg and travel2.13deg off goal (source manifest
+already2.08deg shaft/travel difference). App retarget/reference checks pass.
+No GUI/live state edits/native rebuild. Reload lab. Details Labs/BodyflipLab/THROWS.md.
+
+**Final unaimed throws baked, November 1:** user requested both final animations
+for another lab, explicitly selected100% Small. Outputs:
+Exports/Throws/FinalNoAim/{BigThrow_Final_NoAim,SmallThrow_Final_NoAim}.fbx,
+plus clips.json for26 lab bones. Both Aim off; current saved pose edits baked,
+full89-bone source hierarchy retained. Big131/Small69 samples at60fps; releaseF34.
+FBX reimport all-bone/frame checks pass, max position error2.97e-7m. Small100%
+has no saved keys, so matches source motion; partial-charge shaping remains
+procedural. Grip/scale/launch physics in manifest, not reapplied pose edits or
+animation retiming. Source/live-state/Unreal assets unchanged; no editor/build.
+[Short receiving-agent handoff](Exports/Throws/FinalNoAim/HANDOFF.md).
+
+**Bodyflip rearward heading correction, November 1 (latest, partial):** user
+authorized fixing backward-facing/downward launch, explicitly forbids declaring
+success on unrelated fixtures. Replaced shortest-arc throw steering with world
+heading then elevation. Additive throw spine aim is no longer clipped by the
+standalone rest22deg spine cones; source projection and other joints remain,
+native profiles retain limits. Actual saved-scene app replay now yields shaft
+error0deg and vertical release+2.549m/s (before44.15deg/-16.969m/s). Heading
+turn-176.79deg, elevation-5.95deg. Offline before/after pose plot inspected.
+NOT fully fixed: velocity is still42.94deg from requested direction; unaimed
+adapted motion already has47.64deg hand-velocity/shaft mismatch. No redirected
+projectile velocity was added.951 direction checks, six motion cases/2,000
+transfer checks, actual app checks and four shared physical cases pass. No GUI,
+live state edits or native build. Details Labs/BodyflipLab/THROWS.md;
+Saved/BodyflipLab/ThrowSceneAudit/{scene,results}.json and release-comparison.png.
+
+**Bodyflip actual saved throw failure, November 1 (latest investigation):** user
+rejected the displayed result again. Read-only actual-app replay of state.json
+(Space, big throw, target[-.83778,2.43491,-3.27299], compensation1, transfer on)
+reproduces release shaft44.15deg and velocity81.51deg off the fixed world goal.
+Aim solution residual0.75163; correction quaternion[.80441,.57225,-.15955,.00254]
+is nearly180deg around a tilted axis. The newly introduced shortest-arc rule
+can fold the torso for a rearward target; final22deg spine limits also constrain
+the correction. Earlier app tests exercised different targets and do not validate
+this scene. No further production change in this investigation. Do not claim
+the throw fixed. Offline replay: Labs/BodyflipLab/audit-throw-scene.mjs;
+Saved/BodyflipLab/ThrowSceneAudit/before.json. No GUI/live scene writes.
+
+**Bodyflip continuous throw spine steering, November 1 (latest, local):** user
+reiterated original-to-authored-direction rotation through the spine, preserving
+relative arms. Throw aim no longer converts its endpoint into projected joint
+coordinate offsets and replays them on every pose. It retains one quaternion,
+smoothly blends it over entry/release/return, and applies cumulative20/40/60/80/100%
+world rotations over spine_01-05. Spear uses shortest-arc direction rotation,
+avoiding an additional heading/elevation roll; Small remains yaw-only. Existing
+pelvis-transfer option and motion compensation remain. Final legal projection
+and endpoint calibration remain; no arm offsets are added by aim.951 direction/
+intermediate-arm checks, six motion cases/2,000 transfer checks, actual app
+release/retarget/reference toggle and four shared physical melee cases pass.
+No raster verification or claim that the separate hand/shaft velocity mismatch
+is eliminated. Source-only; reload. Details: Labs/BodyflipLab/THROWS.md.
+
+**Bodyflip spear launch/reference repair, November 1 (current, local):** same
+Throw Lab `big throw.fbx`, with its approved grip/key edits. Previous correction
+dropped the profile's 1.8x speed and axial spin, introducing transverse hand
+angular velocity. Restored configured shaft-axis spin; apply speedScale to
+animation timing, keeping linear release velocity derived from the final hand
+trajectory. Current-settings fixed-base audit: 9.83 -> 17.66m/s (Throw Lab18.34),
+initial transverse spin13.18 -> 0rad/s; first25ms shaft turn16.30 -> 1.73deg.
+Remaining aerodynamic turning is real: hand travel is still24.75deg from shaft;
+this does not prove full alignment or eliminate all in-flight turning.
+Vanilla checkbox now shows **THROW LAB REFERENCE** for both throws: full-body
+approved100% source plus held/released weapon and original target/floor. Cached
+reference flight adds no runtime physics world.49,864 source/reference checks,
+app render/toggle/retarget test, six motion cases,60 drift and130 direction checks
+pass. No GUI/raster, live state writes, Unreal/native build or tuning edits.
+Reload lab. Details: Labs/BodyflipLab/THROWS.md; ThrowLaunchAudit evidence.
+
+**Bodyflip authored throw direction, November 1 (current, local):** user
+clarified spine-only steering with unchanged relative arms, then replaced the
+moving-point aim objective with an authored absolute world direction. Optional
+per-event `throwDirection: [x,y,z]` is normalized and persisted. Without it,
+the lab uses target minus pelvis position at `segment.jumpStart` (jump frame 0).
+The frozen origin is captured from world poses, before physical aim prediction;
+spine corrections and subsequent body drift/spin cannot change the goal. Spear
+uses the vector; Small throw its horizontal bearing, preserving the arc.
+Target edits reauthor the default ray from that same frame-zero origin; explicit
+vectors ignore target edits. Viewport guide displays the frozen world ray.
+130 direction/relative-arm checks, six motion cases, app target-edit/release
+checks, 33 scene checks and four shared physical cases pass. Source-only change;
+reload lab. No GUI, saved-state overwrite, Unreal/native package or arm edits.
+Earlier pending wrist/forearm question is superseded, not an outstanding choice.
+Details: Labs/BodyflipLab/THROWS.md; Saved/BodyflipLab/ThrowDirection/results.json.
+
+**Bodyflip throw motion, November 1 (historical; question superseded below):**
+User rejected the saved-impulse approach. Throws now use the shared upper-body
+attack path: optional equal transfer over spine_01-05, legal arm entry, motion
+compensation, soft legs/amount and recovery. Imported Throw Lab target aiming
+is disabled. Bodyflip throw aim uses upper-chain heading/elevation only (bomb
+heading only), with no free roll or pelvis/whole-body tilt fallback. Release
+linear/angular velocity comes from the final held object's pre-release motion;
+no saved impulse/spin is added. Throw speed changes animation rate; zero disables
+that throw. No live state edits, GUI use, Unreal work or native repackaging.
+Checks: six compensation/aim cases, 2,000 spine shares, 60 drift/rate checks,
+app release-velocity checks, source parity and shared melee physics pass.
+Remaining: adapted spear shaft is ~48deg off hand-driven travel; original source
+is already ~17deg, increased by retargeting/arm projection. Asked whether to
+adjust forearm/wrist motion or preserve source pose; superseded by the newer
+spine-only, authored-direction instruction above.
+Do not restore the saved impulse or claim complete throw acceptance. Evidence:
+Saved/BodyflipLab/ThrowMotion/results.json; Labs/BodyflipLab/THROWS.md.
+
+**Bodyflip throw release aiming, October 31 (rejected/superseded):** Big throw now
+aims the spear shaft from its geometry origin at Release. Small throw solves
+world yaw only so launch stays in the target's vertical plane and retains its
+upward arc; target height cannot flatten it. Replaced attached-hand/source
+derivative subtraction (false lateral impulse from retargeting/projection) with
+body COM translation plus pelvis angular transport. Imported throw impulse,
+charge/speed, gravity and aero unchanged. 20 release cases + 12 prescribed
+carrier cases, 72 direction/spin cases, 54 drift checks, app retarget checks,
+49,314 source parity checks and 4 shared physical melee cases pass. Reproduced
+stationary spear has 1.34cm lateral deviation at nominal target flight time;
+shaft unit-vector error below 9e-9. This is not an exact ballistic-hit guarantee.
+Reload lab; no live state edits, GUI, Unreal build or native repackaging.
+Details/evidence: Labs/BodyflipLab/THROWS.md, Saved/BodyflipLab/ThrowAim/.
+
+**Bodyflip target-move crash, October 31 (current, local):** fixed projectile
+shape lifetime in `projectile-world.mjs`. Retargeting destroyed the released
+spear's body and its scaled collider, leaving a dangling cache entry; the next
+spawn failed inside WASM (reported function signature mismatch; offline replay
+produced table index out of bounds). Cache now owns an explicit reference until
+disposal. 36 projectile rebuilds, 6 target inputs + 6 drag-path edits in the actual
+app-script harness, and 10 existing projectile checks pass. No live scene writes,
+GUI use, Unreal or native package changes. Reload lab to load fix and clear the
+crashed instance. Details: Labs/BodyflipLab/THROWS.md.
+
+**Bodyflip full-strength aim, latest October31:** removed Aim percentage slider;
+Aim on/off remains. Enabled timeline/manual/held/physical aiming always uses100%.
+Legacy saved aimWeight is forced to1 on load/sanitize, covering older80% scenes.
+Frozen KickL replay now hits3.2304cm from centre inside12cm target. Legacy migration,
+33scene checks and syntax pass. Refresh loads; no saved-state overwrite, GUI use,
+Unreal or native package changes. Details in Bodyflip README/full-aim.json receipt.
+
+**Bodyflip KickL aim audit, latest October31:** user accepted distributed transfer.
+Current saved Space kick misses because Aim is80%. Reproduced reported26.7526cm
+surface miss; identical inputs at100% place contact3.2304cm from centre, inside
+12cm target. Kick path is separate from spine transfer. No settings/source edits.
+Evidence Saved/Diagnostics/BodyflipKickAim/; details in Bodyflip README.
+
+**Bodyflip optional distributed pelvis transfer, latest October31:** unconditional
+spine_01 transfer removed; default scheduled/manual attacks retain authored pelvis
+and spine rotations. New More options checkbox **Spread pelvis turn across spine**
+(defaultoff, last) keeps the base pelvis and distributes the attack pelvis delta
+20% each over spine_01–05. Full chain recovers original upper orientation before
+limits/aim. Motion compensation remains separate; user's conservation complaint
+is not resolved/validated by this option. Post-Hit recovery now removes compensation
+relative to authored motion, preserving its follow-through.1046 distribution and
+1068 authored samples +24manual checks pass; arm-entry/arming/torso/scene checks
+pass. Saved settings untouched; no GUI/native package/build/push. Refresh loads.
+Details: Labs/BodyflipLab/README.md, Saved/Diagnostics/BodyflipAuthoredPelvis/.
+
+**Bodyflip Motion compensation checkbox, October31:** appended at the end of
+More options after Vanilla attack only; default on preserves previous behavior.
+Off bypasses existing upper-body attack pelvis compensation (soft and rigid) for
+scheduled/manual paths, retaining Amount % and Soft legs. Rechecking restores
+them. Uses preserve-time regeneration and scene persistence; does not disable
+aim, pelvis transfer, joint limits or separate flip balance.608 pose comparisons,
+33 scene checks and syntax pass. Saved scene/native/editor unchanged. Refresh
+loads the checkbox; details in Labs/BodyflipLab/README.md.
+
+**Bodyflip vanilla inspection, latest October31:** appended More options checkbox
+Vanilla attack only (default off). Displays original full-body source directly,
+including pelvis/root motion, bypassing all motion corrections in the display.
+Armed-aligned source clock makes current F100 slashL source F13.9364; original
+pre-Armed frames and held endpoints. Display-only, persists per scene, no generation
+on toggle; hides scene/debug overlays.267 focused checks +33 scene checks pass,
+syntax checked, no GUI use. Saved settings/native/editor unchanged. See latest
+Labs/BodyflipLab/README.md section. Refresh loads the new control.
+
+**Bodyflip F95–F100 investigation, latest October31:** vanilla comparison and
+stage audit confirm an introduced motion shape. Original pelvis turn is moved
+into spine_01 (vanilla local twist~0deg); first +/-22deg clamp suppresses lead-in
+until F96.2657. Active opposite-pelvis/soft-leg compensation counter-rotates that
+spine to preserve upper world orientation, but a second clamp breaks preservation
+from F98.9361. F100 same-input chest speed941->384deg/s; bypassing only that last
+spine clamp restores941 (diagnostic, not a fix). Flip balance inactive, separate
+attack-inertia solver still active. Current target changed; first audit aim-speed
+numbers describe the previous target. No production/tuning/editor changes. Detailed
+intent/stages/evidence in Labs/BodyflipLab/README.md and
+Saved/Diagnostics/BodyflipUpper95Followup. User withdrew under1s requirement.
+
+**Bodyflip context refresh — October 31, latest handoff.** Read the
+[current lab status](Labs/BodyflipLab/README.md#context-refresh-handoff---october-31)
+before resuming. Per-mode timelines are implemented and verified (33 checks):
+Run retains the two jumps; Space is empty. First app reload must be Ctrl+R,
+because the old Refresh button saves its stale state first. No desktop control.
+The earlier slash/performance work is **unfinished, uncommitted lab-only work**:
+warm generation measured2.74–3.01s, cold5.99s including3.20s landing NN; user
+requires below1s. Latest aim preserves authored arm motion and fits direction,
+not exact contact; earlier near-zero-contact and native-parity claims below do
+not validate this version. Bounce test has an unresolved loading-velocity failure.
+Native package is still the earlier891446-byte version; do not assume lab/native
+parity. Detailed changes, tests, limitations, saved-scene migration and resume
+steps are in the linked README. Preserve accepted flipless motion, existing
+settings and other agents' dirty files. No broad cleanup, GUI use, Unreal build
+or push was performed for this handoff. Latest request was documentation only.
+
 **Bodyflip October31 intermediate source checkpoint:** Lab/runtime tooling and
 authored throw data checkpointed before the new aim-miss investigation. Native
 shared C++ integration, generated packages and model exports remain local.

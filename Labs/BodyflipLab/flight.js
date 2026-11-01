@@ -1,5 +1,6 @@
 (function(root){
 'use strict';
+const Work=typeof module!=='undefined'?require('./preparation.js'):root.BodyflipPreparation;
 const Physical=typeof module!=='undefined'?require('./physical-flight.js'):root.BodyflipPhysicalFlight,PhysicalAim=typeof module!=='undefined'?require('./physical-aim.js'):root.BodyflipPhysicalAim;
 const SC=typeof module!=='undefined'?require('./spin-contact.js'):root.BodyflipSpinContact;
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery,C=typeof module!=='undefined'?require('./core.js'):root.BodyflipCore;
@@ -15,7 +16,7 @@ const D=typeof module!=='undefined'?require('./mass.js'):root.BodyflipMass,O=typ
 const A=typeof module!=='undefined'?require('./jump-attack.js'):root.BodyflipJumpAttack,G=typeof module!=='undefined'?require('./space-gym.js'):root.BodyflipSpace;
 const {add,sub,mul,rotate,qm,qinv,qslerp}=R,clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const finish=(points,q)=>({points,q,axes:q.map(R.toAxes)});
-function translate(p,delta){return finish(p.points.map(v=>add(v,delta)),p.q);}
+function translate(p,delta){return {...p,...finish(p.points.map(v=>add(v,delta)),p.q)};}
 function decodeNN(data){return {names:['root',...data.names],fps:data.fps,duration:data.duration,poses:data.poses.map((p,i)=>{const q=[[0,0,0,1],...p.axes.map(R.fromAxes)];return finish([data.roots[i],...p.points],q);}),roots:data.roots,source:data.source};}
 function decodeJump(data){return {name:data.name,fps:data.fps,duration:data.duration,poses:data.frames.map(frame=>{const points=frame.map(v=>[v[0]*.01,v[2]*.01,v[1]*.01]),q=frame.map(v=>R.fromAxes([[1,0,0],[0,1,0],[0,0,1]].map((axis,k)=>{const a=rotate(v.slice(3),axis);return [a[0],a[2],a[1]].map(x=>k===1?-x:x);})));return finish(points,q);})};}
 function at(clip,t,parents,loop=false){clip.locals ||= clip.poses.map(p=>R.localize(p.points,p.q,parents));t=loop?((t%clip.duration)+clip.duration)%clip.duration:clamp(t,0,clip.duration);const f=t*clip.fps,i=Math.min(clip.poses.length-2,Math.floor(f));const a=clip.locals[i],b=clip.locals[i+1],u=clamp(f-i,0,1);return R.fk({p:a.p.map((v,j)=>add(v,mul(sub(b.p[j],v),u))),q:a.q.map((v,j)=>qslerp(v,b.q[j],u))},parents);}
@@ -39,7 +40,13 @@ function carryVelocity(incoming,normal,direction){
  const line=R.cross(normal,direction),squared=R.dot(line,line);
  return squared>1e-12?mul(line,R.dot(incoming,line)/squared):sub(incoming,mul(normal,R.dot(incoming,normal)));
 }
-function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
+function* createSteps(run,jumps,settings,parents,reference=run.poses[0],context={}){
+ // Contact integration repeatedly queries identical incoming poses (including
+ // fractional ticks). Cache that immutable input, not the changing push pose.
+ context={...context};
+ for(const key of ['poseAt','articulationAt','contactSpinAt'])if(context[key]){
+  const source=context[key],cache=new Map();context[key]=time=>{if(cache.has(time))return cache.get(time);const value=source(time);cache.set(time,value);if(cache.size>2048)cache.delete(cache.keys().next().value);return value;};
+ }
  C.registerRig(run.names,parents,reference);H.registerRig(reference);
  settings=C.sanitize(settings);
  const jumpScale=context.jumpScale??1,jumpTimeScale=Math.sqrt(jumpScale),launchSpeed=Math.sqrt(2*9.81*jumpHeight(jumps)*jumpScale),build=C.jumpBuild(settings,jumpScale*100),authoredBuild=build.ms>settings.loadMs;
@@ -57,7 +64,8 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
  // After this marker owns the body, an earlier segment's hypothetical landing
  // cannot rebase the root underneath the support planner. Retain its raw
  // flight curve, anchored at takeover; this jump's body carrier resolves contact.
- const rawWorldRun=time=>{const pose=incomingBody&&time>=supportStart?translate(incomingBody(time-supportStart),add(context.articulationAt(time).points[0],add(incomingRootOffset,mul(incomingRootVelocity,time-supportStart)))):priorPose(time);return hand?H.reframe(pose):pose;};
+ const rawWorldPose=time=>{const pose=incomingBody&&time>=supportStart?translate(incomingBody(time-supportStart),add(context.articulationAt(time).points[0],add(incomingRootOffset,mul(incomingRootVelocity,time-supportStart)))):priorPose(time);return hand?H.reframe(pose):pose;};
+ const incomingCache=new Map(),rawWorldRun=time=>{if(incomingCache.has(time))return incomingCache.get(time);const p=rawWorldPose(time);incomingCache.set(time,p);if(incomingCache.size>2048)incomingCache.delete(incomingCache.keys().next().value);return p;};
  const rawStart=rawWorldRun(supportStart);
  const surface=context.surface||S.ground(edge);
  const grounded=context.grounded??(context.surfaces?K.supported(rawStart.points[0],context.surfaces):false);
@@ -203,7 +211,7 @@ function create(run,jumps,settings,parents,reference=run.poses[0],context={}){
  // its physical body is clear. Only grounded locomotion may use the standing
  // capsule here; airborne loading resolves the posed body, as hand loading does.
  if(build.ms>0&&Number.isFinite(contactTime)){
-  bounce=B.create({root:jumpRoot,hip:mean(limbs.map(a=>(hand?support.terminal.pose:contactBodyPose(0)).points[a.hip])),upperLength:hand?null:l.upper,lowerLength:hand?null:l.lower,foot:paired?mean(support.terminal.hands.map(h=>h.foot)):support.terminal.foot,normal:surface.normal,direction,incoming,reach:driveReach,maxReach:paired?driveReach*settings.supportReach:support.maxReach,loadMs:settings.loadMs,buildMs:footBuild?Math.max(0,build.ms-(contactTime-preparationStart)*1000):build.ms,authoredBuild,rebound:settings.rebound,launchSpeed,cap:settings.fallCap,rolling:(t,p)=>driveContact(rollingAt(t,p)),carry:carryVelocity,loading:(t,p)=>driveContact(contactMotion.sample(t,p)),constraints:contactConstraints,anchorOffset:hand||authoredBuild||context.contactSpinAt?t=>{const p=contactBodyPose(t,!hand&&loadCommitted?Math.min(t,loadDuration):t);return sub(mean(limbs.map(a=>p.points[a.hip])),p.points[0]);}:null,surfaceOrigin:hand?surface.origin:null,resolveRoot:hand&&context.surfaces||authoredBuild?(p,delta,t)=>{if(!hand&&grounded)return K.move(p,delta,context.surfaces||[surface]);const base=contactBodyPose(t),at=add(p,delta),posed={...base,points:base.points.map(v=>add(v,sub(at,base.points[0])))};return contactBody.resolve(solveContacts(posed,contactMotion.sample(t,at)),context.surfaces||[surface],hand?handShapes:['foot_'+l.side.toLowerCase(),'ball_'+l.side.toLowerCase()]);}:null,startPush:t=>{loadDuration=t;loadCommitted=true;depthStop=contactTime+t;if(hand&&authoredBuild)contactMotion.invalidate();contactMotion.startPush(t);}});
+  bounce=yield* B.steps({root:jumpRoot,hip:mean(limbs.map(a=>(hand?support.terminal.pose:contactBodyPose(0)).points[a.hip])),upperLength:hand?null:l.upper,lowerLength:hand?null:l.lower,foot:paired?mean(support.terminal.hands.map(h=>h.foot)):support.terminal.foot,normal:surface.normal,direction,incoming,reach:driveReach,maxReach:paired?driveReach*settings.supportReach:support.maxReach,loadMs:settings.loadMs,buildMs:footBuild?Math.max(0,build.ms-(contactTime-preparationStart)*1000):build.ms,authoredBuild,rebound:settings.rebound,launchSpeed,cap:settings.fallCap,rolling:(t,p)=>driveContact(rollingAt(t,p)),carry:carryVelocity,loading:(t,p)=>driveContact(contactMotion.sample(t,p)),constraints:contactConstraints,anchorOffset:hand||authoredBuild||context.contactSpinAt?t=>{const p=contactBodyPose(t,!hand&&loadCommitted?Math.min(t,loadDuration):t);return sub(mean(limbs.map(a=>p.points[a.hip])),p.points[0]);}:null,surfaceOrigin:hand?surface.origin:null,resolveRoot:hand&&context.surfaces||authoredBuild?(p,delta,t)=>{if(!hand&&grounded)return K.move(p,delta,context.surfaces||[surface]);const base=contactBodyPose(t),at=add(p,delta),posed={...base,points:base.points.map(v=>add(v,sub(at,base.points[0])))};return contactBody.resolve(solveContacts(posed,contactMotion.sample(t,at)),context.surfaces||[surface],hand?handShapes:['foot_'+l.side.toLowerCase(),'ball_'+l.side.toLowerCase()]);}:null,startPush:t=>{loadDuration=t;loadCommitted=true;depthStop=contactTime+t;if(hand&&authoredBuild)contactMotion.invalidate();contactMotion.startPush(t);}});
   if(hand)contactMotion.setRootAt(t=>bounce.sample(t).p);
   runEnd=localRoot(loadingPose(bounce.loadDuration));launchLocal=R.localize(runEnd.points,runEnd.q,parents);
   if(authoredBuild&&!hand){const p=rawWorldRun(contactTime+bounce.loadDuration);buildPelvisRest=R.localize(p.points,p.q,parents).p[pelvis];}
@@ -357,6 +365,7 @@ function handFrames(source,segment,settings){
   return frame;
  };
 }
+function create(...args){const job=createSteps(...args);for(;;){const next=job.next();if(next.done)return next.value;}}
 function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,catalog=null,options={}){
  H.registerRig(reference);
  C.registerRig(run.names,parents,reference);H.registerRig(reference);
@@ -366,7 +375,7 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,cat
  // Rotate motion sources, not the environment or rig's rest frames.
  if(settings.startYaw)jumps=jumps.map(c=>({...c,poses:c.poses.map(turnPose),locals:undefined,takeoff:undefined}));
  if(settings.mode==='spaceGym'){const originalRun=run;run={...run,sample:t=>turnPose(originalRun.sample?originalRun.sample(t):originalRun.poses[0])};}
- if(settings.mode==='spaceGym')return {...G.sequence(run,jumps,settings,parents,schedule.filter(e=>e.time<=horizon),catalog,reference),preparedThrough:horizon};
+ if(settings.mode==='spaceGym')return G.sequence(run,jumps,settings,parents,schedule,catalog,reference,{defer:options.defer,horizon});
  const origin=run.poses[0].points[0],speed=(run.poses.at(-1).points[0][2]-origin[2])/((run.poses.length-1)/run.fps),edge=settings.mode==='idle'?5:speed*settings.runSeconds-.12;
  const surfaces=S.scene(edge,settings),events=[],segments=[],loop=jumps.find(c=>c.name.endsWith('_Loop_Fall'));
  const gait=t=>{const p=run.sample?run.sample(t):translate(at(run,t,parents),[-origin[0],0,-origin[2]+Math.max(0,t-run.duration)*speed]);return run.facingSeeded?p:turnPose(p);};
@@ -397,7 +406,7 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,cat
  const carrierOptions={surfaces,speed,parents,headingAt,initialYaw:settings.startYaw*Math.PI/180,landingBlend:settings.jumpBlend,gait,fallPose,cap:settings.fallCap,phase,resume,horizon,decorate:settings.surfaceIK&&IK.available&&surfaces.some(s=>s.normal[1]>1e-5&&s.normal[1]<.99999)?(source,options)=>IK.track(source,{...options,names:run.names,parents,gait:settings.mode==='jump'?'run':'walk'}):null};
  // A single final balance sees attack articulation, aiming and released-limb follow.
  function physicalTrack(segment,source,start,seedSource=source){
-  const pushed=segment.launchSpeed>0&&Number.isFinite(segment.jumpStart)&&start<segment.abortTime&&(segment.bounce?segment.bounce.didPush&&start>segment.jumpStart+1e-9:start>=segment.jumpStart-1e-9);
+  const pushed=segment.launchSpeed>0&&Number.isFinite(segment.jumpStart)&&start<segment.abortTime&&(segment.bounce?segment.bounce.didPush&&(segment.supportKind==='hand'?start>segment.jumpStart+1e-9:start>=segment.jumpStart-1e-9):start>=segment.jumpStart-1e-9);
   // Contact decides whether a push happened. Once it did, strength is a
   // gameplay command on COM velocity, not a side effect of the departing pose.
   // Rebound remains the explicit, separately tunable returned impact energy.
@@ -407,16 +416,32 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,cat
    return sub(add(carryVelocity(world,segment.surface.normal,segment.direction),mul(segment.direction,speed)),bias);
   }:null;
   const config={start,settings,names:run.names,parents,reference,gravity:9.81,cap:settings.fallCap,seedSource,releaseVelocity,balance:segment.spin.active};
+  let carry=null;
+  const worldPose=(pose,time)=>{
+   carry ||= (()=>{const at=start-1e-7,state=segment.carrier.state(at);return {offset:sub(state.root,seedSource(at).root),velocity:state.bias};})();
+   return translate(pose,add(carry.offset,mul(carry.velocity,Math.max(0,time-start))));
+  };
+  if(segment.supportKind!=='hand'&&segment.spinContact){
+   const history=(t,project)=>{const f=segment.carrier.sample(Math.min(t,start-1e-7));return project?{...f,pose:project(f.pose)}:f;};
+   config.articulation=context=>segment.spinContact.physicalFollow(context,history,worldPose);
+  }
   let track=null;
   return {sample(time){
    if(!pushed&&!segment.spin.active||!Number.isFinite(start)||time<=start)return source(time);
-   track ||= segment.spin.active&&settings.aim&&segment.attack?PhysicalAim.create(source,config,{track:segment.attack,clip:catalog.get(segment.event.attack),settings}):Physical.create(source,config);
+   track ||= segment.spin.active&&settings.aim&&segment.attack?PhysicalAim.create(source,config,{track:segment.attack,clip:catalog.get(segment.event.attack),settings,worldPose}):Physical.create(source,config);
    const frame=track.sample(time);return {...frame,physicalAim:segment.spin.active};
   },get track(){return track;}};
  }
  const baselineSpin=settings.airFlip&&Number.isFinite(edgeTime)?O.create(baseline,{start:edgeTime,commandTime:edgeTime,event:{spinVersion:2},settings,names:run.names,parents,reference}):null;
  const baselineCarrier=K.track(baselineSpin?baselineSpin.sample:baseline,{...carrierOptions,body,rootMotion:run.nativeEntry?t=>gait(t).points[0]:null});
- let previous=t=>baselineCarrier.sample(t),eventIndex=0,preparedThrough=0;
+ let previous=t=>baselineCarrier.sample(t),eventIndex=0,preparedThrough=0,building=null;
+ function buildSegment(...args){
+  building ||= {job:createSteps(...args),result:null};
+  if(building.result)return building.result;
+  for(;;){const finish=Work.hold();let next;try{next=building.job.next();}finally{finish();}
+   if(next.done){building.result=next.value;return next.value;}Work.checkpoint();
+  }
+ }
  function prepareThrough(end){
  horizon=Math.max(horizon,end);carrierOptions.horizon=horizon;baselineCarrier.setHorizon(horizon);
  for(const segment of segments)segment.carrier.setHorizon?.(horizon);
@@ -425,8 +450,9 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,cat
   const event=schedule[eventIndex];
   const prior=previous,frame=prior(event.time),last=segments.at(-1);
   if(last&&event.time<Math.min(last.spinReleaseTime??last.jumpStart+last.release,last.abortTime)-1e-8){events.push({...event,status:'Busy',reason:'Previous support / push still active'});continue;}
+  let finishSetup=()=>{};try{
   const p=frame.pose,spinSeed=frame.spin||null,spinOrigin=spinSeed?.rotation||[0,0,0,1],unspun=t=>O.rebase(prior(t),spinOrigin,massRig);
-  if(C.sanitizeJump(event).jumpPercent===0){
+  if(C.sanitizeJump(event).jumpPercent===0){finishSetup=Work.hold();
    const segment=G.action(event,unspun);segment.motion=M.create(event,segment,jumps,run.names,parents,settings);if(segment.motion)segment.sample=segment.motion.sample;segment.attack=A.create(event,segment,catalog,run.names,parents,settings,reference);if(segment.attack)segment.sample=segment.attack.sample;segment.spin=O.create(segment.sample,{start:event.time,commandTime:event.time,event,settings,names:run.names,parents,reference,inherited:spinSeed});segment.physical=physicalTrack(segment,segment.spin.sample,event.time,prior);segment.sample=segment.physical.sample;segment.rawSample=segment.sample;segment.carrier=K.track(segment.sample,{...carrierOptions,start:event.time,initialYaw:frame.capsule?.yaw??carrierOptions.initialYaw,body,exactSource:true,forceSource:true,bodyDuringSupport:true,supportAirborne:!frame.capsule?.grounded});segments.push(segment);previous=t=>t<(segment.preparationStart??event.time)?prior(t):segment.carrier.sample(t);events.push({...event,status:'Action',reason:'0% push',pushTime:event.time});continue;
   }
   const priorRoot=t=>C.sanitizeJump(event).pushWith!=='foot'&&t>event.time?(last?last.carrier:baselineCarrier).state(t).root:prior(t).root;
@@ -440,7 +466,8 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,cat
   }).sort((a,b)=>Number(b.available)-Number(a.available)||(a.available?a.contactGap-b.contactGap:0)||a.gap-b.gap);
   const surface=event.surface==='auto'?ranked[0]?.surface:surfaces.find(s=>s.id===event.surface);
   if(!surface){events.push({...event,status:'Miss',reason:'Surface disabled'});continue;}
-  const segment=create(run,jumps,settings,parents,reference,{time:event.time,anticipate:true,notBefore:Math.max(last?Math.min(last.spinReleaseTime??last.airStart,last.abortTime):0,frame.capsule?.landingTime??0),grounded:frame.capsule?.grounded,hand:C.sanitizeJump(event).pushWith,handChoice:ranked.find(r=>r.surface===surface)?.choices,jumpScale:C.sanitizeJump(event).jumpPercent/100,surface,surfaces,poseAt:t=>unspun(t).pose,continueAt:unspun,contactSpinAt:!frame.capsule?.grounded&&C.sanitizeJump(event).pushWith==='foot'&&last?t=>qm(last.spin.state(t).rotation,qinv(spinOrigin)):null,articulationAt:last&&!last.carrier.state(event.time).landed?t=>O.rebase((last.rawSample||last.sample)(t),spinOrigin,massRig).pose:null,rootAt:t=>{const f=t<=event.time?prior(t):null;return f?f.root:(last?last.carrier.state(t).root:baselineCarrier.state(t).root);},velocityAt,speed:Math.hypot(velocity[0],velocity[2])});
+  const segment=buildSegment(run,jumps,settings,parents,reference,{time:event.time,anticipate:true,notBefore:Math.max(last?Math.min(last.spinReleaseTime??last.airStart,last.abortTime):0,frame.capsule?.landingTime??0),grounded:frame.capsule?.grounded,hand:C.sanitizeJump(event).pushWith,handChoice:ranked.find(r=>r.surface===surface)?.choices,jumpScale:C.sanitizeJump(event).jumpPercent/100,surface,surfaces,poseAt:t=>unspun(t).pose,continueAt:unspun,contactSpinAt:!frame.capsule?.grounded&&C.sanitizeJump(event).pushWith==='foot'&&last?t=>qm(last.spin.state(t).rotation,qinv(spinOrigin)):null,articulationAt:last&&!last.carrier.state(event.time).landed?t=>O.rebase((last.rawSample||last.sample)(t),spinOrigin,massRig).pose:null,rootAt:t=>{const f=t<=event.time?prior(t):null;return f?f.root:(last?last.carrier.state(t).root:baselineCarrier.state(t).root);},velocityAt,speed:Math.hypot(velocity[0],velocity[2])});
+  finishSetup=Work.hold();
   segment.surfaceChoices=ranked.map(r=>({surface:r.surface.id,foot:r.foot,eligible:r.available,contactGap:r.contactGap,pelvisGap:r.gap}));
   segment.event=event;
   // Compose all articulation first; one COM correction then drives the capsule.
@@ -450,11 +477,13 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,cat
   segment.attack=A.create(event,segment,catalog,run.names,parents,settings,reference);if(segment.attack)segment.sample=segment.attack.sample;
   const unturned=segment.sample;segment.unturned=unturned;
   const spinContact=SC.create(segment,settings,run.names,parents,reference),pin=spinContact.apply;segment.spinContact=spinContact;
-  segment.spin=O.create(t=>unturned(t,0,0,settings.axis),{start:event.time,commandTime:segment.airStart,event,settings,names:run.names,parents,reference,inherited:spinSeed,contact:pin});
+  segment.spin=O.create(t=>unturned(t,0,0,settings.axis),{start:event.time,commandTime:spinContact.contactEnd,event,settings,names:run.names,parents,reference,inherited:spinSeed,contact:pin});
   segment.spinReleaseTime=spinContact.releaseTime;
   const earlyRelease=segment.spinReleaseTime<segment.airStart-1e-7;
-  const authored=t=>{const f=segment.spin.sample(t);return earlyRelease&&t>=segment.spinReleaseTime?{...f,phase:'FALL',supportState:'FREE',airTime:t-segment.spinReleaseTime,spinRelease:true}:f;};
-  if(earlyRelease){const originalPushDebug=segment.pushDebug;segment.pushDebug=t=>t>=segment.spinReleaseTime?null:originalPushDebug(t);}
+  const pushedFoot=segment.supportKind!=='hand'&&segment.bounce?.didPush&&segment.spinReleaseTime>=segment.jumpStart-1e-8;
+  const physicalFoot=segment.supportKind!=='hand';
+  const authored=t=>{const f=segment.spin.sample(t,!(physicalFoot&&t>=segment.spinReleaseTime));return earlyRelease&&t>=segment.spinReleaseTime?{...f,phase:pushedFoot?'RISE':'FALL',supportState:'FREE',airTime:t-segment.spinReleaseTime,spinRelease:true}:f;};
+  if(earlyRelease&&!pushedFoot){const originalPushDebug=segment.pushDebug;segment.pushDebug=t=>t>=segment.spinReleaseTime?null:originalPushDebug(t);}
   if(segment.supportKind==='hand')segment.inertia=N.create(authored,{release:spinContact.releaseTime,cap:settings.fallCap,names:run.names,parents,reference});
   const source=segment.inertia?segment.inertia.sample:authored;
   const raw=handFrames(source,segment,{...settings,airFlip:false});
@@ -472,12 +501,14 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,cat
   // the carrier will add its accumulated displacement/velocity exactly once.
   // Any surface projection must run in displayed world coordinates first.
   const sourceRelease=(t,project)=>{const f=displayedRelease(t,project),original=raw(t),delta=sub(original.root,f.root);return {...f,root:original.root,pose:{...f.pose,points:f.pose.points.map(p=>add(p,delta))}};};
-  const finalArticulation=t=>{const f=raw(t);return t>=segment.spinReleaseTime?{...f,pose:pin(f.pose,t,f,null,sourceRelease)}:f;};
+  const finalArticulation=t=>{const f=raw(t);return !physicalFoot&&t>=segment.spinReleaseTime?{...f,pose:pin(f.pose,t,f,null,sourceRelease)}:f;};
   segment.physical=physicalTrack(segment,finalArticulation,segment.spinReleaseTime,sourceRelease);
   segment.rawSample=segment.physical.sample;
   segment.carrier=K.track(segment.physical.sample,{...carrierOptions,initialYaw:prior(segment.preparationStart).capsule?.yaw??carrierOptions.initialYaw,breakTimes:departureTimes,start:segment.preparationStart,forceSource:true,body,bodyDuringSupport:segment.supportKind==='hand'||!frame.capsule?.grounded,supportAirborne:!frame.capsule?.grounded,excludeBody:frame=>frame.spin?.active?spinContact.activeBones(frame.spin.time):['APPROACH','PIN'].includes(frame.supportState)?(segment.support.limbs||[segment.support.leg]).flatMap(l=>segment.supportKind==='hand'?['hand_'+l.side.toLowerCase()]:['foot_'+l.side.toLowerCase(),'ball_'+l.side.toLowerCase()]):[],exactSource:true,cacheResolvedPose:true,correctPose:(pose,frame)=>{if(frame.physical)return pose;if(frame.returnedToLocomotion&&segment.supportKind==='hand')return pin(pose,frame.time,frame,null,displayedRelease,pose);if(frame.spin?.active||(segment.supportKind==='hand'?settings.handFollow:settings.legFollow)>0&&frame.spin?.time>=segment.spinReleaseTime)return pin(pose,frame.spin.time,frame,null,displayedRelease);const l=segment.support.leg;if(segment.support.paired&&frame.supportState==='APPROACH'&&frame.hands?.some(h=>h.pinned))return segment.support.sample(frame.supportAge,pose.points[0]).pose;if(frame.supportState!=='PIN')return pose;const c=segment.supportKind==='hand'?segment.contactMotion.sample(frame.contactAge,pose.points[0]):{foot:frame.pose.points[l.foot],rotation:{footQ:frame.pose.q[l.foot],toeQ:frame.pose.q[l.toe]}};return segment.supportKind==='hand'?segment.solveContacts(pose,c):segment.solveSupport(pose,l,c.foot,parents,settings.supportReach,c.rotation);}});
-  events.push({...event,surfaceId:surface.id,supportKind:segment.supportKind,supportSide:segment.supportFoot,status:earlyRelease&&segment.spinReleaseTime<=segment.jumpStart?'Miss':Number.isFinite(segment.jumpStart)&&(!segment.bounce||segment.bounce.didPush)?'Push':'Miss',contactTime:segment.contactTime,pushTime:segment.jumpStart,releaseTime:segment.spinReleaseTime,handReleases:spinContact.releases,reason:earlyRelease&&segment.spinReleaseTime<=segment.jumpStart?'Spin released support before push':segment.bounce&&!segment.bounce.didPush?'No push travel: '+segment.bounce.limitReason:segment.failureReason});
+  events.push({...event,surfaceId:surface.id,supportKind:segment.supportKind,supportSide:segment.supportFoot,status:earlyRelease&&!pushedFoot&&segment.spinReleaseTime<=segment.jumpStart?'Miss':Number.isFinite(segment.jumpStart)&&(!segment.bounce||segment.bounce.didPush)?'Push':'Miss',contactTime:segment.contactTime,pushTime:segment.jumpStart,releaseTime:segment.spinReleaseTime,handReleases:spinContact.releases,reason:earlyRelease&&!pushedFoot&&segment.spinReleaseTime<=segment.jumpStart?'Spin released support before push':segment.bounce&&!segment.bounce.didPush?'No push travel: '+segment.bounce.limitReason:segment.failureReason});
   segments.push(segment);previous=t=>t<(segment.preparationStart??event.time)?prior(t):segment.carrier.sample(t);
+  }finally{finishSetup();}
+  building=null;
  }
  for(let i=0;i<segments.length;i++){const s=segments[i],until=Math.min(end,segments[i+1]?.preparationStart??segments[i+1]?.supportStart??end);s.carrier.setHorizon?.(until);s.carrier.prepare(until);const landing=s.carrier.landings.find(l=>l.time<=until&&l.time<s.jumpStart);if(landing){const result=events.find(e=>e.id===s.event.id);if(result&&['Push','Miss'].includes(result.status)){result.status='Miss';result.reason='Body contact before push ('+(landing.bone||landing.surfaceId)+')';result.landingTime=landing.time;}}}
  baselineCarrier.setHorizon(Math.min(end,segments[0]?.preparationStart??segments[0]?.supportStart??end));baselineCarrier.prepare(Math.min(end,segments[0]?.preparationStart??segments[0]?.supportStart??end));
@@ -497,7 +528,7 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,cat
   animationLeg:(t,p,unretimed=false,other=false)=>{const s=activeAt(t);return s&&!s.carrier.state(t).landed?s.animationLeg(t,p,unretimed,other):null;},coneDebug:(t,p)=>{const s=activeAt(t);return s&&!s.carrier.state(t).landed?s.coneDebug(t,p):null;},idealDebug:t=>{const s=activeAt(t);if(!s||s.carrier.state(t).landed)return null;const debug=s.idealDebug(t);if(debug?.kind==='hand'){const releases=s.spinContact.releases;return {...debug,targets:debug.targets.map(target=>({...target,selected:target.selected&&!releases.some(r=>r.side===target.foot&&t>=r.time)}))};}return debug;}};
 }
 const continuationCache=new Map();
-async function prepare(run,jumps,input,parents,reference,generate,cancelled=()=>false,catalog=null){
+async function prepare(run,jumps,input,parents,reference,generate,cancelled=()=>false,catalog=null,{cooperative=false}={}){
  const settings=C.sanitize(input),preparedSeeds=new Map(),originalRun=run;
  let facingSample=null;
  function resume(data){
@@ -537,8 +568,10 @@ async function prepare(run,jumps,input,parents,reference,generate,cancelled=()=>
      if(!run.facingSeeded)run={...originalRun,facingSeeded:true,sample:t=>facingSample(t)};
     }
     if(!sequenceResult)sequenceResult=sequence(run,jumps,settings,parents,reference,resume,catalog,{horizon,defer:true});
-    else if(settings.mode==='spaceGym')Object.assign(sequenceResult,sequence(run,jumps,settings,parents,reference,resume,catalog,{horizon,defer:true}));
-    sequenceResult.prepareThrough?.(horizon);
+    if(cooperative&&sequenceResult.prepareThrough){
+     await Work.run(()=>sequenceResult.prepareThrough(horizon),cancelled);
+     if(cancelled())return null;
+    }else sequenceResult.prepareThrough?.(horizon);
     // Keep the legacy first-jump fields for diagnostics and offline callers.
     if(sequenceResult.segments[0])for(const [key,value] of Object.entries(sequenceResult.segments[0]))if(!(key in sequenceResult))sequenceResult[key]=value;
     sequenceResult.extend=end=>{work=work.catch(()=>{}).then(()=>extendTo(end));return work;};

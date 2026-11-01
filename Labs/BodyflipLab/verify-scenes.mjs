@@ -24,11 +24,33 @@ check('Rename affects only selected scene',S.rename(restored,'Other').items[1].n
 assert.throws(()=>S.rename(restored,' '));assert.throws(()=>S.select(restored,'missing'));assert.throws(()=>S.copy(restored,'Duplicate','original'));
 check('Invalid operations leave library intact',JSON.stringify(restored)===JSON.stringify(copied));
 
+// Each sequence owns its markers, gait start, trim, speed and playhead.
+const runState=S.snapshot({settings:C.sanitize({mode:'jump',jumpEvents:[{id:'run',time:1}],trimIn:.5,trimOut:4,playbackSpeed:.5,runPhase:.25}),camera:{yaw:2},playback:{time:2,playing:true}});
+let spaceState=S.switchMode(runState,'spaceGym');
+check('First visit to Space starts empty at frame zero',spaceState.settings.jumpEvents.length===0&&spaceState.playback.time===0&&!spaceState.playback.playing);
+spaceState.settings.jumpEvents.push({id:'space',time:3,...C.sanitizeJump({})});
+spaceState.settings.trimIn=1;spaceState.settings.trimOut=6;spaceState.settings.playbackSpeed=1.5;spaceState.playback.time=3;
+spaceState.settings.supportAlpha=9;spaceState.settings.target=[1,2,3];
+const runAgain=S.switchMode(spaceState,'jump');
+check('Run restores markers, trim, speed, gait and playhead',runAgain.settings.jumpEvents[0].id==='run'&&runAgain.settings.trimIn===.5&&runAgain.settings.trimOut===4&&runAgain.settings.playbackSpeed===.5&&runAgain.settings.runPhase===.25&&runAgain.playback.time===2&&runAgain.playback.playing);
+check('Shared tuning, target and camera stay shared',runAgain.settings.supportAlpha===9&&runAgain.settings.target[2]===3&&runAgain.camera.yaw===2);
+const modeLibrary=S.open(runAgain),modeDisk=JSON.parse(JSON.stringify(S.pack(modeLibrary))),spaceAgain=S.switchMode(modeDisk,'spaceGym');
+check('Both tracks survive scene serialization and refresh',spaceAgain.settings.jumpEvents[0].id==='space'&&spaceAgain.settings.trimOut===6&&spaceAgain.settings.playbackSpeed===1.5&&spaceAgain.playback.time===3);
+spaceAgain.settings.jumpEvents[0].time=9;
+check('Mode copies cannot mutate the source state',modeDisk.modePlaybacks.spaceGym.settings.jumpEvents[0].time===3&&runState.settings.jumpEvents[0].time===1);
+for(const mode of ['walk','idle'])check(mode+' begins with an independent empty track',S.switchMode(modeDisk,mode).settings.jumpEvents.length===0);
+const modeCopy=S.copy(modeLibrary,'Copy','copy');
+check('Scene copies preserve all mode tracks, paused',S.switchMode(S.pack(modeCopy),'spaceGym').settings.jumpEvents[0].id==='space'&&Object.values(modeCopy.items.at(-1).state.modePlaybacks).every(s=>!s.playback.playing));
+const legacy=S.snapshot({settings:{mode:'idle',jumpEvents:[{id:'legacy',time:1}]},playback:{time:1}});
+check('Legacy active timeline is preserved without assigning it to other modes',legacy.modePlaybacks.idle.settings.jumpEvents[0].id==='legacy'&&S.switchMode(legacy,'jump').settings.jumpEvents.length===0);
+assert.throws(()=>S.switchMode(modeDisk,'missing'));
+
 // Execute the actual app's storage and scene handlers; no DOM renderer or inference needed.
 const app=read('app.js'),nodes=new Map();
 const node=id=>{if(!nodes.has(id))nodes.set(id,{disabled:false,replaceChildren(...values){this.options=values;}});return nodes.get(id);};
 let disk=null,reloads=0,reject=false,dialog='Trial',release;
 const ctx={C,BodyflipPlatforms:P,cameraDefault:{yaw:-.55,pitch:-.06,zoom:.95,panX:0,panY:0},BodyflipScenes:S,sceneLibrary:library,sceneReady:true,sceneChanging:false,stateWrites:Promise.resolve(),settings:structuredClone(original.settings),cameraState:structuredClone(original.camera),simTime:7,attackTime:-1,flip:88,twist:0,playing:true,hit:false,bestMiss:Infinity,previewRAF:4,previewTime:7.25,saveTimer:3,seekRevision:0,loadingRun:false,document:{body:{inert:false}},crypto:{randomUUID:()=> 'trial'},$:node,Option:function(name,id){return {name,id};},prompt:()=>dialog,location:{reload(){reloads++;}},setPlaying(v){ctx.playing=v;},clearTimeout(){},cancelAnimationFrame(){},post:async(path,payload)=>{if(reject)throw Error('disk full');disk=structuredClone(payload);},fail(e){ctx.failure=e.message;}};
+ctx.modePlaybacks={};ctx.modeRestore=null;
 vm.createContext(ctx);vm.runInContext(app.slice(app.indexOf('function playbackState(){'),app.indexOf('async function restorePlayback(')),ctx);
 // A prior delayed save must complete before the switch writes its newer library.
 ctx.stateWrites=new Promise(resolve=>release=resolve);
@@ -53,7 +75,22 @@ const loaded=C.sanitize(P.restoreDefaultsOnce(disk.settings)),surfaces=Terrain.s
 check('New scene has only the original flat floor after reload migration',surfaces.length===1&&surfaces[0].id==='floor'&&surfaces[0].normal[1]===1&&!loaded.ramps);
 check('New scene resets edited camera, jumps and tuning to defaults',disk.camera.yaw===ctx.cameraDefault.yaw&&loaded.supportAlpha===C.defaults.supportAlpha&&F.eventsFor(loaded).length===1&&loaded.jumpEvents===null);
 check('New scene keeps existing scene and saves outgoing edits',JSON.stringify(disk.scenes.items.find(s=>s.id==='trial'))===retained&&disk.scenes.items.find(s=>s.id==='original').state.settings.supportAlpha===123);
-check('New scene is last control at far right of header',/id="newScene"[^>]*>New scene<\/button><\/div><\/header>/.test(read('index.html')));
-check('Controls appended after existing Refresh',read('index.html').indexOf('id="scene"')>read('index.html').indexOf('id="refresh"'));
+check('Scene action order remains Copy, Rename, New scene',/id="copyScene"[^]*id="renameScene"[^]*id="newScene"[^]*<\/header>/.test(read('index.html')));
+
+// Exercise rapid mode changes while the previous preparation is still pending.
+ctx.sceneChanging=false;ctx.previewRAF=null;ctx.settings=structuredClone(runState.settings);ctx.simTime=2;ctx.playing=true;ctx.modePlaybacks={};ctx.modeRestore=null;
+ctx.syncControls=()=>{};ctx.save=()=>{};const pending=[];
+ctx.prepareRun=()=>new Promise(resolve=>pending.push(resolve));
+ctx.restorePlayback=async s=>{ctx.simTime=s.time;ctx.playing=s.playing===true;};
+const toSpace=ctx.changeMode('spaceGym');
+check('Mode handler switches markers before preparing',ctx.settings.mode==='spaceGym'&&ctx.settings.jumpEvents.length===0&&ctx.modeRestore.playback.time===0);
+const toRun=ctx.changeMode('jump');
+pending[0]();await toSpace;
+check('Stale preparation cannot restore the previous mode',ctx.settings.mode==='jump'&&ctx.modeRestore.playback.time===2);
+pending[1]();await toRun;
+check('Latest mode restores its playhead after generation',ctx.simTime===2&&ctx.playing&&ctx.modeRestore===null&&ctx.settings.jumpEvents[0].id==='run');
+const again=ctx.changeMode('spaceGym');
+check('Rapid switch preserves the unprepared mode playhead',ctx.modeRestore.playback.time===0);
+pending[2]();await again;
 fs.writeFileSync(new URL('scenes-verification.json',import.meta.url),JSON.stringify({passed:checks.length,checks},null,2)+'\n');
 console.log(JSON.stringify({passed:checks.length}));

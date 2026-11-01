@@ -1,10 +1,12 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const Scenes=createRequire(import.meta.url)('./scenes.js');
 const app=fs.readFileSync(new URL('app.js',import.meta.url),'utf8'),html=fs.readFileSync(new URL('index.html',import.meta.url),'utf8'),checks=[];
 const check=(name,value)=>{assert(value,name);checks.push(name);};
 let posted=null,reloaded=0,resets=0,cancelled=[],cleared=[];
-const ctx={sceneLibrary:null,stateWrites:Promise.resolve(),settings:{mode:'jump',motion:'kinematic',flipAngle:12,twistAngle:4,trimIn:1,trimOut:3,trimLoop:true,playbackSpeed:.5},cameraState:{yaw:.8},simTime:2.25,attackTime:.45,flip:93,twist:22,playing:true,hit:true,bestMiss:.02,previewRAF:null,previewTime:0,saveTimer:44,seekRevision:0,document:{hidden:false},location:{reload(){reloaded++;}},clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),total:()=>2,drawAll(){},resetPhysics(){resets++;},setPlaying(value){ctx.playing=!!value;},clearTimeout:id=>cleared.push(id),cancelAnimationFrame:id=>cancelled.push(id),post:async(path,data)=>{posted=JSON.parse(JSON.stringify(data));},seek:async time=>{ctx.simTime=time;ctx.attackTime=-1;ctx.flip=ctx.twist=0;ctx.playing=false;},fail(e){throw e;}};
+const ctx={BodyflipScenes:Scenes,modePlaybacks:{},modeRestore:null,runRevision:0,sceneLibrary:null,stateWrites:Promise.resolve(),settings:{mode:'jump',motion:'kinematic',flipAngle:12,twistAngle:4,trimIn:1,trimOut:3,trimLoop:true,playbackSpeed:.5},cameraState:{yaw:.8},simTime:2.25,attackTime:.45,flip:93,twist:22,playing:true,hit:true,bestMiss:.02,previewRAF:null,previewTime:0,saveTimer:44,seekRevision:0,document:{hidden:false},location:{reload(){reloaded++;}},clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),total:()=>2,drawAll(){},resetPhysics(){resets++;},setPlaying(value){ctx.playing=!!value;},clearTimeout:id=>cleared.push(id),cancelAnimationFrame:id=>cancelled.push(id),post:async(path,data)=>{posted=JSON.parse(JSON.stringify(data));},seek:async time=>{ctx.simTime=time;ctx.attackTime=-1;ctx.flip=ctx.twist=0;ctx.playing=false;},fail(e){throw e;}};
 vm.createContext(ctx);vm.runInContext(app.slice(app.indexOf('function playbackState(){'),app.indexOf('function save(){')),ctx);
 await ctx.refreshLab();
 check('Refresh saves active time before pausing',posted.playback.time===2.25&&posted.playback.playing===true&&!ctx.playing);
@@ -22,6 +24,8 @@ ctx.settings.mode='idle';await ctx.restorePlayback({...snapshot,time:8,attackTim
 check('Idle restores clock and attack state',ctx.simTime===8&&ctx.attackTime===.8&&ctx.flip===93&&ctx.playing);
 ctx.document.hidden=true;await ctx.restorePlayback(snapshot);check('Hidden lab does not start rendering',!ctx.playing);
 const before=ctx.simTime;await ctx.restorePlayback(undefined);check('Older saves without playback still load',ctx.simTime===before);
+ctx.document.hidden=false;ctx.playWanted=true;await ctx.restorePlayback({...snapshot,playing:false},()=>true,true);check('Mode option preserves current running intent',ctx.playing);
+ctx.playWanted=false;await ctx.restorePlayback({...snapshot,playing:true},()=>true,true);check('Mode option preserves current paused intent',!ctx.playing);
 const alpha=html.match(/<input[^>]*id="supportAlpha"[^>]*>/)?.[0];check('Alpha arrow step is one',/step="1"/.test(alpha));
 check('Refresh button uses state-preserving handler',app.includes("$('refresh').onclick=refreshLab;"));
 check('Boot restores after preparing flight',app.includes("await prepareRun();await restorePlayback(s.playback);"));

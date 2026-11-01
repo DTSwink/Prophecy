@@ -46,17 +46,25 @@ function solve(I,v){
  return [x0,x1,x2];
 }
 const velocity=(I,desired,joints)=>solve(I,sub(desired,joints));
-function correct(previous,candidate,desired,rig,dt,{iterations=3,tolerance=1e-7,axis=null}={}){
+function correct(previous,candidate,desired,rig,dt,{iterations=3,tolerance=1e-7,axis=null,project=null}={}){
  if(desired.some(x=>!Number.isFinite(x)))throw Error('Non-finite desired momentum');
  if(axis&&(!axis.every(Number.isFinite)||length(axis)<1e-12))throw Error('Momentum axis must be finite and nonzero');
  const direction=axis?R.unit(axis):null,selected=v=>direction?mul(direction,dot(v,direction)):v;
- const measure=measurement(previous,rig,dt);let pose=candidate,rotation=identity,measured=measure(pose),h=measured.momentum,fullResidual=sub(desired,h),residual=selected(fullResidual),used=0;
+ const measure=measurement(previous,rig,dt),resolved=q=>{const p=M.rotateAboutCOM(candidate,q,rig);return project?project(p):p;};let pose=project?project(candidate):candidate,rotation=identity,measured=measure(pose),h=measured.momentum,fullResidual=sub(desired,h),residual=selected(fullResidual),used=0;
  const count=Math.max(0,Math.min(3,Math.floor(iterations)));
  for(;used<count&&length(residual)>tolerance;used++){
   // dH/dtheta = I/dt to first order. Remeasure the finite motion after each
   // correction rather than pretending that its differential estimate is exact.
-  const I=tensor(measured,rig),increment=direction?mul(direction,dot(fullResidual,direction)/M.moment(I,direction)):solve(I,residual),delta=qexp(mul(increment,dt));
-  rotation=R.unit(qm(delta,rotation));pose=M.rotateAboutCOM(candidate,rotation,rig);
+  const I=tensor(measured,rig);let increment=direction?mul(direction,dot(fullResidual,direction)/M.moment(I,direction)):solve(I,residual);
+  if(project){
+   // A world-directed limb does not rotate rigidly with the trunk. Measure
+   // that constraint's actual response instead of counting its full inertia.
+   const h=1e-5,response=axis=>mul(sub(measure(resolved(qm(qexp(mul(axis,h)),rotation))).momentum,measured.momentum),dt/h);
+   if(direction){const d=dot(response(direction),direction);if(Math.abs(d)>1e-9)increment=mul(direction,dot(fullResidual,direction)/d);}
+   else {const a=response([1,0,0]),b=response([0,1,0]),c=response([0,0,1]),det=dot(a,cross(b,c));if(Math.abs(det)>1e-9)increment=[dot(residual,cross(b,c))/det,dot(a,cross(residual,c))/det,dot(a,cross(b,residual))/det];}
+  }
+  const delta=qexp(mul(increment,dt));
+  rotation=R.unit(qm(delta,rotation));pose=resolved(rotation);
   measured=measure(pose);h=measured.momentum;fullResidual=sub(desired,h);residual=selected(fullResidual);
  }
  // Axis control deliberately leaves transverse momentum unconstrained.

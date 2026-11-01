@@ -41,7 +41,7 @@ for(const name of [...catalog.keys(),'big-throw','small-throw']){
   const indices=A.bones(names,parents),set=new Set(indices),targetAt=A.armTrack(clip,names,parents,reference);
   // Remove the external carrier transform, exactly as the airborne controller
   // does. Internal parent-child orientation still uses the harness FK metric.
-  const world=local=>{const q=local.q.map((v,i)=>set.has(parents[i])?null:v);for(const i of indices)q[i]=set.has(parents[i])?R.qm(q[parents[i]],local.q[i]):local.q[i];return {axes:q.map(R.toAxes)};};
+  const world=local=>{const q=local.q.map((v,i)=>set.has(i)&&set.has(parents[i])?null:v);for(const i of indices)q[i]=set.has(parents[i])?R.qm(q[parents[i]],local.q[i]):local.q[i];return {axes:q.map(R.toAxes)};};
   oracle.poseFromClipAt=f=>world(targetAt(f));oracle.from=world(rest);oracle.target=world(targetAt(clip.meta.phases.armed));oracle.indices=set;oracle.armed=clip.meta.phases.armed;
   for(const c of a.arming.candidates){oracle.excluded=new Set(indices.filter(i=>!c.includeLowerArms&&names[i].startsWith('lowerarm_')));const expected=vm.runInContext('({gt:standaloneLiveBuildGtAngularLut(armed,indices,excluded).totalDistanceRad,live:standaloneLivePoseAngularDistanceRad(from,target,indices,excluded)})',oracle);maxOracleError=Math.max(maxOracleError,Math.abs(expected.gt-c.gtDistance),Math.abs(expected.live-c.liveDistance));near(expected.gt,c.gtDistance,'Live Harness GT distance',2e-6);near(expected.live,c.liveDistance,'Live Harness current distance',2e-6);}
  }

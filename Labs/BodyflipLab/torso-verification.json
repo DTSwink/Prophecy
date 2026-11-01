@@ -1,12 +1,12 @@
 {
   "passed": 30,
-  "maxDimensionError": 1.2334124100763592e-8,
-  "maxOffsetError": 1.3044696396519867e-9,
+  "maxDimensionError": 1.233412410626753e-8,
+  "maxOffsetError": 1.3044696674527466e-9,
   "maxRotationError": 6.129127101500416e-8,
-  "simAnchorError": 0.00009201107135900864,
+  "simAnchorError": 0.00009217087973957757,
   "checks": [
     "One separate collider for each spine",
-    "Attack starts at spine_01 and excludes pelvis",
+    "Attack includes authored pelvis and first spine",
     "spine_01 visible box follows its own axial rotation",
     "spine_01 retains exact rigid dimensions",
     "spine_01 center follows its bone-local offset",
@@ -32,7 +32,7 @@
     "Rendered and Jolt local orientations match",
     "spine_01 reaches the authored attack rotation",
     "spine_01 attack is visibly moving",
-    "Attack keeps pelvis fixed",
+    "Attack keeps pelvis position and uses authored rotation",
     "Kinematic body uses the same constrained attack target",
     "Simulated torso keeps the five constrained bodies finite"
   ]

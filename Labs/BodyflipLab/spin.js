@@ -2,6 +2,7 @@
  * Pose inertia changes speed along that axis, never inventing another axis. */
 (function(root){
 'use strict';
+const Work=typeof module!=='undefined'?require('./preparation.js'):root.BodyflipPreparation;
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,M=node?require('./mass.js'):root.BodyflipMass,C=node?require('./core.js'):root.BodyflipCore;
 const Target=node?require('./target-rig.js'):root.BodyflipTargetRig;
 const Response=node?require('./spin-response.js'):root.BodyflipSpinResponse;
@@ -39,7 +40,7 @@ function create(source,{start=0,commandTime=start,event={},settings,names,parent
  const active=!!(inherited?.active||target.flip||target.twist);
  const targetRig=Target.create(names,parents,reference),sourceLegal=active||e.attack!=='none'||e.pose!=='none';
  if(sourceLegal){const legal=targetRig.track(source,{start});source=legal.sample;}
- const sourceCache=new Map(),originalSource=source;source=time=>{const key=Math.round(time*1e9);if(sourceCache.has(key))return sourceCache.get(key);const f=originalSource(time);sourceCache.set(key,f);if(sourceCache.size>512)sourceCache.delete(sourceCache.keys().next().value);return f;};
+ const sourceCache=new Map(),originalSource=source;source=time=>{const key=Math.round(time*1e9);if(sourceCache.has(key))return sourceCache.get(key);const f=originalSource(time);sourceCache.set(key,f);if(sourceCache.size>4096)sourceCache.delete(sourceCache.keys().next().value);return f;};
  const seedAxis=inherited?.axis||axis,ramp=e.instantSpin?0:e.turnIn,axisCommand=e.turnAxis===null&&inherited?.axisCommand?inherited.axisCommand:{from:seedAxis,to:axis,begin,duration:ramp};
  const curveAxis=(curve,t)=>rotate(R.qslerp(identity,R.fromTo(curve.from,curve.to),t<curve.begin?0:curve.duration>0?ease((t-curve.begin)/curve.duration):1),curve.from);
  const axisAt=t=>curveAxis(axisCommand,t),oldAxis=inherited?.axisCommand||{from:seedAxis,to:seedAxis,begin:start,duration:0};
@@ -108,11 +109,11 @@ function create(source,{start=0,commandTime=start,event={},settings,names,parent
  function advance(){const i=states.length-1,time=start+i*dt;states.push(integrate(states[i],time,time+dt));}
  function computeState(time){
   if(time<=start){const v=velocity(start,identity,states[0].lag);return {...states[0],...v,rotation:seed,target:v.rates,axis:seedAxis,axisIndex,spinPlan:initialPlan||spinPlan};}
-  const i=Math.floor((time-start)/dt+1e-9);while(states.length<=i)advance();
+  const i=Math.floor((time-start)/dt+1e-9);while(states.length<=i){advance();Work.checkpoint();}
   const lo=start+i*dt,s=time-lo<1e-10?states[i]:integrate(states[i],lo,time),v=velocity(time,s.q,s.lag);
   return {...s,rotation:unit(qm(s.q,seed)),...v,target:v.rates,axisIndex,spinPlan:time<begin?initialPlan:spinPlan};
  }
- const stateCache=new Map();function state(time){const key=Math.round(time*1e9);if(stateCache.has(key))return stateCache.get(key);const s=computeState(time);stateCache.set(key,s);if(stateCache.size>512)stateCache.delete(stateCache.keys().next().value);return s;}
+ const stateCache=new Map();function state(time){const key=Math.round(time*1e9);if(stateCache.has(key))return stateCache.get(key);const s=computeState(time);stateCache.set(key,s);if(stateCache.size>4096)stateCache.delete(stateCache.keys().next().value);return s;}
  function sample(time,applyContact=true){
   const frame=source(time);if(time<start||frame.returnedToLocomotion&&frame.capsule?.landingTime>start)return frame;
   const s=active?state(time):{q:identity,rotation:seed,omega:[0,0,0],target,axis,axisIndex,flip:0,twist:0,flipRate:0,twistRate:0,flipScale:1,twistScale:1};
@@ -121,7 +122,7 @@ function create(source,{start=0,commandTime=start,event={},settings,names,parent
   if(contact&&applyContact)pose=contact(pose,time,frame,s);
   return {...frame,pose,spin:{...s,time,active,command:target,commands,axisCommand},jumpMotion:{...frame.jumpMotion,flip:s.flip,twist:s.twist,flipRate:s.flipRate,twistRate:s.twistRate,axis:s.axis}};
  }
- const orientationCache=new Map();function atOrientation(time,rotation){const key=[Math.round(time*1e9),...rotation].join(',');if(orientationCache.has(key))return orientationCache.get(key);const f=source(time),p=response&&time>=start?response.apply(f.pose,state(time).lag):f.pose,out={...f,pose:M.rotateAboutCOM(p,qm(rotation,qinv(seed)),rig)};if(sourceLegal)targetRig.mark(out.pose);orientationCache.set(key,out);if(orientationCache.size>512)orientationCache.delete(orientationCache.keys().next().value);return out;}
+ const orientationCache=new Map();function atOrientation(time,rotation){const key=[Math.round(time*1e9),...rotation].join(',');if(orientationCache.has(key))return orientationCache.get(key);const f=source(time),p=response&&time>=start?response.apply(f.pose,state(time).lag):f.pose,out={...f,pose:M.rotateAboutCOM(p,qm(rotation,qinv(seed)),rig)};if(sourceLegal)targetRig.mark(out.pose);orientationCache.set(key,out);if(orientationCache.size>1024)orientationCache.delete(orientationCache.keys().next().value);return out;}
  return {sample,atOrientation,state,ratesAt,active,start,begin,target,rig,get ticks(){return states.length-1;}};
 }
 const api={create,rebase,heading};if(node)module.exports=api;else root.BodyflipSpin=api;

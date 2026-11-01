@@ -1,4 +1,4 @@
-/* Camera coordinates are world-space in free mode, COM-relative in follow mode. */
+/* Free/world, COM-follow, or rigidly attached to the displayed pelvis frame. */
 (function(root){
 'use strict';
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
@@ -8,11 +8,32 @@ function basis(eye,target,height){
  const forward=unit(sub(target,eye));let right=unit(cross(forward,[0,1,0]));if(length(right)<1e-6)right=[1,0,0];
  return {eye,target,forward,right,up:unit(cross(right,forward)),targetDepth:Math.max(.01,length(sub(target,eye))),focalCss:(height*.5)/Math.tan(Math.PI/8)};
 }
-function view(state,center,height){
+function view(state,center,height,pelvis){
+ if(state.pelvisView&&pelvis){
+  const local=view({...state,pelvisView:null,free:false},[0,0,0],height),rotation=R.qm(pelvis.q,state.pelvisView.anchor);
+  const direction=v=>R.rotate(rotation,v),point=v=>add(pelvis.point,direction(v));
+  return {...local,eye:point(local.eye),target:point(local.target),forward:direction(local.forward),right:direction(local.right),up:direction(local.up),referenceRotation:rotation};
+ }
  if(state.free&&state.freeView){const v=state.freeView;return basis(v.eye,add(v.eye,mul(v.forward,v.distance)),height);}
  const distance=3.55/state.zoom,target=add(center,state.offset||[0,0,0]),eye=add(target,[Math.sin(state.yaw)*distance,distance*(.27-state.pitch*.55),Math.cos(state.yaw)*distance]);
  const b=basis(eye,target,height),scale=b.targetDepth/b.focalCss,shift=add(mul(b.right,-state.panX*scale),mul(b.up,state.panY*scale));
  return {...b,eye:add(eye,shift),target:add(target,shift)};
+}
+function pelvisFrame(pose,index){
+ if(!pose?.points?.[index]||!pose.axes?.[index])return null;
+ return {point:pose.points[index],q:R.fromAxes(pose.axes[index])};
+}
+function togglePelvis(state,enabled,current,pelvis){
+ if(enabled){
+  if(state.pelvisView||!pelvis)return;
+  const previous=JSON.parse(JSON.stringify({...state,pelvisView:null}));
+  // Capture the current view: enabling the inspection mode must not jump the camera.
+  toggle(state,false,current,pelvis.point);
+  state.offset=sub(current.target,pelvis.point);
+  state.pelvisView={anchor:R.qinv(pelvis.q),previous};
+ }else if(state.pelvisView){
+  Object.assign(state,state.pelvisView.previous,{pelvisView:null});
+ }
 }
 function toggle(state,enabled,current,center){
  if(enabled){state.freeView={eye:current.eye.slice(),forward:current.forward.slice(),distance:length(sub(current.target,current.eye))};state.free=true;}
@@ -52,12 +73,17 @@ function move(state,keys,seconds){
  v.eye=add(v.eye,mul(unit(direction),3*seconds));
 }
 function restore(state,saved,defaults){
- Object.assign(state,defaults);
+ Object.assign(state,defaults,{pelvisView:null});
  if(!saved)return;
  for(const k of ['yaw','pitch','zoom','panX','panY'])if(Number.isFinite(saved[k])&&(k!=='zoom'||saved[k]>0))state[k]=saved[k];
  if(vector(saved.offset))state.offset=saved.offset.slice();
  const v=saved.freeView;
  if(saved.free===true&&v&&vector(v.eye)&&vector(v.forward)&&length(v.forward)>.001&&Number.isFinite(v.distance)&&v.distance>.001){state.free=true;state.freeView={eye:v.eye.slice(),forward:unit(v.forward),distance:v.distance};}
+ const p=saved.pelvisView;
+ if(p&&Array.isArray(p.anchor)&&p.anchor.length===4&&p.anchor.every(Number.isFinite)&&length(p.anchor)>.001){
+  const previous={};restore(previous,{...p.previous,pelvisView:null},defaults);
+  state.pelvisView={anchor:unit(p.anchor),previous};state.free=false;state.freeView=null;
+ }
 }
-const api={view,toggle,rotate,pan,wheel,move,restore};if(typeof module!=='undefined')module.exports=api;else root.BodyflipCamera=api;
+const api={view,toggle,pelvisFrame,togglePelvis,rotate,pan,wheel,move,restore};if(typeof module!=='undefined')module.exports=api;else root.BodyflipCamera=api;
 })(globalThis);

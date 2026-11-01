@@ -44,6 +44,37 @@ K.toggle(state,false,K.view(state,center,800),center);const following=K.view(sta
 check('Follow resumes centered after free movement and zoom',near(following.target,center)&&near(R.sub(K.view(state,R.add(center,[2,0,0]),800).eye,following.eye),[2,0,0]));
 
 const app=fs.readFileSync(new URL('app.js',import.meta.url),'utf8');let queued=0,cancelled=0;
+// A fixed point on the pelvis must stay fixed on screen during any whole-body
+// rotation/translation, while articulation relative to it must remain visible.
+const cameraCoordinates=(v,p)=>{const d=R.sub(p,v.eye);return [R.dot(d,v.right),R.dot(d,v.up),R.dot(d,v.forward)];};
+let maxPelvisError=0;
+for(const free of [false,true]){
+ const state={...defaults,panX:137,panY:-71},frame={point:[2,3,4],q:R.qexp([.4,-.8,1.2])};
+ if(free)K.toggle(state,true,K.view(state,center,800),center);
+ const previous=structuredClone(state),before=K.view(state,center,800),snapshot=JSON.stringify(frame);
+ K.togglePelvis(state,true,before,frame);
+ const attached=K.view(state,center,800,frame);
+ check('Pelvis view preserves the current '+(free?'free':'follow')+' view',near(attached.eye,before.eye)&&near(attached.target,before.target)&&near(attached.up,before.up));
+ for(const controls of [false,true]){
+  if(controls){K.rotate(state,40,-80);K.pan(state,K.view(state,center,800,frame),70,35);K.wheel(state,150);}
+  const view=K.view(state,center,800,frame),local=[.3,.8,-.2],point=R.add(frame.point,R.rotate(frame.q,local)),expected=cameraCoordinates(view,point);
+  for(const axis of [[1,0,0],[0,1,0],[0,0,1],R.unit([1,2,-3])])for(const angle of [-Math.PI,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2]){
+   const q=R.qexp(R.mul(axis,angle)),next={point:R.add(frame.point,[5,-8,11]),q:R.qm(q,frame.q)},v=K.view(state,center,800,next),p=R.add(next.point,R.rotate(next.q,local));
+   maxPelvisError=Math.max(maxPelvisError,R.length(R.sub(cameraCoordinates(v,p),expected)));
+  }
+  check('Pelvis-relative articulation remains visible',!near(cameraCoordinates(view,R.add(point,R.rotate(frame.q,[.1,0,0]))),expected));
+ }
+ const saved={};K.restore(saved,JSON.parse(JSON.stringify(state)),defaults);
+ const a=K.view(saved,center,800,frame),b=K.view(state,center,800,frame);
+ check('Saved pelvis camera restores eye and full rolled basis',near(a.eye,b.eye)&&near(a.up,b.up)&&near(a.right,b.right));
+ K.togglePelvis(saved,false);check('Leaving pelvis view restores the previous camera',JSON.stringify({...saved,pelvisView:null})===JSON.stringify({...previous,pelvisView:null}));
+ check('Pelvis view never changes the displayed pose',snapshot===JSON.stringify(frame));
+}
+check('Pelvis view cancels all rigid rotation and translation, including inverted and rolled frames',maxPelvisError<1e-9);
+const renderContext={cameraState:{pelvisView:{}},WebGLMotionRenderer:class{draw(data){this.body=data;}}};vm.createContext(renderContext);
+vm.runInContext(app.slice(app.indexOf('class BodyflipRenderer'),app.indexOf('function syncPlaybackReadout'))+';globalThis.TestRenderer=BodyflipRenderer;',renderContext);
+const isolatedRenderer=new renderContext.TestRenderer(),displayed={points:[]};isolatedRenderer.draw(displayed,[0,0,0]);
+check('Pelvis view draws the actual body and skips all scene/debug overlay work',isolatedRenderer.body===displayed);
 const ctx={cameraState:{free:true},requestAnimationFrame:()=>++queued,cancelAnimationFrame:()=>cancelled++,save(){},document:{hidden:false},BodyflipCamera:K,playing:false,drawAll(){}};
 vm.createContext(ctx);vm.runInContext(app.slice(app.indexOf('const cameraKeys='),app.indexOf('class BodyflipRenderer')),ctx);
 const event=(key,target={},extra={})=>({key,target,preventDefault(){},stopImmediatePropagation(){},...extra});
@@ -51,5 +82,5 @@ check('QZDS works from a previously clicked checkbox',ctx.cameraKey(event('z',{t
 ctx.cameraKey(event('z'),false);check('Releasing keys stops the camera RAF',cancelled===1);
 check('Writing and Ctrl+Z keep their normal keys',!ctx.cameraKey(event('z',{tagName:'INPUT',type:'number'}),true)&&!ctx.cameraKey(event('z',{}, {ctrlKey:true}),true));
 ctx.cameraState.free=false;check('QZDS is inactive in follow mode',!ctx.cameraKey(event('q'),true));
-fs.writeFileSync(new URL('camera-verification.json',import.meta.url),JSON.stringify({passed:checks.length,checks,maxSwitchError,maxRecenterError,visualVerified:false},null,2)+'\n');
-console.log(JSON.stringify({passed:checks.length,maxSwitchError,maxRecenterError}));
+fs.writeFileSync(new URL('camera-verification.json',import.meta.url),JSON.stringify({passed:checks.length,checks,maxSwitchError,maxRecenterError,maxPelvisError,visualVerified:false},null,2)+'\n');
+console.log(JSON.stringify({passed:checks.length,maxSwitchError,maxRecenterError,maxPelvisError}));

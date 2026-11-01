@@ -3,7 +3,7 @@
 'use strict';
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
 const {add,sub,mul,dot,length,unit}=R,clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),g=[0,-9.81,0];
-function create({root:origin,hip,foot,normal,direction,incoming,reach,maxReach,loadMs,buildMs=loadMs,authoredBuild=buildMs>loadMs,rebound,launchSpeed,cap,rolling,carry,loading=()=>({foot,valid:true}),startPush=()=>{},anchorOffset=null,resolveRoot=null,surfaceOrigin=null,constraints=null,upperLength=null,lowerLength=null}){
+function* steps({root:origin,hip,foot,normal,direction,incoming,reach,maxReach,loadMs,buildMs=loadMs,authoredBuild=buildMs>loadMs,rebound,launchSpeed,cap,rolling,carry,loading=()=>({foot,valid:true}),startPush=()=>{},anchorOffset=null,resolveRoot=null,surfaceOrigin=null,constraints=null,upperLength=null,lowerLength=null}){
  const dt=1/480,response=Math.max(.001,loadMs/1000),offset=sub(hip,origin),rest=length(sub(hip,foot));
  const minLength=Math.max(.45*reach,rest-.25*reach),room=Math.max(.015,rest-minLength);
  const anchorVelocity=t=>anchorOffset?mul(sub(anchorOffset(t+dt/2),anchorOffset(Math.max(0,t-dt/2))),1/(t<dt/2?t+dt/2:dt)):[0,0,0];
@@ -166,7 +166,7 @@ function create({root:origin,hip,foot,normal,direction,incoming,reach,maxReach,l
  // of the inward velocity when that heading is skewed away from the normal.
  const impulse=sub(targetVelocity,loaded.v),drive=length(impulse)>1e-9?unit(impulse):direction;
  const tangent=v=>sub(v,mul(drive,dot(v,drive))),vt=tangent(loaded.v),gt=tangent(g);
- const socket=t=>anchorOffset?anchorOffset(loadDuration+t):offset;
+ const sockets=new Map(),socket=t=>{if(sockets.has(t))return sockets.get(t);const p=anchorOffset?anchorOffset(loadDuration+t):offset;sockets.set(t,p);return p;};
  const c0=rolling(0,loaded.p),h0=add(loaded.p,socket(0)),d0=length(sub(h0,c0.foot));
  const theta=d=>Math.acos(clamp((d*d-a*a-b*b)/(2*a*b),-1,1));
  const theta0=theta(d0),goal=theta(maxReach),branch=dot(sub(h0,c0.foot),drive)>=0?1:-1,velocityStep=1e-5,nextRoot=add(loaded.p,mul(loaded.v,velocityStep)),nextFoot=rolling(velocityStep,nextRoot).foot;
@@ -174,8 +174,8 @@ function create({root:origin,hip,foot,normal,direction,incoming,reach,maxReach,l
  const thetaDot=-d0*radialVelocity/Math.max(1e-12,a*b*Math.sin(theta0));
  const error=theta0-goal,coefficient=thetaDot+w*error;
  const bend=t=>goal+(error+coefficient*t)*Math.exp(-w*t);
- const cache=new Map();
- function position(t){
+ const cache=new Map(),resolvedCache=new Map();
+ function geometryPosition(t){
   if(t<0){const p=add(loaded.p,mul(loaded.v,t));return {p,raw:p,valid:true,geometric:true,contacts:[]};}
   const key=Math.round(t*1e10);if(cache.has(key))return cache.get(key);
   const angle=bend(t),distance=Math.sqrt(a*a+b*b+2*a*b*Math.cos(angle));
@@ -185,17 +185,23 @@ function create({root:origin,hip,foot,normal,direction,incoming,reach,maxReach,l
    valid=valid&&contact.valid&&disc>=0;if(!valid)break;
    const next=add(base,mul(drive,-along+branch*Math.sqrt(Math.max(0,disc))));if(length(sub(next,p))<1e-9){p=next;break;}p=next;
   }
-  const raw=p,geometric=valid;let contacts=[];if(resolveRoot){const hit=resolveRoot(loaded.p,sub(p,loaded.p),loadDuration+t);p=hit.root;contacts=hit.contacts;}
-  const contact=rolling(t,p),h=add(p,socket(t)),d=length(sub(h,contact.foot));
-  valid=valid&&contact.valid&&d<=maxReach+1e-7&&d>=minLength-1e-7&&dot(sub(h,surfaceOrigin||contact.foot),normal)>=minimumHeight-1e-7&&(!constraints||pairValid(p,loadDuration+t));
-  const result={p,raw,valid,geometric,contacts};cache.set(key,result);return result;
+  const result={raw:p,geometric:valid};cache.set(key,result);return result;
  }
- function derivatives(t){const center=position(t);let h=eps,left,right;for(let i=0;i<12;i++){left=position(t-h);right=position(t+h);if(left.geometric&&right.geometric)break;h*=.5;}
+ function position(t){
+  if(t<0){const raw=add(loaded.p,mul(loaded.v,t));return {p:raw,raw,valid:true,geometric:true,contacts:[]};}
+  const key=Math.round(t*1e10);if(resolvedCache.has(key))return resolvedCache.get(key);
+  const {raw,geometric}=geometryPosition(t);let p=raw,contacts=[];
+  if(resolveRoot){const hit=resolveRoot(loaded.p,sub(p,loaded.p),loadDuration+t);p=hit.root;contacts=hit.contacts;}
+  const contact=rolling(t,p),h=add(p,socket(t)),d=length(sub(h,contact.foot));
+  const valid=geometric&&contact.valid&&d<=maxReach+1e-7&&d>=minLength-1e-7&&dot(sub(h,surfaceOrigin||contact.foot),normal)>=minimumHeight-1e-7&&(!constraints||pairValid(p,loadDuration+t));
+  const result={p,raw,valid,geometric,contacts};resolvedCache.set(key,result);return result;
+ }
+ function derivatives(t){const center=geometryPosition(t);let h=eps,left,right;for(let i=0;i<12;i++){left=geometryPosition(t-h);right=geometryPosition(t+h);if(left.geometric&&right.geometric)break;h*=.5;}
   let v,a;if(left.geometric&&right.geometric){v=mul(sub(right.raw,left.raw),1/(2*h));a=mul(add(sub(right.raw,mul(center.raw,2)),left.raw),1/(h*h));}
-  else {h=Math.min(eps,t/2);const p=position(t-h),q=position(t-2*h);v=mul(add(sub(mul(center.raw,3),mul(p.raw,4)),q.raw),1/(2*h));a=mul(add(sub(center.raw,mul(p.raw,2)),q.raw),1/(h*h));}
-  const hv=Math.min(1e-5,Math.max(1e-8,t/2)),vm=position(t-hv),vp=position(t+hv);
+  else {h=Math.min(eps,t/2);const p=geometryPosition(t-h),q=geometryPosition(t-2*h);v=mul(add(sub(mul(center.raw,3),mul(p.raw,4)),q.raw),1/(2*h));a=mul(add(sub(center.raw,mul(p.raw,2)),q.raw),1/(h*h));}
+  const hv=Math.min(1e-5,Math.max(1e-8,t/2)),vm=geometryPosition(t-hv),vp=geometryPosition(t+hv);
   if(vm.geometric&&vp.geometric)v=mul(sub(vp.raw,vm.raw),1/(2*hv));
-  else if(t>=2*hv){const vm2=position(t-2*hv);if(vm.geometric&&vm2.geometric)v=mul(add(sub(mul(center.raw,3),mul(vm.raw,4)),vm2.raw),1/(2*hv));}
+  else if(t>=2*hv){const vm2=geometryPosition(t-2*hv);if(vm.geometric&&vm2.geometric)v=mul(add(sub(mul(center.raw,3),mul(vm.raw,4)),vm2.raw),1/(2*hv));}
   return {v,a};
  }
  function push(t){const p=position(t);let v=t===0?loaded.v:derivatives(t).v;for(const c of p.contacts)v=sub(v,mul(c.normal,Math.min(0,dot(v,c.normal))));return {p:p.p,v};}
@@ -211,19 +217,19 @@ function create({root:origin,hip,foot,normal,direction,incoming,reach,maxReach,l
  const end=push(pushTime);
  return {loaded,loadDuration,spring:[0,0,0],storedEnergy,returnedEnergy,targetSpeed,targetVelocity,pushDuration:T,pushTime,push,full:pushTime>0,end,reason,theta0,thetaDot,releaseBend:bend(pushTime),reaction:reaction(pushTime)};
  }
- function selectExtension(){
+ function* selectExtension(){
  let loadIndex=frames.length-1,plan=planExtension(loadIndex),bestError=Infinity;
  const remaining=p=>dot(sub(p.targetVelocity,p.end.v),direction);
  // End actuation when its requested energy is delivered. Release carries that
  // velocity; it never clips velocity or accelerates a shorter drive to fit.
- for(let i=frames.length-1;i>=0;i--){const chosen=i===frames.length-1?plan:planExtension(i);
+ for(let i=frames.length-1;i>=0;i--){const chosen=i===frames.length-1?plan:planExtension(i);yield;
   if(chosen.pushTime>0&&remaining(chosen)>=-1e-8&&remaining(chosen)<bestError){plan=chosen;loadIndex=i;bestError=remaining(chosen);if(bestError<1e-4)break;}
  }
  startPush(plan.loadDuration);return {plan,loadIndex,reason:plan.reason};
   }
 
  let loadIndex=frames.length-1,plan;
- if(upperLength>0&&lowerLength>0){const selected=selectExtension();plan=selected.plan;loadIndex=selected.loadIndex;limitReason=selected.reason;}
+ if(upperLength>0&&lowerLength>0){const selected=yield* selectExtension();plan=selected.plan;loadIndex=selected.loadIndex;limitReason=selected.reason;}
  else {
  plan=planDrive(loadIndex);
  // A longer buildup must leave room to reverse the incoming velocity. If
@@ -250,5 +256,6 @@ function create({root:origin,hip,foot,normal,direction,incoming,reach,maxReach,l
  }
  return {extension:upperLength>0&&lowerLength>0?{initialBend:plan.theta0,initialBendSpeed:plan.thetaDot,releaseBend:plan.releaseBend,targetSpeed:plan.targetSpeed,speed:dot(plan.end.v,direction),reason:plan.reason}:null,sample,loadDuration,releaseTime,didPush:upperLength>0&&lowerLength>0?pushTime>1e-9:pushTime>.001,compression,storedEnergy,returnedEnergy,limitReason,frames,released,apex:releaseTime+Math.max(0,released.v[1])/9.81};
 }
-const api={create};if(typeof module!=='undefined')module.exports=api;else root.BodyflipBounce=api;
+function create(options){const job=steps(options);for(;;){const next=job.next();if(next.done)return next.value;}}
+const api={create,steps};if(typeof module!=='undefined')module.exports=api;else root.BodyflipBounce=api;
 })(globalThis);

@@ -206,19 +206,19 @@ function applySpatial(pose,names,parents,state){
 }
 // Plan against the same anatomical pose used for display, preserving its COM.
 // In particular, a discarded spine rotation must not drive a pelvis response.
-function createProjection(names,parents,reference){
+function createProjection(names,parents,reference,attackFree=false){
  const joints=J.create(names,parents,reference),massRig=M.model(names,parents,reference),cache=new WeakMap();
  return pose=>{
   if(cache.has(pose))return cache.get(pose);
-  const center=M.center(pose,massRig),p=joints.project(pose),shift=sub(center,M.center(p,massRig));
+  const center=M.center(pose,massRig),p=joints.project(attackFree?{...pose,attackFree:true}:pose),shift=sub(center,M.center(p,massRig));
   const result={...pose,...p,points:p.points.map((v,i)=>i?add(v,shift):pose.points[0])};
   cache.set(pose,result);cache.set(result,result);return result;
  };
 }
-function createSpatial({source,base,target,start,end,names,parents,reference,choreography=null,amount=1,anticipation=.06,recoveryStart=Infinity,recoveryEnd=end}){
+function createSpatial({source,base,target,start,end,names,parents,reference,choreography=null,amount=1,anticipation=.06,recoveryStart=Infinity,recoveryEnd=end,attackFree=false}){
  if(typeof target!=='function')throw Error('Attack compensation requires an opposite-angle target');
  const rig=model(names,parents,reference),hinges=legHinges(names,reference),dt=1/60,stop=end+.8,count=Math.ceil((stop-start)/dt),p=names.indexOf('pelvis'),spine=names.indexOf('spine_01'),hips=hinges.map(h=>h.hip);
- const legal=createProjection(names,parents,reference);
+ const legal=createProjection(names,parents,reference,attackFree);
  const rawSource=source,rawBase=base;source=t=>legal(rawSource(t));base=t=>legal(rawBase(t));
  const zero=()=>[0,0,0],plans=[{pelvis:zero(),pelvisRate:zero(),legs:[zero(),zero()],rates:[zero(),zero()],x:Array(9).fill(0),xrates:Array(9).fill(0)}],initial=source(start),rest=base(start);
  let history={bodies:bodies(initial,rig),target:bodies(legal(target(start,initial,rest)),rig)},jacobian=null;

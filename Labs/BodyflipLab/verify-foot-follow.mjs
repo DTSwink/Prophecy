@@ -10,8 +10,10 @@ const roots=[],poses=[];for(let f=0;f<countFrames;f++){const row=Array.from({len
 
 const assert=(await import('node:assert/strict')).default,S=require(base+'support.js'),M=require(base+'mass.js'),run=F.decodeNN({...meta,duration:5,roots,poses}),mass=M.model(names,parents,reference),T=require(base+'target-rig.js').create(names,parents,reference),checks=[];
 const check=(ok,label)=>{assert(ok,label);checks.push(label);},distance=(a,b)=>R.length(R.sub(a,b)),angle=(a,b)=>Math.acos(Math.max(-1,Math.min(1,R.dot(R.unit(a),R.unit(b)))))*180/Math.PI;
-const seq=F.sequence(run,jumps,settings,parents,reference,null,null,{horizon:2.5}),seg=seq.segments[1],l=seg.support.leg,release=seg.spinReleaseTime,point=seq.sample(release-1e-7).pose.points[l.foot];
+const seq=F.sequence(run,jumps,settings,parents,reference,null,null,{horizon:2.5}),seg=seq.segments[1],l=seg.support.leg,release=seg.spinReleaseTime;
 check(seq.events.every(e=>e.status==='Push'),'Both saved foot jumps still push');
+check(Number.isFinite(release),'Finite release before sampling');
+const point=seq.sample(release-1e-7).pose.points[l.foot];
 let maxAim=0,maxExtension=0,lastBend=null,maxCOM=0;
 for(let i=0;i<=96;i++){
  const t=release+i/240,frame=seq.sample(t),p=T.project(frame.pose,seq.surfaces),hip=p.points[l.hip],knee=p.points[l.knee],foot=p.points[l.foot],bend=180-angle(R.sub(hip,knee),R.sub(foot,knee));

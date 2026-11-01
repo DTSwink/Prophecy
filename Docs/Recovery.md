@@ -1,5 +1,15 @@
 # Restoring Prophecy
 
+## November 1 accepted Bodyflip throw checkpoint
+
+Accepted standalone motion before target-point aiming experiments: FinalNoAim
+throw sources, shared spine transfer/return, distance-weighted return duration,
+attack joint-limit exemption and playback intent preservation. Includes current
+saved-profile.json (snapshot of live state; live state itself is not changed),
+final source exports/import tools and focused checks. 16,918 final-source,
+157 return checks and the actual-app playback/retarget harness pass.
+Unreal, native packaging and other tasks are outside this checkpoint.
+
 ## October 25 Bodyflip motion checkpoint
 
 The approved lab includes Idle with shared jump controls, fresh flat scenes,

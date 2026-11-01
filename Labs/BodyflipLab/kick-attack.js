@@ -20,10 +20,11 @@ function preview({clip,names,parents,reference,lead=.18,tail=.45,directArmed=fal
  const response=turn.restore(conserved);
  const result={track,response,hitTime,reference,lead,tail,directArmed,timingPose};entries.push(result);if(entries.length>8)entries.shift();return result;
 }
-function create({clip,names,parents,reference,base,start=0,lead=.18,tail=.45,directArmed=false}){
+function create({clip,names,parents,reference,base,start=0,lead=.18,tail=.45,directArmed=false,returnSettings={}}){
+ tail=C.attackReturn(returnSettings,tail).horizon;
  const plan=preview({clip,names,parents,reference,lead,tail,directArmed,timingPose:directArmed?base(start):reference}),{track,response}=plan,pelvis=names.indexOf('pelvis'),rest=R.localize(reference.points,reference.q,parents);
- const end=start+track.end,returnEnd=start+track.stop,hitTime=start+plan.hitTime;
- function sample(time){
+ const returnPolicy=C.attackReturn(returnSettings,tail),end=start+track.end,returnEnd=end+returnPolicy.horizon,hitTime=start+plan.hitTime;
+ function active(time){
   const baseline=base(time),age=time-start;if(age<=0||time>=returnEnd)return baseline;
   const pose=response.sample(age),local=R.localize(pose.points,pose.q,parents),b=R.localize(baseline.points,baseline.q,parents);
   // Fade the ongoing gait/pose out on entry and back in during recovery.
@@ -34,7 +35,9 @@ function create({clip,names,parents,reference,base,start=0,lead=.18,tail=.45,dir
   const result=R.fk({p:b.p,q},parents),com=p=>K.center(H.bodies(p,response.rig),response.rig),shift=R.sub(com(baseline),com(result));
   result.points=result.points.map(p=>R.add(p,shift));result.points[0]=baseline.points[0].slice();return result;
  }
- return {sample,start,end,returnEnd,hitTime,plan,armedTime:start+track.armedTime,fullBodyKick:true,arming:track.arming};
+ function sample(time){if(time<start||time>=returnEnd)return base(time);const pose=active(time);return {...pose,attackFree:true};}
+ const result={returnPolicy,sample,start,end,returnEnd,hitTime,plan,armedTime:start+track.armedTime,fullBodyKick:true,arming:track.arming};
+ const J=node?require('./jump-attack.js'):root.BodyflipJumpAttack;return J.distanceReturn(result,base,clip,names,parents,returnSettings,reference,true);
 }
 const api={accepts,preview,create};if(node)module.exports=api;else root.BodyflipKickAttack=api;
 })(globalThis);

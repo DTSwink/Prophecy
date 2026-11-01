@@ -637,8 +637,9 @@ class WebGLMotionRenderer {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     if (!data) return;
 
-    const {eye,target,forward,right,up,targetDepth,focalCss}=BodyflipCamera.view(cameraState,sharedRoot,rect.height);
-    const view = this.lookAt(eye, target, [0, 1, 0]);
+    const pelvis=cameraState.pelvisView?BodyflipCamera.pelvisFrame(data,nameToIndex.get('pelvis')):null;
+    const {eye,target,forward,right,up,targetDepth,focalCss,referenceRotation}=BodyflipCamera.view(cameraState,sharedRoot,rect.height,pelvis);
+    const view = this.lookAt(eye, target, up);
     const projection = this.perspective(45 * Math.PI / 180, width / height, Math.max(.02,targetDepth/10000), Math.max(60,targetDepth*4));
     const viewProjection = this.matrixMultiply(projection, view);
     this.viewProjection = viewProjection;
@@ -648,7 +649,7 @@ class WebGLMotionRenderer {
     gl.uniformMatrix4fv(this.locations.viewProjection, false, viewProjection);
     gl.uniform3fv(this.locations.camera, eye);
     gl.uniform1f(this.locations.opacity, 1);
-    gl.uniform3fv(this.locations.lightDirection, [-.58, .78, -.24]);
+    gl.uniform3fv(this.locations.lightDirection, referenceRotation?Recovery.rotate(referenceRotation,[-.58,.78,-.24]):[-.58,.78,-.24]);
     gl.uniform3fv(this.locations.fogColor, [.078, .096, .128]);
     gl.uniform1f(this.locations.fogNear, Math.max(1.2, targetDepth * .68));
     gl.uniform1f(this.locations.fogFar, targetDepth * 1.55 + 3.5);
@@ -677,6 +678,14 @@ class WebGLMotionRenderer {
     }
     if (data.ghost) this.addBody(mesh, data.ghost);
     this.addBody(mesh, data);
+    if(data.vanillaOnly){
+      this.addProjectiles(mesh,data.projectiles);
+      // The recorded Throw Lab flight collides with this reference floor/target.
+      if(data.referenceScene){const {target,radius,floorY}=data.referenceScene,y=floorY-.006,r=20,a=[sharedRoot[0]-r,y,sharedRoot[2]-r],b=[sharedRoot[0]+r,y,sharedRoot[2]-r],c=[sharedRoot[0]+r,y,sharedRoot[2]+r],d=[sharedRoot[0]-r,y,sharedRoot[2]+r];
+        this.triangle(mesh,a,c,b,[0,1,0],[.050,.102,.174]);this.triangle(mesh,a,d,c,[0,1,0],[.050,.102,.174]);
+        this.capsule(mesh,target,target,radius,[1,.38,.66],22,8);
+      }
+    }
 
     // Same final displayed XYZ basis, arrow geometry and depth as Final Harness.
     for (const [enabled, joints, length] of [

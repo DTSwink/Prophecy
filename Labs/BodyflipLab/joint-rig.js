@@ -53,6 +53,7 @@ function create(names,parents,reference){
   return qm(qm(c.parentBasis,W.compose([0,y,z,Math.sqrt(Math.max(0,1-y*y-z*z))],qexp([clamp(d.angle,c.limits.twistMin,c.limits.twistMax),0,0]))),qinv(basis));
  }
  function project(pose){
+  if(pose.attackFree)return pose;
   const q=pose.q.slice(),points=pose.points.slice();
   // Keep the authored hip/shoulder twist. Inferring a complete plane from
   // three almost-collinear points flips that plane when an elbow straightens.
@@ -61,11 +62,16 @@ function create(names,parents,reference){
    const relative=qm(qinv(q[c.parent]),q[c.i]),legal=clampLocal(relative,c),chain=add(rest.p[c.i],rotate(legal,rest.p[c.child])),wanted=sub(points[c.child],points[c.parent]);
    const hip=qm(R.fromTo(rotate(q[c.parent],chain),wanted),q[c.parent]);q[c.parent]=hip;q[c.i]=qm(hip,legal);
   }
-  const local=R.localize(points,q,parents);for(const c of joints){local.p[c.i]=rest.p[c.i];local.q[c.i]=clampLocal(local.q[c.i],c);}
+  const local=R.localize(points,q,parents);for(const c of joints){local.p[c.i]=rest.p[c.i];
+   // The additive attack heading is distributed over the spine after source
+   // legality. Clipping it again to the resting 22-degree cone destroys the
+   // requested rearward turn. Other joints retain their normal projection.
+   if(!(pose.attackSpineAim&&!profile&&/^spine_0[1-5]$/.test(c.name)))local.q[c.i]=clampLocal(local.q[c.i],c);
+  }
   // One FK pass enforces both native connector positions. Nonphysical toes
   // retain their animated local transform under their physical foot parent.
   if(profile)for(const c of joints)local.p[c.i]=sub(c.parentFrame.p,rotate(local.q[c.i],c.childFrame.p));
-  return R.fk(local,parents);
+  return {...R.fk(local,parents),...(pose.attackSpineAim?{attackSpineAim:true}:{})};
  }
  function inspect(pose){const local=R.localize(pose.points,pose.q,parents);return joints.map(c=>({name:c.name,angularError:length(qlog(qm(clampLocal(local.q[c.i],c),qinv(local.q[c.i])))),anchorError:c.native?length(sub(add(pose.points[c.parent],rotate(pose.q[c.parent],c.parentFrame.p)),add(pose.points[c.i],rotate(pose.q[c.i],c.childFrame.p)))):length(sub(local.p[c.i],rest.p[c.i]))}));}
  existing={joints,project,inspect,clampLocal,rest,coordinates,fromCoordinates,swingSweep};cache.set(reference,existing);return existing;

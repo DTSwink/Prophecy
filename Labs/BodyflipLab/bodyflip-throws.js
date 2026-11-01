@@ -6,7 +6,7 @@ function create({physics,renderer}){
  function configure(next,sample,key=''){
   const horizon=next?.preparedThrough??Infinity;if(next===sequence&&key===revision&&horizon===through)return;
   sequence=next;poseAt=sample;revision=key;through=horizon;tracks=(sequence?.segments||[]).map(s=>s.attack).filter(t=>t?.isThrow);
-  plans=tracks.filter(t=>t.releaseTime<=horizon+1e-8).map(t=>t.launchAt(poseAt(t.releaseTime),t.transportVelocity(poseAt),t.transportAngularVelocity(poseAt)));
+  plans=tracks.filter(t=>t.releaseTime<=horizon+1e-8).map(t=>t.launchAt(poseAt(t.releaseTime),t.releaseVelocity(poseAt),t.projectileAngularVelocity(poseAt)));
   renderer.throwAssets=T.assets;physics.setProjectiles(T.assets,plans);
  }
  function sample(time,pose){

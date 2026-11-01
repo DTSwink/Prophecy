@@ -1,6 +1,7 @@
 /* Free-flight balance of the final articulated pose. Contact owns the seed. */
 (function(root){
 'use strict';
+const Work=typeof module!=='undefined'?require('./preparation.js'):root.BodyflipPreparation;
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,M=node?require('./mass.js'):root.BodyflipMass,H=node?require('./momentum.js'):root.BodyflipMomentum;
 const {add,sub,mul,length,qm}=R,identity=[0,0,0,1],step=1/240,epsilon=1e-7,velocityStep=.0001;
 function curveAt(curve,t){
@@ -12,7 +13,7 @@ function command(frame,t){
  const plan=frame.spin?.spinPlan;if(!plan)return {vector:[0,0,0],momentum:[0,0,0]};
  const vector=add(curveAt(plan.flip,t),curveAt(plan.twist,t));return {vector,momentum:M.product(plan.referenceI,vector)};
 }
-function create(source,{start,settings,names,parents,reference,gravity=9.81,cap=20,seedSource=source,velocityImpulse=[0,0,0],releaseVelocity=null,balance=true,stepSeconds=step}={}){
+function create(source,{start,settings,names,parents,reference,gravity=9.81,cap=20,seedSource=source,velocityImpulse=[0,0,0],releaseVelocity=null,balance=true,stepSeconds=step,articulation=null}={}){
  if(!Number.isFinite(start))throw Error('Physical flight needs a finite release time');
  if(!(stepSeconds>0&&Number.isFinite(stepSeconds)))throw Error('Physical flight needs a positive finite timestep');
  const tick=stepSeconds,rig=M.model(names,parents,reference),inertia=settings?.spinInertia??1,frames=[];let seed=null;
@@ -24,7 +25,7 @@ function create(source,{start,settings,names,parents,reference,gravity=9.81,cap=
   return add(mul(current,1-inertia),mul(drive.momentum,inertia));
  }
  function initialize(){
-  if(seed)return;
+  if(frames.length)return;
   // These reads stay strictly on the completed contact side. The owning
   // carrier may still be constructing the first released frame.
   const before=seedSource(start-step),last=seedSource(start-epsilon),elapsed=step-epsilon;
@@ -41,7 +42,8 @@ function create(source,{start,settings,names,parents,reference,gravity=9.81,cap=
   // captured, constrained limb pose. Starting from the pre-projection joints
   // would turn their correction into an instantaneous whole-body rotation.
   const first=source(start),shift=sub(seed.center,M.center(first.pose,rig));
-  frames.push({...last,pose:{...first.pose,points:first.pose.points.map(p=>add(p,shift))},physical});
+  let pose={...first.pose,points:first.pose.points.map(p=>add(p,shift))};if(follow)pose=follow(pose,start);
+  frames.push({...last,pose,physical});
  }
  function ballistic(t){
   const age=Math.max(0,t-start),v=seed.velocity,g=Math.max(0,gravity),terminal=Math.max(0,cap);
@@ -55,28 +57,37 @@ function create(source,{start,settings,names,parents,reference,gravity=9.81,cap=
   const phase=releaseVelocity&&['RISE','FALL','FALL LOOP'].includes(frame.phase)?path.velocity[1]>0?'RISE':frame.phase==='RISE'?'FALL':frame.phase:frame.phase;
   if(!balance){
    const shift=sub(path.center,M.center(frame.pose,rig)),physical={...previous.physical,com:path.center,velocity:path.velocity};
-   return {...frame,phase,vy:path.velocity[1],pose:{...frame.pose,points:frame.pose.points.map(p=>add(p,shift))},root:add(frame.root||frame.pose.points[0],shift),physical};
+   let pose={...frame.pose,points:frame.pose.points.map(p=>add(p,shift))};if(follow)pose=follow(pose,t);
+   return {...frame,phase,vy:path.velocity[1],pose,root:add(frame.root||frame.pose.points[0],shift),physical};
   }
   const retained=length(drive.vector)>1e-10?drive.vector:frame.spin?.spinAxis||frame.spin?.axis;
   const axis=settings?.momentum3D===false&&retained&&length(retained)>1e-10?R.unit(retained):null;
   // Keep all authored articulation. Only the carrier's accumulated rigid
   // rotation changes, so joint limits and limb timing survive unchanged.
-  const candidate=M.rotateAboutCOM(frame.pose,previous.physical.rotation,rig),target=add(seed.momentum,sub(drivenMomentum(drive,candidate),seed.command)),balanced=H.correct(previous.pose,candidate,target,rig,dt,{axis});
+  let candidate=M.rotateAboutCOM(frame.pose,previous.physical.rotation,rig);
+  const move=sub(path.center,M.center(candidate,rig));candidate={...candidate,points:candidate.points.map(p=>add(p,move))};
+  const constrained=follow?.active(t),worldFollow=constrained&&follow.worldActive(t);
+  // Recovery is a local joint offset. Once world follow ends, apply it once;
+  // a rigid momentum correction cannot alter it, so no constraint Jacobian
+  // or repeated IK is needed during the return.
+  if(constrained&&!worldFollow)candidate=follow(candidate,t);
+  const target=add(seed.momentum,sub(drivenMomentum(drive,candidate),seed.command)),balanced=H.correct(previous.pose,candidate,target,rig,dt,{axis,project:worldFollow?p=>follow(p,t):null});
   const rotation=R.unit(qm(balanced.rotation,previous.physical.rotation)),shift=sub(path.center,M.center(balanced.pose,rig));
   const pose={...balanced.pose,points:balanced.pose.points.map(p=>add(p,shift))},physical={momentum:balanced.momentum,target,rotation,error:balanced.error,fullResidual:balanced.fullResidual,axis,com:path.center,velocity:path.velocity,iterations:balanced.iterations,balanced:true};
   const carrier=frame.spin?qm(rotation,frame.spin.rotation||identity):null;
   const spin=frame.spin?{...frame.spin,q:qm(rotation,frame.spin.q||identity),rotation:carrier,commandedOmega:frame.spin.omega,
    omega:mul(R.qlog(qm(carrier,R.qinv(previous.spin?.rotation||identity))),1/dt)}:frame.spin;
-  return {...frame,phase,vy:path.velocity[1],pose,root:add(frame.root||frame.pose.points[0],shift),spin,physical};
+  return {...frame,phase,vy:path.velocity[1],pose,root:add(frame.root||frame.pose.points[0],add(move,shift)),spin,physical};
  }
  function sample(t){
   if(t<=start)return seedSource(Math.min(t,start-epsilon));
   initialize();const index=Math.floor((t-start)/tick+1e-9);
-  while(frames.length<=index){const n=frames.length;frames.push(advance(frames[n-1],start+n*tick,tick));}
+  while(frames.length<=index){const n=frames.length;frames.push(advance(frames[n-1],start+n*tick,tick));Work.checkpoint();}
   const at=start+index*tick,elapsed=t-at;
   return elapsed<1e-10?frames[index]:advance(frames[index],t,elapsed);
  }
  function state(t){initialize();return t<=start?frames[0].physical:sample(t).physical;}
+ const follow=articulation?.({sample,source});
  return {sample,state,rig,start,step:tick,get ticks(){return Math.max(0,frames.length-1);}};
 }
 const api={create,command};if(node)module.exports=api;else root.BodyflipPhysicalFlight=api;

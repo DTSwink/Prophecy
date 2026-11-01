@@ -2,6 +2,7 @@
  * Standing dimensions match AProphecyAgent::InitCapsuleSize. */
 (function(root){
 'use strict';
+const Work=typeof module!=='undefined'?require('./preparation.js'):root.BodyflipPreparation;
 const R=typeof module!=='undefined'?require('./recovery.js'):root.Recovery;
 const C=typeof module!=='undefined'?require('./core.js'):root.BodyflipCore;
 const {add,sub,mul,dot,length,unit}=R,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -133,7 +134,7 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
     next.landing=landing;next.landed=true;landings.push(landing);
    }
    next.velocity=next.mode==='loco'&&next.normal&&speed===0?[0,0,0]:mul(sub(next.bodyRoot||next.root,prev.root),1/h);
-   frames.push(next);
+   frames.push(next);Work.checkpoint();
   }
  }
  function frameIndex(time){if(!breakTimes.length)return Math.max(0,Math.min(frames.length-1,Math.floor((time-start)/dt+1e-8)));let lo=0,hi=frames.length-1;while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(frames[mid].t<=time+1e-10)lo=mid;else hi=mid-1;}return lo;}

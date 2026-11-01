@@ -1,21 +1,53 @@
 {
   "schema": "bodyflip-lab-v1",
   "settings": {
-    "loadMs": 50,
+    "attackReturnDuration": null,
+    "attackReturnDistance": 0.4,
+    "attackReturnLerp": 0.1,
+    "attackReturnExponent": 0,
+    "attackReturnSnap": 0.1,
+    "bigThrowReturnFrames": 16,
+    "smallThrowReturnFrames": 34,
+    "distributePelvisTurn": true,
+    "motionCompensation": true,
+    "vanillaOnly": false,
+    "momentum3D": true,
+    "startYaw": 0,
+    "legFollow": 0.1,
+    "spinLag": 0.6,
+    "handReturn": 0.5,
+    "handCone": 45,
+    "showHandCones": true,
+    "footTargets": true,
+    "handTargets": true,
+    "handFollow": 0.05,
+    "spinInertia": 1,
+    "jumpBuildX": 35,
+    "jumpBuildY": 70,
+    "loadYMs": 200,
+    "loadFullMs": 300,
+    "buildDepth": 0.15,
+    "handBend": 0.35,
+    "undoRotation": true,
+    "kickToArmed": true,
+    "softAttackLegs": true,
+    "pelvisAttackCompensation": 1,
+    "surfaceIK": true,
+    "loadMs": 100,
     "rebound": 0.5,
-    "platformTranslucency": 0.25,
+    "platformTranslucency": 0.8,
     "platforms": [
       {
         "id": "floor",
         "position": [
           0,
           -0.2,
-          0.9400005052579159
+          -0.5599910537770252
         ],
         "size": [
           3.6,
           0.4,
-          7.880001010515832
+          66.20677485127891
         ],
         "rotation": [
           0,
@@ -29,12 +61,12 @@
         "position": [
           -2.163746750430836,
           2.07889393668845,
-          11.374367737124148
+          10.880017892445949
         ],
         "size": [
           6,
           0.12,
-          12.932280408940178
+          18
         ],
         "rotation": [
           0,
@@ -48,12 +80,12 @@
         "position": [
           2.163746750430836,
           2.07889393668845,
-          11.529864257117469
+          10.880017892445949
         ],
         "size": [
           6,
           0.12,
-          12.958420212841132
+          18
         ],
         "rotation": [
           0,
@@ -61,109 +93,602 @@
           0.3826834323650897,
           0.9238795325112867
         ]
-      },
-      {
-        "id": "pmvo2cudq",
-        "position": [
-          1.0482587964131729,
-          1.5042469559369773,
-          12.992439873965106
-        ],
-        "size": [
-          26.315307161779426,
-          0.15,
-          16.405869486441368
-        ],
-        "rotation": [
-          -0.7123265405852128,
-          0,
-          0,
-          0.7018482026605918
-        ]
       }
     ],
     "jumpSkew": 0.5,
-    "ramps": true,
+    "ramps": false,
     "jumpEvents": [
       {
         "id": "first",
-        "time": 0.8833333333333333,
-        "surface": "floor"
-      },
-      {
-        "id": "mmvnlymnl_0",
-        "time": 1.5833333333333333,
-        "surface": "auto"
-      },
-      {
-        "id": "mmvnophoa_0",
-        "time": 2.0833333333333335,
-        "surface": "auto"
+        "time": 0.25,
+        "surface": "floor",
+        "instantSpin": true,
+        "spinVersion": 2,
+        "pushWith": "foot",
+        "jumpPercent": 0,
+        "attack": "big-throw",
+        "throwCharge": 100,
+        "throwSpeed": 1,
+        "throwDirection": null,
+        "attackDelay": 0,
+        "attackIn": 0.2,
+        "attackOut": 0.25,
+        "flip": 0,
+        "twist": 0,
+        "turnDelay": 0,
+        "turnDuration": 0.8,
+        "turnIn": 0.4,
+        "turnOut": 0.4,
+        "turnAxis": null,
+        "pose": "none",
+        "poseIn": 0.2,
+        "poseHold": 0.3,
+        "poseOut": 0.25
       }
     ],
-    "mode": "jump",
+    "mode": "spaceGym",
     "motion": "kinematic",
     "runSeconds": 1,
     "jumpEarly": 0.1,
-    "runPhase": 0.3,
-    "jumpBlend": 0.2,
+    "runPhase": 0,
+    "jumpBlend": 0.4,
     "legBlend": 0.2,
     "fallCap": 20,
     "jumpFoot": "Auto",
     "standRatio": 0.5,
     "plantPitch": 10,
     "toeOffPitch": 35,
-    "footRollSpeed": 400,
+    "footRollSpeed": 720,
     "matchLeg": true,
-    "supportCone": 60,
+    "supportCone": 40,
     "supportReach": 0.99,
     "supportTrigger": 0.05,
-    "supportAlpha": 6,
-    "supportSpeed": 400,
+    "supportAlpha": 1,
+    "supportSpeed": 800,
     "airFlip": false,
     "playbackSpeed": 1,
     "trimLoop": true,
-    "trimIn": 0.36666666666666664,
-    "trimOut": 4.166666666666667,
+    "trimIn": 0,
+    "trimOut": 2.0833333333333335,
     "axis": 0,
     "flipSpeed": 120,
-    "flipAngle": 88,
+    "flipAngle": 0,
     "twistAngle": 0,
     "twistSpeed": 0,
     "attack": "slashLD",
     "variant": 1,
     "aim": true,
-    "aimWeight": 0.8,
+    "aimWeight": 1,
     "loop": false,
     "attackRate": 1,
-    "ghost": false,
+    "ghost": true,
     "animLeg": false,
-    "showCone": true,
-    "showJump": true,
+    "animOtherLeg": false,
+    "rawLeg": false,
+    "showCone": false,
+    "showJump": false,
     "bicolor": true,
     "skeleton": false,
     "target": [
-      0.4705996075742363,
-      2.139021926855169,
-      0.822056717097478
+      -1.1029287273377102,
+      2.5047544189912108,
+      -3.001230561488211
     ],
     "radius": 0.12,
     "platformResetVersion": "2026-10-25-default-platforms-1"
   },
   "camera": {
-    "yaw": 3.3220000000000005,
-    "pitch": -0.1608001098632808,
-    "zoom": 0.1674126938439236,
-    "panX": 0,
-    "panY": 0
+    "yaw": 30.6372001953125,
+    "pitch": -0.16216027350012402,
+    "zoom": 0.6277972679839496,
+    "panX": -11.199951171875,
+    "panY": 27.999984741210938,
+    "free": false,
+    "offset": null,
+    "freeView": null,
+    "pelvisView": null
   },
   "playback": {
-    "time": 1.033333333333331,
+    "time": 1.8333333333333317,
     "attackTime": -1,
-    "flip": 88,
+    "flip": 0,
     "twist": 0,
-    "playing": true,
+    "playing": false,
     "hit": false,
-    "bestMiss": null
+    "bestMiss": 0.7101113045259078
+  },
+  "modePlaybacks": {
+    "spaceGym": {
+      "settings": {
+        "jumpEvents": [
+          {
+            "id": "first",
+            "time": 0.25,
+            "surface": "floor",
+            "instantSpin": true,
+            "spinVersion": 2,
+            "pushWith": "foot",
+            "jumpPercent": 0,
+            "attack": "big-throw",
+            "throwCharge": 100,
+            "throwSpeed": 1,
+            "throwDirection": null,
+            "attackDelay": 0,
+            "attackIn": 0.2,
+            "attackOut": 0.25,
+            "flip": 0,
+            "twist": 0,
+            "turnDelay": 0,
+            "turnDuration": 0.8,
+            "turnIn": 0.4,
+            "turnOut": 0.4,
+            "turnAxis": null,
+            "pose": "none",
+            "poseIn": 0.2,
+            "poseHold": 0.3,
+            "poseOut": 0.25
+          }
+        ],
+        "runSeconds": 1,
+        "jumpEarly": 0.1,
+        "runPhase": 0,
+        "startYaw": 0,
+        "trimIn": 0,
+        "trimOut": 2.0833333333333335,
+        "trimLoop": true,
+        "playbackSpeed": 1,
+        "loop": false
+      },
+      "playback": {
+        "time": 1.8333333333333317,
+        "attackTime": -1,
+        "flip": 0,
+        "twist": 0,
+        "playing": false,
+        "hit": false,
+        "bestMiss": 0.7101113045259078
+      }
+    }
+  },
+  "scenes": {
+    "version": 1,
+    "active": "26c0349e-6555-4114-aa19-05ea0ff814ec",
+    "items": [
+      {
+        "id": "original",
+        "name": "Inclines",
+        "state": {
+          "schema": "bodyflip-lab-v1",
+          "settings": {
+            "loadMs": 50,
+            "rebound": 0.5,
+            "platformTranslucency": 0.25,
+            "platforms": [
+              {
+                "id": "floor",
+                "position": [
+                  0,
+                  -0.2,
+                  0.9400005052579159
+                ],
+                "size": [
+                  3.6,
+                  0.4,
+                  7.880001010515832
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              {
+                "id": "left",
+                "position": [
+                  -2.163746750430836,
+                  2.07889393668845,
+                  11.374367737124148
+                ],
+                "size": [
+                  6,
+                  0.12,
+                  12.932280408940178
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  -0.3826834323650897,
+                  0.9238795325112867
+                ]
+              },
+              {
+                "id": "right",
+                "position": [
+                  2.163746750430836,
+                  2.07889393668845,
+                  11.529864257117469
+                ],
+                "size": [
+                  6,
+                  0.12,
+                  12.958420212841132
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0.3826834323650897,
+                  0.9238795325112867
+                ]
+              },
+              {
+                "id": "pmvo2cudq",
+                "position": [
+                  1.0482587964131729,
+                  1.5042469559369773,
+                  12.992439873965106
+                ],
+                "size": [
+                  26.315307161779426,
+                  0.15,
+                  16.405869486441368
+                ],
+                "rotation": [
+                  -0.7123265405852128,
+                  0,
+                  0,
+                  0.7018482026605918
+                ]
+              }
+            ],
+            "jumpSkew": 0.5,
+            "ramps": true,
+            "jumpEvents": [
+              {
+                "id": "first",
+                "time": 0.8833333333333333,
+                "surface": "floor"
+              },
+              {
+                "id": "mmvnlymnl_0",
+                "time": 1.5833333333333333,
+                "surface": "auto"
+              },
+              {
+                "id": "mmvnophoa_0",
+                "time": 2.0833333333333335,
+                "surface": "auto"
+              }
+            ],
+            "mode": "jump",
+            "motion": "kinematic",
+            "runSeconds": 1,
+            "jumpEarly": 0.1,
+            "runPhase": 0.3,
+            "jumpBlend": 0.2,
+            "legBlend": 0.2,
+            "fallCap": 20,
+            "jumpFoot": "Auto",
+            "standRatio": 0.5,
+            "plantPitch": 10,
+            "toeOffPitch": 35,
+            "footRollSpeed": 400,
+            "matchLeg": true,
+            "supportCone": 60,
+            "supportReach": 0.99,
+            "supportTrigger": 0.05,
+            "supportAlpha": 6,
+            "supportSpeed": 400,
+            "airFlip": false,
+            "playbackSpeed": 1,
+            "trimLoop": true,
+            "trimIn": 0.36666666666666664,
+            "trimOut": 4.166666666666667,
+            "axis": 0,
+            "flipSpeed": 120,
+            "flipAngle": 88,
+            "twistAngle": 0,
+            "twistSpeed": 0,
+            "attack": "slashLD",
+            "variant": 1,
+            "aim": true,
+            "aimWeight": 0.8,
+            "loop": false,
+            "attackRate": 1,
+            "ghost": false,
+            "animLeg": false,
+            "animOtherLeg": false,
+            "rawLeg": false,
+            "showCone": true,
+            "showJump": true,
+            "bicolor": true,
+            "skeleton": false,
+            "target": [
+              0.4705996075742363,
+              2.139021926855169,
+              0.822056717097478
+            ],
+            "radius": 0.12,
+            "platformResetVersion": "2026-10-25-default-platforms-1"
+          },
+          "camera": {
+            "yaw": 3.04039990234375,
+            "pitch": -0.10320007324218716,
+            "zoom": 0.5029355268232617,
+            "panX": 0,
+            "panY": 0,
+            "free": false,
+            "offset": null,
+            "freeView": null
+          },
+          "playback": {
+            "time": 3.100000000000049,
+            "attackTime": -1,
+            "flip": 88,
+            "twist": 0,
+            "playing": false,
+            "hit": false,
+            "bestMiss": null
+          }
+        }
+      },
+      {
+        "id": "26c0349e-6555-4114-aa19-05ea0ff814ec",
+        "name": "Scene 2",
+        "state": {
+          "schema": "bodyflip-lab-v1",
+          "settings": {
+            "attackReturnDuration": null,
+            "attackReturnDistance": 0.4,
+            "attackReturnLerp": 0.1,
+            "attackReturnExponent": 0,
+            "attackReturnSnap": 0.1,
+            "bigThrowReturnFrames": 16,
+            "smallThrowReturnFrames": 34,
+            "distributePelvisTurn": true,
+            "motionCompensation": true,
+            "vanillaOnly": false,
+            "momentum3D": true,
+            "startYaw": 0,
+            "legFollow": 0.1,
+            "spinLag": 0.6,
+            "handReturn": 0.5,
+            "handCone": 45,
+            "showHandCones": true,
+            "footTargets": true,
+            "handTargets": true,
+            "handFollow": 0.05,
+            "spinInertia": 1,
+            "jumpBuildX": 35,
+            "jumpBuildY": 70,
+            "loadYMs": 200,
+            "loadFullMs": 300,
+            "buildDepth": 0.15,
+            "handBend": 0.35,
+            "undoRotation": true,
+            "kickToArmed": true,
+            "softAttackLegs": true,
+            "pelvisAttackCompensation": 1,
+            "surfaceIK": true,
+            "loadMs": 100,
+            "rebound": 0.5,
+            "platformTranslucency": 0.8,
+            "platforms": [
+              {
+                "id": "floor",
+                "position": [
+                  0,
+                  -0.2,
+                  -0.5599910537770252
+                ],
+                "size": [
+                  3.6,
+                  0.4,
+                  66.20677485127891
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              {
+                "id": "left",
+                "position": [
+                  -2.163746750430836,
+                  2.07889393668845,
+                  10.880017892445949
+                ],
+                "size": [
+                  6,
+                  0.12,
+                  18
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  -0.3826834323650897,
+                  0.9238795325112867
+                ]
+              },
+              {
+                "id": "right",
+                "position": [
+                  2.163746750430836,
+                  2.07889393668845,
+                  10.880017892445949
+                ],
+                "size": [
+                  6,
+                  0.12,
+                  18
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0.3826834323650897,
+                  0.9238795325112867
+                ]
+              }
+            ],
+            "jumpSkew": 0.5,
+            "ramps": false,
+            "jumpEvents": [
+              {
+                "id": "first",
+                "time": 0.25,
+                "surface": "floor",
+                "instantSpin": true,
+                "spinVersion": 2,
+                "pushWith": "foot",
+                "jumpPercent": 0,
+                "attack": "big-throw",
+                "throwCharge": 100,
+                "throwSpeed": 1,
+                "throwDirection": null,
+                "attackDelay": 0,
+                "attackIn": 0.2,
+                "attackOut": 0.25,
+                "flip": 0,
+                "twist": 0,
+                "turnDelay": 0,
+                "turnDuration": 0.8,
+                "turnIn": 0.4,
+                "turnOut": 0.4,
+                "turnAxis": null,
+                "pose": "none",
+                "poseIn": 0.2,
+                "poseHold": 0.3,
+                "poseOut": 0.25
+              }
+            ],
+            "mode": "spaceGym",
+            "motion": "kinematic",
+            "runSeconds": 1,
+            "jumpEarly": 0.1,
+            "runPhase": 0,
+            "jumpBlend": 0.4,
+            "legBlend": 0.2,
+            "fallCap": 20,
+            "jumpFoot": "Auto",
+            "standRatio": 0.5,
+            "plantPitch": 10,
+            "toeOffPitch": 35,
+            "footRollSpeed": 720,
+            "matchLeg": true,
+            "supportCone": 40,
+            "supportReach": 0.99,
+            "supportTrigger": 0.05,
+            "supportAlpha": 1,
+            "supportSpeed": 800,
+            "airFlip": false,
+            "playbackSpeed": 1,
+            "trimLoop": true,
+            "trimIn": 0,
+            "trimOut": 2.0833333333333335,
+            "axis": 0,
+            "flipSpeed": 120,
+            "flipAngle": 0,
+            "twistAngle": 0,
+            "twistSpeed": 0,
+            "attack": "slashLD",
+            "variant": 1,
+            "aim": true,
+            "aimWeight": 1,
+            "loop": false,
+            "attackRate": 1,
+            "ghost": true,
+            "animLeg": false,
+            "animOtherLeg": false,
+            "rawLeg": false,
+            "showCone": false,
+            "showJump": false,
+            "bicolor": true,
+            "skeleton": false,
+            "target": [
+              -1.1029287273377102,
+              2.5047544189912108,
+              -3.001230561488211
+            ],
+            "radius": 0.12,
+            "platformResetVersion": "2026-10-25-default-platforms-1"
+          },
+          "camera": {
+            "yaw": 30.6372001953125,
+            "pitch": -0.16216027350012402,
+            "zoom": 0.6277972679839496,
+            "panX": -11.199951171875,
+            "panY": 27.999984741210938,
+            "free": false,
+            "offset": null,
+            "freeView": null,
+            "pelvisView": null
+          },
+          "playback": {
+            "time": 1.8333333333333317,
+            "attackTime": -1,
+            "flip": 0,
+            "twist": 0,
+            "playing": false,
+            "hit": false,
+            "bestMiss": 0.7101113045259078
+          },
+          "modePlaybacks": {
+            "spaceGym": {
+              "settings": {
+                "jumpEvents": [
+                  {
+                    "id": "first",
+                    "time": 0.25,
+                    "surface": "floor",
+                    "instantSpin": true,
+                    "spinVersion": 2,
+                    "pushWith": "foot",
+                    "jumpPercent": 0,
+                    "attack": "big-throw",
+                    "throwCharge": 100,
+                    "throwSpeed": 1,
+                    "throwDirection": null,
+                    "attackDelay": 0,
+                    "attackIn": 0.2,
+                    "attackOut": 0.25,
+                    "flip": 0,
+                    "twist": 0,
+                    "turnDelay": 0,
+                    "turnDuration": 0.8,
+                    "turnIn": 0.4,
+                    "turnOut": 0.4,
+                    "turnAxis": null,
+                    "pose": "none",
+                    "poseIn": 0.2,
+                    "poseHold": 0.3,
+                    "poseOut": 0.25
+                  }
+                ],
+                "runSeconds": 1,
+                "jumpEarly": 0.1,
+                "runPhase": 0,
+                "startYaw": 0,
+                "trimIn": 0,
+                "trimOut": 2.0833333333333335,
+                "trimLoop": true,
+                "playbackSpeed": 1,
+                "loop": false
+              },
+              "playback": {
+                "time": 1.8333333333333317,
+                "attackTime": -1,
+                "flip": 0,
+                "twist": 0,
+                "playing": false,
+                "hit": false,
+                "bestMiss": 0.7101113045259078
+              }
+            }
+          }
+        }
+      }
+    ]
   }
 }

@@ -1,0 +1,208 @@
+{
+  "schema": 1,
+  "bakedAt": "2026-11-01T12:50:01.586Z",
+  "stateSha256": "00370e9ee80c3d53350efb5a84949fe6e0993aa76312b5616abcb1a45b80a5d0",
+  "units": {
+    "position": "meters",
+    "linearVelocity": "meters/second",
+    "angularVelocity": "radians/second",
+    "quaternion": "xyzw",
+    "up": "Y",
+    "fps": 60
+  },
+  "sampling": "Frames are baked final world transforms; locals are parent-relative. Do not reapply hand/forearm keys or Half/Aim. Physical launch adjustments are metadata, not animation retiming.",
+  "algorithmSha256": {
+    "Tools/Throws/lab-reference.mjs": "4ab146e6c6f211e44334b8e06ece94c262e04664718826d7be910f50f941a36d",
+    "Labs/ThrowLab/recovery.js": "b0e685a3fe41da51297e00270e20364847d3eacdbb44e3cd98763d2909249847",
+    "Labs/ThrowLab/core.js": "8f7845b9b227004f07112130353c571af07e1f57945436a91f9901e1c69e22f9",
+    "Labs/ThrowLab/vanilla.js": "c0fd30d74e82a1779666c2bffeb34fed7680bb17d16a083a27cc1f55c316ebb1",
+    "Labs/ThrowLab/attack.js": "8c8e098d2c71354c0853c1d63a3d62b3ccfb342af7b4f47a669e8702c7d61250",
+    "Labs/ThrowLab/projectile.js": "93b90e42aff2fb8e959214ac31b82d0c0839179c01256b94145b68e705891be8"
+  },
+  "clips": [
+    {
+      "id": "big-throw",
+      "file": "BigThrow_Final_NoAim.fbx",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\ue5\\slashes\\recoveries\\big throw.fbx",
+      "sourceSha256": "12309248b7e634528fc8bdd63d473f7a470eee5413fe321232a840f1e3fb4acf",
+      "frameCount": 131,
+      "endFrame": 130,
+      "armedFrame": 25,
+      "releaseFrame": 34,
+      "throwPercent": 100,
+      "aimAtTarget": false,
+      "halfAttack": false,
+      "kind": "spear",
+      "grip": {
+        "position": [
+          -0.0000758837456032752,
+          4.119968255444917e-18,
+          0.00037853945126959006
+        ],
+        "rotation": [
+          8.717798971249347e-15,
+          -371.3355239245188,
+          173.0643402734489
+        ]
+      },
+      "scale": [
+        0.8623427588789339,
+        0.8834927125312151,
+        0.7619161867885869
+      ],
+      "bind": {
+        "position": [
+          0.07126077264547348,
+          0.027076689526438713,
+          -0.000621743150986731
+        ],
+        "rotation": [
+          0.050956989786163066,
+          0.0952109607903272,
+          0.004880262042765217,
+          0.9941400510892364
+        ]
+      },
+      "longAxis": [
+        0,
+        0,
+        1
+      ],
+      "mass": 1.2,
+      "launch": {
+        "p": [
+          0.26207873379632024,
+          1.547058957216196,
+          0.8741584743270506
+        ],
+        "q": [
+          0.006547339986176923,
+          -0.011814403667473931,
+          -0.8984879400722943,
+          0.4387903528448788
+        ],
+        "phase": "held",
+        "v": [
+          -0.8171366981142687,
+          -0.2522691594376215,
+          18.319883331244455
+        ],
+        "omega": [
+          -0.3244941275141388,
+          0.22701285547546224,
+          14.655416067998864
+        ],
+        "axis": [
+          -0.02213350474207157,
+          0.01548437918328251,
+          0.9996351044101748
+        ],
+        "twist": 14
+      },
+      "physics": {
+        "velocityRotation": [
+          -10.068574918246746,
+          0.28767062856306225,
+          7.301489426852394
+        ],
+        "speedScale": 1.8,
+        "twist": 14,
+        "aero": {
+          "enabled": true,
+          "strength": 1,
+          "pressure": 0.27,
+          "damping": 1
+        }
+      },
+      "validation": {
+        "targetError": 5.551115123125783e-16,
+        "maxWorldPositionDifferenceFromRawMeters": 0.013831132825801893
+      },
+      "bakedHandKeys": 8,
+      "bakedForearmKeys": 26
+    },
+    {
+      "id": "small-throw",
+      "file": "SmallThrow_Final_NoAim.fbx",
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\ue5\\slashes\\recoveries\\small throw.fbx",
+      "sourceSha256": "34c3fd086685a4c2d527d06767818fbe3767743c85efec3435cafd530b6d4a71",
+      "frameCount": 69,
+      "endFrame": 68,
+      "armedFrame": 18,
+      "releaseFrame": 34,
+      "throwPercent": 100,
+      "aimAtTarget": false,
+      "halfAttack": false,
+      "kind": "bomb",
+      "grip": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ]
+      },
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "mass": 0.6,
+      "launch": {
+        "p": [
+          0.2515375186256793,
+          1.003892238522575,
+          0.4747369173204887
+        ],
+        "q": [
+          0.7267748277019183,
+          -0.5609707347330712,
+          0.38988886605838524,
+          0.0713922735006499
+        ],
+        "phase": "held",
+        "v": [
+          -1.2561571533318905,
+          4.723005064609222,
+          3.662656155866297
+        ],
+        "omega": [
+          -10.038294113230338,
+          -6.75168497927403,
+          -4.066043435081922
+        ],
+        "axis": [
+          -0.7865366413047098,
+          -0.5290189315878437,
+          -0.3185892055716277
+        ],
+        "twist": 12.187435736095178
+      },
+      "physics": {
+        "velocityRotation": [
+          0,
+          0,
+          0
+        ],
+        "speedScale": 1,
+        "twist": null,
+        "aero": {
+          "enabled": true,
+          "strength": 1,
+          "pressure": 0.27,
+          "damping": 1
+        }
+      },
+      "validation": {
+        "targetError": 5.551115123125783e-16,
+        "maxWorldPositionDifferenceFromRawMeters": 0
+      },
+      "bakedHandKeys": 0,
+      "bakedForearmKeys": 0
+    }
+  ]
+}

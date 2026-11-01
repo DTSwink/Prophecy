@@ -43,8 +43,21 @@ check('All markers can be deleted without regenerating first jump',settings.jump
 elements.jumpHere.onclick();check('Plus can add after deleting all jumps',settings.jumpEvents.length===1&&settings.jumpEvents[0].time===82/60);
 settings.mode='idle';editor.sync();check('Schedule stays available in Idle',!elements.jumpEditor.hidden);
 check('New jump keeps the prior rate and adds no pose',elements.jumpFlip.value===''&&elements.jumpTwist.value===''&&elements.jumpDelay.value==='0'&&elements.jumpPose.value==='none');
+{
+ const before=edits,lane=elements.jumpLane,marker=elements.jumpMarkers.children[0];
+ const press=()=>lane.onpointerdown({button:0,target:marker,clientX:200,pointerId:1,preventDefault(){}});
+ press();lane.onpointermove({clientX:200.7});lane.onpointerup();
+ check('Opening a marker with pointer jitter does not regenerate motion',edits===before);
+ document.activeElement=elements.jumpTime;editor.commitFocused();document.activeElement=null;
+ check('Committing the displayed rounded time keeps the same 60 Hz frame without regeneration',edits===before);
+ press();lane.onpointermove({clientX:230});lane.onpointermove({clientX:240});
+ check('Marker drag previews do not regenerate motion while held',edits===before);
+ lane.onpointerup();check('Completed marker drag regenerates exactly once',edits===before+1);
+ const time=settings.jumpEvents[0].time;press();lane.onpointermove({clientX:220});lane.onpointermove({clientX:200});lane.onpointerup();
+ check('Dragging back to the original frame does not regenerate motion',edits===before+1&&settings.jumpEvents[0].time===time);
+}
 check('Pose blend fields inactive until a pose is selected',elements.jumpPoseIn.disabled&&elements.jumpPoseHold.disabled&&elements.jumpPoseOut.disabled);
-for(const [id,value,key] of [['jumpPercent','25','jumpPercent'],['jumpAttack','jabR','attack'],['jumpAttackDelay','.3','attackDelay'],['jumpAttackIn','.15','attackIn'],['jumpAttackOut','.35','attackOut'],['jumpFlip','720','flip'],['jumpTwist','-360','twist'],['jumpDelay','.25','turnDelay'],['jumpDuration','1.2','turnDuration'],['jumpAxis','3','turnAxis'],['jumpPose','pose3','pose'],['jumpPoseIn','.3','poseIn'],['jumpPoseHold','.4','poseHold'],['jumpPoseOut','.5','poseOut']]){
+for(const [id,value,key] of [['jumpPercent','25','jumpPercent'],['jumpAttack','jabR','attack'],['jumpAttackDelay','.3','attackDelay'],['jumpAttackIn','.15','attackIn'],['jumpFlip','720','flip'],['jumpTwist','-360','twist'],['jumpDelay','.25','turnDelay'],['jumpDuration','1.2','turnDuration'],['jumpAxis','3','turnAxis'],['jumpPose','pose3','pose'],['jumpPoseIn','.3','poseIn'],['jumpPoseHold','.4','poseHold'],['jumpPoseOut','.5','poseOut']]){
  elements[id].value=value;elements[id].onchange();check('Edit persists '+key,settings.jumpEvents[0][key]===((id==='jumpPose'||id==='jumpAttack')?value:+value));
 }
 check('Pose blend fields become available',!elements.jumpPoseIn.disabled&&!elements.jumpPoseOut.disabled);

@@ -11,7 +11,7 @@ original=original.slice(0,start)+'segment.sample=segment.spin.sample;\n'+origina
 const orientation='segment.sample.atOrientation=segment.spin.active?(t,rotation)=>O.rebase(segment.sample(t),rotation,rig):segment.spin.atOrientation;';assert(original.includes(orientation));original=original.replace(orientation,'segment.sample.atOrientation=segment.spin.atOrientation;');
 const prior={exports:{}};new Function('module','require',original)(prior,require);const before=prior.exports,projector=Target.create(names,parents,reference),project=p=>projector.project(p);
 function aimed(sequence,name,settings){
- const track=sequence.segments[0].attack,sampleHit=t=>sequence.sample(t).pose,launchAt=track.launchAt?(p,map=x=>x)=>track.launchAt(p,track.transportVelocity(t=>map(sampleHit(t),t))):null;
+ const track=sequence.segments[0].attack,sampleHit=t=>sequence.sample(t).pose,launchAt=track.launchAt?(p,map=x=>x)=>track.launchAt(p,track.releaseVelocity(t=>map(sampleHit(t),t))):null;
  const plan=A.create({clip:catalog.get(name),track,names,parents,reference,sampleHit,launchAt,project});
  return t=>project(plan.apply(sampleHit(t),t,settings.target,settings.aimWeight,settings.undoRotation));
 }

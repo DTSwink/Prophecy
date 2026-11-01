@@ -1,6 +1,7 @@
 /* One constrained target for kinematic display and dynamic angular tracking. */
 (function(root){
 'use strict';
+const Work=typeof module!=='undefined'?require('./preparation.js'):root.BodyflipPreparation;
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,J=node?require('./joint-rig.js'):root.BodyflipJointRig,M=node?require('./mass.js'):root.BodyflipMass,S=node?require('./support.js'):root.BodyflipSupport,P=node?require('./body-contact.js'):root.BodyflipBodyContact;
 const {add,sub,mul,length,rotate,qm}=R,emptySurfaces=[],cache=new WeakMap(),profiles=new WeakMap(),Profile=node?require('./rig-profile.js'):root.BodyflipRigProfile;
 function create(names,parents,reference){
@@ -18,7 +19,7 @@ function create(names,parents,reference){
   // Anatomical projection can change the shoulder's world aim. Re-aim the
   // released pushing arm from its current socket, then clamp in the same
   // shoulder constraint frame. The target remains an absolute world point.
-  for(const aim of p.handFollow||[]){
+  for(const aim of p.attackFree?[]:p.handFollow||[]){
    if(aim.weight<=0)continue;
    const joint=joints.joints.find(j=>j.i===aim.shoulder),original=R.localize(pose.points,pose.q,parents).q[aim.shoulder];
    for(let pass=0;pass<3;pass++){
@@ -40,7 +41,7 @@ function create(names,parents,reference){
     let worst=null;for(const shape of footShapes(pose,leg.side))for(const surface of surfaces){const c=P.query(shape,surface);if(c.gap<-.00005&&(!worst||c.gap<worst.gap))worst=c;}
     if(!worst)continue;
     const target=add(pose.points[leg.foot],mul(worst.normal,-worst.gap+.00005)),live=S.leg(pose,names,leg.side),rotation={footQ:pose.q[leg.foot],toeQ:pose.q[leg.toe]};
-    pose=joints.project(S.solve(pose,live,target,parents,1,rotation));corrected=true;
+    pose=joints.project({...S.solve(pose,live,target,parents,1,rotation),...(p.attackFree?{attackFree:true}:{})});corrected=true;
    }
    // Foot clearance changes articulation, not the intended mass-centre path.
    // Rebalance before the next pass checks the remaining sole clearance.
@@ -56,7 +57,7 @@ function create(names,parents,reference){
  function track(source,{start=0,surfaces=emptySurfaces}={}){
   const dt=1/240,maxLocalSpeed=30,frames=[];
   function make(time,previous,elapsed){
-   const frame=source(time),wanted=project(frame.pose,surfaces);if(!previous)return {...frame,pose:wanted};
+   const frame=source(time),wanted=project(frame.pose,surfaces);if(!previous||wanted.attackFree)return {...frame,pose:wanted};
    const local=R.localize(wanted.points,wanted.q,parents),before=R.localize(previous.pose.points,previous.pose.q,parents);let limited=false;
    for(const joint of joints.joints){const i=joint.i,delta=R.qlog(qm(local.q[i],R.qinv(before.q[i]))),angle=length(delta),cap=maxLocalSpeed*elapsed;if(angle>cap+1e-9){local.q[i]=joints.clampLocal(qm(R.qexp(mul(delta,cap/angle)),before.q[i]),joint);limited=true;}}
    if(!limited)return {...frame,pose:wanted};
@@ -67,7 +68,7 @@ function create(names,parents,reference){
    if(time<start)return source(time);
    if(!frames.length)frames.push(make(start,null,0));
    const tick=Math.floor((time-start)/dt+1e-9);
-   while(frames.length<=tick){const t=start+frames.length*dt;frames.push(make(t,frames.at(-1),dt));}
+   while(frames.length<=tick){const t=start+frames.length*dt;frames.push(make(t,frames.at(-1),dt));Work.checkpoint();}
    const at=start+tick*dt;return time-at<1e-9?frames[tick]:make(time,frames[tick],time-at);
   }
   return {sample,get ticks(){return frames.length;}};

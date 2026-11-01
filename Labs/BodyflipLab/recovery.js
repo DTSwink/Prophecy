@@ -1,10 +1,14 @@
 /* Parent-local FK recovery. Stateless sampling; no per-frame history or IK. */
 (function(root){
 'use strict';
-const add=(a,b)=>a.map((v,i)=>v+b[i]), sub=(a,b)=>a.map((v,i)=>v-b[i]);
-const mul=(a,s)=>a.map(v=>v*s), dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0);
+// Hot 3D/4D operations avoid callback and iterator allocations. Other vector
+// sizes remain supported by the small least-squares solvers.
+const add=(a,b)=>a.length===3?[a[0]+b[0],a[1]+b[1],a[2]+b[2]]:a.length===4?[a[0]+b[0],a[1]+b[1],a[2]+b[2],a[3]+b[3]]:a.map((v,i)=>v+b[i]);
+const sub=(a,b)=>a.length===3?[a[0]-b[0],a[1]-b[1],a[2]-b[2]]:a.length===4?[a[0]-b[0],a[1]-b[1],a[2]-b[2],a[3]-b[3]]:a.map((v,i)=>v-b[i]);
+const mul=(a,s)=>a.length===3?[a[0]*s,a[1]*s,a[2]*s]:a.length===4?[a[0]*s,a[1]*s,a[2]*s,a[3]*s]:a.map(v=>v*s);
+const dot=(a,b)=>a.length===3?a[0]*b[0]+a[1]*b[1]+a[2]*b[2]:a.length===4?a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]:a.reduce((s,v,i)=>s+v*b[i],0);
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
-const length=a=>Math.hypot(...a), unit=a=>mul(a,1/(length(a)||1));
+const length=a=>{const s=dot(a,a);return s>1e-300&&s<1e300?Math.sqrt(s):Math.hypot(...a);}, unit=a=>mul(a,1/(length(a)||1));
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const ident=[0,0,0,1];
 const qinv=q=>[-q[0],-q[1],-q[2],q[3]];

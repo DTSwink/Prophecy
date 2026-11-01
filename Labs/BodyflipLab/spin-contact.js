@@ -8,7 +8,7 @@ const Feet=node?require('./support.js'):root.BodyflipSupport;
 const Targets=node?require('./target-rig.js'):root.BodyflipTargetRig;
 const {add,sub,length}=R,step=1/240;
 function create(segment,settings,names,parents,reference){
- const limbs=segment.support.limbs||[segment.support.leg],rig=J.create(names,parents,reference),hand=segment.supportKind==='hand',end=segment.airStart;
+ const limbs=segment.support.limbs||[segment.support.leg],rig=J.create(names,parents,reference),hand=segment.supportKind==='hand',end=!hand&&segment.bounce?.didPush?segment.jumpStart:segment.airStart;
  const mass=Mass.model(names,parents,reference),targets=Targets.create(names,parents,reference);
  const releases=new Map(),recoveries=new Map(),followTargets=new Map();let planned=false,planning=false;
  const pure=t=>segment.spin.sample(t,false);
@@ -43,15 +43,16 @@ function create(segment,settings,names,parents,reference){
   planning=false;planned=true;
  }
  const returnBlend=hand?settings.handReturn:settings.legBlend;
- const followSeconds=hand?settings.handFollow:(settings.legFollow??.2);
- const followDuration=l=>followSeconds>0&&releases.get(l)>segment.jumpStart+1e-8&&segment.bounce?.didPush!==false?followSeconds:0;
+ const followSeconds=hand?settings.handFollow:(settings.legFollow??.08);
+ const followDuration=l=>followSeconds>0&&(hand?releases.get(l)>segment.jumpStart+1e-8:releases.get(l)>=segment.jumpStart-1e-8)&&segment.bounce?.didPush!==false?followSeconds:0;
  const chain=l=>[l.hip,l.knee,l.foot,...(hand?[]:[l.toe])].filter(i=>i>=0);
  // A foot has one release trajectory: preserve its departing pose, extend
  // toward the fixed world contact, then inertialize once into the animation.
  // Do not repeatedly choose a shortest arc between two moving leg poses.
- function footFollow(pose,time,l,animation,releaseSource){
+ function footFollow(pose,time,l,animation,releaseSource,physical=null){
   const release=releases.get(l),duration=followDuration(l),age=time-release,key=(releaseSource?'carrier,':'foot,')+l.side;
-  let target=followTargets.get(key);
+  const savedTargets=physical?.targets||followTargets,savedRecoveries=physical?.recoveries||recoveries;
+  let target=savedTargets.get(key);
   if(!target){
    // Capture the displayed, constrained leg. The release sampler resolves
    // this projection in world space before any source-coordinate rebase.
@@ -59,27 +60,36 @@ function create(segment,settings,names,parents,reference){
    const source=t=>{if(releaseSource)return releaseSource(t,project).pose;const f=pure(t);return project(apply(f.pose,t,f));};
    const at=release-1e-7,last=source(at),previous=source(at-C.motionStep),limb=Feet.leg(last,names,l.side);
    const bend=p=>Math.acos(Math.max(-1,Math.min(1,(length(sub(p.points[l.foot],p.points[l.hip]))**2-limb.upper**2-limb.lower**2)/(2*limb.upper*limb.lower))));
-   target={foot:last.points[l.foot].slice(),limb,rotation:{footQ:last.q[l.foot],toeQ:last.q[l.toe]},axis:R.unit(sub(last.points[l.foot],last.points[l.hip])),pole:limb.pole,bend:bend(last),bendSpeed:(bend(last)-bend(previous))/C.motionStep};
-   followTargets.set(key,target);
+   const forward=Feet.footFrame(last,l.foot,l.toe,l.side).forward,normal=segment.surface.normal,tangent=sub(forward,R.mul(normal,R.dot(forward,normal)));
+   target={history:source,foot:last.points[l.foot].slice(),limb,rotation:{footQ:last.q[l.foot],toeQ:last.q[l.toe]},forward,rollAxis:R.unit(R.cross(normal,R.length(tangent)>1e-8?tangent:limb.pole)),axis:R.unit(sub(last.points[l.foot],last.points[l.hip])),pole:limb.pole,bend:bend(last),bendSpeed:(bend(last)-bend(previous))/C.motionStep};
+   savedTargets.set(key,target);
   }
   const reachAt=(p,t)=>{
    const a=target.limb,elapsed=Math.max(0,t-release),max=a.reach*settings.supportReach,minBend=Math.acos(Math.max(-1,Math.min(1,(max*max-a.upper*a.upper-a.lower*a.lower)/(2*a.upper*a.lower)))),error=Math.max(0,target.bend-minBend),omega=3/Math.max(1/15,duration),speed=Math.max(-omega*error,target.bendSpeed),bend=Math.min(Math.PI*150/180,minBend+(error+(speed+omega*error)*elapsed)*Math.exp(-omega*elapsed));
    const reach=Math.sqrt(Math.max(0,a.upper*a.upper+a.lower*a.lower+2*a.upper*a.lower*Math.cos(bend))),delta=sub(target.foot,p.points[l.hip]),distance=length(delta),aim=add(p.points[l.hip],R.mul(R.unit(delta),Math.min(reach,distance)));
-   // The bend plane belongs to the departing world-space leg. A body flip
-   // must not carry that plane around with the pelvis after contact releases.
-   const worldLimb={...a,axisLocal:R.rotate(R.qinv(p.q[a.pelvis]),target.axis),poleLocal:R.rotate(R.qinv(p.q[a.pelvis]),target.pole)};
-   return targets.project(Feet.solve(p,worldLimb,aim,parents,settings.supportReach,target.rotation));
+   // Preserve world aim while allowing the knee plane to follow the hip.
+   // Locking that plane too would wind up the hip's twist during a flip.
+   const worldLimb=physical?a:{...a,axisLocal:R.rotate(R.qinv(p.q[a.pelvis]),target.axis),poleLocal:R.rotate(R.qinv(p.q[a.pelvis]),target.pole)};
+   let solved=Feet.solve(p,worldLimb,aim,parents,settings.supportReach,target.rotation);
+   // After toe-off, point the toes along the extending shin. Ground pitch
+   // no longer defines the endpoint: the anatomical ankle limit does.
+   const direction=R.unit(sub(solved.points[l.foot],solved.points[l.knee])),remaining=Math.max(0,Math.atan2(R.dot(target.rollAxis,R.cross(target.forward,direction)),R.dot(target.forward,direction))),turn=R.qexp(R.mul(target.rollAxis,Math.min(remaining,elapsed*settings.footRollSpeed*Math.PI/180)));
+   const local=R.localize(solved.points,solved.q,parents),footQ=R.qm(turn,target.rotation.footQ),toeQ=R.qm(turn,target.rotation.toeQ);
+   local.q[l.foot]=R.qm(R.qinv(solved.q[l.knee]),footQ);local.q[l.toe]=R.qm(R.qinv(footQ),toeQ);
+   return targets.project(R.fk(local,parents));
   };
   let reached;
   if(age<duration)reached=reachAt(pose,time);
   else {
-   let recovery=recoveries.get(key);
+   let recovery=savedRecoveries.get(key);
    if(!recovery){
     const at=release+duration,offset=sub(pose.points[0],pure(time).pose.points[0]);
     const source=t=>{const p=pure(t).pose;return {...p,points:p.points.map(v=>add(v,offset))};};
-    recovery=C.transition(t=>reachAt(source(at+t),at+t),t=>pure(at+t).pose,returnBlend,parents,chain(l),true);recoveries.set(key,recovery);
+    const outgoing=physical?t=>duration>0?physical.history(at+Math.min(t,-1e-7)).pose:target.history(at+Math.min(t,-1e-7)):t=>reachAt(source(at+t),at+t);
+    const incoming=physical?t=>physical.source(at+t).pose:t=>pure(at+t).pose;
+    recovery=C.transition(outgoing,incoming,returnBlend,parents,chain(l),true);savedRecoveries.set(key,recovery);
    }
-   reached=recovery(age-duration);
+   reached=physical&&recovery.apply?recovery.apply(animation,age-duration):recovery(age-duration);
   }
   const local=R.localize(pose.points,pose.q,parents),limb=R.localize(reached.points,reached.q,parents);
   for(const i of chain(l))local.q[i]=limb.q[i];return R.fk(local,parents);
@@ -161,7 +171,23 @@ function create(segment,settings,names,parents,reference){
   });
   return aims.length?{...out,handFollow:aims}:out;
  }
- return {apply,plan,get releases(){plan();return limbs.map(l=>({side:l.side,time:releases.get(l),early:releases.get(l)<end-1e-7}));},get releaseTime(){plan();return Math.max(...releases.values());},activeBones(time){plan();return limbs.filter(l=>time<releases.get(l)).flatMap(l=>hand?['hand_'+l.side.toLowerCase()]:['foot_'+l.side.toLowerCase(),'ball_'+l.side.toLowerCase()]);}};
+ // Each physical prediction owns its recovery state. Solve the released foot
+ // in displayed world space inside the momentum calculation, not before the
+ // body's rigid turn. It remains a free limb, never a renewed ground contact.
+ function physicalFollow({sample,source},releaseSource,worldPose){
+  plan();const context={targets:new Map(),recoveries:new Map(),source,history:t=>{const f=sample(t);return {...f,pose:worldPose(f.pose,t)};}};
+  const active=t=>!hand&&segment.bounce?.didPush!==false&&limbs.some(l=>releases.get(l)>=segment.jumpStart-1e-8&&t>=releases.get(l)&&t<releases.get(l)+followDuration(l)+returnBlend);
+  const follow=(p,t)=>{
+   if(!active(t))return p;
+   const world=worldPose(p,t),offset=sub(world.points[0],p.points[0]),goal=Mass.center(world,mass);let out=world;
+   for(let pass=0;pass<8;pass++){
+    for(const l of limbs)if(t>=releases.get(l)&&t<releases.get(l)+followDuration(l)+returnBlend)out=footFollow(out,t,l,world,releaseSource,context);
+    const delta=sub(goal,Mass.center(out,mass));out={...out,points:out.points.map((v,i)=>i===0?v:add(v,delta))};if(length(delta)<1e-9)break;
+   }
+   return {...out,points:out.points.map(v=>sub(v,offset))};
+  };follow.active=active;follow.worldActive=t=>active(t)&&limbs.some(l=>t<releases.get(l)+followDuration(l));return follow;
+ }
+ return {apply,physicalFollow,plan,contactEnd:end,get releases(){plan();return limbs.map(l=>({side:l.side,time:releases.get(l),early:releases.get(l)<end-1e-7}));},get releaseTime(){plan();return Math.max(...releases.values());},activeBones(time){plan();return limbs.filter(l=>time<releases.get(l)).flatMap(l=>hand?['hand_'+l.side.toLowerCase()]:['foot_'+l.side.toLowerCase(),'ball_'+l.side.toLowerCase()]);}};
 }
 const api={create};if(node)module.exports=api;else root.BodyflipSpinContact=api;
 })(globalThis);

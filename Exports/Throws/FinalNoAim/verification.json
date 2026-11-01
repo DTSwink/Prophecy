@@ -1,0 +1,24 @@
+[
+  {
+    "file": "BigThrow_Final_NoAim.fbx",
+    "frames": 131,
+    "skeletonBones": 89,
+    "maxLabPositionErrorMeters": 2.3266325872083595e-07,
+    "maxLabQuaternionError": 2.942091015256665e-14,
+    "maxAllNodePositionErrorMeters": 2.9604802701325453e-07,
+    "maxAllNodeQuaternionError": 3.8413716652030416e-14,
+    "sha256": "53fdc7d9eaf5a228fcf30cd3692dd23e93d34c01ea7922915faeea3a4ff571b6",
+    "sourceUnchanged": true
+  },
+  {
+    "file": "SmallThrow_Final_NoAim.fbx",
+    "frames": 69,
+    "skeletonBones": 89,
+    "maxLabPositionErrorMeters": 1.6190567661195466e-07,
+    "maxLabQuaternionError": 6.439293542825908e-15,
+    "maxAllNodePositionErrorMeters": 1.6190567662980016e-07,
+    "maxAllNodeQuaternionError": 9.103828801926284e-15,
+    "sha256": "4daf11d39d926ef1c2d8b0ac9d72436826a2321c523d2f4273b30ab19af39667",
+    "sourceUnchanged": true
+  }
+]

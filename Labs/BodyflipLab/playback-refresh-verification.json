@@ -13,6 +13,8 @@
     "Idle restores clock and attack state",
     "Hidden lab does not start rendering",
     "Older saves without playback still load",
+    "Mode option preserves current running intent",
+    "Mode option preserves current paused intent",
     "Alpha arrow step is one",
     "Refresh button uses state-preserving handler",
     "Boot restores after preparing flight"
