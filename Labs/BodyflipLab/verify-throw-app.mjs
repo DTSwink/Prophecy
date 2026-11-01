@@ -28,7 +28,7 @@ try{
   ids.get('targetX').value=String(-1+i*.3);ids.get('targetX').oninput();
   assert.notEqual(vm.runInContext('JSON.stringify(throwController.plans)',ctx),before);
   vm.runInContext('settings.target[2]+=.1;refreshAim({preview:true});refreshAim()',ctx);
-  assert(vm.runInContext('(()=>{const p=throwController.plans[0],track=throwController.tracks[0],plan=aimPlans.get(track);return R.length(R.sub(R.unit(p.axis),plan.throwDirectionFor(settings.target)));})()',ctx)<1e-6,'app release spear shaft follows frozen world direction');
+  assert(vm.runInContext('(()=>{const p=throwController.plans[0];return R.length(R.sub(R.unit(p.axis),R.unit(R.sub(settings.target,p.p))));})()',ctx)<1e-6,'actual app release shaft points at the target from its final held origin');
   assert(vm.runInContext('(()=>{const p=throwController.plans[0],track=throwController.tracks[0];return Math.abs(R.length(p.v)-R.length(track.model.launch.v));})()',ctx)<.01,'stationary carrier preserves final manifest launch speed');
   assert.equal(physics.projectileDiagnostics().bodies,1);
   assert.equal(ctx.BodyflipLab.state.errors.length,0);
@@ -43,6 +43,16 @@ try{
  ids.get('vanillaOnly').checked=false;ids.get('vanillaOnly').onchange();
  assert.equal(vm.runInContext('JSON.stringify({plans:throwController.plans,physics:physics.projectileDiagnostics(),time:simTime,pose:currentPose,settings})',ctx),beforeReference,'reference toggle preserves simulation and tuning');
  assert(vm.runInContext('(()=>{const p=throwController.plans[0];return R.length(R.cross(R.unit(p.axis),p.omega));})()',ctx)<1e-8,'actual spawn has axial spear spin');
+ // The actual app's spinning path must aim after the complete momentum response.
+ for(const momentum3D of [false,true]){
+  ctx.testMomentum3D=momentum3D;
+  await vm.runInContext('settings.momentum3D=testMomentum3D;settings.jumpEvents[0].flip=120;settings.jumpEvents[0].instantSpin=true;settings.target=[2,2,-3];runKey=null;prepareRun({preserveTime:true})',ctx);
+  await vm.runInContext('BodyflipLab.seek(throwController.tracks[0].releaseTime)',ctx);
+  assert(vm.runInContext('flight.segments[0].spin.active',ctx),'test exercises active spin');
+  assert(vm.runInContext('(()=>{const p=throwController.plans[0];return R.length(R.sub(R.unit(p.axis),R.unit(R.sub(settings.target,p.p))));})()',ctx)<1e-6,'final app shaft targets the point during spin');
+  assert.equal(ctx.BodyflipLab.state.errors.length,0,'physical point-aim preparation completes');
+ }
+ await vm.runInContext('settings.jumpEvents[0].flip=0;settings.momentum3D=false;runKey=null;prepareRun({preserveTime:true})',ctx);
  ids.get('attackReturnExponent').value='.5';ids.get('attackReturnExponent').oninput();await ids.get('attackReturnExponent').onchange();
  assert.equal(vm.runInContext('settings.attackReturnExponent',ctx),.5,'retained exponent value');assert.equal(ids.get('attackReturnExponentRead').textContent,'0.50');
  ids.get('attackReturnLerp').value='20';ids.get('attackReturnLerp').oninput();await ids.get('attackReturnLerp').onchange();

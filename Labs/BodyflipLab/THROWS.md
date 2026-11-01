@@ -1,5 +1,58 @@
 # Throws in Bodyflip
 
+## Point-targeted spear release - November 1 (accepted)
+
+The accepted setup was pushed first as `5b2a2da6`; the remote branch and recovery
+manifest were verified. The user confirmed the point-targeted change works and
+requested its push. Live saved state and Unreal are unchanged.
+
+Default spear aim now fits the forward shaft ray from its **actual held release
+origin** to the target point. Previously it used the jump-frame-zero pelvis-to-
+target direction, so a displaced release origin could leave a lateral miss.
+Each candidate recomputes the held origin after spine articulation and COM
+compensation. Like Throw Lab, it fits heading and elevation through spine01-05.
+Ordinary playback retains its accepted rotation curve, including held-aim
+transitions. Entry, Release, End and timed/distance-weighted return retain their
+existing clocks. Relative arms, wrists and head remain authored.
+
+For an actively spinning carrier, the two-angle fit evaluates the complete
+physical trajectory, including its momentum response. This path uses Throw Lab's
+continuous heading/elevation distribution to avoid the shortest-quaternion-log
+seam while fitting large turns. The previous predictor
+applied world rotations in the wrong order for this case. The fit starts from
+the neutral carrier's release orientation; if that heading branch cannot converge,
+it tries the opposite winding with the same two degrees of freedom. This may
+require a larger spine turn. Nothing rotates the pelvis independently or redirects
+the projectile. Fitting reads shaft geometry only; the actual spawn retains the
+existing manifest velocity/spin transport and carrier translation.
+Velocity prediction now accepts its own carrier pose sample, avoiding a recursive
+read of the unfinished sequence in full-charge spinning throws. The actual spawn
+continues to use the original carrier calculation.
+
+Explicit `throwDirection` still requests a fixed authored world ray. Small throws
+retain their frame-zero azimuth and source upward arc. Slashes/kicks are unchanged.
+Preparation is cooperative and cached per attack/target; seeking/playback does not
+re-fit. The four physical probes needed10/13/13/130 trajectory evaluations, so
+this is a lab solution, not a measured60Hz native-game implementation. Native
+integration/performance work has not been done. Unreachable points still report
+the best residual; no universal reachability guarantee is implied.
+
+Validation:396 moving/stationary target cases at2/4/12m, front/back/side and
+elevated/lowered, with motion compensation on/off; maximum direction error
+9.6e-9 and preserved arm/head local rotations within8.5e-16rad. Four complete
+physical cases finish within2.4e-8 direction error and preserve seek results.
+Actual app checks cover target inputs/drags, active spin with both momentum modes,
+release packets, return controls and automatic playback resume (one Jolt world,
+mock DOM/GL, no raster). Checkpoint comparison of slashL/jabR/KickL/small/explicit-
+ray spear:15,860 bones, zero position difference and angular difference<2e-16rad.
+Final source16,918 checks, shared return157 checks, authored direction762 checks
+and existing four melee physical cases pass. Tests:verify-throw-target.mjs,
+verify-throw-app.mjs, verify-throw-direction.mjs, verify-final-throws.mjs,
+verify-duration-attack-return.mjs and verify-physical-aim.mjs.
+The72-case throw-aim matrix also completes, including full-charge Small at
+plus/minus360deg/s. Its pre-existing37% Small/-360 yaw-only limitation remains
+(one case with0.00943 direction residual); it is not a spear point-fit failure.
+
 ## Upper-body pose audit - November 1 (current)
 
 **Correction applied:** root is a coordinate frame; user authorized attacks to

@@ -1,5 +1,13 @@
 # Restoring Prophecy
 
+## November 1 accepted Bodyflip target-point aiming
+
+User confirmed the target-point spear throw works and requested this checkpoint.
+Includes the spine-only point fit, full momentum-response evaluation for spinning
+throws, recursive prediction fix, focused regression tests and current handoff.
+The earlier accepted setup is5b2a2da6. Live settings and Unreal are unchanged;
+native integration/performance validation remains separate. See Bodyflip THROWS.md.
+
 ## November 1 accepted Bodyflip throw checkpoint
 
 Accepted standalone motion before target-point aiming experiments: FinalNoAim

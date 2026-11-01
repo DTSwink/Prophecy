@@ -36,7 +36,21 @@ dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
 
-## Spear launch and Throw Lab reference - November 1 (current, local)
+## Spear target point - November 1 (accepted)
+
+User confirmed this works and requested a push. The prior accepted setup is
+`5b2a2da6`. Default spear aim
+now fits the actual held release shaft to the target point, accounting for the
+weapon origin moving with the spine turn. Uses Throw Lab's continuous heading/
+elevation distribution; spinning attacks evaluate the full momentum response.
+Explicit authored rays and small throws retain their previous behavior. Source
+arms/head, launch physics and shared return are preserved.396 target cases,
+four physical cases and actual-app spin/retarget/playback checks pass. Agent
+verification was offline; the user subsequently accepted the working result.
+Native game integration and performance validation remain.
+See [current throw details and limits](THROWS.md).
+
+## Spear launch and Throw Lab reference - November 1
 
 Current correction: root is treated as a coordinate frame. Source world pelvis
 orientation is converted into the initial root frame before interpolation and

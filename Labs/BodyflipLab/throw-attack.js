@@ -73,8 +73,8 @@ function create(event,segment,catalog,names,parents,settings,reference){
  const center=pose=>{const p=heldAt(pose);return R.add(p.p,R.rotate(p.q,m.seed.comOffset));};
  // Full-charge throws transport the final manifest launch with the held frame,
  // adding carrier translation once. Partial charge retains its procedural derivative.
- function releaseVelocity(poseAt,h=1/(1000*rate)){
-  if(m.finalNoAim){const turn=R.qm(heldAt(poseAt(releaseTime)).q,R.qinv(m.seed.q)),pelvis=names.indexOf('pelvis'),at=t=>segment.sample(t).pose.points[pelvis],carrier=R.mul(R.sub(at(releaseTime),at(releaseTime-h)),1/h);return R.add(R.mul(R.rotate(turn,m.seed.v),rate),carrier);}
+ function releaseVelocity(poseAt,h=1/(1000*rate),carrierPoseAt=t=>segment.sample(t).pose){
+  if(m.finalNoAim){const turn=R.qm(heldAt(poseAt(releaseTime)).q,R.qinv(m.seed.q)),pelvis=names.indexOf('pelvis'),at=t=>carrierPoseAt(t).points[pelvis],carrier=R.mul(R.sub(at(releaseTime),at(releaseTime-h)),1/h);return R.add(R.mul(R.rotate(turn,m.seed.v),rate),carrier);}
   const p=center(poseAt(releaseTime)),a=center(poseAt(releaseTime-h)),b=center(poseAt(releaseTime-2*h));return R.mul(R.add(R.sub(R.mul(p,3),R.mul(a,4)),b),1/(2*h));}
  function releaseAngularVelocity(poseAt,h=1/(1000*rate)){const q=heldAt(poseAt(releaseTime)).q,delta=t=>R.qlog(R.qm(q,R.qinv(heldAt(poseAt(t)).q)));return R.mul(R.sub(R.mul(delta(releaseTime-h),4),delta(releaseTime-2*h)),1/(2*h));}
  // Throw Lab authors spear spin along its shaft; sideways hand swing is not tumbling.

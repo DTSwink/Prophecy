@@ -32,11 +32,14 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
   point=pose=>add(pose.points[bone],rotate(pose.q[bone],offset));
  }
  const rig=H.model(names,parents,reference),hit=sampleHit(hitTime),initialLaunch=launchAt?launchAt(hit):null,initialAim=initialLaunch?launchAim(initialLaunch):null,planar=initialLaunch?.kind==='bomb',origin=initialAim?initialAim.origin:center(hit,rig),direction=initialAim?initialAim.direction:sub(point(hit),origin);
- // Frame zero of the jump establishes a world-space ray. Neither the current
- // release point nor any candidate spine rotation is allowed to retarget it.
+ // An explicit authored ray remains fixed in world space. Otherwise a spear
+ // fits its actual release ray to the target point, as in Throw Lab. Each
+ // candidate must include the origin displacement caused by the spine turn.
+ // Bombs retain their frame-zero azimuth and original upward arc.
  const aimReferenceOrigin=initialLaunch?(throwAimOrigin||sampleHit(Number.isFinite(track.aimReferenceTime)?track.aimReferenceTime:track.start??0).points[names.indexOf('pelvis')]).slice():null;
  const authoredDirection=track.throwDirection?.slice()||null;
- const throwDirectionFor=initialLaunch?target=>{const d=authoredDirection||sub(target,aimReferenceOrigin);return unit(length(d)>1e-9?d:direction);}:null;
+ const pointThrow=initialLaunch?.kind==='spear'&&!authoredDirection,continuousThrow=pointThrow&&!!evaluateMotion;
+ const throwDirectionFor=initialLaunch?target=>{if(!authoredDirection&&!planar)return null;const d=authoredDirection||sub(target,aimReferenceOrigin);return unit(length(d)>1e-9?d:direction);}:null;
  let carrier=null;
  const start=track.start??0,armed=track.armedTime??start+track.duration,ready=!launchAt&&direct.has(clip.meta.name)?armed:hitTime;
  const end=track.end,returnEnd=track.returnEnd,returnPolicy=track.returnPolicy||C.attackReturn({},track.returnEnd-track.end);
@@ -58,12 +61,15 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
    // Throws steer the upper body with heading and elevation only. There is
    // no free roll, whole-pelvis turn or sideways-tilt fallback to win the fit.
    const heading=Math.atan2(direction[0],direction[2])+p[0],pitch=planar?0:(p[1]||0),headingTurn=qm(qexp([Math.cos(heading)*pitch,0,-Math.sin(heading)*pitch]),qexp([0,p[0],0])),turn=headingTurn,log=R.qlog(turn);
-   return {yaw:identity,bends:factors.map(w=>qexp(mul(log,w)))};
+   // Physical point fitting uses Throw Lab's continuous heading/elevation branches.
+   // Taking a shortest quaternion log can flip the distributed spine turn
+   // while fitting a rearward target or compensating a spinning carrier.
+   return continuousThrow?{yaw:identity,throwAngles:[p[0],pitch],bends:factors.map(w=>qm(qexp([Math.cos(heading)*pitch*w,0,-Math.sin(heading)*pitch*w]),qexp([0,p[0]*w,0])))}:{yaw:identity,bends:factors.map(w=>qexp(mul(log,w)))};
   }
   return {yaw:worldTurn(qm(qexp([p[3]||0,0,p[4]||0]),qexp([0,p[0],0]))),bends:factors.map(w=>worldTurn(qexp([p[1]*w,(p[5]||0)*w,p[2]*w])))};
  };
  const blendQ=(a,b,w)=>qm(qexp(mul(R.qlog(qm(b,qinv(a))),w)),a);
- function mix(a,b,w){if(Array.isArray(a))a=neutral;return {yaw:blendQ(a.yaw,b.yaw,w),offsets:a.offsets.map((v,i)=>v.map((x,j)=>x+(b.offsets[i][j]-x)*w)),...(initialLaunch?{throwTurn:blendQ(a.throwTurn||identity,b.throwTurn||identity,w)}:{})};}
+ function mix(a,b,w){if(Array.isArray(a))a=neutral;return {yaw:blendQ(a.yaw,b.yaw,w),offsets:a.offsets.map((v,i)=>v.map((x,j)=>x+(b.offsets[i][j]-x)*w)),...(continuousThrow?{throwAngles:(a.throwAngles||[0,0]).map((v,i)=>v+((b.throwAngles?.[i]||0)-v)*w)}:initialLaunch?{throwTurn:blendQ(a.throwTurn||identity,b.throwTurn||identity,w)}:{})};}
  // Search in world correction coordinates, but never interpolate those
  // cumulative rotations: adjacent spines can choose opposite quaternion
  // branches. The animation path uses additive legal joint coordinates below.
@@ -101,7 +107,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
   // Keep throws as one direction-to-direction rotation. Converting a release
   // pose into joint-limit coordinates and replaying those offsets on every
   // animation frame changes the path and introduces unintended torso roll.
-  if(initialLaunch)return {...neutral,throwTurn:world.bends[bone]};
+  if(initialLaunch)return {...neutral,...(continuousThrow?{throwAngles:world.throwAngles}:{throwTurn:world.bends[bone]})};
   corrected ||= project(applyWorld(legalHit,world));
   const local=R.localize(corrected.points,corrected.q,parents);
   return {yaw:world.yaw,offsets:joints.joints.map((c,i)=>coordinates(local.q[c.i],c).map((x,j)=>x-hitCoordinates[i][j]))};
@@ -109,7 +115,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
  const rotationBases=new WeakMap();
  function applyRotation(pose,delta){
   if(Array.isArray(delta))delta=neutral;
-  if(initialLaunch){const log=R.qlog(delta.throwTurn||identity);return applyWorld(pose,{yaw:identity,bends:factors.map(w=>qexp(mul(log,w)))});}
+  if(initialLaunch){if(continuousThrow)return applyWorld(pose,state(delta.throwAngles||[0,0]));const log=R.qlog(delta.throwTurn||identity);return applyWorld(pose,{yaw:identity,bends:factors.map(w=>qexp(mul(log,w)))});}
   const base=project(pose);let prepared=rotationBases.get(base);
   if(!prepared){const pivot=center(base,rig),local=R.localize(base.points,base.q,parents);prepared={pivot,local,coordinates:joints.joints.map(c=>coordinates(local.q[c.i],c))};rotationBases.set(base,prepared);}
   const pivot=prepared.pivot,local={p:prepared.local.p,q:prepared.local.q.slice()};
@@ -136,6 +142,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
   const fade=returnPolicy.factor(time-end);
   out.yaw=R.qslerp(identity,out.yaw,fade);
   if(out.throwTurn)out.throwTurn=R.qslerp(identity,out.throwTurn,fade);
+  if(out.throwAngles)out.throwAngles=mul(out.throwAngles,fade);
   out.offsets=out.offsets.map(v=>mul(v,fade));
   return out;
  }
@@ -175,10 +182,12 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
    let job=jobs.get(key);
    if(!job){
     function* search(){
-     let p=initialLaunch?(planar?[yaw]:[yaw,Math.asin(unit(direction)[1])-Math.asin(desired[1])]):(motionSolve.seed||[0,0,0]).slice(),value=yield p,error=length(sub(value,desired));
+     const seeds=initialLaunch?(motionSolve.throwSeeds||[planar?[yaw]:[yaw,Math.asin(unit(direction)[1])-Math.asin(desired[1])]]):[motionSolve.seed||[0,0,0]],tolerance=motionSolve.tolerance??1e-4;let best=null;
+     for(const seed of seeds){
+     let p=seed.slice(),value=yield p,error=length(sub(value,desired));
      for(const stage of initialLaunch?[planar?[0]:[0,1]]:[motionSolve.indices||[0,1,2],...(motionSolve.fallbackIndices?[motionSolve.fallbackIndices]:[])]){
       const indices=stage;
-      for(let iteration=0;iteration<(motionSolve.iterations??2)&&error>1e-4;iteration++){
+      for(let iteration=0;iteration<(motionSolve.iterations??2)&&error>tolerance;iteration++){
        const h=1e-3,columns=[];
        for(const j of indices){const v=p.slice();v[j]+=h;const probe=yield v;columns.push(mul(sub(probe,value),(motionSolve.scales?.[j]??1)/h));}
        const damping=1e-6*Math.max(1,...columns.map(a=>dot(a,a))),matrix=columns.map((a,i)=>columns.map((b,j)=>dot(a,b)+(i===j?damping:0)));
@@ -191,7 +200,9 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
        if(!improved)break;
       }
      }
-     return {state:legalState(state(p)),parameters:p,error,bounded:true};
+     const result={state:legalState(state(p)),parameters:p,error,bounded:true};if(!best||error<best.error)best=result;if(error<=tolerance)break;
+     }
+     return best;
     }
     job={iterator:search(),step:null,value:undefined};jobs.set(key,job);
    }

@@ -4,6 +4,21 @@ Updated **October 19, 2026**, after static-fuse verification. This file and the 
 
 ## Resume here
 
+**Bodyflip target-point spear aim, November 1 (accepted for push):**
+User confirmed the targeting works and requested a push.
+Accepted state was pushed first as5b2a2da6 on origin/codex/standalone-sim;
+remote HEAD matched and recovery manifest verified. Current spear default now
+fits the actual release shaft/origin to the target, fitting heading/elevation
+through spine01-05. Explicit throwDirection and small
+throw azimuth keep their earlier behavior. For spinning bodies, fit against the
+complete momentum-compensated trajectory; no projectile velocity redirect.
+Full-charge spin prediction also avoids recursive carrier-velocity reads.
+396 target cases,4 physical cases and actual-app spin/retarget/playback pass.
+Matched checkpoint poses for slash/jab/kick/small/explicit-ray throws:15,860 bone
+comparisons, zero position difference. FinalNoAim16,918 checks and157 return
+checks pass. Agent validation was offline CLI/DOM; user acceptance followed.
+No live state writes, Unreal changes or native port. See Labs/BodyflipLab/THROWS.md.
+
 ## November 1 accepted Bodyflip throw checkpoint
 
 Accepted standalone motion before target-point aiming experiments: FinalNoAim
