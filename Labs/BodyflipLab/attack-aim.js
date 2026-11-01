@@ -57,6 +57,10 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
  // During a flip, yaw follows the pelvis upright; it is not a fixed world-Y turn.
  const pelvis=names.indexOf('pelvis'),aimBasis=evaluateMotion?qm(hit.q[pelvis],qinv(reference.q[pelvis])):identity,worldTurn=q=>qm(qm(aimBasis,q),qinv(aimBasis));
  const state=p=>{
+  if(motionSolve?.headingElevation){
+   const d=rotate(qinv(aimBasis),direction),heading=Math.atan2(d[0],d[2])+p[0],right=[Math.cos(heading),0,-Math.sin(heading)];
+   return {yaw:worldTurn(qexp([0,p[0],0])),heading:p[0],bends:factors.map(w=>worldTurn(qexp(mul(right,p[1]*w))))};
+  }
   if(initialLaunch){
    // Throws steer the upper body with heading and elevation only. There is
    // no free roll, whole-pelvis turn or sideways-tilt fallback to win the fit.
@@ -69,7 +73,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
   return {yaw:worldTurn(qm(qexp([p[3]||0,0,p[4]||0]),qexp([0,p[0],0]))),bends:factors.map(w=>worldTurn(qexp([p[1]*w,(p[5]||0)*w,p[2]*w])))};
  };
  const blendQ=(a,b,w)=>qm(qexp(mul(R.qlog(qm(b,qinv(a))),w)),a);
- function mix(a,b,w){if(Array.isArray(a))a=neutral;return {yaw:blendQ(a.yaw,b.yaw,w),offsets:a.offsets.map((v,i)=>v.map((x,j)=>x+(b.offsets[i][j]-x)*w)),...(continuousThrow?{throwAngles:(a.throwAngles||[0,0]).map((v,i)=>v+((b.throwAngles?.[i]||0)-v)*w)}:initialLaunch?{throwTurn:blendQ(a.throwTurn||identity,b.throwTurn||identity,w)}:{})};}
+ function mix(a,b,w){if(Array.isArray(a))a=neutral;const heading=(a.heading||0)+((b.heading||0)-(a.heading||0))*w;return {yaw:motionSolve?.headingElevation?worldTurn(qexp([0,heading,0])):blendQ(a.yaw,b.yaw,w),...(motionSolve?.headingElevation?{heading}:{}),offsets:a.offsets.map((v,i)=>v.map((x,j)=>x+(b.offsets[i][j]-x)*w)),...(continuousThrow?{throwAngles:(a.throwAngles||[0,0]).map((v,i)=>v+((b.throwAngles?.[i]||0)-v)*w)}:initialLaunch?{throwTurn:blendQ(a.throwTurn||identity,b.throwTurn||identity,w)}:{})};}
  // Search in world correction coordinates, but never interpolate those
  // cumulative rotations: adjacent spines can choose opposite quaternion
  // branches. The animation path uses additive legal joint coordinates below.
@@ -110,7 +114,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
   if(initialLaunch)return {...neutral,...(continuousThrow?{throwAngles:world.throwAngles}:{throwTurn:world.bends[bone]})};
   corrected ||= project(applyWorld(legalHit,world));
   const local=R.localize(corrected.points,corrected.q,parents);
-  return {yaw:world.yaw,offsets:joints.joints.map((c,i)=>coordinates(local.q[c.i],c).map((x,j)=>x-hitCoordinates[i][j]))};
+  return {yaw:world.yaw,...(motionSolve?.headingElevation?{heading:world.heading}:{}),offsets:joints.joints.map((c,i)=>coordinates(local.q[c.i],c).map((x,j)=>x-hitCoordinates[i][j]))};
  }
  const rotationBases=new WeakMap();
  function applyRotation(pose,delta){
@@ -141,6 +145,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
   if(!undo)return out;
   const fade=returnPolicy.factor(time-end);
   out.yaw=R.qslerp(identity,out.yaw,fade);
+  if(motionSolve?.headingElevation){out.heading*=fade;out.yaw=worldTurn(qexp([0,out.heading,0]));}
   if(out.throwTurn)out.throwTurn=R.qslerp(identity,out.throwTurn,fade);
   if(out.throwAngles)out.throwAngles=mul(out.throwAngles,fade);
   out.offsets=out.offsets.map(v=>mul(v,fade));
@@ -163,7 +168,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
     // Evaluate the same full trajectory used for display, after its momentum
     // response. Candidate sources apply a supplied delta directly, never solve
     // another aim plan, so future-hit evaluation cannot recurse into itself.
-    const context={applyDeltaAt,applyRotation,weight,hitTime},result=evaluateMotion(legalState(world,posed),context),actual=result.pose||result;
+    const context={applyDeltaAt,applyRotation,deltaAt:(delta,time)=>timedDelta(delta,time,amount,evaluationUndoRotation),weight,hitTime},result=evaluateMotion(legalState(world,posed),context),actual=result.pose||result;
     const launch=result.launch||(launchAt?launchAt(actual,result.sample?(_,time=hitTime)=>result.sample(time):undefined):null);
     const aimed=launch?launchAim(launch,target,fixedDirection):null,origin=aimed?aimed.origin:center(actual,rig),direction=aimed?unit(aimed.direction):unit(sub(point(actual),origin));
     let wanted=aimed?aimed.wanted:unit(sub(target,origin));

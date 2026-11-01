@@ -1,0 +1,62 @@
+// Full browser-script order and app initialization using an in-memory DOM/GL sink.
+// Real local data and the app's single Jolt world; no browser or live state writes.
+import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),R=require('./recovery.js');globalThis.Recovery=R;
+const {createPhysics}=await import('./physics.mjs');let worlds=0,physics;
+const html=fs.readFileSync(new URL('index.html',import.meta.url),'utf8'),ids=new Map(),gl=new Proxy({getShaderParameter:()=>true,getProgramParameter:()=>true,getAttribLocation:()=>0,getUniformLocation:()=>({})},{get:(t,k)=>t[k]??(k.toUpperCase()===k?1:()=>({}))});
+class Element{constructor(tag='div'){this.tagName=tag.toUpperCase();this.value='';this.children=[];this.dataset={};this.style={setProperty(){}};this.attrs={};this.classList={add(){},remove(){},toggle(){},contains(){return false;}};this.parentElement={classList:this.classList,insertBefore(){}};this.textContent='';this.clientWidth=1280;this.clientHeight=720;}
+ get childNodes(){return this.children;} append(...a){for(const x of a){x.parent=this;this.children.push(x);}}replaceChildren(...a){this.children=[];this.append(...a);}remove(){if(this.parent)this.parent.children=this.parent.children.filter(e=>e!==this);}setAttribute(k,v){this.attrs[k]=v;}getAttribute(k){return this.attrs[k];}addEventListener(){}getBoundingClientRect(){return {left:0,top:0,width:1280,height:720};}getContext(){return gl;}setPointerCapture(){}contains(e){return this===e||this.children.some(x=>x.contains(e));}closest(){return null;}matches(){return false;}focus(){}blur(){} }
+Element.prototype.toggleAttribute=function(k,force){const present=force??!(k in this.attrs);if(present)this.attrs[k]='';else delete this.attrs[k];return present;};
+for(const m of html.matchAll(/<(\w+)[^>]*\bid="([^"]+)"[^>]*>/g)){const e=new Element(m[1]);e.id=m[2];for(const a of m[0].matchAll(/([\w-]+)="([^"]*)"/g))e.attrs[a[1]]=a[2];e.value=e.attrs.value||'';e.type=e.attrs.type||'';ids.set(e.id,e);}
+const footer=new Element(),document={body:new Element('body'),hidden:false,activeElement:null,getElementById:id=>ids.get(id)||null,createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag),addEventListener(){},querySelector:()=>footer,querySelectorAll:selector=>selector.includes('axisGrid')?ids.get('axisGrid').children:[]};
+const fixture=JSON.parse(fs.readFileSync(new URL('fixtures/twist-attack.json',import.meta.url))).scene;fixture.playback.playing=false;
+const fetched=[],writes=[];let timers=0;
+const ctx=vm.createContext({document,console,structuredClone,performance,URL,TextEncoder,TextDecoder,Float32Array,Float64Array,Int32Array,Uint8Array,ArrayBuffer,Buffer,Math,Date,Map,Set,WeakMap,WeakSet,atob,devicePixelRatio:1,ResizeObserver:class{observe(){}},Option:function(text,value){const e=new Element('option');e.textContent=text;e.value=value;return e;},setTimeout:()=>++timers,clearTimeout(){},requestAnimationFrame:()=>1,cancelAnimationFrame(){},location:{reload(){}},crypto:{randomUUID:()=> 'test'},fetch:async(path,options)=>{fetched.push(path);if(options?.method==='POST'){writes.push(path);return {ok:true,json:async()=>({})};}if(path==='/state')return {ok:true,json:async()=>structuredClone(fixture)};const bytes=fs.readFileSync(new URL(path,import.meta.url));return {ok:true,json:async()=>JSON.parse(bytes),arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};},__createPhysics:async(...a)=>{worlds++;physics=await createPhysics(...a);return physics;}});ctx.window=ctx;ctx.addEventListener=()=>{};
+const scripts=[...html.matchAll(/<script src="([^"]+)"/g)].map(m=>m[1]);
+ctx.setTimeout=(callback,delay=0)=>{if(delay===0)queueMicrotask(callback);return ++timers;};
+fixture.settings.momentum3D=false;
+try{
+ for(const file of scripts){if(file==='shared-foot-ik.js')continue;let code=fs.readFileSync(new URL(file,import.meta.url),'utf8');if(file==='physical-aim.js')code=code.replace('const statistics={evaluations:0}', 'root.__aimInputs ||= []; root.__aimInputs.push({rawSource:originalSource,physicalOptions,track,clip,settings,project,worldPose});const statistics={evaluations:0}');if(file==='app.js')code=code.replace("await import('./physics.mjs')","({createPhysics:__createPhysics})").replace('init().catch(fail);','');vm.runInContext(code,ctx,{filename:file});}
+
+
+ await vm.runInContext('init()',ctx);
+ assert(html.indexOf('id="poseControls"')>html.indexOf('id="attackReturnExponent"'));
+ assert(html.indexOf('id="poseControls"')<html.indexOf('id="jumpFoot"'));
+ assert(html.indexOf('id="poseBlendIn"')<html.indexOf('id="poseBlendDistance"'));assert(!html.includes('id="jumpPoseIn"'));assert(!ids.get('poseBlendIn').disabled);
+ const original=vm.runInContext('JSON.stringify(physics.target(aimTimelinePoseAt(flight.segments[0].attack.hitTime)))',ctx);
+
+ const enable=ids.get('jumpMarkers').children.find(e=>e.className==='jump-enable');assert(enable&&enable.checked,'checkbox below jump marker');vm.runInContext('setPlaying(true)',ctx);enable.checked=false;enable.onchange();await vm.runInContext('preparingRun?.promise',ctx);assert.equal(vm.runInContext('flight.segments.length',ctx),0,'disabled marker omitted by actual app');assert(ctx.BodyflipLab.state.playing,'checkbox edit resumes playback');enable.checked=true;enable.onchange();await vm.runInContext('preparingRun?.promise',ctx);assert(ctx.BodyflipLab.state.playing,'re-enable resumes playback');assert.equal(vm.runInContext('JSON.stringify(physics.target(aimTimelinePoseAt(flight.segments[0].attack.hitTime)))',ctx),original,'re-enable restores original motion');
+ vm.runInContext('setPlaying(true)',ctx);const key=vm.runInContext('preparedMotionKey',ctx);
+ ids.get('poseEdit').value='pose3';ids.get('poseEdit').onchange();
+ assert(ctx.BodyflipLab.state.playing,'pose picker does not pause');assert.equal(vm.runInContext('preparedMotionKey',ctx),key,'pose picker does not rebuild');
+ for(const [id,value] of [['poseBlendIn',.4],['poseBlendDistance',.5],['poseEaseIn',.2],['poseExponent',2.5],['poseEaseOut',.8],['poseResponseSpeed',720],['poseResponseTime',.2],['poseWobbleSpeed',1.5],['poseWobbleAmplitude',25]]){ids.get(id).value=value;ids.get(id).oninput();await ids.get(id).onchange();assert(ctx.BodyflipLab.state.playing,'slider rebuild resumes playback');}
+ const shared=['poseBlendIn','poseBlendDistance','poseEaseIn','poseExponent','poseEaseOut','poseResponseSpeed','poseResponseTime'];
+ for(const pose of ['pose1','pose2','pose3','pose4']){ids.get('poseEdit').value=pose;ids.get('poseEdit').onchange();assert.deepEqual(shared.map(id=>+ids.get(id).value),[.4,.5,.2,2.5,.8,720,.2],'shared sliders do not change with wobble selection');assert.equal(+ids.get('poseWobbleAmplitude').value,pose==='pose3'?25:10);const tuning=JSON.parse(vm.runInContext(`JSON.stringify(C.poseSettings(settings,'${pose}'))`,ctx));assert.deepEqual([tuning.blendIn,tuning.blendDistance,tuning.responseSpeed,tuning.responseTime],[.4,.5,720,.2],'all poses consume shared settings');}
+ ids.get('poseEdit').value='pose3';ids.get('poseEdit').onchange();
+ assert(html.indexOf('id="poseResponseTime"')<html.indexOf('id="poseEdit"'),'selector only groups wobble');
+ assert(vm.runInContext("(()=>{const saved=BodyflipScenes.snapshot({settings,playback:{}}),copy=JSON.parse(JSON.stringify(saved)),restored=BodyflipScenes.switchMode(BodyflipScenes.switchMode(copy,'idle'),'spaceGym');return [C.sanitize(copy.settings),C.sanitize(restored.settings)].every(s=>JSON.stringify(s.poseTuning)===JSON.stringify(settings.poseTuning)&&['poseBlendIn','poseBlendDistance','poseEaseIn','poseExponent','poseEaseOut','poseResponseSpeed','poseResponseTime'].every(k=>s[k]===settings[k]));})()",ctx),'shared settings and wobble save/mode roundtrip');
+ assert(vm.runInContext("(()=>{const old={poseEdit:'pose4',poseTuning:{pose1:{responseSpeed:900},pose4:{blendIn:.24,blendDistance:.7,responseSpeed:45,responseTime:.08,wobbleAmplitude:.3}}},s=C.sanitize(old),again=C.sanitize({...s,poseEdit:'pose1'});return s.poseBlendIn===.24&&s.poseBlendDistance===.7&&s.poseResponseSpeed===45&&s.poseResponseTime===.08&&s.poseTuning.pose4.wobbleAmplitude===.3&&again.poseResponseSpeed===45&&!('responseSpeed' in s.poseTuning.pose4);})()",ctx),'legacy selected values migrate once to shared settings');
+ assert.equal(vm.runInContext('JSON.stringify(physics.target(aimTimelinePoseAt(flight.segments[0].attack.hitTime)))',ctx),original,'inactive pose tuning leaves accepted slash unchanged');
+ vm.runInContext('setPlaying(false)',ctx);ids.get('poseWobbleAmplitude').value=20;ids.get('poseWobbleAmplitude').oninput();await ids.get('poseWobbleAmplitude').onchange();assert(!ctx.BodyflipLab.state.playing,'paused stays paused');
+
+ assert(!ids.get('invertPoseVariants').checked);vm.runInContext('setPlaying(true)',ctx);ids.get('invertPoseVariants').checked=true;await ids.get('invertPoseVariants').onchange();assert(ctx.BodyflipLab.state.playing,'inversion toggle preserves Play');assert(vm.runInContext('settings.invertPoseVariants&&C.sanitize(JSON.parse(JSON.stringify(settings))).invertPoseVariants',ctx),'inversion saves');vm.runInContext('setPlaying(false)',ctx);ids.get('invertPoseVariants').checked=false;await ids.get('invertPoseVariants').onchange();assert(!ctx.BodyflipLab.state.playing,'inversion preserves pause');
+ const rows=[];
+ for(const [poseId,attack,flip,twist] of [['pose1','slashL',120,0],['pose4','slashL',0,200],['pose3','KickL',0,200],['pose2','big-throw',0,200],['pose4','slashL',0,-200]].filter(()=>!process.argv.includes('--controls-only'))){
+  ctx.testPose=poseId;ctx.testAttack=attack;ctx.testFlip=flip;ctx.testTwist=twist;
+  const began=performance.now();
+  await vm.runInContext("settings.jumpEvents[0]={...settings.jumpEvents[0],pose:testPose,poseIn:.2,poseHold:2,poseOut:.3,attack:testAttack,attackDelay:.4,flip:testFlip,twist:testTwist};settings.spinLag=.6;settings.attackReturnDistance=testTwist<0?1:0;preparedMotionKey=null;prepareRun({preserveTime:true})",ctx);
+  const row=vm.runInContext(`(()=>{
+   const segment=flight.segments[0],track=segment.attack,physical=segment.physical.track,time=track.releaseTime??track.hitTime,plan=physical.plan,at=t=>physics.target(aimTimelinePoseAt(t)),pose=at(time),input=__aimInputs.at(-1),raw=input.rawSource(time).pose,al=R.localize(raw.points,raw.q,parents),bl=R.localize(pose.points,pose.q,parents);
+   let directionError;
+   if(track.launchAt){const held=track.launchAt(pose,[0,0,0],[0,0,0]),toward=R.unit(R.sub(settings.target,held.p));directionError=R.length(R.sub(R.unit(held.axis),toward));}
+   else {const center=BodyflipAttackAim.center(pose,plan.rig);directionError=R.length(R.sub(R.unit(R.sub(plan.point(pose),center)),R.unit(R.sub(settings.target,center))));}
+   const armError=Math.max(...names.map((n,i)=>/^(upperarm|lowerarm|hand|clavicle|neck)_|^head$/.test(n)?R.length(R.qlog(R.qm(al.q[i],R.qinv(bl.q[i])))):0));
+   let residual=0,iterations=0,count=0;for(let i=1;i<=180;i++){const f=flight.sample(segment.event.time+i/60);if(f.jumpMotion?.poseResponseError!==undefined){residual=Math.max(residual,Math.abs(f.jumpMotion.poseResponseError));iterations+=f.jumpMotion.poseResponseIterations;count++;}}
+   let boundaryJump=0,boundaries=[];for(const t of [track.start,track.end,track.returnEnd]){const a=at(t-1e-7),b=at(t+1e-7);const errors=a.q.map((q,i)=>R.length(R.qlog(R.qm(q,R.qinv(b.q[i]))))),angle=Math.max(...errors);boundaries.push({t,angle,bone:names[errors.indexOf(angle)]});boundaryJump=Math.max(boundaryJump,angle);}
+   const saved=JSON.stringify(at(time));at(.1);const seekSame=saved===JSON.stringify(at(time));
+   return {pose:testPose,attack:testAttack,directionError,armError,residual,meanIterations:iterations/count,boundaryJump,boundaries,seekSame};
+  })()`,ctx);row.prepareMs=performance.now()-began;rows.push(row);console.log(JSON.stringify(row));
+  assert(row.directionError<1e-5,'pose + attack aims correctly');assert(row.armError<1e-7,'pose response preserves authored attack arms');assert(row.residual<1e-4,'coupled velocity response converges');assert(row.seekSame,'deterministic seek');assert(row.boundaryJump<.01,'continuous attack entry and return with pose underneath');
+ }
+ assert.equal(ctx.BodyflipLab.state.errors.length,0);assert.equal(worlds,1);console.log(JSON.stringify({passed:true,cases:rows.length,liveWrites:0}));
+}finally{physics?.dispose();}

@@ -38,7 +38,7 @@ function create(source,{start=0,commandTime=start,event={},settings,names,parent
  }
  const ratesAt=t=>({flip:value(commands.flip,t),twist:value(commands.twist,t)}),target={flip:commands.flip.to,twist:commands.twist.to};
  const active=!!(inherited?.active||target.flip||target.twist);
- const targetRig=Target.create(names,parents,reference),sourceLegal=active||e.attack!=='none'||e.pose!=='none';
+ const targetRig=Target.create(names,parents,reference),sourceLegal=active||e.attack!=='none'||(e.pose!=='none'&&e.pose!=='keep')||!!initial.airPoseBase;
  if(sourceLegal){const legal=targetRig.track(source,{start});source=legal.sample;}
  const sourceCache=new Map(),originalSource=source;source=time=>{const key=Math.round(time*1e9);if(sourceCache.has(key))return sourceCache.get(key);const f=originalSource(time);sourceCache.set(key,f);if(sourceCache.size>4096)sourceCache.delete(sourceCache.keys().next().value);return f;};
  const seedAxis=inherited?.axis||axis,ramp=e.instantSpin?0:e.turnIn,axisCommand=e.turnAxis===null&&inherited?.axisCommand?inherited.axisCommand:{from:seedAxis,to:axis,begin,duration:ramp};
@@ -76,7 +76,7 @@ function create(source,{start=0,commandTime=start,event={},settings,names,parent
   const plan=time<begin?initialPlan:spinPlan,rates=ratesAt(time),flipAxis=axisAt(time);
   if(!plan)return {omega:[0,0,0],flipRate:0,twistRate:0,rates,flipScale:1,twistScale:1,axis:flipAxis};
   const command=add(vectorAt(plan.flip,time),vectorAt(plan.twist,time)),speed=length(command),direction=speed>1e-12?mul(command,1/speed):flipAxis;
-  const base=source(time).pose,p=response&&lag?response.apply(base,lag):base;
+  const frame=source(time),base=frame.pose,p=response&&lag?response.apply(base,lag,!!frame.poseMotion||frame.pose.authoredPose):base;
   const neutral=M.moment(plan.referenceI,direction),actual=M.moment(M.tensor(p,rig),rotate(qinv(q),direction));
   const scale=1+(settings.spinInertia??1)*(neutral/actual-1),omega=mul(command,scale);
   return {omega,spinAxis:direction,axialMomentum:actual*speed*scale,flipRate:rates.flip*scale,twistRate:rates.twist*scale,rates,flipScale:scale,twistScale:scale,axis:flipAxis};
@@ -117,12 +117,12 @@ function create(source,{start=0,commandTime=start,event={},settings,names,parent
  function sample(time,applyContact=true){
   const frame=source(time);if(time<start||frame.returnedToLocomotion&&frame.capsule?.landingTime>start)return frame;
   const s=active?state(time):{q:identity,rotation:seed,omega:[0,0,0],target,axis,axisIndex,flip:0,twist:0,flipRate:0,twistRate:0,flipScale:1,twistScale:1};
-  const articulated=response?response.apply(frame.pose,s.lag):frame.pose;
+  const articulated=response?response.apply(frame.pose,s.lag,!!frame.poseMotion||frame.pose.authoredPose):frame.pose;
   let pose=active?targetRig.mark(M.rotateAboutCOM(articulated,s.q,rig)):articulated;
   if(contact&&applyContact)pose=contact(pose,time,frame,s);
   return {...frame,pose,spin:{...s,time,active,command:target,commands,axisCommand},jumpMotion:{...frame.jumpMotion,flip:s.flip,twist:s.twist,flipRate:s.flipRate,twistRate:s.twistRate,axis:s.axis}};
  }
- const orientationCache=new Map();function atOrientation(time,rotation){const key=[Math.round(time*1e9),...rotation].join(',');if(orientationCache.has(key))return orientationCache.get(key);const f=source(time),p=response&&time>=start?response.apply(f.pose,state(time).lag):f.pose,out={...f,pose:M.rotateAboutCOM(p,qm(rotation,qinv(seed)),rig)};if(sourceLegal)targetRig.mark(out.pose);orientationCache.set(key,out);if(orientationCache.size>1024)orientationCache.delete(orientationCache.keys().next().value);return out;}
+ const orientationCache=new Map();function atOrientation(time,rotation){const key=[Math.round(time*1e9),...rotation].join(',');if(orientationCache.has(key))return orientationCache.get(key);const f=source(time),p=response&&time>=start?response.apply(f.pose,state(time).lag,!!f.poseMotion||f.pose.authoredPose):f.pose,out={...f,pose:M.rotateAboutCOM(p,qm(rotation,qinv(seed)),rig)};if(sourceLegal)targetRig.mark(out.pose);orientationCache.set(key,out);if(orientationCache.size>1024)orientationCache.delete(orientationCache.keys().next().value);return out;}
  return {sample,atOrientation,state,ratesAt,active,start,begin,target,rig,get ticks(){return states.length-1;}};
 }
 const api={create,rebase,heading};if(node)module.exports=api;else root.BodyflipSpin=api;

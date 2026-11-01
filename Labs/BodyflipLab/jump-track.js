@@ -4,7 +4,7 @@ class JumpTrack {
  constructor(api){
   this.api=api;this.selected=null;this.open=false;this.drag=null;this.pending=null;this.serial=0;
   const el=id=>document.getElementById(id);this.el=el;
-  this.fields={jumpThrowCharge:'throwCharge',jumpThrowSpeed:'throwSpeed',jumpInstantSpin:'instantSpin',jumpPushWith:'pushWith',jumpPercent:'jumpPercent',jumpAttack:'attack',jumpAttackDelay:'attackDelay',jumpAttackIn:'attackIn',jumpFlip:'flip',jumpTwist:'twist',jumpDelay:'turnDelay',jumpDuration:'turnDuration',jumpTurnIn:'turnIn',jumpTurnOut:'turnOut',jumpPoseIn:'poseIn',jumpPoseHold:'poseHold',jumpPoseOut:'poseOut',jumpAxis:'turnAxis',jumpPose:'pose'};
+  this.fields={jumpThrowCharge:'throwCharge',jumpThrowSpeed:'throwSpeed',jumpInstantSpin:'instantSpin',jumpPushWith:'pushWith',jumpPercent:'jumpPercent',jumpAttack:'attack',jumpAttackDelay:'attackDelay',jumpAttackIn:'attackIn',jumpFlip:'flip',jumpTwist:'twist',jumpDelay:'turnDelay',jumpDuration:'turnDuration',jumpTurnIn:'turnIn',jumpTurnOut:'turnOut',jumpPoseOut:'poseOut',jumpAxis:'turnAxis',jumpPose:'pose'};
   for(const [id,key] of Object.entries(this.fields))el(id).onchange=()=>{
    const value=el(id).value;
    if(key==='instantSpin')this.change({instantSpin:el(id).checked});
@@ -53,18 +53,18 @@ class JumpTrack {
   this.max=max;
   el('jumpEditor').hidden=el('jumpHere').hidden=false;
   if(!events.some(e=>e.id===this.selected))this.selected=null;
-  const selected=events.find(e=>e.id===this.selected),index=events.indexOf(selected),result=results.find(e=>e.id===this.selected);
+  const selected=events.find(e=>e.id===this.selected),index=events.indexOf(selected),result=selected?.enabled===false?{status:'Disabled',reason:'Unchecked'}:results.find(e=>e.id===this.selected);
   el('jumpHere').disabled=events.length>=32;el('jumpPopover').hidden=!selected||!this.open;
   for(const id of ['jumpTime','jumpRemove'])el(id).disabled=!selected;
   if(document.activeElement!==el('jumpTime'))el('jumpTime').value=selected?selected.time.toFixed(3):'';
   const motion=BodyflipCore.sanitizeJump(selected);
   for(const [id,key] of Object.entries(this.fields)){
-   el(id).disabled=!selected||(key.startsWith('attack')&&key!=='attack'&&motion.attack==='none')||(key.startsWith('pose')&&key!=='pose'&&motion.pose==='none');
+   el(id).disabled=!selected||(key.startsWith('attack')&&key!=='attack'&&motion.attack==='none')||(key==='poseOut'&&motion.pose!=='none');
    if(key==='instantSpin')el(id).checked=motion.instantSpin;
    else if(document.activeElement!==el(id))el(id).value=motion[key]===null?'':String(motion[key]);
   }
   el('jumpThrowFields').hidden=!BodyflipThrowAttack.accepts(motion.attack);el('jumpThrowCharge').disabled=motion.attack!=='small-throw';
-  el('jumpPoseTiming').setAttribute('aria-disabled',String(motion.pose==='none'));
+  el('jumpPoseTiming').setAttribute('aria-disabled',String(!selected));
   el('jumpOptionsLabel').textContent=selected?'J'+(index+1)+' · Flip / pose':'Flip / pose · Select a jump marker';
   el('jumpLabel').textContent=selected?'J'+(index+1):'—';
   el('jumpStatus').textContent=result?(result.status==='Push'?'Push '+result.pushTime.toFixed(3)+' s · '+result.surfaceId+(result.supportKind==='hand'?' \u00b7 '+(result.supportSide==='Both'?'Both hands':result.supportSide+' hand'):''):result.status+' · '+result.reason):events.length?'Preparing…':'No jumps · run off ledge';
@@ -72,8 +72,11 @@ class JumpTrack {
   const lane=el('jumpMarkers'),existing=new Map([...lane.children].map(x=>[x.dataset.id,x]));
   events.forEach((event,i)=>{
    let b=existing.get(event.id);if(b)existing.delete(event.id);else{b=document.createElement('button');b.className='jump-marker';b.dataset.id=event.id;lane.append(b);b.onclick=()=>{this.commitFocused();this.selected=event.id;this.open=true;this.sync();};}
+   const toggleId='enabled:'+event.id;let toggle=existing.get(toggleId);if(toggle)existing.delete(toggleId);else{toggle=document.createElement('input');toggle.type='checkbox';toggle.className='jump-enable';toggle.dataset.id=toggleId;lane.append(toggle);toggle.onchange=()=>this.commit(this.api.get().events.map(e=>e.id===event.id?{...e,enabled:toggle.checked}:e));}
+   toggle.checked=event.enabled!==false;toggle.style.left=(100*event.time/max)+'%';toggle.title='Enable jump '+(i+1);toggle.setAttribute('aria-label',toggle.title);
    const r=results.find(e=>e.id===event.id);b.textContent=String(i+1);b.style.left=(100*event.time/max)+'%';b.classList.toggle('selected',event.id===this.selected);b.dataset.status=r?.status||'';
    b.title='Jump '+(i+1)+(settings.mode==='spaceGym'?' · start ':' · support ')+event.time.toFixed(3)+' s · '+(r?.status==='Push'?'push '+r.pushTime.toFixed(3)+' s on '+r.surfaceId:r?.reason||event.surface);b.setAttribute('aria-label',b.title);b.setAttribute('aria-pressed',String(event.id===this.selected));
+   if(event.enabled===false){b.dataset.status='Disabled';b.title='Jump '+(i+1)+' · Disabled';b.setAttribute('aria-label',b.title);}
   });
   for(const b of existing.values())b.remove();
   if(selected){const width=el('jumpPopover').getBoundingClientRect().width,left=el('jumpLane').offsetLeft+el('jumpLane').clientWidth*selected.time/max-width/2;el('jumpPopover').style.left=Math.max(0,Math.min(Math.max(0,el('jumpEditor').clientWidth-width),left))+'px';}

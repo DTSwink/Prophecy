@@ -36,6 +36,228 @@ dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
 
+## Authored airborne poses - November 1 (current, local)
+
+Pose in, Blend distance weight, Full response and Spin response are shared
+across all poses. Only wobble remains per pose. Old scenes migrate the currently
+selected pose's displayed four values once, preserving per-pose wobble; persisted
+shared settings take precedence thereafter. The Wobble pose selector is below
+the shared sliders. No pose Out remains on the jump marker.
+
+**Invert pose variants** is appended at the bottom of More options, default
+off. It swaps positive/negative spin-frame selection for all four poses,
+including entry-distance measurement and Keep pose continuation. Neutral pose,
+requested spin commands, blend amount and wobble settings are unchanged.
+Saved option uses the normal rebuild with Play/pause intent preserved.
+
+Jump markers now offer **Keep pose**, separate from No pose. Keep preserves
+the ongoing pose blend, wobble clock and filtered spin response. A changed spin
+command still updates the kept pose from actual angular velocity; its previous
+variation is removed before the new carrier applies it, avoiding double motion.
+If support/push replaces articulation, retain the incoming pose choice and wobble
+clock when re-entering it after release. Keep with no active pose stays unposed.
+
+Each marker has a small enable checkbox directly underneath. Unchecking skips
+its entire push/spin/pose/attack event before planning, while keeping the marker
+and settings editable and serializable. Rechecking restores it. Existing/new
+markers default enabled; existing pose choices/defaults are unchanged.
+`verify-keep-pose.mjs` covers uninterrupted timing, reverse spin response,
+clear/empty Keep, contact re-entry, disabled Space/normal jumps and deterministic
+seeks. Editor82 checks cover toggling/save/restore. Actual-app checks cover
+checkbox rebuilding with Play retained and unchanged motion after re-enable.
+All checks are offline; no live state writes, native work, or push. Refresh.
+
+Lara, Snatch, Ball and Ninja replace the four placeholder slots, preserving
+saved pose1..pose4 IDs. `export_poses.py` reads the three-frame FBXs under
+`C:/Users/singerie/Documents/Cursor/stepper/ue5/slashes/recoveries` into
+`data/poses.json`. The export records source SHA256, validates the 26-bone
+hierarchy, converts source units/axes, and leaves the FBXs unchanged.
+Frame 0 is neutral. Positive/negative spin uses frames 1/2 for Lara and 2/1
+for the other three: chosen from the authored limb trailing direction after
+reviewing all source frames. **Corrected after user review:** poses are local to
+the live pelvis. Source pelvis/root orientation is excluded from the neutral
+pose and both spin variants. All descendant joints follow the pelvis during
+flips; root motion, pelvis orientation and bone lengths remain with flight.
+The earlier import incorrectly applied the source pelvis orientation.
+
+Zero-wobble pelvis correction: the underlying idle loop was still changing the
+pelvis orientation even though the authored pose excluded that joint. In the
+reported Snatch scene, flip/twist were zero, physical balance was inactive,
+and pelvis sway was2.107deg across the saved loop. Pose entry now blends out
+that base-animation sway by retaining the incoming pelvis basis, never the
+FBX pelvis orientation. Downstream commanded spin and momentum correction
+still carry the whole pose. A relative offset retains the underlying animated
+pelvis orientation so No pose can restore it in the current carrier frame.
+`verify-pose-pelvis.mjs` checks all four zero-wobble poses (rotation change
+<2e-16rad), restores animated pelvis on clear, and verifies combined flip/twist
+and deterministic seeks. Existing distance/source/pose+attack checks pass.
+
+
+At the user's requested position, **Pose tuning** is directly below the left
+return sliders and above Foot/Air flip. The response sliders affect all
+poses. Wobble pose selects which pose's wobble to edit; the timeline marker's
+Pose dropdown selects which pose actually plays. Controls:
+
+- Pose in: slider maximum0.6 seconds, directly above Blend distance weight on the left. Always
+  enabled; sets the shared base entry time for every pose (0.2s default).
+  Legacy scenes migrate the displayed selected-pose value. Out remains
+  there for the selected No pose marker.
+- Blend distance weight: 1 by default, range 0..1. Pose In/Out uses the same
+  frozen duration rule as attack returns: base seconds * (1-weight +
+  weight*angle/90deg), minimum1/60s. Measure the largest descendant orientation
+  difference in the current pelvis frame once at entry/clear. Entry includes
+  the spin variant requested by incoming measured velocity and initial wobble;
+  later spin changes do not retime the blend. No pose uses the shared
+  weight. Weight0 restores fixed In/Out time. Independent of attack return tuning.
+- Ease in: 0..1, default0.15. Higher softens the beginning of the transition.
+- Exponent: 1..3, default2. At1 every joint follows the same progress curve.
+  Higher values make farther local target rotations catch up faster relative to
+  nearer ones, then decelerate into the target. Each joint's entry angle is frozen
+  once, including the requested spin variant. This changes each joint's progress,
+  not the existing distance-based duration. The pelvis uses only the shared time
+  envelope, keeping this distance effect below the pelvis.
+- Ease out: 0..1, default0.5. Higher softens the finish. All three sliders sit
+  after Blend distance weight and apply to entry, pose changes and No pose exit.
+  Keep continues the existing curve; wobble and Spin response remain independent.
+  The analytic time curve is u=t^(1+2*in)/(t^(1+2*in)+(1-t)^(1+2*out)); each
+  joint's progress is1-(1-u)^g, where g=(1+angle/90deg)^(exponent-1).
+  Both endpoints are exact; no accumulated tick state or terminal snap is needed.
+  Verified with45/135deg joint entry/exit comparisons, exact arrival/seek checks,
+  actual-app slider persistence/playback, five pose+attack cases and Keep tests.
+- Full response: 360 degrees/s by default; range 1..3600. At that projected
+  speed the requested blend reaches the corresponding authored extreme; half
+  that speed requests a halfway blend, with sign choosing the extra frame.
+  Spin response smooths how quickly the pose follows this request.
+- Spin response: 0.15 seconds by default; range 0.05..1. This is the damping
+  time constant, not a fixed completion duration; higher reacts more gently.
+- Wobble speed: 1x by default, range 0..4.
+- Wobble amplitude: 10% by default, range 0..100%. Zero speed or amplitude
+  disables the additive wobble.
+
+The blend uses measured carrier angular velocity dotted with current world
+pelvis up (+X in this skeleton), in degrees/s. It does not read the Twist slider
+as a substitute for actual motion. A critically damped signed blend avoids
+frame-to-frame shape/velocity feedback. Free flight solves this scalar response
+alongside its existing momentum correction, so changing limb inertia contributes
+to the same balance. A bounded scalar iteration runs only while a pose is active;
+results use the existing cached trajectory. This is standalone lab preparation,
+not a measured game-tick performance claim.
+
+Wobble is the falling loop's motion around each joint's mean orientation, added
+only to clavicles/arms/hands and legs/feet. No pelvis/spine/head wobble, base-fall
+pose replacement, or root drift. Pose In blends into the selected pose, which
+then holds indefinitely until another jump selects a different pose or No pose.
+No pose uses that marker's Out time to restore the ongoing unposed animation
+in the current pelvis frame. The obsolete Hold input is removed; saved poseHold
+values are retained for compatibility but ignored. Authored poses retain their joint ranges through target
+projection and optional limb recoil; the old resting clamps distorted these
+sources. During an attack, pose-speed variation fades off the attack's joints
+and back in during its shared return, including distance-weighted returns.
+The underlying moving base articulation is retained across pose changes so
+No pose can restore it without restoring an old world orientation. Completed
+deformation is consumed before subsequent markers to avoid applying it twice. The pose picker does not rebuild; slider edits preserve Play intent.
+
+Offline verification: `verify-authored-poses.mjs` checks all frames/intermediate
+blends, both spin signs, arbitrary world reorientation, perpendicular velocity,
+wobble phase/amplitude, recoil continuity, persistent holds through 100 seconds,
+pose replacement/clearing while flipping, slider extremes with axis-only/full-3D
+balance, and a normal grounded jump. Root/pelvis position and incoming pelvis orientation are retained
+at entry in upright, sideways and upside-down orientations; thereafter the
+incoming pelvis basis is held while the physical carrier continues. Descendant source rotation
+error <9e-16 rad; clearing restores the projected base within3e-15 rad.
+The jump-editor check covers entry/clear controls; Hold is no longer editable.
+Distance timing checks cover24 entry/exit cases (0/45/90/180deg and weights
+0/.5/1), frozen duration, and invariance under full-body reorientation.
+`verify-pose-app.mjs` checks actual app initialization, control placement,
+independent tuning, save/mode roundtrips, playback intent and five spinning
+pose+attack cases (Lara/Ninja slash, Ball kick, Snatch Big throw, weighted return).
+Pose+attack checks verify final target direction, authored relative arms/head,
+continuous phase boundaries and deterministic seeking.
+Space-fall, actual throw/playback, and 157 duration-return checks also pass.
+Source collider sheet reviewed at `Saved/BodyflipLab/AuthoredPoses/source-frames.png`;
+no live playback/raster acceptance, live saved-state writes, Unreal/native changes,
+or push. Refresh the lab to load.
+
+The older `verify-jump-motion.mjs` stops at "Delay holds the previous rate" with
+both current code and all changed JS files loaded from HEAD. Its later placeholder
+rest-limit expectations are superseded by the authored-source checks above.
+The legacy landing harness also fails its exact displayed-contact/NN-seed
+assertion on both current code and HEAD; no landing/NN changes were made here.
+
+## Space falling animation - November 1 (current)
+
+Space mode previously used the idle loop throughout. **Falling animation in
+Space**, appended at the bottom of More options, enables the existing authored
+`_Loop_Fall` as its moving base pose. It defaults off and is disabled outside
+Space. Blend starts at the first marker, or time zero on an empty timeline, and
+uses the existing Jump blend duration. Attacks layer over it and return to it.
+The fall loop changes only limb/spine rotations: existing bone lengths, root
+and pelvis orientation, zero gravity and push commands remain. Scene settings
+save `spaceFallAnimation`; toggles use the normal rebuild that preserves Play.
+
+`node Labs/BodyflipLab/verify-space-fall.mjs` passes against actual app scripts
+and one Jolt world: the saved axis-controlled twist aims with2.85e-10 direction
+error, return matches the ongoing falling articulation within4e-15rad, entry
+is continuous, seeks are deterministic, root/pelvis and bone lengths are
+preserved, playing/paused intent survives toggles, and turning it off restores
+the original Hit pose exactly. No live saved-state writes or GUI/native work.
+Reload, then enable the checkbox to use it.
+The older `verify-scenes.mjs` stops on its assumption that saved-profile has
+exactly one scene; the current accepted fixture has two. This also fails with
+HEAD core.js. The focused test above checks this option's save/mode roundtrip.
+
+The user accepted twist + attack with **3D momentum off**. The tilted return
+report was caused by that option's additional full-body reaction, which no-spin
+attacks bypass. With it on, the saved case reaches51.89deg pelvis tilt near
+2.083s; with it off1.44deg, matching the idle motion's1.42deg. The joint return
+itself completed in both cases. `audit-twist-return.mjs` records seven isolated
+comparisons in `Saved/BodyflipLab/TwistAttackAudit/return-audit.json`. No forced
+uprighting, return change, or physics toggle change was added by the agent.
+
+## Twist and melee aim - November 1 (local)
+
+Current saved SlashL at200deg/s twist now aims at the target direction at Hit.
+The previous six-pass prediction solved a pose in a different rotation order
+from playback; the final momentum correction also erased its whole-body yaw.
+`physical-aim.js` now predicts the neutral Hit frame, seeds the existing air
+attack's heading/elevation there, and fits only those two angles against the
+complete final trajectory. The same trajectory is retained for playback.
+Direction is measured from physical COM to the authored contact point; radial
+reach is outside this task, per the user. No weapon, arm or target correction.
+
+Intentional air-attack heading is an external angular command, just like the
+existing flip/twist input. `physical-flight.js` includes its angular velocity
+in the momentum budget, while still balancing internal articulation. This is
+NOT conservation of unchanged total world angular momentum during that command.
+It preserves the commanded turn rather than letting compensation cancel it.
+The scalar heading remains unwrapped during fitting/entry/return, preventing a
+branch switch at180deg. Existing pelvis-to-spine transfer, source arms/head,
+duration-based return, no-spin aim and throw aiming retain their earlier paths.
+
+`node Labs/BodyflipLab/verify-twist-attack.mjs` runs the actual app scripts and
+one Jolt world with isolated state. Its portable fixture captures the user's
+saved case and the accepted zero-spin pose.12 cases cover twist+/-200,+/-360,
+flip+/-120, flip90/twist180, slashR, jabR, pike and KickL at twist200, and zero
+spin (rates in degrees/second). Maximum final direction error is5.86e-7 in unit
+vector length (0.000034deg); authored relative arms/head and return articulation
+errors stay below2e-15rad. Entry aim is zero, phase boundaries are continuous,
+seeking does not refit, and zero-spin bone positions/orientations match the
+accepted checkpoint. Existing full-pose return projection step (~0.00306rad)
+is unchanged; this check distinguishes it from the added aim correction.
+
+Additional validation: four physical aim cases and translation invariance,
+396 spear target cases/four physical throws,157 duration-return checks, and
+actual-app throw/retarget/playback checks pass. `audit-twist-attack.mjs final
+--mesh` exports the actual collider meshes for seven saved-case phases;
+`Saved/BodyflipLab/TwistAttackAudit/pose-review.png` was reviewed in oblique and
+top views. It is an offline contact sheet, not a live-playback acceptance.
+
+The fit takes7-16 trajectory evaluations in these cases and is cached for
+playback. Measured preparation varies with machine load (saved case about
+0.7-0.9s solve in recent runs); no measured speedup or game-tick budget is
+claimed. Native integration/performance remains separate. Local/uncommitted;
+reload the lab to review. No live saved-state writes or Unreal/native changes.
+
 ## Spear target point - November 1 (accepted)
 
 User confirmed this works and requested a push. The prior accepted setup is

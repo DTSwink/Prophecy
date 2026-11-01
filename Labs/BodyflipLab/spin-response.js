@@ -46,13 +46,13 @@ function create(names,parents,reference,strength){
   }
   return {x,v};
  }
- function apply(pose,state){
+ function apply(pose,state,authored=pose.authoredPose){
   if(!state||state.x.every(v=>Math.abs(v)<1e-12))return pose;
   const local=R.localize(pose.points,pose.q,parents),com=M.center(pose,rig);
   for(let k=0;k<chains.length;k++){
    const {i,h,joint}=chains[k],offset=state.x.slice(k*4,k*4+3),angle=length(offset),limit=.3;
-   if(angle>1e-12)local.q[i]=joints.clampLocal(qm(qexp(mul(offset,limit*Math.tanh(angle/limit)/angle)),local.q[i]),joint);
-   const delta=qlog(qm(local.q[h.i],qinv(h.bind))),bend=dot(delta,h.axisLocal),raw=state.x[k*4+3],room=Math.max(0,raw<0?bend-h.min:h.max-bend),cap=Math.min(.35,room);
+   if(angle>1e-12){const turned=qm(qexp(mul(offset,limit*Math.tanh(angle/limit)/angle)),local.q[i]);local.q[i]=authored?turned:joints.clampLocal(turned,joint);}
+   const delta=qlog(qm(local.q[h.i],qinv(h.bind))),bend=dot(delta,h.axisLocal),raw=state.x[k*4+3],room=Math.max(0,raw<0?bend-h.min:h.max-bend),cap=authored ? .35 : Math.min(.35,room);
    const flex=cap>1e-8?cap*Math.tanh(raw/cap):0;
    local.q[h.i]=qm(qexp(mul(h.axisLocal,flex)),local.q[h.i]);
   }

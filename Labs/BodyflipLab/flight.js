@@ -369,7 +369,7 @@ function create(...args){const job=createSteps(...args);for(;;){const next=job.n
 function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,catalog=null,options={}){
  H.registerRig(reference);
  C.registerRig(run.names,parents,reference);H.registerRig(reference);
- const settings=C.sanitize(input),schedule=eventsFor(settings);let horizon=options.horizon??Math.max(12,settings.trimOut,...schedule.map(e=>e.time+5));
+ const settings=C.sanitize(input),schedule=eventsFor(settings).filter(e=>e.enabled!==false);let horizon=options.horizon??Math.max(12,settings.trimOut,...schedule.map(e=>e.time+5));
  const startTurn=R.qexp([0,settings.startYaw*Math.PI/180,0]);
  const turnPose=p=>settings.startYaw?finish(p.points.map(v=>add(p.points[0],rotate(startTurn,sub(v,p.points[0])))),p.q.map(q=>qm(startTurn,q))):p;
  // Rotate motion sources, not the environment or rig's rest frames.
@@ -469,7 +469,7 @@ function sequence(run,jumps,input,parents,reference=run.poses[0],resume=null,cat
   const segment=buildSegment(run,jumps,settings,parents,reference,{time:event.time,anticipate:true,notBefore:Math.max(last?Math.min(last.spinReleaseTime??last.airStart,last.abortTime):0,frame.capsule?.landingTime??0),grounded:frame.capsule?.grounded,hand:C.sanitizeJump(event).pushWith,handChoice:ranked.find(r=>r.surface===surface)?.choices,jumpScale:C.sanitizeJump(event).jumpPercent/100,surface,surfaces,poseAt:t=>unspun(t).pose,continueAt:unspun,contactSpinAt:!frame.capsule?.grounded&&C.sanitizeJump(event).pushWith==='foot'&&last?t=>qm(last.spin.state(t).rotation,qinv(spinOrigin)):null,articulationAt:last&&!last.carrier.state(event.time).landed?t=>O.rebase((last.rawSample||last.sample)(t),spinOrigin,massRig).pose:null,rootAt:t=>{const f=t<=event.time?prior(t):null;return f?f.root:(last?last.carrier.state(t).root:baselineCarrier.state(t).root);},velocityAt,speed:Math.hypot(velocity[0],velocity[2])});
   finishSetup=Work.hold();
   segment.surfaceChoices=ranked.map(r=>({surface:r.surface.id,foot:r.foot,eligible:r.available,contactGap:r.contactGap,pelvisGap:r.gap}));
-  segment.event=event;
+  segment.event=event;segment.inheritedPose=frame;
   // Compose all articulation first; one COM correction then drives the capsule.
   segment.sample=segment.authoredSample;
   segment.motion=M.create(event,segment,jumps,run.names,parents,settings);

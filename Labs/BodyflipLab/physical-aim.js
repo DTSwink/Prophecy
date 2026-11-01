@@ -14,8 +14,13 @@ function create(rawSource,physicalOptions,{track,clip,settings,project=null,worl
  // Fit the same two spine angles against the actual trajectory instead.
  const pointThrow=track.isThrow&&track.kind==='spear'&&!track.throwDirection,candidates=new Map();let pointContext=null;
  function candidate(delta,context){
-  const key=JSON.stringify(delta.throwAngles||delta.throwTurn);if(candidates.has(key))return candidates.get(key);
-  const path=P.create(t=>{const f=rawSource(t);return {...f,pose:finish(context.applyDeltaAt(f.pose,t,delta))};},physicalOptions);
+  const key=JSON.stringify(delta.throwAngles||delta.throwTurn||delta);if(candidates.has(key))return candidates.get(key);
+  const pelvis=names.indexOf('pelvis'),basis=rawSource(hitTime).pose.q[pelvis],localYaw=t=>R.qm(R.qm(R.qinv(basis),context.deltaAt(delta,t).yaw),basis);
+  // Air attack yaw is an intentional carrier turn, just like commanded spin.
+  // Its angular velocity must enter the command budget; treating it as an
+  // internal joint motion makes balance cancel the requested heading.
+  const angularCommand=track.isThrow?null:(t,pose,dt)=>R.rotate(pose.q[pelvis],R.mul(R.qlog(R.qm(localYaw(t),R.qinv(localYaw(t-dt)))),1/dt));
+  const path=P.create(t=>{const f=rawSource(t);return {...f,pose:finish(context.applyDeltaAt(f.pose,t,delta))};},{...physicalOptions,angularCommand});
   candidates.set(key,path);if(candidates.size>4)candidates.delete(candidates.keys().next().value);statistics.evaluations++;return path;
  }
  function preparePointThrow(){
@@ -37,10 +42,25 @@ function create(rawSource,physicalOptions,{track,clip,settings,project=null,worl
   }
   const solved=plan.solution(target);physical=candidate(solved.state,pointContext);statistics.error=solved.error;candidates.clear();
  }
+ // Reuse air-attack heading plus elevation in the predicted body frame.
+ // The final compensated trajectory is the evaluator, so fitting and playback
+ // cannot disagree about which direction the attack actually takes.
+ function prepareMelee(){
+  if(!plan){
+   neutralHit ||= neutral.sample(hitTime);
+   const hit=finish(worldPose(neutralHit.pose,hitTime)),probe=A.create({clip,track,names,parents,reference,sampleHit:()=>hit,project}),basis=R.qm(hit.q[names.indexOf('pelvis')],R.qinv(reference.q[names.indexOf('pelvis')])),ray=R.unit(R.rotate(R.qinv(basis),R.sub(probe.point(hit),M.center(hit,rig)))),goal=R.unit(R.rotate(R.qinv(basis),R.sub(target,M.center(hit,rig)))),difference=Math.atan2(goal[0],goal[2])-Math.atan2(ray[0],ray[2]),yaw=Math.atan2(Math.sin(difference),Math.cos(difference));
+
+   plan=A.create({clip,track,names,parents,reference,sampleHit:t=>finish(worldPose(rawSource(t).pose,t)),project,evaluationAmount:amount,evaluationUndoRotation:undo,
+    evaluateMotion:(delta,context)=>{pointContext=context;const path=candidate(delta,context);return {pose:finish(worldPose(path.sample(hitTime).pose,hitTime))};},
+    motionSolve:{seed:[yaw,Math.asin(ray[1])-Math.asin(goal[1])],headingElevation:true,indices:[0,1],iterations:12,maxStep:1.2,tolerance:1e-6}});
+  }
+  const solved=plan.solution(target);physical=candidate(solved.state,pointContext);statistics.error=solved.error;candidates.clear();
+ }
  function prepare(){
   if(physical)return;
   if(!aim||amount<=0){physical=neutral;return;}
   if(pointThrow){preparePointThrow();return;}
+  if(!track.isThrow){prepareMelee();return;}
   if(track.isThrow&&!throwAimOrigin){const time=Number.isFinite(track.aimReferenceTime)?track.aimReferenceTime:track.start;throwAimOrigin=worldPose(rawSource(time).pose,time).points[names.indexOf('pelvis')].slice();}
   neutralHit ||= neutral.sample(hitTime);
   prediction ||= neutralHit.physical.rotation;

@@ -1,8 +1,139 @@
-# Prophecy — current handoff
+# Prophecy â€” current handoff
 
-Updated **October 19, 2026**, after static-fuse verification. This file and the current sections of linked topics take precedence over dated archives.
+Handoff updated **November 1, 2026**. This file and the current sections of linked topics take precedence over dated archives. Each topic has its own verification/build state.
 
 ## Resume here
+
+**Bodyflip accepted checkpoint, November 1:** User requested push before the sweep-kick audit. Includes current authored poses/shared transition controls, Keep/enable/variant options, twist aiming, Space fall option and saved-profile snapshot. Focused pose/app/attack checks passed. Unrelated native/assets/tasks excluded.
+
+**Bodyflip authored poses, November 1 (current, local):**
+Added shared Ease in / Exponent / Ease out sliders directly below Blend distance
+weight. Defaults0.15 /2 /0.5 give a quicker start and softer finish. Independent
+start/end easing shapes time; Exponent1 keeps common joint progress and higher
+values accelerate joints with farther target rotations relative to nearer ones.
+Distances are measured per local joint once at entry (including requested spin
+variant); the analytic curve slows into the target and finishes at the existing
+distance-weighted duration. Applies to entering/changing/clearing poses, including
+the variant deformation; Keep retains the ongoing curve. Pelvis uses only the
+shared time envelope. No attack-return or spin-response damping changes.
+Entry/clear checks cover45/135deg joints, exponents1/2/3, monotonic motion,
+exact arrival, smooth finish, seeking; authored-pose/timing/spin checks pass.
+Actual-app slider/save/playback and five pose+attack cases pass, as do Keep
+continuity checks. No live state writes, native work or push; refresh the lab.
+
+Pose in, Blend distance weight, Full response and Spin response are now shared
+across all poses. Only Wobble speed/amplitude remain per pose; the Wobble pose
+selector sits below the shared sliders. Legacy scenes migrate the previously
+selected pose's displayed values to shared settings once; subsequent selector
+changes only edit wobble. Entry uses shared Pose in; No pose Out stays per marker.
+Source/timing/spin and actual-app controls/save/mode/playback checks pass.
+No live state writes or push; refresh the lab.
+
+Added Invert pose variants at the bottom of More options, default off. Swaps
+the positive/negative extra frames for every pose (including timing measurement
+and Keep), without reversing spin commands. Serialized global setting; rebuild
+retains Play/pause intent. Neutral frame and wobble tuning retained.
+
+Added Keep pose to jump markers. It continues the active pose/wobble/filter
+without restarting and follows changed spin commands; no active pose stays
+unposed. Contact re-entry retains incoming pose choice and wobble clock.
+Small checked-by-default enable checkbox sits below each jump marker. Off skips
+all of that jump's push/spin/pose/attack planning but preserves its settings;
+re-enable restores them. Editor82 and Keep/disabled-sequence checks pass;
+actual-app checkbox/playback and pose+attack regression checks pass. No live
+state writes, native work or push. Refresh lab to load both controls.
+
+Zero-wobble pelvis drift corrected after user report: Snatch had zero spin,
+no active physical balance, but inherited2.107deg of idle pelvis sway. A held
+pose now retains its incoming pelvis basis, blending out idle sway during entry.
+Source FBX pelvis remains excluded; commanded flip/twist and physical carrier
+rotation remain. No pose restores the underlying animated pelvis via a relative
+offset, including after body turns. Four-pose regression: held rotation drift
+<2e-16rad, clear/flip/twist/seek checks pass. User saved settings unchanged.
+
+Replaced placeholders with user recovery FBXs: Lara, Snatch, Ball and Ninja,
+three frames each, keeping pose1..pose4 saved IDs. Frame0 neutral; positive /
+negative spin uses Lara1/2 and others2/1, chosen by authored limb trailing.
+Source SHA256 recorded; FBXs unchanged. **Corrected after user review:** all
+three frames now affect only joints below the current pelvis. Source pelvis/root
+orientation is excluded; the pose follows the pelvis through flips. Earlier
+implementation incorrectly copied the authored pelvis rotation.
+
+Pose entry/clear now uses the attack-return angular-distance duration rule,
+with shared **Blend distance weight** on the left (default1, range0..1).
+Duration = In/Out * (1-weight + weight*angle/90deg), minimum1/60s, measured
+once at the start from the largest below-pelvis orientation difference. Entry
+includes the requested spin variant at incoming measured velocity and initial
+wobble. No pose uses the shared weight; attack tuning is independent.
+24 distance/entry/exit checks and whole-body-frame invariance checks pass.
+Full response tooltip now explains the speed threshold and halfway example.
+Pose in is now an always-enabled left slider directly above Blend distance
+weight, editing the shared base entry time across all poses and markers. Removed the old In
+field from More options; No pose Out stays there. Playback intent retained.
+Pose in slider maximum is now0.6s for finer dragging; existing saved tuning
+and angular-distance scaling are retained.
+
+Shared Full response speed and Spin response damping time, plus per-pose
+Wobble speed and Wobble amplitude sit directly below left return sliders, above Foot/Air flip,
+per the user's explicit placement. Defaults360deg/s,0.15s,1x,10%. Wobble adds
+mean-relative falling-loop motion only to limbs. Spin frames use measured world
+angular velocity projected on current pelvis up, with a damped response coupled
+to existing momentum balance. Preserve authored joint ranges through recoil;
+mask pose response off attack joints and restore it during the shared return.
+Poses now hold indefinitely until a later jump selects another pose or No pose.
+No pose blends to the ongoing unposed animation using that marker's Out time,
+keeping the current pelvis frame. Removed obsolete Hold input; saved poseHold
+is ignored. In applies to pose entry; Out is enabled for No pose. Wobble tuning
+remains independent per pose; slider rebuild retains playback intent.
+
+Source/math/sign/wobble/slider-extreme/grounded-jump checks pass. Pose layer
+retains the incoming pelvis frame upright, sideways and upside-down, holds through
+100s, and changing/clearing markers remain continuous while flipping. Clearing
+restores the moving projected base within3e-15rad. Jump editor76 checks pass.
+Five actual-app pose+attack cases cover slash, kick, Big throw and weighted
+return, checking target direction, authored arms/head and phase continuity. Existing
+Space-fall, throw/playback and157 duration-return checks pass. Source collider
+sheet reviewed offline; live playback not reviewed. Legacy jump-motion test
+fails its delay assertion on both HEAD and current code, before pose checks.
+Legacy landing harness also fails exact contact/NN-seed matching on current
+and HEAD; landing/NN code was not changed in this correction.
+No live-state/Unreal/native edits or push. Refresh lab. Details and options:
+[Labs/BodyflipLab/README.md](Labs/BodyflipLab/README.md#authored-airborne-poses---november-1-current-local).
+
+**Bodyflip Space falling animation, November 1 (current, local):**
+User accepted twist + attack after switching OFF 3D momentum; that resolves the
+reported residual tilt for the selected axis-controlled behavior. No physics
+code or saved setting was changed during the tilt audit. Its seven offline
+comparisons distinguish full-3D residual body rotation from the ordinary attack
+return; the earlier joint-only return check did not establish global uprightness.
+
+Added **Falling animation in Space** at the bottom of More options, default off
+and disabled in other modes. Space previously used only the idle loop as its
+base. On blends into the existing Loop_Fall at the first marker (time zero if
+there are none), using Jump blend. Attacks return to that ongoing animation.
+Only local limb/spine rotations change; root/pelvis base, gravity and push rules
+remain. Actual-app checkbox/rebuild/playback test passes: final aimed direction
+error2.85e-10, return articulation error<4e-15rad, no added root drift, off
+restores the original pose exactly. No live state writes, native/Unreal work or
+push. Reload the lab, then enable the checkbox. Details: Bodyflip README.
+
+**Bodyflip twist + melee aim, November 1 (local; accepted with 3D momentum off):**
+The saved SlashL /200deg/s twist now aligns the final contact direction at Hit:
+147deg error before,0.000034deg after. User scope is direction only. Predict
+body orientation at Hit, reuse air-attack heading/elevation, then fit those two
+angles against the actual compensated trajectory. No separate arm correction.
+The old predictor fitted a different rotation order and balance cancelled its
+whole-body heading. Deliberate aim heading is now an explicit angular command,
+like existing flip/twist; internal articulation still receives compensation.
+This changes total world angular momentum during the aiming turn; it is NOT
+passive torque-free conservation. Heading stays continuous across180deg.
+12 actual-app cases pass (both twist signs, flips, combined motion, slashL/R,
+jab, pike, kick, zero-spin); arms/head and shared return retained. Accepted
+zero-spin pose matches exactly; throw/playback and focused return checks pass.
+Offline collider contact sheet reviewed; user subsequently accepted axis-only playback.
+Preparation is cached,7-16 trajectory evaluations; no native runtime performance
+claim. Live settings, Unreal and native files unchanged. No commit/push yet.
+See [current implementation and verification](Labs/BodyflipLab/README.md#twist-and-melee-aim---november-1-local).
 
 **Bodyflip target-point spear aim, November 1 (accepted for push):**
 User confirmed the targeting works and requested a push.

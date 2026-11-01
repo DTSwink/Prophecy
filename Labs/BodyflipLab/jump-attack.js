@@ -1,6 +1,8 @@
 /* Authored pelvis and upper-body attack. Final Harness pre-Armed entry, then authored time. */
 (function(root){
 'use strict';
+const PoseMotion=typeof module!=='undefined'?require('./jump-motion.js'):root.BodyflipJumpMotion;
+
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,C=node?require('./core.js'):root.BodyflipCore,H=node?require('./attack-inertia.js'):root.BodyflipAttackInertia,K=node?require('./kick-attack.js'):root.BodyflipKickAttack,T=node?require('./throw-attack.js'):root.BodyflipThrowAttack;
 const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
 const Joint=node?require('./joint-rig.js'):root.BodyflipJointRig,Entry=node?require('./attack-entry.js'):root.BodyflipAttackEntry;
@@ -70,7 +72,7 @@ function distanceReturn(track,base,clip,names,parents,settings,reference,poseOnl
   const active=time<returnEnd,pose=active?{...(returning ||= C.transition(t=>original(end+t),t=>base(end+t),duration,parents))(time-end),attackFree:true}:base(time);
   if(poseOnly)return pose;
   const frame=baseFrame?baseFrame(time,...args):track.sample(time,...args);if(!active)return {...frame,pose};
-  return {...frame,pose,attack:{...track.sample(end).attack,phase:'RETURN'}};
+  return {...PoseMotion.restrict(frame,track.indices,returnPolicy.factor(time-end)),pose,attack:{...track.sample(end).attack,phase:'RETURN'}};
  }
  return {...track,sample,returnPolicy,returnEnd,returnDistance:angle,returnBaseDuration:oldDuration};
 }
@@ -85,7 +87,7 @@ function create(event,segment,catalog,names,parents,settings,reference=null,{who
   const duration=kick.plan.track.armedTime,sourceFrame=kick.plan.track.sourceFrame;
   return {...kick,match:0,score:0,duration,sourceFrame,indices:names.map((_,i)=>i).slice(1),sample(time,...args){
    const frame=base(time,...args);if(time<start||time>=kick.returnEnd)return frame;
-   return {...frame,pose:kick.sample(time),attack:{name:e.attack,phase:time>=kick.end?'RETURN':time<start+duration?'ARM':'ATTACK',sourceFrame:Math.min(clip.poses.length-1,sourceFrame(time-start)),matchedFrame:0,armedTime:start+duration,start,end:kick.end}};
+   return {...PoseMotion.restrict(frame,names.map((_,i)=>i),time<start+duration?smooth((time-start)/duration):time<kick.end?1:kick.returnPolicy.factor(time-kick.end)),pose:kick.sample(time),attack:{name:e.attack,phase:time>=kick.end?'RETURN':time<start+duration?'ARM':'ATTACK',sourceFrame:Math.min(clip.poses.length-1,sourceFrame(time-start)),matchedFrame:0,armedTime:start+duration,start,end:kick.end}};
   }};
  }
 
@@ -127,7 +129,7 @@ function create(event,segment,catalog,names,parents,settings,reference=null,{who
   if(time>=returnEnd)return frame;
   const pose=time<=hitTime||!(amount>0)?displayed(time,frame):legal(recovery.sample(time));
   const age=time-start;
-  return {...frame,pose:{...pose,attackFree:true},attack:{name:e.attack,phase:time>=end?'RETURN':age<duration?'ARM':'ATTACK',sourceFrame:Math.min(clip.poses.length-1,sourceFrame(age)),matchedFrame:match,armedTime:start+duration,start,end}};
+  return {...PoseMotion.restrict(frame,indices,age<duration?smooth(age/duration):time<end?1:returnPolicy.factor(time-end)),pose:{...pose,attackFree:true},attack:{name:e.attack,phase:time>=end?'RETURN':age<duration?'ARM':'ATTACK',sourceFrame:Math.min(clip.poses.length-1,sourceFrame(age)),matchedFrame:match,armedTime:start+duration,start,end}};
  }
  const track={returnPolicy,sample,start,end,hitTime,returnEnd,recovery,match,score,duration,sourceFrame,indices,inertia,arming};
  return clipOverride?track:distanceReturn(track,t=>base(t).pose,clip,names,parents,settings,reference||clip.poses[0],false,base);

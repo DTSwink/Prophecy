@@ -6,8 +6,24 @@ const Work=typeof module!=='undefined'?require('./preparation.js'):root.Bodyflip
 const Physical=typeof module!=='undefined'?require('./physical-flight.js'):root.BodyflipPhysicalFlight,PhysicalAim=typeof module!=='undefined'?require('./physical-aim.js'):root.BodyflipPhysicalAim;
 function action(event,sample){return {event,sample,supportStart:event.time,jumpStart:event.time,airStart:event.time,abortTime:Infinity,release:0,matchDistance:null,supportScores:[],support:{frames:[],terminal:{}},animationLeg:()=>null,coneDebug:()=>null,idealDebug:()=>null,pushDebug:()=>null};}
 function sequence(run,jumps,settings,parents,events,catalog,reference=run.poses[0],{defer=false,horizon=Infinity}={}){
+ events=events.filter(e=>e.enabled!==false);
  const segments=[],results=[],rig=D.model(run.names,parents,reference);
- let previous=t=>{const pose=run.sample?run.sample(t):run.poses[0];const delta=R.sub([0,1.2,0],pose.points[0]);return {pose:{...pose,points:pose.points.map(p=>R.add(p,delta))},root:[0,1.2,0],velocity:[0,0,0],phase:'SPACE',vy:0,speed:0,airTime:0};};
+ const idleAt=t=>run.sample?run.sample(t):run.poses[0],fallStart=events[0]?.time??0;
+ let baseAt=idleAt;
+ if(settings.spaceFallAnimation){
+  const fall=jumps.find(c=>c.name.endsWith('_Loop_Fall')),pelvis=run.names.indexOf('pelvis');
+  if(!fall)throw Error('Missing Space falling animation');
+  const falling=age=>{
+   const time=((age%fall.duration)+fall.duration)%fall.duration,frame=time*fall.fps,i=Math.min(fall.poses.length-2,Math.floor(frame));
+   const idle=idleAt(fallStart+age),pose=C.blend(fall.poses[i],fall.poses[i+1],frame-i,parents),local=R.localize(idle.points,idle.q,parents),target=R.localize(pose.points,pose.q,parents);
+   // Falling supplies articulation, never exported root motion or carrier tilt.
+   for(let j=0;j<parents.length;j++)if(j!==0&&j!==pelvis)local.q[j]=target.q[j];
+   return R.fk(local,parents);
+  };
+  const limbs=parents.map((_,i)=>i).filter(i=>i!==0&&i!==pelvis),blend=C.transition(age=>idleAt(fallStart+age),falling,settings.jumpBlend,parents,limbs,true);
+  baseAt=t=>t<fallStart?idleAt(t):blend(t-fallStart);
+ }
+ let previous=t=>{const pose=baseAt(t);const delta=R.sub([0,1.2,0],pose.points[0]);return {pose:{...pose,points:pose.points.map(p=>R.add(p,delta))},root:[0,1.2,0],velocity:[0,0,0],phase:settings.spaceFallAnimation&&t>=fallStart?'FALL LOOP':'SPACE',vy:0,speed:0,airTime:0};};
  if(settings.airFlip){const spin=O.create(previous,{start:0,event:{spinVersion:2},settings,names:run.names,parents,reference});previous=spin.sample;previous.atOrientation=spin.atOrientation;}
  const clip=jumps.find(c=>c.name.includes('_Start_Stand_')),height=Math.max(...clip.poses.map(p=>p.points[0][1]))-Math.min(...clip.poses.map(p=>p.points[0][1])),normalSpeed=Math.sqrt(2*9.81*height);
  let eventIndex=0,preparedThrough=0;
