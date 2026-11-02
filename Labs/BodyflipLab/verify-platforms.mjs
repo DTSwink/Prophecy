@@ -132,12 +132,12 @@ check('Viewport commits numeric editor before taking focus',focusCount===3&&blur
 focusCallbacks.pointerdown({target:focusDocument.activeElement});
 check('Click within numeric editor retains editing focus',focusCount===3&&blurCount===1);
 const callbacks={},canvas={addEventListener:(name,fn)=>callbacks[name]=fn,setPointerCapture(){}},state={zoom:.95,yaw:0,pitch:0,panX:0,panY:0};
-const sandbox=vm.createContext({cameraState:state,settings:{mode:'space',target:[0,0,0]},platformEditor:null,clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),drawAll(){},save(){},resetCamera(){}});
+const sandbox=vm.createContext({BodyflipCamera:require('./camera.js'),cameraState:state,settings:{mode:'space',target:[0,0,0]},platformEditor:null,clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),drawAll(){},save(){},resetCamera(){}});
 vm.runInContext('class Camera {'+part+'}\nglobalThis.Camera=Camera;',sandbox);const binding=new sandbox.Camera();binding.canvas=canvas;binding.bindCamera();
 for(let i=0;i<100;i++)callbacks.wheel({deltaY:100,preventDefault(){}});
 check('Wheel zooms far beyond old limit',state.zoom<.0001&&state.zoom>0);
 callbacks.pointerdown({button:0,clientX:0,clientY:0,pointerId:1,preventDefault(){}});callbacks.pointermove({clientX:10,clientY:10});
-check('Corrected orbit axes stay intact',state.yaw===-.08&&state.pitch===-.06);
+check('Corrected orbit axes stay intact',state.yaw===-.08&&Math.abs(Math.atan(.27-state.pitch*.55)-Math.atan(.27)-.033)<1e-12);
 // Clicking selects; dragging over a platform must reach the camera first.
 callbacks.pointerup({type:'pointerup',clientX:10,clientY:10});
 sandbox.settings.mode='jump';let selectedClicks=0,previews=0,cancelledPreviews=0;
@@ -149,7 +149,7 @@ const up=(x,y)=>callbacks.pointerup({type:'pointerup',clientX:x,clientY:y});
 let yaw=state.yaw,pitch=state.pitch;down();
 check('Press previews gizmo immediately without committing a click',previews===1&&selectedClicks===0&&binding.drag!==null);
 move(120,110);up(120,110);
-check('Left drag over platform cancels preview and orbits',selectedClicks===0&&cancelledPreviews===1&&Math.abs(state.yaw-(yaw-.16))<1e-10&&Math.abs(state.pitch-(pitch-.06))<1e-10);
+check('Left drag over platform cancels preview and orbits',selectedClicks===0&&cancelledPreviews===1&&Math.abs(state.yaw-(yaw-.16))<1e-10&&Math.abs(Math.atan(.27-state.pitch*.55)-Math.atan(.27-pitch*.55)-.033)<1e-12);
 check('Actual camera drag requests deselection',clearedSelections===1);
 yaw=state.yaw;pitch=state.pitch;down();move(102,101);up(102,101);
 check('Click tolerates original hand jitter without orbit',selectedClicks===1&&state.yaw===yaw&&state.pitch===pitch);

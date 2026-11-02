@@ -7,25 +7,25 @@ const F=BodyflipFlight;let flight=null,jumps=[],run=null,flightFrame=null,runRev
 const pivot=[0,1.5,0],cameraDefault={yaw:-.55,pitch:-.06,zoom:.95,panX:0,panY:0,free:false,offset:null,freeView:null,pelvisView:null},cameraState={...cameraDefault},cache=new Map(),errors=[];
 let idleLoop=null,manualResponse=null;
 let playWanted=false;
-let playRevision=0,previewRAF=null,previewTime=0,platformEditor=null;
+let playRevision=0,previewRAF=null,previewTime=0,previewAdvance=false,platformEditor=null;
 let extending=null,preparingRun=null;
 let sceneLibrary=null,sceneChanging=false,sceneReady=false,stateWrites=Promise.resolve();
 let modePlaybacks={},modeRestore=null;
 function trimActive(){return !!flight;}
 function timelineMax(){return Math.max(12,settings.trimOut,Math.ceil(simTime),...F.eventsFor(settings).map(e=>Math.ceil(e.time+1)));}
 function syncTrim(){const max=timelineMax();if(jumpTrack&&jumpTrack.max!==max)jumpTrack.sync();$('trimControls').hidden=$('trimToggle').hidden=false;$('trimLoop').checked=settings.trimLoop;for(const key of ['trimIn','trimOut']){const el=$(key),t=settings[key];el.style.left=(100*t/max)+'%';el.setAttribute('aria-valuenow',t);el.setAttribute('aria-valuemax',max);el.setAttribute('aria-valuetext',t.toFixed(3)+' seconds');el.dataset.time=(key==='trimIn'?'In ':'Out ')+t.toFixed(3)+' s';} $('trimSelection').style.left=(100*settings.trimIn/max)+'%';$('trimSelection').style.width=(100*(settings.trimOut-settings.trimIn)/max)+'%';}
-function previewSeek(time){previewTime=time;++seekRevision;seeking=false;if(playing)setPlaying(false);else ++playRevision;if(previewRAF===null)previewRAF=requestAnimationFrame(()=>{previewRAF=null;seek(previewTime).catch(fail);});}
+function previewSeek(time,{advance=false}={}){previewAdvance=advance&&(previewRAF===null||previewAdvance);previewTime=time;++seekRevision;seeking=false;if(playing)setPlaying(false);else ++playRevision;if(previewRAF===null)previewRAF=requestAnimationFrame(()=>{const advance=previewAdvance;previewRAF=null;previewAdvance=false;seek(previewTime,{advance}).catch(fail);});}
 function stepFrame(direction){
  if(!physics||loadingRun)return;
  const current=previewRAF!==null?previewTime:simTime;
  const first=Math.round(settings.trimIn*60),last=Math.round(settings.trimOut*60);
  let frame=Math.round(current*60)+direction;
  if(frame>last)frame=first;else if(frame<first)frame=last;
- previewSeek(frame/60);
+ previewSeek(frame/60,{advance:direction>0&&frame>Math.round(current*60)});
 }
 function finishPreview(time){if(previewRAF!==null)cancelAnimationFrame(previewRAF);previewRAF=null;const revision=runRevision;seek(time).catch(fail);ensurePrepared(settings.trimOut,()=>revision!==runRevision).catch(fail);}
 function moveTrim(key,value){const t=Math.round(clamp(value,0,600)*60)/60;settings[key]=key==='trimIn'?Math.min(t,settings.trimOut-1/60):Math.max(t,settings.trimIn+1/60);settings.trimLoop=true;syncTrim();previewSeek(settings[key]);save();}
-function placeKinematic(time){manualResponse=null;simTime=Math.round(time*60)/60;const air=flight&&settings.airFlip?Math.max(0,simTime-(flight.airStartAt?.(simTime)??flight.airStart)):0;flip=settings.flipAngle+settings.flipSpeed*air;twist=settings.twistAngle+settings.twistSpeed*air;attackTime=-1;previousContact=null;hit=false;bestMiss=Infinity;desiredPose=targetPose();physics.reset(desiredPose,flightFrame?.handInertia?.velocity||flightFrame?.velocity||[0,flightFrame?.vy||0,flight?.speed||0]);currentPose=physics.read();drawAll();}
+function placeKinematic(time){manualResponse=null;simTime=Math.round(time*60)/60;const air=flight&&settings.airFlip?Math.max(0,simTime-(flight.airStartAt?.(simTime)??flight.airStart)):0;flip=settings.flipAngle+settings.flipSpeed*air;twist=settings.twistAngle+settings.twistSpeed*air;attackTime=-1;previousContact=null;hit=false;bestMiss=Infinity;desiredPose=targetPose();physics.reset(desiredPose,flightFrame?.handInertia?.velocity||flightFrame?.velocity||[0,flightFrame?.vy||0,flight?.speed||0]);currentPose=physics.read();measureAttackContact();drawAll();}
 function restartTrim(){const job=seek(settings.trimIn),revision=playRevision;job.then(()=>{if(revision===playRevision&&!document.hidden)setPlaying(true);}).catch(fail);}
 function playbackStep(){if(trimActive()){
  if(simTime>=settings.trimOut-1e-8&&!settings.trimLoop){setPlaying(false);return false;}
@@ -272,7 +272,7 @@ async function ensurePrepared(time,cancelled=()=>false){
   }finally{if(extending===task)extending=null;if(revision===runRevision){loadingRun=false;$('play').disabled=false;$('step').disabled=false;$('strike').disabled=false;}}
  })();return task.promise;
 }
-async function seek(time,{temporary=false}={}){const rev=++seekRevision;setPlaying(false,{temporary});seeking=true;try{await ensurePrepared(time,()=>rev!==seekRevision);if(rev!==seekRevision)return;hit=false;bestMiss=Infinity;if(settings.motion==='kinematic'){placeKinematic(time);return;}simTime=0;attackTime=-1;flip=settings.flipAngle;twist=settings.twistAngle;resetPhysics();const ticks=Math.round(time*60);for(let n=0;n<ticks;){const start=performance.now();do{tick();n++;}while(n<ticks&&performance.now()-start<6);if(n<ticks){await new Promise(r=>setTimeout(r,0));if(rev!==seekRevision)return;}}drawAll();}finally{if(rev===seekRevision)seeking=false;}}
+async function seek(time,{temporary=false,advance=false}={}){const rev=++seekRevision;setPlaying(false,{temporary});seeking=true;try{await ensurePrepared(time,()=>rev!==seekRevision);if(rev!==seekRevision)return;if(settings.motion==='kinematic'){if(advance&&time>=simTime){const end=Math.round(time*60)/60;while(simTime<end-1e-8)tick(end);drawAll();}else placeKinematic(time);return;}hit=false;bestMiss=Infinity;simTime=0;attackTime=-1;flip=settings.flipAngle;twist=settings.twistAngle;resetPhysics();const ticks=Math.round(time*60);for(let n=0;n<ticks;){const start=performance.now();do{tick();n++;}while(n<ticks&&performance.now()-start<6);if(n<ticks){await new Promise(r=>setTimeout(r,0));if(rev!==seekRevision)return;}}drawAll();}finally{if(rev===seekRevision)seeking=false;}}
 function animate(stamp){raf=null;if(!playing||document.hidden)return;if(lastStamp)accumulator=Math.min(.05,accumulator+Math.min((stamp-lastStamp)/1000,.05)*settings.playbackSpeed);lastStamp=stamp;let count=0;while(accumulator>=1/60&&count++<3){if(!playbackStep())return;accumulator-=1/60;}drawAll();if(playing)raf=requestAnimationFrame(animate);}
 function setPlaying(value,{temporary=false}={}){if(!temporary)playWanted=!!value;++playRevision;if(value&&physics&&!loadingRun&&!seeking&&trimActive()&&(simTime<settings.trimIn-1e-8||simTime>=settings.trimOut-1e-8)){if(settings.motion==='kinematic')placeKinematic(settings.trimIn);else {restartTrim();return;}}playing=!!value&&!!physics&&!loadingRun&&!seeking;if(raf!==null)cancelAnimationFrame(raf);raf=null;lastStamp=0;accumulator=0;$('play').innerHTML=playWanted?'Pause <kbd>Space</kbd>':'Play <kbd>Space</kbd>';if(playing)raf=requestAnimationFrame(animate);else if(physics)drawAll();}
 const cameraKeys=new Set();let cameraRAF=null,cameraStamp=0;

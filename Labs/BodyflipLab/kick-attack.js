@@ -7,26 +7,24 @@ const accepts=name=>C.effector(name).startsWith('foot_');
 function preview({clip,names,parents,reference,lead=.18,tail=.45,directArmed=false,timingPose=reference,compensation=true,endFrame=clip.poses.length-1}){
  let entries=cache.get(clip);if(!entries){entries=[];cache.set(clip,entries);}
  const found=entries.find(e=>e.reference===reference&&e.lead===lead&&e.tail===tail&&e.directArmed===directArmed&&e.timingPose===timingPose&&e.compensation===compensation&&e.endFrame===endFrame);if(found)return found;
- const track=K.recording({clip,names,parents,reference,lead,tail,directArmed,timingPose,endFrame}),pelvis=names.indexOf('pelvis');
- let limb=names.indexOf(C.effector(clip.meta.name));while(limb>=0&&parents[limb]!==pelvis)limb=parents[limb];
- if(limb<0)throw Error('Kick needs a striking leg');
+ const track=K.recording({clip,names,parents,reference,lead,tail,directArmed,timingPose,endFrame});
  const turn=K.bodyTurn(track,names,reference);
  const hitTime=track.lead+(clip.meta.phases.hit-track.sourceStart)/clip.meta.fps;
  // Recover only the added balance, while the complete source follow-through
  // keeps playing. Returning the pelvis's absolute Hit orientation erased
  // the rest of a turn and bent the torso against the recovering pelvis.
  const balanceEnd=Math.max(track.end,hitTime+tail);
- // Preserve the complete circular sweep under one common balance rotation.
- // Protecting only the leg rotated the arms through its unchanged trajectory.
+ // Preserve the recorded kick shape. Balance rotates the whole pose rather
+ // than folding the spine and free hip against a world-fixed striking leg.
  const sweepPlane=clip.meta.circular===true;
- const conserved=sweepPlane?K.create({source:turn.remove,names,parents,reference,duration:track.stop+1.2,recoveryStart:hitTime,recoveryEnd:balanceEnd}):K.createBalanced({source:turn.remove,names,parents,reference,duration:track.stop+1.2,strikeRoot:limb,strikeWeight:track.strikeWeight,recoveryStart:hitTime,recoveryEnd:balanceEnd});
+ const conserved=K.create({source:turn.remove,names,parents,reference,duration:track.stop+1.2,recoveryStart:hitTime,recoveryEnd:balanceEnd});
  const response=turn.restore(conserved);
- if(sweepPlane&&!compensation)response.sample=response.uncorrected;
+ if(!compensation)response.sample=response.uncorrected;
  const result={track,response,hitTime,reference,lead,tail,directArmed,timingPose,compensation,sweepPlane,endFrame};entries.push(result);if(entries.length>8)entries.shift();return result;
 }
 function create({clip,names,parents,reference,base,start=0,lead=.18,tail=.45,directArmed=false,returnSettings={}}){
  const sweepPlane=clip.meta.circular===true;
- if(sweepPlane){const Target=node?require('./target-rig.js'):root.BodyflipTargetRig,project=Target.create(names,parents,reference).project,source=base;base=t=>project(source(t));}
+ {const Target=node?require('./target-rig.js'):root.BodyflipTargetRig,project=Target.create(names,parents,reference).project,source=base;base=t=>project(source(t));}
  tail=C.attackReturn(returnSettings,tail).horizon;
  const plan=preview({clip,names,parents,reference,lead,tail,directArmed,timingPose:directArmed?base(start):reference,compensation:returnSettings.motionCompensation!==false,endFrame:C.attackEndFrame(returnSettings,clip.meta.name,clip.meta.phases.hit,clip.poses.length-1)}),{track,response}=plan,pelvis=names.indexOf('pelvis'),rest=R.localize(reference.points,reference.q,parents);
  const returnPolicy=C.attackReturn(returnSettings,tail),end=start+track.end,returnEnd=end+returnPolicy.horizon,hitTime=start+plan.hitTime;
@@ -45,6 +43,11 @@ function create({clip,names,parents,reference,base,start=0,lead=.18,tail=.45,dir
  const result={returnPolicy,sample,start,end,returnEnd,hitTime,plan,armedTime:start+track.armedTime,fullBodyKick:true,sweepPlane,aimRecoveryStart:sweepPlane?hitTime:undefined,aimRecoveryEnd:sweepPlane?Math.max(end,hitTime+tail):undefined,arming:track.arming};
  const J=node?require('./jump-attack.js'):root.BodyflipJumpAttack;const final=J.distanceReturn(result,base,clip,names,parents,returnSettings,reference,true);
  if(sweepPlane)final.aimRecoveryEnd=Math.min(final.returnEnd,result.aimRecoveryEnd);
+ else {
+  // Recoil may follow the kick, but must not clamp its authored joints back
+  // into resting cones. Keep the exemption through the complete return.
+  const sample=final.sample;final.sample=t=>{const pose=sample(t);return t>=start&&t<final.returnEnd?{...pose,authoredPose:true}:pose;};
+ }
  return final;
 }
 const api={accepts,preview,create};if(node)module.exports=api;else root.BodyflipKickAttack=api;

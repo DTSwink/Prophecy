@@ -5,6 +5,8 @@ import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url),S=require('./scenes.js'),C=require('./core.js'),P=require('./platforms.js'),Terrain=require('./support.js'),F=require('./flight.js');
 const read=n=>fs.readFileSync(new URL(n,import.meta.url),'utf8');
 const original=JSON.parse(read('saved-profile.json')),checks=[];
+// This case specifically exercises migration of a pre-library save.
+delete original.scenes;
 const check=(name,ok)=>{assert(ok,name);checks.push(name);};
 let library=S.open(original);
 check('Existing setup migrates intact into Inclines',library.items.length===1&&library.items[0].name==='Inclines'&&JSON.stringify(S.pack(library).settings)===JSON.stringify(original.settings));

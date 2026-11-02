@@ -1,5 +1,123 @@
 # Bodyflip Lab
 
+**Accepted lab port, November 3 (built and verified; source-only checkpoint):**
+Current normal-kick solver and live saved scene/settings are ported. Four jab/hook
+cutoffs now match typed C++ defaults. Native settings use the validated
+bodyflip-lab-settings-v1 wrapper. Arrow-step hit and Big Throw renderer fixes
+remain in the browser. Previous lab-only notes below are historical.
+
+Normal Editor build succeeded. Complete-project cold host passed saved defaults,
+Small Throw and Blueprint compatibility; 10,552 pins/links retained. Normal
+TestNN editor passed reflection and 60 owned Play ticks, then returned to edit.
+No gameplay assets or live settings changed. Two intermediate startup GC crashes
+stopped recurring after refreshing the diagnostic host from the independently
+rebuilt Ambient binaries; no Ambient code was changed in this task.
+
+34 app/package cases /945 frames pass; pinned V8 checks 268,801 values exactly;
+actual Unreal VM checks 210,779 values exactly. Kick22, pose/attack5, sweep6,
+sweep-cut8 and package101 checks pass. Broad lab suite:26 pass after harness
+repairs;9 older checks still fail on previous committed source too (8 same first
+failure). These are recorded, not called green. Saved-scene tests have a stale
+attackFree=false assertion: persistent Ball pose correctly retains authored
+joint freedom. Clear-air tracking meets existing gates; floor contact still
+reaches57.15deg against45deg. Earlier hand/contact limitations remain.
+
+Evidence: Saved/Diagnostics/BodyflipAccepted20261102. Compact receipt:
+Tools/Recovery/Receipts20261102Bodyflip/accepted-lab-final.json. Only Bodyflip
+source/settings/tests/receipt are in this checkpoint; no heavy assets/binaries.
+
+**Big Throw playback performance, November 2 (LAB ONLY):** Current live setup
+profiled read-only. The 43,494-triangle spear renderer rebuilt temporary vectors
+and spread arguments every frame; drawing dominated CPU time, not trajectory
+sampling or projectile physics. `renderer.js` now reuses typed vertex/normal/
+color buffers and scalar transforms, preserving the full mesh and draw order.
+Actual-app Node replay with a GL sink: repeated-pass mean 60.65 -> 8.75 ms,
+p95 94.78 -> 10.55 ms; first-pass mean 56.94 -> 11.74 ms (first-use spikes remain).
+These are CPU replay timings, not measured browser FPS. Nine mesh checks match
+uploaded Float32 values exactly; 115 before/after character/projectile frames
+also match exactly. Settings unchanged; served renderer verified. Regression:
+`node Labs/BodyflipLab/verify-projectile-renderer.mjs`. Evidence and profile:
+`Saved/Diagnostics/ThrowPlayback20261102/`. No Unreal port or Git push.
+
+**Arrow-step hit indicator, November 2 (LAB ONLY):** Forward arrow steps now run
+the same ticks/contact checks as Play, including intermediate frames when held.
+Previously the seek path cleared the hit and never tested contact. Rewinding,
+scrubbing or wrapping clears later hits and checks the selected pose without a
+stale swept segment. Attack motion, collision thresholds and live settings are
+unchanged. `node Labs/BodyflipLab/verify-frame-step.mjs`: 13 behavioral checks
+pass; source syntax and served app.js verified. No Unreal port or Git push.
+
+**Normal kick pose correction, November 2 (LAB ONLY; awaiting user review):**
+User clarified that the deformed kick poses matter, not only the Hit direction.
+Normal Kick L/R now use the existing common-body airborne reaction, retaining
+recorded joint arrangement instead of the16-variable spine/free-hip rebalance.
+Aim also rotates the complete compensated pose; it reaches its correction by
+Armed and retains the existing normal-kick return policy. The motion-compensation
+checkbox now also works for normal kicks. Entry/return use the projected base.
+Normal kicks carry the existing authored-pose exemption through return so spin
+recoil cannot re-clamp them into resting joint cones. Recoil itself is retained.
+
+Measured old distortions: compensation added up to49.15deg at spine01 and33.66deg
+at the free hip; aim added65-103deg at the striking hip; spin-recoil's resting
+clamp independently changed Kick R by35.83deg. These corrections no longer
+reshape the normal kick. The accepted sweep branch is unchanged.
+
+Steering is an explicit commanded body turn, not passive conserved motion.
+Its finite-step momentum is the difference between the moving aim frame and
+that same interval with the aim frame held fixed. The original neutral solver's
+residual is retained (transport disagreement<5.2e-10), not reset to zero.
+Fractional seeks use the actual underlying integration interval. Sweep's earlier
+bookkeeping is retained to avoid changing the accepted movement in this task.
+
+22 actual-app motion cases at960Hz cover both legs, flip+/-400, twist+/-200,
+front/rear targets, zero spin, compensation off and full3D. Maximum Hit direction
+error9.2e-16; added aim joint rotation<2.8e-13deg; recorded-stroke shape difference
+<0.000735deg /4.4micrometres from retained recoil. Reverse seeks agree<9e-15.
+Boundary pose differences across+/-1e-7s are below0.000717deg; strike/return
+velocity joins below1.7deg/s at6.25e-7s. The original falling loop has a velocity
+corner at this setup's entry time (about263deg/s at left hand); projected kick
+entry matches that baseline to about1e-6deg/s. That pre-existing loop corner is
+not claimed fixed. No still image or video was used to approve dynamic quality.
+Sweep/Slash L/Pike:363 before/after poses match exactly. Live settings unchanged;
+served source bytes verified. No Unreal package/build changes and no Git push.
+Portable regression: `node Labs/BodyflipLab/verify-kick-shape.mjs` (four reported
+cases), `--full` selects22. Captured fixture: `fixtures/kick-spin.json`.
+Evidence: `Saved/Diagnostics/KickPose20261102/`; preceding diagnosis below remains
+historical. User must refresh the lab to review the changed movement.
+
+**Earlier normal-kick investigation, November 2 (superseded by lab correction above):**
+Captured the live Kick L / flip-400 / twist200 Space Gym setup read-only at
+`Saved/Diagnostics/KickSpin20261102/live-state.json`. Actual app replay checks
+Kick L/R at zero spin and flip+/-400 with twist200, plus sweep controls.
+Kick L/-400 misses the target DIRECTION by38.261deg; its bounded solve returns
+error0.655446 after52 trajectory evaluations, and production applies that failed
+result without a failure indication. Other three spinning normal-kick endpoints
+fit, but aiming changes the kicking hip by65.44-103.39deg during the motion.
+Normal kicks use Hit-derived joint-coordinate offsets, unlike sweep's rigid
+whole-compensated-pose aim. Do not equate an exact Hit endpoint with good motion.
+
+Offline in-memory experiment retains normal `createBalanced` compensation and
+changes only aim to a rigid whole-pose turn. Direction errors fall below1.3e-6deg
+without changing any joint-local articulation (below5.2e-14deg). Normal kick
+entry/return also switches raw falling poses against the projected display,
+causing about8deg entry and5-6deg exit jumps, including at zero spin. Applying
+the existing sweep projected-base rule removes those jumps: differences halve
+with each halved time interval. Eight combined prototype cases cover both legs,
+flip+/-400, twist+200/current rear target and twist-200/reflected front target.
+The accepted sweep generator, live settings, lab runtime and Unreal are unchanged.
+
+Proposed implementation: keep normal kick animation/balance; predict its balanced
+Hit pose; use one explicit rigid aiming command, fully introduced by Armed;
+retain existing return policy; use the same projected baseline on both sides.
+Do not copy sweep's momentum bookkeeping blindly: the prototype reports roughly
+0.26-1.71 angular-momentum residual versus below0.001 in the current normal path;
+current sweep controls themselves report about1.45-1.47. Its finite-step
+`I*omega` steering accounting must be resolved/verified before adoption. The
+pre-existing arm-speed peaks also remain; prototype endpoint/continuity checks are not
+visual approval of the full motion. No videos or still-based motion claims.
+Evidence/scripts: `Saved/Diagnostics/KickSpin20261102/` (current-audit,
+rigid-audit, rigid-projected-audit). No production fix, build or push this turn.
+
 **Pike steering replacement, November 2 (accepted; ported to Unreal):** removed the rejected
 06 world-chest lock and its winding history. The same optional saved checkbox
 is now labelled **Pike: steer through thrust**. It plans a continuous heading /

@@ -1,12 +1,12 @@
 {
   "schema": 3,
-  "labSettings": "52a406dc785407744b31dab51467c58904cadc491b7ff06c0982e00c8f0a7d00",
+  "labSettings": "d5c1ace25fcc4c4daea146b8d000ce6828651df13e7399efa456182ae7930b9a",
   "compiler": {
     "name": "esbuild",
     "version": "0.25.12",
     "target": "es2017"
   },
-  "packageMode": "full",
+  "packageMode": "runtime-only",
   "polyfills": "ce291c1efe21616babfb3e6e886b6c017d6c1f3a4375a6e46352fbb0109008ba",
   "trig": {
     "source": "Tools/FootIK/v8-trig.js",
@@ -82,8 +82,8 @@
     "BodyflipLab/support.js": "6d6d454dbf0f40bfe1b13fee3b0eace3b5d3f5b9cbd727509bb4d55992ee1560",
     "BodyflipLab/core.js": "dca13510158be98c2c77d9f9b3575b439e1f695093786722d00015fee9e60b80",
     "BodyflipLab/body-contact.js": "a38553a139369f5214998190f172775318ddd6cbc6ed6d452901cbdf6845c6df",
-    "BodyflipLab/physical-aim.js": "8c4796a26e1c4fbd7b4ef0516240c8df3d25a0a021d4b6af8ca0b1b90f2161e0",
-    "BodyflipLab/attack-aim.js": "a9e0511a5545c82b2ec56dfb9c3f738bf8eeed64afc492ed1f3cd337f1a6032d",
+    "BodyflipLab/physical-aim.js": "f572a9459823ff2c56b4b47e9bf160800c776123abf6fda9e3db5a4ffbfa4c54",
+    "BodyflipLab/attack-aim.js": "ff2fd613d42578de5d3cf3b29f5955837daab919597f0ddbe8184017f93f9dd4",
     "BodyflipLab/attack-inertia.js": "ed492aa1ce6898435065d021cd799dcb2794eebe7f8c3ec842b8adb7df89ba46",
     "BodyflipLab/leg-response.js": "d915eba48917f075f6054de1088a45efc967c751d25389dd2be40128d8308c27",
     "BodyflipLab/spin-contact.js": "e7f99721125af6c5b68adc25982c39d59654a9437038b93329f11ab9f67a9431",
@@ -105,7 +105,7 @@
     "BodyflipLab/spin.js": "d3ee0016671b3de14a1b608f6db71123f20a87fb6312626171e7e572b7d36f65",
     "BodyflipLab/spin-response.js": "b3a4e4b486743ed5ef582ac5fe894dd13d7269cbf89f92b0be646dbb2428074f",
     "BodyflipLab/jump-attack.js": "f7379bac093a3e8f072a25dc04115a01852d65532c0a713209afa5990809dddc",
-    "BodyflipLab/kick-attack.js": "f31fbcce4d88e05763b2e60e0f6c95626cc33f473b81107449ddd6de14f34a63",
+    "BodyflipLab/kick-attack.js": "d8ea48bab084ed6fffad3aef7508b348c6dc9f87fc174d5c1bc1d8a6f084074a",
     "BodyflipLab/airborne-motion.js": "016bba5c307bc826cbd109262a0c5a2472c8275ea695a1e64a1d4de03bca62cc",
     "BodyflipLab/attack-entry.js": "08be69481db92811562bd55f03568724be3e95a9348af7805b814ddf72f54586",
     "BodyflipLab/throw-attack.js": "f9a895a3815c8f5c68cd6d4a7148391a87890e796c05287b702e0ff41b11102a",
@@ -114,6 +114,6 @@
     "BodyflipLab/idle.js": "88f2d05d25c30a2aed25af654045dfa75deb9736758086e786d5628ac7b62723"
   },
   "adapter": "e5c6c8f0c111aa4fe6010e19dd3c9f20eb97ec645c4528aeb1c8594b60e04126",
-  "runtime": "f55a6813a5365e1c61e9e00d3d5f8155d255da6bd19e853c6b35c9a1103654be",
+  "runtime": "f22adbd2309a090f7327fcdf91f50233eee788785a11f31d0e50061f9076224c",
   "assets": "27ca29667350b2edf2985d42b57d66b569de292c9deb031b5f94bb0212eceb95"
 }

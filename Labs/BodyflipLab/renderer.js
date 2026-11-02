@@ -476,9 +476,20 @@ class WebGLMotionRenderer {
     if(!items?.length||!this.throwAssets)return;
     this.throwMeshCache ||= new Map();
     for(const item of items){const asset=this.throwAssets[item.kind];if(!asset)continue;const key=item.kind+':'+item.scale.join(',');let cached=this.throwMeshCache.get(key);
-      if(!cached){const local=asset.vertices.map(p=>p.map((v,i)=>v*item.scale[i])),normals=[];for(let t=0;t<asset.triangles.length;t+=3){const [a,b,c]=asset.triangles.slice(t,t+3).map(i=>local[i]);normals.push(normalize(cross(sub(b,a),sub(c,a))));}cached={local,normals};this.throwMeshCache.set(key,cached);}
-      const axes=Recovery.toAxes(item.q),transform=p=>add(item.p,add(add(mul(axes[0],p[0]),mul(axes[1],p[1])),mul(axes[2],p[2]))),world=cached.local.map(transform);
-      for(let t=0;t<asset.triangles.length;t+=3){const n=cached.normals[t/3],normal=add(add(mul(axes[0],n[0]),mul(axes[1],n[1])),mul(axes[2],n[2]));for(let k=0;k<3;k++){const i=asset.triangles[t+k],p=world[i],color=asset.colors[i]||[.7,.7,.7];mesh.push(...p,...normal,...color);}}
+      // Keep the full mesh, but reuse its storage instead of allocating vectors
+      // and spread arguments for every vertex/triangle on every display frame.
+      if(!cached||cached.asset!==asset){
+        const local=new Float64Array(asset.vertices.length*3),normals=new Float64Array(asset.triangles.length),colors=new Float64Array(local.length);
+        for(let i=0;i<asset.vertices.length;i++){const p=asset.vertices[i],c=asset.colors[i]||[.7,.7,.7];for(let k=0;k<3;k++){local[i*3+k]=p[k]*item.scale[k];colors[i*3+k]=c[k];}}
+        for(let t=0;t<asset.triangles.length;t+=3){const a=asset.triangles[t]*3,b=asset.triangles[t+1]*3,c=asset.triangles[t+2]*3,ux=local[b]-local[a],uy=local[b+1]-local[a+1],uz=local[b+2]-local[a+2],vx=local[c]-local[a],vy=local[c+1]-local[a+1],vz=local[c+2]-local[a+2];normals.set(normalize([uy*vz-uz*vy,uz*vx-ux*vz,ux*vy-uy*vx]),t);}
+        cached={asset,local,normals,colors,world:new Float64Array(local.length)};this.throwMeshCache.set(key,cached);
+      }
+      const {local,normals,colors,world}=cached,[x,y,z]=Recovery.toAxes(item.q),p=item.p;
+      for(let i=0;i<local.length;i+=3)for(let k=0;k<3;k++)world[i+k]=p[k]+(x[k]*local[i]+y[k]*local[i+1]+z[k]*local[i+2]);
+      for(let t=0;t<asset.triangles.length;t+=3){
+        const nx=x[0]*normals[t]+y[0]*normals[t+1]+z[0]*normals[t+2],ny=x[1]*normals[t]+y[1]*normals[t+1]+z[1]*normals[t+2],nz=x[2]*normals[t]+y[2]*normals[t+1]+z[2]*normals[t+2];
+        for(let k=0;k<3;k++){const i=asset.triangles[t+k]*3;mesh.push(world[i],world[i+1],world[i+2],nx,ny,nz,colors[i],colors[i+1],colors[i+2]);}
+      }
     }
   }
 

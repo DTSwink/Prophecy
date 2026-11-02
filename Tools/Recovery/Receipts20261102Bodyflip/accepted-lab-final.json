@@ -1,0 +1,319 @@
+{
+  "date": "2026-11-03",
+  "scope": "Accepted Bodyflip lab port and source-only checkpoint; unrelated ongoing tasks excluded",
+  "runtimeSha256": "f22adbd2309a090f7327fcdf91f50233eee788785a11f31d0e50061f9076224c",
+  "runtimeBytes": 1012558,
+  "modules": 44,
+  "settingsSha256": "d5c1ace25fcc4c4daea146b8d000ce6828651df13e7399efa456182ae7930b9a",
+  "build": {
+    "result": "Succeeded",
+    "log": "Saved/Diagnostics/BodyflipAccepted20261102/build.log"
+  },
+  "appPackage": {
+    "passed": true,
+    "cases": 34,
+    "frames": 945,
+    "maxPositionMetres": 8.368134691109012e-08,
+    "maxRotationRadians": 3.305237444165179e-07
+  },
+  "pinnedV8": {
+    "passed": true,
+    "cases": 42,
+    "frames": 1188,
+    "numericValues": 268801,
+    "maximumDifference": 0
+  },
+  "unrealVM": {
+    "passed": true,
+    "frames": 945,
+    "numericValues": 210779,
+    "maximumDifference": 0,
+    "report": "Saved/Diagnostics/BodyflipAccepted20261102/Reports/index.json"
+  },
+  "lab": {
+    "broadSuitePassedAfterHarnessRepairs": 26,
+    "broadSuiteRemainingFailures": [
+      {
+        "test": "all-armed-entry",
+        "current": "manualSoft is not defined",
+        "previousCommit": "manualSoft is not defined",
+        "sameFirstFailure": true
+      },
+      {
+        "test": "all-attack-hit-return",
+        "current": "Expected values to be strictly equal:",
+        "previousCommit": "No changing sockets",
+        "sameFirstFailure": false
+      },
+      {
+        "test": "coupled-weapon-return",
+        "current": "no extra full sword turn",
+        "previousCommit": "no extra full sword turn",
+        "sameFirstFailure": true
+      },
+      {
+        "test": "final-throws",
+        "current": "throw uses shared attack rotation return",
+        "previousCommit": "throw uses shared attack rotation return",
+        "sameFirstFailure": true
+      },
+      {
+        "test": "spin-momentum",
+        "current": "Explicit zero stops rotation",
+        "previousCommit": "Explicit zero stops rotation",
+        "sameFirstFailure": true
+      },
+      {
+        "test": "foot-ik",
+        "current": "Landing still seeds the NN seamlessly",
+        "previousCommit": "Landing still seeds the NN seamlessly",
+        "sameFirstFailure": true
+      },
+      {
+        "test": "hand-both",
+        "current": "saved 90-degree flip, 50 percent uses the feasible contact count",
+        "previousCommit": "saved 90-degree flip, 50 percent uses the feasible contact count",
+        "sameFirstFailure": true
+      },
+      {
+        "test": "support-contact",
+        "current": "Cannot read properties of undefined (reading 'normal')",
+        "previousCommit": "Cannot read properties of undefined (reading 'normal')",
+        "sameFirstFailure": true
+      },
+      {
+        "test": "landing-continuity",
+        "current": "Recorded NN uses actual physical landing seeds",
+        "previousCommit": "Recorded NN uses actual physical landing seeds",
+        "sameFirstFailure": true
+      }
+    ],
+    "kickMotionCasesPassed": 22,
+    "poseAttackCasesPassed": 5,
+    "sweepCasesPassed": 6,
+    "sweepCutCasesPassed": 8,
+    "packageChecksPassed": 101
+  },
+  "nativeInitialTests": [
+    {
+      "name": "Prophecy.Bodyflip.Controls.BlueprintOptions",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.Controls.CarrierHeading",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.Controls.FailedGenerationRetainsError",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.Controls.SavedLabTuning",
+      "state": "Fail"
+    },
+    {
+      "name": "Prophecy.Bodyflip.Controls.WorldThrowDirection",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.Physics.SubstepResolution",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.SavedSetup.AirPhysical",
+      "state": "Fail"
+    },
+    {
+      "name": "Prophecy.Bodyflip.SavedSetup.Kinematic",
+      "state": "Fail"
+    },
+    {
+      "name": "Prophecy.Bodyflip.SavedSetup.Physical",
+      "state": "Fail"
+    },
+    {
+      "name": "Prophecy.Bodyflip.AgentKinematicAndSim",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.AirBigThrow",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.AirSmallThrow",
+      "state": "Fail"
+    },
+    {
+      "name": "Prophecy.Bodyflip.AsyncTrimExtension",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.CurrentLabParity",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.ExistingBlueprintCompatibility",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Jolt.Bodyflip.FractionalRelease",
+      "state": "Success"
+    }
+  ],
+  "nativeFinalFullProjectTests": [
+    {
+      "name": "Prophecy.Bodyflip.Controls.SavedLabTuning",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.AirSmallThrow",
+      "state": "Success"
+    },
+    {
+      "name": "Prophecy.Bodyflip.ExistingBlueprintCompatibility",
+      "state": "Success"
+    }
+  ],
+  "savedSetup": {
+    "agent-saved-kinematic": {
+      "automationStatus": "failed",
+      "frames": 146,
+      "metrics": {
+        "rootMaxCm": 2.0816681711721685e-17,
+        "targetMaxCm": 3.972054645195637e-15,
+        "targetRotationMaxRad": 4.2146848510894035e-08,
+        "physicalMaxCm": 0,
+        "physicalRotationMaxRad": 0,
+        "physicalSamples": 0,
+        "segmentLengthMaxCm": 0,
+        "sawRise": false,
+        "sawSpin": true,
+        "pausedAndResumed": true
+      },
+      "finalAttackFree": true
+    },
+    "agent-air-saved-jolt": {
+      "automationStatus": "failed",
+      "frames": 146,
+      "metrics": {
+        "rootMaxCm": 0,
+        "targetMaxCm": 3.972054645195637e-15,
+        "targetRotationMaxRad": 4.2146848510894035e-08,
+        "physicalMaxCm": 10.869243758110612,
+        "physicalRotationMaxRad": 0.58216326577601,
+        "physicalSamples": 3358,
+        "segmentLengthMaxCm": 0.7224398386729121,
+        "physicalRmsCm": 1.970833733610093,
+        "physicalRotationRmsRad": 0.0787243150649407,
+        "sawRise": false,
+        "sawSpin": true,
+        "pausedAndResumed": true
+      },
+      "finalAttackFree": true
+    },
+    "agent-saved-jolt": {
+      "automationStatus": "failed",
+      "frames": 146,
+      "metrics": {
+        "rootMaxCm": 0,
+        "targetMaxCm": 3.972054645195637e-15,
+        "targetRotationMaxRad": 4.2146848510894035e-08,
+        "physicalMaxCm": 10.328516113848089,
+        "physicalRotationMaxRad": 0.9974496925742693,
+        "physicalSamples": 3358,
+        "segmentLengthMaxCm": 0.6554572643083176,
+        "physicalRmsCm": 2.0233636751419417,
+        "physicalRotationRmsRad": 0.13272124762674536,
+        "sawRise": false,
+        "sawSpin": true,
+        "pausedAndResumed": true
+      },
+      "finalAttackFree": true
+    }
+  },
+  "savedSetupInterpretation": "All three saved-scene tests retain a stale assertion that attackFree must be false at trim end. Current scene ends in persistent authored Ball pose; joint-rig bypass is intentional. Kinematic targets match and clear-air physical tracking passes unchanged thresholds. Floor-level physical rotation reaches 57.15 degrees, above the 45 degree gate. These are not reported as passing automation tests.",
+  "startup": "Two cold headless startup GC crashes occurred while Ambient generated/native binaries were being rebuilt concurrently. Bodyflip-only host ran. Refreshing all host binaries after the independent Ambient build restored full-project startup; full-project tests and normal-editor Play passed. No Ambient source changes made here.",
+  "editor": {
+    "success": true,
+    "reason": "Existing Blueprint compiled; actual Play initialized and NN targets advanced",
+    "scope": "Cold reflection and NN Play startup; physical tracking is tested separately",
+    "assets_unchanged": true,
+    "before": {
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "8ae4d2d5899e15d0f436e398ac3fd709f50505ab5e4e1ce9497306918dbd5eec",
+      "Content/testNN.umap": "43367266b1543325c567e6762ac32ab01c8ac34e5068a4732eb7f78162b918c6"
+    },
+    "after": {
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "8ae4d2d5899e15d0f436e398ac3fd709f50505ab5e4e1ce9497306918dbd5eec",
+      "Content/testNN.umap": "43367266b1543325c567e6762ac32ab01c8ac34e5068a4732eb7f78162b918c6"
+    },
+    "rows": [
+      {
+        "absolute_tick": 1,
+        "bones": 25,
+        "alpha": 0.5,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 2,
+        "bones": 25,
+        "alpha": 0.0,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 3,
+        "bones": 25,
+        "alpha": 0.5,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 4,
+        "bones": 25,
+        "alpha": 0.0,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 5,
+        "bones": 25,
+        "alpha": 0.5,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 61,
+        "bones": 25,
+        "alpha": 0.5,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      }
+    ],
+    "saved_setup_callable": true,
+    "elapsed_seconds": 10.75
+  },
+  "binaryParity": {
+    "Binaries/Win64/UnrealEditor-GameAnimationSample3.dll": {
+      "project": "5416e10c1b4291e5fffaf66d69f6eff9124877996679e9c46d99c83a66bad038",
+      "host": "5416e10c1b4291e5fffaf66d69f6eff9124877996679e9c46d99c83a66bad038"
+    },
+    "Binaries/Win64/UnrealEditor-ProphecyAmbient.dll": {
+      "project": "765ed6ad1e95a9bf16cb03d74b6eb92058477323cc647669a9c5dde4eacf66e7",
+      "host": "765ed6ad1e95a9bf16cb03d74b6eb92058477323cc647669a9c5dde4eacf66e7"
+    },
+    "Binaries/Win64/UnrealEditor-ProphecyFootIKMath.dll": {
+      "project": "9d27ca4f2fbde12cd87bf26a15e5db1311cb2816c3c7116e8817807a3c43cf59",
+      "host": "9d27ca4f2fbde12cd87bf26a15e5db1311cb2816c3c7116e8817807a3c43cf59"
+    },
+    "Plugins/ProphecyJolt/Binaries/Win64/UnrealEditor-ProphecyJolt.dll": {
+      "project": "45e511b122e893cb68d147ed68d66932690d24026babbe18d35bf072e71d8421",
+      "host": "45e511b122e893cb68d147ed68d66932690d24026babbe18d35bf072e71d8421"
+    }
+  },
+  "protectedAssets": {
+    "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "8ae4d2d5899e15d0f436e398ac3fd709f50505ab5e4e1ce9497306918dbd5eec",
+    "Content/testNN.umap": "43367266b1543325c567e6762ac32ab01c8ac34e5068a4732eb7f78162b918c6",
+    "Content/Characters/UEFN_Mannequin/Meshes/SKM_UEFN_Mannequin.uasset": "45f26e68c6b84583a534b5ad30ccb311f5a259649f025cebd65b465579561291"
+  },
+  "limitations": [
+    "Nine legacy lab checks also fail on previous committed source; eight share first failure, one differs. Full details above.",
+    "Existing physical floor/hand-contact limitations remain; no acceptance thresholds relaxed.",
+    "Dynamic numerical traces were tested; no videos or screenshot-based motion claims."
+  ],
+  "largeFiles": "No new binary assets, models, FBX, videos, build outputs or raw frame dumps included. Existing 1.01 MB runtime source updated."
+}

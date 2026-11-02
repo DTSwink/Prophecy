@@ -3466,7 +3466,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
               Work.checkpoint();
             }
           }
-          function prepareSweep() {
+          function prepareKick() {
             const sampleHit = (t) => finish(worldPose(neutral.sample(t).pose, t));
             plan = A.create({ clip, track, names, parents, reference, sampleHit, project });
             const solved = plan.solution(target);
@@ -3474,12 +3474,21 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
             statistics.error = solved.error;
             const H = node ? require2("./momentum.js") : root.BodyflipMomentum, dt = 1 / 240;
             physical = { sample(t) {
-              const frame = neutral.sample(t);
-              if (t <= start || undo && t >= track.aimRecoveryEnd) return frame;
-              const delta = plan.rotation(t, target, amount, undo), q = delta.yaw, pose = plan.applyRotation(frame.pose, delta), before = neutral.sample(Math.max(start, t - dt)), elapsed = t - Math.max(start, t - dt), prior = plan.rotation(Math.max(start, t - dt), target, amount, undo), previous2 = plan.applyRotation(before.pose, prior);
-              const omega = R.mul(R.qlog(R.qm(q, R.qinv(prior.yaw))), 1 / elapsed), momentum = H.momentum(previous2, pose, rig, elapsed), command = R.add(R.rotate(q, frame.physical.target), M.product(M.tensor(pose, rig), omega)), residual = R.sub(momentum, command), axis = frame.physical.axis && R.rotate(q, frame.physical.axis);
-              const spin = frame.spin ? __spreadProps(__spreadValues({}, frame.spin), { q: R.qm(q, frame.spin.q), rotation: R.qm(q, frame.spin.rotation), omega: R.add(R.rotate(q, frame.spin.omega), omega) }) : frame.spin;
-              return __spreadProps(__spreadValues({}, frame), { pose, spin, physical: __spreadProps(__spreadValues({}, frame.physical), { rotation: R.qm(q, frame.physical.rotation), momentum, target: command, axis, error: axis ? Math.abs(R.dot(residual, axis)) : R.length(residual), fullResidual: R.length(residual), aimCommand: omega }) });
+              var _a2;
+              const frame = neutral.sample(t), sweep = track.sweepPlane;
+              if (t <= start || !sweep && (t <= track.start || t - start < 1e-10) || undo && t >= (sweep ? track.aimRecoveryEnd : track.returnEnd)) return frame;
+              const tickTime = start + Math.floor((t - start) / neutral.step + 1e-9) * neutral.step;
+              const priorTime = sweep ? Math.max(start, t - dt) : Math.max(start, t - tickTime < 1e-10 ? tickTime - neutral.step : tickTime);
+              const delta = plan.rotation(t, target, amount, undo), q = delta.yaw, pose = plan.applyRotation(frame.pose, delta), before = neutral.sample(priorTime), elapsed = t - priorTime, prior = plan.rotation(priorTime, target, amount, undo), previous2 = plan.applyRotation(before.pose, prior);
+              const omega = R.mul(R.qlog(R.qm(q, R.qinv(prior.yaw))), 1 / elapsed), momentum = H.momentum(previous2, pose, rig, elapsed);
+              let steering;
+              if (!sweep) {
+                const heldPrevious = M.rotateAboutCOM(before.pose, q, rig);
+                steering = R.sub(momentum, H.momentum(heldPrevious, pose, rig, elapsed));
+              } else steering = M.product(M.tensor(pose, rig), omega);
+              const command = R.add(R.rotate(q, frame.physical.target), steering), residual = R.sub(momentum, command), axis = frame.physical.axis && R.rotate(q, frame.physical.axis);
+              const carrier = frame.spin && R.qm(q, frame.spin.rotation), spin = frame.spin ? __spreadProps(__spreadValues({}, frame.spin), { q: R.qm(q, frame.spin.q), rotation: carrier, omega: sweep ? R.add(R.rotate(q, frame.spin.omega), omega) : R.mul(R.qlog(R.qm(carrier, R.qinv(R.qm(prior.yaw, ((_a2 = before.spin) == null ? void 0 : _a2.rotation) || [0, 0, 0, 1])))), 1 / elapsed) }) : frame.spin;
+              return __spreadProps(__spreadValues({}, frame), { pose, spin, physical: __spreadValues(__spreadProps(__spreadValues({}, frame.physical), { rotation: R.qm(q, frame.physical.rotation), momentum, target: command, axis, error: axis ? Math.abs(R.dot(residual, axis)) : R.length(residual), fullResidual: R.length(residual), aimCommand: omega }), !sweep ? { aimMomentum: steering } : {}) });
             } };
           }
           function prepare() {
@@ -3493,8 +3502,8 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
               preparePointThrow();
               return;
             }
-            if (track.sweepPlane) {
-              prepareSweep();
+            if (track.fullBodyKick) {
+              prepareKick();
               return;
             }
             if (!track.isThrow) {
@@ -3631,7 +3640,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
         function create({ clip, track, names, parents, reference, sampleHit, launchAt = null, project = null, evaluateMotion = null, evaluationAmount = 1, evaluationUndoRotation = true, motionSolve = null, throwAimOrigin = null }) {
           var _a, _b, _c, _d, _e;
           if (!launchAt && !(clip == null ? void 0 : clip.meta.hitTarget)) throw Error("Missing original hit target for " + (clip == null ? void 0 : clip.meta.name));
-          const sweepPlane = track.sweepPlane === true, pike = (clip == null ? void 0 : clip.meta.name) === "pike";
+          const sweepPlane = track.sweepPlane === true, rigidAim = sweepPlane || track.fullBodyKick === true, pike = (clip == null ? void 0 : clip.meta.name) === "pike";
           const hitTime = launchAt ? (_a = track.releaseTime) != null ? _a : track.hitTime : track.hitTime;
           let bone, point;
           if (launchAt) {
@@ -3678,7 +3687,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
           };
           const pelvis = names.indexOf("pelvis"), aimBasis = evaluateMotion ? qm(hit.q[pelvis], qinv(reference.q[pelvis])) : identity, worldTurn = (q) => qm(qm(aimBasis, q), qinv(aimBasis));
           const state = (p) => {
-            if (sweepPlane) {
+            if (rigidAim) {
               const d = rotate(qinv(aimBasis), direction), heading = Math.atan2(d[0], d[2]) + p[0], pitch = p[1] || 0;
               return { yaw: worldTurn(qm(qexp([Math.cos(heading) * pitch, 0, -Math.sin(heading) * pitch]), qexp([0, p[0], 0]))), sweepAngles: [p[0], pitch], bends: names.map(() => identity) };
             }
@@ -3696,7 +3705,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
           function mix(a, b, w) {
             if (Array.isArray(a)) a = neutral;
             if (pike) return __spreadValues(__spreadValues({}, neutral), state([(a.heading || 0) + ((b.heading || 0) - (a.heading || 0)) * w, (a.pitch || 0) + ((b.pitch || 0) - (a.pitch || 0)) * w]));
-            if (sweepPlane) return __spreadValues(__spreadValues({}, neutral), state((a.sweepAngles || [0, 0]).map((v, i) => {
+            if (rigidAim) return __spreadValues(__spreadValues({}, neutral), state((a.sweepAngles || [0, 0]).map((v, i) => {
               var _a2;
               return v + ((((_a2 = b.sweepAngles) == null ? void 0 : _a2[i]) || 0) - v) * w;
             })));
@@ -3707,7 +3716,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
             }) } : initialLaunch ? { throwTurn: blendQ(a.throwTurn || identity, b.throwTurn || identity, w) } : {});
           }
           function applyWorld(pose, delta) {
-            if (sweepPlane) {
+            if (rigidAim) {
               const pivot2 = center(pose, rig), q2 = pose.q.map((q3, i) => i ? qm(delta.yaw, q3) : q3), points2 = pose.points.map((p, i) => i ? add(pivot2, rotate(delta.yaw, sub(p, pivot2))) : p.slice());
               return __spreadProps(__spreadValues({}, pose), { points: points2, q: q2, axes: q2.map(R.toAxes) });
             }
@@ -3765,7 +3774,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
           }
           const legalHit = project(hit), hitLocal = R.localize(legalHit.points, legalHit.q, parents), hitCoordinates = joints.joints.map((c) => coordinates(hitLocal.q[c.i], c));
           function legalState(world, corrected = null) {
-            if (sweepPlane) return __spreadValues(__spreadValues({}, neutral), world);
+            if (rigidAim) return __spreadValues(__spreadValues({}, neutral), world);
             if (pike) return __spreadValues(__spreadValues({}, neutral), world);
             if (initialLaunch) return __spreadValues(__spreadValues({}, neutral), continuousThrow ? { throwAngles: world.throwAngles } : { throwTurn: world.bends[bone] });
             corrected || (corrected = project(applyWorld(legalHit, world)));
@@ -3775,7 +3784,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
           const rotationBases = /* @__PURE__ */ new WeakMap();
           function applyRotation(pose, delta) {
             if (Array.isArray(delta)) delta = neutral;
-            if (sweepPlane) return applyWorld(pose, delta);
+            if (rigidAim) return applyWorld(pose, delta);
             if (pike) return applyWorld(pose, state([delta.heading || 0, delta.pitch || 0]));
             if (initialLaunch) {
               if (continuousThrow) return applyWorld(pose, state(delta.throwAngles || [0, 0]));
@@ -3824,7 +3833,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
             const goal = mix(neutral, delta, Math.max(0, Math.min(1, amount2))), out = mix(from, goal, smooth((time - start) / Math.max(1e-8, ready - start)));
             if (!undo) return out;
             const fade = aimFade(time);
-            if (sweepPlane || pike) return mix(neutral, out, fade);
+            if (rigidAim || pike) return mix(neutral, out, fade);
             out.yaw = R.qslerp(identity, out.yaw, fade);
             if (motionSolve == null ? void 0 : motionSolve.headingElevation) {
               out.heading *= fade;
@@ -3846,7 +3855,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
             const azimuth = (v) => Math.atan2(v[0], v[2]), wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
             const yaw = Math.hypot(desired[0], desired[2]) < 1e-8 ? 0 : wrap(azimuth(desired) - azimuth(direction));
             const initial = R.qlog(between(rotate(qexp([0, yaw, 0]), direction), desired, [0, 1, 0]));
-            let p = planar ? [yaw] : initialLaunch || sweepPlane || pike ? [yaw, Math.asin(unit(direction)[1]) - Math.asin(desired[1])] : [yaw, initial[0], initial[2]];
+            let p = planar ? [yaw] : initialLaunch || rigidAim || pike ? [yaw, Math.asin(unit(direction)[1]) - Math.asin(desired[1])] : [yaw, initial[0], initial[2]];
             const evaluate = (p2) => {
               const world = state(p2), posed = project(applyWorld(legalHit, world));
               if (evaluateMotion) {
@@ -10980,17 +10989,14 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
           }
           const found = entries.find((e) => e.reference === reference && e.lead === lead && e.tail === tail && e.directArmed === directArmed && e.timingPose === timingPose && e.compensation === compensation && e.endFrame === endFrame);
           if (found) return found;
-          const track = K.recording({ clip, names, parents, reference, lead, tail, directArmed, timingPose, endFrame }), pelvis = names.indexOf("pelvis");
-          let limb = names.indexOf(C.effector(clip.meta.name));
-          while (limb >= 0 && parents[limb] !== pelvis) limb = parents[limb];
-          if (limb < 0) throw Error("Kick needs a striking leg");
+          const track = K.recording({ clip, names, parents, reference, lead, tail, directArmed, timingPose, endFrame });
           const turn = K.bodyTurn(track, names, reference);
           const hitTime = track.lead + (clip.meta.phases.hit - track.sourceStart) / clip.meta.fps;
           const balanceEnd = Math.max(track.end, hitTime + tail);
           const sweepPlane = clip.meta.circular === true;
-          const conserved = sweepPlane ? K.create({ source: turn.remove, names, parents, reference, duration: track.stop + 1.2, recoveryStart: hitTime, recoveryEnd: balanceEnd }) : K.createBalanced({ source: turn.remove, names, parents, reference, duration: track.stop + 1.2, strikeRoot: limb, strikeWeight: track.strikeWeight, recoveryStart: hitTime, recoveryEnd: balanceEnd });
+          const conserved = K.create({ source: turn.remove, names, parents, reference, duration: track.stop + 1.2, recoveryStart: hitTime, recoveryEnd: balanceEnd });
           const response = turn.restore(conserved);
-          if (sweepPlane && !compensation) response.sample = response.uncorrected;
+          if (!compensation) response.sample = response.uncorrected;
           const result = { track, response, hitTime, reference, lead, tail, directArmed, timingPose, compensation, sweepPlane, endFrame };
           entries.push(result);
           if (entries.length > 8) entries.shift();
@@ -10998,7 +11004,7 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
         }
         function create({ clip, names, parents, reference, base, start = 0, lead = 0.18, tail = 0.45, directArmed = false, returnSettings = {} }) {
           const sweepPlane = clip.meta.circular === true;
-          if (sweepPlane) {
+          {
             const Target = node ? require2("./target-rig.js") : root.BodyflipTargetRig, project = Target.create(names, parents, reference).project, source = base;
             base = (t) => project(source(t));
           }
@@ -11025,6 +11031,13 @@ globalThis.BodyflipRequire = /* @__PURE__ */ (function() {
           const J = node ? require2("./jump-attack.js") : root.BodyflipJumpAttack;
           const final = J.distanceReturn(result, base, clip, names, parents, returnSettings, reference, true);
           if (sweepPlane) final.aimRecoveryEnd = Math.min(final.returnEnd, result.aimRecoveryEnd);
+          else {
+            const sample2 = final.sample;
+            final.sample = (t) => {
+              const pose = sample2(t);
+              return t >= start && t < final.returnEnd ? __spreadProps(__spreadValues({}, pose), { authoredPose: true }) : pose;
+            };
+          }
           return final;
         }
         const api = { accepts, preview, create };

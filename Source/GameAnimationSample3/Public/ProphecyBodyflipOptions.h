@@ -308,7 +308,9 @@ struct GAMEANIMATIONSAMPLE3_API FProphecyBodyflipSettings
         {EProphecyBodyflipAttack::SweepKick,26}, {EProphecyBodyflipAttack::SlashRightUp,23},
         {EProphecyBodyflipAttack::SlashRightDown,22}, {EProphecyBodyflipAttack::SlashRight,25},
         {EProphecyBodyflipAttack::SlashLeftUp,21}, {EProphecyBodyflipAttack::SlashLeftDown,24},
-        {EProphecyBodyflipAttack::Pike,16}};
+        {EProphecyBodyflipAttack::Pike,16},
+        {EProphecyBodyflipAttack::JabLeft,11}, {EProphecyBodyflipAttack::JabRight,11},
+        {EProphecyBodyflipAttack::HookLeft,13}, {EProphecyBodyflipAttack::HookRight,13}};
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bodyflip|Pose")
     TMap<EProphecyBodyflipPose, FProphecyBodyflipPoseTuning> PoseTuning = {
         {EProphecyBodyflipPose::Pose1,{0.3,0.04}}, {EProphecyBodyflipPose::Pose2,{0.2,0.09}},

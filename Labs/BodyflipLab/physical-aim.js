@@ -148,27 +148,39 @@ function create(rawSource,physicalOptions,{track,clip,settings,project=null,worl
    pikeJob.value=pikeJob.evaluate(pikeJob.step.value);pikeJob.step=null;Work.checkpoint();
   }
  }
- // A sweep aims the complete already-compensated body, so its COM is
- // unchanged and the target direction can be solved directly. This prescribed
- // rigid turn must not be fed back as an internal articulation to cancel.
- function prepareSweep(){
+ // Kick shape and its balanced motion stay intact. Aim is an explicit rigid
+ // command, separate from internal articulation, as with the accepted sweep.
+ function prepareKick(){
   const sampleHit=t=>finish(worldPose(neutral.sample(t).pose,t));
   plan=A.create({clip,track,names,parents,reference,sampleHit,project});
   const solved=plan.solution(target);statistics.evaluations=1;statistics.error=solved.error;
   const H=node?require('./momentum.js'):root.BodyflipMomentum,dt=1/240;
   physical={sample(t){
-   const frame=neutral.sample(t);if(t<=start||(undo&&t>=track.aimRecoveryEnd))return frame;
-   const delta=plan.rotation(t,target,amount,undo),q=delta.yaw,pose=plan.applyRotation(frame.pose,delta),before=neutral.sample(Math.max(start,t-dt)),elapsed=t-Math.max(start,t-dt),prior=plan.rotation(Math.max(start,t-dt),target,amount,undo),previous=plan.applyRotation(before.pose,prior);
-   const omega=R.mul(R.qlog(R.qm(q,R.qinv(prior.yaw))),1/elapsed),momentum=H.momentum(previous,pose,rig,elapsed),command=R.add(R.rotate(q,frame.physical.target),M.product(M.tensor(pose,rig),omega)),residual=R.sub(momentum,command),axis=frame.physical.axis&&R.rotate(q,frame.physical.axis);
-   const spin=frame.spin?{...frame.spin,q:R.qm(q,frame.spin.q),rotation:R.qm(q,frame.spin.rotation),omega:R.add(R.rotate(q,frame.spin.omega),omega)}:frame.spin;
-   return {...frame,pose,spin,physical:{...frame.physical,rotation:R.qm(q,frame.physical.rotation),momentum,target:command,axis,error:axis?Math.abs(R.dot(residual,axis)):R.length(residual),fullResidual:R.length(residual),aimCommand:omega}};
+   const frame=neutral.sample(t),sweep=track.sweepPlane;
+   if(t<=start||(!sweep&&(t<=track.start||t-start<1e-10))||(undo&&t>=(sweep?track.aimRecoveryEnd:track.returnEnd)))return frame;
+   // Match the neutral integrator's actual interval, including fractional seeks.
+   const tickTime=start+Math.floor((t-start)/neutral.step+1e-9)*neutral.step;
+   const priorTime=sweep?Math.max(start,t-dt):Math.max(start,t-tickTime<1e-10?tickTime-neutral.step:tickTime);
+   const delta=plan.rotation(t,target,amount,undo),q=delta.yaw,pose=plan.applyRotation(frame.pose,delta),before=neutral.sample(priorTime),elapsed=t-priorTime,prior=plan.rotation(priorTime,target,amount,undo),previous=plan.applyRotation(before.pose,prior);
+   const omega=R.mul(R.qlog(R.qm(q,R.qinv(prior.yaw))),1/elapsed),momentum=H.momentum(previous,pose,rig,elapsed);
+   let steering;
+   if(!sweep){
+    // Isolate the finite-step momentum from the prescribed aim turn. With
+    // both endpoints at the same aim orientation this term is zero. Preserve
+    // the neutral solver's residual instead of declaring measured motion exact.
+    const heldPrevious=M.rotateAboutCOM(before.pose,q,rig);
+    steering=R.sub(momentum,H.momentum(heldPrevious,pose,rig,elapsed));
+   }else steering=M.product(M.tensor(pose,rig),omega);
+   const command=R.add(R.rotate(q,frame.physical.target),steering),residual=R.sub(momentum,command),axis=frame.physical.axis&&R.rotate(q,frame.physical.axis);
+   const carrier=frame.spin&&R.qm(q,frame.spin.rotation),spin=frame.spin?{...frame.spin,q:R.qm(q,frame.spin.q),rotation:carrier,omega:sweep?R.add(R.rotate(q,frame.spin.omega),omega):R.mul(R.qlog(R.qm(carrier,R.qinv(R.qm(prior.yaw,before.spin?.rotation||[0,0,0,1])))),1/elapsed)}:frame.spin;
+   return {...frame,pose,spin,physical:{...frame.physical,rotation:R.qm(q,frame.physical.rotation),momentum,target:command,axis,error:axis?Math.abs(R.dot(residual,axis)):R.length(residual),fullResidual:R.length(residual),aimCommand:omega,...(!sweep?{aimMomentum:steering}:{})}};
   }};
  }
  function prepare(){
   if(physical)return;
   if(!aim||amount<=0){physical=neutral;return;}
   if(pointThrow){preparePointThrow();return;}
-  if(track.sweepPlane){prepareSweep();return;}
+  if(track.fullBodyKick){prepareKick();return;}
   if(!track.isThrow){if(settings.pikeSpineAbsorb&&clip?.meta.name==='pike')preparePike();else prepareMelee();return;}
   if(track.isThrow&&!throwAimOrigin){const time=Number.isFinite(track.aimReferenceTime)?track.aimReferenceTime:track.start;throwAimOrigin=worldPose(rawSource(time).pose,time).points[names.indexOf('pelvis')].slice();}
   neutralHit ||= neutral.sample(hitTime);

@@ -9,13 +9,14 @@ const event={id:'action',time:.1,enabled:true,jumpPercent:0,spinVersion:2,flip:0
 const base={...saved,trimIn:0,trimOut:2.6,mode:'spaceGym',jumpEvents:[event]};
 const cases=[{name:'saved-pike',settings:saved,times:Array.from({length:40},(_,i)=>i*5/60)},
  ...[
-  {name:'pike-steering-off',settings:{...saved,pikeSpineAbsorb:false}},
-  {name:'pike-front',settings:{...saved,target:[0,2,3]}},
-  {name:'pike-back',settings:{...saved,target:[0,2,-3]}},
-  {name:'pike-fast-spin',settings:{...saved,jumpEvents:saved.jumpEvents.map(e=>e.enabled&&e.attack==='pike'?{...e,flip:800,twist:400}:e)}}
+  {name:'pike-steering-off',settings:{...base,pikeSpineAbsorb:false,jumpEvents:[{...event,attack:'pike',flip:400,twist:200}]}},
+  {name:'pike-front',settings:{...base,target:[0,2,3],jumpEvents:[{...event,attack:'pike',flip:400,twist:200}]}},
+  {name:'pike-back',settings:{...base,target:[0,2,-3],jumpEvents:[{...event,attack:'pike',flip:400,twist:200}]}},
+  {name:'pike-fast-spin',settings:{...base,jumpEvents:[{...event,attack:'pike',flip:800,twist:400}]}}
  ],
- ...['slashL','slashLU','slashRU','sweepKick','KickL','big-throw','small-throw'].map(attack=>({name:attack,settings:{...base,jumpEvents:[{...event,attack}]}})),
+ ...[...JSON.parse(fs.readFileSync('Labs/BodyflipLab/data/vanilla.json')).clips.map(c=>c.name),'big-throw','small-throw'].map(attack=>({name:attack,settings:{...base,jumpEvents:[{...event,attack}]}})),
  ...['slashL','sweepKick','big-throw','small-throw'].map(attack=>({name:attack+'-twist',settings:{...base,target:[-1,2,-2],jumpEvents:[{...event,attack,twist:360,throwCharge:37}]}})),
+ ...['KickL','KickR'].flatMap(attack=>[-400,400].map(flip=>({name:attack+'-flip'+flip,settings:{...base,jumpEvents:[{...event,attack,flip,twist:200}]}}))),
  {name:'poses-and-keep',settings:{...base,trimOut:4,jumpEvents:[{...event,pose:'pose1',flip:180,twist:120},{...event,id:'keep',time:.8,pose:'keep',twist:-400},{...event,id:'ignored',time:1.2,enabled:false,pose:'none'},{...event,id:'snatch',time:1.5,pose:'pose2'},{...event,id:'ball',time:2.2,pose:'pose3'},{...event,id:'ninja',time:2.9,pose:'pose4'},{...event,id:'clear',time:3.5,pose:'none'}]},times:Array.from({length:41},(_,i)=>i/10)},
  {name:'authored-world-ray',settings:{...base,jumpEvents:[{...event,attack:'big-throw',twist:160,throwDirection:[-1,.2,1]}]}},
 ];

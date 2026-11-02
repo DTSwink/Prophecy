@@ -2,6 +2,32 @@
 
 ## Current state
 
+**Accepted lab port, November 3 (built and verified; source-only checkpoint):**
+Current normal-kick solver and live saved scene/settings are ported. Four jab/hook
+cutoffs now match typed C++ defaults. Native settings use the validated
+bodyflip-lab-settings-v1 wrapper. Arrow-step hit and Big Throw renderer fixes
+remain in the browser. Previous lab-only notes below are historical.
+
+Normal Editor build succeeded. Complete-project cold host passed saved defaults,
+Small Throw and Blueprint compatibility; 10,552 pins/links retained. Normal
+TestNN editor passed reflection and 60 owned Play ticks, then returned to edit.
+No gameplay assets or live settings changed. Two intermediate startup GC crashes
+stopped recurring after refreshing the diagnostic host from the independently
+rebuilt Ambient binaries; no Ambient code was changed in this task.
+
+34 app/package cases /945 frames pass; pinned V8 checks 268,801 values exactly;
+actual Unreal VM checks 210,779 values exactly. Kick22, pose/attack5, sweep6,
+sweep-cut8 and package101 checks pass. Broad lab suite:26 pass after harness
+repairs;9 older checks still fail on previous committed source too (8 same first
+failure). These are recorded, not called green. Saved-scene tests have a stale
+attackFree=false assertion: persistent Ball pose correctly retains authored
+joint freedom. Clear-air tracking meets existing gates; floor contact still
+reaches57.15deg against45deg. Earlier hand/contact limitations remain.
+
+Evidence: Saved/Diagnostics/BodyflipAccepted20261102. Compact receipt:
+Tools/Recovery/Receipts20261102Bodyflip/accepted-lab-final.json. Only Bodyflip
+source/settings/tests/receipt are in this checkpoint; no heavy assets/binaries.
+
 The user accepted the current lab and requested the complete native port and
 backup on November 2. The package now includes pike_final, both-arm return
 protection, Pike heading/elevation aiming and the accepted continuous thrust

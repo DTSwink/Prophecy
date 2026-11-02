@@ -23,7 +23,7 @@ function between(from,to,up){
 }
 function create({clip,track,names,parents,reference,sampleHit,launchAt=null,project=null,evaluateMotion=null,evaluationAmount=1,evaluationUndoRotation=true,motionSolve=null,throwAimOrigin=null}){
  if(!launchAt&&!clip?.meta.hitTarget)throw Error('Missing original hit target for '+clip?.meta.name);
- const sweepPlane=track.sweepPlane===true,pike=clip?.meta.name==='pike';
+ const sweepPlane=track.sweepPlane===true,rigidAim=sweepPlane||track.fullBodyKick===true,pike=clip?.meta.name==='pike';
  const hitTime=launchAt?(track.releaseTime??track.hitTime):track.hitTime;
  let bone,point;
  if(launchAt){bone=names.indexOf(track.handBone||'hand_r');point=pose=>launchCenter(launchAt(pose));}
@@ -59,7 +59,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
  // During a flip, yaw follows the pelvis upright; it is not a fixed world-Y turn.
  const pelvis=names.indexOf('pelvis'),aimBasis=evaluateMotion?qm(hit.q[pelvis],qinv(reference.q[pelvis])):identity,worldTurn=q=>qm(qm(aimBasis,q),qinv(aimBasis));
  const state=p=>{
-  if(sweepPlane){
+  if(rigidAim){
    const d=rotate(qinv(aimBasis),direction),heading=Math.atan2(d[0],d[2])+p[0],pitch=p[1]||0;
    return {yaw:worldTurn(qm(qexp([Math.cos(heading)*pitch,0,-Math.sin(heading)*pitch]),qexp([0,p[0],0]))),sweepAngles:[p[0],pitch],bends:names.map(()=>identity)};
   }
@@ -79,12 +79,12 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
   return {yaw:worldTurn(qm(qexp([p[3]||0,0,p[4]||0]),qexp([0,p[0],0]))),bends:factors.map(w=>worldTurn(qexp([p[1]*w,(p[5]||0)*w,p[2]*w])))};
  };
  const blendQ=(a,b,w)=>qm(qexp(mul(R.qlog(qm(b,qinv(a))),w)),a);
- function mix(a,b,w){if(Array.isArray(a))a=neutral;if(pike)return {...neutral,...state([(a.heading||0)+((b.heading||0)-(a.heading||0))*w,(a.pitch||0)+((b.pitch||0)-(a.pitch||0))*w])};if(sweepPlane)return {...neutral,...state((a.sweepAngles||[0,0]).map((v,i)=>v+((b.sweepAngles?.[i]||0)-v)*w))};const heading=(a.heading||0)+((b.heading||0)-(a.heading||0))*w;return {yaw:motionSolve?.headingElevation?worldTurn(qexp([0,heading,0])):blendQ(a.yaw,b.yaw,w),...(motionSolve?.headingElevation?{heading}:{}),offsets:a.offsets.map((v,i)=>v.map((x,j)=>x+(b.offsets[i][j]-x)*w)),...(continuousThrow?{throwAngles:(a.throwAngles||[0,0]).map((v,i)=>v+((b.throwAngles?.[i]||0)-v)*w)}:initialLaunch?{throwTurn:blendQ(a.throwTurn||identity,b.throwTurn||identity,w)}:{})};}
+ function mix(a,b,w){if(Array.isArray(a))a=neutral;if(pike)return {...neutral,...state([(a.heading||0)+((b.heading||0)-(a.heading||0))*w,(a.pitch||0)+((b.pitch||0)-(a.pitch||0))*w])};if(rigidAim)return {...neutral,...state((a.sweepAngles||[0,0]).map((v,i)=>v+((b.sweepAngles?.[i]||0)-v)*w))};const heading=(a.heading||0)+((b.heading||0)-(a.heading||0))*w;return {yaw:motionSolve?.headingElevation?worldTurn(qexp([0,heading,0])):blendQ(a.yaw,b.yaw,w),...(motionSolve?.headingElevation?{heading}:{}),offsets:a.offsets.map((v,i)=>v.map((x,j)=>x+(b.offsets[i][j]-x)*w)),...(continuousThrow?{throwAngles:(a.throwAngles||[0,0]).map((v,i)=>v+((b.throwAngles?.[i]||0)-v)*w)}:initialLaunch?{throwTurn:blendQ(a.throwTurn||identity,b.throwTurn||identity,w)}:{})};}
  // Search in world correction coordinates, but never interpolate those
  // cumulative rotations: adjacent spines can choose opposite quaternion
  // branches. The animation path uses additive legal joint coordinates below.
  function applyWorld(pose,delta){
-  if(sweepPlane){const pivot=center(pose,rig),q=pose.q.map((q,i)=>i?qm(delta.yaw,q):q),points=pose.points.map((p,i)=>i?add(pivot,rotate(delta.yaw,sub(p,pivot))):p.slice());return {...pose,points,q,axes:q.map(R.toAxes)};}
+  if(rigidAim){const pivot=center(pose,rig),q=pose.q.map((q,i)=>i?qm(delta.yaw,q):q),points=pose.points.map((p,i)=>i?add(pivot,rotate(delta.yaw,sub(p,pivot))):p.slice());return {...pose,points,q,axes:q.map(R.toAxes)};}
 
   const pivot=center(pose,rig),world=delta.bends.map(q=>qm(q,delta.yaw)),points=[],q=[];
   for(let i=0;i<names.length;i++){
@@ -120,7 +120,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
  }
  const legalHit=project(hit),hitLocal=R.localize(legalHit.points,legalHit.q,parents),hitCoordinates=joints.joints.map(c=>coordinates(hitLocal.q[c.i],c));
  function legalState(world,corrected=null){
-  if(sweepPlane)return {...neutral,...world};
+  if(rigidAim)return {...neutral,...world};
   if(pike)return {...neutral,...world};
   // Keep throws as one direction-to-direction rotation. Converting a release
   // pose into joint-limit coordinates and replaying those offsets on every
@@ -133,7 +133,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
  const rotationBases=new WeakMap();
  function applyRotation(pose,delta){
   if(Array.isArray(delta))delta=neutral;
-  if(sweepPlane)return applyWorld(pose,delta);
+  if(rigidAim)return applyWorld(pose,delta);
   if(pike)return applyWorld(pose,state([delta.heading||0,delta.pitch||0]));
   if(initialLaunch){if(continuousThrow)return applyWorld(pose,state(delta.throwAngles||[0,0]));const log=R.qlog(delta.throwTurn||identity);return applyWorld(pose,{yaw:identity,bends:factors.map(w=>qexp(mul(log,w)))});}
   const base=project(pose);let prepared=rotationBases.get(base);
@@ -160,7 +160,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
   const goal=mix(neutral,delta,Math.max(0,Math.min(1,amount))),out=mix(from,goal,smooth((time-start)/Math.max(1e-8,ready-start)));
   if(!undo)return out;
   const fade=aimFade(time);
-  if(sweepPlane||pike)return mix(neutral,out,fade);
+  if(rigidAim||pike)return mix(neutral,out,fade);
   out.yaw=R.qslerp(identity,out.yaw,fade);
   if(motionSolve?.headingElevation){out.heading*=fade;out.yaw=worldTurn(qexp([0,out.heading,0]));}
   if(out.throwTurn)out.throwTurn=R.qslerp(identity,out.throwTurn,fade);
@@ -178,7 +178,7 @@ function create({clip,track,names,parents,reference,sampleHit,launchAt=null,proj
   const azimuth=v=>Math.atan2(v[0],v[2]),wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
   const yaw=Math.hypot(desired[0],desired[2])<1e-8?0:wrap(azimuth(desired)-azimuth(direction));
   const initial=R.qlog(between(rotate(qexp([0,yaw,0]),direction),desired,[0,1,0]));
-  let p=planar?[yaw]:(initialLaunch||sweepPlane||pike)?[yaw,Math.asin(unit(direction)[1])-Math.asin(desired[1])]:[yaw,initial[0],initial[2]];
+  let p=planar?[yaw]:(initialLaunch||rigidAim||pike)?[yaw,Math.asin(unit(direction)[1])-Math.asin(desired[1])]:[yaw,initial[0],initial[2]];
   const evaluate=p=>{
    const world=state(p),posed=project(applyWorld(legalHit,world));
    if(evaluateMotion){

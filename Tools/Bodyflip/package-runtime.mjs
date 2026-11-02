@@ -7,6 +7,9 @@ import {spawnSync} from 'node:child_process';
 const runtimeOnly=process.argv.includes('--runtime-only');
 for(const arg of process.argv.slice(2))if(arg!=='--runtime-only')throw Error('Unknown package option: '+arg);
 const require=createRequire(import.meta.url),base=path.resolve('Labs/BodyflipLab'),out=path.resolve('Content/BodyflipLab'),sources=new Map();
+const preset=JSON.parse(fs.readFileSync(path.join(out,'LabSettings.json'),'utf8'));
+if(preset.schema!=='bodyflip-lab-settings-v1'||!preset.settings||typeof preset.settings!=='object'||Array.isArray(preset.settings))
+  throw Error('LabSettings.json must use the native bodyflip-lab-settings-v1 wrapper.');
 const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const digest=text=>crypto.createHash('sha256').update(text).digest('hex');
 const decoderIds=['BodyflipLab/core.js','BodyflipLab/recovery.js','BodyflipLab/flight.js'];
